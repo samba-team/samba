@@ -296,6 +296,7 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	uint32_t in_ctl_code;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
+	uint32_t in_max_output_length;
 	uint32_t out_input_offset;
 	uint32_t out_output_offset;
 	DATA_BLOB out_output_buffer = data_blob_null;
@@ -328,6 +329,24 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	in_ctl_code		= IVAL(inbody, 0x04);
 	in_file_id_persistent	= BVAL(inbody, 0x08);
 	in_file_id_volatile	= BVAL(inbody, 0x10);
+	in_max_output_length	= IVAL(inbody, 0x2C);
+
+	if (out_output_buffer.length > in_max_output_length) {
+		/*
+		 * Return NT_STATUS_BUFFER_TOO_SMALL by
+		 * default if the provided buffer doesn't
+		 * fit.
+		 *
+		 * If someone wants truncated data
+		 * together with STATUS_BUFFER_OVERFLOW
+		 * it needs to be done explicitly in
+		 * the backends. We currently do that
+		 * in:
+		 * - fsctl_dfs_get_refers()
+		 * - smbd_smb2_ioctl_pipe_read_done()
+		 */
+		status = NT_STATUS_BUFFER_TOO_SMALL;
+	}
 
 	if (smbd_smb2_ioctl_is_failure(in_ctl_code, status,
 				       out_output_buffer.length)) {
