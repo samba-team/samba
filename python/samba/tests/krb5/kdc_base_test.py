@@ -73,6 +73,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_TICKET,
     NT_PRINCIPAL,
     NT_SRV_HST,
+    NT_SRV_INST,
     PADATA_ENCRYPTED_CHALLENGE,
     PADATA_ENC_TIMESTAMP,
     PADATA_ETYPE_INFO2,
@@ -1122,6 +1123,149 @@ class KDCBaseTest(RawKerberosTest):
             enc_part = ticket_creds.encpart_private
 
         return rep, enc_part
+
+    def get_service_ticket(self, tgt, target_creds, service='host',
+                           to_rodc=False):
+        etype = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
+
+        key = tgt.session_key
+        ticket = tgt.ticket
+
+        cname = tgt.cname
+        realm = tgt.crealm
+
+        target_name = target_creds.get_username()[:-1]
+        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=[service, target_name])
+
+        rep, enc_part = self.tgs_req(cname, sname, realm, ticket, key, etype,
+                                     to_rodc=to_rodc)
+
+        service_ticket = rep['ticket']
+
+        ticket_etype = service_ticket['enc-part']['etype']
+        target_key = self.TicketDecryptionKey_from_creds(target_creds,
+                                                         etype=ticket_etype)
+
+        session_key = self.EncryptionKey_import(enc_part['key'])
+
+        service_ticket_creds = KerberosTicketCreds(service_ticket,
+                                                   session_key,
+                                                   crealm=realm,
+                                                   cname=cname,
+                                                   srealm=realm,
+                                                   sname=sname,
+                                                   decryption_key=target_key)
+
+        return service_ticket_creds
+
+    def get_tgt(self, creds, to_rodc=False, kdc_options=None,
+                expected_flags=None, unexpected_flags=None):
+        user_name = creds.get_username()
+        realm = creds.get_realm()
+
+        salt = creds.get_salt()
+
+        etype = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
+        cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=[user_name])
+        sname = self.PrincipalName_create(name_type=NT_SRV_INST,
+                                          names=['krbtgt', realm])
+
+        till = self.get_KerberosTime(offset=36000)
+
+        if to_rodc:
+            krbtgt_creds = self.get_rodc_krbtgt_creds()
+        else:
+            krbtgt_creds = self.get_krbtgt_creds()
+        ticket_decryption_key = (
+            self.TicketDecryptionKey_from_creds(krbtgt_creds))
+
+        if kdc_options is None:
+            kdc_options = krb5_asn1.KDCOptions('forwardable,'
+                                               'renewable,'
+                                               'canonicalize,'
+                                               'renewable-ok')
+        kdc_options = str(kdc_options)
+
+        pac_options = '1'  # supports claims
+
+        rep, kdc_exchange_dict = self._test_as_exchange(
+            cname=cname,
+            realm=realm,
+            sname=sname,
+            till=till,
+            client_as_etypes=etype,
+            expected_error_mode=KDC_ERR_PREAUTH_REQUIRED,
+            expected_crealm=realm,
+            expected_cname=cname,
+            expected_srealm=realm,
+            expected_sname=sname,
+            expected_salt=salt,
+            expected_flags=expected_flags,
+            unexpected_flags=unexpected_flags,
+            etypes=etype,
+            padata=None,
+            kdc_options=kdc_options,
+            preauth_key=None,
+            ticket_decryption_key=ticket_decryption_key,
+            pac_request=True,
+            pac_options=pac_options,
+            to_rodc=to_rodc)
+        self.check_pre_authentication(rep)
+
+        etype_info2 = kdc_exchange_dict['preauth_etype_info2']
+
+        preauth_key = self.PasswordKey_from_etype_info2(creds,
+                                                        etype_info2[0],
+                                                        creds.get_kvno())
+
+        ts_enc_padata = self.get_enc_timestamp_pa_data(creds, rep)
+
+        padata = [ts_enc_padata]
+
+        expected_realm = realm.upper()
+
+        expected_sname = self.PrincipalName_create(
+            name_type=NT_SRV_INST, names=['krbtgt', realm.upper()])
+
+        rep, kdc_exchange_dict = self._test_as_exchange(
+            cname=cname,
+            realm=realm,
+            sname=sname,
+            till=till,
+            client_as_etypes=etype,
+            expected_error_mode=0,
+            expected_crealm=expected_realm,
+            expected_cname=cname,
+            expected_srealm=expected_realm,
+            expected_sname=expected_sname,
+            expected_salt=salt,
+            etypes=etype,
+            padata=padata,
+            kdc_options=kdc_options,
+            preauth_key=preauth_key,
+            ticket_decryption_key=ticket_decryption_key,
+            pac_request=True,
+            pac_options=pac_options,
+            to_rodc=to_rodc)
+        self.check_as_reply(rep)
+
+        tgt = rep['ticket']
+
+        enc_part = self.get_as_rep_enc_data(preauth_key, rep)
+        session_key = self.EncryptionKey_import(enc_part['key'])
+
+        ticket_creds = KerberosTicketCreds(
+            tgt,
+            session_key,
+            crealm=realm,
+            cname=cname,
+            srealm=realm,
+            sname=sname,
+            decryption_key=ticket_decryption_key)
+
+        return ticket_creds, enc_part
 
     # Named tuple to contain values of interest when the PAC is decoded.
     PacData = namedtuple(
