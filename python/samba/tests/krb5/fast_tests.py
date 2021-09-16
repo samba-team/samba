@@ -1553,10 +1553,7 @@ class FAST_Tests(KDCBaseTest):
                                                'canonicalize,'
                                                'renewable-ok'))
 
-        pac_request = self.get_pa_pac_request()
-        pac_options = self.get_pa_pac_options('1')  # supports claims
-
-        padata = [pac_request, pac_options]
+        pac_options = '1'  # supports claims
 
         rep, kdc_exchange_dict = self._test_as_exchange(
             cname=cname,
@@ -1571,10 +1568,12 @@ class FAST_Tests(KDCBaseTest):
             expected_sname=sname,
             expected_salt=salt,
             etypes=etype,
-            padata=padata,
+            padata=None,
             kdc_options=kdc_options,
             preauth_key=None,
-            ticket_decryption_key=ticket_decryption_key)
+            ticket_decryption_key=ticket_decryption_key,
+            pac_request=True,
+            pac_options=pac_options)
         self.check_pre_authentication(rep)
 
         etype_info2 = kdc_exchange_dict['preauth_etype_info2']
@@ -1585,7 +1584,7 @@ class FAST_Tests(KDCBaseTest):
 
         ts_enc_padata = self.get_enc_timestamp_pa_data(creds, rep)
 
-        padata = [ts_enc_padata, pac_request, pac_options]
+        padata = [ts_enc_padata]
 
         expected_realm = realm.upper()
 
@@ -1608,7 +1607,9 @@ class FAST_Tests(KDCBaseTest):
             padata=padata,
             kdc_options=kdc_options,
             preauth_key=preauth_key,
-            ticket_decryption_key=ticket_decryption_key)
+            ticket_decryption_key=ticket_decryption_key,
+            pac_request=True,
+            pac_options=pac_options)
         self.check_as_reply(rep)
 
         tgt = rep['ticket']
