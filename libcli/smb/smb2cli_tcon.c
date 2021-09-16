@@ -23,42 +23,38 @@
 #include "../libcli/smb/smb_common.h"
 #include "../libcli/smb/smbXcli_base.h"
 
-struct smb2cli_tcon_state {
-	struct tevent_context *ev;
-	struct smbXcli_conn *conn;
-	uint32_t timeout_msec;
+struct smb2cli_raw_tcon_state {
 	struct smbXcli_session *session;
 	struct smbXcli_tcon *tcon;
 	uint8_t fixed[8];
 	uint8_t dyn_pad[1];
 };
 
-static void smb2cli_tcon_done(struct tevent_req *subreq);
+static void smb2cli_raw_tcon_done(struct tevent_req *subreq);
 
-struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
-				     struct tevent_context *ev,
-				     struct smbXcli_conn *conn,
-				     uint32_t timeout_msec,
-				     struct smbXcli_session *session,
-				     struct smbXcli_tcon *tcon,
-				     uint16_t flags,
-				     const char *unc)
+struct tevent_req *smb2cli_raw_tcon_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct smbXcli_conn *conn,
+					 uint32_t additional_flags,
+					 uint32_t clear_flags,
+					 uint32_t timeout_msec,
+					 struct smbXcli_session *session,
+					 struct smbXcli_tcon *tcon,
+					 uint16_t tcon_flags,
+					 const char *unc)
 {
-	struct tevent_req *req, *subreq;
-	struct smb2cli_tcon_state *state;
-	uint8_t *fixed;
-	uint8_t *dyn;
+	struct tevent_req *req = NULL;
+	struct smb2cli_raw_tcon_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+	uint8_t *fixed = NULL;
+	uint8_t *dyn = NULL;
 	size_t dyn_len;
-	uint32_t additional_flags = 0;
-	uint32_t clear_flags = 0;
 
-	req = tevent_req_create(mem_ctx, &state, struct smb2cli_tcon_state);
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb2cli_raw_tcon_state);
 	if (req == NULL) {
 		return NULL;
 	}
-	state->ev = ev;
-	state->conn = conn;
-	state->timeout_msec = timeout_msec;
 	state->session = session;
 	state->tcon = tcon;
 
@@ -77,7 +73,7 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	fixed = state->fixed;
 	SSVAL(fixed, 0, 9);
 	if (smbXcli_conn_protocol(conn) >= PROTOCOL_SMB3_10) {
-		SSVAL(fixed, 2, flags);
+		SSVAL(fixed, 2, tcon_flags);
 	} else {
 		SSVAL(fixed, 2, 0); /* Reserved */
 	}
@@ -87,10 +83,6 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	if (dyn_len == 0) {
 		dyn = state->dyn_pad;
 		dyn_len = sizeof(state->dyn_pad);
-	}
-
-	if (smbXcli_session_is_authenticated(state->session)) {
-		additional_flags |= SMB2_HDR_FLAG_SIGNED;
 	}
 
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_TCON,
@@ -104,19 +96,17 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, smb2cli_tcon_done, req);
+	tevent_req_set_callback(subreq, smb2cli_raw_tcon_done, req);
 
 	return req;
 }
 
-static void smb2cli_tcon_validate(struct tevent_req *subreq);
-
-static void smb2cli_tcon_done(struct tevent_req *subreq)
+static void smb2cli_raw_tcon_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct smb2cli_tcon_state *state = tevent_req_data(
-		req, struct smb2cli_tcon_state);
+	struct smb2cli_raw_tcon_state *state = tevent_req_data(
+		req, struct smb2cli_raw_tcon_state);
 	NTSTATUS status;
 	struct iovec *iov;
 	uint8_t *body;
@@ -155,6 +145,129 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 				share_flags,
 				share_capabilities,
 				maximal_access);
+
+	tevent_req_done(req);
+}
+
+NTSTATUS smb2cli_raw_tcon_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS smb2cli_raw_tcon(struct smbXcli_conn *conn,
+			  uint32_t additional_flags,
+			  uint32_t clear_flags,
+			  uint32_t timeout_msec,
+			  struct smbXcli_session *session,
+			  struct smbXcli_tcon *tcon,
+			  uint16_t tcon_flags,
+			  const char *unc)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_has_async_calls(conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = smb2cli_raw_tcon_send(frame, ev, conn,
+				    additional_flags, clear_flags,
+				    timeout_msec, session, tcon,
+				    tcon_flags, unc);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = smb2cli_raw_tcon_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+struct smb2cli_tcon_state {
+	struct tevent_context *ev;
+	struct smbXcli_conn *conn;
+	uint32_t timeout_msec;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	uint8_t fixed[8];
+	uint8_t dyn_pad[1];
+};
+
+static void smb2cli_tcon_done(struct tevent_req *subreq);
+
+struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct smbXcli_conn *conn,
+				     uint32_t timeout_msec,
+				     struct smbXcli_session *session,
+				     struct smbXcli_tcon *tcon,
+				     uint16_t flags,
+				     const char *unc)
+{
+	struct tevent_req *req, *subreq;
+	struct smb2cli_tcon_state *state;
+	uint32_t additional_flags = 0;
+	uint32_t clear_flags = 0;
+
+	req = tevent_req_create(mem_ctx, &state, struct smb2cli_tcon_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->conn = conn;
+	state->timeout_msec = timeout_msec;
+	state->session = session;
+	state->tcon = tcon;
+
+	if (smbXcli_session_is_authenticated(state->session)) {
+		additional_flags |= SMB2_HDR_FLAG_SIGNED;
+	}
+
+	subreq = smb2cli_raw_tcon_send(state,
+				       state->ev,
+				       state->conn,
+				       additional_flags,
+				       clear_flags,
+				       state->timeout_msec,
+				       state->session,
+				       state->tcon,
+				       flags,
+				       unc);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb2cli_tcon_done, req);
+
+	return req;
+}
+
+static void smb2cli_tcon_validate(struct tevent_req *subreq);
+
+static void smb2cli_tcon_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb2cli_tcon_state *state = tevent_req_data(
+		req, struct smb2cli_tcon_state);
+	NTSTATUS status;
+
+	status = smb2cli_raw_tcon_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 
 	if (!smbXcli_session_is_authenticated(state->session)) {
 		tevent_req_done(req);
