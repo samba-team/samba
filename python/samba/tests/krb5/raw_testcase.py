@@ -263,6 +263,45 @@ class Krb5EncryptionKey:
         return EncryptionKey_obj
 
 
+class RodcPacEncryptionKey(Krb5EncryptionKey):
+    def __init__(self, key, kvno, rodc_id=None):
+        super().__init__(key, kvno)
+
+        if rodc_id is None:
+            kvno = self.kvno
+            if kvno is not None:
+                kvno >>= 16
+                kvno &= (1 << 16) - 1
+
+            rodc_id = kvno or None
+
+        if rodc_id is not None:
+            self.rodc_id = rodc_id.to_bytes(2, byteorder='little')
+        else:
+            self.rodc_id = b''
+
+    def make_zeroed_checksum(self, ctype=None):
+        checksum = super().make_zeroed_checksum(ctype)
+        return checksum + bytes(len(self.rodc_id))
+
+    def make_checksum(self, usage, plaintext, ctype=None):
+        checksum = super().make_checksum(usage, plaintext, ctype)
+        return checksum + self.rodc_id
+
+    def verify_checksum(self, usage, plaintext, ctype, cksum):
+        if self.rodc_id:
+            cksum, cksum_rodc_id = cksum[:-2], cksum[-2:]
+
+            if self.rodc_id != cksum_rodc_id:
+                raise AssertionError(f'{self.rodc_id.hex()} != '
+                                     f'{cksum_rodc_id.hex()}')
+
+        super().verify_checksum(usage,
+                                plaintext,
+                                ctype,
+                                cksum)
+
+
 class KerberosCredentials(Credentials):
     def __init__(self):
         super(KerberosCredentials, self).__init__()
@@ -325,7 +364,7 @@ class KerberosCredentials(Credentials):
         etype = int(etype)
         contents = binascii.a2b_hex(hexkey)
         key = kcrypto.Key(etype, contents)
-        self.forced_keys[etype] = Krb5EncryptionKey(key, self.kvno)
+        self.forced_keys[etype] = RodcPacEncryptionKey(key, self.kvno)
 
     def get_forced_key(self, etype):
         etype = int(etype)
@@ -982,13 +1021,13 @@ class RawKerberosTest(TestCaseInTempDir):
 
     def SessionKey_create(self, etype, contents, kvno=None):
         key = kcrypto.Key(etype, contents)
-        return Krb5EncryptionKey(key, kvno)
+        return RodcPacEncryptionKey(key, kvno)
 
     def PasswordKey_create(self, etype=None, pwd=None, salt=None, kvno=None):
         self.assertIsNotNone(pwd)
         self.assertIsNotNone(salt)
         key = kcrypto.string_to_key(etype, pwd, salt)
-        return Krb5EncryptionKey(key, kvno)
+        return RodcPacEncryptionKey(key, kvno)
 
     def PasswordKey_from_etype_info2(self, creds, etype_info2, kvno=None):
         e = etype_info2['etype']
