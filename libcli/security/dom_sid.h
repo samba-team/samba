@@ -23,6 +23,9 @@
 #ifndef _DOM_SID_H_
 #define _DOM_SID_H_
 
+#include "replace.h"
+#include <talloc.h>
+#include "lib/util/data_blob.h"
 #include "librpc/gen_ndr/security.h"
 
 /* Some well-known SIDs */
