@@ -1573,7 +1573,7 @@ class FAST_Tests(KDCBaseTest):
 
         return service_ticket_creds
 
-    def get_tgt(self, creds):
+    def get_tgt(self, creds, to_rodc=False):
         user_name = creds.get_username()
         realm = creds.get_realm()
 
@@ -1587,7 +1587,10 @@ class FAST_Tests(KDCBaseTest):
 
         till = self.get_KerberosTime(offset=36000)
 
-        krbtgt_creds = self.get_krbtgt_creds()
+        if to_rodc:
+            krbtgt_creds = self.get_rodc_krbtgt_creds()
+        else:
+            krbtgt_creds = self.get_krbtgt_creds()
         ticket_decryption_key = (
             self.TicketDecryptionKey_from_creds(krbtgt_creds))
 
@@ -1616,7 +1619,8 @@ class FAST_Tests(KDCBaseTest):
             preauth_key=None,
             ticket_decryption_key=ticket_decryption_key,
             pac_request=True,
-            pac_options=pac_options)
+            pac_options=pac_options,
+            to_rodc=to_rodc)
         self.check_pre_authentication(rep)
 
         etype_info2 = kdc_exchange_dict['preauth_etype_info2']
@@ -1652,7 +1656,8 @@ class FAST_Tests(KDCBaseTest):
             preauth_key=preauth_key,
             ticket_decryption_key=ticket_decryption_key,
             pac_request=True,
-            pac_options=pac_options)
+            pac_options=pac_options,
+            to_rodc=to_rodc)
         self.check_as_reply(rep)
 
         tgt = rep['ticket']
