@@ -1127,13 +1127,6 @@ class KDCBaseTest(RawKerberosTest):
     PacData = namedtuple(
         "PacData",
         "account_name account_sid logon_name upn domain_name")
-    PAC_LOGON_INFO = 1
-    PAC_CREDENTIAL_INFO = 2
-    PAC_SRV_CHECKSUM = 6
-    PAC_KDC_CHECKSUM = 7
-    PAC_LOGON_NAME = 10
-    PAC_CONSTRAINED_DELEGATION = 11
-    PAC_UPN_DNS_INFO = 12
 
     def get_pac_data(self, authorization_data):
         '''Decode the PAC element contained in the authorization-data element
@@ -1154,15 +1147,15 @@ class KDCBaseTest(RawKerberosTest):
             for ad in (x for x in buf if x['ad-type'] == AD_WIN2K_PAC):
                 pb = ndr_unpack(krb5pac.PAC_DATA, ad['ad-data'])
                 for pac in pb.buffers:
-                    if pac.type == self.PAC_LOGON_INFO:
+                    if pac.type == krb5pac.PAC_TYPE_LOGON_INFO:
                         account_name = (
                             pac.info.info.info3.base.account_name)
                         user_sid = (
                             str(pac.info.info.info3.base.domain_sid)
                             + "-" + str(pac.info.info.info3.base.rid))
-                    elif pac.type == self.PAC_LOGON_NAME:
+                    elif pac.type == krb5pac.PAC_TYPE_LOGON_NAME:
                         logon_name = pac.info.account_name
-                    elif pac.type == self.PAC_UPN_DNS_INFO:
+                    elif pac.type == krb5pac.PAC_TYPE_UPN_DNS_INFO:
                         upn = pac.info.upn_name
                         domain_name = pac.info.dns_domain_name
 
