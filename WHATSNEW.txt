@@ -29,6 +29,14 @@ certmonger paired with cepces to monitor the host certificate templates.
 Certificates are installed in /var/lib/samba/certs and private keys are
 installed in /var/lib/samba/private/certs.
 
+Ability to add ports to dns forwarder addresses in internal DNS backend
+-----------------------------------------------------------------------
+
+The internal DNS server of Samba forwards queries non-AD zones to one or more
+configured forwarders. Up until now it has been assumed that these forwarders
+listen on port 53. Starting with this version it is possible to configure the
+port using host:port notation. See smb.conf for more details. Existing setups
+are not affected, as the default port is 53.
 
 REMOVED FEATURES
 ================
@@ -50,6 +58,7 @@ smb.conf changes
   Parameter Name                          Description     Default
   --------------                          -----------     -------
   kernel share modes                      New default     No
+  dns forwarder                           Changed
 
 
 KNOWN ISSUES
