@@ -1573,7 +1573,8 @@ class FAST_Tests(KDCBaseTest):
 
         return service_ticket_creds
 
-    def get_tgt(self, creds, to_rodc=False, kdc_options=None):
+    def get_tgt(self, creds, to_rodc=False, kdc_options=None,
+                expected_flags=None, unexpected_flags=None):
         user_name = creds.get_username()
         realm = creds.get_realm()
 
@@ -1615,6 +1616,8 @@ class FAST_Tests(KDCBaseTest):
             expected_srealm=realm,
             expected_sname=sname,
             expected_salt=salt,
+            expected_flags=expected_flags,
+            unexpected_flags=unexpected_flags,
             etypes=etype,
             padata=None,
             kdc_options=kdc_options,
