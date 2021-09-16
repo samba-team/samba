@@ -244,35 +244,27 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_SERVER_TRUST_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        try:
-            self.samdb.modify(m)
-            self.fail("Unexpectedly able to set userAccountControl to be a DC on %s" % m.dn)
-        except LdbError as e5:
-            (enum, estr) = e5.args
-            self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
+        self.assertRaisesLdbError(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                  f"Unexpectedly able to set userAccountControl to be a DC on {m.dn}",
+                                  self.samdb.modify, m)
 
         m = ldb.Message()
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT |
                                                          samba.dsdb.UF_PARTIAL_SECRETS_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        try:
-            self.samdb.modify(m)
-            self.fail("Unexpectedly able to set userAccountControl to be an RODC on %s" % m.dn)
-        except LdbError as e6:
-            (enum, estr) = e6.args
-            self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
+
+        self.assertRaisesLdbError(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                  f"Unexpectedly able to set userAccountControl to be a RODC on {m.dn}",
+                                  self.samdb.modify, m)
 
         m = ldb.Message()
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        try:
-            self.samdb.modify(m)
-            self.fail("Unexpectedly able to set userAccountControl to be an Workstation on %s" % m.dn)
-        except LdbError as e7:
-            (enum, estr) = e7.args
-            self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
+        self.assertRaisesLdbError(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                  f"Unexpectedly able to set userAccountControl to be a Workstation on {m.dn}",
+                                  self.samdb.modify, m)
 
         m = ldb.Message()
         m.dn = res[0].dn
@@ -284,13 +276,10 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["primaryGroupID"] = ldb.MessageElement(str(security.DOMAIN_RID_ADMINS),
                                                  ldb.FLAG_MOD_REPLACE, "primaryGroupID")
-        try:
-            self.samdb.modify(m)
-        except LdbError as e8:
-            (enum, estr) = e8.args
-            self.assertEqual(ldb.ERR_UNWILLING_TO_PERFORM, enum)
-            return
-        self.fail()
+        self.assertRaisesLdbError(ldb.ERR_UNWILLING_TO_PERFORM,
+                                  f"Unexpectedly able to set primaryGroupID on {m.dn}",
+                                  self.samdb.modify, m)
+
 
     def test_mod_computer_cc(self):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
@@ -320,24 +309,17 @@ class UserAccountControlTests(samba.tests.TestCase):
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT |
                                                          samba.dsdb.UF_PARTIAL_SECRETS_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        try:
-            self.samdb.modify(m)
-            self.fail("Unexpectedly able to set userAccountControl on %s" % m.dn)
-        except LdbError as e9:
-            (enum, estr) = e9.args
-            self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
+        self.assertRaisesLdbError(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                  f"Unexpectedly able to set userAccountControl as RODC on {m.dn}",
+                                  self.samdb.modify, m)
 
         m = ldb.Message()
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_SERVER_TRUST_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        try:
-            self.samdb.modify(m)
-            self.fail()
-        except LdbError as e10:
-            (enum, estr) = e10.args
-            self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
-
+        self.assertRaisesLdbError(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                  f"Unexpectedly able to set userAccountControl as DC on {m.dn}",
+                                  self.samdb.modify, m)
 
         m = ldb.Message()
         m.dn = res[0].dn
@@ -349,12 +331,10 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        try:
-            self.samdb.modify(m)
-            self.fail("Unexpectedly able to set userAccountControl to be an Workstation on %s" % m.dn)
-        except LdbError as e11:
-            (enum, estr) = e11.args
-            self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
+        self.assertRaisesLdbError(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                  f"Unexpectedly able to set userAccountControl to be a workstation on {m.dn}",
+                                  self.samdb.modify, m)
+
 
     def test_add_computer_cc_normal_bare(self):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
@@ -392,12 +372,11 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_NORMAL_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        try:
-            self.samdb.modify(m)
-            self.fail("Unexpectedly able to set userAccountControl to be an Normal account without |UF_PASSWD_NOTREQD on %s" % m.dn)
-        except LdbError as e7:
-            (enum, estr) = e7.args
-            self.assertEqual(ldb.ERR_UNWILLING_TO_PERFORM, enum)
+        self.assertRaisesLdbError(ldb.ERR_UNWILLING_TO_PERFORM,
+                                  f"Unexpectedly able to set userAccountControl to be an Normal "
+                                  "account without |UF_PASSWD_NOTREQD Unexpectedly able to "
+                                  "set userAccountControl to be a workstation on {m.dn}",
+                                  self.samdb.modify, m)
 
 
     def test_admin_mod_uac(self):
@@ -419,12 +398,11 @@ class UserAccountControlTests(samba.tests.TestCase):
                                                          UF_PARTIAL_SECRETS_ACCOUNT |
                                                          UF_TRUSTED_FOR_DELEGATION),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        try:
-            self.admin_samdb.modify(m)
-            self.fail("Unexpectedly able to set userAccountControl to UF_WORKSTATION_TRUST_ACCOUNT|UF_PARTIAL_SECRETS_ACCOUNT|UF_TRUSTED_FOR_DELEGATION on %s" % m.dn)
-        except LdbError as e12:
-            (enum, estr) = e12.args
-            self.assertEqual(ldb.ERR_OTHER, enum)
+        self.assertRaisesLdbError(ldb.ERR_OTHER,
+                                  f"Unexpectedly able to set userAccountControl to "
+                                  "UF_WORKSTATION_TRUST_ACCOUNT|UF_PARTIAL_SECRETS_ACCOUNT|"
+                                  "UF_TRUSTED_FOR_DELEGATION on {m.dn}",
+                                  self.admin_samdb.modify, m)
 
         m = ldb.Message()
         m.dn = res[0].dn
@@ -834,14 +812,10 @@ class UserAccountControlTests(samba.tests.TestCase):
         m["primaryGroupID"] = ldb.MessageElement(
             [str(security.DOMAIN_RID_USERS)], ldb.FLAG_MOD_REPLACE,
             "primaryGroupID")
-        try:
-            self.admin_samdb.modify(m)
 
-            # When creating a new object, you can not ever set the primaryGroupID
-            self.fail("Unexpectedly able to set primaryGroupID to be other than DCS on %s" % computername)
-        except LdbError as e15:
-            (enum, estr) = e15.args
-            self.assertEqual(enum, ldb.ERR_UNWILLING_TO_PERFORM)
+        self.assertRaisesLdbError(ldb.ERR_UNWILLING_TO_PERFORM,
+                                  f"Unexpectedly able to set primaryGroupID to be other than DCS on {m.dn}",
+                                  self.admin_samdb.modify, m)
 
     def test_primarygroupID_priv_user_modify(self):
         computername = self.computernames[0]
