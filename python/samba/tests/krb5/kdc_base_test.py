@@ -228,7 +228,7 @@ class KDCBaseTest(RawKerberosTest):
 
         return default_enctypes
 
-    def create_account(self, ldb, name, machine_account=False,
+    def create_account(self, samdb, name, machine_account=False,
                        spn=None, upn=None, additional_details=None,
                        ou=None, account_control=0):
         '''Create an account for testing.
@@ -239,13 +239,13 @@ class KDCBaseTest(RawKerberosTest):
             guid = (DS_GUID_COMPUTERS_CONTAINER if machine_account
                     else DS_GUID_USERS_CONTAINER)
 
-            ou = ldb.get_wellknown_dn(ldb.get_default_basedn(), guid)
+            ou = samdb.get_wellknown_dn(samdb.get_default_basedn(), guid)
 
         dn = "CN=%s,%s" % (name, ou)
 
         # remove the account if it exists, this will happen if a previous test
         # run failed
-        delete_force(ldb, dn)
+        delete_force(samdb, dn)
         if machine_account:
             object_class = "computer"
             account_name = "%s$" % name
@@ -270,19 +270,19 @@ class KDCBaseTest(RawKerberosTest):
             details["userPrincipalName"] = upn
         if additional_details is not None:
             details.update(additional_details)
-        ldb.add(details)
+        samdb.add(details)
 
         creds = KerberosCredentials()
         creds.guess(self.get_lp())
-        creds.set_realm(ldb.domain_dns_name().upper())
-        creds.set_domain(ldb.domain_netbios_name().upper())
+        creds.set_realm(samdb.domain_dns_name().upper())
+        creds.set_domain(samdb.domain_netbios_name().upper())
         creds.set_password(password)
         creds.set_username(account_name)
         if machine_account:
             creds.set_workstation(name)
         else:
             creds.set_workstation('')
-        creds.set_dn(dn)
+        creds.set_dn(ldb.Dn(samdb, dn))
         #
         # Save the account name so it can be deleted in tearDownClass
         self.accounts.add(dn)
