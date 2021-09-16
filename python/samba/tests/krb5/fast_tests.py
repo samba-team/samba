@@ -1530,7 +1530,7 @@ class FAST_Tests(KDCBaseTest):
 
         return service_ticket_creds
 
-    def get_tgt(self, creds, to_rodc=False):
+    def get_tgt(self, creds, to_rodc=False, kdc_options=None):
         user_name = creds.get_username()
         realm = creds.get_realm()
 
@@ -1551,10 +1551,12 @@ class FAST_Tests(KDCBaseTest):
         ticket_decryption_key = (
             self.TicketDecryptionKey_from_creds(krbtgt_creds))
 
-        kdc_options = str(krb5_asn1.KDCOptions('forwardable,'
+        if kdc_options is None:
+            kdc_options = krb5_asn1.KDCOptions('forwardable,'
                                                'renewable,'
                                                'canonicalize,'
-                                               'renewable-ok'))
+                                               'renewable-ok')
+        kdc_options = str(kdc_options)
 
         pac_options = '1'  # supports claims
 
