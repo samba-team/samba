@@ -232,11 +232,28 @@ class Krb5EncryptionKey:
         plaintext = kcrypto.decrypt(self.key, usage, ciphertext)
         return plaintext
 
+    def make_zeroed_checksum(self, ctype=None):
+        if ctype is None:
+            ctype = self.ctype
+
+        checksum_len = kcrypto.checksum_len(ctype)
+        return bytes(checksum_len)
+
     def make_checksum(self, usage, plaintext, ctype=None):
         if ctype is None:
             ctype = self.ctype
         cksum = kcrypto.make_checksum(ctype, self.key, usage, plaintext)
         return cksum
+
+    def verify_checksum(self, usage, plaintext, ctype, cksum):
+        if self.ctype != ctype:
+            raise AssertionError(f'{self.ctype} != {ctype}')
+
+        kcrypto.verify_checksum(ctype,
+                                self.key,
+                                usage,
+                                plaintext,
+                                cksum)
 
     def export_obj(self):
         EncryptionKey_obj = {
