@@ -163,6 +163,49 @@ static void test_address_inet_from_strings(void **state)
 	assert_int_equal(rc, -1);
 	assert_int_not_equal(save_errno, 0);
 	assert_null(addr);
+
+	/*
+	 * Unspecified IP family, given NULL, verify it returns something
+	 */
+	rc = tsocket_address_inet_from_strings(mem_ctx, "ip", NULL, 1234,
+					       &addr);
+	assert_return_code(rc, errno);
+	assert_non_null(addr);
+	TALLOC_FREE(addr);
+
+	/*
+	 * IPv4, given NULL, verify it returns 0.0.0.0
+	 */
+	rc = tsocket_address_inet_from_strings(mem_ctx, "ipv4", NULL, 1234,
+					       &addr);
+	assert_return_code(rc, errno);
+	assert_non_null(addr);
+	addr_s = tsocket_address_string(addr, mem_ctx);
+	assert_non_null(addr_s);
+	assert_string_equal(addr_s, "ipv4:0.0.0.0:1234");
+	assert_true(tsocket_address_is_inet(addr, "ip"));
+	assert_true(tsocket_address_is_inet(addr, "ipv4"));
+	assert_false(tsocket_address_is_inet(addr, "ipv6"));
+	assert_int_equal(tsocket_address_inet_port(addr), 1234);
+	TALLOC_FREE(addr);
+	TALLOC_FREE(addr_s);
+
+	/*
+	 * IPv6, given NULL, verify it returns ::
+	 */
+	rc = tsocket_address_inet_from_strings(mem_ctx, "ipv6", NULL, 1234,
+					       &addr);
+	assert_return_code(rc, errno);
+	assert_non_null(addr);
+	addr_s = tsocket_address_string(addr, mem_ctx);
+	assert_non_null(addr_s);
+	assert_string_equal(addr_s, "ipv6::::1234");
+	assert_true(tsocket_address_is_inet(addr, "ip"));
+	assert_false(tsocket_address_is_inet(addr, "ipv4"));
+	assert_true(tsocket_address_is_inet(addr, "ipv6"));
+	assert_int_equal(tsocket_address_inet_port(addr), 1234);
+	TALLOC_FREE(addr);
+	TALLOC_FREE(addr_s);
 }
 
 int main(int argc, char *argv[])
