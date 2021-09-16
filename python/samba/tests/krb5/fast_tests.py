@@ -1540,7 +1540,7 @@ class FAST_Tests(KDCBaseTest):
         self.assertTrue(
             security.KERB_ENCTYPE_CLAIMS_SUPPORTED & krbtgt_etypes)
 
-    def get_service_ticket(self, tgt, target_creds, service='host'):
+    def get_service_ticket(self, tgt, target_creds, service='host', to_rodc=False):
         etype = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
 
         key = tgt.session_key
@@ -1553,7 +1553,7 @@ class FAST_Tests(KDCBaseTest):
         sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=[service, target_name])
 
-        rep, enc_part = self.tgs_req(cname, sname, realm, ticket, key, etype)
+        rep, enc_part = self.tgs_req(cname, sname, realm, ticket, key, etype, to_rodc=to_rodc)
 
         service_ticket = rep['ticket']
 
