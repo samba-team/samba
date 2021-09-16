@@ -1177,11 +1177,6 @@ class RawKerberosTest(TestCaseInTempDir):
         pa_data = self.PA_DATA_create(PADATA_PAC_REQUEST, pa_pac)
         return pa_data
 
-    def get_pa_pac_request(self, request_pac=True):
-        pac_request = self.KERB_PA_PAC_REQUEST_create(request_pac)
-
-        return pac_request
-
     def get_pa_pac_options(self, options):
         pac_options = self.PA_PAC_OPTIONS_create(options)
         pac_options = self.der_encode(pac_options,
