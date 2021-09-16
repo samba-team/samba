@@ -161,6 +161,15 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(
 	}
 
 	/*
+	 * Do not pass an empty policy_handle to dcesrv_handle_lookup() or
+	 * it will create a new empty handle
+	 */
+	if (ndr_policy_handle_empty(hnd)) {
+		p->fault_state = DCERPC_FAULT_CONTEXT_MISMATCH;
+		return NULL;
+	}
+
+	/*
 	 * Do not pass handle_type to avoid setting the fault_state in the
 	 * pipes_struct if the handle type does not match
 	 */
