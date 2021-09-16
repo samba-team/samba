@@ -593,6 +593,26 @@ NTSTATUS smb2cli_logoff(struct smbXcli_conn *conn,
 			uint32_t timeout_msec,
 			struct smbXcli_session *session);
 
+/* smb2cli_raw_tcon* should only be used in tests! */
+struct tevent_req *smb2cli_raw_tcon_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct smbXcli_conn *conn,
+					 uint32_t additional_flags,
+					 uint32_t clear_flags,
+					 uint32_t timeout_msec,
+					 struct smbXcli_session *session,
+					 struct smbXcli_tcon *tcon,
+					 uint16_t tcon_flags,
+					 const char *unc);
+NTSTATUS smb2cli_raw_tcon_recv(struct tevent_req *req);
+NTSTATUS smb2cli_raw_tcon(struct smbXcli_conn *conn,
+			  uint32_t additional_flags,
+			  uint32_t clear_flags,
+			  uint32_t timeout_msec,
+			  struct smbXcli_session *session,
+			  struct smbXcli_tcon *tcon,
+			  uint16_t tcon_flags,
+			  const char *unc);
 struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct smbXcli_conn *conn,
