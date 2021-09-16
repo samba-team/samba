@@ -208,11 +208,154 @@ static void test_address_inet_from_strings(void **state)
 	TALLOC_FREE(addr_s);
 }
 
+static void test_address_inet_from_hostport_strings(void **state)
+{
+	int rc = 0;
+	int save_errno;
+	TALLOC_CTX *mem_ctx = *state;
+	struct tsocket_address *addr = NULL;
+	char *addr_s = NULL;
+
+	/*
+	 * IPv4 host:port
+	 */
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ip", "1.2.3.4:5678", 1234, &addr);
+	assert_return_code(rc, errno);
+	assert_non_null(addr);
+	addr_s = tsocket_address_string(addr, mem_ctx);
+	assert_non_null(addr_s);
+	assert_string_equal(addr_s, "ipv4:1.2.3.4:5678");
+	TALLOC_FREE(addr);
+	TALLOC_FREE(addr_s);
+
+	/*
+	 * IPv4 host
+	 */
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ip", "1.2.3.4", 1234, &addr);
+	assert_return_code(rc, errno);
+	assert_non_null(addr);
+	addr_s = tsocket_address_string(addr, mem_ctx);
+	assert_non_null(addr_s);
+	assert_string_equal(addr_s, "ipv4:1.2.3.4:1234");
+	TALLOC_FREE(addr);
+	TALLOC_FREE(addr_s);
+
+	/*
+	 * IPv6 [host]:port
+	 */
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ip", "[2001::1]:5678", 1234, &addr);
+	assert_return_code(rc, errno);
+	assert_non_null(addr);
+	addr_s = tsocket_address_string(addr, mem_ctx);
+	assert_non_null(addr_s);
+	assert_string_equal(addr_s, "ipv6:2001::1:5678");
+	TALLOC_FREE(addr);
+	TALLOC_FREE(addr_s);
+
+	/*
+	 * IPv6 [host]
+	 */
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ip", "[2001::1]", 1234, &addr);
+	assert_return_code(rc, errno);
+	assert_non_null(addr);
+	addr_s = tsocket_address_string(addr, mem_ctx);
+	assert_non_null(addr_s);
+	assert_string_equal(addr_s, "ipv6:2001::1:1234");
+	TALLOC_FREE(addr);
+	TALLOC_FREE(addr_s);
+
+	/*
+	 * IPv6 host
+	 */
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ip", "2001::1", 1234, &addr);
+	assert_return_code(rc, errno);
+	assert_non_null(addr);
+	addr_s = tsocket_address_string(addr, mem_ctx);
+	assert_non_null(addr_s);
+	assert_string_equal(addr_s, "ipv6:2001::1:1234");
+	TALLOC_FREE(addr);
+	TALLOC_FREE(addr_s);
+
+	/*
+	 * Given NULL, verify it returns something
+	 */
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ipv6", NULL, 1234, &addr);
+	assert_return_code(rc, errno);
+	assert_non_null(addr);
+	addr_s = tsocket_address_string(addr, mem_ctx);
+	assert_non_null(addr_s);
+	assert_string_equal(addr_s, "ipv6::::1234");
+	TALLOC_FREE(addr);
+	TALLOC_FREE(addr_s);
+
+	/*
+	 * [host]grarbage
+	 */
+	errno = 0;
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ip", "[2001::1]garbage", 1234, &addr);
+	save_errno = errno;
+	assert_int_equal(rc, -1);
+	assert_int_not_equal(save_errno, 0);
+	assert_null(addr);
+
+	/*
+	 * [host]:grarbage
+	 */
+	errno = 0;
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ip", "[2001::1]:garbage", 1234, &addr);
+	save_errno = errno;
+	assert_int_equal(rc, -1);
+	assert_int_not_equal(save_errno, 0);
+	assert_null(addr);
+
+	/*
+	 * host:grarbage
+	 */
+	errno = 0;
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ip", "1.2.3.4:garbage", 1234, &addr);
+	save_errno = errno;
+	assert_int_equal(rc, -1);
+	assert_int_not_equal(save_errno, 0);
+	assert_null(addr);
+
+	/*
+	 * [host]:<port-too-large>
+	 */
+	errno = 0;
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ip", "[2001::1]:100000", 1234, &addr);
+	save_errno = errno;
+	assert_int_equal(rc, -1);
+	assert_int_not_equal(save_errno, 0);
+	assert_null(addr);
+
+	/*
+	 * host:<port-too-large>
+	 */
+	errno = 0;
+	rc = tsocket_address_inet_from_hostport_strings(
+	    mem_ctx, "ip", "1.2.3.4:100000", 1234, &addr);
+	save_errno = errno;
+	assert_int_equal(rc, -1);
+	assert_int_not_equal(save_errno, 0);
+	assert_null(addr);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
 	const struct CMUnitTest tests[] = {
 	    cmocka_unit_test(test_address_inet_from_strings),
+	    cmocka_unit_test(test_address_inet_from_hostport_strings),
 	};
 
 	if (argc == 2) {
