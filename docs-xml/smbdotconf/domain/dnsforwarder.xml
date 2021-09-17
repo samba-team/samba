@@ -8,10 +8,14 @@
 	</para>
 
 	<para>The DNS forwarder is only used if the internal DNS server
-		in Samba is used.
+		in Samba is used. Port numbers can be appended by separating them from
+		the address by using a colon (':').  When specifying a port, IPv6
+		addresses must be enclosed in square brackets ('[' and ']'). IPv6
+		forwarder addresses with no port specified, don't need the square
+		brackets, and default to port 53.
 	</para>
 </description>
 
 <value type="default"></value>
-<value type="example">192.168.0.1 192.168.0.2</value>
+<value type="example">192.168.0.1 192.168.0.2 ::1 [2001:db8::1] [2001:db8:1:2::1]:54 </value>
 </samba:parameter>
