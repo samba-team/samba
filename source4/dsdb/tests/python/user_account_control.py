@@ -306,7 +306,11 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        self.samdb.modify(m)
+        try:
+            self.samdb.modify(m)
+        except LdbError as e:
+            (enum, estr) = e.args
+            self.fail(f"got {estr} setting userAccountControl to UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD")
 
         m = ldb.Message()
         m.dn = res[0].dn
@@ -361,7 +365,11 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        self.samdb.modify(m)
+        try:
+            self.samdb.modify(m)
+        except LdbError as e:
+            (enum, estr) = e.args
+            self.fail(f"got {estr} setting userAccountControl to UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD")
 
         m = ldb.Message()
         m.dn = res[0].dn
@@ -458,7 +466,11 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(UF_ACCOUNTDISABLE),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        self.admin_samdb.modify(m)
+        try:
+            self.admin_samdb.modify(m)
+        except LdbError as e:
+            (enum, estr) = e.args
+            self.fail(f"got {estr} setting userAccountControl to UF_ACCOUNTDISABLE (as admin)")
 
         res = self.admin_samdb.search("%s" % self.base_dn,
                                       expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
@@ -579,7 +591,11 @@ class UserAccountControlTests(samba.tests.TestCase):
             m.dn = res[0].dn
             m["userAccountControl"] = ldb.MessageElement(str(orig_uac),
                                                          ldb.FLAG_MOD_REPLACE, "userAccountControl")
-            self.admin_samdb.modify(m)
+            try:
+                self.admin_samdb.modify(m)
+            except LdbError as e:
+                (enum, estr) = e.args
+                self.fail(f"got {estr} resetting userAccountControl to initial value {orig_uac:#08x}")
 
             res = self.admin_samdb.search("%s" % self.base_dn,
                                           expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
@@ -898,7 +914,12 @@ class UserAccountControlTests(samba.tests.TestCase):
             and account_type == UF_NORMAL_ACCOUNT):
             self.admin_samdb.add(msg_dict)
         elif objectclass == "computer":
-            self.admin_samdb.add(msg_dict)
+            try:
+                self.admin_samdb.add(msg_dict)
+            except ldb.LdbError as e:
+                (num, msg) = e.args
+                self.fail("Failed to create {objectclass} account "
+                          "with {account_type_string}")
         else:
             self.assertRaisesLdbError(ldb.ERR_OBJECT_CLASS_VIOLATION,
                                       "Should have been unable to {account_type_str} on {objectclass}",
