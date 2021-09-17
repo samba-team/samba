@@ -166,7 +166,6 @@ def format_option(name, value=None):
 
 def make_test(
         cmd='make testonly',
-        FAIL_IMMEDIATELY=1,
         INJECT_SELFTEST_PREFIX=1,
         TESTS='',
         include_envs=None,
@@ -182,7 +181,13 @@ def make_test(
         TESTS = (TESTS + ' ' + ' '.join(test_options)).strip()
 
     _options = []
-    if FAIL_IMMEDIATELY:
+
+    # Allow getting a full CI with
+    # git push -o ci.variable='AUTOBUILD_FAIL_IMMEDIATELY=0'
+
+    FAIL_IMMEDIATELY = os.getenv("AUTOBUILD_FAIL_IMMEDIATELY", "1")
+
+    if int(FAIL_IMMEDIATELY):
         _options.append('FAIL_IMMEDIATELY=1')
     if TESTS:
         _options.append("TESTS='{}'".format(TESTS))
