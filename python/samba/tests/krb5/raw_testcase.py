@@ -34,8 +34,9 @@ from pyasn1.codec.native.encoder import encode as pyasn1_native_encode
 from pyasn1.codec.ber.encoder import BitStringEncoder
 
 from samba.credentials import Credentials
-from samba.dcerpc import security
+from samba.dcerpc import krb5pac, security
 from samba.gensec import FEATURE_SEAL
+from samba.ndr import ndr_pack, ndr_unpack
 
 import samba.tests
 from samba.tests import TestCaseInTempDir
@@ -417,6 +418,10 @@ class KerberosTicketCreds:
 
 class RawKerberosTest(TestCaseInTempDir):
     """A raw Kerberos Test case."""
+
+    pac_checksum_types = {krb5pac.PAC_TYPE_SRV_CHECKSUM,
+                          krb5pac.PAC_TYPE_KDC_CHECKSUM,
+                          krb5pac.PAC_TYPE_TICKET_CHECKSUM}
 
     etypes_to_test = (
         {"value": -1111, "name": "dummy", },
@@ -2900,6 +2905,114 @@ class RawKerberosTest(TestCaseInTempDir):
                                         ticket_blob)
         self.assertEqual(expected_checksum, checksum)
 
+    def verify_ticket(self, ticket, krbtgt_key, expect_pac=True):
+        # Check if the ticket is a TGT.
+        sname = ticket.ticket['sname']
+        is_tgt = sname['name-string'][0] == b'krbtgt'
+
+        # Decrypt the ticket.
+
+        key = ticket.decryption_key
+        enc_part = ticket.ticket['enc-part']
+
+        self.assertElementEqual(enc_part, 'etype', key.etype)
+        self.assertElementKVNO(enc_part, 'kvno', key.kvno)
+
+        enc_part = key.decrypt(KU_TICKET, enc_part['cipher'])
+        enc_part = self.der_decode(
+            enc_part, asn1Spec=krb5_asn1.EncTicketPart())
+
+        # Fetch the authorization data from the ticket.
+        auth_data = enc_part.get('authorization-data')
+        if expect_pac:
+            self.assertIsNotNone(auth_data)
+        elif auth_data is None:
+            return
+
+        # Get a copy of the authdata with an empty PAC, and the existing PAC
+        # (if present).
+        empty_pac = self.get_empty_pac()
+        auth_data, pac_data = self.replace_pac(auth_data,
+                                               empty_pac,
+                                               expect_pac=expect_pac)
+        if not expect_pac:
+            return
+
+        # Unpack the PAC as both PAC_DATA and PAC_DATA_RAW types. We use the
+        # raw type to create a new PAC with zeroed signatures for
+        # verification. This is because on Windows, the resource_groups field
+        # is added to PAC_LOGON_INFO after the info3 field has been created,
+        # which results in a different ordering of pointer values than Samba
+        # (see commit 0e201ecdc53). Using the raw type avoids changing
+        # PAC_LOGON_INFO, so verification against Windows can work. We still
+        # need the PAC_DATA type to retrieve the actual checksums, because the
+        # signatures in the raw type may contain padding bytes.
+        pac = ndr_unpack(krb5pac.PAC_DATA,
+                         pac_data)
+        raw_pac = ndr_unpack(krb5pac.PAC_DATA_RAW,
+                             pac_data)
+
+        checksums = {}
+
+        for pac_buffer, raw_pac_buffer in zip(pac.buffers, raw_pac.buffers):
+            buffer_type = pac_buffer.type
+            if buffer_type in self.pac_checksum_types:
+                self.assertNotIn(buffer_type, checksums,
+                                 f'Duplicate checksum type {buffer_type}')
+
+                # Fetch the checksum and the checksum type from the PAC buffer.
+                checksum = pac_buffer.info.signature
+                ctype = pac_buffer.info.type
+                if ctype & 1 << 31:
+                    ctype |= -1 << 31
+
+                checksums[buffer_type] = checksum, ctype
+
+                if buffer_type != krb5pac.PAC_TYPE_TICKET_CHECKSUM:
+                    # Zero the checksum field so that we can later verify the
+                    # checksums. The ticket checksum field is not zeroed.
+
+                    signature = ndr_unpack(
+                        krb5pac.PAC_SIGNATURE_DATA,
+                        raw_pac_buffer.info.remaining)
+                    signature.signature = bytes(len(checksum))
+                    raw_pac_buffer.info.remaining = ndr_pack(
+                        signature)
+
+        # Re-encode the PAC.
+        pac_data = ndr_pack(raw_pac)
+
+        # Verify the signatures.
+
+        server_checksum, server_ctype = checksums[
+            krb5pac.PAC_TYPE_SRV_CHECKSUM]
+        Krb5EncryptionKey.verify_checksum(key,
+                                          KU_NON_KERB_CKSUM_SALT,
+                                          pac_data,
+                                          server_ctype,
+                                          server_checksum)
+
+        kdc_checksum, kdc_ctype = checksums[
+            krb5pac.PAC_TYPE_KDC_CHECKSUM]
+        krbtgt_key.verify_checksum(KU_NON_KERB_CKSUM_SALT,
+                                   server_checksum,
+                                   kdc_ctype,
+                                   kdc_checksum)
+
+        if is_tgt:
+            self.assertNotIn(krb5pac.PAC_TYPE_TICKET_CHECKSUM, checksums)
+        else:
+            ticket_checksum, ticket_ctype = checksums[
+                krb5pac.PAC_TYPE_TICKET_CHECKSUM]
+            enc_part['authorization-data'] = auth_data
+            enc_part = self.der_encode(enc_part,
+                                       asn1Spec=krb5_asn1.EncTicketPart())
+
+            krbtgt_key.verify_checksum(KU_NON_KERB_CKSUM_SALT,
+                                       enc_part,
+                                       ticket_ctype,
+                                       ticket_checksum)
+
     def replace_pac(self, auth_data, new_pac, expect_pac=True):
         if new_pac is not None:
             self.assertElementEqual(new_pac, 'ad-type', AD_WIN2K_PAC)
@@ -2942,6 +3055,9 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNotNone(ad_relevant, 'Expected AD-RELEVANT')
 
         return new_auth_data, old_pac
+
+    def get_empty_pac(self):
+        return self.AuthorizationData_create(AD_WIN2K_PAC, bytes(1))
 
     def get_outer_pa_dict(self, kdc_exchange_dict):
         return self.get_pa_dict(kdc_exchange_dict['req_padata'])
