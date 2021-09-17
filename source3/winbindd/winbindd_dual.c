@@ -47,8 +47,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-extern bool override_logfile;
-
 static void forall_domain_children(bool (*fn)(struct winbindd_child *c,
 					      void *private_data),
 				   void *private_data)
@@ -1546,16 +1544,17 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 
 	close_conns_after_fork();
 
-	if (!override_logfile && logfilename) {
+	if (is_default_dyn_LOGFILEBASE() && logfilename) {
 		lp_set_logfile(logfilename);
 		reopen_logs();
 	}
 
 	if (!winbindd_setup_sig_term_handler(false))
 		return NT_STATUS_NO_MEMORY;
-	if (!winbindd_setup_sig_hup_handler(override_logfile ? NULL :
-					    logfilename))
+	if (!winbindd_setup_sig_hup_handler(
+		    !is_default_dyn_LOGFILEBASE() ? NULL : logfilename)) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Stop zombies in children */
 	CatchChild();
@@ -1776,10 +1775,11 @@ static bool fork_domain_child(struct winbindd_child *child)
 	messaging_register(global_messaging_context(), NULL,
 			   MSG_WINBIND_DISCONNECT_DC,
 			   winbind_msg_disconnect_dc);
-	messaging_register(global_messaging_context(),
-			   override_logfile ? NULL : child->logfilename,
-			   MSG_SMB_CONF_UPDATED,
-			   winbindd_msg_reload_services_child);
+	messaging_register(
+		global_messaging_context(),
+		!is_default_dyn_LOGFILEBASE() ? NULL : child->logfilename,
+		MSG_SMB_CONF_UPDATED,
+		winbindd_msg_reload_services_child);
 
 	primary_domain = find_our_domain();
 

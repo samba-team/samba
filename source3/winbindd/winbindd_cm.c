@@ -98,7 +98,6 @@ struct dc_name_ip {
 };
 
 extern struct winbindd_methods reconnect_methods;
-extern bool override_logfile;
 
 static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain, bool need_rw_dc);
 static void set_dc_type_and_flags( struct winbindd_domain *domain );

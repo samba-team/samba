@@ -64,8 +64,6 @@ static void winbindd_setup_max_fds(void);
 static bool opt_nocache = False;
 static bool interactive = False;
 
-extern bool override_logfile;
-
 struct imessaging_context *winbind_imessaging_context(void)
 {
 	static struct imessaging_context *msg = NULL;
@@ -1718,7 +1716,7 @@ int main(int argc, const char **argv)
 
 	poptFreeContext(pc);
 
-	if (!override_logfile) {
+	if (is_default_dyn_LOGFILEBASE()) {
 		char *lfile = NULL;
 		if (asprintf(&lfile,"%s/log.winbindd",
 				get_dyn_LOGFILEBASE()) > 0) {
