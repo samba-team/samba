@@ -583,16 +583,6 @@ static void debug_backends_log(const char *msg, int msg_level)
 	}
 }
 
-/* -------------------------------------------------------------------------- **
- * External variables.
- */
-
-/*
-   used to check if the user specified a
-   logfile on the command line
-*/
-bool    override_logfile;
-
 int debuglevel_get_class(size_t idx)
 {
 	return dbgc_config[idx].loglevel;

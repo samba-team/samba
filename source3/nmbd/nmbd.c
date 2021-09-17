@@ -37,8 +37,6 @@ int global_nmb_port = -1;
 extern bool rescan_listen_set;
 extern bool global_in_nmbd;
 
-extern bool override_logfile;
-
 /* have we found LanMan clients yet? */
 bool found_lm_clients = False;
 
@@ -857,7 +855,7 @@ static bool open_sockets(bool isdaemon, int port)
 
 	sys_srandom(time(NULL) ^ getpid());
 
-	if (!override_logfile) {
+	if (is_default_dyn_LOGFILEBASE()) {
 		char *lfile = NULL;
 		if (asprintf(&lfile, "%s/log.nmbd", get_dyn_LOGFILEBASE()) < 0) {
 			exit(1);
