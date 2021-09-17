@@ -72,8 +72,8 @@ static struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = tsocket_address_inet_from_strings(state, "ip", server_addr_string,
-						DNS_SERVICE_PORT, &server_addr);
+	ret = tsocket_address_inet_from_hostport_strings(
+	    state, "ip", server_addr_string, DNS_SERVICE_PORT, &server_addr);
 	if (ret != 0) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
@@ -231,8 +231,8 @@ static struct tevent_req *dns_tcp_request_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = tsocket_address_inet_from_strings(
-		state, "ip", server_addr_string, DNS_SERVICE_PORT, &remote);
+	ret = tsocket_address_inet_from_hostport_strings(
+	    state, "ip", server_addr_string, DNS_SERVICE_PORT, &remote);
 	if (ret != 0) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
