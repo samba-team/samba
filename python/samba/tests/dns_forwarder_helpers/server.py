@@ -19,6 +19,7 @@
 # Based on the EchoServer example from python docs
 
 import socketserver as SocketServer
+import socket
 import sys
 from threading import Timer
 from samba.dcerpc import dns
@@ -85,11 +86,18 @@ class DnsHandler(SocketServer.BaseRequestHandler):
         t = Timer(timeout, self.really_handle, [data, socket])
         t.start()
 
+class TestUDPServer(SocketServer.UDPServer):
+    def __init__(self, server_address, RequestHandlerClass):
+        if server_address[0].find(':') != -1:
+            self.address_family = socket.AF_INET6
+        else:
+            self.address_family = socket.AF_INET
+        super(SocketServer.UDPServer, self).__init__(server_address, RequestHandlerClass)
 
 def main():
     global SERVER_ID
     host, port, SERVER_ID = sys.argv[1:]
-    server = SocketServer.UDPServer((host, int(port)), DnsHandler)
+    server = TestUDPServer((host, int(port)), DnsHandler)
     server.serve_forever()
 
 

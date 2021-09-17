@@ -1675,13 +1675,13 @@ sub provision_fl2003dc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
 	my $ip_addr1 = Samba::get_ipv4_addr("fakednsforwarder1");
-	my $ip_addr2 = Samba::get_ipv4_addr("fakednsforwarder2");
+	my $ip_addr2 = Samba::get_ipv6_addr("fakednsforwarder2");
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2003...\n";
 	my $extra_conf_options = "allow dns updates = nonsecure and secure
 	dcesrv:header signing = no
 	dcesrv:max auth states = 0
-	dns forwarder = $ip_addr1 $ip_addr2";
+	dns forwarder = $ip_addr1 [$ip_addr2]:54";
 	my $extra_provision_options = ["--base-schema=2008_R2"];
 	my $ret = $self->provision($prefix,
 				   "domain controller",

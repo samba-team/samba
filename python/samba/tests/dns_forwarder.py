@@ -31,6 +31,8 @@ import samba.getopt as options
 import optparse
 import subprocess
 
+DNS_PORT2 = 54
+
 parser = optparse.OptionParser("dns_forwarder.py <server name> <server ip> (dns forwarder)+ [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
@@ -173,7 +175,10 @@ class TestDnsForwarding(DNSTest):
                                            'dns_forwarder_helpers/server.py'),
                              host, str(port), id])
         self.subprocesses.append(p)
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+        if (host.find(':') != -1):
+            s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM, 0)
+        else:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
         for i in range(300):
             time.sleep(0.05)
             s.connect((host, port))
@@ -349,7 +354,7 @@ class TestDnsForwarding(DNSTest):
             print("Ignoring test_double_forwarder_first_frozen")
             return
         s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
-        s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
+        s2 = self.start_toy_server(dns_servers[1], DNS_PORT2, 'forwarder2')
         s1.send(b'timeout 1000', 0)
         ad = contact_real_server(server_ip, 53)
         name = "dsfsfds.dsfsdfs"
@@ -378,7 +383,7 @@ class TestDnsForwarding(DNSTest):
         if len(dns_servers) < 2:
             print("Ignoring test_double_forwarder_first_down")
             return
-        s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
+        s2 = self.start_toy_server(dns_servers[1], DNS_PORT2, 'forwarder2')
         ad = contact_real_server(server_ip, 53)
         name = "dsfsfds.dsfsdfs"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
@@ -407,7 +412,7 @@ class TestDnsForwarding(DNSTest):
             print("Ignoring test_double_forwarder_both_slow")
             return
         s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
-        s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
+        s2 = self.start_toy_server(dns_servers[1], DNS_PORT2, 'forwarder2')
         s1.send(b'timeout 1.5', 0)
         s2.send(b'timeout 1.5', 0)
         ad = contact_real_server(server_ip, 53)
@@ -493,7 +498,7 @@ class TestDnsForwarding(DNSTest):
             print("Ignoring test_cname_forwarding_with_slow_server")
             return
         s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
-        s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
+        s2 = self.start_toy_server(dns_servers[1], DNS_PORT2, 'forwarder2')
         s1.send(b'timeout 10000', 0)
 
         name = 'resolve.cname.%s' % self.get_dns_domain()
@@ -525,7 +530,7 @@ class TestDnsForwarding(DNSTest):
         if len(dns_servers) < 2:
             print("Ignoring test_cname_forwarding_with_server_down")
             return
-        s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
+        s2 = self.start_toy_server(dns_servers[1], DNS_PORT2, 'forwarder2')
 
         name1 = 'resolve1.cname.%s' % self.get_dns_domain()
         name2 = 'resolve2.cname.%s' % self.get_dns_domain()
