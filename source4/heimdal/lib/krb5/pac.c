@@ -489,13 +489,13 @@ verify_checksum(krb5_context context,
     }
     ret = krb5_storage_read(sp, cksum.checksum.data, cksum.checksum.length);
     if (ret != (int)cksum.checksum.length) {
-	ret = EINVAL;
+	ret = KRB5KRB_AP_ERR_INAPP_CKSUM;
 	krb5_set_error_message(context, ret, "PAC checksum missing checksum");
 	goto out;
     }
 
     if (!krb5_checksum_is_keyed(context, cksum.cksumtype)) {
-	ret = EINVAL;
+	ret = KRB5KRB_AP_ERR_INAPP_CKSUM;
 	krb5_set_error_message(context, ret, "Checksum type %d not keyed",
 			       cksum.cksumtype);
 	goto out;
