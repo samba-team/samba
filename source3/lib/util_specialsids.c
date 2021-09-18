@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "../libcli/security/security.h"
+#include "util_specialsids.h"
 
 bool sid_check_is_asserted_identity(const struct dom_sid *sid)
 {

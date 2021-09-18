@@ -751,11 +751,6 @@ bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
 			   struct dom_sid *sid, const char **domain);
 
-/* The following definitions come from lib/util_specialsids.c  */
-bool sid_check_is_asserted_identity(const struct dom_sid *sid);
-bool sid_check_is_in_asserted_identity(const struct dom_sid *sid);
-const char *asserted_identity_domain_name(void);
-
 /* The following definitions come from lib/filename_util.c */
 
 NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,

@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/lib/util_specialsids.h"
 
 
 /*****************************************************************
