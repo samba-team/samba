@@ -464,7 +464,9 @@ NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
  * Performs an in-place case conversion guaranteed to stay the same size.
  */
 
-static NTSTATUS normalize_filename_case(connection_struct *conn, char *filename)
+static NTSTATUS normalize_filename_case(connection_struct *conn,
+					char *filename,
+					uint32_t ucf_flags)
 {
 	bool ok;
 
@@ -1059,7 +1061,9 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 * the man page. Thanks to jht@samba.org for finding this. JRA.
 	 */
 
-	status = normalize_filename_case(state->conn, state->smb_fname->base_name);
+	status = normalize_filename_case(state->conn,
+					 state->smb_fname->base_name,
+					 ucf_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("normalize_filename_case %s failed\n",
 				state->smb_fname->base_name);
@@ -1913,7 +1917,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 	if (orig_lcomp == NULL) {
 		return NULL;
 	}
-	status = normalize_filename_case(conn, orig_lcomp);
+	status = normalize_filename_case(conn, orig_lcomp, ucf_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(orig_lcomp);
 		return NULL;
