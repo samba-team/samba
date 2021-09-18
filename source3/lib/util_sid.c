@@ -46,18 +46,13 @@ char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid)
 
 bool sid_linearize(uint8_t *outbuf, size_t len, const struct dom_sid *sid)
 {
-	int8_t i;
+	struct ndr_push ndr = {
+		.data = outbuf, .alloc_size = len, .fixed_buf_size = true,
+	};
+	enum ndr_err_code ndr_err;
 
-	if (len < ndr_size_dom_sid(sid, 0))
-		return False;
-
-	SCVAL(outbuf,0,sid->sid_rev_num);
-	SCVAL(outbuf,1,sid->num_auths);
-	memcpy(&outbuf[2], sid->id_auth, 6);
-	for(i = 0; i < sid->num_auths; i++)
-		SIVAL(outbuf, 8 + (i*4), sid->sub_auths[i]);
-
-	return True;
+	ndr_err = ndr_push_dom_sid(&ndr, NDR_SCALARS|NDR_BUFFERS, sid);
+	return NDR_ERR_CODE_IS_SUCCESS(ndr_err);
 }
 
 /*****************************************************************
