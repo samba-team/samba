@@ -1709,7 +1709,8 @@ int main(int argc, const char **argv)
 
 	if (log_stdout && cmdline_daemon_cfg->fork) {
 		d_fprintf(stderr, "\nERROR: "
-			  "Can't log to stdout (-S) unless daemon is in foreground +(-F) or interactive (-i)\n\n");
+			  "Can't log to stdout (-S) unless daemon is in "
+			  "foreground (-F) or interactive (-i)\n\n");
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
