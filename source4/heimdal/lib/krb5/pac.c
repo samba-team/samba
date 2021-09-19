@@ -435,6 +435,8 @@ krb5_pac_get_types(krb5_context context,
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_pac_free(krb5_context context, krb5_pac pac)
 {
+    if (pac == NULL)
+	return;
     krb5_data_free(&pac->data);
     krb5_data_free(&pac->ticket_sign_data);
     free(pac->pac);

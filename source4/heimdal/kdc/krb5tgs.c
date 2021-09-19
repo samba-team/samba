@@ -2074,8 +2074,7 @@ out:
 
     free_EncTicketPart(&adtkt);
 
-    if (mspac)
-	krb5_pac_free(context, mspac);
+    krb5_pac_free(context, mspac);
 
     return ret;
 }
