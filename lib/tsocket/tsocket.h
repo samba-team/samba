@@ -539,6 +539,49 @@ int _tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
 					   __location__)
 #endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Create a tsocket_address for ipv4 and ipv6 endpoint addresses.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  fam      The family can be can be "ipv4", "ipv6" or "ip". With
+ *                      "ip" it autodetects "ipv4" or "ipv6" based on the
+ *                      addr.
+ *
+ * @param[in]  host_port_addr   A valid ip address string based on the
+ *                      selected family (dns names are not allowed!). A port
+ *                      number may follow sepatated by a colon. IPv6 may be
+ *                      surrounded in square brackets, and these are required
+ *                      if appending a port number. It's valid to pass NULL,
+ *                      which gets mapped to "0.0.0.0" or "::".
+ *
+ * @param[in]  default_port  A valid port number for the default port if none
+ *                      given.
+ *
+ * @param[out] _addr    A tsocket_address pointer to store the information.
+ *
+ * @return              0 on success, -1 on error with errno set.
+ */
+int tsocket_address_inet_from_hostport_strings(TALLOC_CTX *mem_ctx,
+					       const char *fam,
+					       const char *host_port_addr,
+					       uint16_t default_port,
+					       struct tsocket_address **_addr);
+#else
+int _tsocket_address_inet_from_hostport_strings(TALLOC_CTX *mem_ctx,
+						const char *fam,
+						const char *host_port_addr,
+						uint16_t default_port,
+						struct tsocket_address **_addr,
+						const char *location);
+
+#define tsocket_address_inet_from_hostport_strings(                            \
+    mem_ctx, fam, host_port_addr, default_port, _addr)                         \
+	_tsocket_address_inet_from_hostport_strings(                           \
+	    mem_ctx, fam, host_port_addr, default_port, _addr, __location__)
+#endif
+
 /**
  * @brief Get the address of an 'inet' tsocket_address as a string.
  *

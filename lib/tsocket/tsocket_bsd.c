@@ -29,6 +29,7 @@
 #include "lib/util/iov_buf.h"
 #include "lib/util/blocking.h"
 #include "lib/util/util_net.h"
+#include "lib/util/samba_util.h"
 
 static int tsocket_bsd_error_from_errno(int ret,
 					int sys_errno,
@@ -438,6 +439,105 @@ done:
 	if (result) {
 		freeaddrinfo(result);
 	}
+	return ret;
+}
+
+int _tsocket_address_inet_from_hostport_strings(TALLOC_CTX *mem_ctx,
+						const char *fam,
+						const char *host_port_addr,
+						uint16_t default_port,
+						struct tsocket_address **_addr,
+						const char *location)
+{
+	char *pl_sq = NULL;
+	char *pr_sq = NULL;
+	char *pl_period = NULL;
+	char *port_sep = NULL;
+	char *cport = NULL;
+	char *buf = NULL;
+	uint64_t port = 0;
+	int ret;
+	char *s_addr = NULL;
+	uint16_t s_port = default_port;
+	bool conv_ret;
+	bool is_ipv6_by_squares = false;
+
+	if (host_port_addr == NULL) {
+		/* got straight to next function if host_port_addr is NULL */
+		goto get_addr;
+	}
+	buf = talloc_strdup(mem_ctx, host_port_addr);
+	if (buf == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	pl_period = strchr_m(buf, '.');
+	port_sep = strrchr_m(buf, ':');
+	pl_sq = strchr_m(buf, '[');
+	pr_sq = strrchr_m(buf, ']');
+	/* See if its IPv4 or IPv6 */
+	/* Only parse IPv6 with squares with/without port, and IPv4 with port */
+	/* Everything else, let tsocket_address_inet_from string() */
+	/* find parsing errors */
+#ifdef HAVE_IPV6
+	is_ipv6_by_squares = (pl_sq != NULL && pr_sq != NULL && pr_sq > pl_sq);
+#endif
+	if (is_ipv6_by_squares) {
+		/* IPv6 possibly with port - squares detected */
+		port_sep = pr_sq + 1;
+		if (*port_sep == '\0') {
+			s_addr = pl_sq + 1;
+			*pr_sq = 0;
+			s_port = default_port;
+			goto get_addr;
+		}
+		if (*port_sep != ':') {
+			errno = EINVAL;
+			return -1;
+		}
+		cport = port_sep + 1;
+		conv_ret = conv_str_u64(cport, &port);
+		if (!conv_ret) {
+			errno = EINVAL;
+			return -1;
+		}
+		if (port > 65535) {
+			errno = EINVAL;
+			return -1;
+		}
+		s_port = (uint16_t)port;
+		*port_sep = 0;
+		*pr_sq = 0;
+		s_addr = pl_sq + 1;
+		*pl_sq = 0;
+		goto get_addr;
+	} else if (pl_period != NULL && port_sep != NULL) {
+		/* IPv4 with port - more than one period in string */
+		cport = port_sep + 1;
+		conv_ret = conv_str_u64(cport, &port);
+		if (!conv_ret) {
+			errno = EINVAL;
+			return -1;
+		}
+		if (port > 65535) {
+			errno = EINVAL;
+			return -1;
+		}
+		s_port = (uint16_t)port;
+		*port_sep = 0;
+		s_addr = buf;
+		goto get_addr;
+	} else {
+		/* Everything else, let tsocket_address_inet_from string() */
+		/* find parsing errors */
+		s_addr = buf;
+		s_port = default_port;
+		goto get_addr;
+	}
+get_addr:
+	ret = _tsocket_address_inet_from_strings(
+	    mem_ctx, fam, s_addr, s_port, _addr, location);
+
 	return ret;
 }
 
