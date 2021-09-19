@@ -308,8 +308,8 @@ int main(int argc, const char *argv[])
 			ARRAY_SIZE(fd_params), fd_params, argc, argv);
 	}
 
+	talloc_enable_null_tracking();
 	frame = talloc_stackframe();
-
 	umask(0);
 
 	ok = samba_cmdline_init(frame,
