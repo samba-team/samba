@@ -1362,11 +1362,10 @@ _krb5_kdc_pac_ticket_parse(krb5_context context,
 			   krb5_pac *ppac)
 {
     AuthorizationData *ad = tkt->authorization_data;
-    krb5_boolean pac_found = FALSE;
     krb5_pac pac = NULL;
     unsigned i, j;
     size_t len = 0;
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
 
     *signedticket = FALSE;
     *ppac = NULL;
@@ -1377,8 +1376,10 @@ _krb5_kdc_pac_ticket_parse(krb5_context context,
     for (i = 0; i < ad->len; i++) {
 	AuthorizationData child;
 
-	if (ad->val[i].ad_type == KRB5_AUTHDATA_WIN2K_PAC)
-	    return KRB5KDC_ERR_BADOPTION;
+	if (ad->val[i].ad_type == KRB5_AUTHDATA_WIN2K_PAC) {
+	    ret = KRB5KDC_ERR_BADOPTION;
+	    goto out;
+	}
 
 	if (ad->val[i].ad_type != KRB5_AUTHDATA_IF_RELEVANT)
 	    continue;
@@ -1390,79 +1391,84 @@ _krb5_kdc_pac_ticket_parse(krb5_context context,
 	if (ret) {
 	    krb5_set_error_message(context, ret, "Failed to decode "
 				   "AD-IF-RELEVANT with %d", ret);
-	    return ret;
+	    goto out;
 	}
 
 	for (j = 0; j < child.len; j++) {
-	    if (child.val[j].ad_type == KRB5_AUTHDATA_WIN2K_PAC) {
-		krb5_data adifr_data = ad->val[i].ad_data;
-		krb5_data pac_data = child.val[j].ad_data;
-		krb5_data recoded_adifr;
+	    krb5_data adifr_data = ad->val[i].ad_data;
+	    krb5_data pac_data = child.val[j].ad_data;
+	    krb5_data recoded_adifr;
 
-		if (pac_found) {
-		    free_AuthorizationData(&child);
-		    return KRB5KDC_ERR_BADOPTION;
-		}
-		pac_found = TRUE;
+	    if (child.val[j].ad_type != KRB5_AUTHDATA_WIN2K_PAC)
+		continue;
 
-		ret = krb5_pac_parse(context,
-				     pac_data.data,
-				     pac_data.length,
-				     &pac);
-		if (ret) {
-		    free_AuthorizationData(&child);
-		    return ret;
-		}
-
-		if (pac->ticket_checksum == NULL) {
-		    free_AuthorizationData(&child);
-		    *ppac = pac;
-		    continue;
-		}
-
-		/*
-		 * Encode the ticket with the PAC replaced with a single zero
-		 * byte, to be used as input data to the ticket signature.
-		 */
-
-		child.val[j].ad_data = single_zero_pac;
-
-		ASN1_MALLOC_ENCODE(AuthorizationData, recoded_adifr.data,
-				   recoded_adifr.length, &child, &len, ret);
-		if (recoded_adifr.length != len)
-		    krb5_abortx(context, "Internal error in ASN.1 encoder");
-
-		child.val[j].ad_data = pac_data;
+	    if (pac != NULL) {
 		free_AuthorizationData(&child);
-
-		if (ret) {
-		    krb5_pac_free(context, pac);
-		    return ret;
-		}
-
-		ad->val[i].ad_data = recoded_adifr;
-
-		ASN1_MALLOC_ENCODE(EncTicketPart,
-				   pac->ticket_sign_data.data,
-				   pac->ticket_sign_data.length, tkt, &len,
-				   ret);
-		if(pac->ticket_sign_data.length != len)
-		    krb5_abortx(context, "Internal error in ASN.1 encoder");
-
-		ad->val[i].ad_data = adifr_data;
-		krb5_data_free(&recoded_adifr);
-
-		if (ret) {
-		    krb5_pac_free(context, pac);
-		    return ret;
-		}
-
-		*signedticket = TRUE;
-		*ppac = pac;
+		ret = KRB5KDC_ERR_BADOPTION;
+		goto out;
 	    }
+
+	    ret = krb5_pac_parse(context,
+				 pac_data.data,
+				 pac_data.length,
+				 &pac);
+	    if (ret) {
+		free_AuthorizationData(&child);
+		goto out;
+	    }
+
+	    if (pac->ticket_checksum == NULL)
+		continue;
+
+	    /*
+	     * Encode the ticket with the PAC replaced with a single zero
+	     * byte, to be used as input data to the ticket signature.
+	     */
+
+	    child.val[j].ad_data = single_zero_pac;
+
+	    ASN1_MALLOC_ENCODE(AuthorizationData, recoded_adifr.data,
+			       recoded_adifr.length, &child, &len, ret);
+	    if (recoded_adifr.length != len)
+		krb5_abortx(context, "Internal error in ASN.1 encoder");
+
+	    child.val[j].ad_data = pac_data;
+
+	    if (ret) {
+		free_AuthorizationData(&child);
+		goto out;
+	    }
+
+	    ad->val[i].ad_data = recoded_adifr;
+
+	    ASN1_MALLOC_ENCODE(EncTicketPart,
+			       pac->ticket_sign_data.data,
+			       pac->ticket_sign_data.length, tkt, &len,
+			       ret);
+	    if (pac->ticket_sign_data.length != len)
+		krb5_abortx(context, "Internal error in ASN.1 encoder");
+
+	    ad->val[i].ad_data = adifr_data;
+	    krb5_data_free(&recoded_adifr);
+
+	    if (ret) {
+		free_AuthorizationData(&child);
+		goto out;
+	    }
+
+	    *signedticket = TRUE;
 	}
 	free_AuthorizationData(&child);
     }
+
+out:
+    if (ret) {
+	krb5_pac_free(context, pac);
+	return ret;
+    }
+
+    *ppac = pac;
+
     return 0;
 }
 
