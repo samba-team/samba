@@ -2254,6 +2254,13 @@ class RawKerberosTest(TestCaseInTempDir):
             armor_key = kdc_exchange_dict['armor_key']
             self.verify_ticket_checksum(ticket, ticket_checksum, armor_key)
 
+        to_rodc = kdc_exchange_dict['to_rodc']
+        if to_rodc:
+            krbtgt_creds = self.get_rodc_krbtgt_creds()
+        else:
+            krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
+
         expect_pac = kdc_exchange_dict['expect_pac']
 
         ticket_session_key = None
@@ -2385,6 +2392,9 @@ class RawKerberosTest(TestCaseInTempDir):
             decryption_key=ticket_decryption_key,
             ticket_private=ticket_private,
             encpart_private=encpart_private)
+
+        if ticket_decryption_key is not None:
+            self.verify_ticket(ticket_creds, krbtgt_key, expect_pac=expect_pac)
 
         kdc_exchange_dict['rep_ticket_creds'] = ticket_creds
 
@@ -3061,16 +3071,20 @@ class RawKerberosTest(TestCaseInTempDir):
         if is_tgt:
             self.assertNotIn(krb5pac.PAC_TYPE_TICKET_CHECKSUM, checksums)
         else:
-            ticket_checksum, ticket_ctype = checksums[
-                krb5pac.PAC_TYPE_TICKET_CHECKSUM]
-            enc_part['authorization-data'] = auth_data
-            enc_part = self.der_encode(enc_part,
-                                       asn1Spec=krb5_asn1.EncTicketPart())
+            ticket_checksum, ticket_ctype = checksums.get(
+                krb5pac.PAC_TYPE_TICKET_CHECKSUM,
+                (None, None))
+            if self.strict_checking:
+                self.assertIsNotNone(ticket_checksum)
+            if ticket_checksum is not None:
+                enc_part['authorization-data'] = auth_data
+                enc_part = self.der_encode(enc_part,
+                                           asn1Spec=krb5_asn1.EncTicketPart())
 
-            krbtgt_key.verify_checksum(KU_NON_KERB_CKSUM_SALT,
-                                       enc_part,
-                                       ticket_ctype,
-                                       ticket_checksum)
+                krbtgt_key.verify_checksum(KU_NON_KERB_CKSUM_SALT,
+                                           enc_part,
+                                           ticket_ctype,
+                                           ticket_checksum)
 
     def modified_ticket(self,
                         ticket, *,
