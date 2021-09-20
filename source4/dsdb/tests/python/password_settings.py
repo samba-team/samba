@@ -594,19 +594,27 @@ class PasswordSettingsTestCase(PasswordTestCase):
         dummy_pso.apply_to(user.dn)
         self.assertTrue(user.get_resultant_PSO() == dummy_pso.dn)
 
-        # now clear the ADS_UF_NORMAL_ACCOUNT flag for the user, which should
-        # mean a resultant PSO is no longer returned (we're essentially turning
-        # the user into a DC here, which is a little overkill but tests
-        # behaviour as per the Windows specification)
-        self.set_attribute(user.dn, "userAccountControl",
-                           str(dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
-                           operation=FLAG_MOD_REPLACE)
+        try:
+            # now clear the ADS_UF_NORMAL_ACCOUNT flag for the user, which should
+            # mean a resultant PSO is no longer returned (we're essentially turning
+            # the user into a DC here, which is a little overkill but tests
+            # behaviour as per the Windows specification)
+            self.set_attribute(user.dn, "userAccountControl",
+                               str(dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                               operation=FLAG_MOD_REPLACE)
+        except ldb.LdbError as e:
+            (num, msg) = e.args
+            self.fail("Failed to change user into a workstation: {msg}")
         self.assertIsNone(user.get_resultant_PSO())
 
-        # reset it back to a normal user account
-        self.set_attribute(user.dn, "userAccountControl",
-                           str(dsdb.UF_NORMAL_ACCOUNT),
-                           operation=FLAG_MOD_REPLACE)
+        try:
+            # reset it back to a normal user account
+            self.set_attribute(user.dn, "userAccountControl",
+                               str(dsdb.UF_NORMAL_ACCOUNT),
+                               operation=FLAG_MOD_REPLACE)
+        except ldb.LdbError as e:
+            (num, msg) = e.args
+            self.fail("Failed to change user back into a user: {msg}")
         self.assertTrue(user.get_resultant_PSO() == dummy_pso.dn)
 
         # no PSO should be returned if RID is equal to DOMAIN_USER_RID_KRBTGT
