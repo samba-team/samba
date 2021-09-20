@@ -458,8 +458,9 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		 */
 		ret = SMB_VFS_FILESYSTEM_SHAREMODE(fsp, 0, 0);
 		if (ret == -1) {
-			DBG_INFO("removing kernel flock for %s failed: %s\n",
-				  fsp_str_dbg(fsp), strerror(errno));
+			DBG_INFO("Removing file system sharemode for %s "
+				 "failed: %s\n",
+				 fsp_str_dbg(fsp), strerror(errno));
 		}
 
 		fsp->fsp_flags.kernel_share_modes_taken = false;
@@ -517,9 +518,9 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		/* remove filesystem sharemodes */
 		ret = SMB_VFS_FILESYSTEM_SHAREMODE(fsp, 0, 0);
 		if (ret == -1) {
-			DEBUG(2, ("close_remove_share_mode: removing kernel "
-				  "flock for %s failed: %s\n",
-				  fsp_str_dbg(fsp), strerror(errno)));
+			DBG_INFO("Removing file system sharemode for "
+				 "%s failed: %s\n",
+				 fsp_str_dbg(fsp), strerror(errno));
 		}
 	}
 
