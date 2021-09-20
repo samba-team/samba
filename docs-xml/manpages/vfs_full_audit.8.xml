@@ -93,7 +93,7 @@
         <member>getxattrat_recv</member>
         <member>getxattrat_send</member>
         <member>is_offline</member>
-        <member>kernel_flock</member>
+        <member>filesystem_sharemode</member>
         <member>lchown</member>
         <member>linkat</member>
         <member>linux_setlease</member>
