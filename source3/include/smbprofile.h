@@ -78,7 +78,6 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_ftruncate) \
 	SMBPROFILE_STATS_BASIC(syscall_fallocate) \
 	SMBPROFILE_STATS_BASIC(syscall_fcntl_lock) \
-	SMBPROFILE_STATS_BASIC(syscall_kernel_flock) \
 	SMBPROFILE_STATS_BASIC(syscall_fcntl) \
 	SMBPROFILE_STATS_BASIC(syscall_linux_setlease) \
 	SMBPROFILE_STATS_BASIC(syscall_fcntl_getlock) \
