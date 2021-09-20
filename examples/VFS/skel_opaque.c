@@ -428,9 +428,10 @@ static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op,
 	return false;
 }
 
-static int skel_kernel_flock(struct vfs_handle_struct *handle,
-			     struct files_struct *fsp,
-			     uint32_t share_mode, uint32_t access_mask)
+static int skel_filesystem_sharemode(struct vfs_handle_struct *handle,
+				     struct files_struct *fsp,
+				     uint32_t share_mode,
+				     uint32_t access_mask)
 {
 	errno = ENOSYS;
 	return -1;
@@ -1009,7 +1010,7 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.ftruncate_fn = skel_ftruncate,
 	.fallocate_fn = skel_fallocate,
 	.lock_fn = skel_lock,
-	.filesystem_sharemode_fn = skel_kernel_flock,
+	.filesystem_sharemode_fn = skel_filesystem_sharemode,
 	.fcntl_fn = skel_fcntl,
 	.linux_setlease_fn = skel_linux_setlease,
 	.getlock_fn = skel_getlock,
