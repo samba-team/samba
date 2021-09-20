@@ -1787,9 +1787,10 @@ out:
 	return ok;
 }
 
-static int vfs_gluster_kernel_flock(struct vfs_handle_struct *handle,
-				    files_struct *fsp, uint32_t share_access,
-				    uint32_t access_mask)
+static int vfs_gluster_filesystem_sharemode(struct vfs_handle_struct *handle,
+					    files_struct *fsp,
+					    uint32_t share_access,
+					    uint32_t access_mask)
 {
 	errno = ENOSYS;
 	return -1;
@@ -2362,7 +2363,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.ftruncate_fn = vfs_gluster_ftruncate,
 	.fallocate_fn = vfs_gluster_fallocate,
 	.lock_fn = vfs_gluster_lock,
-	.filesystem_sharemode_fn = vfs_gluster_kernel_flock,
+	.filesystem_sharemode_fn = vfs_gluster_filesystem_sharemode,
 	.fcntl_fn = vfs_gluster_fcntl,
 	.linux_setlease_fn = vfs_gluster_linux_setlease,
 	.getlock_fn = vfs_gluster_getlock,
