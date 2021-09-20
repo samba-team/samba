@@ -155,7 +155,7 @@ static int samba_bgqd_pidfile_create(
 	return EAGAIN;
 }
 
-static int closeall_except(int *fds, size_t num_fds)
+static int closefrom_except(int lower, int *fds, size_t num_fds)
 {
 	size_t i;
 	int max_keep = -1;
@@ -168,7 +168,7 @@ static int closeall_except(int *fds, size_t num_fds)
 		return 0;
 	}
 
-	for (fd = 0; fd < max_keep; fd++) {
+	for (fd = lower; fd < max_keep; fd++) {
 		bool keep = false;
 
 		/*
@@ -191,17 +191,18 @@ static int closeall_except(int *fds, size_t num_fds)
 		}
 	}
 
-	closefrom(max_keep+1);
+	closefrom(MAX(lower, max_keep+1));
 	return 0;
 }
 
-static int closeall_except_fd_params(
+static int closefrom_except_fd_params(
+	int lower,
 	size_t num_fd_params,
 	const char *fd_params[],
 	int argc,
 	const char *argv[])
 {
-	int fds[num_fd_params+3];
+	int fds[num_fd_params];
 	size_t i;
 	struct poptOption long_options[num_fd_params + 1];
 	poptContext pc;
@@ -217,10 +218,6 @@ static int closeall_except_fd_params(
 	}
 	long_options[num_fd_params] = (struct poptOption) { .longName=NULL, };
 
-	fds[num_fd_params] = 0;
-	fds[num_fd_params+1] = 1;
-	fds[num_fd_params+2] = 2;
-
 	pc = poptGetContext(argv[0], argc, argv, long_options, 0);
 
 	while ((ret = poptGetNextOpt(pc)) != -1) {
@@ -229,7 +226,7 @@ static int closeall_except_fd_params(
 
 	poptFreeContext(pc);
 
-	ret = closeall_except(fds, ARRAY_SIZE(fds));
+	ret = closefrom_except(lower, fds, ARRAY_SIZE(fds));
 	return ret;
 }
 
@@ -304,8 +301,8 @@ int main(int argc, const char *argv[])
 			"ready-signal-fd", "parent-watch-fd",
 		};
 
-		closeall_except_fd_params(
-			ARRAY_SIZE(fd_params), fd_params, argc, argv);
+		closefrom_except_fd_params(
+			3, ARRAY_SIZE(fd_params), fd_params, argc, argv);
 	}
 
 	talloc_enable_null_tracking();
