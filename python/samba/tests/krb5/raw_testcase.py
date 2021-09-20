@@ -303,6 +303,29 @@ class RodcPacEncryptionKey(Krb5EncryptionKey):
                                 cksum)
 
 
+class ZeroedChecksumKey(Krb5EncryptionKey):
+    def make_checksum(self, usage, plaintext, ctype=None):
+        return self.make_zeroed_checksum(ctype)
+
+
+class WrongLengthChecksumKey(Krb5EncryptionKey):
+    def __init__(self, key, kvno, length):
+        super().__init__(key, kvno)
+
+        self._length = length
+
+    def make_checksum(self, usage, plaintext, ctype=None):
+        checksum = super().make_checksum(usage, plaintext, ctype)
+
+        diff = self._length - len(checksum)
+        if diff > 0:
+            checksum += bytes(diff)
+        elif diff < 0:
+            checksum = checksum[:self._length]
+
+        return checksum
+
+
 class KerberosCredentials(Credentials):
 
     fast_supported_bits = (security.KERB_ENCTYPE_FAST_SUPPORTED |
