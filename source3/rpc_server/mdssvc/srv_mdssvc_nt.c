@@ -162,19 +162,6 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 	return;
 }
 
-static bool is_zero_policy_handle(const struct policy_handle *h)
-{
-	struct GUID zero_uuid = {0};
-
-	if (h->handle_type != 0) {
-		return false;
-	}
-	if (!GUID_equal(&h->uuid, &zero_uuid)) {
-		return false;
-	}
-	return true;
-}
-
 void _mdssvc_unknown1(struct pipes_struct *p, struct mdssvc_unknown1 *r)
 {
 	struct mds_ctx *mds_ctx;
@@ -186,7 +173,7 @@ void _mdssvc_unknown1(struct pipes_struct *p, struct mdssvc_unknown1 *r)
 				     struct mds_ctx,
 				     &status);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (is_zero_policy_handle(r->in.handle)) {
+		if (ndr_policy_handle_empty(r->in.handle)) {
 			p->fault_state = 0;
 		} else {
 			p->fault_state = DCERPC_NCA_S_PROTO_ERROR;
@@ -219,7 +206,7 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 				     struct mds_ctx,
 				     &status);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (is_zero_policy_handle(r->in.handle)) {
+		if (ndr_policy_handle_empty(r->in.handle)) {
 			p->fault_state = 0;
 		} else {
 			p->fault_state = DCERPC_NCA_S_PROTO_ERROR;
@@ -300,7 +287,7 @@ void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 				     &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("invalid handle\n");
-		if (is_zero_policy_handle(r->in.in_handle)) {
+		if (ndr_policy_handle_empty(r->in.in_handle)) {
 			p->fault_state = 0;
 		} else {
 			p->fault_state = DCERPC_NCA_S_PROTO_ERROR;
