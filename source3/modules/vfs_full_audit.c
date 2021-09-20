@@ -1774,10 +1774,10 @@ static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
 {
 	int result;
 
-	result = SMB_VFS_NEXT_KERNEL_FLOCK(handle,
-					   fsp,
-					   share_access,
-					   access_mask);
+	result = SMB_VFS_NEXT_FILESYSTEM_SHAREMODE(handle,
+						   fsp,
+						   share_access,
+						   access_mask);
 
 	do_log(SMB_VFS_OP_KERNEL_FLOCK, (result >= 0), handle, "%s",
 	       fsp_str_do_log(fsp));
@@ -2938,7 +2938,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.ftruncate_fn = smb_full_audit_ftruncate,
 	.fallocate_fn = smb_full_audit_fallocate,
 	.lock_fn = smb_full_audit_lock,
-	.kernel_flock_fn = smb_full_audit_kernel_flock,
+	.filesystem_sharemode_fn = smb_full_audit_kernel_flock,
 	.fcntl_fn = smb_full_audit_fcntl,
 	.linux_setlease_fn = smb_full_audit_linux_setlease,
 	.getlock_fn = smb_full_audit_getlock,

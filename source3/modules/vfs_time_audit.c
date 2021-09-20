@@ -1359,8 +1359,10 @@ static int smb_time_audit_kernel_flock(struct vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_access,
-					   access_mask);
+	result = SMB_VFS_NEXT_FILESYSTEM_SHAREMODE(handle,
+						   fsp,
+						   share_access,
+						   access_mask);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
@@ -2746,7 +2748,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.ftruncate_fn = smb_time_audit_ftruncate,
 	.fallocate_fn = smb_time_audit_fallocate,
 	.lock_fn = smb_time_audit_lock,
-	.kernel_flock_fn = smb_time_audit_kernel_flock,
+	.filesystem_sharemode_fn = smb_time_audit_kernel_flock,
 	.fcntl_fn = smb_time_audit_fcntl,
 	.linux_setlease_fn = smb_time_audit_linux_setlease,
 	.getlock_fn = smb_time_audit_getlock,

@@ -4059,7 +4059,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * check is deferred to the VFS module implementing
 		 * the file-system sharemode call.
 		 */
-		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access, access_mask);
+		ret_flock = SMB_VFS_FILESYSTEM_SHAREMODE(fsp,
+							 share_access,
+							 access_mask);
 		if(ret_flock == -1 ){
 
 			del_share_mode(lck, fsp);

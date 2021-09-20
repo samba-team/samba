@@ -1624,7 +1624,10 @@ static int catia_kernel_flock(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_access, access_mask);
+	ret = SMB_VFS_NEXT_FILESYSTEM_SHAREMODE(handle,
+						fsp,
+						share_access,
+						access_mask);
 
 	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
 
@@ -1892,7 +1895,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.ftruncate_fn = catia_ftruncate,
 	.fallocate_fn = catia_fallocate,
 	.lock_fn = catia_lock,
-	.kernel_flock_fn = catia_kernel_flock,
+	.filesystem_sharemode_fn = catia_kernel_flock,
 	.linux_setlease_fn = catia_linux_setlease,
 	.getlock_fn = catia_getlock,
 	.realpath_fn = catia_realpath,

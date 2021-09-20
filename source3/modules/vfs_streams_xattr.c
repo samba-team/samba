@@ -1498,8 +1498,10 @@ static int streams_xattr_kernel_flock(vfs_handle_struct *handle,
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
 	if (sio == NULL) {
-		return SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp,
-						 share_access, access_mask);
+		return SMB_VFS_NEXT_FILESYSTEM_SHAREMODE(handle,
+							 fsp,
+							 share_access,
+							 access_mask);
 	}
 
 	return 0;
@@ -1558,7 +1560,7 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 
 	.lock_fn = streams_xattr_lock,
 	.getlock_fn = streams_xattr_getlock,
-	.kernel_flock_fn = streams_xattr_kernel_flock,
+	.filesystem_sharemode_fn = streams_xattr_kernel_flock,
 	.linux_setlease_fn = streams_xattr_linux_setlease,
 	.strict_lock_check_fn = streams_xattr_strict_lock_check,
 

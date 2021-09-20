@@ -425,9 +425,10 @@ bool vfs_not_implemented_lock(vfs_handle_struct *handle, files_struct *fsp, int 
 	return false;
 }
 
-int vfs_not_implemented_kernel_flock(struct vfs_handle_struct *handle,
-				     struct files_struct *fsp,
-				     uint32_t share_access, uint32_t access_mask)
+int vfs_not_implemented_filesystem_sharemode(struct vfs_handle_struct *handle,
+					     struct files_struct *fsp,
+					     uint32_t share_access,
+					     uint32_t access_mask)
 {
 	errno = ENOSYS;
 	return -1;
@@ -1013,7 +1014,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.ftruncate_fn = vfs_not_implemented_ftruncate,
 	.fallocate_fn = vfs_not_implemented_fallocate,
 	.lock_fn = vfs_not_implemented_lock,
-	.kernel_flock_fn = vfs_not_implemented_kernel_flock,
+	.filesystem_sharemode_fn = vfs_not_implemented_filesystem_sharemode,
 	.fcntl_fn = vfs_not_implemented_fcntl,
 	.linux_setlease_fn = vfs_not_implemented_linux_setlease,
 	.getlock_fn = vfs_not_implemented_getlock,

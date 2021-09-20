@@ -2283,13 +2283,16 @@ int smb_vfs_call_fallocate(struct vfs_handle_struct *handle,
 	return handle->fns->fallocate_fn(handle, fsp, mode, offset, len);
 }
 
-int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, uint32_t share_mode,
-			      uint32_t access_mask)
+int smb_vfs_call_filesystem_sharemode(struct vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      uint32_t share_mode,
+				      uint32_t access_mask)
 {
-	VFS_FIND(kernel_flock);
-	return handle->fns->kernel_flock_fn(handle, fsp, share_mode,
-					 access_mask);
+	VFS_FIND(filesystem_sharemode);
+	return handle->fns->filesystem_sharemode_fn(handle,
+						    fsp,
+						    share_mode,
+						    access_mask);
 }
 
 int smb_vfs_call_fcntl(struct vfs_handle_struct *handle,

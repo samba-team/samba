@@ -1039,8 +1039,10 @@ struct vfs_fn_pointers {
 			    off_t offset,
 			    off_t len);
 	bool (*lock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, off_t offset, off_t count, int type);
-	int (*kernel_flock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp,
-			       uint32_t share_access, uint32_t access_mask);
+	int (*filesystem_sharemode_fn)(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       uint32_t share_access, uint32_t
+				       access_mask);
 	int (*fcntl_fn)(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, int cmd, va_list cmd_arg);
 	int (*linux_setlease_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
@@ -1543,9 +1545,10 @@ int smb_vfs_call_fallocate(struct vfs_handle_struct *handle,
 bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, int op, off_t offset,
 		       off_t count, int type);
-int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, uint32_t share_access,
-			      uint32_t access_mask);
+int smb_vfs_call_filesystem_sharemode(struct vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      uint32_t share_access,
+				      uint32_t access_mask);
 int smb_vfs_call_fcntl(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, int cmd, ...);
 int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
@@ -1964,9 +1967,10 @@ int vfs_not_implemented_fallocate(vfs_handle_struct *handle, files_struct *fsp,
 				  uint32_t mode, off_t offset, off_t len);
 bool vfs_not_implemented_lock(vfs_handle_struct *handle, files_struct *fsp, int op,
 			      off_t offset, off_t count, int type);
-int vfs_not_implemented_kernel_flock(struct vfs_handle_struct *handle,
-				     struct files_struct *fsp,
-				     uint32_t share_access, uint32_t access_mask);
+int vfs_not_implemented_filesystem_sharemode(struct vfs_handle_struct *handle,
+					     struct files_struct *fsp,
+					     uint32_t share_access,
+					     uint32_t access_mask);
 int vfs_not_implemented_fcntl(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, int cmd, va_list cmd_arg);
 int vfs_not_implemented_linux_setlease(struct vfs_handle_struct *handle,
