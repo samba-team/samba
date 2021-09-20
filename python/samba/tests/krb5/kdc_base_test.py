@@ -291,6 +291,12 @@ class KDCBaseTest(RawKerberosTest):
 
         self.creds_set_enctypes(creds)
 
+        res = samdb.search(base=dn,
+                           scope=ldb.SCOPE_BASE,
+                           attrs=['msDS-KeyVersionNumber'])
+        kvno = int(res[0]['msDS-KeyVersionNumber'][0])
+        creds.set_kvno(kvno)
+
         return (creds, dn)
 
     def create_rodc(self, ctx):
@@ -669,12 +675,6 @@ class KDCBaseTest(RawKerberosTest):
                                         spn=spn,
                                         additional_details=details,
                                         account_control=user_account_control)
-
-        res = samdb.search(base=dn,
-                           scope=ldb.SCOPE_BASE,
-                           attrs=['msDS-KeyVersionNumber'])
-        kvno = int(res[0]['msDS-KeyVersionNumber'][0])
-        creds.set_kvno(kvno)
 
         keys = self.get_keys(samdb, dn)
         self.creds_set_keys(creds, keys)
