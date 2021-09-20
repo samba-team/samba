@@ -1489,10 +1489,10 @@ static bool streams_xattr_getlock(vfs_handle_struct *handle,
 	return false;
 }
 
-static int streams_xattr_kernel_flock(vfs_handle_struct *handle,
-				      files_struct *fsp,
-				      uint32_t share_access,
-				      uint32_t access_mask)
+static int streams_xattr_filesystem_sharemode(vfs_handle_struct *handle,
+					      files_struct *fsp,
+					      uint32_t share_access,
+					      uint32_t access_mask)
 {
 	struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
@@ -1560,7 +1560,7 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 
 	.lock_fn = streams_xattr_lock,
 	.getlock_fn = streams_xattr_getlock,
-	.filesystem_sharemode_fn = streams_xattr_kernel_flock,
+	.filesystem_sharemode_fn = streams_xattr_filesystem_sharemode,
 	.linux_setlease_fn = streams_xattr_linux_setlease,
 	.strict_lock_check_fn = streams_xattr_strict_lock_check,
 
