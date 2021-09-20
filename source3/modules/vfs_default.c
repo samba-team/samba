@@ -3015,8 +3015,10 @@ static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, o
 	return result;
 }
 
-static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
-				uint32_t share_access, uint32_t access_mask)
+static int vfswrap_filesystem_sharemode(vfs_handle_struct *handle,
+					files_struct *fsp,
+					uint32_t share_access,
+					uint32_t access_mask)
 {
 	errno = ENOTSUP;
 	return -1;
@@ -3970,7 +3972,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.ftruncate_fn = vfswrap_ftruncate,
 	.fallocate_fn = vfswrap_fallocate,
 	.lock_fn = vfswrap_lock,
-	.filesystem_sharemode_fn = vfswrap_kernel_flock,
+	.filesystem_sharemode_fn = vfswrap_filesystem_sharemode,
 	.fcntl_fn = vfswrap_fcntl,
 	.linux_setlease_fn = vfswrap_linux_setlease,
 	.getlock_fn = vfswrap_getlock,
