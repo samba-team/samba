@@ -282,15 +282,11 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         samdb = self.get_samdb()
         user_name = "mskileusr"
         alt_name = "mskilealtsec"
-        (uc, dn) = self.create_account(samdb, user_name)
+        (uc, dn) = self.create_account(samdb, user_name,
+                                       account_control=UF_DONT_REQUIRE_PREAUTH)
         realm = uc.get_realm().lower()
         alt_sec = "Kerberos:%s@%s" % (alt_name, realm)
         self.add_attribute(samdb, dn, "altSecurityIdentities", alt_sec)
-        self.modify_attribute(
-            samdb,
-            dn,
-            "userAccountControl",
-            str(UF_NORMAL_ACCOUNT | UF_DONT_REQUIRE_PREAUTH))
 
         mach_name = "mskilemac"
         (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
@@ -660,15 +656,11 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         samdb = self.get_samdb()
         user_name = "mskileusr"
         alt_name = "mskilealtsec"
-        (uc, dn) = self.create_account(samdb, user_name)
+        (uc, dn) = self.create_account(samdb, user_name,
+                                       account_control=UF_DONT_REQUIRE_PREAUTH)
         realm = uc.get_realm().lower()
         alt_sec = "Kerberos:%s@%s" % (alt_name, realm)
         self.add_attribute(samdb, dn, "altSecurityIdentities", alt_sec)
-        self.modify_attribute(
-            samdb,
-            dn,
-            "userAccountControl",
-            str(UF_NORMAL_ACCOUNT | UF_DONT_REQUIRE_PREAUTH))
         ename = alt_name + "@" + realm
 
         mach_name = "mskilemac"
