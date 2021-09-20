@@ -1611,10 +1611,10 @@ static bool catia_lock(vfs_handle_struct *handle,
 	return ok;
 }
 
-static int catia_kernel_flock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp,
-			      uint32_t share_access,
-			      uint32_t access_mask)
+static int catia_filesystem_sharemode(struct vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      uint32_t share_access,
+				      uint32_t access_mask)
 {
 	struct catia_cache *cc = NULL;
 	int ret;
@@ -1895,7 +1895,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.ftruncate_fn = catia_ftruncate,
 	.fallocate_fn = catia_fallocate,
 	.lock_fn = catia_lock,
-	.filesystem_sharemode_fn = catia_kernel_flock,
+	.filesystem_sharemode_fn = catia_filesystem_sharemode,
 	.linux_setlease_fn = catia_linux_setlease,
 	.getlock_fn = catia_getlock,
 	.realpath_fn = catia_realpath,
