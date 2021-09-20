@@ -318,7 +318,7 @@ Table of Contents
    SMB_VFS_GETXATTR()                 [Path]      -
    SMB_VFS_GETXATTRAT_RECV()          [Enum]      -
    SMB_VFS_GETXATTRAT_SEND()          [Enum]      -
-   SMB_VFS_KERNEL_FLOCK()             [fsp]       -
+   SMB_VFS_FILESYSTEM_SHAREMODE()     [fsp]       -
    SMB_VFS_LCHOWN()                   [Path]      Todo
    SMB_VFS_LINKAT()                   [NsC]       -
    SMB_VFS_LINUX_SETLEASE()           [fsp]       -
@@ -456,7 +456,7 @@ Table of Contents
   • SMB_VFS_GETLOCK()
   • SMB_VFS_GET_ALLOC_SIZE()
   • SMB_VFS_GET_SHADOW_COPY_DATA()
-  • SMB_VFS_KERNEL_FLOCK()
+  • SMB_VFS_FILESYSTEM_SHAREMODE()
   • SMB_VFS_LINUX_SETLEASE()
   • SMB_VFS_LOCK()
   • SMB_VFS_LSEEK()

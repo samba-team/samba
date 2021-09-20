@@ -250,7 +250,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_GETXATTR()                | [[Path][Path]]     | -      |
 | SMB_VFS_GETXATTRAT_RECV()         | [[Enum][Enum]]     | -      |
 | SMB_VFS_GETXATTRAT_SEND()         | [[Enum][Enum]]     | -      |
-| SMB_VFS_KERNEL_FLOCK()            | [[fsp][fsp]]      | -      |
+| SMB_VFS_FILESYSTEM_SHAREMODE()    | [[fsp][fsp]]      | -      |
 | SMB_VFS_LCHOWN()                  | [[Path][Path]]     | Todo   |
 | SMB_VFS_LINKAT()                  | [[NsC][NsC]]      | -      |
 | SMB_VFS_LINUX_SETLEASE()          | [[fsp][fsp]]      | -      |
@@ -350,7 +350,7 @@ whenever VFS access is done in a piecemeal fashion.
  - SMB_VFS_GETLOCK()
  - SMB_VFS_GET_ALLOC_SIZE()
  - SMB_VFS_GET_SHADOW_COPY_DATA()
- - SMB_VFS_KERNEL_FLOCK()
+ - SMB_VFS_FILESYSTEM_SHAREMODE()
  - SMB_VFS_LINUX_SETLEASE()
  - SMB_VFS_LOCK()
  - SMB_VFS_LSEEK()
