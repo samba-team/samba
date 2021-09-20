@@ -289,14 +289,14 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         m = ldb.Message()
         m.dn = ldb.Dn(self.ldb, self.base_dn)
 
-        self.account_lockout_duration = 10
+        self.account_lockout_duration = 15
         account_lockout_duration_ticks = -int(self.account_lockout_duration * (1e7))
 
         m["lockoutDuration"] = ldb.MessageElement(str(account_lockout_duration_ticks),
                                                   ldb.FLAG_MOD_REPLACE,
                                                   "lockoutDuration")
 
-        self.lockout_observation_window = 10
+        self.lockout_observation_window = 15
         lockout_observation_window_ticks = -int(self.lockout_observation_window * (1e7))
 
         m["lockOutObservationWindow"] = ldb.MessageElement(str(lockout_observation_window_ticks),
