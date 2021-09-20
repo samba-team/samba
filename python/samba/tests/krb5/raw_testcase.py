@@ -944,12 +944,15 @@ class RawKerberosTest(TestCaseInTempDir):
         v = self.getElementValue(obj, elem)
         self.assertIsNone(v)
 
-    def assertElementPresent(self, obj, elem):
+    def assertElementPresent(self, obj, elem, expect_empty=False):
         v = self.getElementValue(obj, elem)
         self.assertIsNotNone(v)
         if self.strict_checking:
             if isinstance(v, collections.abc.Container):
-                self.assertNotEqual(0, len(v))
+                if expect_empty:
+                    self.assertEqual(0, len(v))
+                else:
+                    self.assertNotEqual(0, len(v))
 
     def assertElementEqual(self, obj, elem, value):
         v = self.getElementValue(obj, elem)
@@ -1907,6 +1910,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          outer_req=None,
                          pac_request=None,
                          pac_options=None,
+                         expect_pac=True,
                          to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -1952,6 +1956,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'outer_req': outer_req,
             'pac_request': pac_request,
             'pac_options': pac_options,
+            'expect_pac': expect_pac,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -1992,6 +1997,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           outer_req=None,
                           pac_request=None,
                           pac_options=None,
+                          expect_pac=True,
                           to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2036,6 +2042,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'outer_req': outer_req,
             'pac_request': pac_request,
             'pac_options': pac_options,
+            'expect_pac': expect_pac,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -2236,6 +2243,8 @@ class RawKerberosTest(TestCaseInTempDir):
             armor_key = kdc_exchange_dict['armor_key']
             self.verify_ticket_checksum(ticket, ticket_checksum, armor_key)
 
+        expect_pac = kdc_exchange_dict['expect_pac']
+
         ticket_session_key = None
         if ticket_private is not None:
             self.assertElementFlags(ticket_private, 'flags',
@@ -2265,7 +2274,8 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertElementMissing(ticket_private, 'renew-till')
             if self.strict_checking:
                 self.assertElementEqual(ticket_private, 'caddr', [])
-            self.assertElementPresent(ticket_private, 'authorization-data')
+            self.assertElementPresent(ticket_private, 'authorization-data',
+                                      expect_empty=not expect_pac)
 
         encpart_session_key = None
         if encpart_private is not None:
