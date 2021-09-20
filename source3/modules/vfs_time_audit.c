@@ -1349,10 +1349,10 @@ static bool smb_time_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
 	return result;
 }
 
-static int smb_time_audit_kernel_flock(struct vfs_handle_struct *handle,
-				       struct files_struct *fsp,
-				       uint32_t share_access,
-				       uint32_t access_mask)
+static int smb_time_audit_filesystem_sharemode(struct vfs_handle_struct *handle,
+					       struct files_struct *fsp,
+					       uint32_t share_access,
+					       uint32_t access_mask)
 {
 	int result;
 	struct timespec ts1,ts2;
@@ -1367,7 +1367,7 @@ static int smb_time_audit_kernel_flock(struct vfs_handle_struct *handle,
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fsp("kernel_flock", timediff, fsp);
+		smb_time_audit_log_fsp("filesystem_sharemode", timediff, fsp);
 	}
 
 	return result;
@@ -2748,7 +2748,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.ftruncate_fn = smb_time_audit_ftruncate,
 	.fallocate_fn = smb_time_audit_fallocate,
 	.lock_fn = smb_time_audit_lock,
-	.filesystem_sharemode_fn = smb_time_audit_kernel_flock,
+	.filesystem_sharemode_fn = smb_time_audit_filesystem_sharemode,
 	.fcntl_fn = smb_time_audit_fcntl,
 	.linux_setlease_fn = smb_time_audit_linux_setlease,
 	.getlock_fn = smb_time_audit_getlock,
