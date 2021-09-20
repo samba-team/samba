@@ -48,7 +48,7 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	if (lp_kernel_share_modes(SNUM(conn))) {
 		/*
 		 * We do not support durable handles
-		 * if kernel share modes (flocks) are used
+		 * if file system sharemodes are used
 		 */
 		return NT_STATUS_NOT_SUPPORTED;
 	}
