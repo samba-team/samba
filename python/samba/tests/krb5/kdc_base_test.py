@@ -110,6 +110,7 @@ class KDCBaseTest(RawKerberosTest):
         cls.accounts = set()
 
         cls.account_cache = {}
+        cls.tkt_cache = {}
 
         cls._rodc_ctx = None
 
@@ -1125,7 +1126,17 @@ class KDCBaseTest(RawKerberosTest):
         return rep, enc_part
 
     def get_service_ticket(self, tgt, target_creds, service='host',
-                           to_rodc=False):
+                           to_rodc=False, fresh=False):
+        user_name = tgt.cname['name-string'][0]
+        target_name = target_creds.get_username()
+        cache_key = (user_name, target_name, service, to_rodc)
+
+        if not fresh:
+            ticket = self.tkt_cache.get(cache_key)
+
+            if ticket is not None:
+                return ticket
+
         etype = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
 
         key = tgt.session_key
@@ -1157,11 +1168,23 @@ class KDCBaseTest(RawKerberosTest):
                                                    sname=sname,
                                                    decryption_key=target_key)
 
+        self.tkt_cache[cache_key] = service_ticket_creds
+
         return service_ticket_creds
 
     def get_tgt(self, creds, to_rodc=False, kdc_options=None,
-                expected_flags=None, unexpected_flags=None):
+                expected_flags=None, unexpected_flags=None,
+                fresh=False):
         user_name = creds.get_username()
+        cache_key = (user_name, to_rodc, kdc_options,
+                     expected_flags, unexpected_flags)
+
+        if not fresh:
+            tgt = self.tkt_cache.get(cache_key)
+
+            if tgt is not None:
+                return tgt
+
         realm = creds.get_realm()
 
         salt = creds.get_salt()
@@ -1252,6 +1275,8 @@ class KDCBaseTest(RawKerberosTest):
         self.check_as_reply(rep)
 
         ticket_creds = kdc_exchange_dict['rep_ticket_creds']
+
+        self.tkt_cache[cache_key] = ticket_creds
 
         return ticket_creds
 
