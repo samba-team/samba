@@ -321,7 +321,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             names=[mc.get_username()])
 
         (rep, enc_part) = self.tgs_req(
-            cname, sname, uc.get_realm(), ticket, key, etype)
+            cname, sname, uc.get_realm(), ticket, key, etype,
+            expect_pac=False)
         self.check_tgs_reply(rep)
 
         # Check the contents of the service ticket
@@ -695,7 +696,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             names=[mc.get_username()])
 
         (rep, enc_part) = self.tgs_req(
-            cname, sname, uc.get_realm(), ticket, key, etype)
+            cname, sname, uc.get_realm(), ticket, key, etype,
+            expect_pac=False)
         self.check_tgs_reply(rep)
 
         # Check the contents of the service ticket
