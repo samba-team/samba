@@ -6,7 +6,10 @@ from waflib import Logs
 
 def build(bld):
     bld.SAMBA_LIBRARY('cmdline',
-                      source='cmdline.c',
+                      source='''
+                          cmdline.c
+                          closefrom_except.c
+                      ''',
                       deps='''
                            talloc
                            cli_smb_common
