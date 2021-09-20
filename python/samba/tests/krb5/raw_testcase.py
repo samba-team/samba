@@ -2977,7 +2977,7 @@ class RawKerberosTest(TestCaseInTempDir):
     def verify_ticket(self, ticket, krbtgt_key, expect_pac=True):
         # Check if the ticket is a TGT.
         sname = ticket.ticket['sname']
-        is_tgt = sname['name-string'][0] == b'krbtgt'
+        is_tgt = self.is_tgs(sname)
 
         # Decrypt the ticket.
 
@@ -3370,6 +3370,10 @@ class RawKerberosTest(TestCaseInTempDir):
         return {
             krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key
         }
+
+    def is_tgs(self, principal):
+        name = principal['name-string'][0]
+        return name in ('krbtgt', b'krbtgt')
 
     def get_empty_pac(self):
         return self.AuthorizationData_create(AD_WIN2K_PAC, bytes(1))
