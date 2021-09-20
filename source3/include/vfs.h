@@ -360,9 +360,10 @@
  * Version 45 - Remove SYS_ACL_BLOB_GET_FILE
  * Version 45 - Add SMB_VFS_FCHFLAGS
  * Version 45 - Remove SMB_VFS_GETXATTR
+ * Version 46 - Rename SMB_VFS_KERNEL_FLOCK to SMB_VFS_FILESYSTEM_SHAREMODE
  */
 
-#define SMB_VFS_INTERFACE_VERSION 45
+#define SMB_VFS_INTERFACE_VERSION 46
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
