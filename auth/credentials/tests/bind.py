@@ -92,7 +92,8 @@ class BindTests(samba.tests.TestCase):
         # this test to detect when the LDAP DN is being double-parsed
         # but must be in the user@realm style to allow the account to
         # be created
-        self.ldb.add_ldif("""
+        try:
+            self.ldb.add_ldif("""
 dn: """ + self.virtual_user_dn + """
 cn: frednurk@""" + self.realm + """
 displayName: Fred Nurk
@@ -105,13 +106,21 @@ objectClass: person
 objectClass: top
 objectClass: user
 """)
+        except LdbError as e:
+            (num, msg) = e.args
+            self.fail(f"Failed to create e-mail user: {msg}")
+
         self.addCleanup(delete_force, self.ldb, self.virtual_user_dn)
-        self.ldb.modify_ldif("""
+        try:
+            self.ldb.modify_ldif("""
 dn: """ + self.virtual_user_dn + """
 changetype: modify
 replace: unicodePwd
 unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode('utf8') + """
 """)
+        except LdbError as e:
+            (num, msg) = e.args
+            self.fail(f"Failed to set password on e-mail user: {msg}")
 
         self.ldb.enable_account('distinguishedName=%s' % self.virtual_user_dn)
 
