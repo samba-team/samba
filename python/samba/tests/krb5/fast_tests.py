@@ -67,11 +67,9 @@ class FAST_Tests(KDCBaseTest):
         super().setUpClass()
 
         cls.user_tgt = None
-        cls.user_enc_part = None
         cls.user_service_ticket = None
 
         cls.mach_tgt = None
-        cls.mach_enc_part = None
         cls.mach_service_ticket = None
 
     def setUp(self):
@@ -1543,16 +1541,14 @@ class FAST_Tests(KDCBaseTest):
     def get_mach_tgt(self):
         if self.mach_tgt is None:
             mach_creds = self.get_mach_creds()
-            type(self).mach_tgt, type(self).mach_enc_part = (
-                self.get_tgt(mach_creds))
+            type(self).mach_tgt = self.get_tgt(mach_creds)
 
         return self.mach_tgt
 
     def get_user_tgt(self):
         if self.user_tgt is None:
             user_creds = self.get_client_creds()
-            type(self).user_tgt, type(self).user_enc_part = (
-                self.get_tgt(user_creds))
+            type(self).user_tgt = self.get_tgt(user_creds)
 
         return self.user_tgt
 
