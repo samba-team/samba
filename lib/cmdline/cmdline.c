@@ -67,8 +67,8 @@ bool samba_cmdline_init_common(TALLOC_CTX *mem_ctx)
 	fault_setup();
 
 	/*
-	 * Log to stdout by default.
-	 * This can be changed to stderr using the option: --debug-stdout
+	 * Log to stderr by default.
+	 * This can be changed to stdout using the option: --debug-stdout
 	 */
 	setup_logging(getprogname(), DEBUG_DEFAULT_STDERR);
 
