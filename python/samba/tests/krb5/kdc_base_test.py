@@ -1084,7 +1084,7 @@ class KDCBaseTest(RawKerberosTest):
 
     def tgs_req(self, cname, sname, realm, ticket, key, etypes,
                 expected_error_mode=0, padata=None, kdc_options=0,
-                to_rodc=False):
+                to_rodc=False, service_creds=None):
         '''Send a TGS-REQ, returns the response and the decrypted and
            decoded enc-part
         '''
@@ -1097,6 +1097,12 @@ class KDCBaseTest(RawKerberosTest):
                                   key,
                                   crealm=realm,
                                   cname=cname)
+
+        if service_creds is not None:
+            decryption_key = self.TicketDecryptionKey_from_creds(
+                service_creds)
+        else:
+            decryption_key = None
 
         if not expected_error_mode:
             check_error_fn = None
@@ -1120,6 +1126,7 @@ class KDCBaseTest(RawKerberosTest):
             check_error_fn=check_error_fn,
             check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
+            ticket_decryption_key=decryption_key,
             generate_padata_fn=generate_padata if padata is not None else None,
             tgt=tgt,
             authenticator_subkey=subkey,
