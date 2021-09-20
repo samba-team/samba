@@ -1,19 +1,15 @@
-Release Announcements
-=====================
-
-This is the seventh release candidate of Samba 4.15.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.15 will be the next version of the Samba suite.
+                   ==============================
+                   Release Notes for Samba 4.15.0
+                         September 20, 2021
+                   ==============================
 
 
-UPGRADING
-=========
+This is the first stable release of the Samba 4.15 release series.
+Please read the release notes carefully before upgrading.
+
 
 Removed SMB (development) dialects
-----------------------------------
+==================================
 
 The following SMB (development) dialects are no longer
 supported: SMB2_22, SMB2_24 and SMB3_10. They are were
@@ -32,7 +28,7 @@ explicitly to a specific dialect, just leave
 them unspecified or specify the value "default".
 
 New GPG key
------------
+===========
 
 The GPG release key for Samba releases changed from:
 
@@ -53,7 +49,7 @@ Starting from Jan 21th 2021, all Samba releases will be signed with the new key.
 See also GPG_AA99442FB680B620_replaces_6F33915B6568B7EA.txt
 
 New minimum version for the experimental MIT KDC
-------------------------------------------------
+================================================
 
 The build of the AD DC using the system MIT Kerberos, an
 experimental feature, now requires MIT Kerberos 1.19.  An up-to-date
