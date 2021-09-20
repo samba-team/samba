@@ -1251,21 +1251,9 @@ class KDCBaseTest(RawKerberosTest):
             to_rodc=to_rodc)
         self.check_as_reply(rep)
 
-        tgt = rep['ticket']
+        ticket_creds = kdc_exchange_dict['rep_ticket_creds']
 
-        enc_part = self.get_as_rep_enc_data(preauth_key, rep)
-        session_key = self.EncryptionKey_import(enc_part['key'])
-
-        ticket_creds = KerberosTicketCreds(
-            tgt,
-            session_key,
-            crealm=realm,
-            cname=cname,
-            srealm=realm,
-            sname=sname,
-            decryption_key=ticket_decryption_key)
-
-        return ticket_creds, enc_part
+        return ticket_creds
 
     # Named tuple to contain values of interest when the PAC is decoded.
     PacData = namedtuple(
