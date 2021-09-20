@@ -151,7 +151,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FTRUNCATE,
 	SMB_VFS_OP_FALLOCATE,
 	SMB_VFS_OP_LOCK,
-	SMB_VFS_OP_KERNEL_FLOCK,
+	SMB_VFS_OP_FILESYSTEM_SHAREMODE,
 	SMB_VFS_OP_FCNTL,
 	SMB_VFS_OP_LINUX_SETLEASE,
 	SMB_VFS_OP_GETLOCK,
@@ -287,7 +287,7 @@ static struct {
 	{ SMB_VFS_OP_FTRUNCATE,	"ftruncate" },
 	{ SMB_VFS_OP_FALLOCATE,"fallocate" },
 	{ SMB_VFS_OP_LOCK,	"lock" },
-	{ SMB_VFS_OP_KERNEL_FLOCK,	"kernel_flock" },
+	{ SMB_VFS_OP_FILESYSTEM_SHAREMODE,	"filesystem_sharemode" },
 	{ SMB_VFS_OP_FCNTL,	"fcntl" },
 	{ SMB_VFS_OP_LINUX_SETLEASE, "linux_setlease" },
 	{ SMB_VFS_OP_GETLOCK,	"getlock" },
@@ -1767,10 +1767,10 @@ static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
 	return result;
 }
 
-static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
-				       struct files_struct *fsp,
-				       uint32_t share_access,
-				       uint32_t access_mask)
+static int smb_full_audit_filesystem_sharemode(struct vfs_handle_struct *handle,
+					       struct files_struct *fsp,
+					       uint32_t share_access,
+					       uint32_t access_mask)
 {
 	int result;
 
@@ -1779,7 +1779,7 @@ static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
 						   share_access,
 						   access_mask);
 
-	do_log(SMB_VFS_OP_KERNEL_FLOCK, (result >= 0), handle, "%s",
+	do_log(SMB_VFS_OP_FILESYSTEM_SHAREMODE, (result >= 0), handle, "%s",
 	       fsp_str_do_log(fsp));
 
 	return result;
@@ -2938,7 +2938,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.ftruncate_fn = smb_full_audit_ftruncate,
 	.fallocate_fn = smb_full_audit_fallocate,
 	.lock_fn = smb_full_audit_lock,
-	.filesystem_sharemode_fn = smb_full_audit_kernel_flock,
+	.filesystem_sharemode_fn = smb_full_audit_filesystem_sharemode,
 	.fcntl_fn = smb_full_audit_fcntl,
 	.linux_setlease_fn = smb_full_audit_linux_setlease,
 	.getlock_fn = smb_full_audit_getlock,
