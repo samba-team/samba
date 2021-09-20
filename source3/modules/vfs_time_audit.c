@@ -1392,7 +1392,7 @@ static int smb_time_audit_fcntl(struct vfs_handle_struct *handle,
 
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fsp("kernel_flock", timediff, fsp);
+		smb_time_audit_log_fsp("fcntl", timediff, fsp);
 	}
 
 	return result;
