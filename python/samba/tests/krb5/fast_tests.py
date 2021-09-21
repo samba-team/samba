@@ -1126,6 +1126,7 @@ class FAST_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
         krbtgt_decryption_key = self.TicketDecryptionKey_from_creds(
             krbtgt_creds)
+        krbtgt_etypes = krbtgt_creds.tgs_supported_enctypes
 
         target_username = target_creds.get_username()[:-1]
         target_realm = target_creds.get_realm()
@@ -1134,6 +1135,7 @@ class FAST_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=[target_service, target_username])
         target_decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
+        target_etypes = target_creds.tgs_supported_enctypes
 
         fast_cookie = None
         preauth_etype_info2 = None
@@ -1322,6 +1324,7 @@ class FAST_Tests(KDCBaseTest):
                     expected_anon=expected_anon,
                     expected_srealm=expected_srealm,
                     expected_sname=expected_sname,
+                    expected_supported_etypes=krbtgt_etypes,
                     expected_flags=expected_flags,
                     unexpected_flags=unexpected_flags,
                     ticket_decryption_key=krbtgt_decryption_key,
@@ -1355,6 +1358,7 @@ class FAST_Tests(KDCBaseTest):
                     expected_anon=expected_anon,
                     expected_srealm=expected_srealm,
                     expected_sname=expected_sname,
+                    expected_supported_etypes=target_etypes,
                     expected_flags=expected_flags,
                     unexpected_flags=unexpected_flags,
                     ticket_decryption_key=target_decryption_key,
