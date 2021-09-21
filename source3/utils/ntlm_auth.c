@@ -790,10 +790,8 @@ static NTSTATUS ntlm_auth_generate_session_info_pac(struct auth4_context *auth_c
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	char *unixuser;
 	NTSTATUS status;
-	char *domain = NULL;
-	char *realm = NULL;
-	char *user = NULL;
-	char *p;
+	const char *domain = "";
+	const char *user = "";
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
@@ -810,77 +808,44 @@ static NTSTATUS ntlm_auth_generate_session_info_pac(struct auth4_context *auth_c
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-	}
-
-	DEBUG(3, ("Kerberos ticket principal name is [%s]\n", princ_name));
-
-	p = strchr_m(princ_name, '@');
-	if (!p) {
-		DEBUG(3, ("[%s] Doesn't look like a valid principal\n",
-			  princ_name));
-		status = NT_STATUS_LOGON_FAILURE;
+	} else {
+		status = NT_STATUS_ACCESS_DENIED;
+		DBG_WARNING("Kerberos ticket for[%s] has no PAC: %s\n",
+			    princ_name, nt_errstr(status));
 		goto done;
 	}
 
-	user = talloc_strndup(mem_ctx, princ_name, p - princ_name);
-	if (!user) {
-		status = NT_STATUS_NO_MEMORY;
+	if (logon_info->info3.base.account_name.string != NULL) {
+		user = logon_info->info3.base.account_name.string;
+	} else {
+		user = "";
+	}
+	if (logon_info->info3.base.logon_domain.string != NULL) {
+		domain = logon_info->info3.base.logon_domain.string;
+	} else {
+		domain = "";
+	}
+
+	if (strlen(user) == 0 || strlen(domain) == 0) {
+		status = NT_STATUS_ACCESS_DENIED;
+		DBG_WARNING("Kerberos ticket for[%s] has invalid "
+			    "account_name[%s]/logon_domain[%s]: %s\n",
+			    princ_name,
+			    logon_info->info3.base.account_name.string,
+			    logon_info->info3.base.logon_domain.string,
+			    nt_errstr(status));
 		goto done;
 	}
 
-	realm = talloc_strdup(talloc_tos(), p + 1);
-	if (!realm) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+	DBG_NOTICE("Kerberos ticket principal name is [%s] "
+		   "account_name[%s]/logon_domain[%s]\n",
+		   princ_name, user, domain);
 
-	if (!strequal(realm, lp_realm())) {
-		DEBUG(3, ("Ticket for foreign realm %s@%s\n", user, realm));
+	if (!strequal(domain, lp_workgroup())) {
 		if (!lp_allow_trusted_domains()) {
 			status = NT_STATUS_LOGON_FAILURE;
 			goto done;
 		}
-	}
-
-	if (logon_info && logon_info->info3.base.logon_domain.string) {
-		domain = talloc_strdup(mem_ctx,
-					logon_info->info3.base.logon_domain.string);
-		if (!domain) {
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		DEBUG(10, ("Domain is [%s] (using PAC)\n", domain));
-	} else {
-
-		/* If we have winbind running, we can (and must) shorten the
-		   username by using the short netbios name. Otherwise we will
-		   have inconsistent user names. With Kerberos, we get the
-		   fully qualified realm, with ntlmssp we get the short
-		   name. And even w2k3 does use ntlmssp if you for example
-		   connect to an ip address. */
-
-		wbcErr wbc_status;
-		struct wbcDomainInfo *info = NULL;
-
-		DEBUG(10, ("Mapping [%s] to short name using winbindd\n",
-			   realm));
-
-		wbc_status = wbcDomainInfo(realm, &info);
-
-		if (WBC_ERROR_IS_OK(wbc_status)) {
-			domain = talloc_strdup(mem_ctx,
-						info->short_name);
-			wbcFreeMemory(info);
-		} else {
-			DEBUG(3, ("Could not find short name: %s\n",
-				  wbcErrorString(wbc_status)));
-			domain = talloc_strdup(mem_ctx, realm);
-		}
-		if (!domain) {
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		DEBUG(10, ("Domain is [%s] (using Winbind)\n", domain));
 	}
 
 	unixuser = talloc_asprintf(tmp_ctx, "%s%c%s", domain, winbind_separator(), user);
