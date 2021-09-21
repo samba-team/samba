@@ -132,7 +132,8 @@ class KdcTgsTests(KDCBaseTest):
             names=["ldap", samdb.host_dns_name()])
 
         (rep, _) = self.tgs_req(
-            cname, sname, uc.get_realm(), ticket, key, etype)
+            cname, sname, uc.get_realm(), ticket, key, etype,
+            service_creds=self.get_dc_creds())
 
         self.check_tgs_reply(rep)
 
@@ -175,7 +176,8 @@ class KdcTgsTests(KDCBaseTest):
             names=[mc.get_username()])
 
         (rep, enc_part) = self.tgs_req(
-            cname, sname, uc.get_realm(), ticket, key, etype)
+            cname, sname, uc.get_realm(), ticket, key, etype,
+            service_creds=mc)
         self.check_tgs_reply(rep)
 
         # Check the contents of the service ticket
