@@ -633,10 +633,8 @@ class KDCBaseTest(RawKerberosTest):
 
         enctypes = supported_enctypes
         if fast_support:
-            fast_bits = (security.KERB_ENCTYPE_FAST_SUPPORTED |
-                         security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED |
-                         security.KERB_ENCTYPE_CLAIMS_SUPPORTED)
-            enctypes = (enctypes or 0) | fast_bits
+            enctypes = enctypes or 0
+            enctypes |= KerberosCredentials.fast_supported_bits
 
         if enctypes is not None:
             details['msDS-SupportedEncryptionTypes'] = str(enctypes)
