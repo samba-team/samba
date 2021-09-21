@@ -750,6 +750,17 @@ class RawKerberosTest(TestCaseInTempDir):
         c.set_gensec_features(c.get_gensec_features() | FEATURE_SEAL)
         return c
 
+    def get_rodc_krbtgt_creds(self,
+                              require_keys=True,
+                              require_strongest_key=False):
+        if require_strongest_key:
+            self.assertTrue(require_keys)
+        c = self._get_krb5_creds(prefix='RODC_KRBTGT',
+                                 allow_missing_password=True,
+                                 allow_missing_keys=not require_keys,
+                                 require_strongest_key=require_strongest_key)
+        return c
+
     def get_krbtgt_creds(self,
                          require_keys=True,
                          require_strongest_key=False):
