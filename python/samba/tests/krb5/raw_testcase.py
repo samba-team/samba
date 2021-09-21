@@ -1879,6 +1879,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          expected_anon=False,
                          expected_srealm=None,
                          expected_sname=None,
+                         expected_supported_etypes=None,
                          expected_flags=None,
                          unexpected_flags=None,
                          ticket_decryption_key=None,
@@ -1923,6 +1924,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_anon': expected_anon,
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
+            'expected_supported_etypes': expected_supported_etypes,
             'expected_flags': expected_flags,
             'unexpected_flags': unexpected_flags,
             'ticket_decryption_key': ticket_decryption_key,
@@ -1963,6 +1965,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expected_anon=False,
                           expected_srealm=None,
                           expected_sname=None,
+                          expected_supported_etypes=None,
                           expected_flags=None,
                           unexpected_flags=None,
                           ticket_decryption_key=None,
@@ -2006,6 +2009,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_anon': expected_anon,
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
+            'expected_supported_etypes': expected_supported_etypes,
             'expected_flags': expected_flags,
             'unexpected_flags': unexpected_flags,
             'ticket_decryption_key': ticket_decryption_key,
@@ -2312,19 +2316,19 @@ class RawKerberosTest(TestCaseInTempDir):
                     if canonicalize:
                         self.assertIn(PADATA_SUPPORTED_ETYPES, enc_pa_dict)
 
+                        expected_supported_etypes = kdc_exchange_dict[
+                            'expected_supported_etypes']
+                        expected_supported_etypes |= (
+                            security.KERB_ENCTYPE_DES_CBC_CRC |
+                            security.KERB_ENCTYPE_DES_CBC_MD5 |
+                            security.KERB_ENCTYPE_RC4_HMAC_MD5)
+
                         (supported_etypes,) = struct.unpack(
                             '<L',
                             enc_pa_dict[PADATA_SUPPORTED_ETYPES])
 
-                        self.assertTrue(
-                            security.KERB_ENCTYPE_FAST_SUPPORTED
-                            & supported_etypes)
-                        self.assertTrue(
-                            security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED
-                            & supported_etypes)
-                        self.assertTrue(
-                            security.KERB_ENCTYPE_CLAIMS_SUPPORTED
-                            & supported_etypes)
+                        self.assertEqual(supported_etypes,
+                                         expected_supported_etypes)
                     else:
                         self.assertNotIn(PADATA_SUPPORTED_ETYPES, enc_pa_dict)
 
@@ -3396,6 +3400,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           kdc_options,
                           expected_flags=None,
                           unexpected_flags=None,
+                          expected_supported_etypes=None,
                           preauth_key=None,
                           ticket_decryption_key=None,
                           pac_request=None,
@@ -3424,6 +3429,7 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_cname=expected_cname,
             expected_srealm=expected_srealm,
             expected_sname=expected_sname,
+            expected_supported_etypes=expected_supported_etypes,
             ticket_decryption_key=ticket_decryption_key,
             generate_padata_fn=generate_padata_fn,
             check_error_fn=check_error_fn,
