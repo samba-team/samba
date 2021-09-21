@@ -304,6 +304,11 @@ class RodcPacEncryptionKey(Krb5EncryptionKey):
 
 
 class KerberosCredentials(Credentials):
+
+    fast_supported_bits = (security.KERB_ENCTYPE_FAST_SUPPORTED |
+                           security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED |
+                           security.KERB_ENCTYPE_CLAIMS_SUPPORTED)
+
     def __init__(self):
         super(KerberosCredentials, self).__init__()
         all_enc_types = 0
@@ -331,26 +336,52 @@ class KerberosCredentials(Credentials):
     def set_ap_supported_enctypes(self, value):
         self.ap_supported_enctypes = int(value)
 
-    def _get_krb5_etypes(self, supported_enctypes):
-        etypes = ()
+    etype_map = collections.OrderedDict([
+        (kcrypto.Enctype.AES256,
+            security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96),
+        (kcrypto.Enctype.AES128,
+            security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96),
+        (kcrypto.Enctype.RC4,
+            security.KERB_ENCTYPE_RC4_HMAC_MD5),
+        (kcrypto.Enctype.DES_MD5,
+            security.KERB_ENCTYPE_DES_CBC_MD5),
+        (kcrypto.Enctype.DES_CRC,
+            security.KERB_ENCTYPE_DES_CBC_CRC)
+    ])
 
-        if supported_enctypes & security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96:
-            etypes += (kcrypto.Enctype.AES256,)
-        if supported_enctypes & security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96:
-            etypes += (kcrypto.Enctype.AES128,)
-        if supported_enctypes & security.KERB_ENCTYPE_RC4_HMAC_MD5:
-            etypes += (kcrypto.Enctype.RC4,)
+    @classmethod
+    def etypes_to_bits(self, etypes):
+        bits = 0
+        for etype in etypes:
+            bit = self.etype_map[etype]
+            if bits & bit:
+                raise ValueError(f'Got duplicate etype: {etype}')
+            bits |= bit
+
+        return bits
+
+    @classmethod
+    def bits_to_etypes(self, bits):
+        etypes = ()
+        for etype, bit in self.etype_map.items():
+            if bit & bits:
+                bits &= ~bit
+                etypes += (etype,)
+
+        bits &= ~self.fast_supported_bits
+        if bits != 0:
+            raise ValueError(f'Unsupported etype bits: {bits}')
 
         return etypes
 
     def get_as_krb5_etypes(self):
-        return self._get_krb5_etypes(self.as_supported_enctypes)
+        return self.bits_to_etypes(self.as_supported_enctypes)
 
     def get_tgs_krb5_etypes(self):
-        return self._get_krb5_etypes(self.tgs_supported_enctypes)
+        return self.bits_to_etypes(self.tgs_supported_enctypes)
 
     def get_ap_krb5_etypes(self):
-        return self._get_krb5_etypes(self.ap_supported_enctypes)
+        return self.bits_to_etypes(self.ap_supported_enctypes)
 
     def set_kvno(self, kvno):
         # Sign-extend from 32 bits.
