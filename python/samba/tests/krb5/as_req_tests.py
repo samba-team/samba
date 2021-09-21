@@ -60,7 +60,7 @@ class AsReqKerberosTests(KDCBaseTest):
                                initial_kdc_options=None):
         client_creds = self.get_client_creds()
         client_account = client_creds.get_username()
-        client_as_etypes = client_creds.get_as_krb5_etypes()
+        client_as_etypes = self.get_default_enctypes()
         krbtgt_creds = self.get_krbtgt_creds(require_keys=False)
         krbtgt_account = krbtgt_creds.get_username()
         realm = krbtgt_creds.get_realm()
@@ -114,7 +114,7 @@ class AsReqKerberosTests(KDCBaseTest):
     def test_as_req_enc_timestamp(self):
         client_creds = self.get_client_creds()
         client_account = client_creds.get_username()
-        client_as_etypes = client_creds.get_as_krb5_etypes()
+        client_as_etypes = self.get_default_enctypes()
         client_kvno = client_creds.get_kvno()
         krbtgt_creds = self.get_krbtgt_creds(require_strongest_key=True)
         krbtgt_account = krbtgt_creds.get_username()

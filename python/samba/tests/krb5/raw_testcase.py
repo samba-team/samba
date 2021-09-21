@@ -1082,7 +1082,10 @@ class RawKerberosTest(TestCaseInTempDir):
 
         if etype is None:
             etypes = creds.get_tgs_krb5_etypes()
-            etype = etypes[0]
+            if etypes:
+                etype = etypes[0]
+            else:
+                etype = kcrypto.Enctype.RC4
 
         forced_key = creds.get_forced_key(etype)
         if forced_key is not None:
