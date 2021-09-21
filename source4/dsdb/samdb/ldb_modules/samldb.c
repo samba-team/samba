@@ -68,6 +68,13 @@ struct samldb_ctx {
 	/* used for add operations */
 	enum samldb_add_type type;
 
+	/*
+	 * should we apply the need_trailing_dollar restriction to
+	 * samAccountName
+	 */
+
+	bool need_trailing_dollar;
+
 	/* the resulting message */
 	struct ldb_message *msg;
 
@@ -232,12 +239,86 @@ static int samldb_unique_attr_check(struct samldb_ctx *ac, const char *attr,
 
 static int samldb_sam_accountname_valid_check(struct samldb_ctx *ac)
 {
-	int ret = samldb_unique_attr_check(ac, "samAccountName", NULL,
-					   ldb_get_default_basedn(
-						   ldb_module_get_ctx(ac->module)));
-	if (ret == LDB_ERR_OBJECT_CLASS_VIOLATION) {
+	int ret = 0;
+	bool is_admin;
+	struct security_token *user_token = NULL;
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct ldb_message_element *el = dsdb_get_single_valued_attr(ac->msg, "samAccountName",
+					 ac->req->operation);
+	if (el == NULL || el->num_values == 0) {
+		ldb_asprintf_errstring(ldb,
+			"%08X: samldb: 'samAccountName' can't be deleted/empty!",
+			W_ERROR_V(WERR_DS_ILLEGAL_MOD_OPERATION));
+		if (ac->req->operation == LDB_ADD) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		} else {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
+
+	ret = samldb_unique_attr_check(ac, "samAccountName", NULL,
+				       ldb_get_default_basedn(
+					       ldb_module_get_ctx(ac->module)));
+
+	/*
+	 * Error code munging to try and match what must be some quite
+	 * strange code-paths in Windows
+	 */
+	if (ret == LDB_ERR_CONSTRAINT_VIOLATION
+	    && ac->req->operation == LDB_MODIFY) {
+		ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+	} else if (ret == LDB_ERR_OBJECT_CLASS_VIOLATION) {
 		ret = LDB_ERR_CONSTRAINT_VIOLATION;
 	}
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (!ac->need_trailing_dollar) {
+		return LDB_SUCCESS;
+	}
+
+	/* This does not permit a single $ */
+	if (el->values[0].length < 2) {
+		ldb_asprintf_errstring(ldb,
+				       "%08X: samldb: 'samAccountName' "
+				       "can't just be one character!",
+			W_ERROR_V(WERR_DS_ILLEGAL_MOD_OPERATION));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	user_token = acl_user_token(ac->module);
+	if (user_token == NULL) {
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+
+	is_admin
+		= security_token_has_builtin_administrators(user_token);
+
+	if (is_admin) {
+		/*
+		 * Administrators are allowed to select strange names.
+		 * This is poor practice but not prevented.
+		 */
+		return false;
+	}
+
+	if (el->values[0].data[el->values[0].length - 1] != '$') {
+		ldb_asprintf_errstring(ldb,
+				       "%08X: samldb: 'samAccountName' "
+				       "must have a trailing $!",
+			W_ERROR_V(WERR_DS_ILLEGAL_MOD_OPERATION));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	if (el->values[0].data[el->values[0].length - 2] == '$') {
+		ldb_asprintf_errstring(ldb,
+				       "%08X: samldb: 'samAccountName' "
+				       "must not have a double trailing $!",
+			W_ERROR_V(WERR_DS_ILLEGAL_MOD_OPERATION));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	return ret;
 }
 
@@ -554,17 +635,31 @@ static int samldb_schema_add_handle_mapiid(struct samldb_ctx *ac)
 }
 
 /* sAMAccountName handling */
-static int samldb_generate_sAMAccountName(struct ldb_context *ldb,
+static int samldb_generate_sAMAccountName(struct samldb_ctx *ac,
 					  struct ldb_message *msg)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	char *name;
 
-	/* Format: $000000-000000000000 */
+	/*
+	 * This is currently a Samba-only behaviour, to add a trailing
+	 * $ even for the generated accounts.
+	 */
 
-	name = talloc_asprintf(msg, "$%.6X-%.6X%.6X",
-				(unsigned int)generate_random(),
-				(unsigned int)generate_random(),
-				(unsigned int)generate_random());
+	if (ac->need_trailing_dollar) {
+		/* Format: $000000-00000000000$ */
+		name = talloc_asprintf(msg, "$%.6X-%.6X%.5X$",
+				       (unsigned int)generate_random(),
+				       (unsigned int)generate_random(),
+				       (unsigned int)generate_random());
+	} else {
+		/* Format: $000000-000000000000 */
+
+		name = talloc_asprintf(msg, "$%.6X-%.6X%.6X",
+				       (unsigned int)generate_random(),
+				       (unsigned int)generate_random(),
+				       (unsigned int)generate_random());
+	}
 	if (name == NULL) {
 		return ldb_oom(ldb);
 	}
@@ -573,11 +668,10 @@ static int samldb_generate_sAMAccountName(struct ldb_context *ldb,
 
 static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 {
-	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	int ret;
 
 	if (ldb_msg_find_element(ac->msg, "sAMAccountName") == NULL) {
-		ret = samldb_generate_sAMAccountName(ldb, ac->msg);
+		ret = samldb_generate_sAMAccountName(ac, ac->msg);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1490,6 +1584,20 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 							      is_computer_objectclass);
 		if (ret != LDB_SUCCESS) {
 			return ret;
+		}
+
+		/*
+		 * Require, for non-admin modifications, a trailing $
+		 * for either objectclass=computer or a trust account
+		 * type in userAccountControl
+		 */
+		if ((user_account_control
+		     & UF_TRUST_ACCOUNT_MASK) != 0) {
+			ac->need_trailing_dollar = true;
+		}
+
+		if (is_computer_objectclass) {
+			ac->need_trailing_dollar = true;
 		}
 
 		/* add "sAMAccountType" attribute */
@@ -4005,12 +4113,41 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(ac->msg, "sAMAccountName");
 	if (el != NULL) {
+		uint32_t user_account_control;
+		struct ldb_result *res = NULL;
+		const char * const attrs[] = { "userAccountControl",
+					       "objectclass",
+					       NULL };
+		ret = dsdb_module_search_dn(ac->module,
+					    ac,
+					    &res,
+					    ac->msg->dn,
+					    attrs,
+					    DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED,
+					    ac->req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		user_account_control
+			= ldb_msg_find_attr_as_uint(res->msgs[0],
+						    "userAccountControl",
+						    0);
+
+		if ((user_account_control
+		     & UF_TRUST_ACCOUNT_MASK) != 0) {
+			ac->need_trailing_dollar = true;
+
+		} else if (samdb_find_attribute(ldb,
+						res->msgs[0],
+						"objectclass",
+						"computer")
+			   != NULL) {
+			ac->need_trailing_dollar = true;
+		}
+
 		ret = samldb_sam_accountname_valid_check(ac);
-		/*
-		 * Other errors are checked for elsewhere, we just
-		 * want to prevent duplicates
-		 */
-		if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
