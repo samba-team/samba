@@ -817,23 +817,27 @@ static NTSTATUS ntlm_auth_generate_session_info_pac(struct auth4_context *auth_c
 	if (!p) {
 		DEBUG(3, ("[%s] Doesn't look like a valid principal\n",
 			  princ_name));
-		return NT_STATUS_LOGON_FAILURE;
+		status = NT_STATUS_LOGON_FAILURE;
+		goto done;
 	}
 
 	user = talloc_strndup(mem_ctx, princ_name, p - princ_name);
 	if (!user) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	realm = talloc_strdup(talloc_tos(), p + 1);
 	if (!realm) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	if (!strequal(realm, lp_realm())) {
 		DEBUG(3, ("Ticket for foreign realm %s@%s\n", user, realm));
 		if (!lp_allow_trusted_domains()) {
-			return NT_STATUS_LOGON_FAILURE;
+			status = NT_STATUS_LOGON_FAILURE;
+			goto done;
 		}
 	}
 
@@ -841,7 +845,8 @@ static NTSTATUS ntlm_auth_generate_session_info_pac(struct auth4_context *auth_c
 		domain = talloc_strdup(mem_ctx,
 					logon_info->info3.base.logon_domain.string);
 		if (!domain) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 		DEBUG(10, ("Domain is [%s] (using PAC)\n", domain));
 	} else {
@@ -871,7 +876,8 @@ static NTSTATUS ntlm_auth_generate_session_info_pac(struct auth4_context *auth_c
 			domain = talloc_strdup(mem_ctx, realm);
 		}
 		if (!domain) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 		DEBUG(10, ("Domain is [%s] (using Winbind)\n", domain));
 	}
