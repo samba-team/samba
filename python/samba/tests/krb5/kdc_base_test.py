@@ -1215,7 +1215,8 @@ class KDCBaseTest(RawKerberosTest):
                                           names=[service, target_name])
 
         rep, enc_part = self.tgs_req(cname, sname, realm, ticket, key, etype,
-                                     to_rodc=to_rodc)
+                                     to_rodc=to_rodc,
+                                     service_creds=target_creds)
 
         service_ticket = rep['ticket']
 
