@@ -1267,6 +1267,8 @@ class KDCBaseTest(RawKerberosTest):
         expected_sname = self.PrincipalName_create(
             name_type=NT_SRV_INST, names=['krbtgt', realm.upper()])
 
+        expected_etypes = krbtgt_creds.tgs_supported_enctypes
+
         rep, kdc_exchange_dict = self._test_as_exchange(
             cname=cname,
             realm=realm,
@@ -1279,6 +1281,7 @@ class KDCBaseTest(RawKerberosTest):
             expected_srealm=expected_realm,
             expected_sname=expected_sname,
             expected_salt=salt,
+            expected_supported_etypes=expected_etypes,
             etypes=etype,
             padata=padata,
             kdc_options=kdc_options,
