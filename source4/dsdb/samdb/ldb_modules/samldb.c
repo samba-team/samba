@@ -1371,9 +1371,9 @@ static int samldb_check_user_account_control_rules(struct samldb_ctx *ac,
 /*
  * "Objectclass" trigger (MS-SAMR 3.1.1.8.1)
  *
- * Has to be invoked on "add" and "modify" operations on "user", "computer" and
+ * Has to be invoked on "add" operations on "user", "computer" and
  * "group" objects.
- * ac->msg contains the "add"/"modify" message
+ * ac->msg contains the "add"
  * ac->type contains the object type (main objectclass)
  */
 static int samldb_objectclass_trigger(struct samldb_ctx *ac)
@@ -1414,6 +1414,8 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 
 	switch(ac->type) {
 	case SAMLDB_TYPE_USER: {
+		uint32_t raw_uac;
+		uint32_t user_account_control;
 		bool is_computer_objectclass;
 		bool uac_generated = false, uac_add_flags = false;
 		uint32_t default_user_account_control = UF_NORMAL_ACCOUNT;
@@ -1437,7 +1439,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		/* On add operations we might need to generate a
 		 * "userAccountControl" (if it isn't specified). */
 		el = ldb_msg_find_element(ac->msg, "userAccountControl");
-		if ((el == NULL) && (ac->req->operation == LDB_ADD)) {
+		if (el == NULL) {
 			ret = samdb_msg_set_uint(ldb, ac->msg, ac->msg,
 						 "userAccountControl",
 						 default_user_account_control);
@@ -1449,114 +1451,111 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		}
 
 		el = ldb_msg_find_element(ac->msg, "userAccountControl");
-		if (el != NULL) {
-			uint32_t raw_uac;
-			uint32_t user_account_control;
-			/* Step 1.3: "userAccountControl" -> "sAMAccountType" mapping */
-			user_account_control = ldb_msg_find_attr_as_uint(ac->msg,
-									 "userAccountControl",
-									 0);
-			raw_uac = user_account_control;
-			/*
-			 * "userAccountControl" = 0 or missing one of
-			 * the types means "UF_NORMAL_ACCOUNT"
-			 * or "UF_WORKSTATION_TRUST_ACCOUNT" (if a computer).
-			 * See MS-SAMR 3.1.1.8.10 point 8
-			 */
-			if ((user_account_control & UF_ACCOUNT_TYPE_MASK) == 0) {
-				user_account_control
-					= default_user_account_control
-					| user_account_control;
-				uac_generated = true;
-			}
+		SMB_ASSERT(el != NULL);
 
-			/*
-			 * As per MS-SAMR 3.1.1.8.10 these flags have not to be set
-			 */
-			if ((user_account_control & UF_LOCKOUT) != 0) {
-				user_account_control &= ~UF_LOCKOUT;
-				uac_generated = true;
-			}
-			if ((user_account_control & UF_PASSWORD_EXPIRED) != 0) {
-				user_account_control &= ~UF_PASSWORD_EXPIRED;
-				uac_generated = true;
-			}
+		/* Step 1.3: "userAccountControl" -> "sAMAccountType" mapping */
+		user_account_control = ldb_msg_find_attr_as_uint(ac->msg,
+								 "userAccountControl",
+								 0);
+		raw_uac = user_account_control;
+		/*
+		 * "userAccountControl" = 0 or missing one of
+		 * the types means "UF_NORMAL_ACCOUNT"
+		 * or "UF_WORKSTATION_TRUST_ACCOUNT" (if a computer).
+		 * See MS-SAMR 3.1.1.8.10 point 8
+		 */
+		if ((user_account_control & UF_ACCOUNT_TYPE_MASK) == 0) {
+			user_account_control
+				= default_user_account_control
+				| user_account_control;
+			uac_generated = true;
+		}
 
-			ret = samldb_check_user_account_control_rules(ac, NULL,
-								      raw_uac,
-								      user_account_control,
-								      0,
-								      is_computer_objectclass);
+		/*
+		 * As per MS-SAMR 3.1.1.8.10 these flags have not to be set
+		 */
+		if ((user_account_control & UF_LOCKOUT) != 0) {
+			user_account_control &= ~UF_LOCKOUT;
+			uac_generated = true;
+		}
+		if ((user_account_control & UF_PASSWORD_EXPIRED) != 0) {
+			user_account_control &= ~UF_PASSWORD_EXPIRED;
+			uac_generated = true;
+		}
+
+		ret = samldb_check_user_account_control_rules(ac, NULL,
+							      raw_uac,
+							      user_account_control,
+							      0,
+							      is_computer_objectclass);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		/* add "sAMAccountType" attribute */
+		ret = dsdb_user_obj_set_account_type(ldb, ac->msg, user_account_control, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		/* "isCriticalSystemObject" might be set */
+		if (user_account_control &
+		    (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
+			ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
+						 "TRUE");
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
-
-			/* add "sAMAccountType" attribute */
-			ret = dsdb_user_obj_set_account_type(ldb, ac->msg, user_account_control, NULL);
+			el2 = ldb_msg_find_element(ac->msg,
+						   "isCriticalSystemObject");
+			el2->flags = LDB_FLAG_MOD_REPLACE;
+		} else if (user_account_control & UF_WORKSTATION_TRUST_ACCOUNT) {
+			ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
+						 "FALSE");
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
+			el2 = ldb_msg_find_element(ac->msg,
+						   "isCriticalSystemObject");
+			el2->flags = LDB_FLAG_MOD_REPLACE;
+		}
 
-			/* "isCriticalSystemObject" might be set */
-			if (user_account_control &
-			    (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
-				ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
-							 "TRUE");
-				if (ret != LDB_SUCCESS) {
-					return ret;
-				}
-				el2 = ldb_msg_find_element(ac->msg,
-							   "isCriticalSystemObject");
-				el2->flags = LDB_FLAG_MOD_REPLACE;
-			} else if (user_account_control & UF_WORKSTATION_TRUST_ACCOUNT) {
-				ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
-							 "FALSE");
-				if (ret != LDB_SUCCESS) {
-					return ret;
-				}
-				el2 = ldb_msg_find_element(ac->msg,
-							   "isCriticalSystemObject");
-				el2->flags = LDB_FLAG_MOD_REPLACE;
+		/* Step 1.4: "userAccountControl" -> "primaryGroupID" mapping */
+		if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
+			uint32_t rid;
+
+			ret = dsdb_user_obj_set_primary_group_id(ldb, ac->msg, user_account_control, &rid);
+			if (ret != LDB_SUCCESS) {
+				return ret;
 			}
-
-			/* Step 1.4: "userAccountControl" -> "primaryGroupID" mapping */
-			if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
-				uint32_t rid;
-
-				ret = dsdb_user_obj_set_primary_group_id(ldb, ac->msg, user_account_control, &rid);
-				if (ret != LDB_SUCCESS) {
-					return ret;
-				}
-				/*
-				 * Older AD deployments don't know about the
-				 * RODC group
-				 */
-				if (rid == DOMAIN_RID_READONLY_DCS) {
-					ret = samldb_prim_group_tester(ac, rid);
-					if (ret != LDB_SUCCESS) {
-						return ret;
-					}
-				}
-			}
-
-			/* Step 1.5: Add additional flags when needed */
-			/* Obviously this is done when the "userAccountControl"
-			 * has been generated here (tested against Windows
-			 * Server) */
-			if (uac_generated) {
-				if (uac_add_flags) {
-					user_account_control |= UF_ACCOUNTDISABLE;
-					user_account_control |= UF_PASSWD_NOTREQD;
-				}
-
-				ret = samdb_msg_set_uint(ldb, ac->msg, ac->msg,
-							 "userAccountControl",
-							 user_account_control);
+			/*
+			 * Older AD deployments don't know about the
+			 * RODC group
+			 */
+			if (rid == DOMAIN_RID_READONLY_DCS) {
+				ret = samldb_prim_group_tester(ac, rid);
 				if (ret != LDB_SUCCESS) {
 					return ret;
 				}
 			}
+		}
 
+		/* Step 1.5: Add additional flags when needed */
+		/* Obviously this is done when the "userAccountControl"
+		 * has been generated here (tested against Windows
+		 * Server) */
+		if (uac_generated) {
+			if (uac_add_flags) {
+				user_account_control |= UF_ACCOUNTDISABLE;
+				user_account_control |= UF_PASSWD_NOTREQD;
+			}
+
+			ret = samdb_msg_set_uint(ldb, ac->msg, ac->msg,
+						 "userAccountControl",
+						 user_account_control);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 		break;
 	}
