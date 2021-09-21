@@ -222,11 +222,11 @@ class KDCBaseTest(RawKerberosTest):
         functional_level = self.get_domain_functional_level(samdb)
 
         # RC4 should always be supported
-        default_enctypes = security.KERB_ENCTYPE_RC4_HMAC_MD5
+        default_enctypes = {kcrypto.Enctype.RC4}
         if functional_level >= DS_DOMAIN_FUNCTION_2008:
             # AES is only supported at functional level 2008 or higher
-            default_enctypes |= security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96
-            default_enctypes |= security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+            default_enctypes.add(kcrypto.Enctype.AES256)
+            default_enctypes.add(kcrypto.Enctype.AES128)
 
         return default_enctypes
 
@@ -513,12 +513,7 @@ class KDCBaseTest(RawKerberosTest):
 
         default_enctypes = self.get_default_enctypes()
 
-        if default_enctypes & security.KERB_ENCTYPE_RC4_HMAC_MD5:
-            self.assertIn(kcrypto.Enctype.RC4, keys)
-        if default_enctypes & security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96:
-            self.assertIn(kcrypto.Enctype.AES256, keys)
-        if default_enctypes & security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96:
-            self.assertIn(kcrypto.Enctype.AES128, keys)
+        self.assertCountEqual(default_enctypes, keys)
 
         return keys
 
