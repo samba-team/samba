@@ -69,5 +69,18 @@ bool is_allowed_domain(const char *domain_name)
 		}
 	}
 
-	return true;
+	if (lp_allow_trusted_domains()) {
+		return true;
+	}
+
+	if (strequal(lp_workgroup(), domain_name)) {
+		return true;
+	}
+
+	if (is_myname(domain_name)) {
+		return true;
+	}
+
+	DBG_NOTICE("Not trusted domain '%s'\n", domain_name);
+	return false;
 }
