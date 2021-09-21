@@ -289,6 +289,8 @@ class KDCBaseTest(RawKerberosTest):
         # Save the account name so it can be deleted in tearDownClass
         self.accounts.add(dn)
 
+        self.creds_set_enctypes(creds)
+
         return (creds, dn)
 
     def create_rodc(self, ctx):
@@ -522,13 +524,28 @@ class KDCBaseTest(RawKerberosTest):
             for enctype, key in keys.items():
                 creds.set_forced_key(enctype, key)
 
-        supported_enctypes = 0
-        if kcrypto.Enctype.AES256 in keys:
-            supported_enctypes |= security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96
-        if kcrypto.Enctype.AES128 in keys:
-            supported_enctypes |= security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96
-        if kcrypto.Enctype.RC4 in keys:
-            supported_enctypes |= security.KERB_ENCTYPE_RC4_HMAC_MD5
+    def creds_set_enctypes(self, creds):
+        samdb = self.get_samdb()
+
+        res = samdb.search(creds.get_dn(),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=['msDS-SupportedEncryptionTypes'])
+        supported_enctypes = res[0].get('msDS-SupportedEncryptionTypes', idx=0)
+
+        if supported_enctypes is None:
+            supported_enctypes = 0
+
+        creds.set_as_supported_enctypes(supported_enctypes)
+        creds.set_tgs_supported_enctypes(supported_enctypes)
+        creds.set_ap_supported_enctypes(supported_enctypes)
+
+    def creds_set_default_enctypes(self, creds, fast_support=False):
+        default_enctypes = self.get_default_enctypes()
+        supported_enctypes = KerberosCredentials.etypes_to_bits(
+            default_enctypes)
+
+        if fast_support:
+            supported_enctypes |= KerberosCredentials.fast_supported_bits
 
         creds.set_as_supported_enctypes(supported_enctypes)
         creds.set_tgs_supported_enctypes(supported_enctypes)
@@ -661,14 +678,6 @@ class KDCBaseTest(RawKerberosTest):
 
         keys = self.get_keys(samdb, dn)
         self.creds_set_keys(creds, keys)
-
-        if machine_account:
-            if supported_enctypes is not None:
-                tgs_enctypes = supported_enctypes
-            else:
-                tgs_enctypes = security.KERB_ENCTYPE_RC4_HMAC_MD5
-
-            creds.set_tgs_supported_enctypes(tgs_enctypes)
 
         # Handle secret replication to the RODC.
 
@@ -814,6 +823,11 @@ class KDCBaseTest(RawKerberosTest):
             keys = self.get_keys(samdb, krbtgt_dn)
             self.creds_set_keys(creds, keys)
 
+            # The RODC krbtgt account should support the default enctypes,
+            # although it might not have the msDS-SupportedEncryptionTypes
+            # attribute.
+            self.creds_set_default_enctypes(creds)
+
             return creds
 
         c = self._get_krb5_creds(prefix='RODC_KRBTGT',
@@ -858,6 +872,8 @@ class KDCBaseTest(RawKerberosTest):
             keys = self.get_keys(samdb, dn)
             self.creds_set_keys(creds, keys)
 
+            self.creds_set_enctypes(creds)
+
             return creds
 
         c = self._get_krb5_creds(prefix='MOCK_RODC_KRBTGT',
@@ -897,6 +913,12 @@ class KDCBaseTest(RawKerberosTest):
 
             keys = self.get_keys(samdb, dn)
             self.creds_set_keys(creds, keys)
+
+            # The krbtgt account should support the default enctypes, although
+            # it might not (on Samba) have the msDS-SupportedEncryptionTypes
+            # attribute.
+            self.creds_set_default_enctypes(creds,
+                                            fast_support=self.kdc_fast_support)
 
             return creds
 
