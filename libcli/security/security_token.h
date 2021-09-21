@@ -41,8 +41,6 @@ void security_token_debug(int dbg_class, int dbg_lev, const struct security_toke
 
 bool security_token_is_sid(const struct security_token *token, const struct dom_sid *sid);
 
-bool security_token_is_sid_string(const struct security_token *token, const char *sid_string);
-
 bool security_token_is_system(const struct security_token *token);
 
 bool security_token_is_anonymous(const struct security_token *token);
