@@ -3290,6 +3290,14 @@ class RawKerberosTest(TestCaseInTempDir):
 
         return new_auth_data, old_pac
 
+    def get_krbtgt_checksum_key(self):
+        krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
+
+        return {
+            krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key
+        }
+
     def get_empty_pac(self):
         return self.AuthorizationData_create(AD_WIN2K_PAC, bytes(1))
 

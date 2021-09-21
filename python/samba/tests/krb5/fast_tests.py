@@ -25,10 +25,7 @@ import collections
 import ldb
 
 from samba.dcerpc import security
-from samba.tests.krb5.raw_testcase import (
-    KerberosTicketCreds,
-    Krb5EncryptionKey
-)
+from samba.tests.krb5.raw_testcase import Krb5EncryptionKey
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.tests.krb5.rfc4120_constants import (
     AD_FX_FAST_ARMOR,
@@ -45,7 +42,6 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS,
     KRB_AS_REP,
     KRB_TGS_REP,
-    KU_TICKET,
     NT_PRINCIPAL,
     NT_SRV_INST,
     PADATA_FX_COOKIE,
@@ -1428,44 +1424,19 @@ class FAST_Tests(KDCBaseTest):
     def gen_tgt_fast_armor_auth_data(self):
         user_tgt = self.get_user_tgt()
 
-        ticket_decryption_key = user_tgt.decryption_key
-
-        tgt_encpart = self.getElementValue(user_tgt.ticket, 'enc-part')
-        self.assertElementEqual(tgt_encpart, 'etype',
-                                ticket_decryption_key.etype)
-        self.assertElementKVNO(tgt_encpart, 'kvno',
-                               ticket_decryption_key.kvno)
-        tgt_cipher = self.getElementValue(tgt_encpart, 'cipher')
-        tgt_decpart = ticket_decryption_key.decrypt(KU_TICKET, tgt_cipher)
-        tgt_private = self.der_decode(tgt_decpart,
-                                      asn1Spec=krb5_asn1.EncTicketPart())
-
         auth_data = self.generate_fast_armor_auth_data()
-        tgt_private['authorization-data'].append(auth_data)
 
-        # Re-encrypt the user TGT.
-        tgt_private_new = self.der_encode(
-            tgt_private,
-            asn1Spec=krb5_asn1.EncTicketPart())
-        tgt_encpart = self.EncryptedData_create(ticket_decryption_key,
-                                                KU_TICKET,
-                                                tgt_private_new)
-        user_ticket = user_tgt.ticket.copy()
-        user_ticket['enc-part'] = tgt_encpart
+        def modify_fn(enc_part):
+            enc_part['authorization-data'].append(auth_data)
 
-        user_tgt = KerberosTicketCreds(
-            user_ticket,
-            session_key=user_tgt.session_key,
-            crealm=user_tgt.crealm,
-            cname=user_tgt.cname,
-            srealm=user_tgt.srealm,
-            sname=user_tgt.sname,
-            decryption_key=user_tgt.decryption_key,
-            ticket_private=tgt_private,
-            encpart_private=user_tgt.encpart_private)
+            return enc_part
+
+        checksum_keys = self.get_krbtgt_checksum_key()
 
         # Use our modifed TGT to replace the one in the request.
-        return user_tgt
+        return self.modified_ticket(user_tgt,
+                                    modify_fn=modify_fn,
+                                    checksum_keys=checksum_keys)
 
     def create_fast_cookie(self, cookie):
         self.assertIsNotNone(cookie)
