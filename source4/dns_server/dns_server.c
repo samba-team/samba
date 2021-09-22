@@ -700,7 +700,7 @@ static NTSTATUS dns_startup_interfaces(struct dns_server *dns,
 							    iface_list_n_ip(ifaces, i));
 
 			status = dns_add_socket(dns, model_ops, "dns", address,
-						DNS_SERVICE_PORT);
+						lpcfg_dns_port(dns->task->lp_ctx));
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	} else {
@@ -713,7 +713,7 @@ static NTSTATUS dns_startup_interfaces(struct dns_server *dns,
 		}
 		for (i = 0; wcard[i] != NULL; i++) {
 			status = dns_add_socket(dns, model_ops, "dns", wcard[i],
-						DNS_SERVICE_PORT);
+						lpcfg_dns_port(dns->task->lp_ctx));
 			if (NT_STATUS_IS_OK(status)) {
 				num_binds++;
 			}

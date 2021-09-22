@@ -48,6 +48,20 @@ available for Samba AD compiled with MIT Kerberos 1.20.
 
 [1] https://docs.microsoft.com/en-us/windows-server/security/kerberos/kerberos-constrained-delegation-overview
 
+Customizable DNS listening port
+-------------------------------
+
+It is now possible to set a custom listening port for the builtin DNS service,
+making easy to host another DNS on the same system that would bind to the
+default port and forward the domain-specific queries to Samba using the custom
+port. This is the opposite configuration of setting a forwarder in Samba.
+
+It makes possible to use another DNS server as a front and forward to Samba.
+
+Dynamic DNS updates may not be proxied by the front DNS server when forwarding
+to Samba. Dynamic DNS update proxying depends on the features of the other DNS
+server used as a front.
+
 
 REMOVED FEATURES
 ================
@@ -58,6 +72,7 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  dns port                                New default     53
 
 
 KNOWN ISSUES

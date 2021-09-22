@@ -1,0 +1,21 @@
+<samba:parameter name="dns port"
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>Specifies which ports the server should listen on for
+    DNS traffic.</para>
+
+    <para>It makes possible to use another DNS server as a front
+    and forward to Samba.</para>
+
+    <warning>
+        <para>Dynamic DNS updates may not be proxied by the front
+        DNS server when forwarding to Samba. Dynamic DNS update
+        proxying depends on the features of the other DNS server
+        used as a front.</para>
+    </warning>
+</description>
+
+<value type="default">53</value>
+</samba:parameter>

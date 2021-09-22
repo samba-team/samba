@@ -71,6 +71,7 @@
 #include "dbwrap/dbwrap_rbt.h"
 #include "../lib/util/bitmap.h"
 #include "librpc/gen_ndr/nbt.h"
+#include "librpc/gen_ndr/dns.h"
 #include "source4/lib/tls/tls.h"
 #include "libcli/auth/ntlm_check.h"
 #include "lib/crypto/gnutls_helpers.h"
@@ -786,6 +787,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.init_logon_delay = 100; /* 100 ms default delay */
 
 	Globals.wins_dns_proxy = true;
+	Globals.dns_port = DNS_SERVICE_PORT;
 
 	Globals.allow_trusted_domains = true;
 	lpcfg_string_set(Globals.ctx, &Globals.idmap_backend, "tdb");

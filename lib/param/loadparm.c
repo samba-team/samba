@@ -69,6 +69,7 @@
 #include "libcli/smb/smb_constants.h"
 #include "tdb.h"
 #include "librpc/gen_ndr/nbt.h"
+#include "librpc/gen_ndr/dns.h"
 #include "libds/common/roles.h"
 #include "lib/util/samba_util.h"
 #include "libcli/auth/ntlm_check.h"
@@ -2694,6 +2695,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "cldap port", "389");
 	lpcfg_do_global_parameter(lp_ctx, "krb5 port", "88");
 	lpcfg_do_global_parameter(lp_ctx, "kpasswd port", "464");
+	lpcfg_do_global_parameter_var(lp_ctx, "dns port", "%d", DNS_SERVICE_PORT);
 
 	lpcfg_do_global_parameter(lp_ctx, "kdc enable fast", "True");
 
