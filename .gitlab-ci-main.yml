@@ -454,7 +454,7 @@ pages:
     - ls -la *.info
     - lcov $(ls *.info | xargs -I{} echo -n "-a {} ") -o all.info
     - ls -la *.info
-    - genhtml all.info --output-directory public --prefix=$(pwd) --title "coverage report for $CI_COMMIT_REF_NAME $CI_COMMIT_SHORT_SHA"
+    - genhtml all.info --ignore-errors source --output-directory public --prefix=$(pwd) --title "coverage report for $CI_COMMIT_REF_NAME $CI_COMMIT_SHORT_SHA"
   artifacts:
     expire_in: 30 days
     paths:
