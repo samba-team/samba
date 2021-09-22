@@ -4255,6 +4255,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	uint32_t access_mask = SEC_DIR_ADD_SUBDIR;
 	int ret;
 	bool ok;
+	struct smb_filename *oldwd_fname = NULL;
+	struct smb_filename *smb_fname_rel = NULL;
 
 	SMB_ASSERT(*dirfsp == conn->cwd_fsp);
 
@@ -4267,7 +4269,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	ok = parent_smb_fname(talloc_tos(),
 			      smb_dname,
 			      &parent_dir_fname,
-			      NULL);
+			      &smb_fname_rel);
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -4295,13 +4297,39 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return status;
 	}
 
+	oldwd_fname = vfs_GetWd(talloc_tos(), conn);
+	if (oldwd_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Pin parent directory in place. */
+	if (vfs_ChDir(conn, parent_dir_fname) == -1) {
+		status = map_nt_error_from_unix(errno);
+		TALLOC_FREE(oldwd_fname);
+		return status;
+	}
+
+	/* Ensure the relative path is below the share. */
+	status = check_reduced_name(conn, parent_dir_fname, smb_fname_rel);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto need_chdir_err;
+	}
+
 	ret = SMB_VFS_MKDIRAT(conn,
 			      *dirfsp,
-			      smb_dname,
+			      smb_fname_rel,
 			      mode);
 	if (ret != 0) {
-		return map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
+		goto need_chdir_err;
 	}
+
+	/* Return to share $cwd. */
+	ret = vfs_ChDir(conn, oldwd_fname);
+	if (ret == -1) {
+		smb_panic("unable to get back to old directory\n");
+	}
+	TALLOC_FREE(oldwd_fname);
 
 	/* Ensure we're checking for a symlink here.... */
 	/* We don't want to get caught by a symlink racer. */
@@ -4378,6 +4406,15 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		     smb_dname->base_name);
 
 	return NT_STATUS_OK;
+
+  need_chdir_err:
+
+	ret = vfs_ChDir(conn, oldwd_fname);
+	if (ret == -1) {
+		smb_panic("unable to get back to old directory\n");
+	}
+	TALLOC_FREE(oldwd_fname);
+	return status;
 }
 
 /****************************************************************************
