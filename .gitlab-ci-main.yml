@@ -169,7 +169,7 @@ others:
 
 .shared_template_build_only:
   extends: .shared_template
-  timeout: 45m
+  timeout: 1h
   artifacts:
     expire_in: 1 week
     paths:
