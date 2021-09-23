@@ -225,6 +225,27 @@ static void copy_no_nl(char *out,
 	memcpy(out, in, len);
 	out[len] = '\0';
 }
+
+#if defined(HAVE_LIBSYSTEMD_JOURNAL) || defined(HAVE_LIBSYSTEMD) || \
+	defined(HAVE_LTTNG_TRACEF) || defined(HAVE_GPFS)
+static void ensure_copy_no_nl(char *out,
+			      size_t out_size,
+			      const char *in,
+			      size_t in_len)
+{
+	/*
+	 * Assume out is a static buffer that is reused as a cache.
+	 * If it isn't empty then this has already been done with the
+	 * same input.
+	 */
+	if (out[0] != '\0') {
+		return;
+	}
+
+	copy_no_nl(out, out_size, in, in_len);
+}
+#endif
+
 /* -------------------------------------------------------------------------- **
  * Debug backends. When logging to DEBUG_FILE, send the log entries to
  * all active backends.
@@ -314,6 +335,10 @@ static void debug_systemd_log(int msg_level,
 			      const char *msg_no_nl)
 {
 	if (state.hs_len > 0) {
+		ensure_copy_no_nl(state.header_str_no_nl,
+				  sizeof(state.header_str_no_nl),
+				  state.header_str,
+				  state.hs_len);
 		sd_journal_send("MESSAGE=%s",
 				state.header_str_no_nl,
 				"PRIORITY=%d",
@@ -337,6 +362,10 @@ static void debug_lttng_log(int msg_level,
 			    const char *msg_no_nl)
 {
 	if (state.hs_len > 0) {
+		ensure_copy_no_nl(state.header_str_no_nl,
+				  sizeof(state.header_str_no_nl),
+				  state.header_str,
+				  state.hs_len);
 		tracef(state.header_str_no_nl);
 	}
 	tracef(msg_no_nl);
@@ -374,6 +403,10 @@ static void debug_gpfs_log(int msg_level,
 			   const char *msg_no_nl)
 {
 	if (state.hs_len > 0) {
+		ensure_copy_no_nl(state.header_str_no_nl,
+				  sizeof(state.header_str_no_nl),
+				  state.header_str,
+				  state.hs_len);
 		gpfswrap_add_trace(msg_level, state.header_str_no_nl);
 	}
 	gpfswrap_add_trace(msg_level, msg_no_nl);
@@ -1738,10 +1771,7 @@ full:
 		state.hs_len = sizeof(state.header_str) - 1;
 	}
 
-	copy_no_nl(state.header_str_no_nl,
-		   sizeof(state.header_str_no_nl),
-		   state.header_str,
-		   state.hs_len);
+	state.header_str_no_nl[0] = '\0';
 
 	errno = old_errno;
 	return( true );
