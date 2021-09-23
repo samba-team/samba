@@ -111,50 +111,6 @@ int debug_level_from_string(const char *log_string)
  * file logging backend
  */
 
-struct file_log_state {
-	const char *app_name;
-	int fd;
-	char buffer[1024];
-};
-
-static void file_log(void *private_data, int level, const char *msg)
-{
-	struct file_log_state *state = talloc_get_type_abort(
-		private_data, struct file_log_state);
-	struct timeval tv;
-	struct timeval_buf tvbuf;
-	int ret;
-
-	if (state->fd == STDERR_FILENO) {
-		ret = snprintf(state->buffer, sizeof(state->buffer),
-			       "%s[%u]: %s\n",
-			       state->app_name, (unsigned)getpid(), msg);
-	} else {
-		GetTimeOfDay(&tv);
-		timeval_str_buf(&tv, false, true, &tvbuf);
-
-		ret = snprintf(state->buffer, sizeof(state->buffer),
-			       "%s %s[%u]: %s\n", tvbuf.buf,
-			       state->app_name, (unsigned)getpid(), msg);
-	}
-	if (ret < 0) {
-		return;
-	}
-
-	state->buffer[sizeof(state->buffer)-1] = '\0';
-
-	sys_write_v(state->fd, state->buffer, strlen(state->buffer));
-}
-
-static int file_log_state_destructor(struct file_log_state *state)
-{
-	if (state->fd != -1 && state->fd != STDERR_FILENO) {
-		close(state->fd);
-		state->fd = -1;
-	}
-	return 0;
-}
-
 static bool file_log_validate(const char *option)
 {
 	char *t, *dir;
@@ -185,46 +141,49 @@ static bool file_log_validate(const char *option)
 	return true;
 }
 
-static int file_log_setup(TALLOC_CTX *mem_ctx, const char *option,
+static int file_log_setup(TALLOC_CTX *mem_ctx,
+			  const char *option,
 			  const char *app_name)
 {
-	struct file_log_state *state;
-
-	state = talloc_zero(mem_ctx, struct file_log_state);
-	if (state == NULL) {
-		return ENOMEM;
-	}
-
-	state->app_name = app_name;
+	struct debug_settings settings = {
+		.debug_syslog_format = true,
+		.debug_hires_timestamp = true,
+	};
+	const char *t = NULL;
 
 	if (option == NULL || strcmp(option, "-") == 0) {
-		int ret;
+		/*
+		 * Logging to stderr is the default and has already
+		 * been done in logging init
+		 */
+		return 0;
+	}
 
-		state->fd = STDERR_FILENO;
-		ret = dup2(STDERR_FILENO, STDOUT_FILENO);
-		if (ret == -1) {
-			int save_errno = errno;
-			talloc_free(state);
-			return save_errno;
-		}
+	/*
+	 * Support logging of fake hostname in local daemons.  This
+	 * hostname is basename(getenv(CTDB_BASE)).
+	 */
+	t = getenv("CTDB_TEST_MODE");
+	if (t != NULL) {
+		t = getenv("CTDB_BASE");
+		if (t != NULL) {
+			const char *p = strrchr(t, '/');
+			if (p != NULL) {
+				p++;
+				if (p[0] == '\0') {
+					p = "unknown";
+				}
+			} else {
+				p = t;
+			}
 
-	} else {
-		state->fd = open(option, O_WRONLY|O_APPEND|O_CREAT, 0644);
-		if (state->fd == -1) {
-			int save_errno = errno;
-			talloc_free(state);
-			return save_errno;
-		}
-
-		if (! set_close_on_exec(state->fd)) {
-			int save_errno = errno;
-			talloc_free(state);
-			return save_errno;
+			debug_set_hostname(p);
 		}
 	}
 
-	talloc_set_destructor(state, file_log_state_destructor);
-	debug_set_callback(state, file_log);
+	debug_set_settings(&settings, "file", 0, false);
+	debug_set_logfile(option);
+	setup_logging(app_name, DEBUG_FILE);
 
 	return 0;
 }

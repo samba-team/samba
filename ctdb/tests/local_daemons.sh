@@ -427,14 +427,7 @@ local_daemons_print_log ()
 
 	# shellcheck disable=SC2016
 	# $CTDB_BASE must only be expanded under onnode, not in top-level shell
-	onnode -q "$_nodes" 'echo ${CTDB_BASE}/log.ctdb' |
-	while IFS='' read -r _l ; do
-		_dir=$(dirname "$_l")
-		_node=$(basename "$_dir")
-		# Add fake hostname after date and time, which are the
-		# first 2 words on each line
-		sed -e "s|^\\([^ ][^ ]* [^ ][^ ]*\\)|\\1 ${_node}|" "$_l"
-	done |
+	onnode -q "$_nodes" 'cat ${CTDB_BASE}/log.ctdb' |
 	sort
 
 }

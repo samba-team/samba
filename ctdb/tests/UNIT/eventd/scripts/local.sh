@@ -118,6 +118,5 @@ result_filter ()
 	_pid="[0-9][0-9]*"
 	sed -e "s#${_duration}#DURATION#" \
 	    -e "s#${_datetime}#DATETIME#" \
-	    -e "s#,${_pid}#,PID#" \
-	    -e "s#\[${_pid}\]#[PID]#"
+	    -e "s#,${_pid}#,PID#"
 }
