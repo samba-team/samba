@@ -949,6 +949,33 @@ _kdc_is_anonymous(krb5_context context, krb5_principal principal)
     return 1;
 }
 
+static krb5_error_code
+get_local_tgs(krb5_context context,
+	      krb5_kdc_configuration *config,
+	      krb5_const_realm realm,
+	      hdb_entry_ex **krbtgt)
+{
+    krb5_error_code ret;
+    krb5_principal tgs_name;
+
+    *krbtgt = NULL;
+
+    ret = krb5_make_principal(context,
+			      &tgs_name,
+			      realm,
+			      KRB5_TGS_NAME,
+			      realm,
+			      NULL);
+    if (ret)
+	return ret;
+
+    ret = _kdc_db_fetch(context, config, tgs_name,
+			HDB_F_GET_KRBTGT, NULL, NULL, krbtgt);
+    krb5_free_principal(context, tgs_name);
+
+    return ret;
+}
+
 /*
  *
  */
@@ -985,6 +1012,8 @@ _kdc_as_rep(krb5_context context,
 #endif
     const EncryptionKey *pk_reply_key = NULL;
     krb5_boolean is_tgs;
+    hdb_entry_ex *krbtgt = NULL;
+    Key *krbtgt_key = NULL;
 
     memset(&rep, 0, sizeof(rep));
     memset(&session_key, 0, sizeof(session_key));
@@ -1467,6 +1496,22 @@ _kdc_as_rep(krb5_context context,
     if(ret)
 	goto out;
 
+    /* If server is not krbtgt, fetch local krbtgt key for signing authdata */
+    if (is_tgs) {
+	krbtgt_key = skey;
+    } else {
+	ret = get_local_tgs(context, config, server_princ->realm,
+			    &krbtgt);
+	if (ret)
+	    goto out;
+
+	ret = _kdc_get_preferred_key(context, config, krbtgt,
+				      server_princ->realm,
+				      NULL, &krbtgt_key);
+	if (ret)
+	    goto out;
+    }
+
     if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey
        || (f.request_anonymous && !config->allow_anonymous)) {
 	ret = KRB5KDC_ERR_BADOPTION;
@@ -1739,7 +1784,7 @@ _kdc_as_rep(krb5_context context,
 	    ret = _krb5_pac_sign(context, p, et.authtime,
 				 client_pac,
 				 &skey->key, /* Server key */
-				 &skey->key, /* FIXME: should be krbtgt key */
+				 &krbtgt_key->key, /* TGS key */
 				 rodc_id,
 				 &data);
 	    krb5_free_principal(context, client_pac);
@@ -1808,6 +1853,8 @@ out:
 	_kdc_free_ent(context, client);
     if(server)
 	_kdc_free_ent(context, server);
+    if (krbtgt)
+	_kdc_free_ent(context, krbtgt);
     return ret;
 }
 
