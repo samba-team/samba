@@ -1716,6 +1716,7 @@ _kdc_as_rep(krb5_context context,
 	krb5_pac p = NULL;
 	krb5_data data;
 	uint16_t rodc_id;
+	krb5_principal client_pac;
 
 	ret = _kdc_pac_generate(context, client, pk_reply_key, &p);
 	if (ret) {
@@ -1726,12 +1727,21 @@ _kdc_as_rep(krb5_context context,
 	if (p != NULL) {
 	    rodc_id = server->entry.kvno >> 16;
 
+	    /* libkrb5 expects ticket and PAC client names to match */
+	    ret = _krb5_principalname2krb5_principal(context, &client_pac,
+						     et.cname, et.crealm);
+	    if (ret) {
+	       krb5_pac_free(context, p);
+	       goto out;
+	    }
+
 	    ret = _krb5_pac_sign(context, p, et.authtime,
-				 client->entry.principal,
+				 client_pac,
 				 &skey->key, /* Server key */
 				 &skey->key, /* FIXME: should be krbtgt key */
 				 rodc_id,
 				 &data);
+	    krb5_free_principal(context, client_pac);
 	    krb5_pac_free(context, p);
 	    if (ret) {
 		kdc_log(context, config, 0, "PAC signing failed for -- %s",
