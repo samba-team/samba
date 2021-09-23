@@ -368,9 +368,8 @@ static void debug_ringbuf_reload(bool enabled, bool previously_enabled,
 	}
 }
 
-static void debug_ringbuf_log(int msg_level,
-			      const char *msg,
-			      const char *msg_no_nl)
+static void _debug_ringbuf_log(int msg_level,
+			       const char *msg)
 {
 	size_t msglen = strlen(msg);
 	size_t allowed_size;
@@ -396,6 +395,13 @@ static void debug_ringbuf_log(int msg_level,
 
 	memcpy(debug_ringbuf + debug_ringbuf_ofs, msg, msglen);
 	debug_ringbuf_ofs += msglen;
+}
+
+static void debug_ringbuf_log(int msg_level,
+			      const char *msg,
+			      const char *msg_no_nl)
+{
+	_debug_ringbuf_log(msg_level, msg);
 }
 
 static struct debug_backend {
