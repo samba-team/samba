@@ -185,3 +185,8 @@ class SegfaultTests(samba.tests.TestCase):
 
         del msg
         diff.dn
+
+    @segfault_detector
+    def test_ldb_msg_del_dn(self):
+        msg = ldb.Message()
+        del msg.dn
