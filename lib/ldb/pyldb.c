@@ -182,6 +182,10 @@ static PyObject *py_ldb_control_get_critical(PyLdbControlObject *self,
 
 static int py_ldb_control_set_critical(PyLdbControlObject *self, PyObject *value, void *closure)
 {
+	if (value == NULL) {
+		PyErr_SetString(PyExc_AttributeError, "cannot delete critical flag");
+		return -1;
+	}
 	if (PyObject_IsTrue(value)) {
 		self->data->critical = true;
 	} else {
