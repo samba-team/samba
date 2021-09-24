@@ -3741,6 +3741,10 @@ static PyObject *py_ldb_msg_get_dn(PyLdbMessageObject *self, void *closure)
 static int py_ldb_msg_set_dn(PyLdbMessageObject *self, PyObject *value, void *closure)
 {
 	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	if (value == NULL) {
+		PyErr_SetString(PyExc_AttributeError, "cannot delete dn");
+		return -1;
+	}
 	if (!pyldb_Dn_Check(value)) {
 		PyErr_SetString(PyExc_TypeError, "expected dn");
 		return -1;
