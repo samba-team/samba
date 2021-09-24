@@ -190,3 +190,10 @@ class SegfaultTests(samba.tests.TestCase):
     def test_ldb_msg_del_dn(self):
         msg = ldb.Message()
         del msg.dn
+
+    @segfault_detector
+    def test_ldb_control_del_critical(self):
+        samdb = self.get_samdb()
+
+        c = ldb.Control(samdb, 'relax:1')
+        del c.critical

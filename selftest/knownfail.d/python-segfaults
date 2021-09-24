@@ -1,3 +1,4 @@
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_net_replicate_init__3
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_dnsp_string_list
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_dns_record
+samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_control_del_critical
