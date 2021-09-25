@@ -139,7 +139,7 @@ objectClass: organizationalUnit
         # now check properties of the user
         name_cur = ou_cur["ou"][0]
         self.assertEqual(ou_cur["isDeleted"][0], b"TRUE")
-        self.assertTrue(not(b"objectCategory" in ou_cur))
+        self.assertTrue(not("objectCategory" in ou_cur))
         self.assertTrue(dodn in str(ou_cur["dn"]),
                         "OU %s is deleted but it is not located under %s!" % (name_cur, dodn))
 
