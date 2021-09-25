@@ -3433,33 +3433,25 @@ static PyObject *py_ldb_msg_keys(PyLdbMessageObject *self,
 	return obj;
 }
 
-static PyObject *py_ldb_msg_getitem_helper(PyLdbMessageObject *self, PyObject *py_name)
+static PyObject *py_ldb_msg_getitem(PyLdbMessageObject *self, PyObject *py_name)
 {
-	struct ldb_message_element *el;
-	const char *name;
+	struct ldb_message_element *el = NULL;
+	const char *name = NULL;
 	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	name = PyUnicode_AsUTF8(py_name);
 	if (name == NULL) {
-		PyErr_SetNone(PyExc_TypeError);
 		return NULL;
 	}
-	if (!ldb_attr_cmp(name, "dn"))
+	if (!ldb_attr_cmp(name, "dn")) {
 		return pyldb_Dn_FromDn(msg->dn);
+	}
 	el = ldb_msg_find_element(msg, name);
 	if (el == NULL) {
-		return NULL;
-	}
-	return (PyObject *)PyLdbMessageElement_FromMessageElement(el, msg->elements);
-}
-
-static PyObject *py_ldb_msg_getitem(PyLdbMessageObject *self, PyObject *py_name)
-{
-	PyObject *ret = py_ldb_msg_getitem_helper(self, py_name);
-	if (ret == NULL) {
 		PyErr_SetString(PyExc_KeyError, "No such element");
 		return NULL;
 	}
-	return ret;
+
+	return PyLdbMessageElement_FromMessageElement(el, msg->elements);
 }
 
 static PyObject *py_ldb_msg_get(PyLdbMessageObject *self, PyObject *args, PyObject *kwargs)
