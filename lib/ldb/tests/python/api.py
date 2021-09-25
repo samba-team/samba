@@ -3203,6 +3203,29 @@ class LdbMsgTests(TestCase):
     def test_get_unknown_text(self):
         self.assertEqual(None, self.msg.text.get("lalalala"))
 
+    def test_contains(self):
+        self.msg['foo'] = ['bar']
+        self.assertIn('foo', self.msg)
+
+        self.msg['Foo'] = ['bar']
+        self.assertIn('Foo', self.msg)
+
+    def test_contains_case(self):
+        self.msg['foo'] = ['bar']
+        self.assertIn('Foo', self.msg)
+
+        self.msg['Foo'] = ['bar']
+        self.assertIn('foo', self.msg)
+
+    def test_contains_dn(self):
+        self.assertIn('dn', self.msg)
+
+    def test_contains_dn_case(self):
+        self.assertIn('DN', self.msg)
+
+    def test_contains_invalid(self):
+        self.assertRaises(TypeError, lambda: None in self.msg)
+
     def test_msg_diff(self):
         l = ldb.Ldb()
         msgs = l.parse_ldif("dn: foo=bar\nfoo: bar\nbaz: do\n\ndn: foo=bar\nfoo: bar\nbaz: dont\n")
