@@ -95,20 +95,6 @@ bool security_token_has_sid(const struct security_token *token, const struct dom
 	return false;
 }
 
-bool security_token_has_sid_string(const struct security_token *token, const char *sid_string)
-{
-	bool ret;
-	struct dom_sid sid;
-
-	ret = dom_sid_parse(sid_string, &sid);
-	if (!ret) {
-		return false;
-	}
-
-	ret = security_token_has_sid(token, &sid);
-	return ret;
-}
-
 bool security_token_has_builtin_guests(const struct security_token *token)
 {
 	return security_token_has_sid(token, &global_sid_Builtin_Guests);
