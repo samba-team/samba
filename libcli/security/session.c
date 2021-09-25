@@ -26,23 +26,25 @@
 enum security_user_level security_session_user_level(struct auth_session_info *session_info,
 						     const struct dom_sid *domain_sid)
 {
+	struct security_token *token = NULL;
 	bool authenticated = false;
 	bool guest = false;
 
 	if (!session_info) {
 		return SECURITY_ANONYMOUS;
 	}
+	token = session_info->security_token;
 
-	if (security_token_is_system(session_info->security_token)) {
+	if (security_token_is_system(token)) {
 		return SECURITY_SYSTEM;
 	}
 
-	if (security_token_is_anonymous(session_info->security_token)) {
+	if (security_token_is_anonymous(token)) {
 		return SECURITY_ANONYMOUS;
 	}
 
-	authenticated = security_token_has_nt_authenticated_users(session_info->security_token);
-	guest = security_token_has_builtin_guests(session_info->security_token);
+	authenticated = security_token_has_nt_authenticated_users(token);
+	guest = security_token_has_builtin_guests(token);
 	if (!authenticated) {
 		if (guest) {
 			return SECURITY_GUEST;
@@ -50,21 +52,21 @@ enum security_user_level security_session_user_level(struct auth_session_info *s
 		return SECURITY_ANONYMOUS;
 	}
 
-	if (security_token_has_builtin_administrators(session_info->security_token)) {
+	if (security_token_has_builtin_administrators(token)) {
 		return SECURITY_ADMINISTRATOR;
 	}
 
 	if (domain_sid) {
 		struct dom_sid *rodc_dcs;
 		rodc_dcs = dom_sid_add_rid(session_info, domain_sid, DOMAIN_RID_READONLY_DCS);
-		if (security_token_has_sid(session_info->security_token, rodc_dcs)) {
+		if (security_token_has_sid(token, rodc_dcs)) {
 			talloc_free(rodc_dcs);
 			return SECURITY_RO_DOMAIN_CONTROLLER;
 		}
 		talloc_free(rodc_dcs);
 	}
 
-	if (security_token_has_enterprise_dcs(session_info->security_token)) {
+	if (security_token_has_enterprise_dcs(token)) {
 		return SECURITY_DOMAIN_CONTROLLER;
 	}
 
