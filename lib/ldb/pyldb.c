@@ -3433,6 +3433,22 @@ static PyObject *py_ldb_msg_keys(PyLdbMessageObject *self,
 	return obj;
 }
 
+static int py_ldb_msg_contains(PyLdbMessageObject *self, PyObject *py_name)
+{
+	struct ldb_message_element *el = NULL;
+	const char *name = NULL;
+	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	name = PyUnicode_AsUTF8(py_name);
+	if (name == NULL) {
+		return -1;
+	}
+	if (!ldb_attr_cmp(name, "dn")) {
+		return 1;
+	}
+	el = ldb_msg_find_element(msg, name);
+	return el != NULL ? 1 : 0;
+}
+
 static PyObject *py_ldb_msg_getitem(PyLdbMessageObject *self, PyObject *py_name)
 {
 	struct ldb_message_element *el = NULL;
@@ -3661,6 +3677,10 @@ static Py_ssize_t py_ldb_msg_length(PyLdbMessageObject *self)
 	return pyldb_Message_AsMessage(self)->num_elements;
 }
 
+static PySequenceMethods py_ldb_msg_sequence = {
+	.sq_contains = (objobjproc)py_ldb_msg_contains,
+};
+
 static PyMappingMethods py_ldb_msg_mapping = {
 	.mp_length = (lenfunc)py_ldb_msg_length,
 	.mp_subscript = (binaryfunc)py_ldb_msg_getitem,
@@ -3838,6 +3858,7 @@ static PyTypeObject PyLdbMessage = {
 	.tp_name = "ldb.Message",
 	.tp_methods = py_ldb_msg_methods,
 	.tp_getset = py_ldb_msg_getset,
+	.tp_as_sequence = &py_ldb_msg_sequence,
 	.tp_as_mapping = &py_ldb_msg_mapping,
 	.tp_basicsize = sizeof(PyLdbMessageObject),
 	.tp_dealloc = (destructor)py_ldb_msg_dealloc,
