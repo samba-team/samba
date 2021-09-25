@@ -5104,9 +5104,8 @@ static NTSTATUS inherit_new_acl(struct smb_filename *parent_dir_fname,
 	}
 
 	if (try_builtin_administrators) {
-		struct unixid ids;
+		struct unixid ids = { .id = 0 };
 
-		ZERO_STRUCT(ids);
 		ok = sids_to_unixids(&global_sid_Builtin_Administrators, 1, &ids);
 		if (ok) {
 			switch (ids.type) {
@@ -5127,9 +5126,8 @@ static NTSTATUS inherit_new_acl(struct smb_filename *parent_dir_fname,
 	}
 
 	if (try_system) {
-		struct unixid ids;
+		struct unixid ids = { .id = 0 };
 
-		ZERO_STRUCT(ids);
 		ok = sids_to_unixids(&global_sid_System, 1, &ids);
 		if (ok) {
 			switch (ids.type) {
