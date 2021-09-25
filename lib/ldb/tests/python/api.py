@@ -3082,6 +3082,12 @@ class LdbMsgTests(TestCase):
     def test_notpresent(self):
         self.assertRaises(KeyError, lambda: self.msg["foo"])
 
+    def test_invalid(self):
+        try:
+            self.assertRaises(TypeError, lambda: self.msg[42])
+        except KeyError:
+            self.fail()
+
     def test_del(self):
         del self.msg["foo"]
 
