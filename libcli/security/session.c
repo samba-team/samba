@@ -57,13 +57,12 @@ enum security_user_level security_session_user_level(struct auth_session_info *s
 	}
 
 	if (domain_sid) {
-		struct dom_sid *rodc_dcs;
-		rodc_dcs = dom_sid_add_rid(session_info, domain_sid, DOMAIN_RID_READONLY_DCS);
-		if (security_token_has_sid(token, rodc_dcs)) {
-			talloc_free(rodc_dcs);
+		struct dom_sid rodc_dcs = { .num_auths = 0 };
+		sid_compose(&rodc_dcs, domain_sid, DOMAIN_RID_READONLY_DCS);
+
+		if (security_token_has_sid(token, &rodc_dcs)) {
 			return SECURITY_RO_DOMAIN_CONTROLLER;
 		}
-		talloc_free(rodc_dcs);
 	}
 
 	if (security_token_has_enterprise_dcs(token)) {
