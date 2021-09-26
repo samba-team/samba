@@ -86,8 +86,21 @@ interface krb5pac
 	} PAC_CONSTRAINED_DELEGATION;
 
 	typedef [bitmap32bit] bitmap {
-		PAC_UPN_DNS_FLAG_CONSTRUCTED = 0x00000001
+		PAC_UPN_DNS_FLAG_CONSTRUCTED = 0x00000001,
+		PAC_UPN_DNS_FLAG_HAS_SAM_NAME_AND_SID = 0x00000002
 	} PAC_UPN_DNS_FLAGS;
+
+	typedef struct {
+		[value(2*strlen_m(samaccountname))] uint16 samaccountname_size;
+		[relative_short,subcontext(0),subcontext_size(samaccountname_size),flag(NDR_ALIGN8|STR_NOTERM|NDR_REMAINING)] string *samaccountname;
+		[value(ndr_size_dom_sid(objectsid, ndr->flags))] uint16 objectsid_size;
+		[relative_short,subcontext(0),subcontext_size(objectsid_size)] dom_sid *objectsid;
+	} PAC_UPN_DNS_INFO_SAM_NAME_AND_SID;
+
+	typedef [nodiscriminant] union {
+		[case(PAC_UPN_DNS_FLAG_HAS_SAM_NAME_AND_SID)] PAC_UPN_DNS_INFO_SAM_NAME_AND_SID sam_name_and_sid;
+		[default];
+	} PAC_UPN_DNS_INFO_EX;
 
 	typedef struct {
 		[value(2*strlen_m(upn_name))] uint16 upn_name_size;
@@ -95,6 +108,7 @@ interface krb5pac
 		[value(2*strlen_m(dns_domain_name))] uint16 dns_domain_name_size;
 		[relative_short,subcontext(0),subcontext_size(dns_domain_name_size),flag(NDR_ALIGN8|STR_NOTERM|NDR_REMAINING)] string *dns_domain_name;
 		PAC_UPN_DNS_FLAGS flags;
+		[switch_is(flags & PAC_UPN_DNS_FLAG_HAS_SAM_NAME_AND_SID)] PAC_UPN_DNS_INFO_EX ex;
 	} PAC_UPN_DNS_INFO;
 
 	typedef [public] struct {
@@ -142,7 +156,7 @@ interface krb5pac
 
 	typedef [public,nopush,nopull] struct {
 		PAC_TYPE type;
-		[value(_ndr_size_PAC_INFO(info, type, 0))] uint32 _ndr_size;
+		[value(_ndr_size_PAC_INFO(info, type, LIBNDR_FLAG_ALIGN8))] uint32 _ndr_size;
 		/*
 		 * We need to have two subcontexts to get the padding right,
 		 * the outer subcontext uses NDR_ROUND(_ndr_size, 8), while
