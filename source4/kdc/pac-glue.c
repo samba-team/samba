@@ -101,6 +101,14 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 		pac_upn.upn_dns_info.flags |= PAC_UPN_DNS_FLAG_CONSTRUCTED;
 	}
 
+	pac_upn.upn_dns_info.flags |= PAC_UPN_DNS_FLAG_HAS_SAM_NAME_AND_SID;
+
+	pac_upn.upn_dns_info.ex.sam_name_and_sid.samaccountname
+		= info->info->account_name;
+
+	pac_upn.upn_dns_info.ex.sam_name_and_sid.objectsid
+		= &info->sids[0];
+
 	ndr_err = ndr_push_union_blob(upn_data, mem_ctx, &pac_upn,
 				      PAC_TYPE_UPN_DNS_INFO,
 				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
