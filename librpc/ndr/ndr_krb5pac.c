@@ -41,7 +41,7 @@ enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_PAC_TYPE(ndr, NDR_SCALARS, r->type));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, _ndr_size_PAC_INFO(r->info,r->type,0)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, _ndr_size_PAC_INFO(r->info,r->type,LIBNDR_FLAG_ALIGN8)));
 		{
 			uint32_t _flags_save_PAC_INFO = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN8);
@@ -59,7 +59,7 @@ enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const
 				{
 					struct ndr_push *_ndr_info_pad;
 					struct ndr_push *_ndr_info;
-					size_t _ndr_size = _ndr_size_PAC_INFO(r->info, r->type, 0);
+					size_t _ndr_size = _ndr_size_PAC_INFO(r->info, r->type, LIBNDR_FLAG_ALIGN8);
 					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info_pad, 0, NDR_ROUND(_ndr_size, 8)));
 					NDR_CHECK(ndr_push_subcontext_start(_ndr_info_pad, &_ndr_info, 0, _ndr_size));
 					NDR_CHECK(ndr_push_set_switch_value(_ndr_info, r->info, r->type));
