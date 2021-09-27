@@ -2078,6 +2078,8 @@ static int ldb_kv_handle_request(struct ldb_module *module,
 		}
 	}
 
+	ac->timeout_timeval = tv;
+
 	/* set a spy so that we do not try to use the request context
 	 * if it is freed before ltdb_callback fires */
 	ac->spy = talloc(req, struct ldb_kv_req_spy);

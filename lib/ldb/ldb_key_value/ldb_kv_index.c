@@ -2352,6 +2352,47 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 	for (i = 0; i < num_keys; i++) {
 		int ret;
 		bool matched;
+
+		/*
+		 * Check the time every 64 records, to reduce calls to
+		 * gettimeofday().  This is a compromise, not all
+		 * calls to ldb_match_message() will take the same
+		 * time, most will run quickly but by luck it might be
+		 * possible to have 64 records that are slow, doing a
+		 * recursive search via LDAP_MATCHING_RULE_IN_CHAIN.
+		 *
+		 * Thankfully this is after index processing so only
+		 * on the subset that matches some index (but still
+		 * possibly a big one like objectclass=user)
+		 */
+		if (i % 64 == 0) {
+			struct timeval now = tevent_timeval_current();
+			int timeval_cmp = tevent_timeval_compare(&ac->timeout_timeval,
+								 &now);
+
+			/*
+			 * The search has taken too long.  This is the
+			 * most likely place for our time to expire,
+			 * as we are checking the records after the
+			 * index set intersection.  This is now the
+			 * slow process of checking if the records
+			 * actually match.
+			 *
+			 * The tevent based timeout is not likely to
+			 * be hit, sadly, as we don't run an event
+			 * loop.
+			 *
+			 * While we are indexed and most of the work
+			 * should have been done already, the
+			 * ldb_match_* calls can be quite expensive if
+			 * the caller uses LDAP_MATCHING_RULE_IN_CHAIN
+			 */
+			if (timeval_cmp <= 0) {
+				talloc_free(keys);
+				return LDB_ERR_TIME_LIMIT_EXCEEDED;
+			}
+		}
+
 		msg = ldb_msg_new(ac);
 		if (!msg) {
 			talloc_free(keys);
