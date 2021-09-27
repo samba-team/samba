@@ -314,7 +314,8 @@ static int search_func(_UNUSED_ struct ldb_kv_private *ldb_kv,
 	struct ldb_context *ldb;
 	struct ldb_kv_context *ac;
 	struct ldb_message *msg, *filtered_msg;
-	int ret;
+	struct timeval now;
+	int ret, timeval_cmp;
 	bool matched;
 
 	ac = talloc_get_type(state, struct ldb_kv_context);
@@ -339,6 +340,36 @@ static int search_func(_UNUSED_ struct ldb_kv_private *ldb_kv,
 
 	if (ldb_kv_key_is_normal_record(key) == false) {
 		return 0;
+	}
+
+	/*
+	 * Check the time every 64 records, to reduce calls to
+	 * gettimeofday().  This is a compromise, not all calls to
+	 * ldb_match_message() will take the same time, most will fail
+	 * quickly but by luck it might be possible to have 64 records
+	 * that are slow, doing a recursive search via
+	 * LDAP_MATCHING_RULE_IN_CHAIN.
+	 */
+	if (ac->timeout_counter++ % 64 == 0) {
+		now = tevent_timeval_current();
+		timeval_cmp = tevent_timeval_compare(&ac->timeout_timeval,
+						     &now);
+
+		/*
+		 * The search has taken too long.  This is the most
+		 * likely place for our time to expire, as we are in
+		 * an un-indexed search and we return the data from
+		 * within this loop.  The tevent based timeout is not
+		 * likely to be hit, sadly.
+		 *
+		 * ldb_match_msg_error() can be quite expensive if a
+		 * LDAP_MATCHING_RULE_IN_CHAIN extended match was
+		 * specified.
+		 */
+		if (timeval_cmp <= 0) {
+			ac->error = LDB_ERR_TIME_LIMIT_EXCEEDED;
+			return -1;
+		}
 	}
 
 	msg = ldb_msg_new(ac);

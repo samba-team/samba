@@ -152,6 +152,16 @@ struct ldb_kv_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
 
+	/*
+	 * Required as we might not get to the event loop before the
+	 * timeout, so we need some old-style cooperative multitasking
+	 * here.
+	 */
+	struct timeval timeout_timeval;
+
+	/* Used to throttle calls to gettimeofday() */
+	size_t timeout_counter;
+
 	bool request_terminated;
 	struct ldb_kv_req_spy *spy;
 
