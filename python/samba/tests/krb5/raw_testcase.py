@@ -49,6 +49,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_GENERIC,
     KDC_ERR_PREAUTH_FAILED,
     KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS,
+    KERB_ERR_TYPE_EXTENDED,
     KRB_AP_REQ,
     KRB_AS_REP,
     KRB_AS_REQ,
@@ -85,7 +86,6 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_PAC_REQUEST,
     PADATA_PK_AS_REQ,
     PADATA_PK_AS_REP_19,
-    PADATA_PW_SALT,
     PADATA_SUPPORTED_ETYPES
 )
 import samba.tests.krb5.kcrypto as kcrypto
@@ -2497,34 +2497,51 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertIsNotNone(edata)
         if edata is not None:
             if rep_msg_type == KRB_TGS_REP and not sent_fast:
-                rep_padata = [self.der_decode(edata,
-                                              asn1Spec=krb5_asn1.PA_DATA())]
+                error_data = self.der_decode(
+                    edata,
+                    asn1Spec=krb5_asn1.KERB_ERROR_DATA())
+                self.assertEqual(KERB_ERR_TYPE_EXTENDED,
+                                 error_data['data-type'])
+
+                extended_error = error_data['data-value']
+
+                self.assertEqual(12, len(extended_error))
+
+                status = int.from_bytes(extended_error[:4], 'little')
+                flags = int.from_bytes(extended_error[8:], 'little')
+
+                expected_status = kdc_exchange_dict['expected_status']
+                self.assertEqual(expected_status, status)
+
+                self.assertEqual(3, flags)
             else:
+                self.assertIsNone(kdc_exchange_dict['expected_status'])
+
                 rep_padata = self.der_decode(edata,
                                              asn1Spec=krb5_asn1.METHOD_DATA())
-            self.assertGreater(len(rep_padata), 0)
+                self.assertGreater(len(rep_padata), 0)
 
-            if sent_fast:
-                self.assertEqual(1, len(rep_padata))
-                rep_pa_dict = self.get_pa_dict(rep_padata)
-                self.assertIn(PADATA_FX_FAST, rep_pa_dict)
+                if sent_fast:
+                    self.assertEqual(1, len(rep_padata))
+                    rep_pa_dict = self.get_pa_dict(rep_padata)
+                    self.assertIn(PADATA_FX_FAST, rep_pa_dict)
 
-                armor_key = kdc_exchange_dict['armor_key']
-                self.assertIsNotNone(armor_key)
-                fast_response = self.check_fx_fast_data(
-                    kdc_exchange_dict,
-                    rep_pa_dict[PADATA_FX_FAST],
-                    armor_key,
-                    expect_strengthen_key=False)
+                    armor_key = kdc_exchange_dict['armor_key']
+                    self.assertIsNotNone(armor_key)
+                    fast_response = self.check_fx_fast_data(
+                        kdc_exchange_dict,
+                        rep_pa_dict[PADATA_FX_FAST],
+                        armor_key,
+                        expect_strengthen_key=False)
 
-                rep_padata = fast_response['padata']
+                    rep_padata = fast_response['padata']
 
-            etype_info2 = self.check_rep_padata(kdc_exchange_dict,
-                                                callback_dict,
-                                                rep_padata,
-                                                error_code)
+                etype_info2 = self.check_rep_padata(kdc_exchange_dict,
+                                                    callback_dict,
+                                                    rep_padata,
+                                                    error_code)
 
-            kdc_exchange_dict['preauth_etype_info2'] = etype_info2
+                kdc_exchange_dict['preauth_etype_info2'] = etype_info2
 
         return rep
 
@@ -2576,13 +2593,10 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_patypes += (PADATA_FX_COOKIE,)
 
         if rep_msg_type == KRB_TGS_REP:
-            if not sent_fast and error_code != 0:
-                expected_patypes += (PADATA_PW_SALT,)
-            else:
-                sent_pac_options = self.get_sent_pac_options(kdc_exchange_dict)
-                if ('1' in sent_pac_options
-                        and error_code not in (0, KDC_ERR_GENERIC)):
-                    expected_patypes += (PADATA_PAC_OPTIONS,)
+            sent_pac_options = self.get_sent_pac_options(kdc_exchange_dict)
+            if ('1' in sent_pac_options
+                    and error_code not in (0, KDC_ERR_GENERIC)):
+                expected_patypes += (PADATA_PAC_OPTIONS,)
         elif error_code != KDC_ERR_GENERIC:
             if expect_etype_info:
                 self.assertGreater(len(expect_etype_info2), 0)
@@ -2621,7 +2635,6 @@ class RawKerberosTest(TestCaseInTempDir):
         fast_error = None
         fx_fast = None
         pac_options = None
-        pw_salt = None
         for pa in rep_padata:
             patype = self.getElementValue(pa, 'padata-type')
             pavalue = self.getElementValue(pa, 'padata-value')
@@ -2675,11 +2688,6 @@ class RawKerberosTest(TestCaseInTempDir):
                     pavalue,
                     asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
                 continue
-            if patype == PADATA_PW_SALT:
-                self.assertIsNone(pw_salt)
-                pw_salt = pavalue
-                self.assertIsNotNone(pw_salt)
-                continue
 
         if fast_cookie is not None:
             kdc_exchange_dict['fast_cookie'] = fast_cookie
@@ -2694,19 +2702,6 @@ class RawKerberosTest(TestCaseInTempDir):
 
         if pac_options is not None:
             self.assertElementEqual(pac_options, 'options', sent_pac_options)
-
-        if pw_salt is not None:
-            self.assertEqual(12, len(pw_salt))
-
-            status = int.from_bytes(pw_salt[:4], 'little')
-            flags = int.from_bytes(pw_salt[8:], 'little')
-
-            expected_status = kdc_exchange_dict['expected_status']
-            self.assertEqual(expected_status, status)
-
-            self.assertEqual(3, flags)
-        else:
-            self.assertIsNone(kdc_exchange_dict.get('expected_status'))
 
         if enc_challenge is not None:
             if not sent_enc_challenge:
