@@ -324,6 +324,9 @@ class WrongLengthChecksumKey(Krb5EncryptionKey):
 
         return checksum
 
+    def make_zeroed_checksum(self, ctype=None):
+        return bytes(self._length)
+
     def make_checksum(self, usage, plaintext, ctype=None):
         checksum = super().make_checksum(usage, plaintext, ctype)
         return self._adjust_to_length(checksum, self._length)
