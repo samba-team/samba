@@ -281,15 +281,15 @@ class RodcPacEncryptionKey(Krb5EncryptionKey):
         else:
             self.rodc_id = b''
 
-    def make_zeroed_checksum(self, ctype=None):
+    def make_rodc_zeroed_checksum(self, ctype=None):
         checksum = super().make_zeroed_checksum(ctype)
         return checksum + bytes(len(self.rodc_id))
 
-    def make_checksum(self, usage, plaintext, ctype=None):
+    def make_rodc_checksum(self, usage, plaintext, ctype=None):
         checksum = super().make_checksum(usage, plaintext, ctype)
         return checksum + self.rodc_id
 
-    def verify_checksum(self, usage, plaintext, ctype, cksum):
+    def verify_rodc_checksum(self, usage, plaintext, ctype, cksum):
         if self.rodc_id:
             cksum, cksum_rodc_id = cksum[:-2], cksum[-2:]
 
@@ -303,12 +303,15 @@ class RodcPacEncryptionKey(Krb5EncryptionKey):
                                 cksum)
 
 
-class ZeroedChecksumKey(Krb5EncryptionKey):
+class ZeroedChecksumKey(RodcPacEncryptionKey):
     def make_checksum(self, usage, plaintext, ctype=None):
         return self.make_zeroed_checksum(ctype)
 
+    def make_rodc_checksum(self, usage, plaintext, ctype=None):
+        return self.make_rodc_zeroed_checksum(ctype)
 
-class WrongLengthChecksumKey(Krb5EncryptionKey):
+
+class WrongLengthChecksumKey(RodcPacEncryptionKey):
     def __init__(self, key, kvno, length):
         super().__init__(key, kvno)
 
@@ -329,6 +332,13 @@ class WrongLengthChecksumKey(Krb5EncryptionKey):
 
     def make_checksum(self, usage, plaintext, ctype=None):
         checksum = super().make_checksum(usage, plaintext, ctype)
+        return self._adjust_to_length(checksum, self._length)
+
+    def make_rodc_zeroed_checksum(self, ctype=None):
+        return bytes(self._length)
+
+    def make_rodc_checksum(self, usage, plaintext, ctype=None):
+        checksum = super().make_rodc_checksum(usage, plaintext, ctype)
         return self._adjust_to_length(checksum, self._length)
 
 
@@ -3080,18 +3090,17 @@ class RawKerberosTest(TestCaseInTempDir):
 
         server_checksum, server_ctype = checksums[
             krb5pac.PAC_TYPE_SRV_CHECKSUM]
-        Krb5EncryptionKey.verify_checksum(key,
-                                          KU_NON_KERB_CKSUM_SALT,
-                                          pac_data,
-                                          server_ctype,
-                                          server_checksum)
+        key.verify_checksum(KU_NON_KERB_CKSUM_SALT,
+                            pac_data,
+                            server_ctype,
+                            server_checksum)
 
         kdc_checksum, kdc_ctype = checksums[
             krb5pac.PAC_TYPE_KDC_CHECKSUM]
-        krbtgt_key.verify_checksum(KU_NON_KERB_CKSUM_SALT,
-                                   server_checksum,
-                                   kdc_ctype,
-                                   kdc_checksum)
+        krbtgt_key.verify_rodc_checksum(KU_NON_KERB_CKSUM_SALT,
+                                        server_checksum,
+                                        kdc_ctype,
+                                        kdc_checksum)
 
         if is_tgt:
             self.assertNotIn(krb5pac.PAC_TYPE_TICKET_CHECKSUM, checksums)
@@ -3106,10 +3115,10 @@ class RawKerberosTest(TestCaseInTempDir):
                 enc_part = self.der_encode(enc_part,
                                            asn1Spec=krb5_asn1.EncTicketPart())
 
-                krbtgt_key.verify_checksum(KU_NON_KERB_CKSUM_SALT,
-                                           enc_part,
-                                           ticket_ctype,
-                                           ticket_checksum)
+                krbtgt_key.verify_rodc_checksum(KU_NON_KERB_CKSUM_SALT,
+                                                enc_part,
+                                                ticket_ctype,
+                                                ticket_checksum)
 
     def modified_ticket(self,
                         ticket, *,
@@ -3300,16 +3309,15 @@ class RawKerberosTest(TestCaseInTempDir):
             if buffer_type == krb5pac.PAC_TYPE_TICKET_CHECKSUM:
                 self.assertIsNotNone(enc_part)
 
-                signature = checksum_key.make_checksum(
+                signature = checksum_key.make_rodc_checksum(
                     KU_NON_KERB_CKSUM_SALT,
                     enc_part)
 
             elif buffer_type == krb5pac.PAC_TYPE_SRV_CHECKSUM:
-                signature = Krb5EncryptionKey.make_zeroed_checksum(
-                    checksum_key)
+                signature = checksum_key.make_zeroed_checksum()
 
             else:
-                signature = checksum_key.make_zeroed_checksum()
+                signature = checksum_key.make_rodc_zeroed_checksum()
 
             checksum_buffer.info.signature = signature
             checksum_buffer.info.type = ctype
@@ -3325,8 +3333,7 @@ class RawKerberosTest(TestCaseInTempDir):
             server_checksum_key = checksum_keys[krb5pac.PAC_TYPE_SRV_CHECKSUM]
 
             pac_data = ndr_pack(pac)
-            server_checksum = Krb5EncryptionKey.make_checksum(
-                server_checksum_key,
+            server_checksum = server_checksum_key.make_checksum(
                 KU_NON_KERB_CKSUM_SALT,
                 pac_data)
 
@@ -3339,7 +3346,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
             kdc_checksum_key = checksum_keys[krb5pac.PAC_TYPE_KDC_CHECKSUM]
 
-            kdc_checksum = kdc_checksum_key.make_checksum(
+            kdc_checksum = kdc_checksum_key.make_rodc_checksum(
                 KU_NON_KERB_CKSUM_SALT,
                 server_checksum)
 
