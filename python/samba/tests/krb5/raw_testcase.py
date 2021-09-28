@@ -3200,11 +3200,11 @@ class RawKerberosTest(TestCaseInTempDir):
                 # Get a copy of the authdata with an empty PAC, and the
                 # existing PAC (if present).
                 empty_pac = self.get_empty_pac()
-                empty_pac_auth_data, pac_data = self.replace_pac(auth_data,
-                                                                 empty_pac)
+                empty_pac_auth_data, pac_data = self.replace_pac(
+                    auth_data,
+                    empty_pac,
+                    expect_pac=expect_pac)
 
-                if expect_pac:
-                    self.assertIsNotNone(pac_data)
                 if pac_data is not None:
                     pac = ndr_unpack(krb5pac.PAC_DATA, pac_data)
 
@@ -3234,7 +3234,8 @@ class RawKerberosTest(TestCaseInTempDir):
 
             # Replace the PAC in the authorization data and re-add it to the
             # ticket enc-part.
-            auth_data, _ = self.replace_pac(auth_data, new_pac)
+            auth_data, _ = self.replace_pac(auth_data, new_pac,
+                                            expect_pac=expect_pac)
             enc_part['authorization-data'] = auth_data
 
         # Re-encrypt the ticket enc-part with the new key.
