@@ -314,16 +314,19 @@ class WrongLengthChecksumKey(Krb5EncryptionKey):
 
         self._length = length
 
-    def make_checksum(self, usage, plaintext, ctype=None):
-        checksum = super().make_checksum(usage, plaintext, ctype)
-
-        diff = self._length - len(checksum)
+    @classmethod
+    def _adjust_to_length(cls, checksum, length):
+        diff = length - len(checksum)
         if diff > 0:
             checksum += bytes(diff)
         elif diff < 0:
-            checksum = checksum[:self._length]
+            checksum = checksum[:length]
 
         return checksum
+
+    def make_checksum(self, usage, plaintext, ctype=None):
+        checksum = super().make_checksum(usage, plaintext, ctype)
+        return self._adjust_to_length(checksum, self._length)
 
 
 class KerberosCredentials(Credentials):
