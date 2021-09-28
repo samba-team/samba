@@ -80,6 +80,9 @@
 		authoritative for a unix ID to SID mapping, so it must be set
 		for each individually configured domain and for the default
 		configuration. The configured ranges must be mutually disjoint.
+		</para>
+		<para>
+		Note that the low value interacts with the <smbconfoption name="min domain uid"/> option!
 		</para></listitem>
 		</varlistentry>
 
@@ -115,4 +118,5 @@
 	</programlisting>
 	
 </description>
+<related>min domain uid</related>
 </samba:parameter>
