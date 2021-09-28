@@ -3342,7 +3342,10 @@ class RawKerberosTest(TestCaseInTempDir):
         kdc_checksum_buffer = checksum_buffers.get(
             krb5pac.PAC_TYPE_KDC_CHECKSUM)
         if kdc_checksum_buffer is not None:
-            self.assertIsNotNone(server_checksum_buffer)
+            if server_checksum_buffer is None:
+                # There's no server signature to make the checksum over, so
+                # just make the checksum over an empty bytes object.
+                server_checksum = bytes()
 
             kdc_checksum_key = checksum_keys[krb5pac.PAC_TYPE_KDC_CHECKSUM]
 
