@@ -2,7 +2,7 @@
 
 APPNAME = 'ldb'
 # For Samba 4.15.x
-VERSION = '2.4.0'
+VERSION = '2.4.1'
 
 import sys, os
 
