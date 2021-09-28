@@ -373,10 +373,10 @@ class KerberosCredentials(Credentials):
     ])
 
     @classmethod
-    def etypes_to_bits(self, etypes):
+    def etypes_to_bits(cls, etypes):
         bits = 0
         for etype in etypes:
-            bit = self.etype_map[etype]
+            bit = cls.etype_map[etype]
             if bits & bit:
                 raise ValueError(f'Got duplicate etype: {etype}')
             bits |= bit
@@ -384,14 +384,14 @@ class KerberosCredentials(Credentials):
         return bits
 
     @classmethod
-    def bits_to_etypes(self, bits):
+    def bits_to_etypes(cls, bits):
         etypes = ()
-        for etype, bit in self.etype_map.items():
+        for etype, bit in cls.etype_map.items():
             if bit & bits:
                 bits &= ~bit
                 etypes += (etype,)
 
-        bits &= ~self.fast_supported_bits
+        bits &= ~cls.fast_supported_bits
         if bits != 0:
             raise ValueError(f'Unsupported etype bits: {bits}')
 
