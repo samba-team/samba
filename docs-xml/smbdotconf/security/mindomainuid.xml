@@ -1,0 +1,17 @@
+<samba:parameter name="min domain uid"
+                 type="integer"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+  <para>
+    The integer parameter specifies the minimum uid allowed when mapping a
+    local account to a domain account.
+  </para>
+
+  <para>
+    Note that this option interacts with the configured <emphasis>idmap ranges</emphasis>!
+  </para>
+</description>
+
+<value type="default">1000</value>
+</samba:parameter>
