@@ -294,8 +294,10 @@ class KDCBaseTest(RawKerberosTest):
         res = samdb.search(base=dn,
                            scope=ldb.SCOPE_BASE,
                            attrs=['msDS-KeyVersionNumber'])
-        kvno = int(res[0]['msDS-KeyVersionNumber'][0])
-        creds.set_kvno(kvno)
+        kvno = res[0].get('msDS-KeyVersionNumber', idx=0)
+        if kvno is not None:
+            self.assertEqual(int(kvno), 1)
+        creds.set_kvno(1)
 
         return (creds, dn)
 
