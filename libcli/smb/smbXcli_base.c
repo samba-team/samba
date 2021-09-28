@@ -3318,7 +3318,11 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 
 		state->smb2.cancel_flags = SVAL(state->smb2.hdr, SMB2_HDR_FLAGS);
 		state->smb2.cancel_flags &= ~SMB2_HDR_FLAG_CHAINED;
-		state->smb2.cancel_mid = mid;
+		if (state->conn->smb2.server.sign_algo >= SMB2_SIGNING_AES128_GMAC) {
+			state->smb2.cancel_mid = mid;
+		} else {
+			state->smb2.cancel_mid = 0;
+		}
 		state->smb2.cancel_aid = 0;
 
 skip_credits:

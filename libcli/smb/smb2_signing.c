@@ -430,8 +430,16 @@ static NTSTATUS smb2_signing_calc_signature(struct smb2_signing_key *signing_key
 	}
 	msg_id = BVAL(hdr, SMB2_HDR_MESSAGE_ID);
 	if (msg_id == 0) {
-		DBG_ERR("opcode[%u] msg_id == 0\n", opcode);
-		return NT_STATUS_INTERNAL_ERROR;
+		if (opcode != SMB2_OP_CANCEL ||
+		    sign_algo_id >= SMB2_SIGNING_AES128_GMAC)
+		{
+			DBG_ERR("opcode[%u] msg_id == 0\n", opcode);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		/*
+		 * Legacy algorithms allow MID 0
+		 * for cancel requests
+		 */
 	}
 	if (msg_id == UINT64_MAX) {
 		DBG_ERR("opcode[%u] msg_id == UINT64_MAX\n", opcode);
