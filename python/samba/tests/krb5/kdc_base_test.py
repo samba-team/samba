@@ -598,7 +598,7 @@ class KDCBaseTest(RawKerberosTest):
             'no_auth_data_required': False,
             'supported_enctypes': None,
             'not_delegated': False,
-            'allowed_to_delegate_to': None,
+            'delegation_to_spn': None,
             'trusted_to_auth_for_delegation': False,
             'fast_support': False
         }
@@ -629,13 +629,13 @@ class KDCBaseTest(RawKerberosTest):
                             no_auth_data_required,
                             supported_enctypes,
                             not_delegated,
-                            allowed_to_delegate_to,
+                            delegation_to_spn,
                             trusted_to_auth_for_delegation,
                             fast_support):
         if machine_account:
             self.assertFalse(not_delegated)
         else:
-            self.assertIsNone(allowed_to_delegate_to)
+            self.assertIsNone(delegation_to_spn)
             self.assertFalse(trusted_to_auth_for_delegation)
 
         samdb = self.get_samdb()
@@ -664,8 +664,8 @@ class KDCBaseTest(RawKerberosTest):
         if enctypes is not None:
             details['msDS-SupportedEncryptionTypes'] = str(enctypes)
 
-        if allowed_to_delegate_to:
-            details['msDS-AllowedToDelegateTo'] = allowed_to_delegate_to
+        if delegation_to_spn:
+            details['msDS-AllowedToDelegateTo'] = delegation_to_spn
 
         if machine_account:
             spn = 'host/' + user_name
