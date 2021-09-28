@@ -255,7 +255,9 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 			continue;
 		}
 		if (strcasecmp("MaxQueryDuration", policy_name) == 0) {
-			conn->limits.search_timeout = policy_value;
+			if (policy_value > 0) {
+				conn->limits.search_timeout = policy_value;
+			}
 			continue;
 		}
 	}
