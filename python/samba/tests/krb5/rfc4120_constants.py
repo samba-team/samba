@@ -78,6 +78,12 @@ KDC_ERR_SKEW = 37
 KDC_ERR_GENERIC = 60
 KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS = 93
 
+# Extended error types
+KERB_AP_ERR_TYPE_SKEW_RECOVERY = int(
+    krb5_asn1.KerbErrorDataTypeValues('kERB-AP-ERR-TYPE-SKEW-RECOVERY'))
+KERB_ERR_TYPE_EXTENDED = int(
+    krb5_asn1.KerbErrorDataTypeValues('kERB-ERR-TYPE-EXTENDED'))
+
 # Name types
 NT_UNKNOWN = int(krb5_asn1.NameTypeValues('kRB5-NT-UNKNOWN'))
 NT_PRINCIPAL = int(krb5_asn1.NameTypeValues('kRB5-NT-PRINCIPAL'))
