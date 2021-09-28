@@ -2169,7 +2169,6 @@ class RawKerberosTest(TestCaseInTempDir):
 
                 self.check_rep_padata(kdc_exchange_dict,
                                       callback_dict,
-                                      rep,
                                       fast_response['padata'],
                                       error_code=0)
 
@@ -2509,7 +2508,6 @@ class RawKerberosTest(TestCaseInTempDir):
 
             etype_info2 = self.check_rep_padata(kdc_exchange_dict,
                                                 callback_dict,
-                                                rep,
                                                 rep_padata,
                                                 error_code)
 
@@ -2520,7 +2518,6 @@ class RawKerberosTest(TestCaseInTempDir):
     def check_rep_padata(self,
                          kdc_exchange_dict,
                          callback_dict,
-                         rep,
                          rep_padata,
                          error_code):
         rep_msg_type = kdc_exchange_dict['rep_msg_type']
