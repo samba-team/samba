@@ -2103,6 +2103,22 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 			}
 		}
 		goto out;
+	} else if ((lp_security() == SEC_ADS || lp_security() == SEC_DOMAIN) &&
+		   !is_myname(domain) && pwd->pw_uid < lp_min_domain_uid()) {
+		/*
+		 * !is_myname(domain) because when smbd starts tries to setup
+		 * the guest user info, calling this function with nobody
+		 * username. Nobody is usually uid 65535 but it can be changed
+		 * to a regular user with 'guest account' parameter
+		 */
+		nt_status = NT_STATUS_INVALID_TOKEN;
+		DBG_NOTICE("Username '%s%s%s' is invalid on this system, "
+			   "it does not meet 'min domain uid' "
+			   "restriction (%u < %u): %s\n",
+			   nt_domain, lp_winbind_separator(), nt_username,
+			   pwd->pw_uid, lp_min_domain_uid(),
+			   nt_errstr(nt_status));
+		goto out;
 	}
 
 	result = make_server_info(tmp_ctx);
