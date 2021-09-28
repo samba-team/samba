@@ -41,10 +41,12 @@ static void check_timestamp(time_t before, const char* timestamp)
 	struct tm tm;
 	time_t after;
 	time_t actual;
-	const double lower = -1;
+	struct timeval tv;
 
 
-	after = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	after = tv.tv_sec;
 
 	/*
 	 * Convert the ISO 8601 timestamp into a time_t
@@ -71,12 +73,9 @@ static void check_timestamp(time_t before, const char* timestamp)
 
 	/*
 	 * The timestamp should be before <= actual <= after
-	 * Note: as the microsecond portion of the time is truncated we use
-	 *       a -1 as the lower bound for the time difference instead of
-	 *       zero
 	 */
-	assert_true(difftime(actual, before) >= lower);
-	assert_true(difftime(after, actual) >= lower);
+	assert_true(difftime(actual, before) >= 0);
+	assert_true(difftime(after, actual) >= 0);
 }
 
 static void test_has_password_changed(void **state)
@@ -295,6 +294,8 @@ static void test_operation_json_empty(void **state)
 	json_t *v = NULL;
 	json_t *o = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -310,7 +311,9 @@ static void test_operation_json_empty(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_SUCCESS;
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = operation_json(module, req, reply);
 	assert_int_equal(3, json_object_size(json.root));
 
@@ -426,6 +429,8 @@ static void test_operation_json(void **state)
 	json_t *f = NULL;
 	json_t *g = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -465,7 +470,9 @@ static void test_operation_json(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_ERR_OPERATIONS_ERROR;
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = operation_json(module, req, reply);
 	assert_int_equal(3, json_object_size(json.root));
 
@@ -621,6 +628,8 @@ static void test_as_system_operation_json(void **state)
 	json_t *f = NULL;
 	json_t *g = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -669,7 +678,9 @@ static void test_as_system_operation_json(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_ERR_OPERATIONS_ERROR;
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = operation_json(module, req, reply);
 	assert_int_equal(3, json_object_size(json.root));
 
@@ -796,6 +807,8 @@ static void test_password_change_json_empty(void **state)
 	json_t *v = NULL;
 	json_t *o = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -811,7 +824,9 @@ static void test_password_change_json_empty(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_SUCCESS;
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = password_change_json(module, req, reply);
 	assert_int_equal(3, json_object_size(json.root));
 
@@ -899,6 +914,8 @@ static void test_password_change_json(void **state)
 	json_t *v = NULL;
 	json_t *o = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
@@ -936,7 +953,9 @@ static void test_password_change_json(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_SUCCESS;
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = password_change_json(module, req, reply);
 	assert_int_equal(3, json_object_size(json.root));
 
@@ -1025,10 +1044,14 @@ static void test_transaction_json(void **state)
 	json_t *v = NULL;
 	json_t *o = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 	GUID_from_string(GUID, &guid);
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = transaction_json("delete", &guid, 10000099);
 
 	assert_int_equal(3, json_object_size(json.root));
@@ -1086,10 +1109,14 @@ static void test_commit_failure_json(void **state)
 	json_t *v = NULL;
 	json_t *o = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 	GUID_from_string(GUID, &guid);
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = commit_failure_json(
 		"prepare",
 		987876,
@@ -1173,6 +1200,8 @@ static void test_replicated_update_json_empty(void **state)
 	json_t *v = NULL;
 	json_t *o = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -1193,7 +1222,9 @@ static void test_replicated_update_json_empty(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_SUCCESS;
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = replicated_update_json(module, req, reply);
 	assert_int_equal(3, json_object_size(json.root));
 
@@ -1309,6 +1340,8 @@ static void test_replicated_update_json(void **state)
 	json_t *v = NULL;
 	json_t *o = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -1345,7 +1378,9 @@ static void test_replicated_update_json(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_ERR_NO_SUCH_OBJECT;
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = replicated_update_json(module, req, reply);
 	assert_int_equal(3, json_object_size(json.root));
 

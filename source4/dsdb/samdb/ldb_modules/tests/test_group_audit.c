@@ -268,9 +268,12 @@ static void _check_timestamp(
 	struct tm tm;
 	time_t after;
 	time_t actual;
+	struct timeval tv;
 
 
-	after = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	after = tv.tv_sec;
 
 	/*
 	 * Convert the ISO 8601 timestamp into a time_t
@@ -806,6 +809,8 @@ static void test_audit_group_json(void **state)
 	json_t *v = NULL;
 	json_t *o = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -826,7 +831,9 @@ static void test_audit_group_json(void **state)
 	req->operation =  LDB_ADD;
 	add_transaction_id(req, TRANSACTION);
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = audit_group_json(module,
 				req,
 				"the-action",
@@ -910,6 +917,8 @@ static void test_audit_group_json_error(void **state)
 	json_t *v = NULL;
 	json_t *o = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -930,7 +939,9 @@ static void test_audit_group_json_error(void **state)
 	req->operation =  LDB_ADD;
 	add_transaction_id(req, TRANSACTION);
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = audit_group_json(module,
 				req,
 				"the-action",
@@ -1015,6 +1026,8 @@ static void test_audit_group_json_no_event(void **state)
 	json_t *v = NULL;
 	json_t *o = NULL;
 	time_t before;
+	struct timeval tv;
+	int rc;
 
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
@@ -1035,7 +1048,9 @@ static void test_audit_group_json_no_event(void **state)
 	req->operation =  LDB_ADD;
 	add_transaction_id(req, TRANSACTION);
 
-	before = time(NULL);
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
 	json = audit_group_json(module,
 				req,
 				"the-action",
