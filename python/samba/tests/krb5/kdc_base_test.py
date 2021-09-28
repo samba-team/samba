@@ -301,6 +301,30 @@ class KDCBaseTest(RawKerberosTest):
 
         return (creds, dn)
 
+    def get_security_descriptor(self, dn):
+        samdb = self.get_samdb()
+
+        sid = self.get_objectSid(samdb, dn)
+
+        owner_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
+
+        ace = security.ace()
+        ace.access_mask = security.SEC_ADS_GENERIC_ALL
+
+        ace.trustee = security.dom_sid(sid)
+
+        dacl = security.acl()
+        dacl.revision = security.SECURITY_ACL_REVISION_ADS
+        dacl.aces = [ace]
+        dacl.num_aces = 1
+
+        security_desc = security.descriptor()
+        security_desc.type |= security.SEC_DESC_DACL_PRESENT
+        security_desc.owner_sid = owner_sid
+        security_desc.dacl = dacl
+
+        return ndr_pack(security_desc)
+
     def create_rodc(self, ctx):
         ctx.nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn]
         ctx.full_nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn]
@@ -599,6 +623,7 @@ class KDCBaseTest(RawKerberosTest):
             'supported_enctypes': None,
             'not_delegated': False,
             'delegation_to_spn': None,
+            'delegation_from_dn': None,
             'trusted_to_auth_for_delegation': False,
             'fast_support': False
         }
@@ -630,12 +655,14 @@ class KDCBaseTest(RawKerberosTest):
                             supported_enctypes,
                             not_delegated,
                             delegation_to_spn,
+                            delegation_from_dn,
                             trusted_to_auth_for_delegation,
                             fast_support):
         if machine_account:
             self.assertFalse(not_delegated)
         else:
             self.assertIsNone(delegation_to_spn)
+            self.assertIsNone(delegation_from_dn)
             self.assertFalse(trusted_to_auth_for_delegation)
 
         samdb = self.get_samdb()
@@ -666,6 +693,12 @@ class KDCBaseTest(RawKerberosTest):
 
         if delegation_to_spn:
             details['msDS-AllowedToDelegateTo'] = delegation_to_spn
+
+        if delegation_from_dn:
+            security_descriptor = self.get_security_descriptor(
+                delegation_from_dn)
+            details['msDS-AllowedToActOnBehalfOfOtherIdentity'] = (
+                security_descriptor)
 
         if machine_account:
             spn = 'host/' + user_name
