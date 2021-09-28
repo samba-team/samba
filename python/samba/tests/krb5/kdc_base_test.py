@@ -590,6 +590,7 @@ class KDCBaseTest(RawKerberosTest):
                            scope=ldb.SCOPE_BASE,
                            attrs=[group_attr])
         orig_msg = res[0]
+        self.assertIn(group_attr, orig_msg)
 
         members = list(orig_msg[group_attr])
         members.append(account_dn)
