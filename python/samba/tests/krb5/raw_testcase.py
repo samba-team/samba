@@ -3424,14 +3424,19 @@ class RawKerberosTest(TestCaseInTempDir):
                 if expect_pac:
                     self.assertIsNotNone(old_pac, 'Expected PAC')
 
-                ad_relevant = self.der_encode(
-                    relevant_elems,
-                    asn1Spec=krb5_asn1.AD_IF_RELEVANT())
+                if relevant_elems:
+                    ad_relevant = self.der_encode(
+                        relevant_elems,
+                        asn1Spec=krb5_asn1.AD_IF_RELEVANT())
 
-                authdata_elem = self.AuthorizationData_create(AD_IF_RELEVANT,
-                                                              ad_relevant)
+                    authdata_elem = self.AuthorizationData_create(
+                        AD_IF_RELEVANT,
+                        ad_relevant)
+                else:
+                    authdata_elem = None
 
-            new_auth_data.append(authdata_elem)
+            if authdata_elem is not None:
+                new_auth_data.append(authdata_elem)
 
         if expect_pac:
             self.assertIsNotNone(ad_relevant, 'Expected AD-RELEVANT')
