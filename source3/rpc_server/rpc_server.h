@@ -53,15 +53,6 @@ struct dcerpc_ncacn_conn {
 	struct auth_session_info *session_info;
 };
 
-NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
-				struct tevent_context *ev_ctx,
-				struct messaging_context *msg_ctx,
-				struct dcesrv_context *dce_ctx,
-				struct dcesrv_endpoint *endpoint,
-				dcerpc_ncacn_termination_fn term_fn,
-				void *termination_data,
-				struct dcerpc_ncacn_conn **out);
-
 void set_incoming_fault(struct pipes_struct *p);
 void process_complete_pdu(struct pipes_struct *p, struct ncacn_packet *pkt);
 

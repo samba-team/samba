@@ -51,35 +51,6 @@ struct dcerpc_ncacn_listen_state {
 	void *termination_data;
 };
 
-NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
-				struct tevent_context *ev_ctx,
-				struct messaging_context *msg_ctx,
-				struct dcesrv_context *dce_ctx,
-				struct dcesrv_endpoint *endpoint,
-				dcerpc_ncacn_termination_fn term_fn,
-				void *termination_data,
-				struct dcerpc_ncacn_conn **out)
-{
-	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
-
-	ncacn_conn = talloc_zero(mem_ctx, struct dcerpc_ncacn_conn);
-	if (ncacn_conn == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ncacn_conn->ev_ctx = ev_ctx;
-	ncacn_conn->msg_ctx = msg_ctx;
-	ncacn_conn->dce_ctx = dce_ctx;
-	ncacn_conn->endpoint = endpoint;
-	ncacn_conn->sock = -1;
-	ncacn_conn->termination_fn = term_fn;
-	ncacn_conn->termination_data = termination_data;
-
-	*out = ncacn_conn;
-
-	return NT_STATUS_OK;
-}
-
 static void ncacn_terminate_connection(struct dcerpc_ncacn_conn *conn,
 				       const char *reason);
 

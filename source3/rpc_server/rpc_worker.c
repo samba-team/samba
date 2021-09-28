@@ -243,21 +243,20 @@ static void rpc_worker_new_client(
 		goto fail;
 	}
 
-	status = dcerpc_ncacn_conn_init(
-		dce_ctx,
-		global_event_context(),
-		global_messaging_context(),
-		dce_ctx,
-		ep,
-		rpc_worker_connection_terminated,
-		worker,
-		&ncacn_conn);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("dcerpc_ncacn_conn_init() failed: %s\n",
-			  nt_errstr(status));
+	ncacn_conn = talloc(dce_ctx, struct dcerpc_ncacn_conn);
+	if (ncacn_conn == NULL) {
+		DBG_DEBUG("talloc failed\n");
 		goto fail;
 	}
-	ncacn_conn->sock = sock;
+	*ncacn_conn = (struct dcerpc_ncacn_conn) {
+		.ev_ctx = global_event_context(),
+		.msg_ctx = global_messaging_context(),
+		.dce_ctx = dce_ctx,
+		.endpoint = ep,
+		.sock = sock,
+		.termination_fn = rpc_worker_connection_terminated,
+		.termination_data = worker,
+	};
 
 	if (transport == NCALRPC) {
 		ret = tsocket_address_unix_from_path(
