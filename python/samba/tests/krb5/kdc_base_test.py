@@ -1181,8 +1181,10 @@ class KDCBaseTest(RawKerberosTest):
         if service_creds is not None:
             decryption_key = self.TicketDecryptionKey_from_creds(
                 service_creds)
+            expected_supported_etypes = service_creds.tgs_supported_enctypes
         else:
             decryption_key = None
+            expected_supported_etypes = None
 
         if not expected_error_mode:
             check_error_fn = None
@@ -1205,6 +1207,7 @@ class KDCBaseTest(RawKerberosTest):
             expected_error_mode=expected_error_mode,
             expected_flags=expected_flags,
             unexpected_flags=unexpected_flags,
+            expected_supported_etypes=expected_supported_etypes,
             check_error_fn=check_error_fn,
             check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
