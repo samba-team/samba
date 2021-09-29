@@ -1354,10 +1354,10 @@ class FAST_Tests(KDCBaseTest):
 
             expected_flags = kdc_dict.pop('expected_flags', None)
             if expected_flags is not None:
-                expected_flags = krb5_asn1.KDCOptions(expected_flags)
+                expected_flags = krb5_asn1.TicketFlags(expected_flags)
             unexpected_flags = kdc_dict.pop('unexpected_flags', None)
             if unexpected_flags is not None:
-                unexpected_flags = krb5_asn1.KDCOptions(unexpected_flags)
+                unexpected_flags = krb5_asn1.TicketFlags(unexpected_flags)
 
             if rep_type == KRB_AS_REP:
                 kdc_exchange_dict = self.as_exchange_dict(
