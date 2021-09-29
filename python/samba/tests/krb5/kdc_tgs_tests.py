@@ -85,7 +85,8 @@ class KdcTgsTests(KDCBaseTest):
             names=["host", samdb.host_dns_name()])
 
         (rep, enc_part) = self.tgs_req(cname, sname, realm, ticket, key, etype,
-                                       expected_error_mode=KDC_ERR_BADMATCH)
+                                       expected_error_mode=KDC_ERR_BADMATCH,
+                                       expect_edata=False)
 
         self.assertIsNone(
             enc_part,
