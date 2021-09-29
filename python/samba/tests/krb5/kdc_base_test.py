@@ -285,6 +285,7 @@ class KDCBaseTest(RawKerberosTest):
         else:
             creds.set_workstation('')
         creds.set_dn(ldb.Dn(samdb, dn))
+        creds.set_spn(spn)
         #
         # Save the account name so it can be deleted in tearDownClass
         self.accounts.add(dn)
