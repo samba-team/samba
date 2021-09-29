@@ -1278,8 +1278,7 @@ class KDCBaseTest(RawKerberosTest):
                 expected_flags=None, unexpected_flags=None,
                 fresh=False):
         user_name = creds.get_username()
-        cache_key = (user_name, to_rodc, kdc_options,
-                     expected_flags, unexpected_flags)
+        cache_key = (user_name, to_rodc, kdc_options)
 
         if not fresh:
             tgt = self.tkt_cache.get(cache_key)
