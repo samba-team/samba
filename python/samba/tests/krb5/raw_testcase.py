@@ -1961,6 +1961,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          pac_options=None,
                          expect_edata=None,
                          expect_pac=True,
+                         expect_claims=True,
                          to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2008,6 +2009,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'pac_options': pac_options,
             'expect_edata': expect_edata,
             'expect_pac': expect_pac,
+            'expect_claims': expect_claims,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -2050,6 +2052,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           pac_options=None,
                           expect_edata=None,
                           expect_pac=True,
+                          expect_claims=True,
                           to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2096,6 +2099,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'pac_options': pac_options,
             'expect_edata': expect_edata,
             'expect_pac': expect_pac,
+            'expect_claims': expect_claims,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
