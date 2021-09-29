@@ -1053,14 +1053,14 @@ class RawKerberosTest(TestCaseInTempDir):
         v = self.getElementValue(obj, elem)
         self.assertIsNotNone(v)
         if expected is not None:
-            self.assertIsInstance(expected, krb5_asn1.KDCOptions)
+            self.assertIsInstance(expected, krb5_asn1.TicketFlags)
             for i, flag in enumerate(expected):
                 if flag == 1:
                     self.assertEqual('1', v[i],
                                      f"'{expected.namedValues[i]}' "
                                      f"expected in {v}")
         if unexpected is not None:
-            self.assertIsInstance(unexpected, krb5_asn1.KDCOptions)
+            self.assertIsInstance(unexpected, krb5_asn1.TicketFlags)
             for i, flag in enumerate(unexpected):
                 if flag == 1:
                     self.assertEqual('0', v[i],
