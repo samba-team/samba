@@ -2053,6 +2053,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           expect_edata=None,
                           expect_pac=True,
                           expect_claims=True,
+                          expected_proxy_target=None,
+                          expected_transited_services=None,
                           to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2100,6 +2102,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_edata': expect_edata,
             'expect_pac': expect_pac,
             'expect_claims': expect_claims,
+            'expected_proxy_target': expected_proxy_target,
+            'expected_transited_services': expected_transited_services,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -2493,6 +2497,23 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertCountEqual(expected_types, buffer_types,
                                   f'expected: {expected_types} '
                                   f'got: {buffer_types}')
+
+        for pac_buffer in pac.buffers:
+            if pac_buffer.type == krb5pac.PAC_TYPE_CONSTRAINED_DELEGATION:
+                expected_proxy_target = kdc_exchange_dict[
+                    'expected_proxy_target']
+                expected_transited_services = kdc_exchange_dict[
+                    'expected_transited_services']
+
+                delegation_info = pac_buffer.info.info
+
+                self.assertEqual(expected_proxy_target,
+                                 str(delegation_info.proxy_target))
+
+                transited_services = list(map(
+                    str, delegation_info.transited_services))
+                self.assertEqual(expected_transited_services,
+                                 transited_services)
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
