@@ -1959,6 +1959,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          outer_req=None,
                          pac_request=None,
                          pac_options=None,
+                         expect_edata=None,
                          expect_pac=True,
                          to_rodc=False):
         if expected_error_mode == 0:
@@ -2005,6 +2006,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'outer_req': outer_req,
             'pac_request': pac_request,
             'pac_options': pac_options,
+            'expect_edata': expect_edata,
             'expect_pac': expect_pac,
             'to_rodc': to_rodc
         }
@@ -2046,6 +2048,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           outer_req=None,
                           pac_request=None,
                           pac_options=None,
+                          expect_edata=None,
                           expect_pac=True,
                           to_rodc=False):
         if expected_error_mode == 0:
@@ -2091,6 +2094,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'outer_req': outer_req,
             'pac_request': pac_request,
             'pac_options': pac_options,
+            'expect_edata': expect_edata,
             'expect_pac': expect_pac,
             'to_rodc': to_rodc
         }
@@ -2477,20 +2481,20 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementEqualUTF8(rep, 'realm', expected_srealm)
             self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
             self.assertElementMissing(rep, 'e-text')
-        if (error_code == KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS
-                or (rep_msg_type == KRB_TGS_REP
-                    and not sent_fast)
-                or (sent_fast and fast_armor_type is not None
-                    and fast_armor_type != FX_FAST_ARMOR_AP_REQUEST)
-                or inner):
+        expected_status = kdc_exchange_dict['expected_status']
+        expect_edata = kdc_exchange_dict['expect_edata']
+        if expect_edata is None:
+            expect_edata = (error_code != KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS
+                            and (not sent_fast or fast_armor_type is None
+                                 or fast_armor_type == FX_FAST_ARMOR_AP_REQUEST)
+                            and not inner)
+        if not expect_edata:
+            self.assertIsNone(expected_status)
             self.assertElementMissing(rep, 'e-data')
             return rep
         edata = self.getElementValue(rep, 'e-data')
         if self.strict_checking:
-            if error_code != KDC_ERR_GENERIC:
-                # Predicting whether an ERR_GENERIC error contains e-data is
-                # more complicated.
-                self.assertIsNotNone(edata)
+            self.assertIsNotNone(edata)
         if edata is not None:
             if rep_msg_type == KRB_TGS_REP and not sent_fast:
                 error_data = self.der_decode(
@@ -2506,12 +2510,11 @@ class RawKerberosTest(TestCaseInTempDir):
                 status = int.from_bytes(extended_error[:4], 'little')
                 flags = int.from_bytes(extended_error[8:], 'little')
 
-                expected_status = kdc_exchange_dict['expected_status']
                 self.assertEqual(expected_status, status)
 
                 self.assertEqual(3, flags)
             else:
-                self.assertIsNone(kdc_exchange_dict['expected_status'])
+                self.assertIsNone(expected_status)
 
                 rep_padata = self.der_decode(edata,
                                              asn1Spec=krb5_asn1.METHOD_DATA())
