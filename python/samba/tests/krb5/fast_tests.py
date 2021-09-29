@@ -99,11 +99,7 @@ class FAST_Tests(KDCBaseTest):
         ])
 
     def test_simple_no_sname(self):
-        krbtgt_creds = self.get_krbtgt_creds()
-        krbtgt_username = krbtgt_creds.get_username()
-        krbtgt_realm = krbtgt_creds.get_realm()
-        expected_sname = self.PrincipalName_create(
-            name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
+        expected_sname = self.get_krbtgt_sname()
 
         self._run_test_sequence([
             {
@@ -116,11 +112,7 @@ class FAST_Tests(KDCBaseTest):
         ])
 
     def test_simple_tgs_no_sname(self):
-        krbtgt_creds = self.get_krbtgt_creds()
-        krbtgt_username = krbtgt_creds.get_username()
-        krbtgt_realm = krbtgt_creds.get_realm()
-        expected_sname = self.PrincipalName_create(
-            name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
+        expected_sname = self.get_krbtgt_sname()
 
         self._run_test_sequence([
             {
@@ -134,11 +126,7 @@ class FAST_Tests(KDCBaseTest):
         ])
 
     def test_fast_no_sname(self):
-        krbtgt_creds = self.get_krbtgt_creds()
-        krbtgt_username = krbtgt_creds.get_username()
-        krbtgt_realm = krbtgt_creds.get_realm()
-        expected_sname = self.PrincipalName_create(
-            name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
+        expected_sname = self.get_krbtgt_sname()
 
         self._run_test_sequence([
             {
@@ -153,11 +141,7 @@ class FAST_Tests(KDCBaseTest):
         ])
 
     def test_fast_tgs_no_sname(self):
-        krbtgt_creds = self.get_krbtgt_creds()
-        krbtgt_username = krbtgt_creds.get_username()
-        krbtgt_realm = krbtgt_creds.get_realm()
-        expected_sname = self.PrincipalName_create(
-            name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
+        expected_sname = self.get_krbtgt_sname()
 
         self._run_test_sequence([
             {
@@ -830,6 +814,8 @@ class FAST_Tests(KDCBaseTest):
         ])
 
     def test_fast_ad_fx_fast_armor(self):
+        expected_sname = self.get_krbtgt_sname()
+
         # If the authenticator or TGT authentication data contains the
         # AD-fx-fast-armor authdata type, the KDC must reject the request
         # (RFC6113 5.4.1.1).
@@ -849,7 +835,8 @@ class FAST_Tests(KDCBaseTest):
                 'use_fast': True,
                 'gen_authdata_fn': self.generate_fast_armor_auth_data,
                 'gen_tgt_fn': self.get_user_tgt,
-                'fast_armor': None
+                'fast_armor': None,
+                'expected_sname': expected_sname
             }
         ])
 
@@ -877,6 +864,8 @@ class FAST_Tests(KDCBaseTest):
         ])
 
     def test_fast_ad_fx_fast_armor_ticket(self):
+        expected_sname = self.get_krbtgt_sname()
+
         # If the authenticator or TGT authentication data contains the
         # AD-fx-fast-armor authdata type, the KDC must reject the request
         # (RFC6113 5.4.2).
@@ -896,7 +885,8 @@ class FAST_Tests(KDCBaseTest):
                 'expected_error_mode': KDC_ERR_GENERIC,
                 'use_fast': True,
                 'gen_tgt_fn': self.gen_tgt_fast_armor_auth_data,
-                'fast_armor': None
+                'fast_armor': None,
+                'expected_sname': expected_sname
             }
         ])
 
@@ -956,6 +946,8 @@ class FAST_Tests(KDCBaseTest):
         ])
 
     def test_fast_tgs_no_subkey(self):
+        expected_sname = self.get_krbtgt_sname()
+
         # Show that omitting the subkey in the TGS-REQ authenticator fails
         # (RFC6113 5.4.2).
         self._run_test_sequence([
@@ -965,7 +957,8 @@ class FAST_Tests(KDCBaseTest):
                 'use_fast': True,
                 'gen_tgt_fn': self.get_user_tgt,
                 'fast_armor': None,
-                'include_subkey': False
+                'include_subkey': False,
+                'expected_sname': expected_sname
             }
         ])
 
