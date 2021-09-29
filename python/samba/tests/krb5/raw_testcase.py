@@ -2475,11 +2475,7 @@ class RawKerberosTest(TestCaseInTempDir):
             else:
                 self.assertElementMissing(rep, 'cname')
             self.assertElementEqualUTF8(rep, 'realm', expected_srealm)
-            if sent_fast and error_code == KDC_ERR_GENERIC:
-                self.assertElementEqualPrincipal(rep, 'sname',
-                                                 self.get_krbtgt_sname())
-            else:
-                self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
+            self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
             self.assertElementMissing(rep, 'e-text')
         if (error_code == KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS
                 or (rep_msg_type == KRB_TGS_REP
