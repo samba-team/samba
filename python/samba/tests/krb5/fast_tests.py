@@ -107,7 +107,8 @@ class FAST_Tests(KDCBaseTest):
                 'expected_error_mode': (KDC_ERR_GENERIC, KDC_ERR_S_PRINCIPAL_UNKNOWN),
                 'use_fast': False,
                 'sname': None,
-                'expected_sname': expected_sname
+                'expected_sname': expected_sname,
+                'expect_edata': False
             }
         ])
 
@@ -121,7 +122,8 @@ class FAST_Tests(KDCBaseTest):
                 'use_fast': False,
                 'gen_tgt_fn': self.get_user_tgt,
                 'sname': None,
-                'expected_sname': expected_sname
+                'expected_sname': expected_sname,
+                'expect_edata': False
             }
         ])
 
@@ -172,6 +174,7 @@ class FAST_Tests(KDCBaseTest):
                 'expected_error_mode': KDC_ERR_NOT_US,
                 'use_fast': False,
                 'gen_tgt_fn': self.get_user_service_ticket,
+                'expect_edata': False
             }
         ])
 
@@ -182,6 +185,7 @@ class FAST_Tests(KDCBaseTest):
                 'expected_error_mode': KDC_ERR_NOT_US,
                 'use_fast': False,
                 'gen_tgt_fn': self.get_mach_service_ticket,
+                'expect_edata': False
             }
         ])
 
@@ -294,7 +298,8 @@ class FAST_Tests(KDCBaseTest):
                 'expected_error_mode': KDC_ERR_ETYPE_NOSUPP,
                 'use_fast': False,
                 'gen_tgt_fn': self.get_mach_tgt,
-                'etypes': ()
+                'etypes': (),
+                'expect_edata': False
             }
         ])
 
@@ -342,7 +347,8 @@ class FAST_Tests(KDCBaseTest):
                 'use_fast': True,
                 'gen_fast_fn': self.generate_empty_fast,
                 'fast_armor': None,
-                'gen_armor_tgt_fn': self.get_mach_tgt
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'expect_edata': False
             }
         ])
 
@@ -365,7 +371,8 @@ class FAST_Tests(KDCBaseTest):
                 'expected_error_mode': KDC_ERR_GENERIC,
                 'use_fast': True,
                 'fast_armor': None,  # no armor,
-                'gen_armor_tgt_fn': self.get_mach_tgt
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'expect_edata': False
             }
         ])
 
@@ -809,7 +816,8 @@ class FAST_Tests(KDCBaseTest):
                 # should be KRB_APP_ERR_MODIFIED
                 'use_fast': False,
                 'gen_authdata_fn': self.generate_fast_used_auth_data,
-                'gen_tgt_fn': self.get_user_tgt
+                'gen_tgt_fn': self.get_user_tgt,
+                'expect_edata': False
             }
         ])
 
@@ -836,7 +844,8 @@ class FAST_Tests(KDCBaseTest):
                 'gen_authdata_fn': self.generate_fast_armor_auth_data,
                 'gen_tgt_fn': self.get_user_tgt,
                 'fast_armor': None,
-                'expected_sname': expected_sname
+                'expected_sname': expected_sname,
+                'expect_edata': False
             }
         ])
 
@@ -886,7 +895,8 @@ class FAST_Tests(KDCBaseTest):
                 'use_fast': True,
                 'gen_tgt_fn': self.gen_tgt_fast_armor_auth_data,
                 'fast_armor': None,
-                'expected_sname': expected_sname
+                'expected_sname': expected_sname,
+                'expect_edata': False
             }
         ])
 
@@ -958,7 +968,8 @@ class FAST_Tests(KDCBaseTest):
                 'gen_tgt_fn': self.get_user_tgt,
                 'fast_armor': None,
                 'include_subkey': False,
-                'expected_sname': expected_sname
+                'expected_sname': expected_sname,
+                'expect_edata': False
             }
         ])
 
@@ -1209,6 +1220,10 @@ class FAST_Tests(KDCBaseTest):
             else:
                 tgt_cname = client_cname
 
+            expect_edata = kdc_dict.pop('expect_edata', None)
+            if expect_edata is not None:
+                self.assertTrue(expected_error_mode)
+
             expected_cname = kdc_dict.pop('expected_cname', tgt_cname)
             expected_anon = kdc_dict.pop('expected_anon',
                                          False)
@@ -1343,7 +1358,8 @@ class FAST_Tests(KDCBaseTest):
                     inner_req=inner_req,
                     outer_req=outer_req,
                     pac_request=True,
-                    pac_options=pac_options)
+                    pac_options=pac_options,
+                    expect_edata=expect_edata)
             else:  # KRB_TGS_REP
                 kdc_exchange_dict = self.tgs_exchange_dict(
                     expected_crealm=expected_crealm,
@@ -1376,7 +1392,8 @@ class FAST_Tests(KDCBaseTest):
                     inner_req=inner_req,
                     outer_req=outer_req,
                     pac_request=None,
-                    pac_options=pac_options)
+                    pac_options=pac_options,
+                    expect_edata=expect_edata)
 
             repeat = kdc_dict.pop('repeat', 1)
             for _ in range(repeat):
