@@ -2354,10 +2354,10 @@ class RawKerberosTest(TestCaseInTempDir):
             if self.strict_checking:
                 self.assertElementEqual(encpart_private, 'caddr', [])
 
-            sent_claims = self.sent_claims(kdc_exchange_dict)
+            sent_pac_options = self.get_sent_pac_options(kdc_exchange_dict)
 
             if self.strict_checking:
-                if sent_claims or canonicalize:
+                if canonicalize or '1' in sent_pac_options:
                     self.assertElementPresent(encpart_private,
                                               'encrypted-pa-data')
                     enc_pa_dict = self.get_pa_dict(
@@ -2381,12 +2381,15 @@ class RawKerberosTest(TestCaseInTempDir):
                     else:
                         self.assertNotIn(PADATA_SUPPORTED_ETYPES, enc_pa_dict)
 
-                    # ClaimsCompIdFASTSupported registry key
-                    if sent_claims:
+                    if '1' in sent_pac_options:
                         self.assertIn(PADATA_PAC_OPTIONS, enc_pa_dict)
 
-                        self.check_pac_options_claims_support(
-                            enc_pa_dict[PADATA_PAC_OPTIONS])
+                        pac_options = self.der_decode(
+                            enc_pa_dict[PADATA_PAC_OPTIONS],
+                            asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
+
+                        self.assertElementEqual(pac_options, 'options',
+                                                sent_pac_options)
                     else:
                         self.assertNotIn(PADATA_PAC_OPTIONS, enc_pa_dict)
                 else:
@@ -2418,11 +2421,6 @@ class RawKerberosTest(TestCaseInTempDir):
             self.verify_ticket(ticket_creds, krbtgt_key, expect_pac=expect_pac)
 
         kdc_exchange_dict['rep_ticket_creds'] = ticket_creds
-
-    def check_pac_options_claims_support(self, pac_options):
-        pac_options = self.der_decode(pac_options,
-                                      asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
-        self.assertEqual('1', pac_options['options'][0])  # claims bit
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
@@ -2565,8 +2563,9 @@ class RawKerberosTest(TestCaseInTempDir):
             if not sent_fast and error_code != 0:
                 expected_patypes += (PADATA_PW_SALT,)
             else:
-                sent_claims = self.sent_claims(kdc_exchange_dict)
-                if sent_claims and error_code not in (0, KDC_ERR_GENERIC):
+                sent_pac_options = self.get_sent_pac_options(kdc_exchange_dict)
+                if ('1' in sent_pac_options
+                        and error_code not in (0, KDC_ERR_GENERIC)):
                     expected_patypes += (PADATA_PAC_OPTIONS,)
         elif error_code != KDC_ERR_GENERIC:
             if expect_etype_info:
@@ -2656,8 +2655,9 @@ class RawKerberosTest(TestCaseInTempDir):
                 continue
             if patype == PADATA_PAC_OPTIONS:
                 self.assertIsNone(pac_options)
-                pac_options = pavalue
-                self.assertIsNotNone(pac_options)
+                pac_options = self.der_decode(
+                    pavalue,
+                    asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
                 continue
             if patype == PADATA_PW_SALT:
                 self.assertIsNone(pw_salt)
@@ -2677,7 +2677,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                          inner=True)
 
         if pac_options is not None:
-            self.check_pac_options_claims_support(pac_options)
+            self.assertElementEqual(pac_options, 'options', sent_pac_options)
 
         if pw_salt is not None:
             self.assertEqual(12, len(pw_salt))
@@ -3418,19 +3418,21 @@ class RawKerberosTest(TestCaseInTempDir):
 
         return PADATA_ENCRYPTED_CHALLENGE in fast_pa_dict
 
-    def sent_claims(self, kdc_exchange_dict):
+    def get_sent_pac_options(self, kdc_exchange_dict):
         fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
 
         if PADATA_PAC_OPTIONS not in fast_pa_dict:
-            return False
+            return ''
 
         pac_options = self.der_decode(fast_pa_dict[PADATA_PAC_OPTIONS],
                                       asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
         pac_options = pac_options['options']
-        claims_pos = len(tuple(krb5_asn1.PACOptionFlags('claims'))) - 1
 
-        return (claims_pos < len(pac_options)
-                and pac_options[claims_pos] == '1')
+        # Mask out unsupported bits.
+        pac_options, remaining = pac_options[:4], pac_options[4:]
+        pac_options += '0' * len(remaining)
+
+        return pac_options
 
     def get_krbtgt_sname(self):
         krbtgt_creds = self.get_krbtgt_creds()
