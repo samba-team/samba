@@ -2340,6 +2340,13 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementPresent(ticket_private, 'authorization-data',
                                       expect_empty=not expect_pac)
 
+            if expect_pac:
+                authorization_data = self.getElementValue(ticket_private,
+                                                          'authorization-data')
+                pac_data = self.get_pac(authorization_data)
+
+                self.check_pac_buffers(pac_data, kdc_exchange_dict)
+
         encpart_session_key = None
         if encpart_private is not None:
             self.assertElementPresent(encpart_private, 'key')
@@ -2445,6 +2452,47 @@ class RawKerberosTest(TestCaseInTempDir):
             self.verify_ticket(ticket_creds, krbtgt_key, expect_pac=expect_pac)
 
         kdc_exchange_dict['rep_ticket_creds'] = ticket_creds
+
+    def check_pac_buffers(self, pac_data, kdc_exchange_dict):
+        pac = ndr_unpack(krb5pac.PAC_DATA, pac_data)
+
+        rep_msg_type = kdc_exchange_dict['rep_msg_type']
+        armor_tgt = kdc_exchange_dict['armor_tgt']
+
+        expected_sname = kdc_exchange_dict['expected_sname']
+        expect_claims = kdc_exchange_dict['expect_claims']
+
+        expected_types = [krb5pac.PAC_TYPE_LOGON_INFO,
+                          krb5pac.PAC_TYPE_SRV_CHECKSUM,
+                          krb5pac.PAC_TYPE_KDC_CHECKSUM,
+                          krb5pac.PAC_TYPE_LOGON_NAME,
+                          krb5pac.PAC_TYPE_UPN_DNS_INFO]
+
+        kdc_options = kdc_exchange_dict['kdc_options']
+        pos = len(tuple(krb5_asn1.KDCOptions('cname-in-addl-tkt'))) - 1
+        constrained_delegation = (pos < len(kdc_options)
+                                  and kdc_options[pos] == '1')
+        if constrained_delegation:
+            expected_types.append(krb5pac.PAC_TYPE_CONSTRAINED_DELEGATION)
+
+        if self.kdc_fast_support:
+            if expect_claims:
+                expected_types.append(krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO)
+
+            if (rep_msg_type == KRB_TGS_REP
+                    and armor_tgt is not None):
+                expected_types.append(krb5pac.PAC_TYPE_DEVICE_INFO)
+                expected_types.append(krb5pac.PAC_TYPE_DEVICE_CLAIMS_INFO)
+
+        if not self.is_tgs(expected_sname):
+            expected_types.append(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
+
+        if self.strict_checking:
+            buffer_types = [pac_buffer.type
+                            for pac_buffer in pac.buffers]
+            self.assertCountEqual(expected_types, buffer_types,
+                                  f'expected: {expected_types} '
+                                  f'got: {buffer_types}')
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
@@ -3396,6 +3444,10 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNotNone(ad_relevant, 'Expected AD-RELEVANT')
 
         return new_auth_data, old_pac
+
+    def get_pac(self, auth_data, expect_pac=True):
+        _, pac = self.replace_pac(auth_data, None, expect_pac)
+        return pac
 
     def get_krbtgt_checksum_key(self):
         krbtgt_creds = self.get_krbtgt_creds()
