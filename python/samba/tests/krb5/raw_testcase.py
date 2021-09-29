@@ -1801,8 +1801,6 @@ class RawKerberosTest(TestCaseInTempDir):
             fast_padata, req_body = generate_fast_padata_fn(kdc_exchange_dict,
                                                             callback_dict,
                                                             req_body)
-
-            fast_padata += additional_padata
         else:
             fast_padata = []
 
@@ -1847,6 +1845,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                             KU_FAST_REQ_CHKSUM,
                                             checksum_blob)
 
+            fast_padata += additional_padata
             fast = generate_fast_fn(kdc_exchange_dict,
                                     callback_dict,
                                     inner_req_body,
