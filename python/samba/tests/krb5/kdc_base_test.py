@@ -1164,7 +1164,7 @@ class KDCBaseTest(RawKerberosTest):
     def tgs_req(self, cname, sname, realm, ticket, key, etypes,
                 expected_error_mode=0, padata=None, kdc_options=0,
                 to_rodc=False, service_creds=None, expect_pac=True,
-                expect_edata=None):
+                expect_edata=None, expected_flags=None, unexpected_flags=None):
         '''Send a TGS-REQ, returns the response and the decrypted and
            decoded enc-part
         '''
@@ -1203,6 +1203,8 @@ class KDCBaseTest(RawKerberosTest):
             expected_srealm=realm,
             expected_sname=sname,
             expected_error_mode=expected_error_mode,
+            expected_flags=expected_flags,
+            unexpected_flags=unexpected_flags,
             check_error_fn=check_error_fn,
             check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
@@ -1230,10 +1232,12 @@ class KDCBaseTest(RawKerberosTest):
         return rep, enc_part
 
     def get_service_ticket(self, tgt, target_creds, service='host',
-                           to_rodc=False, fresh=False):
+                           to_rodc=False, kdc_options=None,
+                           expected_flags=None, unexpected_flags=None,
+                           fresh=False):
         user_name = tgt.cname['name-string'][0]
         target_name = target_creds.get_username()
-        cache_key = (user_name, target_name, service, to_rodc)
+        cache_key = (user_name, target_name, service, to_rodc, kdc_options)
 
         if not fresh:
             ticket = self.tkt_cache.get(cache_key)
@@ -1242,6 +1246,10 @@ class KDCBaseTest(RawKerberosTest):
                 return ticket
 
         etype = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
+
+        if kdc_options is None:
+            kdc_options = '0'
+        kdc_options = krb5_asn1.KDCOptions(kdc_options)
 
         key = tgt.session_key
         ticket = tgt.ticket
@@ -1255,7 +1263,10 @@ class KDCBaseTest(RawKerberosTest):
 
         rep, enc_part = self.tgs_req(cname, sname, realm, ticket, key, etype,
                                      to_rodc=to_rodc,
-                                     service_creds=target_creds)
+                                     service_creds=target_creds,
+                                     kdc_options=kdc_options,
+                                     expected_flags=expected_flags,
+                                     unexpected_flags=unexpected_flags)
 
         service_ticket = rep['ticket']
 
@@ -1309,11 +1320,11 @@ class KDCBaseTest(RawKerberosTest):
             self.TicketDecryptionKey_from_creds(krbtgt_creds))
 
         if kdc_options is None:
-            kdc_options = krb5_asn1.KDCOptions('forwardable,'
-                                               'renewable,'
-                                               'canonicalize,'
-                                               'renewable-ok')
-        kdc_options = str(kdc_options)
+            kdc_options = ('forwardable,'
+                           'renewable,'
+                           'canonicalize,'
+                           'renewable-ok')
+        kdc_options = krb5_asn1.KDCOptions(kdc_options)
 
         pac_options = '1'  # supports claims
 
@@ -1370,6 +1381,8 @@ class KDCBaseTest(RawKerberosTest):
             expected_srealm=expected_realm,
             expected_sname=expected_sname,
             expected_salt=salt,
+            expected_flags=expected_flags,
+            unexpected_flags=unexpected_flags,
             expected_supported_etypes=expected_etypes,
             etypes=etype,
             padata=padata,
