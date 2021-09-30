@@ -1942,6 +1942,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          expected_flags=None,
                          unexpected_flags=None,
                          ticket_decryption_key=None,
+                         expect_ticket_checksum=None,
                          generate_fast_fn=None,
                          generate_fast_armor_fn=None,
                          generate_fast_padata_fn=None,
@@ -1990,6 +1991,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_flags': expected_flags,
             'unexpected_flags': unexpected_flags,
             'ticket_decryption_key': ticket_decryption_key,
+            'expect_ticket_checksum': expect_ticket_checksum,
             'generate_fast_fn': generate_fast_fn,
             'generate_fast_armor_fn': generate_fast_armor_fn,
             'generate_fast_padata_fn': generate_fast_padata_fn,
@@ -2034,6 +2036,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expected_flags=None,
                           unexpected_flags=None,
                           ticket_decryption_key=None,
+                          expect_ticket_checksum=None,
                           generate_fast_fn=None,
                           generate_fast_armor_fn=None,
                           generate_fast_padata_fn=None,
@@ -2083,6 +2086,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_flags': expected_flags,
             'unexpected_flags': unexpected_flags,
             'ticket_decryption_key': ticket_decryption_key,
+            'expect_ticket_checksum': expect_ticket_checksum,
             'generate_fast_fn': generate_fast_fn,
             'generate_fast_armor_fn': generate_fast_armor_fn,
             'generate_fast_padata_fn': generate_fast_padata_fn,
@@ -2459,8 +2463,15 @@ class RawKerberosTest(TestCaseInTempDir):
             ticket_private=ticket_private,
             encpart_private=encpart_private)
 
+        # TODO: This parameter should be removed when all service tickets are
+        # issued with ticket checksums.
+        expect_ticket_checksum = kdc_exchange_dict['expect_ticket_checksum']
+        if expect_ticket_checksum:
+            self.assertIsNotNone(ticket_decryption_key)
+
         if ticket_decryption_key is not None:
-            self.verify_ticket(ticket_creds, krbtgt_key, expect_pac=expect_pac)
+            self.verify_ticket(ticket_creds, krbtgt_key, expect_pac=expect_pac,
+                               expect_ticket_checksum=expect_ticket_checksum)
 
         kdc_exchange_dict['rep_ticket_creds'] = ticket_creds
 
@@ -3083,7 +3094,8 @@ class RawKerberosTest(TestCaseInTempDir):
                                         ticket_blob)
         self.assertEqual(expected_checksum, checksum)
 
-    def verify_ticket(self, ticket, krbtgt_key, expect_pac=True):
+    def verify_ticket(self, ticket, krbtgt_key, expect_pac=True,
+                      expect_ticket_checksum=True):
         # Check if the ticket is a TGT.
         sname = ticket.ticket['sname']
         is_tgt = self.is_tgs(sname)
@@ -3182,8 +3194,10 @@ class RawKerberosTest(TestCaseInTempDir):
             ticket_checksum, ticket_ctype = checksums.get(
                 krb5pac.PAC_TYPE_TICKET_CHECKSUM,
                 (None, None))
-            if self.strict_checking:
+            if expect_ticket_checksum:
                 self.assertIsNotNone(ticket_checksum)
+            elif expect_ticket_checksum is False:
+                self.assertIsNone(ticket_checksum)
             if ticket_checksum is not None:
                 enc_part['authorization-data'] = auth_data
                 enc_part = self.der_encode(enc_part,
