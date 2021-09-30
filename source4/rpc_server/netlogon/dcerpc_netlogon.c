@@ -2845,10 +2845,8 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 				  struct dom_sid *user_sid,
 				  struct ldb_dn *obj_dn)
 {
-	const char *rodc_attrs[] = { "msDS-KrbTgtLink",
-				     "msDS-NeverRevealGroup",
+	const char *rodc_attrs[] = { "msDS-NeverRevealGroup",
 				     "msDS-RevealOnDemandGroup",
-				     "objectGUID",
 				     "userAccountControl",
 				     NULL };
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };

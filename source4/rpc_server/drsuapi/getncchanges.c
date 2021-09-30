@@ -1171,7 +1171,6 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	const char *rodc_attrs[] = { "msDS-KrbTgtLink",
 				     "msDS-NeverRevealGroup",
 				     "msDS-RevealOnDemandGroup",
-				     "objectGUID",
 				     "userAccountControl",
 				     NULL };
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
