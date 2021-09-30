@@ -1171,10 +1171,10 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	const char *rodc_attrs[] = { "msDS-KrbTgtLink", "msDS-NeverRevealGroup", "msDS-RevealOnDemandGroup", "objectGUID", NULL };
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
 	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
-	const struct dom_sid **never_reveal_sids, **reveal_sids, **token_sids;
+	uint32_t num_never_reveal_sids, num_reveal_sids, num_token_sids;
+	struct dom_sid *never_reveal_sids, *reveal_sids, *token_sids;
 	const struct dom_sid *object_sid = NULL;
 	WERROR werr;
-	const struct dom_sid *additional_sids[] = { NULL, NULL };
 
 	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op on %s\n",
 		 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
@@ -1259,11 +1259,12 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 
 	/* if the object SID is equal to the user_sid, allow */
 	object_sid = samdb_result_dom_sid(mem_ctx, obj_res->msgs[0], "objectSid");
+	if (object_sid == NULL) {
+		goto failed;
+	}
 	if (dom_sid_equal(user_sid, object_sid)) {
 		goto allowed;
 	}
-
-	additional_sids[0] = object_sid;
 
 	/*
 	 * Must be an RODC account at this point, verify machine DN matches the
@@ -1294,13 +1295,17 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	}
 
 	werr = samdb_result_sid_array_dn(b_state->sam_ctx_system, rodc_res->msgs[0],
-					 mem_ctx, "msDS-NeverRevealGroup", &never_reveal_sids);
+					 mem_ctx, "msDS-NeverRevealGroup",
+					 &num_never_reveal_sids,
+					 &never_reveal_sids);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto denied;
 	}
 
 	werr = samdb_result_sid_array_dn(b_state->sam_ctx_system, rodc_res->msgs[0],
-					 mem_ctx, "msDS-RevealOnDemandGroup", &reveal_sids);
+					 mem_ctx, "msDS-RevealOnDemandGroup",
+					 &num_reveal_sids,
+					 &reveal_sids);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto denied;
 	}
@@ -1311,19 +1316,27 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	 * TODO determine if sIDHistory is required for this check
 	 */
 	werr = samdb_result_sid_array_ndr(b_state->sam_ctx_system, obj_res->msgs[0],
-					  mem_ctx, "tokenGroups", &token_sids,
-					  additional_sids, 1);
+					  mem_ctx, "tokenGroups",
+					  &num_token_sids,
+					  &token_sids,
+					  object_sid, 1);
 	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
 		goto denied;
 	}
 
 	if (never_reveal_sids &&
-	    sid_list_match(token_sids, never_reveal_sids)) {
+	    sid_list_match(num_token_sids,
+			   token_sids,
+			   num_never_reveal_sids,
+			   never_reveal_sids)) {
 		goto denied;
 	}
 
 	if (reveal_sids &&
-	    sid_list_match(token_sids, reveal_sids)) {
+	    sid_list_match(num_token_sids,
+			   token_sids,
+			   num_reveal_sids,
+			   reveal_sids)) {
 		goto allowed;
 	}
 
