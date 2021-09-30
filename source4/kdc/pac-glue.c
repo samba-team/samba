@@ -860,27 +860,6 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
-				struct samba_kdc_entry *p,
-				DATA_BLOB **_logon_info_blob)
-{
-	NTSTATUS nt_status;
-	DATA_BLOB *upn_blob = NULL;
-
-	nt_status = samba_kdc_get_pac_blobs(mem_ctx, p,
-					    _logon_info_blob,
-					    NULL, /* cred_blob */
-					    &upn_blob,
-					    NULL,
-					    NULL);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
-	TALLOC_FREE(upn_blob);
-	return NT_STATUS_OK;
-}
-
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
