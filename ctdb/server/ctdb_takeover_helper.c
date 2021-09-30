@@ -1193,6 +1193,7 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
+	bool status;
 	int ret;
 	struct tevent_req *req;
 	uint32_t *force_rebalance_nodes = NULL;
@@ -1231,6 +1232,13 @@ int main(int argc, const char *argv[])
 	ev = tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		D_ERR("tevent_context_init() failed\n");
+		ret = ENOMEM;
+		goto done;
+	}
+
+	status = logging_setup_sighup_handler(ev, mem_ctx, NULL, NULL);
+	if (!status) {
+		D_ERR("logging_setup_sighup_handler() failed\n");
 		ret = ENOMEM;
 		goto done;
 	}

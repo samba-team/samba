@@ -3121,6 +3121,7 @@ int main(int argc, char *argv[])
 	TALLOC_CTX *mem_ctx = NULL;
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
+	bool status;
 	int ret = 0;
 	struct tevent_req *req;
 	uint32_t generation;
@@ -3157,6 +3158,12 @@ int main(int argc, char *argv[])
 	ev = tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		D_ERR("tevent_context_init() failed\n");
+		goto failed;
+	}
+
+	status = logging_setup_sighup_handler(ev, mem_ctx, NULL, NULL);
+	if (!status) {
+		D_ERR("logging_setup_sighup_handler() failed\n");
 		goto failed;
 	}
 
