@@ -2854,8 +2854,8 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
 	WERROR werr;
 	struct dom_sid *object_sid;
-	uint32_t num_never_reveal_sids, num_reveal_sids, num_token_sids;
-	struct dom_sid *never_reveal_sids, *reveal_sids, *token_sids;
+	uint32_t num_token_sids;
+	struct dom_sid *token_sids;
 
 	rodc_dn = ldb_dn_new_fmt(mem_ctx, sam_ctx, "<SID=%s>",
 				 dom_sid_string(mem_ctx, user_sid));
@@ -2888,38 +2888,14 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 		goto denied;
 	}
 
-	werr = samdb_result_sid_array_dn(sam_ctx, rodc_res->msgs[0],
-					 mem_ctx, "msDS-NeverRevealGroup",
-					 &num_never_reveal_sids,
-					 &never_reveal_sids);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto denied;
-	}
+	werr = samdb_confirm_rodc_allowed_to_repl_to_sid_list(sam_ctx,
+							      rodc_res->msgs[0],
+							      num_token_sids,
+							      token_sids);
 
-	werr = samdb_result_sid_array_dn(sam_ctx, rodc_res->msgs[0],
-					 mem_ctx, "msDS-RevealOnDemandGroup",
-					 &num_reveal_sids,
-					 &reveal_sids);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto denied;
-	}
-
-	if (never_reveal_sids &&
-	    sid_list_match(num_token_sids,
-			   token_sids,
-			   num_never_reveal_sids,
-			   never_reveal_sids)) {
-		goto denied;
-	}
-
-	if (reveal_sids &&
-	    sid_list_match(num_token_sids,
-			   token_sids,
-			   num_reveal_sids,
-			   reveal_sids)) {
+	if (W_ERROR_IS_OK(werr)) {
 		goto allowed;
 	}
-
 denied:
 	return false;
 allowed:
