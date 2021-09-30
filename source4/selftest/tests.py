@@ -920,9 +920,16 @@ planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.simple_tests",
                                 'FAST_SUPPORT': have_fast_support,
                                 'TKT_SIG_SUPPORT': tkt_sig_support})
 planoldpythontestsuite("ad_dc_default:local", "samba.tests.krb5.s4u_tests",
-                       environ={'SERVICE_USERNAME':'srv_account',
-                                'SERVICE_PASSWORD':'$PASSWORD',
+                       environ={'ADMIN_USERNAME':'$USERNAME',
+                                'ADMIN_PASSWORD':'$PASSWORD',
                                 'FOR_USER':'$USERNAME',
+                                'STRICT_CHECKING':'0',
+                                'FAST_SUPPORT': have_fast_support,
+                                'TKT_SIG_SUPPORT': tkt_sig_support})
+planoldpythontestsuite("rodc:local", "samba.tests.krb5.rodc_tests",
+                       environ={'ADMIN_USERNAME':'$USERNAME',
+                                'ADMIN_PASSWORD':'$PASSWORD',
+                                'STRICT_CHECKING':'0',
                                 'FAST_SUPPORT': have_fast_support,
                                 'TKT_SIG_SUPPORT': tkt_sig_support})
 
