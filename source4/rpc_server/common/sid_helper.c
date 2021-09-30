@@ -213,3 +213,48 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
 	return WERR_DS_DRA_SECRETS_DENIED;
 
 }
+
+/*
+ * This is a wrapper for the above that pulls in the tokenGroups
+ * rather than relying on the caller providing those
+ */
+WERROR samdb_confirm_rodc_allowed_to_repl_to(struct ldb_context *sam_ctx,
+					     struct ldb_message *rodc_msg,
+					     struct ldb_message *obj_msg)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	WERROR werr;
+	uint32_t num_token_sids;
+	struct dom_sid *token_sids;
+	const struct dom_sid *object_sid = NULL;
+
+	object_sid = samdb_result_dom_sid(frame,
+					  obj_msg,
+					  "objectSid");
+	if (object_sid == NULL) {
+		return WERR_DS_DRA_BAD_DN;
+	}
+	
+	/*
+	 * The SID list needs to include itself as well as the tokenGroups.
+	 *
+	 * TODO determine if sIDHistory is required for this check
+	 */
+	werr = samdb_result_sid_array_ndr(sam_ctx,
+					  obj_msg,
+					  frame, "tokenGroups",
+					  &num_token_sids,
+					  &token_sids,
+					  object_sid, 1);
+	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
+		return WERR_DS_DRA_SECRETS_DENIED;
+	}
+
+	werr = samdb_confirm_rodc_allowed_to_repl_to_sid_list(sam_ctx,
+							      rodc_msg,
+							      obj_msg,
+							      num_token_sids,
+							      token_sids);
+	TALLOC_FREE(frame);
+	return werr;
+}
