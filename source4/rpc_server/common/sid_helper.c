@@ -133,16 +133,37 @@ WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
 
 WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ctx,
 						      struct ldb_message *rodc_msg,
+						      struct ldb_message *obj_msg,
 						      uint32_t num_token_sids,
 						      struct dom_sid *token_sids)
 {
 	uint32_t num_never_reveal_sids, num_reveal_sids;
 	struct dom_sid *never_reveal_sids, *reveal_sids;
 	TALLOC_CTX *frame = talloc_stackframe();
-	WERROR werr = samdb_result_sid_array_dn(sam_ctx, rodc_msg,
-						frame, "msDS-NeverRevealGroup",
-						&num_never_reveal_sids,
-						&never_reveal_sids);
+	WERROR werr;
+	
+	/*
+	 * We are not allowed to get anyone elses krbtgt secrets (and
+	 * in callers that don't shortcut before this, the RODC should
+	 * not deal with any krbtgt)
+	 */
+	if (samdb_result_dn(sam_ctx, frame,
+			    obj_msg, "msDS-KrbTgtLinkBL", NULL)) {
+		TALLOC_FREE(frame);
+		return WERR_DS_DRA_SECRETS_DENIED;
+	}
+
+	if (ldb_msg_find_attr_as_uint(obj_msg,
+				      "userAccountControl", 0) &
+	    UF_INTERDOMAIN_TRUST_ACCOUNT) {
+		TALLOC_FREE(frame);
+		return WERR_DS_DRA_SECRETS_DENIED;
+	}
+
+	werr = samdb_result_sid_array_dn(sam_ctx, rodc_msg,
+					 frame, "msDS-NeverRevealGroup",
+					 &num_never_reveal_sids,
+					 &never_reveal_sids);
 	if (!W_ERROR_IS_OK(werr)) {
 		TALLOC_FREE(frame);
 		return WERR_DS_DRA_SECRETS_DENIED;

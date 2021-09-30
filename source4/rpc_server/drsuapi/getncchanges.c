@@ -1296,20 +1296,9 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 		goto denied;
 	}
 
-	/* but it isn't allowed to get anyone elses krbtgt secrets */
-	if (samdb_result_dn(b_state->sam_ctx_system, mem_ctx,
-			    obj_res->msgs[0], "msDS-KrbTgtLinkBL", NULL)) {
-		goto denied;
-	}
-
-	if (ldb_msg_find_attr_as_uint(obj_res->msgs[0],
-				      "userAccountControl", 0) &
-	    UF_INTERDOMAIN_TRUST_ACCOUNT) {
-		goto denied;
-	}
-
 	werr = samdb_confirm_rodc_allowed_to_repl_to_sid_list(b_state->sam_ctx_system,
 							      rodc_res->msgs[0],
+							      obj_res->msgs[0],
 							      num_token_sids,
 							      token_sids);
 
