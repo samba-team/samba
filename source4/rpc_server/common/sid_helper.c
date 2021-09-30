@@ -141,6 +141,7 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
 	struct dom_sid *never_reveal_sids, *reveal_sids;
 	TALLOC_CTX *frame = talloc_stackframe();
 	WERROR werr;
+	uint32_t rodc_uac;
 	
 	/*
 	 * We are not allowed to get anyone elses krbtgt secrets (and
@@ -157,6 +158,18 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
 				      "userAccountControl", 0) &
 	    UF_INTERDOMAIN_TRUST_ACCOUNT) {
 		TALLOC_FREE(frame);
+		return WERR_DS_DRA_SECRETS_DENIED;
+	}
+
+	/* Be very sure the RODC is really an RODC */
+	rodc_uac = ldb_msg_find_attr_as_uint(rodc_msg,
+					     "userAccountControl",
+					     0);
+	if ((rodc_uac & UF_PARTIAL_SECRETS_ACCOUNT)
+	    != UF_PARTIAL_SECRETS_ACCOUNT) {
+		TALLOC_FREE(frame);
+		DBG_ERR("Attempt to use an RODC account that is not an RODC: %s\n",
+			ldb_dn_get_linearized(rodc_msg->dn));
 		return WERR_DS_DRA_SECRETS_DENIED;
 	}
 
