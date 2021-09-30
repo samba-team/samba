@@ -667,3 +667,78 @@ int logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 	talloc_free(option);
 	return ret;
 }
+
+bool logging_reopen_logs(void)
+{
+	bool status;
+
+	status = reopen_logs_internal();
+
+	return status;
+}
+
+struct logging_reopen_logs_data {
+	void (*hook)(void *private_data);
+	void *private_data;
+};
+
+static void logging_sig_hup_handler(struct tevent_context *ev,
+				    struct tevent_signal *se,
+				    int signum,
+				    int count,
+				    void *dont_care,
+				    void *private_data)
+{
+	bool status;
+
+	if (private_data != NULL) {
+		struct logging_reopen_logs_data *data = talloc_get_type_abort(
+			private_data, struct logging_reopen_logs_data);
+
+		if (data->hook != NULL) {
+			data->hook(data->private_data);
+		}
+	}
+
+	status = logging_reopen_logs();
+	if (!status) {
+		D_WARNING("Failed to reopen logs\n");
+		return;
+	}
+
+	D_NOTICE("Reopened logs\n");
+
+}
+
+bool logging_setup_sighup_handler(struct tevent_context *ev,
+				  TALLOC_CTX *talloc_ctx,
+				  void (*hook)(void *private_data),
+				  void *private_data)
+{
+	struct logging_reopen_logs_data *data = NULL;
+	struct tevent_signal *se;
+
+	if (hook != NULL) {
+		data = talloc(talloc_ctx, struct logging_reopen_logs_data);
+		if (data == NULL) {
+			return false;
+		}
+
+		data->hook = hook;
+		data->private_data = private_data;
+	}
+
+
+	se = tevent_add_signal(ev,
+			       talloc_ctx,
+			       SIGHUP,
+			       0,
+			       logging_sig_hup_handler,
+			       data);
+	if (se == NULL) {
+		talloc_free(data);
+		return false;
+	}
+
+	return true;
+}

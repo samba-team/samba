@@ -21,6 +21,7 @@
 #define __CTDB_LOGGING_H__
 
 #include <talloc.h>
+#include <tevent.h>
 #include "lib/util/debug.h"
 
 #define DEBUG_ERR     DBGLVL_ERR
@@ -40,5 +41,11 @@ int debug_level_from_string(const char *log_string);
 bool logging_validate(const char *logging);
 int logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 		 const char *debuglevel, const char *app_name);
+
+bool logging_reopen_logs(void);
+bool logging_setup_sighup_handler(struct tevent_context *ev,
+				  TALLOC_CTX *talloc_ctx,
+				  void (*hook)(void *private_data),
+				  void *private_data);
 
 #endif /* __CTDB_LOGGING_H__ */
