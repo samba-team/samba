@@ -2858,9 +2858,6 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 	int ret;
 	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
 	WERROR werr;
-	struct dom_sid *object_sid;
-	uint32_t num_token_sids;
-	struct dom_sid *token_sids;
 
 	rodc_dn = ldb_dn_new_fmt(mem_ctx, sam_ctx, "<SID=%s>",
 				 dom_sid_string(mem_ctx, user_sid));
@@ -2874,30 +2871,9 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 	ret = dsdb_search_dn(sam_ctx, mem_ctx, &obj_res, obj_dn, obj_attrs, 0);
 	if (ret != LDB_SUCCESS || obj_res->count != 1) goto denied;
 
-	object_sid = samdb_result_dom_sid(mem_ctx, obj_res->msgs[0], "objectSid");
-	if (object_sid == NULL) {
-		goto denied;
-	}
-
-	/*
-	 * The SID list needs to include itself as well as the tokenGroups.
-	 *
-	 * TODO determine if sIDHistory is required for this check
-	 */
-	werr = samdb_result_sid_array_ndr(sam_ctx, obj_res->msgs[0],
-					  mem_ctx, "tokenGroups",
-					  &num_token_sids,
-					  &token_sids,
-					  object_sid, 1);
-	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
-		goto denied;
-	}
-
-	werr = samdb_confirm_rodc_allowed_to_repl_to_sid_list(sam_ctx,
-							      rodc_res->msgs[0],
-							      obj_res->msgs[0],
-							      num_token_sids,
-							      token_sids);
+	werr = samdb_confirm_rodc_allowed_to_repl_to(sam_ctx,
+						     rodc_res->msgs[0],
+						     obj_res->msgs[0]);
 
 	if (W_ERROR_IS_OK(werr)) {
 		goto allowed;
