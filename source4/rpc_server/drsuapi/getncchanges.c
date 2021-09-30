@@ -1171,8 +1171,8 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	const char *rodc_attrs[] = { "msDS-KrbTgtLink", "msDS-NeverRevealGroup", "msDS-RevealOnDemandGroup", "objectGUID", NULL };
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
 	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
-	uint32_t num_never_reveal_sids, num_reveal_sids, num_token_sids;
-	struct dom_sid *never_reveal_sids, *reveal_sids, *token_sids;
+	uint32_t num_token_sids;
+	struct dom_sid *token_sids;
 	const struct dom_sid *object_sid = NULL;
 	WERROR werr;
 
@@ -1308,35 +1308,12 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 		goto denied;
 	}
 
-	werr = samdb_result_sid_array_dn(b_state->sam_ctx_system, rodc_res->msgs[0],
-					 mem_ctx, "msDS-NeverRevealGroup",
-					 &num_never_reveal_sids,
-					 &never_reveal_sids);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto denied;
-	}
+	werr = samdb_confirm_rodc_allowed_to_repl_to_sid_list(b_state->sam_ctx_system,
+							      rodc_res->msgs[0],
+							      num_token_sids,
+							      token_sids);
 
-	werr = samdb_result_sid_array_dn(b_state->sam_ctx_system, rodc_res->msgs[0],
-					 mem_ctx, "msDS-RevealOnDemandGroup",
-					 &num_reveal_sids,
-					 &reveal_sids);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto denied;
-	}
-
-	if (never_reveal_sids &&
-	    sid_list_match(num_token_sids,
-			   token_sids,
-			   num_never_reveal_sids,
-			   never_reveal_sids)) {
-		goto denied;
-	}
-
-	if (reveal_sids &&
-	    sid_list_match(num_token_sids,
-			   token_sids,
-			   num_reveal_sids,
-			   reveal_sids)) {
+	if (W_ERROR_IS_OK(werr)) {
 		goto allowed;
 	}
 

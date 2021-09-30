@@ -130,3 +130,52 @@ WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
 
 	return WERR_OK;
 }
+
+WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ctx,
+						      struct ldb_message *rodc_msg,
+						      uint32_t num_token_sids,
+						      struct dom_sid *token_sids)
+{
+	uint32_t num_never_reveal_sids, num_reveal_sids;
+	struct dom_sid *never_reveal_sids, *reveal_sids;
+	TALLOC_CTX *frame = talloc_stackframe();
+	WERROR werr = samdb_result_sid_array_dn(sam_ctx, rodc_msg,
+						frame, "msDS-NeverRevealGroup",
+						&num_never_reveal_sids,
+						&never_reveal_sids);
+	if (!W_ERROR_IS_OK(werr)) {
+		TALLOC_FREE(frame);
+		return WERR_DS_DRA_SECRETS_DENIED;
+	}
+
+	werr = samdb_result_sid_array_dn(sam_ctx, rodc_msg,
+					 frame, "msDS-RevealOnDemandGroup",
+					 &num_reveal_sids,
+					 &reveal_sids);
+	if (!W_ERROR_IS_OK(werr)) {
+		TALLOC_FREE(frame);
+		return WERR_DS_DRA_SECRETS_DENIED;
+	}
+
+	if (never_reveal_sids &&
+	    sid_list_match(num_token_sids,
+			   token_sids,
+			   num_never_reveal_sids,
+			   never_reveal_sids)) {
+		TALLOC_FREE(frame);
+		return WERR_DS_DRA_SECRETS_DENIED;
+	}
+
+	if (reveal_sids &&
+	    sid_list_match(num_token_sids,
+			   token_sids,
+			   num_reveal_sids,
+			   reveal_sids)) {
+		TALLOC_FREE(frame);
+		return WERR_OK;
+	}
+
+	TALLOC_FREE(frame);
+	return WERR_DS_DRA_SECRETS_DENIED;
+
+}
