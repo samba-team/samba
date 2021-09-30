@@ -2916,6 +2916,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 {
 	struct tevent_signal *se;
 	struct ctdb_recoverd *rec;
+	bool status;
 
 	DEBUG(DEBUG_NOTICE,("monitor_cluster starting\n"));
 
@@ -2934,6 +2935,15 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	rec->priority_time = timeval_current();
 	rec->frozen_on_inactive = false;
+
+	status = logging_setup_sighup_handler(rec->ctdb->ev,
+					      rec,
+					      NULL,
+					      NULL);
+	if (!status) {
+		D_ERR("Failed to install SIGHUP handler\n");
+		exit(1);
+	}
 
 	se = tevent_add_signal(ctdb->ev, ctdb, SIGTERM, 0,
 			       recd_sig_term_handler, rec);
