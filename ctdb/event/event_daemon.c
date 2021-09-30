@@ -74,6 +74,15 @@ static int event_daemon_reconfigure(void *private_data)
 	return 0;
 }
 
+static int event_daemon_reopen_logs(void *private_data)
+{
+	bool status;
+
+	status = logging_reopen_logs();
+
+	return status ? 0 : 1;
+}
+
 static void event_daemon_shutdown(void *private_data)
 {
 	struct event_daemon_state *e_state = talloc_get_type_abort(
@@ -307,6 +316,7 @@ int main(int argc, const char **argv)
 	daemon_funcs = (struct sock_daemon_funcs) {
 		.startup = event_daemon_startup,
 		.reconfigure = event_daemon_reconfigure,
+		.reopen_logs = event_daemon_reopen_logs,
 		.shutdown = event_daemon_shutdown,
 	};
 
