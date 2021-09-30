@@ -101,30 +101,14 @@ static struct tevent_req *idmap_script_xid2sid_send(
 		    return tevent_req_post(req, ev);
 	}
 
-	state->argl = talloc_zero_array(state,
-					char *,
-					5);
+	state->argl = str_list_make_empty(state);
+	str_list_add_printf(&state->argl, "%s", script);
+	str_list_add_printf(&state->argl, "IDTOSID");
+	str_list_add_printf(&state->argl, "%cID", key);
+	str_list_add_printf(&state->argl, "%lu", (unsigned long)xid.id);
 	if (tevent_req_nomem(state->argl, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->argl[0] = talloc_strdup(state->argl, script);
-	if (tevent_req_nomem(state->argl[0], req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->argl[1] = talloc_strdup(state->argl, "IDTOSID");
-	if (tevent_req_nomem(state->argl[1], req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->argl[2] = talloc_asprintf(state->argl, "%cID", key);
-	if (tevent_req_nomem(state->argl[2], req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->argl[3] = talloc_asprintf(state->argl, "%lu",
-				(unsigned long)xid.id);
-	if (tevent_req_nomem(state->argl[3], req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->argl[4] = NULL;
 
 	subreq = file_ploadv_send(state, ev, state->argl, 1024);
 	if (tevent_req_nomem(subreq, req)) {
@@ -361,26 +345,14 @@ static struct tevent_req *idmap_script_sid2xid_send(
 	}
 	state->idx = idx;
 
-	state->argl = talloc_zero_array(state,
-					char *,
-					4);
+	state->argl = str_list_make_empty(state);
+	str_list_add_printf(&state->argl, "%s", script);
+	str_list_add_printf(&state->argl, "SIDTOID");
+	str_list_add_printf(
+		&state->argl, "%s", dom_sid_str_buf(sid, &sidbuf));
 	if (tevent_req_nomem(state->argl, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->argl[0] = talloc_strdup(state->argl, script);
-	if (tevent_req_nomem(state->argl[0], req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->argl[1] = talloc_strdup(state->argl, "SIDTOID");
-	if (tevent_req_nomem(state->argl[1], req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->argl[2] = talloc_asprintf(state->argl, "%s",
-			dom_sid_str_buf(sid, &sidbuf));
-	if (tevent_req_nomem(state->argl[2], req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->argl[3] = NULL;
 
 	subreq = file_ploadv_send(state, ev, state->argl, 1024);
 	if (tevent_req_nomem(subreq, req)) {
