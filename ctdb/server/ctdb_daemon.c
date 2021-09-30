@@ -1496,6 +1496,7 @@ static void sighup_hook(void *private_data)
 	if (ctdb->recoverd_pid > 0) {
 		kill(ctdb->recoverd_pid, SIGHUP);
 	}
+	ctdb_event_reopen_logs(ctdb);
 }
 
 /*

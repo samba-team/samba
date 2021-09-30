@@ -837,3 +837,10 @@ int ctdb_event_script(struct ctdb_context *ctdb, enum ctdb_event call)
 	/* GCC complains about empty format string, so use %s and "". */
 	return ctdb_event_script_args(ctdb, call, NULL);
 }
+
+void ctdb_event_reopen_logs(struct ctdb_context *ctdb)
+{
+	if (ctdb->ectx->eventd_pid > 0) {
+		kill(ctdb->ectx->eventd_pid, SIGHUP);
+	}
+}
