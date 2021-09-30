@@ -2913,6 +2913,16 @@ done:
 	}
 }
 
+static void recd_sighup_hook(void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type_abort(
+		private_data, struct ctdb_recoverd);
+
+	if (rec->helper_pid > 0) {
+		kill(rec->helper_pid, SIGHUP);
+	}
+}
+
 /*
   the main monitoring loop
  */
@@ -2943,8 +2953,8 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	status = logging_setup_sighup_handler(rec->ctdb->ev,
 					      rec,
-					      NULL,
-					      NULL);
+					      recd_sighup_hook,
+					      rec);
 	if (!status) {
 		D_ERR("Failed to install SIGHUP handler\n");
 		exit(1);
