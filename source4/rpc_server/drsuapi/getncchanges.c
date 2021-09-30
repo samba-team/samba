@@ -1176,8 +1176,6 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 				     NULL };
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
 	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
-	uint32_t num_token_sids;
-	struct dom_sid *token_sids;
 	const struct dom_sid *object_sid = NULL;
 	WERROR werr;
 
@@ -1287,25 +1285,9 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 		goto allowed;
 	}
 
-	/*
-	 * The SID list needs to include itself as well as the tokenGroups.
-	 *
-	 * TODO determine if sIDHistory is required for this check
-	 */
-	werr = samdb_result_sid_array_ndr(b_state->sam_ctx_system, obj_res->msgs[0],
-					  mem_ctx, "tokenGroups",
-					  &num_token_sids,
-					  &token_sids,
-					  object_sid, 1);
-	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
-		goto denied;
-	}
-
-	werr = samdb_confirm_rodc_allowed_to_repl_to_sid_list(b_state->sam_ctx_system,
-							      rodc_res->msgs[0],
-							      obj_res->msgs[0],
-							      num_token_sids,
-							      token_sids);
+	werr = samdb_confirm_rodc_allowed_to_repl_to(b_state->sam_ctx_system,
+						     rodc_res->msgs[0],
+						     obj_res->msgs[0]);
 
 	if (W_ERROR_IS_OK(werr)) {
 		goto allowed;
