@@ -2891,6 +2891,7 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 
 	werr = samdb_confirm_rodc_allowed_to_repl_to_sid_list(sam_ctx,
 							      rodc_res->msgs[0],
+							      obj_res->msgs[0],
 							      num_token_sids,
 							      token_sids);
 
