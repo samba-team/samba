@@ -263,6 +263,7 @@ struct ctdb_recoverd {
 	struct ctdb_node_capabilities *caps;
 	bool frozen_on_inactive;
 	struct ctdb_recovery_lock_handle *recovery_lock_handle;
+	pid_t helper_pid;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -899,6 +900,7 @@ static int helper_run(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	close(state->fd[1]);
 	state->fd[1] = -1;
 
+	rec->helper_pid = state->pid;
 	state->done = false;
 
 	fde = tevent_add_fd(rec->ctdb->ev, state, state->fd[0],
@@ -927,6 +929,7 @@ static int helper_run(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	rec->helper_pid = -1;
 	ctdb_kill(rec->ctdb, state->pid, SIGKILL);
 	talloc_free(state);
 	return 0;
@@ -938,6 +941,7 @@ fail:
 	if (state->fd[1] != -1) {
 		close(state->fd[1]);
 	}
+	rec->helper_pid = -1;
 	if (state->pid != -1) {
 		ctdb_kill(rec->ctdb, state->pid, SIGKILL);
 	}
@@ -2926,6 +2930,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	rec->ctdb = ctdb;
 	rec->recmaster = CTDB_UNKNOWN_PNN;
 	rec->recovery_lock_handle = NULL;
+	rec->helper_pid = -1;
 
 	rec->takeover_run = ctdb_op_init(rec, "takeover runs");
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->takeover_run);
