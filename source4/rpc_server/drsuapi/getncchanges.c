@@ -1282,6 +1282,20 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 		goto allowed;
 	}
 
+	/*
+	 * The SID list needs to include itself as well as the tokenGroups.
+	 *
+	 * TODO determine if sIDHistory is required for this check
+	 */
+	werr = samdb_result_sid_array_ndr(b_state->sam_ctx_system, obj_res->msgs[0],
+					  mem_ctx, "tokenGroups",
+					  &num_token_sids,
+					  &token_sids,
+					  object_sid, 1);
+	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
+		goto denied;
+	}
+
 	/* but it isn't allowed to get anyone elses krbtgt secrets */
 	if (samdb_result_dn(b_state->sam_ctx_system, mem_ctx,
 			    obj_res->msgs[0], "msDS-KrbTgtLinkBL", NULL)) {
@@ -1307,20 +1321,6 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 					 &num_reveal_sids,
 					 &reveal_sids);
 	if (!W_ERROR_IS_OK(werr)) {
-		goto denied;
-	}
-
-	/*
-	 * The SID list needs to include itself as well as the tokenGroups.
-	 *
-	 * TODO determine if sIDHistory is required for this check
-	 */
-	werr = samdb_result_sid_array_ndr(b_state->sam_ctx_system, obj_res->msgs[0],
-					  mem_ctx, "tokenGroups",
-					  &num_token_sids,
-					  &token_sids,
-					  object_sid, 1);
-	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
 		goto denied;
 	}
 

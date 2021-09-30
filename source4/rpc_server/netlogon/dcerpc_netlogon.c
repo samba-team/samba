@@ -2874,6 +2874,20 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 		goto denied;
 	}
 
+	/*
+	 * The SID list needs to include itself as well as the tokenGroups.
+	 *
+	 * TODO determine if sIDHistory is required for this check
+	 */
+	werr = samdb_result_sid_array_ndr(sam_ctx, obj_res->msgs[0],
+					  mem_ctx, "tokenGroups",
+					  &num_token_sids,
+					  &token_sids,
+					  object_sid, 1);
+	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
+		goto denied;
+	}
+
 	werr = samdb_result_sid_array_dn(sam_ctx, rodc_res->msgs[0],
 					 mem_ctx, "msDS-NeverRevealGroup",
 					 &num_never_reveal_sids,
@@ -2887,20 +2901,6 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 					 &num_reveal_sids,
 					 &reveal_sids);
 	if (!W_ERROR_IS_OK(werr)) {
-		goto denied;
-	}
-
-	/*
-	 * The SID list needs to include itself as well as the tokenGroups.
-	 *
-	 * TODO determine if sIDHistory is required for this check
-	 */
-	werr = samdb_result_sid_array_ndr(sam_ctx, obj_res->msgs[0],
-					  mem_ctx, "tokenGroups",
-					  &num_token_sids,
-					  &token_sids,
-					  object_sid, 1);
-	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
 		goto denied;
 	}
 
