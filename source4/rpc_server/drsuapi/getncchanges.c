@@ -1168,7 +1168,12 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	struct ldb_dn *ntds_dn = NULL, *server_dn = NULL;
 	struct ldb_dn *rodc_dn, *krbtgt_link_dn;
 	int ret;
-	const char *rodc_attrs[] = { "msDS-KrbTgtLink", "msDS-NeverRevealGroup", "msDS-RevealOnDemandGroup", "objectGUID", NULL };
+	const char *rodc_attrs[] = { "msDS-KrbTgtLink",
+				     "msDS-NeverRevealGroup",
+				     "msDS-RevealOnDemandGroup",
+				     "objectGUID",
+				     "userAccountControl",
+				     NULL };
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
 	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
 	uint32_t num_token_sids;
