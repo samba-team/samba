@@ -1495,6 +1495,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb,
 		      bool interactive,
 		      bool test_mode_enabled)
 {
+	bool status;
 	int ret;
 	struct tevent_fd *fde;
 
@@ -1547,6 +1548,15 @@ int ctdb_start_daemon(struct ctdb_context *ctdb,
 	tevent_loop_allow_nesting(ctdb->ev);
 	ctdb_tevent_trace_init();
 	tevent_set_trace_callback(ctdb->ev, ctdb_tevent_trace, ctdb);
+
+	status = logging_setup_sighup_handler(ctdb->ev,
+					      ctdb,
+					      NULL,
+					      NULL);
+	if (!status) {
+		D_ERR("Failed to set up signal handler for SIGHUP\n");
+		exit(1);
+	}
 
 	/* set up a handler to pick up sigchld */
 	if (ctdb_init_sigchld(ctdb) == NULL) {
