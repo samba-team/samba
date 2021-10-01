@@ -2877,6 +2877,7 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 	if (ret != LDB_SUCCESS || obj_res->count != 1) goto denied;
 
 	werr = samdb_confirm_rodc_allowed_to_repl_to(sam_ctx,
+						     user_sid,
 						     rodc_res->msgs[0],
 						     obj_res->msgs[0]);
 

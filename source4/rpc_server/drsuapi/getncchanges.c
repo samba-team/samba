@@ -1174,7 +1174,6 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 				     NULL };
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
 	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
-	const struct dom_sid *object_sid = NULL;
 	WERROR werr;
 
 	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op on %s\n",
@@ -1262,15 +1261,6 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	ret = dsdb_search_dn(b_state->sam_ctx_system, mem_ctx, &obj_res, obj_dn, obj_attrs, 0);
 	if (ret != LDB_SUCCESS || obj_res->count != 1) goto failed;
 
-	/* if the object SID is equal to the user_sid, allow */
-	object_sid = samdb_result_dom_sid(mem_ctx, obj_res->msgs[0], "objectSid");
-	if (object_sid == NULL) {
-		goto failed;
-	}
-	if (dom_sid_equal(user_sid, object_sid)) {
-		goto allowed;
-	}
-
 	/*
 	 * Must be an RODC account at this point, verify machine DN matches the
 	 * SID account
@@ -1288,6 +1278,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	}
 
 	werr = samdb_confirm_rodc_allowed_to_repl_to(b_state->sam_ctx_system,
+						     user_sid,
 						     rodc_res->msgs[0],
 						     obj_res->msgs[0]);
 

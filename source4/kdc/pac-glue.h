@@ -52,8 +52,8 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB **_cred_ndr_blob,
 				 DATA_BLOB **_upn_info_blob,
 				 DATA_BLOB **_pac_attrs_blob,
-				 const krb5_boolean *pac_request);
-
+				 const krb5_boolean *pac_request,
+				 struct auth_user_info_dc **_user_info_dc);
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
@@ -79,3 +79,12 @@ krb5_error_code samba_kdc_validate_pac_blob(
 		krb5_context context,
 		struct samba_kdc_entry *client_skdc_entry,
 		const krb5_pac pac);
+
+/*
+ * In the RODC case, to confirm that the returned user is permitted to
+ * be replicated to the KDC (krbgtgt_xxx user) represented by *rodc
+ */
+WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_sids,
+					  struct dom_sid *sids,
+					  struct samba_kdc_entry *rodc,
+					  struct samba_kdc_entry *object);
