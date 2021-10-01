@@ -1251,7 +1251,11 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 				 dom_sid_string(mem_ctx, user_sid));
 	if (!ldb_dn_validate(rodc_dn)) goto failed;
 
-	/* do the two searches we need */
+	/*
+	 * do the two searches we need
+	 * We need DSDB_SEARCH_SHOW_EXTENDED_DN as we get a SID lists
+	 * out of the extended DNs
+	 */
 	ret = dsdb_search_dn(b_state->sam_ctx_system, mem_ctx, &rodc_res, rodc_dn, rodc_attrs,
 			     DSDB_SEARCH_SHOW_EXTENDED_DN);
 	if (ret != LDB_SUCCESS || rodc_res->count != 1) goto failed;
