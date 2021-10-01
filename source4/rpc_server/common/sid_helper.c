@@ -151,12 +151,18 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
 	if (samdb_result_dn(sam_ctx, frame,
 			    obj_msg, "msDS-KrbTgtLinkBL", NULL)) {
 		TALLOC_FREE(frame);
+		DBG_INFO("Denied attempt to replicate to/act as a RODC krbtgt trust account %s using RODC: %s\n",
+			 ldb_dn_get_linearized(obj_msg->dn),
+			 ldb_dn_get_linearized(rodc_msg->dn));
 		return WERR_DS_DRA_SECRETS_DENIED;
 	}
 
 	if (ldb_msg_find_attr_as_uint(obj_msg,
 				      "userAccountControl", 0) &
 	    UF_INTERDOMAIN_TRUST_ACCOUNT) {
+		DBG_INFO("Denied attempt to replicate to/act as a inter-domain trust account %s using RODC: %s\n",
+			 ldb_dn_get_linearized(obj_msg->dn),
+			 ldb_dn_get_linearized(rodc_msg->dn));
 		TALLOC_FREE(frame);
 		return WERR_DS_DRA_SECRETS_DENIED;
 	}
@@ -167,9 +173,9 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
 					     0);
 	if ((rodc_uac & UF_PARTIAL_SECRETS_ACCOUNT)
 	    != UF_PARTIAL_SECRETS_ACCOUNT) {
-		TALLOC_FREE(frame);
 		DBG_ERR("Attempt to use an RODC account that is not an RODC: %s\n",
 			ldb_dn_get_linearized(rodc_msg->dn));
+		TALLOC_FREE(frame);
 		return WERR_DS_DRA_SECRETS_DENIED;
 	}
 
@@ -178,6 +184,9 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
 					 &num_never_reveal_sids,
 					 &never_reveal_sids);
 	if (!W_ERROR_IS_OK(werr)) {
+		DBG_ERR("Failed to parse msDS-NeverRevealGroup on %s: %s\n",
+			ldb_dn_get_linearized(rodc_msg->dn),
+			win_errstr(werr));
 		TALLOC_FREE(frame);
 		return WERR_DS_DRA_SECRETS_DENIED;
 	}
@@ -187,6 +196,9 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
 					 &num_reveal_sids,
 					 &reveal_sids);
 	if (!W_ERROR_IS_OK(werr)) {
+		DBG_ERR("Failed to parse msDS-RevealOnDemandGroup on %s: %s\n",
+			ldb_dn_get_linearized(rodc_msg->dn),
+			win_errstr(werr));
 		TALLOC_FREE(frame);
 		return WERR_DS_DRA_SECRETS_DENIED;
 	}
@@ -247,6 +259,10 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to(struct ldb_context *sam_ctx,
 					  &token_sids,
 					  object_sid, 1);
 	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
+		DBG_ERR("Failed to get tokenGroups on %s to confirm access via RODC %s: %s\n",
+			ldb_dn_get_linearized(obj_msg->dn),
+			ldb_dn_get_linearized(rodc_msg->dn),
+			win_errstr(werr));
 		return WERR_DS_DRA_SECRETS_DENIED;
 	}
 
