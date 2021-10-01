@@ -47,19 +47,18 @@ bool sid_list_match(uint32_t num_sids1,
 
 /*
  * Return an array of SIDs from a ldb_message given an attribute name assumes
- * the SIDs are in NDR form (with additional sids applied on the end).
+ * the SIDs are in NDR form (with primary_sid applied on the start).
  */
-WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
-				  struct ldb_message *msg,
-				  TALLOC_CTX *mem_ctx,
-				  const char *attr,
-				  uint32_t *num_sids,
-				  struct dom_sid **sids,
-				  const struct dom_sid *additional_sids,
-				  unsigned int num_additional)
+static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
+					 struct ldb_message *msg,
+					 TALLOC_CTX *mem_ctx,
+					 const char *attr,
+					 uint32_t *num_sids,
+					 struct dom_sid **sids,
+					 const struct dom_sid *primary_sid)
 {
 	struct ldb_message_element *el;
-	unsigned int i, j;
+	unsigned int i;
 
 	el = ldb_msg_find_element(msg, attr);
 	if (!el) {
@@ -69,24 +68,25 @@ WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
 
 	/* Make array long enough for NULL and additional SID */
 	(*sids) = talloc_array(mem_ctx, struct dom_sid,
-			       el->num_values + num_additional);
+			       el->num_values + 1);
 	W_ERROR_HAVE_NO_MEMORY(*sids);
 
-	for (i=0; i<el->num_values; i++) {
-		enum ndr_err_code ndr_err;
+	(*sids)[0] = *primary_sid;
 
-		ndr_err = ndr_pull_struct_blob_all_noalloc(&el->values[i], &(*sids)[i],
+	for (i = 0; i<el->num_values; i++) {
+		enum ndr_err_code ndr_err;
+		struct dom_sid sid = { 0, };
+
+		ndr_err = ndr_pull_struct_blob_all_noalloc(&el->values[i], &sid,
 					       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return WERR_INTERNAL_DB_CORRUPTION;
 		}
+		/* Primary SID is already in position zero. */
+		(*sids)[i+1] = sid;
 	}
 
-	for (j = 0; j < num_additional; j++) {
-		(*sids)[i++] = additional_sids[j];
-	}
-
-	*num_sids = i;
+	*num_sids = i+1;
 
 	return WERR_OK;
 }
@@ -131,6 +131,7 @@ WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
 }
 
 WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ctx,
+						      const struct dom_sid *rodc_machine_account_sid,
 						      struct ldb_message *rodc_msg,
 						      struct ldb_message *obj_msg,
 						      uint32_t num_token_sids,
@@ -202,6 +203,12 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
 		return WERR_DS_DRA_SECRETS_DENIED;
 	}
 
+	/* The RODC can replicate and print tickets for itself. */
+	if (dom_sid_equal(&token_sids[0], rodc_machine_account_sid)) {
+		TALLOC_FREE(frame);
+		return WERR_OK;
+	}
+
 	if (never_reveal_sids &&
 	    sid_list_match(num_token_sids,
 			   token_sids,
@@ -230,6 +237,7 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
  * rather than relying on the caller providing those
  */
 WERROR samdb_confirm_rodc_allowed_to_repl_to(struct ldb_context *sam_ctx,
+					     struct dom_sid *rodc_machine_account_sid,
 					     struct ldb_message *rodc_msg,
 					     struct ldb_message *obj_msg)
 {
@@ -256,7 +264,7 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to(struct ldb_context *sam_ctx,
 					  frame, "tokenGroups",
 					  &num_token_sids,
 					  &token_sids,
-					  object_sid, 1);
+					  object_sid);
 	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
 		DBG_ERR("Failed to get tokenGroups on %s to confirm access via RODC %s: %s\n",
 			ldb_dn_get_linearized(obj_msg->dn),
@@ -266,6 +274,7 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to(struct ldb_context *sam_ctx,
 	}
 
 	werr = samdb_confirm_rodc_allowed_to_repl_to_sid_list(sam_ctx,
+							      rodc_machine_account_sid,
 							      rodc_msg,
 							      obj_msg,
 							      num_token_sids,
