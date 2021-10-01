@@ -163,7 +163,7 @@ void hexedit_refresh(struct hexedit *buf)
 		size_t i, endline;
 
 		wmove(buf->win, lineno, 0);
-		wprintw(buf->win, "%08X  ", off);
+		wprintw(buf->win, "%08zX  ", off);
 
 		endline = BYTES_PER_LINE;
 
