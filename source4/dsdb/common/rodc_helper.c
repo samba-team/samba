@@ -23,7 +23,6 @@
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "source4/dsdb/samdb/samdb.h"
-#include "rpc_server/common/sid_helper.h"
 #include "libcli/security/security.h"
 
 /*
