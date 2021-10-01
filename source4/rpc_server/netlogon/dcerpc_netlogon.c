@@ -42,7 +42,6 @@
 #include "librpc/gen_ndr/ndr_winbind.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "lib/socket/netif.h"
-#include "rpc_server/common/sid_helper.h"
 #include "lib/util/util_str_escape.h"
 #include "lib/param/loadparm.h"
 
