@@ -85,7 +85,7 @@ esac
 	    $SANITIZER_ARG \
 	    --disable-warnings-as-errors \
 	    --abi-check-disable \
-	    --fuzz-target-ldflags="-Wl,--disable-new-dtags $LIB_FUZZING_ENGINE" \
+	    "--fuzz-target-ldflags=-Wl,--disable-new-dtags $LIB_FUZZING_ENGINE" \
 	    --nonshared-binary=ALL \
 	    "$@" \
 	    LINK_CC="$CXX"
