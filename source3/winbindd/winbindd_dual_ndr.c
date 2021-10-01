@@ -432,7 +432,6 @@ static NTSTATUS make_internal_dcesrv_connection(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-	conn->default_auth_state->session_info = ncacn_conn->session_info;
 	conn->default_auth_state->auth_finished = true;
 
 	context = talloc_zero(conn, struct dcesrv_connection_context);
