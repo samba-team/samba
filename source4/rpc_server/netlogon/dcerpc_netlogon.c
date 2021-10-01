@@ -2865,7 +2865,11 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 				 dom_sid_string(mem_ctx, user_sid));
 	if (!ldb_dn_validate(rodc_dn)) goto denied;
 
-	/* do the two searches we need */
+	/*
+	 * do the two searches we need
+	 * We need DSDB_SEARCH_SHOW_EXTENDED_DN as we get a SID list
+	 * out of the extended DNs
+	 */
 	ret = dsdb_search_dn(sam_ctx, mem_ctx, &rodc_res, rodc_dn, rodc_attrs,
 			     DSDB_SEARCH_SHOW_EXTENDED_DN);
 	if (ret != LDB_SUCCESS || rodc_res->count != 1) goto denied;
