@@ -35,6 +35,7 @@
 #include "libcli/security/security.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/kerberos/pac_utils.h"
+#include "source4/dsdb/common/util.h"
 
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
@@ -744,13 +745,19 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 	return 0;
 }
 
+/*
+ * We return not just the blobs, but also the user_info_dc because we
+ * will need, in the RODC case, to confirm that the returned user is
+ * permitted to be replicated to the KDC
+ */
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *p,
 				 DATA_BLOB **_logon_info_blob,
 				 DATA_BLOB **_cred_ndr_blob,
 				 DATA_BLOB **_upn_info_blob,
 				 DATA_BLOB **_pac_attrs_blob,
-				 const krb5_boolean *pac_request)
+				 const krb5_boolean *pac_request,
+				 struct auth_user_info_dc **_user_info_dc)
 {
 	struct auth_user_info_dc *user_info_dc;
 	DATA_BLOB *logon_blob = NULL;
@@ -848,7 +855,15 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	TALLOC_FREE(user_info_dc);
+	/*
+	 * Return to the caller to allow a check on the allowed/denied
+	 * RODC replication groups
+	 */
+	if (_user_info_dc == NULL) {
+		TALLOC_FREE(user_info_dc);
+	} else {
+		*_user_info_dc = user_info_dc;
+	}
 	*_logon_info_blob = logon_blob;
 	if (_cred_ndr_blob != NULL) {
 		*_cred_ndr_blob = cred_blob;
@@ -1093,4 +1108,91 @@ krb5_error_code samba_kdc_validate_pac_blob(
 out:
 	TALLOC_FREE(frame);
 	return code;
+}
+
+
+/*
+ * In the RODC case, to confirm that the returned user is permitted to
+ * be replicated to the KDC (krbgtgt_xxx user) represented by *rodc
+ */
+WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
+					  struct dom_sid *object_sids,
+					  struct samba_kdc_entry *rodc,
+					  struct samba_kdc_entry *object)
+{
+	int ret;
+	WERROR werr;
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *rodc_attrs[] = { "msDS-KrbTgtLink",
+				     "msDS-NeverRevealGroup",
+				     "msDS-RevealOnDemandGroup",
+				     "userAccountControl",
+				     "objectSid",
+				     NULL };
+	struct ldb_result *rodc_machine_account = NULL;
+	struct ldb_dn *rodc_machine_account_dn = samdb_result_dn(rodc->kdc_db_ctx->samdb,
+						 frame,
+						 rodc->msg,
+						 "msDS-KrbTgtLinkBL",
+						 NULL);
+	const struct dom_sid *rodc_machine_account_sid = NULL;
+
+	if (rodc_machine_account_dn == NULL) {
+		DBG_ERR("krbtgt account %s has no msDS-KrbTgtLinkBL to find RODC machine account for allow/deny list\n",
+			ldb_dn_get_linearized(rodc->msg->dn));
+		TALLOC_FREE(frame);
+		return WERR_DS_DRA_BAD_DN;
+	}
+
+	/*
+	 * Follow the link and get the RODC account (the krbtgt
+	 * account is the krbtgt_XXX account, but the
+	 * msDS-NeverRevealGroup and msDS-RevealOnDemandGroup is on
+	 * the RODC$ account)
+	 *
+	 * We need DSDB_SEARCH_SHOW_EXTENDED_DN as we get a SID lists
+	 * out of the extended DNs
+	 */
+
+	ret = dsdb_search_dn(rodc->kdc_db_ctx->samdb,
+			     frame,
+			     &rodc_machine_account,
+			     rodc_machine_account_dn,
+			     rodc_attrs,
+			     DSDB_SEARCH_SHOW_EXTENDED_DN);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to fetch RODC machine account %s pointed to by %s to check allow/deny list: %s\n",
+			ldb_dn_get_linearized(rodc_machine_account_dn),
+			ldb_dn_get_linearized(rodc->msg->dn),
+			ldb_errstring(rodc->kdc_db_ctx->samdb));
+		TALLOC_FREE(frame);
+		return WERR_DS_DRA_BAD_DN;
+	}
+
+	if (rodc_machine_account->count != 1) {
+		DBG_ERR("Failed to fetch RODC machine account %s pointed to by %s to check allow/deny list: (%d)\n",
+			ldb_dn_get_linearized(rodc_machine_account_dn),
+			ldb_dn_get_linearized(rodc->msg->dn),
+			rodc_machine_account->count);
+		TALLOC_FREE(frame);
+		return WERR_DS_DRA_BAD_DN;
+	}
+
+	/* if the object SID is equal to the user_sid, allow */
+	rodc_machine_account_sid = samdb_result_dom_sid(frame,
+					  rodc_machine_account->msgs[0],
+					  "objectSid");
+	if (rodc_machine_account_sid == NULL) {
+		return WERR_DS_DRA_BAD_DN;
+	}
+
+	werr = samdb_confirm_rodc_allowed_to_repl_to_sid_list(rodc->kdc_db_ctx->samdb,
+							      rodc_machine_account_sid,
+							      rodc_machine_account->msgs[0],
+							      object->msg,
+							      num_object_sids,
+							      object_sids);
+
+	TALLOC_FREE(frame);
+	return werr;
 }

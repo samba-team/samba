@@ -57,7 +57,10 @@
 						\
 	"pwdLastSet",				\
 	"msDS-UserPasswordExpiryTimeComputed",	\
-	"accountExpires"
+	"accountExpires",			\
+						\
+	/* Needed for RODC rule processing */	\
+	"msDS-KrbTgtLinkBL"
 
 const char *krbtgt_attrs[] = {
 	KRBTGT_ATTRS, NULL
