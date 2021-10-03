@@ -176,7 +176,7 @@ WERROR samdb_confirm_rodc_allowed_to_repl_to_sid_list(struct ldb_context *sam_ct
 		DBG_ERR("Attempt to use an RODC account that is not an RODC: %s\n",
 			ldb_dn_get_linearized(rodc_msg->dn));
 		TALLOC_FREE(frame);
-		return WERR_DS_DRA_SECRETS_DENIED;
+		return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
 	werr = samdb_result_sid_array_dn(sam_ctx, rodc_msg,

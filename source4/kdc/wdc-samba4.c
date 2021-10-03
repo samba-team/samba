@@ -276,7 +276,11 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 							  client_skdc_entry);
 		if (!W_ERROR_IS_OK(werr)) {
 			talloc_free(mem_ctx);
-			return KRB5KDC_ERR_TGT_REVOKED;
+			if (W_ERROR_EQUAL(werr, WERR_DOMAIN_CONTROLLER_NOT_FOUND)) {
+				return KRB5KDC_ERR_POLICY;
+			} else {
+				return KRB5KDC_ERR_TGT_REVOKED;
+			}
 		}
 	}
 
