@@ -61,6 +61,22 @@ BINDIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
 
 HEXDUMP_FILTER = bytearray([x if ((len(repr(chr(x))) == 3) and (x < 127)) else ord('.') for x in range(256)])
 
+LDB_ERR_LUT = {v: k for k,v in vars(ldb).items() if k.startswith('ERR_')}
+
+def ldb_err(v):
+    if isinstance(v, ldb.LdbError):
+        v = v.args[0]
+
+    if v in LDB_ERR_LUT:
+        return LDB_ERR_LUT[v]
+
+    try:
+        return f"[{', '.join(LDB_ERR_LUT.get(x, x) for x in v)}]"
+    except TypeError as e:
+        print(e)
+    return v
+
+
 def DynamicTestCase(cls):
     cls.setUpDynamicTestCases()
     return cls
