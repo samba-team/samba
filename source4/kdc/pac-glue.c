@@ -1141,7 +1141,7 @@ WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
 		DBG_ERR("krbtgt account %s has no msDS-KrbTgtLinkBL to find RODC machine account for allow/deny list\n",
 			ldb_dn_get_linearized(rodc->msg->dn));
 		TALLOC_FREE(frame);
-		return WERR_DS_DRA_BAD_DN;
+		return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
 	/*
@@ -1166,7 +1166,7 @@ WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
 			ldb_dn_get_linearized(rodc->msg->dn),
 			ldb_errstring(rodc->kdc_db_ctx->samdb));
 		TALLOC_FREE(frame);
-		return WERR_DS_DRA_BAD_DN;
+		return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
 	if (rodc_machine_account->count != 1) {
