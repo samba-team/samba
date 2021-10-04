@@ -169,6 +169,11 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 	/*TODO: create a new event context here! */
 	ev = auth_ctx->event_ctx;
 
+	/*
+	 * We are authoritative by default
+	 */
+	*pauthoritative = 1;
+
 	subreq = auth_check_password_send(mem_ctx,
 					  ev,
 					  auth_ctx,
