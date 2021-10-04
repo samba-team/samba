@@ -467,10 +467,9 @@ NTSTATUS _lsa_EnumTrustDom(struct pipes_struct *p,
 			   struct lsa_EnumTrustDom *r)
 {
 	struct lsa_info *info;
-	uint32_t count;
+	uint32_t i, count;
 	struct trustdom_info **domains;
 	struct lsa_DomainInfo *entries;
-	int i;
 	NTSTATUS nt_status;
 
 	info = find_policy_by_hnd(p,
