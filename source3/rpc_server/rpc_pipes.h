@@ -37,7 +37,6 @@ struct dcesrv_context;
 struct pipes_struct {
 	struct pipes_struct *next, *prev;
 
-	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
 
 	enum dcerpc_transport_t transport;

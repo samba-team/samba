@@ -25,6 +25,7 @@
 #include "winbindd/winbindd_proto.h"
 #include "rpc_client/cli_pipe.h"
 #include "ntdomain.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_winbind.h"
 #include "librpc/gen_ndr/ndr_winbind_scompat.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
@@ -930,6 +931,10 @@ reconnect:
 NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 			struct winbind_SamLogon *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *local_address =
+		dcesrv_connection_get_local_address(dcesrv_conn);
 	struct winbindd_domain *domain;
 	NTSTATUS status;
 	struct netr_IdentityInfo *identity_info = NULL;
@@ -1027,7 +1032,7 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 				       challenge,
 				       lm_response, nt_response,
 				       p->remote_address,
-				       p->local_address,
+				       local_address,
 				       &r->out.authoritative,
 				       true, /* skip_sam */
 				       &flags,

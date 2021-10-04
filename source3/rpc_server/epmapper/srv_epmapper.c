@@ -286,6 +286,8 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 error_status_t _epm_Lookup(struct pipes_struct *p,
 			   struct epm_Lookup *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
 	struct policy_handle *entry_handle;
 	struct rpc_eps *eps;
 	TALLOC_CTX *tmp_ctx;
@@ -310,6 +312,8 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 
 	if (r->in.entry_handle == NULL ||
 	    ndr_policy_handle_empty(r->in.entry_handle)) {
+		const struct tsocket_address *local_address =
+			dcesrv_connection_get_local_address(dcesrv_conn);
 		char *srv_addr = NULL;
 
 		DEBUG(7, ("_epm_Lookup: No entry_handle found, creating it.\n"));
@@ -320,11 +324,11 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			goto done;
 		}
 
-		if (p->local_address != NULL &&
-		    tsocket_address_is_inet(p->local_address, "ipv4"))
+		if (local_address != NULL &&
+		    tsocket_address_is_inet(local_address, "ipv4"))
 		{
-			srv_addr = tsocket_address_inet_addr_string(p->local_address,
-								    tmp_ctx);
+			srv_addr = tsocket_address_inet_addr_string(
+				local_address, tmp_ctx);
 		}
 
 		switch (r->in.inquiry_type) {
@@ -740,6 +744,8 @@ fail:
 error_status_t _epm_Map(struct pipes_struct *p,
 			struct epm_Map *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
 	struct policy_handle *entry_handle;
 	enum dcerpc_transport_t transport;
 	struct ndr_syntax_id ifid;
@@ -818,6 +824,8 @@ error_status_t _epm_Map(struct pipes_struct *p,
 
 	if (r->in.entry_handle == NULL ||
 	    ndr_policy_handle_empty(r->in.entry_handle)) {
+		const struct tsocket_address *local_addr =
+			dcesrv_connection_get_local_address(dcesrv_conn);
 		char *local_address = NULL;
 		struct ndr_syntax_id_buf buf;
 		char *if_string = NULL;
@@ -837,14 +845,14 @@ error_status_t _epm_Map(struct pipes_struct *p,
 		DBG_INFO("Mapping interface %s\n", if_string);
 
 		if ((transport == NCACN_IP_TCP) &&
-		    tsocket_address_is_inet(p->local_address, "ip")) {
+		    tsocket_address_is_inet(local_addr, "ip")) {
 			/*
 			 * We don't have the host ip in the epm
 			 * database. For NCACN_IP_TCP, add the IP that
 			 * the client connected to.
 			 */
 			local_address = tsocket_address_inet_addr_string(
-				p->local_address, tmp_ctx);
+				local_addr, tmp_ctx);
 		}
 
 		eps = epm_map_get_towers(
