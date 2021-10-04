@@ -2155,6 +2155,13 @@ void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain)
 
 void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
 {
+	/*
+	 * Make sure we start with authoritative=true,
+	 * it will only set to false if we don't know the
+	 * domain.
+	 */
+	resp->data.auth.authoritative = true;
+
 	resp->data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(resp->data.auth.nt_status_string, nt_errstr(result));
 
