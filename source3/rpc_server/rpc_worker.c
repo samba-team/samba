@@ -161,27 +161,6 @@ static int dcesrv_connection_destructor(struct dcesrv_connection *conn)
 	return 0;
 }
 
-static int make_base_pipes_struct(
-	TALLOC_CTX *mem_ctx,
-	struct messaging_context *msg_ctx,
-	const char *pipe_name,
-	enum dcerpc_transport_t transport,
-	struct pipes_struct **_p)
-{
-	struct pipes_struct *p;
-
-	p = talloc_zero(mem_ctx, struct pipes_struct);
-	if (!p) {
-		return ENOMEM;
-	}
-
-	p->msg_ctx = msg_ctx;
-	p->transport = transport;
-
-	*_p = p;
-	return 0;
-}
-
 /*
  * A new client has been passed to us from samba-dcerpcd.
  */
@@ -407,17 +386,13 @@ static void rpc_worker_new_client(
 		goto fail;
 	}
 
-	ret = make_base_pipes_struct(
-		ncacn_conn,
-		ncacn_conn->msg_ctx,
-		client->binding,
-		transport,
-		&ncacn_conn->p);
-	if (ret != 0) {
-		DBG_DEBUG("make_base_pipes_struct failed: %s\n",
-			  strerror(ret));
+	ncacn_conn->p = talloc_zero(ncacn_conn, struct pipes_struct);
+	if (ncacn_conn->p == NULL) {
+		DBG_DEBUG("talloc failed\n");
 		goto fail;
 	}
+	ncacn_conn->p->msg_ctx = ncacn_conn->msg_ctx;
+	ncacn_conn->p->transport = transport;
 
 	status = dcesrv_endpoint_connect(
 		ncacn_conn->dce_ctx,
