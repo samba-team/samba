@@ -45,11 +45,6 @@ struct pipes_struct {
 	struct pipe_auth_data auth;
 
 	/*
-	 * Set to true when an RPC bind has been done on this pipe.
-	 */
-	bool pipe_bound;
-
-	/*
 	 * Set the DCERPC_FAULT to return.
 	 */
 	int fault_state;

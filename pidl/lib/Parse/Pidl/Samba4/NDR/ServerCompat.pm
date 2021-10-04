@@ -226,11 +226,6 @@ sub boilerplate_iface($)
 	$self->pidl("static NTSTATUS $name\__op_bind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)");
 	$self->pidl("{");
 	$self->indent();
-	$self->pidl("struct pipes_struct *p = NULL;");
-	$self->pidl("");
-	$self->pidl("/* Retrieve pipes struct */");
-	$self->pidl("p = dcesrv_get_pipes_struct(context->conn);");
-	$self->pidl("p->pipe_bound = true;");
 	$self->pidlnoindent("#ifdef DCESRV_INTERFACE_$uname\_BIND");
 	$self->pidl("return DCESRV_INTERFACE_$uname\_BIND(context,iface);");
 	$self->pidlnoindent("#else");

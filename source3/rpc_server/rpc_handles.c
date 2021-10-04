@@ -204,9 +204,18 @@ bool pipe_access_check(struct pipes_struct *p)
 
 	if (lp_restrict_anonymous() > 0) {
 
+		struct dcesrv_call_state *dce_call = p->dce_call;
+		struct dcesrv_auth *auth_state = dce_call->auth_state;
+		enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+
+		if (!auth_state->auth_finished) {
+			return false;
+		}
+
+		dcesrv_call_auth_info(dce_call, &auth_type, NULL);
+
 		/* schannel, so we must be ok */
-		if (p->pipe_bound &&
-		    (p->auth.auth_type == DCERPC_AUTH_TYPE_SCHANNEL)) {
+		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
 			return True;
 		}
 
