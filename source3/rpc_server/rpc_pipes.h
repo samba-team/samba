@@ -67,9 +67,6 @@ struct pipes_struct {
 	/* handle database to use on this pipe. */
 	struct dcesrv_call_state *dce_call;
 
-	/* call id retrieved from the pdu header */
-	uint32_t call_id;
-
 	/* operation number retrieved from the rpc header */
 	uint16_t opnum;
 
