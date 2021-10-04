@@ -99,3 +99,49 @@
 ^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Canonicalize_Enterprise_UpperUserName_UPN_RemoveDollar\(
 ^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Canonicalize_UpperRealm_AsReqSelf\(
 ^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Canonicalize_UpperRealm_UPN_AsReqSelf\(
+#
+# KDC AS REQ tests
+#
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_enc_timestamp_spn(?!_)
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_enc_timestamp_spn_realm
+#
+# KDC COMPATABLITY
+#
+samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_ticket_signature
+#
+# KDC TGS PAC tests
+#
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_client_no_auth_data_required\(ad_dc\)
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_no_pac_client_no_auth_data_required\(ad_dc\)
+#
+# KDC TGT tests
+#
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_authdata_no_pac
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_no_pac
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_req_no_requester_sid
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid\(
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_missing_renew
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_missing_validate
+#
+# PAC tests
+#
+^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2000dc
+^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2003dc
+^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2008dc
+^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2008r2dc
+^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2000dc
+^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2003dc
+^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2008dc
+^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2008r2dc
+^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2000dc
+^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2003dc
+^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2008dc
+^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2008r2dc
+^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2000dc
+^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2003dc
+^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008dc
+^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008r2dc
+#
+# PAC attributes tests
+#
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_pac_attrs_none

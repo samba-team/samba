@@ -960,7 +960,12 @@ for env in ['fileserver_smb1', 'nt4_member', 'clusteredmember', 'ktest', 'nt4_dc
     planoldpythontestsuite(env, "samba.tests.imports")
 
 have_fast_support = 1
-tkt_sig_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
+if ('SAMBA4_USES_HEIMDAL' in config_hash or
+    'HAVE_MIT_KRB5_1_20' in config_hash):
+    tkt_sig_support = 1
+else:
+    tkt_sig_support = 0
+
 expect_pac = int('SAMBA4_USES_HEIMDAL' in config_hash)
 extra_pac_buffers = int('SAMBA4_USES_HEIMDAL' in config_hash)
 check_cname = int('SAMBA4_USES_HEIMDAL' in config_hash)

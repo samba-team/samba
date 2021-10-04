@@ -190,6 +190,7 @@ static krb5_error_code ks_get_pac(krb5_context context,
 	return code;
 }
 
+#if KRB5_KDB_DAL_MAJOR_VERSION < 9
 static krb5_error_code ks_verify_pac(krb5_context context,
 				     unsigned int flags,
 				     krb5_const_principal client_princ,
@@ -557,6 +558,128 @@ done:
 
 	return code;
 }
+#else /* KRB5_KDB_DAL_MAJOR_VERSION >= 9 */
+static krb5_error_code ks_update_pac(krb5_context context,
+				     int flags,
+				     krb5_db_entry *client,
+				     krb5_db_entry *server,
+				     krb5_db_entry *signing_krbtgt,
+				     krb5_pac old_pac,
+				     krb5_pac new_pac)
+{
+	struct mit_samba_context *mit_ctx = NULL;
+	krb5_error_code code;
+
+	mit_ctx = ks_get_context(context);
+	if (mit_ctx == NULL) {
+		return KRB5_KDB_DBNOTINITED;
+	}
+
+	code = mit_samba_update_pac(mit_ctx,
+				    context,
+				    flags,
+				    client,
+				    server,
+				    signing_krbtgt,
+				    old_pac,
+				    new_pac);
+	if (code != 0) {
+		return code;
+	}
+
+	return code;
+}
+
+krb5_error_code kdb_samba_db_issue_pac(krb5_context context,
+				       unsigned int flags,
+				       krb5_db_entry *client,
+				       krb5_keyblock *replaced_reply_key,
+				       krb5_db_entry *server,
+				       krb5_db_entry *signing_krbtgt,
+				       krb5_timestamp authtime,
+				       krb5_pac old_pac,
+				       krb5_pac new_pac,
+				       krb5_data ***auth_indicators)
+{
+	char *client_name = NULL;
+	char *server_name = NULL;
+	krb5_error_code code = EINVAL;
+
+	/* The KDC handles both signing and verification for us. */
+
+	if (client != NULL) {
+		code = krb5_unparse_name(context,
+					 client->princ,
+					 &client_name);
+		if (code != 0) {
+			return code;
+		}
+	}
+
+	if (server != NULL) {
+		code = krb5_unparse_name(context,
+					 server->princ,
+					 &server_name);
+		if (code != 0) {
+			SAFE_FREE(client_name);
+			return code;
+		}
+	}
+
+	/*
+	 * Get a new PAC for AS-REQ or S4U2Self for our realm.
+	 *
+	 * For a simple cross-realm S4U2Proxy there will be the following TGS
+	 * requests after the client realm is identified:
+	 *
+	 * 1. server@SREALM to SREALM for krbtgt/CREALM@SREALM -- a regular TGS
+	 *    request with server's normal TGT and no S4U2Self padata.
+	 * 2. server@SREALM to CREALM for server@SREALM (expressed as an
+	 *    enterprise principal), with the TGT from #1 as header ticket and
+	 *    S4U2Self padata identifying the client.
+	 * 3. server@SREALM to SREALM for server@SREALM with S4U2Self padata,
+	 *    with the referral TGT from #2 as header ticket
+	 *
+	 * In request 2 the PROTOCOL_TRANSITION and CROSS_REALM flags are set,
+	 * and the request is for a local client (so client != NULL) and we
+	 * want to make a new PAC.
+	 *
+	 * In request 3 the PROTOCOL_TRANSITION and CROSS_REALM flags are also
+	 * set, but the request is for a non-local client (so client == NULL)
+	 * and we want to copy the subject PAC contained in the referral TGT.
+	 */
+	if (old_pac == NULL ||
+	    (client != NULL && (flags & KRB5_KDB_FLAG_PROTOCOL_TRANSITION))) {
+		DBG_NOTICE("Generate PAC for AS-REQ [client=%s, flags=%#08x]\n",
+			   client_name != NULL ? client_name : "<unknown>",
+			   flags);
+
+		code = ks_get_pac(context,
+				  client,
+				  server,
+				  replaced_reply_key,
+				  &new_pac);
+	} else {
+		DBG_NOTICE("Update PAC for TGS-REQ [client=%s, server=%s, "
+			   "flags=%#08x]\n",
+			   client_name != NULL ? client_name : "<unknown>",
+			   server_name != NULL ? server_name : "<unknown>",
+			   flags);
+
+		code = ks_update_pac(context,
+				flags,
+				client,
+				server,
+				signing_krbtgt,
+				old_pac,
+				new_pac);
+	}
+	SAFE_FREE(client_name);
+	SAFE_FREE(server_name);
+
+	return code;
+}
+#endif /* KRB5_KDB_DAL_MAJOR_VERSION */
 
 krb5_error_code kdb_samba_db_check_allowed_to_delegate(krb5_context context,
 						       krb5_const_principal client,

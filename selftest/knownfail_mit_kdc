@@ -196,8 +196,6 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 #
 # KDC TGS PAC tests
 #
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_client_no_auth_data_required\(ad_dc\)
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_no_pac_client_no_auth_data_required\(ad_dc\)
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_no_pac_service_no_auth_data_required\(ad_dc\)
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_remove_pac\(ad_dc\)
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_remove_pac_client_no_auth_data_required\(ad_dc\)
@@ -223,7 +221,10 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 #
 ^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_enc_timestamp_spn(?!_)
 ^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_enc_timestamp_spn_realm
-
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_enc_timestamp_aes128_rc4.*fl2003dc
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_enc_timestamp_mac_aes128_rc4.*fl2003dc
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_no_preauth.*aes.*rc4.*fl2003dc
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_no_preauth.*rc4.*aes.*fl2003dc
 # Differences in our KDC compared to windows
 #
 ^samba4.krb5.kdc .*.as-req-pac-request # We should reply to a request for a PAC over UDP with KRB5KRB_ERR_RESPONSE_TOO_BIG unconditionally
@@ -275,30 +276,14 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba4.blackbox.pkinit_pac.netr-mem-arcfour.s4u2proxy-arcfour.ad_dc_ntvfs:local
 ^samba4.blackbox.pkinit_pac.netr-mem-arcfour.verify-sig-arcfour.ad_dc:local
 ^samba4.blackbox.pkinit_pac.netr-mem-arcfour.verify-sig-arcfour.ad_dc_ntvfs:local
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2008r2dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2000dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2003dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2008dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2008r2dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.s4u2proxy-arcfour.fl2000dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.s4u2proxy-arcfour.fl2003dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.s4u2proxy-arcfour.fl2008dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.s4u2proxy-arcfour.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008r2dc
 #
 # Alias tests
 #
@@ -346,8 +331,6 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_validate_pac_request_false
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_validate_pac_request_none
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_validate_pac_request_true
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_authdata_no_pac
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_req(?!_invalid)
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_rodc_allowed_denied
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_rodc_denied
@@ -363,7 +346,6 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_authdata_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rename
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_req_no_requester_sid
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_allowed_denied
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_denied
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_no_krbtgt_link
@@ -422,7 +404,6 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_pac_attrs_rodc_renew_true
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_pac_attrs_true
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_pac_attrs_false
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_pac_attrs_none
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_pac_attrs_true
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_req_from_rodc_no_pac_attrs
 #
@@ -438,11 +419,8 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 # PAC requester SID tests
 #
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_req_from_rodc_no_requester_sid
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid\(
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_missing_renew
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_missing_rodc_renew
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_missing_rodc_validate
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_missing_validate
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_rodc_renew
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_rodc_validate
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_logon_info_only_sid_mismatch_existing

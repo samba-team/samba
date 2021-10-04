@@ -120,7 +120,12 @@ class SimpleKerberosTests(KDCBaseTest):
             self.fail(
                 "(Heimdal) Salt populated for ARCFOUR_HMAC_MD5 encryption")
 
-    def test_heimdal_ticket_signature(self):
+    # This tests also passes again Samba AD built with MIT Kerberos 1.20 which
+    # is not released yet.
+    #
+    # FIXME: Should be moved to to a new kdc_tgt_tests.py once MIT KRB5 1.20
+    # is released.
+    def test_ticket_signature(self):
         # Ensure that a DC correctly issues tickets signed with its krbtgt key.
         user_creds = self.get_client_creds()
         target_creds = self.get_service_creds()
@@ -141,7 +146,7 @@ class SimpleKerberosTests(KDCBaseTest):
         self.verify_ticket(service_ticket, key, service_ticket=True,
                            expect_ticket_checksum=True)
 
-    def test_mit_ticket_signature(self):
+    def test_mit_pre_1_20_ticket_signature(self):
         # Ensure that a DC does not issue tickets signed with its krbtgt key.
         user_creds = self.get_client_creds()
         target_creds = self.get_service_creds()

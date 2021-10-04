@@ -166,10 +166,15 @@ kdb_vftabl kdb_function_table = {
 	.decrypt_key_data          = kdb_samba_dbekd_decrypt_key_data,
 	.encrypt_key_data          = kdb_samba_dbekd_encrypt_key_data,
 
-	.sign_authdata             = kdb_samba_db_sign_auth_data,
 	.check_policy_as           = kdb_samba_db_check_policy_as,
 	.audit_as_req              = kdb_samba_db_audit_as_req,
 	.check_allowed_to_delegate = kdb_samba_db_check_allowed_to_delegate,
 
 	.free_principal_e_data     = kdb_samba_db_free_principal_e_data,
+
+#if KRB5_KDB_DAL_MAJOR_VERSION >= 9
+	.issue_pac                 = kdb_samba_db_issue_pac,
+#else
+	.sign_authdata             = kdb_samba_db_sign_auth_data,
+#endif
 };
