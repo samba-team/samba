@@ -1091,7 +1091,7 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 		opname = ndr_table_netlogon.calls[opnum].name;
 	}
 
-	auth_type = p->auth.auth_type;
+	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
 
 	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
@@ -2014,9 +2014,13 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		status = serverinfo_to_SamInfo3(server_info,
 						r->out.validation->sam3);
 		break;
-	case 6:
+	case 6: {
+		enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+		dcesrv_call_auth_info(dce_call, NULL, &auth_level);
+
 		/* Only allow this if the pipe is protected. */
-		if (p->auth.auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
+		if (auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
 			DEBUG(0,("netr_Validation6: client %s not using privacy for netlogon\n",
 				get_remote_machine_name()));
 			status = NT_STATUS_INVALID_PARAMETER;
@@ -2026,6 +2030,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		status = serverinfo_to_SamInfo6(server_info,
 						r->out.validation->sam6);
 		break;
+	}
 	}
 
 	TALLOC_FREE(server_info);
@@ -2125,6 +2130,8 @@ NTSTATUS _netr_LogonSamLogon(struct pipes_struct *p,
 NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 			       struct netr_LogonSamLogonEx *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds = NULL;
 	struct loadparm_context *lp_ctx;
@@ -2137,7 +2144,10 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 	}
 
 	/* Only allow this if the pipe is protected. */
-	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+
+	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
+
+	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		DEBUG(0,("_netr_LogonSamLogonEx: client %s not using schannel for netlogon\n",
 			get_remote_machine_name() ));
 		return NT_STATUS_INVALID_PARAMETER;

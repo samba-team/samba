@@ -292,9 +292,6 @@ sub boilerplate_iface($)
 	$self->pidl("p = dcesrv_get_pipes_struct(dce_call->conn);");
 	$self->pidl("p->dce_call = dce_call;");
 	$self->pidl("p->mem_ctx = mem_ctx;");
-	$self->pidl("p->auth.auth_type = dce_call->auth_state->auth_type;");
-	$self->pidl("p->auth.auth_level = dce_call->auth_state->auth_level;");
-	$self->pidl("p->auth.auth_context_id = dce_call->auth_state->auth_context_id;");
 	$self->pidl("/* Reset pipes struct fault state */");
 	$self->pidl("p->fault_state = 0;");
 	$self->pidl("");
@@ -335,9 +332,6 @@ sub boilerplate_iface($)
 
 	$self->pidl("p->dce_call = NULL;");
 	$self->pidl("p->mem_ctx = NULL;");
-	$self->pidl("p->auth.auth_type = 0;");
-	$self->pidl("p->auth.auth_level = 0;");
-	$self->pidl("p->auth.auth_context_id = 0;");
 	$self->pidl("/* Check pipes struct fault state */");
 	$self->pidl("if (p->fault_state != 0) {");
 	$self->indent();

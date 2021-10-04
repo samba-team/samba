@@ -1090,6 +1090,9 @@ NTSTATUS _lsa_LookupSids2(struct pipes_struct *p,
 NTSTATUS _lsa_LookupSids3(struct pipes_struct *p,
 			  struct lsa_LookupSids3 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 	struct lsa_LookupSids2 q;
 
 	if (p->transport != NCACN_IP_TCP) {
@@ -1097,9 +1100,11 @@ NTSTATUS _lsa_LookupSids3(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
+
 	/* No policy handle on this call. Restrict to crypto connections. */
-	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
-	    p->auth.auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
+	    auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
 		DEBUG(1, ("_lsa_LookupSids3: The client %s is not using "
 			  "a secure connection over netlogon\n",
 			  get_remote_machine_name() ));
@@ -1402,6 +1407,9 @@ NTSTATUS _lsa_LookupNames3(struct pipes_struct *p,
 NTSTATUS _lsa_LookupNames4(struct pipes_struct *p,
 			   struct lsa_LookupNames4 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 	struct lsa_LookupNames3 q;
 
 	if (p->transport != NCACN_IP_TCP) {
@@ -1409,9 +1417,11 @@ NTSTATUS _lsa_LookupNames4(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
+
 	/* No policy handle on this call. Restrict to crypto connections. */
-	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
-	    p->auth.auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
+	    auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
 		DEBUG(1, ("_lsa_LookupNames4: The client %s is not using "
 			  "a secure connection over netlogon\n",
 			  get_remote_machine_name()));

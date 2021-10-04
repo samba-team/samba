@@ -41,8 +41,6 @@ struct pipes_struct {
 
 	struct messaging_context *msg_ctx;
 
-	struct pipe_auth_data auth;
-
 	/*
 	 * Set the DCERPC_FAULT to return.
 	 */

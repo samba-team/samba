@@ -93,9 +93,6 @@ static NTSTATUS iremotewinspool__op_dispatch_internal(struct dcesrv_call_state *
 	p = dcesrv_get_pipes_struct(dce_call->conn);
 	p->dce_call = dce_call;
 	p->mem_ctx = mem_ctx;
-	p->auth.auth_type = dce_call->auth_state->auth_type;
-	p->auth.auth_level = dce_call->auth_state->auth_level;
-	p->auth.auth_context_id = dce_call->auth_state->auth_context_id;
 	/* Reset pipes struct fault state */
 	p->fault_state = 0;
 
@@ -1230,9 +1227,6 @@ fail:
 
 	p->dce_call = NULL;
 	p->mem_ctx = NULL;
-	p->auth.auth_type = 0;
-	p->auth.auth_level = 0;
-	p->auth.auth_context_id = 0;
 	/* Check pipes struct fault state */
 	if (p->fault_state != 0) {
 		dce_call->fault_code = p->fault_state;

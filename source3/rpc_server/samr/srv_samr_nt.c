@@ -7242,6 +7242,8 @@ static enum samr_ValidationStatus samr_ValidatePassword_Reset(TALLOC_CTX *mem_ct
 NTSTATUS _samr_ValidatePassword(struct pipes_struct *p,
 				struct samr_ValidatePassword *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 	union samr_ValidatePasswordRep *rep;
 	NTSTATUS status;
 	struct samr_GetDomPwInfo pw;
@@ -7252,7 +7254,9 @@ NTSTATUS _samr_ValidatePassword(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (p->auth.auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
+	dcesrv_call_auth_info(dce_call, NULL, &auth_level);
+
+	if (auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
 		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
 		return NT_STATUS_ACCESS_DENIED;
 	}
