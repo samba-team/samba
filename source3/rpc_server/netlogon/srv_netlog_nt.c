@@ -411,6 +411,8 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
 	const struct tsocket_address *local_address =
 		dcesrv_connection_get_local_address(dcesrv_conn);
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	DATA_BLOB blob;
@@ -427,7 +429,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 
 	status = rpcint_binding_handle(p->mem_ctx,
 				       &ndr_table_lsarpc,
-				       p->remote_address,
+				       remote_address,
 				       local_address,
 				       p->session_info,
 				       p->msg_ctx,
@@ -1741,6 +1743,8 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
 	const struct tsocket_address *local_address =
 		dcesrv_connection_get_local_address(dcesrv_conn);
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	NTSTATUS status = NT_STATUS_OK;
 	union netr_LogonLevel *logon = r->in.logon;
 	const char *nt_username, *nt_domain, *nt_workstation;
@@ -1872,7 +1876,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 						     &user_info,
 						     nt_username, nt_domain,
 						     wksname,
-						     p->remote_address,
+						     remote_address,
 						     local_address,
 						     logon->network->identity_info.parameter_control,
 						     logon->network->lm.data,
@@ -1927,7 +1931,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 							 &user_info,
 							 nt_username, nt_domain,
 							 nt_workstation,
-							 p->remote_address,
+							 remote_address,
 							 local_address,
 							 logon->password->identity_info.parameter_control,
 							 chal,

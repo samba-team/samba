@@ -52,6 +52,8 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
 	const struct tsocket_address *local_address =
 		dcesrv_connection_get_local_address(dcesrv_conn);
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	struct junction_map *jn = NULL;
 	struct referral *old_referral_list = NULL;
 	bool self_ref = False;
@@ -84,7 +86,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	status = get_referred_path(ctx,
 				   p->session_info,
 				   r->in.path,
-				   p->remote_address,
+				   remote_address,
 				   local_address,
 				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
@@ -127,6 +129,8 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
 	const struct tsocket_address *local_address =
 		dcesrv_connection_get_local_address(dcesrv_conn);
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	struct junction_map *jn = NULL;
 	bool self_ref = False;
 	int consumedcnt = 0;
@@ -162,7 +166,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 	status = get_referred_path(ctx,
 				   p->session_info,
 				   r->in.dfs_entry_path,
-				   p->remote_address,
+				   remote_address,
 				   local_address,
 				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
@@ -377,6 +381,8 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
 	const struct tsocket_address *local_address =
 		dcesrv_connection_get_local_address(dcesrv_conn);
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	int consumedcnt = strlen(r->in.dfs_entry_path);
 	struct junction_map *jn = NULL;
 	bool self_ref = False;
@@ -400,7 +406,7 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 	status = get_referred_path(ctx,
 				   p->session_info,
 				   r->in.dfs_entry_path,
-				   p->remote_address,
+				   remote_address,
 				   local_address,
 				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);

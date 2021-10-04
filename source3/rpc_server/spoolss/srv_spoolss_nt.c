@@ -1676,6 +1676,10 @@ static WERROR copy_devicemode(TALLOC_CTX *mem_ctx,
 WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			      struct spoolss_OpenPrinterEx *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	int snum;
 	char *raddr;
 	char *rhost;
@@ -1858,13 +1862,13 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		}
 
 		/* check smb.conf parameters and the the sec_desc */
-		raddr = tsocket_address_inet_addr_string(p->remote_address,
+		raddr = tsocket_address_inet_addr_string(remote_address,
 							 p->mem_ctx);
 		if (raddr == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
-		rc = get_remote_hostname(p->remote_address,
+		rc = get_remote_hostname(remote_address,
 					 &rhost,
 					 p->mem_ctx);
 		if (rc < 0) {
@@ -2658,6 +2662,10 @@ static struct spoolss_NotifyOption *dup_spoolss_NotifyOption(TALLOC_CTX *mem_ctx
 WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 						     struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	int snum = -1;
 	struct spoolss_NotifyOption *option = r->in.notify_options;
 	struct sockaddr_storage client_ss;
@@ -2694,7 +2702,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 
 	DEBUG(10,("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
 		  "remote_address is %s\n",
-		  tsocket_address_string(p->remote_address, p->mem_ctx)));
+		  tsocket_address_string(remote_address, p->mem_ctx)));
 
 	if (!lp_print_notify_backchannel(snum)) {
 		DEBUG(10, ("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
@@ -2702,7 +2710,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 		return WERR_RPC_S_SERVER_UNAVAILABLE;
 	}
 
-	client_len = tsocket_address_bsd_sockaddr(p->remote_address,
+	client_len = tsocket_address_bsd_sockaddr(remote_address,
 						  (struct sockaddr *) &client_ss,
 						  sizeof(struct sockaddr_storage));
 	if (client_len < 0) {
@@ -5927,6 +5935,10 @@ WERROR _spoolss_EndPagePrinter(struct pipes_struct *p,
 WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 				struct spoolss_StartDocPrinter *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	struct spoolss_DocumentInfo1 *info_1;
 	int snum;
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -5980,14 +5992,14 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 		return WERR_INVALID_HANDLE;
 	}
 
-	rc = get_remote_hostname(p->remote_address,
+	rc = get_remote_hostname(remote_address,
 				 &rhost,
 				 p->mem_ctx);
 	if (rc < 0) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (strequal(rhost,"UNKNOWN")) {
-		rhost = tsocket_address_inet_addr_string(p->remote_address,
+		rhost = tsocket_address_inet_addr_string(remote_address,
 							 p->mem_ctx);
 		if (rhost == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;
@@ -6950,6 +6962,10 @@ static WERROR update_printer(struct pipes_struct *p,
 			     struct spoolss_SetPrinterInfoCtr *info_ctr,
 			     struct spoolss_DeviceMode *devmode)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	uint32_t printer_mask = SPOOLSS_PRINTER_INFO_ALL;
 	struct spoolss_SetPrinterInfo2 *printer = info_ctr->info.info2;
 	struct spoolss_PrinterInfo2 *old_printer;
@@ -7021,7 +7037,7 @@ static WERROR update_printer(struct pipes_struct *p,
 	{
 		char *raddr;
 
-		raddr = tsocket_address_inet_addr_string(p->remote_address,
+		raddr = tsocket_address_inet_addr_string(remote_address,
 							 p->mem_ctx);
 		if (raddr == NULL) {
 			result = WERR_NOT_ENOUGH_MEMORY;
@@ -8435,6 +8451,10 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 					   struct spoolss_UserLevelCtr *user_ctr,
 					   struct policy_handle *handle)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	struct spoolss_SetPrinterInfo2 *info2 = info_ctr->info.info2;
 	uint32_t info2_mask = SPOOLSS_PRINTER_INFO_ALL;
 	const struct loadparm_substitution *lp_sub =
@@ -8487,7 +8507,7 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 	if (*lp_addprinter_command(talloc_tos(), lp_sub) ) {
 		char *raddr;
 
-		raddr = tsocket_address_inet_addr_string(p->remote_address,
+		raddr = tsocket_address_inet_addr_string(remote_address,
 							 p->mem_ctx);
 		if (raddr == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;

@@ -935,6 +935,8 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
 	const struct tsocket_address *local_address =
 		dcesrv_connection_get_local_address(dcesrv_conn);
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	struct winbindd_domain *domain;
 	NTSTATUS status;
 	struct netr_IdentityInfo *identity_info = NULL;
@@ -1031,7 +1033,7 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 				       0,
 				       challenge,
 				       lm_response, nt_response,
-				       p->remote_address,
+				       remote_address,
 				       local_address,
 				       &r->out.authoritative,
 				       true, /* skip_sam */

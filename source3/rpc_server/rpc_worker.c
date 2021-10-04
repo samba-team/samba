@@ -166,7 +166,6 @@ static int make_base_pipes_struct(
 	struct messaging_context *msg_ctx,
 	const char *pipe_name,
 	enum dcerpc_transport_t transport,
-	const struct tsocket_address *remote_address,
 	struct pipes_struct **_p)
 {
 	struct pipes_struct *p;
@@ -178,12 +177,6 @@ static int make_base_pipes_struct(
 
 	p->msg_ctx = msg_ctx;
 	p->transport = transport;
-
-	p->remote_address = tsocket_address_copy(remote_address, p);
-	if (p->remote_address == NULL) {
-		talloc_free(p);
-		return ENOMEM;
-	}
 
 	*_p = p;
 	return 0;
@@ -419,7 +412,6 @@ static void rpc_worker_new_client(
 		ncacn_conn->msg_ctx,
 		client->binding,
 		transport,
-		ncacn_conn->remote_client_addr,
 		&ncacn_conn->p);
 	if (ret != 0) {
 		DBG_DEBUG("make_base_pipes_struct failed: %s\n",

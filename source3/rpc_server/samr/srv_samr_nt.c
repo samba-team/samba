@@ -1888,6 +1888,10 @@ NTSTATUS _samr_ChangePasswordUser(struct pipes_struct *p,
 NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 				   struct samr_ChangePasswordUser2 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	NTSTATUS status;
 	char *user_name = NULL;
 	char *rhost;
@@ -1915,7 +1919,7 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rhost = tsocket_address_inet_addr_string(p->remote_address,
+	rhost = tsocket_address_inet_addr_string(remote_address,
 						 talloc_tos());
 	if (rhost == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1956,6 +1960,10 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 				      struct samr_OemChangePasswordUser2 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	NTSTATUS status;
 	char *user_name = NULL;
 	const char *wks = NULL;
@@ -1992,7 +2000,7 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	rhost = tsocket_address_inet_addr_string(p->remote_address,
+	rhost = tsocket_address_inet_addr_string(remote_address,
 						 talloc_tos());
 	if (rhost == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -2028,6 +2036,10 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 				   struct samr_ChangePasswordUser3 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	NTSTATUS status;
 	char *user_name = NULL;
 	const char *wks = NULL;
@@ -2060,7 +2072,7 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rhost = tsocket_address_inet_addr_string(p->remote_address,
+	rhost = tsocket_address_inet_addr_string(remote_address,
 						 talloc_tos());
 	if (rhost == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -5212,6 +5224,10 @@ out:
 NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			   struct samr_SetUserInfo *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
 	struct samr_info *uinfo;
 	NTSTATUS status;
 	struct samu *pwd = NULL;
@@ -5314,7 +5330,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	rhost = tsocket_address_inet_addr_string(p->remote_address,
+	rhost = tsocket_address_inet_addr_string(remote_address,
 						 talloc_tos());
 	if (rhost == NULL) {
 		return NT_STATUS_NO_MEMORY;
