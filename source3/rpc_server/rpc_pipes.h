@@ -65,14 +65,6 @@ struct pipes_struct {
 	struct dcesrv_call_state *dce_call;
 };
 
-int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
-			   struct messaging_context *msg_ctx,
-			   const char *pipe_name,
-			   enum dcerpc_transport_t transport,
-			   const struct tsocket_address *remote_address,
-			   const struct tsocket_address *local_address,
-			   struct pipes_struct **_p);
-
 bool check_open_pipes(void);
 size_t num_pipe_handles(void);
 

@@ -161,6 +161,43 @@ static int dcesrv_connection_destructor(struct dcesrv_connection *conn)
 	return 0;
 }
 
+static int make_base_pipes_struct(
+	TALLOC_CTX *mem_ctx,
+	struct messaging_context *msg_ctx,
+	const char *pipe_name,
+	enum dcerpc_transport_t transport,
+	const struct tsocket_address *remote_address,
+	const struct tsocket_address *local_address,
+	struct pipes_struct **_p)
+{
+	struct pipes_struct *p;
+
+	p = talloc_zero(mem_ctx, struct pipes_struct);
+	if (!p) {
+		return ENOMEM;
+	}
+
+	p->msg_ctx = msg_ctx;
+	p->transport = transport;
+
+	p->remote_address = tsocket_address_copy(remote_address, p);
+	if (p->remote_address == NULL) {
+		talloc_free(p);
+		return ENOMEM;
+	}
+
+	if (local_address) {
+		p->local_address = tsocket_address_copy(local_address, p);
+		if (p->local_address == NULL) {
+			talloc_free(p);
+			return ENOMEM;
+		}
+	}
+
+	*_p = p;
+	return 0;
+}
+
 /*
  * A new client has been passed to us from samba-dcerpcd.
  */
