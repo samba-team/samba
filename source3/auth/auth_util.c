@@ -570,13 +570,11 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * If winbind is not around, we can not make much use of the SIDs the
-	 * domain controller provided us with. Likewise if the user name was
-	 * mapped to some local unix user.
+	 * If the user name was mapped to some local unix user,
+	 * we can not make much use of the SIDs the
+	 * domain controller provided us with.
 	 */
-
-	if (((lp_server_role() == ROLE_DOMAIN_MEMBER) && !winbind_ping()) ||
-	    (server_info->nss_token)) {
+	if (server_info->nss_token) {
 		char *found_username = NULL;
 		status = create_token_from_username(session_info,
 						    server_info->unix_name,
