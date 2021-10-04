@@ -88,12 +88,6 @@
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_no_client_pac_no_auth_data_required_a
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_no_client_pac_no_auth_data_required_b
 #
-# SPN tests
-#
-^samba.tests.krb5.spn_tests.samba.tests.krb5.spn_tests.SpnTests.test_spn_3_part_instance_spn_computer
-^samba.tests.krb5.spn_tests.samba.tests.krb5.spn_tests.SpnTests.test_spn_3_part_our_domain_spn_computer
-^samba.tests.krb5.spn_tests.samba.tests.krb5.spn_tests.SpnTests.test_spn_3_part_our_realm_spn_computer
-#
 # KDC TGT tests
 #
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_authdata_no_pac

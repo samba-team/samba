@@ -970,6 +970,29 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			entry_ex->entry.flags.server = 0;
 		}
 	}
+
+	/*
+	 * We restrict a 3-part SPN ending in my domain/realm to full
+	 * domain controllers.
+	 *
+	 * This avoids any cases where (eg) a demoted DC still has
+	 * these more restricted SPNs.
+	 */
+	if (krb5_princ_size(context, principal) > 2) {
+		char *third_part
+			= smb_krb5_principal_get_comp_string(mem_ctx,
+							     context,
+							     principal,
+							     2);
+		bool is_our_realm =
+			 lpcfg_is_my_domain_or_realm(lp_ctx,
+						     third_part);
+		bool is_dc = userAccountControl &
+			(UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT);
+		if (is_our_realm && !is_dc) {
+			entry_ex->entry.flags.server = 0;
+		}
+	}
 	/*
 	 * To give the correct type of error to the client, we must
 	 * not just return the entry without .server set, we must
