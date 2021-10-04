@@ -141,6 +141,13 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 	const char *target_domain_name = NULL;
 	const char *account_name = NULL;
 
+	/*
+	 * Make sure we start with authoritative=true,
+	 * it will only set to false if we don't know the
+	 * domain.
+	 */
+	req->out.authoritative = true;
+
 	switch (req->in.logon_level) {
 	case NetlogonInteractiveInformation:
 	case NetlogonServiceInformation:

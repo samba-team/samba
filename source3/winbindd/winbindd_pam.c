@@ -1797,7 +1797,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 {
 	fstring name_namespace, name_domain, name_user;
 	NTSTATUS result;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 	uint32_t flags = 0;
 	uint16_t validation_level = 0;
 	union netr_Validation *validation = NULL;
@@ -2451,6 +2451,13 @@ done:
 		result = NT_STATUS_NO_LOGON_SERVERS;
 	}
 
+	/*
+	 * Here we don't alter
+	 * state->response->data.auth.authoritative based
+	 * on the servers response
+	 * as we don't want a fallback to the local sam
+	 * for interactive PAM logons
+	 */
 	set_auth_errors(state->response, result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Plain-text authentication for user %s returned %s (PAM: %d)\n",
@@ -2665,7 +2672,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	const char *name_domain = NULL;
 	const char *workstation;
 	uint64_t logon_id = 0;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 	uint32_t flags = 0;
 	uint16_t validation_level;
 	union netr_Validation *validation = NULL;
@@ -2738,7 +2745,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				       &validation_level,
 				       &validation);
 	if (!NT_STATUS_IS_OK(result)) {
-		state->response->data.auth.authoritative = authoritative;
 		goto done;
 	}
 
@@ -2770,7 +2776,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				   "from firewalled domain [%s]\n",
 				   info3->base.account_name.string,
 				   info3->base.logon_domain.string);
-			state->response->data.auth.authoritative = true;
 			result = NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
 			goto done;
 		}
@@ -2792,6 +2797,8 @@ done:
 	}
 
 	set_auth_errors(state->response, result);
+	state->response->data.auth.authoritative = authoritative;
+
 	/*
 	 * Log the winbind pam authentication, the logon_id will tie this to
 	 * any of the logons invoked from this request.
