@@ -941,6 +941,13 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 	union netr_Validation *validation = NULL;
 	bool interactive = false;
 
+	/*
+	 * Make sure we start with authoritative=true,
+	 * it will only set to false if we don't know the
+	 * domain.
+	 */
+	r->out.authoritative = true;
+
 	domain = wb_child_domain();
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
