@@ -392,6 +392,9 @@ static NTSTATUS create_lsa_policy_handle(TALLOC_CTX *mem_ctx,
 NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 			  struct lsa_OpenPolicy2 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	uint32_t des_access = r->in.access_mask;
@@ -404,8 +407,8 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 	}
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->session_info->security_token,
-			       p->session_info->unix_token,
+	map_max_allowed_access(session_info->security_token,
+			       session_info->unix_token,
 			       &des_access);
 
 	/* map the generic bits to the lsa policy ones */
@@ -418,7 +421,7 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->session_info->security_token,
+	status = access_check_object(psd, session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, des_access,
 				     &acc_granted, "_lsa_OpenPolicy2" );
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1529,6 +1532,9 @@ static NTSTATUS lsa_lookup_trusted_domain_by_name(TALLOC_CTX *mem_ctx,
 NTSTATUS _lsa_OpenSecret(struct pipes_struct *p,
 			 struct lsa_OpenSecret *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct security_descriptor *psd;
 	NTSTATUS status;
 	uint32_t acc_granted;
@@ -1547,8 +1553,8 @@ NTSTATUS _lsa_OpenSecret(struct pipes_struct *p,
 	}
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->session_info->security_token,
-			       p->session_info->unix_token,
+	map_max_allowed_access(session_info->security_token,
+			       session_info->unix_token,
 			       &r->in.access_mask);
 
 	/* map the generic bits to the lsa policy ones */
@@ -1564,7 +1570,7 @@ NTSTATUS _lsa_OpenSecret(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->session_info->security_token,
+	status = access_check_object(psd, session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     r->in.access_mask,
 				     &acc_granted, "_lsa_OpenSecret");
@@ -1595,6 +1601,9 @@ static NTSTATUS _lsa_OpenTrustedDomain_base(struct pipes_struct *p,
 					    struct trustdom_info *info,
 					    struct policy_handle *handle)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	uint32_t acc_granted;
@@ -1604,8 +1613,8 @@ static NTSTATUS _lsa_OpenTrustedDomain_base(struct pipes_struct *p,
 	 * handle - so don't check against policy handle. */
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->session_info->security_token,
-			       p->session_info->unix_token,
+	map_max_allowed_access(session_info->security_token,
+			       session_info->unix_token,
 			       &access_mask);
 
 	/* map the generic bits to the lsa account ones */
@@ -1619,7 +1628,7 @@ static NTSTATUS _lsa_OpenTrustedDomain_base(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->session_info->security_token,
+	status = access_check_object(psd, session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     access_mask, &acc_granted,
 				     "_lsa_OpenTrustedDomain");
@@ -1705,6 +1714,9 @@ static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
 				       TALLOC_CTX *mem_ctx, DATA_BLOB *auth_blob,
 				       struct trustDomainPasswords *auth_struct)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	enum ndr_err_code ndr_err;
 	DATA_BLOB lsession_key;
 	gnutls_cipher_hd_t cipher_hnd = NULL;
@@ -1713,14 +1725,14 @@ static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
 	int rc;
 	bool encrypted;
 
-	encrypted =
-		dcerpc_is_transport_encrypted(p->session_info);
+	encrypted = dcerpc_is_transport_encrypted(session_info);
 	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED &&
 	    !encrypted) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = session_extract_session_key(p->session_info, &lsession_key, KEY_USE_16BYTES);
+	status = session_extract_session_key(
+		session_info, &lsession_key, KEY_USE_16BYTES);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -1832,6 +1844,9 @@ static NTSTATUS get_trustauth_inout_blob(TALLOC_CTX *mem_ctx,
 NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 				     struct lsa_CreateTrustedDomainEx2 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct lsa_info *policy;
 	NTSTATUS status;
 	uint32_t acc_granted;
@@ -1858,14 +1873,15 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (p->session_info->unix_token->uid != sec_initial_uid() &&
-	    !nt_token_check_domain_rid(p->session_info->security_token, DOMAIN_RID_ADMINS)) {
+	if (session_info->unix_token->uid != sec_initial_uid() &&
+	    !nt_token_check_domain_rid(
+		    session_info->security_token, DOMAIN_RID_ADMINS)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->session_info->security_token,
-			       p->session_info->unix_token,
+	map_max_allowed_access(session_info->security_token,
+			       session_info->unix_token,
 			       &r->in.access_mask);
 
 	/* map the generic bits to the lsa policy ones */
@@ -1878,7 +1894,7 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->session_info->security_token,
+	status = access_check_object(psd, session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     r->in.access_mask, &acc_granted,
 				     "_lsa_CreateTrustedDomainEx2");
@@ -2316,6 +2332,9 @@ NTSTATUS _lsa_QueryTrustedDomainInfoByName(struct pipes_struct *p,
 NTSTATUS _lsa_CreateSecret(struct pipes_struct *p,
 			   struct lsa_CreateSecret *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	NTSTATUS status;
 	struct lsa_info *handle;
 	uint32_t acc_granted;
@@ -2339,8 +2358,8 @@ NTSTATUS _lsa_CreateSecret(struct pipes_struct *p,
 	}
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->session_info->security_token,
-			       p->session_info->unix_token,
+	map_max_allowed_access(session_info->security_token,
+			       session_info->unix_token,
 			       &r->in.access_mask);
 
 	/* map the generic bits to the lsa policy ones */
@@ -2353,7 +2372,7 @@ NTSTATUS _lsa_CreateSecret(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->session_info->security_token,
+	status = access_check_object(psd, session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     r->in.access_mask,
 				     &acc_granted, "_lsa_CreateSecret");
@@ -2401,6 +2420,9 @@ NTSTATUS _lsa_CreateSecret(struct pipes_struct *p,
 NTSTATUS _lsa_SetSecret(struct pipes_struct *p,
 			struct lsa_SetSecret *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	NTSTATUS status;
 	struct lsa_info *info = NULL;
 	DATA_BLOB blob_new, blob_old;
@@ -2423,7 +2445,8 @@ NTSTATUS _lsa_SetSecret(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
+	status = session_extract_session_key(
+		session_info, &session_key, KEY_USE_16BYTES);
 	if(!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2478,6 +2501,9 @@ NTSTATUS _lsa_SetSecret(struct pipes_struct *p,
 NTSTATUS _lsa_QuerySecret(struct pipes_struct *p,
 			  struct lsa_QuerySecret *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct lsa_info *info = NULL;
 	DATA_BLOB blob_new, blob_old;
 	DATA_BLOB blob_new_crypt, blob_old_crypt;
@@ -2506,7 +2532,8 @@ NTSTATUS _lsa_QuerySecret(struct pipes_struct *p,
 		return status;
 	}
 
-	status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
+	status = session_extract_session_key(
+		session_info, &session_key, KEY_USE_16BYTES);
 	if(!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2814,6 +2841,9 @@ NTSTATUS _lsa_EnumAccounts(struct pipes_struct *p,
 NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 			  struct lsa_GetUserName *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const char *username, *domname;
 	struct lsa_String *account_name = NULL;
 	struct lsa_String *authority_name = NULL;
@@ -2833,7 +2863,7 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (security_session_user_level(p->session_info, NULL) < SECURITY_USER) {
+	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
 		/*
 		 * I'm 99% sure this is not the right place to do this,
 		 * global_sid_Anonymous should probably be put into the token
@@ -2844,8 +2874,8 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
-		username = p->session_info->unix_info->sanitized_username;
-		domname = p->session_info->info->domain_name;
+		username = session_info->unix_info->sanitized_username;
+		domname = session_info->info->domain_name;
 	}
 
 	account_name = talloc(p->mem_ctx, struct lsa_String);
@@ -2877,6 +2907,9 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 			    struct lsa_CreateAccount *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	NTSTATUS status;
 	struct lsa_info *handle;
 	uint32_t acc_granted;
@@ -2904,8 +2937,8 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 	}
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->session_info->security_token,
-			       p->session_info->unix_token,
+	map_max_allowed_access(session_info->security_token,
+			       session_info->unix_token,
 			       &r->in.access_mask);
 
 	/* map the generic bits to the lsa policy ones */
@@ -2918,7 +2951,7 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->session_info->security_token,
+	status = access_check_object(psd, session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, r->in.access_mask,
 				     &acc_granted, "_lsa_CreateAccount");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2949,6 +2982,9 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 			  struct lsa_OpenAccount *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	uint32_t des_access = r->in.access_mask;
@@ -2973,8 +3009,8 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 	 * handle - so don't check against policy handle. */
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->session_info->security_token,
-			       p->session_info->unix_token,
+	map_max_allowed_access(session_info->security_token,
+			       session_info->unix_token,
 			       &des_access);
 
 	/* map the generic bits to the lsa account ones */
@@ -2988,7 +3024,7 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->session_info->security_token,
+	status = access_check_object(psd, session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, des_access,
 				     &acc_granted, "_lsa_OpenAccount" );
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3346,6 +3382,9 @@ NTSTATUS _lsa_QuerySecurity(struct pipes_struct *p,
 NTSTATUS _lsa_AddAccountRights(struct pipes_struct *p,
 			       struct lsa_AddAccountRights *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	int i = 0;
 	uint32_t acc_granted = 0;
 	struct security_descriptor *psd = NULL;
@@ -3378,7 +3417,7 @@ NTSTATUS _lsa_AddAccountRights(struct pipes_struct *p,
 	 * on the account sid. We don't check here so just use the latter. JRA.
 	 */
 
-	status = access_check_object(psd, p->session_info->security_token,
+	status = access_check_object(psd, session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW,
 				     &acc_granted, "_lsa_AddAccountRights" );
@@ -3417,6 +3456,9 @@ NTSTATUS _lsa_AddAccountRights(struct pipes_struct *p,
 NTSTATUS _lsa_RemoveAccountRights(struct pipes_struct *p,
 				  struct lsa_RemoveAccountRights *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	int i = 0;
 	struct security_descriptor *psd = NULL;
 	size_t sd_size;
@@ -3449,7 +3491,7 @@ NTSTATUS _lsa_RemoveAccountRights(struct pipes_struct *p,
 	 * and DELETE on the account sid.
 	 */
 
-	status = access_check_object(psd, p->session_info->security_token,
+	status = access_check_object(psd, session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
 				     LSA_ACCOUNT_VIEW|SEC_STD_DELETE,

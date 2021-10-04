@@ -44,6 +44,9 @@ static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 					    const char *path,
 					    struct policy_handle *handle)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct mds_ctx *mds_ctx;
 
 	ZERO_STRUCTP(handle);
@@ -51,7 +54,7 @@ static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 	mds_ctx = mds_init_ctx(mem_ctx,
 			       messaging_tevent_context(p->msg_ctx),
 			       p->msg_ctx,
-			       p->session_info,
+			       session_info,
 			       snum,
 			       sharename,
 			       path);
@@ -149,6 +152,9 @@ void _mdssvc_unknown1(struct pipes_struct *p, struct mdssvc_unknown1 *r)
 
 void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	bool ok;
 	char *rbuf;
 	struct mds_ctx *mds_ctx;
@@ -173,7 +179,7 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 
 	DEBUG(10, ("%s: path: %s\n", __func__, mds_ctx->spath));
 
-	ok = security_token_is_sid(p->session_info->security_token,
+	ok = security_token_is_sid(session_info->security_token,
 				   &mds_ctx->sid);
 	if (!ok) {
 		struct dom_sid_buf buf;

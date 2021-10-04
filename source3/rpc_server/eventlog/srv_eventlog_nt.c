@@ -288,6 +288,9 @@ static bool get_oldest_entry_hook( EVENTLOG_INFO * info )
 
 static NTSTATUS elog_open( struct pipes_struct * p, const char *logname, struct policy_handle *hnd )
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	EVENTLOG_INFO *elog;
 
 	/* first thing is to validate the eventlog name */
@@ -321,7 +324,7 @@ static NTSTATUS elog_open( struct pipes_struct * p, const char *logname, struct 
 			elog->logname = talloc_strdup( elog, ELOG_APPL );
 
 			/* do the access check */
-			if ( !elog_check_access( elog, p->session_info) ) {
+			if ( !elog_check_access( elog, session_info) ) {
 				TALLOC_FREE( elog );
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -339,7 +342,7 @@ static NTSTATUS elog_open( struct pipes_struct * p, const char *logname, struct 
 
 	/* now do the access check.  Close the tdb if we fail here */
 
-	if ( !elog_check_access( elog, p->session_info) ) {
+	if ( !elog_check_access( elog, session_info) ) {
 		TALLOC_FREE( elog );
 		return NT_STATUS_ACCESS_DENIED;
 	}

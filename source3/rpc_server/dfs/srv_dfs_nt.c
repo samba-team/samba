@@ -54,6 +54,8 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 		dcesrv_connection_get_local_address(dcesrv_conn);
 	const struct tsocket_address *remote_address =
 		dcesrv_connection_get_remote_address(dcesrv_conn);
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct junction_map *jn = NULL;
 	struct referral *old_referral_list = NULL;
 	bool self_ref = False;
@@ -62,7 +64,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (p->session_info->unix_token->uid != sec_initial_uid()) {
+	if (session_info->unix_token->uid != sec_initial_uid()) {
 		DEBUG(10,("_dfs_add: uid != 0. Access denied.\n"));
 		return WERR_ACCESS_DENIED;
 	}
@@ -84,7 +86,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 
 	/* The following call can change the cwd. */
 	status = get_referred_path(ctx,
-				   p->session_info,
+				   session_info,
 				   r->in.path,
 				   remote_address,
 				   local_address,
@@ -116,7 +118,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	jn->referral_list[jn->referral_count-1].ttl = REFERRAL_TTL;
 	jn->referral_list[jn->referral_count-1].alternate_path = altpath;
 
-	if(!create_msdfs_link(jn, p->session_info)) {
+	if (!create_msdfs_link(jn, session_info)) {
 		return WERR_NERR_DFSCANTCREATEJUNCTIONPOINT;
 	}
 
@@ -131,6 +133,8 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 		dcesrv_connection_get_local_address(dcesrv_conn);
 	const struct tsocket_address *remote_address =
 		dcesrv_connection_get_remote_address(dcesrv_conn);
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct junction_map *jn = NULL;
 	bool self_ref = False;
 	int consumedcnt = 0;
@@ -139,7 +143,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 	char *altpath = NULL;
 	NTSTATUS status;
 
-	if (p->session_info->unix_token->uid != sec_initial_uid()) {
+	if (session_info->unix_token->uid != sec_initial_uid()) {
 		DEBUG(10,("_dfs_remove: uid != 0. Access denied.\n"));
 		return WERR_ACCESS_DENIED;
 	}
@@ -164,7 +168,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 	}
 
 	status = get_referred_path(ctx,
-				   p->session_info,
+				   session_info,
 				   r->in.dfs_entry_path,
 				   remote_address,
 				   local_address,
@@ -176,7 +180,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 
 	/* if no server-share pair given, remove the msdfs link completely */
 	if(!r->in.servername && !r->in.sharename) {
-		if(!remove_msdfs_link(jn, p->session_info)) {
+		if(!remove_msdfs_link(jn, session_info)) {
 			return WERR_NERR_DFSNOSUCHVOLUME;
 		}
 	} else {
@@ -207,11 +211,11 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 
 		/* Only one referral, remove it */
 		if(jn->referral_count == 1) {
-			if(!remove_msdfs_link(jn, p->session_info)) {
+			if(!remove_msdfs_link(jn, session_info)) {
 				return WERR_NERR_DFSNOSUCHVOLUME;
 			}
 		} else {
-			if(!create_msdfs_link(jn, p->session_info)) {
+			if(!create_msdfs_link(jn, session_info)) {
 				return WERR_NERR_DFSCANTCREATEJUNCTIONPOINT;
 			}
 		}
@@ -304,12 +308,15 @@ static bool init_reply_dfs_info_100(TALLOC_CTX *mem_ctx, struct junction_map* j,
 
 WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct junction_map *jn = NULL;
 	size_t num_jn = 0;
 	size_t i;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	jn = enum_msdfs_links(ctx, p->session_info, &num_jn);
+	jn = enum_msdfs_links(ctx, session_info, &num_jn);
 	if (!jn || num_jn == 0) {
 		num_jn = 0;
 		jn = NULL;
@@ -383,6 +390,8 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 		dcesrv_connection_get_local_address(dcesrv_conn);
 	const struct tsocket_address *remote_address =
 		dcesrv_connection_get_remote_address(dcesrv_conn);
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	int consumedcnt = strlen(r->in.dfs_entry_path);
 	struct junction_map *jn = NULL;
 	bool self_ref = False;
@@ -404,7 +413,7 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 
 	/* The following call can change the cwd. */
 	status = get_referred_path(ctx,
-				   p->session_info,
+				   session_info,
 				   r->in.dfs_entry_path,
 				   remote_address,
 				   local_address,

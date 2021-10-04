@@ -438,22 +438,26 @@ static NTSTATUS srv_fssa_start(struct messaging_context *msg_ctx)
  */
 static bool fss_permitted(struct pipes_struct *p)
 {
-	if (p->session_info->unix_token->uid == sec_initial_uid()) {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
+
+	if (session_info->unix_token->uid == sec_initial_uid()) {
 		DEBUG(6, ("Granting FSRVP op, user started smbd\n"));
 		return true;
 	}
 
 	if (nt_token_check_sid(&global_sid_Builtin_Administrators,
-			       p->session_info->security_token)) {
+			       session_info->security_token)) {
 		DEBUG(6, ("Granting FSRVP op, administrators group member\n"));
 		return true;
 	}
 	if (nt_token_check_sid(&global_sid_Builtin_Backup_Operators,
-			       p->session_info->security_token)) {
+			       session_info->security_token)) {
 		DEBUG(6, ("Granting FSRVP op, backup operators group member\n"));
 		return true;
 	}
-	if (security_token_has_privilege(p->session_info->security_token,
+	if (security_token_has_privilege(session_info->security_token,
 					 SEC_PRIV_BACKUP)) {
 		DEBUG(6, ("Granting FSRVP op, backup privilege present\n"));
 		return true;
@@ -728,6 +732,9 @@ static uint32_t map_share_comment(struct fss_sc_smap *sc_smap,
 uint32_t _fss_AddToShadowCopySet(struct pipes_struct *p,
 				 struct fss_AddToShadowCopySet *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	uint32_t ret;
 	struct fss_sc_set *sc_set;
 	struct fss_sc *sc;
@@ -773,12 +780,12 @@ uint32_t _fss_AddToShadowCopySet(struct pipes_struct *p,
 		goto err_tmp_free;
 	}
 
-	status = fss_conn_create_tos(p->msg_ctx, p->session_info, snum, &conn);
+	status = fss_conn_create_tos(p->msg_ctx, session_info, snum, &conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = HRES_ERROR_V(HRES_E_ACCESSDENIED);
 		goto err_tmp_free;
 	}
-	if (!become_user_without_service_by_session(conn, p->session_info)) {
+	if (!become_user_without_service_by_session(conn, session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		ret = HRES_ERROR_V(HRES_E_ACCESSDENIED);
 		goto err_tmp_free;
@@ -929,6 +936,9 @@ static NTSTATUS commit_sc_with_conn(TALLOC_CTX *mem_ctx,
 uint32_t _fss_CommitShadowCopySet(struct pipes_struct *p,
 				  struct fss_CommitShadowCopySet *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct fss_sc_set *sc_set;
 	struct fss_sc *sc;
 	uint32_t commit_count;
@@ -961,7 +971,7 @@ uint32_t _fss_CommitShadowCopySet(struct pipes_struct *p,
 		char *base_path;
 		char *snap_path;
 		status = commit_sc_with_conn(frame, global_event_context(),
-					     p->msg_ctx, p->session_info, sc,
+					     p->msg_ctx, session_info, sc,
 					     &base_path, &snap_path);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("snap create failed for shadow copy of "
@@ -1330,6 +1340,9 @@ uint32_t _fss_AbortShadowCopySet(struct pipes_struct *p,
 uint32_t _fss_IsPathSupported(struct pipes_struct *p,
 			      struct fss_IsPathSupported *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	int snum;
 	char *service;
 	char *base_vol;
@@ -1358,12 +1371,12 @@ uint32_t _fss_IsPathSupported(struct pipes_struct *p,
 		return HRES_ERROR_V(HRES_E_INVALIDARG);
 	}
 
-	status = fss_conn_create_tos(p->msg_ctx, p->session_info, snum, &conn);
+	status = fss_conn_create_tos(p->msg_ctx, session_info, snum, &conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return HRES_ERROR_V(HRES_E_ACCESSDENIED);
 	}
-	if (!become_user_without_service_by_session(conn, p->session_info)) {
+	if (!become_user_without_service_by_session(conn, session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		TALLOC_FREE(frame);
 		return HRES_ERROR_V(HRES_E_ACCESSDENIED);
@@ -1569,6 +1582,9 @@ err_cancel:
 uint32_t _fss_DeleteShareMapping(struct pipes_struct *p,
 				 struct fss_DeleteShareMapping *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct fss_sc_set *sc_set;
 	struct fss_sc *sc;
 	struct fss_sc_smap *sc_smap;
@@ -1638,11 +1654,11 @@ uint32_t _fss_DeleteShareMapping(struct pipes_struct *p,
 		goto err_tmp_free;
 	}
 
-	status = fss_conn_create_tos(p->msg_ctx, p->session_info, snum, &conn);
+	status = fss_conn_create_tos(p->msg_ctx, session_info, snum, &conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto err_tmp_free;
 	}
-	if (!become_user_without_service_by_session(conn, p->session_info)) {
+	if (!become_user_without_service_by_session(conn, session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto err_tmp_free;

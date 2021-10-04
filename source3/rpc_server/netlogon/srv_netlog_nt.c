@@ -185,6 +185,8 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 			     struct netr_LogonControl2Ex *r)
 {
 	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	uint32_t flags = 0x0;
 	WERROR pdc_connection_status = WERR_OK;
 	uint32_t logon_attempts = 0x0;
@@ -230,8 +232,11 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		break;
 	default:
 		if ((geteuid() != sec_initial_uid()) &&
-		    !nt_token_check_domain_rid(p->session_info->security_token, DOMAIN_RID_ADMINS) &&
-		    !nt_token_check_sid(&global_sid_Builtin_Administrators, p->session_info->security_token))
+		    !nt_token_check_domain_rid(
+			    session_info->security_token, DOMAIN_RID_ADMINS) &&
+		    !nt_token_check_sid(
+			    &global_sid_Builtin_Administrators,
+			    session_info->security_token))
 		{
 			return WERR_ACCESS_DENIED;
 		}
@@ -413,6 +418,8 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 		dcesrv_connection_get_local_address(dcesrv_conn);
 	const struct tsocket_address *remote_address =
 		dcesrv_connection_get_remote_address(dcesrv_conn);
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	DATA_BLOB blob;
@@ -431,7 +438,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 				       &ndr_table_lsarpc,
 				       remote_address,
 				       local_address,
-				       p->session_info,
+				       session_info,
 				       p->msg_ctx,
 				       &h);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1422,6 +1429,9 @@ static NTSTATUS netr_set_machine_account_password(
 NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 				 struct netr_ServerPasswordSet *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	NTSTATUS status = NT_STATUS_OK;
 	size_t i;
 	struct netlogon_creds_CredentialState *creds = NULL;
@@ -1465,7 +1475,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 
 	cr.creds.nt_hash = r->in.new_password;
 	status = netr_set_machine_account_password(p->mem_ctx,
-						   p->session_info,
+						   session_info,
 						   p->msg_ctx,
 						   creds->sid,
 						   &cr);
@@ -1479,6 +1489,9 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 				  struct netr_ServerPasswordSet2 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds = NULL;
 	DATA_BLOB plaintext = data_blob_null;
@@ -1627,7 +1640,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	}
 
 	status = netr_set_machine_account_password(p->mem_ctx,
-						   p->session_info,
+						   session_info,
 						   p->msg_ctx,
 						   creds->sid,
 						   &cr);
@@ -2692,11 +2705,14 @@ static NTSTATUS fill_forest_trust_array(TALLOC_CTX *mem_ctx,
 WERROR _netr_DsRGetForestTrustInformation(struct pipes_struct *p,
 					  struct netr_DsRGetForestTrustInformation *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	NTSTATUS status;
 	struct lsa_ForestTrustInformation *info, **info_ptr;
 	enum security_user_level security_level;
 
-	security_level = security_session_user_level(p->session_info, NULL);
+	security_level = security_session_user_level(session_info, NULL);
 	if (security_level < SECURITY_USER) {
 		return WERR_ACCESS_DENIED;
 	}

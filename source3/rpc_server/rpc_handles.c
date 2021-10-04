@@ -207,6 +207,8 @@ bool pipe_access_check(struct pipes_struct *p)
 		struct dcesrv_call_state *dce_call = p->dce_call;
 		struct dcesrv_auth *auth_state = dce_call->auth_state;
 		enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+		struct auth_session_info *session_info = NULL;
+		enum security_user_level user_level;
 
 		if (!auth_state->auth_finished) {
 			return false;
@@ -219,7 +221,10 @@ bool pipe_access_check(struct pipes_struct *p)
 			return True;
 		}
 
-		if (security_session_user_level(p->session_info, NULL) < SECURITY_USER) {
+		session_info = dcesrv_call_session_info(dce_call);
+		user_level = security_session_user_level(session_info, NULL);
+
+		if (user_level < SECURITY_USER) {
 			return False;
 		}
 	}

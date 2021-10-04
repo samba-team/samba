@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "ntdomain.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/libnet_join.h"
 #include "libnet/libnet_join.h"
 #include "../libcli/auth/libcli_auth.h"
@@ -361,6 +362,9 @@ static struct wkssvc_NetWkstaInfo102 *create_wks_info_102(TALLOC_CTX *mem_ctx)
 WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 			       struct wkssvc_NetWkstaGetInfo *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct dom_sid_buf buf;
 
 	switch (r->in.level) {
@@ -375,7 +379,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 	case 101:
 		/* Level 101 can be allowed from any logged in user */
 		if (!nt_token_check_sid(&global_sid_Authenticated_Users,
-					p->session_info->security_token)) {
+					session_info->security_token)) {
 			DEBUG(1,("User not allowed for NetWkstaGetInfo level "
 				 "101\n"));
 			DEBUGADD(3,(" - does not have sid for Authenticated "
@@ -384,7 +388,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 					    &global_sid_Authenticated_Users,
 					    &buf)));
 			security_token_debug(DBGC_CLASS, 3,
-					    p->session_info->security_token);
+					    session_info->security_token);
 			return WERR_ACCESS_DENIED;
 		}
 		r->out.info->info101 = create_wks_info_101(p->mem_ctx);
@@ -395,7 +399,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 	case 102:
 		/* Level 102 Should only be allowed from a domain administrator */
 		if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-					p->session_info->security_token)) {
+					session_info->security_token)) {
 			DEBUG(1,("User not allowed for NetWkstaGetInfo level "
 				 "102\n"));
 			DEBUGADD(3,(" - does not have sid for Administrators "
@@ -404,7 +408,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 					    &global_sid_Builtin_Administrators,
 					    &buf)));
 			security_token_debug(DBGC_CLASS, 3,
-					    p->session_info->security_token);
+					    session_info->security_token);
 			return WERR_ACCESS_DENIED;
 		}
 		r->out.info->info102 = create_wks_info_102(p->mem_ctx);
@@ -587,9 +591,13 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 WERROR _wkssvc_NetWkstaEnumUsers(struct pipes_struct *p,
 				 struct wkssvc_NetWkstaEnumUsers *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
+
 	/* This with any level should only be allowed from a domain administrator */
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->session_info->security_token)) {
+				session_info->security_token)) {
 		struct dom_sid_buf buf;
 		DEBUG(1,("User not allowed for NetWkstaEnumUsers\n"));
 		DEBUGADD(3,(" - does not have sid for Administrators group "
@@ -597,7 +605,8 @@ WERROR _wkssvc_NetWkstaEnumUsers(struct pipes_struct *p,
 			    dom_sid_str_buf(
 				    &global_sid_Builtin_Administrators,
 				    &buf)));
-		security_token_debug(DBGC_CLASS, 3, p->session_info->security_token);
+		security_token_debug(
+			DBGC_CLASS, 3, session_info->security_token);
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -847,12 +856,15 @@ WERROR _wkssvc_NetrGetJoinableOus(struct pipes_struct *p,
 WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 			       struct wkssvc_NetrJoinDomain2 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct libnet_JoinCtx *j = NULL;
 	char *cleartext_pwd = NULL;
 	char *admin_domain = NULL;
 	char *admin_account = NULL;
 	WERROR werr;
-	struct security_token *token = p->session_info->security_token;
+	struct security_token *token = session_info->security_token;
 	NTSTATUS status;
 	DATA_BLOB session_key;
 	bool ok;
@@ -878,7 +890,7 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	status = session_extract_session_key(p->session_info,
+	status = session_extract_session_key(session_info,
 					     &session_key,
 					     KEY_USE_16BYTES);
 	if(!NT_STATUS_IS_OK(status)) {
@@ -939,12 +951,15 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 				 struct wkssvc_NetrUnjoinDomain2 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct libnet_UnjoinCtx *u = NULL;
 	char *cleartext_pwd = NULL;
 	char *admin_domain = NULL;
 	char *admin_account = NULL;
 	WERROR werr;
-	struct security_token *token = p->session_info->security_token;
+	struct security_token *token = session_info->security_token;
 	NTSTATUS status;
 	DATA_BLOB session_key;
 	bool ok;
@@ -961,7 +976,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	status = session_extract_session_key(p->session_info,
+	status = session_extract_session_key(session_info,
 					     &session_key,
 					     KEY_USE_16BYTES);
 	if (!NT_STATUS_IS_OK(status)) {

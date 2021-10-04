@@ -285,7 +285,6 @@ sub boilerplate_iface($)
 	$self->indent();
 	$self->pidl("uint16_t opnum = dce_call->pkt.u.request.opnum;");
 	$self->pidl("struct pipes_struct *p = NULL;");
-	$self->pidl("struct auth_session_info *pipe_session_info = NULL;");
 	$self->pidl("NTSTATUS status = NT_STATUS_OK;");
 	$self->pidl("bool impersonated = false;");
 	$self->pidl("");
@@ -293,9 +292,6 @@ sub boilerplate_iface($)
 	$self->pidl("p = dcesrv_get_pipes_struct(dce_call->conn);");
 	$self->pidl("p->dce_call = dce_call;");
 	$self->pidl("p->mem_ctx = mem_ctx;");
-	$self->pidl("/* Update pipes struct session info */");
-	$self->pidl("pipe_session_info = p->session_info;");
-	$self->pidl("p->session_info = dce_call->auth_state->session_info;");
 	$self->pidl("p->auth.auth_type = dce_call->auth_state->auth_type;");
 	$self->pidl("p->auth.auth_level = dce_call->auth_state->auth_level;");
 	$self->pidl("p->auth.auth_context_id = dce_call->auth_state->auth_context_id;");
@@ -306,7 +302,7 @@ sub boilerplate_iface($)
 	$self->pidl("/* Impersonate */");
 	$self->pidl("if (dispatch == S3COMPAT_RPC_DISPATCH_EXTERNAL) {");
 	$self->indent();
-	$self->pidl("impersonated = become_authenticated_pipe_user(p->session_info);");
+	$self->pidl("impersonated = become_authenticated_pipe_user(dce_call->auth_state->session_info);");
 	$self->pidl("if (!impersonated) {");
 	$self->indent();
 	$self->pidl("dce_call->fault_code = DCERPC_FAULT_ACCESS_DENIED;");
@@ -339,8 +335,6 @@ sub boilerplate_iface($)
 
 	$self->pidl("p->dce_call = NULL;");
 	$self->pidl("p->mem_ctx = NULL;");
-	$self->pidl("/* Restore session info */");
-	$self->pidl("p->session_info = pipe_session_info;");
 	$self->pidl("p->auth.auth_type = 0;");
 	$self->pidl("p->auth.auth_level = 0;");
 	$self->pidl("p->auth.auth_context_id = 0;");

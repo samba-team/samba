@@ -288,6 +288,9 @@ done:
 WERROR _svcctl_OpenSCManagerW(struct pipes_struct *p,
 			      struct svcctl_OpenSCManagerW *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct security_descriptor *sec_desc;
 	uint32_t access_granted = 0;
 	NTSTATUS status;
@@ -298,7 +301,7 @@ WERROR _svcctl_OpenSCManagerW(struct pipes_struct *p,
 		return WERR_NOT_ENOUGH_MEMORY;
 
 	se_map_generic( &r->in.access_mask, &scm_generic_map );
-	status = svcctl_access_check( sec_desc, p->session_info->security_token,
+	status = svcctl_access_check( sec_desc, session_info->security_token,
 				      r->in.access_mask, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
@@ -313,6 +316,9 @@ WERROR _svcctl_OpenSCManagerW(struct pipes_struct *p,
 WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 			    struct svcctl_OpenServiceW *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct security_descriptor *sec_desc;
 	uint32_t access_granted = 0;
 	NTSTATUS status;
@@ -350,7 +356,7 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 	}
 
 	se_map_generic( &r->in.access_mask, &svc_generic_map );
-	status = svcctl_access_check( sec_desc, p->session_info->security_token,
+	status = svcctl_access_check( sec_desc, session_info->security_token,
 				      r->in.access_mask, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
@@ -380,6 +386,9 @@ WERROR _svcctl_CloseServiceHandle(struct pipes_struct *p,
 WERROR _svcctl_GetServiceDisplayNameW(struct pipes_struct *p,
 				      struct svcctl_GetServiceDisplayNameW *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const char *service;
 	const char *display_name;
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
@@ -393,7 +402,7 @@ WERROR _svcctl_GetServiceDisplayNameW(struct pipes_struct *p,
 
 	display_name = svcctl_lookup_dispname(p->mem_ctx,
 					      p->msg_ctx,
-					      p->session_info,
+					      session_info,
 					      service);
 	if (!display_name) {
 		display_name = "";
@@ -473,6 +482,9 @@ static int enumerate_status(TALLOC_CTX *ctx,
 WERROR _svcctl_EnumServicesStatusW(struct pipes_struct *p,
 				   struct svcctl_EnumServicesStatusW *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct ENUM_SERVICE_STATUSW *services = NULL;
 	int num_services;
 	int i = 0;
@@ -492,7 +504,7 @@ WERROR _svcctl_EnumServicesStatusW(struct pipes_struct *p,
 
 	num_services = enumerate_status(p->mem_ctx,
 					p->msg_ctx,
-					p->session_info,
+					session_info,
 					&services);
 	if (num_services == -1 ) {
 		return WERR_NOT_ENOUGH_MEMORY;
@@ -754,6 +766,9 @@ static WERROR fill_svc_config(TALLOC_CTX *mem_ctx,
 WERROR _svcctl_QueryServiceConfigW(struct pipes_struct *p,
 				   struct svcctl_QueryServiceConfigW *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 	uint32_t buffer_size;
 	WERROR wresult;
@@ -773,7 +788,7 @@ WERROR _svcctl_QueryServiceConfigW(struct pipes_struct *p,
 
 	wresult = fill_svc_config(p->mem_ctx,
 				  p->msg_ctx,
-				  p->session_info,
+				  session_info,
 				  info->name,
 				  r->out.query);
 	if ( !W_ERROR_IS_OK(wresult) )
@@ -797,6 +812,9 @@ WERROR _svcctl_QueryServiceConfigW(struct pipes_struct *p,
 WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 				    struct svcctl_QueryServiceConfig2W *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 	uint32_t buffer_size;
 	DATA_BLOB blob = data_blob_null;
@@ -822,7 +840,7 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 
 			description = svcctl_lookup_description(p->mem_ctx,
 								p->msg_ctx,
-								p->session_info,
+								session_info,
 								info->name);
 
 			desc_buf.description = description;
@@ -979,6 +997,9 @@ WERROR _svcctl_QueryServiceObjectSecurity(struct pipes_struct *p,
 WERROR _svcctl_SetServiceObjectSecurity(struct pipes_struct *p,
 					struct svcctl_SetServiceObjectSecurity *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 	struct security_descriptor *sec_desc = NULL;
 	uint32_t required_access;
@@ -1025,7 +1046,7 @@ WERROR _svcctl_SetServiceObjectSecurity(struct pipes_struct *p,
 
 	/* store the new SD */
 
-	if (!svcctl_set_secdesc(p->msg_ctx, p->session_info, info->name, sec_desc))
+	if (!svcctl_set_secdesc(p->msg_ctx, session_info, info->name, sec_desc))
 		return WERR_ACCESS_DENIED;
 
 	return WERR_OK;

@@ -27,6 +27,7 @@
 #include "system/passwd.h"
 #include "lib/util/server_id.h"
 #include "ntdomain.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "librpc/gen_ndr/ndr_srvsvc_scompat.h"
 #include "../libcli/security/security.h"
@@ -244,6 +245,9 @@ static void init_srv_share_info_1(struct pipes_struct *p,
 				  struct srvsvc_NetShareInfo1 *r,
 				  int snum)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	char *net_name = lp_servicename(talloc_tos(), lp_sub, snum);
@@ -253,7 +257,7 @@ static void init_srv_share_info_1(struct pipes_struct *p,
 		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum),
 			get_current_username(), lp_path(talloc_tos(), lp_sub, snum),
-			p->session_info->unix_token->uid, get_current_username(),
+			session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 
@@ -270,6 +274,9 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 				  struct srvsvc_NetShareInfo2 *r,
 				  int snum)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	char *remark = NULL;
@@ -283,7 +290,7 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum),
 			get_current_username(), lp_path(talloc_tos(), lp_sub, snum),
-			p->session_info->unix_token->uid, get_current_username(),
+			session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 	path = talloc_asprintf(p->mem_ctx,
@@ -341,6 +348,9 @@ static void map_generic_share_sd_bits(struct security_descriptor *psd)
 static void init_srv_share_info_501(struct pipes_struct *p,
 				    struct srvsvc_NetShareInfo501 *r, int snum)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	const char *net_name = lp_servicename(talloc_tos(), lp_sub, snum);
@@ -350,7 +360,7 @@ static void init_srv_share_info_501(struct pipes_struct *p,
 		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum),
 			get_current_username(), lp_path(talloc_tos(), lp_sub, snum),
-			p->session_info->unix_token->uid, get_current_username(),
+			session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 
@@ -372,6 +382,9 @@ static void init_srv_share_info_501(struct pipes_struct *p,
 static void init_srv_share_info_502(struct pipes_struct *p,
 				    struct srvsvc_NetShareInfo502 *r, int snum)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	const char *net_name = lp_servicename(talloc_tos(), lp_sub, snum);
@@ -386,7 +399,7 @@ static void init_srv_share_info_502(struct pipes_struct *p,
 		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum),
 			get_current_username(), lp_path(talloc_tos(), lp_sub, snum),
-			p->session_info->unix_token->uid, get_current_username(),
+			session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 	path = talloc_asprintf(ctx, "C:%s", lp_path(talloc_tos(), lp_sub, snum));
@@ -421,6 +434,9 @@ static void init_srv_share_info_1004(struct pipes_struct *p,
 				     struct srvsvc_NetShareInfo1004 *r,
 				     int snum)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	char *remark = lp_comment(p->mem_ctx, lp_sub, snum);
@@ -429,7 +445,7 @@ static void init_srv_share_info_1004(struct pipes_struct *p,
 		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum),
 			get_current_username(), lp_path(talloc_tos(), lp_sub, snum),
-			p->session_info->unix_token->uid, get_current_username(),
+			session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 
@@ -520,6 +536,9 @@ static bool is_hidden_share(int snum)
 static bool is_enumeration_allowed(struct pipes_struct *p,
                                    int snum)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 
@@ -527,13 +546,13 @@ static bool is_enumeration_allowed(struct pipes_struct *p,
 		return true;
 	}
 
-	if (!user_ok_token(p->session_info->unix_info->unix_name,
-			   p->session_info->info->domain_name,
-			   p->session_info->security_token, snum)) {
+	if (!user_ok_token(session_info->unix_info->unix_name,
+			   session_info->info->domain_name,
+			   session_info->security_token, snum)) {
 		return false;
 	}
 
-	return share_access_check(p->session_info->security_token,
+	return share_access_check(session_info->security_token,
 				  lp_servicename(talloc_tos(), lp_sub, snum),
 				  FILE_READ_DATA, NULL);
 }
@@ -1304,6 +1323,9 @@ static WERROR init_srv_conn_info_1(const char *name,
 WERROR _srvsvc_NetFileEnum(struct pipes_struct *p,
 			   struct srvsvc_NetFileEnum *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	TALLOC_CTX *ctx = NULL;
 	struct srvsvc_NetFileCtr3 *ctr3;
 	uint32_t resume_hnd = 0;
@@ -1317,7 +1339,7 @@ WERROR _srvsvc_NetFileEnum(struct pipes_struct *p,
 	}
 
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->session_info->security_token)) {
+				session_info->security_token)) {
 		DEBUG(1, ("Enumerating files only allowed for "
 			  "administrators\n"));
 		return WERR_ACCESS_DENIED;
@@ -1468,12 +1490,15 @@ WERROR _srvsvc_NetSrvSetInfo(struct pipes_struct *p,
 WERROR _srvsvc_NetConnEnum(struct pipes_struct *p,
 			   struct srvsvc_NetConnEnum *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	WERROR werr;
 
 	DEBUG(5,("_srvsvc_NetConnEnum: %d\n", __LINE__));
 
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->session_info->security_token)) {
+				session_info->security_token)) {
 		DEBUG(1, ("Enumerating connections only allowed for "
 			  "administrators\n"));
 		return WERR_ACCESS_DENIED;
@@ -1507,12 +1532,15 @@ WERROR _srvsvc_NetConnEnum(struct pipes_struct *p,
 WERROR _srvsvc_NetSessEnum(struct pipes_struct *p,
 			   struct srvsvc_NetSessEnum *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	WERROR werr;
 
 	DEBUG(5,("_srvsvc_NetSessEnum: %d\n", __LINE__));
 
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->session_info->security_token)) {
+				session_info->security_token)) {
 		DEBUG(1, ("Enumerating sessions only allowed for "
 			  "administrators\n"));
 		return WERR_ACCESS_DENIED;
@@ -1547,6 +1575,9 @@ WERROR _srvsvc_NetSessEnum(struct pipes_struct *p,
 WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 			  struct srvsvc_NetSessDel *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct sessionid *session_list;
 	int num_sessions, snum;
 	const char *username;
@@ -1560,8 +1591,8 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 
 	/* fail out now if you are not root or not a domain admin */
 
-	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
-		( ! nt_token_check_domain_rid(p->session_info->security_token,
+	if ((session_info->unix_token->uid != sec_initial_uid()) &&
+		( ! nt_token_check_domain_rid(session_info->security_token,
 					      DOMAIN_RID_ADMINS))) {
 
 		goto done;
@@ -1582,7 +1613,7 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 
 		NTSTATUS ntstat;
 
-		if (p->session_info->unix_token->uid != sec_initial_uid()) {
+		if (session_info->unix_token->uid != sec_initial_uid()) {
 			not_root = True;
 			become_root();
 		}
@@ -1757,6 +1788,9 @@ WERROR _srvsvc_NetShareGetInfo(struct pipes_struct *p,
 WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 			       struct srvsvc_NetShareSetInfo *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	char *command = NULL;
@@ -1811,15 +1845,16 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	if (lp_printable(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(
+		session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
 	/* fail out now if you are not root and not a disk op */
 
-	if ( p->session_info->unix_token->uid != sec_initial_uid() && !is_disk_op ) {
+	if (session_info->unix_token->uid != sec_initial_uid() && !is_disk_op) {
 		DEBUG(2,("_srvsvc_NetShareSetInfo: uid %u doesn't have the "
 			"SeDiskOperatorPrivilege privilege needed to modify "
 			"share %s\n",
-			(unsigned int)p->session_info->unix_token->uid,
+			(unsigned int)session_info->unix_token->uid,
 			share_name ));
 		return WERR_ACCESS_DENIED;
 	}
@@ -2014,6 +2049,9 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 			   struct srvsvc_NetShareAdd *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	char *command = NULL;
 	char *share_name_in = NULL;
 	char *share_name = NULL;
@@ -2037,10 +2075,12 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 		*r->out.parm_error = 0;
 	}
 
-	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(
+		session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
-	if (p->session_info->unix_token->uid != sec_initial_uid()  && !is_disk_op )
+	if (session_info->unix_token->uid != sec_initial_uid()  && !is_disk_op) {
 		return WERR_ACCESS_DENIED;
+	}
 
 	if (!lp_add_share_command(talloc_tos(), lp_sub) || !*lp_add_share_command(talloc_tos(), lp_sub)) {
 		DBG_WARNING("_srvsvc_NetShareAdd: No \"add share command\" parameter set in smb.conf.\n");
@@ -2217,6 +2257,9 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 			   struct srvsvc_NetShareDel *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	char *command = NULL;
 	char *share_name = NULL;
 	int ret;
@@ -2252,10 +2295,12 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	if (lp_printable(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(
+		session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
-	if (p->session_info->unix_token->uid != sec_initial_uid()  && !is_disk_op )
+	if (session_info->unix_token->uid != sec_initial_uid()  && !is_disk_op) {
 		return WERR_ACCESS_DENIED;
+	}
 
 	if (!lp_delete_share_command(talloc_tos(), lp_sub) || !*lp_delete_share_command(talloc_tos(), lp_sub)) {
 		DBG_WARNING("_srvsvc_NetShareDel: No \"delete share command\" parameter set in smb.conf.\n");
@@ -2374,6 +2419,9 @@ WERROR _srvsvc_NetRemoteTOD(struct pipes_struct *p,
 WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 				  struct srvsvc_NetGetFileSecurity *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	TALLOC_CTX *frame = talloc_stackframe();
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
@@ -2410,7 +2458,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
 					       snum,
 					       lp_path(frame, lp_sub, snum),
-					       p->session_info,
+					       session_info,
 					       &c);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
@@ -2506,6 +2554,9 @@ error_exit:
 WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 				  struct srvsvc_NetSetFileSecurity *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	TALLOC_CTX *frame = talloc_stackframe();
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
@@ -2544,7 +2595,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
 					       snum,
 					       lp_path(frame, lp_sub, snum),
-					       p->session_info,
+					       session_info,
 					       &c);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
@@ -2782,14 +2833,18 @@ static int enum_file_close_fn(struct file_id id,
 WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 			    struct srvsvc_NetFileClose *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	struct enum_file_close_state state;
 	bool is_disk_op;
 
 	DEBUG(5,("_srvsvc_NetFileClose: %d\n", __LINE__));
 
-	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(
+		session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
-	if (p->session_info->unix_token->uid != sec_initial_uid() && !is_disk_op) {
+	if (session_info->unix_token->uid != sec_initial_uid() && !is_disk_op) {
 		return WERR_ACCESS_DENIED;
 	}
 

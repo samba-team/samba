@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "ntdomain.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_ntsvcs.h"
 #include "librpc/gen_ndr/ndr_ntsvcs_scompat.h"
 #include "services/svc_winreg_glue.h"
@@ -126,6 +127,9 @@ _PNP_GetDeviceRegProp
 WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 			     struct PNP_GetDeviceRegProp *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	char *ptr;
 	const char *result;
 	DATA_BLOB blob;
@@ -148,7 +152,7 @@ WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 
 		result = svcctl_lookup_dispname(mem_ctx,
 						p->msg_ctx,
-						p->session_info,
+						session_info,
 						ptr);
 		if (result == NULL) {
 			return WERR_GEN_FAILURE;

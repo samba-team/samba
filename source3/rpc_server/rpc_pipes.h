@@ -39,7 +39,6 @@ struct pipes_struct {
 
 	enum dcerpc_transport_t transport;
 
-	struct auth_session_info *session_info;
 	struct messaging_context *msg_ctx;
 
 	struct pipe_auth_data auth;

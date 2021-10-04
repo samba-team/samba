@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "ntdomain.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_winreg.h"
 #include "librpc/gen_ndr/ndr_winreg_scompat.h"
 #include "registry.h"
@@ -75,12 +76,15 @@ static WERROR open_registry_key(struct pipes_struct *p,
 				const char *subkeyname,
 				uint32_t access_desired)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	WERROR result = WERR_OK;
 	struct registry_key *key;
 
 	if (parent == NULL) {
 		result = reg_openhive(p->mem_ctx, subkeyname, access_desired,
-				      p->session_info->security_token, &key);
+				      session_info->security_token, &key);
 	}
 	else {
 		result = reg_openkey(p->mem_ctx, parent, subkeyname,
@@ -546,6 +550,9 @@ WERROR _winreg_InitiateSystemShutdown(struct pipes_struct *p,
 WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 					struct winreg_InitiateSystemShutdownEx *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	char *shutdown_script = NULL;
@@ -607,7 +614,8 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	can_shutdown = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_REMOTE_SHUTDOWN);
+	can_shutdown = security_token_has_privilege(
+		session_info->security_token, SEC_PRIV_REMOTE_SHUTDOWN);
 
 	/* IF someone has privs, run the shutdown script as root. OTHERWISE run it as not root
 	   Take the error return from the script and provide it as the Windows return code. */
@@ -637,6 +645,9 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 WERROR _winreg_AbortSystemShutdown(struct pipes_struct *p,
 				   struct winreg_AbortSystemShutdown *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const char *abort_shutdown_script = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
@@ -647,7 +658,8 @@ WERROR _winreg_AbortSystemShutdown(struct pipes_struct *p,
 	if (!*abort_shutdown_script)
 		return WERR_ACCESS_DENIED;
 
-	can_shutdown = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_REMOTE_SHUTDOWN);
+	can_shutdown = security_token_has_privilege(
+		session_info->security_token, SEC_PRIV_REMOTE_SHUTDOWN);
 
 	/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
 

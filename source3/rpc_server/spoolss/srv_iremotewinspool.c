@@ -82,7 +82,6 @@ static NTSTATUS iremotewinspool__op_dispatch_internal(struct dcesrv_call_state *
 {
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	struct pipes_struct *p = NULL;
-	struct auth_session_info *pipe_session_info = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	bool impersonated = false;
 
@@ -94,9 +93,6 @@ static NTSTATUS iremotewinspool__op_dispatch_internal(struct dcesrv_call_state *
 	p = dcesrv_get_pipes_struct(dce_call->conn);
 	p->dce_call = dce_call;
 	p->mem_ctx = mem_ctx;
-	/* Update pipes struct session info */
-	pipe_session_info = p->session_info;
-	p->session_info = dce_call->auth_state->session_info;
 	p->auth.auth_type = dce_call->auth_state->auth_type;
 	p->auth.auth_level = dce_call->auth_state->auth_level;
 	p->auth.auth_context_id = dce_call->auth_state->auth_context_id;
@@ -105,7 +101,8 @@ static NTSTATUS iremotewinspool__op_dispatch_internal(struct dcesrv_call_state *
 
 	/* Impersonate */
 	if (!rpcint_call) {
-		impersonated = become_authenticated_pipe_user(p->session_info);
+		impersonated = become_authenticated_pipe_user(
+			dce_call->auth_state->session_info);
 		if (!impersonated) {
 			dce_call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
 			status = NT_STATUS_NET_WRITE_FAULT;
@@ -1233,8 +1230,6 @@ fail:
 
 	p->dce_call = NULL;
 	p->mem_ctx = NULL;
-	/* Restore session info */
-	p->session_info = pipe_session_info;
 	p->auth.auth_type = 0;
 	p->auth.auth_level = 0;
 	p->auth.auth_context_id = 0;
