@@ -1,0 +1,22 @@
+<samba:parameter name="rpc start on demand helpers"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+		This global parameter determines if <command>samba-dcerpcd</command>
+		should be started on demand to service named pipe (np) DCE-RPC requests from
+		<command>smbd</command> or <command>winbindd</command>. This is the
+		normal case where no startup scripts have been modified to start
+		<command>samba-dcerpcd</command> as a daemon.
+	</para>
+	<para>
+		If <command>samba-dcerpcd</command> is started as a daemon
+		or via a system service manager such as systemd, this parameter
+		MUST be set to "no", otherwise <command>samba-dcerpcd</command>
+		will fail to start.
+	</para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>

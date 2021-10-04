@@ -980,6 +980,12 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.min_domain_uid = 1000;
 
+	/*
+	 * By default allow smbd and winbindd to start samba-dcerpcd as
+	 * a named-pipe helper.
+	 */
+	Globals.rpc_start_on_demand_helpers = true;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
