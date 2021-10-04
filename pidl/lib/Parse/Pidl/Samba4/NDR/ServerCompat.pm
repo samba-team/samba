@@ -296,8 +296,6 @@ sub boilerplate_iface($)
 	$self->pidl("");
 	$self->pidl("/* Retrieve pipes struct */");
 	$self->pidl("p = dcesrv_get_pipes_struct(dce_call->conn);");
-	$self->pidl("/* Update pipes struct opnum */");
-	$self->pidl("p->opnum = opnum;");
 	$self->pidl("p->dce_call = dce_call;");
 	$self->pidl("p->mem_ctx = mem_ctx;");
 	$self->pidl("/* Update pipes struct session info */");

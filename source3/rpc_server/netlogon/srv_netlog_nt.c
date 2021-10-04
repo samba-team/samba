@@ -28,6 +28,7 @@
 #include "system/passwd.h" /* uid_wrapper */
 #include "ntdomain.h"
 #include "../libcli/auth/schannel.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_scompat.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
@@ -187,6 +188,7 @@ static bool wb_check_trust_creds(const char *domain, WERROR *tc_status)
 WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 			     struct netr_LogonControl2Ex *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
 	uint32_t flags = 0x0;
 	WERROR pdc_connection_status = WERR_OK;
 	uint32_t logon_attempts = 0x0;
@@ -203,7 +205,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 	NTSTATUS status;
 	struct netr_DsRGetDCNameInfo *dc_info;
 
-	switch (p->opnum) {
+	switch (dce_call->pkt.u.request.opnum) {
 	case NDR_NETR_LOGONCONTROL:
 		fn = "_netr_LogonControl";
 		break;
@@ -850,6 +852,7 @@ NTSTATUS _netr_ServerAuthenticate(struct pipes_struct *p,
 NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 				   struct netr_ServerAuthenticate3 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
 	NTSTATUS status;
 	uint32_t srv_flgs;
 	/* r->in.negotiate_flags is an aliased pointer to r->out.negotiate_flags,
@@ -917,7 +920,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		srv_flgs &= ~NETLOGON_NEG_ARCFOUR;
 	}
 
-	switch (p->opnum) {
+	switch (dce_call->pkt.u.request.opnum) {
 		case NDR_NETR_SERVERAUTHENTICATE:
 			fn = "_netr_ServerAuthenticate";
 			break;
@@ -1044,6 +1047,7 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 					     struct netr_Authenticator *return_authenticator,
 					     struct netlogon_creds_CredentialState **creds_out)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
 	NTSTATUS status;
 	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
 	bool schannel_required = schannel_global_required;
@@ -1051,7 +1055,7 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 	struct loadparm_context *lp_ctx;
 	struct netlogon_creds_CredentialState *creds = NULL;
 	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
-	uint16_t opnum = p->opnum;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const char *opname = "<unknown>";
 	static bool warned_global_once = false;
 
@@ -1722,6 +1726,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 					 struct netr_LogonSamLogonEx *r,
 					 struct netlogon_creds_CredentialState *creds)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
 	NTSTATUS status = NT_STATUS_OK;
 	union netr_LogonLevel *logon = r->in.logon;
 	const char *nt_username, *nt_domain, *nt_workstation;
@@ -1740,7 +1745,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	}
 #endif
 
-	switch (p->opnum) {
+	switch (dce_call->pkt.u.request.opnum) {
 		case NDR_NETR_LOGONSAMLOGON:
 			fn = "_netr_LogonSamLogon";
 			break;

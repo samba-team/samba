@@ -97,8 +97,6 @@ static NTSTATUS iremotewinspool__op_dispatch_internal(struct dcesrv_call_state *
 
 	/* Retrieve pipes struct */
 	p = dcesrv_get_pipes_struct(dce_call->conn);
-	/* Update pipes struct opnum */
-	p->opnum = opnum;
 	p->dce_call = dce_call;
 	p->mem_ctx = mem_ctx;
 	/* Update pipes struct session info */

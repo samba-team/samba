@@ -35,6 +35,7 @@
 #include "system/passwd.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "ntdomain.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
 #include "../librpc/gen_ndr/ndr_samr_scompat.h"
 #include "rpc_server/samr/srv_samr_util.h"
@@ -4051,6 +4052,7 @@ NTSTATUS _samr_Connect(struct pipes_struct *p,
 NTSTATUS _samr_Connect2(struct pipes_struct *p,
 			struct samr_Connect2 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
 	struct security_descriptor *psd = NULL;
 	uint32_t    acc_granted;
 	uint32_t    des_access = r->in.access_mask;
@@ -4058,7 +4060,7 @@ NTSTATUS _samr_Connect2(struct pipes_struct *p,
 	size_t    sd_size;
 	const char *fn = "_samr_Connect2";
 
-	switch (p->opnum) {
+	switch (dce_call->pkt.u.request.opnum) {
 	case NDR_SAMR_CONNECT2:
 		fn = "_samr_Connect2";
 		break;

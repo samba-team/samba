@@ -1002,6 +1002,7 @@ NTSTATUS _lsa_LookupSids(struct pipes_struct *p,
 static NTSTATUS _lsa_LookupSids_common(struct pipes_struct *p,
 				struct lsa_LookupSids2 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
 	NTSTATUS status;
 	struct lsa_info *handle;
 	int num_sids = r->in.sids->num_sids;
@@ -1010,7 +1011,7 @@ static NTSTATUS _lsa_LookupSids_common(struct pipes_struct *p,
 	struct lsa_TranslatedName2 *names = NULL;
 	bool check_policy = true;
 
-	switch (p->opnum) {
+	switch (dce_call->pkt.u.request.opnum) {
 		case NDR_LSA_LOOKUPSIDS3:
 			check_policy = false;
 			break;
@@ -1289,6 +1290,7 @@ NTSTATUS _lsa_LookupNames2(struct pipes_struct *p,
 static NTSTATUS _lsa_LookupNames_common(struct pipes_struct *p,
 					struct lsa_LookupNames3 *r)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
 	NTSTATUS status;
 	struct lsa_info *handle;
 	struct lsa_String *names = r->in.names;
@@ -1299,7 +1301,7 @@ static NTSTATUS _lsa_LookupNames_common(struct pipes_struct *p,
 	int flags = 0;
 	bool check_policy = true;
 
-	switch (p->opnum) {
+	switch (dce_call->pkt.u.request.opnum) {
 		case NDR_LSA_LOOKUPNAMES4:
 			check_policy = false;
 			break;
