@@ -29,6 +29,7 @@ if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
 if bld.CONFIG_GET('SAMBA_USES_MITKDC'):
     bld.SAMBA_MODULE('service_kdc',
                      source='kdc-service-mit.c',
+                     cflags_end='-Wno-strict-prototypes',
                      subsystem='service',
                      init_function='server_service_mitkdc_init',
                      deps='''
