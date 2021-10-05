@@ -972,6 +972,13 @@ planoldpythontestsuite("ad_dc_smb1", "samba.tests.krb5.test_smb",
                            'FAST_SUPPORT': have_fast_support,
                            'TKT_SIG_SUPPORT': tkt_sig_support
                        })
+planoldpythontestsuite("ad_member_no_nss_wb:local",
+                       "samba.tests.krb5.test_min_domain_uid",
+                       environ={
+                           'ADMIN_USERNAME': '$DC_USERNAME',
+                           'ADMIN_PASSWORD': '$DC_PASSWORD',
+                           'STRICT_CHECKING': '0'
+                       })
 
 for env in ["ad_dc", smbv1_disabled_testenv]:
     planoldpythontestsuite(env, "samba.tests.smb", extra_args=['-U"$USERNAME%$PASSWORD"'])
