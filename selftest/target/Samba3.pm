@@ -1954,7 +1954,6 @@ sub setup_ktest
         workgroup = KTEST
         realm = ktest.samba.example.com
 	security = ads
-        username map = $prefix/lib/username.map
         server signing = required
 	server min protocol = SMB3_00
 	client max protocol = SMB3
@@ -1962,6 +1961,10 @@ sub setup_ktest
         # This disables NTLM auth against the local SAM, which
         # we use can then test this setting by.
         ntlm auth = disabled
+
+        idmap config * : backend = autorid
+        idmap config * : range = 1000000-1999999
+        idmap config * : rangesize = 100000
 ";
 
 	my $ret = $self->provision(
@@ -1986,12 +1989,6 @@ sub setup_ktest
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
-
-	open(USERMAP, ">$prefix/lib/username.map") or die("Unable to open $prefix/lib/username.map");
-	print USERMAP "
-$ret->{USERNAME} = KTEST\\Administrator
-";
-	close(USERMAP);
 
 #This is the secrets.tdb created by 'net ads join' from Samba3 to a
 #Samba4 DC with the same parameters as are being used here.  The
@@ -2044,6 +2041,7 @@ $ret->{USERNAME} = KTEST\\Administrator
 	if (not $self->check_or_start(
 		env_vars => $ret,
 		nmbd => "yes",
+		winbindd => "offline",
 		smbd => "yes")) {
 	       return undef;
 	}
