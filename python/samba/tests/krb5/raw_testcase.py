@@ -1942,7 +1942,12 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNone(check_error_fn)
             self.assertEqual(0, len(expected_error_mode))
         self.assertIsNotNone(expected_msg_type)
-        self.assertEqual(msg_type, expected_msg_type)
+        if msg_type == KRB_ERROR:
+            error_code = self.getElementValue(rep, 'error-code')
+            fail_msg = f'Got unexpected error: {error_code}'
+        else:
+            fail_msg = f'Expected to fail with error: {expected_error_mode}'
+        self.assertEqual(msg_type, expected_msg_type, fail_msg)
 
         if msg_type == KRB_ERROR:
             return check_error_fn(kdc_exchange_dict,
