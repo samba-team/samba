@@ -912,34 +912,13 @@ sub provision_ad_member
 		# Start winbindd in offline mode
 		if (not $self->check_or_start(
 			env_vars => $ret,
-			winbindd => "yes",
-			skip_wait => 1)) {
+			winbindd => "offline")) {
 			return undef;
 		}
 
 		# Set socket dir again
 		$ENV{SOCKET_WRAPPER_DIR} = $swrap_env;
 
-		print "checking for winbindd\n";
-		my $count = 0;
-		my $rc = 0;
-		$cmd = "NSS_WRAPPER_PASSWD='$ret->{NSS_WRAPPER_PASSWD}' ";
-		$cmd .= "NSS_WRAPPER_GROUP='$ret->{NSS_WRAPPER_GROUP}' ";
-		$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
-		$cmd .= "$wbinfo --ping";
-
-		do {
-			$rc = system($cmd);
-			if ($rc != 0) {
-				sleep(1);
-			}
-			$count++;
-		} while ($rc != 0 && $count < 20);
-		if ($count == 20) {
-			print "WINBINDD not reachable after 20 seconds\n";
-			teardown_env($self, $ret);
-			return undef;
-		}
 	} else {
 		if (not $self->check_or_start(
 			env_vars => $ret,
@@ -2110,7 +2089,6 @@ sub check_or_start($$) {
 	my $winbindd = $args{winbindd} // "no";
 	my $smbd = $args{smbd} // "no";
 	my $child_cleanup = $args{child_cleanup};
-	my $skip_wait = $args{skip_wait} // 0;
 
 	my $STDIN_READER;
 
@@ -2159,7 +2137,7 @@ sub check_or_start($$) {
 		LOG_FILE => $env_vars->{WINBINDD_TEST_LOG},
 		PCAP_FILE => "env-$ENV{ENVNAME}-winbindd",
 	};
-	if ($winbindd ne "yes") {
+	if ($winbindd ne "yes" and $winbindd ne "offline") {
 		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
 
@@ -2194,10 +2172,6 @@ sub check_or_start($$) {
 
 	# close the parent's read-end of the pipe
 	close($STDIN_READER);
-
-	if ($skip_wait) {
-		return 1;
-	}
 
 	return $self->wait_for_start($env_vars, $nmbd, $winbindd, $smbd);
 }
@@ -3395,13 +3369,17 @@ sub wait_for_start($$$$$)
 		}
 	}
 
-	if ($winbindd eq "yes") {
+	if ($winbindd eq "yes" or $winbindd eq "offline") {
 	    print "checking for winbindd\n";
 	    my $count = 0;
 	    $cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
 	    $cmd .= "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
 	    $cmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
-	    $cmd .= Samba::bindir_path($self, "wbinfo") . " --ping-dc";
+	    if ($winbindd eq "yes") {
+		$cmd .= Samba::bindir_path($self, "wbinfo") . " --ping-dc";
+	    } elsif ($winbindd eq "offline") {
+		$cmd .= Samba::bindir_path($self, "wbinfo") . " --ping";
+	    }
 
 	    do {
 		$ret = system($cmd);
