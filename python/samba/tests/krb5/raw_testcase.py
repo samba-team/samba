@@ -2493,15 +2493,14 @@ class RawKerberosTest(TestCaseInTempDir):
             ticket_private=ticket_private,
             encpart_private=encpart_private)
 
-        # TODO: This parameter should be removed when all service tickets are
-        # issued with ticket checksums.
         expect_ticket_checksum = kdc_exchange_dict['expect_ticket_checksum']
         if expect_ticket_checksum:
             self.assertIsNotNone(ticket_decryption_key)
 
         if ticket_decryption_key is not None:
             self.verify_ticket(ticket_creds, krbtgt_key, expect_pac=expect_pac,
-                               expect_ticket_checksum=expect_ticket_checksum)
+                               expect_ticket_checksum=expect_ticket_checksum
+                               or self.tkt_sig_support)
 
         kdc_exchange_dict['rep_ticket_creds'] = ticket_creds
 
