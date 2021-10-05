@@ -25,6 +25,8 @@
 #include "auth/gensec/gensec_internal.h"
 #include "auth/common_auth.h"
 #include "../lib/util/asn1.h"
+#include "param/param.h"
+#include "libds/common/roles.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -48,10 +50,27 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 	session_info_flags |= AUTH_SESSION_INFO_DEFAULT_GROUPS;
 
 	if (!pac_blob) {
-		if (gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
-			DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access\n",
-				  principal_string));
-			return NT_STATUS_ACCESS_DENIED;
+		enum server_role server_role =
+			lpcfg_server_role(gensec_security->settings->lp_ctx);
+
+		/*
+		 * For any domain setup (DC or member) we require having
+		 * a PAC, as the service ticket comes from an AD DC,
+		 * which will always provide a PAC, unless
+		 * UF_NO_AUTH_DATA_REQUIRED is configured for our
+		 * account, but that's just an invalid configuration,
+		 * the admin configured for us!
+		 *
+		 * As a legacy case, we still allow kerberos tickets from an MIT
+		 * realm, but only in standalone mode. In that mode we'll only
+		 * ever accept a kerberos authentication with a keytab file
+		 * being explicitly configured via the 'keytab method' option.
+		 */
+		if (server_role != ROLE_STANDALONE) {
+			DBG_WARNING("Unable to find PAC in ticket from %s, "
+				    "failing to allow access\n",
+				    principal_string);
+			return NT_STATUS_NO_IMPERSONATION_TOKEN;
 		}
 		DBG_NOTICE("Unable to find PAC for %s, resorting to local "
 			   "user lookup\n", principal_string);
