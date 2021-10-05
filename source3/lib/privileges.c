@@ -176,10 +176,9 @@ bool get_privileges_for_sids(uint64_t *privileges, struct dom_sid *slist, int sc
 		if ( !get_privileges( &slist[i], &mask ) )
 			continue;
 
-		DEBUG(5,("get_privileges_for_sids: sid = %s\nPrivilege "
-			 "set: 0x%llx\n",
+		DBG_INFO("sid = %s\nPrivilege set: 0x%"PRIx64"\n",
 			 dom_sid_str_buf(&slist[i], &buf),
-			 (unsigned long long)mask));
+			 mask);
 
 		*privileges |= mask;
 		found = True;
