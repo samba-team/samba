@@ -129,7 +129,7 @@ static bool set_privileges( const struct dom_sid *sid, uint64_t mask )
 	uint8_t privbuf[8];
 	struct dom_sid_buf tmp;
 	fstring keystr;
-	TDB_DATA data;
+	TDB_DATA data = { .dptr = privbuf, .dsize = sizeof(privbuf), };
 
 	if ( !lp_enable_privileges() )
 		return False;
@@ -148,9 +148,6 @@ static bool set_privileges( const struct dom_sid *sid, uint64_t mask )
 
 	/* This writes the 64 bit bitmask out in little endian format */
 	SBVAL(privbuf,0,mask);
-
-	data.dptr  = privbuf;
-	data.dsize = sizeof(privbuf);
 
 	return NT_STATUS_IS_OK(dbwrap_store_bystring(db, keystr, data,
 						     TDB_REPLACE));
