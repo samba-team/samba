@@ -48,8 +48,6 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 {
 	enum server_role server_role = lp_server_role();
 	TALLOC_CTX *tmp_ctx;
-	struct PAC_LOGON_INFO *logon_info = NULL;
-	struct netr_SamInfo3 *info3_copy = NULL;
 	bool is_mapped;
 	bool is_guest;
 	char *ntuser;
@@ -203,19 +201,20 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 	/* This is the standalone legacy code path */
 
 	if (pac_blob != NULL) {
-#ifdef HAVE_KRB5
-		status = kerberos_pac_logon_info(tmp_ctx, *pac_blob, NULL, NULL,
-						 NULL, NULL, 0, &logon_info);
-#else
-		status = NT_STATUS_ACCESS_DENIED;
-#endif
+		/*
+		 * In standalone mode we don't expect a PAC!
+		 * we only support MIT realms
+		 */
+		status = NT_STATUS_BAD_TOKEN_TYPE;
+		DBG_WARNING("Unexpected PAC for [%s] in standalone mode - %s\n",
+			    princ_name, nt_errstr(status));
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 	}
 
 	status = get_user_from_kerberos_info(tmp_ctx, rhost,
-					     princ_name, logon_info,
+					     princ_name, NULL,
 					     &is_mapped, &is_guest,
 					     &ntuser, &ntdomain,
 					     &username, &pw);
@@ -226,19 +225,9 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 		goto done;
 	}
 
-	/* Get the info3 from the PAC data if we have it */
-	if (logon_info) {
-		status = create_info3_from_pac_logon_info(tmp_ctx,
-					logon_info,
-					&info3_copy);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-	}
-
 	status = make_session_info_krb5(mem_ctx,
 					ntuser, ntdomain, username, pw,
-					info3_copy, is_guest, is_mapped, NULL /* No session key for now, caller will sort it out */,
+					NULL, is_guest, is_mapped, NULL /* No session key for now, caller will sort it out */,
 					session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to map kerberos pac to server info (%s)\n",
