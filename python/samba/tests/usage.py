@@ -106,6 +106,7 @@ EXCLUDE_USAGE = {
     'python/samba/tests/krb5/salt_tests.py',
     'python/samba/tests/krb5/spn_tests.py',
     'python/samba/tests/krb5/alias_tests.py',
+    'python/samba/tests/krb5/test_min_domain_uid.py',
 }
 
 EXCLUDE_HELP = {
