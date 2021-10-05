@@ -238,6 +238,7 @@ sub check_env($$)
 	ad_member_idmap_rid => ["ad_dc"],
 	ad_member_idmap_ad  => ["fl2008r2dc"],
 	ad_member_fips      => ["ad_dc_fips"],
+	ad_member_no_nss_wb => ["ad_dc"],
 
 	clusteredmember_smb1 => ["nt4_dc"],
 );
@@ -652,7 +653,9 @@ sub provision_ad_member
 	    $dcvars,
 	    $trustvars_f,
 	    $trustvars_e,
-	    $force_fips_mode) = @_;
+	    $extra_member_options,
+	    $force_fips_mode,
+	    $no_nss_winbind) = @_;
 
 	my $prefix_abs = abs_path($prefix);
 	my @dirs = ();
@@ -690,6 +693,10 @@ sub provision_ad_member
 		$netbios_aliases = "netbios aliases = foo bar";
 	}
 
+	unless (defined($extra_member_options)) {
+		$extra_member_options = "";
+	}
+
 	my $member_options = "
 	security = ads
         workgroup = $dcvars->{DOMAIN}
@@ -712,6 +719,10 @@ sub provision_ad_member
 
 	rpc_daemon:epmd = fork
 	rpc_daemon:lsasd = fork
+
+	# Begin extra member options
+	$extra_member_options
+	# End extra member options
 
 [sub_dug]
 	path = $share_dir/D_%D/U_%U/G_%G
@@ -791,12 +802,17 @@ sub provision_ad_member
 	# access the share for tests.
 	chmod 0777, "$prefix/share";
 
-	if (not $self->check_or_start(
-		env_vars => $ret,
-		nmbd => "yes",
-		winbindd => "yes",
-		smbd => "yes")) {
-	    return undef;
+        if (defined($no_nss_winbind)) {
+	        $ret->{NSS_WRAPPER_MODULE_SO_PATH} = "";
+	        $ret->{NSS_WRAPPER_MODULE_FN_PREFIX} = "";
+        }
+
+        if (not $self->check_or_start(
+			env_vars => $ret,
+			nmbd => "yes",
+			winbindd => "yes",
+			smbd => "yes")) {
+			return undef;
 	}
 
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
@@ -1174,7 +1190,45 @@ sub setup_ad_member_fips
 					  $dcvars,
 					  $trustvars_f,
 					  $trustvars_e,
+					  undef,
 					  1);
+}
+
+sub setup_ad_member_no_nss_wb
+{
+	my ($self,
+	    $prefix,
+	    $dcvars,
+	    $trustvars_f,
+	    $trustvars_e) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->have_ads()) {
+	        return "UNKNOWN";
+	}
+
+	print "PROVISIONING AD MEMBER WITHOUT NSS WINBIND...";
+
+	my $extra_member_options = "
+	username map = $prefix/lib/username.map
+";
+
+	my $ret = $self->provision_ad_member($prefix,
+					     "ADMEMNONSSWB",
+					     $dcvars,
+					     $trustvars_f,
+					     $trustvars_e,
+					     $extra_member_options,
+					     undef,
+					     1);
+
+	open(USERMAP, ">$prefix/lib/username.map") or die("Unable to open $prefix/lib/username.map");
+	print USERMAP "
+root = $dcvars->{DOMAIN}/root
+";
+	close(USERMAP);
+
+	return $ret;
 }
 
 sub setup_simpleserver
