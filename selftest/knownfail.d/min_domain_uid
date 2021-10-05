@@ -1,0 +1,1 @@
+^samba.tests.krb5.test_min_domain_uid.samba.*.SmbMinDomainUid.test_min_domain_uid_.*\(ad_member_no_nss_wb:local\)
