@@ -257,8 +257,7 @@ static int priv_traverse_fn(struct db_record *rec, void *state)
 		return 0;
 
 	if ( !string_to_sid(&sid, sid_string) ) {
-		DEBUG(0,("travsersal_fn_enum__acct: Could not convert SID [%s]\n",
-			sid_string));
+		DBG_WARNING("Could not convert SID [%s]\n", sid_string);
 		return 0;
 	}
 
