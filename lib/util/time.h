@@ -63,6 +63,7 @@
  * implement this yet.
  */
 #define NTTIME_FREEZE UINT64_MAX
+#define NTTIME_THAW (UINT64_MAX - 1)
 
 #define SAMBA_UTIME_NOW UTIME_NOW
 #define SAMBA_UTIME_OMIT UTIME_OMIT
