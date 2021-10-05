@@ -81,8 +81,8 @@ class Cksumtype(object):
     MD4_DES = 3
     MD5 = 7
     MD5_DES = 8
-    SHA1 = 9
     SHA1_DES3 = 12
+    SHA1 = 14
     SHA1_AES128 = 15
     SHA1_AES256 = 16
     HMAC_MD5 = -138
