@@ -827,7 +827,7 @@ sub provision_ad_member
 		nmbd => "yes",
 		winbindd => "yes",
 		smbd => "yes")) {
-		return undef;
+	    return undef;
 	}
 
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
@@ -1909,7 +1909,7 @@ sub check_or_start($$) {
 		LOG_FILE => $env_vars->{WINBINDD_TEST_LOG},
 		PCAP_FILE => "env-$ENV{ENVNAME}-winbindd",
 	};
-	if ($winbindd ne "yes") {
+	if ($winbindd ne "yes" and $winbindd ne "offline") {
 		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
 
@@ -3131,13 +3131,17 @@ sub wait_for_start($$$$$)
 		}
 	}
 
-	if ($winbindd eq "yes") {
+	if ($winbindd eq "yes" or $winbindd eq "offline") {
 	    print "checking for winbindd\n";
 	    my $count = 0;
 	    $cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
 	    $cmd .= "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
 	    $cmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
-	    $cmd .= Samba::bindir_path($self, "wbinfo") . " --ping-dc";
+	    if ($winbindd eq "yes") {
+		$cmd .= Samba::bindir_path($self, "wbinfo") . " --ping-dc";
+	    } elsif ($winbindd eq "offline") {
+		$cmd .= Samba::bindir_path($self, "wbinfo") . " --ping";
+	    }
 
 	    do {
 		$ret = system($cmd);
