@@ -171,6 +171,7 @@ static void rpc_worker_new_client(
 {
 	struct dcesrv_context *dce_ctx = worker->dce_ctx;
 	struct named_pipe_auth_req_info5 *info5 = client->npa_info5;
+	struct tsocket_address *remote_client_addr = NULL;
 	struct dcerpc_binding *b = NULL;
 	enum dcerpc_transport_t transport;
 	struct dcesrv_endpoint *ep = NULL;
@@ -260,7 +261,7 @@ static void rpc_worker_new_client(
 		ret = tsocket_address_unix_from_path(
 			ncacn_conn,
 			info5->remote_client_addr,
-			&ncacn_conn->remote_client_addr);
+			&remote_client_addr);
 		if (ret == -1) {
 			DBG_DEBUG("tsocket_address_unix_from_path"
 				  "(%s) failed: %s\n",
@@ -302,7 +303,7 @@ static void rpc_worker_new_client(
 			"ip",
 			info5->remote_client_addr,
 			info5->remote_client_port,
-			&ncacn_conn->remote_client_addr);
+			&remote_client_addr);
 		if (ret == -1) {
 			DBG_DEBUG("tsocket_address_inet_from_strings"
 				  "(%s, %"PRIu16") failed: %s\n",
@@ -423,7 +424,8 @@ static void rpc_worker_new_client(
 
 	dcesrv_conn->stream = talloc_move(dcesrv_conn, &tstream);
 	dcesrv_conn->local_address = ncacn_conn->local_server_addr;
-	dcesrv_conn->remote_address = ncacn_conn->remote_client_addr;
+	dcesrv_conn->remote_address =
+		talloc_move(dcesrv_conn, &remote_client_addr);
 
 	if (client->bind_packet.length == 0) {
 		DBG_DEBUG("Expected bind packet\n");
