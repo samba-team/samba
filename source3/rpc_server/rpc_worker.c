@@ -249,7 +249,6 @@ static void rpc_worker_new_client(
 		goto fail;
 	}
 	*ncacn_conn = (struct dcerpc_ncacn_conn) {
-		.msg_ctx = global_messaging_context(),
 		.dce_ctx = dce_ctx,
 		.endpoint = ep,
 		.sock = sock,
@@ -390,7 +389,7 @@ static void rpc_worker_new_client(
 		DBG_DEBUG("talloc failed\n");
 		goto fail;
 	}
-	ncacn_conn->p->msg_ctx = ncacn_conn->msg_ctx;
+	ncacn_conn->p->msg_ctx = global_messaging_context();
 	ncacn_conn->p->transport = transport;
 
 	status = dcesrv_endpoint_connect(
