@@ -175,7 +175,7 @@ static const struct {
 */
 uint64_t sec_privilege_mask(enum sec_privilege privilege)
 {
-	int i;
+	size_t i;
 	for (i=0;i<ARRAY_SIZE(privs);i++) {
 		if (privs[i].luid == privilege) {
 			return privs[i].privilege_mask;
@@ -191,7 +191,7 @@ uint64_t sec_privilege_mask(enum sec_privilege privilege)
 
 void se_priv_put_all_privileges(uint64_t *privilege_mask)
 {
-	int i;
+	size_t i;
 
 	*privilege_mask = 0;
 	for ( i=0; i<ARRAY_SIZE(privs); i++ ) {
@@ -205,7 +205,7 @@ void se_priv_put_all_privileges(uint64_t *privilege_mask)
 
 bool se_priv_from_name( const char *name, uint64_t *privilege_mask )
 {
-	int i;
+	size_t i;
 	for ( i=0; i<ARRAY_SIZE(privs); i++ ) {
 		if ( strequal( privs[i].name, name ) ) {
 			*privilege_mask = privs[i].privilege_mask;
@@ -218,7 +218,7 @@ bool se_priv_from_name( const char *name, uint64_t *privilege_mask )
 
 const char* get_privilege_dispname( const char *name )
 {
-	int i;
+	size_t i;
 
 	if (!name) {
 		return NULL;
@@ -273,7 +273,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute 
 
 bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t privilege_mask )
 {
-	int i;
+	size_t i;
 	struct lsa_LUIDAttribute luid;
 
 	luid.attribute = 0;
@@ -325,7 +325,7 @@ bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet
 */
 const char *sec_privilege_name(enum sec_privilege privilege)
 {
-	int i;
+	size_t i;
 	for (i=0;i<ARRAY_SIZE(privs);i++) {
 		if (privs[i].luid == privilege) {
 			return privs[i].name;
@@ -341,7 +341,7 @@ const char *sec_privilege_name(enum sec_privilege privilege)
 */
 const char *sec_privilege_display_name(enum sec_privilege privilege, uint16_t *language)
 {
-	int i;
+	size_t i;
 	for (i=0;i<ARRAY_SIZE(privs);i++) {
 		if (privs[i].luid == privilege) {
 			return privs[i].description;
@@ -355,7 +355,7 @@ const char *sec_privilege_display_name(enum sec_privilege privilege, uint16_t *l
 */
 enum sec_privilege sec_privilege_id(const char *name)
 {
-	int i;
+	size_t i;
 	for (i=0;i<ARRAY_SIZE(privs);i++) {
 		if (strcasecmp(privs[i].name, name) == 0) {
 			return privs[i].luid;
@@ -369,7 +369,7 @@ enum sec_privilege sec_privilege_id(const char *name)
 */
 uint32_t sec_right_bit(const char *name)
 {
-	int i;
+	size_t i;
 	for (i=0;i<ARRAY_SIZE(rights);i++) {
 		if (strcasecmp(rights[i].name, name) == 0) {
 			return rights[i].right_mask;
@@ -383,7 +383,7 @@ uint32_t sec_right_bit(const char *name)
 */
 enum sec_privilege sec_privilege_from_index(int idx)
 {
-	if (idx >= 0 && idx<ARRAY_SIZE(privs)) {
+	if (idx >= 0 && (unsigned)idx<ARRAY_SIZE(privs)) {
 		return privs[idx].luid;
 	}
 	return SEC_PRIV_INVALID;
@@ -394,7 +394,7 @@ enum sec_privilege sec_privilege_from_index(int idx)
 */
 const char *sec_privilege_name_from_index(int idx)
 {
-	if (idx >= 0 && idx<ARRAY_SIZE(privs)) {
+	if (idx >= 0 && (unsigned)idx<ARRAY_SIZE(privs)) {
 		return privs[idx].name;
 	}
 	return NULL;
@@ -460,7 +460,7 @@ void security_token_debug_privileges(int dbg_class, int dbg_lev, const struct se
 				       (unsigned long long) token->privilege_mask));
 
 	if (token->privilege_mask) {
-		int idx = 0;
+		size_t idx = 0;
 		int i = 0;
 		for (idx = 0; idx<ARRAY_SIZE(privs); idx++) {
 			if (token->privilege_mask & privs[idx].privilege_mask) {
@@ -474,7 +474,7 @@ void security_token_debug_privileges(int dbg_class, int dbg_lev, const struct se
 				       (unsigned long) token->rights_mask));
 
 	if (token->rights_mask) {
-		int idx = 0;
+		size_t idx = 0;
 		int i = 0;
 		for (idx = 0; idx<ARRAY_SIZE(rights); idx++) {
 			if (token->rights_mask & rights[idx].right_mask) {
