@@ -238,10 +238,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 		switch (types[i]) {
 		case PAC_TYPE_LOGON_INFO:
 			if (logon_info_idx != -1) {
-				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
-					  (int)types[i],
-					  (int)logon_info_idx,
-					  (int)i));
+				DEBUG(1, ("logon info type[%"PRIu32"] twice [%zd] and [%zu]: \n",
+					  types[i],
+					  logon_info_idx,
+					  i));
 				SAFE_FREE(types);
 				talloc_free(mem_ctx);
 				return EINVAL;
@@ -250,10 +250,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 			break;
 		case PAC_TYPE_CONSTRAINED_DELEGATION:
 			if (delegation_idx != -1) {
-				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
-					  (int)types[i],
-					  (int)logon_info_idx,
-					  (int)i));
+				DEBUG(1, ("constrained delegation type[%"PRIu32"] twice [%zd] and [%zu]: \n",
+					  types[i],
+					  delegation_idx,
+					  i));
 				SAFE_FREE(types);
 				talloc_free(mem_ctx);
 				return EINVAL;
@@ -262,10 +262,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 			break;
 		case PAC_TYPE_LOGON_NAME:
 			if (logon_name_idx != -1) {
-				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
-					  (int)types[i],
-					  (int)logon_info_idx,
-					  (int)i));
+				DEBUG(1, ("logon name type[%"PRIu32"] twice [%zd] and [%zu]: \n",
+					  types[i],
+					  logon_name_idx,
+					  i));
 				SAFE_FREE(types);
 				talloc_free(mem_ctx);
 				return EINVAL;
@@ -274,10 +274,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 			break;
 		case PAC_TYPE_UPN_DNS_INFO:
 			if (upn_dns_info_idx != -1) {
-				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
-					  (int)types[i],
-					  (int)logon_info_idx,
-					  (int)i));
+				DEBUG(1, ("upn dns info type[%"PRIu32"] twice [%zd] and [%zu]: \n",
+					  types[i],
+					  upn_dns_info_idx,
+					  i));
 				SAFE_FREE(types);
 				talloc_free(mem_ctx);
 				return EINVAL;
@@ -286,10 +286,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 			break;
 		case PAC_TYPE_SRV_CHECKSUM:
 			if (srv_checksum_idx != -1) {
-				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
-					  (int)types[i],
-					  (int)logon_info_idx,
-					  (int)i));
+				DEBUG(1, ("server checksum type[%"PRIu32"] twice [%zd] and [%zu]: \n",
+					  types[i],
+					  srv_checksum_idx,
+					  i));
 				SAFE_FREE(types);
 				talloc_free(mem_ctx);
 				return EINVAL;
@@ -298,10 +298,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 			break;
 		case PAC_TYPE_KDC_CHECKSUM:
 			if (kdc_checksum_idx != -1) {
-				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
-					  (int)types[i],
-					  (int)logon_info_idx,
-					  (int)i));
+				DEBUG(1, ("kdc checksum type[%"PRIu32"] twice [%zd] and [%zu]: \n",
+					  types[i],
+					  kdc_checksum_idx,
+					  i));
 				SAFE_FREE(types);
 				talloc_free(mem_ctx);
 				return EINVAL;
