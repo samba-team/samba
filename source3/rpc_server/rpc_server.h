@@ -42,7 +42,6 @@ struct dcerpc_ncacn_conn {
 	struct dcesrv_endpoint *endpoint;
 
 	char *remote_client_name;
-	struct tsocket_address *local_server_addr;
 	char *local_server_name;
 	struct auth_session_info *session_info;
 };
