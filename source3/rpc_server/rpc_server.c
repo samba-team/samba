@@ -299,7 +299,7 @@ struct pipes_struct *dcesrv_get_pipes_struct(struct dcesrv_connection *conn)
 			conn->transport.private_data,
 			struct dcerpc_ncacn_conn);
 
-	return ncacn_conn->p;
+	return &ncacn_conn->p;
 }
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */

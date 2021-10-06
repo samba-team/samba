@@ -23,8 +23,8 @@
 #include "librpc/rpc/rpc_common.h" /* For enum dcerpc_transport_t */
 
 #include "librpc/rpc/dcesrv_core.h"
+#include "rpc_pipes.h"
 
-struct pipes_struct;
 struct auth_session_info;
 struct cli_credentials;
 
@@ -35,7 +35,7 @@ struct dcerpc_ncacn_conn {
 	struct dcerpc_ncacn_conn *prev, *next;
 	int sock;
 
-	struct pipes_struct *p;
+	struct pipes_struct p;
 	dcerpc_ncacn_termination_fn termination_fn;
 	void *termination_data;
 

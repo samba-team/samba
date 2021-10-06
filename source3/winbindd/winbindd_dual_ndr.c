@@ -328,27 +328,17 @@ static NTSTATUS make_internal_ncacn_conn(TALLOC_CTX *mem_ctx,
 				struct dcerpc_ncacn_conn **_out)
 {
 	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
-	NTSTATUS status;
 
 	ncacn_conn = talloc_zero(mem_ctx, struct dcerpc_ncacn_conn);
 	if (ncacn_conn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ncacn_conn->p = talloc_zero(ncacn_conn, struct pipes_struct);
-	if (ncacn_conn->p == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-	ncacn_conn->p->mem_ctx = mem_ctx;
+	ncacn_conn->p.mem_ctx = mem_ctx;
 
 	*_out = ncacn_conn;
 
 	return NT_STATUS_OK;
-
-fail:
-	talloc_free(ncacn_conn);
-	return status;
 }
 
 static NTSTATUS find_ncalrpc_default_endpoint(struct dcesrv_context *dce_ctx,

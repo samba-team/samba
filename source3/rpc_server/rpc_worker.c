@@ -383,13 +383,8 @@ static void rpc_worker_new_client(
 		goto fail;
 	}
 
-	ncacn_conn->p = talloc_zero(ncacn_conn, struct pipes_struct);
-	if (ncacn_conn->p == NULL) {
-		DBG_DEBUG("talloc failed\n");
-		goto fail;
-	}
-	ncacn_conn->p->msg_ctx = global_messaging_context();
-	ncacn_conn->p->transport = transport;
+	ncacn_conn->p.msg_ctx = global_messaging_context();
+	ncacn_conn->p.transport = transport;
 
 	status = dcesrv_endpoint_connect(
 		dce_ctx,
