@@ -376,11 +376,8 @@ static void rpc_worker_new_client(
 	}
 	sock = -1;
 
-	ncacn_conn->session_info = talloc_move(
-		ncacn_conn, &info5->session_info->session_info);
-
 	if (security_token_is_system(
-		    ncacn_conn->session_info->security_token) &&
+		    info5->session_info->session_info->security_token) &&
 	    (transport != NCALRPC)) {
 		DBG_DEBUG("System token only allowed on NCALRPC\n");
 		goto fail;
@@ -398,7 +395,7 @@ static void rpc_worker_new_client(
 		dce_ctx,
 		ncacn_conn,
 		ep,
-		ncacn_conn->session_info,
+		info5->session_info->session_info,
 		global_event_context(),
 		DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
 		&dcesrv_conn);

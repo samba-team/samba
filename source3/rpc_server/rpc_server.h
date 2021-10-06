@@ -43,7 +43,6 @@ struct dcerpc_ncacn_conn {
 
 	char *remote_client_name;
 	char *local_server_name;
-	struct auth_session_info *session_info;
 };
 
 void set_incoming_fault(struct pipes_struct *p);
