@@ -44,16 +44,12 @@ struct dcerpc_ncacn_conn {
 	struct dcesrv_endpoint *endpoint;
 
 	struct tstream_context *tstream;
-	struct tevent_queue *send_queue;
 
 	struct tsocket_address *remote_client_addr;
 	char *remote_client_name;
 	struct tsocket_address *local_server_addr;
 	char *local_server_name;
 	struct auth_session_info *session_info;
-
-	struct iovec *iov;
-	size_t count;
 };
 
 NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
