@@ -430,7 +430,7 @@ static void debug_ringbuf_reload(bool enabled, bool previously_enabled,
 
 static void _debug_ringbuf_log(int msg_level,
 			       const char *msg,
-			       size_t msglen)
+			       size_t msg_len)
 {
 	size_t allowed_size;
 
@@ -441,20 +441,20 @@ static void _debug_ringbuf_log(int msg_level,
 	/* Ensure the buffer is always \0 terminated */
 	allowed_size = debug_ringbuf_size - 1;
 
-	if (msglen > allowed_size) {
+	if (msg_len > allowed_size) {
 		return;
 	}
 
-	if ((debug_ringbuf_ofs + msglen) < debug_ringbuf_ofs) {
+	if ((debug_ringbuf_ofs + msg_len) < debug_ringbuf_ofs) {
 		return;
 	}
 
-	if ((debug_ringbuf_ofs + msglen) > allowed_size) {
+	if ((debug_ringbuf_ofs + msg_len) > allowed_size) {
 		debug_ringbuf_ofs = 0;
 	}
 
-	memcpy(debug_ringbuf + debug_ringbuf_ofs, msg, msglen);
-	debug_ringbuf_ofs += msglen;
+	memcpy(debug_ringbuf + debug_ringbuf_ofs, msg, msg_len);
+	debug_ringbuf_ofs += msg_len;
 }
 
 static void debug_ringbuf_log(int msg_level,
