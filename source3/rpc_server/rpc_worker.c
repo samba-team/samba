@@ -174,6 +174,7 @@ static void rpc_worker_new_client(
 	struct dcerpc_binding *b = NULL;
 	enum dcerpc_transport_t transport;
 	struct dcesrv_endpoint *ep = NULL;
+	struct tstream_context *tstream = NULL;
 	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
 	struct dcesrv_connection *dcesrv_conn = NULL;
 	DATA_BLOB buffer = { .data = NULL };
@@ -346,7 +347,7 @@ static void rpc_worker_new_client(
 			ncacn_conn,
 			sock,
 			FILE_TYPE_MESSAGE_MODE_PIPE,
-			&ncacn_conn->tstream);
+			&tstream);
 		if (ret == -1) {
 			DBG_DEBUG("tstream_npa_existing_socket failed: %s\n",
 				  strerror(errno));
@@ -364,7 +365,7 @@ static void rpc_worker_new_client(
 		transport = info5->transport;
 	} else {
 		ret = tstream_bsd_existing_socket(
-			ncacn_conn, sock, &ncacn_conn->tstream);
+			ncacn_conn, sock, &tstream);
 		if (ret == -1) {
 			DBG_DEBUG("tstream_bsd_existing_socket failed: %s\n",
 				  strerror(errno));
@@ -420,7 +421,7 @@ static void rpc_worker_new_client(
 		goto fail;
 	}
 
-	dcesrv_conn->stream = talloc_move(dcesrv_conn, &ncacn_conn->tstream);
+	dcesrv_conn->stream = talloc_move(dcesrv_conn, &tstream);
 	dcesrv_conn->local_address = ncacn_conn->local_server_addr;
 	dcesrv_conn->remote_address = ncacn_conn->remote_client_addr;
 
