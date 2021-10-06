@@ -39,7 +39,6 @@ struct dcerpc_ncacn_conn {
 	dcerpc_ncacn_termination_fn termination_fn;
 	void *termination_data;
 
-	struct dcesrv_context *dce_ctx;
 	struct dcesrv_endpoint *endpoint;
 
 	struct tstream_context *tstream;

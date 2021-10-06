@@ -249,7 +249,6 @@ static void rpc_worker_new_client(
 		goto fail;
 	}
 	*ncacn_conn = (struct dcerpc_ncacn_conn) {
-		.dce_ctx = dce_ctx,
 		.endpoint = ep,
 		.sock = sock,
 		.termination_fn = rpc_worker_connection_terminated,
@@ -393,7 +392,7 @@ static void rpc_worker_new_client(
 	ncacn_conn->p->transport = transport;
 
 	status = dcesrv_endpoint_connect(
-		ncacn_conn->dce_ctx,
+		dce_ctx,
 		ncacn_conn,
 		ep,
 		ncacn_conn->session_info,
