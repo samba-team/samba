@@ -204,6 +204,27 @@ static int debug_level_to_priority(int level)
 #endif
 
 /* -------------------------------------------------------------------------- **
+ * Produce a version of the given buffer without any trailing newlines.
+ */
+static void copy_no_nl(char *out,
+		       size_t out_size,
+		       const char *in,
+		       size_t in_len)
+{
+	size_t len;
+	/*
+	 * Some backends already add an extra newline, so also provide
+	 * a buffer without the newline character.
+	 */
+	len = MIN(in_len, out_size - 1);
+	if ((len > 0) && (in[len - 1] == '\n')) {
+		len--;
+	}
+
+	memcpy(out, in, len);
+	out[len] = '\0';
+}
+/* -------------------------------------------------------------------------- **
  * Debug backends. When logging to DEBUG_FILE, send the log entries to
  * all active backends.
  */
@@ -570,19 +591,12 @@ static void debug_backends_log(const char *msg, int msg_level)
 {
 	char msg_no_nl[FORMAT_BUFR_SIZE];
 	size_t i;
-	size_t len;
 
 	/*
 	 * Some backends already add an extra newline, so also provide
 	 * a buffer without the newline character.
 	 */
-	len = MIN(strlen(msg), FORMAT_BUFR_SIZE - 1);
-	if ((len > 0) && (msg[len - 1] == '\n')) {
-		len--;
-	}
-
-	memcpy(msg_no_nl, msg, len);
-	msg_no_nl[len] = '\0';
+	copy_no_nl(msg_no_nl, FORMAT_BUFR_SIZE, msg, strlen(msg));
 
 	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
 		if (msg_level <= debug_backends[i].log_level) {
