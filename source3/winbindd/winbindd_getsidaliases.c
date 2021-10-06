@@ -126,7 +126,7 @@ NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
 	struct winbindd_getsidaliases_state *state = tevent_req_data(
 		req, struct winbindd_getsidaliases_state);
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 	char *sidlist;
 
 	if (tevent_req_is_nterror(req, &status)) {
