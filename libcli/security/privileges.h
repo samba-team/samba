@@ -25,6 +25,8 @@
 #ifndef PRIVILEGES_H
 #define PRIVILEGES_H
 
+#include "lib/util/data_blob.h"
+#include "lib/util/time.h"
 #include "../librpc/gen_ndr/lsa.h"
 #include "../librpc/gen_ndr/security.h"
 

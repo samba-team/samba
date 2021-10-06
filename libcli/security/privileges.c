@@ -32,10 +32,12 @@
  * some extra functions to hide privs array from lib/privileges.c
  */
 
-#include "includes.h"
+#include "replace.h"
 #include "libcli/security/privileges.h"
 #include "libcli/security/privileges_private.h"
 #include "librpc/gen_ndr/security.h"
+#include "lib/util/samba_util.h"
+#include "lib/util/debug.h"
 
 /* The use of strcasecmp here is safe, all the comparison strings are ASCII */
 #undef strcasecmp
