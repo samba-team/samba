@@ -134,20 +134,20 @@ NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
 	}
 
 	sidlist = talloc_strdup(response, "");
-	if (sidlist == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+
 	for (i=0; i<state->num_aliases; i++) {
 		struct dom_sid sid;
 		struct dom_sid_buf tmp;
 		sid_compose(&sid, &state->sid, state->aliases[i]);
 
-		sidlist = talloc_asprintf_append_buffer(
-			sidlist, "%s\n", dom_sid_str_buf(&sid, &tmp));
-		if (sidlist == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		talloc_asprintf_addbuf(
+			&sidlist, "%s\n", dom_sid_str_buf(&sid, &tmp));
 	}
+
+	if (sidlist == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	response->extra_data.data = sidlist;
 	response->length += talloc_get_size(sidlist);
 	response->data.num_entries = state->num_aliases;
