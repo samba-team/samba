@@ -2030,19 +2030,10 @@ char *utok_string(TALLOC_CTX *mem_ctx, const struct security_unix_token *tok)
 		(uintmax_t)(tok->uid),
 		(uintmax_t)(tok->gid),
 		tok->ngroups);
-	if (str == NULL) {
-		return NULL;
-	}
 
 	for (i=0; i<tok->ngroups; i++) {
-		char *tmp;
-		tmp = talloc_asprintf_append_buffer(
-			str, " %ju", (uintmax_t)tok->groups[i]);
-		if (tmp == NULL) {
-			TALLOC_FREE(str);
-			return NULL;
-		}
-		str = tmp;
+		talloc_asprintf_addbuf(
+			&str, " %ju", (uintmax_t)tok->groups[i]);
 	}
 
 	return str;
