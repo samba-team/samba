@@ -249,7 +249,6 @@ static void rpc_worker_new_client(
 		goto fail;
 	}
 	*ncacn_conn = (struct dcerpc_ncacn_conn) {
-		.ev_ctx = global_event_context(),
 		.msg_ctx = global_messaging_context(),
 		.dce_ctx = dce_ctx,
 		.endpoint = ep,
