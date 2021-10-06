@@ -157,7 +157,7 @@
 	ok</emphasis> parameter means access will be permitted as the default guest user (specified elsewhere):
 <programlisting>
 	<smbconfsection name="[aprinter]"/>
-	<smbconfoption name="path">/usr/spool/public</smbconfoption>
+	<smbconfoption name="path">/var/tmp</smbconfoption>
 	<smbconfoption name="read only">yes</smbconfoption>
 	<smbconfoption name="printable">yes</smbconfoption>
 	<smbconfoption name="guest ok">yes</smbconfoption>
@@ -292,7 +292,7 @@
 		it. A typical [printers] entry looks like this:
 <programlisting>
 <smbconfsection name="[printers]"/>
-<smbconfoption name="path">/usr/spool/public</smbconfoption>
+<smbconfoption name="path">/var/tmp</smbconfoption>
 <smbconfoption name="guest ok">yes</smbconfoption>
 <smbconfoption name="printable">yes</smbconfoption>
 </programlisting>
