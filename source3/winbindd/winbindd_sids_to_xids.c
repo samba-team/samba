@@ -112,9 +112,6 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 	}
 
 	result = talloc_strdup(response, "");
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	for (i=0; i<state->num_sids; i++) {
 		char type = '\0';
@@ -143,15 +140,18 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 		}
 
 		if (found) {
-			result = talloc_asprintf_append_buffer(
-				result, "%c%lu\n", type,
+			talloc_asprintf_addbuf(
+				&result,
+				"%c%lu\n",
+				type,
 				(unsigned long)xid.id);
 		} else {
-			result = talloc_asprintf_append_buffer(result, "\n");
+			talloc_asprintf_addbuf(&result, "\n");
 		}
-		if (result == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+	}
+
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	response->extra_data.data = result;
