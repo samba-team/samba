@@ -316,3 +316,26 @@ _PUBLIC_ int memcmp_const_time(const void *s1, const void *s2, size_t n)
 
 	return sum != 0;
 }
+
+_PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...)
+{
+	va_list ap;
+	char *s = *ps;
+	char *t = NULL;
+
+	if (s == NULL) {
+		return;
+	}
+
+	va_start(ap, fmt);
+	t = talloc_vasprintf_append_buffer(s, fmt, ap);
+	va_end(ap);
+
+	if (t == NULL) {
+		/* signal failure to the next caller */
+		TALLOC_FREE(s);
+		*ps = NULL;
+	} else {
+		*ps = t;
+	}
+}
