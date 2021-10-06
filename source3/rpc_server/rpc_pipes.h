@@ -35,8 +35,6 @@ struct dcesrv_context;
  * NamedPipes.
  */
 struct pipes_struct {
-	struct pipes_struct *next, *prev;
-
 	enum dcerpc_transport_t transport;
 
 	struct messaging_context *msg_ctx;
