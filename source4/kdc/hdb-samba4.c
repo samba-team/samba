@@ -274,38 +274,19 @@ hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db,
 
 static krb5_error_code
 hdb_samba4_check_s4u2self(krb5_context context, HDB *db,
-			  hdb_entry_ex *entry,
-			  krb5_const_principal target_principal)
+			  hdb_entry_ex *client_entry,
+			  hdb_entry_ex *server_target_entry)
 {
-	struct samba_kdc_db_context *kdc_db_ctx;
-	struct samba_kdc_entry *skdc_entry;
-	krb5_error_code ret;
+	struct samba_kdc_entry *skdc_client_entry
+		= talloc_get_type_abort(client_entry->ctx,
+					struct samba_kdc_entry);
+	struct samba_kdc_entry *skdc_server_target_entry
+		= talloc_get_type_abort(server_target_entry->ctx,
+					struct samba_kdc_entry);
 
-	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
-					   struct samba_kdc_db_context);
-	skdc_entry = talloc_get_type_abort(entry->ctx,
-					   struct samba_kdc_entry);
-
-	ret = samba_kdc_check_s4u2self(context, kdc_db_ctx,
-				       skdc_entry,
-				       target_principal);
-	switch (ret) {
-	case 0:
-		break;
-	case SDB_ERR_WRONG_REALM:
-		ret = HDB_ERR_WRONG_REALM;
-		break;
-	case SDB_ERR_NOENTRY:
-		ret = HDB_ERR_NOENTRY;
-		break;
-	case SDB_ERR_NOT_FOUND_HERE:
-		ret = HDB_ERR_NOT_FOUND_HERE;
-		break;
-	default:
-		break;
-	}
-
-	return ret;
+	return samba_kdc_check_s4u2self(context,
+					skdc_client_entry,
+					skdc_server_target_entry);
 }
 
 static void reset_bad_password_netlogon(TALLOC_CTX *mem_ctx,
