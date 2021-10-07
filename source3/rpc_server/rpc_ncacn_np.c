@@ -78,40 +78,6 @@ fail:
 	return NULL;
 }
 
-static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
-			const struct ndr_syntax_id *abstract_syntax,
-			const struct ndr_interface_table *ndr_table,
-			const struct tsocket_address *remote_address,
-			const struct tsocket_address *local_address,
-			const struct auth_session_info *session_info,
-			struct messaging_context *msg_ctx,
-			struct dcerpc_binding_handle **binding_handle)
-{
-	struct rpc_pipe_client *rpccli = NULL;
-	NTSTATUS status;
-
-	status = rpc_pipe_open_local_np(
-		mem_ctx,
-		ndr_table,
-		NULL,
-		remote_address,
-		NULL,
-		local_address,
-		session_info,
-		&rpccli);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("rpc_pipe_open_local_np failed: %s\n",
-			  nt_errstr(status));
-		goto fail;
-	}
-
-	*binding_handle = rpccli->binding_handle;
-	return NT_STATUS_OK;
-fail:
-	TALLOC_FREE(rpccli);
-	return status;
-}
-
 /**
  * @brief Create a new DCERPC Binding Handle which uses a local dispatch function.
  *
@@ -151,9 +117,29 @@ NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       struct messaging_context *msg_ctx,
 			       struct dcerpc_binding_handle **binding_handle)
 {
-	return rpcint_binding_handle_ex(mem_ctx, NULL, ndr_table, remote_address,
-					local_address, session_info,
-					msg_ctx, binding_handle);
+	struct rpc_pipe_client *rpccli = NULL;
+	NTSTATUS status;
+
+	status = rpc_pipe_open_local_np(
+		mem_ctx,
+		ndr_table,
+		NULL,
+		remote_address,
+		NULL,
+		local_address,
+		session_info,
+		&rpccli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpc_pipe_open_local_np failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	*binding_handle = rpccli->binding_handle;
+	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(rpccli);
+	return status;
 }
 
 /**
