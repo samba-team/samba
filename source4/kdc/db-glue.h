@@ -40,9 +40,8 @@ krb5_error_code samba_kdc_nextkey(krb5_context context,
 
 krb5_error_code
 samba_kdc_check_s4u2self(krb5_context context,
-			 struct samba_kdc_db_context *kdc_db_ctx,
-			 struct samba_kdc_entry *skdc_entry,
-			 krb5_const_principal target_principal);
+			 struct samba_kdc_entry *skdc_entry_client,
+			 struct samba_kdc_entry *skdc_entry_server_target);
 
 krb5_error_code
 samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
