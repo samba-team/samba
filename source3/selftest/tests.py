@@ -1078,6 +1078,15 @@ plantestsuite("samba3.blackbox.open-eintr", "simpleserver:local",
                '$SERVER_IP',
                "error_inject"])
 
+plantestsuite("samba3.blackbox.chdir-cache", "simpleserver:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_chdir_cache.sh"),
+               configuration,
+               os.path.join(bindir(), "smbclient"),
+               os.path.join(bindir(), "smbcontrol"),
+               '$SERVER_IP',
+               "error_inject"])
+
 plantestsuite("samba3.blackbox.netfileenum", "simpleserver:local",
               [os.path.join(samba3srcdir,
                             "script/tests/test_netfileenum.sh"),
