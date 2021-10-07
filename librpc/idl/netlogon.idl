@@ -16,6 +16,7 @@ cpp_quote("#define ENC_RSA_MD5 KERB_ENCTYPE_DES_CBC_MD5")
 cpp_quote("#define ENC_RC4_HMAC_MD5 KERB_ENCTYPE_RC4_HMAC_MD5")
 cpp_quote("#define ENC_HMAC_SHA1_96_AES128 KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96")
 cpp_quote("#define ENC_HMAC_SHA1_96_AES256 KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96")
+cpp_quote("#define NETLOGON_SERVER_PIPE_STATE_MAGIC 0x4f555358")
 
 [
   uuid("12345678-1234-abcd-ef00-01234567cffb"),
@@ -341,6 +342,11 @@ interface netlogon
 	typedef [public, flag(NDR_PAHEX)] struct {
 		uint8 data[8];
 	} netr_Credential;
+
+	typedef [public] struct {
+		netr_Credential client_challenge;
+		netr_Credential server_challenge;
+	} netlogon_server_pipe_state;
 
 	typedef [public] struct {
 		netr_Credential cred;

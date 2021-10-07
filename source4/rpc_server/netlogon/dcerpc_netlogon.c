@@ -66,12 +66,6 @@ static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_connection_context 
 	return dcesrv_interface_bind_reject_connect(context, iface);
 }
 
-#define NETLOGON_SERVER_PIPE_STATE_MAGIC 0x4f555358
-struct netlogon_server_pipe_state {
-	struct netr_Credential client_challenge;
-	struct netr_Credential server_challenge;
-};
-
 static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerReqChallenge *r)
 {

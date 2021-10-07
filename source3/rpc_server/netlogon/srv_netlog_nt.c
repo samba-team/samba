@@ -56,11 +56,6 @@ extern userdom_struct current_user_info;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-struct netlogon_server_pipe_state {
-	struct netr_Credential client_challenge;
-	struct netr_Credential server_challenge;
-};
-
 /*************************************************************************
  _netr_LogonControl
  *************************************************************************/
