@@ -313,7 +313,7 @@ check_constrained_delegation(krb5_context context,
  * Determine if s4u2self is allowed from this client to this server
  *
  * For example, regardless of the principal being impersonated, if the
- * 'client' and 'server' are the same, then it's safe.
+ * 'client' and 'server' (target) are the same, then it's safe.
  */
 
 static krb5_error_code
@@ -321,18 +321,28 @@ check_s4u2self(krb5_context context,
 	       krb5_kdc_configuration *config,
 	       HDB *clientdb,
 	       hdb_entry_ex *client,
-	       krb5_const_principal server)
+	       hdb_entry_ex *target_server,
+	       krb5_const_principal target_server_principal)
 {
     krb5_error_code ret;
 
-    /* if client does a s4u2self to itself, that ok */
-    if (krb5_principal_compare(context, client->entry.principal, server) == TRUE)
-	return 0;
-
+    /*
+     * Always allow the plugin to check, this might be faster, allow a
+     * policy or audit check and can look into the DB records
+     * directly
+     */
     if (clientdb->hdb_check_s4u2self) {
-	ret = clientdb->hdb_check_s4u2self(context, clientdb, client, server);
+	ret = clientdb->hdb_check_s4u2self(context,
+					   clientdb,
+					   client,
+					   target_server);
 	if (ret == 0)
 	    return 0;
+    } else if (krb5_principal_compare(context,
+				      client->entry.principal,
+				      target_server_principal) == TRUE) {
+	/* if client does a s4u2self to itself, and there is no plugin, that is ok */
+	return 0;
     } else {
 	ret = KRB5KDC_ERR_BADOPTION;
     }
@@ -1774,7 +1784,7 @@ server_lookup:
 	     * Check that service doing the impersonating is
 	     * requesting a ticket to it-self.
 	     */
-	    ret = check_s4u2self(context, config, clientdb, client, sp);
+	    ret = check_s4u2self(context, config, clientdb, client, server, sp);
 	    if (ret) {
 		kdc_log(context, config, 0, "S4U2Self: %s is not allowed "
 			"to impersonate to service "
