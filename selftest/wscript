@@ -252,7 +252,7 @@ def cmd_testonly(opt):
     if os.environ.get('USE_NAMESPACES') is None:
         env.OPTIONS += " --socket_wrapper_so_path=" + CONFIG_GET(opt, 'LIBSOCKET_WRAPPER_SO_PATH')
 
-    if Utils.unversioned_sys_platform() in ('netbsd', 'openbsd', 'sunos'):
+    if not CONFIG_SET(opt, 'HAVE_RESOLV_CONF_SUPPORT'):
         env.OPTIONS += " --use-dns-faking"
 
     if CONFIG_GET(opt, 'USING_SYSTEM_KRB5') and CONFIG_GET(opt, 'MIT_KDC_PATH'):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+from waflib import Logs
 
 VERSION="1.1.7"
 
@@ -48,6 +49,18 @@ def configure(conf):
         conf.CHECK_FUNCS_IN('res_nclose', 'resolv')
         if conf.CONFIG_SET('HAVE_RES_NCLOSE'):
             conf.DEFINE('HAVE_RES_NCLOSE_IN_LIBRESOLV', 1)
+
+        # If we find res_nquery in libc, we can't do resolv.conf redirect
+        conf.CHECK_FUNCS('res_nquery __res_nquery')
+        if (conf.CONFIG_SET('HAVE_RES_NQUERY')
+                or conf.CONFIG_SET('HAVE___RES_NQUERY')):
+            Logs.warn("Detection for resolv_wrapper: "
+                      "Only dns faking will be available")
+        else:
+            if conf.CHECK_FUNCS('res_nquery', lib='resolv'):
+                conf.DEFINE('HAVE_RESOLV_CONF_SUPPORT', 1)
+            if conf.CHECK_FUNCS('__res_nquery', lib='resolv'):
+                conf.DEFINE('HAVE_RESOLV_CONF_SUPPORT', 1)
 
         conf.CHECK_FUNCS_IN('res_init __res_init', 'resolv', checklibc=True)
         conf.CHECK_FUNCS_IN('res_ninit __res_ninit', 'resolv', checklibc=True)
