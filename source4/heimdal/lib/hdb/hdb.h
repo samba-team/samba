@@ -266,7 +266,7 @@ typedef struct HDB{
     /**
      * Check if s4u2self is allowed from this client to this server
      */
-    krb5_error_code (*hdb_check_s4u2self)(krb5_context, struct HDB *, hdb_entry_ex *, krb5_const_principal);
+    krb5_error_code (*hdb_check_s4u2self)(krb5_context, struct HDB *, hdb_entry_ex *, hdb_entry_ex *);
 }HDB;
 
 #define HDB_INTERFACE_VERSION	7
