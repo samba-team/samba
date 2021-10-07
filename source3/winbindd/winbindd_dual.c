@@ -1544,15 +1544,16 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 
 	close_conns_after_fork();
 
-	if (is_default_dyn_LOGFILEBASE() && logfilename) {
+	if (logfilename != NULL) {
 		lp_set_logfile(logfilename);
 		reopen_logs();
 	}
 
-	if (!winbindd_setup_sig_term_handler(false))
+	if (!winbindd_setup_sig_term_handler(false)) {
 		return NT_STATUS_NO_MEMORY;
-	if (!winbindd_setup_sig_hup_handler(
-		    !is_default_dyn_LOGFILEBASE() ? NULL : logfilename)) {
+	}
+
+	if (!winbindd_setup_sig_hup_handler(logfilename)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1777,7 +1778,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 			   winbind_msg_disconnect_dc);
 	messaging_register(
 		global_messaging_context(),
-		!is_default_dyn_LOGFILEBASE() ? NULL : child->logfilename,
+		child->logfilename,
 		MSG_SMB_CONF_UPDATED,
 		winbindd_msg_reload_services_child);
 
