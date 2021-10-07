@@ -478,6 +478,29 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 #endif /* SAMBA4_USES_HEIMDAL */
 
 
+/**
+ * @brief Create a PAC with the given blobs (logon, credentials, upn and
+ * delegation).
+ *
+ * @param[in] context   The KRB5 context to use.
+ *
+ * @param[in] logon_blob Fill the logon info PAC buffer with the given blob,
+ *                       use NULL to ignore it.
+ *
+ * @param[in] cred_blob  Fill the credentials info PAC buffer with the given
+ *                       blob, use NULL to ignore it.
+ *
+ * @param[in] upn_blob  Fill the UPN info PAC buffer with the given blob, use
+ *                      NULL to ignore it.
+ *
+ * @param[in] deleg_blob Fill the delegation info PAC buffer with the given
+ *                       blob, use NULL to ignore it.
+ *
+ * @param[in] pac        The pac buffer to fill. This should be allocated with
+ *                       krb5_pac_init() already.
+ *
+ * @returns 0 on success or a corresponding KRB5 error.
+ */
 krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *logon_blob,
 				    const DATA_BLOB *cred_blob,
@@ -485,7 +508,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *pac_attrs_blob,
 				    const DATA_BLOB *requester_sid_blob,
 				    const DATA_BLOB *deleg_blob,
-				    krb5_pac *pac)
+				    krb5_pac pac)
 {
 	krb5_data logon_data;
 	krb5_data cred_data;
@@ -578,18 +601,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		}
 	}
 
-	ret = krb5_pac_init(context, pac);
-	if (ret != 0) {
-		smb_krb5_free_data_contents(context, &logon_data);
-		smb_krb5_free_data_contents(context, &cred_data);
-		smb_krb5_free_data_contents(context, &upn_data);
-		smb_krb5_free_data_contents(context, &pac_attrs_data);
-		smb_krb5_free_data_contents(context, &requester_sid_data);
-		smb_krb5_free_data_contents(context, &deleg_data);
-		return ret;
-	}
-
-	ret = krb5_pac_add_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &logon_data);
+	ret = krb5_pac_add_buffer(context, pac, PAC_TYPE_LOGON_INFO, &logon_data);
 	smb_krb5_free_data_contents(context, &logon_data);
 	if (ret != 0) {
 		smb_krb5_free_data_contents(context, &cred_data);
@@ -601,7 +613,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	}
 
 	if (cred_blob != NULL) {
-		ret = krb5_pac_add_buffer(context, *pac,
+		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_CREDENTIAL_INFO,
 					  &cred_data);
 		smb_krb5_free_data_contents(context, &cred_data);
@@ -622,7 +634,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	 *
 	 * Not needed with MIT Kerberos - asn
 	 */
-	ret = krb5_pac_add_buffer(context, *pac,
+	ret = krb5_pac_add_buffer(context, pac,
 				  PAC_TYPE_LOGON_NAME,
 				  &null_data);
 	if (ret != 0) {
@@ -635,7 +647,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 #endif
 
 	if (upn_blob != NULL) {
-		ret = krb5_pac_add_buffer(context, *pac,
+		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_UPN_DNS_INFO,
 					  &upn_data);
 		smb_krb5_free_data_contents(context, &upn_data);
@@ -648,7 +660,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	}
 
 	if (pac_attrs_blob != NULL) {
-		ret = krb5_pac_add_buffer(context, *pac,
+		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_ATTRIBUTES_INFO,
 					  &pac_attrs_data);
 		smb_krb5_free_data_contents(context, &pac_attrs_data);
@@ -660,7 +672,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	}
 
 	if (requester_sid_blob != NULL) {
-		ret = krb5_pac_add_buffer(context, *pac,
+		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_REQUESTER_SID,
 					  &requester_sid_data);
 		smb_krb5_free_data_contents(context, &requester_sid_data);
@@ -671,7 +683,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	}
 
 	if (deleg_blob != NULL) {
-		ret = krb5_pac_add_buffer(context, *pac,
+		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_CONSTRAINED_DELEGATION,
 					  &deleg_data);
 		smb_krb5_free_data_contents(context, &deleg_data);
