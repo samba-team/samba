@@ -427,8 +427,8 @@ class KerberosASCanonicalizationTests(KDCBaseTest):
 
 
 if __name__ == "__main__":
-    global_asn1_print = True
-    global_hexdump = True
+    global_asn1_print = False
+    global_hexdump = False
     import unittest
 
     unittest.main()
