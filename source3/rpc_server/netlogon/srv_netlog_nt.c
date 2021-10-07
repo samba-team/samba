@@ -790,16 +790,21 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 NTSTATUS _netr_ServerReqChallenge(struct pipes_struct *p,
 				  struct netr_ServerReqChallenge *r)
 {
-	struct netlogon_server_pipe_state *pipe_state =
-		talloc_get_type(p->private_data, struct netlogon_server_pipe_state);
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct netlogon_server_pipe_state *pipe_state = NULL;
+	NTSTATUS status;
+
+	pipe_state = dcesrv_iface_state_find_conn(
+		dce_call,
+		NETLOGON_SERVER_PIPE_STATE_MAGIC,
+		struct netlogon_server_pipe_state);
 
 	if (pipe_state) {
 		DEBUG(10,("_netr_ServerReqChallenge: new challenge requested. Clearing old state.\n"));
 		talloc_free(pipe_state);
-		p->private_data = NULL;
 	}
 
-	pipe_state = talloc(p, struct netlogon_server_pipe_state);
+	pipe_state = talloc(p->mem_ctx, struct netlogon_server_pipe_state);
 	NT_STATUS_HAVE_NO_MEMORY(pipe_state);
 
 	pipe_state->client_challenge = *r->in.credentials;
@@ -808,7 +813,13 @@ NTSTATUS _netr_ServerReqChallenge(struct pipes_struct *p,
 
 	*r->out.return_credentials = pipe_state->server_challenge;
 
-	p->private_data = pipe_state;
+	status = dcesrv_iface_state_store_conn(
+		dce_call,
+		NETLOGON_SERVER_PIPE_STATE_MAGIC,
+		pipe_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -858,8 +869,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 	struct dom_sid sid;
 	struct samr_Password mach_pwd;
 	struct netlogon_creds_CredentialState *creds;
-	struct netlogon_server_pipe_state *pipe_state =
-		talloc_get_type(p->private_data, struct netlogon_server_pipe_state);
+	struct netlogon_server_pipe_state *pipe_state = NULL;
 
 	/* According to Microsoft (see bugid #6099)
 	 * Windows 7 looks at the negotiate_flags
@@ -931,6 +941,11 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 
 	/* We use this as the key to store the creds: */
 	/* r->in.computer_name */
+
+	pipe_state = dcesrv_iface_state_find_conn(
+		dce_call,
+		NETLOGON_SERVER_PIPE_STATE_MAGIC,
+		struct netlogon_server_pipe_state);
 
 	if (!pipe_state) {
 		DEBUG(0,("%s: no challenge sent to client %s\n", fn,
