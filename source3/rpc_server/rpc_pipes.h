@@ -66,10 +66,6 @@ struct pipes_struct {
 
 	/* handle database to use on this pipe. */
 	struct dcesrv_call_state *dce_call;
-
-	/* private data for the interface implementation */
-	void *private_data;
-
 };
 
 int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
