@@ -360,6 +360,14 @@ static void set_sec_ctx_internal(uid_t uid, gid_t gid,
 	current_user.ut.ngroups = ngroups;
 	current_user.ut.groups = groups;
 	current_user.nt_user_token = ctx_p->token;
+
+	/*
+	 * Delete any ChDir cache. We can't assume
+	 * the new uid has access to current working
+	 * directory.
+	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14682
+	 */
+	SAFE_FREE(LastDir);
 }
 
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, const struct security_token *token)
