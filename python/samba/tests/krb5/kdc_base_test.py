@@ -23,6 +23,7 @@ import tempfile
 import binascii
 import collections
 import secrets
+from enum import Enum, auto
 
 from collections import namedtuple
 import ldb
@@ -89,6 +90,10 @@ global_hexdump = False
 class KDCBaseTest(RawKerberosTest):
     """ Base class for KDC tests.
     """
+
+    class AccountType(Enum):
+        USER = auto()
+        COMPUTER = auto()
 
     @classmethod
     def setUpClass(cls):
@@ -230,7 +235,7 @@ class KDCBaseTest(RawKerberosTest):
 
         return default_enctypes
 
-    def create_account(self, samdb, name, machine_account=False,
+    def create_account(self, samdb, name, account_type=AccountType.USER,
                        spn=None, upn=None, additional_details=None,
                        ou=None, account_control=0):
         '''Create an account for testing.
@@ -238,8 +243,10 @@ class KDCBaseTest(RawKerberosTest):
            which is used by tearDownClass to clean up the created accounts.
         '''
         if ou is None:
-            guid = (DS_GUID_COMPUTERS_CONTAINER if machine_account
-                    else DS_GUID_USERS_CONTAINER)
+            if account_type is account_type.COMPUTER:
+                guid = DS_GUID_COMPUTERS_CONTAINER
+            else:
+                guid = DS_GUID_USERS_CONTAINER
 
             ou = samdb.get_wellknown_dn(samdb.get_default_basedn(), guid)
 
@@ -248,14 +255,17 @@ class KDCBaseTest(RawKerberosTest):
         # remove the account if it exists, this will happen if a previous test
         # run failed
         delete_force(samdb, dn)
-        if machine_account:
-            object_class = "computer"
-            account_name = "%s$" % name
-            account_control |= UF_WORKSTATION_TRUST_ACCOUNT
-        else:
+        if account_type is self.AccountType.USER:
             object_class = "user"
             account_name = name
             account_control |= UF_NORMAL_ACCOUNT
+        else:
+            object_class = "computer"
+            account_name = "%s$" % name
+            if account_type is self.AccountType.COMPUTER:
+                account_control |= UF_WORKSTATION_TRUST_ACCOUNT
+            else:
+                self.fail()
 
         password = generate_random_password(32, 32)
         utf16pw = ('"%s"' % password).encode('utf-16-le')
@@ -267,6 +277,10 @@ class KDCBaseTest(RawKerberosTest):
             "userAccountControl": str(account_control),
             "unicodePwd": utf16pw}
         if spn is not None:
+            if isinstance(spn, str):
+                spn = spn.format(account=account_name)
+            else:
+                spn = tuple(s.format(account=account_name) for s in spn)
             details["servicePrincipalName"] = spn
         if upn is not None:
             details["userPrincipalName"] = upn
@@ -280,10 +294,10 @@ class KDCBaseTest(RawKerberosTest):
         creds.set_domain(samdb.domain_netbios_name().upper())
         creds.set_password(password)
         creds.set_username(account_name)
-        if machine_account:
-            creds.set_workstation(name)
-        else:
+        if account_type is self.AccountType.USER:
             creds.set_workstation('')
+        else:
+            creds.set_workstation(name)
         creds.set_dn(ldb.Dn(samdb, dn))
         creds.set_spn(spn)
         #
@@ -609,13 +623,14 @@ class KDCBaseTest(RawKerberosTest):
         return cleanup
 
     def get_cached_creds(self, *,
-                         machine_account,
+                         account_type,
                          opts=None,
                          use_cache=True):
         if opts is None:
             opts = {}
 
         opts_default = {
+            'spn': None,
             'allowed_replication': False,
             'allowed_replication_mock': False,
             'denied_replication': False,
@@ -632,7 +647,7 @@ class KDCBaseTest(RawKerberosTest):
         }
 
         account_opts = {
-            'machine_account': machine_account,
+            'account_type': account_type,
             **opts_default,
             **opts
         }
@@ -651,7 +666,8 @@ class KDCBaseTest(RawKerberosTest):
         return creds
 
     def create_account_opts(self, *,
-                            machine_account,
+                            account_type,
+                            spn,
                             allowed_replication,
                             allowed_replication_mock,
                             denied_replication,
@@ -665,12 +681,13 @@ class KDCBaseTest(RawKerberosTest):
                             delegation_from_dn,
                             trusted_to_auth_for_delegation,
                             fast_support):
-        if machine_account:
-            self.assertFalse(not_delegated)
-        else:
+        if account_type is self.AccountType.USER:
+            self.assertIsNone(spn)
             self.assertIsNone(delegation_to_spn)
             self.assertIsNone(delegation_from_dn)
             self.assertFalse(trusted_to_auth_for_delegation)
+        else:
+            self.assertFalse(not_delegated)
 
         samdb = self.get_samdb()
         rodc_samdb = self.get_rodc_samdb()
@@ -707,13 +724,11 @@ class KDCBaseTest(RawKerberosTest):
             details['msDS-AllowedToActOnBehalfOfOtherIdentity'] = (
                 security_descriptor)
 
-        if machine_account:
+        if spn is None and account_type is not self.AccountType.USER:
             spn = 'host/' + user_name
-        else:
-            spn = None
 
         creds, dn = self.create_account(samdb, user_name,
-                                        machine_account=machine_account,
+                                        account_type=account_type,
                                         spn=spn,
                                         additional_details=details,
                                         account_control=user_account_control)
@@ -787,7 +802,7 @@ class KDCBaseTest(RawKerberosTest):
                          allow_missing_password=False,
                          allow_missing_keys=True):
         def create_client_account():
-            return self.get_cached_creds(machine_account=False)
+            return self.get_cached_creds(account_type=self.AccountType.USER)
 
         c = self._get_krb5_creds(prefix='CLIENT',
                                  allow_missing_password=allow_missing_password,
@@ -799,7 +814,7 @@ class KDCBaseTest(RawKerberosTest):
                        allow_missing_password=False,
                        allow_missing_keys=True):
         def create_mach_account():
-            return self.get_cached_creds(machine_account=True,
+            return self.get_cached_creds(account_type=self.AccountType.COMPUTER,
                                          opts={'fast_support': True})
 
         c = self._get_krb5_creds(prefix='MAC',
@@ -813,7 +828,7 @@ class KDCBaseTest(RawKerberosTest):
                           allow_missing_keys=True):
         def create_service_account():
             return self.get_cached_creds(
-                machine_account=True,
+                account_type=self.AccountType.COMPUTER,
                 opts={
                     'trusted_to_auth_for_delegation': True,
                     'fast_support': True

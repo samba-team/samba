@@ -220,12 +220,14 @@ class S4UKerberosTests(KDCBaseTest):
 
     def _run_s4u2self_test(self, kdc_dict):
         client_opts = kdc_dict.pop('client_opts', None)
-        client_creds = self.get_cached_creds(machine_account=False,
-                                             opts=client_opts)
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts=client_opts)
 
         service_opts = kdc_dict.pop('service_opts', None)
-        service_creds = self.get_cached_creds(machine_account=True,
-                                              opts=service_opts)
+        service_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts=service_opts)
 
         service_tgt = self.get_tgt(service_creds)
         modify_service_tgt_fn = kdc_dict.pop('modify_service_tgt_fn', None)
@@ -432,8 +434,9 @@ class S4UKerberosTests(KDCBaseTest):
 
     def _run_delegation_test(self, kdc_dict):
         client_opts = kdc_dict.pop('client_opts', None)
-        client_creds = self.get_cached_creds(machine_account=False,
-                                             opts=client_opts)
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts=client_opts)
 
         service1_opts = kdc_dict.pop('service1_opts', {})
         service2_opts = kdc_dict.pop('service2_opts', {})
@@ -443,24 +446,28 @@ class S4UKerberosTests(KDCBaseTest):
         self.assertFalse(allow_delegation and allow_rbcd)
 
         if allow_rbcd:
-            service1_creds = self.get_cached_creds(machine_account=True,
-                                                   opts=service1_opts)
+            service1_creds = self.get_cached_creds(
+                account_type=self.AccountType.COMPUTER,
+                opts=service1_opts)
 
             self.assertNotIn('delegation_from_dn', service2_opts)
             service2_opts['delegation_from_dn'] = str(service1_creds.get_dn())
 
-            service2_creds = self.get_cached_creds(machine_account=True,
-                                                   opts=service2_opts)
+            service2_creds = self.get_cached_creds(
+                account_type=self.AccountType.COMPUTER,
+                opts=service2_opts)
         else:
-            service2_creds = self.get_cached_creds(machine_account=True,
-                                                   opts=service2_opts)
+            service2_creds = self.get_cached_creds(
+                account_type=self.AccountType.COMPUTER,
+                opts=service2_opts)
 
             if allow_delegation:
                 self.assertNotIn('delegation_to_spn', service1_opts)
                 service1_opts['delegation_to_spn'] = service2_creds.get_spn()
 
-            service1_creds = self.get_cached_creds(machine_account=True,
-                                                   opts=service1_opts)
+            service1_creds = self.get_cached_creds(
+                account_type=self.AccountType.COMPUTER,
+                opts=service1_opts)
 
         client_tkt_options = kdc_dict.pop('client_tkt_options', 'forwardable')
         expected_flags = krb5_asn1.TicketFlags(client_tkt_options)
