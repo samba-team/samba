@@ -150,18 +150,15 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         # Create a machine account for the test.
         #
         samdb = self.get_samdb()
-        user_name = "mskilemac"
-        (mc, dn) = self.create_account(samdb, user_name, machine_account=True)
-        realm = mc.get_realm().lower()
-
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, dn) = self.create_account(samdb, mach_name, machine_account=True)
+        realm = mc.get_realm().lower()
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
         etype = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
         cname = self.PrincipalName_create(
-            name_type=NT_PRINCIPAL, names=[user_name])
+            name_type=NT_PRINCIPAL, names=[mach_name])
         sname = self.PrincipalName_create(
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
@@ -180,7 +177,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         key = self.EncryptionKey_import(enc_part2['key'])
         cname = self.PrincipalName_create(
             name_type=NT_PRINCIPAL,
-            names=[user_name])
+            names=[mach_name])
         sname = self.PrincipalName_create(
             name_type=NT_PRINCIPAL,
             names=[mc.get_username()])
@@ -197,7 +194,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         # check the crealm and cname
         cname = enc_part['cname']
         self.assertEqual(NT_PRINCIPAL, cname['name-type'])
-        self.assertEqual(user_name.encode('UTF8'), cname['name-string'][0])
+        self.assertEqual(mach_name.encode('UTF8'), cname['name-string'][0])
         self.assertEqual(realm.upper().encode('UTF8'), enc_part['crealm'])
 
     def test_nt_principal_step_3(self):
