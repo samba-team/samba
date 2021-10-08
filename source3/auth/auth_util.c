@@ -1898,7 +1898,7 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	passwd = smb_getpwnam(mem_ctx, dom_user, &real_username, true );
+	passwd = smb_getpwnam(mem_ctx, dom_user, &real_username, false);
 	if (!passwd) {
 		DEBUG(3, ("Failed to find authenticated user %s via "
 			  "getpwnam(), denying access.\n", dom_user));
