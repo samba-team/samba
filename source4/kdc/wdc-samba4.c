@@ -23,7 +23,10 @@
 
 #include "includes.h"
 #include "kdc/kdc-glue.h"
+#include "kdc/db-glue.h"
 #include "kdc/pac-glue.h"
+#include "sdb.h"
+#include "sdb_hdb.h"
 
 /*
  * Given the right private pointer from hdb_samba4,
@@ -94,15 +97,13 @@ static krb5_error_code samba_wdc_get_pac_compat(void *priv, krb5_context context
 	return samba_wdc_get_pac(priv, context, client, NULL, pac);
 }
 
-/* Resign (and reform, including possibly new groups) a PAC */
-
-static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
-					   const krb5_principal client_principal,
-					   const krb5_principal delegated_proxy_principal,
-					   struct hdb_entry_ex *client,
-					   struct hdb_entry_ex *server,
-					   struct hdb_entry_ex *krbtgt,
-					   krb5_pac *pac)
+static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
+					    const krb5_principal delegated_proxy_principal,
+					    struct hdb_entry_ex *client,
+					    struct hdb_entry_ex *server,
+					    struct hdb_entry_ex *krbtgt,
+					    krb5_pac *pac,
+					    krb5_cksumtype ctype)
 {
 	struct samba_kdc_entry *p =
 		talloc_get_type_abort(server->ctx,
@@ -110,15 +111,13 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	struct samba_kdc_entry *krbtgt_skdc_entry =
 		talloc_get_type_abort(krbtgt->ctx,
 		struct samba_kdc_entry);
-	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_kdc_reget_pac context");
+	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_kdc_reget_pac2 context");
 	krb5_pac new_pac = NULL;
 	DATA_BLOB *pac_blob = NULL;
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *deleg_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
-	struct PAC_SIGNATURE_DATA *pac_srv_sig;
-	struct PAC_SIGNATURE_DATA *pac_kdc_sig;
 	bool is_in_db, is_untrusted;
 	size_t num_types = 0;
 	uint32_t *types = NULL;
@@ -130,6 +129,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	ssize_t upn_dns_info_idx = -1;
 	ssize_t srv_checksum_idx = -1;
 	ssize_t kdc_checksum_idx = -1;
+	ssize_t tkt_checksum_idx = -1;
 
 	if (!mem_ctx) {
 		return ENOMEM;
@@ -148,6 +148,71 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	if (ret != 0) {
 		talloc_free(mem_ctx);
 		return ret;
+	}
+
+	if (delegated_proxy_principal != NULL) {
+		krb5_enctype etype;
+		Key *key = NULL;
+
+		if (!is_in_db) {
+			/*
+			 * The RODC-issued PAC was signed by a KDC entry that we
+			 * don't have a key for. The server signature is not
+			 * trustworthy, since it could have been created by the
+			 * server we got the ticket from. We must not proceed as
+			 * otherwise the ticket signature is unchecked.
+			 */
+			talloc_free(mem_ctx);
+			return HDB_ERR_NOT_FOUND_HERE;
+		}
+
+		/* Fetch the correct key depending on the checksum type. */
+		if (ctype == CKSUMTYPE_HMAC_MD5) {
+			etype = ENCTYPE_ARCFOUR_HMAC;
+		} else {
+			ret = krb5_cksumtype_to_enctype(context,
+							ctype,
+							&etype);
+			if (ret != 0) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+		}
+		ret = hdb_enctype2key(context, &krbtgt->entry, etype, &key);
+		if (ret != 0) {
+			return ret;
+		}
+
+		/* Check the KDC and ticket signatures. */
+		ret = krb5_pac_verify(context,
+				      *pac,
+				      0,
+				      NULL,
+				      NULL,
+				      &key->key);
+		if (ret != 0) {
+			DEBUG(1, ("PAC KDC signature failed to verify\n"));
+			talloc_free(mem_ctx);
+			return ret;
+		}
+
+		deleg_blob = talloc_zero(mem_ctx, DATA_BLOB);
+		if (!deleg_blob) {
+			talloc_free(mem_ctx);
+			return ENOMEM;
+		}
+
+		nt_status = samba_kdc_update_delegation_info_blob(mem_ctx,
+					context, *pac,
+					server->entry.principal,
+					delegated_proxy_principal,
+					deleg_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0, ("Building PAC failed: %s\n",
+				  nt_errstr(nt_status)));
+			talloc_free(mem_ctx);
+			return EINVAL;
+		}
 	}
 
 	if (is_untrusted) {
@@ -173,52 +238,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 			return ENOMEM;
 		}
 
-		pac_srv_sig = talloc_zero(mem_ctx, struct PAC_SIGNATURE_DATA);
-		if (!pac_srv_sig) {
-			talloc_free(mem_ctx);
-			return ENOMEM;
-		}
-
-		pac_kdc_sig = talloc_zero(mem_ctx, struct PAC_SIGNATURE_DATA);
-		if (!pac_kdc_sig) {
-			talloc_free(mem_ctx);
-			return ENOMEM;
-		}
-
 		nt_status = samba_kdc_update_pac_blob(mem_ctx, context,
 						      krbtgt_skdc_entry->kdc_db_ctx->samdb,
 						      *pac, pac_blob,
-						      pac_srv_sig, pac_kdc_sig);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("Building PAC failed: %s\n",
-				  nt_errstr(nt_status)));
-			talloc_free(mem_ctx);
-			return EINVAL;
-		}
-		
-		if (is_in_db) {
-			/* Now check the KDC signature, fetching the correct key based on the enc type */
-			ret = kdc_check_pac(context, pac_srv_sig->signature, pac_kdc_sig, krbtgt);
-			if (ret != 0) {
-				DEBUG(1, ("PAC KDC signature failed to verify\n"));
-				talloc_free(mem_ctx);
-				return ret;
-			}
-		}
-	}
-
-	if (delegated_proxy_principal) {
-		deleg_blob = talloc_zero(mem_ctx, DATA_BLOB);
-		if (!deleg_blob) {
-			talloc_free(mem_ctx);
-			return ENOMEM;
-		}
-
-		nt_status = samba_kdc_update_delegation_info_blob(mem_ctx,
-					context, *pac,
-					server->entry.principal,
-					delegated_proxy_principal,
-					deleg_blob);
+						      NULL, NULL);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("Building PAC failed: %s\n",
 				  nt_errstr(nt_status)));
@@ -307,6 +330,18 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 				return EINVAL;
 			}
 			kdc_checksum_idx = i;
+			break;
+		case PAC_TYPE_TICKET_CHECKSUM:
+			if (tkt_checksum_idx != -1) {
+				DEBUG(1, ("ticket checksum type[%"PRIu32"] twice [%zd] and [%zu]: \n",
+					  types[i],
+					  tkt_checksum_idx,
+					  i));
+				SAFE_FREE(types);
+				talloc_free(mem_ctx);
+				return EINVAL;
+			}
+			tkt_checksum_idx = i;
 			break;
 		default:
 			continue;
@@ -468,6 +503,131 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	*pac = new_pac;
 
 	talloc_free(mem_ctx);
+	return ret;
+}
+
+/* Resign (and reform, including possibly new groups) a PAC */
+
+static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
+					   const krb5_principal client_principal,
+					   const krb5_principal delegated_proxy_principal,
+					   struct hdb_entry_ex *client,
+					   struct hdb_entry_ex *server,
+					   struct hdb_entry_ex *krbtgt,
+					   krb5_pac *pac)
+{
+	struct samba_kdc_entry *krbtgt_skdc_entry =
+		talloc_get_type_abort(krbtgt->ctx,
+				      struct samba_kdc_entry);
+	krb5_error_code ret;
+	krb5_cksumtype ctype = CKSUMTYPE_NONE;
+	struct hdb_entry_ex signing_krbtgt_hdb;
+
+	if (delegated_proxy_principal) {
+		uint16_t rodc_id;
+		unsigned int my_krbtgt_number;
+
+		/*
+		 * We're using delegated_proxy_principal for the moment to
+		 * indicate cases where the ticket was encrypted with the server
+		 * key, and not a krbtgt key. This cannot be trusted, so we need
+		 * to find a krbtgt key that signs the PAC in order to trust the
+		 * ticket.
+		 *
+		 * The krbtgt passed in to this function refers to the krbtgt
+		 * used to decrypt the ticket of the server requesting
+		 * S4U2Proxy.
+		 *
+		 * When we implement service ticket renewal, we need to check
+		 * the PAC, and this will need to be updated.
+		 */
+		ret = krb5_pac_get_kdc_checksum_info(context,
+						     *pac,
+						     &ctype,
+						     &rodc_id);
+		if (ret != 0) {
+			DEBUG(1, ("Failed to get PAC checksum info\n"));
+			return ret;
+		}
+
+		/*
+		 * We need to check the KDC and ticket signatures, fetching the
+		 * correct key based on the enctype.
+		 */
+
+		my_krbtgt_number = krbtgt_skdc_entry->kdc_db_ctx->my_krbtgt_number;
+
+		if (my_krbtgt_number != 0) {
+			/*
+			 * If we are an RODC, and we are not the KDC that signed
+			 * the evidence ticket, then we need to proxy the
+			 * request.
+			 */
+			if (rodc_id != my_krbtgt_number) {
+				return HDB_ERR_NOT_FOUND_HERE;
+			}
+		} else {
+			/*
+			 * If we are a DC, the ticket may have been signed by a
+			 * different KDC than the one that issued the header
+			 * ticket.
+			 */
+			if (rodc_id != krbtgt->entry.kvno >> 16) {
+				struct sdb_entry_ex signing_krbtgt_sdb;
+
+				/*
+				 * If we didn't sign the ticket, then return an
+				 * error.
+				 */
+				if (rodc_id != 0) {
+					return KRB5KRB_AP_ERR_MODIFIED;
+				}
+
+				/*
+				 * Fetch our key from the database. To support
+				 * key rollover, we're going to need to try
+				 * multiple keys by trial and error. For now,
+				 * krbtgt keys aren't assumed to change.
+				 */
+				ret = samba_kdc_fetch(context,
+						      krbtgt_skdc_entry->kdc_db_ctx,
+						      krbtgt->entry.principal,
+						      SDB_F_GET_KRBTGT | SDB_F_CANON,
+						      0,
+						      &signing_krbtgt_sdb);
+				if (ret != 0) {
+					return ret;
+				}
+
+				ret = sdb_entry_ex_to_hdb_entry_ex(context,
+								   &signing_krbtgt_sdb,
+								   &signing_krbtgt_hdb);
+				sdb_free_entry(&signing_krbtgt_sdb);
+				if (ret != 0) {
+					return ret;
+				}
+
+				/*
+				 * Replace the krbtgt entry with our own entry
+				 * for further processing.
+				 */
+				krbtgt = &signing_krbtgt_hdb;
+			}
+		}
+	}
+
+	ret = samba_wdc_reget_pac2(context,
+				   delegated_proxy_principal,
+				   client,
+				   server,
+				   krbtgt,
+				   pac,
+				   ctype);
+
+	if (krbtgt == &signing_krbtgt_hdb) {
+		hdb_free_entry(context, &signing_krbtgt_hdb);
+	}
+
 	return ret;
 }
 
