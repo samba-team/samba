@@ -470,6 +470,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_pac_add_buffer;
 		krb5_pac_free;
 		krb5_pac_get_buffer;
+		krb5_pac_get_kdc_checksum_info;
 		krb5_pac_get_types;
 		krb5_pac_init;
 		krb5_pac_parse;
@@ -753,7 +754,6 @@ HEIMDAL_KRB5_2.0 {
 		_krb5_pac_sign;
 		_krb5_kdc_pac_sign_ticket;
 		_krb5_kdc_pac_ticket_parse;
-		_krb5_pac_get_kdc_checksum_info;
 		_kdc_tkt_insert_pac;
 		_kdc_tkt_add_if_relevant_ad;
 		_krb5_parse_moduli;
