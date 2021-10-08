@@ -281,6 +281,7 @@ setup_public_addresses ()
 
 	echo "Setting up public addresses in ${_f}"
 	cat >"$_f" <<EOF
+# This is a comment
 10.0.0.1/24 dev123
 10.0.0.2/24 dev123
 10.0.0.3/24 dev123
