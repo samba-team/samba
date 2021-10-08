@@ -95,7 +95,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         realm = uc.get_realm().lower()
 
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, _) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
@@ -151,7 +152,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         #
         samdb = self.get_samdb()
         mach_name = "mskilemac"
-        (mc, dn) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, dn) = self.create_account(samdb, mach_name,
+                                       account_type=self.AccountType.COMPUTER)
         realm = mc.get_realm().lower()
 
         # Do the initial AS-REQ, should get a pre-authentication required
@@ -215,7 +217,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         realm = uc.get_realm().lower()
 
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, _) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
@@ -286,7 +289,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.add_attribute(samdb, dn, "altSecurityIdentities", alt_sec)
 
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, _) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, as we've set UF_DONT_REQUIRE_PREAUTH
         # we should get a valid AS-RESP
@@ -351,7 +355,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.add_attribute(samdb, dn, "altSecurityIdentities", alt_sec)
 
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, _) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
@@ -420,7 +425,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.add_attribute(samdb, dn, "altSecurityIdentities", alt_sec)
 
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, _) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
@@ -459,7 +465,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         realm = uc.get_realm().lower()
 
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, _) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
@@ -523,7 +530,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         ename = user_name + "@" + realm
 
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, _) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
@@ -586,7 +594,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         realm = uc.get_realm().lower()
 
         mach_name = "mskilemac"
-        (mc, dn) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, dn) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
         ename = mach_name + "@" + realm
         uname = mach_name + "$@" + realm
 
@@ -661,7 +670,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         ename = alt_name + "@" + realm
 
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, _) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, as we've set UF_DONT_REQUIRE_PREAUTH
         # we should get a valid AS-RESP
@@ -728,7 +738,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         uname = user_name + "@" + realm
 
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, _) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
@@ -798,7 +809,8 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         ename = alt_name + "@" + realm
 
         mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name, machine_account=True)
+        (mc, _) = self.create_account(samdb, mach_name,
+                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
