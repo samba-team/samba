@@ -782,7 +782,6 @@ sub provision_ad_member
 
 	mkdir($_, 0777) foreach(@dirs);
 
-	close(USERMAP);
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
 	$ret->{DOMSID} = $dcvars->{DOMSID};
@@ -1044,7 +1043,6 @@ sub setup_ad_member_rfc2307
 
 	$ret or return undef;
 
-	close(USERMAP);
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
 	$ret->{DOMSID} = $dcvars->{DOMSID};
@@ -1142,7 +1140,6 @@ sub setup_ad_member_idmap_rid
 
 	$ret or return undef;
 
-	close(USERMAP);
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
 	$ret->{DOMSID} = $dcvars->{DOMSID};
@@ -1242,7 +1239,6 @@ sub setup_ad_member_idmap_ad
 
 	$ret or return undef;
 
-	close(USERMAP);
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
 	$ret->{DOMSID} = $dcvars->{DOMSID};
@@ -1342,7 +1338,6 @@ sub setup_ad_member_oneway
 
 	$ret or return undef;
 
-	close(USERMAP);
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
 	$ret->{DOMSID} = $dcvars->{DOMSID};
