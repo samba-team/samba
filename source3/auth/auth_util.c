@@ -1933,7 +1933,7 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 {
 	struct passwd *pw = NULL;
 	char *p = NULL;
-	char *username = NULL;
+	const char *username = NULL;
 
 	/* we only save a copy of the username it has been mangled 
 	   by winbindd use default domain */
@@ -1952,48 +1952,55 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 	/* code for a DOMAIN\user string */
 
 	if ( p ) {
-		pw = Get_Pwnam_alloc( mem_ctx, domuser );
-		if ( pw ) {
-			/* make sure we get the case of the username correct */
-			/* work around 'winbind use default domain = yes' */
+		const char *domain = NULL;
 
-			if ( lp_winbind_use_default_domain() &&
-			     !strchr_m( pw->pw_name, *lp_winbind_separator() ) ) {
-				char *domain;
+		/* split the domain and username into 2 strings */
+		*p = '\0';
+		domain = username;
+		p++;
+		username = p;
 
-				/* split the domain and username into 2 strings */
-				*p = '\0';
-				domain = username;
-
-				*p_save_username = talloc_asprintf(mem_ctx,
-								"%s%c%s",
-								domain,
-								*lp_winbind_separator(),
-								pw->pw_name);
-				if (!*p_save_username) {
-					TALLOC_FREE(pw);
-					return NULL;
-				}
-			} else {
-				*p_save_username = talloc_strdup(mem_ctx, pw->pw_name);
-			}
-
-			/* whew -- done! */
-			return pw;
+		if (strequal(domain, get_global_sam_name())) {
+			/*
+			 * This typically don't happen
+			 * as check_sam_Security()
+			 * don't call make_server_info_info3()
+			 * and thus check_account().
+			 *
+			 * But we better keep this.
+			 */
+			goto username_only;
 		}
 
-		/* setup for lookup of just the username */
-		/* remember that p and username are overlapping memory */
-
-		p++;
-		username = talloc_strdup(mem_ctx, p);
-		if (!username) {
+		pw = Get_Pwnam_alloc( mem_ctx, domuser );
+		if (pw == NULL) {
 			return NULL;
 		}
+		/* make sure we get the case of the username correct */
+		/* work around 'winbind use default domain = yes' */
+
+		if ( lp_winbind_use_default_domain() &&
+		     !strchr_m( pw->pw_name, *lp_winbind_separator() ) ) {
+			*p_save_username = talloc_asprintf(mem_ctx,
+							"%s%c%s",
+							domain,
+							*lp_winbind_separator(),
+							pw->pw_name);
+			if (!*p_save_username) {
+				TALLOC_FREE(pw);
+				return NULL;
+			}
+		} else {
+			*p_save_username = talloc_strdup(mem_ctx, pw->pw_name);
+		}
+
+		/* whew -- done! */
+		return pw;
+
 	}
 
 	/* just lookup a plain username */
-
+username_only:
 	pw = Get_Pwnam_alloc(mem_ctx, username);
 
 	/* Create local user if requested but only if winbindd
