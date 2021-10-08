@@ -55,11 +55,12 @@ class CcacheTests(KDCBaseTest):
         (user_credentials, _) = self.create_account(samdb, user_name)
 
         # Create the machine account.
-        (mach_credentials, _) = self.create_account(samdb,
-                                                    mach_name,
-                                                    machine_account=True,
-                                                    spn="%s/%s" % (service,
-                                                                   mach_name))
+        (mach_credentials, _) = self.create_account(
+            samdb,
+            mach_name,
+            account_type=self.AccountType.COMPUTER,
+            spn="%s/%s" % (service,
+                           mach_name))
 
         # Talk to the KDC to obtain the service ticket, which gets placed into
         # the cache. The machine account name has to match the name in the

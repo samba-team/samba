@@ -39,12 +39,12 @@ class RodcKerberosTests(KDCBaseTest):
     # and including the RODCIdentifier.
     def test_rodc_ticket_signature(self):
         user_creds = self.get_cached_creds(
-            machine_account=False,
+            account_type=self.AccountType.USER,
             opts={
                 'revealed_to_rodc': True
             })
         target_creds = self.get_cached_creds(
-            machine_account=True,
+            account_type=self.AccountType.COMPUTER,
             opts={
                 'revealed_to_rodc': True
             })
