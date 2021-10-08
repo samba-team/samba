@@ -1647,6 +1647,8 @@ userPassword: thatsAcomplPASS1
         except LdbError as e31:
             (num, _) = e31.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            pass # Not self.fail() as we normally want success.
 
     def test_reset_password3(self):
         """Grant WP and see what happens (unicodePwd)"""
@@ -1708,6 +1710,8 @@ userPassword: thatsAcomplPASS1
         except LdbError as e34:
             (num, _) = e34.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            pass # Not self.fail() as we normally want success
 
 
 class AclExtendedTests(AclTests):
@@ -2024,6 +2028,8 @@ class AclSPNTests(AclTests):
         except LdbError as e39:
             (num, _) = e39.args
             self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
 
         mod = "(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;%s)" % str(self.user_sid1)
         self.sd_utils.dacl_add_ace(ctx.acct_dn, mod)
@@ -2062,29 +2068,39 @@ class AclSPNTests(AclTests):
         except LdbError as e40:
             (num, _) = e40.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
         try:
             self.replace_spn(self.ldb_user1, ctx.acct_dn, "ldap/%s.%s/DomainDnsZones.%s" %
                              (ctx.myname, ctx.dnsdomain, ctx.dnsdomain))
         except LdbError as e41:
             (num, _) = e41.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
         try:
             self.replace_spn(self.ldb_user1, ctx.acct_dn, "nosuchservice/%s/%s" % ("abcd", "abcd"))
         except LdbError as e42:
             (num, _) = e42.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
         try:
             self.replace_spn(self.ldb_user1, ctx.acct_dn, "GC/%s.%s/%s" %
                              (ctx.myname, ctx.dnsdomain, netbiosdomain))
         except LdbError as e43:
             (num, _) = e43.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
         try:
             self.replace_spn(self.ldb_user1, ctx.acct_dn, "E3514235-4B06-11D1-AB04-00C04FC2DCD2/%s/%s" %
                              (ctx.ntds_guid, ctx.dnsdomain))
         except LdbError as e44:
             (num, _) = e44.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
 
     def test_computer_spn(self):
         # with WP, any value can be set
@@ -2130,6 +2146,8 @@ class AclSPNTests(AclTests):
         except LdbError as e45:
             (num, _) = e45.args
             self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
 
         mod = "(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;%s)" % str(self.user_sid1)
         self.sd_utils.dacl_add_ace(self.computerdn, mod)
@@ -2148,41 +2166,55 @@ class AclSPNTests(AclTests):
         except LdbError as e46:
             (num, _) = e46.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s.%s/%s" %
                              (self.computername, self.dcctx.dnsdomain, netbiosdomain))
         except LdbError as e47:
             (num, _) = e47.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s/%s" %
                              (self.computername, self.dcctx.dnsdomain))
         except LdbError as e48:
             (num, _) = e48.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s.%s/%s" %
                              (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsdomain))
         except LdbError as e49:
             (num, _) = e49.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "GC/%s.%s/%s" %
                              (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsforest))
         except LdbError as e50:
             (num, _) = e50.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "ldap/%s/%s" % (self.computername, netbiosdomain))
         except LdbError as e51:
             (num, _) = e51.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "ldap/%s.%s/ForestDnsZones.%s" %
                              (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsdomain))
         except LdbError as e52:
             (num, _) = e52.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
 
     def test_spn_rwdc(self):
         self.dc_spn_test(self.dcctx)
