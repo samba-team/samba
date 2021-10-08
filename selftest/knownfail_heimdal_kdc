@@ -124,13 +124,8 @@
 #
 # S4U tests
 #
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_bronze_bit_constrained_delegation_old_checksum
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_bronze_bit_rbcd_old_checksum
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_no_service_pac
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_unkeyed_client_checksum
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_unkeyed_service_checksum
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_zeroed_client_checksum
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_zeroed_service_checksum
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_existing_delegation_info
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_missing_client_checksum
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_no_client_pac_a
@@ -141,10 +136,6 @@
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_zeroed_service_checksum
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_forwardable
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_s4u2self_not_trusted_empty_allowed
-#
-# RODC tests
-#
-^samba.tests.krb5.rodc_tests.samba.tests.krb5.rodc_tests.RodcKerberosTests.test_rodc_ticket_signature
 #
 # The lack of KRB5SignedPath means we no longer return
 # KRB5KRB_ERR_RESPONSE_TOO_BIG in this specific case
