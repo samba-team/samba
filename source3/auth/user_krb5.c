@@ -155,7 +155,7 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 			if (!fuser) {
 				return NT_STATUS_NO_MEMORY;
 			}
-			pw = smb_getpwnam(mem_ctx, fuser, &unixuser, true);
+			pw = smb_getpwnam(mem_ctx, fuser, &unixuser, false);
 		}
 
 		/* extra sanity check that the guest account is valid */
