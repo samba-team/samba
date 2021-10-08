@@ -148,7 +148,8 @@ class KdcTgsTests(KDCBaseTest):
         samdb = self.get_samdb()
         user_name = "tsttktusr"
         (uc, dn) = self.create_account(samdb, user_name)
-        (mc, _) = self.create_account(samdb, "tsttktmac", machine_account=True)
+        (mc, _) = self.create_account(samdb, "tsttktmac",
+                                      account_type=self.AccountType.COMPUTER)
         realm = uc.get_realm().lower()
 
         # Do the initial AS-REQ, should get a pre-authentication required
@@ -282,7 +283,7 @@ class KdcTgsTests(KDCBaseTest):
 
     def test_client_no_auth_data_required(self):
         client_creds = self.get_cached_creds(
-            machine_account=False,
+            account_type=self.AccountType.USER,
             opts={'no_auth_data_required': True})
         service_creds = self.get_service_creds()
 
@@ -299,7 +300,7 @@ class KdcTgsTests(KDCBaseTest):
     def test_service_no_auth_data_required(self):
         client_creds = self.get_client_creds()
         service_creds = self.get_cached_creds(
-            machine_account=True,
+            account_type=self.AccountType.COMPUTER,
             opts={'no_auth_data_required': True})
 
         tgt = self.get_tgt(client_creds)
