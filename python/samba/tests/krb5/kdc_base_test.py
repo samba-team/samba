@@ -38,12 +38,14 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
     DS_DOMAIN_FUNCTION_2008,
     DS_GUID_COMPUTERS_CONTAINER,
+    DS_GUID_DOMAIN_CONTROLLERS_CONTAINER,
     DS_GUID_USERS_CONTAINER,
     UF_WORKSTATION_TRUST_ACCOUNT,
     UF_NO_AUTH_DATA_REQUIRED,
     UF_NORMAL_ACCOUNT,
     UF_NOT_DELEGATED,
     UF_PARTIAL_SECRETS_ACCOUNT,
+    UF_SERVER_TRUST_ACCOUNT,
     UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
 )
 from samba.join import DCJoinContext
@@ -94,6 +96,7 @@ class KDCBaseTest(RawKerberosTest):
     class AccountType(Enum):
         USER = auto()
         COMPUTER = auto()
+        SERVER = auto()
 
     @classmethod
     def setUpClass(cls):
@@ -245,6 +248,8 @@ class KDCBaseTest(RawKerberosTest):
         if ou is None:
             if account_type is account_type.COMPUTER:
                 guid = DS_GUID_COMPUTERS_CONTAINER
+            elif account_type is account_type.SERVER:
+                guid = DS_GUID_DOMAIN_CONTROLLERS_CONTAINER
             else:
                 guid = DS_GUID_USERS_CONTAINER
 
@@ -265,6 +270,8 @@ class KDCBaseTest(RawKerberosTest):
                 account_name += '$'
             if account_type is self.AccountType.COMPUTER:
                 account_control |= UF_WORKSTATION_TRUST_ACCOUNT
+            elif account_type is self.AccountType.SERVER:
+                account_control |= UF_SERVER_TRUST_ACCOUNT
             else:
                 self.fail()
 
