@@ -174,7 +174,8 @@ _kdc_find_etype(krb5_context context, krb5_boolean use_strongest_session_key,
 		ret = hdb_enctype2key(context, &princ->entry, p[i], &key);
 		if (ret)
 		    continue;
-		if (is_preauth && !is_default_salt_p(&def_salt, key))
+		if (is_preauth && enctype == (krb5_enctype)ETYPE_DES_CBC_CRC
+		    && !is_default_salt_p(&def_salt, key))
 		    continue;
 		enctype = p[i];
 	    }
