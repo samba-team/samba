@@ -195,7 +195,25 @@ hosts:		files wins
 		</para></listitem>
 		</varlistentry>
 
-		&cmdline.common.samba.server;
+		&cmdline.common.debug.server;
+		&cmdline.common.config.server;
+		&cmdline.common.option;
+
+		<varlistentry>
+			<term>-l|--log-basename=logdirectory</term>
+			<listitem>
+				<para>
+					Base directory name for log/debug files. The parent process
+					uses filename log.winbindd, the child process uses filename
+					log.wb-&lt;name>. The log file is never removed by winbindd.
+				</para>
+			</listitem>
+		</varlistentry>
+
+		&cmdline.common.samba.leakreport;
+		&cmdline.common.samba.leakreportfull;
+		&cmdline.version;
+
 		&popt.autohelp;
 
 	</variablelist>
