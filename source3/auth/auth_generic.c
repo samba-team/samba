@@ -166,7 +166,7 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to map kerberos pac to server info (%s)\n",
 			  nt_errstr(status)));
-		status = NT_STATUS_ACCESS_DENIED;
+		status = nt_status_squash(status);
 		goto done;
 	}
 
