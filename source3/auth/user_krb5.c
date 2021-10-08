@@ -150,9 +150,7 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				char *ntdomain,
 				char *username,
 				struct passwd *pw,
-				const struct netr_SamInfo3 *info3,
 				bool mapped_to_guest, bool username_was_mapped,
-				DATA_BLOB *session_key,
 				struct auth_session_info **session_info)
 {
 	NTSTATUS status;
@@ -162,20 +160,6 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 		status = make_server_info_guest(mem_ctx, &server_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("make_server_info_guest failed: %s!\n",
-				  nt_errstr(status)));
-			return status;
-		}
-
-	} else if (info3) {
-		/* pass the unmapped username here since map_username()
-		   will be called again in make_server_info_info3() */
-
-		status = make_server_info_info3(mem_ctx,
-						ntuser, ntdomain,
-						&server_info,
-						info3);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("make_server_info_info3 failed: %s!\n",
 				  nt_errstr(status)));
 			return status;
 		}
@@ -231,7 +215,7 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 
 	server_info->nss_token |= username_was_mapped;
 
-	status = create_local_token(mem_ctx, server_info, session_key, ntuser, session_info);
+	status = create_local_token(mem_ctx, server_info, NULL, ntuser, session_info);
 	talloc_free(server_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("failed to create local token: %s\n",
@@ -261,9 +245,7 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				char *ntdomain,
 				char *username,
 				struct passwd *pw,
-				const struct netr_SamInfo3 *info3,
 				bool mapped_to_guest, bool username_was_mapped,
-				DATA_BLOB *session_key,
 				struct auth_session_info **session_info)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
