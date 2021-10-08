@@ -417,7 +417,6 @@ struct PAC_LOGON_INFO;
 NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 				     const char *cli_name,
 				     const char *princ_name,
-				     struct PAC_LOGON_INFO *logon_info,
 				     bool *is_mapped,
 				     bool *mapped_to_guest,
 				     char **ntuser,

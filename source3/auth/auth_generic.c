@@ -214,7 +214,7 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 	}
 
 	status = get_user_from_kerberos_info(tmp_ctx, rhost,
-					     princ_name, NULL,
+					     princ_name,
 					     &is_mapped, &is_guest,
 					     &ntuser, &ntdomain,
 					     &username, &pw);
