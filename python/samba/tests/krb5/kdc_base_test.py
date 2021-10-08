@@ -610,7 +610,8 @@ class KDCBaseTest(RawKerberosTest):
 
     def get_cached_creds(self, *,
                          machine_account,
-                         opts=None):
+                         opts=None,
+                         use_cache=True):
         if opts is None:
             opts = {}
 
@@ -638,9 +639,13 @@ class KDCBaseTest(RawKerberosTest):
 
         cache_key = tuple(sorted(account_opts.items()))
 
-        creds = self.account_cache.get(cache_key)
-        if creds is None:
-            creds = self.create_account_opts(**account_opts)
+        if use_cache:
+            creds = self.account_cache.get(cache_key)
+            if creds is not None:
+                return creds
+
+        creds = self.create_account_opts(**account_opts)
+        if use_cache:
             self.account_cache[cache_key] = creds
 
         return creds
