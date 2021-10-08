@@ -1311,10 +1311,10 @@ out:
 }
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-_krb5_pac_get_kdc_checksum_info(krb5_context context,
-				krb5_pac pac,
-				krb5_cksumtype *cstype,
-				uint16_t *rodc_id)
+krb5_pac_get_kdc_checksum_info(krb5_context context,
+			       krb5_pac pac,
+			       krb5_cksumtype *cstype,
+			       uint16_t *rodc_id)
 {
     krb5_error_code ret;
     krb5_storage *sp = NULL;
