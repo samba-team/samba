@@ -227,7 +227,7 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 
 	status = make_session_info_krb5(mem_ctx,
 					ntuser, ntdomain, username, pw,
-					NULL, is_guest, is_mapped, NULL /* No session key for now, caller will sort it out */,
+					is_guest, is_mapped,
 					session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to map kerberos pac to server info (%s)\n",
