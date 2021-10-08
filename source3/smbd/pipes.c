@@ -77,7 +77,7 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 		uint16_t dialect = xconn->smb2.server.dialect;
 		uint16_t srv_smb_encrypt = DCERPC_SMB_ENCRYPTION_REQUIRED;
 		uint16_t cipher = xconn->smb2.server.cipher;
-		struct dom_sid smb3_sid;
+		struct dom_sid smb3_sid = global_sid_Samba_SMB3;
 		uint32_t i;
 		bool ok;
 
@@ -88,12 +88,6 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 			return NT_STATUS_NO_MEMORY;
 		}
 		security_token = session_info->security_token;
-
-		ok = dom_sid_parse(SID_SAMBA_SMB3, &smb3_sid);
-		if (!ok) {
-			file_free(smb_req, fsp);
-			return NT_STATUS_BUFFER_TOO_SMALL;
-		}
 
 		/*
 		 * Security check:

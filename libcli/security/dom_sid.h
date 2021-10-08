@@ -64,6 +64,7 @@ extern const struct dom_sid global_sid_Unix_NFS_Users;
 extern const struct dom_sid global_sid_Unix_NFS_Groups;
 extern const struct dom_sid global_sid_Unix_NFS_Mode;
 extern const struct dom_sid global_sid_Unix_NFS_Other;
+extern const struct dom_sid global_sid_Samba_SMB3;
 
 enum lsa_SidType;
 
