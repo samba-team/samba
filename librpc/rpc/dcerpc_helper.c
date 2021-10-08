@@ -33,7 +33,7 @@ static bool smb3_sid_parse(const struct dom_sid *sid,
 	uint16_t encrypt;
 	uint16_t cipher;
 
-	if (sid->sub_auths[0] != 1397571891) {
+	if (sid->sub_auths[0] != global_sid_Samba_SMB3.sub_auths[0]) {
 		return false;
 	}
 
