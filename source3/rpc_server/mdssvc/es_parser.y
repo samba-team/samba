@@ -247,7 +247,7 @@ static char *map_type(const struct es_attr_map *attr,
 
 	mime_type_list = es_map_sl_type(s->mime_map, val);
 	if (mime_type_list == NULL) {
-		DBG_ERR("Mapping type [%s] failed\n", val);
+		DBG_DEBUG("Mapping type [%s] failed\n", val);
 		return NULL;
 	}
 
@@ -553,8 +553,8 @@ static char *map_expr(const struct es_attr_map *attr,
 		break;
 	}
 	if (es == NULL) {
-		DBG_ERR("Mapping [%s %c %s (%s)] failed\n",
-			attr->name, op, val1, val2 ? val2 : "");
+		DBG_DEBUG("Mapping [%s %c %s (%s)] failed\n",
+			  attr->name, op, val1, val2 ? val2 : "");
 		return NULL;
 	}
 

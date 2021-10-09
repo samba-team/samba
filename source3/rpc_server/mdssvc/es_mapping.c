@@ -179,7 +179,7 @@ struct es_attr_map *es_map_sl_attr(TALLOC_CTX *mem_ctx,
 			  "type",
 			  &typestr);
 	if (ret != 0) {
-		DBG_ERR("No JSON type mapping for [%s]\n", sl_attr);
+		DBG_DEBUG("No JSON type mapping for [%s]\n", sl_attr);
 		return NULL;
 	}
 
