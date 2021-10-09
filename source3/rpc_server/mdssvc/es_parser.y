@@ -65,6 +65,9 @@
 		TALLOC_CTX *frame;
 		json_t *kmd_map;
 		json_t *mime_map;
+		bool ignore_unknown_attribute;
+		bool ignore_unknown_type;
+		bool type_error;
 		YY_BUFFER_STATE s;
 		const char *result;
 	} *global_es_parser_state;
@@ -115,23 +118,48 @@ input:
 
 line:
 expr {
+	if ($1 == NULL) {
+		YYABORT;
+	}
+	if (global_es_parser_state->type_error) {
+		YYABORT;
+	}
 	global_es_parser_state->result = $1;
 }
 ;
 
 expr:
 OBRACE expr CBRACE {
-	if ($2 == NULL) YYABORT;
-	$$ = talloc_asprintf(talloc_tos(), "(%s)", $2);
-	if ($$ == NULL) YYABORT;
+	if ($2 == NULL) {
+		$$ = NULL;
+	} else {
+		$$ = talloc_asprintf(talloc_tos(), "(%s)", $2);
+		if ($$ == NULL) YYABORT;
+	}
 }
 | expr AND expr {
-	$$ = talloc_asprintf(talloc_tos(), "(%s) AND (%s)", $1, $3);
-	if ($$ == NULL) YYABORT;
+	if ($1 == NULL && $3 == NULL) {
+		$$ = NULL;
+	} else if ($1 == NULL) {
+		$$ = $3;
+	} else if ($3 == NULL) {
+		$$ = $1;
+	} else {
+		$$ = talloc_asprintf(talloc_tos(), "(%s) AND (%s)", $1, $3);
+		if ($$ == NULL) YYABORT;
+	}
 }
 | expr OR expr {
-	$$ = talloc_asprintf(talloc_tos(), "%s OR %s", $1, $3);
-	if ($$ == NULL) YYABORT;
+	if ($1 == NULL && $3 == NULL) {
+		$$ = NULL;
+	} else if ($1 == NULL) {
+		$$ = $3;
+	} else if ($3 == NULL) {
+		$$ = $1;
+	} else {
+		$$ = talloc_asprintf(talloc_tos(), "%s OR %s", $1, $3);
+		if ($$ == NULL) YYABORT;
+	}
 }
 | match {
 	$$ = $1;
@@ -150,20 +178,32 @@ OBRACE expr CBRACE {
 
 match:
 attribute EQUAL value {
-	$$ = map_expr($1, '=', $3, NULL);
-	if ($$ == NULL) YYABORT;
+	if ($1 == NULL) {
+		$$ = NULL;
+	} else {
+		$$ = map_expr($1, '=', $3, NULL);
+	}
 }
 | attribute UNEQUAL value {
-	$$ = map_expr($1, '!', $3, NULL);
-	if ($$ == NULL) YYABORT;
+	if ($1 == NULL) {
+		$$ = NULL;
+	} else {
+		$$ = map_expr($1, '!', $3, NULL);
+	}
 }
 | attribute LT value {
-	$$ = map_expr($1, '<', $3, NULL);
-	if ($$ == NULL) YYABORT;
+	if ($1 == NULL) {
+		$$ = NULL;
+	} else {
+		$$ = map_expr($1, '<', $3, NULL);
+	}
 }
 | attribute GT value {
-	$$ = map_expr($1, '>', $3, NULL);
-	if ($$ == NULL) YYABORT;
+	if ($1 == NULL) {
+		$$ = NULL;
+	} else {
+		$$ = map_expr($1, '>', $3, NULL);
+	}
 }
 | function {
 	$$ = $1;
@@ -174,8 +214,11 @@ attribute EQUAL value {
 
 function:
 FUNC_INRANGE OBRACE attribute COMMA WORD COMMA WORD CBRACE {
-	$$ = map_expr($3, '~', $5, $7);
-	if ($$ == NULL) YYABORT;
+	if ($3 == NULL) {
+		$$ = NULL;
+	} else {
+		$$ = map_expr($3, '~', $5, $7);
+	}
 };
 
 attribute:
@@ -183,7 +226,11 @@ WORD {
 	$$ = es_map_sl_attr(global_es_parser_state->frame,
 			    global_es_parser_state->kmd_map,
 			    $1);
-	if ($$ == NULL) YYABORT;
+	if ($$ == NULL &&
+	    !global_es_parser_state->ignore_unknown_attribute)
+	{
+		YYABORT;
+	}
 };
 
 value:
@@ -248,6 +295,9 @@ static char *map_type(const struct es_attr_map *attr,
 	mime_type_list = es_map_sl_type(s->mime_map, val);
 	if (mime_type_list == NULL) {
 		DBG_DEBUG("Mapping type [%s] failed\n", val);
+		if (!s->ignore_unknown_type) {
+			s->type_error = true;
+		}
 		return NULL;
 	}
 
@@ -603,6 +653,16 @@ bool map_spotlight_to_es_query(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(s.frame);
 		return false;
 	}
+
+	s.ignore_unknown_attribute = lp_parm_bool(GLOBAL_SECTION_SNUM,
+						  "elasticsearch",
+						  "ignore unknown attribute",
+						  false);
+	s.ignore_unknown_type = lp_parm_bool(GLOBAL_SECTION_SNUM,
+					     "elasticsearch",
+					     "ignore unknown type",
+					     false);
+
 	global_es_parser_state = &s;
 	result = mdsyylparse();
 	global_es_parser_state = NULL;
