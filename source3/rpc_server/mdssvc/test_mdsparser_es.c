@@ -161,6 +161,40 @@ static struct {
 	}
 };
 
+static struct {
+	const char *mds;
+	const char *es;
+} map_ignore_failures[] = {
+	{
+		"*==\"Samba\"||foo==\"bar\"",
+		"(Samba)" PATH_QUERY_SUBEXPR
+	}, {
+		"*==\"Samba\"&&foo==\"bar\"",
+		"(Samba)" PATH_QUERY_SUBEXPR
+	}, {
+		"*==\"Samba\"||kMDItemContentType==\"666\"",
+		"(Samba)" PATH_QUERY_SUBEXPR
+	}, {
+		"*==\"Samba\"&&kMDItemContentType==\"666\"",
+		"(Samba)" PATH_QUERY_SUBEXPR
+	}, {
+		"*==\"Samba\"||foo==\"bar\"||kMDItemContentType==\"666\"",
+		"(Samba)" PATH_QUERY_SUBEXPR
+	}, {
+		"*==\"Samba\"&&foo==\"bar\"&&kMDItemContentType==\"666\"",
+		"(Samba)" PATH_QUERY_SUBEXPR
+	}, {
+		"foo==\"bar\"||kMDItemContentType==\"666\"||*==\"Samba\"||x!=\"6\"",
+		"(Samba)" PATH_QUERY_SUBEXPR
+	}, {
+		"*==\"Samba\"||InRange(foo,1,2)",
+		"(Samba)" PATH_QUERY_SUBEXPR
+	}, {
+		"*==\"Samba\"||foo==$time.iso(2018-10-01T10:00:00Z)",
+		"(Samba)" PATH_QUERY_SUBEXPR
+	}
+};
+
 static void test_mdsparser_es(void **state)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -192,6 +226,26 @@ static void test_mdsparser_es(void **state)
 		assert_string_equal(es_query, map[i].es);
 	}
 
+	if (!lp_parm_bool(GLOBAL_SECTION_SNUM,
+			  "elasticsearch",
+			  "test mapping failures",
+			  false))
+	{
+		goto done;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(map_ignore_failures); i++) {
+		DBG_DEBUG("Mapping: %s\n", map_ignore_failures[i].mds);
+		ok = map_spotlight_to_es_query(frame,
+					       mappings,
+					       path_scope,
+					       map_ignore_failures[i].mds,
+					       &es_query);
+		assert_true(ok);
+		assert_string_equal(es_query, map_ignore_failures[i].es);
+	}
+
+done:
 	json_decref(mappings);
 	TALLOC_FREE(frame);
 }
