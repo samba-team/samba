@@ -52,19 +52,26 @@ def create_kdc_conf(kdcconf, realm, domain, logdir):
         f.write("\tkdc_ports = 88\n")
         f.write("\tkdc_tcp_ports = 88\n")
         f.write("\tkadmind_port = 464\n")
+        f.write("\trestrict_anonymous_to_tgt = true\n")
         f.write("\n")
 
         f.write("[realms]\n")
 
         f.write("\t%s = {\n" % realm)
+        f.write("\t\tmaster_key_type = aes256-cts\n")
+        f.write("\t\tdefault_principal_flags = +preauth\n")
         f.write("\t}\n")
         f.write("\n")
 
         f.write("\t%s = {\n" % realm.lower())
+        f.write("\t\tmaster_key_type = aes256-cts\n")
+        f.write("\t\tdefault_principal_flags = +preauth\n")
         f.write("\t}\n")
         f.write("\n")
 
         f.write("\t%s = {\n" % domain)
+        f.write("\t\tmaster_key_type = aes256-cts\n")
+        f.write("\t\tdefault_principal_flags = +preauth\n")
         f.write("\t}\n")
         f.write("\n")
 

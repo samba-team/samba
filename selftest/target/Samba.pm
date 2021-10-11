@@ -457,15 +457,22 @@ sub mk_mitkdc_conf($$)
 [kdcdefaults]
 	kdc_ports = 88
 	kdc_tcp_ports = 88
+	restrict_anonymous_to_tgt = true
 
 [realms]
 	$ctx->{realm} = {
+		master_key_type = aes256-cts
+		default_principal_flags = +preauth
 	}
 
 	$ctx->{dnsname} = {
+		master_key_type = aes256-cts
+		default_principal_flags = +preauth
 	}
 
 	$ctx->{domain} = {
+		master_key_type = aes256-cts
+		default_principal_flags = +preauth
 	}
 
 [dbmodules]
