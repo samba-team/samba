@@ -481,6 +481,10 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	krb5_error_code code;
 	struct samba_kdc_entry *skdc_entry;
 	bool is_krbtgt;
+	enum samba_asserted_identity asserted_identity =
+		(flags & KRB5_KDB_FLAG_PROTOCOL_TRANSITION) ?
+			SAMBA_ASSERTED_IDENTITY_SERVICE :
+			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
 
 	skdc_entry = talloc_get_type_abort(client->e_data,
 					   struct samba_kdc_entry);
@@ -501,6 +505,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 
 	nt_status = samba_kdc_get_pac_blobs(tmp_ctx,
 					    skdc_entry,
+					    asserted_identity,
 					    &logon_info_blob,
 					    cred_ndr_ptr,
 					    &upn_dns_info_blob,

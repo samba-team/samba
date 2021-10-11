@@ -107,6 +107,11 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		talloc_get_type_abort(client->context,
 		struct samba_kdc_entry);
 	bool is_krbtgt;
+	bool is_s4u2self = samba_wdc_is_s4u2self_req(r);
+	enum samba_asserted_identity asserted_identity =
+		(is_s4u2self) ?
+			SAMBA_ASSERTED_IDENTITY_SERVICE :
+			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
 
 	mem_ctx = talloc_named(client->context, 0, "samba_get_pac context");
 	if (!mem_ctx) {
@@ -120,6 +125,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	is_krbtgt = krb5_principal_is_krbtgt(context, server->principal);
 
 	nt_status = samba_kdc_get_pac_blobs(mem_ctx, skdc_entry,
+					    asserted_identity,
 					    &logon_blob,
 					    cred_ndr_ptr,
 					    &upn_blob,

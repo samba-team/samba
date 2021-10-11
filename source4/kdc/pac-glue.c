@@ -831,6 +831,40 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 }
 
 /*
+ * Because the KDC does not limit protocol transition, two new well-known SIDs
+ * were introduced to give this control to the resource administrator. These
+ * SIDs identify whether protocol transition has occurred, and can be used with
+ * standard access control lists to grant or limit access as needed.
+ *
+ * https://docs.microsoft.com/en-us/windows-server/security/kerberos/kerberos-constrained-delegation-overview
+ */
+static NTSTATUS samba_add_asserted_identity(TALLOC_CTX *mem_ctx,
+					    enum samba_asserted_identity ai,
+					    struct auth_user_info_dc *user_info_dc)
+{
+	struct dom_sid ai_sid;
+	const char *sid_str = NULL;
+
+	switch (ai) {
+	case SAMBA_ASSERTED_IDENTITY_SERVICE:
+		sid_str = SID_SERVICE_ASSERTED_IDENTITY;
+		break;
+	case SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY:
+		sid_str = SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY;
+		break;
+	case SAMBA_ASSERTED_IDENTITY_IGNORE:
+		return NT_STATUS_OK;
+	}
+
+	dom_sid_parse(sid_str, &ai_sid);
+
+	return add_sid_to_array_unique(user_info_dc,
+				       &ai_sid,
+				       &user_info_dc->sids,
+				       &user_info_dc->num_sids);
+}
+
+/*
  * Look up the user's info in the database and create a auth_user_info_dc
  * structure. If the resulting structure is not talloc_free()d, it will be
  * reused on future calls to this function.
@@ -864,6 +898,7 @@ NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
 
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *p,
+				 enum samba_asserted_identity asserted_identity,
 				 DATA_BLOB **_logon_info_blob,
 				 DATA_BLOB **_cred_ndr_blob,
 				 DATA_BLOB **_upn_info_blob,
@@ -928,6 +963,14 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Getting user info for PAC failed: %s\n",
 			  nt_errstr(nt_status)));
+		return nt_status;
+	}
+
+	nt_status = samba_add_asserted_identity(mem_ctx,
+						asserted_identity,
+						user_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("Failed to add assertied identity!\n");
 		return nt_status;
 	}
 
@@ -1474,6 +1517,18 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	if (is_untrusted) {
 		struct auth_user_info_dc *user_info_dc = NULL;
 		WERROR werr;
+		/*
+		 * In this case the RWDC discards the PAC an RODC generated.
+		 * Windows adds the asserted_identity in this case too.
+		 *
+		 * Note that SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION
+		 * generates KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN.
+		 * So we can always use
+		 * SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY
+		 * here.
+		 */
+		enum samba_asserted_identity asserted_identity =
+			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
 
 		if (client == NULL) {
 			code = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
@@ -1482,6 +1537,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 		nt_status = samba_kdc_get_pac_blobs(mem_ctx,
 						    client,
+						    asserted_identity,
 						    &pac_blob,
 						    NULL,
 						    &upn_blob,

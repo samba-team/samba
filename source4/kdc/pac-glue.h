@@ -21,6 +21,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+enum samba_asserted_identity {
+	SAMBA_ASSERTED_IDENTITY_IGNORE = 0,
+	SAMBA_ASSERTED_IDENTITY_SERVICE,
+	SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
+};
+
 enum {
 	SAMBA_KDC_FLAG_PROTOCOL_TRANSITION    = 0x00000001,
 	SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION = 0x00000002,
@@ -61,6 +67,7 @@ NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
 
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *skdc_entry,
+				 enum samba_asserted_identity asserted_identity,
 				 DATA_BLOB **_logon_info_blob,
 				 DATA_BLOB **_cred_ndr_blob,
 				 DATA_BLOB **_upn_info_blob,
