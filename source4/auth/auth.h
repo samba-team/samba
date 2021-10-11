@@ -69,14 +69,6 @@ struct auth_operations {
 				TALLOC_CTX *mem_ctx,
 				struct auth_user_info_dc **interim_info,
 				bool *authoritative);
-
-	/* Lookup a 'session info interim' return based only on the principal or DN */
-	NTSTATUS (*get_user_info_dc_principal)(TALLOC_CTX *mem_ctx,
-						       struct auth4_context *auth_context,
-						       const char *principal,
-						       struct ldb_dn *user_dn,
-						       struct auth_user_info_dc **interim_info);
-	uint32_t flags;
 };
 
 struct auth_method_context {
