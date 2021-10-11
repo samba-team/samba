@@ -164,6 +164,7 @@ done:
 }
 
 static krb5_error_code ks_get_pac(krb5_context context,
+				  uint32_t flags,
 				  krb5_db_entry *client,
 				  krb5_db_entry *server,
 				  krb5_keyblock *client_key,
@@ -436,6 +437,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 		}
 
 		code = ks_get_pac(context,
+				  flags,
 				  client_entry,
 				  server,
 				  NULL,
@@ -494,6 +496,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 				}
 
 				code = ks_get_pac(context,
+						  flags,
 						  client_entry,
 						  server,
 						  NULL,
@@ -655,6 +658,7 @@ krb5_error_code kdb_samba_db_issue_pac(krb5_context context,
 			   flags);
 
 		code = ks_get_pac(context,
+				  flags,
 				  client,
 				  server,
 				  replaced_reply_key,
