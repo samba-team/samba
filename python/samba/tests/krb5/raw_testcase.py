@@ -2742,73 +2742,32 @@ class RawKerberosTest(TestCaseInTempDir):
                                                          PADATA_PK_AS_REP_19,
                                                          PADATA_PK_AS_REQ})
 
-        etype_info2 = None
-        etype_info = None
-        enc_timestamp = None
-        enc_challenge = None
-        pk_as_req = None
-        pk_as_rep19 = None
-        fast_cookie = None
-        fast_error = None
-        fx_fast = None
-        pac_options = None
-        for pa in rep_padata:
-            patype = self.getElementValue(pa, 'padata-type')
-            pavalue = self.getElementValue(pa, 'padata-value')
-            if patype == PADATA_ETYPE_INFO2:
-                self.assertIsNone(etype_info2)
-                etype_info2 = self.der_decode(pavalue,
-                                              asn1Spec=krb5_asn1.ETYPE_INFO2())
-                continue
-            if patype == PADATA_ETYPE_INFO:
-                self.assertIsNone(etype_info)
-                etype_info = self.der_decode(pavalue,
-                                             asn1Spec=krb5_asn1.ETYPE_INFO())
-                continue
-            if patype == PADATA_ENC_TIMESTAMP:
-                self.assertIsNone(enc_timestamp)
-                enc_timestamp = pavalue
-                self.assertEqual(len(enc_timestamp), 0)
-                continue
-            if patype == PADATA_ENCRYPTED_CHALLENGE:
-                self.assertIsNone(enc_challenge)
-                enc_challenge = pavalue
-                continue
-            if patype == PADATA_PK_AS_REQ:
-                self.assertIsNone(pk_as_req)
-                pk_as_req = pavalue
-                self.assertEqual(len(pk_as_req), 0)
-                continue
-            if patype == PADATA_PK_AS_REP_19:
-                self.assertIsNone(pk_as_rep19)
-                pk_as_rep19 = pavalue
-                self.assertEqual(len(pk_as_rep19), 0)
-                continue
-            if patype == PADATA_FX_COOKIE:
-                self.assertIsNone(fast_cookie)
-                fast_cookie = pavalue
-                self.assertIsNotNone(fast_cookie)
-                continue
-            if patype == PADATA_FX_ERROR:
-                self.assertIsNone(fast_error)
-                fast_error = pavalue
-                self.assertIsNotNone(fast_error)
-                continue
-            if patype == PADATA_FX_FAST:
-                self.assertIsNone(fx_fast)
-                fx_fast = pavalue
-                self.assertEqual(len(fx_fast), 0)
-                continue
-            if patype == PADATA_PAC_OPTIONS:
-                self.assertIsNone(pac_options)
-                pac_options = self.der_decode(
-                    pavalue,
-                    asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
-                continue
+        if not expected_patypes:
+            return None
 
+        pa_dict = self.get_pa_dict(rep_padata)
+
+        enc_timestamp = pa_dict.get(PADATA_ENC_TIMESTAMP)
+        if enc_timestamp is not None:
+            self.assertEqual(len(enc_timestamp), 0)
+
+        pk_as_req = pa_dict.get(PADATA_PK_AS_REQ)
+        if pk_as_req is not None:
+            self.assertEqual(len(pk_as_req), 0)
+
+        pk_as_rep19 = pa_dict.get(PADATA_PK_AS_REP_19)
+        if pk_as_rep19 is not None:
+            self.assertEqual(len(pk_as_rep19), 0)
+
+        fx_fast = pa_dict.get(PADATA_FX_FAST)
+        if fx_fast is not None:
+            self.assertEqual(len(fx_fast), 0)
+
+        fast_cookie = pa_dict.get(PADATA_FX_COOKIE)
         if fast_cookie is not None:
             kdc_exchange_dict['fast_cookie'] = fast_cookie
 
+        fast_error = pa_dict.get(PADATA_FX_ERROR)
         if fast_error is not None:
             fast_error = self.der_decode(fast_error,
                                          asn1Spec=krb5_asn1.KRB_ERROR())
@@ -2817,9 +2776,14 @@ class RawKerberosTest(TestCaseInTempDir):
                                          fast_error,
                                          inner=True)
 
+        pac_options = pa_dict.get(PADATA_PAC_OPTIONS)
         if pac_options is not None:
+            pac_options = self.der_decode(
+                pac_options,
+                asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
             self.assertElementEqual(pac_options, 'options', sent_pac_options)
 
+        enc_challenge = pa_dict.get(PADATA_ENCRYPTED_CHALLENGE)
         if enc_challenge is not None:
             if not sent_enc_challenge:
                 self.assertEqual(len(enc_challenge), 0)
@@ -2862,52 +2826,21 @@ class RawKerberosTest(TestCaseInTempDir):
                     self.assertLess(current_time - 300, rep_time)
                     self.assertLess(rep_time, current_time + 300)
 
-        if all(etype not in client_as_etypes or etype not in proposed_etypes
-               for etype in (kcrypto.Enctype.AES256,
-                             kcrypto.Enctype.AES128,
-                             kcrypto.Enctype.RC4)):
-            self.assertIsNone(etype_info2)
-            self.assertIsNone(etype_info)
-            if rep_msg_type == KRB_AS_REP:
-                if self.strict_checking:
-                    if sent_fast:
-                        self.assertIsNotNone(enc_challenge)
-                        self.assertIsNone(enc_timestamp)
-                    else:
-                        self.assertIsNotNone(enc_timestamp)
-                        self.assertIsNone(enc_challenge)
-                    self.assertIsNotNone(pk_as_req)
-                    self.assertIsNotNone(pk_as_rep19)
-            else:
-                self.assertIsNone(enc_timestamp)
-                self.assertIsNone(enc_challenge)
-                self.assertIsNone(pk_as_req)
-                self.assertIsNone(pk_as_rep19)
-            return None
-
-        if error_code != KDC_ERR_GENERIC:
-            if self.strict_checking:
-                self.assertIsNotNone(etype_info2)
-        else:
-            self.assertIsNone(etype_info2)
-        if expect_etype_info:
-            if self.strict_checking:
-                self.assertIsNotNone(etype_info)
-        else:
-            if self.strict_checking:
-                self.assertIsNone(etype_info)
-        if unexpect_etype_info:
-            self.assertIsNone(etype_info)
-
-        if error_code != KDC_ERR_GENERIC and self.strict_checking:
+        etype_info2 = pa_dict.get(PADATA_ETYPE_INFO2)
+        if etype_info2 is not None:
+            etype_info2 = self.der_decode(etype_info2,
+                                          asn1Spec=krb5_asn1.ETYPE_INFO2())
             self.assertGreaterEqual(len(etype_info2), 1)
-            self.assertEqual(len(etype_info2), len(expect_etype_info2))
+            if self.strict_checking:
+                self.assertEqual(len(etype_info2), len(expect_etype_info2))
             for i in range(0, len(etype_info2)):
                 e = self.getElementValue(etype_info2[i], 'etype')
-                self.assertEqual(e, expect_etype_info2[i])
+                if self.strict_checking:
+                    self.assertEqual(e, expect_etype_info2[i])
                 salt = self.getElementValue(etype_info2[i], 'salt')
                 if e == kcrypto.Enctype.RC4:
-                    self.assertIsNone(salt)
+                    if self.strict_checking:
+                        self.assertIsNone(salt)
                 else:
                     self.assertIsNotNone(salt)
                     expected_salt = kdc_exchange_dict['expected_salt']
@@ -2916,7 +2849,11 @@ class RawKerberosTest(TestCaseInTempDir):
                 s2kparams = self.getElementValue(etype_info2[i], 's2kparams')
                 if self.strict_checking:
                     self.assertIsNone(s2kparams)
+
+        etype_info = pa_dict.get(PADATA_ETYPE_INFO)
         if etype_info is not None:
+            etype_info = self.der_decode(etype_info,
+                                         asn1Spec=krb5_asn1.ETYPE_INFO())
             self.assertEqual(len(etype_info), 1)
             e = self.getElementValue(etype_info[0], 'etype')
             self.assertEqual(e, kcrypto.Enctype.RC4)
@@ -2925,30 +2862,6 @@ class RawKerberosTest(TestCaseInTempDir):
             if self.strict_checking:
                 self.assertIsNotNone(salt)
                 self.assertEqual(len(salt), 0)
-
-        if error_code not in (KDC_ERR_PREAUTH_FAILED,
-                              KDC_ERR_GENERIC):
-            if sent_fast:
-                self.assertIsNotNone(enc_challenge)
-                if self.strict_checking:
-                    self.assertIsNone(enc_timestamp)
-            else:
-                self.assertIsNotNone(enc_timestamp)
-                if self.strict_checking:
-                    self.assertIsNone(enc_challenge)
-            if not sent_enc_challenge:
-                if self.strict_checking:
-                    self.assertIsNotNone(pk_as_req)
-                    self.assertIsNotNone(pk_as_rep19)
-            else:
-                self.assertIsNone(pk_as_req)
-                self.assertIsNone(pk_as_rep19)
-        else:
-            if self.strict_checking:
-                self.assertIsNone(enc_timestamp)
-                self.assertIsNone(enc_challenge)
-            self.assertIsNone(pk_as_req)
-            self.assertIsNone(pk_as_rep19)
 
         return etype_info2
 
