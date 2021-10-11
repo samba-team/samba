@@ -1079,6 +1079,20 @@ class RawKerberosTest(TestCaseInTempDir):
                                      f"'{unexpected.namedValues[i]}' "
                                      f"unexpected in {v}")
 
+    def assertSequenceElementsEqual(self, expected, got, *,
+                                    require_strict=None):
+        if self.strict_checking:
+            self.assertEqual(expected, got)
+        else:
+            fail_msg = f'expected: {expected} got: {got}'
+
+            if require_strict is not None:
+                fail_msg += f' (ignoring: {require_strict})'
+                expected = (x for x in expected if x not in require_strict)
+                got = (x for x in got if x not in require_strict)
+
+            self.assertCountEqual(expected, got, fail_msg)
+
     def get_KerberosTimeWithUsec(self, epoch=None, offset=None):
         if epoch is None:
             epoch = time.time()
@@ -2714,10 +2728,13 @@ class RawKerberosTest(TestCaseInTempDir):
                 expected_patypes += (PADATA_FX_FAST,)
                 expected_patypes += (PADATA_FX_COOKIE,)
 
-        if self.strict_checking:
-            for i, patype in enumerate(expected_patypes):
-                self.assertElementEqual(rep_padata[i], 'padata-type', patype)
-            self.assertEqual(len(rep_padata), len(expected_patypes))
+        got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
+        self.assertSequenceElementsEqual(expected_patypes, got_patypes,
+                                         require_strict={PADATA_FX_COOKIE,
+                                                         PADATA_FX_FAST,
+                                                         PADATA_PAC_OPTIONS,
+                                                         PADATA_PK_AS_REP_19,
+                                                         PADATA_PK_AS_REQ})
 
         etype_info2 = None
         etype_info = None
