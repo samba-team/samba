@@ -52,7 +52,6 @@ class AsReqBaseTest(KDCBaseTest):
         user_name = client_creds.get_username()
         if client_account is None:
             client_account = user_name
-        client_as_etypes = self.get_default_enctypes()
         client_kvno = client_creds.get_kvno()
         krbtgt_creds = self.get_krbtgt_creds(require_strongest_key=True)
         krbtgt_account = krbtgt_creds.get_username()
@@ -76,7 +75,7 @@ class AsReqBaseTest(KDCBaseTest):
             till = self.get_KerberosTime(offset=36000)
 
         if etypes is None:
-            etypes = client_as_etypes
+            etypes = self.get_default_enctypes()
         if kdc_options is None:
             kdc_options = krb5_asn1.KDCOptions('forwardable')
         if expected_error is not None:
@@ -89,7 +88,6 @@ class AsReqBaseTest(KDCBaseTest):
             realm,
             sname,
             till,
-            client_as_etypes,
             initial_error_mode,
             expected_crealm,
             expected_cname,
@@ -137,7 +135,6 @@ class AsReqBaseTest(KDCBaseTest):
             realm,
             sname,
             till,
-            client_as_etypes,
             preauth_error_mode,
             expected_crealm,
             expected_cname,
@@ -180,7 +177,6 @@ class AsReqKerberosTests(AsReqBaseTest):
                                initial_kdc_options=None):
         client_creds = self.get_client_creds()
         client_account = client_creds.get_username()
-        client_as_etypes = self.get_default_enctypes()
         krbtgt_creds = self.get_krbtgt_creds(require_keys=False)
         krbtgt_account = krbtgt_creds.get_username()
         realm = krbtgt_creds.get_realm()
@@ -196,10 +192,8 @@ class AsReqKerberosTests(AsReqBaseTest):
         expected_sname = sname
         expected_salt = client_creds.get_salt()
 
-        if any(etype in client_as_etypes and etype in initial_etypes
-               for etype in (kcrypto.Enctype.AES256,
-                             kcrypto.Enctype.AES128,
-                             kcrypto.Enctype.RC4)):
+        if any(etype in initial_etypes
+               for etype in self.get_default_enctypes()):
             expected_error_mode = KDC_ERR_PREAUTH_REQUIRED
         else:
             expected_error_mode = KDC_ERR_ETYPE_NOSUPP
@@ -213,7 +207,6 @@ class AsReqKerberosTests(AsReqBaseTest):
             check_error_fn=self.generic_check_kdc_error,
             check_rep_fn=None,
             expected_error_mode=expected_error_mode,
-            client_as_etypes=client_as_etypes,
             expected_salt=expected_salt,
             kdc_options=str(initial_kdc_options),
             pac_request=pac)

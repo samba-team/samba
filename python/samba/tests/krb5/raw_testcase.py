@@ -974,6 +974,16 @@ class RawKerberosTest(TestCaseInTempDir):
         c.set_anonymous()
         return c
 
+    # Overridden by KDCBaseTest. At this level we don't know what actual
+    # enctypes are supported, so assume they all are. This matches the
+    # behaviour that tests expect by default.
+    def get_default_enctypes(self):
+        return [
+            kcrypto.Enctype.AES256,
+            kcrypto.Enctype.AES128,
+            kcrypto.Enctype.RC4,
+        ]
+
     def asn1_dump(self, name, obj, asn1_print=None):
         if asn1_print is None:
             asn1_print = self.do_asn1_print
@@ -2476,7 +2486,6 @@ class RawKerberosTest(TestCaseInTempDir):
                          callback_dict=None,
                          expected_error_mode=0,
                          expected_status=None,
-                         client_as_etypes=None,
                          expected_salt=None,
                          authenticator_subkey=None,
                          preauth_key=None,
@@ -2548,7 +2557,6 @@ class RawKerberosTest(TestCaseInTempDir):
             'callback_dict': callback_dict,
             'expected_error_mode': expected_error_mode,
             'expected_status': expected_status,
-            'client_as_etypes': client_as_etypes,
             'expected_salt': expected_salt,
             'authenticator_subkey': authenticator_subkey,
             'preauth_key': preauth_key,
@@ -3872,7 +3880,6 @@ class RawKerberosTest(TestCaseInTempDir):
 
         req_body = kdc_exchange_dict['req_body']
         proposed_etypes = req_body['etype']
-        client_as_etypes = kdc_exchange_dict.get('client_as_etypes', [])
 
         sent_fast = self.sent_fast(kdc_exchange_dict)
         sent_enc_challenge = self.sent_enc_challenge(kdc_exchange_dict)
@@ -3882,27 +3889,34 @@ class RawKerberosTest(TestCaseInTempDir):
 
         rc4_support = kdc_exchange_dict['rc4_support']
 
+        def expected_etype(etypes, proposed_etypes):
+            return max(filter(lambda e: e in etypes, proposed_etypes),
+                       default=None)
+
+        supported_etypes = self.get_default_enctypes()
+
+        aes_etypes = set()
+        if kcrypto.Enctype.AES256 in supported_etypes:
+            aes_etypes.add(kcrypto.Enctype.AES256)
+        if kcrypto.Enctype.AES128 in supported_etypes:
+            aes_etypes.add(kcrypto.Enctype.AES128)
+
+        rc4_etypes = set()
+        if rc4_support and kcrypto.Enctype.RC4 in supported_etypes:
+            rc4_etypes.add(kcrypto.Enctype.RC4)
+
+        expected_aes = expected_etype(aes_etypes, proposed_etypes)
+        expected_rc4 = expected_etype(rc4_etypes, proposed_etypes)
+
         expect_etype_info2 = ()
         expect_etype_info = False
-        expected_aes_type = 0
-        expected_rc4_type = 0
-        if kcrypto.Enctype.RC4 in proposed_etypes:
-            expect_etype_info = True
-        for etype in proposed_etypes:
-            if etype not in client_as_etypes:
-                continue
-            if etype in (kcrypto.Enctype.AES256, kcrypto.Enctype.AES128):
-                expect_etype_info = False
-                if etype > expected_aes_type:
-                    expected_aes_type = etype
-            if etype in (kcrypto.Enctype.RC4,) and error_code != 0:
-                if etype > expected_rc4_type and rc4_support:
-                    expected_rc4_type = etype
-
-        if expected_aes_type != 0:
-            expect_etype_info2 += (expected_aes_type,)
-        if expected_rc4_type != 0:
-            expect_etype_info2 += (expected_rc4_type,)
+        if expected_aes is not None:
+            expect_etype_info2 += (expected_aes,)
+        if expected_rc4 is not None:
+            if error_code != 0:
+                expect_etype_info2 += (expected_rc4,)
+            if expected_aes is None:
+                expect_etype_info = True
 
         expected_patypes = ()
         if sent_fast and error_code != 0:
@@ -3916,8 +3930,7 @@ class RawKerberosTest(TestCaseInTempDir):
                 expected_patypes += (PADATA_PAC_OPTIONS,)
         elif error_code != KDC_ERR_GENERIC:
             if expect_etype_info:
-                if rc4_support:
-                    self.assertGreater(len(expect_etype_info2), 0)
+                self.assertGreater(len(expect_etype_info2), 0)
                 expected_patypes += (PADATA_ETYPE_INFO,)
             if len(expect_etype_info2) != 0:
                 expected_patypes += (PADATA_ETYPE_INFO2,)
@@ -4824,7 +4837,6 @@ class RawKerberosTest(TestCaseInTempDir):
                           realm,
                           sname,
                           till,
-                          client_as_etypes,
                           expected_error_mode,
                           expected_crealm,
                           expected_cname,
@@ -4897,7 +4909,6 @@ class RawKerberosTest(TestCaseInTempDir):
             check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
             expected_error_mode=expected_error_mode,
-            client_as_etypes=client_as_etypes,
             expected_salt=expected_salt,
             expected_flags=expected_flags,
             unexpected_flags=unexpected_flags,

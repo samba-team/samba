@@ -1730,7 +1730,6 @@ class FAST_Tests(KDCBaseTest):
                     check_kdc_private_fn=self.generic_check_kdc_private,
                     callback_dict={},
                     expected_error_mode=expected_error_mode,
-                    client_as_etypes=etypes,
                     expected_salt=expected_salt,
                     authenticator_subkey=authenticator_subkey,
                     preauth_key=preauth_key,

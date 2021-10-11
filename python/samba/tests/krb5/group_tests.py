@@ -2123,7 +2123,6 @@ class GroupTests(KDCBaseTest):
             realm=realm,
             sname=sname,
             till=till,
-            client_as_etypes=etypes,
             expected_error_mode=0,
             expected_crealm=realm,
             expected_cname=cname,
