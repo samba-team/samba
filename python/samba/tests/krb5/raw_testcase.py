@@ -2552,6 +2552,12 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertEqual(expected_transited_services,
                                  transited_services)
 
+            elif pac_buffer.type == krb5pac.PAC_TYPE_LOGON_NAME:
+                expected_cname = kdc_exchange_dict['expected_cname']
+                account_name = expected_cname['name-string'][0]
+
+                self.assertEqual(account_name, pac_buffer.info.account_name)
+
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
                                 callback_dict,
