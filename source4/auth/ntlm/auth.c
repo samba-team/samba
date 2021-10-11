@@ -86,48 +86,6 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth4_context *auth_ctx, uint8_t cha
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
-Used in the gensec_gssapi and gensec_krb5 server-side code, where the
-PAC isn't available, and for tokenGroups in the DSDB stack.
-
- Supply either a principal or a DN
-****************************************************************************/
-static NTSTATUS auth_generate_session_info_principal(struct auth4_context *auth_ctx,
-						  TALLOC_CTX *mem_ctx,
-						  const char *principal,
-						  struct ldb_dn *user_dn,
-                                                  uint32_t session_info_flags,
-                                                  struct auth_session_info **session_info)
-{
-	NTSTATUS nt_status;
-	struct auth_method_context *method;
-	struct auth_user_info_dc *user_info_dc;
-
-	for (method = auth_ctx->methods; method; method = method->next) {
-		if (!method->ops->get_user_info_dc_principal) {
-			continue;
-		}
-
-		nt_status = method->ops->get_user_info_dc_principal(mem_ctx, auth_ctx, principal, user_dn, &user_info_dc);
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
-			continue;
-		}
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
-
-		nt_status = auth_generate_session_info_wrapper(auth_ctx, mem_ctx, 
-							       user_info_dc,
-							       user_info_dc->info->account_name,
-							       session_info_flags, session_info);
-		talloc_free(user_info_dc);
-
-		return nt_status;
-	}
-
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 /**
  * Check a user's Plaintext, LM or NTLM password.
  * (sync version)
@@ -626,8 +584,11 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
 	TALLOC_CTX *tmp_ctx;
 
 	if (!pac_blob) {
-		return auth_generate_session_info_principal(auth_ctx, mem_ctx, principal_name,
-						       NULL, session_info_flags, session_info);
+		/*
+		 * This should already be catched at the main
+		 * gensec layer, but better check twice
+		 */
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	tmp_ctx = talloc_named(mem_ctx, 0, "gensec_gssapi_session_info context");
