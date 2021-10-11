@@ -3,6 +3,7 @@ variables:
   # "--enable-coverage" or ""
   # See .gitlab-ci-coverage.yml
   SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE: ""
+  AUTOBUILD_SKIP_SAMBA_O3: "0"
 
 include:
   - /.gitlab-ci-default-runners.yml
