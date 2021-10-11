@@ -568,7 +568,11 @@ class RawKerberosTest(TestCaseInTempDir):
         # obtained.
         cls.creds_dict = {}
 
-        cls.kdc_fast_support = False
+        kdc_fast_support = samba.tests.env_get_var_value('FAST_SUPPORT',
+                                                         allow_missing=True)
+        if kdc_fast_support is None:
+            kdc_fast_support = '0'
+        cls.kdc_fast_support = bool(int(kdc_fast_support))
 
     def setUp(self):
         super().setUp()
