@@ -235,13 +235,12 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 	SMB_ASSERT(i == naces);
 
 	/* store acl */
-	fd = fsp_get_io_fd(fsp);
-	if (fd != -1) {
-		rv = facl(fd, ACE_SETACL, naces, acebuf);
+	fd = fsp_get_pathref_fd(fsp);
+	if (fd == -1) {
+		errno = EBADF;
+		return false;
 	}
-	else {
-		rv = acl(fsp->fsp_name->base_name, ACE_SETACL, naces, acebuf);
-	}
+	rv = facl(fd, ACE_SETACL, naces, acebuf);
 	if (rv != 0) {
 		if(errno == ENOSYS) {
 			DEBUG(9, ("acl(ACE_SETACL, %s): Operation is not "
@@ -322,11 +321,11 @@ static int fget_zfsacl(TALLOC_CTX *mem_ctx,
 	ace_t *acebuf = NULL;
 	int fd;
 
-	fd = fsp_get_io_fd(fsp);
+	fd = fsp_get_pathref_fd(fsp);
 	if (fd == -1) {
-		return get_zfsacl(mem_ctx, fsp->fsp_name, outbuf);
+		errno = EBADF;
+		return -1;
 	}
-
 	naces = facl(fd, ACE_GETACLCNT, 0, NULL);
 	if (naces == -1) {
 		int dbg_level = 10;
