@@ -86,6 +86,9 @@ static int SDBFlags_to_kflags(const struct SDBFlags *s,
 	if (s->allow_digest) {
 		;
 	}
+	if (s->no_auth_data_reqd) {
+		*k |= KRB5_KDB_NO_AUTH_DATA_REQUIRED;
+	}
 
 	return 0;
 }
