@@ -248,7 +248,8 @@ class Krb5EncryptionKey:
 
     def verify_checksum(self, usage, plaintext, ctype, cksum):
         if self.ctype != ctype:
-            raise AssertionError(f'{self.ctype} != {ctype}')
+            raise AssertionError(f'key checksum type ({self.ctype}) != '
+                                 f'checksum type ({ctype})')
 
         kcrypto.verify_checksum(ctype,
                                 self.key,
