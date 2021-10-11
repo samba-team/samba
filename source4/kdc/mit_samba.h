@@ -49,6 +49,7 @@ int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 
 int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		      krb5_context context,
+		      uint32_t flags,
 		      krb5_db_entry *client,
 		      krb5_db_entry *server,
 		      krb5_keyblock *replaced_reply_key,

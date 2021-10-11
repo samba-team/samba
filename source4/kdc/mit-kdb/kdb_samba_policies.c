@@ -180,6 +180,7 @@ static krb5_error_code ks_get_pac(krb5_context context,
 
 	code = mit_samba_get_pac(mit_ctx,
 				 context,
+				 flags,
 				 client,
 				 server,
 				 client_key,
