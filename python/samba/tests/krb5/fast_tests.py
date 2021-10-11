@@ -43,6 +43,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_AS_REP,
     KRB_TGS_REP,
     NT_PRINCIPAL,
+    NT_SRV_HST,
     NT_SRV_INST,
     PADATA_FX_COOKIE,
     PADATA_FX_FAST,
@@ -1185,7 +1186,7 @@ class FAST_Tests(KDCBaseTest):
         target_realm = target_creds.get_realm()
         target_service = 'host'
         target_sname = self.PrincipalName_create(
-            name_type=NT_SRV_INST, names=[target_service, target_username])
+            name_type=NT_SRV_HST, names=[target_service, target_username])
         target_decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
         target_etypes = target_creds.tgs_supported_enctypes
