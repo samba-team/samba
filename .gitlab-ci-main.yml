@@ -514,16 +514,24 @@ ubuntu1804-samba-o3:
     AUTOBUILD_JOB_NAME: samba-o3
     SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu1804}
     SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE: "--enable-coverage"
+  only:
+    variables:
+      # do not run o3 builds (which run a lot of VMs) if told not to
+      # (this uses the same variable as autobuild.py)
+      - $AUTOBUILD_SKIP_SAMBA_O3 == "0"
 
 # All other jobs do not want code coverage.
 .samba-o3-template:
   extends: .shared_template
   variables:
     AUTOBUILD_JOB_NAME: samba-o3
-  only:
-    variables:
-      # do not run o3 for coverage since they are using different images
-      - $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE == ""
+  rules:
+    # do not run o3 builds (which run a lot of VMs) if told not to
+    # (this uses the same variable as autobuild.py)
+    - if: $AUTOBUILD_SKIP_SAMBA_O3 == "1"
+      when: never
+    # do not run o3 for coverage since they are using different images
+    - if: $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE == ""
 
 ubuntu2004-samba-o3:
   extends: .samba-o3-template
