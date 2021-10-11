@@ -2661,11 +2661,10 @@ class RawKerberosTest(TestCaseInTempDir):
         if kcrypto.Enctype.RC4 in proposed_etypes:
             expect_etype_info = True
         for etype in proposed_etypes:
-            if etype in (kcrypto.Enctype.AES256, kcrypto.Enctype.AES128):
-                expect_etype_info = False
             if etype not in client_as_etypes:
                 continue
             if etype in (kcrypto.Enctype.AES256, kcrypto.Enctype.AES128):
+                expect_etype_info = False
                 if etype > expected_aes_type:
                     expected_aes_type = etype
             if etype in (kcrypto.Enctype.RC4,) and error_code != 0:
@@ -2865,7 +2864,8 @@ class RawKerberosTest(TestCaseInTempDir):
         else:
             self.assertIsNone(etype_info2)
         if expect_etype_info:
-            self.assertIsNotNone(etype_info)
+            if self.strict_checking:
+                self.assertIsNotNone(etype_info)
         else:
             if self.strict_checking:
                 self.assertIsNone(etype_info)
