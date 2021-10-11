@@ -938,22 +938,11 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 	return NT_STATUS_OK;
 }
 
-/* Wrapper for the auth subsystem pointer */
-static NTSTATUS authsam_get_user_info_dc_principal_wrapper(TALLOC_CTX *mem_ctx,
-							  struct auth4_context *auth_context,
-							  const char *principal,
-							  struct ldb_dn *user_dn,
-							  struct auth_user_info_dc **user_info_dc)
-{
-	return authsam_get_user_info_dc_principal(mem_ctx, auth_context->lp_ctx, auth_context->sam_ctx,
-						 principal, user_dn, user_info_dc);
-}
 static const struct auth_operations sam_ignoredomain_ops = {
 	.name		           = "sam_ignoredomain",
 	.want_check	           = authsam_ignoredomain_want_check,
 	.check_password_send	   = authsam_check_password_send,
 	.check_password_recv	   = authsam_check_password_recv,
-	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper,
 };
 
 static const struct auth_operations sam_ops = {
@@ -961,7 +950,6 @@ static const struct auth_operations sam_ops = {
 	.want_check	           = authsam_want_check,
 	.check_password_send	   = authsam_check_password_send,
 	.check_password_recv	   = authsam_check_password_recv,
-	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper,
 };
 
 _PUBLIC_ NTSTATUS auth4_sam_init(TALLOC_CTX *);
