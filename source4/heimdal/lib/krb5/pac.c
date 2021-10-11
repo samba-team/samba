@@ -1018,9 +1018,10 @@ _krb5_pac_sign(krb5_context context,
     uint32_t server_offset = 0, priv_offset = 0, ticket_offset = 0;
     uint32_t server_cksumtype = 0, priv_cksumtype = 0;
     int num = 0;
-    size_t i;
+    size_t i, sz;
     krb5_data logon, d;
 
+    krb5_data_zero(&d);
     krb5_data_zero(&logon);
 
     for (i = 0; i < p->pac->numbuffers; i++) {
@@ -1080,8 +1081,10 @@ _krb5_pac_sign(krb5_context context,
 	void *ptr;
 
 	ptr = realloc(p->pac, sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * (p->pac->numbuffers + num - 1)));
-	if (ptr == NULL)
-	    return krb5_enomem(context);
+	if (ptr == NULL) {
+	    ret = krb5_enomem(context);
+            goto out;
+        }
 
 	p->pac = ptr;
 
@@ -1109,30 +1112,33 @@ _krb5_pac_sign(krb5_context context,
 
     /* Calculate LOGON NAME */
     ret = build_logon_name(context, authtime, principal, &logon);
-    if (ret)
-	goto out;
 
     /* Set lengths for checksum */
-    ret = pac_checksum(context, server_key, &server_cksumtype, &server_size);
-    if (ret)
-	goto out;
+    if (ret == 0)
+        ret = pac_checksum(context, server_key, &server_cksumtype, &server_size);
 
-    ret = pac_checksum(context, priv_key, &priv_cksumtype, &priv_size);
-    if (ret)
-	goto out;
+    if (ret == 0)
+        ret = pac_checksum(context, priv_key, &priv_cksumtype, &priv_size);
 
     /* Encode PAC */
-    sp = krb5_storage_emem();
-    if (sp == NULL)
-	return krb5_enomem(context);
-
-    krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
-
-    spdata = krb5_storage_emem();
-    if (spdata == NULL) {
-	krb5_storage_free(sp);
-	return krb5_enomem(context);
+    if (ret == 0) {
+        sp = krb5_storage_emem();
+        if (sp == NULL)
+            ret = krb5_enomem(context);
     }
+
+    if (ret == 0) {
+        krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
+        spdata = krb5_storage_emem();
+        if (spdata == NULL) {
+            krb5_storage_free(sp);
+            ret = krb5_enomem(context);
+        }
+    }
+
+    if (ret)
+        goto out;
+
     krb5_storage_set_flags(spdata, KRB5_STORAGE_BYTEORDER_LE);
 
     CHECK(ret, krb5_store_uint32(sp, p->pac->numbuffers), out);
@@ -1222,76 +1228,55 @@ _krb5_pac_sign(krb5_context context,
     /* assert (server_offset != 0 && priv_offset != 0); */
 
     /* export PAC */
-    ret = krb5_storage_to_data(spdata, &d);
-    if (ret) {
-	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	goto out;
-    }
-    ret = krb5_storage_write(sp, d.data, d.length);
-    if (ret != (int)d.length) {
-	krb5_data_free(&d);
-	ret = krb5_enomem(context);
-	goto out;
+    if (ret == 0)
+        ret = krb5_storage_to_data(spdata, &d);
+    if (ret == 0) {
+        sz = krb5_storage_write(sp, d.data, d.length);
+        if (sz != d.length) {
+            krb5_data_free(&d);
+            ret = krb5_enomem(context);
+            goto out;
+        }
     }
     krb5_data_free(&d);
 
-    ret = krb5_storage_to_data(sp, &d);
-    if (ret) {
-	ret = krb5_enomem(context);
-	goto out;
-    }
+    if (ret == 0)
+        ret = krb5_storage_to_data(sp, &d);
 
     /* sign */
-    if (p->ticket_sign_data.length) {
+    if (ret == 0 && p->ticket_sign_data.length)
 	ret = create_checksum(context, priv_key, priv_cksumtype,
 			      p->ticket_sign_data.data,
 			      p->ticket_sign_data.length,
 			      (char *)d.data + ticket_offset, priv_size);
-	if (ret) {
-	    krb5_data_free(&d);
-	    goto out;
-	}
-    }
-    ret = create_checksum(context, server_key, server_cksumtype,
-			  d.data, d.length,
-			  (char *)d.data + server_offset, server_size);
-    if (ret) {
-	krb5_data_free(&d);
-	goto out;
-    }
-    ret = create_checksum(context, priv_key, priv_cksumtype,
-			  (char *)d.data + server_offset, server_size,
-			  (char *)d.data + priv_offset, priv_size);
-    if (ret) {
-	krb5_data_free(&d);
-	goto out;
-    }
-
-    if (rodc_id != 0) {
+    if (ret == 0)
+        ret = create_checksum(context, server_key, server_cksumtype,
+                              d.data, d.length,
+                              (char *)d.data + server_offset, server_size);
+    if (ret == 0)
+        ret = create_checksum(context, priv_key, priv_cksumtype,
+                              (char *)d.data + server_offset, server_size,
+                              (char *)d.data + priv_offset, priv_size);
+    if (ret == 0 && rodc_id != 0) {
 	krb5_data rd;
 	krb5_storage *rs = krb5_storage_emem();
-	if (rs == NULL) {
-	    krb5_data_free(&d);
+	if (rs == NULL)
 	    ret = krb5_enomem(context);
-	    goto out;
-	}
 	krb5_storage_set_flags(rs, KRB5_STORAGE_BYTEORDER_LE);
-	ret = krb5_store_uint16(rs, rodc_id);
-	if (ret) {
-	    krb5_storage_free(rs);
-	    krb5_data_free(&d);
-	    goto out;
-	}
-	ret = krb5_storage_to_data(rs, &rd);
+        if (ret == 0)
+            ret = krb5_store_uint16(rs, rodc_id);
+        if (ret == 0)
+            ret = krb5_storage_to_data(rs, &rd);
 	krb5_storage_free(rs);
-	if (ret) {
-	    krb5_data_free(&d);
+	if (ret)
 	    goto out;
-	}
 	heim_assert(rd.length == sizeof(rodc_id), "invalid length");
 	memcpy((char *)d.data + priv_offset + priv_size, rd.data, rd.length);
 	krb5_data_free(&rd);
     }
+
+    if (ret)
+        goto out;
 
     /* done */
     *data = d;
@@ -1302,6 +1287,7 @@ _krb5_pac_sign(krb5_context context,
 
     return 0;
 out:
+    krb5_data_free(&d);
     krb5_data_free(&logon);
     if (sp)
 	krb5_storage_free(sp);
@@ -1528,8 +1514,8 @@ _krb5_kdc_pac_sign_ticket(krb5_context context,
 
     ret = _krb5_pac_sign(context, pac, tkt->authtime, client, server_key,
 			 kdc_key, rodc_id, &rspac);
-    if (ret)
-	return ret;
-
-    return _kdc_tkt_insert_pac(context, tkt, &rspac);
+    if (ret == 0)
+        ret = _kdc_tkt_insert_pac(context, tkt, &rspac);
+    krb5_data_free(&rspac);
+    return ret;
 }
