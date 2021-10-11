@@ -30,6 +30,53 @@
 #include "librpc/gen_ndr/auth.h"
 #include <krb5_locl.h>
 
+static bool samba_wdc_is_s4u2self_req(astgs_request_t r)
+{
+	krb5_kdc_configuration *config = kdc_request_get_config((kdc_request_t)r);
+	const KDC_REQ *req = kdc_request_get_req(r);
+	const PA_DATA *pa_for_user = NULL;
+
+	if (req->msg_type != krb_tgs_req) {
+		return false;
+	}
+
+	if (config->enable_fast && req->padata != NULL) {
+		const PA_DATA *pa_fx_fast = NULL;
+		int idx = 0;
+
+		pa_fx_fast = krb5_find_padata(req->padata->val,
+					      req->padata->len,
+					      KRB5_PADATA_FX_FAST,
+					      &idx);
+		if (pa_fx_fast != NULL) {
+			/*
+			 * We're in the outer request
+			 * with KRB5_PADATA_FX_FAST
+			 * if fast is enabled we'll
+			 * process the s4u2self
+			 * request only in the
+			 * inner request.
+			 */
+			return false;
+		}
+	}
+
+	if (req->padata != NULL) {
+		int idx = 0;
+
+		pa_for_user = krb5_find_padata(req->padata->val,
+					       req->padata->len,
+					       KRB5_PADATA_FOR_USER,
+					       &idx);
+	}
+
+	if (pa_for_user != NULL) {
+		return true;
+	}
+
+	return false;
+}
+
 /*
  * Given the right private pointer from hdb_samba4,
  * get a PAC from the attached ldb messages.
@@ -111,7 +158,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	return ret;
 }
 
-static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
+static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 					    const krb5_principal delegated_proxy_principal,
 					    hdb_entry *client,
 					    hdb_entry *server,
@@ -119,6 +166,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 					    krb5_pac *pac,
 					    krb5_cksumtype ctype)
 {
+	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	struct samba_kdc_entry *client_skdc_entry = NULL;
 	struct samba_kdc_entry *server_skdc_entry =
 		talloc_get_type_abort(server->context, struct samba_kdc_entry);
@@ -127,6 +175,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 	TALLOC_CTX *mem_ctx = NULL;
 	krb5_pac new_pac = NULL;
 	krb5_error_code ret;
+	bool is_s4u2self = samba_wdc_is_s4u2self_req(r);
 	bool is_in_db = false;
 	bool is_untrusted = false;
 	uint32_t flags = 0;
@@ -153,6 +202,10 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 	ret = samba_krbtgt_is_in_db(krbtgt_skdc_entry, &is_in_db, &is_untrusted);
 	if (ret != 0) {
 		goto out;
+	}
+
+	if (is_s4u2self) {
+		flags |= SAMBA_KDC_FLAG_PROTOCOL_TRANSITION;
 	}
 
 	if (delegated_proxy_principal != NULL) {
@@ -358,7 +411,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 		}
 	}
 
-	ret = samba_wdc_reget_pac2(context,
+	ret = samba_wdc_reget_pac2(r,
 				   delegated_proxy_principal,
 				   client,
 				   server,

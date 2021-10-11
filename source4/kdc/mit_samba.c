@@ -609,6 +609,10 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 
 	}
 
+	if (kdc_flags & KRB5_KDB_FLAG_PROTOCOL_TRANSITION) {
+		flags |= SAMBA_KDC_FLAG_PROTOCOL_TRANSITION;
+	}
+
 	if (kdc_flags & KRB5_KDB_FLAG_CONSTRAINED_DELEGATION) {
 		flags |= SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION;
 		delegated_proxy_principal = discard_const(client_principal);
