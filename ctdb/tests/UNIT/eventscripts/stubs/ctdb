@@ -425,7 +425,7 @@ ctdb_ifaces()
 	# Assume -Y.
 	echo "|Name|LinkStatus|References|"
 	while read _ip _iface ; do
-		case "_$ip" in
+		case "$_ip" in
 		\#*) : ;;
 		*)
 			_status=1
