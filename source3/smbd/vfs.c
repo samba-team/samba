@@ -1626,7 +1626,7 @@ int vfs_fake_fd(void)
 
 /*
  * This is just a helper to make
- * users of vfs_fake_fd() more symetric
+ * users of vfs_fake_fd() more symmetric
  */
 int vfs_fake_fd_close(int fd)
 {
