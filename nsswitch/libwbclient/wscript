@@ -37,6 +37,7 @@ def build(bld):
                              wbc_pwd.c
                              wbc_sid.c
                              wbc_util.c''',
+                      hide_symbols=True,
                       deps='winbind-client smb_strtox',
                       pc_files='wbclient.pc',
                       public_headers='wbclient.h',

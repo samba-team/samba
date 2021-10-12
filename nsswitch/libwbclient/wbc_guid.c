@@ -26,6 +26,7 @@
 #include "libwbclient.h"
 
 /* Convert a binary GUID to a character string */
+_PUBLIC_
 wbcErr wbcGuidToString(const struct wbcGuid *guid,
 		       char **guid_string)
 {
@@ -50,6 +51,7 @@ wbcErr wbcGuidToString(const struct wbcGuid *guid,
 }
 
 /* @brief Convert a character string to a binary GUID */
+_PUBLIC_
 wbcErr wbcStringToGuid(const char *str,
 		       struct wbcGuid *guid)
 {

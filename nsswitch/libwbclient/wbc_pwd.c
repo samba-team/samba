@@ -168,6 +168,7 @@ fail:
 }
 
 /* Fill in a struct passwd* for a domain user based on username */
+_PUBLIC_
 wbcErr wbcCtxGetpwnam(struct wbcContext *ctx,
 		      const char *name, struct passwd **pwd)
 {
@@ -201,12 +202,14 @@ wbcErr wbcCtxGetpwnam(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetpwnam(const char *name, struct passwd **pwd)
 {
 	return wbcCtxGetpwnam(NULL, name, pwd);
 }
 
 /* Fill in a struct passwd* for a domain user based on uid */
+_PUBLIC_
 wbcErr wbcCtxGetpwuid(struct wbcContext *ctx, uid_t uid, struct passwd **pwd)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -237,12 +240,14 @@ wbcErr wbcCtxGetpwuid(struct wbcContext *ctx, uid_t uid, struct passwd **pwd)
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetpwuid(uid_t uid, struct passwd **pwd)
 {
 	return wbcCtxGetpwuid(NULL, uid, pwd);
 }
 
 /* Fill in a struct passwd* for a domain user based on sid */
+_PUBLIC_
 wbcErr wbcCtxGetpwsid(struct wbcContext *ctx,
 		      struct wbcDomainSid *sid, struct passwd **pwd)
 {
@@ -274,12 +279,14 @@ wbcErr wbcCtxGetpwsid(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetpwsid(struct wbcDomainSid *sid, struct passwd **pwd)
 {
 	return wbcCtxGetpwsid(NULL, sid, pwd);
 }
 
 /* Fill in a struct passwd* for a domain user based on username */
+_PUBLIC_
 wbcErr wbcCtxGetgrnam(struct wbcContext *ctx,
 		      const char *name, struct group **grp)
 {
@@ -316,12 +323,14 @@ wbcErr wbcCtxGetgrnam(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetgrnam(const char *name, struct group **grp)
 {
 	return wbcCtxGetgrnam(NULL, name, grp);
 }
 
 /* Fill in a struct passwd* for a domain user based on uid */
+_PUBLIC_
 wbcErr wbcCtxGetgrgid(struct wbcContext *ctx, gid_t gid, struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -355,6 +364,7 @@ wbcErr wbcCtxGetgrgid(struct wbcContext *ctx, gid_t gid, struct group **grp)
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetgrgid(gid_t gid, struct group **grp)
 {
 	return wbcCtxGetgrgid(NULL, gid, grp);
@@ -366,6 +376,7 @@ wbcErr wbcGetgrgid(gid_t gid, struct group **grp)
 static struct winbindd_response pw_response;
 
 /* Reset the passwd iterator */
+_PUBLIC_
 wbcErr wbcCtxSetpwent(struct wbcContext *ctx)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -389,12 +400,14 @@ wbcErr wbcCtxSetpwent(struct wbcContext *ctx)
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcSetpwent(void)
 {
 	return wbcCtxSetpwent(NULL);
 }
 
 /* Close the passwd iterator */
+_PUBLIC_
 wbcErr wbcCtxEndpwent(struct wbcContext *ctx)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -416,12 +429,14 @@ wbcErr wbcCtxEndpwent(struct wbcContext *ctx)
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcEndpwent(void)
 {
 	return wbcCtxEndpwent(NULL);
 }
 
 /* Return the next struct passwd* entry from the pwent iterator */
+_PUBLIC_
 wbcErr wbcCtxGetpwent(struct wbcContext *ctx, struct passwd **pwd)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -467,6 +482,7 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetpwent(struct passwd **pwd)
 {
 	return wbcCtxGetpwent(NULL, pwd);
@@ -478,6 +494,7 @@ wbcErr wbcGetpwent(struct passwd **pwd)
 static struct winbindd_response gr_response;
 
 /* Reset the group iterator */
+_PUBLIC_
 wbcErr wbcCtxSetgrent(struct wbcContext *ctx)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -501,12 +518,14 @@ wbcErr wbcCtxSetgrent(struct wbcContext *ctx)
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcSetgrent(void)
 {
 	return wbcCtxSetgrent(NULL);
 }
 
 /* Close the group iterator */
+_PUBLIC_
 wbcErr wbcCtxEndgrent(struct wbcContext *ctx)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -528,12 +547,14 @@ wbcErr wbcCtxEndgrent(struct wbcContext *ctx)
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcEndgrent(void)
 {
 	return wbcCtxEndgrent(NULL);
 }
 
 /* Return the next struct group* entry from the pwent iterator */
+_PUBLIC_
 wbcErr wbcCtxGetgrent(struct wbcContext *ctx, struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -584,12 +605,14 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetgrent(struct group **grp)
 {
 	return wbcCtxGetgrent(NULL, grp);
 }
 
 /* Return the next struct group* entry from the pwent iterator */
+_PUBLIC_
 wbcErr wbcCtxGetgrlist(struct wbcContext *ctx, struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -636,12 +659,14 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetgrlist(struct group **grp)
 {
 	return wbcCtxGetgrlist(NULL, grp);
 }
 
 /* Return the unix group array belonging to the given user */
+_PUBLIC_
 wbcErr wbcCtxGetGroups(struct wbcContext *ctx, const char *account,
 		       uint32_t *num_groups, gid_t **_groups)
 {
@@ -690,6 +715,7 @@ wbcErr wbcCtxGetGroups(struct wbcContext *ctx, const char *account,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetGroups(const char *account, uint32_t *num_groups, gid_t **_groups)
 {
 	return wbcCtxGetGroups(NULL, account, num_groups, _groups);

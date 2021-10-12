@@ -27,6 +27,7 @@
 #include "lib/util/smb_strtox.h"
 
 /* Convert a Windows SID to a Unix uid, allocating an uid if needed */
+_PUBLIC_
 wbcErr wbcCtxSidToUid(struct wbcContext *ctx, const struct wbcDomainSid *sid,
 		      uid_t *puid)
 {
@@ -54,12 +55,14 @@ wbcErr wbcCtxSidToUid(struct wbcContext *ctx, const struct wbcDomainSid *sid,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
 {
 	return wbcCtxSidToUid(NULL, sid, puid);
 }
 
 /* Convert a Windows SID to a Unix uid if there already is a mapping */
+_PUBLIC_
 wbcErr wbcQuerySidToUid(const struct wbcDomainSid *sid,
 			uid_t *puid)
 {
@@ -67,6 +70,7 @@ wbcErr wbcQuerySidToUid(const struct wbcDomainSid *sid,
 }
 
 /* Convert a Unix uid to a Windows SID, allocating a SID if needed */
+_PUBLIC_
 wbcErr wbcCtxUidToSid(struct wbcContext *ctx, uid_t uid,
 		      struct wbcDomainSid *psid)
 {
@@ -97,12 +101,14 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcUidToSid(uid_t uid, struct wbcDomainSid *sid)
 {
 	return wbcCtxUidToSid(NULL, uid, sid);
 }
 
 /* Convert a Unix uid to a Windows SID if there already is a mapping */
+_PUBLIC_
 wbcErr wbcQueryUidToSid(uid_t uid,
 			struct wbcDomainSid *sid)
 {
@@ -118,6 +124,7 @@ wbcErr wbcQueryUidToSid(uid_t uid,
  *
  **/
 
+_PUBLIC_
 wbcErr wbcCtxSidToGid(struct wbcContext *ctx, const struct wbcDomainSid *sid,
 		      gid_t *pgid)
 {
@@ -145,6 +152,7 @@ wbcErr wbcCtxSidToGid(struct wbcContext *ctx, const struct wbcDomainSid *sid,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
 {
 	return wbcCtxSidToGid(NULL, sid, pgid);
@@ -152,6 +160,7 @@ wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
 
 /* Convert a Windows SID to a Unix gid if there already is a mapping */
 
+_PUBLIC_
 wbcErr wbcQuerySidToGid(const struct wbcDomainSid *sid,
 			gid_t *pgid)
 {
@@ -160,6 +169,7 @@ wbcErr wbcQuerySidToGid(const struct wbcDomainSid *sid,
 
 
 /* Convert a Unix gid to a Windows SID, allocating a SID if needed */
+_PUBLIC_
 wbcErr wbcCtxGidToSid(struct wbcContext *ctx, gid_t gid,
 		      struct wbcDomainSid *psid)
 {
@@ -190,12 +200,14 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGidToSid(gid_t gid, struct wbcDomainSid *sid)
 {
 	return wbcCtxGidToSid(NULL, gid, sid);
 }
 
 /* Convert a Unix gid to a Windows SID if there already is a mapping */
+_PUBLIC_
 wbcErr wbcQueryGidToSid(gid_t gid,
 			struct wbcDomainSid *sid)
 {
@@ -203,6 +215,7 @@ wbcErr wbcQueryGidToSid(gid_t gid,
 }
 
 /* Obtain a new uid from Winbind */
+_PUBLIC_
 wbcErr wbcCtxAllocateUid(struct wbcContext *ctx, uid_t *puid)
 {
 	struct winbindd_request request;
@@ -232,12 +245,14 @@ wbcErr wbcCtxAllocateUid(struct wbcContext *ctx, uid_t *puid)
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcAllocateUid(uid_t *puid)
 {
 	return wbcCtxAllocateUid(NULL, puid);
 }
 
 /* Obtain a new gid from Winbind */
+_PUBLIC_
 wbcErr wbcCtxAllocateGid(struct wbcContext *ctx, gid_t *pgid)
 {
 	struct winbindd_request request;
@@ -267,6 +282,7 @@ wbcErr wbcCtxAllocateGid(struct wbcContext *ctx, gid_t *pgid)
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcAllocateGid(gid_t *pgid)
 {
 	return wbcCtxAllocateGid(NULL, pgid);
@@ -277,42 +293,49 @@ wbcErr wbcAllocateGid(gid_t *pgid)
 #define _ID_TYPE_GID 2
 
 /* Set an user id mapping - not implemented any more */
+_PUBLIC_
 wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid)
 {
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
 /* Set a group id mapping - not implemented any more */
+_PUBLIC_
 wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 {
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
 /* Remove a user id mapping - not implemented any more */
+_PUBLIC_
 wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid)
 {
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
 /* Remove a group id mapping - not implemented any more */
+_PUBLIC_
 wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 {
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
 /* Set the highwater mark for allocated uids - not implemented any more */
+_PUBLIC_
 wbcErr wbcSetUidHwm(uid_t uid_hwm)
 {
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
 /* Set the highwater mark for allocated gids - not implemented any more */
+_PUBLIC_
 wbcErr wbcSetGidHwm(gid_t gid_hwm)
 {
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
 /* Convert a list of SIDs */
+_PUBLIC_
 wbcErr wbcCtxSidsToUnixIds(struct wbcContext *ctx,
 			   const struct wbcDomainSid *sids,
 			   uint32_t num_sids, struct wbcUnixId *ids)
@@ -422,12 +445,14 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcSidsToUnixIds(const struct wbcDomainSid *sids, uint32_t num_sids,
 			struct wbcUnixId *ids)
 {
 	return wbcCtxSidsToUnixIds(NULL, sids, num_sids, ids);
 }
 
+_PUBLIC_
 wbcErr wbcCtxUnixIdsToSids(struct wbcContext *ctx,
 			   const struct wbcUnixId *ids, uint32_t num_ids,
 			   struct wbcDomainSid *sids)
@@ -517,6 +542,7 @@ fail:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcUnixIdsToSids(const struct wbcUnixId *ids, uint32_t num_ids,
 			struct wbcDomainSid *sids)
 {

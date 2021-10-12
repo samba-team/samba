@@ -32,6 +32,7 @@
  *
  * @return #wbcErr
  **/
+_PUBLIC_
 wbcErr wbcCtxPing(struct wbcContext *ctx)
 {
 	struct winbindd_request request;
@@ -45,6 +46,7 @@ wbcErr wbcCtxPing(struct wbcContext *ctx)
 	return wbcRequestResponse(ctx, WINBINDD_PING, &request, &response);
 }
 
+_PUBLIC_
 wbcErr wbcPing(void)
 {
 	return wbcCtxPing(NULL);
@@ -67,6 +69,7 @@ static void wbcInterfaceDetailsDestructor(void *ptr)
  * @return #wbcErr
  */
 
+_PUBLIC_
 wbcErr wbcCtxInterfaceDetails(struct wbcContext *ctx,
 			      struct wbcInterfaceDetails **_details)
 {
@@ -142,6 +145,7 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
 {
 	return wbcCtxInterfaceDetails(NULL, _details);
@@ -162,6 +166,7 @@ static void wbcDomainInfoDestructor(void *ptr)
  * @return #wbcErr
  */
 
+_PUBLIC_
 wbcErr wbcCtxDomainInfo(struct wbcContext *ctx,
 			const char *domain,
 			struct wbcDomainInfo **dinfo)
@@ -220,12 +225,14 @@ wbcErr wbcCtxDomainInfo(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 {
 	return wbcCtxDomainInfo(NULL, domain, dinfo);
 }
 
 /* Get the list of current DCs */
+_PUBLIC_
 wbcErr wbcCtxDcInfo(struct wbcContext *ctx,
 		    const char *domain, size_t *num_dcs,
 		    const char ***dc_names, const char ***dc_ips)
@@ -313,6 +320,7 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcDcInfo(const char *domain, size_t *num_dcs,
 		 const char ***dc_names, const char ***dc_ips)
 {
@@ -320,6 +328,7 @@ wbcErr wbcDcInfo(const char *domain, size_t *num_dcs,
 }
 
 /* Resolve a NetbiosName via WINS */
+_PUBLIC_
 wbcErr wbcCtxResolveWinsByName(struct wbcContext *ctx,
 			       const char *name, char **ip)
 {
@@ -353,12 +362,14 @@ wbcErr wbcCtxResolveWinsByName(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcResolveWinsByName(const char *name, char **ip)
 {
 	return wbcCtxResolveWinsByName(NULL, name, ip);
 }
 
 /* Resolve an IP address via WINS into a NetbiosName */
+_PUBLIC_
 wbcErr wbcCtxResolveWinsByIP(struct wbcContext *ctx,
 			     const char *ip, char **name)
 {
@@ -392,6 +403,7 @@ wbcErr wbcCtxResolveWinsByIP(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcResolveWinsByIP(const char *ip, char **name)
 {
 	return wbcCtxResolveWinsByIP(NULL, ip, name);
@@ -542,6 +554,7 @@ static void wbcDomainInfoListDestructor(void *ptr)
 }
 
 /* Enumerate the domain trusts known by Winbind */
+_PUBLIC_
 wbcErr wbcCtxListTrusts(struct wbcContext *ctx,
 			struct wbcDomainInfo **domains, size_t *num_domains)
 {
@@ -613,6 +626,7 @@ wbcErr wbcCtxListTrusts(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 {
 	return wbcCtxListTrusts(NULL, domains, num_domains);
@@ -626,6 +640,7 @@ static void wbcDomainControllerInfoDestructor(void *ptr)
 }
 
 /* Enumerate the domain trusts known by Winbind */
+_PUBLIC_
 wbcErr wbcCtxLookupDomainController(struct wbcContext *ctx,
 				    const char *domain, uint32_t flags,
 				    struct wbcDomainControllerInfo **dc_info)
@@ -673,6 +688,7 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcLookupDomainController(const char *domain, uint32_t flags,
 				 struct wbcDomainControllerInfo **dc_info)
 {
@@ -753,6 +769,7 @@ done:
 }
 
 /* Get extended domain controller information */
+_PUBLIC_
 wbcErr wbcCtxLookupDomainControllerEx(struct wbcContext *ctx,
 				      const char *domain,
 				      struct wbcGuid *guid,
@@ -814,6 +831,7 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcLookupDomainControllerEx(const char *domain,
 				   struct wbcGuid *guid,
 				   const char *site,
@@ -836,6 +854,7 @@ static void wbcNamedBlobDestructor(void *ptr)
 }
 
 /* Initialize a named blob and add to list of blobs */
+_PUBLIC_
 wbcErr wbcAddNamedBlob(size_t *num_blobs,
 		       struct wbcNamedBlob **pblobs,
 		       const char *name,
@@ -894,6 +913,7 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 void wbcSetClientProcessName(const char *name)
 {
 	winbind_set_client_name(name);

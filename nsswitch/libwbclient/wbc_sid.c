@@ -31,6 +31,7 @@
 /* Convert a sid to a string into a buffer. Return the string
  * length. If buflen is too small, return the string length that would
  * result if it was long enough. */
+_PUBLIC_
 int wbcSidToStringBuf(const struct wbcDomainSid *sid, char *buf, int buflen)
 {
 	uint64_t id_auth;
@@ -65,6 +66,7 @@ int wbcSidToStringBuf(const struct wbcDomainSid *sid, char *buf, int buflen)
 }
 
 /* Convert a binary SID to a character string */
+_PUBLIC_
 wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 		      char **sid_string)
 {
@@ -95,6 +97,7 @@ wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 #define AUTHORITY_MASK	(~(0xffffffffffffULL))
 
 /* Convert a character string to a binary SID */
+_PUBLIC_
 wbcErr wbcStringToSid(const char *str,
 		      struct wbcDomainSid *sid)
 {
@@ -182,6 +185,7 @@ done:
 
 
 /* Convert a domain and name to SID */
+_PUBLIC_
 wbcErr wbcCtxLookupName(struct wbcContext *ctx,
 			const char *domain,
 			const char *name,
@@ -225,6 +229,7 @@ wbcErr wbcCtxLookupName(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcLookupName(const char *domain,
 		     const char *name,
 		     struct wbcDomainSid *sid,
@@ -235,6 +240,7 @@ wbcErr wbcLookupName(const char *domain,
 
 
 /* Convert a SID to a domain and name */
+_PUBLIC_
 wbcErr wbcCtxLookupSid(struct wbcContext *ctx,
 		       const struct wbcDomainSid *sid,
 		       char **pdomain,
@@ -298,6 +304,7 @@ done:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 		    char **pdomain,
 		    char **pname,
@@ -327,6 +334,7 @@ static void wbcTranslatedNamesDestructor(void *ptr)
 	}
 }
 
+_PUBLIC_
 wbcErr wbcCtxLookupSids(struct wbcContext *ctx,
 			const struct wbcDomainSid *sids, int num_sids,
 			struct wbcDomainInfo **pdomains, int *pnum_domains,
@@ -502,6 +510,7 @@ fail:
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcLookupSids(const struct wbcDomainSid *sids, int num_sids,
 		     struct wbcDomainInfo **pdomains, int *pnum_domains,
 		     struct wbcTranslatedName **pnames)
@@ -512,6 +521,7 @@ wbcErr wbcLookupSids(const struct wbcDomainSid *sids, int num_sids,
 
 /* Translate a collection of RIDs within a domain to names */
 
+_PUBLIC_
 wbcErr wbcCtxLookupRids(struct wbcContext *ctx, struct wbcDomainSid *dom_sid,
 		     int num_rids,
 		     uint32_t *rids,
@@ -639,6 +649,7 @@ wbcErr wbcCtxLookupRids(struct wbcContext *ctx, struct wbcDomainSid *dom_sid,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		     int num_rids,
 		     uint32_t *rids,
@@ -651,6 +662,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 }
 
 /* Get the groups a user belongs to */
+_PUBLIC_
 wbcErr wbcCtxLookupUserSids(struct wbcContext *ctx,
 			    const struct wbcDomainSid *user_sid,
 			    bool domain_groups_only,
@@ -724,6 +736,7 @@ wbcErr wbcCtxLookupUserSids(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 			 bool domain_groups_only,
 			 uint32_t *num_sids,
@@ -745,6 +758,7 @@ wbcErr _sid_to_rid(struct wbcDomainSid *sid, uint32_t *rid)
 }
 
 /* Get alias membership for sids */
+_PUBLIC_
 wbcErr wbcCtxGetSidAliases(struct wbcContext *ctx,
 			   const struct wbcDomainSid *dom_sid,
 			   struct wbcDomainSid *sids,
@@ -853,6 +867,7 @@ wbcErr wbcCtxGetSidAliases(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 			struct wbcDomainSid *sids,
 			uint32_t num_sids,
@@ -865,6 +880,7 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 
 
 /* Lists Users */
+_PUBLIC_
 wbcErr wbcCtxListUsers(struct wbcContext *ctx,
 		       const char *domain_name,
 		       uint32_t *_num_users,
@@ -939,6 +955,7 @@ wbcErr wbcCtxListUsers(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcListUsers(const char *domain_name,
 		    uint32_t *_num_users,
 		    const char ***_users)
@@ -947,6 +964,7 @@ wbcErr wbcListUsers(const char *domain_name,
 }
 
 /* Lists Groups */
+_PUBLIC_
 wbcErr wbcCtxListGroups(struct wbcContext *ctx,
 			const char *domain_name,
 			uint32_t *_num_groups,
@@ -1021,6 +1039,7 @@ wbcErr wbcCtxListGroups(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcListGroups(const char *domain_name,
 		     uint32_t *_num_groups,
 		     const char ***_groups)
@@ -1028,6 +1047,7 @@ wbcErr wbcListGroups(const char *domain_name,
 	return wbcCtxListGroups(NULL, domain_name, _num_groups, _groups);
 }
 
+_PUBLIC_
 wbcErr wbcCtxGetDisplayName(struct wbcContext *ctx,
 			    const struct wbcDomainSid *sid,
 			    char **pdomain,
@@ -1074,6 +1094,7 @@ wbcErr wbcCtxGetDisplayName(struct wbcContext *ctx,
 	return wbc_status;
 }
 
+_PUBLIC_
 wbcErr wbcGetDisplayName(const struct wbcDomainSid *sid,
 			 char **pdomain,
 			 char **pfullname,
@@ -1082,6 +1103,7 @@ wbcErr wbcGetDisplayName(const struct wbcDomainSid *sid,
 	return wbcCtxGetDisplayName(NULL, sid, pdomain, pfullname, pname_type);
 }
 
+_PUBLIC_
 const char* wbcSidTypeString(enum wbcSidType type)
 {
 	switch (type) {

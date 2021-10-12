@@ -108,6 +108,7 @@ static wbcErr wbcRequestResponseInt(
  *
  * @return #wbcErr
  */
+_PUBLIC_ /* this is internal to wbclient_internal.h, but part of the ABI */
 wbcErr wbcRequestResponse(struct wbcContext *ctx, int cmd,
 			  struct winbindd_request *request,
 			  struct winbindd_response *response)
@@ -122,6 +123,7 @@ wbcErr wbcRequestResponse(struct wbcContext *ctx, int cmd,
 				     winbindd_request_response);
 }
 
+_PUBLIC_ /* this is internal to wbclient_internal.h, but part of the ABI */
 wbcErr wbcRequestResponsePriv(struct wbcContext *ctx, int cmd,
 			      struct winbindd_request *request,
 			      struct winbindd_response *response)
@@ -142,6 +144,7 @@ wbcErr wbcRequestResponsePriv(struct wbcContext *ctx, int cmd,
  *
  * @return a pointer to a static string
  **/
+_PUBLIC_
 const char *wbcErrorString(wbcErr error)
 {
 	switch (error) {
@@ -197,6 +200,7 @@ static struct wbcMemPrefix *wbcMemToPrefix(void *ptr)
 	return (struct wbcMemPrefix *)(((char *)ptr) - wbcPrefixLen());
 }
 
+_PUBLIC_ /* this is internal to wbclient_internal.h, but part of the ABI */
 void *wbcAllocateMemory(size_t nelem, size_t elsize,
 			void (*destructor)(void *ptr))
 {
@@ -218,6 +222,7 @@ void *wbcAllocateMemory(size_t nelem, size_t elsize,
 }
 
 /* Free library allocated memory */
+_PUBLIC_
 void wbcFreeMemory(void *p)
 {
 	struct wbcMemPrefix *wbcMem;
@@ -240,6 +245,7 @@ void wbcFreeMemory(void *p)
 	return;
 }
 
+_PUBLIC_ /* this is internal to wbclient_internal.h, but part of the ABI */
 char *wbcStrDup(const char *str)
 {
 	char *result;
@@ -263,6 +269,7 @@ static void wbcStringArrayDestructor(void *ptr)
 	}
 }
 
+_PUBLIC_ /* this is internal to wbclient_internal.h, but part of the ABI */
 const char **wbcAllocateStringArray(int num_strings)
 {
 	return (const char **)wbcAllocateMemory(
@@ -270,6 +277,7 @@ const char **wbcAllocateStringArray(int num_strings)
 		wbcStringArrayDestructor);
 }
 
+_PUBLIC_
 wbcErr wbcLibraryDetails(struct wbcLibraryDetails **_details)
 {
 	struct wbcLibraryDetails *info;
@@ -298,6 +306,7 @@ static void wbcContextDestructor(void *ptr)
 	winbindd_ctx_free(ctx->winbindd_ctx);
 }
 
+_PUBLIC_
 struct wbcContext *wbcCtxCreate(void)
 {
 	struct wbcContext *ctx;
@@ -322,11 +331,13 @@ struct wbcContext *wbcCtxCreate(void)
 	return ctx;
 }
 
+_PUBLIC_
 void wbcCtxFree(struct wbcContext *ctx)
 {
 	wbcFreeMemory(ctx);
 }
 
+_PUBLIC_ /* this is internal to wbclient_internal.h, but part of the ABI */
 struct wbcContext *wbcGetGlobalCtx(void)
 {
 	return &wbcGlobalCtx;
