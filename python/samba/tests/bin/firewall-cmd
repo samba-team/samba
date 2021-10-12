@@ -1,0 +1,110 @@
+#!/usr/bin/python3
+import optparse
+import os, sys, re
+import pickle
+try:
+    from firewall.core.rich import Rich_Rule
+except ImportError:
+    Rich_Rule = None
+
+sys.path.insert(0, "bin/python")
+
+if __name__ == "__main__":
+    parser = optparse.OptionParser('firewall-cmd [options]')
+    parser.add_option('--list-interfaces', default=False, action="store_true")
+    parser.add_option('--permanent', default=False, action="store_true")
+    parser.add_option('--new-zone')
+    parser.add_option('--get-zones', default=False, action="store_true")
+    parser.add_option('--delete-zone')
+    parser.add_option('--zone')
+    parser.add_option('--add-interface')
+    parser.add_option('--add-rich-rule')
+    parser.add_option('--remove-rich-rule')
+    parser.add_option('--list-rich-rules', default=False, action="store_true")
+
+    (opts, args) = parser.parse_args()
+
+    # Use a dir we can write to in the testenv
+    if 'LOCAL_PATH' in os.environ:
+        data_dir = os.path.realpath(os.environ.get('LOCAL_PATH'))
+    else:
+        data_dir = os.path.dirname(os.path.realpath(__file__))
+    dump_file = os.path.join(data_dir, 'firewall-cmd.dump')
+    if os.path.exists(dump_file):
+        with open(dump_file, 'rb') as r:
+            data = pickle.load(r)
+    else:
+        data = {}
+
+    if opts.list_interfaces:
+        if not opts.zone: # default zone dummy interface
+            print('eth0')
+        else:
+            assert 'zone_interfaces' in data
+            assert opts.zone in data['zone_interfaces'].keys()
+            for interface in data['zone_interfaces'][opts.zone]:
+                sys.stdout.write('%s ' % interface)
+            print()
+    elif opts.new_zone:
+        if 'zones' not in data:
+            data['zones'] = []
+        data['zones'].append(opts.new_zone)
+    elif opts.get_zones:
+        if 'zones' in data:
+            for zone in data['zones']:
+                sys.stdout.write('%s ' % zone)
+            print()
+    elif opts.delete_zone:
+        assert 'zones' in data
+        assert opts.delete_zone in data['zones']
+        data['zones'].remove(opts.delete_zone)
+        if len(data['zones']) == 0:
+            del data['zones']
+        if 'zone_interfaces' in data and opts.zone in data['zone_interfaces'].keys():
+            del data['zone_interfaces'][opts.zone]
+    elif opts.add_interface:
+        assert opts.zone
+        assert 'zones' in data
+        assert opts.zone in data['zones']
+        if 'zone_interfaces' not in data:
+            data['zone_interfaces'] = {}
+        if opts.zone not in data['zone_interfaces'].keys():
+            data['zone_interfaces'][opts.zone] = []
+        data['zone_interfaces'][opts.zone].append(opts.add_interface)
+    elif opts.add_rich_rule:
+        assert opts.zone
+        if 'rules' not in data:
+            data['rules'] = {}
+        if opts.zone not in data['rules']:
+            data['rules'][opts.zone] = []
+        # Test rule parsing if firewalld is installed
+        if Rich_Rule:
+            # Parsing failure will throw an exception
+            data['rules'][opts.zone].append(str(Rich_Rule(rule_str=opts.add_rich_rule)))
+        else:
+            data['rules'][opts.zone].append(opts.add_rich_rule)
+    elif opts.remove_rich_rule:
+        assert opts.zone
+        assert 'rules' in data
+        assert opts.zone in data['rules'].keys()
+        if Rich_Rule:
+            rich_rule = str(Rich_Rule(rule_str=opts.remove_rich_rule))
+            assert rich_rule in data['rules'][opts.zone]
+            data['rules'][opts.zone].remove(rich_rule)
+        else:
+            assert opts.remove_rich_rule in data['rules'][opts.zone]
+            data['rules'][opts.zone].remove(opts.remove_rich_rule)
+    elif opts.list_rich_rules:
+        assert opts.zone
+        assert 'rules' in data
+        assert opts.zone in data['rules'].keys()
+        for rule in data['rules'][opts.zone]:
+            print(rule)
+
+    if opts.permanent:
+        if data == {}:
+            if os.path.exists(dump_file):
+                os.unlink(dump_file)
+        else:
+            with open(dump_file, 'wb') as w:
+                pickle.dump(data, w)
