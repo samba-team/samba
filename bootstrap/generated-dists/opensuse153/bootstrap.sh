@@ -106,6 +106,7 @@ zypper --non-interactive install \
     wget \
     which \
     xfsprogs-devel \
+    xz \
     yum-utils \
     zlib-devel
 

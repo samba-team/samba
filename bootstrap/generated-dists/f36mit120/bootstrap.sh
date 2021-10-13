@@ -116,6 +116,7 @@ dnf install -y \
     wget \
     which \
     xfsprogs-devel \
+    xz \
     yum-utils \
     zlib-devel
 

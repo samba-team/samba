@@ -94,4 +94,5 @@ packages:
   - wget
   - xfslibs-dev
   - xsltproc
+  - xz-utils
   - zlib1g-dev

@@ -179,6 +179,7 @@ PKGS = [
     ('docbook-xsl', 'docbook-style-xsl'),
     ('', 'keyutils-libs-devel'),
     ('', 'which'),
+    ('xz-utils', 'xz')
 ]
 
 

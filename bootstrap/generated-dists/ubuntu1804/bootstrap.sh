@@ -105,6 +105,7 @@ apt-get -y install \
     wget \
     xfslibs-dev \
     xsltproc \
+    xz-utils \
     zlib1g-dev
 
 apt-get -y autoremove
