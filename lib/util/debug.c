@@ -95,6 +95,8 @@ static struct {
 	struct debug_settings settings;
 	debug_callback_fn callback;
 	void *callback_private;
+	char header_str[300];
+	size_t hs_len;
 } state = {
 	.settings = {
 		.timestamp_logs = true
@@ -1543,10 +1545,16 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	/* Ensure we don't lose any real errno value. */
 	int old_errno = errno;
 	bool verbose = false;
-	char header_str[300];
-	size_t hs_len;
 	struct timeval tv;
 	struct timeval_buf tvbuf;
+
+	/*
+	 * This might be overkill, but if another early return is
+	 * added later then initialising these avoids potential
+	 * problems
+	 */
+	state.hs_len = 0;
+	state.header_str[0] = '\0';
 
 	if( format_pos ) {
 		/* This is a fudge.  If there is stuff sitting in the format_bufr, then
@@ -1580,9 +1588,12 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	timeval_str_buf(&tv, false, state.settings.debug_hires_timestamp,
 			&tvbuf);
 
-	hs_len = snprintf(header_str, sizeof(header_str), "[%s, %2d",
-			  tvbuf.buf, level);
-	if (hs_len >= sizeof(header_str)) {
+	state.hs_len = snprintf(state.header_str,
+				sizeof(state.header_str),
+				"[%s, %2d",
+				tvbuf.buf,
+				level);
+	if (state.hs_len >= sizeof(state.header_str)) {
 		goto full;
 	}
 
@@ -1591,31 +1602,35 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	}
 
 	if (verbose || state.settings.debug_pid) {
-		hs_len += snprintf(
-			header_str + hs_len, sizeof(header_str) - hs_len,
-			", pid=%u", (unsigned int)getpid());
-		if (hs_len >= sizeof(header_str)) {
+		state.hs_len += snprintf(state.header_str + state.hs_len,
+					 sizeof(state.header_str) - state.hs_len,
+					 ", pid=%u",
+					 (unsigned int)getpid());
+		if (state.hs_len >= sizeof(state.header_str)) {
 			goto full;
 		}
 	}
 
 	if (verbose || state.settings.debug_uid) {
-		hs_len += snprintf(
-			header_str + hs_len, sizeof(header_str) - hs_len,
-			", effective(%u, %u), real(%u, %u)",
-			(unsigned int)geteuid(), (unsigned int)getegid(),
-			(unsigned int)getuid(), (unsigned int)getgid());
-		if (hs_len >= sizeof(header_str)) {
+		state.hs_len += snprintf(state.header_str + state.hs_len,
+					 sizeof(state.header_str) - state.hs_len,
+					 ", effective(%u, %u), real(%u, %u)",
+					 (unsigned int)geteuid(),
+					 (unsigned int)getegid(),
+					 (unsigned int)getuid(),
+					 (unsigned int)getgid());
+		if (state.hs_len >= sizeof(state.header_str)) {
 			goto full;
 		}
 	}
 
 	if ((verbose || state.settings.debug_class)
 	    && (cls != DBGC_ALL)) {
-		hs_len += snprintf(
-			header_str + hs_len, sizeof(header_str) - hs_len,
-			", class=%s", classname_table[cls]);
-		if (hs_len >= sizeof(header_str)) {
+		state.hs_len += snprintf(state.header_str + state.hs_len,
+					 sizeof(state.header_str) - state.hs_len,
+					 ", class=%s",
+					 classname_table[cls]);
+		if (state.hs_len >= sizeof(state.header_str)) {
 			goto full;
 		}
 	}
@@ -1623,22 +1638,35 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	/*
 	 * No +=, see man man strlcat
 	 */
-	hs_len = strlcat(header_str, "] ", sizeof(header_str));
-	if (hs_len >= sizeof(header_str)) {
+	state.hs_len = strlcat(state.header_str, "] ", sizeof(state.header_str));
+	if (state.hs_len >= sizeof(state.header_str)) {
 		goto full;
 	}
 
 	if (!state.settings.debug_prefix_timestamp) {
-		hs_len += snprintf(
-			header_str + hs_len, sizeof(header_str) - hs_len,
-			"%s(%s)\n", location, func);
-		if (hs_len >= sizeof(header_str)) {
+		state.hs_len += snprintf(state.header_str + state.hs_len,
+					 sizeof(state.header_str) - state.hs_len,
+					 "%s(%s)\n",
+					 location,
+					 func);
+		if (state.hs_len >= sizeof(state.header_str)) {
 			goto full;
 		}
 	}
 
 full:
-	(void)Debug1(header_str);
+	/*
+	 * Above code never overflows state.header_str and always
+	 * NUL-terminates correctly.  However, state.hs_len can point
+	 * past the end of the buffer to indicate that truncation
+	 * occurred, so fix it if necessary, since state.hs_len is
+	 * expected to be used after return.
+	 */
+	if (state.hs_len >= sizeof(state.header_str)) {
+		state.hs_len = sizeof(state.header_str) - 1;
+	}
+
+	(void)Debug1(state.header_str);
 
 	errno = old_errno;
 	return( true );
