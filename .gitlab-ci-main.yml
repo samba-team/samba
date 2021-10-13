@@ -83,7 +83,11 @@ include:
   interruptible: true
   timeout: 2h
 
+  # Otherwise we run twice, once on push and once on MR
+  # https://forum.gitlab.com/t/new-rules-syntax-and-detached-pipelines/37292
   rules:
+    - if: $CI_MERGE_REQUEST_ID
+      when: never
     - when: on_success
 
   variables:
@@ -357,6 +361,10 @@ samba-fips:
   extends: .private_runner_test
   stage: test_private
   rules:
+      # See above, to avoid a duplicate CI on the MR (these rules override the others)
+    - if: $CI_MERGE_REQUEST_ID
+      when: never
+
       # These jobs are only run if the gitlab repo has private runners available.
       # To enable private jobs, you must add the following var and value to
       # your gitlab repo by navigating to:
@@ -517,6 +525,9 @@ ubuntu1804-samba-o3:
     SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu1804}
     SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE: "--enable-coverage"
   rules:
+    # See above, to avoid a duplicate CI on the MR (these rules override the others)
+    - if: $CI_MERGE_REQUEST_ID
+      when: never
     # do not run o3 builds (which run a lot of VMs) if told not to
     # (this uses the same variable as autobuild.py)
     - if: $AUTOBUILD_SKIP_SAMBA_O3 == "1"
@@ -528,6 +539,9 @@ ubuntu1804-samba-o3:
   variables:
     AUTOBUILD_JOB_NAME: samba-o3
   rules:
+    # See above, to avoid a duplicate CI on the MR (these rules override the others)
+    - if: $CI_MERGE_REQUEST_ID
+      when: never
     # do not run o3 builds (which run a lot of VMs) if told not to
     # (this uses the same variable as autobuild.py)
     - if: $AUTOBUILD_SKIP_SAMBA_O3 == "1"
