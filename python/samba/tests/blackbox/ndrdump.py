@@ -89,6 +89,41 @@ class NdrDumpTests(BlackboxTestCase):
                          expected.encode('utf-8'))
         self.assertTrue(actual.endswith(b"dump OK\n"))
 
+    def test_ndrdump_upn_dns_info_ex(self):
+        with open(self.data_path(
+                'krb5pac_upn_dns_info_ex.txt')) as f:
+            expected = f.read()
+        data_path = self.data_path(
+            'krb5pac_upn_dns_info_ex.b64.txt')
+
+        try:
+            actual = self.check_output(
+                'ndrdump --debug-stdout -d0 krb5pac PAC_DATA struct '
+                '--validate --base64-input ' + data_path)
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        self.assertEqual(actual, expected.encode('utf-8'))
+
+    def test_ndrdump_upn_dns_info_ex_not_supported(self):
+        with open(self.data_path(
+                'krb5pac_upn_dns_info_ex_not_supported.txt')) as f:
+            expected = f.read()
+        data_path = self.data_path(
+            'krb5pac_upn_dns_info_ex_not_supported.b64.txt')
+
+        try:
+            # This PAC has been edited to remove the
+            # PAC_UPN_DNS_FLAG_HAS_SAM_NAME_AND_SID bit, so that we can
+            # simulate older versions of Samba parsing this structure.
+            actual = self.check_output(
+                'ndrdump --debug-stdout -d0 krb5pac PAC_DATA struct '
+                '--validate --base64-input ' + data_path)
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        self.assertEqual(actual, expected.encode('utf-8'))
+
     def test_ndrdump_with_binary_struct_number(self):
         expected = '''pull returned Success
     GUID                     : 33323130-3534-3736-3839-616263646566
