@@ -1,0 +1,213 @@
+pull returned Success
+    PAC_DATA: struct PAC_DATA
+        num_buffers              : 0x00000006 (6)
+        version                  : 0x00000000 (0)
+        buffers: ARRAY(6)
+            buffers: struct PAC_BUFFER
+                type                     : PAC_TYPE_LOGON_INFO (1)
+                _ndr_size                : 0x000001d0 (464)
+                info                     : *
+                    info                     : union PAC_INFO(case 1)
+                    logon_info: struct PAC_LOGON_INFO_CTR
+                        info                     : *
+                            info: struct PAC_LOGON_INFO
+                                info3: struct netr_SamInfo3
+                                    base: struct netr_SamBaseInfo
+                                        logon_time               : NTTIME(0)
+                                        logoff_time              : Thu Sep 14 02:48:05 AM 30828 UTC
+                                        kickoff_time             : Thu Sep 14 02:48:05 AM 30828 UTC
+                                        last_password_change     : Wed Oct 13 02:08:12 AM 2021 UTC
+                                        allow_password_change    : Thu Oct 14 02:08:12 AM 2021 UTC
+                                        force_password_change    : Wed Nov 24 02:08:12 AM 2021 UTC
+                                        account_name: struct lsa_String
+                                            length                   : 0x0012 (18)
+                                            size                     : 0x0012 (18)
+                                            string                   : *
+                                                string                   : 'tsttktusr'
+                                        full_name: struct lsa_String
+                                            length                   : 0x0000 (0)
+                                            size                     : 0x0000 (0)
+                                            string                   : *
+                                                string                   : ''
+                                        logon_script: struct lsa_String
+                                            length                   : 0x0000 (0)
+                                            size                     : 0x0000 (0)
+                                            string                   : *
+                                                string                   : ''
+                                        profile_path: struct lsa_String
+                                            length                   : 0x0000 (0)
+                                            size                     : 0x0000 (0)
+                                            string                   : *
+                                                string                   : ''
+                                        home_directory: struct lsa_String
+                                            length                   : 0x0000 (0)
+                                            size                     : 0x0000 (0)
+                                            string                   : *
+                                                string                   : ''
+                                        home_drive: struct lsa_String
+                                            length                   : 0x0000 (0)
+                                            size                     : 0x0000 (0)
+                                            string                   : *
+                                                string                   : ''
+                                        logon_count              : 0x0000 (0)
+                                        bad_password_count       : 0x0000 (0)
+                                        rid                      : 0x0000048e (1166)
+                                        primary_gid              : 0x00000201 (513)
+                                        groups: struct samr_RidWithAttributeArray
+                                            count                    : 0x00000001 (1)
+                                            rids                     : *
+                                                rids: ARRAY(1)
+                                                    rids: struct samr_RidWithAttribute
+                                                        rid                      : 0x00000201 (513)
+                                                        attributes               : 0x00000007 (7)
+                                                               1: SE_GROUP_MANDATORY       
+                                                               1: SE_GROUP_ENABLED_BY_DEFAULT
+                                                               1: SE_GROUP_ENABLED         
+                                                               0: SE_GROUP_OWNER           
+                                                               0: SE_GROUP_USE_FOR_DENY_ONLY
+                                                               0: SE_GROUP_INTEGRITY       
+                                                               0: SE_GROUP_INTEGRITY_ENABLED
+                                                               0: SE_GROUP_RESOURCE        
+                                                            0x00: SE_GROUP_LOGON_ID         (0)
+                                        user_flags               : 0x00000020 (32)
+                                               0: NETLOGON_GUEST           
+                                               0: NETLOGON_NOENCRYPTION    
+                                               0: NETLOGON_CACHED_ACCOUNT  
+                                               0: NETLOGON_USED_LM_PASSWORD
+                                               1: NETLOGON_EXTRA_SIDS      
+                                               0: NETLOGON_SUBAUTH_SESSION_KEY
+                                               0: NETLOGON_SERVER_TRUST_ACCOUNT
+                                               0: NETLOGON_NTLMV2_ENABLED  
+                                               0: NETLOGON_RESOURCE_GROUPS 
+                                               0: NETLOGON_PROFILE_PATH_RETURNED
+                                               0: NETLOGON_GRACE_LOGON     
+                                        key: struct netr_UserSessionKey
+                                            key: ARRAY(16): <REDACTED SECRET VALUES>
+                                        logon_server: struct lsa_StringLarge
+                                            length                   : 0x000e (14)
+                                            size                     : 0x0010 (16)
+                                            string                   : *
+                                                string                   : 'LOCALDC'
+                                        logon_domain: struct lsa_StringLarge
+                                            length                   : 0x0016 (22)
+                                            size                     : 0x0018 (24)
+                                            string                   : *
+                                                string                   : 'SAMBADOMAIN'
+                                        domain_sid               : *
+                                            domain_sid               : S-1-5-21-4109729462-983708096-1421331175
+                                        LMSessKey: struct netr_LMSessionKey
+                                            key: ARRAY(8): <REDACTED SECRET VALUES>
+                                        acct_flags               : 0x00000010 (16)
+                                               0: ACB_DISABLED             
+                                               0: ACB_HOMDIRREQ            
+                                               0: ACB_PWNOTREQ             
+                                               0: ACB_TEMPDUP              
+                                               1: ACB_NORMAL               
+                                               0: ACB_MNS                  
+                                               0: ACB_DOMTRUST             
+                                               0: ACB_WSTRUST              
+                                               0: ACB_SVRTRUST             
+                                               0: ACB_PWNOEXP              
+                                               0: ACB_AUTOLOCK             
+                                               0: ACB_ENC_TXT_PWD_ALLOWED  
+                                               0: ACB_SMARTCARD_REQUIRED   
+                                               0: ACB_TRUSTED_FOR_DELEGATION
+                                               0: ACB_NOT_DELEGATED        
+                                               0: ACB_USE_DES_KEY_ONLY     
+                                               0: ACB_DONT_REQUIRE_PREAUTH 
+                                               0: ACB_PW_EXPIRED           
+                                               0: ACB_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
+                                               0: ACB_NO_AUTH_DATA_REQD    
+                                               0: ACB_PARTIAL_SECRETS_ACCOUNT
+                                               0: ACB_USE_AES_KEYS         
+                                        sub_auth_status          : 0x00000000 (0)
+                                        last_successful_logon    : NTTIME(0)
+                                        last_failed_logon        : NTTIME(0)
+                                        failed_logon_count       : 0x00000000 (0)
+                                        reserved                 : 0x00000000 (0)
+                                    sidcount                 : 0x00000001 (1)
+                                    sids                     : *
+                                        sids: ARRAY(1)
+                                            sids: struct netr_SidAttr
+                                                sid                      : *
+                                                    sid                      : S-1-18-1
+                                                attributes               : 0x00000007 (7)
+                                                       1: SE_GROUP_MANDATORY       
+                                                       1: SE_GROUP_ENABLED_BY_DEFAULT
+                                                       1: SE_GROUP_ENABLED         
+                                                       0: SE_GROUP_OWNER           
+                                                       0: SE_GROUP_USE_FOR_DENY_ONLY
+                                                       0: SE_GROUP_INTEGRITY       
+                                                       0: SE_GROUP_INTEGRITY_ENABLED
+                                                       0: SE_GROUP_RESOURCE        
+                                                    0x00: SE_GROUP_LOGON_ID         (0)
+                                resource_groups: struct PAC_DOMAIN_GROUP_MEMBERSHIP
+                                    domain_sid               : NULL
+                                    groups: struct samr_RidWithAttributeArray
+                                        count                    : 0x00000000 (0)
+                                        rids                     : NULL
+                _pad                     : 0x00000000 (0)
+            buffers: struct PAC_BUFFER
+                type                     : PAC_TYPE_LOGON_NAME (10)
+                _ndr_size                : 0x0000001c (28)
+                info                     : *
+                    info                     : union PAC_INFO(case 10)
+                    logon_name: struct PAC_LOGON_NAME
+                        logon_time               : Wed Oct 13 02:08:11 AM 2021 UTC
+                        size                     : 0x0012 (18)
+                        account_name             : 'tsttktusr'
+                _pad                     : 0x00000000 (0)
+            buffers: struct PAC_BUFFER
+                type                     : PAC_TYPE_UPN_DNS_INFO (12)
+                _ndr_size                : 0x000000a8 (168)
+                info                     : *
+                    info                     : union PAC_INFO(case 12)
+                    upn_dns_info: struct PAC_UPN_DNS_INFO
+                        upn_name_size            : 0x0036 (54)
+                        upn_name                 : *
+                            upn_name                 : 'tsttktusr@samba.example.com'
+                        dns_domain_name_size     : 0x0022 (34)
+                        dns_domain_name          : *
+                            dns_domain_name          : 'SAMBA.EXAMPLE.COM'
+                        flags                    : 0x00000001 (1)
+                               1: PAC_UPN_DNS_FLAG_CONSTRUCTED
+                               0: PAC_UPN_DNS_FLAG_HAS_SAM_NAME_AND_SID
+                        ex                       : union PAC_UPN_DNS_INFO_EX(case 0)
+                _pad                     : 0x00000000 (0)
+            buffers: struct PAC_BUFFER
+                type                     : PAC_TYPE_SRV_CHECKSUM (6)
+                _ndr_size                : 0x00000014 (20)
+                info                     : *
+                    info                     : union PAC_INFO(case 6)
+                    srv_cksum: struct PAC_SIGNATURE_DATA
+                        type                     : 0xffffff76 (4294967158)
+                        signature                : DATA_BLOB length=16
+[0000] 2B 39 6A 8C 76 29 DA 8D   63 C0 95 57 19 10 6E CE   +9j.v).. c..W..n.
+                _pad                     : 0x00000000 (0)
+            buffers: struct PAC_BUFFER
+                type                     : PAC_TYPE_KDC_CHECKSUM (7)
+                _ndr_size                : 0x00000010 (16)
+                info                     : *
+                    info                     : union PAC_INFO(case 7)
+                    kdc_cksum: struct PAC_SIGNATURE_DATA
+                        type                     : 0x00000010 (16)
+                        signature                : DATA_BLOB length=12
+[0000] 5A D4 78 FD 1B F0 F6 DC   B7 45 65 56               Z.x..... .EeV
+                _pad                     : 0x00000000 (0)
+            buffers: struct PAC_BUFFER
+                type                     : PAC_TYPE_TICKET_CHECKSUM (16)
+                _ndr_size                : 0x00000010 (16)
+                info                     : *
+                    info                     : union PAC_INFO(case 16)
+                    ticket_checksum: struct PAC_SIGNATURE_DATA
+                        type                     : 0x00000010 (16)
+                        signature                : DATA_BLOB length=12
+[0000] 78 48 2F 88 18 AA 0B 3F   ED 34 DF 4A               xH/....? .4.J
+                _pad                     : 0x00000000 (0)
+push returned Success
+pull returned Success
+WARNING! orig bytes:824 validated pushed bytes:768
+WARNING! orig pulled bytes:824 validated pulled bytes:768
+WARNING! orig and validated differ at byte 0x2C (44)
+WARNING! orig byte[0x2C] = 0xA8 validated byte[0x2C] = 0x70
+dump OK
