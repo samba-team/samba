@@ -83,6 +83,9 @@ include:
   interruptible: true
   timeout: 2h
 
+  rules:
+    - when: on_success
+
   variables:
     AUTOBUILD_JOB_NAME: $CI_JOB_NAME
   stage: build
@@ -353,13 +356,12 @@ samba-fips:
 .private_test_only:
   extends: .private_runner_test
   stage: test_private
-  only:
-    variables:
+  rules:
       # These jobs are only run if the gitlab repo has private runners available.
       # To enable private jobs, you must add the following var and value to
       # your gitlab repo by navigating to:
       # settings -> CI/CD -> Environment variables
-      - $SUPPORT_PRIVATE_TEST == "yes"
+    - if: $SUPPORT_PRIVATE_TEST == "yes"
 
 .needs_samba-def-build-private:
   extends:
@@ -514,11 +516,11 @@ ubuntu1804-samba-o3:
     AUTOBUILD_JOB_NAME: samba-o3
     SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu1804}
     SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE: "--enable-coverage"
-  only:
-    variables:
-      # do not run o3 builds (which run a lot of VMs) if told not to
-      # (this uses the same variable as autobuild.py)
-      - $AUTOBUILD_SKIP_SAMBA_O3 == "0"
+  rules:
+    # do not run o3 builds (which run a lot of VMs) if told not to
+    # (this uses the same variable as autobuild.py)
+    - if: $AUTOBUILD_SKIP_SAMBA_O3 == "1"
+      when: never
 
 # All other jobs do not want code coverage.
 .samba-o3-template:
