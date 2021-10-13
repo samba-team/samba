@@ -319,10 +319,7 @@ create_env:
 #ifdef HAVE_CLEARENV
 	clearenv();
 #else
-	{
-		extern char **environ;
-		environ = calloc(3, sizeof(*environ));
-	}
+	environ = calloc(3, sizeof(*environ));
 #endif
 
 	CUPS_SMB_DEBUG("Setting KRB5CCNAME to '%s'", gen_cc);
