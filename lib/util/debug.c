@@ -1740,13 +1740,16 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 		}
 	}
 
-	/*
-	 * No +=, see man man strlcat
-	 */
-	state.hs_len = strlcat(state.header_str, "] ", sizeof(state.header_str));
-	if (state.hs_len >= sizeof(state.header_str)) {
+	if (state.hs_len >= sizeof(state.header_str) - 1) {
 		goto full;
 	}
+	state.header_str[state.hs_len] = ']';
+	state.hs_len++;
+	if (state.hs_len < sizeof(state.header_str) - 1) {
+		state.header_str[state.hs_len] = ' ';
+		state.hs_len++;
+	}
+	state.header_str[state.hs_len] = '\0';
 
 	if (!state.settings.debug_prefix_timestamp) {
 		state.hs_len += snprintf(state.header_str + state.hs_len,
