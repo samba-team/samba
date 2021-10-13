@@ -1,0 +1,19 @@
+<samba:parameter name="elasticsearch:ignore unknown attribute"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      Ignore unknown Spotlight attributes in search queries. An example query
+      using the unsupported attribute
+      <literal>&quot;kMDItemTopic&quot;</literal> would be
+      <literal>kMDItemTopic==&quot;hotstuff&quot;</literal>. By
+      default any query using such a type would completely fail. By enabling
+      this option, if the type match is a subexpression of a larger expression,
+      then this subexpression is just ignored.
+    </para>
+  </description>
+
+  <value type="default">no</value>
+  <value type="example">yes</value>
+</samba:parameter>
