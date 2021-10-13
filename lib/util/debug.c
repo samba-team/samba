@@ -1698,7 +1698,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 				"[%s, %2d",
 				tvbuf.buf,
 				level);
-	if (state.hs_len >= sizeof(state.header_str)) {
+	if (state.hs_len >= sizeof(state.header_str) - 1) {
 		goto full;
 	}
 
@@ -1711,7 +1711,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 					 sizeof(state.header_str) - state.hs_len,
 					 ", pid=%u",
 					 (unsigned int)getpid());
-		if (state.hs_len >= sizeof(state.header_str)) {
+		if (state.hs_len >= sizeof(state.header_str) - 1) {
 			goto full;
 		}
 	}
@@ -1724,7 +1724,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 					 (unsigned int)getegid(),
 					 (unsigned int)getuid(),
 					 (unsigned int)getgid());
-		if (state.hs_len >= sizeof(state.header_str)) {
+		if (state.hs_len >= sizeof(state.header_str) - 1) {
 			goto full;
 		}
 	}
@@ -1735,9 +1735,6 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 					 sizeof(state.header_str) - state.hs_len,
 					 ", class=%s",
 					 classname_table[cls]);
-		if (state.hs_len >= sizeof(state.header_str)) {
-			goto full;
-		}
 	}
 
 	if (state.hs_len >= sizeof(state.header_str) - 1) {
