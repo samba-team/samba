@@ -97,6 +97,16 @@ include:
     key: ccache.${CI_JOB_NAME}.${SAMBA_CI_JOB_IMAGE}.${SAMBA_CI_FLAVOR}
     paths:
       - ccache
+
+  # This is overridden in many cases, but ensures none of the other
+  # main jobs start until and unless this build finishes.  However
+  # this also ensures we do not download artifacts from any build
+  # unless we specifically depend on it, saving bandwidth
+
+  needs:
+    - job: samba-def-build
+      artifacts: false
+
   before_script:
     - uname -a
     - lsb_release -a
@@ -176,6 +186,7 @@ others:
 .shared_template_build_only:
   extends: .shared_template
   timeout: 2h
+  needs:
   artifacts:
     expire_in: 1 week
     paths:
