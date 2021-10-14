@@ -695,10 +695,12 @@ tgs_make_reply(krb5_context context,
     }
 
     /* The PAC should be the last change to the ticket. */
-    ret = _krb5_kdc_pac_sign_ticket(context, mspac, tgt_name, serverkey,
-				    krbtgtkey, rodc_id, add_ticket_sig, &et);
+    if (mspac != NULL) {
+	ret = _krb5_kdc_pac_sign_ticket(context, mspac, tgt_name, serverkey,
+					krbtgtkey, rodc_id, add_ticket_sig, &et);
 	if (ret)
 	    goto out;
+    }
 
     /* It is somewhat unclear where the etype in the following
        encryption should come from. What we have is a session
