@@ -574,6 +574,12 @@ class RawKerberosTest(TestCaseInTempDir):
             kdc_fast_support = '0'
         cls.kdc_fast_support = bool(int(kdc_fast_support))
 
+        tkt_sig_support = samba.tests.env_get_var_value('TKT_SIG_SUPPORT',
+                                                        allow_missing=True)
+        if tkt_sig_support is None:
+            tkt_sig_support = '0'
+        cls.tkt_sig_support = bool(int(tkt_sig_support))
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
