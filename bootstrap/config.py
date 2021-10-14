@@ -399,6 +399,14 @@ DEB_DISTS = {
             'liburing-dev': '',   # not available
         }
     },
+    'debian11': {
+        'docker_image': 'debian:11',
+        'vagrant_box': 'debian/bullseye64',
+        'replace': {
+            'language-pack-en': '',   # included in locales
+            'liburing-dev': '',   # not available
+        }
+    },
     'ubuntu1804': {
         'docker_image': 'ubuntu:18.04',
         'vagrant_box': 'ubuntu/bionic64',

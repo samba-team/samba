@@ -97,6 +97,9 @@ ubuntu2004:
 debian10:
   extends: .build_image_template
 
+debian11:
+  extends: .build_image_template
+
 fedora33:
   extends: .build_image_template
 
