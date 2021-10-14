@@ -98,6 +98,7 @@ static struct {
 	char header_str[300];
 	char header_str_no_nl[300];
 	size_t hs_len;
+	char msg_no_nl[FORMAT_BUFR_SIZE];
 } state = {
 	.settings = {
 		.timestamp_logs = true
@@ -251,10 +252,7 @@ static void ensure_copy_no_nl(char *out,
  * all active backends.
  */
 
-static void debug_file_log(int msg_level,
-			   const char *msg,
-			   size_t msg_len,
-			   const char *msg_no_nl)
+static void debug_file_log(int msg_level, const char *msg, size_t msg_len)
 {
 	struct iovec iov[] = {
 		{
@@ -305,10 +303,7 @@ static void debug_syslog_reload(bool enabled, bool previously_enabled,
 	}
 }
 
-static void debug_syslog_log(int msg_level,
-			     const char *msg,
-			     size_t msg_len,
-			     const char *msg_no_nl)
+static void debug_syslog_log(int msg_level, const char *msg, size_t msg_len)
 {
 	int priority;
 
@@ -329,10 +324,7 @@ static void debug_syslog_log(int msg_level,
 
 #if defined(HAVE_LIBSYSTEMD_JOURNAL) || defined(HAVE_LIBSYSTEMD)
 #include <systemd/sd-journal.h>
-static void debug_systemd_log(int msg_level,
-			      const char *msg,
-			      size_t msg_len,
-			      const char *msg_no_nl)
+static void debug_systemd_log(int msg_level, const char *msg, size_t msg_len)
 {
 	if (state.hs_len > 0) {
 		ensure_copy_no_nl(state.header_str_no_nl,
@@ -347,7 +339,7 @@ static void debug_systemd_log(int msg_level,
 				msg_level,
 				NULL);
 	}
-	sd_journal_send("MESSAGE=%s", msg_no_nl,
+	sd_journal_send("MESSAGE=%s", state.msg_no_nl,
 			"PRIORITY=%d", debug_level_to_priority(msg_level),
 			"LEVEL=%d", msg_level,
 			NULL);
@@ -356,10 +348,7 @@ static void debug_systemd_log(int msg_level,
 
 #ifdef HAVE_LTTNG_TRACEF
 #include <lttng/tracef.h>
-static void debug_lttng_log(int msg_level,
-			    const char *msg,
-			    size_t msg_len,
-			    const char *msg_no_nl)
+static void debug_lttng_log(int msg_level, const char *msg, size_t msg_len)
 {
 	if (state.hs_len > 0) {
 		ensure_copy_no_nl(state.header_str_no_nl,
@@ -368,7 +357,7 @@ static void debug_lttng_log(int msg_level,
 				  state.hs_len);
 		tracef(state.header_str_no_nl);
 	}
-	tracef(msg_no_nl);
+	tracef(state.msg_no_nl);
 }
 #endif /* WITH_LTTNG_TRACEF */
 
@@ -397,10 +386,7 @@ static void debug_gpfs_reload(bool enabled, bool previously_enabled,
 	}
 }
 
-static void debug_gpfs_log(int msg_level,
-			   const char *msg,
-			   size_t msg_len,
-			   const char *msg_no_nl)
+static void debug_gpfs_log(int msg_level, const char *msg, size_t msg_len)
 {
 	if (state.hs_len > 0) {
 		ensure_copy_no_nl(state.header_str_no_nl,
@@ -409,7 +395,7 @@ static void debug_gpfs_log(int msg_level,
 				  state.hs_len);
 		gpfswrap_add_trace(msg_level, state.header_str_no_nl);
 	}
-	gpfswrap_add_trace(msg_level, msg_no_nl);
+	gpfswrap_add_trace(msg_level, state.msg_no_nl);
 }
 #endif /* HAVE_GPFS */
 
@@ -461,9 +447,7 @@ static void debug_ringbuf_reload(bool enabled, bool previously_enabled,
 	}
 }
 
-static void _debug_ringbuf_log(int msg_level,
-			       const char *msg,
-			       size_t msg_len)
+static void _debug_ringbuf_log(int msg_level, const char *msg, size_t msg_len)
 {
 	size_t allowed_size;
 
@@ -490,10 +474,7 @@ static void _debug_ringbuf_log(int msg_level,
 	debug_ringbuf_ofs += msg_len;
 }
 
-static void debug_ringbuf_log(int msg_level,
-			      const char *msg,
-			      size_t msg_len,
-			      const char *msg_no_nl)
+static void debug_ringbuf_log(int msg_level, const char *msg, size_t msg_len)
 {
 	if (state.hs_len > 0) {
 		_debug_ringbuf_log(msg_level, state.header_str, state.hs_len);
@@ -509,8 +490,7 @@ static struct debug_backend {
 		       const char *prog_name, char *option);
 	void (*log)(int msg_level,
 		    const char *msg,
-		    size_t len,
-		    const char *msg_no_nl);
+		    size_t len);
 	char *option;
 } debug_backends[] = {
 	{
@@ -668,21 +648,17 @@ static void debug_set_backends(const char *param)
 
 static void debug_backends_log(const char *msg, size_t msg_len, int msg_level)
 {
-	char msg_no_nl[FORMAT_BUFR_SIZE];
 	size_t i;
 
 	/*
 	 * Some backends already add an extra newline, so also provide
 	 * a buffer without the newline character.
 	 */
-	copy_no_nl(msg_no_nl, FORMAT_BUFR_SIZE, msg, msg_len);
+	copy_no_nl(state.msg_no_nl, FORMAT_BUFR_SIZE, msg, msg_len);
 
 	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
 		if (msg_level <= debug_backends[i].log_level) {
-			debug_backends[i].log(msg_level,
-					      msg,
-					      msg_len,
-					      msg_no_nl);
+			debug_backends[i].log(msg_level, msg, msg_len);
 		}
 	}
 
