@@ -1485,7 +1485,12 @@ planpythontestsuite("ad_dc", "samba.tests.krb5.as_canonicalization_tests",
                            'ADMIN_USERNAME': '$USERNAME',
                            'ADMIN_PASSWORD': '$PASSWORD'
                        })
-planpythontestsuite("ad_dc", "samba.tests.krb5.compatability_tests")
+planpythontestsuite("ad_dc", "samba.tests.krb5.compatability_tests",
+                    environ={
+                        'ADMIN_USERNAME': '$USERNAME',
+                        'ADMIN_PASSWORD': '$PASSWORD',
+                        'STRICT_CHECKING': '0',
+                    })
 planpythontestsuite("ad_dc", "samba.tests.krb5.kdc_tests")
 planpythontestsuite(
     "ad_dc",

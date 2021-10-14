@@ -1,7 +1,7 @@
 #
 # We expect all the MIT specific compatability tests to fail on heimdal
 # kerberos
-^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_mit_
+^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_mit_(?!ticket_signature)
 #
 # Heimdal currently fails the following MS-KILE client principal lookup
 # tests
@@ -67,3 +67,7 @@
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_no_sname.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_inner_no_sname.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_inner_no_sname.ad_dc
+#
+# Heimdal currently does not generate ticket signatures
+#
+^samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.SimpleKerberosTests.test_heimdal_ticket_signature
