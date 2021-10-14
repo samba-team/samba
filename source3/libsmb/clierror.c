@@ -76,7 +76,7 @@ int cli_status_to_errno(NTSTATUS status)
 		status = dos_to_ntstatus(eclass, ecode);
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_INACCESSIBLE_SYSTEM_SHORTCUT)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 		/*
 		 * Legacy code from cli_errno, see Samba up to 4.13: A
 		 * special case for this Vista error. Since its
