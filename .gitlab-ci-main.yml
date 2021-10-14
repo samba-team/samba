@@ -148,7 +148,6 @@ include:
       - api_failure
       - runner_unsupported
       - stale_schedule
-      - job_execution_timeout
       - archived_failure
       - scheduler_failure
       - data_integrity_failure
