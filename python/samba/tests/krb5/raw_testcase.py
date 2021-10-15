@@ -3530,6 +3530,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           ticket_decryption_key=None,
                           pac_request=None,
                           pac_options=None,
+                          expect_pac=True,
                           to_rodc=False):
 
         def _generate_padata_copy(_kdc_exchange_dict,
@@ -3569,6 +3570,7 @@ class RawKerberosTest(TestCaseInTempDir):
             kdc_options=str(kdc_options),
             pac_request=pac_request,
             pac_options=pac_options,
+            expect_pac=expect_pac,
             to_rodc=to_rodc)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
