@@ -620,6 +620,13 @@ static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
 	}
 
 	/*
+	 * POSIX pathnames must never call into mangling.
+	 */
+	if (state->posix_pathnames) {
+		goto done;
+	}
+
+	/*
 	 * Just the last part of the name doesn't exist.
 	 * We need to strupper() or strlower() it as
 	 * this conversion may be used for file creation
@@ -671,6 +678,8 @@ static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
 			state->smb_fname->base_name + name_ofs;
 		state->end = state->name + strlen(state->name);
 	}
+
+  done:
 
 	DBG_DEBUG("New file [%s]\n", state->name);
 	state->done = true;
