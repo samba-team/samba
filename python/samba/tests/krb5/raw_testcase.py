@@ -3447,6 +3447,15 @@ class RawKerberosTest(TestCaseInTempDir):
         _, pac = self.replace_pac(auth_data, None, expect_pac)
         return pac
 
+    def get_ticket_pac(self, ticket, expect_pac=True):
+        auth_data = ticket.ticket_private.get('authorization-data')
+        if expect_pac:
+            self.assertIsNotNone(auth_data)
+        elif auth_data is None:
+            return None
+
+        return self.get_pac(auth_data, expect_pac=expect_pac)
+
     def get_krbtgt_checksum_key(self):
         krbtgt_creds = self.get_krbtgt_creds()
         krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
