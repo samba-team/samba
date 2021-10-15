@@ -1260,6 +1260,9 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		 * A special case - if we don't have any wildcards or mangling chars and are case
 		 * sensitive or the underlying filesystem is case insensitive then searching
 		 * won't help.
+		 *
+		 * NB. As POSIX sets state->case_sensitive as
+		 * true we will never call into mangle_is_mangled() here.
 		 */
 
 		if ((state->case_sensitive || !(state->conn->fs_capabilities &
