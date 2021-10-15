@@ -540,6 +540,9 @@ struct uc_state {
 	bool posix_pathnames;
 	bool allow_wcard_last_component;
 	bool done;
+	bool case_sensitive;
+	bool case_preserve;
+	bool short_case_preserve;
 };
 
 static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
@@ -977,6 +980,9 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		.ucf_flags = ucf_flags,
 		.posix_pathnames = (ucf_flags & UCF_POSIX_PATHNAMES),
 		.allow_wcard_last_component = (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP),
+		.case_sensitive = conn->case_sensitive,
+		.case_preserve = conn->case_preserve,
+		.short_case_preserve = conn->short_case_preserve,
 	};
 
 	*smb_fname_out = NULL;
