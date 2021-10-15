@@ -470,6 +470,12 @@ static NTSTATUS normalize_filename_case(connection_struct *conn,
 {
 	bool ok;
 
+	if (ucf_flags & UCF_POSIX_PATHNAMES) {
+		/*
+		 * POSIX never normalizes filename case.
+		 */
+		return NT_STATUS_OK;
+	}
 	if (!conn->case_sensitive) {
 		return NT_STATUS_OK;
 	}
