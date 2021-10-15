@@ -477,7 +477,7 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	 * providing case sensitive semantics or the underlying
 	 * filesystem is case sensitive.
 	 */
-	if (dptr->conn->case_sensitive ||
+	if (dptr->dir_hnd->case_sensitive ||
 	    !(dptr->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH))
 	{
 		goto clean;
@@ -1717,7 +1717,7 @@ static bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset)
 	if (dir_hnd->name_cache_size && dir_hnd->name_cache) {
 		for (i = dir_hnd->name_cache_index; i >= 0; i--) {
 			struct name_cache_entry *e = &dir_hnd->name_cache[i];
-			if (e->name && (conn->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
+			if (e->name && (dir_hnd->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
 				*poffset = e->offset;
 				SeekDir(dir_hnd, e->offset);
 				return True;
@@ -1726,7 +1726,7 @@ static bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset)
 		for (i = dir_hnd->name_cache_size - 1;
 				i > dir_hnd->name_cache_index; i--) {
 			struct name_cache_entry *e = &dir_hnd->name_cache[i];
-			if (e->name && (conn->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
+			if (e->name && (dir_hnd->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
 				*poffset = e->offset;
 				SeekDir(dir_hnd, e->offset);
 				return True;
@@ -1739,7 +1739,7 @@ static bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset)
 	dir_hnd->file_number = 0;
 	*poffset = START_OF_DIRECTORY_OFFSET;
 	while ((entry = ReadDirName(dir_hnd, poffset, NULL, &talloced))) {
-		if (conn->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
+		if (dir_hnd->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
 			TALLOC_FREE(talloced);
 			return True;
 		}
