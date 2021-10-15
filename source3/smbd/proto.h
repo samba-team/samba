@@ -363,11 +363,6 @@ NTSTATUS check_name(connection_struct *conn,
 NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 				    uint32_t ucf_flags,
 				    NTTIME twrp);
-int get_real_filename(connection_struct *conn,
-		      struct smb_filename *path,
-		      const char *name,
-		      TALLOC_CTX *mem_ctx,
-		      char **found_name);
 int get_real_filename_full_scan(connection_struct *conn,
 				const char *path,
 				const char *name,

@@ -30,6 +30,12 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 
+static int get_real_filename(connection_struct *conn,
+			     struct smb_filename *path,
+			     const char *name,
+			     TALLOC_CTX *mem_ctx,
+			     char **found_name);
+
 uint32_t ucf_flags_from_smb_request(struct smb_request *req)
 {
 	uint32_t ucf_flags = 0;
@@ -1685,11 +1691,11 @@ int get_real_filename_full_scan(connection_struct *conn,
  fallback.
 ****************************************************************************/
 
-int get_real_filename(connection_struct *conn,
-		      struct smb_filename *path,
-		      const char *name,
-		      TALLOC_CTX *mem_ctx,
-		      char **found_name)
+static int get_real_filename(connection_struct *conn,
+			     struct smb_filename *path,
+			     const char *name,
+			     TALLOC_CTX *mem_ctx,
+			     char **found_name)
 {
 	int ret;
 	bool mangled;
