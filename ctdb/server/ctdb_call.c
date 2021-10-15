@@ -1398,8 +1398,10 @@ static void ctdb_call_resend(struct ctdb_call_state *state)
 	state->c->hdr.destnode = ctdb->pnn;
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
-	DEBUG(DEBUG_NOTICE,("resent ctdb_call for db %s reqid %u generation %u\n",
-			    state->ctdb_db->db_name, state->reqid, state->generation));
+	D_INFO("resent ctdb_call for db %s reqid %u generation %u\n",
+	       state->ctdb_db->db_name,
+	       state->reqid,
+	       state->generation);
 }
 
 /*
@@ -1408,11 +1410,17 @@ static void ctdb_call_resend(struct ctdb_call_state *state)
 void ctdb_call_resend_db(struct ctdb_db_context *ctdb_db)
 {
 	struct ctdb_call_state *state, *next;
+	unsigned int count = 0;
 
 	for (state = ctdb_db->pending_calls; state; state = next) {
 		next = state->next;
 		ctdb_call_resend(state);
+		count++;
 	}
+	D_NOTICE("Resent calls for database=%s, generation=%u, count=%u\n",
+		 ctdb_db->db_name,
+		 ctdb_db->generation,
+		 count);
 }
 
 void ctdb_call_resend_all(struct ctdb_context *ctdb)
