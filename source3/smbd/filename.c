@@ -987,6 +987,13 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 
 	*smb_fname_out = NULL;
 
+	if (state->posix_pathnames) {
+		/* POSIX means ignore case settings on share. */
+		state->case_sensitive = true;
+		state->case_preserve = true;
+		state->short_case_preserve = true;
+	}
+
 	state->smb_fname = talloc_zero(state->mem_ctx, struct smb_filename);
 	if (state->smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
