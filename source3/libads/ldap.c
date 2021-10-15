@@ -280,12 +280,12 @@ static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
 
 	/* Fill in the ads->config values */
 
+	ADS_TALLOC_CONST_FREE(ads->config.workgroup);
 	ADS_TALLOC_CONST_FREE(ads->config.realm);
 	ADS_TALLOC_CONST_FREE(ads->config.bind_path);
 	ADS_TALLOC_CONST_FREE(ads->config.ldap_server_name);
 	ADS_TALLOC_CONST_FREE(ads->config.server_site_name);
 	ADS_TALLOC_CONST_FREE(ads->config.client_site_name);
-	ADS_TALLOC_CONST_FREE(ads->server.workgroup);
 
 	if (!check_cldap_reply_required_flags(cldap_reply->server_type,
 					      ads->config.flags)) {
@@ -296,6 +296,13 @@ static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
 	ads->config.ldap_server_name = talloc_strdup(ads,
 						     cldap_reply->pdc_dns_name);
 	if (ads->config.ldap_server_name == NULL) {
+		DBG_WARNING("Out of memory\n");
+		ret = false;
+		goto out;
+	}
+
+	ads->config.workgroup = talloc_strdup(ads, cldap_reply->domain_name);
+	if (ads->config.workgroup == NULL) {
 		DBG_WARNING("Out of memory\n");
 		ret = false;
 		goto out;
@@ -337,13 +344,6 @@ static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
 			ret = false;
 			goto out;
 		}
-	}
-
-	ads->server.workgroup = talloc_strdup(ads, cldap_reply->domain_name);
-	if (ads->server.workgroup == NULL) {
-		DBG_WARNING("Out of memory\n");
-		ret = false;
-		goto out;
 	}
 
 	ads->ldap.port = gc ? LDAP_GC_PORT : LDAP_PORT;
