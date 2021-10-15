@@ -59,6 +59,7 @@ struct smb_Dir {
 	struct name_cache_entry *name_cache;
 	unsigned int name_cache_index;
 	unsigned int file_number;
+	bool case_sensitive;
 	files_struct *fsp; /* Back pointer to containing fsp, only
 			      set from OpenDir_fsp(). */
 };
@@ -1549,6 +1550,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		goto fail;
 	}
 	dir_hnd->fsp = fsp;
+	dir_hnd->case_sensitive = conn->case_sensitive;
 
 	talloc_set_destructor(dir_hnd, smb_Dir_destructor);
 
