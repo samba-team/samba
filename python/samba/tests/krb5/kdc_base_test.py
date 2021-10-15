@@ -1306,9 +1306,9 @@ class KDCBaseTest(RawKerberosTest):
 
     def get_tgt(self, creds, to_rodc=False, kdc_options=None,
                 expected_flags=None, unexpected_flags=None,
-                fresh=False):
+                pac_request=True, expect_pac=True, fresh=False):
         user_name = creds.get_username()
-        cache_key = (user_name, to_rodc, kdc_options)
+        cache_key = (user_name, to_rodc, kdc_options, pac_request)
 
         if not fresh:
             tgt = self.tkt_cache.get(cache_key)
@@ -1363,7 +1363,7 @@ class KDCBaseTest(RawKerberosTest):
             kdc_options=kdc_options,
             preauth_key=None,
             ticket_decryption_key=ticket_decryption_key,
-            pac_request=True,
+            pac_request=pac_request,
             pac_options=pac_options,
             to_rodc=to_rodc)
         self.check_pre_authentication(rep)
@@ -1405,8 +1405,9 @@ class KDCBaseTest(RawKerberosTest):
             kdc_options=kdc_options,
             preauth_key=preauth_key,
             ticket_decryption_key=ticket_decryption_key,
-            pac_request=True,
+            pac_request=pac_request,
             pac_options=pac_options,
+            expect_pac=expect_pac,
             to_rodc=to_rodc)
         self.check_as_reply(rep)
 
