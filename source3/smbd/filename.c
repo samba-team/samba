@@ -629,7 +629,7 @@ static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
 	if (!state->case_preserve ||
 	    (mangle_is_8_3(state->name, false,
 			   state->conn->params) &&
-	     !state->conn->short_case_preserve)) {
+	     !state->short_case_preserve)) {
 		if (!strnorm(state->name,
 			     lp_default_case(SNUM(state->conn)))) {
 			DBG_DEBUG("strnorm %s failed\n",
