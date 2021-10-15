@@ -59,6 +59,7 @@ interface ads
 
 	typedef [nopull,nopush] struct {
 		nbt_server_type flags; /* cldap flags identifying the services. */
+		string workgroup;
 		string realm;
 		string bind_path;
 		string ldap_server_name;
