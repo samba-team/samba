@@ -19,12 +19,12 @@ dbcheck() {
 
 # This list of attributes can be freely extended
 dbcheck_fix_one_way_links() {
-	$PYTHON $BINDIR/samba-tool dbcheck --quiet --fix --yes fix_all_old_dn_string_component_mismatch --attrs="lastKnownParent defaultObjectCategory fromServer rIDSetReferences msDS-RevealOnDemandGroup msDS-NeverRevealGroup" --cross-ncs $ARGS
+	$PYTHON $BINDIR/samba-tool dbcheck --quiet --fix --yes fix_all_old_dn_string_component_mismatch --attrs="lastKnownParent defaultObjectCategory fromServer rIDSetReferences" --cross-ncs $ARGS
 }
 
 # This list of attributes can be freely extended
 dbcheck_fix_stale_links() {
-	$PYTHON $BINDIR/samba-tool dbcheck --quiet --fix --yes remove_plausible_deleted_DN_links --attrs="member msDS-NC-Replica-Locations msDS-NC-RO-Replica-Locations" --cross-ncs $ARGS
+	$PYTHON $BINDIR/samba-tool dbcheck --quiet --fix --yes remove_plausible_deleted_DN_links --attrs="member msDS-NC-Replica-Locations msDS-NC-RO-Replica-Locations msDS-RevealOnDemandGroup msDS-NeverRevealGroup" --cross-ncs $ARGS
 }
 
 # This list of attributes can be freely extended
