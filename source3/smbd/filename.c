@@ -948,7 +948,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 		stat_cache_add(state->orig_path,
 			       state->dirpath,
 			       state->smb_fname->twrp,
-			       state->conn->case_sensitive);
+			       state->case_sensitive);
 	}
 
 	/*
@@ -1145,7 +1145,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 * added and verified in build_stream_path().
 	 */
 
-	if (!state->conn->case_sensitive ||
+	if (!state->case_sensitive ||
 	    !(state->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH))
 	{
 		bool found;
@@ -1213,7 +1213,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 			stat_cache_add(state->orig_path,
 				       state->smb_fname->base_name,
 				       state->smb_fname->twrp,
-				       state->conn->case_sensitive);
+				       state->case_sensitive);
 			DBG_DEBUG("Conversion of base_name finished "
 				  "[%s] -> [%s]\n",
 				  state->orig_path, state->smb_fname->base_name);
@@ -1255,7 +1255,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		 * won't help.
 		 */
 
-		if ((state->conn->case_sensitive || !(state->conn->fs_capabilities &
+		if ((state->case_sensitive || !(state->conn->fs_capabilities &
 					FILE_CASE_SENSITIVE_SEARCH)) &&
 				!mangle_is_mangled(state->smb_fname->base_name, state->conn->params)) {
 
@@ -1373,7 +1373,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		stat_cache_add(state->orig_path,
 			       state->smb_fname->base_name,
 			       state->smb_fname->twrp,
-			       state->conn->case_sensitive);
+			       state->case_sensitive);
 	}
 
 	/*
