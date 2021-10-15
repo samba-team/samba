@@ -1356,7 +1356,13 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 * just a component. JRA.
 	 */
 
-	if (mangle_is_mangled(state->name, state->conn->params)) {
+	if (state->posix_pathnames) {
+		/*
+		 * POSIX names are never mangled and we must not
+		 * call into mangling functions.
+		 */
+		state->component_was_mangled = false;
+	} else if (mangle_is_mangled(state->name, state->conn->params)) {
 		state->component_was_mangled = true;
 	}
 
