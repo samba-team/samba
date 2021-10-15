@@ -626,7 +626,7 @@ static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
 	 * purposes. Fix inspired by
 	 * Thomas Neumann <t.neumann@iku-ag.de>.
 	 */
-	if (!state->conn->case_preserve ||
+	if (!state->case_preserve ||
 	    (mangle_is_8_3(state->name, false,
 			   state->conn->params) &&
 	     !state->conn->short_case_preserve)) {
