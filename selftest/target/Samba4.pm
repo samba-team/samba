@@ -239,12 +239,19 @@ sub wait_for_start($$)
 
 sub write_ldb_file($$$)
 {
-	my ($self, $file, $ldif) = @_;
+	my ($self, $file, $ldif_in) = @_;
 
 	my $ldbadd =  Samba::bindir_path($self, "ldbadd");
-	open(LDIF, "|$ldbadd -H $file >/dev/null");
-	print LDIF $ldif;
-	return(close(LDIF));
+	open(my $ldif, "|$ldbadd -H $file > /dev/null")
+	    or die "Failed to run $ldbadd: $!";
+	print $ldif $ldif_in;
+	close($ldif);
+
+	unless ($? == 0) {
+	    warn("$ldbadd failed: $?");
+	    return undef;
+	}
+	return 1;
 }
 
 sub add_wins_config($$)
@@ -946,6 +953,8 @@ sub provision_raw_step2($$$)
 {
 	my ($self, $ctx, $ret) = @_;
 
+	my $ldif;
+
 	my $provision_cmd = join(" ", @{$ctx->{provision_options}});
 	unless (system($provision_cmd) == 0) {
 		warn("Unable to provision: \n$provision_cmd\n");
@@ -991,17 +1000,23 @@ sub provision_raw_step2($$$)
 
 	my $user_dn = "cn=$testallowed_account,cn=users,$base_dn";
 	$testallowed_account = "testallowed account";
-	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
-	print LDIF "dn: $user_dn
+	open($ldif, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb")
+	    or die "Failed to run $ldbmodify: $!";
+	print $ldif "dn: $user_dn
 changetype: modify
 replace: samAccountName
 samAccountName: $testallowed_account
 -
 ";
-	close(LDIF);
+	close($ldif);
+	unless ($? == 0) {
+	    warn("$ldbmodify failed: $?");
+	    return undef;
+	}
 
-	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
-	print LDIF "dn: $user_dn
+	open($ldif, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb")
+            or die "Failed to run $ldbmodify: $!";
+	print $ldif "dn: $user_dn
 changetype: modify
 replace: userPrincipalName
 userPrincipalName: testallowed upn\@$ctx->{realm}
@@ -1009,7 +1024,11 @@ replace: servicePrincipalName
 servicePrincipalName: host/testallowed
 -	    
 ";
-	close(LDIF);
+	close($ldif);
+	unless ($? == 0) {
+	    warn("$ldbmodify failed: $?");
+	    return undef;
+	}
 
 	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
@@ -1020,14 +1039,19 @@ servicePrincipalName: host/testallowed
 	}
 
 	$user_dn = "cn=testdenied,cn=users,$base_dn";
-	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
-	print LDIF "dn: $user_dn
+        open($ldif, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb")
+            or die "Failed to run $ldbmodify: $!";
+        print $ldif "dn: $user_dn
 changetype: modify
 replace: userPrincipalName
 userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 -	    
 ";
-	close(LDIF);
+	close($ldif);
+	unless ($? == 0) {
+	    warn("$ldbmodify failed: $?");
+	    return undef;
+	}
 
 	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
@@ -1038,8 +1062,9 @@ userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 	}
 
 	$user_dn = "cn=testupnspn,cn=users,$base_dn";
-	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
-	print LDIF "dn: $user_dn
+        open($ldif, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb")
+            or die "Failed to run $ldbmodify: $!";
+        print $ldif "dn: $user_dn
 changetype: modify
 replace: userPrincipalName
 userPrincipalName: http/testupnspn.$ctx->{dnsname}\@$ctx->{realm}
@@ -1047,7 +1072,11 @@ replace: servicePrincipalName
 servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 -
 ";
-	close(LDIF);
+	close($ldif);
+	unless ($? == 0) {
+	    warn("$ldbmodify failed: $?");
+	    return undef;
+	}
 
 	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
@@ -1110,14 +1139,19 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	# Change the userPrincipalName for jane
 	$user_dn = "cn=jane,cn=users,$base_dn";
 
-	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
-	print LDIF "dn: $user_dn
+	open($ldif, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb")
+            or die "Failed to run $ldbmodify: $!";
+        print $ldif "dn: $user_dn
 changetype: modify
 replace: userPrincipalName
 userPrincipalName: jane.doe\@$ctx->{realm}
 -
 ";
-	close(LDIF);
+	close($ldif);
+	unless ($? == 0) {
+	    warn("$ldbmodify failed: $?");
+	    return undef;
+	}
 
 	return $ret;
 }
