@@ -1273,10 +1273,11 @@ class KDCBaseTest(RawKerberosTest):
     def get_service_ticket(self, tgt, target_creds, service='host',
                            to_rodc=False, kdc_options=None,
                            expected_flags=None, unexpected_flags=None,
-                           fresh=False):
+                           pac_request=True, expect_pac=True, fresh=False):
         user_name = tgt.cname['name-string'][0]
         target_name = target_creds.get_username()[:-1]
-        cache_key = (user_name, target_name, service, to_rodc, kdc_options)
+        cache_key = (user_name, target_name, service, to_rodc, kdc_options,
+                     pac_request)
 
         if not fresh:
             ticket = self.tkt_cache.get(cache_key)
@@ -1312,6 +1313,8 @@ class KDCBaseTest(RawKerberosTest):
             tgt=tgt,
             authenticator_subkey=authenticator_subkey,
             kdc_options=kdc_options,
+            pac_request=pac_request,
+            expect_pac=expect_pac,
             to_rodc=to_rodc)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
@@ -1329,6 +1332,7 @@ class KDCBaseTest(RawKerberosTest):
             krbtgt_creds = self.get_krbtgt_creds()
         krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
         self.verify_ticket(service_ticket_creds, krbtgt_key,
+                           expect_pac=expect_pac,
                            expect_ticket_checksum=self.tkt_sig_support)
 
         self.tkt_cache[cache_key] = service_ticket_creds
