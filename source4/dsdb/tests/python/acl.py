@@ -2190,6 +2190,54 @@ class AclSPNTests(AclTests):
     def test_spn_rodc(self):
         self.dc_spn_test(self.rodcctx)
 
+    def test_delete_add_spn(self):
+        # Grant Validated-SPN property.
+        mod = f'(OA;;SW;{security.GUID_DRS_VALIDATE_SPN};;{self.user_sid1})'
+        self.sd_utils.dacl_add_ace(self.computerdn, mod)
+
+        spn_base = f'HOST/{self.computername}'
+
+        allowed_spn = f'{spn_base}.{self.dcctx.dnsdomain}'
+        not_allowed_spn = f'{spn_base}/{self.dcctx.get_domain_name()}'
+
+        # Ensure we are able to add an allowed SPN.
+        msg = Message(Dn(self.ldb_user1, self.computerdn))
+        msg['servicePrincipalName'] = MessageElement(allowed_spn,
+                                                     FLAG_MOD_ADD,
+                                                     'servicePrincipalName')
+        self.ldb_user1.modify(msg)
+
+        # Ensure we are not able to add a disallowed SPN.
+        msg = Message(Dn(self.ldb_user1, self.computerdn))
+        msg['servicePrincipalName'] = MessageElement(not_allowed_spn,
+                                                     FLAG_MOD_ADD,
+                                                     'servicePrincipalName')
+        try:
+            self.ldb_user1.modify(msg)
+        except LdbError as e:
+            num, _ = e.args
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail(f'able to add disallowed SPN {not_allowed_spn}')
+
+        # Ensure that deleting an existing SPN followed by adding a disallowed
+        # SPN fails.
+        msg = Message(Dn(self.ldb_user1, self.computerdn))
+        msg['0'] = MessageElement([],
+                                  FLAG_MOD_DELETE,
+                                  'servicePrincipalName')
+        msg['1'] = MessageElement(not_allowed_spn,
+                                  FLAG_MOD_ADD,
+                                  'servicePrincipalName')
+        try:
+            self.ldb_user1.modify(msg)
+        except LdbError as e:
+            num, _ = e.args
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail(f'able to add disallowed SPN {not_allowed_spn}')
+
+
 # tests SEC_ADS_LIST vs. SEC_ADS_LIST_OBJECT
 @DynamicTestCase
 class AclVisibiltyTests(AclTests):
