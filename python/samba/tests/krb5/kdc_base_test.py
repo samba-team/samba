@@ -1275,7 +1275,7 @@ class KDCBaseTest(RawKerberosTest):
                            expected_flags=None, unexpected_flags=None,
                            fresh=False):
         user_name = tgt.cname['name-string'][0]
-        target_name = target_creds.get_username()
+        target_name = target_creds.get_username()[:-1]
         cache_key = (user_name, target_name, service, to_rodc, kdc_options)
 
         if not fresh:
@@ -1288,40 +1288,40 @@ class KDCBaseTest(RawKerberosTest):
 
         if kdc_options is None:
             kdc_options = '0'
-        kdc_options = krb5_asn1.KDCOptions(kdc_options)
+        kdc_options = str(krb5_asn1.KDCOptions(kdc_options))
 
-        key = tgt.session_key
-        ticket = tgt.ticket
-
-        cname = tgt.cname
-        realm = tgt.crealm
-
-        target_name = target_creds.get_username()[:-1]
         sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=[service, target_name])
+        srealm = target_creds.get_realm()
 
-        rep, enc_part = self.tgs_req(cname, sname, realm, ticket, key, etype,
-                                     to_rodc=to_rodc,
-                                     service_creds=target_creds,
-                                     kdc_options=kdc_options,
-                                     expected_flags=expected_flags,
-                                     unexpected_flags=unexpected_flags)
+        authenticator_subkey = self.RandomKey(kcrypto.Enctype.AES256)
 
-        service_ticket = rep['ticket']
+        decryption_key = self.TicketDecryptionKey_from_creds(target_creds)
 
-        ticket_etype = service_ticket['enc-part']['etype']
-        target_key = self.TicketDecryptionKey_from_creds(target_creds,
-                                                         etype=ticket_etype)
+        kdc_exchange_dict = self.tgs_exchange_dict(
+            expected_crealm=tgt.crealm,
+            expected_cname=tgt.cname,
+            expected_srealm=srealm,
+            expected_sname=sname,
+            expected_supported_etypes=target_creds.tgs_supported_enctypes,
+            expected_flags=expected_flags,
+            unexpected_flags=unexpected_flags,
+            ticket_decryption_key=decryption_key,
+            check_rep_fn=self.generic_check_kdc_rep,
+            check_kdc_private_fn=self.generic_check_kdc_private,
+            tgt=tgt,
+            authenticator_subkey=authenticator_subkey,
+            kdc_options=kdc_options,
+            to_rodc=to_rodc)
 
-        session_key = self.EncryptionKey_import(enc_part['key'])
+        rep = self._generic_kdc_exchange(kdc_exchange_dict,
+                                         cname=None,
+                                         realm=srealm,
+                                         sname=sname,
+                                         etypes=etype)
+        self.check_tgs_reply(rep)
 
-        service_ticket_creds = KerberosTicketCreds(service_ticket,
-                                                   session_key,
-                                                   crealm=realm,
-                                                   cname=cname,
-                                                   srealm=realm,
-                                                   sname=sname,
-                                                   decryption_key=target_key)
+        service_ticket_creds = kdc_exchange_dict['rep_ticket_creds']
 
         if to_rodc:
             krbtgt_creds = self.get_rodc_krbtgt_creds()
