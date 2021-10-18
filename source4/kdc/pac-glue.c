@@ -651,11 +651,6 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	}
 	*_upn_info_blob = NULL;
 
-	/* The user account may be set not to want the PAC */
-	if ( ! samba_princ_needs_pac(p)) {
-		return NT_STATUS_OK;
-	}
-
 	logon_blob = talloc_zero(mem_ctx, DATA_BLOB);
 	if (logon_blob == NULL) {
 		return NT_STATUS_NO_MEMORY;
