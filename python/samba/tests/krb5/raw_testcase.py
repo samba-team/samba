@@ -2385,13 +2385,6 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementPresent(ticket_private, 'authorization-data',
                                       expect_empty=not expect_pac)
 
-            if expect_pac:
-                authorization_data = self.getElementValue(ticket_private,
-                                                          'authorization-data')
-                pac_data = self.get_pac(authorization_data)
-
-                self.check_pac_buffers(pac_data, kdc_exchange_dict)
-
         encpart_session_key = None
         if encpart_private is not None:
             self.assertElementPresent(encpart_private, 'key')
@@ -2492,6 +2485,13 @@ class RawKerberosTest(TestCaseInTempDir):
             decryption_key=ticket_decryption_key,
             ticket_private=ticket_private,
             encpart_private=encpart_private)
+
+        if ticket_private is not None:
+            pac_data = self.get_ticket_pac(ticket_creds, expect_pac=expect_pac)
+            if expect_pac:
+                self.check_pac_buffers(pac_data, kdc_exchange_dict)
+            else:
+                self.assertIsNone(pac_data)
 
         expect_ticket_checksum = kdc_exchange_dict['expect_ticket_checksum']
         if expect_ticket_checksum:
