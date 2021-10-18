@@ -141,7 +141,3 @@
 # KRB5KRB_ERR_RESPONSE_TOO_BIG in this specific case
 #
 ^samba4.krb5.kdc with machine account.as-req-pac-request.fl2000dc:local
-#
-# TGS tests
-#
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_service_no_auth_data_required
