@@ -698,7 +698,12 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 		return LDB_SUCCESS;
 	}
 
-	ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+	ret = acl_check_extended_right(tmp_ctx,
+				       module,
+				       req,
+				       objectclass,
+				       sd,
+				       acl_user_token(module),
 				       GUID_DRS_VALIDATE_SPN,
 				       SEC_ADS_SELF_WRITE,
 				       sid);
@@ -911,7 +916,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
-/* ckecks if modifications are allowed on "Member" attribute */
+/* checks if modifications are allowed on "Member" attribute */
 static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
 				     struct ldb_module *module,
 				     struct ldb_request *req,
@@ -925,6 +930,16 @@ static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *user_dn;
 	struct ldb_message_element *member_el;
+	const struct ldb_message *msg = NULL;
+
+	if (req->operation == LDB_MODIFY) {
+		msg = req->op.mod.message;
+	} else if (req->operation == LDB_ADD) {
+		msg = req->op.add.message;
+	} else {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	/* if we have wp, we can do whatever we like */
 	if (acl_check_access_on_attribute(module,
 					  mem_ctx,
@@ -935,13 +950,13 @@ static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
 		return LDB_SUCCESS;
 	}
 	/* if we are adding/deleting ourselves, check for self membership */
-	ret = dsdb_find_dn_by_sid(ldb, mem_ctx, 
-				  &acl_user_token(module)->sids[PRIMARY_USER_SID_INDEX], 
+	ret = dsdb_find_dn_by_sid(ldb, mem_ctx,
+				  &acl_user_token(module)->sids[PRIMARY_USER_SID_INDEX],
 				  &user_dn);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	member_el = ldb_msg_find_element(req->op.mod.message, "member");
+	member_el = ldb_msg_find_element(msg, "member");
 	if (!member_el) {
 		return ldb_operr(ldb);
 	}
@@ -955,13 +970,18 @@ static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
 			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 		}
 	}
-	ret = acl_check_extended_right(mem_ctx, sd, acl_user_token(module),
+	ret = acl_check_extended_right(mem_ctx,
+				       module,
+				       req,
+				       objectclass,
+				       sd,
+				       acl_user_token(module),
 				       GUID_DRS_SELF_MEMBERSHIP,
 				       SEC_ADS_SELF_WRITE,
 				       sid);
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 		dsdb_acl_debug(sd, acl_user_token(module),
-			       req->op.mod.message->dn,
+			       msg->dn,
 			       true,
 			       10);
 	}
@@ -1021,6 +1041,9 @@ static int acl_check_password_rights(
 		 * so we don't have to strict verification of the input.
 		 */
 		ret = acl_check_extended_right(tmp_ctx,
+					       module,
+					       req,
+					       objectclass,
 					       sd,
 					       acl_user_token(module),
 					       GUID_DRS_USER_CHANGE_PASSWORD,
@@ -1044,7 +1067,12 @@ static int acl_check_password_rights(
 		 * the only caller is samdb_set_password_internal(),
 		 * so we don't have to strict verification of the input.
 		 */
-		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+		ret = acl_check_extended_right(tmp_ctx,
+					       module,
+					       req,
+					       objectclass,
+					       sd,
+					       acl_user_token(module),
 					       GUID_DRS_FORCE_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
 					       sid);
@@ -1097,7 +1125,12 @@ static int acl_check_password_rights(
 	if (rep_attr_cnt > 0) {
 		pav->pwd_reset = true;
 
-		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+		ret = acl_check_extended_right(tmp_ctx,
+					       module,
+					       req,
+					       objectclass,
+					       sd,
+					       acl_user_token(module),
 					       GUID_DRS_FORCE_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
 					       sid);
@@ -1107,7 +1140,12 @@ static int acl_check_password_rights(
 	if (add_attr_cnt != del_attr_cnt) {
 		pav->pwd_reset = true;
 
-		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+		ret = acl_check_extended_right(tmp_ctx,
+					       module,
+					       req,
+					       objectclass,
+					       sd,
+					       acl_user_token(module),
 					       GUID_DRS_FORCE_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
 					       sid);
@@ -1117,7 +1155,12 @@ static int acl_check_password_rights(
 	if (add_val_cnt == 1 && del_val_cnt == 1) {
 		pav->pwd_reset = false;
 
-		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+		ret = acl_check_extended_right(tmp_ctx,
+					       module,
+					       req,
+					       objectclass,
+					       sd,
+					       acl_user_token(module),
 					       GUID_DRS_USER_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
 					       sid);
@@ -1131,7 +1174,12 @@ static int acl_check_password_rights(
 	if (add_val_cnt == 1 && del_val_cnt == 0) {
 		pav->pwd_reset = true;
 
-		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+		ret = acl_check_extended_right(tmp_ctx,
+					       module,
+					       req,
+					       objectclass,
+					       sd,
+					       acl_user_token(module),
 					       GUID_DRS_FORCE_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
 					       sid);
@@ -1686,6 +1734,9 @@ static int acl_check_reanimate_tombstone(TALLOC_CTX *mem_ctx,
 	struct ldb_result *acl_res;
 	struct security_descriptor *sd = NULL;
 	struct dom_sid *sid = NULL;
+	const struct dsdb_schema *schema = NULL;
+	const struct dsdb_class *objectclass = NULL;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	static const char *acl_attrs[] = {
 		"nTSecurityDescriptor",
 		"objectClass",
@@ -1706,10 +1757,20 @@ static int acl_check_reanimate_tombstone(TALLOC_CTX *mem_ctx,
 
 	ret = dsdb_get_sd_from_ldb_message(mem_ctx, req, acl_res->msgs[0], &sd);
 	sid = samdb_result_dom_sid(mem_ctx, acl_res->msgs[0], "objectSid");
+	schema = dsdb_get_schema(ldb, req);
+	if (!schema) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	objectclass = dsdb_get_structural_oc_from_msg(schema, acl_res->msgs[0]);
 	if (ret != LDB_SUCCESS || !sd) {
 		return ldb_operr(ldb_module_get_ctx(module));
 	}
-	return acl_check_extended_right(mem_ctx, sd, acl_user_token(module),
+	return acl_check_extended_right(mem_ctx,
+					module,
+					req,
+					objectclass,
+					sd,
+					acl_user_token(module),
 					GUID_DRS_REANIMATE_TOMBSTONE,
 					SEC_ADS_CONTROL_ACCESS, sid);
 }

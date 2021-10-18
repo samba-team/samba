@@ -2192,12 +2192,15 @@ static int samldb_check_user_account_control_objectclass_invariants(
 	return LDB_SUCCESS;
 }
 
-static int samldb_get_domain_secdesc(struct samldb_ctx *ac,
-				     struct security_descriptor **domain_sd)
+static int samldb_get_domain_secdesc_and_oc(struct samldb_ctx *ac,
+					    struct security_descriptor **domain_sd,
+					    const struct dsdb_class **objectclass)
 {
-	const char * const sd_attrs[] = {"ntSecurityDescriptor", NULL};
+	const char * const sd_attrs[] = {"ntSecurityDescriptor", "objectClass", NULL};
 	struct ldb_result *res;
 	struct ldb_dn *domain_dn = ldb_get_default_basedn(ldb_module_get_ctx(ac->module));
+	const struct dsdb_schema *schema = NULL;
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	int ret = dsdb_module_search_dn(ac->module, ac, &res,
 					domain_dn,
 					sd_attrs,
@@ -2210,6 +2213,11 @@ static int samldb_get_domain_secdesc(struct samldb_ctx *ac,
 		return ldb_module_operr(ac->module);
 	}
 
+	schema = dsdb_get_schema(ldb, ac->req);
+	if (!schema) {
+		return ldb_module_operr(ac->module);;
+	}
+	*objectclass = dsdb_get_structural_oc_from_msg(schema, res->msgs[0]);
 	return dsdb_get_sd_from_ldb_message(ldb_module_get_ctx(ac->module),
 					    ac, res->msgs[0], domain_sd);
 
@@ -2228,6 +2236,7 @@ static int samldb_check_user_account_control_acl(struct samldb_ctx *ac,
 	bool need_acl_check = false;
 	struct security_token *user_token;
 	struct security_descriptor *domain_sd;
+	const struct dsdb_class *objectclass = NULL;
 	const struct uac_to_guid {
 		uint32_t uac;
 		uint32_t priv_to_change_from;
@@ -2313,7 +2322,7 @@ static int samldb_check_user_account_control_acl(struct samldb_ctx *ac,
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
 
-	ret = samldb_get_domain_secdesc(ac, &domain_sd);
+	ret = samldb_get_domain_secdesc_and_oc(ac, &domain_sd, &objectclass);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -2344,7 +2353,11 @@ static int samldb_check_user_account_control_acl(struct samldb_ctx *ac,
 					ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 				}
 			} else if (map[i].guid) {
-				ret = acl_check_extended_right(ac, domain_sd,
+				ret = acl_check_extended_right(ac,
+							       ac->module,
+							       ac->req,
+							       objectclass,
+							       domain_sd,
 							       user_token,
 							       map[i].guid,
 							       SEC_ADS_CONTROL_ACCESS,
@@ -2684,12 +2697,11 @@ static int samldb_check_pwd_last_set_acl(struct samldb_ctx *ac,
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	int ret = 0;
-	struct ldb_result *res = NULL;
-	const char * const sd_attrs[] = {"ntSecurityDescriptor", NULL};
 	struct security_token *user_token = NULL;
 	struct security_descriptor *domain_sd = NULL;
 	struct ldb_dn *domain_dn = ldb_get_default_basedn(ldb_module_get_ctx(ac->module));
 	const char *operation = "";
+	const struct dsdb_class *objectclass = NULL;
 
 	if (dsdb_module_am_system(ac->module)) {
 		return LDB_SUCCESS;
@@ -2711,24 +2723,15 @@ static int samldb_check_pwd_last_set_acl(struct samldb_ctx *ac,
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
 
-	ret = dsdb_module_search_dn(ac->module, ac, &res,
-				    domain_dn,
-				    sd_attrs,
-				    DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED,
-				    ac->req);
+	ret = samldb_get_domain_secdesc_and_oc(ac, &domain_sd, &objectclass);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	if (res->count != 1) {
-		return ldb_module_operr(ac->module);
-	}
-
-	ret = dsdb_get_sd_from_ldb_message(ldb, ac, res->msgs[0], &domain_sd);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	ret = acl_check_extended_right(ac, domain_sd,
+	ret = acl_check_extended_right(ac,
+				       ac->module,
+				       ac->req,
+				       objectclass,
+				       domain_sd,
 				       user_token,
 				       GUID_DRS_UNEXPIRE_PASSWORD,
 				       SEC_ADS_CONTROL_ACCESS,
@@ -3758,16 +3761,21 @@ static int samldb_check_sensitive_attributes(struct samldb_ctx *ac)
 	el = ldb_msg_find_element(ac->msg, "msDS-SecondaryKrbTgtNumber");
 	if (el) {
 		struct security_descriptor *domain_sd;
+		const struct dsdb_class *objectclass = NULL;
 		/*
 		 * msDS-SecondaryKrbTgtNumber allows the creator to
 		 * become an RODC, this is trusted as an RODC
 		 * account
 		 */
-		ret = samldb_get_domain_secdesc(ac, &domain_sd);
+		ret = samldb_get_domain_secdesc_and_oc(ac, &domain_sd, &objectclass);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		ret = acl_check_extended_right(ac, domain_sd,
+		ret = acl_check_extended_right(ac,
+					       ac->module,
+					       ac->req,
+					       objectclass,
+					       domain_sd,
 					       user_token,
 					       GUID_DRS_DS_INSTALL_REPLICA,
 					       SEC_ADS_CONTROL_ACCESS,

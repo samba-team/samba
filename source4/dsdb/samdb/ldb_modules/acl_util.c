@@ -197,6 +197,9 @@ fail:
 
 /* checks for validated writes */
 int acl_check_extended_right(TALLOC_CTX *mem_ctx,
+			     struct ldb_module *module,
+			     struct ldb_request *req,
+			     const struct dsdb_class *objectclass,
 			     struct security_descriptor *sd,
 			     struct security_token *token,
 			     const char *ext_right,
@@ -208,6 +211,43 @@ int acl_check_extended_right(TALLOC_CTX *mem_ctx,
 	uint32_t access_granted;
 	struct object_tree *root = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	static const char *no_attrs[] = { NULL };
+	struct ldb_result *extended_rights_res = NULL;
+	struct ldb_dn *extended_rights_dn = NULL;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret = 0;
+
+	/*
+	 * Find the extended right and check if applies to
+	 * the objectclass of the object
+	 */
+	extended_rights_dn = samdb_extended_rights_dn(ldb, req);
+	if (!extended_rights_dn) {
+		ldb_set_errstring(ldb,
+			"access_check: CN=Extended-Rights dn could not be generated!");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* Note: we are checking only the structural object class. */
+	ret = dsdb_module_search(module, req, &extended_rights_res,
+				 extended_rights_dn, LDB_SCOPE_ONELEVEL,
+				 no_attrs,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_FLAG_AS_SYSTEM,
+				 req,
+				 "(&(rightsGuid=%s)(appliesTo=%s))",
+				 ext_right,
+				 GUID_string(tmp_ctx,
+					     &(objectclass->schemaIDGUID)));
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	} else if (extended_rights_res->count == 0 ) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE,
+			  "acl_check_extended_right: Could not find appliesTo for %s\n",
+			  ext_right);
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
 
 	GUID_from_string(ext_right, &right);
 
