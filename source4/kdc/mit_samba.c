@@ -495,18 +495,11 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 	ssize_t srv_checksum_idx = -1;
 	ssize_t kdc_checksum_idx = -1;
 	krb5_pac new_pac = NULL;
-	bool ok;
 
 	if (client != NULL) {
 		client_skdc_entry =
 			talloc_get_type_abort(client->e_data,
 					      struct samba_kdc_entry);
-
-		/* The user account may be set not to want the PAC */
-		ok = samba_princ_needs_pac(client_skdc_entry);
-		if (!ok) {
-			return EINVAL;
-		}
 	}
 
 	if (server == NULL) {
