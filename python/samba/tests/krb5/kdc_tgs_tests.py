@@ -31,6 +31,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_ERROR,
     KRB_TGS_REP,
     KDC_ERR_BADMATCH,
+    KDC_ERR_BADOPTION,
     NT_PRINCIPAL,
     NT_SRV_INST,
 )
@@ -214,7 +215,8 @@ class KdcTgsTests(KDCBaseTest):
             "rep = {%s},%s" % (rep, pac_data))
 
     def _make_tgs_request(self, client_creds, service_creds, tgt,
-                          expect_pac=True):
+                          pac_request=None, expect_pac=True,
+                          expect_error=False):
         client_account = client_creds.get_username()
         cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=[client_account])
@@ -241,6 +243,15 @@ class KdcTgsTests(KDCBaseTest):
 
         authenticator_subkey = self.RandomKey(kcrypto.Enctype.AES256)
 
+        if expect_error:
+            expected_error_mode = KDC_ERR_BADOPTION
+            check_error_fn = self.generic_check_kdc_error
+            check_rep_fn = None
+        else:
+            expected_error_mode = 0
+            check_error_fn = None
+            check_rep_fn = self.generic_check_kdc_rep
+
         kdc_exchange_dict = self.tgs_exchange_dict(
             expected_crealm=expected_crealm,
             expected_cname=expected_cname,
@@ -248,12 +259,14 @@ class KdcTgsTests(KDCBaseTest):
             expected_sname=expected_sname,
             expected_supported_etypes=expected_supported_etypes,
             ticket_decryption_key=target_decryption_key,
-            check_rep_fn=self.generic_check_kdc_rep,
+            check_error_fn=check_error_fn,
+            check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
-            expected_error_mode=0,
+            expected_error_mode=expected_error_mode,
             tgt=tgt,
             authenticator_subkey=authenticator_subkey,
             kdc_options=kdc_options,
+            pac_request=pac_request,
             expect_pac=expect_pac)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
@@ -261,25 +274,43 @@ class KdcTgsTests(KDCBaseTest):
                                          realm=realm,
                                          sname=sname,
                                          etypes=etypes)
-        self.check_reply(rep, KRB_TGS_REP)
+        if expect_error:
+            self.check_error_rep(rep, expected_error_mode)
 
-        return kdc_exchange_dict['rep_ticket_creds']
+            return None
+        else:
+            self.check_reply(rep, KRB_TGS_REP)
+
+            return kdc_exchange_dict['rep_ticket_creds']
+
+    def test_request(self):
+        client_creds = self.get_client_creds()
+        service_creds = self.get_service_creds()
+
+        tgt = self.get_tgt(client_creds)
+
+        pac = self.get_ticket_pac(tgt)
+        self.assertIsNotNone(pac)
+
+        ticket = self._make_tgs_request(client_creds, service_creds, tgt)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
 
     def test_request_no_pac(self):
         client_creds = self.get_client_creds()
         service_creds = self.get_service_creds()
 
-        tgt = self.get_tgt(client_creds, pac_request=False,
-                           expect_pac=False)
+        tgt = self.get_tgt(client_creds, pac_request=False)
 
-        pac = self.get_ticket_pac(tgt, expect_pac=False)
-        self.assertIsNone(pac)
+        pac = self.get_ticket_pac(tgt)
+        self.assertIsNotNone(pac)
 
         ticket = self._make_tgs_request(client_creds, service_creds, tgt,
-                                        expect_pac=False)
+                                        pac_request=False)
 
-        pac = self.get_ticket_pac(ticket, expect_pac=False)
-        self.assertIsNone(pac)
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
 
     def test_client_no_auth_data_required(self):
         client_creds = self.get_cached_creds(
@@ -293,6 +324,23 @@ class KdcTgsTests(KDCBaseTest):
         self.assertIsNotNone(pac)
 
         ticket = self._make_tgs_request(client_creds, service_creds, tgt)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_no_pac_client_no_auth_data_required(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={'no_auth_data_required': True})
+        service_creds = self.get_service_creds()
+
+        tgt = self.get_tgt(client_creds, pac_request=False)
+
+        pac = self.get_ticket_pac(tgt)
+        self.assertIsNotNone(pac)
+
+        ticket = self._make_tgs_request(client_creds, service_creds, tgt,
+                                        pac_request=False)
 
         pac = self.get_ticket_pac(ticket)
         self.assertIsNotNone(pac)
@@ -314,6 +362,53 @@ class KdcTgsTests(KDCBaseTest):
         pac = self.get_ticket_pac(ticket, expect_pac=False)
         self.assertIsNone(pac)
 
+    def test_no_pac_service_no_auth_data_required(self):
+        client_creds = self.get_client_creds()
+        service_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'no_auth_data_required': True})
+
+        tgt = self.get_tgt(client_creds, pac_request=False)
+
+        pac = self.get_ticket_pac(tgt)
+        self.assertIsNotNone(pac)
+
+        ticket = self._make_tgs_request(client_creds, service_creds, tgt,
+                                        pac_request=False, expect_pac=False)
+
+        pac = self.get_ticket_pac(ticket, expect_pac=False)
+        self.assertIsNone(pac)
+
+    def test_remove_pac_service_no_auth_data_required(self):
+        client_creds = self.get_client_creds()
+        service_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'no_auth_data_required': True})
+
+        tgt = self.modified_ticket(self.get_tgt(client_creds),
+                                   exclude_pac=True)
+
+        pac = self.get_ticket_pac(tgt, expect_pac=False)
+        self.assertIsNone(pac)
+
+        self._make_tgs_request(client_creds, service_creds, tgt,
+                               expect_pac=False, expect_error=True)
+
+    def test_remove_pac_client_no_auth_data_required(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={'no_auth_data_required': True})
+        service_creds = self.get_service_creds()
+
+        tgt = self.modified_ticket(self.get_tgt(client_creds),
+                                   exclude_pac=True)
+
+        pac = self.get_ticket_pac(tgt, expect_pac=False)
+        self.assertIsNone(pac)
+
+        self._make_tgs_request(client_creds, service_creds, tgt,
+                               expect_pac=False, expect_error=True)
+
     def test_remove_pac(self):
         client_creds = self.get_client_creds()
         service_creds = self.get_service_creds()
@@ -324,11 +419,8 @@ class KdcTgsTests(KDCBaseTest):
         pac = self.get_ticket_pac(tgt, expect_pac=False)
         self.assertIsNone(pac)
 
-        ticket = self._make_tgs_request(client_creds, service_creds, tgt,
-                                        expect_pac=False)
-
-        pac = self.get_ticket_pac(ticket, expect_pac=False)
-        self.assertIsNone(pac)
+        self._make_tgs_request(client_creds, service_creds, tgt,
+                               expect_pac=False, expect_error=True)
 
 
 if __name__ == "__main__":
