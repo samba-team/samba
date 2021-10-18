@@ -538,6 +538,8 @@ class S4UKerberosTests(KDCBaseTest):
         transited_service = f'host/{service1_name}@{service1_realm}'
         expected_transited_services.append(transited_service)
 
+        expect_pac = kdc_dict.pop('expect_pac', True)
+
         kdc_exchange_dict = self.tgs_exchange_dict(
             expected_crealm=client_realm,
             expected_cname=client_cname,
@@ -557,7 +559,8 @@ class S4UKerberosTests(KDCBaseTest):
             pac_options=pac_options,
             expect_edata=expect_edata,
             expected_proxy_target=expected_proxy_target,
-            expected_transited_services=expected_transited_services)
+            expected_transited_services=expected_transited_services,
+            expect_pac=expect_pac)
 
         self._generic_kdc_exchange(kdc_exchange_dict,
                                    cname=None,
@@ -575,6 +578,18 @@ class S4UKerberosTests(KDCBaseTest):
             {
                 'expected_error_mode': 0,
                 'allow_delegation': True
+            })
+
+    def test_constrained_delegation_no_auth_data_required(self):
+        # Test constrained delegation.
+        self._run_delegation_test(
+            {
+                'expected_error_mode': 0,
+                'allow_delegation': True,
+                'service2_opts': {
+                    'no_auth_data_required': True
+                },
+                'expect_pac': False
             })
 
     def test_constrained_delegation_existing_delegation_info(self):
@@ -624,6 +639,35 @@ class S4UKerberosTests(KDCBaseTest):
                 'modify_service_tgt_fn': self.remove_ticket_pac
             })
 
+    def test_constrained_delegation_no_client_pac_no_auth_data_required(self):
+        # Test constrained delegation when the client service ticket does not
+        # contain a PAC.
+        self._run_delegation_test(
+            {
+                'expected_error_mode': (KDC_ERR_BADOPTION,
+                                        KDC_ERR_MODIFIED),
+                'allow_delegation': True,
+                'modify_client_tkt_fn': self.remove_ticket_pac,
+                'expect_edata': False,
+                'service2_opts': {
+                    'no_auth_data_required': True
+                }
+            })
+
+    def test_constrained_delegation_no_service_pac_no_auth_data_required(self):
+        # Test constrained delegation when the service TGT does not contain a
+        # PAC.
+        self._run_delegation_test(
+            {
+                'expected_error_mode': (KDC_ERR_BADOPTION,
+                                        KDC_ERR_MODIFIED),
+                'allow_delegation': True,
+                'modify_service_tgt_fn': self.remove_ticket_pac,
+                'service2_opts': {
+                    'no_auth_data_required': True
+                }
+            })
+
     def test_constrained_delegation_non_forwardable(self):
         # Test constrained delegation with a non-forwardable ticket.
         self._run_delegation_test(
@@ -643,6 +687,18 @@ class S4UKerberosTests(KDCBaseTest):
                 'expected_error_mode': 0,
                 'pac_options': '0001',  # supports RBCD
                 'allow_delegation': True
+            })
+
+    def test_rbcd_no_auth_data_required(self):
+        self._run_delegation_test(
+            {
+                'expected_error_mode': 0,
+                'allow_rbcd': True,
+                'pac_options': '0001',  # supports RBCD
+                'service2_opts': {
+                    'no_auth_data_required': True
+                },
+                'expect_pac': False
             })
 
     def test_rbcd_existing_delegation_info(self):
@@ -710,6 +766,55 @@ class S4UKerberosTests(KDCBaseTest):
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD
                 'modify_service_tgt_fn': self.remove_ticket_pac
+            })
+
+    def test_rbcd_no_client_pac_no_auth_data_required_a(self):
+        # Test constrained delegation when the client service ticket does not
+        # contain a PAC, and an empty msDS-AllowedToDelegateTo attribute.
+        self._run_delegation_test(
+            {
+                'expected_error_mode': KDC_ERR_MODIFIED,
+                'expected_status': ntstatus.NT_STATUS_NOT_SUPPORTED,
+                'allow_rbcd': True,
+                'pac_options': '0001',  # supports RBCD
+                'modify_client_tkt_fn': self.remove_ticket_pac,
+                'service2_opts': {
+                    'no_auth_data_required': True
+                }
+            })
+
+    def test_rbcd_no_client_pac_no_auth_data_required_b(self):
+        # Test constrained delegation when the client service ticket does not
+        # contain a PAC, and a non-empty msDS-AllowedToDelegateTo attribute.
+        self._run_delegation_test(
+            {
+                'expected_error_mode': KDC_ERR_MODIFIED,
+                'expected_status': ntstatus.NT_STATUS_NO_MATCH,
+                'allow_rbcd': True,
+                'pac_options': '0001',  # supports RBCD
+                'modify_client_tkt_fn': self.remove_ticket_pac,
+                'service1_opts': {
+                    'delegation_to_spn': ('host/test')
+                },
+                'service2_opts': {
+                    'no_auth_data_required': True
+                }
+            })
+
+    def test_rbcd_no_service_pac_no_auth_data_required(self):
+        # Test constrained delegation when the service TGT does not contain a
+        # PAC.
+        self._run_delegation_test(
+            {
+                'expected_error_mode': KDC_ERR_BADOPTION,
+                'expected_status':
+                    ntstatus.NT_STATUS_NOT_FOUND,
+                'allow_rbcd': True,
+                'pac_options': '0001',  # supports RBCD
+                'modify_service_tgt_fn': self.remove_ticket_pac,
+                'service2_opts': {
+                    'no_auth_data_required': True
+                }
             })
 
     def test_rbcd_non_forwardable(self):
