@@ -1116,10 +1116,6 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	}
 
 	# Change the userPrincipalName for jane
-	$ldbmodify = ${cmd_env};
-	$ldbmodify .= Samba::bindir_path($self, "ldbmodify");
-	$ldbmodify .=  " --configfile=$ctx->{smb_conf}";
-	$base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
 	$user_dn = "cn=jane,cn=users,$base_dn";
 
 	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
