@@ -1182,6 +1182,17 @@ struct ldb_dn *samdb_sites_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
 	return new_dn;
 }
 
+struct ldb_dn *samdb_extended_rights_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
+{
+	struct ldb_dn *new_dn;
+
+	new_dn = ldb_dn_copy(mem_ctx, ldb_get_config_basedn(sam_ctx));
+	if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Extended-Rights")) {
+		talloc_free(new_dn);
+		return NULL;
+	}
+	return new_dn;
+}
 /*
   work out the domain sid for the current open ldb
 */

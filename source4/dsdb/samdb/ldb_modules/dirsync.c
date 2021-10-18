@@ -1066,7 +1066,9 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 	if (!(dirsync_ctl->flags & LDAP_DIRSYNC_OBJECT_SECURITY)) {
 		struct dom_sid *sid;
 		struct security_descriptor *sd = NULL;
-		const char *acl_attrs[] = { "nTSecurityDescriptor", "objectSid", NULL };
+		const char *acl_attrs[] = { "nTSecurityDescriptor", "objectSid", "objectClass", NULL };
+		const struct dsdb_schema *schema = NULL;
+		const struct dsdb_class *objectclass = NULL;
 		/*
 		 * If we don't have the flag and if we have the "replicate directory change" granted
 		 * then we upgrade ourself to system to not be blocked by the acl
@@ -1096,7 +1098,14 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		ret = acl_check_extended_right(dsc, sd, acl_user_token(module), GUID_DRS_GET_CHANGES, SEC_ADS_CONTROL_ACCESS, sid);
+		schema = dsdb_get_schema(ldb, req);
+		if (!schema) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		objectclass = dsdb_get_structural_oc_from_msg(schema, acl_res->msgs[0]);
+		ret = acl_check_extended_right(dsc, module, req, objectclass,
+					       sd, acl_user_token(module),
+					       GUID_DRS_GET_CHANGES, SEC_ADS_CONTROL_ACCESS, sid);
 
 		if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 			return ret;
