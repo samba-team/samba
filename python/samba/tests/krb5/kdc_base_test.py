@@ -2133,19 +2133,15 @@ class KDCBaseTest(RawKerberosTest):
         '''Decrypt and decode a service ticket
         '''
 
-        name = creds.get_username()
-        if name.endswith('$'):
-            name = name[:-1]
-        realm = creds.get_realm()
-        salt = "%s.%s@%s" % (name, realm.lower(), realm.upper())
+        enc_part = ticket['enc-part']
 
-        key = self.PasswordKey_create(
-            ticket['enc-part']['etype'],
-            creds.get_password(),
-            salt,
-            ticket['enc-part']['kvno'])
+        key = self.TicketDecryptionKey_from_creds(creds,
+                                                  enc_part['etype'])
 
-        enc_part = key.decrypt(KU_TICKET, ticket['enc-part']['cipher'])
+        if key.kvno is not None:
+            self.assertElementKVNO(enc_part, 'kvno', key.kvno)
+
+        enc_part = key.decrypt(KU_TICKET, enc_part['cipher'])
         enc_ticket_part = self.der_decode(
             enc_part, asn1Spec=krb5_asn1.EncTicketPart())
         return enc_ticket_part
