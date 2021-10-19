@@ -711,8 +711,7 @@ class KDCBaseTest(RawKerberosTest):
 
         rodc_dn = self.get_server_dn(rodc_samdb)
 
-        user_name = self.account_base + str(self.account_id)
-        type(self).account_id += 1
+        user_name = self.get_new_username()
         if name_prefix is not None:
             user_name = name_prefix + user_name
         if name_suffix is not None:
@@ -820,6 +819,12 @@ class KDCBaseTest(RawKerberosTest):
             self.add_to_group(dn, mock_rodc_dn, 'msDS-NeverRevealGroup')
 
         return creds
+
+    def get_new_username(self):
+        user_name = self.account_base + str(self.account_id)
+        type(self).account_id += 1
+
+        return user_name
 
     def get_client_creds(self,
                          allow_missing_password=False,
