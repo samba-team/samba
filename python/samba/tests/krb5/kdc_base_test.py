@@ -237,7 +237,7 @@ class KDCBaseTest(RawKerberosTest):
 
     def create_account(self, samdb, name, account_type=AccountType.USER,
                        spn=None, upn=None, additional_details=None,
-                       ou=None, account_control=0):
+                       ou=None, account_control=0, add_dollar=True):
         '''Create an account for testing.
            The dn of the created account is added to self.accounts,
            which is used by tearDownClass to clean up the created accounts.
@@ -255,13 +255,14 @@ class KDCBaseTest(RawKerberosTest):
         # remove the account if it exists, this will happen if a previous test
         # run failed
         delete_force(samdb, dn)
+        account_name = name
         if account_type is self.AccountType.USER:
             object_class = "user"
-            account_name = name
             account_control |= UF_NORMAL_ACCOUNT
         else:
             object_class = "computer"
-            account_name = "%s$" % name
+            if add_dollar:
+                account_name += '$'
             if account_type is self.AccountType.COMPUTER:
                 account_control |= UF_WORKSTATION_TRUST_ACCOUNT
             else:
@@ -632,6 +633,7 @@ class KDCBaseTest(RawKerberosTest):
         opts_default = {
             'name_prefix': None,
             'name_suffix': None,
+            'add_dollar': True,
             'spn': None,
             'allowed_replication': False,
             'allowed_replication_mock': False,
@@ -671,6 +673,7 @@ class KDCBaseTest(RawKerberosTest):
                             account_type,
                             name_prefix,
                             name_suffix,
+                            add_dollar,
                             spn,
                             allowed_replication,
                             allowed_replication_mock,
@@ -739,7 +742,8 @@ class KDCBaseTest(RawKerberosTest):
                                         account_type=account_type,
                                         spn=spn,
                                         additional_details=details,
-                                        account_control=user_account_control)
+                                        account_control=user_account_control,
+                                        add_dollar=add_dollar)
 
         keys = self.get_keys(samdb, dn)
         self.creds_set_keys(creds, keys)
