@@ -109,3 +109,10 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_remove_pac_client_no_auth_data_required
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_remove_pac_service_no_auth_data_required
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_request_no_pac
+#
+# Alias tests
+#
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_create_alias_delete
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_create_alias_rename
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_dc_alias_delete
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_dc_alias_rename
