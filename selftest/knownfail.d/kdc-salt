@@ -1,12 +1,1 @@
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_at_case_mac
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_at_case_user
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_at_end_mac
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_at_end_no_dollar_mac
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_at_end_user
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_at_mac
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_at_start_mac
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_at_start_user
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_at_user
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_double_at_mac
-^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_double_at_user
 ^samba.tests.krb5.salt_tests.samba.tests.krb5.salt_tests.SaltTests.test_salt_upn_at_realm_user

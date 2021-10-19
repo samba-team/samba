@@ -350,12 +350,19 @@ krb5_error_code ms_suptypes_to_ietf_enctypes(TALLOC_CTX *mem_ctx,
 int smb_krb5_get_pw_salt(krb5_context context,
 			 krb5_const_principal host_princ,
 			 krb5_data *psalt);
-int smb_krb5_salt_principal(const char *realm,
+int smb_krb5_salt_principal(krb5_context krb5_ctx,
+			    const char *realm,
 			    const char *sAMAccountName,
 			    const char *userPrincipalName,
 			    uint32_t uac_flags,
-			    TALLOC_CTX *mem_ctx,
-			    char **_salt_principal);
+			    krb5_principal *salt_princ);
+
+int smb_krb5_salt_principal_str(const char *realm,
+				const char *sAMAccountName,
+				const char *userPrincipalName,
+				uint32_t uac_flags,
+				TALLOC_CTX *mem_ctx,
+				char **_salt_principal);
 int smb_krb5_salt_principal2data(krb5_context context,
 				 const char *salt_principal,
 				 TALLOC_CTX *mem_ctx,
