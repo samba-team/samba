@@ -62,7 +62,7 @@ void mit_samba_context_free(struct mit_samba_context *ctx)
  */
 static void mit_samba_debug(void *private_ptr, int msg_level, const char *msg)
 {
-	int is_error = 1;
+	int is_error = errno;
 
 	if (msg_level > 0) {
 		is_error = 0;
