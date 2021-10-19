@@ -1512,6 +1512,16 @@ planpythontestsuite(
         'FAST_SUPPORT': have_fast_support,
         'TKT_SIG_SUPPORT': tkt_sig_support
     })
+planpythontestsuite(
+    "ad_dc",
+    "samba.tests.krb5.alias_tests",
+    environ={
+        'ADMIN_USERNAME': '$USERNAME',
+        'ADMIN_PASSWORD': '$PASSWORD',
+        'STRICT_CHECKING': '0',
+        'FAST_SUPPORT': have_fast_support,
+        'TKT_SIG_SUPPORT': tkt_sig_support
+    })
 
 for env in [
         'vampire_dc',
