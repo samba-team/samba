@@ -1395,6 +1395,14 @@ for env in ["fl2008r2dc", "fl2003dc"]:
                                'TKT_SIG_SUPPORT': tkt_sig_support
                            })
 
+planoldpythontestsuite('fl2008r2dc', 'samba.tests.krb5.salt_tests',
+                       environ={
+                           'ADMIN_USERNAME': '$USERNAME',
+                           'ADMIN_PASSWORD': '$PASSWORD',
+                           'STRICT_CHECKING': '0',
+                           'FAST_SUPPORT': have_fast_support,
+                           'TKT_SIG_SUPPORT': tkt_sig_support
+                       })
 
 for env in ["rodc", "promoted_dc", "fl2000dc", "fl2008r2dc"]:
     if env == "rodc":

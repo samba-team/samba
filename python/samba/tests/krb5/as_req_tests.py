@@ -113,6 +113,13 @@ class AsReqKerberosTests(KDCBaseTest):
 
     def test_as_req_enc_timestamp(self):
         client_creds = self.get_client_creds()
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def test_as_req_enc_timestamp_mac(self):
+        client_creds = self.get_mach_creds()
+        self._run_as_req_enc_timestamp(client_creds)
+
+    def _run_as_req_enc_timestamp(self, client_creds):
         client_account = client_creds.get_username()
         client_as_etypes = self.get_default_enctypes()
         client_kvno = client_creds.get_kvno()
@@ -196,6 +203,9 @@ class AsReqKerberosTests(KDCBaseTest):
             ticket_decryption_key=krbtgt_decryption_key,
             pac_request=True)
         self.assertIsNotNone(as_rep)
+
+        return etype_info2
+
 
 if __name__ == "__main__":
     global_asn1_print = False
