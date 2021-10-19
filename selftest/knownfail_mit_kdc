@@ -386,3 +386,10 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.spn_tests.samba.tests.krb5.spn_tests.SpnTests.test_spn_3_part_instance_spn_computer
 ^samba.tests.krb5.spn_tests.samba.tests.krb5.spn_tests.SpnTests.test_spn_3_part_our_domain_spn_computer
 ^samba.tests.krb5.spn_tests.samba.tests.krb5.spn_tests.SpnTests.test_spn_3_part_our_realm_spn_computer
+#
+# Alias tests
+#
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_create_alias_delete
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_create_alias_rename
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_dc_alias_delete
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_dc_alias_rename

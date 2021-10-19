@@ -105,6 +105,7 @@ EXCLUDE_USAGE = {
     'python/samba/tests/krb5/rodc_tests.py',
     'python/samba/tests/krb5/salt_tests.py',
     'python/samba/tests/krb5/spn_tests.py',
+    'python/samba/tests/krb5/alias_tests.py',
 }
 
 EXCLUDE_HELP = {
