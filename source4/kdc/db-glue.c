@@ -870,13 +870,13 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		userAccountControl |= msDS_User_Account_Control_Computed;
 	}
 
-	/* 
+	/*
 	 * If we are set to canonicalize, we get back the fixed UPPER
 	 * case realm, and the real username (ie matching LDAP
-	 * samAccountName) 
+	 * samAccountName)
 	 *
 	 * Otherwise, if we are set to enterprise, we
-	 * get back the whole principal as-sent 
+	 * get back the whole principal as-sent
 	 *
 	 * Finally, if we are not set to canonicalize, we get back the
 	 * fixed UPPER case realm, but the as-sent username
@@ -946,7 +946,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			 * the client-specified realm.  This code attempts to
 			 * replace the client principal's realm with the one
 			 * we determine from our records */
-			
+
 			/* this has to be with malloc() */
 			ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
 			if (ret) {
