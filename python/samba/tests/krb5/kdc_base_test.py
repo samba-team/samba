@@ -108,7 +108,7 @@ class KDCBaseTest(RawKerberosTest):
         # An identifier to ensure created accounts have unique names. Windows
         # caches accounts based on usernames, so account names being different
         # across test runs avoids previous test runs affecting the results.
-        cls.account_base = f'krb5_{secrets.token_hex(5)}_'
+        cls.account_base = f'{secrets.token_hex(4)}_'
         cls.account_id = 0
 
         # A set containing DNs of accounts created as part of testing.
