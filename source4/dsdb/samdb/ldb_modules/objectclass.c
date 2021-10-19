@@ -813,6 +813,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 	struct ldb_message_element *oc_el_entry, *oc_el_change;
 	struct ldb_val *vals;
 	struct ldb_message *msg;
+	const struct dsdb_class *current_structural_objectclass;
 	const struct dsdb_class *objectclass;
 	unsigned int i, j, k;
 	bool found;
@@ -830,6 +831,22 @@ static int objectclass_do_mod(struct oc_context *ac)
 	if (oc_el_entry == NULL) {
 		/* existing entry without a valid object class? */
 		return ldb_operr(ldb);
+	}
+
+	/*
+	 * Get the current new top-most structural object class
+	 *
+	 * We must not allow this to change
+	 */
+
+	current_structural_objectclass
+		= dsdb_get_last_structural_class(ac->schema,
+						 oc_el_entry);
+	if (current_structural_objectclass == NULL) {
+		ldb_asprintf_errstring(ldb,
+				       "objectclass: cannot find current structural objectclass on %s!",
+				       ldb_dn_get_linearized(ac->search_res->message->dn));
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
 	/* use a new message structure */
@@ -938,6 +955,25 @@ static int objectclass_do_mod(struct oc_context *ac)
 		if (objectclass == NULL) {
 			ldb_set_errstring(ldb,
 					  "objectclass: cannot delete all structural objectclasses!");
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
+
+		/*
+		 * Has (so far, we re-check for each and every
+		 * "objectclass" in the message) the structural
+		 * objectclass changed?
+		 */
+
+		if (objectclass != current_structural_objectclass) {
+			const char *dn
+				= ldb_dn_get_linearized(ac->search_res->message->dn);
+			ldb_asprintf_errstring(ldb,
+					       "objectclass: not permitted "
+					       "to change the structural "
+					       "objectClass on %s [%s] => [%s]!",
+					       dn,
+					       current_structural_objectclass->lDAPDisplayName,
+					       objectclass->lDAPDisplayName);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
 
