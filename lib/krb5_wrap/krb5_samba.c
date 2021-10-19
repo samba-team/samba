@@ -456,19 +456,20 @@ int smb_krb5_get_pw_salt(krb5_context context,
  *
  * @see smb_krb5_salt_principal2data
  */
-int smb_krb5_salt_principal(const char *realm,
+int smb_krb5_salt_principal(krb5_context krb5_ctx,
+			    const char *realm,
 			    const char *sAMAccountName,
 			    const char *userPrincipalName,
 			    uint32_t uac_flags,
-			    TALLOC_CTX *mem_ctx,
-			    char **_salt_principal)
+			    krb5_principal *salt_princ)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *upper_realm = NULL;
 	const char *principal = NULL;
 	int principal_len = 0;
+	krb5_error_code krb5_ret;
 
-	*_salt_principal = NULL;
+	*salt_princ = NULL;
 
 	if (sAMAccountName == NULL) {
 		TALLOC_FREE(frame);
@@ -512,7 +513,6 @@ int smb_krb5_salt_principal(const char *realm,
 	 */
 	if (uac_flags & UF_TRUST_ACCOUNT_MASK) {
 		int computer_len = 0;
-		char *tmp = NULL;
 
 		computer_len = strlen(sAMAccountName);
 		if (sAMAccountName[computer_len-1] == '$') {
@@ -520,57 +520,183 @@ int smb_krb5_salt_principal(const char *realm,
 		}
 
 		if (uac_flags & UF_INTERDOMAIN_TRUST_ACCOUNT) {
-			principal = talloc_asprintf(frame, "krbtgt/%*.*s",
-						    computer_len, computer_len,
-						    sAMAccountName);
-			if (principal == NULL) {
+			const char *krbtgt = "krbtgt";
+			krb5_ret = krb5_build_principal_ext(krb5_ctx,
+							    salt_princ,
+							    strlen(upper_realm),
+							    upper_realm,
+							    strlen(krbtgt),
+							    krbtgt,
+							    computer_len,
+							    sAMAccountName,
+							    0);
+			if (krb5_ret != 0) {
 				TALLOC_FREE(frame);
-				return ENOMEM;
+				return krb5_ret;
 			}
 		} else {
+			const char *host = "host";
+			char *tmp = NULL;
+			char *tmp_lower = NULL;
 
-			tmp = talloc_asprintf(frame, "host/%*.*s.%s",
-					      computer_len, computer_len,
-					      sAMAccountName, realm);
+			tmp = talloc_asprintf(frame, "%*.*s.%s",
+					      computer_len,
+					      computer_len,
+					      sAMAccountName,
+					      realm);
 			if (tmp == NULL) {
 				TALLOC_FREE(frame);
 				return ENOMEM;
 			}
 
-			principal = strlower_talloc(frame, tmp);
-			TALLOC_FREE(tmp);
-			if (principal == NULL) {
+			tmp_lower = strlower_talloc(frame, tmp);
+			if (tmp_lower == NULL) {
 				TALLOC_FREE(frame);
 				return ENOMEM;
 			}
+
+			krb5_ret = krb5_build_principal_ext(krb5_ctx,
+							    salt_princ,
+							    strlen(upper_realm),
+							    upper_realm,
+							    strlen(host),
+							    host,
+							    strlen(tmp_lower),
+							    tmp_lower,
+							    0);
+			if (krb5_ret != 0) {
+				TALLOC_FREE(frame);
+				return krb5_ret;
+			}
 		}
 
-		principal_len = strlen(principal);
-
 	} else if (userPrincipalName != NULL) {
-		char *p;
+		/*
+		 * We parse the name not only to allow an easy
+		 * replacement of the realm (no matter the realm in
+		 * the UPN, the salt comes from the upper-case real
+		 * realm, but also to correctly provide a salt when
+		 * the UPN is host/foo.bar
+		 *
+		 * This can fail for a UPN of the form foo@bar@REALM
+		 * (which is accepted by windows) however.
+		 */
+		krb5_ret = krb5_parse_name(krb5_ctx,
+					   userPrincipalName,
+					   salt_princ);
 
-		principal = userPrincipalName;
-		p = strchr(principal, '@');
-		if (p != NULL) {
-			principal_len = PTR_DIFF(p, principal);
-		} else {
-			principal_len = strlen(principal);
+		if (krb5_ret != 0) {
+			TALLOC_FREE(frame);
+			return krb5_ret;
+		}
+
+		/*
+		 * No matter what realm (including none) in the UPN,
+		 * the realm is replaced with our upper-case realm
+		 */
+		smb_krb5_principal_set_realm(krb5_ctx,
+					     *salt_princ,
+					     upper_realm);
+		if (krb5_ret != 0) {
+			krb5_free_principal(krb5_ctx, *salt_princ);
+			TALLOC_FREE(frame);
+			return krb5_ret;
 		}
 	} else {
 		principal = sAMAccountName;
 		principal_len = strlen(principal);
-	}
 
-	*_salt_principal = talloc_asprintf(mem_ctx, "%*.*s@%s",
-					   principal_len, principal_len,
-					   principal, upper_realm);
-	if (*_salt_principal == NULL) {
-		TALLOC_FREE(frame);
-		return ENOMEM;
+		krb5_ret = krb5_build_principal_ext(krb5_ctx,
+						    salt_princ,
+						    strlen(upper_realm),
+						    upper_realm,
+						    principal_len,
+						    principal,
+						    0);
+		if (krb5_ret != 0) {
+			TALLOC_FREE(frame);
+			return krb5_ret;
+		}
 	}
 
 	TALLOC_FREE(frame);
+	return 0;
+}
+
+/**
+ * @brief This constructs the salt principal used by active directory
+ *
+ * Most Kerberos encryption types require a salt in order to
+ * calculate the long term private key for user/computer object
+ * based on a password.
+ *
+ * The returned _salt_principal is a string in forms like this:
+ * - host/somehost.example.com@EXAMPLE.COM
+ * - SomeAccount@EXAMPLE.COM
+ * - SomePrincipal@EXAMPLE.COM
+ *
+ * This is not the form that's used as salt, it's just
+ * the human readable form. It needs to be converted by
+ * smb_krb5_salt_principal2data().
+ *
+ * @param[in]  realm              The realm the user/computer is added too.
+ *
+ * @param[in]  sAMAccountName     The sAMAccountName attribute of the object.
+ *
+ * @param[in]  userPrincipalName  The userPrincipalName attribute of the object
+ *                                or NULL is not available.
+ *
+ * @param[in]  uac_flags          UF_ACCOUNT_TYPE_MASKed userAccountControl field
+ *
+ * @param[in]  mem_ctx            The TALLOC_CTX to allocate _salt_principal.
+ *
+ * @param[out]  _salt_principal   The resulting principal as string.
+ *
+ * @retval 0 Success; otherwise - Kerberos error codes
+ *
+ * @see smb_krb5_salt_principal2data
+ */
+int smb_krb5_salt_principal_str(const char *realm,
+				const char *sAMAccountName,
+				const char *userPrincipalName,
+				uint32_t uac_flags,
+				TALLOC_CTX *mem_ctx,
+				char **_salt_principal_str)
+{
+	krb5_principal salt_principal = NULL;
+	char *salt_principal_malloc;
+	krb5_context krb5_ctx;
+	krb5_error_code krb5_ret
+		= smb_krb5_init_context_common(&krb5_ctx);
+	if (krb5_ret != 0) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(krb5_ret));
+		return krb5_ret;
+	}
+
+	krb5_ret = smb_krb5_salt_principal(krb5_ctx,
+					   realm,
+					   sAMAccountName,
+					   userPrincipalName,
+					   uac_flags,
+					   &salt_principal);
+
+	krb5_ret = krb5_unparse_name(krb5_ctx, salt_principal,
+				     &salt_principal_malloc);
+	if (krb5_ret != 0) {
+		krb5_free_principal(krb5_ctx, salt_principal);
+		DBG_ERR("kerberos unparse of salt principal failed (%s)\n",
+			error_message(krb5_ret));
+		return krb5_ret;
+	}
+	krb5_free_principal(krb5_ctx, salt_principal);
+	*_salt_principal_str
+		= talloc_strdup(mem_ctx, salt_principal_malloc);
+	krb5_free_unparsed_name(krb5_ctx, salt_principal_malloc);
+
+	if (*_salt_principal_str == NULL) {
+		return ENOMEM;
+	}
 	return 0;
 }
 

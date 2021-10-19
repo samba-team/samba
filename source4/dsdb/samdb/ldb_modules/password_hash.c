@@ -688,8 +688,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb;
 	krb5_error_code krb5_ret;
-	char *salt_principal = NULL;
-	char *salt_data = NULL;
+	krb5_principal salt_principal = NULL;
+	krb5_data salt_data;
 	krb5_data salt;
 	krb5_keyblock key;
 	krb5_data cleartext_data;
@@ -700,11 +700,11 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	cleartext_data.length = io->n.cleartext_utf8->length;
 
 	uac_flags = io->u.userAccountControl & UF_ACCOUNT_TYPE_MASK;
-	krb5_ret = smb_krb5_salt_principal(io->ac->status->domain_data.realm,
+	krb5_ret = smb_krb5_salt_principal(io->smb_krb5_context->krb5_context,
+					   io->ac->status->domain_data.realm,
 					   io->u.sAMAccountName,
 					   io->u.user_principal_name,
 					   uac_flags,
-					   io->ac,
 					   &salt_principal);
 	if (krb5_ret) {
 		ldb_asprintf_errstring(ldb,
@@ -718,8 +718,10 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	/*
 	 * create salt from salt_principal
 	 */
-	krb5_ret = smb_krb5_salt_principal2data(io->smb_krb5_context->krb5_context,
-						salt_principal, io->ac, &salt_data);
+	krb5_ret = smb_krb5_get_pw_salt(io->smb_krb5_context->krb5_context,
+					salt_principal, &salt_data);
+
+	krb5_free_principal(io->smb_krb5_context->krb5_context, salt_principal);
 	if (krb5_ret) {
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
@@ -728,11 +730,16 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 								  krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	io->g.salt = salt_data;
 
 	/* now use the talloced copy of the salt */
-	salt.data	= discard_const(io->g.salt);
+	salt.data	= talloc_strndup(io->ac,
+					 (char *)salt_data.data,
+					 salt_data.length);
+	io->g.salt      = salt.data;
 	salt.length	= strlen(io->g.salt);
+
+	smb_krb5_free_data_contents(io->smb_krb5_context->krb5_context,
+				    &salt_data);
 
 	/*
 	 * create ENCTYPE_AES256_CTS_HMAC_SHA1_96 key out of

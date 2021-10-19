@@ -1574,11 +1574,11 @@ NTSTATUS secrets_store_JoinCtx(const struct libnet_JoinCtx *r)
 	if (info->salt_principal == NULL && r->out.domain_is_ad) {
 		char *p = NULL;
 
-		ret = smb_krb5_salt_principal(info->domain_info.dns_domain.string,
-					      info->account_name,
-					      NULL /* userPrincipalName */,
-					      UF_WORKSTATION_TRUST_ACCOUNT,
-					      info, &p);
+		ret = smb_krb5_salt_principal_str(info->domain_info.dns_domain.string,
+						  info->account_name,
+						  NULL /* userPrincipalName */,
+						  UF_WORKSTATION_TRUST_ACCOUNT,
+						  info, &p);
 		if (ret != 0) {
 			status = krb5_to_nt_status(ret);
 			DBG_ERR("smb_krb5_salt_principal() failed "
