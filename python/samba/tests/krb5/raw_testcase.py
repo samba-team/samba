@@ -366,6 +366,7 @@ class KerberosCredentials(Credentials):
         self.forced_salt = None
 
         self.dn = None
+        self.upn = None
         self.spn = None
 
     def set_as_supported_enctypes(self, value):
@@ -474,6 +475,12 @@ class KerberosCredentials(Credentials):
 
     def get_spn(self):
         return self.spn
+
+    def set_upn(self, upn):
+        self.upn = upn
+
+    def get_upn(self):
+        return self.upn
 
 
 class KerberosTicketCreds:

@@ -300,6 +300,7 @@ class KDCBaseTest(RawKerberosTest):
         else:
             creds.set_workstation(name)
         creds.set_dn(ldb.Dn(samdb, dn))
+        creds.set_upn(upn)
         creds.set_spn(spn)
         #
         # Save the account name so it can be deleted in tearDownClass
@@ -634,6 +635,7 @@ class KDCBaseTest(RawKerberosTest):
             'name_prefix': None,
             'name_suffix': None,
             'add_dollar': True,
+            'upn': None,
             'spn': None,
             'allowed_replication': False,
             'allowed_replication_mock': False,
@@ -674,6 +676,7 @@ class KDCBaseTest(RawKerberosTest):
                             name_prefix,
                             name_suffix,
                             add_dollar,
+                            upn,
                             spn,
                             allowed_replication,
                             allowed_replication_mock,
@@ -740,6 +743,7 @@ class KDCBaseTest(RawKerberosTest):
 
         creds, dn = self.create_account(samdb, user_name,
                                         account_type=account_type,
+                                        upn=upn,
                                         spn=spn,
                                         additional_details=details,
                                         account_control=user_account_control,
