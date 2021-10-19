@@ -630,6 +630,8 @@ class KDCBaseTest(RawKerberosTest):
             opts = {}
 
         opts_default = {
+            'name_prefix': None,
+            'name_suffix': None,
             'spn': None,
             'allowed_replication': False,
             'allowed_replication_mock': False,
@@ -667,6 +669,8 @@ class KDCBaseTest(RawKerberosTest):
 
     def create_account_opts(self, *,
                             account_type,
+                            name_prefix,
+                            name_suffix,
                             spn,
                             allowed_replication,
                             allowed_replication_mock,
@@ -696,6 +700,10 @@ class KDCBaseTest(RawKerberosTest):
 
         user_name = self.account_base + str(self.account_id)
         type(self).account_id += 1
+        if name_prefix is not None:
+            user_name = name_prefix + user_name
+        if name_suffix is not None:
+            user_name += name_suffix
 
         user_account_control = 0
         if trusted_to_auth_for_delegation:
