@@ -1200,12 +1200,12 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		break;
 	}
 
-	ret = smb_krb5_salt_principal(realm,
-				      username, /* sAMAccountName */
-				      upn, /* userPrincipalName */
-				      uac_flags,
-				      mem_ctx,
-				      &salt_principal);
+	ret = smb_krb5_salt_principal_str(realm,
+					  username, /* sAMAccountName */
+					  upn, /* userPrincipalName */
+					  uac_flags,
+					  mem_ctx,
+					  &salt_principal);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
