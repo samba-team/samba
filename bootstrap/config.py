@@ -404,7 +404,6 @@ DEB_DISTS = {
         'vagrant_box': 'debian/bullseye64',
         'replace': {
             'language-pack-en': '',   # included in locales
-            'liburing-dev': '',   # not available
         }
     },
     'ubuntu1804': {
