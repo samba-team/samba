@@ -454,13 +454,22 @@ class KerberosCredentials(Credentials):
         if self.forced_salt is not None:
             return self.forced_salt
 
+        upn = self.get_upn()
+        if upn is not None:
+            salt_name = upn.rsplit('@', 1)[0].replace('/', '')
+        else:
+            salt_name = self.get_username()
+
         if self.get_workstation():
+            salt_name = self.get_username().lower()
+            if salt_name[-1] == '$':
+                salt_name = salt_name[:-1]
             salt_string = '%shost%s.%s' % (
                 self.get_realm().upper(),
-                self.get_username().lower().rsplit('$', 1)[0],
+                salt_name,
                 self.get_realm().lower())
         else:
-            salt_string = self.get_realm().upper() + self.get_username()
+            salt_string = self.get_realm().upper() + salt_name
 
         return salt_string.encode('utf-8')
 
