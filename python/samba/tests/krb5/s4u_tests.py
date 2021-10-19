@@ -256,6 +256,17 @@ class S4UKerberosTests(KDCBaseTest):
         if unexpected_flags is not None:
             unexpected_flags = krb5_asn1.TicketFlags(unexpected_flags)
 
+        expected_error_mode = kdc_dict.pop('expected_error_mode', 0)
+        expected_status = kdc_dict.pop('expected_status', None)
+        if expected_error_mode:
+            check_error_fn = self.generic_check_kdc_error
+            check_rep_fn = None
+        else:
+            check_error_fn = None
+            check_rep_fn = self.generic_check_kdc_rep
+
+            self.assertIsNone(expected_status)
+
         kdc_options = kdc_dict.pop('kdc_options', '0')
         kdc_options = krb5_asn1.KDCOptions(kdc_options)
 
@@ -290,9 +301,11 @@ class S4UKerberosTests(KDCBaseTest):
             ticket_decryption_key=service_decryption_key,
             expect_ticket_checksum=True,
             generate_padata_fn=generate_s4u2self_padata,
-            check_rep_fn=self.generic_check_kdc_rep,
+            check_error_fn=check_error_fn,
+            check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
-            expected_error_mode=0,
+            expected_error_mode=expected_error_mode,
+            expected_status=expected_status,
             tgt=service_tgt,
             authenticator_subkey=authenticator_subkey,
             kdc_options=str(kdc_options),
@@ -318,6 +331,26 @@ class S4UKerberosTests(KDCBaseTest):
                 'kdc_options': 'forwardable',
                 'modify_service_tgt_fn': functools.partial(
                     self.set_ticket_forwardable, flag=True),
+                'expected_flags': 'forwardable'
+            })
+
+    # Test performing an S4U2Self operation with a forwardable ticket that does
+    # not contain a PAC. The request should fail.
+    def test_s4u2self_no_pac(self):
+        def forwardable_no_pac(ticket):
+            ticket = self.set_ticket_forwardable(ticket, flag=True)
+            return self.remove_ticket_pac(ticket)
+
+        self._run_s4u2self_test(
+            {
+                'expected_error_mode': (KDC_ERR_GENERIC,
+                                        KDC_ERR_BADOPTION),
+                'expected_status': ntstatus.NT_STATUS_INVALID_PARAMETER,
+                'client_opts': {
+                    'not_delegated': False
+                },
+                'kdc_options': 'forwardable',
+                'modify_service_tgt_fn': forwardable_no_pac,
                 'expected_flags': 'forwardable'
             })
 
