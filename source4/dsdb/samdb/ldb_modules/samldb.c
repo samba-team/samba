@@ -2812,8 +2812,15 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	bool old_is_critical = false;
 	bool new_is_critical = false;
 
-	el = dsdb_get_single_valued_attr(ac->msg, "userAccountControl",
-					 ac->req->operation);
+	ret = dsdb_get_expected_new_values(ac,
+					   ac->msg,
+					   "userAccountControl",
+					   &el,
+					   ac->req->operation);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	if (el == NULL || el->num_values == 0) {
 		ldb_asprintf_errstring(ldb,
 			"%08X: samldb: 'userAccountControl' can't be deleted!",
