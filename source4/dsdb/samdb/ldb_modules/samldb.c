@@ -907,8 +907,15 @@ static int samldb_schema_add_handle_mapiid(struct samldb_ctx *ac)
 	schema = dsdb_get_schema(ldb, ac);
 	schema_dn = ldb_get_schema_basedn(ldb);
 
-	el = dsdb_get_single_valued_attr(ac->msg, "mAPIID",
-					 ac->req->operation);
+	ret = dsdb_get_expected_new_values(ac,
+					   ac->msg,
+					   "mAPIID",
+					   &el,
+					   ac->req->operation);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	if (el == NULL) {
 		return LDB_SUCCESS;
 	}
