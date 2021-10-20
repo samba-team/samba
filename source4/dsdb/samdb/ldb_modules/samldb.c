@@ -3013,9 +3013,12 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 			return ldb_module_oom(ac->module);
 		}
 
-		/* Overwrite "userAccountControl" correctly */
-		el = dsdb_get_single_valued_attr(ac->msg, "userAccountControl",
-						 ac->req->operation);
+		ret = ldb_msg_add_empty(ac->msg,
+					"userAccountControl",
+					LDB_FLAG_MOD_REPLACE,
+					&el);
+		el->values = talloc(ac->msg, struct ldb_val);
+		el->num_values = 1;
 		el->values[0].data = (uint8_t *) tempstr;
 		el->values[0].length = strlen(tempstr);
 	} else {
