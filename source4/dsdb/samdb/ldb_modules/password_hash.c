@@ -2247,23 +2247,31 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 	}
 
 	if (io->ac->pwd_last_set_bypass) {
-		struct ldb_message_element *el1 = NULL;
-		struct ldb_message_element *el2 = NULL;
-
+		struct ldb_message_element *el = NULL;
+		size_t i;
+		size_t count = 0;
+		/*
+		 * This is a message from pdb_samba_dsdb_replace_by_sam()
+		 *
+		 * We want to ensure there is only one pwdLastSet element, and
+		 * it isn't deleting.
+		 */
 		if (msg == NULL) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		el1 = dsdb_get_single_valued_attr(msg, "pwdLastSet",
-						  io->ac->req->operation);
-		if (el1 == NULL) {
+		for (i = 0; i < msg->num_elements; i++) {
+			if (ldb_attr_cmp(msg->elements[i].name,
+					 "pwdLastSet") == 0) {
+				count++;
+				el = &msg->elements[i];
+			}
+		}
+		if (count != 1) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-		el2 = ldb_msg_find_element(msg, "pwdLastSet");
-		if (el2 == NULL) {
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-		if (el1 != el2) {
+
+		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
