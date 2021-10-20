@@ -201,6 +201,7 @@ static int password_hash_bypass(struct ldb_module *module, struct ldb_request *r
 	struct ldb_message_element *nthe;
 	struct ldb_message_element *lmhe;
 	struct ldb_message_element *sce;
+	int ret;
 
 	switch (request->operation) {
 	case LDB_ADD:
@@ -214,17 +215,26 @@ static int password_hash_bypass(struct ldb_module *module, struct ldb_request *r
 	}
 
 	/* nobody must touch password histories and 'supplementalCredentials' */
-	nte = dsdb_get_single_valued_attr(msg, "unicodePwd",
-					  request->operation);
-	lme = dsdb_get_single_valued_attr(msg, "dBCSPwd",
-					  request->operation);
-	nthe = dsdb_get_single_valued_attr(msg, "ntPwdHistory",
-					   request->operation);
-	lmhe = dsdb_get_single_valued_attr(msg, "lmPwdHistory",
-					   request->operation);
-	sce = dsdb_get_single_valued_attr(msg, "supplementalCredentials",
-					  request->operation);
 
+#define GET_VALUES(el, attr) do {  \
+	ret = dsdb_get_expected_new_values(request,		\
+					   msg,			\
+					   attr,		\
+					   &el,			\
+					   request->operation);	\
+								\
+	if (ret != LDB_SUCCESS) {				\
+		return ret;					\
+	}							\
+} while(0)
+
+	GET_VALUES(nte, "unicodePwd");
+	GET_VALUES(lme, "dBCSPwd");
+	GET_VALUES(nthe, "ntPwdHistory");
+	GET_VALUES(lmhe, "lmPwdHistory");
+	GET_VALUES(sce, "supplementalCredentials");
+
+#undef GET_VALUES
 #define CHECK_HASH_ELEMENT(e, min, max) do {\
 	if (e && e->num_values) { \
 		unsigned int _count; \
