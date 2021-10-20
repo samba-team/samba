@@ -1442,6 +1442,127 @@ void dsdb_req_chain_debug(struct ldb_request *req, int level)
 }
 
 /*
+ * Get all the values that *might* be added by an ldb message, as a composite
+ * ldb element.
+ *
+ * This is useful when we need to check all the possible values against some
+ * criteria.
+ *
+ * In cases where a modify message mixes multiple ADDs, DELETEs, and REPLACES,
+ * the returned element might contain more values than would actually end up
+ * in the database if the message was run to its conclusion.
+ *
+ * If the operation is not LDB_ADD or LDB_MODIFY, an operations error is
+ * returned.
+ *
+ * The returned element might not be new, and should not be modified or freed
+ * before the message is finished.
+ */
+
+int dsdb_get_expected_new_values(TALLOC_CTX *mem_ctx,
+				 const struct ldb_message *msg,
+				 const char *attr_name,
+				 struct ldb_message_element **el,
+				 enum ldb_request_type operation)
+{
+	unsigned int i;
+	unsigned int el_count = 0;
+	unsigned int val_count = 0;
+	struct ldb_val *v = NULL;
+	struct ldb_message_element *_el = NULL;
+	*el = NULL;
+
+	if (operation != LDB_ADD && operation != LDB_MODIFY) {
+		DBG_ERR("inapplicable operation type: %d\n", operation);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* count the adding or replacing elements */
+	for (i = 0; i < msg->num_elements; i++) {
+		if (ldb_attr_cmp(msg->elements[i].name, attr_name) == 0) {
+			unsigned int tmp;
+			if ((operation == LDB_MODIFY) &&
+			    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags)
+						== LDB_FLAG_MOD_DELETE)) {
+				continue;
+			}
+			el_count++;
+			tmp = val_count + msg->elements[i].num_values;
+			if (unlikely(tmp < val_count)) {
+				DBG_ERR("too many values for one element!");
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			val_count = tmp;
+		}
+	}
+	if (el_count == 0) {
+		/* nothing to see here */
+		return LDB_SUCCESS;
+	}
+
+	if (el_count == 1 || val_count == 0) {
+		/*
+		 * There is one effective element, which we can return as-is,
+		 * OR there are only elements with zero values -- any of which
+		 * will do.
+		 */
+		for (i = 0; i < msg->num_elements; i++) {
+			if (ldb_attr_cmp(msg->elements[i].name, attr_name) == 0) {
+				if ((operation == LDB_MODIFY) &&
+				    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags)
+				     == LDB_FLAG_MOD_DELETE)) {
+					continue;
+				}
+				*el = &msg->elements[i];
+				return LDB_SUCCESS;
+			}
+		}
+	}
+
+	_el = talloc_zero(mem_ctx, struct ldb_message_element);
+	if (_el == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	_el->name = attr_name;
+
+	if (val_count == 0) {
+		/*
+		 * Seems unlikely, but sometimes we might be adding zero
+		 * values in multiple separate elements. The talloc zero has
+		 * already set the expected values = NULL, num_values = 0.
+		 */
+		*el = _el;
+		return LDB_SUCCESS;
+	}
+
+	_el->values = talloc_array(_el, struct ldb_val, val_count);
+	if (_el->values == NULL) {
+		talloc_free(_el);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	_el->num_values = val_count;
+
+	v = _el->values;
+
+	for (i = 0; i < val_count; i++) {
+		if (ldb_attr_cmp(msg->elements[i].name, attr_name) == 0) {
+			if ((operation == LDB_MODIFY) &&
+			    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags)
+						== LDB_FLAG_MOD_DELETE)) {
+				continue;
+			}
+			memcpy(v,
+			       msg->elements[i].values,
+			       msg->elements[i].num_values);
+			v += msg->elements[i].num_values;
+		}
+	}
+
+	*el = _el;
+	return LDB_SUCCESS;
+}
+
+/*
  * Gets back a single-valued attribute by the rules of the DSDB triggers when
  * performing a modify operation.
  *
