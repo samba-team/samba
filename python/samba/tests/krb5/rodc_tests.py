@@ -41,11 +41,13 @@ class RodcKerberosTests(KDCBaseTest):
         user_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
             opts={
+                'allowed_replication': True,
                 'revealed_to_rodc': True
             })
         target_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
             opts={
+                'allowed_replication': True,
                 'revealed_to_rodc': True
             })
 
