@@ -4302,9 +4302,15 @@ static int samldb_fsmo_role_owner_check(struct samldb_ctx *ac)
 	struct ldb_dn *res_dn;
 	struct ldb_result *res;
 	int ret;
+	ret = dsdb_get_expected_new_values(ac,
+					   ac->msg,
+					   "fSMORoleOwner",
+					   &el,
+					   ac->req->operation);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
-	el = dsdb_get_single_valued_attr(ac->msg, "fSMORoleOwner",
-					 ac->req->operation);
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
