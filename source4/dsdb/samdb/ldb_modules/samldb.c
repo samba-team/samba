@@ -3102,8 +3102,15 @@ static int samldb_pwd_last_set_change(struct samldb_ctx *ac)
 		NULL
 	};
 
-	el = dsdb_get_single_valued_attr(ac->msg, "pwdLastSet",
-					 ac->req->operation);
+	ret = dsdb_get_expected_new_values(ac,
+					   ac->msg,
+					   "pwdLastSet",
+					   &el,
+					   ac->req->operation);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	if (el == NULL || el->num_values == 0) {
 		ldb_asprintf_errstring(ldb,
 			"%08X: samldb: 'pwdLastSet' can't be deleted!",
