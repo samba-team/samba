@@ -2926,6 +2926,39 @@ class SamTests(samba.tests.TestCase):
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
+    def test_isCriticalSystemObject_user(self):
+        """Test the isCriticalSystemObject behaviour"""
+        print("Testing isCriticalSystemObject behaviour\n")
+
+        # Add tests (of a user)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": "user"})
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertTrue("isCriticalSystemObject" not in res1[0])
+
+        # Modification tests
+        m = Message()
+
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement(str(UF_WORKSTATION_TRUST_ACCOUNT),
+                                                 FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertTrue("isCriticalSystemObject" in res1[0])
+        self.assertEqual(str(res1[0]["isCriticalSystemObject"][0]), "FALSE")
+
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
     def test_isCriticalSystemObject(self):
         """Test the isCriticalSystemObject behaviour"""
         print("Testing isCriticalSystemObject behaviour\n")
@@ -2940,7 +2973,8 @@ class SamTests(samba.tests.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["isCriticalSystemObject"])
         self.assertTrue(len(res1) == 1)
-        self.assertTrue("isCriticalSystemObject" not in res1[0])
+        self.assertTrue("isCriticalSystemObject" in res1[0])
+        self.assertEqual(str(res1[0]["isCriticalSystemObject"][0]), "FALSE")
 
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
