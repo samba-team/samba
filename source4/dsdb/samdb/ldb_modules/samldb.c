@@ -171,11 +171,19 @@ static int samldb_get_single_valued_attr(struct ldb_context *ldb,
 	 * attribute.
 	 */
 	struct ldb_message_element *el = NULL;
+	int ret;
 
 	*value = NULL;
 
-	el = dsdb_get_single_valued_attr(ac->msg, attr,
-					 ac->req->operation);
+	ret = dsdb_get_expected_new_values(ac,
+					   ac->msg,
+					   attr,
+					   &el,
+					   ac->req->operation);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
