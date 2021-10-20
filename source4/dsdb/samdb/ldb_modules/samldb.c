@@ -4315,6 +4315,9 @@ static int samldb_fsmo_role_owner_check(struct samldb_ctx *ac)
 		/* we are not affected */
 		return LDB_SUCCESS;
 	}
+	if (el->num_values != 1) {
+		goto choose_error_code;
+	}
 
 	/* Create a temporary message for fetching the "fSMORoleOwner" */
 	tmp_msg = ldb_msg_new(ac->msg);
@@ -4331,11 +4334,7 @@ static int samldb_fsmo_role_owner_check(struct samldb_ctx *ac)
 	if (res_dn == NULL) {
 		ldb_set_errstring(ldb,
 				  "samldb: 'fSMORoleOwner' attributes have to reference 'nTDSDSA' entries!");
-		if (ac->req->operation == LDB_ADD) {
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		} else {
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
+		goto choose_error_code;
 	}
 
 	/* Fetched DN has to reference a "nTDSDSA" entry */
@@ -4355,6 +4354,14 @@ static int samldb_fsmo_role_owner_check(struct samldb_ctx *ac)
 	talloc_free(res);
 
 	return LDB_SUCCESS;
+
+choose_error_code:
+	/* this is just how it is */
+	if (ac->req->operation == LDB_ADD) {
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	} else {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 }
 
 /*
