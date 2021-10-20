@@ -4047,10 +4047,22 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	unsigned int i, j;
 	int ret;
 
-	el = dsdb_get_single_valued_attr(ac->msg, "dNSHostName",
-					 ac->req->operation);
-	el2 = dsdb_get_single_valued_attr(ac->msg, "sAMAccountName",
-					  ac->req->operation);
+	ret = dsdb_get_expected_new_values(ac,
+					   ac->msg,
+					   "dNSHostName",
+					   &el,
+					   ac->req->operation);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = dsdb_get_expected_new_values(ac,
+					   ac->msg,
+					   "sAMAccountName",
+					   &el2,
+					   ac->req->operation);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 	if ((el == NULL) && (el2 == NULL)) {
 		/* we are not affected */
 		return LDB_SUCCESS;
