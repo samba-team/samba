@@ -2375,6 +2375,13 @@ class RawKerberosTest(TestCaseInTempDir):
             krbtgt_creds = self.get_krbtgt_creds()
         krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
 
+        krbtgt_keys = [krbtgt_key]
+        if not self.strict_checking:
+            krbtgt_key_rc4 = self.TicketDecryptionKey_from_creds(
+                krbtgt_creds,
+                etype=kcrypto.Enctype.RC4)
+            krbtgt_keys.append(krbtgt_key_rc4)
+
         expect_pac = kdc_exchange_dict['expect_pac']
 
         ticket_session_key = None
@@ -2522,7 +2529,7 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNotNone(ticket_decryption_key)
 
         if ticket_decryption_key is not None:
-            self.verify_ticket(ticket_creds, krbtgt_key, expect_pac=expect_pac,
+            self.verify_ticket(ticket_creds, krbtgt_keys, expect_pac=expect_pac,
                                expect_ticket_checksum=expect_ticket_checksum
                                or self.tkt_sig_support)
 
@@ -3083,7 +3090,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                         ticket_blob)
         self.assertEqual(expected_checksum, checksum)
 
-    def verify_ticket(self, ticket, krbtgt_key, expect_pac=True,
+    def verify_ticket(self, ticket, krbtgt_keys, expect_pac=True,
                       expect_ticket_checksum=True):
         # Check if the ticket is a TGT.
         is_tgt = self.is_tgt(ticket)
@@ -3171,6 +3178,16 @@ class RawKerberosTest(TestCaseInTempDir):
 
         kdc_checksum, kdc_ctype = checksums[
             krb5pac.PAC_TYPE_KDC_CHECKSUM]
+
+        if isinstance(krbtgt_keys, collections.abc.Container):
+            if self.strict_checking:
+                krbtgt_key = krbtgt_keys[0]
+            else:
+                krbtgt_key = next(key for key in krbtgt_keys
+                                  if key.ctype == kdc_ctype)
+        else:
+            krbtgt_key = krbtgt_keys
+
         krbtgt_key.verify_rodc_checksum(KU_NON_KERB_CKSUM_SALT,
                                         server_checksum,
                                         kdc_ctype,
