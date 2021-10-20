@@ -3226,8 +3226,15 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	struct ldb_result *res;
 	const char * const attrs[] = { "groupType", NULL };
 
-	el = dsdb_get_single_valued_attr(ac->msg, "groupType",
-					 ac->req->operation);
+	ret = dsdb_get_expected_new_values(ac,
+					   ac->msg,
+					   "groupType",
+					   &el,
+					   ac->req->operation);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
