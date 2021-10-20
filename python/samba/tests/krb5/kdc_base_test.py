@@ -657,7 +657,8 @@ class KDCBaseTest(RawKerberosTest):
             'delegation_to_spn': None,
             'delegation_from_dn': None,
             'trusted_to_auth_for_delegation': False,
-            'fast_support': False
+            'fast_support': False,
+            'id': None
         }
 
         account_opts = {
@@ -698,7 +699,8 @@ class KDCBaseTest(RawKerberosTest):
                             delegation_to_spn,
                             delegation_from_dn,
                             trusted_to_auth_for_delegation,
-                            fast_support):
+                            fast_support,
+                            id):
         if account_type is self.AccountType.USER:
             self.assertIsNone(spn)
             self.assertIsNone(delegation_to_spn)
