@@ -227,7 +227,10 @@ class KdcTgsTests(KDCBaseTest):
 
     def _make_tgs_request(self, client_creds, service_creds, tgt,
                           pac_request=None, expect_pac=True,
-                          expect_error=False):
+                          expect_error=False,
+                          expected_account_name=None,
+                          expected_upn_name=None,
+                          expected_sid=None):
         client_account = client_creds.get_username()
         cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=[client_account])
@@ -268,6 +271,9 @@ class KdcTgsTests(KDCBaseTest):
             expected_cname=expected_cname,
             expected_srealm=expected_srealm,
             expected_sname=expected_sname,
+            expected_account_name=expected_account_name,
+            expected_upn_name=expected_upn_name,
+            expected_sid=expected_sid,
             expected_supported_etypes=expected_supported_etypes,
             ticket_decryption_key=target_decryption_key,
             check_error_fn=check_error_fn,
@@ -432,6 +438,49 @@ class KdcTgsTests(KDCBaseTest):
 
         self._make_tgs_request(client_creds, service_creds, tgt,
                                expect_pac=False, expect_error=True)
+
+    def test_upn_dns_info_ex_user(self):
+        client_creds = self.get_client_creds()
+        self._run_upn_dns_info_ex_test(client_creds)
+
+    def test_upn_dns_info_ex_mac(self):
+        mach_creds = self.get_mach_creds()
+        self._run_upn_dns_info_ex_test(mach_creds)
+
+    def test_upn_dns_info_ex_upn_user(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={'upn': 'upn_dns_info_test_upn0@bar'})
+        self._run_upn_dns_info_ex_test(client_creds)
+
+    def test_upn_dns_info_ex_upn_mac(self):
+        mach_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'upn': 'upn_dns_info_test_upn1@bar'})
+        self._run_upn_dns_info_ex_test(mach_creds)
+
+    def _run_upn_dns_info_ex_test(self, client_creds):
+        service_creds = self.get_service_creds()
+
+        samdb = self.get_samdb()
+        dn = client_creds.get_dn()
+
+        account_name = client_creds.get_username()
+        upn_name = client_creds.get_upn()
+        if upn_name is None:
+            realm = client_creds.get_realm().lower()
+            upn_name = f'{account_name}@{realm}'
+        sid = self.get_objectSid(samdb, dn)
+
+        tgt = self.get_tgt(client_creds,
+                           expected_account_name=account_name,
+                           expected_upn_name=upn_name,
+                           expected_sid=sid)
+
+        self._make_tgs_request(client_creds, service_creds, tgt,
+                               expected_account_name=account_name,
+                               expected_upn_name=upn_name,
+                               expected_sid=sid)
 
     # Test making a TGS request.
     def test_tgs_req(self):

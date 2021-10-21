@@ -1358,7 +1358,7 @@ class KDCBaseTest(RawKerberosTest):
 
     def get_tgt(self, creds, to_rodc=False, kdc_options=None,
                 expected_flags=None, unexpected_flags=None,
-                expected_account_name=None,
+                expected_account_name=None, expected_upn_name=None,
                 expected_sid=None,
                 pac_request=True, expect_pac=True, fresh=False):
         user_name = creds.get_username()
@@ -1410,6 +1410,7 @@ class KDCBaseTest(RawKerberosTest):
             expected_srealm=realm,
             expected_sname=sname,
             expected_account_name=expected_account_name,
+            expected_upn_name=expected_upn_name,
             expected_sid=expected_sid,
             expected_salt=salt,
             expected_flags=expected_flags,
