@@ -238,6 +238,10 @@ class S4UKerberosTests(KDCBaseTest):
         client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                                  names=[client_name])
 
+        samdb = self.get_samdb()
+        client_dn = client_creds.get_dn()
+        sid = self.get_objectSid(samdb, client_dn)
+
         service_name = service_creds.get_username()[:-1]
         service_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                                   names=['host', service_name])
@@ -279,6 +283,8 @@ class S4UKerberosTests(KDCBaseTest):
             expected_cname=client_cname,
             expected_srealm=realm,
             expected_sname=service_sname,
+            expected_account_name=client_name,
+            expected_sid=sid,
             expected_flags=expected_flags,
             unexpected_flags=unexpected_flags,
             ticket_decryption_key=service_decryption_key,
@@ -438,6 +444,10 @@ class S4UKerberosTests(KDCBaseTest):
             account_type=self.AccountType.USER,
             opts=client_opts)
 
+        samdb = self.get_samdb()
+        client_dn = client_creds.get_dn()
+        sid = self.get_objectSid(samdb, client_dn)
+
         service1_opts = kdc_dict.pop('service1_opts', {})
         service2_opts = kdc_dict.pop('service2_opts', {})
 
@@ -552,6 +562,8 @@ class S4UKerberosTests(KDCBaseTest):
             expected_cname=client_cname,
             expected_srealm=service2_realm,
             expected_sname=service2_sname,
+            expected_account_name=client_username,
+            expected_sid=sid,
             expected_supported_etypes=service2_etypes,
             ticket_decryption_key=service2_decryption_key,
             check_error_fn=check_error_fn,
