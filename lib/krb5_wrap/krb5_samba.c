@@ -594,9 +594,9 @@ int smb_krb5_salt_principal(krb5_context krb5_ctx,
 		 * No matter what realm (including none) in the UPN,
 		 * the realm is replaced with our upper-case realm
 		 */
-		smb_krb5_principal_set_realm(krb5_ctx,
-					     *salt_princ,
-					     upper_realm);
+		krb5_ret = smb_krb5_principal_set_realm(krb5_ctx,
+							*salt_princ,
+							upper_realm);
 		if (krb5_ret != 0) {
 			krb5_free_principal(krb5_ctx, *salt_princ);
 			TALLOC_FREE(frame);
