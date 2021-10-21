@@ -1984,6 +1984,8 @@ class RawKerberosTest(TestCaseInTempDir):
                          expected_anon=False,
                          expected_srealm=None,
                          expected_sname=None,
+                         expected_account_name=None,
+                         expected_sid=None,
                          expected_supported_etypes=None,
                          expected_flags=None,
                          unexpected_flags=None,
@@ -2033,6 +2035,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_anon': expected_anon,
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
+            'expected_account_name': expected_account_name,
+            'expected_sid': expected_sid,
             'expected_supported_etypes': expected_supported_etypes,
             'expected_flags': expected_flags,
             'unexpected_flags': unexpected_flags,
@@ -2078,6 +2082,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           expected_anon=False,
                           expected_srealm=None,
                           expected_sname=None,
+                          expected_account_name=None,
+                          expected_sid=None,
                           expected_supported_etypes=None,
                           expected_flags=None,
                           unexpected_flags=None,
@@ -2128,6 +2134,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_anon': expected_anon,
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
+            'expected_account_name': expected_account_name,
+            'expected_sid': expected_sid,
             'expected_supported_etypes': expected_supported_etypes,
             'expected_flags': expected_flags,
             'unexpected_flags': unexpected_flags,
@@ -2561,6 +2569,9 @@ class RawKerberosTest(TestCaseInTempDir):
                                   f'expected: {expected_types} '
                                   f'got: {buffer_types}')
 
+        expected_account_name = kdc_exchange_dict['expected_account_name']
+        expected_sid = kdc_exchange_dict['expected_sid']
+
         for pac_buffer in pac.buffers:
             if pac_buffer.type == krb5pac.PAC_TYPE_CONSTRAINED_DELEGATION:
                 expected_proxy_target = kdc_exchange_dict[
@@ -2583,6 +2594,17 @@ class RawKerberosTest(TestCaseInTempDir):
                 account_name = expected_cname['name-string'][0]
 
                 self.assertEqual(account_name, pac_buffer.info.account_name)
+
+            elif pac_buffer.type == krb5pac.PAC_TYPE_LOGON_INFO:
+                logon_info = pac_buffer.info.info.info3.base
+
+                if expected_account_name is not None:
+                    self.assertEqual(expected_account_name,
+                                     str(logon_info.account_name))
+
+                if expected_sid is not None:
+                    expected_rid = int(expected_sid.rsplit('-', 1)[1])
+                    self.assertEqual(expected_rid, logon_info.rid)
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
@@ -3548,6 +3570,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           etypes,
                           padata,
                           kdc_options,
+                          expected_account_name=None,
+                          expected_sid=None,
                           expected_flags=None,
                           unexpected_flags=None,
                           expected_supported_etypes=None,
@@ -3580,6 +3604,8 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_cname=expected_cname,
             expected_srealm=expected_srealm,
             expected_sname=expected_sname,
+            expected_account_name=expected_account_name,
+            expected_sid=expected_sid,
             expected_supported_etypes=expected_supported_etypes,
             ticket_decryption_key=ticket_decryption_key,
             generate_padata_fn=generate_padata_fn,
