@@ -3,9 +3,6 @@
 #
 # All these tests need to be fixed and the entries here removed
 
-^samba4.sam.python\(fl2008r2dc\).__main__.SamTests.test_users_groups\(fl2008r2dc\)
-^samba4.ldap.python\(ad_dc_default\).__main__.BasicTests.test_all\(ad_dc_default\)
-^samba4.sam.python\(ad_dc_default\).__main__.SamTests.test_users_groups\(ad_dc_default\)
 ^samba4.priv_attrs.strict.python\(ad_dc_default\).__main__.PrivAttrsTests.test_priv_attr_userAccountControl-DC_add_CC_WP_user\(ad_dc_default\)
 ^samba4.priv_attrs.strict.python\(ad_dc_default\).__main__.PrivAttrsTests.test_priv_attr_userAccountControl-DC_add_CC_default_user\(ad_dc_default\)
 ^samba4.priv_attrs.strict.python\(ad_dc_default\).__main__.PrivAttrsTests.test_priv_attr_userAccountControl-a2d-user_add_CC_WP_computer\(ad_dc_default\)
