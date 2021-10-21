@@ -2135,7 +2135,7 @@ class SamTests(samba.tests.TestCase):
             self.fail()
         except LdbError as e67:
             (num, _) = e67.args
-            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_OBJECT_CLASS_VIOLATION)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -2154,7 +2154,7 @@ class SamTests(samba.tests.TestCase):
             self.fail()
         except LdbError as e68:
             (num, _) = e68.args
-            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_OBJECT_CLASS_VIOLATION)
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["sAMAccountType"])
@@ -2502,7 +2502,7 @@ class SamTests(samba.tests.TestCase):
             self.fail()
         except LdbError as e76:
             (num, _) = e76.args
-            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_OBJECT_CLASS_VIOLATION)
 
         # "primaryGroupID" does not change if account type remains the same
 
