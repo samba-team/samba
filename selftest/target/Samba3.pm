@@ -1460,6 +1460,9 @@ sub setup_fileserver
 	my $bad_iconv_sharedir="$share_dir/bad_iconv";
 	push(@dirs, $bad_iconv_sharedir);
 
+	my $veto_sharedir="$share_dir/veto";
+	push(@dirs,$veto_sharedir);
+
 	my $ip4 = Samba::get_ipv4_addr("FILESERVER");
 	my $fileserver_options = "
 	kernel change notify = yes
@@ -1567,6 +1570,19 @@ sub setup_fileserver
 	path = $bad_iconv_sharedir
 	comment = smb username is [%U]
 	vfs objects =
+
+[veto_files_nodelete]
+	path = $veto_sharedir
+	read only = no
+	msdfs root = yes
+	veto files = /veto_name*/
+	delete veto files = no
+
+[veto_files_delete]
+	path = $veto_sharedir
+	msdfs root = yes
+	veto files = /veto_name*/
+	delete veto files = yes
 
 [homes]
 	comment = Home directories

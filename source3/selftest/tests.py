@@ -498,6 +498,9 @@ for env in ["fileserver"]:
     plantestsuite("samba3.blackbox.smbclient_iconv.CORE", env + "_smb1_done",
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_iconv.sh"),
                    '$SERVER', '$SERVER_IP', 'bad_iconv', '$USERNAME', '$PASSWORD', smbclient3, '-mCORE'])
+    plantestsuite("samba3.blackbox.test_veto_rmdir", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_veto_rmdir.sh"),
+                  '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/veto', smbclient3])
 
     #
     # tar command tests
