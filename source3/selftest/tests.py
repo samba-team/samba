@@ -501,6 +501,9 @@ for env in ["fileserver"]:
     plantestsuite("samba3.blackbox.test_veto_rmdir", env,
                   [os.path.join(samba3srcdir, "script/tests/test_veto_rmdir.sh"),
                   '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/veto', smbclient3])
+    plantestsuite("samba3.blackbox.test_dangle_rmdir", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_delete_veto_files_only_rmdir.sh"),
+                  '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/veto', smbclient3])
 
     #
     # tar command tests

@@ -1,0 +1,1 @@
+^samba3.blackbox.test_dangle_rmdir.rmdir can delete directory containing dangling symlink\(fileserver\)
