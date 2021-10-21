@@ -2626,8 +2626,14 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
-	/* "isCriticalSystemObject" might be set/changed */
-	if (old_is_critical != new_is_critical) {
+	/*
+	 * "isCriticalSystemObject" might be set/changed
+	 *
+	 * Even a change from UF_NORMAL_ACCOUNT (implicitly FALSE) to
+	 * UF_WORKSTATION_TRUST_ACCOUNT (actually FALSE) triggers
+	 * creating the attribute.
+	 */
+	if (old_is_critical != new_is_critical || old_atype != new_atype) {
 		ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
 					 new_is_critical ? "TRUE": "FALSE");
 		if (ret != LDB_SUCCESS) {
