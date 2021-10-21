@@ -2207,7 +2207,7 @@ class SamTests(samba.tests.TestCase):
                           attrs=["sAMAccountType", "userAccountControl"])
         self.assertTrue(len(res1) == 1)
         self.assertEqual(int(res1[0]["sAMAccountType"][0]),
-                          ATYPE_NORMAL_ACCOUNT)
+                          ATYPE_WORKSTATION_TRUST)
         self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
         self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_PASSWD_NOTREQD == 0)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -2315,7 +2315,7 @@ class SamTests(samba.tests.TestCase):
                           attrs=["sAMAccountType", "userAccountControl"])
         self.assertTrue(len(res1) == 1)
         self.assertEqual(int(res1[0]["sAMAccountType"][0]),
-                          ATYPE_NORMAL_ACCOUNT)
+                          ATYPE_WORKSTATION_TRUST)
         self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE != 0)
 
         # As computer you can switch from a normal account to a workstation
