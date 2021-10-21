@@ -1264,7 +1264,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 
 	/* Retry the rmdir */
 	ret = SMB_VFS_UNLINKAT(conn,
-			       dirfsp,
+			       parent_fname->fsp,
 			       at_fname,
 			       AT_REMOVEDIR);
 
