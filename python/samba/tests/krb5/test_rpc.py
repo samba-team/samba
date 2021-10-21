@@ -50,13 +50,16 @@ class RpcTests(KDCBaseTest):
         # Create the user account.
         (user_credentials, _) = self.create_account(samdb, user_name)
 
+        mach_credentials = self.get_dc_creds()
+
         # Talk to the KDC to obtain the service ticket, which gets placed into
         # the cache. The machine account name has to match the name in the
         # ticket, to ensure that the krbtgt ticket doesn't also need to be
         # stored.
         (creds, cachefile) = self.create_ccache_with_user(user_credentials,
-                                                          mach_name,
-                                                          service)
+                                                          mach_credentials,
+                                                          service,
+                                                          mach_name)
 
         # Authenticate in-process to the machine account using the user's
         # cached credentials.
