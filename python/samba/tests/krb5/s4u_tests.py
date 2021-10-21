@@ -309,6 +309,7 @@ class S4UKerberosTests(KDCBaseTest):
             tgt=service_tgt,
             authenticator_subkey=authenticator_subkey,
             kdc_options=str(kdc_options),
+            expect_upn_dns_info_ex=False,
             expect_claims=False)
 
         self._generic_kdc_exchange(kdc_exchange_dict,
@@ -610,6 +611,7 @@ class S4UKerberosTests(KDCBaseTest):
             kdc_options=kdc_options,
             pac_options=pac_options,
             expect_edata=expect_edata,
+            expect_upn_dns_info_ex=False,
             expected_proxy_target=expected_proxy_target,
             expected_transited_services=expected_transited_services,
             expect_pac=expect_pac)

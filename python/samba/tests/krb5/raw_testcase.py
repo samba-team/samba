@@ -1986,6 +1986,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          expected_srealm=None,
                          expected_sname=None,
                          expected_account_name=None,
+                         expected_upn_name=None,
                          expected_sid=None,
                          expected_supported_etypes=None,
                          expected_flags=None,
@@ -2019,6 +2020,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          expect_edata=None,
                          expect_pac=True,
                          expect_claims=True,
+                         expect_upn_dns_info_ex=None,
                          to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2037,6 +2039,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
             'expected_account_name': expected_account_name,
+            'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
             'expected_supported_etypes': expected_supported_etypes,
             'expected_flags': expected_flags,
@@ -2070,6 +2073,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_edata': expect_edata,
             'expect_pac': expect_pac,
             'expect_claims': expect_claims,
+            'expect_upn_dns_info_ex': expect_upn_dns_info_ex,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -2084,6 +2088,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expected_srealm=None,
                           expected_sname=None,
                           expected_account_name=None,
+                          expected_upn_name=None,
                           expected_sid=None,
                           expected_supported_etypes=None,
                           expected_flags=None,
@@ -2116,6 +2121,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expect_edata=None,
                           expect_pac=True,
                           expect_claims=True,
+                          expect_upn_dns_info_ex=None,
                           expected_proxy_target=None,
                           expected_transited_services=None,
                           to_rodc=False):
@@ -2136,6 +2142,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
             'expected_account_name': expected_account_name,
+            'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
             'expected_supported_etypes': expected_supported_etypes,
             'expected_flags': expected_flags,
@@ -2168,6 +2175,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_edata': expect_edata,
             'expect_pac': expect_pac,
             'expect_claims': expect_claims,
+            'expect_upn_dns_info_ex': expect_upn_dns_info_ex,
             'expected_proxy_target': expected_proxy_target,
             'expected_transited_services': expected_transited_services,
             'to_rodc': to_rodc
@@ -2584,6 +2592,12 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_account_name = kdc_exchange_dict['expected_account_name']
         expected_sid = kdc_exchange_dict['expected_sid']
 
+        expect_upn_dns_info_ex = kdc_exchange_dict['expect_upn_dns_info_ex']
+        if expect_upn_dns_info_ex is None and (
+                expected_account_name is not None
+                or expected_sid is not None):
+            expect_upn_dns_info_ex = True
+
         for pac_buffer in pac.buffers:
             if pac_buffer.type == krb5pac.PAC_TYPE_CONSTRAINED_DELEGATION:
                 expected_proxy_target = kdc_exchange_dict[
@@ -2617,6 +2631,31 @@ class RawKerberosTest(TestCaseInTempDir):
                 if expected_sid is not None:
                     expected_rid = int(expected_sid.rsplit('-', 1)[1])
                     self.assertEqual(expected_rid, logon_info.rid)
+
+            elif pac_buffer.type == krb5pac.PAC_TYPE_UPN_DNS_INFO:
+                upn_dns_info = pac_buffer.info
+                upn_dns_info_ex = upn_dns_info.ex
+
+                expected_realm = kdc_exchange_dict['expected_crealm']
+                self.assertEqual(expected_realm,
+                                 upn_dns_info.dns_domain_name)
+
+                expected_upn_name = kdc_exchange_dict['expected_upn_name']
+                if expected_upn_name is not None:
+                    self.assertEqual(expected_upn_name,
+                                     upn_dns_info.upn_name)
+
+                if expect_upn_dns_info_ex:
+                    self.assertIsNotNone(upn_dns_info_ex)
+
+                if upn_dns_info_ex is not None:
+                    if expected_account_name is not None:
+                        self.assertEqual(expected_account_name,
+                                         upn_dns_info_ex.samaccountname)
+
+                    if expected_sid is not None:
+                        self.assertEqual(expected_sid,
+                                         str(upn_dns_info_ex.objectsid))
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
@@ -3600,6 +3639,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           padata,
                           kdc_options,
                           expected_account_name=None,
+                          expected_upn_name=None,
                           expected_sid=None,
                           expected_flags=None,
                           unexpected_flags=None,
@@ -3634,6 +3674,7 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_srealm=expected_srealm,
             expected_sname=expected_sname,
             expected_account_name=expected_account_name,
+            expected_upn_name=expected_upn_name,
             expected_sid=expected_sid,
             expected_supported_etypes=expected_supported_etypes,
             ticket_decryption_key=ticket_decryption_key,
