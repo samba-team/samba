@@ -67,7 +67,7 @@ class CcacheTests(KDCBaseTest):
         # ticket, to ensure that the krbtgt ticket doesn't also need to be
         # stored.
         (creds, cachefile) = self.create_ccache_with_user(user_credentials,
-                                                          mach_name)
+                                                          mach_credentials)
 
         # Authenticate in-process to the machine account using the user's
         # cached credentials.
