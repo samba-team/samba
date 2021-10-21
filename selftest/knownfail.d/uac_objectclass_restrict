@@ -4,7 +4,6 @@
 # All these tests need to be fixed and the entries here removed
 
 ^samba4.sam.python\(.*\).__main__.SamTests.test_userAccountControl_computer_add_0_uac
-^samba4.sam.python\(.*\).__main__.SamTests.test_userAccountControl_computer_add_trust
 ^samba4.sam.python\(.*\).__main__.SamTests.test_userAccountControl_computer_modify
 ^samba4.sam.python\(.*\).__main__.SamTests.test_userAccountControl_user_modify
 ^samba4.sam.python\(fl2008r2dc\).__main__.SamTests.test_users_groups\(fl2008r2dc\)

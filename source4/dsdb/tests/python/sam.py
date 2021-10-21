@@ -2299,7 +2299,7 @@ class SamTests(samba.tests.TestCase):
             self.fail()
         except LdbError as e72:
             (num, _) = e72.args
-            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_OBJECT_CLASS_VIOLATION)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
     def test_userAccountControl_computer_modify(self):
