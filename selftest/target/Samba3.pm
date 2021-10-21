@@ -1738,6 +1738,10 @@ sub setup_fileserver
 	veto files = /veto_name*/
 	delete veto files = yes
 
+[delete_veto_files_only]
+	path = $veto_sharedir
+	delete veto files = yes
+
 [homes]
 	comment = Home directories
 	browseable = No
