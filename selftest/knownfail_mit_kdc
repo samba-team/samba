@@ -352,3 +352,9 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2003dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008r2dc
+#
+# SPN tests
+#
+^samba.tests.krb5.spn_tests.samba.tests.krb5.spn_tests.SpnTests.test_spn_3_part_instance_spn_computer
+^samba.tests.krb5.spn_tests.samba.tests.krb5.spn_tests.SpnTests.test_spn_3_part_our_domain_spn_computer
+^samba.tests.krb5.spn_tests.samba.tests.krb5.spn_tests.SpnTests.test_spn_3_part_our_realm_spn_computer

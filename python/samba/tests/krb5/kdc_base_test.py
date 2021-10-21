@@ -97,6 +97,7 @@ class KDCBaseTest(RawKerberosTest):
         USER = auto()
         COMPUTER = auto()
         SERVER = auto()
+        RODC = auto()
 
     @classmethod
     def setUpClass(cls):
