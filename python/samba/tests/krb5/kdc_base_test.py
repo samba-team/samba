@@ -1283,11 +1283,13 @@ class KDCBaseTest(RawKerberosTest):
         return rep, enc_part
 
     def get_service_ticket(self, tgt, target_creds, service='host',
+                           target_name=None,
                            to_rodc=False, kdc_options=None,
                            expected_flags=None, unexpected_flags=None,
                            pac_request=True, expect_pac=True, fresh=False):
         user_name = tgt.cname['name-string'][0]
-        target_name = target_creds.get_username()[:-1]
+        if target_name is None:
+            target_name = target_creds.get_username()[:-1]
         cache_key = (user_name, target_name, service, to_rodc, kdc_options,
                      pac_request)
 
@@ -1669,51 +1671,28 @@ class KDCBaseTest(RawKerberosTest):
 
         return cachefile
 
-    def create_ccache_with_user(self, user_credentials, mach_name,
-                                service="host"):
+    def create_ccache_with_user(self, user_credentials, mach_credentials,
+                                service="host", target_name=None):
         # Obtain a service ticket authorising the user and place it into a
         # newly created credentials cache file.
 
         user_name = user_credentials.get_username()
         realm = user_credentials.get_realm()
 
-        # Do the initial AS-REQ, should get a pre-authentication required
-        # response
-        etype = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
         cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=[user_name])
-        sname = self.PrincipalName_create(name_type=NT_SRV_HST,
-                                          names=["krbtgt", realm])
 
-        rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authentication(rep)
-
-        # Do the next AS-REQ
-        padata = self.get_enc_timestamp_pa_data(user_credentials, rep)
-        key = self.get_as_rep_key(user_credentials, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
-        self.check_as_reply(rep)
+        tgt = self.get_tgt(user_credentials)
 
         # Request a ticket to the host service on the machine account
-        ticket = rep['ticket']
-        enc_part = self.get_as_rep_enc_data(key, rep)
-        key = self.EncryptionKey_import(enc_part['key'])
-        cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                          names=[user_name])
-        sname = self.PrincipalName_create(name_type=NT_SRV_HST,
-                                          names=[service, mach_name])
-
-        (rep, enc_part) = self.tgs_req(
-            cname, sname, realm, ticket, key, etype)
-        self.check_tgs_reply(rep)
-        key = self.EncryptionKey_import(enc_part['key'])
-
-        # Check the contents of the pac, and the ticket
-        ticket = rep['ticket']
+        ticket = self.get_service_ticket(tgt, mach_credentials,
+                                         service=service,
+                                         target_name=target_name)
 
         # Write the ticket into a credentials cache file that can be ingested
         # by the main credentials code.
-        cachefile = self.create_ccache(cname, ticket, enc_part)
+        cachefile = self.create_ccache(cname, ticket.ticket,
+                                       ticket.encpart_private)
 
         # Create a credentials object to reference the credentials cache.
         creds = Credentials()
