@@ -1102,13 +1102,14 @@ class RawKerberosTest(TestCaseInTempDir):
                                      f"unexpected in {v}")
 
     def assertSequenceElementsEqual(self, expected, got, *,
-                                    require_strict=None):
-        if self.strict_checking:
+                                    require_strict=None,
+                                    require_ordered=True):
+        if self.strict_checking and require_ordered:
             self.assertEqual(expected, got)
         else:
             fail_msg = f'expected: {expected} got: {got}'
 
-            if require_strict is not None:
+            if not self.strict_checking and require_strict is not None:
                 fail_msg += f' (ignoring: {require_strict})'
                 expected = (x for x in expected if x not in require_strict)
                 got = (x for x in got if x not in require_strict)
@@ -2569,12 +2570,16 @@ class RawKerberosTest(TestCaseInTempDir):
         if not self.is_tgs(expected_sname):
             expected_types.append(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
 
-        if self.strict_checking:
-            buffer_types = [pac_buffer.type
-                            for pac_buffer in pac.buffers]
-            self.assertCountEqual(expected_types, buffer_types,
-                                  f'expected: {expected_types} '
-                                  f'got: {buffer_types}')
+        require_strict = {krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO}
+        if not self.tkt_sig_support:
+            require_strict.add(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
+
+        buffer_types = [pac_buffer.type
+                        for pac_buffer in pac.buffers]
+        self.assertSequenceElementsEqual(
+            expected_types, buffer_types,
+            require_ordered=False,
+            require_strict=require_strict)
 
         expected_account_name = kdc_exchange_dict['expected_account_name']
         expected_sid = kdc_exchange_dict['expected_sid']
