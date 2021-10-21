@@ -290,7 +290,9 @@ class SamTests(samba.tests.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": "computer"})
+            "objectclass": "computer",
+            "userAccountControl": str(UF_NORMAL_ACCOUNT |
+                                      UF_PASSWD_NOTREQD)})
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
