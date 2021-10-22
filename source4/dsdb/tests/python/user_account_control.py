@@ -91,32 +91,43 @@ account_types = set([UF_NORMAL_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_
 class UserAccountControlTests(samba.tests.TestCase):
     @classmethod
     def setUpDynamicTestCases(cls):
-        for account_type in [UF_NORMAL_ACCOUNT,
-                             UF_WORKSTATION_TRUST_ACCOUNT,
-                             UF_SERVER_TRUST_ACCOUNT]:
-            account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
-            for objectclass in ["computer", "user"]:
-                test_name = f"{account_type_str}_{objectclass}"
-                cls.generate_dynamic_test("test_objectclass_uac_lock",
-                                          test_name,
-                                          account_type,
-                                          objectclass)
+        for priv in [(True, "priv"), (False, "cc")]:
+            for account_type in [UF_NORMAL_ACCOUNT,
+                                 UF_WORKSTATION_TRUST_ACCOUNT,
+                                 UF_SERVER_TRUST_ACCOUNT]:
+                account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
+                for objectclass in ["computer", "user"]:
+                    for name in [("oc_uac_lock$", "withdollar"), \
+                        ("oc_uac_lock", "plain")]:
+                        test_name = f"{account_type_str}_{objectclass}_{priv[1]}_{name[1]}"
+                        cls.generate_dynamic_test("test_objectclass_uac_dollar_lock",
+                                                  test_name,
+                                                  account_type,
+                                                  objectclass,
+                                                  name[0],
+                                                  priv[0])
 
+        for priv in [(True, "priv"), (False, "wp")]:
+            for account_type in [UF_NORMAL_ACCOUNT,
+                                 UF_WORKSTATION_TRUST_ACCOUNT,
+                                 UF_SERVER_TRUST_ACCOUNT]:
+                account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
+                for account_type2 in [UF_NORMAL_ACCOUNT,
+                                      UF_WORKSTATION_TRUST_ACCOUNT,
+                                      UF_SERVER_TRUST_ACCOUNT]:
+                    for how in ["replace", "deladd"]:
+                        account_type2_str = dsdb.user_account_control_flag_bit_to_string(account_type2)
+                        test_name = f"{account_type_str}_{account_type2_str}_{how}_{priv[1]}"
+                        cls.generate_dynamic_test("test_objectclass_uac_mod_lock",
+                                                  test_name,
+                                                  account_type,
+                                                  account_type2,
+                                                  how,
+                                                  priv[0])
         for account_type in [UF_NORMAL_ACCOUNT,
                              UF_WORKSTATION_TRUST_ACCOUNT,
                              UF_SERVER_TRUST_ACCOUNT]:
             account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
-            for account_type2 in [UF_NORMAL_ACCOUNT,
-                                  UF_WORKSTATION_TRUST_ACCOUNT,
-                                  UF_SERVER_TRUST_ACCOUNT]:
-                for how in ["replace", "deladd"]:
-                    account_type2_str = dsdb.user_account_control_flag_bit_to_string(account_type2)
-                    test_name = f"{account_type_str}_{account_type2_str}_{how}"
-                    cls.generate_dynamic_test("test_objectclass_uac_mod_lock",
-                                              test_name,
-                                              account_type,
-                                              account_type2,
-                                              how)
             for objectclass in ["user", "computer"]:
                 for how in ["replace", "deladd"]:
                     test_name = f"{account_type_str}_{objectclass}_{how}"
@@ -895,10 +906,11 @@ class UserAccountControlTests(samba.tests.TestCase):
             "primaryGroupID")
         self.admin_samdb.modify(m)
 
-    def _test_objectclass_uac_lock_with_args(self,
-                                             account_type,
-                                             objectclass):
-        name = "oc_uac_lock$"
+    def _test_objectclass_uac_dollar_lock_with_args(self,
+                                                    account_type,
+                                                    objectclass,
+                                                    name,
+                                                    priv):
         dn = "CN=%s,%s" % (name, self.OU)
         msg_dict = {
             "dn": dn,
@@ -910,25 +922,57 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         print(f"Adding account {name} as {account_type_str} with objectclass {objectclass}")
 
-        if (objectclass == "user" \
-            and account_type == UF_NORMAL_ACCOUNT):
-            self.admin_samdb.add(msg_dict)
-        elif objectclass == "computer":
-            try:
-                self.admin_samdb.add(msg_dict)
-            except ldb.LdbError as e:
-                (num, msg) = e.args
-                self.fail("Failed to create {objectclass} account "
-                          "with {account_type_string}")
+        if priv:
+            samdb = self.admin_samdb
         else:
-            self.assertRaisesLdbError(ldb.ERR_OBJECT_CLASS_VIOLATION,
-                                      "Should have been unable to {account_type_str} on {objectclass}",
-                                      self.admin_samdb.add, msg_dict)
+            user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
+            mod = "(OA;;CC;;;%s)" % str(user_sid)
+
+            self.sd_utils.dacl_add_ace(self.OU, mod)
+            samdb = self.samdb
+
+        enum = ldb.SUCCESS
+        try:
+            samdb.add(msg_dict)
+        except ldb.LdbError as e:
+            (enum, msg) = e.args
+
+        if (account_type == UF_SERVER_TRUST_ACCOUNT
+            and objectclass != "computer"):
+            self.assertEqual(enum, ldb.ERR_OBJECT_CLASS_VIOLATION)
+            return
+
+        if priv == False and account_type == UF_SERVER_TRUST_ACCOUNT:
+            self.assertEqual(enum, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            return
+
+        if (objectclass == "user"
+            and account_type != UF_NORMAL_ACCOUNT):
+            self.assertEqual(enum, ldb.ERR_OBJECT_CLASS_VIOLATION)
+            return
+
+        if (not priv and objectclass == "computer"
+            and account_type == UF_NORMAL_ACCOUNT):
+            self.assertEqual(enum, ldb.ERR_OBJECT_CLASS_VIOLATION)
+            return
+
+        if priv and account_type == UF_NORMAL_ACCOUNT:
+            self.assertEqual(enum, 0)
+            return
+
+        if (priv == False and
+            account_type != UF_NORMAL_ACCOUNT and
+            name[-1] != '$'):
+            self.assertEqual(enum, ldb.ERR_UNWILLING_TO_PERFORM)
+            return
+
+        self.assertEqual(enum, 0)
 
     def _test_objectclass_uac_mod_lock_with_args(self,
                                                  account_type,
                                                  account_type2,
-                                                 how):
+                                                 how,
+                                                 priv):
         name = "uac_mod_lock$"
         dn = "CN=%s,%s" % (name, self.OU)
         if account_type == UF_NORMAL_ACCOUNT:
@@ -949,10 +993,25 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         print(f"Adding account {name} as {account_type_str} with objectclass {objectclass}")
 
+        if priv:
+            samdb = self.admin_samdb
+        else:
+            samdb = self.samdb
+
+        user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
+
+        # Create the object as admin
         self.admin_samdb.add(msg_dict)
 
+        # We want to test what the underlying rules for non-admins
+        # regardless of security descriptors are, so set this very,
+        # dangerously, broadly
+        mod = "(OA;;WP;;;%s)" % str(user_sid)
+
+        self.sd_utils.dacl_add_ace(dn, mod)
+
         m = ldb.Message()
-        m.dn = ldb.Dn(self.admin_samdb, dn)
+        m.dn = ldb.Dn(samdb, dn)
         if how == "replace":
             m["userAccountControl"] = ldb.MessageElement(str(account_type2 | UF_PASSWD_NOTREQD),
                                                          ldb.FLAG_MOD_REPLACE, "userAccountControl")
@@ -964,17 +1023,36 @@ class UserAccountControlTests(samba.tests.TestCase):
         else:
             raise ValueError(f"{how} was not a valid argument")
 
-        if (account_type in [UF_SERVER_TRUST_ACCOUNT,
-                            UF_WORKSTATION_TRUST_ACCOUNT]) and \
+        if (account_type == account_type2):
+            samdb.modify(m)
+        elif (account_type == UF_NORMAL_ACCOUNT) and \
+               (account_type2 == UF_SERVER_TRUST_ACCOUNT) and not priv:
+                self.assertRaisesLdbError(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                          f"Should have been unable to change {account_type_str} to {account_type2_str}",
+                                          samdb.modify, m)
+        elif (account_type == UF_NORMAL_ACCOUNT) and \
+               (account_type2 == UF_SERVER_TRUST_ACCOUNT) and priv:
+                self.assertRaisesLdbError(ldb.ERR_UNWILLING_TO_PERFORM,
+                                          f"Should have been unable to change {account_type_str} to {account_type2_str}",
+                                          samdb.modify, m)
+        elif (account_type == UF_WORKSTATION_TRUST_ACCOUNT) and \
+               (account_type2 == UF_SERVER_TRUST_ACCOUNT) and not priv:
+                self.assertRaisesLdbError(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                          f"Should have been unable to change {account_type_str} to {account_type2_str}",
+                                          samdb.modify, m)
+        elif priv:
+            samdb.modify(m)
+        elif (account_type in [UF_SERVER_TRUST_ACCOUNT,
+                               UF_WORKSTATION_TRUST_ACCOUNT]) and \
             (account_type2 in [UF_SERVER_TRUST_ACCOUNT,
                                UF_WORKSTATION_TRUST_ACCOUNT]):
-            self.admin_samdb.modify(m)
+            samdb.modify(m)
         elif (account_type == account_type2):
-            self.admin_samdb.modify(m)
+            samdb.modify(m)
         else:
-            self.assertRaisesLdbError(ldb.ERR_UNWILLING_TO_PERFORM,
+            self.assertRaisesLdbError(ldb.ERR_OBJECT_CLASS_VIOLATION,
                                       f"Should have been unable to change {account_type_str} to {account_type2_str}",
-                                      self.admin_samdb.modify, m)
+                                      samdb.modify, m)
 
     def _test_objectclass_mod_lock_with_args(self,
                                              account_type,
