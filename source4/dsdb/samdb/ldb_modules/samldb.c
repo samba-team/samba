@@ -3873,6 +3873,37 @@ static int check_spn_direct_collision(struct ldb_context *ldb,
 }
 
 
+static int count_spn_components(struct ldb_val val)
+{
+	/*
+	 * a 3 part servicePrincipalName has two slashes, like
+	 * ldap/example.com/DomainDNSZones.example.com.
+	 *
+	 * In krb5_parse_name_flags() we don't count "\/" as a slash (i.e.
+	 * escaped by a backslash), but this is not the behaviour of Windows
+	 * on setting a servicePrincipalName -- slashes are counted regardless
+	 * of backslashes.
+	 *
+	 * Accordingly, here we ignore backslashes. This will reject
+	 * multi-slash SPNs that krb5_parse_name_flags() would accept, and
+	 * allow ones in the form "a\/b" that it won't parse.
+	 */
+	size_t i;
+	int slashes = 0;
+	for (i = 0; i < val.length; i++) {
+		char c = val.data[i];
+		if (c == '/') {
+			slashes++;
+			if (slashes == 3) {
+				/* at this point we don't care */
+				return 4;
+			}
+		}
+	}
+	return slashes + 1;
+}
+
+
 /* Check that "servicePrincipalName" changes do not introduce a collision
  * globally. */
 static int samldb_spn_uniqueness_check(struct samldb_ctx *ac,
@@ -3888,7 +3919,17 @@ static int samldb_spn_uniqueness_check(struct samldb_ctx *ac,
 	}
 
 	for (i = 0; i < spn_el->num_values; i++) {
+		int n_components;
 		spn = (char *)spn_el->values[i].data;
+
+		n_components = count_spn_components(spn_el->values[i]);
+		if (n_components > 3 || n_components < 2) {
+			ldb_asprintf_errstring(ldb,
+					       "samldb: spn[%s] invalid with %u components",
+					       spn, n_components);
+			talloc_free(tmp_ctx);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 
 		ret = check_spn_direct_collision(ldb,
 						 tmp_ctx,
