@@ -1365,7 +1365,8 @@ static int samldb_check_user_account_control_rules(struct samldb_ctx *ac,
 						   struct dom_sid *sid,
 						   uint32_t req_uac,
 						   uint32_t user_account_control,
-						   uint32_t user_account_control_old);
+						   uint32_t user_account_control_old,
+						   bool is_computer_objectclass);
 
 /*
  * "Objectclass" trigger (MS-SAMR 3.1.1.8.1)
@@ -1484,19 +1485,10 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			ret = samldb_check_user_account_control_rules(ac, NULL,
 								      raw_uac,
 								      user_account_control,
-								      0);
+								      0,
+								      is_computer_objectclass);
 			if (ret != LDB_SUCCESS) {
 				return ret;
-			}
-
-			/* Workstation and (read-only) DC objects do need objectclass "computer" */
-			if ((samdb_find_attribute(ldb, ac->msg,
-						  "objectclass", "computer") == NULL) &&
-			    (user_account_control &
-			     (UF_SERVER_TRUST_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT))) {
-				ldb_set_errstring(ldb,
-						  "samldb: Requested account type does need objectclass 'computer'!");
-				return LDB_ERR_OBJECT_CLASS_VIOLATION;
 			}
 
 			/* add "sAMAccountType" attribute */
@@ -1993,6 +1985,106 @@ static int samldb_check_user_account_control_invariants(struct samldb_ctx *ac,
 	return ret;
 }
 
+/*
+ * It would be best if these rules apply, always, but for now they
+ * apply only to non-admins
+ */
+static int samldb_check_user_account_control_objectclass_invariants(
+	struct samldb_ctx *ac,
+	uint32_t user_account_control,
+	uint32_t user_account_control_old,
+	bool is_computer_objectclass)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+
+	uint32_t old_ufa = user_account_control_old & UF_ACCOUNT_TYPE_MASK;
+	uint32_t new_ufa = user_account_control & UF_ACCOUNT_TYPE_MASK;
+
+	uint32_t old_rodc = user_account_control_old & UF_PARTIAL_SECRETS_ACCOUNT;
+	uint32_t new_rodc = user_account_control & UF_PARTIAL_SECRETS_ACCOUNT;
+
+	bool is_admin;
+	struct security_token *user_token
+		= acl_user_token(ac->module);
+	if (user_token == NULL) {
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+
+	is_admin
+		= security_token_has_builtin_administrators(user_token);
+
+
+	/*
+	 * We want to allow changes to (eg) disable an account
+	 * that was created wrong, only checking the
+	 * objectclass if the account type changes.
+	 */
+	if (old_ufa == new_ufa && old_rodc == new_rodc) {
+		return LDB_SUCCESS;
+	}
+
+	switch (new_ufa) {
+	case UF_NORMAL_ACCOUNT:
+		if (is_computer_objectclass && !is_admin) {
+			ldb_asprintf_errstring(ldb,
+				"%08X: samldb: UF_NORMAL_ACCOUNT "
+				"requires objectclass 'user' not 'computer'!",
+				W_ERROR_V(WERR_DS_MACHINE_ACCOUNT_CREATED_PRENT4));
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
+		break;
+
+	case UF_INTERDOMAIN_TRUST_ACCOUNT:
+		if (is_computer_objectclass) {
+			ldb_asprintf_errstring(ldb,
+				"%08X: samldb: UF_INTERDOMAIN_TRUST_ACCOUNT "
+				"requires objectclass 'user' not 'computer'!",
+				W_ERROR_V(WERR_DS_MACHINE_ACCOUNT_CREATED_PRENT4));
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
+		break;
+
+	case UF_WORKSTATION_TRUST_ACCOUNT:
+		if (!is_computer_objectclass) {
+			/*
+			 * Modify of a user account account into a
+			 * workstation without objectclass computer
+			 * as an admin is still permitted, but not
+			 * to make an RODC
+			 */
+			if (is_admin
+			    && ac->req->operation == LDB_MODIFY
+			    && new_rodc == 0) {
+				break;
+			}
+			ldb_asprintf_errstring(ldb,
+				"%08X: samldb: UF_WORKSTATION_TRUST_ACCOUNT "
+				"requires objectclass 'computer'!",
+				W_ERROR_V(WERR_DS_MACHINE_ACCOUNT_CREATED_PRENT4));
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
+		break;
+
+	case UF_SERVER_TRUST_ACCOUNT:
+		if (!is_computer_objectclass) {
+			ldb_asprintf_errstring(ldb,
+				"%08X: samldb: UF_SERVER_TRUST_ACCOUNT "
+				"requires objectclass 'computer'!",
+				W_ERROR_V(WERR_DS_MACHINE_ACCOUNT_CREATED_PRENT4));
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
+		break;
+
+	default:
+		ldb_asprintf_errstring(ldb,
+			"%08X: samldb: invalid userAccountControl[0x%08X]",
+			W_ERROR_V(WERR_INVALID_PARAMETER),
+				       user_account_control);
+		return LDB_ERR_OTHER;
+	}
+	return LDB_SUCCESS;
+}
+
 static int samldb_get_domain_secdesc(struct samldb_ctx *ac,
 				     struct security_descriptor **domain_sd)
 {
@@ -2191,7 +2283,8 @@ static int samldb_check_user_account_control_rules(struct samldb_ctx *ac,
 						   struct dom_sid *sid,
 						   uint32_t req_uac,
 						   uint32_t user_account_control,
-						   uint32_t user_account_control_old)
+						   uint32_t user_account_control_old,
+						   bool is_computer_objectclass)
 {
 	int ret;
 	struct dsdb_control_password_user_account_control *uac = NULL;
@@ -2200,6 +2293,14 @@ static int samldb_check_user_account_control_rules(struct samldb_ctx *ac,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+	ret = samldb_check_user_account_control_objectclass_invariants(ac,
+								       user_account_control,
+								       user_account_control_old,
+								       is_computer_objectclass);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ret = samldb_check_user_account_control_acl(ac, sid, user_account_control, user_account_control_old);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -2261,7 +2362,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		"objectSid",
 		NULL
 	};
-	bool is_computer = false;
+	bool is_computer_objectclass = false;
 	bool old_is_critical = false;
 	bool new_is_critical = false;
 
@@ -2316,7 +2417,10 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 						     "lockoutTime", 0);
 	old_is_critical = ldb_msg_find_attr_as_bool(res->msgs[0],
 						    "isCriticalSystemObject", 0);
-	/* When we do not have objectclass "computer" we cannot switch to a (read-only) DC */
+	/*
+	 * When we do not have objectclass "computer" we cannot
+	 * switch to a workstation or (RO)DC
+	 */
 	el = ldb_msg_find_element(res->msgs[0], "objectClass");
 	if (el == NULL) {
 		return ldb_operr(ldb);
@@ -2324,7 +2428,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	computer_val = data_blob_string_const("computer");
 	val = ldb_msg_find_val(el, &computer_val);
 	if (val != NULL) {
-		is_computer = true;
+		is_computer_objectclass = true;
 	}
 
 	old_ufa = old_uac & UF_ACCOUNT_TYPE_MASK;
@@ -2349,7 +2453,8 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	ret = samldb_check_user_account_control_rules(ac, sid,
 						      raw_uac,
 						      new_uac,
-						      old_uac);
+						      old_uac,
+						      is_computer_objectclass);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -2371,25 +2476,11 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	case UF_WORKSTATION_TRUST_ACCOUNT:
 		new_is_critical = false;
 		if (new_uac & UF_PARTIAL_SECRETS_ACCOUNT) {
-			if (!is_computer) {
-				ldb_asprintf_errstring(ldb,
-						       "%08X: samldb: UF_PARTIAL_SECRETS_ACCOUNT "
-						       "requires objectclass 'computer'!",
-						       W_ERROR_V(WERR_DS_MACHINE_ACCOUNT_CREATED_PRENT4));
-				return LDB_ERR_UNWILLING_TO_PERFORM;
-			}
 			new_is_critical = true;
 		}
 		break;
 
 	case UF_SERVER_TRUST_ACCOUNT:
-		if (!is_computer) {
-			ldb_asprintf_errstring(ldb,
-				"%08X: samldb: UF_SERVER_TRUST_ACCOUNT "
-				"requires objectclass 'computer'!",
-				W_ERROR_V(WERR_DS_MACHINE_ACCOUNT_CREATED_PRENT4));
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
 		new_is_critical = true;
 		break;
 
