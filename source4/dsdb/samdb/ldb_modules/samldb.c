@@ -216,37 +216,21 @@ static int samldb_unique_attr_check(struct samldb_ctx *ac, const char *attr,
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	const char * const no_attrs[] = { NULL };
-	struct ldb_result *res;
-	const char *enc_str;
-	struct ldb_message_element *el;
+	struct ldb_result *res = NULL;
+	const char *str = NULL;
+	const char *enc_str = NULL;
 	int ret;
 
-	el = dsdb_get_single_valued_attr(ac->msg, attr,
-					 ac->req->operation);
-	if (el == NULL) {
-		/* we are not affected */
+	ret = samldb_get_single_valued_attr(ldb, ac, attr, &str);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (str == NULL) {
+		/* the attribute wasn't found */
 		return LDB_SUCCESS;
 	}
 
-	if (el->num_values > 1) {
-		ldb_asprintf_errstring(ldb,
-				       "samldb: %s has %u values, should be single-valued!",
-				       attr, el->num_values);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	} else if (el->num_values == 0) {
-		ldb_asprintf_errstring(ldb,
-				       "samldb: new value for %s not provided for mandatory, single-valued attribute!",
-				       attr);
-		return LDB_ERR_OBJECT_CLASS_VIOLATION;
-	}
-	if (el->values[0].length == 0) {
-		ldb_asprintf_errstring(ldb,
-				       "samldb: %s is of zero length, should have a value!",
-				       attr);
-		return LDB_ERR_OBJECT_CLASS_VIOLATION;
-	}
-	enc_str = ldb_binary_encode(ac, el->values[0]);
-
+	enc_str = ldb_binary_encode_string(ac, str);
 	if (enc_str == NULL) {
 		return ldb_module_oom(ac->module);
 	}
