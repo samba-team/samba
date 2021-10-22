@@ -238,8 +238,9 @@ static int samldb_unique_attr_check(struct samldb_ctx *ac, const char *attr,
 		return ldb_module_oom(ac->module);
 	}
 
-	/* Make sure that attr (eg) "sAMAccountName" is only used once */
-
+	/*
+	 * No other object should have the attribute with this value.
+	 */
 	if (attr_conflict != NULL) {
 		ret = dsdb_module_search(ac->module, ac, &res,
 					 base_dn,
@@ -273,6 +274,193 @@ static int samldb_unique_attr_check(struct samldb_ctx *ac, const char *attr,
 	return LDB_SUCCESS;
 }
 
+
+
+static inline int samldb_sam_account_upn_clash_sub_search(
+	struct samldb_ctx *ac,
+	TALLOC_CTX *mem_ctx,
+	struct ldb_dn *base_dn,
+	const char *attr,
+	const char *value,
+	const char *err_msg
+	)
+{
+	/*
+	 * A very specific helper function for samldb_sam_account_upn_clash(),
+	 * where we end up doing this same thing several times in a row.
+	 */
+	const char * const no_attrs[] = { NULL };
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct ldb_result *res = NULL;
+	int ret;
+	char *enc_value = ldb_binary_encode_string(ac, value);
+	if (enc_value == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+	ret = dsdb_module_search(ac->module, mem_ctx, &res,
+				 base_dn,
+				 LDB_SCOPE_SUBTREE, no_attrs,
+				 DSDB_FLAG_NEXT_MODULE, ac->req,
+				 "(%s=%s)",
+				 attr, enc_value);
+	talloc_free(enc_value);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	} else if (res->count > 1) {
+		return ldb_operr(ldb);
+	} else if (res->count == 1) {
+		if (ldb_dn_compare(res->msgs[0]->dn, ac->msg->dn) != 0){
+			ldb_asprintf_errstring(ldb,
+					       "samldb: %s '%s' "
+					       "is already in use %s",
+					       attr, value, err_msg);
+			/* different errors for different attrs */
+			if (strcasecmp("userPrincipalName", attr) == 0) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+			return LDB_ERR_ENTRY_ALREADY_EXISTS;
+		}
+	}
+	return LDB_SUCCESS;
+}
+
+static int samldb_sam_account_upn_clash(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	int ret;
+	struct ldb_dn *base_dn = ldb_get_default_basedn(ldb);
+	TALLOC_CTX *tmp_ctx = NULL;
+	const char *real_sam = NULL;
+	const char *real_upn = NULL;
+	char *implied_sam = NULL;
+	char *implied_upn = NULL;
+	const char *realm = NULL;
+
+	ret = samldb_get_single_valued_attr(ldb, ac,
+					    "sAMAccountName",
+					    &real_sam);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = samldb_get_single_valued_attr(ldb, ac,
+					    "userPrincipalName",
+					    &real_upn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (real_upn == NULL && real_sam == NULL) {
+		/* Not changing these things, so we're done */
+		return LDB_SUCCESS;
+	}
+
+	tmp_ctx = talloc_new(ac);
+	realm = samdb_dn_to_dns_domain(tmp_ctx, base_dn);
+	if (realm == NULL) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb);
+	}
+
+	if (real_upn != NULL) {
+		/*
+		 * note we take the last @ in the upn because the first (i.e.
+		 * sAMAccountName equivalent) part can contain @.
+		 *
+		 * It is also OK (per Windows) for a UPN to have zero @s.
+		 */
+		char *at = NULL;
+		char *upn_realm = NULL;
+		implied_sam = talloc_strdup(tmp_ctx, real_upn);
+		if (implied_sam == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_module_oom(ac->module);
+		}
+
+		at = strrchr(implied_sam, '@');
+		if (at == NULL) {
+			/*
+			 * there is no @ in this UPN, so we treat the whole
+			 * thing as a sAMAccountName for the purposes of a
+			 * clash.
+			 */
+			DBG_INFO("samldb: userPrincipalName '%s' contains "
+				 "no '@' character\n", implied_sam);
+		} else {
+			/*
+			 * Now, this upn only implies a sAMAccountName if the
+			 * realm is our realm. So we need to compare the tail
+			 * of the upn to the realm.
+			 */
+			*at = '\0';
+			upn_realm = at + 1;
+			if (strcasecmp(upn_realm, realm) != 0) {
+				/* implied_sam is not the implied
+				 * sAMAccountName after all, because it is
+				 * from a different realm. */
+				TALLOC_FREE(implied_sam);
+			}
+		}
+	}
+
+	if (real_sam != NULL) {
+		implied_upn = talloc_asprintf(tmp_ctx, "%s@%s",
+					      real_sam, realm);
+		if (implied_upn == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_module_oom(ac->module);
+		}
+	}
+
+	/*
+	 * Now we have all of the actual and implied names, in which to search
+	 * for conflicts.
+	 */
+	if (real_sam != NULL) {
+		ret = samldb_sam_account_upn_clash_sub_search(
+			ac, tmp_ctx, base_dn, "sAMAccountName",
+			real_sam, "");
+
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+	if (implied_upn != NULL) {
+		ret = samldb_sam_account_upn_clash_sub_search(
+			ac, tmp_ctx, base_dn, "userPrincipalName", implied_upn,
+			"(implied by sAMAccountName)");
+
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+	if (real_upn != NULL) {
+		ret = samldb_sam_account_upn_clash_sub_search(
+			ac, tmp_ctx, base_dn, "userPrincipalName",
+			real_upn, "");
+
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+	if (implied_sam != NULL) {
+		ret = samldb_sam_account_upn_clash_sub_search(
+			ac, tmp_ctx, base_dn, "sAMAccountName", implied_sam,
+			"(implied by userPrincipalName)");
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+
+/* This is run during an add or modify */
 static int samldb_sam_accountname_valid_check(struct samldb_ctx *ac)
 {
 	int ret = 0;
@@ -306,7 +494,11 @@ static int samldb_sam_accountname_valid_check(struct samldb_ctx *ac)
 	} else if (ret == LDB_ERR_OBJECT_CLASS_VIOLATION) {
 		ret = LDB_ERR_CONSTRAINT_VIOLATION;
 	}
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
+	ret = samldb_sam_account_upn_clash(ac);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -4180,7 +4372,6 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-
 		user_account_control
 			= ldb_msg_find_attr_as_uint(res->msgs[0],
 						    "userAccountControl",
@@ -4200,6 +4391,15 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 		ret = samldb_sam_accountname_valid_check(ac);
 		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	el = ldb_msg_find_element(ac->msg, "userPrincipalName");
+	if (el != NULL) {
+		ret = samldb_sam_account_upn_clash(ac);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
 			return ret;
 		}
 	}
