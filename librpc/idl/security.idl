@@ -206,6 +206,15 @@ interface security
 		 SEC_ADS_GENERIC_READ           |
 		 SEC_ADS_GENERIC_ALL_DS);
 
+	/*
+	 * Rights implicitly granted to a user who is an owner of the security
+	 * descriptor being processed.
+	 */
+	typedef enum {
+		IMPLICIT_OWNER_READ_CONTROL_RIGHTS,
+		IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS
+	} implicit_owner_rights;
+
 	/***************************************************************/
 	/* WELL KNOWN SIDS */
 

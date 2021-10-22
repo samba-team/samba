@@ -106,7 +106,8 @@ void se_map_standard(uint32_t *access_mask, const struct standard_mapping *mappi
   perform a SEC_FLAG_MAXIMUM_ALLOWED access check
 */
 static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
-					const struct security_token *token)
+					 const struct security_token *token,
+					 enum implicit_owner_rights implicit_owner_rights)
 {
 	uint32_t denied = 0, granted = 0;
 	bool am_owner = false;
@@ -115,7 +116,14 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 
 	if (sd->dacl == NULL) {
 		if (security_token_has_sid(token, sd->owner_sid)) {
-			granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
+			switch (implicit_owner_rights) {
+			case IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS:
+				granted |= SEC_STD_WRITE_DAC;
+				FALL_THROUGH;
+			case IMPLICIT_OWNER_READ_CONTROL_RIGHTS:
+				granted |= SEC_STD_READ_CONTROL;
+				break;
+			}
 		}
 		return granted;
 	}
@@ -145,7 +153,14 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	}
 
 	if (am_owner && !have_owner_rights_ace) {
-		granted |= SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL;
+		switch (implicit_owner_rights) {
+		case IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS:
+			granted |= SEC_STD_WRITE_DAC;
+			FALL_THROUGH;
+		case IMPLICIT_OWNER_READ_CONTROL_RIGHTS:
+			granted |= SEC_STD_READ_CONTROL;
+			break;
+		}
 	}
 
 	for (i = 0;i<sd->dacl->num_aces; i++) {
@@ -183,15 +198,11 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	return granted & ~denied;
 }
 
-/*
-  The main entry point for access checking. If returning ACCESS_DENIED
-  this function returns the denied bits in the uint32_t pointed
-  to by the access_granted pointer.
-*/
-NTSTATUS se_access_check(const struct security_descriptor *sd,
-			  const struct security_token *token,
-			  uint32_t access_desired,
-			  uint32_t *access_granted)
+static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor *sd,
+					       const struct security_token *token,
+					       uint32_t access_desired,
+					       uint32_t *access_granted,
+					       enum implicit_owner_rights implicit_owner_rights)
 {
 	uint32_t i;
 	uint32_t bits_remaining;
@@ -206,7 +217,7 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
 		uint32_t orig_access_desired = access_desired;
 
-		access_desired |= access_check_max_allowed(sd, token);
+		access_desired |= access_check_max_allowed(sd, token, implicit_owner_rights);
 		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 		*access_granted = access_desired;
 		bits_remaining = access_desired;
@@ -251,7 +262,14 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		}
 	}
 	if (am_owner && !have_owner_rights_ace) {
-		bits_remaining &= ~(SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL);
+		switch (implicit_owner_rights) {
+		case IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS:
+			bits_remaining &= ~SEC_STD_WRITE_DAC;
+			FALL_THROUGH;
+		case IMPLICIT_OWNER_READ_CONTROL_RIGHTS:
+			bits_remaining &= ~SEC_STD_READ_CONTROL;
+			break;
+		}
 	}
 
 	/* check each ace in turn. */
@@ -318,6 +336,23 @@ done:
 }
 
 /*
+  The main entry point for access checking. If returning ACCESS_DENIED
+  this function returns the denied bits in the uint32_t pointed
+  to by the access_granted pointer.
+*/
+NTSTATUS se_access_check(const struct security_descriptor *sd,
+			 const struct security_token *token,
+			 uint32_t access_desired,
+			 uint32_t *access_granted)
+{
+	return se_access_check_implicit_owner(sd,
+					      token,
+					      access_desired,
+					      access_granted,
+					      IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS);
+}
+
+/*
   The main entry point for access checking FOR THE FILE SERVER ONLY !
   If returning ACCESS_DENIED this function returns the denied bits in
   the uint32_t pointed to by the access_granted pointer.
@@ -333,10 +368,11 @@ NTSTATUS se_file_access_check(const struct security_descriptor *sd,
 
 	if (!priv_open_requested) {
 		/* Fall back to generic se_access_check(). */
-		return se_access_check(sd,
-				token,
-				access_desired,
-				access_granted);
+		return se_access_check_implicit_owner(sd,
+						      token,
+						      access_desired,
+						      access_granted,
+						      IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS);
 	}
 
 	/*
@@ -349,7 +385,7 @@ NTSTATUS se_file_access_check(const struct security_descriptor *sd,
 	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
 		uint32_t orig_access_desired = access_desired;
 
-		access_desired |= access_check_max_allowed(sd, token);
+		access_desired |= access_check_max_allowed(sd, token, true);
 		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 
 		if (security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
@@ -366,10 +402,11 @@ NTSTATUS se_file_access_check(const struct security_descriptor *sd,
 			access_desired));
 	}
 
-	status = se_access_check(sd,
-				token,
-				access_desired,
-				access_granted);
+	status = se_access_check_implicit_owner(sd,
+						token,
+						access_desired,
+						access_granted,
+						IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		return status;
@@ -478,34 +515,13 @@ static NTSTATUS check_object_specific_access(struct security_ace *ace,
 	return NT_STATUS_OK;
 }
 
-/**
- * @brief Perform directoryservice (DS) related access checks for a given user
- *
- * Perform DS access checks for the user represented by its security_token, on
- * the provided security descriptor. If an tree associating GUID and access
- * required is provided then object access (OA) are checked as well. *
- * @param[in]   sd             The security descritor against which the required
- *                             access are requested
- *
- * @param[in]   token          The security_token associated with the user to
- *                             test
- *
- * @param[in]   access_desired A bitfield of rights that must be granted for the
- *                             given user in the specified SD.
- *
- * If one
- * of the entry in the tree grants all the requested rights for the given GUID
- * FIXME
- * tree can be null if not null it's the
- * Lots of code duplication, it will be united in just one
- * function eventually */
-
-NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
-			     const struct security_token *token,
-			     uint32_t access_desired,
-			     uint32_t *access_granted,
-			     struct object_tree *tree,
-			     struct dom_sid *replace_sid)
+NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd,
+					    const struct security_token *token,
+					    uint32_t access_desired,
+					    uint32_t *access_granted,
+					    struct object_tree *tree,
+					    struct dom_sid *replace_sid,
+					    enum implicit_owner_rights implicit_owner_rights)
 {
 	uint32_t i;
 	uint32_t bits_remaining;
@@ -518,7 +534,7 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 
 	/* handle the maximum allowed flag */
 	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
-		access_desired |= access_check_max_allowed(sd, token);
+		access_desired |= access_check_max_allowed(sd, token, implicit_owner_rights);
 		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 		*access_granted = access_desired;
 		bits_remaining = access_desired;
@@ -535,7 +551,14 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 	/* the owner always gets SEC_STD_WRITE_DAC and SEC_STD_READ_CONTROL */
 	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL)) &&
 	    security_token_has_sid(token, sd->owner_sid)) {
-		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
+		switch (implicit_owner_rights) {
+		case IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS:
+			bits_remaining &= ~SEC_STD_WRITE_DAC;
+			FALL_THROUGH;
+		case IMPLICIT_OWNER_READ_CONTROL_RIGHTS:
+			bits_remaining &= ~SEC_STD_READ_CONTROL;
+			break;
+		}
 	}
 
 	/* SEC_PRIV_TAKE_OWNERSHIP grants SEC_STD_WRITE_OWNER */
@@ -612,4 +635,42 @@ done:
 	}
 
 	return NT_STATUS_OK;
+}
+
+/**
+ * @brief Perform directoryservice (DS) related access checks for a given user
+ *
+ * Perform DS access checks for the user represented by its security_token, on
+ * the provided security descriptor. If an tree associating GUID and access
+ * required is provided then object access (OA) are checked as well. *
+ * @param[in]   sd             The security descritor against which the required
+ *                             access are requested
+ *
+ * @param[in]   token          The security_token associated with the user to
+ *                             test
+ *
+ * @param[in]   access_desired A bitfield of rights that must be granted for the
+ *                             given user in the specified SD.
+ *
+ * If one
+ * of the entry in the tree grants all the requested rights for the given GUID
+ * FIXME
+ * tree can be null if not null it's the
+ * Lots of code duplication, it will be united in just one
+ * function eventually */
+
+NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
+			     const struct security_token *token,
+			     uint32_t access_desired,
+			     uint32_t *access_granted,
+			     struct object_tree *tree,
+			     struct dom_sid *replace_sid)
+{
+	return sec_access_check_ds_implicit_owner(sd,
+						  token,
+						  access_desired,
+						  access_granted,
+						  tree,
+						  replace_sid,
+						  IMPLICIT_OWNER_READ_CONTROL_RIGHTS);
 }

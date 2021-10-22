@@ -1303,7 +1303,10 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertEqual(desc_sddl, sddl)
         sddl = "O:AUG:AUD:AI(D;;CC;;;LG)"
-        self.sd_utils.modify_sd_on_dn(group_dn, sddl)
+        try:
+            self.sd_utils.modify_sd_on_dn(group_dn, sddl)
+        except LdbError as e:
+            self.fail(str(e))
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertEqual(desc_sddl, sddl)
 
@@ -1329,7 +1332,10 @@ class DaclDescriptorTests(DescriptorTests):
         self.assertFalse("ID" in desc_sddl)
         for x in re.findall(r"\(.*?\)", mod):
             self.assertFalse(x in desc_sddl)
-        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        try:
+            self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        except LdbError as e:
+            self.fail(str(e))
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertFalse("ID" in desc_sddl)
         for x in re.findall(r"\(.*?\)", mod):
@@ -1356,7 +1362,10 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";CI;", ";CIID;")
         self.assertTrue(mod in desc_sddl)
-        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        try:
+            self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        except LdbError as e:
+            self.fail(str(e))
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
@@ -1382,7 +1391,10 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";OI;", ";OIIOID;")  # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        try:
+            self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        except LdbError as e:
+            self.fail(str(e))
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
@@ -1408,7 +1420,10 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";CI;", ";CIID;")  # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        try:
+            self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        except LdbError as e:
+            self.fail(str(e))
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
@@ -1434,7 +1449,10 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";OI;", ";OIIOID;")  # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        try:
+            self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        except LdbError as e:
+            self.fail(str(e))
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
@@ -1460,7 +1478,10 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";CI;", ";CIID;")  # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        try:
+            self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        except LdbError as e:
+            self.fail(str(e))
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
@@ -1486,7 +1507,10 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";OI;", ";OIIOID;")  # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.sd_utils.modify_sd_on_dn(group_dn, "D:(OA;OI;WP;bf967a39-0de6-11d0-a285-00aa003049e2;;DU)" + moded)
+        try:
+            self.sd_utils.modify_sd_on_dn(group_dn, "D:(OA;OI;WP;bf967a39-0de6-11d0-a285-00aa003049e2;;DU)" + moded)
+        except LdbError as e:
+            self.fail(str(e))
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
@@ -1512,7 +1536,10 @@ class DaclDescriptorTests(DescriptorTests):
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue("(D;ID;WP;;;AU)" in desc_sddl)
         self.assertTrue("(D;CIIOID;WP;;;CO)" in desc_sddl)
-        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        try:
+            self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        except LdbError as e:
+            self.fail(str(e))
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue("(D;ID;WP;;;DA)" in desc_sddl)

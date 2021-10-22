@@ -502,13 +502,15 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 		if (ret == LDB_SUCCESS) {
 			flags |= SECINFO_OWNER | SECINFO_GROUP;
 		}
-		ret = acl_check_access_on_attribute(module,
-						    msg,
-						    sd,
-						    sid,
-						    SEC_STD_WRITE_DAC,
-						    attr,
-						    objectclass);
+		ret = acl_check_access_on_attribute_implicit_owner(
+			module,
+			msg,
+			sd,
+			sid,
+			SEC_STD_WRITE_DAC,
+			attr,
+			objectclass,
+			IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS);
 		if (ret == LDB_SUCCESS) {
 			flags |= SECINFO_DACL;
 		}
@@ -2064,6 +2066,9 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			uint32_t sd_flags = dsdb_request_sd_flags(req, NULL);
 			uint32_t access_mask = 0;
 
+			bool block_owner_rights;
+			enum implicit_owner_rights implicit_owner_rights;
+
 			if (sd_flags & (SECINFO_OWNER|SECINFO_GROUP)) {
 				access_mask |= SEC_STD_WRITE_OWNER;
 			}
@@ -2074,13 +2079,32 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				access_mask |= SEC_FLAG_SYSTEM_SECURITY;
 			}
 
-			ret = acl_check_access_on_attribute(module,
-							    tmp_ctx,
-							    sd,
-							    sid,
-							    access_mask,
-							    attr,
-							    objectclass);
+			block_owner_rights = !dsdb_module_am_administrator(module);
+
+			if (block_owner_rights) {
+				block_owner_rights = dsdb_block_owner_implicit_rights(module,
+										      req,
+										      req);
+			}
+			if (block_owner_rights) {
+				block_owner_rights = samdb_find_attribute(ldb,
+									  acl_res->msgs[0],
+									  "objectclass",
+									  "computer");
+			}
+
+			implicit_owner_rights = block_owner_rights ?
+				IMPLICIT_OWNER_READ_CONTROL_RIGHTS :
+				IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS;
+
+			ret = acl_check_access_on_attribute_implicit_owner(module,
+									   tmp_ctx,
+									   sd,
+									   sid,
+									   access_mask,
+									   attr,
+									   objectclass,
+									   implicit_owner_rights);
 			if (ret != LDB_SUCCESS) {
 				ldb_asprintf_errstring(ldb_module_get_ctx(module),
 						       "Object %s has no write dacl access\n",

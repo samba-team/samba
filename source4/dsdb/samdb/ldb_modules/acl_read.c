@@ -406,8 +406,9 @@ static int check_attr_access_rights(TALLOC_CTX *mem_ctx, const char *attr_name,
 		return LDB_SUCCESS;
 	}
 
-	ret = acl_check_access_on_attribute(ac->module, mem_ctx, sd, sid,
-					    access_mask, attr, objectclass);
+	ret = acl_check_access_on_attribute_implicit_owner(ac->module, mem_ctx, sd, sid,
+							   access_mask, attr, objectclass,
+							   IMPLICIT_OWNER_READ_CONTROL_RIGHTS);
 
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 		return ret;
@@ -674,13 +675,14 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 				continue;
 			}
 
-			ret = acl_check_access_on_attribute(ac->module,
-							    tmp_ctx,
-							    sd,
-							    sid,
-							    access_mask,
-							    attr,
-							    objectclass);
+			ret = acl_check_access_on_attribute_implicit_owner(ac->module,
+									   tmp_ctx,
+									   sd,
+									   sid,
+									   access_mask,
+									   attr,
+									   objectclass,
+									   IMPLICIT_OWNER_READ_CONTROL_RIGHTS);
 
 			/*
 			 * Dirsync control needs the replpropertymetadata attribute

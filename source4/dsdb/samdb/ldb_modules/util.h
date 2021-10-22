@@ -28,6 +28,7 @@ struct dom_sid;
 struct netlogon_samlogon_response;
 
 #include "librpc/gen_ndr/misc.h"
+#include "librpc/gen_ndr/security.h"
 #include "dsdb/samdb/ldb_modules/util_proto.h"
 #include "dsdb/common/util.h"
 #include "../libcli/netlogon/netlogon.h"
