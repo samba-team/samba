@@ -433,11 +433,10 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        try:
-            self.samdb.modify(m)
-        except LdbError as e:
-            (enum, estr) = e.args
-            self.fail(f"got {estr} setting userAccountControl to UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD")
+
+        self.assertRaisesLdbError(ldb.ERR_OBJECT_CLASS_VIOLATION,
+                                  f"Unexpectedly able to set userAccountControl as to UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD on {m.dn}",
+                                  self.samdb.modify, m)
 
         m = ldb.Message()
         m.dn = res[0].dn
@@ -501,7 +500,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                                       scope=SCOPE_SUBTREE,
                                       attrs=["userAccountControl"])
 
-        self.assertEqual(int(res[0]["userAccountControl"][0]), (UF_NORMAL_ACCOUNT |
+        self.assertEqual(int(res[0]["userAccountControl"][0]), (UF_WORKSTATION_TRUST_ACCOUNT |
                                                                 UF_ACCOUNTDISABLE |
                                                                 UF_PASSWD_NOTREQD))
 
@@ -681,11 +680,9 @@ class UserAccountControlTests(samba.tests.TestCase):
                                           scope=SCOPE_SUBTREE,
                                           attrs=["userAccountControl"])
 
-            if account_type == UF_WORKSTATION_TRUST_ACCOUNT:
-                self.assertEqual(orig_uac, account_type)
-            else:
-                self.assertEqual(orig_uac & UF_NORMAL_ACCOUNT,
-                                 account_type)
+            self.assertEqual(len(res), 1)
+            reset_uac = int(res[0]["userAccountControl"][0])
+            self.assertEqual(orig_uac, reset_uac)
 
             m = ldb.Message()
             m.dn = res[0].dn
@@ -704,14 +701,16 @@ class UserAccountControlTests(samba.tests.TestCase):
                     # No point going on, try the next bit
                     continue
                 elif bit in super_priv_bits:
-                    self.assertEqual(enum, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
+                    self.assertIn(enum, (ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                         ldb.ERR_OBJECT_CLASS_VIOLATION))
                     # No point going on, try the next bit
                     continue
 
                 elif (account_type == UF_NORMAL_ACCOUNT) \
                    and (bit in account_types) \
                    and (bit != account_type):
-                    self.assertEqual(enum, ldb.ERR_UNWILLING_TO_PERFORM)
+                    self.assertIn(enum, (ldb.ERR_UNWILLING_TO_PERFORM,
+                                         ldb.ERR_OBJECT_CLASS_VIOLATION))
                     continue
 
                 elif (account_type == UF_WORKSTATION_TRUST_ACCOUNT) \
@@ -789,7 +788,10 @@ class UserAccountControlTests(samba.tests.TestCase):
 
             except LdbError as e3:
                 (enum, estr) = e3.args
-                if bit in priv_to_remove_bits:
+                if account_type == UF_WORKSTATION_TRUST_ACCOUNT:
+                    # Because removing any bit would change the account back to a user, which is locked by objectclass
+                    self.assertIn(enum, (ldb.ERR_OBJECT_CLASS_VIOLATION, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS))
+                elif bit in priv_to_remove_bits:
                     self.assertEqual(enum, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
                 else:
                     self.fail("Unexpectedly unable to remove userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
@@ -808,7 +810,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                     self.assertEqual(int(res[0]["userAccountControl"][0]),
                                      bit | UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD,
                                      "bit 0X%08x should not have been removed" % bit)
-            else:
+            elif account_type != UF_WORKSTATION_TRUST_ACCOUNT:
                 self.assertEqual(int(res[0]["userAccountControl"][0]),
                                  UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD,
                                  "bit 0X%08x should have been removed" % bit)
@@ -859,9 +861,19 @@ class UserAccountControlTests(samba.tests.TestCase):
                                     bit_str,
                                     computername))
             elif bit in priv_bits:
-                self.assertEqual(enum, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
+                if bit == UF_INTERDOMAIN_TRUST_ACCOUNT:
+                    self.assertIn(enum, (ldb.ERR_OBJECT_CLASS_VIOLATION,
+                                         ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS))
+                else:
+                    self.assertEqual(enum, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
             elif bit in unwilling_bits:
-                self.assertEqual(enum, ldb.ERR_UNWILLING_TO_PERFORM)
+                # This can fail early as user in a computer is not permitted as non-admin
+                self.assertIn(enum, (ldb.ERR_UNWILLING_TO_PERFORM,
+                                     ldb.ERR_OBJECT_CLASS_VIOLATION))
+            elif bit & UF_NORMAL_ACCOUNT:
+                # This can fail early as user in a computer is not permitted as non-admin
+                self.assertIn(enum, (ldb.ERR_UNWILLING_TO_PERFORM,
+                                     ldb.ERR_OBJECT_CLASS_VIOLATION))
             else:
                 self.fail("Unable to set userAccountControl bit 0x%08X (%s) on %s: %s"
                           % (bit,
