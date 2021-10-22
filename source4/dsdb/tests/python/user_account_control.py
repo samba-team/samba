@@ -483,7 +483,8 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_NORMAL_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        self.assertRaisesLdbError(ldb.ERR_UNWILLING_TO_PERFORM,
+        self.assertRaisesLdbError([ldb.ERR_OBJECT_CLASS_VIOLATION,
+                                   ldb.ERR_UNWILLING_TO_PERFORM],
                                   f"Unexpectedly able to set userAccountControl to be an Normal "
                                   "account without |UF_PASSWD_NOTREQD Unexpectedly able to "
                                   "set userAccountControl to be a workstation on {m.dn}",
@@ -1203,12 +1204,14 @@ class UserAccountControlTests(samba.tests.TestCase):
             samdb.modify(m)
         elif (account_type == UF_NORMAL_ACCOUNT) and \
                (account_type2 == UF_SERVER_TRUST_ACCOUNT) and not priv:
-                self.assertRaisesLdbError(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                self.assertRaisesLdbError([ldb.ERR_OBJECT_CLASS_VIOLATION,
+                                           ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS],
                                           f"Should have been unable to change {account_type_str} to {account_type2_str}",
                                           samdb.modify, m)
         elif (account_type == UF_NORMAL_ACCOUNT) and \
                (account_type2 == UF_SERVER_TRUST_ACCOUNT) and priv:
-                self.assertRaisesLdbError(ldb.ERR_UNWILLING_TO_PERFORM,
+                self.assertRaisesLdbError([ldb.ERR_OBJECT_CLASS_VIOLATION,
+                                           ldb.ERR_UNWILLING_TO_PERFORM],
                                           f"Should have been unable to change {account_type_str} to {account_type2_str}",
                                           samdb.modify, m)
         elif (account_type == UF_WORKSTATION_TRUST_ACCOUNT) and \
@@ -1281,7 +1284,8 @@ class UserAccountControlTests(samba.tests.TestCase):
             m["1objectclass"] = ldb.MessageElement(new_objectclass,
                                                    ldb.FLAG_MOD_ADD, "objectclass")
 
-        self.assertRaisesLdbError(ldb.ERR_UNWILLING_TO_PERFORM,
+        self.assertRaisesLdbError([ldb.ERR_OBJECT_CLASS_VIOLATION,
+                                   ldb.ERR_UNWILLING_TO_PERFORM],
                                   "Should have been unable Able to change objectclass of a {objectclass}",
                                   self.admin_samdb.modify, m)
 
