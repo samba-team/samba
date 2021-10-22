@@ -161,6 +161,55 @@ static int samldb_next_step(struct samldb_ctx *ac)
 	}
 }
 
+static int samldb_get_single_valued_attr(struct ldb_context *ldb,
+					 struct samldb_ctx *ac,
+					 const char *attr,
+					 const char **value)
+{
+	/*
+	 * The steps we end up going through to get and check a single valued
+	 * attribute.
+	 */
+	struct ldb_message_element *el = NULL;
+
+	*value = NULL;
+
+	el = dsdb_get_single_valued_attr(ac->msg, attr,
+					 ac->req->operation);
+	if (el == NULL) {
+		/* we are not affected */
+		return LDB_SUCCESS;
+	}
+
+	if (el->num_values > 1) {
+		ldb_asprintf_errstring(
+			ldb,
+		        "samldb: %s has %u values, should be single-valued!",
+			attr, el->num_values);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	} else if (el->num_values == 0) {
+		ldb_asprintf_errstring(
+			ldb,
+			"samldb: new value for %s "
+			"not provided for mandatory, single-valued attribute!",
+			attr);
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	}
+
+
+	if (el->values[0].length == 0) {
+		ldb_asprintf_errstring(
+			ldb,
+			"samldb: %s is of zero length, should have a value!",
+			attr);
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	}
+
+	*value = (char *)el->values[0].data;
+
+	return LDB_SUCCESS;
+}
+
 static int samldb_unique_attr_check(struct samldb_ctx *ac, const char *attr,
 				    const char *attr_conflict,
 				    struct ldb_dn *base_dn)
