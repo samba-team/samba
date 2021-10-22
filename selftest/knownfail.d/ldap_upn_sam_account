@@ -1,1 +1,0 @@
-samba.tests.ldap_upn_sam_account.+LdapUpnSamSambaOnlyTest.test_upn_sam_SAM_contains_delete

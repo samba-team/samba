@@ -322,6 +322,59 @@ static inline int samldb_sam_account_upn_clash_sub_search(
 	return LDB_SUCCESS;
 }
 
+static int samaccountname_bad_chars_check(struct samldb_ctx *ac,
+					  const char *name)
+{
+	/*
+	 * The rules here are based on
+	 *
+	 * https://social.technet.microsoft.com/wiki/contents/articles/11216.active-directory-requirements-for-creating-objects.aspx
+	 *
+	 * Windows considers UTF-8 sequences that map to "similar" characters
+	 * (e.g. 'a', 'ā') to be the same sAMAccountName, and we don't. Names
+	 * that are not valid UTF-8 *are* allowed.
+	 *
+	 * Additionally, Samba collapses multiple spaces, and Windows doesn't.
+	 */
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	size_t i;
+
+	for (i = 0; name[i] != '\0'; i++) {
+		uint8_t c = name[i];
+		char *p = NULL;
+		if (c < 32 || c == 127) {
+			ldb_asprintf_errstring(
+				ldb,
+				"samldb: sAMAccountName contains invalid "
+				"0x%.2x character\n", c);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		p = strchr("\"[]:;|=+*?<>/\\,", c);
+		if (p != NULL) {
+			ldb_asprintf_errstring(
+				ldb,
+				"samldb: sAMAccountName contains invalid "
+				"'%c' character\n", c);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+	}
+
+	if (i == 0) {
+		ldb_asprintf_errstring(
+			ldb,
+			"samldb: sAMAccountName is empty\n");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	if (name[i - 1] == '.') {
+		ldb_asprintf_errstring(
+			ldb,
+			"samldb: sAMAccountName ends with '.'");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+	return LDB_SUCCESS;
+}
+
 static int samldb_sam_account_upn_clash(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
@@ -417,6 +470,11 @@ static int samldb_sam_account_upn_clash(struct samldb_ctx *ac)
 			ac, tmp_ctx, base_dn, "sAMAccountName",
 			real_sam, "");
 
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		ret = samaccountname_bad_chars_check(ac, real_sam);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
