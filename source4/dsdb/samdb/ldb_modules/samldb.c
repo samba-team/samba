@@ -533,8 +533,17 @@ static int samldb_sam_accountname_valid_check(struct samldb_ctx *ac)
 	bool is_admin;
 	struct security_token *user_token = NULL;
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	struct ldb_message_element *el = dsdb_get_single_valued_attr(ac->msg, "samAccountName",
-					 ac->req->operation);
+	struct ldb_message_element *el = NULL;
+
+	ret = dsdb_get_expected_new_values(ac,
+					   ac->msg,
+					   "samAccountName",
+					   &el,
+					   ac->req->operation);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	if (el == NULL || el->num_values == 0) {
 		ldb_asprintf_errstring(ldb,
 			"%08X: samldb: 'samAccountName' can't be deleted/empty!",
