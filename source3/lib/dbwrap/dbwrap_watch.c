@@ -811,60 +811,6 @@ static size_t dbwrap_watched_id(struct db_context *db, uint8_t *id,
 	return dbwrap_db_id(ctx->backend, id, idlen);
 }
 
-static void dbwrap_watched_wakeup_fn(
-	struct db_record *rec,
-	TDB_DATA value,
-	void *private_data)
-{
-	uint8_t num_watchers_buf[4] = { 0 };
-	TDB_DATA dbufs[2] = {
-		{
-			.dptr = num_watchers_buf,
-			.dsize = sizeof(num_watchers_buf),
-		},
-		{ 0 },		/* filled in with existing data */
-	};
-	NTSTATUS status;
-	bool ok;
-
-	dbwrap_watched_subrec_wakeup_fn(rec, value, private_data);
-
-	/*
-	 * Watchers are informed only once: Store the existing data
-	 * without any watchers
-	 */
-
-	ok = dbwrap_watch_rec_parse(value, NULL, NULL, &dbufs[1]);
-	if (!ok) {
-		DBG_DEBUG("dbwrap_watch_rec_parse failed\n");
-		return;
-	}
-
-	status = dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("dbwrap_record_storev() failed: %s\n",
-			  nt_errstr(status));
-	}
-}
-
-void dbwrap_watched_wakeup(struct db_record *rec)
-{
-	struct db_context *db = dbwrap_record_get_db(rec);
-	struct db_watched_ctx *ctx = talloc_get_type_abort(
-		db->private_data, struct db_watched_ctx);
-	struct dbwrap_watched_subrec_wakeup_state state = {
-		.msg_ctx = ctx->msg,
-	};
-	NTSTATUS status;
-
-	status = dbwrap_do_locked(
-		ctx->backend, rec->key, dbwrap_watched_wakeup_fn, &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("dbwrap_do_locked failed: %s\n",
-			  nt_errstr(status));
-	}
-}
-
 struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
 				   struct db_context **backend,
 				   struct messaging_context *msg)
