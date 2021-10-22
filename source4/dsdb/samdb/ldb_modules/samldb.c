@@ -3383,6 +3383,546 @@ static int samldb_description_check(struct samldb_ctx *ac, bool *modified)
 	return LDB_SUCCESS;
 }
 
+#define SPN_ALIAS_NONE 0
+#define SPN_ALIAS_LINK 1
+#define SPN_ALIAS_TARGET 2
+
+static int find_spn_aliases(struct ldb_context *ldb,
+			    TALLOC_CTX *mem_ctx,
+			    const char *service_class,
+			    char ***aliases,
+			    size_t *n_aliases,
+			    int *direction)
+{
+	/*
+	 * If you change the way this works, you should also look at changing
+	 * LDB_lookup_spn_alias() in source4/dsdb/samdb/cracknames.c, which
+	 * does some of the same work.
+	 *
+	 * In particular, note that sPNMappings are resolved on a first come,
+	 * first served basis. For example, if we have
+	 *
+	 *  host=ldap,cifs
+	 *  foo=ldap
+	 *  cifs=host,alerter
+	 *
+	 * then 'ldap', 'cifs', and 'host' will resolve to 'host', and
+	 * 'alerter' will resolve to 'cifs'.
+	 *
+	 * If this resolution method is made more complicated, then the
+	 * cracknames function should also be changed.
+	 */
+	size_t i, j;
+	int ret;
+	bool ok;
+	struct ldb_result *res = NULL;
+	struct ldb_message_element *spnmappings = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct ldb_dn *service_dn = NULL;
+
+	const char *attrs[] = {
+		"sPNMappings",
+		NULL
+	};
+
+	*direction = SPN_ALIAS_NONE;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	service_dn = ldb_dn_new(
+		tmp_ctx, ldb,
+		"CN=Directory Service,CN=Windows NT,CN=Services");
+	if (service_dn == NULL) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	ok = ldb_dn_add_base(service_dn, ldb_get_config_basedn(ldb));
+	if (! ok) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_search(ldb, tmp_ctx, &res, service_dn, LDB_SCOPE_BASE,
+			 attrs, "(objectClass=nTDSService)");
+
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		DBG_WARNING("sPNMappings not found.\n");
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	spnmappings = ldb_msg_find_element(res->msgs[0], "sPNMappings");
+	if (spnmappings == NULL || spnmappings->num_values == 0) {
+		DBG_WARNING("no sPNMappings attribute\n");
+		talloc_free(tmp_ctx);
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+	*n_aliases = 0;
+
+	for (i = 0; i < spnmappings->num_values; i++) {
+		char *p = NULL;
+		char *mapping = talloc_strndup(
+			tmp_ctx,
+			(char *)spnmappings->values[i].data,
+			spnmappings->values[i].length);
+		if (mapping == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_oom(ldb);
+		}
+
+		p = strchr(mapping, '=');
+		if (p == NULL) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_ALIAS_PROBLEM;
+		}
+		p[0] = '\0';
+		p++;
+
+		if (strcasecmp(mapping, service_class) == 0) {
+			/*
+			 * We need to return the reverse aliases for this one.
+			 *
+			 * typically, this means the service_class is "host"
+			 * and the mapping is "host=alerter,appmgmt,cisvc,..",
+			 * so we get "alerter", "appmgmt", etc in the list of
+			 * aliases.
+			 */
+
+			/* There is one more field than there are commas */
+			size_t n = 1;
+
+			for (j = 0; p[j] != '\0'; j++) {
+				if (p[j] == ',') {
+					n++;
+					p[j] = '\0';
+				}
+			}
+			*aliases = talloc_array(mem_ctx, char*, n);
+			if (*aliases == NULL) {
+				talloc_free(tmp_ctx);
+				return ldb_oom(ldb);
+			}
+			*n_aliases = n;
+			talloc_steal(mem_ctx, mapping);
+			for (j = 0; j < n; j++) {
+				(*aliases)[j] = p;
+				p += strlen(p) + 1;
+			}
+			talloc_free(tmp_ctx);
+			*direction = SPN_ALIAS_LINK;
+			return LDB_SUCCESS;
+		}
+		/*
+		 * We need to look along the list to see if service_class is
+		 * there; if so, we return a list of one item (probably "host").
+		 */
+		do {
+			char *str = p;
+			p = strchr(p, ',');
+			if (p != NULL) {
+				p[0] = '\0';
+				p++;
+			}
+			if (strcasecmp(str, service_class) == 0) {
+				*aliases = talloc_array(mem_ctx, char*, 1);
+				if (*aliases == NULL) {
+					talloc_free(tmp_ctx);
+					return ldb_oom(ldb);
+				}
+				*n_aliases = 1;
+				(*aliases)[0] = mapping;
+				talloc_steal(mem_ctx, mapping);
+				talloc_free(tmp_ctx);
+				*direction = SPN_ALIAS_TARGET;
+				return LDB_SUCCESS;
+			}
+		} while (p != NULL);
+	}
+	DBG_INFO("no sPNMappings alias for '%s'\n", service_class);
+	talloc_free(tmp_ctx);
+	*aliases = NULL;
+	*n_aliases = 0;
+	return LDB_SUCCESS;
+}
+
+
+static int get_spn_dn(struct ldb_context *ldb,
+		      TALLOC_CTX *tmp_ctx,
+		      const char *candidate,
+		      struct ldb_dn **dn)
+{
+	int ret;
+	const char *empty_attrs[] = { NULL };
+	struct ldb_message *msg = NULL;
+	struct ldb_dn *base_dn = ldb_get_default_basedn(ldb);
+
+	const char *enc_candidate = NULL;
+
+	*dn = NULL;
+
+	enc_candidate = ldb_binary_encode_string(tmp_ctx, candidate);
+	if (enc_candidate == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	ret = dsdb_search_one(ldb,
+			      tmp_ctx,
+			      &msg,
+			      base_dn,
+			      LDB_SCOPE_SUBTREE,
+			      empty_attrs,
+			      0,
+			      "(servicePrincipalName=%s)",
+			      enc_candidate);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	*dn = msg->dn;
+	return LDB_SUCCESS;
+}
+
+
+static int check_spn_write_rights(struct ldb_context *ldb,
+				  TALLOC_CTX *mem_ctx,
+				  const char *spn,
+				  struct ldb_dn *dn)
+{
+	int ret;
+	struct ldb_message *msg = NULL;
+	struct ldb_message_element *del_el = NULL;
+	struct ldb_message_element *add_el = NULL;
+	struct ldb_val val = {
+		.data = discard_const_p(uint8_t, spn),
+		.length = strlen(spn)
+	};
+
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return ldb_oom(ldb);
+	}
+	msg->dn = dn;
+
+	ret = ldb_msg_add_empty(msg,
+				"servicePrincipalName",
+				LDB_FLAG_MOD_DELETE,
+				&del_el);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+
+	del_el->values = talloc_array(msg->elements, struct ldb_val, 1);
+	if (del_el->values == NULL) {
+		talloc_free(msg);
+		return ret;
+	}
+
+	del_el->values[0] = val;
+	del_el->num_values = 1;
+
+	ret = ldb_msg_add_empty(msg,
+				"servicePrincipalName",
+				LDB_FLAG_MOD_ADD,
+				&add_el);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+
+	add_el->values = talloc_array(msg->elements, struct ldb_val, 1);
+	if (add_el->values == NULL) {
+		talloc_free(msg);
+		return ret;
+	}
+
+	add_el->values[0] = val;
+	add_el->num_values = 1;
+
+	ret = ldb_modify(ldb, msg);
+	if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
+		DBG_ERR("hmm I think we're OK, but not sure\n");
+	} else if (ret != LDB_SUCCESS) {
+		DBG_ERR("SPN write rights check failed with %d\n", ret);
+		talloc_free(msg);
+		return ret;
+	}
+	talloc_free(msg);
+	return LDB_SUCCESS;
+}
+
+
+static int check_spn_alias_collision(struct ldb_context *ldb,
+				     TALLOC_CTX *mem_ctx,
+				     const char *spn,
+				     struct ldb_dn *target_dn)
+{
+	int ret;
+	char *service_class = NULL;
+	char *spn_tail = NULL;
+	char *p = NULL;
+	char **aliases = NULL;
+	size_t n_aliases = 0;
+	size_t i, len;
+	TALLOC_CTX *tmp_ctx = NULL;
+	const char *target_dnstr = ldb_dn_get_linearized(target_dn);
+	int link_direction;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	/*
+	 * "dns/example.com/xxx"  gives
+	 *    service_class = "dns"
+	 *    spn_tail      = "example.com/xxx"
+	 */
+	p = strchr(spn, '/');
+	if (p == NULL) {
+		/* bad SPN */
+		talloc_free(tmp_ctx);
+		return ldb_error(ldb,
+				 LDB_ERR_OPERATIONS_ERROR,
+				 "malformed servicePrincipalName");
+	}
+	len = p - spn;
+
+	service_class = talloc_strndup(tmp_ctx, spn, len);
+	if (service_class == NULL) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+	spn_tail = p + 1;
+
+	ret = find_spn_aliases(ldb,
+			       tmp_ctx,
+			       service_class,
+			       &aliases,
+			       &n_aliases,
+			       &link_direction);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/*
+	 * we have the list of aliases, and now we need to combined them with
+	 * spn_tail and see if we can find the SPN.
+	 */
+	for (i = 0; i < n_aliases; i++) {
+		struct ldb_dn *colliding_dn = NULL;
+		const char *colliding_dnstr = NULL;
+
+		char *candidate = talloc_asprintf(tmp_ctx,
+						  "%s/%s",
+						  aliases[i],
+						  spn_tail);
+		if (candidate == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_oom(ldb);
+		}
+
+		ret = get_spn_dn(ldb, tmp_ctx, candidate, &colliding_dn);
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			DBG_DEBUG("SPN alias '%s' not found (good)\n",
+				  candidate);
+			talloc_free(candidate);
+			continue;
+		}
+		if (ret != LDB_SUCCESS) {
+			DBG_ERR("SPN '%s' search error %d\n", candidate, ret);
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		target_dnstr = ldb_dn_get_linearized(target_dn);
+		/*
+		 * We have found an existing SPN that matches the alias. That
+		 * is OK only if it is on the object we are trying to add to,
+		 * or if the SPN on the other side is a more generic alias for
+		 * this one and we also have rights to modify it.
+		 *
+		 * That is, we can put "host/X" and "cifs/X" on the same
+		 * object, but not on different objects, unless we put the
+		 * host/X on first, and could also change that object when we
+		 * add cifs/X. It is forbidden to add the objects in the other
+		 * order.
+		 *
+		 * The rationale for this is that adding "cifs/X" effectively
+		 * changes "host/X" by diverting traffic. If "host/X" can be
+		 * added after "cifs/X", a sneaky person could get "cifs/X" in
+		 * first, making "host/X" have less effect than intended.
+		 *
+		 * Note: we also can't have "host/X" and "Host/X" on the same
+		 * object, but that is not relevant here.
+		 */
+
+		ret = ldb_dn_compare(colliding_dn, target_dn);
+		if (ret != 0) {
+			colliding_dnstr = ldb_dn_get_linearized(colliding_dn);
+			DBG_ERR("trying to add SPN '%s' on '%s' when '%s' is "
+				"on '%s'\n",
+				spn,
+				target_dnstr,
+				candidate,
+				colliding_dnstr);
+
+			if (link_direction == SPN_ALIAS_LINK) {
+				/* we don't allow host/X if there is a
+				 * cifs/X */
+				talloc_free(tmp_ctx);
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+			ret = check_spn_write_rights(ldb,
+						     tmp_ctx,
+						     candidate,
+						     colliding_dn);
+			if (ret != LDB_SUCCESS) {
+				DBG_ERR("SPN '%s' is on '%s' so '%s' can't be "
+					"added to '%s'\n",
+					candidate,
+					colliding_dnstr,
+					spn,
+					target_dnstr);
+				talloc_free(tmp_ctx);
+				ldb_asprintf_errstring(ldb,
+						       "samldb: spn[%s] would cause a conflict",
+						       spn);
+				return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+			}
+		} else {
+			DBG_INFO("SPNs '%s' and '%s' alias both on '%s'\n",
+				 candidate, spn, target_dnstr);
+		}
+		talloc_free(candidate);
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+static int check_spn_direct_collision(struct ldb_context *ldb,
+				      TALLOC_CTX *mem_ctx,
+				      const char *spn,
+				      struct ldb_dn *target_dn)
+{
+	int ret;
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct ldb_dn *colliding_dn = NULL;
+	const char *target_dnstr = NULL;
+	const char *colliding_dnstr = NULL;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	ret = get_spn_dn(ldb, tmp_ctx, spn, &colliding_dn);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		DBG_DEBUG("SPN '%s' not found (good)\n", spn);
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("SPN '%s' search error %d\n", spn, ret);
+		talloc_free(tmp_ctx);
+		if (ret == LDB_ERR_COMPARE_TRUE) {
+			/*
+			 * COMPARE_TRUE has special meaning here and we don't
+			 * want to return it by mistake.
+			 */
+			ret = LDB_ERR_OPERATIONS_ERROR;
+		}
+		return ret;
+	}
+	/*
+	 * We have found this exact SPN. This is mostly harmless (depend on
+	 * ADD vs REPLACE) when the spn is being put on the object that
+	 * already has, so we let it through to succeed or fail as some other
+	 * module sees fit.
+	 */
+	target_dnstr = ldb_dn_get_linearized(target_dn);
+	ret = ldb_dn_compare(colliding_dn, target_dn);
+	if (ret != 0) {
+		colliding_dnstr = ldb_dn_get_linearized(colliding_dn);
+		DBG_ERR("SPN '%s' is on '%s' so it can't be "
+			"added to '%s'\n",
+			spn,
+			colliding_dnstr,
+			target_dnstr);
+		ldb_asprintf_errstring(ldb,
+				       "samldb: spn[%s] would cause a conflict",
+				       spn);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	DBG_INFO("SPN '%s' is already on '%s'\n",
+		 spn, target_dnstr);
+	talloc_free(tmp_ctx);
+	return LDB_ERR_COMPARE_TRUE;
+}
+
+
+/* Check that "servicePrincipalName" changes do not introduce a collision
+ * globally. */
+static int samldb_spn_uniqueness_check(struct samldb_ctx *ac,
+				       struct ldb_message_element *spn_el)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	int ret;
+	const char *spn = NULL;
+	size_t i;
+	TALLOC_CTX *tmp_ctx = talloc_new(ac->msg);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	for (i = 0; i < spn_el->num_values; i++) {
+		spn = (char *)spn_el->values[i].data;
+
+		ret = check_spn_direct_collision(ldb,
+						 tmp_ctx,
+						 spn,
+						 ac->msg->dn);
+		if (ret == LDB_ERR_COMPARE_TRUE) {
+			DBG_INFO("SPN %s re-added to the same object\n", spn);
+			talloc_free(tmp_ctx);
+			return LDB_SUCCESS;
+		}
+		if (ret != LDB_SUCCESS) {
+			DBG_ERR("SPN %s failed direct uniqueness check\n", spn);
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		ret = check_spn_alias_collision(ldb,
+						tmp_ctx,
+						spn,
+						ac->msg->dn);
+
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			/* we have no sPNMappings, hence no aliases */
+			break;
+		}
+		if (ret != LDB_SUCCESS) {
+			DBG_ERR("SPN %s failed alias uniqueness check\n", spn);
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		DBG_INFO("SPN %s seems to be unique\n", spn);
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+
+
 /* This trigger adapts the "servicePrincipalName" attributes if the
  * "dNSHostName" and/or "sAMAccountName" attribute change(s) */
 static int samldb_service_principal_names_change(struct samldb_ctx *ac)
@@ -3498,8 +4038,14 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 		return LDB_SUCCESS;
 	}
 
-	/* Potential "servicePrincipalName" changes in the same request have to
-	 * be handled before the update (Windows behaviour). */
+	/*
+	 * Potential "servicePrincipalName" changes in the same request have
+	 * to be handled before the update (Windows behaviour).
+	 *
+	 * We extract the SPN changes into a new message and run it through
+	 * the stack from this module, so that it subjects them to the SPN
+	 * checks we have here.
+	 */
 	el = ldb_msg_find_element(ac->msg, "servicePrincipalName");
 	if (el != NULL) {
 		msg = ldb_msg_new(ac->msg);
@@ -3521,7 +4067,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 		} while (el != NULL);
 
 		ret = dsdb_module_modify(ac->module, msg,
-					 DSDB_FLAG_NEXT_MODULE, ac->req);
+					 DSDB_FLAG_OWN_MODULE, ac->req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -4255,6 +4801,19 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		return samldb_fill_object(ac);
 	}
 
+
+	el = ldb_msg_find_element(ac->msg, "servicePrincipalName");
+	if ((el != NULL)) {
+		/*
+		 * We need to check whether the SPN collides with an existing
+		 * one (anywhere) including via aliases.
+		 */
+		ret = samldb_spn_uniqueness_check(ac, el);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "subnet") != NULL) {
 		ret = samldb_verify_subnet(ac, ac->msg->dn);
@@ -4505,7 +5064,30 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	el2 = ldb_msg_find_element(ac->msg, "sAMAccountName");
 	if ((el != NULL) || (el2 != NULL)) {
 		modified = true;
+		/*
+		 * samldb_service_principal_names_change() might add SPN
+		 * changes to the request, so this must come before the SPN
+		 * uniqueness check below.
+		 *
+		 * Note we ALSO have to do the SPN uniqueness check inside
+		 * samldb_service_principal_names_change(), because it does a
+		 * subrequest to do requested SPN modifications *before* its
+		 * automatic ones are added.
+		 */
 		ret = samldb_service_principal_names_change(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	el = ldb_msg_find_element(ac->msg, "servicePrincipalName");
+	if ((el != NULL)) {
+		/*
+		 * We need to check whether the SPN collides with an existing
+		 * one (anywhere) including via aliases.
+		 */
+		modified = true;
+		ret = samldb_spn_uniqueness_check(ac, el);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
