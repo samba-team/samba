@@ -218,6 +218,23 @@ class UserAccountControlTests(samba.tests.TestCase):
         print("Adding computer account %s" % computername)
         samdb.add(msg)
 
+    def add_user_ldap(self, username, others=None, samdb=None):
+        if samdb is None:
+            samdb = self.samdb
+        dn = "CN=%s,%s" % (username, self.OU)
+        samaccountname = "%s" % username
+        msg_dict = {
+            "dn": dn,
+            "objectclass": "user"}
+        if others is not None:
+            msg_dict = dict(list(msg_dict.items()) + list(others.items()))
+
+        msg = ldb.Message.from_dict(self.samdb, msg_dict)
+        msg["sAMAccountName"] = samaccountname
+
+        print("Adding user account %s" % username)
+        samdb.add(msg)
+
     def get_creds(self, target_username, target_password):
         creds_tmp = Credentials()
         creds_tmp.set_username(target_username)
@@ -531,17 +548,21 @@ class UserAccountControlTests(samba.tests.TestCase):
 
     def _test_uac_bits_set_with_args(self, bit, bit_str):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
-        mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
+        # Allow the creation of any children and write to any
+        # attributes (this is not a test of ACLs, this is a test of
+        # non-ACL userAccountControl rules
+        mod = f"(OA;CI;WP;;;{user_sid})(OA;;CC;;;{user_sid})"
 
         old_sd = self.sd_utils.read_sd_on_dn(self.OU)
 
         self.sd_utils.dacl_add_ace(self.OU, mod)
 
+        # We want to start with UF_NORMAL_ACCOUNT, so we make a user
         computername = self.computernames[0]
-        self.add_computer_ldap(computername)
+        self.add_user_ldap(computername)
 
         res = self.admin_samdb.search("%s" % self.base_dn,
-                                      expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                      expression="(&(objectClass=user)(cn=%s))" % computername,
                                       scope=SCOPE_SUBTREE,
                                       attrs=[])
 
@@ -587,7 +608,11 @@ class UserAccountControlTests(samba.tests.TestCase):
 
     def _test_uac_bits_unrelated_modify_with_args(self, account_type):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
-        mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
+
+        # Allow the creation of any children and write to any
+        # attributes (this is not a test of ACLs, this is a test of
+        # non-ACL userAccountControl rules
+        mod = f"(OA;CI;WP;;;{user_sid})(OA;;CC;;;{user_sid})"
 
         old_sd = self.sd_utils.read_sd_on_dn(self.OU)
 
@@ -595,22 +620,19 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         computername = self.computernames[0]
         if account_type == UF_WORKSTATION_TRUST_ACCOUNT:
-            self.add_computer_ldap(computername, others={"userAccountControl": [str(account_type)]})
-        else:
             self.add_computer_ldap(computername)
+        else:
+            self.add_user_ldap(computername)
 
         res = self.admin_samdb.search(self.OU,
-                                      expression=f"(cn={computername})",
+                                      expression=f"(&(objectclass=user)(cn={computername}))",
                                       scope=SCOPE_SUBTREE,
                                       attrs=["userAccountControl"])
         self.assertEqual(len(res), 1)
 
         orig_uac = int(res[0]["userAccountControl"][0])
-        if account_type == UF_WORKSTATION_TRUST_ACCOUNT:
-            self.assertEqual(orig_uac, account_type)
-        else:
-            self.assertEqual(orig_uac & UF_NORMAL_ACCOUNT,
-                             account_type)
+        self.assertEqual(orig_uac & account_type,
+                         account_type)
 
         m = ldb.Message()
         m.dn = res[0].dn
@@ -648,7 +670,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                 self.fail(f"got {estr} resetting userAccountControl to initial value {orig_uac:#08x}")
 
             res = self.admin_samdb.search("%s" % self.base_dn,
-                                          expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                          expression="(&(objectClass=user)(cn=%s))" % computername,
                                           scope=SCOPE_SUBTREE,
                                           attrs=["userAccountControl"])
 
@@ -695,7 +717,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                     self.fail("Unable to set userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
 
             res = self.admin_samdb.search("%s" % self.base_dn,
-                                          expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                          expression="(&(objectClass=user)(cn=%s))" % computername,
                                           scope=SCOPE_SUBTREE,
                                           attrs=["userAccountControl"])
 
@@ -725,7 +747,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                 self.fail("Unable to set userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
 
             res = self.admin_samdb.search("%s" % self.base_dn,
-                                          expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                          expression="(&(objectClass=user)(cn=%s))" % computername,
                                           scope=SCOPE_SUBTREE,
                                           attrs=["userAccountControl"])
 
@@ -766,7 +788,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                     self.fail("Unexpectedly unable to remove userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
 
             res = self.admin_samdb.search("%s" % self.base_dn,
-                                          expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                          expression="(&(objectClass=user)(cn=%s))" % computername,
                                           scope=SCOPE_SUBTREE,
                                           attrs=["userAccountControl"])
 
