@@ -785,8 +785,6 @@ sub provision_raw_step1($$)
 	notify:inotify = false
 	ldb:nosync = true
 	ldap server require strong auth = yes
-#We don't want to pass our self-tests if the PAC code is wrong
-	gensec:require_pac = true
 	log file = $ctx->{logdir}/log.\%m
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes

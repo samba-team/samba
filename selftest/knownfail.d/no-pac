@@ -1,0 +1,4 @@
+^samba.tests.krb5.test_ccache.samba.tests.krb5.test_ccache.CcacheTests.test_ccache_no_pac
+^samba.tests.krb5.test_ldap.samba.tests.krb5.test_ldap.LdapTests.test_ldap_no_pac
+^samba.tests.krb5.test_rpc.samba.tests.krb5.test_rpc.RpcTests.test_rpc_no_pac
+^samba.tests.krb5.test_smb.samba.tests.krb5.test_smb.SmbTests.test_smb_no_pac
