@@ -313,7 +313,7 @@ class UserAccountControlTests(samba.tests.TestCase):
 
     def test_add_computer_sd_cc(self):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
-        mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
+        mod = f"(OA;CI;WDCC;{dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
 
         old_sd = self.sd_utils.read_sd_on_dn(self.OU)
         self.sd_utils.dacl_add_ace(self.OU, mod)
@@ -451,7 +451,7 @@ class UserAccountControlTests(samba.tests.TestCase):
 
     def test_add_computer_cc_normal_bare(self):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
-        mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
+        mod = f"(OA;CI;CC;{dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
 
         old_sd = self.sd_utils.read_sd_on_dn(self.OU)
         self.sd_utils.dacl_add_ace(self.OU, mod)
@@ -889,9 +889,11 @@ class UserAccountControlTests(samba.tests.TestCase):
         computername = self.computernames[0]
 
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
-        mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
-
+        ace_cc = f"(OA;;CC;{dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
+        ace_wp_dnshostname = f"(OA;CI;WP;{dsdb.DS_GUID_SCHEMA_ATTR_DNS_HOST_NAME};;{user_sid})"
+        ace_wp_primarygroupid = f"(OA;CI;WP;{dsdb.DS_GUID_SCHEMA_ATTR_PRIMARY_GROUP_ID};;{user_sid})"
         old_sd = self.sd_utils.read_sd_on_dn(self.OU)
+        mod = ace_cc + ace_wp_dnshostname + ace_wp_primarygroupid
 
         self.sd_utils.dacl_add_ace(self.OU, mod)
         try:

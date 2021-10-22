@@ -8,3 +8,5 @@
 ^samba4.ldap.acl.python\(.*\).__main__.AclModifyTests.test_modify_owner_other_admin_computer\(.*\)
 ^samba4.ldap.acl.python\(.*\).__main__.AclModifyTests.test_modify_owner_other_computer\(.*\)
 ^samba4.ldap.acl.python\(.*\).__main__.AclModifyTests.test_modify_owner_other_user\(.*\)
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_add_computer_cc_normal_bare\(.*\)
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_add_computer_sd_cc\(.*\)

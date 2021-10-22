@@ -496,6 +496,7 @@ class AclAddTests(AclTests):
         user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
         mod = f"(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
         self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        # servicePrincipalName
         mod = f"(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_SERVICE_PRINCIPAL_NAME};;{user_sid})"
         self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
         dn = "CN=%s,OU=test_add_ou1,%s" % (self.test_user3, self.base_dn)
@@ -534,7 +535,11 @@ class AclAddTests(AclTests):
         user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
         mod = f"(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
         self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        # servicePrincipalName
         mod = f"(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_SERVICE_PRINCIPAL_NAME};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        # userAccountControl
+        mod = f"(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_USER_ACCOUNT_CONTROL};;{user_sid})"
         self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
         dn = "CN=%s,OU=test_add_ou1,%s" % (self.test_user4, self.base_dn)
         samaccountname = self.test_user4 + "$"
@@ -4073,7 +4078,7 @@ class AclSearchTests(AclTests):
     def test_search4(self):
         """There is no difference in visibility if the user is also creator"""
         self.create_clean_ou("OU=ou1," + self.base_dn)
-        mod = "(A;CI;CC;;;%s)" % (str(self.user_sid))
+        mod = "(A;CI;CCWD;;;%s)" % (str(self.user_sid))
         self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
                                                  self.domain_sid)
@@ -4145,7 +4150,7 @@ class AclSearchTests(AclTests):
     def test_search6(self):
         """If an attribute that cannot be read is used in a filter, it is as if the attribute does not exist"""
         self.create_clean_ou("OU=ou1," + self.base_dn)
-        mod = "(A;CI;LCCC;;;%s)" % (str(self.user_sid))
+        mod = "(A;CI;LCCCWD;;;%s)" % (str(self.user_sid))
         self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
                                                  self.domain_sid)

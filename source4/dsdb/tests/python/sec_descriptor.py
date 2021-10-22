@@ -693,7 +693,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
-        mod = "(A;;WDCC;;;AU)"
+        mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
         try:
@@ -983,7 +983,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
         user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
-        mod = "(A;;WDCC;;;AU)"
+        mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
@@ -1122,7 +1122,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
         user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
-        mod = "(A;;CC;;;AU)"
+        mod = "(A;CI;CCWD;;;AU)"
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
@@ -1148,7 +1148,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
         user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn(user_name))
-        mod = "(A;;CC;;;AU)"
+        mod = "(A;CI;CCWD;;;AU)"
         self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
