@@ -896,7 +896,7 @@ static void g_lock_unlock_fn(
 	} else {
 		if (!exclusive) {
 			DBG_DEBUG("Lock not found, self=%s, lck.exclusive=%s, "
-				  "num_rec=%zu\n",
+				  "num_shared=%zu\n",
 				  server_id_str_buf(state->self, &tmp1),
 				  server_id_str_buf(lck.exclusive, &tmp2),
 				  lck.num_shared);
