@@ -21,6 +21,7 @@ from __future__ import print_function
 import os
 import tempfile
 import warnings
+import collections
 import ldb
 import samba
 from samba import param
@@ -196,23 +197,32 @@ class TestCase(unittest.TestCase):
             f(*args, **kwargs)
         except ldb.LdbError as e:
             (num, msg) = e.args
-            if num != errcode:
+            if isinstance(errcode, collections.abc.Container):
+                found = num in errcode
+            else:
+                found = num == errcode
+            if not found:
                 lut = {v: k for k, v in vars(ldb).items()
                        if k.startswith('ERR_') and isinstance(v, int)}
-                self.fail("%s, expected "
-                          "LdbError %s, (%d) "
-                          "got %s (%d) "
-                          "%s" % (message,
-                                  lut.get(errcode), errcode,
-                                  lut.get(num), num,
-                                  msg))
+                if isinstance(errcode, collections.abc.Container):
+                    errcode_name = ' '.join(lut.get(x) for x in errcode)
+                else:
+                    errcode_name = lut.get(errcode)
+                self.fail(f"{message}, expected "
+                          f"LdbError {errcode_name}, {errcode} "
+                          f"got {lut.get(num)} ({num}) "
+                          f"{msg}")
         else:
             lut = {v: k for k, v in vars(ldb).items()
                    if k.startswith('ERR_') and isinstance(v, int)}
+            if isinstance(errcode, collections.abc.Container):
+                errcode_name = ' '.join(lut.get(x) for x in errcode)
+            else:
+                errcode_name = lut.get(errcode)
             self.fail("%s, expected "
-                      "LdbError %s, (%d) "
+                      "LdbError %s, (%s) "
                       "but we got success" % (message,
-                                              lut.get(errcode),
+                                              errcode_name,
                                               errcode))
 
 
