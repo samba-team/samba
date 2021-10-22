@@ -594,6 +594,9 @@ class UserAccountControlTests(samba.tests.TestCase):
             if (bit in priv_bits):
                 self.fail("Unexpectedly able to set userAccountControl bit 0x%08X (%s), on %s"
                           % (bit, bit_str, m.dn))
+            if (bit in account_types and bit != UF_NORMAL_ACCOUNT):
+                self.fail("Unexpectedly able to set userAccountControl bit 0x%08X (%s), on %s"
+                          % (bit, bit_str, m.dn))
         except LdbError as e:
             (enum, estr) = e.args
             if bit in invalid_bits:
@@ -601,6 +604,8 @@ class UserAccountControlTests(samba.tests.TestCase):
                                  ldb.ERR_OTHER,
                                  "was not able to set 0x%08X (%s) on %s"
                                  % (bit, bit_str, m.dn))
+            elif (bit in account_types):
+                self.assertIn(enum, [ldb.ERR_OBJECT_CLASS_VIOLATION, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS])
             elif (bit in priv_bits):
                 self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
             else:
