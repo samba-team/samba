@@ -1,3 +1,1 @@
 samba.tests.ldap_spn.+LdapSpnTest.test_spn_dodgy_spns
-samba.tests.ldap_spn.+LdapSpnTest.test_spn_one_part_spns_no_slashes_
-samba.tests.ldap_spn.+LdapSpnTest.test_spn_too_many_spn_parts
