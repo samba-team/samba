@@ -378,34 +378,34 @@ NTSTATUS cli_readlink_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 {
 	struct cli_readlink_state *state = tevent_req_data(
 		req, struct cli_readlink_state);
+	struct symlink_reparse_struct *symlink = NULL;
 	NTSTATUS status;
-	char *substitute_name;
-	char *print_name;
-	uint32_t flags;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
-	if (!symlink_reparse_buffer_parse(state->data, state->num_data,
-					  talloc_tos(), &substitute_name,
-					  &print_name, &flags)) {
+	symlink = symlink_reparse_buffer_parse(
+		talloc_tos(), state->data, state->num_data);
+	if (symlink == NULL) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	if (psubstitute_name != NULL) {
-		*psubstitute_name = talloc_move(mem_ctx, &substitute_name);
+		*psubstitute_name = talloc_move(
+			mem_ctx, &symlink->substitute_name);
 	}
-	TALLOC_FREE(substitute_name);
 
 	if (pprint_name != NULL) {
-		*pprint_name = talloc_move(mem_ctx, &print_name);
+		*pprint_name = talloc_move(mem_ctx, &symlink->print_name);
 	}
-	TALLOC_FREE(print_name);
 
 	if (pflags != NULL) {
-		*pflags = flags;
+		*pflags = symlink->flags;
 	}
+
+	TALLOC_FREE(symlink);
+
 	return NT_STATUS_OK;
 }
 
