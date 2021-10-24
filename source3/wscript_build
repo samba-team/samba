@@ -435,7 +435,6 @@ bld.SAMBA3_LIBRARY('libsmb',
                           libsmb/clidfs.c
                           libsmb/clioplock.c
                           libsmb/async_smb.c
-                          libsmb/reparse_symlink.c
                           libsmb/clisymlink.c
                           libsmb/smbsock_connect.c
                           libsmb/cli_smb2_fnum.c
