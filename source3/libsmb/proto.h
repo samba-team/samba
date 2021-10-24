@@ -1009,15 +1009,6 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		   uint8_t **rparam, uint32_t min_rparam, uint32_t *num_rparam,
 		   uint8_t **rdata, uint32_t min_rdata, uint32_t *num_rdata);
 
-/* The following definitions come from libsmb/reparse_symlink.c  */
-
-bool symlink_reparse_buffer_marshall(
-	const char *substitute, const char *printname, uint32_t flags,
-	TALLOC_CTX *mem_ctx, uint8_t **pdst, size_t *pdstlen);
-bool symlink_reparse_buffer_parse(
-	const uint8_t *src, size_t srclen, TALLOC_CTX *mem_ctx,
-	char **psubstitute_name, char **pprint_name, uint32_t *pflags);
-
 /* The following definitions come from libsmb/clisymlink.c  */
 
 struct tevent_req *cli_symlink_send(TALLOC_CTX *mem_ctx,

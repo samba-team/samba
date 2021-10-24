@@ -27,6 +27,7 @@
 #include "libcli/security/secdesc.h"
 #include "libcli/security/security.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "source3/libsmb/reparse_symlink.h"
 
 struct cli_symlink_state {
 	struct tevent_context *ev;

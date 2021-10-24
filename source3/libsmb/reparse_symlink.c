@@ -20,10 +20,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
-#include "include/client.h"
-#include "libsmb/proto.h"
-#include "include/ntioctl.h"
+#include "replace.h"
+#include "reparse_symlink.h"
+#include "lib/util/talloc_stack.h"
+#include "lib/util/charset/charset.h"
+#include "lib/util/byteorder.h"
+#include "libcli/smb/smb_constants.h"
+#include "libcli/smb/smb_util.h"
+#include "lib/util/debug.h"
 
 bool symlink_reparse_buffer_marshall(
 	const char *substitute, const char *printname, uint32_t flags,
