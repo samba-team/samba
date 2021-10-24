@@ -22,7 +22,6 @@
 
 #include "replace.h"
 #include "reparse_symlink.h"
-#include "lib/util/talloc_stack.h"
 #include "lib/util/charset/charset.h"
 #include "lib/util/byteorder.h"
 #include "libcli/smb/smb_constants.h"
@@ -39,6 +38,8 @@ bool symlink_reparse_buffer_marshall(
 	uint8_t *print_utf16 = NULL;
 	size_t subst_len = 0;
 	size_t print_len = 0;
+	bool ret = false;
+	bool ok;
 
 	if (substitute == NULL) {
 		return false;
@@ -47,14 +48,27 @@ bool symlink_reparse_buffer_marshall(
 		printname = substitute;
 	}
 
-	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_UTF16,
-				   substitute, strlen(substitute),
-				   &subst_utf16, &subst_len)) {
+	ok = convert_string_talloc(
+		mem_ctx,
+		CH_UNIX,
+		CH_UTF16,
+		substitute,
+		strlen(substitute),
+		&subst_utf16,
+		&subst_len);
+	if (!ok) {
 		goto fail;
 	}
-	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_UTF16,
-				   printname, strlen(printname),
-				   &print_utf16, &print_len)) {
+
+	ok = convert_string_talloc(
+		mem_ctx,
+		CH_UNIX,
+		CH_UTF16,
+		printname,
+		strlen(printname),
+		&print_utf16,
+		&print_len);
+	if (!ok) {
 		goto fail;
 	}
 
@@ -82,21 +96,20 @@ bool symlink_reparse_buffer_marshall(
 
 	if ((subst_utf16 != NULL) && (subst_len != 0)) {
 		memcpy(dst + 20, subst_utf16, subst_len);
-		TALLOC_FREE(subst_utf16);
 	}
 
 	if ((print_utf16 != NULL) && (print_len != 0)) {
 		memcpy(dst + 20 + subst_len, print_utf16, print_len);
-		TALLOC_FREE(print_utf16);
 	}
 
 	*pdst = dst;
 	*pdstlen = dst_len;
-	return true;
+	ret = true;
+
 fail:
 	TALLOC_FREE(subst_utf16);
 	TALLOC_FREE(print_utf16);
-	return false;
+	return ret;
 }
 
 struct symlink_reparse_struct *symlink_reparse_buffer_parse(
