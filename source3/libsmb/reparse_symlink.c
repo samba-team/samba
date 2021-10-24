@@ -128,14 +128,14 @@ bool symlink_reparse_buffer_parse(
 			   (int)reparse_data_length));
 		return false;
 	}
-	if (trans_oob(srclen - 8, reparse_data_length, 0)) {
+	if (smb_buffer_oob(srclen - 8, reparse_data_length, 0)) {
 		DEBUG(10, ("reparse_data_length (%d) too large for "
 			   "src_len (%d)\n", (int)reparse_data_length,
 			   (int)srclen));
 		return false;
 	}
-	if (trans_oob(reparse_data_length - 12, substitute_name_offset,
-		      substitute_name_length)) {
+	if (smb_buffer_oob(reparse_data_length - 12, substitute_name_offset,
+			   substitute_name_length)) {
 		DEBUG(10, ("substitute_name (%d/%d) does not fit in "
 			   "reparse_data_length (%d)\n",
 			   (int)substitute_name_offset,
@@ -143,8 +143,8 @@ bool symlink_reparse_buffer_parse(
 			   (int)reparse_data_length - 12));
 		return false;
 	}
-	if (trans_oob(reparse_data_length - 12, print_name_offset,
-		      print_name_length)) {
+	if (smb_buffer_oob(reparse_data_length - 12, print_name_offset,
+			   print_name_length)) {
 		DEBUG(10, ("print_name (%d/%d) does not fit in "
 			   "reparse_data_length (%d)\n",
 			   (int)print_name_offset,

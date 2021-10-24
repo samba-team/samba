@@ -6240,7 +6240,7 @@ static void cli_notify_done(struct tevent_req *subreq)
 		ssize_t ret;
 		char *name;
 
-		if (trans_oob(num_params, ofs + 12, len)) {
+		if (smb_buffer_oob(num_params, ofs + 12, len)) {
 			TALLOC_FREE(params);
 			tevent_req_nterror(
 				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
