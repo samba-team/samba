@@ -317,6 +317,8 @@ class TestCase(unittest.TestCase):
 
     def assertRaisesLdbError(self, errcode, message, f, *args, **kwargs):
         """Assert a function raises a particular LdbError."""
+        if message is None:
+            message = f"{f.__name__}(*{args}, **{kwargs})"
         try:
             f(*args, **kwargs)
         except ldb.LdbError as e:
