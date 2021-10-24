@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "smb_constants.h"
 #include <talloc.h>
+#include "libcli/util/ntstatus.h"
 
 #ifndef _SMB_UTIL_H
 #define _SMB_UTIL_H
