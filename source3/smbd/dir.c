@@ -1922,16 +1922,59 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 			break;
 		}
 
-		/*
-		 * is_visible_fsp() always returns true
-		 * for the symlink/MSDFS case.
-		 */
-
 		if (S_ISLNK(smb_dname_full->st.st_ex_mode)) {
+			/* Could it be an msdfs link ? */
+			if (lp_host_msdfs() &&
+			    lp_msdfs_root(SNUM(conn))) {
+				struct smb_filename *smb_dname;
+				smb_dname = synthetic_smb_fname(talloc_tos(),
+							dname,
+							NULL,
+							&smb_dname_full->st,
+							fsp->fsp_name->twrp,
+							fsp->fsp_name->flags);
+				if (smb_dname == NULL) {
+					TALLOC_FREE(talloced);
+					TALLOC_FREE(fullname);
+					TALLOC_FREE(smb_dname_full);
+					status = NT_STATUS_NO_MEMORY;
+					break;
+				}
+				if (is_msdfs_link(fsp, smb_dname)) {
+					TALLOC_FREE(talloced);
+					TALLOC_FREE(fullname);
+					TALLOC_FREE(smb_dname_full);
+					TALLOC_FREE(smb_dname);
+					DBG_DEBUG("got msdfs link name %s "
+						"- can't delete directory %s\n",
+						dname,
+						fsp_str_dbg(fsp));
+					status = NT_STATUS_DIRECTORY_NOT_EMPTY;
+					break;
+				}
+				TALLOC_FREE(smb_dname);
+			}
+			/* Not a DFS link - could it be a dangling symlink ? */
+			ret = SMB_VFS_STAT(conn, smb_dname_full);
+			if (ret == -1 && (errno == ENOENT || errno == ELOOP)) {
+				/*
+				 * Dangling symlink.
+				 * Allow if "delete veto files = yes"
+				 */
+				if (lp_delete_veto_files(SNUM(conn))) {
+					TALLOC_FREE(talloced);
+					TALLOC_FREE(fullname);
+					TALLOC_FREE(smb_dname_full);
+					continue;
+				}
+			}
+			DBG_DEBUG("got symlink name %s - "
+				"can't delete directory %s\n",
+				dname,
+				fsp_str_dbg(fsp));
 			TALLOC_FREE(talloced);
 			TALLOC_FREE(fullname);
 			TALLOC_FREE(smb_dname_full);
-			DBG_DEBUG("got name %s - can't delete\n", dname);
 			status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 			break;
 		}
