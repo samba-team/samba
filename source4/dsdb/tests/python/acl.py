@@ -1925,6 +1925,8 @@ class AclSPNTests(AclTests):
         self.computername = "testcomp8"
         self.test_user = "spn_test_user8"
         self.computerdn = "CN=%s,CN=computers,%s" % (self.computername, self.base_dn)
+        self.user_object = "user_with_spn"
+        self.user_object_dn = "CN=%s,CN=Users,%s" % (self.user_object, self.base_dn)
         self.dc_dn = "CN=%s,OU=Domain Controllers,%s" % (self.dcname, self.base_dn)
         self.site = "Default-First-Site-Name"
         self.rodcctx = DCJoinContext(server=host, creds=creds, lp=lp,
@@ -1946,6 +1948,7 @@ class AclSPNTests(AclTests):
         self.dcctx.cleanup_old_join()
         delete_force(self.ldb_admin, "cn=%s,cn=computers,%s" % (self.computername, self.base_dn))
         delete_force(self.ldb_admin, self.get_user_dn(self.test_user))
+        delete_force(self.ldb_admin, self.user_object_dn)
 
         del self.ldb_user1
 
@@ -2220,6 +2223,20 @@ class AclSPNTests(AclTests):
 
     def test_spn_rodc(self):
         self.dc_spn_test(self.rodcctx)
+
+    def test_user_spn(self):
+        #grant SW to a regular user and try to set the spn on a user object
+        #should get  ERR_INSUFFICIENT_ACCESS_RIGHTS, since Validate-SPN only applies to computer
+        self.ldb_admin.newuser(self.user_object, self.user_pass)
+        mod = "(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;%s)" % str(self.user_sid1)
+        self.sd_utils.dacl_add_ace(self.user_object_dn, mod)
+        try:
+            self.replace_spn(self.ldb_user1, self.user_object_dn, "nosuchservice/%s/%s" % ("abcd", "abcd"))
+        except LdbError as e60:
+            (num, _) = e60.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
 
     def test_delete_add_spn(self):
         # Grant Validated-SPN property.
