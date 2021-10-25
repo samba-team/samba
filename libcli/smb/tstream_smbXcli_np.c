@@ -280,10 +280,14 @@ static void tstream_smbXcli_np_open_done(struct tevent_req *subreq)
 	if (state->is_smb1) {
 		status = smb1cli_ntcreatex_recv(subreq, &state->fnum);
 	} else {
-		status = smb2cli_create_recv(subreq,
-					     &state->fid_persistent,
-					     &state->fid_volatile,
-					     NULL, NULL, NULL);
+		status = smb2cli_create_recv(
+			subreq,
+			&state->fid_persistent,
+			&state->fid_volatile,
+			NULL,
+			NULL,
+			NULL,
+			NULL);
 	}
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {

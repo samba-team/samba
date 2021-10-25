@@ -343,7 +343,8 @@ static void cli_smb2_create_fnum_done(struct tevent_req *subreq)
 		&h.fid_persistent,
 		&h.fid_volatile, &state->cr,
 		state,
-		&state->out_cblobs);
+		&state->out_cblobs,
+		NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

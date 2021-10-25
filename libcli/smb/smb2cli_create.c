@@ -336,6 +336,11 @@ static NTSTATUS smb2cli_create_unparsed_unix_len(
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
+	if (unparsed_utf16_len == 0) {
+		*_unparsed_unix_len = 0;
+		return NT_STATUS_OK;
+	}
+
 	unparsed_utf16 = name_utf16 + name_utf16_len - unparsed_utf16_len;
 
 	ok = convert_string_talloc(
@@ -352,16 +357,7 @@ static NTSTATUS smb2cli_create_unparsed_unix_len(
 			  strerror(errno));
 		return status;
 	}
-
-	/*
-	 * convert_string_talloc() returns a 0-terminated string
-	 */
-	SMB_ASSERT(unparsed_unix_len > 0);
-	SMB_ASSERT(unparsed_unix[unparsed_unix_len-1] == '\0');
-
-	TALLOC_FREE(unparsed_unix);
-
-	*_unparsed_unix_len = (unparsed_unix_len-1);
+	*_unparsed_unix_len = unparsed_unix_len;
 	return NT_STATUS_OK;
 }
 
@@ -469,7 +465,8 @@ NTSTATUS smb2cli_create_recv(struct tevent_req *req,
 			     uint64_t *fid_volatile,
 			     struct smb_create_returns *cr,
 			     TALLOC_CTX *mem_ctx,
-			     struct smb2_create_blobs *blobs)
+			     struct smb2_create_blobs *blobs,
+			     struct symlink_reparse_struct **psymlink)
 {
 	struct smb2cli_create_state *state =
 		tevent_req_data(req,
@@ -477,6 +474,10 @@ NTSTATUS smb2cli_create_recv(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK) &&
+		    (psymlink != NULL)) {
+			*psymlink = talloc_move(mem_ctx, &state->symlink);
+		}
 		tevent_req_received(req);
 		return status;
 	}
@@ -510,7 +511,8 @@ NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 			uint64_t *fid_volatile,
 			struct smb_create_returns *cr,
 			TALLOC_CTX *mem_ctx,
-			struct smb2_create_blobs *ret_blobs)
+			struct smb2_create_blobs *ret_blobs,
+			struct symlink_reparse_struct **psymlink)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -541,8 +543,14 @@ NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = smb2cli_create_recv(req, fid_persistent, fid_volatile, cr,
-				     mem_ctx, ret_blobs);
+	status = smb2cli_create_recv(
+		req,
+		fid_persistent,
+		fid_volatile,
+		cr,
+		mem_ctx,
+		ret_blobs,
+		psymlink);
  fail:
 	TALLOC_FREE(frame);
 	return status;

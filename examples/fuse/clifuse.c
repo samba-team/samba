@@ -267,8 +267,14 @@ static void cli_get_unixattr_opened(struct tevent_req *subreq)
 	struct cli_state *cli = state->cli;
 	NTSTATUS status;
 
-	status = smb2cli_create_recv(subreq, &state->fid_persistent,
-				     &state->fid_volatile, NULL, NULL, NULL);
+	status = smb2cli_create_recv(
+		subreq,
+		&state->fid_persistent,
+		&state->fid_volatile,
+		NULL,
+		NULL,
+		NULL,
+		NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		DBG_DEBUG("smb2cli_create_recv returned %s\n",
@@ -1174,10 +1180,14 @@ static void cli_ll_opendir_done(struct tevent_req *req)
 		req, struct ll_opendir_state);
 	NTSTATUS status;
 
-	status = smb2cli_create_recv(req,
-				     &state->dir_state->fid_persistent,
-				     &state->dir_state->fid_volatile,
-				     NULL, NULL, NULL);
+	status = smb2cli_create_recv(
+		req,
+		&state->dir_state->fid_persistent,
+		&state->dir_state->fid_volatile,
+		NULL,
+		NULL,
+		NULL,
+		NULL);
 	TALLOC_FREE(req);
 
 	DEBUG(10, ("%s: smbcli_create_recv returned %s\n", __func__,
