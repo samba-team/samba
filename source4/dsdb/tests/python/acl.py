@@ -26,13 +26,14 @@ from ldb import FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE
 from samba.dcerpc import security, drsuapi, misc
 
 from samba.auth import system_session
-from samba import gensec, sd_utils
+from samba import gensec, sd_utils, werror
 from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 import samba.tests
 from samba.tests import delete_force
 import samba.dsdb
 from samba.tests.password_test import PasswordCommon
+from samba.ndr import ndr_pack
 
 parser = optparse.OptionParser("acl.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -72,6 +73,12 @@ class AclTests(samba.tests.TestCase):
 
     def setUp(self):
         super(AclTests, self).setUp()
+
+        strict_checking = samba.tests.env_get_var_value('STRICT_CHECKING', allow_missing=True)
+        if strict_checking is None:
+            strict_checking = '1'
+        self.strict_checking = bool(int(strict_checking))
+
         self.ldb_admin = SamDB(ldaphost, credentials=creds, session_info=system_session(lp), lp=lp)
         self.base_dn = self.ldb_admin.domain_dn()
         self.domain_sid = security.dom_sid(self.ldb_admin.get_domain_sid())
@@ -87,6 +94,28 @@ class AclTests(samba.tests.TestCase):
         self.creds_tmp.set_realm(creds.get_realm())
         self.creds_tmp.set_workstation(creds.get_workstation())
         print("baseDN: %s" % self.base_dn)
+
+        # set AttributeAuthorizationOnLDAPAdd and BlockOwnerImplicitRights
+        self.set_heuristic(samba.dsdb.DS_HR_ATTR_AUTHZ_ON_LDAP_ADD, b'11')
+
+    def set_heuristic(self, index, values):
+        self.assertGreater(index, 0)
+        self.assertLess(index, 30)
+        self.assertIsInstance(values, bytes)
+
+        # Get the old "dSHeuristics" if it was set
+        dsheuristics = self.ldb_admin.get_dsheuristics()
+        # Reset the "dSHeuristics" as they were before
+        self.addCleanup(self.ldb_admin.set_dsheuristics, dsheuristics)
+        # Set the "dSHeuristics" to activate the correct behaviour
+        default_heuristics = b"000000000100000000020000000003"
+        if dsheuristics is None:
+            dsheuristics = b""
+        dsheuristics += default_heuristics[len(dsheuristics):]
+        dsheuristics = (dsheuristics[:index - 1] +
+                        values +
+                        dsheuristics[index - 1 + len(values):])
+        self.ldb_admin.set_dsheuristics(dsheuristics)
 
     def get_user_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
@@ -131,13 +160,23 @@ class AclAddTests(AclTests):
         self.usr_admin_not_owner = "acl_add_user2"
         # Regular user
         self.regular_user = "acl_add_user3"
+        self.regular_user2 = "acl_add_user4"
+        self.regular_user3 = "acl_add_user5"
         self.test_user1 = "test_add_user1"
+        self.test_user2 = "test_add_user2"
+        self.test_user3 = "test_add_user3"
+        self.test_user4 = "test_add_user4"
         self.test_group1 = "test_add_group1"
         self.ou1 = "OU=test_add_ou1"
         self.ou2 = "OU=test_add_ou2,%s" % self.ou1
+        delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_owner))
+        delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_not_owner))
+        delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+        delete_force(self.ldb_admin, self.get_user_dn(self.regular_user2))
         self.ldb_admin.newuser(self.usr_admin_owner, self.user_pass)
         self.ldb_admin.newuser(self.usr_admin_not_owner, self.user_pass)
         self.ldb_admin.newuser(self.regular_user, self.user_pass)
+        self.ldb_admin.newuser(self.regular_user2, self.user_pass)
 
         # add admins to the Domain Admins group
         self.ldb_admin.add_remove_group_members("Domain Admins", [self.usr_admin_owner],
@@ -148,23 +187,38 @@ class AclAddTests(AclTests):
         self.ldb_owner = self.get_ldb_connection(self.usr_admin_owner, self.user_pass)
         self.ldb_notowner = self.get_ldb_connection(self.usr_admin_not_owner, self.user_pass)
         self.ldb_user = self.get_ldb_connection(self.regular_user, self.user_pass)
+        self.ldb_user2 = self.get_ldb_connection(self.regular_user2, self.user_pass)
 
     def tearDown(self):
         super(AclAddTests, self).tearDown()
         delete_force(self.ldb_admin, "CN=%s,%s,%s" %
                      (self.test_user1, self.ou2, self.base_dn))
         delete_force(self.ldb_admin, "CN=%s,%s,%s" %
+                     (self.test_user1, self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" %
+                     (self.test_user2, self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" %
+                     (self.test_user3, self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" %
+                     (self.test_user4, self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" %
                      (self.test_group1, self.ou2, self.base_dn))
+        delete_force(self.ldb_admin, "CN=test_computer2,%s,%s" %
+                     (self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, "CN=test_computer1,%s,%s" %
+                     (self.ou1, self.base_dn))
         delete_force(self.ldb_admin, "%s,%s" % (self.ou2, self.base_dn))
         delete_force(self.ldb_admin, "%s,%s" % (self.ou1, self.base_dn))
         delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_owner))
         delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_not_owner))
         delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+        delete_force(self.ldb_admin, self.get_user_dn(self.regular_user2))
         delete_force(self.ldb_admin, self.get_user_dn("test_add_anonymous"))
 
         del self.ldb_notowner
         del self.ldb_owner
         del self.ldb_user
+        del self.ldb_user2
 
     # Make sure top OU is deleted (and so everything under it)
     def assert_top_ou_deleted(self):
@@ -262,6 +316,1345 @@ class AclAddTests(AclTests):
                                     expression="(distinguishedName=%s,%s)" % ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
         self.assertTrue(len(res) > 0)
 
+    def test_add_c1(self):
+        """Testing adding a computer object with the rights of regular user granted the right 'Create Computer child objects' """
+        self.assert_top_ou_deleted()
+        # Change descriptor for top level OU
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = f"(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        mod = f"(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_SERVICE_PRINCIPAL_NAME};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+
+        # Add a computer object, specifying an explicit SD to grant WP to the creator
+        print("Test adding a user with explicit nTSecurityDescriptor")
+        wp_ace = "(A;;WP;;;%s)" % str(user_sid)
+        tmp_desc = security.descriptor.from_sddl("D:%s" % wp_ace, self.domain_sid)
+        dn = "CN=%s,OU=test_add_ou1,%s" % (self.test_user1, self.base_dn)
+        samaccountname = self.test_user1 + "$"
+        # This should fail, the user has no WD or WO
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "host/" + self.test_user1,
+                "nTSecurityDescriptor": ndr_pack(tmp_desc)})
+        except LdbError as e3:
+            (num, _) = e3.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+
+    def test_add_c2(self):
+        """Testing adding a computer object with the rights of regular user granted the right 'Create User child objects' and WO"""
+        self.assert_top_ou_deleted()
+        # Change descriptor for top level OU
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = f"(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        mod = f"(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_SERVICE_PRINCIPAL_NAME};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        # Grant WO, we should still not be able to specify a DACL
+        mod = "(A;CI;WO;;;%s)" % str(user_sid)
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        # Add a computer object, specifying an explicit SD to grant WP to the creator
+        print("Test adding a user with explicit nTSecurityDescriptor")
+        wp_ace = "(A;;WP;;;%s)" % str(user_sid)
+        tmp_desc = security.descriptor.from_sddl("D:%s" % wp_ace, self.domain_sid)
+        dn = "CN=%s,OU=test_add_ou1,%s" % (self.test_user1, self.base_dn)
+        samaccountname = self.test_user1 + "$"
+        # This should fail, the user has no WD
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "host/" + self.test_user1,
+                "nTSecurityDescriptor": ndr_pack(tmp_desc)})
+        except LdbError as e3:
+            (num, _) = e3.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+
+        # We still cannot modify the owner or group
+        sd_sddl = f"O:{user_sid}G:{user_sid}"
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "host/" + self.test_user1,
+                "nTSecurityDescriptor": ndr_pack(tmp_desc)})
+        except LdbError as e3:
+            (num, _) = e3.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+
+    def test_add_c3(self):
+        """Testing adding a computer object with the rights of regular user granted the right 'Create Computer child objects' and WD"""
+        self.assert_top_ou_deleted()
+        # Change descriptor for top level OU
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = f"(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        mod = f"(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_SERVICE_PRINCIPAL_NAME};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        # Grant WD, we should still not be able to specify a DACL
+        mod = "(A;CI;WD;;;%s)" % str(user_sid)
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        # Add a computer object, specifying an explicit SD to grant WP to the creator
+        print("Test adding a user with explicit nTSecurityDescriptor")
+        wp_ace = "(A;;WP;;;%s)" % str(user_sid)
+        sd_sddl = f"O:{user_sid}G:BA"
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        dn = "CN=%s,OU=test_add_ou1,%s" % (self.test_user1, self.base_dn)
+        samaccountname = self.test_user1 + "$"
+        # The user has no WO, but this succeeds, because WD means we skip further per-attribute checks
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "host/" + self.test_user1,
+                "nTSecurityDescriptor": ndr_pack(tmp_desc)})
+        except LdbError as e3:
+            self.fail(str(e3))
+
+        # we should be able to modify the DACL
+        tmp_desc = security.descriptor.from_sddl("D:%s" % wp_ace, self.domain_sid)
+        dn = "CN=%s,OU=test_add_ou1,%s" % (self.test_user2, self.base_dn)
+        samaccountname = self.test_user2 + "$"
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "host/" + self.test_user2,
+                "nTSecurityDescriptor": ndr_pack(tmp_desc)})
+        except LdbError as e3:
+            self.fail(str(e3))
+
+        # verify the ace is present
+        new_sd = self.sd_utils.get_sd_as_sddl("CN=test_add_user2,OU=test_add_ou1,%s" %
+                                              self.base_dn)
+        self.assertIn(wp_ace, new_sd)
+
+    def test_add_c4(self):
+        """Testing adding a computer object with the rights of regular user granted the right 'Create User child objects' and WDWO"""
+        self.assert_top_ou_deleted()
+        # Change descriptor for top level OU
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = f"(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        mod = f"(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_SERVICE_PRINCIPAL_NAME};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        # Grant WD and WO, we should be able to update the SD
+        mod = "(A;CI;WDWO;;;%s)" % str(user_sid)
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        # Add a computer object, specifying an explicit SD to grant WP to the creator
+        print("Test adding a user with explicit nTSecurityDescriptor")
+        wp_ace = "(A;;WP;;;%s)" % str(user_sid)
+        sd_sddl = "O:%sG:BAD:(A;;WP;;;%s)" % (str(user_sid), str(user_sid))
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        dn = "CN=%s,OU=test_add_ou1,%s" % (self.test_user1, self.base_dn)
+        samaccountname = self.test_user1 + "$"
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "host/" + self.test_user1,
+                "nTSecurityDescriptor": ndr_pack(tmp_desc)})
+        except LdbError as e3:
+            self.fail(str(e3))
+
+        # verify the owner and group is present
+        new_sd = self.sd_utils.get_sd_as_sddl("CN=test_add_user1,OU=test_add_ou1,%s" %
+                                              self.base_dn)
+        self.assertIn(f"O:{user_sid}G:BA", new_sd)
+        self.assertIn(wp_ace, new_sd)
+
+    def test_add_c5(self):
+        """Testing adding a computer with an optional attribute """
+        self.assert_top_ou_deleted()
+        # Change descriptor for top level OU
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = f"(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        mod = f"(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_SERVICE_PRINCIPAL_NAME};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        dn = "CN=%s,OU=test_add_ou1,%s" % (self.test_user3, self.base_dn)
+        samaccountname = self.test_user3 + "$"
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "host/" + self.test_user3,
+                "department": "Ministry of Silly Walks"})
+        except LdbError as e3:
+            (num, _) = e3.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+
+        # grant WP for that attribute and try again
+        mod = f"(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_DEPARTMENT};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "host/" + self.test_user3,
+                "department": "Ministry of Silly Walks"})
+        except LdbError as e3:
+            self.fail(str(e3))
+
+    def test_add_c6(self):
+        """Test creating a computer with a mandatory attribute(sAMAccountName)"""
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = f"(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        mod = f"(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_SERVICE_PRINCIPAL_NAME};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        dn = "CN=%s,OU=test_add_ou1,%s" % (self.test_user4, self.base_dn)
+        samaccountname = self.test_user4 + "$"
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "host/" + self.test_user4})
+        except LdbError as e3:
+            self.fail(str(e3))
+
+    def test_add_computer1(self):
+        """Testing Computer with the rights of regular user granted the right 'Create Computer child objects' """
+        self.assert_top_ou_deleted()
+        # Change descriptor for top level OU
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
+        mod = f"(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        mod = f"(OA;CI;SW;{samba.dsdb.DS_GUID_SCHEMA_ATTR_SERVICE_PRINCIPAL_NAME};;CO)"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+
+        # add a Computer object with servicePrincipalName
+        # Creator-Owner has SW from the default SD
+        dn = "CN=test_computer1,OU=test_add_ou1,%s" % (self.base_dn)
+        samaccountname = "test_computer1$"
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "nosuchservice/abcd/abcd"})
+        except LdbError as e3:
+            (num, _) = e3.args
+            if self.strict_checking:
+                self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            else:
+                self.assertIn(num, (ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                    ERR_CONSTRAINT_VIOLATION))
+        else:
+            self.fail()
+
+        # Inherited Deny from the parent will not work, because of ordering rules
+        mod = f"(OD;CI;SW;{samba.dsdb.DS_GUID_SCHEMA_ATTR_SERVICE_PRINCIPAL_NAME};;{user_sid})"
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        try:
+            self.ldb_user.add({
+                "dn": dn,
+                "objectclass": "computer",
+                "sAMAccountName": samaccountname,
+                "userAccountControl": str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
+                "servicePrincipalName": "nosuchservice/abcd/abcd"})
+        except LdbError as e3:
+            (num, _) = e3.args
+            if self.strict_checking:
+                self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            else:
+                self.assertIn(num, (ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                    ERR_CONSTRAINT_VIOLATION))
+        else:
+            self.fail()
+
+    def test_add_optional_attr(self):
+        '''Show that adding a computer object with an optional attribute is disallowed'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_domain_admins(self):
+        '''Show that adding a computer object with an optional attribute is allowed if the user is a Domain Administrator'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.ldb_admin.add_remove_group_members('Domain Admins',
+                                                [self.regular_user],
+                                                add_members_operation=True)
+        ldb_domain_admin = self.get_ldb_connection(self.regular_user,
+                                                   self.user_pass)
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            ldb_domain_admin.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_enterprise_admins(self):
+        '''Show that adding a computer object with an optional attribute is allowed if the user is an Enterprise Administrator'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.ldb_admin.add_remove_group_members('Enterprise Admins',
+                                                [self.regular_user],
+                                                add_members_operation=True)
+        ldb_enterprise_admin = self.get_ldb_connection(self.regular_user,
+                                                       self.user_pass)
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            ldb_enterprise_admin.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_non_computer(self):
+        '''Show that adding a non-computer object with an optional attribute is allowed'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_USER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = self.test_user1
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'user',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_derived_computer(self):
+        '''Show that adding an object derived from computer with an optional attribute is disallowed'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_MANAGED_SERVICE_ACCOUNT};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'msDS-ManagedServiceAccount',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_write_dac(self):
+        '''Show that adding a computer object with an optional attribute is allowed if the security descriptor gives WRITE_DAC access'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(A;CI;WD;;;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_system_must_contain(self):
+        '''Show that adding a computer object with only systemMustContain attributes is allowed'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'instanceType': '4',
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_system_must_contain_denied(self):
+        '''Show that adding a computer object with only systemMustContain attributes is allowed, even when explicitly denied'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(D;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_INSTANCE_TYPE};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'instanceType': '4',
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_unicode_pwd(self):
+        '''Show that adding a computer object with a unicodePwd is allowed'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        password = 'Secret007'
+        utf16pw = f'"{password}"'.encode('utf-16-le')
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'unicodePwd': utf16pw,
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_user_password(self):
+        '''Show that adding a computer object with a userPassword is allowed'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        password = 'Secret007'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'userPassword': password,
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_user_password_denied(self):
+        '''Show that adding a computer object with a userPassword is allowed, even when explicitly denied'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(D;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_USER_PASSWORD};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        password = 'Secret007'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'userPassword': password,
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_clear_text_password(self):
+        '''Show that adding a computer object with a clearTextPassword is allowed
+
+Note: this does not work on Windows.'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        password = 'Secret007'.encode('utf-16-le')
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'clearTextPassword': password,
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_disallowed_attr(self):
+        '''Show that adding a computer object with a denied attribute is disallowed'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(D;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_MS_SFU_30};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_allowed_attr(self):
+        '''Show that adding a computer object with an allowed attribute is allowed'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_MS_SFU_30};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_optional_attr_heuristic_0(self):
+        '''Show that adding a computer object with an optional attribute is allowed when AttributeAuthorizationOnLDAPAdd == 0'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_ATTR_AUTHZ_ON_LDAP_ADD, b'0')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_optional_attr_heuristic_2(self):
+        '''Show that adding a computer object with an optional attribute is allowed when AttributeAuthorizationOnLDAPAdd == 2'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_ATTR_AUTHZ_ON_LDAP_ADD, b'2')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_security_descriptor_implicit_right(self):
+        '''Show that adding a computer object with a security descriptor is allowed when BlockOwnerImplicitRights != 1'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'0')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'O:{user_sid}G:{user_sid}'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_security_descriptor_implicit_right_optional_attr(self):
+        '''Show that adding a computer object with a security descriptor and an optional attribute is disallowed when BlockOwnerImplicitRights != 1'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'0')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'O:{user_sid}G:{user_sid}'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'msSFU30Name': 'foo',
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_explicit_right(self):
+        '''Show that a computer object with a security descriptor can be added if BlockOwnerImplicitRights == 1 and WRITE_DAC is granted'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(A;CI;WD;;;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = (f'O:{user_sid}G:{user_sid}'
+                   f'D:(A;;WP;;;{user_sid})')
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_security_descriptor_explicit_right_no_owner_disallow(self):
+        '''Show that a computer object with a security descriptor can be added if BlockOwnerImplicitRights == 1, WRITE_DAC is granted, and WRITE_OWNER is denied'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(A;CI;WD;;;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(D;CI;WO;;;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'D:(A;;WP;;;{user_sid})'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_security_descriptor_explicit_right_owner_disallow(self):
+        '''Show that a computer object with a security descriptor containing an owner and group can be added if BlockOwnerImplicitRights == 1, WRITE_DAC is granted, and WRITE_OWNER is denied'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(A;CI;WD;;;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(D;CI;WO;;;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = (f'O:{user_sid}G:{user_sid}'
+                   f'D:(A;;WP;;;{user_sid})')
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_security_descriptor_explicit_right_sacl(self):
+        '''Show that adding a computer object with a security descriptor containing a SACL is disallowed if BlockOwnerImplicitRights == 1 and WRITE_DAC is granted'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(A;CI;WD;;;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = (f'O:{user_sid}G:{user_sid}'
+                   f'D:(A;;WP;;;{user_sid})S:(A;;WP;;;{user_sid})')
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            if self.strict_checking:
+                self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+                self.assertIn(f'{werror.WERR_PRIVILEGE_NOT_HELD:08X}', estr)
+            else:
+                self.assertIn(num, (ERR_CONSTRAINT_VIOLATION,
+                                    ERR_INSUFFICIENT_ACCESS_RIGHTS))
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_explicit_right_owner_not_us(self):
+        '''Show that adding a computer object with a security descriptor owned by another is disallowed if BlockOwnerImplicitRights == 1 and WRITE_DAC is granted'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(A;CI;WD;;;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = 'O:BA'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertIn(f'{werror.WERR_INVALID_OWNER:08X}', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_explicit_right_owner_not_us_admin(self):
+        '''Show that adding a computer object with a security descriptor owned by another is allowed if BlockOwnerImplicitRights == 1, WRITE_DAC is granted, and we are in Domain Admins'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(A;CI;WD;;;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = 'O:BA'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_admin.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_no_implicit_right(self):
+        '''Show that adding a computer object without a security descriptor is allowed when BlockOwnerImplicitRights == 1'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+            })
+        except LdbError as err:
+            self.fail(err)
+
+    def test_add_security_descriptor_owner(self):
+        '''Show that adding a computer object with a security descriptor containing an owner is disallowed when BlockOwnerImplicitRights == 1'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'O:{user_sid}'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_owner_implicit(self):
+        '''Show that adding a computer object with a security descriptor containing an owner is disallowed when BlockOwnerImplicitRights == 1, even when we are the owner of the OU security descriptor'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+
+        ou_controls = [
+            f'sd_flags:1:{security.SECINFO_OWNER|security.SECINFO_DACL}']
+        ou_sddl = (f'O:{user_sid}'
+                   f'D:(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.sd_utils.modify_sd_on_dn(f'{self.ou1},{self.base_dn}', ou_desc,
+                                      controls=ou_controls)
+
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'O:{user_sid}'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_owner_explicit_right(self):
+        '''Show that adding a computer object with a security descriptor containing an owner is disallowed when BlockOwnerImplicitRights == 1, even with WO'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(A;CI;WO;;;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'O:{user_sid}'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_group(self):
+        '''Show that adding a computer object with a security descriptor containing an group is disallowed when BlockOwnerImplicitRights == 1'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'G:{user_sid}'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_group_explicit_right(self):
+        '''Show that adding a computer object with a security descriptor containing an group is disallowed when BlockOwnerImplicitRights == 1, even with WO'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(A;CI;WO;;;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'G:{user_sid}'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_group_implicit(self):
+        '''Show that adding a computer object with a security descriptor containing an group is disallowed when BlockOwnerImplicitRights == 1, even when we are the owner of the OU security descriptor'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+
+        ou_controls = [
+            f'sd_flags:1:{security.SECINFO_OWNER|security.SECINFO_DACL}']
+        ou_sddl = (f'O:{user_sid}'
+                   f'D:(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.sd_utils.modify_sd_on_dn(f'{self.ou1},{self.base_dn}', ou_desc,
+                                      controls=ou_controls)
+
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'G:{user_sid}'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_dacl(self):
+        '''Show that adding a computer object with a security descriptor containing a DACL is disallowed when BlockOwnerImplicitRights == 1'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'D:(A;;WP;;;{user_sid})'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_dacl_implicit(self):
+        '''Show that adding a computer object with a security descriptor containing a DACL is disallowed when BlockOwnerImplicitRights == 1, even when we are the owner of the OU security descriptor'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+
+        ou_controls = [
+            f'sd_flags:1:{security.SECINFO_OWNER|security.SECINFO_DACL}']
+        ou_sddl = (f'O:{user_sid}'
+                   f'D:(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.sd_utils.modify_sd_on_dn(f'{self.ou1},{self.base_dn}', ou_desc,
+                                      controls=ou_controls)
+
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'D:(A;;WP;;;{user_sid})'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_sacl(self):
+        '''Show that adding a computer object with a security descriptor containing a SACL is disallowed when BlockOwnerImplicitRights == 1'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(
+            f'{self.ou1},{self.base_dn}',
+            f'(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        sd_sddl = f'S:(A;;WP;;;{user_sid})'
+        tmp_desc = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
+    def test_add_security_descriptor_empty(self):
+        '''Show that adding a computer object with an empty security descriptor is disallowed when BlockOwnerImplicitRights == 1, even when we are the owner of the OU security descriptor'''
+
+        self.assert_top_ou_deleted()
+        self.ldb_owner.create_ou(f'{self.ou1},{self.base_dn}')
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'1')
+
+        user_sid = self.sd_utils.get_object_sid(
+            self.get_user_dn(self.regular_user))
+
+        ou_controls = [
+            f'sd_flags:1:{security.SECINFO_OWNER|security.SECINFO_DACL}']
+        ou_sddl = (f'O:{user_sid}'
+                   f'D:(OA;CI;CC;{samba.dsdb.DS_GUID_SCHEMA_CLASS_COMPUTER};;{user_sid})')
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.sd_utils.modify_sd_on_dn(f'{self.ou1},{self.base_dn}', ou_desc,
+                                      controls=ou_controls)
+
+        dn = f'CN={self.test_user1},{self.ou1},{self.base_dn}'
+        account_name = f'{self.test_user1}$'
+        tmp_desc = security.descriptor.from_sddl('', self.domain_sid)
+        try:
+            self.ldb_user.add({
+                'dn': dn,
+                'objectclass': 'computer',
+                'sAMAccountName': account_name,
+                'ntSecurityDescriptor': ndr_pack(tmp_desc),
+            })
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            if self.strict_checking:
+                self.assertIn('000021CC', estr)
+        else:
+            self.fail('expected to fail')
+
     def test_add_anonymous(self):
         """Test add operation with anonymous user"""
         anonymous = SamDB(url=ldaphost, credentials=self.creds_tmp, lp=lp)
@@ -301,6 +1694,7 @@ class AclModifyTests(AclTests):
         delete_force(self.ldb_admin, "CN=test_modify_group2,CN=Users," + self.base_dn)
         delete_force(self.ldb_admin, "CN=test_modify_group3,CN=Users," + self.base_dn)
         delete_force(self.ldb_admin, "CN=test_mod_hostname,OU=test_modify_ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "CN=test_modify_ou1_user,OU=test_modify_ou1," + self.base_dn)
         delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_sm))
@@ -311,6 +1705,16 @@ class AclModifyTests(AclTests):
         del self.ldb_user
         del self.ldb_user2
         del self.ldb_user3
+
+    def get_sd_rights_effective(self, samdb, dn):
+        res = samdb.search(dn,
+                           scope=SCOPE_BASE,
+                           attrs=['sDRightsEffective'])
+        sd_rights = res[0].get('sDRightsEffective', idx=0)
+        if sd_rights is not None:
+            sd_rights = int(sd_rights)
+
+        return sd_rights
 
     def test_modify_u1(self):
         """5 Modify one attribute if you have DS_WRITE_PROPERTY for it"""
@@ -633,6 +2037,1005 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)"
                                     % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(str(res[0]["Member"][0]), "CN=test_modify_user2,CN=Users," + self.base_dn)
+
+    def test_modify_dacl_explicit_user(self):
+        '''Modify the DACL of a user's security descriptor when we have RIGHT_WRITE_DAC'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        username = 'test_modify_ou1_user'
+        user_dn = Dn(self.ldb_admin, f'CN={username},{ou_dn}')
+
+        sd_sddl = 'D:(A;;WP;;;BA)'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        self.ldb_admin.newuser(username, self.user_pass,
+                               userou=f'OU={ou_name}',
+                               sd=descriptor)
+
+        new_sddl = f'D:(A;;WP;;;{self.user_sid})'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        controls = [f'sd_flags:1:{security.SECINFO_DACL}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = 0
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the DACL.
+        message = Message(user_dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # The update fails since we don't have WRITE_DAC.
+        try:
+            self.ldb_user.modify(message, controls=controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # Grant ourselves WRITE_DAC.
+        write_dac_sddl = f'(A;CI;WD;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, write_dac_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = security.SECINFO_DACL
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails if we don't specify the controls.
+        try:
+            self.ldb_user.modify(message)
+        except LdbError as err:
+            if self.strict_checking:
+                num, estr = err.args
+                self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # The update succeeds when specifying the controls.
+        self.ldb_user.modify(message, controls=controls)
+
+    def test_modify_dacl_explicit_computer(self):
+        '''Modify the DACL of a computer's security descriptor when we have RIGHT_WRITE_DAC'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = Dn(self.ldb_admin, f'CN={account_name},{ou_dn}')
+
+        sd_sddl = 'D:(A;;WP;;;BA)'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+            'nTSecurityDescriptor': ndr_pack(descriptor),
+        })
+
+        new_sddl = f'D:(A;;WP;;;{self.user_sid})'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        controls = [f'sd_flags:1:{security.SECINFO_DACL}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the DACL.
+        message = Message(dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # The update fails since we don't have WRITE_DAC.
+        try:
+            self.ldb_user.modify(message, controls=controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # Grant ourselves WRITE_DAC.
+        write_dac_sddl = f'(A;CI;WD;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, write_dac_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails if we don't specify the controls.
+        try:
+            self.ldb_user.modify(message)
+        except LdbError as err:
+            if self.strict_checking:
+                num, estr = err.args
+                self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # The update succeeds when specifying the controls.
+        self.ldb_user.modify(message, controls=controls)
+
+    def test_modify_dacl_owner_user(self):
+        '''Modify the DACL of a user's security descriptor when we are its owner'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        username = 'test_modify_ou1_user'
+        user_dn = Dn(self.ldb_admin, f'CN={username},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        self.ldb_admin.newuser(username, self.user_pass,
+                               userou=f'OU={ou_name}',
+                               sd=descriptor)
+
+        new_sddl = f'D:(A;;WP;;;{self.user_sid})'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+        dacl_controls = [f'sd_flags:1:{security.SECINFO_DACL}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = 0
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the DACL.
+        message = Message(user_dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # The update fails since we are not the owner.
+        try:
+            self.ldb_user.modify(message, controls=dacl_controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # Make ourselves the owner of the security descriptor.
+        owner_sddl = f'O:{self.user_sid}'
+        owner_desc = security.descriptor.from_sddl(owner_sddl, self.domain_sid)
+        self.sd_utils.modify_sd_on_dn(user_dn, owner_desc,
+                                      controls=owner_controls)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = security.SECINFO_DACL
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails if we don't specify the controls.
+        try:
+            self.ldb_user.modify(message)
+        except LdbError as err:
+            if self.strict_checking:
+                num, estr = err.args
+                self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # The update succeeds when specifying the controls.
+        self.ldb_user.modify(message, controls=dacl_controls)
+
+    def test_modify_dacl_owner_computer_implicit_right_blocked(self):
+        '''Show that we cannot modify the DACL of a computer's security descriptor when we are its owner and BlockOwnerImplicitRights == 1'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = Dn(self.ldb_admin, f'CN={account_name},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+            'nTSecurityDescriptor': ndr_pack(descriptor),
+        })
+
+        new_sddl = f'D:(A;;WP;;;{self.user_sid})'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+        dacl_controls = [f'sd_flags:1:{security.SECINFO_DACL}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the DACL.
+        message = Message(dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # The update fails since we are not the owner.
+        try:
+            self.ldb_user.modify(message, controls=dacl_controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # Make ourselves the owner of the security descriptor.
+        owner_sddl = f'O:{self.user_sid}'
+        owner_desc = security.descriptor.from_sddl(owner_sddl, self.domain_sid)
+        self.sd_utils.modify_sd_on_dn(dn, owner_desc,
+                                      controls=owner_controls)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails even when specifying the controls.
+        try:
+            self.ldb_user.modify(message, controls=dacl_controls)
+        except LdbError as err:
+            if self.strict_checking:
+                num, estr = err.args
+                self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+    def test_modify_dacl_owner_computer_implicit_right_allowed(self):
+        '''Modify the DACL of a computer's security descriptor when we are its owner and BlockOwnerImplicitRights != 1'''
+
+        self.set_heuristic(samba.dsdb.DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS, b'0')
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = Dn(self.ldb_admin, f'CN={account_name},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+            'nTSecurityDescriptor': ndr_pack(descriptor),
+        })
+
+        new_sddl = f'D:(A;;WP;;;{self.user_sid})'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+        dacl_controls = [f'sd_flags:1:{security.SECINFO_DACL}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the DACL.
+        message = Message(dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # The update fails since we are not the owner.
+        try:
+            self.ldb_user.modify(message, controls=dacl_controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # Make ourselves the owner of the security descriptor.
+        owner_sddl = f'O:{self.user_sid}'
+        owner_desc = security.descriptor.from_sddl(owner_sddl, self.domain_sid)
+        self.sd_utils.modify_sd_on_dn(dn, owner_desc,
+                                      controls=owner_controls)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails if we don't specify the controls.
+        try:
+            self.ldb_user.modify(message)
+        except LdbError as err:
+            if self.strict_checking:
+                num, estr = err.args
+                self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # The update succeeds when specifying the controls.
+        self.ldb_user.modify(message, controls=dacl_controls)
+
+    def test_modify_owner_explicit_user(self):
+        '''Modify the owner of a user's security descriptor when we have RIGHT_WRITE_OWNER'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        username = 'test_modify_ou1_user'
+        user_dn = Dn(self.ldb_admin, f'CN={username},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        self.ldb_admin.newuser(username, self.user_pass,
+                               userou=f'OU={ou_name}',
+                               sd=descriptor)
+
+        # Try to modify the owner to ourselves.
+        new_sddl = f'O:{self.user_sid}'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = 0
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the owner.
+        message = Message(user_dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # The update fails since we don't have WRITE_OWNER.
+        try:
+            self.ldb_user.modify(message, controls=owner_controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # Grant ourselves WRITE_OWNER.
+        owner_sddl = f'(A;CI;WO;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, owner_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = security.SECINFO_OWNER | security.SECINFO_GROUP
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails if we don't specify the controls.
+        try:
+            self.ldb_user.modify(message)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # The update succeeds when specifying the controls.
+        self.ldb_user.modify(message, controls=owner_controls)
+
+    def test_modify_owner_explicit_computer(self):
+        '''Modify the owner of a computer's security descriptor when we have RIGHT_WRITE_OWNER'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = Dn(self.ldb_admin, f'CN={account_name},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+            'nTSecurityDescriptor': ndr_pack(descriptor),
+        })
+
+        # Try to modify the owner to ourselves.
+        new_sddl = f'O:{self.user_sid}'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the owner.
+        message = Message(dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # The update fails since we don't have WRITE_OWNER.
+        try:
+            self.ldb_user.modify(message, controls=owner_controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # Grant ourselves WRITE_OWNER.
+        owner_sddl = f'(A;CI;WO;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, owner_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails if we don't specify the controls.
+        try:
+            self.ldb_user.modify(message)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # The update succeeds when specifying the controls.
+        self.ldb_user.modify(message, controls=owner_controls)
+
+    def test_modify_group_explicit_user(self):
+        '''Modify the group of a user's security descriptor when we have RIGHT_WRITE_OWNER'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        username = 'test_modify_ou1_user'
+        user_dn = Dn(self.ldb_admin, f'CN={username},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        self.ldb_admin.newuser(username, self.user_pass,
+                               userou=f'OU={ou_name}',
+                               sd=descriptor)
+
+        # Try to modify the group to ourselves.
+        new_sddl = f'G:{self.user_sid}'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        group_controls = [f'sd_flags:1:{security.SECINFO_GROUP}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = 0
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the group.
+        message = Message(user_dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # The update fails since we don't have WRITE_OWNER.
+        try:
+            self.ldb_user.modify(message, controls=group_controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # Grant ourselves WRITE_OWNER.
+        owner_sddl = f'(A;CI;WO;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, owner_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = security.SECINFO_OWNER | security.SECINFO_GROUP
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails if we don't specify the controls.
+        try:
+            self.ldb_user.modify(message)
+        except LdbError as err:
+            if self.strict_checking:
+                num, estr = err.args
+                self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # The update succeeds when specifying the controls.
+        self.ldb_user.modify(message, controls=group_controls)
+
+    def test_modify_group_explicit_computer(self):
+        '''Modify the group of a computer's security descriptor when we have RIGHT_WRITE_OWNER'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = Dn(self.ldb_admin, f'CN={account_name},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+            'nTSecurityDescriptor': ndr_pack(descriptor),
+        })
+
+        # Try to modify the group to ourselves.
+        new_sddl = f'G:{self.user_sid}'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        group_controls = [f'sd_flags:1:{security.SECINFO_GROUP}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the group.
+        message = Message(dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # The update fails since we don't have WRITE_OWNER.
+        try:
+            self.ldb_user.modify(message, controls=group_controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # Grant ourselves WRITE_OWNER.
+        owner_sddl = f'(A;CI;WO;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, owner_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails if we don't specify the controls.
+        try:
+            self.ldb_user.modify(message)
+        except LdbError as err:
+            if self.strict_checking:
+                num, estr = err.args
+                self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+                self.assertIn(f'{werror.WERR_ACCESS_DENIED:08X}', estr)
+        else:
+            self.fail()
+
+        # The update succeeds when specifying the controls.
+        self.ldb_user.modify(message, controls=group_controls)
+
+    def test_modify_owner_other_user(self):
+        '''Show we cannot set the owner of a user's security descriptor to another SID'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        username = 'test_modify_ou1_user'
+        user_dn = Dn(self.ldb_admin, f'CN={username},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        self.ldb_admin.newuser(username, self.user_pass,
+                               userou=f'OU={ou_name}',
+                               sd=descriptor)
+
+        # Try to modify the owner to someone other than ourselves.
+        new_sddl = f'O:BA'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = 0
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the owner.
+        message = Message(user_dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # Grant ourselves WRITE_OWNER.
+        owner_sddl = f'(A;CI;WO;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, owner_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = security.SECINFO_OWNER | security.SECINFO_GROUP
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails when trying to specify another user.
+        try:
+            self.ldb_user.modify(message, controls=owner_controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_INVALID_OWNER:08X}', estr)
+        else:
+            self.fail('expected an error')
+
+    def test_modify_owner_other_computer(self):
+        '''Show we cannot set the owner of a computer's security descriptor to another SID'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = Dn(self.ldb_admin, f'CN={account_name},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+            'nTSecurityDescriptor': ndr_pack(descriptor),
+        })
+
+        # Try to modify the owner to someone other than ourselves.
+        new_sddl = f'O:BA'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the owner.
+        message = Message(dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # Grant ourselves WRITE_OWNER.
+        owner_sddl = f'(A;CI;WO;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, owner_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update fails when trying to specify another user.
+        try:
+            self.ldb_user.modify(message, controls=owner_controls)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+            if self.strict_checking:
+                self.assertIn(f'{werror.WERR_INVALID_OWNER:08X}', estr)
+        else:
+            self.fail('expected an error')
+
+    def test_modify_owner_other_admin_user(self):
+        '''Show a domain admin cannot set the owner of a user's security descriptor to another SID'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        username = 'test_modify_ou1_user'
+        user_dn = Dn(self.ldb_admin, f'CN={username},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        self.ldb_admin.newuser(username, self.user_pass,
+                               userou=f'OU={ou_name}',
+                               sd=descriptor)
+
+        # Try to modify the owner to someone other than ourselves.
+        new_sddl = f'O:BA'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = 0
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the owner.
+        message = Message(user_dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # Grant ourselves WRITE_OWNER.
+        owner_sddl = f'(A;CI;WO;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, owner_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = security.SECINFO_OWNER | security.SECINFO_GROUP
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update succeeds as admin when trying to specify another user.
+        self.ldb_admin.modify(message, controls=owner_controls)
+
+    def test_modify_owner_other_admin_computer(self):
+        '''Show a domain admin cannot set the owner of a computer's security descriptor to another SID'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = Dn(self.ldb_admin, f'CN={account_name},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+            'nTSecurityDescriptor': ndr_pack(descriptor),
+        })
+
+        # Try to modify the owner to someone other than ourselves.
+        new_sddl = f'O:BA'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the owner.
+        message = Message(dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # Grant ourselves WRITE_OWNER.
+        owner_sddl = f'(A;CI;WO;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, owner_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update succeeds as admin when trying to specify another user.
+        self.ldb_admin.modify(message, controls=owner_controls)
+
+    def test_modify_owner_admin_user(self):
+        '''Show a domain admin can set the owner of a user's security descriptor to Domain Admins'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        username = 'test_modify_ou1_user'
+        user_dn = Dn(self.ldb_admin, f'CN={username},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        self.ldb_admin.newuser(username, self.user_pass,
+                               userou=f'OU={ou_name}',
+                               sd=descriptor)
+
+        # Try to modify the owner to Domain Admins.
+        new_sddl = f'O:DA'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = 0
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the owner.
+        message = Message(user_dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # Grant ourselves WRITE_OWNER.
+        owner_sddl = f'(A;CI;WO;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, owner_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, user_dn)
+        expected_rights = security.SECINFO_OWNER | security.SECINFO_GROUP
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update succeeds as admin when specifying Domain Admins.
+        self.ldb_admin.modify(message, controls=owner_controls)
+
+    def test_modify_owner_admin_computer(self):
+        '''Show a domain admin can set the owner of a computer's security descriptor to Domain Admins'''
+
+        ou_name = 'test_modify_ou1'
+        ou_dn = f'OU={ou_name},{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = Dn(self.ldb_admin, f'CN={account_name},{ou_dn}')
+
+        sd_sddl = 'O:BA'
+        descriptor = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        ou_sddl = f'D:(OA;CI;WP;{samba.dsdb.DS_GUID_SCHEMA_ATTR_NT_SECURITY_DESCRIPTOR};;{self.user_sid})'
+        ou_desc = security.descriptor.from_sddl(ou_sddl, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, name=ou_name, sd=ou_desc)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+            'nTSecurityDescriptor': ndr_pack(descriptor),
+        })
+
+        # Try to modify the owner to Domain Admins.
+        new_sddl = f'O:DA'
+        new_desc = security.descriptor.from_sddl(new_sddl, self.domain_sid)
+
+        owner_controls = [f'sd_flags:1:{security.SECINFO_OWNER}']
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The user should not be able to modify the owner.
+        message = Message(dn)
+        message['nTSecurityDescriptor'] = MessageElement(
+            ndr_pack(new_desc),
+            FLAG_MOD_REPLACE,
+            'nTSecurityDescriptor')
+
+        # Grant ourselves WRITE_OWNER.
+        owner_sddl = f'(A;CI;WO;;;{self.user_sid})'
+        self.sd_utils.dacl_add_ace(ou_dn, owner_sddl)
+
+        # Check our effective rights.
+        effective_rights = self.get_sd_rights_effective(self.ldb_user, dn)
+        expected_rights = None
+        self.assertEqual(expected_rights, effective_rights)
+
+        # The update succeeds as admin when specifying Domain Admins.
+        self.ldb_admin.modify(message, controls=owner_controls)
 
     def test_modify_anonymous(self):
         """Test add operation with anonymous user"""
@@ -3108,11 +5511,6 @@ class AclVisibiltyTests(AclTests):
 
     def setUp(self):
         super(AclVisibiltyTests, self).setUp()
-
-        strict_checking = samba.tests.env_get_var_value('STRICT_CHECKING', allow_missing=True)
-        if strict_checking is None:
-            strict_checking = '1'
-        self.strict_checking = bool(int(strict_checking))
 
         # Get the old "dSHeuristics" if it was set
         self.dsheuristics = self.ldb_admin.get_dsheuristics()
