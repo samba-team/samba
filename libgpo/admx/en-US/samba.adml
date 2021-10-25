@@ -3127,78 +3127,6 @@ Example: 192.9.200.1 192.168.2.61</string>
        U      Insert the string "1 user" or "&lt;n&gt; users" where &lt;n&gt; is the number of current users logged in.
 
        v      Insert the version of the OS, that is, the build-date and such.</string>
-      <string id="CAT_371A8FF5_990F_47DD_B200_D436AC28A4F9">Firewalld</string>
-      <string id="POL_ADABE9E0_FFF9_4FFE_A105_03E646C79978">Zones</string>
-      <string id="POL_ADABE9E0_FFF9_4FFE_A105_03E646C79978_Help">A list of zones to create. Existing zones on the host will be unaffected.
-
-Rule creation for zones is handled in the Rules setting.</string>
-      <string id="POL_B21F349F_4BF6_473E_8452_047D714F156C">Rules</string>
-      <string id="POL_B21F349F_4BF6_473E_8452_047D714F156C_Help">A JSON dictionary, containing zones paired with a list of rules.
-
-For example, to create rules for the Work and Home zones, specify the following JSON:
-
-{
-  "work": [
-    {"rule": {"family": "ipv4"}, "source address": "172.25.1.7", "service name": "ftp", "reject": {}},
-    {"rule": {}, "source address": "172.25.1.8", "service name": "ftp", "reject": {}}
-  ],
-  "home": [
-    {"rule": {}, "protocol value": "icmp", "reject": {}},
-    {"rule": {"family": "ipv4"}, "source address": "192.168.1.2/32", "service name": "telnet", "accept": {"limit value": "1/m"}}
-  ]
-}
-
-An improperly formatted JSON will be ignored.
-
-The rule structure loosely follows the Firewalld Rich Language Documentation.
-
-General rule structure:
-{
-  "rule": {
-    "family": "ipv4 | ipv6",
-    "priority": "priority"
-  },
-  "source [not] address | mac | ipset": "address[/mask] | mac-address | ipset",
-  "destination [not] adress": "address[/mask]",
-  "service name": "service name",
-  "port": {
-    "port": "port value",
-    "protocol": "tcp | udp"
-  }
-  "protocol value": "protocol value",
-  "icmp-block name": "icmptype name",
-  "Masquerade": true|false,
-  "icmp-type": "icmptype name",
-  "forward-port": {
-    "port": "port value",
-    "protocol": "tcp | udp",
-    "to-port": "port value",
-    "to-addr": "address"
-  },
-  "source-port": {
-    "port": "port value",
-    "protocol": "tcp | udp"
-  },
-  "log": {
-    "prefix": "prefix text",
-    "level": "emerg | alert | crit | error | warning | notice | info | debug",
-    "limit value": "rate/duration"
-  },
-  "audit": {
-    "limit value": "rate/duration"
-  },
-  "accept" : {
-    "limit value": "rate/duration"
-  } | "reject": {
-    "type": "reject type",
-    "limit value": "rate/duration"
-  } | "drop": {
-    "limit value": "rate/duration"
-  } | "mark": {
-    "set": "mark[/mask]",
-    "limit value": "rate/duration"
-  }
-}</string>
     </stringTable>
     <presentationTable>
       <presentation id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061">
@@ -4715,15 +4643,6 @@ General rule structure:
         <textBox refId="TXT_8075D9EA_6E15_4B2A_833A_B918EE90856F">
           <label>Login Prompt Message</label>
           <defaultValue>Welcome to \s \r \l</defaultValue>
-        </textBox>
-      </presentation>
-      <presentation id="POL_ADABE9E0_FFF9_4FFE_A105_03E646C79978">
-        <listBox refId="LST_5B9AE80A_6529_4313_A9A1_764DF5320930">Firewalld Zones</listBox>
-      </presentation>
-      <presentation id="POL_B21F349F_4BF6_473E_8452_047D714F156C">
-        <textBox refId="TXT_76109A0B_AA79_4F69_ADFC_2B3CA52763D2">
-          <label>Firewalld Rules</label>
-          <defaultValue>{}</defaultValue>
         </textBox>
       </presentation>
     </presentationTable>
