@@ -739,6 +739,16 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_base);
 	} else {
 		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_base);
+		if (ret == -1 && (errno == ENOENT || errno == ELOOP)) {
+			if (VALID_STAT(smb_fname->st) &&
+					S_ISLNK(smb_fname->st.st_ex_mode)) {
+				/*
+				 * Original name was a link - Could be
+				 * trying to remove a dangling symlink.
+				 */
+				ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_base);
+			}
+		}
 	}
 
 	if (ret == -1) {
