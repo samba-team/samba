@@ -232,6 +232,18 @@ struct dsdb_control_transaction_identifier {
  */
 #define DSDB_CONTROL_FORCE_ALLOW_VALIDATED_DNS_HOSTNAME_SPN_WRITE_OID "1.3.6.1.4.1.7165.4.3.35"
 
+/*
+ * Used by descriptor module to pass a special SD to acl module,
+ * one without the user-provided descriptor taken into account
+ */
+
+#define DSDB_CONTROL_CALCULATED_DEFAULT_SD_OID "1.3.6.1.4.1.7165.4.3.36"
+struct dsdb_control_calculated_default_sd {
+	struct security_descriptor *default_sd;
+	bool specified_sd:1;
+	bool specified_sacl:1;
+};
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;

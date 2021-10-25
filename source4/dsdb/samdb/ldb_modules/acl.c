@@ -714,6 +714,8 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 	const struct ldb_val *sam_account_name_val = NULL;
 	struct GUID ntds;
 	char *ntds_guid = NULL;
+	const struct ldb_message *msg = NULL;
+	const struct ldb_message *search_res = NULL;
 
 	static const char *acl_attrs[] = {
 		"samAccountName",
@@ -725,6 +727,12 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 		"nETBIOSName",
 		NULL
 	};
+
+	if (req->operation == LDB_MODIFY) {
+		msg = req->op.mod.message;
+	} else if (req->operation == LDB_ADD) {
+		msg = req->op.add.message;
+	}
 
 	if (implicit_validated_write_control != NULL) {
 		/*
@@ -758,7 +766,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 
 		if (ret != LDB_SUCCESS) {
 			dsdb_acl_debug(sd, acl_user_token(module),
-				       req->op.mod.message->dn,
+				       msg->dn,
 				       true,
 				       10);
 			talloc_free(tmp_ctx);
@@ -782,23 +790,32 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 			talloc_free(tmp_ctx);
 			return LDB_SUCCESS;
 		}
-	}
 
-	ret = dsdb_module_search_dn(module, tmp_ctx,
-				    &acl_res, req->op.mod.message->dn,
-				    acl_attrs,
-				    DSDB_FLAG_NEXT_MODULE |
-				    DSDB_FLAG_AS_SYSTEM |
-				    DSDB_SEARCH_SHOW_RECYCLED,
-				    req);
-	if (ret != LDB_SUCCESS) {
+		ret = dsdb_module_search_dn(module, tmp_ctx,
+					    &acl_res, msg->dn,
+					    acl_attrs,
+					    DSDB_FLAG_NEXT_MODULE |
+					    DSDB_FLAG_AS_SYSTEM |
+					    DSDB_SEARCH_SHOW_RECYCLED,
+					    req);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		search_res = acl_res->msgs[0];
+	} else if (req->operation == LDB_ADD) {
+		search_res = msg;
+	} else {
 		talloc_free(tmp_ctx);
-		return ret;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	dns_host_name_val = ldb_msg_find_ldb_val(acl_res->msgs[0], "dNSHostName");
+	if (req->operation == LDB_MODIFY) {
+		dns_host_name_val = ldb_msg_find_ldb_val(search_res, "dNSHostName");
+	}
 
-	ret = dsdb_msg_get_single_value(req->op.mod.message,
+	ret = dsdb_msg_get_single_value(msg,
 					"dNSHostName",
 					dns_host_name_val,
 					&dns_host_name_val,
@@ -808,11 +825,13 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	userAccountControl = ldb_msg_find_attr_as_uint(acl_res->msgs[0], "userAccountControl", 0);
+	userAccountControl = ldb_msg_find_attr_as_uint(search_res, "userAccountControl", 0);
 
-	sam_account_name_val = ldb_msg_find_ldb_val(acl_res->msgs[0], "sAMAccountName");
+	if (req->operation == LDB_MODIFY) {
+		sam_account_name_val = ldb_msg_find_ldb_val(search_res, "sAMAccountName");
+	}
 
-	ret = dsdb_msg_get_single_value(req->op.mod.message,
+	ret = dsdb_msg_get_single_value(msg,
 					"sAMAccountName",
 					sam_account_name_val,
 					&sam_account_name_val,
@@ -834,13 +853,18 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 
 	netbios_name = ldb_msg_find_attr_as_string(netbios_res->msgs[0], "nETBIOSName", NULL);
 
-	/* NTDSDSA objectGuid of object we are checking SPN for */
+	/*
+	 * NTDSDSA objectGuid of object we are checking SPN for
+	 *
+	 * Note - do we have the necessary attributes for this during an add operation?
+	 * How should we test this?
+	 */
 	if (userAccountControl & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
 		ret = dsdb_module_find_ntdsguid_for_computer(module, tmp_ctx,
-							     req->op.mod.message->dn, &ntds, req);
+							     msg->dn, &ntds, req);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "Failed to find NTDSDSA objectGuid for %s: %s",
-					       ldb_dn_get_linearized(req->op.mod.message->dn),
+					       ldb_dn_get_linearized(msg->dn),
 					       ldb_strerror(ret));
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -910,6 +934,12 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 		return ldb_oom(ldb);
 	}
 
+	if (req->operation == LDB_MODIFY) {
+		msg = req->op.mod.message;
+	} else if (req->operation == LDB_ADD) {
+		msg = req->op.add.message;
+	}
+
 	if (implicit_validated_write_control != NULL) {
 		/*
 		 * The validated write control dispenses with ACL
@@ -943,7 +973,7 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 
 		if (ret != LDB_SUCCESS) {
 			dsdb_acl_debug(sd, acl_user_token(module),
-				       req->op.mod.message->dn,
+				       msg->dn,
 				       true,
 				       10);
 			talloc_free(tmp_ctx);
@@ -963,8 +993,6 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 			"sAMAccountName",
 			NULL
 		};
-
-		msg = req->op.mod.message;
 
 		/*
 		 * If not add or replace (eg delete),
@@ -991,7 +1019,6 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 
 		search_res = acl_res->msgs[0];
 	} else if (req->operation == LDB_ADD) {
-		msg = req->op.add.message;
 		search_res = msg;
 	} else {
 		talloc_free(tmp_ctx);
@@ -1032,7 +1059,9 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	samAccountName = ldb_msg_find_ldb_val(search_res, "sAMAccountName");
+	if (req->operation == LDB_MODIFY) {
+		samAccountName = ldb_msg_find_ldb_val(search_res, "sAMAccountName");
+	}
 
 	ret = dsdb_msg_get_single_value(msg,
 					"sAMAccountName",
@@ -1227,11 +1256,23 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb;
 	const struct dsdb_schema *schema;
 	const struct dsdb_class *objectclass;
+	const struct dsdb_class *computer_objectclass = NULL;
+	const struct ldb_message_element *oc_el = NULL;
+	struct ldb_message_element sorted_oc_el;
 	struct ldb_control *as_system;
+	struct ldb_control *sd_ctrl = NULL;
 	struct ldb_message_element *el;
 	unsigned int instanceType = 0;
+	struct dsdb_control_calculated_default_sd *control_sd = NULL;
+	const struct dsdb_attribute *attr = NULL;
+	const char **must_contain = NULL;
+	const struct ldb_message *msg = req->op.add.message;
+	const struct dom_sid *domain_sid = NULL;
+	int i = 0;
+	bool attribute_authorization;
+	bool is_subclass;
 
-	if (ldb_dn_is_special(req->op.add.message->dn)) {
+	if (ldb_dn_is_special(msg->dn)) {
 		return ldb_next_request(module, req);
 	}
 
@@ -1245,8 +1286,9 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ldb = ldb_module_get_ctx(module);
+	domain_sid = samdb_domain_sid(ldb);
 
-	parent = ldb_dn_get_parent(req, req->op.add.message->dn);
+	parent = ldb_dn_get_parent(req, msg->dn);
 	if (parent == NULL) {
 		return ldb_oom(ldb);
 	}
@@ -1256,21 +1298,38 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	objectclass = dsdb_get_structural_oc_from_msg(schema, req->op.add.message);
-	if (!objectclass) {
+	/* Find the objectclass of the new account. */
+
+	oc_el = ldb_msg_find_element(msg, "objectclass");
+	if (oc_el == NULL) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       "acl: unable to find or validate structural objectClass on %s\n",
-				       ldb_dn_get_linearized(req->op.add.message->dn));
+				       ldb_dn_get_linearized(msg->dn));
 		return ldb_module_done(req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	el = ldb_msg_find_element(req->op.add.message, "instanceType");
+	schema = dsdb_get_schema(ldb, req);
+	if (schema == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	ret = dsdb_sort_objectClass_attr(ldb, schema, oc_el, req, &sorted_oc_el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	objectclass = dsdb_get_last_structural_class(schema, &sorted_oc_el);
+	if (objectclass == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	el = ldb_msg_find_element(msg, "instanceType");
 	if ((el != NULL) && (el->num_values != 1)) {
 		ldb_set_errstring(ldb, "acl: the 'instanceType' attribute is single-valued!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	instanceType = ldb_msg_find_attr_as_uint(req->op.add.message,
+	instanceType = ldb_msg_find_attr_as_uint(msg,
 						 "instanceType", 0);
 	if (instanceType & INSTANCE_TYPE_IS_NC_HEAD) {
 		static const char *no_attrs[] = { NULL };
@@ -1292,7 +1351,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 					 DSDB_SEARCH_SHOW_RECYCLED,
 					 req,
 					 "(&(nCName=%s)(objectClass=crossRef))",
-					 ldb_dn_get_linearized(req->op.add.message->dn));
+					 ldb_dn_get_linearized(msg->dn));
 
 		if (ret == LDB_SUCCESS) {
 			/* Check that we can write to the crossRef object MS-ADTS 3.1.1.5.2.8.2 */
@@ -1312,6 +1371,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 			 * the naming master etc need to be handled
 			 * in the instanceType module
 			 */
+			/* Note - do we need per-attribute checks? */
 			return ldb_next_request(module, req);
 		}
 
@@ -1337,18 +1397,215 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 		 * master and adding the crossRef object need to be
 		 * handled in the instanceType module
 		 */
-		return ldb_next_request(module, req);
+	} else {
+		ret = dsdb_module_check_access_on_dn(module, req, parent,
+						     SEC_ADS_CREATE_CHILD,
+						     &objectclass->schemaIDGUID, req);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb_module_get_ctx(module),
+					       "acl: unable to get access to %s\n",
+					       ldb_dn_get_linearized(msg->dn));
+			return ret;
+		}
 	}
 
-	ret = dsdb_module_check_access_on_dn(module, req, parent,
-					     SEC_ADS_CREATE_CHILD,
-					     &objectclass->schemaIDGUID, req);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module),
-				       "acl: unable to get access to %s\n",
-				       ldb_dn_get_linearized(req->op.add.message->dn));
-		return ret;
+	attribute_authorization = dsdb_attribute_authz_on_ldap_add(module,
+								   req,
+								   req);
+	if (!attribute_authorization) {
+		/* Skip the remaining checks */
+		goto success;
 	}
+
+	/* Check if we have computer objectclass. */
+	computer_objectclass = dsdb_class_by_lDAPDisplayName(schema, "computer");
+	if (computer_objectclass == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	is_subclass = dsdb_is_subclass_of(schema, objectclass, computer_objectclass);
+	if (!is_subclass) {
+		/*
+		 * This object is not a computer (or derived from computer), so
+		 * skip the remaining checks.
+		 */
+		goto success;
+	}
+
+	/*
+	 * we have established we have CC right, now check per-attribute
+	 * access based on the default SD
+	 */
+
+	sd_ctrl = ldb_request_get_control(req,
+					  DSDB_CONTROL_CALCULATED_DEFAULT_SD_OID);
+	if (sd_ctrl == NULL) {
+		goto success;
+	}
+
+	{
+		TALLOC_CTX *tmp_ctx = talloc_new(req);
+		control_sd = (struct dsdb_control_calculated_default_sd *) sd_ctrl->data;
+		DBG_DEBUG("Received cookie descriptor %s\n\n",
+			  sddl_encode(tmp_ctx, control_sd->default_sd, domain_sid));
+		TALLOC_FREE(tmp_ctx);
+		/* Mark the "change" control as uncritical (done) */
+		sd_ctrl->critical = false;
+	}
+
+	/*
+	 * At this point we do not yet have the object's SID, so we
+	 * leave it empty. It is irrelevant, as it is used to expand
+	 * Principal-Self, and rights granted to PS will have no effect
+	 * in this case
+	 */
+	/* check if we have WD, no need to perform other attribute checks if we do */
+	attr = dsdb_attribute_by_lDAPDisplayName(schema, "nTSecurityDescriptor");
+	if (attr == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	if (control_sd->specified_sacl) {
+		const struct security_token *token = acl_user_token(module);
+		bool has_priv = security_token_has_privilege(token, SEC_PRIV_SECURITY);
+		if (!has_priv) {
+			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+		}
+	}
+
+	ret = acl_check_access_on_attribute(module,
+					    req,
+					    control_sd->default_sd,
+					    NULL,
+					    SEC_STD_WRITE_DAC,
+					    attr,
+					    objectclass);
+	if (ret == LDB_SUCCESS) {
+		goto success;
+	}
+
+	if (control_sd->specified_sd) {
+		bool block_owner_rights = dsdb_block_owner_implicit_rights(module,
+									   req,
+									   req);
+		if (block_owner_rights) {
+			ldb_asprintf_errstring(ldb_module_get_ctx(module),
+					       "Object %s has no SD modification rights",
+					       ldb_dn_get_linearized(msg->dn));
+			dsdb_acl_debug(control_sd->default_sd,
+				       acl_user_token(module),
+				       msg->dn,
+				       true,
+				       10);
+			ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+			return ret;
+		}
+	}
+
+	must_contain = dsdb_full_attribute_list(req, schema, &sorted_oc_el,
+						DSDB_SCHEMA_ALL_MUST);
+	for (i=0; i < msg->num_elements; i++) {
+		el = &msg->elements[i];
+
+		attr = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
+		if (attr == NULL && ldb_attr_cmp("clearTextPassword", el->name) != 0) {
+			ldb_asprintf_errstring(ldb, "acl_add: attribute '%s' "
+					       "on entry '%s' was not found in the schema!",
+					       el->name,
+				       ldb_dn_get_linearized(msg->dn));
+			ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
+			return ret;
+		}
+
+		if (attr != NULL) {
+			bool found = str_list_check(must_contain, attr->lDAPDisplayName);
+			/* do not check the mandatory attributes */
+			if (found) {
+				continue;
+			}
+		}
+
+		if (ldb_attr_cmp("dBCSPwd", el->name) == 0 ||
+			   ldb_attr_cmp("unicodePwd", el->name) == 0 ||
+			   ldb_attr_cmp("userPassword", el->name) == 0 ||
+			   ldb_attr_cmp("clearTextPassword", el->name) == 0) {
+			continue;
+		} else if (ldb_attr_cmp("member", el->name) == 0) {
+			ret = acl_check_self_membership(req,
+							module,
+							req,
+							control_sd->default_sd,
+							NULL,
+							attr,
+							objectclass);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		} else if (ldb_attr_cmp("servicePrincipalName", el->name) == 0) {
+			ret = acl_check_spn(req,
+					    module,
+					    req,
+					    el,
+					    control_sd->default_sd,
+					    NULL,
+					    attr,
+					    objectclass,
+					    NULL);
+			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb_module_get_ctx(module),
+						       "Object %s cannot be created with spn",
+						       ldb_dn_get_linearized(msg->dn));
+				dsdb_acl_debug(control_sd->default_sd,
+					       acl_user_token(module),
+					       msg->dn,
+					       true,
+					       10);
+				return ret;
+			}
+		} else if (ldb_attr_cmp("dnsHostName", el->name) == 0) {
+			ret = acl_check_dns_host_name(req,
+						      module,
+						      req,
+						      el,
+						      control_sd->default_sd,
+						      NULL,
+						      attr,
+						      objectclass,
+						      NULL);
+			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb_module_get_ctx(module),
+						       "Object %s cannot be created with dnsHostName",
+						       ldb_dn_get_linearized(msg->dn));
+				dsdb_acl_debug(control_sd->default_sd,
+					       acl_user_token(module),
+					       msg->dn,
+					       true,
+					       10);
+				return ret;
+			}
+		} else {
+			ret = acl_check_access_on_attribute(module,
+							    req,
+							    control_sd->default_sd,
+							    NULL,
+							    SEC_ADS_WRITE_PROP,
+							    attr,
+							    objectclass);
+			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb_module_get_ctx(module),
+						       "Object %s has no write property access",
+						       ldb_dn_get_linearized(msg->dn));
+				dsdb_acl_debug(control_sd->default_sd,
+					       acl_user_token(module),
+					       msg->dn,
+					       true,
+					       10);
+				ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+				return ret;
+			}
+		}
+	}
+success:
 	return ldb_next_request(module, req);
 }
 

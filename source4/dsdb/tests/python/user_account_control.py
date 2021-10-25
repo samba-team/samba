@@ -322,8 +322,11 @@ class UserAccountControlTests(samba.tests.TestCase):
         sd = ldb.MessageElement((ndr_pack(self.sd_reference_modify)),
                                 ldb.FLAG_MOD_ADD,
                                 "nTSecurityDescriptor")
-        self.add_computer_ldap(computername,
-                               others={"nTSecurityDescriptor": sd})
+        try:
+            self.add_computer_ldap(computername,
+                                   others={"nTSecurityDescriptor": sd})
+        except LdbError as e:
+            self.fail(str(e))
 
         res = self.admin_samdb.search("%s" % self.base_dn,
                                       expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
@@ -457,9 +460,11 @@ class UserAccountControlTests(samba.tests.TestCase):
         sd = ldb.MessageElement((ndr_pack(self.sd_reference_modify)),
                                 ldb.FLAG_MOD_ADD,
                                 "nTSecurityDescriptor")
-        self.add_computer_ldap(computername,
-                               others={"nTSecurityDescriptor": sd})
-
+        try:
+            self.add_computer_ldap(computername,
+                                   others={"nTSecurityDescriptor": sd})
+        except LdbError as e:
+            self.fail(str(e))
         res = self.admin_samdb.search("%s" % self.base_dn,
                                       expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
                                       scope=SCOPE_SUBTREE,

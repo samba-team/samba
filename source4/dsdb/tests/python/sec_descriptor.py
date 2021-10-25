@@ -696,7 +696,10 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         mod = "(A;;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
-        class_dn = self.create_schema_class(_ldb)
+        try:
+            class_dn = self.create_schema_class(_ldb)
+        except LdbError as e3:
+            self.fail()
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
@@ -985,7 +988,10 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
         delete_force(self.ldb_admin, object_dn)
-        self.create_configuration_specifier(_ldb, object_dn)
+        try:
+            self.create_configuration_specifier(_ldb, object_dn)
+        except LdbError as e3:
+            self.fail()
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
@@ -1124,7 +1130,10 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
-        self.create_configuration_specifier(_ldb, object_dn, desc_sddl)
+        try:
+            self.create_configuration_specifier(_ldb, object_dn, desc_sddl)
+        except LdbError as e3:
+            self.fail()
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
@@ -1147,7 +1156,10 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
-        self.create_configuration_specifier(_ldb, object_dn, desc_sddl)
+        try:
+            self.create_configuration_specifier(_ldb, object_dn, desc_sddl)
+        except LdbError as e3:
+            self.fail()
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
