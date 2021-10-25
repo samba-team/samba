@@ -962,8 +962,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	struct smb_filename *smb_dname = fsp->fsp_name;
 	struct smb_filename *parent_fname = NULL;
 	struct smb_filename *at_fname = NULL;
-	const struct loadparm_substitution *lp_sub =
-		loadparm_s3_global_substitution();
 	SMB_STRUCT_STAT st;
 	const char *dname = NULL;
 	char *talloced = NULL;
@@ -1023,9 +1021,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		return NT_STATUS_OK;
 	}
 
-	if (!((errno == ENOTEMPTY) || (errno == EEXIST)) ||
-	    !*lp_veto_files(talloc_tos(), lp_sub, SNUM(conn)))
-	{
+	if (!((errno == ENOTEMPTY) || (errno == EEXIST))) {
 		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
 			 "%s\n", smb_fname_str_dbg(smb_dname),
 			 strerror(errno)));
@@ -1034,10 +1030,20 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	}
 
 	/*
+	 * Here we know the initial directory unlink failed with
+	 * ENOTEMPTY or EEXIST so we know there are objects within.
+	 * If we don't have permission to delete files non
+	 * visible to the client just fail the directory delete.
+	 */
+
+	if (!lp_delete_veto_files(SNUM(conn))) {
+		errno = ENOTEMPTY;
+		goto err;
+	}
+
+	/*
 	 * Check to see if the only thing in this directory are
-	 * vetoed files/directories. If so then delete them and
-	 * retry. If we fail to delete any of them (and we *don't*
-	 * do a recursive delete) then fail the rmdir.
+	 * files non-visible to the client. If not, fail the delete.
 	 */
 
 	dir_hnd = OpenDir(talloc_tos(), conn, smb_dname, NULL, 0);
@@ -1130,16 +1136,18 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			continue;
 		}
 
+		/*
+		 * We found a client visible name.
+		 * We cannot delete this directory.
+		 */
+		DBG_DEBUG("got name %s - "
+			"can't delete directory %s\n",
+			dname,
+			fsp_str_dbg(fsp));
 		TALLOC_FREE(talloced);
 		TALLOC_FREE(fullname);
 		TALLOC_FREE(smb_dname_full);
 		TALLOC_FREE(direntry_fname);
-	}
-
-	/* We only have veto files/directories.
-	 * Are we allowed to delete them ? */
-
-	if (!lp_delete_veto_files(SNUM(conn))) {
 		errno = ENOTEMPTY;
 		goto err;
 	}
