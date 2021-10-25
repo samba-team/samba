@@ -18,6 +18,7 @@
 #
 
 import re
+from socket import gethostname
 from samba.dcerpc import nbt
 from samba.net import Net
 import ldb
@@ -59,6 +60,10 @@ def netcmd_finddc(lp, creds, realm=None):
     '''Return domain-name of a writable/ldap-capable DC for the default
        domain (parameter "realm" in smb.conf) unless another realm has been
        specified as argument'''
+    # It is reasonable to assume, that if we are running a command from a DC,
+    # that a user expects that the command will run against this DC.
+    if lp.get('server role') == 'active directory domain controller':
+        return gethostname()
     net = Net(creds=creds, lp=lp)
     if realm is None:
         realm = lp.get('realm')
