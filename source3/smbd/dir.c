@@ -1876,6 +1876,8 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	char *talloced = NULL;
 	SMB_STRUCT_STAT st;
 	struct connection_struct *conn = fsp->conn;
+	struct smb_filename *smb_dname = fsp->fsp_name;
+	int ret;
 	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(),
 					conn,
 					fsp->fsp_name,
@@ -1887,6 +1889,9 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	}
 
 	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced))) {
+		struct smb_filename *smb_dname_full = NULL;
+		char *fullname = NULL;
+
 		if (ISDOT(dname) || (ISDOTDOT(dname))) {
 			TALLOC_FREE(talloced);
 			continue;
@@ -1899,6 +1904,98 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 				True)) {
 			TALLOC_FREE(talloced);
 			continue;
+		}
+
+		fullname = talloc_asprintf(talloc_tos(),
+					   "%s/%s",
+					   smb_dname->base_name,
+					   dname);
+
+		if (fullname == NULL) {
+			TALLOC_FREE(dir_hnd);
+			TALLOC_FREE(talloced);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		smb_dname_full = synthetic_smb_fname(talloc_tos(),
+						     fullname,
+						     NULL,
+						     NULL,
+						     smb_dname->twrp,
+						     smb_dname->flags);
+		if (smb_dname_full == NULL) {
+			TALLOC_FREE(dir_hnd);
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		ret = SMB_VFS_LSTAT(conn, smb_dname_full);
+		if (ret != 0) {
+			TALLOC_FREE(dir_hnd);
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			return map_nt_error_from_unix(errno);
+		}
+
+		if (S_ISLNK(smb_dname_full->st.st_ex_mode)) {
+			/* Could it be an msdfs link ? */
+			if (lp_host_msdfs() &&
+			    lp_msdfs_root(SNUM(conn))) {
+				struct smb_filename *smb_atname;
+				smb_atname = synthetic_smb_fname(talloc_tos(),
+							dname,
+							NULL,
+							&smb_dname_full->st,
+							fsp->fsp_name->twrp,
+							fsp->fsp_name->flags);
+				if (smb_atname == NULL) {
+					TALLOC_FREE(dir_hnd);
+					TALLOC_FREE(talloced);
+					TALLOC_FREE(fullname);
+					TALLOC_FREE(smb_dname_full);
+					return NT_STATUS_NO_MEMORY;
+				}
+				if (is_msdfs_link(conn, smb_atname)) {
+					TALLOC_FREE(dir_hnd);
+					TALLOC_FREE(talloced);
+					TALLOC_FREE(fullname);
+					TALLOC_FREE(smb_dname_full);
+					TALLOC_FREE(smb_atname);
+					DBG_DEBUG("got msdfs link name %s "
+						"- can't delete directory %s\n",
+						dname,
+						fsp_str_dbg(fsp));
+					return NT_STATUS_DIRECTORY_NOT_EMPTY;
+				}
+				TALLOC_FREE(smb_atname);
+			}
+
+			/* Not a DFS link - could it be a dangling symlink ? */
+			ret = SMB_VFS_STAT(conn, smb_dname_full);
+			if (ret == -1 && (errno == ENOENT || errno == ELOOP)) {
+				/*
+				 * Dangling symlink.
+				 * Allow if "delete veto files = yes"
+				 */
+				if (lp_delete_veto_files(SNUM(conn))) {
+					TALLOC_FREE(talloced);
+					TALLOC_FREE(fullname);
+					TALLOC_FREE(smb_dname_full);
+					continue;
+				}
+			}
+
+			DBG_DEBUG("got symlink name %s - "
+				"can't delete directory %s\n",
+				dname,
+				fsp_str_dbg(fsp));
+			TALLOC_FREE(dir_hnd);
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			return NT_STATUS_DIRECTORY_NOT_EMPTY;
 		}
 
 		DEBUG(10,("got name %s - can't delete\n",
