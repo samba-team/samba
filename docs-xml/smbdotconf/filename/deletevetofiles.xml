@@ -4,9 +4,12 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option is used when Samba is attempting to 
-	delete a directory that contains one or more vetoed directories 
-	(see the <smbconfoption name="veto files"/>
-	option).  If this option is set to <constant>no</constant> (the default) then if a vetoed 
+	delete a directory that contains one or more vetoed files
+	or directories or non-visible files or directories (such
+	as dangling symlinks that point nowhere).
+	(see the <smbconfoption name="veto files"/>, <smbconfoption name="hide special files"/>,
+	<smbconfoption name="hide unreadable"/>, <smbconfoption name="hide unwriteable files"/>
+	options).  If this option is set to <constant>no</constant> (the default) then if a vetoed
 	directory contains any non-vetoed files or directories then the 
 	directory delete will fail. This is usually what you want.</para>
 
