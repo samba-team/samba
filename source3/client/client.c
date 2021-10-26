@@ -388,8 +388,6 @@ static int do_cd(const char *new_dir)
 	char *new_cd = NULL;
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
-	SMB_STRUCT_STAT sbuf;
-	uint32_t attributes;
 	int ret = 1;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	struct cli_credentials *creds = samba_cmdline_get_creds();
@@ -449,46 +447,24 @@ static int do_cd(const char *new_dir)
 		return 0;
 	}
 
-	/* Use a trans2_qpathinfo to test directories for modern servers.
-	   Except Win9x doesn't support the qpathinfo_basic() call..... */
 
-	if (smbXcli_conn_protocol(targetcli->conn) > PROTOCOL_LANMAN2 && !targetcli->win95) {
+	targetpath = talloc_asprintf(
+		ctx, "%s%s", targetpath, CLI_DIRSEP_STR);
+	if (!targetpath) {
+		client_set_cur_dir(saved_dir);
+		goto out;
+	}
+	targetpath = client_clean_name(ctx, targetpath);
+	if (!targetpath) {
+		client_set_cur_dir(saved_dir);
+		goto out;
+	}
 
-		status = cli_qpathinfo_basic(targetcli, targetpath, &sbuf,
-					     &attributes);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("cd %s: %s\n", new_cd, nt_errstr(status));
-			client_set_cur_dir(saved_dir);
-			goto out;
-		}
-
-		if (!(attributes & FILE_ATTRIBUTE_DIRECTORY)) {
-			d_printf("cd %s: not a directory\n", new_cd);
-			client_set_cur_dir(saved_dir);
-			goto out;
-		}
-	} else {
-
-		targetpath = talloc_asprintf(ctx,
-				"%s%s",
-				targetpath,
-				CLI_DIRSEP_STR );
-		if (!targetpath) {
-			client_set_cur_dir(saved_dir);
-			goto out;
-		}
-		targetpath = client_clean_name(ctx, targetpath);
-		if (!targetpath) {
-			client_set_cur_dir(saved_dir);
-			goto out;
-		}
-
-		status = cli_chkpath(targetcli, targetpath);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("cd %s: %s\n", new_cd, nt_errstr(status));
-			client_set_cur_dir(saved_dir);
-			goto out;
-		}
+	status = cli_chkpath(targetcli, targetpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cd %s: %s\n", new_cd, nt_errstr(status));
+		client_set_cur_dir(saved_dir);
+		goto out;
 	}
 
 	ret = 0;
