@@ -2369,6 +2369,10 @@ class RawKerberosTest(TestCaseInTempDir):
         renewable_pos = len(tuple(krb5_asn1.KDCOptions('renewable'))) - 1
         renewable = (renewable_pos < len(kdc_options)
                      and kdc_options[renewable_pos] == '1')
+        renew_pos = len(tuple(krb5_asn1.KDCOptions('renew'))) - 1
+        renew = (renew_pos < len(kdc_options)
+                 and kdc_options[renew_pos] == '1')
+        expect_renew_till = renewable or renew
 
         expected_crealm = kdc_exchange_dict['expected_crealm']
         expected_cname = kdc_exchange_dict['expected_cname']
@@ -2425,7 +2429,7 @@ class RawKerberosTest(TestCaseInTempDir):
             if self.strict_checking:
                 self.assertElementPresent(ticket_private, 'starttime')
             self.assertElementPresent(ticket_private, 'endtime')
-            if renewable:
+            if expect_renew_till:
                 if self.strict_checking:
                     self.assertElementPresent(ticket_private, 'renew-till')
             else:
@@ -2461,7 +2465,7 @@ class RawKerberosTest(TestCaseInTempDir):
             if self.strict_checking:
                 self.assertElementPresent(encpart_private, 'starttime')
             self.assertElementPresent(encpart_private, 'endtime')
-            if renewable:
+            if expect_renew_till:
                 if self.strict_checking:
                     self.assertElementPresent(encpart_private, 'renew-till')
             else:
