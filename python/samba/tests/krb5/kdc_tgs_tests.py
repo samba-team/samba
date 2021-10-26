@@ -1026,6 +1026,33 @@ class KdcTgsTests(KDCBaseTest):
 
         tgt = self.get_tgt(client_creds)
 
+        return self._modify_tgt(
+            tgt=tgt,
+            renewable=renewable,
+            invalid=invalid,
+            from_rodc=from_rodc,
+            new_rid=new_rid,
+            remove_pac=remove_pac,
+            allow_empty_authdata=allow_empty_authdata,
+            can_modify_logon_info=can_modify_logon_info,
+            can_modify_requester_sid=can_modify_requester_sid,
+            remove_pac_attrs=remove_pac_attrs,
+            remove_requester_sid=remove_requester_sid)
+
+    def _modify_tgt(self,
+                    tgt,
+                    renewable=False,
+                    invalid=False,
+                    from_rodc=False,
+                    new_rid=None,
+                    remove_pac=False,
+                    allow_empty_authdata=False,
+                    cname=None,
+                    crealm=None,
+                    can_modify_logon_info=True,
+                    can_modify_requester_sid=True,
+                    remove_pac_attrs=False,
+                    remove_requester_sid=False):
         if from_rodc:
             krbtgt_creds = self.get_mock_rodc_krbtgt_creds()
         else:
@@ -1110,11 +1137,42 @@ class KdcTgsTests(KDCBaseTest):
         else:
             flags_modify_fn = None
 
+        if cname is not None or crealm is not None:
+            def modify_fn(enc_part):
+                if flags_modify_fn is not None:
+                    enc_part = flags_modify_fn(enc_part)
+
+                if cname is not None:
+                    enc_part['cname'] = cname
+
+                if crealm is not None:
+                    enc_part['crealm'] = crealm
+
+                return enc_part
+        else:
+            modify_fn = flags_modify_fn
+
+        if cname is not None:
+            def modify_pac_fn(pac):
+                if change_sid_fn is not None:
+                    pac = change_sid_fn(pac)
+
+                for pac_buffer in pac.buffers:
+                    if pac_buffer.type == krb5pac.PAC_TYPE_LOGON_NAME:
+                        logon_info = pac_buffer.info
+
+                        logon_info.account_name = (
+                            cname['name-string'][0].decode('utf-8'))
+
+                return pac
+        else:
+            modify_pac_fn = change_sid_fn
+
         return self.modified_ticket(
             tgt,
             new_ticket_key=krbtgt_key,
-            modify_fn=flags_modify_fn,
-            modify_pac_fn=change_sid_fn,
+            modify_fn=modify_fn,
+            modify_pac_fn=modify_pac_fn,
             exclude_pac=remove_pac,
             allow_empty_authdata=allow_empty_authdata,
             update_pac_checksums=not remove_pac,
