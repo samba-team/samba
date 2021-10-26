@@ -114,6 +114,43 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 }
 
 static
+NTSTATUS samba_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
+				  const krb5_boolean *pac_request,
+				  DATA_BLOB *pac_attrs_data)
+{
+	union PAC_INFO pac_attrs;
+	enum ndr_err_code ndr_err;
+	NTSTATUS nt_status;
+
+	ZERO_STRUCT(pac_attrs);
+
+	*pac_attrs_data = data_blob_null;
+
+	/* Set the length of the flags in bits. */
+	pac_attrs.attributes_info.flags_length = 2;
+
+	if (pac_request == NULL) {
+		pac_attrs.attributes_info.flags
+			|= PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY;
+	} else if (*pac_request) {
+		pac_attrs.attributes_info.flags
+			|= PAC_ATTRIBUTE_FLAG_PAC_WAS_REQUESTED;
+	}
+
+	ndr_err = ndr_push_union_blob(pac_attrs_data, mem_ctx, &pac_attrs,
+				      PAC_TYPE_ATTRIBUTES_INFO,
+				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(1, ("PAC ATTRIBUTES_INFO (presig) push failed: %s\n",
+			  nt_errstr(nt_status)));
+		return nt_status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static
 NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 				      const struct ldb_message *msg,
 				      DATA_BLOB *cred_blob)
@@ -413,12 +450,14 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *logon_blob,
 				    const DATA_BLOB *cred_blob,
 				    const DATA_BLOB *upn_blob,
+				    const DATA_BLOB *pac_attrs_blob,
 				    const DATA_BLOB *deleg_blob,
 				    krb5_pac *pac)
 {
 	krb5_data logon_data;
 	krb5_data cred_data;
 	krb5_data upn_data;
+	krb5_data pac_attrs_data;
 	krb5_data deleg_data;
 	krb5_error_code ret;
 #ifdef SAMBA4_USES_HEIMDAL
@@ -463,6 +502,19 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		}
 	}
 
+	ZERO_STRUCT(pac_attrs_data);
+	if (pac_attrs_blob != NULL) {
+		ret = smb_krb5_copy_data_contents(&pac_attrs_data,
+						  pac_attrs_blob->data,
+						  pac_attrs_blob->length);
+		if (ret != 0) {
+			smb_krb5_free_data_contents(context, &logon_data);
+			smb_krb5_free_data_contents(context, &cred_data);
+			smb_krb5_free_data_contents(context, &upn_data);
+			return ret;
+		}
+	}
+
 	ZERO_STRUCT(deleg_data);
 	if (deleg_blob != NULL) {
 		ret = smb_krb5_copy_data_contents(&deleg_data,
@@ -472,6 +524,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 			smb_krb5_free_data_contents(context, &logon_data);
 			smb_krb5_free_data_contents(context, &cred_data);
 			smb_krb5_free_data_contents(context, &upn_data);
+			smb_krb5_free_data_contents(context, &pac_attrs_data);
 			return ret;
 		}
 	}
@@ -481,6 +534,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		smb_krb5_free_data_contents(context, &logon_data);
 		smb_krb5_free_data_contents(context, &cred_data);
 		smb_krb5_free_data_contents(context, &upn_data);
+		smb_krb5_free_data_contents(context, &pac_attrs_data);
 		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
@@ -488,8 +542,9 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	ret = krb5_pac_add_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &logon_data);
 	smb_krb5_free_data_contents(context, &logon_data);
 	if (ret != 0) {
-		smb_krb5_free_data_contents(context, &upn_data);
 		smb_krb5_free_data_contents(context, &cred_data);
+		smb_krb5_free_data_contents(context, &upn_data);
+		smb_krb5_free_data_contents(context, &pac_attrs_data);
 		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
@@ -501,6 +556,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		smb_krb5_free_data_contents(context, &cred_data);
 		if (ret != 0) {
 			smb_krb5_free_data_contents(context, &upn_data);
+			smb_krb5_free_data_contents(context, &pac_attrs_data);
 			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
 		}
@@ -519,6 +575,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				  &null_data);
 	if (ret != 0) {
 		smb_krb5_free_data_contents(context, &upn_data);
+		smb_krb5_free_data_contents(context, &pac_attrs_data);
 		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
@@ -529,6 +586,18 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 					  PAC_TYPE_UPN_DNS_INFO,
 					  &upn_data);
 		smb_krb5_free_data_contents(context, &upn_data);
+		if (ret != 0) {
+			smb_krb5_free_data_contents(context, &pac_attrs_data);
+			smb_krb5_free_data_contents(context, &deleg_data);
+			return ret;
+		}
+	}
+
+	if (pac_attrs_blob != NULL) {
+		ret = krb5_pac_add_buffer(context, *pac,
+					  PAC_TYPE_ATTRIBUTES_INFO,
+					  &pac_attrs_data);
+		smb_krb5_free_data_contents(context, &pac_attrs_data);
 		if (ret != 0) {
 			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
@@ -560,6 +629,48 @@ bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry)
 	}
 
 	return true;
+}
+
+int samba_client_requested_pac(krb5_context context,
+			       krb5_pac *pac,
+			       TALLOC_CTX *mem_ctx,
+			       bool *requested_pac)
+{
+	enum ndr_err_code ndr_err;
+	krb5_data k5pac_attrs_in;
+	DATA_BLOB pac_attrs_in;
+	union PAC_INFO pac_attrs;
+	int ret;
+
+	*requested_pac = true;
+
+	ret = krb5_pac_get_buffer(context, *pac, PAC_TYPE_ATTRIBUTES_INFO,
+				  &k5pac_attrs_in);
+	if (ret != 0) {
+		return ret == ENOENT ? 0 : ret;
+	}
+
+	pac_attrs_in = data_blob_const(k5pac_attrs_in.data,
+				       k5pac_attrs_in.length);
+
+	ndr_err = ndr_pull_union_blob(&pac_attrs_in, mem_ctx, &pac_attrs,
+				      PAC_TYPE_ATTRIBUTES_INFO,
+				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
+	smb_krb5_free_data_contents(context, &k5pac_attrs_in);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the PAC ATTRIBUTES_INFO: %s\n", nt_errstr(nt_status)));
+		return EINVAL;
+	}
+
+	if (pac_attrs.attributes_info.flags & (PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY
+					       | PAC_ATTRIBUTE_FLAG_PAC_WAS_REQUESTED)) {
+		*requested_pac = true;
+	} else {
+		*requested_pac = false;
+	}
+
+	return 0;
 }
 
 /* Was the krbtgt in this DB (ie, should we check the incoming signature) and was it an RODC */
@@ -637,12 +748,15 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *p,
 				 DATA_BLOB **_logon_info_blob,
 				 DATA_BLOB **_cred_ndr_blob,
-				 DATA_BLOB **_upn_info_blob)
+				 DATA_BLOB **_upn_info_blob,
+				 DATA_BLOB **_pac_attrs_blob,
+				 const krb5_boolean *pac_request)
 {
 	struct auth_user_info_dc *user_info_dc;
 	DATA_BLOB *logon_blob = NULL;
 	DATA_BLOB *cred_blob = NULL;
 	DATA_BLOB *upn_blob = NULL;
+	DATA_BLOB *pac_attrs_blob = NULL;
 	NTSTATUS nt_status;
 
 	*_logon_info_blob = NULL;
@@ -650,6 +764,9 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		*_cred_ndr_blob = NULL;
 	}
 	*_upn_info_blob = NULL;
+	if (_pac_attrs_blob != NULL) {
+		*_pac_attrs_blob = NULL;
+	}
 
 	logon_blob = talloc_zero(mem_ctx, DATA_BLOB);
 	if (logon_blob == NULL) {
@@ -666,6 +783,13 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	upn_blob = talloc_zero(mem_ctx, DATA_BLOB);
 	if (upn_blob == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (_pac_attrs_blob != NULL) {
+		pac_attrs_blob = talloc_zero(mem_ctx, DATA_BLOB);
+		if (pac_attrs_blob == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	nt_status = authsam_make_user_info_dc(mem_ctx, p->kdc_db_ctx->samdb,
@@ -712,12 +836,27 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
+	if (pac_attrs_blob != NULL) {
+		nt_status = samba_get_pac_attrs_blob(pac_attrs_blob,
+						     pac_request,
+						     pac_attrs_blob);
+
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0, ("Building PAC ATTRIBUTES failed: %s\n",
+				  nt_errstr(nt_status)));
+			return nt_status;
+		}
+	}
+
 	TALLOC_FREE(user_info_dc);
 	*_logon_info_blob = logon_blob;
 	if (_cred_ndr_blob != NULL) {
 		*_cred_ndr_blob = cred_blob;
 	}
 	*_upn_info_blob = upn_blob;
+	if (_pac_attrs_blob != NULL) {
+		*_pac_attrs_blob = pac_attrs_blob;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -731,7 +870,9 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 	nt_status = samba_kdc_get_pac_blobs(mem_ctx, p,
 					    _logon_info_blob,
 					    NULL, /* cred_blob */
-					    &upn_blob);
+					    &upn_blob,
+					    NULL,
+					    NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

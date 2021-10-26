@@ -31,10 +31,16 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *logon_blob,
 				    const DATA_BLOB *cred_blob,
 				    const DATA_BLOB *upn_blob,
+				    const DATA_BLOB *pac_attrs_blob,
 				    const DATA_BLOB *deleg_blob,
 				    krb5_pac *pac);
 
 bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry);
+
+int samba_client_requested_pac(krb5_context context,
+			       krb5_pac *pac,
+			       TALLOC_CTX *mem_ctx,
+			       bool *requested_pac);
 
 int samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
 			  bool *is_in_db,
@@ -44,7 +50,9 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *skdc_entry,
 				 DATA_BLOB **_logon_info_blob,
 				 DATA_BLOB **_cred_ndr_blob,
-				 DATA_BLOB **_upn_info_blob);
+				 DATA_BLOB **_upn_info_blob,
+				 DATA_BLOB **_pac_attrs_blob,
+				 const krb5_boolean *pac_request);
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 				struct samba_kdc_entry *skdc_entry,
 				DATA_BLOB **_logon_info_blob);
