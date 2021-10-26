@@ -37,6 +37,7 @@
 static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 					 struct hdb_entry_ex *client,
 					 const krb5_keyblock *pk_reply_key,
+					 const krb5_boolean *pac_request,
 					 krb5_pac *pac)
 {
 	TALLOC_CTX *mem_ctx;
@@ -46,6 +47,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	DATA_BLOB _cred_blob = data_blob_null;
 	DATA_BLOB *cred_blob = NULL;
 	DATA_BLOB *upn_blob = NULL;
+	DATA_BLOB *pac_attrs_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct samba_kdc_entry *skdc_entry =
@@ -64,7 +66,9 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	nt_status = samba_kdc_get_pac_blobs(mem_ctx, skdc_entry,
 					    &logon_blob,
 					    cred_ndr_ptr,
-					    &upn_blob);
+					    &upn_blob,
+					    &pac_attrs_blob,
+					    pac_request);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return EINVAL;
@@ -84,7 +88,8 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	}
 
 	ret = samba_make_krb5_pac(context, logon_blob, cred_blob,
-				  upn_blob, NULL, pac);
+				  upn_blob, pac_attrs_blob,
+				  NULL, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -92,9 +97,10 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 
 static krb5_error_code samba_wdc_get_pac_compat(void *priv, krb5_context context,
 						struct hdb_entry_ex *client,
+						const krb5_boolean *pac_request,
 						krb5_pac *pac)
 {
-	return samba_wdc_get_pac(priv, context, client, NULL, pac);
+	return samba_wdc_get_pac(priv, context, client, NULL, pac_request, pac);
 }
 
 static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
@@ -132,6 +138,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 	ssize_t srv_checksum_idx = -1;
 	ssize_t kdc_checksum_idx = -1;
 	ssize_t tkt_checksum_idx = -1;
+	ssize_t attrs_info_idx = -1;
 
 	if (!mem_ctx) {
 		return ENOMEM;
@@ -239,7 +246,8 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 							  struct samba_kdc_entry);
 
 		nt_status = samba_kdc_get_pac_blobs(mem_ctx, client_skdc_entry,
-						    &pac_blob, NULL, &upn_blob);
+						    &pac_blob, NULL, &upn_blob,
+						    NULL, NULL);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
 			return EINVAL;
@@ -356,6 +364,18 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			}
 			tkt_checksum_idx = i;
 			break;
+		case PAC_TYPE_ATTRIBUTES_INFO:
+			if (attrs_info_idx != -1) {
+				DEBUG(1, ("attributes info type[%"PRIu32"] twice [%zd] and [%zu]: \n",
+					  types[i],
+					  attrs_info_idx,
+					  i));
+				SAFE_FREE(types);
+				talloc_free(mem_ctx);
+				return EINVAL;
+			}
+			attrs_info_idx = i;
+			break;
 		default:
 			continue;
 		}
@@ -401,6 +421,20 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 		ret = 0;
 		new_pac = NULL;
 		goto out;
+	}
+
+	if (!server_skdc_entry->is_krbtgt) {
+		/*
+		 * The client may have requested no PAC when obtaining the
+		 * TGT.
+		 */
+		bool requested_pac;
+		ret = samba_client_requested_pac(context, pac, mem_ctx,
+						 &requested_pac);
+		if (ret != 0 || !requested_pac) {
+			new_pac = NULL;
+			goto out;
+		}
 	}
 
 	/* Otherwise build an updated PAC */
@@ -487,6 +521,9 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			 * we just add a place holders here.
 			 */
 			type_blob = data_blob_const(&zero_byte, 1);
+			break;
+		case PAC_TYPE_ATTRIBUTES_INFO:
+			/* just copy... */
 			break;
 		default:
 			/* just copy... */

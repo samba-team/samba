@@ -914,27 +914,30 @@ _kdc_check_addresses(krb5_context context,
  */
 
 static krb5_boolean
-send_pac_p(krb5_context context, KDC_REQ *req)
+send_pac_p(krb5_context context, KDC_REQ *req, krb5_boolean *pac_request)
 {
     krb5_error_code ret;
     PA_PAC_REQUEST pacreq;
     const PA_DATA *pa;
     int i = 0;
 
+    *pac_request = TRUE;
+
     pa = _kdc_find_padata(req, &i, KRB5_PADATA_PA_PAC_REQUEST);
     if (pa == NULL)
-	return TRUE;
+	return FALSE;
 
     ret = decode_PA_PAC_REQUEST(pa->padata_value.data,
 				pa->padata_value.length,
 				&pacreq,
 				NULL);
     if (ret)
-	return TRUE;
+	return FALSE;
     i = pacreq.include_pac;
     free_PA_PAC_REQUEST(&pacreq);
-    if (i == 0)
-	return FALSE;
+    if (i == 0) {
+	*pac_request = FALSE;
+    }
     return TRUE;
 }
 
@@ -1758,13 +1761,19 @@ _kdc_as_rep(krb5_context context,
     }
 
     /* Add the PAC */
-    if (send_pac_p(context, req)) {
+    {
 	krb5_pac p = NULL;
 	krb5_data data;
 	uint16_t rodc_id;
 	krb5_principal client_pac;
+	krb5_boolean sent_pac_request;
+	krb5_boolean pac_request;
 
-	ret = _kdc_pac_generate(context, client, pk_reply_key, &p);
+	sent_pac_request = send_pac_p(context, req, &pac_request);
+
+	ret = _kdc_pac_generate(context, client, pk_reply_key,
+				sent_pac_request ? &pac_request : NULL,
+				&p);
 	if (ret) {
 	    kdc_log(context, config, 0, "PAC generation failed for -- %s",
 		    client_name);
