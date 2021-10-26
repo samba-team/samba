@@ -799,7 +799,7 @@ static void ntlmssp_server_auth_done(struct tevent_req *subreq)
 	struct gensec_security *gensec_security = state->gensec_security;
 	struct gensec_ntlmssp_context *gensec_ntlmssp = state->gensec_ntlmssp;
 	struct auth4_context *auth_context = gensec_security->auth_context;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 	NTSTATUS status;
 
 	status = auth_context->check_ntlm_password_recv(subreq,
