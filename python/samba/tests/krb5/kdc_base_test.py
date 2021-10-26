@@ -1362,6 +1362,7 @@ class KDCBaseTest(RawKerberosTest):
                 expected_sid=None,
                 pac_request=True, expect_pac=True,
                 expect_pac_attrs=None, expect_pac_attrs_pac_request=None,
+                expect_requester_sid=None,
                 fresh=False):
         user_name = creds.get_username()
         cache_key = (user_name, to_rodc, kdc_options, pac_request)
@@ -1430,6 +1431,7 @@ class KDCBaseTest(RawKerberosTest):
             expect_pac=expect_pac,
             expect_pac_attrs=expect_pac_attrs,
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
+            expect_requester_sid=expect_requester_sid,
             to_rodc=to_rodc)
         self.check_pre_authentication(rep)
 
@@ -1476,6 +1478,7 @@ class KDCBaseTest(RawKerberosTest):
             expect_pac=expect_pac,
             expect_pac_attrs=expect_pac_attrs,
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
+            expect_requester_sid=expect_requester_sid,
             to_rodc=to_rodc)
         self.check_as_reply(rep)
 
