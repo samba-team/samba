@@ -667,7 +667,7 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
         existing_rid = self._get_existing_rid(replication_allowed=True,
-                                       revealed_to_rodc=True)
+                                              revealed_to_rodc=True)
         tgt = self._get_tgt(creds, from_rodc=True, new_rid=existing_rid)
         self._run_tgs(tgt, expected_error=KDC_ERR_CLIENT_NAME_MISMATCH)
 
@@ -675,7 +675,7 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
         existing_rid = self._get_existing_rid(replication_allowed=True,
-                                       revealed_to_rodc=True)
+                                              revealed_to_rodc=True)
         tgt = self._get_tgt(creds, renewable=True, from_rodc=True,
                             new_rid=existing_rid)
         self._renew_tgt(tgt, expected_error=KDC_ERR_CLIENT_NAME_MISMATCH)
@@ -693,7 +693,7 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
         existing_rid = self._get_existing_rid(replication_allowed=True,
-                                       revealed_to_rodc=True)
+                                              revealed_to_rodc=True)
         tgt = self._get_tgt(creds, from_rodc=True, new_rid=existing_rid)
         self._s4u2self(tgt, creds, expected_error=KDC_ERR_CLIENT_NAME_MISMATCH)
 
@@ -701,7 +701,7 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
         existing_rid = self._get_existing_rid(replication_allowed=True,
-                                       revealed_to_rodc=True)
+                                              revealed_to_rodc=True)
         tgt = self._get_tgt(creds, from_rodc=True, new_rid=existing_rid)
         self._user2user(tgt, creds,
                         expected_error=KDC_ERR_CLIENT_NAME_MISMATCH)
