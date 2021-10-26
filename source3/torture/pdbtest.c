@@ -277,7 +277,7 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 	struct netr_SamInfo6 *info6_wbc = NULL;
 	NTSTATUS status;
 	bool ok;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 	int rc;
 
 	rc = SMBOWFencrypt(pdb_get_nt_passwd(pdb_entry), challenge_8,
