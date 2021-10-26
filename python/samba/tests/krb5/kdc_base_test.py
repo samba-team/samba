@@ -1294,7 +1294,8 @@ class KDCBaseTest(RawKerberosTest):
         if target_name is None:
             target_name = target_creds.get_username()[:-1]
         cache_key = (user_name, target_name, service, to_rodc, kdc_options,
-                     pac_request)
+                     pac_request, str(expected_flags), str(unexpected_flags),
+                     expect_pac)
 
         if not fresh:
             ticket = self.tkt_cache.get(cache_key)
@@ -1365,7 +1366,11 @@ class KDCBaseTest(RawKerberosTest):
                 expect_requester_sid=None,
                 fresh=False):
         user_name = creds.get_username()
-        cache_key = (user_name, to_rodc, kdc_options, pac_request)
+        cache_key = (user_name, to_rodc, kdc_options, pac_request,
+                     str(expected_flags), str(unexpected_flags),
+                     expected_account_name, expected_upn_name, expected_sid,
+                     expect_pac, expect_pac_attrs,
+                     expect_pac_attrs_pac_request, expect_requester_sid)
 
         if not fresh:
             tgt = self.tkt_cache.get(cache_key)
