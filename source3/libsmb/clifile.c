@@ -4623,10 +4623,12 @@ NTSTATUS cli_setatr(struct cli_state *cli,
 ****************************************************************************/
 
 static void cli_chkpath_done(struct tevent_req *subreq);
-static void cli_chkpath_done2(struct tevent_req *subreq);
+static void cli_chkpath_opened(struct tevent_req *subreq);
+static void cli_chkpath_closed(struct tevent_req *subreq);
 
 struct cli_chkpath_state {
-	int dummy;
+	struct tevent_context *ev;
+	struct cli_state *cli;
 };
 
 struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
@@ -4644,13 +4646,29 @@ struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
+	state->cli = cli;
 
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		subreq = cli_smb2_chkpath_send(state, ev, cli, fname);
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_NT1) {
+		subreq = cli_ntcreate_send(
+			state,			  /* mem_ctx */
+			state->ev,		  /* ev */
+			state->cli,		  /* cli */
+			fname,			  /* fname */
+			0,			  /* create_flags */
+			FILE_READ_ATTRIBUTES,	  /* desired_access */
+			FILE_ATTRIBUTE_DIRECTORY, /* FileAttributes */
+			FILE_SHARE_READ|
+			FILE_SHARE_WRITE|
+			FILE_SHARE_DELETE, /* share_access */
+			FILE_OPEN,	/* CreateDisposition */
+			FILE_DIRECTORY_FILE, /* CreateOptions */
+			SMB2_IMPERSONATION_IMPERSONATION,
+			0);		/* SecurityFlags */
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(subreq, cli_chkpath_done2, req);
+		tevent_req_set_callback(subreq, cli_chkpath_opened, req);
 		return req;
 	}
 
@@ -4682,21 +4700,36 @@ struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
 
 static void cli_chkpath_done(struct tevent_req *subreq)
 {
+	NTSTATUS status = cli_smb_recv(
+		subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_chkpath_opened(struct tevent_req *subreq)
+{
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct cli_chkpath_state *state = tevent_req_data(
+		req, struct cli_chkpath_state);
 	NTSTATUS status;
+	uint16_t fnum;
 
-	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
+	status = cli_ntcreate_recv(subreq, &fnum, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	tevent_req_done(req);
+
+	subreq = cli_close_send(state, state->ev, state->cli, fnum);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_chkpath_closed, req);
 }
 
-static void cli_chkpath_done2(struct tevent_req *subreq)
+static void cli_chkpath_closed(struct tevent_req *subreq)
 {
-	NTSTATUS status = cli_smb2_chkpath_recv(subreq);
+	NTSTATUS status = cli_close_recv(subreq);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
