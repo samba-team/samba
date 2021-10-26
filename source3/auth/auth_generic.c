@@ -418,7 +418,7 @@ NTSTATUS auth_check_password_session_info(struct auth4_context *auth_context,
 {
 	NTSTATUS nt_status;
 	void *server_info;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 	struct tevent_context *ev = NULL;
 	struct tevent_req *subreq = NULL;
 	bool ok;
