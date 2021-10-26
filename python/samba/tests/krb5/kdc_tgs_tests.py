@@ -1302,12 +1302,18 @@ class KdcTgsTests(KDCBaseTest):
             expect_edata=False,
             expect_claims=expect_claims)
 
-        self._generic_kdc_exchange(kdc_exchange_dict,
-                                   cname=None,
-                                   realm=srealm,
-                                   sname=sname,
-                                   etypes=etypes,
-                                   additional_tickets=additional_tickets)
+        rep = self._generic_kdc_exchange(kdc_exchange_dict,
+                                         cname=None,
+                                         realm=srealm,
+                                         sname=sname,
+                                         etypes=etypes,
+                                         additional_tickets=additional_tickets)
+        if expected_error:
+            self.check_error_rep(rep, expected_error)
+            return None
+        else:
+            self.check_reply(rep, KRB_TGS_REP)
+            return kdc_exchange_dict['rep_ticket_creds']
 
 
 if __name__ == "__main__":
