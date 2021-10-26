@@ -25,7 +25,7 @@ import ldb
 
 from samba import dsdb, ntstatus
 
-from samba.dcerpc import krb5pac
+from samba.dcerpc import krb5pac, security
 
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
@@ -1014,7 +1014,11 @@ class KdcTgsTests(KDCBaseTest):
                  from_rodc=False,
                  new_rid=None,
                  remove_pac=False,
-                 allow_empty_authdata=False):
+                 allow_empty_authdata=False,
+                 can_modify_logon_info=True,
+                 can_modify_requester_sid=True,
+                 remove_pac_attrs=False,
+                 remove_requester_sid=False):
         self.assertFalse(renewable and invalid)
 
         if remove_pac:
@@ -1027,19 +1031,38 @@ class KdcTgsTests(KDCBaseTest):
         else:
             krbtgt_creds = self.get_krbtgt_creds()
 
-        if new_rid is not None:
+        if new_rid is not None or remove_requester_sid or remove_pac_attrs:
             def change_sid_fn(pac):
-                for pac_buffer in pac.buffers:
+                pac_buffers = pac.buffers
+                for pac_buffer in pac_buffers:
                     if pac_buffer.type == krb5pac.PAC_TYPE_LOGON_INFO:
-                        logon_info = pac_buffer.info.info
+                        if new_rid is not None and can_modify_logon_info:
+                            logon_info = pac_buffer.info.info
 
-                        logon_info.info3.base.rid = new_rid
+                            logon_info.info3.base.rid = new_rid
+                    elif pac_buffer.type == krb5pac.PAC_TYPE_REQUESTER_SID:
+                        if remove_requester_sid:
+                            pac.num_buffers -= 1
+                            pac_buffers.remove(pac_buffer)
+                        elif new_rid is not None and can_modify_requester_sid:
+                            requester_sid = pac_buffer.info
+
+                            samdb = self.get_samdb()
+                            domain_sid = samdb.get_domain_sid()
+
+                            new_sid = f'{domain_sid}-{new_rid}'
+
+                            requester_sid.sid = security.dom_sid(new_sid)
+                    elif pac_buffer.type == krb5pac.PAC_TYPE_ATTRIBUTES_INFO:
+                        if remove_pac_attrs:
+                            pac.num_buffers -= 1
+                            pac_buffers.remove(pac_buffer)
+
+                pac.buffers = pac_buffers
 
                 return pac
-
-            modify_pac_fn = change_sid_fn
         else:
-            modify_pac_fn = None
+            change_sid_fn = None
 
         krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
 
@@ -1051,7 +1074,7 @@ class KdcTgsTests(KDCBaseTest):
             }
 
         if renewable:
-            def set_renewable(enc_part):
+            def flags_modify_fn(enc_part):
                 # Set the renewable flag.
                 renewable_flag = krb5_asn1.TicketFlags('renewable')
                 pos = len(tuple(renewable_flag)) - 1
@@ -1067,10 +1090,8 @@ class KdcTgsTests(KDCBaseTest):
                 enc_part['renew-till'] = renew_till
 
                 return enc_part
-
-            modify_fn = set_renewable
         elif invalid:
-            def set_invalid(enc_part):
+            def flags_modify_fn(enc_part):
                 # Set the invalid flag.
                 invalid_flag = krb5_asn1.TicketFlags('invalid')
                 pos = len(tuple(invalid_flag)) - 1
@@ -1086,16 +1107,14 @@ class KdcTgsTests(KDCBaseTest):
                 enc_part['starttime'] = past_time
 
                 return enc_part
-
-            modify_fn = set_invalid
         else:
-            modify_fn = None
+            flags_modify_fn = None
 
         return self.modified_ticket(
             tgt,
             new_ticket_key=krbtgt_key,
-            modify_fn=modify_fn,
-            modify_pac_fn=modify_pac_fn,
+            modify_fn=flags_modify_fn,
+            modify_pac_fn=change_sid_fn,
             exclude_pac=remove_pac,
             allow_empty_authdata=allow_empty_authdata,
             update_pac_checksums=not remove_pac,
