@@ -1407,7 +1407,7 @@ static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 	uint32_t flags = 0;
 
 	ZERO_STRUCT(logon);
@@ -1520,7 +1520,7 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(a);

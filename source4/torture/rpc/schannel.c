@@ -50,7 +50,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct netr_NetworkInfo ninfo;
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 	uint32_t _flags = 0;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int i;
