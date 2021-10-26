@@ -1389,6 +1389,8 @@ class KDCBaseTest(RawKerberosTest):
         ticket_decryption_key = (
             self.TicketDecryptionKey_from_creds(krbtgt_creds))
 
+        expected_etypes = krbtgt_creds.tgs_supported_enctypes
+
         if kdc_options is None:
             kdc_options = ('forwardable,'
                            'renewable,'
@@ -1415,6 +1417,7 @@ class KDCBaseTest(RawKerberosTest):
             expected_salt=salt,
             expected_flags=expected_flags,
             unexpected_flags=unexpected_flags,
+            expected_supported_etypes=expected_etypes,
             etypes=etype,
             padata=None,
             kdc_options=kdc_options,
@@ -1422,6 +1425,7 @@ class KDCBaseTest(RawKerberosTest):
             ticket_decryption_key=ticket_decryption_key,
             pac_request=pac_request,
             pac_options=pac_options,
+            expect_pac=expect_pac,
             to_rodc=to_rodc)
         self.check_pre_authentication(rep)
 
@@ -1440,8 +1444,6 @@ class KDCBaseTest(RawKerberosTest):
         expected_sname = self.PrincipalName_create(
             name_type=NT_SRV_INST, names=['krbtgt', realm.upper()])
 
-        expected_etypes = krbtgt_creds.tgs_supported_enctypes
-
         rep, kdc_exchange_dict = self._test_as_exchange(
             cname=cname,
             realm=realm,
@@ -1453,6 +1455,9 @@ class KDCBaseTest(RawKerberosTest):
             expected_cname=cname,
             expected_srealm=expected_realm,
             expected_sname=expected_sname,
+            expected_account_name=expected_account_name,
+            expected_upn_name=expected_upn_name,
+            expected_sid=expected_sid,
             expected_salt=salt,
             expected_flags=expected_flags,
             unexpected_flags=unexpected_flags,
