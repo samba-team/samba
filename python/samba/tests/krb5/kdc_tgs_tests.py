@@ -510,6 +510,20 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self._get_tgt(creds)
         self._user2user(tgt, creds, expected_error=0)
 
+    def test_tgs_req_no_pac_attrs(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, remove_pac_attrs=True)
+
+        self._run_tgs(tgt, expected_error=0, expect_pac=True,
+                      expect_pac_attrs=False)
+
+    def test_tgs_req_from_rodc_no_pac_attrs(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self._get_tgt(creds, from_rodc=True, remove_pac_attrs=True)
+        self._run_tgs(tgt, expected_error=0, expect_pac=True,
+                      expect_pac_attrs=False)
+
     # Test making a request without a PAC.
     def test_tgs_no_pac(self):
         creds = self._get_creds()
@@ -1007,6 +1021,221 @@ class KdcTgsTests(KDCBaseTest):
         self._user2user(service_ticket, creds,
                         expected_error=(KDC_ERR_MODIFIED, KDC_ERR_POLICY))
 
+    def test_pac_attrs_none(self):
+        creds = self._get_creds()
+        self.get_tgt(creds, pac_request=None,
+                     expect_pac=True,
+                     expect_pac_attrs=True,
+                     expect_pac_attrs_pac_request=None)
+
+    def test_pac_attrs_false(self):
+        creds = self._get_creds()
+        self.get_tgt(creds, pac_request=False,
+                     expect_pac=True,
+                     expect_pac_attrs=True,
+                     expect_pac_attrs_pac_request=False)
+
+    def test_pac_attrs_true(self):
+        creds = self._get_creds()
+        self.get_tgt(creds, pac_request=True,
+                     expect_pac=True,
+                     expect_pac_attrs=True,
+                     expect_pac_attrs_pac_request=True)
+
+    def test_pac_attrs_renew_none(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=None,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=None)
+        tgt = self._modify_tgt(tgt, renewable=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=True,
+                        expect_pac_attrs_pac_request=None)
+
+    def test_pac_attrs_renew_false(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=False,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=False)
+        tgt = self._modify_tgt(tgt, renewable=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=True,
+                        expect_pac_attrs_pac_request=False)
+
+    def test_pac_attrs_renew_true(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=True,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=True)
+        tgt = self._modify_tgt(tgt, renewable=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=True,
+                        expect_pac_attrs_pac_request=True)
+
+    def test_pac_attrs_rodc_renew_none(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=None,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=None)
+        tgt = self._modify_tgt(tgt, from_rodc=True, renewable=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=True,
+                        expect_pac_attrs_pac_request=None)
+
+    def test_pac_attrs_rodc_renew_false(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=False,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=False)
+        tgt = self._modify_tgt(tgt, from_rodc=True, renewable=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=True,
+                        expect_pac_attrs_pac_request=False)
+
+    def test_pac_attrs_rodc_renew_true(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=True,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=True)
+        tgt = self._modify_tgt(tgt, from_rodc=True, renewable=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=True,
+                        expect_pac_attrs_pac_request=True)
+
+    def test_pac_attrs_missing_renew_none(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=None,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=None)
+        tgt = self._modify_tgt(tgt, renewable=True,
+                               remove_pac_attrs=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=False)
+
+    def test_pac_attrs_missing_renew_false(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=False,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=False)
+        tgt = self._modify_tgt(tgt, renewable=True,
+                               remove_pac_attrs=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=False)
+
+    def test_pac_attrs_missing_renew_true(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=True,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=True)
+        tgt = self._modify_tgt(tgt, renewable=True,
+                               remove_pac_attrs=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=False)
+
+    def test_pac_attrs_missing_rodc_renew_none(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=None,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=None)
+        tgt = self._modify_tgt(tgt, from_rodc=True, renewable=True,
+                               remove_pac_attrs=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=False)
+
+    def test_pac_attrs_missing_rodc_renew_false(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=False,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=False)
+        tgt = self._modify_tgt(tgt, from_rodc=True, renewable=True,
+                               remove_pac_attrs=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=False)
+
+    def test_pac_attrs_missing_rodc_renew_true(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=True,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=True)
+        tgt = self._modify_tgt(tgt, from_rodc=True, renewable=True,
+                               remove_pac_attrs=True)
+
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac=True,
+                        expect_pac_attrs=False)
+
+    def test_tgs_pac_attrs_none(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=None,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=None)
+
+        self._run_tgs(tgt, expected_error=0, expect_pac=True,
+                      expect_pac_attrs=True,
+                      expect_pac_attrs_pac_request=None)
+
+    def test_tgs_pac_attrs_false(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=False,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=False)
+
+        self._run_tgs(tgt, expected_error=0, expect_pac=False)
+
+    def test_tgs_pac_attrs_true(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=True,
+                           expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=True)
+
+        self._run_tgs(tgt, expected_error=0, expect_pac=True,
+                      expect_pac_attrs=True,
+                      expect_pac_attrs_pac_request=True)
+
+
     def _get_tgt(self,
                  client_creds,
                  renewable=False,
@@ -1278,23 +1507,34 @@ class KdcTgsTests(KDCBaseTest):
     def _get_non_existent_rid(self):
         return (1 << 30) - 1
 
-    def _run_tgs(self, tgt, expected_error):
+    def _run_tgs(self, tgt, expected_error, expect_pac=True,
+                 expect_pac_attrs=None, expect_pac_attrs_pac_request=None):
         target_creds = self.get_service_creds()
-        self._tgs_req(tgt, expected_error, target_creds)
+        return self._tgs_req(
+            tgt, expected_error, target_creds,
+            expect_pac=expect_pac,
+            expect_pac_attrs=expect_pac_attrs,
+            expect_pac_attrs_pac_request=expect_pac_attrs_pac_request)
 
-    def _renew_tgt(self, tgt, expected_error):
+    def _renew_tgt(self, tgt, expected_error, expect_pac=True,
+                   expect_pac_attrs=None, expect_pac_attrs_pac_request=None):
         krbtgt_creds = self.get_krbtgt_creds()
         kdc_options = str(krb5_asn1.KDCOptions('renew'))
-        self._tgs_req(tgt, expected_error, krbtgt_creds,
-                      kdc_options=kdc_options)
+        return self._tgs_req(
+            tgt, expected_error, krbtgt_creds,
+            kdc_options=kdc_options,
+            expect_pac=expect_pac,
+            expect_pac_attrs=expect_pac_attrs,
+            expect_pac_attrs_pac_request=expect_pac_attrs_pac_request)
 
-    def _validate_tgt(self, tgt, expected_error):
+    def _validate_tgt(self, tgt, expected_error, expect_pac=True):
         krbtgt_creds = self.get_krbtgt_creds()
         kdc_options = str(krb5_asn1.KDCOptions('validate'))
-        self._tgs_req(tgt, expected_error, krbtgt_creds,
-                      kdc_options=kdc_options)
+        return self._tgs_req(tgt, expected_error, krbtgt_creds,
+                             kdc_options=kdc_options,
+                             expect_pac=expect_pac)
 
-    def _s4u2self(self, tgt, tgt_creds, expected_error,
+    def _s4u2self(self, tgt, tgt_creds, expected_error, expect_pac=True,
                   expect_edata=False, expected_status=None):
         user_creds = self._get_mach_creds()
 
@@ -1318,17 +1558,20 @@ class KdcTgsTests(KDCBaseTest):
                              expected_cname=user_cname,
                              generate_padata_fn=generate_s4u2self_padata,
                              expect_claims=False, expect_edata=expect_edata,
-                             expected_status=expected_status)
+                             expected_status=expected_status,
+                             expect_pac=expect_pac)
 
-    def _user2user(self, tgt, tgt_creds, expected_error, sname=None):
+    def _user2user(self, tgt, tgt_creds, expected_error, sname=None,
+                   expect_pac=True):
         user_creds = self._get_mach_creds()
         user_tgt = self.get_tgt(user_creds)
 
         kdc_options = str(krb5_asn1.KDCOptions('enc-tkt-in-skey'))
-        self._tgs_req(user_tgt, expected_error, tgt_creds,
-                      kdc_options=kdc_options,
-                      additional_ticket=tgt,
-                      sname=sname)
+        return self._tgs_req(user_tgt, expected_error, tgt_creds,
+                             kdc_options=kdc_options,
+                             additional_ticket=tgt,
+                             sname=sname,
+                             expect_pac=expect_pac)
 
     def _tgs_req(self, tgt, expected_error, target_creds,
                  kdc_options='0',
@@ -1337,6 +1580,9 @@ class KdcTgsTests(KDCBaseTest):
                  generate_padata_fn=None,
                  sname=None,
                  expect_claims=True,
+                 expect_pac=True,
+                 expect_pac_attrs=None,
+                 expect_pac_attrs_pac_request=None,
                  expect_edata=False,
                  expected_status=None):
         srealm = target_creds.get_realm()
@@ -1390,6 +1636,9 @@ class KdcTgsTests(KDCBaseTest):
             authenticator_subkey=subkey,
             kdc_options=kdc_options,
             expect_edata=expect_edata,
+            expect_pac=expect_pac,
+            expect_pac_attrs=expect_pac_attrs,
+            expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             expect_claims=expect_claims)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
