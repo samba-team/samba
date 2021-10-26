@@ -2021,6 +2021,8 @@ class RawKerberosTest(TestCaseInTempDir):
                          expect_pac=True,
                          expect_claims=True,
                          expect_upn_dns_info_ex=None,
+                         expect_pac_attrs=None,
+                         expect_pac_attrs_pac_request=None,
                          to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2074,6 +2076,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_pac': expect_pac,
             'expect_claims': expect_claims,
             'expect_upn_dns_info_ex': expect_upn_dns_info_ex,
+            'expect_pac_attrs': expect_pac_attrs,
+            'expect_pac_attrs_pac_request': expect_pac_attrs_pac_request,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -2122,6 +2126,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           expect_pac=True,
                           expect_claims=True,
                           expect_upn_dns_info_ex=None,
+                          expect_pac_attrs=None,
+                          expect_pac_attrs_pac_request=None,
                           expected_proxy_target=None,
                           expected_transited_services=None,
                           to_rodc=False):
@@ -2176,6 +2182,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_pac': expect_pac,
             'expect_claims': expect_claims,
             'expect_upn_dns_info_ex': expect_upn_dns_info_ex,
+            'expect_pac_attrs': expect_pac_attrs,
+            'expect_pac_attrs_pac_request': expect_pac_attrs_pac_request,
             'expected_proxy_target': expected_proxy_target,
             'expected_transited_services': expected_transited_services,
             'to_rodc': to_rodc
@@ -2596,6 +2604,12 @@ class RawKerberosTest(TestCaseInTempDir):
         if not self.tkt_sig_support:
             require_strict.add(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
 
+        expect_pac_attrs = kdc_exchange_dict['expect_pac_attrs']
+        if expect_pac_attrs:
+            expected_types.append(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
+        elif expect_pac_attrs is None:
+            require_strict.add(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
+
         buffer_types = [pac_buffer.type
                         for pac_buffer in pac.buffers]
         self.assertSequenceElementsEqual(
@@ -2670,6 +2684,25 @@ class RawKerberosTest(TestCaseInTempDir):
                     if expected_sid is not None:
                         self.assertEqual(expected_sid,
                                          str(upn_dns_info_ex.objectsid))
+
+            elif (pac_buffer.type == krb5pac.PAC_TYPE_ATTRIBUTES_INFO
+                      and expect_pac_attrs):
+                attr_info = pac_buffer.info
+
+                self.assertEqual(2, attr_info.flags_length)
+
+                flags = attr_info.flags
+
+                requested_pac = bool(flags & 1)
+                given_pac = bool(flags & 2)
+
+                expect_pac_attrs_pac_request = kdc_exchange_dict[
+                    'expect_pac_attrs_pac_request']
+
+                self.assertEqual(expect_pac_attrs_pac_request is True,
+                                 requested_pac)
+                self.assertEqual(expect_pac_attrs_pac_request is None,
+                                 given_pac)
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
@@ -3663,6 +3696,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           pac_request=None,
                           pac_options=None,
                           expect_pac=True,
+                          expect_pac_attrs=None,
+                          expect_pac_attrs_pac_request=None,
                           to_rodc=False):
 
         def _generate_padata_copy(_kdc_exchange_dict,
@@ -3706,6 +3741,8 @@ class RawKerberosTest(TestCaseInTempDir):
             pac_request=pac_request,
             pac_options=pac_options,
             expect_pac=expect_pac,
+            expect_pac_attrs=expect_pac_attrs,
+            expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             to_rodc=to_rodc)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
