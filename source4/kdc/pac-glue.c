@@ -40,7 +40,8 @@
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 				       const struct auth_user_info_dc *info,
-				       DATA_BLOB *pac_data)
+				       DATA_BLOB *pac_data,
+				       DATA_BLOB *requester_sid_blob)
 {
 	struct netr_SamInfo3 *info3;
 	union PAC_INFO pac_info;
@@ -50,6 +51,9 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(pac_info);
 
 	*pac_data = data_blob_null;
+	if (requester_sid_blob != NULL) {
+		*requester_sid_blob = data_blob_null;
+	}
 
 	nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx, info, &info3);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -73,6 +77,25 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 		DEBUG(1, ("PAC_LOGON_INFO (presig) push failed: %s\n",
 			  nt_errstr(nt_status)));
 		return nt_status;
+	}
+
+	if (requester_sid_blob != NULL && info->num_sids > 0) {
+		union PAC_INFO pac_requester_sid;
+
+		ZERO_STRUCT(pac_requester_sid);
+
+		pac_requester_sid.requester_sid.sid = info->sids[0];
+
+		ndr_err = ndr_push_union_blob(requester_sid_blob, mem_ctx,
+					      &pac_requester_sid,
+					      PAC_TYPE_REQUESTER_SID,
+					      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			nt_status = ndr_map_error2ntstatus(ndr_err);
+			DEBUG(1, ("PAC_REQUESTER_SID (presig) push failed: %s\n",
+				  nt_errstr(nt_status)));
+			return nt_status;
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -460,6 +483,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *cred_blob,
 				    const DATA_BLOB *upn_blob,
 				    const DATA_BLOB *pac_attrs_blob,
+				    const DATA_BLOB *requester_sid_blob,
 				    const DATA_BLOB *deleg_blob,
 				    krb5_pac *pac)
 {
@@ -467,6 +491,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	krb5_data cred_data;
 	krb5_data upn_data;
 	krb5_data pac_attrs_data;
+	krb5_data requester_sid_data;
 	krb5_data deleg_data;
 	krb5_error_code ret;
 #ifdef SAMBA4_USES_HEIMDAL
@@ -524,6 +549,20 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		}
 	}
 
+	ZERO_STRUCT(requester_sid_data);
+	if (requester_sid_blob != NULL) {
+		ret = smb_krb5_copy_data_contents(&requester_sid_data,
+						  requester_sid_blob->data,
+						  requester_sid_blob->length);
+		if (ret != 0) {
+			smb_krb5_free_data_contents(context, &logon_data);
+			smb_krb5_free_data_contents(context, &cred_data);
+			smb_krb5_free_data_contents(context, &upn_data);
+			smb_krb5_free_data_contents(context, &pac_attrs_data);
+			return ret;
+		}
+	}
+
 	ZERO_STRUCT(deleg_data);
 	if (deleg_blob != NULL) {
 		ret = smb_krb5_copy_data_contents(&deleg_data,
@@ -534,6 +573,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 			smb_krb5_free_data_contents(context, &cred_data);
 			smb_krb5_free_data_contents(context, &upn_data);
 			smb_krb5_free_data_contents(context, &pac_attrs_data);
+			smb_krb5_free_data_contents(context, &requester_sid_data);
 			return ret;
 		}
 	}
@@ -544,6 +584,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		smb_krb5_free_data_contents(context, &cred_data);
 		smb_krb5_free_data_contents(context, &upn_data);
 		smb_krb5_free_data_contents(context, &pac_attrs_data);
+		smb_krb5_free_data_contents(context, &requester_sid_data);
 		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
@@ -554,6 +595,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		smb_krb5_free_data_contents(context, &cred_data);
 		smb_krb5_free_data_contents(context, &upn_data);
 		smb_krb5_free_data_contents(context, &pac_attrs_data);
+		smb_krb5_free_data_contents(context, &requester_sid_data);
 		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
@@ -566,6 +608,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		if (ret != 0) {
 			smb_krb5_free_data_contents(context, &upn_data);
 			smb_krb5_free_data_contents(context, &pac_attrs_data);
+			smb_krb5_free_data_contents(context, &requester_sid_data);
 			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
 		}
@@ -585,6 +628,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	if (ret != 0) {
 		smb_krb5_free_data_contents(context, &upn_data);
 		smb_krb5_free_data_contents(context, &pac_attrs_data);
+		smb_krb5_free_data_contents(context, &requester_sid_data);
 		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
@@ -597,6 +641,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		smb_krb5_free_data_contents(context, &upn_data);
 		if (ret != 0) {
 			smb_krb5_free_data_contents(context, &pac_attrs_data);
+			smb_krb5_free_data_contents(context, &requester_sid_data);
 			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
 		}
@@ -607,6 +652,18 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 					  PAC_TYPE_ATTRIBUTES_INFO,
 					  &pac_attrs_data);
 		smb_krb5_free_data_contents(context, &pac_attrs_data);
+		if (ret != 0) {
+			smb_krb5_free_data_contents(context, &requester_sid_data);
+			smb_krb5_free_data_contents(context, &deleg_data);
+			return ret;
+		}
+	}
+
+	if (requester_sid_blob != NULL) {
+		ret = krb5_pac_add_buffer(context, *pac,
+					  PAC_TYPE_REQUESTER_SID,
+					  &requester_sid_data);
+		smb_krb5_free_data_contents(context, &requester_sid_data);
 		if (ret != 0) {
 			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
@@ -765,6 +822,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB **_upn_info_blob,
 				 DATA_BLOB **_pac_attrs_blob,
 				 const krb5_boolean *pac_request,
+				 DATA_BLOB **_requester_sid_blob,
 				 struct auth_user_info_dc **_user_info_dc)
 {
 	struct auth_user_info_dc *user_info_dc;
@@ -772,6 +830,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *cred_blob = NULL;
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *pac_attrs_blob = NULL;
+	DATA_BLOB *requester_sid_blob = NULL;
 	NTSTATUS nt_status;
 
 	*_logon_info_blob = NULL;
@@ -781,6 +840,9 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	*_upn_info_blob = NULL;
 	if (_pac_attrs_blob != NULL) {
 		*_pac_attrs_blob = NULL;
+	}
+	if (_requester_sid_blob != NULL) {
+		*_requester_sid_blob = NULL;
 	}
 
 	logon_blob = talloc_zero(mem_ctx, DATA_BLOB);
@@ -807,6 +869,13 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (_requester_sid_blob != NULL) {
+		requester_sid_blob = talloc_zero(mem_ctx, DATA_BLOB);
+		if (requester_sid_blob == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	nt_status = authsam_make_user_info_dc(mem_ctx, p->kdc_db_ctx->samdb,
 					     lpcfg_netbios_name(p->kdc_db_ctx->lp_ctx),
 					     lpcfg_sam_name(p->kdc_db_ctx->lp_ctx),
@@ -824,7 +893,8 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_get_logon_info_pac_blob(logon_blob,
 						  user_info_dc,
-						  logon_blob);
+						  logon_blob,
+						  requester_sid_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Building PAC LOGON INFO failed: %s\n",
 			  nt_errstr(nt_status)));
@@ -880,6 +950,9 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	if (_pac_attrs_blob != NULL) {
 		*_pac_attrs_blob = pac_attrs_blob;
 	}
+	if (_requester_sid_blob != NULL) {
+		*_requester_sid_blob = requester_sid_blob;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -912,7 +985,7 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = samba_get_logon_info_pac_blob(mem_ctx,
-						  user_info_dc, pac_blob);
+						  user_info_dc, pac_blob, NULL);
 
 	return nt_status;
 }
@@ -1062,6 +1135,52 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 	return nt_status;
 }
 
+static krb5_error_code samba_get_requester_sid(TALLOC_CTX *mem_ctx,
+					       krb5_pac pac,
+					       krb5_context context,
+					       struct dom_sid *sid)
+{
+	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
+	krb5_error_code ret;
+
+	DATA_BLOB pac_requester_sid_in;
+	krb5_data k5pac_requester_sid_in;
+
+	union PAC_INFO info;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	ret = krb5_pac_get_buffer(context, pac, PAC_TYPE_REQUESTER_SID,
+				  &k5pac_requester_sid_in);
+	if (ret != 0) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	pac_requester_sid_in = data_blob_const(k5pac_requester_sid_in.data,
+					       k5pac_requester_sid_in.length);
+
+	ndr_err = ndr_pull_union_blob(&pac_requester_sid_in, tmp_ctx, &info,
+				      PAC_TYPE_REQUESTER_SID,
+				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
+	smb_krb5_free_data_contents(context, &k5pac_requester_sid_in);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the PAC REQUESTER_SID: %s\n", nt_errstr(nt_status)));
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+
+	*sid = info.requester_sid.sid;
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
 /* Does a parse and SID check, but no crypto. */
 krb5_error_code samba_kdc_validate_pac_blob(
 		krb5_context context,
@@ -1075,22 +1194,36 @@ krb5_error_code samba_kdc_validate_pac_blob(
 	krb5_error_code code;
 	bool ok;
 
-	code = kerberos_pac_to_user_info_dc(frame,
-					    pac,
-					    context,
-					    &pac_user_info,
-					    NULL,
-					    NULL);
-	if (code != 0) {
+	/*
+	 * First, try to get the SID from the requester SID buffer in the PAC.
+	 */
+	code = samba_get_requester_sid(frame, pac, context, &pac_sid);
+
+	if (code == ENOENT) {
+		/*
+		 * If the requester SID buffer isn't present, fall back to the
+		 * SID in the LOGON_INFO PAC buffer.
+		 */
+		code = kerberos_pac_to_user_info_dc(frame,
+						    pac,
+						    context,
+						    &pac_user_info,
+						    NULL,
+						    NULL);
+		if (code != 0) {
+			goto out;
+		}
+
+		if (pac_user_info->num_sids == 0) {
+			code = EINVAL;
+			goto out;
+		}
+
+		pac_sid = pac_user_info->sids[0];
+	} else if (code != 0) {
 		goto out;
 	}
 
-	if (pac_user_info->num_sids == 0) {
-		code = EINVAL;
-		goto out;
-	}
-
-	pac_sid = pac_user_info->sids[0];
 	client_sid = samdb_result_dom_sid(frame,
 					  client_skdc_entry->msg,
 					  "objectSid");

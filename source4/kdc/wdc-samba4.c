@@ -49,6 +49,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	DATA_BLOB *cred_blob = NULL;
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *pac_attrs_blob = NULL;
+	DATA_BLOB *requester_sid_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct samba_kdc_entry *skdc_entry =
@@ -70,6 +71,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 					    &upn_blob,
 					    &pac_attrs_blob,
 					    pac_request,
+					    &requester_sid_blob,
 					    NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -91,7 +93,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 
 	ret = samba_make_krb5_pac(context, logon_blob, cred_blob,
 				  upn_blob, pac_attrs_blob,
-				  NULL, pac);
+				  requester_sid_blob, NULL, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -125,6 +127,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 	krb5_pac new_pac = NULL;
 	DATA_BLOB *pac_blob = NULL;
 	DATA_BLOB *upn_blob = NULL;
+	DATA_BLOB *requester_sid_blob = NULL;
 	DATA_BLOB *deleg_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
@@ -141,6 +144,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 	ssize_t kdc_checksum_idx = -1;
 	ssize_t tkt_checksum_idx = -1;
 	ssize_t attrs_info_idx = -1;
+	ssize_t requester_sid_idx = -1;
 
 	if (!mem_ctx) {
 		return ENOMEM;
@@ -257,7 +261,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 
 		nt_status = samba_kdc_get_pac_blobs(mem_ctx, client_skdc_entry,
 						    &pac_blob, NULL, &upn_blob,
-						    NULL, NULL,
+						    NULL, NULL, &requester_sid_blob,
 						    &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
@@ -408,6 +412,18 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			}
 			attrs_info_idx = i;
 			break;
+		case PAC_TYPE_REQUESTER_SID:
+			if (requester_sid_idx != -1) {
+				DEBUG(1, ("requester sid type[%"PRIu32"] twice [%zd] and [%zu]: \n",
+					  types[i],
+					  requester_sid_idx,
+					  i));
+				SAFE_FREE(types);
+				talloc_free(mem_ctx);
+				return EINVAL;
+			}
+			requester_sid_idx = i;
+			break;
 		default:
 			continue;
 		}
@@ -546,6 +562,11 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			 * we just add a place holder here.
 			 */
 			type_blob = data_blob_const(&zero_byte, 1);
+
+			if (requester_sid_idx == -1 && requester_sid_blob != NULL) {
+				/* inject REQUESTER_SID behind */
+				forced_next_type = PAC_TYPE_REQUESTER_SID;
+			}
 			break;
 		case PAC_TYPE_KDC_CHECKSUM:
 			/*
@@ -556,6 +577,15 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			break;
 		case PAC_TYPE_ATTRIBUTES_INFO:
 			/* just copy... */
+			break;
+		case PAC_TYPE_REQUESTER_SID:
+			/*
+			 * Replace in the RODC case, otherwise
+			 * requester_sid_blob is NULL and we just copy.
+			 */
+			if (requester_sid_blob != NULL) {
+				type_blob = *requester_sid_blob;
+			}
 			break;
 		default:
 			/* just copy... */
