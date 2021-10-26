@@ -324,10 +324,10 @@ class KdcTgsTests(KDCBaseTest):
         self.assertIsNotNone(pac)
 
         ticket = self._make_tgs_request(client_creds, service_creds, tgt,
-                                        pac_request=False)
+                                        pac_request=False, expect_pac=False)
 
-        pac = self.get_ticket_pac(ticket)
-        self.assertIsNotNone(pac)
+        pac = self.get_ticket_pac(ticket, expect_pac=False)
+        self.assertIsNone(pac)
 
     def test_client_no_auth_data_required(self):
         client_creds = self.get_cached_creds(
@@ -351,13 +351,13 @@ class KdcTgsTests(KDCBaseTest):
             opts={'no_auth_data_required': True})
         service_creds = self.get_service_creds()
 
-        tgt = self.get_tgt(client_creds, pac_request=False)
+        tgt = self.get_tgt(client_creds)
 
         pac = self.get_ticket_pac(tgt)
         self.assertIsNotNone(pac)
 
         ticket = self._make_tgs_request(client_creds, service_creds, tgt,
-                                        pac_request=False)
+                                        pac_request=False, expect_pac=True)
 
         pac = self.get_ticket_pac(ticket)
         self.assertIsNotNone(pac)
