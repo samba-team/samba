@@ -1927,7 +1927,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				TALLOC_FREE(mem_ctx);
 
 			} else {
-				uint8_t authoritative = 0;
+				uint8_t authoritative = 1;
 
 				if (!domain) {
 					domain = smb_xstrdup(get_winbind_domain());
@@ -2443,7 +2443,7 @@ static bool check_auth_crap(void)
 	char *hex_lm_key;
 	char *hex_user_session_key;
 	char *error_string;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 
 	setbuf(stdout, NULL);
 
