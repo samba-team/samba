@@ -120,7 +120,7 @@ static NTSTATUS check_samba4_security(
 	NTSTATUS nt_status;
 	struct auth_user_info_dc *user_info_dc;
 	struct auth4_context *auth4_context;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 	struct auth_serversupplied_info *server_info = NULL;
 
 	nt_status = make_auth4_context_s4(auth_context, mem_ctx, &auth4_context);
