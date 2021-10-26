@@ -596,6 +596,12 @@ class RawKerberosTest(TestCaseInTempDir):
             tkt_sig_support = '0'
         cls.tkt_sig_support = bool(int(tkt_sig_support))
 
+        expect_pac = samba.tests.env_get_var_value('EXPECT_PAC',
+                                                   allow_missing=True)
+        if expect_pac is None:
+            expect_pac = '1'
+        cls.expect_pac = bool(int(expect_pac))
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
@@ -2417,7 +2423,10 @@ class RawKerberosTest(TestCaseInTempDir):
                 etype=kcrypto.Enctype.RC4)
             krbtgt_keys.append(krbtgt_key_rc4)
 
-        expect_pac = kdc_exchange_dict['expect_pac']
+        if self.expect_pac and self.is_tgs(expected_sname):
+            expect_pac = True
+        else:
+            expect_pac = kdc_exchange_dict['expect_pac']
 
         ticket_session_key = None
         if ticket_private is not None:
@@ -2448,8 +2457,9 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertElementMissing(ticket_private, 'renew-till')
             if self.strict_checking:
                 self.assertElementEqual(ticket_private, 'caddr', [])
-            self.assertElementPresent(ticket_private, 'authorization-data',
-                                      expect_empty=not expect_pac)
+            if expect_pac is not None:
+                self.assertElementPresent(ticket_private, 'authorization-data',
+                                          expect_empty=not expect_pac)
 
         encpart_session_key = None
         if encpart_private is not None:
@@ -2554,10 +2564,13 @@ class RawKerberosTest(TestCaseInTempDir):
 
         if ticket_private is not None:
             pac_data = self.get_ticket_pac(ticket_creds, expect_pac=expect_pac)
-            if expect_pac:
-                self.check_pac_buffers(pac_data, kdc_exchange_dict)
-            else:
+            if expect_pac is True:
+                self.assertIsNotNone(pac_data)
+            elif expect_pac is False:
                 self.assertIsNone(pac_data)
+
+            if pac_data is not None:
+                self.check_pac_buffers(pac_data, kdc_exchange_dict)
 
         expect_ticket_checksum = kdc_exchange_dict['expect_ticket_checksum']
         if expect_ticket_checksum:
