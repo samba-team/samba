@@ -460,7 +460,8 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 					    skdc_entry,
 					    &logon_info_blob,
 					    cred_ndr_ptr,
-					    &upn_dns_info_blob);
+					    &upn_dns_info_blob,
+					    NULL, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		if (NT_STATUS_EQUAL(nt_status,
@@ -487,6 +488,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 				   logon_info_blob,
 				   pcred_blob,
 				   upn_dns_info_blob,
+				   NULL,
 				   NULL,
 				   pac);
 
@@ -590,7 +592,8 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 						    client_skdc_entry,
 						    &pac_blob,
 						    NULL,
-						    &upn_blob);
+						    &upn_blob,
+						    NULL, NULL);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			code = EINVAL;
 			goto done;
