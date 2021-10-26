@@ -93,8 +93,7 @@ static int net_status_sessions(struct net_context *c, int argc, const char **arg
 	return 0;
 }
 
-static int show_share(const struct connections_key *key,
-		      const struct connections_data *crec,
+static int show_share(const struct connections_data *crec,
 		      void *state)
 {
 	struct server_id_buf tmp;
@@ -138,8 +137,7 @@ static int collect_pids(const char *key, struct sessionid *session,
 	return 0;
 }
 
-static int show_share_parseable(const struct connections_key *key,
-				const struct connections_data *crec,
+static int show_share_parseable(const struct connections_data *crec,
 				void *state)
 {
 	struct sessionids *ids = (struct sessionids *)state;

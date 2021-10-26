@@ -315,8 +315,7 @@ static const char *session_dialect_str(uint16_t dialect)
 	return unkown_dialect;
 }
 
-static int traverse_connections(const struct connections_key *key,
-				const struct connections_data *crec,
+static int traverse_connections(const struct connections_data *crec,
 				void *private_data)
 {
 	TALLOC_CTX *mem_ctx = (TALLOC_CTX *)private_data;
