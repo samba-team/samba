@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "smbd/smbXsrv_open.h"
 #include "libcli/security/security.h"
 #include "util_tdb.h"
 #include "lib/util/bitmap.h"

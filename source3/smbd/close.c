@@ -26,6 +26,7 @@
 #include "locking/share_mode_lock.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "smbd/smbXsrv_open.h"
 #include "smbd/scavenger.h"
 #include "fake_file.h"
 #include "transfer_file.h"

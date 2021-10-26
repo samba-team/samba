@@ -18,6 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "smbXsrv_open.h"
 #include "includes.h"
 #include "system/filesys.h"
 #include "lib/util/server_id.h"

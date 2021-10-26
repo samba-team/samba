@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "smbd/smbXsrv_open.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "../lib/async_req/async_sock.h"
 #include "ctdbd_conn.h"

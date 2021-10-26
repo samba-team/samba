@@ -22,6 +22,7 @@
 #include "messages.h"
 #include "serverid.h"
 #include "smbd/globals.h"
+#include "smbd/smbXsrv_open.h"
 #include "smbd/scavenger.h"
 #include "locking/share_mode_lock.h"
 #include "locking/leases_db.h"

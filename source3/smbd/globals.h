@@ -661,43 +661,7 @@ NTSTATUS smbXsrv_tcon_global_traverse(
 			int (*fn)(struct smbXsrv_tcon_global0 *, void *),
 			void *private_data);
 
-NTSTATUS smbXsrv_open_global_init(void);
-NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
-			     struct auth_session_info *session_info,
-			     NTTIME now,
-			     struct smbXsrv_open **_open);
-NTSTATUS smbXsrv_open_update(struct smbXsrv_open *_open);
-NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now);
-NTSTATUS smb1srv_open_table_init(struct smbXsrv_connection *conn);
-NTSTATUS smb1srv_open_lookup(struct smbXsrv_connection *conn,
-			     uint16_t fnum, NTTIME now,
-			     struct smbXsrv_open **_open);
-NTSTATUS smb2srv_open_table_init(struct smbXsrv_connection *conn);
-NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
-			     uint64_t persistent_id,
-			     uint64_t volatile_id,
-			     NTTIME now,
-			     struct smbXsrv_open **_open);
-NTSTATUS smbXsrv_open_purge_replay_cache(struct smbXsrv_client *client,
-					 const struct GUID *create_guid);
-NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
-					  struct GUID caller_req_guid,
-					  struct GUID create_guid,
-					  const char *name,
-					  NTTIME now,
-					  struct smbXsrv_open **_open);
-NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
-			       struct auth_session_info *session_info,
-			       uint64_t persistent_id,
-			       const struct GUID *create_guid,
-			       NTTIME now,
-			       struct smbXsrv_open **_open);
-struct smbXsrv_open_global0;
-NTSTATUS smbXsrv_open_global_traverse(
-	int (*fn)(struct smbXsrv_open_global0 *, void *),
-	void *private_data);
 
-NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id);
 bool smbXsrv_is_encrypted(uint8_t encryption_flags);
 bool smbXsrv_is_partially_encrypted(uint8_t encryption_flags);
 bool smbXsrv_set_crypto_flag(uint8_t *flags, uint8_t flag);

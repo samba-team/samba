@@ -25,6 +25,7 @@
 #include "serverid.h"
 #include "session.h"
 #include "smbd/globals.h"
+#include "smbd/smbXsrv_open.h"
 #include "util_tdb.h"
 #include "librpc/gen_ndr/ndr_open_files.h"
 

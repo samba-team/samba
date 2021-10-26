@@ -23,6 +23,7 @@
 #include "printing.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "smbd/smbXsrv_open.h"
 #include "../libcli/smb/smb_common.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../librpc/gen_ndr/ndr_smb2_lease_struct.h"

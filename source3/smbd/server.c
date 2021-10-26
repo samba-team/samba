@@ -29,6 +29,7 @@
 #include "locking/share_mode_lock.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "smbd/smbXsrv_open.h"
 #include "registry/reg_init_full.h"
 #include "libcli/auth/schannel.h"
 #include "secrets.h"
