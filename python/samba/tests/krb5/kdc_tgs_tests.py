@@ -23,7 +23,7 @@ import os
 import ldb
 
 
-from samba import dsdb
+from samba import dsdb, ntstatus
 
 from samba.dcerpc import krb5pac
 
@@ -40,6 +40,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_BADMATCH,
     KDC_ERR_BADOPTION,
     KDC_ERR_CLIENT_NAME_MISMATCH,
+    KDC_ERR_GENERIC,
     KDC_ERR_MODIFIED,
     KDC_ERR_POLICY,
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
@@ -528,7 +529,10 @@ class KdcTgsTests(KDCBaseTest):
     def test_s4u2self_no_pac(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, remove_pac=True)
-        self._s4u2self(tgt, creds, expected_error=KDC_ERR_BADOPTION)
+        self._s4u2self(tgt, creds,
+                       expected_error=(KDC_ERR_GENERIC, KDC_ERR_BADOPTION),
+                       expected_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
+                       expect_edata=True)
 
     def test_user2user_no_pac(self):
         creds = self._get_creds()
@@ -556,7 +560,10 @@ class KdcTgsTests(KDCBaseTest):
     def test_s4u2self_authdata_no_pac(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, remove_pac=True, allow_empty_authdata=True)
-        self._s4u2self(tgt, creds, expected_error=KDC_ERR_BADOPTION)
+        self._s4u2self(tgt, creds,
+                       expected_error=(KDC_ERR_GENERIC, KDC_ERR_BADOPTION),
+                       expected_status=ntstatus.NT_STATUS_INVALID_PARAMETER,
+                       expect_edata=True)
 
     def test_user2user_authdata_no_pac(self):
         creds = self._get_creds()
@@ -1210,7 +1217,8 @@ class KdcTgsTests(KDCBaseTest):
         self._tgs_req(tgt, expected_error, krbtgt_creds,
                       kdc_options=kdc_options)
 
-    def _s4u2self(self, tgt, tgt_creds, expected_error):
+    def _s4u2self(self, tgt, tgt_creds, expected_error,
+                  expect_edata=False, expected_status=None):
         user_creds = self._get_mach_creds()
 
         user_name = user_creds.get_username()
@@ -1229,10 +1237,11 @@ class KdcTgsTests(KDCBaseTest):
 
             return [padata], req_body
 
-        self._tgs_req(tgt, expected_error, tgt_creds,
-                      expected_cname=user_cname,
-                      generate_padata_fn=generate_s4u2self_padata,
-                      expect_claims=False)
+        return self._tgs_req(tgt, expected_error, tgt_creds,
+                             expected_cname=user_cname,
+                             generate_padata_fn=generate_s4u2self_padata,
+                             expect_claims=False, expect_edata=expect_edata,
+                             expected_status=expected_status)
 
     def _user2user(self, tgt, tgt_creds, expected_error, sname=None):
         user_creds = self._get_mach_creds()
@@ -1250,7 +1259,9 @@ class KdcTgsTests(KDCBaseTest):
                  additional_ticket=None,
                  generate_padata_fn=None,
                  sname=None,
-                 expect_claims=True):
+                 expect_claims=True,
+                 expect_edata=False,
+                 expected_status=None):
         srealm = target_creds.get_realm()
 
         if sname is None:
@@ -1297,10 +1308,11 @@ class KdcTgsTests(KDCBaseTest):
             check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
             expected_error_mode=expected_error,
+            expected_status=expected_status,
             tgt=tgt,
             authenticator_subkey=subkey,
             kdc_options=kdc_options,
-            expect_edata=False,
+            expect_edata=expect_edata,
             expect_claims=expect_claims)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
