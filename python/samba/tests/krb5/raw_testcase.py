@@ -3293,7 +3293,7 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertFalse(checksum_keys)
             self.assertFalse(include_checksums)
 
-        expect_pac = update_pac_checksums or modify_pac_fn is not None
+        expect_pac = modify_pac_fn is not None
 
         key = ticket.decryption_key
 
