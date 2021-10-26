@@ -2225,9 +2225,19 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNotNone(ticket_encpart)
             if ticket_encpart is not None:  # Never None, but gives indentation
                 self.assertElementPresent(ticket_encpart, 'etype')
-                # 'unspecified' means present, with any value != 0
-                self.assertElementKVNO(ticket_encpart, 'kvno',
-                                       self.unspecified_kvno)
+
+                kdc_options = kdc_exchange_dict['kdc_options']
+                pos = len(tuple(krb5_asn1.KDCOptions('enc-tkt-in-skey'))) - 1
+                expect_kvno = (pos >= len(kdc_options)
+                               or kdc_options[pos] != '1')
+                if expect_kvno:
+                    # 'unspecified' means present, with any value != 0
+                    self.assertElementKVNO(ticket_encpart, 'kvno',
+                                           self.unspecified_kvno)
+                else:
+                    # For user-to-user, don't expect a kvno.
+                    self.assertElementMissing(ticket_encpart, 'kvno')
+
                 self.assertElementPresent(ticket_encpart, 'cipher')
                 ticket_cipher = self.getElementValue(ticket_encpart, 'cipher')
         self.assertElementPresent(rep, 'enc-part')
