@@ -74,6 +74,7 @@ krb5_error_code
 _kdc_pac_generate(krb5_context context,
 		  hdb_entry_ex *client,
 		  const krb5_keyblock *pk_reply_key,
+		  const krb5_boolean *pac_request,
 		  krb5_pac *pac)
 {
     *pac = NULL;
@@ -87,8 +88,10 @@ _kdc_pac_generate(krb5_context context,
 
     if (windcft->pac_pk_generate != NULL && pk_reply_key != NULL)
 	return (windcft->pac_pk_generate)(windcctx, context,
-					  client, pk_reply_key, pac);
-    return (windcft->pac_generate)(windcctx, context, client, pac);
+					  client, pk_reply_key,
+					  pac_request, pac);
+    return (windcft->pac_generate)(windcctx, context, client,
+				   pac_request, pac);
 }
 
 krb5_error_code
