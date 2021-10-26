@@ -1235,6 +1235,231 @@ class KdcTgsTests(KDCBaseTest):
                       expect_pac_attrs=True,
                       expect_pac_attrs_pac_request=True)
 
+    def test_tgs_pac_request_none(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=None)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_tgs_pac_request_false(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=False, expect_pac=None)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=False)
+
+        pac = self.get_ticket_pac(ticket, expect_pac=False)
+        self.assertIsNone(pac)
+
+    def test_tgs_pac_request_true(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=True)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_renew_pac_request_none(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=None)
+        tgt = self._modify_tgt(tgt, renewable=True)
+
+        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_renew_pac_request_false(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=False, expect_pac=None)
+        tgt = self._modify_tgt(tgt, renewable=True)
+
+        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=False)
+
+        pac = self.get_ticket_pac(ticket, expect_pac=False)
+        self.assertIsNone(pac)
+
+    def test_renew_pac_request_true(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=True)
+        tgt = self._modify_tgt(tgt, renewable=True)
+
+        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_validate_pac_request_none(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=None)
+        tgt = self._modify_tgt(tgt, invalid=True)
+
+        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_validate_pac_request_false(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=False, expect_pac=None)
+        tgt = self._modify_tgt(tgt, invalid=True)
+
+        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=False)
+
+        pac = self.get_ticket_pac(ticket, expect_pac=False)
+        self.assertIsNone(pac)
+
+    def test_validate_pac_request_true(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=True)
+        tgt = self._modify_tgt(tgt, invalid=True)
+
+        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_s4u2self_pac_request_none(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=None)
+
+        ticket = self._s4u2self(tgt, creds, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_s4u2self_pac_request_false(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=False, expect_pac=None)
+
+        ticket = self._s4u2self(tgt, creds, expected_error=0, expect_pac=False)
+
+        pac = self.get_ticket_pac(ticket, expect_pac=False)
+        self.assertIsNone(pac)
+
+    def test_s4u2self_pac_request_true(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=True)
+
+        ticket = self._s4u2self(tgt, creds, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_user2user_pac_request_none(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=None)
+
+        ticket = self._user2user(tgt, creds, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_user2user_pac_request_false(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=False, expect_pac=None)
+
+        ticket = self._user2user(tgt, creds, expected_error=0,
+                                 expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket, expect_pac=True)
+        self.assertIsNotNone(pac)
+
+    def test_user2user_pac_request_true(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=True)
+
+        ticket = self._user2user(tgt, creds, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_user2user_user_pac_request_none(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds)
+
+        user_creds = self._get_mach_creds()
+        user_tgt = self.get_tgt(user_creds, pac_request=None)
+
+        ticket = self._user2user(tgt, creds, expected_error=0,
+                                 user_tgt=user_tgt, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_user2user_user_pac_request_false(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds)
+
+        user_creds = self._get_mach_creds()
+        user_tgt = self.get_tgt(user_creds, pac_request=False, expect_pac=None)
+
+        ticket = self._user2user(tgt, creds, expected_error=0,
+                                 user_tgt=user_tgt, expect_pac=False)
+
+        pac = self.get_ticket_pac(ticket, expect_pac=False)
+        self.assertIsNone(pac)
+
+    def test_user2user_user_pac_request_true(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds)
+
+        user_creds = self._get_mach_creds()
+        user_tgt = self.get_tgt(user_creds, pac_request=True)
+
+        ticket = self._user2user(tgt, creds, expected_error=0,
+                                 user_tgt=user_tgt, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_tgs_rodc_pac_request_none(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=None)
+        tgt = self._modify_tgt(tgt, from_rodc=True)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_tgs_rodc_pac_request_false(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=False, expect_pac=None)
+        tgt = self._modify_tgt(tgt, from_rodc=True)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=False)
+
+        pac = self.get_ticket_pac(ticket, expect_pac=False)
+        self.assertIsNone(pac)
+
+    def test_tgs_rodc_pac_request_true(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=True)
+        tgt = self._modify_tgt(tgt, from_rodc=True)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
 
     def _get_tgt(self,
                  client_creds,
@@ -1562,9 +1787,10 @@ class KdcTgsTests(KDCBaseTest):
                              expect_pac=expect_pac)
 
     def _user2user(self, tgt, tgt_creds, expected_error, sname=None,
-                   expect_pac=True):
-        user_creds = self._get_mach_creds()
-        user_tgt = self.get_tgt(user_creds)
+                   user_tgt=None, expect_pac=True):
+        if user_tgt is None:
+            user_creds = self._get_mach_creds()
+            user_tgt = self.get_tgt(user_creds)
 
         kdc_options = str(krb5_asn1.KDCOptions('enc-tkt-in-skey'))
         return self._tgs_req(user_tgt, expected_error, tgt_creds,
