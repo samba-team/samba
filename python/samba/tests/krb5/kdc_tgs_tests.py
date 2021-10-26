@@ -1122,6 +1122,14 @@ class KdcTgsTests(KDCBaseTest):
         self._user2user(tgt, creds, sname=sname,
                         expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
 
+    def test_user2user_no_sname(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        self._user2user(tgt, creds, sname=False,
+                        expected_error=(KDC_ERR_GENERIC,
+                                        KDC_ERR_S_PRINCIPAL_UNKNOWN))
+
     def test_user2user_service_ticket(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds)
@@ -2025,16 +2033,24 @@ class KdcTgsTests(KDCBaseTest):
                  expected_status=None):
         srealm = target_creds.get_realm()
 
-        if sname is None:
-            target_name = target_creds.get_username()
-            if target_name == 'krbtgt':
-                sname = self.PrincipalName_create(name_type=NT_SRV_INST,
-                                                  names=[target_name, srealm])
-            else:
-                if target_name[-1] == '$':
-                    target_name = target_name[:-1]
-                sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                                  names=['host', target_name])
+        if sname is False:
+            sname = None
+            expected_sname = self.get_krbtgt_sname()
+        else:
+            if sname is None:
+                target_name = target_creds.get_username()
+                if target_name == 'krbtgt':
+                    sname = self.PrincipalName_create(
+                        name_type=NT_SRV_INST,
+                        names=[target_name, srealm])
+                else:
+                    if target_name[-1] == '$':
+                        target_name = target_name[:-1]
+                    sname = self.PrincipalName_create(
+                        name_type=NT_PRINCIPAL,
+                        names=['host', target_name])
+
+            expected_sname = sname
 
         if additional_ticket is not None:
             additional_tickets = [additional_ticket.ticket]
@@ -2062,7 +2078,7 @@ class KdcTgsTests(KDCBaseTest):
             expected_crealm=tgt.crealm,
             expected_cname=expected_cname,
             expected_srealm=srealm,
-            expected_sname=sname,
+            expected_sname=expected_sname,
             ticket_decryption_key=decryption_key,
             generate_padata_fn=generate_padata_fn,
             check_error_fn=check_error_fn,
