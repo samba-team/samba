@@ -1518,6 +1518,41 @@ server_lookup:
 	goto out;
     }
 
+    /* Now refetch the primary krbtgt, and get the current kvno (the
+     * sign check may have been on an old kvno, and the server may
+     * have been an incoming trust) */
+    ret = krb5_make_principal(context, &krbtgt_principal,
+			      krb5_principal_get_comp_string(context,
+							     krbtgt->entry.principal,
+							     1),
+			      KRB5_TGS_NAME,
+			      krb5_principal_get_comp_string(context,
+							     krbtgt->entry.principal,
+							     1), NULL);
+    if(ret) {
+	kdc_log(context, config, 0,
+		    "Failed to generate krbtgt principal");
+	goto out;
+    }
+
+    ret = _kdc_db_fetch(context, config, krbtgt_principal, HDB_F_GET_KRBTGT, NULL, NULL, &krbtgt_out);
+    krb5_free_principal(context, krbtgt_principal);
+    if (ret) {
+	krb5_error_code ret2;
+	char *ktpn, *ktpn2;
+	ret = krb5_unparse_name(context, krbtgt->entry.principal, &ktpn);
+	ret2 = krb5_unparse_name(context, krbtgt_principal, &ktpn2);
+	kdc_log(context, config, 0,
+		"Request with wrong krbtgt: %s, %s not found in our database",
+		(ret == 0) ? ktpn : "<unknown>", (ret2 == 0) ? ktpn2 : "<unknown>");
+	if(ret == 0)
+	    free(ktpn);
+	if(ret2 == 0)
+	    free(ktpn2);
+	ret = KRB5KRB_AP_ERR_NOT_US;
+	goto out;
+    }
+
     /*
      * Select enctype, return key and kvno.
      */
@@ -1567,41 +1602,6 @@ server_lookup:
      * not the same, it's someone that is using a uni-directional trust
      * backward.
      */
-
-    /* Now refetch the primary krbtgt, and get the current kvno (the
-     * sign check may have been on an old kvno, and the server may
-     * have been an incoming trust) */
-    ret = krb5_make_principal(context, &krbtgt_principal,
-			      krb5_principal_get_comp_string(context,
-							     krbtgt->entry.principal,
-							     1),
-			      KRB5_TGS_NAME,
-			      krb5_principal_get_comp_string(context,
-							     krbtgt->entry.principal,
-							     1), NULL);
-    if(ret) {
-	kdc_log(context, config, 0,
-		    "Failed to generate krbtgt principal");
-	goto out;
-    }
-
-    ret = _kdc_db_fetch(context, config, krbtgt_principal, HDB_F_GET_KRBTGT, NULL, NULL, &krbtgt_out);
-    krb5_free_principal(context, krbtgt_principal);
-    if (ret) {
-	krb5_error_code ret2;
-	char *ktpn, *ktpn2;
-	ret = krb5_unparse_name(context, krbtgt->entry.principal, &ktpn);
-	ret2 = krb5_unparse_name(context, krbtgt_principal, &ktpn2);
-	kdc_log(context, config, 0,
-		"Request with wrong krbtgt: %s, %s not found in our database",
-		(ret == 0) ? ktpn : "<unknown>", (ret2 == 0) ? ktpn2 : "<unknown>");
-	if(ret == 0)
-	    free(ktpn);
-	if(ret2 == 0)
-	    free(ktpn2);
-	ret = KRB5KRB_AP_ERR_NOT_US;
-	goto out;
-    }
 
     /* The first realm is the realm of the service, the second is
      * krbtgt/<this>/@REALM component of the krbtgt DN the request was
