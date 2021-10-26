@@ -40,6 +40,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_BADMATCH,
     KDC_ERR_BADOPTION,
     KDC_ERR_CLIENT_NAME_MISMATCH,
+    KDC_ERR_MODIFIED,
     KDC_ERR_POLICY,
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
     KDC_ERR_TGT_REVOKED,
@@ -996,7 +997,8 @@ class KdcTgsTests(KDCBaseTest):
         service_creds = self.get_service_creds()
         service_ticket = self.get_service_ticket(tgt, service_creds)
 
-        self._user2user(service_ticket, creds, expected_error=KDC_ERR_POLICY)
+        self._user2user(service_ticket, creds,
+                        expected_error=(KDC_ERR_MODIFIED, KDC_ERR_POLICY))
 
     def _get_tgt(self,
                  client_creds,
