@@ -949,7 +949,7 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds()
         tgt = self._get_tgt(creds)
 
-        user_name = self._get_mach_creds().get_username()
+        user_name = creds.get_username()
         sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=['host', user_name])
 
@@ -960,18 +960,17 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds()
         tgt = self._get_tgt(creds)
 
-        user_name = self._get_mach_creds().get_username()
+        user_name = creds.get_username()
         sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=[user_name])
 
-        self._user2user(tgt, creds, sname=sname,
-                        expected_error=KDC_ERR_BADMATCH)
+        self._user2user(tgt, creds, sname=sname, expected_error=0)
 
     def test_user2user_wrong_sname(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds)
 
-        other_creds = self.get_service_creds()
+        other_creds = self._get_mach_creds()
         user_name = other_creds.get_username()
         sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=[user_name])
