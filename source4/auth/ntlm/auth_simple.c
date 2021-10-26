@@ -150,7 +150,7 @@ static void authenticate_ldap_simple_bind_done(struct tevent_req *subreq)
 	const struct tsocket_address *local_address = user_info->local_host;
 	const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
 	struct auth_user_info_dc *user_info_dc = NULL;
-	uint8_t authoritative = 0;
+	uint8_t authoritative = 1;
 	uint32_t flags = 0;
 	NTSTATUS nt_status;
 
