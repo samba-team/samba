@@ -43,8 +43,10 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_GENERIC,
     KDC_ERR_MODIFIED,
     KDC_ERR_POLICY,
+    KDC_ERR_C_PRINCIPAL_UNKNOWN,
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
     KDC_ERR_TGT_REVOKED,
+    KDC_ERR_WRONG_REALM,
     NT_PRINCIPAL,
     NT_SRV_INST,
 )
@@ -1112,6 +1114,100 @@ class KdcTgsTests(KDCBaseTest):
                         expected_error=(KDC_ERR_BADMATCH,
                                         KDC_ERR_BADOPTION))
 
+    def test_user2user_other_sname(self):
+        other_name = self.get_new_username()
+        spn = f'host/{other_name}'
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'spn': spn})
+        tgt = self._get_tgt(creds)
+
+        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=['host', other_name])
+
+        self._user2user(tgt, creds, sname=sname, expected_error=0)
+
+    def test_user2user_wrong_sname_krbtgt(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        sname = self.get_krbtgt_sname()
+
+        self._user2user(tgt, creds, sname=sname,
+                        expected_error=(KDC_ERR_BADMATCH,
+                                        KDC_ERR_BADOPTION))
+
+    def test_user2user_wrong_srealm(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        self._user2user(tgt, creds, srealm='OTHER.REALM',
+                        expected_error=(KDC_ERR_WRONG_REALM,
+                                        KDC_ERR_S_PRINCIPAL_UNKNOWN))
+
+    def test_user2user_tgt_correct_realm(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        realm = creds.get_realm().encode('utf-8')
+        tgt = self._modify_tgt(tgt, realm)
+
+        self._user2user(tgt, creds,
+                        expected_error=0)
+
+    def test_user2user_tgt_wrong_realm(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        tgt = self._modify_tgt(tgt, b'OTHER.REALM')
+
+        self._user2user(tgt, creds,
+                        expected_error=0)
+
+    def test_user2user_tgt_correct_cname(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        user_name = creds.get_username()
+        user_name = user_name.encode('utf-8')
+        cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=[user_name])
+
+        tgt = self._modify_tgt(tgt, cname=cname)
+
+        self._user2user(tgt, creds, expected_error=0)
+
+    def test_user2user_tgt_other_cname(self):
+        samdb = self.get_samdb()
+
+        other_name = self.get_new_username()
+        upn = f'{other_name}@{samdb.domain_dns_name()}'
+
+        creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'upn': upn})
+        tgt = self._get_tgt(creds)
+
+        cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=[other_name.encode('utf-8')])
+
+        tgt = self._modify_tgt(tgt, cname=cname)
+
+        self._user2user(tgt, creds, expected_error=0)
+
+    def test_user2user_tgt_cname_host(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        user_name = creds.get_username()
+        user_name = user_name.encode('utf-8')
+        cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=[b'host', user_name])
+
+        tgt = self._modify_tgt(tgt, cname=cname)
+
+        self._user2user(tgt, creds, expected_error=KDC_ERR_C_PRINCIPAL_UNKNOWN)
+
     def test_user2user_non_existent_sname(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds)
@@ -2005,7 +2101,7 @@ class KdcTgsTests(KDCBaseTest):
                              expect_pac=expect_pac)
 
     def _user2user(self, tgt, tgt_creds, expected_error, sname=None,
-                   user_tgt=None, expect_pac=True):
+                   srealm=None, user_tgt=None, expect_pac=True):
         if user_tgt is None:
             user_creds = self._get_mach_creds()
             user_tgt = self.get_tgt(user_creds)
@@ -2015,6 +2111,7 @@ class KdcTgsTests(KDCBaseTest):
                              kdc_options=kdc_options,
                              additional_ticket=tgt,
                              sname=sname,
+                             srealm=srealm,
                              expect_pac=expect_pac)
 
     def _tgs_req(self, tgt, expected_error, target_creds,
@@ -2023,6 +2120,7 @@ class KdcTgsTests(KDCBaseTest):
                  additional_ticket=None,
                  generate_padata_fn=None,
                  sname=None,
+                 srealm=None,
                  expect_claims=True,
                  expect_pac=True,
                  expect_pac_attrs=None,
@@ -2031,7 +2129,10 @@ class KdcTgsTests(KDCBaseTest):
                  expect_edata=False,
                  expected_sid=None,
                  expected_status=None):
-        srealm = target_creds.get_realm()
+        if srealm is False:
+            srealm = None
+        elif srealm is None:
+            srealm = target_creds.get_realm()
 
         if sname is False:
             sname = None
