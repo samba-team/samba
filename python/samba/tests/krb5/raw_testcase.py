@@ -2023,6 +2023,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          expect_upn_dns_info_ex=None,
                          expect_pac_attrs=None,
                          expect_pac_attrs_pac_request=None,
+                         expect_requester_sid=None,
                          to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2078,6 +2079,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_upn_dns_info_ex': expect_upn_dns_info_ex,
             'expect_pac_attrs': expect_pac_attrs,
             'expect_pac_attrs_pac_request': expect_pac_attrs_pac_request,
+            'expect_requester_sid': expect_requester_sid,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -2128,6 +2130,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expect_upn_dns_info_ex=None,
                           expect_pac_attrs=None,
                           expect_pac_attrs_pac_request=None,
+                          expect_requester_sid=None,
                           expected_proxy_target=None,
                           expected_transited_services=None,
                           to_rodc=False):
@@ -2184,6 +2187,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_upn_dns_info_ex': expect_upn_dns_info_ex,
             'expect_pac_attrs': expect_pac_attrs,
             'expect_pac_attrs_pac_request': expect_pac_attrs_pac_request,
+            'expect_requester_sid': expect_requester_sid,
             'expected_proxy_target': expected_proxy_target,
             'expected_transited_services': expected_transited_services,
             'to_rodc': to_rodc
@@ -2610,6 +2614,12 @@ class RawKerberosTest(TestCaseInTempDir):
         elif expect_pac_attrs is None:
             require_strict.add(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
 
+        expect_requester_sid = kdc_exchange_dict['expect_requester_sid']
+        if expect_requester_sid:
+            expected_types.append(krb5pac.PAC_TYPE_REQUESTER_SID)
+        elif expect_requester_sid is None:
+            require_strict.add(krb5pac.PAC_TYPE_REQUESTER_SID)
+
         buffer_types = [pac_buffer.type
                         for pac_buffer in pac.buffers]
         self.assertSequenceElementsEqual(
@@ -2703,6 +2713,13 @@ class RawKerberosTest(TestCaseInTempDir):
                                  requested_pac)
                 self.assertEqual(expect_pac_attrs_pac_request is None,
                                  given_pac)
+
+            elif (pac_buffer.type == krb5pac.PAC_TYPE_REQUESTER_SID
+                      and expect_requester_sid):
+                requester_sid = pac_buffer.info.sid
+
+                self.assertIsNotNone(expected_sid)
+                self.assertEqual(expected_sid, str(requester_sid))
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
@@ -3698,6 +3715,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expect_pac=True,
                           expect_pac_attrs=None,
                           expect_pac_attrs_pac_request=None,
+                          expect_requester_sid=None,
                           to_rodc=False):
 
         def _generate_padata_copy(_kdc_exchange_dict,
@@ -3743,6 +3761,7 @@ class RawKerberosTest(TestCaseInTempDir):
             expect_pac=expect_pac,
             expect_pac_attrs=expect_pac_attrs,
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
+            expect_requester_sid=expect_requester_sid,
             to_rodc=to_rodc)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
