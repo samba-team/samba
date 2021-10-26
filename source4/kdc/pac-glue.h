@@ -32,6 +32,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *cred_blob,
 				    const DATA_BLOB *upn_blob,
 				    const DATA_BLOB *pac_attrs_blob,
+				    const DATA_BLOB *requester_sid_blob,
 				    const DATA_BLOB *deleg_blob,
 				    krb5_pac *pac);
 
@@ -53,6 +54,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB **_upn_info_blob,
 				 DATA_BLOB **_pac_attrs_blob,
 				 const krb5_boolean *pac_request,
+				 DATA_BLOB **_requester_sid_blob,
 				 struct auth_user_info_dc **_user_info_dc);
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
