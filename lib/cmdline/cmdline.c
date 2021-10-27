@@ -1251,7 +1251,7 @@ static struct poptOption popt_legacy_s3[] = {
 	{
 		.longName   = "kerberos",
 		.shortName  = 'k',
-		.argInfo    = POPT_ARG_STRING,
+		.argInfo    = POPT_ARG_NONE,
 		.val        = 'k',
 		.descrip    = "DEPRECATED: Migrate to --use-kerberos",
 	},
