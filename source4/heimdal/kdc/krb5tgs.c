@@ -1302,9 +1302,12 @@ tgs_build_reply(krb5_context context,
     krb5_error_code ret;
     krb5_principal cp = NULL, sp = NULL, tp = NULL, dp = NULL;
     krb5_principal krbtgt_principal = NULL;
+    krb5_principal user2user_princ = NULL;
     char *spn = NULL, *cpn = NULL, *tpn = NULL, *dpn = NULL;
+    char *user2user_name = NULL;
     hdb_entry_ex *server = NULL, *client = NULL, *s4u2self_impersonated_client = NULL;
     HDB *clientdb, *s4u2self_impersonated_clientdb;
+    HDB *serverdb = NULL;
     krb5_realm ref_realm = NULL;
     EncTicketPart *tgt = &ticket->ticket;
     const char *tgt_realm = /* Realm of TGT issuer */
@@ -1370,7 +1373,7 @@ tgs_build_reply(krb5_context context,
 
 server_lookup:
     ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER | flags,
-			NULL, NULL, &server);
+			NULL, &serverdb, &server);
 
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
 	kdc_log(context, config, 5, "target %s does not have secrets at this KDC, need to proxy", sp);
@@ -1511,6 +1514,7 @@ server_lookup:
 	    krb5uint32 second_kvno = 0;
 	    krb5uint32 *kvno_ptr = NULL;
 	    size_t i;
+	    hdb_entry_ex *user2user_client = NULL;
 
 	    if(b->additional_tickets == NULL ||
 	       b->additional_tickets->len == 0){
@@ -1558,6 +1562,53 @@ server_lookup:
 	    ret = verify_flags(context, config, &adtkt, spn);
 	    if (ret)
 		goto out;
+
+	    /* Fetch the name from the TGT. */
+	    ret = _krb5_principalname2krb5_principal(context, &user2user_princ,
+						     adtkt.cname, adtkt.crealm);
+	    if (ret) {
+		goto out;
+	    }
+
+	    ret = krb5_unparse_name(context, user2user_princ, &user2user_name);
+	    if (ret) {
+		goto out;
+	    }
+
+	    /* Look up the name given in the TGT in the database. */
+	    ret = db_fetch_client(context, config, flags, user2user_princ, user2user_name,
+				  krb5_principal_get_realm(context, krbtgt_out->entry.principal),
+				  NULL, &user2user_client);
+	    if (ret) {
+		goto out;
+	    }
+
+	    if (user2user_client != NULL) {
+		/*
+		 * If the account is present in the database, check the account
+		 * flags.
+		 */
+		ret = kdc_check_flags(context, config,
+				      user2user_client, user2user_name,
+				      NULL, NULL,
+				      FALSE);
+		if (ret) {
+		    _kdc_free_ent(context, user2user_client);
+		    goto out;
+		}
+
+		/*
+		 * Also check that the account is the same one specified in the
+		 * request.
+		 */
+		ret = check_s4u2self(context, config, serverdb, server, user2user_client, user2user_princ);
+		if (ret) {
+		    _kdc_free_ent(context, user2user_client);
+		    goto out;
+		}
+	    }
+
+	    _kdc_free_ent(context, user2user_client);
 
 	    ekey = &adtkt.key;
 	    for(i = 0; i < b->etype.len; i++)
@@ -2062,6 +2113,7 @@ server_lookup:
 			 reply);
 
 out:
+    free(user2user_name);
     if (tpn != cpn)
 	    free(tpn);
     free(spn);
@@ -2079,6 +2131,8 @@ out:
     if(s4u2self_impersonated_client)
 	_kdc_free_ent(context, s4u2self_impersonated_client);
 
+    if (user2user_princ)
+	krb5_free_principal(context, user2user_princ);
     if (tp && tp != cp)
 	krb5_free_principal(context, tp);
     if (cp)
