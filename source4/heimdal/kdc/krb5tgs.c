@@ -1306,6 +1306,7 @@ tgs_build_reply(krb5_context context,
     char *spn = NULL, *cpn = NULL, *tpn = NULL, *dpn = NULL;
     char *user2user_name = NULL;
     hdb_entry_ex *server = NULL, *client = NULL, *s4u2self_impersonated_client = NULL;
+    hdb_entry_ex *user2user_krbtgt = NULL;
     HDB *clientdb, *s4u2self_impersonated_clientdb;
     HDB *serverdb = NULL;
     krb5_realm ref_realm = NULL;
@@ -1316,6 +1317,7 @@ tgs_build_reply(krb5_context context,
     krb5_keyblock sessionkey;
     krb5_kvno kvno;
     krb5_pac mspac = NULL;
+    krb5_pac user2user_pac = NULL;
     uint16_t rodc_id;
     krb5_boolean add_ticket_sig = FALSE;
     hdb_entry_ex *krbtgt_out = NULL;
@@ -1508,13 +1510,13 @@ server_lookup:
 
 	if(b->kdc_options.enc_tkt_in_skey) {
 	    Ticket *t;
-	    hdb_entry_ex *uu;
 	    krb5_principal p;
 	    Key *uukey;
 	    krb5uint32 second_kvno = 0;
 	    krb5uint32 *kvno_ptr = NULL;
 	    size_t i;
 	    hdb_entry_ex *user2user_client = NULL;
+	    krb5_boolean user2user_kdc_issued = FALSE;
 
 	    if(b->additional_tickets == NULL ||
 	       b->additional_tickets->len == 0){
@@ -1540,22 +1542,20 @@ server_lookup:
 	    }
 	    ret = _kdc_db_fetch(context, config, p,
 				HDB_F_GET_KRBTGT, kvno_ptr,
-				NULL, &uu);
+				NULL, &user2user_krbtgt);
 	    krb5_free_principal(context, p);
 	    if(ret){
 		if (ret == HDB_ERR_NOENTRY)
 		    ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 		goto out;
 	    }
-	    ret = hdb_enctype2key(context, &uu->entry,
+	    ret = hdb_enctype2key(context, &user2user_krbtgt->entry,
 				  t->enc_part.etype, &uukey);
 	    if(ret){
-		_kdc_free_ent(context, uu);
 		ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
 		goto out;
 	    }
 	    ret = krb5_decrypt_ticket(context, t, &uukey->key, &adtkt, 0);
-	    _kdc_free_ent(context, uu);
 	    if(ret)
 		goto out;
 
@@ -1608,7 +1608,27 @@ server_lookup:
 		}
 	    }
 
+	    /* Verify the PAC of the TGT. */
+	    ret = check_PAC(context, config, user2user_princ, NULL,
+			    user2user_client, user2user_krbtgt, user2user_krbtgt, user2user_krbtgt,
+			    &uukey->key, &tkey_check->key, &adtkt, &user2user_kdc_issued, &user2user_pac);
 	    _kdc_free_ent(context, user2user_client);
+	    if (ret) {
+		const char *msg = krb5_get_error_message(context, ret);
+		kdc_log(context, config, 0,
+			"Verify PAC failed for %s (%s) from %s with %s",
+			spn, user2user_name, from, msg);
+		krb5_free_error_message(context, msg);
+		goto out;
+	    }
+
+	    if (user2user_pac == NULL || !user2user_kdc_issued) {
+		ret = KRB5KDC_ERR_BADOPTION;
+		kdc_log(context, config, 0,
+			"Ticket not signed with PAC; user-to-user failed (%s).",
+			mspac ? "Ticket unsigned" : "No PAC");
+		goto out;
+	    }
 
 	    ekey = &adtkt.key;
 	    for(i = 0; i < b->etype.len; i++)
@@ -2130,6 +2150,8 @@ out:
 	_kdc_free_ent(context, client);
     if(s4u2self_impersonated_client)
 	_kdc_free_ent(context, s4u2self_impersonated_client);
+    if (user2user_krbtgt)
+	_kdc_free_ent(context, user2user_krbtgt);
 
     if (user2user_princ)
 	krb5_free_principal(context, user2user_princ);
@@ -2148,6 +2170,7 @@ out:
     free_EncTicketPart(&adtkt);
 
     krb5_pac_free(context, mspac);
+    krb5_pac_free(context, user2user_pac);
 
     return ret;
 }
