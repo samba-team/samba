@@ -1361,7 +1361,10 @@ tgs_build_reply(krb5_context context,
 	    ret = KRB5KDC_ERR_POLICY;
 	    goto out;
 	}
-	_krb5_principalname2krb5_principal(context, &p, t->sname, t->realm);
+	ret = _krb5_principalname2krb5_principal(context, &p, t->sname, t->realm);
+	if (ret) {
+	    goto out;
+	}
 	if(t->enc_part.kvno){
 	    second_kvno = *t->enc_part.kvno;
 	    kvno_ptr = &second_kvno;
