@@ -15,11 +15,16 @@ localPolicyFlags: 0
 operatingSystem: Samba
 operatingSystemVersion: ${SAMBA_VERSION_STRING}
 sAMAccountName: ${NETBIOSNAME}$
-# The "servicePrincipalName" updates are now handled by the "samba_spnupdate"
-# script
 userAccountControl: 532480
 clearTextPassword:: ${MACHINEPASS_B64}
 objectSid: ${DOMAINSID}-${DCRID}
+# While some "servicePrincipalName" updates might be handled by the
+# "samba_spnupdate" script, we need to get the basics in here before
+# we add any others.
+servicePrincipalName: HOST/${DNSNAME}
+servicePrincipalName: HOST/${NETBIOSNAME}
+servicePrincipalName: HOST/${DNSNAME}/${DNSNAME}
+
 
 dn: CN=RID Set,CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
 objectClass: rIDSet
