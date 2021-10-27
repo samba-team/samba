@@ -1,4 +1,109 @@
                    ==============================
+                   Release Notes for Samba 4.15.1
+                          October 27, 2021
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.15 release series.
+
+
+Changes since 4.15.0
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14682: vfs_shadow_copy2: core dump in make_relative_path.
+   * BUG 14685: Log clutter from filename_convert_internal.
+   * BUG 14862: MacOSX compilation fixes.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14868: rodc_rwdc test flaps.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14642: Provide a fix for MS CVE-2020-17049 in Samba [SECURITY] 'Bronze
+     bit' S4U2Proxy Constrained Delegation bypass in Samba with embedded
+     Heimdal.
+   * BUG 14836: Python ldb.msg_diff() memory handling failure.
+   * BUG 14845: "in" operator on ldb.Message is case sensitive.
+   * BUG 14848: Release LDB 2.4.1 for Samba 4.15.1.
+   * BUG 14854: samldb_krbtgtnumber_available() looks for incorrect string.
+   * BUG 14871: Fix Samba support for UF_NO_AUTH_DATA_REQUIRED.
+   * BUG 14874: Allow special chars like "@" in samAccountName when generating
+     the salt.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14826: Correctly ignore comments in CTDB public addresses file.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 14642: Provide a fix for MS CVE-2020-17049 in Samba [SECURITY] 'Bronze
+     bit' S4U2Proxy Constrained Delegation bypass in Samba with embedded
+     Heimdal.
+
+o  Viktor Dukhovni <viktor@twosigma.com>
+   * BUG 12998: Fix transit path validation.
+
+o  Pavel Filipenský <pfilipen@redhat.com>
+   * BUG 14852: Fix that child winbindd logs to log.winbindd instead of
+     log.wb-<DOMAIN>.
+
+o  Luke Howard <lukeh@padl.com>
+   * BUG 14642: Provide a fix for MS CVE-2020-17049 in Samba [SECURITY] 'Bronze
+     bit' S4U2Proxy Constrained Delegation bypass in Samba with embedded
+     Heimdal.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14855: SMB3 cancel requests should only include the MID together with
+     AsyncID when AES-128-GMAC is used.
+
+o  Alex Richardson <Alexander.Richardson@cl.cam.ac.uk>
+   * BUG 14862: MacOSX compilation fixes.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14870: Prepare to operate with MIT krb5 >= 1.20.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14826: Correctly ignore comments in CTDB public addresses file.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 14642: Provide a fix for MS CVE-2020-17049 in Samba [SECURITY] 'Bronze
+     bit' S4U2Proxy Constrained Delegation bypass in Samba with embedded
+     Heimdal.
+   * BUG 14836: Python ldb.msg_diff() memory handling failure.
+   * BUG 14845: "in" operator on ldb.Message is case sensitive.
+   * BUG 14864: Heimdal prefers RC4 over AES for machine accounts.
+   * BUG 14868: rodc_rwdc test flaps.
+   * BUG 14871: Fix Samba support for UF_NO_AUTH_DATA_REQUIRED.
+   * BUG 14874: Allow special chars like "@" in samAccountName when generating
+     the salt.
+
+o  Nicolas Williams <nico@twosigma.com>
+   * BUG 14642: Provide a fix for MS CVE-2020-17049 in Samba [SECURITY] 'Bronze
+     bit' S4U2Proxy Constrained Delegation bypass in Samba with embedded
+     Heimdal.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.15.0
                          September 20, 2021
                    ==============================
