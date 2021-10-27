@@ -99,7 +99,10 @@ class TestCase(unittest.TestCase):
         def fn(self):
             getattr(self, "_%s_with_args" % fnname)(*args)
         fn.__doc__ = doc
-        setattr(cls, "%s_%s" % (fnname, suffix), fn)
+        attr = "%s_%s" % (fnname, suffix)
+        if hasattr(cls, attr):
+            raise RuntimeError(f"Dynamic test {attr} already exists!")
+        setattr(cls, attr, fn)
 
     @classmethod
     def setUpDynamicTestCases(cls):
