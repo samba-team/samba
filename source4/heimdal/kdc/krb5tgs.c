@@ -1339,64 +1339,7 @@ tgs_build_reply(krb5_context context,
     if (b->kdc_options.canonicalize)
 	flags |= HDB_F_CANON;
 
-    if(b->kdc_options.enc_tkt_in_skey){
-	Ticket *t;
-	hdb_entry_ex *uu;
-	krb5_principal p;
-	Key *uukey;
-	krb5uint32 second_kvno = 0;
-	krb5uint32 *kvno_ptr = NULL;
-
-	if(b->additional_tickets == NULL ||
-	   b->additional_tickets->len == 0){
-	    ret = KRB5KDC_ERR_BADOPTION; /* ? */
-	    kdc_log(context, config, 0,
-		    "No second ticket present in request");
-	    goto out;
-	}
-	t = &b->additional_tickets->val[0];
-	if(!get_krbtgt_realm(&t->sname)){
-	    kdc_log(context, config, 0,
-		    "Additional ticket is not a ticket-granting ticket");
-	    ret = KRB5KDC_ERR_POLICY;
-	    goto out;
-	}
-	ret = _krb5_principalname2krb5_principal(context, &p, t->sname, t->realm);
-	if (ret) {
-	    goto out;
-	}
-	if(t->enc_part.kvno){
-	    second_kvno = *t->enc_part.kvno;
-	    kvno_ptr = &second_kvno;
-	}
-	ret = _kdc_db_fetch(context, config, p,
-			    HDB_F_GET_KRBTGT, kvno_ptr,
-			    NULL, &uu);
-	krb5_free_principal(context, p);
-	if(ret){
-	    if (ret == HDB_ERR_NOENTRY)
-		ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
-	    goto out;
-	}
-	ret = hdb_enctype2key(context, &uu->entry,
-			      t->enc_part.etype, &uukey);
-	if(ret){
-	    _kdc_free_ent(context, uu);
-	    ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
-	    goto out;
-	}
-	ret = krb5_decrypt_ticket(context, t, &uukey->key, &adtkt, 0);
-	_kdc_free_ent(context, uu);
-	if(ret)
-	    goto out;
-
-	ret = verify_flags(context, config, &adtkt, spn);
-	if (ret)
-	    goto out;
-
-	s = &adtkt.cname;
-	r = adtkt.crealm;
-    } else if (s == NULL) {
+    if (s == NULL) {
 	ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	krb5_set_error_message(context, ret, "No server in request");
 	goto out;
@@ -1561,7 +1504,61 @@ server_lookup:
 	krb5_enctype etype;
 
 	if(b->kdc_options.enc_tkt_in_skey) {
+	    Ticket *t;
+	    hdb_entry_ex *uu;
+	    krb5_principal p;
+	    Key *uukey;
+	    krb5uint32 second_kvno = 0;
+	    krb5uint32 *kvno_ptr = NULL;
 	    size_t i;
+
+	    if(b->additional_tickets == NULL ||
+	       b->additional_tickets->len == 0){
+		ret = KRB5KDC_ERR_BADOPTION; /* ? */
+		kdc_log(context, config, 0,
+			"No second ticket present in request");
+		goto out;
+	    }
+	    t = &b->additional_tickets->val[0];
+	    if(!get_krbtgt_realm(&t->sname)){
+		kdc_log(context, config, 0,
+			"Additional ticket is not a ticket-granting ticket");
+		ret = KRB5KDC_ERR_POLICY;
+		goto out;
+	    }
+	    ret = _krb5_principalname2krb5_principal(context, &p, t->sname, t->realm);
+	    if (ret) {
+		goto out;
+	    }
+	    if(t->enc_part.kvno){
+		second_kvno = *t->enc_part.kvno;
+		kvno_ptr = &second_kvno;
+	    }
+	    ret = _kdc_db_fetch(context, config, p,
+				HDB_F_GET_KRBTGT, kvno_ptr,
+				NULL, &uu);
+	    krb5_free_principal(context, p);
+	    if(ret){
+		if (ret == HDB_ERR_NOENTRY)
+		    ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+		goto out;
+	    }
+	    ret = hdb_enctype2key(context, &uu->entry,
+				  t->enc_part.etype, &uukey);
+	    if(ret){
+		_kdc_free_ent(context, uu);
+		ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
+		goto out;
+	    }
+	    ret = krb5_decrypt_ticket(context, t, &uukey->key, &adtkt, 0);
+	    _kdc_free_ent(context, uu);
+	    if(ret)
+		goto out;
+
+	    ret = verify_flags(context, config, &adtkt, spn);
+	    if (ret)
+		goto out;
+
 	    ekey = &adtkt.key;
 	    for(i = 0; i < b->etype.len; i++)
 		if (b->etype.val[i] == adtkt.key.keytype)
