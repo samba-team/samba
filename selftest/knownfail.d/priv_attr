@@ -1,3 +1,8 @@
+# These priv_attrs tests would be good to fix, but are not fatal as
+# the testsuite is run twice, once with and once without STRICT_CHECKING=0
+#
+# These knownfails show that we can improve our error matching against Windows.
+#
 samba4.priv_attrs.strict.python\(.*\).__main__.PrivAttrsTests.test_priv_attr_sidHistory_add_CC_WP_computer
 samba4.priv_attrs.strict.python\(.*\).__main__.PrivAttrsTests.test_priv_attr_sidHistory_add_CC_WP_user
 samba4.priv_attrs.strict.python\(.*\).__main__.PrivAttrsTests.test_priv_attr_sidHistory_add_CC_default_computer
