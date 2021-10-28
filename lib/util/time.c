@@ -178,7 +178,7 @@ check if it's a null NTTIME
 **/
 _PUBLIC_ bool null_nttime(NTTIME t)
 {
-	return t == 0 || t == (NTTIME)-1;
+	return t == 0;
 }
 
 /*******************************************************************
