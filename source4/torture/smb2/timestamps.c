@@ -352,6 +352,213 @@ static bool test_time_t_1968(struct torture_context *tctx,
 			   -63158400 /* 1968 */);
 }
 
+static bool test_freeze_thaw(struct torture_context *tctx,
+			     struct smb2_tree *tree)
+{
+	const char *filename = BASEDIR "\\test_freeze_thaw";
+	struct smb2_create cr;
+	struct smb2_handle handle = {{0}};
+	struct smb2_handle testdirh = {{0}};
+	struct timespec ts = { .tv_sec = time(NULL) };
+	uint64_t nttime;
+	union smb_fileinfo gi;
+	union smb_setfileinfo si;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+
+	cr = (struct smb2_create) {
+		.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+		.in.fname = filename,
+	};
+
+	status = smb2_create(tree, tctx, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	handle = cr.out.file.handle;
+
+	si = (union smb_setfileinfo) {
+		.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION,
+		.basic_info.in.file.handle = handle,
+	};
+
+	/*
+	 * Step 1:
+	 * First set timestamps of testfile to current time
+	 */
+
+	nttime = full_timespec_to_nt_time(&ts);
+	si.basic_info.in.create_time = nttime;
+	si.basic_info.in.write_time = nttime;
+	si.basic_info.in.change_time = nttime;
+
+	status = smb2_setinfo_file(tree, &si);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	gi = (union smb_fileinfo) {
+		.generic.level = SMB_QFILEINFO_BASIC_INFORMATION,
+		.generic.in.file.handle = handle,
+	};
+
+	/*
+	 * Step 2:
+	 * Verify timestamps are indeed set to the value in "nttime".
+	 */
+
+	status = smb2_getinfo_file(tree, tctx, &gi);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+
+	torture_comment(tctx, "Got: create: %s, write: %s, change: %s\n",
+			nt_time_string(tctx, gi.basic_info.out.create_time),
+			nt_time_string(tctx, gi.basic_info.out.write_time),
+			nt_time_string(tctx, gi.basic_info.out.change_time));
+
+	torture_assert_u64_equal_goto(tctx,
+				      nttime,
+				      gi.basic_info.out.create_time,
+				      ret, done,
+				      "Wrong create time\n");
+	torture_assert_u64_equal_goto(tctx,
+				      nttime,
+				      gi.basic_info.out.write_time,
+				      ret, done,
+				      "Wrong write time\n");
+	torture_assert_u64_equal_goto(tctx,
+				      nttime,
+				      gi.basic_info.out.change_time,
+				      ret, done,
+				      "Wrong change time\n");
+
+	/*
+	 * Step 3:
+	 * First set timestamps with NTTIME_FREEZE, must not change any
+	 * timestamp value.
+	 */
+
+	si.basic_info.in.create_time = NTTIME_FREEZE;
+	si.basic_info.in.write_time = NTTIME_FREEZE;
+	si.basic_info.in.change_time = NTTIME_FREEZE;
+
+	status = smb2_setinfo_file(tree, &si);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	gi = (union smb_fileinfo) {
+		.generic.level = SMB_QFILEINFO_BASIC_INFORMATION,
+		.generic.in.file.handle = handle,
+	};
+
+	/*
+	 * Step 4:
+	 * Verify timestamps are unmodified from step 2.
+	 */
+
+	gi = (union smb_fileinfo) {
+		.generic.level = SMB_QFILEINFO_BASIC_INFORMATION,
+		.generic.in.file.handle = handle,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &gi);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+
+	torture_comment(tctx, "Got: create: %s, write: %s, change: %s\n",
+			nt_time_string(tctx, gi.basic_info.out.create_time),
+			nt_time_string(tctx, gi.basic_info.out.write_time),
+			nt_time_string(tctx, gi.basic_info.out.change_time));
+
+	torture_assert_u64_equal_goto(tctx,
+				      nttime,
+				      gi.basic_info.out.create_time,
+				      ret, done,
+				      "Wrong create time\n");
+	torture_assert_u64_equal_goto(tctx,
+				      nttime,
+				      gi.basic_info.out.write_time,
+				      ret, done,
+				      "Wrong write time\n");
+	torture_assert_u64_equal_goto(tctx,
+				      nttime,
+				      gi.basic_info.out.change_time,
+				      ret, done,
+				      "Wrong change time\n");
+
+	/*
+	 * Step 5:
+	 * First set timestamps with NTTIME_THAW, must not change any timestamp
+	 * value.
+	 */
+
+	si.basic_info.in.create_time = NTTIME_THAW;
+	si.basic_info.in.write_time = NTTIME_THAW;
+	si.basic_info.in.change_time = NTTIME_THAW;
+
+	status = smb2_setinfo_file(tree, &si);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	gi = (union smb_fileinfo) {
+		.generic.level = SMB_QFILEINFO_BASIC_INFORMATION,
+		.generic.in.file.handle = handle,
+	};
+
+	/*
+	 * Step 6:
+	 * Verify timestamps are unmodified from step 2.
+	 */
+
+	gi = (union smb_fileinfo) {
+		.generic.level = SMB_QFILEINFO_BASIC_INFORMATION,
+		.generic.in.file.handle = handle,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &gi);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+
+	torture_comment(tctx, "Got: create: %s, write: %s, change: %s\n",
+			nt_time_string(tctx, gi.basic_info.out.create_time),
+			nt_time_string(tctx, gi.basic_info.out.write_time),
+			nt_time_string(tctx, gi.basic_info.out.change_time));
+
+	torture_assert_u64_equal_goto(tctx,
+				      nttime,
+				      gi.basic_info.out.create_time,
+				      ret, done,
+				      "Wrong create time\n");
+	torture_assert_u64_equal_goto(tctx,
+				      nttime,
+				      gi.basic_info.out.write_time,
+				      ret, done,
+				      "Wrong write time\n");
+	torture_assert_u64_equal_goto(tctx,
+				      nttime,
+				      gi.basic_info.out.change_time,
+				      ret, done,
+				      "Wrong change time\n");
+
+done:
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+	if (!smb2_util_handle_empty(testdirh)) {
+		smb2_util_close(tree, testdirh);
+	}
+	smb2_deltree(tree, BASEDIR);
+	return ret;
+}
+
 static bool test_delayed_write_vs_seteof(struct torture_context *tctx,
 					 struct smb2_tree *tree)
 {
@@ -980,6 +1187,7 @@ struct torture_suite *torture_smb2_timestamps_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "time_t_-1", test_time_t_minus_1);
 	torture_suite_add_1smb2_test(suite, "time_t_-2", test_time_t_minus_2);
 	torture_suite_add_1smb2_test(suite, "time_t_1968", test_time_t_1968);
+	torture_suite_add_1smb2_test(suite, "freeze-thaw", test_freeze_thaw);
 
 	/*
 	 * Testing of delayed write-time udpates
