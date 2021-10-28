@@ -485,6 +485,34 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self._get_tgt(creds, remove_pac=True)
         self._user2user(tgt, creds, expected_error=KDC_ERR_BADOPTION)
 
+    # Test making a request with authdata and without a PAC.
+    def test_tgs_authdata_no_pac(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, remove_pac=True, allow_empty_authdata=True)
+        self._run_tgs(tgt, expected_error=KDC_ERR_BADOPTION)
+
+    def test_renew_authdata_no_pac(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, renewable=True, remove_pac=True,
+                            allow_empty_authdata=True)
+        self._renew_tgt(tgt, expected_error=KDC_ERR_BADOPTION)
+
+    def test_validate_authdata_no_pac(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, invalid=True, remove_pac=True,
+                            allow_empty_authdata=True)
+        self._validate_tgt(tgt, expected_error=KDC_ERR_BADOPTION)
+
+    def test_s4u2self_authdata_no_pac(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, remove_pac=True, allow_empty_authdata=True)
+        self._s4u2self(tgt, creds, expected_error=KDC_ERR_BADOPTION)
+
+    def test_user2user_authdata_no_pac(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, remove_pac=True, allow_empty_authdata=True)
+        self._user2user(tgt, creds, expected_error=KDC_ERR_BADOPTION)
+
     # Test changing the SID in the PAC to that of another account.
     def test_tgs_sid_mismatch_existing(self):
         creds = self._get_creds()
@@ -928,7 +956,8 @@ class KdcTgsTests(KDCBaseTest):
                  invalid=False,
                  from_rodc=False,
                  new_rid=None,
-                 remove_pac=False):
+                 remove_pac=False,
+                 allow_empty_authdata=False):
         self.assertFalse(renewable and invalid)
 
         if remove_pac:
@@ -1011,6 +1040,7 @@ class KdcTgsTests(KDCBaseTest):
             modify_fn=modify_fn,
             modify_pac_fn=modify_pac_fn,
             exclude_pac=remove_pac,
+            allow_empty_authdata=allow_empty_authdata,
             update_pac_checksums=not remove_pac,
             checksum_keys=checksum_keys)
 
