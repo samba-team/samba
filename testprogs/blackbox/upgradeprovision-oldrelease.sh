@@ -182,12 +182,12 @@ referenceprovision() {
 
 ldapcmp() {
     if [ x$RELEASE != x"alpha13" ]; then
-         $PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/${RELEASE}_upgrade_reference/private/sam.ldb tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb --two --skip-missing-dn --filter=dnsRecord,displayName,msDS-SupportedEncryptionTypes
+         $PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/${RELEASE}_upgrade_reference/private/sam.ldb tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb --two --skip-missing-dn --filter=dnsRecord,displayName,msDS-SupportedEncryptionTypes,servicePrincipalName
     fi
 }
 
 ldapcmp_full() {
-        $PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/${RELEASE}_upgrade_reference/private/sam.ldb tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb --two --filter=dNSProperty,dnsRecord,cn,displayName,versionNumber,systemFlags,msDS-HasInstantiatedNCs --skip-missing-dn
+        $PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/${RELEASE}_upgrade_reference/private/sam.ldb tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb --two --filter=dNSProperty,dnsRecord,cn,displayName,versionNumber,systemFlags,msDS-HasInstantiatedNCs,servicePrincipalName --skip-missing-dn
 }
 
 ldapcmp_sd() {
