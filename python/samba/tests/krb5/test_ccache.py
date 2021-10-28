@@ -25,7 +25,7 @@ from samba import NTSTATUSError, gensec
 from samba.auth import AuthContext
 from samba.dcerpc import security
 from samba.ndr import ndr_unpack
-from samba.ntstatus import NT_STATUS_ACCESS_DENIED
+from samba.ntstatus import NT_STATUS_NO_IMPERSONATION_TOKEN
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 
@@ -84,6 +84,7 @@ class CcacheTests(KDCBaseTest):
         # cached credentials.
 
         lp = self.get_lp()
+        lp.set('server role', 'active directory domain controller')
 
         settings = {}
         settings["lp_ctx"] = lp
@@ -135,7 +136,7 @@ class CcacheTests(KDCBaseTest):
                 self.fail()
 
             enum, _ = e.args
-            self.assertEqual(NT_STATUS_ACCESS_DENIED, enum)
+            self.assertEqual(NT_STATUS_NO_IMPERSONATION_TOKEN, enum)
             return
 
         token = session.security_token

@@ -24,7 +24,7 @@ from ldb import SCOPE_SUBTREE
 from samba import NTSTATUSError
 from samba.dcerpc import security
 from samba.ndr import ndr_unpack
-from samba.ntstatus import NT_STATUS_ACCESS_DENIED
+from samba.ntstatus import NT_STATUS_NO_IMPERSONATION_TOKEN
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.samba3 import param as s3param
 
@@ -114,7 +114,7 @@ class SmbTests(KDCBaseTest):
                 self.fail()
 
             enum, _ = e.args
-            self.assertEqual(NT_STATUS_ACCESS_DENIED, enum)
+            self.assertEqual(NT_STATUS_NO_IMPERSONATION_TOKEN, enum)
             return
         else:
             self.assertFalse(expect_error)
