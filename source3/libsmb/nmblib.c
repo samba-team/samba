@@ -449,7 +449,7 @@ static int put_res_rec(char *buf, size_t buflen, int offset,struct res_rec *recs
 		if (buf) {
 			RSSVAL(buf,offset,recs[i].rr_type);
 			RSSVAL(buf,offset+2,recs[i].rr_class);
-			RSIVAL(buf,offset+4,recs[i].ttl);
+			RSIVAL(buf,offset+4,(unsigned int)recs[i].ttl);
 			RSSVAL(buf,offset+8,recs[i].rdlength);
 			memcpy(buf+offset+10,recs[i].rdata,recs[i].rdlength);
 		}
