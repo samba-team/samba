@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.1.2"
+VERSION="1.1.4"
 
 def find_library(library_names, lookup_paths):
     for directory in lookup_paths:
@@ -55,11 +55,6 @@ def configure(conf):
                             'pam',
                             checklibc=False,
                             headers='security/pam_appl.h')
-
-        conf.CHECK_FUNCS_IN('pam_modutil_search_key',
-                            'pam',
-                            checklibc=False,
-                            headers='security/pam_modutil.h')
 
         conf.CHECK_C_PROTOTYPE('pam_vprompt',
                                'int pam_vprompt(const pam_handle_t *_pamh, int _style, char **_resp, const char *_fmt, va_list _ap)',

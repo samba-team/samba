@@ -66,7 +66,8 @@ enum pamtest_err _pamtest_conv(const char *service,
 			       pam_conv_fn conv_fn,
 			       void *conv_userdata,
 			       struct pam_testcase test_cases[],
-			       size_t num_test_cases)
+			       size_t num_test_cases,
+			       pam_handle_t *pam_handle)
 {
 	int rv;
 	pam_handle_t *ph;
@@ -82,9 +83,13 @@ enum pamtest_err _pamtest_conv(const char *service,
 		return PAMTEST_ERR_INTERNAL;
 	}
 
-	rv = pam_start(service, user, &conv, &ph);
-	if (rv != PAM_SUCCESS) {
-		return PAMTEST_ERR_START;
+	if (pam_handle == NULL) {
+		rv = pam_start(service, user, &conv, &ph);
+		if (rv != PAM_SUCCESS) {
+			return PAMTEST_ERR_START;
+		}
+	} else {
+		ph = pam_handle;
 	}
 
 	for (tcindex = 0; tcindex < num_test_cases; tcindex++) {
@@ -322,7 +327,8 @@ enum pamtest_err _pamtest(const char *service,
 			  const char *user,
 			  struct pamtest_conv_data *conv_data,
 			  struct pam_testcase test_cases[],
-			  size_t num_test_cases)
+			  size_t num_test_cases,
+			  pam_handle_t *pam_handle)
 {
 	struct pamtest_conv_ctx cctx = {
 		.data = conv_data,
@@ -332,5 +338,6 @@ enum pamtest_err _pamtest(const char *service,
 			     pamtest_simple_conv,
 			     &cctx,
 			     test_cases,
-			     num_test_cases);
+			     num_test_cases,
+			     pam_handle);
 }

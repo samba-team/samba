@@ -311,7 +311,14 @@ static struct pwrap pwrap;
  *********************************************************/
 
 bool pam_wrapper_enabled(void);
+#if ! defined(HAVE_CONSTRUCTOR_ATTRIBUTE) && defined(HAVE_PRAGMA_INIT)
+/* xlC and other oldschool compilers support (only) this */
+#pragma init (pwrap_constructor)
+#endif
 void pwrap_constructor(void) CONSTRUCTOR_ATTRIBUTE;
+#if ! defined(HAVE_DESTRUCTOR_ATTRIBUTE) && defined(HAVE_PRAGMA_FINI)
+#pragma fini (pwrap_destructor)
+#endif
 void pwrap_destructor(void) DESTRUCTOR_ATTRIBUTE;
 
 /*********************************************************
@@ -784,14 +791,20 @@ static void pwrap_clean_stale_dirs(const char *dir)
 	buf[sizeof(buf) - 1] = '\0';
 
 	tmp = strtol(buf, NULL, 10);
-	if (tmp == 0 || tmp > 0xFFFF || errno == ERANGE) {
+	if (tmp == 0 || errno == ERANGE) {
 		PWRAP_LOG(PWRAP_LOG_ERROR,
 			  "Failed to parse pid, buf=%s",
 			  buf);
 		return;
 	}
 
-	pid = (pid_t)(tmp & 0xFFFF);
+	pid = (pid_t)tmp;
+	/* Check if we are out of pid_t range on this system */
+	if ((long)pid != tmp) {
+		PWRAP_LOG(PWRAP_LOG_ERROR,
+			  "pid out of range: %ld", tmp);
+		return;
+	}
 
 	rc = kill(pid, 0);
 	if (rc == -1) {
@@ -935,130 +948,6 @@ static void pwrap_init(void)
 
 #else /* HAVE_PAM_START_CONFDIR */
 
-#ifdef HAVE_PAM_MODUTIL_SEARCH_KEY
-/*
- * This is needed to workaround Tumbleweed which packages a libpam git version.
- */
-static int pso_copy(const char *src, const char *dst, const char *pdir, mode_t mode)
-{
-#define PSO_COPY_READ_SIZE 16
-	int srcfd = -1;
-	int dstfd = -1;
-	int rc = -1;
-	ssize_t bread, bwritten;
-	struct stat sb;
-	char buf[PSO_COPY_READ_SIZE + 1];
-	size_t pso_copy_read_size = PSO_COPY_READ_SIZE;
-	int cmp;
-	size_t to_read;
-	bool found_slash;
-
-	cmp = strcmp(src, dst);
-	if (cmp == 0) {
-		return -1;
-	}
-
-	srcfd = open(src, O_RDONLY, 0);
-	if (srcfd < 0) {
-		return -1;
-	}
-
-	if (mode == 0) {
-		rc = fstat(srcfd, &sb);
-		if (rc != 0) {
-			rc = -1;
-			goto out;
-		}
-		mode = sb.st_mode;
-	}
-
-	dstfd = open(dst, O_CREAT|O_WRONLY|O_TRUNC, mode);
-	if (dstfd < 0) {
-		rc = -1;
-		goto out;
-	}
-
-	found_slash = false;
-	to_read = 1;
-
-	for (;;) {
-		bread = read(srcfd, buf, to_read);
-		if (bread == 0) {
-			/* done */
-			break;
-		} else if (bread < 0) {
-			errno = EIO;
-			rc = -1;
-			goto out;
-		}
-
-		to_read = 1;
-		if (!found_slash && buf[0] == '/') {
-			found_slash = true;
-			to_read = pso_copy_read_size;
-		}
-
-		if (found_slash && bread == PSO_COPY_READ_SIZE) {
-			cmp = memcmp(buf, "usr/etc/pam.d/%s", 16);
-			if (cmp == 0) {
-				char tmp[16] = {0};
-
-				snprintf(tmp, sizeof(tmp), "%s/%%s", pdir + 1);
-
-				memcpy(buf, tmp, 12);
-				memset(&buf[12], '\0', 4);
-
-				/*
-				 * If we found this string, we need to reduce
-				 * the read size to not miss, the next one.
-				 */
-				pso_copy_read_size = 13;
-			} else {
-				cmp = memcmp(buf, "usr/etc/pam.d", 13);
-				if (cmp == 0) {
-					memcpy(buf, pdir + 1, 9);
-					memset(&buf[9], '\0', 4);
-				} else {
-					cmp = memcmp(buf, "etc/pam.d", 9);
-					if (cmp == 0) {
-						memcpy(buf, pdir + 1, 9);
-					}
-				}
-			}
-			found_slash = false;
-		}
-
-		bwritten = write(dstfd, buf, bread);
-		if (bwritten < 0) {
-			errno = EIO;
-			rc = -1;
-			goto out;
-		}
-
-		if (bread != bwritten) {
-			errno = EFAULT;
-			rc = -1;
-			goto out;
-		}
-	}
-
-	rc = 0;
-out:
-	if (srcfd != -1) {
-		close(srcfd);
-	}
-	if (dstfd != -1) {
-		close(dstfd);
-	}
-	if (rc < 0) {
-		unlink(dst);
-	}
-
-	return rc;
-#undef PSO_COPY_READ_SIZE
-}
-#else /* HAVE_PAM_MODUTIL_SEARCH_KEY */
-
 static int pso_copy(const char *src, const char *dst, const char *pdir, mode_t mode)
 {
 #define PSO_COPY_READ_SIZE 9
@@ -1154,7 +1043,6 @@ out:
 	return rc;
 #undef PSO_COPY_READ_SIZE
 }
-#endif /* HAVE_PAM_MODUTIL_SEARCH_KEY */
 
 static void pwrap_init(void)
 {

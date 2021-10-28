@@ -58,7 +58,13 @@ typedef struct {
 	enum pamtest_ops pam_operation;
 	int expected_rv;
 	int flags;
+
+	PyObject *pam_handle;
+	PyObject *pam_env;
 } TestCaseObject;
+
+#define PyTestCase_AsTestCaseObject(py_obj) \
+	(TestCaseObject *)(py_obj)
 
 /**********************************************************
  *** module-specific exceptions
@@ -461,6 +467,22 @@ static PyMemberDef pypamtest_test_case_members[] = {
 		discard_const_p(char, "Additional flags for the PAM operation"),
 	},
 
+	{
+		discard_const_p(char, "pam_handle"),
+		T_OBJECT_EX,
+		offsetof(TestCaseObject, pam_handle),
+		READONLY,
+		discard_const_p(char, "Pam handle"),
+	},
+
+	{
+		discard_const_p(char, "pam_env"),
+		T_OBJECT_EX,
+		offsetof(TestCaseObject, pam_env),
+		READONLY,
+		discard_const_p(char, "Pam env"),
+	},
+
 	{ NULL, 0, 0, 0, NULL } /* Sentinel */
 };
 
@@ -773,6 +795,8 @@ static int py_testcase_to_cstruct(PyObject *py_test, struct pam_testcase *test)
 	int rc;
 	long value;
 
+	memset(test, 0, sizeof(struct pam_testcase));
+
 	rc = py_testcase_get(py_test, "pam_operation", &value);
 	if (rc != 0) {
 		return rc;
@@ -903,6 +927,84 @@ static int py_tc_list_to_cstruct_list(PyObject *py_test_list,
 	return 0;
 }
 
+static int cstruct_to_py_testcase(PyObject *pytest, struct pam_testcase *ctest)
+{
+	TestCaseObject *t = PyTestCase_AsTestCaseObject(pytest);
+	size_t i;
+	int rc;
+
+	switch (t->pam_operation) {
+	case PAMTEST_GETENVLIST:
+		if (ctest->case_out.envlist == NULL) {
+			break;
+		}
+
+		t->pam_env = PyDict_New();
+		if (t->pam_env == NULL) {
+			return ENOMEM;
+		}
+		for (i = 0; ctest->case_out.envlist[i] != NULL; i++) {
+			char *key = NULL;
+			char *val = NULL;
+			key = strdup(ctest->case_out.envlist[i]);
+			if (key == NULL) {
+				return ENOMEM;
+			}
+			val = strrchr(key, '=');
+			if (val == NULL) {
+				PyErr_Format(PyExc_IOError,
+					     "Failed to parse PAM environment "
+					     "variable");
+				free(key);
+				return EINVAL;
+			}
+			*val = '\0';
+			rc = PyDict_SetItem(t->pam_env,
+					    PyUnicode_FromString(key),
+					    PyUnicode_FromString(val + 1));
+			free(key);
+			if (rc == -1) {
+				return rc;
+			}
+		}
+		break;
+	case PAMTEST_KEEPHANDLE:
+		t->pam_handle = PyCapsule_New(ctest->case_out.ph, NULL, NULL);
+		if (t->pam_handle == NULL) {
+			return ENOMEM;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static int cstruct_list_to_py_tc_list(PyObject *py_test_list,
+				      Py_ssize_t num_tests,
+				      struct pam_testcase *test_list)
+{
+	Py_ssize_t i;
+	PyObject *py_test = NULL;
+	int rc;
+
+	for (i = 0; i < num_tests; i++) {
+		py_test = PySequence_GetItem(py_test_list, i);
+		if (py_test == NULL) {
+			return EIO;
+		}
+
+		rc = cstruct_to_py_testcase(py_test, &test_list[i]);
+		Py_DECREF(py_test);
+		if (rc != 0) {
+			return EIO;
+		}
+	}
+
+	return 0;
+}
+
 PyDoc_STRVAR(RunPamTest__doc__,
 "Run PAM tests\n\n"
 "This function runs PAM test cases and reports result\n"
@@ -917,7 +1019,9 @@ PyDoc_STRVAR(RunPamTest__doc__,
 "conversation for PAM_PROMPT_ECHO_ON input.\n"
 );
 
-static PyObject *pypamtest_run_pamtest(PyObject *module, PyObject *args)
+static PyObject *pypamtest_run_pamtest(PyObject *module,
+				       PyObject *args,
+				       PyObject *kwargs)
 {
 	int ok;
 	int rc;
@@ -926,21 +1030,33 @@ static PyObject *pypamtest_run_pamtest(PyObject *module, PyObject *args)
 	PyObject *py_test_list;
 	PyObject *py_echo_off = NULL;
 	PyObject *py_echo_on = NULL;
+	PyObject *py_pam_handle = NULL;
 	Py_ssize_t num_tests;
 	struct pam_testcase *test_list;
 	enum pamtest_err perr;
 	struct pamtest_conv_data conv_data;
+	pam_handle_t *pam_handle = NULL;
 	TestResultObject *result = NULL;
+	const char * const kwnames[] = { "username",
+				  "service",
+				  "tests",
+				  "echo_off",
+				  "echo_on",
+				  "handle",
+				  NULL };
 
 	(void) module;	/* unused */
 
-	ok = PyArg_ParseTuple(args,
-			      discard_const_p(char, "ssO|OO"),
-			      &username,
-			      &service,
-			      &py_test_list,
-			      &py_echo_off,
-			      &py_echo_on);
+	ok = PyArg_ParseTupleAndKeywords(args,
+					 kwargs,
+					 discard_const_p(char, "ssO|OOO"),
+					 discard_const_p(char *, kwnames),
+					 &username,
+					 &service,
+					 &py_test_list,
+					 &py_echo_off,
+					 &py_echo_on,
+					 &py_pam_handle);
 	if (!ok) {
 		return NULL;
 	}
@@ -976,7 +1092,23 @@ static PyObject *pypamtest_run_pamtest(PyObject *module, PyObject *args)
 		return NULL;
 	}
 
-	perr = _pamtest(service, username, &conv_data, test_list, num_tests);
+	if (py_pam_handle != NULL) {
+		pam_handle = (pam_handle_t *)PyCapsule_GetPointer(py_pam_handle,
+								  NULL);
+		if (pam_handle == NULL) {
+			PyMem_Free(test_list);
+			PyErr_Format(PyExc_IOError,
+				     "Failed to get the pam handle pointer");
+			return NULL;
+		}
+	}
+
+	perr = _pamtest(service,
+			username,
+			&conv_data,
+			test_list,
+			num_tests,
+			pam_handle);
 	if (perr != PAMTEST_ERR_OK) {
 		free_conv_data(&conv_data);
 		set_pypamtest_exception(PyExc_PamTestError,
@@ -985,6 +1117,18 @@ static PyObject *pypamtest_run_pamtest(PyObject *module, PyObject *args)
 					num_tests);
 		PyMem_Free(test_list);
 		return NULL;
+	}
+
+	rc = cstruct_list_to_py_tc_list(py_test_list, num_tests, test_list);
+	if (rc != 0) {
+		if (rc == ENOMEM) {
+			PyErr_NoMemory();
+			return NULL;
+		} else {
+			PyErr_Format(PyExc_IOError,
+				     "Cannot convert C structure to python");
+			return NULL;
+		}
 	}
 	PyMem_Free(test_list);
 
@@ -1003,7 +1147,7 @@ static PyMethodDef pypamtest_module_methods[] = {
 	{
 		discard_const_p(char, "run_pamtest"),
 		(PyCFunction) pypamtest_run_pamtest,
-		METH_VARARGS,
+		METH_VARARGS | METH_KEYWORDS,
 		RunPamTest__doc__,
 	},
 
@@ -1111,6 +1255,34 @@ PyMODINIT_FUNC initpypamtest(void)
 		RETURN_ON_ERROR;
 	}
 	ret = PyModule_AddIntMacro(m, PAMTEST_KEEPHANDLE);
+	if (ret == -1) {
+		RETURN_ON_ERROR;
+	}
+
+	ret = PyModule_AddIntConstant(m,
+				      "PAMTEST_FLAG_DELETE_CRED",
+				      PAM_DELETE_CRED);
+	if (ret == -1) {
+		RETURN_ON_ERROR;
+	}
+
+	ret = PyModule_AddIntConstant(m,
+				      "PAMTEST_FLAG_ESTABLISH_CRED",
+				      PAM_ESTABLISH_CRED);
+	if (ret == -1) {
+		RETURN_ON_ERROR;
+	}
+
+	ret = PyModule_AddIntConstant(m,
+				      "PAMTEST_FLAG_REINITIALIZE_CRED",
+				      PAM_REINITIALIZE_CRED);
+	if (ret == -1) {
+		RETURN_ON_ERROR;
+	}
+
+	ret = PyModule_AddIntConstant(m,
+				      "PAMTEST_FLAG_REFRESH_CRED",
+				      PAM_REFRESH_CRED);
 	if (ret == -1) {
 		RETURN_ON_ERROR;
 	}

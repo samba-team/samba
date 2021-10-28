@@ -19,6 +19,7 @@
 #ifndef __LIBPAMTEST_H_
 #define __LIBPAMTEST_H_
 
+#include <stddef.h>
 #include <stdint.h>
 #include <security/pam_appl.h>
 
@@ -128,12 +129,11 @@ struct pamtest_conv_data {
 	 * an index internally.
 	 */
 	const char **in_echo_on;
-
-	/** Captures messages through PAM_TEXT_INFO. The test caller is
+	/** Captures messages through PAM_ERROR_MSG. The test caller is
 	 * responsible for allocating enough space in the array.
 	 */
 	char **out_err;
-	/** Captures messages through PAM_ERROR_MSG. The test caller is
+	/** Captures messages through PAM_TEXT_INFO. The test caller is
 	 * responsible for allocating enough space in the array.
 	 */
 	char **out_info;
@@ -156,6 +156,8 @@ struct pamtest_conv_data {
  * @param[in]  test_cases   List of libpamtest test cases. Must end with
  *                          PAMTEST_CASE_SENTINEL
  *
+ * @param[in]  pam_handle   The PAM handle to use to run the tests
+ *
  * @code
  * int main(void) {
  *     int rc;
@@ -175,10 +177,11 @@ enum pamtest_err run_pamtest_conv(const char *service,
 				  const char *user,
 				  pam_conv_fn conv_fn,
 				  void *conv_userdata,
-				  struct pam_testcase test_cases[]);
+				  struct pam_testcase test_cases[],
+				  pam_handle_t *pam_handle);
 #else
-#define run_pamtest_conv(service, user, conv_fn, conv_data, test_cases) \
-	_pamtest_conv(service, user, conv_fn, conv_data, test_cases, sizeof(test_cases)/sizeof(test_cases[0])
+#define run_pamtest_conv(service, user, conv_fn, conv_data, test_cases, pam_handle) \
+	_pamtest_conv(service, user, conv_fn, conv_data, test_cases, sizeof(test_cases)/sizeof(test_cases[0], pam_handle)
 #endif
 
 #ifdef DOXYGEN
@@ -195,6 +198,8 @@ enum pamtest_err run_pamtest_conv(const char *service,
  *
  * @param[in]  test_cases   List of libpamtest test cases. Must end with
  *                          PAMTEST_CASE_SENTINEL
+ *
+ * @param[in]  pam_handle   The PAM handle to use to run the tests
  *
  * @code
  * int main(void) {
@@ -214,10 +219,11 @@ enum pamtest_err run_pamtest_conv(const char *service,
 enum pamtest_err run_pamtest(const char *service,
 			     const char *user,
 			     struct pamtest_conv_data *conv_data,
-			     struct pam_testcase test_cases[]);
+			     struct pam_testcase test_cases[],
+			     pam_handle_t *pam_handle);
 #else
-#define run_pamtest(service, user, conv_data, test_cases) \
-	_pamtest(service, user, conv_data, test_cases, sizeof(test_cases)/sizeof(test_cases[0]))
+#define run_pamtest(service, user, conv_data, test_cases, pam_handle) \
+	_pamtest(service, user, conv_data, test_cases, sizeof(test_cases)/sizeof(test_cases[0]), pam_handle)
 #endif
 
 #ifdef DOXYGEN
@@ -262,13 +268,15 @@ enum pamtest_err _pamtest_conv(const char *service,
 			       pam_conv_fn conv_fn,
 			       void *conv_userdata,
 			       struct pam_testcase test_cases[],
-			       size_t num_test_cases);
+			       size_t num_test_cases,
+			       pam_handle_t *pam_handle);
 
 enum pamtest_err _pamtest(const char *service,
 			  const char *user,
 			  struct pamtest_conv_data *conv_data,
 			  struct pam_testcase test_cases[],
-			  size_t num_test_cases);
+			  size_t num_test_cases,
+			  pam_handle_t *pam_handle);
 
 const struct pam_testcase *_pamtest_failed_case(struct pam_testcase test_cases[],
 						size_t num_test_cases);
