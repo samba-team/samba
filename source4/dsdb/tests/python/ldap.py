@@ -435,33 +435,41 @@ class BasicTests(samba.tests.TestCase):
             (num, _) = e.args
             self.assertEqual(num, ERR_OBJECT_CLASS_VIOLATION)
 
-        # Add a new top-most structural class "inetOrgPerson" and remove it
-        # afterwards
+        # Try to add a new top-most structural class "inetOrgPerson"
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("inetOrgPerson", FLAG_MOD_ADD,
                                           "objectClass")
-        ldb.modify(m)
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError as e:
+            (num, _) = e.args
+            self.assertEqual(num, ERR_OBJECT_CLASS_VIOLATION)
 
+        # Try to remove the structural class "user"
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["objectClass"] = MessageElement("inetOrgPerson", FLAG_MOD_DELETE,
+        m["objectClass"] = MessageElement("user", FLAG_MOD_DELETE,
                                           "objectClass")
-        ldb.modify(m)
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError as e:
+            (num, _) = e.args
+            self.assertEqual(num, ERR_OBJECT_CLASS_VIOLATION)
 
-        # Replace top-most structural class to "inetOrgPerson" and reset it
-        # back to "user"
+        # Try to replace top-most structural class to "inetOrgPerson"
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("inetOrgPerson", FLAG_MOD_REPLACE,
                                           "objectClass")
-        ldb.modify(m)
-
-        m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["objectClass"] = MessageElement("user", FLAG_MOD_REPLACE,
-                                          "objectClass")
-        ldb.modify(m)
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError as e:
+            (num, _) = e.args
+            self.assertEqual(num, ERR_OBJECT_CLASS_VIOLATION)
 
         # Add a new auxiliary object class "posixAccount" to "ldaptestuser"
         m = Message()
