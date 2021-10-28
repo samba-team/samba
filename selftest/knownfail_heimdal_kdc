@@ -119,6 +119,7 @@
 #
 # KDC TGT tests
 #
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_authdata_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_rodc_allowed_denied
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_rodc_denied
@@ -130,6 +131,7 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_rodc_sid_mismatch_nonexisting
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_sid_mismatch_existing
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_sid_mismatch_nonexisting
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_authdata_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_rodc_allowed_denied
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_rodc_denied
@@ -141,6 +143,7 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_rodc_sid_mismatch_nonexisting
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_sid_mismatch_existing
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_sid_mismatch_nonexisting
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_authdata_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_allowed_denied
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_denied
@@ -152,6 +155,7 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_sid_mismatch_nonexisting
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_sid_mismatch_existing
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_sid_mismatch_nonexisting
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_authdata_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_matching_sname_host
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_matching_sname_no_host
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_no_pac
@@ -169,6 +173,7 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_sid_mismatch_existing
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_sid_mismatch_nonexisting
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_wrong_sname
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_authdata_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_rodc_allowed_denied
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_rodc_denied

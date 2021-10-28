@@ -3224,6 +3224,7 @@ class RawKerberosTest(TestCaseInTempDir):
                         modify_fn=None,
                         modify_pac_fn=None,
                         exclude_pac=False,
+                        allow_empty_authdata=False,
                         update_pac_checksums=True,
                         checksum_keys=None,
                         include_checksums=None):
@@ -3332,8 +3333,10 @@ class RawKerberosTest(TestCaseInTempDir):
 
             # Replace the PAC in the authorization data and re-add it to the
             # ticket enc-part.
-            auth_data, _ = self.replace_pac(auth_data, new_pac,
-                                            expect_pac=expect_pac)
+            auth_data, _ = self.replace_pac(
+                auth_data, new_pac,
+                expect_pac=expect_pac,
+                allow_empty_authdata=allow_empty_authdata)
             enc_part['authorization-data'] = auth_data
 
         # Re-encrypt the ticket enc-part with the new key.
@@ -3454,7 +3457,8 @@ class RawKerberosTest(TestCaseInTempDir):
 
             kdc_checksum_buffer.info.signature = kdc_checksum
 
-    def replace_pac(self, auth_data, new_pac, expect_pac=True):
+    def replace_pac(self, auth_data, new_pac, expect_pac=True,
+                    allow_empty_authdata=False):
         if new_pac is not None:
             self.assertElementEqual(new_pac, 'ad-type', AD_WIN2K_PAC)
             self.assertElementPresent(new_pac, 'ad-data')
@@ -3483,7 +3487,7 @@ class RawKerberosTest(TestCaseInTempDir):
                 if expect_pac:
                     self.assertIsNotNone(old_pac, 'Expected PAC')
 
-                if relevant_elems:
+                if relevant_elems or allow_empty_authdata:
                     ad_relevant = self.der_encode(
                         relevant_elems,
                         asn1Spec=krb5_asn1.AD_IF_RELEVANT())
@@ -3494,7 +3498,7 @@ class RawKerberosTest(TestCaseInTempDir):
                 else:
                     authdata_elem = None
 
-            if authdata_elem is not None:
+            if authdata_elem is not None or allow_empty_authdata:
                 new_auth_data.append(authdata_elem)
 
         if expect_pac:
