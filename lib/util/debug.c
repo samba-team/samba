@@ -24,6 +24,8 @@
 #include "system/filesys.h"
 #include "system/syslog.h"
 #include "system/locale.h"
+#include "system/network.h"
+#include "system/time.h"
 #include "time_basic.h"
 #include "close_low_fd.h"
 #include "memory.h"
@@ -89,6 +91,7 @@ static struct {
 	bool initialized;
 	enum debug_logtype logtype; /* The type of logging we are doing: eg stdout, file, stderr */
 	char prog_name[255];
+	char hostname[HOST_NAME_MAX+1];
 	bool reopening_logs;
 	bool schedule_reopen_logs;
 
@@ -1071,6 +1074,35 @@ void debug_set_settings(struct debug_settings *settings,
 	debug_set_backends(logging_param);
 }
 
+static void ensure_hostname(void)
+{
+	int ret;
+
+	if (state.hostname[0] != '\0') {
+		return;
+	}
+
+	ret = gethostname(state.hostname, sizeof(state.hostname));
+	if (ret != 0) {
+		strlcpy(state.hostname, "unknown", sizeof(state.hostname));
+		return;
+	}
+
+	/*
+	 * Ensure NUL termination, since POSIX isn't clear about that.
+	 *
+	 * Don't worry about truncating at the first '.' or similar,
+	 * since this is usually not fully qualified.  Trying to
+	 * truncate opens up the multibyte character gates of hell.
+	 */
+	state.hostname[sizeof(state.hostname) - 1] = '\0';
+}
+
+void debug_set_hostname(const char *name)
+{
+	strlcpy(state.hostname, name, sizeof(state.hostname));
+}
+
 /**
   control the name of the logfile and whether logging will be to stdout, stderr
   or a file, and set up syslog
@@ -1671,11 +1703,52 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	 * not yet loaded, then default to timestamps on.
 	 */
 	if (!(state.settings.timestamp_logs ||
-	      state.settings.debug_prefix_timestamp)) {
+	      state.settings.debug_prefix_timestamp ||
+	      state.settings.debug_syslog_format)) {
 		return true;
 	}
 
 	GetTimeOfDay(&tv);
+
+	if (state.settings.debug_syslog_format) {
+		if (state.settings.debug_hires_timestamp) {
+			timeval_str_buf(&tv, true, true, &tvbuf);
+		} else {
+			time_t t;
+			struct tm *tm;
+
+			t = (time_t)tv.tv_sec;
+			tm = localtime(&t);
+			if (tm != NULL) {
+				size_t len;
+				len = strftime(tvbuf.buf,
+					       sizeof(tvbuf.buf),
+					       "%b %e %T",
+					       tm);
+				if (len == 0) {
+					/* Trigger default time format below */
+					tm = NULL;
+				}
+			}
+			if (tm == NULL) {
+				snprintf(tvbuf.buf,
+					 sizeof(tvbuf.buf),
+					 "%ld seconds since the Epoch", (long)t);
+			}
+		}
+
+		ensure_hostname();
+		state.hs_len = snprintf(state.header_str,
+					sizeof(state.header_str),
+					"%s %s %s[%u]: ",
+					tvbuf.buf,
+					state.hostname,
+					state.prog_name,
+					(unsigned int) getpid());
+
+		goto full;
+	}
+
 	timeval_str_buf(&tv, false, state.settings.debug_hires_timestamp,
 			&tvbuf);
 
