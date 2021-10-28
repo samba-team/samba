@@ -96,7 +96,7 @@ class LdapTests(KDCBaseTest):
 
             enum, estr = e.args
             self.assertEqual(ERR_OPERATIONS_ERROR, enum)
-            self.assertIn('NT_STATUS_ACCESS_DENIED', estr)
+            self.assertIn('NT_STATUS_NO_IMPERSONATION_TOKEN', estr)
             return
 
         ldb_res = ldb_as_user.search('',

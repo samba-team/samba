@@ -22,7 +22,7 @@ import os
 
 from samba import NTSTATUSError, credentials
 from samba.dcerpc import lsa
-from samba.ntstatus import NT_STATUS_ACCESS_DENIED
+from samba.ntstatus import NT_STATUS_NO_IMPERSONATION_TOKEN
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 
@@ -84,7 +84,7 @@ class RpcTests(KDCBaseTest):
                 self.fail()
 
             enum, _ = e.args
-            self.assertEqual(NT_STATUS_ACCESS_DENIED, enum)
+            self.assertEqual(NT_STATUS_NO_IMPERSONATION_TOKEN, enum)
             return
 
         (account_name, _) = conn.GetUserName(None, None, None)
