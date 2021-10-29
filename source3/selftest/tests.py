@@ -1193,6 +1193,13 @@ plantestsuite("samba3.blackbox.smbclient.encryption_off", "simpleserver",
                "$USERNAME", "$PASSWORD", "$SERVER",
                smbclient3])
 
+plantestsuite("samba3.blackbox.smbXsrv_client_dead_rec", "fileserver:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_smbXsrv_client_dead_rec.sh"),
+               configuration,
+               '$SERVER_IP',
+               "tmp"])
+
 for env in ['fileserver', 'simpleserver']:
     plantestsuite("samba3.blackbox.smbclient.encryption", env,
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_encryption.sh"),
