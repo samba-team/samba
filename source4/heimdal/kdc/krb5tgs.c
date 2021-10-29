@@ -74,8 +74,11 @@ check_PAC(krb5_context context,
     *ppac = NULL;
 
     ret = _krb5_kdc_pac_ticket_parse(context, tkt, &signedticket, &pac);
-    if (ret || pac == NULL)
+    if (ret)
 	return ret;
+
+    if (pac == NULL)
+	return KRB5KDC_ERR_BADOPTION;
 
     /* Verify the server signature. */
     ret = krb5_pac_verify(context, pac, tkt->authtime, client_principal,
