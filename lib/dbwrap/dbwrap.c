@@ -110,16 +110,13 @@ NTSTATUS dbwrap_record_delete(struct db_record *rec)
 {
 	NTSTATUS status;
 
-	/*
-	 * Invalidate before rec->delete_rec() is called, give
-	 * rec->delete_rec() the chance to re-validate rec->value.
-	 */
-	rec->value_valid = false;
-
 	status = rec->delete_rec(rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	rec->value = tdb_null;
+
 	return NT_STATUS_OK;
 }
 
