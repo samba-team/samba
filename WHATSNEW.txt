@@ -1,4 +1,102 @@
                    ===============================
+                   Release Notes for Samba 4.13.13
+                          October 29, 2021
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.13 release series.
+
+
+Changes since 4.13.12
+---------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14868: rodc_rwdc test flaps.
+   * BUG 14881: Backport bronze bit fixes, tests, and selftest improvements.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14642: Provide a fix for MS CVE-2020-17049 in Samba [SECURITY] 'Bronze
+     bit' S4U2Proxy Constrained Delegation bypass in Samba with
+     embedded Heimdal.
+   * BUG 14836: Python ldb.msg_diff() memory handling failure.
+   * BUG 14845: "in" operator on ldb.Message is case sensitive.
+   * BUG 14848: Release LDB 2.3.1 for Samba 4.14.9.
+   * BUG 14871: Fix Samba support for UF_NO_AUTH_DATA_REQUIRED.
+   * BUG 14874: Allow special chars like "@" in samAccountName when generating
+     the salt.
+   * BUG 14881: Backport bronze bit fixes, tests, and selftest improvements.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 14642: Provide a fix for MS CVE-2020-17049 in Samba [SECURITY] 'Bronze
+     bit' S4U2Proxy Constrained Delegation bypass in Samba with
+     embedded Heimdal.
+   * BUG 14881: Backport bronze bit fixes, tests, and selftest improvements.
+
+o  Viktor Dukhovni <viktor@twosigma.com>
+   * BUG 12998: Fix transit path validation.
+   * BUG 14881: Backport bronze bit fixes, tests, and selftest improvements.
+
+o  Luke Howard <lukeh@padl.com>
+   * BUG 14642: Provide a fix for MS CVE-2020-17049 in Samba [SECURITY] 'Bronze
+     bit' S4U2Proxy Constrained Delegation bypass in Samba with
+     embedded Heimdal.
+   * BUG 14881: Backport bronze bit fixes, tests, and selftest improvements.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14881: Backport bronze bit fixes, tests, and selftest improvements.
+
+o  David Mulder <dmulder@suse.com>
+   * BUG 14881: Backport bronze bit fixes, tests, and selftest improvements.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14870: Prepare to operate with MIT krb5 >= 1.20.
+   * BUG 14881: Backport bronze bit fixes, tests, and selftest improvements.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 14642: Provide a fix for MS CVE-2020-17049 in Samba [SECURITY] 'Bronze
+     bit' S4U2Proxy Constrained Delegation bypass in Samba with
+     embedded Heimdal.
+   * BUG 14645: rpcclient NetFileEnum and net rpc file both cause lock order
+     violation: brlock.tdb, share_entries.tdb.
+   * BUG 14836: Python ldb.msg_diff() memory handling failure.
+   * BUG 14845: "in" operator on ldb.Message is case sensitive.
+   * BUG 14848: Release LDB 2.3.1 for Samba 4.14.9.
+   * BUG 14868: rodc_rwdc test flaps.
+   * BUG 14871: Fix Samba support for UF_NO_AUTH_DATA_REQUIRED.
+   * BUG 14874: Allow special chars like "@" in samAccountName when generating
+     the salt.
+   * BUG 14881: Backport bronze bit fixes, tests, and selftest improvements.
+
+o  Nicolas Williams <nico@twosigma.com>
+   * BUG 14642: Provide a fix for MS CVE-2020-17049 in Samba [SECURITY] 'Bronze
+     bit' S4U2Proxy Constrained Delegation bypass in Samba with
+     embedded Heimdal.
+   * BUG 14881: Backport bronze bit fixes, tests, and selftest improvements.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ===============================
                    Release Notes for Samba 4.13.12
                          September 22, 2021
                    ===============================
@@ -72,8 +170,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ===============================
