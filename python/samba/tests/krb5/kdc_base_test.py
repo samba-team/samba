@@ -710,9 +710,6 @@ class KDCBaseTest(RawKerberosTest):
             self.assertFalse(not_delegated)
 
         samdb = self.get_samdb()
-        rodc_samdb = self.get_rodc_samdb()
-
-        rodc_dn = self.get_server_dn(rodc_samdb)
 
         user_name = self.get_new_username()
         if name_prefix is not None:
@@ -764,6 +761,9 @@ class KDCBaseTest(RawKerberosTest):
         # Handle secret replication to the RODC.
 
         if allowed_replication or revealed_to_rodc:
+            rodc_samdb = self.get_rodc_samdb()
+            rodc_dn = self.get_server_dn(rodc_samdb)
+
             # Allow replicating this account's secrets if requested, or allow
             # it only temporarily if we're about to replicate them.
             allowed_cleanup = self.add_to_group(
@@ -784,6 +784,9 @@ class KDCBaseTest(RawKerberosTest):
                                 revealed=revealed_to_rodc)
 
         if denied_replication:
+            rodc_samdb = self.get_rodc_samdb()
+            rodc_dn = self.get_server_dn(rodc_samdb)
+
             # Deny replicating this account's secrets to the RODC.
             self.add_to_group(dn, rodc_dn, 'msDS-NeverRevealGroup')
 
