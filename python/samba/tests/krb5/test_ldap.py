@@ -20,6 +20,8 @@
 import sys
 import os
 
+import ldb
+
 from ldb import LdbError, ERR_OPERATIONS_ERROR, SCOPE_BASE, SCOPE_SUBTREE
 from samba.dcerpc import security
 from samba.ndr import ndr_unpack
@@ -41,13 +43,16 @@ class LdapTests(KDCBaseTest):
     """
 
     def test_ldap(self):
-        self._run_ldap_test("ldapusr")
+        self._run_ldap_test()
+
+    def test_ldap_rename(self):
+        self._run_ldap_test(rename=True)
 
     def test_ldap_no_pac(self):
-        self._run_ldap_test("ldapusr_nopac", include_pac=False,
+        self._run_ldap_test(include_pac=False,
                             expect_anon=True, allow_error=True)
 
-    def _run_ldap_test(self, user_name, include_pac=True,
+    def _run_ldap_test(self, rename=False, include_pac=True,
                        expect_anon=False, allow_error=False):
         # Create a user account and a machine account, along with a Kerberos
         # credentials cache file where the service ticket authenticating the
@@ -59,7 +64,10 @@ class LdapTests(KDCBaseTest):
         service = "ldap"
 
         # Create the user account.
-        (user_credentials, _) = self.create_account(samdb, user_name)
+        user_credentials = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            use_cache=False)
+        user_name = user_credentials.get_username()
 
         mach_credentials = self.get_dc_creds()
 
@@ -75,15 +83,26 @@ class LdapTests(KDCBaseTest):
         # Remove the cached credentials file.
         self.addCleanup(os.remove, cachefile.name)
 
-        # Authenticate in-process to the machine account using the user's
-        # cached credentials.
-
         # Retrieve the user account's SID.
         ldb_res = samdb.search(scope=SCOPE_SUBTREE,
                                expression="(sAMAccountName=%s)" % user_name,
                                attrs=["objectSid"])
         self.assertEqual(1, len(ldb_res))
         sid = ndr_unpack(security.dom_sid, ldb_res[0]["objectSid"][0])
+
+        if rename:
+            # Rename the account.
+
+            new_name = self.get_new_username()
+
+            msg = ldb.Message(user_credentials.get_dn())
+            msg['sAMAccountName'] = ldb.MessageElement(new_name,
+                                                       ldb.FLAG_MOD_REPLACE,
+                                                       'sAMAccountName')
+            samdb.modify(msg)
+
+        # Authenticate in-process to the machine account using the user's
+        # cached credentials.
 
         # Connect to the machine account and retrieve the user SID.
         try:
