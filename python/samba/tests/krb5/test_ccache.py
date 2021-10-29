@@ -20,6 +20,8 @@
 import sys
 import os
 
+import ldb
+
 from ldb import SCOPE_SUBTREE
 from samba import NTSTATUSError, gensec
 from samba.auth import AuthContext
@@ -42,13 +44,16 @@ class CcacheTests(KDCBaseTest):
     """
 
     def test_ccache(self):
-        self._run_ccache_test("ccacheusr")
+        self._run_ccache_test()
+
+    def test_ccache_rename(self):
+        self._run_ccache_test(rename=True)
 
     def test_ccache_no_pac(self):
-        self._run_ccache_test("ccacheusr_nopac", include_pac=False,
+        self._run_ccache_test(include_pac=False,
                               expect_anon=True, allow_error=True)
 
-    def _run_ccache_test(self, user_name, include_pac=True,
+    def _run_ccache_test(self, rename=False, include_pac=True,
                          expect_anon=False, allow_error=False):
         # Create a user account and a machine account, along with a Kerberos
         # credentials cache file where the service ticket authenticating the
@@ -60,7 +65,10 @@ class CcacheTests(KDCBaseTest):
         samdb = self.get_samdb()
 
         # Create the user account.
-        (user_credentials, _) = self.create_account(samdb, user_name)
+        user_credentials = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            use_cache=False)
+        user_name = user_credentials.get_username()
 
         # Create the machine account.
         (mach_credentials, _) = self.create_account(
@@ -79,6 +87,24 @@ class CcacheTests(KDCBaseTest):
                                                           pac=include_pac)
         # Remove the cached credentials file.
         self.addCleanup(os.remove, cachefile.name)
+
+        # Retrieve the user account's SID.
+        ldb_res = samdb.search(scope=SCOPE_SUBTREE,
+                               expression="(sAMAccountName=%s)" % user_name,
+                               attrs=["objectSid"])
+        self.assertEqual(1, len(ldb_res))
+        sid = ndr_unpack(security.dom_sid, ldb_res[0]["objectSid"][0])
+
+        if rename:
+            # Rename the account.
+
+            new_name = self.get_new_username()
+
+            msg = ldb.Message(user_credentials.get_dn())
+            msg['sAMAccountName'] = ldb.MessageElement(new_name,
+                                                       ldb.FLAG_MOD_REPLACE,
+                                                       'sAMAccountName')
+            samdb.modify(msg)
 
         # Authenticate in-process to the machine account using the user's
         # cached credentials.
@@ -120,13 +146,6 @@ class CcacheTests(KDCBaseTest):
 
         # Ensure that the first SID contained within the obtained security
         # token is the SID of the user we created.
-
-        # Retrieve the user account's SID.
-        ldb_res = samdb.search(scope=SCOPE_SUBTREE,
-                               expression="(sAMAccountName=%s)" % user_name,
-                               attrs=["objectSid"])
-        self.assertEqual(1, len(ldb_res))
-        sid = ndr_unpack(security.dom_sid, ldb_res[0]["objectSid"][0])
 
         # Retrieve the SIDs from the security token.
         try:
