@@ -1769,6 +1769,23 @@ class KdcTgsTests(KDCBaseTest):
         pac = self.get_ticket_pac(ticket)
         self.assertIsNotNone(pac)
 
+    def test_tgs_rename(self):
+        creds = self.get_cached_creds(account_type=self.AccountType.USER,
+                                      use_cache=False)
+        tgt = self.get_tgt(creds)
+
+        # Rename the account.
+        new_name = self.get_new_username()
+
+        samdb = self.get_samdb()
+        msg = ldb.Message(creds.get_dn())
+        msg['sAMAccountName'] = ldb.MessageElement(new_name,
+                                                   ldb.FLAG_MOD_REPLACE,
+                                                   'sAMAccountName')
+        samdb.modify(msg)
+
+        self._run_tgs(tgt, expected_error=KDC_ERR_C_PRINCIPAL_UNKNOWN)
+
     def _get_tgt(self,
                  client_creds,
                  renewable=False,
