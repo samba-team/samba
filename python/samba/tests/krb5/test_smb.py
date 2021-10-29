@@ -20,6 +20,8 @@
 import sys
 import os
 
+import ldb
+
 from ldb import SCOPE_SUBTREE
 from samba import NTSTATUSError
 from samba.dcerpc import security
@@ -43,13 +45,16 @@ class SmbTests(KDCBaseTest):
     """
 
     def test_smb(self):
-        self._run_smb_test("smbusr")
+        self._run_smb_test()
+
+    def test_smb_rename(self):
+        self._run_smb_test(rename=True)
 
     def test_smb_no_pac(self):
-        self._run_smb_test("smbusr_nopac", include_pac=False,
+        self._run_smb_test(include_pac=False,
                            expect_error=True)
 
-    def _run_smb_test(self, user_name, include_pac=True,
+    def _run_smb_test(self, rename=False, include_pac=True,
                       expect_error=False):
         # Create a user account and a machine account, along with a Kerberos
         # credentials cache file where the service ticket authenticating the
@@ -62,7 +67,12 @@ class SmbTests(KDCBaseTest):
         share = "tmp"
 
         # Create the user account.
-        (user_credentials, _) = self.create_account(samdb, user_name)
+        user_credentials = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            use_cache=False)
+        user_name = user_credentials.get_username()
+
+        mach_credentials = self.get_dc_creds()
 
         mach_credentials = self.get_dc_creds()
 
@@ -78,6 +88,24 @@ class SmbTests(KDCBaseTest):
         # Remove the cached credentials file.
         self.addCleanup(os.remove, cachefile.name)
 
+        # Retrieve the user account's SID.
+        ldb_res = samdb.search(scope=SCOPE_SUBTREE,
+                               expression="(sAMAccountName=%s)" % user_name,
+                               attrs=["objectSid"])
+        self.assertEqual(1, len(ldb_res))
+        sid = ndr_unpack(security.dom_sid, ldb_res[0]["objectSid"][0])
+
+        if rename:
+            # Rename the account.
+
+            new_name = self.get_new_username()
+
+            msg = ldb.Message(user_credentials.get_dn())
+            msg['sAMAccountName'] = ldb.MessageElement(new_name,
+                                                       ldb.FLAG_MOD_REPLACE,
+                                                       'sAMAccountName')
+            samdb.modify(msg)
+
         # Set the Kerberos 5 credentials cache environment variable. This is
         # required because the codepath that gets run (gse_krb5) looks for it
         # in here and not in the credentials object.
@@ -87,13 +115,6 @@ class SmbTests(KDCBaseTest):
 
         # Authenticate in-process to the machine account using the user's
         # cached credentials.
-
-        # Retrieve the user account's SID.
-        ldb_res = samdb.search(scope=SCOPE_SUBTREE,
-                               expression="(sAMAccountName=%s)" % user_name,
-                               attrs=["objectSid"])
-        self.assertEqual(1, len(ldb_res))
-        sid = ndr_unpack(security.dom_sid, ldb_res[0]["objectSid"][0])
 
         # Connect to a share and retrieve the user SID.
         s3_lp = s3param.get_context()

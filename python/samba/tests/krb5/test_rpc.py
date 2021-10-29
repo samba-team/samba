@@ -20,6 +20,8 @@
 import sys
 import os
 
+import ldb
+
 from samba import NTSTATUSError, credentials
 from samba.dcerpc import lsa
 from samba.ntstatus import NT_STATUS_NO_IMPERSONATION_TOKEN
@@ -39,13 +41,16 @@ class RpcTests(KDCBaseTest):
     """
 
     def test_rpc(self):
-        self._run_rpc_test("rpcusr")
+        self._run_rpc_test()
+
+    def test_rpc_rename(self):
+        self._run_rpc_test(rename=True)
 
     def test_rpc_no_pac(self):
-        self._run_rpc_test("rpcusr_nopac", include_pac=False,
+        self._run_rpc_test(include_pac=False,
                            expect_anon=True, allow_error=True)
 
-    def _run_rpc_test(self, user_name, include_pac=True,
+    def _run_rpc_test(self, rename=False, include_pac=True,
                       expect_anon=False, allow_error=False):
         # Create a user account and a machine account, along with a Kerberos
         # credentials cache file where the service ticket authenticating the
@@ -57,7 +62,10 @@ class RpcTests(KDCBaseTest):
         service = "cifs"
 
         # Create the user account.
-        (user_credentials, _) = self.create_account(samdb, user_name)
+        user_credentials = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            use_cache=False)
+        user_name = user_credentials.get_username()
 
         mach_credentials = self.get_dc_creds()
 
@@ -72,6 +80,17 @@ class RpcTests(KDCBaseTest):
                                                           pac=include_pac)
         # Remove the cached credentials file.
         self.addCleanup(os.remove, cachefile.name)
+
+        if rename:
+            # Rename the account.
+
+            new_name = self.get_new_username()
+
+            msg = ldb.Message(user_credentials.get_dn())
+            msg['sAMAccountName'] = ldb.MessageElement(new_name,
+                                                       ldb.FLAG_MOD_REPLACE,
+                                                       'sAMAccountName')
+            samdb.modify(msg)
 
         # Authenticate in-process to the machine account using the user's
         # cached credentials.
