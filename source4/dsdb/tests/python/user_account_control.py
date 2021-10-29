@@ -123,6 +123,46 @@ class UserAccountControlTests(samba.tests.TestCase):
                                                   account_type2,
                                                   how,
                                                   priv[0])
+
+            for objectclass in ["computer", "user"]:
+                account_types = [UF_NORMAL_ACCOUNT]
+                if objectclass == "computer":
+                    account_types.append(UF_WORKSTATION_TRUST_ACCOUNT)
+                    account_types.append(UF_SERVER_TRUST_ACCOUNT)
+
+                for account_type in account_types:
+                    account_type_str = (
+                        dsdb.user_account_control_flag_bit_to_string(
+                            account_type))
+                    for account_type2 in [UF_NORMAL_ACCOUNT,
+                                          UF_WORKSTATION_TRUST_ACCOUNT,
+                                          UF_SERVER_TRUST_ACCOUNT,
+                                          UF_PARTIAL_SECRETS_ACCOUNT,
+                                          None]:
+                        if account_type2 is None:
+                            account_type2_str = None
+                        else:
+                            account_type2_str = (
+                                dsdb.user_account_control_flag_bit_to_string(
+                                    account_type2))
+
+                            for objectclass2 in ["computer", "user", None]:
+                                for name2 in [("oc_uac_lock", "remove_dollar"),
+                                              (None, "keep_dollar")]:
+                                    test_name = (f"{priv[1]}_{objectclass}_"
+                                                 f"{account_type_str}_to_"
+                                                 f"{objectclass2}_"
+                                                 f"{account_type2_str}_"
+                                                 f"{name2[1]}")
+                                    cls.generate_dynamic_test("test_mod_lock",
+                                                              test_name,
+                                                              objectclass,
+                                                              objectclass2,
+                                                              account_type,
+                                                              account_type2,
+                                                              name2[0],
+                                                              priv[0])
+
         for account_type in [UF_NORMAL_ACCOUNT,
                              UF_WORKSTATION_TRUST_ACCOUNT,
                              UF_SERVER_TRUST_ACCOUNT]:
@@ -966,6 +1006,116 @@ class UserAccountControlTests(samba.tests.TestCase):
             return
 
         self.assertEqual(enum, 0)
+
+    def _test_mod_lock_with_args(self,
+                                 objectclass,
+                                 objectclass2,
+                                 account_type,
+                                 account_type2,
+                                 name2,
+                                 priv):
+        name = "oc_uac_lock$"
+
+        dn = "CN=%s,%s" % (name, self.OU)
+        msg_dict = {
+            "dn": dn,
+            "objectclass": objectclass,
+            "samAccountName": name,
+            "userAccountControl": str(account_type | UF_PASSWD_NOTREQD)}
+
+        account_type_str = dsdb.user_account_control_flag_bit_to_string(
+            account_type)
+
+        print(f"Adding account {name} as {account_type_str} "
+              f"with objectclass {objectclass}")
+
+        # Create the object as admin
+        self.admin_samdb.add(msg_dict)
+
+        if priv:
+            samdb = self.admin_samdb
+        else:
+            samdb = self.samdb
+
+        user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
+
+        # We want to test what the underlying rules for non-admins regardless
+        # of security descriptors are, so set this very, dangerously, broadly
+        mod = f"(OA;;WP;;;{user_sid})"
+
+        self.sd_utils.dacl_add_ace(dn, mod)
+
+        msg = "Modifying account"
+        if name2 is not None:
+            msg += f" to {name2}"
+        if account_type2 is not None:
+            account_type2_str = dsdb.user_account_control_flag_bit_to_string(
+                account_type2)
+            msg += f" as {account_type2_str}"
+        else:
+            account_type2_str = None
+        if objectclass2 is not None:
+            msg += f" with objectClass {objectclass2}"
+        print(msg)
+
+        msg = ldb.Message(ldb.Dn(samdb, dn))
+        if objectclass2 is not None:
+            msg["objectClass"] = ldb.MessageElement(objectclass2,
+                                                    ldb.FLAG_MOD_REPLACE,
+                                                    "objectClass")
+        if name2 is not None:
+            msg["sAMAccountName"] = ldb.MessageElement(name2,
+                                                       ldb.FLAG_MOD_REPLACE,
+                                                       "sAMAccountName")
+        if account_type2 is not None:
+            msg["userAccountControl"] = ldb.MessageElement(
+                str(account_type2 | UF_PASSWD_NOTREQD),
+                ldb.FLAG_MOD_REPLACE,
+                "userAccountControl")
+        enum = ldb.SUCCESS
+        try:
+            samdb.modify(msg)
+        except ldb.LdbError as e:
+            enum, _ = e.args
+
+        # Setting userAccountControl to be an RODC is not allowed.
+        if account_type2 == UF_PARTIAL_SECRETS_ACCOUNT:
+            self.assertEqual(enum, ldb.ERR_OTHER)
+            return
+
+        # Unprivileged users cannot change userAccountControl. The exception is
+        # changing a non-normal account to UF_WORKSTATION_TRUST_ACCOUNT, which
+        # is allowed.
+        if (not priv
+                and account_type2 is not None
+                and account_type != account_type2
+                and (account_type == UF_NORMAL_ACCOUNT
+                     or account_type2 != UF_WORKSTATION_TRUST_ACCOUNT)):
+            self.assertIn(enum, [ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+                                 ldb.ERR_OBJECT_CLASS_VIOLATION])
+            return
+
+        # A non-computer account cannot have UF_SERVER_TRUST_ACCOUNT.
+        if objectclass == "user" and account_type2 == UF_SERVER_TRUST_ACCOUNT:
+            self.assertIn(enum, [ldb.ERR_UNWILLING_TO_PERFORM,
+                                 ldb.ERR_OBJECT_CLASS_VIOLATION])
+            return
+
+        # The objectClass is not allowed to change.
+        if objectclass2 is not None and objectclass != objectclass2:
+            self.assertIn(enum, [ldb.ERR_OBJECT_CLASS_VIOLATION,
+                                 ldb.ERR_UNWILLING_TO_PERFORM])
+            return
+
+        # Unprivileged users cannot remove the trailing dollar from a computer
+        # account.
+        if not priv and objectclass == "computer" and (
+                name2 is not None and name2[-1] != "$"):
+            self.assertEqual(enum, ldb.ERR_UNWILLING_TO_PERFORM)
+            return
+
+        self.assertEqual(enum, 0)
+        return
 
     def _test_objectclass_uac_mod_lock_with_args(self,
                                                  account_type,
