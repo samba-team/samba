@@ -1257,48 +1257,6 @@ bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
  Send a qfileinfo QUERY_FILE_NAME_INFO call.
 ****************************************************************************/
 
-NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
-		       TALLOC_CTX *mem_ctx, char **_name)
-{
-	uint16_t recv_flags2;
-	uint8_t *rdata;
-	uint32_t num_rdata;
-	NTSTATUS status;
-	char *name = NULL;
-	uint32_t namelen;
-
-	status = cli_qfileinfo(talloc_tos(), cli, fnum,
-			       SMB_QUERY_FILE_NAME_INFO,
-			       4, CLI_BUFFER_SIZE, &recv_flags2,
-			       &rdata, &num_rdata);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	namelen = IVAL(rdata, 0);
-	if (namelen > (num_rdata - 4)) {
-		TALLOC_FREE(rdata);
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	pull_string_talloc(mem_ctx,
-			   (const char *)rdata,
-			   recv_flags2,
-			   &name,
-			   rdata + 4,
-			   namelen,
-			   STR_UNICODE);
-	if (name == NULL) {
-		status = map_nt_error_from_unix(errno);
-		TALLOC_FREE(rdata);
-		return status;
-	}
-
-	*_name = name;
-	TALLOC_FREE(rdata);
-	return NT_STATUS_OK;
-}
-
 struct cli_qfileinfo_basic_state {
 	uint32_t attr;
 	off_t size;
