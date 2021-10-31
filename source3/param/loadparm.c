@@ -675,6 +675,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	lpcfg_string_set(Globals.ctx, &Globals.log_level, "0");
 	Globals.debug_prefix_timestamp = false;
 	Globals.debug_hires_timestamp = true;
+	Globals.debug_syslog_format = false;
 	Globals.debug_pid = false;
 	Globals.debug_uid = false;
 	Globals.debug_class = false;

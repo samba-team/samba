@@ -2559,6 +2559,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "debug timestamp", "Yes");
 	lpcfg_do_global_parameter(lp_ctx, "debug prefix timestamp", "No");
 	lpcfg_do_global_parameter(lp_ctx, "debug hires timestamp", "Yes");
+	lpcfg_do_global_parameter(lp_ctx, "debug syslog format", "No");
 	lpcfg_do_global_parameter(lp_ctx, "debug pid", "No");
 	lpcfg_do_global_parameter(lp_ctx, "debug uid", "No");
 	lpcfg_do_global_parameter(lp_ctx, "debug class", "No");
@@ -3102,6 +3103,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	settings.timestamp_logs = lp_ctx->globals->timestamp_logs;
 	settings.debug_prefix_timestamp = lp_ctx->globals->debug_prefix_timestamp;
 	settings.debug_hires_timestamp = lp_ctx->globals->debug_hires_timestamp;
+	settings.debug_syslog_format = lp_ctx->globals->debug_syslog_format;
 	settings.debug_pid = lp_ctx->globals->debug_pid;
 	settings.debug_uid = lp_ctx->globals->debug_uid;
 	settings.debug_class = lp_ctx->globals->debug_class;

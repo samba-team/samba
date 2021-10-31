@@ -9,7 +9,8 @@
     </para>
 
     <para>
-    Note that the parameter <smbconfoption name="debug timestamp"/> must be on for this to have an effect.
+    Note that the parameter <smbconfoption name="debug timestamp"/> or
+    <smbconfoption name="debug syslog format"/> must be on for this to have an effect.
     </para>
 
 </description>

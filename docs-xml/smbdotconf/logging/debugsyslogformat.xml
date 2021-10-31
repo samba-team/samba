@@ -1,0 +1,21 @@
+<samba:parameter name="debug syslog format"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+    With this option enabled, debug messages are printed in a
+    single-line format like that traditionally produced by syslog.
+    The timestamp consists of an abbreviated month, space-padded date,
+    and time including seconds.  This is followed by the hostname and
+    the program name, with the process-ID in square brackets.
+    </para>
+
+    <para>
+    If <smbconfoption name="debug hires timestamp"/> is also enabled
+    then an RFC5424 timestamp is used instead.
+    </para>
+
+</description>
+<value type="default">no</value>
+</samba:parameter>
