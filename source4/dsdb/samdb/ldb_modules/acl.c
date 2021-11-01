@@ -712,7 +712,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 				       SEC_ADS_SELF_WRITE,
 				       sid);
 
-	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+	if (ret != LDB_SUCCESS) {
 		dsdb_acl_debug(sd, acl_user_token(module),
 			       req->op.mod.message->dn,
 			       true,
