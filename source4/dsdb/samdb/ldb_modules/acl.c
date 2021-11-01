@@ -656,9 +656,14 @@ success:
 	return LDB_SUCCESS;
 }
 
+/*
+ * Passing in 'el' is critical, we want to check all the values.
+ *
+ */
 static int acl_check_spn(TALLOC_CTX *mem_ctx,
 			 struct ldb_module *module,
 			 struct ldb_request *req,
+			 const struct ldb_message_element *el,
 			 struct security_descriptor *sd,
 			 struct dom_sid *sid,
 			 const struct dsdb_attribute *attr,
@@ -670,7 +675,6 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_result *acl_res;
 	struct ldb_result *netbios_res;
-	struct ldb_message_element *el;
 	struct ldb_dn *partitions_dn = samdb_partitions_dn(ldb, tmp_ctx);
 	uint32_t userAccountControl;
 	const char *samAccountName;
@@ -720,6 +724,23 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	/*
+	 * If we have "validated write spn", allow delete of any
+	 * existing value (this keeps constrained delete to the same
+	 * rules as unconstrained)
+	 */
+	if (req->operation == LDB_MODIFY) {
+		/*
+		 * If not add or replace (eg delete),
+		 * return success
+		 */
+		if ((el->flags
+		     & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE)) == 0) {
+			talloc_free(tmp_ctx);
+			return LDB_SUCCESS;
+		}
+	}
+
 	ret = dsdb_module_search_dn(module, tmp_ctx,
 				    &acl_res, req->op.mod.message->dn,
 				    acl_attrs,
@@ -747,13 +768,6 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 				 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)));
 
 	netbios_name = ldb_msg_find_attr_as_string(netbios_res->msgs[0], "nETBIOSName", NULL);
-
-	el = ldb_msg_find_element(req->op.mod.message, "servicePrincipalName");
-	if (!el) {
-		talloc_free(tmp_ctx);
-		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
-					 "Error finding element for servicePrincipalName.");
-	}
 
 	/* NTDSDSA objectGuid of object we are checking SPN for */
 	if (userAccountControl & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
@@ -1513,6 +1527,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			ret = acl_check_spn(tmp_ctx,
 					    module,
 					    req,
+					    el,
 					    sd,
 					    sid,
 					    attr,
