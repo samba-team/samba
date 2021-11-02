@@ -1,0 +1,2 @@
+^samba4.sam.python\(ad_dc_default\).__main__.SamTests.test_service_principal_name_uniqueness\(ad_dc_default\)
+^samba4.sam.python\(fl2008r2dc\).__main__.SamTests.test_service_principal_name_uniqueness\(fl2008r2dc\)
