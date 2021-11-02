@@ -874,7 +874,7 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 		 * valid (cf the checks in dos_mode() and dos_mode_at_send().
 		 *
 		 * If SMB_VFS_GET_DOS_ATTRIBUTES[_SEND|_RECV] fails we must call
-		 * dos_mode_post() which also does the mapping of a last ressort
+		 * dos_mode_post() which also does the mapping of a last resort
 		 * from S_IFMT(st_mode).
 		 *
 		 * Only if we get NT_STATUS_NOT_IMPLEMENTED from a stacked VFS
