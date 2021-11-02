@@ -1369,7 +1369,7 @@ _krb5_kdc_pac_ticket_parse(krb5_context context,
     *ppac = NULL;
 
     if (ad == NULL || ad->len == 0)
-	return KRB5KDC_ERR_BADOPTION;
+	return 0;
 
     for (i = 0; i < ad->len; i++) {
 	AuthorizationData child;
