@@ -523,7 +523,7 @@ typedef struct files_struct {
  * file descriptor that can be used with all VFS calls.
  *
  * The flag "is_fsa" is a property of the FSA layer in Samba. The term FSA
- * layer refers to the parts of smbs that implement Windows NTFS semantics
+ * layer refers to the parts of smbd that implement Windows NTFS semantics
  * on-top of a POSIX filesystem. If "is_fsa" is true, the fsp was
  * processed by the SMB_VFS_CREATE_FILE() VFS call, otherwise the fsp was
  * created by openat_pathref_fsp() which only connected the low-level
@@ -573,7 +573,7 @@ typedef struct files_struct {
  * reference to a filesystem object by opening it with the O_RDONLY flag
  * requires that the caller have read permission on the object, even when
  * the subsequent operation (e.g., fchdir(2), fstat(2)) does not require
- * read permis‐ sion on the object. [1]
+ * read permission on the object. [1]
  *
  * If for example Samba receives an SMB request to open a file requesting
  * SEC_FILE_READ_ATTRIBUTE access rights because the client wants to read
@@ -626,7 +626,7 @@ typedef struct files_struct {
  *
  * A fallback is needed that allows opening a file-handle with the same
  * higher level semantics even if the system doesn't support O_PATH. This
- * is implemented by qimpersonating the root user for the open()
+ * is implemented by impersonating the root user for the open()
  * syscall. To avoid bypassing restrictive permissions on intermediate
  * directories components of a path, the root user is only impersonated
  * after changing directory to the parent directory of the client
@@ -634,7 +634,7 @@ typedef struct files_struct {
  *
  * In order to avoid privilege escalation security issues with these root
  * opened file-handles we must carefully control their usage throughout
- * the codebase. Therefor we
+ * the codebase. Therefore we
  *
  * - tag the pathref fsp's with the flag "is_pathref" and
  *
