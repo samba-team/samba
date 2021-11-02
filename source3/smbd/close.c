@@ -1055,6 +1055,8 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		goto err;
 	}
 
+	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
+
 	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced)) != NULL) {
 		struct smb_filename *smb_dname_full = NULL;
 		struct smb_filename *direntry_fname = NULL;
@@ -1203,7 +1205,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 
 	/* Do a recursive delete. */
 	RewindDir(dir_hnd,&dirpos);
-	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
 
 	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced)) != NULL) {
 		struct smb_filename *direntry_fname = NULL;
