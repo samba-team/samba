@@ -39,23 +39,29 @@ class ComputerCmdTestCase(SambaToolCmdTest):
         # ips used to test --ip-address option
         self.ipv4 = '10.10.10.10'
         self.ipv6 = '2001:0db8:0a0b:12f0:0000:0000:0000:0001'
+        computer_basename = self.randomName().lower()
         data = [
             {
-                'name': 'testcomputer1',
+                'name': computer_basename + 'cmp1',
                 'ip_address_list': [self.ipv4]
             },
             {
-                'name': 'testcomputer2',
+                'name': computer_basename + 'cmp2',
                 'ip_address_list': [self.ipv6],
-                'service_principal_name_list': ['SPN0']
+                'service_principal_name_list': [
+                    'host/' + computer_basename + 'SPN20',
+                ],
             },
             {
-                'name': 'testcomputer3$',
+                'name': computer_basename + 'cmp3$',
                 'ip_address_list': [self.ipv4, self.ipv6],
-                'service_principal_name_list': ['SPN0', 'SPN1']
+                'service_principal_name_list': [
+                    'host/' + computer_basename + 'SPN30',
+                    'host/' + computer_basename + 'SPN31',
+                ],
             },
             {
-                'name': 'testcomputer4$',
+                'name': computer_basename + 'cmp4$',
             },
         ]
         self.computers = [self._randomComputer(base=item) for item in data]
