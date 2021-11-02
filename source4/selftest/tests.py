@@ -811,7 +811,7 @@ planoldpythontestsuite("ad_dc:local", "samba.tests.dckeytab", extra_args=['-U"$U
 
 have_fast_support = int('SAMBA_USES_MITKDC' in config_hash)
 tkt_sig_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
-expect_pac = 0
+expect_pac = int('SAMBA4_USES_HEIMDAL' in config_hash)
 planoldpythontestsuite("none", "samba.tests.krb5.kcrypto")
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.simple_tests",
                        environ={'SERVICE_USERNAME':'$SERVER',
