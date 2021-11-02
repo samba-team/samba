@@ -326,7 +326,7 @@ static NTSTATUS rearrange_snapshot_path(struct smb_filename *smb_fname,
 				smb_fname->base_name,
 				&parent,
 				&last_component);
-	if (ret == false) {
+	if (!ret) {
 		/* Must terminate debug with \n */
 		DBG_DEBUG("NT_STATUS_NO_MEMORY\n");
 		return NT_STATUS_NO_MEMORY;
