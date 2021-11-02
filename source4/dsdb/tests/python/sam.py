@@ -90,6 +90,7 @@ class SamTests(samba.tests.TestCase):
         delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptest\,specialuser,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer2,cn=computers," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
 
@@ -3500,6 +3501,26 @@ class SamTests(samba.tests.TestCase):
         self.assertTrue("HOST/testname3.testdom" in [str(x) for x in res[0]["servicePrincipalName"]])
 
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+    def test_service_principal_name_uniqueness(self):
+        """Test the servicePrincipalName uniqueness behaviour"""
+        print("Testing servicePrincipalName uniqueness behaviour")
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "servicePrincipalName": "HOST/testname.testdom"})
+
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestcomputer2,cn=computers," + self.base_dn,
+                "objectclass": "computer",
+                "servicePrincipalName": "HOST/testname.testdom"})
+        except LdbError as e:
+            num, _ = e.args
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            self.fail()
 
     def test_sam_description_attribute(self):
         """Test SAM description attribute"""
