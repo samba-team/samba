@@ -4838,6 +4838,18 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
+	el = ldb_msg_find_element(ac->msg, "servicePrincipalName");
+	if ((el != NULL)) {
+		/*
+		 * We need to check whether the SPN collides with an existing
+		 * one (anywhere) including via aliases.
+		 */
+		ret = samldb_spn_uniqueness_check(ac, el);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "user") != NULL) {
 		ac->type = SAMLDB_TYPE_USER;
@@ -4934,19 +4946,6 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		return samldb_fill_object(ac);
-	}
-
-
-	el = ldb_msg_find_element(ac->msg, "servicePrincipalName");
-	if ((el != NULL)) {
-		/*
-		 * We need to check whether the SPN collides with an existing
-		 * one (anywhere) including via aliases.
-		 */
-		ret = samldb_spn_uniqueness_check(ac, el);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
 	}
 
 	if (samdb_find_attribute(ldb, ac->msg,
