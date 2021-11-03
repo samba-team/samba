@@ -236,7 +236,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 		s_len++;
 	}
 
-	if (!do_convert) {
+	if (s_len == 0) {
+		d_len = 0;
+		dest = (uint8_t *)talloc_strdup(ndr, "");
+	} else if (!do_convert) {
 		d_len = s_len;
 		dest = (uint8_t *)talloc_strndup(ndr, s, s_len);
 	} else if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
