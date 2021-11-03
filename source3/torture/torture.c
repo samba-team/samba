@@ -15251,6 +15251,10 @@ static struct {
 		.fn    = run_list_dir_async_test,
 	},
 	{
+		.name  = "SMB2-DEL-ON-CLOSE-NONEMPTY",
+		.fn    = run_delete_on_close_non_empty,
+	},
+	{
 		.name  = "CLEANUP1",
 		.fn    = run_cleanup1,
 	},
