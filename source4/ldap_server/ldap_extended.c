@@ -23,6 +23,8 @@
 #include "lib/tls/tls.h"
 #include "samba/service_stream.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "librpc/gen_ndr/auth.h"
+#include "libcli/security/security_token.h"
 
 struct ldapsrv_starttls_postprocess_context {
 	struct ldapsrv_connection *conn;
@@ -151,11 +153,57 @@ struct ldapsrv_extended_operation {
 	NTSTATUS (*fn)(struct ldapsrv_call *call, struct ldapsrv_reply *reply, const char **errorstr);
 };
 
+static NTSTATUS ldapsrv_whoami(struct ldapsrv_call *call,
+			       struct ldapsrv_reply *reply,
+			       const char **errstr)
+{
+	struct ldapsrv_connection *conn = call->conn;
+	struct auth_session_info *session_info = conn->session_info;
+	struct ldap_ExtendedResponse *ext_resp =
+		&reply->msg->r.ExtendedResponse;
+
+	*errstr = NULL;
+
+	if (!security_token_is_anonymous(session_info->security_token)) {
+		struct auth_user_info *uinfo = session_info->info;
+		DATA_BLOB *value = talloc_zero(call, DATA_BLOB);
+
+		if (value == NULL) {
+			goto nomem;
+		}
+
+		value->data = (uint8_t *)talloc_asprintf(value,
+							 "u:%s\\%s",
+							 uinfo->domain_name,
+							 uinfo->account_name);
+		if (value->data == NULL) {
+			goto nomem;
+		}
+		value->length = talloc_get_size(value->data) - 1;
+
+		ext_resp->value = value;
+	}
+
+	ext_resp->response.resultcode = LDAP_SUCCESS;
+	ext_resp->response.errormessage = NULL;
+
+	ldapsrv_queue_reply(call, reply);
+
+	return NT_STATUS_OK;
+nomem:
+	return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
+}
+
+
 static struct ldapsrv_extended_operation extended_ops[] = {
 	{
 		.oid	= LDB_EXTENDED_START_TLS_OID,
 		.fn	= ldapsrv_StartTLS,
 	},{
+		.oid = LDB_EXTENDED_WHOAMI_OID,
+		.fn = ldapsrv_whoami,
+	},
+	{
 		.oid	= NULL,
 		.fn	= NULL,
 	}
