@@ -189,6 +189,13 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 	dump_data_file(d, l, !force, stdout);
 }
 
+static void ndrdump_data_diff(const uint8_t *d1, size_t l1,
+			      const uint8_t *d2, size_t l2,
+			      bool force)
+{
+	dump_data_file_diff(stdout, !force, d1, l1, d2, l2);
+}
+
 static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 				struct ndr_pull *ndr_pull,
 				struct ndr_print *ndr_print,
@@ -753,6 +760,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			printf("WARNING! orig and validated differ at byte 0x%02X (%u)\n", i, i);
 			printf("WARNING! orig byte[0x%02X] = 0x%02X validated byte[0x%02X] = 0x%02X\n",
 				i, byte_a, i, byte_b);
+			ndrdump_data_diff(blob.data, blob.length,
+					  v_blob.data, v_blob.length,
+					  dumpdata);
 		}
 	}
 
