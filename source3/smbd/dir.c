@@ -1356,6 +1356,14 @@ bool is_visible_fsp(struct files_struct *fsp)
 	hide_special = lp_hide_special_files(SNUM(fsp->conn));
 	hide_new_files_timeout = lp_hide_new_files_timeout(SNUM(fsp->conn));
 
+	if (!hide_unreadable &&
+	    !hide_unwriteable &&
+	    !hide_special &&
+	    (hide_new_files_timeout == 0))
+	{
+		return true;
+	}
+
 	if (fsp->base_fsp != NULL) {
 		/* Only operate on non-stream files. */
 		fsp = fsp->base_fsp;
