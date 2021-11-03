@@ -256,6 +256,21 @@ plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-LIST-DIR-ASYNC",
                 smbtorture3,
                 "",
                 "-l $LOCAL_PATH"])
+#
+# SMB2-DEL-ON-CLOSE-NONEMPTY needs to run against a special fileserver share veto_files_delete
+#
+plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-DEL-ON-CLOSE-NONEMPTY",
+                "fileserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'SMB2-DEL-ON-CLOSE-NONEMPTY',
+                '//$SERVER_IP/veto_files_delete',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "",
+                "-l $LOCAL_PATH"])
+
 
 
 shares = [

@@ -3228,3 +3228,139 @@ bool run_list_dir_async_test(int dummy)
 	(void)cli_rmdir(cli, dname);
 	return ret;
 }
+
+/*
+ * Test delete a directory fails if a file is created
+ * in a directory after the delete on close is set.
+ * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14892
+ */
+
+bool run_delete_on_close_non_empty(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	const char *dname = "DEL_ON_CLOSE_DIR";
+	const char *fname = "DEL_ON_CLOSE_DIR\\testfile";
+	uint16_t fnum = (uint16_t)-1;
+	uint16_t fnum1 = (uint16_t)-1;
+	bool ret = false;
+
+	printf("SMB2 delete on close nonempty\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	/* Ensure directory doesn't exist. */
+	(void)cli_unlink(cli,
+			 fname,
+			 FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	(void)cli_rmdir(cli, dname);
+
+	/* Create target directory. */
+	status = cli_ntcreate(cli,
+				dname,
+				0,
+				DELETE_ACCESS|FILE_READ_DATA,
+				FILE_ATTRIBUTE_DIRECTORY,
+				FILE_SHARE_READ|
+					FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_CREATE,
+				FILE_DIRECTORY_FILE,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_ntcreate for directory %s returned %s\n",
+				dname,
+				nt_errstr(status));
+		goto out;
+	}
+
+	/* Now set the delete on close bit. */
+	status = cli_nt_delete_on_close(cli, fnum, 1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_cli_nt_delete_on_close set for directory "
+			"%s returned %s\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Create file inside target directory. */
+	/*
+	 * NB. On Windows this will return NT_STATUS_DELETE_PENDING.  Only on
+	 * Samba will this succeed by default (the option "check parent
+	 * directory delete on close" configures behaviour), but we're using
+	 * this to test a race condition.
+	 */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				FILE_READ_DATA,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|
+					FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_CREATE,
+				0,
+				0,
+				&fnum1,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_ntcreate for file %s returned %s\n",
+				fname,
+				nt_errstr(status));
+		goto out;
+	}
+	cli_close(cli, fnum1);
+	fnum1 = (uint16_t)-1;
+
+	/* Now the close should fail. */
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
+		printf("cli_close for directory %s returned %s\n",
+				dname,
+				nt_errstr(status));
+		goto out;
+	}
+
+	ret = true;
+
+  out:
+
+	if (fnum1 != (uint16_t)-1) {
+		cli_close(cli, fnum1);
+	}
+	if (fnum != (uint16_t)-1) {
+		cli_nt_delete_on_close(cli, fnum, 0);
+		cli_close(cli, fnum);
+	}
+	(void)cli_unlink(cli,
+			 fname,
+			 FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	(void)cli_rmdir(cli, dname);
+	return ret;
+}
