@@ -481,6 +481,48 @@ void print_asc(int level, const uint8_t *buf,int len)
 	print_asc_cb(buf, len, debugadd_cb, &level);
 }
 
+static void dump_data_block16(const char *prefix, size_t idx,
+			      const uint8_t *buf, size_t len,
+			      void (*cb)(const char *buf, void *private_data),
+			      void *private_data)
+{
+	char tmp[16];
+	size_t i;
+
+	SMB_ASSERT(len >= 0 && len <= 16);
+
+	snprintf(tmp, sizeof(tmp), "%s[%04zX]", prefix, idx);
+	cb(tmp, private_data);
+
+	for (i=0; i<16; i++) {
+		if (i == 8) {
+			cb("  ", private_data);
+		}
+		if (i < len) {
+			snprintf(tmp, sizeof(tmp), " %02X", (int)buf[i]);
+		} else {
+			snprintf(tmp, sizeof(tmp), "   ");
+		}
+		cb(tmp, private_data);
+	}
+
+	cb("   ", private_data);
+
+	if (len == 0) {
+		cb("EMPTY   BLOCK\n", private_data);
+		return;
+	}
+
+	for (i=0; i<len; i++) {
+		if (i == 8) {
+			cb(" ", private_data);
+		}
+		print_asc_cb(&buf[i], 1, cb, private_data);
+	}
+
+	cb("\n", private_data);
+}
+
 /**
  * Write dump of binary data to a callback
  */
@@ -491,73 +533,30 @@ void dump_data_cb(const uint8_t *buf, int len,
 {
 	int i=0;
 	bool skipped = false;
-	char tmp[16];
 
 	if (len<=0) return;
 
-	for (i=0;i<len;) {
+	for (i=0;i<len;i+=16) {
+		size_t remaining_len = len - i;
+		size_t this_len = MIN(remaining_len, 16);
+		const uint8_t *this_buf = &buf[i];
 
-		if (i%16 == 0) {
-			if ((omit_zero_bytes == true) &&
-			    (i > 0) &&
-			    (len > i+16) &&
-			    all_zero(&buf[i], 16))
-			{
-				i +=16;
-				continue;
+		if ((omit_zero_bytes == true) &&
+		    (i > 0) && (remaining_len > 16) &&
+		    (this_len == 16) && all_zero(this_buf, 16))
+		{
+			if (!skipped) {
+				cb("skipping zero buffer bytes\n",
+				   private_data);
+				skipped = true;
 			}
-
-			if (i<len)  {
-				snprintf(tmp, sizeof(tmp), "[%04X] ", i);
-				cb(tmp, private_data);
-			}
+			continue;
 		}
 
-		snprintf(tmp, sizeof(tmp), "%02X ", (int)buf[i]);
-		cb(tmp, private_data);
-		i++;
-		if (i%8 == 0) {
-			cb("  ", private_data);
-		}
-		if (i%16 == 0) {
-
-			print_asc_cb(&buf[i-16], 8, cb, private_data);
-			cb(" ", private_data);
-			print_asc_cb(&buf[i-8], 8, cb, private_data);
-			cb("\n", private_data);
-
-			if ((omit_zero_bytes == true) &&
-			    (len > i+16) &&
-			    all_zero(&buf[i], 16)) {
-				if (!skipped) {
-					cb("skipping zero buffer bytes\n",
-					   private_data);
-					skipped = true;
-				}
-			}
-		}
+		skipped = false;
+		dump_data_block16("", i, this_buf, this_len,
+				  cb, private_data);
 	}
-
-	if (i%16) {
-		int n;
-		n = 16 - (i%16);
-		cb("  ", private_data);
-		if (n>8) {
-			cb(" ", private_data);
-		}
-		while (n--) {
-			cb("   ", private_data);
-		}
-		n = MIN(8,i%16);
-		print_asc_cb(&buf[i-(i%16)], n, cb, private_data);
-		cb(" ", private_data);
-		n = (i%16) - n;
-		if (n>0) {
-			print_asc_cb(&buf[i-n], n, cb, private_data);
-		}
-		cb("\n", private_data);
-	}
-
 }
 
 /**
