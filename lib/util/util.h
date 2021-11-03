@@ -51,4 +51,32 @@ _PUBLIC_ void dump_data(int level, const uint8_t *buf,int len);
  */
 _PUBLIC_ void dump_data_dbgc(int dbgc_class, int level, const uint8_t *buf, int len);
 
+/**
+ * Write dump of compared binary data to a callback
+ */
+void dump_data_diff_cb(const uint8_t *buf1, size_t len1,
+		       const uint8_t *buf2, size_t len2,
+		       bool omit_zero_bytes,
+		       void (*cb)(const char *buf, void *private_data),
+		       void *private_data);
+
+/**
+ * Write dump of compared binary data to the log file.
+ *
+ * The data is only written if the log level is at least level for
+ * debug class dbgc_class.
+ */
+_PUBLIC_ void dump_data_diff(int dbgc_class, int level,
+			     bool omit_zero_bytes,
+			     const uint8_t *buf1, size_t len1,
+			     const uint8_t *buf2, size_t len2);
+
+/**
+ * Write dump of compared binary data to the given file handle
+ */
+_PUBLIC_ void dump_data_file_diff(FILE *f,
+				  bool omit_zero_bytes,
+				  const uint8_t *buf1, size_t len1,
+				  const uint8_t *buf2, size_t len2);
+
 #endif

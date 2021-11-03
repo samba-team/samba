@@ -615,6 +615,90 @@ void dump_data_file(const uint8_t *buf, int len, bool omit_zero_bytes,
 }
 
 /**
+ * Write dump of compared binary data to a callback
+ */
+void dump_data_diff_cb(const uint8_t *buf1, size_t len1,
+		       const uint8_t *buf2, size_t len2,
+		       bool omit_zero_bytes,
+		       void (*cb)(const char *buf, void *private_data),
+		       void *private_data)
+{
+	size_t len = MAX(len1, len2);
+	size_t i;
+	bool skipped = false;
+
+	for (i=0; i<len; i+=16) {
+		size_t remaining_len = len - i;
+		size_t remaining_len1 = 0;
+		size_t this_len1 = 0;
+		const uint8_t *this_buf1 = NULL;
+		size_t remaining_len2 = 0;
+		size_t this_len2 = 0;
+		const uint8_t *this_buf2 = NULL;
+
+		if (i < len1) {
+			remaining_len1 = len1 - i;
+			this_len1 = MIN(remaining_len1, 16);
+			this_buf1 = &buf1[i];
+		}
+		if (i < len2) {
+			remaining_len2 = len2 - i;
+			this_len2 = MIN(remaining_len2, 16);
+			this_buf2 = &buf2[i];
+		}
+
+		if ((omit_zero_bytes == true) &&
+		    (i > 0) && (remaining_len > 16) &&
+		    (this_len1 == 16) && all_zero(this_buf1, 16) &&
+		    (this_len2 == 16) && all_zero(this_buf2, 16))
+		{
+			if (!skipped) {
+				cb("skipping zero buffer bytes\n",
+				   private_data);
+				skipped = true;
+			}
+			continue;
+		}
+
+		skipped = false;
+
+		if ((this_len1 == this_len2) &&
+		    (memcmp(this_buf1, this_buf2, this_len1) == 0))
+		{
+			dump_data_block16(" ", i, this_buf1, this_len1,
+					  cb, private_data);
+			continue;
+		}
+
+		dump_data_block16("-", i, this_buf1, this_len1,
+				  cb, private_data);
+		dump_data_block16("+", i, this_buf2, this_len2,
+				  cb, private_data);
+	}
+}
+
+_PUBLIC_ void dump_data_diff(int dbgc_class, int level,
+			     bool omit_zero_bytes,
+			     const uint8_t *buf1, size_t len1,
+			     const uint8_t *buf2, size_t len2)
+{
+	struct debug_channel_level dcl = { dbgc_class, level };
+
+	if (!DEBUGLVLC(dbgc_class, level)) {
+		return;
+	}
+	dump_data_diff_cb(buf1, len1, buf2, len2, true, debugadd_channel_cb, &dcl);
+}
+
+_PUBLIC_ void dump_data_file_diff(FILE *f,
+			          bool omit_zero_bytes,
+			          const uint8_t *buf1, size_t len1,
+			          const uint8_t *buf2, size_t len2)
+{
+	dump_data_diff_cb(buf1, len1, buf2, len2, omit_zero_bytes, fprintf_cb, f);
+}
+
+/**
  malloc that aborts with smb_panic on fail or zero size.
 **/
 
