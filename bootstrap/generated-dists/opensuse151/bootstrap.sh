@@ -75,7 +75,6 @@ zypper --non-interactive install \
     perl-Parse-Yapp \
     perl-Test-Base \
     pkgconfig \
-    policycoreutils-python \
     popt-devel \
     procps \
     psmisc \
@@ -87,6 +86,7 @@ zypper --non-interactive install \
     python3-dnspython \
     python3-gpg \
     python3-iso8601 \
+    python3-policycoreutils \
     python3-pyasn1 \
     python3-setproctitle \
     readline-devel \

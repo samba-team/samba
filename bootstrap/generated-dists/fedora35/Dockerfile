@@ -3,7 +3,7 @@
 # See also bootstrap/config.py
 #
 
-FROM fedora:33
+FROM fedora:35
 
 # pass in with --build-arg while build
 ARG SHA1SUM

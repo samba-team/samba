@@ -145,8 +145,8 @@ PKGS = [
     ('python3-pyasn1', 'python3-pyasn1'), # for krb5 tests
     ('python3-setproctitle', 'python3-setproctitle'),
 
-    ('', 'libsemanage-python'),
-    ('', 'policycoreutils-python'),
+    ('', 'python3-libsemanage'),
+    ('', 'python3-policycoreutils'),
 
     # perl
     ('libparse-yapp-perl', 'perl-Parse-Yapp'),
@@ -467,24 +467,11 @@ RPM_DISTS = {
         'replace': {
             'lsb-release': 'redhat-lsb',
             '@development-tools': '"@Development Tools"',  # add quotes
-            'libsemanage-python': 'python3-libsemanage',
             'lcov': '', # does not exist
             'perl-JSON-Parse': '', # does not exist?
             'perl-Test-Base': 'perl-Test-Simple',
             'perl-FindBin': '',
-            'policycoreutils-python': 'python3-policycoreutils',
             'liburing-devel': '', # not available yet, Add me back, once available!
-        }
-    },
-    'fedora33': {
-        'docker_image': 'fedora:33',
-        'vagrant_box': 'fedora/33-cloud-base',
-        'bootstrap': DNF_BOOTSTRAP,
-        'replace': {
-            'lsb-release': 'redhat-lsb',
-            'libsemanage-python': 'python3-libsemanage',
-            'policycoreutils-python': 'python3-policycoreutils',
-            'python3-iso8601': 'python3-dateutil',
         }
     },
     'fedora34': {
@@ -493,11 +480,20 @@ RPM_DISTS = {
         'bootstrap': DNF_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
-            'libsemanage-python': 'python3-libsemanage',
-            'policycoreutils-python': 'python3-policycoreutils',
             'perl-FindBin': '',
             'python3-iso8601': 'python3-dateutil',
-            'libtracker-sparql-2.0-dev': '', # only tracker 3.x is available
+            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
+        }
+    },
+    'fedora35': {
+        'docker_image': 'fedora:35',
+        'vagrant_box': 'fedora/35-cloud-base',
+        'bootstrap': DNF_BOOTSTRAP,
+        'replace': {
+            'lsb-release': 'redhat-lsb',
+            'perl-FindBin': '',
+            'python3-iso8601': 'python3-dateutil',
+            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
         }
     },
     'opensuse151': {
@@ -514,7 +510,7 @@ RPM_DISTS = {
             'jansson-devel': 'libjansson-devel',
             'keyutils-libs-devel': 'keyutils-devel',
             'krb5-workstation': 'krb5-client',
-            'libsemanage-python': 'python2-semanage',
+            'python3-libsemanage': 'python2-semanage',
             'openldap-devel': 'openldap2-devel',
             'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',
             'perl-JSON-Parse': 'perl-JSON-XS',
@@ -545,7 +541,7 @@ RPM_DISTS = {
             'jansson-devel': 'libjansson-devel',
             'keyutils-libs-devel': 'keyutils-devel',
             'krb5-workstation': 'krb5-client',
-            'libsemanage-python': 'python2-semanage',
+            'python3-libsemanage': 'python2-semanage',
             'openldap-devel': 'openldap2-devel',
             'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',
             'perl-JSON-Parse': 'perl-JSON-XS',
