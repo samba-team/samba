@@ -1061,6 +1061,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		struct smb_filename *smb_dname_full = NULL;
 		struct smb_filename *direntry_fname = NULL;
 		char *fullname = NULL;
+		int retval;
 
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			TALLOC_FREE(talloced);
@@ -1095,8 +1096,8 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			goto err;
 		}
 
-		ret = SMB_VFS_LSTAT(conn, smb_dname_full);
-		if (ret != 0) {
+		retval = SMB_VFS_LSTAT(conn, smb_dname_full);
+		if (retval != 0) {
 			int saved_errno = errno;
 			TALLOC_FREE(talloced);
 			TALLOC_FREE(fullname);
@@ -1139,8 +1140,8 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			}
 
 			/* Not a DFS link - could it be a dangling symlink ? */
-			ret = SMB_VFS_STAT(conn, smb_dname_full);
-			if (ret == -1 && (errno == ENOENT || errno == ELOOP)) {
+			retval = SMB_VFS_STAT(conn, smb_dname_full);
+			if (retval == -1 && (errno == ENOENT || errno == ELOOP)) {
 				/*
 				 * Dangling symlink.
 				 * Allow delete as "delete veto files = yes"
@@ -1243,8 +1244,8 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		 * Todo: use SMB_VFS_STATX() once that's available.
 		 */
 
-		ret = SMB_VFS_LSTAT(conn, smb_dname_full);
-		if (ret != 0) {
+		retval = SMB_VFS_LSTAT(conn, smb_dname_full);
+		if (retval != 0) {
 			goto err_break;
 		}
 
