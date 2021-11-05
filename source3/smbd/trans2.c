@@ -1643,12 +1643,12 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 	}
 
 	got_match = exact_match(state->has_wild,
-				state->conn->case_sensitive,
+				state->case_sensitive,
 				fname, mask);
 	state->got_exact_match = got_match;
 	if (!got_match) {
 		got_match = mask_match(fname, mask,
-				       state->conn->case_sensitive);
+				       state->case_sensitive);
 	}
 
 	if(!got_match && state->check_mangled_names &&
@@ -1667,12 +1667,12 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 		}
 
 		got_match = exact_match(state->has_wild,
-					state->conn->case_sensitive,
+					state->case_sensitive,
 					mangled_name, mask);
 		state->got_exact_match = got_match;
 		if (!got_match) {
 			got_match = mask_match(mangled_name, mask,
-					       state->conn->case_sensitive);
+					       state->case_sensitive);
 		}
 	}
 
