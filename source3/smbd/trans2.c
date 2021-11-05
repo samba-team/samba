@@ -1589,6 +1589,7 @@ struct smbd_dirptr_lanman2_state {
 	bool check_mangled_names;
 	bool has_wild;
 	bool got_exact_match;
+	bool case_sensitive;
 };
 
 static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
@@ -2482,6 +2483,7 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	}
 	state.has_wild = dptr_has_wild(dirptr);
 	state.got_exact_match = false;
+	state.case_sensitive = conn->case_sensitive;
 
 	*got_exact_match = false;
 
