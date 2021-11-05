@@ -1172,8 +1172,9 @@ void file_free(struct smb_request *req, files_struct *fsp)
 
 	fsp_free(fsp);
 
-	DEBUG(5,("freed files structure %llu (%u used)\n",
-		 (unsigned long long)fnum, (unsigned int)sconn->num_files));
+	DBG_INFO("freed files structure %"PRIu64" (%zu used)\n",
+		 fnum,
+		 sconn->num_files);
 }
 
 /****************************************************************************
