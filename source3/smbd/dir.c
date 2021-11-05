@@ -1550,7 +1550,11 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		goto fail;
 	}
 	dir_hnd->fsp = fsp;
-	dir_hnd->case_sensitive = conn->case_sensitive;
+	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
+		dir_hnd->case_sensitive = true;
+	} else {
+		dir_hnd->case_sensitive = conn->case_sensitive;
+	}
 
 	talloc_set_destructor(dir_hnd, smb_Dir_destructor);
 
