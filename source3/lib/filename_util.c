@@ -57,13 +57,14 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 NTTIME twrp,
 					 uint32_t flags)
 {
-	struct smb_filename smb_fname_loc = { 0, };
-
 	/* Setup the base_name/stream_name. */
-	smb_fname_loc.base_name = discard_const_p(char, base_name);
-	smb_fname_loc.stream_name = discard_const_p(char, stream_name);
-	smb_fname_loc.flags = flags;
-	smb_fname_loc.twrp = twrp;
+
+	struct smb_filename smb_fname_loc = {
+		.base_name = discard_const_p(char, base_name),
+		.stream_name = discard_const_p(char, stream_name),
+		.flags = flags,
+		.twrp = twrp,
+	};
 
 	/* Copy the psbuf if one was given. */
 	if (psbuf)
