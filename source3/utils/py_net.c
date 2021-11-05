@@ -64,19 +64,23 @@ static WERROR check_ads_config(struct loadparm_context *lp_ctx)
 static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
 	struct libnet_JoinCtx *r = NULL;
+	struct net_context *c;
 	WERROR werr;
 	PyObject *result;
 	TALLOC_CTX *mem_ctx;
+	uint8_t no_dns_updates;
 	bool modify_config = lp_config_backend_is_registry();
 	const char *kwnames[] = { "dnshostname", "createupn", "createcomputer",
 				  "osName", "osVer", "osServicePack",
-				  "machinepass", "debug", NULL };
+				  "machinepass", "debug", "noDnsUpdates", NULL };
 
 	mem_ctx = talloc_new(self->mem_ctx);
 	if (mem_ctx == NULL) {
 		PyErr_NoMemory();
 		return NULL;
 	}
+	c = talloc_zero(mem_ctx, struct net_context);
+	c->msg_ctx = mem_ctx;
 
 	werr = libnet_init_JoinCtx(mem_ctx, &r);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -84,7 +88,7 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 		return NULL;
 	}
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|sssssssp:Join",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ssssssspp:Join",
 					 discard_const_p(char *, kwnames),
 					 &r->in.dnshostname,
 					 &r->in.upn,
@@ -93,7 +97,8 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 					 &r->in.os_version,
 					 &r->in.os_servicepack,
 					 &r->in.machine_password,
-					 &r->in.debug)) {
+					 &r->in.debug,
+					 &no_dns_updates)) {
 		talloc_free(mem_ctx);
 		PyErr_FromString(_("Invalid arguments\n"));
 		return NULL;
@@ -121,6 +126,9 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
 				  WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
 	r->in.msg_ctx		= cmdline_messaging_context(get_dyn_CONFIGFILE());
+	c->opt_user_name = r->in.admin_account;
+	c->opt_password = r->in.admin_password;
+	c->opt_kerberos = r->in.use_kerberos;
 
 	werr = libnet_Join(mem_ctx, r);
 	if (W_ERROR_EQUAL(werr, WERR_NERR_DCNOTFOUND)) {
@@ -148,6 +156,16 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 			   "You should set \"workgroup = %s\" in %s.\n"),
 			 get_dyn_CONFIGFILE(), r->out.netbios_domain_name,
 			 r->out.netbios_domain_name, get_dyn_CONFIGFILE());
+	}
+
+	/*
+	 * We try doing the dns update (if it was compiled in
+	 * and if it was not disabled on the command line).
+	 * If the dns update fails, we still consider the join
+	 * operation as succeeded if we came this far.
+	 */
+	if (!no_dns_updates) {
+		net_ads_join_dns_updates(c, mem_ctx, r);
 	}
 
 	result = Py_BuildValue("ss", dom_sid_string(mem_ctx, r->out.domain_sid),

@@ -636,7 +636,10 @@ class cmd_domain_join(Command):
                     "Don't choose this unless you know what you're doing")
     ]
 
-    takes_options = []
+    takes_options = [
+        Option("--no-dns-updates", action="store_true",
+               help="Disable DNS updates")
+    ]
     takes_options.extend(common_join_options)
     takes_options.extend(common_provision_join_options)
 
@@ -652,7 +655,7 @@ class cmd_domain_join(Command):
             versionopts=None, server=None, site=None, targetdir=None,
             domain_critical_only=False, machinepass=None,
             use_ntvfs=False, experimental_s4_member=False, dns_backend=None,
-            quiet=False, verbose=False,
+            quiet=False, verbose=False, no_dns_updates=False,
             plaintext_secrets=False,
             backend_store=None, backend_store_size=None):
         lp = sambaopts.get_loadparm()
@@ -693,7 +696,8 @@ class cmd_domain_join(Command):
                 s3_net = s3_Net(creds, s3_lp, server=server)
                 (sid, domain_name) = s3_net.join_member(netbios_name,
                                                         machinepass=machinepass,
-                                                        debug=verbose)
+                                                        debug=verbose,
+                                                        noDnsUpdates=no_dns_updates)
 
             self.errf.write("Joined domain %s (%s)\n" % (domain_name, sid))
         elif role == "DC" and is_ad_dc_built():

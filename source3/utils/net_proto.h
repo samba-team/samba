@@ -23,7 +23,9 @@
 #ifndef _NET_PROTO_H_
 #define _NET_PROTO_H_
 
+#include "ads.h"
 #include "libads/ads_status.h"
+#include "librpc/gen_ndr/libnet_join.h"
 
 /* The following definitions come from utils/net.c  */
 
@@ -45,6 +47,15 @@ int net_ads_keytab(struct net_context *c, int argc, const char **argv);
 int net_ads_kerberos(struct net_context *c, int argc, const char **argv);
 int net_ads_setspn(struct net_context *c, int argc, const char **argv);
 int net_ads(struct net_context *c, int argc, const char **argv);
+
+/* The following definitions come from utils/net_ads_join_dns.c  */
+void use_in_memory_ccache(void);
+NTSTATUS net_update_dns_ext(struct net_context *c,
+			    TALLOC_CTX *mem_ctx, ADS_STRUCT *ads,
+			    const char *hostname,
+			    struct sockaddr_storage *iplist,
+			    int num_addrs, bool remove_host);
+void net_ads_join_dns_updates(struct net_context *c, TALLOC_CTX *ctx, struct libnet_JoinCtx *r);
 
 /* The following definitions come from utils/net_ads_gpo.c  */
 

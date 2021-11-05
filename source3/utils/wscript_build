@@ -7,6 +7,9 @@ bld.SAMBA3_SUBSYSTEM('PASSWD_UTIL',
 bld.SAMBA3_SUBSYSTEM('CONN_TDB',
                      source='conn_tdb.c')
 
+bld.SAMBA3_SUBSYSTEM('DNS_UTIL',
+                     source='net_dns.c net_ads_join_dns.c')
+
 bld.SAMBA3_BINARY('profiles',
                  source='profiles.c',
                  deps='''
@@ -211,7 +214,6 @@ bld.SAMBA3_BINARY('net',
                  net_util.c
                  net_rpc_sh_acct.c
                  net_rpc_audit.c
-                 net_dns.c
                  net_ads_gpo.c
                  net_conf.c
                  net_conf_util.c
@@ -281,6 +283,7 @@ bld.SAMBA3_BINARY('net',
                  jansson
                  common_auth
                  ADOUBLE
+                 DNS_UTIL
                  ''')
 
 bld.SAMBA3_BINARY('mvxattr',
@@ -339,6 +342,6 @@ pytalloc_util = bld.pyembed_libname('pytalloc-util')
 pyrpc_util = bld.pyembed_libname('pyrpc_util')
 bld.SAMBA3_PYTHON('python_net_s3',
         source='py_net.c',
-        deps='LIBNET cmdline_contexts %s %s' % (pytalloc_util, pyrpc_util),
+        deps='LIBNET DNS_UTIL cmdline_contexts %s %s' % (pytalloc_util, pyrpc_util),
         realname='samba/net_s3.so'
         )
