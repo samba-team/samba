@@ -1340,12 +1340,11 @@ static NTSTATUS vfswrap_parent_pathname(struct vfs_handle_struct *handle,
 	struct smb_filename *name = NULL;
 	char *p = NULL;
 
-	parent = cp_smb_filename(frame, smb_fname_in);
+	parent = cp_smb_filename_nostream(frame, smb_fname_in);
 	if (parent == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
-	TALLOC_FREE(parent->stream_name);
 	SET_STAT_INVALID(parent->st);
 
 	p = strrchr_m(parent->base_name, '/'); /* Find final '/', if any */
