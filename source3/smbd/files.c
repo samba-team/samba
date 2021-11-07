@@ -1462,6 +1462,7 @@ size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen)
 	 */
 	if (buf == NULL) {
 		buf = tmp_buf;
+		SMB_ASSERT(buflen==0);
 	}
 
 	len = snprintf(buf, buflen, "%s/%s", fsp->conn->connectpath,
