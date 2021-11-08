@@ -44,6 +44,20 @@ static bool _samba_cmdline_load_config_s4(void)
 		}
 	}
 
+	switch (_config_type) {
+	case SAMBA_CMDLINE_CONFIG_SERVER: {
+		const struct samba_cmdline_daemon_cfg *cmdline_daemon_cfg =
+			samba_cmdline_get_daemon_cfg();
+
+		if (!cmdline_daemon_cfg->interactive) {
+			setup_logging(getprogname(), DEBUG_FILE);
+		}
+		break;
+	}
+	default:
+		break;
+	}
+
 	config_file = get_dyn_CONFIGFILE();
 	ok = lpcfg_load(lp_ctx, config_file);
 	if (!ok) {
