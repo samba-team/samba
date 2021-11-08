@@ -25,6 +25,7 @@
 #include "cmdline_private.h"
 
 static bool _require_smbconf;
+static enum samba_cmdline_config_type _config_type;
 
 static bool _samba_cmdline_load_config_s4(void)
 {
@@ -81,6 +82,7 @@ bool samba_cmdline_init(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 	_require_smbconf = require_smbconf;
+	_config_type = config_type;
 
 	creds = cli_credentials_init(mem_ctx);
 	if (creds == NULL) {
