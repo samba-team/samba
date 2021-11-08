@@ -1283,6 +1283,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	bool creating = !file_existed && (flags & O_CREAT);
 	bool truncating = (flags & O_TRUNC);
 	bool open_fd = false;
+	bool posix_open = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
 
 	/*
 	 * Catch early an attempt to open an existing
@@ -1531,7 +1532,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		if (S_ISLNK(smb_fname->st.st_ex_mode) &&
-		    !(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN))
+		    !posix_open)
 		{
 			/*
 			 * Don't allow stat opens on symlinks directly unless
@@ -1573,7 +1574,7 @@ static NTSTATUS open_file(files_struct *fsp,
 						      access_mask);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
-				(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
+				posix_open &&
 				S_ISLNK(smb_fname->st.st_ex_mode)) {
 			/* This is a POSIX stat open for delete
 			 * or rename on a symlink that points
