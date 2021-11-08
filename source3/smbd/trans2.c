@@ -2483,7 +2483,7 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	}
 	state.has_wild = dptr_has_wild(dirptr);
 	state.got_exact_match = false;
-	state.case_sensitive = conn->case_sensitive;
+	state.case_sensitive = dptr_case_sensitive(dirptr);
 
 	*got_exact_match = false;
 
@@ -2995,7 +2995,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 directory,lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn))));
 	if (in_list(directory,
 		    lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn)),
-			conn->case_sensitive)) {
+			dptr_case_sensitive(fsp->dptr))) {
 		dont_descend = True;
 	}
 
@@ -3370,7 +3370,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
 		 directory,lp_dont_descend(ctx, lp_sub, SNUM(conn))));
-	if (in_list(directory,lp_dont_descend(ctx, lp_sub, SNUM(conn)),conn->case_sensitive))
+	if (in_list(directory,lp_dont_descend(ctx, lp_sub, SNUM(conn)),
+			dptr_case_sensitive(fsp->dptr)))
 		dont_descend = True;
 
 	p = pdata;
