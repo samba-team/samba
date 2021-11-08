@@ -272,6 +272,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	char *p;
 	bool stop = false;
 	bool ok;
+	bool posix_dir_handle = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_query_directory_state);
@@ -467,7 +468,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		 fsp->fsp_name->base_name, lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn)),
 		(unsigned int)in_output_buffer_length ));
 	if (in_list(fsp->fsp_name->base_name,lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn)),
-			conn->case_sensitive)) {
+			posix_dir_handle ? true : conn->case_sensitive)) {
 		state->dont_descend = true;
 	}
 
