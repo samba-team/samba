@@ -397,6 +397,11 @@ void dptr_set_priv(struct dptr_struct *dptr)
 	dptr->priv = true;
 }
 
+bool dptr_case_sensitive(struct dptr_struct *dptr)
+{
+	return dptr->dir_hnd->case_sensitive;
+}
+
 /****************************************************************************
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
