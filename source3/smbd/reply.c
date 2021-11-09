@@ -8806,6 +8806,7 @@ void reply_copy(struct smb_request *req)
 		ucf_flags_from_smb_request(req);
 	uint32_t ucf_flags_dst = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 		ucf_flags_from_smb_request(req);
+	bool posix_pathnames = req->posix_pathnames;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcopy);
@@ -8899,7 +8900,7 @@ void reply_copy(struct smb_request *req)
 		goto out;
 	}
 
-	if (!req->posix_pathnames) {
+	if (!posix_pathnames) {
 		char *orig_src_lcomp = NULL;
 		char *orig_dst_lcomp = NULL;
 		/*
