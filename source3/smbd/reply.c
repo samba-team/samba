@@ -9084,7 +9084,8 @@ void reply_copy(struct smb_request *req)
 			}
 
 			if(!mask_match(dname, fname_src_mask,
-				       conn->case_sensitive)) {
+				       posix_pathnames ?
+					true : conn->case_sensitive)) {
 				TALLOC_FREE(talloced);
 				continue;
 			}
