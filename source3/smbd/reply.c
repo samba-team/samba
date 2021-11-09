@@ -3359,6 +3359,9 @@ NTSTATUS unlink_internals(connection_struct *conn,
 		long offset = 0;
 		const char *dname = NULL;
 		char *talloced = NULL;
+		bool case_sensitive =
+			(smb_fname->flags & SMB_FILENAME_POSIX_PATH) ?
+			true : conn->case_sensitive;
 
 		if ((dirtype & SAMBA_ATTRIBUTES_MASK) == FILE_ATTRIBUTE_DIRECTORY) {
 			status = NT_STATUS_OBJECT_NAME_INVALID;
@@ -3427,7 +3430,7 @@ NTSTATUS unlink_internals(connection_struct *conn,
 			}
 
 			if(!mask_match(dname, fname_mask,
-				       conn->case_sensitive)) {
+				       case_sensitive)) {
 				TALLOC_FREE(frame);
 				TALLOC_FREE(talloced);
 				continue;
