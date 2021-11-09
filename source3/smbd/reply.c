@@ -8040,6 +8040,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	int rc;
 	bool src_has_wild = false;
 	bool dest_has_wild = false;
+	bool posix_pathname = (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH);
 
 	/*
 	 * Split the old name into directory and last component
@@ -8092,7 +8093,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 	}
 
-	if (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH) {
+	if (posix_pathname) {
 		status = make_smb2_posix_create_ctx(talloc_tos(), &posx, 0777);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
