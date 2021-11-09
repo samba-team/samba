@@ -8083,6 +8083,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	 */
 
 	if (!VALID_STAT(smb_fname_src->st) &&
+	    !posix_pathname &&
 	    mangle_is_mangled(fname_src_mask, conn->params)) {
 		char *new_mask = NULL;
 		mangle_lookup_name_from_8_3(ctx, fname_src_mask, &new_mask,
