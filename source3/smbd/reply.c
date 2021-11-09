@@ -3289,6 +3289,7 @@ NTSTATUS unlink_internals(connection_struct *conn,
 	struct smb_filename *smb_fname_dir = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 	int ret;
+	bool posix_pathname = (smb_fname->flags & SMB_FILENAME_POSIX_PATH);
 
 	/* Split up the directory from the filename/mask. */
 	status = split_fname_dir_mask(ctx, smb_fname->base_name,
@@ -3307,6 +3308,7 @@ NTSTATUS unlink_internals(connection_struct *conn,
 	 */
 
 	if (!VALID_STAT(smb_fname->st) &&
+	    !posix_pathname &&
 	    mangle_is_mangled(fname_mask, conn->params)) {
 		char *new_mask = NULL;
 		mangle_lookup_name_from_8_3(ctx, fname_mask,
