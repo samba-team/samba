@@ -131,7 +131,7 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!is_allowed_domain(domain_name)) {
+	if (secure_channel_type == SEC_CHAN_NULL && !is_allowed_domain(domain_name)) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
