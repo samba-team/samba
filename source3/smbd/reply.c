@@ -7582,6 +7582,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	uint32_t access_mask = SEC_DIR_ADD_FILE;
 	bool dst_exists, old_is_stream, new_is_stream;
 	int ret;
+	bool case_sensitive = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
+				true : conn->case_sensitive;
+	bool case_preserve = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
+				true : conn->case_preserve;
 
 	status = check_name(conn, smb_fname_dst_in);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -7612,7 +7616,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	 * the rename (user is trying to change the case of the
 	 * filename).
 	 */
-	if (!conn->case_sensitive && conn->case_preserve &&
+	if (!case_sensitive && case_preserve &&
 	    strequal(fsp->fsp_name->base_name, smb_fname_dst->base_name) &&
 	    strequal(fsp->fsp_name->stream_name, smb_fname_dst->stream_name)) {
 		char *fname_dst_parent = NULL;
