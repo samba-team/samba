@@ -3390,6 +3390,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	if(!continue_bit && resume_name && *resume_name) {
 		SMB_STRUCT_STAT st;
+		bool posix_open = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
 
 		long current_pos = 0;
 		/*
@@ -3398,7 +3399,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 * could be mangled. Ensure we check the unmangled name.
 		 */
 
-		if (mangle_is_mangled(resume_name, conn->params)) {
+		if (!posix_open &&
+				mangle_is_mangled(resume_name, conn->params)) {
 			char *new_resume_name = NULL;
 			mangle_lookup_name_from_8_3(ctx,
 						resume_name,
