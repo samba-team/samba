@@ -8941,6 +8941,7 @@ void reply_copy(struct smb_request *req)
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 	if (!VALID_STAT(smb_fname_src->st) &&
+	    !posix_pathnames &&
 	    mangle_is_mangled(fname_src_mask, conn->params)) {
 		char *new_mask = NULL;
 		mangle_lookup_name_from_8_3(ctx, fname_src_mask,
