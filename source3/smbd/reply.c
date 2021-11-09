@@ -8041,6 +8041,10 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	bool src_has_wild = false;
 	bool dest_has_wild = false;
 	bool posix_pathname = (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH);
+	bool case_sensitive = posix_pathname ? true : conn->case_sensitive;
+	bool case_preserve = posix_pathname ? true : conn->case_preserve;
+	bool short_case_preserve = posix_pathname ? true :
+					conn->short_case_preserve;
 
 	/*
 	 * Split the old name into directory and last component
@@ -8131,8 +8135,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			  "case_preserve = %d, short case preserve = %d, "
 			  "directory = %s, newname = %s, "
 			  "last_component_dest = %s\n",
-			  conn->case_sensitive, conn->case_preserve,
-			  conn->short_case_preserve,
+			  case_sensitive, case_preserve,
+			  short_case_preserve,
 			  smb_fname_str_dbg(smb_fname_src),
 			  smb_fname_str_dbg(smb_fname_dst),
 			  dst_original_lcomp));
@@ -8285,7 +8289,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			}
 		}
 
-		if(!mask_match(dname, fname_src_mask, conn->case_sensitive)) {
+		if(!mask_match(dname, fname_src_mask, case_sensitive)) {
 			TALLOC_FREE(talloced);
 			continue;
 		}
