@@ -34,6 +34,7 @@
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smb_signing.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/lib/substitute.h"
 
 /****************************************************************************
  Add the standard 'Samba' signature to the end of the session setup.

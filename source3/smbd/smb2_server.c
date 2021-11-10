@@ -33,6 +33,7 @@
 #include "lib/util/iov_buf.h"
 #include "auth.h"
 #include "libcli/smb/smbXcli_base.h"
+#include "source3/lib/substitute.h"
 
 #if defined(LINUX)
 /* SIOCOUTQ TIOCOUTQ are the same */

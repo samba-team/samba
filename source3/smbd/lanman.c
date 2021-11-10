@@ -45,6 +45,7 @@
 #include "rpc_server/rpc_ncacn_np.h"
 #include "lib/util/string_wrappers.h"
 #include "source3/printing/rap_jobid.h"
+#include "source3/lib/substitute.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES

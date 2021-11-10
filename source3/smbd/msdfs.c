@@ -34,6 +34,7 @@
 #include "librpc/gen_ndr/ndr_dfsblobs.h"
 #include "lib/tsocket/tsocket.h"
 #include "lib/global_contexts.h"
+#include "source3/lib/substitute.h"
 
 /**********************************************************************
  Parse a DFS pathname of the form \hostname\service\reqpath

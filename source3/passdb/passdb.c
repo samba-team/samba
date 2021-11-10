@@ -33,6 +33,7 @@
 #include "auth/credentials/credentials.h"
 #include "lib/param/param.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/lib/substitute.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

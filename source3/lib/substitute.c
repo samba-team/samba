@@ -20,6 +20,7 @@
 
 
 #include "includes.h"
+#include "substitute.h"
 #include "system/passwd.h"
 #include "secrets.h"
 #include "auth.h"

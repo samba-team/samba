@@ -49,6 +49,7 @@
 #include "lib/param/param.h"
 #include "libsmb/dsgetdcname.h"
 #include "lib/util/util_str_escape.h"
+#include "source3/lib/substitute.h"
 
 extern userdom_struct current_user_info;
 

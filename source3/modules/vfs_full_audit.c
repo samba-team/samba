@@ -73,6 +73,7 @@
 #include "passdb/machine_sid.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/lib/substitute.h"
 
 static int vfs_full_audit_debug_level = DBGC_VFS;
 

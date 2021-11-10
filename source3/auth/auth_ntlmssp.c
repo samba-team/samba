@@ -25,6 +25,7 @@
 #include "auth.h"
 #include "libcli/security/security.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "source3/lib/substitute.h"
 
 NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
 				     TALLOC_CTX *mem_ctx,

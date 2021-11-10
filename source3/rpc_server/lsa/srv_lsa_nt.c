@@ -53,6 +53,7 @@
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/rpc/dcerpc_helper.h"
 #include "lib/param/loadparm.h"
+#include "source3/lib/substitute.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
