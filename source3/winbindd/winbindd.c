@@ -1717,15 +1717,6 @@ int main(int argc, const char **argv)
 
 	poptFreeContext(pc);
 
-	if (is_default_dyn_LOGFILEBASE()) {
-		char *lfile = NULL;
-		if (asprintf(&lfile,"%s/log.winbindd",
-				get_dyn_LOGFILEBASE()) > 0) {
-			lp_set_logfile(lfile);
-			SAFE_FREE(lfile);
-		}
-	}
-
 	reopen_logs();
 
 	DEBUG(0,("winbindd version %s started.\n", samba_version_string()));
