@@ -1125,7 +1125,6 @@ bool reopen_logs_internal(void)
 {
 	struct debug_backend *b = NULL;
 	mode_t oldumask;
-	int new_fd = 0;
 	size_t i;
 	bool ok;
 
@@ -1190,7 +1189,7 @@ bool reopen_logs_internal(void)
 	 * If log file was opened or created successfully, take over stderr to
 	 * catch output into logs.
 	 */
-	if (new_fd != -1) {
+	if (dbgc_config[DBGC_ALL].fd > 0) {
 		if (dup2(dbgc_config[DBGC_ALL].fd, 2) == -1) {
 			/* Close stderr too, if dup2 can't point it -
 			   at the logfile.  There really isn't much
