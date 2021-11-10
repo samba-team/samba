@@ -30,6 +30,7 @@
 #include "tevent.h"
 #include "param/param.h"
 #include "system/filesys.h"
+#include "system/passwd.h"
 
 /**
  * Create a new credentials structure
@@ -1159,12 +1160,24 @@ _PUBLIC_ bool cli_credentials_guess(struct cli_credentials *cred,
 {
 	const char *error_string;
 	const char *env = NULL;
+	struct passwd *pwd = NULL;
 	bool ok;
 
 	if (lp_ctx != NULL) {
 		ok = cli_credentials_set_conf(cred, lp_ctx);
 		if (!ok) {
 			return false;
+		}
+	}
+
+	pwd = getpwuid(getuid());
+	if (pwd != NULL) {
+		size_t len = strlen(pwd->pw_name);
+
+		if (len > 0 && len <= 1024) {
+			(void)cli_credentials_parse_string(cred,
+							   pwd->pw_name,
+							   CRED_GUESS_ENV);
 		}
 	}
 
