@@ -817,6 +817,11 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_EXTENDED_DYNAMIC_OID	"1.3.6.1.4.1.1466.101.119.1"
 
+/**
+   OID for RFC4532 "Who Am I" extended operation
+*/
+#define LDB_EXTENDED_WHOAMI_OID		"1.3.6.1.4.1.4203.1.11.3"
+
 struct ldb_sd_flags_control {
 	/*
 	 * request the owner	0x00000001
