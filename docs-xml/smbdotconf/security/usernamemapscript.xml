@@ -6,7 +6,7 @@
 <description>
 	<para>This script is a mutually exclusive alternative to the 
 	<smbconfoption name="username map"/> parameter.  This parameter 
-	specifies and external program or script that must accept a single 
+	specifies an external program or script that must accept a single 
 	command line option (the username transmitted in the authentication
 	request) and return a line on standard output (the name to which
 	the account should mapped).  In this way, it is possible to store
