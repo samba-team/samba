@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "printing.h"
 #include "smbd/proto.h"
+#include "source3/lib/substitute.h"
 
 extern userdom_struct current_user_info;
 

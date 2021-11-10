@@ -25,6 +25,7 @@
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
 #include "msdfs.h"
+#include "source3/lib/substitute.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

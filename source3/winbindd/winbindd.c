@@ -51,6 +51,7 @@
 #include "lib/gencache.h"
 #include "rpc_server/rpc_config.h"
 #include "lib/global_contexts.h"
+#include "source3/lib/substitute.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

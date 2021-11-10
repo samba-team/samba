@@ -26,6 +26,7 @@
 #include "passdb/lookup_sid.h"
 #include "auth.h"
 #include "../auth/auth_util.h"
+#include "source3/lib/substitute.h"
 
 /* what user is current? */
 extern struct current_user current_user;

@@ -36,6 +36,7 @@
 #include "auth/credentials/credentials.h"
 #include "lib/param/loadparm.h"
 #include "librpc/gen_ndr/dcerpc.h"
+#include "source3/lib/substitute.h"
 
 static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 						TALLOC_CTX *mem_ctx,

@@ -33,6 +33,7 @@
 #include "idmap.h"
 #include "lib/util/smb_strtox.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/lib/substitute.h"
 
 /*
  * Set a user's data

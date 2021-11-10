@@ -51,6 +51,7 @@
 #include "lib/param/param.h"
 #include "auth/gensec/gensec.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/lib/substitute.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>

@@ -22,6 +22,7 @@
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "../libcli/security/security.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/lib/substitute.h"
 
 struct wb_getpwsid_state {
 	struct tevent_context *ev;

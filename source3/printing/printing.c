@@ -40,6 +40,7 @@
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
 #include "source3/printing/rap_jobid.h"
+#include "source3/lib/substitute.h"
 
 extern userdom_struct current_user_info;
 

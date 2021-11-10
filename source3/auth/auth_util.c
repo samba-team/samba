@@ -38,6 +38,7 @@
 #include "rpc_client/util_netlogon.h"
 #include "source4/auth/auth.h"
 #include "auth/auth_util.h"
+#include "source3/lib/substitute.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

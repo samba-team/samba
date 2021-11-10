@@ -60,6 +60,7 @@
 #include "rpc_server/fssd.h"
 #include "rpc_server/mdssd.h"
 #include "lib/global_contexts.h"
+#include "source3/lib/substitute.h"
 
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_protocol.h"

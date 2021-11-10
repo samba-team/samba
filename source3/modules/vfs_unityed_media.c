@@ -62,6 +62,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "lib/util/smb_strtox.h"
 #include <libgen.h>
+#include "source3/lib/substitute.h"
 
 #define UM_PARAM_TYPE_NAME "unityed_media"
 

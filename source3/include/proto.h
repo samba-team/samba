@@ -139,39 +139,6 @@ int smbrun_no_sanitize(const char *cmd, int *outfd, char * const *env);
 int smbrun(const char *cmd, int *outfd, char * const *env);
 int smbrunsecret(const char *cmd, const char *secret);
 
-/* The following definitions come from lib/substitute.c  */
-
-bool set_local_machine_name(const char *local_name, bool perm);
-const char *get_local_machine_name(void);
-bool set_remote_machine_name(const char *remote_name, bool perm);
-const char *get_remote_machine_name(void);
-void sub_set_smb_name(const char *name);
-void set_current_user_info(const char *smb_name, const char *unix_name,
-			   const char *domain);
-void sub_set_socket_ids(const char *peeraddr, const char *peername,
-			const char *sockaddr);
-const char *get_current_username(void);
-void standard_sub_basic(const char *smb_name, const char *domain_name,
-			char *str, size_t len);
-char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name,
-		       const char *domain_name, const char *str);
-char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
-			const char *input_string,
-			const char *username,
-			const char *grpname,
-			const char *domain,
-			uid_t uid,
-			gid_t gid);
-char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
-			  const char *servicename, const char *user,
-			  const char *connectpath, gid_t gid,
-			  const char *str);
-char *talloc_sub_full(TALLOC_CTX *mem_ctx,
-			  const char *servicename, const char *user,
-			  const char *connectpath, gid_t gid,
-			  const char *smb_name, const char *domain_name,
-			  const char *str);
-
 /* The following definitions come from lib/sysquotas.c  */
 
 int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);

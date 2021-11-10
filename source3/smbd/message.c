@@ -27,6 +27,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "smbprofile.h"
+#include "source3/lib/substitute.h"
 
 extern userdom_struct current_user_info;
 
