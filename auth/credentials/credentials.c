@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    User credentials handling
@@ -6,17 +6,17 @@
    Copyright (C) Jelmer Vernooij 2005
    Copyright (C) Tim Potter 2001
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -33,9 +33,9 @@
 
 /**
  * Create a new credentials structure
- * @param mem_ctx TALLOC_CTX parent for credentials structure 
+ * @param mem_ctx TALLOC_CTX parent for credentials structure
  */
-_PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx) 
+_PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 {
 	struct cli_credentials *cred = talloc_zero(mem_ctx, struct cli_credentials);
 	if (cred == NULL) {
@@ -101,7 +101,7 @@ _PUBLIC_ void *_cli_credentials_callback_data(struct cli_credentials *cred)
 
 /**
  * Create a new anonymous credential
- * @param mem_ctx TALLOC_CTX parent for credentials structure 
+ * @param mem_ctx TALLOC_CTX parent for credentials structure
  */
 _PUBLIC_ struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx)
 {
@@ -184,11 +184,11 @@ _PUBLIC_ uint32_t cli_credentials_get_gensec_features(struct cli_credentials *cr
 _PUBLIC_ const char *cli_credentials_get_username(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
-		cli_credentials_set_machine_account(cred, 
+		cli_credentials_set_machine_account(cred,
 					cred->machine_account_pending_lp_ctx);
 	}
 
-	if (cred->username_obtained == CRED_CALLBACK && 
+	if (cred->username_obtained == CRED_CALLBACK &&
 	    !cred->callback_running) {
 	    	cred->callback_running = true;
 		cred->username = cred->username_cb(cred);
@@ -222,7 +222,7 @@ cli_credentials_get_username_and_obtained(struct cli_credentials *cred,
 	return cli_credentials_get_username(cred);
 }
 
-_PUBLIC_ bool cli_credentials_set_username(struct cli_credentials *cred, 
+_PUBLIC_ bool cli_credentials_set_username(struct cli_credentials *cred,
 				  const char *val, enum credentials_obtained obtained)
 {
 	if (obtained >= cred->username_obtained) {
@@ -247,7 +247,7 @@ _PUBLIC_ bool cli_credentials_set_username_callback(struct cli_credentials *cred
 	return false;
 }
 
-_PUBLIC_ bool cli_credentials_set_bind_dn(struct cli_credentials *cred, 
+_PUBLIC_ bool cli_credentials_set_bind_dn(struct cli_credentials *cred,
 				 const char *bind_dn)
 {
 	cred->bind_dn = talloc_strdup(cred, bind_dn);
@@ -279,7 +279,7 @@ _PUBLIC_ char *cli_credentials_get_principal_and_obtained(struct cli_credentials
 					cred->machine_account_pending_lp_ctx);
 	}
 
-	if (cred->principal_obtained == CRED_CALLBACK && 
+	if (cred->principal_obtained == CRED_CALLBACK &&
 	    !cred->callback_running) {
 	    	cred->callback_running = true;
 		cred->principal = cred->principal_cb(cred);
@@ -320,7 +320,7 @@ _PUBLIC_ char *cli_credentials_get_principal_and_obtained(struct cli_credentials
 
 		if (effective_realm != NULL && strlen(effective_realm) != 0) {
 			*obtained = effective_obtained;
-			return talloc_asprintf(mem_ctx, "%s@%s", 
+			return talloc_asprintf(mem_ctx, "%s@%s",
 					       effective_username,
 					       effective_realm);
 		}
@@ -341,8 +341,8 @@ _PUBLIC_ char *cli_credentials_get_principal(struct cli_credentials *cred, TALLO
 	return cli_credentials_get_principal_and_obtained(cred, mem_ctx, &obtained);
 }
 
-_PUBLIC_ bool cli_credentials_set_principal(struct cli_credentials *cred, 
-				   const char *val, 
+_PUBLIC_ bool cli_credentials_set_principal(struct cli_credentials *cred,
+				   const char *val,
 				   enum credentials_obtained obtained)
 {
 	if (obtained >= cred->principal_obtained) {
@@ -377,7 +377,7 @@ _PUBLIC_ bool cli_credentials_set_principal_callback(struct cli_credentials *cre
  * function to determine if authentication has been explicitly
  * requested */
 
-_PUBLIC_ bool cli_credentials_authentication_requested(struct cli_credentials *cred) 
+_PUBLIC_ bool cli_credentials_authentication_requested(struct cli_credentials *cred)
 {
 	uint32_t gensec_features = 0;
 
@@ -436,7 +436,7 @@ _PUBLIC_ const char *cli_credentials_get_password(struct cli_credentials *cred)
 						    cred->machine_account_pending_lp_ctx);
 	}
 
-	if (cred->password_obtained == CRED_CALLBACK && 
+	if (cred->password_obtained == CRED_CALLBACK &&
 	    !cred->callback_running &&
 	    !cred->password_will_be_nt_hash) {
 		cred->callback_running = true;
@@ -474,8 +474,8 @@ cli_credentials_get_password_and_obtained(struct cli_credentials *cred,
 /* Set a password on the credentials context, including an indication
  * of 'how' the password was obtained */
 
-_PUBLIC_ bool cli_credentials_set_password(struct cli_credentials *cred, 
-				  const char *val, 
+_PUBLIC_ bool cli_credentials_set_password(struct cli_credentials *cred,
+				  const char *val,
 				  enum credentials_obtained obtained)
 {
 	if (obtained >= cred->password_obtained) {
@@ -562,8 +562,8 @@ _PUBLIC_ const char *cli_credentials_get_old_password(struct cli_credentials *cr
 	return cred->old_password;
 }
 
-_PUBLIC_ bool cli_credentials_set_old_password(struct cli_credentials *cred, 
-				      const char *val, 
+_PUBLIC_ bool cli_credentials_set_old_password(struct cli_credentials *cred,
+				      const char *val,
 				      enum credentials_obtained obtained)
 {
 	cred->old_password = talloc_strdup(cred, val);
@@ -711,7 +711,7 @@ _PUBLIC_ struct samr_Password *cli_credentials_get_old_nt_hash(struct cli_creden
 /**
  * Obtain the 'short' or 'NetBIOS' domain for this credentials context.
  * @param cred credentials context
- * @retval The domain set on this context. 
+ * @retval The domain set on this context.
  * @note Return value will never be NULL except by programmer error.
  */
 _PUBLIC_ const char *cli_credentials_get_domain(struct cli_credentials *cred)
@@ -721,7 +721,7 @@ _PUBLIC_ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 						    cred->machine_account_pending_lp_ctx);
 	}
 
-	if (cred->domain_obtained == CRED_CALLBACK && 
+	if (cred->domain_obtained == CRED_CALLBACK &&
 	    !cred->callback_running) {
 	    	cred->callback_running = true;
 		cred->domain = cred->domain_cb(cred);
@@ -736,8 +736,8 @@ _PUBLIC_ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 }
 
 
-_PUBLIC_ bool cli_credentials_set_domain(struct cli_credentials *cred, 
-				const char *val, 
+_PUBLIC_ bool cli_credentials_set_domain(struct cli_credentials *cred,
+				const char *val,
 				enum credentials_obtained obtained)
 {
 	if (obtained >= cred->domain_obtained) {
@@ -746,7 +746,7 @@ _PUBLIC_ bool cli_credentials_set_domain(struct cli_credentials *cred,
 		 * calculations */
 		cred->domain = strupper_talloc(cred, val);
 		cred->domain_obtained = obtained;
-		/* setting domain does not mean we have to invalidate ccache 
+		/* setting domain does not mean we have to invalidate ccache
 		 * because domain in not used for Kerberos operations.
 		 * If ccache invalidation is required, one will anyway specify
 		 * a password to kinit, and that will force invalidation of the ccache
@@ -772,17 +772,17 @@ bool cli_credentials_set_domain_callback(struct cli_credentials *cred,
 /**
  * Obtain the Kerberos realm for this credentials context.
  * @param cred credentials context
- * @retval The realm set on this context. 
+ * @retval The realm set on this context.
  * @note Return value will never be NULL except by programmer error.
  */
 _PUBLIC_ const char *cli_credentials_get_realm(struct cli_credentials *cred)
-{	
+{
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred,
 						    cred->machine_account_pending_lp_ctx);
 	}
 
-	if (cred->realm_obtained == CRED_CALLBACK && 
+	if (cred->realm_obtained == CRED_CALLBACK &&
 	    !cred->callback_running) {
 	    	cred->callback_running = true;
 		cred->realm = cred->realm_cb(cred);
@@ -800,8 +800,8 @@ _PUBLIC_ const char *cli_credentials_get_realm(struct cli_credentials *cred)
  * Set the realm for this credentials context, and force it to
  * uppercase for the sanity of our local kerberos libraries
  */
-_PUBLIC_ bool cli_credentials_set_realm(struct cli_credentials *cred, 
-			       const char *val, 
+_PUBLIC_ bool cli_credentials_set_realm(struct cli_credentials *cred,
+			       const char *val,
 			       enum credentials_obtained obtained)
 {
 	if (obtained >= cred->realm_obtained) {
@@ -830,12 +830,12 @@ bool cli_credentials_set_realm_callback(struct cli_credentials *cred,
  * Obtain the 'short' or 'NetBIOS' workstation name for this credentials context.
  *
  * @param cred credentials context
- * @retval The workstation name set on this context. 
+ * @retval The workstation name set on this context.
  * @note Return value will never be NULL except by programmer error.
  */
 _PUBLIC_ const char *cli_credentials_get_workstation(struct cli_credentials *cred)
 {
-	if (cred->workstation_obtained == CRED_CALLBACK && 
+	if (cred->workstation_obtained == CRED_CALLBACK &&
 	    !cred->callback_running) {
 	    	cred->callback_running = true;
 		cred->workstation = cred->workstation_cb(cred);
@@ -848,8 +848,8 @@ _PUBLIC_ const char *cli_credentials_get_workstation(struct cli_credentials *cre
 	return cred->workstation;
 }
 
-_PUBLIC_ bool cli_credentials_set_workstation(struct cli_credentials *cred, 
-				     const char *val, 
+_PUBLIC_ bool cli_credentials_set_workstation(struct cli_credentials *cred,
+				     const char *val,
 				     enum credentials_obtained obtained)
 {
 	if (obtained >= cred->workstation_obtained) {
@@ -893,7 +893,7 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 		return;
 	}
 
-	uname = talloc_strdup(credentials, data); 
+	uname = talloc_strdup(credentials, data);
 	uname_free = uname;
 
 	if ((p = strchr_m(uname,'%'))) {
@@ -980,10 +980,10 @@ _PUBLIC_ char *cli_credentials_get_unparsed_name(struct cli_credentials *credent
 	} else {
 		cli_credentials_get_ntlm_username_domain(credentials, mem_ctx, &username, &domain);
 		if (domain && domain[0]) {
-			name = talloc_asprintf(mem_ctx, "%s\\%s", 
+			name = talloc_asprintf(mem_ctx, "%s\\%s",
 					       domain, username);
 		} else {
-			name = talloc_asprintf(mem_ctx, "%s", 
+			name = talloc_asprintf(mem_ctx, "%s",
 					       username);
 		}
 	}
@@ -1149,9 +1149,9 @@ _PUBLIC_ bool cli_credentials_set_conf(struct cli_credentials *cred,
 }
 
 /**
- * Guess defaults for credentials from environment variables, 
+ * Guess defaults for credentials from environment variables,
  * and from the configuration file
- * 
+ *
  * @param cred Credentials structure to fill in
  */
 _PUBLIC_ bool cli_credentials_guess(struct cli_credentials *cred,
@@ -1258,7 +1258,7 @@ _PUBLIC_ void cli_credentials_set_netlogon_creds(
 }
 
 /**
- * Return attached NETLOGON credentials 
+ * Return attached NETLOGON credentials
  */
 
 _PUBLIC_ struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred)
@@ -1266,7 +1266,7 @@ _PUBLIC_ struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_cre
 	return cred->netlogon_creds;
 }
 
-/** 
+/**
  * Set NETLOGON secure channel type
  */
 
@@ -1285,7 +1285,7 @@ _PUBLIC_ time_t cli_credentials_get_password_last_changed_time(struct cli_creden
 	return cred->password_last_changed_time;
 }
 
-/** 
+/**
  * Set NETLOGON secure channel type
  */
 
@@ -1307,7 +1307,7 @@ _PUBLIC_ enum netr_SchannelType cli_credentials_get_secure_channel_type(struct c
 /**
  * Fill in a credentials structure as the anonymous user
  */
-_PUBLIC_ void cli_credentials_set_anonymous(struct cli_credentials *cred) 
+_PUBLIC_ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 {
 	cli_credentials_set_username(cred, "", CRED_SPECIFIED);
 	cli_credentials_set_domain(cred, "", CRED_SPECIFIED);
@@ -1328,7 +1328,7 @@ _PUBLIC_ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 _PUBLIC_ bool cli_credentials_is_anonymous(struct cli_credentials *cred)
 {
 	const char *username;
-	
+
 	/* if bind dn is set it's not anonymous */
 	if (cred->bind_dn) {
 		return false;
@@ -1345,7 +1345,7 @@ _PUBLIC_ bool cli_credentials_is_anonymous(struct cli_credentials *cred)
 	}
 
 	username = cli_credentials_get_username(cred);
-	
+
 	/* Yes, it is deliberate that we die if we have a NULL pointer
 	 * here - anonymous is "", not NULL, which is 'never specified,
 	 * never guessed', ie programmer bug */
@@ -1357,7 +1357,7 @@ _PUBLIC_ bool cli_credentials_is_anonymous(struct cli_credentials *cred)
 }
 
 /**
- * Mark the current password for a credentials struct as wrong. This will 
+ * Mark the current password for a credentials struct as wrong. This will
  * cause the password to be prompted again (if a callback is set).
  *
  * This will decrement the number of times the password can be tried.
@@ -1384,9 +1384,9 @@ _PUBLIC_ bool cli_credentials_wrong_password(struct cli_credentials *cred)
 	return true;
 }
 
-_PUBLIC_ void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
-					      const char **username, 
-					      const char **domain) 
+_PUBLIC_ void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx,
+					      const char **username,
+					      const char **domain)
 {
 	if (cred->principal_obtained >= cred->username_obtained) {
 		*domain = talloc_strdup(mem_ctx, "");
@@ -1401,11 +1401,11 @@ _PUBLIC_ void cli_credentials_get_ntlm_username_domain(struct cli_credentials *c
  * Read a named file, and parse it for username, domain, realm and password
  *
  * @param credentials Credentials structure on which to set the password
- * @param file a named file to read the details from 
+ * @param file a named file to read the details from
  * @param obtained This enum describes how 'specified' this password is
  */
 
-_PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const char *file, enum credentials_obtained obtained) 
+_PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const char *file, enum credentials_obtained obtained)
 {
 	uint16_t len = 0;
 	char *ptr, *val, *param;
@@ -1505,7 +1505,7 @@ _PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const cha
  * Read a named file, and parse it for a password
  *
  * @param credentials Credentials structure on which to set the password
- * @param file a named file to read the password from 
+ * @param file a named file to read the password from
  * @param obtained This enum describes how 'specified' this password is
  */
 
@@ -1523,7 +1523,7 @@ _PUBLIC_ bool cli_credentials_parse_password_file(struct cli_credentials *creden
 	ret = cli_credentials_parse_password_fd(credentials, fd, obtained);
 
 	close(fd);
-	
+
 	return ret;
 }
 
@@ -1532,11 +1532,11 @@ _PUBLIC_ bool cli_credentials_parse_password_file(struct cli_credentials *creden
  * Read a file descriptor, and parse it for a password (eg from a file or stdin)
  *
  * @param credentials Credentials structure on which to set the password
- * @param fd open file descriptor to read the password from 
+ * @param fd open file descriptor to read the password from
  * @param obtained This enum describes how 'specified' this password is
  */
 
-_PUBLIC_ bool cli_credentials_parse_password_fd(struct cli_credentials *credentials, 
+_PUBLIC_ bool cli_credentials_parse_password_fd(struct cli_credentials *credentials,
 				       int fd, enum credentials_obtained obtained)
 {
 	char *p;
