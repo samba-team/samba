@@ -6923,7 +6923,18 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 				   ar->req);
 	LDB_REQ_SET_LOCATION(search_req);
 
-	ret = dsdb_request_add_controls(search_req, DSDB_SEARCH_SHOW_RECYCLED);
+	/*
+	 * We set DSDB_SEARCH_SHOW_EXTENDED_DN to get the GUID on the
+	 * DN.  This in turn helps our operational module find the
+	 * record by GUID, not DN lookup which is more error prone if
+	 * DN indexing changes.  We prefer to keep chasing GUIDs
+	 * around if possible, even within a transaction.
+	 *
+	 * The aim here is to keep replication moving and allow a
+	 * reindex later.
+	 */
+	ret = dsdb_request_add_controls(search_req, DSDB_SEARCH_SHOW_RECYCLED
+					|DSDB_SEARCH_SHOW_EXTENDED_DN);
 
 	if (ret != LDB_SUCCESS) {
 		return ret;
