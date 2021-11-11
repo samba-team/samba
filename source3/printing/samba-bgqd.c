@@ -40,6 +40,7 @@
 #include "source3/lib/util_procid.h"
 #include "source3/auth/proto.h"
 #include "source3/printing/queue_process.h"
+#include "source3/lib/substitute.h"
 
 static void watch_handler(struct tevent_req *req)
 {
@@ -235,6 +236,7 @@ static int closeall_except_fd_params(
 
 int main(int argc, const char *argv[])
 {
+	struct samba_cmdline_daemon_cfg *cmdline_daemon_cfg = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	const char *progname = getprogname();
@@ -245,8 +247,6 @@ int main(int argc, const char *argv[])
 	struct tevent_req *watch_req = NULL;
 	struct tevent_signal *sigterm_handler = NULL;
 	struct bq_state *bq = NULL;
-	int foreground = 0;
-	int no_process_group = 0;
 	int log_stdout = 0;
 	int ready_signal_fd = -1;
 	int watch_fd = -1;
@@ -259,21 +259,7 @@ int main(int argc, const char *argv[])
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		POPT_COMMON_SAMBA
-		{
-			.longName   = "foreground",
-			.shortName  = 'F',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = &foreground,
-			.descrip    = "Run daemon in foreground "
-				      "(for daemontools, etc.)",
-		},
-		{
-			.longName   = "no-process-group",
-			.shortName  = '\0',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = &no_process_group,
-			.descrip    = "Don't create a new process group" ,
-		},
+		POPT_COMMON_DAEMON
 
 		/*
 		 * File descriptor to write the PID of the helper
@@ -311,6 +297,7 @@ int main(int argc, const char *argv[])
 	frame = talloc_stackframe();
 
 	umask(0);
+	set_remote_machine_name("smbd-bgqd", true);
 
 	ok = samba_cmdline_init(frame,
 				SAMBA_CMDLINE_CONFIG_SERVER,
@@ -319,6 +306,8 @@ int main(int argc, const char *argv[])
 		DBG_ERR("Failed to setup cmdline parser!\n");
 		exit(ENOMEM);
 	}
+
+	cmdline_daemon_cfg = samba_cmdline_get_daemon_cfg();
 
 	pc = samba_popt_get_context(progname,
 				    argc,
@@ -340,16 +329,12 @@ int main(int argc, const char *argv[])
 
 	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
 
-	if (foreground) {
+	if (!cmdline_daemon_cfg->fork) {
 		daemon_status(progname, "Starting process ... ");
 	} else {
-		become_daemon(true, no_process_group, log_stdout);
-	}
-
-	if (log_stdout) {
-		setup_logging(progname, DEBUG_STDOUT);
-	} else {
-		setup_logging(progname, DEBUG_FILE);
+		become_daemon(true,
+			      cmdline_daemon_cfg->no_process_group,
+			      log_stdout);
 	}
 
 	BlockSignals(true, SIGPIPE);
