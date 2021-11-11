@@ -1404,7 +1404,7 @@ static const struct op_attributes_replace search_sub[] = {
 	{ "tokenGroups", "primaryGroupID", objectSid_attr, construct_token_groups },
 	{ "tokenGroupsNoGCAcceptable", "primaryGroupID", objectSid_attr, construct_token_groups_no_gc},
 	{ "tokenGroupsGlobalAndUniversal", "primaryGroupID", objectSid_attr, construct_global_universal_token_groups },
-	{ "parentGUID", NULL, NULL, construct_parent_guid },
+	{ "parentGUID", "objectGUID", NULL, construct_parent_guid },
 	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry },
 	{ "msDS-isRODC", "objectClass", objectCategory_attr, construct_msds_isrodc },
 	{ "msDS-KeyVersionNumber", "replPropertyMetaData", NULL, construct_msds_keyversionnumber },
