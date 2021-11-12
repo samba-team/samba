@@ -1,0 +1,2 @@
+^samba.tests.krb5.test_idmap_nss.samba.tests.krb5.test_idmap_nss.IdmapNssTests.test_unmapped_user_kerberos
+^samba.tests.krb5.test_idmap_nss.samba.tests.krb5.test_idmap_nss.IdmapNssTests.test_unmapped_user_ntlm
