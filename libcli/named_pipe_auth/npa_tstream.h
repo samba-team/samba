@@ -24,7 +24,7 @@ struct tevent_req;
 struct tevent_context;
 struct auth_session_info_transport;
 struct tsocket_address;
-struct named_pipe_auth_req_info4;
+struct named_pipe_auth_req_info5;
 
 struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
@@ -110,7 +110,7 @@ int _tstream_npa_accept_existing_recv(
 	int *perrno,
 	TALLOC_CTX *mem_ctx,
 	struct tstream_context **stream,
-	struct named_pipe_auth_req_info4 **info4,
+	struct named_pipe_auth_req_info5 **info5,
 	struct tsocket_address **remote_client_addr,
 	char **_remote_client_name,
 	struct tsocket_address **local_server_addr,
