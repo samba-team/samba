@@ -1063,6 +1063,48 @@ class KDCBaseTest(RawKerberosTest):
                                  fallback_creds_fn=download_dc_creds)
         return c
 
+    def get_server_creds(self,
+                     require_keys=True,
+                     require_strongest_key=False):
+        if require_strongest_key:
+            self.assertTrue(require_keys)
+
+        def download_server_creds():
+            samdb = self.get_samdb()
+
+            res = samdb.search(base=samdb.get_default_basedn(),
+                               expression=(f'(|(sAMAccountName={self.host}*)'
+                                           f'(dNSHostName={self.host}))'),
+                               scope=ldb.SCOPE_SUBTREE,
+                               attrs=['sAMAccountName',
+                                      'msDS-KeyVersionNumber'])
+            self.assertEqual(1, len(res))
+            dn = res[0].dn
+            username = str(res[0]['sAMAccountName'])
+
+            creds = KerberosCredentials()
+            creds.set_domain(self.env_get_var('DOMAIN', 'SERVER'))
+            creds.set_realm(self.env_get_var('REALM', 'SERVER'))
+            creds.set_username(username)
+
+            kvno = int(res[0]['msDS-KeyVersionNumber'][0])
+            creds.set_kvno(kvno)
+            creds.set_dn(dn)
+
+            keys = self.get_keys(samdb, dn)
+            self.creds_set_keys(creds, keys)
+
+            self.creds_set_enctypes(creds)
+
+            return creds
+
+        c = self._get_krb5_creds(prefix='SERVER',
+                                 allow_missing_password=True,
+                                 allow_missing_keys=not require_keys,
+                                 require_strongest_key=require_strongest_key,
+                                 fallback_creds_fn=download_server_creds)
+        return c
+
     def as_req(self, cname, sname, realm, etypes, padata=None, kdc_options=0):
         '''Send a Kerberos AS_REQ, returns the undecoded response
         '''
