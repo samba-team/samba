@@ -1080,6 +1080,7 @@ static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
 	case ROLE_ACTIVE_DIRECTORY_DC:
+	case ROLE_IPA_DC:
 		return NT_STATUS_OK;
 	default:
 		return NT_STATUS_NOT_IMPLEMENTED;
