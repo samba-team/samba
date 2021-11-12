@@ -610,7 +610,7 @@ sub get_interface($)
 		fipsadmember      => 57,
 		offlineadmem      => 58,
 		s2kmember         => 59,
-		admemnonsswb      => 60,
+		admemidmapnss     => 60,
 
 		rootdnsforwarder  => 64,
 
