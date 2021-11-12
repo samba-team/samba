@@ -861,6 +861,22 @@ planoldpythontestsuite("ad_member_idmap_nss:local",
                            'ADMIN_PASSWORD': '$DC_PASSWORD',
                            'STRICT_CHECKING': '0'
                        })
+planoldpythontestsuite("ad_member_idmap_nss:local",
+                       "samba.tests.krb5.test_idmap_nss",
+                       environ={
+                           'ADMIN_USERNAME': '$DC_USERNAME',
+                           'ADMIN_PASSWORD': '$DC_PASSWORD',
+                           'MAPPED_USERNAME': 'bob',
+                           'MAPPED_PASSWORD': 'Secret007',
+                           'UNMAPPED_USERNAME': 'jane',
+                           'UNMAPPED_PASSWORD': 'Secret007',
+                           'INVALID_USERNAME': 'joe',
+                           'INVALID_PASSWORD': 'Secret007',
+                           'STRICT_CHECKING': '0',
+                           'FAST_SUPPORT': have_fast_support,
+                           'TKT_SIG_SUPPORT': tkt_sig_support,
+                           'EXPECT_PAC': expect_pac
+                       })
 
 for env in ["ad_dc", smbv1_disabled_testenv]:
     planoldpythontestsuite(env, "samba.tests.smb", extra_args=['-U"$USERNAME%$PASSWORD"'])
