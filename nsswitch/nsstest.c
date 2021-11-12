@@ -466,7 +466,7 @@ static void nss_test_errors(void)
 		printf("ERROR Non existent user gave error %d\n", last_error);
 	}
 
-	pwd = getpwuid(0xFFF0);
+	pwd = getpwuid(0xFF00);
 	if (pwd || last_error != NSS_STATUS_NOTFOUND) {
 		total_errors++;
 		printf("ERROR Non existent uid gave error %d\n", last_error);
