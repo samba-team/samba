@@ -681,6 +681,7 @@ NTSTATUS _lsa_QueryInfoPolicy(struct pipes_struct *p,
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
+			case ROLE_IPA_DC:
 				name = get_global_sam_name();
 				sid = dom_sid_dup(p->mem_ctx, get_global_sam_sid());
 				if (!sid) {
