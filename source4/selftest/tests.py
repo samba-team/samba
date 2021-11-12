@@ -876,7 +876,7 @@ planoldpythontestsuite("ad_dc_smb1", "samba.tests.krb5.test_smb",
                            'TKT_SIG_SUPPORT': tkt_sig_support,
                            'EXPECT_PAC': expect_pac
                        })
-planoldpythontestsuite("ad_member_no_nss_wb:local",
+planoldpythontestsuite("ad_member_idmap_nss:local",
                        "samba.tests.krb5.test_min_domain_uid",
                        environ={
                            'ADMIN_USERNAME': '$DC_USERNAME',
