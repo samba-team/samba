@@ -139,21 +139,36 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	for (i = 0; ids[i]; i++) {
 		struct group *gr;
 		enum lsa_SidType type;
-		const char *p = NULL;
+		const char *_domain = NULL;
+		const char *_name = NULL;
+		char *domain = NULL;
 		char *name = NULL;
 		bool ret;
 
 		/* by default calls to winbindd are disabled
 		   the following call will not recurse so this is safe */
 		(void)winbind_on();
-		ret = winbind_lookup_sid(talloc_tos(), ids[i]->sid, NULL,
-					 &p, &type);
+		ret = winbind_lookup_sid(talloc_tos(),
+					 ids[i]->sid,
+					 &_domain,
+					 &_name,
+					 &type);
 		(void)winbind_off();
-		name = discard_const_p(char, p);
-
 		if (!ret) {
 			/* TODO: how do we know if the name is really not mapped,
 			 * or something just failed ? */
+			ids[i]->status = ID_UNMAPPED;
+			continue;
+		}
+
+		domain = discard_const_p(char, _domain);
+		name = discard_const_p(char, _name);
+
+		if (!strequal(domain, dom->name)) {
+			struct dom_sid_buf buf;
+			DBG_ERR("DOMAIN[%s] ignoring SID[%s] belongs to %s [%s\\%s]\n",
+			        dom->name, dom_sid_str_buf(ids[i]->sid, &buf),
+				sid_type_lookup(type), domain, name);
 			ids[i]->status = ID_UNMAPPED;
 			continue;
 		}
@@ -190,6 +205,7 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 			ids[i]->status = ID_UNKNOWN;
 			break;
 		}
+		TALLOC_FREE(domain);
 		TALLOC_FREE(name);
 	}
 	return NT_STATUS_OK;
