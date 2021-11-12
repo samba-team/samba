@@ -1862,7 +1862,9 @@ const struct auth_session_info *get_session_info_system(void)
 ***************************************************************************/
 
 static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
-			      const char *username, char **found_username,
+			      const char *username,
+			      const struct dom_sid *sid,
+			      char **found_username,
 			      struct passwd **pwd,
 			      bool *username_was_mapped)
 {
@@ -1897,6 +1899,31 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 	}
 
 	passwd = smb_getpwnam(mem_ctx, dom_user, &real_username, false);
+	if (!passwd && !*username_was_mapped) {
+		struct dom_sid_buf buf;
+		uid_t uid;
+		bool ok;
+
+		DBG_DEBUG("Failed to find authenticated user %s via "
+			  "getpwnam(), fallback to sid_to_uid(%s).\n",
+			  dom_user, dom_sid_str_buf(sid, &buf));
+
+		ok = sid_to_uid(sid, &uid);
+		if (!ok) {
+			DBG_ERR("Failed to convert SID %s to a UID (dom_user[%s])\n",
+				dom_sid_str_buf(sid, &buf), dom_user);
+			return NT_STATUS_NO_SUCH_USER;
+		}
+		passwd = getpwuid_alloc(mem_ctx, uid);
+		if (!passwd) {
+			DBG_ERR("Failed to find local account with UID %lld for SID %s (dom_user[%s])\n",
+				(long long)uid,
+				dom_sid_str_buf(sid, &buf),
+				dom_user);
+			return NT_STATUS_NO_SUCH_USER;
+		}
+		real_username = talloc_strdup(mem_ctx, passwd->pw_name);
+	}
 	if (!passwd) {
 		DEBUG(3, ("Failed to find authenticated user %s via "
 			  "getpwnam(), denying access.\n", dom_user));
@@ -2042,6 +2069,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	bool username_was_mapped;
 	struct passwd *pwd;
 	struct auth_serversupplied_info *result;
+	struct dom_sid sid;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	/* 
@@ -2088,9 +2116,13 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* this call will try to create the user if necessary */
 
+	sid_copy(&sid, info3->base.domain_sid);
+	sid_append_rid(&sid, info3->base.rid);
+
 	nt_status = check_account(tmp_ctx,
 				  nt_domain,
 				  nt_username,
+				  &sid,
 				  &found_username,
 				  &pwd,
 				  &username_was_mapped);
