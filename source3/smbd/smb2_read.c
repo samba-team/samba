@@ -335,6 +335,7 @@ normal_read:
 				in_offset,
 				in_length,
 				READ_LOCK,
+				lp_posix_cifsu_locktype(fsp),
 				&lock);
 
 	*pstatus = NT_STATUS_OK;
@@ -553,6 +554,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 				in_offset,
 				in_length,
 				READ_LOCK,
+				lp_posix_cifsu_locktype(fsp),
 				&lock);
 
 	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {

@@ -343,6 +343,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 					src_off,
 					num,
 					READ_LOCK,
+					lp_posix_cifsu_locktype(src_fsp),
 					&src_lck);
 		if (!SMB_VFS_STRICT_LOCK_CHECK(src_fsp->conn, src_fsp, &src_lck)) {
 			tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
@@ -360,6 +361,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 					dest_off,
 					num,
 					WRITE_LOCK,
+					lp_posix_cifsu_locktype(dest_fsp),
 					&dest_lck);
 
 		if (!SMB_VFS_STRICT_LOCK_CHECK(dest_fsp->conn, dest_fsp, &dest_lck)) {

@@ -207,9 +207,13 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	SCVAL(aio_ex->outbuf.data,smb_vwv0,0xFF); /* Never a chained reply. */
 	SCVAL(smb_buf(aio_ex->outbuf.data), 0, 0); /* padding byte */
 
-	init_strict_lock_struct(fsp, (uint64_t)smbreq->smbpid,
-		(uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
-		&aio_ex->lock);
+	init_strict_lock_struct(fsp,
+			(uint64_t)smbreq->smbpid,
+			(uint64_t)startpos,
+			(uint64_t)smb_maxcnt,
+			READ_LOCK,
+			lp_posix_cifsu_locktype(fsp),
+			&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
 	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &aio_ex->lock)) {
@@ -472,9 +476,13 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	srv_set_message((char *)aio_ex->outbuf.data, 6, 0, True);
 	SCVAL(aio_ex->outbuf.data,smb_vwv0,0xFF); /* Never a chained reply. */
 
-	init_strict_lock_struct(fsp, (uint64_t)smbreq->smbpid,
-		(uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
-		&aio_ex->lock);
+	init_strict_lock_struct(fsp,
+			(uint64_t)smbreq->smbpid,
+			(uint64_t)startpos,
+			(uint64_t)numtowrite,
+			WRITE_LOCK,
+			lp_posix_cifsu_locktype(fsp),
+			&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
 	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &aio_ex->lock)) {
@@ -720,9 +728,13 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	init_strict_lock_struct(fsp, fsp->op->global->open_persistent_id,
-		(uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
-		&aio_ex->lock);
+	init_strict_lock_struct(fsp,
+			fsp->op->global->open_persistent_id,
+			(uint64_t)startpos,
+			(uint64_t)smb_maxcnt,
+			READ_LOCK,
+			lp_posix_cifsu_locktype(fsp),
+			&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
 	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &aio_ex->lock)) {
@@ -857,9 +869,13 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 
 	aio_ex->write_through = write_through;
 
-	init_strict_lock_struct(fsp, fsp->op->global->open_persistent_id,
-		in_offset, (uint64_t)in_data.length, WRITE_LOCK,
-		&aio_ex->lock);
+	init_strict_lock_struct(fsp,
+			fsp->op->global->open_persistent_id,
+			in_offset,
+			(uint64_t)in_data.length,
+			WRITE_LOCK,
+			lp_posix_cifsu_locktype(fsp),
+			&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
 	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &aio_ex->lock)) {

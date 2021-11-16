@@ -3697,9 +3697,13 @@ void reply_readbraw(struct smb_request *req)
 	/* ensure we don't overrun the packet size */
 	maxcount = MIN(65535,maxcount);
 
-	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
-	    (uint64_t)startpos, (uint64_t)maxcount, READ_LOCK,
-	    &lock);
+	init_strict_lock_struct(fsp,
+			(uint64_t)req->smbpid,
+			(uint64_t)startpos,
+			(uint64_t)maxcount,
+			READ_LOCK,
+			lp_posix_cifsu_locktype(fsp),
+			&lock);
 
 	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 		reply_readbraw_error(xconn);
@@ -3965,9 +3969,13 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 
 	data = smb_buf(req->outbuf) + 3;
 
-	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
-	    (uint64_t)startpos, (uint64_t)numtoread, READ_LOCK,
-	    &lock);
+	init_strict_lock_struct(fsp,
+			(uint64_t)req->smbpid,
+			(uint64_t)startpos,
+			(uint64_t)numtoread,
+			READ_LOCK,
+			lp_posix_cifsu_locktype(fsp),
+			&lock);
 
 	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
@@ -4042,9 +4050,13 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	int saved_errno = 0;
 	NTSTATUS status;
 
-	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
-	    (uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
-	    &lock);
+	init_strict_lock_struct(fsp,
+			(uint64_t)req->smbpid,
+			(uint64_t)startpos,
+			(uint64_t)smb_maxcnt,
+			READ_LOCK,
+			lp_posix_cifsu_locktype(fsp),
+			&lock);
 
 	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
@@ -4565,9 +4577,13 @@ void reply_writebraw(struct smb_request *req)
 	}
 
 	if (!fsp->print_file) {
-		init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
-		    (uint64_t)startpos, (uint64_t)tcount, WRITE_LOCK,
-		    &lock);
+		init_strict_lock_struct(fsp,
+				(uint64_t)req->smbpid,
+				(uint64_t)startpos,
+				(uint64_t)tcount,
+				WRITE_LOCK,
+				lp_posix_cifsu_locktype(fsp),
+				&lock);
 
 		if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
@@ -4780,9 +4796,13 @@ void reply_writeunlock(struct smb_request *req)
 	}
 
 	if (!fsp->print_file && numtowrite > 0) {
-		init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
-		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
-		    &lock);
+		init_strict_lock_struct(fsp,
+				(uint64_t)req->smbpid,
+				(uint64_t)startpos,
+				(uint64_t)numtowrite,
+				WRITE_LOCK,
+				lp_posix_cifsu_locktype(fsp),
+				&lock);
 
 		if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
@@ -4911,9 +4931,13 @@ void reply_write(struct smb_request *req)
 	}
 
 	if (!fsp->print_file) {
-		init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
-			(uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
-			&lock);
+		init_strict_lock_struct(fsp,
+				(uint64_t)req->smbpid,
+				(uint64_t)startpos,
+				(uint64_t)numtowrite,
+				WRITE_LOCK,
+				lp_posix_cifsu_locktype(fsp),
+				&lock);
 
 		if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
@@ -5207,9 +5231,13 @@ void reply_write_and_X(struct smb_request *req)
 			/* NT_STATUS_RETRY - fall through to sync write. */
 		}
 
-		init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
-		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
-		    &lock);
+		init_strict_lock_struct(fsp,
+				(uint64_t)req->smbpid,
+				(uint64_t)startpos,
+				(uint64_t)numtowrite,
+				WRITE_LOCK,
+				lp_posix_cifsu_locktype(fsp),
+				&lock);
 
 		if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
@@ -5909,9 +5937,13 @@ void reply_writeclose(struct smb_request *req)
 	}
 
 	if (fsp->print_file == NULL) {
-		init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
-		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
-		    &lock);
+		init_strict_lock_struct(fsp,
+				(uint64_t)req->smbpid,
+				(uint64_t)startpos,
+				(uint64_t)numtowrite,
+				WRITE_LOCK,
+				lp_posix_cifsu_locktype(fsp),
+				&lock);
 
 		if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
