@@ -46,6 +46,8 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS,
     KRB_AS_REP,
     KRB_TGS_REP,
+    KU_TGS_REQ_AUTH_DAT_SESSION,
+    KU_TGS_REQ_AUTH_DAT_SUBKEY,
     NT_PRINCIPAL,
     NT_SRV_HST,
     NT_SRV_INST,
@@ -951,6 +953,32 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    def test_fast_ad_fx_fast_armor_enc_auth_data(self):
+        # If the authenticator or TGT authentication data contains the
+        # AD-fx-fast-armor authdata type, the KDC must reject the request
+        # (RFC6113 5.4.2). However, the KDC should not reject a request that
+        # contains this authdata type in enc-authorization-data.
+        self._run_test_sequence([
+            # This request works.
+            {
+                'rep_type': KRB_TGS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_tgt_fn': self.get_user_tgt,
+                'fast_armor': None
+            },
+            # Add AD-fx-fast-armor authdata element to
+            # enc-authorization-data. This request also works.
+            {
+                'rep_type': KRB_TGS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_enc_authdata_fn': self.generate_fast_armor_auth_data,
+                'gen_tgt_fn': self.get_user_tgt,
+                'fast_armor': None
+            }
+        ])
+
     def test_fast_ad_fx_fast_armor_ticket2(self):
         self._run_test_sequence([
             # Show that we can still use the modified ticket as armor.
@@ -1364,6 +1392,21 @@ class FAST_Tests(KDCBaseTest):
             else:
                 auth_data = None
 
+            gen_enc_authdata_fn = kdc_dict.pop('gen_enc_authdata_fn', None)
+            if gen_enc_authdata_fn is not None:
+                enc_auth_data = [gen_enc_authdata_fn()]
+
+                enc_auth_data_key = authenticator_subkey
+                enc_auth_data_usage = KU_TGS_REQ_AUTH_DAT_SUBKEY
+                if enc_auth_data_key is None:
+                    enc_auth_data_key = tgt.session_key
+                    enc_auth_data_usage = KU_TGS_REQ_AUTH_DAT_SESSION
+            else:
+                enc_auth_data = None
+
+                enc_auth_data_key = None
+                enc_auth_data_usage = None
+
             if not use_fast:
                 self.assertNotIn('inner_req', kdc_dict)
                 self.assertNotIn('outer_req', kdc_dict)
@@ -1449,11 +1492,15 @@ class FAST_Tests(KDCBaseTest):
 
             repeat = kdc_dict.pop('repeat', 1)
             for _ in range(repeat):
-                rep = self._generic_kdc_exchange(kdc_exchange_dict,
-                                                 cname=cname,
-                                                 realm=crealm,
-                                                 sname=sname,
-                                                 etypes=etypes)
+                rep = self._generic_kdc_exchange(
+                    kdc_exchange_dict,
+                    cname=cname,
+                    realm=crealm,
+                    sname=sname,
+                    etypes=etypes,
+                    EncAuthorizationData=enc_auth_data,
+                    EncAuthorizationData_key=enc_auth_data_key,
+                    EncAuthorizationData_usage=enc_auth_data_usage)
                 if len(expected_error_mode) == 0:
                     self.check_reply(rep, rep_type)
 
