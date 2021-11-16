@@ -31,7 +31,6 @@
 
 NTSTATUS smbd_do_locks_try(
 	struct files_struct *fsp,
-	enum brl_flavour lock_flav,
 	uint16_t num_locks,
 	struct smbd_lock_element *locks,
 	uint16_t *blocker_idx,
@@ -52,7 +51,7 @@ NTSTATUS smbd_do_locks_try(
 			e->count,
 			e->offset,
 			e->brltype,
-			lock_flav,
+			e->lock_flav,
 			blocking_pid,
 			blocking_smblctx);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -75,7 +74,7 @@ NTSTATUS smbd_do_locks_try(
 			  e->smblctx,
 			  e->count,
 			  e->offset,
-			  lock_flav);
+			  e->lock_flav);
 	}
 
 	return status;
@@ -437,7 +436,6 @@ static NTSTATUS smbd_smb1_do_locks_check(
 
 	status = smbd_do_locks_try(
 		fsp,
-		lock_flav,
 		num_locks,
 		locks,
 		blocker_idx,

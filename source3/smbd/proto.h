@@ -99,7 +99,6 @@ bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req);
 
 NTSTATUS smbd_do_locks_try(
 	struct files_struct *fsp,
-	enum brl_flavour lock_flav,
 	uint16_t num_locks,
 	struct smbd_lock_element *locks,
 	uint16_t *blocker_idx,

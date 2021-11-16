@@ -570,7 +570,6 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 
 	status = smbd_do_locks_try(
 		state->fsp,
-		WINDOWS_LOCK,
 		state->lock_count,
 		state->locks,
 		&blocker_idx,
