@@ -136,7 +136,6 @@ def is_latin1_file(name):
             r'^source4/setup/ad-schema/\w+.ldf$',
             r'^source4/setup/display-specifiers/D[\w-]+.txt$',
             r'^third_party/pep8/testsuite/latin-1.py$',
-            r'^source4/auth/gensec/gensec_krb5_heimdal.c$',
             r'^source4/heimdal/HEIMDAL-LICENCE.txt$',
             r'^source4/heimdal/lib/asn1/asn1-template.h$',
             r'^source4/heimdal/lib/asn1/gen_template.c$',
