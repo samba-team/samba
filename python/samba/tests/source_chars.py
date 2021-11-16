@@ -63,6 +63,7 @@ IGNORED_FILES = {
     'source3/selftest/ktest-krb5_ccache-2',
     'source3/selftest/ktest-krb5_ccache-3',
     'third_party/pep8/testsuite/latin-1.py',
+    'testdata/source-chars-bad.c',
 }
 
 IGNORED_EXTENSIONS = {
@@ -204,6 +205,18 @@ class CharacterTests(TestCase):
             for c in set(s):
                 if is_bad_char(c):
                     self.fail(f"{name} has potentially bad format characters!")
+
+    def test_unexpected_format_chars_do_fail(self):
+        """Test the test"""
+        for name, n_bad in [
+                ('testdata/source-chars-bad.c', 3)
+        ]:
+            fullname = os.path.join(ROOT, name)
+            with open(fullname) as f:
+                s = f.read()
+            chars = set(s)
+            bad_chars = [c for c in chars if is_bad_char(c)]
+            self.assertEqual(len(bad_chars), n_bad)
 
 
 def check_file_text():
