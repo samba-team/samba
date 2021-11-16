@@ -67,6 +67,7 @@ struct smbd_lock_element {
 	struct GUID req_guid;
 	uint64_t smblctx;
 	enum brl_type brltype;
+	enum brl_flavour lock_flav;
 	uint64_t offset;
 	uint64_t count;
 };

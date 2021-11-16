@@ -3794,6 +3794,7 @@ void reply_lockread(struct smb_request *req)
 		.req_guid = smbd_request_guid(req, 0),
 		.smblctx = req->smbpid,
 		.brltype = WRITE_LOCK,
+		.lock_flav = WINDOWS_LOCK,
 		.count = SVAL(req->vwv+1, 0),
 		.offset = IVAL_TO_SMB_OFF_T(req->vwv+2, 0),
 	};
@@ -4823,6 +4824,7 @@ void reply_writeunlock(struct smb_request *req)
 			.req_guid = smbd_request_guid(req, 0),
 			.smblctx = req->smbpid,
 			.brltype = UNLOCK_LOCK,
+			.lock_flav = WINDOWS_LOCK,
 			.offset = startpos,
 			.count = numtowrite,
 		};
@@ -6000,6 +6002,7 @@ void reply_lock(struct smb_request *req)
 		.req_guid = smbd_request_guid(req, 0),
 		.smblctx = req->smbpid,
 		.brltype = WRITE_LOCK,
+		.lock_flav = WINDOWS_LOCK,
 		.count = IVAL(req->vwv+1, 0),
 		.offset = IVAL(req->vwv+3, 0),
 	};
@@ -6092,6 +6095,7 @@ void reply_unlock(struct smb_request *req)
 		.req_guid = smbd_request_guid(req, 0),
 		.smblctx = req->smbpid,
 		.brltype = UNLOCK_LOCK,
+		.lock_flav = WINDOWS_LOCK,
 		.offset = IVAL(req->vwv+3, 0),
 		.count = IVAL(req->vwv+1, 0),
 	};
@@ -8316,6 +8320,7 @@ void reply_lockingX(struct smb_request *req)
 			ulocks[i].offset = get_lock_offset(
 				data, i, large_file_format);
 			ulocks[i].brltype = UNLOCK_LOCK;
+			ulocks[i].lock_flav = WINDOWS_LOCK;
 		}
 
 		/*
@@ -8371,6 +8376,7 @@ void reply_lockingX(struct smb_request *req)
 		locks[i].count = get_lock_count(data, i, large_file_format);
 		locks[i].offset = get_lock_offset(data, i, large_file_format);
 		locks[i].brltype = brltype;
+		locks[i].lock_flav = WINDOWS_LOCK;
 	}
 
 	if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
