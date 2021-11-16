@@ -140,7 +140,6 @@ def is_latin1_file(name):
             r'^source4/heimdal/lib/asn1/asn1-template.h$',
             r'^source4/heimdal/lib/asn1/gen_template.c$',
             r'^source4/heimdal/lib/hdb/hdb-keytab.c$',
-            r'^lib/replace/timegm.c$',
     ):
         if re.match(pattern, name):
             return True
