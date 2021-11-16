@@ -1165,9 +1165,7 @@ class FAST_Tests(KDCBaseTest):
             self.check_kdc_fast_support()
 
         kdc_options_default = str(krb5_asn1.KDCOptions('forwardable,'
-                                                       'renewable,'
-                                                       'canonicalize,'
-                                                       'renewable-ok'))
+                                                       'canonicalize'))
 
         client_creds = self.get_client_creds()
         target_creds = self.get_service_creds()
