@@ -1,6 +1,6 @@
 #!/bin/sh
 # Blackbox tests for samba-tool ntacl get/set on member server
-# Copyright (C) 2018 Björn Baumbach <bb@sernet.de>
+# Copyright (C) 2018 BjÃ¶rn Baumbach <bb@sernet.de>
 
 if [ $# -ne 2 ]; then
 	echo "Usage: test_samba-tool_ntacl.sh PREFIX DOMSID"
