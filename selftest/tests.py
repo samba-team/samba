@@ -49,6 +49,8 @@ pam_wrapper_so_path = config_hash.get("LIBPAM_WRAPPER_SO_PATH")
 pam_set_items_so_path = config_hash.get("PAM_SET_ITEMS_SO_PATH")
 
 planpythontestsuite("none", "samba.tests.source")
+planpythontestsuite("none", "samba.tests.source_chars")
+
 if have_man_pages_support:
     planpythontestsuite("none", "samba.tests.docs")
 
