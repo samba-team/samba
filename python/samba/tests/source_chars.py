@@ -133,7 +133,6 @@ def iter_source_files():
 
 def is_latin1_file(name):
     for pattern in (
-            r'^source3/modules/vfs_acl_common.h$',
             r'^source4/setup/ad-schema/\w+.ldf$',
             r'^source4/setup/display-specifiers/D[\w-]+.txt$',
             r'^testprogs/blackbox/test_samba-tool_ntacl.sh$',
