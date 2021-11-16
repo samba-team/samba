@@ -33,12 +33,16 @@ from samba.tests.krb5.rfc4120_constants import (
     AES256_CTS_HMAC_SHA1_96,
     ARCFOUR_HMAC_MD5,
     FX_FAST_ARMOR_AP_REQUEST,
+    KDC_ERR_BAD_INTEGRITY,
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_GENERIC,
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
+    KDC_ERR_MODIFIED,
     KDC_ERR_NOT_US,
+    KDC_ERR_POLICY,
     KDC_ERR_PREAUTH_FAILED,
     KDC_ERR_PREAUTH_REQUIRED,
+    KDC_ERR_SKEW,
     KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS,
     KRB_AS_REP,
     KRB_TGS_REP,
@@ -134,7 +138,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC,
+                                        KDC_ERR_S_PRINCIPAL_UNKNOWN),
                 'use_fast': True,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_tgt,
@@ -164,7 +169,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC,
+                                        KDC_ERR_S_PRINCIPAL_UNKNOWN),
                 'use_fast': True,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_tgt,
@@ -181,7 +187,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC,
+                                        KDC_ERR_S_PRINCIPAL_UNKNOWN),
                 'use_fast': True,
                 'gen_tgt_fn': self.get_user_tgt,
                 'fast_armor': None,
@@ -206,7 +213,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_NOT_US,
+                'expected_error_mode': (KDC_ERR_NOT_US,
+                                        KDC_ERR_POLICY),
                 'use_fast': False,
                 'gen_tgt_fn': self.get_user_service_ticket,
                 'expect_edata': False
@@ -217,7 +225,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_NOT_US,
+                'expected_error_mode': (KDC_ERR_NOT_US,
+                                        KDC_ERR_POLICY),
                 'use_fast': False,
                 'gen_tgt_fn': self.get_mach_service_ticket,
                 'expect_edata': False
@@ -378,7 +387,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC,
+                                        KDC_ERR_PREAUTH_FAILED),
                 'use_fast': True,
                 'gen_fast_fn': self.generate_empty_fast,
                 'fast_armor': None,
@@ -403,7 +413,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC,
+                                        KDC_ERR_PREAUTH_FAILED),
                 'use_fast': True,
                 'fast_armor': None,  # no armor,
                 'gen_armor_tgt_fn': self.get_mach_tgt,
@@ -500,7 +511,8 @@ class FAST_Tests(KDCBaseTest):
             },
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_PREAUTH_FAILED,
+                'expected_error_mode': (KDC_ERR_PREAUTH_FAILED,
+                                        KDC_ERR_PREAUTH_REQUIRED),
                 'use_fast': False,
                 'gen_padata_fn': self.generate_enc_challenge_padata_wrong_key
             }
@@ -509,8 +521,8 @@ class FAST_Tests(KDCBaseTest):
     def test_fast_encrypted_challenge_clock_skew(self):
         # The KDC is supposed to confirm that the timestamp is within its
         # current clock skew, and return KRB_APP_ERR_SKEW if it is not (RFC6113
-        # 5.4.6).  However, Windows accepts a skewed timestamp in the encrypted
-        # challenge.
+        # 5.4.6). However, this test fails against Windows, which accepts a
+        # skewed timestamp in the encrypted challenge.
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
@@ -521,7 +533,7 @@ class FAST_Tests(KDCBaseTest):
             },
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': 0,
+                'expected_error_mode': KDC_ERR_SKEW,
                 'use_fast': True,
                 'gen_padata_fn': functools.partial(
                     self.generate_enc_challenge_padata,
@@ -533,21 +545,14 @@ class FAST_Tests(KDCBaseTest):
 
     def test_fast_invalid_tgt(self):
         # The armor ticket 'sname' field is required to identify the target
-        # realm TGS (RFC6113 5.4.1.1). However, Windows will still accept a
-        # service ticket identifying a different server principal.
+        # realm TGS (RFC6113 5.4.1.1). However, this test fails against
+        # Windows, which will still accept a service ticket identifying a
+        # different server principal.
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'expected_error_mode': KDC_ERR_POLICY,
                 'use_fast': True,
-                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
-                'gen_armor_tgt_fn': self.get_user_service_ticket
-            },
-            {
-                'rep_type': KRB_AS_REP,
-                'expected_error_mode': 0,
-                'use_fast': True,
-                'gen_padata_fn': self.generate_enc_challenge_padata,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_user_service_ticket
                                     # ticket not identifying TGS of current
@@ -555,20 +560,14 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    # Similarly, this test fails against Windows, which accepts a service
+    # ticket identifying a different server principal.
     def test_fast_invalid_tgt_mach(self):
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'expected_error_mode': KDC_ERR_POLICY,
                 'use_fast': True,
-                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
-                'gen_armor_tgt_fn': self.get_mach_service_ticket
-            },
-            {
-                'rep_type': KRB_AS_REP,
-                'expected_error_mode': 0,
-                'use_fast': True,
-                'gen_padata_fn': self.generate_enc_challenge_padata,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_service_ticket
                                     # ticket not identifying TGS of current
@@ -862,8 +861,8 @@ class FAST_Tests(KDCBaseTest):
             # Add the 'FAST used' auth data and it now fails.
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
-                # should be KRB_APP_ERR_MODIFIED
+                'expected_error_mode': (KDC_ERR_MODIFIED,
+                                        KDC_ERR_GENERIC),
                 'use_fast': False,
                 'gen_authdata_fn': self.generate_fast_used_auth_data,
                 'gen_tgt_fn': self.get_user_tgt,
@@ -889,7 +888,8 @@ class FAST_Tests(KDCBaseTest):
             # Add the 'FAST armor' auth data and it now fails.
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC,
+                                        KDC_ERR_BAD_INTEGRITY),
                 'use_fast': True,
                 'gen_authdata_fn': self.generate_fast_armor_auth_data,
                 'gen_tgt_fn': self.get_user_tgt,
@@ -941,7 +941,8 @@ class FAST_Tests(KDCBaseTest):
             # fails.
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC,
+                                        KDC_ERR_BAD_INTEGRITY),
                 'use_fast': True,
                 'gen_tgt_fn': self.gen_tgt_fast_armor_auth_data,
                 'fast_armor': None,
@@ -976,7 +977,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_NOT_US,
+                'expected_error_mode': (KDC_ERR_NOT_US,
+                                        KDC_ERR_POLICY),
                 'use_fast': True,
                 'gen_tgt_fn': self.get_user_service_ticket,  # fails
                 'fast_armor': None
@@ -987,7 +989,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_NOT_US,  # fails
+                'expected_error_mode': (KDC_ERR_NOT_US,  # fails
+                                        KDC_ERR_POLICY),
                 'use_fast': True,
                 'gen_tgt_fn': self.get_mach_service_ticket,
                 'fast_armor': None
@@ -1013,7 +1016,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC,
+                                        KDC_ERR_PREAUTH_FAILED),
                 'use_fast': True,
                 'gen_tgt_fn': self.get_user_tgt,
                 'fast_armor': None,
