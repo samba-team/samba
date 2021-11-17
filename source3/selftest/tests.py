@@ -1312,6 +1312,15 @@ plantestsuite(
      "-b $PREFIX/clusteredmember/unclists/tmp.txt -N 5 -o 10"])
 
 plantestsuite(
+    "samba3.net_machine_account",
+    "clusteredmember",
+    [os.path.join(samba3srcdir,
+                  "script/tests/test_net_machine_account.sh"),
+     "bin/net",
+     "$SERVERCONFFILE",
+     "$SERVER_IP"])
+
+plantestsuite(
     "samba3.net_lookup_ldap",
     "ad_dc:local",
     [os.path.join(samba3srcdir,
