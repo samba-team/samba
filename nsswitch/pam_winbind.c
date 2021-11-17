@@ -479,6 +479,10 @@ static int _pam_parse(const pam_handle_t *pamh,
 		ctrl |= WINBIND_MKHOMEDIR;
 	}
 
+	if (tiniparser_getboolean(d, "global:pwd_change_prompt", false)) {
+		ctrl |= WINBIND_PWD_CHANGE_PROMPT;
+	}
+
 config_from_pam:
 	/* step through arguments */
 	for (i=argc,v=argv; i-- > 0; ++v) {
@@ -522,6 +526,8 @@ config_from_pam:
 		else if (!strncasecmp(*v, "warn_pwd_expire",
 			strlen("warn_pwd_expire")))
 			ctrl |= WINBIND_WARN_PWD_EXPIRE;
+		else if (!strcasecmp(*v, "pwd_change_prompt"))
+			ctrl |= WINBIND_PWD_CHANGE_PROMPT;
 		else if (type != PAM_WINBIND_CLEANUP) {
 			__pam_log(pamh, ctrl, LOG_ERR,
 				 "pam_parse: unknown option: %s", *v);
@@ -976,7 +982,8 @@ static bool _pam_send_password_expiry_message(struct pwb_context *ctx,
 		 * successfully sent the warning message.
 		 * Give the user a chance to change pwd.
 		 */
-		if (ret == PAM_SUCCESS) {
+		if (ret == PAM_SUCCESS &&
+		    (ctx->ctrl & WINBIND_PWD_CHANGE_PROMPT)) {
 			if (change_pwd) {
 				retval = _pam_winbind_change_pwd(ctx);
 				if (retval) {
@@ -1006,7 +1013,8 @@ static bool _pam_send_password_expiry_message(struct pwb_context *ctx,
 		 * successfully sent the warning message.
 		 * Give the user a chance to change pwd.
 		 */
-		if (ret == PAM_SUCCESS) {
+		if (ret == PAM_SUCCESS &&
+		    (ctx->ctrl & WINBIND_PWD_CHANGE_PROMPT)) {
 			if (change_pwd) {
 				retval = _pam_winbind_change_pwd(ctx);
 				if (retval) {
