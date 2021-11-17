@@ -271,6 +271,15 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	state->lock_flav = lock_flav;
 	state->num_locks = num_locks;
 	state->locks = locks;
+	state->deny_status = NT_STATUS_LOCK_NOT_GRANTED;
+
+	DBG_DEBUG("state=%p, state->smbreq=%p\n", state, state->smbreq);
+
+	if (num_locks == 0 || locks == NULL) {
+		DBG_DEBUG("no locks\n");
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
 
 	if (lock_flav == POSIX_LOCK) {
 		/*
@@ -278,16 +287,6 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		 * NT_STATUS_FILE_LOCK_CONFLICT.
 		 */
 		state->deny_status = NT_STATUS_FILE_LOCK_CONFLICT;
-	} else {
-		state->deny_status = NT_STATUS_LOCK_NOT_GRANTED;
-	}
-
-	DBG_DEBUG("state=%p, state->smbreq=%p\n", state, state->smbreq);
-
-	if (num_locks == 0) {
-		DBG_DEBUG("no locks\n");
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
 	}
 
 	smbd_smb1_do_locks_try(req);
