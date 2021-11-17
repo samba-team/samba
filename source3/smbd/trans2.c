@@ -7677,7 +7677,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 			.offset = offset,
 			.count = count,
 		};
-		status = smbd_do_unlocking(req, fsp, 1, &l, POSIX_LOCK);
+		status = smbd_do_unlocking(req, fsp, 1, &l);
 		return status;
 	}
 

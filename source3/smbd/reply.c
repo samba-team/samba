@@ -4847,7 +4847,7 @@ void reply_writeunlock(struct smb_request *req)
 			.offset = startpos,
 			.count = numtowrite,
 		};
-		status = smbd_do_unlocking(req, fsp, 1, &l, WINDOWS_LOCK);
+		status = smbd_do_unlocking(req, fsp, 1, &l);
 		if (NT_STATUS_V(status)) {
 			reply_nterror(req, status);
 			goto out;
@@ -6130,7 +6130,7 @@ void reply_unlock(struct smb_request *req)
 		.count = IVAL(req->vwv+1, 0),
 	};
 
-	status = smbd_do_unlocking(req, fsp, 1, &lck, WINDOWS_LOCK);
+	status = smbd_do_unlocking(req, fsp, 1, &lck);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -8112,7 +8112,6 @@ struct smbd_do_unlocking_state {
 	struct files_struct *fsp;
 	uint16_t num_ulocks;
 	struct smbd_lock_element *ulocks;
-	enum brl_flavour lock_flav;
 	NTSTATUS status;
 };
 
@@ -8124,7 +8123,6 @@ static void smbd_do_unlocking_fn(
 {
 	struct smbd_do_unlocking_state *state = private_data;
 	struct files_struct *fsp = state->fsp;
-	enum brl_flavour lock_flav = state->lock_flav;
 	uint16_t i;
 
 	for (i = 0; i < state->num_ulocks; i++) {
@@ -8144,7 +8142,7 @@ static void smbd_do_unlocking_fn(
 		}
 
 		state->status = do_unlock(
-			fsp, e->smblctx, e->count, e->offset, lock_flav);
+			fsp, e->smblctx, e->count, e->offset, e->lock_flav);
 
 		DBG_DEBUG("do_unlock returned %s\n",
 			  nt_errstr(state->status));
@@ -8160,14 +8158,12 @@ static void smbd_do_unlocking_fn(
 NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			   files_struct *fsp,
 			   uint16_t num_ulocks,
-			   struct smbd_lock_element *ulocks,
-			   enum brl_flavour lock_flav)
+			   struct smbd_lock_element *ulocks)
 {
 	struct smbd_do_unlocking_state state = {
 		.fsp = fsp,
 		.num_ulocks = num_ulocks,
 		.ulocks = ulocks,
-		.lock_flav = lock_flav,
 	};
 	NTSTATUS status;
 
@@ -8371,7 +8367,7 @@ void reply_lockingX(struct smb_request *req)
 		}
 
 		status = smbd_do_unlocking(
-			req, fsp, num_ulocks, ulocks, WINDOWS_LOCK);
+			req, fsp, num_ulocks, ulocks);
 		TALLOC_FREE(ulocks);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBlockingX);

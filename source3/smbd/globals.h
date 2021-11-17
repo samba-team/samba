@@ -118,8 +118,7 @@ struct GUID smbd_request_guid(struct smb_request *smb1req, uint16_t idx);
 NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			   files_struct *fsp,
 			   uint16_t num_ulocks,
-			   struct smbd_lock_element *ulocks,
-			   enum brl_flavour lock_flav);
+			   struct smbd_lock_element *ulocks);
 
 NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       TALLOC_CTX *mem_ctx,
