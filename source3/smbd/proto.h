@@ -122,7 +122,6 @@ void smbd_smb1_brl_finish_by_req(struct tevent_req *req, NTSTATUS status);
 bool smbd_smb1_brl_finish_by_lock(
 	struct files_struct *fsp,
 	bool large_offset,
-	enum brl_flavour lock_flav,
 	struct smbd_lock_element lock,
 	NTSTATUS finish_status);
 bool smbd_smb1_brl_finish_by_mid(

@@ -687,7 +687,6 @@ void smbd_smb1_brl_finish_by_req(struct tevent_req *req, NTSTATUS status)
 bool smbd_smb1_brl_finish_by_lock(
 	struct files_struct *fsp,
 	bool large_offset,
-	enum brl_flavour lock_flav,
 	struct smbd_lock_element lock,
 	NTSTATUS finish_status)
 {
@@ -705,8 +704,7 @@ bool smbd_smb1_brl_finish_by_lock(
 
 		DBG_DEBUG("i=%zu, req=%p\n", i, req);
 
-		if ((state->large_offset != large_offset) ||
-		    (state->locks[0].lock_flav != lock_flav)) {
+		if (state->large_offset != large_offset) {
 			continue;
 		}
 

@@ -8360,7 +8360,6 @@ void reply_lockingX(struct smb_request *req)
 		ok = smbd_smb1_brl_finish_by_lock(
 			fsp,
 			large_file_format,
-			WINDOWS_LOCK,
 			ulocks[0],
 			NT_STATUS_OK);
 		if (ok) {
@@ -8426,7 +8425,6 @@ void reply_lockingX(struct smb_request *req)
 		ok = smbd_smb1_brl_finish_by_lock(
 			fsp,
 			large_file_format,
-			WINDOWS_LOCK,
 			locks[0], /* Windows only cancels the first lock */
 			NT_STATUS_FILE_LOCK_CONFLICT);
 
