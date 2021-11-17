@@ -409,8 +409,16 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt
+            },
+            {
+                'rep_type': KRB_AS_REP,
                 'expected_error_mode': KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS,
                 'use_fast': True,
+                'gen_padata_fn': self.generate_enc_challenge_padata,
                 'fast_options': '001',  # unsupported critical option
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_tgt
