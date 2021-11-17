@@ -7702,7 +7702,6 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 		fsp,
 		blocking_lock ? UINT32_MAX : 0,
 		true,		/* large_offset */
-		POSIX_LOCK,
 		1,
 		lck);
 	if (subreq == NULL) {

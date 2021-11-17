@@ -108,7 +108,6 @@ struct smbd_smb1_do_locks_state {
 	uint32_t retry_msecs;
 	struct timeval endtime;
 	bool large_offset;	/* required for correct cancel */
-	enum brl_flavour lock_flav;
 	uint16_t num_locks;
 	struct smbd_lock_element *locks;
 	uint16_t blocker;
@@ -250,7 +249,6 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	struct files_struct *fsp,
 	uint32_t lock_timeout,
 	bool large_offset,
-	enum brl_flavour lock_flav,
 	uint16_t num_locks,
 	struct smbd_lock_element *locks)
 {
@@ -268,7 +266,6 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	state->fsp = fsp;
 	state->timeout = lock_timeout;
 	state->large_offset = large_offset;
-	state->lock_flav = lock_flav;
 	state->num_locks = num_locks;
 	state->locks = locks;
 	state->deny_status = NT_STATUS_LOCK_NOT_GRANTED;
@@ -281,7 +278,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if (lock_flav == POSIX_LOCK) {
+	if (state->locks[0].lock_flav == POSIX_LOCK) {
 		/*
 		 * SMB1 posix locks always use
 		 * NT_STATUS_FILE_LOCK_CONFLICT.
@@ -411,7 +408,6 @@ static NTSTATUS smbd_smb1_do_locks_check(
 
 		if (blocked_state->locks == locks) {
 			SMB_ASSERT(blocked_state->num_locks == num_locks);
-			SMB_ASSERT(blocked_state->lock_flav == lock_flav);
 
 			/*
 			 * We found ourself...
@@ -460,6 +456,7 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 	NTSTATUS status;
 	bool ok;
 	bool expired;
+	enum brl_flavour lock_flav = state->locks[0].lock_flav;
 
 	lck = get_existing_share_mode_lock(state, fsp->file_id);
 	if (tevent_req_nomem(lck, req)) {
@@ -469,7 +466,7 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 
 	status = smbd_smb1_do_locks_check(
 		fsp,
-		state->lock_flav,
+		lock_flav,
 		state->num_locks,
 		state->locks,
 		&state->blocker,
@@ -713,7 +710,7 @@ bool smbd_smb1_brl_finish_by_lock(
 		DBG_DEBUG("i=%zu, req=%p\n", i, req);
 
 		if ((state->large_offset != large_offset) ||
-		    (state->lock_flav != lock_flav)) {
+		    (state->locks[0].lock_flav != lock_flav)) {
 			continue;
 		}
 

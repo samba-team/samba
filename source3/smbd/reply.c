@@ -3810,7 +3810,6 @@ void reply_lockread(struct smb_request *req)
 		fsp,
 		0,
 		false,		/* large_offset */
-		WINDOWS_LOCK,
 		1,
 		lck);
 	if (subreq == NULL) {
@@ -6052,7 +6051,6 @@ void reply_lock(struct smb_request *req)
 		fsp,
 		0,
 		false,		/* large_offset */
-		WINDOWS_LOCK,
 		1,
 		lck);
 	if (subreq == NULL) {
@@ -8452,7 +8450,6 @@ void reply_lockingX(struct smb_request *req)
 		fsp,
 		lock_timeout,
 		large_file_format,
-		WINDOWS_LOCK,
 		num_locks,
 		locks);
 	if (subreq == NULL) {
