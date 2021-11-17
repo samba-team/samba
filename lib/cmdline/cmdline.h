@@ -131,6 +131,10 @@ struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt);
  */
 struct samba_cmdline_daemon_cfg *samba_cmdline_get_daemon_cfg(void);
 
+void samba_cmdline_set_machine_account_fn(
+	NTSTATUS (*fn) (struct cli_credentials *cred,
+			struct loadparm_context *lp_ctx));
+
 /**
  * @brief Burn secrets on the command line.
  *
