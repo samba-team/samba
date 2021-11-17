@@ -1105,7 +1105,8 @@ class FAST_Tests(KDCBaseTest):
                 'use_fast': True,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_tgt,
-                'fast_options': '01',  # hide client names
+                'fast_options': str(krb5_asn1.FastOptions(
+                    'hide-client-names')),
                 'expected_anon': True
             },
             {
@@ -1115,7 +1116,8 @@ class FAST_Tests(KDCBaseTest):
                 'gen_padata_fn': self.generate_enc_challenge_padata,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_tgt,
-                'fast_options': '01',  # hide client names
+                'fast_options': str(krb5_asn1.FastOptions(
+                    'hide-client-names')),
                 'expected_anon': True
             }
         ])
@@ -1128,7 +1130,8 @@ class FAST_Tests(KDCBaseTest):
                 'use_fast': True,
                 'gen_tgt_fn': self.get_user_tgt,
                 'fast_armor': None,
-                'fast_options': '01',  # hide client names
+                'fast_options': str(krb5_asn1.FastOptions(
+                    'hide-client-names')),
                 'expected_anon': True
             }
         ])
