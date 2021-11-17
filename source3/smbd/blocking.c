@@ -120,7 +120,6 @@ static void smbd_smb1_blocked_locks_cleanup(
 	struct tevent_req *req, enum tevent_req_state req_state);
 static NTSTATUS smbd_smb1_do_locks_check(
 	struct files_struct *fsp,
-	enum brl_flavour lock_flav,
 	uint16_t num_locks,
 	struct smbd_lock_element *locks,
 	uint16_t *blocker_idx,
@@ -381,7 +380,6 @@ static NTSTATUS smbd_smb1_do_locks_check_blocked(
 
 static NTSTATUS smbd_smb1_do_locks_check(
 	struct files_struct *fsp,
-	enum brl_flavour lock_flav,
 	uint16_t num_locks,
 	struct smbd_lock_element *locks,
 	uint16_t *blocker_idx,
@@ -456,7 +454,6 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 	NTSTATUS status;
 	bool ok;
 	bool expired;
-	enum brl_flavour lock_flav = state->locks[0].lock_flav;
 
 	lck = get_existing_share_mode_lock(state, fsp->file_id);
 	if (tevent_req_nomem(lck, req)) {
@@ -466,7 +463,6 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 
 	status = smbd_smb1_do_locks_check(
 		fsp,
-		lock_flav,
 		state->num_locks,
 		state->locks,
 		&state->blocker,
