@@ -2648,7 +2648,9 @@ class RawKerberosTest(TestCaseInTempDir):
         if not self.is_tgs(expected_sname):
             expected_types.append(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
 
-        require_strict = {krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO}
+        require_strict = {krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO,
+                          krb5pac.PAC_TYPE_DEVICE_INFO,
+                          krb5pac.PAC_TYPE_DEVICE_CLAIMS_INFO}
         if not self.tkt_sig_support:
             require_strict.add(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
 
