@@ -19,7 +19,7 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('CMDLINE_S3',
                         source='cmdline_s3.c',
-                        deps='cmdline')
+                        deps='cmdline secrets3')
 
     bld.SAMBA_SUBSYSTEM('CMDLINE_S4',
                         source='cmdline_s4.c',
