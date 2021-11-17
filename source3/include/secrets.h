@@ -20,6 +20,9 @@
 #ifndef _SECRETS_H
 #define _SECRETS_H
 
+#include "replace.h"
+#include "librpc/gen_ndr/security.h"
+
 /* the first one is for the hashed password (NT4 style) the latter
    for plaintext (ADS)
 */
