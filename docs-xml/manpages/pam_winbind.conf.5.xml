@@ -194,6 +194,13 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>pwd_change_prompt = yes|no</term>
+		<listitem><para>
+			Generate prompt for changing an expired password. Defaults to "no".
+		</para></listitem>
+		</varlistentry>
+
 		</variablelist>
 
 	</para>
