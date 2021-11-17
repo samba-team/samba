@@ -94,6 +94,14 @@ SAFE_FORMAT_CHARS = {
     '\ufeff'
 }
 
+# These files legitimately mix left-to-right and right-to-left text.
+# In the real world mixing directions would be normal in bilingual
+# documents, but it is rare in Samba source code.
+BIDI_FILES = {
+    'source4/heimdal/lib/wind/NormalizationTest.txt',
+    'testdata/source-chars-bidi.py',
+}
+
 
 def get_git_files():
     try:
@@ -196,9 +204,15 @@ class CharacterTests(TestCase):
                 else:
                     self.fail(f"could not decode {name}: {e}")
 
+            dirs = set()
             for c in set(s):
                 if is_bad_char(c):
                     self.fail(f"{name} has potentially bad format characters!")
+                dirs.add(u.bidirectional(c))
+
+            if 'L' in dirs and 'R' in dirs:
+                if name not in BIDI_FILES:
+                    self.fail(f"{name} has LTR and RTL text ({dirs})")
 
     def test_unexpected_format_chars_do_fail(self):
         """Test the test"""
@@ -211,6 +225,21 @@ class CharacterTests(TestCase):
             chars = set(s)
             bad_chars = [c for c in chars if is_bad_char(c)]
             self.assertEqual(len(bad_chars), n_bad)
+
+    def test_unexpected_bidi_fails(self):
+        """Test the test"""
+        for name in [
+                'testdata/source-chars-bidi.py'
+        ]:
+            fullname = os.path.join(ROOT, name)
+            with open(fullname) as f:
+                s = f.read()
+
+            dirs = set()
+            for c in set(s):
+                dirs.add(u.bidirectional(c))
+            self.assertIn('L', dirs)
+            self.assertIn('R', dirs)
 
 
 def check_file_text():
