@@ -24,8 +24,8 @@ import collections
 
 import ldb
 
-from samba.dcerpc import security
-from samba.tests.krb5.raw_testcase import Krb5EncryptionKey
+from samba.dcerpc import krb5pac, security
+from samba.tests.krb5.raw_testcase import Krb5EncryptionKey, ZeroedChecksumKey
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.tests.krb5.rfc4120_constants import (
     AD_FX_FAST_ARMOR,
@@ -580,6 +580,21 @@ class FAST_Tests(KDCBaseTest):
                 'gen_armor_tgt_fn': self.get_mach_service_ticket
                                     # ticket not identifying TGS of current
                                     # realm
+            }
+        ])
+
+    def test_fast_invalid_checksum_tgt(self):
+        # The armor ticket 'sname' field is required to identify the target
+        # realm TGS (RFC6113 5.4.1.1). However, this test fails against
+        # Windows, which will still accept a service ticket identifying a
+        # different server principal even if the ticket checksum is invalid.
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_POLICY,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_service_ticket_invalid_checksum
             }
         ])
 
@@ -1663,6 +1678,27 @@ class FAST_Tests(KDCBaseTest):
                 self.get_service_ticket(mach_tgt, service_creds))
 
         return self.mach_service_ticket
+
+    def get_service_ticket_invalid_checksum(self):
+        ticket = self.get_user_service_ticket()
+
+        krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
+
+        zeroed_key = ZeroedChecksumKey(krbtgt_key.key,
+                                       krbtgt_key.kvno)
+
+        server_key = ticket.decryption_key
+        checksum_keys = {
+            krb5pac.PAC_TYPE_SRV_CHECKSUM: server_key,
+            krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key,
+            krb5pac.PAC_TYPE_TICKET_CHECKSUM: zeroed_key,
+        }
+
+        return self.modified_ticket(
+            ticket,
+            checksum_keys=checksum_keys,
+            include_checksums={krb5pac.PAC_TYPE_TICKET_CHECKSUM: True})
 
 
 if __name__ == "__main__":
