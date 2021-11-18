@@ -1,3 +1,1 @@
 ^samba.blackbox.rpcclient_schannel.ncacn_np.getusername.fips\(ad_member_fips:local\)
-^samba.blackbox.rpcclient_schannel.ncacn_ip_tcp.lookupsids\(ad_member:local\)
-^samba.blackbox.rpcclient_schannel.ncacn_ip_tcp.lookupsids\(ad_member_fips:local\)

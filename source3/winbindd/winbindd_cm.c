@@ -2580,6 +2580,8 @@ retry:
 	TALLOC_FREE(creds);
 	status = cli_rpc_pipe_open_schannel_with_creds(
 		conn->cli, &ndr_table_samr, NCACN_NP, p_creds,
+		remote_name,
+		remote_sockaddr,
 		&conn->samr_pipe);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)
@@ -2722,6 +2724,8 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 	struct winbindd_cm_conn *conn;
 	struct netlogon_creds_cli_context *p_creds = NULL;
 	NTSTATUS status;
+	const char *remote_name = NULL;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 	DEBUG(10,("cm_connect_lsa_tcp\n"));
 
@@ -2748,11 +2752,17 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	status = cli_rpc_pipe_open_schannel_with_creds(conn->cli,
-						       &ndr_table_lsarpc,
-						       NCACN_IP_TCP,
-						       p_creds,
-						       &conn->lsa_pipe_tcp);
+	remote_name = smbXcli_conn_remote_name(conn->cli->conn);
+	remote_sockaddr = smbXcli_conn_remote_sockaddr(conn->cli->conn);
+
+	status = cli_rpc_pipe_open_schannel_with_creds(
+			conn->cli,
+			&ndr_table_lsarpc,
+			NCACN_IP_TCP,
+			p_creds,
+			remote_name,
+			remote_sockaddr,
+			&conn->lsa_pipe_tcp);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cli_rpc_pipe_open_schannel_with_key failed: %s\n",
 			nt_errstr(status)));
@@ -2885,6 +2895,8 @@ retry:
 	TALLOC_FREE(creds);
 	result = cli_rpc_pipe_open_schannel_with_creds(
 		conn->cli, &ndr_table_lsarpc, NCACN_NP, p_creds,
+		remote_name,
+		remote_sockaddr,
 		&conn->lsa_pipe);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_NETWORK_SESSION_EXPIRED)

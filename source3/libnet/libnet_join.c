@@ -1297,11 +1297,18 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(creds);
 
 	if (netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC) {
-		status = cli_rpc_pipe_open_schannel_with_creds(cli,
-							       &ndr_table_netlogon,
-							       NCACN_NP,
-							       netlogon_creds,
-							       &passwordset_pipe);
+		const char *remote_name = smbXcli_conn_remote_name(cli->conn);
+		const struct sockaddr_storage *remote_sockaddr =
+			smbXcli_conn_remote_sockaddr(cli->conn);
+
+		status = cli_rpc_pipe_open_schannel_with_creds(
+				cli,
+				&ndr_table_netlogon,
+				NCACN_NP,
+				netlogon_creds,
+				remote_name,
+				remote_sockaddr,
+				&passwordset_pipe);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(frame);
 			return status;
@@ -1700,6 +1707,8 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	uint32_t netlogon_flags = 0;
 	NTSTATUS status;
 	int flags = CLI_FULL_CONNECTION_IPC;
+	const char *remote_name = NULL;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 	if (!dc_name) {
 		TALLOC_FREE(frame);
@@ -1800,9 +1809,15 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
+	remote_name = smbXcli_conn_remote_name(cli->conn);
+	remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
+
 	status = cli_rpc_pipe_open_schannel_with_creds(
 		cli, &ndr_table_netlogon, NCACN_NP,
-		netlogon_creds, &netlogon_pipe);
+		netlogon_creds,
+		remote_name,
+		remote_sockaddr,
+		&netlogon_pipe);
 
 	TALLOC_FREE(netlogon_pipe);
 
@@ -1810,7 +1825,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 		DEBUG(0,("libnet_join_ok: failed to open schannel session "
 			"on netlogon pipe to server %s for domain %s. "
 			"Error was %s\n",
-			smbXcli_conn_remote_name(cli->conn),
+			remote_name,
 			netbios_domain_name, nt_errstr(status)));
 		cli_shutdown(cli);
 		TALLOC_FREE(frame);
