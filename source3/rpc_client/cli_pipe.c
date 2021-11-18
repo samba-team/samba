@@ -3369,6 +3369,7 @@ NTSTATUS cli_rpc_pipe_open_with_creds(struct cli_state *cli,
 				      enum dcerpc_AuthType auth_type,
 				      enum dcerpc_AuthLevel auth_level,
 				      const char *server,
+				      const struct sockaddr_storage *remote_sockaddr,
 				      struct cli_credentials *creds,
 				      struct rpc_pipe_client **presult)
 {
@@ -3376,8 +3377,6 @@ NTSTATUS cli_rpc_pipe_open_with_creds(struct cli_state *cli,
 	struct pipe_auth_data *auth = NULL;
 	const char *target_service = table->authservices->names[0];
 	NTSTATUS status;
-	const struct sockaddr_storage *remote_sockaddr =
-		smbXcli_conn_remote_sockaddr(cli->conn);
 
 	status = cli_rpc_pipe_open(cli,
 				   transport,

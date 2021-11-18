@@ -2445,6 +2445,8 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	struct netlogon_creds_cli_context *p_creds;
 	struct cli_credentials *creds = NULL;
 	bool retry = false; /* allow one retry attempt for expired session */
+	const char *remote_name = NULL;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 	if (sid_check_is_our_sam(&domain->sid)) {
 		if (domain->rodc == false || need_rw_dc == false) {
@@ -2498,6 +2500,9 @@ retry:
 		goto anonymous;
 	}
 
+	remote_name = smbXcli_conn_remote_name(conn->cli->conn);
+	remote_sockaddr = smbXcli_conn_remote_sockaddr(conn->cli->conn);
+
 	/*
 	 * We have an authenticated connection. Use a SPNEGO
 	 * authenticated SAMR pipe with sign & seal.
@@ -2507,7 +2512,8 @@ retry:
 					      NCACN_NP,
 					      DCERPC_AUTH_TYPE_SPNEGO,
 					      conn->auth_level,
-					      smbXcli_conn_remote_name(conn->cli->conn),
+					      remote_name,
+					      remote_sockaddr,
 					      creds,
 					      &conn->samr_pipe);
 
@@ -2772,6 +2778,8 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	struct netlogon_creds_cli_context *p_creds;
 	struct cli_credentials *creds = NULL;
 	bool retry = false; /* allow one retry attempt for expired session */
+	const char *remote_name = NULL;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 retry:
 	result = init_dc_connection_rpc(domain, false);
@@ -2804,6 +2812,9 @@ retry:
 		goto anonymous;
 	}
 
+	remote_name = smbXcli_conn_remote_name(conn->cli->conn);
+	remote_sockaddr = smbXcli_conn_remote_sockaddr(conn->cli->conn);
+
 	/*
 	 * We have an authenticated connection. Use a SPNEGO
 	 * authenticated LSA pipe with sign & seal.
@@ -2812,7 +2823,8 @@ retry:
 		(conn->cli, &ndr_table_lsarpc, NCACN_NP,
 		 DCERPC_AUTH_TYPE_SPNEGO,
 		 conn->auth_level,
-		 smbXcli_conn_remote_name(conn->cli->conn),
+		 remote_name,
+		 remote_sockaddr,
 		 creds,
 		 &conn->lsa_pipe);
 

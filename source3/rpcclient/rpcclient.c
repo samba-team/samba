@@ -956,7 +956,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					transport,
 					auth_type,
 					auth_level,
-					smbXcli_conn_remote_name(cli->conn),
+					remote_name,
+					remote_sockaddr,
 					creds,
 					&cmd_entry->rpc_pipe);
 				break;
