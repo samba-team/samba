@@ -262,7 +262,7 @@ static bool torture_krb5_pre_send_as_req_test(struct torture_krb5_context *test_
 						 KRB5_NT_PRINCIPAL,
 						 "krb5 libs unexpectedly "
 						 "did not set principal "
-						 "as NT_SRV_HST!");
+						 "as NT_PRINCIPAL!");
 		} else {
 			torture_assert_int_equal(test_context->tctx,
 						 test_context->as_req.req_body.cname->name_type,
