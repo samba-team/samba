@@ -143,12 +143,16 @@ NTSTATUS remote_password_change(const char *remote_machine,
 	/* Try not to give the password away too easily */
 
 	if (!pass_must_change) {
+		const struct sockaddr_storage *remote_sockaddr =
+			smbXcli_conn_remote_sockaddr(cli->conn);
+
 		result = cli_rpc_pipe_open_with_creds(cli,
 						      &ndr_table_samr,
 						      NCACN_NP,
 						      DCERPC_AUTH_TYPE_NTLMSSP,
 						      DCERPC_AUTH_LEVEL_PRIVACY,
 						      remote_machine,
+						      remote_sockaddr,
 						      creds,
 						      &pipe_hnd);
 	} else {
