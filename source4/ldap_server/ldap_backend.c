@@ -729,6 +729,15 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	unsigned int i;
 	int extended_type = 1;
 
+	/*
+	 * Warn for searches that are longer than 1/4 of the
+	 * search_timeout, being 30sec by default
+	 */
+	struct timeval start_time = timeval_current();
+	struct timeval warning_time
+		= timeval_add(&start_time,
+			      call->conn->limits.search_timeout / 4,
+			      0);
 
 	local_ctx = talloc_new(call);
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -736,29 +745,27 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	basedn = ldb_dn_new(local_ctx, samdb, req->basedn);
 	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
-	DEBUG(10, ("SearchRequest: basedn: [%s]\n", req->basedn));
-	DEBUG(10, ("SearchRequest: filter: [%s]\n", ldb_filter_from_tree(call, req->tree)));
-
 	switch (req->scope) {
-		case LDAP_SEARCH_SCOPE_BASE:
-			scope_str = "BASE";
-			scope = LDB_SCOPE_BASE;
-			break;
-		case LDAP_SEARCH_SCOPE_SINGLE:
-			scope_str = "ONE";
-			scope = LDB_SCOPE_ONELEVEL;
-			break;
-		case LDAP_SEARCH_SCOPE_SUB:
-			scope_str = "SUB";
-			scope = LDB_SCOPE_SUBTREE;
-			break;
-	        default:
-			result = LDAP_PROTOCOL_ERROR;
-			map_ldb_error(local_ctx, LDB_ERR_PROTOCOL_ERROR, NULL,
-				&errstr);
-			errstr = talloc_asprintf(local_ctx,
-				"%s. Invalid scope", errstr);
-			goto reply;
+	case LDAP_SEARCH_SCOPE_BASE:
+		scope_str = "BASE";
+		scope = LDB_SCOPE_BASE;
+		break;
+	case LDAP_SEARCH_SCOPE_SINGLE:
+		scope_str = "ONE";
+		scope = LDB_SCOPE_ONELEVEL;
+		break;
+	case LDAP_SEARCH_SCOPE_SUB:
+		scope_str = "SUB";
+		scope = LDB_SCOPE_SUBTREE;
+		break;
+	default:
+		result = LDAP_PROTOCOL_ERROR;
+		map_ldb_error(local_ctx, LDB_ERR_PROTOCOL_ERROR, NULL,
+			      &errstr);
+		scope_str = "<Invalid scope>";
+		errstr = talloc_asprintf(local_ctx,
+					 "%s. Invalid scope", errstr);
+		goto reply;
 	}
 	DEBUG(10,("SearchRequest: scope: [%s]\n", scope_str));
 
@@ -911,6 +918,76 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	}
 
 reply:
+
+	/*
+	 * This looks like duplicated code - because it is - but
+	 * otherwise the work in the parameters will be done
+	 * regardless, this way the functions only execuate when the
+	 * log level is set.
+	 *
+	 * The basedn is re-obtained as a string to escape it
+	 */
+	if ((req->timelimit == 0 || call->conn->limits.search_timeout < req->timelimit)
+	    && ldb_ret == LDB_ERR_TIME_LIMIT_EXCEEDED) {
+		struct dom_sid_buf sid_buf;
+		DBG_WARNING("MaxQueryDuration(%d) timeout exceeded "
+			    "in SearchRequest by %s from %s filter: [%s] "
+			    "basedn: [%s] "
+			    "scope: [%s]\n",
+			    call->conn->limits.search_timeout,
+			    dom_sid_str_buf(&call->conn->session_info->security_token->sids[0],
+					    &sid_buf),
+			    tsocket_address_string(call->conn->connection->remote_address,
+						   call),
+			    ldb_filter_from_tree(call, req->tree),
+			    ldb_dn_get_extended_linearized(call, basedn, 1),
+			    scope_str);
+		for (i=0; i < req->num_attributes; i++) {
+			DBG_WARNING("MaxQueryDuration timeout exceeded attrs: [%s]\n",
+				    req->attributes[i]);
+		}
+
+	} else if (timeval_expired(&warning_time)) {
+		struct dom_sid_buf sid_buf;
+		DBG_NOTICE("Long LDAP Query: Duration was %.2fs, "
+			   "MaxQueryDuration(%d)/4 == %d "
+			   "in SearchRequest by %s from %s filter: [%s] "
+			   "basedn: [%s] "
+			   "scope: [%s] "
+			   "result: %s\n",
+			   timeval_elapsed(&start_time),
+			   call->conn->limits.search_timeout,
+			   call->conn->limits.search_timeout / 4,
+			   dom_sid_str_buf(&call->conn->session_info->security_token->sids[0],
+					   &sid_buf),
+			   tsocket_address_string(call->conn->connection->remote_address,
+						  call),
+			   ldb_filter_from_tree(call, req->tree),
+			   ldb_dn_get_extended_linearized(call, basedn, 1),
+			   scope_str,
+			   ldb_strerror(ldb_ret));
+		for (i=0; i < req->num_attributes; i++) {
+			DBG_NOTICE("Long LDAP Query attrs: [%s]\n",
+				   req->attributes[i]);
+		}
+	} else {
+		struct dom_sid_buf sid_buf;
+		DBG_INFO("LDAP Query: Duration was %.2fs, "
+			 "SearchRequest by %s from %s filter: [%s] "
+			 "basedn: [%s] "
+			 "scope: [%s] "
+			 "result: %s\n",
+			 timeval_elapsed(&start_time),
+			 dom_sid_str_buf(&call->conn->session_info->security_token->sids[0],
+					 &sid_buf),
+			 tsocket_address_string(call->conn->connection->remote_address,
+						call),
+			 ldb_filter_from_tree(call, req->tree),
+			 ldb_dn_get_extended_linearized(call, basedn, 1),
+			 scope_str,
+			 ldb_strerror(ldb_ret));
+	}
+
 	DLIST_REMOVE(call->conn->pending_calls, call);
 	call->notification.busy = false;
 
