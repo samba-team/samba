@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RPC pipe client
 
@@ -73,9 +73,9 @@ static char **completion_fn(const char *text, int start, int end)
 
 #if 0	/* JERRY */
 	/* FIXME!!!  -- what to do when completing argument? */
-	/* for words not at the start of the line fallback 
+	/* for words not at the start of the line fallback
 	   to filename completion */
-	if (start) 
+	if (start)
 		return NULL;
 #endif
 
@@ -103,7 +103,7 @@ static char **completion_fn(const char *text, int start, int end)
 		for (i=0; commands->cmd_set[i].name; i++) {
 			if ((strncmp(text, commands->cmd_set[i].name, strlen(text)) == 0) &&
 				(( commands->cmd_set[i].returntype == RPC_RTYPE_NTSTATUS &&
-                        commands->cmd_set[i].ntfn ) || 
+                        commands->cmd_set[i].ntfn ) ||
                       ( commands->cmd_set[i].returntype == RPC_RTYPE_WERROR &&
                         commands->cmd_set[i].wfn))) {
 				matches[count] = SMB_STRDUP(commands->cmd_set[i].name);
@@ -233,7 +233,7 @@ static NTSTATUS cmd_listcommands(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 
         /* Help on one command */
 
-	for (tmp = cmd_list; tmp; tmp = tmp->next) 
+	for (tmp = cmd_list; tmp; tmp = tmp->next)
 	{
 		tmp_set = tmp->cmd_set;
 
