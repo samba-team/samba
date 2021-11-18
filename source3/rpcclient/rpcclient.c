@@ -968,6 +968,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					cmd_entry->table,
 					transport,
 					rpcclient_netlogon_domain,
+					remote_name,
+					remote_sockaddr,
 					&cmd_entry->rpc_pipe,
 					rpcclient_msg_ctx,
 					&rpcclient_netlogon_creds);

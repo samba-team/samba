@@ -42,12 +42,13 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 				    const struct ndr_interface_table *table,
 				    enum dcerpc_transport_t transport,
 				    const char *domain,
+				    const char *remote_name,
+				    const struct sockaddr_storage *remote_sockaddr,
 				    struct rpc_pipe_client **presult,
 				    TALLOC_CTX *mem_ctx,
 				    struct netlogon_creds_cli_context **pcreds)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	const char *dc_name = smbXcli_conn_remote_name(cli->conn);
 	struct rpc_pipe_client *result = NULL;
 	NTSTATUS status;
 	struct cli_credentials *cli_creds = NULL;
@@ -63,7 +64,7 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	}
 
 	status = rpccli_create_netlogon_creds_ctx(cli_creds,
-						  dc_name,
+						  remote_name,
 						  msg_ctx,
 						  frame,
 						  &netlogon_creds);
