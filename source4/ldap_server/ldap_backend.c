@@ -729,9 +729,6 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	unsigned int i;
 	int extended_type = 1;
 
-	DEBUG(10, ("SearchRequest"));
-	DEBUGADD(10, (" basedn: %s", req->basedn));
-	DEBUGADD(10, (" filter: %s\n", ldb_filter_from_tree(call, req->tree)));
 
 	local_ctx = talloc_new(call);
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
