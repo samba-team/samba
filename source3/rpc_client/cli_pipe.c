@@ -3163,7 +3163,7 @@ static int rpc_pipe_client_np_ref_destructor(struct rpc_pipe_client_np_ref *np_r
  *    assignments of cli, which invalidates the data in the returned
  *    rpc_pipe_client if this function is called before the structure assignment
  *    of cli.
- * 
+ *
  ****************************************************************************/
 
 static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
