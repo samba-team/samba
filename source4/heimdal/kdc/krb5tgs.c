@@ -1629,7 +1629,7 @@ server_lookup:
 		ret = KRB5KDC_ERR_BADOPTION;
 		kdc_log(context, config, 0,
 			"Ticket not signed with PAC; user-to-user failed (%s).",
-			mspac ? "Ticket unsigned" : "No PAC");
+			user2user_pac ? "Ticket unsigned" : "No PAC");
 		goto out;
 	    }
 
