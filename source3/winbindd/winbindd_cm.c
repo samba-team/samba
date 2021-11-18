@@ -3070,6 +3070,11 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	sec_chan_type = cli_credentials_get_secure_channel_type(creds);
 	if (sec_chan_type == SEC_CHAN_NULL) {
+		const char *remote_name =
+			smbXcli_conn_remote_name(conn->cli->conn);
+		const struct sockaddr_storage *remote_sockaddr =
+			smbXcli_conn_remote_sockaddr(conn->cli->conn);
+
 		if (transport == NCACN_IP_TCP) {
 			DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL "
 				   "for %s, deny NCACN_IP_TCP and let the "
@@ -3086,6 +3091,8 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 			conn->cli,
 			transport,
 			&ndr_table_netlogon,
+			remote_name,
+			remote_sockaddr,
 			&conn->netlogon_pipe);
 		if (!NT_STATUS_IS_OK(result)) {
 			invalidate_cm_connection(domain);

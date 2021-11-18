@@ -3160,15 +3160,13 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 					    enum dcerpc_transport_t transport,
 					    const struct ndr_interface_table *table,
+					    const char *remote_name,
+					    const struct sockaddr_storage *remote_sockaddr,
 					    struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth;
 	NTSTATUS status;
-	const char *remote_name = smbXcli_conn_remote_name(cli->conn);
-	const struct sockaddr_storage *remote_sockaddr =
-		smbXcli_conn_remote_sockaddr(cli->conn);
-
 
 	status = cli_rpc_pipe_open(cli,
 				   transport,
@@ -3243,8 +3241,15 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 				  const struct ndr_interface_table *table,
 				  struct rpc_pipe_client **presult)
 {
+	const char *remote_name = smbXcli_conn_remote_name(cli->conn);
+	const struct sockaddr_storage *remote_sockaddr =
+		smbXcli_conn_remote_sockaddr(cli->conn);
+
 	return cli_rpc_pipe_open_noauth_transport(cli, NCACN_NP,
-						  table, presult);
+						  table,
+						  remote_name,
+						  remote_sockaddr,
+						  presult);
 }
 
 /****************************************************************************

@@ -168,6 +168,8 @@ NTSTATUS rpccli_setup_netlogon_creds_locked(
 	const struct samr_Password *nt_hashes[2] = { NULL, NULL };
 	uint8_t idx_nt_hashes = 0;
 	NTSTATUS status;
+	const char *remote_name = NULL;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
 	if (NT_STATUS_IS_OK(status)) {
@@ -177,10 +179,16 @@ NTSTATUS rpccli_setup_netlogon_creds_locked(
 			action = "overwrite";
 		}
 
+		if (cli != NULL) {
+			remote_name = smbXcli_conn_remote_name(cli->conn);
+		} else {
+			remote_name = "<UNKNOWN>";
+		}
+
 		DEBUG(5,("%s: %s cached netlogon_creds cli[%s/%s] to %s\n",
 			 __FUNCTION__, action,
 			 creds->account_name, creds->computer_name,
-			 smbXcli_conn_remote_name(cli->conn)));
+			 remote_name));
 		if (!force_reauth) {
 			goto done;
 		}
@@ -200,14 +208,19 @@ NTSTATUS rpccli_setup_netlogon_creds_locked(
 		num_nt_hashes = 2;
 	}
 
+	remote_name = smbXcli_conn_remote_name(cli->conn);
+	remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
+
 	status = cli_rpc_pipe_open_noauth_transport(cli,
 						    transport,
 						    &ndr_table_netlogon,
+						    remote_name,
+						    remote_sockaddr,
 						    &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("%s: failed to open noauth netlogon connection to %s - %s\n",
 			 __FUNCTION__,
-			 smbXcli_conn_remote_name(cli->conn),
+			 remote_name,
 			 nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return status;
@@ -233,7 +246,7 @@ NTSTATUS rpccli_setup_netlogon_creds_locked(
 	DEBUG(5,("%s: using new netlogon_creds cli[%s/%s] to %s\n",
 		 __FUNCTION__,
 		 creds->account_name, creds->computer_name,
-		 smbXcli_conn_remote_name(cli->conn)));
+		 remote_name));
 
 done:
 	if (negotiate_flags != NULL) {
@@ -293,6 +306,8 @@ NTSTATUS rpccli_connect_netlogon(
 	struct rpc_pipe_client *rpccli;
 	NTSTATUS status;
 	bool retry = false;
+	const char *remote_name = NULL;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 	sec_chan_type = cli_credentials_get_secure_channel_type(trust_creds);
 	if (sec_chan_type == SEC_CHAN_NULL) {
@@ -411,8 +426,15 @@ again:
 			goto fail;
 		}
 
-		status = cli_rpc_pipe_open_noauth_transport(
-			cli, transport, &ndr_table_netlogon, &rpccli);
+		remote_name = smbXcli_conn_remote_name(cli->conn);
+		remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
+
+		status = cli_rpc_pipe_open_noauth_transport(cli,
+							    transport,
+							    &ndr_table_netlogon,
+							    remote_name,
+							    remote_sockaddr,
+							    &rpccli);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("cli_rpc_pipe_open_noauth_transport "
 				  "failed: %s\n", nt_errstr(status));

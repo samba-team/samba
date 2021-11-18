@@ -879,8 +879,44 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	enum dcerpc_transport_t transport;
 
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	const char *remote_name = NULL;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
+	struct sockaddr_storage remote_ss = {
+		.ss_family = AF_UNSPEC,
+	};
 
 	transport = dcerpc_binding_get_transport(binding);
+
+	if (cli != NULL) {
+		remote_name = smbXcli_conn_remote_name(cli->conn);
+		remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
+	} else {
+		const char *remote_host =
+			dcerpc_binding_get_string_option(binding, "host");
+		remote_name = dcerpc_binding_get_string_option(
+				binding, "target_hostname");
+
+		if (remote_host != NULL) {
+			int af = AF_UNSPEC;
+
+			if (remote_name == NULL) {
+				remote_name = dcerpc_binding_get_string_option(
+						binding, "host");
+			}
+
+			if (is_ipaddress_v4(remote_host)) {
+				af = AF_INET;
+			} else if (is_ipaddress_v6(remote_host)) {
+				af = AF_INET6;
+			}
+			if (af != AF_UNSPEC) {
+				int ok = inet_pton(af, remote_host, &remote_ss);
+				if (ok) {
+					remote_sockaddr = &remote_ss;
+				}
+			}
+		}
+	}
 
 	/* Open pipe */
 
@@ -906,6 +942,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				ntresult = cli_rpc_pipe_open_noauth_transport(
 					cli, transport,
 					cmd_entry->table,
+					remote_name,
+					remote_sockaddr,
 					&cmd_entry->rpc_pipe);
 				break;
 			case DCERPC_AUTH_TYPE_SPNEGO:
