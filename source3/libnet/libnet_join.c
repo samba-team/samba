@@ -3045,7 +3045,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(r->in.domain_sid);
 	}
 
-	if (!(r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) && 
+	if (!(r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) &&
 	    !r->in.delete_machine_account) {
 		libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
 		return WERR_OK;
@@ -3077,8 +3077,8 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 	}
 
 #ifdef HAVE_ADS
-	/* for net ads leave, try to delete the account.  If it works, 
-	   no sense in disabling.  If it fails, we can still try to 
+	/* for net ads leave, try to delete the account.  If it works,
+	   no sense in disabling.  If it fails, we can still try to
 	   disable it. jmcd */
 
 	if (r->in.delete_machine_account) {
@@ -3086,10 +3086,10 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		ads_status = libnet_unjoin_connect_ads(mem_ctx, r);
 		if (ADS_ERR_OK(ads_status)) {
 			/* dirty hack */
-			r->out.dns_domain_name = 
+			r->out.dns_domain_name =
 				talloc_strdup(mem_ctx,
 					      r->in.ads->server.realm);
-			ads_status = 
+			ads_status =
 				libnet_unjoin_remove_machine_acct(mem_ctx, r);
 		}
 		if (!ADS_ERR_OK(ads_status)) {
@@ -3105,7 +3105,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 	}
 #endif /* HAVE_ADS */
 
-	/* The WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE flag really means 
+	/* The WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE flag really means
 	   "disable".  */
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) {
 		status = libnet_join_unjoindomain_rpc(mem_ctx, r);
@@ -3124,7 +3124,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		r->out.disabled_machine_account = true;
 	}
 
-	/* If disable succeeded or was not requested at all, we 
+	/* If disable succeeded or was not requested at all, we
 	   should be getting rid of our end of things */
 
 	libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
