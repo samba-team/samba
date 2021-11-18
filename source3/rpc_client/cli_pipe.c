@@ -3320,6 +3320,8 @@ NTSTATUS cli_rpc_pipe_open_bind_schannel(
 	const struct ndr_interface_table *table,
 	enum dcerpc_transport_t transport,
 	struct netlogon_creds_cli_context *netlogon_creds,
+	const char *remote_name,
+	const struct sockaddr_storage *remote_sockaddr,
 	struct rpc_pipe_client **_rpccli)
 {
 	struct rpc_pipe_client *rpccli;
@@ -3328,9 +3330,6 @@ NTSTATUS cli_rpc_pipe_open_bind_schannel(
 	struct cli_credentials *cli_creds;
 	enum dcerpc_AuthLevel auth_level;
 	NTSTATUS status;
-	const char *remote_name = smbXcli_conn_remote_name(cli->conn);
-	const struct sockaddr_storage *remote_sockaddr =
-		smbXcli_conn_remote_sockaddr(cli->conn);
 
 	status = cli_rpc_pipe_open(cli,
 				   transport,
@@ -3395,6 +3394,9 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 	struct rpc_pipe_client *rpccli;
 	struct netlogon_creds_cli_lck *lck;
 	NTSTATUS status;
+	const char *remote_name = smbXcli_conn_remote_name(cli->conn);
+	const struct sockaddr_storage *remote_sockaddr =
+		smbXcli_conn_remote_sockaddr(cli->conn);
 
 	status = netlogon_creds_cli_lck(
 		netlogon_creds, NETLOGON_CREDS_CLI_LCK_EXCLUSIVE,
@@ -3406,8 +3408,13 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 		return status;
 	}
 
-	status = cli_rpc_pipe_open_bind_schannel(
-		cli, table, transport, netlogon_creds, &rpccli);
+	status = cli_rpc_pipe_open_bind_schannel(cli,
+						 table,
+						 transport,
+						 netlogon_creds,
+						 remote_name,
+						 remote_sockaddr,
+						 &rpccli);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 		netlogon_creds_cli_delete_lck(netlogon_creds);
 	}

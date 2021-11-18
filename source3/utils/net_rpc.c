@@ -188,11 +188,18 @@ int run_rpc_command(struct net_context *c,
 		if (lp_client_schannel()
 		    && (ndr_syntax_id_equal(&table->syntax_id,
 					    &ndr_table_netlogon.syntax_id))) {
+			const char *remote_name =
+				smbXcli_conn_remote_name(cli->conn);
+			const struct sockaddr_storage *remote_sockaddr =
+				smbXcli_conn_remote_sockaddr(cli->conn);
+
 			/* Always try and create an schannel netlogon pipe. */
 			TALLOC_FREE(c->netlogon_creds);
 			nt_status = cli_rpc_pipe_open_schannel(
 				cli, c->msg_ctx, table, NCACN_NP,
 				domain_name,
+				remote_name,
+				remote_sockaddr,
 				&pipe_hnd, c, &c->netlogon_creds);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Could not initialise schannel netlogon pipe. Error was %s\n",

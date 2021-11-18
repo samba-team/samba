@@ -368,15 +368,22 @@ again:
 		}
 	}
 
+	remote_name = smbXcli_conn_remote_name(cli->conn);
+	remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
+
 	do_serverauth = force_reauth || !found_existing_creds;
 
 	if (!do_serverauth) {
 		/*
 		 * Do the quick schannel bind without a reauth
 		 */
-		status = cli_rpc_pipe_open_bind_schannel(
-			cli, &ndr_table_netlogon, transport, creds_ctx,
-			&rpccli);
+		status = cli_rpc_pipe_open_bind_schannel(cli,
+							 &ndr_table_netlogon,
+							 transport,
+							 creds_ctx,
+							 remote_name,
+							 remote_sockaddr,
+							 &rpccli);
 		if (!retry && NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 			DBG_DEBUG("Retrying with serverauthenticate\n");
 			TALLOC_FREE(lck);
@@ -426,9 +433,6 @@ again:
 			goto fail;
 		}
 
-		remote_name = smbXcli_conn_remote_name(cli->conn);
-		remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
-
 		status = cli_rpc_pipe_open_noauth_transport(cli,
 							    transport,
 							    &ndr_table_netlogon,
@@ -443,8 +447,13 @@ again:
 		goto done;
 	}
 
-	status = cli_rpc_pipe_open_bind_schannel(
-		cli, &ndr_table_netlogon, transport, creds_ctx, &rpccli);
+	status = cli_rpc_pipe_open_bind_schannel(cli,
+						 &ndr_table_netlogon,
+						 transport,
+						 creds_ctx,
+						 remote_name,
+						 remote_sockaddr,
+						 &rpccli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("cli_rpc_pipe_open_bind_schannel "
 			  "failed: %s\n", nt_errstr(status));
