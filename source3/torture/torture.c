@@ -8929,6 +8929,11 @@ static bool run_posix_blocking_lock(int dummy)
 		return false;
 	}
 
+	status = torture_setup_unix_extensions(cli2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
 	cli_setatr(cli1, fname, 0, 0);
 	cli_posix_unlink(cli1, fname);
 
