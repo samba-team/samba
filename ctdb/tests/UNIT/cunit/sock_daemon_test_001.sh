@@ -37,10 +37,14 @@ ok <<EOF
 daemon started, pid=PID
 startup completed successfully
 listening on $sockpath
-Received signal $(sigcode SIGHUP)
+Received signal $(sigcode SIGUSR1)
 reconfigure failed, ret=1
 Received signal $(sigcode SIGUSR1)
 reconfigure completed successfully
+Received signal 1
+reopen logs, ret=1
+Received signal 1
+reopen logs completed successfully
 Received signal $(sigcode SIGTERM)
 Shutting down
 daemon started, pid=PID
@@ -48,8 +52,12 @@ startup completed successfully
 listening on $sockpath
 Received signal $(sigcode SIGUSR1)
 reconfigure failed, ret=2
-Received signal $(sigcode SIGHUP)
+Received signal $(sigcode SIGUSR1)
 reconfigure completed successfully
+Received signal 1
+reopen logs failed, ret=2
+Received signal 1
+reopen logs completed successfully
 Received signal $(sigcode SIGTERM)
 Shutting down
 EOF

@@ -555,6 +555,8 @@ static void sock_daemon_run_signal_handler(struct tevent_context *ev,
 					   void *private_data);
 static void sock_daemon_run_reconfigure(struct tevent_req *req);
 static void sock_daemon_run_reconfigure_done(struct tevent_req *subreq);
+static void sock_daemon_run_reopen_logs(struct tevent_req *req);
+static void sock_daemon_run_reopen_logs_done(struct tevent_req *subreq);
 static void sock_daemon_run_shutdown(struct tevent_req *req);
 static void sock_daemon_run_shutdown_done(struct tevent_req *subreq);
 static void sock_daemon_run_exit(struct tevent_req *req);
@@ -735,8 +737,13 @@ static void sock_daemon_run_signal_handler(struct tevent_context *ev,
 
 	D_NOTICE("Received signal %d\n", signum);
 
-	if (signum == SIGHUP || signum == SIGUSR1) {
+	if (signum == SIGUSR1) {
 		sock_daemon_run_reconfigure(req);
+		return;
+	}
+
+	if (signum == SIGHUP) {
+		sock_daemon_run_reopen_logs(req);
 		return;
 	}
 
@@ -796,6 +803,58 @@ static void sock_daemon_run_reconfigure_done(struct tevent_req *subreq)
 	}
 
 	D_NOTICE("reconfigure completed successfully\n");
+}
+
+static void sock_daemon_run_reopen_logs(struct tevent_req *req)
+{
+	struct tevent_req *subreq;
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
+	struct sock_daemon_context *sockd = state->sockd;
+
+	if (sockd->funcs != NULL && sockd->funcs->reopen_logs_send != NULL &&
+	    sockd->funcs->reopen_logs_recv != NULL) {
+		subreq = sockd->funcs->reopen_logs_send(state, state->ev,
+							sockd->private_data);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					sock_daemon_run_reopen_logs_done, req);
+		return;
+	}
+
+	if (sockd->funcs != NULL && sockd->funcs->reopen_logs != NULL) {
+		int ret;
+
+		ret = sockd->funcs->reopen_logs(sockd->private_data);
+		if (ret != 0) {
+			D_ERR("reopen logs, ret=%d\n", ret);
+			return;
+		}
+
+		D_NOTICE("reopen logs completed successfully\n");
+	}
+}
+
+static void sock_daemon_run_reopen_logs_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
+	struct sock_daemon_context *sockd = state->sockd;
+	int ret;
+	bool status;
+
+	status = sockd->funcs->reopen_logs_recv(subreq, &ret);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		D_ERR("reopen logs failed, ret=%d\n", ret);
+		return;
+	}
+
+	D_NOTICE("reopen logs completed successfully\n");
 }
 
 static void sock_daemon_run_shutdown(struct tevent_req *req)

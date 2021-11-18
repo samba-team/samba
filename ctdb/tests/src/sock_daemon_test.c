@@ -287,6 +287,71 @@ static bool test2_reconfigure_recv(struct tevent_req *req, int *perr)
 	return true;
 }
 
+static int test2_reopen_logs(void *private_data)
+{
+	static bool first_time = true;
+	int fd = *(int *)private_data;
+	int ret = 4;
+	ssize_t nwritten;
+
+	nwritten = write(fd, &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+
+	if (first_time) {
+		first_time = false;
+		return 1;
+	}
+
+	return 0;
+}
+
+struct test2_reopen_logs_state {
+	int fd;
+};
+
+static struct tevent_req *test2_reopen_logs_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 void *private_data)
+{
+	struct tevent_req *req;
+	struct test2_reopen_logs_state *state;
+	static bool first_time = true;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct test2_reopen_logs_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->fd = *(int *)private_data;
+
+	if (first_time) {
+		first_time = false;
+		tevent_req_error(req, 2);
+	} else {
+		tevent_req_done(req);
+	}
+
+	return tevent_req_post(req, ev);
+}
+
+static bool test2_reopen_logs_recv(struct tevent_req *req, int *perr)
+{
+	struct test2_reopen_logs_state *state = tevent_req_data(
+		req, struct test2_reopen_logs_state);
+	int ret = 4;
+	ssize_t nwritten;
+
+	nwritten = write(state->fd, &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+
+	if (tevent_req_is_unix_error(req, perr)) {
+		return false;
+	}
+
+	return true;
+}
+
 static void test2_shutdown(void *private_data)
 {
 	int fd = *(int *)private_data;
@@ -354,6 +419,7 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 		struct sock_daemon_funcs test2_funcs = {
 			.startup = test2_startup,
 			.reconfigure = test2_reconfigure,
+			.reopen_logs = test2_reopen_logs,
 			.shutdown = test2_shutdown,
 		};
 
@@ -393,7 +459,7 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(pid == pid2);
 	close(pidfile_fd);
 
-	ret = kill(pid, SIGHUP);
+	ret = kill(pid, SIGUSR1);
 	assert(ret == 0);
 
 	n = read(fd[0], &ret, sizeof(ret));
@@ -406,6 +472,20 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 	n = read(fd[0], &ret, sizeof(ret));
 	assert(n == sizeof(ret));
 	assert(ret == 2);
+
+	ret = kill(pid, SIGHUP);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 4);
+
+	ret = kill(pid, SIGHUP);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 4);
 
 	ret = kill(pid, SIGTERM);
 	assert(ret == 0);
@@ -439,6 +519,8 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 			.startup = test2_startup,
 			.reconfigure_send = test2_reconfigure_send,
 			.reconfigure_recv = test2_reconfigure_recv,
+			.reopen_logs_send = test2_reopen_logs_send,
+			.reopen_logs_recv = test2_reopen_logs_recv,
 			.shutdown_send = test2_shutdown_send,
 			.shutdown_recv = test2_shutdown_recv,
 		};
@@ -475,12 +557,26 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(n == sizeof(ret));
 	assert(ret == 2);
 
-	ret = kill(pid, SIGHUP);
+	ret = kill(pid, SIGUSR1);
 	assert(ret == 0);
 
 	n = read(fd[0], &ret, sizeof(ret));
 	assert(n == sizeof(ret));
 	assert(ret == 2);
+
+	ret = kill(pid, SIGHUP);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 4);
+
+	ret = kill(pid, SIGHUP);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 4);
 
 	ret = kill(pid, SIGTERM);
 	assert(ret == 0);

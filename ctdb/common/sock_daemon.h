@@ -54,11 +54,17 @@ struct sock_client_context;
  *
  * startup_send()/startup_recv() is the async version of startup()
  *
- * reconfigure() is called when the daemon receives SIGUSR1 or SIGHUP
+ * reconfigure() is called when the daemon receives SIGUSR1
  *	reconfigure() should return 0 for success, non-zero value on failure
  *	On failure, sock_daemon_run() will continue to run.
  *
  * reconfigure_send()/reconfigure_recv() is the async version of reconfigure()
+ *
+ * reopen_logs() is called when the daemon receives SIGHUP
+ *	reopen_logs() should return 0 for success, non-zero value on failure
+ *	On failure, sock_daemon_run() will continue to run.
+ *
+ * reopen_logs_send()/reopen_logs_recv() is the async version of reopen_logs()
  *
  * shutdown() is called when process receives SIGINT or SIGTERM or
  *             when wait computation has finished
@@ -89,6 +95,13 @@ struct sock_daemon_funcs {
 						struct tevent_context *ev,
 						void *private_data);
 	bool (*reconfigure_recv)(struct tevent_req *req, int *perr);
+
+	int (*reopen_logs)(void *private_data);
+
+	struct tevent_req * (*reopen_logs_send)(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						void *private_data);
+	bool (*reopen_logs_recv)(struct tevent_req *req, int *perr);
 
 	void (*shutdown)(void *private_data);
 
