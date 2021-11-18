@@ -2717,6 +2717,10 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				goto out;
 			}
+			if (!req->posix_pathnames) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				goto out;
+			}
 			break;
 		default:
 			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
@@ -3180,6 +3184,10 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			/* Always use filesystem for UNIX mtime query. */
 			ask_sharemode = false;
 			if (!lp_unix_extensions()) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+			if (!req->posix_pathnames) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
@@ -5144,8 +5152,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	uint32_t access_mask = 0;
 	size_t len = 0;
 
-	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
-		return NT_STATUS_INVALID_LEVEL;
+	if (INFO_LEVEL_IS_UNIX(info_level)) {
+		if (!lp_unix_extensions()) {
+			return NT_STATUS_INVALID_LEVEL;
+		}
+		if (!req->posix_pathnames) {
+			return NT_STATUS_INVALID_LEVEL;
+		}
 	}
 
 	DEBUG(5,("smbd_do_qfilepathinfo: %s (%s) level=%d max_data=%u\n",
@@ -5958,9 +5971,15 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
 
-		if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
-			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-			return;
+		if (INFO_LEVEL_IS_UNIX(info_level)) {
+			if (!lp_unix_extensions()) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+			if (!req->posix_pathnames) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
 		}
 
 		/* Initial check for valid fsp ptr. */
@@ -6050,6 +6069,10 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			if (!lp_unix_extensions()) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+			if (!req->posix_pathnames) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
@@ -9061,7 +9084,9 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		if (!lp_unix_extensions()) {
 			return NT_STATUS_INVALID_LEVEL;
 		}
-
+		if (!req->posix_pathnames) {
+			return NT_STATUS_INVALID_LEVEL;
+		}
 		status = smbd_do_posix_setfilepathinfo(conn,
 						       req,
 						       req,
@@ -9282,6 +9307,17 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 		info_level = SVAL(params,2);
 
+		if (INFO_LEVEL_IS_UNIX(info_level)) {
+			if (!lp_unix_extensions()) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+			if (!req->posix_pathnames) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+		}
+
 		smb_fname = fsp->fsp_name;
 
 		if (fsp_get_pathref_fd(fsp) == -1) {
@@ -9360,6 +9396,18 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		info_level = SVAL(params,0);
+
+		if (INFO_LEVEL_IS_UNIX(info_level)) {
+			if (!lp_unix_extensions()) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+			if (!req->posix_pathnames) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+		}
+
 		if (req->posix_pathnames) {
 			srvstr_get_path_posix(req,
 				params,
