@@ -1,0 +1,8 @@
+^samba3.smbtorture_s3.plain.POSIX-BLOCKING-LOCK.smbtorture\(nt4_dc_smb1\)
+^samba3.blackbox.acl_xattr.NT1.nt_affects_posix.*
+^samba3.blackbox.acl_xattr.NT1.nt_affects_chown.*
+^samba3.blackbox.acl_xattr.NT1.nt_affects_chgrp.*
+^samba3.blackbox.inherit_owner.*.NT1.*verify.*unix\ owner.*
+^samba3.unix.info2.info2\(nt4_dc_smb1\)
+^samba3.unix.info2.info2\(ad_dc_smb1\)
+^samba3.raw.search.one\ file\ search.*
