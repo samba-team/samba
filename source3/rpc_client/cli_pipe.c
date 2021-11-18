@@ -3136,13 +3136,15 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 				  enum dcerpc_transport_t transport,
 				  const struct ndr_interface_table *table,
+				  const char *remote_name,
+				  const struct sockaddr_storage *remote_sockaddr,
 				  struct rpc_pipe_client **presult)
 {
 	switch (transport) {
 	case NCACN_IP_TCP:
 		return rpc_pipe_open_tcp(NULL,
-					 smbXcli_conn_remote_name(cli->conn),
-					 smbXcli_conn_remote_sockaddr(cli->conn),
+					 remote_name,
+					 remote_sockaddr,
 					 table, presult);
 	case NCACN_NP:
 		return rpc_pipe_open_np(cli, table, presult);
@@ -3163,8 +3165,17 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth;
 	NTSTATUS status;
+	const char *remote_name = smbXcli_conn_remote_name(cli->conn);
+	const struct sockaddr_storage *remote_sockaddr =
+		smbXcli_conn_remote_sockaddr(cli->conn);
 
-	status = cli_rpc_pipe_open(cli, transport, table, &result);
+
+	status = cli_rpc_pipe_open(cli,
+				   transport,
+				   table,
+				   remote_name,
+				   remote_sockaddr,
+				   &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3255,8 +3266,15 @@ NTSTATUS cli_rpc_pipe_open_with_creds(struct cli_state *cli,
 	struct pipe_auth_data *auth = NULL;
 	const char *target_service = table->authservices->names[0];
 	NTSTATUS status;
+	const struct sockaddr_storage *remote_sockaddr =
+		smbXcli_conn_remote_sockaddr(cli->conn);
 
-	status = cli_rpc_pipe_open(cli, transport, table, &result);
+	status = cli_rpc_pipe_open(cli,
+				   transport,
+				   table,
+				   server,
+				   remote_sockaddr,
+				   &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3306,8 +3324,16 @@ NTSTATUS cli_rpc_pipe_open_bind_schannel(
 	struct cli_credentials *cli_creds;
 	enum dcerpc_AuthLevel auth_level;
 	NTSTATUS status;
+	const char *remote_name = smbXcli_conn_remote_name(cli->conn);
+	const struct sockaddr_storage *remote_sockaddr =
+		smbXcli_conn_remote_sockaddr(cli->conn);
 
-	status = cli_rpc_pipe_open(cli, transport, table, &rpccli);
+	status = cli_rpc_pipe_open(cli,
+				   transport,
+				   table,
+				   remote_name,
+				   remote_sockaddr,
+				   &rpccli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
