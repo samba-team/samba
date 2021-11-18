@@ -453,7 +453,7 @@ static void mds_es_search_done(struct tevent_req *subreq)
 		/*
 		 * Closed by the user. This is the only place where we free "s"
 		 * explicitly because the talloc parent slq is already gone.
-		 * Everywhere else we rely on the destructor of slq to free s"."
+		 * Everywhere else we rely on the destructor of slq to free "s".
 		 */
 		TALLOC_FREE(s);
 		goto trigger;
