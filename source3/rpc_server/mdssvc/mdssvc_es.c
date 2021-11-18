@@ -564,7 +564,7 @@ static void mds_es_search_unset_pending(struct sl_es_search *s)
 	}
 
 	s->pending = false;
-	talloc_set_destructor(s, NULL);
+	talloc_set_destructor(s, search_destructor);
 }
 
 static struct tevent_req *mds_es_search_send(TALLOC_CTX *mem_ctx,
