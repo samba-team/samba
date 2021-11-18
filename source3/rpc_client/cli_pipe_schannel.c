@@ -95,6 +95,8 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 		status = cli_rpc_pipe_open_schannel_with_creds(cli, table,
 							       transport,
 							       netlogon_creds,
+							       remote_name,
+							       remote_sockaddr,
 							       &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(frame);

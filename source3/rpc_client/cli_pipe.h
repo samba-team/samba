@@ -102,6 +102,8 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 					       const struct ndr_interface_table *table,
 					       enum dcerpc_transport_t transport,
 					       struct netlogon_creds_cli_context *netlogon_creds,
+					       const char *remote_name,
+					       const struct sockaddr_storage *remote_sockaddr,
 					       struct rpc_pipe_client **_rpccli);
 
 NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
