@@ -148,8 +148,6 @@ static int anr_replace_value(struct anr_context *ac,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->found_anr = true;
-
 	if (match->length > 1 && match->data[0] == '=') {
 		struct ldb_val *match2 = talloc(mem_ctx, struct ldb_val);
 		if (match2 == NULL){
@@ -285,6 +283,49 @@ static int anr_replace_subtrees(struct anr_context *ac,
 	return LDB_SUCCESS;
 }
 
+struct anr_present_ctx {
+	bool found_anr;
+	const char *attr;
+};
+
+/*
+  callback to determine if ANR is in use at all
+ */
+static int parse_tree_anr_present(struct ldb_parse_tree *tree, void *private_context)
+{
+	struct anr_present_ctx *ctx = private_context;
+	switch (tree->operation) {
+	case LDB_OP_EQUALITY:
+	case LDB_OP_GREATER:
+	case LDB_OP_LESS:
+	case LDB_OP_APPROX:
+		if (ldb_attr_cmp(tree->u.equality.attr, ctx->attr) == 0) {
+			ctx->found_anr = true;
+		}
+		break;
+	case LDB_OP_SUBSTRING:
+		if (ldb_attr_cmp(tree->u.substring.attr, ctx->attr) == 0) {
+			ctx->found_anr = true;
+		}
+		break;
+	case LDB_OP_PRESENT:
+		if (ldb_attr_cmp(tree->u.present.attr, ctx->attr) == 0) {
+			ctx->found_anr = true;
+		}
+		break;
+	case LDB_OP_EXTENDED:
+		if (tree->u.extended.attr &&
+		    ldb_attr_cmp(tree->u.extended.attr, ctx->attr) == 0) {
+			ctx->found_anr = true;
+		}
+		break;
+	default:
+		break;
+	}
+	return LDB_SUCCESS;
+}
+
+
 static int anr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct anr_context *ac;
@@ -322,7 +363,20 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_parse_tree *anr_tree;
 	struct ldb_request *down_req;
 	struct anr_context *ac;
+	struct anr_present_ctx ctx;
+	const char *attr = "anr";
 	int ret;
+
+	ctx.found_anr = false;
+	ctx.attr = attr;
+
+	ldb_parse_tree_walk(req->op.search.tree,
+			    parse_tree_anr_present,
+			    &ctx);
+
+	if (!ctx.found_anr) {
+		return ldb_next_request(module, req);
+	}
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -333,20 +387,23 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac->module = module;
 	ac->req = req;
-	ac->found_anr = false;
 
 #if 0
 	printf("oldanr : %s\n", ldb_filter_from_tree (0, req->op.search.tree));
 #endif
 
-	ret = anr_replace_subtrees(ac, req->op.search.tree, "anr", &anr_tree);
-	if (ret != LDB_SUCCESS) {
+	/* First make a copy, so we don't overwrite caller memory */
+
+	anr_tree = ldb_parse_tree_copy_shallow(ac, req->op.search.tree);
+
+	if (anr_tree == NULL) {
 		return ldb_operr(ldb);
 	}
 
-	if (!ac->found_anr) {
-		talloc_free(ac);
-		return ldb_next_request(module, req);
+	/* Now expand 'anr' out */
+	ret = anr_replace_subtrees(ac, anr_tree, attr, &anr_tree);
+	if (ret != LDB_SUCCESS) {
+		return ldb_operr(ldb);
 	}
 
 	ret = ldb_build_search_req_ex(&down_req,
