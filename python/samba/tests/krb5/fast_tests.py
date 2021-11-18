@@ -640,6 +640,42 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    def test_fast_session_key(self):
+        # Ensure that specified APOptions are ignored.
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'fast_ap_options': str(krb5_asn1.APOptions('use-session-key'))
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_padata_fn': self.generate_enc_challenge_padata,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'fast_ap_options': str(krb5_asn1.APOptions('use-session-key'))
+            }
+        ])
+
+    def test_fast_tgs_armor_session_key(self):
+        # Ensure that specified APOptions are ignored.
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_TGS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_tgt_fn': self.get_user_tgt,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'fast_ap_options': str(krb5_asn1.APOptions('use-session-key'))
+            }
+        ])
+
     def test_fast_outer_wrong_realm(self):
         self._run_test_sequence([
             {
@@ -1420,6 +1456,8 @@ class FAST_Tests(KDCBaseTest):
             if unexpected_flags is not None:
                 unexpected_flags = krb5_asn1.TicketFlags(unexpected_flags)
 
+            fast_ap_options = kdc_dict.pop('fast_ap_options', None)
+
             if rep_type == KRB_AS_REP:
                 kdc_exchange_dict = self.as_exchange_dict(
                     expected_crealm=expected_crealm,
@@ -1454,6 +1492,7 @@ class FAST_Tests(KDCBaseTest):
                     outer_req=outer_req,
                     pac_request=True,
                     pac_options=pac_options,
+                    fast_ap_options=fast_ap_options,
                     expect_edata=expect_edata)
             else:  # KRB_TGS_REP
                 kdc_exchange_dict = self.tgs_exchange_dict(
@@ -1488,6 +1527,7 @@ class FAST_Tests(KDCBaseTest):
                     outer_req=outer_req,
                     pac_request=None,
                     pac_options=pac_options,
+                    fast_ap_options=fast_ap_options,
                     expect_edata=expect_edata)
 
             repeat = kdc_dict.pop('repeat', 1)

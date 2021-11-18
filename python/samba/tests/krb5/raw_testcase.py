@@ -2039,6 +2039,8 @@ class RawKerberosTest(TestCaseInTempDir):
                          outer_req=None,
                          pac_request=None,
                          pac_options=None,
+                         ap_options=None,
+                         fast_ap_options=None,
                          expect_edata=None,
                          expect_pac=True,
                          expect_claims=True,
@@ -2095,6 +2097,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'outer_req': outer_req,
             'pac_request': pac_request,
             'pac_options': pac_options,
+            'ap_options': ap_options,
+            'fast_ap_options': fast_ap_options,
             'expect_edata': expect_edata,
             'expect_pac': expect_pac,
             'expect_claims': expect_claims,
@@ -2146,6 +2150,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           outer_req=None,
                           pac_request=None,
                           pac_options=None,
+                          ap_options=None,
+                          fast_ap_options=None,
                           expect_edata=None,
                           expect_pac=True,
                           expect_claims=True,
@@ -2203,6 +2209,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'outer_req': outer_req,
             'pac_request': pac_request,
             'pac_options': pac_options,
+            'ap_options': ap_options,
+            'fast_ap_options': fast_ap_options,
             'expect_edata': expect_edata,
             'expect_pac': expect_pac,
             'expect_claims': expect_claims,
@@ -3151,8 +3159,13 @@ class RawKerberosTest(TestCaseInTempDir):
                                                   usage,
                                                   authenticator_blob)
 
-        ap_options = krb5_asn1.APOptions('0')
-        ap_req_obj = self.AP_REQ_create(ap_options=str(ap_options),
+        if armor:
+            ap_options = kdc_exchange_dict['fast_ap_options']
+        else:
+            ap_options = kdc_exchange_dict['ap_options']
+        if ap_options is None:
+            ap_options = str(krb5_asn1.APOptions('0'))
+        ap_req_obj = self.AP_REQ_create(ap_options=ap_options,
                                         ticket=tgt.ticket,
                                         authenticator=authenticator)
         ap_req = self.der_encode(ap_req_obj, asn1Spec=krb5_asn1.AP_REQ())
