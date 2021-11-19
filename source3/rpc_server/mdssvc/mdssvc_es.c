@@ -112,6 +112,7 @@ static struct tevent_req *mds_es_connect_send(
 static int mds_es_connect_recv(struct tevent_req *req);
 static void mds_es_connected(struct tevent_req *subreq);
 static bool mds_es_next_search_trigger(struct mds_es_ctx *mds_es_ctx);
+static void mds_es_search_unset_pending(struct sl_es_search *s);
 
 static bool mds_es_connect(struct mds_ctx *mds_ctx)
 {
@@ -440,6 +441,7 @@ static void mds_es_search_done(struct tevent_req *subreq)
 
 	DBG_DEBUG("Search done for search [%p]\n", s);
 
+	mds_es_search_unset_pending(s);
 	DLIST_REMOVE(mds_es_ctx->searches, s);
 
 	ret = mds_es_search_recv(subreq);
@@ -650,7 +652,6 @@ static void mds_es_search_http_send_done(struct tevent_req *subreq)
 	}
 
 	if (state->s->mds_es_ctx->mds_ctx == NULL) {
-		mds_es_search_unset_pending(state->s);
 		tevent_req_error(req, ECANCELED);
 		return;
 	}
@@ -684,8 +685,6 @@ static void mds_es_search_http_read_done(struct tevent_req *subreq)
 	bool ok;
 
 	DBG_DEBUG("Got response for search [%p]\n", s);
-
-	mds_es_search_unset_pending(s);
 
 	status = http_read_response_recv(subreq, state, &state->http_response);
 	TALLOC_FREE(subreq);
