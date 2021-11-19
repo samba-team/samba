@@ -2,4 +2,3 @@
 ^samba3.blackbox.acl_xattr.NT1.nt_affects_posix.*
 ^samba3.blackbox.acl_xattr.NT1.nt_affects_chown.*
 ^samba3.blackbox.acl_xattr.NT1.nt_affects_chgrp.*
-^samba3.blackbox.inherit_owner.*.NT1.*verify.*unix\ owner.*
