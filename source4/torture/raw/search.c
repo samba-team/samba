@@ -297,6 +297,55 @@ static union smb_search_data *find(const char *name)
 	return NULL;
 }
 
+/*
+ * Negotiate SMB1+POSIX.
+ */
+
+static NTSTATUS setup_smb1_posix(struct torture_context *tctx,
+				 struct smbcli_state *cli_unix)
+{
+	struct smb_trans2 tp;
+	uint16_t setup;
+	uint8_t data[12];
+	uint8_t params[4];
+	uint32_t cap = cli_unix->transport->negotiate.capabilities;
+
+	if ((cap & CAP_UNIX) == 0) {
+		/*
+		 * Server doesn't support SMB1+POSIX.
+		 * The caller will skip the UNIX info
+		 * level anyway.
+		 */
+		torture_comment(tctx,
+			"Server doesn't support SMB1+POSIX\n");
+		return NT_STATUS_OK;
+	}
+
+	/* Setup POSIX on this connection. */
+	SSVAL(data, 0, CIFS_UNIX_MAJOR_VERSION);
+	SSVAL(data, 2, CIFS_UNIX_MINOR_VERSION);
+	SBVAL(data,4,((uint64_t)(
+		CIFS_UNIX_POSIX_ACLS_CAP|
+		CIFS_UNIX_POSIX_PATHNAMES_CAP|
+		CIFS_UNIX_FCNTL_LOCKS_CAP|
+		CIFS_UNIX_EXTATTR_CAP|
+		CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)));
+	setup = TRANSACT2_SETFSINFO;
+	tp.in.max_setup = 0;
+	tp.in.flags = 0;
+	tp.in.timeout = 0;
+	tp.in.setup_count = 1;
+	tp.in.max_param = 0;
+	tp.in.max_data = 0;
+	tp.in.setup = &setup;
+	tp.in.trans_name = NULL;
+	SSVAL(params, 0, 0);
+	SSVAL(params, 2, SMB_SET_CIFS_UNIX_INFO);
+	tp.in.params = data_blob_talloc(tctx, params, 4);
+	tp.in.data = data_blob_talloc(tctx, data, 12);
+	return smb_raw_trans2(cli_unix->tree, tctx, &tp);
+}
+
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
 */
@@ -314,6 +363,16 @@ static bool test_one_file(struct torture_context *tctx,
 	bool all_info_supported, alt_info_supported, name_info_supported,
 	    internal_info_supported;
 	union smb_search_data *s;
+
+	status = setup_smb1_posix(tctx, cli_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_result(tctx,
+			TORTURE_FAIL,
+			__location__"setup_smb1_posix() failed (%s)\n",
+			nt_errstr(status));
+		ret = false;
+		goto done;
+	}
 
 	fnum = create_complex_file(cli, tctx, fname);
 	if (fnum == -1) {
