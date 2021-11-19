@@ -112,6 +112,7 @@ static struct tevent_req *mds_es_connect_send(
 static int mds_es_connect_recv(struct tevent_req *req);
 static void mds_es_connected(struct tevent_req *subreq);
 static bool mds_es_next_search_trigger(struct mds_es_ctx *mds_es_ctx);
+static void mds_es_search_set_pending(struct sl_es_search *s);
 static void mds_es_search_unset_pending(struct sl_es_search *s);
 
 static bool mds_es_connect(struct mds_ctx *mds_ctx)
@@ -427,6 +428,7 @@ static bool mds_es_next_search_trigger(struct mds_es_ctx *mds_es_ctx)
 		return false;
 	}
 	tevent_req_set_callback(subreq, mds_es_search_done, s);
+	mds_es_search_set_pending(s);
 	return true;
 }
 
@@ -629,7 +631,6 @@ static struct tevent_req *mds_es_search_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	mds_es_search_set_pending(s);
 	tevent_req_set_callback(subreq, mds_es_search_http_send_done, req);
 	return req;
 }
