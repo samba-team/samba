@@ -300,8 +300,9 @@ static union smb_search_data *find(const char *name)
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
 */
-static bool test_one_file(struct torture_context *tctx, 
-			  struct smbcli_state *cli)
+static bool test_one_file(struct torture_context *tctx,
+			  struct smbcli_state *cli,
+			  struct smbcli_state *cli_unix)
 {
 	bool ret = true;
 	int fnum;
@@ -1571,7 +1572,7 @@ struct torture_suite *torture_raw_search(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "search");
 
-	torture_suite_add_1smb_test(suite, "one file search", test_one_file);
+	torture_suite_add_2smb_test(suite, "one file search", test_one_file);
 	torture_suite_add_1smb_test(suite, "many files", test_many_files);
 	torture_suite_add_1smb_test(suite, "sorted", test_sorted);
 	torture_suite_add_1smb_test(suite, "modify search", test_modify_search);
