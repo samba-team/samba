@@ -316,7 +316,11 @@ static bool test_one_file(struct torture_context *tctx,
 
 	fnum = create_complex_file(cli, tctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
+		torture_result(tctx,
+			TORTURE_FAIL,
+			__location__"ERROR: open of %s failed (%s)\n",
+			fname,
+			smbcli_errstr(cli->tree));
 		ret = false;
 		goto done;
 	}
@@ -343,9 +347,11 @@ static bool test_one_file(struct torture_context *tctx,
 		}
 
 		if (!NT_STATUS_IS_OK(levels[i].status)) {
-			printf("search level %s(%d) failed - %s\n",
-			       levels[i].name, (int)levels[i].level, 
-			       nt_errstr(levels[i].status));
+			torture_result(tctx,
+				TORTURE_FAIL,
+				__location__"search level %s(%d) failed - %s\n",
+				levels[i].name, (int)levels[i].level,
+				nt_errstr(levels[i].status));
 			ret = false;
 			continue;
 		}
@@ -363,7 +369,9 @@ static bool test_one_file(struct torture_context *tctx,
 			expected_status = STATUS_NO_MORE_FILES;
 		}
 		if (!NT_STATUS_EQUAL(status, expected_status)) {
-			printf("search level %s(%d) should fail with %s - %s\n",
+			torture_result(tctx,
+				TORTURE_FAIL,
+				__location__"search level %s(%d) should fail with %s - %s\n",
 			       levels[i].name, (int)levels[i].level, 
 			       nt_errstr(expected_status),
 			       nt_errstr(status));
@@ -400,8 +408,10 @@ static bool test_one_file(struct torture_context *tctx,
 	s = find(name); \
 	if (s) { \
 		if ((s->sname1.field1) != (v.sname2.out.field2)) { \
-			printf("(%s) %s/%s [0x%x] != %s/%s [0x%x]\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [0x%x] != %s/%s [0x%x]\n", \
+				__location__, \
 				#sname1, #field1, (int)s->sname1.field1, \
 				#sname2, #field2, (int)v.sname2.out.field2); \
 			ret = false; \
@@ -412,8 +422,10 @@ static bool test_one_file(struct torture_context *tctx,
 	s = find(name); \
 	if (s) { \
 		if (s->sname1.field1 != (~1 & nt_time_to_unix(v.sname2.out.field2))) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s/%s [%s]\n", \
+				__location__, \
 				#sname1, #field1, timestring(tctx, s->sname1.field1), \
 				#sname2, #field2, nt_time_string(tctx, v.sname2.out.field2)); \
 			ret = false; \
@@ -424,8 +436,10 @@ static bool test_one_file(struct torture_context *tctx,
 	s = find(name); \
 	if (s) { \
 		if (s->sname1.field1 != v.sname2.out.field2) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s/%s [%s]\n", \
+				__location__, \
 				#sname1, #field1, nt_time_string(tctx, s->sname1.field1), \
 				#sname2, #field2, nt_time_string(tctx, v.sname2.out.field2)); \
 			ret = false; \
@@ -436,8 +450,10 @@ static bool test_one_file(struct torture_context *tctx,
 	s = find(name); \
 	if (s) { \
 		if (!s->sname1.field1 || strcmp(s->sname1.field1, v.sname2.out.field2.s)) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s/%s [%s]\n", \
+				__location__, \
 				#sname1, #field1, s->sname1.field1, \
 				#sname2, #field2, v.sname2.out.field2.s); \
 			ret = false; \
@@ -450,8 +466,10 @@ static bool test_one_file(struct torture_context *tctx,
 		if (!s->sname1.field1.s || \
 		    strcmp(s->sname1.field1.s, v.sname2.out.field2.s) || \
 		    wire_bad_flags(&s->sname1.field1, flags, cli->transport)) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s/%s [%s]\n", \
+				__location__, \
 				#sname1, #field1, s->sname1.field1.s, \
 				#sname2, #field2, v.sname2.out.field2.s); \
 			ret = false; \
@@ -464,8 +482,10 @@ static bool test_one_file(struct torture_context *tctx,
 		if (!s->sname1.field1.s || \
 		    strcmp(s->sname1.field1.s, fname) || \
 		    wire_bad_flags(&s->sname1.field1, flags, cli->transport)) { \
-			printf("(%s) %s/%s [%s] != %s\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s\n", \
+				__location__, \
 				#sname1, #field1, s->sname1.field1.s, \
 				fname); \
 			ret = false; \
@@ -477,8 +497,10 @@ static bool test_one_file(struct torture_context *tctx,
 	if (s) { \
 		if (!s->sname1.field1 || \
 		    strcmp(s->sname1.field1, fname)) { \
-			printf("(%s) %s/%s [%s] != %s\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s\n", \
+				__location__, \
 				#sname1, #field1, s->sname1.field1, \
 				fname); \
 			ret = false; \
