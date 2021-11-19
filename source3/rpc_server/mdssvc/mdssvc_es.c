@@ -115,6 +115,26 @@ static bool mds_es_next_search_trigger(struct mds_es_ctx *mds_es_ctx);
 static void mds_es_search_set_pending(struct sl_es_search *s);
 static void mds_es_search_unset_pending(struct sl_es_search *s);
 
+static int mds_es_ctx_destructor(struct mds_es_ctx *mds_es_ctx)
+{
+	struct sl_es_search *s = mds_es_ctx->searches;
+
+	/*
+	 * The per tree-connect state mds_es_ctx (a child of mds_ctx) is about
+	 * to go away and has already freed all waiting searches. If there's a
+	 * search remaining that's when the search is already active. Reset the
+	 * mds_es_ctx pointer, so we can detect this when the search completes.
+	 */
+
+	if (s == NULL) {
+		return 0;
+	}
+
+	s->mds_es_ctx = NULL;
+
+	return 0;
+}
+
 static bool mds_es_connect(struct mds_ctx *mds_ctx)
 {
 	struct mdssvc_es_ctx *mdssvc_es_ctx = talloc_get_type_abort(
@@ -132,6 +152,7 @@ static bool mds_es_connect(struct mds_ctx *mds_ctx)
 	};
 
 	mds_ctx->backend_private = mds_es_ctx;
+	talloc_set_destructor(mds_es_ctx, mds_es_ctx_destructor);
 
 	subreq = mds_es_connect_send(
 			mds_es_ctx,
@@ -349,6 +370,9 @@ static void mds_es_reconnect_on_error(struct sl_es_search *s)
 
 static int search_destructor(struct sl_es_search *s)
 {
+	if (s->mds_es_ctx == NULL) {
+		return 0;
+	}
 	DLIST_REMOVE(s->mds_es_ctx->searches, s);
 	return 0;
 }
@@ -444,6 +468,15 @@ static void mds_es_search_done(struct tevent_req *subreq)
 	DBG_DEBUG("Search done for search [%p]\n", s);
 
 	mds_es_search_unset_pending(s);
+
+	if (mds_es_ctx == NULL) {
+		/*
+		 * Search connection closed by the user while s was pending.
+		 */
+		TALLOC_FREE(s);
+		return;
+	}
+
 	DLIST_REMOVE(mds_es_ctx->searches, s);
 
 	ret = mds_es_search_recv(subreq);
