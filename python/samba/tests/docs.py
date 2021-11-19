@@ -86,7 +86,8 @@ def set_smbconf_arbitary(cmdline, topdir, param, param_type, value_to_use):
 
     return None
 
-def set_smbconf_arbitary_opposite(cmdline, topdir, tempdir, section, param, opposite_value, value_to_use):
+def set_smbconf_arbitrary_opposite(cmdline, topdir, tempdir, section, param,
+                                   param_type, opposite_value, value_to_use):
     g = tempfile.NamedTemporaryFile(mode='w', dir=tempdir, delete=False)
     try:
         towrite = section + "\n"
@@ -461,7 +462,8 @@ class SmbDotConfTests(TestCase):
                                      "--option",
                                      "%s = %s" % (param, value_to_use)]
 
-                future = executor.submit(set_smbconf_arbitary_opposite, cmdline, self.topdir, self.tempdir, section, param, opposite_value, value_to_use)
+                future = executor.submit(set_smbconf_arbitrary_opposite, cmdline, self.topdir, self.tempdir,
+                                         section, param, param_type, opposite_value, value_to_use)
                 result_futures2.append(future)
 
             for f in concurrent.futures.as_completed(result_futures1):
