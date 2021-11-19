@@ -2552,12 +2552,6 @@ class TestDNSAging(DNSTest):
     def test_dns_delete_simple_112_113_days_no_aging(self):
         self._test_dns_delete_simple(112, 113, False)
 
-    def test_dns_delete_simple_112_113_days_aging(self):
-        self._test_dns_delete_simple(112, 113, True)
-
-    def test_dns_delete_simple_112_113_days_no_aging(self):
-        self._test_dns_delete_simple(112, 113, False)
-
     def test_dns_delete_simple_0_113_days_aging(self):
         # 1e9 hours ago evaluates to 0, i.e static
         self._test_dns_delete_simple(1e9, 113, True)
@@ -2594,12 +2588,6 @@ class TestDNSAging(DNSTest):
 
     def test_dns_delete_simple_12_13_days_no_aging_touch(self):
         self._test_dns_delete_simple(12, 13, False, True)
-
-    def test_dns_delete_simple_112_113_days_aging_touch(self):
-        self._test_dns_delete_simple(112, 113, True, True)
-
-    def test_dns_delete_simple_112_113_days_no_aging_touch(self):
-        self._test_dns_delete_simple(112, 113, False, True)
 
     def test_dns_delete_simple_112_113_days_aging_touch(self):
         self._test_dns_delete_simple(112, 113, True, True)
