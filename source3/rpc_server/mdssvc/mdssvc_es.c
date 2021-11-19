@@ -685,7 +685,7 @@ static void mds_es_search_http_send_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->s->mds_es_ctx->mds_ctx == NULL) {
+	if (state->s->mds_es_ctx == NULL) {
 		tevent_req_error(req, ECANCELED);
 		return;
 	}
@@ -732,7 +732,7 @@ static void mds_es_search_http_read_done(struct tevent_req *subreq)
 		tevent_req_done(req);
 		return;
 	}
-	if (s->mds_es_ctx->mds_ctx == NULL) {
+	if (s->mds_es_ctx == NULL) {
 		tevent_req_error(req, ECANCELED);
 		return;
 	}
