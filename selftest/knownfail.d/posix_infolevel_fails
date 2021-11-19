@@ -5,4 +5,3 @@
 ^samba3.blackbox.inherit_owner.*.NT1.*verify.*unix\ owner.*
 ^samba3.unix.info2.info2\(nt4_dc_smb1\)
 ^samba3.unix.info2.info2\(ad_dc_smb1\)
-^samba3.raw.search.one\ file\ search.*

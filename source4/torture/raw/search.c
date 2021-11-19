@@ -389,10 +389,19 @@ static bool test_one_file(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		NTSTATUS expected_status;
 		uint32_t cap = cli->transport->negotiate.capabilities;
+		struct smbcli_state *cli_search = cli;
 
 		torture_comment(tctx, "Testing %s\n", levels[i].name);
 
-		levels[i].status = torture_single_search(cli, tctx, fname, 
+		if (levels[i].data_level == RAW_SEARCH_DATA_UNIX_INFO) {
+			/*
+			 * For an SMB1+POSIX info level, use the cli_unix
+			 * connection.
+			 */
+			cli_search = cli_unix;
+		}
+
+		levels[i].status = torture_single_search(cli_search, tctx, fname,
 							 levels[i].level,
 							 levels[i].data_level,
 							 0,
@@ -416,7 +425,7 @@ static bool test_one_file(struct torture_context *tctx,
 			continue;
 		}
 
-		status = torture_single_search(cli, tctx, fname2, 
+		status = torture_single_search(cli_search, tctx, fname2,
 					       levels[i].level,
 					       levels[i].data_level,
 					       0,
