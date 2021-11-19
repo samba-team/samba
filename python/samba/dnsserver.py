@@ -297,7 +297,7 @@ def flag_from_string(rec_type):
     rtype = rec_type.upper()
     try:
         return getattr(dnsp, 'DNS_TYPE_' + rtype)
-    except AttributeError:
+    except AttributeError as e:
         raise DNSParseError('Unknown type of DNS record %s' % rec_type) from e
 
 
