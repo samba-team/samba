@@ -305,8 +305,8 @@ static bool test_one_file(struct torture_context *tctx,
 {
 	bool ret = true;
 	int fnum;
-	const char *fname = "\\torture_search.txt";
-	const char *fname2 = "\\torture_search-NOTEXIST.txt";
+	const char *fname = "torture_search.txt";
+	const char *fname2 = "torture_search-NOTEXIST.txt";
 	NTSTATUS status;
 	int i;
 	union smb_fileinfo all_info, alt_info, name_info, internal_info;
@@ -581,20 +581,20 @@ static bool test_one_file(struct torture_context *tctx,
 		    short_name, alt_info, alt_name_info, fname, STR_UNICODE);
 	}
 
-	CHECK_NAME("STANDARD",            standard,            name, fname+1, 0);
-	CHECK_NAME("EA_SIZE",             ea_size,             name, fname+1, 0);
-	CHECK_NAME("DIRECTORY_INFO",      directory_info,      name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_NAME("FULL_DIRECTORY_INFO", full_directory_info, name, fname+1, STR_TERMINATE_ASCII);
+	CHECK_NAME("STANDARD",            standard,            name, fname, 0);
+	CHECK_NAME("EA_SIZE",             ea_size,             name, fname, 0);
+	CHECK_NAME("DIRECTORY_INFO",      directory_info,      name, fname, STR_TERMINATE_ASCII);
+	CHECK_NAME("FULL_DIRECTORY_INFO", full_directory_info, name, fname, STR_TERMINATE_ASCII);
 
 	if (name_info_supported) {
-		CHECK_NAME("NAME_INFO", name_info, name, fname+1,
+		CHECK_NAME("NAME_INFO", name_info, name, fname,
 		    STR_TERMINATE_ASCII);
 	}
 
-	CHECK_NAME("BOTH_DIRECTORY_INFO", both_directory_info, name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_NAME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_NAME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_UNIX_NAME("UNIX_INFO",           unix_info,           name, fname+1, STR_TERMINATE_ASCII);
+	CHECK_NAME("BOTH_DIRECTORY_INFO", both_directory_info, name, fname, STR_TERMINATE_ASCII);
+	CHECK_NAME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           name, fname, STR_TERMINATE_ASCII);
+	CHECK_NAME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           name, fname, STR_TERMINATE_ASCII);
+	CHECK_UNIX_NAME("UNIX_INFO",           unix_info,           name, fname, STR_TERMINATE_ASCII);
 
 	if (internal_info_supported) {
 		CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,
