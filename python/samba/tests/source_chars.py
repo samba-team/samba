@@ -62,7 +62,6 @@ IGNORED_FILES = {
     'examples/tridge/smb.conf',
     'source3/selftest/ktest-krb5_ccache-2',
     'source3/selftest/ktest-krb5_ccache-3',
-    'third_party/pep8/testsuite/latin-1.py',
     'testdata/source-chars-bad.c',
 }
 
@@ -135,7 +134,6 @@ def is_latin1_file(name):
     for pattern in (
             r'^source4/setup/ad-schema/\w+.ldf$',
             r'^source4/setup/display-specifiers/D[\w-]+.txt$',
-            r'^third_party/pep8/testsuite/latin-1.py$',
             r'^source4/heimdal/HEIMDAL-LICENCE.txt$',
             r'^source4/heimdal/lib/asn1/asn1-template.h$',
             r'^source4/heimdal/lib/asn1/gen_template.c$',
