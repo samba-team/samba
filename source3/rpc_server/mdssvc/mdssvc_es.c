@@ -685,7 +685,7 @@ static void mds_es_search_http_send_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->s->mds_es_ctx == NULL) {
+	if (state->s->mds_es_ctx == NULL || state->s->slq == NULL) {
 		tevent_req_done(req);
 		return;
 	}
