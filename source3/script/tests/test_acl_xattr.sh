@@ -55,9 +55,9 @@ nt_affects_posix() {
     local b4
     local af
     local fname="$share.$$"
-    b4=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    b4=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "posix; getfacl $fname" 2>/dev/null) || exit 1
     $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -a "ACL:$SERVER\force_user:ALLOWED/0x0/READ" 2>/dev/null || exit 1
-    af=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    af=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "posix; getfacl $fname" 2>/dev/null) || exit 1
     echo "before: $b4"
     echo "after: $af"
     echo "${b4}" | grep -q "^# owner:" || exit 1
@@ -90,12 +90,12 @@ nt_affects_chown() {
     #basic sanity...
     test "$b4_expected != $af_expected" || exit 1
 
-    b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "posix; getfacl $fname" 2>/dev/null) || exit 1
     echo "${b4_actual}" | grep -q "^# owner:" || exit 1
     b4_actual=$(echo "$b4_actual" | sed -rn 's/^# owner: (.*)/\1/p')
     $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -a "ACL:$SERVER\force_user:ALLOWED/0x0/FULL" || exit 1
     $SMBCACLS //$SERVER/$share $fname -U force_user%$PASSWORD -C force_user 2>/dev/null || exit 1
-    af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "posix; getfacl $fname" 2>/dev/null) || exit 1
     echo "${af_actual}" | grep -q "^# owner:" || exit 1
     af_actual=$(echo "$af_actual" | sed -rn 's/^# owner: (.*)/\1/p')
     echo "before: $b4_actual"
@@ -124,11 +124,11 @@ nt_affects_chgrp() {
     #basic sanity...
     test "$b4_expected" != "$af_expected" || exit 1
 
-    b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "posix; getfacl $fname" 2>/dev/null) || exit 1
     echo "${b4_actual}" | grep -q "^# group:" || exit 1
     b4_actual=$(echo "$b4_actual" | sed -rn 's/^# group: (.*)/\1/p')
     $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -G domadmins 2>/dev/null || exit 1
-    af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "posix; getfacl $fname" 2>/dev/null) || exit 1
     echo "${af_actual}" | grep -q "^# group:" || exit 1
     af_actual=$(echo "$af_actual" | sed -rn 's/^# group: (.*)/\1/p')
     echo "before: $b4_actual"
