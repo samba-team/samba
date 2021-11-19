@@ -19,6 +19,7 @@
 import shlex
 import socket
 from samba.dcerpc import dnsserver, dnsp
+from samba import WERRORError, werror
 
 # Note: these are not quite the same as similar looking classes in
 # provision/sambadns.py -- those ones are based on
