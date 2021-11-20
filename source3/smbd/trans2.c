@@ -44,6 +44,7 @@
 #include "messages.h"
 #include "smb1_utils.h"
 #include "libcli/smb/smb2_posix.h"
+#include "source3/lib/adouble.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
@@ -240,6 +241,7 @@ bool samba_private_attr_name(const char *unix_ea_name)
 		SAMBA_XATTR_DOS_ATTRIB,
 		SAMBA_XATTR_MARKER,
 		XATTR_NTACL_NAME,
+		AFPINFO_EA_NETATALK,
 		NULL
 	};
 
