@@ -2815,6 +2815,11 @@ static int cmd_posix_open(void)
 		d_printf("posix_open <filename> 0<mode>\n");
 		return 1;
 	}
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			"the \"posix_open\" command can be used.\n");
+		return 1;
+	}
 	mode = (mode_t)strtol(buf, (char **)NULL, 8);
 
 	status = cli_resolve_path(ctx, "",
@@ -2876,6 +2881,11 @@ static int cmd_posix_mkdir(void)
 		d_printf("posix_mkdir <filename> 0<mode>\n");
 		return 1;
 	}
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			"the \"posix_mkdir\" command can be used.\n");
+		return 1;
+	}
 	mode = (mode_t)strtol(buf, (char **)NULL, 8);
 
 	status = cli_resolve_path(ctx, "",
@@ -2908,6 +2918,11 @@ static int cmd_posix_unlink(void)
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_unlink <filename>\n");
+		return 1;
+	}
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			"the \"posix_unlink\" command can be used.\n");
 		return 1;
 	}
 	mask = talloc_asprintf(ctx,
@@ -2953,6 +2968,11 @@ static int cmd_posix_rmdir(void)
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_rmdir <filename>\n");
+		return 1;
+	}
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			"the \"posix_rmdir\" command can be used.\n");
 		return 1;
 	}
 	mask = talloc_asprintf(ctx,
@@ -3154,6 +3174,12 @@ static int cmd_lock(void)
 		return 1;
 	}
 
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			"the \"lock\" command can be used.\n");
+		return 1;
+	}
+
 	len = (uint64_t)strtol(buf, (char **)NULL, 16);
 
 	status = cli_posix_lock(cli, fnum, start, len, true, lock_type);
@@ -3190,6 +3216,12 @@ static int cmd_unlock(void)
 		return 1;
 	}
 
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			"the \"unlock\" command can be used.\n");
+		return 1;
+	}
+
 	len = (uint64_t)strtol(buf, (char **)NULL, 16);
 
 	status = cli_posix_unlock(cli, fnum, start, len);
@@ -3212,6 +3244,12 @@ static int cmd_posix_whoami(void)
 	struct dom_sid *sids = NULL;
 	bool guest = false;
 	uint32_t i;
+
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			"the \"posix_whoami\" command can be used.\n");
+		return 1;
+	}
 
 	status = cli_posix_whoami(cli,
 			ctx,
@@ -3350,6 +3388,12 @@ static int cmd_link(void)
 		return 1;
 	}
 
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			 "the \"link\" command can be used.\n");
+		return 1;
+	}
+
 	status = cli_posix_hardlink(targetcli, targetname, newname);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s linking files (%s -> %s)\n",
@@ -3403,6 +3447,12 @@ static int cmd_readlink(void)
 		return 1;
 	}
 
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			 "the \"readlink\" command can be used.\n");
+		return 1;
+	}
+
 	status = cli_posix_readlink(targetcli, name, talloc_tos(), &linkname);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s readlink on file %s\n",
@@ -3442,6 +3492,11 @@ static int cmd_symlink(void)
 	link_target = buf;
 
 	if (SERVER_HAS_UNIX_CIFS(cli)) {
+		if (CLI_DIRSEP_CHAR != '/') {
+			d_printf("Command \"posix\" must be issued before "
+				"the \"symlink\" command can be used.\n");
+			return 1;
+		}
 		newname = talloc_asprintf(ctx, "%s%s", client_get_cur_dir(),
 					  buf2);
 		if (!newname) {
@@ -3522,6 +3577,12 @@ static int cmd_chmod(void)
 
 	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			 "the \"chmod\" command can be used.\n");
 		return 1;
 	}
 
@@ -3686,6 +3747,12 @@ static int cmd_getfacl(void)
 
 	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			 "the \"getfacl\" command can be used.\n");
 		return 1;
 	}
 
@@ -3988,6 +4055,12 @@ static int cmd_stat(void)
 		return 1;
 	}
 
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			 "the \"stat\" command can be used.\n");
+		return 1;
+	}
+
 	status = cli_posix_stat(targetcli, targetname, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s stat file %s\n",
@@ -4099,6 +4172,12 @@ static int cmd_chown(void)
 
 	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+
+	if (CLI_DIRSEP_CHAR != '/') {
+		d_printf("Command \"posix\" must be issued before "
+			 "the \"chown\" command can be used.\n");
 		return 1;
 	}
 
