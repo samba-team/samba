@@ -522,4 +522,14 @@ struct winbindd_response {
 	} extra_data;
 };
 
+/* Free a response structure */
+
+static inline void winbindd_free_response(struct winbindd_response *response)
+{
+	/* Free any allocated extra_data */
+
+	if (response)
+		SAFE_FREE(response->extra_data.data);
+}
+
 #endif

@@ -67,16 +67,6 @@ static void put_wb_global_ctx(void)
 	return;
 }
 
-/* Free a response structure */
-
-void winbindd_free_response(struct winbindd_response *response)
-{
-	/* Free any allocated extra_data */
-
-	if (response)
-		SAFE_FREE(response->extra_data.data);
-}
-
 void winbind_set_client_name(const char *name)
 {
 	if (name == NULL || strlen(name) == 0) {

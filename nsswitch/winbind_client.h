@@ -34,7 +34,6 @@ struct winbindd_context;
 struct winbindd_context *winbindd_ctx_create(void);
 void winbindd_ctx_free(struct winbindd_context *ctx);
 
-void winbindd_free_response(struct winbindd_response *response);
 NSS_STATUS winbindd_request_response(struct winbindd_context *ctx,
 				     int req_type,
 				     struct winbindd_request *request,
