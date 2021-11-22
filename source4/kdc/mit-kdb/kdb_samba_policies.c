@@ -686,41 +686,17 @@ krb5_error_code kdb_samba_db_check_allowed_to_delegate(krb5_context context,
 						       const krb5_db_entry *server,
 						       krb5_const_principal proxy)
 {
-	struct mit_samba_context *mit_ctx;
-
-	/*
-	 * Names are quite odd and confusing in the current implementation.
-	 * The following mappings should help understanding what is what.
-	 * client ->  client to impersonate
-	 * server; -> delegating service
-	 * proxy; -> target principal
-	 */
-	krb5_db_entry *delegating_service = discard_const_p(krb5_db_entry, server);
-
-	char *target_name = NULL;
-	bool is_enterprise;
-	krb5_error_code code;
+	struct mit_samba_context *mit_ctx = NULL;
 
 	mit_ctx = ks_get_context(context);
 	if (mit_ctx == NULL) {
 		return KRB5_KDB_DBNOTINITED;
 	}
 
-	code = krb5_unparse_name(context, proxy, &target_name);
-	if (code) {
-		goto done;
-	}
+	return mit_samba_check_s4u2proxy(mit_ctx,
+					 server,
+					 proxy);
 
-	is_enterprise = (proxy->type == KRB5_NT_ENTERPRISE_PRINCIPAL);
-
-	code = mit_samba_check_s4u2proxy(mit_ctx,
-					 delegating_service,
-					 target_name,
-					 is_enterprise);
-
-done:
-	free(target_name);
-	return code;
 }
 
 

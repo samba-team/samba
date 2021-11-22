@@ -3,4 +3,3 @@
 .*RODC
 ^samba4.ntvfs.cifs.ntlm.base.unlink
 ^samba4.ntvfs.cifs.krb5.base.unlink
-^samba.tests.krb5.s4u_tests

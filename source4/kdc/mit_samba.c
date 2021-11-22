@@ -1473,40 +1473,22 @@ int mit_samba_check_client_access(struct mit_samba_context *ctx,
 }
 
 int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
-			      krb5_db_entry *kentry,
-			      const char *target_name,
-			      bool is_nt_enterprise_name)
+			      const krb5_db_entry *server,
+			      krb5_const_principal target_principal)
 {
-#if 1
-	/*
-	 * This is disabled because mit_samba_update_pac_data() does not handle
-	 * S4U_DELEGATION_INFO
-	 */
-
+#if KRB5_KDB_DAL_MAJOR_VERSION < 9
 	return KRB5KDC_ERR_BADOPTION;
 #else
-	krb5_principal target_principal;
-	int flags = 0;
-	int ret;
+	struct samba_kdc_entry *server_skdc_entry =
+		talloc_get_type_abort(server->e_data, struct samba_kdc_entry);
+	krb5_error_code code;
 
-	if (is_nt_enterprise_name) {
-		flags = KRB5_PRINCIPAL_PARSE_ENTERPRISE;
-	}
+	code = samba_kdc_check_s4u2proxy(ctx->context,
+					 ctx->db_ctx,
+					 server_skdc_entry,
+					 target_principal);
 
-	ret = krb5_parse_name_flags(ctx->context, target_name,
-				    flags, &target_principal);
-	if (ret) {
-		return ret;
-	}
-
-	ret = samba_kdc_check_s4u2proxy(ctx->context,
-					ctx->db_ctx,
-					skdc_entry,
-					target_principal);
-
-	krb5_free_principal(ctx->context, target_principal);
-
-	return ret;
+	return code;
 #endif
 }
 
