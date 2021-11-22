@@ -129,6 +129,7 @@ bld.SAMBA3_BINARY('ntlm_auth',
                  libsmb
                  CMDLINE_S3
                  cmdline_contexts
+                 wbclient
                  gse gensec''')
 
 bld.SAMBA3_BINARY('dbwrap_tool',

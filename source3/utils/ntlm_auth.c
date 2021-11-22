@@ -37,13 +37,14 @@
 #include "librpc/crypto/gse.h"
 #include "smb_krb5.h"
 #include "lib/util/tiniparser.h"
-#include "nsswitch/winbind_client.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "../lib/util/asn1.h"
 #include "auth/common_auth.h"
 #include "source3/include/auth.h"
 #include "source3/auth/proto.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "nsswitch/winbind_struct_protocol.h"
+#include "nsswitch/libwbclient/wbclient_internal.h"
 #include "lib/param/loadparm.h"
 #include "lib/util/base64.h"
 #include "cmdline_contexts.h"
@@ -473,7 +474,7 @@ static bool check_plaintext_auth(const char *user, const char *pass,
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-        NSS_STATUS result;
+	wbcErr ret;
 
 	if (!get_require_membership_sid()) {
 		return False;
@@ -496,12 +497,13 @@ static bool check_plaintext_auth(const char *user, const char *pass,
 		request.flags |= WBFLAG_PAM_CACHED_LOGIN;
 	}
 
-	result = winbindd_request_response(NULL, WINBINDD_PAM_AUTH, &request, &response);
+	ret = wbcRequestResponse(NULL, WINBINDD_PAM_AUTH,
+				 &request, &response);
 
 	/* Display response */
 
 	if (stdout_diagnostics) {
-		if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
+		if (!WBC_ERROR_IS_OK(ret) && (response.data.auth.nt_status == 0)) {
 			d_fprintf(stderr, "Reading winbind reply failed! (0x01)\n");
 		}
 
@@ -510,7 +512,7 @@ static bool check_plaintext_auth(const char *user, const char *pass,
 			 response.data.auth.error_string,
 			 response.data.auth.nt_status);
 	} else {
-		if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
+		if (!WBC_ERROR_IS_OK(ret) && (response.data.auth.nt_status == 0)) {
 			DEBUG(1, ("Reading winbind reply failed! (0x01)\n"));
 		}
 
@@ -520,7 +522,7 @@ static bool check_plaintext_auth(const char *user, const char *pass,
 			  response.data.auth.nt_status));
 	}
 
-        return (result == NSS_STATUS_SUCCESS);
+	return WBC_ERROR_IS_OK(ret);
 }
 
 /* authenticate a user with an encrypted username/password */
@@ -540,7 +542,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 				   char **unix_name)
 {
 	NTSTATUS nt_status;
-        NSS_STATUS result;
+	wbcErr ret;
 	struct winbindd_request request;
 	struct winbindd_response response;
 
@@ -598,7 +600,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
                 request.data.auth_crap.nt_resp_len = nt_response->length;
 	}
 
-	result = winbindd_priv_request_response(
+	ret = wbcRequestResponsePriv(
 		NULL,
 		WINBINDD_PAM_AUTH_CRAP,
 		&request,
@@ -607,7 +609,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	/* Display response */
 
-	if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
+	if (!WBC_ERROR_IS_OK(ret) && (response.data.auth.nt_status == 0)) {
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		if (error_string)
 			*error_string = smb_xstrdup("Reading winbind reply failed!");
@@ -655,7 +657,7 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
 						      char  **error_string)
 {
 	NTSTATUS nt_status;
-	NSS_STATUS result;
+	wbcErr ret;
 	struct winbindd_request request;
 	struct winbindd_response response;
 
@@ -698,11 +700,12 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
 		request.data.chng_pswd_auth_crap.old_lm_hash_enc_len = old_lm_hash_enc.length;
 	}
 
-	result = winbindd_request_response(NULL, WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, &request, &response);
+	ret = wbcRequestResponse(NULL, WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP,
+				 &request, &response);
 
 	/* Display response */
 
-	if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0))
+	if (!WBC_ERROR_IS_OK(ret) && (response.data.auth.nt_status == 0))
 	{
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		if (error_string)
