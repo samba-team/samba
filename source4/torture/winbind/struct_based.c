@@ -20,7 +20,10 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "nsswitch/winbind_client.h"
+#include "nsswitch/libwbclient/wbclient.h"
+#include "nsswitch/winbind_nss_config.h"
+#include "nsswitch/winbind_struct_protocol.h"
+#include "nsswitch/libwbclient/wbclient_internal.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "param/param.h"
@@ -29,23 +32,43 @@
 #include "lib/util/string_wrappers.h"
 
 #define DO_STRUCT_REQ_REP_EXT(op,req,rep,expected,strict,warnaction,cmt) do { \
+	const char *__cmt = (cmt); \
+	wbcErr __wbc_status = WBC_ERR_UNKNOWN_FAILURE; \
 	NSS_STATUS __got, __expected = (expected); \
-	__got = winbindd_request_response(NULL, op, req, rep); \
+	__wbc_status = wbcRequestResponse(NULL, op, req, rep); \
+	switch (__wbc_status) { \
+	case WBC_ERR_SUCCESS: \
+		__got = NSS_STATUS_SUCCESS; \
+		break; \
+	case WBC_ERR_WINBIND_NOT_AVAILABLE: \
+		__got = NSS_STATUS_UNAVAIL; \
+		break; \
+	case WBC_ERR_DOMAIN_NOT_FOUND: \
+		__got = NSS_STATUS_NOTFOUND; \
+		break; \
+	default: \
+		torture_result(torture, TORTURE_FAIL, \
+				__location__ ": " __STRING(op) \
+				" returned unmapped %s, expected nss %d%s%s", \
+				wbcErrorString(__wbc_status), __expected, \
+				(__cmt) ? ": " : "", \
+				(__cmt) ? (__cmt) : ""); \
+		return false; \
+	} \
 	if (__got != __expected) { \
-		const char *__cmt = (cmt); \
 		if (strict) { \
 			torture_result(torture, TORTURE_FAIL, \
 				__location__ ": " __STRING(op) \
-				" returned %d, expected %d%s%s", \
-				__got, __expected, \
+				" returned %s, got %d , expected %d%s%s", \
+				wbcErrorString(__wbc_status), __got, __expected, \
 				(__cmt) ? ": " : "", \
 				(__cmt) ? (__cmt) : ""); \
 			return false; \
 		} else { \
 			torture_warning(torture, \
 				__location__ ": " __STRING(op) \
-				" returned %d, expected %d%s%s", \
-				__got, __expected, \
+				" returned %s, got %d , expected %d%s%s", \
+				wbcErrorString(__wbc_status), __got, __expected, \
 				(__cmt) ? ": " : "", \
 				(__cmt) ? (__cmt) : ""); \
 			warnaction; \

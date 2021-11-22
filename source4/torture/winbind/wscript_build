@@ -5,6 +5,6 @@ bld.SAMBA_MODULE('TORTURE_WINBIND',
 	autoproto='proto.h',
 	subsystem='smbtorture',
 	init_function='torture_winbind_init',
-	deps='popt wbclient winbind-client torture PAM_ERRORS',
+	deps='popt wbclient torture PAM_ERRORS',
 	internal_module=True
 	)
