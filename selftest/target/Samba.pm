@@ -618,6 +618,7 @@ sub get_interface($)
 		offlineadmem      => 58,
 		s2kmember         => 59,
 		admemidmapnss     => 60,
+		localadmember2    => 61,
 
 		rootdnsforwarder  => 64,
 

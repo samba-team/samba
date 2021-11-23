@@ -241,6 +241,7 @@ sub check_env($$)
 	ad_member_offlogon  => ["ad_dc"],
 	ad_member_oneway    => ["fl2000dc"],
 	ad_member_idmap_nss => ["ad_dc"],
+	ad_member_s3_join   => ["ad_dc"],
 
 	clusteredmember => ["nt4_dc"],
 );
@@ -1001,6 +1002,28 @@ sub setup_ad_member
 					  $dcvars,
 					  $trustvars_f,
 					  $trustvars_e);
+}
+
+sub setup_ad_member_s3_join
+{
+        my ($self,
+            $prefix,
+            $dcvars,
+            $trustvars_f,
+            $trustvars_e) = @_;
+
+        # If we didn't build with ADS, pretend this env was never available
+        if (not $self->have_ads()) {
+                return "UNKNOWN";
+        }
+
+        print "PROVISIONING AD MEMBER...";
+
+        return $self->provision_ad_member($prefix,
+                                          "LOCALADMEMBER2",
+                                          $dcvars,
+                                          $trustvars_f,
+                                          $trustvars_e);
 }
 
 sub setup_ad_member_rfc2307
