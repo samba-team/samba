@@ -20,9 +20,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-
-#include "system/kerberos.h"
+#include "lib/replace/replace.h"
+#include "lib/replace/system/kerberos.h"
+#include "lib/util/data_blob.h"
+#include "lib/util/debug.h"
+#include "lib/util/fault.h"
+#include "lib/util/memory.h"
 
 #include <profile.h>
 #include <kdb.h>
