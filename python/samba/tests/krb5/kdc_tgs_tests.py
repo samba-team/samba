@@ -40,6 +40,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_BADMATCH,
     KDC_ERR_GENERIC,
     KDC_ERR_MODIFIED,
+    KDC_ERR_NOT_US,
     KDC_ERR_POLICY,
     KDC_ERR_C_PRINCIPAL_UNKNOWN,
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
@@ -1233,6 +1234,56 @@ class KdcTgsTests(KDCBaseTest):
         self._user2user(tgt, creds, sname=False,
                         expected_error=(KDC_ERR_GENERIC,
                                         KDC_ERR_S_PRINCIPAL_UNKNOWN))
+
+    def test_tgs_service_ticket(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        service_creds = self.get_service_creds()
+        service_ticket = self.get_service_ticket(tgt, service_creds)
+
+        self._run_tgs(service_ticket,
+                      expected_error=(KDC_ERR_NOT_US, KDC_ERR_POLICY))
+
+    def test_renew_service_ticket(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        service_creds = self.get_service_creds()
+        service_ticket = self.get_service_ticket(tgt, service_creds)
+
+        service_ticket = self.modified_ticket(
+            service_ticket,
+            modify_fn=self._modify_renewable,
+            checksum_keys=self.get_krbtgt_checksum_key())
+
+        self._renew_tgt(service_ticket,
+                        expected_error=KDC_ERR_POLICY)
+
+    def test_validate_service_ticket(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        service_creds = self.get_service_creds()
+        service_ticket = self.get_service_ticket(tgt, service_creds)
+
+        service_ticket = self.modified_ticket(
+            service_ticket,
+            modify_fn=self._modify_invalid,
+            checksum_keys=self.get_krbtgt_checksum_key())
+
+        self._validate_tgt(service_ticket,
+                           expected_error=KDC_ERR_POLICY)
+
+    def test_s4u2self_service_ticket(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        service_creds = self.get_service_creds()
+        service_ticket = self.get_service_ticket(tgt, service_creds)
+
+        self._s4u2self(service_ticket, creds,
+                       expected_error=(KDC_ERR_NOT_US, KDC_ERR_POLICY))
 
     def test_user2user_service_ticket(self):
         creds = self._get_creds()
