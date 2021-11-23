@@ -412,7 +412,7 @@ class KdcTgsTests(KDCBaseTest):
         self.assertIsNone(pac)
 
         self._make_tgs_request(client_creds, service_creds, tgt,
-                               expect_pac=False, expect_error=True)
+                               expect_error=True)
 
     def test_remove_pac_client_no_auth_data_required(self):
         client_creds = self.get_cached_creds(
@@ -427,7 +427,7 @@ class KdcTgsTests(KDCBaseTest):
         self.assertIsNone(pac)
 
         self._make_tgs_request(client_creds, service_creds, tgt,
-                               expect_pac=False, expect_error=True)
+                               expect_error=True)
 
     def test_remove_pac(self):
         client_creds = self.get_client_creds()
@@ -440,7 +440,7 @@ class KdcTgsTests(KDCBaseTest):
         self.assertIsNone(pac)
 
         self._make_tgs_request(client_creds, service_creds, tgt,
-                               expect_pac=False, expect_error=True)
+                               expect_error=True)
 
     def test_upn_dns_info_ex_user(self):
         client_creds = self.get_client_creds()
