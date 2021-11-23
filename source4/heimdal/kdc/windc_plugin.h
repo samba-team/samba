@@ -55,12 +55,14 @@ struct hdb_entry_ex;
 typedef krb5_error_code
 (*krb5plugin_windc_pac_generate)(void *, krb5_context,
 				 struct hdb_entry_ex *, /* client */
+				 struct hdb_entry_ex *, /* server */
 				 const krb5_boolean *, /* pac_request */
 				 krb5_pac *);
 
 typedef krb5_error_code
 (*krb5plugin_windc_pac_pk_generate)(void *, krb5_context,
 				    struct hdb_entry_ex *, /* client */
+				    struct hdb_entry_ex *, /* server */
 				    const krb5_keyblock *, /* pk_replykey */
 				    const krb5_boolean *, /* pac_request */
 				    krb5_pac *);
