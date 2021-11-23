@@ -2599,7 +2599,7 @@ samba_kdc_check_s4u2self(krb5_context context,
 	 */
 	if (!(orig_sid && target_sid && dom_sid_equal(orig_sid, target_sid))) {
 		talloc_free(frame);
-		return KRB5KDC_ERR_BADOPTION;
+		return KRB5KRB_AP_ERR_BADMATCH;
 	}
 
 	talloc_free(frame);
