@@ -602,6 +602,13 @@ class RawKerberosTest(TestCaseInTempDir):
             expect_pac = '1'
         cls.expect_pac = bool(int(expect_pac))
 
+        expect_extra_pac_buffers = samba.tests.env_get_var_value(
+            'EXPECT_EXTRA_PAC_BUFFERS',
+            allow_missing=True)
+        if expect_extra_pac_buffers is None:
+            expect_extra_pac_buffers = '1'
+        cls.expect_extra_pac_buffers = bool(int(expect_extra_pac_buffers))
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
@@ -2624,17 +2631,34 @@ class RawKerberosTest(TestCaseInTempDir):
         if not self.tkt_sig_support:
             require_strict.add(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
 
+        expect_extra_pac_buffers = rep_msg_type == KRB_AS_REP
+
         expect_pac_attrs = kdc_exchange_dict['expect_pac_attrs']
+
+        if expect_pac_attrs:
+            expect_pac_attrs_pac_request = kdc_exchange_dict[
+                'expect_pac_attrs_pac_request']
+        else:
+            expect_pac_attrs_pac_request = kdc_exchange_dict[
+                'pac_request']
+
+        if expect_pac_attrs is None:
+            if self.expect_extra_pac_buffers:
+                expect_pac_attrs = expect_extra_pac_buffers
+            else:
+                require_strict.add(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
         if expect_pac_attrs:
             expected_types.append(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
-        elif expect_pac_attrs is None:
-            require_strict.add(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
 
         expect_requester_sid = kdc_exchange_dict['expect_requester_sid']
+
+        if expect_requester_sid is None:
+            if self.expect_extra_pac_buffers:
+                expect_requester_sid = expect_extra_pac_buffers
+            else:
+                require_strict.add(krb5pac.PAC_TYPE_REQUESTER_SID)
         if expect_requester_sid:
             expected_types.append(krb5pac.PAC_TYPE_REQUESTER_SID)
-        elif expect_requester_sid is None:
-            require_strict.add(krb5pac.PAC_TYPE_REQUESTER_SID)
 
         buffer_types = [pac_buffer.type
                         for pac_buffer in pac.buffers]
@@ -2722,9 +2746,6 @@ class RawKerberosTest(TestCaseInTempDir):
                 requested_pac = bool(flags & 1)
                 given_pac = bool(flags & 2)
 
-                expect_pac_attrs_pac_request = kdc_exchange_dict[
-                    'expect_pac_attrs_pac_request']
-
                 self.assertEqual(expect_pac_attrs_pac_request is True,
                                  requested_pac)
                 self.assertEqual(expect_pac_attrs_pac_request is None,
@@ -2734,8 +2755,8 @@ class RawKerberosTest(TestCaseInTempDir):
                       and expect_requester_sid):
                 requester_sid = pac_buffer.info.sid
 
-                self.assertIsNotNone(expected_sid)
-                self.assertEqual(expected_sid, str(requester_sid))
+                if expected_sid is not None:
+                    self.assertEqual(expected_sid, str(requester_sid))
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
