@@ -21,7 +21,7 @@ import os
 
 import ldb
 
-from samba.tests.krb5.as_req_tests import AsReqKerberosTests
+from samba.tests.krb5.as_req_tests import AsReqBaseTest
 import samba.tests.krb5.kcrypto as kcrypto
 
 sys.path.insert(0, "bin/python")
@@ -31,7 +31,7 @@ global_asn1_print = False
 global_hexdump = False
 
 
-class SaltTests(AsReqKerberosTests):
+class SaltTests(AsReqBaseTest):
 
     def setUp(self):
         super().setUp()
