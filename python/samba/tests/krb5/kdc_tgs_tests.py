@@ -497,12 +497,18 @@ class KdcTgsTests(KDCBaseTest):
     def test_renew_req(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, renewable=True)
-        self._renew_tgt(tgt, expected_error=0)
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac_attrs=True,
+                        expect_pac_attrs_pac_request=True,
+                        expect_requester_sid=True)
 
     def test_validate_req(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, invalid=True)
-        self._validate_tgt(tgt, expected_error=0)
+        self._validate_tgt(tgt, expected_error=0,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=True,
+                           expect_requester_sid=True)
 
     def test_s4u2self_req(self):
         creds = self._get_creds()
@@ -774,13 +780,17 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
         tgt = self._get_tgt(creds, renewable=True, from_rodc=True)
-        self._renew_tgt(tgt, expected_error=0)
+        self._renew_tgt(tgt, expected_error=0,
+                        expect_pac_attrs=False,
+                        expect_requester_sid=True)
 
     def test_validate_rodc_revealed(self):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
         tgt = self._get_tgt(creds, invalid=True, from_rodc=True)
-        self._validate_tgt(tgt, expected_error=0)
+        self._validate_tgt(tgt, expected_error=0,
+                           expect_pac_attrs=False,
+                           expect_requester_sid=True)
 
     def test_s4u2self_rodc_revealed(self):
         creds = self._get_creds(replication_allowed=True,
@@ -1434,7 +1444,8 @@ class KdcTgsTests(KDCBaseTest):
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
                         expect_pac_attrs=True,
-                        expect_pac_attrs_pac_request=None)
+                        expect_pac_attrs_pac_request=None,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_renew_false(self):
         creds = self._get_creds()
@@ -1447,7 +1458,8 @@ class KdcTgsTests(KDCBaseTest):
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
                         expect_pac_attrs=True,
-                        expect_pac_attrs_pac_request=False)
+                        expect_pac_attrs_pac_request=False,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_renew_true(self):
         creds = self._get_creds()
@@ -1460,7 +1472,8 @@ class KdcTgsTests(KDCBaseTest):
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
                         expect_pac_attrs=True,
-                        expect_pac_attrs_pac_request=True)
+                        expect_pac_attrs_pac_request=True,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_rodc_renew_none(self):
         creds = self._get_creds(replication_allowed=True,
@@ -1473,8 +1486,8 @@ class KdcTgsTests(KDCBaseTest):
 
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
-                        expect_pac_attrs=True,
-                        expect_pac_attrs_pac_request=None)
+                        expect_pac_attrs=False,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_rodc_renew_false(self):
         creds = self._get_creds(replication_allowed=True,
@@ -1487,8 +1500,8 @@ class KdcTgsTests(KDCBaseTest):
 
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
-                        expect_pac_attrs=True,
-                        expect_pac_attrs_pac_request=False)
+                        expect_pac_attrs=False,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_rodc_renew_true(self):
         creds = self._get_creds(replication_allowed=True,
@@ -1501,8 +1514,8 @@ class KdcTgsTests(KDCBaseTest):
 
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
-                        expect_pac_attrs=True,
-                        expect_pac_attrs_pac_request=True)
+                        expect_pac_attrs=False,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_missing_renew_none(self):
         creds = self._get_creds()
@@ -1515,7 +1528,8 @@ class KdcTgsTests(KDCBaseTest):
 
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
-                        expect_pac_attrs=False)
+                        expect_pac_attrs=False,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_missing_renew_false(self):
         creds = self._get_creds()
@@ -1528,7 +1542,8 @@ class KdcTgsTests(KDCBaseTest):
 
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
-                        expect_pac_attrs=False)
+                        expect_pac_attrs=False,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_missing_renew_true(self):
         creds = self._get_creds()
@@ -1541,7 +1556,8 @@ class KdcTgsTests(KDCBaseTest):
 
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
-                        expect_pac_attrs=False)
+                        expect_pac_attrs=False,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_missing_rodc_renew_none(self):
         creds = self._get_creds(replication_allowed=True,
@@ -1555,7 +1571,8 @@ class KdcTgsTests(KDCBaseTest):
 
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
-                        expect_pac_attrs=False)
+                        expect_pac_attrs=False,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_missing_rodc_renew_false(self):
         creds = self._get_creds(replication_allowed=True,
@@ -1569,7 +1586,8 @@ class KdcTgsTests(KDCBaseTest):
 
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
-                        expect_pac_attrs=False)
+                        expect_pac_attrs=False,
+                        expect_requester_sid=True)
 
     def test_pac_attrs_missing_rodc_renew_true(self):
         creds = self._get_creds(replication_allowed=True,
@@ -1583,7 +1601,8 @@ class KdcTgsTests(KDCBaseTest):
 
         self._renew_tgt(tgt, expected_error=0,
                         expect_pac=True,
-                        expect_pac_attrs=False)
+                        expect_pac_attrs=False,
+                        expect_requester_sid=True)
 
     def test_tgs_pac_attrs_none(self):
         creds = self._get_creds()
@@ -1593,8 +1612,7 @@ class KdcTgsTests(KDCBaseTest):
                            expect_pac_attrs_pac_request=None)
 
         self._run_tgs(tgt, expected_error=0, expect_pac=True,
-                      expect_pac_attrs=True,
-                      expect_pac_attrs_pac_request=None)
+                      expect_pac_attrs=False)
 
     def test_tgs_pac_attrs_false(self):
         creds = self._get_creds()
@@ -1603,7 +1621,8 @@ class KdcTgsTests(KDCBaseTest):
                            expect_pac_attrs=True,
                            expect_pac_attrs_pac_request=False)
 
-        self._run_tgs(tgt, expected_error=0, expect_pac=False)
+        self._run_tgs(tgt, expected_error=0, expect_pac=False,
+                      expect_pac_attrs=False)
 
     def test_tgs_pac_attrs_true(self):
         creds = self._get_creds()
@@ -1613,8 +1632,7 @@ class KdcTgsTests(KDCBaseTest):
                            expect_pac_attrs_pac_request=True)
 
         self._run_tgs(tgt, expected_error=0, expect_pac=True,
-                      expect_pac_attrs=True,
-                      expect_pac_attrs_pac_request=True)
+                      expect_pac_attrs=False)
 
     def test_as_requester_sid(self):
         creds = self._get_creds()
@@ -1639,8 +1657,7 @@ class KdcTgsTests(KDCBaseTest):
                            expect_requester_sid=True)
 
         self._run_tgs(tgt, expected_error=0, expect_pac=True,
-                      expected_sid=sid,
-                      expect_requester_sid=True)
+                      expect_requester_sid=False)
 
     def test_tgs_requester_sid_renew(self):
         creds = self._get_creds()
@@ -1655,6 +1672,8 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self._modify_tgt(tgt, renewable=True)
 
         self._renew_tgt(tgt, expected_error=0, expect_pac=True,
+                        expect_pac_attrs=True,
+                        expect_pac_attrs_pac_request=None,
                         expected_sid=sid,
                         expect_requester_sid=True)
 
@@ -1672,6 +1691,7 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self._modify_tgt(tgt, from_rodc=True, renewable=True)
 
         self._renew_tgt(tgt, expected_error=0, expect_pac=True,
+                        expect_pac_attrs=False,
                         expected_sid=sid,
                         expect_requester_sid=True)
 
@@ -1738,7 +1758,10 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self.get_tgt(creds, pac_request=None)
         tgt = self._modify_tgt(tgt, renewable=True)
 
-        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None)
+        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None,
+                              expect_pac_attrs=True,
+                              expect_pac_attrs_pac_request=None,
+                              expect_requester_sid=True)
 
         ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
 
@@ -1750,7 +1773,10 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self.get_tgt(creds, pac_request=False, expect_pac=None)
         tgt = self._modify_tgt(tgt, renewable=True)
 
-        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None)
+        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None,
+                              expect_pac_attrs=True,
+                              expect_pac_attrs_pac_request=False,
+                              expect_requester_sid=True)
 
         ticket = self._run_tgs(tgt, expected_error=0, expect_pac=False)
 
@@ -1762,7 +1788,10 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self.get_tgt(creds, pac_request=True)
         tgt = self._modify_tgt(tgt, renewable=True)
 
-        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None)
+        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None,
+                              expect_pac_attrs=True,
+                              expect_pac_attrs_pac_request=True,
+                              expect_requester_sid=True)
 
         ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
 
@@ -1774,7 +1803,10 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self.get_tgt(creds, pac_request=None)
         tgt = self._modify_tgt(tgt, invalid=True)
 
-        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None)
+        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None,
+                                 expect_pac_attrs=True,
+                                 expect_pac_attrs_pac_request=None,
+                                 expect_requester_sid=True)
 
         ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
 
@@ -1786,7 +1818,10 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self.get_tgt(creds, pac_request=False, expect_pac=None)
         tgt = self._modify_tgt(tgt, invalid=True)
 
-        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None)
+        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None,
+                                 expect_pac_attrs=True,
+                                 expect_pac_attrs_pac_request=False,
+                                 expect_requester_sid=True)
 
         ticket = self._run_tgs(tgt, expected_error=0, expect_pac=False)
 
@@ -1798,7 +1833,10 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self.get_tgt(creds, pac_request=True)
         tgt = self._modify_tgt(tgt, invalid=True)
 
-        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None)
+        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None,
+                                 expect_pac_attrs=True,
+                                 expect_pac_attrs_pac_request=True,
+                                 expect_requester_sid=True)
 
         ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
 
@@ -1946,7 +1984,7 @@ class KdcTgsTests(KDCBaseTest):
 
         ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
 
-        pac = self.get_ticket_pac(ticket, expect_pac=False)
+        pac = self.get_ticket_pac(ticket)
         self.assertIsNotNone(pac)
 
     def test_tgs_rodc_pac_request_true(self):
@@ -2279,12 +2317,21 @@ class KdcTgsTests(KDCBaseTest):
             expect_requester_sid=expect_requester_sid,
             expected_sid=expected_sid)
 
-    def _validate_tgt(self, tgt, expected_error, expect_pac=True):
+    def _validate_tgt(self, tgt, expected_error, expect_pac=True,
+                      expect_pac_attrs=None,
+                      expect_pac_attrs_pac_request=None,
+                      expect_requester_sid=None,
+                      expected_sid=None):
         krbtgt_creds = self.get_krbtgt_creds()
         kdc_options = str(krb5_asn1.KDCOptions('validate'))
-        return self._tgs_req(tgt, expected_error, krbtgt_creds,
-                             kdc_options=kdc_options,
-                             expect_pac=expect_pac)
+        return self._tgs_req(
+            tgt, expected_error, krbtgt_creds,
+            kdc_options=kdc_options,
+            expect_pac=expect_pac,
+            expect_pac_attrs=expect_pac_attrs,
+            expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
+            expect_requester_sid=expect_requester_sid,
+            expected_sid=expected_sid)
 
     def _s4u2self(self, tgt, tgt_creds, expected_error, expect_pac=True,
                   expect_edata=False, expected_status=None):
