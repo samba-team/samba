@@ -471,7 +471,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 		goto out;
 	}
 
-	if (!server_skdc_entry->is_krbtgt) {
+	if (!is_untrusted && !server_skdc_entry->is_krbtgt) {
 		/*
 		 * The client may have requested no PAC when obtaining the
 		 * TGT.
