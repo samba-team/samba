@@ -32,6 +32,7 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 
 import samba.tests.krb5.kcrypto as kcrypto
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
+from samba.tests.krb5.raw_testcase import Krb5EncryptionKey
 from samba.tests.krb5.rfc4120_constants import (
     AES256_CTS_HMAC_SHA1_96,
     ARCFOUR_HMAC_MD5,
@@ -513,6 +514,11 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self._get_tgt(creds)
         self._user2user(tgt, creds, expected_error=0)
 
+    def test_fast_req(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+        self._fast(tgt, creds, expected_error=0)
+
     def test_tgs_req_invalid(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, invalid=True)
@@ -527,6 +533,12 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, invalid=True)
         self._user2user(tgt, creds, expected_error=KRB_ERR_TKT_NYV)
+
+    def test_fast_req_invalid(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, invalid=True)
+        self._fast(tgt, creds, expected_error=KRB_ERR_TKT_NYV,
+                   expected_sname=self.get_krbtgt_sname())
 
     def test_tgs_req_no_requester_sid(self):
         creds = self._get_creds()
@@ -583,6 +595,12 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self._get_tgt(creds, remove_pac=True)
         self._user2user(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED)
 
+    def test_fast_no_pac(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, remove_pac=True)
+        self._fast(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED,
+                   expected_sname=self.get_krbtgt_sname())
+
     # Test making a request with authdata and without a PAC.
     def test_tgs_authdata_no_pac(self):
         creds = self._get_creds()
@@ -612,6 +630,12 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, remove_pac=True, allow_empty_authdata=True)
         self._user2user(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED)
+
+    def test_fast_authdata_no_pac(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, remove_pac=True, allow_empty_authdata=True)
+        self._fast(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED,
+                   expected_sname=self.get_krbtgt_sname())
 
     # Test changing the SID in the PAC to that of another account.
     def test_tgs_sid_mismatch_existing(self):
@@ -645,6 +669,14 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self._get_tgt(creds, new_rid=existing_rid)
         self._user2user(tgt, creds,
                         expected_error=KDC_ERR_TGT_REVOKED)
+
+    def test_fast_sid_mismatch_existing(self):
+        creds = self._get_creds()
+        existing_rid = self._get_existing_rid()
+        tgt = self._get_tgt(creds, new_rid=existing_rid)
+        self._fast(tgt, creds,
+                   expected_error=KDC_ERR_TGT_REVOKED,
+                   expected_sname=self.get_krbtgt_sname())
 
     def test_requester_sid_mismatch_existing(self):
         creds = self._get_creds()
@@ -701,6 +733,14 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self._get_tgt(creds, new_rid=nonexistent_rid)
         self._user2user(tgt, creds,
                         expected_error=KDC_ERR_TGT_REVOKED)
+
+    def test_fast_sid_mismatch_nonexisting(self):
+        creds = self._get_creds()
+        nonexistent_rid = self._get_non_existent_rid()
+        tgt = self._get_tgt(creds, new_rid=nonexistent_rid)
+        self._fast(tgt, creds,
+                   expected_error=KDC_ERR_TGT_REVOKED,
+                   expected_sname=self.get_krbtgt_sname())
 
     def test_requester_sid_mismatch_nonexisting(self):
         creds = self._get_creds()
@@ -799,6 +839,16 @@ class KdcTgsTests(KDCBaseTest):
         self._user2user(tgt, creds,
                         expected_error=KDC_ERR_TGT_REVOKED)
 
+    def test_fast_rodc_sid_mismatch_existing(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        existing_rid = self._get_existing_rid(replication_allowed=True,
+                                              revealed_to_rodc=True)
+        tgt = self._get_tgt(creds, from_rodc=True, new_rid=existing_rid)
+        self._fast(tgt, creds,
+                   expected_error=KDC_ERR_TGT_REVOKED,
+                   expected_sname=self.get_krbtgt_sname())
+
     def test_tgs_rodc_requester_sid_mismatch_existing(self):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
@@ -865,6 +915,15 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self._get_tgt(creds, from_rodc=True, new_rid=nonexistent_rid)
         self._user2user(tgt, creds,
                         expected_error=KDC_ERR_TGT_REVOKED)
+
+    def test_fast_rodc_sid_mismatch_nonexisting(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        nonexistent_rid = self._get_non_existent_rid()
+        tgt = self._get_tgt(creds, from_rodc=True, new_rid=nonexistent_rid)
+        self._fast(tgt, creds,
+                   expected_error=KDC_ERR_TGT_REVOKED,
+                   expected_sname=self.get_krbtgt_sname())
 
     def test_tgs_rodc_requester_sid_mismatch_nonexisting(self):
         creds = self._get_creds(replication_allowed=True,
@@ -955,6 +1014,14 @@ class KdcTgsTests(KDCBaseTest):
         self._remove_rodc_partial_secrets()
         self._user2user(tgt, creds, expected_error=KDC_ERR_POLICY)
 
+    def test_fast_rodc_no_partial_secrets(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self._get_tgt(creds, from_rodc=True)
+        self._remove_rodc_partial_secrets()
+        self._fast(tgt, creds, expected_error=KDC_ERR_POLICY,
+                   expected_sname=self.get_krbtgt_sname())
+
     # Test with an RODC-issued ticket where the RODC account does not have an
     # msDS-KrbTgtLink.
     def test_tgs_rodc_no_krbtgt_link(self):
@@ -992,6 +1059,14 @@ class KdcTgsTests(KDCBaseTest):
         self._remove_rodc_krbtgt_link()
         self._user2user(tgt, creds, expected_error=KDC_ERR_POLICY)
 
+    def test_fast_rodc_no_krbtgt_link(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self._get_tgt(creds, from_rodc=True)
+        self._remove_rodc_krbtgt_link()
+        self._fast(tgt, creds, expected_error=KDC_ERR_POLICY,
+                   expected_sname=self.get_krbtgt_sname())
+
     # Test with an RODC-issued ticket where the client is not allowed to
     # replicate to the RODC.
     def test_tgs_rodc_not_allowed(self):
@@ -1018,6 +1093,12 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds(revealed_to_rodc=True)
         tgt = self._get_tgt(creds, from_rodc=True)
         self._user2user(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED)
+
+    def test_fast_rodc_not_allowed(self):
+        creds = self._get_creds(revealed_to_rodc=True)
+        tgt = self._get_tgt(creds, from_rodc=True)
+        self._fast(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED,
+                   expected_sname=self.get_krbtgt_sname())
 
     # Test with an RODC-issued ticket where the client is denied from
     # replicating to the RODC.
@@ -1050,6 +1131,13 @@ class KdcTgsTests(KDCBaseTest):
                                 revealed_to_rodc=True)
         tgt = self._get_tgt(creds, from_rodc=True)
         self._user2user(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED)
+
+    def test_fast_rodc_denied(self):
+        creds = self._get_creds(replication_denied=True,
+                                revealed_to_rodc=True)
+        tgt = self._get_tgt(creds, from_rodc=True)
+        self._fast(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED,
+                   expected_sname=self.get_krbtgt_sname())
 
     # Test with an RODC-issued ticket where the client is both allowed and
     # denied replicating to the RODC.
@@ -1087,6 +1175,14 @@ class KdcTgsTests(KDCBaseTest):
                                 revealed_to_rodc=True)
         tgt = self._get_tgt(creds, from_rodc=True)
         self._user2user(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED)
+
+    def test_fast_rodc_allowed_denied(self):
+        creds = self._get_creds(replication_allowed=True,
+                                replication_denied=True,
+                                revealed_to_rodc=True)
+        tgt = self._get_tgt(creds, from_rodc=True)
+        self._fast(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED,
+                   expected_sname=self.get_krbtgt_sname())
 
     # Test user-to-user with incorrect service principal names.
     def test_user2user_matching_sname_host(self):
@@ -1294,6 +1390,17 @@ class KdcTgsTests(KDCBaseTest):
 
         self._user2user(service_ticket, creds,
                         expected_error=(KDC_ERR_MODIFIED, KDC_ERR_POLICY))
+
+    # Expected to fail against Windows, which does not produce a policy error.
+    def test_fast_service_ticket(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        service_creds = self.get_service_creds()
+        service_ticket = self.get_service_ticket(tgt, service_creds)
+
+        self._fast(service_ticket, creds,
+                   expected_error=KDC_ERR_POLICY)
 
     def test_pac_attrs_none(self):
         creds = self._get_creds()
@@ -1792,6 +1899,34 @@ class KdcTgsTests(KDCBaseTest):
         pac = self.get_ticket_pac(ticket)
         self.assertIsNotNone(pac)
 
+    def test_fast_pac_request_none(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=None)
+
+        ticket = self._fast(tgt, creds, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_fast_pac_request_false(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=False)
+
+        ticket = self._fast(tgt, creds, expected_error=0,
+                            expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket, expect_pac=True)
+        self.assertIsNotNone(pac)
+
+    def test_fast_pac_request_true(self):
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds, pac_request=True)
+
+        ticket = self._fast(tgt, creds, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
     def test_tgs_rodc_pac_request_none(self):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
@@ -2192,13 +2327,28 @@ class KdcTgsTests(KDCBaseTest):
                              srealm=srealm,
                              expect_pac=expect_pac)
 
+    def _fast(self, armor_tgt, armor_tgt_creds, expected_error,
+              expected_sname=None, expect_pac=True):
+        user_creds = self._get_mach_creds()
+        user_tgt = self.get_tgt(user_creds)
+
+        target_creds = self.get_service_creds()
+
+        return self._tgs_req(user_tgt, expected_error, target_creds,
+                             armor_tgt=armor_tgt,
+                             expected_sname=expected_sname,
+                             expect_pac=expect_pac)
+
     def _tgs_req(self, tgt, expected_error, target_creds,
+                 armor_tgt=None,
                  kdc_options='0',
                  expected_cname=None,
+                 expected_sname=None,
                  additional_ticket=None,
                  generate_padata_fn=None,
                  sname=None,
                  srealm=None,
+                 use_fast=False,
                  expect_claims=True,
                  expect_pac=True,
                  expect_pac_attrs=None,
@@ -2214,7 +2364,8 @@ class KdcTgsTests(KDCBaseTest):
 
         if sname is False:
             sname = None
-            expected_sname = self.get_krbtgt_sname()
+            if expected_sname is None:
+                expected_sname = self.get_krbtgt_sname()
         else:
             if sname is None:
                 target_name = target_creds.get_username()
@@ -2229,7 +2380,8 @@ class KdcTgsTests(KDCBaseTest):
                         name_type=NT_PRINCIPAL,
                         names=['host', target_name])
 
-            expected_sname = sname
+            if expected_sname is None:
+                expected_sname = sname
 
         if additional_ticket is not None:
             additional_tickets = [additional_ticket.ticket]
@@ -2240,6 +2392,28 @@ class KdcTgsTests(KDCBaseTest):
                 target_creds)
 
         subkey = self.RandomKey(tgt.session_key.etype)
+
+        if armor_tgt is not None:
+            armor_subkey = self.RandomKey(subkey.etype)
+            explicit_armor_key = self.generate_armor_key(armor_subkey,
+                                                         armor_tgt.session_key)
+            armor_key = kcrypto.cf2(explicit_armor_key.key,
+                                    subkey.key,
+                                    b'explicitarmor',
+                                    b'tgsarmor')
+            armor_key = Krb5EncryptionKey(armor_key, None)
+
+            generate_fast_fn = self.generate_simple_fast
+            generate_fast_armor_fn = self.generate_ap_req
+
+            pac_options = '1'  # claims support
+        else:
+            armor_subkey = None
+            armor_key = None
+            generate_fast_fn = None
+            generate_fast_armor_fn = None
+
+            pac_options = None
 
         etypes = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
 
@@ -2260,12 +2434,18 @@ class KdcTgsTests(KDCBaseTest):
             expected_sname=expected_sname,
             ticket_decryption_key=decryption_key,
             generate_padata_fn=generate_padata_fn,
+            generate_fast_fn=generate_fast_fn,
+            generate_fast_armor_fn=generate_fast_armor_fn,
             check_error_fn=check_error_fn,
             check_rep_fn=check_rep_fn,
             check_kdc_private_fn=self.generic_check_kdc_private,
             expected_error_mode=expected_error,
             expected_status=expected_status,
             tgt=tgt,
+            armor_key=armor_key,
+            armor_tgt=armor_tgt,
+            armor_subkey=armor_subkey,
+            pac_options=pac_options,
             authenticator_subkey=subkey,
             kdc_options=kdc_options,
             expect_edata=expect_edata,
