@@ -2855,7 +2855,6 @@ class RawKerberosTest(TestCaseInTempDir):
 
         expect_etype_info2 = ()
         expect_etype_info = False
-        unexpect_etype_info = True
         expected_aes_type = 0
         expected_rc4_type = 0
         if kcrypto.Enctype.RC4 in proposed_etypes:
@@ -2868,7 +2867,6 @@ class RawKerberosTest(TestCaseInTempDir):
                 if etype > expected_aes_type:
                     expected_aes_type = etype
             if etype in (kcrypto.Enctype.RC4,) and error_code != 0:
-                unexpect_etype_info = False
                 if etype > expected_rc4_type:
                     expected_rc4_type = etype
 
