@@ -786,7 +786,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
                           options="-q -P comment -p")
 
     HEIMDAL_LIBRARY('hx509',
-        'lib/hx509/ca.c lib/hx509/cert.c lib/hx509/cms.c lib/hx509/collector.c lib/hx509/crypto.c lib/hx509/error.c lib/hx509/env.c lib/hx509/file.c lib/hx509/keyset.c lib/hx509/ks_dir.c lib/hx509/ks_file.c lib/hx509/ks_keychain.c lib/hx509/ks_mem.c lib/hx509/ks_null.c lib/hx509/ks_p11.c lib/hx509/ks_p12.c lib/hx509/lock.c lib/hx509/name.c lib/hx509/peer.c lib/hx509/print.c lib/hx509/req.c lib/hx509/revoke.c lib/hx509/sel.c lib/hx509/hx509_err.c lib/hx509/sel-lex.l lib/hx509/sel-gram.y',
+        HEIMDAL_HX509_OBJH_SOURCE + ' lib/hx509/sel-lex.l lib/hx509/sel-gram.y',
         includes='../heimdal/lib/hx509',
         deps='roken com_err asn1 hcrypto asn1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKCS10_ASN1 wind',
         cflags=bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS,
