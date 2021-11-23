@@ -246,6 +246,7 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
+		NULL,					/* dirfsp */
 		smb_fname_src,				/* fname */
 		FILE_READ_DATA|FILE_READ_ATTRIBUTES|
 			FILE_READ_EA,			/* access_mask */
@@ -271,6 +272,7 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
+		NULL,					/* dirfsp */
 		smb_fname_dst,				/* fname */
 		FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|
 			FILE_WRITE_EA,			/* access_mask */

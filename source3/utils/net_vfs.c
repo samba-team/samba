@@ -252,6 +252,7 @@ static int net_vfs_get_ntacl(struct net_context *net,
 	status = SMB_VFS_CREATE_FILE(
 		state.conn_tos->conn,
 		NULL,				/* req */
+		NULL,
 		smb_fname,
 		FILE_READ_ATTRIBUTES|READ_CONTROL_ACCESS,
 		FILE_SHARE_READ|FILE_SHARE_WRITE,

@@ -371,6 +371,7 @@
 		from files_struct.
  * Version 47 - Add SMB_VFS_GET_REAL_FILENAME_AT
  * Version 47 - Replace SMB_VFS_GET_REAL_FILENAME with SMB_VFS_GET_REAL_FILENAME_AT
+ * Version 47 - Re-add dirfsp to CREATE_FILE
  */
 
 #define SMB_VFS_INTERFACE_VERSION 47
@@ -975,6 +976,7 @@ struct vfs_fn_pointers {
 			 mode_t mode);
 	NTSTATUS (*create_file_fn)(struct vfs_handle_struct *handle,
 				   struct smb_request *req,
+				   struct files_struct *dirfsp,
 				   struct smb_filename *smb_fname,
 				   uint32_t access_mask,
 				   uint32_t share_access,
@@ -1460,6 +1462,7 @@ int smb_vfs_call_openat(struct vfs_handle_struct *handle,
 			mode_t mode);
 NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 				  struct smb_request *req,
+				  struct files_struct *dirfsp,
 				  struct smb_filename *smb_fname,
 				  uint32_t access_mask,
 				  uint32_t share_access,
@@ -1904,6 +1907,7 @@ int vfs_not_implemented_openat(vfs_handle_struct *handle,
 			       mode_t mode);
 NTSTATUS vfs_not_implemented_create_file(struct vfs_handle_struct *handle,
 				struct smb_request *req,
+				struct files_struct *dirfsp,
 				struct smb_filename *smb_fname,
 				uint32_t access_mask,
 				uint32_t share_access,

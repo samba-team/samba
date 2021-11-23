@@ -206,6 +206,7 @@ static int skel_openat(struct vfs_handle_struct *handle,
 
 static NTSTATUS skel_create_file(struct vfs_handle_struct *handle,
 				 struct smb_request *req,
+				 struct files_struct *dirfsp,
 				 struct smb_filename *smb_fname,
 				 uint32_t access_mask,
 				 uint32_t share_access,

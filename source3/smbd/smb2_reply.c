@@ -844,6 +844,7 @@ NTSTATUS unlink_internals(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE
 		(conn,			/* conn */
 		 req,			/* req */
+		 NULL,			/* dirfsp */
 		 smb_fname,		/* fname */
 		 DELETE_ACCESS,		/* access_mask */
 		 FILE_SHARE_NONE,	/* share_access */
@@ -1779,6 +1780,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	status = SMB_VFS_CREATE_FILE(
 			conn,				/* conn */
 			req,				/* req */
+			NULL,				/* dirfsp */
 			smb_fname_src,			/* fname */
 			access_mask,			/* access_mask */
 			(FILE_SHARE_READ |		/* share_access */
@@ -1904,6 +1906,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
+		NULL,					/* dirfsp */
 		smb_fname_src,	       			/* fname */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
@@ -1941,6 +1944,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
+		NULL,					/* dirfsp */
 		smb_fname_dst,				/* fname */
 		FILE_GENERIC_WRITE,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */

@@ -964,6 +964,7 @@ static bool readdir_attr_meta_finderi_stream(
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,                           /* conn */
 		NULL,                                   /* req */
+		NULL,					/* dirfsp */
 		stream_name,				/* fname */
 		FILE_READ_DATA,                         /* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |   /* share_access */
@@ -4136,6 +4137,7 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
 
 static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 				  struct smb_request *req,
+				  struct files_struct *dirfsp,
 				  struct smb_filename *smb_fname,
 				  uint32_t access_mask,
 				  uint32_t share_access,
@@ -4188,7 +4190,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	}
 
 	status = SMB_VFS_NEXT_CREATE_FILE(
-		handle, req, smb_fname,
+		handle, req, dirfsp, smb_fname,
 		access_mask, share_access,
 		create_disposition, create_options,
 		file_attributes, oplock_request,
@@ -4957,6 +4959,7 @@ static bool fruit_get_bandsize(vfs_handle_struct *handle,
 	status = SMB_VFS_NEXT_CREATE_FILE(
 		handle,				/* conn */
 		NULL,				/* req */
+		NULL,				/* dirfsp */
 		smb_fname,			/* fname */
 		FILE_GENERIC_READ,		/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE, /* share_access */

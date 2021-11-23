@@ -851,6 +851,7 @@ err:
 
 static NTSTATUS um_create_file(vfs_handle_struct *handle,
 			       struct smb_request *req,
+			       struct files_struct *dirfsp,
 			       struct smb_filename *smb_fname,
 			       uint32_t access_mask,
 			       uint32_t share_access,
@@ -878,6 +879,7 @@ static NTSTATUS um_create_file(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_CREATE_FILE(
 			handle,
 			req,
+			dirfsp,
 			smb_fname,
 			access_mask,
 			share_access,
@@ -912,6 +914,7 @@ static NTSTATUS um_create_file(vfs_handle_struct *handle,
 	status = SMB_VFS_NEXT_CREATE_FILE(
 		handle,
 		req,
+		dirfsp,
 		client_fname,
 		access_mask,
 		share_access,

@@ -2240,6 +2240,7 @@ static NTSTATUS cmd_create_file(
 	status = SMB_VFS_CREATE_FILE(
 		vfs->conn,
 		NULL,
+		NULL,
 
 		/*
 		 * Using fname->fsp->fsp_name seems to be legal,

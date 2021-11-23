@@ -660,6 +660,7 @@ static void call_trans2open(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
+		NULL,					/* dirfsp */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
@@ -1018,6 +1019,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	ntstatus = SMB_VFS_CREATE_FILE(
 			conn, /* conn */
 			req, /* req */
+			NULL, /* dirfsp */
 			smb_dname, /* dname */
 			FILE_LIST_DIRECTORY, /* access_mask */
 			FILE_SHARE_READ|
@@ -2723,6 +2725,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
+		NULL,					/* dirfsp */
 		smb_dname,				/* fname */
 		MAXIMUM_ALLOWED_ACCESS,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
