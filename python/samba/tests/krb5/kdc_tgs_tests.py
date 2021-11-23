@@ -1786,6 +1786,40 @@ class KdcTgsTests(KDCBaseTest):
 
         self._run_tgs(tgt, expected_error=KDC_ERR_C_PRINCIPAL_UNKNOWN)
 
+    def _modify_renewable(self, enc_part):
+        # Set the renewable flag.
+        renewable_flag = krb5_asn1.TicketFlags('renewable')
+        pos = len(tuple(renewable_flag)) - 1
+
+        flags = enc_part['flags']
+        self.assertLessEqual(pos, len(flags))
+
+        new_flags = flags[:pos] + '1' + flags[pos + 1:]
+        enc_part['flags'] = new_flags
+
+        # Set the renew-till time to be in the future.
+        renew_till = self.get_KerberosTime(offset=100 * 60 * 60)
+        enc_part['renew-till'] = renew_till
+
+        return enc_part
+
+    def _modify_invalid(self, enc_part):
+        # Set the invalid flag.
+        invalid_flag = krb5_asn1.TicketFlags('invalid')
+        pos = len(tuple(invalid_flag)) - 1
+
+        flags = enc_part['flags']
+        self.assertLessEqual(pos, len(flags))
+
+        new_flags = flags[:pos] + '1' + flags[pos + 1:]
+        enc_part['flags'] = new_flags
+
+        # Set the ticket start time to be in the past.
+        past_time = self.get_KerberosTime(offset=-100 * 60 * 60)
+        enc_part['starttime'] = past_time
+
+        return enc_part
+
     def _get_tgt(self,
                  client_creds,
                  renewable=False,
@@ -1880,39 +1914,9 @@ class KdcTgsTests(KDCBaseTest):
             }
 
         if renewable:
-            def flags_modify_fn(enc_part):
-                # Set the renewable flag.
-                renewable_flag = krb5_asn1.TicketFlags('renewable')
-                pos = len(tuple(renewable_flag)) - 1
-
-                flags = enc_part['flags']
-                self.assertLessEqual(pos, len(flags))
-
-                new_flags = flags[:pos] + '1' + flags[pos + 1:]
-                enc_part['flags'] = new_flags
-
-                # Set the renew-till time to be in the future.
-                renew_till = self.get_KerberosTime(offset=100 * 60 * 60)
-                enc_part['renew-till'] = renew_till
-
-                return enc_part
+            flags_modify_fn = self._modify_renewable
         elif invalid:
-            def flags_modify_fn(enc_part):
-                # Set the invalid flag.
-                invalid_flag = krb5_asn1.TicketFlags('invalid')
-                pos = len(tuple(invalid_flag)) - 1
-
-                flags = enc_part['flags']
-                self.assertLessEqual(pos, len(flags))
-
-                new_flags = flags[:pos] + '1' + flags[pos + 1:]
-                enc_part['flags'] = new_flags
-
-                # Set the ticket start time to be in the past.
-                past_time = self.get_KerberosTime(offset=-100 * 60 * 60)
-                enc_part['starttime'] = past_time
-
-                return enc_part
+            flags_modify_fn = self._modify_invalid
         else:
             flags_modify_fn = None
 
