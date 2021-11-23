@@ -1846,12 +1846,13 @@ server_lookup:
 	    if (mspac) {
 		krb5_pac_free(context, mspac);
 		mspac = NULL;
-		ret = _kdc_pac_generate(context, s4u2self_impersonated_client, NULL, NULL, &mspac);
-		if (ret) {
-		    kdc_log(context, config, 0, "PAC generation failed for -- %s",
-			    tpn);
-		    goto out;
-		}
+	    }
+
+	    ret = _kdc_pac_generate(context, s4u2self_impersonated_client, NULL, NULL, &mspac);
+	    if (ret) {
+		kdc_log(context, config, 0, "PAC generation failed for -- %s",
+			tpn);
+		goto out;
 	    }
 
 	    /*
