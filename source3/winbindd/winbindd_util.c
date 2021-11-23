@@ -1784,6 +1784,9 @@ char *fill_domain_username_talloc(TALLOC_CTX *mem_ctx,
 	}
 
 	tmp_user = talloc_strdup(mem_ctx, user);
+	if (tmp_user == NULL) {
+		return NULL;
+	}
 	if (!strlower_m(tmp_user)) {
 		TALLOC_FREE(tmp_user);
 		return NULL;
