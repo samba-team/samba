@@ -37,6 +37,7 @@
  */
 static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 					 struct hdb_entry_ex *client,
+					 struct hdb_entry_ex *server,
 					 const krb5_keyblock *pk_reply_key,
 					 const krb5_boolean *pac_request,
 					 krb5_pac *pac)
@@ -55,6 +56,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	struct samba_kdc_entry *skdc_entry =
 		talloc_get_type_abort(client->ctx,
 		struct samba_kdc_entry);
+	bool is_krbtgt;
 
 	mem_ctx = talloc_named(client->ctx, 0, "samba_get_pac context");
 	if (!mem_ctx) {
@@ -65,13 +67,15 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 		cred_ndr_ptr = &cred_ndr;
 	}
 
+	is_krbtgt = krb5_principal_is_krbtgt(context, server->entry.principal);
+
 	nt_status = samba_kdc_get_pac_blobs(mem_ctx, skdc_entry,
 					    &logon_blob,
 					    cred_ndr_ptr,
 					    &upn_blob,
-					    &pac_attrs_blob,
+					    is_krbtgt ? &pac_attrs_blob : NULL,
 					    pac_request,
-					    &requester_sid_blob,
+					    is_krbtgt ? &requester_sid_blob : NULL,
 					    NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -101,10 +105,11 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 
 static krb5_error_code samba_wdc_get_pac_compat(void *priv, krb5_context context,
 						struct hdb_entry_ex *client,
+						struct hdb_entry_ex *server,
 						const krb5_boolean *pac_request,
 						krb5_pac *pac)
 {
-	return samba_wdc_get_pac(priv, context, client, NULL, pac_request, pac);
+	return samba_wdc_get_pac(priv, context, client, server, NULL, pac_request, pac);
 }
 
 static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
