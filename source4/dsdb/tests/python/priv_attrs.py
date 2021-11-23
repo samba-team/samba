@@ -167,7 +167,7 @@ class PrivAttrsTests(samba.tests.TestCase):
         creds_tmp.set_kerberos_state(DONT_USE_KERBEROS)  # kinit is too expensive to use in a tight loop
         return creds_tmp
 
-    def assertGotLdbError(self, got, wanted):
+    def assertGotLdbError(self, wanted, got):
         if not self.strict_checking:
             self.assertNotEqual(got, ldb.SUCCESS)
         else:
