@@ -1848,7 +1848,8 @@ server_lookup:
 		mspac = NULL;
 	    }
 
-	    ret = _kdc_pac_generate(context, s4u2self_impersonated_client, NULL, NULL, &mspac);
+	    ret = _kdc_pac_generate(context, s4u2self_impersonated_client, server,
+				    NULL, NULL, &mspac);
 	    if (ret) {
 		kdc_log(context, config, 0, "PAC generation failed for -- %s",
 			tpn);

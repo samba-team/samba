@@ -1771,7 +1771,7 @@ _kdc_as_rep(krb5_context context,
 
 	sent_pac_request = send_pac_p(context, req, &pac_request);
 
-	ret = _kdc_pac_generate(context, client, pk_reply_key,
+	ret = _kdc_pac_generate(context, client, server, pk_reply_key,
 				sent_pac_request ? &pac_request : NULL,
 				&p);
 	if (ret) {
