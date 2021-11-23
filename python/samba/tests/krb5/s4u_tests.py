@@ -42,6 +42,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_INAPP_CKSUM,
     KDC_ERR_MODIFIED,
     KDC_ERR_SUMTYPE_NOSUPP,
+    KDC_ERR_TGT_REVOKED,
     KU_PA_ENC_TIMESTAMP,
     KU_AS_REP_ENC_PART,
     KU_TGS_REP_ENC_PART_SUB_KEY,
@@ -278,6 +279,8 @@ class S4UKerberosTests(KDCBaseTest):
         etypes = kdc_dict.pop('etypes', (AES256_CTS_HMAC_SHA1_96,
                                          ARCFOUR_HMAC_MD5))
 
+        expect_edata = kdc_dict.pop('expect_edata', None)
+
         def generate_s4u2self_padata(_kdc_exchange_dict,
                                      _callback_dict,
                                      req_body):
@@ -309,7 +312,8 @@ class S4UKerberosTests(KDCBaseTest):
             tgt=service_tgt,
             authenticator_subkey=authenticator_subkey,
             kdc_options=str(kdc_options),
-            expect_claims=False)
+            expect_claims=False,
+            expect_edata=expect_edata)
 
         self._generic_kdc_exchange(kdc_exchange_dict,
                                    cname=None,
@@ -343,15 +347,14 @@ class S4UKerberosTests(KDCBaseTest):
 
         self._run_s4u2self_test(
             {
-                'expected_error_mode': (KDC_ERR_GENERIC,
-                                        KDC_ERR_BADOPTION),
-                'expected_status': ntstatus.NT_STATUS_INVALID_PARAMETER,
+                'expected_error_mode': KDC_ERR_TGT_REVOKED,
                 'client_opts': {
                     'not_delegated': False
                 },
                 'kdc_options': 'forwardable',
                 'modify_service_tgt_fn': forwardable_no_pac,
-                'expected_flags': 'forwardable'
+                'expected_flags': 'forwardable',
+                'expect_edata': False
             })
 
     # Test performing an S4U2Self operation without requesting a forwardable
@@ -674,8 +677,8 @@ class S4UKerberosTests(KDCBaseTest):
         # contain a PAC.
         self._run_delegation_test(
             {
-                'expected_error_mode': (KDC_ERR_BADOPTION,
-                                        KDC_ERR_MODIFIED),
+                'expected_error_mode': (KDC_ERR_MODIFIED,
+                                        KDC_ERR_TGT_REVOKED),
                 'allow_delegation': True,
                 'modify_client_tkt_fn': self.remove_ticket_pac,
                 'expect_edata': False
@@ -686,9 +689,10 @@ class S4UKerberosTests(KDCBaseTest):
         # PAC.
         self._run_delegation_test(
             {
-                'expected_error_mode': 0,
+                'expected_error_mode': KDC_ERR_TGT_REVOKED,
                 'allow_delegation': True,
-                'modify_service_tgt_fn': self.remove_ticket_pac
+                'modify_service_tgt_fn': self.remove_ticket_pac,
+                'expect_edata': False
             })
 
     def test_constrained_delegation_no_client_pac_no_auth_data_required(self):
@@ -696,8 +700,8 @@ class S4UKerberosTests(KDCBaseTest):
         # contain a PAC.
         self._run_delegation_test(
             {
-                'expected_error_mode': (KDC_ERR_BADOPTION,
-                                        KDC_ERR_MODIFIED),
+                'expected_error_mode': (KDC_ERR_MODIFIED,
+                                        KDC_ERR_BADOPTION),
                 'allow_delegation': True,
                 'modify_client_tkt_fn': self.remove_ticket_pac,
                 'expect_edata': False,
@@ -711,13 +715,14 @@ class S4UKerberosTests(KDCBaseTest):
         # PAC.
         self._run_delegation_test(
             {
-                'expected_error_mode': (KDC_ERR_BADOPTION,
-                                        KDC_ERR_MODIFIED),
+                'expected_error_mode': KDC_ERR_TGT_REVOKED,
                 'allow_delegation': True,
                 'modify_service_tgt_fn': self.remove_ticket_pac,
                 'service2_opts': {
                     'no_auth_data_required': True
-                }
+                },
+                'expect_pac': False,
+                'expect_edata': False
             })
 
     def test_constrained_delegation_non_forwardable(self):
@@ -812,12 +817,11 @@ class S4UKerberosTests(KDCBaseTest):
         # PAC.
         self._run_delegation_test(
             {
-                'expected_error_mode': KDC_ERR_BADOPTION,
-                'expected_status':
-                    ntstatus.NT_STATUS_NOT_FOUND,
+                'expected_error_mode': KDC_ERR_TGT_REVOKED,
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD
-                'modify_service_tgt_fn': self.remove_ticket_pac
+                'modify_service_tgt_fn': self.remove_ticket_pac,
+                'expect_edata': False
             })
 
     def test_rbcd_no_client_pac_no_auth_data_required_a(self):
@@ -858,15 +862,14 @@ class S4UKerberosTests(KDCBaseTest):
         # PAC.
         self._run_delegation_test(
             {
-                'expected_error_mode': KDC_ERR_BADOPTION,
-                'expected_status':
-                    ntstatus.NT_STATUS_NOT_FOUND,
+                'expected_error_mode': KDC_ERR_TGT_REVOKED,
                 'allow_rbcd': True,
                 'pac_options': '0001',  # supports RBCD
                 'modify_service_tgt_fn': self.remove_ticket_pac,
                 'service2_opts': {
                     'no_auth_data_required': True
-                }
+                },
+                'expect_edata': False
             })
 
     def test_rbcd_non_forwardable(self):
@@ -941,8 +944,8 @@ class S4UKerberosTests(KDCBaseTest):
         for checksum in self.pac_checksum_types:
             with self.subTest(checksum=checksum):
                 if checksum == krb5pac.PAC_TYPE_TICKET_CHECKSUM:
-                    expected_error_mode = (KDC_ERR_BADOPTION,
-                                           KDC_ERR_MODIFIED)
+                    expected_error_mode = (KDC_ERR_MODIFIED,
+                                           KDC_ERR_BADOPTION)
                 else:
                     expected_error_mode = KDC_ERR_GENERIC
 
@@ -1061,8 +1064,7 @@ class S4UKerberosTests(KDCBaseTest):
         for checksum in self.pac_checksum_types:
             with self.subTest(checksum=checksum):
                 if checksum == krb5pac.PAC_TYPE_SRV_CHECKSUM:
-                    expected_error_mode = (KDC_ERR_MODIFIED,
-                                           KDC_ERR_BAD_INTEGRITY)
+                    expected_error_mode = KDC_ERR_MODIFIED
                     expected_status = ntstatus.NT_STATUS_WRONG_PASSWORD
                 else:
                     expected_error_mode = 0
@@ -1162,8 +1164,7 @@ class S4UKerberosTests(KDCBaseTest):
                 with self.subTest(checksum=checksum, ctype=ctype):
                     if checksum == krb5pac.PAC_TYPE_SRV_CHECKSUM:
                         if ctype == Cksumtype.SHA1:
-                            expected_error_mode = (KDC_ERR_SUMTYPE_NOSUPP,
-                                                   KDC_ERR_BAD_INTEGRITY)
+                            expected_error_mode = KDC_ERR_SUMTYPE_NOSUPP
                             expected_status = ntstatus.NT_STATUS_LOGON_FAILURE
                         else:
                             expected_error_mode = KDC_ERR_GENERIC

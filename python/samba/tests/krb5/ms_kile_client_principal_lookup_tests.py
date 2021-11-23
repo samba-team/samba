@@ -32,6 +32,7 @@ from samba.tests.krb5.rfc4120_constants import (
     NT_PRINCIPAL,
     NT_SRV_INST,
     KDC_ERR_C_PRINCIPAL_UNKNOWN,
+    KDC_ERR_TGT_REVOKED,
 )
 
 global_asn1_print = False
@@ -322,21 +323,10 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc, expect_pac=False)
-        self.check_tgs_reply(rep)
-
-        # Check the contents of the service ticket
-        ticket = rep['ticket']
-        enc_part = self.decode_service_ticket(mc, ticket)
-        #
-        # We get an empty authorization-data element in the ticket.
-        # i.e. no PAC
-        self.assertEqual([], enc_part['authorization-data'])
-        # check the crealm and cname
-        cname = enc_part['cname']
-        self.assertEqual(NT_PRINCIPAL, cname['name-type'])
-        self.assertEqual(alt_name.encode('UTF8'), cname['name-string'][0])
-        self.assertEqual(realm.upper().encode('UTF8'), enc_part['crealm'])
+            service_creds=mc, expect_pac=False,
+            expect_edata=False,
+            expected_error_mode=KDC_ERR_TGT_REVOKED)
+        self.check_error_rep(rep, KDC_ERR_TGT_REVOKED)
 
     def test_nt_principal_step_4_b(self):
         ''' Step 4, pre-authentication
@@ -703,21 +693,10 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         (rep, enc_part) = self.tgs_req(
             cname, sname, uc.get_realm(), ticket, key, etype,
-            service_creds=mc, expect_pac=False)
-        self.check_tgs_reply(rep)
-
-        # Check the contents of the service ticket
-        ticket = rep['ticket']
-        enc_part = self.decode_service_ticket(mc, ticket)
-        #
-        # We get an empty authorization-data element in the ticket.
-        # i.e. no PAC
-        self.assertEqual([], enc_part['authorization-data'])
-        # check the crealm and cname
-        cname = enc_part['cname']
-        self.assertEqual(NT_ENTERPRISE_PRINCIPAL, cname['name-type'])
-        self.assertEqual(ename.encode('UTF8'), cname['name-string'][0])
-        self.assertEqual(realm.upper().encode('UTF8'), enc_part['crealm'])
+            service_creds=mc, expect_pac=False,
+            expect_edata=False,
+            expected_error_mode=KDC_ERR_TGT_REVOKED)
+        self.check_error_rep(rep, KDC_ERR_TGT_REVOKED)
 
     def test_nt_enterprise_principal_step_6_b(self):
         ''' Step 4, pre-authentication
