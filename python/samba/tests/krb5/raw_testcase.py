@@ -1167,10 +1167,11 @@ class RawKerberosTest(TestCaseInTempDir):
         key = kcrypto.Key(etype, contents)
         return RodcPacEncryptionKey(key, kvno)
 
-    def PasswordKey_create(self, etype=None, pwd=None, salt=None, kvno=None):
+    def PasswordKey_create(self, etype=None, pwd=None, salt=None, kvno=None,
+                           params=None):
         self.assertIsNotNone(pwd)
         self.assertIsNotNone(salt)
-        key = kcrypto.string_to_key(etype, pwd, salt)
+        key = kcrypto.string_to_key(etype, pwd, salt, params=params)
         return RodcPacEncryptionKey(key, kvno)
 
     def PasswordKey_from_etype_info2(self, creds, etype_info2, kvno=None):
@@ -1182,9 +1183,11 @@ class RawKerberosTest(TestCaseInTempDir):
             nthash = creds.get_nt_hash()
             return self.SessionKey_create(etype=e, contents=nthash, kvno=kvno)
 
+        params = etype_info2.get('s2kparams')
+
         password = creds.get_password()
         return self.PasswordKey_create(
-            etype=e, pwd=password, salt=salt, kvno=kvno)
+            etype=e, pwd=password, salt=salt, kvno=kvno, params=params)
 
     def TicketDecryptionKey_from_creds(self, creds, etype=None):
 
