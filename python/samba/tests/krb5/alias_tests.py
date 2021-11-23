@@ -28,7 +28,7 @@ from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.tests.krb5.rfc4120_constants import (
     AES256_CTS_HMAC_SHA1_96,
     ARCFOUR_HMAC_MD5,
-    KDC_ERR_CLIENT_NAME_MISMATCH,
+    KDC_ERR_TGT_REVOKED,
     NT_PRINCIPAL,
 )
 
@@ -168,7 +168,7 @@ class AliasTests(KDCBaseTest):
                                              ctype=None)
             return [padata], req_body
 
-        expected_error_mode = KDC_ERR_CLIENT_NAME_MISMATCH
+        expected_error_mode = KDC_ERR_TGT_REVOKED
 
         # Make a request using S4U2Self. The request should fail.
         kdc_exchange_dict = self.tgs_exchange_dict(
@@ -184,7 +184,8 @@ class AliasTests(KDCBaseTest):
             tgt=tgt,
             authenticator_subkey=authenticator_subkey,
             kdc_options='0',
-            expect_pac=True)
+            expect_pac=True,
+            expect_edata=False)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
                                          cname=None,
