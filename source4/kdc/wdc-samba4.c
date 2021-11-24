@@ -459,6 +459,12 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 		talloc_free(mem_ctx);
 		return EINVAL;
 	}
+	if (delegated_proxy_principal == NULL && requester_sid_idx == -1) {
+		DEBUG(1, ("PAC_TYPE_REQUESTER_SID missing\n"));
+		SAFE_FREE(types);
+		talloc_free(mem_ctx);
+		return KRB5KDC_ERR_TGT_REVOKED;
+	}
 
 	/*
 	 * The server account may be set not to want the PAC.
