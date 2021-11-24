@@ -1237,11 +1237,7 @@ krb5_error_code samba_kdc_validate_pac_blob(
 			"PAC[%s] != CLI[%s]\n",
 			dom_sid_str_buf(&pac_sid, &buf1),
 			dom_sid_str_buf(client_sid, &buf2));
-#if defined(KRB5KDC_ERR_CLIENT_NAME_MISMATCH) /* MIT */
-			code = KRB5KDC_ERR_CLIENT_NAME_MISMATCH;
-#else /* Heimdal (where this is an enum) */
-			code = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
-#endif
+			code = KRB5KDC_ERR_TGT_REVOKED;
 		goto out;
 	}
 
