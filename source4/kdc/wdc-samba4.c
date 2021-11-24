@@ -579,7 +579,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			type_blob = data_blob_const(&zero_byte, 1);
 			break;
 		case PAC_TYPE_ATTRIBUTES_INFO:
-			if (is_krbtgt) {
+			if (!is_untrusted && is_krbtgt) {
 				/* just copy... */
 				break;
 			} else {
