@@ -285,11 +285,8 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_validate_pac_request_none
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_validate_pac_request_true
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_pac_request_false
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_pac_attrs_none
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_pac_attrs_true
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_req_from_rodc_no_requester_sid
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_req_no_requester_sid
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid(?!_)
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_missing_renew
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_missing_rodc_renew
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_missing_rodc_validate
@@ -297,42 +294,3 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_rodc_renew
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_requester_sid_rodc_validate
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_rodc_revealed
-#
-# PAC tests
-#
-^samba4.blackbox.pkinit_pac.STEP1 remote.pac verification.ad_dc:local
-^samba4.blackbox.pkinit_pac.STEP1 remote.pac verification.ad_dc_ntvfs:local
-^samba4.blackbox.pkinit_pac.netr-bdc-aes.verify-sig-aes.ad_dc:local
-^samba4.blackbox.pkinit_pac.netr-bdc-aes.verify-sig-aes.ad_dc_ntvfs:local
-^samba4.blackbox.pkinit_pac.netr-mem-aes.s4u2proxy-aes.ad_dc:local
-^samba4.blackbox.pkinit_pac.netr-mem-aes.s4u2proxy-aes.ad_dc_ntvfs:local
-^samba4.blackbox.pkinit_pac.netr-mem-aes.verify-sig-aes.ad_dc:local
-^samba4.blackbox.pkinit_pac.netr-mem-aes.verify-sig-aes.ad_dc_ntvfs:local
-^samba4.blackbox.pkinit_pac.netr-mem-arcfour.s4u2proxy-arcfour.ad_dc:local
-^samba4.blackbox.pkinit_pac.netr-mem-arcfour.s4u2proxy-arcfour.ad_dc_ntvfs:local
-^samba4.blackbox.pkinit_pac.netr-mem-arcfour.verify-sig-arcfour.ad_dc:local
-^samba4.blackbox.pkinit_pac.netr-mem-arcfour.verify-sig-arcfour.ad_dc_ntvfs:local
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.s4u2proxy-arcfour.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.s4u2proxy-arcfour.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.s4u2proxy-arcfour.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.s4u2proxy-arcfour.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008r2dc
