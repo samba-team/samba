@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB client password change routine
    Copyright (C) Andrew Tridgell 1994-1998
@@ -79,7 +79,7 @@ NTSTATUS remote_password_change(const char *remote_machine,
 
 	if (!NT_STATUS_IS_OK(result)) {
 		if (asprintf(err_str, "machine %s rejected the negotiate "
-			 "protocol. Error was : %s.\n",        
+			 "protocol. Error was : %s.\n",
 			 remote_machine, nt_errstr(result)) == -1) {
 			*err_str = NULL;
 		}
@@ -87,7 +87,7 @@ NTSTATUS remote_password_change(const char *remote_machine,
 		return result;
 	}
 
-	/* Given things like SMB signing, restrict anonymous and the like, 
+	/* Given things like SMB signing, restrict anonymous and the like,
 	   try an authenticated connection first */
 	result = cli_session_setup_creds(cli, creds);
 
@@ -120,7 +120,7 @@ NTSTATUS remote_password_change(const char *remote_machine,
 
 		if (!NT_STATUS_IS_OK(result)) {
 			if (asprintf(err_str, "machine %s rejected the session "
-				 "setup. Error was : %s.\n",        
+				 "setup. Error was : %s.\n",
 				 remote_machine, nt_errstr(result)) == -1) {
 				*err_str = NULL;
 			}
@@ -196,7 +196,7 @@ NTSTATUS remote_password_change(const char *remote_machine,
 		cli_shutdown(cli);
 		return NT_STATUS_OK;
 
-	} else if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) 
+	} else if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)
 		     || NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))) {
 		/* it failed, but for reasons such as wrong password, too short etc ... */
 
@@ -227,7 +227,7 @@ NTSTATUS remote_password_change(const char *remote_machine,
 		cli_shutdown(cli);
 		return NT_STATUS_OK;
 	} else {
-		if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) 
+		if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)
 		      || NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))) {
 			/* it failed, but again it was due to things like new password too short */
 
