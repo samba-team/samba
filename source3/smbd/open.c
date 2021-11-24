@@ -5539,20 +5539,26 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	struct smb_filename *parent_dir_fname = NULL;
 	struct smb_filename *smb_fname_atname = NULL;
 
-	DBG_DEBUG("create_file_unixpath: access_mask = 0x%x "
-		  "file_attributes = 0x%x, share_access = 0x%x, "
-		  "create_disposition = 0x%x create_options = 0x%x "
-		  "oplock_request = 0x%x private_flags = 0x%x "
-		  "ea_list = %p, sd = %p, "
+	DBG_DEBUG("access_mask = 0x%"PRIx32" "
+		  "file_attributes = 0x%"PRIx32" "
+		  "share_access = 0x%"PRIx32" "
+		  "create_disposition = 0x%"PRIx32" "
+		  "create_options = 0x%"PRIx32" "
+		  "oplock_request = 0x%"PRIx32" "
+		  "private_flags = 0x%"PRIx32" "
+		  "ea_list = %p, "
+		  "sd = %p, "
 		  "fname = %s\n",
-		  (unsigned int)access_mask,
-		  (unsigned int)file_attributes,
-		  (unsigned int)share_access,
-		  (unsigned int)create_disposition,
-		  (unsigned int)create_options,
-		  (unsigned int)oplock_request,
-		  (unsigned int)private_flags,
-		  ea_list, sd, smb_fname_str_dbg(smb_fname));
+		  access_mask,
+		  file_attributes,
+		  share_access,
+		  create_disposition,
+		  create_options,
+		  oplock_request,
+		  private_flags,
+		  ea_list,
+		  sd,
+		  smb_fname_str_dbg(smb_fname));
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		status = NT_STATUS_NOT_SUPPORTED;
