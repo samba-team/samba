@@ -1726,6 +1726,73 @@ class KdcTgsTests(KDCBaseTest):
 
         self._renew_tgt(tgt, expected_error=KDC_ERR_TGT_REVOKED)
 
+    def test_tgs_requester_sid_validate(self):
+        creds = self._get_creds()
+
+        samdb = self.get_samdb()
+        sid = self.get_objectSid(samdb, creds.get_dn())
+
+        tgt = self.get_tgt(creds, pac_request=None,
+                           expect_pac=True,
+                           expected_sid=sid,
+                           expect_requester_sid=True)
+        tgt = self._modify_tgt(tgt, invalid=True)
+
+        self._validate_tgt(tgt, expected_error=0, expect_pac=True,
+                           expect_pac_attrs=True,
+                           expect_pac_attrs_pac_request=None,
+                           expected_sid=sid,
+                           expect_requester_sid=True)
+
+    def test_tgs_requester_sid_rodc_validate(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+
+        samdb = self.get_samdb()
+        sid = self.get_objectSid(samdb, creds.get_dn())
+
+        tgt = self.get_tgt(creds, pac_request=None,
+                           expect_pac=True,
+                           expected_sid=sid,
+                           expect_requester_sid=True)
+        tgt = self._modify_tgt(tgt, from_rodc=True, invalid=True)
+
+        self._validate_tgt(tgt, expected_error=0, expect_pac=True,
+                           expect_pac_attrs=False,
+                           expected_sid=sid,
+                           expect_requester_sid=True)
+
+    def test_tgs_requester_sid_missing_validate(self):
+        creds = self._get_creds()
+
+        samdb = self.get_samdb()
+        sid = self.get_objectSid(samdb, creds.get_dn())
+
+        tgt = self.get_tgt(creds, pac_request=None,
+                           expect_pac=True,
+                           expected_sid=sid,
+                           expect_requester_sid=True)
+        tgt = self._modify_tgt(tgt, invalid=True,
+                               remove_requester_sid=True)
+
+        self._validate_tgt(tgt, expected_error=KDC_ERR_TGT_REVOKED)
+
+    def test_tgs_requester_sid_missing_rodc_validate(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+
+        samdb = self.get_samdb()
+        sid = self.get_objectSid(samdb, creds.get_dn())
+
+        tgt = self.get_tgt(creds, pac_request=None,
+                           expect_pac=True,
+                           expected_sid=sid,
+                           expect_requester_sid=True)
+        tgt = self._modify_tgt(tgt, from_rodc=True, invalid=True,
+                               remove_requester_sid=True)
+
+        self._validate_tgt(tgt, expected_error=KDC_ERR_TGT_REVOKED)
+
     def test_tgs_pac_request_none(self):
         creds = self._get_creds()
         tgt = self.get_tgt(creds, pac_request=None)
