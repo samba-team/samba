@@ -1109,6 +1109,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
 
         # Recursively get all file paths in the backup directories
         all_files = []
+        all_stats = set()
         for backup_dir in backup_dirs:
             for (working_dir, _, filenames) in os.walk(backup_dir):
                 if working_dir.startswith(paths.sysvol):
@@ -1126,7 +1127,13 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                     # Ignore files that have already been added. This prevents
                     # duplicates if one backup dir is a subdirectory of another,
                     # or if backup dirs contain hardlinks.
-                    if any(os.path.samefile(full_path, file) for file in all_files):
+                    try:
+                        s = os.stat(full_path)
+                    except FileNotFoundError:
+                        logger.info(f"{full_path} does not exist (dangling symlink?)")
+                        continue
+
+                    if (s.st_ino, s.st_dev) in all_stats:
                         continue
 
                     # Assume existing backup files are from a previous backup.
@@ -1140,6 +1147,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                         continue
 
                     all_files.append(full_path)
+                    all_stats.add((s.st_ino, s.st_dev))
 
         # We would prefer to open with FLG_RDONLY but then we can't
         # start a transaction which is the strong isolation we want
