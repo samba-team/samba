@@ -792,6 +792,8 @@ class KdcTgsTests(KDCBaseTest):
                            expect_pac_attrs=False,
                            expect_requester_sid=True)
 
+    # This test fails on Windows, which gives KDC_ERR_C_PRINCIPAL_UNKNOWN when
+    # attempting to use S4U2Self with a TGT from an RODC.
     def test_s4u2self_rodc_revealed(self):
         creds = self._get_creds(replication_allowed=True,
                                 revealed_to_rodc=True)
@@ -2370,6 +2372,8 @@ class KdcTgsTests(KDCBaseTest):
             expect_requester_sid=expect_requester_sid,
             expected_sid=expected_sid)
 
+    # These tests fail against Windows, which does not implement ticket
+    # renewal.
     def _renew_tgt(self, tgt, expected_error, expect_pac=True,
                    expect_pac_attrs=None, expect_pac_attrs_pac_request=None,
                    expect_requester_sid=None, expected_sid=None):
@@ -2384,6 +2388,8 @@ class KdcTgsTests(KDCBaseTest):
             expect_requester_sid=expect_requester_sid,
             expected_sid=expected_sid)
 
+    # These tests fail against Windows, which does not implement ticket
+    # validation.
     def _validate_tgt(self, tgt, expected_error, expect_pac=True,
                       expect_pac_attrs=None,
                       expect_pac_attrs_pac_request=None,
