@@ -132,6 +132,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	bool is_in_db, is_untrusted;
+	bool is_krbtgt;
 	size_t num_types = 0;
 	uint32_t *types = NULL;
 	uint32_t forced_next_type = 0;
@@ -471,7 +472,9 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 		goto out;
 	}
 
-	if (!is_untrusted && !server_skdc_entry->is_krbtgt) {
+	is_krbtgt = krb5_principal_is_krbtgt(context, server->entry.principal);
+
+	if (!is_untrusted && !is_krbtgt) {
 		/*
 		 * The client may have requested no PAC when obtaining the
 		 * TGT.
@@ -576,17 +579,25 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			type_blob = data_blob_const(&zero_byte, 1);
 			break;
 		case PAC_TYPE_ATTRIBUTES_INFO:
-			/* just copy... */
-			break;
-		case PAC_TYPE_REQUESTER_SID:
-			/*
-			 * Replace in the RODC case, otherwise
-			 * requester_sid_blob is NULL and we just copy.
-			 */
-			if (requester_sid_blob != NULL) {
-				type_blob = *requester_sid_blob;
+			if (is_krbtgt) {
+				/* just copy... */
+				break;
+			} else {
+				continue;
 			}
-			break;
+		case PAC_TYPE_REQUESTER_SID:
+			if (is_krbtgt) {
+				/*
+				 * Replace in the RODC case, otherwise
+				 * requester_sid_blob is NULL and we just copy.
+				 */
+				if (requester_sid_blob != NULL) {
+					type_blob = *requester_sid_blob;
+				}
+				break;
+			} else {
+				continue;
+			}
 		default:
 			/* just copy... */
 			break;
