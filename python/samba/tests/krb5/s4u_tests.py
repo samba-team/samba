@@ -36,6 +36,7 @@ from samba.tests.krb5.raw_testcase import (
 from samba.tests.krb5.rfc4120_constants import (
     AES256_CTS_HMAC_SHA1_96,
     ARCFOUR_HMAC_MD5,
+    KDC_ERR_BADMATCH,
     KDC_ERR_BADOPTION,
     KDC_ERR_BAD_INTEGRITY,
     KDC_ERR_GENERIC,
@@ -243,7 +244,9 @@ class S4UKerberosTests(KDCBaseTest):
         client_dn = client_creds.get_dn()
         sid = self.get_objectSid(samdb, client_dn)
 
-        service_name = service_creds.get_username()[:-1]
+        service_name = kdc_dict.pop('service_name', None)
+        if service_name is None:
+            service_name = service_creds.get_username()[:-1]
         service_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                                   names=['host', service_name])
 
@@ -472,6 +475,33 @@ class S4UKerberosTests(KDCBaseTest):
                 'modify_service_tgt_fn': functools.partial(
                     self.set_ticket_forwardable, flag=True),
                 'expected_flags': 'forwardable'
+            })
+
+    # Do an S4U2Self with the sname in the request different to that of the
+    # service. We expect an error.
+    def test_s4u2self_wrong_sname(self):
+        other_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={
+                'trusted_to_auth_for_delegation': True,
+                'id': 0
+            })
+        other_sname = other_creds.get_username()[:-1]
+
+        self._run_s4u2self_test(
+            {
+                'expected_error_mode': KDC_ERR_BADMATCH,
+                'expect_edata': False,
+                'client_opts': {
+                    'not_delegated': False
+                },
+                'service_opts': {
+                    'trusted_to_auth_for_delegation': True
+                },
+                'service_name': other_sname,
+                'kdc_options': 'forwardable',
+                'modify_service_tgt_fn': functools.partial(
+                    self.set_ticket_forwardable, flag=True)
             })
 
     def _run_delegation_test(self, kdc_dict):
