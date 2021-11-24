@@ -324,6 +324,13 @@ class S4UKerberosTests(KDCBaseTest):
                                    sname=service_sname,
                                    etypes=etypes)
 
+        if not expected_error_mode:
+            # Check that the ticket contains a PAC.
+            ticket = kdc_exchange_dict['rep_ticket_creds']
+
+            pac = self.get_ticket_pac(ticket)
+            self.assertIsNotNone(pac)
+
         # Ensure we used all the parameters given to us.
         self.assertEqual({}, kdc_dict)
 
@@ -504,6 +511,24 @@ class S4UKerberosTests(KDCBaseTest):
                     self.set_ticket_forwardable, flag=True)
             })
 
+    # Do an S4U2Self where the service does not require authorization data. The
+    # resulting ticket should still contain a PAC.
+    def test_s4u2self_no_auth_data_required(self):
+        self._run_s4u2self_test(
+            {
+                'client_opts': {
+                    'not_delegated': False
+                },
+                'service_opts': {
+                    'trusted_to_auth_for_delegation': True,
+                    'no_auth_data_required': True
+                },
+                'kdc_options': 'forwardable',
+                'modify_service_tgt_fn': functools.partial(
+                    self.set_ticket_forwardable, flag=True),
+                'expected_flags': 'forwardable'
+            })
+
     def _run_delegation_test(self, kdc_dict):
         client_opts = kdc_dict.pop('client_opts', None)
         client_creds = self.get_cached_creds(
@@ -653,6 +678,15 @@ class S4UKerberosTests(KDCBaseTest):
                                    sname=service2_sname,
                                    etypes=etypes,
                                    additional_tickets=additional_tickets)
+
+        if not expected_error_mode:
+            # Check whether the ticket contains a PAC.
+            ticket = kdc_exchange_dict['rep_ticket_creds']
+            pac = self.get_ticket_pac(ticket, expect_pac=expect_pac)
+            if expect_pac:
+                self.assertIsNotNone(pac)
+            else:
+                self.assertIsNone(pac)
 
         # Ensure we used all the parameters given to us.
         self.assertEqual({}, kdc_dict)
