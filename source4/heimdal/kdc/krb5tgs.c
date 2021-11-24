@@ -78,7 +78,7 @@ check_PAC(krb5_context context,
 	return ret;
 
     if (pac == NULL)
-	return KRB5KDC_ERR_BADOPTION;
+	return KRB5KDC_ERR_TGT_REVOKED;
 
     /* Verify the server signature. */
     ret = krb5_pac_verify(context, pac, tkt->authtime, client_principal,
