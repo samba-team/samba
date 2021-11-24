@@ -1867,6 +1867,51 @@ class KdcTgsTests(KDCBaseTest):
         pac = self.get_ticket_pac(ticket)
         self.assertIsNotNone(pac)
 
+    def test_rodc_renew_pac_request_none(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=None)
+        tgt = self._modify_tgt(tgt, renewable=True, from_rodc=True)
+
+        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None,
+                              expect_pac_attrs=False,
+                              expect_requester_sid=True)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_rodc_renew_pac_request_false(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=False, expect_pac=None)
+        tgt = self._modify_tgt(tgt, renewable=True, from_rodc=True)
+
+        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None,
+                              expect_pac_attrs=False,
+                              expect_requester_sid=True)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_rodc_renew_pac_request_true(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=True)
+        tgt = self._modify_tgt(tgt, renewable=True, from_rodc=True)
+
+        tgt = self._renew_tgt(tgt, expected_error=0, expect_pac=None,
+                              expect_pac_attrs=False,
+                              expect_requester_sid=True)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
     def test_validate_pac_request_none(self):
         creds = self._get_creds()
         tgt = self.get_tgt(creds, pac_request=None)
@@ -1905,6 +1950,51 @@ class KdcTgsTests(KDCBaseTest):
         tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None,
                                  expect_pac_attrs=True,
                                  expect_pac_attrs_pac_request=True,
+                                 expect_requester_sid=True)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_rodc_validate_pac_request_none(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=None)
+        tgt = self._modify_tgt(tgt, invalid=True, from_rodc=True)
+
+        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None,
+                                 expect_pac_attrs=False,
+                                 expect_requester_sid=True)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_rodc_validate_pac_request_false(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=False, expect_pac=None)
+        tgt = self._modify_tgt(tgt, invalid=True, from_rodc=True)
+
+        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None,
+                                 expect_pac_attrs=False,
+                                 expect_requester_sid=True)
+
+        ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)
+
+        pac = self.get_ticket_pac(ticket)
+        self.assertIsNotNone(pac)
+
+    def test_rodc_validate_pac_request_true(self):
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self.get_tgt(creds, pac_request=True)
+        tgt = self._modify_tgt(tgt, invalid=True, from_rodc=True)
+
+        tgt = self._validate_tgt(tgt, expected_error=0, expect_pac=None,
+                                 expect_pac_attrs=False,
                                  expect_requester_sid=True)
 
         ticket = self._run_tgs(tgt, expected_error=0, expect_pac=True)

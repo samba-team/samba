@@ -400,6 +400,12 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_rodc_sid_mismatch_existing
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_rodc_sid_mismatch_nonexisting
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_service_ticket
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_renew_pac_request_false
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_renew_pac_request_none
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_renew_pac_request_true
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_validate_pac_request_false
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_validate_pac_request_none
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_rodc_validate_pac_request_true
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_authdata_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_req(?!_invalid)
