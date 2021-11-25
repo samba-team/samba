@@ -417,3 +417,5 @@ plantestsuite("samba.unittests.test_oLschema2ldif", "none",
 if with_elasticsearch_backend:
     plantestsuite("samba.unittests.mdsparser_es", "none",
                   [os.path.join(bindir(), "default/source3/test_mdsparser_es")] + [configuration])
+plantestsuite("samba.unittests.adouble", "none",
+              [os.path.join(bindir(), "test_adouble")])
