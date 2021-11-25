@@ -1084,6 +1084,11 @@ bld.SAMBA3_SUBSYSTEM('ADOUBLE',
                     source='lib/adouble.c',
                     deps='STRING_REPLACE')
 
+bld.SAMBA3_BINARY('test_adouble',
+                 source='lib/test_adouble.c',
+                 deps='smbd_base STRING_REPLACE cmocka',
+                 for_selftest=True)
+
 bld.SAMBA3_SUBSYSTEM('STRING_REPLACE',
                     source='lib/string_replace.c')
 
