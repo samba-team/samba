@@ -427,3 +427,5 @@ if with_elasticsearch_backend:
                   [os.path.join(bindir(), "default/source3/test_mdsparser_es")] + [configuration])
 plantestsuite("samba.unittests.credentials", "none",
               [os.path.join(bindir(), "default/auth/credentials/test_creds")])
+plantestsuite("samba.unittests.adouble", "none",
+              [os.path.join(bindir(), "test_adouble")])
