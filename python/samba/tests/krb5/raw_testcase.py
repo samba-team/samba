@@ -609,6 +609,12 @@ class RawKerberosTest(TestCaseInTempDir):
             expect_extra_pac_buffers = '1'
         cls.expect_extra_pac_buffers = bool(int(expect_extra_pac_buffers))
 
+        cname_checking = samba.tests.env_get_var_value('CHECK_CNAME',
+                                                       allow_missing=True)
+        if cname_checking is None:
+            cname_checking = '1'
+        cls.cname_checking = bool(int(cname_checking))
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
@@ -2232,6 +2238,7 @@ class RawKerberosTest(TestCaseInTempDir):
         padata = self.getElementValue(rep, 'padata')
         if self.strict_checking:
             self.assertElementEqualUTF8(rep, 'crealm', expected_crealm)
+        if self.cname_checking:
             if expected_anon:
                 expected_cname = self.PrincipalName_create(
                     name_type=NT_WELLKNOWN,
@@ -2452,7 +2459,7 @@ class RawKerberosTest(TestCaseInTempDir):
                 ticket_session_key = self.EncryptionKey_import(ticket_key)
             self.assertElementEqualUTF8(ticket_private, 'crealm',
                                         expected_crealm)
-            if self.strict_checking:
+            if self.cname_checking:
                 self.assertElementEqualPrincipal(ticket_private, 'cname',
                                                  expected_cname)
             self.assertElementPresent(ticket_private, 'transited')
@@ -2695,7 +2702,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
             elif pac_buffer.type == krb5pac.PAC_TYPE_LOGON_NAME:
                 expected_cname = kdc_exchange_dict['expected_cname']
-                account_name = expected_cname['name-string'][0]
+                account_name = '/'.join(expected_cname['name-string'])
 
                 self.assertEqual(account_name, pac_buffer.info.account_name)
 
@@ -2785,15 +2792,15 @@ class RawKerberosTest(TestCaseInTempDir):
         self.assertElementPresent(rep, 'stime')
         self.assertElementPresent(rep, 'susec')
         # error-code checked above
+        if expected_anon and not inner:
+            expected_cname = self.PrincipalName_create(
+                name_type=NT_WELLKNOWN,
+                names=['WELLKNOWN', 'ANONYMOUS'])
+            self.assertElementEqualPrincipal(rep, 'cname', expected_cname)
+        elif self.strict_checking:
+            self.assertElementMissing(rep, 'cname')
         if self.strict_checking:
             self.assertElementMissing(rep, 'crealm')
-            if expected_anon and not inner:
-                expected_cname = self.PrincipalName_create(
-                    name_type=NT_WELLKNOWN,
-                    names=['WELLKNOWN', 'ANONYMOUS'])
-                self.assertElementEqualPrincipal(rep, 'cname', expected_cname)
-            else:
-                self.assertElementMissing(rep, 'cname')
             self.assertElementEqualUTF8(rep, 'realm', expected_srealm)
             self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
             self.assertElementMissing(rep, 'e-text')
