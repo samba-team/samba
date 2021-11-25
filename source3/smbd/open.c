@@ -5673,13 +5673,9 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			break;
 		}
 
-		/* Create an smb_filename with stream_name == NULL. */
-		smb_fname_base = synthetic_smb_fname(talloc_tos(),
-						smb_fname->base_name,
-						NULL,
-						&smb_fname->st,
-						smb_fname->twrp,
-						smb_fname->flags);
+		smb_fname_base = cp_smb_filename_nostream(
+			talloc_tos(), smb_fname);
+
 		if (smb_fname_base == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
