@@ -266,7 +266,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_pull_struct_blob of PAC_DATA structure failed");
 
-	num_pac_buffers = 7;
+	num_pac_buffers = 5;
 	if (expect_pac_upn_dns_info) {
 		num_pac_buffers += 1;
 	}
@@ -322,18 +322,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx,
 		       pac_buf->info != NULL,
 		       "PAC_TYPE_TICKET_CHECKSUM info");
-
-	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_ATTRIBUTES_INFO);
-	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_ATTRIBUTES_INFO");
-	torture_assert(tctx,
-		       pac_buf->info != NULL,
-		       "PAC_TYPE_ATTRIBUTES_INFO info");
-
-	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_REQUESTER_SID);
-	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_REQUESTER_SID");
-	torture_assert(tctx,
-		       pac_buf->info != NULL,
-		       "PAC_TYPE_REQUESTER_SID info");
 
 	ok = netlogon_validate_pac(tctx, p, server_creds, secure_channel_type, test_machine_name,
 				   negotiate_flags, pac_data, session_info);
@@ -1094,7 +1082,7 @@ static bool test_S4U2Proxy(struct torture_context *tctx,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_pull_struct_blob of PAC_DATA structure failed");
 
-	num_pac_buffers = 9;
+	num_pac_buffers = 7;
 
 	torture_assert_int_equal(tctx, pac_data_struct.version, 0, "version");
 	torture_assert_int_equal(tctx, pac_data_struct.num_buffers, num_pac_buffers, "num_buffers");
@@ -1133,14 +1121,6 @@ static bool test_S4U2Proxy(struct torture_context *tctx,
 	torture_assert_str_equal(tctx, deleg->transited_services[0].string,
 				 talloc_asprintf(tctx, "%s@%s", self_princ, cli_credentials_get_realm(credentials)),
 				 "wrong transited_services[0]");
-
-	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_ATTRIBUTES_INFO);
-	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_ATTRIBUTES_INFO");
-	torture_assert_not_null(tctx, pac_buf->info, "PAC_TYPE_ATTRIBUTES_INFO info");
-
-	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_REQUESTER_SID);
-	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_REQUESTER_SID");
-	torture_assert_not_null(tctx, pac_buf->info, "PAC_TYPE_REQUESTER_SID info");
 
 	return netlogon_validate_pac(tctx, p, server_creds, secure_channel_type, test_machine_name,
 				     negotiate_flags, pac_data, session_info);
