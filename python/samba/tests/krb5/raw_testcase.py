@@ -3758,6 +3758,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expect_pac_attrs=None,
                           expect_pac_attrs_pac_request=None,
                           expect_requester_sid=None,
+                          expect_edata=None,
                           to_rodc=False):
 
         def _generate_padata_copy(_kdc_exchange_dict,
@@ -3804,6 +3805,7 @@ class RawKerberosTest(TestCaseInTempDir):
             expect_pac_attrs=expect_pac_attrs,
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             expect_requester_sid=expect_requester_sid,
+            expect_edata=expect_edata,
             to_rodc=to_rodc)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,

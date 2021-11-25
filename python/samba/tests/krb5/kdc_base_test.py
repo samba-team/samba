@@ -285,6 +285,8 @@ class KDCBaseTest(RawKerberosTest):
             "sAMAccountName": account_name,
             "userAccountControl": str(account_control),
             "unicodePwd": utf16pw}
+        if upn is not None:
+            upn = upn.format(account=account_name)
         if spn is not None:
             if isinstance(spn, str):
                 spn = spn.format(account=account_name)

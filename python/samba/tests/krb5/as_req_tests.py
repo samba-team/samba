@@ -27,9 +27,11 @@ from samba.tests.krb5.kdc_base_test import KDCBaseTest
 import samba.tests.krb5.kcrypto as kcrypto
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
+    KDC_ERR_C_PRINCIPAL_UNKNOWN,
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_PREAUTH_REQUIRED,
     KU_PA_ENC_TIMESTAMP,
+    NT_ENTERPRISE_PRINCIPAL,
     NT_PRINCIPAL,
     NT_SRV_INST,
     PADATA_ENC_TIMESTAMP
@@ -40,46 +42,67 @@ global_hexdump = False
 
 
 class AsReqBaseTest(KDCBaseTest):
-    def _run_as_req_enc_timestamp(self, client_creds):
-        client_account = client_creds.get_username()
+    def _run_as_req_enc_timestamp(self, client_creds, client_account=None,
+                                  expected_cname=None,
+                                  name_type=NT_PRINCIPAL, etypes=None,
+                                  expected_error=None, expect_edata=None,
+                                  kdc_options=None):
+        user_name = client_creds.get_username()
+        if client_account is None:
+            client_account = user_name
         client_as_etypes = self.get_default_enctypes()
         client_kvno = client_creds.get_kvno()
         krbtgt_creds = self.get_krbtgt_creds(require_strongest_key=True)
         krbtgt_account = krbtgt_creds.get_username()
+        krbtgt_supported_etypes = krbtgt_creds.tgs_supported_enctypes
         realm = krbtgt_creds.get_realm()
 
-        cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                          names=[client_account])
+        cname = self.PrincipalName_create(name_type=name_type,
+                                          names=client_account.split('/'))
         sname = self.PrincipalName_create(name_type=NT_SRV_INST,
                                           names=[krbtgt_account, realm])
 
         expected_crealm = realm
-        expected_cname = cname
+        if expected_cname is None:
+            expected_cname = cname
         expected_srealm = realm
         expected_sname = sname
         expected_salt = client_creds.get_salt()
 
         till = self.get_KerberosTime(offset=36000)
 
-        initial_etypes = client_as_etypes
-        initial_kdc_options = krb5_asn1.KDCOptions('forwardable')
-        initial_error_mode = KDC_ERR_PREAUTH_REQUIRED
+        if etypes is None:
+            etypes = client_as_etypes
+        if kdc_options is None:
+            kdc_options = krb5_asn1.KDCOptions('forwardable')
+        if expected_error is not None:
+            initial_error_mode = expected_error
+        else:
+            initial_error_mode = KDC_ERR_PREAUTH_REQUIRED
 
-        rep, kdc_exchange_dict = self._test_as_exchange(cname,
-                                                        realm,
-                                                        sname,
-                                                        till,
-                                                        client_as_etypes,
-                                                        initial_error_mode,
-                                                        expected_crealm,
-                                                        expected_cname,
-                                                        expected_srealm,
-                                                        expected_sname,
-                                                        expected_salt,
-                                                        initial_etypes,
-                                                        None,
-                                                        initial_kdc_options,
-                                                        pac_request=True)
+        rep, kdc_exchange_dict = self._test_as_exchange(
+            cname,
+            realm,
+            sname,
+            till,
+            client_as_etypes,
+            initial_error_mode,
+            expected_crealm,
+            expected_cname,
+            expected_srealm,
+            expected_sname,
+            expected_salt,
+            etypes,
+            None,
+            kdc_options,
+            expected_supported_etypes=krbtgt_supported_etypes,
+            expected_account_name=user_name,
+            pac_request=True,
+            expect_edata=expect_edata)
+
+        if expected_error is not None:
+            return None
+
         etype_info2 = kdc_exchange_dict['preauth_etype_info2']
         self.assertIsNotNone(etype_info2)
 
@@ -98,8 +121,6 @@ class AsReqBaseTest(KDCBaseTest):
         pa_ts = self.PA_DATA_create(PADATA_ENC_TIMESTAMP, pa_ts)
 
         preauth_padata = [pa_ts]
-        preauth_etypes = client_as_etypes
-        preauth_kdc_options = krb5_asn1.KDCOptions('forwardable')
         preauth_error_mode = 0 # AS-REP
 
         krbtgt_decryption_key = (
@@ -117,9 +138,11 @@ class AsReqBaseTest(KDCBaseTest):
             expected_srealm,
             expected_sname,
             expected_salt,
-            preauth_etypes,
+            etypes,
             preauth_padata,
-            preauth_kdc_options,
+            kdc_options,
+            expected_supported_etypes=krbtgt_supported_etypes,
+            expected_account_name=user_name,
             preauth_key=preauth_key,
             ticket_decryption_key=krbtgt_decryption_key,
             pac_request=True)
@@ -248,6 +271,78 @@ class AsReqKerberosTests(AsReqBaseTest):
             client_creds,
             etypes={kcrypto.Enctype.AES128,
                     kcrypto.Enctype.RC4})
+
+    def test_as_req_enc_timestamp_spn(self):
+        client_creds = self.get_mach_creds()
+        spn = client_creds.get_spn()
+        self._run_as_req_enc_timestamp(
+            client_creds, client_account=spn,
+            expected_error=KDC_ERR_C_PRINCIPAL_UNKNOWN,
+            expect_edata=False)
+
+    def test_as_req_enc_timestamp_spn_realm(self):
+        samdb = self.get_samdb()
+        realm = samdb.domain_dns_name().upper()
+
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'upn': f'host/{{account}}.{realm}@{realm}'})
+        spn = client_creds.get_spn()
+        self._run_as_req_enc_timestamp(
+            client_creds, client_account=spn,
+            expected_error=KDC_ERR_C_PRINCIPAL_UNKNOWN,
+            expect_edata=False)
+
+    def test_as_req_enc_timestamp_spn_upn(self):
+        samdb = self.get_samdb()
+        realm = samdb.domain_dns_name().upper()
+
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'upn': f'host/{{account}}.{realm}@{realm}',
+                  'spn': f'host/{{account}}.{realm}'})
+        spn = client_creds.get_spn()
+        self._run_as_req_enc_timestamp(client_creds, client_account=spn)
+
+    def test_as_req_enc_timestamp_spn_enterprise(self):
+        client_creds = self.get_mach_creds()
+        spn = client_creds.get_spn()
+        self._run_as_req_enc_timestamp(
+            client_creds, client_account=spn,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            expected_error=KDC_ERR_C_PRINCIPAL_UNKNOWN,
+            expect_edata=False)
+
+    def test_as_req_enc_timestamp_spn_enterprise_realm(self):
+        samdb = self.get_samdb()
+        realm = samdb.domain_dns_name().upper()
+
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'upn': f'host/{{account}}.{realm}@{realm}'})
+        spn = client_creds.get_spn()
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            client_account=spn,
+            expected_error=KDC_ERR_C_PRINCIPAL_UNKNOWN,
+            expect_edata=False)
+
+    def test_as_req_enc_timestamp_spn_upn_enterprise(self):
+        samdb = self.get_samdb()
+        realm = samdb.domain_dns_name().upper()
+
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'upn': f'host/{{account}}.{realm}@{realm}',
+                  'spn': f'host/{{account}}.{realm}'})
+        spn = client_creds.get_spn()
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            client_account=spn,
+            expected_error=KDC_ERR_C_PRINCIPAL_UNKNOWN,
+            expect_edata=False)
 
 
 if __name__ == "__main__":
