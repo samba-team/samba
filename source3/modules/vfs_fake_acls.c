@@ -668,7 +668,7 @@ static int fake_acls_connect(struct vfs_handle_struct *handle,
 	}
 	/*
 	 * Create a struct can tell us if we're recursing
-	 * into open_pathref_fsp() in this module. This will
+	 * into openat_pathref_fsp() in this module. This will
 	 * go away once we have SMB_VFS_STATX() and we will
 	 * have a way for a caller to as for specific stat
 	 * fields in a granular way. Then we will know exactly

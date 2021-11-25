@@ -287,7 +287,7 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
  * sense. It's a object that "links" together an fsp and an smb_fname
  * and the link allocated as talloc child of an fsp.
  *
- * The link is created for fsps that open_pathref_fsp() returns in
+ * The link is created for fsps that openat_pathref_fsp() returns in
  * smb_fname->fsp. When this fsp is freed by file_free() by some caller
  * somewhere, the destructor fsp_smb_fname_link_destructor() on the link object
  * will use the link to reset the reference in smb_fname->fsp that is about to
