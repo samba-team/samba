@@ -433,22 +433,6 @@ void stat_cache_delete(const char *name)
 	TALLOC_FREE(lname);
 }
 
-/***************************************************************
- Compute a hash value based on a string key value.
- The function returns the bucket index number for the hashed key.
- JRA. Use a djb-algorithm hash for speed.
-***************************************************************/
-
-unsigned int fast_string_hash(TDB_DATA *key)
-{
-        unsigned int n = 0;
-        const char *p;
-        for (p = (const char *)key->dptr; *p != '\0'; p++) {
-                n = ((n << 5) + n) ^ (unsigned int)(*p);
-        }
-        return n;
-}
-
 /***************************************************************************
  Initializes or clears the stat cache.
 **************************************************************************/

@@ -1176,7 +1176,6 @@ void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 				    const char *name);
 void stat_cache_delete(const char *name);
 struct TDB_DATA;
-unsigned int fast_string_hash(struct TDB_DATA *key);
 bool reset_stat_cache( void );
 
 /* The following definitions come from smbd/statvfs.c  */
