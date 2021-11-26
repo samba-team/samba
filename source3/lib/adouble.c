@@ -707,12 +707,25 @@ static bool ad_pack(struct vfs_handle_struct *handle,
 static bool ad_unpack_xattrs(struct adouble *ad)
 {
 	struct ad_xattr_header *h = &ad->adx_header;
+	size_t bufsize = talloc_get_size(ad->ad_data);
 	const char *p = ad->ad_data;
 	uint32_t hoff;
 	uint32_t i;
 
+	if (ad->ad_type != ADOUBLE_RSRC) {
+		return false;
+	}
+
 	if (ad_getentrylen(ad, ADEID_FINDERI) <= ADEDLEN_FINDERI) {
 		return true;
+	}
+
+	/*
+	 * Ensure the buffer ad->ad_data was allocated by ad_alloc() for an
+	 * ADOUBLE_RSRC type (._ AppleDouble file on-disk).
+	 */
+	if (bufsize != AD_XATTR_MAX_HDR_SIZE) {
+		return false;
 	}
 
 	/* 2 bytes padding */
@@ -964,9 +977,11 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 		ad->ad_eid[eid].ade_len = len;
 	}
 
-	ok = ad_unpack_xattrs(ad);
-	if (!ok) {
-		return false;
+	if (ad->ad_type == ADOUBLE_RSRC) {
+		ok = ad_unpack_xattrs(ad);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	return true;
