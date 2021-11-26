@@ -572,6 +572,10 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < numdcs; i++) {
 		size_t j;
 
+		if (dcs[i].num_ips == 0) {
+			continue;
+		}
+
 		dclist[ret_count].hostname =
 			talloc_move(dclist, &dcs[i].hostname);
 
