@@ -300,7 +300,7 @@ bld.SAMBA3_BINARY('destroy_netlogon_creds_cli',
                   ''',
                   install=False)
 
-smbstatus_source = 'status.c ../smbd/notify_msg.c'
+smbstatus_source = 'status.c'
 
 if bld.CONFIG_GET("WITH_PROFILE"):
     smbstatus_source += ' status_profile.c'
