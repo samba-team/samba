@@ -46,6 +46,7 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 	char *fuser = NULL;
 	char *unixuser = NULL;
 	struct passwd *pw = NULL;
+	bool may_retry = false;
 
 	DEBUG(3, ("Kerberos ticket principal name is [%s]\n", princ_name));
 
@@ -71,6 +72,7 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 		domain = realm;
 	} else {
 		domain = lp_workgroup();
+		may_retry = true;
 	}
 
 	fuser = talloc_asprintf(mem_ctx,
@@ -89,6 +91,13 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 	*mapped_to_guest = false;
 
 	pw = smb_getpwnam(mem_ctx, fuser, &unixuser, true);
+	if (may_retry && pw == NULL && !*is_mapped) {
+		fuser = talloc_strdup(mem_ctx, user);
+		if (!fuser) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		pw = smb_getpwnam(mem_ctx, fuser, &unixuser, true);
+	}
 	if (pw) {
 		if (!unixuser) {
 			return NT_STATUS_NO_MEMORY;
