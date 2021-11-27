@@ -20,6 +20,9 @@
 #ifndef NPA_TSTREAM_H
 #define NPA_TSTREAM_H
 
+#include <replace.h>
+#include "librpc/rpc/rpc_common.h"
+
 struct tevent_req;
 struct tevent_context;
 struct auth_session_info_transport;
@@ -30,6 +33,7 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    const char *directory,
 					    const char *npipe,
+					    enum dcerpc_transport_t transport,
 					    const struct tsocket_address *remote_client_addr,
 					    const char *remote_client_name_in,
 					    const struct tsocket_address *local_server_addr,

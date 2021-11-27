@@ -13,6 +13,7 @@ interface named_pipe_auth
 	const char *NAMED_PIPE_AUTH_MAGIC = "NPAM";
 
 	typedef [public] struct {
+		uint8 transport;
 		[charset(UTF8),string] uint8 *remote_client_name;
 		[charset(DOS),string] uint8 *remote_client_addr;
 		uint16 remote_client_port;

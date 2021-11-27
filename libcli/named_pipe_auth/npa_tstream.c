@@ -60,6 +60,7 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    const char *directory,
 					    const char *npipe,
+					    enum dcerpc_transport_t transport,
 					    const struct tsocket_address *remote_client_addr,
 					    const char *remote_client_name_in,
 					    const struct tsocket_address *local_server_addr,
@@ -120,6 +121,9 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 
 	state->auth_req.level = 5;
 	info5 = &state->auth_req.info.info5;
+
+	info5->transport = transport;
+	SMB_ASSERT(info5->transport == transport); /* Assert no overflow */
 
 	info5->remote_client_name = remote_client_name_in;
 	info5->remote_client_addr = tsocket_address_inet_addr_string(remote_client_addr,
