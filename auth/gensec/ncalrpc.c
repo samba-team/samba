@@ -329,7 +329,7 @@ static bool gensec_ncalrpc_have_feature(struct gensec_security *gensec_security,
 }
 
 static const struct gensec_security_ops gensec_ncalrpc_security_ops = {
-	.name           = "naclrpc_as_system",
+	.name           = "ncalrpc_as_system",
 	.auth_type      = DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM,
 	.client_start   = gensec_ncalrpc_client_start,
 	.server_start   = gensec_ncalrpc_server_start,
