@@ -416,35 +416,12 @@ fail:
 /* Run before the parent forks */
 bool printing_subsystem_init(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx,
-			     struct dcesrv_context *dce_ctx,
-			     bool start_daemons)
+			     struct dcesrv_context *dce_ctx)
 {
 	pid_t pid = -1;
 
 	if (!print_backend_init(msg_ctx)) {
 		return false;
-	}
-
-	/* start spoolss daemon */
-	/* start as a separate daemon only if enabled */
-	if (!start_daemons) {
-		bool ret;
-		struct bq_state *state;
-
-		state = talloc_zero(NULL, struct bq_state);
-		if (state == NULL) {
-			exit(1);
-		}
-		state->ev = ev_ctx;
-		state->msg = msg_ctx;
-
-		ret = printing_subsystem_queue_tasks(state);
-
-		/* Publish nt printers, this requires a working winreg pipe */
-		pcap_cache_reload(ev_ctx, msg_ctx,
-				  delete_and_reload_printers_full);
-
-		return ret;
 	}
 
 	pid = start_background_queue(NULL, NULL, NULL);
