@@ -115,6 +115,7 @@ int _tstream_npa_accept_existing_recv(
 	TALLOC_CTX *mem_ctx,
 	struct tstream_context **stream,
 	struct named_pipe_auth_req_info5 **info5,
+	enum dcerpc_transport_t *transport,
 	struct tsocket_address **remote_client_addr,
 	char **_remote_client_name,
 	struct tsocket_address **local_server_addr,
@@ -124,6 +125,7 @@ int _tstream_npa_accept_existing_recv(
 #define tstream_npa_accept_existing_recv(req, perrno, \
 					 mem_ctx, stream, \
 					 info4, \
+					 transport, \
 					 remote_client_addr, \
 					 remote_client_name,  \
 					 local_server_addr, \
@@ -132,6 +134,7 @@ int _tstream_npa_accept_existing_recv(
 	_tstream_npa_accept_existing_recv(req, perrno, \
 					  mem_ctx, stream, \
 					  info4, \
+					  transport, \
 					  remote_client_addr, \
 					  remote_client_name,  \
 					  local_server_addr, \

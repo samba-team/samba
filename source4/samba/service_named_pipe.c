@@ -88,6 +88,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	struct named_pipe_socket *pipe_sock =
 				talloc_get_type(conn->private_data,
 						struct named_pipe_socket);
+	enum dcerpc_transport_t transport;
 	struct tsocket_address *remote_client_addr;
 	char *remote_client_name;
 	struct tsocket_address *local_server_addr;
@@ -107,6 +108,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	ret = tstream_npa_accept_existing_recv(subreq, &error, tmp_ctx,
 					       &conn->tstream,
 					       NULL,
+					       &transport,
 					       &remote_client_addr,
 					       &remote_client_name,
 					       &local_server_addr,

@@ -369,6 +369,7 @@ static void dcesrv_ncacn_np_accept_done(struct tevent_req *subreq)
 	ret = tstream_npa_accept_existing_recv(subreq, &error, ncacn_conn,
 					       &ncacn_conn->tstream,
 					       NULL,
+					       NULL,
 					       &ncacn_conn->remote_client_addr,
 					       &ncacn_conn->remote_client_name,
 					       &ncacn_conn->local_server_addr,
