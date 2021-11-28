@@ -140,6 +140,30 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 		goto out;
 	}
 
+	if (transport == NCACN_NP) {
+		if (security_token_is_system(conn->session_info->security_token)) {
+			reason = talloc_asprintf(
+				conn,
+				"System token not allowed on transport %d\n",
+				transport);
+			goto out;
+		}
+	} else if (transport == NCALRPC) {
+		/*
+		 * TODO:
+		 * we should somehow remember the given transport on
+		 * the connection, but that's a task for another day
+		 * as it's not trivial to do...
+		 */
+	} else {
+		reason = talloc_asprintf(
+			conn,
+			"Only allow NCACN_NP or NCALRPC transport on named pipes, "
+			"got %d\n",
+			(int)transport);
+		goto out;
+	}
+
 	/*
 	 * hand over to the real pipe implementation,
 	 * now that we have setup the transport session_info

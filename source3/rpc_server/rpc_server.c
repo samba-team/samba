@@ -34,6 +34,7 @@
 #include "rpc_server/rpc_ncacn_np.h"
 #include "rpc_server/srv_pipe_hnd.h"
 #include "rpc_server/srv_pipe.h"
+#include "libcli/security/security_token.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -363,13 +364,14 @@ static void dcesrv_ncacn_np_accept_done(struct tevent_req *subreq)
 	struct dcerpc_ncacn_conn *ncacn_conn = tevent_req_callback_data(
 		subreq, struct dcerpc_ncacn_conn);
 	struct auth_session_info_transport *session_info_transport = NULL;
+	enum dcerpc_transport_t transport;
 	int error;
 	int ret;
 
 	ret = tstream_npa_accept_existing_recv(subreq, &error, ncacn_conn,
 					       &ncacn_conn->tstream,
 					       NULL,
-					       NULL,
+					       &transport,
 					       &ncacn_conn->remote_client_addr,
 					       &ncacn_conn->remote_client_name,
 					       &ncacn_conn->local_server_addr,
@@ -377,6 +379,21 @@ static void dcesrv_ncacn_np_accept_done(struct tevent_req *subreq)
 					       &session_info_transport);
 	ncacn_conn->session_info = talloc_move(ncacn_conn,
 			&session_info_transport->session_info);
+
+	if (transport != NCACN_NP) {
+		ncacn_terminate_connection(
+			ncacn_conn,
+			"Only allow NCACN_NP transport on named pipes\n");
+		return;
+	}
+
+	if (security_token_is_system(
+		    ncacn_conn->session_info->security_token)) {
+		ncacn_terminate_connection(
+			ncacn_conn,
+			"No system token via NCACN_NP allowed\n");
+		return;
+	}
 
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
