@@ -1605,11 +1605,11 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 static int stat_with_capability(struct vfs_handle_struct *handle,
 				struct smb_filename *smb_fname, int flag)
 {
+	bool fake_dctime = lp_fake_directory_create_times(SNUM(handle->conn));
 	int fd = -1;
 	NTSTATUS status;
 	struct smb_filename *dir_name = NULL;
 	struct smb_filename *rel_name = NULL;
-	struct stat st;
 	int ret = -1;
 
 	status = SMB_VFS_PARENT_PATHNAME(handle->conn,
@@ -1629,17 +1629,16 @@ static int stat_with_capability(struct vfs_handle_struct *handle,
 	}
 
 	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
-	ret = fstatat(fd, rel_name->base_name, &st, flag);
+	ret = sys_fstatat(fd,
+				rel_name->base_name,
+				&smb_fname->st,
+				flag,
+				fake_dctime);
+
 	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
 	TALLOC_FREE(dir_name);
 	close(fd);
-
-	if (ret == 0) {
-		init_stat_ex_from_stat(
-			&smb_fname->st, &st,
-			lp_fake_directory_create_times(SNUM(handle->conn)));
-	}
 
 	return ret;
 }
