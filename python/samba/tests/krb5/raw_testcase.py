@@ -65,6 +65,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_AP_REQ_AUTH,
     KU_AS_REP_ENC_PART,
     KU_AP_REQ_ENC_PART,
+    KU_AS_REQ,
     KU_ENC_CHALLENGE_KDC,
     KU_FAST_ENC,
     KU_FAST_FINISHED,
@@ -95,6 +96,7 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_PAC_REQUEST,
     PADATA_PK_AS_REQ,
     PADATA_PK_AS_REP_19,
+    PADATA_REQ_ENC_PA_REP,
     PADATA_SUPPORTED_ETYPES
 )
 import samba.tests.krb5.kcrypto as kcrypto
@@ -2306,6 +2308,8 @@ class RawKerberosTest(TestCaseInTempDir):
                                                    req_body=req_body,
                                                    asn1Spec=req_asn1Spec())
 
+        kdc_exchange_dict['req_obj'] = req_obj
+
         to_rodc = kdc_exchange_dict['to_rodc']
 
         rep = self.send_recv_transaction(req_decoded, to_rodc=to_rodc)
@@ -2689,6 +2693,8 @@ class RawKerberosTest(TestCaseInTempDir):
                     rep_decpart,
                     asn1Spec=krb5_asn1.EncTGSRepPart())
 
+        kdc_exchange_dict['reply_key'] = encpart_decryption_key
+
         self.assertIsNotNone(check_kdc_private_fn)
         if check_kdc_private_fn is not None:
             check_kdc_private_fn(kdc_exchange_dict, callback_dict,
@@ -2855,15 +2861,35 @@ class RawKerberosTest(TestCaseInTempDir):
 
             sent_pac_options = self.get_sent_pac_options(kdc_exchange_dict)
 
-            if self.strict_checking:
-                if canonicalize or '1' in sent_pac_options:
-                    self.assertElementPresent(encpart_private,
-                                              'encrypted-pa-data')
-                    enc_pa_dict = self.get_pa_dict(
-                        encpart_private['encrypted-pa-data'])
-                    if canonicalize:
-                        self.assertIn(PADATA_SUPPORTED_ETYPES, enc_pa_dict)
+            sent_enc_pa_rep = self.sent_enc_pa_rep(kdc_exchange_dict)
 
+            enc_padata = self.getElementValue(encpart_private,
+                                              'encrypted-pa-data')
+            if (canonicalize or '1' in sent_pac_options or (
+                    rep_msg_type == KRB_AS_REP and sent_enc_pa_rep)):
+                if self.strict_checking:
+                    self.assertIsNotNone(enc_padata)
+
+                if enc_padata is not None:
+                    enc_pa_dict = self.get_pa_dict(enc_padata)
+                    if self.strict_checking:
+                        if canonicalize:
+                            self.assertIn(PADATA_SUPPORTED_ETYPES, enc_pa_dict)
+                        else:
+                            self.assertNotIn(PADATA_SUPPORTED_ETYPES,
+                                             enc_pa_dict)
+
+                        if '1' in sent_pac_options:
+                            self.assertIn(PADATA_PAC_OPTIONS, enc_pa_dict)
+                        else:
+                            self.assertNotIn(PADATA_PAC_OPTIONS, enc_pa_dict)
+
+                    if rep_msg_type == KRB_AS_REP and sent_enc_pa_rep:
+                        self.assertIn(PADATA_REQ_ENC_PA_REP, enc_pa_dict)
+                    else:
+                        self.assertNotIn(PADATA_REQ_ENC_PA_REP, enc_pa_dict)
+
+                    if PADATA_SUPPORTED_ETYPES in enc_pa_dict:
                         expected_supported_etypes = kdc_exchange_dict[
                             'expected_supported_etypes']
                         expected_supported_etypes |= (
@@ -2877,24 +2903,39 @@ class RawKerberosTest(TestCaseInTempDir):
 
                         self.assertEqual(supported_etypes,
                                          expected_supported_etypes)
-                    else:
-                        self.assertNotIn(PADATA_SUPPORTED_ETYPES, enc_pa_dict)
 
-                    if '1' in sent_pac_options:
-                        self.assertIn(PADATA_PAC_OPTIONS, enc_pa_dict)
-
+                    if PADATA_PAC_OPTIONS in enc_pa_dict:
                         pac_options = self.der_decode(
                             enc_pa_dict[PADATA_PAC_OPTIONS],
                             asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
 
                         self.assertElementEqual(pac_options, 'options',
                                                 sent_pac_options)
-                    else:
-                        self.assertNotIn(PADATA_PAC_OPTIONS, enc_pa_dict)
-                else:
-                    self.assertElementEqual(encpart_private,
-                                            'encrypted-pa-data',
-                                            [])
+
+                    if PADATA_REQ_ENC_PA_REP in enc_pa_dict:
+                        enc_pa_rep = enc_pa_dict[PADATA_REQ_ENC_PA_REP]
+
+                        enc_pa_rep = self.der_decode(
+                            enc_pa_rep,
+                            asn1Spec=krb5_asn1.Checksum())
+
+                        reply_key = kdc_exchange_dict['reply_key']
+                        req_obj = kdc_exchange_dict['req_obj']
+                        req_asn1Spec = kdc_exchange_dict['req_asn1Spec']
+
+                        req_obj = self.der_encode(req_obj,
+                                                  asn1Spec=req_asn1Spec())
+
+                        checksum = enc_pa_rep['checksum']
+                        ctype = enc_pa_rep['cksumtype']
+
+                        reply_key.verify_checksum(KU_AS_REQ,
+                                                  req_obj,
+                                                  ctype,
+                                                  checksum)
+            else:
+                if enc_padata is not None:
+                    self.assertEqual(enc_padata, [])
 
         if ticket_session_key is not None and encpart_session_key is not None:
             self.assertEqual(ticket_session_key.etype,
@@ -4051,6 +4092,11 @@ class RawKerberosTest(TestCaseInTempDir):
         fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
 
         return PADATA_ENCRYPTED_CHALLENGE in fast_pa_dict
+
+    def sent_enc_pa_rep(self, kdc_exchange_dict):
+        fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
+
+        return PADATA_REQ_ENC_PA_REP in fast_pa_dict
 
     def get_sent_pac_options(self, kdc_exchange_dict):
         fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
