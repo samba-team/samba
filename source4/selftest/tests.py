@@ -962,6 +962,7 @@ tkt_sig_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
 expect_pac = int('SAMBA4_USES_HEIMDAL' in config_hash)
 extra_pac_buffers = int('SAMBA4_USES_HEIMDAL' in config_hash)
 check_cname = int('SAMBA4_USES_HEIMDAL' in config_hash)
+check_padata = int('SAMBA4_USES_HEIMDAL' in config_hash)
 planoldpythontestsuite("none", "samba.tests.krb5.kcrypto")
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.simple_tests",
                        environ={'SERVICE_USERNAME':'$SERVER',
@@ -969,7 +970,8 @@ planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.simple_tests",
                                 'TKT_SIG_SUPPORT': tkt_sig_support,
                                 'EXPECT_PAC': expect_pac,
                                 'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                                'CHECK_CNAME': check_cname})
+                                'CHECK_CNAME': check_cname,
+                                'CHECK_PADATA': check_padata})
 planoldpythontestsuite("ad_dc_default:local", "samba.tests.krb5.s4u_tests",
                        environ={'ADMIN_USERNAME':'$USERNAME',
                                 'ADMIN_PASSWORD':'$PASSWORD',
@@ -979,7 +981,8 @@ planoldpythontestsuite("ad_dc_default:local", "samba.tests.krb5.s4u_tests",
                                 'TKT_SIG_SUPPORT': tkt_sig_support,
                                 'EXPECT_PAC': expect_pac,
                                 'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                                'CHECK_CNAME': check_cname})
+                                'CHECK_CNAME': check_cname,
+                                'CHECK_PADATA': check_padata})
 planoldpythontestsuite("rodc:local", "samba.tests.krb5.rodc_tests",
                        environ={'ADMIN_USERNAME':'$USERNAME',
                                 'ADMIN_PASSWORD':'$PASSWORD',
@@ -988,7 +991,8 @@ planoldpythontestsuite("rodc:local", "samba.tests.krb5.rodc_tests",
                                 'TKT_SIG_SUPPORT': tkt_sig_support,
                                 'EXPECT_PAC': expect_pac,
                                 'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                                'CHECK_CNAME': check_cname})
+                                'CHECK_CNAME': check_cname,
+                                'CHECK_PADATA': check_padata})
 
 planoldpythontestsuite("ad_dc_default", "samba.tests.dsdb_dns")
 
@@ -997,7 +1001,8 @@ planoldpythontestsuite("fl2008r2dc:local", "samba.tests.krb5.xrealm_tests",
                                 'TKT_SIG_SUPPORT': tkt_sig_support,
                                 'EXPECT_PAC': expect_pac,
                                 'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                                'CHECK_CNAME': check_cname})
+                                'CHECK_CNAME': check_cname,
+                                'CHECK_PADATA': check_padata})
 
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ccache",
                        environ={
@@ -1008,7 +1013,8 @@ planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ccache",
                            'TKT_SIG_SUPPORT': tkt_sig_support,
                            'EXPECT_PAC': expect_pac,
                            'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                           'CHECK_CNAME': check_cname
+                           'CHECK_CNAME': check_cname,
+                           'CHECK_PADATA': check_padata
                        })
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ldap",
                        environ={
@@ -1019,7 +1025,8 @@ planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ldap",
                            'TKT_SIG_SUPPORT': tkt_sig_support,
                            'EXPECT_PAC': expect_pac,
                            'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                           'CHECK_CNAME': check_cname
+                           'CHECK_CNAME': check_cname,
+                           'CHECK_PADATA': check_padata
                        })
 for env in ['ad_dc_default', 'ad_member']:
     planoldpythontestsuite(env, "samba.tests.krb5.test_rpc",
@@ -1031,7 +1038,8 @@ for env in ['ad_dc_default', 'ad_member']:
                                'TKT_SIG_SUPPORT': tkt_sig_support,
                                'EXPECT_PAC': expect_pac,
                                'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                               'CHECK_CNAME': check_cname
+                               'CHECK_CNAME': check_cname,
+                               'CHECK_PADATA': check_padata
                            })
 planoldpythontestsuite("ad_dc_smb1", "samba.tests.krb5.test_smb",
                        environ={
@@ -1042,7 +1050,8 @@ planoldpythontestsuite("ad_dc_smb1", "samba.tests.krb5.test_smb",
                            'TKT_SIG_SUPPORT': tkt_sig_support,
                            'EXPECT_PAC': expect_pac,
                            'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                           'CHECK_CNAME': check_cname
+                           'CHECK_CNAME': check_cname,
+                           'CHECK_PADATA': check_padata
                        })
 planoldpythontestsuite("ad_member_idmap_nss:local",
                        "samba.tests.krb5.test_min_domain_uid",
@@ -1067,7 +1076,8 @@ planoldpythontestsuite("ad_member_idmap_nss:local",
                            'TKT_SIG_SUPPORT': tkt_sig_support,
                            'EXPECT_PAC': expect_pac,
                            'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                           'CHECK_CNAME': check_cname
+                           'CHECK_CNAME': check_cname,
+                           'CHECK_PADATA': check_padata
                        })
 
 for env in ["ad_dc", smbv1_disabled_testenv]:
@@ -1664,7 +1674,8 @@ for env in ["fl2008r2dc", "fl2003dc"]:
                                'TKT_SIG_SUPPORT': tkt_sig_support,
                                'EXPECT_PAC': expect_pac,
                                'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                               'CHECK_CNAME': check_cname
+                               'CHECK_CNAME': check_cname,
+                               'CHECK_PADATA': check_padata
                            })
 
 planoldpythontestsuite('fl2008r2dc', 'samba.tests.krb5.salt_tests',
@@ -1676,7 +1687,8 @@ planoldpythontestsuite('fl2008r2dc', 'samba.tests.krb5.salt_tests',
                            'TKT_SIG_SUPPORT': tkt_sig_support,
                            'EXPECT_PAC': expect_pac,
                            'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                           'CHECK_CNAME': check_cname
+                           'CHECK_CNAME': check_cname,
+                           'CHECK_PADATA': check_padata
                        })
 
 for env in ["rodc", "promoted_dc", "fl2000dc", "fl2008r2dc"]:
@@ -1701,7 +1713,8 @@ planpythontestsuite("ad_dc", "samba.tests.krb5.as_canonicalization_tests",
                            'TKT_SIG_SUPPORT': tkt_sig_support,
                            'EXPECT_PAC': expect_pac,
                            'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                           'CHECK_CNAME': check_cname
+                           'CHECK_CNAME': check_cname,
+                           'CHECK_PADATA': check_padata
                        })
 planpythontestsuite("ad_dc", "samba.tests.krb5.compatability_tests",
                     environ={
@@ -1712,14 +1725,16 @@ planpythontestsuite("ad_dc", "samba.tests.krb5.compatability_tests",
                         'TKT_SIG_SUPPORT': tkt_sig_support,
                         'EXPECT_PAC': expect_pac,
                         'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                        'CHECK_CNAME': check_cname
+                        'CHECK_CNAME': check_cname,
+                        'CHECK_PADATA': check_padata
                     })
 planpythontestsuite("ad_dc", "samba.tests.krb5.kdc_tests",
                     environ={'FAST_SUPPORT': have_fast_support,
                              'TKT_SIG_SUPPORT': tkt_sig_support,
                              'EXPECT_PAC': expect_pac,
                              'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-                             'CHECK_CNAME': check_cname})
+                             'CHECK_CNAME': check_cname,
+                             'CHECK_PADATA': check_padata})
 planpythontestsuite(
     "ad_dc",
     "samba.tests.krb5.kdc_tgs_tests",
@@ -1731,7 +1746,8 @@ planpythontestsuite(
         'TKT_SIG_SUPPORT': tkt_sig_support,
         'EXPECT_PAC': expect_pac,
         'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-        'CHECK_CNAME': check_cname
+        'CHECK_CNAME': check_cname,
+        'CHECK_PADATA': check_padata
     })
 planpythontestsuite(
     "ad_dc",
@@ -1744,7 +1760,8 @@ planpythontestsuite(
         'TKT_SIG_SUPPORT': tkt_sig_support,
         'EXPECT_PAC': expect_pac,
         'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-        'CHECK_CNAME': check_cname
+        'CHECK_CNAME': check_cname,
+        'CHECK_PADATA': check_padata
     })
 planpythontestsuite(
     "ad_dc",
@@ -1757,7 +1774,8 @@ planpythontestsuite(
         'TKT_SIG_SUPPORT': tkt_sig_support,
         'EXPECT_PAC': expect_pac,
         'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-        'CHECK_CNAME': check_cname
+        'CHECK_CNAME': check_cname,
+        'CHECK_PADATA': check_padata
     })
 planpythontestsuite(
     "ad_dc",
@@ -1770,7 +1788,8 @@ planpythontestsuite(
         'TKT_SIG_SUPPORT': tkt_sig_support,
         'EXPECT_PAC': expect_pac,
         'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-        'CHECK_CNAME': check_cname
+        'CHECK_CNAME': check_cname,
+        'CHECK_PADATA': check_padata
     })
 planpythontestsuite(
     "ad_dc",
@@ -1783,7 +1802,8 @@ planpythontestsuite(
         'TKT_SIG_SUPPORT': tkt_sig_support,
         'EXPECT_PAC': expect_pac,
         'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
-        'CHECK_CNAME': check_cname
+        'CHECK_CNAME': check_cname,
+        'CHECK_PADATA': check_padata
     })
 planoldpythontestsuite(
     'ad_dc',

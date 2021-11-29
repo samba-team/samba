@@ -634,6 +634,12 @@ class RawKerberosTest(TestCaseInTempDir):
             cname_checking = '1'
         cls.cname_checking = bool(int(cname_checking))
 
+        padata_checking = samba.tests.env_get_var_value('CHECK_PADATA',
+                                                        allow_missing=True)
+        if padata_checking is None:
+            padata_checking = '1'
+        cls.padata_checking = bool(int(padata_checking))
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
@@ -2318,6 +2324,12 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementPresent(encpart, 'cipher')
             encpart_cipher = self.getElementValue(encpart, 'cipher')
 
+        if self.padata_checking:
+            self.check_reply_padata(kdc_exchange_dict,
+                                    callback_dict,
+                                    encpart,
+                                    padata)
+
         ticket_checksum = None
 
         # Get the decryption key for the encrypted part
@@ -2962,6 +2974,52 @@ class RawKerberosTest(TestCaseInTempDir):
                 kdc_exchange_dict['preauth_etype_info2'] = etype_info2
 
         return rep
+
+    def check_reply_padata(self,
+                           kdc_exchange_dict,
+                           callback_dict,
+                           encpart,
+                           rep_padata):
+        expected_patypes = ()
+
+        sent_fast = self.sent_fast(kdc_exchange_dict)
+        rep_msg_type = kdc_exchange_dict['rep_msg_type']
+
+        if sent_fast:
+            expected_patypes += (PADATA_FX_FAST,)
+        elif rep_msg_type == KRB_AS_REP:
+            chosen_etype = self.getElementValue(encpart, 'etype')
+            self.assertIsNotNone(chosen_etype)
+
+            if chosen_etype in {kcrypto.Enctype.AES256,
+                                kcrypto.Enctype.AES128}:
+                expected_patypes += (PADATA_ETYPE_INFO2,)
+
+        got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
+        self.assertSequenceElementsEqual(expected_patypes, got_patypes)
+
+        if not expected_patypes:
+            return None
+
+        pa_dict = self.get_pa_dict(rep_padata)
+
+        etype_info2 = pa_dict.get(PADATA_ETYPE_INFO2)
+        if etype_info2 is not None:
+            etype_info2 = self.der_decode(etype_info2,
+                                          asn1Spec=krb5_asn1.ETYPE_INFO2())
+            self.assertEqual(len(etype_info2), 1)
+            elem = etype_info2[0]
+
+            e = self.getElementValue(elem, 'etype')
+            self.assertEqual(e, chosen_etype)
+            salt = self.getElementValue(elem, 'salt')
+            self.assertIsNotNone(salt)
+            expected_salt = kdc_exchange_dict['expected_salt']
+            if expected_salt is not None:
+                self.assertEqual(salt, expected_salt)
+            s2kparams = self.getElementValue(elem, 's2kparams')
+            if self.strict_checking:
+                self.assertIsNone(s2kparams)
 
     def check_rep_padata(self,
                          kdc_exchange_dict,
