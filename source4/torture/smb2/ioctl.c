@@ -7126,6 +7126,59 @@ static bool test_ioctl_bug14788_NETWORK_INTERFACE(struct torture_context *tortur
 				      NT_STATUS_BUFFER_TOO_SMALL,
 				      "FSCTL_QUERY_NETWORK_INTERFACE_INFO");
 
+	/*
+	 * An invalid FSCTL_QUERY_NETWORK_INTERFACE_INFO,
+	 * with file_id_* not being UINT64_MAX.
+	 *
+	 * This gives INVALID_PARAMETER instead
+	 * of FILE_CLOSED.
+	 */
+	status = smb2cli_ioctl(transport->conn,
+			       timeout_msec,
+			       session->smbXcli,
+			       tree->smbXcli,
+			       INT64_MAX, /* in_fid_persistent */
+			       INT64_MAX, /* in_fid_volatile */
+			       FSCTL_QUERY_NETWORK_INTERFACE_INFO,
+			       0, /* in_max_input_length */
+			       NULL, /* in_input_buffer */
+			       UINT16_MAX, /* in_max_output_length */
+			       NULL, /* in_output_buffer */
+			       SMB2_IOCTL_FLAG_IS_FSCTL,
+			       torture,
+			       &out_input_buffer,
+			       &out_output_buffer);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_INVALID_PARAMETER,
+				      "FSCTL_QUERY_NETWORK_INTERFACE_INFO");
+
+	/*
+	 * An invalid FSCTL_QUERY_NETWORK_INTERFACE_INFO,
+	 * with file_id_* not being UINT64_MAX and
+	 * in_max_output_length = 1.
+	 *
+	 * This proves INVALID_PARAMETER instead
+	 * of BUFFER_TOO_SMALL.
+	 */
+	status = smb2cli_ioctl(transport->conn,
+			       timeout_msec,
+			       session->smbXcli,
+			       tree->smbXcli,
+			       INT64_MAX, /* in_fid_persistent */
+			       INT64_MAX, /* in_fid_volatile */
+			       FSCTL_QUERY_NETWORK_INTERFACE_INFO,
+			       0, /* in_max_input_length */
+			       NULL, /* in_input_buffer */
+			       1, /* in_max_output_length */
+			       NULL, /* in_output_buffer */
+			       SMB2_IOCTL_FLAG_IS_FSCTL,
+			       torture,
+			       &out_input_buffer,
+			       &out_output_buffer);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_INVALID_PARAMETER,
+				      "FSCTL_QUERY_NETWORK_INTERFACE_INFO");
+
 	return true;
 }
 
