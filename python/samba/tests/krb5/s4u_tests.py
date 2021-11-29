@@ -24,7 +24,7 @@ sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
 from samba import ntstatus
-from samba.dcerpc import krb5pac, lsa
+from samba.dcerpc import krb5pac, lsa, security
 
 from samba.tests import env_get_var_value
 from samba.tests.krb5.kcrypto import Cksumtype, Enctype
@@ -532,7 +532,21 @@ class S4UKerberosTests(KDCBaseTest):
                 'expected_flags': 'forwardable'
             })
 
+    # Do an S4U2Self an check that the service asserted identity is part of
+    # the sids.
+    def test_s4u2self_asserted_identity(self):
+        self._run_s4u2self_test(
+            {
+                'client_opts': {
+                    'not_delegated': False
+                },
+                'expected_groups': [security.SID_SERVICE_ASSERTED_IDENTITY],
+                'unexpected_groups': [security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY]
+            })
+
     def _run_delegation_test(self, kdc_dict):
+        s4u2self = kdc_dict.pop('s4u2self', False)
+
         client_opts = kdc_dict.pop('client_opts', None)
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
@@ -580,6 +594,15 @@ class S4UKerberosTests(KDCBaseTest):
         client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                                  names=[client_username])
 
+        service1_name = service1_creds.get_username()[:-1]
+        service1_realm = service1_creds.get_realm()
+        service1_service = 'host'
+        service1_sname = self.PrincipalName_create(
+            name_type=NT_PRINCIPAL, names=[service1_service,
+                                           service1_name])
+        service1_decryption_key = self.TicketDecryptionKey_from_creds(
+            service1_creds)
+
         expect_pac = kdc_dict.pop('expect_pac', True)
 
         expected_groups = kdc_dict.pop('expected_groups', None)
@@ -591,14 +614,61 @@ class S4UKerberosTests(KDCBaseTest):
         etypes = kdc_dict.pop('etypes', (AES256_CTS_HMAC_SHA1_96,
                                          ARCFOUR_HMAC_MD5))
 
-        client_tgt = self.get_tgt(client_creds,
-                                  kdc_options=client_tkt_options,
-                                  expected_flags=expected_flags)
-        client_service_tkt = self.get_service_ticket(
-            client_tgt,
-            service1_creds,
-            kdc_options=client_tkt_options,
-            expected_flags=expected_flags)
+        if s4u2self:
+            def generate_s4u2self_padata(_kdc_exchange_dict,
+                                         _callback_dict,
+                                         req_body):
+                pa_s4u = self.PA_S4U2Self_create(
+                    name=client_cname,
+                    realm=client_realm,
+                    tgt_session_key=service1_tgt.session_key,
+                    ctype=None)
+
+                return [pa_s4u], req_body
+
+            s4u2self_expected_flags = krb5_asn1.TicketFlags('forwardable')
+            s4u2self_unexpected_flags = krb5_asn1.TicketFlags('0')
+
+            s4u2self_kdc_options = krb5_asn1.KDCOptions('forwardable')
+
+            s4u2self_authenticator_subkey = self.RandomKey(Enctype.AES256)
+            s4u2self_kdc_exchange_dict = self.tgs_exchange_dict(
+                expected_crealm=client_realm,
+                expected_cname=client_cname,
+                expected_srealm=service1_realm,
+                expected_sname=service1_sname,
+                expected_account_name=client_username,
+                expected_groups=expected_groups,
+                unexpected_groups=unexpected_groups,
+                expected_sid=sid,
+                expected_flags=s4u2self_expected_flags,
+                unexpected_flags=s4u2self_unexpected_flags,
+                ticket_decryption_key=service1_decryption_key,
+                generate_padata_fn=generate_s4u2self_padata,
+                check_rep_fn=self.generic_check_kdc_rep,
+                check_kdc_private_fn=self.generic_check_kdc_private,
+                tgt=service1_tgt,
+                authenticator_subkey=s4u2self_authenticator_subkey,
+                kdc_options=str(s4u2self_kdc_options),
+                expect_claims=False,
+                expect_edata=False)
+
+            self._generic_kdc_exchange(s4u2self_kdc_exchange_dict,
+                                       cname=None,
+                                       realm=service1_realm,
+                                       sname=service1_sname,
+                                       etypes=etypes)
+
+            client_service_tkt = s4u2self_kdc_exchange_dict['rep_ticket_creds']
+        else:
+            client_tgt = self.get_tgt(client_creds,
+                                      kdc_options=client_tkt_options,
+                                      expected_flags=expected_flags)
+            client_service_tkt = self.get_service_ticket(
+                client_tgt,
+                service1_creds,
+                kdc_options=client_tkt_options,
+                expected_flags=expected_flags)
 
         modify_client_tkt_fn = kdc_dict.pop('modify_client_tkt_fn', None)
         if modify_client_tkt_fn is not None:
@@ -702,6 +772,33 @@ class S4UKerberosTests(KDCBaseTest):
             {
                 'expected_error_mode': 0,
                 'allow_delegation': True
+            })
+
+    def test_constrained_delegation_authentication_asserted_identity(self):
+        # Test constrained delegation and check asserted identity is the
+        # authenticaten authority. Note that we should always find this
+        # SID for all the requests. Just S4U2Self will have a different SID.
+        self._run_delegation_test(
+            {
+                'expected_error_mode': 0,
+                'allow_delegation': True,
+                'expected_groups': [security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY],
+                'unexpected_groups': [security.SID_SERVICE_ASSERTED_IDENTITY]
+            })
+
+    def test_constrained_delegation_service_asserted_identity(self):
+        # Test constrained delegation and check asserted identity is the
+        # service sid is there. This is a S4U2Proxy + S4U2Self test.
+        self._run_delegation_test(
+            {
+                'expected_error_mode': 0,
+                'allow_delegation': True,
+                's4u2self': True,
+                'service1_opts': {
+                    'trusted_to_auth_for_delegation': True,
+                },
+                'expected_groups': [security.SID_SERVICE_ASSERTED_IDENTITY],
+                'unexpected_groups': [security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY]
             })
 
     def test_constrained_delegation_no_auth_data_required(self):
