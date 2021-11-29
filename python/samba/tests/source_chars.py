@@ -57,19 +57,29 @@ def _find_root():
 ROOT = _find_root()
 
 
-IGNORED_FILES = {
+IGNORED_FILES = (
     'examples/validchars/validchr.com',
     'examples/tridge/smb.conf',
     'source3/selftest/ktest-krb5_ccache-2',
     'source3/selftest/ktest-krb5_ccache-3',
     'testdata/source-chars-bad.c',
-}
+)
+
+IGNORED_RE = (
+    r'^source4/heimdal/lib/hcrypto/passwd_dialog',
+    r'^source4/heimdal/lib/hx509/data/',
+    r'^source4/heimdal/po',
+    r'^source4/heimdal/tests/kdc/hdb-mitdb',
+)
 
 IGNORED_EXTENSIONS = {
+    'bmp',
     'cer',
     'corrupt',
     'crl',
+    'crt',
     'dat',
+    'der',
     'dump',
     'gpg',
     'gz',
@@ -77,6 +87,7 @@ IGNORED_EXTENSIONS = {
     'keytab',
     'ldb',
     'p12',
+    'pdf',
     'pem',
     'png',
     'SAMBABACKUP',
@@ -84,6 +95,7 @@ IGNORED_EXTENSIONS = {
     'tdb',
     'tif',
     'reg',
+    'req'
 }
 
 
@@ -125,8 +137,18 @@ def iter_source_files():
     filenames = get_git_files()
 
     for name in filenames:
+        ignore = False
         if name in IGNORED_FILES:
-            print(c_DARK_YELLOW(f"ignoring {name}"))
+            print(c_DARK_YELLOW(f"ignoring (exact) {name}"))
+            continue
+
+        for ignored in IGNORED_RE:
+            ignore = (re.match(ignored, name))
+            if ignore:
+                break
+
+        if ignore:
+            print(c_DARK_YELLOW(f"ignoring (via RE) {name}"))
             continue
 
         if '.' in name:
@@ -142,10 +164,8 @@ def is_latin1_file(name):
     for pattern in (
             r'^source4/setup/ad-schema/\w+.ldf$',
             r'^source4/setup/display-specifiers/D[\w-]+.txt$',
-            r'^source4/heimdal/HEIMDAL-LICENCE.txt$',
-            r'^source4/heimdal/lib/asn1/asn1-template.h$',
-            r'^source4/heimdal/lib/asn1/gen_template.c$',
-            r'^source4/heimdal/lib/hdb/hdb-keytab.c$',
+            r'^source4/heimdal/cf/pkg.m4$',
+            r'^source4/heimdal/doc/standardisation/',
     ):
         if re.match(pattern, name):
             return True
