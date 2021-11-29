@@ -53,6 +53,7 @@ from samba.tests.krb5.rfc4120_constants import (
     NT_SRV_INST,
     PADATA_FX_COOKIE,
     PADATA_FX_FAST,
+    PADATA_REQ_ENC_PA_REP,
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 import samba.tests.krb5.kcrypto as kcrypto
@@ -119,6 +120,35 @@ class FAST_Tests(KDCBaseTest):
                 'expected_error_mode': 0,
                 'use_fast': False,
                 'gen_tgt_fn': self.get_user_tgt
+            }
+        ])
+
+    def test_simple_enc_pa_rep(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': False
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': 0,
+                'use_fast': False,
+                'gen_padata_fn': self.generate_enc_pa_rep_timestamp_padata,
+                'expected_flags': 'enc-pa-rep'
+            }
+        ])
+
+    # Currently we only send PADATA-REQ-ENC-PA-REP for AS-REQ requests.
+    def test_simple_tgs_enc_pa_rep(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_TGS_REP,
+                'expected_error_mode': 0,
+                'use_fast': False,
+                'gen_tgt_fn': self.get_user_tgt,
+                'gen_padata_fn': self.generate_enc_pa_rep_padata,
+                'expected_flags': 'enc-pa-rep'
             }
         ])
 
@@ -422,6 +452,7 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    # Expected to fail against Windows - Windows does not produce an error.
     def test_fast_unknown_critical_option(self):
         self._run_test_sequence([
             {
@@ -572,6 +603,7 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    # Expected to fail against Windows - Windows does not produce an error.
     def test_fast_encrypted_challenge_clock_skew(self):
         # The KDC is supposed to confirm that the timestamp is within its
         # current clock skew, and return KRB_APP_ERR_SKEW if it is not (RFC6113
@@ -744,6 +776,56 @@ class FAST_Tests(KDCBaseTest):
                 'gen_armor_tgt_fn': self.get_mach_tgt,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'fast_ap_options': str(krb5_asn1.APOptions('use-session-key'))
+            }
+        ])
+
+    def test_fast_enc_pa_rep(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'expected_flags': 'enc-pa-rep'
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_padata_fn': self.generate_enc_pa_rep_challenge_padata,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'expected_flags': 'enc-pa-rep'
+            }
+        ])
+
+    # Currently we only send PADATA-REQ-ENC-PA-REP for AS-REQ requests.
+    def test_fast_tgs_enc_pa_rep(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_TGS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_tgt_fn': self.get_user_tgt,
+                'fast_armor': None,
+                'gen_padata_fn': self.generate_enc_pa_rep_padata,
+                'expected_flags': 'enc-pa-rep'
+            }
+        ])
+
+    # Currently we only send PADATA-REQ-ENC-PA-REP for AS-REQ requests.
+    def test_fast_tgs_armor_enc_pa_rep(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_TGS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_tgt_fn': self.get_user_tgt,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_padata_fn': self.generate_enc_pa_rep_padata,
+                'expected_flags': 'enc-pa-rep'
             }
         ])
 
@@ -1659,6 +1741,38 @@ class FAST_Tests(KDCBaseTest):
 
             # Ensure we used all the parameters given to us.
             self.assertEqual({}, kdc_dict)
+
+    def generate_enc_pa_rep_padata(self,
+                                   kdc_exchange_dict,
+                                   callback_dict,
+                                   req_body):
+        padata = self.PA_DATA_create(PADATA_REQ_ENC_PA_REP, b'')
+
+        return [padata], req_body
+
+    def generate_enc_pa_rep_challenge_padata(self,
+                                             kdc_exchange_dict,
+                                             callback_dict,
+                                             req_body):
+        padata, req_body = self.generate_enc_challenge_padata(kdc_exchange_dict,
+                                                              callback_dict,
+                                                              req_body)
+
+        padata.append(self.PA_DATA_create(PADATA_REQ_ENC_PA_REP, b''))
+
+        return padata, req_body
+
+    def generate_enc_pa_rep_timestamp_padata(self,
+                                             kdc_exchange_dict,
+                                             callback_dict,
+                                             req_body):
+        padata, req_body = self.generate_enc_timestamp_padata(kdc_exchange_dict,
+                                                              callback_dict,
+                                                              req_body)
+
+        padata.append(self.PA_DATA_create(PADATA_REQ_ENC_PA_REP, b''))
+
+        return padata, req_body
 
     def generate_fast_armor_auth_data(self):
         auth_data = self.AuthorizationData_create(AD_FX_FAST_ARMOR, b'')

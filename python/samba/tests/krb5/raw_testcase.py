@@ -90,7 +90,8 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_PKINIT_KX,
     PADATA_PK_AS_REQ,
     PADATA_PK_AS_REP_19,
-    PADATA_SUPPORTED_ETYPES
+    PADATA_SUPPORTED_ETYPES,
+    PADATA_REQ_ENC_PA_REP
 )
 import samba.tests.krb5.kcrypto as kcrypto
 

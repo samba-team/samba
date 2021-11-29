@@ -107,13 +107,6 @@ class EncryptionType(Int32):
     pass
 
 
-class UInt32(univ.Integer):
-    pass
-
-
-UInt32.subtypeSpec = constraint.ValueRangeConstraint(0, 4294967295)
-
-
 class EncryptedData(univ.Sequence):
     pass
 
@@ -254,6 +247,13 @@ class KDCOptions(KerberosFlags):
 
 class KerberosTime(useful.GeneralizedTime):
     pass
+
+
+class UInt32(univ.Integer):
+    pass
+
+
+UInt32.subtypeSpec = constraint.ValueRangeConstraint(0, 4294967295)
 
 
 class KDC_REQ_BODY(univ.Sequence):
@@ -1135,7 +1135,8 @@ TicketFlagsValues.namedValues = namedval.NamedValues(
     ('pre-authent', 10),
     ('hw-authent', 11),
     ('transited-policy-checked', 12),
-    ('ok-as-delegate', 13)
+    ('ok-as-delegate', 13),
+    ('enc-pa-rep', 15)
 )
 
 
