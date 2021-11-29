@@ -1405,17 +1405,25 @@ class KDCBaseTest(RawKerberosTest):
         return service_ticket_creds
 
     def get_tgt(self, creds, to_rodc=False, kdc_options=None,
+                client_account=None, client_name_type=NT_PRINCIPAL,
                 expected_flags=None, unexpected_flags=None,
                 expected_account_name=None, expected_upn_name=None,
+                expected_cname=None,
                 expected_sid=None,
                 pac_request=True, expect_pac=True,
                 expect_pac_attrs=None, expect_pac_attrs_pac_request=None,
                 expect_requester_sid=None,
                 fresh=False):
-        user_name = creds.get_username()
+        if client_account is not None:
+            user_name = client_account
+        else:
+            user_name = creds.get_username()
+
         cache_key = (user_name, to_rodc, kdc_options, pac_request,
+                     client_name_type,
                      str(expected_flags), str(unexpected_flags),
                      expected_account_name, expected_upn_name, expected_sid,
+                     str(expected_cname),
                      expect_pac, expect_pac_attrs,
                      expect_pac_attrs_pac_request, expect_requester_sid)
 
@@ -1430,10 +1438,13 @@ class KDCBaseTest(RawKerberosTest):
         salt = creds.get_salt()
 
         etype = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
-        cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                          names=[user_name])
+        cname = self.PrincipalName_create(name_type=client_name_type,
+                                          names=user_name.split('/'))
         sname = self.PrincipalName_create(name_type=NT_SRV_INST,
                                           names=['krbtgt', realm])
+
+        if expected_cname is None:
+            expected_cname = cname
 
         till = self.get_KerberosTime(offset=36000)
 
@@ -1463,7 +1474,7 @@ class KDCBaseTest(RawKerberosTest):
             client_as_etypes=etype,
             expected_error_mode=KDC_ERR_PREAUTH_REQUIRED,
             expected_crealm=realm,
-            expected_cname=cname,
+            expected_cname=expected_cname,
             expected_srealm=realm,
             expected_sname=sname,
             expected_account_name=expected_account_name,
@@ -1510,7 +1521,7 @@ class KDCBaseTest(RawKerberosTest):
             client_as_etypes=etype,
             expected_error_mode=0,
             expected_crealm=expected_realm,
-            expected_cname=cname,
+            expected_cname=expected_cname,
             expected_srealm=expected_realm,
             expected_sname=expected_sname,
             expected_account_name=expected_account_name,

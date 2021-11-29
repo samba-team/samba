@@ -344,6 +344,146 @@ class AsReqKerberosTests(AsReqBaseTest):
             expected_error=KDC_ERR_C_PRINCIPAL_UNKNOWN,
             expect_edata=False)
 
+    def test_as_req_enterprise_canon(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={'upn': 'krb5_enterprise0'})
+
+        user_name = client_creds.get_username()
+        realm = client_creds.get_realm()
+        client_account = f'{user_name}@{realm}'
+
+        expected_cname = self.PrincipalName_create(
+            name_type=NT_PRINCIPAL,
+            names=[user_name])
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            client_account=client_account,
+            expected_cname=expected_cname,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            kdc_options=krb5_asn1.KDCOptions('canonicalize'))
+
+    def test_as_req_enterprise_canon_case(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={'upn': 'krb5_enterprise1'})
+
+        user_name = client_creds.get_username()
+        realm = client_creds.get_realm().lower()
+        client_account = f'{user_name}@{realm}'
+
+        expected_cname = self.PrincipalName_create(
+            name_type=NT_PRINCIPAL,
+            names=[user_name])
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            client_account=client_account,
+            expected_cname=expected_cname,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            kdc_options=krb5_asn1.KDCOptions('canonicalize'))
+
+    def test_as_req_enterprise_canon_mac(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'upn': 'krb5_enterprise2'})
+
+        user_name = client_creds.get_username()
+        realm = client_creds.get_realm()
+        client_account = f'{user_name}@{realm}'
+
+        expected_cname = self.PrincipalName_create(
+            name_type=NT_PRINCIPAL,
+            names=[user_name])
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            client_account=client_account,
+            expected_cname=expected_cname,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            kdc_options=krb5_asn1.KDCOptions('canonicalize'))
+
+    def test_as_req_enterprise_canon_mac_case(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'upn': 'krb5_enterprise3'})
+
+        user_name = client_creds.get_username()
+        realm = client_creds.get_realm().lower()
+        client_account = f'{user_name}@{realm}'
+
+        expected_cname = self.PrincipalName_create(
+            name_type=NT_PRINCIPAL,
+            names=[user_name])
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            client_account=client_account,
+            expected_cname=expected_cname,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            kdc_options=krb5_asn1.KDCOptions('canonicalize'))
+
+    def test_as_req_enterprise_no_canon(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={'upn': 'krb5_enterprise4'})
+
+        user_name = client_creds.get_username()
+        realm = client_creds.get_realm()
+        client_account = f'{user_name}@{realm}'
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            client_account=client_account,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            kdc_options=0)
+
+    def test_as_req_enterprise_no_canon_case(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            opts={'upn': 'krb5_enterprise5'})
+
+        user_name = client_creds.get_username()
+        realm = client_creds.get_realm().lower()
+        client_account = f'{user_name}@{realm}'
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            client_account=client_account,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            kdc_options=0)
+
+    def test_as_req_enterprise_no_canon_mac(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'upn': 'krb5_enterprise6'})
+
+        user_name = client_creds.get_username()
+        realm = client_creds.get_realm()
+        client_account = f'{user_name}@{realm}'
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            client_account=client_account,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            kdc_options=0)
+
+    def test_as_req_enterprise_no_canon_mac_case(self):
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={'upn': 'krb5_enterprise7'})
+
+        user_name = client_creds.get_username()
+        realm = client_creds.get_realm().lower()
+        client_account = f'{user_name}@{realm}'
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            client_account=client_account,
+            name_type=NT_ENTERPRISE_PRINCIPAL,
+            kdc_options=0)
+
 
 if __name__ == "__main__":
     global_asn1_print = False
