@@ -44,6 +44,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_C_PRINCIPAL_UNKNOWN,
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
     KDC_ERR_TGT_REVOKED,
+    KRB_ERR_TKT_NYV,
     KDC_ERR_WRONG_REALM,
     NT_PRINCIPAL,
     NT_SRV_INST,
@@ -510,6 +511,21 @@ class KdcTgsTests(KDCBaseTest):
         creds = self._get_creds()
         tgt = self._get_tgt(creds)
         self._user2user(tgt, creds, expected_error=0)
+
+    def test_tgs_req_invalid(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, invalid=True)
+        self._run_tgs(tgt, expected_error=KRB_ERR_TKT_NYV)
+
+    def test_s4u2self_req_invalid(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, invalid=True)
+        self._s4u2self(tgt, creds, expected_error=KRB_ERR_TKT_NYV)
+
+    def test_user2user_req_invalid(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, invalid=True)
+        self._user2user(tgt, creds, expected_error=KRB_ERR_TKT_NYV)
 
     def test_tgs_req_no_requester_sid(self):
         creds = self._get_creds()
