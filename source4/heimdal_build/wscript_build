@@ -212,11 +212,11 @@ def HEIMDAL_GENERATOR(name, rule, source='', target='',
         name=name)
 
 
-def HEIMDAL_LIBRARY(libname, source, deps, version_script, includes=''):
+def HEIMDAL_LIBRARY(libname, source, deps, version_script, includes='', cflags=''):
     '''define a Heimdal library'''
 
     cflags, cflags_end, allow_warnings = HEIMDAL_CFLAGS(use_hostcc=False,
-                                                        extra_cflags=[])
+                                                        extra_cflags=cflags)
     source = heimdal_paths(source)
     orig_vscript_map = heimdal_path(version_script, absolute=False)
     bld.SAMBA_LIBRARY(libname, source,
@@ -280,7 +280,8 @@ def HEIMDAL_BINARY(binname, source,
                  install_path=None):
     '''define a Samba binary'''
 
-    cflags, cflags_end, allow_warnings = HEIMDAL_CFLAGS(use_hostcc=use_hostcc)
+    cflags, cflags_end, allow_warnings = HEIMDAL_CFLAGS(use_hostcc=use_hostcc,
+                                                        extra_cflags=cflags)
     source = heimdal_paths(source)
 
     obj_target = binname + '.heimdal.objlist'
