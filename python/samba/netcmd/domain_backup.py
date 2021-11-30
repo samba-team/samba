@@ -1128,9 +1128,9 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                     # duplicates if one backup dir is a subdirectory of another,
                     # or if backup dirs contain hardlinks.
                     try:
-                        s = os.stat(full_path)
+                        s = os.stat(full_path, follow_symlinks=False)
                     except FileNotFoundError:
-                        logger.info(f"{full_path} does not exist (dangling symlink?)")
+                        logger.warning(f"{full_path} does not exist!")
                         continue
 
                     if (s.st_ino, s.st_dev) in all_stats:
