@@ -58,7 +58,6 @@ bld.SAMBA_LIBRARY('HDB_SAMBA4',
 bld.SAMBA_LIBRARY('HDB_SAMBA4_PLUGIN',
                   source='hdb-samba4-plugin.c',
                   deps='hdb HDB_SAMBA4 samba-util samba-hostconfig ',
-                  includes=kdc_include,
                   link_name='modules/hdb/hdb_samba4.so',
                   realname='hdb_samba4.so',
                   install_path='${MODULESDIR}/hdb',
@@ -67,7 +66,6 @@ bld.SAMBA_LIBRARY('HDB_SAMBA4_PLUGIN',
 
 bld.SAMBA_SUBSYSTEM('KDC-SERVER',
                     source='kdc-server.c kdc-proxy.c',
-                    includes=kdc_include,
                     deps='''
                          krb5samba
                          ldb
@@ -83,7 +81,6 @@ elif bld.CONFIG_GET('SAMBA_USES_MITKDC'):
 
 bld.SAMBA_SUBSYSTEM('KPASSWD-SERVICE',
                     source=kpasswd_flavor_src,
-                    includes=kdc_include,
                     deps='''
                          krb5samba
                          samba_server_gensec
@@ -106,13 +103,11 @@ bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
 
 bld.SAMBA_SUBSYSTEM('sdb',
 	source='sdb.c',
-	includes=kdc_include,
 	deps='talloc krb5',
 	)
 
 bld.SAMBA_SUBSYSTEM('sdb_hdb',
 	source='sdb_to_hdb.c',
-	includes=kdc_include,
 	deps='talloc sdb hdb',
 	autoproto='sdb_hdb.h',
 	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
@@ -120,7 +115,6 @@ bld.SAMBA_SUBSYSTEM('sdb_hdb',
 
 bld.SAMBA_SUBSYSTEM('sdb_kdb',
 	source='sdb_to_kdb.c',
-	includes=kdc_include,
 	deps='sdb kdb5',
 	autoproto='sdb_kdb.h',
 	enabled=bld.CONFIG_SET('HAVE_KDB_H')
@@ -128,7 +122,6 @@ bld.SAMBA_SUBSYSTEM('sdb_kdb',
 
 bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	source='pac-glue.c',
-        includes=kdc_include,
 	deps='ldb auth4_sam common_auth samba-credentials samba-hostconfig com_err'
 	)
 
@@ -143,12 +136,10 @@ bld.SAMBA_LIBRARY('db-glue',
 	source='db-glue.c',
 	deps='ldb auth4_sam common_auth samba-credentials sdb samba-hostconfig com_err RPC_NDR_IRPC MESSAGING',
 	private_library=True,
-        includes=kdc_include,
 	)
 
 bld.SAMBA_SUBSYSTEM('KPASSWD_GLUE',
         source='kpasswd_glue.c',
-        includes=kdc_include,
         deps='ldb com_err')
 
 bld.SAMBA_SUBSYSTEM('MIT_KDC_IRPC',
