@@ -12814,10 +12814,7 @@ static bool run_smb1_wild_mangle_unlink_test(int dummy)
 	}
 
 	/* Start fresh. */
-	cli_unlink(cli,
-		star_name,
-		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_rmdir(cli, dname);
+	torture_deltree(cli, dname);
 
 	/*
 	 * Create two files - 'a' and '*'.
@@ -12927,10 +12924,7 @@ static bool run_smb1_wild_mangle_unlink_test(int dummy)
 	TALLOC_FREE(mangled_name);
 
 	if (cli != NULL) {
-		cli_unlink(cli,
-			star_name,
-			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-		cli_rmdir(cli, dname);
+		torture_deltree(cli, dname);
 		torture_close_connection(cli);
 	}
 
