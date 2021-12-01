@@ -3537,10 +3537,8 @@ void reply_unlink(struct smb_request *req)
 	struct smb_filename *smb_fname = NULL;
 	uint32_t dirtype;
 	NTSTATUS status;
-	uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
-			ucf_flags_from_smb_request(req);
+	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	TALLOC_CTX *ctx = talloc_tos();
-	bool has_wild = false;
 
 	START_PROFILE(SMBunlink);
 
@@ -3573,22 +3571,9 @@ void reply_unlink(struct smb_request *req)
 		goto out;
 	}
 
-	if (!req->posix_pathnames) {
-		char *lcomp = get_original_lcomp(ctx,
-					conn,
-					name,
-					ucf_flags);
-		if (lcomp == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-		has_wild = ms_has_wild(lcomp);
-		TALLOC_FREE(lcomp);
-	}
-
 	DEBUG(3,("reply_unlink : %s\n", smb_fname_str_dbg(smb_fname)));
 
-	status = unlink_internals(conn, req, dirtype, smb_fname, has_wild);
+	status = unlink_internals(conn, req, dirtype, smb_fname, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
