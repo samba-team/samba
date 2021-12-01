@@ -13016,10 +13016,7 @@ static bool run_smb1_wild_mangle_rename_test(int dummy)
 	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	/* Ensure we start from fresh. */
-	cli_unlink(cli,
-		wild_name,
-		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_posix_rmdir(cli_posix, dname);
+	torture_deltree(cli, dname);
 
 	/*
 	 * Create two files - 'foo' and 'fo*'.
@@ -13138,13 +13135,10 @@ static bool run_smb1_wild_mangle_rename_test(int dummy)
 	TALLOC_FREE(windows_rename_src);
 
 	if (cli != NULL) {
-		cli_unlink(cli,
-			wild_name,
-			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		torture_deltree(cli, dname);
 		torture_close_connection(cli);
 	}
 
-	cli_posix_rmdir(cli_posix, dname);
 	torture_close_connection(cli_posix);
 
 	return correct;
