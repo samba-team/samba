@@ -991,8 +991,7 @@ void reply_ctemp(struct smb_request *req);
 NTSTATUS unlink_internals(connection_struct *conn,
 			struct smb_request *req,
 			uint32_t dirtype,
-			struct smb_filename *smb_fname,
-			bool has_wcard);
+			struct smb_filename *smb_fname);
 void reply_unlink(struct smb_request *req);
 ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
 		      off_t startpos, size_t nread);

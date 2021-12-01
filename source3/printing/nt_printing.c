@@ -2042,7 +2042,7 @@ static NTSTATUS driver_unlink_internals(connection_struct *conn,
 		goto err_out;
 	}
 
-	status = unlink_internals(conn, NULL, 0, smb_fname, false);
+	status = unlink_internals(conn, NULL, 0, smb_fname);
 err_out:
 	talloc_free(tmp_ctx);
 	return status;
