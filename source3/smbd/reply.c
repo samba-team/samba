@@ -8255,10 +8255,8 @@ void reply_mv(struct smb_request *req)
 	const char *src_original_lcomp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	const char *dst_original_lcomp = NULL;
-	uint32_t src_ucf_flags = ucf_flags_from_smb_request(req) |
-		(!req->posix_pathnames ? UCF_ALWAYS_ALLOW_WCARD_LCOMP : 0);
-	uint32_t dst_ucf_flags = ucf_flags_from_smb_request(req) |
-		(!req->posix_pathnames ? UCF_ALWAYS_ALLOW_WCARD_LCOMP : 0);
+	uint32_t src_ucf_flags = ucf_flags_from_smb_request(req);
+	uint32_t dst_ucf_flags = ucf_flags_from_smb_request(req);
 	bool stream_rename = false;
 
 	START_PROFILE(SMBmv);
