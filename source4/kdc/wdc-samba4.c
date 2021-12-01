@@ -109,15 +109,6 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	return ret;
 }
 
-static krb5_error_code samba_wdc_get_pac_compat(void *priv, krb5_context context,
-						struct hdb_entry_ex *client,
-						struct hdb_entry_ex *server,
-						const krb5_boolean *pac_request,
-						krb5_pac *pac)
-{
-	return samba_wdc_get_pac(priv, context, client, server, NULL, pac_request, pac);
-}
-
 static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 					    const krb5_principal delegated_proxy_principal,
 					    struct hdb_entry_ex *client,
@@ -905,10 +896,9 @@ struct krb5plugin_windc_ftable windc_plugin_table = {
 	.minor_version = KRB5_WINDC_PLUGIN_MINOR,
 	.init = samba_wdc_plugin_init,
 	.fini = samba_wdc_plugin_fini,
-	.pac_generate = samba_wdc_get_pac_compat,
 	.pac_verify = samba_wdc_reget_pac,
 	.client_access = samba_wdc_check_client_access,
-	.pac_pk_generate = samba_wdc_get_pac,
+	.pac_generate = samba_wdc_get_pac,
 };
 
 
