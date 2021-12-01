@@ -3283,11 +3283,9 @@ NTSTATUS unlink_internals(connection_struct *conn,
 {
 	char *fname_dir = NULL;
 	char *fname_mask = NULL;
-	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smb_filename *smb_fname_dir = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
-	int ret;
 
 	/* Split up the directory from the filename/mask. */
 	status = split_fname_dir_mask(ctx, smb_fname->base_name,
@@ -3316,208 +3314,36 @@ NTSTATUS unlink_internals(connection_struct *conn,
 		}
 	}
 
-	if (!has_wild) {
-
-		/*
-		 * Only one file needs to be unlinked. Append the mask back
-		 * onto the directory.
-		 */
-		TALLOC_FREE(smb_fname->base_name);
-		if (ISDOT(fname_dir)) {
-			/* Ensure we use canonical names on open. */
-			smb_fname->base_name = talloc_asprintf(smb_fname,
-							"%s",
-							fname_mask);
-		} else {
-			smb_fname->base_name = talloc_asprintf(smb_fname,
-							"%s/%s",
-							fname_dir,
-							fname_mask);
-		}
-		if (!smb_fname->base_name) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-		if (dirtype == 0) {
-			dirtype = FILE_ATTRIBUTE_NORMAL;
-		}
-
-		status = check_name(conn, smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-
-		status = do_unlink(conn, req, smb_fname, dirtype);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-
-		count++;
+	/*
+	 * Only one file needs to be unlinked. Append the mask back
+	 * onto the directory.
+	 */
+	TALLOC_FREE(smb_fname->base_name);
+	if (ISDOT(fname_dir)) {
+		/* Ensure we use canonical names on open. */
+		smb_fname->base_name = talloc_asprintf(smb_fname,
+						"%s",
+						fname_mask);
 	} else {
-		struct smb_Dir *dir_hnd = NULL;
-		long offset = 0;
-		const char *dname = NULL;
-		char *talloced = NULL;
-
-		if ((dirtype & SAMBA_ATTRIBUTES_MASK) == FILE_ATTRIBUTE_DIRECTORY) {
-			status = NT_STATUS_OBJECT_NAME_INVALID;
-			goto out;
-		}
-		if (dirtype == 0) {
-			dirtype = FILE_ATTRIBUTE_NORMAL;
-		}
-
-		if (strequal(fname_mask,"????????.???")) {
-			TALLOC_FREE(fname_mask);
-			fname_mask = talloc_strdup(ctx, "*");
-			if (!fname_mask) {
-				status = NT_STATUS_NO_MEMORY;
-				goto out;
-			}
-		}
-
-		smb_fname_dir = synthetic_smb_fname(talloc_tos(),
-					fname_dir,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags);
-		if (smb_fname_dir == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-
-		status = check_name(conn, smb_fname_dir);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-
-		dir_hnd = OpenDir(talloc_tos(), conn, smb_fname_dir, fname_mask,
-				  dirtype);
-		if (dir_hnd == NULL) {
-			status = map_nt_error_from_unix(errno);
-			goto out;
-		}
-
-		/* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
-		   the pattern matches against the long name, otherwise the short name 
-		   We don't implement this yet XXXX
-		*/
-
-		status = NT_STATUS_NO_SUCH_FILE;
-
-		while ((dname = ReadDirName(dir_hnd, &offset,
-					    &smb_fname->st, &talloced))) {
-			TALLOC_CTX *frame = talloc_stackframe();
-			char *p = NULL;
-			struct smb_filename *f = NULL;
-
-			/* Quick check for "." and ".." */
-			if (ISDOT(dname) || ISDOTDOT(dname)) {
-				TALLOC_FREE(frame);
-				TALLOC_FREE(talloced);
-				continue;
-			}
-
-			if (IS_VETO_PATH(conn, dname)) {
-				TALLOC_FREE(frame);
-				TALLOC_FREE(talloced);
-				continue;
-			}
-
-			if(!mask_match(dname, fname_mask,
-				       conn->case_sensitive)) {
-				TALLOC_FREE(frame);
-				TALLOC_FREE(talloced);
-				continue;
-			}
-
-			if (ISDOT(fname_dir)) {
-				/* Ensure we use canonical names on open. */
-				p = talloc_asprintf(smb_fname, "%s", dname);
-			} else {
-				p = talloc_asprintf(smb_fname, "%s/%s",
-						    fname_dir, dname);
-			}
-			if (p == NULL) {
-				TALLOC_FREE(dir_hnd);
-				status = NT_STATUS_NO_MEMORY;
-				TALLOC_FREE(frame);
-				TALLOC_FREE(talloced);
-				goto out;
-			}
-			f = synthetic_smb_fname(frame,
-						p,
-						NULL,
-						&smb_fname->st,
-						smb_fname->twrp,
-						smb_fname->flags);
-			if (f == NULL) {
-				TALLOC_FREE(dir_hnd);
-				status = NT_STATUS_NO_MEMORY;
-				TALLOC_FREE(frame);
-				TALLOC_FREE(talloced);
-				goto out;
-			}
-
-			ret = vfs_stat(conn, f);
-			if (ret != 0) {
-				status = map_nt_error_from_unix(errno);
-				TALLOC_FREE(dir_hnd);
-				TALLOC_FREE(frame);
-				TALLOC_FREE(talloced);
-				goto out;
-			}
-
-			status = openat_pathref_fsp(conn->cwd_fsp, f);
-			if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
-			    (f->flags & SMB_FILENAME_POSIX_PATH) &&
-			    S_ISLNK(f->st.st_ex_mode))
-			{
-				status = NT_STATUS_OK;
-			}
-			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(dir_hnd);
-				TALLOC_FREE(frame);
-				TALLOC_FREE(talloced);
-				goto out;
-			}
-
-			if (!is_visible_fsp(f->fsp)) {
-				TALLOC_FREE(frame);
-				TALLOC_FREE(talloced);
-				continue;
-			}
-
-			status = check_name(conn, f);
-			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(dir_hnd);
-				TALLOC_FREE(frame);
-				TALLOC_FREE(talloced);
-				goto out;
-			}
-
-			status = do_unlink(conn, req, f, dirtype);
-			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(dir_hnd);
-				TALLOC_FREE(frame);
-				TALLOC_FREE(talloced);
-				goto out;
-			}
-
-			count++;
-			DBG_DEBUG("successful unlink [%s]\n",
-				  smb_fname_str_dbg(f));
-
-			TALLOC_FREE(frame);
-			TALLOC_FREE(talloced);
-		}
-		TALLOC_FREE(dir_hnd);
+		smb_fname->base_name = talloc_asprintf(smb_fname,
+						"%s/%s",
+						fname_dir,
+						fname_mask);
+	}
+	if (!smb_fname->base_name) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+	if (dirtype == 0) {
+		dirtype = FILE_ATTRIBUTE_NORMAL;
 	}
 
-	if (count == 0 && NT_STATUS_IS_OK(status) && errno != 0) {
-		status = map_nt_error_from_unix(errno);
+	status = check_name(conn, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
+
+	status = do_unlink(conn, req, smb_fname, dirtype);
 
  out:
 	TALLOC_FREE(smb_fname_dir);
