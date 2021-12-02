@@ -1732,7 +1732,6 @@ void reply_ntrename(struct smb_request *req)
 	const char *dst_original_lcomp = NULL;
 	const char *p;
 	NTSTATUS status;
-	bool dest_has_wcard = False;
 	uint32_t attrs;
 	uint32_t ucf_flags_src = ucf_flags_from_smb_request(req);
 	uint32_t ucf_flags_dst = ucf_flags_from_smb_request(req);
@@ -1862,27 +1861,20 @@ void reply_ntrename(struct smb_request *req)
 						DELETE_ACCESS);
 			break;
 		case RENAME_FLAG_HARD_LINK:
-			if (dest_has_wcard) {
-				/* No wildcards. */
-				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-			} else {
-				status = hardlink_internals(ctx, conn,
-							    req,
-							    false,
-							    smb_fname_old,
-							    smb_fname_new);
-			}
+			status = hardlink_internals(ctx,
+						    conn,
+						    req,
+						    false,
+						    smb_fname_old,
+						    smb_fname_new);
 			break;
 		case RENAME_FLAG_COPY:
-			if (dest_has_wcard) {
-				/* No wildcards. */
-				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-			} else {
-				status = copy_internals(ctx, conn, req,
-							smb_fname_old,
-							smb_fname_new,
-							attrs);
-			}
+			status = copy_internals(ctx,
+						conn,
+						req,
+						smb_fname_old,
+						smb_fname_new,
+						attrs);
 			break;
 		case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
 			status = NT_STATUS_INVALID_PARAMETER;
