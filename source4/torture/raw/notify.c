@@ -254,7 +254,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing notify on wildcard unlink for %d files\n", count-1);
 	/* (2nd unlink) do a wildcard unlink */
-	status = smbcli_unlink(cli2->tree, BASEDIR_CN1_DIR "\\test*.txt");
+	status = smbcli_unlink_wcard(cli2->tree, BASEDIR_CN1_DIR "\\test*.txt");
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb_raw_changenotify_recv");
 
