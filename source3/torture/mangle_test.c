@@ -188,8 +188,7 @@ bool torture_mangle(int dummy)
 		return False;
 	}
 
-	cli_unlink(cli, "\\mangle_test\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_rmdir(cli, "\\mangle_test");
+	torture_deltree(cli, "\\mangle_test");
 
 	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\mangle_test"))) {
 		printf("ERROR: Failed to make directory\n");
@@ -212,11 +211,7 @@ bool torture_mangle(int dummy)
 		}
 	}
 
-	cli_unlink(cli, "\\mangle_test\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	if (!NT_STATUS_IS_OK(cli_rmdir(cli, "\\mangle_test"))) {
-		printf("ERROR: Failed to remove directory\n");
-		return False;
-	}
+	torture_deltree(cli, "\\mangle_test");
 
 	printf("\nTotal collisions %u/%u  - %.2f%%   (%u failures)\n",
 	       collisions, total, (100.0*collisions) / total, failures);
