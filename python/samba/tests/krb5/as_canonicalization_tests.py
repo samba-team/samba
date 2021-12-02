@@ -135,6 +135,12 @@ USER_NAME = "tstkrb5cnnusr"
 class KerberosASCanonicalizationTests(KDCBaseTest):
 
     @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user_creds = None
+        cls.machine_creds = None
+
+    @classmethod
     def setUpDynamicTestCases(cls):
 
         def skip(ct, options):
@@ -164,14 +170,14 @@ class KerberosASCanonicalizationTests(KDCBaseTest):
     def user_account_creds(self):
         if self.user_creds is None:
             samdb = self.get_samdb()
-            self.user_creds, _ = self.create_account(samdb, USER_NAME)
+            type(self).user_creds, _ = self.create_account(samdb, USER_NAME)
 
         return self.user_creds
 
     def machine_account_creds(self):
         if self.machine_creds is None:
             samdb = self.get_samdb()
-            self.machine_creds, _ = self.create_account(
+            type(self).machine_creds, _ = self.create_account(
                 samdb,
                 MACHINE_NAME,
                 account_type=self.AccountType.COMPUTER)
@@ -184,9 +190,6 @@ class KerberosASCanonicalizationTests(KDCBaseTest):
         super().setUp()
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
-
-        self.user_creds = None
-        self.machine_creds = None
 
     def _test_with_args(self, x, ct):
         if ct == CredentialsType.User:
