@@ -1461,7 +1461,7 @@ static bool torture_chkpath_test(struct torture_context *tctx,
 
 	/* cleanup from an old run */
 	smbcli_rmdir(cli->tree, "\\chkpath.dir\\dir2");
-	smbcli_unlink(cli->tree, "\\chkpath.dir\\*");
+	smbcli_unlink_wcard(cli->tree, "\\chkpath.dir\\*");
 	smbcli_rmdir(cli->tree, "\\chkpath.dir");
 
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\chkpath.dir"))) {
@@ -1516,7 +1516,7 @@ static bool torture_chkpath_test(struct torture_context *tctx,
 	}
 
 	smbcli_rmdir(cli->tree, "\\chkpath.dir\\dir2");
-	smbcli_unlink(cli->tree, "\\chkpath.dir\\*");
+	smbcli_unlink_wcard(cli->tree, "\\chkpath.dir\\*");
 	smbcli_rmdir(cli->tree, "\\chkpath.dir");
 
 	return ret;
