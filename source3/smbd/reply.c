@@ -7879,7 +7879,6 @@ void reply_mv(struct smb_request *req)
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_src = NULL;
-	const char *src_original_lcomp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	const char *dst_original_lcomp = NULL;
 	uint32_t src_ucf_flags = ucf_flags_from_smb_request(req);
@@ -7936,16 +7935,6 @@ void reply_mv(struct smb_request *req)
 			goto out;
 		}
 		reply_nterror(req, status);
-		goto out;
-	}
-
-	/* Get the last component of the source for rename_internals(). */
-	src_original_lcomp = get_original_lcomp(ctx,
-					conn,
-					name,
-					dst_ucf_flags);
-	if (src_original_lcomp == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		goto out;
 	}
 
