@@ -1816,10 +1816,6 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	if (!req->posix_pathnames) {
-		dest_has_wcard = ms_has_wild(dst_original_lcomp);
-	}
-
 	status = filename_convert(ctx, conn,
 				  newname,
 				  ucf_flags_dst,
