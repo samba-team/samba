@@ -7716,6 +7716,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	int create_options = 0;
 	struct smb2_create_blobs *posx = NULL;
 	int rc;
+	struct files_struct *fsp = NULL;
 	bool posix_pathname = (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH);
 	bool case_sensitive = posix_pathname ? true : conn->case_sensitive;
 	bool case_preserve = posix_pathname ? true : conn->case_preserve;
@@ -7768,70 +7769,67 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 	}
 
-	{
-		files_struct *fsp;
+	/*
+	 * Only one file needs to be renamed. Append the mask back
+	 * onto the directory.
+	 */
+	TALLOC_FREE(smb_fname_src->base_name);
+	if (ISDOT(fname_src_dir)) {
+		/* Ensure we use canonical names on open. */
+		smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+						"%s",
+						fname_src_mask);
+	} else {
+		smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+						"%s/%s",
+						fname_src_dir,
+						fname_src_mask);
+	}
+	if (!smb_fname_src->base_name) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 
+	DBG_NOTICE("case_sensitive = %d, "
+		  "case_preserve = %d, short case preserve = %d, "
+		  "directory = %s, newname = %s, "
+		  "last_component_dest = %s\n",
+		  case_sensitive, case_preserve,
+		  short_case_preserve,
+		  smb_fname_str_dbg(smb_fname_src),
+		  smb_fname_str_dbg(smb_fname_dst),
+		  dst_original_lcomp);
+
+	ZERO_STRUCT(smb_fname_src->st);
+
+	rc = vfs_stat(conn, smb_fname_src);
+	if (rc == -1) {
+		status = map_nt_error_from_unix_common(errno);
+		goto out;
+	}
+
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_src);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_EQUAL(status,
+				NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			goto out;
+		}
 		/*
-		 * Only one file needs to be renamed. Append the mask back
-		 * onto the directory.
+		 * Possible symlink src.
 		 */
-		TALLOC_FREE(smb_fname_src->base_name);
-		if (ISDOT(fname_src_dir)) {
-			/* Ensure we use canonical names on open. */
-			smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
-							"%s",
-							fname_src_mask);
-		} else {
-			smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
-							"%s/%s",
-							fname_src_dir,
-							fname_src_mask);
-		}
-		if (!smb_fname_src->base_name) {
-			status = NT_STATUS_NO_MEMORY;
+		if (!(smb_fname_src->flags & SMB_FILENAME_POSIX_PATH)) {
 			goto out;
 		}
-
-		DEBUG(3, ("rename_internals: case_sensitive = %d, "
-			  "case_preserve = %d, short case preserve = %d, "
-			  "directory = %s, newname = %s, "
-			  "last_component_dest = %s\n",
-			  case_sensitive, case_preserve,
-			  short_case_preserve,
-			  smb_fname_str_dbg(smb_fname_src),
-			  smb_fname_str_dbg(smb_fname_dst),
-			  dst_original_lcomp));
-
-		ZERO_STRUCT(smb_fname_src->st);
-
-		rc = vfs_stat(conn, smb_fname_src);
-		if (rc == -1) {
-			status = map_nt_error_from_unix_common(errno);
+		if (!S_ISLNK(smb_fname_src->st.st_ex_mode)) {
 			goto out;
 		}
+	}
 
-		status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_src);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (!NT_STATUS_EQUAL(status,
-					NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-				goto out;
-			}
-			/*
-			 * Possible symlink src.
-			 */
-			if (!(smb_fname_src->flags & SMB_FILENAME_POSIX_PATH)) {
-				goto out;
-			}
-			if (!S_ISLNK(smb_fname_src->st.st_ex_mode)) {
-				goto out;
-			}
-		}
+	if (S_ISDIR(smb_fname_src->st.st_ex_mode)) {
+		create_options |= FILE_DIRECTORY_FILE;
+	}
 
-		if (S_ISDIR(smb_fname_src->st.st_ex_mode)) {
-			create_options |= FILE_DIRECTORY_FILE;
-		}
-
-		status = SMB_VFS_CREATE_FILE(
+	status = SMB_VFS_CREATE_FILE(
 			conn,				/* conn */
 			req,				/* req */
 			smb_fname_src,			/* fname */
@@ -7852,27 +7850,25 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			posx,				/* in_context_blobs */
 			NULL);				/* out_context_blobs */
 
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("Could not open rename source %s: %s\n",
-				  smb_fname_str_dbg(smb_fname_src),
-				  nt_errstr(status)));
-			goto out;
-		}
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_NOTICE("Could not open rename source %s: %s\n",
+			  smb_fname_str_dbg(smb_fname_src),
+			  nt_errstr(status));
+		goto out;
+	}
 
-		status = rename_internals_fsp(conn,
+	status = rename_internals_fsp(conn,
 					fsp,
 					smb_fname_dst,
 					dst_original_lcomp,
 					attrs,
 					replace_if_exists);
 
-		close_file(req, fsp, NORMAL_CLOSE);
+	close_file(req, fsp, NORMAL_CLOSE);
 
-		DEBUG(3, ("rename_internals: Error %s rename %s -> %s\n",
-			  nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
-			  smb_fname_str_dbg(smb_fname_dst)));
-
-	}
+	DBG_NOTICE("Error %s rename %s -> %s\n",
+		  nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
+		  smb_fname_str_dbg(smb_fname_dst));
 
  out:
 	TALLOC_FREE(posx);
