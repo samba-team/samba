@@ -1853,7 +1853,6 @@ void reply_ntrename(struct smb_request *req)
 						conn,
 						req,
 						smb_fname_old,
-						NULL,
 						smb_fname_new,
 						dst_original_lcomp,
 						attrs,
