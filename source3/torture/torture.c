@@ -12941,7 +12941,7 @@ static bool run_smb1_wild_mangle_rename_test(int dummy)
 	const char *foostar_name = "smb1_wild_mangle_rename/fo*";
 	const char *wild_name = "smb1_wild_mangle_rename/*";
 	char *windows_rename_src = NULL;
-	const char *windows_rename_dst = "smb1_wild_mangle_rename\\ba*";
+	const char *windows_rename_dst = "smb1_wild_mangle_rename\\bar";
 	char *mangled_name = NULL;
 	NTSTATUS status;
 
