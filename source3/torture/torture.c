@@ -9933,9 +9933,7 @@ bool torture_chkpath_test(int dummy)
 	printf("starting chkpath test\n");
 
 	/* cleanup from an old run */
-	cli_rmdir(cli, "\\chkpath.dir\\dir2");
-	cli_unlink(cli, "\\chkpath.dir\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_rmdir(cli, "\\chkpath.dir");
+	torture_deltree(cli, "\\chkpath.dir");
 
 	status = cli_mkdir(cli, "\\chkpath.dir");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -9996,9 +9994,7 @@ bool torture_chkpath_test(int dummy)
 		ret = False;
 	}
 
-	cli_rmdir(cli, "\\chkpath.dir\\dir2");
-	cli_unlink(cli, "\\chkpath.dir\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_rmdir(cli, "\\chkpath.dir");
+	torture_deltree(cli, "\\chkpath.dir");
 
 	if (!torture_close_connection(cli)) {
 		return False;
