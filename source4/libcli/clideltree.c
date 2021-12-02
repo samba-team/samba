@@ -119,7 +119,7 @@ int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 	if (asprintf(&mask, "%s\\*", dname) < 0) {
 		return -1;
 	}
-	smbcli_unlink(dstate.tree, mask);
+	smbcli_unlink_wcard(dstate.tree, mask);
 	smbcli_list(dstate.tree, mask, 
 		 FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM, 
 		 delete_fn, &dstate);
