@@ -140,11 +140,7 @@ NTSTATUS smbcli_unlink(struct smbcli_tree *tree, const char *fname)
 	union smb_unlink parms;
 
 	parms.unlink.in.pattern = fname;
-	if (strchr(fname, '*')) {
-		parms.unlink.in.attrib = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
-	} else {
-		parms.unlink.in.attrib = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
-	}
+	parms.unlink.in.attrib = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
 
 	return smb_raw_unlink(tree, &parms);
 }
