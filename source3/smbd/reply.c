@@ -7841,7 +7841,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	struct smb2_create_blobs *posx = NULL;
 	int rc;
 	bool src_has_wild = false;
-	bool dest_has_wild = false;
 
 	/*
 	 * Split the old name into directory and last component
@@ -7922,24 +7921,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			  smb_fname_str_dbg(smb_fname_src),
 			  smb_fname_str_dbg(smb_fname_dst),
 			  dst_original_lcomp));
-
-		/* The dest name still may have wildcards. */
-		if (dest_has_wild) {
-			char *fname_dst_mod = NULL;
-			if (!resolve_wildcards(smb_fname_dst,
-					       smb_fname_src->base_name,
-					       smb_fname_dst->base_name,
-					       &fname_dst_mod)) {
-				DEBUG(6, ("rename_internals: resolve_wildcards "
-					  "%s %s failed\n",
-					  smb_fname_src->base_name,
-					  smb_fname_dst->base_name));
-				status = NT_STATUS_NO_MEMORY;
-				goto out;
-			}
-			TALLOC_FREE(smb_fname_dst->base_name);
-			smb_fname_dst->base_name = fname_dst_mod;
-		}
 
 		ZERO_STRUCT(smb_fname_src->st);
 
