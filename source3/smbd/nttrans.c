@@ -1788,14 +1788,6 @@ void reply_ntrename(struct smb_request *req)
 		}
 	}
 
-	/*
-	 * If this is a rename operation, allow wildcards and save the
-	 * destination's last component.
-	 */
-	if (rename_type == RENAME_FLAG_RENAME) {
-		ucf_flags_dst |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
-	}
-
 	/* rename_internals() calls unix_convert(), so don't call it here. */
 	status = filename_convert(ctx, conn,
 				  oldname,
