@@ -7872,20 +7872,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	if (!(smb_fname_src->flags & SMB_FILENAME_POSIX_PATH)) {
-		/*
-		 * Check the wildcard mask *before*
-		 * unmangling. As mangling is done
-		 * for names that can't be returned
-		 * to Windows the unmangled name may
-		 * contain Windows wildcard characters.
-		 */
-		if (src_original_lcomp != NULL) {
-			src_has_wild = ms_has_wild(src_original_lcomp);
-		}
-		dest_has_wild = ms_has_wild(dst_original_lcomp);
-	}
-
 	/*
 	 * We should only check the mangled cache
 	 * here if unix_convert failed. This means
