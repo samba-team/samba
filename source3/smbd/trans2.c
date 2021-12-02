@@ -7441,8 +7441,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		 * the newname instead.
 		 */
 		char *base_name = NULL;
-		uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP|
-				ucf_flags_from_smb_request(req);
+		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 
 		/* newname must *not* be a stream name. */
 		if (newname[0] == ':') {
