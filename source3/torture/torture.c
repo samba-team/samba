@@ -458,6 +458,133 @@ void torture_conn_set_sockopt(struct cli_state *cli)
 	smbXcli_conn_set_sockopt(cli->conn, sockops);
 }
 
+static NTSTATUS torture_delete_fn(struct file_info *finfo,
+				  const char *pattern,
+				  void *state)
+{
+	NTSTATUS status;
+	char *filename = NULL;
+	char *dirname = NULL;
+	char *p = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cli_state *cli = (struct cli_state *)state;
+
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	dirname = talloc_strdup(frame, pattern);
+	if (dirname == NULL) {
+		TALLOC_FREE(frame);
+                return NT_STATUS_NO_MEMORY;
+        }
+        p = strrchr_m(dirname, '\\');
+        if (p != NULL) {
+                /* Remove the terminating '\' */
+                *p = '\0';
+        }
+        if (dirname[0] != '\0') {
+                filename = talloc_asprintf(frame,
+                                           "%s\\%s",
+                                           dirname,
+                                           finfo->name);
+        } else {
+                filename = talloc_asprintf(frame,
+                                           "%s",
+                                           finfo->name);
+        }
+        if (filename == NULL) {
+                TALLOC_FREE(frame);
+                return NT_STATUS_NO_MEMORY;
+        }
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
+		char *subdirname = talloc_asprintf(frame,
+						   "%s\\*",
+						   filename);
+		if (subdirname == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		status = cli_list(cli,
+				  subdirname,
+				  FILE_ATTRIBUTE_DIRECTORY |
+					  FILE_ATTRIBUTE_HIDDEN |
+					  FILE_ATTRIBUTE_SYSTEM,
+				  torture_delete_fn,
+				  cli);
+		if (NT_STATUS_IS_OK(status)) {
+			printf("torture_delete_fn: cli_list "
+				"of %s failed (%s)\n",
+				subdirname,
+				nt_errstr(status));
+			TALLOC_FREE(frame);
+			return status;
+		}
+		status = cli_rmdir(cli, filename);
+	} else {
+		status = cli_unlink(cli,
+				    filename,
+				    FILE_ATTRIBUTE_SYSTEM |
+					FILE_ATTRIBUTE_HIDDEN);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
+			printf("torture_delete_fn: cli_rmdir"
+				" of %s failed (%s)\n",
+				filename,
+				nt_errstr(status));
+		} else {
+			printf("torture_delete_fn: cli_unlink"
+				" of %s failed (%s)\n",
+				filename,
+				nt_errstr(status));
+		}
+	}
+	TALLOC_FREE(frame);
+	return status;
+}
+
+void torture_deltree(struct cli_state *cli, const char *dname)
+{
+	char *mask = NULL;
+	NTSTATUS status;
+
+	/* It might be a file */
+	(void)cli_unlink(cli,
+			 dname,
+			 FILE_ATTRIBUTE_SYSTEM |
+				FILE_ATTRIBUTE_HIDDEN);
+
+	mask = talloc_asprintf(cli,
+			       "%s\\*",
+			       dname);
+	if (mask == NULL) {
+		printf("torture_deltree: talloc_asprintf failed\n");
+		return;
+	}
+
+	status = cli_list(cli,
+			mask,
+			FILE_ATTRIBUTE_DIRECTORY |
+				FILE_ATTRIBUTE_HIDDEN|
+				FILE_ATTRIBUTE_SYSTEM,
+			torture_delete_fn,
+			cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("torture_deltree: cli_list of %s failed (%s)\n",
+			mask,
+			nt_errstr(status));
+	}
+	TALLOC_FREE(mask);
+	status = cli_rmdir(cli, dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("torture_deltree: cli_rmdir of %s failed (%s)\n",
+			dname,
+			nt_errstr(status));
+	}
+}
+
 /* check if the server produced the expected dos or nt error code */
 static bool check_both_error(int line, NTSTATUS status,
 			     uint8_t eclass, uint32_t ecode, NTSTATUS nterr)
