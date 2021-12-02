@@ -159,6 +159,11 @@ NTSTATUS smbcli_rename(struct smbcli_tree *tree, const char *fname_src,
 NTSTATUS smbcli_unlink(struct smbcli_tree *tree, const char *fname);
 
 /****************************************************************************
+ Delete a wildcard pattern of files.
+****************************************************************************/
+NTSTATUS smbcli_unlink_wcard(struct smbcli_tree *tree, const char *fname);
+
+/****************************************************************************
  Create a directory.
 ****************************************************************************/
 NTSTATUS smbcli_mkdir(struct smbcli_tree *tree, const char *dname);
