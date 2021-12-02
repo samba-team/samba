@@ -43,8 +43,8 @@ bool torture_utable(int dummy)
 
 	memset(valid, 0, sizeof(valid));
 
+	torture_deltree(cli, "\\utable");
 	cli_mkdir(cli, "\\utable");
-	cli_unlink(cli, "\\utable\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 	for (c=1; c < 0x10000; c++) {
 		size_t size = 0;
