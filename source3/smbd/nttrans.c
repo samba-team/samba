@@ -1771,6 +1771,11 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
+	if (!req->posix_pathnames && ms_has_wild(newname)) {
+		reply_nterror(req, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+		goto out;
+	}
+
 	if (!req->posix_pathnames) {
 		/* The newname must begin with a ':' if the
 		   oldname contains a ':'. */
