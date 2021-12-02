@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "system/dir.h"
 
 /****************************************************************************
  Hard/Symlink a file (UNIX extensions).
@@ -146,6 +147,101 @@ NTSTATUS smbcli_unlink(struct smbcli_tree *tree, const char *fname)
 	}
 
 	return smb_raw_unlink(tree, &parms);
+}
+
+struct wcard_delete_state {
+	struct smbcli_tree *tree;
+	NTSTATUS status;
+	char *error_name; /* To help debugging. */
+};
+
+static void del_fn(struct clilist_file_info *finfo,
+			const char *pattern,
+			void *priv)
+{
+	NTSTATUS status;
+	union smb_unlink parms;
+	char *filename = NULL;
+	char *dirname = NULL;
+	char *p = NULL;
+	struct wcard_delete_state *state = (struct wcard_delete_state *)priv;
+
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
+		return;
+	}
+	dirname = talloc_strdup(state, pattern);
+	if (dirname == NULL) {
+		TALLOC_FREE(state->error_name);
+		state->status = NT_STATUS_NO_MEMORY;
+		return;
+	}
+	p = strrchr_m(dirname, '\\');
+	if (p != NULL) {
+		/* Remove the terminating '\' */
+		*p = '\0';
+	}
+	if (dirname[0] != '\0') {
+		filename = talloc_asprintf(dirname,
+					   "%s\\%s",
+					   dirname,
+					   finfo->name);
+	} else {
+		filename = talloc_asprintf(dirname,
+					   "%s",
+					   finfo->name);
+	}
+	if (filename == NULL) {
+		TALLOC_FREE(dirname);
+		TALLOC_FREE(state->error_name);
+		state->status = NT_STATUS_NO_MEMORY;
+		return;
+	}
+	parms.unlink.in.pattern = filename;
+	parms.unlink.in.attrib = FILE_ATTRIBUTE_SYSTEM |
+				 FILE_ATTRIBUTE_HIDDEN;
+	status = smb_raw_unlink(state->tree, &parms);
+	if (NT_STATUS_IS_OK(state->status)) {
+		state->status = status;
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * Save off the name we failed to
+			 * delete to help debugging.
+			 */
+			state->error_name = talloc_move(state, &filename);
+		}
+	}
+	TALLOC_FREE(dirname);
+}
+
+/****************************************************************************
+ Delete a file, possibly with a wildcard pattern.
+****************************************************************************/
+NTSTATUS smbcli_unlink_wcard(struct smbcli_tree *tree, const char *pattern)
+{
+	NTSTATUS status;
+	int ret;
+	struct wcard_delete_state *state = NULL;
+
+	if (strchr(pattern, '*') == NULL) {
+		/* No wildcard, just call smbcli_unlink(). */
+		return smbcli_unlink(tree, pattern);
+	}
+	state = talloc_zero(tree, struct wcard_delete_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->tree = tree;
+	ret = smbcli_list(tree,
+			  pattern,
+			  FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
+			  del_fn,
+			  state);
+	status = state->status;
+	TALLOC_FREE(state);
+	if (ret < 0) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return status;
 }
 
 /****************************************************************************
