@@ -12508,8 +12508,7 @@ static bool run_streamerror(int dummy)
 		return false;
 	}
 
-	cli_unlink(cli, "\\testdir_streamerror\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_rmdir(cli, dname);
+	torture_deltree(cli, dname);
 
 	status = cli_mkdir(cli, dname);
 	if (!NT_STATUS_IS_OK(status)) {
