@@ -856,21 +856,21 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_VERS_HOSTCC',
        use_global_deps=False,
        use_hostcc=True)
 
-HEIMDAL_SUBSYSTEM('HEIMDAL_ASN1_GEN_HOSTCC',
-       'lib/asn1/gen.c',
-       includes='../heimdal/lib/asn1',
-       group='hostcc_build_main',
-       cflags=bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS,
-       deps='ROKEN_HOSTCC',
-       use_global_deps=False,
-       use_hostcc=True)
-
 HEIMDAL_SUBSYSTEM('HEIMDAL_VERS',
        'lib/vers/print_version.c ../heimdal_build/version.c',
         deps='roken replace')
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_ASN1_COMPILE'):
+    HEIMDAL_SUBSYSTEM('HEIMDAL_ASN1_GEN_HOSTCC',
+                      'lib/asn1/gen.c',
+                      includes='../heimdal/lib/asn1',
+                      group='hostcc_build_main',
+                      cflags=bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS,
+                      deps='ROKEN_HOSTCC',
+                      use_global_deps=False,
+                      use_hostcc=True)
+
     # here is the asn1 compiler build rule
     HEIMDAL_BINARY('asn1_compile',
         'lib/asn1/gen_copy.c '
