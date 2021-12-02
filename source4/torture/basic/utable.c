@@ -195,7 +195,7 @@ bool torture_casetable(struct torture_context *tctx,
 		smbcli_close(cli->tree, fnum);
 	}
 
-	smbcli_unlink(cli->tree, "\\utable\\*");
+	smbcli_unlink_wcard(cli->tree, "\\utable\\*");
 	smbcli_rmdir(cli->tree, "\\utable");
 
 	return true;
