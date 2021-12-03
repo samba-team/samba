@@ -90,45 +90,6 @@ static bool mangled_equal(const char *name1,
 	return strequal(name1, mname);
 }
 
-/****************************************************************************
- Cope with the differing wildcard and non-wildcard error cases.
-****************************************************************************/
-
-static NTSTATUS determine_path_error(const char *name,
-			bool allow_wcard_last_component,
-			bool posix_pathnames)
-{
-	const char *p;
-	bool name_has_wild = false;
-
-	if (!allow_wcard_last_component) {
-		/* Error code within a pathname. */
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-	}
-
-	/* We're terminating here so we
-	 * can be a little slower and get
-	 * the error code right. Windows
-	 * treats the last part of the pathname
-	 * separately I think, so if the last
-	 * component is a wildcard then we treat
-	 * this ./ as "end of component" */
-
-	p = strchr(name, '/');
-
-	if (!posix_pathnames) {
-		name_has_wild = ms_has_wild(name);
-	}
-
-	if (!p && (name_has_wild || ISDOT(name))) {
-		/* Error code at the end of a pathname. */
-		return NT_STATUS_OBJECT_NAME_INVALID;
-	} else {
-		/* Error code within a pathname. */
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-	}
-}
-
 static NTSTATUS check_for_dot_component(const struct smb_filename *smb_fname)
 {
 	/* Ensure we catch all names with in "/."
@@ -868,9 +829,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 			/* Error code at the end of a pathname. */
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
-		return determine_path_error(state->end+1,
-					    false,
-					    state->posix_pathnames);
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
 	/* The name cannot have a wildcard if it's not
@@ -1035,9 +994,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		if (state->orig_path[1] == '\0' || state->orig_path[2] == '\0') {
 			status = NT_STATUS_OBJECT_NAME_INVALID;
 		} else {
-			status =determine_path_error(&state->orig_path[2],
-			    false,
-			    state->posix_pathnames);
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		}
 		goto err;
 	}
