@@ -524,7 +524,6 @@ struct uc_state {
 	bool component_was_mangled;
 	bool name_has_wildcard;
 	bool posix_pathnames;
-	bool allow_wcard_last_component;
 	bool done;
 };
 
@@ -870,7 +869,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 		return determine_path_error(state->end+1,
-					    state->allow_wcard_last_component,
+					    false,
 					    state->posix_pathnames);
 	}
 
@@ -962,7 +961,6 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		.orig_path = orig_path,
 		.ucf_flags = ucf_flags,
 		.posix_pathnames = (ucf_flags & UCF_POSIX_PATHNAMES),
-		.allow_wcard_last_component = (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP),
 	};
 
 	*smb_fname_out = NULL;
@@ -1038,7 +1036,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 			status = NT_STATUS_OBJECT_NAME_INVALID;
 		} else {
 			status =determine_path_error(&state->orig_path[2],
-			    state->allow_wcard_last_component,
+			    false,
 			    state->posix_pathnames);
 		}
 		goto err;
@@ -1163,7 +1161,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	if (!state->posix_pathnames) {
 		/* POSIX pathnames have no wildcards. */
 		state->name_has_wildcard = ms_has_wild(state->smb_fname->base_name);
-		if (state->name_has_wildcard && !state->allow_wcard_last_component) {
+		if (state->name_has_wildcard) {
 			/* Wildcard not valid anywhere. */
 			status = NT_STATUS_OBJECT_NAME_INVALID;
 			goto fail;
