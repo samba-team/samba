@@ -680,10 +680,6 @@ bool is_msdfs_link(struct files_struct *dirfsp,
  Used by other functions to decide if a dfs path is remote,
  and to get the list of referred locations for that remote path.
 
- search_flag: For findfirsts, dfs links themselves are not
- redirected, but paths beyond the links are. For normal smb calls,
- even dfs links need to be redirected.
-
  consumedcntp: how much of the dfs path is being redirected. the client
  should try the remaining path on the redirected server.
 
@@ -755,15 +751,6 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		TALLOC_FREE(parent_fname);
 
 		if (NT_STATUS_IS_OK(status)) {
-			/* XX_ALLOW_WCARD_XXX is called from search functions.*/
-			if (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP) {
-				DBG_INFO("(FindFirst) No redirection "
-					 "for dfs link %s.\n",
-					 dfspath);
-				status = NT_STATUS_OK;
-				goto out;
-			}
-
 			DBG_INFO("%s resolves to a valid dfs link\n",
 				 dfspath);
 
