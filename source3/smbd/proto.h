@@ -378,6 +378,12 @@ NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			uint32_t ucf_flags,
 			NTTIME twrp,
 			struct smb_filename **pp_smb_fname);
+NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
+					   connection_struct *conn,
+					   const char *name_in,
+					   uint32_t ucf_flags,
+					   struct smb_filename **_smb_fname_out,
+					   char **_mask_out);
 
 /* The following definitions come from smbd/files.c  */
 

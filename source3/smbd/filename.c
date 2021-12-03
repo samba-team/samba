@@ -2089,6 +2089,246 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 }
 
 /*
+ * Strip a @GMT component from an SMB1-DFS path. Could be anywhere
+ * in the path.
+ */
+
+static char *strip_gmt_from_raw_dfs(TALLOC_CTX *ctx,
+				    const char *name_in,
+				    bool posix_pathnames,
+				    NTTIME *_twrp)
+{
+	NTSTATUS status;
+	struct smb_filename *smb_fname = NULL;
+	char *name_out = NULL;
+
+	smb_fname = synthetic_smb_fname(ctx,
+					name_in,
+					NULL,
+					NULL,
+					0,
+					0);
+	if (smb_fname == NULL) {
+		return NULL;
+	}
+	if (!posix_pathnames) {
+		/*
+		 * Raw DFS names are still '\\' separated.
+		 * canonicalize_snapshot_path() only works
+		 * on '/' separated paths. Convert.
+		 */
+		string_replace(smb_fname->base_name, '\\', '/');
+	}
+	status = canonicalize_snapshot_path(smb_fname,
+					    UCF_GMT_PATHNAME,
+					    0);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname);
+		return NULL;
+	}
+	if (!posix_pathnames) {
+		/* Replace as raw DFS names. */
+		string_replace(smb_fname->base_name, '/', '\\');
+	}
+	name_out = talloc_strdup(ctx, smb_fname->base_name);
+	*_twrp = smb_fname->twrp;
+	TALLOC_FREE(smb_fname);
+	return name_out;
+}
+
+/*
+ * Deal with the SMB1 semantics of sending a pathname with a
+ * wildcard as the terminal component for a SMB1search or
+ * trans2 findfirst.
+ */
+
+NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
+					   connection_struct *conn,
+					   const char *name_in,
+					   uint32_t ucf_flags,
+					   struct smb_filename **_smb_fname_out,
+					   char **_mask_out)
+{
+	NTSTATUS status;
+	char *p = NULL;
+	char *mask = NULL;
+	struct smb_filename *smb_fname = NULL;
+	bool posix_pathnames = (ucf_flags & UCF_POSIX_PATHNAMES);
+	NTTIME twrp = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	*_smb_fname_out = NULL;
+	*_mask_out = NULL;
+
+	DBG_DEBUG("name_in: %s\n", name_in);
+
+	if (ucf_flags & UCF_DFS_PATHNAME) {
+		/*
+		 * We've been given a raw DFS pathname.
+		 * In Windows mode this is separated by '\\'
+		 * characters.
+		 *
+		 * We need to remove the last component
+		 * which must be a wildcard before passing
+		 * to dfs_redirect(). But the last component
+		 * may also be a @GMT- token so we have to
+		 * remove that first.
+		 */
+		char path_sep = posix_pathnames ? '/' : '\\';
+		char *fname = NULL;
+		char *name_in_copy = NULL;
+		char *last_component = NULL;
+
+		/* Work on a copy of name_in. */
+		if (ucf_flags & UCF_GMT_PATHNAME) {
+			name_in_copy = strip_gmt_from_raw_dfs(frame,
+							      name_in,
+							      posix_pathnames,
+							      &twrp);
+			ucf_flags &= ~UCF_GMT_PATHNAME;
+		} else {
+			name_in_copy = talloc_strdup(frame, name_in);
+		}
+		if (name_in_copy == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/*
+		 * Now we know that the last component is the
+		 * wildcard. Copy it and truncate to remove it.
+		 */
+		p = strrchr_m(name_in_copy, path_sep);
+		if (p == NULL) {
+			last_component = talloc_strdup(frame, name_in_copy);
+			name_in_copy[0] = '\0';
+		} else {
+			last_component = talloc_strdup(frame, p+1);
+			*p = '\0';
+		}
+		if (last_component == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		DBG_DEBUG("name_in_copy: %s\n", name_in);
+
+		/*
+		 * Now we can call dfs_redirect()
+		 * on the name without wildcard.
+		 */
+		status = dfs_redirect(frame,
+				      conn,
+				      name_in_copy,
+				      ucf_flags,
+				      !conn->sconn->using_smb2,
+				      NULL,
+				      &fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("dfs_redirect "
+				"failed for name %s with %s\n",
+				name_in_copy,
+				nt_errstr(status));
+			TALLOC_FREE(frame);
+			return status;
+		}
+		/* Add the last component back. */
+		if (fname[0] == '\0') {
+			name_in = talloc_strdup(frame, last_component);
+		} else {
+			name_in = talloc_asprintf(frame,
+						  "%s%c%s",
+						  fname,
+						  path_sep,
+						  last_component);
+		}
+		if (name_in == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		ucf_flags &= ~UCF_DFS_PATHNAME;
+
+		DBG_DEBUG("After DFS redirect name_in: %s\n", name_in);
+	}
+
+	smb_fname = synthetic_smb_fname(frame,
+					name_in,
+					NULL,
+					NULL,
+					twrp,
+					posix_pathnames ?
+						SMB_FILENAME_POSIX_PATH : 0);
+	if (smb_fname == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Canonicalize any @GMT- paths. */
+	status = canonicalize_snapshot_path(smb_fname, ucf_flags, twrp);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	/* Get the original lcomp. */
+	mask = get_original_lcomp(frame,
+				  conn,
+				  name_in,
+				  ucf_flags);
+	if (mask == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (mask[0] == '\0') {
+		/* Windows and OS/2 systems treat search on the root as * */
+		TALLOC_FREE(mask);
+		mask = talloc_strdup(frame, "*");
+		if (mask == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	DBG_DEBUG("mask = %s\n", mask);
+
+	/*
+	 * Remove the terminal component so
+	 * filename_convert never sees the mask.
+	 */
+	p = strrchr_m(smb_fname->base_name,'/');
+	if (p == NULL) {
+		/* filename_convert handles a '\0' base_name. */
+		smb_fname->base_name[0] = '\0';
+	} else {
+		*p = '\0';
+	}
+
+	DBG_DEBUG("For filename_convert: smb_fname = %s\n",
+		smb_fname_str_dbg(smb_fname));
+
+	/* Convert the parent directory path. */
+	status = filename_convert(frame,
+				  conn,
+				  smb_fname->base_name,
+				  ucf_flags,
+				  smb_fname->twrp,
+				  &smb_fname);
+
+	if (NT_STATUS_IS_OK(status)) {
+		*_smb_fname_out = talloc_move(ctx, &smb_fname);
+		*_mask_out = talloc_move(ctx, &mask);
+	} else {
+		DBG_DEBUG("filename_convert error for %s: %s\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status));
+	}
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/*
  * Build the full path from a dirfsp and dirfsp relative name
  */
 struct smb_filename *full_path_from_dirfsp_atname(
