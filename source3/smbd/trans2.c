@@ -2665,14 +2665,12 @@ static void call_trans2findfirst(connection_struct *conn,
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
 	struct smbd_server_connection *sconn = req->sconn;
-	uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
-			ucf_flags_from_smb_request(req);
+	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	bool backup_priv = false;
 	bool as_root = false;
 	files_struct *fsp = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	int ret;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2758,11 +2756,12 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 		become_root();
 		as_root = true;
 	}
-	ntstatus = filename_convert(talloc_tos(), conn,
-				    directory,
-				    ucf_flags,
-				    0,
-				    &smb_dname);
+	ntstatus = filename_convert_smb1_search_path(talloc_tos(),
+						     conn,
+						     directory,
+						     ucf_flags,
+						     &smb_dname,
+						     &mask);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
@@ -2774,71 +2773,8 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 		goto out;
 	}
 
-	/*
-	 * The above call to filename_convert() is on the path from the client
-	 * including the search mask. Until the code that chops of the search
-	 * mask from the path below is moved before the call to
-	 * filename_convert(), we close a possible pathref fsp to ensure
-	 * SMB_VFS_CREATE_FILE() below will internally open a pathref fsp on the
-	 * correct path.
-	 */
-	if (smb_dname->fsp != NULL) {
-		ntstatus = fd_close(smb_dname->fsp);
-		if (!NT_STATUS_IS_OK(ntstatus)) {
-			reply_nterror(req, ntstatus);
-			goto out;
-		}
-		/*
-		 * The pathref fsp link destructor will set smb_dname->fsp to
-		 * NULL. Turning this into an assert to give a hint at readers
-		 * of the code trying to understand the mechanics.
-		 */
-		file_free(req, smb_dname->fsp);
-		SMB_ASSERT(smb_dname->fsp == NULL);
-	}
-
-	mask = get_original_lcomp(talloc_tos(),
-				conn,
-				directory,
-				ucf_flags);
-	if (mask == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		goto out;
-	}
-
+	TALLOC_FREE(directory);
 	directory = smb_dname->base_name;
-
-	p = strrchr_m(directory,'/');
-	if(p == NULL) {
-		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
-		if((directory[0] == '.') && (directory[1] == '\0')) {
-			mask = talloc_strdup(talloc_tos(),"*");
-			if (!mask) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				goto out;
-			}
-		}
-	} else {
-		*p = 0;
-	}
-
-	if (p == NULL || p == directory) {
-		struct smb_filename *old_name = smb_dname;
-
-		/* Ensure we don't have a directory name of "". */
-		smb_dname = synthetic_smb_fname(talloc_tos(),
-						".",
-						NULL,
-						&old_name->st,
-						old_name->twrp,
-						old_name->flags);
-		TALLOC_FREE(old_name);
-		if (smb_dname == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-		directory = smb_dname->base_name;
-	}
 
 	DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
 
@@ -2896,25 +2832,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		goto out;
 	}
 	params = *pparams;
-
-	/*
-	 * As we've cut off the last component from
-	 * smb_fname we need to re-stat smb_dname
-	 * so FILE_OPEN disposition knows the directory
-	 * exists.
-	 */
-	ret = vfs_stat(conn, smb_dname);
-	if (ret == -1) {
-		ntstatus = map_nt_error_from_unix(errno);
-		reply_nterror(req, ntstatus);
-		goto out;
-	}
-
-	ntstatus = openat_pathref_fsp(conn->cwd_fsp, smb_dname);
-	if (!NT_STATUS_IS_OK(ntstatus)) {
-		reply_nterror(req, ntstatus);
-		goto out;
-	}
 
 	/*
 	 * Open an fsp on this directory for the dptr.
