@@ -1452,6 +1452,7 @@ static NTSTATUS check_name(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+#if 0
 /****************************************************************************
  Must be called as root. Creates the struct privilege_paths
  attached to the struct smb_request if this call is successful.
@@ -1470,6 +1471,7 @@ static NTSTATUS check_name_with_privilege(connection_struct *conn,
 			smb_fname,
 			smbreq);
 }
+#endif
 
 /****************************************************************************
  Check if two filenames are equal.
@@ -1999,11 +2001,8 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 			TALLOC_FREE(smb_fname);
 			return status;
 		}
-	} else if (!smbreq) {
-		status = check_name(conn, smb_fname);
 	} else {
-		status = check_name_with_privilege(conn, smbreq,
-				smb_fname);
+		status = check_name(conn, smb_fname);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("filename_convert_internal: check_name failed "
