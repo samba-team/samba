@@ -894,14 +894,13 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	NTSTATUS status;
-	bool search_wcard_flag = (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP);
 	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
 
 	if (!pdp) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = parse_dfs_path(conn, path_in, search_wcard_flag,
+	status = parse_dfs_path(conn, path_in, false,
 				allow_broken_path, pdp);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
