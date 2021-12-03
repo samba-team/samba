@@ -36,30 +36,49 @@ conf.CHECK_HEADERS('com_err.h', lib='com_err')
 
 conf.find_program('krb5-config', path_list=path_krb5_config, var='KRB5_CONFIG')
 if conf.env.KRB5_CONFIG:
-    conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
-               package="", uselib_store="KRB5")
-    krb5_define_syslib(conf, "krb5", conf.env['LIB_KRB5'])
-
-    conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
-                   package="kadm-server", uselib_store="KADM-SERVER")
-    conf.CHECK_FUNCS_IN('kadm5_init', 'kadm5srv_mit')
-
-    conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
-                   package="kdb", uselib_store="KDB5")
-    krb5_define_syslib(conf, "kdb5", conf.env['LIB_KDB5'])
-
-    conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
-               package="gssapi", uselib_store="GSSAPI")
-    krb5_define_syslib(conf, "gssapi", conf.env['LIB_GSSAPI'])
-    if 'k5crypto' in conf.env['LIB_GSSAPI']:
-        krb5_define_syslib(conf, "k5crypto", conf.env['LIB_GSSAPI'])
-    if 'gssapi_krb5' in conf.env['LIB_GSSAPI']:
-        krb5_define_syslib(conf, "gssapi_krb5", conf.env['LIB_GSSAPI'])
-
     vendor = conf.cmd_and_log(conf.env.KRB5_CONFIG+['--vendor'])
     conf.env.KRB5_VENDOR = vendor.strip().lower()
     if conf.env.KRB5_VENDOR == 'heimdal':
         raise Errors.WafError('--with-system-mitkrb5 cannot be used with system heimdal')
+
+    if conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
+                      package="", uselib_store="KRB5"):
+        if 'krb5' in conf.env['LIB_KRB5']:
+            krb5_define_syslib(conf, "krb5", conf.env['LIB_KRB5'])
+        if 'k5crypto' in conf.env['LIB_KRB5']:
+            krb5_define_syslib(conf, "k5crypto", conf.env['LIB_GSSAPI'])
+    else:
+        raise Errors.WafError('Unable to find required krb5 library!')
+
+    if conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
+                      package="gssapi", uselib_store="GSSAPI"):
+        krb5_define_syslib(conf, "gssapi", conf.env['LIB_GSSAPI'])
+        if 'gssapi_krb5' in conf.env['LIB_GSSAPI']:
+            krb5_define_syslib(conf, "gssapi_krb5", conf.env['LIB_GSSAPI'])
+    else:
+        raise Errors.WafError('Unable to find required gssapi library!')
+
+    if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
+        if conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
+                          package="gssrpc", uselib_store="GSSRPC"):
+            krb5_define_syslib(conf, "gssrpc", conf.env['LIB_GSSRPC'])
+
+        if conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
+                          package="kdb", uselib_store="KDB5"):
+            krb5_define_syslib(conf, "kdb5", conf.env['LIB_KDB5'])
+            conf.CHECK_HEADERS('kdb.h', lib='kdb5')
+        else:
+            raise Errors.WafError('Unable to find required kdb5 library!')
+
+        if conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
+                          package="kadm-server", uselib_store="KADM5SRV_MIT"):
+            krb5_define_syslib(conf,
+                               "kadm5srv_mit",
+                               conf.env['LIB_KADM5SRV_MIT'])
+            conf.CHECK_FUNCS_IN('kadm5_init', 'kadm5srv_mit')
+        else:
+            raise Errors.WafError('Unable to find required kadm5srv_mit '
+                                  'library!')
 
     conf.define('USING_SYSTEM_KRB5', 1)
     del conf.env.HEIMDAL_KRB5_CONFIG
@@ -80,8 +99,6 @@ if conf.env.KRB5_CONFIG:
         Logs.info('MIT Kerberos %s detected, MIT krb5 build can proceed' % (krb5_version))
 
     conf.define('USING_SYSTEM_MITKRB5', '"%s"' % krb5_version)
-
-conf.CHECK_HEADERS('kdb.h', lib='kdb5')
 
 conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
 conf.CHECK_HEADERS('krb5.h krb5/localauth_plugin.h', lib='krb5')
