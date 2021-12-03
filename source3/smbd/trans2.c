@@ -2757,19 +2757,12 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 	if (backup_priv) {
 		become_root();
 		as_root = true;
-		ntstatus = filename_convert_with_privilege(talloc_tos(),
-				conn,
-				req,
-				directory,
-				ucf_flags,
-				&smb_dname);
-	} else {
-		ntstatus = filename_convert(talloc_tos(), conn,
+	}
+	ntstatus = filename_convert(talloc_tos(), conn,
 				    directory,
 				    ucf_flags,
 				    0,
 				    &smb_dname);
-	}
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
