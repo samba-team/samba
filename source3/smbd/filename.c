@@ -1152,8 +1152,8 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 
 	if (!state->posix_pathnames) {
 		/* POSIX pathnames have no wildcards. */
-		state->name_has_wildcard = ms_has_wild(state->smb_fname->base_name);
-		if (state->name_has_wildcard) {
+		bool name_has_wildcard = ms_has_wild(state->smb_fname->base_name);
+		if (name_has_wildcard) {
 			/* Wildcard not valid anywhere. */
 			status = NT_STATUS_OBJECT_NAME_INVALID;
 			goto fail;
