@@ -1960,13 +1960,12 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
  * @return NT_STATUS_OK if all operations completed successfully, appropriate
  * 	   error otherwise.
  */
-static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
-				connection_struct *conn,
-				struct smb_request *smbreq,
-				const char *name_in,
-				uint32_t ucf_flags,
-				NTTIME twrp,
-				struct smb_filename **_smb_fname)
+NTSTATUS filename_convert(TALLOC_CTX *ctx,
+			  connection_struct *conn,
+			  const char *name_in,
+			  uint32_t ucf_flags,
+			  NTTIME twrp,
+			  struct smb_filename **_smb_fname)
 {
 	struct smb_filename *smb_fname = NULL;
 	bool has_wild;
@@ -1982,10 +1981,10 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				!conn->sconn->using_smb2,
 				&fname);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10,("filename_convert_internal: dfs_redirect "
+			DBG_DEBUG("dfs_redirect "
 				"failed for name %s with %s\n",
 				name_in,
-				nt_errstr(status) ));
+				nt_errstr(status));
 			return status;
 		}
 		name_in = fname;
@@ -2011,10 +2010,10 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 
 	status = unix_convert(ctx, conn, name_in, twrp, &smb_fname, ucf_flags);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("filename_convert_internal: unix_convert failed "
+		DBG_DEBUG("unix_convert failed "
 			"for name %s with %s\n",
 			name_in,
-			nt_errstr(status) ));
+			nt_errstr(status));
 		return status;
 	}
 
@@ -2031,10 +2030,10 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		status = check_name(conn, smb_fname);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("filename_convert_internal: check_name failed "
+		DBG_NOTICE("check_name failed "
 			"for name %s with %s\n",
 			smb_fname_str_dbg(smb_fname),
-			nt_errstr(status) ));
+			nt_errstr(status));
 		TALLOC_FREE(smb_fname);
 		return status;
 	}
@@ -2080,27 +2079,6 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 
 	*_smb_fname = smb_fname;
 	return status;
-}
-
-/*
- * Go through all the steps to validate a filename.
- * Non-root version.
- */
-
-NTSTATUS filename_convert(TALLOC_CTX *ctx,
-				connection_struct *conn,
-				const char *name_in,
-				uint32_t ucf_flags,
-				NTTIME twrp,
-				struct smb_filename **pp_smb_fname)
-{
-	return filename_convert_internal(ctx,
-					conn,
-					NULL,
-					name_in,
-					ucf_flags,
-					twrp,
-					pp_smb_fname);
 }
 
 /*
