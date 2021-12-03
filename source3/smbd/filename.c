@@ -936,6 +936,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	struct uc_state *state = &uc_state;
 	NTSTATUS status;
 	int ret = -1;
+	int parent_stat_errno = 0;
 
 	*state = (struct uc_state) {
 		.mem_ctx = mem_ctx,
@@ -1163,122 +1164,118 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	DBG_DEBUG("Begin: name [%s] dirpath [%s] name [%s]\n",
 		  state->smb_fname->base_name, state->dirpath, state->name);
 
-	{
-		int parent_stat_errno = 0;
+	/*
+	 * stat the name - if it exists then we can add the stream back (if
+	 * there was one) and be done!
+	 */
 
-		/*
-		 * stat the name - if it exists then we can add the stream back (if
-		 * there was one) and be done!
-		 */
+	ret = vfs_stat(state->conn, state->smb_fname);
+	if (ret == 0) {
+		status = check_for_dot_component(state->smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+		/* Add the path (not including the stream) to the cache. */
+		stat_cache_add(state->orig_path,
+			       state->smb_fname->base_name,
+			       state->smb_fname->twrp,
+			       state->case_sensitive);
+		DBG_DEBUG("Conversion of base_name finished "
+			  "[%s] -> [%s]\n",
+			  state->orig_path, state->smb_fname->base_name);
+		goto done;
+	}
 
-		ret = vfs_stat(state->conn, state->smb_fname);
-		if (ret == 0) {
-			status = check_for_dot_component(state->smb_fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto fail;
-			}
-			/* Add the path (not including the stream) to the cache. */
-			stat_cache_add(state->orig_path,
-				       state->smb_fname->base_name,
-				       state->smb_fname->twrp,
-				       state->case_sensitive);
-			DBG_DEBUG("Conversion of base_name finished "
-				  "[%s] -> [%s]\n",
-				  state->orig_path, state->smb_fname->base_name);
-			goto done;
+	/* Stat failed - ensure we don't use it. */
+	SET_STAT_INVALID(state->smb_fname->st);
+
+	/*
+	 * Note: we must continue processing a path if we get EACCES
+	 * from stat. With NFS4 permissions the file might be lacking
+	 * READ_ATTR, but if the parent has LIST permissions we can
+	 * resolve the path in the path traversal loop down below.
+	 */
+
+	if (errno == ENOENT) {
+		/* Optimization when creating a new file - only
+		   the last component doesn't exist.
+		   NOTE : check_parent_exists() doesn't preserve errno.
+		*/
+		int saved_errno = errno;
+		status = check_parent_exists(state->mem_ctx,
+					state->conn,
+					state->posix_pathnames,
+					state->smb_fname,
+					&state->dirpath,
+					&state->name,
+					&parent_stat_errno);
+		errno = saved_errno;
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	}
+
+	/*
+	 * A special case - if we don't have any wildcards or mangling chars and are case
+	 * sensitive or the underlying filesystem is case insensitive then searching
+	 * won't help.
+	 *
+	 * NB. As POSIX sets state->case_sensitive as
+	 * true we will never call into mangle_is_mangled() here.
+	 */
+
+	if ((state->case_sensitive || !(state->conn->fs_capabilities &
+				FILE_CASE_SENSITIVE_SEARCH)) &&
+			!mangle_is_mangled(state->smb_fname->base_name, state->conn->params)) {
+
+		status = check_for_dot_component(state->smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
 		}
 
-		/* Stat failed - ensure we don't use it. */
-		SET_STAT_INVALID(state->smb_fname->st);
-
 		/*
-		 * Note: we must continue processing a path if we get EACCES
-		 * from stat. With NFS4 permissions the file might be lacking
-		 * READ_ATTR, but if the parent has LIST permissions we can
-		 * resolve the path in the path traversal loop down below.
+		 * The stat failed. Could be ok as it could be
+		 * a new file.
 		 */
 
-		if (errno == ENOENT) {
-			/* Optimization when creating a new file - only
-			   the last component doesn't exist.
-			   NOTE : check_parent_exists() doesn't preserve errno.
-			*/
-			int saved_errno = errno;
-			status = check_parent_exists(state->mem_ctx,
-						state->conn,
-						state->posix_pathnames,
-						state->smb_fname,
-						&state->dirpath,
-						&state->name,
-						&parent_stat_errno);
-			errno = saved_errno;
-			if (!NT_STATUS_IS_OK(status)) {
-				goto fail;
-			}
-		}
-
-		/*
-		 * A special case - if we don't have any wildcards or mangling chars and are case
-		 * sensitive or the underlying filesystem is case insensitive then searching
-		 * won't help.
-		 *
-		 * NB. As POSIX sets state->case_sensitive as
-		 * true we will never call into mangle_is_mangled() here.
-		 */
-
-		if ((state->case_sensitive || !(state->conn->fs_capabilities &
-					FILE_CASE_SENSITIVE_SEARCH)) &&
-				!mangle_is_mangled(state->smb_fname->base_name, state->conn->params)) {
-
-			status = check_for_dot_component(state->smb_fname);
-			if (!NT_STATUS_IS_OK(status)) {
+		if (errno == ENOTDIR || errno == ELOOP) {
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			goto fail;
+		} else if (errno == ENOENT) {
+			/*
+			 * Was it a missing last component ?
+			 * or a missing intermediate component ?
+			 *
+			 * Optimization.
+			 *
+			 * For this code path we can guarantee that
+			 * we have gone through check_parent_exists()
+			 * and it returned NT_STATUS_OK.
+			 *
+			 * Either there was no parent component (".")
+			 * parent_stat_errno == 0 and we have a missing
+			 * last component here.
+			 *
+			 * OR check_parent_exists() called STAT/LSTAT
+			 * and if it failed parent_stat_errno has been
+			 * set telling us if the parent existed or not.
+			 *
+			 * Either way we can avoid another STAT/LSTAT
+			 * system call on the parent here.
+			 */
+			if (parent_stat_errno == ENOTDIR ||
+					parent_stat_errno == ENOENT ||
+					parent_stat_errno == ELOOP) {
+				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 				goto fail;
 			}
 
 			/*
-			 * The stat failed. Could be ok as it could be
- 			 * a new file.
- 			 */
-
-			if (errno == ENOTDIR || errno == ELOOP) {
-				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-				goto fail;
-			} else if (errno == ENOENT) {
-				/*
-				 * Was it a missing last component ?
-				 * or a missing intermediate component ?
-				 *
-				 * Optimization.
-				 *
-				 * For this code path we can guarantee that
-				 * we have gone through check_parent_exists()
-				 * and it returned NT_STATUS_OK.
-				 *
-				 * Either there was no parent component (".")
-				 * parent_stat_errno == 0 and we have a missing
-				 * last component here.
-				 *
-				 * OR check_parent_exists() called STAT/LSTAT
-				 * and if it failed parent_stat_errno has been
-				 * set telling us if the parent existed or not.
-				 *
-				 * Either way we can avoid another STAT/LSTAT
-				 * system call on the parent here.
-				 */
-				if (parent_stat_errno == ENOTDIR ||
-						parent_stat_errno == ENOENT ||
-						parent_stat_errno == ELOOP) {
-					status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-					goto fail;
-				}
-
-				/*
-				 * Missing last component is ok - new file.
-				 * Also deal with permission denied elsewhere.
-				 * Just drop out to done.
-				 */
-				goto done;
-			}
+			 * Missing last component is ok - new file.
+			 * Also deal with permission denied elsewhere.
+			 * Just drop out to done.
+			 */
+			goto done;
 		}
 	}
 
