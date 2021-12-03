@@ -688,8 +688,8 @@ static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 	if (state->posix_pathnames) {
 		/*
 		 * For posix_pathnames, we're done.
-		 * Don't blunder into the name_has_wildcard OR
-		 * get_real_filename() codepaths as they may
+		 * Don't blunder into the
+		 * get_real_filename() codepath as they may
 		 * be doing case insensitive lookups. So when
 		 * creating a new POSIX directory Foo they might
 		 * match on name foo.
@@ -737,10 +737,6 @@ static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 	/*
 	 * Try to find this part of the path in the directory.
 	 */
-
-	if (state->name_has_wildcard) {
-		return unix_convert_step_search_fail(state);
-	}
 
 	dname = (struct smb_filename) {
 		.base_name = state->dirpath,
