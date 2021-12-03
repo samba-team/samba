@@ -473,9 +473,6 @@ Note NT_STATUS_OK doesn't mean the name exists or is valid, just that we
 didn't get any fatal errors that should immediately terminate the calling SMB
 processing whilst resolving.
 
-If UCF_ALWAYS_ALLOW_WCARD_LCOMP is passed in, then a MS wildcard
-should be allowed in the last component of the path only.
-
 If the orig_path was a stream, smb_filename->base_name will point to the base
 filename, and smb_filename->stream_name will point to the stream name.  If
 orig_path was not a stream, then smb_filename->stream_name will be NULL.
