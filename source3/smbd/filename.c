@@ -2079,27 +2079,6 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 }
 
 /*
- * Go through all the steps to validate a filename.
- * root (privileged) version.
- */
-
-NTSTATUS filename_convert_with_privilege(TALLOC_CTX *ctx,
-                                connection_struct *conn,
-				struct smb_request *smbreq,
-                                const char *name_in,
-                                uint32_t ucf_flags,
-                                struct smb_filename **pp_smb_fname)
-{
-	return filename_convert_internal(ctx,
-					conn,
-					smbreq,
-					name_in,
-					ucf_flags,
-					0,
-					pp_smb_fname);
-}
-
-/*
  * Build the full path from a dirfsp and dirfsp relative name
  */
 struct smb_filename *full_path_from_dirfsp_atname(

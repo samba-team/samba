@@ -382,12 +382,6 @@ NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			uint32_t ucf_flags,
 			NTTIME twrp,
 			struct smb_filename **pp_smb_fname);
-NTSTATUS filename_convert_with_privilege(TALLOC_CTX *mem_ctx,
-			connection_struct *conn,
-			struct smb_request *smbreq,
-			const char *name_in,
-			uint32_t ucf_flags,
-			struct smb_filename **pp_smb_fname);
 
 /* The following definitions come from smbd/files.c  */
 
