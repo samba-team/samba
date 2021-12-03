@@ -30,6 +30,10 @@ if isinstance(Options.options.with_system_mitkrb5, list):
 else:
     path_krb5_config = None
 
+conf.CHECK_CFG(args="--cflags --libs", package="com_err", uselib_store="com_err")
+conf.CHECK_FUNCS_IN('_et_list', 'com_err')
+conf.CHECK_HEADERS('com_err.h', lib='com_err')
+
 conf.find_program('krb5-config', path_list=path_krb5_config, var='KRB5_CONFIG')
 if conf.env.KRB5_CONFIG:
     conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
@@ -49,8 +53,6 @@ if conf.env.KRB5_CONFIG:
     krb5_define_syslib(conf, "gssapi", conf.env['LIB_GSSAPI'])
     if 'k5crypto' in conf.env['LIB_GSSAPI']:
         krb5_define_syslib(conf, "k5crypto", conf.env['LIB_GSSAPI'])
-    if 'com_err' in conf.env['LIB_GSSAPI']:
-        krb5_define_syslib(conf, "com_err", conf.env['LIB_GSSAPI'])
     if 'gssapi_krb5' in conf.env['LIB_GSSAPI']:
         krb5_define_syslib(conf, "gssapi_krb5", conf.env['LIB_GSSAPI'])
 
@@ -79,9 +81,6 @@ if conf.env.KRB5_CONFIG:
 
     conf.define('USING_SYSTEM_MITKRB5', '"%s"' % krb5_version)
 
-conf.CHECK_CFG(args="--cflags --libs", package="com_err", uselib_store="com_err")
-conf.CHECK_FUNCS_IN('_et_list', 'com_err')
-conf.CHECK_HEADERS('com_err.h', lib='com_err')
 conf.CHECK_HEADERS('kdb.h', lib='kdb5')
 
 conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
