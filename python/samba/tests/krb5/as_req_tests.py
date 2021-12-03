@@ -209,6 +209,46 @@ class AsReqKerberosTests(AsReqBaseTest):
         client_creds = self.get_mach_creds()
         self._run_as_req_enc_timestamp(client_creds)
 
+    def test_as_req_enc_timestamp_rc4(self):
+        client_creds = self.get_client_creds()
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            etypes={kcrypto.Enctype.RC4})
+
+    def test_as_req_enc_timestamp_mac_rc4(self):
+        client_creds = self.get_mach_creds()
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            etypes={kcrypto.Enctype.RC4})
+
+    def test_as_req_enc_timestamp_rc4_dummy(self):
+        client_creds = self.get_client_creds()
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            etypes={kcrypto.Enctype.RC4,
+                    -1111})
+
+    def test_as_req_enc_timestamp_mac_rc4_dummy(self):
+        client_creds = self.get_mach_creds()
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            etypes={kcrypto.Enctype.RC4,
+                    -1111})
+
+    def test_as_req_enc_timestamp_aes128_rc4(self):
+        client_creds = self.get_client_creds()
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            etypes={kcrypto.Enctype.AES128,
+                    kcrypto.Enctype.RC4})
+
+    def test_as_req_enc_timestamp_mac_aes128_rc4(self):
+        client_creds = self.get_mach_creds()
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            etypes={kcrypto.Enctype.AES128,
+                    kcrypto.Enctype.RC4})
+
 
 if __name__ == "__main__":
     global_asn1_print = False
