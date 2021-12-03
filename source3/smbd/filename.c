@@ -1452,27 +1452,6 @@ static NTSTATUS check_name(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-#if 0
-/****************************************************************************
- Must be called as root. Creates the struct privilege_paths
- attached to the struct smb_request if this call is successful.
-****************************************************************************/
-
-static NTSTATUS check_name_with_privilege(connection_struct *conn,
-		struct smb_request *smbreq,
-		const struct smb_filename *smb_fname)
-{
-	NTSTATUS status = check_veto_path(conn, smb_fname);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	return check_reduced_name_with_privilege(conn,
-			smb_fname,
-			smbreq);
-}
-#endif
-
 /****************************************************************************
  Check if two filenames are equal.
  This needs to be careful about whether we are case sensitive.
