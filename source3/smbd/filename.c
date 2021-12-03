@@ -494,7 +494,6 @@ struct uc_state {
 	char *dirpath;
 	char *stream;
 	bool component_was_mangled;
-	bool name_has_wildcard;
 	bool posix_pathnames;
 	bool done;
 	bool case_sensitive;
