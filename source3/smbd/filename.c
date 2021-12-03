@@ -1125,7 +1125,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	DBG_DEBUG("Begin: name [%s] dirpath [%s] name [%s]\n",
 		  state->smb_fname->base_name, state->dirpath, state->name);
 
-	if (!state->name_has_wildcard) {
+	{
 		int parent_stat_errno = 0;
 
 		/*
@@ -1239,27 +1239,6 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 		}
-	} else {
-		/*
-		 * We have a wildcard in the pathname.
-		 *
-		 * Optimization for common case where the wildcard
-		 * is in the last component and the client already
-		 * sent the correct case.
-		 * NOTE : check_parent_exists() doesn't preserve errno.
-		 */
-		int saved_errno = errno;
-		status = check_parent_exists(state->mem_ctx,
-					state->conn,
-					state->posix_pathnames,
-					state->smb_fname,
-					&state->dirpath,
-					&state->name,
-					NULL);
-		errno = saved_errno;
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
 	}
 
 	/*
@@ -1299,7 +1278,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 * components as this can change the size.
 	 */
 
-	if(!state->component_was_mangled && !state->name_has_wildcard) {
+	if(!state->component_was_mangled) {
 		stat_cache_add(state->orig_path,
 			       state->smb_fname->base_name,
 			       state->smb_fname->twrp,
