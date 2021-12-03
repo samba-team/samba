@@ -1300,9 +1300,6 @@ struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
 NTSTATUS check_reduced_name(connection_struct *conn,
 			const struct smb_filename *cwd_fname,
 			const struct smb_filename *smb_fname);
-NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
-			const struct smb_filename *smb_fname,
-			struct smb_request *smbreq);
 int vfs_stat(struct connection_struct *conn,
 	     struct smb_filename *smb_fname);
 int vfs_stat_smb_basename(struct connection_struct *conn,
