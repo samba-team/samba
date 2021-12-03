@@ -1970,7 +1970,6 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 			  struct smb_filename **_smb_fname)
 {
 	struct smb_filename *smb_fname = NULL;
-	bool has_wild;
 	NTSTATUS status;
 
 	*_smb_fname = NULL;
@@ -2043,14 +2042,6 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 			nt_errstr(status));
 		TALLOC_FREE(smb_fname);
 		return status;
-	}
-
-	has_wild = ms_has_wild(name_in);
-	if (has_wild) {
-		DBG_DEBUG("[%s] contains wildcard, skipping pathref fsp\n",
-			  name_in);
-		*_smb_fname = smb_fname;
-		return NT_STATUS_OK;
 	}
 
 	if (!VALID_STAT(smb_fname->st)) {
