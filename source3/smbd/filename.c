@@ -829,25 +829,6 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
-	/* The name cannot have a wildcard if it's not
-	   the last component. */
-
-	if (!state->posix_pathnames) {
-		state->name_has_wildcard = ms_has_wild(state->name);
-	}
-
-	/* Wildcards never valid within a pathname. */
-	if (state->name_has_wildcard && state->end != NULL) {
-		return NT_STATUS_OBJECT_NAME_INVALID;
-	}
-
-	/* Skip the stat call if it's a wildcard end. */
-	if (state->name_has_wildcard) {
-		DBG_DEBUG("Wildcard [%s]\n", state->name);
-		state->done = true;
-		return NT_STATUS_OK;
-	}
-
 	status = unix_convert_step_stat(state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -880,9 +861,9 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 
 	/*
 	 * Cache the dirpath thus far. Don't cache a name with mangled
-	 * or wildcard components as this can change the size.
+	 * components as this can change the size.
 	 */
-	if(!state->component_was_mangled && !state->name_has_wildcard) {
+	if(!state->component_was_mangled) {
 		stat_cache_add(state->orig_path,
 			       state->dirpath,
 			       state->smb_fname->twrp,
