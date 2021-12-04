@@ -1871,6 +1871,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 	char *last_slash = NULL;
 	char *orig_lcomp;
 	char *fname = NULL;
+	NTTIME twrp = 0;
 	NTSTATUS status;
 
 	if (ucf_flags & UCF_DFS_PATHNAME) {
@@ -1879,6 +1880,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 				filename_in,
 				ucf_flags,
 				!conn->sconn->using_smb2,
+				&twrp,
 				&fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("dfs_redirect "
@@ -1907,7 +1909,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 					filename_in,
 					NULL,
 					NULL,
-					0,
+					twrp,
 					0);
 		if (smb_fname == NULL) {
 			TALLOC_FREE(fname);
@@ -1915,7 +1917,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 		}
 		status = canonicalize_snapshot_path(smb_fname,
 						    ucf_flags,
-						    0);
+						    twrp);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(fname);
 			TALLOC_FREE(smb_fname);
@@ -1975,10 +1977,12 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 
 	if (ucf_flags & UCF_DFS_PATHNAME) {
 		char *fname = NULL;
+		NTTIME dfs_twrp = 0;
 		status = dfs_redirect(ctx, conn,
 				name_in,
 				ucf_flags,
 				!conn->sconn->using_smb2,
+				&dfs_twrp,
 				&fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("dfs_redirect "
@@ -1989,6 +1993,9 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 		}
 		name_in = fname;
 		ucf_flags &= ~UCF_DFS_PATHNAME;
+		if (twrp == 0 && dfs_twrp != 0) {
+			twrp = dfs_twrp;
+		}
 	}
 
 	if (is_fake_file_path(name_in)) {
