@@ -697,6 +697,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		const struct dfs_path *pdp, /* Parsed out
 					       server+share+extrapath. */
 		uint32_t ucf_flags,
+		NTTIME *_twrp,
 		int *consumedcntp,
 		struct referral **ppreflist,
 		size_t *preferral_count)
@@ -867,6 +868,10 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		}
 	}
 
+	if ((ucf_flags & UCF_GMT_PATHNAME) && _twrp != NULL) {
+		*_twrp = smb_fname->twrp;
+	}
+
 	status = NT_STATUS_OK;
  out:
 
@@ -965,6 +970,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 				path_in,
 				pdp,
 				ucf_flags,
+				NULL, /* twrp. */
 				NULL, /* int *consumedcntp */
 				NULL, /* struct referral **ppreflist */
 				NULL); /* size_t *preferral_count */
@@ -1189,6 +1195,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 				dfs_path,
 				pdp,
 				0, /* ucf_flags */
+				NULL,
 				consumedcntp,
 				&jucn->referral_list,
 				&jucn->referral_count);
