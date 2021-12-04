@@ -901,6 +901,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			const char *path_in,
 			uint32_t ucf_flags,
 			bool allow_broken_path,
+			NTTIME *_twrp,
 			char **pp_path_out)
 {
 	const struct loadparm_substitution *lp_sub =
@@ -970,7 +971,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 				path_in,
 				pdp,
 				ucf_flags,
-				NULL, /* twrp. */
+				_twrp, /* twrp. */
 				NULL, /* int *consumedcntp */
 				NULL, /* struct referral **ppreflist */
 				NULL); /* size_t *preferral_count */

@@ -567,6 +567,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			const char *name_in,
 			uint32_t ucf_flags,
 			bool allow_broken_path,
+			NTTIME *twrp,
 			char **pp_name_out);
 struct connection_struct;
 struct smb_filename;
