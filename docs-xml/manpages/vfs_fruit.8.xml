@@ -402,7 +402,7 @@
 	      attributes"/> is enabled.  Returning a file identifier of
 	      zero causes the Mac client to stop using and trusting the file id
 	      returned from the server.</para>
-	      <para>The default is <emphasis>yes</emphasis>.</para>
+	      <para>The default is <emphasis>no</emphasis>.</para>
 	    </listitem>
 	  </varlistentry>
 
