@@ -110,7 +110,7 @@ conf.CHECK_FUNCS_IN('des_set_key','crypto')
 conf.CHECK_FUNCS_IN('copy_Authenticator', 'asn1')
 conf.CHECK_FUNCS_IN('roken_getaddrinfo_hostspec', 'roken')
 
-conf.CHECK_HEADERS('profile.h')
+conf.CHECK_HEADERS('profile.h', lib='krb5')
 
 if conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi gssapi_krb5'):
     have_gssapi=True
@@ -132,8 +132,8 @@ conf.CHECK_FUNCS_IN('''
        gss_import_cred gss_export_cred
        gss_acquire_cred_from
        ''', 'gssapi gssapi_krb5')
-conf.CHECK_VARIABLE('GSS_KRB5_CRED_NO_CI_FLAGS_X', headers=possible_gssapi_headers)
-conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
+conf.CHECK_VARIABLE('GSS_KRB5_CRED_NO_CI_FLAGS_X',
+        headers=possible_gssapi_headers, lib='gssapi gssapi_krb5')
 conf.CHECK_FUNCS('''
        krb5_auth_con_getrecvsubkey
        krb5_auth_con_getsendsubkey
@@ -165,33 +165,49 @@ conf.CHECK_FUNCS('''
        krb5_principal_set_type
        krb5_warnx
        krb5_get_prompt_types
+       krb5_mk_req_extended krb5_kt_compare
        ''',
-     lib='krb5 k5crypto')
+     lib='krb5 k5crypto',
+     headers='krb5.h')
 conf.CHECK_DECLS('''krb5_get_credentials_for_user
                     krb5_auth_con_set_req_cksumtype''',
-                    headers='krb5.h', always=True)
-conf.CHECK_VARIABLE('AP_OPTS_USE_SUBKEY', headers='krb5.h')
-conf.CHECK_VARIABLE('KV5M_KEYTAB', headers='krb5.h')
-conf.CHECK_VARIABLE('KRB5_KU_OTHER_CKSUM', headers='krb5.h')
-conf.CHECK_VARIABLE('KRB5_KEYUSAGE_APP_DATA_CKSUM', headers='krb5.h')
-conf.CHECK_VARIABLE('ENCTYPE_AES128_CTS_HMAC_SHA1_96', headers='krb5.h')
-conf.CHECK_VARIABLE('ENCTYPE_AES256_CTS_HMAC_SHA1_96', headers='krb5.h')
-conf.CHECK_DECLS('KRB5_PDU_NONE', reverse=True, headers='krb5.h')
-conf.CHECK_STRUCTURE_MEMBER('krb5_keytab_entry', 'key', headers='krb5.h',
+                    headers='krb5.h', lib='krb5', always=True)
+conf.CHECK_VARIABLE('AP_OPTS_USE_SUBKEY', headers='krb5.h', lib='krb5')
+conf.CHECK_VARIABLE('KV5M_KEYTAB', headers='krb5.h', lib='krb5')
+conf.CHECK_VARIABLE('KRB5_KU_OTHER_CKSUM', headers='krb5.h', lib='krb5')
+conf.CHECK_VARIABLE('KRB5_KEYUSAGE_APP_DATA_CKSUM', headers='krb5.h', lib='krb5')
+conf.CHECK_VARIABLE('ENCTYPE_AES128_CTS_HMAC_SHA1_96', headers='krb5.h', lib='krb5')
+conf.CHECK_VARIABLE('ENCTYPE_AES256_CTS_HMAC_SHA1_96', headers='krb5.h', lib='krb5')
+conf.CHECK_DECLS('KRB5_PDU_NONE', reverse=True, headers='krb5.h', lib='krb5')
+conf.CHECK_STRUCTURE_MEMBER('krb5_keytab_entry', 'key',
+                            headers='krb5.h',
+                            lib='krb5',
                             define='HAVE_KRB5_KEYTAB_ENTRY_KEY')
-conf.CHECK_STRUCTURE_MEMBER('krb5_keytab_entry', 'keyblock', headers='krb5.h',
+conf.CHECK_STRUCTURE_MEMBER('krb5_keytab_entry', 'keyblock',
+                            headers='krb5.h',
+                            lib='krb5',
                             define='HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK')
-conf.CHECK_STRUCTURE_MEMBER('krb5_address', 'magic', headers='krb5.h',
+conf.CHECK_STRUCTURE_MEMBER('krb5_address', 'magic',
+                            headers='krb5.h',
+                            lib='krb5',
                             define='HAVE_MAGIC_IN_KRB5_ADDRESS')
-conf.CHECK_STRUCTURE_MEMBER('krb5_address', 'addrtype', headers='krb5.h',
+conf.CHECK_STRUCTURE_MEMBER('krb5_address', 'addrtype',
+                            headers='krb5.h',
+                            lib='krb5',
                             define='HAVE_ADDRTYPE_IN_KRB5_ADDRESS')
-conf.CHECK_STRUCTURE_MEMBER('krb5_ap_req', 'ticket', headers='krb5.h',
+conf.CHECK_STRUCTURE_MEMBER('krb5_ap_req', 'ticket',
+                            headers='krb5.h',
+                            lib='krb5',
                             define='HAVE_TICKET_POINTER_IN_KRB5_AP_REQ')
-conf.CHECK_STRUCTURE_MEMBER('krb5_prompt', 'type', headers='krb5.h',
+conf.CHECK_STRUCTURE_MEMBER('krb5_prompt', 'type',
+                            headers='krb5.h',
+                            lib='krb5',
                             define='HAVE_KRB5_PROMPT_TYPE')
-conf.CHECK_CODE('krb5_trace_info', 'HAVE_KRB5_TRACE_INFO', headers='krb5.h')
-conf.CHECK_CODE('struct krb5_trace_info', 'HAVE_KRB5_TRACE_INFO_STRUCT', headers='krb5.h')
-conf.CHECK_TYPE('krb5_encrypt_block', headers='krb5.h')
+conf.CHECK_CODE('krb5_trace_info', 'HAVE_KRB5_TRACE_INFO',
+                headers='krb5.h', lib='krb5')
+conf.CHECK_CODE('struct krb5_trace_info', 'HAVE_KRB5_TRACE_INFO_STRUCT',
+                headers='krb5.h', lib='krb5')
+conf.CHECK_TYPE('krb5_encrypt_block', headers='krb5.h', lib='krb5')
 
 conf.CHECK_CODE('''
        krb5_context ctx;
@@ -200,6 +216,7 @@ conf.CHECK_CODE('''
        ''',
     'KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT',
     headers='krb5.h', link=False,
+    lib='krb5',
     msg="Checking whether krb5_get_init_creds_opt_free takes a context argument")
 conf.CHECK_CODE('''
        const krb5_data *pkdata;
@@ -311,6 +328,7 @@ conf.CHECK_CODE('''#define KRB5_DEPRECATED 1
        #include <krb5.h>''',
    'HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER', addmain=False,
     link=False,
+    lib='krb5',
     msg="Checking for KRB5_DEPRECATED define taking an identifier")
 
 conf.CHECK_CODE('''
