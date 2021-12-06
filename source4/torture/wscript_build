@@ -6,7 +6,7 @@ samba_net = bld.pyembed_libname('samba-net')
 bld.SAMBA_SUBSYSTEM('TORTURE_UTIL',
 	source='util_smb.c',
 	public_deps='torture',
-	deps='smbclient-raw CMDLINE_S4'
+	deps='smbclient-raw CMDLINE_S4 CREDENTIALS_KRB5'
 	)
 
 
