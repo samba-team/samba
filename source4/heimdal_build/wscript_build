@@ -901,23 +901,24 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
         )
     bld.env['COMPILE_ET'] = os.path.join(bld.bldnode.parent.abspath(), 'compile_et')
 
-HEIMDAL_BINARY('samba4kinit',
-    'kuser/kinit.c',
-    deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto',
-    install=False
-    )
+if bld.CONFIG_SET('USING_EMBEDDED_HEIMDAL'):
+    HEIMDAL_BINARY('samba4kinit',
+        'kuser/kinit.c',
+        deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto',
+        install=False
+        )
 
-HEIMDAL_BINARY('samba4kgetcred',
-    'kuser/kgetcred.c',
-    deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto asn1',
-    install=False
-    )
+    HEIMDAL_BINARY('samba4kgetcred',
+        'kuser/kgetcred.c',
+        deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto asn1',
+        install=False
+        )
 
-HEIMDAL_BINARY('samba4kpasswd',
-    'kpasswd/kpasswd.c',
-    deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto',
-    install=False
-    )
+    HEIMDAL_BINARY('samba4kpasswd',
+        'kpasswd/kpasswd.c',
+        deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto',
+        install=False
+        )
 
 # Alias subsystem to allow common kerberos code that will
 # otherwise link against MIT's gssapi_krb5 and k5crypto
