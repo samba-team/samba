@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Parameter loading functions
    Copyright (C) Karl Auer 1993-1998
@@ -41,7 +41,7 @@
  * 3) add it to the list of available functions (eg: using FN_GLOBAL_STRING())
  * 4) If it's a global then initialise it in init_globals. If a local
  *    (ie. service) parameter then initialise it in the sDefault structure
- *  
+ *
  *
  * Notes:
  *   The configuration file is processed sequentially for speed. It is NOT
@@ -755,8 +755,8 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.ldap_server_require_strong_auth =
 		LDAP_SERVER_REQUIRE_STRONG_AUTH_YES;
 
-	/* This is what we tell the afs client. in reality we set the token 
-	 * to never expire, though, when this runs out the afs client will 
+	/* This is what we tell the afs client. in reality we set the token
+	 * to never expire, though, when this runs out the afs client will
 	 * forget the token. Set to 0 to get NEVERDATE.*/
 	Globals.afs_token_lifetime = 604800;
 	Globals.cups_connection_timeout = CUPS_DEFAULT_CONNECTION_TIMEOUT;
@@ -1431,7 +1431,7 @@ static void free_service(struct loadparm_service *pservice)
 
 static void free_service_byindex(int idx)
 {
-	if ( !LP_SNUM_OK(idx) ) 
+	if ( !LP_SNUM_OK(idx) )
 		return;
 
 	ServicePtrs[idx]->valid = false;
@@ -1452,8 +1452,8 @@ static void free_service_byindex(int idx)
 }
 
 /***************************************************************************
- Add a new service to the services array initialising it with the given 
- service. 
+ Add a new service to the services array initialising it with the given
+ service.
 ***************************************************************************/
 
 static int add_a_service(const struct loadparm_service *pservice, const char *name)
@@ -1501,7 +1501,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 		lpcfg_string_set(ServicePtrs[i], &ServicePtrs[i]->szService,
 				 name);
 
-	DEBUG(8,("add_a_service: Creating snum = %d for %s\n", 
+	DEBUG(8,("add_a_service: Creating snum = %d for %s\n",
 		i, ServicePtrs[i]->szService));
 
 	if (!hash_a_service(ServicePtrs[i]->szService, i)) {
@@ -1613,7 +1613,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 
 	ServicePtrs[i]->autoloaded = true;
 
-	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
+	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename,
 	       user, ServicePtrs[i]->path ));
 
 	return true;
@@ -3060,7 +3060,7 @@ void lp_killservice(int iServiceIn)
 }
 
 /***************************************************************************
- Save the curent values of all global and sDefault parameters into the 
+ Save the curent values of all global and sDefault parameters into the
  defaults union. This allows testparm to show only the
  changed (ie. non-default) parameters.
 ***************************************************************************/
@@ -4345,7 +4345,7 @@ int lp_servicenumber(const char *pszServiceName)
 }
 
 /*******************************************************************
- A useful volume label function. 
+ A useful volume label function.
 ********************************************************************/
 
 const char *volume_label(TALLOC_CTX *ctx, int snum)
@@ -4409,8 +4409,8 @@ int lp_default_server_announce(void)
 	default_server_announce |= SV_TYPE_SERVER;
 	default_server_announce |= SV_TYPE_SERVER_UNIX;
 
-	/* note that the flag should be set only if we have a 
-	   printer service but nmbd doesn't actually load the 
+	/* note that the flag should be set only if we have a
+	   printer service but nmbd doesn't actually load the
 	   services so we can't tell   --jerry */
 
 	default_server_announce |= SV_TYPE_PRINTQ_SERVER;
