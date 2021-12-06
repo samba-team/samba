@@ -64,6 +64,10 @@ PADATA_PW_SALT = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-PW-SALT'))
 PADATA_SUPPORTED_ETYPES = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-SUPPORTED-ETYPES'))
+PADATA_PKINIT_KX = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-PKINIT-KX'))
+PADATA_GSS = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-GSS'))
 
 # Error codes
 KDC_ERR_C_PRINCIPAL_UNKNOWN = 6

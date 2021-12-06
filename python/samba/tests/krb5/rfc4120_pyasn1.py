@@ -1077,7 +1077,8 @@ PADataTypeValues.namedValues = namedval.NamedValues(
     ('kRB5-PADATA-PKU2U-NAME', 148),
     ('kRB5-PADATA-REQ-ENC-PA-REP', 149),
     ('kRB5-PADATA-SUPPORTED-ETYPES', 165),
-    ('kRB5-PADATA-PAC-OPTIONS', 167)
+    ('kRB5-PADATA-PAC-OPTIONS', 167),
+    ('kRB5-PADATA-GSS', 655)
 )
 
 

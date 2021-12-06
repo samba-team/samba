@@ -81,9 +81,11 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_FX_COOKIE,
     PADATA_FX_ERROR,
     PADATA_FX_FAST,
+    PADATA_GSS,
     PADATA_KDC_REQ,
     PADATA_PAC_OPTIONS,
     PADATA_PAC_REQUEST,
+    PADATA_PKINIT_KX,
     PADATA_PK_AS_REQ,
     PADATA_PK_AS_REP_19,
     PADATA_SUPPORTED_ETYPES
@@ -2956,7 +2958,9 @@ class RawKerberosTest(TestCaseInTempDir):
                           PADATA_FX_FAST,
                           PADATA_PAC_OPTIONS,
                           PADATA_PK_AS_REP_19,
-                          PADATA_PK_AS_REQ}
+                          PADATA_PK_AS_REQ,
+                          PADATA_PKINIT_KX,
+                          PADATA_GSS}
         strict_edata_checking = kdc_exchange_dict['strict_edata_checking']
         if not strict_edata_checking:
             require_strict.add(PADATA_ETYPE_INFO2)
