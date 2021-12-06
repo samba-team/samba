@@ -212,7 +212,7 @@ def CHECK_VARIABLE(conf, v, define=None, always=False,
 
 
 @conf
-def CHECK_DECLS(conf, vars, reverse=False, headers=None, always=False):
+def CHECK_DECLS(conf, vars, reverse=False, headers=None, lib=None, always=False):
     '''check a list of variable declarations, using the HAVE_DECL_xxx form
        of define
 
@@ -227,6 +227,7 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None, always=False):
         if not CHECK_VARIABLE(conf, v,
                               define=define,
                               headers=headers,
+                              lib=lib,
                               msg='Checking for declaration of %s' % v,
                               always=always):
             if not CHECK_CODE(conf,
@@ -238,6 +239,7 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None, always=False):
                       msg='Checking for declaration of %s (as enum)' % v,
                       local_include=False,
                       headers=headers,
+                      lib=lib,
                       define=define,
                       always=always):
                 ret = False
