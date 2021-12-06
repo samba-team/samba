@@ -63,7 +63,7 @@
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
 
-#include "ads.h"
+#include "include/smb_ldap.h"
 #include "../librpc/gen_ndr/svcctl.h"
 #include "intl.h"
 #include "../libcli/smb/smb_signing.h"
