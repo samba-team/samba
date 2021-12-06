@@ -2481,11 +2481,11 @@ class RawKerberosTest(TestCaseInTempDir):
             if self.strict_checking:
                 self.assertElementPresent(ticket_private, 'starttime')
             self.assertElementPresent(ticket_private, 'endtime')
-            if expect_renew_till:
-                if self.strict_checking:
+            if self.strict_checking:
+                if expect_renew_till:
                     self.assertElementPresent(ticket_private, 'renew-till')
-            else:
-                self.assertElementMissing(ticket_private, 'renew-till')
+                else:
+                    self.assertElementMissing(ticket_private, 'renew-till')
             if self.strict_checking:
                 self.assertElementEqual(ticket_private, 'caddr', [])
             if expect_pac is not None:
@@ -2518,11 +2518,11 @@ class RawKerberosTest(TestCaseInTempDir):
             if self.strict_checking:
                 self.assertElementPresent(encpart_private, 'starttime')
             self.assertElementPresent(encpart_private, 'endtime')
-            if expect_renew_till:
-                if self.strict_checking:
+            if self.strict_checking:
+                if expect_renew_till:
                     self.assertElementPresent(encpart_private, 'renew-till')
-            else:
-                self.assertElementMissing(encpart_private, 'renew-till')
+                else:
+                    self.assertElementMissing(encpart_private, 'renew-till')
             self.assertElementEqualUTF8(encpart_private, 'srealm',
                                         expected_srealm)
             self.assertElementEqualPrincipal(encpart_private, 'sname',
