@@ -509,6 +509,7 @@ bld.SAMBA3_LIBRARY('ads',
                    deps='''
                         cli-ldap-common
                         krb5samba
+                        krb5
                         ldap
                         lber
                         KRBCLIENT
