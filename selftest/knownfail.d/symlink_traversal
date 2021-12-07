@@ -1,2 +1,3 @@
 ^samba3.blackbox.test_symlink_traversal.SMB2.symlink_traversal_SMB2\(fileserver\)
 ^samba3.blackbox.test_symlink_traversal.SMB1.symlink_traversal_SMB1\(fileserver_smb1_done\)
+^samba3.blackbox.test_symlink_traversal.SMB1.posix.symlink_traversal_SMB1_posix\(fileserver_smb1_done\)
