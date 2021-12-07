@@ -2537,7 +2537,7 @@ sub provision($$)
 	create_file_chmod("$widelinks_target", 0666) or return undef;
 
 	##
-	## This link should get ACCESS_DENIED
+	## This link should get an error
 	##
 	symlink "$widelinks_target", "$widelinks_shrdir/source";
 	##
