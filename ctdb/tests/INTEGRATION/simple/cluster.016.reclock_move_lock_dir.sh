@@ -14,7 +14,10 @@ set -e
 
 ctdb_test_skip_on_cluster
 
-ctdb_test_init -r 5
+ctdb_test_init -n
+
+echo "Starting CTDB with cluster lock recheck time set to 5s..."
+ctdb_nodes_start_custom -r 5
 
 all_nodes_are_banned ()
 {
