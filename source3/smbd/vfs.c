@@ -1146,6 +1146,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	bool allow_symlinks = true;
 	const char *conn_rootdir;
 	size_t rootdir_len;
+	bool parent_dir_checked = false;
 
 	DBG_DEBUG("check_reduced_name [%s] [%s]\n", fname, conn->connectpath);
 
@@ -1207,6 +1208,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 		if (resolved_name == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		parent_dir_checked = true;
 	} else {
 		resolved_name = resolved_fname->base_name;
 	}
@@ -1256,7 +1258,13 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 				conn_rootdir,
 				resolved_name);
 			TALLOC_FREE(resolved_fname);
-			return NT_STATUS_ACCESS_DENIED;
+			if (parent_dir_checked) {
+				/* Part of a component path. */
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			} else {
+				/* End of a path. */
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
 		}
 	}
 
@@ -1311,7 +1319,13 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 				p);
 			TALLOC_FREE(resolved_fname);
 			TALLOC_FREE(new_fname);
-			return NT_STATUS_ACCESS_DENIED;
+			if (parent_dir_checked) {
+				/* Part of a component path. */
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			} else {
+				/* End of a path. */
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
 		}
 	}
 
