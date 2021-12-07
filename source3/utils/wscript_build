@@ -8,7 +8,8 @@ bld.SAMBA3_SUBSYSTEM('CONN_TDB',
                      source='conn_tdb.c')
 
 bld.SAMBA3_SUBSYSTEM('DNS_UTIL',
-                     source='net_dns.c net_ads_join_dns.c')
+                     source='net_dns.c net_ads_join_dns.c',
+                     deps='addns')
 
 bld.SAMBA3_BINARY('profiles',
                  source='profiles.c',
