@@ -75,18 +75,8 @@ try:
         onlyif="hcrypto asn1 roken krb5 com_err wind")
     check_system_heimdal_lib("heimntlm", "heim_ntlm_ntlmv2_key", "heimntlm.h",
         onlyif="roken hcrypto krb5")
-    if check_system_heimdal_lib("hdb", "hdb_db_dir", "krb5.h hdb.h",
-        onlyif="roken krb5 hcrypto com_err wind"):
-        conf.CHECK_CODE('''
-            #include <hdb.h>
-            int main(void) { hdb_enctype2key(NULL, NULL, NULL, 0, NULL); }
-            ''',
-            define='HDB_ENCTYPE2KEY_TAKES_KEYSET',
-            addmain=False,
-            lib='hdb',
-            msg='Checking whether hdb_enctype2key takes a keyset argument',
-            local_include=False)
-
+    check_system_heimdal_lib("hdb", "hdb_db_dir", "krb5.h hdb.h",
+        onlyif="roken krb5 hcrypto com_err wind")
     check_system_heimdal_lib("kdc", "kdc_log", "kdc.h",
         onlyif="roken krb5 hdb asn1 heimntlm hcrypto com_err wind heimbase")
 finally:

@@ -17,10 +17,11 @@ def heimdal_paths(ps):
 
 # waf build tool for building .et files with compile_et
 def HEIMDAL_ASN1(name, source,
-               options='',
-               directory='',
-               option_file=None,
-               includes=''):
+                 options='',
+                 directory='',
+                 option_file=None,
+                 includes='',
+                 template=True):
     '''Build a ASN1 file using the asn1 compiler.
        This will produce 2 output files'''
     source = heimdal_path(source)
@@ -42,6 +43,7 @@ def HEIMDAL_ASN1(name, source,
         "%s/asn1_%s_asn1.x" % (directory, bname),
         "%s/%s_asn1.hx" % (directory, bname),
         "%s/%s_asn1-priv.hx" % (directory, bname),
+        "%s/%s_asn1_oids.x" % (directory, bname),
         ])
 
     # the ${TGT[0].parent.abspath(env)} expression gives us the parent directory of
@@ -58,7 +60,16 @@ def HEIMDAL_ASN1(name, source,
     else:
         no_leak_check = ""
 
-    asn1_rule = cd_rule + no_leak_check + ' "${ASN1_COMPILE}" ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file "${SRC[0].abspath(env)}" ${ASN1NAME}'
+    if template:
+        template_str = " --template "
+    else:
+        template_str = ""
+
+    asn1_rule = cd_rule + \
+        no_leak_check + \
+        ' "${ASN1_COMPILE}" ${OPTION_FILE} ${ASN1OPTIONS} ' \
+        + template_str \
+        + ' --one-code-file "${SRC[0].abspath(env)}" ${ASN1NAME}'
 
     source = TO_LIST(source)
 
@@ -126,12 +137,17 @@ def HEIMDAL_ASN1(name, source,
     includes = TO_LIST(includes)
     includes.append(os.path.dirname(out_files[0]))
 
+    cflags=[]
+    if not template:
+        cflags = bld.env.HEIMDAL_UNPICKY_WNO_FREE_NOHEAP_OBJECT_CFLAGS
+
     t = bld(features       = 'c',
             source         = cfile,
             target         = name,
-            samba_cflags   = CURRENT_CFLAGS(bld, name, ''),
+            samba_cflags   = CURRENT_CFLAGS(bld, name, cflags),
             depends_on     = '',
-            samba_deps     = TO_LIST('roken replace'),
+            samba_deps     = TO_LIST('roken replace heimbase '
+                                     'HEIMDAL_HEIM_ASN1'),
             samba_includes = includes,
             local_include  = True)
 
@@ -340,6 +356,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         lib/roken/emalloc.c
         lib/roken/ecalloc.c
         lib/roken/getarg.c
+        lib/roken/getauxval.c
         lib/roken/get_window_size.c
         lib/roken/getdtablesize.c
         lib/roken/h_errno.c
@@ -356,12 +373,17 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         lib/roken/strpool.c
         lib/roken/estrdup.c
         lib/roken/erealloc.c
+        lib/roken/secure_getenv.c
         lib/roken/simple_exec.c
         lib/roken/strcollect.c
         lib/roken/rtbl.c
         lib/roken/rand.c
         lib/roken/cloexec.c
+        lib/roken/clz.c
         lib/roken/xfree.c
+        lib/roken/timeval.c
+        lib/roken/mergesort.c
+        lib/roken/mergesort_r.c
         ../heimdal_build/replace.c
     '''
 
@@ -371,6 +393,8 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         lib/roken/resolve.c
         lib/roken/socket.c
         lib/roken/roken_gethostby.c
+        lib/roken/mkostemp.c
+        lib/roken/getuserinfo.c
     '''
 
     HEIMDAL_LIBRARY('roken',
@@ -390,6 +414,22 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         )
 
 if not bld.CONFIG_SET("USING_SYSTEM_KDC"):
+    HEIMDAL_LIB_GSS_PREAUTH_SOURCE = '''
+        lib/gss_preauth/pa_client.c
+        lib/gss_preauth/pa_common.c
+    '''
+
+    HEIMDAL_LIBRARY('gss_preauth',
+                    source=HEIMDAL_LIB_GSS_PREAUTH_SOURCE,
+                    includes='../heimdal/lib/gss_preauth',
+                    deps='roken gssapi')
+    HEIMDAL_AUTOPROTO('lib/gss_preauth/gss-preauth-private.h',
+                      HEIMDAL_LIB_GSS_PREAUTH_SOURCE,
+                      options='-q -P remove -p')
+    HEIMDAL_AUTOPROTO('lib/gss_preauth/gss-preauth-protos.h',
+                      HEIMDAL_LIB_GSS_PREAUTH_SOURCE,
+                      options='-E KRB5_LIB -q -P remove -o')
+
     HEIMDAL_ASN1('HEIMDAL_KX509_ASN1',
         'lib/asn1/kx509.asn1',
         directory='lib/asn1'
@@ -399,11 +439,11 @@ if not bld.CONFIG_SET("USING_SYSTEM_KDC"):
         directory='lib/asn1'
         )
 
-    KDC_SOURCE='kdc/default_config.c kdc/kerberos5.c kdc/krb5tgs.c kdc/pkinit.c kdc/log.c kdc/misc.c kdc/digest.c kdc/process.c kdc/windc.c kdc/kx509.c'
+    KDC_SOURCE='kdc/default_config.c kdc/fast.c kdc/kerberos5.c kdc/krb5tgs.c kdc/pkinit.c kdc/pkinit-ec.c kdc/log.c kdc/misc.c kdc/digest.c kdc/process.c kdc/windc.c kdc/kx509.c kdc/gss_preauth.c'
 
     HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
                         includes='../heimdal/kdc',
-                        deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm hcrypto com_err wind heimbase',
+                        deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm hcrypto com_err wind heimbase gssapi gss_preauth',
                         version_script='kdc/version-script.map')
     HEIMDAL_AUTOPROTO('kdc/kdc-protos.h', KDC_SOURCE)
     HEIMDAL_AUTOPROTO_PRIVATE('kdc/kdc-private.h', KDC_SOURCE)
@@ -424,7 +464,11 @@ if not bld.CONFIG_SET("USING_SYSTEM_HEIMNTLM"):
 if not bld.CONFIG_SET("USING_SYSTEM_HDB"):
     HEIMDAL_ASN1('HEIMDAL_HDB_ASN1', 'lib/hdb/hdb.asn1',
         directory='lib/asn1',
-        options="--sequence=HDB-Ext-KeySet --sequence=Keys",
+        options="--sequence=HDB-extensions	\
+                 --sequence=HDB-Ext-KeyRotation	\
+	         --sequence=HDB-Ext-KeySet	\
+		 --sequence=Keys",
+        template=False,
         includes='../heimdal/lib/asn1')
 
     HDB_KEYS_SOURCE = 'lib/hdb/keys.c'
@@ -438,9 +482,10 @@ if not bld.CONFIG_SET("USING_SYSTEM_HDB"):
     HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET', 'lib/hdb/hdb_err.et')
 
     HDB_SOURCE = '''lib/hdb/db.c lib/hdb/dbinfo.c lib/hdb/hdb.c
-                                  lib/hdb/ext.c lib/hdb/keytab.c lib/hdb/hdb-keytab.c
-                                  lib/hdb/mkey.c lib/hdb/ndbm.c lib/hdb/hdb_err.c
-                                  ../heimdal_build/hdb-glue.c'''
+                    lib/hdb/ext.c lib/hdb/keytab.c lib/hdb/hdb-keytab.c
+                    lib/hdb/mkey.c lib/hdb/ndbm.c lib/hdb/hdb_err.c
+                    lib/hdb/common.c
+                    ../heimdal_build/hdb-glue.c'''
 
     HEIMDAL_LIBRARY('hdb',
         version_script='lib/hdb/version-script.map',
@@ -453,11 +498,13 @@ if not bld.CONFIG_SET("USING_SYSTEM_HDB"):
 
 
 if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
+    HEIMDAL_ERRTABLE('HEIMDAL_NEGOEX_ERR_ET', 'lib/gssapi/spnego/negoex_err.et')
     HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET', 'lib/gssapi/krb5/gkrb5_err.et')
 
     HEIMDAL_ASN1('HEIMDAL_GSSAPI_ASN1',
         'lib/gssapi/mech/gssapi.asn1',
         includes='../heimdal/lib/asn1',
+        template=False,
         directory='lib/gssapi'
         )
 
@@ -465,6 +512,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
         source='lib/gssapi/spnego/spnego.asn1',
         options='--sequence=MechTypeList',
         includes='../heimdal/lib/asn1',
+        template=False,
         directory='lib/gssapi'
         )
 
@@ -473,8 +521,11 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
         lib/gssapi/spnego/external.c
         lib/gssapi/spnego/compat.c
         lib/gssapi/spnego/context_stubs.c
-        lib/gssapi/spnego/cred_stubs.c
+        lib/gssapi/spnego/context_storage.c
         lib/gssapi/spnego/accept_sec_context.c
+        lib/gssapi/spnego/negoex_ctx.c
+        lib/gssapi/spnego/negoex_err.c
+        lib/gssapi/spnego/negoex_util.c
     '''
 
     HEIMDAL_AUTOPROTO_PRIVATE('lib/gssapi/spnego/spnego-private.h',
@@ -483,6 +534,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
     HEIMDAL_GSSAPI_KRB5_SOURCE = '''
         lib/gssapi/krb5/copy_ccache.c
         lib/gssapi/krb5/delete_sec_context.c
+        lib/gssapi/krb5/duplicate_cred.c
         lib/gssapi/krb5/init_sec_context.c
         lib/gssapi/krb5/context_time.c
         lib/gssapi/krb5/init.c
@@ -518,6 +570,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
         lib/gssapi/krb5/external.c
         lib/gssapi/krb5/compat.c
         lib/gssapi/krb5/creds.c
+        lib/gssapi/krb5/ccache_name.c
         lib/gssapi/krb5/acquire_cred.c
         lib/gssapi/krb5/release_cred.c
         lib/gssapi/krb5/store_cred.c
@@ -531,36 +584,91 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
         lib/gssapi/krb5/aeap.c
         lib/gssapi/krb5/pname_to_uid.c
         lib/gssapi/krb5/authorize_localname.c
+        lib/gssapi/krb5/gkrb5_err.c
     '''
 
     HEIMDAL_AUTOPROTO_PRIVATE('lib/gssapi/krb5/gsskrb5-private.h',
                               HEIMDAL_GSSAPI_KRB5_SOURCE)
 
+    HEIMDAL_GSSAPI_MECH_SOURCE = '''
+        lib/gssapi/mech/cred.c
+        lib/gssapi/mech/context.c
+        lib/gssapi/mech/gss_krb5.c
+        lib/gssapi/mech/gss_mech_switch.c
+        lib/gssapi/mech/gss_process_context_token.c
+        lib/gssapi/mech/gss_buffer_set.c
+        lib/gssapi/mech/gss_aeap.c
+        lib/gssapi/mech/gss_add_cred.c
+        lib/gssapi/mech/gss_add_cred_from.c
+        lib/gssapi/mech/gss_acquire_cred_from.c
+        lib/gssapi/mech/gss_cred.c
+        lib/gssapi/mech/gss_store_cred_into.c
+        lib/gssapi/mech/gss_add_oid_set_member.c
+        lib/gssapi/mech/gss_compare_name.c
+        lib/gssapi/mech/gss_release_oid_set.c
+        lib/gssapi/mech/gss_create_empty_oid_set.c
+        lib/gssapi/mech/gss_duplicate_oid_set.c
+        lib/gssapi/mech/gss_decapsulate_token.c
+        lib/gssapi/mech/gss_inquire_cred_by_oid.c
+        lib/gssapi/mech/gss_canonicalize_name.c
+        lib/gssapi/mech/gss_inquire_sec_context_by_oid.c
+        lib/gssapi/mech/gss_inquire_names_for_mech.c
+        lib/gssapi/mech/gss_inquire_mechs_for_name.c
+        lib/gssapi/mech/gss_wrap_size_limit.c
+        lib/gssapi/mech/gss_names.c
+        lib/gssapi/mech/gss_verify.c
+        lib/gssapi/mech/gss_display_name.c
+        lib/gssapi/mech/gss_duplicate_oid.c
+        lib/gssapi/mech/gss_duplicate_cred.c
+        lib/gssapi/mech/gss_display_status.c
+        lib/gssapi/mech/gss_release_buffer.c
+        lib/gssapi/mech/gss_release_oid.c
+        lib/gssapi/mech/gss_test_oid_set_member.c
+        lib/gssapi/mech/gss_release_cred.c
+        lib/gssapi/mech/gss_set_sec_context_option.c
+        lib/gssapi/mech/gss_export_name.c
+        lib/gssapi/mech/gss_seal.c
+        lib/gssapi/mech/gss_acquire_cred.c
+        lib/gssapi/mech/gss_unseal.c
+        lib/gssapi/mech/gss_verify_mic.c
+        lib/gssapi/mech/gss_accept_sec_context.c
+        lib/gssapi/mech/gss_inquire_cred_by_mech.c
+        lib/gssapi/mech/gss_indicate_mechs.c
+        lib/gssapi/mech/gss_get_neg_mechs.c
+        lib/gssapi/mech/gss_delete_sec_context.c
+        lib/gssapi/mech/gss_sign.c
+        lib/gssapi/mech/gss_utils.c
+        lib/gssapi/mech/gss_init_sec_context.c
+        lib/gssapi/mech/gss_oid_equal.c
+        lib/gssapi/mech/gss_oid.c
+        lib/gssapi/mech/gss_oid_to_str.c
+        lib/gssapi/mech/gss_mo.c
+        lib/gssapi/mech/gss_context_time.c
+        lib/gssapi/mech/gss_encapsulate_token.c
+        lib/gssapi/mech/gss_get_mic.c
+        lib/gssapi/mech/gss_import_sec_context.c
+        lib/gssapi/mech/gss_inquire_cred.c
+        lib/gssapi/mech/gss_wrap.c
+        lib/gssapi/mech/gss_import_name.c
+        lib/gssapi/mech/gss_duplicate_name.c
+        lib/gssapi/mech/gss_unwrap.c
+        lib/gssapi/mech/gss_export_sec_context.c
+        lib/gssapi/mech/gss_export_name_composite.c
+        lib/gssapi/mech/gss_inquire_context.c
+        lib/gssapi/mech/gss_release_name.c
+        lib/gssapi/mech/gss_set_cred_option.c
+        lib/gssapi/mech/gss_pseudo_random.c
+        lib/gssapi/mech/gssspi_exchange_meta_data.c
+        lib/gssapi/mech/gssspi_query_mechanism_info.c
+        lib/gssapi/mech/gssspi_query_meta_data.c
+        ../heimdal_build/gssapi-glue.c
+    '''
+
     HEIMDAL_LIBRARY('gssapi',
-                    HEIMDAL_GSSAPI_SPNEGO_SOURCE + HEIMDAL_GSSAPI_KRB5_SOURCE + '''
-    lib/gssapi/mech/context.c lib/gssapi/mech/gss_krb5.c lib/gssapi/mech/gss_mech_switch.c
-    lib/gssapi/mech/gss_process_context_token.c lib/gssapi/mech/gss_buffer_set.c
-    lib/gssapi/mech/gss_aeap.c lib/gssapi/mech/gss_add_cred.c lib/gssapi/mech/gss_cred.c
-    lib/gssapi/mech/gss_add_oid_set_member.c lib/gssapi/mech/gss_compare_name.c lib/gssapi/mech/gss_release_oid_set.c
-    lib/gssapi/mech/gss_create_empty_oid_set.c lib/gssapi/mech/gss_decapsulate_token.c lib/gssapi/mech/gss_inquire_cred_by_oid.c
-    lib/gssapi/mech/gss_canonicalize_name.c lib/gssapi/mech/gss_inquire_sec_context_by_oid.c lib/gssapi/mech/gss_inquire_names_for_mech.c
-    lib/gssapi/mech/gss_inquire_mechs_for_name.c lib/gssapi/mech/gss_wrap_size_limit.c lib/gssapi/mech/gss_names.c
-    lib/gssapi/mech/gss_verify.c lib/gssapi/mech/gss_display_name.c
-    lib/gssapi/mech/gss_duplicate_oid.c lib/gssapi/mech/gss_display_status.c lib/gssapi/mech/gss_release_buffer.c
-    lib/gssapi/mech/gss_release_oid.c lib/gssapi/mech/gss_test_oid_set_member.c
-    lib/gssapi/mech/gss_release_cred.c
-    lib/gssapi/mech/gss_set_sec_context_option.c lib/gssapi/mech/gss_export_name.c lib/gssapi/mech/gss_seal.c
-    lib/gssapi/mech/gss_acquire_cred.c lib/gssapi/mech/gss_unseal.c lib/gssapi/mech/gss_verify_mic.c
-    lib/gssapi/mech/gss_accept_sec_context.c lib/gssapi/mech/gss_inquire_cred_by_mech.c lib/gssapi/mech/gss_indicate_mechs.c
-    lib/gssapi/mech/gss_delete_sec_context.c lib/gssapi/mech/gss_sign.c lib/gssapi/mech/gss_utils.c
-    lib/gssapi/mech/gss_init_sec_context.c lib/gssapi/mech/gss_oid_equal.c lib/gssapi/mech/gss_oid.c
-    lib/gssapi/mech/gss_oid_to_str.c lib/gssapi/mech/gss_mo.c
-    lib/gssapi/mech/gss_context_time.c lib/gssapi/mech/gss_encapsulate_token.c lib/gssapi/mech/gss_get_mic.c
-    lib/gssapi/mech/gss_import_sec_context.c lib/gssapi/mech/gss_inquire_cred.c lib/gssapi/mech/gss_wrap.c
-    lib/gssapi/mech/gss_import_name.c lib/gssapi/mech/gss_duplicate_name.c lib/gssapi/mech/gss_unwrap.c
-    lib/gssapi/mech/gss_export_sec_context.c lib/gssapi/mech/gss_inquire_context.c lib/gssapi/mech/gss_release_name.c
-    lib/gssapi/mech/gss_set_cred_option.c  lib/gssapi/mech/gss_pseudo_random.c ../heimdal_build/gssapi-glue.c''',
-        includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
+                    HEIMDAL_GSSAPI_SPNEGO_SOURCE +
+                    HEIMDAL_GSSAPI_KRB5_SOURCE +
+                    HEIMDAL_GSSAPI_MECH_SOURCE,
+        includes='../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech ../heimdal/lib/ntlm',
         deps='hcrypto asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind heimbase',
         cflags=bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS,
         version_script='lib/gssapi/version-script.map',
@@ -575,13 +683,23 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
                       deps='hcrypto heimbase wind hx509 com_err'
                       )
 
+    HEIMDAL_SUBSYSTEM('HEIMDAL_IPC_CLIENT',
+                      [os.path.join('lib/ipc', x) for x in TO_LIST(
+                                   '''client.c  common.c''')],
+                      includes='../heimdal/include ../heimdal/lib/asn1 ../heimdal/lib/ipc',
+                      deps='roken heimbase')
+
     HEIMDAL_ERRTABLE('HEIMDAL_KRB5_ERR_ET', 'lib/krb5/krb5_err.et')
 
     HEIMDAL_ERRTABLE('HEIMDAL_KRB_ERR_ET', 'lib/krb5/krb_err.et')
 
     HEIMDAL_ERRTABLE('HEIMDAL_K524_ERR_ET', 'lib/krb5/k524_err.et')
 
-    HEIMDAL_ERRTABLE('HEIMDAL_HEIM_ERR_ET', 'lib/krb5/heim_err.et')
+    HEIMDAL_ERRTABLE('HEIMDAL_K5E1_ERR_ET', 'lib/krb5/k5e1_err.et')
+
+    HEIMDAL_ERRTABLE('HEIMDAL_KX509_ERR_ET', 'lib/krb5/kx509_err.et')
+
+    HEIMDAL_ERRTABLE('HEIMDAL_HEIM_ERR_ET', 'lib/base/heim_err.et')
 
     KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in TO_LIST(
                                    '''acache.c add_et_list.c
@@ -591,13 +709,13 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
                                    changepw.c codec.c config_file.c
                                    constants.c convert_creds.c
                                    copy_host_realm.c crc.c creds.c
-                                   crypto.c crypto-aes.c crypto-algs.c
+                                   crypto.c crypto-aes-sha1.c crypto-aes-sha2.c crypto-algs.c
                                    crypto-arcfour.c crypto-des3.c crypto-des.c
                                    crypto-des-common.c crypto-evp.c
                                    crypto-null.c crypto-pk.c crypto-rand.c
-                                   data.c eai_to_heim_errno.c
+                                   data.c dcache.c db_plugin.c deprecated.c eai_to_heim_errno.c enomem.c
                                    error_string.c expand_hostname.c
-                                   fcache.c free.c free_host_realm.c
+                                   fast.c fcache.c free.c free_host_realm.c
                                    generate_seq_number.c generate_subkey.c
                                    get_addrs.c get_cred.c
                                    get_default_principal.c
@@ -609,22 +727,24 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
                                    keytab_keyfile.c krbhst.c log.c
                                    mcache.c misc.c mk_error.c mk_priv.c
                                    mk_rep.c mk_req.c mk_req_ext.c
-                                   mit_glue.c n-fold.c padata.c pkinit.c
+                                   mit_glue.c net_read.c net_write.c n-fold.c padata.c pkinit.c pkinit-ec.c
                                    principal.c prog_setup.c pac.c
                                    pcache.c prompter_posix.c rd_cred.c rd_error.c
                                    rd_priv.c rd_rep.c rd_req.c replay.c
-                                   salt.c salt-aes.c salt-arcfour.c salt-des3.c salt-des.c
+                                   salt.c salt-aes-sha1.c salt-aes-sha2.c salt-arcfour.c salt-des3.c salt-des.c
                                    send_to_kdc.c set_default_realm.c
                                    store.c store-int.c store_emem.c store_fd.c
-                                   store_mem.c ticket.c time.c transited.c
-                                   version.c warn.c krb5_err.c
-                                   aname_to_localname.c kuserok.c
-                                   heim_err.c k524_err.c krb_err.c''')]  + ["../heimdal_build/krb5-glue.c"]
+                                   store_mem.c store_stdio.c ticket.c time.c transited.c
+                                   version.c warn.c krb5_err.c sp800-108-kdf.c
+                                   aname_to_localname.c kuserok.c kx509.c
+                                   mk_cred.c kx509_err.c
+                                   k524_err.c krb_err.c k5e1_err.c''')]  + ["../heimdal_build/krb5-glue.c"]
 
     HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
         version_script='lib/krb5/version-script.map',
                         includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
-                deps='roken wind asn1 hx509 hcrypto com_err HEIMDAL_CONFIG heimbase execinfo samba_intl',
+                deps='roken wind asn1 hx509 HEIMDAL_KX509_ASN1 hcrypto com_err HEIMDAL_CONFIG heimbase execinfo samba_intl HEIMDAL_IPC_CLIENT',
+                cflags=['-DLOCALSTATEDIR="/2"'] + bld.dynconfig_cflags(),
                         )
     KRB5_PROTO_SOURCE = KRB5_SOURCE + ['lib/krb5/expand_path.c', 'lib/krb5/plugin.c', 'lib/krb5/context.c']
 
@@ -633,7 +753,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
         options='-E KRB5_LIB -q -P comment -o')
 
 if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
-    HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
+    HEIMDAL_HEIM_ASN1_SOURCE = '''
         lib/asn1/der_get.c
         lib/asn1/der_put.c
         lib/asn1/der_free.c
@@ -641,16 +761,21 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
         lib/asn1/der_length.c
         lib/asn1/der_copy.c
         lib/asn1/der_cmp.c
+        lib/asn1/der_print.c
+        lib/asn1/extra.c
+        lib/asn1/timegm.c
+        lib/asn1/template.c
+        lib/asn1/oid_resolution.c
     '''
 
     HEIMDAL_AUTOPROTO('lib/asn1/der-protos.h',
-                          HEIMDAL_HEIM_ASN1_DER_SOURCE,
+                          HEIMDAL_HEIM_ASN1_SOURCE,
                           group='hostcc_build_source',
                           options="-q -P comment -o")
 
 
     HEIMDAL_AUTOPROTO('lib/asn1/der-private.h',
-                          HEIMDAL_HEIM_ASN1_DER_SOURCE,
+                          HEIMDAL_HEIM_ASN1_SOURCE,
                           group='hostcc_build_source',
                           options="-q -P comment -p")
 
@@ -661,15 +786,40 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
         heimdal_heim_asn1_cflags = '-Wno-format-truncation'
 
     HEIMDAL_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
-        HEIMDAL_HEIM_ASN1_DER_SOURCE + 'lib/asn1/extra.c lib/asn1/timegm.c lib/asn1/asn1_err.c',
+        HEIMDAL_HEIM_ASN1_SOURCE + 'lib/asn1/asn1_err.c',
         includes='../heimdal/lib/asn1',
         cflags=heimdal_heim_asn1_cflags,
-        deps='roken com_err'
+        deps='''roken com_err
+        HEIMDAL_CMS_ASN1
+        HEIMDAL_DIGEST_ASN1
+        HEIMDAL_KRB5_ASN1
+        HEIMDAL_KX509_ASN1
+        HEIMDAL_OCSP_ASN1
+        HEIMDAL_PKCS10_ASN1
+        HEIMDAL_PKCS12_ASN1
+        HEIMDAL_PKCS8_ASN1
+        HEIMDAL_PKCS9_ASN1
+        HEIMDAL_PKINIT_ASN1
+        HEIMDAL_RFC2459_ASN1
+        HEIMDAL_RFC4108_ASN1
+        '''
+        )
+
+    HEIMDAL_ASN1('HEIMDAL_CRMF_ASN1',
+        'lib/asn1/crmf.asn1',
+        option_file='lib/asn1/crmf.opt',
+        directory='lib/asn1',
+        template=False
         )
 
     HEIMDAL_ASN1('HEIMDAL_RFC2459_ASN1',
         'lib/asn1/rfc2459.asn1',
         option_file='lib/asn1/rfc2459.opt',
+        directory='lib/asn1'
+        )
+
+    HEIMDAL_ASN1('HEIMDAL_RFC4108_ASN1',
+        'lib/asn1/rfc4108.asn1',
         directory='lib/asn1'
         )
 
@@ -697,30 +847,107 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
 
 if not bld.CONFIG_SET('USING_SYSTEM_HCRYPTO'):
     if not bld.CONFIG_SET("USING_SYSTEM_TOMMATH"):
+        # As directly listed in lib/hcrypto/libtommath/makefile.shared
+        libtommath_o = "\
+bn_cutoffs.o bn_deprecated.o bn_mp_2expt.o bn_mp_abs.o bn_mp_add.o bn_mp_add_d.o bn_mp_addmod.o \
+bn_mp_and.o bn_mp_clamp.o bn_mp_clear.o bn_mp_clear_multi.o bn_mp_cmp.o bn_mp_cmp_d.o bn_mp_cmp_mag.o \
+bn_mp_cnt_lsb.o bn_mp_complement.o bn_mp_copy.o bn_mp_count_bits.o bn_mp_decr.o bn_mp_div.o bn_mp_div_2.o \
+bn_mp_div_2d.o bn_mp_div_3.o bn_mp_div_d.o bn_mp_dr_is_modulus.o bn_mp_dr_reduce.o bn_mp_dr_setup.o \
+bn_mp_error_to_string.o bn_mp_exch.o bn_mp_expt_u32.o bn_mp_exptmod.o bn_mp_exteuclid.o bn_mp_fread.o \
+bn_mp_from_sbin.o bn_mp_from_ubin.o bn_mp_fwrite.o bn_mp_gcd.o bn_mp_get_double.o bn_mp_get_i32.o \
+bn_mp_get_i64.o bn_mp_get_l.o bn_mp_get_ll.o bn_mp_get_mag_u32.o bn_mp_get_mag_u64.o bn_mp_get_mag_ul.o \
+bn_mp_get_mag_ull.o bn_mp_grow.o bn_mp_incr.o bn_mp_init.o bn_mp_init_copy.o bn_mp_init_i32.o \
+bn_mp_init_i64.o bn_mp_init_l.o bn_mp_init_ll.o bn_mp_init_multi.o bn_mp_init_set.o bn_mp_init_size.o \
+bn_mp_init_u32.o bn_mp_init_u64.o bn_mp_init_ul.o bn_mp_init_ull.o bn_mp_invmod.o bn_mp_is_square.o \
+bn_mp_iseven.o bn_mp_isodd.o bn_mp_kronecker.o bn_mp_lcm.o bn_mp_log_u32.o bn_mp_lshd.o bn_mp_mod.o \
+bn_mp_mod_2d.o bn_mp_mod_d.o bn_mp_montgomery_calc_normalization.o bn_mp_montgomery_reduce.o \
+bn_mp_montgomery_setup.o bn_mp_mul.o bn_mp_mul_2.o bn_mp_mul_2d.o bn_mp_mul_d.o bn_mp_mulmod.o bn_mp_neg.o \
+bn_mp_or.o bn_mp_pack.o bn_mp_pack_count.o bn_mp_prime_fermat.o bn_mp_prime_frobenius_underwood.o \
+bn_mp_prime_is_prime.o bn_mp_prime_miller_rabin.o bn_mp_prime_next_prime.o \
+bn_mp_prime_rabin_miller_trials.o bn_mp_prime_rand.o bn_mp_prime_strong_lucas_selfridge.o \
+bn_mp_radix_size.o bn_mp_radix_smap.o bn_mp_rand.o bn_mp_read_radix.o bn_mp_reduce.o bn_mp_reduce_2k.o \
+bn_mp_reduce_2k_l.o bn_mp_reduce_2k_setup.o bn_mp_reduce_2k_setup_l.o bn_mp_reduce_is_2k.o \
+bn_mp_reduce_is_2k_l.o bn_mp_reduce_setup.o bn_mp_root_u32.o bn_mp_rshd.o bn_mp_sbin_size.o bn_mp_set.o \
+bn_mp_set_double.o bn_mp_set_i32.o bn_mp_set_i64.o bn_mp_set_l.o bn_mp_set_ll.o bn_mp_set_u32.o \
+bn_mp_set_u64.o bn_mp_set_ul.o bn_mp_set_ull.o bn_mp_shrink.o bn_mp_signed_rsh.o bn_mp_sqr.o \
+bn_mp_sqrmod.o bn_mp_sqrt.o bn_mp_sqrtmod_prime.o bn_mp_sub.o bn_mp_sub_d.o bn_mp_submod.o \
+bn_mp_to_radix.o bn_mp_to_sbin.o bn_mp_to_ubin.o bn_mp_ubin_size.o bn_mp_unpack.o bn_mp_xor.o bn_mp_zero.o \
+bn_prime_tab.o bn_s_mp_add.o bn_s_mp_balance_mul.o bn_s_mp_exptmod.o bn_s_mp_exptmod_fast.o \
+bn_s_mp_get_bit.o bn_s_mp_invmod_fast.o bn_s_mp_invmod_slow.o bn_s_mp_karatsuba_mul.o \
+bn_s_mp_karatsuba_sqr.o bn_s_mp_montgomery_reduce_fast.o bn_s_mp_mul_digs.o bn_s_mp_mul_digs_fast.o \
+bn_s_mp_mul_high_digs.o bn_s_mp_mul_high_digs_fast.o bn_s_mp_prime_is_divisible.o \
+bn_s_mp_rand_jenkins.o bn_s_mp_rand_platform.o bn_s_mp_reverse.o bn_s_mp_sqr.o bn_s_mp_sqr_fast.o \
+bn_s_mp_sub.o bn_s_mp_toom_mul.o bn_s_mp_toom_sqr.o"
+
+        full_path_libtommath_c = \
+            [os.path.join('lib/hcrypto/libtommath',
+                          x.split(".o")[0] + ".c")
+             for x in TO_LIST(libtommath_o)]
+
         HEIMDAL_SUBSYSTEM('tommath',
-        'lib/hcrypto/libtommath/bncore.c lib/hcrypto/libtommath/bn_mp_init.c lib/hcrypto/libtommath/bn_mp_clear.c lib/hcrypto/libtommath/bn_mp_exch.c lib/hcrypto/libtommath/bn_mp_grow.c lib/hcrypto/libtommath/bn_mp_shrink.c lib/hcrypto/libtommath/bn_mp_clamp.c lib/hcrypto/libtommath/bn_mp_zero.c lib/hcrypto/libtommath/bn_mp_zero_multi.c lib/hcrypto/libtommath/bn_mp_set.c lib/hcrypto/libtommath/bn_mp_set_int.c lib/hcrypto/libtommath/bn_mp_init_size.c lib/hcrypto/libtommath/bn_mp_copy.c lib/hcrypto/libtommath/bn_mp_init_copy.c lib/hcrypto/libtommath/bn_mp_abs.c lib/hcrypto/libtommath/bn_mp_neg.c lib/hcrypto/libtommath/bn_mp_cmp_mag.c lib/hcrypto/libtommath/bn_mp_cmp.c lib/hcrypto/libtommath/bn_mp_cmp_d.c lib/hcrypto/libtommath/bn_mp_rshd.c lib/hcrypto/libtommath/bn_mp_lshd.c lib/hcrypto/libtommath/bn_mp_mod_2d.c lib/hcrypto/libtommath/bn_mp_div_2d.c lib/hcrypto/libtommath/bn_mp_mul_2d.c lib/hcrypto/libtommath/bn_mp_div_2.c lib/hcrypto/libtommath/bn_mp_mul_2.c lib/hcrypto/libtommath/bn_s_mp_add.c lib/hcrypto/libtommath/bn_s_mp_sub.c lib/hcrypto/libtommath/bn_fast_s_mp_mul_digs.c lib/hcrypto/libtommath/bn_s_mp_mul_digs.c lib/hcrypto/libtommath/bn_fast_s_mp_mul_high_digs.c lib/hcrypto/libtommath/bn_s_mp_mul_high_digs.c lib/hcrypto/libtommath/bn_fast_s_mp_sqr.c lib/hcrypto/libtommath/bn_s_mp_sqr.c lib/hcrypto/libtommath/bn_mp_add.c lib/hcrypto/libtommath/bn_mp_sub.c lib/hcrypto/libtommath/bn_mp_karatsuba_mul.c lib/hcrypto/libtommath/bn_mp_mul.c lib/hcrypto/libtommath/bn_mp_karatsuba_sqr.c lib/hcrypto/libtommath/bn_mp_sqr.c lib/hcrypto/libtommath/bn_mp_div.c lib/hcrypto/libtommath/bn_mp_mod.c lib/hcrypto/libtommath/bn_mp_add_d.c lib/hcrypto/libtommath/bn_mp_sub_d.c lib/hcrypto/libtommath/bn_mp_mul_d.c lib/hcrypto/libtommath/bn_mp_div_d.c lib/hcrypto/libtommath/bn_mp_mod_d.c lib/hcrypto/libtommath/bn_mp_expt_d.c lib/hcrypto/libtommath/bn_mp_addmod.c lib/hcrypto/libtommath/bn_mp_submod.c lib/hcrypto/libtommath/bn_mp_mulmod.c lib/hcrypto/libtommath/bn_mp_sqrmod.c lib/hcrypto/libtommath/bn_mp_gcd.c lib/hcrypto/libtommath/bn_mp_lcm.c lib/hcrypto/libtommath/bn_fast_mp_invmod.c lib/hcrypto/libtommath/bn_mp_invmod.c lib/hcrypto/libtommath/bn_mp_reduce.c lib/hcrypto/libtommath/bn_mp_montgomery_setup.c lib/hcrypto/libtommath/bn_fast_mp_montgomery_reduce.c lib/hcrypto/libtommath/bn_mp_montgomery_reduce.c lib/hcrypto/libtommath/bn_mp_exptmod_fast.c lib/hcrypto/libtommath/bn_mp_exptmod.c lib/hcrypto/libtommath/bn_mp_2expt.c lib/hcrypto/libtommath/bn_mp_n_root.c lib/hcrypto/libtommath/bn_mp_jacobi.c lib/hcrypto/libtommath/bn_reverse.c lib/hcrypto/libtommath/bn_mp_count_bits.c lib/hcrypto/libtommath/bn_mp_read_unsigned_bin.c lib/hcrypto/libtommath/bn_mp_read_signed_bin.c lib/hcrypto/libtommath/bn_mp_to_unsigned_bin.c lib/hcrypto/libtommath/bn_mp_to_signed_bin.c lib/hcrypto/libtommath/bn_mp_unsigned_bin_size.c lib/hcrypto/libtommath/bn_mp_signed_bin_size.c lib/hcrypto/libtommath/bn_mp_xor.c lib/hcrypto/libtommath/bn_mp_and.c lib/hcrypto/libtommath/bn_mp_or.c lib/hcrypto/libtommath/bn_mp_rand.c lib/hcrypto/libtommath/bn_mp_montgomery_calc_normalization.c lib/hcrypto/libtommath/bn_mp_prime_is_divisible.c lib/hcrypto/libtommath/bn_prime_tab.c lib/hcrypto/libtommath/bn_mp_prime_fermat.c lib/hcrypto/libtommath/bn_mp_prime_miller_rabin.c lib/hcrypto/libtommath/bn_mp_prime_is_prime.c lib/hcrypto/libtommath/bn_mp_prime_next_prime.c lib/hcrypto/libtommath/bn_mp_find_prime.c lib/hcrypto/libtommath/bn_mp_isprime.c lib/hcrypto/libtommath/bn_mp_dr_reduce.c lib/hcrypto/libtommath/bn_mp_dr_is_modulus.c lib/hcrypto/libtommath/bn_mp_dr_setup.c lib/hcrypto/libtommath/bn_mp_reduce_setup.c lib/hcrypto/libtommath/bn_mp_toom_mul.c lib/hcrypto/libtommath/bn_mp_toom_sqr.c lib/hcrypto/libtommath/bn_mp_div_3.c lib/hcrypto/libtommath/bn_s_mp_exptmod.c lib/hcrypto/libtommath/bn_mp_reduce_2k.c lib/hcrypto/libtommath/bn_mp_reduce_is_2k.c lib/hcrypto/libtommath/bn_mp_reduce_2k_setup.c lib/hcrypto/libtommath/bn_mp_reduce_2k_l.c lib/hcrypto/libtommath/bn_mp_reduce_is_2k_l.c lib/hcrypto/libtommath/bn_mp_reduce_2k_setup_l.c lib/hcrypto/libtommath/bn_mp_radix_smap.c lib/hcrypto/libtommath/bn_mp_read_radix.c lib/hcrypto/libtommath/bn_mp_toradix.c lib/hcrypto/libtommath/bn_mp_radix_size.c lib/hcrypto/libtommath/bn_mp_fread.c lib/hcrypto/libtommath/bn_mp_fwrite.c lib/hcrypto/libtommath/bn_mp_cnt_lsb.c lib/hcrypto/libtommath/bn_error.c lib/hcrypto/libtommath/bn_mp_init_multi.c lib/hcrypto/libtommath/bn_mp_clear_multi.c lib/hcrypto/libtommath/bn_mp_exteuclid.c lib/hcrypto/libtommath/bn_mp_toradix_n.c lib/hcrypto/libtommath/bn_mp_prime_random_ex.c lib/hcrypto/libtommath/bn_mp_get_int.c lib/hcrypto/libtommath/bn_mp_sqrt.c lib/hcrypto/libtommath/bn_mp_is_square.c lib/hcrypto/libtommath/bn_mp_init_set.c lib/hcrypto/libtommath/bn_mp_init_set_int.c lib/hcrypto/libtommath/bn_mp_invmod_slow.c lib/hcrypto/libtommath/bn_mp_prime_rabin_miller_trials.c lib/hcrypto/libtommath/bn_mp_to_signed_bin_n.c lib/hcrypto/libtommath/bn_mp_to_unsigned_bin_n.c',
-            includes='../heimdal/lib/hcrypto/libtommath'
-            )
+                          full_path_libtommath_c,
+                          includes='../heimdal/lib/hcrypto/libtommath'
+        )
 
     HEIMDAL_LIBRARY('hcrypto',
-        'lib/hcrypto/aes.c lib/hcrypto/bn.c lib/hcrypto/dh.c lib/hcrypto/dh-ltm.c lib/hcrypto/des.c lib/hcrypto/dsa.c lib/hcrypto/engine.c lib/hcrypto/md2.c lib/hcrypto/md4.c lib/hcrypto/md5.c lib/hcrypto/rsa.c lib/hcrypto/rsa-ltm.c lib/hcrypto/rc2.c lib/hcrypto/rc4.c lib/hcrypto/rijndael-alg-fst.c lib/hcrypto/rnd_keys.c lib/hcrypto/sha.c lib/hcrypto/sha256.c lib/hcrypto/sha512.c lib/hcrypto/ui.c lib/hcrypto/evp.c lib/hcrypto/evp-hcrypto.c lib/hcrypto/pkcs5.c lib/hcrypto/pkcs12.c lib/hcrypto/rand.c lib/hcrypto/rand-egd.c lib/hcrypto/rand-unix.c lib/hcrypto/rand-fortuna.c lib/hcrypto/rand-timer.c lib/hcrypto/hmac.c lib/hcrypto/camellia.c lib/hcrypto/camellia-ntt.c lib/hcrypto/common.c lib/hcrypto/validate.c',
+        'lib/hcrypto/aes.c lib/hcrypto/bn.c lib/hcrypto/dh.c lib/hcrypto/dh-ltm.c lib/hcrypto/des.c lib/hcrypto/dsa.c lib/hcrypto/engine.c lib/hcrypto/md2.c lib/hcrypto/md4.c lib/hcrypto/md5.c lib/hcrypto/rsa.c lib/hcrypto/rsa-ltm.c lib/hcrypto/rc2.c lib/hcrypto/rc4.c lib/hcrypto/rijndael-alg-fst.c lib/hcrypto/rnd_keys.c lib/hcrypto/sha.c lib/hcrypto/sha256.c lib/hcrypto/sha512.c lib/hcrypto/ui.c lib/hcrypto/evp.c lib/hcrypto/evp-hcrypto.c lib/hcrypto/pkcs5.c lib/hcrypto/pkcs12.c lib/hcrypto/rand.c lib/hcrypto/rand-unix.c lib/hcrypto/rand-fortuna.c lib/hcrypto/rand-timer.c lib/hcrypto/hmac.c lib/hcrypto/camellia.c lib/hcrypto/camellia-ntt.c lib/hcrypto/common.c lib/hcrypto/validate.c',
         includes='../heimdal/lib/hcrypto ../heimdal/lib ../heimdal/include',
         deps='roken asn1 tommath replace',
         version_script='lib/hcrypto/version-script.map',
         )
 
 if not bld.CONFIG_SET('USING_SYSTEM_HEIMBASE'):
+    HEIMBASE_SOURCE_COMMON = '''
+        lib/base/array.c
+        lib/base/bool.c
+        lib/base/bsearch.c
+        lib/base/data.c
+        lib/base/db.c
+        lib/base/dict.c
+        lib/base/error.c
+        lib/base/heimbase.c
+        lib/base/string.c
+        lib/base/number.c
+        lib/base/null.c
+        lib/base/json.c
+        lib/base/heim_err.c
+    '''
+    HEIMBASE_SOURCE = HEIMBASE_SOURCE_COMMON + '''
+        lib/base/config_file.c
+        lib/base/context.c
+        lib/base/error_string.c
+        lib/base/expand_path.c
+        lib/base/log.c
+        lib/base/plugin.c
+        lib/base/warn.c
+    '''
+    HEIMDAL_AUTOPROTO('lib/base/heimbase-protos.h',
+                      HEIMBASE_SOURCE,
+                      group='hostcc_build_source')
     HEIMDAL_LIBRARY('heimbase',
-        'base/array.c base/bool.c base/dict.c base/heimbase.c base/string.c base/number.c base/null.c',
-        includes='../heimdal/base ../heimdal/include',
-        deps='roken replace',
-        version_script='base/version-script.map',
+        HEIMBASE_SOURCE,
+        includes='../heimdal/lib/base ../heimdal/include ../heimdal/lib/krb5',
+        deps='roken replace com_err',
+        cflags=['-DLOCALSTATEDIR="/2"'] + bld.dynconfig_cflags(),
+        version_script='lib/base/version-script.map',
         )
 
+    HEIMBASE_HOSTCC_SOURCE = HEIMBASE_SOURCE_COMMON + '''
+        lib/com_err/com_err.c
+        lib/com_err/error.c
+    '''
+    HEIMDAL_SUBSYSTEM('HEIMBASE_HOSTCC',
+        HEIMBASE_HOSTCC_SOURCE,
+        use_hostcc=True,
+        use_global_deps=False,
+        includes='../heimdal/lib/base ../heimdal/lib/com_err ../heimdal/include ../heimdal/lib/krb5',
+        group='hostcc_build_main',
+        deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC',
+        )
 
 if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
     HEIMDAL_ASN1('HEIMDAL_OCSP_ASN1',
-        'lib/hx509/ocsp.asn1',
+        'lib/asn1/ocsp.asn1',
         options='--preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData',
         includes='../heimdal/lib/asn1',
         directory='lib/hx509'
@@ -744,7 +971,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
         )
 
     HEIMDAL_ASN1('HEIMDAL_PKCS10_ASN1',
-        'lib/hx509/pkcs10.asn1',
+        'lib/asn1/pkcs10.asn1',
         options='--preserve-binary=CertificationRequestInfo',
         includes='../heimdal/lib/asn1',
         directory='lib/hx509'
@@ -759,6 +986,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
         lib/hx509/cms.c
         lib/hx509/collector.c
         lib/hx509/crypto.c
+        lib/hx509/crypto-ec.c
         lib/hx509/error.c
         lib/hx509/env.c
         lib/hx509/file.c
@@ -791,7 +1019,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
     HEIMDAL_LIBRARY('hx509',
         HEIMDAL_HX509_OBJH_SOURCE + ' lib/hx509/sel-lex.l lib/hx509/sel-gram.y',
         includes='../heimdal/lib/hx509',
-        deps='roken com_err asn1 hcrypto asn1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKCS10_ASN1 wind',
+        deps='roken com_err asn1 hcrypto asn1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKCS10_ASN1 wind heimbase',
         cflags=bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS,
         version_script='lib/hx509/version-script.map',
         )
@@ -870,13 +1098,13 @@ if not bld.CONFIG_SET('USING_SYSTEM_ASN1_COMPILE'):
                       includes='../heimdal/lib/asn1',
                       group='hostcc_build_main',
                       cflags=bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS,
-                      deps='ROKEN_HOSTCC',
+                      deps='ROKEN_HOSTCC HEIMBASE_HOSTCC',
                       use_global_deps=False,
                       use_hostcc=True)
 
     # here is the asn1 compiler build rule
     HEIMDAL_BINARY('asn1_compile',
-        'lib/asn1/gen_copy.c '
+        'lib/asn1/gen_copy.c lib/asn1/gen_print.c '
         'lib/asn1/gen_decode.c lib/asn1/gen_encode.c lib/asn1/gen_free.c '
         'lib/asn1/gen_glue.c lib/asn1/gen_length.c lib/asn1/gen_seq.c '
         'lib/asn1/gen_template.c lib/asn1/hash.c lib/asn1/symbol.c '
@@ -885,7 +1113,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ASN1_COMPILE'):
         use_global_deps=False,
         includes='../heimdal/lib/asn1',
         group='hostcc_build_main',
-        deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC '
+        deps='ROKEN_HOSTCC HEIMBASE_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC '
              'HEIMDAL_ASN1_GEN_HOSTCC',
         install=False
     )
@@ -907,13 +1135,13 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
 if bld.CONFIG_SET('USING_EMBEDDED_HEIMDAL'):
     HEIMDAL_BINARY('samba4kinit',
         'kuser/kinit.c',
-        deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto',
+        deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto gssapi gss_preauth',
         install=False
         )
 
     HEIMDAL_BINARY('samba4kgetcred',
         'kuser/kgetcred.c',
-        deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto asn1',
+        deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto asn1 gssapi gss_preauth',
         install=False
         )
 

@@ -2,7 +2,7 @@
 
 # We do this because we do not want to depend on the KDC, only find and use it's header files.  We do not want 
 if not bld.CONFIG_SET("USING_SYSTEM_KDC"):
-    kdc_include = "../heimdal/kdc"
+    kdc_include = "../heimdal/kdc ../heimdal/lib/gssapi"
 else:
     kdc_include = getattr(bld.env, "CPPPATH_KDC")
 

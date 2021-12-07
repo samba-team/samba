@@ -26,7 +26,7 @@ conf.CHECK_HEADERS('curses.h term.h termcap.h', together=True)
 
 conf.CHECK_FUNCS('''atexit cgetent getprogname setprogname gethostname
                     putenv rcmd readv secure_getenv
-                    sendmsg setitimer strlwr strncasecmp
+                    sendmsg setitimer strlwr strncasecmp mkostemp
             strptime strsep strsep_copy    strtok_r strupr swab umask uname unsetenv
             closefrom err warn errx warnx flock writev''')
 
@@ -85,6 +85,10 @@ conf.ADD_NAMED_CFLAGS('HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS',
                       '-Wno-strict-overflow',
                       testflags=True)
 
+conf.ADD_NAMED_CFLAGS('HEIMDAL_UNPICKY_WNO_FREE_NOHEAP_OBJECT_CFLAGS',
+                      '-Wno-error=free-nonheap-object',
+                      testflags=True)
+
 if len(bld.env.HEIMDAL_NO_ERROR_CFLAGS) == len(heimdal_no_error_flags):
     Logs.info("Most warnings in Heimdal code will "
               "error due to -Werror (good)")
@@ -139,6 +143,7 @@ conf.define('HAVE_KRB5_C_VERIFY_CHECKSUM', 1)
 conf.define('HAVE_KRB5_ENCTYPE_TO_STRING', 1)
 conf.define('HAVE_KRB5_ENCTYPE_TO_STRING_WITH_KRB5_CONTEXT_ARG', 1)
 conf.define('HAVE_KRB5_FREE_ERROR_CONTENTS', 1)
+conf.define('HAVE_KRB5_FREE_UNPARSED_NAME', 1)
 conf.define('HAVE_KRB5_FREE_HOST_REALM', 1)
 conf.define('HAVE_KRB5_FWD_TGT_CREDS', 1)
 conf.define('HAVE_KRB5_GET_CREDS', 1)

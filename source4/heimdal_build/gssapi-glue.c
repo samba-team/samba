@@ -26,3 +26,7 @@ gssapi_mech_interface __gss_ntlm_initialize(void)
 {
 	return NULL;
 }
+gssapi_mech_interface __gss_sanon_initialize(void)
+{
+	return NULL;
+}

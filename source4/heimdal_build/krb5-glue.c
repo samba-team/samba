@@ -22,6 +22,6 @@
 #include "../heimdal/lib/krb5/krb5_locl.h"
 
 const krb5_cc_ops krb5_scc_ops = {
-    .version = KRB5_CC_OPS_VERSION,
+    .version = KRB5_CC_OPS_VERSION_2,
     .prefix = "_NOTSUPPORTED_SDB",
 };
