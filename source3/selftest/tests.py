@@ -579,6 +579,12 @@ for env in ["fileserver"]:
                   smbclient3,
                   "-mSMB3"])
 
+    plantestsuite("samba3.blackbox.test_symlink_traversal.SMB2", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_symlink_traversal_smb2.sh"),
+                  '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/local_symlinks',
+                  '$PREFIX', smbclient3])
+
+
     #
     # tar command tests
     #
