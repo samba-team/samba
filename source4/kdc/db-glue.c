@@ -980,19 +980,17 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			goto out;
 		}
 
-		if (smb_krb5_principal_get_type(context, principal) != KRB5_NT_ENTERPRISE_PRINCIPAL) {
-			/* While we have copied the client principal, tests
-			 * show that Win2k3 returns the 'corrected' realm, not
-			 * the client-specified realm.  This code attempts to
-			 * replace the client principal's realm with the one
-			 * we determine from our records */
-			
-			/* this has to be with malloc() */
-			ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
-			if (ret) {
-				krb5_clear_error_message(context);
-				goto out;
-			}
+		/* While we have copied the client principal, tests
+		 * show that Win2k3 returns the 'corrected' realm, not
+		 * the client-specified realm.  This code attempts to
+		 * replace the client principal's realm with the one
+		 * we determine from our records */
+
+		/* this has to be with malloc() */
+		ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+		if (ret) {
+			krb5_clear_error_message(context);
+			goto out;
 		}
 	}
 
