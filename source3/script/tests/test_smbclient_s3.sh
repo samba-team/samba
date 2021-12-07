@@ -1044,12 +1044,12 @@ EOF
 	return 1
     fi
 
-# This should fail with NT_STATUS_ACCESS_DENIED
-    echo "$out" | grep 'NT_STATUS_ACCESS_DENIED'
+# This should fail with NT_STATUS_OBJECT_NAME_NOT_FOUND
+    echo "$out" | grep 'NT_STATUS_OBJECT_NAME_NOT_FOUND'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
-	echo "failed - should get NT_STATUS_ACCESS_DENIED listing \\widelinks_share\\source"
+	echo "failed - should get NT_STATUS_OBJECT_NAME_NOT_FOUND listing \\widelinks_share\\source"
 	return 1
     fi
 }
@@ -1168,11 +1168,11 @@ EOF
        return 1
     fi
 
-    echo "$out" | grep 'NT_STATUS_ACCESS_DENIED'
+    echo "$out" | grep 'NT_STATUS_OBJECT_NAME_NOT_FOUND'
     ret=$?
     if [ $ret -ne 0 ] ; then
        echo "$out"
-       echo "failed - should get NT_STATUS_ACCESS_DENIED getting \\nosymlinks\\source"
+       echo "failed - should get NT_STATUS_OBJECT_NAME_NOT_FOUND getting \\nosymlinks\\source"
        return 1
     fi
 
