@@ -30,6 +30,9 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 
+static NTSTATUS check_name(connection_struct *conn,
+			   const struct smb_filename *smb_fname);
+
 uint32_t ucf_flags_from_smb_request(struct smb_request *req)
 {
 	uint32_t ucf_flags = 0;
@@ -529,6 +532,39 @@ static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
 
 	if (errno == EACCES) {
 		if ((state->ucf_flags & UCF_PREP_CREATEFILE) == 0) {
+			/*
+			 * Could be a symlink pointing to
+			 * a directory outside the share
+			 * to which we don't have access.
+			 * If so, we need to know that here
+			 * so we can return the correct error code.
+			 * check_name() is never called if we
+			 * error out of filename_convert().
+			 */
+			int ret;
+			NTSTATUS status;
+			struct smb_filename dname = (struct smb_filename) {
+					.base_name = state->dirpath,
+					.twrp = state->smb_fname->twrp,
+			};
+
+			/* handle null paths */
+			if ((dname.base_name == NULL) ||
+					(dname.base_name[0] == '\0')) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			ret = SMB_VFS_LSTAT(state->conn, &dname);
+			if (ret != 0) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			if (!S_ISLNK(dname.st.st_ex_mode)) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			status = check_name(state->conn, &dname);
+			if (!NT_STATUS_IS_OK(status)) {
+				/* We know this is an intermediate path. */
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
 			return NT_STATUS_ACCESS_DENIED;
 		} else {
 			/*
