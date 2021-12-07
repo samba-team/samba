@@ -2041,6 +2041,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          pac_options=None,
                          ap_options=None,
                          fast_ap_options=None,
+                         strict_edata_checking=True,
                          expect_edata=None,
                          expect_pac=True,
                          expect_claims=True,
@@ -2099,6 +2100,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'pac_options': pac_options,
             'ap_options': ap_options,
             'fast_ap_options': fast_ap_options,
+            'strict_edata_checking': strict_edata_checking,
             'expect_edata': expect_edata,
             'expect_pac': expect_pac,
             'expect_claims': expect_claims,
@@ -2152,6 +2154,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           pac_options=None,
                           ap_options=None,
                           fast_ap_options=None,
+                          strict_edata_checking=True,
                           expect_edata=None,
                           expect_pac=True,
                           expect_claims=True,
@@ -2211,6 +2214,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'pac_options': pac_options,
             'ap_options': ap_options,
             'fast_ap_options': fast_ap_options,
+            'strict_edata_checking': strict_edata_checking,
             'expect_edata': expect_edata,
             'expect_pac': expect_pac,
             'expect_claims': expect_claims,
@@ -2821,7 +2825,8 @@ class RawKerberosTest(TestCaseInTempDir):
                             and not inner)
         if not expect_edata:
             self.assertIsNone(expected_status)
-            self.assertElementMissing(rep, 'e-data')
+            if self.strict_checking:
+                self.assertElementMissing(rep, 'e-data')
             return rep
         edata = self.getElementValue(rep, 'e-data')
         if self.strict_checking:
@@ -2947,13 +2952,19 @@ class RawKerberosTest(TestCaseInTempDir):
                 expected_patypes += (PADATA_FX_FAST,)
                 expected_patypes += (PADATA_FX_COOKIE,)
 
+        require_strict = {PADATA_FX_COOKIE,
+                          PADATA_FX_FAST,
+                          PADATA_PAC_OPTIONS,
+                          PADATA_PK_AS_REP_19,
+                          PADATA_PK_AS_REQ}
+        strict_edata_checking = kdc_exchange_dict['strict_edata_checking']
+        if not strict_edata_checking:
+            require_strict.add(PADATA_ETYPE_INFO2)
+            require_strict.add(PADATA_ENCRYPTED_CHALLENGE)
+
         got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
         self.assertSequenceElementsEqual(expected_patypes, got_patypes,
-                                         require_strict={PADATA_FX_COOKIE,
-                                                         PADATA_FX_FAST,
-                                                         PADATA_PAC_OPTIONS,
-                                                         PADATA_PK_AS_REP_19,
-                                                         PADATA_PK_AS_REQ})
+                                         require_strict=require_strict)
 
         if not expected_patypes:
             return None

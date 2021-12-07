@@ -146,7 +146,8 @@ class FAST_Tests(KDCBaseTest):
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_tgt,
                 'sname': None,
-                'expected_sname': expected_sname
+                'expected_sname': expected_sname,
+                'strict_edata_checking': False
             }
         ])
 
@@ -161,7 +162,8 @@ class FAST_Tests(KDCBaseTest):
                 'gen_tgt_fn': self.get_user_tgt,
                 'fast_armor': None,
                 'sname': None,
-                'expected_sname': expected_sname
+                'expected_sname': expected_sname,
+                'strict_edata_checking': False
             }
         ])
 
@@ -179,7 +181,8 @@ class FAST_Tests(KDCBaseTest):
                 'inner_req': {
                     'sname': None  # should be ignored
                 },
-                'expected_sname': expected_sname
+                'expected_sname': expected_sname,
+                'strict_edata_checking': False
             }
         ])
 
@@ -197,7 +200,8 @@ class FAST_Tests(KDCBaseTest):
                 'inner_req': {
                     'sname': None  # should be ignored
                 },
-                'expected_sname': expected_sname
+                'expected_sname': expected_sname,
+                'strict_edata_checking': False
             }
         ])
 
@@ -357,7 +361,8 @@ class FAST_Tests(KDCBaseTest):
                 'use_fast': True,
                 'gen_tgt_fn': self.get_mach_tgt,
                 'fast_armor': None,
-                'etypes': ()
+                'etypes': (),
+                'strict_edata_checking': False
             }
         ])
 
@@ -379,7 +384,8 @@ class FAST_Tests(KDCBaseTest):
                 'use_fast': True,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_tgt,
-                'etypes': ()
+                'etypes': (),
+                'strict_edata_checking': False
             }
         ])
 
@@ -1458,6 +1464,8 @@ class FAST_Tests(KDCBaseTest):
 
             fast_ap_options = kdc_dict.pop('fast_ap_options', None)
 
+            strict_edata_checking = kdc_dict.pop('strict_edata_checking', True)
+
             if rep_type == KRB_AS_REP:
                 kdc_exchange_dict = self.as_exchange_dict(
                     expected_crealm=expected_crealm,
@@ -1493,6 +1501,7 @@ class FAST_Tests(KDCBaseTest):
                     pac_request=True,
                     pac_options=pac_options,
                     fast_ap_options=fast_ap_options,
+                    strict_edata_checking=strict_edata_checking,
                     expect_edata=expect_edata)
             else:  # KRB_TGS_REP
                 kdc_exchange_dict = self.tgs_exchange_dict(
@@ -1528,6 +1537,7 @@ class FAST_Tests(KDCBaseTest):
                     pac_request=None,
                     pac_options=pac_options,
                     fast_ap_options=fast_ap_options,
+                    strict_edata_checking=strict_edata_checking,
                     expect_edata=expect_edata)
 
             repeat = kdc_dict.pop('repeat', 1)
