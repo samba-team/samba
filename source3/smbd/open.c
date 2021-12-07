@@ -1443,12 +1443,10 @@ static NTSTATUS open_file(files_struct *fsp,
 			 * POSIX client that hit a symlink. We don't want to
 			 * return NT_STATUS_STOPPED_ON_SYMLINK to avoid handling
 			 * this special error code in all callers, so we map
-			 * this to NT_STATUS_OBJECT_PATH_NOT_FOUND. Historically
-			 * the lower level functions returned status code mapped
-			 * from errno by map_nt_error_from_unix() where ELOOP is
-			 * mapped to NT_STATUS_OBJECT_PATH_NOT_FOUND.
+			 * this to NT_STATUS_OBJECT_NAME_NOT_FOUND to match
+			 * openat_pathref_fsp().
 			 */
-			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
@@ -1531,9 +1529,10 @@ static NTSTATUS open_file(files_struct *fsp,
 		{
 			/*
 			 * Don't allow stat opens on symlinks directly unless
-			 * it's a POSIX open.
+			 * it's a POSIX open. Match the return code from
+			 * openat_pathref_fsp().
 			 */
-			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
 		if (!fsp->fsp_flags.is_pathref) {
