@@ -173,6 +173,7 @@ kdb_vftabl kdb_function_table = {
 	.free_principal_e_data     = kdb_samba_db_free_principal_e_data,
 
 #if KRB5_KDB_DAL_MAJOR_VERSION >= 9
+	.allowed_to_delegate_from  = kdb_samba_db_allowed_to_delegate_from,
 	.issue_pac                 = kdb_samba_db_issue_pac,
 #else
 	.sign_authdata             = kdb_samba_db_sign_auth_data,

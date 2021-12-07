@@ -700,6 +700,33 @@ krb5_error_code kdb_samba_db_check_allowed_to_delegate(krb5_context context,
 }
 
 
+#if KRB5_KDB_DAL_MAJOR_VERSION >= 9
+krb5_error_code kdb_samba_db_allowed_to_delegate_from(
+		krb5_context context,
+		krb5_const_principal client_principal,
+		krb5_const_principal server_principal,
+		krb5_pac header_pac,
+		const krb5_db_entry *proxy)
+{
+	struct mit_samba_context *mit_ctx = NULL;
+	krb5_error_code code;
+
+	mit_ctx = ks_get_context(context);
+	if (mit_ctx == NULL) {
+		return KRB5_KDB_DBNOTINITED;
+	}
+
+	code = mit_samba_check_allowed_to_delegate_from(mit_ctx,
+							client_principal,
+							server_principal,
+							header_pac,
+							proxy);
+
+	return code;
+}
+#endif
+
+
 static void samba_bad_password_count(krb5_db_entry *client,
 				     krb5_error_code error_code)
 {

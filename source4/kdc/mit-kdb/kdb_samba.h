@@ -156,6 +156,13 @@ krb5_error_code kdb_samba_db_check_allowed_to_delegate(krb5_context context,
 						       const krb5_db_entry *server,
 						       krb5_const_principal proxy);
 
+krb5_error_code kdb_samba_db_allowed_to_delegate_from(
+		krb5_context context,
+		krb5_const_principal client,
+		krb5_const_principal server,
+		krb5_pac header_pac,
+		const krb5_db_entry *proxy);
+
 void kdb_samba_db_audit_as_req(krb5_context kcontext,
 			       krb5_kdc_req *request,
 			       const krb5_address *local_addr,
