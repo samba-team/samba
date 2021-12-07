@@ -41,6 +41,22 @@ are not affected, as the default port is 53.
 REMOVED FEATURES
 ================
 
+SMB1 CORE and LANMAN1 protocol wildcard copy, unlink and rename removed
+=======================================================================
+
+In preparation for the removal of the SMB1 server, the unused
+SMB1 command SMB_COM_COPY (SMB1 command number 0x29) has been
+removed from the Samba smbd server. In addition, the ability
+to process file name wildcards in requests using the SMB1 commands
+SMB_COM_COPY (SMB1 command number 0x2A), SMB_COM_RENAME (SMB1 command
+number 0x7), SMB_COM_NT_RENAME (SMB1 command number 0xA5) and
+SMB_COM_DELETE (SMB1 command number 0x6) have been removed.
+
+This only affects clients using MS-DOS based versions of
+SMB1, the last release of which was Windows 98. Users requiring
+support for these features will need to use older versions
+of Samba.
+
 No longer using Linux mandatory locks for sharemodes
 ====================================================
 
