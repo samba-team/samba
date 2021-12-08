@@ -74,7 +74,11 @@ static void smb_krb5_debug_close(void *private_data) {
 #endif
 
 #ifdef SAMBA4_USES_HEIMDAL
-static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *private_data)
+static void smb_krb5_debug_wrapper(
+#ifdef HAVE_KRB5_ADDLOG_FUNC_NEED_CONTEXT
+		krb5_context ctx,
+#endif /* HAVE_KRB5_ADDLOG_FUNC_NEED_CONTEXT */
+		const char *timestr, const char *msg, void *private_data)
 {
 	DEBUGC(DBGC_KERBEROS, 3, ("Kerberos: %s\n", msg));
 }

@@ -202,3 +202,7 @@ conf.define('HAVE_KRB5_PRINCIPAL_GET_TYPE', 1)
 conf.define('HAVE_KRB5_WARNX', 1)
 conf.define('HAVE_KRB5_PROMPT_TYPE', 1)
 
+if conf.CONFIG_SET('USING_EMBEDDED_HEIMDAL'):
+    conf.define('HAVE_KRB5_ADDLOG_FUNC_NEED_CONTEXT', 1)
+else:
+    pass # TODO
