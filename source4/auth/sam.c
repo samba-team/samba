@@ -46,6 +46,7 @@
 	"msDS-SupportedEncryptionTypes",	\
 	"supplementalCredentials",		\
 	"msDS-AllowedToDelegateTo",		\
+	"msDS-AllowedToActOnBehalfOfOtherIdentity", \
 						\
 	/* passwords */				\
 	"dBCSPwd",				\
