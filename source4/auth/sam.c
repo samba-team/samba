@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2010
    Copyright (C) Gerald Carter                             2003
    Copyright (C) Stefan Metzmacher                         2005
    Copyright (C) Matthias Dieter Wallnöfer                 2009
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -122,7 +122,7 @@ const char *user_attrs[] = {
  servers local time, as logon hours are just specified as a weekly
  bitmask.
 ****************************************************************************/
-                                                                                                              
+
 static bool logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
 {
 	/* In logon hours first bit is Sunday from 12AM to 1AM */
@@ -140,7 +140,7 @@ static bool logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
 
 	if (hours->length != 168/8) {
 		DEBUG(5,("logon_hours_ok: malformed logon hours restrictions for user %s\n", name_for_logs));
-		return true;		
+		return true;
 	}
 
 	lasttime = time(NULL);
@@ -165,7 +165,7 @@ static bool logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
 				asct = "INVALID TIME";
 			}
 		}
-		
+
 		DEBUG(1, ("logon_hours_ok: Account for user %s not allowed to "
 			  "logon at this time (%s).\n",
 			  name_for_logs, asct ));
@@ -203,7 +203,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", name_for_logs));
 
 	acct_flags = samdb_result_acct_flags(msg, "msDS-User-Account-Control-Computed");
-	
+
 	acct_expiry = samdb_result_account_expires(msg);
 
 	/* Check for when we must change this password, taking the
@@ -228,7 +228,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	/* Test account expire time */
 	if (now > acct_expiry) {
 		DEBUG(2,("authsam_account_ok: Account for user '%s' has expired.\n", name_for_logs));
-		DEBUG(3,("authsam_account_ok: Account expired at '%s'.\n", 
+		DEBUG(3,("authsam_account_ok: Account expired at '%s'.\n",
 			 nt_time_string(mem_ctx, acct_expiry)));
 		return NT_STATUS_ACCOUNT_EXPIRED;
 	}
@@ -271,11 +271,11 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_WORKSTATION;
 		}
 	}
-	
+
 	if (!logon_hours_ok(msg, name_for_logs)) {
 		return NT_STATUS_INVALID_LOGON_HOURS;
 	}
-	
+
 	if (!allow_domain_trust) {
 		if (acct_flags & ACB_DOMTRUST) {
 			DEBUG(2,("sam_account_ok: Domain trust account %s denied by server\n", name_for_logs));
@@ -340,7 +340,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 					   const char *netbios_name,
 					   const char *domain_name,
 					   const char *dns_domain_name,
-					   struct ldb_dn *domain_dn, 
+					   struct ldb_dn *domain_dn,
 					   struct ldb_message *msg,
 					   DATA_BLOB user_sess_key,
 					   DATA_BLOB lm_sess_key,
@@ -540,7 +540,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	info->last_password_change = samdb_result_nttime(msg,
 		"pwdLastSet", 0);
 	info->allow_password_change
-		= samdb_result_allow_password_change(sam_ctx, mem_ctx, 
+		= samdb_result_allow_password_change(sam_ctx, mem_ctx,
 			domain_dn, msg, "pwdLastSet");
 	info->force_password_change = samdb_result_nttime(msg,
 		"msDS-UserPasswordExpiryTimeComputed", 0);
@@ -674,7 +674,7 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 				   const char **attrs,
 				   struct ldb_dn **domain_dn,
 				   struct ldb_message **msg)
-{			   
+{
 	struct ldb_dn *user_dn;
 	NTSTATUS nt_status;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -684,13 +684,13 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = crack_user_principal_name(sam_ctx, tmp_ctx, principal, 
+	nt_status = crack_user_principal_name(sam_ctx, tmp_ctx, principal,
 					      &user_dn, domain_dn);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
 	}
-	
+
 	/* pull the user attributes */
 	ret = dsdb_search_one(sam_ctx, tmp_ctx, msg, user_dn,
 			      LDB_SCOPE_BASE, attrs,
@@ -703,7 +703,7 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	talloc_steal(mem_ctx, *msg);
 	talloc_steal(mem_ctx, *domain_dn);
 	talloc_free(tmp_ctx);
-	
+
 	return NT_STATUS_OK;
 }
 
