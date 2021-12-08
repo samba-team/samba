@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
-#include "system/gssapi.h"
 #include <tevent.h>
 #include "auth/kerberos/kerberos.h"
 #include "lib/socket/socket.h"

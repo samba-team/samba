@@ -27,7 +27,6 @@
 #include "auth/kerberos/krb5_init_context.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "lib/krb5_wrap/krb5_samba.h"
-#include "lib/krb5_wrap/gss_samba.h"
 
 struct auth_user_info_dc;
 struct cli_credentials;
