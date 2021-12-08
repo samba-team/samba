@@ -713,9 +713,7 @@ static void take_reclock_handler(char status,
 	s->done = true;
 }
 
-static void force_election(struct ctdb_recoverd *rec,
-			   uint32_t pnn,
-			   struct ctdb_node_map_old *nodemap);
+static void force_election(struct ctdb_recoverd *rec);
 
 static void lost_reclock_handler(void *private_data)
 {
@@ -725,7 +723,7 @@ static void lost_reclock_handler(void *private_data)
 	D_ERR("Recovery lock helper terminated, triggering an election\n");
 	TALLOC_FREE(rec->recovery_lock_handle);
 
-	force_election(rec, ctdb_get_pnn(rec->ctdb), rec->nodemap);
+	force_election(rec);
 }
 
 static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
@@ -1378,7 +1376,7 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 /*
   send out an election request
  */
-static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
+static int send_election_request(struct ctdb_recoverd *rec)
 {
 	int ret;
 	TDB_DATA election_data;
@@ -1397,13 +1395,15 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
 	/* first we assume we will win the election and set 
 	   recoverymaster to be ourself on the current node
 	 */
-	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(),
-				     CTDB_CURRENT_NODE, pnn);
+	ret = ctdb_ctrl_setrecmaster(ctdb,
+				     CONTROL_TIMEOUT(),
+				     CTDB_CURRENT_NODE,
+				     rec->pnn);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to set recmaster\n"));
 		return -1;
 	}
-	rec->recmaster = pnn;
+	rec->recmaster = rec->pnn;
 
 	/* send an election message to all active nodes */
 	DEBUG(DEBUG_INFO,(__location__ " Send election request to all active nodes\n"));
@@ -1420,7 +1420,7 @@ static void election_send_request(struct tevent_context *ev,
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
 	int ret;
 
-	ret = send_election_request(rec, ctdb_get_pnn(rec->ctdb));
+	ret = send_election_request(rec);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send election request!\n"));
 	}
@@ -1755,8 +1755,7 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 /*
   force the start of the election process
  */
-static void force_election(struct ctdb_recoverd *rec, uint32_t pnn, 
-			   struct ctdb_node_map_old *nodemap)
+static void force_election(struct ctdb_recoverd *rec)
 {
 	int ret;
 	struct ctdb_context *ctdb = rec->ctdb;
@@ -1764,7 +1763,7 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 	DEBUG(DEBUG_INFO,(__location__ " Force an election\n"));
 
 	/* set all nodes to recovery mode to stop all internode traffic */
-	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE);
+	ret = set_recovery_mode(ctdb, rec, rec->nodemap, CTDB_RECOVERY_ACTIVE);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return;
@@ -1778,7 +1777,7 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 				timeval_current_ofs(ctdb->tunable.election_timeout, 0),
 			ctdb_election_timeout, rec);
 
-	ret = send_election_request(rec, pnn);
+	ret = send_election_request(rec);
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to initiate recmaster election"));
 		return;
@@ -2331,7 +2330,7 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 	if (rec->recmaster == CTDB_UNKNOWN_PNN) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Initial recovery master set - forcing election\n"));
-		force_election(rec, pnn, nodemap);
+		force_election(rec);
 		return false;
 	}
 
@@ -2349,7 +2348,7 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 		      (" Current recmaster node %u does not have CAP_RECMASTER,"
 		       " but we (node %u) have - force an election\n",
 		       rec->recmaster, pnn));
-		force_election(rec, pnn, nodemap);
+		force_election(rec);
 		return false;
 	}
 
@@ -2363,7 +2362,7 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR,
 		      ("Recmaster node %u has been deleted. Force election\n",
 		       rec->recmaster));
-		force_election(rec, pnn, nodemap);
+		force_election(rec);
 		return false;
 	}
 
@@ -2373,7 +2372,7 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_NOTICE,
 		      ("Recmaster node %u is disconnected/deleted. Force election\n",
 		       rec->recmaster));
-		force_election(rec, pnn, nodemap);
+		force_election(rec);
 		return false;
 	}
 
@@ -2402,7 +2401,7 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 		 */
 		nodemap->nodes[rec->recmaster].flags =
 			recmaster_nodemap->nodes[rec->recmaster].flags;
-		force_election(rec, pnn, nodemap);
+		force_election(rec);
 		return false;
 	}
 
@@ -2581,7 +2580,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		/* can not happen */
 		return;
 	case MONITOR_ELECTION_NEEDED:
-		force_election(rec, pnn, nodemap);
+		force_election(rec);
 		return;
 	case MONITOR_OK:
 		break;
