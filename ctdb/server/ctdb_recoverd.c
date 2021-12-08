@@ -247,6 +247,7 @@ struct ctdb_recovery_lock_handle;
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
 	uint32_t recmaster;
+	uint32_t pnn;
 	uint32_t last_culprit_node;
 	struct ctdb_node_map_old *nodemap;
 	struct timeval priority_time;
@@ -2940,6 +2941,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	rec->ctdb = ctdb;
 	rec->recmaster = CTDB_UNKNOWN_PNN;
+	rec->pnn = ctdb_get_pnn(ctdb);
 	rec->recovery_lock_handle = NULL;
 	rec->helper_pid = -1;
 
