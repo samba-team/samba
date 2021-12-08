@@ -723,6 +723,14 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 const SMB_STRUCT_STAT *psbuf,
 					 NTTIME twrp,
 					 uint32_t flags);
+NTSTATUS filename_convert_dirfsp(
+	TALLOC_CTX *ctx,
+	connection_struct *conn,
+	const char *name_in,
+	uint32_t ucf_flags,
+	NTTIME twrp,
+	struct files_struct **pdirfsp,
+	struct smb_filename **psmb_name_rel);
 struct smb_filename *full_path_from_dirfsp_atname(
 	TALLOC_CTX *mem_ctx,
 	const struct files_struct *dirfsp,

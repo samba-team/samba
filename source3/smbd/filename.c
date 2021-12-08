@@ -29,6 +29,7 @@
 #include "fake_file.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "lib/util/memcache.h"
 
 static NTSTATUS get_real_filename(connection_struct *conn,
 				  struct smb_filename *path,
@@ -1716,6 +1717,53 @@ static NTSTATUS get_real_filename_at(struct files_struct *dirfsp,
 	return status;
 }
 
+/*
+ * Create the memcache-key for GETREALFILENAME_CACHE: This supplements
+ * the stat cache for the last component to be looked up. Cache
+ * contents is the correctly capitalized translation of the parameter
+ * "name" as it exists on disk. This is indexed by inode of the dirfsp
+ * and name, and contrary to stat_cahce_lookup() it does not
+ * vfs_stat() the last component. This will be taken care of by an
+ * attempt to do a openat_pathref_fsp().
+ */
+static bool get_real_filename_cache_key(
+	TALLOC_CTX *mem_ctx,
+	struct files_struct *dirfsp,
+	const char *name,
+	DATA_BLOB *_key)
+{
+	struct file_id fid = vfs_file_id_from_sbuf(
+		dirfsp->conn, &dirfsp->fsp_name->st);
+	char *upper = NULL;
+	uint8_t *key = NULL;
+	size_t namelen, keylen;
+
+	upper = talloc_strdup_upper(mem_ctx, name);
+	if (upper == NULL) {
+		return false;
+	}
+	namelen = talloc_get_size(upper);
+
+	keylen = namelen + sizeof(fid);
+	if (keylen < sizeof(fid)) {
+		TALLOC_FREE(upper);
+		return false;
+	}
+
+	key = talloc_size(mem_ctx, keylen);
+	if (key == NULL) {
+		TALLOC_FREE(upper);
+		return false;
+	}
+
+	memcpy(key, &fid, sizeof(fid));
+	memcpy(key + sizeof(fid), upper, namelen);
+	TALLOC_FREE(upper);
+
+	*_key = (DATA_BLOB) { .data = key, .length = keylen, };
+	return true;
+}
+
 static NTSTATUS get_real_filename(connection_struct *conn,
 				  struct smb_filename *path,
 				  const char *name,
@@ -2341,6 +2389,570 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 	}
 
 	TALLOC_FREE(frame);
+	return status;
+}
+
+/*
+ * Get the correct capitalized stream name hanging off
+ * base_fsp. Equivalent of get_real_filename(), but for streams.
+ */
+static NTSTATUS get_real_stream_name(
+	TALLOC_CTX *mem_ctx,
+	struct files_struct *base_fsp,
+	const char *stream_name,
+	char **_found)
+{
+	unsigned int i, num_streams = 0;
+	struct stream_struct *streams = NULL;
+	NTSTATUS status;
+
+	status = vfs_fstreaminfo(
+		base_fsp, talloc_tos(), &num_streams, &streams);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	for (i=0; i<num_streams; i++) {
+		bool equal = sname_equal(stream_name, streams[i].name, false);
+
+		DBG_DEBUG("comparing [%s] and [%s]: %sequal\n",
+			  stream_name,
+			  streams[i].name,
+			  equal ? "" : "not ");
+
+		if (equal) {
+			*_found = talloc_move(mem_ctx, &streams[i].name);
+			TALLOC_FREE(streams);
+			return NT_STATUS_OK;
+		}
+	}
+
+	TALLOC_FREE(streams);
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+static bool filename_split_lcomp(
+	TALLOC_CTX *mem_ctx,
+	const char *name_in,
+	bool posix,
+	char **_dirname,
+	const char **_fname_rel,
+	const char **_streamname)
+{
+	const char *lcomp = NULL;
+	const char *fname_rel = NULL;
+	const char *streamname = NULL;
+	char *dirname = NULL;
+
+	if (name_in[0] == '\0') {
+		fname_rel = ".";
+		dirname = talloc_strdup(mem_ctx, "");
+		if (dirname == NULL) {
+			return false;
+		}
+		goto done;
+	}
+
+	lcomp = strrchr_m(name_in, '/');
+	if (lcomp != NULL) {
+		fname_rel = lcomp+1;
+		dirname = talloc_strndup(mem_ctx, name_in, lcomp - name_in);
+		if (dirname == NULL) {
+			return false;
+		}
+		goto find_stream;
+	}
+
+	/*
+	 * No slash, dir is emtpy
+	 */
+	dirname = talloc_strdup(mem_ctx, "");
+	if (dirname == NULL) {
+		return false;
+	}
+
+	if (name_in[0] == ':') {
+		/*
+		 * Special case for stream on root directory
+		 */
+		fname_rel = ".";
+		streamname = name_in;
+		goto done;
+	}
+
+	fname_rel = name_in;
+
+find_stream:
+	if (!posix) {
+		streamname = strchr_m(fname_rel, ':');
+
+		if (streamname != NULL) {
+			fname_rel = talloc_strndup(
+				mem_ctx,
+				fname_rel,
+				streamname - fname_rel);
+			if (fname_rel == NULL) {
+				TALLOC_FREE(dirname);
+				return false;
+			}
+		}
+	}
+
+done:
+	*_dirname = dirname;
+	*_fname_rel = fname_rel;
+	*_streamname = streamname;
+	return true;
+}
+
+/*
+ * Create the correct capitalization of a file name to be created.
+ */
+static NTSTATUS filename_convert_normalize_new(
+	TALLOC_CTX *mem_ctx,
+	struct connection_struct *conn,
+	char *name_in,
+	char **_normalized)
+{
+	char *name = name_in;
+
+	*_normalized = NULL;
+
+	if (!conn->case_preserve ||
+	    (mangle_is_8_3(name, false,
+			   conn->params) &&
+	     !conn->short_case_preserve)) {
+
+		char *normalized = talloc_strdup(mem_ctx, name);
+		if (normalized == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		strnorm(normalized, lp_default_case(SNUM(conn)));
+		name = normalized;
+	}
+
+	if (mangle_is_mangled(name, conn->params)) {
+		bool found;
+		char *unmangled = NULL;
+
+		found = mangle_lookup_name_from_8_3(
+			mem_ctx, name, &unmangled, conn->params);
+		if (found) {
+			name = unmangled;
+		}
+	}
+
+	if (name != name_in) {
+		*_normalized = name;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+ * Open smb_fname_rel->fsp as a pathref fsp with a case insensitive
+ * fallback using GETREALFILENAME_CACHE and get_real_filename_at() if
+ * the first attempt based on the filename sent by the client gives
+ * ENOENT.
+ */
+static NTSTATUS openat_pathref_fsp_case_insensitive(
+	struct files_struct *dirfsp,
+	struct smb_filename *smb_fname_rel,
+	uint32_t ucf_flags)
+{
+	const bool posix = (ucf_flags & UCF_POSIX_PATHNAMES);
+	DATA_BLOB cache_key = { .data = NULL, };
+	char *found_name = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	SET_STAT_INVALID(smb_fname_rel->st);
+
+	status = openat_pathref_fsp(dirfsp, smb_fname_rel);
+
+	if (NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OK;
+	}
+
+	if (VALID_STAT(smb_fname_rel->st)) {
+		/*
+		 * We got an error although the object existed. Might
+		 * be a symlink we don't want.
+		 */
+		return status;
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		/*
+		 * Only retry on ENOENT
+		 */
+		return status;
+	}
+
+	if (posix || dirfsp->conn->case_sensitive) {
+		/*
+		 * Only return case insensitive if required
+		 */
+		return status;
+	}
+
+	if (lp_stat_cache()) {
+		char *base_name = smb_fname_rel->base_name;
+		DATA_BLOB value = { .data = NULL };
+
+		ok = get_real_filename_cache_key(
+			talloc_tos(), dirfsp, base_name, &cache_key);
+		if (!ok) {
+			/*
+			 * probably ENOMEM, just bail
+			 */
+			return status;
+		}
+
+		DO_PROFILE_INC(statcache_lookups);
+
+		ok = memcache_lookup(
+			NULL, GETREALFILENAME_CACHE, cache_key, &value);
+		if (!ok) {
+			DO_PROFILE_INC(statcache_misses);
+			goto lookup;
+		}
+		DO_PROFILE_INC(statcache_hits);
+
+		TALLOC_FREE(smb_fname_rel->base_name);
+		smb_fname_rel->base_name = talloc_memdup(
+			smb_fname_rel, value.data, value.length);
+		if (smb_fname_rel->base_name == NULL) {
+			TALLOC_FREE(cache_key.data);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = openat_pathref_fsp(dirfsp, smb_fname_rel);
+		if (NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(cache_key.data);
+			return NT_STATUS_OK;
+		}
+
+		memcache_delete(NULL, GETREALFILENAME_CACHE, cache_key);
+	}
+
+lookup:
+	status = get_real_filename_at(
+		dirfsp, smb_fname_rel->base_name, smb_fname_rel, &found_name);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+	    (ucf_flags & UCF_PREP_CREATEFILE)) {
+		/*
+		 * dropbox
+		 */
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname_rel->base_name);
+		smb_fname_rel->base_name = found_name;
+
+		status = openat_pathref_fsp(dirfsp, smb_fname_rel);
+	}
+
+	if (NT_STATUS_IS_OK(status) && (cache_key.data != NULL)) {
+		DATA_BLOB value = {
+			.data = (uint8_t *)smb_fname_rel->base_name,
+			.length = strlen(smb_fname_rel->base_name) + 1,
+		};
+
+		memcache_add(NULL, GETREALFILENAME_CACHE, cache_key, value);
+	}
+
+	TALLOC_FREE(cache_key.data);
+
+	return status;
+}
+
+/*
+ * Split up name_in as sent by the client into a directory pathref fsp
+ * and a relative smb_filename.
+ */
+NTSTATUS filename_convert_dirfsp(
+	TALLOC_CTX *mem_ctx,
+	connection_struct *conn,
+	const char *name_in,
+	uint32_t ucf_flags,
+	NTTIME twrp,
+	struct files_struct **_dirfsp,
+	struct smb_filename **_smb_fname)
+{
+	struct smb_filename *smb_dirname = NULL;
+	struct smb_filename *smb_fname_rel = NULL;
+	struct smb_filename *smb_fname = NULL;
+	const bool posix = (ucf_flags & UCF_POSIX_PATHNAMES);
+	char *dirname = NULL;
+	const char *fname_rel = NULL;
+	const char *streamname = NULL;
+	char *saved_streamname = NULL;
+	struct files_struct *base_fsp = NULL;
+	bool ok;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	if (ucf_flags & UCF_DFS_PATHNAME) {
+		char *fname = NULL;
+		NTTIME dfs_twrp = 0;
+		status = dfs_redirect(
+			mem_ctx,
+			conn,
+			name_in,
+			ucf_flags,
+			!conn->sconn->using_smb2,
+			&dfs_twrp,
+			&fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("dfs_redirect "
+				"failed for name %s with %s\n",
+				name_in,
+				nt_errstr(status));
+			return status;
+		}
+		name_in = fname;
+		ucf_flags &= ~UCF_DFS_PATHNAME;
+		if (twrp == 0 && dfs_twrp != 0) {
+			twrp = dfs_twrp;
+		}
+	}
+
+	if (is_fake_file_path(name_in) || conn->printer) {
+		smb_fname = synthetic_smb_fname_split(mem_ctx, name_in, posix);
+		if (smb_fname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		smb_fname->st = (SMB_STRUCT_STAT) { .st_ex_nlink = 1 };
+		smb_fname->st.st_ex_btime =
+			(struct timespec){0, SAMBA_UTIME_OMIT};
+		smb_fname->st.st_ex_atime =
+			(struct timespec){0, SAMBA_UTIME_OMIT};
+		smb_fname->st.st_ex_mtime =
+			(struct timespec){0, SAMBA_UTIME_OMIT};
+		smb_fname->st.st_ex_ctime =
+			(struct timespec){0, SAMBA_UTIME_OMIT};
+
+		*_dirfsp = conn->cwd_fsp;
+		*_smb_fname = smb_fname;
+		return NT_STATUS_OK;
+	}
+
+	ok = filename_split_lcomp(
+		talloc_tos(),
+		name_in,
+		posix,
+		&dirname,
+		&fname_rel,
+		&streamname);
+	if (!ok) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (fname_rel[0] == '\0') {
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto fail;
+	}
+
+	if (!posix) {
+		bool name_has_wild = ms_has_wild(dirname);
+		name_has_wild |= ms_has_wild(fname_rel);
+		if (name_has_wild) {
+			status = NT_STATUS_OBJECT_NAME_INVALID;
+			goto fail;
+		}
+	}
+
+	status = filename_convert(
+		mem_ctx,
+		conn,
+		dirname,
+		ucf_flags & ~UCF_PREP_CREATEFILE,
+		0,
+		&smb_dirname);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("filename_convert(%s) failed: %s\n",
+			  dirname,
+			  nt_errstr(status));
+		TALLOC_FREE(dirname);
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			/*
+			 * Except ACCESS_DENIED, everything else leads
+			 * to PATH_NOT_FOUND.
+			 */
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
+		goto fail;
+	}
+	TALLOC_FREE(dirname);
+
+	if (!VALID_STAT_OF_DIR(smb_dirname->st)) {
+		status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		goto fail;
+	}
+
+	if (twrp == 0) {
+		/*
+		 * Might be SMB1 @GMT-style path. filename_convert()
+		 * will have extracted the twrp.
+		 */
+		twrp = smb_dirname->twrp;
+	}
+
+	smb_fname_rel = synthetic_smb_fname(
+		mem_ctx,
+		fname_rel,
+		streamname,
+		NULL,
+		twrp,
+		posix ? SMB_FILENAME_POSIX_PATH : 0);
+	if (smb_fname_rel == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if ((conn->fs_capabilities & FILE_NAMED_STREAMS) &&
+	    is_named_stream(smb_fname_rel)) {
+		/*
+		 * Find the base_fsp first without the stream.
+		 */
+		saved_streamname = smb_fname_rel->stream_name;
+		smb_fname_rel->stream_name = NULL;
+	}
+
+	status = normalize_filename_case(
+		conn, smb_fname_rel->base_name, ucf_flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("normalize_filename_case %s failed: %s\n",
+			smb_fname_rel->base_name,
+			nt_errstr(status));
+		goto fail;
+	}
+
+	status = openat_pathref_fsp_case_insensitive(
+		smb_dirname->fsp, smb_fname_rel, ucf_flags);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+
+		char *normalized = NULL;
+
+		if (VALID_STAT(smb_fname_rel->st)) {
+			/*
+			 * NT_STATUS_OBJECT_NAME_NOT_FOUND is
+			 * misleading: The object exists but might be
+			 * a symlink pointing outside the share.
+			 */
+			goto fail;
+		}
+
+		/*
+		 * Creating a new file
+		 */
+
+		status = filename_convert_normalize_new(
+			smb_fname_rel,
+			conn,
+			smb_fname_rel->base_name,
+			&normalized);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("filename_convert_normalize_new failed: "
+				  "%s\n",
+				  nt_errstr(status));
+			goto fail;
+		}
+		if (normalized != NULL) {
+			smb_fname_rel->base_name = normalized;
+		}
+
+		smb_fname_rel->stream_name = saved_streamname;
+
+		smb_fname = full_path_from_dirfsp_atname(
+			mem_ctx, smb_dirname->fsp, smb_fname_rel);
+		if (smb_fname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	if (saved_streamname == NULL) {
+		smb_fname = smb_fname_rel->fsp->fsp_name;
+		goto done;
+	}
+
+	base_fsp = smb_fname_rel->fsp;
+	smb_fname_fsp_unlink(smb_fname_rel);
+	SET_STAT_INVALID(smb_fname_rel->st);
+
+	smb_fname_rel->stream_name = saved_streamname;
+
+	status = open_stream_pathref_fsp(
+		smb_dirname->fsp, &base_fsp, smb_fname_rel);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+	    !conn->case_sensitive) {
+		char *found = NULL;
+
+		status = get_real_stream_name(
+			smb_fname_rel,
+			base_fsp,
+			smb_fname_rel->stream_name,
+			&found);
+
+		if (NT_STATUS_IS_OK(status)) {
+			smb_fname_rel->stream_name = found;
+			found = NULL;
+			status = open_stream_pathref_fsp(
+				smb_dirname->fsp, &base_fsp, smb_fname_rel);
+		}
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		smb_fname = smb_fname_rel->fsp->fsp_name;
+		goto done;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+	    (ucf_flags & UCF_PREP_CREATEFILE)) {
+		/*
+		 * Creating a new stream
+		 *
+		 * We should save the already-open base fsp for
+		 * create_file_unixpath() somehow.
+		 */
+		smb_fname = full_path_from_dirfsp_atname(
+			mem_ctx, smb_dirname->fsp, smb_fname_rel);
+		if (smb_fname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+done:
+	*_dirfsp = smb_dirname->fsp;
+	*_smb_fname = smb_fname;
+
+	smb_fname_fsp_unlink(smb_fname_rel);
+	TALLOC_FREE(smb_fname_rel);
+	return NT_STATUS_OK;
+
+fail:
+	TALLOC_FREE(smb_dirname);
+	TALLOC_FREE(smb_fname_rel);
 	return status;
 }
 

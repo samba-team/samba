@@ -614,6 +614,106 @@ fail:
 	return status;
 }
 
+/*
+ * Open a stream given an already opened base_fsp. Avoid
+ * non_widelink_open: This is only valid for the case where we have a
+ * valid non-cwd_fsp dirfsp that we can pass to SMB_VFS_OPENAT()
+ */
+NTSTATUS open_stream_pathref_fsp(
+	const struct files_struct *dirfsp,
+	struct files_struct **_base_fsp,
+	struct smb_filename *smb_fname)
+{
+	connection_struct *conn = dirfsp->conn;
+	struct smb_filename *full_fname = NULL;
+	struct files_struct *fsp = NULL;
+	int ret, fd;
+	NTSTATUS status;
+
+	SMB_ASSERT(smb_fname->fsp == NULL);
+	SMB_ASSERT(*_base_fsp != NULL);
+	SMB_ASSERT(is_named_stream(smb_fname));
+	SMB_ASSERT(dirfsp != conn->cwd_fsp);
+
+	status = fsp_new(conn, conn, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	GetTimeOfDay(&fsp->open_time);
+	fsp_set_gen_id(fsp);
+	ZERO_STRUCT(conn->sconn->fsp_fi_cache);
+
+	fsp->fsp_flags.is_pathref = true;
+
+	full_fname = full_path_from_dirfsp_atname(fsp, dirfsp, smb_fname);
+	if (full_fname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	status = fsp_attach_smb_fname(fsp, &full_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	fsp_set_base_fsp(fsp, *_base_fsp);
+
+	/*
+	 * non_widelink_open() not required: See the asserts above,
+	 * this will only open the stream relative to
+	 * dirfsp!=conn->cwd_fsp and fsp->base_fsp!=NULL.
+	 */
+
+	fd = SMB_VFS_OPENAT(
+		conn,
+		dirfsp,
+		smb_fname,
+		fsp,
+		O_RDONLY|O_NONBLOCK|O_NOFOLLOW,
+		0);
+	fsp_set_fd(fsp, fd);
+
+	if (fd == -1) {
+		status = map_nt_error_from_unix(errno);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		goto fail;
+	}
+
+	ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	smb_fname->st = fsp->fsp_name->st;
+
+	fsp->fsp_flags.is_directory = false; /* streams can't be a directory */
+	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
+
+	status = fsp_smb_fname_link(fsp,
+				    &smb_fname->fsp_link,
+				    &smb_fname->fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	DBG_DEBUG("fsp [%s]: OK\n", fsp_str_dbg(fsp));
+
+	talloc_set_destructor(smb_fname, smb_fname_fsp_destructor);
+	return NT_STATUS_OK;
+
+fail:
+	if (fsp != NULL) {
+		fsp_set_base_fsp(fsp, NULL);
+		fd_close(fsp);
+		file_free(NULL, fsp);
+	}
+	return status;
+}
+
 void smb_fname_fsp_unlink(struct smb_filename *smb_fname)
 {
 	talloc_set_destructor(smb_fname, NULL);
