@@ -273,6 +273,11 @@ static void ctdb_restart_recd(struct tevent_context *ev,
 			      struct tevent_timer *te, struct timeval t,
 			      void *private_data);
 
+static bool this_node_is_leader(struct ctdb_recoverd *rec)
+{
+	return rec->recmaster == rec->ctdb->pnn;
+}
+
 /*
   ban a node for a period of time
  */
@@ -1116,7 +1121,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/* Check if the current node is still the recmaster.  It's possible that
 	 * re-election has changed the recmaster.
 	 */
-	if (pnn != rec->recmaster) {
+	if (!this_node_is_leader(rec)) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Recovery master changed to %u, aborting recovery\n",
 		       rec->recmaster));
@@ -1155,7 +1160,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 			if (! ok) {
 				D_ERR("Unable to take recovery lock\n");
 
-				if (pnn != rec->recmaster) {
+				if (!this_node_is_leader(rec)) {
 					D_NOTICE("Recovery master changed to %u,"
 						 " aborting recovery\n",
 						 rec->recmaster);
@@ -1494,7 +1499,7 @@ static void recd_node_rebalance_handler(uint64_t srvid, TDB_DATA data,
 	uint32_t *t;
 	int len;
 
-	if (rec->recmaster != ctdb_get_pnn(ctdb)) {
+	if (!this_node_is_leader(rec)) {
 		return;
 	}
 
@@ -1672,8 +1677,8 @@ static void banning_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 		private_data, struct ctdb_recoverd);
 	uint32_t ban_pnn;
 
-	/* Ignore if we are not recmaster */
-	if (rec->ctdb->pnn != rec->recmaster) {
+	/* Ignore if we are not leader */
+	if (!this_node_is_leader(rec)) {
 		return;
 	}
 
@@ -2108,8 +2113,8 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb,
 	bool need_takeover_run = false;
 	struct ctdb_public_ip_list_old *ips = NULL;
 
-	/* If we are not the recmaster then do some housekeeping */
-	if (rec->recmaster != pnn) {
+	/* If we are not the leader then do some housekeeping */
+	if (!this_node_is_leader(rec)) {
 		/* Ignore any IP reallocate requests - only recmaster
 		 * processes them
 		 */
@@ -2545,10 +2550,8 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		verify_local_ip_allocation(ctdb, rec, pnn, nodemap);
 	}
 
-	/* if we are not the recmaster then we do not need to check
-	   if recovery is needed
-	 */
-	if (pnn != rec->recmaster) {
+	/* If this node is not the leader then skip recovery checks */
+	if (!this_node_is_leader(rec)) {
 		return;
 	}
 
@@ -2832,7 +2835,7 @@ static void maybe_log_cluster_state(struct tevent_context *ev,
 	unsigned int minutes;
 	unsigned int num_connected;
 
-	if (rec->recmaster != ctdb_get_pnn(ctdb)) {
+	if (!this_node_is_leader(rec)) {
 		goto done;
 	}
 
