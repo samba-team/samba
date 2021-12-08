@@ -7266,7 +7266,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		goto out;
 	}
 
-	dst_exists = SMB_VFS_STAT(conn, smb_fname_dst) == 0;
+	dst_exists = vfs_stat(conn, smb_fname_dst) == 0;
 
 	if(!replace_if_exists && dst_exists) {
 		DEBUG(3, ("rename_internals_fsp: dest exists doing rename "
