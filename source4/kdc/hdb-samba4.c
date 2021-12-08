@@ -530,7 +530,7 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 		return NT_STATUS_ERROR_DS_INCOMPATIBLE_VERSION;
 	}
 
-	*db = talloc(base_ctx, HDB);
+	*db = talloc_zero(base_ctx, HDB);
 	if (!*db) {
 		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 		return NT_STATUS_NO_MEMORY;
