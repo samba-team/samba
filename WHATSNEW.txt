@@ -1,4 +1,123 @@
                    ==============================
+                   Release Notes for Samba 4.15.3
+                         December 08, 2021
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.15 release series.
+
+Important Notes
+===============
+
+There have been a few regressions in the security release 4.15.2:
+
+o CVE-2020-25717: A user on the domain can become root on domain members.
+                  https://www.samba.org/samba/security/CVE-2020-25717.html
+                  PLEASE [RE-]READ!
+                  The instructions have been updated and some workarounds
+                  initially adviced for 4.15.2 are no longer required and
+                  should be reverted in most cases.
+
+o BUG-14902: User with multiple spaces (eg Fred<space><space>Nurk) become
+             un-deletable. While this release should fix this bug, it is
+             adviced to have a look at the bug report for more detailed
+             information, see https://bugzilla.samba.org/show_bug.cgi?id=14902.
+
+Changes since 4.15.2
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14878: Recursive directory delete with veto files is broken in 4.15.0.
+   * BUG 14879: A directory containing dangling symlinks cannot be deleted by
+     SMB2 alone when they are the only entry in the directory.
+   * BUG 14892: SIGSEGV in rmdir_internals/synthetic_pathref - dirfsp is used
+     uninitialized in rmdir_internals().
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14694: MaxQueryDuration not honoured in Samba AD DC LDAP.
+   * BUG 14901: The CVE-2020-25717 username map [script] advice has undesired
+     side effects for the local nt token.
+   * BUG 14902: User with multiple spaces (eg Fred<space><space>Nurk) become
+     un-deletable.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14127: Avoid storing NTTIME_THAW (-2) as value on disk.
+   * BUG 14882: smbXsrv_client_global record validation leads to crash if
+     existing record points at non-existing process.
+   * BUG 14890: Crash in vfs_fruit asking for fsp_get_io_fd() for an XATTR call.
+   * BUG 14897: Samba process doesn't log to logfile.
+   * BUG 14907: set_ea_dos_attribute() fallback calling
+     get_file_handle_for_metadata() triggers locking.tdb assert.
+   * BUG 14922: Kerberos authentication on standalone server in MIT realm
+     broken.
+   * BUG 14923: Segmentation fault when joining the domain.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 14903: Support for ROLE_IPA_DC is incomplete.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14767: rpcclient cannot connect to ncacn_ip_tcp services anymore
+   * BUG 14893: winexe crashes since 4.15.0 after popt parsing.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14908: net ads status -P broken in a clustered environment.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14788: Memory leak if ioctl(FSCTL_VALIDATE_NEGOTIATE_INFO) fails before
+     smbd_smb2_ioctl_send.
+   * BUG 14882: smbXsrv_client_global record validation leads to crash if
+     existing record points at non-existing process.
+   * BUG 14899: winbindd doesn't start when "allow trusted domains" is off.
+   * BUG 14901: The CVE-2020-25717 username map [script] advice has undesired
+     side effects for the local nt token.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14767: rpcclient cannot connect to ncacn_ip_tcp services anymore.
+   * BUG 14883: smbclient login without password using '-N' fails with
+     NT_STATUS_INVALID_PARAMETER on Samba AD DC.
+   * BUG 14912: A schannel client incorrectly detects a downgrade connecting to
+     an AES only server.
+   * BUG 14921: Possible null pointer dereference in winbind.
+
+o  Andreas Schneider <asn@cryptomilk.org>
+   * BUG 14846: Fix -k legacy option for client tools like smbclient, rpcclient,
+     net, etc.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14872: Add Debian 11 CI bootstrap support.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 14694: MaxQueryDuration not honoured in Samba AD DC LDAP.
+   * BUG 14901: The CVE-2020-25717 username map [script] advice has undesired
+     side effects for the local nt token.
+
+o  Andrew Walker <awalker@ixsystems.com>
+   * BUG 14888: Crash in recycle_unlink_internal().
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.15.2
                            November 9, 2021
                    ==============================
@@ -102,8 +221,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ==============================
