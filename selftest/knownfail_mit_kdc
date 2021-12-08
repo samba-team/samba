@@ -548,3 +548,17 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_logon_info_sid_mismatch_nonexisting
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_requester_sid_mismatch_existing
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_requester_sid_mismatch_nonexisting
+#
+# PAC alignment tests
+#
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_7_chars
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_8_chars
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_9_chars
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_11_chars
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_12_chars
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_13_chars
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_15_chars
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_16_chars
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_17_chars
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_19_chars
+^samba.tests.krb5.pac_align_tests.samba.tests.krb5.pac_align_tests.PacAlignTests.test_pac_align_20_chars

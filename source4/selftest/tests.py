@@ -1768,6 +1768,19 @@ planpythontestsuite(
         'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
         'CHECK_CNAME': check_cname
     })
+planoldpythontestsuite(
+    'ad_dc',
+    'samba.tests.krb5.pac_align_tests',
+    environ={
+        'ADMIN_USERNAME': '$DC_USERNAME',
+        'ADMIN_PASSWORD': '$DC_PASSWORD',
+        'STRICT_CHECKING': '0',
+        'FAST_SUPPORT': have_fast_support,
+        'TKT_SIG_SUPPORT': tkt_sig_support,
+        'EXPECT_PAC': expect_pac,
+        'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
+        'CHECK_CNAME': check_cname
+    })
 
 for env in [
         'vampire_dc',
