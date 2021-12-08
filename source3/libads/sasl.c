@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    ads sasl code
    Copyright (C) Andrew Tridgell 2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -117,7 +117,7 @@ static const struct ads_saslwrap_ops ads_sasl_gensec_ops = {
 	.disconnect	= ads_sasl_gensec_disconnect
 };
 
-/* 
+/*
    perform a LDAP/SASL/SPNEGO/{NTLMSSP,KRB5} bind (just how many layers can
    we fit on one socket??)
 */
@@ -496,7 +496,7 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 
 #endif /* HAVE_KRB5 */
 
-/* 
+/*
    this performs a SASL/SPNEGO bind
 */
 static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
@@ -529,7 +529,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	file_save("sasl_spnego.dat", blob.data, blob.length);
 #endif
 
-	/* the server sent us the first part of the SPNEGO exchange in the negprot 
+	/* the server sent us the first part of the SPNEGO exchange in the negprot
 	   reply */
 	if (!spnego_parse_negTokenInit(talloc_tos(), blob, OIDs, &given_principal, NULL) ||
 			OIDs[0] == NULL) {
@@ -557,7 +557,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 #ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
-	    got_kerberos_mechanism) 
+	    got_kerberos_mechanism)
 	{
 		mech = "KRB5";
 
@@ -578,7 +578,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 				  "calling kinit\n", ads_errstr(status)));
 		}
 
-		status = ADS_ERROR_KRB5(ads_kinit_password(ads)); 
+		status = ADS_ERROR_KRB5(ads_kinit_password(ads));
 
 		if (ADS_ERR_OK(status)) {
 			status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
@@ -597,7 +597,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		}
 
 		/* only fallback to NTLMSSP if allowed */
-		if (ADS_ERR_OK(status) || 
+		if (ADS_ERR_OK(status) ||
 		    !(ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP)) {
 			goto done;
 		}
@@ -613,7 +613,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 #endif
 
 	/* lets do NTLMSSP ... this has the big advantage that we don't need
-	   to sync clocks, and we don't rely on special versions of the krb5 
+	   to sync clocks, and we don't rely on special versions of the krb5
 	   library for HMAC_MD4 encryption */
 	mech = "NTLMSSP";
 	status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
