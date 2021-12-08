@@ -276,7 +276,7 @@ static void ctdb_restart_recd(struct tevent_context *ev,
 
 static bool this_node_is_leader(struct ctdb_recoverd *rec)
 {
-	return rec->recmaster == rec->ctdb->pnn;
+	return rec->recmaster == rec->pnn;
 }
 
 /*
@@ -380,7 +380,7 @@ static int update_capabilities(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	capp = ctdb_get_node_capabilities(caps, ctdb_get_pnn(ctdb));
+	capp = ctdb_get_node_capabilities(caps, rec->pnn);
 	if (capp == NULL) {
 		DEBUG(DEBUG_ERR,
 		      (__location__
@@ -569,7 +569,7 @@ static int update_flags(struct ctdb_recoverd *rec,
 		if (local_flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
-		if (remote_pnn == ctdb->pnn) {
+		if (remote_pnn == rec->pnn) {
 			/*
 			 * No remote nodemap for this node since this
 			 * is the local nodemap.  However, still need
@@ -605,7 +605,7 @@ compare_remotes:
 			if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
 				continue;
 			}
-			if (nodemap->nodes[i].pnn == ctdb->pnn) {
+			if (nodemap->nodes[i].pnn == rec->pnn) {
 				continue;
 			}
 
@@ -816,7 +816,7 @@ static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 		ban_state->count = 0;
 
 		/* Banning ourself? */
-		if (ctdb->nodes[i]->pnn == rec->ctdb->pnn) {
+		if (ctdb->nodes[i]->pnn == rec->pnn) {
 			*self_ban = true;
 		}
 	}
@@ -1291,7 +1291,7 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 
 	ZERO_STRUCTP(em);
 
-	em->pnn = rec->ctdb->pnn;
+	em->pnn = rec->pnn;
 	em->priority_time = rec->priority_time;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, rec, &nodemap);
@@ -1300,7 +1300,7 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 		return;
 	}
 
-	rec->node_flags = nodemap->nodes[ctdb->pnn].flags;
+	rec->node_flags = nodemap->nodes[rec->pnn].flags;
 	em->node_flags = rec->node_flags;
 
 	for (i=0;i<nodemap->num;i++) {
@@ -1562,7 +1562,7 @@ static void srvid_disable_and_reply(struct ctdb_recoverd *rec,
 	}
 
 	/* Returning our PNN tells the caller that we succeeded */
-	ret = ctdb_get_pnn(ctdb);
+	ret = rec->pnn;
 done:
 	result.dsize = sizeof(int32_t);
 	result.dptr  = (uint8_t *)&ret;
@@ -1649,7 +1649,7 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 	rec->reallocate_requests = NULL;
 
 	if (do_takeover_run(rec, rec->nodemap)) {
-		ret = ctdb_get_pnn(ctdb);
+		ret = rec->pnn;
 	} else {
 		ret = -1;
 	}
@@ -1697,7 +1697,7 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	struct election_message *em = (struct election_message *)data.dptr;
 
 	/* Ignore election packets from ourself */
-	if (ctdb->pnn == em->pnn) {
+	if (rec->pnn == em->pnn) {
 		return;
 	}
 
@@ -2043,7 +2043,7 @@ static bool interfaces_have_changed(struct ctdb_context *ctdb,
 	/* Read the interfaces from the local node */
 	if (ctdb_ctrl_get_ifaces(ctdb, CONTROL_TIMEOUT(),
 				 CTDB_CURRENT_NODE, mem_ctx, &ifaces) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get interfaces from local node %u\n", ctdb->pnn));
+		D_ERR("Unable to get interfaces from local node %u\n", rec->pnn);
 		/* We could return an error.  However, this will be
 		 * rare so we'll decide that the interfaces have
 		 * actually changed, just in case.
@@ -2310,7 +2310,6 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 				     TALLOC_CTX *mem_ctx)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
-	uint32_t pnn = ctdb_get_pnn(ctdb);
 	struct ctdb_node_map_old *nodemap = rec->nodemap;
 	struct ctdb_node_map_old *recmaster_nodemap = NULL;
 	int ret;
@@ -2334,11 +2333,11 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 					rec->recmaster,
 					CTDB_CAP_RECMASTER) &&
 	    (rec->ctdb->capabilities & CTDB_CAP_RECMASTER) &&
-	    !(nodemap->nodes[pnn].flags & NODE_FLAGS_INACTIVE)) {
+	    !(nodemap->nodes[rec->pnn].flags & NODE_FLAGS_INACTIVE)) {
 		DEBUG(DEBUG_ERR,
 		      (" Current recmaster node %u does not have CAP_RECMASTER,"
 		       " but we (node %u) have - force an election\n",
-		       rec->recmaster, pnn));
+		       rec->recmaster, rec->pnn));
 		force_election(rec);
 		return false;
 	}
@@ -2402,7 +2401,6 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		      TALLOC_CTX *mem_ctx)
 {
-	uint32_t pnn;
 	struct ctdb_node_map_old *nodemap=NULL;
 	struct ctdb_node_map_old **remote_nodemaps=NULL;
 	struct ctdb_vnn_map *vnnmap=NULL;
@@ -2451,19 +2449,21 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	pnn = ctdb_get_pnn(ctdb);
-
 	/* get nodemap */
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), pnn, rec, &nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb,
+				   CONTROL_TIMEOUT(),
+				   rec->pnn,
+				   rec,
+				   &nodemap);
 	if (ret != 0) {
-		DBG_ERR("Unable to get nodemap from node %"PRIu32"\n", pnn);
+		DBG_ERR("Unable to get nodemap from node %"PRIu32"\n", rec->pnn);
 		return;
 	}
 	talloc_free(rec->nodemap);
 	rec->nodemap = nodemap;
 
 	/* remember our own node flags */
-	rec->node_flags = nodemap->nodes[pnn].flags;
+	rec->node_flags = nodemap->nodes[rec->pnn].flags;
 
 	ban_misbehaving_nodes(rec, &self_ban);
 	if (self_ban) {
@@ -2566,7 +2566,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 	/* verify that all active nodes agree that we are the recmaster */
-	switch (verify_recmaster(rec, nodemap, pnn)) {
+	switch (verify_recmaster(rec, nodemap, rec->pnn)) {
 	case MONITOR_RECOVERY_NEEDED:
 		/* can not happen */
 		return;
@@ -2581,9 +2581,13 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 
 	/* get the vnnmap */
-	ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &vnnmap);
+	ret = ctdb_ctrl_getvnnmap(ctdb,
+				  CONTROL_TIMEOUT(),
+				  rec->pnn,
+				  mem_ctx,
+				  &vnnmap);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get vnnmap from node %u\n", pnn));
+		DBG_ERR("Unable to get vnnmap from node %u\n", rec->pnn);
 		return;
 	}
 
@@ -2613,7 +2617,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		/* We must already hold the recovery lock */
 		if (!ctdb_recovery_have_lock(rec)) {
 			DEBUG(DEBUG_ERR,("Failed recovery lock sanity check.  Force a recovery\n"));
-			ctdb_set_culprit(rec, ctdb->pnn);
+			ctdb_set_culprit(rec, rec->pnn);
 			do_recovery(rec, mem_ctx);
 			return;
 		}
@@ -2631,7 +2635,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* verify that all other nodes have the same nodemap as we have
 	*/
 	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].pnn == ctdb->pnn) {
+		if (nodemap->nodes[j].pnn == rec->pnn) {
 			continue;
 		}
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
@@ -2684,7 +2688,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	if (vnnmap->size != num_lmasters) {
 		DEBUG(DEBUG_ERR, (__location__ " The vnnmap count is different from the number of active lmaster nodes: %u vs %u\n",
 			  vnnmap->size, num_lmasters));
-		ctdb_set_culprit(rec, ctdb->pnn);
+		ctdb_set_culprit(rec, rec->pnn);
 		do_recovery(rec, mem_ctx);
 		return;
 	}
@@ -2702,7 +2706,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 						 CTDB_CAP_LMASTER)) {
 			continue;
 		}
-		if (nodemap->nodes[j].pnn == pnn) {
+		if (nodemap->nodes[j].pnn == rec->pnn) {
 			continue;
 		}
 
@@ -2728,7 +2732,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		if (nodemap->nodes[j].pnn == pnn) {
+		if (nodemap->nodes[j].pnn == rec->pnn) {
 			continue;
 		}
 
@@ -2835,7 +2839,7 @@ static void maybe_log_cluster_state(struct tevent_context *ev,
 	for (i = 0; i < rec->nodemap->num; i++) {
 		struct ctdb_node_and_flags *n = &rec->nodemap->nodes[i];
 
-		if (n->pnn == ctdb_get_pnn(ctdb)) {
+		if (n->pnn == rec->pnn) {
 			continue;
 		}
 		if ((n->flags & NODE_FLAGS_DELETED) != 0) {
