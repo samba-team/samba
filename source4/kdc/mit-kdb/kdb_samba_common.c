@@ -35,7 +35,8 @@
 
 struct mit_samba_context *ks_get_context(krb5_context kcontext)
 {
-	void *db_ctx;
+	struct mit_samba_context *mit_ctx = NULL;
+	void *db_ctx = NULL;
 	krb5_error_code code;
 
 	code = krb5_db_get_context(kcontext, &db_ctx);
@@ -43,7 +44,9 @@ struct mit_samba_context *ks_get_context(krb5_context kcontext)
 		return NULL;
 	}
 
-	return (struct mit_samba_context *)db_ctx;
+	mit_ctx = talloc_get_type_abort(db_ctx, struct mit_samba_context);
+
+	return mit_ctx;
 }
 
 bool ks_data_eq_string(krb5_data d, const char *s)
