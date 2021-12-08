@@ -7984,9 +7984,9 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	} else {
 		if (!check_both_error(__LINE__, status, ERRDOS, ERRbadpath,
-				NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+				NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			printf("POSIX open of %s should have failed "
-				"with NT_STATUS_OBJECT_PATH_NOT_FOUND, "
+				"with NT_STATUS_OBJECT_NAME_NOT_FOUND, "
 				"failed with %s instead.\n",
 				sname, nt_errstr(status));
 			goto out;
