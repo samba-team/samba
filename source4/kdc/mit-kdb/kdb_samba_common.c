@@ -46,6 +46,12 @@ struct mit_samba_context *ks_get_context(krb5_context kcontext)
 
 	mit_ctx = talloc_get_type_abort(db_ctx, struct mit_samba_context);
 
+	/*
+	 * This is nomrally the starting point for Kerberos operations in
+	 * MIT KRB5, so reset errno to 0 for possible com_err debug messages.
+	 */
+	errno = 0;
+
 	return mit_ctx;
 }
 
