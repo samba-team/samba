@@ -1,0 +1,7 @@
+#
+# MIT and Heimdal currently fails some as_req_no_preauth tests against FL 2003.  It is unclear if we should care.
+#
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_enc_timestamp_aes128_rc4.*fl2003dc
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_enc_timestamp_mac_aes128_rc4.*fl2003dc
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_no_preauth.*aes.*rc4.*fl2003dc
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_no_preauth.*rc4.*aes.*fl2003dc
