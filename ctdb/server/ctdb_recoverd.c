@@ -1531,10 +1531,11 @@ static void recd_node_rebalance_handler(uint64_t srvid, TDB_DATA data,
 
 
 
-static void srvid_disable_and_reply(struct ctdb_context *ctdb,
+static void srvid_disable_and_reply(struct ctdb_recoverd *rec,
 				    TDB_DATA data,
 				    struct ctdb_op_state *op_state)
 {
+	struct ctdb_context *ctdb = rec->ctdb;
 	struct ctdb_disable_message *r;
 	uint32_t timeout;
 	TDB_DATA result;
@@ -1574,7 +1575,7 @@ static void disable_takeover_runs_handler(uint64_t srvid, TDB_DATA data,
 	struct ctdb_recoverd *rec = talloc_get_type(
 		private_data, struct ctdb_recoverd);
 
-	srvid_disable_and_reply(rec->ctdb, data, rec->takeover_run);
+	srvid_disable_and_reply(rec, data, rec->takeover_run);
 }
 
 /* Backward compatibility for this SRVID */
@@ -1607,7 +1608,7 @@ static void disable_recoveries_handler(uint64_t srvid, TDB_DATA data,
 	struct ctdb_recoverd *rec = talloc_get_type(
 		private_data, struct ctdb_recoverd);
 
-	srvid_disable_and_reply(rec->ctdb, data, rec->recovery);
+	srvid_disable_and_reply(rec, data, rec->recovery);
 }
 
 /*
