@@ -390,16 +390,8 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 			torture_assert(test_context->tctx,
 				       ok,
 				       "torture_check_krb5_error failed");
-		} else if (test_context->packet_count == 1) {
-			ok = torture_check_krb5_error(test_context,
-						      recv_buf,
-						      KRB5KRB_ERR_RESPONSE_TOO_BIG,
-						      false);
-			torture_assert(test_context->tctx,
-				       ok,
-				       "torture_check_krb5_error failed");
 		} else if ((decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used) == 0)
-			   && (test_context->packet_count == 2)) {
+			   && (test_context->packet_count == 1)) {
 			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
 			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
 			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KRB_ERR_RESPONSE_TOO_BIG - KRB5KDC_ERR_NONE,
@@ -413,7 +405,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 			torture_assert_int_equal(test_context->tctx, test_context->as_rep.pvno, 5, "Got wrong as_rep->pvno");
 			free_AS_REP(&test_context->as_rep);
 		}
-		torture_assert(test_context->tctx, test_context->packet_count < 3, "too many packets");
+		torture_assert(test_context->tctx, test_context->packet_count < 2, "too many packets");
 		free_AS_REQ(&test_context->as_req);
 		break;
 
