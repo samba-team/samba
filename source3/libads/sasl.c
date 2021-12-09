@@ -604,7 +604,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 		DEBUG(1,("ads_sasl_spnego_gensec_bind(KRB5) failed "
 			 "for %s/%s with user[%s] realm[%s]: %s, "
-			 "fallback to NTLMSSP\n",
+			 "try to fallback to NTLMSSP\n",
 			 p.service, p.hostname,
 			 ads->auth.user_name,
 			 ads->auth.realm,
@@ -616,6 +616,14 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	   to sync clocks, and we don't rely on special versions of the krb5
 	   library for HMAC_MD4 encryption */
 	mech = "NTLMSSP";
+
+	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+		DBG_WARNING("We can't fallback to NTLMSSP, weak crypto is"
+			    " disallowed.\n");
+		status = ADS_ERROR_NT(NT_STATUS_NETWORK_CREDENTIAL_CONFLICT);
+		goto done;
+	}
+
 	status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
 					     CRED_USE_KERBEROS_DISABLED,
 					     p.service, p.hostname,
