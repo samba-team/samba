@@ -282,10 +282,11 @@ static bool this_node_is_leader(struct ctdb_recoverd *rec)
 /*
   ban a node for a period of time
  */
-static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_time)
+static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn)
 {
 	int ret;
 	struct ctdb_context *ctdb = rec->ctdb;
+	uint32_t ban_time = ctdb->tunable.recovery_ban_period;
 	struct ctdb_ban_state bantime;
 
 	if (!ctdb_validate_pnn(ctdb, pnn)) {
@@ -700,13 +701,9 @@ static void take_reclock_handler(char status,
 
 		{
 			struct ctdb_recoverd *rec = s->rec;
-			struct ctdb_context *ctdb = rec->ctdb;
-			uint32_t pnn = ctdb_get_pnn(ctdb);
 
 			D_ERR("Banning this node\n");
-			ctdb_ban_node(rec,
-				      pnn,
-				      ctdb->tunable.recovery_ban_period);
+			ctdb_ban_node(rec, rec->pnn);
 		}
 	}
 
@@ -812,10 +809,10 @@ static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 			continue;
 		}
 
-		DEBUG(DEBUG_NOTICE,("Node %u reached %u banning credits - banning it for %u seconds\n",
-			ctdb->nodes[i]->pnn, ban_state->count,
-			ctdb->tunable.recovery_ban_period));
-		ctdb_ban_node(rec, ctdb->nodes[i]->pnn, ctdb->tunable.recovery_ban_period);
+		D_NOTICE("Node %u reached %u banning credits\n",
+			 ctdb->nodes[i]->pnn,
+			 ban_state->count);
+		ctdb_ban_node(rec, ctdb->nodes[i]->pnn);
 		ban_state->count = 0;
 
 		/* Banning ourself? */
@@ -1175,12 +1172,8 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 					goto fail;
 				}
 
-				D_ERR("Abort recovery, "
-				      "ban this node for %u seconds\n",
-				      ctdb->tunable.recovery_ban_period);
-				ctdb_ban_node(rec,
-					      rec->pnn,
-					      ctdb->tunable.recovery_ban_period);
+				D_ERR("Abort recovery, ban this node\n");
+				ctdb_ban_node(rec, rec->pnn);
 				goto fail;
 			}
 			D_NOTICE("Recovery lock taken successfully\n");
