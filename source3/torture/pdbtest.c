@@ -191,7 +191,7 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 	} else if (pdb_get_hours_len(s1) != 0) {
 		d1_buf = pdb_get_hours(s1);
 		d2_buf = pdb_get_hours(s2);
-		if (d2_buf == NULL && d2_buf != NULL) {
+		if (d2_buf == NULL && d1_buf != NULL) {
 			DEBUG(0, ("Logon hours is not set\n"));
 			ret = False;
 		} else if (d1_buf == NULL) {
