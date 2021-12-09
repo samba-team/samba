@@ -2736,6 +2736,22 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 		return ret;
 	}
 
+	el = ldb_msg_find_element(skdc_entry->msg, "msDS-AllowedToDelegateTo");
+	if (el == NULL) {
+		goto bad_option;
+	}
+
+	/*
+	 * This is the Microsoft forwardable flag behavior.
+	 *
+	 * If the proxy (target) principal is NULL, and we have any authorized
+	 * delegation target, allow to forward.
+	 */
+	if (el->num_values >= 0 && target_principal == NULL) {
+		return 0;
+	}
+
+
 	/*
 	 * The main heimdal code already checked that the target_principal
 	 * belongs to the same realm as the client.
@@ -2764,11 +2780,6 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 				       "samba_kdc_check_s4u2proxy:"
 				       " talloc_strdup() failed!");
 		return ret;
-	}
-
-	el = ldb_msg_find_element(skdc_entry->msg, "msDS-AllowedToDelegateTo");
-	if (el == NULL) {
-		goto bad_option;
 	}
 
 	val = data_blob_string_const(target_principal_name);
