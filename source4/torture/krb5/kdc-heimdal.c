@@ -145,7 +145,7 @@ static bool torture_check_krb5_error(struct torture_krb5_context *test_context,
 	rc = decode_KRB_ERROR(reply->data, reply->length, &error, &used);
 	torture_assert_int_equal(test_context->tctx,
 				 rc, 0,
-				 "decode_AS_REP failed");
+				 "decode_KRB_ERROR failed");
 
 	torture_assert_int_equal(test_context->tctx,
 				 used, reply->length,
