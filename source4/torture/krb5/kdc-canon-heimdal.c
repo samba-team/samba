@@ -202,12 +202,6 @@ static bool test_accept_ticket(struct torture_context *tctx,
  * sent to the network, and before they are processed on the recv
  * side.
  *
- * The torture_krb5_pre_send_test() and torture_krb5_post_recv_test()
- * functions are implement the actual tests.
- *
- * When this asserts, the caller will get a spurious 'cannot contact
- * any KDC' message.
- *
  */
 static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context context,
 								   void *data, /* struct torture_krb5_context */
