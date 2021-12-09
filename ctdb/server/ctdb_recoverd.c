@@ -856,7 +856,6 @@ static int helper_run(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	struct tevent_fd *fde;
 	const char **args;
 	int nargs, ret;
-	uint32_t recmaster = rec->recmaster;
 
 	state = talloc_zero(mem_ctx, struct helper_state);
 	if (state == NULL) {
@@ -918,8 +917,7 @@ static int helper_run(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	while (!state->done) {
 		tevent_loop_once(rec->ctdb->ev);
 
-		/* If recmaster changes, we have lost election */
-		if (recmaster != rec->recmaster) {
+		if (!this_node_is_leader(rec)) {
 			D_ERR("Recmaster changed to %u, aborting %s\n",
 			      rec->recmaster, type);
 			state->result = 1;
