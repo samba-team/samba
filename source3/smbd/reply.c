@@ -7185,11 +7185,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	bool dst_exists, old_is_stream, new_is_stream;
 	int ret;
 
-	status = check_name(conn, smb_fname_dst_in);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	status = parent_dirname_compatible_open(conn, smb_fname_dst_in);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
