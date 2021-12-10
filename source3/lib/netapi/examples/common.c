@@ -167,7 +167,9 @@ char *netapi_read_file(const char *filename, uint32_t *psize)
 	if (file != NULL) {
 		fclose(file);
 	}
-	close(fd);
+	if (fd >= 0) {
+		close(fd);
+	}
 
 	return p;
 }
