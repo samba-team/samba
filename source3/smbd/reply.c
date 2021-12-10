@@ -7190,11 +7190,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	bool case_preserve = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
 				true : conn->case_preserve;
 
-	status = check_name(conn, smb_fname_dst_in);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	status = parent_dirname_compatible_open(conn, smb_fname_dst_in);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
