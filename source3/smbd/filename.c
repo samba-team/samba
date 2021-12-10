@@ -1430,7 +1430,7 @@ static NTSTATUS check_veto_path(connection_struct *conn,
  a valid one for the user to access.
 ****************************************************************************/
 
-NTSTATUS check_name(connection_struct *conn,
+static NTSTATUS check_name(connection_struct *conn,
 			const struct smb_filename *smb_fname)
 {
 	NTSTATUS status = check_veto_path(conn, smb_fname);

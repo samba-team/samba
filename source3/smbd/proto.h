@@ -358,8 +358,6 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      NTTIME twrp,
 		      struct smb_filename **smb_fname,
 		      uint32_t ucf_flags);
-NTSTATUS check_name(connection_struct *conn,
-			const struct smb_filename *smb_fname);
 NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 				    uint32_t ucf_flags,
 				    NTTIME twrp);
