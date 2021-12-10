@@ -1625,40 +1625,6 @@ void reply_dskattr(struct smb_request *req)
 	return;
 }
 
-#if 0
-/*
- * Utility function to split the filename from the directory.
- */
-static NTSTATUS split_fname_dir_mask(TALLOC_CTX *ctx, const char *fname_in,
-				     char **fname_dir_out,
-				     char **fname_mask_out)
-{
-	const char *p = NULL;
-	char *fname_dir = NULL;
-	char *fname_mask = NULL;
-
-	p = strrchr_m(fname_in, '/');
-	if (!p) {
-		fname_dir = talloc_strdup(ctx, ".");
-		fname_mask = talloc_strdup(ctx, fname_in);
-	} else {
-		fname_dir = talloc_strndup(ctx, fname_in,
-		    PTR_DIFF(p, fname_in));
-		fname_mask = talloc_strdup(ctx, p+1);
-	}
-
-	if (!fname_dir || !fname_mask) {
-		TALLOC_FREE(fname_dir);
-		TALLOC_FREE(fname_mask);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*fname_dir_out = fname_dir;
-	*fname_mask_out = fname_mask;
-	return NT_STATUS_OK;
-}
-#endif
-
 /****************************************************************************
  Make a dir struct.
 ****************************************************************************/
