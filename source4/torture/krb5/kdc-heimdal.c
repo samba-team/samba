@@ -748,7 +748,6 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	const char *expected_principal_string;
 	krb5_get_init_creds_opt *krb_options = NULL;
 	const char *realm;
-	const char *krb5_service = torture_setting_string(tctx, "krb5-service", "host");
 	const char *krb5_hostname = torture_setting_string(tctx, "krb5-hostname", "");
 
 
@@ -909,6 +908,12 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	{
 		char *got_principal_string;
 		char *assertion_message;
+
+		if (krb5_hostname[0] != '\0') {
+			torture_assert_int_equal(tctx, k5ret, KRB5KRB_AP_ERR_BAD_INTEGRITY, "krb5_get_init_creds_password should have failed");
+			return true;
+		}
+
 		torture_assert_int_equal(tctx, k5ret, 0, "krb5_get_init_creds_password failed");
 
 		torture_assert_int_equal(tctx,
@@ -932,24 +937,6 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 							    my_creds.client,
 							    principal),
 			       assertion_message);
-
-		if (krb5_hostname[0] == '\0') {
-			break;
-		}
-
-		torture_assert_str_equal(tctx,
-					 my_creds.server->name.name_string.val[0],
-					 krb5_service,
-					 "Mismatch in name[0] between AS_REP and expected response");
-		torture_assert_str_equal(tctx,
-					 my_creds.server->name.name_string.val[1],
-					 krb5_hostname,
-					 "Mismatch in name[1] between AS_REP and expected response");
-
-		torture_assert_str_equal(tctx,
-					 my_creds.server->realm,
-					 realm,
-					 "Mismatch in server realm in AS_REP, expected krbtgt/REALM@REALM");
 
 		break;
 	}
