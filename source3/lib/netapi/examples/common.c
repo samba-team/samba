@@ -126,6 +126,7 @@ char *netapi_read_file(const char *filename, uint32_t *psize)
 	}
 
 	while (size < maxsize) {
+		char *tmp = NULL;
 		size_t newbufsize;
 		size_t nread;
 
@@ -136,10 +137,12 @@ char *netapi_read_file(const char *filename, uint32_t *psize)
 			goto fail; /* overflow */
 		}
 
-		p = realloc(p, sizeof(char)*newbufsize);
-		if (p == NULL) {
+		tmp = realloc(p, sizeof(char) * newbufsize);
+		if (tmp == NULL) {
+			free(p);
 			goto fail;
 		}
+		p = tmp;
 
 		nread = fread(p+size, 1, chunk, file);
 		size += nread;
@@ -151,6 +154,7 @@ char *netapi_read_file(const char *filename, uint32_t *psize)
 
 	err = ferror(file);
 	if (err != 0) {
+		free(p);
 		goto fail;
 	}
 
