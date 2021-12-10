@@ -30,7 +30,9 @@ static WERROR libnet_odj_compose_ODJ_WIN7BLOB(TALLOC_CTX *mem_ctx,
 {
 	char *samaccount;
 	uint32_t len;
-	struct ODJ_POLICY_DNS_DOMAIN_INFO i;
+	struct ODJ_POLICY_DNS_DOMAIN_INFO i = {
+		.Sid = NULL,
+	};
 
 	ZERO_STRUCTP(b);
 
