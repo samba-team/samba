@@ -607,6 +607,8 @@ static ADS_STATUS ads_startup_int(struct net_context *c, bool only_own_domain,
 	char *cp;
 	const char *realm = NULL;
 	bool tried_closest_dc = false;
+	enum credentials_use_kerberos krb5_state =
+		CRED_USE_KERBEROS_DISABLED;
 
 	/* lp_realm() should be handled by a command line param,
 	   However, the join requires that realm be set in smb.conf
@@ -650,9 +652,27 @@ retry:
 		ads->auth.password = smb_xstrdup(c->opt_password);
 	}
 
-	ads->auth.flags |= auth_flags;
 	SAFE_FREE(ads->auth.user_name);
 	ads->auth.user_name = smb_xstrdup(c->opt_user_name);
+
+	ads->auth.flags |= auth_flags;
+
+	/* The ADS code will handle FIPS mode */
+	krb5_state = cli_credentials_get_kerberos_state(c->creds);
+	switch (krb5_state) {
+	case CRED_USE_KERBEROS_REQUIRED:
+		ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
+		ads->auth.flags &= ~ADS_AUTH_ALLOW_NTLMSSP;
+		break;
+	case CRED_USE_KERBEROS_DESIRED:
+		ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
+		ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
+		break;
+	case CRED_USE_KERBEROS_DISABLED:
+		ads->auth.flags |= ADS_AUTH_DISABLE_KERBEROS;
+		ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
+		break;
+	}
 
        /*
         * If the username is of the form "name@realm",
