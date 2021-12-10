@@ -245,3 +245,24 @@ _PUBLIC_ bool data_blob_append(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	return true;
 }
 
+/**
+  pad the length of a data blob to a multiple of
+  'pad'. 'pad' must be a power of two.
+**/
+_PUBLIC_ bool data_blob_pad(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
+			    size_t pad)
+{
+	size_t old_len = blob->length;
+	size_t new_len = (old_len + pad - 1) & ~(pad - 1);
+
+	if (new_len < old_len) {
+		return false;
+	}
+
+	if (!data_blob_realloc(mem_ctx, blob, new_len)) {
+		return false;
+	}
+
+	memset(blob->data + old_len, 0, new_len - old_len);
+	return true;
+}

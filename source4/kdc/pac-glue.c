@@ -109,6 +109,7 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 	union PAC_INFO pac_upn;
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
+	bool ok;
 
 	ZERO_STRUCT(pac_upn);
 
@@ -140,6 +141,11 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 		DEBUG(1, ("PAC UPN_DNS_INFO (presig) push failed: %s\n",
 			  nt_errstr(nt_status)));
 		return nt_status;
+	}
+
+	ok = data_blob_pad(mem_ctx, upn_data, 8);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	return NT_STATUS_OK;
