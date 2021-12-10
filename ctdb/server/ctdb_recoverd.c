@@ -243,7 +243,7 @@ struct ctdb_banning_state {
 	struct timeval last_reported_time;
 };
 
-struct ctdb_recovery_lock_handle;
+struct ctdb_cluster_lock_handle;
 
 /*
   private state of recovery daemon
@@ -271,7 +271,7 @@ struct ctdb_recoverd {
 	uint32_t *force_rebalance_nodes;
 	struct ctdb_node_capabilities *caps;
 	bool frozen_on_inactive;
-	struct ctdb_recovery_lock_handle *recovery_lock_handle;
+	struct ctdb_cluster_lock_handle *cluster_lock_handle;
 	pid_t helper_pid;
 };
 
@@ -506,30 +506,30 @@ static int update_flags_on_all_nodes(struct ctdb_recoverd *rec,
 	return 0;
 }
 
-static bool ctdb_recovery_lock(struct ctdb_recoverd *rec);
-static bool ctdb_recovery_have_lock(struct ctdb_recoverd *rec);
+static bool _cluster_lock_lock(struct ctdb_recoverd *rec);
+static bool cluster_lock_held(struct ctdb_recoverd *rec);
 
 static bool cluster_lock_take(struct ctdb_recoverd *rec)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
-	bool lock_taken;
+	bool have_lock;
 
 	if (ctdb->recovery_lock == NULL) {
 		return true;
 	}
 
-	if (ctdb_recovery_have_lock(rec)) {
-		D_NOTICE("Already holding recovery lock\n");
+	if (cluster_lock_held(rec)) {
+		D_NOTICE("Already holding cluster lock\n");
 		return true;
 	}
 
-	D_NOTICE("Attempting to take recovery lock (%s)\n", ctdb->recovery_lock);
-	lock_taken = ctdb_recovery_lock(rec);
-	if (!lock_taken) {
+	D_NOTICE("Attempting to take cluster lock (%s)\n", ctdb->recovery_lock);
+	have_lock = _cluster_lock_lock(rec);
+	if (!have_lock) {
 		return false;
 	}
 
-	D_NOTICE("Recovery lock taken successfully\n");
+	D_NOTICE("Cluster lock taken successfully\n");
 	return true;
 }
 
@@ -579,7 +579,7 @@ static int leader_broadcast_send(struct ctdb_recoverd *rec, uint32_t pnn)
 }
 
 static int leader_broadcast_loop(struct ctdb_recoverd *rec);
-static void ctdb_recovery_unlock(struct ctdb_recoverd *rec);
+static void cluster_lock_release(struct ctdb_recoverd *rec);
 
 /* This runs continously but only sends the broadcast when leader */
 static void leader_broadcast_loop_handler(struct tevent_context *ev,
@@ -596,8 +596,8 @@ static void leader_broadcast_loop_handler(struct tevent_context *ev,
 			rec->leader = CTDB_UNKNOWN_PNN;
 		}
 		if (rec->ctdb->recovery_lock != NULL &&
-		    rec->recovery_lock_handle != NULL) {
-			ctdb_recovery_unlock(rec);
+		    cluster_lock_held(rec)) {
+			cluster_lock_release(rec);
 		}
 		goto done;
 	}
@@ -793,12 +793,12 @@ static uint32_t new_generation(void)
 	return generation;
 }
 
-static bool ctdb_recovery_have_lock(struct ctdb_recoverd *rec)
+static bool cluster_lock_held(struct ctdb_recoverd *rec)
 {
-	return (rec->recovery_lock_handle != NULL);
+	return (rec->cluster_lock_handle != NULL);
 }
 
-struct ctdb_recovery_lock_handle {
+struct ctdb_cluster_lock_handle {
 	bool done;
 	bool locked;
 	double latency;
@@ -806,12 +806,12 @@ struct ctdb_recovery_lock_handle {
 	struct ctdb_recoverd *rec;
 };
 
-static void take_reclock_handler(char status,
-				 double latency,
-				 void *private_data)
+static void take_cluster_lock_handler(char status,
+				      double latency,
+				      void *private_data)
 {
-	struct ctdb_recovery_lock_handle *s =
-		(struct ctdb_recovery_lock_handle *) private_data;
+	struct ctdb_cluster_lock_handle *s =
+		(struct ctdb_cluster_lock_handle *) private_data;
 
 	s->locked = (status == '0') ;
 
@@ -829,15 +829,15 @@ static void take_reclock_handler(char status,
 		break;
 
 	case '1':
-		D_ERR("Unable to take recovery lock - contention\n");
+		D_ERR("Unable to take cluster lock - contention\n");
 		break;
 
 	case '2':
-		D_ERR("Unable to take recovery lock - timeout\n");
+		D_ERR("Unable to take cluster lock - timeout\n");
 		break;
 
 	default:
-		D_ERR("Unable to take recover lock - unknown error\n");
+		D_ERR("Unable to take cluster lock - unknown error\n");
 
 		{
 			struct ctdb_recoverd *rec = s->rec;
@@ -852,26 +852,26 @@ static void take_reclock_handler(char status,
 
 static void force_election(struct ctdb_recoverd *rec);
 
-static void lost_reclock_handler(void *private_data)
+static void lost_cluster_lock_handler(void *private_data)
 {
 	struct ctdb_recoverd *rec = talloc_get_type_abort(
 		private_data, struct ctdb_recoverd);
 
-	D_ERR("Recovery lock helper terminated\n");
-	TALLOC_FREE(rec->recovery_lock_handle);
+	D_ERR("Cluster lock helper terminated\n");
+	TALLOC_FREE(rec->cluster_lock_handle);
 
 	if (this_node_can_be_leader(rec)) {
 		force_election(rec);
 	}
 }
 
-static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
+static bool _cluster_lock_lock(struct ctdb_recoverd *rec)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	struct ctdb_cluster_mutex_handle *h;
-	struct ctdb_recovery_lock_handle *s;
+	struct ctdb_cluster_lock_handle *s;
 
-	s = talloc_zero(rec, struct ctdb_recovery_lock_handle);
+	s = talloc_zero(rec, struct ctdb_cluster_lock_handle);
 	if (s == NULL) {
 		DBG_ERR("Memory allocation error\n");
 		return false;
@@ -883,16 +883,16 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 			       ctdb,
 			       ctdb->recovery_lock,
 			       120,
-			       take_reclock_handler,
+			       take_cluster_lock_handler,
 			       s,
-			       lost_reclock_handler,
+			       lost_cluster_lock_handler,
 			       rec);
 	if (h == NULL) {
 		talloc_free(s);
 		return false;
 	}
 
-	rec->recovery_lock_handle = s;
+	rec->cluster_lock_handle = s;
 	s->h = h;
 
 	while (! s->done) {
@@ -900,7 +900,7 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 	}
 
 	if (! s->locked) {
-		TALLOC_FREE(rec->recovery_lock_handle);
+		TALLOC_FREE(rec->cluster_lock_handle);
 		return false;
 	}
 
@@ -911,28 +911,28 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 	return true;
 }
 
-static void ctdb_recovery_unlock(struct ctdb_recoverd *rec)
+static void cluster_lock_release(struct ctdb_recoverd *rec)
 {
-	if (rec->recovery_lock_handle == NULL) {
+	if (rec->cluster_lock_handle == NULL) {
 		return;
 	}
 
-	if (! rec->recovery_lock_handle->done) {
+	if (! rec->cluster_lock_handle->done) {
 		/*
-		 * Taking of recovery lock still in progress.  Free
+		 * Taking of cluster lock still in progress.  Free
 		 * the cluster mutex handle to release it but leave
-		 * the recovery lock handle in place to allow taking
+		 * the cluster lock handle in place to allow taking
 		 * of the lock to fail.
 		 */
-		D_NOTICE("Cancelling recovery lock\n");
-		TALLOC_FREE(rec->recovery_lock_handle->h);
-		rec->recovery_lock_handle->done = true;
-		rec->recovery_lock_handle->locked = false;
+		D_NOTICE("Cancelling cluster lock\n");
+		TALLOC_FREE(rec->cluster_lock_handle->h);
+		rec->cluster_lock_handle->done = true;
+		rec->cluster_lock_handle->locked = false;
 		return;
 	}
 
-	D_NOTICE("Releasing recovery lock\n");
-	TALLOC_FREE(rec->recovery_lock_handle);
+	D_NOTICE("Releasing cluster lock\n");
+	TALLOC_FREE(rec->cluster_lock_handle);
 }
 
 static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
@@ -1840,9 +1840,9 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	/* we didn't win */
 	TALLOC_FREE(rec->send_election_te);
 
-	/* Release the recovery lock file */
-	if (ctdb_recovery_have_lock(rec)) {
-		ctdb_recovery_unlock(rec);
+	/* Release the cluster lock file */
+	if (cluster_lock_held(rec)) {
+		cluster_lock_release(rec);
 	}
 
 	/* Set leader to the winner of this round */
@@ -2762,9 +2762,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 
         if (ctdb->recovery_lock != NULL) {
-		/* We must already hold the recovery lock */
-		if (!ctdb_recovery_have_lock(rec)) {
-			DEBUG(DEBUG_ERR,("Failed recovery lock sanity check.  Force a recovery\n"));
+		/* We must already hold the cluster lock */
+		if (!cluster_lock_held(rec)) {
+			D_ERR("Failed cluster lock sanity check\n");
 			ctdb_set_culprit(rec, rec->pnn);
 			do_recovery(rec, mem_ctx);
 			return;
@@ -2944,7 +2944,7 @@ static void recd_sig_term_handler(struct tevent_context *ev,
 		private_data, struct ctdb_recoverd);
 
 	DEBUG(DEBUG_ERR, ("Received SIGTERM, exiting\n"));
-	ctdb_recovery_unlock(rec);
+	cluster_lock_release(rec);
 	exit(0);
 }
 
@@ -3082,7 +3082,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	rec->ctdb = ctdb;
 	rec->leader = CTDB_UNKNOWN_PNN;
 	rec->pnn = ctdb_get_pnn(ctdb);
-	rec->recovery_lock_handle = NULL;
+	rec->cluster_lock_handle = NULL;
 	rec->leader_broadcast_timeout = LEADER_BROADCAST_TIMEOUT;
 	rec->helper_pid = -1;
 
