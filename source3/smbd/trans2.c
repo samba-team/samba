@@ -7477,25 +7477,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					  0,
 					  &smb_fname_dst);
 
-		/* If an error we expect this to be
-		 * NT_STATUS_OBJECT_PATH_NOT_FOUND */
-
 		if (!NT_STATUS_IS_OK(status)) {
-			if(!NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND,
-					    status)) {
-				goto out;
-			}
-			/* Create an smb_fname to call rename_internals_fsp() */
-			smb_fname_dst = synthetic_smb_fname(ctx,
-						base_name,
-						NULL,
-						NULL,
-						smb_fname_src->twrp,
-						smb_fname_src->flags);
-			if (smb_fname_dst == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto out;
-			}
+			goto out;
 		}
 		dst_original_lcomp = get_original_lcomp(smb_fname_dst,
 					conn,
