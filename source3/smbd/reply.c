@@ -3142,6 +3142,10 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	int ret;
 	struct smb2_create_blobs *posx = NULL;
 
+	if (dirtype == 0) {
+		dirtype = FILE_ATTRIBUTE_NORMAL;
+	}
+
 	DEBUG(10,("do_unlink: %s, dirtype = %d\n",
 		  smb_fname_str_dbg(smb_fname),
 		  dirtype));
@@ -3332,9 +3336,6 @@ NTSTATUS unlink_internals(connection_struct *conn,
 	if (!smb_fname->base_name) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
-	}
-	if (dirtype == 0) {
-		dirtype = FILE_ATTRIBUTE_NORMAL;
 	}
 
 	status = check_name(conn, smb_fname);
