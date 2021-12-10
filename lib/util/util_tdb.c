@@ -142,8 +142,11 @@ static int fetch_int32_parser(TDB_DATA key, TDB_DATA data, void *private_data)
 
 static int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, TDB_DATA key)
 {
-	int v = -1;
-	tdb_parse_record(tdb, key, fetch_int32_parser, &v);
+	int32_t v = -1;
+	int32_t ret = tdb_parse_record(tdb, key, fetch_int32_parser, &v);
+	if (ret == -1) {
+		return ret;
+	}
 	return v;
 }
 
