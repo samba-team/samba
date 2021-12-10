@@ -509,12 +509,17 @@ static int update_flags_on_all_nodes(struct ctdb_recoverd *rec,
 static bool _cluster_lock_lock(struct ctdb_recoverd *rec);
 static bool cluster_lock_held(struct ctdb_recoverd *rec);
 
+static bool cluster_lock_enabled(struct ctdb_recoverd *rec)
+{
+	return rec->ctdb->recovery_lock != NULL;
+}
+
 static bool cluster_lock_take(struct ctdb_recoverd *rec)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	bool have_lock;
 
-	if (ctdb->recovery_lock == NULL) {
+	if (!cluster_lock_enabled(rec)) {
 		return true;
 	}
 
@@ -595,8 +600,7 @@ static void leader_broadcast_loop_handler(struct tevent_context *ev,
 		if (this_node_is_leader(rec)) {
 			rec->leader = CTDB_UNKNOWN_PNN;
 		}
-		if (rec->ctdb->recovery_lock != NULL &&
-		    cluster_lock_held(rec)) {
+		if (cluster_lock_enabled(rec) && cluster_lock_held(rec)) {
 			cluster_lock_release(rec);
 		}
 		goto done;
@@ -1282,7 +1286,7 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 		goto fail;
 	}
 
-	if (ctdb->recovery_lock != NULL) {
+	if (cluster_lock_enabled(rec)) {
 		bool ok;
 
 		ok = cluster_lock_take(rec);
@@ -2760,8 +2764,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		break;
 	}
 
-
-        if (ctdb->recovery_lock != NULL) {
+	if (cluster_lock_enabled(rec)) {
 		/* We must already hold the cluster lock */
 		if (!cluster_lock_held(rec)) {
 			D_ERR("Failed cluster lock sanity check\n");
@@ -3111,7 +3114,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 		exit(1);
 	}
 
-	if (ctdb->recovery_lock == NULL) {
+	if (!cluster_lock_enabled(rec)) {
 		struct tevent_timer *tt;
 
 		tt = tevent_add_timer(ctdb->ev,
