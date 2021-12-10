@@ -3130,10 +3130,10 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
  * unlink a file with all relevant access checks
  *******************************************************************/
 
-static NTSTATUS do_unlink(connection_struct *conn,
+NTSTATUS unlink_internals(connection_struct *conn,
 			struct smb_request *req,
-			struct smb_filename *smb_fname,
-			uint32_t dirtype)
+			uint32_t dirtype,
+			struct smb_filename *smb_fname)
 {
 	uint32_t fattr;
 	files_struct *fsp;
@@ -3274,6 +3274,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	return close_file(req, fsp, NORMAL_CLOSE);
 }
 
+#if 0
 /****************************************************************************
  The guts of the unlink command, split out so it may be called by the NT SMB
  code.
@@ -3351,6 +3352,7 @@ NTSTATUS unlink_internals(connection_struct *conn,
 	TALLOC_FREE(fname_mask);
 	return status;
 }
+#endif
 
 /****************************************************************************
  Reply to a unlink
