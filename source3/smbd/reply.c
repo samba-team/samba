@@ -1625,6 +1625,7 @@ void reply_dskattr(struct smb_request *req)
 	return;
 }
 
+#if 0
 /*
  * Utility function to split the filename from the directory.
  */
@@ -1656,6 +1657,7 @@ static NTSTATUS split_fname_dir_mask(TALLOC_CTX *ctx, const char *fname_in,
 	*fname_mask_out = fname_mask;
 	return NT_STATUS_OK;
 }
+#endif
 
 /****************************************************************************
  Make a dir struct.
@@ -7623,11 +7625,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			bool replace_if_exists,
 			uint32_t access_mask)
 {
-	char *fname_src_dir = NULL;
-	struct smb_filename *smb_fname_src_dir = NULL;
-	char *fname_src_mask = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	char *talloced = NULL;
 	int create_options = 0;
 	struct smb2_create_blobs *posx = NULL;
 	int rc;
@@ -7638,43 +7636,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	bool short_case_preserve = posix_pathname ? true :
 					conn->short_case_preserve;
 
-	/*
-	 * Split the old name into directory and last component
-	 * strings. Note that unix_convert may have stripped off a
-	 * leading ./ from both name and newname if the rename is
-	 * at the root of the share. We need to make sure either both
-	 * name and newname contain a / character or neither of them do.
-	 */
-
-	/* Split up the directory from the filename/mask. */
-	status = split_fname_dir_mask(ctx, smb_fname_src->base_name,
-				      &fname_src_dir, &fname_src_mask);
-	if (!NT_STATUS_IS_OK(status)) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
-	/*
-	 * We should only check the mangled cache
-	 * here if unix_convert failed. This means
-	 * that the path in 'mask' doesn't exist
-	 * on the file system and so we need to look
-	 * for a possible mangle. This patch from
-	 * Tine Smukavec <valentin.smukavec@hermes.si>.
-	 */
-
-	if (!VALID_STAT(smb_fname_src->st) &&
-	    !posix_pathname &&
-	    mangle_is_mangled(fname_src_mask, conn->params)) {
-		char *new_mask = NULL;
-		mangle_lookup_name_from_8_3(ctx, fname_src_mask, &new_mask,
-					    conn->params);
-		if (new_mask) {
-			TALLOC_FREE(fname_src_mask);
-			fname_src_mask = new_mask;
-		}
-	}
-
 	if (posix_pathname) {
 		status = make_smb2_posix_create_ctx(talloc_tos(), &posx, 0777);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -7682,27 +7643,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 				    nt_errstr(status));
 			goto out;
 		}
-	}
-
-	/*
-	 * Only one file needs to be renamed. Append the mask back
-	 * onto the directory.
-	 */
-	TALLOC_FREE(smb_fname_src->base_name);
-	if (ISDOT(fname_src_dir)) {
-		/* Ensure we use canonical names on open. */
-		smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
-						"%s",
-						fname_src_mask);
-	} else {
-		smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
-						"%s/%s",
-						fname_src_dir,
-						fname_src_mask);
-	}
-	if (!smb_fname_src->base_name) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
 	}
 
 	DBG_NOTICE("case_sensitive = %d, "
@@ -7787,10 +7727,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
  out:
 	TALLOC_FREE(posx);
-	TALLOC_FREE(talloced);
-	TALLOC_FREE(smb_fname_src_dir);
-	TALLOC_FREE(fname_src_dir);
-	TALLOC_FREE(fname_src_mask);
 	return status;
 }
 
