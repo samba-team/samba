@@ -3146,9 +3146,9 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		dirtype = FILE_ATTRIBUTE_NORMAL;
 	}
 
-	DEBUG(10,("do_unlink: %s, dirtype = %d\n",
+	DBG_DEBUG("%s, dirtype = %d\n",
 		  smb_fname_str_dbg(smb_fname),
-		  dirtype));
+		  dirtype);
 
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
@@ -3248,17 +3248,17 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	TALLOC_FREE(posx);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("SMB_VFS_CREATEFILE failed: %s\n",
-			   nt_errstr(status)));
+		DBG_DEBUG("SMB_VFS_CREATEFILE failed: %s\n",
+			   nt_errstr(status));
 		return status;
 	}
 
 	status = can_set_delete_on_close(fsp, fattr);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("do_unlink can_set_delete_on_close for file %s - "
+		DBG_DEBUG("can_set_delete_on_close for file %s - "
 			"(%s)\n",
 			smb_fname_str_dbg(smb_fname),
-			nt_errstr(status)));
+			nt_errstr(status));
 		close_file(req, fsp, NORMAL_CLOSE);
 		return status;
 	}
