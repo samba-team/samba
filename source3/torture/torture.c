@@ -4391,7 +4391,7 @@ static bool run_trans2test(int dummy)
 	const char *fname = "\\trans2.tst";
 	const char *dname = "\\trans2";
 	const char *fname2 = "\\trans2\\trans2.tst";
-	char *pname;
+	char *pname = NULL;
 	bool correct = True;
 	NTSTATUS status;
 	uint32_t fs_attr;
