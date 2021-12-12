@@ -2099,12 +2099,10 @@ static bool interfaces_have_changed(struct ctdb_context *ctdb,
 
 /* Check that the local allocation of public IP addresses is correct
  * and do some house-keeping */
-static int verify_local_ip_allocation(struct ctdb_context *ctdb,
-				      struct ctdb_recoverd *rec,
-				      uint32_t pnn,
-				      struct ctdb_node_map_old *nodemap)
+static int verify_local_ip_allocation(struct ctdb_recoverd *rec)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct ctdb_context *ctdb = rec->ctdb;
 	unsigned int j;
 	int ret;
 	bool need_takeover_run = false;
@@ -2150,7 +2148,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb,
 
 	for (j=0; j<ips->num; j++) {
 		if (ips->ips[j].pnn == CTDB_UNKNOWN_PNN &&
-		    nodemap->nodes[pnn].flags == 0) {
+		    rec->nodemap->nodes[rec->pnn].flags == 0) {
 			DEBUG(DEBUG_WARNING,
 			      ("Unassigned IP %s can be served by this node\n",
 			       ctdb_addr_to_str(&ips->ips[j].addr)));
@@ -2180,7 +2178,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb,
 	}
 
 	for (j=0; j<ips->num; j++) {
-		if (ips->ips[j].pnn == pnn) {
+		if (ips->ips[j].pnn == rec->pnn) {
 			if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
 				DEBUG(DEBUG_ERR,
 				      ("Assigned IP %s not on an interface\n",
@@ -2205,7 +2203,7 @@ done:
 		DEBUG(DEBUG_NOTICE,("Trigger takeoverrun\n"));
 
 		ZERO_STRUCT(rd);
-		rd.pnn = ctdb->pnn;
+		rd.pnn = rec->pnn;
 		rd.srvid = 0;
 		data.dptr = (uint8_t *)&rd;
 		data.dsize = sizeof(rd);
@@ -2544,7 +2542,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	if (ctdb->recovery_mode == CTDB_RECOVERY_NORMAL) {
 		/* Check if an IP takeover run is needed and trigger one if
 		 * necessary */
-		verify_local_ip_allocation(ctdb, rec, pnn, nodemap);
+		verify_local_ip_allocation(rec);
 	}
 
 	/* If this node is not the leader then skip recovery checks */
