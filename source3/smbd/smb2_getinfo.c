@@ -340,23 +340,11 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			 * handle (returned from an NT SMB). NT5.0 seems
 			 * to do this call. JRA.
 			 */
-
-			if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
-				/* Always do lstat for UNIX calls. */
-				if (SMB_VFS_LSTAT(conn, fsp->fsp_name)) {
-					DEBUG(3,("smbd_smb2_getinfo_send: "
-						 "SMB_VFS_LSTAT of %s failed "
-						 "(%s)\n", fsp_str_dbg(fsp),
-						 strerror(errno)));
-					status = map_nt_error_from_unix(errno);
-					tevent_req_nterror(req, status);
-					return tevent_req_post(req, ev);
-				}
-			} else if (SMB_VFS_STAT(conn, fsp->fsp_name)) {
-				DEBUG(3,("smbd_smb2_getinfo_send: "
-					 "SMB_VFS_STAT of %s failed (%s)\n",
+			int ret = vfs_stat(conn, fsp->fsp_name);
+			if (ret != 0) {
+				DBG_NOTICE("vfs_stat of %s failed (%s)\n",
 					 fsp_str_dbg(fsp),
-					 strerror(errno)));
+					 strerror(errno));
 				status = map_nt_error_from_unix(errno);
 				tevent_req_nterror(req, status);
 				return tevent_req_post(req, ev);
