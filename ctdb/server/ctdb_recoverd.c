@@ -279,6 +279,12 @@ static bool this_node_is_leader(struct ctdb_recoverd *rec)
 	return rec->leader == rec->pnn;
 }
 
+static bool this_node_can_be_leader(struct ctdb_recoverd *rec)
+{
+	return (rec->node_flags & NODE_FLAGS_INACTIVE) == 0 &&
+		(rec->ctdb->capabilities & CTDB_CAP_RECMASTER) != 0;
+}
+
 /*
   ban a node for a period of time
  */
@@ -1308,8 +1314,8 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 		}
 	}
 
-	/* we shouldnt try to win this election if we cant be a recmaster */
-	if ((ctdb->capabilities & CTDB_CAP_RECMASTER) == 0) {
+	if (!this_node_can_be_leader(rec)) {
+		/* Try to lose... */
 		em->num_connected = 0;
 		em->priority_time = timeval_current();
 	}
@@ -1327,18 +1333,7 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 
 	ctdb_election_data(rec, &myem);
 
-	/* we cant win if we don't have the recmaster capability */
-	if ((rec->ctdb->capabilities & CTDB_CAP_RECMASTER) == 0) {
-		return false;
-	}
-
-	/* we cant win if we are banned */
-	if (rec->node_flags & NODE_FLAGS_BANNED) {
-		return false;
-	}
-
-	/* we cant win if we are stopped */
-	if (rec->node_flags & NODE_FLAGS_STOPPED) {
+	if (!this_node_can_be_leader(rec)) {
 		return false;
 	}
 
