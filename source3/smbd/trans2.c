@@ -9250,6 +9250,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	files_struct *fsp = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int data_return_size = 0;
+	int ret;
 
 	if (!params) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -9288,26 +9289,14 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			 * handle (returned from an NT SMB). NT5.0 seems
 			 * to do this call. JRA.
 			 */
-			if (INFO_LEVEL_IS_UNIX(info_level)) {
-				/* Always do lstat for UNIX calls. */
-				if (SMB_VFS_LSTAT(conn, smb_fname)) {
-					DEBUG(3,("call_trans2setfilepathinfo: "
-						 "SMB_VFS_LSTAT of %s failed "
-						 "(%s)\n",
-						 smb_fname_str_dbg(smb_fname),
-						 strerror(errno)));
-					reply_nterror(req, map_nt_error_from_unix(errno));
-					return;
-				}
-			} else {
-				if (SMB_VFS_STAT(conn, smb_fname) != 0) {
-					DEBUG(3,("call_trans2setfilepathinfo: "
-						 "fileinfo of %s failed (%s)\n",
-						 smb_fname_str_dbg(smb_fname),
-						 strerror(errno)));
-					reply_nterror(req, map_nt_error_from_unix(errno));
-					return;
-				}
+			ret = vfs_stat(conn, smb_fname);
+			if (ret != 0) {
+				DBG_NOTICE("vfs_stat of %s failed (%s)\n",
+					smb_fname_str_dbg(smb_fname),
+					strerror(errno));
+				reply_nterror(req,
+					map_nt_error_from_unix(errno));
+				return;
 			}
 		} else if (fsp->print_file) {
 			/*
