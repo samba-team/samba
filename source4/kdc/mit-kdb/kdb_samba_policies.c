@@ -431,7 +431,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 		code = ks_get_pac(context,
 				  client_entry,
 				  server,
-				  client_key,
+				  NULL,
 				  &pac);
 		if (code != 0) {
 			goto done;
@@ -484,7 +484,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 				code = ks_get_pac(context,
 						  client_entry,
 						  server,
-						  client_key,
+						  NULL,
 						  &pac);
 				if (code != 0 && code != ENOENT) {
 					goto done;
