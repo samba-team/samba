@@ -169,11 +169,7 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (posix_pathnames) {
-		ret = SMB_VFS_LSTAT(conn, parent_fname);
-	} else {
-		ret = SMB_VFS_STAT(conn, parent_fname);
-	}
+	ret = vfs_stat(conn, parent_fname);
 
 	/* If the parent stat failed, just continue
 	   with the normal tree walk. */
