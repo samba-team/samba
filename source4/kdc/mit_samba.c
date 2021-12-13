@@ -501,12 +501,6 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		pcred_blob = &cred_blob;
 	}
 
-	code = krb5_pac_init(context, pac);
-	if (code != 0) {
-		talloc_free(tmp_ctx);
-		return code;
-	}
-
 	code = samba_make_krb5_pac(context,
 				   logon_info_blob,
 				   pcred_blob,

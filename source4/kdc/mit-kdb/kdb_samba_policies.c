@@ -428,6 +428,12 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 	 */
 	if (with_pac && generate_pac) {
 		DBG_DEBUG("Generate PAC for AS-REQ [%s]\n", client_name);
+
+		code = krb5_pac_init(context, &pac);
+		if (code != 0) {
+			goto done;
+		}
+
 		code = ks_get_pac(context,
 				  client_entry,
 				  server,
@@ -480,6 +486,11 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 				DBG_DEBUG("Generate PAC for constrained"
 					  "delegation TGS [%s]\n",
 					  client_name);
+
+				code = krb5_pac_init(context, &pac);
+				if (code != 0) {
+					goto done;
+				}
 
 				code = ks_get_pac(context,
 						  client_entry,
