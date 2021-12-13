@@ -433,6 +433,7 @@ int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		      krb5_context context,
 		      krb5_db_entry *client,
+		      krb5_db_entry *server,
 		      krb5_keyblock *client_key,
 		      krb5_pac *pac)
 {
@@ -443,9 +444,12 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	DATA_BLOB **cred_ndr_ptr = NULL;
 	DATA_BLOB cred_blob = data_blob_null;
 	DATA_BLOB *pcred_blob = NULL;
+	DATA_BLOB *pac_attrs_blob = NULL;
+	DATA_BLOB *requester_sid_blob = NULL;
 	NTSTATUS nt_status;
 	krb5_error_code code;
 	struct samba_kdc_entry *skdc_entry;
+	bool is_krbtgt;
 
 	skdc_entry = talloc_get_type_abort(client->e_data,
 					   struct samba_kdc_entry);
@@ -464,12 +468,16 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	}
 #endif
 
+	is_krbtgt = ks_is_tgs_principal(smb_ctx, server->princ);
+
 	nt_status = samba_kdc_get_pac_blobs(tmp_ctx,
 					    skdc_entry,
 					    &logon_info_blob,
 					    cred_ndr_ptr,
 					    &upn_dns_info_blob,
-					    NULL, NULL, NULL,
+					    is_krbtgt ? &pac_attrs_blob : NULL,
+					    NULL,
+					    is_krbtgt ? &requester_sid_blob : NULL,
 					    NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
@@ -497,8 +505,8 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 				   logon_info_blob,
 				   pcred_blob,
 				   upn_dns_info_blob,
-				   NULL,
-				   NULL,
+				   pac_attrs_blob,
+				   requester_sid_blob,
 				   NULL,
 				   pac);
 
