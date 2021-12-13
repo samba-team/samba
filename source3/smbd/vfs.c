@@ -1352,12 +1352,7 @@ int vfs_stat_smb_basename(struct connection_struct *conn,
 	};
 	int ret;
 
-	if (smb_fname.flags & SMB_FILENAME_POSIX_PATH) {
-		ret = SMB_VFS_LSTAT(conn, &smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(conn, &smb_fname);
-	}
-
+	ret = vfs_stat(conn, &smb_fname);
 	if (ret != -1) {
 		*psbuf = smb_fname.st;
 	}
