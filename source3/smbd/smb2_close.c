@@ -177,11 +177,7 @@ static void setup_close_full_information(connection_struct *conn,
 		return;
 	}
 
-	if (posix_open) {
-		ret = SMB_VFS_LSTAT(conn, smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(conn, smb_fname);
-	}
+	ret = vfs_stat(conn, smb_fname);
 	if (ret != 0) {
 		return;
 	}
