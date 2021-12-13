@@ -6166,28 +6166,14 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			}
 		}
 
-		if (INFO_LEVEL_IS_UNIX(info_level) || req->posix_pathnames) {
-			/* Always do lstat for UNIX calls. */
-			if (SMB_VFS_LSTAT(conn, smb_fname)) {
-				DEBUG(3,("call_trans2qfilepathinfo: "
-					 "SMB_VFS_LSTAT of %s failed (%s)\n",
-					 smb_fname_str_dbg(smb_fname),
-					 strerror(errno)));
-				reply_nterror(req,
-					map_nt_error_from_unix(errno));
-				return;
-			}
-
-		} else {
-			if (SMB_VFS_STAT(conn, smb_fname) != 0) {
-				DEBUG(3,("call_trans2qfilepathinfo: "
-					 "SMB_VFS_STAT of %s failed (%s)\n",
-					 smb_fname_str_dbg(smb_fname),
-					 strerror(errno)));
-				reply_nterror(req,
-					map_nt_error_from_unix(errno));
-				return;
-			}
+		ret = vfs_stat(conn, smb_fname);
+		if (ret != 0) {
+			DBG_NOTICE("vfs_stat of %s failed (%s)\n",
+				smb_fname_str_dbg(smb_fname),
+				strerror(errno));
+			reply_nterror(req,
+				map_nt_error_from_unix(errno));
+			return;
 		}
 
 		status = file_name_hash(conn,
