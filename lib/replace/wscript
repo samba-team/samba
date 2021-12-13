@@ -313,6 +313,22 @@ def configure(conf):
                     headers='stdint.h sys/atomic.h',
                     msg='Checking for atomic_add_32 compiler builtin')
 
+    conf.CHECK_CODE('''
+                    uint32_t i,j;
+                    j = __atomic_add_fetch(&i,1,__ATOMIC_SEQ_CST)
+                    ''',
+                    'HAVE___ATOMIC_ADD_FETCH',
+                    headers='stdint.h',
+                    msg='Checking for __atomic_add_fetch compiler builtin')
+
+    conf.CHECK_CODE('''
+                    uint32_t i,j;
+                    __atomic_load(&i,&j,__ATOMIC_SEQ_CST)
+                    ''',
+                    'HAVE___ATOMIC_ADD_LOAD',
+                    headers='stdint.h',
+                    msg='Checking for __atomic_load compiler builtin')
+
     # Check for thread fence. */
     tf = conf.CHECK_CODE('atomic_thread_fence(memory_order_seq_cst);',
                          'HAVE_ATOMIC_THREAD_FENCE',
