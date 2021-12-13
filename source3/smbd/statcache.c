@@ -331,12 +331,7 @@ bool stat_cache_lookup(connection_struct *conn,
 		.twrp = twrp,
 	};
 
-	if (posix_paths) {
-		ret = SMB_VFS_LSTAT(conn, &smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(conn, &smb_fname);
-	}
-
+	ret = vfs_stat(conn, &smb_fname);
 	if (ret != 0) {
 		/* Discard this entry - it doesn't exist in the filesystem. */
 		memcache_delete(smbd_memcache(), STAT_CACHE,
