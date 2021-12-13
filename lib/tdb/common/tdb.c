@@ -64,6 +64,15 @@ static void tdb_increment_seqnum(struct tdb_context *tdb)
 		return;
 	}
 
+#if defined(HAVE___ATOMIC_ADD_FETCH) && defined(HAVE___ATOMIC_ADD_LOAD)
+	if (tdb->map_ptr != NULL) {
+		uint32_t *pseqnum = (uint32_t *)(
+			TDB_SEQNUM_OFS + (char *)tdb->map_ptr);
+		__atomic_add_fetch(pseqnum, 1, __ATOMIC_SEQ_CST);
+		return;
+	}
+#endif
+
 	if (tdb_nest_lock(tdb, TDB_SEQNUM_OFS, F_WRLCK,
 			  TDB_LOCK_WAIT|TDB_LOCK_PROBE) != 0) {
 		return;
@@ -837,6 +846,21 @@ _PUBLIC_ tdb_log_func tdb_log_fn(struct tdb_context *tdb)
 _PUBLIC_ int tdb_get_seqnum(struct tdb_context *tdb)
 {
 	tdb_off_t seqnum=0;
+
+	if (tdb->transaction != NULL) {
+		tdb_ofs_read(tdb, TDB_SEQNUM_OFS, &seqnum);
+		return seqnum;
+	}
+
+#if defined(HAVE___ATOMIC_ADD_FETCH) && defined(HAVE___ATOMIC_ADD_LOAD)
+	if (tdb->map_ptr != NULL) {
+		uint32_t *pseqnum = (uint32_t *)(
+			TDB_SEQNUM_OFS + (char *)tdb->map_ptr);
+		uint32_t ret;
+		__atomic_load(pseqnum, &ret,__ATOMIC_SEQ_CST);
+		return ret;
+	}
+#endif
 
 	tdb_ofs_read(tdb, TDB_SEQNUM_OFS, &seqnum);
 	return seqnum;
