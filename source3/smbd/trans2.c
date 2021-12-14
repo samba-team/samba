@@ -9432,24 +9432,6 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		if (!VALID_STAT(smb_fname->st) && require_existing_object) {
 			reply_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		}
-
-		if (INFO_LEVEL_IS_UNIX(info_level)) {
-			/*
-			 * For CIFS UNIX extensions the target name may not exist.
-			 */
-
-			/* Always do lstat for UNIX calls. */
-			SMB_VFS_LSTAT(conn, smb_fname);
-
-		} else if (!VALID_STAT(smb_fname->st) &&
-			   SMB_VFS_STAT(conn, smb_fname)) {
-			DEBUG(3,("call_trans2setfilepathinfo: SMB_VFS_STAT of "
-				 "%s failed (%s)\n",
-				 smb_fname_str_dbg(smb_fname),
-				 strerror(errno)));
-			reply_nterror(req, map_nt_error_from_unix(errno));
-			return;
-		}
 	}
 
 	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (%s) info_level=%d "
