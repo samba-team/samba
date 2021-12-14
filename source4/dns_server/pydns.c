@@ -388,7 +388,7 @@ static PyObject *py_dsdb_dns_timestamp_to_nt_time(PyObject *self, PyObject *args
 		return NULL;
 	}
 
-	if (timestamp > UINT32_MAX || timestamp < 0) {
+	if (timestamp > UINT32_MAX) {
 		PyErr_SetString(PyExc_ValueError, "Time out of range");
 		return NULL;
 	}
