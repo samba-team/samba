@@ -968,7 +968,6 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 
 		for (i=0; i<num_rids; i++) {
 			struct dom_sid sid;
-			char *dom_name = NULL;
 			char *name = NULL;
 
 			sid_compose(&sid, domain_sid, rids[i]);
@@ -980,16 +979,10 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 				domain,
 				tmp_ctx,
 				&sid,
-				&dom_name,
+				NULL,
 				&name,
 				&types[i]);
 			if (NT_STATUS_IS_OK(status)) {
-				if (domain_name == NULL) {
-					domain_name = dom_name;
-				} else {
-					/* always the same */
-					TALLOC_FREE(dom_name);
-				}
 				names[i] = talloc_move(names, &name);
 				num_mapped += 1;
 			}
