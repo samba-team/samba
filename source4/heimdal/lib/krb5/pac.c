@@ -62,12 +62,10 @@ struct krb5_pac_data {
 #define PACTYPE_SIZE			8
 #define PAC_INFO_BUFFER_SIZE		16
 
-#define PAC_LOGON_INFO			1
 #define PAC_SERVER_CHECKSUM		6
 #define PAC_PRIVSVR_CHECKSUM		7
 #define PAC_LOGON_NAME			10
 #define PAC_CONSTRAINED_DELEGATION	11
-#define PAC_UPN_DNS_INFO		12
 #define PAC_TICKET_CHECKSUM		16
 
 #define CHECK(r,f,l)						\
@@ -1192,17 +1190,7 @@ _krb5_pac_sign(krb5_context context,
 		ret = krb5_enomem(context);
 		goto out;
 	    }
-
-	    if (p->pac->buffers[i].type == PAC_LOGON_INFO
-		|| p->pac->buffers[i].type == PAC_UPN_DNS_INFO)
-	    {
-		uint32_t rounded = (len + PAC_ALIGNMENT - 1) / PAC_ALIGNMENT
-		    * PAC_ALIGNMENT;
-		uint32_t remaining = rounded - len;
-		CHECK(ret, fill_zeros(context, spdata, remaining), out);
-
-		len = rounded;
-	    }
+	    /* XXX if not aligned, fill_zeros */
 	}
 
 	/* write header */
