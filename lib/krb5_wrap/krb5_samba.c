@@ -680,6 +680,11 @@ int smb_krb5_salt_principal_str(const char *realm,
 					   userPrincipalName,
 					   uac_flags,
 					   &salt_principal);
+	if (krb5_ret != 0) {
+		DBG_ERR("unable to create salt principal:%s\n",
+			error_message(krb5_ret));
+		return krb5_ret;
+	}
 
 	krb5_ret = krb5_unparse_name(krb5_ctx, salt_principal,
 				     &salt_principal_malloc);
