@@ -2667,8 +2667,10 @@ int ctdb_ctrl_disable_node(TALLOC_CTX *mem_ctx,
 			   int destnode,
 			   struct timeval timeout)
 {
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
+	struct ctdb_req_control request = {
+		.opcode = 0,
+	};
+	struct ctdb_reply_control *reply = NULL;
 	int ret;
 
 	ctdb_req_control_disable_node(&request);
@@ -2701,8 +2703,10 @@ int ctdb_ctrl_enable_node(TALLOC_CTX *mem_ctx,
 			  int destnode,
 			  struct timeval timeout)
 {
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
+	struct ctdb_req_control request = {
+		.opcode = 0,
+	};
+	struct ctdb_reply_control *reply = NULL;
 	int ret;
 
 	ctdb_req_control_enable_node(&request);
