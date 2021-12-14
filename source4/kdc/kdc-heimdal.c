@@ -412,6 +412,24 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 
 	kdc_config->force_include_pa_etype_salt = true;
 
+	/*
+	 * For Samba CVE-2020-25719 Require PAC to be present
+	 * This instructs Heimdal to match AD behaviour,
+	 * as seen after Microsoft's CVE-2021-42287 when
+	 * PacRequestorEnforcement is set to 2.
+	 *
+	 * Samba BUG: https://bugzilla.samba.org/show_bug.cgi?id=14686
+	 * REF: https://support.microsoft.com/en-au/topic/kb5008380-authentication-updates-cve-2021-42287-9dafac11-e0d0-4cb8-959a-143bd0201041
+	 */
+
+	kdc_config->require_pac = true;
+
+	/*
+	 * Match Windows and RFC6113 and Windows but break older
+	 * Heimdal clients.
+	 */
+	kdc_config->enable_armored_pa_enc_timestamp = false;
+
 	/* Register hdb-samba4 hooks for use as a keytab */
 
 	kdc->base_ctx = talloc_zero(kdc, struct samba_kdc_base_context);
