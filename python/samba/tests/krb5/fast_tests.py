@@ -95,6 +95,23 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    def test_simple_as_req_self(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': False,
+                'as_req_self': True
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': 0,
+                'use_fast': False,
+                'gen_padata_fn': self.generate_enc_timestamp_padata,
+                'as_req_self': True
+            }
+        ], client_account=self.AccountType.COMPUTER)
+
     def test_simple_tgs(self):
         self._run_test_sequence([
             {
@@ -478,6 +495,27 @@ class FAST_Tests(KDCBaseTest):
                 'gen_armor_tgt_fn': self.get_mach_tgt
             }
         ])
+
+    def test_fast_encrypted_challenge_as_req_self(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'as_req_self': True
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_padata_fn': self.generate_enc_challenge_padata,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'as_req_self': True
+            }
+        ], client_account=self.AccountType.COMPUTER)
 
     def test_fast_encrypted_challenge_wrong_key(self):
         self._run_test_sequence([
@@ -1256,14 +1294,15 @@ class FAST_Tests(KDCBaseTest):
 
         return fast_padata
 
-    def _run_test_sequence(self, test_sequence):
+    def _run_test_sequence(self, test_sequence,
+                           client_account=KDCBaseTest.AccountType.USER):
         if self.strict_checking:
             self.check_kdc_fast_support()
 
         kdc_options_default = str(krb5_asn1.KDCOptions('forwardable,'
                                                        'canonicalize'))
 
-        client_creds = self.get_client_creds()
+        client_creds = self.get_cached_creds(account_type=client_account)
         target_creds = self.get_service_creds()
         krbtgt_creds = self.get_krbtgt_creds()
 
@@ -1288,6 +1327,10 @@ class FAST_Tests(KDCBaseTest):
         target_decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
         target_etypes = target_creds.tgs_supported_enctypes
+
+        client_decryption_key = self.TicketDecryptionKey_from_creds(
+            client_creds)
+        client_etypes = client_creds.tgs_supported_enctypes
 
         fast_cookie = None
         preauth_etype_info2 = None
@@ -1350,10 +1393,16 @@ class FAST_Tests(KDCBaseTest):
             cname = client_cname if rep_type == KRB_AS_REP else None
             crealm = client_realm
 
+            as_req_self = kdc_dict.pop('as_req_self', False)
+            if as_req_self:
+                self.assertEqual(KRB_AS_REP, rep_type)
+
             if 'sname' in kdc_dict:
                 sname = kdc_dict.pop('sname')
             else:
-                if rep_type == KRB_AS_REP:
+                if as_req_self:
+                    sname = client_cname
+                elif rep_type == KRB_AS_REP:
                     sname = krbtgt_sname
                 else:  # KRB_TGS_REP
                     sname = target_sname
@@ -1493,16 +1542,23 @@ class FAST_Tests(KDCBaseTest):
             strict_edata_checking = kdc_dict.pop('strict_edata_checking', True)
 
             if rep_type == KRB_AS_REP:
+                if as_req_self:
+                    expected_supported_etypes = client_etypes
+                    decryption_key = client_decryption_key
+                else:
+                    expected_supported_etypes = krbtgt_etypes
+                    decryption_key = krbtgt_decryption_key
+
                 kdc_exchange_dict = self.as_exchange_dict(
                     expected_crealm=expected_crealm,
                     expected_cname=expected_cname,
                     expected_anon=expected_anon,
                     expected_srealm=expected_srealm,
                     expected_sname=expected_sname,
-                    expected_supported_etypes=krbtgt_etypes,
+                    expected_supported_etypes=expected_supported_etypes,
                     expected_flags=expected_flags,
                     unexpected_flags=unexpected_flags,
-                    ticket_decryption_key=krbtgt_decryption_key,
+                    ticket_decryption_key=decryption_key,
                     generate_fast_fn=generate_fast_fn,
                     generate_fast_armor_fn=generate_fast_armor_fn,
                     generate_fast_padata_fn=generate_fast_padata_fn,
