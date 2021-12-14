@@ -85,6 +85,12 @@ int mit_samba_check_client_access(struct mit_samba_context *ctx,
 int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 			      const krb5_db_entry *server,
 			      krb5_const_principal target_principal);
+krb5_error_code mit_samba_check_allowed_to_delegate_from(
+		struct mit_samba_context *ctx,
+		krb5_const_principal client,
+		krb5_const_principal server,
+		krb5_pac header_pac,
+		const krb5_db_entry *proxy);
 
 int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 				      char *pwd,

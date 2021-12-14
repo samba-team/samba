@@ -1492,6 +1492,31 @@ int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 #endif
 }
 
+krb5_error_code mit_samba_check_allowed_to_delegate_from(
+		struct mit_samba_context *ctx,
+		krb5_const_principal client_principal,
+		krb5_const_principal server_principal,
+		krb5_pac header_pac,
+		const krb5_db_entry *proxy)
+{
+#if KRB5_KDB_DAL_MAJOR_VERSION < 8
+	return KRB5KDC_ERR_POLICY;
+#else
+	struct samba_kdc_entry *proxy_skdc_entry =
+		talloc_get_type_abort(proxy->e_data, struct samba_kdc_entry);
+	krb5_error_code code;
+
+	code = samba_kdc_check_s4u2proxy_rbcd(ctx->context,
+					      ctx->db_ctx,
+					      client_principal,
+					      server_principal,
+					      header_pac,
+					      proxy_skdc_entry);
+
+	return code;
+#endif
+}
+
 static krb5_error_code mit_samba_change_pwd_error(krb5_context context,
 						  NTSTATUS result,
 						  enum samPwdChangeReason reject_reason,
