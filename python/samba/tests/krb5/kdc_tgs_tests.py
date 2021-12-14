@@ -345,9 +345,10 @@ class KdcTgsTests(KDCBaseTest):
         self.assertIsNone(pac)
 
     def test_request_enterprise_canon(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
-            opts={'upn': 'tgs_enterprise0'})
+            opts={'upn': upn})
         service_creds = self.get_service_creds()
 
         user_name = client_creds.get_username()
@@ -376,9 +377,10 @@ class KdcTgsTests(KDCBaseTest):
             kdc_options=kdc_options)
 
     def test_request_enterprise_canon_case(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
-            opts={'upn': 'tgs_enterprise1'})
+            opts={'upn': upn})
         service_creds = self.get_service_creds()
 
         user_name = client_creds.get_username()
@@ -407,9 +409,10 @@ class KdcTgsTests(KDCBaseTest):
             kdc_options=kdc_options)
 
     def test_request_enterprise_canon_mac(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'upn': 'tgs_enterprise2'})
+            opts={'upn': upn})
         service_creds = self.get_service_creds()
 
         user_name = client_creds.get_username()
@@ -438,9 +441,10 @@ class KdcTgsTests(KDCBaseTest):
             kdc_options=kdc_options)
 
     def test_request_enterprise_canon_case_mac(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'upn': 'tgs_enterprise3'})
+            opts={'upn': upn})
         service_creds = self.get_service_creds()
 
         user_name = client_creds.get_username()
@@ -469,9 +473,10 @@ class KdcTgsTests(KDCBaseTest):
             kdc_options=kdc_options)
 
     def test_request_enterprise_no_canon(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
-            opts={'upn': 'tgs_enterprise4'})
+            opts={'upn': upn})
         service_creds = self.get_service_creds()
 
         user_name = client_creds.get_username()
@@ -494,9 +499,10 @@ class KdcTgsTests(KDCBaseTest):
             kdc_options=kdc_options)
 
     def test_request_enterprise_no_canon_case(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
-            opts={'upn': 'tgs_enterprise5'})
+            opts={'upn': upn})
         service_creds = self.get_service_creds()
 
         user_name = client_creds.get_username()
@@ -519,9 +525,10 @@ class KdcTgsTests(KDCBaseTest):
             kdc_options=kdc_options)
 
     def test_request_enterprise_no_canon_mac(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'upn': 'tgs_enterprise6'})
+            opts={'upn': upn})
         service_creds = self.get_service_creds()
 
         user_name = client_creds.get_username()
@@ -544,9 +551,10 @@ class KdcTgsTests(KDCBaseTest):
             kdc_options=kdc_options)
 
     def test_request_enterprise_no_canon_case_mac(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'upn': 'tgs_enterprise7'})
+            opts={'upn': upn})
         service_creds = self.get_service_creds()
 
         user_name = client_creds.get_username()
