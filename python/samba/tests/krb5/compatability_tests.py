@@ -132,13 +132,14 @@ class SimpleKerberosTests(KDCBaseTest):
         tgt = self.get_tgt(user_creds)
 
         # Ensure the PAC contains the expected checksums.
-        self.verify_ticket(tgt, key)
+        self.verify_ticket(tgt, key, service_ticket=False)
 
         # Get a service ticket from the DC.
         service_ticket = self.get_service_ticket(tgt, target_creds)
 
         # Ensure the PAC contains the expected checksums.
-        self.verify_ticket(service_ticket, key, expect_ticket_checksum=True)
+        self.verify_ticket(service_ticket, key, service_ticket=True,
+                           expect_ticket_checksum=True)
 
     def test_mit_ticket_signature(self):
         # Ensure that a DC does not issue tickets signed with its krbtgt key.
@@ -152,13 +153,14 @@ class SimpleKerberosTests(KDCBaseTest):
         tgt = self.get_tgt(user_creds)
 
         # Ensure the PAC contains the expected checksums.
-        self.verify_ticket(tgt, key)
+        self.verify_ticket(tgt, key, service_ticket=False)
 
         # Get a service ticket from the DC.
         service_ticket = self.get_service_ticket(tgt, target_creds)
 
         # Ensure the PAC does not contain the expected checksums.
-        self.verify_ticket(service_ticket, key, expect_ticket_checksum=False)
+        self.verify_ticket(service_ticket, key, service_ticket=True,
+                           expect_ticket_checksum=False)
 
     def as_pre_auth_req(self, creds, etypes):
         user = creds.get_username()
