@@ -683,7 +683,7 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 			tmp_ctx, name, &normalized);
 		if (NT_STATUS_IS_OK(nstatus) ||
 		    NT_STATUS_EQUAL(nstatus, NT_STATUS_FILE_RENAMED)) {
-			name = normalized;
+			lsa_name.string = normalized;
 		}
 	}
 
