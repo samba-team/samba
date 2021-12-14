@@ -7072,7 +7072,7 @@ static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
 		return status;
 	}
 
-	ret = SMB_VFS_LSTAT(conn, smb_fname_parent);
+	ret = vfs_stat(conn, smb_fname_parent);
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
