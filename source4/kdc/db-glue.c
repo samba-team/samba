@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"
@@ -2821,6 +2822,175 @@ bad_option:
 			       target_principal_name);
 	talloc_free(mem_ctx);
 	return KRB5KDC_ERR_BADOPTION;
+}
+
+/*
+ * This method is called for S4U2Proxy requests and implements the
+ * resource-based constrained delegation variant, which can support
+ * cross-realm delegation.
+ */
+krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
+		krb5_context context,
+		struct samba_kdc_db_context *kdc_db_ctx,
+		krb5_const_principal client_principal,
+		krb5_const_principal server_principal,
+		krb5_pac header_pac,
+		struct samba_kdc_entry *proxy_skdc_entry)
+{
+	krb5_error_code code;
+	enum ndr_err_code ndr_err;
+	char *client_name = NULL;
+	char *server_name = NULL;
+	const char *proxy_dn = NULL;
+	const DATA_BLOB *data = NULL;
+	struct security_descriptor *rbcd_security_descriptor = NULL;
+	struct auth_user_info_dc *user_info_dc = NULL;
+	struct auth_session_info *session_info = NULL;
+	uint32_t session_info_flags = AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
+	uint32_t access_desired = SEC_ADS_GENERIC_ALL; /* => 0x000f01ff */
+	uint32_t access_granted = 0;
+	NTSTATUS nt_status;
+	TALLOC_CTX *mem_ctx = NULL;
+
+	mem_ctx = talloc_named(kdc_db_ctx,
+			       0,
+			       "samba_kdc_check_s4u2proxy_rbcd");
+	if (mem_ctx == NULL) {
+		errno = ENOMEM;
+		code = errno;
+
+		return code;
+	}
+
+	proxy_dn = ldb_dn_get_linearized(proxy_skdc_entry->msg->dn);
+	if (proxy_dn == NULL) {
+		DBG_ERR("ldb_dn_get_linearized failed for proxy_dn!\n");
+		TALLOC_FREE(mem_ctx);
+		if (errno == 0) {
+			errno = ENOMEM;
+		}
+		code = errno;
+
+		goto out;
+	}
+
+	rbcd_security_descriptor = talloc_zero(mem_ctx,
+					       struct security_descriptor);
+	if (rbcd_security_descriptor == NULL) {
+		errno = ENOMEM;
+		code = errno;
+
+		goto out;
+	}
+
+	code = krb5_unparse_name_flags(context,
+				       client_principal,
+				       KRB5_PRINCIPAL_UNPARSE_DISPLAY,
+				       &client_name);
+	if (code != 0) {
+		DBG_ERR("Unable to parse client_principal!\n");
+		goto out;
+	}
+
+	code = krb5_unparse_name_flags(context,
+				       server_principal,
+				       KRB5_PRINCIPAL_UNPARSE_DISPLAY,
+				       &server_name);
+	if (code != 0) {
+		DBG_ERR("Unable to parse server_principal!\n");
+		SAFE_FREE(client_name);
+		goto out;
+	}
+
+	DBG_INFO("Check delegation from client[%s] to server[%s] via "
+		 "proxy[%s]\n",
+		 client_name,
+		 server_name,
+		 proxy_dn);
+
+	code = kerberos_pac_to_user_info_dc(mem_ctx,
+					    header_pac,
+					    context,
+					    &user_info_dc,
+					    NULL,
+					    NULL);
+	if (code != 0) {
+		goto out;
+	}
+
+	if (user_info_dc->info->authenticated) {
+		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+	}
+
+	nt_status = auth_generate_session_info(mem_ctx,
+					       kdc_db_ctx->lp_ctx,
+					       kdc_db_ctx->samdb,
+					       user_info_dc,
+					       session_info_flags,
+					       &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		code = map_errno_from_nt_status(nt_status);
+		goto out;
+	}
+
+	data = ldb_msg_find_ldb_val(proxy_skdc_entry->msg,
+				    "msDS-AllowedToActOnBehalfOfOtherIdentity");
+	if (data == NULL) {
+		DBG_ERR("Could not find security descriptor"
+			"msDS-AllowedToActOnBehalfOfOtherIdentity in "
+			"proxy[%s]\n",
+			proxy_dn);
+		code = KRB5KDC_ERR_BADOPTION;
+		goto out;
+	}
+
+	ndr_err = ndr_pull_struct_blob(
+			data,
+			mem_ctx,
+			rbcd_security_descriptor,
+			(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		errno = ndr_map_error2errno(ndr_err);
+		DBG_ERR("Failed to unmarshall "
+			"msDS-AllowedToActOnBehalfOfOtherIdentity "
+			"security descriptor of proxy[%s]\n",
+			proxy_dn);
+		code = KRB5KDC_ERR_BADOPTION;
+		goto out;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(security_token, session_info->security_token);
+		NDR_PRINT_DEBUG(security_descriptor, rbcd_security_descriptor);
+	}
+
+	nt_status = sec_access_check_ds(rbcd_security_descriptor,
+					session_info->security_token,
+					access_desired,
+					&access_granted,
+					NULL,
+					NULL);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_WARNING("RBCD: sec_access_check_ds(access_desired=%#08x, "
+			    "access_granted:%#08x) failed with: %s\n",
+			    access_desired,
+			    access_granted,
+			    nt_errstr(nt_status));
+
+		code = KRB5KDC_ERR_BADOPTION;
+		goto out;
+	}
+
+	DBG_NOTICE("RBCD: Access granted for client[%s]\n", client_name);
+
+	code = 0;
+out:
+	SAFE_FREE(client_name);
+	SAFE_FREE(server_name);
+
+	TALLOC_FREE(mem_ctx);
+	return code;
 }
 
 NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_context *base_ctx,

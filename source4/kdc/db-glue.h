@@ -61,5 +61,13 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 			  struct samba_kdc_entry *skdc_entry,
 			  krb5_const_principal target_principal);
 
+krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
+		krb5_context context,
+		struct samba_kdc_db_context *kdc_db_ctx,
+		krb5_const_principal client_principal,
+		krb5_const_principal server_principal,
+		krb5_pac header_pac,
+		struct samba_kdc_entry *proxy_skdc_entry);
+
 NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_context *base_ctx,
 				struct samba_kdc_db_context **kdc_db_ctx_out);
