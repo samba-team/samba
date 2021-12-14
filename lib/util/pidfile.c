@@ -207,7 +207,7 @@ void pidfile_create(const char *piddir, const char *name)
 {
 	size_t len = strlen(piddir) + strlen(name) + 6;
 	char pidFile[len];
-	pid_t pid;
+	pid_t pid = (pid_t)-1;
 	int ret, fd;
 
 	snprintf(pidFile, sizeof(pidFile), "%s/%s.pid", piddir, name);
