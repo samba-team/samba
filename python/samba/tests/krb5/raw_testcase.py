@@ -2587,7 +2587,11 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNotNone(ticket_decryption_key)
 
         if ticket_decryption_key is not None:
-            self.verify_ticket(ticket_creds, krbtgt_keys, expect_pac=expect_pac,
+            service_ticket = (not self.is_tgs(expected_sname)
+                              and rep_msg_type == KRB_TGS_REP)
+            self.verify_ticket(ticket_creds, krbtgt_keys,
+                               service_ticket=service_ticket,
+                               expect_pac=expect_pac,
                                expect_ticket_checksum=expect_ticket_checksum
                                or self.tkt_sig_support)
 
@@ -2624,14 +2628,14 @@ class RawKerberosTest(TestCaseInTempDir):
                 expected_types.append(krb5pac.PAC_TYPE_DEVICE_INFO)
                 expected_types.append(krb5pac.PAC_TYPE_DEVICE_CLAIMS_INFO)
 
-        if not self.is_tgs(expected_sname):
+        if not self.is_tgs(expected_sname) and rep_msg_type == KRB_TGS_REP:
             expected_types.append(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
 
         require_strict = {krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO}
         if not self.tkt_sig_support:
             require_strict.add(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
 
-        expect_extra_pac_buffers = rep_msg_type == KRB_AS_REP
+        expect_extra_pac_buffers = self.is_tgs(expected_sname)
 
         expect_pac_attrs = kdc_exchange_dict['expect_pac_attrs']
 
@@ -3233,11 +3237,9 @@ class RawKerberosTest(TestCaseInTempDir):
                                         ticket_blob)
         self.assertEqual(expected_checksum, checksum)
 
-    def verify_ticket(self, ticket, krbtgt_keys, expect_pac=True,
+    def verify_ticket(self, ticket, krbtgt_keys, service_ticket,
+                      expect_pac=True,
                       expect_ticket_checksum=True):
-        # Check if the ticket is a TGT.
-        is_tgt = self.is_tgt(ticket)
-
         # Decrypt the ticket.
 
         key = ticket.decryption_key
@@ -3336,7 +3338,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                         kdc_ctype,
                                         kdc_checksum)
 
-        if is_tgt:
+        if not service_ticket:
             self.assertNotIn(krb5pac.PAC_TYPE_TICKET_CHECKSUM, checksums)
         else:
             ticket_checksum, ticket_ctype = checksums.get(
