@@ -9339,6 +9339,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	} else {
 		char *fname = NULL;
 		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+		bool require_existing_object = true;
 
 		/* set path info */
 		if (total_params < 7) {
@@ -9405,6 +9406,32 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		 * below, it can still be NULL.
 		 */
 		fsp = smb_fname->fsp;
+
+		/*
+		 * There are 4 info levels which can
+		 * create a new object in the filesystem.
+		 * They are:
+		 * SMB_SET_FILE_UNIX_LINK -> creates POSIX symlink.
+		 * SMB_POSIX_PATH_OPEN -> creates POSIX file or directory.
+		 * SMB_SET_FILE_UNIX_BASIC:
+		 * SMB_SET_FILE_UNIX_INFO2: can create a POSIX special file.
+		 *
+		 * These info levels do not require an existing object.
+		 */
+		switch (info_level) {
+		case SMB_SET_FILE_UNIX_LINK:
+		case SMB_POSIX_PATH_OPEN:
+		case SMB_SET_FILE_UNIX_BASIC:
+		case SMB_SET_FILE_UNIX_INFO2:
+			require_existing_object = false;
+			break;
+		default:
+			break;
+		}
+
+		if (!VALID_STAT(smb_fname->st) && require_existing_object) {
+			reply_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		}
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/*
