@@ -6111,6 +6111,17 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		}
 
 		/*
+		 * qpathinfo must operate on an existing file, so we
+		 * can exit early if filename_convert() returned the "new file"
+		 * NT_STATUS_OK, !VALID_STAT case.
+		 */
+
+		if (!VALID_STAT(smb_fname->st)) {
+			reply_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+			return;
+		}
+
+		/*
 		 * smb_fname->fsp may be NULL if smb_fname points at a symlink
 		 * and we're in POSIX context, so be careful when using fsp
 		 * below, it can still be NULL.
