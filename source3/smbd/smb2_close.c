@@ -163,7 +163,6 @@ static void setup_close_full_information(connection_struct *conn,
 				uint32_t *out_file_attributes)
 {
 	NTSTATUS status;
-	int ret;
 
 	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
@@ -173,11 +172,6 @@ static void setup_close_full_information(connection_struct *conn,
 		status = NT_STATUS_OK;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		return;
-	}
-
-	ret = vfs_stat(conn, smb_fname);
-	if (ret != 0) {
 		return;
 	}
 
