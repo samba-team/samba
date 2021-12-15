@@ -675,6 +675,69 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 		return NT_STATUS_OK;
 	}
 
+	if (response.length == 95) {
+		/*
+		 * ndr_pull_NTLMv2_RESPONSE() fails on this strange blob,
+		 * because the AvPairs content is not valid
+		 * as AvLen of the first pair is 33032 (0x8108).
+		 *
+		 * I saw a single machine sending the following 3 times
+		 * in a row, but I'm not sure if everything is static.
+		 *
+		 * Note this is NTLMv2_CLIENT_CHALLENGE only, not
+		 * the full NTLMv2_RESPONSE (which has Response of 16 bytes
+		 * before the NTLMv2_CLIENT_CHALLENGE).
+		 *
+		 * Note this code only prevents
+		 * ndr_pull_error(Buffer Size Error): Pull bytes 39016
+		 * debug message for a known case, the actual
+		 * bug is also handled below in a generic way to
+		 * map NT_STATUS_BUFFER_TOO_SMALL to NT_STATUS_OK.
+		 *
+		 * See https://bugzilla.samba.org/show_bug.cgi?id=14932
+		 */
+		static const char *netapp_magic =
+			"\x01\x01\x00\x00\x00\x00\x00\x00"
+			"\x3f\x3f\x3f\x3f\x3f\x3f\x3f\x3f"
+			"\xb8\x82\x3a\xf1\xb3\xdd\x08\x15"
+			"\x00\x00\x00\x00\x11\xa2\x08\x81"
+			"\x50\x38\x22\x78\x2b\x94\x47\xfe"
+			"\x54\x94\x7b\xff\x17\x27\x5a\xb4"
+			"\xf4\x18\xba\xdc\x2c\x38\xfd\x5b"
+			"\xfb\x0e\xc1\x85\x1e\xcc\x92\xbb"
+			"\x9b\xb1\xc4\xd5\x53\x14\xff\x8c"
+			"\x76\x49\xf5\x45\x90\x19\xa2";
+		/*
+		 * First we check the initial bytes
+		 * and the 0x3F timestamp.
+		 */
+		cmp = memcmp(response.data + 16,
+			     netapp_magic,
+			     16);
+		if (cmp == 0) {
+			/*
+			 * Then check everything after the
+			 * client challenge
+			 */
+			cmp = memcmp(response.data + 40,
+				     netapp_magic + 24,
+				     response.length - 40);
+			if (cmp == 0) {
+				DBG_DEBUG("Invalid NETAPP NTLMv2_RESPONSE "
+					  "for user[%s\\%s] against "
+					  "SEC_CHAN(%u)[%s/%s] "
+					  "in workgroup[%s]\n",
+					  account_domain,
+					  account_name,
+					  creds->secure_channel_type,
+					  creds->computer_name,
+					  creds->account_name,
+					  workgroup);
+				return NT_STATUS_OK;
+			}
+		}
+	}
+
 	frame = talloc_stackframe();
 
 	err = ndr_pull_struct_blob(&response, frame, &v2_resp,
