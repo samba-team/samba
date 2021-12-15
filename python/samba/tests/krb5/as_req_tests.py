@@ -345,9 +345,10 @@ class AsReqKerberosTests(AsReqBaseTest):
             expect_edata=False)
 
     def test_as_req_enterprise_canon(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
-            opts={'upn': 'krb5_enterprise0'})
+            opts={'upn': upn})
 
         user_name = client_creds.get_username()
         realm = client_creds.get_realm()
@@ -365,9 +366,10 @@ class AsReqKerberosTests(AsReqBaseTest):
             kdc_options=krb5_asn1.KDCOptions('canonicalize'))
 
     def test_as_req_enterprise_canon_case(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
-            opts={'upn': 'krb5_enterprise1'})
+            opts={'upn': upn})
 
         user_name = client_creds.get_username()
         realm = client_creds.get_realm().lower()
@@ -385,9 +387,10 @@ class AsReqKerberosTests(AsReqBaseTest):
             kdc_options=krb5_asn1.KDCOptions('canonicalize'))
 
     def test_as_req_enterprise_canon_mac(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'upn': 'krb5_enterprise2'})
+            opts={'upn': upn})
 
         user_name = client_creds.get_username()
         realm = client_creds.get_realm()
@@ -405,9 +408,10 @@ class AsReqKerberosTests(AsReqBaseTest):
             kdc_options=krb5_asn1.KDCOptions('canonicalize'))
 
     def test_as_req_enterprise_canon_mac_case(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'upn': 'krb5_enterprise3'})
+            opts={'upn': upn})
 
         user_name = client_creds.get_username()
         realm = client_creds.get_realm().lower()
@@ -425,9 +429,10 @@ class AsReqKerberosTests(AsReqBaseTest):
             kdc_options=krb5_asn1.KDCOptions('canonicalize'))
 
     def test_as_req_enterprise_no_canon(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
-            opts={'upn': 'krb5_enterprise4'})
+            opts={'upn': upn})
 
         user_name = client_creds.get_username()
         realm = client_creds.get_realm()
@@ -440,9 +445,10 @@ class AsReqKerberosTests(AsReqBaseTest):
             kdc_options=0)
 
     def test_as_req_enterprise_no_canon_case(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
-            opts={'upn': 'krb5_enterprise5'})
+            opts={'upn': upn})
 
         user_name = client_creds.get_username()
         realm = client_creds.get_realm().lower()
@@ -455,9 +461,10 @@ class AsReqKerberosTests(AsReqBaseTest):
             kdc_options=0)
 
     def test_as_req_enterprise_no_canon_mac(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'upn': 'krb5_enterprise6'})
+            opts={'upn': upn})
 
         user_name = client_creds.get_username()
         realm = client_creds.get_realm()
@@ -470,9 +477,10 @@ class AsReqKerberosTests(AsReqBaseTest):
             kdc_options=0)
 
     def test_as_req_enterprise_no_canon_mac_case(self):
+        upn = self.get_new_username()
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.COMPUTER,
-            opts={'upn': 'krb5_enterprise7'})
+            opts={'upn': upn})
 
         user_name = client_creds.get_username()
         realm = client_creds.get_realm().lower()
