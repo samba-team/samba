@@ -682,11 +682,27 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
 		NTSTATUS status;
 		status = ndr_map_error2ntstatus(err);
-		DEBUG(2,("Failed to parse NTLMv2_RESPONSE "
-			 "length %u - %s - %s\n",
-			 (unsigned)response.length,
-			 ndr_map_error2string(err),
-			 nt_errstr(status)));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
+			/*
+			 * We are supposed to ignore invalid buffers,
+			 * see https://bugzilla.samba.org/show_bug.cgi?id=14932
+			 */
+			status = NT_STATUS_OK;
+		}
+		DEBUG(2,("%s: Failed to parse NTLMv2_RESPONSE length=%u "
+			"for user[%s\\%s] against SEC_CHAN(%u)[%s/%s] "
+			"in workgroup[%s] - %s %s %s\n",
+			__func__,
+			(unsigned)response.length,
+			account_domain,
+			account_name,
+			creds->secure_channel_type,
+			creds->computer_name,
+			creds->account_name,
+			workgroup,
+			ndr_map_error2string(err),
+			NT_STATUS_IS_OK(status) ? "(ignoring) =>" : "=>",
+			nt_errstr(status)));
 		dump_data(2, response.data, response.length);
 		TALLOC_FREE(frame);
 		return status;
