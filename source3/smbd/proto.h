@@ -1165,7 +1165,6 @@ void stat_cache_add( const char *full_orig_name,
 		NTTIME twrp,
 		bool case_sensitive);
 bool stat_cache_lookup(connection_struct *conn,
-			bool posix_paths,
 			char **pp_name,
 			char **pp_dirpath,
 			char **pp_start,

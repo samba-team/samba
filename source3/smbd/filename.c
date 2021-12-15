@@ -1092,7 +1092,6 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		bool found;
 
 		found = stat_cache_lookup(state->conn,
-					  state->posix_pathnames,
 					  &state->smb_fname->base_name,
 					  &state->dirpath,
 					  &state->name,
