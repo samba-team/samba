@@ -2490,8 +2490,19 @@ class RawKerberosTest(TestCaseInTempDir):
             if self.strict_checking:
                 self.assertElementEqual(ticket_private, 'caddr', [])
             if expect_pac is not None:
-                self.assertElementPresent(ticket_private, 'authorization-data',
-                                          expect_empty=not expect_pac)
+                if expect_pac:
+                    self.assertElementPresent(ticket_private,
+                                              'authorization-data',
+                                              expect_empty=not expect_pac)
+                else:
+                    # It is more correct to not have an authorization-data
+                    # present than an empty one.
+                    #
+                    # https://github.com/krb5/krb5/pull/1225#issuecomment-995104193
+                    v = self.getElementValue(ticket_private,
+                                             'authorization-data')
+                    if v is not None:
+                        self.assertEqual(0, len(v))
 
         encpart_session_key = None
         if encpart_private is not None:
