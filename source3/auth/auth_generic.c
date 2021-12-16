@@ -143,6 +143,7 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 							  info->account_name,
 							  info->domain_name,
 							  info, &server_info);
+		wbcFreeMemory(info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("make_server_info_wbcAuthUserInfo failed: %s\n",
 				   nt_errstr(status)));
