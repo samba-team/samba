@@ -47,6 +47,7 @@ from samba.tests.krb5.rfc4120_constants import (
     AD_WIN2K_PAC,
     FX_FAST_ARMOR_AP_REQUEST,
     KDC_ERR_GENERIC,
+    KDC_ERR_POLICY,
     KDC_ERR_PREAUTH_FAILED,
     KDC_ERR_SKEW,
     KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS,
@@ -2958,7 +2959,8 @@ class RawKerberosTest(TestCaseInTempDir):
             if len(expect_etype_info2) != 0:
                 expected_patypes += (PADATA_ETYPE_INFO2,)
 
-            if error_code not in (KDC_ERR_PREAUTH_FAILED, KDC_ERR_SKEW):
+            if error_code not in (KDC_ERR_PREAUTH_FAILED, KDC_ERR_SKEW,
+                                  KDC_ERR_POLICY):
                 if sent_fast:
                     expected_patypes += (PADATA_ENCRYPTED_CHALLENGE,)
                 else:

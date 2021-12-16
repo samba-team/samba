@@ -1644,7 +1644,7 @@ class KdcTgsTests(KDCBaseTest):
         self._user2user(service_ticket, creds,
                         expected_error=(KDC_ERR_MODIFIED, KDC_ERR_POLICY))
 
-    # Expected to fail against Windows, which does not produce a policy error.
+    # Expected to fail against Windows, which does not produce an error.
     def test_fast_service_ticket(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds)
@@ -1653,7 +1653,8 @@ class KdcTgsTests(KDCBaseTest):
         service_ticket = self.get_service_ticket(tgt, service_creds)
 
         self._fast(service_ticket, creds,
-                   expected_error=KDC_ERR_POLICY)
+                   expected_error=(KDC_ERR_POLICY,
+                                   KDC_ERR_S_PRINCIPAL_UNKNOWN))
 
     def test_pac_attrs_none(self):
         creds = self._get_creds()

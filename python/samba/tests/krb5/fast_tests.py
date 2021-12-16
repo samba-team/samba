@@ -605,7 +605,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_POLICY,
+                'expected_error_mode': (KDC_ERR_POLICY,
+                                        KDC_ERR_S_PRINCIPAL_UNKNOWN),
                 'use_fast': True,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_user_service_ticket
@@ -620,7 +621,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_POLICY,
+                'expected_error_mode': (KDC_ERR_POLICY,
+                                        KDC_ERR_S_PRINCIPAL_UNKNOWN),
                 'use_fast': True,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_service_ticket
@@ -637,7 +639,8 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_POLICY,
+                'expected_error_mode': (KDC_ERR_POLICY,
+                                        KDC_ERR_S_PRINCIPAL_UNKNOWN),
                 'use_fast': True,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_service_ticket_invalid_checksum
@@ -657,7 +660,8 @@ class FAST_Tests(KDCBaseTest):
             },
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'expected_error_mode': (KDC_ERR_PREAUTH_REQUIRED,
+                                        KDC_ERR_POLICY),
                 'use_fast': True,
                 'gen_padata_fn': self.generate_enc_timestamp_padata,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
