@@ -791,7 +791,7 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 		break;
 
 	case TORTURE_KRB5_TEST_AES: {
-		krb5_enctype etype_list[] = { KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96 };
+		static krb5_enctype etype_list[] = { KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96 };
 
 		k5ret = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context,
 						      &krb_options);
@@ -805,7 +805,7 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 		break;
 	}
 	case TORTURE_KRB5_TEST_RC4: {
-		krb5_enctype etype_list[] = { KRB5_ENCTYPE_ARCFOUR_HMAC_MD5 };
+		static krb5_enctype etype_list[] = { KRB5_ENCTYPE_ARCFOUR_HMAC_MD5 };
 
 		k5ret = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context,
 						      &krb_options);
@@ -819,8 +819,8 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 		break;
 	}
 	case TORTURE_KRB5_TEST_AES_RC4: {
-		krb5_enctype etype_list[] = { KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-					      KRB5_ENCTYPE_ARCFOUR_HMAC_MD5 };
+		static krb5_enctype etype_list[] = { KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+						     KRB5_ENCTYPE_ARCFOUR_HMAC_MD5 };
 
 		k5ret = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context,
 						      &krb_options);
