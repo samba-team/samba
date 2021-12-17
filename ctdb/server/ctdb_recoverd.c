@@ -48,6 +48,8 @@
 
 #include "ctdb_cluster_mutex.h"
 
+#define LEADER_BROADCAST_TIMEOUT 5
+
 /* List of SRVID requests that need to be processed */
 struct srvid_list {
 	struct srvid_list *next, *prev;
@@ -250,6 +252,8 @@ struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
 	uint32_t leader;
 	struct tevent_timer *leader_broadcast_te;
+	struct tevent_timer *leader_broadcast_timeout_te;
+	unsigned int leader_broadcast_timeout;
 	uint32_t pnn;
 	uint32_t last_culprit_node;
 	struct ctdb_node_map_old *nodemap;
@@ -1935,6 +1939,60 @@ static void push_flags_handler(uint64_t srvid, TDB_DATA data,
 	talloc_free(tmp_ctx);
 }
 
+static void leader_broadcast_timeout_handler(struct tevent_context *ev,
+					     struct tevent_timer *te,
+					     struct timeval current_time,
+					     void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type_abort(
+		private_data, struct ctdb_recoverd);
+
+	rec->leader_broadcast_timeout_te = NULL;
+
+	/* Let other nodes know that an election is underway */
+	leader_broadcast_send(rec, CTDB_UNKNOWN_PNN);
+
+	D_NOTICE("Leader broadcast timeout. Force election\n");
+	force_election(rec);
+}
+
+static void leader_broadcast_timeout_cancel(struct ctdb_recoverd *rec)
+{
+	TALLOC_FREE(rec->leader_broadcast_timeout_te);
+}
+
+static int leader_broadcast_timeout_start(struct ctdb_recoverd *rec)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	/*
+	 * This should not be necessary.  However, there will be
+	 * interactions with election code here.  It will want to
+	 * cancel and restart the timer around potentially long
+	 * elections.
+	 */
+	leader_broadcast_timeout_cancel(rec);
+
+	rec->leader_broadcast_timeout_te =
+		tevent_add_timer(
+			ctdb->ev,
+			rec,
+			timeval_current_ofs(rec->leader_broadcast_timeout, 0),
+			leader_broadcast_timeout_handler,
+			rec);
+	if (rec->leader_broadcast_timeout_te == NULL) {
+		D_ERR("Unable to start leader broadcast timeout\n");
+		return ENOMEM;
+	}
+
+	return 0;
+}
+
+static bool leader_broadcast_timeout_active(struct ctdb_recoverd *rec)
+{
+	return rec->leader_broadcast_timeout_te != NULL;
+}
+
 static void leader_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
 	struct ctdb_recoverd *rec = talloc_get_type_abort(
@@ -1950,11 +2008,19 @@ static void leader_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 		return;
 	}
 
+	leader_broadcast_timeout_cancel(rec);
+
 	if (pnn == rec->leader) {
-		return;
+		goto done;
 	}
 
 	if (pnn == CTDB_UNKNOWN_PNN) {
+		/*
+		 * Leader broadcast timeout was cancelled above - stop
+		 * main loop from restarting it until election is
+		 * complete
+		 */
+		rec->election_in_progress = true;
 		return;
 	}
 
@@ -1966,10 +2032,13 @@ static void leader_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 				     pnn);
 	if (ret != 0) {
 		DBG_WARNING("Failed to set leader\n");
-		return;
+		goto done;
 	}
 
 	rec->leader = pnn;
+
+done:
+	leader_broadcast_timeout_start(rec);
 }
 
 struct verify_recmode_normal_data {
@@ -2442,12 +2511,11 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 	int ret;
 
 	/*
-	 * When recovery daemon is started, leader is set to
-	 * "unknown" so it knows to start an election.
+	 * When leader is unknown the leader broadcast timeout will
+	 * cause election to be called, so wait for that to happen.
 	 */
 	if (rec->leader == CTDB_UNKNOWN_PNN) {
-		D_NOTICE("Initial leader set - forcing election\n");
-		force_election(rec);
+		D_NOTICE("Unknown leader, waiting for leader broadcast\n");
 		return false;
 	}
 
@@ -2559,6 +2627,22 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			ctdb_set_culprit(rec, rec->pnn);
 		}
 	}
+	/*
+	 * Similar for leader broadcast timeouts.  These can also have
+	 * been stopped by another node receiving a leader broadcast
+	 * timeout and transmitting an "unknown leader broadcast".
+	 * Note that this should never be done during an election - at
+	 * the moment there is nothing between here and the above
+	 * election-in-progress check that can process an election
+	 * result (i.e. no event loop).
+	 */
+	if (!leader_broadcast_timeout_active(rec)) {
+		ret = leader_broadcast_timeout_start(rec);
+		if (ret != 0) {
+			ctdb_set_culprit(rec, rec->pnn);
+		}
+	}
+
 
 	/* read the debug level from the parent and update locally */
 	ret = ctdb_ctrl_get_debuglevel(ctdb, CTDB_CURRENT_NODE, &debug_level);
@@ -3069,6 +3153,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	rec->leader = CTDB_UNKNOWN_PNN;
 	rec->pnn = ctdb_get_pnn(ctdb);
 	rec->recovery_lock_handle = NULL;
+	rec->leader_broadcast_timeout = LEADER_BROADCAST_TIMEOUT;
 	rec->helper_pid = -1;
 
 	rec->takeover_run = ctdb_op_init(rec, "takeover runs");
