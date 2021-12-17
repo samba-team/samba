@@ -854,10 +854,13 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 		 * dos_mode_post() which also does the mapping of a last ressort
 		 * from S_IFMT(st_mode).
 		 *
-		 * Only if we get NT_STATUS_NOT_IMPLEMENTED from a stacked VFS
-		 * module we must fallback to sync processing.
+		 * Only if we get NT_STATUS_NOT_IMPLEMENTED or
+		 * NT_STATUS_NOT_SUPPORTED from a stacked VFS module we must
+		 * fallback to sync processing.
 		 */
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED))
+		{
 			/*
 			 * state->dosmode should still be 0, but reset
 			 * it to be sure.
