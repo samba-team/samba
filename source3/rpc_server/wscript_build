@@ -278,7 +278,6 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     RPC_IREMOTEWINSPOOL
                     RPC_EVENTLOG
                     RPC_RPCECHO
-                    RPC_SERVER
                     RPC_EPMAPPER
 		    RPC_FSS_AGENT
                     ''')
