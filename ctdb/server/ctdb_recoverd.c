@@ -2491,92 +2491,6 @@ static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 	return 0;
 }
 
-static bool validate_recovery_master(struct ctdb_recoverd *rec,
-				     TALLOC_CTX *mem_ctx)
-{
-	struct ctdb_context *ctdb = rec->ctdb;
-	struct ctdb_node_map_old *nodemap = rec->nodemap;
-	struct ctdb_node_map_old *recmaster_nodemap = NULL;
-	int ret;
-
-	/*
-	 * When leader is unknown the leader broadcast timeout will
-	 * cause election to be called, so wait for that to happen.
-	 */
-	if (rec->leader == CTDB_UNKNOWN_PNN) {
-		D_NOTICE("Unknown leader, waiting for leader broadcast\n");
-		return false;
-	}
-
-	/*
-	 * If the current leader does not have CTDB_CAP_RECMASTER,
-	 * but we have, then force an election and try to become the new
-	 * leader.
-	 */
-	if (!ctdb_node_has_capabilities(rec->caps,
-					rec->leader,
-					CTDB_CAP_RECMASTER) &&
-	    (rec->ctdb->capabilities & CTDB_CAP_RECMASTER) &&
-	    !(nodemap->nodes[rec->pnn].flags & NODE_FLAGS_INACTIVE)) {
-		D_ERR("Current leader %u does not have CAP_RECMASTER,"
-		      " but we (node %u) have - force an election\n",
-		      rec->leader,
-		      rec->pnn);
-		force_election(rec);
-		return false;
-	}
-
-	/* Verify that the leader node has not been deleted.  This
-	 * should not happen because a node should always be shutdown
-	 * before being deleted, causing a new master to be elected
-	 * before now.  However, if something strange has happened
-	 * then checking here will ensure we don't index beyond the
-	 * end of the nodemap array. */
-	if (rec->leader >= nodemap->num) {
-		D_ERR("Leader node %u has been deleted. Force election\n",
-		      rec->leader);
-		force_election(rec);
-		return false;
-	}
-
-	/* if recovery master is disconnected/deleted we must elect a new recmaster */
-	if (nodemap->nodes[rec->leader].flags &
-	    (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED)) {
-		D_NOTICE("Leader %u is disconnected/deleted. Force election\n",
-			 rec->leader);
-		force_election(rec);
-		return false;
-	}
-
-	/* get nodemap from the recovery master to check if it is inactive */
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), rec->leader,
-				   mem_ctx, &recmaster_nodemap);
-	if (ret != 0) {
-		DBG_ERR("Unable to get nodemap from leader %u\n",
-			rec->leader);
-		/* No election, just error */
-		return false;
-	}
-
-
-	if ((recmaster_nodemap->nodes[rec->leader].flags & NODE_FLAGS_INACTIVE) &&
-	    (rec->node_flags & NODE_FLAGS_INACTIVE) == 0) {
-		D_NOTICE("Leader node %u is inactive. Force election\n",
-			 rec->leader);
-		/*
-		 * update our nodemap to carry the recmaster's notion of
-		 * its own flags, so that we don't keep freezing the
-		 * inactive recmaster node...
-		 */
-		nodemap->nodes[rec->leader].flags =
-			recmaster_nodemap->nodes[rec->leader].flags;
-		force_election(rec);
-		return false;
-	}
-
-	return true;
-}
-
 static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		      TALLOC_CTX *mem_ctx)
 {
@@ -2733,10 +2647,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	ret = update_capabilities(rec, nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
-		return;
-	}
-
-	if (! validate_recovery_master(rec, mem_ctx)) {
 		return;
 	}
 
