@@ -5371,6 +5371,56 @@ static bool test_session_encryption_aes_256_gcm(struct torture_context *tctx, st
 	return ret;
 }
 
+static bool test_session_ntlmssp_bug14932(struct torture_context *tctx, struct smb2_tree *tree)
+{
+	struct cli_credentials *ntlm_creds =
+		cli_credentials_shallow_copy(tctx, samba_cmdline_get_creds());
+	NTSTATUS status;
+	bool ret = true;
+	/*
+	 * This is a NTLMv2_RESPONSE with the strange
+	 * NTLMv2_CLIENT_CHALLENGE used by the net diag
+	 * tool.
+	 *
+	 * As we expect an error anyway we fill the
+	 * Response part with 0xab...
+	 */
+	static const char *netapp_magic =
+		"\xab\xab\xab\xab\xab\xab\xab\xab"
+		"\xab\xab\xab\xab\xab\xab\xab\xab"
+		"\x01\x01\x00\x00\x00\x00\x00\x00"
+		"\x3f\x3f\x3f\x3f\x3f\x3f\x3f\x3f"
+		"\xb8\x82\x3a\xf1\xb3\xdd\x08\x15"
+		"\x00\x00\x00\x00\x11\xa2\x08\x81"
+		"\x50\x38\x22\x78\x2b\x94\x47\xfe"
+		"\x54\x94\x7b\xff\x17\x27\x5a\xb4"
+		"\xf4\x18\xba\xdc\x2c\x38\xfd\x5b"
+		"\xfb\x0e\xc1\x85\x1e\xcc\x92\xbb"
+		"\x9b\xb1\xc4\xd5\x53\x14\xff\x8c"
+		"\x76\x49\xf5\x45\x90\x19\xa2";
+	DATA_BLOB lm_response = data_blob_talloc_zero(tctx, 24);
+	DATA_BLOB lm_session_key = data_blob_talloc_zero(tctx, 16);
+	DATA_BLOB nt_response = data_blob_const(netapp_magic, 95);
+	DATA_BLOB nt_session_key = data_blob_talloc_zero(tctx, 16);
+
+	cli_credentials_set_kerberos_state(ntlm_creds,
+					   CRED_USE_KERBEROS_DISABLED,
+					   CRED_SPECIFIED);
+	cli_credentials_set_ntlm_response(ntlm_creds,
+					  &lm_response,
+					  &lm_session_key,
+					  &nt_response,
+					  &nt_session_key,
+					  CRED_SPECIFIED);
+	status = smb2_session_setup_spnego(tree->session,
+					   ntlm_creds,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_INVALID_PARAMETER,
+				      "smb2_session_setup_spnego failed");
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5442,6 +5492,7 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "encryption-aes-128-gcm", test_session_encryption_aes_128_gcm);
 	torture_suite_add_1smb2_test(suite, "encryption-aes-256-ccm", test_session_encryption_aes_256_ccm);
 	torture_suite_add_1smb2_test(suite, "encryption-aes-256-gcm", test_session_encryption_aes_256_gcm);
+	torture_suite_add_1smb2_test(suite, "ntlmssp_bug14932", test_session_ntlmssp_bug14932);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");
 
