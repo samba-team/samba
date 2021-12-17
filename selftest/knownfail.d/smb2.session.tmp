@@ -1,0 +1,5 @@
+^samba3.smb2.session.plain.ntlmssp_bug14932\(nt4_dc\)
+^samba3.smb2.session.enc.ntlmssp_bug14932\(nt4_dc\)
+^samba3.smb2.session.ntlm.ntlmssp_bug14932\(ad_dc\)
+^samba3.smb2.session.krb5.ntlmssp_bug14932\(ad_dc\)
+^samba3.smb2.session.krb5.ntlmssp_bug14932\(ad_member_idmap_rid\)
