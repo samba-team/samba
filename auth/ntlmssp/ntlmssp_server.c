@@ -532,6 +532,14 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 					(ndr_pull_flags_fn_t)ndr_pull_NTLMv2_RESPONSE);
 		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
 			nt_status = ndr_map_error2ntstatus(err);
+			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_BUFFER_TOO_SMALL)) {
+				/*
+				 * Note that invalid blobs should result in
+				 * INVALID_PARAMETER, as demonstrated by
+				 * smb2.session.ntlmssp_bug14932
+				 */
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+			}
 			DEBUG(1,("%s: failed to parse NTLMv2_RESPONSE of length %zu for "
 				 "user=[%s] domain=[%s] workstation=[%s] - %s %s\n",
 				 __func__, ntlmssp_state->nt_resp.length,
