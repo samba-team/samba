@@ -230,8 +230,10 @@ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 bool cli_credentials_set_old_nt_hash(struct cli_credentials *cred,
 				     const struct samr_Password *nt_hash);
 bool cli_credentials_set_ntlm_response(struct cli_credentials *cred,
-				       const DATA_BLOB *lm_response, 
-				       const DATA_BLOB *nt_response, 
+				       const DATA_BLOB *lm_response,
+				       const DATA_BLOB *lm_session_key,
+				       const DATA_BLOB *nt_response,
+				       const DATA_BLOB *nt_session_key,
 				       enum credentials_obtained obtained);
 int cli_credentials_set_keytab_name(struct cli_credentials *cred, 
 				    struct loadparm_context *lp_ctx,
