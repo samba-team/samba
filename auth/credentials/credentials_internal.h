@@ -70,7 +70,9 @@ struct cli_credentials {
 
 	/* Allows NTLM pass-though authentication */
 	DATA_BLOB lm_response;
+	DATA_BLOB lm_session_key;
 	DATA_BLOB nt_response;
+	DATA_BLOB nt_session_key;
 
 	struct ccache_container *ccache;
 	struct gssapi_creds_container *client_gss_creds;
