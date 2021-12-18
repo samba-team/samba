@@ -69,10 +69,26 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
+		if (cred->nt_session_key.length != 0) {
+			session_key = data_blob_dup_talloc(frame,
+							   cred->nt_session_key);
+			if (session_key.data == NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
 		if (cred->lm_response.length != 0) {
 			lm_response = data_blob_dup_talloc(frame,
 							   cred->lm_response);
 			if (lm_response.data == NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+		if (cred->lm_session_key.length != 0) {
+			lm_session_key = data_blob_dup_talloc(frame,
+							      cred->lm_session_key);
+			if (lm_session_key.data == NULL) {
 				TALLOC_FREE(frame);
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -483,19 +499,54 @@ _PUBLIC_ bool cli_credentials_set_old_nt_hash(struct cli_credentials *cred,
 }
 
 _PUBLIC_ bool cli_credentials_set_ntlm_response(struct cli_credentials *cred,
-						const DATA_BLOB *lm_response, 
-						const DATA_BLOB *nt_response, 
+						const DATA_BLOB *lm_response,
+						const DATA_BLOB *lm_session_key,
+						const DATA_BLOB *nt_response,
+						const DATA_BLOB *nt_session_key,
 						enum credentials_obtained obtained)
 {
 	if (obtained >= cred->password_obtained) {
 		cli_credentials_set_password(cred, NULL, obtained);
-		if (nt_response) {
-			cred->nt_response = data_blob_talloc(cred, nt_response->data, nt_response->length);
-			talloc_steal(cred, cred->nt_response.data);
+
+		data_blob_clear_free(&cred->lm_response);
+		data_blob_clear_free(&cred->lm_session_key);
+		data_blob_clear_free(&cred->nt_response);
+		data_blob_clear_free(&cred->nt_session_key);
+
+		if (lm_response != NULL && lm_response->length != 0) {
+			cred->lm_response = data_blob_talloc(cred,
+							lm_response->data,
+							lm_response->length);
+			if (cred->lm_response.data == NULL) {
+				return false;
+			}
 		}
-		if (nt_response) {
-			cred->lm_response = data_blob_talloc(cred, lm_response->data, lm_response->length);
+		if (lm_session_key != NULL && lm_session_key->length != 0) {
+			cred->lm_session_key = data_blob_talloc(cred,
+							lm_session_key->data,
+							lm_session_key->length);
+			if (cred->lm_session_key.data == NULL) {
+				return false;
+			}
 		}
+
+		if (nt_response != NULL && nt_response->length != 0) {
+			cred->nt_response = data_blob_talloc(cred,
+							nt_response->data,
+							nt_response->length);
+			if (cred->nt_response.data == NULL) {
+				return false;
+			}
+		}
+		if (nt_session_key != NULL && nt_session_key->length != 0) {
+			cred->nt_session_key = data_blob_talloc(cred,
+							nt_session_key->data,
+							nt_session_key->length);
+			if (cred->nt_session_key.data == NULL) {
+				return false;
+			}
+		}
+
 		return true;
 	}
 
