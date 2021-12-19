@@ -2689,11 +2689,18 @@ static void call_trans2findfirst(connection_struct *conn,
 
 	info_level = SVAL(params,6);
 
-	DEBUG(3,("call_trans2findfirst: dirtype = %x, maxentries = %d, close_after_first=%d, \
-close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_data_bytes = %d\n",
-		(unsigned int)dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
-		(int)backup_priv,
-		info_level, max_data_bytes));
+	DBG_NOTICE("dirtype = %"PRIx32", maxentries = %d, "
+		   "close_after_first=%d, close_if_end = %d "
+		   "requires_resume_key = %d backup_priv = %d level = 0x%x, "
+		   "max_data_bytes = %d\n",
+		   dirtype,
+		   maxentries,
+		   close_after_first,
+		   close_if_end,
+		   requires_resume_key,
+		   backup_priv,
+		   info_level,
+		   max_data_bytes);
 
 	if (!maxentries) {
 		/* W2K3 seems to treat zero as 1. */
