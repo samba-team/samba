@@ -2584,8 +2584,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.7",
 		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_DN_BINARY_validate_ldb,
-		.equality		= "caseIgnoreMatch",
+		.validate_ldb		= dsdb_syntax_DN_validate_ldb,
+		.equality               = "distinguishedNameMatch",
 		.ldb_syntax		= LDB_SYNTAX_DN,
 	},{
 	/*
