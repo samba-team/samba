@@ -1348,8 +1348,76 @@ interface netlogon
 
 	typedef struct {
 		[value(284)] uint32 OSVersionInfoSize;
+		/*
+		 * [MS-NRPC] 2.2.1.3.15 NL_OSVERSIONINFO_V1
+		 *
+		 * 4  The operating system is Windows NT 4.0.
+		 * 5  The operating system is
+		 *    Windows 2000,
+		 *    Windows XP,
+		 *    Windows Server 2003, or
+		 *    Windows Server 2003 R2 operating system.
+		 * 6  The operating system is
+		 *    Windows Vista, Windows Server 2008,
+		 *    Windows 7, Windows Server 2008 R2,
+		 *    Windows 8, Windows Server 2012,
+		 *    Windows 8.1, or Windows Server 2012 R2.
+		 * 10 The operating system is
+		 *    Windows 10 and later.
+		 */
 		uint32 MajorVersion;
+		/*
+		 * [MS-NRPC] 2.2.1.3.15 NL_OSVERSIONINFO_V1
+		 *
+		 * 0 The operating system is
+		 *   Windows NT 4.0, Windows 2000,
+		 *   Windows Vista, Windows Server 2008,
+		 *   Windows 10, Windows Server 2016, and later.
+		 * 1 The operating system is
+		 *   Windows XP, Windows 7, or Windows Server 2008 R2.
+		 * 2 The operating system is
+		 *   Windows XP Professional x64 Edition operating system,
+		 *   Windows Server 2003, Windows Server 2003 R2,
+		 *   Windows 8, or Windows Server 2012.
+		 * 3 The operating system is
+		 *   Windows 8.1 or Windows Server 2012 R2.
+		 *
+		 * I guess this results in:
+		 *
+		 * Windows Server 2022                              => 10.0 (20348)
+		 * Windows Server 2019                              => 10.0
+		 * Windows Server operating system                  => 10.0
+		 * Windows 10 and Windows Server 2016               => 10.0 (14393)
+		 * Windows 8.1 and Windows Server 2012 R2           => 6.3 (9600)
+		 * Windows 8 and Windows Server 2012                => 6.2
+		 * Windows 7 and Windows Server 2008 R2             => 6.1 (7600)
+		 * Windows Vista and Windows Server 2008            => 6.0
+		 * Windows XP operating system Service Pack 1 (SP1) => 5.2
+		 * Windows XP and Windows Server 2003               => 5.1
+		 * Windows 2000                                     => 5.0
+		 * Windows NT 4.0                                   => 4.0
+		 */
 		uint32 MinorVersion;
+		/*
+		 * From [MS-RPRN] 7 Appendix B: Product Behavior:
+		 *
+		 * Windows Server 2019 >= 17633
+		 * Windows Server operating system >= 16299
+		 * Windows 10 and Windows Server 2016 >= 10586
+		 * Windows 8.1 and Windows Server 2012 R2 >= 9431
+		 * Windows 8 and Windows Server 2012 >= 9200
+		 * Windows 7 and Windows Server 2008 R2 >= 7007
+		 * Windows Vista operating system with Service Pack 1 (SP1) and
+		 * Windows Server 2008 >= 6001
+		 * Windows Vista and Windows Server 2008 >= 6000
+		 * Windows XP operating system Service Pack 1 (SP1) >= 2196
+		 * Windows XP and Windows Server 2003 >= 2196
+		 * Windows 2000 >= 1382
+		 * Windows NT 4.0 >= 1381
+		 *
+		 * From testing:
+		 * Windows Server 2022 => 10.0 (20348)
+		 */
 		uint32 BuildNumber;
 		uint32 PlatformId;
 		[subcontext(0),subcontext_size(256)] nstring CSDVersion;
