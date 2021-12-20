@@ -1726,6 +1726,7 @@ static WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_
 
 	*out = data_blob_string_const(ldb_dn_get_extended_linearized(mem_ctx, dn, 1));
 	talloc_free(tmp_ctx);
+	W_ERROR_HAVE_NO_MEMORY(out->data);
 	return WERR_OK;
 }
 
@@ -2060,6 +2061,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 		}
 		out->values[i] = data_blob_string_const(dsdb_dn_get_extended_linearized(out->values, dsdb_dn, 1));
 		talloc_free(tmp_ctx);
+		W_ERROR_HAVE_NO_MEMORY(out->values[i].data);
 	}
 
 	return WERR_OK;
