@@ -2055,7 +2055,15 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 		/* set binary stuff */
 		dsdb_dn = dsdb_dn_construct(tmp_ctx, dn, id3.binary, attr->syntax->ldap_oid);
 		if (!dsdb_dn) {
-			/* If this fails, it must be out of memory, we know the ldap_oid is valid */
+			if (errno == EINVAL) {
+				/*
+				 * This might be Object(OR-Name)
+				 * failing because of a non empty
+				 * binary part.
+				 */
+				talloc_free(tmp_ctx);
+				return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+			}
 			talloc_free(tmp_ctx);
 			W_ERROR_HAVE_NO_MEMORY(dsdb_dn);
 		}
