@@ -1715,14 +1715,19 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<num_streams; i++) {
-		DEBUG(10, ("comparing [%s] and [%s]: ",
-			   smb_fname->stream_name, streams[i].name));
-		if (sname_equal(smb_fname->stream_name, streams[i].name,
-				conn->case_sensitive)) {
-			DEBUGADD(10, ("equal\n"));
+		bool equal = sname_equal(
+			smb_fname->stream_name,
+			streams[i].name,
+			conn->case_sensitive);
+
+		DBG_DEBUG("comparing [%s] and [%s]: %sequal\n",
+			  smb_fname->stream_name,
+			  streams[i].name,
+			  equal ? "" : "not ");
+
+		if (equal) {
 			break;
 		}
-		DEBUGADD(10, ("not equal\n"));
 	}
 
 	/* Couldn't find the stream. */
