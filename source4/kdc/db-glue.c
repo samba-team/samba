@@ -920,7 +920,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT) {
 		p->is_krbtgt = true;
 
-		if (flags & (SDB_F_CANON)) {
+		if (flags & (SDB_F_CANON|SDB_F_FORCE_CANON)) {
 			/*
 			 * When requested to do so, ensure that the
 			 * both realm values in the principal are set
