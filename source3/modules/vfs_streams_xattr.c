@@ -330,8 +330,9 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
 				return -1);
 
-	DEBUG(10, ("streams_xattr_open called for %s with flags 0x%x\n",
-		   smb_fname_str_dbg(smb_fname), flags));
+	DBG_DEBUG("called for %s with flags 0x%x\n",
+		  smb_fname_str_dbg(smb_fname),
+		  flags);
 
 	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_OPENAT(handle,
