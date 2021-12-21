@@ -415,6 +415,22 @@ for t in libsmbclient:
             [ "--option=torture:clientprotocol=%s" % proto],
             "samba4.%s.%s" % (t, proto))
 
+url = "smb://baduser:invalidpw@$SERVER/tmpguest"
+t = "libsmbclient.noanon_list"
+libsmbclient_testargs = [
+    '//$SERVER/tmpguest',
+    '-U$USERNAME%$PASSWORD',
+    "--option=torture:smburl=" + url,
+    "--option=torture:replace_smbconf="
+    "%s/testdata/samba3/smb_new.conf" % srcdir()
+    ]
+for proto in protocols:
+    plansmbtorture4testsuite(t,
+        "maptoguest",
+        libsmbclient_testargs +
+        [ "--option=torture:clientprotocol=%s" % proto],
+        "samba4.%s.baduser.%s" % (t, proto))
+
 plansmbtorture4testsuite("raw.qfileinfo.ipc", "ad_dc_ntvfs", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
 for t in smbtorture4_testsuites("rap."):
