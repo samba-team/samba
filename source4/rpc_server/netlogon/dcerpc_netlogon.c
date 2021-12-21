@@ -2602,9 +2602,14 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 							 os_version->BuildNumber);
 			NT_STATUS_HAVE_NO_MEMORY(os_version_str);
 
-			ret = ldb_msg_add_string(new_msg,
-						 "operatingSystemServicePack",
-						 os_version->CSDVersion);
+			if (strlen(os_version->CSDVersion) != 0) {
+				ret = ldb_msg_add_string(new_msg,
+							 "operatingSystemServicePack",
+							 os_version->CSDVersion);
+			} else {
+				ret = samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
+							   "operatingSystemServicePack");
+			}
 			if (ret != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY;
 			}
