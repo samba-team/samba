@@ -1254,6 +1254,54 @@ static bool torture_libsmbclient_utimes(struct torture_context *tctx)
 	return true;
 }
 
+static bool torture_libsmbclient_noanon_list(struct torture_context *tctx)
+{
+	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
+	struct smbc_dirent *dirent = NULL;
+	SMBCCTX *ctx = NULL;
+	int dhandle = -1;
+	bool ok = true;
+
+	if (smburl == NULL) {
+		torture_fail(tctx,
+			     "option --option=torture:smburl="
+			     "smb://user:password@server missing\n");
+	}
+
+	ok = torture_libsmbclient_init_context(tctx, &ctx);
+	torture_assert_goto(tctx,
+			    ok,
+			    ok,
+			    out,
+			    "Failed to init context");
+	torture_comment(tctx,
+			"Testing smbc_setOptionNoAutoAnonymousLogin\n");
+	smbc_setOptionNoAutoAnonymousLogin(ctx, true);
+	smbc_set_context(ctx);
+
+	torture_comment(tctx, "Listing: %s\n", smburl);
+	dhandle = smbc_opendir(smburl);
+	torture_assert_int_not_equal_goto(tctx,
+					  dhandle,
+					  -1,
+					  ok,
+					  out,
+					  "Failed to open smburl");
+
+	while((dirent = smbc_readdir(dhandle)) != NULL) {
+		torture_comment(tctx, "DIR: %s\n", dirent->name);
+		torture_assert_not_null_goto(tctx,
+					     dirent->name,
+					     ok,
+					     out,
+					     "Failed to read name");
+	}
+
+out:
+	smbc_closedir(dhandle);
+	return ok;
+}
+
 NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
@@ -1275,6 +1323,8 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 		torture_libsmbclient_readdirplus2);
 	torture_suite_add_simple_test(
 		suite, "utimes", torture_libsmbclient_utimes);
+	torture_suite_add_simple_test(
+		suite, "noanon_list", torture_libsmbclient_noanon_list);
 
 	suite->description = talloc_strdup(suite, "libsmbclient interface tests");
 
