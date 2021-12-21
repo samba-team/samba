@@ -5143,8 +5143,8 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 2nd call (variation of DNS hostname doesn't work)\n");
 	netlogon_creds_client_authenticator(creds, &a);
 
-	/* Wipe out the osVersion, and prove which values still 'stick' */
-	q1.os_version.os = NULL;
+	/* Wipe out the CSDVersion, and prove which values still 'stick' */
+	os.os.CSDVersion = "";
 
 	/* Change also the DNS hostname to test differences in behaviour */
 	talloc_free(discard_const_p(char, q1.dns_hostname));
@@ -5175,9 +5175,9 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		torture_assert(tctx,
 			       ldb_msg_find_attr_as_string(res[0], "operatingSystemServicePack", NULL) == NULL,
 			       "'operatingSystemServicePack' shouldn't stick!");
-		torture_assert(tctx,
-			       ldb_msg_find_attr_as_string(res[0], "operatingSystemVersion", NULL) == NULL,
-			       "'operatingSystemVersion' shouldn't stick!");
+		torture_assert_str_equal(tctx,
+					 ldb_msg_find_attr_as_string(res[0], "operatingSystemVersion", NULL),
+					 version_str, "'operatingSystemVersion' wrong!");
 
 		/* The DNS host name shouldn't have been updated by the server */
 
