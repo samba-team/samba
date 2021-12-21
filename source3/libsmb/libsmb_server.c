@@ -498,7 +498,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 
 	status = NT_STATUS_UNSUCCESSFUL;
 
-	if (context->internal->smb_encryption_level != SMBC_ENCRYPTLEVEL_NONE) {
+	if (context->internal->smb_encryption_level > SMBC_ENCRYPTLEVEL_NONE) {
 		signing_state = SMB_SIGNING_REQUIRED;
 	}
 
