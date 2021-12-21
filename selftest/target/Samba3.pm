@@ -1866,6 +1866,7 @@ sub setup_maptoguest
 	my $options = "
 map to guest = bad user
 ntlm auth = yes
+server min protocol = LANMAN1
 
 [force_user_error_inject]
 	path = $share_dir
