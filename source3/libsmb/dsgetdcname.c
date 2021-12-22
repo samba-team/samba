@@ -89,18 +89,18 @@ static void debug_dsdcinfo_flags(int lvl, uint32_t flags)
 		DEBUGADD(lvl,("DS_IS_FLAT_NAME "));
 	if (flags & DS_IS_DNS_NAME)
 		DEBUGADD(lvl,("DS_IS_DNS_NAME "));
-	if (flags & 0x00040000)
-		DEBUGADD(lvl,("0x00040000 "));
-	if (flags & 0x00080000)
-		DEBUGADD(lvl,("0x00080000 "));
-	if (flags & 0x00100000)
-		DEBUGADD(lvl,("0x00100000 "));
-	if (flags & 0x00200000)
-		DEBUGADD(lvl,("0x00200000 "));
-	if (flags & 0x00400000)
-		DEBUGADD(lvl,("0x00400000 "));
-	if (flags & 0x00800000)
-		DEBUGADD(lvl,("0x00800000 "));
+	if (flags & DS_TRY_NEXTCLOSEST_SITE)
+		DEBUGADD(lvl,("DS_TRY_NEXTCLOSEST_SITE "));
+	if (flags & DS_DIRECTORY_SERVICE_6_REQUIRED)
+		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_6_REQUIRED "));
+	if (flags & DS_WEB_SERVICE_REQUIRED)
+		DEBUGADD(lvl,("DS_WEB_SERVICE_REQUIRED "));
+	if (flags & DS_DIRECTORY_SERVICE_8_REQUIRED)
+		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_8_REQUIRED "));
+	if (flags & DS_DIRECTORY_SERVICE_9_REQUIRED)
+		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_9_REQUIRED "));
+	if (flags & DS_DIRECTORY_SERVICE_10_REQUIRED)
+		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_10_REQUIRED "));
 	if (flags & 0x01000000)
 		DEBUGADD(lvl,("0x01000000 "));
 	if (flags & 0x02000000)
