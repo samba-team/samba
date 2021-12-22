@@ -297,6 +297,18 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		}
 	}
 
+	if (dc_level >= DS_DOMAIN_FUNCTION_2012) {
+		server_type |= DS_SERVER_DS_8;
+	}
+
+	if (dc_level >= DS_DOMAIN_FUNCTION_2012_R2) {
+		server_type |= DS_SERVER_DS_9;
+	}
+
+	if (dc_level >= DS_DOMAIN_FUNCTION_2016) {
+		server_type |= DS_SERVER_DS_10;
+	}
+
 	if (version & (NETLOGON_NT_VERSION_5EX|NETLOGON_NT_VERSION_5EX_WITH_IP)) {
 		pdc_name = lpcfg_netbios_name(lp_ctx);
 	} else {
