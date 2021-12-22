@@ -38,9 +38,7 @@
 
 #define TEST_CANONICALIZE     0x0000001
 #define TEST_ENTERPRISE       0x0000002
-#define TEST_UPPER_REALM      0x0000004
 #define TEST_UPPER_USERNAME   0x0000008
-#define TEST_NETBIOS_REALM    0x0000010
 #define TEST_WIN2K            0x0000020
 #define TEST_UPN              0x0000040
 #define TEST_S4U2SELF         0x0000080
@@ -57,9 +55,7 @@ struct test_data {
 	const char *real_username;
 	bool canonicalize;
 	bool enterprise;
-	bool upper_realm;
 	bool upper_username;
-	bool netbios_realm;
 	bool win2k;
 	bool upn;
 	bool other_upn_suffix;
@@ -324,11 +320,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		torture_skip(tctx, "--option=torture:run_removedollar_test=true not specified");
 	}
 
-	if (test_data->netbios_realm) {
-		test_data->realm = test_data->real_domain;
-	} else {
-		test_data->realm = test_data->real_realm;
-	}
+	test_data->realm = test_data->real_realm;
 
 	if (test_data->upn) {
 		char *p;
@@ -360,20 +352,14 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		 * with a valid domain, without adding even more
 		 * combinations
 		 */
-		if (test_data->netbios_realm == false) {
-			test_data->realm = p;
-		}
+		test_data->realm = p;
 	}
 
 	ok = torture_krb5_init_context_canon(tctx, test_data, &test_context);
 	torture_assert(tctx, ok, "torture_krb5_init_context failed");
 	k5_context = test_context->smb_krb5_context->krb5_context;
 
-	if (test_data->upper_realm) {
-		test_data->realm = strupper_talloc(test_data, test_data->realm);
-	} else {
-		test_data->realm = strlower_talloc(test_data, test_data->realm);
-	}
+	test_data->realm = strupper_talloc(test_data, test_data->realm);
 	if (test_data->upper_username) {
 		test_data->username = strupper_talloc(test_data, test_data->username);
 	} else {
@@ -532,13 +518,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 					     password, NULL, NULL, 0,
 					     NULL, krb_options);
 
-	if (test_data->netbios_realm && test_data->upn) {
-		torture_assert_int_equal(tctx, k5ret,
-					 KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN,
-					 "Got wrong error_code from krb5_get_init_creds_password");
-		/* We can't proceed with more checks */
-		return true;
-	} else if (test_context->test_data->as_req_spn
+	if (test_context->test_data->as_req_spn
 		   && !test_context->test_data->spn_is_upn) {
 		torture_assert_int_equal(tctx, k5ret,
 					 KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN,
@@ -673,30 +653,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	/* Confirm if we can get a ticket krbtgt/realm that we got back with the initial kinit */
 	k5ret = krb5_get_creds(k5_context, opt, ccache, krbtgt_other, &server_creds);
 
-	if (test_data->canonicalize == false
-	    && test_data->netbios_realm && test_data->upper_realm) {
-		/*
-		 * In these situations, the code above does store a
-		 * principal in the credentials cache matching what
-		 * krb5_get_creds() needs, so the test succeds, with no packets.
-		 *
-		 */
-		assertion_message = talloc_asprintf(tctx,
-						    "krb5_get_creds for %s failed with: %s",
-						    krbtgt_other_string,
-						    smb_get_krb5_error_message(k5_context, k5ret,
-									       tctx));
-
-		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
-		torture_assert_int_equal(tctx,
-					 test_context->packet_count,
-					 0, "Expected krb5_get_creds not to send packets");
-	} else if (test_data->canonicalize == false
-		   && (test_data->upper_realm == false || test_data->netbios_realm == true)) {
-		torture_assert_int_equal(tctx, k5ret, KRB5_CC_NOTFOUND,
-					 "krb5_get_creds should have failed with KRB5_CC_NOTFOUND");
-	} else {
-
+	{
 		/*
 		 * In these situations, the code above does not store a
 		 * principal in the credentials cache matching what
@@ -755,11 +712,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 * krb5_get_creds() needs, so the test fails.
 	 *
 	 */
-	if (test_data->canonicalize == false
-	    && (test_data->upper_realm == false || test_data->netbios_realm == true)) {
-		torture_assert_int_equal(tctx, k5ret, KRB5_CC_NOTFOUND,
-					 "krb5_get_creds should have failed with KRB5_CC_NOTFOUND");
-	} else {
+	{
 		assertion_message = talloc_asprintf(tctx,
 						    "krb5_get_creds for %s failed: %s",
 						    principal_string,
@@ -901,17 +854,6 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	}
 
 	/*
-	 * Only in these cases would the above code have needed to
-	 * send packets to the network
-	 */
-	if (test_data->canonicalize == false
-	    && (test_data->upper_realm == false || test_data->netbios_realm == true)) {
-		torture_assert(tctx,
-			       test_context->packet_count > 0,
-			       "Expected krb5_mk_req_exact to send packets");
-	}
-
-	/*
 	 * Confirm gettting a ticket to pass to the server, running
 	 * the TEST_TGS_REQ_HOST, TEST_TGS_REQ_HOST_SRV_INST, TEST_TGS_REQ_HOST_SRV_HST stage
 	 *
@@ -922,7 +864,6 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 */
 
 	if (*test_data->krb5_service && *test_data->krb5_hostname) {
-		bool implied_canonicalize;
 		krb5_principal host_principal_srv_inst;
 		/*
 		 * This tries to guess when the krb5 libs will ask for a
@@ -942,23 +883,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 				    &in_data, ccache,
 				    &enc_ticket);
 
-		implied_canonicalize = test_data->canonicalize;
-		if (test_data->spn_is_upn && (test_data->upn || test_data->as_req_spn)) {
-			implied_canonicalize = true;
-		}
-
-		if (implied_canonicalize == false
-		    && (test_data->upper_realm == false || test_data->netbios_realm == true)) {
-			torture_assert_int_equal(tctx, k5ret, KRB5_CC_NOTFOUND,
-						 "krb5_get_creds should have failed with KRB5_CC_NOTFOUND");
-		} else if (test_data->spn_is_upn
-			   && test_data->canonicalize == false
-			   && test_data->upper_realm == false
-			   && test_data->upper_username == true
-			   && test_data->upn) {
-			torture_assert_int_equal(tctx, k5ret, KRB5_CC_NOTFOUND,
-						 "krb5_get_creds should have failed with KRB5_CC_NOTFOUND");
-		} else {
+		{
 			assertion_message = talloc_asprintf(tctx,
 							    "krb5_mk_req for %s/%s failed: %s",
 							    test_data->krb5_service,
@@ -1003,11 +928,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 					  &in_data, ccache,
 					  &enc_ticket);
 		krb5_free_principal(k5_context, host_principal_srv_inst);
-		if (test_data->canonicalize == false
-		    && (test_data->upper_realm == false || test_data->netbios_realm == true)) {
-			torture_assert_int_equal(tctx, k5ret, KRB5_CC_NOTFOUND,
-						 "krb5_get_creds should have failed with KRB5_CC_NOTFOUND");
-		} else {
+		{
 			assertion_message = talloc_asprintf(tctx,
 							    "krb5_mk_req for %s/%s KRB5_NT_SRV_INST failed: %s",
 							    test_data->krb5_service,
@@ -1048,11 +969,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 					  &in_data, ccache,
 					  &enc_ticket);
 		krb5_free_principal(k5_context, host_principal_srv_inst);
-		if (test_data->canonicalize == false
-		    && (test_data->upper_realm == false || test_data->netbios_realm == true)) {
-			torture_assert_int_equal(tctx, k5ret, KRB5_CC_NOTFOUND,
-						 "krb5_get_creds should have failed with KRB5_CC_NOTFOUND");
-		} else {
+		{
 			assertion_message = talloc_asprintf(tctx,
 							    "krb5_mk_req for %s/%s KRB5_NT_SRV_INST failed: %s",
 							    test_data->krb5_service,
@@ -1109,12 +1026,10 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 	suite->description = talloc_strdup(suite, "Kerberos Canonicalisation tests");
 
 	for (i = 0; i < TEST_ALL; i++) {
-		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s.%s.%s",
+		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s",
 					     (i & TEST_CANONICALIZE) ? "canon" : "no-canon",
 					     (i & TEST_ENTERPRISE) ? "enterprise" : "no-enterprise",
-					     (i & TEST_UPPER_REALM) ? "uc-realm" : "lc-realm",
 					     (i & TEST_UPPER_USERNAME) ? "uc-user" : "lc-user",
-					     (i & TEST_NETBIOS_REALM) ? "netbios-realm" : "krb5-realm",
 					     (i & TEST_WIN2K) ? "win2k" : "no-win2k",
 					     (i & TEST_UPN) ? "upn" :
 					     ((i & TEST_AS_REQ_SPN) ? "spn" : 
@@ -1147,9 +1062,7 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 						samba_cmdline_get_creds());
 		test_data->canonicalize = (i & TEST_CANONICALIZE) != 0;
 		test_data->enterprise = (i & TEST_ENTERPRISE) != 0;
-		test_data->upper_realm = (i & TEST_UPPER_REALM) != 0;
 		test_data->upper_username = (i & TEST_UPPER_USERNAME) != 0;
-		test_data->netbios_realm = (i & TEST_NETBIOS_REALM) != 0;
 		test_data->win2k = (i & TEST_WIN2K) != 0;
 		test_data->upn = (i & TEST_UPN) != 0;
 		test_data->s4u2self = (i & TEST_S4U2SELF) != 0;
