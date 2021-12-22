@@ -2990,6 +2990,31 @@ struct dcesrv_netr_DsRGetDCName_base_state {
 
 static void dcesrv_netr_DsRGetDCName_base_done(struct tevent_req *subreq);
 
+/* Returns a nonzero value if multiple bits in 'val' are set. */
+static bool multiple_bits_set(uint32_t val)
+{
+	/*
+	 * Subtracting one from an integer has the effect of flipping all the
+	 * bits from the least significant bit up to and including the least
+	 * significant '1' bit. For example,
+	 *
+	 *   0b101000 - 1
+	 * = 0b100111
+	 *       ====
+	 *
+	 * If 'val' is zero, all the bits will be flipped and thus the bitwise
+	 * AND of 'val' with 'val - 1' will be zero.
+	 *
+	 * If the integer is nonzero, the least significant '1' bit will be
+	 * ANDed with a '0' bit and so will be reset in the final result, but
+	 * all other '1' bits will remain set. In other words, the effect of
+	 * this expression is to mask off the least significant bit that is
+	 * set. Therefore iff the result of 'val & (val - 1)' is non-zero, 'val'
+	 * must contain multiple set bits.
+	 */
+	return val & (val - 1);
+}
+
 static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName_base_state *state)
 {
 	struct dcesrv_call_state *dce_call = state->dce_call;
@@ -3034,28 +3059,93 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 
 	/* "server_unc" is ignored by w2k3 */
 
+	/*
+	 * With the following flags:
+	 * DS_FORCE_REDISCOVERY (Flag A)
+	 * DS_DIRECTORY_SERVICE_REQUIRED (Flag B)
+	 * DS_DIRECTORY_SERVICE_PREFERRED (Flag C)
+	 * DS_GC_SERVER_REQUIRED (Flag D)
+	 * DS_PDC_REQUIRED (Flag E)
+	 * DS_BACKGROUND_ONLY (Flag F)
+	 * DS_IP_REQUIRED (Flag G)
+	 * DS_KDC_REQUIRED (Flag H)
+	 * DS_TIMESERV_REQUIRED (Flag I)
+	 * DS_WRITABLE_REQUIRED (Flag J)
+	 * DS_GOOD_TIMESERV_PREFERRED (Flag K)
+	 * DS_AVOID_SELF (Flag L)
+	 * DS_ONLY_LDAP_NEEDED (Flag M)
+	 * DS_IS_FLAT_NAME (Flag N)
+	 * DS_IS_DNS_NAME (Flag O)
+	 * DS_TRY_NEXTCLOSEST_SITE (Flag P)
+	 * DS_DIRECTORY_SERVICE_6_REQUIRED  (Flag Q)
+	 * DS_WEB_SERVICE_REQUIRED (Flag T)
+	 * DS_DIRECTORY_SERVICE_8_REQUIRED  (Flag U)
+	 * DS_DIRECTORY_SERVICE_9_REQUIRED  (Flag V)
+	 * DS_DIRECTORY_SERVICE_10_REQUIRED (Flag W)
+	 * DS_RETURN_DNS_NAME (Flag R)
+	 * DS_RETURN_FLAT_NAME (Flag S)
+	 *
+	 * MS-NRPC 3.5.4.3.1 says:
+	 * ...
+	 * On receiving this call, the server MUST perform the following Flags
+	 * parameter validations:
+	 * - Flags D, E, and H MUST NOT be combined with each other.
+	 * - Flag N MUST NOT be combined with the O flag.
+	 * - Flag R MUST NOT be combined with the S flag.
+	 * - Flags B, Q, U, V, and W MUST NOT be combined with each other.
+	 * - Flag K MUST NOT be combined with any of the flags: B, C, D, E, or H.
+	 * - Flag P MUST NOT be set when the SiteName parameter is provided.
+	 * The server MUST return ERROR_INVALID_FLAGS for any of the previously
+	 * mentioned conflicting combinations.
+	 * ...
+	 */
+
 	if (r->in.flags & ~(DSGETDC_VALID_FLAGS)) {
+		/*
+		 * TODO: add tests to prove this (maybe based on the
+		 * msDS-Behavior-Version levels of dc, domain and/or forest
+		 *
+		 * Note that we currently reject
+		 * DS_DIRECTORY_SERVICE_{8,9,10}_REQUIRED
+		 * at this stage.
+		 */
 		return WERR_INVALID_FLAGS;
 	}
 
-	if (r->in.flags & DS_GC_SERVER_REQUIRED &&
-	    r->in.flags & DS_PDC_REQUIRED &&
-	    r->in.flags & DS_KDC_REQUIRED) {
+	/* Flags D, E, and H MUST NOT be combined with each other. */
+#define _DEH (DS_GC_SERVER_REQUIRED|DS_PDC_REQUIRED|DS_KDC_REQUIRED)
+	if (multiple_bits_set(r->in.flags & _DEH)) {
 		return WERR_INVALID_FLAGS;
 	}
+
+	/* Flag N MUST NOT be combined with the O flag. */
 	if (r->in.flags & DS_IS_FLAT_NAME &&
 	    r->in.flags & DS_IS_DNS_NAME) {
 		return WERR_INVALID_FLAGS;
 	}
+
+	/* Flag R MUST NOT be combined with the S flag. */
 	if (r->in.flags & DS_RETURN_DNS_NAME &&
 	    r->in.flags & DS_RETURN_FLAT_NAME) {
 		return WERR_INVALID_FLAGS;
 	}
-	if (r->in.flags & DS_DIRECTORY_SERVICE_REQUIRED &&
-	    r->in.flags & DS_DIRECTORY_SERVICE_6_REQUIRED) {
+
+	/* Flags B, Q, U, V, and W MUST NOT be combined with each other */
+#define _BQUVW ( \
+	DS_DIRECTORY_SERVICE_REQUIRED | \
+	DS_DIRECTORY_SERVICE_6_REQUIRED | \
+	DS_DIRECTORY_SERVICE_8_REQUIRED | \
+	DS_DIRECTORY_SERVICE_9_REQUIRED | \
+	DS_DIRECTORY_SERVICE_10_REQUIRED | \
+0)
+	if (multiple_bits_set(r->in.flags & _BQUVW)) {
 		return WERR_INVALID_FLAGS;
 	}
 
+	/*
+	 * Flag K MUST NOT be combined with any of the flags:
+	 * B, C, D, E, or H.
+	 */
 	if (r->in.flags & DS_GOOD_TIMESERV_PREFERRED &&
 	    r->in.flags &
 	    (DS_DIRECTORY_SERVICE_REQUIRED |
@@ -3066,6 +3156,7 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 		return WERR_INVALID_FLAGS;
 	}
 
+	/* Flag P MUST NOT be set when the SiteName parameter is provided. */
 	if (r->in.flags & DS_TRY_NEXTCLOSEST_SITE &&
 	    r->in.site_name) {
 		return WERR_INVALID_FLAGS;
