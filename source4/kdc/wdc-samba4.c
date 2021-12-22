@@ -39,7 +39,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 					 struct hdb_entry_ex *client,
 					 struct hdb_entry_ex *server,
 					 const krb5_keyblock *pk_reply_key,
-					 const krb5_boolean *pac_request,
+					 uint64_t pac_attributes,
 					 krb5_pac *pac)
 {
 	TALLOC_CTX *mem_ctx;
@@ -74,7 +74,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 					    cred_ndr_ptr,
 					    &upn_blob,
 					    is_krbtgt ? &pac_attrs_blob : NULL,
-					    pac_request,
+					    pac_attributes,
 					    is_krbtgt ? &requester_sid_blob : NULL,
 					    NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -265,7 +265,8 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 
 		nt_status = samba_kdc_get_pac_blobs(mem_ctx, client_skdc_entry,
 						    &pac_blob, NULL, &upn_blob,
-						    NULL, NULL, &requester_sid_blob,
+						    NULL, PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY,
+						    &requester_sid_blob,
 						    &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);

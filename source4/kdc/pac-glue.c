@@ -153,7 +153,7 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 
 static
 NTSTATUS samba_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
-				  const krb5_boolean *pac_request,
+				  uint64_t pac_attributes,
 				  DATA_BLOB *pac_attrs_data)
 {
 	union PAC_INFO pac_attrs;
@@ -166,14 +166,7 @@ NTSTATUS samba_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
 
 	/* Set the length of the flags in bits. */
 	pac_attrs.attributes_info.flags_length = 2;
-
-	if (pac_request == NULL) {
-		pac_attrs.attributes_info.flags
-			|= PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY;
-	} else if (*pac_request) {
-		pac_attrs.attributes_info.flags
-			|= PAC_ATTRIBUTE_FLAG_PAC_WAS_REQUESTED;
-	}
+	pac_attrs.attributes_info.flags = pac_attributes;
 
 	ndr_err = ndr_push_union_blob(pac_attrs_data, mem_ctx, &pac_attrs,
 				      PAC_TYPE_ATTRIBUTES_INFO,
@@ -839,7 +832,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB **_cred_ndr_blob,
 				 DATA_BLOB **_upn_info_blob,
 				 DATA_BLOB **_pac_attrs_blob,
-				 const krb5_boolean *pac_request,
+				 uint64_t pac_attributes,
 				 DATA_BLOB **_requester_sid_blob,
 				 struct auth_user_info_dc **_user_info_dc)
 {
@@ -941,7 +934,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 
 	if (pac_attrs_blob != NULL) {
 		nt_status = samba_get_pac_attrs_blob(pac_attrs_blob,
-						     pac_request,
+						     pac_attributes,
 						     pac_attrs_blob);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
