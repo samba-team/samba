@@ -365,7 +365,7 @@ uint32_t interpret_addr(const char *str)
 		ret = dest.s_addr; /* NETWORK BYTE ORDER ! */
 	} else {
 		/* Otherwise assume it's a network name of some sort and use
-			getadddrinfo. */
+			getaddrinfo. */
 		struct addrinfo *res = NULL;
 		struct addrinfo *res_list = NULL;
 		if (!interpret_string_addr_internal(&res_list,
