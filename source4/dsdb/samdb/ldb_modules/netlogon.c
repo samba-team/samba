@@ -77,6 +77,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	struct interface *ifaces;
 	bool user_known = false, am_rodc = false;
 	uint32_t uac = 0;
+	int dc_level;
 	NTSTATUS status;
 
 	/* the domain parameter could have an optional trailing "." */
@@ -287,7 +288,8 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		server_type |= DS_SERVER_WRITABLE;
 	}
 
-	if (dsdb_functional_level(sam_ctx) >= DS_DOMAIN_FUNCTION_2008) {
+	dc_level = dsdb_dc_functional_level(sam_ctx);
+	if (dc_level >= DS_DOMAIN_FUNCTION_2008) {
 		if (server_type & DS_SERVER_WRITABLE) {
 			server_type |= DS_SERVER_FULL_SECRET_DOMAIN_6;
 		} else {
