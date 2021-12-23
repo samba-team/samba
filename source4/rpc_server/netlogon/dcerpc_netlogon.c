@@ -3037,6 +3037,8 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 	const char *domain_name = NULL;
 	const char *pdc_ip;
 	bool different_domain = true;
+	uint32_t valid_flags;
+	int dc_level;
 
 	ZERO_STRUCTP(r->out.info);
 
@@ -3100,14 +3102,21 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 	 * ...
 	 */
 
-	if (r->in.flags & ~(DSGETDC_VALID_FLAGS)) {
+	dc_level = dsdb_dc_functional_level(sam_ctx);
+	valid_flags = DSGETDC_VALID_FLAGS;
+	if (dc_level >= DS_DOMAIN_FUNCTION_2012) {
+		valid_flags |= DS_DIRECTORY_SERVICE_8_REQUIRED;
+	}
+	if (dc_level >= DS_DOMAIN_FUNCTION_2012_R2) {
+		valid_flags |= DS_DIRECTORY_SERVICE_9_REQUIRED;
+	}
+	if (dc_level >= DS_DOMAIN_FUNCTION_2016) {
+		valid_flags |= DS_DIRECTORY_SERVICE_10_REQUIRED;
+	}
+	if (r->in.flags & ~valid_flags) {
 		/*
 		 * TODO: add tests to prove this (maybe based on the
 		 * msDS-Behavior-Version levels of dc, domain and/or forest
-		 *
-		 * Note that we currently reject
-		 * DS_DIRECTORY_SERVICE_{8,9,10}_REQUIRED
-		 * at this stage.
 		 */
 		return WERR_INVALID_FLAGS;
 	}
