@@ -613,6 +613,19 @@ class RawKerberosTest(TestCaseInTempDir):
             kdc_fast_support = '0'
         cls.kdc_fast_support = bool(int(kdc_fast_support))
 
+        kdc_claims_support = samba.tests.env_get_var_value('CLAIMS_SUPPORT',
+                                                           allow_missing=True)
+        if kdc_claims_support is None:
+            kdc_claims_support = '0'
+        cls.kdc_claims_support = bool(int(kdc_claims_support))
+
+        kdc_compound_id_support = samba.tests.env_get_var_value(
+            'COMPOUND_ID_SUPPORT',
+            allow_missing=True)
+        if kdc_compound_id_support is None:
+            kdc_compound_id_support = '0'
+        cls.kdc_compound_id_support = bool(int(kdc_compound_id_support))
+
         tkt_sig_support = samba.tests.env_get_var_value('TKT_SIG_SUPPORT',
                                                         allow_missing=True)
         if tkt_sig_support is None:
@@ -2901,8 +2914,14 @@ class RawKerberosTest(TestCaseInTempDir):
                             '<L',
                             enc_pa_dict[PADATA_SUPPORTED_ETYPES])
 
-                        self.assertEqual(supported_etypes,
-                                         expected_supported_etypes)
+                        ignore_bits = (security.KERB_ENCTYPE_DES_CBC_CRC |
+                                       security.KERB_ENCTYPE_DES_CBC_MD5)
+
+                        self.assertEqual(
+                            supported_etypes & ~ignore_bits,
+                            expected_supported_etypes & ~ignore_bits,
+                            f'got: {supported_etypes}, '
+                            f'expected: {expected_supported_etypes}')
 
                     if PADATA_PAC_OPTIONS in enc_pa_dict:
                         pac_options = self.der_decode(

@@ -600,13 +600,21 @@ class KDCBaseTest(RawKerberosTest):
         creds.set_tgs_supported_enctypes(supported_enctypes)
         creds.set_ap_supported_enctypes(supported_enctypes)
 
-    def creds_set_default_enctypes(self, creds, fast_support=False):
+    def creds_set_default_enctypes(self, creds,
+                                   fast_support=False,
+                                   claims_support=False,
+                                   compound_id_support=False):
         default_enctypes = self.get_default_enctypes()
         supported_enctypes = KerberosCredentials.etypes_to_bits(
             default_enctypes)
 
         if fast_support:
-            supported_enctypes |= KerberosCredentials.fast_supported_bits
+            supported_enctypes |= security.KERB_ENCTYPE_FAST_SUPPORTED
+        if claims_support:
+            supported_enctypes |= security.KERB_ENCTYPE_CLAIMS_SUPPORTED
+        if compound_id_support:
+            supported_enctypes |= (
+                security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED)
 
         creds.set_as_supported_enctypes(supported_enctypes)
         creds.set_tgs_supported_enctypes(supported_enctypes)
@@ -924,7 +932,11 @@ class KDCBaseTest(RawKerberosTest):
             # The RODC krbtgt account should support the default enctypes,
             # although it might not have the msDS-SupportedEncryptionTypes
             # attribute.
-            self.creds_set_default_enctypes(creds)
+            self.creds_set_default_enctypes(
+                creds,
+                fast_support=self.kdc_fast_support,
+                claims_support=self.kdc_claims_support,
+                compound_id_support=self.kdc_compound_id_support)
 
             return creds
 
@@ -1015,8 +1027,11 @@ class KDCBaseTest(RawKerberosTest):
             # The krbtgt account should support the default enctypes, although
             # it might not (on Samba) have the msDS-SupportedEncryptionTypes
             # attribute.
-            self.creds_set_default_enctypes(creds,
-                                            fast_support=self.kdc_fast_support)
+            self.creds_set_default_enctypes(
+                creds,
+                fast_support=self.kdc_fast_support,
+                claims_support=self.kdc_claims_support,
+                compound_id_support=self.kdc_compound_id_support)
 
             return creds
 
