@@ -300,7 +300,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	union PAC_INFO info;
 	union PAC_INFO _upn_dns_info;
-	const struct PAC_UPN_DNS_INFO *upn_dns_info = NULL;
+	struct PAC_UPN_DNS_INFO *upn_dns_info = NULL;
 	struct auth_user_info_dc *user_info_dc_out;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -369,6 +369,12 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 					 upn_dns_info,
 					 &user_info_dc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("make_user_info_dc_pac() failed -%s\n",
+			nt_errstr(nt_status));
+		NDR_PRINT_DEBUG(PAC_LOGON_INFO, info.logon_info.info);
+		if (upn_dns_info != NULL) {
+			NDR_PRINT_DEBUG(PAC_UPN_DNS_INFO, upn_dns_info);
+		}
 		talloc_free(tmp_ctx);
 		return EINVAL;
 	}
