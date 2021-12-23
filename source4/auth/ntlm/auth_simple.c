@@ -88,9 +88,9 @@ _PUBLIC_ struct tevent_req *authenticate_ldap_simple_bind_send(TALLOC_CTX *mem_c
 	user_info->service_description = "LDAP";
 
 	if (using_tls) {
-		user_info->auth_description = "simple bind";
-	} else {
 		user_info->auth_description = "simple bind/TLS";
+	} else {
+		user_info->auth_description = "simple bind";
 	}
 
 	user_info->password_state = AUTH_PASSWORD_PLAIN;
