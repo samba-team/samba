@@ -3842,6 +3842,21 @@ int dsdb_forest_functional_level(struct ldb_context *ldb)
 }
 
 /*
+ * This detects and returns the DC functional level (DS_DOMAIN_FUNCTION_*)
+ */
+int dsdb_dc_functional_level(struct ldb_context *ldb)
+{
+	int *dcFunctionality =
+		talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int);
+	if (!dcFunctionality) {
+		/* this is expected during initial provision */
+		DEBUG(4,(__location__ ": WARNING: domainControllerFunctionality not setup\n"));
+		return DS_DOMAIN_FUNCTION_2008_R2;
+	}
+	return *dcFunctionality;
+}
+
+/*
   set a GUID in an extended DN structure
  */
 int dsdb_set_extended_dn_guid(struct ldb_dn *dn, const struct GUID *guid, const char *component_name)
