@@ -212,13 +212,16 @@ def HEIMDAL_GENERATOR(name, rule, source='', target='',
         name=name)
 
 
-def HEIMDAL_LIBRARY(libname, source, deps, version_script, includes='', cflags=''):
+def HEIMDAL_LIBRARY(libname, source, deps, version_script=None, includes='', cflags=''):
     '''define a Heimdal library'''
 
     cflags, cflags_end, allow_warnings = HEIMDAL_CFLAGS(use_hostcc=False,
                                                         extra_cflags=cflags)
     source = heimdal_paths(source)
-    orig_vscript_map = heimdal_path(version_script, absolute=False)
+    if version_script is not None:
+        orig_vscript_map = heimdal_path(version_script, absolute=False)
+    else:
+        orig_vscript_map = None
     bld.SAMBA_LIBRARY(libname, source,
                       deps=deps,
                       includes=includes,
