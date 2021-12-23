@@ -240,6 +240,19 @@ static int ip_from_string(const char *str, ctdb_sock_addr *addr)
 		uint8_t ipv4_mapped_prefix[12] = {
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff
 		};
+		size_t len = strlen(str);
+		char s[64];
+
+		len = strlcpy(s, str, sizeof(s));
+		if (len >= sizeof(s)) {
+			return EINVAL;
+		}
+
+		if ((len >= 2) && (s[0] == '[') && (s[len-1] == ']')) {
+			s[len-1] = '\0';
+			str = s+1;
+			p = strrchr(str, ':');
+		}
 
 		ret = ipv6_from_string(str, &addr->ip6);
 		if (ret != 0) {
