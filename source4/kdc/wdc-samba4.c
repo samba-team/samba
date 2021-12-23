@@ -253,8 +253,8 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 					delegated_proxy_principal,
 					deleg_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("Building PAC failed: %s\n",
-				  nt_errstr(nt_status)));
+			DBG_ERR("samba_kdc_update_delegation_info_blob() failed: %s\n",
+				nt_errstr(nt_status));
 			talloc_free(mem_ctx);
 			return EINVAL;
 		}
@@ -278,6 +278,8 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 						    &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
+			DBG_ERR("samba_kdc_get_pac_blobs() failed: %s\n",
+				nt_errstr(nt_status));
 			return KRB5KDC_ERR_TGT_REVOKED;
 		}
 
@@ -313,8 +315,8 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 						      *pac, pac_blob,
 						      NULL, NULL);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("Building PAC failed: %s\n",
-				  nt_errstr(nt_status)));
+			DBG_ERR("samba_kdc_update_pac_blob() failed: %s\n",
+				nt_errstr(nt_status));
 			talloc_free(mem_ctx);
 			return EINVAL;
 		}
