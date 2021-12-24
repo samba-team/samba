@@ -26,6 +26,7 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include <hdb.h>
+#include <heimbase.h>
 #include <kdc.h>
 #include <krb5/windc_plugin.h>
 #include "kdc/samba_kdc.h"
