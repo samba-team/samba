@@ -882,6 +882,65 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 	return KRB5_PLUGIN_NO_HANDLE;
 }
 
+/* this function allocates 'data' using malloc.
+ * The caller is responsible for freeing it */
+static krb5_error_code samba_kdc_build_supported_etypes(uint32_t supported_etypes,
+							krb5_data *e_data)
+{
+	e_data->data = malloc(4);
+	if (e_data->data == NULL) {
+		return ENOMEM;
+	}
+	e_data->length = 4;
+
+	PUSH_LE_U32(e_data->data, 0, supported_etypes);
+
+	return 0;
+}
+
+static krb5_error_code samba_wdc_finalize_reply(void *priv,
+						astgs_request_t r)
+{
+	struct samba_kdc_entry *server_kdc_entry;
+	uint32_t supported_enctypes;
+
+	server_kdc_entry = talloc_get_type(r->server->ctx, struct samba_kdc_entry);
+
+	/*
+	 * If the canonicalize flag is set, add PA-SUPPORTED-ENCTYPES padata
+	 * type to indicate what encryption types the server supports.
+	 */
+	supported_enctypes = server_kdc_entry->supported_enctypes;
+	if (r->req.req_body.kdc_options.canonicalize && supported_enctypes != 0) {
+		krb5_error_code ret;
+		krb5_data kd;
+
+		if (r->ek.encrypted_pa_data == NULL) {
+			r->ek.encrypted_pa_data = calloc(1, sizeof *(r->ek.encrypted_pa_data));
+			if (r->ek.encrypted_pa_data == NULL) {
+				return ENOMEM;
+			}
+		}
+
+		ret = samba_kdc_build_supported_etypes(supported_enctypes, &kd);
+		if (ret != 0) {
+			return ret;
+		}
+		ret = krb5_padata_add(r->context, r->ek.encrypted_pa_data,
+				      KRB5_PADATA_SUPPORTED_ETYPES,
+				      kd.data, kd.length);
+		if (ret != 0) {
+			/*
+			 * So we do not leak the allocated
+			 * memory on kd in the error case
+			 */
+			krb5_data_free(&kd);
+		}
+	}
+
+	return 0;
+}
+
 static krb5_error_code samba_wdc_plugin_init(krb5_context context, void **ptr)
 {
 	*ptr = NULL;
@@ -899,6 +958,7 @@ struct krb5plugin_windc_ftable windc_plugin_table = {
 	.fini = samba_wdc_plugin_fini,
 	.pac_verify = samba_wdc_reget_pac,
 	.client_access = samba_wdc_check_client_access,
+	.finalize_reply = samba_wdc_finalize_reply,
 	.pac_generate = samba_wdc_get_pac,
 };
 
