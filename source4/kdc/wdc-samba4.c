@@ -843,27 +843,21 @@ static void samba_kdc_build_edata_reply(NTSTATUS nt_status, krb5_data *e_data)
 	return;
 }
 
-
 static krb5_error_code samba_wdc_check_client_access(void *priv,
-						     krb5_context context,
-						     krb5_kdc_configuration *config,
-						     hdb_entry_ex *client_ex, const char *client_name,
-						     hdb_entry_ex *server_ex, const char *server_name,
-						     KDC_REQ *req,
-						     METHOD_DATA *md)
+						     astgs_request_t r)
 {
 	struct samba_kdc_entry *kdc_entry;
 	bool password_change;
 	char *workstation;
 	NTSTATUS nt_status;
 
-	kdc_entry = talloc_get_type(client_ex->ctx, struct samba_kdc_entry);
-	password_change = (server_ex && server_ex->entry.flags.change_pw);
-	workstation = get_netbios_name((TALLOC_CTX *)client_ex->ctx,
-					req->req_body.addresses);
+	kdc_entry = talloc_get_type(r->client->ctx, struct samba_kdc_entry);
+	password_change = (r->server && r->server->entry.flags.change_pw);
+	workstation = get_netbios_name((TALLOC_CTX *)r->client->ctx,
+					r->req.req_body.addresses);
 
 	nt_status = samba_kdc_check_client_access(kdc_entry,
-						  client_name,
+						  r->cname,
 						  workstation,
 						  password_change);
 
@@ -872,12 +866,12 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 			return ENOMEM;
 		}
 
-		if (md) {
+		if (r->rep.padata) {
 			int ret;
 			krb5_data kd;
 
 			samba_kdc_build_edata_reply(nt_status, &kd);
-			ret = krb5_padata_add(context, md,
+			ret = krb5_padata_add(r->context, r->rep.padata,
 					      KRB5_PADATA_PW_SALT,
 					      kd.data, kd.length);
 			if (ret != 0) {
