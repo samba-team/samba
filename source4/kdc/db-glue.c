@@ -424,7 +424,8 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    bool is_rodc,
 						    uint32_t userAccountControl,
 						    enum samba_kdc_ent_type ent_type,
-						    struct sdb_entry_ex *entry_ex)
+						    struct sdb_entry_ex *entry_ex,
+						    uint32_t *supported_enctypes_out)
 {
 	krb5_error_code ret = 0;
 	enum ndr_err_code ndr_err;
@@ -444,10 +445,14 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		= ldb_msg_find_attr_as_uint(msg,
 					    "msDS-SupportedEncryptionTypes",
 					    0);
+	*supported_enctypes_out = 0;
 
 	if (rid == DOMAIN_RID_KRBTGT || is_rodc) {
 		/* KDCs (and KDCs on RODCs) use AES */
 		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
+
+		/* KDCs support FAST */
+		supported_enctypes |= ENC_FAST_SUPPORTED;
 	} else if (userAccountControl & (UF_PARTIAL_SECRETS_ACCOUNT|UF_SERVER_TRUST_ACCOUNT)) {
 		/* DCs and RODCs comptuer accounts use AES */
 		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
@@ -488,6 +493,9 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		ret = samba_kdc_set_random_keys(context,
 						kdc_db_ctx,
 						entry_ex);
+
+		*supported_enctypes_out = supported_enctypes;
+
 		goto out;
 	}
 
@@ -628,15 +636,19 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
 		entry_ex->entry.keys.len++;
+
+		*supported_enctypes_out |= ENC_RC4_HMAC_MD5;
 	}
 
 	if (pkb4) {
 		for (i=0; i < pkb4->num_keys; i++) {
 			struct sdb_key key = {};
+			uint32_t enctype_bit;
 
 			if (!pkb4->keys[i].value) continue;
 
-			if (!(kerberos_enctype_to_bitmap(pkb4->keys[i].keytype) & supported_enctypes)) {
+			enctype_bit = kerberos_enctype_to_bitmap(pkb4->keys[i].keytype);
+			if (!(enctype_bit & supported_enctypes)) {
 				continue;
 			}
 
@@ -687,14 +699,18 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
 			entry_ex->entry.keys.len++;
+
+			*supported_enctypes_out |= enctype_bit;
 		}
 	} else if (pkb3) {
 		for (i=0; i < pkb3->num_keys; i++) {
 			struct sdb_key key = {};
+			uint32_t enctype_bit;
 
 			if (!pkb3->keys[i].value) continue;
 
-			if (!(kerberos_enctype_to_bitmap(pkb3->keys[i].keytype) & supported_enctypes)) {
+			enctype_bit = kerberos_enctype_to_bitmap(pkb3->keys[i].keytype);
+			if (!(enctype_bit & supported_enctypes)) {
 				continue;
 			}
 
@@ -743,8 +759,15 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
 			entry_ex->entry.keys.len++;
+
+			*supported_enctypes_out |= enctype_bit;
 		}
 	}
+
+	/* Set FAST support bits */
+	*supported_enctypes_out |= supported_enctypes & (ENC_FAST_SUPPORTED |
+							 ENC_COMPOUND_IDENTITY_SUPPORTED |
+							 ENC_CLAIMS_SUPPORTED);
 
 out:
 	if (ret != 0) {
@@ -838,6 +861,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	krb5_boolean is_computer = FALSE;
 
 	struct samba_kdc_entry *p;
+	uint32_t supported_enctypes = 0;
 	NTTIME acct_expiry;
 	NTSTATUS status;
 
@@ -1216,13 +1240,14 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, kdc_db_ctx, p, msg,
 					   rid, is_rodc, userAccountControl,
-					   ent_type, entry_ex);
+					   ent_type, entry_ex, &supported_enctypes);
 	if (ret) {
 		/* Could be bogus data in the entry, or out of memory */
 		goto out;
 	}
 
 	p->msg = talloc_steal(p, msg);
+	p->supported_enctypes = supported_enctypes;
 
 out:
 	if (ret != 0) {
@@ -1363,6 +1388,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	p->is_trust = true;
 	p->kdc_db_ctx = kdc_db_ctx;
 	p->realm_dn = realm_dn;
+	p->supported_enctypes = supported_enctypes;
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
