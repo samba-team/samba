@@ -31,6 +31,8 @@
  * SUCH DAMAGE.
  */
 
+#define KRB5_DEPRECATED_FUNCTION(x)
+
 #include "krb5_locl.h"
 
 #ifndef HEIMDAL_SMALLER
@@ -113,14 +115,12 @@ add_padata(krb5_context context,
     if (!enctypes) {
 	enctypes = context->etypes;
 	netypes = 0;
-	for (ep = enctypes; *ep != ETYPE_NULL; ep++)
+	for (ep = enctypes; *ep != (krb5_enctype)ETYPE_NULL; ep++)
 	    netypes++;
     }
     pa2 = realloc (md->val, (md->len + netypes) * sizeof(*md->val));
-    if (pa2 == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (pa2 == NULL)
+	return krb5_enomem(context);
     md->val = pa2;
 
     for (i = 0; i < netypes; ++i) {
@@ -164,14 +164,12 @@ init_as_req (krb5_context context,
     a->req_body.kdc_options = opts;
     a->req_body.cname = malloc(sizeof(*a->req_body.cname));
     if (a->req_body.cname == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	ret = krb5_enomem(context);
 	goto fail;
     }
     a->req_body.sname = malloc(sizeof(*a->req_body.sname));
     if (a->req_body.sname == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	ret = krb5_enomem(context);
 	goto fail;
     }
     ret = _krb5_principal2principalname (a->req_body.cname, creds->client);
@@ -187,8 +185,7 @@ init_as_req (krb5_context context,
     if(creds->times.starttime) {
 	a->req_body.from = malloc(sizeof(*a->req_body.from));
 	if (a->req_body.from == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	    ret = krb5_enomem(context);
 	    goto fail;
 	}
 	*a->req_body.from = creds->times.starttime;
@@ -200,8 +197,7 @@ init_as_req (krb5_context context,
     if(creds->times.renew_till){
 	a->req_body.rtime = malloc(sizeof(*a->req_body.rtime));
 	if (a->req_body.rtime == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	    ret = krb5_enomem(context);
 	    goto fail;
 	}
 	*a->req_body.rtime = creds->times.renew_till;
@@ -224,8 +220,7 @@ init_as_req (krb5_context context,
     } else {
 	a->req_body.addresses = malloc(sizeof(*a->req_body.addresses));
 	if (a->req_body.addresses == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	    ret = krb5_enomem(context);
 	    goto fail;
 	}
 
@@ -249,8 +244,7 @@ init_as_req (krb5_context context,
 	size_t i;
 	ALLOC(a->padata, 1);
 	if(a->padata == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	    ret = krb5_enomem(context);
 	    goto fail;
 	}
 	a->padata->val = NULL;
@@ -288,8 +282,7 @@ init_as_req (krb5_context context,
     else if (*ptypes ==  KRB5_PADATA_ENC_TIMESTAMP) {
 	ALLOC(a->padata, 1);
 	if (a->padata == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	    ret = krb5_enomem(context);
 	    goto fail;
 	}
 	a->padata->len = 0;
@@ -445,9 +438,6 @@ krb5_get_in_cred(krb5_context context,
                    one more try */
 		if (!ptypes && !preauth
 		    && ret == KRB5KDC_ERR_PREAUTH_REQUIRED
-#if 0
-			|| ret == KRB5KDC_ERR_BADOPTION
-#endif
 		    && set_ptypes(context, &error, &ptypes, &my_preauth)) {
 		    done = 0;
 		    preauth = my_preauth;
@@ -499,7 +489,7 @@ krb5_get_in_cred(krb5_context context,
     {
 	unsigned flags = EXTRACT_TICKET_TIMESYNC;
 	if (opts.request_anonymous)
-	    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
+	    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH | EXTRACT_TICKET_MATCH_ANON;
 
 	ret = _krb5_extract_ticket(context,
 				   &rep,
@@ -510,6 +500,7 @@ krb5_get_in_cred(krb5_context context,
 				   NULL,
 				   nonce,
 				   flags,
+				   NULL,
 				   decrypt_proc,
 				   decryptarg);
     }

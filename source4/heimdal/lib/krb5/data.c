@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 
 /**
- * Reset the (potentially uninitalized) krb5_data structure.
+ * Reset the (potentially uninitialized) krb5_data structure.
  *
  * @param p krb5_data to reset.
  *
@@ -62,8 +62,7 @@ krb5_data_zero(krb5_data *p)
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_data_free(krb5_data *p)
 {
-    if(p->data != NULL)
-	free(p->data);
+    free(p->data);
     krb5_data_zero(p);
 }
 
@@ -149,7 +148,7 @@ krb5_data_copy(krb5_data *p, const void *data, size_t len)
     if (len) {
 	if(krb5_data_alloc(p, len))
 	    return ENOMEM;
-	memmove(p->data, data, len);
+	memcpy(p->data,	data, len);
     } else
 	p->data = NULL;
     p->length = len;
@@ -176,10 +175,8 @@ krb5_copy_data(krb5_context context,
 {
     krb5_error_code ret;
     ALLOC(*outdata, 1);
-    if(*outdata == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
-	return ENOMEM;
-    }
+    if(*outdata == NULL)
+	return krb5_enomem(context);
     ret = der_copy_octet_string(indata, *outdata);
     if(ret) {
 	krb5_clear_error_message (context);

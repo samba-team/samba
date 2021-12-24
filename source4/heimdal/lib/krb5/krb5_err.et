@@ -3,6 +3,8 @@
 #
 # This might look like a com_err file, but is not
 #
+# Do try to keep this in sync with MIT's.
+#
 id "$Id$"
 
 error_table krb5
@@ -101,18 +103,27 @@ error_code DIGEST_IN_SIGNED_DATA_NOT_ACCEPTED, "Digest in signedData not accepte
 error_code PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED, "Public key encryption not supported"
 
 ## these are never used
-#index 80
+#index 85
 #prefix KRB5_IAKERB
 #error_code ERR_KDC_NOT_FOUND,	"IAKERB proxy could not find a KDC"
 #error_code ERR_KDC_NO_RESPONSE,	"IAKERB proxy never reeived a response from a KDC"
 
-# 82-93 are reserved
+index 91
+error_code MORE_PREAUTH_DATA_REQUIRED, "More pre-authentication data required"
+
+index 93
+error_code UNKNOWN_CRITICAL_FAST_OPTIONS, "Unknown critical FAST options"
 
 index 94
 error_code INVALID_HASH_ALG, "Invalid OTP digest algorithm"
 error_code INVALID_ITERATION_COUNT, "Invalid OTP iteration count"
 
-# 97-127 are reserved
+# 97-99 are reserved
+
+index 100
+error_code NO_ACCEPTABLE_KDF, "No acceptable KDF offered"
+
+# 101-127 are reserved
 
 index 128
 prefix
@@ -260,15 +271,44 @@ error_code KRB5_SAM_INVALID_ETYPE,  "Invalid encryption type in SAM challenge"
 error_code KRB5_SAM_NO_CHECKSUM,  "Missing checksum in SAM challenge"
 error_code KRB5_SAM_BAD_CHECKSUM,  "Bad checksum in SAM challenge"
 
-index 238
+error_code KRB5_KT_NAME_TOOLONG,        "Keytab name too long"
+error_code KRB5_KT_KVNONOTFOUND,        "Key version number for principal in key table is incorrect"
+error_code KRB5_APPL_EXPIRED,   "This application has expired"
+error_code KRB5_LIB_EXPIRED,    "This Krb5 library has expired"
+
+error_code KRB5_CHPW_PWDNULL,           "New password cannot be zero length"
+error_code KRB5_CHPW_FAIL,              "Password change failed"
+error_code KRB5_KT_FORMAT,              "Bad format in keytab"
+
+error_code KRB5_NOPERM_ETYPE,   "Encryption type not permitted"
+error_code KRB5_CONFIG_ETYPE_NOSUPP,    "No supported encryption types (config file error?)"
+
 error_code KRB5_OBSOLETE_FN,	"Program called an obsolete, deleted function"
 
-index 245
+error_code KRB5_EAI_FAIL,       "unknown getaddrinfo failure"
+error_code KRB5_EAI_NODATA,     "no data available for host/domain name"
+error_code KRB5_EAI_NONAME,     "host/domain name not found"
+error_code KRB5_EAI_SERVICE,    "service name unknown"
+
+error_code KRB5_ERR_NUMERIC_REALM, "Cannot determine realm for numeric host address"
+
 error_code KRB5_ERR_BAD_S2K_PARAMS, "Invalid key generation parameters from KDC"
+
 error_code KRB5_ERR_NO_SERVICE,	"Service not available"
+
+index 247
 error_code KRB5_CC_NOSUPP,      "Credential cache function not supported"
 error_code KRB5_DELTAT_BADFORMAT,	"Invalid format of Kerberos lifetime or clock skew string"
 error_code KRB5_PLUGIN_NO_HANDLE,	"Supplied data not handled by this plugin"
 error_code KRB5_PLUGIN_OP_NOTSUPP,	"Plugin does not support the operaton"
+
+error_code KRB5_ERR_INVALID_UTF8,       "Invalid UTF-8 string"
+error_code KRB5_ERR_FAST_REQUIRED,      "FAST protected pre-authentication required but not supported by KDC"
+
+error_code KRB5_LOCAL_ADDR_REQUIRED,    "Auth context must contain local address"
+error_code KRB5_REMOTE_ADDR_REQUIRED,   "Auth context must contain remote address"
+
+error_code KRB5_TRACE_NOSUPP,           "Tracing unsupported"
+
 
 end

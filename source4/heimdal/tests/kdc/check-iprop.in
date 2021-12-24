@@ -1,0 +1,611 @@
+#!/bin/sh
+#
+# Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
+# (Royal Institute of Technology, Stockholm, Sweden). 
+# All rights reserved. 
+#
+# Redistribution and use in source and binary forms, with or without 
+# modification, are permitted provided that the following conditions 
+# are met: 
+#
+# 1. Redistributions of source code must retain the above copyright 
+#    notice, this list of conditions and the following disclaimer. 
+#
+# 2. Redistributions in binary form must reproduce the above copyright 
+#    notice, this list of conditions and the following disclaimer in the 
+#    documentation and/or other materials provided with the distribution. 
+#
+# 3. Neither the name of the Institute nor the names of its contributors 
+#    may be used to endorse or promote products derived from this software 
+#    without specific prior written permission. 
+#
+# THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+# SUCH DAMAGE. 
+
+top_builddir="@top_builddir@"
+env_setup="@env_setup@"
+objdir="@objdir@"
+
+db_type=@db_type@
+
+. ${env_setup}
+
+# If there is no useful db support compiled in, disable test
+${have_db} || exit 77
+
+
+# Don't run this test in AFS, since it lacks support for AF_UNIX
+expr "X`/bin/pwd || pwd`" : "X/afs/.*" > /dev/null 2>/dev/null && exit 77
+
+R=TEST.H5L.SE
+
+port=@port@
+ipropport=@ipropport@
+ipropport2=@ipropport2@
+
+cache="FILE:${objdir}/cache.krb5"
+keytabfile=${objdir}/iprop.keytab
+keytab="FILE:${keytabfile}"
+
+kdc="${kdc} --addresses=localhost -P $port"
+kadmin="${kadmin} -r $R"
+kinit="${kinit} -c $cache ${afs_no_afslog}"
+
+# We'll test iprop, and in particular, hierarchical iprop.  This means we'll
+# have a setup like:
+#
+#  ipropd-master -> ipropd-slave -> 2nd ipropd-master -> 2nd ipropd-slave
+
+# Waiting for incremental propagation is inherently difficult because we don't
+# have a way for ipropd-slave to signal this script that it has received
+# updates.  Well, it does have a way to signal a possible ipropd-master for
+# hierarchical iprop, but we don't have a way to get that signal here.
+#
+# FIXME: Add a private interface for async waiting for iprop.
+#
+# What we do is we have a set of utility functions:
+#
+#  - get_iprop_ver   [N] -> checks that N (default to 1) ops have made it over
+#  - get_iprop_ver2  [N] -> same, but for second ipropd-slave instance
+#
+#  - wait_for            -> repeat a command until it succeeds or too many tries
+#  - wait_for_slave  [N] -> wait for N ops to make it over (calls get_iprop_ver)
+#  - wait_for_slave2 [N] -> same, but for second ipropd-slave instance
+#
+# In particular the wait_for* functions busy-wait for a max amount of time,
+# with sleeps in between.
+#
+# NOTE: get_iprop_ver and get_iprop_ver2 keep hidden state.
+#
+# When first called, get_iprop_ver / get_iprop_ver2 save the current version
+# numbers.  Thereafter they check that N ops have been received.
+#
+# It is critical to account for every incremental op via get_iprop_ver /
+# get_iprop_ver2, or wait_for_slave / wait_for_slave2, otherwise this test will
+# be racy and will have spurious failures!
+#
+# The pattern should be something like this:
+#
+#   echo "Add host"
+#   ${kadmin} -l add --random-key --use-defaults host/foo@${R} || exit 1
+#   wait_for_slave
+#   ^^^^^^^^^^^^^^
+#      waits for 1 operation
+#
+# or
+#
+#   echo "Rollover host keys"
+#   ${kadmin} -l cpw -r --keepold host/foo@${R} || exit 1
+#   ${kadmin} -l cpw -r --keepold host/foo@${R} || exit 1
+#   ${kadmin} -l cpw -r --keepold host/foo@${R} || exit 1
+#   wait_for_slave 3
+#   ^^^^^^^^^^^^^^^^
+#      waits for the three operations
+#
+# So though all operations must be accounted for, they need not be accounted
+# one by one.
+
+slave_ver_from_master_old=
+slave_ver_from_master_new=
+slave_ver_old=
+slave_ver_new=
+get_iprop_ver () {
+    min_change=${1:-1}
+    slave_ver_from_master_new=`grep '^iprop/' iprop-stats | head -1 | awk '{print $3}'`
+    slave_ver_new=`grep 'up-to-date with version:' iprop-slave-status | awk '{print $4}'`
+    if [ -z "$slave_ver_from_master_new" -o -z "$slave_ver_new" ]; then
+        return 1
+    fi
+    if [ x"$slave_ver_from_master_new" != x"$slave_ver_new" ]; then
+        return 1
+    fi
+    if [ x"$slave_ver_from_master_old" != x ]; then
+        change=`expr "$slave_ver_from_master_new" - "$slave_ver_from_master_old"`
+        if [ "$change" -lt "$min_change" ]; then
+            return 1
+        fi
+    fi
+    slave_ver_from_master_old=$slave_ver_from_master_new
+    slave_ver_old=$slave_ver_new
+    return 0
+}
+
+slave_ver_from_master_old2=
+slave_ver_from_master_new2=
+slave_ver_old2=
+slave_ver_new2=
+get_iprop_ver2 () {
+    min_change=${1:-1}
+    slave_ver_from_master_new2=`grep '^iprop/' iprop-stats2 | head -1 | awk '{print $3}'`
+    slave_ver_new2=`grep 'up-to-date with version:' iprop-slave-status2 | awk '{print $4}'`
+    if [ -z "$slave_ver_from_master_new2" -o -z "$slave_ver_new2" ]; then
+        return 1
+    fi
+    if [ x"$slave_ver_from_master_new2" != x"$slave_ver_new2" ]; then
+        return 1
+    fi
+    if [ x"$slave_ver_from_master_old2" != x ]; then
+        change=`expr "$slave_ver_from_master_new2" - "$slave_ver_from_master_old2"`
+        if [ "$change" -lt "$min_change" ]; then
+            return 1
+        fi
+    fi
+    slave_ver_from_master_old2=$slave_ver_from_master_new2
+    slave_ver_old2=$slave_ver_new2
+    return 0
+}
+
+waitsec=65
+sleeptime=2
+wait_for () {
+    msg=$1
+    shift
+    t=0
+    while ! "$@"; do
+        sleep $sleeptime;
+        t=`expr $t + $sleeptime`
+        if [ $t -gt $waitsec ]; then
+            echo "Waited too long for $msg"
+            exit 1
+        fi
+    done
+    return 0
+}
+
+check_pidfile_is_dead () {
+    if test ! -f lt-${1}.pid -a ! -f ${1}.pid; then
+        return 0
+    fi
+    _pid=`cat lt-${1}.pid ${1}.pid 2>/dev/null`
+    if [ -z "$_pid" ]; then
+        return 0
+    fi
+    if kill -0 $_pid 2>/dev/null; then
+        return 1
+    fi
+    return 0
+}
+
+wait_for_slave () {
+    wait_for "iprop versions to change and/or slave to catch up" get_iprop_ver "$@"
+}
+
+wait_for_slave2 () {
+    wait_for "iprop versions to change and/or second slave to catch up" get_iprop_ver2 "$@"
+}
+
+wait_for_master_down () {
+    wait_for "master to exit" check_pidfile_is_dead ipropd-master
+}
+
+wait_for_slave_down () {
+    wait_for "slave to exit" check_pidfile_is_dead ipropd-slave
+}
+
+KRB5_CONFIG="${objdir}/krb5.conf"
+export KRB5_CONFIG
+
+rm -f ${keytabfile}
+rm -f current-db*
+rm -f current*.log
+rm -f out-*
+rm -f mkey.file*
+rm -f messages.log messages.log
+
+> messages.log
+> messages.log2
+
+echo Creating database
+${kadmin} -l \
+    init \
+    --realm-max-ticket-life=1day \
+    --realm-max-renewable-life=1month \
+    ${R} || exit 1
+
+${kadmin} -l add -p foo --use-defaults user@${R} || exit 1
+
+${kadmin} -l add --random-key --use-defaults iprop/localhost@${R} || exit 1
+${kadmin} -l ext -k ${keytab} iprop/localhost@${R} || exit 1
+${kadmin} -l add --random-key --use-defaults iprop/slave.test.h5l.se@${R} || exit 1
+${kadmin} -l ext -k ${keytab} iprop/slave.test.h5l.se@${R} || exit 1
+
+echo foo > ${objdir}/foopassword
+
+echo "Test log recovery"
+${kadmin} -l add --random-key --use-defaults recovtest@${R} || exit 1
+# Test theory: save the log, make a change and save the record it
+# produced, restore the log, append to it the saved record, then add dummy
+# record.
+
+# Save the log
+cp current.log current.log.tmp
+ls -l current.log.tmp | awk '{print $5}' > tmp
+read sz < tmp
+# Make a change
+${kadmin} -l mod -a requires-pre-auth recovtest@${R} || exit 1
+${kadmin} -l get recovtest@${R} | grep 'Attributes: requires-pre-auth$' > /dev/null || exit 1
+# Save the resulting log record
+ls -l current.log | awk '{print $5}' > tmp
+read nsz < tmp
+rm tmp
+dd bs=1 if=current.log skip=$sz of=current.log.tmp.saved-record count=`expr $nsz - $sz` 2>/dev/null
+# Undo the change
+${kadmin} -l mod -a -requires-pre-auth recovtest@${R} || exit 1
+${kadmin} -l get recovtest@${R} | grep 'Attributes:.$' > /dev/null || exit 1
+# Restore the log
+cp current.log current.log.save
+mv current.log.tmp current.log
+# Append the saved record
+cat current.log.tmp.saved-record >> current.log
+rm current.log.tmp.saved-record
+# Check that we still see the principal as modified after another write forcing
+# log recovery.
+${kadmin} -l add --random-key --use-defaults dummy@${R} || exit 1
+${kadmin} -l del dummy@${R} || exit 1
+${kadmin} -l get recovtest@${R} | grep 'Attributes: requires-pre-auth$' > /dev/null || exit 1
+
+# -- foo
+ipds=
+ipdm=
+kdcpid=
+
+> iprop-stats
+> iprop-stats2
+rm -f iprop-slave-status iprop-slave-status2
+
+ipropd_slave2=$ipropd_slave
+ipropd_master2=$ipropd_master
+ipropd_slave="${ipropd_slave} --status-file=iprop-slave-status --port=$ipropport"
+ipropd_slave="${ipropd_slave} --hostname=slave.test.h5l.se -k ${keytab}"
+ipropd_slave="${ipropd_slave} --detach localhost"
+ipropd_master="${ipropd_master} --hostname=localhost -k ${keytab}"
+ipropd_master="${ipropd_master} --port=$ipropport"
+ipropd_master="${ipropd_master} --database=${objdir}/current-db --detach"
+
+ipropd_slave2="${ipropd_slave2} --status-file=iprop-slave-status2 --port=$ipropport2"
+ipropd_slave2="${ipropd_slave2} --hostname=slave.test.h5l.se -k ${keytab}"
+ipropd_slave2="${ipropd_slave2} --pidfile-basename=ipropd-slave2"
+ipropd_slave2="${ipropd_slave2} --detach localhost"
+ipropd_master2="${ipropd_master2} --hostname=localhost -k ${keytab}"
+ipropd_master2="${ipropd_master2} --port=$ipropport2"
+ipropd_master2="${ipropd_master2} --pidfile-basename=ipropd-master2"
+ipropd_master2="${ipropd_master2} --database=${objdir}/current-db.slave --detach"
+
+cleanup() {
+    echo 'killing ipropd s + m + kdc'
+    test -n "$ipdm" && kill -9 $ipdm        >/dev/null 2>/dev/null
+    test -n "$ipdm2" && kill -9 $ipdm2      >/dev/null 2>/dev/null
+    test -n "$ipds" && kill -9 $ipds        >/dev/null 2>/dev/null
+    test -n "$ipds2" && kill -9 $ipds2      >/dev/null 2>/dev/null
+    test -n "$kdcpid" && kill -9 $kdcpid    >/dev/null 2>/dev/null
+    tail messages.log
+    tail iprop-stats
+    exit 1
+}
+trap cleanup EXIT
+
+echo Starting kdc ; > messages.log
+${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+kdcpid=`getpid kdc`
+
+echo "starting master" ; > messages.log
+env ${HEIM_MALLOC_DEBUG} \
+${ipropd_master} || { echo "ipropd-master failed to start"; exit 1; }
+ipdm=`getpid ipropd-master`
+
+echo "starting slave" ; > messages.log
+env ${HEIM_MALLOC_DEBUG} \
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${ipropd_slave} || { echo "ipropd-slave failed to start"; exit 1; }
+ipds=`getpid ipropd-slave`
+sh ${wait_kdc} ipropd-slave messages.log 'slave status change: up-to-date' || exit 1
+get_iprop_ver || exit 1
+
+echo "checking slave is up"
+${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
+${EGREP} 'up-to-date with version' iprop-slave-status >/dev/null || { echo "slave to up to date" ; cat iprop-slave-status ; exit 1; }
+
+# Also setup a second master on the slave, then a second slave to pull from the
+# second master.
+echo "starting master2" ; > messages.log
+env ${HEIM_MALLOC_DEBUG} \
+KRB5_CONFIG="${objdir}/krb5-master2.conf" \
+${ipropd_master2} || { echo "second ipropd-master failed to start"; exit 1; }
+ipdm2=`getpid ipropd-master2`
+
+echo "starting slave2" ; > messages.log
+env ${HEIM_MALLOC_DEBUG} \
+KRB5_CONFIG="${objdir}/krb5-slave2.conf" \
+${ipropd_slave2} || { echo "ipropd-slave failed to start"; exit 1; }
+ipds2=`getpid ipropd-slave2`
+sh ${wait_kdc} ipropd-slave messages2.log 'slave status change: up-to-date' || exit 1
+wait_for "Slave sees new host" get_iprop_ver2 0 || exit 1
+
+# ----------------- checking: pushing lives changes
+
+slave_get() { KRB5_CONFIG="${objdir}/krb5-slave.conf" ${kadmin} -l get "$@"; }
+slave_check_exists() {
+    # Creation with a random key is not atomic, there are at present
+    # 3 log entries to create a random key principal, the entry is
+    # "invalid" for the first two of these.  We wait for the entry to
+    # exist and not be invalid
+    #
+    attrs=`slave_get -o attributes "$@" 2>/dev/null` || return 1
+    echo $attrs | egrep 'Attributes:' | egrep -v invalid >/dev/null || return 1
+    get_iprop_ver 0
+}
+
+echo "Add host"
+${kadmin} -l add --random-key --use-defaults host/foo@${R} || exit 1
+wait_for_slave
+wait_for "Slave sees new host" slave_check_exists "host/foo@${R}"
+
+echo "Rollover host keys"
+${kadmin} -l cpw -r --keepold host/foo@${R} || exit 1
+${kadmin} -l cpw -r --keepold host/foo@${R} || exit 1
+${kadmin} -l cpw -r --keepold host/foo@${R} || exit 1
+wait_for_slave 3
+slave_get host/foo@${R} | \
+    ${EGREP} Keytypes: | cut -d: -f2 | tr ' ' '
+' | sed 's/^.*[[]\(.*\)[]].*$/\1/' | grep '[0-9]' | sort -nu | tr -d '
+' | ${EGREP} 1234 > /dev/null || exit 1
+
+wait_for_slave2 4
+
+echo "Delete 3DES keys"
+${kadmin} -l del_enctype host/foo@${R} des3-cbc-sha1
+wait_for_slave
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${kadmin} -l get host/foo@${R} | \
+    ${EGREP} Keytypes: | cut -d: -f2 | tr ' ' '
+' | sed 's/^.*[[]\(.*\)[]].*$/\1/' | grep '[0-9]' | sort -nu | tr -d '
+' | ${EGREP} 1234 > /dev/null || exit 1
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${kadmin} -l get host/foo@${R} | \
+    ${EGREP} 'Keytypes:.*des3-cbc-sha1' > /dev/null && exit 1
+
+echo "Change policy host"
+${kadmin} -l modify --policy=default host/foo@${R} || exit 1
+wait_for_slave
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${kadmin} -l get host/foo@${R} > /dev/null 2>/dev/null || exit 1
+
+echo "Rename host"
+${kadmin} -l rename host/foo@${R} host/bar@${R} || exit 1
+wait_for_slave
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${kadmin} -l get host/foo@${R} > /dev/null 2>/dev/null && exit 1
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${kadmin} -l get host/bar@${R} > /dev/null || exit 1
+
+wait_for_slave2 3
+
+echo "Delete host"
+${kadmin} -l delete host/bar@${R} || exit 1
+wait_for_slave
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${kadmin} -l get host/bar@${R} > /dev/null 2>/dev/null && exit 1
+
+# See note below in LMDB sanity checking
+echo "Re-add host"
+${kadmin} -l add --random-key --use-defaults host/foo@${R} || exit 1
+${kadmin} -l add --random-key --use-defaults host/bar@${R} || exit 1
+wait_for_slave 2
+wait_for "Slave sees re-added host" slave_check_exists "host/bar@${R}"
+
+wait_for_slave2 3
+
+echo "kill slave and remove log and database"
+> iprop-stats
+sh ${leaks_kill} ipropd-slave $ipds || exit 1
+rm -f iprop-slave-status
+
+wait_for_slave_down
+${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Down' iprop-stats >/dev/null || exit 1
+
+# ----------------- checking: slave is missing changes while down
+
+rm current.slave.log current-db.slave* || exit 1
+
+echo "doing changes while slave is down"
+${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
+${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
+
+echo "Making a copy of the master log file"
+cp ${objdir}/current.log ${objdir}/current.log.tmp
+
+# ----------------- checking: checking that master and slaves resyncs
+
+echo "starting slave again" ; > messages.log
+> iprop-stats
+env ${HEIM_MALLOC_DEBUG} \
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${ipropd_slave} || { echo "ipropd-slave failed to start"; exit 1; }
+ipds=`getpid ipropd-slave`
+
+echo "checking slave is up again"
+wait_for "slave to start and connect to master" \
+    ${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Up' iprop-stats >/dev/null
+wait_for_slave 2
+wait_for_slave2 2
+${EGREP} 'up-to-date with version' iprop-slave-status >/dev/null || { echo "slave not up to date" ; cat iprop-slave-status ; exit 1; }
+echo "checking for replay problems"
+${EGREP} 'Entry already exists in database' messages.log && exit 1
+
+echo "compare versions on master and slave logs (no lock)"
+KRB5_CONFIG=${objdir}/krb5-slave.conf \
+${iprop_log} last-version -n > slave-last.tmp
+${iprop_log} last-version -n > master-last.tmp
+cmp master-last.tmp slave-last.tmp || exit 1
+
+echo "kill slave and remove log and database"
+sh ${leaks_kill} ipropd-slave $ipds || exit 1
+wait_for_slave_down
+
+rm current.slave.log current-db.slave* || exit 1
+> iprop-stats
+rm -f iprop-slave-status
+echo "starting slave" ; > messages.log
+env ${HEIM_MALLOC_DEBUG} \
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${ipropd_slave} || { echo "ipropd-slave failed to start"; exit 1; }
+ipds=`getpid ipropd-slave`
+wait_for_slave 0
+
+echo "checking slave is up again"
+wait_for "slave to start and connect to master" \
+    ${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Up' iprop-stats >/dev/null
+${EGREP} 'up-to-date with version' iprop-slave-status >/dev/null || { echo "slave not up to date" ; cat iprop-slave-status ; exit 1; }
+echo "checking for replay problems"
+${EGREP} 'Entry already exists in database' messages.log && exit 1
+
+# ----------------- checking: checking live truncation of master log
+
+${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
+wait_for_slave
+wait_for_slave2
+
+echo "live truncate on master log"
+${iprop_log} truncate -K 5 || exit 1
+wait_for_slave 0
+
+echo "Killing master and slave"
+sh ${leaks_kill} ipropd-master $ipdm || exit 1
+sh ${leaks_kill} ipropd-slave $ipds || exit 1
+
+rm -f iprop-slave-status
+
+wait_for_slave_down
+wait_for_master_down
+
+echo "compare versions on master and slave logs"
+KRB5_CONFIG=${objdir}/krb5-slave.conf \
+${iprop_log} last-version > slave-last.tmp
+${iprop_log} last-version > master-last.tmp
+cmp master-last.tmp slave-last.tmp || exit 1
+
+# ----------------- checking: master going backward
+> iprop-stats
+> messages.log
+
+echo "Going back to old version of the master log file"
+cp ${objdir}/current.log.tmp ${objdir}/current.log
+
+echo "starting master"  ; > messages.log
+env ${HEIM_MALLOC_DEBUG} \
+${ipropd_master} || { echo "ipropd-master failed to start"; exit 1; }
+ipdm=`getpid ipropd-master`
+
+echo "starting slave" ; > messages.log
+env ${HEIM_MALLOC_DEBUG} \
+KRB5_CONFIG="${objdir}/krb5-slave.conf" \
+${ipropd_slave} || { echo "ipropd-slave failed to start"; exit 1; }
+ipds=`getpid ipropd-slave`
+wait_for_slave -1
+
+echo "checking slave is up again"
+wait_for "slave to start and connect to master" \
+    ${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Up' iprop-stats >/dev/null
+${EGREP} 'up-to-date with version' iprop-slave-status >/dev/null || { echo "slave to up to date" ; cat iprop-slave-status ; exit 1; }
+echo "checking for replay problems"
+${EGREP} 'Entry already exists in database' messages.log && exit 1
+
+echo "pushing one change"
+${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
+wait_for_slave
+wait_for_slave2 0
+
+echo "Killing master"
+sh ${leaks_kill} ipropd-master $ipdm || exit 1
+
+wait_for_master_down
+
+wait_for "slave to disconnect" \
+  ${EGREP} 'disconnected' iprop-slave-status >/dev/null
+
+if ! tail -30 messages.log | grep 'disconnected for server' > /dev/null; then
+    echo "client didnt disconnect"
+    exit 1
+fi
+
+echo "probing for slave pid"
+kill -0 ${ipds}  || { echo "slave no longer there"; exit 1; }
+
+> messages.log
+
+echo "Staring master again" ; > messages.log
+env ${HEIM_MALLOC_DEBUG} \
+${ipropd_master} || { echo "ipropd-master failed to start"; exit 1; }
+ipdm=`getpid ipropd-master`
+
+echo "probing for slave pid"
+kill -0 ${ipds}  || { echo "slave no longer there"; exit 1; }
+
+
+echo "pushing one change"
+${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
+wait_for_slave
+wait_for_slave2
+
+echo "shutting down all services"
+
+leaked=false
+sh ${leaks_kill} kdc $kdcpid || leaked=true
+sh ${leaks_kill} ipropd-master $ipdm || leaked=true
+sh ${leaks_kill} ipropd-slave $ipds || leaked=true
+sh ${leaks_kill} ipropd-master $ipdm2 || leaked=true
+sh ${leaks_kill} ipropd-slave $ipds2 || leaked=true
+rm -f iprop-slave-status
+trap "" EXIT
+$leaked && exit 1
+
+echo "compare versions on master and slave logs"
+KRB5_CONFIG=${objdir}/krb5-slave.conf \
+${iprop_log} last-version > slave-last.tmp
+${iprop_log} last-version > master-last.tmp
+cmp master-last.tmp slave-last.tmp || exit 1
+
+if [ "$db_type" = lmdb ] && type mdb_stat > /dev/null 2>&1; then
+    # Sanity check that we have the same number of principals at the HDB
+    # and LMDB levels.
+    #
+    # We should also do this for the sqlite backend, but that would
+    # require a sqlite3(1) shell that is capable of opening our HDB
+    # files.
+    echo "checking that principals in DB == entries in LMDB"
+    # Add one to match lmdb overhead
+    princs=`(echo; ${kadmin} -l list '*') | wc -l`
+    entries=`mdb_stat -n current-db.mdb | grep 'Entries:' | awk '{print $2}'`
+    [ "$princs" -eq "$entries" ] || exit 1
+fi
+
+exit 0

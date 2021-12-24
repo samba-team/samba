@@ -40,7 +40,6 @@
 
 extern const RAND_METHOD hc_rand_fortuna_method;
 extern const RAND_METHOD hc_rand_unix_method;
-extern const RAND_METHOD hc_rand_egd_method;
 extern const RAND_METHOD hc_rand_timer_method;
 extern const RAND_METHOD hc_rand_w32crypto_method;
 

@@ -34,7 +34,7 @@
 #include "hx_locl.h"
 
 /**
- * @page page_env Hx509 enviroment functions
+ * @page page_env Hx509 environment functions
  *
  * See the library functions here: @ref hx509_env
  */
@@ -43,7 +43,7 @@
  * Add a new key/value pair to the hx509_env.
  *
  * @param context A hx509 context.
- * @param env enviroment to add the enviroment variable too.
+ * @param env environment to add the environment variable too.
  * @param key key to add
  * @param value value to add
  *
@@ -52,7 +52,7 @@
  * @ingroup hx509_env
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_env_add(hx509_context context, hx509_env *env,
 	      const char *key, const char *value)
 {
@@ -94,7 +94,7 @@ hx509_env_add(hx509_context context, hx509_env *env,
  * Add a new key/binding pair to the hx509_env.
  *
  * @param context A hx509 context.
- * @param env enviroment to add the enviroment variable too.
+ * @param env environment to add the environment variable too.
  * @param key key to add
  * @param list binding list to add
  *
@@ -103,7 +103,7 @@ hx509_env_add(hx509_context context, hx509_env *env,
  * @ingroup hx509_env
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_env_add_binding(hx509_context context, hx509_env *env,
 		      const char *key, hx509_env list)
 {
@@ -141,7 +141,7 @@ hx509_env_add_binding(hx509_context context, hx509_env *env,
  * Search the hx509_env for a length based key.
  *
  * @param context A hx509 context.
- * @param env enviroment to add the enviroment variable too.
+ * @param env environment to add the environment variable too.
  * @param key key to search for.
  * @param len length of key.
  *
@@ -150,7 +150,7 @@ hx509_env_add_binding(hx509_context context, hx509_env *env,
  * @ingroup hx509_env
  */
 
-const char *
+HX509_LIB_FUNCTION const char * HX509_LIB_CALL
 hx509_env_lfind(hx509_context context, hx509_env env,
 		const char *key, size_t len)
 {
@@ -167,7 +167,7 @@ hx509_env_lfind(hx509_context context, hx509_env env,
  * Search the hx509_env for a key.
  *
  * @param context A hx509 context.
- * @param env enviroment to add the enviroment variable too.
+ * @param env environment to add the environment variable too.
  * @param key key to search for.
  *
  * @return the value if the key is found, NULL otherwise.
@@ -175,7 +175,7 @@ hx509_env_lfind(hx509_context context, hx509_env env,
  * @ingroup hx509_env
  */
 
-const char *
+HX509_LIB_FUNCTION const char * HX509_LIB_CALL
 hx509_env_find(hx509_context context, hx509_env env, const char *key)
 {
     while(env) {
@@ -190,7 +190,7 @@ hx509_env_find(hx509_context context, hx509_env env, const char *key)
  * Search the hx509_env for a binding.
  *
  * @param context A hx509 context.
- * @param env enviroment to add the enviroment variable too.
+ * @param env environment to add the environment variable too.
  * @param key key to search for.
  *
  * @return the binding if the key is found, NULL if not found.
@@ -229,14 +229,14 @@ env_free(hx509_env b)
 }
 
 /**
- * Free an hx509_env enviroment context.
+ * Free an hx509_env environment context.
  *
- * @param env the enviroment to free.
+ * @param env the environment to free.
  *
  * @ingroup hx509_env
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_env_free(hx509_env *env)
 {
     if (*env)

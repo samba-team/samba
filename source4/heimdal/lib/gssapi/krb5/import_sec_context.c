@@ -47,12 +47,10 @@ _gsskrb5_import_sec_context (
     krb5_auth_context ac;
     krb5_address local, remote;
     krb5_address *localp, *remotep;
-    krb5_data data;
-    gss_buffer_desc buffer;
     krb5_keyblock keyblock;
     int32_t flags, tmp;
+    int64_t tmp64;
     gsskrb5_ctx ctx;
-    gss_name_t name;
 
     GSSAPI_KRB5_INIT (&context);
 
@@ -66,6 +64,9 @@ _gsskrb5_import_sec_context (
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
+
+    krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_PACKED);
+    krb5_storage_set_flags(sp, KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE);
 
     ctx = calloc(1, sizeof(*ctx));
     if (ctx == NULL) {
@@ -141,6 +142,15 @@ _gsskrb5_import_sec_context (
     if (krb5_ret_uint32 (sp, &ac->remote_seqnumber))
 	goto failure;
 
+    if (flags & SC_AUTHENTICATOR) {
+        if (krb5_ret_int64(sp, &tmp64))
+            goto failure;
+        ac->authenticator->ctime = tmp64;
+        if (krb5_ret_int32(sp, &tmp))
+            goto failure;
+        ac->authenticator->cusec = tmp;
+    }
+
     if (krb5_ret_int32 (sp, &tmp) != 0)
 	goto failure;
     ac->keytype = tmp;
@@ -149,42 +159,15 @@ _gsskrb5_import_sec_context (
     ac->cksumtype = tmp;
 
     /* names */
-
-    if (krb5_ret_data (sp, &data))
-	goto failure;
-    buffer.value  = data.data;
-    buffer.length = data.length;
-
-    ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NT_EXPORT_NAME,
-				&name);
-    if (ret) {
-	ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NO_OID,
-				    &name);
-	if (ret) {
-	    krb5_data_free (&data);
+    if (flags & SC_SOURCE_NAME) {
+        if (krb5_ret_principal(sp, &ctx->source))
 	    goto failure;
-	}
     }
-    ctx->source = (krb5_principal)name;
-    krb5_data_free (&data);
 
-    if (krb5_ret_data (sp, &data) != 0)
-	goto failure;
-    buffer.value  = data.data;
-    buffer.length = data.length;
-
-    ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NT_EXPORT_NAME,
-				&name);
-    if (ret) {
-	ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NO_OID,
-				    &name);
-	if (ret) {
-	    krb5_data_free (&data);
+    if (flags & SC_TARGET_NAME) {
+        if (krb5_ret_principal(sp, &ctx->target))
 	    goto failure;
-	}
     }
-    ctx->target = (krb5_principal)name;
-    krb5_data_free (&data);
 
     if (krb5_ret_int32 (sp, &tmp))
 	goto failure;
@@ -193,12 +176,21 @@ _gsskrb5_import_sec_context (
 	goto failure;
     ctx->more_flags = tmp;
     if (krb5_ret_int32 (sp, &tmp))
-	goto failure;
-    ctx->lifetime = tmp;
-
-    ret = _gssapi_msg_order_import(minor_status, sp, &ctx->order);
-    if (ret)
         goto failure;
+    ctx->state = tmp;
+    /*
+     * XXX endtime should be a 64-bit int, but we don't have
+     * krb5_ret_int64() yet.
+     */
+    if (krb5_ret_int32 (sp, &tmp))
+	goto failure;
+    ctx->endtime = tmp;
+
+    if (flags & SC_ORDER) {
+        ret = _gssapi_msg_order_import(minor_status, sp, &ctx->order);
+        if (ret)
+            goto failure;
+    }
 
     krb5_storage_free (sp);
 

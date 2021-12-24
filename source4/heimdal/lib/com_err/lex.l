@@ -1,6 +1,6 @@
 %{
 /*
- * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2017 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -53,8 +53,6 @@ static int getstring(void);
 
 %}
 
-%option nounput
-
 %%
 et			{ return ET; }
 error_table		{ return ET; }
@@ -73,13 +71,11 @@ end			{ return END; }
 .			{ return *yytext; }
 %%
 
-#ifndef yywrap /* XXX */
 int
 yywrap ()
 {
      return 1;
 }
-#endif
 
 static int
 getstring(void)

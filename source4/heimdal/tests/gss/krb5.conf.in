@@ -1,0 +1,38 @@
+include @srcdirabs@/include-krb5.conf
+
+[libdefaults]
+	default_keytab_name = @objdir@/server.keytab
+        enable-kx509 = yes
+        kx509_store = PEM-FILE:/tmp/cert_%{euid}.pem
+	default_realm = TEST.H5L.SE
+	kuserok = SYSTEM-K5LOGIN:@srcdir@/../kdc/k5login
+	kuserok = USER-K5LOGIN
+	kuserok = SIMPLE
+
+[realms]
+	TEST.H5L.SE = {
+		kdc = localhost:@port@
+                auth_to_local_names = {
+                        user1 = mapped_user1
+                }
+	}
+
+[kdc]
+	database = {
+		dbname = @objdir@/current-db
+		realm = TEST.H5L.SE
+		mkey_file = @objdir@/mkey.file
+                log_file = @objdir@/current.log
+	}
+
+[hdb]
+	db-dir = @objdir@
+        enable_virtual_hostbased_princs = true
+        virtual_hostbased_princ_mindots = 1
+        virtual_hostbased_princ_maxdots = 3
+
+[logging]
+	kdc = 0-/FILE:@objdir@/messages.log
+	default = 0-/FILE:@objdir@/messages.log
+
+include @srcdirabs@/missing-krb5.conf

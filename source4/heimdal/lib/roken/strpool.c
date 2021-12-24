@@ -39,7 +39,8 @@
 
 struct rk_strpool {
     char *str;
-    size_t len;
+    size_t len; /* strlen() of str */
+    size_t sz;  /* Allocated size */
 };
 
 /*
@@ -49,7 +50,7 @@ struct rk_strpool {
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_strpoolfree(struct rk_strpool *p)
 {
-    if (p->str) {
+    if (p && p->str) {
 	free(p->str);
 	p->str = NULL;
     }
@@ -64,29 +65,32 @@ ROKEN_LIB_FUNCTION struct rk_strpool * ROKEN_LIB_CALL
 rk_strpoolprintf(struct rk_strpool *p, const char *fmt, ...)
 {
     va_list ap;
-    char *str, *str2;
+    char *str;
     int len;
 
-    if (p == NULL) {
-	p = malloc(sizeof(*p));
-	if (p == NULL)
-	    return NULL;
-	p->str = NULL;
-	p->len = 0;
-    }
     va_start(ap, fmt);
     len = vasprintf(&str, fmt, ap);
     va_end(ap);
-    if (str == NULL) {
-	rk_strpoolfree(p);
-	return NULL;
+    if (str == NULL)
+	return rk_strpoolfree(p), NULL;
+
+    if (p == NULL) {
+	if ((p = malloc(sizeof(*p))) == NULL)
+            return free(str), NULL;
+	p->str = str;
+	p->len = p->sz = len;
+        return p;
+    } /* else grow the buffer and append `str', but don't grow too fast */
+
+    if (len + p->len + 1 > p->sz) {
+        size_t sz = p->len + len + 9 + (p->sz >> 2);
+        char *str2;
+
+        if ((str2 = realloc(p->str, sz)) == NULL)
+            return rk_strpoolfree(p), NULL;
+        p->str = str2;
+        p->sz = sz;
     }
-    str2 = realloc(p->str, len + p->len + 1);
-    if (str2 == NULL) {
-	rk_strpoolfree(p);
-	return NULL;
-    }
-    p->str = str2;
     memcpy(p->str + p->len, str, len + 1);
     p->len += len;
     free(str);

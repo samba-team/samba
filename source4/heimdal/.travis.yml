@@ -1,0 +1,92 @@
+os:
+    - linux
+    - osx
+
+language: c
+
+env:
+    global:
+        secure: "YKG77M7zMvJ+IeV2ziw//HcHqMqFoAzIZlE99Yw/aOn5pvMYKq6Ep7EFVhbfDu9yN0T7M5csCGQeH7/ylDlsZSRMUw72844ezMDM8e10T/lW/T/OYN7j1ZVHh3WSJgS+1D9VG6/Y0OY1Si3lb7PcOdAIU0fPJV5xQONN2+hpJeI="
+
+before_install:
+    - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get update -qq; fi
+    - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install -qq bison comerr-dev flex libcap-ng-dev libdb-dev libedit-dev libjson-perl libldap2-dev libncurses5-dev libperl4-corelibs-perl libsqlite3-dev libkeyutils-dev pkg-config python ss-dev texinfo unzip netbase keyutils; fi
+    - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install -qq ldap-utils gdb apport; fi
+    - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install -qq curl libmicrohttpd-dev; fi
+    - if [ $TRAVIS_OS_NAME = linux -a -n "$COVERAGE" ]; then sudo apt-get install -qq jq; fi
+    - if [ $TRAVIS_OS_NAME = osx ]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install cpanm bison flex berkeley-db lmdb openldap openssl; fi
+    - if [ $TRAVIS_OS_NAME = osx ]; then sudo cpanm install JSON; fi
+    - if [ $TRAVIS_OS_NAME = osx -a -n "$COVERAGE" ]; then brew install jq; fi
+    - mkdir ci-build
+    - mkdir coverity-build
+    - ./autogen.sh
+
+install:
+    - cd ci-build
+    - |
+      if [ $TRAVIS_OS_NAME = osx ]; then
+          LDFLAGS="-L/usr/local/opt/berkeley-db/lib -L/usr/local/opt/lmdb/lib" \
+          CFLAGS="-I/usr/local/opt/lmdb/include" \
+          ../configure \
+                  --srcdir=`dirname "$PWD"` \
+                  --prefix=/tmp/heimdal \
+                  --enable-maintainer-mode $COVERAGE \
+                  --enable-static=no \
+                  --enable-pthread-support \
+                  --disable-afs-support \
+                  --disable-ndbm-db \
+                  --with-openldap=/usr/local/opt/openldap \
+                  --with-openssl=/usr/local/opt/openssl/ \
+                  --with-hcrypto-default-backend=ossl \
+                  --with-berkeley-db \
+                  --with-berkeley-db-include=/usr/local/opt/berkeley-db/include
+      else
+          # This list of -Wno-error options should be reduced over time where possible
+          if [ x"$TRAVIS_COMPILER" != x"clang" ]; then
+              CFLAGS="-Wno-error=empty-body -Wno-error=shadow -Wno-error=unused-value -Wno-error=bad-function-cast -Wno-error=unused-function -Wno-error=unused-result -Wno-error=deprecated-declarations" ../configure --enable-developer --srcdir=`dirname "$PWD"` --enable-maintainer-mode $COVERAGE
+          else
+              CFLAGS="-Wno-error=shadow -Wno-error=bad-function-cast -Wno-error=unused-function -Wno-error=unused-result -Wno-error=deprecated-declarations" ../configure --enable-developer --srcdir=`dirname "$PWD"` --enable-maintainer-mode $COVERAGE
+          fi
+      fi
+    - ulimit -c unlimited; make -j3
+
+script:
+    - if [ x${COVERITY_SCAN_BRANCH} != x1 ]; then ulimit -c unlimited; make check${MAKE_CHECK_SUFFIX}; fi
+
+after_script:
+    - if [ -n "$COVERAGE" ]; then ../tools/coveralls-tool -O $PWD -S ..; fi
+    - find . -name \*.log -print0|xargs -0 grep '^==[1-9]'
+
+after_failure:
+    - find . -name test-suite.log -print0 | xargs -0 cat
+    - if [ $TRAVIS_OS_NAME = linux ]; then echo "thread apply all bt" > x; find . -name core -print | while read core; do gdb -batch -x x `file "$core"|sed -e "s/^[^']*'//" -e "s/[ '].*$//"` "$core"; done; fi
+    - if [ $TRAVIS_OS_NAME = osx ]; then find . -name core -print | while read core; do echo bt | lldb --core "$core" `file "$core"|sed -e "s/^[^']*'//" -e "s/[ '].*$//"` "$core"; done; fi
+
+compiler:
+    - clang
+    - gcc
+
+matrix:
+    include:
+      - os: linux
+        compiler: gcc
+        env: COVERAGE=--enable-gcov
+    exclude:
+      - os: osx
+        compiler: gcc
+
+notifications:
+    email:
+        on_success: change
+        on_failure: always
+
+addons:
+
+    coverity_scan:
+        project:
+            name: "heimdal/heimdal"
+            description: "Build submitted via Travis CI"
+        notification_email: heimdal-builders@secure-endpoints.com
+        build_command_prepend: ../configure --enable-maintainer-mode
+        build_command: make
+        branch_pattern: coverity_scan

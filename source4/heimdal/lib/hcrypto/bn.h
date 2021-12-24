@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006-2016 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -67,6 +67,13 @@
 #define BN_CTX_get hc_BN_CTX_get
 #define BN_CTX_start hc_BN_CTX_start
 #define BN_CTX_end hc_BN_CTX_end
+
+#define BIGNUM hc_BIGNUM
+#define BN_GENCB hc_BN_GENCB
+#define BN_CTX hc_BN_CTX
+#define BN_BLINDING hc_BN_BLINDING
+#define BN_MONT_CTX hc_BN_MONT_CTX
+
 
 /*
  *

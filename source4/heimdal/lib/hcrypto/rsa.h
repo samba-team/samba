@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006-2016 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -66,6 +66,9 @@
 #define i2d_RSAPrivateKey hc_i2d_RSAPrivateKey
 #define i2d_RSAPublicKey hc_i2d_RSAPublicKey
 #define d2i_RSAPublicKey hc_d2i_RSAPublicKey
+
+#define RSA hc_RSA
+#define RSA_METHOD hc_RSA_METHOD
 
 /*
  *

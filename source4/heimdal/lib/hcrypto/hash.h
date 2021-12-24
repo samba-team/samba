@@ -40,7 +40,6 @@
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
-#include <roken.h>
 
 #ifndef min
 #define min(a,b) (((a)>(b))?(b):(a))

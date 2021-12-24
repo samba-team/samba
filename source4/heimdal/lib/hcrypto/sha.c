@@ -31,7 +31,8 @@
  * SUCH DAMAGE.
  */
 
-#include "config.h"
+#include <config.h>
+#include <roken.h>
 
 #include "hash.h"
 #include "sha.h"
@@ -43,7 +44,7 @@
 #define E m->counter[4]
 #define X data
 
-void
+int
 SHA1_Init (struct sha *m)
 {
   m->sz[0] = 0;
@@ -53,6 +54,7 @@ SHA1_Init (struct sha *m)
   C = 0x98badcfe;
   D = 0x10325476;
   E = 0xc3d2e1f0;
+  return 1;
 }
 
 
@@ -220,7 +222,7 @@ struct x32{
   unsigned int b:32;
 };
 
-void
+int
 SHA1_Update (struct sha *m, const void *v, size_t len)
 {
   const unsigned char *p = v;
@@ -253,9 +255,10 @@ SHA1_Update (struct sha *m, const void *v, size_t len)
       offset = 0;
     }
   }
+  return 1;
 }
 
-void
+int
 SHA1_Final (void *res, struct sha *m)
 {
   unsigned char zeros[72];
@@ -293,4 +296,5 @@ SHA1_Final (void *res, struct sha *m)
       r[i] = swap_uint32_t (m->counter[i]);
   }
 #endif
+  return 1;
 }

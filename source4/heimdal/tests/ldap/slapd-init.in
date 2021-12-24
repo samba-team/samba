@@ -1,0 +1,58 @@
+#!/bin/sh 
+# $Id$
+
+srcdir=@srcdir@
+
+rm -rf db schema
+mkdir db
+
+# kill of old slapd if running
+sh "${srcdir}/slapd-stop" > /dev/null
+
+SCHEMA_NEEDED="hdb core nis cosine inetorgperson openldap samba"
+
+SCHEMA_PATHS="${srcdir}/../../lib/hdb ${srcdir} /etc/ldap/schema /etc/openldap/schema /private/etc/openldap/schema /usr/share/openldap/schema"
+
+test -d schema || mkdir schema
+
+# setup needed schema files
+for f in $SCHEMA_NEEDED; do
+    if [ ! -r schema/$f.schema ]; then
+	for d in $SCHEMA_PATHS ; do
+	    if [ -r $d/$f.schema ] ; then
+		cp $d/$f.schema schema/$f.schema
+		continue 2
+	    fi
+	done
+	echo "SKIPPING TESTS: you need the following schema file: $f.schema"
+	exit 1
+    fi
+done
+
+touch modules.conf || exit 1
+
+if ! slapadd -d 0 -f "${srcdir}/slapd.conf" < "${srcdir}/init.ldif"; then
+    echo "moduleload back_bdb.la"   >> modules.conf
+    if ! slapadd -d 0 -f "${srcdir}/slapd.conf" < "${srcdir}/init.ldif"; then
+        echo "modulepath /usr/lib/ldap"  > modules.conf
+        echo "moduleload back_bdb.la"   >> modules.conf
+        slapadd -d 0 -f "${srcdir}/slapd.conf" < "${srcdir}/init.ldif" || exit 1
+    fi
+fi
+
+cp "`which slapd`" . || true # fails if running
+
+echo "starting slapd"
+./slapd -d0 -f "${srcdir}/slapd.conf" -h ldapi://.%2Fldap-socket &
+slapd_pid=$!
+
+tries=0
+while kill -0 $slapd_pid && [ ! -S ldap-socket ] && 
+      ! ldapsearch -l 2 -w '' -D '' -b "o=TEST,dc=H5L,dc=SE" -s base -H ldapi://.%2Fldap-socket >/dev/null &&
+      [ $tries -lt 30 ]; do
+    sleep 1
+    tries=`expr 1 + $tries`
+done
+
+kill -0 $slapd_pid || exit 1
+[ -S ldap-socket ] || exit 1

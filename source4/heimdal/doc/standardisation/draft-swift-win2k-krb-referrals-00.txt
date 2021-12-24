@@ -1,0 +1,412 @@
+CAT Working Group                                              M. Swift 
+Internet Draft                                                Microsoft 
+Document: draft-swift-win2k-krb-referrals-00.txt           October 1999 
+Category: Informational                                                 
+ 
+ 
+           Generating KDC Referrals to locate Kerberos realms 
+ 
+ 
+Status of this Memo 
+ 
+   This document is an Internet-Draft and is in full conformance with 
+   all provisions of Section 10 of RFC2026 [1].  
+    
+   Internet-Drafts are working documents of the Internet Engineering 
+   Task Force (IETF), its areas, and its working groups. Note that 
+   other groups may also distribute working documents as Internet-
+   Drafts. Internet-Drafts are draft documents valid for a maximum of 
+   six months and may be updated, replaced, or obsoleted by other 
+   documents at any time. It is inappropriate to use Internet- Drafts 
+   as reference material or to cite them other than as "work in 
+   progress."  
+    
+   The list of current Internet-Drafts can be accessed at 
+   http://www.ietf.org/ietf/1id-abstracts.txt  
+
+   The list of Internet-Draft Shadow Directories can be accessed at 
+   http://www.ietf.org/shadow.html. 
+    
+1. Abstract 
+    
+   The draft documents a new method for a Kerberos Key Distribution 
+   Center (KDC) to respond to client requests for tickets as is used in 
+   Microsoft's Windows 2000 implementation of Kerberos. The KDC will 
+   handle requests for principals in other realms by returning either a 
+   referral error or a cross-realm TGT to another realm on the referral 
+   path. 
+    
+2. Conventions used in this document 
+    
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", 
+   "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and "OPTIONAL" in 
+   this document are to be interpreted as described in RFC-2119 [2]. 
+    
+3. Introduction 
+    
+   The Kerberos TGS and AS protocols, as defined in RFC 1510 [3], 
+   require that client software be able to parse principal names into a 
+   realm and an account portion. However, if a site want to deploy a 
+   Kerberos realm infrastructure separately from its DNS 
+   infrastructure, Kerberos must be able to handle the case where the 
+   client software does not know what realm contains a given service or 
+   user principal name. In addition, the current protocol requires the 
+   client to know the hierarchy of realms by explicitly asking for a 
+
+  
+Swift                  Category - Informational                      1 
+
+                            KDC Referrals                October 1999 
+ 
+ 
+   referral to a specific realm rather than letting the KDC pick the 
+   next realm on the referral path. 
+    
+   To rectify these problems, this draft introduces three new kinds of 
+   KDC referrals: 
+    
+   1. AS ticket referrals, in which the client doesn∆t know which realm 
+     contains a user account. 
+   2. TGS ticket referrals, in which the client doesn∆t know which realm 
+     contains a server account. 
+   3. Cross realm shortcut referrals, in which the KDC chooses the next 
+     path on a referral chain 
+    
+4. Realm Organization Model 
+    
+   This draft assumes that the world of principals is arranged on 
+   multiple levels: the realm, the enterprise, and the world. A KDC may 
+   issue tickets for any principal in its realm or cross-realm tickets 
+   for realms with which it has a direct trust relationship. The KDC 
+   also has access to a trusted directory or name service that can 
+   resolve any name from within its enterprise into a realm. This 
+   trusted name service removes the need to use an untrusted DNS lookup 
+   for name resolution. 
+    
+   For example, consider the following configuration, where lines 
+   indicate trust relationships: 
+    
+                  MS.COM  
+                /        \ 
+               /          \ 
+        OFFICE.MS.COM    NT.MS.COM 
+    
+   In this configuration, all users in the MS.COM enterprise could have 
+   a principal name such as alice@ms.com, with the same realm portion. 
+   In addition, servers at MS.COM should be able to have DNS host names 
+   from any DNS domain independent of what Kerberos realm their 
+   principal resides in. 
+    
+5. Principal Names 
+    
+5.1 Service Principal Names 
+    
+   The standard Kerberos model in RFC 1510 [3] gives each Kerberos 
+   principal a single name. However, if a service is reachable by 
+   several addresses, it may be useful for a principal to have multiple 
+   names. Consider a service running on a multi-homed machine. Rather 
+   than requiring a separate principal and password for each name it 
+   exports, a single account with multiple names could be used. 
+    
+   Multiple names are also useful for services in that clients need not 
+   perform DNS lookups to resolve a host name into a full DNS address. 
+   Instead, the service may have a name for each of its supported host 
+   names, including its IP address. Nonetheless, it is still convenient 
+  
+Swift                  Category - Informational                      2 
+
+                            KDC Referrals                October 1999 
+ 
+ 
+   for the service to not have to be aware of all these names. Thus a 
+   new name may be added to DNS for a service by updating DNS and the 
+   KDC database without having to notify the service. In addition, it 
+   implies that these aliases are globally unique: they do not include 
+   a specifier dictating what domain contains the principal. Thus, an 
+   alias for a server is of the form "name/name/name" and may be 
+   transmitted as any name type. 
+    
+5.2 Client Principal Names 
+    
+   Similarly, a client account may also have multiple principal names. 
+   More useful, though, is a globally unique name that allows 
+   unification of email and security principal names. For example, all 
+   users at Microsoft may have a client principal name of the form 
+   "joe@MS.COM" even though the principals are contained in multiple 
+   realms. This global name is again an alias for the true client 
+   principal name, which is indicates what realm contains the 
+   principal. Thus, accounts "alice" in the realm ntdev.MS.COM and 
+   "bob" in office.MS.COM may logon as "alice@MS.COM" and "bob@MS.COM". 
+   This change requires a new client principal name type, as the AS-REQ 
+   message only contains a single realm field, and the realm portion of 
+   this name doesn't correspond to any realm security realm. Thus, the 
+   entire name "alice@MS.COM" is transmitted in the client name field 
+   of the AS-REQ message, with a name type of KRB-NT-ENTERPRISE-
+   PRINCIPAL. 
+    
+        #define KRB-NT-ENTERPRISE-PRINCIPAL     10 
+    
+5.3 Name Canonicalization 
+    
+   In order to support name aliases, the Kerberos client must 
+   explicitly request the name-canonicalization KDC option (bit 12) in 
+   the ticket flags for the TGS-REQ. This option is an indicator to the 
+   KDC that if it fails to find the name in the local database as a 
+   normal principal name, it should try to look the name up as an alias 
+   both locally and in a global directory. This flag indicates to the 
+   KDC that the client is prepared to receive a reply with a different 
+   client or server principal name than the request. Thus, the 
+   KDCOptions types is redefined as: 
+    
+        KDCOptions ::=   BIT STRING { 
+                          reserved(0), 
+                          forwardable(1), 
+                          forwarded(2), 
+                          proxiable(3), 
+                          proxy(4), 
+                          allow-postdate(5), 
+                          postdated(6), 
+                          unused7(7), 
+                          renewable(8), 
+                          unused9(9), 
+                          unused10(10), 
+                          unused11(11), 
+  
+Swift                  Category - Informational                      3 
+
+                            KDC Referrals                October 1999 
+ 
+ 
+                          name-canonicalize(12), 
+                          renewable-ok(27), 
+                          enc-tkt-in-skey(28), 
+                          renew(30), 
+                          validate(31) 
+         } 
+    
+6. Client Referrals 
+    
+   The simplest form of ticket referral is for a user requesting a 
+   ticket using an AS-REQ. In this case, the client machine will send 
+   the AS request to a convenient realm, probably either the realm of 
+   the client machine or the realm portion of the client name. In the 
+   case of the name Alice@MS.COM, the client may optimistically choose 
+   to send the request to MS.COM. The client will send the string 
+   "alice@MS.COM" in the client principal name field using the KRB-NT-
+   ENTERPRISE-PRINCIPAL name type. The KDC will try to lookup the name 
+   in its local account database. If the account is present, it will 
+   return a KDC reply structure with the appropriate ticket. If the 
+   account is not present and the name-canonicalize option is 
+   requested, it will try to lookup the entire name (Alice@MS.COM) in 
+   the global directory. If this lookup is unsuccessful, it will return 
+   the error KDC_ERR_C_PRINCIPAL_UNKNOWN. If the lookup is successful, 
+   it will return an error KDC_ERR_WRONG_REALM (0x44) and in the error 
+   message, the cname and crealm field will contain the client name and 
+   the true realm of the client. If the KDC contains the account 
+   locally, it will return a normal ticket. The client name and realm 
+   portions of the ticket and KDC reply message will be the client's 
+   true name in the realm, not the globally unique name. 
+    
+   If the client receives a KDC_ERR_WRONG_REALM error, it will issue a 
+   new AS request to the realm specified by the crealm field of the 
+   error message. 
+ 
+7. Server Referrals 
+    
+   The server referral mechanism is a bit more complex than the client 
+   referral mechanism. The primary problem is that the KDC must return 
+   a referral ticket rather than an error message, so it must include 
+   in the TGS response information about what realm contains the 
+   service. This is done by returning information about the server name 
+   in the pre-auth data field of the KDC reply. 
+    
+   If the KDC resolves the server principal name into a principal in 
+   its realm, it may return a normal ticket. If the name-canonicalize 
+   bit is not set, then the KDC should only look up the name as a 
+   normal principal name. Otherwise, it should search all aliases as 
+   well. The server principal name in both the ticket and the KDC reply 
+   should be the true server principal name instead of one of the 
+   aliases. This prevents the application server from needing to know 
+   about all its aliases. 
+    
+
+  
+Swift                  Category - Informational                      4 
+
+                            KDC Referrals                October 1999 
+ 
+ 
+   If the KDC doesn∆t find the principal locally but is able to 
+   resolved it into a realm from the global directory, then it should 
+   return a cross-realm ticket granting ticket to the next hop on the 
+   trust path towards that realm. In this case, the KDC will return the 
+   server realm as a PA data type. The data itself is an ASN.1 encoded 
+   structure containing the server's realm, and if known, true 
+   principal name. The preauthentication data type is KRB5-PADATA-
+   SERVER-REFERRAL-INFO. 
+    
+        #define KRB5-PADATA-SERVER-REFERRAL-INFO        20 
+         
+        KERB-PA-SERV-REFERRAL   ::= SEQUENCE { 
+                referred-server-name[1]   KERB-PRINCIPAL-NAME OPTIONAL, 
+                referred-server-realm[0]  KERB-REALM 
+        } 
+    
+   The client may use the referred-server-name field to tell if it 
+   already has a ticket to the server in its ticket cache. 
+    
+   The client can use this information to request a chain of cross-
+   realm ticket granting tickets until it reaches this realm, and can 
+   then expect to receive a valid service ticket. 
+    
+8. Cross Realm Routing 
+    
+   The current Kerberos protocol requires the client libraries to 
+   explicitly request a cross-realm TGT for each pair of realms on a 
+   referral chain. As a result, the client machines need to be aware of 
+   the trust hierarchy and of any short-cut trusts (those that aren∆t 
+   parent-child trusts). This requires a lot of configuration on the 
+   client. Instead, the client should be able to request a TGT to the 
+   target realm from each realm on the route. The KDC will determine 
+   the best path for the client and return a cross-realm TGT. The 
+   client software has to be aware that a request for a cross-realm TGT 
+   may return a TGT for a realm different from the one requested. 
+    
+9. Security Considerations 
+ 
+   The original Kerberos specification stated that the server principal 
+   name in the KDC reply was the same as the server name in the 
+   request. These protocol changes break that assumption, so the client 
+   may be vulnerable to a denial of service attack by an attacker that 
+   replays replies from previous requests. It can verify that the 
+   request was one of its own by checking the client-address field or 
+   authtime field, though, so the damage is limited. 
+    
+10. References 
+    
+ 
+   1  Bradner, S., "The Internet Standards Process -- Revision 3", BCP 
+      9, RFC 2026, October 1996. 
+    
+ 
+  
+Swift                  Category - Informational                      5 
+
+                            KDC Referrals                October 1999 
+ 
+ 
+ 
+   2  Bradner, S., "Key words for use in RFCs to Indicate Requirement 
+      Levels", BCP 14, RFC 2119, March 1997 
+    
+   3  Kohl, J., Neuman, C., "The Kerberos Network Authentication 
+      Service (V5)", RFC 1510, September 1993 
+    
+    
+10. Author's Addresses 
+    
+   Michael Swift 
+   Microsoft 
+   One Microsoft Way 
+   Redmond, Washington 
+   Email: mikesw@microsoft.com 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+Swift                  Category - Informational                      6 
+
+                            KDC Referrals                October 1999 
+ 
+ 
+    
+Full Copyright Statement 
+ 
+   Copyright (C) The Internet Society (1999).  All Rights Reserved. 
+    
+   This document and translations of it may be copied and furnished to 
+   others, and derivative works that comment on or otherwise explain it 
+   or assist in its implementation may be prepared, copied, published 
+   and distributed, in whole or in part, without restriction of any 
+   kind, provided that the above copyright notice and this paragraph 
+   are included on all such copies and derivative works.  However, this   
+   document itself may not be modified in any way, such as by removing   
+   the copyright notice or references to the Internet Society or other   
+   Internet organizations, except as needed for the purpose of 
+   developing Internet standards in which case the procedures for 
+   copyrights defined in the Internet Standards process must be 
+   followed, or as required to translate it into languages other than 
+   English. 
+    
+   The limited permissions granted above are perpetual and will not be 
+   revoked by the Internet Society or its successors or assigns. 
+    
+   This document and the information contained herein is provided on an 
+   "AS IS" basis and THE INTERNET SOCIETY AND THE INTERNET ENGINEERING 
+   TASK FORCE DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING 
+   BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION 
+   HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF 
+   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE." 
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+Swift                  Category - Informational                      7 
+

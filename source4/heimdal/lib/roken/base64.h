@@ -47,9 +47,9 @@
 #endif
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-base64_encode(const void *, int, char **);
+rk_base64_encode(const void *, int, char **);
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-base64_decode(const char *, void *);
+rk_base64_decode(const char *, void *);
 
 #endif

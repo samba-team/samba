@@ -1,0 +1,395 @@
+
+
+Kerberos working group                                         J.Brezak 
+Internet Draft                                                Microsoft 
+Document: draft-brezak-spnego-http-00.txt                                      
+Category: Informational                                                 
+                                                         September 2001 
+ 
+ 
+           HTTP Authentication: SPNEGO Access Authentication 
+ 
+ 
+Status of this Memo 
+ 
+   This document is an Internet-Draft and is in full conformance with 
+   all provisions of Section 10 of RFC2026 [1]. Internet-Drafts are 
+   working documents of the Internet Engineering Task Force (IETF), its 
+   areas, and its working groups. Note that other groups may also 
+   distribute working documents as Internet-Drafts. Internet-Drafts are 
+   draft documents valid for a maximum of six months and may be 
+   updated, replaced, or obsoleted by other documents at any time. It 
+   is inappropriate to use Internet- Drafts as reference material or to 
+   cite them other than as "work in progress." 
+     
+   The list of current Internet-Drafts can be accessed at 
+   http://www.ietf.org/ietf/1id-abstracts.txt  
+    
+   The list of Internet-Draft Shadow Directories can be accessed at 
+   http://www.ietf.org/shadow.html. 
+    
+1. Abstract 
+    
+   This document describes how MicrosoftÆs Internet Explorer 5.0 and 
+   Internet Information Services 5.0 use Kerberos for security 
+   enhancements of web transactions. The HTTP auth-scheme of 
+   'negotiate' is defined here; when the negotiation results in the 
+   selection of Kerberos, the security services of authentication and 
+   optionally impersonation are performed. 
+    
+    
+2. Conventions used in this document 
+    
+   In examples, "C:" and "S:" indicate lines sent by the client and 
+   server respectively. 
+    
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", 
+   "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and "OPTIONAL" in 
+   this document are to be interpreted as described in RFC-2119 [3]. 
+    
+    
+3. Access Authentication 
+    
+3.1 Reliance on the HTTP/1.1 Specification 
+ 
+   This specification is a companion to the HTTP/1.1 specification [4] 
+   and builds on the authentication mechanisms defined in [5]. It uses 
+  
+Brezak                 Category û Informational                      1 
+
+
+
+
+
+
+
+
+                     SPNEGO Access Authentication       September 2001 
+
+   the augmented BNF section 2.1 of that document, and relies on both 
+   the non-terminals defined in that document and other aspects of the 
+   HTTP/1.1 specification. 
+    
+    
+4. HTTP Negotiate Authentication Scheme 
+    
+   Use of Kerberos is wrapped in an HTTP auth-scheme of "Negotiate".  
+   The auth-params exchanged use data formats defined for use with the 
+   GSS-API [6].  In particular, they follow the formats set for the 
+   SPNEGO [7] and Kerberos [8] "mechanisms" for GSSAPI.  The 
+   "Negotiate" auth-scheme calls for the use of SPNEGO GSSAPI tokens 
+   which the specific mechanism type specifies. 
+    
+4.1 The WWW-Authenticate Response Header 
+    
+   If the server receives a request for an access-protected object, and 
+   an acceptable Authorization header is not sent, the server responds 
+   with a "401 Unauthorized" status code, and a WWW-Authenticate header 
+   as per the framework described in [4]. The negotiate scheme will 
+   operate as follows: 
+    
+    
+        challenge       = "Negotiate" auth-data 
+        auth-data       = 1#( [gssapi-data] ) 
+         
+   The meanings of the values of the directives used above are as 
+   follows: 
+    
+   gssapi-data 
+        If the gss_accept_security_context return a token for the 
+        client, this directive contains is the base64 encoding of an 
+        InitialContextToken as defined in [6]. 
+  
+   A status code 200 response can also carry a WWW-Authenticate 
+   response header containing the final leg of a authentication. Before 
+   using the contents of the response, the gssapi-data should be 
+   processed by gss_init_security_context to determine the state of the 
+   security context. If this function indicates success, the response 
+   can be used by the application. Otherwise an appropriate action 
+   based on the authentication status should be. 
+    
+   For example the authentication could have failed on the final leg if 
+   mutual authentication was requested and the server was not able to 
+   prove its identity. In this case, the returned results are suspect. 
+   It is not always possible to mutually authenticate the server before 
+   the HTTP operation. POST methods are in this category. 
+    
+   When the Kerberos Version 5 GSSAPI mechanism [RFC-1964] is being 
+   used, the HTTP server will be using a principal name of the form of 
+   "http/<hostname>". 
+    
+4.2 The Authorization Request Header 
+ 
+  
+Brezak                 Category û Informational                      2 
+
+
+
+
+
+
+
+
+                     SPNEGO Access Authentication       September 2001 
+
+   The client is expected to retry the request, passing an 
+   Authorization header line, which is defined according to the 
+   framework described in [4] utilized as follow: 
+    
+        credentials             = "Negotiate" auth-data2 
+        auth-data2              = 1#( gssapi-data ) 
+                                 
+   gssapi-data 
+        This directive contains is the base64 encoding of an 
+        InitialContextToken as defined in [6]. 
+    
+   If a directive or its value is improper, or required directives are 
+   missing, the propose response is 400 Bad Request. If a 401 
+   Unauthorized status code is returned, the contents of the WWW-
+   Authenticate response header is used to continue the authentication 
+   as long as the opaque value is the same. 
+    
+5. Negotiate Operation Example 
+    
+   The user is logged onto realm A.COM as user@A.COM. The web server is 
+   in realm B using the principal http/server@B.COM. Realm B.COM trusts 
+   Realm A.COM  
+    
+   The client requests an access-protected document from server via a 
+   GET method request. The URI of the document is 
+   "http://www.nowhere.org/dir/index.html". 
+    
+   The first time the client requests the document, no Authorization 
+   header is sent, so the server responds with: 
+    
+        HTTP/1.1 401 Unauthorized 
+        WWW-Authenticate: Negotiate 
+         
+   The client will obtain the user credentials using the SPNEGO GSSAPI 
+   mechanism type to identify generate a GSSAPI message to be sent to 
+   the server with a new request, including the following Authorization 
+   header: 
+    
+        Authorization: Negotiate 
+        2a87421000492ade0234568ac0289eca874209af8bc028 
+         
+   The server will decode the gssapi-data and pass this to the SPNEGO 
+   GSSAPI mechanism in the gss_accept_security_context function. The 
+   return value from the gss_accept_security_context function can 
+   indicate the security context is complete and supply final 
+   authentication data to be returned to the client. If the server has 
+   more gssapi data to send to the client to complete the context it is 
+   to be carried in WWW-Authenticate header with the final response. 
+   The response will be sent to the client, including the following 
+   header: 
+    
+        HTTP/1.1 200 Success 
+        WWW-Authenticate: Negotiate ade0234568ac874209af8bc0280289eca 
+         
+  
+Brezak                 Category û Informational                      3 
+
+
+
+
+
+
+
+
+                     SPNEGO Access Authentication       September 2001 
+
+   The client will decode the gssapi-data and supply it to 
+   gss_init_security_context using the context for this server. If the 
+   status is successful from the final gss_init_security_context, the 
+   response can be used by the application. 
+ 
+7. Security Considerations 
+ 
+   The SPNEGO HTTP authentication facility is only used to provide 
+   authentication of a user to server. It provides no facilities for 
+   protecting the HTTP headers or data including the Authorization and 
+   WWW-Authenticate headers that are used to implement this mechanism. 
+    
+   This mechanism is not used for HTTP authentication to HTTP proxies. 
+    
+   If an HTTP proxy is used between the client and server, it must take 
+   care to not share authenticated connections between different 
+   authenticated clients to the same server. If this is not honored, 
+   then the server can easily lose track of security context 
+   associations. A proxy that correctly honors client to server 
+   authentication integrity will supply the "Proxy-support: Session-
+   Based-Authentication" HTTP header to the client in HTTP responses 
+   from the proxy. The client MUST NOT utilize the SPNEGO HTTP 
+   authentication mechanism through a proxy unless the proxy supplies 
+   this header with the 401 Unauthorized response from the server. 
+    
+    
+8. References 
+    
+ 
+   1  Bradner, S., "The Internet Standards Process -- Revision 3", BCP 
+      9, RFC 2026, October 1996. 
+    
+   3  Bradner, S., "Key words for use in RFCs to Indicate Requirement 
+      Levels", BCP 14, RFC 2119, March 1997 
+    
+   4 Fielding, R., Gettys, J., Mogul, J., Frystyk, H., Masinter, L., 
+      Leach, P. and T. Berners-Lee,  "Hypertext Transfer Protocol -- 
+      HTTP/1.1", RFC 2616, June 1999. 
+     
+   5 Franks, J., Hallam-Baker, P., Hostetler, J., Lawrence, S., Leach, 
+      P., Luotonen, A., Stewart, L., "HTTP Authentication: Basic and 
+      Digest Access Authentication", RFC 2617, June 1999. 
+    
+   6 Linn, J., "Generic Security Service Application Program Interface, 
+      Version 2", RFC 2078, January 1997. 
+    
+   7 Baize, E., Pinkas, D., "The Simple and Protected GSS-API 
+      Negotiation Mechanism", RFC 2478, December 1998. 
+    
+   8 Linn, J., "The Kerberos Version 5 GSS-API Mechanism", RFC 1964, 
+      June 1996. 
+    
+ 
+    
+  
+Brezak                 Category û Informational                      4 
+
+
+
+
+
+
+
+
+                     SPNEGO Access Authentication       September 2001 
+
+    
+10. Author's Addresses 
+    
+   John Brezak 
+   Microsoft 
+   One Microsoft Way 
+   Redmond, Washington 
+   Email: jbrezak@microsoft.com 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+Brezak                 Category û Informational                      5 
+
+
+
+
+
+
+
+
+                     SPNEGO Access Authentication       September 2001 
+
+    
+Full Copyright Statement 
+ 
+   Copyright (C) The Internet Society (2001).  All Rights Reserved. 
+    
+   This document and translations of it may be copied and furnished to 
+   others, and derivative works that comment on or otherwise explain it 
+   or assist in its implementation may be prepared, copied, published 
+   and distributed, in whole or in part, without restriction of any 
+   kind, provided that the above copyright notice and this paragraph 
+   are included on all such copies and derivative works.  However, this   
+   document itself may not be modified in any way, such as by removing   
+   the copyright notice or references to the Internet Society or other   
+   Internet organizations, except as needed for the purpose of 
+   developing Internet standards in which case the procedures for 
+   copyrights defined in the Internet Standards process must be 
+   followed, or as required to translate it into languages other than 
+   English. 
+    
+   The limited permissions granted above are perpetual and will not be 
+   revoked by the Internet Society or its successors or assigns. 
+    
+   This document and the information contained herein is provided on an 
+   "AS IS" basis and THE INTERNET SOCIETY AND THE INTERNET ENGINEERING 
+   TASK FORCE DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING 
+   BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION 
+   HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF 
+   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE." 
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+Brezak                 Category û Informational                      6 
+
+
+
+
+
+
+

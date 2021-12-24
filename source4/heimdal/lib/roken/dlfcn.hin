@@ -1,0 +1,109 @@
+/***********************************************************************
+ * Copyright (c) 2009, Secure Endpoints Inc.
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 
+ * - Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ * 
+ * - Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in
+ *   the documentation and/or other materials provided with the
+ *   distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ * 
+ **********************************************************************/
+
+#ifndef __dlfcn_h__
+#define __dlfcn_h__
+
+#include <windows.h>
+
+#ifndef ROKEN_LIB_FUNCTION
+#ifdef _WIN32
+#define ROKEN_LIB_FUNCTION
+#define ROKEN_LIB_CALL     __cdecl
+#else
+#define ROKEN_LIB_FUNCTION
+#define ROKEN_LIB_CALL
+#endif
+#endif
+
+#ifdef _WIN32
+typedef int (__stdcall *DLSYM_RET_TYPE)();
+#else
+#define DLSYM_RET_TYPE void *
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Relocations are performed when the object is loaded. */
+#define RTLD_NOW    0
+
+/* Relocations are performed at an implementation-defined time.
+ * Windows API does not support lazy symbol resolving (when first reference
+ * to a given symbol occurs). So RTLD_LAZY implementation is same as RTLD_NOW.
+ */
+#define RTLD_LAZY   RTLD_NOW
+
+/* All symbols are available for relocation processing of other modules. */
+#define RTLD_GLOBAL (1 << 1)
+
+/* All symbols are not made available for relocation processing by other modules. */
+#define RTLD_LOCAL  (1 << 2)
+
+/* These two were added in The Open Group Base Specifications Issue 6.
+ * Note: All other RTLD_* flags in any dlfcn.h are not standard compliant.
+ */
+
+/* The symbol lookup happens in the normal global scope. */
+#define RTLD_DEFAULT    ((void *)0LL)
+
+/* Specifies the next object after this one that defines name. */
+#define RTLD_NEXT       ((void *)-1LL)
+
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+dlclose(void *);
+
+ROKEN_LIB_FUNCTION char  * ROKEN_LIB_CALL
+dlerror(void);
+
+ROKEN_LIB_FUNCTION void  * ROKEN_LIB_CALL
+dlopen(const char *, int);
+
+ROKEN_LIB_FUNCTION DLSYM_RET_TYPE ROKEN_LIB_CALL
+dlsym(void *, const char *);
+
+typedef struct Dl_info
+{
+   const char *dli_fname;  /* Filename of defining object (thread unsafe and reused on every call to dladdr) */
+   void       *dli_fbase;  /* Load address of that object */
+   const char *dli_sname;  /* Name of nearest lower symbol */
+   void       *dli_saddr;  /* Exact value of nearest symbol */
+} Dl_info, Dl_info_t;
+
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+dladdr(void *addr, Dl_info *dli);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+#endif	/* __dlfcn_h__ */

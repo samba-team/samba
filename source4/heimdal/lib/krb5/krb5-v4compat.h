@@ -105,11 +105,7 @@ struct credentials {
 #define 	CLOCK_SKEW	5*60
 
 #ifndef TKT_ROOT
-#ifdef KRB5_USE_PATH_TOKENS
 #define TKT_ROOT "%{TEMP}/tkt"
-#else
-#define TKT_ROOT "/tmp/tkt"
-#endif
 #endif
 
 struct _krb5_krb_auth_data {

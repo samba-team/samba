@@ -64,3 +64,12 @@ rk_cloexec_dir(DIR * d)
     rk_cloexec(dirfd(d));
 #endif
 }
+
+void ROKEN_LIB_FUNCTION
+rk_cloexec_socket(rk_socket_t s)
+{
+#ifndef _WIN32
+    rk_cloexec((int)s);
+#endif
+}
+

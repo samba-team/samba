@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_mk_req_internal(krb5_context context,
 		      krb5_auth_context *auth_context,
 		      const krb5_flags ap_req_options,
@@ -73,48 +73,37 @@ _krb5_mk_req_internal(krb5_context context,
     if (ret)
 	goto out;
 
-    /* it's unclear what type of checksum we can use.  try the best one, except:
-     * a) if it's configured differently for the current realm, or
-     * b) if the session key is des-cbc-crc
+    /*
+     * Use the default checksum type except for some interoperability cases
+     * with older MIT, DCE and Windows KDCs.
      */
-
     if (in_data) {
-	if(ac->keyblock->keytype == ETYPE_DES_CBC_CRC) {
-	    /* this is to make DCE secd (and older MIT kdcs?) happy */
-	    ret = krb5_create_checksum(context,
-				       NULL,
-				       0,
-				       CKSUMTYPE_RSA_MD4,
-				       in_data->data,
-				       in_data->length,
-				       &c);
-	} else if(ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5 ||
-		  ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5_56 ||
-		  ac->keyblock->keytype == ETYPE_DES_CBC_MD4 ||
-		  ac->keyblock->keytype == ETYPE_DES_CBC_MD5) {
-	    /* this is to make MS kdc happy */
-	    ret = krb5_create_checksum(context,
-				       NULL,
-				       0,
-				       CKSUMTYPE_RSA_MD5,
-				       in_data->data,
-				       in_data->length,
-				       &c);
-	} else {
-	    krb5_crypto crypto;
+	krb5_crypto crypto;
+	krb5_cksumtype checksum_type = CKSUMTYPE_NONE;
 
-	    ret = krb5_crypto_init(context, ac->keyblock, 0, &crypto);
-	    if (ret)
-		goto out;
-	    ret = krb5_create_checksum(context,
-				       crypto,
-				       checksum_usage,
-				       0,
-				       in_data->data,
-				       in_data->length,
-				       &c);
-	    krb5_crypto_destroy(context, crypto);
-	}
+	if (ac->keyblock->keytype == ETYPE_DES_CBC_CRC)
+	    checksum_type = CKSUMTYPE_RSA_MD4;
+	else if (ac->keyblock->keytype == ETYPE_DES_CBC_MD4 ||
+		 ac->keyblock->keytype == ETYPE_DES_CBC_MD5 ||
+		 ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5 ||
+		 ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5_56)
+	    checksum_type = CKSUMTYPE_RSA_MD5;
+	else
+	    checksum_type = CKSUMTYPE_NONE;
+
+	ret = krb5_crypto_init(context, ac->keyblock, 0, &crypto);
+	if (ret)
+	    goto out;
+
+	_krb5_crypto_set_flags(context, crypto, KRB5_CRYPTO_FLAG_ALLOW_UNKEYED_CHECKSUM);
+	ret = krb5_create_checksum(context,
+				   crypto,
+				   checksum_usage,
+				   checksum_type,
+				   in_data->data,
+				   in_data->length,
+				   &c);
+	krb5_crypto_destroy(context, crypto);
 	c_opt = &c;
     } else {
 	c_opt = NULL;

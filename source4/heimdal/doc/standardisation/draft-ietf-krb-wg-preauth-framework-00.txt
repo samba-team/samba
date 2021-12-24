@@ -1,0 +1,1177 @@
+
+
+Kerberos Working Group                                        S. Hartman
+Internet-Draft                                                       MIT
+Expires: August 9, 2004                                 February 9, 2004
+
+
+         A Generalized Framework for Kerberos Preauthentication
+                 draft-ietf-krb-wg-preauth-framework-00
+
+Status of this Memo
+
+   This document is an Internet-Draft and is in full conformance with
+   all provisions of Section 10 of RFC2026.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups. Note that other
+   groups may also distribute working documents as Internet-Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time. It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at http://
+   www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on August 9, 2004.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2004). All Rights Reserved.
+
+Abstract
+
+   Kerberos is a protocol for verifying the identity of principals
+   (e.g., a workstation user or a network server) on an open network.
+   The Kerberos protocol provides a mechanism called preauthentication
+   for proving the identity  of a principal and for better protecting
+   the long-term secret of the principal.
+
+   This document describes a model for Kerberos preauthentication
+   mechanisms.  The model describes what state in the Kerberos request a
+   preauthentication mechanism is likely to change. It also describes
+   how multiple preauthentication mechanisms used in the same request
+   will interact.
+
+   This document also provides common tools needed by multiple
+
+
+
+Hartman                  Expires August 9, 2004                 [Page 1]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+   preauthentication mechanisms.
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [1].
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   2.  Model for Preauthentication  . . . . . . . . . . . . . . . . .  4
+   2.1 Information Managed by Model . . . . . . . . . . . . . . . . .  5
+   2.2 The Preauth_Required Error . . . . . . . . . . . . . . . . . .  6
+   2.3 Client to KDC  . . . . . . . . . . . . . . . . . . . . . . . .  7
+   2.4 KDC to Client  . . . . . . . . . . . . . . . . . . . . . . . .  7
+   3.  Preauthentication Facilities . . . . . . . . . . . . . . . . .  9
+   3.1 Client Authentication  . . . . . . . . . . . . . . . . . . . . 10
+   3.2 Strengthen Reply Key . . . . . . . . . . . . . . . . . . . . . 10
+   3.3 Replace Reply Key  . . . . . . . . . . . . . . . . . . . . . . 11
+   3.4 Verify Response  . . . . . . . . . . . . . . . . . . . . . . . 11
+   4.  Requirements for Preauthentication Mechanisms  . . . . . . . . 12
+   5.  Tools for Use in Preauthentication Mechanisms  . . . . . . . . 13
+   5.1 Combine Keys . . . . . . . . . . . . . . . . . . . . . . . . . 13
+   5.2 Signing Requests/Responses . . . . . . . . . . . . . . . . . . 13
+   5.3 Managing State for the KDC . . . . . . . . . . . . . . . . . . 13
+   6.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 14
+   7.  Security Considerations  . . . . . . . . . . . . . . . . . . . 15
+   8.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 16
+       Author's Address . . . . . . . . . . . . . . . . . . . . . . . 18
+       Normative References . . . . . . . . . . . . . . . . . . . . . 17
+       Informative References . . . . . . . . . . . . . . . . . . . . 18
+   A.  Todo List  . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+       Intellectual Property and Copyright Statements . . . . . . . . 20
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                 [Page 2]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+1. Introduction
+
+   The core Kerberos specification treats preauthentication data as an
+   opaque typed hole in the messages to the KDC that may influence the
+   reply key used to encrypt the KDC response.  This generality has been
+   useful: preauthentication data is used for a variety of extensions to
+   the protocol, many outside the expectations of the initial designers.
+   However, this generality makes designing the more common types of
+   preauthentication mechanisms difficult. Each mechanism needs to
+   specify how it interacts with other mechanisms.  Also, problems like
+   combining a key with the long-term secret or proving the identity of
+   the user are common to multiple mechanisms.  Where there are
+   generally well-accepted solutions to these problems, it is desirable
+   to standardize one of these solutions so mechanisms  can avoid
+   duplication of work.  In other cases, a modular approach to these
+   problems is appropriate.  The modular approach will allow new  and
+   better solutions to common preauth problems to be used by existing
+   mechanisms as they are developed.
+
+   This document specifies a framework for Kerberos preauthentication
+   mechanisms.  IT defines the common set of functions preauthentication
+   mechanisms perform as well as how these functions affect the state of
+   the request and response.  In addition several common tools needed by
+   preauthentication mechanisms are provided.  Unlike [3], this
+   framework is not complete--it does not describe all the inputs and
+   outputs for the preauthentication mechanisms.  Mechanism designers
+   should try to be consistent with this framework because doing so will
+   make their mechanisms easier to implement.  Kerberos implementations
+   are likely to have plugin architectures  for preauthentication; such
+   architectures are likely to support mechanisms that follow this
+   framework plus commonly used extensions.
+
+   This document should be read only after reading the documents
+   describing the Kerberos cryptography framework [3] and the core
+   Kerberos protocol [2].  This document freely uses terminology and
+   notation from these documents without reference or further
+   explanation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                 [Page 3]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+2. Model for Preauthentication
+
+   when a Kerberos client wishes to obtain a ticket using the
+   authentication server, it sends an initial AS request.  If
+   preauthentication is being used, then the KDC will respond with a
+   KDC_ERR_PREAUTH_REQUIRED error.  Alternatively, if the client knows
+   what preauthentication to use, it MAY optimize a round-trip and send
+   an initial request with padata included.  If the client includes the
+   wrong padata, the server MAY return KDC_ERR_PREAUTH_FAILED with no
+   indication of what padata should have been included.  For
+   interoperability reasons, clients that include optimistic preauth
+   MUST retry with no padata and examine the KDC_ERR_PREAUTH_REQUIRED if
+   they receive a KDC_ERR_PREAUTH_FAILED in response to their initial
+   optimistic request.
+
+   The KDC maintains no state between two requests; subsequent requests
+   may even be processed by a different KDC. On the other hand, the
+   client treats a series of exchanges with KDCs as a single
+   authentication session.  Each exchange accumulates state and
+   hopefully brings the client closer to a successful authentication.
+
+   These models for state management are in apparent conflict. For many
+   of the simpler preauthentication scenarios,  the client uses one
+   round trip to find out what mechanisms the KDC supports.  Then the
+   next request contains sufficient preauthentication for the KDC to be
+   able to return a successful response.  For these simple scenarios,
+   the client only sends one request with preauthentication data and so
+   the authentication session is trivial.  For more complex
+   authentication sessions, the KDC needs to provide the client with a
+   cookie to include in future requests to capture the current state of
+   the authentication session.  Handling of multiple round-trip
+   mechanisms is discussed in Section 5.3.
+
+   This framework specifies the behavior of Kerberos preauthentication
+   mechanisms used to identify users or to modify the reply key used to
+   encrypt the KDC response.  The padata typed hole may be used to carry
+   extensions to Kerberos that have nothing to do with proving the
+   identity of the user or establishing a reply key.  These extensions
+   are outside the scope of this framework.  However mechanisms that do
+   accomplish these goals should follow this framework.
+
+   This framework specifies the minimum state that a Kerberos
+   implementation needs to maintain while handling a request in order to
+   process preauthentication.  It also specifies how Kerberos
+   implementations process the preauthentication data at each step of
+   the AS request process.
+
+
+
+
+
+Hartman                  Expires August 9, 2004                 [Page 4]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+2.1 Information Managed by Model
+
+   The following information is maintained by the client and KDC as each
+   request is being processed:
+
+   o  The reply key used to encrypt the KDC response
+
+   o  How strongly the identity of the client has been authenticated
+
+   o  Whether the reply key has been used in this authentication session
+
+   o  Whether the contents of the KDC response can be  verified by the
+      client principal
+
+   o  Whether the contents of the KDC response can be  verified by the
+      client machine
+
+   Conceptually, the reply key is initially the long-term key of the
+   principal.  However, principals can have multiple long-term keys
+   because of support for multiple encryption types, salts and
+   string2key parameters.  As described in section 5.2.7.5 of the
+   Kerberos protocol [2], the KDC sends PA-ETYPe-INFO2 to notify the
+   client  what types of keys are available.  Thus in full generality,
+   the reply key in the preauth model is actually a set of keys.  At the
+   beginning of a request, it is initialized to the set of long-term
+   keys advertised in the PA-ETYPE-INFO2 element on the KDC.  If
+   multiple reply keys are available, the client chooses which one to
+   use.  Thus the client does not need to treat the reply key as a set.
+   At the beginning of a handling a request, the client picks a reply
+   key to use.
+
+   KDC implementations MAY choose to offer only one key in the
+   PA-ETYPE-INFO2 element.  Since the KDC already knows the client's
+   list of supported enctypes from the  request, no interoperability
+   problems are created by choosing a single possible reply key.  This
+   way, the KDC implementation avoids the complexity of treating the
+   reply key as a set.
+
+   At the beginning of handling a message on both the client and KDC,
+   the client's identity is not authenticated.  A mechanism may indicate
+   that it has successfully authenticated the client's identity.  This
+   information is useful to keep track of on the client  in order to
+   know what preauthentication mechanisms should be used.  The KDC needs
+   to keep track of whether the client is authenticated because the
+   primary purpose of preauthentication is to authenticate the client
+   identity before issuing a ticket.  Implementations that have
+   preauthentication mechanisms offering significantly different
+   strengths of client authentication MAY choose to keep track of the
+
+
+
+Hartman                  Expires August 9, 2004                 [Page 5]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+   strength of the authentication used as an input into policy
+   decisions.  For example, some principals might require strong
+   preauthentication, while less sensitive principals can use relatively
+   weak forms of preauthentication like encrypted timestamp.
+
+   Initially the reply key has not been used.  A preauthentication
+   mechanism that uses the reply key either directly to encrypt or
+   cheksum some data or indirectly in the generation of new keys MUST
+   indicate that the reply key is used.  This state is maintained by the
+   client and KDC to enforce the security requirement stated in Section
+   3.3 that the reply key cannot be replaced after it is used.
+
+   Without preauthentication, the client knows that the KDC request is
+   authentic and has not been modified because it is encrypted in the
+   long-term key of the client.  Only the KDC and client know that key.
+   So at the start of handling any message the KDC request is presumed
+   to be verified to the client principal.  Any preauthentication
+   mechanism that sets a new reply key not based on the principal's
+   long-term secret MUST either verify the KDC response some other way
+   or indicate that the response is not verified.  If a mechanism
+   indicates that the response is not verified then the client
+   implementation MUST return an error unless a subsequent mechanism
+   verifies the response.  The KDC needs to track this state so it can
+   avoid generating a response that is not verified.
+
+   The typical Kerberos request does not provide a way for the client
+   machine to know that it is talking to the correct KDC. Someone who
+   can inject packets into the network between the client machine and
+   the KDC and who knows the password that the user will give to the
+   client machine can generate a KDC response that will decrypt
+   properly.  So, if the client machine needs to authenticate that the
+   user is in fact the named principal, then the client machine needs to
+   do a TGS request for itself as a service.  Some preauthentication
+   mechanisms may provide  a way for the client to authenticate the KDC.
+   Examples of this include signing the response with a well-known
+   public key or providing a ticket for the client machine as a service
+   in addition to the requested ticket.
+
+2.2 The Preauth_Required Error
+
+   Typically a client starts an authentication session by sending  an
+   initial request with no preauthentication.  If the KDC requires
+   preauthentication, then it returns a KDC_ERR_PREAUTH_REQUIRED
+   message.  This message MAY also be returned for preauthentication
+   configurations that use multi-round-trip mechanisms.  This error
+   contains a sequence of padata.  Typically the padata contains the
+   preauth type IDs of all the available preauthentication mechanisms.
+   IN the initial error response, most mechanisms do not contain data.
+
+
+
+Hartman                  Expires August 9, 2004                 [Page 6]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+   If a mechanism requires multiple round trips or starts with a
+   challenge from the KDC to the client, then it will likely contain
+   data in the initial error response.
+
+   The KDC SHOULD NOT send data that is encrypted in the long-term
+   password-based key of the principal.  Doing so has the same security
+   exposures as the Kerberos protocol without preauthentication.  There
+   are few situations where preauthentication is desirable and where the
+   KDC needs to expose ciphertext encrypted in a weak key before the
+   client has proven knowledge of that key.
+
+   In order to generate the error response, the KDC first starts by
+   initializing the preauthentication state.  Then it processes any
+   padata in the client's request in the order provided by the client.
+   Mechanisms that are not understood by the KDC are ignored.
+   Mechanisms that are inappropriate for the client principal or request
+   SHOULD also be ignored.  Next, it generates padata for the error
+   response, modifying the preauthentication state appropriately as each
+   mechanism is processed.  The KDC chooses the order in which it will
+   generated padata (and thus the order of padata in the response), but
+   it needs to modify the preauthentication state consistently with the
+   choice of order.  For example, if some mechanism establishes an
+   authenticated client identity, then the mechanisms subsequent in the
+   generated response receive this state as input.  After the padata is
+   generated, the error response is sent.
+
+2.3 Client to KDC
+
+   This description assumes a client has already received a
+   KDC_ERR_PREAUTH_REQUIRED from the KDC.  If the client performs
+   optimistic preauthentication then the client needs to optimisticly
+   choose the information it would normally receive from that error
+   response.
+
+   The client starts by initializing the preauthentication state as
+   specified.  It then processes the pdata in the
+   KDC_ERR_PREAUTH_REQUIRED.
+
+   After processing the pdata in the KDC error, the client generates a
+   new request.  It processes the preauthentication mechanisms in the
+   order in which they will appear in the next request, updating the
+   state as appropriate. When the request is complete it is sent.
+
+2.4 KDC to Client
+
+   When a KDC receives an AS request from a client, it needs to
+   determine whether it will respond with an error or  a AS reply.
+   There are many causes for an error to be generated that have nothing
+
+
+
+Hartman                  Expires August 9, 2004                 [Page 7]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+   to do with preauthentication; they are discussed in the Kerberos
+   specification.
+
+   From the standpoint of evaluating the preauthentication, the KDC
+   first starts by initializing the preauthentication state.  IT then
+   processes the padata in the request.  AS mentioned in Section 2.2,
+   the KDC MAY ignore padata that is inappropriate for the configuration
+   and MUST ignore padata of an unknown type.
+
+   At this point the KDC decides whether it will issue a
+   preauthentication required error or a reply.  Typically a KDC will
+   issue a reply if the client's identity has been authenticated to a
+   sufficient degree.  The processing of the preauthentication required
+   error is described in Section 2.2.
+
+   The KDC generates the pdata modifying the preauthentication state as
+   necessary.  Then it generates the final response, encrypting it in
+   the current preauthentication reply key.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                 [Page 8]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+3. Preauthentication Facilities
+
+   Preauthentication mechanisms can be thought of as conceptually
+   providing various facilities.  This serves two useful purposes.
+   First, mechanism authors can choose only to solve one specific small
+   problem.  It is often useful for a mechanism designed to offer key
+   management not to directly provide client authentication but instead
+   to allow one or more other mechanisms to handle this need.  Secondly,
+   thinking about the  abstract services that a mechanism provides
+   yields a minimum set of security requirements that all mechanisms
+   providing that facility must meet. These security requirements are
+   not complete; mechanisms will have additional security requirements
+   based on the specific protocol they employ.
+
+   A mechanism is not constrained to only offering one of these
+   facilities.  While such mechanisms can be designed and are sometimes
+   useful, many preauthentication mechanisms implement several
+   facilities.  By combining multiple facilities in a single mechanism,
+   it is often easier to construct a secure, simple solution than  by
+   solving the problem in full generality.  Even when mechanisms provide
+   multiple facilities, they need to meet the security requirements for
+   all the facilities they provide.
+
+   According to Kerberos extensibility rules (section 1.4.2 of the
+   Kerberos specification [2]), an extension MUST NOT change the
+   semantics of a message unless a recipient is known to understand that
+   extension.  Because a client does not know that the KDC supports a
+   particular preauth mechanism when it sends an initial request, a
+   preauth mechanism MUST NOT change the semantics of the request in a
+   way that will break a KDC that does not understand that mechanism.
+   Similarly, KDCs MUST not send messages to clients that affect the
+   core semantics unless the clients have indicated support for the
+   message.
+
+   The only state in this model that would break the interpretation of a
+   message is changing the expected reply key.  If one mechanism changed
+   the reply key and a later mechanism used that reply key, then a KDC
+   that interpreted the second mechanism but not the first would fail to
+   interpret the request correctly.  In order to avoid this problem,
+   extensions that change core semantics are typically divided into two
+   parts.  The first part proposes a change to the core semantic--for
+   example proposes a new reply key.  The second part acknowledges that
+   the extension is understood and that the change takes effect. Section
+   3.2 discusses how to design mechanisms that modify the reply key to
+   be split into a proposal and acceptance without requiring additional
+   round trips to use the new reply key in subsiquent preauthentication.
+   Other changes in the state described in Section 2.1 can safely be
+   ignored by a KDC that does not understand a mechanism.  Mechanisms
+
+
+
+Hartman                  Expires August 9, 2004                 [Page 9]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+   that modify the behavior of the request outside the scope of this
+   framework need to carefully consider the Kerberos extensibility rules
+   to avoid similar problems.
+
+3.1 Client Authentication
+
+      Binding to reply key
+
+      Consider Secure ID case where you don't have anything to bind to
+
+
+3.2 Strengthen Reply Key
+
+   Particularly, when dealing with keys based on passwords it is
+   desirable to increase the strength of the key by adding additional
+   secrets to it.  Examples of sources of additional secrets include the
+   results of a Diffie-Hellman key exchange or key bits from the output
+   of a smart card [5].  Typically these additional secrets are
+   converted into a Kerberos protocol key.  Then they are combined with
+   the existing reply key as discussed in Section 5.1.
+
+   If a mechanism implementing this facility wishes to modify the reply
+   key before knowing that the other party in the exchange supports the
+   mechanism, it proposes modifying the reply key.  The other party then
+   includes a message indicating that the proposal is accepted if it is
+   understood and meets policy.  In many cases it is desirable to use
+   the new reply key for client authentication and for other facilities.
+   Waiting for the other party to accept the proposal and actually
+   modify the reply key state would add an additional round trip to the
+   exchange.  Instead, mechanism designers  are encouraged to include a
+   typed hole for additional padata in the message that proposes the
+   reply key change.  The padata included in the typed hole are
+   generated assuming the new reply key. If the other party accepts the
+   proposal, then these padata are interpreted as if they were included
+   immediately following the proposal.  The party generating the
+   proposal can determine whether the padata were processed based on
+   whether the proposal for the reply key is accepted.
+
+   The specific formats of the proposal message, including where padata
+   are  are included is a matter for the mechanism specification.
+   Similarly, the format of the message accepting the proposal is
+   mechanism-specific.
+
+   Mechanisms implementing this facility and including a typed hole for
+   additional padata MUST checksum that padata using a keyed checksum or
+   encrypt the padata.  Typically the reply key is used to protect the
+   padata.  XXX If you are only minimally increasing the strength of the
+   reply key, this may give the attacker access to something too close
+
+
+
+Hartman                  Expires August 9, 2004                [Page 10]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+   to the original reply key.  However, binding the padata to the new
+   reply key  seems potentially important from a security standpoint.
+   There may also be objections to this from a double encryption
+   standpoint because we also recommend client authentication facilities
+   be tied to the reply key.
+
+3.3 Replace Reply Key
+
+      Containers to handle reply key when not sure whether other side
+      supports mech
+
+      Make sure reply key is not used previously
+
+      Interactions with client authentication
+
+      Reference to container argument
+
+
+3.4 Verify Response
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                [Page 11]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+4. Requirements for Preauthentication Mechanisms
+
+      State management for multi-round-trip mechs
+
+      Security interactions with other mechs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                [Page 12]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+5. Tools for Use in Preauthentication Mechanisms
+
+5.1 Combine Keys
+
+5.2 Signing Requests/Responses
+
+5.3 Managing State for the KDC
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                [Page 13]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+6. IANA Considerations
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                [Page 14]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+7. Security Considerations
+
+      Very little of the AS request is authenticated.  Same for padata
+      in the reply or error.  Discuss implications
+
+      Table of security requirements stated elsewhere in the document
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                [Page 15]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+8. Acknowledgements
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                [Page 16]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+Normative References
+
+   [1]  Bradner, S., "Key words for use in RFCs to Indicate Requirement
+        Levels", RFC 2119, BCP 14, March 1997.
+
+   [2]  Neuman, C., Yu, T., Hartman, S. and K. Raeburn, "The Kerberos
+        Network Authentication Service (V5)",
+        draft-ietf-krb-wg-kerberos-clarifications-04.txt (work in
+        progress), June 2003.
+
+   [3]  Raeburn, K., "Encryption and Checksum Specifications for
+        Kerberos 5", draft-ietf-krb-wg-crypto-03.txt (work in progress).
+
+   [4]  Yergeau, F., "UTF-8, a transformation format of ISO 10646", RFC
+        2279, January 1998.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                [Page 17]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+Informative References
+
+   [5]  Hornstein, K., Renard, K., Neuman, C. and G. Zorn, "Integrating
+        Single-use Authentication Mechanisms with Kerberos",
+        draft-ietf-krb-wg-kerberos-sam-02.txt (work in progress),
+        October 2003.
+
+
+Author's Address
+
+   Sam hartman
+   MIT
+
+   EMail: hartmans@mit.edu
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                [Page 18]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+Appendix A. Todo List
+
+      Flesh out sections that are still outlines
+
+      Discuss cookies and multiple-round-trip mechanisms.
+
+      Talk about checksum contributions from each mechanism
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                [Page 19]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   intellectual property or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; neither does it represent that it
+   has made any effort to identify any such rights. Information on the
+   IETF's procedures with respect to rights in standards-track and
+   standards-related documentation can be found in BCP-11. Copies of
+   claims of rights made available for publication and any assurances of
+   licenses to be made available, or the result of an attempt made to
+   obtain a general license or permission for the use of such
+   proprietary rights by implementors or users of this specification can
+   be obtained from the IETF Secretariat.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights which may cover technology that may be required to practice
+   this standard. Please address the information to the IETF Executive
+   Director.
+
+
+Full Copyright Statement
+
+   Copyright (C) The Internet Society (2004). All Rights Reserved.
+
+   This document and translations of it may be copied and furnished to
+   others, and derivative works that comment on or otherwise explain it
+   or assist in its implementation may be prepared, copied, published
+   and distributed, in whole or in part, without restriction of any
+   kind, provided that the above copyright notice and this paragraph are
+   included on all such copies and derivative works. However, this
+   document itself may not be modified in any way, such as by removing
+   the copyright notice or references to the Internet Society or other
+   Internet organizations, except as needed for the purpose of
+   developing Internet standards in which case the procedures for
+   copyrights defined in the Internet Standards process must be
+   followed, or as required to translate it into languages other than
+   English.
+
+   The limited permissions granted above are perpetual and will not be
+   revoked by the Internet Society or its successors or assignees.
+
+   This document and the information contained herein is provided on an
+   "AS IS" basis and THE INTERNET SOCIETY AND THE INTERNET ENGINEERING
+   TASK FORCE DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING
+   BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION
+
+
+
+Hartman                  Expires August 9, 2004                [Page 20]
+
+Internet-Draft        Kerberos Preauth Framework           February 2004
+
+
+   HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF
+   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires August 9, 2004                [Page 21]
+
+

@@ -1,0 +1,557 @@
+NETWORK WORKING GROUP                                        N. Williams
+Internet-Draft                                                       Sun
+Expires: December 30, 2004                                     July 2004
+
+
+
+            GSS-API Domain-Based Service Names and Name Type
+            draft-williams-gssapi-domain-based-names-00.txt
+
+
+Status of this Memo
+
+
+   By submitting this Internet-Draft, I certify that any applicable
+   patent or other IPR claims of which I am aware have been disclosed,
+   and any of which I become aware will be disclosed, in accordance with
+   RFC 3668.
+
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as
+   Internet-Drafts.
+
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+
+   This Internet-Draft will expire on December 30, 2004.
+
+
+Copyright Notice
+
+
+   Copyright (C) The Internet Society (2004).  All Rights Reserved.
+
+
+Abstract
+
+
+   This document describes domainname-based service principal names and
+   the corresponding name type for the GSS-API.
+
+
+   Domain-based service names are similar to host-based service names,
+   but using a domain name (not necessarily and Internat domain name)
+   instead of or in addition to a hostname.  The primary purpose of
+   domain-based service names is to provide a way to name clustered
+   services after the domain which they service, thereby allowing their
+   clients to authorize the service's servers based on authentication of
+   their names.
+
+
+
+
+Williams               Expires December 30, 2004                [Page 1]
+Internet-Draft           GSS Domain Based Names                July 2004
+
+
+
+Table of Contents
+
+
+   1. Conventions used in this document  . . . . . . . . . . . . . . . 3
+   2. Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+   3. Name Type OID and Symbolic Name  . . . . . . . . . . . . . . . . 5
+   4. Query and Display Syntaxes . . . . . . . . . . . . . . . . . . . 6
+   5. Examples . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+   6. Security Considerations  . . . . . . . . . . . . . . . . . . . . 8
+   7. Normative  . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+      Author's Address . . . . . . . . . . . . . . . . . . . . . . . . 8
+      Intellectual Property and Copyright Statements . . . . . . . . . 9
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 2]
+Internet-Draft           GSS Domain Based Names                July 2004
+
+
+
+1.  Conventions used in this document
+
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 3]
+Internet-Draft           GSS Domain Based Names                July 2004
+
+
+
+2.  Introduction
+
+
+   The use of hostbased principal names for domain-wide services
+   presents the problem of how to distinguish between an instance of a
+   hostbased service that is authorized to respond for a domain and one
+   that isn't.
+
+
+   Consider LDAP.  LDAP with SASL and the Kerberos V GSS-API mechanism
+   uses a hostbased principal with a service name of "ldap", a
+   reasonable approach, provided there is only one logical LDAP
+   directory in a Kerberos realm's domain, and that all ldap servers in
+   that realm serve that one LDAP directory.  If there were other LDAP
+   directories, then clients could not tell which service is authorized
+   to serve which directory, not without assuming a secure method for
+   finding LDAP servers (e.g., DNSSEC).  This is a significant, and
+   oft-unstated restriction on users of LDAP.
+
+
+   Domain based names can eliminate this problem by allowing LDAP
+   service names to indicate which LDAP directory they are authorized to
+   serve.
+
+
+   A domain-based name consists of three required elements:
+   o  a service name
+   o  a domain name
+   o  a hostname
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 4]
+Internet-Draft           GSS Domain Based Names                July 2004
+
+
+
+3.  Name Type OID and Symbolic Name
+
+
+   The new name type has an OID of
+      [NOTE:  OID assignment to be made with IANA.]
+
+
+      {iso(1) org(3) dod(6) internet(1) security(5) nametypes(6)
+      gss-domain-based(5)}
+
+
+   The recommended symbolic name for this GSS-API name type is
+   "GSS_C_NT_DOMAINBASED_SERVICE".
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 5]
+Internet-Draft           GSS Domain Based Names                July 2004
+
+
+
+4.  Query and Display Syntaxes
+
+
+   There is a single syntax that applies to both query and display forms
+   of domain-based names.  (We ignore string profile matters here as the
+   GSS-API's, and its mechanisms' use of character strings are out of
+   scope for this document.)
+
+
+   The syntax is:
+      domain-based-name :=
+         | <service> '@' <domain> '@' <hostname>
+         | <service> '@@' <hostname>
+
+
+   The domain name element is only optional in the query syntax of
+   domain-based names.
+
+
+   A missing domain name is always to be added by the GSS-API mechanisms
+   during name canonicalization, using whatever default values are
+   appropriate for the mechanisms.
+
+
+   Therefore the display form of domain-based MNs (see [RFC2743]) MUST
+   include all three elements of domain-based names.
+
+
+   Note that for Internet domain names the trailing '.' is not and MUST
+   NOT be included in the domain name (or hostname) parts of the display
+   form GSS-API domain-based MNs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 6]
+Internet-Draft           GSS Domain Based Names                July 2004
+
+
+
+5.  Examples
+
+
+   o  ldap@@ds1.example.tld
+   o  ldap@example.tld@ds1.example.tld
+
+
+   o  kadmin@@kdc1.example.tld
+   o  kadmin@example.tld@kdc1.example.tld
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 7]
+Internet-Draft           GSS Domain Based Names                July 2004
+
+
+
+6.  Security Considerations
+
+
+   Use of GSS-API domain-based names may not be negotiable by some
+   GSS-API mechanisms, and some acceptors may not support GSS-API
+   domain-based names.  In such cases initiators are left to fallback on
+   the use of hostbased names, in which case the initiators MUST also
+   verify that the acceptor's hostbased name is authorized to provide
+   the given service for the domain that the initiator had wanted.
+
+
+   The above security consideration also applies to all GSS-API
+   initiators who lack support for domain-based service names.
+
+
+7  Normative
+
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+
+   [RFC2744]  Wray, J., "Generic Security Service API Version 2 :
+              C-bindings", RFC 2744, January 2000.
+
+
+
+Author's Address
+
+
+   Nicolas Williams
+   Sun Microsystems
+   5300 Riata Trace Ct
+   Austin, TX  78727
+   US
+
+
+   EMail: Nicolas.Williams@sun.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 8]
+Internet-Draft           GSS Domain Based Names                July 2004
+
+
+
+Intellectual Property Statement
+
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+
+Disclaimer of Validity
+
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+
+Copyright Statement
+
+
+   Copyright (C) The Internet Society (2004).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+
+Acknowledgment
+
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Williams               Expires December 30, 2004                [Page 9] 

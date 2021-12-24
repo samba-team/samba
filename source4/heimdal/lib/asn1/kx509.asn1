@@ -1,7 +1,13 @@
 -- $Id$
 
-KX509 DEFINITIONS ::=
-BEGIN
+-- Version 2 of the kx509 protocol is documented in RFC6717.
+--
+-- Our version here has extensions without changing the version number on the
+-- wire.
+
+KX509 DEFINITIONS ::= BEGIN
+IMPORTS Extensions FROM rfc2459
+        KerberosTime FROM krb5;
 
 KX509-ERROR-CODE ::= INTEGER {
 	KX509-STATUS-GOOD(0),
@@ -11,21 +17,188 @@ KX509-ERROR-CODE ::= INTEGER {
 	KX509-STATUS-SERVER-BAD(4),
 	KX509-STATUS-SERVER-TEMP(5),
         -- 6 is used internally in the umich client, avoid that
-	KX509-STATUS-SERVER-KEY(7)
+	KX509-STATUS-SERVER-KEY(7),
+        -- CSR use negotiation:
+	KX509-STATUS-CLIENT-USE-CSR(8)
+        -- Let us reserve 1000+ for Kebreros protocol wire error codes  -Nico
 }
 
+-- Originally kx509 requests carried only a public key.  We'd like to have
+-- proof of possession, and the ability to carry additional options, both, in
+-- cleartext and otherwise.
+--
+-- We'll use a CSR for proof of posession and desired certificate extensions.
+--
+-- We'll also provide a non-CSR-based method of conveying desired certificate
+-- extensions.  The reason for this is simply that we may want to have a [e.g.,
+-- RESTful HTTP] proxy for the kx509 service, and we want clients to be able to
+-- be as simple as possible -cargo-culted even- with support for attributes
+-- (desired certificate extensions) as parameters outside the CSR that the
+-- proxy can encode without having the private key for the CSR (naturally).
+--
+-- I.e., ultimately we'll have a REST endpoint, /kx509, say, with query
+-- parameters like:
+--
+--  - csr=<base64-encoding-of-DER-encoded-CSR>
+--  - eku=<OID>
+--  - ku=<key-usage-flag-name>
+--  - rfc822Name=<URL-escaped-email-address>
+--  - xMPPName=<URL-escaped-jabber-address>
+--  - dNSName=<URL-escaped-FQDN>
+--  - dNSSrv=<URL-escaped-_service.FQDN>
+--  - registeredID=<OID>
+--  - principalName=<URL-escaped-RFC1964-format-Kerberos-Principal-Name>
+--
+-- with exactly one CSR and zero, one, or more of the other parameters.
+--
+-- We'll even have a way to convey a bearer token from the REST proxy so that
+-- we may have a way to get PKIX credentials using bearer tokens.  And then,
+-- using PKINIT, we may have a way to get Kerberos credentials using bearer
+-- tokens.
+--
+-- To do this we define a Kx509CSRPlus that we can use in the `pk-key' field of
+-- Kx509Request (see below):
+Kx509CSRPlus ::= [APPLICATION 35] SEQUENCE {
+        -- PKCS#10, DER-encoded CSR, with or without meaningful attributes
+        csr             OCTET STRING,
+        -- Desired certificate Extensions such as KeyUsage, ExtKeyUsage, or
+        -- subjectAlternativeName (SAN)
+        exts            Extensions OPTIONAL,
+        -- Desired certificate lifetime
+        req-life        KerberosTime OPTIONAL,
+        ...
+}
+
+-- Version 2
 Kx509Request ::= SEQUENCE {
 	authenticator OCTET STRING,
-	pk-hash OCTET STRING,
-	pk-key OCTET STRING
+	pk-hash OCTET STRING, -- HMAC(ticket_session_key, pk-key)
+	pk-key OCTET STRING   -- one of:
+                              --  - the public key, DER-encoded (RSA, basically)
+                              --  - a Kx509CSRPlus
 }
 
+-- Kx509ErrorCode is a Heimdal-specific enhancement with no change on the wire,
+-- and really only just so the error-code field below can fit on one line.
+Kx509ErrorCode ::= INTEGER (-2147483648..2147483647)
+
 Kx509Response ::= SEQUENCE {
-	error-code[0]	INTEGER (-2147483648..2147483647)
-	      OPTIONAL -- DEFAULT 0 --,
-	hash[1]		OCTET STRING OPTIONAL,
-	certificate[2]	OCTET STRING OPTIONAL,
+	error-code[0]	Kx509ErrorCode DEFAULT 0,
+	hash[1]		OCTET STRING OPTIONAL,   -- HMAC(session_key, ...)
+	certificate[2]	OCTET STRING OPTIONAL,   -- DER-encoded Certificate
+                                                 -- if client sent raw RSA SPK
+                                                 -- or DER-encoded Certificates
+                                                 -- (i.e., SEQ. OF Certificate)
+                                                 -- if client used a
+                                                 -- Kx509CSRPlus
 	e-text[3]	VisibleString OPTIONAL
 }
+
+-- Offset for Kerberos protocol errors when error-code set to one:
+kx509-krb5-error-base INTEGER ::= 1000
+
+-- RFC6717 says this about error codes:
+--
+--   +------------+-----------------------------+------------------------+
+--   | error-code | Condition                   | Example                |
+--   +------------+-----------------------------+------------------------+
+--   | 1          | Permanent problem with      | Incompatible version   |
+--   |            | client request              |                        |
+--   | 2          | Solvable problem with       | Expired Kerberos       |
+--   |            | client request              | credentials            |
+--   | 3          | Temporary problem with      | Packet loss            |
+--   |            | client request              |                        |
+--   | 4          | Permanent problem with the  | Internal               |
+--   |            | server                      | misconfiguration       |
+--   | 5          | Temporary problem with the  | Server overloaded      |
+--   |            | server                      |                        |
+--   +------------+-----------------------------+------------------------+
+--
+-- Looking at UMich CITI's kca (server-side of kx509) implementation, it always
+-- sends 0 as the status code, and the UMich CITI kx509 client never checks it.
+-- All of these error codes are local only in the UMich CITI implementation.
+--
+-- Meanwhile, Heimdal used to never send error responses at all.
+--
+-- As a result we can use whatever error codes we want.  We'll send Kerberos
+-- protocol errors + 1000.  And we'll never use RFC6717 error codes at all.
+--
+-- Looking at umich source...
+--
+--   #define KX509_STATUS_GOOD       0               /* No problems handling client request */
+--   #define KX509_STATUS_CLNT_BAD   1               /* Client-side permanent problem */
+--                                                           /* ex. version incompatible */
+--   #define KX509_STATUS_CLNT_FIX   2               /* Client-side solvable problem */
+--                                                           /* ex. re-authenticate */
+--   #define KX509_STATUS_CLNT_TMP   3               /* Client-side temporary problem */
+--                                                           /* ex. packet loss */
+--   #define KX509_STATUS_SRVR_BAD   4               /* Server-side permanent problem */
+--                                                           /* ex. server broken */
+--   #define KX509_STATUS_SRVR_TMP   5               /* Server-side temporary problem */
+--                                                           /* ex. server overloaded */
+--   #define KX509_STATUS_SRVR_CANT_CLNT_VERS 6      /* Server-side doesn't handle */
+--                                                           /* existence of client_version */
+--                                                           /* field in KX509_REQUEST */
+--
+-- The umich server uses these errors in these situations:
+--
+--  - KX509_STATUS_SRVR_TMP is for:
+--     - request decode errors
+--     - krb5_is_ap_req() errors
+--     - wrong Kerberos protocol vno in AP-REQ
+--     - some ENOMEMs
+--     - UDP read errors (??)
+--     - LDAP issues (they use LDAP to map realm-chopped user princ names to
+--       full names)
+--     - pk decode errors
+--  - KX509_STATUS_CLNT_TMP is for:
+--     - HMAC mismatch
+--     - some ENOMEMs
+--     - failure to accept AP-REQ
+--     - failure to unparse princ names from AP-REQ's Ticket
+--  - KX509_STATUS_SRVR_BAD is for:
+--     - configuration issues (missing issuer creds)
+--     - serial number transaction issues (we should randomize)
+--     - subjectName construction issues
+--     - certificate construction issues (ENOMEM, say)
+--     - failure to authenticate (never happens, since KX509_STATUS_CLNT_TMP is
+--       used earlier when krb5_rd_req() fails)
+--  - KX509_STATUS_CLNT_FIX is for:
+--     - more than one component client principals
+--     - client princ name component zero string length shorter than 3 or
+--       longer than 8 (WTF)
+--     - other policy issues
+--  - KX509_STATUS_CLNT_BAD
+--     - wrong protocol version number (version_2_0)
+
+-- Possible new version designs:
+--
+--  - keep the protocol the same but use a CSR instead of a raw RSA public key
+--     - on the server try decoding first a CSR, then a raw RSA public key
+--
+--  - keep the protocol the same but use either a CSR or a self-signed cert
+--     - on the server try decoding first a Certificate, then a CSR, then a raw
+--       RSA public key
+--
+--       CSRs are a pain to deal with.  Self-signed certificates can act as a
+--       CSR of a sort.  Use notBefore == 1970-01-01T00:00:00Z and an EKU
+--       denoting "this certificate is really a much-easier-to-work-with CSR
+--       alternative".
+--
+--  - keep the protocol similar, but use the checksum field of the
+--    Authenticator to authenticate the request data; use a KRB-PRIV for the
+--    reply
+--
+--  - extend the KDC/AS/TGS protocols to support certificate issuance, either
+--    at the same time as ticket acquisition, or as an alternative
+--     - send a CSR as a authz-data element
+--     - expect an EncryptedData with the issued Certificate inside as the
+--       Ticket in the result (again, ugly hack)
+--     - or maybe just add new messages, but, the thing is that the existing
+--       "AP-REP + stuff" kx509 protocol is a fine design pattern, there's no
+--       need to radically change it, just slightly.
+--
+-- The main benefit of using an extension to the KDC/AS/TGS protocols is that
+-- we could then use FAST for confidentiality protection.
 
 END

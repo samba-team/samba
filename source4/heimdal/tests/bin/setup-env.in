@@ -1,0 +1,87 @@
+#!/bin/sh
+
+HEIM_PIDFILE_DIR="${objdir}/"
+export HEIM_PIDFILE_DIR
+
+unset KRB5_CONFIG
+unset KRB5CCNAME
+
+unset GSS_MECH_CONFIG
+unset GSSAPI_SPNEGO_NAME
+
+top_builddir="@top_builddir@"
+top_srcdir="@top_srcdir@"
+EGREP="@EGREP@"
+NO_AFS="@NO_AFS@"
+
+# Meant to be sourced (source or .) by the tester application, offers
+# most commands in heimdal as variables
+
+# regular apps
+bx509d="${TESTS_ENVIRONMENT} ${top_builddir}/kdc/bx509d"
+httpkadmind="${TESTS_ENVIRONMENT} ${top_builddir}/kdc/httpkadmind"
+hxtool="${TESTS_ENVIRONMENT} ${top_builddir}/lib/hx509/hxtool"
+iprop_log="${TESTS_ENVIRONMENT} ${top_builddir}/lib/kadm5/iprop-log"
+ipropd_master="${TESTS_ENVIRONMENT} ${top_builddir}/lib/kadm5/ipropd-master"
+ipropd_slave="${TESTS_ENVIRONMENT} ${top_builddir}/lib/kadm5/ipropd-slave"
+kadmin="${TESTS_ENVIRONMENT} ${top_builddir}/kadmin/kadmin"
+kadmind="${TESTS_ENVIRONMENT} ${top_builddir}/kadmin/kadmind"
+kdc="${TESTS_ENVIRONMENT} ${top_builddir}/kdc/kdc"
+kdc_tester="${TESTS_ENVIRONMENT} ${top_builddir}/kdc/kdc-tester"
+test_csr_authorizer="${TESTS_ENVIRONMENT} ${top_builddir}/kdc/test_csr_authorizer"
+test_kdc_ca="${TESTS_ENVIRONMENT} ${top_builddir}/kdc/test_kdc_ca"
+test_token_validator="${TESTS_ENVIRONMENT} ${top_builddir}/kdc/test_token_validator"
+kdestroy="${TESTS_ENVIRONMENT} ${top_builddir}/kuser/kdestroy"
+kdigest="${TESTS_ENVIRONMENT} ${top_builddir}/kuser/kdigest"
+kgetcred="${TESTS_ENVIRONMENT} ${top_builddir}/kuser/kgetcred"
+kimpersonate="${TESTS_ENVIRONMENT} ${top_builddir}/kuser/kimpersonate"
+kinit="${TESTS_ENVIRONMENT} ${top_builddir}/kuser/kinit"
+klist="${TESTS_ENVIRONMENT} ${top_builddir}/kuser/heimtools klist"
+kpasswd="${TESTS_ENVIRONMENT} ${top_builddir}/kpasswd/kpasswd"
+kpasswdd="${TESTS_ENVIRONMENT} ${top_builddir}/kpasswd/kpasswdd"
+kswitch="${TESTS_ENVIRONMENT} ${top_builddir}/kuser/heimtools kswitch"
+kx509="${TESTS_ENVIRONMENT} ${top_builddir}/kuser/heimtools kx509"
+ktutil="${TESTS_ENVIRONMENT} ${top_builddir}/admin/ktutil"
+gsstool="${TESTS_ENVIRONMENT} ${top_builddir}/lib/gssapi/gsstool"
+gsstoken="${TESTS_ENVIRONMENT} ${top_builddir}/lib/gssapi/gss-token"
+
+# regression test tools
+test_ap_req="${TESTS_ENVIRONMENT} ${top_builddir}/lib/krb5/test_ap-req"
+test_canon="${TESTS_ENVIRONMENT} ${top_builddir}/lib/krb5/test_canon"
+test_gic="${TESTS_ENVIRONMENT} ${top_builddir}/lib/krb5/test_gic"
+test_renew="${TESTS_ENVIRONMENT} ${top_builddir}/lib/krb5/test_renew"
+test_ntlm="${TESTS_ENVIRONMENT} ${top_builddir}/lib/gssapi/test_ntlm"
+test_context="${TESTS_ENVIRONMENT} ${top_builddir}/lib/gssapi/test_context"
+rkbase64="${TESTS_ENVIRONMENT} ${top_builddir}/lib/roken/rkbase64"
+rkpty="${TESTS_ENVIRONMENT} ${top_builddir}/lib/roken/rkpty"
+rkvis="${TESTS_ENVIRONMENT} ${top_builddir}/lib/roken/rkvis"
+test_set_kvno0="${TESTS_ENVIRONMENT} ${top_builddir}/lib/krb5/test_set_kvno0"
+test_alname="${TESTS_ENVIRONMENT} ${top_builddir}/lib/krb5/test_alname"
+test_kuserok="${TESTS_ENVIRONMENT} ${top_builddir}/lib/krb5/test_kuserok"
+test_mkforwardable="${TESTS_ENVIRONMENT} ${top_builddir}/lib/krb5/test_mkforwardable"
+
+# misc apps
+have_db="${top_builddir}/tests/db/have-db"
+leaks_kill="${top_srcdir}/tests/kdc/leaks-kill.sh"
+wait_kdc="${top_srcdir}/tests/kdc/wait-kdc.sh"
+getpid () {
+    if [ -f "$HEIM_PIDFILE_DIR/lt-${1}.pid" ]; then
+        cat "$HEIM_PIDFILE_DIR/lt-${1}.pid"
+    else
+        cat "$HEIM_PIDFILE_DIR/${1}.pid"
+    fi
+}
+
+if [ ! "${NO_AFS}" ] ; then
+    afs_no_unlog="--no-unlog"
+    afs_no_afslog="--no-afslog"
+else
+    afs_no_unlog=""
+    afs_no_afslog=""
+fi
+
+# data
+hx509_data="${top_srcdir}/lib/hx509/data"
+
+# malloc debug
+HEIM_MALLOC_DEBUG="MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=/tmp/heim-malloc-log"

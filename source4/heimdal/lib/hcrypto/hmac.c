@@ -31,10 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <config.h>
+#include <roken.h>
+
 #include <hmac.h>
 
 void
@@ -67,6 +66,19 @@ HMAC_CTX_cleanup(HMAC_CTX *ctx)
     }
 }
 
+HMAC_CTX *
+HMAC_CTX_new(void)
+{
+    return calloc(1, sizeof(HMAC_CTX));
+}
+
+void
+HMAC_CTX_free(HMAC_CTX *ctx)
+{
+    HMAC_CTX_cleanup(ctx);
+    free(ctx);
+}
+
 size_t
 HMAC_size(const HMAC_CTX *ctx)
 {
@@ -81,48 +93,38 @@ HMAC_Init_ex(HMAC_CTX *ctx,
 	     ENGINE *engine)
 {
     unsigned char *p;
-    size_t i;
+    size_t i, blockSize;
+
+    blockSize = EVP_MD_block_size(md);
 
     if (ctx->md != md) {
+        if (ctx->md != NULL)
+            HMAC_CTX_cleanup(ctx);
+
 	ctx->md = md;
-	if (ctx->buf) {
-	    memset(ctx->buf, 0, ctx->key_length);
-	    free (ctx->buf);
-	}
 	ctx->key_length = EVP_MD_size(ctx->md);
 	ctx->buf = malloc(ctx->key_length);
+        ctx->opad = malloc(blockSize);
+        ctx->ipad = malloc(blockSize);
+        ctx->ctx = EVP_MD_CTX_create();
     }
 #if 0
     ctx->engine = engine;
 #endif
 
-    if (keylen > EVP_MD_block_size(ctx->md)) {
+    if (keylen > blockSize) {
 	EVP_Digest(key, keylen, ctx->buf, NULL, ctx->md, engine);
 	key = ctx->buf;
 	keylen = EVP_MD_size(ctx->md);
     }
 
-    if (ctx->opad) {
-	memset(ctx->opad, 0, ctx->key_length);
-	free(ctx->opad);
-    }
-    if (ctx->ipad) {
-	memset(ctx->ipad, 0, ctx->key_length);
-	free(ctx->ipad);
-    }
-
-    ctx->opad = malloc(EVP_MD_block_size(ctx->md));
-    ctx->ipad = malloc(EVP_MD_block_size(ctx->md));
-    memset(ctx->ipad, 0x36, EVP_MD_block_size(ctx->md));
-    memset(ctx->opad, 0x5c, EVP_MD_block_size(ctx->md));
+    memset(ctx->ipad, 0x36, blockSize);
+    memset(ctx->opad, 0x5c, blockSize);
 
     for (i = 0, p = ctx->ipad; i < keylen; i++)
 	p[i] ^= ((const unsigned char *)key)[i];
     for (i = 0, p = ctx->opad; i < keylen; i++)
 	p[i] ^= ((const unsigned char *)key)[i];
-
-    if (ctx->ctx == NULL)
-	ctx->ctx = EVP_MD_CTX_create();
 
     EVP_DigestInit_ex(ctx->ctx, ctx->md, ctx->engine);
     EVP_DigestUpdate(ctx->ctx, ctx->ipad, EVP_MD_block_size(ctx->md));

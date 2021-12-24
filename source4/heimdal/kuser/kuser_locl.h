@@ -72,6 +72,11 @@
 #include <parse_time.h>
 #include <err.h>
 #include <krb5.h>
+#include <heimbase.h>
+
+#include <gssapi_mech.h>
+#include <gss-preauth-protos.h>
+#include <gss-preauth-private.h>
 
 #if defined(HAVE_SYS_IOCTL_H) && SunOS != 40
 #include <sys/ioctl.h>
@@ -103,6 +108,6 @@
 #define textdomain(package)
 #endif
 
-extern krb5_context kcc_context;
+extern krb5_context heimtools_context;
 
 #endif /* __KUSER_LOCL_H__ */

@@ -67,9 +67,7 @@ krb5_mk_rep(krb5_context context,
 				 &body.subkey);
 	if (ret) {
 	    free_EncAPRepPart(&body);
-	    krb5_set_error_message(context, ENOMEM,
-				   N_("malloc: out of memory", ""));
-	    return ENOMEM;
+	    return krb5_enomem(context);
 	}
     } else
 	body.subkey = NULL;
@@ -80,9 +78,8 @@ krb5_mk_rep(krb5_context context,
 				      &auth_context->local_seqnumber);
 	ALLOC(body.seq_number, 1);
 	if (body.seq_number == NULL) {
-	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    free_EncAPRepPart(&body);
-	    return ENOMEM;
+	    return krb5_enomem(context);
 	}
 	*(body.seq_number) = auth_context->local_seqnumber;
     } else

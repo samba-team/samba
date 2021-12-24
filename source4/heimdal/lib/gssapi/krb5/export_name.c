@@ -35,7 +35,7 @@
 
 OM_uint32 GSSAPI_CALLCONV _gsskrb5_export_name
            (OM_uint32  * minor_status,
-            const gss_name_t input_name,
+            gss_const_name_t input_name,
             gss_buffer_t exported_name
            )
 {

@@ -50,7 +50,7 @@ struct hx509_collector {
 };
 
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_collector_alloc(hx509_context context, hx509_lock lock, struct hx509_collector **collector)
 {
     struct hx509_collector *c;
@@ -85,14 +85,14 @@ _hx509_collector_alloc(hx509_context context, hx509_lock lock, struct hx509_coll
     return 0;
 }
 
-hx509_lock
+HX509_LIB_FUNCTION hx509_lock HX509_LIB_CALL
 _hx509_collector_get_lock(struct hx509_collector *c)
 {
     return c->lock;
 }
 
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_collector_certs_add(hx509_context context,
 			   struct hx509_collector *c,
 			   hx509_cert cert)
@@ -110,7 +110,7 @@ free_private_key(struct private_key *key)
     free(key);
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_collector_private_key_add(hx509_context context,
 				 struct hx509_collector *c,
 				 const AlgorithmIdentifier *alg,
@@ -247,7 +247,7 @@ match_keys(hx509_context context, struct private_key *value, hx509_certs certs)
     return found;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_collector_collect_certs(hx509_context context,
 			       struct hx509_collector *c,
 			       hx509_certs *ret_certs)
@@ -282,7 +282,7 @@ _hx509_collector_collect_certs(hx509_context context,
     return 0;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_collector_collect_private_keys(hx509_context context,
 				      struct hx509_collector *c,
 				      hx509_private_key **keys)
@@ -313,7 +313,7 @@ _hx509_collector_collect_private_keys(hx509_context context,
 }
 
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 _hx509_collector_free(struct hx509_collector *c)
 {
     size_t i;

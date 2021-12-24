@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2016 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -59,6 +59,7 @@
 #include <krb5-types.h>
 
 #include <rfc2459_asn1.h>
+#include <rfc4108_asn1.h>
 #include <cms_asn1.h>
 #include <pkcs8_asn1.h>
 #include <pkcs9_asn1.h>
@@ -70,13 +71,30 @@
 
 #include <der.h>
 
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
+/*
+ * We use OpenSSL for EC, but to do this we need to disable cross-references
+ * between OpenSSL and hcrypto bn.h and such.  Source files that use OpenSSL EC
+ * must define HEIM_NO_CRYPTO_HDRS before including this file.
+ */
+
 #define HC_DEPRECATED_CRYPTO
+#ifndef HEIM_NO_CRYPTO_HDRS
 #include "crypto-headers.h"
+#endif
 
 struct hx509_keyset_ops;
 struct hx509_collector;
 struct hx509_generate_private_context;
 typedef struct hx509_path hx509_path;
+
+#include <heimbase.h>
 
 #include <hx509.h>
 
@@ -170,6 +188,7 @@ struct hx509_keyset_ops {
 		     void *, int (*)(void *, const char *), void *);
     int (*getkeys)(hx509_context, hx509_certs, void *, hx509_private_key **);
     int (*addkey)(hx509_context, hx509_certs, void *, hx509_private_key);
+    int (*destroy)(hx509_context, hx509_certs, void *);
 };
 
 struct _hx509_password {
@@ -186,10 +205,12 @@ struct hx509_context_data {
 #define HX509_CTX_VERIFY_MISSING_OK	1
     int ocsp_time_diff;
 #define HX509_DEFAULT_OCSP_TIME_DIFF	(5*60)
-    hx509_error error;
+    heim_error_t error;
     struct et_list *et_list;
     char *querystat;
     hx509_certs default_trust_anchors;
+    heim_context hcontext;
+    heim_config_section *cf;
 };
 
 /* _hx509_calculate_path flag field */
@@ -210,6 +231,95 @@ struct hx509_env_data {
 extern const AlgorithmIdentifier * _hx509_crypto_default_sig_alg;
 extern const AlgorithmIdentifier * _hx509_crypto_default_digest_alg;
 extern const AlgorithmIdentifier * _hx509_crypto_default_secret_alg;
+
+/*
+ * Private bits from crypto.c, so crypto-ec.c can also see them.
+ *
+ * This is part of the use-OpenSSL-for-EC hack.
+ */
+
+struct hx509_crypto;
+
+struct signature_alg;
+
+struct hx509_generate_private_context {
+    const heim_oid *key_oid;
+    int isCA;
+    unsigned long num_bits;
+};
+
+struct hx509_private_key_ops {
+    const char *pemtype;
+    const heim_oid *key_oid;
+    int (*available)(const hx509_private_key,
+		     const AlgorithmIdentifier *);
+    int (*get_spki)(hx509_context,
+		    const hx509_private_key,
+		    SubjectPublicKeyInfo *);
+    int (*export)(hx509_context context,
+		  const hx509_private_key,
+		  hx509_key_format_t,
+		  heim_octet_string *);
+    int (*import)(hx509_context, const AlgorithmIdentifier *,
+		  const void *, size_t, hx509_key_format_t,
+		  hx509_private_key);
+    int (*generate_private_key)(hx509_context,
+				struct hx509_generate_private_context *,
+				hx509_private_key);
+    BIGNUM *(*get_internal)(hx509_context, hx509_private_key, const char *);
+};
+
+struct hx509_private_key {
+    unsigned int ref;
+    const struct signature_alg *md;
+    const heim_oid *signature_alg;
+    union {
+	RSA *rsa;
+	void *keydata;
+        void *ecdsa; /* EC_KEY */
+    } private_key;
+    hx509_private_key_ops *ops;
+};
+
+/*
+ *
+ */
+
+struct signature_alg {
+    const char *name;
+    const heim_oid *sig_oid;
+    const AlgorithmIdentifier *sig_alg;
+    const heim_oid *key_oid;
+    const AlgorithmIdentifier *digest_alg;
+    int flags;
+#define PROVIDE_CONF	0x1
+#define REQUIRE_SIGNER	0x2
+#define SELF_SIGNED_OK	0x4
+#define WEAK_SIG_ALG	0x8
+
+#define SIG_DIGEST	0x100
+#define SIG_PUBLIC_SIG	0x200
+#define SIG_SECRET	0x400
+
+#define RA_RSA_USES_DIGEST_INFO 0x1000000
+
+    time_t best_before; /* refuse signature made after best before date */
+    const EVP_MD *(*evp_md)(void);
+    int (*verify_signature)(hx509_context context,
+			    const struct signature_alg *,
+			    const Certificate *,
+			    const AlgorithmIdentifier *,
+			    const heim_octet_string *,
+			    const heim_octet_string *);
+    int (*create_signature)(hx509_context,
+			    const struct signature_alg *,
+			    const hx509_private_key,
+			    const AlgorithmIdentifier *,
+			    const heim_octet_string *,
+			    AlgorithmIdentifier *,
+			    heim_octet_string *);
+    int digest_size;
+};
 
 /*
  * Configurable options

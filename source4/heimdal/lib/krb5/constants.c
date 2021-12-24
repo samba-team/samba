@@ -36,6 +36,9 @@
 #include "krb5_locl.h"
 
 KRB5_LIB_VARIABLE const char *krb5_config_file =
+#ifdef KRB5_DEFAULT_CONFIG_FILE
+KRB5_DEFAULT_CONFIG_FILE
+#else
 #ifdef __APPLE__
 "~/Library/Preferences/com.apple.Kerberos.plist" PATH_SEP
 "/Library/Preferences/com.apple.Kerberos.plist" PATH_SEP
@@ -43,13 +46,14 @@ KRB5_LIB_VARIABLE const char *krb5_config_file =
 "/Library/Preferences/edu.mit.Kerberos" PATH_SEP
 #endif	/* __APPLE__ */
 "~/.krb5/config" PATH_SEP
-SYSCONFDIR "/krb5.conf"
+SYSCONFDIR "/krb5.conf" PATH_SEP
 #ifdef _WIN32
-PATH_SEP "%{COMMON_APPDATA}/Kerberos/krb5.conf"
-PATH_SEP "%{WINDOWS}/krb5.ini"
-#else
-PATH_SEP "/etc/krb5.conf"
-#endif
+"%{COMMON_APPDATA}/Kerberos/krb5.conf" PATH_SEP
+"%{WINDOWS}/krb5.ini"
+#else /* _WIN32 */
+"/etc/krb5.conf"
+#endif /* _WIN32 */
+#endif /* KRB5_DEFAULT_CONFIG_FILE */
 ;
 
 KRB5_LIB_VARIABLE const char *krb5_defkeyname = KEYTAB_DEFAULT;
@@ -59,3 +63,5 @@ KRB5_LIB_VARIABLE const char *krb5_cc_type_file = "FILE";
 KRB5_LIB_VARIABLE const char *krb5_cc_type_memory = "MEMORY";
 KRB5_LIB_VARIABLE const char *krb5_cc_type_kcm = "KCM";
 KRB5_LIB_VARIABLE const char *krb5_cc_type_scc = "SCC";
+KRB5_LIB_VARIABLE const char *krb5_cc_type_dcc = "DIR";
+KRB5_LIB_VARIABLE const char *krb5_cc_type_keyring = "KEYRING";

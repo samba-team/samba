@@ -1,0 +1,672 @@
+
+
+
+Network Working Group                               L. Hornquist Astrand
+Internet-Draft                                               Apple, Inc.
+Intended status: Standards Track                              S. Hartman
+Expires: February 14, 2009                        Painless Security, LLC
+                                                         August 13, 2008
+
+
+                GSS-API: Delegate if approved by policy
+                  draft-lha-gssapi-delegate-policy-00
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on February 14, 2009.
+
+Copyright Notice
+
+   Copyright (C) The IETF Trust (2008).
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009          [Page 1]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+Abstract
+
+   Several GSS-API applications work in a multi-tiered architecture,
+   where the server takes advantage of delegated user credentials to act
+   on behalf of the user and contact additional servers.  In effect, the
+   server acts as an agent on behalf of the user.  Examples include web
+   applications that need to access e-mail or file servers as well as
+   CIFs file servers.  However, delegating the ability to act as a user
+   to a party who is not sufficiently trusted is problematic from a
+   security standpoint.  Kerberos provides a flag called OK-AS-DELEGATE
+   that allows the administrator of a Kerberos realm to communicate that
+   a particular service is trusted for delegation.  This specification
+   adds support for this flag and similar facilities in other
+   authentication mechanisms to GSS-API (RFC 2743).
+
+
+Table of Contents
+
+   1.  Requirements Notation  . . . . . . . . . . . . . . . . . . . .  3
+   2.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  4
+   3.  GSS-API flag, c binding  . . . . . . . . . . . . . . . . . . .  5
+   4.  GSS-API behavior . . . . . . . . . . . . . . . . . . . . . . .  6
+   5.  GSS-API behavior . . . . . . . . . . . . . . . . . . . . . . .  7
+   6.  Security Considerations  . . . . . . . . . . . . . . . . . . .  8
+   7.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . .  9
+   8.  Normative References . . . . . . . . . . . . . . . . . . . . . 10
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 11
+   Intellectual Property and Copyright Statements . . . . . . . . . . 12
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009          [Page 2]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+1.  Requirements Notation
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009          [Page 3]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+2.  Introduction
+
+   Several GSS-API applications work in a multi-tiered architecture,
+   where the server takes advantage of delegated user credentials to act
+   on behalf of the user and contact additional servers.  In effect, the
+   server acts as an agent on behalf of the user.  Examples include web
+   applications that need to access e-mail or file servers as well as
+   CIFs file servers.  However, delegating the ability to act as a user
+   to a party who is not sufficiently trusted is problematic from a
+   security standpoint.
+
+   Today, GSS-API [RFC2743] leaves the determination of whether
+   delegation is desired to the client application.  If the client sets
+   the deleg_req_flag to gss_init_sec_context then the application
+   requests delegation.  This requires client applications to know what
+   services should be trusted for delegation.  In some cases, however, a
+   central authority is in a better position to know what services
+   should receive delegation than the client application.  Some
+   mechanisms such as Kerberos [RFC4121] have a facility to allow a
+   realm administrator to communicate that a particular service is a
+   valid target for delegation.  In Kerberos, the KDC can set the OK-AS-
+   DELEGATE flag in issued tickets.  However even in such a case,
+   delegating to services for applications that do not need delegation
+   is problematic.  So, it is desirable for a GSS-API client to be able
+   to request delegation if and only-if central policy reccomends
+   delegation to the given target.
+
+   This specification adds a new input flag to GSS_Init_sec_context to
+   request delegation when approved by central policy.  In addition, a
+   constant value to be used in the GSS-API C bindings [RFC2744] is
+   defined.  Finally, the behavior for the Kerberos mechanism [RFC4121]
+   is specified.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009          [Page 4]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+3.  GSS-API flag, c binding
+
+   The GSS_Init_sec_context API is extended to gain a new input flag: if
+   the deleg_policy_req flag is set, then delegation should be performed
+   if recommended by central policy.  In addition, the C bindings are
+   extended to define the following constant to represent this new flag.
+
+
+
+   #define GSS_C_DELEG_POLICY_FLAG 32768
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009          [Page 5]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+4.  GSS-API behavior
+
+   As before, if the GSS_C_DELEG_FLAG is set, the GSS-API mechanism
+   tries to delegate.  Output ret_flags contains the flag
+   GSS_C_DELEG_FLAG if delegation is successful.
+
+   If the GSS_C_DELEG_POLICY_FLAG is set, the code delegates only if the
+   mechanism policy allows delegation.  If delegation is done, the
+   output flag ret_flags contain both GSS_C_DELEG_FLAG and
+   GSS_C_DELEG_POLICY_FLAG on the initator and GSS_C_DELEG_FLAG on the
+   acceptor.
+
+   If both GSS_C_DELEG_FLAG and GSS_C_DELEG_POLICY_FLAG are set, then
+   delegation is attempted.  However GSS_C_DELEG_POLICY_FLAG is only set
+   in ret_flags on the initiator if GSS_C_DELEG_POLICY_FLAG would have
+   been sufficient to request delegation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009          [Page 6]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+5.  GSS-API behavior
+
+   If the GSS_C_DELEG_POLICY_FLAG is set, the Kerberos GSS-API mechanism
+   will only delegate if ok-as-delegate is set [RFC4120] in the service
+   ticket.  Other policy checks MAY be applied.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009          [Page 7]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+6.  Security Considerations
+
+   Introduce a flag what allows client to get help from the KDC when to
+   delegate to servers, will limit what servers that client delegate
+   too.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009          [Page 8]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+7.  IANA Considerations
+
+   This section needs to be revised to be consistent with the kitten
+   IANA draft.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009          [Page 9]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+8.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+   [RFC2744]  Wray, J., "Generic Security Service API Version 2 :
+              C-bindings", RFC 2744, January 2000.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+   [RFC4121]  Zhu, L., Jaganathan, K., and S. Hartman, "The Kerberos
+              Version 5 Generic Security Service Application Program
+              Interface (GSS-API) Mechanism: Version 2", RFC 4121,
+              July 2005.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009         [Page 10]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+Authors' Addresses
+
+   Love Hornquist Astrand
+   Apple, Inc.
+
+   Email: lha@apple.com
+
+
+   Sam Hartman
+   Painless Security, LLC
+
+   Email: hartmans-ietf@mit.edu
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009         [Page 11]
+
+Internet-Draft   GSS-API: Delegate if approved by policy     August 2008
+
+
+Full Copyright Statement
+
+   Copyright (C) The IETF Trust (2008).
+
+   This document is subject to the rights, licenses and restrictions
+   contained in BCP 78, and except as set forth therein, the authors
+   retain all their rights.
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY, THE IETF TRUST AND
+   THE INTERNET ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF
+   THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Intellectual Property
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is provided by the IETF
+   Administrative Support Activity (IASA).
+
+
+
+
+
+Hornquist Astrand & Hartman  Expires February 14, 2009         [Page 12]
+

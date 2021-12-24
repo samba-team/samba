@@ -93,6 +93,52 @@ typedef struct hx509_name_constraints {
 #define GeneralSubtrees_SET(g,var) \
 	(g)->len = (var)->len, (g)->val = (var)->val;
 
+static void
+init_context_once(void *ignored)
+{
+
+    ENGINE_add_conf_module();
+    OpenSSL_add_all_algorithms();
+}
+
+/**
+ * Return a cookie identifying this instance of a library.
+ *
+ * Inputs:
+ *
+ * @context     A krb5_context
+ * @module      Our library name or a library we depend on
+ *
+ * Outputs:     The instance cookie
+ *
+ * @ingroup     krb5_support
+ */
+
+HX509_LIB_FUNCTION uintptr_t HX509_LIB_CALL
+hx509_get_instance(const char *libname)
+{
+    static const char *instance = "libhx509";
+
+    if (strcmp(libname, "hx509") == 0)
+        return (uintptr_t)instance;
+
+    return 0;
+}
+
+#ifndef PATH_SEP
+# define PATH_SEP ":"
+#endif
+static const char *hx509_config_file =
+"~/.hx509/config" PATH_SEP
+SYSCONFDIR "/hx509.conf" PATH_SEP
+#ifdef _WIN32
+"%{COMMON_APPDATA}/Heimdal/hx509.conf" PATH_SEP
+"%{WINDOWS}/hx509.ini"
+#else /* _WIN32 */
+"/etc/hx509.conf"
+#endif /* _WIN32 */
+;
+
 /**
  * Creates a hx509 context that most functions in the library
  * uses. The context is only allowed to be used by one thread at each
@@ -105,35 +151,88 @@ typedef struct hx509_name_constraints {
  * @ingroup hx509
  */
 
-int
-hx509_context_init(hx509_context *context)
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_context_init(hx509_context *contextp)
 {
-    *context = calloc(1, sizeof(**context));
-    if (*context == NULL)
+    static heim_base_once_t init_context = HEIM_BASE_ONCE_INIT;
+    heim_error_code ret;
+    hx509_context context;
+    const char *anchors;
+    char **files = NULL;
+
+    *contextp = NULL;
+    context = calloc(1, sizeof(*context));
+    if (context == NULL)
 	return ENOMEM;
 
-    _hx509_ks_null_register(*context);
-    _hx509_ks_mem_register(*context);
-    _hx509_ks_file_register(*context);
-    _hx509_ks_pkcs12_register(*context);
-    _hx509_ks_pkcs11_register(*context);
-    _hx509_ks_dir_register(*context);
-    _hx509_ks_keychain_register(*context);
+    heim_base_once_f(&init_context, NULL, init_context_once);
 
-    ENGINE_add_conf_module();
-    OpenSSL_add_all_algorithms();
+    if ((context->hcontext = heim_context_init()) == NULL) {
+        free(context);
+        return ENOMEM;
+    }
 
-    (*context)->ocsp_time_diff = HX509_DEFAULT_OCSP_TIME_DIFF;
+    if ((ret = heim_get_default_config_files(hx509_config_file,
+                                             "HX509_CONFIG",
+                                             &files))) {
+        heim_context_free(&context->hcontext);
+        free(context);
+        return ret;
+    }
 
-    initialize_hx_error_table_r(&(*context)->et_list);
-    initialize_asn1_error_table_r(&(*context)->et_list);
+    /* If there's no hx509 config, we continue, as we never needed it before */
+    if (files)
+        (void) heim_set_config_files(context->hcontext, files, &context->cf);
+    heim_free_config_files(files);
+
+    _hx509_ks_null_register(context);
+    _hx509_ks_mem_register(context);
+    _hx509_ks_file_register(context);
+    _hx509_ks_pkcs12_register(context);
+    _hx509_ks_pkcs11_register(context);
+    _hx509_ks_dir_register(context);
+    _hx509_ks_keychain_register(context);
+
+    context->ocsp_time_diff =
+        heim_config_get_time_default(context->hcontext, context->cf,
+                                     HX509_DEFAULT_OCSP_TIME_DIFF,
+                                     "libdefaults", "ocsp_time_dif", NULL);
+
+    initialize_hx_error_table_r(&context->et_list);
+    initialize_asn1_error_table_r(&context->et_list);
 
 #ifdef HX509_DEFAULT_ANCHORS
-    (void)hx509_certs_init(*context, HX509_DEFAULT_ANCHORS, 0,
-			   NULL, &(*context)->default_trust_anchors);
+    anchors = heim_config_get_string_default(context->hcontext, context->cf,
+                                             HX509_DEFAULT_ANCHORS,
+                                             "libdefaults", "anchors", NULL);
+#else
+    anchors = heim_config_get_string(context->hcontext, context->cf,
+                                     "libdefaults", "anchors", NULL);
 #endif
+    if (anchors)
+        (void)hx509_certs_init(context, anchors, 0, NULL,
+                               &context->default_trust_anchors);
 
+    *contextp = context;
     return 0;
+}
+
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_set_log_dest(hx509_context context, heim_log_facility *fac)
+{
+    return heim_set_log_dest(context->hcontext, fac);
+}
+
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_set_debug_dest(hx509_context context, heim_log_facility *fac)
+{
+    return heim_set_debug_dest(context->hcontext, fac);
+}
+
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_set_warn_dest(hx509_context context, heim_log_facility *fac)
+{
+    return heim_set_warn_dest(context->hcontext, fac);
 }
 
 /**
@@ -149,7 +248,7 @@ hx509_context_init(hx509_context *context)
  * @ingroup hx509_verify
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_context_set_missing_revoke(hx509_context context, int flag)
 {
     if (flag)
@@ -166,9 +265,12 @@ hx509_context_set_missing_revoke(hx509_context context, int flag)
  * @ingroup hx509
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_context_free(hx509_context *context)
 {
+    if (!*context)
+        return;
+
     hx509_clear_error_string(*context);
     if ((*context)->ks_ops) {
 	free((*context)->ks_ops);
@@ -178,6 +280,9 @@ hx509_context_free(hx509_context *context)
     free_error_table ((*context)->et_list);
     if ((*context)->querystat)
 	free((*context)->querystat);
+    hx509_certs_free(&(*context)->default_trust_anchors);
+    heim_config_file_free((*context)->hcontext, (*context)->cf);
+    heim_context_free(&(*context)->hcontext);
     memset(*context, 0, sizeof(**context));
     free(*context);
     *context = NULL;
@@ -187,7 +292,7 @@ hx509_context_free(hx509_context *context)
  *
  */
 
-Certificate *
+HX509_LIB_FUNCTION Certificate * HX509_LIB_CALL
 _hx509_get_cert(hx509_cert cert)
 {
     return cert->data;
@@ -197,10 +302,33 @@ _hx509_get_cert(hx509_cert cert)
  *
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_cert_get_version(const Certificate *t)
 {
     return t->tbsCertificate.version ? *t->tbsCertificate.version + 1 : 1;
+}
+
+static hx509_cert
+cert_init(hx509_context context, heim_error_t *error)
+{
+    hx509_cert cert;
+
+    cert = malloc(sizeof(*cert));
+    if (cert == NULL) {
+	if (error)
+	    *error = heim_error_create_enomem();
+	return NULL;
+    }
+    cert->ref = 1;
+    cert->friendlyname = NULL;
+    cert->attrs.len = 0;
+    cert->attrs.val = NULL;
+    cert->private_key = NULL;
+    cert->basename = NULL;
+    cert->release = NULL;
+    cert->ctx = NULL;
+    cert->data= NULL;
+    return cert;
 }
 
 /**
@@ -209,42 +337,81 @@ _hx509_cert_get_version(const Certificate *t)
  *
  * @param context A hx509 context.
  * @param c
- * @param cert
+ * @param error
  *
- * @return Returns an hx509 error code.
+ * @return Returns an hx509 certificate
  *
  * @ingroup hx509_cert
  */
 
-int
-hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
+HX509_LIB_FUNCTION hx509_cert HX509_LIB_CALL
+hx509_cert_init(hx509_context context, const Certificate *c, heim_error_t *error)
 {
+    hx509_cert cert;
     int ret;
 
-    *cert = malloc(sizeof(**cert));
-    if (*cert == NULL)
-	return ENOMEM;
-    (*cert)->ref = 1;
-    (*cert)->friendlyname = NULL;
-    (*cert)->attrs.len = 0;
-    (*cert)->attrs.val = NULL;
-    (*cert)->private_key = NULL;
-    (*cert)->basename = NULL;
-    (*cert)->release = NULL;
-    (*cert)->ctx = NULL;
+    if ((cert = cert_init(context, error)) == NULL)
+        return NULL;
 
-    (*cert)->data = calloc(1, sizeof(*(*cert)->data));
-    if ((*cert)->data == NULL) {
-	free(*cert);
-	return ENOMEM;
+    cert->data = calloc(1, sizeof(*(cert->data)));
+    if (cert->data == NULL) {
+	free(cert);
+	if (error)
+	    *error = heim_error_create_enomem();
+	return NULL;
     }
-    ret = copy_Certificate(c, (*cert)->data);
+    ret = copy_Certificate(c, cert->data);
     if (ret) {
-	free((*cert)->data);
-	free(*cert);
-	*cert = NULL;
+	free(cert->data);
+	free(cert);
+	cert = NULL;
     }
-    return ret;
+    return cert;
+}
+
+/**
+ * Copy a certificate object, but drop any private key assignment.
+ *
+ * @param context A hx509 context.
+ * @param src Certificate object
+ * @param error
+ *
+ * @return Returns an hx509 certificate
+ *
+ * @ingroup hx509_cert
+ */
+
+HX509_LIB_FUNCTION hx509_cert HX509_LIB_CALL
+hx509_cert_copy_no_private_key(hx509_context context,
+                               hx509_cert src,
+                               heim_error_t *error)
+{
+    return hx509_cert_init(context, src->data, error);
+}
+
+/**
+ * Allocate and init an hx509 certificate object containing only a private key
+ * (but no Certificate).
+ *
+ * @param context A hx509 context.
+ * @param key
+ * @param error
+ *
+ * @return Returns an hx509 certificate
+ *
+ * @ingroup hx509_cert
+ */
+
+HX509_LIB_FUNCTION hx509_cert HX509_LIB_CALL
+hx509_cert_init_private_key(hx509_context context,
+                            hx509_private_key key,
+                            heim_error_t *error)
+{
+    hx509_cert cert;
+
+    if ((cert = cert_init(context, error)))
+        (void) _hx509_cert_assign_key(cert, key);
+    return cert;
 }
 
 /**
@@ -259,42 +426,46 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
  * @param context A hx509 context.
  * @param ptr pointer to memory region containing encoded certificate.
  * @param len length of memory region.
- * @param cert a return pointer to a hx509 certificate object, will
- * contain NULL on error.
+ * @param error possibly returns an error
  *
- * @return An hx509 error code, see hx509_get_error_string().
+ * @return An hx509 certificate
  *
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION hx509_cert HX509_LIB_CALL
 hx509_cert_init_data(hx509_context context,
 		     const void *ptr,
 		     size_t len,
-		     hx509_cert *cert)
+		     heim_error_t *error)
 {
+    hx509_cert cert;
     Certificate t;
     size_t size;
     int ret;
 
     ret = decode_Certificate(ptr, len, &t, &size);
     if (ret) {
-	hx509_set_error_string(context, 0, ret, "Failed to decode certificate");
-	return ret;
+	if (error)
+	    *error = heim_error_create(ret, "Failed to decode certificate");
+        errno = ret;
+	return NULL;
     }
     if (size != len) {
 	free_Certificate(&t);
-	hx509_set_error_string(context, 0, HX509_EXTRA_DATA_AFTER_STRUCTURE,
-			       "Extra data after certificate");
-	return HX509_EXTRA_DATA_AFTER_STRUCTURE;
+	if (error)
+	    *error = heim_error_create(HX509_EXTRA_DATA_AFTER_STRUCTURE,
+				       "Extra data after certificate");
+        errno = HX509_EXTRA_DATA_AFTER_STRUCTURE;
+	return NULL;
     }
 
-    ret = hx509_cert_init(context, &t, cert);
+    cert = hx509_cert_init(context, &t, error);
     free_Certificate(&t);
-    return ret;
+    return cert;
 }
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 _hx509_cert_set_release(hx509_cert cert,
 			_hx509_cert_release_func release,
 			void *ctx)
@@ -306,7 +477,7 @@ _hx509_cert_set_release(hx509_cert cert,
 
 /* Doesn't make a copy of `private_key'. */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_cert_assign_key(hx509_cert cert, hx509_private_key private_key)
 {
     if (cert->private_key)
@@ -324,7 +495,7 @@ _hx509_cert_assign_key(hx509_cert cert, hx509_private_key private_key)
  * @ingroup hx509_cert
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_cert_free(hx509_cert cert)
 {
     size_t i;
@@ -343,7 +514,8 @@ hx509_cert_free(hx509_cert cert)
     if (cert->private_key)
 	hx509_private_key_free(&cert->private_key);
 
-    free_Certificate(cert->data);
+    if (cert->data)
+        free_Certificate(cert->data);
     free(cert->data);
 
     for (i = 0; i < cert->attrs.len; i++) {
@@ -369,7 +541,7 @@ hx509_cert_free(hx509_cert cert)
  * @ingroup hx509_cert
  */
 
-hx509_cert
+HX509_LIB_FUNCTION hx509_cert HX509_LIB_CALL
 hx509_cert_ref(hx509_cert cert)
 {
     if (cert == NULL)
@@ -394,7 +566,7 @@ hx509_cert_ref(hx509_cert cert)
  * @ingroup hx509_verify
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_verify_init_ctx(hx509_context context, hx509_verify_ctx *ctx)
 {
     hx509_verify_ctx c;
@@ -418,7 +590,7 @@ hx509_verify_init_ctx(hx509_context context, hx509_verify_ctx *ctx)
  * @ingroup hx509_verify
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_verify_destroy_ctx(hx509_verify_ctx ctx)
 {
     if (ctx) {
@@ -441,7 +613,7 @@ hx509_verify_destroy_ctx(hx509_verify_ctx ctx)
  * @ingroup hx509_verify
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_verify_attach_anchors(hx509_verify_ctx ctx, hx509_certs set)
 {
     if (ctx->trust_anchors)
@@ -462,7 +634,7 @@ hx509_verify_attach_anchors(hx509_verify_ctx ctx, hx509_certs set)
  * @ingroup hx509_verify
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_verify_attach_revoke(hx509_verify_ctx ctx, hx509_revoke_ctx revoke_ctx)
 {
     if (ctx->revoke_ctx)
@@ -482,14 +654,14 @@ hx509_verify_attach_revoke(hx509_verify_ctx ctx, hx509_revoke_ctx revoke_ctx)
  * @ingroup hx509_verify
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_verify_set_time(hx509_verify_ctx ctx, time_t t)
 {
     ctx->flags |= HX509_VERIFY_CTX_F_TIME_SET;
     ctx->time_now = t;
 }
 
-time_t
+HX509_LIB_FUNCTION time_t HX509_LIB_CALL
 _hx509_verify_get_time(hx509_verify_ctx ctx)
 {
     return ctx->time_now;
@@ -506,7 +678,7 @@ _hx509_verify_get_time(hx509_verify_ctx ctx)
  * @ingroup hx509_verify
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_verify_set_max_depth(hx509_verify_ctx ctx, unsigned int max_depth)
 {
     ctx->max_depth = max_depth;
@@ -521,7 +693,7 @@ hx509_verify_set_max_depth(hx509_verify_ctx ctx, unsigned int max_depth)
  * @ingroup hx509_verify
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_verify_set_proxy_certificate(hx509_verify_ctx ctx, int boolean)
 {
     if (boolean)
@@ -541,7 +713,7 @@ hx509_verify_set_proxy_certificate(hx509_verify_ctx ctx, int boolean)
  * @ingroup hx509_verify
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_verify_set_strict_rfc3280_verification(hx509_verify_ctx ctx, int boolean)
 {
     if (boolean)
@@ -564,7 +736,7 @@ hx509_verify_set_strict_rfc3280_verification(hx509_verify_ctx ctx, int boolean)
  * @ingroup hx509_cert
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_verify_ctx_f_allow_default_trustanchors(hx509_verify_ctx ctx, int boolean)
 {
     if (boolean)
@@ -573,7 +745,7 @@ hx509_verify_ctx_f_allow_default_trustanchors(hx509_verify_ctx ctx, int boolean)
 	ctx->flags |= HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS;
 }
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_verify_ctx_f_allow_best_before_signature_algs(hx509_context ctx,
 						    int boolean)
 {
@@ -617,7 +789,7 @@ find_extension_auth_key_id(const Certificate *subject,
 					 ai, &size);
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_find_extension_subject_key_id(const Certificate *issuer,
 				     SubjectKeyIdentifier *si)
 {
@@ -717,7 +889,7 @@ add_to_list(hx509_octet_string_list *list, const heim_octet_string *entry)
  * @ingroup hx509_misc
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_free_octet_string_list(hx509_octet_string_list *list)
 {
     size_t i;
@@ -745,7 +917,7 @@ hx509_free_octet_string_list(hx509_octet_string_list *list)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_find_subjectAltName_otherName(hx509_context context,
 					 hx509_cert cert,
 					 const heim_oid *oid,
@@ -799,7 +971,7 @@ check_key_usage(hx509_context context, const Certificate *cert,
     size_t size;
     int ret;
     size_t i = 0;
-    unsigned ku_flags;
+    uint64_t ku_flags;
 
     if (_hx509_cert_get_version(cert) < 3)
 	return 0;
@@ -809,7 +981,7 @@ check_key_usage(hx509_context context, const Certificate *cert,
 	if (req_present) {
 	    hx509_set_error_string(context, 0, HX509_KU_CERT_MISSING,
 				   "Required extension key "
-				   "usage missing from certifiate");
+				   "usage missing from certificate");
 	    return HX509_KU_CERT_MISSING;
 	}
 	return 0;
@@ -820,14 +992,17 @@ check_key_usage(hx509_context context, const Certificate *cert,
 	return ret;
     ku_flags = KeyUsage2int(ku);
     if ((ku_flags & flags) != flags) {
-	unsigned missing = (~ku_flags) & flags;
+	uint64_t missing = (~ku_flags) & flags;
 	char buf[256], *name;
 
-	unparse_flags(missing, asn1_KeyUsage_units(), buf, sizeof(buf));
+	int result = unparse_flags(missing, asn1_KeyUsage_units(),
+				   buf, sizeof(buf));
 	_hx509_unparse_Name(&cert->tbsCertificate.subject, &name);
 	hx509_set_error_string(context, 0, HX509_KU_CERT_MISSING,
 			       "Key usage %s required but missing "
-			       "from certifiate %s", buf, name);
+			       "from certificate %s",
+			       (result > 0) ? buf : "<unknown>",
+                               name ? name : "<unknown>");
 	free(name);
 	return HX509_KU_CERT_MISSING;
     }
@@ -840,7 +1015,7 @@ check_key_usage(hx509_context context, const Certificate *cert,
  * KeyUsage extension.
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_check_key_usage(hx509_context context, hx509_cert cert,
 		       unsigned flags, int req_present)
 {
@@ -888,14 +1063,14 @@ check_basic_constraints(hx509_context context, const Certificate *cert,
 	return ret;
     switch(type) {
     case PROXY_CERT:
-	if (bc.cA != NULL && *bc.cA)
+	if (bc.cA)
 	    ret = HX509_PARENT_IS_CA;
 	break;
     case EE_CERT:
 	ret = 0;
 	break;
     case CA_CERT:
-	if (bc.cA == NULL || !*bc.cA)
+	if (!bc.cA)
 	    ret = HX509_PARENT_NOT_CA;
 	else if (bc.pathLenConstraint)
 	    if (depth - 1 > *bc.pathLenConstraint)
@@ -906,7 +1081,7 @@ check_basic_constraints(hx509_context context, const Certificate *cert,
     return ret;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_cert_is_parent_cmp(const Certificate *subject,
 			  const Certificate *issuer,
 			  int allow_self_signed)
@@ -970,7 +1145,7 @@ _hx509_cert_is_parent_cmp(const Certificate *subject,
 	if (ai.authorityCertIssuer->val[0].element != choice_GeneralName_directoryName)
 	    return -1;
 
-	name.element =
+	name.element = (enum Name_enum)
 	    ai.authorityCertIssuer->val[0].u.directoryName.element;
 	name.u.rdnSequence =
 	    ai.authorityCertIssuer->val[0].u.directoryName.u.rdnSequence;
@@ -1185,7 +1360,7 @@ is_proxy_cert(hx509_context context,
  * internal so we can do easy searches.
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_path_append(hx509_context context, hx509_path *path, hx509_cert cert)
 {
     hx509_cert *val;
@@ -1202,7 +1377,7 @@ _hx509_path_append(hx509_context context, hx509_path *path, hx509_cert cert)
     return 0;
 }
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 _hx509_path_free(hx509_path *path)
 {
     unsigned i;
@@ -1231,7 +1406,7 @@ _hx509_path_free(hx509_path *path)
  * failure.
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_calculate_path(hx509_context context,
 		      int flags,
 		      time_t time_now,
@@ -1287,7 +1462,7 @@ _hx509_calculate_path(hx509_context context,
     return 0;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_AlgorithmIdentifier_cmp(const AlgorithmIdentifier *p,
 			       const AlgorithmIdentifier *q)
 {
@@ -1309,7 +1484,7 @@ _hx509_AlgorithmIdentifier_cmp(const AlgorithmIdentifier *p,
     }
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_Certificate_cmp(const Certificate *p, const Certificate *q)
 {
     int diff;
@@ -1337,7 +1512,7 @@ _hx509_Certificate_cmp(const Certificate *p, const Certificate *q)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_cmp(hx509_cert p, hx509_cert q)
 {
     return _hx509_Certificate_cmp(p->data, q->data);
@@ -1355,7 +1530,7 @@ hx509_cert_cmp(hx509_cert p, hx509_cert q)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_get_issuer(hx509_cert p, hx509_name *name)
 {
     return _hx509_name_from_Name(&p->data->tbsCertificate.issuer, name);
@@ -1373,7 +1548,7 @@ hx509_cert_get_issuer(hx509_cert p, hx509_name *name)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_get_subject(hx509_cert p, hx509_name *name)
 {
     return _hx509_name_from_Name(&p->data->tbsCertificate.subject, name);
@@ -1396,7 +1571,7 @@ hx509_cert_get_subject(hx509_cert p, hx509_name *name)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_get_base_subject(hx509_context context, hx509_cert c,
 			    hx509_name *name)
 {
@@ -1405,8 +1580,8 @@ hx509_cert_get_base_subject(hx509_context context, hx509_cert c,
     if (is_proxy_cert(context, c->data, NULL) == 0) {
 	int ret = HX509_PROXY_CERTIFICATE_NOT_CANONICALIZED;
 	hx509_set_error_string(context, 0, ret,
-			       "Proxy certificate have not been "
-			       "canonicalize yet, no base name");
+			       "Proxy certificate has not been "
+			       "canonicalized yet: no base name");
 	return ret;
     }
     return _hx509_name_from_Name(&c->data->tbsCertificate.subject, name);
@@ -1423,7 +1598,7 @@ hx509_cert_get_base_subject(hx509_context context, hx509_cert c,
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_get_serialnumber(hx509_cert p, heim_integer *i)
 {
     return der_copy_heim_integer(&p->data->tbsCertificate.serialNumber, i);
@@ -1439,7 +1614,7 @@ hx509_cert_get_serialnumber(hx509_cert p, heim_integer *i)
  * @ingroup hx509_cert
  */
 
-time_t
+HX509_LIB_FUNCTION time_t HX509_LIB_CALL
 hx509_cert_get_notBefore(hx509_cert p)
 {
     return _hx509_Time2time_t(&p->data->tbsCertificate.validity.notBefore);
@@ -1455,10 +1630,67 @@ hx509_cert_get_notBefore(hx509_cert p)
  * @ingroup hx509_cert
  */
 
-time_t
+HX509_LIB_FUNCTION time_t HX509_LIB_CALL
 hx509_cert_get_notAfter(hx509_cert p)
 {
     return _hx509_Time2time_t(&p->data->tbsCertificate.validity.notAfter);
+}
+
+/**
+ * Get a maximum Kerberos credential lifetime from a Heimdal certificate
+ * extension.
+ *
+ * @param context hx509 context.
+ * @param cert Certificate.
+ * @param bound If larger than zero, return no more than this.
+ *
+ * @return maximum ticket lifetime.
+ */
+HX509_LIB_FUNCTION time_t HX509_LIB_CALL
+hx509_cert_get_pkinit_max_life(hx509_context context,
+                               hx509_cert cert,
+                               time_t bound)
+{
+    HeimPkinitPrincMaxLifeSecs r = 0;
+    size_t sz, i;
+    time_t b, e;
+    int ret;
+
+    for (i = 0; i < cert->data->tbsCertificate.extensions->len; i++) {
+        Extension *ext = &cert->data->tbsCertificate.extensions->val[i];
+
+        if (ext->_ioschoice_extnValue.element !=
+            choice_Extension_iosnumunknown &&
+            ext->_ioschoice_extnValue.element !=
+            choice_Extension_iosnum_id_heim_ce_pkinit_princ_max_life)
+            continue;
+        if (ext->_ioschoice_extnValue.element == choice_Extension_iosnumunknown &&
+            der_heim_oid_cmp(&asn1_oid_id_heim_ce_pkinit_princ_max_life, &ext->extnID))
+            continue;
+        if (ext->_ioschoice_extnValue.u.ext_HeimPkinitPrincMaxLife) {
+            r = *ext->_ioschoice_extnValue.u.ext_HeimPkinitPrincMaxLife;
+        } else {
+            ret = decode_HeimPkinitPrincMaxLifeSecs(ext->extnValue.data,
+                                                    ext->extnValue.length,
+                                                    &r, &sz);
+            /* No need to free_HeimPkinitPrincMaxLifeSecs(); it's an int */
+            if (ret || r < 1)
+                return 0;
+        }
+        if (bound > 0 && r > bound)
+            return bound;
+        return r;
+    }
+    if (hx509_cert_check_eku(context, cert,
+                             &asn1_oid_id_heim_eku_pkinit_certlife_is_max_life, 0))
+        return 0;
+    b = hx509_cert_get_notBefore(cert);
+    e = hx509_cert_get_notAfter(cert);
+    if (e > b)
+        r = e - b;
+    if (bound > 0 && r > bound)
+        return bound;
+    return r;
 }
 
 /**
@@ -1474,7 +1706,7 @@ hx509_cert_get_notAfter(hx509_cert p)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_get_SPKI(hx509_context context, hx509_cert p, SubjectPublicKeyInfo *spki)
 {
     int ret;
@@ -1500,7 +1732,7 @@ hx509_cert_get_SPKI(hx509_context context, hx509_cert p, SubjectPublicKeyInfo *s
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_get_SPKI_AlgorithmIdentifier(hx509_context context,
 					hx509_cert p,
 					AlgorithmIdentifier *alg)
@@ -1522,7 +1754,7 @@ get_x_unique_id(hx509_context context, const char *name,
 
     if (cert == NULL) {
 	ret = HX509_EXTENSION_NOT_FOUND;
-	hx509_set_error_string(context, 0, ret, "%s unique id doesn't exists", name);
+	hx509_set_error_string(context, 0, ret, "%s unique id doesn't exist", name);
 	return ret;
     }
     ret = der_copy_bit_string(cert, subject);
@@ -1547,7 +1779,7 @@ get_x_unique_id(hx509_context context, const char *name,
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_get_issuer_unique_id(hx509_context context, hx509_cert p, heim_bit_string *issuer)
 {
     return get_x_unique_id(context, "issuer", p->data->tbsCertificate.issuerUniqueID, issuer);
@@ -1567,27 +1799,51 @@ hx509_cert_get_issuer_unique_id(hx509_context context, hx509_cert p, heim_bit_st
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_get_subject_unique_id(hx509_context context, hx509_cert p, heim_bit_string *subject)
 {
     return get_x_unique_id(context, "subject", p->data->tbsCertificate.subjectUniqueID, subject);
 }
 
 
-hx509_private_key
+HX509_LIB_FUNCTION hx509_private_key HX509_LIB_CALL
 _hx509_cert_private_key(hx509_cert p)
 {
     return p->private_key;
 }
 
-int
+/**
+ * Indicate whether a hx509_cert has a private key.
+ *
+ * @param p a hx509 certificate
+ *
+ * @return 1 if p has a private key, 0 otherwise.
+ *
+ * @ingroup hx509_cert
+ */
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_have_private_key(hx509_cert p)
 {
     return p->private_key ? 1 : 0;
 }
 
+/**
+ * Indicate whether a hx509_cert has a private key only (no certificate).
+ *
+ * @param p a hx509 certificate
+ *
+ * @return 1 if p has a private key only (no certificate), 0 otherwise.
+ *
+ * @ingroup hx509_cert
+ */
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_cert_have_private_key_only(hx509_cert p)
+{
+    return p->private_key && !p->data ? 1 : 0;
+}
 
-int
+
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_cert_private_key_exportable(hx509_cert p)
 {
     if (p->private_key == NULL)
@@ -1595,7 +1851,7 @@ _hx509_cert_private_key_exportable(hx509_cert p)
     return _hx509_private_key_exportable(p->private_key);
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_cert_private_decrypt(hx509_context context,
 			    const heim_octet_string *ciphertext,
 			    const heim_oid *encryption_oid,
@@ -1618,7 +1874,7 @@ _hx509_cert_private_decrypt(hx509_context context,
 					      cleartext);
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_public_encrypt(hx509_context context,
 			   const heim_octet_string *cleartext,
 			   const hx509_cert p,
@@ -1634,7 +1890,7 @@ hx509_cert_public_encrypt(hx509_context context,
  *
  */
 
-time_t
+HX509_LIB_FUNCTION time_t HX509_LIB_CALL
 _hx509_Time2time_t(const Time *t)
 {
     switch(t->element) {
@@ -1803,12 +2059,12 @@ match_general_name(const GeneralName *c, const GeneralName *n, int *match)
 
 	c_name._save.data = NULL;
 	c_name._save.length = 0;
-	c_name.element = c->u.directoryName.element;
+	c_name.element = (enum Name_enum)c->u.directoryName.element;
 	c_name.u.rdnSequence = c->u.directoryName.u.rdnSequence;
 
 	n_name._save.data = NULL;
 	n_name._save.length = 0;
-	n_name.element = n->u.directoryName.element;
+	n_name.element = (enum Name_enum)n->u.directoryName.element;
 	n_name.u.rdnSequence = n->u.directoryName.u.rdnSequence;
 
 	ret = match_X501Name(&c_name, &n_name);
@@ -1829,7 +2085,7 @@ match_alt_name(const GeneralName *n, const Certificate *c,
 	       int *same, int *match)
 {
     GeneralNames sa;
-    int ret;
+    int ret = 0;
     size_t i, j;
 
     i = 0;
@@ -1844,7 +2100,7 @@ match_alt_name(const GeneralName *n, const Certificate *c,
 	for (j = 0; j < sa.len; j++) {
 	    if (n->element == sa.val[j].element) {
 		*same = 1;
-		ret = match_general_name(n, &sa.val[j], match);
+		match_general_name(n, &sa.val[j], match);
 	    }
 	}
 	free_GeneralNames(&sa);
@@ -1878,12 +2134,12 @@ match_tree(const GeneralSubtrees *t, const Certificate *c, int *match)
 
 	    memset(&certname, 0, sizeof(certname));
 	    certname.element = choice_GeneralName_directoryName;
-	    certname.u.directoryName.element =
+	    certname.u.directoryName.element = (enum Name_enum)
 		c->tbsCertificate.subject.element;
 	    certname.u.directoryName.u.rdnSequence =
 		c->tbsCertificate.subject.u.rdnSequence;
 
-	    ret = match_general_name(&t->val[i].base, &certname, &name);
+	    match_general_name(&t->val[i].base, &certname, &name);
 	}
 
 	/* Handle subjectAltNames, this is icky since they
@@ -1891,7 +2147,7 @@ match_tree(const GeneralSubtrees *t, const Certificate *c, int *match)
 	 * same type. So if there have been a match of type, require
 	 * altname to be set.
 	 */
-	ret = match_alt_name(&t->val[i].base, c, &same, &alt_name);
+	match_alt_name(&t->val[i].base, c, &same, &alt_name);
     }
     if (name && (!same || alt_name))
 	*match = 1;
@@ -1919,7 +2175,7 @@ check_name_constraints(hx509_context context,
 	    /* allow null subjectNames, they wont matches anything */
 	    if (match == 0 && !subject_null_p(c)) {
 		hx509_set_error_string(context, 0, HX509_VERIFY_CONSTRAINTS,
-				       "Error verify constraints, "
+				       "Error verifying constraints: "
 				       "certificate didn't match any "
 				       "permitted subtree");
 		return HX509_VERIFY_CONSTRAINTS;
@@ -1934,7 +2190,7 @@ check_name_constraints(hx509_context context,
 	    }
 	    if (match) {
 		hx509_set_error_string(context, 0, HX509_VERIFY_CONSTRAINTS,
-				       "Error verify constraints, "
+				       "Error verifying constraints: "
 				       "certificate included in excluded "
 				       "subtree");
 		return HX509_VERIFY_CONSTRAINTS;
@@ -1969,7 +2225,7 @@ free_name_constraints(hx509_name_constraints *nc)
  * @ingroup hx509_verify
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_verify_path(hx509_context context,
 		  hx509_verify_ctx ctx,
 		  hx509_cert cert,
@@ -1977,14 +2233,23 @@ hx509_verify_path(hx509_context context,
 {
     hx509_name_constraints nc;
     hx509_path path;
-    int ret, diff;
-    size_t proxy_cert_depth, selfsigned_depth;
+    int ret, proxy_cert_depth, selfsigned_depth, diff;
     size_t i, k;
     enum certtype type;
     Name proxy_issuer;
     hx509_certs anchors = NULL;
 
     memset(&proxy_issuer, 0, sizeof(proxy_issuer));
+
+    if ((ctx->flags & HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE) == 0 &&
+	is_proxy_cert(context, cert->data, NULL) == 0)
+    {
+	ret = HX509_PROXY_CERT_INVALID;
+	hx509_set_error_string(context, 0, ret,
+			       "Proxy certificate is not allowed as an EE "
+			       "certificate if proxy certificate is disabled");
+	return ret;
+    }
 
     ret = init_name_constraints(&nc);
     if (ret)
@@ -2083,7 +2348,7 @@ hx509_verify_path(hx509_context context,
 		    ret = HX509_PATH_TOO_LONG;
 		    hx509_set_error_string(context, 0, ret,
 					   "Proxy certificate chain "
-					   "longer then allowed");
+					   "longer than allowed");
 		    goto out;
 		}
 		/* XXX MUST check info.proxyPolicy */
@@ -2093,7 +2358,7 @@ hx509_verify_path(hx509_context context,
 		if (find_extension(c, &asn1_oid_id_x509_ce_subjectAltName, &j)) {
 		    ret = HX509_PROXY_CERT_INVALID;
 		    hx509_set_error_string(context, 0, ret,
-					   "Proxy certificate have explicitly "
+					   "Proxy certificate has explicitly "
 					   "forbidden subjectAltName");
 		    goto out;
 		}
@@ -2102,7 +2367,7 @@ hx509_verify_path(hx509_context context,
 		if (find_extension(c, &asn1_oid_id_x509_ce_issuerAltName, &j)) {
 		    ret = HX509_PROXY_CERT_INVALID;
 		    hx509_set_error_string(context, 0, ret,
-					   "Proxy certificate have explicitly "
+					   "Proxy certificate has explicitly "
 					   "forbidden issuerAltName");
 		    goto out;
 		}
@@ -2173,9 +2438,10 @@ hx509_verify_path(hx509_context context,
 		 * EE checking below.
 		 */
 		type = EE_CERT;
-		/* FALLTHOUGH */
+                /* FALLTHROUGH */
 	    }
 	}
+        /* FALLTHROUGH */
 	case EE_CERT:
 	    /*
 	     * If there where any proxy certificates in the chain
@@ -2354,20 +2620,12 @@ hx509_verify_path(hx509_context context,
 	    goto out;
 	}
 	/*
-	 * Verify that the sigature algorithm "best-before" date is
-	 * before the creation date of the certificate, do this for
-	 * trust anchors too, since any trust anchor that is created
-	 * after a algorithm is known to be bad deserved to be invalid.
-	 *
-	 * Skip the leaf certificate for now...
+	 * Verify that the sigature algorithm is not weak. Ignore
+	 * trust anchors since they are provisioned by the user.
 	 */
 
-	if (i != 0 && (ctx->flags & HX509_VERIFY_CTX_F_NO_BEST_BEFORE_CHECK) == 0) {
-	    time_t notBefore =
-		_hx509_Time2time_t(&c->tbsCertificate.validity.notBefore);
-	    ret = _hx509_signature_best_before(context,
-					       &c->signatureAlgorithm,
-					       notBefore);
+	if (i + 1 != path.len && (ctx->flags & HX509_VERIFY_CTX_F_NO_BEST_BEFORE_CHECK) == 0) {
+	    ret = _hx509_signature_is_weak(context, &c->signatureAlgorithm);
 	    if (ret)
 		goto out;
 	}
@@ -2396,7 +2654,7 @@ out:
  * @ingroup hx509_crypto
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_verify_signature(hx509_context context,
 		       const hx509_cert signer,
 		       const AlgorithmIdentifier *alg,
@@ -2406,7 +2664,7 @@ hx509_verify_signature(hx509_context context,
     return _hx509_verify_signature(context, signer, alg, data, sig);
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_verify_signature_bitstring(hx509_context context,
 				  const hx509_cert signer,
 				  const AlgorithmIdentifier *alg,
@@ -2449,7 +2707,7 @@ _hx509_verify_signature_bitstring(hx509_context context,
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_verify_hostname(hx509_context context,
 		      const hx509_cert cert,
 		      int flags,
@@ -2542,7 +2800,7 @@ hx509_verify_hostname(hx509_context context,
     return ret;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_set_cert_attribute(hx509_context context,
 			  hx509_cert cert,
 			  const heim_oid *oid,
@@ -2588,7 +2846,7 @@ _hx509_set_cert_attribute(hx509_context context,
  * @ingroup hx509_cert
  */
 
-hx509_cert_attribute
+HX509_LIB_FUNCTION hx509_cert_attribute HX509_LIB_CALL
 hx509_cert_get_attribute(hx509_cert cert, const heim_oid *oid)
 {
     size_t i;
@@ -2609,7 +2867,7 @@ hx509_cert_get_attribute(hx509_cert cert, const heim_oid *oid)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_set_friendly_name(hx509_cert cert, const char *name)
 {
     if (cert->friendlyname)
@@ -2631,7 +2889,7 @@ hx509_cert_set_friendly_name(hx509_cert cert, const char *name)
  * @ingroup hx509_cert
  */
 
-const char *
+HX509_LIB_FUNCTION const char * HX509_LIB_CALL
 hx509_cert_get_friendly_name(hx509_cert cert)
 {
     hx509_cert_attribute a;
@@ -2684,7 +2942,7 @@ hx509_cert_get_friendly_name(hx509_cert cert)
     return cert->friendlyname;
 }
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 _hx509_query_clear(hx509_query *q)
 {
     memset(q, 0, sizeof(*q));
@@ -2701,7 +2959,7 @@ _hx509_query_clear(hx509_query *q)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_query_alloc(hx509_context context, hx509_query **q)
 {
     *q = calloc(1, sizeof(**q));
@@ -2722,7 +2980,7 @@ hx509_query_alloc(hx509_context context, hx509_query **q)
  * @ingroup hx509_cert
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_query_match_option(hx509_query *q, hx509_query_option option)
 {
     switch(option) {
@@ -2757,7 +3015,7 @@ hx509_query_match_option(hx509_query *q, hx509_query_option option)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_query_match_issuer_serial(hx509_query *q,
 				const Name *issuer,
 				const heim_integer *serialNumber)
@@ -2804,7 +3062,7 @@ hx509_query_match_issuer_serial(hx509_query *q,
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_query_match_friendly_name(hx509_query *q, const char *name)
 {
     if (q->friendlyname)
@@ -2829,7 +3087,7 @@ hx509_query_match_friendly_name(hx509_query *q, const char *name)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_query_match_eku(hx509_query *q, const heim_oid *eku)
 {
     int ret;
@@ -2860,7 +3118,7 @@ hx509_query_match_eku(hx509_query *q, const heim_oid *eku)
     return 0;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_query_match_expr(hx509_context context, hx509_query *q, const char *expr)
 {
     if (q->expr) {
@@ -2870,12 +3128,21 @@ hx509_query_match_expr(hx509_context context, hx509_query *q, const char *expr)
 
     if (expr == NULL) {
 	q->match &= ~HX509_QUERY_MATCH_EXPR;
-    } else {
-	q->expr = _hx509_expr_parse(expr);
-	if (q->expr)
-	    q->match |= HX509_QUERY_MATCH_EXPR;
+        return 0;
     }
 
+    q->expr = _hx509_expr_parse(expr);
+    if (q->expr == NULL) {
+        const char *reason = _hx509_expr_parse_error();
+
+        hx509_set_error_string(context, 0, EINVAL,
+                               "Invalid certificate query match expression: "
+                               "%s (%s)", expr,
+                               reason ? reason : "syntax error");
+        return EINVAL;
+    }
+
+    q->match |= HX509_QUERY_MATCH_EXPR;
     return 0;
 }
 
@@ -2892,7 +3159,7 @@ hx509_query_match_expr(hx509_context context, hx509_query *q, const char *expr)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_query_match_cmp_func(hx509_query *q,
 			   int (*func)(hx509_context, hx509_cert, void *),
 			   void *ctx)
@@ -2915,7 +3182,7 @@ hx509_query_match_cmp_func(hx509_query *q,
  * @ingroup hx509_cert
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_query_free(hx509_context context, hx509_query *q)
 {
     if (q == NULL)
@@ -2942,7 +3209,7 @@ hx509_query_free(hx509_context context, hx509_query *q)
     free(q);
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert cert)
 {
     Certificate *c = _hx509_get_cert(cert);
@@ -3103,7 +3370,7 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
  * @ingroup hx509_cert
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_query_statistic_file(hx509_context context, const char *fn)
 {
     if (context->querystat)
@@ -3111,7 +3378,7 @@ hx509_query_statistic_file(hx509_context context, const char *fn)
     context->querystat = strdup(fn);
 }
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 _hx509_query_statistic(hx509_context context, int type, const hx509_query *q)
 {
     FILE *f;
@@ -3174,7 +3441,7 @@ stat_sort(const void *a, const void *b)
  * @ingroup hx509_cert
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
 {
     rtbl_t t;
@@ -3188,7 +3455,7 @@ hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
 	return;
     f = fopen(context->querystat, "r");
     if (f == NULL) {
-	fprintf(out, "No statistic file %s: %s.\n",
+	fprintf(out, "No statistics file %s: %s.\n",
 		context->querystat, strerror(errno));
 	return;
     }
@@ -3263,7 +3530,7 @@ hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_check_eku(hx509_context context, hx509_cert cert,
 		     const heim_oid *eku, int allow_any_eku)
 {
@@ -3283,12 +3550,11 @@ hx509_cert_check_eku(hx509_context context, hx509_cert cert,
 	    return 0;
 	}
 	if (allow_any_eku) {
-#if 0
-	    if (der_heim_oid_cmp(id_any_eku, &e.val[i]) == 0) {
+	    if (der_heim_oid_cmp(&asn1_oid_id_x509_ce_anyExtendedKeyUsage,
+                                 &e.val[i]) == 0) {
 		free_ExtKeyUsage(&e);
 		return 0;
 	    }
-#endif
 	}
     }
     free_ExtKeyUsage(&e);
@@ -3296,7 +3562,7 @@ hx509_cert_check_eku(hx509_context context, hx509_cert cert,
     return HX509_CERTIFICATE_MISSING_EKU;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_cert_get_keyusage(hx509_context context,
 			 hx509_cert c,
 			 KeyUsage *ku)
@@ -3324,7 +3590,7 @@ _hx509_cert_get_keyusage(hx509_context context,
     return 0;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_cert_get_eku(hx509_context context,
 		    hx509_cert cert,
 		    ExtKeyUsage *e)
@@ -3354,7 +3620,7 @@ _hx509_cert_get_eku(hx509_context context,
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_binary(hx509_context context, hx509_cert c, heim_octet_string *os)
 {
     size_t size;
@@ -3372,7 +3638,6 @@ hx509_cert_binary(hx509_context context, hx509_cert c, heim_octet_string *os)
     }
     if (os->length != size)
 	_hx509_abort("internal ASN.1 encoder error");
-
     return ret;
 }
 
@@ -3383,9 +3648,9 @@ hx509_cert_binary(hx509_context context, hx509_cert c, heim_octet_string *os)
 #undef __attribute__
 #define __attribute__(X)
 
-void
+HX509_LIB_NORETURN_FUNCTION void HX509_LIB_CALL
 _hx509_abort(const char *fmt, ...)
-     __attribute__ ((noreturn, format (printf, 1, 2)))
+     __attribute__ ((__noreturn__, __format__ (__printf__, 1, 2)))
 {
     va_list ap;
     va_start(ap, fmt);
@@ -3404,7 +3669,7 @@ _hx509_abort(const char *fmt, ...)
  * @ingroup hx509_misc
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_xfree(void *ptr)
 {
     free(ptr);
@@ -3414,7 +3679,7 @@ hx509_xfree(void *ptr)
  *
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_cert_to_env(hx509_context context, hx509_cert cert, hx509_env *env)
 {
     ExtKeyUsage eku;
@@ -3426,7 +3691,9 @@ _hx509_cert_to_env(hx509_context context, hx509_cert cert, hx509_env *env)
     *env = NULL;
 
     /* version */
-    asprintf(&buf, "%d", _hx509_cert_get_version(_hx509_get_cert(cert)));
+    ret = asprintf(&buf, "%d", _hx509_cert_get_version(_hx509_get_cert(cert)));
+    if (ret == -1)
+	goto out;
     ret = hx509_env_add(context, &envcert, "version", buf);
     free(buf);
     if (ret)
@@ -3561,7 +3828,7 @@ out:
  * @ingroup hx509_cert
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_print_cert(hx509_context context, hx509_cert cert, FILE *out)
 {
     hx509_name name;
@@ -3601,7 +3868,7 @@ hx509_print_cert(hx509_context context, hx509_cert cert, FILE *out)
 	free(str);
     }
 
-    printf("    keyusage: ");
+    fprintf(out, "    keyusage: ");
     ret = hx509_cert_keyusage_print(context, cert, &str);
     if (ret == 0) {
 	fprintf(out, "%s\n", str);

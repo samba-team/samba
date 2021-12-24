@@ -34,9 +34,7 @@
 #include "mech_locl.h"
 
 /**
- * Add a oid to the oid set, function does not make a copy of the oid,
- * so the pointer to member_oid needs to be stable for the whole time
- * oid_set is used.
+ * Add a oid to the oid set.
  *
  * If there is a duplicate member of the oid, the new member is not
  * added to to the set.
@@ -56,7 +54,7 @@ gss_add_oid_set_member (OM_uint32 * minor_status,
 			const gss_OID member_oid,
 			gss_OID_set * oid_set)
 {
-    gss_OID tmp;
+    gss_OID tmp, interned_oid;
     size_t n;
     OM_uint32 res;
     int present;
@@ -77,8 +75,13 @@ gss_add_oid_set_member (OM_uint32 * minor_status,
 	return GSS_S_FAILURE;
     }
     (*oid_set)->elements = tmp;
+
+    res = _gss_intern_oid(minor_status, member_oid, &interned_oid);
+    if (res != GSS_S_COMPLETE)
+	return res;
+
     (*oid_set)->count = n;
-    (*oid_set)->elements[n-1] = *member_oid;
+    (*oid_set)->elements[n-1] = *interned_oid;
     *minor_status = 0;
     return GSS_S_COMPLETE;
 }

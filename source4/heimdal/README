@@ -1,18 +1,19 @@
 
-Heimdal is a Kerberos 5 implementation.
+Heimdal is an implementation of: ASN.1/DER, PKIX, and Kerberos.
 
-For information how to install see <http://www.h5l.org/compile.html>.
+For information how to install see
+<https://github.com/heimdal/heimdal/wiki/Building-and-installing>.
 
 There are briefer man pages for most of the commands.
 
-Bug reports and bugs are appreciated, see more under Bug reports in
-the manual on how we prefer them: <heimdal-bugs@h5l.org>.
+Bug reports and bugs are appreciated.  Use GitHub issues.
+<https://www.heimdal.software/heimdal/issues>.
 
 For more information see the web-page at
-<http://www.h5l.org/> or the mailing lists:
+<https://www.heimdal.software/heimdal/> or the mailing lists:
 
-heimdal-announce@sics.se	low-volume announcement
-heimdal-discuss@sics.se		high-volume discussion
+heimdal-announce@heimdal.software	low-volume announcement
+heimdal-discuss@heimdal.software	high-volume discussion
 
-send a mail to heimdal-announce-request@sics.se and
-heimdal-discuss-request@sics.se respectively to subscribe.
+send a mail to heimdal-announce-subscribe@heimdal.software and
+heimdal-discuss-subscribe@heimdal.software respectively to subscribe.

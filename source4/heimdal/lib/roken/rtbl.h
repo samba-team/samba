@@ -61,6 +61,7 @@ typedef struct rtbl_data *rtbl_t;
 
 /* flags */
 #define RTBL_HEADER_STYLE_NONE	1
+#define RTBL_JSON		2
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column (rtbl_t, const char*, unsigned int);
@@ -71,14 +72,14 @@ rtbl_add_column_by_id (rtbl_t, unsigned int, const char*, unsigned int);
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column_entryv_by_id (rtbl_t table, unsigned int id,
 			      const char *fmt, ...)
-	__attribute__ ((format (printf, 3, 0)));
+	__attribute__ ((__format__ (__printf__, 3, 0)));
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column_entry (rtbl_t, const char*, const char*);
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column_entryv (rtbl_t, const char*, const char*, ...)
-	__attribute__ ((format (printf, 3, 0)));
+	__attribute__ ((__format__ (__printf__, 3, 0)));
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_add_column_entry_by_id (rtbl_t, unsigned int, const char*);
@@ -91,6 +92,9 @@ rtbl_destroy (rtbl_t);
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rtbl_format (rtbl_t, FILE*);
+
+ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL
+rtbl_format_str (rtbl_t);
 
 ROKEN_LIB_FUNCTION unsigned int ROKEN_LIB_CALL
 rtbl_get_flags (rtbl_t);

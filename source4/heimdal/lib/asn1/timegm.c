@@ -102,7 +102,7 @@ _der_gmtime(time_t t, struct tm *tm)
 
     tm->tm_sec = secday % 60;
     tm->tm_min = (secday % 3600) / 60;
-    tm->tm_hour = secday / 3600;
+    tm->tm_hour = (int)(secday / 3600);
 
     /*
      * Refuse to calculate time ~ 2000 years into the future, this is
@@ -130,7 +130,7 @@ _der_gmtime(time_t t, struct tm *tm)
 	days -= daysinmonth;
 	tm->tm_mon++;
     }
-    tm->tm_mday = days + 1;
+    tm->tm_mday = (int)(days + 1);
 
     return tm;
 }

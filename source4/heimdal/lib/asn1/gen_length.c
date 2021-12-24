@@ -80,16 +80,16 @@ length_type (const char *name, const Type *t,
 	    fprintf(codefile, "}\n");
 	} else if (t->range == NULL) {
 	    length_primitive ("heim_integer", name, variable);
-	} else if (t->range->min == INT_MIN && t->range->max == INT_MAX) {
+	} else if (t->range->min < 0 &&
+                   (t->range->min < INT_MIN || t->range->max > INT_MAX)) {
+	    length_primitive ("integer64", name, variable);
+	} else if (t->range->min < 0) {
 	    length_primitive ("integer", name, variable);
-	} else if (t->range->min == 0 && t->range->max == UINT_MAX) {
+	} else if (t->range->max > UINT_MAX) {
+	    length_primitive ("unsigned64", name, variable);
+	} else {
 	    length_primitive ("unsigned", name, variable);
-	} else if (t->range->min == 0 && t->range->max == INT_MAX) {
-	    length_primitive ("unsigned", name, variable);
-	} else
-	    errx(1, "%s: unsupported range %d -> %d",
-		 name, t->range->min, t->range->max);
-
+	}
 	break;
     case TBoolean:
 	fprintf (codefile, "%s += 1;\n", variable);
@@ -101,16 +101,16 @@ length_type (const char *name, const Type *t,
 	length_primitive ("octet_string", name, variable);
 	break;
     case TBitString: {
-	if (ASN1_TAILQ_EMPTY(t->members))
+	if (HEIM_TAILQ_EMPTY(t->members))
 	    length_primitive("bit_string", name, variable);
 	else {
 	    if (!rfc1510_bitstring) {
 		Member *m;
-		int pos = ASN1_TAILQ_LAST(t->members, memhead)->val;
+		int pos = HEIM_TAILQ_LAST(t->members, memhead)->val;
 
 		fprintf(codefile,
 			"do {\n");
-		ASN1_TAILQ_FOREACH_REVERSE(m, t->members, memhead, members) {
+		HEIM_TAILQ_FOREACH_REVERSE(m, t->members, memhead, members) {
 		    while (m->val / 8 < pos / 8) {
 			pos -= 8;
 		    }
@@ -138,7 +138,7 @@ length_type (const char *name, const Type *t,
 	if(t->type == TChoice)
 	    fprintf (codefile, "switch((%s)->element) {\n", name);
 
-	ASN1_TAILQ_FOREACH(m, t->members, members) {
+	HEIM_TAILQ_FOREACH(m, t->members, members) {
 	    char *s;
 
 	    if (m->ellipsis) {
@@ -188,14 +188,15 @@ length_type (const char *name, const Type *t,
 	fprintf (codefile,
 		 "{\n"
 		 "size_t %s_oldret = %s;\n"
-		 "int i;\n"
+		 "unsigned int n_%s;\n"
 		 "%s = 0;\n",
-		 tmpstr, variable, variable);
+		 tmpstr, variable, tmpstr, variable);
 
-	fprintf (codefile, "for(i = (%s)->len - 1; i >= 0; --i){\n", name);
+	fprintf (codefile, "for(n_%s = (%s)->len; n_%s > 0; --n_%s){\n",
+		 tmpstr, name, tmpstr, tmpstr);
 	fprintf (codefile, "size_t %s_for_oldret = %s;\n"
 		 "%s = 0;\n", tmpstr, variable, variable);
-	if (asprintf (&n, "&(%s)->val[i]", name) < 0  || n == NULL)
+	if (asprintf (&n, "&(%s)->val[n_%s - 1]", name, tmpstr) < 0  || n == NULL)
 	    errx(1, "malloc");
 	if (asprintf (&sname, "%s_S_Of", tmpstr) < 0 || sname == NULL)
 	    errx(1, "malloc");
@@ -246,11 +247,40 @@ length_type (const char *name, const Type *t,
 	break;
     case TTag:{
     	char *tname = NULL;
+        int replace_tag = 0;
+        int prim = !(t->tag.tagclass != ASN1_C_UNIV &&
+                     t->tag.tagenv == TE_EXPLICIT) &&
+            is_primitive_type(t->subtype);
+
 	if (asprintf(&tname, "%s_tag", tmpstr) < 0 || tname == NULL)
 	    errx(1, "malloc");
 	length_type (name, t->subtype, variable, tname);
-	fprintf (codefile, "ret += %lu + der_length_len (ret);\n",
-		 (unsigned long)length_tag(t->tag.tagvalue));
+        /* See the comments in encode_type() about IMPLICIT tags */
+        if (t->tag.tagenv == TE_IMPLICIT && !prim &&
+            t->subtype->type != TSequenceOf && t->subtype->type != TSetOf &&
+            t->subtype->type != TChoice) {
+            if (t->subtype->symbol &&
+                (t->subtype->type == TSequence ||
+                 t->subtype->type == TSet))
+                replace_tag = 1;
+            else if (t->subtype->symbol && strcmp(t->subtype->symbol->name, "heim_any"))
+                replace_tag = 1;
+        } else if (t->tag.tagenv == TE_IMPLICIT && prim && t->subtype->symbol)
+            replace_tag = is_tagged_type(t->subtype->symbol->type);
+        if (replace_tag)
+            /*
+             * We're replacing the tag of the underlying type.  If that type is
+             * imported, then we don't know its tag, so we rely on the
+             * asn1_tag_tag_<TypeName> enum value we generated for it, and we
+             * use the asn1_tag_length_<TypeName> enum value to avoid having to
+             * call der_length_tag() at run-time.
+             */
+            fprintf(codefile, "ret += %lu - asn1_tag_length_%s;\n",
+                    (unsigned long)length_tag(t->tag.tagvalue),
+                    t->subtype->symbol->gen_name);
+        else
+            fprintf(codefile, "ret += %lu + der_length_len (ret);\n",
+                    (unsigned long)length_tag(t->tag.tagvalue));
 	free(tname);
 	break;
     }

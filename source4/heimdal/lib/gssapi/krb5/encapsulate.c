@@ -58,19 +58,6 @@ _gsskrb5_encap_length (size_t data_len,
 }
 
 void *
-_gsskrb5_make_header (void *ptr,
-			 size_t len,
-			 const void *type,
-			 const gss_OID mech)
-{
-    u_char *p = ptr;
-    p = _gssapi_make_mech_header(p, len, mech);
-    memcpy (p, type, 2);
-    p += 2;
-    return p;
-}
-
-void *
 _gssapi_make_mech_header(void *ptr,
 			 size_t len,
 			 const gss_OID mech)
@@ -89,6 +76,19 @@ _gssapi_make_mech_header(void *ptr,
     *p++ = mech->length;
     memcpy (p, mech->elements, mech->length);
     p += mech->length;
+    return p;
+}
+
+void *
+_gsskrb5_make_header (void *ptr,
+			 size_t len,
+			 const void *type,
+			 const gss_OID mech)
+{
+    u_char *p = ptr;
+    p = _gssapi_make_mech_header(p, len, mech);
+    memcpy (p, type, 2);
+    p += 2;
     return p;
 }
 

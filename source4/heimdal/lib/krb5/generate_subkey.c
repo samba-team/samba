@@ -55,12 +55,10 @@ krb5_generate_subkey_extended(krb5_context context,
     krb5_error_code ret;
 
     ALLOC(*subkey, 1);
-    if (*subkey == NULL) {
-	krb5_set_error_message(context, ENOMEM,N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (*subkey == NULL)
+	return krb5_enomem(context);
 
-    if (etype == ETYPE_NULL)
+    if (etype == (krb5_enctype)ETYPE_NULL)
 	etype = key->keytype; /* use session key etype */
 
     /* XXX should we use the session key as input to the RF? */

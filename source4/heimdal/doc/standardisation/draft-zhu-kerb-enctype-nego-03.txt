@@ -1,0 +1,397 @@
+
+
+
+NETWORK WORKING GROUP                                             L. Zhu
+Internet-Draft                                                  P. Leach
+Updates: 4120 (if approved)                                K. Jaganathan
+Expires: January 20, 2006                          Microsoft Corporation
+                                                           July 19, 2005
+
+
+              Kerberos Cryptosystem Negotiation Extension
+                     draft-zhu-kerb-enctype-nego-03
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on January 20, 2006.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2005).
+
+Abstract
+
+   This document specifies an extension to the Kerberos protocol where
+   the client can send a list of supported encryption types in
+   decreasing preference order, and the server then selects an
+   encryption type that is supported by both the client and the server.
+
+
+
+
+
+
+Zhu, et al.             Expires January 20, 2006                [Page 1]
+
+Internet-Draft             Enctype Negotiation                 July 2005
+
+
+Table of Contents
+
+   1.   Introduction . . . . . . . . . . . . . . . . . . . . . . . . . 3
+   2.   Conventions Used in This Document  . . . . . . . . . . . . . . 3
+   3.   Negotiation Extension  . . . . . . . . . . . . . . . . . . . . 3
+   4.   Security Considerations  . . . . . . . . . . . . . . . . . . . 4
+   5.   Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 4
+   6.   IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 5
+   7.   Normative References . . . . . . . . . . . . . . . . . . . . . 5
+        Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . 5
+        Intellectual Property and Copyright Statements . . . . . . . . 7
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.             Expires January 20, 2006                [Page 2]
+
+Internet-Draft             Enctype Negotiation                 July 2005
+
+
+1.  Introduction
+
+   Under the current mechanism [RFC4120], the KDC must limit the ticket
+   session key encryption type (enctype) chosen for a given server to
+   one it believes is supported by both the client and the server.  If
+   both the client and server understand a stronger enctype than the one
+   selected by the KDC, they can not negotiate it.  As the result, the
+   protection of application traffic is often weaker than necessary when
+   the server can support different sets of enctypes depending on the
+   server application software being used.
+
+   This document specifies an extension to the Kerberos protocol to
+   allow clients and servers to negotiate a different and possible
+   stronger cryptosystem to be used in subsequent communication.
+
+   This extension utilizes an authorization data element in the
+   authenticator of the AP-REQ message [RFC4120].  The client sends the
+   list of enctypes that it supports to the server, the server then
+   informs the client its choice.  The negotiated subkey is sent in the
+   AP-REP message [RFC4120].
+
+2.  Conventions Used in This Document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+3.  Negotiation Extension
+
+   If the client prefers an enctype over that of the service ticket
+   session key, then it sends the list of enctypes it supports
+   (including the one selected by the KDC) in decreasing preference
+   order.
+
+   The client sends the enctype list via the authorization-data of the
+   authenticator in the AP-REQ [RFC4120].  A new authorization data
+   element type AD-ETYPE-NEGOTIATION is defined.
+
+           AD-ETYPE-NEGOTIATION              129
+
+   This authorization data element itself is enclosed in the AD-IF-
+   RELEVANT container, thus a correctly implemented server that does not
+   understand this element should ignore it [RFC4120].  The value of
+   this authorization element contains the DER [X690] encoding of the
+   following ASN.1 type:
+
+
+
+
+
+
+Zhu, et al.             Expires January 20, 2006                [Page 3]
+
+Internet-Draft             Enctype Negotiation                 July 2005
+
+
+           EtypeList ::= SEQUENCE OF Int32
+              -- Specifies the enctypes supported by the client.
+              -- This enctype list is in decreasing preference order
+              -- (favorite choice first).
+              -- Int32 is defined in [RFC4120].
+
+   If the EtypeList is present and the server prefers an enctype from
+   the client's enctype list over that of the AP-REQ authenticator
+   subkey (if that is present) or the service ticket session key, the
+   server MUST create a subkey using that enctype.  This negotiated
+   subkey is sent in the subkey field of AP-REP message and it is then
+   used as the protocol key or base key [RFC3961] for subsequent
+   communication.
+
+   This negotiation extension SHOULD NOT be used when the client does
+   not expect the subkey in the AP-REP message from the server.
+
+   A note on key generation: The KDC has a strong Pseudo-Random Number
+   Generator (PRNG), as such the client can take advantage of the
+   randomness provided by the KDC by reusing the KDC key data when
+   generating keys.  Implementations SHOULD use the service ticket
+   session key value as a source of additional entropy when generating
+   the negotiated subkey.  If the AP-REQ authenticator subkey is
+   present, it MAY also be used as a source of entropy.
+
+   The server MAY ignore the preference order indicated by the client.
+   The policy by which the client or the server chooses an enctype
+   (i.e., how the preference order for the supported enctypes is
+   selected) is a local matter.
+
+4.  Security Considerations
+
+   The client's enctype list and the server's reply enctype are part of
+   encrypted data, thus the security considerations are the same as
+   those of the Kerberos encrypted data.
+
+   Both the EtypeList and the server's sub-session key are protected by
+   the session key or sub-session key used for the AP-REQ, and as a
+   result, if a key for a stronger enctype is negotiated underneath a
+   key for a weaker enctype, an attacker capable of breaking the weaker
+   enctype can also discover the key for the stronger enctype.  The
+   advantage of this extension is to minimize the amount of cipher text
+   encrypted under a weak enctype to which an attacker has access.
+
+5.  Acknowledgements
+
+   The authors would like to thank the following individuals for their
+   comments and suggestions: Luke Howard, Tom Yu, Love Hornquist
+
+
+
+Zhu, et al.             Expires January 20, 2006                [Page 4]
+
+Internet-Draft             Enctype Negotiation                 July 2005
+
+
+   Astrand, Sam Harman, Ken Raeburn and Martin Rex.
+
+6.  IANA Considerations
+
+   No IANA actions are required for this document.
+
+7.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+   [RFC3961]  Raeburn, K., "Encryption and Checksum Specifications for
+              Kerberos 5", RFC 3961, February 2005.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+   [X690]     ASN.1 encoding rules: Specification of Basic Encoding Rules 
+              (BER), Canonical Encoding Rules (CER) and Distinguished 
+              Encoding Rules (DER), ITU-T Recommendation X.690 (1997) | 
+              ISO/IEC International Standard 8825-1:1998.
+
+Authors' Addresses
+
+   Larry Zhu
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: lzhu@microsoft.com
+
+
+   Paul Leach
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: paulle@microsoft.com
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.             Expires January 20, 2006                [Page 5]
+
+Internet-Draft             Enctype Negotiation                 July 2005
+
+
+   Karthik Jaganathan
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: karthikj@microsoft.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.             Expires January 20, 2006                [Page 6]
+
+Internet-Draft             Enctype Negotiation                 July 2005
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2005).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Zhu, et al.             Expires January 20, 2006                [Page 7]
+
+

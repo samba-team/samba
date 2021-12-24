@@ -1,0 +1,447 @@
+Network Working Group                                       S. Josefsson
+Internet-Draft                                         November 13, 2004
+Expires: May 14, 2005
+
+
+          Using Transport Layer Security (TLS) with Kerberos 5
+                 draft-josefsson-kerberos5-starttls-00
+
+Status of this Memo
+
+   This document is an Internet-Draft and is subject to all provisions
+   of section 3 of RFC 3667.  By submitting this Internet-Draft, each
+   author represents that any applicable patent or other IPR claims of
+   which he or she is aware have been or will be disclosed, and any of
+   which he or she become aware will be disclosed, in accordance with
+   RFC 3668.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as
+   Internet-Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on May 14, 2005.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2004).
+
+Abstract
+
+   This document specify how the Transport Layer Security (TLS) protocol
+   is used in conjunction with the Kerberos 5 protocol.
+
+
+
+
+
+
+
+
+
+Josefsson                 Expires May 14, 2005                  [Page 1]
+
+Internet-Draft         Using TLS with Kerberos 5           November 2004
+
+
+Table of Contents
+
+   1.  Introduction and Background  . . . . . . . . . . . . . . . . .  3
+   2.  Extension Mechanism for TCP/IP transport . . . . . . . . . . .  4
+   3.  Kerberos 5 STARTTLS Extension  . . . . . . . . . . . . . . . .  4
+     3.1   STARTTLS requested by client (extension 1) . . . . . . . .  4
+     3.2   STARTTLS request accepted by server (extension 2)  . . . .  5
+     3.3   Proceeding after successful TLS negotiation  . . . . . . .  5
+     3.4   Proceeding after failed TLS negotiation  . . . . . . . . .  5
+     3.5   STARTTLS aware KDC Discovery . . . . . . . . . . . . . . .  5
+     3.6   Initial Authentication via TLS . . . . . . . . . . . . . .  5
+   4.  Security Considerations  . . . . . . . . . . . . . . . . . . .  6
+   5.  References . . . . . . . . . . . . . . . . . . . . . . . . . .  6
+   5.1   Normative References . . . . . . . . . . . . . . . . . . . .  6
+   5.2   Informative References . . . . . . . . . . . . . . . . . . .  6
+       Author's Address . . . . . . . . . . . . . . . . . . . . . . .  7
+       Intellectual Property and Copyright Statements . . . . . . . .  8
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson                 Expires May 14, 2005                  [Page 2]
+
+Internet-Draft         Using TLS with Kerberos 5           November 2004
+
+
+1.  Introduction and Background
+
+   This document describe how Shishi, a Kerberos 5 [1] implementation,
+   upgrade communication between clients and Key Distribution Centers
+   (KDCs) to use the Transport Layer Security (TLS) [2] protocol.
+
+   The TLS protocol offer integrity and privacy protected exchanges that
+   can be authentication using X.509 certificates, OpenPGP keys [6], and
+   user name and passwords via SRP [5].
+
+   An inconclusive list of the motivation for using TLS with Kerberos 5
+   is given below.
+
+   o  Explicit server authentication of the KDC to the client.  In
+      traditional Kerberos 5, authentication of the KDC is proved as a
+      side effect that the KDC knows your encryption key (i.e., your
+      password).
+
+   o  Flexible authentication against KDC.  Kerberos 5 assume the user
+      knows a key (usually in the form of a password).  Sometimes
+      external factors make this hard to fulfill.  In some situations,
+      users are equipped with smart cards with a RSA authentication key.
+      In others, users have a OpenPGP client on their desktop, with a
+      public OpenPGP key known to the server.  In some situations, the
+      policy may be that password authentication may only be done
+      through SRP.
+
+   o  Kerberos exchanges are privacy protected.  Part of many Kerberos
+      packets are transfered without privacy protection (i.e.,
+      encryption).  That part contains information, such as the client
+      principal name, the server principal name, the encryption types
+      supported by the client, the lifetime of tickets, etc.  Revealing
+      such information is, in some threat models, considered a problem.
+
+   o  Prevents downgrade attacks affecting encryption types.  The
+      encryption type of the ticket in KDC-REQ are sent in the clear in
+      Kerberos 5.  This allows an attacker to replace the encryption
+      type with a compromised mechanisms, e.g.  56-bit DES.  Since
+      clients in general cannot know the encryption types other servers
+      support, it is difficult for the client to detect if there was a
+      man-in-the-middle or if the remote server simply did not support a
+      stronger mechanism.  Clients could chose to refuse 56-bit DES
+      altogether, but in some environments this leads to operational
+      difficulties.
+
+   o  The TLS protocol has been studied by many parties.  In some threat
+      models, the designer prefer to reduce the number of protocols that
+      can hurt the overall system security if they are compromised.
+
+
+
+Josefsson                 Expires May 14, 2005                  [Page 3]
+
+Internet-Draft         Using TLS with Kerberos 5           November 2004
+
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in RFC 2119 [4].
+
+2.  Extension Mechanism for TCP/IP transport
+
+   Kerberos 5 require Key Distribution Centers (KDCs) to accept requests
+   over TCP.  Each request and response is prefixed by 4 octets,
+   encoding an integer in network byte order, that indicate the length
+   of the packet.  The high bit of the 4 octet length field was reserved
+   for future expansion.  Servers that do not understand how to
+   interpret a set high bit are required to return a KRB-ERROR with the
+   KRB_ERR_FIELD_TOOLONG error code, and to close the TCP stream.
+
+   We will use the reserved bit to provide an extension mechanism.  When
+   the reserved high bit is set, the remaining 31 bits of the 4 octets
+   are treated as an extensible typed hole, and thus form a 31 bit
+   integer enumerating various extensions.  Each of the values indicate
+   a specific extended operation mode, two of which are used and defined
+   here, and the rest are left for others to use.
+
+   If the KDC do not understand a requested extension, it MUST return a
+   KRB-ERROR with a KRB_ERR_FIELD_TOOLONG value (prefixed by the 4 octet
+   length integer, with the high bit clear, as usual) and close the TCP
+   stream.
+
+   The following table specify the meaning of the 31 lower bits in the 4
+   octet field, when the high bit is set:
+
+   0               RESERVED.
+   1               STARTTLS requested by client.
+   2               STARTTLS request accepted by server.
+   3...2147483647  AVAILABLE for registration (via bug-shishi@josefsson.org)
+.
+   2147483648      RESERVED.
+
+
+3.  Kerberos 5 STARTTLS Extension
+
+3.1  STARTTLS requested by client (extension 1)
+
+   When this message is sent by the client, the client is requesting the
+   server to start TLS negotiation on the TCP stream.  The client MUST
+   NOT start TLS negotiation immediately.  Instead, the client wait for
+   either a KRB-ERROR (sent normally, prefixed by a 4 octet length
+   integer) indicating the server do not understand the set high bit, or
+   4 octets which is to be interpreted as an integer in network byte
+   order, where the high bit is set and the remaining 31 bit are
+   interpreted as an integer specifying ``STARTTLS request accepted by
+
+
+
+Josefsson                 Expires May 14, 2005                  [Page 4]
+
+Internet-Draft         Using TLS with Kerberos 5           November 2004
+
+
+   server'' (extension 2).  In the first case, the client infer that the
+   server do not understand (or wish to support) STARTTLS, and can
+   re-try using normal TCP, if unprotected Kerberos 5 exchanges are
+   acceptable to the client policy.  In the latter case, it should
+   invoke TLS negotiation on the stream.  If any other data is received,
+   the client MUST close the TCP stream.
+
+3.2  STARTTLS request accepted by server (extension 2)
+
+   This message should be sent by the server when it has received the
+   extension 1 message.  The message is an acknowledgment of the
+   client's request to initiate STARTTLS on the channel.  The server
+   MUST then invoke a TLS negotiation.
+
+3.3  Proceeding after successful TLS negotiation
+
+   If the TLS negotiation ended successfully, possibly also considering
+   client or server policies, the exchange within the TLS protected
+   stream is performed like normal UDP Kerberos 5 exchanges, i.e., there
+   is no TCP 4 octet length field before each packet.  Instead each
+   Kerberos packet MUST be sent within one TLS record, so the
+   application can use the TLS record length as the Kerberos 5 packet
+   length.
+
+3.4  Proceeding after failed TLS negotiation
+
+   If the TLS negotiation fails, possibly due to client or server policy
+   (e.g., inadequate support of encryption types in TLS, or lack of
+   client or server authentication) the entity that detect the failure
+   MUST disconnected the connection.  It is expected that any error
+   messages that explain the error condition is transfered by TLS.
+
+3.5  STARTTLS aware KDC Discovery
+
+   Section 7.2.3 of Kerberos 5 [1] describe how Domain Name System (DNS)
+   SRV records [3] can be used to find the address of an KDC.  To locate
+   a KDC that support the STARTTLS extension, we use the "_tls" domain.
+   For example:
+
+   _kerberos._tls._tcp.EXAMPLE.COM.   IN      SRV     0 0 88 kdc1.example.com.
+   _kerberos._tls._tcp.EXAMPLE.COM.   IN      SRV     1 0 88 kdc2.example.com.
+
+
+3.6  Initial Authentication via TLS
+
+   The server MAY consider the authentication performed by the TLS
+   exchange as sufficient to issue Kerberos 5 tickets to the client,
+   without requiring, e.g., pre-authentication.  However, it is not an
+
+
+
+Josefsson                 Expires May 14, 2005                  [Page 5]
+
+Internet-Draft         Using TLS with Kerberos 5           November 2004
+
+
+   error to require or use pre-authentication as well.
+
+   The client may also indicate that it wishes to use TLS both for
+   authentication and data protection by using the NULL encryption type
+   in its request.  The server can decide from its local policy whether
+   or not issuing tickets based solely on TLS authentication, and
+   whether NULL encryption within TLS, is acceptable or not.
+
+4.  Security Considerations
+
+   Because the initial token is not protected, it is possible for an
+   active attacker to make it appear to the client that the server do
+   not support this extension.  It is up to client configuration to
+   disallow non-TLS connections, if that vulnerability is deemed
+   unacceptable.  For interoperability, we suggest the default behaviour
+   should be to allow automatic fall back to TCP or UDP.
+
+   The security considerations of both TLS and Kerberos 5 are inherited.
+   Using TLS for authentication and/or data protection together with
+   Kerberos alter the authentication logic fundamentally.  Thus, it may
+   be that even if the TLS and Kerberos 5 protocols and implementations
+   were secure, the combination of TLS and Kerberos 5 described here
+   could be insecure.
+
+   No channel bindings are provided in the Kerberos messages.  It is an
+   open question whether, and how, this could be solved.  One idea for
+   solving this may be to specify a new encryption algorithm in Kerberos
+   5 that is similar to the NULL encryption algorithm, but also include
+   the TLS session identifier.
+
+5.  References
+
+5.1  Normative References
+
+   [1]  Neuman, C., "The Kerberos Network Authentication Service (V5)",
+        draft-ietf-krb-wg-kerberos-clarifications-07 (work in progress),
+        September 2004.
+
+   [2]  Dierks, T. and C. Allen, "The TLS Protocol Version 1.0", RFC
+        2246, January 1999.
+
+   [3]  Gulbrandsen, A., Vixie, P. and L. Esibov, "A DNS RR for
+        specifying the location of services (DNS SRV)", RFC 2782,
+        February 2000.
+
+5.2  Informative References
+
+   [4]  Bradner, S., "Key words for use in RFCs to Indicate Requirement
+
+
+
+Josefsson                 Expires May 14, 2005                  [Page 6]
+
+Internet-Draft         Using TLS with Kerberos 5           November 2004
+
+
+        Levels", BCP 14, RFC 2119, March 1997.
+
+   [5]  Taylor, D., "Using SRP for TLS Authentication",
+        draft-ietf-tls-srp-08 (work in progress), August 2004.
+
+   [6]  Mavroyanopoulos, N., "Using OpenPGP keys for TLS
+        authentication", draft-ietf-tls-openpgp-keys-05 (work in
+        progress), April 2004.
+
+
+Author's Address
+
+   Simon Josefsson
+
+   EMail: simon@josefsson.org
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson                 Expires May 14, 2005                  [Page 7]
+
+Internet-Draft         Using TLS with Kerberos 5           November 2004
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2004).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set for
+th therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Josefsson                 Expires May 14, 2005                  [Page 8]

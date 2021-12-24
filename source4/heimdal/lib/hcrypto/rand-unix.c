@@ -32,13 +32,10 @@
  */
 
 #include <config.h>
+#include <roken.h>
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <rand.h>
 #include <heim_threads.h>
-
-#include <roken.h>
 
 #include "randi.h"
 
@@ -71,20 +68,33 @@ _hc_unix_device_fd(int flags, const char **fn)
 }
 
 static void
-unix_seed(const void *indata, int size)
+unix_seed(const void *p, int size)
 {
+    const unsigned char *indata = p;
+    ssize_t count;
     int fd;
 
-    if (size <= 0)
+    if (size < 0)
+	return;
+    else if (size == 0)
 	return;
 
-    fd = _hc_unix_device_fd(O_WRONLY, NULL);
+    fd = _hc_unix_device_fd(O_RDONLY, NULL);
     if (fd < 0)
 	return;
 
-    write(fd, indata, size);
+    while (size > 0) {
+	count = write(fd, indata, size);
+	if (count < 0 && errno == EINTR)
+	    continue;
+	else if (count <= 0) {
+	    close(fd);
+	    return;
+	}
+	indata += count;
+	size -= count;
+    }
     close(fd);
-
 }
 
 

@@ -1,0 +1,1232 @@
+
+
+
+Network Working Group                                        G. Richards
+Internet-Draft                         RSA, The Security Division of EMC
+Intended status: Standards Track                        October 11, 2006
+Expires: April 14, 2007
+
+
+                              OTP Kerberos
+                     draft-richards-otp-kerberos-01
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on April 14, 2007.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2006).
+
+Abstract
+
+   The Kerberos protocol provides a framework authenticating a client
+   using the exchange of pre-authentication data.  This document
+   describes the use of this framework to carry out One Time Password
+   (OTP) authentication.
+
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                 [Page 1]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   2.  Usage Overview . . . . . . . . . . . . . . . . . . . . . . . .  3
+     2.1.  Pre-Authentication . . . . . . . . . . . . . . . . . . . .  3
+     2.2.  PIN Change . . . . . . . . . . . . . . . . . . . . . . . .  4
+     2.3.  Re-Synchronization . . . . . . . . . . . . . . . . . . . .  4
+   3.  Pre-Authentication Protocol Details  . . . . . . . . . . . . .  4
+     3.1.  Shared Secret  . . . . . . . . . . . . . . . . . . . . . .  4
+     3.2.  Client Request . . . . . . . . . . . . . . . . . . . . . .  5
+     3.3.  KDC Challenge  . . . . . . . . . . . . . . . . . . . . . .  5
+     3.4.  Client Response  . . . . . . . . . . . . . . . . . . . . .  7
+     3.5.  Verifying the pre-auth Data  . . . . . . . . . . . . . . .  7
+     3.6.  Updating the Secret  . . . . . . . . . . . . . . . . . . .  9
+   4.  Reply Key Generation Algorithms  . . . . . . . . . . . . . . .  9
+     4.1.  Using the OTP Value Directly . . . . . . . . . . . . . . .  9
+     4.2.  Hardening the OTP Value  . . . . . . . . . . . . . . . . .  9
+       4.2.1.  Using an Iteration Count . . . . . . . . . . . . . . . 10
+       4.2.2.  Using a Shared Secret and OTP  . . . . . . . . . . . . 10
+       4.2.3.  Using a Password and OTP . . . . . . . . . . . . . . . 11
+     4.3.  Generating the Key without the OTP . . . . . . . . . . . . 11
+       4.3.1.  Using the Password . . . . . . . . . . . . . . . . . . 11
+       4.3.2.  Using a Shared Secret  . . . . . . . . . . . . . . . . 11
+   5.  OTP Kerberos Types . . . . . . . . . . . . . . . . . . . . . . 12
+     5.1.  PA-OTP-CHALLENGE . . . . . . . . . . . . . . . . . . . . . 12
+     5.2.  PA-OTP-RESPONSE  . . . . . . . . . . . . . . . . . . . . . 13
+     5.3.  PA-OTP-CONFIRM . . . . . . . . . . . . . . . . . . . . . . 16
+     5.4.  PA-ENC-PIN . . . . . . . . . . . . . . . . . . . . . . . . 16
+     5.5.  OTPChalKeyParam  . . . . . . . . . . . . . . . . . . . . . 17
+     5.6.  OTPRespKeyParam  . . . . . . . . . . . . . . . . . . . . . 18
+   6.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 19
+   7.  Security Considerations  . . . . . . . . . . . . . . . . . . . 19
+     7.1.  Active attacks . . . . . . . . . . . . . . . . . . . . . . 19
+     7.2.  Denial of service attacks  . . . . . . . . . . . . . . . . 19
+     7.3.  Use of a Shared Secret Value . . . . . . . . . . . . . . . 19
+   8.  References . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+     8.1.  Normative References . . . . . . . . . . . . . . . . . . . 20
+     8.2.  Informative References . . . . . . . . . . . . . . . . . . 20
+   Author's Address . . . . . . . . . . . . . . . . . . . . . . . . . 20
+   Intellectual Property and Copyright Statements . . . . . . . . . . 22
+
+
+
+
+
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                 [Page 2]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+1.  Introduction
+
+   A One-Time Password (OTP) token may be a handheld hardware device, a
+   hardware device connected to a personal computer through an
+   electronic interface such as USB or a software module resident on a
+   personal computer.  All these devices generate one-time passwords
+   that may be used to authenticate a user towards some service.  This
+   document describes extensions to Kerberos V5 [RFC4120] to support
+   pre-authentication using an OTP.
+
+   In this proposal, the KDC sends the client a random nonce,
+   information on which OTP token is to be used, how the OTP is to be
+   generated using that token and how the Reply Key is to be generated.
+   The Reply Key is then used to encrypt the nonce value and the
+   encrypted value is returned to the KDC as the pre-authentication
+   data.  Depending on whether the KDC can obtain the OTP value, the OTP
+   value is either used in the generation of the Reply Key or is
+   encrypted using the key and returned to the KDC along with the
+   encrypted nonce.  The encrypted nonce, an optional encrypted OTP
+   value and information on how the Reply Key and OTP value were
+   generated are sent to the KDC and used by the KDC to generate the
+   same Reply Key and decrypt and verify the nonce.
+
+   This proposal is partially based upon previous work on integrating
+   single-use authentication mechanisms into Kerberos [HoReNeZo04] and
+   uses the existing password-change extensions to handle PIN change as
+   described in [RFC3244].
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+   << This is an early draft of this document and so is liable to change
+   significantly. >>
+
+
+2.  Usage Overview
+
+2.1.  Pre-Authentication
+
+   The approach uses pre-authentication data in KRB_AS_REQ, KRB_AS_REP
+   and KRB_ERROR.  The client begins by sending an initial KRB_AS_REQ to
+   the KDC that may contain pre-authentication data such as the standard
+   Kerberos password data.  The KDC will then determine, in an
+   implementation dependent fashion, whether OTP authentication is
+   required and if it is, it will respond with a KRB_ERROR message
+   containing a PA-OTP-CHALLENGE in the PA-DATA.
+
+
+
+
+Richards                 Expires April 14, 2007                 [Page 3]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+   The PA-OTP-CHALLENGE contains information on how the OTP should be
+   generated, how the Reply Key should be generated and a nonce.  The
+   client uses this information to locate the token and generate the
+   OTP, generate the Reply Key and then encrypt the nonce using the
+   generated key.  Depending on the type of OTP, the Reply Key may be
+   generated using the OTP value or alternatively, the generated OTP
+   will instead be encrypted along with the nonce using the key.
+
+   The encrypted nonce along with information on how the OTP and Reply
+   Key were generated are then sent to the KDC in a PA-OTP-RESPONSE PA-
+   DATA element.  The KDC then uses this information to generate the
+   same key as the client, allowing it to verify the pre-authentication
+   by decrypting the nonce.  If the validation succeeds then the KDC
+   returns the TGT in a KRB_AS_REP.
+
+2.2.  PIN Change
+
+   If, following successful validation of a PA-OTP-RESPONSE in a
+   KRB_AS_REQ, the KDC requires that the user changes their PIN then it
+   will return PA-DATA of type PA-OTP-PIN-CHANGE in the KRB_AS_REP.
+   This pre-auth data can be used to return a new PIN to the user if the
+   KDC has updated the PIN or to indicate to the user that they must
+   change their PIN.
+
+   In the latter case, user PIN change shall be handled by a PIN change
+   service supporting the ChangePasswdData in a KRB_AP_REQ as described
+   in [RFC3244].  If such a user PIN change is required then the KDC
+   SHALL return a TGT in the KRB_AS_REP but it is RECOMMENDED that it
+   only issues tickets for the PIN change service until the PIN has been
+   changed.
+
+2.3.  Re-Synchronization
+
+   It is possible with time and event-based tokens, that the client and
+   OTP server will loose synchronization.  If, when processing a PA-OTP-
+   RESPONSE, the pre-authentication validation fails for this reason
+   then the KDC SHALL return a KRB_ERROR message containing a PA-OTP-
+   CHALLENGE in the PA-DATA with the "nextOTP" flag set.  The setting of
+   this flag will cause the client to re-try the authentication using
+   the OTP for the next token "state".
+
+
+3.  Pre-Authentication Protocol Details
+
+3.1.  Shared Secret
+
+   The method of deriving the Reply Key shall depend upon:
+
+
+
+
+Richards                 Expires April 14, 2007                 [Page 4]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+   o  Whether the OTP is of sufficiently high entropy to generate the
+      key alone.
+
+   o  Whether the OTP has insufficient entropy and so must be
+      strengthened.
+
+   o  Whether the OTP value used can be obtained by the KDC.
+
+   If the OTP value is of low entropy then it is important to slow down
+   an attacker sufficiently to make it economically unattractive to
+   brute-force search for an OTP given an observed OTP-Kerberos
+   exchange.  If the OTP value cannot be obtained by the KDC then it
+   cannot be used in the derivation of the Reply Key but shall be
+   encrypted using the generated key rather than used to derive the key
+   and so the Reply Key must be derived from some other value.  Both of
+   these issues can be solved using shared secret value known by the
+   client and KDC but unknown to the attacker.
+
+   This protocol supports the following types of secret:
+
+   o  A pre-shared secret can be established between the client and KDC
+      and stored on the client.
+
+   o  Diffie-Hellman key agreement (as defined in [RFC2631]) can be used
+      to establish a shared secret value ZZ.  The server's public key,
+      and the base and prime are stored on the client.
+
+   The pre-shared secret value or the Diffie-Hellman shared secret
+   value, ZZ, are converted to a value of the required length for the
+   encryption scheme's random-to-key function using the n-fold function
+   (both defined in [RFC3961]).
+
+3.2.  Client Request
+
+   The client begins by sending an initial KRB_AS_REQ possibly
+   containing other pre-authentication data.  If the KDC determines that
+   OTP-based pre-authentication is required and the request does not
+   contain a PA-OTP-RESPONSE then it will respond as described in
+   Section 3.3.
+
+   Alternatively, if the client has all the necessary information, it
+   MAY construct a PA-OTP-RESPONSE as described in Section 3.4 and
+   include it in the initial request.
+
+3.3.  KDC Challenge
+
+   If the user is required to authenticate using an OTP then the KDC
+   SHALL respond to the initial KRB_AS_REQ with a KRB_ERROR containing:
+
+
+
+Richards                 Expires April 14, 2007                 [Page 5]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+   o  An error code of KDC_ERR_PREAUTH_REQUIRED
+
+   o  An e-data field containing PA-DATA with a PA-OTP-CHALLENGE.
+
+   The PA-OTP-CHALLENGE SHALL contain a nonce value to be encrypted by
+   the generated Reply Key and it MAY also contain information on how
+   the OTP value is to be generated and information on how the Reply Key
+   is to be generated in an otp-keyParam element.
+
+   Use of the otp-keyParam element is OPTIONAL.  If it is not present
+   the Reply Key SHALL be generated directly from the OTP value as
+   specified in Section 4.1 and the OTP value SHALL NOT be included in
+   the client response.
+
+   If the otp-keyParam element is present and the "sendOTP" flag is set
+   then the OTP value MUST NOT be used in the generation of the Reply
+   Key but it must instead be returned to the KDC encrypted using the
+   key.  The Reply Key MUST be derived using one of the methods
+   described in Section 4.3.  If the "sendOTP" flag is not set then the
+   OTP value is to be used in the key derivation then the client MUST
+   use one of the methods described in Section 4.2.
+
+   The otp-keyParam element will control the use of a shared secret in
+   the key derivation.  If the "noSecret" flag is set the the client
+   MUST NOT use a secret value in the key derivation.  If the "noSecret"
+   flag is not set and secret identifier is present then the client MUST
+   NOT use any other secret value.  If the "noSecret" flag is not set
+   and a secret identifier is not present then the client MAY still use
+   a value if there is a value associated with the KDC.
+
+   If the "noSecret" flag is not set and the client can locate a secret
+   value for the KDC then the Reply Key will be generated using one of
+   the following methods:
+
+   o  If the OTP is to be included in the key derivation then the key
+      SHALL be derived as specified in Section 4.2.2.
+
+   o  If the OTP is to be sent encrypted in the response then the key
+      SHALL be derived as specified in Section 4.3.2.
+
+   If the client fails to find a shared secret for the KDC or the
+   "noSecret" flag was set in the challenge then the Reply Key will be
+   generated using one of the following methods:
+
+   o  If the OTP is to be used in the key derivation then the KDC MAY
+      specify an iteration count.  If such a value is specified then the
+      key SHALL be derived from the OTP as described in Section 4.2.1.
+
+
+
+
+Richards                 Expires April 14, 2007                 [Page 6]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+   o  If the OTP is to be used in the key derivation but an iteration
+      count was not specified then the key SHALL be derived from the OTP
+      value and the user's Kerberos password as described in
+      Section 4.2.3.
+
+   o  If the OTP is to be sent encrypted then the key SHALL be derived
+      from the user's Kerberos password as described in section
+      Section 4.3.1.
+
+3.4.  Client Response
+
+   The client will use the generated Reply Key to encrypt the nonce from
+   the KDC challenge and, if required, to encrypt the OTP value.  This
+   encrypted data SHALL be sent to the KDC in the otp-encData of a PA-
+   OTP-RESPONSE PA-DATA element included in a KRB_AS_REQ.
+
+   This response MAY also include information on how the Reply Key was
+   generated in an optional otp-keyParam element.  The client MUST NOT
+   include this element if the Reply Key was generated directly from the
+   OTP value.  The element MUST be included if the Reply Key was
+   generated using either a secret value or an iteration count and
+   contain the secret identifier and iteration count value.  If the
+   Reply Key was generated using a password then the element MUST be
+   present and MUST be empty.
+
+   The response SHOULD also include information on the generated OTP
+   value.
+
+3.5.  Verifying the pre-auth Data
+
+   If KRB_AS_REQ contains a PA-OTP-RESPONSE then the KDC will then use
+   the information in the otp-keyParam to generate the same Reply Key
+   and decrypt the encrypted nonce contained in the otp-encData.
+
+   If the encrypted OTP value is not included in the otp-encData then
+   the Reply Key was generated using the OTP value.  The KDC SHALL
+   therefore use the OTP information in the PA-OTP-RESPONSE to obtain
+   the OTP value for the user and use the value along with the
+   information in the otp-keyParam to generate the Reply Key. This
+   information SHALL be used as follows:
+
+   o  If the otp-keyParam is not present then the Reply Key SHALL be
+      generated directly from the OTP value as described in Section 4.1.
+
+   o  If the otp-keyParam is present but empty then the Reply Key SHALL
+      be generated using the OTP value and the user's Kerberos Password
+      as described in Section 4.2.3.
+
+
+
+
+Richards                 Expires April 14, 2007                 [Page 7]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+   o  If the otp-keyParam is present and contains a secret identifier
+      then the Reply Key SHALL be generated using the OTP value and the
+      secret value as described in Section 4.2.2.
+
+      If the identified secret value can not be found then the KDC SHALL
+      respond with a KDC_ERR_PREAUTH_REQUIRED error as described above
+      but SHALL set the "noSecret" flag in the PA-OTP-CHALLENGE.
+
+   o  if the otp-keyParam is present and contains an iteration count
+      then the Reply Key shall be generated from the OTP value using the
+      iteration count value as described in Section 4.2.1.
+
+   If the encrypted OTP value is included in the otp-encData then the
+   Reply Key was not generated using the OTP value but was instead used
+   to encrypt the OTP value.  The KDC SHALL therefore use the
+   information in the otp-keyParam to generate the Reply Key and decrypt
+   the OTP value.  It SHALL then validate the decrypted value using the
+   OTP information included in the response and fail the authentication
+   if the value is not valid.
+
+   This Reply Key SHALL be generated as follows:
+
+   o  If the otp-keyParam is not present the the KDC SHALL fail the pre-
+      authentication with an error of KDC_ERR_PREAUTH_FAILED.
+
+      If the otp-keyParam is omitted then the Reply Key was generated
+      directly from the OTP value and so is an error if the OTP value is
+      encrypted using the key.
+
+   o  If the otp-keyParam is present but empty then the Reply Key SHALL
+      be generated using the user's Kerberos Password as described in
+      Section 4.3.1.
+
+   o  If the otp-keyParam is present and contains a secret identifier
+      then the Reply Key SHALL be generated using the secret value as
+      described in Section 4.3.2.
+
+      If the identified secret value can not be found then the KDC SHALL
+      respond with a KDC_ERR_PREAUTH_REQUIRED error as described above
+      but SHALL set the "noSecret" flag in the PA-OTP-CHALLENGE.
+
+   o  If the otp-keyParam is present and contains an iteration count
+      then the KDC SHALL fail the authentication with an error of
+      KDC_ERR_PREAUTH_FAILED.
+
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                 [Page 8]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+3.6.  Updating the Secret
+
+   The secret value can be pre-configured on the client but MAY also be
+   transferred from the KDC to the client in encrypted form in the PA-
+   OTP-CONFIRM of the KRB_AS_REP.  If a client receives a new secret
+   value in this way then it MUST update any stored value associated
+   with the KDC.
+
+
+4.  Reply Key Generation Algorithms
+
+4.1.  Using the OTP Value Directly
+
+   If only the OTP value is to be used then the Reply Key SHALL be
+   generated by passing the OTP value through string-to-key (defined in
+   [RFC3961]).
+
+             K = string-to-key(OTP)
+
+   The salt and additional parameters for string-to-key will be as
+   defined in section 3.1.3 of [RFC4120].
+
+4.2.  Hardening the OTP Value
+
+   If the OTP value requires strengthening then several methods shall be
+   supported.
+
+   o  The OTP can be used on its own in the key derivation but run
+      through an iteration process many times as described in
+      Section 4.2.1.
+
+   o  A secret value, shared between the KDC and client can be used
+      along with the OTP value to derive the key as described in
+      Section 4.2.2.
+
+   o  The user's Kerberos password can be used along with the OTP value
+      in the key derivation as described in Section 4.2.3.
+
+   A shared secret can only be used if the client supports the storing
+   of persistent values and has such a value stored.  The other two
+   methods could be used to establish a secret value or when client are
+   not capable of storing such values.
+
+   <<Is there value in another mode which uses the Kerberos password in
+   conjunction with an iteration-hardened OTP value?>>
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                 [Page 9]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+4.2.1.  Using an Iteration Count
+
+   An initial key is generated by running the OTP value through string-
+   to-key.
+
+             K = string-to-key(OTP)
+
+   The following key generation process is then repeated iteration count
+   times with the resulting key being used as the protocol key for the
+   next iteration.
+
+   A sequence of octets, R, is produced from K by iterating over calls
+   to the function pseudo-random (defined in [RFC3961]) and appending
+   the results until at least the number of bits required by random-to-
+   key have been produced.  If the result of the iteration is longer
+   than the required length then the result shall be truncated.
+
+   The octet string parameter for pseudo-random shall be the ASCII
+   string "CombineA" with the loop number appended.  This string has the
+   following byte value:
+
+      {0x43, 0x6f, 0x6d, 0x62, 0x69, 0x6e, 0x65, 0x41}
+
+   A new key is then generated by running R through random-to-key.
+
+             K = random-to-key(R)
+
+4.2.2.  Using a Shared Secret and OTP
+
+   Two intermediate keys, K1 and K2, shall be generated by running the
+   OTP value once through string-to-key and the shared secret through
+   random-to-key.
+
+             K1 = random-to-key(shared secret)
+             K2 = string-to-key(OTP)
+
+   Two sequences of octets, R1 and R2, are then produced from K1 and K2
+   by iterating over calls to pseudo-random and appending the results
+   until the required number of bits have been generated for random-to-
+   key.  If the result of the iteration is longer than the required
+   length then the result shall be truncated.
+
+   The octet string parameter for pseudo-random shall be the ASCII
+   string "CombineA" for K1 and "CombineB" for K2 with the loop number
+   appended.  These have the following byte values:
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 10]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+      {0x43, 0x6f, 0x6d, 0x62, 0x69, 0x6e, 0x65, 0x41}
+      {0x43, 0x6f, 0x6d, 0x62, 0x69, 0x6e, 0x65, 0x42}
+
+   The final key is then generated by combining R1 and R2 using
+   exclusive-OR and running the result through random-to-key.
+
+             K = random-to-key(R1 ^ R2)
+
+   << Check on issue around combining DES keys. >>
+
+4.2.3.  Using a Password and OTP
+
+   Two intermediate keys, K1 and K2, shall be generated by running the
+   OTP and password through string-to-key.
+
+             K1 = string-to-key(Password)
+             K2 = string-to-key(OTP)
+
+   The same process as described in Section 4.2.2 is then used to derive
+   the final reply key.
+
+4.3.  Generating the Key without the OTP
+
+   If the OTP value cannot be used in the derivation of the reply key
+   then this protocol supports the following options:
+
+   o  A secret value, shared between the KDC and client can be used to
+      derive the key as described in Section 4.3.2.
+
+   o  The user's Kerberos password can be used in the key derivation as
+      described in Section 4.3.1.
+
+   A shared secret can only be used if the client supports the storing
+   of persistent values and has such a value stored.  The password-only
+   method could be used to establish a secret value or when clients are
+   not capable of storing such values.
+
+4.3.1.  Using the Password
+
+   The Reply Key SHALL be generated by passing the password value
+   through string-to-key (defined in [RFC3961]).
+
+4.3.2.  Using a Shared Secret
+
+   The reply key shall be generated by running the shared secret value
+   through random-to-key.
+
+             K = random-to-key(shared secret)
+
+
+
+Richards                 Expires April 14, 2007                [Page 11]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+5.  OTP Kerberos Types
+
+5.1.  PA-OTP-CHALLENGE
+
+   This is a pre-authentication type sent by the KDC to the client in a
+   KRB_ERROR.  It contains information for the client on how to generate
+   the OTP and reply key.
+
+             PA-OTP-CHALLENGE ::= SEQUENCE {
+               otp-flags         OTPFlags,
+               otp-nonce         UInt32,
+               otp-etype         INTEGER,
+               otp-track-id  [0] OCTET STRING    OPTIONAL,
+               otp-challenge [1] OCTET STRING    OPTIONAL,
+               otp-length    [2] INTEGER         OPTIONAL,
+               otp-service   [3] UTF8String      OPTIONAL,
+               otp-keyID     [4] OCTET STRING    OPTIONAL,
+               otp-algID     [5] INTEGER         OPTIONAL,
+               otp-keyParam  [6] OTPChalKeyParam OPTIONAL
+             }
+
+             OTPFlags ::= KerberosFlags
+             -- nextOTP (0)
+
+   otp-flags
+      If the "nextOTP" flag is set then the OTP calculated SHALL be
+      based on the next token "state" rather than the current one.  As
+      an example, for a time-based token, this means the next time slot.
+      For an event-based token, this could mean the next counter value,
+      if counter values are used.
+
+   otp-nonce
+      A KDC-supplied nonce value to be encrypted by the client in the
+      PA-OTP-RESPONSE.
+
+   otp-etype
+      The encryption type to be used by the client for all encrypted
+      fields in the PA-OTP-RESPONSE.
+
+   otp-track-id
+      This optional element is used by the KDC to link a client response
+      to the corresponding KDC challenge.  If present, this element MUST
+      be copied by the client to the corresponding element in the PA-
+      OTP-RESPONSE.
+
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 12]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+   otp-challenge
+      The otp-challenge is used by the KDC to send a challenge value for
+      use in the OTP calculation.  The challenge is an optional octet
+      string that SHOULD be uniquely generated for each request it is
+      present in, and SHOULD be eight octets or longer when present.
+      When the challenge is not present, the OTP will be calculated on
+      the current token state only.  The client MAY ignore a provided
+      challenge if and only if the OTP token the client is interacting
+      with is not capable of including a challenge in the OTP
+      calculation.  In this case, KDC policies will determine whether to
+      accept a provided OTP value or not.
+
+   otp-length
+      The otp-length is used by the KDC to specify the desired length of
+      the generated OTP.
+
+   otp-service
+      An identifier of the service supported by the KDC.  This value can
+      be used by the client to locate information such as the shared
+      secret value and OTP key to use.
+
+   otp-keyID
+      The identifier of the OTP key to be used in the OTP calculation.
+      If this value is not present then the client SHOULD use other
+      values such as the otp-service and otp-algID to locate the
+      appropriate key.
+
+   otp-algID
+      The identifier of the algorithm to use when generating the OTP.
+
+   otp-keyParam
+      Information on how the Reply Key should be generated from the OTP
+      and shared secret.  If the value is not present then the reply key
+      MUST be generated directly from the OTP value.
+
+   <<TBD: Should a checksum be added to allow the client to verify the
+   challenge?>>
+
+5.2.  PA-OTP-RESPONSE
+
+   This is a pre-authentication type sent by the client to the KDC in a
+   KRB_AS_REQ containing the encrypted pre-authentication data.  It
+   contains information on the OTP used and how the key was generated
+   that encrypts the pre-authentication data.  This information will
+   then allow the KDC to generate the same key and validate the pre-
+   authentication data.
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 13]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+             PA-OTP-RESPONSE ::= SEQUENCE {
+               otp-flags         OTPFlags,
+               otp-nonce         UInt32,
+               otp-encData       EncryptedData,
+                                      -- PA-ENC-RESPONSE
+                                      -- Key usage of <<TBD>>
+               otp-track-id  [0] OCTET STRING    OPTIONAL,
+               otp-challenge [1] OCTET STRING    OPTIONAL,
+               otp-time      [2] KerberosTime    OPTIONAL,
+               otp-counter   [3] OCTET STRING    OPTIONAL,
+               otp-format    [4] OTPFormat       OPTIONAL,
+               otp-keyID     [5] OCTET STRING    OPTIONAL,
+               otp-keyParam  [6] OTPRespKeyParam OPTIONAL
+             }
+
+
+
+             OTPFormat ::= INTEGER {
+               decimal(0),
+               hexadecimal(1),
+               alphanumeric(2),
+               binary(3)
+             }
+
+
+
+             PA-ENC-RESPONSE ::= SEQUENCE {
+               nonce     OCTET STRING OPTIONAL,
+               otp   [0] OCTET STRING OPTIONAL
+             }
+
+   otp-flags
+      If the "nextOTP" flag is set then the OTP was calculated based on
+      the next token "state" rather than the current one.  This flag
+      MUST be set if and only if it was set in a corresponding PA-OTP-
+      CHALLENGE.
+
+   otp-nonce
+      The nonce value encrypted in the otp-encData.  If the PA-OTP-
+      RESPONSE is sent as a result of a PA-OTP_CHALLENGE then the value
+      MUST be a copy of the corresponding value in the challenge.  If no
+      challenge was received then the nonce value MUST be generated by
+      the client.
+
+
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 14]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+   otp-track-id
+      This element MUST be included if and only if an otp-track-id was
+      included in the corresponding PA-OTP-CHALLENGE.  If included, then
+      the value MUST be copied from the PA-OTP-CHALLENGE.
+
+   otp-challenge
+      Value used by the client to send the challenge used in the OTP
+      calculation.  It MUST be sent to the KDC if and only if the value
+      would otherwise be unknown to the KDC.  For example, the token or
+      client modified or generated challenge.
+
+   otp-time
+      Value used by the client to send the time used in the OTP
+      calculation.
+
+   otp-counter
+      The counter value used in the OTP calculation.  Use of this
+      element is OPTIONAL but it MAY be used by a client to simplify the
+      OTP calculations of the KDC to contain the counter value as
+      reported by the OTP token.
+
+   otp-format
+      The format of the generated OTP.
+
+   otp-keyID
+      The identifier of the OTP key used.
+
+   otp-keyParam
+      Information on how the reply key was generated from the OTP and
+      shared secret.  If the value is not present then the reply key was
+      generated directly from the OTP value.
+
+   otp-encData
+      The otp-encData field contains the result of the pre-
+      authentication process and is encrypted using the generated Reply
+      Key. The fields of this element are populated as follows:
+
+      nonce
+         The value of otp-nonce.
+
+      otp
+         The generated OTP value.  Present if the "sendOTP" flag is set
+         in the challenge.
+
+   <<TBD: Does the response need something such as an encrypted
+   timestamp to protect against replay?>>
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 15]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+5.3.  PA-OTP-CONFIRM
+
+   This is a pre-authentication type returned by the KDC in a KRB_AS_REP
+   if the client requires a new shared secret value.  The value is
+   encrypted as described in section 5.2.9 of [RFC4120] using the
+   current reply key as derived by the KDC from the OTP.
+
+             PA-OTP-CONFIRM ::= SEQUENCE {
+               identifier      OCTET STRING,
+               newSecretValue  EncryptedData  -- OTPNewSecret
+                                              -- Key usage of <<TBD>>
+             }
+
+             OTPNewSecret ::= CHOICE {
+               sharedSecret [0] OCTET STRING,
+               dhParams     [1] DHParam
+             }
+
+             DHParam ::= SEQUENCE {
+               dhParameter DHParameter,
+               dhPublic    INTEGER
+             }
+
+   identifier
+      An octet string identifying the new secret value.
+
+   newSecretValue
+      The new secret data encrypted using the current Reply Key. The
+      encrypted data can be of one of the following types:
+
+      sharedSecret
+         A random bit string.
+
+      dhParams
+         A Diffie-Hellman public value, prime and modulus.
+
+5.4.  PA-ENC-PIN
+
+   Pre-authentication type returned by the KDC in a KRB_AS_REP if the
+   user must change their PIN or if the user's PIN has been changed.
+
+
+
+
+
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 16]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+             PA-ENC-PIN     ::= EncryptedData -- PA-ENC-PIN-ENC
+                                              -- Key usage of <<TBD>>
+             PA-ENC-PIN-ENC ::= SEQUENCE {
+               flags         PinFlags,
+               pin       [0] UTF8String OPTIONAL,
+               minLength [1] INTEGER    OPTIONAL,
+               maxLength [2] INTEGER    OPTIONAL
+             }
+
+             PinFlags ::= KerberosFlags
+               -- systemSetPin (0)
+
+   If the "systemSetPin" flag is set then the user's PIN has been
+   changed and the new PIN value is contained in the pin field.  The PIN
+   field MUST therefore be present.
+
+   If the "systemSetPin" flag is not set then the user's PIN has not
+   been changed by the server but it MUST instead be changed by the user
+   using the PIN change service.  Restrictions on the size of the PIN
+   MAY be given by the minLength and maxLength fields.  If the pin field
+   is present then it contains a PIN value that MAY be used by the user
+   when changing the PIN.  The KDC MAY only issue tickets for the PIN
+   change service until the PIN has been changed.
+
+5.5.  OTPChalKeyParam
+
+   This data type can optionally be included by the KDC in a PA-OTP-
+   CHALLENGE to instruct the client on how to generate the reply key.
+
+   This value is included in the challenge if the OTP generated by the
+   token is too weak to be used alone in the generation of the key.
+
+             OTPChalKeyParam ::= SEQUENCE {
+               flags              ChallengeFlags,
+               identifer      [0] OCTET STRING OPTIONAL,
+               iterationCount [1] INTEGER OPTIONAL
+             }
+
+             ChallengeFlags ::= KerberosFlags
+               -- sendOTP  (0)
+               -- noSecret (1)
+
+   flags
+      Flags controlling the generation of the Reply Key.
+
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 17]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+      sendOTP
+         If the "sendOTP" flag is set then the client MUST NOT use the
+         OTP value to generate the reply key.  It must instead use the
+         generated key to encrypt the OTP value and include the
+         encrypted value in the PA-OTP-RESPONSE.
+
+      noSecret
+         If the "noSecret" flag is set then the client MUST NOT use any
+         stored secret value in the derivation of the Reply Key. If the
+         "sendOTP" flag is also set then the Kerberos password MUST be
+         used.  If the "sendOTP" flag is not set then the iteration
+         count MUST be used if it is present or the Kerberos password
+         MUST be used if the iteration count is not specified.
+
+   identifier
+      Name of the secret that the client SHOULD use to generate the
+      reply key.
+
+      If a secret is specified but cannot be located by the client and
+      an iteration count is specified then the client should generate
+      the key using the iteration count.  If a secret value is specified
+      and cannot be located and an iteration count is not specified then
+      the reply key MUST be generated using the user's Kerberos
+      password.
+
+   iterationCount
+      This value contains the iteration count to use when the generated
+      OTP value is used in the derivation of the reply key.  This value
+      is used by the client if a shared secret is not specified or is
+      specified but cannot be found.  The value has no meaning if the
+      "sendOTP" flag is set.
+
+5.6.  OTPRespKeyParam
+
+   This data type can optionally be included by the client in a PA-OTP-
+   RESPONSE to inform the KDC of how the reply key was generated.
+
+             OTPRespKeyParam ::= SEQUENCE {
+               iterationCount [0] INTEGER OPTIONAL,
+               secret SEQUENCE {
+                 identifier       OCTET STRING,
+                 dhPublic     [1] INTEGER OPTIONAL
+               }
+             }
+
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 18]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+   iterationCount
+      The actual value of the iteration count used by the client in the
+      key derivation.  If omitted then no iteration was used in the
+      derivation of the reply key.
+
+   secret
+      Information on the secret used in the key derivation.  If this
+      value is omitted then no shared secret was used.
+
+      identifier
+         An octet string identifying the shared secret value used by the
+         client in the key derivation.
+      dhPublic
+         The client's Diffie-Hellman public key.  Present only if a
+         Diffie-Hellman secret was used.
+
+
+6.  IANA Considerations
+
+   A registry may be required for the otp-AlgID values as introduced in
+   Section 5.1.  No other IANA actions are anticipated.
+
+
+7.  Security Considerations
+
+7.1.  Active attacks
+
+   <<TBS >>
+
+7.2.  Denial of service attacks
+
+   An active attacker may replace the iteration count value in the PA-
+   OTP-RESPONSE sent by the client to slow down an authentication
+   server.  Authentication servers SHOULD protect against this, e.g. by
+   disregarding PA-OTP-RESPONSE elements with an iteration count value
+   higher than some pre- or dynamically- (depending on load) set number.
+
+7.3.  Use of a Shared Secret Value
+
+   As described in Section 3.1, the use of a shared secret value will
+   slow down an attacker's search for a matching OTP.  The ability to
+   transfer such a value in encrypted form from the KDC to the client
+   means that, even though there may be an initial computational cost
+   for the KDC to authenticate the user if an iteration count is used,
+   subsequent authentications will be efficient, while at the same time
+   more secure, since a pre-shared, value will not be easily found by an
+   attacker.
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 19]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+   If a client does not have a pre-configured secret value for a KDC
+   then it will have to generate the Reply Key using an iteration count
+   or the Kerberos password.  If an iteration count is used then an
+   attacker observing such a KRB_AS_REQ may, depending on available
+   resources, be able to successfully attack that request.  Once the
+   correct OTP has been found, eavesdropping on the KDC's PA_OTP_CONFIRM
+   will potentially give the attacker access to the server-provided
+   secret value.  For this reason, initial exchanges with KDC servers
+   SHOULD occur in a secure environment and the lifetime of this value
+   must also be calculated with this in mind.  Finally, the value MUST
+   be securely stored by the client and the KDC, associated with the
+   user.
+
+
+8.  References
+
+8.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2631]  Rescorla, E., "Diffie-Hellman Key Agreement Method",
+              RFC 2631, June 1999.
+
+   [RFC3244]  Swift, M., Trostle, J., and J. Brezak, "Microsoft Windows
+              2000 Kerberos Change Password and Set Password Protocols",
+              RFC 3244, February 2002.
+
+   [RFC3961]  Raeburn, K., "Encryption and Checksum Specifications for
+              Kerberos 5", RFC 3961, February 2005.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+8.2.  Informative References
+
+   [HoReNeZo04]
+              Horstein, K., Renard, K., Neuman, C., and G. Zorn,
+              "Integrating Single-use Authentication Mechanisms with
+              Kerberos", draft-ietf-krb-wg-kerberos-sam-03 (work in
+              progress), July 2004.
+
+
+
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 20]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+Author's Address
+
+   Gareth Richards
+   RSA, The Security Division of EMC
+   RSA House
+   Western Road
+   Bracknell, Berkshire  RG12 1RT
+   UK
+
+   Email: grichards@rsa.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 21]
+
+Internet-Draft                OTP Kerberos                  October 2006
+
+
+Full Copyright Statement
+
+   Copyright (C) The Internet Society (2006).
+
+   This document is subject to the rights, licenses and restrictions
+   contained in BCP 78, and except as set forth therein, the authors
+   retain all their rights.
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Intellectual Property
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is provided by the IETF
+   Administrative Support Activity (IASA).
+
+
+
+
+
+Richards                 Expires April 14, 2007                [Page 22]
+

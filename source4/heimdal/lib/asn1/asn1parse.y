@@ -41,18 +41,31 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include "symbol.h"
 #include "lex.h"
 #include "gen_locl.h"
 #include "der.h"
 
-RCSID("$Id$");
-
 static Type *new_type (Typetype t);
+/*static IOSClass *new_class(struct fieldhead *);*/
+/*static IOSObject *new_object(struct objfieldhead *);*/
+/*IOSObjectSet *new_object_set(struct objectshead *);*/
+static struct objectshead *add_object_set_spec(struct objectshead *, IOSObject *);
+static ObjectField *new_field_setting(char *, Type *, struct value *);
+static struct objfieldhead *add_field_setting(struct objfieldhead *, ObjectField *);
+static struct fieldhead *add_field_spec(struct fieldhead *, Field *);
+static Field *new_type_field(char *, int, Type *);
+static Field *new_fixed_type_value_field(char *, Type *, int, int, struct value *);
+static Type *parametrize_type(Type *, IOSClass *);
+static Type *type_from_class_field(IOSClass *, const char *);
+static void validate_object_set(IOSObjectSet *);
+/*static Type *type_from_object(const char *, const char *);*/
 static struct constraint_spec *new_constraint_spec(enum ctype);
 static Type *new_tag(int tagclass, int tagvalue, int tagenv, Type *oldtype);
 void yyerror (const char *);
+#define yyerror yyerror
 static struct objid *new_objid(const char *label, int value);
 static void add_oid_to_tail(struct objid *, struct objid *);
 static void fix_labels(Symbol *s);
@@ -62,6 +75,9 @@ struct string_list {
     struct string_list *next;
 };
 
+static int default_tag_env = TE_EXPLICIT;
+static unsigned long idcounter;
+
 /* Declarations for Bison */
 #define YYMALLOC malloc
 #define YYFREE   free
@@ -69,17 +85,26 @@ struct string_list {
 %}
 
 %union {
-    int constant;
+    int64_t constant;
     struct value *value;
     struct range *range;
     char *name;
     Type *type;
+    IOSClass *class;
+    IOSObjectSet *objectset;
+    IOSObject *object;
+    Field *field;
+    ObjectField *objfield;
     Member *member;
+    IOSClass *formalparam;
     struct objid *objid;
     char *defval;
     struct string_list *sl;
     struct tagtype tag;
     struct memhead *members;
+    struct fieldhead *fields;
+    struct objectshead *objects;
+    struct objfieldhead *objfields;
     struct constraint_spec *constraint_spec;
 }
 
@@ -168,15 +193,36 @@ struct string_list {
 %token EEQUAL
 %token ELLIPSIS
 
-%token <name> IDENTIFIER  referencename
+%token <name> TYPE_IDENTIFIER  referencename
+%token <name> CLASS_IDENTIFIER
+%token <name> VALUE_IDENTIFIER
 %token <name> STRING
 
 %token <constant> NUMBER
 %type <constant> SignedNumber
 %type <constant> Class tagenv
+%type <constant> DummyReference
 
-%type <value> Value
-%type <value> BuiltinValue
+%type <name> Identifier
+
+/*
+ * The NULL keyword being both a value and a type causes a reduce/reduce
+ * conflict in the FieldSetting production since its alternatives are
+ *
+ *	'&' Identifier Type
+ *
+ * and
+ *
+ *	'&' Identifier Value
+ *
+ * and NULL is both a type and a value.
+ *
+ * For now we work around this by having a ValueExNull production that excludes
+ * the NULL value.  To really get past this will require unifying the type and
+ * value types (e.g., via type punning).
+ */
+%type <value> Value ValueExNull
+%type <value> BuiltinValue BuiltinValueExNull
 %type <value> IntegerValue
 %type <value> BooleanValue
 %type <value> ObjectIdentifierValue
@@ -185,6 +231,10 @@ struct string_list {
 %type <value> DefinedValue
 %type <value> ReferencedValue
 %type <value> Valuereference
+
+%type <class> DefinedObjectClass ParamGovernor
+%type <class> ObjectClassDefn
+%type <class> Parameter
 
 %type <type> Type
 %type <type> BuiltinType
@@ -207,9 +257,19 @@ struct string_list {
 %type <type> ObjectIdentifierType
 %type <type> CharacterStringType
 %type <type> RestrictedCharactedStringType
+%type <type> ObjectClassFieldType
+%type <type> ParameterizedType
+/*%type <type> TypeFromObject*/
+
+%type <objectset> ObjectSet DefinedObjectSet
+%type <objectset> ActualParameter
+%type <object> Object DefinedObject ObjectDefn
+%type <objfield> FieldSetting
 
 %type <tag> Tag
 
+%type <field> FieldSpec TypeFieldSpec FixedTypeValueFieldSpec
+%type <fields> FieldSpecList
 %type <member> ComponentType
 %type <member> NamedBit
 %type <member> NamedNumber
@@ -218,6 +278,8 @@ struct string_list {
 %type <members> Enumerations
 %type <members> NamedBitList
 %type <members> NamedNumberList
+%type <objects> ObjectSetSpec
+%type <objfields> FieldSettings
 
 %type <objid> objid objid_list objid_element objid_opt
 %type <range> range size
@@ -229,6 +291,8 @@ struct string_list {
 %type <constraint_spec> GeneralConstraint
 %type <constraint_spec> ContentsConstraint
 %type <constraint_spec> UserDefinedConstraint
+%type <constraint_spec> SimpleTableConstraint TableConstraint
+%type <constraint_spec> ComponentRelationConstraint
 
 
 
@@ -236,16 +300,78 @@ struct string_list {
 
 %%
 
-ModuleDefinition: IDENTIFIER objid_opt kw_DEFINITIONS TagDefault ExtensionDefault
+/*
+ * We have sinned by allowing types to have names that start with lower-case,
+ * and values that have names that start with upper-case.
+ *
+ * That worked when we only supported basic X.680 because the rules for
+ * TypeAssignment and ValueAssignment are clearly unambiguous in spite of the
+ * case issue.
+ *
+ * We now pay the price because X.681 adds productions where the only thing we
+ * have to help us distinguish certain rules is the form of an identifier: the
+ * case of its first letter.
+ *
+ * We have begun to undo our sin by not allowing wrong-case identifiers in
+ * certain situations.
+ *
+ * Some historical instances of this sin in-tree:
+ *
+ *  - DOMAIN-X500-COMPRESS (value (enum) but name starts with upper-case)
+ *  - krb5int32		   (type         but name starts with lower-case)
+ *  - krb5uint32	   (type         but name starts with lower-case)
+ *  - hdb_keyset	   (type         but name starts with lower-case)
+ *  - hdb_entry		   (type         but name starts with lower-case)
+ *  - hdb_entry_alias      (type         but name starts with lower-case)
+ *
+ * We have fixed most of these, in some cases leaving behind aliases in header
+ * files as needed.
+ *
+ * This issue is probably also the source of remaining shift/reduce conflicts.
+ *
+ * In the FieldSetting rule in particular, we get a reduce/reduce conflict if
+ * we use `Identifier' instead of `TYPE_IDENTIFIER' for type field settings and
+ * `VALUE_IDENTIFIER' for value field settings, and then we can't make
+ * progress.
+ *
+ * Looking forward, we may not (will not) be able to distinguish ValueSet and
+ * ObjectSet field settings from each other either even without committing this
+ * leading-identifier-character-case sin, and we may not (will not) be able
+ * distinguish Object and Value field settings from each other as well.  To
+ * deal with those we will have to run-time type-tag/pun the C structures for
+ * valueset/objectset and value/object, and have one rule for each of those
+ * that inspects the type of the item to decide what kind of setting it is.
+ */
+Identifier	: TYPE_IDENTIFIER { $$ = $1; }
+		| VALUE_IDENTIFIER { $$ = $1; };
+
+ModuleDefinition: Identifier objid_opt kw_DEFINITIONS TagDefault ExtensionDefault
 			EEQUAL kw_BEGIN ModuleBody kw_END
 		{
-			checkundefined();
+                    struct objid **o = objid2list($2);
+                    size_t i;
+
+                    fprintf(jsonfile,
+                            "{\"module\":\"%s\",\"tagging\":\"%s\",\"objid\":[", $1,
+                            default_tag_env == TE_EXPLICIT ? "explicit" : "implicit");
+
+                    for (i = 0; o && o[i]; i++) {
+                        fprintf(jsonfile, "%s{\"value\":%d", i ? "," : "", o[i]->value);
+                        if (o[i]->label)
+                            fprintf(jsonfile, ",\"label\":\"%s\"", o[i]->label);
+                        fprintf(jsonfile, "}");
+                    }
+                    fprintf(jsonfile, "]}\n");
+                    free(o);
 		}
+		| CLASS_IDENTIFIER objid_opt kw_DEFINITIONS TagDefault ExtensionDefault
+			EEQUAL kw_BEGIN ModuleBody kw_END
 		;
 
 TagDefault	: kw_EXPLICIT kw_TAGS
+			{ default_tag_env = TE_EXPLICIT; }
 		| kw_IMPLICIT kw_TAGS
-		      { lex_error_message("implicit tagging is not supported"); }
+			{ default_tag_env = TE_IMPLICIT; }
 		| kw_AUTOMATIC kw_TAGS
 		      { lex_error_message("automatic tagging is not supported"); }
 		| /* empty */
@@ -272,8 +398,22 @@ SymbolsFromModuleList: SymbolsFromModule
 		| SymbolsFromModuleList SymbolsFromModule
 		;
 
-SymbolsFromModule: referencenames kw_FROM IDENTIFIER objid_opt
+SymbolsFromModule: referencenames kw_FROM Identifier objid_opt
 		{
+		    /*
+                     * FIXME We really could use knowing what kind of thing the
+                     * identifier identifies -- a type, a value, what?
+		     *
+		     * Our sin of allowing type names to start with lower-case
+		     * and values with upper-case means we can't tell.  So we
+		     * assume it's types only, but that means we can't import
+		     * OID values, but we really want to!
+                     *
+                     * One thing we could do is not force `s->stype = Stype'
+                     * here, instead set it to a new `Sunknown' value so that
+                     * the first place that refers to this symbol with enough
+                     * context to imply a symbol type can set it.
+		     */
 		    struct string_list *sl;
 		    for(sl = $1; sl != NULL; sl = sl->next) {
 			Symbol *s = addsym(sl->string);
@@ -300,15 +440,20 @@ AssignmentList	: Assignment
 
 Assignment	: TypeAssignment
 		| ValueAssignment
+		| ParameterizedTypeAssignment
+		| ObjectClassAssignment
+		| ObjectAssignment
+		| ObjectSetAssignment
+	     /* | ParameterizedAssignment // from X.683 */
 		;
 
-referencenames	: IDENTIFIER ',' referencenames
+referencenames	: Identifier ',' referencenames
 		{
 		    $$ = emalloc(sizeof(*$$));
 		    $$->string = $1;
 		    $$->next = $3;
 		}
-		| IDENTIFIER
+		| Identifier
 		{
 		    $$ = emalloc(sizeof(*$$));
 		    $$->string = $1;
@@ -316,14 +461,457 @@ referencenames	: IDENTIFIER ',' referencenames
 		}
 		;
 
-TypeAssignment	: IDENTIFIER EEQUAL Type
+DefinedObjectClass
+		: CLASS_IDENTIFIER
 		{
-		    Symbol *s = addsym ($1);
+		    Symbol *s = addsym($1);
+		    if(s->stype != Sclass)
+		      lex_error_message ("%s is not a class\n", $1);
+		    $$ = s->iosclass;
+		};
+
+ObjectClassAssignment
+		: CLASS_IDENTIFIER EEQUAL ObjectClassDefn
+		{
+		    Symbol *s = addsym($1);
+		    s->stype = Sclass;
+		    s->iosclass = $3;
+		    s->iosclass->symbol = s;
+		    fix_labels(s);
+		}
+		| CLASS_IDENTIFIER EEQUAL DefinedObjectClass
+		{
+		    Symbol *s = addsym($1);
+		    s->stype = Sclass;
+		    s->iosclass = $3;
+		}
+	     /* | ParameterizedObjectClass */
+		;
+
+ObjectClassDefn : kw_CLASS '{' FieldSpecList '}'
+		{
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->fields = $3;
+		    $$->id = idcounter++;
+		};
+
+ObjectAssignment: VALUE_IDENTIFIER DefinedObjectClass EEQUAL Object
+		{
+		    Symbol *s = addsym($1);
+		    s->stype = Sobj;
+		    s->object = $4;
+		    s->object->iosclass = $2;
+		    if (!s->object->symbol)
+			s->object->symbol = s;
+		    fix_labels(s);
+		}
+		;
+
+ObjectSetAssignment
+		: TYPE_IDENTIFIER DefinedObjectClass EEQUAL ObjectSet
+		{
+		    Symbol *s = addsym($1);
+		    s->stype = Sobjset;
+		    s->iosclass = $2;
+		    s->objectset = $4;
+                    s->objectset->symbol = s->objectset->symbol ? s->objectset->symbol : s;
+		    s->objectset->iosclass = $2;
+                    validate_object_set($4);
+                    generate_template_objectset_forwards(s);
+		}
+		;
+
+ObjectSet       : '{' ObjectSetSpec '}'
+		{
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->objects = $2;
+		    $$->id = idcounter++;
+		}
+		;
+
+ObjectSetSpec   : DefinedObject
+		{ $$ = add_object_set_spec(NULL, $1); }
+		| ObjectSetSpec '|' DefinedObject
+		{ $$ = add_object_set_spec($1, $3); }
+		;
+
+Object		: DefinedObject
+		| ObjectDefn
+	     /* | ObjectFromObject      */
+	     /* | ParameterizedObject   */
+		;
+
+DefinedObject	: VALUE_IDENTIFIER
+		{
+		  Symbol *s = addsym($1);
+		  if(s->stype != Sobj)
+		    lex_error_message ("%s is not an object\n", $1);
+		  $$ = s->object;
+		}
+		;
+
+DefinedObjectSet: TYPE_IDENTIFIER
+		{
+		  Symbol *s = addsym($1);
+		  if(s->stype != Sobjset && s->stype != SUndefined)
+		    lex_error_message ("%s is not an object set\n", $1);
+		  $$ = s->objectset;
+		}
+		;
+
+
+ObjectDefn	: '{' FieldSettings '}' /* DefaultSyntax */
+		{
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->objfields = $2;
+		    $$->id = idcounter++;
+		}
+	     /* | DefinedSyntax */
+		;
+
+FieldSettings	: FieldSetting
+		{
+		$$ = add_field_setting(NULL, $1);
+		}
+		| FieldSettings ',' FieldSetting
+		{
+		$$ = add_field_setting($1, $3);
+		}
+		;
+
+/* See note on `Identifier' */
+FieldSetting	: '&' Identifier Type
+		{ $$ = new_field_setting($2, $3, NULL); }
+		| '&' Identifier ValueExNull
+		{ $$ = new_field_setting($2, NULL, $3); }
+	     /* | '&' TYPE_IDENTIFIER ValueSet   */
+	     /* | '&' VALUE_IDENTIFIER Object     */
+	     /* | '&' TYPE_IDENTIFIER ObjectSet  */
+		;
+
+/* Fields of a class */
+FieldSpecList	: FieldSpec
+		{ $$ = add_field_spec(NULL, $1); }
+		| FieldSpecList ',' FieldSpec
+		{ $$ = add_field_spec($1, $3); };
+
+/*
+ * Fields of a CLASS
+ *
+ * There are seven kinds of class/object fields:
+ *
+ *  - type fields,
+ *  - fixed-type value fields,
+ *  - fixed-type value set fields,
+ *  - variable-type value fields
+ *  - variable-type value set fields
+ *  - object fields
+ *  - object set fields
+ *
+ * We care only to support the bare minimum to treat open types as a CHOICE of
+ * sorts and automatically encode/decode values in open types.  That's: type
+ * fields and fixed-type value fields.
+ */
+FieldSpec	: TypeFieldSpec
+		| FixedTypeValueFieldSpec
+	     /* | VariableTypeValueFieldSpec    */
+	     /* | VariableTypeValueSetFieldSpec */
+	     /* | FixedTypeValueSetFieldSpec    */
+	     /* | ObjectFieldSpec               */
+	     /* | ObjectSetFieldSpec            */
+		;
+TypeFieldSpec	: '&' Identifier
+		{ $$ = new_type_field($2, 0, NULL); }
+		| '&' Identifier kw_OPTIONAL
+		{ $$ = new_type_field($2, 1, NULL); }
+		| '&' Identifier kw_DEFAULT Type
+		{ $$ = new_type_field($2, 1, $4); }
+		;
+
+FixedTypeValueFieldSpec
+		: '&' Identifier Type
+		{ $$ = new_fixed_type_value_field($2, $3, 0, 0, NULL); }
+		| '&' Identifier Type kw_UNIQUE
+		{ $$ = new_fixed_type_value_field($2, $3, 1, 0, NULL); }
+		| '&' Identifier Type kw_UNIQUE kw_OPTIONAL
+		{ $$ = new_fixed_type_value_field($2, $3, 1, 1, NULL); }
+		| '&' Identifier Type kw_UNIQUE kw_DEFAULT Value
+		{ $$ = new_fixed_type_value_field($2, $3, 1, 0, $6); }
+		| '&' Identifier Type kw_OPTIONAL
+		{ $$ = new_fixed_type_value_field($2, $3, 0, 1, NULL); }
+		| '&' Identifier Type kw_DEFAULT Value
+		{ $$ = new_fixed_type_value_field($2, $3, 0, 0, $5); };
+
+/*
+ * Now we need a bit of X.683, just enough to parse PKIX.
+ *
+ * E.g., we need to parse this sort of type definition, which isn't quite the
+ * final type definition because the ExtensionSet will be provided later.
+ *
+ *-- <- ObjectClassDefn ->
+ *   EXTENSION ::= CLASS {
+ *       &id  OBJECT IDENTIFIER UNIQUE,
+ *    -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ *    -- FixedTypeValueFieldSpec
+ *
+ *       &ExtnType,
+ *    -- ^^^^^^^^^
+ *    -- TypeFieldSpec
+ *
+ *       &Critical    BOOLEAN DEFAULT {TRUE | FALSE }
+ *    -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ *    -- FixedTypeValueFieldSpec
+ *   } WITH SYNTAX {
+ *       SYNTAX &ExtnType IDENTIFIED BY &id
+ *       [CRITICALITY &Critical]
+ *   }
+ *
+ *-- <--------- ParameterizedTypeAssignment -------->
+ *   -- NOTE: The name of this type has to be Extension, really.
+ *   --       But the name of the Extension type with the actual
+ *   --       parameter provided also has to be Extension.
+ *   --       We could disallow that and require that the various
+ *   --       Extension types all have different names, then we'd
+ *   --       let the one with the actual parameter in PKIX be the
+ *   --       one named Extension.  Or we could find a way to let
+ *   --       them all share one symbol name, or at least two:
+ *   --       the one with the formal parameter, and just one with
+ *   --       an actual parameter.
+ *   --
+ *   --       Also, IMPORTing types that have formal parameters is
+ *   --       almost certainly going to require parsing the IMPORTed
+ *   --       module.  Until we do that, users will be able to work
+ *   --       around that by just copying CLASSes and pameterized
+ *   --       type definitions around.  But when we do start parsing
+ *   --       IMPORTed modules we might need to do something about
+ *   --       many types possibly having the same names, though we
+ *   --       might do nothing and simply say "don't do that!".
+ *   Extension{EXTENSION:ExtensionSet} ::= SEQUENCE {
+ *                    -- ^^^^^^^^^^^^
+ *                    -- is a DummyReference, which is a Reference, basically
+ *                    -- it is an object set variable which will have an object
+ *                    -- set value supplied where constrained types are defined
+ *                    -- from this one, possibly anonymous types where
+ *                    -- SEQUENCE/SET members of this type are defined.
+ *          -- ^^^^^^^^^
+ *          -- is a ParamGovernor, really, just Governor, either a Type or
+ *          -- DefinedObjectClass (we only need DefinedObjectClass)
+ *          -- ^^^^^^^^^^^^^^^^^^^^^^
+ *          -- is a Parameter
+ *         -- ^^^^^^^^^^^^^^^^^^^^^^^^
+ *         -- is a ParameterList (we need only support one param though)
+ *      extnID      EXTENSION.&id({ExtensionSet}),
+ *                            -- ^^^^^^^^^^^^^^^^
+ *                            -- simple table constraint limiting id to OIDs
+ *                            -- from ExtensionSet
+ *               -- ^^^^^^^^^^^^^
+ *               -- a reference to the id field of the EXTENSION CLASS
+ *      critical    BOOLEAN DEFAULT FALSE,
+ *      extnValue   OCTET STRING (CONTAINING
+ *                   -- ObjectClassFieldType
+ *                   -- vvvvvvvvvvvvvvvvvvv
+ *                      EXTENSION.&ExtnType({ExtensionSet}{@extnID}))
+ *                                                     -- ^^^^^^^^^
+ *                                                     -- AtNotation
+ *                                       -- ^^^^^^^^^^^^^^
+ *                                       -- DefinedObjectSet
+ *                                       -- ^^^^^^^^^^^^^^^^^^^^^^^^
+ *                                       -- ComponentRelationConstraint
+ *                                       -- says that extnValue will contain
+ *                                       -- a value of a type identified by
+ *                                       -- the OID in extnID in the object
+ *                                       -- set ExtensionSet (which is a set
+ *                                       -- of {OID, type} objects)
+ *                                      -- ^^^^^^^^^^^^^^^^^^^^^^^^^^
+ *                                      -- ConstraintSpec
+ *                   -- ^^^^^^^^^^^^^^^^^^^
+ *                   -- another type ref
+ *   }
+ *
+ * Then later we'll see (ParameterizedType, a part of DefinedType):
+ *
+ *   TBSCertificate  ::=  SEQUENCE  {
+ *      ...
+ *                        -- Here is where the object set is linked into the
+ *                        -- whole thing, making *magic* possible.  This is
+ *                        -- where the real Extensions type is defined.  Sadly
+ *                        -- this might mean we can't have a C type named
+ *                        -- Extensions.  Hmmm.  We might need an ASN.1
+ *                        -- extension that lets use do this:
+ *                        --
+ *                        --    Extension ::= Extension{{CertExtensions}}
+ *                        --
+ *                        -- or
+ *                        --
+ *                        --    Extension ::= ParameterizedExtension{{CertExtensions}}
+ *                        --
+ *                        -- and then rename the Extension type above to this.
+ *                        -- Then we can define Extensions as a SEQUENCE OF
+ *                        -- that.
+ *                        --
+ *                        -- <-   ParameterizedType    ->
+ *      extensions      [3]  Extensions{{CertExtensions}} OPTIONAL
+ *                                    -- ^^^^^^^^^^^^^^
+ *                                    -- ObjectSetSpec
+ *                                   -- ^^^^^^^^^^^^^^^^
+ *                                   -- ObjectSet
+ *                                  -- ^^^^^^^^^^^^^^^^^^
+ *                                  -- ActualParameterList
+ *                        -- ^^^^^^^^^^
+ *                        -- Type
+ *   }
+ *
+ * Then:
+ *
+ *   -- Object set, limits what Extensions can be in TBSCertificate.
+ *-- <-   ObjectSetAssignment    ->
+ *   CertExtensions EXTENSION ::= {
+ *               -- ^^^^^^^^^
+ *               -- DefinedObjectClass
+ *-- ^^^^^^^^^^^^^^
+ *-- objectsetreference, for us, IDENTIFIER
+ *      ext-AuthorityKeyIdentifier | ext-SubjectKeyIdentifier | ...
+ *   }
+ *
+ * and:
+ *
+ *   -- ObjectAssignment (with defined syntax, which we're not going to support):
+ *   --
+ *   -- Defines one particular object in the CertExtensions object set.
+ *   -- We don't need th SYNTAX bits though -- ETOOMUCHWORK.
+ *   -- This says that the OID id-ce-authorityKeyIdentifier means the extnValue
+ *   -- is a DER-encoded AuthorityKeyIdentifier.
+ *   ext-AuthorityKeyIdentifier EXTENSION ::= { SYNTAX
+ *       AuthorityKeyIdentifier IDENTIFIED BY
+ *       id-ce-authorityKeyIdentifier }
+ *   id-ce-authorityKeyIdentifier OBJECT IDENTIFIER ::=  { id-ce 35 }
+ *
+ *   -- ObjectAssignment (with default syntax):
+ *   ext-AuthorityKeyIdentifier EXTENSION ::= {
+ *       -- fields don't have to be in order since we have the field names
+ *       &extnId id-ce-authorityKeyIdentifier,
+ *       &extnValue AuthorityKeyIdentifier
+ *   }
+ *
+ *   -- Plain old type def using only X.680
+ *   AuthorityKeyIdentifier ::= SEQUENCE {
+ *       keyIdentifier             [0] KeyIdentifier            OPTIONAL,
+ *       authorityCertIssuer       [1] GeneralNames             OPTIONAL,
+ *       authorityCertSerialNumber [2] CertificateSerialNumber  OPTIONAL }
+ *
+ * In terms of compilation, we'll want to support only the template backend,
+ * though we'll generate the same C types for both, the template backend and
+ * the codegen backend.
+ *
+ * The generators should see a type for Extension that includes a) the
+ * parametrization (relating members in the SEQUENCE to fields in the CLASS),
+ * and b) the object set CertExtensions for the _same_ class.
+ *
+ *  - The C types for ASN.1 parametrized types with object set parameters
+ *    should be laid out just as before, but with additional fields:
+ *
+ *      typedef struct Extension {
+ *        heim_oid extnID;
+ *        int *critical;
+ *        heim_octet_string extnValue;
+ *        // NEW FIELDS BELOW
+ *        enum {
+ *          opentypechoice_unknown_Extension = 0
+ *          opentypechoice_Extension_id_ce_authorityKeyIdentifier,
+ *          ...
+ *        } _element;
+ *        union {
+ *          // er, what should this be named?! we have no name information
+ *          // and naming it after its object value name is probably not a good
+ *          // idea or not easy.  We do have the OID value and possible name
+ *          // though, so we should use that:
+ *          AuthorityKeyIdentifier id_ce_authorityKeyIdentifier;
+ *          ...
+ *        } _u;
+ *      } Extension;
+ *
+ * - The template for this should consist of new struct asn1_template entries
+ *   following the ones for the normal fields of Extension.  The first of these
+ *   should have an OP that indicates that the following N entries correspond
+ *   to the object set that specifies this open type, then the following N
+ *   entries should each point to an object in the object set.  Or maybe the
+ *   object set should be a separate template -- either way.  We'll also want a
+ *   flag to indicate whether the object set is sorted (none of the type IDs
+ *   are IMPORTed) or not (some of the type IDs are IMPORTed) so we can binary
+ *   search the object set at encode/decode time.
+ *
+ *   Hmm, we can assume the object sets are already sorted when there's
+ *   IMPORTed IDs -- the author can do it.  Yes, they're sets, but lexically
+ *   they must be in some order.
+ *
+ *   I like that, actually, requiring that the module author manually sort the
+ *   object sets, at least when they refer to type IDs that are IMPORTed.  Or
+ *   maybe forbid object sets that use IMPORTed type IDs -- the module author
+ *   can always copy their definitions anyways.
+ */
+
+TypeAssignment	: Identifier EEQUAL Type
+		{
+		    Symbol *s = addsym($1);
 		    s->stype = Stype;
 		    s->type = $3;
 		    fix_labels(s);
-		    generate_type (s);
+
+		    /*
+		     * Hack: make sure that non-anonymous enumeration types get
+		     * a symbol tacked on so we can generate a template for
+		     * their members for value printing.
+		     */
+		    if (s->type->type == TTag && $3->symbol == NULL &&
+			$3->subtype != NULL && $3->subtype->type == TInteger &&
+			$3->subtype->symbol == NULL) {
+			$3->subtype->symbol = s;
+		    }
+		    if (original_order)
+			generate_type(s);
+		    else
+			generate_type_header_forwards(s);
 		}
+		;
+
+ParameterizedTypeAssignment
+		/* For now we'll only support one parameter -- enough for PKIX */
+		: Identifier '{' Parameter '}' EEQUAL Type
+		{
+		    char *pname = NULL;
+		    Symbol *s;
+
+		    if (asprintf(&pname, "%s{%s:x}", $1, $3->symbol->name) == -1 ||
+			pname == NULL)
+			err(1, "Out of memory");
+		    s = addsym(pname);
+		    free($1);
+		    s->stype = Sparamtype;
+		    s->type = parametrize_type($6, $3);
+		    s->type->symbol = s;
+		    fix_labels(s);
+		}
+		;
+
+/*
+ * We're not going to support governor variables for now.  We don't need to.
+ *
+ * Also, we're not going to support more than one formal parameter.
+ * Correspondingly we'll only support a single actual parameter (the count of
+ * formal and actual parameters has to match, naturally).
+ */
+
+Parameter       : ParamGovernor ':' DummyReference
+		{ $$ = $1; };
+	     /* | DummyReference */
+		;
+
+DummyReference  : TYPE_IDENTIFIER { $$ = idcounter++; };
+
+ParamGovernor   : DefinedObjectClass
+		{ $$ = $1; }
+	     /* | DummyGovernor */
+	     /* | Type */
 		;
 
 Type		: BuiltinType
@@ -345,7 +933,13 @@ BuiltinType	: BitStringType
 		| SetType
 		| SetOfType
 		| TaggedType
+		| ObjectClassFieldType  /* X.681 */
+	     /* | InstanceOfType        // X.681 */
 		;
+
+ObjectClassFieldType
+		: DefinedObjectClass '.' '&' Identifier
+		{ $$ = type_from_class_field($1, $4); };
 
 BooleanType	: kw_BOOLEAN
 		{
@@ -370,14 +964,14 @@ range		: '(' Value RANGE Value ')'
 			lex_error_message("Non-integer in first part of range");
 		    $$ = ecalloc(1, sizeof(*$$));
 		    $$->min = $2->u.integervalue;
-		    $$->max = $2->u.integervalue - 1;
+		    $$->max = INT_MAX;
 		}
 		| '(' kw_MIN RANGE Value ')'
 		{
 		    if($4->type != integervalue)
 			lex_error_message("Non-integer in second part of range");
 		    $$ = ecalloc(1, sizeof(*$$));
-		    $$->min = $4->u.integervalue + 2;
+		    $$->min = INT_MIN;
 		    $$->max = $4->u.integervalue;
 		}
 		| '(' Value ')'
@@ -413,25 +1007,39 @@ IntegerType	: kw_INTEGER
 NamedNumberList	: NamedNumber
 		{
 			$$ = emalloc(sizeof(*$$));
-			ASN1_TAILQ_INIT($$);
-			ASN1_TAILQ_INSERT_HEAD($$, $1, members);
+			HEIM_TAILQ_INIT($$);
+			HEIM_TAILQ_INSERT_HEAD($$, $1, members);
 		}
 		| NamedNumberList ',' NamedNumber
 		{
-			ASN1_TAILQ_INSERT_TAIL($1, $3, members);
+			HEIM_TAILQ_INSERT_TAIL($1, $3, members);
 			$$ = $1;
 		}
 		| NamedNumberList ',' ELLIPSIS
 			{ $$ = $1; } /* XXX used for Enumerations */
 		;
 
-NamedNumber	: IDENTIFIER '(' SignedNumber ')'
+NamedNumber	: Identifier '(' SignedNumber ')'
 		{
 			$$ = emalloc(sizeof(*$$));
 			$$->name = $1;
 			$$->gen_name = estrdup($1);
 			output_name ($$->gen_name);
 			$$->val = $3;
+			$$->optional = 0;
+			$$->ellipsis = 0;
+			$$->type = NULL;
+		}
+		| Identifier '(' DefinedValue ')'
+		{
+			if ($3->type != integervalue)
+			    lex_error_message("Named number %s not a numeric value",
+					      $3->s->name);
+			$$ = emalloc(sizeof(*$$));
+			$$->name = $1;
+			$$->gen_name = estrdup($1);
+			output_name ($$->gen_name);
+			$$->val = $3->u.integervalue;
 			$$->optional = 0;
 			$$->ellipsis = 0;
 			$$->type = NULL;
@@ -453,7 +1061,7 @@ BitStringType	: kw_BIT kw_STRING
 		{
 		  $$ = new_type(TBitString);
 		  $$->members = emalloc(sizeof(*$$->members));
-		  ASN1_TAILQ_INIT($$->members);
+		  HEIM_TAILQ_INIT($$->members);
 		  $$ = new_tag(ASN1_C_UNIV, UT_BitString, TE_EXPLICIT, $$);
 		}
 		| kw_BIT kw_STRING '{' NamedBitList '}'
@@ -474,6 +1082,11 @@ OctetStringType	: kw_OCTET kw_STRING size
 		{
 		    Type *t = new_type(TOctetString);
 		    t->range = $3;
+		    if (t->range) {
+			if (t->range->min < 0)
+			    lex_error_message("can't use a negative SIZE range "
+					      "length for OCTET STRING");
+		    }
 		    $$ = new_tag(ASN1_C_UNIV, UT_OctetString,
 				 TE_EXPLICIT, t);
 		}
@@ -497,13 +1110,13 @@ SequenceType	: kw_SEQUENCE '{' /* ComponentTypeLists */ ComponentTypeList '}'
 		{
 		  $$ = new_type(TSequence);
 		  $$->members = $3;
-		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, $$);
+		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, default_tag_env, $$);
 		}
 		| kw_SEQUENCE '{' '}'
 		{
 		  $$ = new_type(TSequence);
 		  $$->members = NULL;
-		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, $$);
+		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, default_tag_env, $$);
 		}
 		;
 
@@ -511,8 +1124,14 @@ SequenceOfType	: kw_SEQUENCE size kw_OF Type
 		{
 		  $$ = new_type(TSequenceOf);
 		  $$->range = $2;
+		  if ($$->range) {
+		      if ($$->range->min < 0)
+			  lex_error_message("can't use a negative SIZE range "
+					    "length for SEQUENCE OF");
+		    }
+
 		  $$->subtype = $4;
-		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, $$);
+		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, default_tag_env, $$);
 		}
 		;
 
@@ -520,13 +1139,13 @@ SetType		: kw_SET '{' /* ComponentTypeLists */ ComponentTypeList '}'
 		{
 		  $$ = new_type(TSet);
 		  $$->members = $3;
-		  $$ = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, $$);
+		  $$ = new_tag(ASN1_C_UNIV, UT_Set, default_tag_env, $$);
 		}
 		| kw_SET '{' '}'
 		{
 		  $$ = new_type(TSet);
 		  $$->members = NULL;
-		  $$ = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, $$);
+		  $$ = new_tag(ASN1_C_UNIV, UT_Set, default_tag_env, $$);
 		}
 		;
 
@@ -534,7 +1153,7 @@ SetOfType	: kw_SET kw_OF Type
 		{
 		  $$ = new_type(TSetOf);
 		  $$->subtype = $3;
-		  $$ = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, $$);
+		  $$ = new_tag(ASN1_C_UNIV, UT_Set, default_tag_env, $$);
 		}
 		;
 
@@ -547,9 +1166,16 @@ ChoiceType	: kw_CHOICE '{' /* AlternativeTypeLists */ ComponentTypeList '}'
 
 ReferencedType	: DefinedType
 		| UsefulType
+	     /* | TypeFromObject           // X.681 */
+	     /* | ValueSetFromObjects      // X.681 */
 		;
 
-DefinedType	: IDENTIFIER
+/*
+TypeFromObject	: VALUE_IDENTIFIER '.' '&' TYPE_IDENTIFIER
+		{ $$ = type_from_object($1, $4); };
+ */
+
+DefinedType	: TYPE_IDENTIFIER
 		{
 		  Symbol *s = addsym($1);
 		  $$ = new_type(TType);
@@ -558,7 +1184,59 @@ DefinedType	: IDENTIFIER
 		  else
 		    $$->symbol = s;
 		}
+		| ParameterizedType
+		{ $$ = $1; }
 		;
+
+		/*
+                 * Should be ActualParameterList, but we'll do just one for now
+                 * as that's enough for PKIX.
+		 */
+ParameterizedType
+		: Identifier '{' ActualParameter '}' /* XXX ActualParameterList */
+		{
+		  Symbol *s, *ps;
+		  char *pname = NULL;
+
+		  if ($3 == NULL) {
+                    lex_error_message("Unknown ActualParameter object set parametrizing %s\n", $1);
+                    exit(1);
+                  }
+
+		  /* Lookup the type from a ParameterizedTypeAssignment */
+		  if (asprintf(&pname, "%s{%s:x}", $1,
+			       $3->iosclass->symbol->name) == -1 ||
+		      pname == NULL)
+		      err(1, "Out of memory");
+		  ps = addsym(pname);
+		  if (ps->stype != Sparamtype)
+		    lex_error_message ("%s is not a parameterized type\n", $1);
+
+		  s = addsym($1);
+		  $$ = ps->type; /* XXX copy, probably */
+		  if (!ps->type)
+		    errx(1, "Wrong class (%s) parameter for parameterized "
+		         "type %s", $3->iosclass->symbol->name, $1);
+		  s->stype = Stype;
+		  if(s->stype != Stype && s->stype != SUndefined)
+		    lex_error_message ("%s is not a type\n", $1);
+		  else
+		    $$->symbol = s;
+		  $$->actual_parameter = $3;
+		  if ($$->type == TTag)
+		    $$->subtype->actual_parameter = $3;
+		}
+
+/*
+ * Per X.683 $1 for ActualParameter should be any of: a Type, a Value, a
+ * ValueSet, a DefinedObjectClass, an Object, or an ObjectSet.  For PKIX we
+ * need nothing more than an ObjectSet here.
+ *
+ * Also, we can't lexically or syntactically tell the difference between all
+ * these things, though fortunately we can for ObjectSet.
+ */
+ActualParameter : DefinedObjectSet
+		{ $$ = $1; };
 
 UsefulType	: kw_GeneralizedTime
 		{
@@ -574,7 +1252,9 @@ UsefulType	: kw_GeneralizedTime
 
 ConstrainedType	: Type Constraint
 		{
-		    /* if (Constraint.type == contentConstrant) {
+		    $$ = $1;
+		    $$->constraint = $2;
+		    /* if (Constraint.type == contentConstraint) {
 		       assert(Constraint.u.constraint.type == octetstring|bitstring-w/o-NamedBitList); // remember to check type reference too
 		       if (Constraint.u.constraint.type) {
 		         assert((Constraint.u.constraint.type.length % 8) == 0);
@@ -599,6 +1279,7 @@ ConstraintSpec	: GeneralConstraint
 
 GeneralConstraint: ContentsConstraint
 		| UserDefinedConstraint
+		| TableConstraint
 		;
 
 ContentsConstraint: kw_CONTAINING Type
@@ -631,16 +1312,102 @@ UserDefinedConstraint: kw_CONSTRAINED kw_BY '{' '}'
 		}
 		;
 
+TableConstraint : SimpleTableConstraint
+		{ $$ = $1; }
+		| ComponentRelationConstraint
+		{ $$ = $1; };
+
+SimpleTableConstraint
+		: '{' TYPE_IDENTIFIER '}'
+		{
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->ctype = CT_TABLE_CONSTRAINT;
+		    $$->u.content.crel.objectname = $2;
+		    $$->u.content.crel.membername = 0;
+		};
+
+/*
+ * In X.682, ComponentRelationConstraint is a fantastically more complicated
+ * production.  The stuff in the second set of braces is a list of AtNotation,
+ * and AtNotation is '@' followed by some number of '.'s, followed by a
+ * ComponentIdList, which is a non-empty set of identifiers separated by '.'s.
+ * The number of '.'s is a "level" used to identify a SET, SEQUENCE, or CHOICE
+ * where the path of member identifiers is rooted that ultimately identifies
+ * the field providing the constraint.
+ *
+ * So in
+ *
+ *  extnValue   OCTET STRING
+ *    (CONTAINING
+ *	EXTENSION.&ExtnType({ExtensionSet}{@extnID}))
+ *	^^^^^^^^^^^^^^^^^^^
+ *	ObjectClassFieldType
+ *	meaning the open type field
+ *	&ExtnType of EXTENSION
+ *	                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+ *	                   GeneralConstraint
+ *	                    ^^^^^^^^^^^^^^^^^^^^^^^
+ *	                    ComponentRelationConstraint
+ *	                    ^^^^^^^^^^^^^^
+ *	                    DefinedObjectSet
+ *	                                  ^^^^^^^^
+ *	                                   '{' AtNotation ','  +  '}'
+ *
+ * we have EXTENSION.&ExtnType is the ObjectClassFieldType, and
+ * ({ExtensionSet}{@extnID}) is the ComponentRelationConstraint on the
+ * extnValue member, where {ExtensionSet} is the DummyReference from the formal
+ * parameter of the enclosing parameterized type, and {@extnID} is the
+ * AtNotation list identifying the field of the class/objects-in-the-object-set
+ * that will be identifying the type of the extnValue field.
+ *
+ * We need just the one AtNotation component.
+ */
+ComponentRelationConstraint
+		: '{' TYPE_IDENTIFIER '}' '{' '@' Identifier '}'
+		{
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->ctype = CT_TABLE_CONSTRAINT;
+		    $$->u.content.crel.objectname = $2;
+		    $$->u.content.crel.membername = $6;
+		};
+
 TaggedType	: Tag tagenv Type
 		{
 			$$ = new_type(TTag);
 			$$->tag = $1;
 			$$->tag.tagenv = $2;
-			if($3->type == TTag && $2 == TE_IMPLICIT) {
+			if (template_flag) {
+			    $$->subtype = $3;
+			} else if ($2 == TE_IMPLICIT) {
+			    Type *t = $3;
+
+			    /*
+			     * FIXME We shouldn't do this... The logic for
+			     * dealing with IMPLICIT tags belongs elsewhere.
+			     */
+			    while (t->type == TType) {
+				if (t->subtype)
+				    t = t->subtype;
+				else if (t->symbol && t->symbol->type)
+				    t = t->symbol->type;
+				else
+				    break;
+			    }
+			    /*
+			     * IMPLICIT tags of CHOICE types are EXPLICIT
+			     * instead.
+			     */
+			    if (t->type == TChoice)
+				$$->tag.tagenv = TE_EXPLICIT;
+			    if($3->type == TTag && $2 == TE_IMPLICIT) {
 				$$->subtype = $3->subtype;
 				free($3);
-			} else
+			    } else {
 				$$->subtype = $3;
+			    }
+			} else {
+			    $$->subtype = $3;
+			}
 		}
 		;
 
@@ -648,7 +1415,7 @@ Tag		: '[' Class NUMBER ']'
 		{
 			$$.tagclass = $2;
 			$$.tagvalue = $3;
-			$$.tagenv = TE_EXPLICIT;
+			$$.tagenv = default_tag_env;
 		}
 		;
 
@@ -672,11 +1439,11 @@ Class		: /* */
 
 tagenv		: /* */
 		{
-			$$ = TE_EXPLICIT;
+			$$ = default_tag_env;
 		}
 		| kw_EXPLICIT
 		{
-			$$ = TE_EXPLICIT;
+			$$ = default_tag_env;
 		}
 		| kw_IMPLICIT
 		{
@@ -685,7 +1452,7 @@ tagenv		: /* */
 		;
 
 
-ValueAssignment	: IDENTIFIER Type EEQUAL Value
+ValueAssignment	: Identifier Type EEQUAL Value
 		{
 			Symbol *s;
 			s = addsym ($1);
@@ -693,6 +1460,15 @@ ValueAssignment	: IDENTIFIER Type EEQUAL Value
 			s->stype = SValue;
 			s->value = $4;
 			generate_constant (s);
+			/*
+			 * Save this value's name so we can know some name for
+			 * this value wherever _a_ name may be needed for it.
+			 *
+			 * This is useful for OIDs used as type IDs in objects
+			 * sets of classes with open types.  We'll generate
+			 * enum labels from those OIDs' names.
+			 */
+                        s->value->s = s;
 		}
 		;
 
@@ -745,12 +1521,12 @@ RestrictedCharactedStringType: kw_GeneralString
 ComponentTypeList: ComponentType
 		{
 			$$ = emalloc(sizeof(*$$));
-			ASN1_TAILQ_INIT($$);
-			ASN1_TAILQ_INSERT_HEAD($$, $1, members);
+			HEIM_TAILQ_INIT($$);
+			HEIM_TAILQ_INSERT_HEAD($$, $1, members);
 		}
 		| ComponentTypeList ',' ComponentType
 		{
-			ASN1_TAILQ_INSERT_TAIL($1, $3, members);
+			HEIM_TAILQ_INSERT_TAIL($1, $3, members);
 			$$ = $1;
 		}
 		| ComponentTypeList ',' ELLIPSIS
@@ -759,12 +1535,12 @@ ComponentTypeList: ComponentType
 			m->name = estrdup("...");
 			m->gen_name = estrdup("asn1_ellipsis");
 			m->ellipsis = 1;
-			ASN1_TAILQ_INSERT_TAIL($1, m, members);
+			HEIM_TAILQ_INSERT_TAIL($1, m, members);
 			$$ = $1;
 		}
 		;
 
-NamedType	: IDENTIFIER Type
+NamedType	: Identifier Type
 		{
 		  $$ = emalloc(sizeof(*$$));
 		  $$->name = $1;
@@ -798,17 +1574,17 @@ ComponentType	: NamedType
 NamedBitList	: NamedBit
 		{
 			$$ = emalloc(sizeof(*$$));
-			ASN1_TAILQ_INIT($$);
-			ASN1_TAILQ_INSERT_HEAD($$, $1, members);
+			HEIM_TAILQ_INIT($$);
+			HEIM_TAILQ_INSERT_HEAD($$, $1, members);
 		}
 		| NamedBitList ',' NamedBit
 		{
-			ASN1_TAILQ_INSERT_TAIL($1, $3, members);
+			HEIM_TAILQ_INSERT_TAIL($1, $3, members);
 			$$ = $1;
 		}
 		;
 
-NamedBit	: IDENTIFIER '(' NUMBER ')'
+NamedBit	: Identifier '(' NUMBER ')'
 		{
 		  $$ = emalloc(sizeof(*$$));
 		  $$->name = $1;
@@ -846,11 +1622,11 @@ objid_list	:  /* empty */
 		}
 		;
 
-objid_element	: IDENTIFIER '(' NUMBER ')'
+objid_element	: Identifier '(' NUMBER ')'
 		{
 			$$ = new_objid($1, $3);
 		}
-		| IDENTIFIER
+		| Identifier
 		{
 		    Symbol *s = addsym($1);
 		    if(s->stype != SValue ||
@@ -871,11 +1647,22 @@ Value		: BuiltinValue
 		| ReferencedValue
 		;
 
+ValueExNull	: BuiltinValueExNull
+		| ReferencedValue
+		;
+
 BuiltinValue	: BooleanValue
 		| CharacterStringValue
 		| IntegerValue
 		| ObjectIdentifierValue
 		| NullValue
+		;
+
+BuiltinValueExNull
+		: BooleanValue
+		| CharacterStringValue
+		| IntegerValue
+		| ObjectIdentifierValue
 		;
 
 ReferencedValue	: DefinedValue
@@ -884,7 +1671,7 @@ ReferencedValue	: DefinedValue
 DefinedValue	: Valuereference
 		;
 
-Valuereference	: IDENTIFIER
+Valuereference	: VALUE_IDENTIFIER
 		{
 			Symbol *s = addsym($1);
 			if(s->stype != SValue)
@@ -907,7 +1694,7 @@ BooleanValue	: kw_TRUE
 		{
 			$$ = emalloc(sizeof(*$$));
 			$$->type = booleanvalue;
-			$$->u.booleanvalue = 0;
+			$$->u.booleanvalue = 1;
 		}
 		| kw_FALSE
 		{
@@ -992,6 +1779,7 @@ new_type (Typetype tt)
 {
     Type *t = ecalloc(1, sizeof(*t));
     t->type = tt;
+    t->id = idcounter++;
     return t;
 }
 
@@ -1010,7 +1798,7 @@ static void fix_labels1(struct memhead *members, const char *prefix)
 
     if(members == NULL)
 	return;
-    ASN1_TAILQ_FOREACH(m, members, members) {
+    HEIM_TAILQ_FOREACH(m, members, members) {
 	if (asprintf(&m->label, "%s_%s", prefix, m->gen_name) < 0)
 	    errx(1, "malloc");
 	if (m->label == NULL)
@@ -1032,6 +1820,180 @@ fix_labels(Symbol *s)
     char *p = NULL;
     if (asprintf(&p, "choice_%s", s->gen_name) < 0 || p == NULL)
 	errx(1, "malloc");
-    fix_labels2(s->type, p);
+    if (s->type)
+	fix_labels2(s->type, p);
     free(p);
+}
+
+static struct objectshead *
+add_object_set_spec(struct objectshead *lst, IOSObject *o)
+{
+    if (lst == NULL) {
+	lst = emalloc(sizeof(*lst));
+	HEIM_TAILQ_INIT(lst);
+	HEIM_TAILQ_INSERT_HEAD(lst, o, objects);
+    } else {
+	HEIM_TAILQ_INSERT_TAIL(lst, o, objects);
+    }
+    return lst;
+}
+
+static struct objfieldhead *
+add_field_setting(struct objfieldhead *lst, ObjectField *f)
+{
+    if (lst == NULL) {
+	lst = emalloc(sizeof(*lst));
+	HEIM_TAILQ_INIT(lst);
+	HEIM_TAILQ_INSERT_HEAD(lst, f, objfields);
+    } else {
+	HEIM_TAILQ_INSERT_TAIL(lst, f, objfields);
+    }
+    return lst;
+}
+
+static struct fieldhead *
+add_field_spec(struct fieldhead *lst, Field *f)
+{
+    if (lst == NULL) {
+	lst = emalloc(sizeof(*lst));
+	HEIM_TAILQ_INIT(lst);
+	HEIM_TAILQ_INSERT_HEAD(lst, f, fields);
+    } else {
+	HEIM_TAILQ_INSERT_TAIL(lst, f, fields);
+    }
+    return lst;
+}
+
+static ObjectField *
+new_field_setting(char *n, Type *t, struct value *v)
+{
+    ObjectField *of;
+
+    of = ecalloc(1, sizeof(*of));
+    of->value = v;
+    of->type = t;
+    of->name = n;
+    return of;
+}
+
+static Field *
+new_type_field(char *n, int optional, Type *t)
+{
+    Field *f;
+
+    f = ecalloc(1, sizeof(*f));
+    f->optional = optional;
+    f->unique = 0;
+    f->defval = 0;
+    f->type = t;
+    f->name = n;
+    return f;
+}
+
+static Field *
+new_fixed_type_value_field(char *n, Type *t, int unique, int optional, struct value *defval)
+{
+    Field *f;
+
+    f = ecalloc(1, sizeof(*f));
+    f->optional = optional;
+    f->unique = unique;
+    f->defval = defval;
+    f->type = t;
+    f->name = n;
+    return f;
+}
+
+static Type *
+parametrize_type(Type *t, IOSClass *c)
+{
+    Type *type;
+
+    type = new_type(TType);
+    *type = *t; /* XXX Copy, or use subtype; this only works as long as we don't cleanup! */
+    type->formal_parameter = c;
+    return type;
+}
+
+static Type *
+type_from_class_field(IOSClass *c, const char *n)
+{
+    Field *f;
+    Type *t;
+
+    HEIM_TAILQ_FOREACH(f, c->fields, fields) {
+	if (strcmp(f->name, n) == 0) {
+	    t = new_type(TType);
+	    if (f->type) {
+		*t = *f->type;
+	    } else {
+		Symbol *s = addsym("HEIM_ANY");
+		if(s->stype != Stype && s->stype != SUndefined)
+		    errx(1, "Do not define HEIM_ANY, only import it\n");
+		s->stype = Stype;
+		t->symbol = s;
+	    }
+	    t->typeref.iosclass = c;
+	    t->typeref.field = f;
+	    return t;
+	}
+    }
+    return NULL;
+}
+
+static void
+validate_object_set(IOSObjectSet *os)
+{
+    IOSObject **objects;
+    ObjectField *of;
+    IOSObject *o;
+    Field *cf;
+    size_t nobjs, i;
+
+    /* Check unique fields */
+    HEIM_TAILQ_FOREACH(cf, os->iosclass->fields, fields) {
+        if (!cf->unique)
+            continue;
+        if (!cf->type)
+            errx(1, "Type fields of classes can't be UNIQUE (%s)",
+                 os->iosclass->symbol->name);
+        sort_object_set(os, cf, &objects, &nobjs);
+        for (i = 0; i < nobjs; i++) {
+            HEIM_TAILQ_FOREACH(of, objects[i]->objfields, objfields) {
+                if (strcmp(cf->name, of->name) != 0)
+                    continue;
+                if (!of->value)
+                    errx(1, "Value not specified for required UNIQUE field %s of object %s",
+                         cf->name, objects[i]->symbol->name);
+                break;
+            }
+            if (i == 0)
+                continue;
+            if (object_cmp(&objects[i - 1], &objects[i]) == 0)
+                errx(1, "Duplicate values of UNIQUE field %s of objects %s and %s",
+                     cf->name, objects[i - 1]->symbol->name,
+                     objects[i]->symbol->name);
+        }
+        free(objects);
+    }
+
+    /* Check required fields */
+    HEIM_TAILQ_FOREACH(cf, os->iosclass->fields, fields) {
+        if (cf->optional || cf->defval || !cf->type)
+            continue;
+        HEIM_TAILQ_FOREACH(o, os->objects, objects) {
+            int specified = 0;
+
+            HEIM_TAILQ_FOREACH(of, o->objfields, objfields) {
+                if (strcmp(of->name, cf->name) != 0)
+                    continue;
+                if (of->value)
+                    specified = 1;
+                break;
+            }
+            if (!specified)
+                errx(1, "Value not specified for required non-UNIQUE field %s of object %s",
+                     cf->name, o->symbol->name);
+        }
+    }
 }

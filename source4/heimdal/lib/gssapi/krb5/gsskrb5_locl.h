@@ -44,6 +44,7 @@
 #include <gssapi_mech.h>
 #include <gssapi_krb5.h>
 #include <assert.h>
+#include <mech/utils.h>
 
 #include "cfx.h"
 
@@ -57,7 +58,6 @@ typedef struct gsskrb5_ctx {
   struct krb5_auth_context_data *auth_context;
   struct krb5_auth_context_data *deleg_auth_context;
   krb5_principal source, target;
-#define IS_DCE_STYLE(ctx) (((ctx)->flags & GSS_C_DCE_STYLE) != 0)
   OM_uint32 flags;
   enum { LOCAL = 1, OPEN = 2,
 	 COMPAT_OLD_DES3 = 4,
@@ -71,7 +71,7 @@ typedef struct gsskrb5_ctx {
       /* initiator states */
       INITIATOR_START,
       INITIATOR_RESTART,
-      INITIATOR_WAIT_FOR_MUTAL,
+      INITIATOR_WAIT_FOR_MUTUAL,
       INITIATOR_READY,
       /* acceptor states */
       ACCEPTOR_START,
@@ -81,7 +81,7 @@ typedef struct gsskrb5_ctx {
   krb5_creds *kcred;
   krb5_ccache ccache;
   struct krb5_ticket *ticket;
-  OM_uint32 lifetime;
+  time_t endtime;
   HEIMDAL_MUTEX ctx_id_mutex;
   struct gss_msg_order *order;
   krb5_keyblock *service_keyblock;
@@ -89,13 +89,20 @@ typedef struct gsskrb5_ctx {
   krb5_crypto crypto;
 } *gsskrb5_ctx;
 
+static inline krb5_boolean
+IS_DCE_STYLE(gsskrb5_ctx ctx)
+{
+  return (ctx->flags & GSS_C_DCE_STYLE) != 0;
+}
+
 typedef struct {
   krb5_principal principal;
+  char *destination_realm;  /* Realm of acceptor service, if delegated */
   int cred_flags;
 #define GSS_CF_DESTROY_CRED_ON_RELEASE	1
 #define GSS_CF_NO_CI_FLAGS		2
   struct krb5_keytab_data *keytab;
-  OM_uint32 lifetime;
+  time_t endtime;
   gss_cred_usage_t usage;
   gss_OID_set mechanisms;
   struct krb5_ccache_data *ccache;
@@ -116,7 +123,7 @@ extern HEIMDAL_MUTEX gssapi_keytab_mutex;
  * Prototypes
  */
 
-#include <gsskrb5-private.h>
+#include "krb5/gsskrb5-private.h"
 
 #define GSSAPI_KRB5_INIT(ctx) do {				\
     krb5_error_code kret_gss_init;				\
@@ -128,13 +135,19 @@ extern HEIMDAL_MUTEX gssapi_keytab_mutex;
 
 /* sec_context flags */
 
-#define SC_LOCAL_ADDRESS  0x01
-#define SC_REMOTE_ADDRESS 0x02
-#define SC_KEYBLOCK	  0x04
-#define SC_LOCAL_SUBKEY	  0x08
-#define SC_REMOTE_SUBKEY  0x10
+#define SC_LOCAL_ADDRESS  0x0001
+#define SC_REMOTE_ADDRESS 0x0002
+#define SC_KEYBLOCK       0x0004
+#define SC_LOCAL_SUBKEY   0x0008
+#define SC_REMOTE_SUBKEY  0x0010
+#define SC_SOURCE_NAME    0x0020
+#define SC_TARGET_NAME    0x0040
+#define SC_ORDER          0x0080
+#define SC_AUTHENTICATOR  0x0100
 
-/* type to signal that that dns canon maybe should be done */
-#define MAGIC_HOSTBASED_NAME_TYPE 4711
+struct gsskrb5_ccache_name_args {
+    const char *name;
+    const char *out_name;
+};
 
 #endif

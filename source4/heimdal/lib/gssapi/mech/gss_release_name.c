@@ -55,19 +55,8 @@ gss_release_name(OM_uint32 *minor_status,
 	    return GSS_S_COMPLETE;
 
 	name = (struct _gss_name *) *input_name;
+	_gss_mg_release_name(name);
 
-	if (name->gn_type.elements)
-		free(name->gn_type.elements);
-	while (HEIM_SLIST_FIRST(&name->gn_mn)) {
-		struct _gss_mechanism_name *mn;
-		mn = HEIM_SLIST_FIRST(&name->gn_mn);
-		HEIM_SLIST_REMOVE_HEAD(&name->gn_mn, gmn_link);
-		mn->gmn_mech->gm_release_name(minor_status,
-					      &mn->gmn_name);
-		free(mn);
-	}
-	gss_release_buffer(minor_status, &name->gn_value);
-	free(name);
 	*input_name = GSS_C_NO_NAME;
 
 	return (GSS_S_COMPLETE);

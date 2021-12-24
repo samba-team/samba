@@ -55,7 +55,7 @@
  * @ingroup hx509_peer
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_peer_info_alloc(hx509_context context, hx509_peer_info *peer)
 {
     *peer = calloc(1, sizeof(**peer));
@@ -88,7 +88,7 @@ free_cms_alg(hx509_peer_info peer)
  * @ingroup hx509_peer
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_peer_info_free(hx509_peer_info peer)
 {
     if (peer == NULL)
@@ -111,7 +111,7 @@ hx509_peer_info_free(hx509_peer_info peer)
  * @ingroup hx509_peer
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_peer_info_set_cert(hx509_peer_info peer,
 			 hx509_cert cert)
 {
@@ -133,7 +133,7 @@ hx509_peer_info_set_cert(hx509_peer_info peer,
  * @ingroup hx509_peer
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_peer_info_add_cms_alg(hx509_context context,
 			    hx509_peer_info peer,
 			    const AlgorithmIdentifier *val)
@@ -168,7 +168,7 @@ hx509_peer_info_add_cms_alg(hx509_context context,
  * @ingroup hx509_peer
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_peer_info_set_cms_algs(hx509_context context,
 			     hx509_peer_info peer,
 			     const AlgorithmIdentifier *val,
@@ -203,14 +203,14 @@ hx509_peer_info_set_cms_algs(hx509_context context,
  * S/MIME
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_peer_info_parse_smime(hx509_peer_info peer,
 			    const heim_octet_string *data)
 {
     return 0;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_peer_info_unparse_smime(hx509_peer_info peer,
 			      heim_octet_string *data)
 {
@@ -221,14 +221,14 @@ hx509_peer_info_unparse_smime(hx509_peer_info peer,
  * For storing hx509_peer_info to be able to cache them.
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_peer_info_parse(hx509_peer_info peer,
 		      const heim_octet_string *data)
 {
     return 0;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_peer_info_unparse(hx509_peer_info peer,
 			heim_octet_string *data)
 {

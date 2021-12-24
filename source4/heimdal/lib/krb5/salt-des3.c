@@ -50,10 +50,8 @@ DES3_string_to_key(krb5_context context,
 
     len = password.length + salt.saltvalue.length;
     str = malloc(len);
-    if(len != 0 && str == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (len != 0 && str == NULL)
+	return krb5_enomem(context);
     memcpy(str, password.data, password.length);
     memcpy(str + password.length, salt.saltvalue.data, salt.saltvalue.length);
     {
@@ -63,7 +61,7 @@ DES3_string_to_key(krb5_context context,
 
 	ret = _krb5_n_fold(str, len, tmp, 24);
 	if (ret) {
-	    memset(str, 0, len);
+	    memset_s(str, len, 0, len);
 	    free(str);
 	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    return ret;
@@ -73,27 +71,27 @@ DES3_string_to_key(krb5_context context,
 	    memcpy(keys + i, tmp + i * 8, sizeof(keys[i]));
 	    DES_set_odd_parity(keys + i);
 	    if(DES_is_weak_key(keys + i))
-		_krb5_xor(keys + i, (const unsigned char*)"\0\0\0\0\0\0\0\xf0");
+		_krb5_xor8(*(keys + i), (const unsigned char*)"\0\0\0\0\0\0\0\xf0");
 	    DES_set_key_unchecked(keys + i, &s[i]);
 	}
-	memset(&ivec, 0, sizeof(ivec));
+	memset_s(&ivec, sizeof(ivec), 0, sizeof(ivec));
 	DES_ede3_cbc_encrypt(tmp,
 			     tmp, sizeof(tmp),
 			     &s[0], &s[1], &s[2], &ivec, DES_ENCRYPT);
-	memset(s, 0, sizeof(s));
-	memset(&ivec, 0, sizeof(ivec));
+	memset_s(s, sizeof(s), 0, sizeof(s));
+	memset_s(&ivec, sizeof(ivec), 0, sizeof(ivec));
 	for(i = 0; i < 3; i++){
 	    memcpy(keys + i, tmp + i * 8, sizeof(keys[i]));
 	    DES_set_odd_parity(keys + i);
 	    if(DES_is_weak_key(keys + i))
-		_krb5_xor(keys + i, (const unsigned char*)"\0\0\0\0\0\0\0\xf0");
+		_krb5_xor8(*(keys + i), (const unsigned char*)"\0\0\0\0\0\0\0\xf0");
 	}
-	memset(tmp, 0, sizeof(tmp));
+	memset_s(tmp, sizeof(tmp), 0, sizeof(tmp));
     }
     key->keytype = enctype;
     krb5_data_copy(&key->keyvalue, keys, sizeof(keys));
-    memset(keys, 0, sizeof(keys));
-    memset(str, 0, len);
+    memset_s(keys, sizeof(keys), 0, sizeof(keys));
+    memset_s(str, len, 0, len);
     free(str);
     return 0;
 }
@@ -112,10 +110,8 @@ DES3_string_to_key_derived(krb5_context context,
     char *s;
 
     s = malloc(len);
-    if(len != 0 && s == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (len != 0 && s == NULL)
+	return krb5_enomem(context);
     memcpy(s, password.data, password.length);
     memcpy(s + password.length, salt.saltvalue.data, salt.saltvalue.length);
     ret = krb5_string_to_key_derived(context,
@@ -123,7 +119,7 @@ DES3_string_to_key_derived(krb5_context context,
 				     len,
 				     enctype,
 				     key);
-    memset(s, 0, len);
+    memset_s(s, len, 0, len);
     free(s);
     return ret;
 }
@@ -136,7 +132,7 @@ struct salt_type _krb5_des3_salt[] = {
 	"pw-salt",
 	DES3_string_to_key
     },
-    { 0 }
+    { 0, NULL, NULL }
 };
 #endif
 
@@ -146,5 +142,5 @@ struct salt_type _krb5_des3_salt_derived[] = {
 	"pw-salt",
 	DES3_string_to_key_derived
     },
-    { 0 }
+    { 0, NULL, NULL }
 };

@@ -40,6 +40,8 @@
 #include <config.h>
 #endif
 
+#include <roken.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -96,7 +98,6 @@
 #include <libutil.h>
 #endif
 #include <err.h>
-#include <roken.h>
 #include <getarg.h>
 #include <krb5.h>
 #include "crypto-headers.h" /* for des_read_pw_string */

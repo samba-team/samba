@@ -136,7 +136,7 @@ krb5_rd_priv(krb5_context context,
 	krb5_timeofday (context, &sec);
 	if (part.timestamp == NULL ||
 	    part.usec      == NULL ||
-	    abs(*part.timestamp - sec) > context->max_skew) {
+	    krb5_time_abs(*part.timestamp, sec) > context->max_skew) {
 	    krb5_clear_error_message (context);
 	    ret = KRB5KRB_AP_ERR_SKEW;
 	    goto failure_part;

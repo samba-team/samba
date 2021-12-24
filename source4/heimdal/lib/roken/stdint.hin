@@ -1,0 +1,43 @@
+#ifndef _STDINT_H
+#define _STDINT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef signed char int8_t;
+typedef unsigned char uint8_t;
+typedef short int int16_t;
+typedef unsigned short int uint16_t;
+typedef int int32_t;
+typedef unsigned int uint32_t;
+#ifdef _MSC_VER
+typedef __int64 int64_t;
+typedef unsigned __int64 uint64_t;
+#else
+typedef long long int64_t;
+typedef unsigned long long uint64_t;
+#endif
+
+#ifdef _MSC_VER
+#include <intsafe.h>
+#else
+#define INT8_MAX 0x7F
+#define INT8_MIN (-INT8_MAX - 1)
+#define UINT8_MAX 0xFF
+#define INT16_MAX 0x7FFF
+#define INT16_MIN (-INT16_MAX - 1)
+#define UINT16_MAX 0xFFFF
+#define INT32_MAX 0x7FFFFFFF
+#define INT32_MIN (-INT32_MIN - 1)
+#define UINT32_MAX 0xFFFFFFFF
+#define INT64_MAX 0x7FFFFFFFFFFFFFFFLL
+#define INT64_MIN (-INT64_MAX - 1)
+#define UINT64_MAX 0xFFFFFFFFFFFFFFFFLL
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif	/* _STDINT_H */

@@ -81,11 +81,8 @@ krb5_copy_ticket(krb5_context context,
 
     *to = NULL;
     tmp = malloc(sizeof(*tmp));
-    if(tmp == NULL) {
-	krb5_set_error_message(context, ENOMEM,
-			       N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (tmp == NULL)
+	return krb5_enomem(context);
     if((ret = copy_EncTicketPart(&from->ticket, &tmp->ticket))){
 	free(tmp);
 	return ret;
@@ -150,7 +147,7 @@ krb5_ticket_get_server(krb5_context context,
 }
 
 /**
- * Return end time of ticket
+ * Return end time of a ticket
  *
  * @param context a Kerberos 5 context
  * @param ticket ticket to copy
@@ -165,6 +162,29 @@ krb5_ticket_get_endtime(krb5_context context,
 			const krb5_ticket *ticket)
 {
     return ticket->ticket.endtime;
+}
+
+/**
+ * Return authentication, start, end, and renew limit times of a ticket
+ *
+ * @param context a Kerberos 5 context
+ * @param ticket ticket to copy
+ * @param t pointer to krb5_times structure
+ *
+ * @ingroup krb5
+ */
+
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
+krb5_ticket_get_times(krb5_context context,
+                      const krb5_ticket *ticket,
+                      krb5_times *t)
+{
+    t->authtime   = ticket->ticket.authtime;
+    t->starttime  = ticket->ticket.starttime  ? *ticket->ticket.starttime  :
+                                                t->authtime;
+    t->endtime    = ticket->ticket.endtime;
+    t->renew_till = ticket->ticket.renew_till ? *ticket->ticket.renew_till :
+                                                t->endtime;
 }
 
 /**
@@ -325,6 +345,37 @@ out:
     return ret;
 }
 
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+_krb5_get_ad(krb5_context context,
+	     const AuthorizationData *ad,
+	     krb5_keyblock *sessionkey,
+	     int type,
+	     krb5_data *data)
+{
+    krb5_boolean found = FALSE;
+    krb5_error_code ret;
+
+    krb5_data_zero(data);
+
+    if (ad == NULL) {
+	krb5_set_error_message(context, ENOENT,
+			       N_("No authorization data", ""));
+	return ENOENT; /* XXX */
+    }
+
+    ret = find_type_in_ad(context, type, data, &found, TRUE, sessionkey, ad, 0);
+    if (ret)
+	return ret;
+    if (!found) {
+	krb5_set_error_message(context, ENOENT,
+			       N_("Have no authorization data of type %d", ""),
+			       type);
+	return ENOENT; /* XXX */
+    }
+    return 0;
+}
+
+
 /**
  * Extract the authorization data type of type from the ticket. Store
  * the field in data. This function is to use for kerberos
@@ -353,7 +404,7 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
     ad = ticket->ticket.authorization_data;
     if (ticket->ticket.authorization_data == NULL) {
 	krb5_set_error_message(context, ENOENT,
-			       N_("Ticket have not authorization data", ""));
+			       N_("Ticket has no authorization data", ""));
 	return ENOENT; /* XXX */
     }
 
@@ -363,7 +414,7 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
 	return ret;
     if (!found) {
 	krb5_set_error_message(context, ENOENT,
-			       N_("Ticket have not "
+			       N_("Ticket has no "
 				  "authorization data of type %d", ""),
 			       type);
 	return ENOENT; /* XXX */
@@ -498,25 +549,75 @@ noreferral:
     return 0;
 }
 
+/*
+ * Verify KDC supported anonymous if requested
+ */
+static krb5_error_code
+check_client_anonymous(krb5_context context,
+		       krb5_kdc_rep *rep,
+		       krb5_const_principal requested,
+		       krb5_const_principal mapped,
+		       krb5_boolean is_tgs_rep)
+{
+    int flags;
+
+    if (!rep->enc_part.flags.anonymous)
+	return KRB5KDC_ERR_BADOPTION;
+
+    /*
+     * Here we must validate that the AS returned a ticket of the expected type
+     * for either a fully anonymous request, or authenticated request for an
+     * anonymous ticket.  If this is a TGS request, we're done.  Then if the
+     * 'requested' principal was anonymous, we'll check the 'mapped' principal
+     * accordingly (without enforcing the name type and perhaps the realm).
+     * Finally, if the 'requested' principal was not anonymous, well check
+     * that the 'mapped' principal has an anonymous name and type, in a
+     * non-anonymous realm.  (Should we also be checking for a realm match
+     * between the request and the mapped name in this case?)
+     */
+    if (is_tgs_rep)
+	flags = KRB5_ANON_MATCH_ANY_NONT;
+    else if (krb5_principal_is_anonymous(context, requested,
+                                         KRB5_ANON_MATCH_ANY_NONT))
+	flags = KRB5_ANON_MATCH_UNAUTHENTICATED | KRB5_ANON_IGNORE_NAME_TYPE;
+    else
+	flags = KRB5_ANON_MATCH_AUTHENTICATED;
+
+    if (!krb5_principal_is_anonymous(context, mapped, flags))
+	return KRB5KRB_AP_ERR_MODIFIED;
+
+    return 0;
+}
 
 /*
- * Verify referral data
+ * Verify returned client principal name in anonymous/referral case
  */
 
-
 static krb5_error_code
-check_client_referral(krb5_context context,
+check_client_mismatch(krb5_context context,
 		      krb5_kdc_rep *rep,
 		      krb5_const_principal requested,
 		      krb5_const_principal mapped,
 		      krb5_keyblock const * key)
 {
-    if (krb5_principal_compare(context, requested, mapped) == FALSE) {
-	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
-			       N_("Not same client principal returned "
-				  "as requested", ""));
-	return KRB5KRB_AP_ERR_MODIFIED;
+    if (rep->enc_part.flags.anonymous) {
+	if (!krb5_principal_is_anonymous(context, mapped,
+                                         KRB5_ANON_MATCH_ANY_NONT)) {
+	    krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+				   N_("Anonymous ticket does not contain anonymous "
+				      "principal", ""));
+	    return KRB5KRB_AP_ERR_MODIFIED;
+	}
+    } else {
+	if (krb5_principal_compare(context, requested, mapped) == FALSE &&
+	    !rep->enc_part.flags.enc_pa_rep) {
+	    krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+				   N_("Not same client principal returned "
+				   "as requested", ""));
+	    return KRB5KRB_AP_ERR_MODIFIED;
+	}
     }
+
     return 0;
 }
 
@@ -565,7 +666,7 @@ decrypt_tkt (krb5_context context,
     return 0;
 }
 
-int
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 _krb5_extract_ticket(krb5_context context,
 		     krb5_kdc_rep *rep,
 		     krb5_creds *creds,
@@ -575,6 +676,7 @@ _krb5_extract_ticket(krb5_context context,
 		     krb5_addresses *addrs,
 		     unsigned nonce,
 		     unsigned flags,
+		     krb5_data *request,
 		     krb5_decrypt_proc decrypt_proc,
 		     krb5_const_pointer decryptarg)
 {
@@ -593,6 +695,48 @@ _krb5_extract_ticket(krb5_context context,
     if (ret)
 	goto out;
 
+    if (rep->enc_part.flags.enc_pa_rep && request) {
+	krb5_crypto crypto = NULL;
+	Checksum cksum;
+	PA_DATA *pa = NULL;
+	int idx = 0;
+
+	_krb5_debug(context, 5, "processing enc-ap-rep");
+
+	if (rep->enc_part.encrypted_pa_data == NULL ||
+	    (pa = krb5_find_padata(rep->enc_part.encrypted_pa_data->val,
+				   rep->enc_part.encrypted_pa_data->len,
+				   KRB5_PADATA_REQ_ENC_PA_REP,
+				   &idx)) == NULL)
+	{
+	    _krb5_debug(context, 5, "KRB5_PADATA_REQ_ENC_PA_REP missing");
+	    ret = KRB5KRB_AP_ERR_MODIFIED;
+	    goto out;
+	}
+	
+	ret = krb5_crypto_init(context, key, 0, &crypto);
+	if (ret)
+	    goto out;
+	
+	ret = decode_Checksum(pa->padata_value.data,
+			      pa->padata_value.length,
+			      &cksum, NULL);
+	if (ret) {
+	    krb5_crypto_destroy(context, crypto);
+	    goto out;
+	}
+	
+	ret = krb5_verify_checksum(context, crypto,
+				   KRB5_KU_AS_REQ,
+				   request->data, request->length,
+				   &cksum);
+	krb5_crypto_destroy(context, crypto);
+	free_Checksum(&cksum);
+	_krb5_debug(context, 5, "enc-ap-rep: %svalid", (ret == 0) ? "" : "in");
+	if (ret)
+	    goto out;
+    }
+
     /* save session key */
 
     creds->session.keyvalue.length = 0;
@@ -606,27 +750,29 @@ _krb5_extract_ticket(krb5_context context,
 	goto out;
     }
 
-    /*
-     * HACK:
-     * this is really a ugly hack, to support using the Netbios Domain Name
-     * as realm against windows KDC's, they always return the full realm
-     * based on the DNS Name.
-     */
-    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
-    flags |= EXTRACT_TICKET_ALLOW_CNAME_MISMATCH;
-
     /* compare client and save */
-    ret = _krb5_principalname2krb5_principal (context,
-					      &tmp_principal,
-					      rep->kdc_rep.cname,
-					      rep->kdc_rep.crealm);
+    ret = _krb5_principalname2krb5_principal(context,
+					     &tmp_principal,
+					     rep->kdc_rep.cname,
+					     rep->kdc_rep.crealm);
     if (ret)
 	goto out;
 
+    /* check KDC supported anonymous if it was requested */
+    if (flags & EXTRACT_TICKET_MATCH_ANON) {
+	ret = check_client_anonymous(context,rep,
+				     creds->client,
+				     tmp_principal,
+				     request == NULL); /* is TGS */
+	if (ret) {
+	    krb5_free_principal(context, tmp_principal);
+	    goto out;
+	}
+    }
+
     /* check client referral and save principal */
-    /* anonymous here ? */
     if((flags & EXTRACT_TICKET_ALLOW_CNAME_MISMATCH) == 0) {
-	ret = check_client_referral(context, rep,
+	ret = check_client_mismatch(context, rep,
 				    creds->client,
 				    tmp_principal,
 				    &creds->session);
@@ -704,12 +850,12 @@ _krb5_extract_ticket(krb5_context context,
 	tmp_time = rep->enc_part.authtime;
 
     if (creds->times.starttime == 0
-	&& abs(tmp_time - sec_now) > context->max_skew) {
+	&& krb5_time_abs(tmp_time, sec_now) > context->max_skew) {
 	ret = KRB5KRB_AP_ERR_SKEW;
 	krb5_set_error_message (context, ret,
-				N_("time skew (%d) larger than max (%d)", ""),
-			       abs(tmp_time - sec_now),
-			       (int)context->max_skew);
+				N_("time skew (%ld) larger than max (%ld)", ""),
+			       krb5_time_abs(tmp_time, sec_now),
+			       (long)context->max_skew);
 	goto out;
     }
 

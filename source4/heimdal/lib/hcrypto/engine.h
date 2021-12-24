@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006-2016 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -61,6 +61,8 @@
 #define ENGINE_get_default_RSA hc_ENGINE_get_default_RSA
 #define ENGINE_set_default_DH hc_ENGINE_set_default_DH
 #define ENGINE_set_default_RSA hc_ENGINE_set_default_RSA
+
+#define ENGINE hc_ENGINE
 
 /*
  *

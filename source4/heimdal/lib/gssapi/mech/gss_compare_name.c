@@ -2,6 +2,8 @@
  * Copyright (c) 2005 Doug Rabson
  * All rights reserved.
  *
+ * Portions Copyright (c) 2009 Apple Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -30,8 +32,8 @@
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_compare_name(OM_uint32 *minor_status,
-    const gss_name_t name1_arg,
-    const gss_name_t name2_arg,
+    gss_const_name_t name1_arg,
+    gss_const_name_t name2_arg,
     int *name_equal)
 {
 	struct _gss_name *name1 = (struct _gss_name *) name1_arg;
@@ -44,27 +46,43 @@ gss_compare_name(OM_uint32 *minor_status,
 	 */
 	if (name1->gn_value.value && name2->gn_value.value) {
 		*name_equal = 1;
-		if (!gss_oid_equal(&name1->gn_type, &name2->gn_type)) {
+		/* RFC 2743: anonymous names always compare false */
+		if (gss_oid_equal(name1->gn_type, GSS_C_NT_ANONYMOUS) ||
+		    gss_oid_equal(name2->gn_type, GSS_C_NT_ANONYMOUS) ||
+		    !gss_oid_equal(name1->gn_type, name2->gn_type)) {
 			*name_equal = 0;
 		} else if (name1->gn_value.length != name2->gn_value.length ||
 		    memcmp(name1->gn_value.value, name2->gn_value.value,
-			name1->gn_value.length)) {
+			name1->gn_value.length) != 0) {
 			*name_equal = 0;
 		}
 	} else {
 		struct _gss_mechanism_name *mn1;
 		struct _gss_mechanism_name *mn2;
 
-		HEIM_SLIST_FOREACH(mn1, &name1->gn_mn, gmn_link) {
+		HEIM_TAILQ_FOREACH(mn1, &name1->gn_mn, gmn_link) {
 			OM_uint32 major_status;
 
 			major_status = _gss_find_mn(minor_status, name2,
 						    mn1->gmn_mech_oid, &mn2);
-			if (major_status == GSS_S_COMPLETE) {
+			if (major_status == GSS_S_COMPLETE && mn2) {
 				return (mn1->gmn_mech->gm_compare_name(
 						minor_status,
 						mn1->gmn_name,
 						mn2->gmn_name,
+						name_equal));
+			}
+		}
+		HEIM_TAILQ_FOREACH(mn2, &name2->gn_mn, gmn_link) {
+			OM_uint32 major_status;
+
+			major_status = _gss_find_mn(minor_status, name1,
+						    mn2->gmn_mech_oid, &mn1);
+			if (major_status == GSS_S_COMPLETE && mn1) {
+				return (mn2->gmn_mech->gm_compare_name(
+						minor_status,
+						mn2->gmn_name,
+						mn1->gmn_name,
 						name_equal));
 			}
 		}

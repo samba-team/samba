@@ -32,15 +32,11 @@
  */
 
 #include <config.h>
-
-#include <stdio.h>
-#include <stdlib.h>
+#include <roken.h>
 #include <assert.h>
 
 #include <pkcs12.h>
 #include <bn.h>
-
-#include <roken.h>
 
 int
 PKCS12_key_gen(const void *key, size_t keylen,

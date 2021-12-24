@@ -1,0 +1,135 @@
+.\" Copyright (c) 2021 Kungliga Tekniska Högskolan
+.\" (Royal Institute of Technology, Stockholm, Sweden).
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the Institute nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\" $Id$
+.\"
+.Dd February 22, 2021
+.Dt ASN1_PRINT 1
+.Os HEIMDAL
+.Sh NAME
+.Nm asn1_print
+.Nd dump ASN.1 DER encoded values
+.Sh SYNOPSIS
+.Nm
+.Bk -words
+.Oo Fl i \*(Ba Xo Fl Fl no-indent Xc Oc
+.Oo Fl I \*(Ba Xo Fl Fl inner Xc Oc
+.Oo Fl l \*(Ba Xo Fl Fl list-types Xc Oc
+.Oo Fl A \*(Ba Xo Fl Fl try-all-types Xc Oc
+.Oo Fl S \*(Ba Xo Fl Fl raw-sequence Xc Oc
+.Oo Fl n \*(Ba Xo Fl Fl no-print Xc Oc
+.Oo Fl q \*(Ba Xo Fl Fl quiet Xc Oc
+.Oo Xo Fl Fl test-encode Xc Oc
+.Oo Xo Fl Fl test-copy Xc Oc
+.Oo Fl l v \*(Ba Xo
+.Fl Fl version
+.Xc
+.Oc
+.Oo Fl l h \*(Ba Xo
+.Fl Fl help
+.Xc
+.Oc
+.Op Ar FILE Op Ar TypeName...
+.Ek
+.Sh DESCRIPTION
+.Nm
+Dumps ASN.1 DER-encoded values.
+If one or more
+.Ar TypeName
+arguments are given, then
+.Nm
+will print the value in a JSON-like format using its knowledge of
+the ASN.1 modules defining those types, stopping at the first type
+for which it can successfully decode the value.
+If
+.Ar TypeNames
+are given, they must be the names of ASN.1 types exported by an
+ASN.1 modules that are compiled into
+.Nm .
+Use the
+.Fl Fl try-all-types
+option to attempt decoding as all ASN.1 types known to
+.Nm .
+If neither any
+.Ar TypeName
+nor
+.Fl Fl try-all-types
+are given, then the value will be parsed and displayed using just
+the self-describing nature of DER.
+.Pp
+Options supported:
+.Bl -tag -width Ds
+.It Fl i, Fl Fl no-indent
+Do not indent dump.
+.It Fl I, Fl Fl inner
+Try to parse inner structures of OCTET STRING and constructed values.
+.It Fl l, Fl Fl list-types
+List all types known to
+.Nm .
+.It Fl A, Fl Fl try-all-types
+Attempt to decode the value as any of all types known to
+.Nm .
+.It Fl S, Fl Fl raw-sequence
+If a value parses as a given
+.Ar TypeName
+but any bytes are left over, try to parse those separately as
+well until all bytes are consumed or an error occurs.
+.It Fl n, Fl Fl no-print
+For the case where
+.Fl A
+or
+.Fl Fl try-all-types
+or where a
+.Ar TypeName
+is given, do not output a JSON representation of the value, just
+attempt to decode it.
+This is useful for fuzzing.
+.It Fl q, Fl Fl quiet
+Similar to
+.Fl n, Fl Fl no-print
+but JSON output will be formatted, just not output.
+As with
+.Fl n, Fl Fl no-print,
+this option requires
+.Fl A / Fl Fl try-all-types
+or that a
+.Ar TypeName
+be given.
+This is useful for fuzzing.
+.It Fl Fl test-encode
+Check that encoding produces the same value as decoding.
+Useful for fuzzing.
+.It Fl Fl test-copy
+Test copy functions.
+Useful for fuzzing.
+.It Fl v, Fl Fl version
+.It Fl h, Fl Fl help
+.El

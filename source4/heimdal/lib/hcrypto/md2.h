@@ -56,8 +56,8 @@ struct md2 {
 
 typedef struct md2 MD2_CTX;
 
-void MD2_Init (struct md2 *m);
-void MD2_Update (struct md2 *m, const void *p, size_t len);
-void MD2_Final (void *res, struct md2 *m);
+int MD2_Init (struct md2 *m);
+int MD2_Update (struct md2 *m, const void *p, size_t len);
+int MD2_Final (void *res, struct md2 *m);
 
 #endif /* HEIM_MD2_H */

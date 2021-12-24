@@ -57,7 +57,10 @@ krb5_error_code
 _gsskrb5_decode_om_uint32(const void *ptr, OM_uint32 *n)
 {
     const u_char *p = ptr;
-    *n = (p[0] << 0) | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+    *n = ((uint32_t)p[0])
+       | ((uint32_t)p[1] << 8)
+       | ((uint32_t)p[2] << 16)
+       | ((uint32_t)p[3] << 24);
     return 0;
 }
 
@@ -65,7 +68,10 @@ krb5_error_code
 _gsskrb5_decode_be_om_uint32(const void *ptr, OM_uint32 *n)
 {
     const u_char *p = ptr;
-    *n = (p[0] <<24) | (p[1] << 16) | (p[2] << 8) | (p[3] << 0);
+    *n = ((uint32_t)p[0] <<24)
+       | ((uint32_t)p[1] << 16)
+       | ((uint32_t)p[2] << 8)
+       | ((uint32_t)p[3]);
     return 0;
 }
 
@@ -157,10 +163,54 @@ _gsskrb5_create_8003_checksum (
 	*p++ = (fwd_data->length >> 8) & 0xFF;    /* Dlgth  */
 	memcpy(p, (unsigned char *) fwd_data->data, fwd_data->length);
 
-	p += fwd_data->length;
+	/* p += fwd_data->length; */ /* commented out to quiet warning */
     }
 
     return GSS_S_COMPLETE;
+}
+
+static krb5_error_code
+check_ap_options_cbt(void *ad_data, size_t ad_len,
+                     krb5_boolean *client_asserted_cb)
+{
+    uint32_t ad_ap_options;
+
+    *client_asserted_cb = FALSE;
+
+    if (ad_len != sizeof(uint32_t))
+	return KRB5KRB_AP_ERR_MSG_TYPE;
+
+    _gss_mg_decode_le_uint32(ad_data, &ad_ap_options);
+
+    if (ad_ap_options & KERB_AP_OPTIONS_CBT)
+	*client_asserted_cb = TRUE;
+
+    return 0;
+}
+
+static krb5_error_code
+find_ap_options(krb5_context context,
+		krb5_authenticator authenticator,
+	        krb5_boolean *client_asserted_cb)
+{
+    krb5_error_code ret;
+    krb5_authdata *ad;
+    krb5_data data;
+
+    *client_asserted_cb = FALSE;
+
+    ad = authenticator->authorization_data;
+    if (ad == NULL)
+	return 0;
+
+    ret = _krb5_get_ad(context, ad, NULL, KRB5_AUTHDATA_AP_OPTIONS,  &data);
+    if (ret)
+	return ret == ENOENT ? 0 : ret;
+
+    ret = check_ap_options_cbt(data.data, data.length, client_asserted_cb);
+    krb5_data_free(&data);
+
+    return ret;
 }
 
 /*
@@ -170,9 +220,10 @@ _gsskrb5_create_8003_checksum (
 
 OM_uint32
 _gsskrb5_verify_8003_checksum(
+		      krb5_context context,
 		      OM_uint32 *minor_status,
 		      const gss_channel_bindings_t input_chan_bindings,
-		      const Checksum *cksum,
+		      krb5_authenticator authenticator,
 		      OM_uint32 *flags,
 		      krb5_data *fwd_data)
 {
@@ -181,6 +232,10 @@ _gsskrb5_verify_8003_checksum(
     OM_uint32 length;
     int DlgOpt;
     static unsigned char zeros[16];
+    krb5_boolean channel_bound = FALSE;
+    const Checksum *cksum = authenticator->cksum;
+    krb5_boolean client_asserted_cb;
+    krb5_error_code ret;
 
     /* XXX should handle checksums > 24 bytes */
     if(cksum->cksumtype != CKSUMTYPE_GSSAPI || cksum->checksum.length < 24) {
@@ -197,8 +252,14 @@ _gsskrb5_verify_8003_checksum(
 
     p += 4;
 
+    ret = find_ap_options(context, authenticator, &client_asserted_cb);
+    if (ret) {
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+
     if (input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS
-	&& memcmp(p, zeros, sizeof(zeros)) != 0) {
+	&& (memcmp(p, zeros, sizeof(zeros)) != 0 || client_asserted_cb)) {
 	if(hash_input_chan_bindings(input_chan_bindings, hash) != 0) {
 	    *minor_status = 0;
 	    return GSS_S_BAD_BINDINGS;
@@ -207,6 +268,7 @@ _gsskrb5_verify_8003_checksum(
 	    *minor_status = 0;
 	    return GSS_S_BAD_BINDINGS;
 	}
+	channel_bound = TRUE;
     }
 
     p += sizeof(hash);
@@ -239,6 +301,12 @@ _gsskrb5_verify_8003_checksum(
 	    return GSS_S_FAILURE;
 	}
 	memcpy(fwd_data->data, p, fwd_data->length);
+    }
+
+    if (channel_bound) {
+	*flags |= GSS_C_CHANNEL_BOUND_FLAG;
+    } else {
+	*flags &= ~GSS_C_CHANNEL_BOUND_FLAG;
     }
 
     return GSS_S_COMPLETE;

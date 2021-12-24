@@ -1,0 +1,151 @@
+.\" Copyright (c) 2019 Kungliga Tekniska Högskolan
+.\" (Royal Institute of Technology, Stockholm, Sweden).
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the Institute nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\" $Id$
+.\"
+.Dd February 22, 2021
+.Dt ASN1_COMPILE 1
+.Os HEIMDAL
+.Sh NAME
+.Nm asn1_compile
+.Nd compile ASN.1 modules
+.Sh SYNOPSIS
+.Nm
+.Bk -words
+.Op Fl Fl template
+.Op Fl Fl prefix-enum
+.Op Fl Fl enum-prefix=PREFIX
+.Op Fl Fl encode-rfc1510-bit-string
+.Op Fl Fl decode-dce-ber
+.Op Fl Fl support-ber
+.Op Fl Fl preserve-binary=TYPE-NAME
+.Op Fl Fl sequence=TYPE-NAME
+.Op Fl Fl decorate=TYPE-NAME:FIELD-TYPE:field-name[?]
+.Op Fl Fl one-code-file
+.Op Fl Fl gen-name=NAME
+.Op Fl Fl option-file=FILE
+.Op Fl Fl original-order
+.Op Fl Fl no-parse-units
+.Op Fl Fl type-file=C-HEADER-FILE
+.Op Fl Fl version
+.Op Fl Fl help
+.Op Ar FILE.asn1 Op Ar NAME
+.Ek
+.Sh DESCRIPTION
+.Nm
+Compiles an ASN.1 module into C source code and header files.
+.Pp
+Options supported:
+.Bl -tag -width Ds
+.It Fl Fl template
+Use the
+.Dq template
+backend instead of the
+.Dq codegen
+backend (which is the default backend).
+The template backend generates
+.Dq templates
+which are akin to bytecode, and which are interpreted at
+run-time.
+The codegen backend generates C code for all functions directly,
+with no template interpretation.
+The template backend scales better than the codegen backend
+because as we add support for more encoding rules the templates
+stay mostly the same, thus scaling linearly with size of module.
+Whereas the codegen backend scales linear with the product of
+module size and number of encoding rules supported.
+More importantly, currently only the template backend supports
+automatic decoding of open types via X.681/X.682/X.683
+annotations.
+.It Fl Fl prefix-enum
+This option should be removed because ENUMERATED types should
+always have their labels prefixed.
+.It Fl Fl enum-prefix=PREFIX
+This option should be removed because ENUMERATED types should
+always have their labels prefixed.
+.It Fl Fl encode-rfc1510-bit-string
+Use RFC1510, non-standard handling of
+.Dq BIT STRING
+types.
+.It Fl Fl decode-dce-ber
+.It Fl Fl support-ber
+.It Fl Fl preserve-binary=TYPE-NAME
+Generate
+.Sq _save
+fields in structs to preserve the original encoding of some
+sub-value.
+This is useful for cryptographic applications to avoid having to
+re-encode values to check signatures, etc.
+.It Fl Fl sequence=TYPE-NAME
+Generate add/remove functions for
+.Sq SET OF
+and
+.Sq SEQUENCE OF
+types.
+.It Fl Fl decorate=TYPE-NAME:FIELD-TYPE:field-name[?]
+Add to the
+.Va TYPE-NAME
+SET or SEQUENCE type a field of the given
+.Va FIELD-TYPE
+and
+.Va field-name ,
+but do not encode or decode this field.
+If the
+.Va field-name
+ends in a question mark, then treat the field as OPTIONAL for
+the purposes of copy/free function stubs.
+This is useful for adding fields to existing types that can be used
+for internal bookkeeping but which do not affect interoperability
+because they are not encoded.
+.It Fl Fl one-code-file
+Generate a single source code file.
+Otherwise a separate code file will be generated for every type.
+.It Fl Fl gen-name=NAME
+Use
+.Ar NAME
+to form the names of the files generated.
+.It Fl Fl option-file=FILE
+Take additional command-line options from
+.Ar FILE .
+.It Fl Fl original-order
+Attempt to preserve the original order of type definition in the
+ASN.1 module.
+By default the compiler generates types in a topological sort
+order.
+.It Fl Fl no-parse-units
+Do not generate to-int / from-int functions for enumeration
+types.
+.It Fl Fl type-file=C-HEADER-FILE
+Generate an include of the named header file that might be needed
+for common type defintions.
+.It Fl Fl version
+.It Fl Fl help
+.El

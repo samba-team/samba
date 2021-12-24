@@ -1,0 +1,203 @@
+########################################################################
+#
+# Copyright (c) 2009, Secure Endpoints Inc.
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 
+# - Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+# 
+# - Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in
+#   the documentation and/or other materials provided with the
+#   distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+
+RELDIR=lib\hcrypto\libtommath
+
+!include ../../../windows/NTMakefile.w32
+
+INCFILES=	\
+	$(INCDIR)\tommath.h		\
+	$(INCDIR)\tommath_class.h	\
+	$(INCDIR)\tommath_superclass.h
+
+libltm_OBJs=	\
+	$(OBJ)\bn_cutoffs.obj		\
+	$(OBJ)\bn_deprecated.obj	\
+	$(OBJ)\bn_mp_2expt.obj		\
+	$(OBJ)\bn_mp_abs.obj		\
+	$(OBJ)\bn_mp_add.obj		\
+	$(OBJ)\bn_mp_add_d.obj		\
+	$(OBJ)\bn_mp_addmod.obj		\
+	$(OBJ)\bn_mp_and.obj		\
+	$(OBJ)\bn_mp_clamp.obj		\
+	$(OBJ)\bn_mp_clear.obj		\
+	$(OBJ)\bn_mp_clear_multi.obj	\
+	$(OBJ)\bn_mp_cmp.obj		\
+	$(OBJ)\bn_mp_cmp_d.obj		\
+	$(OBJ)\bn_mp_cmp_mag.obj	\
+	$(OBJ)\bn_mp_cnt_lsb.obj	\
+	$(OBJ)\bn_mp_complement.obj	\
+	$(OBJ)\bn_mp_copy.obj		\
+	$(OBJ)\bn_mp_count_bits.obj	\
+	$(OBJ)\bn_mp_decr.obj		\
+	$(OBJ)\bn_mp_div.obj		\
+	$(OBJ)\bn_mp_div_2.obj		\
+	$(OBJ)\bn_mp_div_2d.obj		\
+	$(OBJ)\bn_mp_div_3.obj		\
+	$(OBJ)\bn_mp_div_d.obj		\
+	$(OBJ)\bn_mp_dr_is_modulus.obj	\
+	$(OBJ)\bn_mp_dr_reduce.obj	\
+	$(OBJ)\bn_mp_dr_setup.obj	\
+	$(OBJ)\bn_mp_error_to_string.obj\
+	$(OBJ)\bn_mp_exch.obj		\
+	$(OBJ)\bn_mp_expt_u32.obj	\
+	$(OBJ)\bn_mp_exptmod.obj	\
+	$(OBJ)\bn_mp_exteuclid.obj	\
+	$(OBJ)\bn_mp_fread.obj		\
+	$(OBJ)\bn_mp_from_sbin.obj	\
+	$(OBJ)\bn_mp_from_ubin.obj	\
+	$(OBJ)\bn_mp_fwrite.obj		\
+	$(OBJ)\bn_mp_gcd.obj		\
+	$(OBJ)\bn_mp_get_double.obj	\
+	$(OBJ)\bn_mp_get_i32.obj	\
+	$(OBJ)\bn_mp_get_i64.obj	\
+	$(OBJ)\bn_mp_get_l.obj		\
+	$(OBJ)\bn_mp_get_ll.obj		\
+	$(OBJ)\bn_mp_get_mag_u32.obj	\
+	$(OBJ)\bn_mp_get_mag_u64.obj	\
+	$(OBJ)\bn_mp_get_mag_ul.obj	\
+	$(OBJ)\bn_mp_get_mag_ull.obj	\
+	$(OBJ)\bn_mp_grow.obj		\
+	$(OBJ)\bn_mp_incr.obj		\
+	$(OBJ)\bn_mp_init.obj		\
+	$(OBJ)\bn_mp_init_copy.obj	\
+	$(OBJ)\bn_mp_init_i32.obj	\
+	$(OBJ)\bn_mp_init_i64.obj	\
+	$(OBJ)\bn_mp_init_l.obj		\
+	$(OBJ)\bn_mp_init_ll.obj	\
+	$(OBJ)\bn_mp_init_multi.obj	\
+	$(OBJ)\bn_mp_init_set.obj	\
+	$(OBJ)\bn_mp_init_size.obj	\
+	$(OBJ)\bn_mp_init_u32.obj	\
+	$(OBJ)\bn_mp_init_u64.obj	\
+	$(OBJ)\bn_mp_init_ul.obj	\
+	$(OBJ)\bn_mp_init_ull.obj	\
+	$(OBJ)\bn_mp_invmod.obj		\
+	$(OBJ)\bn_mp_is_square.obj	\
+	$(OBJ)\bn_mp_iseven.obj		\
+	$(OBJ)\bn_mp_isodd.obj		\
+	$(OBJ)\bn_mp_kronecker.obj	\
+	$(OBJ)\bn_mp_lcm.obj		\
+	$(OBJ)\bn_mp_log_u32.obj	\
+	$(OBJ)\bn_mp_lshd.obj		\
+	$(OBJ)\bn_mp_mod.obj		\
+	$(OBJ)\bn_mp_mod_2d.obj		\
+	$(OBJ)\bn_mp_mod_d.obj		\
+	$(OBJ)\bn_mp_montgomery_calc_normalization.obj \
+	$(OBJ)\bn_mp_montgomery_reduce.obj \
+	$(OBJ)\bn_mp_montgomery_setup.obj \
+	$(OBJ)\bn_mp_mul.obj		\
+	$(OBJ)\bn_mp_mul_2.obj		\
+	$(OBJ)\bn_mp_mul_2d.obj		\
+	$(OBJ)\bn_mp_mul_d.obj		\
+	$(OBJ)\bn_mp_mulmod.obj		\
+	$(OBJ)\bn_mp_neg.obj		\
+	$(OBJ)\bn_mp_or.obj		\
+	$(OBJ)\bn_mp_pack.obj		\
+	$(OBJ)\bn_mp_pack_count.obj	\
+	$(OBJ)\bn_mp_prime_fermat.obj	\
+	$(OBJ)\bn_mp_prime_frobenius_underwood.obj \
+	$(OBJ)\bn_mp_prime_is_prime.obj	\
+	$(OBJ)\bn_mp_prime_miller_rabin.obj \
+	$(OBJ)\bn_mp_prime_next_prime.obj   \
+	$(OBJ)\bn_mp_prime_rabin_miller_trials.obj \
+	$(OBJ)\bn_mp_prime_rand.obj	\
+	$(OBJ)\bn_mp_prime_strong_lucas_selfridge.obj \
+	$(OBJ)\bn_mp_radix_size.obj	\
+	$(OBJ)\bn_mp_radix_smap.obj	\
+	$(OBJ)\bn_mp_rand.obj		\
+	$(OBJ)\bn_mp_read_radix.obj	\
+	$(OBJ)\bn_mp_reduce.obj		\
+	$(OBJ)\bn_mp_reduce_2k.obj	\
+	$(OBJ)\bn_mp_reduce_2k_l.obj	\
+	$(OBJ)\bn_mp_reduce_2k_setup.obj \
+	$(OBJ)\bn_mp_reduce_2k_setup_l.obj \
+	$(OBJ)\bn_mp_reduce_is_2k.obj	\
+	$(OBJ)\bn_mp_reduce_is_2k_l.obj	\
+	$(OBJ)\bn_mp_reduce_setup.obj	\
+	$(OBJ)\bn_mp_root_u32.obj	\
+	$(OBJ)\bn_mp_rshd.obj		\
+	$(OBJ)\bn_mp_sbin_size.obj	\
+	$(OBJ)\bn_mp_set.obj		\
+	$(OBJ)\bn_mp_set_double.obj	\
+	$(OBJ)\bn_mp_set_i32.obj	\
+	$(OBJ)\bn_mp_set_i64.obj	\
+	$(OBJ)\bn_mp_set_l.obj		\
+	$(OBJ)\bn_mp_set_ll.obj		\
+	$(OBJ)\bn_mp_set_u32.obj	\
+	$(OBJ)\bn_mp_set_u64.obj	\
+	$(OBJ)\bn_mp_set_ul.obj		\
+	$(OBJ)\bn_mp_set_ull.obj	\
+	$(OBJ)\bn_mp_shrink.obj		\
+	$(OBJ)\bn_mp_signed_rsh.obj	\
+	$(OBJ)\bn_mp_sqr.obj		\
+	$(OBJ)\bn_mp_sqrmod.obj		\
+	$(OBJ)\bn_mp_sqrt.obj		\
+	$(OBJ)\bn_mp_sqrtmod_prime.obj	\
+	$(OBJ)\bn_mp_sub.obj		\
+	$(OBJ)\bn_mp_sub_d.obj		\
+	$(OBJ)\bn_mp_submod.obj		\
+	$(OBJ)\bn_mp_to_radix.obj	\
+	$(OBJ)\bn_mp_to_sbin.obj	\
+	$(OBJ)\bn_mp_to_ubin.obj	\
+	$(OBJ)\bn_mp_ubin_size.obj	\
+	$(OBJ)\bn_mp_unpack.obj		\
+	$(OBJ)\bn_mp_xor.obj		\
+	$(OBJ)\bn_mp_zero.obj		\
+	$(OBJ)\bn_prime_tab.obj		\
+	$(OBJ)\bn_s_mp_add.obj		\
+	$(OBJ)\bn_s_mp_balance_mul.obj	\
+	$(OBJ)\bn_s_mp_exptmod.obj	\
+	$(OBJ)\bn_s_mp_exptmod_fast.obj	\
+	$(OBJ)\bn_s_mp_get_bit.obj	\
+	$(OBJ)\bn_s_mp_invmod_fast.obj	\
+	$(OBJ)\bn_s_mp_invmod_slow.obj	\
+	$(OBJ)\bn_s_mp_karatsuba_mul.obj\
+	$(OBJ)\bn_s_mp_karatsuba_sqr.obj\
+	$(OBJ)\bn_s_mp_montgomery_reduce_fast.obj \
+	$(OBJ)\bn_s_mp_mul_digs.obj	\
+	$(OBJ)\bn_s_mp_mul_digs_fast.obj\
+	$(OBJ)\bn_s_mp_mul_high_digs.obj\
+	$(OBJ)\bn_s_mp_mul_high_digs_fast.obj \
+	$(OBJ)\bn_s_mp_prime_is_divisible.obj \
+	$(OBJ)\bn_s_mp_rand_jenkins.obj	\
+	$(OBJ)\bn_s_mp_rand_platform.obj\
+	$(OBJ)\bn_s_mp_reverse.obj	\
+	$(OBJ)\bn_s_mp_sqr.obj		\
+	$(OBJ)\bn_s_mp_sqr_fast.obj	\
+	$(OBJ)\bn_s_mp_sub.obj		\
+	$(OBJ)\bn_s_mp_toom_mul.obj	\
+	$(OBJ)\bn_s_mp_toom_sqr.obj
+
+$(LIBLTM): $(libltm_OBJs)
+	$(LIBCON)
+
+all:: $(INCFILES) $(LIBLTM)

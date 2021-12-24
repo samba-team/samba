@@ -1,0 +1,114 @@
+#
+# Error messages for the kadm5 library
+#
+# This might look like a com_err file, but is not
+#
+id "$Id$"
+
+error_table ovk kadm5
+
+prefix KADM5
+error_code FAILURE,		"Operation failed for unspecified reason"
+error_code AUTH_GET,		"Operation requires `get' privilege"
+error_code AUTH_ADD,		"Operation requires `add' privilege"
+error_code AUTH_MODIFY,		"Operation requires `modify' privilege"
+error_code AUTH_DELETE,		"Operation requires `delete' privilege"
+error_code AUTH_INSUFFICIENT,	"Insufficient authorization for operation"
+error_code BAD_DB,		"Database inconsistency detected"
+error_code DUP,			"Principal or policy already exists"
+error_code RPC_ERROR,		"Communication failure with server"
+error_code NO_SRV,		"No administration server found for realm"
+error_code BAD_HIST_KEY,	"Password history principal key version mismatch"
+error_code NOT_INIT,		"Connection to server not initialized"
+error_code UNK_PRINC,		"Principal does not exist"
+error_code UNK_POLICY,		"Policy does not exist"
+error_code BAD_MASK,		"Invalid field mask for operation"
+error_code BAD_CLASS,		"Invalid number of character classes"
+error_code BAD_LENGTH,		"Invalid password length"
+error_code BAD_POLICY,		"Invalid policy name"
+error_code BAD_PRINCIPAL,	"Invalid principal name."
+error_code BAD_AUX_ATTR,	"Invalid auxillary attributes"
+error_code BAD_HISTORY,		"Invalid password history count"
+error_code BAD_MIN_PASS_LIFE,	"Password minimum life is greater than password maximum life"
+error_code PASS_Q_TOOSHORT,	"Password is too short"
+error_code PASS_Q_CLASS,	"Password does not contain enough character classes"
+error_code PASS_Q_DICT,		"Password is in the password dictionary"
+error_code PASS_REUSE,		"Can't reuse password"
+error_code PASS_TOOSOON,	"Current password's minimum life has not expired"
+error_code POLICY_REF,		"Policy is in use"
+error_code INIT,		"Connection to server already initialized"
+error_code BAD_PASSWORD,	"Incorrect password"
+error_code PROTECT_PRINCIPAL,	"Can't change protected principal"
+error_code BAD_SERVER_HANDLE,	"Programmer error!  Bad Admin server handle"
+error_code BAD_STRUCT_VERSION,	"Programmer error!  Bad API structure version"
+error_code OLD_STRUCT_VERSION,	"API structure version specified by application is no longer supported"
+error_code NEW_STRUCT_VERSION,	"API structure version specified by application is unknown to libraries"
+error_code BAD_API_VERSION,	"Programmer error!  Bad API version"
+error_code OLD_LIB_API_VERSION,	"API version specified by application is no longer supported by libraries"
+error_code OLD_SERVER_API_VERSION,"API version specified by application is no longer supported by server"
+error_code NEW_LIB_API_VERSION,	"API version specified by application is unknown to libraries"
+error_code NEW_SERVER_API_VERSION,"API version specified by application is unknown to server"
+error_code SECURE_PRINC_MISSING,"Database error! Required principal missing"
+error_code NO_RENAME_SALT,	"The salt type of the specified principal does not support renaming"
+error_code BAD_CLIENT_PARAMS,	"Invalid configuration parameter for remote KADM5 client"
+error_code BAD_SERVER_PARAMS,	"Invalid configuration parameter for local KADM5 client."
+error_code AUTH_LIST,		"Operation requires `list' privilege"
+error_code AUTH_CHANGEPW,	"Operation requires `change-password' privilege"
+error_code BAD_TL_TYPE,		"Invalid tagged data list element type"
+error_code MISSING_CONF_PARAMS,	"Required parameters in kdc.conf missing"
+error_code BAD_SERVER_NAME,	"Bad krb5 admin server hostname"
+error_code KS_TUPLE_NOSUPP,	"Key/salt tuples not supported by this function"
+error_code SETKEY3_ETYPE_MISMATCH,	"Key/salt tuples don't match keys"
+error_code DECRYPT_USAGE_NOSUPP,	"Given usage of kadm5_decrypt() not supported"
+error_code POLICY_OP_NOSUPP,	"Policy operations not supported"
+error_code KEEPOLD_NOSUPP,	"Keep old keys option not supported"
+error_code AUTH_GET_KEYS,	"Operation requires `get-keys' privilege"
+error_code ALREADY_LOCKED,	"Database already locked"
+error_code NOT_LOCKED,		"Database not locked"
+error_code LOG_CORRUPT,		"Incremental propagation log got corrupted"
+error_code LOG_NEEDS_UPGRADE,	"Incremental propagation log must be upgraded"
+error_code BAD_SERVER_HOOK,	    "Bad KADM5 server hook"
+error_code SERVER_HOOK_NOT_FOUND,   "Cannot find KADM5 server hook"
+error_code OLD_SERVER_HOOK_VERSION, "KADM5 server hook is too old for this version of Heimdal"
+error_code NEW_SERVER_HOOK_VERSION, "KADM5 server hook is too new for this version of Heimdal"
+error_code READ_ONLY,           "Database is read-only; try primary server"
+error_code PASS_Q_GENERIC,      "Unspecified password quality failure"
+
+
+# MIT has:
+#
+# - GSS_ERROR sandwiched by AUTH_CHANGEPW and BAD_TL_TYPE
+#   error_code GSS_ERROR, "GSS-API (or Kerberos) error"
+
+# - AUTH_SETKEY, SETKEY_DUP_ENCTYPES, and SETV4KEY_INVAL_ENCTYPE, sandwiched by
+#   BAD_SERVER_NAME and SETKEY3_ETYPE_MISMATCH
+#   error_code AUTH_SETKEY, "Operation requires ``set-key'' privilege"
+#   error_code SETKEY_DUP_ENCTYPES, "Multiple values for single or folded enctype"
+#   error_code SETV4KEY_INVAL_ENCTYPE, "Invalid enctype for setv4key"
+
+# - all of the following after SETKEY3_ETYPE_MISMATCH
+#   error_code MISSING_KRB5_CONF_PARAMS, "Missing parameters in krb5.conf required for kadmin client"
+#   error_code XDR_FAILURE,		"XDR encoding error"
+#   error_code CANT_RESOLVE, "Cannot resolve network address for admin server in requested realm"
+#   error_code BAD_KEYSALTS, "Invalid key/salt tuples"
+#   error_code SETKEY_BAD_KVNO, "Invalid multiple or duplicate kvnos in setkey operation"
+#   error_code AUTH_EXTRACT, "Operation requires ``extract-keys'' privilege"
+#   error_code PROTECT_KEYS, "Principal keys are locked down"
+#   error_code AUTH_INITIAL, "Operation requires initial ticket"
+
+# AUTH_EXTRACT is the same as our AUTH_GET_KEYS
+# MISSING_KRB5_CONF_PARAMS is the same as our MISSING_CONF_PARAMS
+
+# We have a number of errors not in MIT:
+#  - KS_TUPLE_NOSUPP            (no longer relevant)
+#  - DECRYPT_USAGE_NOSUPP       (could be replaced with some other, no?)
+#  - POLICY_OP_NOSUPP           (could be made irrelevant)
+#  - ALREADY_LOCKED             (in MIT KDB locks are recursive)
+#  - NOT_LOCKED                 (KRB5_KDB_NOTLOCKED in MIT)
+#  - LOG_CORRUPT                (unique to Heimdal)
+#  - LOG_NEEDS_UPGRADE          (unique to Heimdal)
+#  - BAD_SERVER_HOOK            (unique to Heimdal, not used in-tree)
+#  - SERVER_HOOK_NOT_FOUND      (unique to Heimdal, not used in-tree)
+#  - OLD_SERVER_HOOK_VERSION    (unique to Heimdal, not used in-tree)
+#  - NEW_SERVER_HOOK_VERSION    (unique to Heimdal, not used in-tree)
+#  - READ_ONLY                  (should not be unique to Heimdal, but is)

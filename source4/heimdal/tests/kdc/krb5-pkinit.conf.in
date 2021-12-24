@@ -1,0 +1,80 @@
+[libdefaults]
+	default_realm = TEST.H5L.SE
+	no-addresses = TRUE
+	allow_weak_crypto = TRUE
+        enable_kx509 = true
+
+[appdefaults]
+	pkinit_anchors = FILE:@objdir@/ca.crt
+
+[realms]
+	TEST.H5L.SE = {
+		kdc = localhost:@port@
+		pkinit_win2k = @w2k@
+	}
+
+[kdc]
+        strict-nametypes = true
+        synthetic_clients = true
+	enable-pkinit = true
+	pkinit_identity = FILE:@objdir@/kdc.crt,@srcdir@/../../lib/hx509/data/key2.der
+	pkinit_anchors = FILE:@objdir@/ca.crt
+	pkinit_mappings_file = @srcdir@/pki-mapping
+        pkinit_max_life_from_cert_extension = true
+	pkinit_max_life_from_cert = @max_life_from_cert@
+
+        plugin_dir =  @objdir@/../../kdc/.libs
+
+        simple_csr_authorizer_directory = @objdir@/simple_csr_authz
+
+        enable_kx509 = true
+        require_initial_kca_tickets = false
+
+	database = {
+		dbname = @objdir@/current-db
+		realm = TEST.H5L.SE
+		mkey_file = @objdir@/mkey.file
+                log_file = @objdir@/log.current-db.log
+	}
+
+
+        realms = {
+                TEST.H5L.SE = {
+                        negotiate_token_validator = {
+                                keytab = HDBGET:@objdir@/current-db
+                        }
+                        kx509 = {
+                                user = {
+                                        include_pkinit_san = true
+                                        subject_name = CN=${principal-name-without-realm},DC=TEST,DC=H5L,DC=SE
+                                        ekus = 1.3.6.1.5.5.7.3.2
+                                        ca = FILE:@objdir@/ca.crt,@srcdir@/../../lib/hx509/data/key.der
+                                        template_cert = FILE:@objdir@/kx509-template.crt
+                                }
+                                hostbased_service = {
+                                        HTTP = {
+                                                include_dnsname_san = true
+                                                ekus = 1.3.6.1.5.5.7.3.1
+                                                ca = FILE:@objdir@/ca.crt,@srcdir@/../../lib/hx509/data/key.der
+                                        }
+                                }
+                                client = {
+                                        ca = FILE:@objdir@/ca.crt,@srcdir@/../../lib/hx509/data/key.der
+                                }
+                                server = {
+                                        ekus = 1.3.6.1.5.5.7.3.1
+                                        ca = FILE:@objdir@/ca.crt,@srcdir@/../../lib/hx509/data/key.der
+                                }
+                        }
+                }
+        }
+
+[hdb]
+	db-dir = @objdir@
+
+[logging]
+	kdc = 0-/FILE:@objdir@/messages.log
+	default = 0-/FILE:@objdir@/messages.log
+
+[kadmin]
+	save-password = true

@@ -30,19 +30,45 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+#include <config.h>
 
 #include "roken.h"
+
+#ifdef HAVE_WIN32_RAND_S
+static int hasRand_s = 1;
+#include "versionsupport.h"
+#endif
 
 void ROKEN_LIB_FUNCTION
 rk_random_init(void)
 {
 #if defined(HAVE_ARC4RANDOM)
-    arc4random_stir();
+    /* nothing to do */;
 #elif defined(HAVE_SRANDOMDEV)
     srandomdev();
 #elif defined(HAVE_RANDOM)
     srandom(time(NULL));
 #else
+# ifdef HAVE_WIN32_RAND_S
+	hasRand_s = IsWindowsXPOrGreater();
+# endif
     srand (time(NULL));
 #endif
 }
+
+#ifdef HAVE_WIN32_RAND_S
+unsigned int ROKEN_LIB_FUNCTION
+rk_random(void)
+{
+    if (hasRand_s) {
+	unsigned int n;
+	int code;
+
+	code = rand_s(&n);
+	if (code == 0)
+	    return n;
+    }
+
+    return rand();
+}
+#endif

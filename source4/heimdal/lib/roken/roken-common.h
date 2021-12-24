@@ -122,7 +122,15 @@
 #define O_ACCMODE	003
 #endif
 
-#ifndef _WIN32
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW 0
+#endif
+
+#ifdef _WIN32
+
+#define _PATH_DEVNULL "\\\\.\\NUL"
+
+#else
 
 #ifndef _PATH_DEV
 #define _PATH_DEV "/dev/"
@@ -151,7 +159,15 @@
 #endif	/* !_WIN32 */
 
 #ifndef PATH_MAX
+#ifdef MAX_PATH
 #define PATH_MAX MAX_PATH
+#else
+#define PATH_MAX 4096
+#endif
+#endif
+
+#ifndef MAX_PATH
+#define MAX_PATH PATH_MAX
 #endif
 
 #ifndef RETSIGTYPE
@@ -274,6 +290,33 @@
 
 #ifndef HAVE___ATTRIBUTE__
 #define __attribute__(x)
+#endif
+
+/*
+ * for dlopen(3)
+ */
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
+
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0
+#endif
+
+#ifndef RTLD_LOCAL
+#define RTLD_LOCAL 0
+#endif
+
+#ifndef RTLD_GROUP
+#define RTLD_GROUP 0
+#endif
+
+#ifndef RTLD_NODELETE
+#define RTLD_NODELETE 0
 #endif
 
 ROKEN_CPP_START
@@ -401,6 +444,10 @@ socket_set_debug (rk_socket_t);
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_tos (rk_socket_t, int);
 
+#define socket_set_nonblocking rk_socket_set_nonblocking
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+socket_set_nonblocking(rk_socket_t, int);
+
 #define socket_set_reuseaddr rk_socket_set_reuseaddr
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_reuseaddr (rk_socket_t, int);
@@ -408,6 +455,10 @@ socket_set_reuseaddr (rk_socket_t, int);
 #define socket_set_ipv6only rk_socket_set_ipv6only
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_ipv6only (rk_socket_t, int);
+
+#define socket_set_keepalive rk_socket_set_keepalive
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+socket_set_keepalive (rk_socket_t, int);
 
 #define socket_to_fd rk_socket_to_fd
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
@@ -452,7 +503,7 @@ free_environment(char **);
 #define warnerr rk_warnerr
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_warnerr(int doerrno, const char *fmt, va_list ap)
-    __attribute__ ((format (printf, 2, 0)));
+    __attribute__ ((__format__ (__printf__, 2, 0)));
 
 ROKEN_LIB_FUNCTION void * ROKEN_LIB_CALL
 rk_realloc(void *, size_t);
@@ -464,7 +515,7 @@ rk_strpoolcollect(struct rk_strpool *);
 
 ROKEN_LIB_FUNCTION struct rk_strpool * ROKEN_LIB_CALL
 rk_strpoolprintf(struct rk_strpool *, const char *, ...)
-    __attribute__ ((format (printf, 2, 3)));
+    __attribute__ ((__format__ (__printf__, 2, 3)));
 
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_strpoolfree(struct rk_strpool *);
@@ -487,11 +538,22 @@ rk_cloexec_file(FILE *);
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_cloexec_dir(DIR *);
 
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+rk_cloexec_socket(rk_socket_t);
+
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-ct_memcmp(const void *, const void *, size_t);
+ct_memcmp(const volatile void * volatile,
+          const volatile void * volatile,
+          size_t);
 
 void ROKEN_LIB_FUNCTION
 rk_random_init(void);
+
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+rk_mkdir(const char *, mode_t);
+
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+rk_clzll(uint64_t);
 
 ROKEN_CPP_END
 

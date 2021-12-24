@@ -31,18 +31,15 @@
  * SUCH DAMAGE.
  */
 
-#include "config.h"
+#include <config.h>
+#include <roken.h>
 
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
 
-#include <string.h>
-
 #include "camellia-ntt.h"
 #include "camellia.h"
-
-#include <roken.h>
 
 int
 CAMELLIA_set_key(const unsigned char *userkey,

@@ -41,16 +41,16 @@
  * Either 0 or an error code is returned.
  */
 
-int
+int ASN1CALL
 der_get_unsigned (const unsigned char *p, size_t len,
 		  unsigned *ret, size_t *size)
 {
     unsigned val = 0;
     size_t oldlen = len;
 
-    if (len == sizeof(unsigned) + 1 && p[0] == 0)
+    if (len == sizeof(val) + 1 && p[0] == 0)
 	;
-    else if (len > sizeof(unsigned))
+    else if (len > sizeof(val))
 	return ASN1_OVERRUN;
 
     while (len--)
@@ -60,14 +60,33 @@ der_get_unsigned (const unsigned char *p, size_t len,
     return 0;
 }
 
-int
+int ASN1CALL
+der_get_unsigned64 (const unsigned char *p, size_t len,
+                   uint64_t *ret, size_t *size)
+{
+    uint64_t val = 0;
+    size_t oldlen = len;
+
+    if (len == sizeof(val) + 1 && p[0] == 0)
+       ;
+    else if (len > sizeof(val))
+	return ASN1_OVERRUN;
+
+    while (len--)
+	val = val * 256 + *p++;
+    *ret = val;
+    if(size) *size = oldlen;
+    return 0;
+}
+
+int ASN1CALL
 der_get_integer (const unsigned char *p, size_t len,
 		 int *ret, size_t *size)
 {
     int val = 0;
     size_t oldlen = len;
 
-    if (len > sizeof(int))
+    if (len > sizeof(val))
 	return ASN1_OVERRUN;
 
     if (len > 0) {
@@ -80,7 +99,28 @@ der_get_integer (const unsigned char *p, size_t len,
     return 0;
 }
 
-int
+int ASN1CALL
+der_get_integer64 (const unsigned char *p, size_t len,
+		   int64_t *ret, size_t *size)
+{
+    int64_t val = 0;
+    size_t oldlen = len;
+
+    if (len > sizeof(val))
+        return ASN1_OVERRUN;
+
+    if (len > 0) {
+       val = (signed char)*p++;
+       while (--len)
+           val = val * 256 + *p++;
+    }
+    *ret = val;
+    if(size) *size = oldlen;
+    return 0;
+}
+
+
+int ASN1CALL
 der_get_length (const unsigned char *p, size_t len,
 		size_t *val, size_t *size)
 {
@@ -114,7 +154,7 @@ der_get_length (const unsigned char *p, size_t len,
     return 0;
 }
 
-int
+int ASN1CALL
 der_get_boolean(const unsigned char *p, size_t len, int *data, size_t *size)
 {
     if(len < 1)
@@ -127,7 +167,7 @@ der_get_boolean(const unsigned char *p, size_t len, int *data, size_t *size)
     return 0;
 }
 
-int
+int ASN1CALL
 der_get_general_string (const unsigned char *p, size_t len,
 			heim_general_string *str, size_t *size)
 {
@@ -143,64 +183,83 @@ der_get_general_string (const unsigned char *p, size_t len,
 	 */
 	while ((size_t)(p1 - p) < len && *p1 == '\0')
 	    p1++;
-       if ((size_t)(p1 - p) != len)
+	if ((size_t)(p1 - p) != len) {
+	    *str = NULL;
 	    return ASN1_BAD_CHARACTER;
+	}
     }
-    if (len > len + 1)
+    if (len == SIZE_MAX) {
+	*str = NULL;
 	return ASN1_BAD_LENGTH;
+    }
 
-    s = malloc (len + 1);
+    *str = s = malloc (len + 1);
     if (s == NULL)
 	return ENOMEM;
     memcpy (s, p, len);
     s[len] = '\0';
-    *str = s;
+
     if(size) *size = len;
     return 0;
 }
 
-int
+int ASN1CALL
 der_get_utf8string (const unsigned char *p, size_t len,
 		    heim_utf8_string *str, size_t *size)
 {
     return der_get_general_string(p, len, str, size);
 }
 
-int
+#define gen_data_zero(_data) \
+	do { (_data)->length = 0; (_data)->data = NULL; } while(0)
+
+int ASN1CALL
 der_get_printable_string(const unsigned char *p, size_t len,
 			 heim_printable_string *str, size_t *size)
 {
+    if (len == SIZE_MAX) {
+	gen_data_zero(str);
+	return ASN1_BAD_LENGTH;
+    }
     str->length = len;
     str->data = malloc(len + 1);
-    if (str->data == NULL)
+    if (str->data == NULL) {
+	gen_data_zero(str);
 	return ENOMEM;
+    }
     memcpy(str->data, p, len);
     ((char *)str->data)[len] = '\0';
     if(size) *size = len;
     return 0;
 }
 
-int
+int ASN1CALL
 der_get_ia5_string(const unsigned char *p, size_t len,
 		   heim_ia5_string *str, size_t *size)
 {
     return der_get_printable_string(p, len, str, size);
 }
 
-int
+int ASN1CALL
 der_get_bmp_string (const unsigned char *p, size_t len,
 		    heim_bmp_string *data, size_t *size)
 {
     size_t i;
 
-    if (len & 1)
+    if (len & 1) {
+	gen_data_zero(data);
 	return ASN1_BAD_FORMAT;
+    }
     data->length = len / 2;
-    if (data->length > UINT_MAX/sizeof(data->data[0]))
+    if (data->length > UINT_MAX/sizeof(data->data[0])) {
+	gen_data_zero(data);
 	return ERANGE;
+    }
     data->data = malloc(data->length * sizeof(data->data[0]));
-    if (data->data == NULL && data->length != 0)
+    if (data->data == NULL && data->length != 0) {
+	gen_data_zero(data);
 	return ENOMEM;
+    }
 
     for (i = 0; i < data->length; i++) {
 	data->data[i] = (p[0] << 8) | p[1];
@@ -208,8 +267,7 @@ der_get_bmp_string (const unsigned char *p, size_t len,
 	/* check for NUL in the middle of the string */
 	if (data->data[i] == 0 && i != (data->length - 1)) {
 	    free(data->data);
-	    data->data = NULL;
-	    data->length = 0;
+	    gen_data_zero(data);
 	    return ASN1_BAD_CHARACTER;
 	}
     }
@@ -218,20 +276,26 @@ der_get_bmp_string (const unsigned char *p, size_t len,
     return 0;
 }
 
-int
+int ASN1CALL
 der_get_universal_string (const unsigned char *p, size_t len,
 			  heim_universal_string *data, size_t *size)
 {
     size_t i;
 
-    if (len & 3)
+    if (len & 3) {
+	gen_data_zero(data);
 	return ASN1_BAD_FORMAT;
+    }
     data->length = len / 4;
-    if (data->length > UINT_MAX/sizeof(data->data[0]))
+    if (data->length > UINT_MAX/sizeof(data->data[0])) {
+	gen_data_zero(data);
 	return ERANGE;
+    }
     data->data = malloc(data->length * sizeof(data->data[0]));
-    if (data->data == NULL && data->length != 0)
+    if (data->data == NULL && data->length != 0) {
+	gen_data_zero(data);
 	return ENOMEM;
+    }
 
     for (i = 0; i < data->length; i++) {
 	data->data[i] = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
@@ -239,8 +303,7 @@ der_get_universal_string (const unsigned char *p, size_t len,
 	/* check for NUL in the middle of the string */
 	if (data->data[i] == 0 && i != (data->length - 1)) {
 	    free(data->data);
-	    data->data = NULL;
-	    data->length = 0;
+	    gen_data_zero(data);
 	    return ASN1_BAD_CHARACTER;
 	}
     }
@@ -248,14 +311,14 @@ der_get_universal_string (const unsigned char *p, size_t len,
     return 0;
 }
 
-int
+int ASN1CALL
 der_get_visible_string (const unsigned char *p, size_t len,
 			heim_visible_string *str, size_t *size)
 {
     return der_get_general_string(p, len, str, size);
 }
 
-int
+int ASN1CALL
 der_get_octet_string (const unsigned char *p, size_t len,
 		      heim_octet_string *data, size_t *size)
 {
@@ -263,18 +326,19 @@ der_get_octet_string (const unsigned char *p, size_t len,
     data->data = malloc(len);
     if (data->data == NULL && data->length != 0)
 	return ENOMEM;
-    memcpy (data->data, p, len);
+    if (data->data != NULL)
+	memcpy (data->data, p, len);
     if(size) *size = len;
     return 0;
 }
 
-int
+int ASN1CALL
 der_get_octet_string_ber (const unsigned char *p, size_t len,
 			  heim_octet_string *data, size_t *size)
 {
     int e;
     Der_type type;
-    Der_class class;
+    Der_class cls;
     unsigned int tag, depth = 0;
     size_t l, datalen, oldlen = len;
 
@@ -282,9 +346,9 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
     data->data = NULL;
 
     while (len) {
-	e = der_get_tag (p, len, &class, &type, &tag, &l);
+	e = der_get_tag (p, len, &cls, &type, &tag, &l);
 	if (e) goto out;
-	if (class != ASN1_C_UNIV) {
+	if (cls != ASN1_C_UNIV) {
 	    e = ASN1_BAD_ID;
 	    goto out;
 	}
@@ -308,7 +372,7 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
 	if (datalen > len)
 	    return ASN1_OVERRUN;
 
-	if (type == PRIM) {
+	if (type == PRIM && datalen) {
 	    void *ptr;
 
 	    ptr = realloc(data->data, data->length + datalen);
@@ -319,7 +383,7 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
 	    data->data = ptr;
 	    memcpy(((unsigned char *)data->data) + data->length, p, datalen);
 	    data->length += datalen;
-	} else
+	} else if (type != PRIM)
 	    depth++;
 
 	p += datalen;
@@ -337,7 +401,7 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
 }
 
 
-int
+int ASN1CALL
 der_get_heim_integer (const unsigned char *p, size_t len,
 		      heim_integer *data, size_t *size)
 {
@@ -423,14 +487,14 @@ generalizedtime2time (const char *s, time_t *t)
     return 0;
 }
 
-static int
+static int ASN1CALL
 der_get_time (const unsigned char *p, size_t len,
 	      time_t *data, size_t *size)
 {
     char *times;
     int e;
 
-    if (len > len + 1 || len == 0)
+    if (len == SIZE_MAX || len == 0)
 	return ASN1_BAD_LENGTH;
 
     times = malloc(len + 1);
@@ -444,21 +508,21 @@ der_get_time (const unsigned char *p, size_t len,
     return e;
 }
 
-int
+int ASN1CALL
 der_get_generalized_time (const unsigned char *p, size_t len,
 			  time_t *data, size_t *size)
 {
     return der_get_time(p, len, data, size);
 }
 
-int
+int ASN1CALL
 der_get_utctime (const unsigned char *p, size_t len,
 			  time_t *data, size_t *size)
 {
     return der_get_time(p, len, data, size);
 }
 
-int
+int ASN1CALL
 der_get_oid (const unsigned char *p, size_t len,
 	     heim_oid *data, size_t *size)
 {
@@ -468,7 +532,7 @@ der_get_oid (const unsigned char *p, size_t len,
     if (len < 1)
 	return ASN1_OVERRUN;
 
-    if (len > len + 1)
+    if (len == SIZE_MAX)
 	return ASN1_BAD_LENGTH;
 
     if (len + 1 > UINT_MAX/sizeof(data->components[0]))
@@ -506,15 +570,15 @@ der_get_oid (const unsigned char *p, size_t len,
     return 0;
 }
 
-int
+int ASN1CALL
 der_get_tag (const unsigned char *p, size_t len,
-	     Der_class *class, Der_type *type,
+	     Der_class *cls, Der_type *type,
 	     unsigned int *tag, size_t *size)
 {
     size_t ret = 0;
     if (len < 1)
-	return ASN1_OVERRUN;
-    *class = (Der_class)(((*p) >> 6) & 0x03);
+	return ASN1_MISSING_FIELD;
+    *cls = (Der_class)(((*p) >> 6) & 0x03);
     *type = (Der_type)(((*p) >> 5) & 0x01);
     *tag = (*p) & 0x1f;
     p++; len--; ret++;
@@ -538,23 +602,23 @@ der_get_tag (const unsigned char *p, size_t len,
     return 0;
 }
 
-int
+int ASN1CALL
 der_match_tag (const unsigned char *p, size_t len,
-	       Der_class class, Der_type type,
+	       Der_class cls, Der_type type,
 	       unsigned int tag, size_t *size)
 {
     Der_type thistype;
     int e;
 
-    e = der_match_tag2(p, len, class, &thistype, tag, size);
+    e = der_match_tag2(p, len, cls, &thistype, tag, size);
     if (e) return e;
     if (thistype != type) return ASN1_BAD_ID;
     return 0;
 }
 
-int
+int ASN1CALL
 der_match_tag2 (const unsigned char *p, size_t len,
-		Der_class class, Der_type *type,
+		Der_class cls, Der_type *type,
 		unsigned int tag, size_t *size)
 {
     size_t l;
@@ -562,27 +626,41 @@ der_match_tag2 (const unsigned char *p, size_t len,
     unsigned int thistag;
     int e;
 
-    e = der_get_tag (p, len, &thisclass, type, &thistag, &l);
+    e = der_get_tag(p, len, &thisclass, type, &thistag, &l);
     if (e) return e;
-    if (class != thisclass)
-	return ASN1_BAD_ID;
-    if(tag > thistag)
-	return ASN1_MISPLACED_FIELD;
-    if(tag < thistag)
+    /*
+     * We do depend on ASN1_BAD_ID being returned in places where we're
+     * essentially implementing an application-level CHOICE where we try to
+     * decode one way then the other.  In Heimdal this happens only in lib/hdb/
+     * where we try to decode a blob as an hdb_entry, then as an
+     * hdb_entry_alias.  Applications should really not depend on this.
+     */
+    if (cls != thisclass && (cls == ASN1_C_APPL || thisclass == ASN1_C_APPL))
+        return ASN1_BAD_ID;
+    if (cls != thisclass || tag != thistag)
 	return ASN1_MISSING_FIELD;
-    if(size) *size = l;
+    if (size) *size = l;
     return 0;
 }
 
-int
+/*
+ * Returns 0 if the encoded data at `p' of length `len' starts with the tag of
+ * class `cls`, type `type', and tag value `tag', and puts the length of the
+ * payload (i.e., the length of V in TLV, not the length of TLV) in
+ * `*length_ret', and the size of the whole thing (the TLV) in `*size' if
+ * `size' is not NULL.
+ *
+ * Else returns an error.
+ */
+int ASN1CALL
 der_match_tag_and_length (const unsigned char *p, size_t len,
-			  Der_class class, Der_type *type, unsigned int tag,
+			  Der_class cls, Der_type *type, unsigned int tag,
 			  size_t *length_ret, size_t *size)
 {
     size_t l, ret = 0;
     int e;
 
-    e = der_match_tag2 (p, len, class, type, tag, &l);
+    e = der_match_tag2 (p, len, cls, type, tag, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -619,7 +697,7 @@ _heim_fix_dce(size_t reallen, size_t *len)
     return 0;
 }
 
-int
+int ASN1CALL
 der_get_bit_string (const unsigned char *p, size_t len,
 		    heim_bit_string *data, size_t *size)
 {
@@ -633,14 +711,19 @@ der_get_bit_string (const unsigned char *p, size_t len,
      * any of them will cause a interger overrun */
     if ((len - 1) >> (sizeof(len) * 8 - 3))
 	return ASN1_OVERRUN;
-    data->length = (len - 1) * 8;
-    data->data = malloc(len - 1);
-    if (data->data == NULL && (len - 1) != 0)
-	return ENOMEM;
-    /* copy data is there is data to copy */
-    if (len - 1 != 0) {
-      memcpy (data->data, p + 1, len - 1);
-      data->length -= p[0];
+    /*
+     * If there is data to copy, do that now.
+     */
+    if (len - 1 > 0) {
+	data->length = (len - 1) * 8;
+	data->data = malloc(len - 1);
+	if (data->data == NULL)
+	    return ENOMEM;
+	memcpy (data->data, p + 1, len - 1);
+	data->length -= p[0];
+    } else {
+	data->data = NULL;
+	data->length = 0;
     }
     if(size) *size = len;
     return 0;

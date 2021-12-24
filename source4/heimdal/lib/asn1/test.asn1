@@ -4,9 +4,44 @@ TEST DEFINITIONS ::=
 
 BEGIN
 
-IMPORTS heim_any FROM heim;
+IMPORTS HEIM_ANY FROM heim;
+
+-- Check that we handle out of order definitions.
+-- The compiler should emit the definition of TESTOutOfOrderBar before that of
+-- TESTOutOfOrderFoo.
+TESTOutOfOrderFoo ::= SEQUENCE {
+        bar TESTOutOfOrderBar
+}
+
+TESTOutOfOrderBar ::= SEQUENCE {
+        aMember INTEGER
+}
+
+-- Check that we can handle rpc.mountd style "lists".  This is unnecessarily
+-- inefficient in its encoding, and there's no point to using this over
+-- SEQUENCE OF (arrays), but it's neat that we can do this now that we can do
+-- out of order definitions.
+--
+-- This could be useful if we ever extend asn1_compile to also handle XDR,
+-- which we well might since XDR's syntax is a dual of a strict subset of
+-- ASN.1, and since XDR the encoding is fairly straightforward.
+--
+-- Note that the `next' member has to be OPTIONAL for this to work.
+TESTCircular ::= SEQUENCE {
+        name UTF8String,
+        next TESTCircular OPTIONAL
+}
+
+TESTDefault ::= SEQUENCE {
+        name UTF8String DEFAULT "Heimdal",
+        version [0] TESTuint32 DEFAULT 8,
+        maxint TESTuint64 DEFAULT 9223372036854775807,
+        works BOOLEAN DEFAULT TRUE
+}
 
 TESTuint32 ::= INTEGER (0..4294967295)
+TESTuint64 ::= INTEGER(0..9223372036854775807)
+TESTint64 ::= INTEGER(-9223372036854775808..9223372036854775807)
 
 TESTLargeTag ::= SEQUENCE {
 	foo[127] INTEGER (-2147483648..2147483647),
@@ -45,9 +80,20 @@ TESTImplicit ::= SEQUENCE {
 }
 
 TESTImplicit2 ::= SEQUENCE {
-	ti1[0] IMPLICIT TESTInteger,
-	ti2[1] IMPLICIT TESTLargeTag,
-	ti3[2] IMPLICIT TESTInteger3
+	ti1[0]  IMPLICIT TESTInteger,
+--	ti2[1]  IMPLICIT TESTLargeTag,   this is disabled since the IMPLICT encoder does't get the types right when stepping inside an structure --
+	ti3[2]  IMPLICIT TESTInteger3,
+        ti4[51] IMPLICIT TESTInteger OPTIONAL
+}
+
+TESTImplicit3 ::= CHOICE {
+        ti1[0] IMPLICIT INTEGER (-2147483648..2147483647),
+        ti2[5] IMPLICIT CHOICE { i1[1] INTEGER (-2147483648..2147483647) }
+}
+
+TESTImplicit4 ::= CHOICE {
+        ti1[0] IMPLICIT INTEGER (-2147483648..2147483647),
+        ti2[5] IMPLICIT TESTChoice2
 }
 
 TESTAllocInner ::= SEQUENCE {
@@ -57,7 +103,7 @@ TESTAllocInner ::= SEQUENCE {
 TESTAlloc ::= SEQUENCE {
 	  tagless TESTAllocInner OPTIONAL,
 	  three [1] INTEGER (-2147483648..2147483647),
-	  tagless2 heim_any OPTIONAL
+	  tagless2 HEIM_ANY OPTIONAL
 }
 
 TESTOptional ::= SEQUENCE {
@@ -71,22 +117,22 @@ TESTENCODEDBY ::= OCTET STRING ( ENCODED BY
   { joint-iso-itu-t(2) asn(1) ber-derived(2) distinguished-encoding(1) }
 )
 
-TESTDer OBJECT IDENTIFIER ::= {
+testDer OBJECT IDENTIFIER ::= {
 	joint-iso-itu-t(2) asn(1) ber-derived(2) distinguished-encoding(1)
 }
 
-TESTCONTAININGENCODEDBY ::= OCTET STRING ( CONTAINING INTEGER ENCODED BY
+testContainingEncodedBy ::= OCTET STRING ( CONTAINING INTEGER ENCODED BY
   { joint-iso-itu-t(2) asn(1) ber-derived(2) distinguished-encoding(1) }
 )
 
-TESTCONTAININGENCODEDBY2 ::= OCTET STRING (
-	CONTAINING INTEGER ENCODED BY TESTDer
+testContainingEncodedBy2 ::= OCTET STRING (
+	CONTAINING INTEGER ENCODED BY testDer
 )
 
 
-TESTValue1 INTEGER ::= 1
+testValue1 INTEGER ::= 1
 
-TESTUSERCONSTRAINED ::= OCTET STRING (CONSTRAINED BY { -- meh -- })
+testUserConstrained ::= OCTET STRING (CONSTRAINED BY { -- meh -- })
 -- TESTUSERCONSTRAINED2 ::= OCTET STRING (CONSTRAINED BY { TESTInteger })
 -- TESTUSERCONSTRAINED3 ::= OCTET STRING (CONSTRAINED BY { INTEGER })
 -- TESTUSERCONSTRAINED4 ::= OCTET STRING (CONSTRAINED BY { INTEGER : 1 })
@@ -96,7 +142,7 @@ TESTSeqOf ::= SEQUENCE OF TESTInteger
 TESTSeqSizeOf1 ::= SEQUENCE SIZE (2) OF TESTInteger
 TESTSeqSizeOf2 ::= SEQUENCE SIZE (1..2) OF TESTInteger
 TESTSeqSizeOf3 ::= SEQUENCE SIZE (1..MAX) OF TESTInteger
-TESTSeqSizeOf4 ::= SEQUENCE SIZE (MIN..2) OF TESTInteger
+TESTSeqSizeOf4 ::= SEQUENCE SIZE (0..2) OF TESTInteger
 
 TESTOSSize1 ::= OCTET STRING SIZE (1..2)
 
@@ -121,6 +167,60 @@ TESTSeqOf3 ::= SEQUENCE {
 	strings SEQUENCE OF GeneralString OPTIONAL
 }
 
+-- Larger/more complex to increase odds of out-of-bounds
+-- read/writes if miscoded
+
+TESTSeqOf4 ::= SEQUENCE {
+	b1 [0] SEQUENCE OF SEQUENCE {
+		s1 OCTET STRING,
+		s2 OCTET STRING,
+		u1 TESTuint64,
+		u2 TESTuint64
+	} OPTIONAL,
+	b2 [1] IMPLICIT SEQUENCE OF SEQUENCE {
+		u1 TESTuint64,
+		u2 TESTuint64,
+		u3 TESTuint64,
+		s1 OCTET STRING,
+		s2 OCTET STRING,
+		s3 OCTET STRING
+	} OPTIONAL,
+	b3 [2] IMPLICIT SEQUENCE OF SEQUENCE {
+		s1 OCTET STRING,
+		u1 TESTuint64,
+		s2 OCTET STRING,
+		u2 TESTuint64,
+		s3 OCTET STRING,
+		u3 TESTuint64,
+		s4 OCTET STRING,
+		u4 TESTuint64
+	} OPTIONAL
+}
+
+TESTSeqOf5 ::= SEQUENCE {
+        outer SEQUENCE {
+          inner SEQUENCE {
+                        u0 TESTuint64,
+                        s0 OCTET STRING,
+                        u1 TESTuint64,
+                        s1 OCTET STRING,
+                        u2 TESTuint64,
+                        s2 OCTET STRING,
+                        u3 TESTuint64,
+                        s3 OCTET STRING,
+                        u4 TESTuint64,
+                        s4 OCTET STRING,
+                        u5 TESTuint64,
+                        s5 OCTET STRING,
+                        u6 TESTuint64,
+                        s6 OCTET STRING,
+                        u7 TESTuint64,
+                        s7 OCTET STRING
+                }
+            }
+        OPTIONAL
+}
+
 TESTPreserve ::= SEQUENCE {
 	zero [0] TESTInteger,
 	one [1] TESTInteger
@@ -132,7 +232,68 @@ TESTBitString ::= BIT STRING {
 	      thirtyone(31)
 }
 
+TESTBitString64 ::= BIT STRING {
+	      zero(0),
+	      eight(8),
+	      thirtyone(31),
+	      thirtytwo(32),
+	      sixtythree(63)
+}
+
+TESTLargeBitString ::= BIT STRING {
+	      zero(0),
+	      eight(8),
+	      thirtyone(31),
+	      onehundredtwenty(120)
+}
+
 TESTMechType::= OBJECT IDENTIFIER
 TESTMechTypeList ::= SEQUENCE OF TESTMechType
+
+
+-- IOS stuff
+_EXTENSION ::= CLASS {
+    &id  OBJECT IDENTIFIER UNIQUE,
+    &ExtnType,
+    &Critical    BOOLEAN DEFAULT FALSE
+}
+
+TESTExtension{_EXTENSION:ExtensionSet} ::= SEQUENCE {
+    extnID      _EXTENSION.&id({ExtensionSet}),
+    critical    BOOLEAN
+--                     (EXTENSION.&Critical({ExtensionSet}{@extnID}))
+                     DEFAULT FALSE,
+    extnValue   OCTET STRING (CONTAINING
+                _EXTENSION.&ExtnType({ExtensionSet}{@extnID}))
+}
+
+id-test-default OBJECT IDENTIFIER ::=  { 1 2 3 4 }
+testext-TESTDefault _EXTENSION ::= {
+     &id id-test-default,
+     &Critical FALSE,
+     &ExtnType TESTDefault
+}
+
+-- And Here's an object set for the EXTENSION CLASS collecting a bunch of
+-- related extensions (here they are the extensions that certificates can
+-- carry in their extensions member):
+TestExtensions _EXTENSION ::= { testext-TESTDefault }
+
+TESTExtension ::= TESTExtension { TestExtensions }
+
+TESTExtensible ::= SEQUENCE {
+  version     INTEGER,
+  extensions  SEQUENCE OF TESTExtension
+}
+
+TESTDecorated ::= SEQUENCE {
+  version     TESTuint32
+  -- gets decorated
+}
+
+TESTNotDecorated ::= SEQUENCE {
+  version     TESTuint32
+  -- should have the same encoding as TESTDecorated
+}
 
 END

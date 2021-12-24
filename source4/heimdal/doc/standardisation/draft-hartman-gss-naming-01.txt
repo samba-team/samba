@@ -1,0 +1,674 @@
+
+
+
+Network Working Group                                         S. Hartman
+Internet-Draft                                                       MIT
+Expires: April 24, 2005                                 October 24, 2004
+
+
+           GSSAPI Mechanisms without a Single Canonical Name
+                    draft-hartman-gss-naming-01.txt
+
+Status of this Memo
+
+   This document is an Internet-Draft and is subject to all provisions
+   of section 3 of RFC 3667.  By submitting this Internet-Draft, each
+   author represents that any applicable patent or other IPR claims of
+   which he or she is aware have been or will be disclosed, and any of
+   which he or she become aware will be disclosed, in accordance with
+   RFC 3668.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as
+   Internet-Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on April 24, 2005.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2004).
+
+Abstract
+
+   The Generic Security Services API (GSSAPI) provides a naming
+   architecture that supports  name-based authorization.  GSSAPI
+   authenticates two named parties to each other.  Names can be stored
+   on access control lists to make authorization decisions.  Advances in
+   security mechanisms and the way implementers wish to use GSSAPI
+   require this model to be extended.  Some mechanisms such as
+   public-key mechanisms do not have a single name to be used.  Other
+   mechanisms such as Kerberos allow names to change as people move
+
+
+
+Hartman                  Expires April 24, 2005                 [Page 1]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+   around organizations.  This document proposes expanding the
+   definition of GSSAPI names to deal with these situations.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires April 24, 2005                 [Page 2]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+1.  Introduction
+
+   The Generic  Security Services API [1] provides a function called
+   gss_export_name that will flatten a GSSAPI name  into a binary blob
+   suitable for comparisons.  This binary blob can be stored on ACLs and
+   then authorization decisions can be made simply by comparing the name
+   exported from a newly accepted context to the name on the ACL.
+
+   As a side effect of this model, each mechanism name needs to be able
+   to be represented in a single canonical form and anyone importing
+   that name needs to be able to retrieve the canonical form.
+
+   Several security mechanisms have been proposed for which this naming
+   architecture is too restrictive.  In some cases it is not always
+   possible to canonicalize any name that is imported.  In other cases
+   there is no single canonical name.  In addition, there is a desire to
+   have more complex authorization models  in GSSAPI than the current
+   name based authorization model.
+
+   This draft discusses two different cases where the current GSSAPI
+   naming seems inadequate.  Two proposals that have been discussed
+   within the IETF Kitten community are discussed.  Finally, the
+   problems that need to be resolved to adopt either of these proposals
+   are discussed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires April 24, 2005                 [Page 3]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+2.  Kerberos Naming
+
+   The Kerberos Referrals draft [2] proposes a new type of Kerberos name
+   called an enterprise name.  The intent is that the enterprise name is
+   an alias that the user knows for themselves and can use to login.
+   The Kerberos KDC translates this name into a normal Kerberos
+   principal and gives the user tickets for this principal.  This normal
+   principal is used for authorization.  The intent is that the
+   enterprise name tracks the user as they move throughout the
+   organization, even if they move to parts of the organization that
+   have different naming policies.  The name they type at login remains
+   constant, but the Kerberos principal used to authenticate them to
+   services changes.
+
+   Performing a mapping from enterprise  name to principal name is not
+   generally possible for unauthenticated services.  So in order to
+   canonicalize an enterprise name to get a principal, a service must
+   have credentials.  However it may not be desirable to allow services
+   to map enterprise names to principal names in the general case.
+   Also, Kerberos does not (and does not plan to) provide a mechanism
+   for mapping enterprise names to principals besides authentication as
+   the enterprise name.  So any such mapping would be vendor-specific.
+   With this feature in Kerberos, it is not possible to implement
+   gss_canonicalize_name for enterprise name types.
+
+   Another issue arises with enterprise names.  IN some cases it would
+   be desirable to put   the enterprise name on the ACL instead of a
+   principal name.  Thus, it would be desirable to include the
+   enterprise name in the name exported by gss_export_name.  However
+   then the exported name would change whenever the mapping changed,
+   defeating the purpose  of including the enterprise name.  So in some
+   cases it would be desirable to have the exported name be based on the
+   enterprise name and in others based on the principal name, but this
+   is not currently possible.
+
+   Another development also complicates GSSAPI naming for Kerberos.
+   Several vendors have been looking at mechanisms to include group
+   membership information in Kerberos authorization data.  It is
+   desirable to put these group names on ACLs.  Again, GSSAPI currently
+   has no mechanism to use this information.
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires April 24, 2005                 [Page 4]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+3.  X.509 Names
+
+   X.509 names are at least as complex as Kerberos names.  It seems like
+   you might want to use the subject name as the name to be exported in
+   a GSSAPI mechanism.  However RFC 3280 [3] does not even require the
+   subject name to be a non-empty sequence.  Instead there are cases
+   where the subjectAltName extension is the only thing to identify the
+   subject of the certificate.  As in the case of Kerberos group
+   memberships, there may be many subjectAltName extensions available in
+   a certificate.  Different applications will care about different
+   extensions.  Thus there is no single value that can be  defined as
+   the exported GSSAPI name that will be generally useful.
+
+   A profile of a particular X.509  GSSAPI mechanism could require a
+   specific name be used.  However this would limit that mechanism to
+   require a particular type of certificate.  There is interest in being
+   able to use arbitrary X.509 certificates with GSSAPI for some
+   applications.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires April 24, 2005                 [Page 5]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+4.  Composite Names
+
+   One proposal to solve these problems is to extend the concept of a
+   GSSAPI name to include a set of name attributes.  Each attribute
+   would be an octet-string labeled by an OID.  Examples of attributes
+   would include Kerberos enterprise names, group memberships in an
+   authorization infrastructure, Kerberos authorization data attributes
+   and subjectAltName attributes in a certificate.  Several new
+   operations would be needed:
+   1.  Add attribute to name
+   2.  Query attributes of name
+   3.  Query values of an attribute
+   4.  Delete an attribute from a name
+
+4.1  Usage of Name Attributes
+
+   Since attributes are part of GSSAPI names, the acceptor can retrieve
+   the attributes of the initiator's name from the context.  These
+   attributes can then be used for authorization.
+
+   Most name attributes will probably not come from explicit operations
+   to add attributes to a name.  Instead, name attributes will probably
+   come from mechanism specific credentials.  Mechanism specific naming
+   and group membership can be  mapped into name attributes by the
+   mechanism implementation.  The specific form of this mapping will
+   general require protocol specification for each mechanism.
+
+4.2  Open issues
+
+   This section describes parts of the proposal to add attributes to
+   names that will need to be explored before the proposal can become a
+   protocol specification.
+
+   Are mechanisms expected to be able to carry arbitrary name attributes
+   as part of a context establishment?   At first it seems like this
+   would be desirable.  However the point of GSSAPI is to establish an
+   authenticated context between two peers.  In particular, a context
+   authenticates two named entities to each other.  The names of these
+   entities and attributes associated with these names will be used for
+   authorization decisions.  If an initiator or acceptor is allowed to
+   assert name attributes and the authenticity of these assertions is
+   not validated by the mechanisms, then security problems may result.
+   On the other hand, requiring that name attributes be mechanism
+   specific and only be carried by mechanisms that understand the name
+   attributes and can validate them compromises GSSAPI's place as a
+   generic API.  Application authors would be forced to understand
+   mechanism-specific attributes to make authorization decisions.  In
+   addition if mechanisms are not required to transport arbitrary
+
+
+
+Hartman                  Expires April 24, 2005                 [Page 6]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+   attributes, then application authors will need to deal with different
+   implementations of the same mechanism that support different sets of
+   name attributes.  One possible solution is to carry a source along
+   with each name attribute; this source could indicate whether the
+   attribute comes from a mechanism data structure or from the other
+   party in the authentication.
+
+   Another related question is how will name attributes be mapped into
+   their mechanism-specific forms.  For example it would be desirable to
+   map many  Kerberos authorization data elements into name attributes.
+   In the case of the Microsoft PAC, it would be desirable for some
+   applications to get the entire PAC.  However in many cases, the
+   specific lists of security IDs contained in the PAC would be more
+   directly useful to an application.  So there may not be a good
+   one-to-one mapping between the mechanism-specific elements and the
+   representation desirable at the GSSAPI layer.
+
+   Specific name matching rules need to be developed.  How do names with
+   attributes compare?  What is the effect of a name attribute on a
+   target name in gss_accept_sec_context?
+
+4.3  Handling gss_export_name
+
+   For many mechanisms, there will be  an obvious choice to use for the
+   name exported by gss_export_name.  For example in the case of
+   Kerberos, the principal name can continue to be used as the exported
+   name.  This will allow applications depending on existing GSSAPI
+   name-based authorization to continue to work.  However it is probably
+   desirable to allow GSSAPI mechanisms for which gss_export_name cannot
+   meaningfully be defined.  The behavior of gss_export_name in such
+   cases should probably be to return some error.  Such mechanisms may
+   not work with existing applications and cannot conform to the current
+   version of the GSSAPI.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires April 24, 2005                 [Page 7]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+5.  Credential Extensions
+
+   An alternative to the name attributes proposal  is to extend GSSAPI
+   credentials  with extensions labeled by OIDs.  Interfaces would be
+   needed to manipulate these credential extensions and to retrieve the
+   credential extensions for credentials used to establish a context.
+   Even if name attributes are used, credential extensions may be useful
+   for other unrelated purposes.
+
+   It is possible to solve problems discussed in this document using
+   some credential extension mechanism.  Doing so will have many of the
+   same open issues as discussed in the  name attributes proposal.  The
+   main advantage of a credential extensions proposal is that  it avoids
+   specifying how name attributes interact with name comparison or
+   target names.
+
+   The primary advantage of the name attributes proposal over credential
+   extensions is that name attributes seem to fit better into the GSSAPI
+   authorization model.  Names are already available at all points when
+   authorization decisions are made.  In addition, for many mechanisms
+   the sort of information carried as name attributes will also be
+   carried as part of the name in the mechanism
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires April 24, 2005                 [Page 8]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+6.  Mechanisms for Export Name
+
+   Another proposal is to define some GSSAPI mechanisms whose only
+   purpose is to have an exportable name form that is useful.  For
+   example, you might be able to export a name as a local machine user
+   ID with such a mechanism.
+
+   This solution works well especially for name information that can be
+   looked up in a directory.  It was unclear from the discussion whether
+   this solution would allow mechanism-specific name information to be
+   extracted from a context.  If so, then this solution would meet many
+   of the goals of this document.
+
+   One advantage of this solution is that it requires few if any changes
+   to GSSAPI semantics.  It is not as flexible as other solutions.
+   Also, it is not clear how to handle mechanisms that do not have a
+   well defined name to export with this solution.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires April 24, 2005                 [Page 9]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+7.  Security Considerations
+
+   GSSAPI sets up a security context between two named parties.  The
+   GSSAPI names are security assertions that are authenticated by the
+   context establishment process.  As such  the GSS naming architecture
+   is critical to the security of GSSAPI.
+
+   Currently GSSAPI uses a simplistic naming model for authorization.
+   Names can be compared  against a set of names on an access control
+   list.  This architecture is relatively simple and its security
+   properties are well understood.  However it does not provide the
+   flexibility and feature set for future deployments of GSSAPI.
+
+   This proposal will significantly increase the complexity of the GSS
+   naming architecture.  As this proposal is fleshed out, we need to
+   consider ways of managing security exposures created by this
+   increased complexity.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires April 24, 2005                [Page 10]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+8.  Acknowledgements
+
+   John Brezak, Paul Leach and Nicolas Williams all participated in
+   discussions that defined the problem this proposal attempts to solve.
+   Nicolas Williams and I discussed details of proposals to solve this
+   problem.  However the details and open issues presented here have
+   only been reviewed by me and so I am responsible for their errors.
+
+9  Informative References
+
+   [1]  Linn, J., "Generic Security Service Application Program
+        Interface Version 2, Update 1", RFC 2743, January 2000.
+
+   [2]  Jaganathan , K., Zhu, L., Swift, M. and J. Brezak, "Generating
+        KDC Referrals to locate Kerberos realms",
+        draft-ietf-krb-wg-kerberos-referrals-03.txt (work in progress),
+        2004.
+
+   [3]  Housley, R., Polk, W., Ford, W. and D. Solo, "Internet X.509
+        Public Key Infrastructure Certificate and Certificate Revocation
+        List (CRL) Profile", rfc 3280, April 2002.
+
+
+Author's Address
+
+   Sam Hartman
+   MIT
+
+   EMail: hartmans@mit.edu
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hartman                  Expires April 24, 2005                [Page 11]
+
+Internet-Draft            GSS Name Attributes               October 2004
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2004).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Hartman                  Expires April 24, 2005                [Page 12]
+
+

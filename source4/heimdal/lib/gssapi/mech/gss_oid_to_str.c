@@ -65,34 +65,3 @@ gss_oid_to_str(OM_uint32 *minor_status, gss_OID oid, gss_buffer_t oid_str)
     *minor_status = 0;
     return GSS_S_COMPLETE;
 }
-
-GSSAPI_LIB_FUNCTION const char * GSSAPI_LIB_CALL
-gss_oid_to_name(gss_const_OID oid)
-{
-    size_t i;
-
-    for (i = 0; _gss_ont_mech[i].oid; i++) {
-	if (gss_oid_equal(oid, _gss_ont_mech[i].oid))
-	    return _gss_ont_mech[i].name;
-    }
-    return NULL;
-}
-
-GSSAPI_LIB_FUNCTION gss_OID GSSAPI_LIB_CALL
-gss_name_to_oid(const char *name)
-{
-    size_t i, partial = (size_t)-1;
-
-    for (i = 0; _gss_ont_mech[i].oid; i++) {
-	if (strcasecmp(name, _gss_ont_mech[i].short_desc) == 0)
-	    return _gss_ont_mech[i].oid;
-	if (strncasecmp(name, _gss_ont_mech[i].short_desc, strlen(name)) == 0) {
-	    if (partial != (size_t)-1)
-		return NULL;
-	    partial = i;
-	}
-    }
-    if (partial != (size_t)-1)
-	return _gss_ont_mech[partial].oid;
-    return NULL;
-}

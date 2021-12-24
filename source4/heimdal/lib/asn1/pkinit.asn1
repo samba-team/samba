@@ -3,9 +3,9 @@
 PKINIT DEFINITIONS ::= BEGIN
 
 IMPORTS EncryptionKey, PrincipalName, Realm, KerberosTime, Checksum, Ticket FROM krb5
-	IssuerAndSerialNumber, ContentInfo FROM cms
+	IssuerAndSerialNumber FROM cms
 	SubjectPublicKeyInfo, AlgorithmIdentifier FROM rfc2459
-	heim_any FROM heim;
+	HEIM_ANY FROM heim;
 
 id-pkinit OBJECT IDENTIFIER ::=
   { iso (1) org (3) dod (6) internet (1) security (5)
@@ -16,6 +16,11 @@ id-pkdhkeydata OBJECT IDENTIFIER  ::= { id-pkinit 2 }
 id-pkrkeydata  OBJECT IDENTIFIER  ::= { id-pkinit 3 }
 id-pkekuoid    OBJECT IDENTIFIER  ::= { id-pkinit 4 }
 id-pkkdcekuoid OBJECT IDENTIFIER  ::= { id-pkinit 5 }
+
+id-heim-eku-pkinit-certlife-is-max-life OBJECT IDENTIFIER ::=
+    { iso(1) member-body(2) se(752) su(43) heim-pkix(16) 3 }
+
+id-apple-system-id OBJECT IDENTIFIER ::= { 1 2 840 113635 100 4 4 }
 
 id-pkinit-kdf OBJECT IDENTIFIER           ::= { id-pkinit 6 }
 id-pkinit-kdf-ah-sha1 OBJECT IDENTIFIER   ::= { id-pkinit-kdf 1 }
@@ -94,11 +99,6 @@ AuthPack ::= SEQUENCE {
 TD-TRUSTED-CERTIFIERS ::= ExternalPrincipalIdentifiers
 TD-INVALID-CERTIFICATES ::= ExternalPrincipalIdentifiers
 
-KRB5PrincipalName ::= SEQUENCE {
-	realm                   [0] Realm,
-	principalName           [1] PrincipalName
-}
-
 AD-INITIAL-VERIFIED-CAS ::= SEQUENCE OF ExternalPrincipalIdentifier
 
 DHRepInfo ::= SEQUENCE {
@@ -148,7 +148,7 @@ AuthPack-Win2k ::= SEQUENCE {
 
 
 TrustedCA-Win2k ::= CHOICE {
-	caName                  [1] heim_any,
+	caName                  [1] HEIM_ANY,
 	issuerAndSerial         [2] IssuerAndSerialNumber
 }
 
@@ -176,8 +176,8 @@ ReplyKeyPack-Win2k ::= SEQUENCE {
 }
 
 PA-PK-AS-REP-BTMM ::= SEQUENCE {
-	dhSignedData		[0] heim_any OPTIONAL,
-	encKeyPack		[1] heim_any OPTIONAL
+	dhSignedData		[0] HEIM_ANY OPTIONAL,
+	encKeyPack		[1] HEIM_ANY OPTIONAL
 }
 
 

@@ -3,6 +3,8 @@
 HEIMDAL_X509_1.2 {
 	global:
 		_hx509_cert_assign_key;
+		_hx509_cert_get_keyusage;
+		_hx509_cert_get_version;
 		_hx509_cert_private_key;
 		_hx509_certs_keys_free;
 		_hx509_certs_keys_get;
@@ -14,36 +16,65 @@ HEIMDAL_X509_1.2 {
 		_hx509_generate_private_key_free;
 		_hx509_generate_private_key_init;
 		_hx509_generate_private_key_is_ca;
+		_hx509_get_cert;
+		_hx509_ks_type;
+		_hx509_make_pkinit_san;
 		_hx509_map_file_os;
 		_hx509_name_from_Name;
+		_hx509_private_key_export;
+		_hx509_private_key_exportable;
+		_hx509_private_key_get_internal;
+		_hx509_private_key_oid;
 		_hx509_private_key_ref;
-		_hx509_request_add_dns_name;
-		_hx509_request_add_email;
-		_hx509_request_parse;
-		_hx509_request_print;
-		_hx509_request_set_email;
-		_hx509_request_to_pkcs10;
-		_hx509_request_to_pkcs10;
+		hx509_request_add_GeneralName;
+		hx509_request_add_dns_name;
+		hx509_request_add_dns_srv;
+		hx509_request_add_eku;
+		hx509_request_add_email;
+		hx509_request_add_ms_upn_name;
+		hx509_request_add_pkinit;
+		hx509_request_add_registered;
+		hx509_request_add_xmpp_name;
+		hx509_request_authorize_ku;
+		hx509_request_authorize_eku;
+		hx509_request_authorize_san;
+		hx509_request_count_unsupported;
+		hx509_request_count_unauthorized;
+		hx509_request_print;
+		hx509_request_to_pkcs10;
 		_hx509_unmap_file_os;
 		_hx509_write_file;
 		hx509_bitstring_print;
+		_hx509_ca_issue_certificate;
 		hx509_ca_sign;
 		hx509_ca_sign_self;
 		hx509_ca_tbs_add_crl_dp_uri;
 		hx509_ca_tbs_add_eku;
+		hx509_ca_tbs_add_ku;
+		hx509_ca_tbs_add_pol;
+		hx509_ca_tbs_add_pol_mapping;
+		hx509_ca_tbs_add_san;
+		hx509_ca_tbs_add_san_dnssrv;
+		hx509_ca_tbs_add_san_hardwareModuleName;
+		hx509_ca_tbs_add_san_hardwareModuleName_string;
 		hx509_ca_tbs_add_san_hostname;
 		hx509_ca_tbs_add_san_jid;
 		hx509_ca_tbs_add_san_ms_upn;
 		hx509_ca_tbs_add_san_otherName;
+		hx509_ca_tbs_add_san_permanentIdentifier;
+		hx509_ca_tbs_add_san_permanentIdentifier_string;
 		hx509_ca_tbs_add_san_pkinit;
 		hx509_ca_tbs_add_san_rfc822name;
 		hx509_ca_tbs_free;
+		hx509_ca_tbs_get_name;
 		hx509_ca_tbs_init;
 		hx509_ca_tbs_set_ca;
 		hx509_ca_tbs_set_domaincontroller;
+		hx509_ca_tbs_set_from_csr;
 		hx509_ca_tbs_set_notAfter;
 		hx509_ca_tbs_set_notAfter_lifetime;
 		hx509_ca_tbs_set_notBefore;
+		hx509_ca_tbs_set_pkinit_max_life;
 		hx509_ca_tbs_set_proxy;
 		hx509_ca_tbs_set_serialnumber;
 		hx509_ca_tbs_set_spki;
@@ -67,12 +98,16 @@ HEIMDAL_X509_1.2 {
 		hx509_cert_get_issuer;
 		hx509_cert_get_notAfter;
 		hx509_cert_get_notBefore;
+		hx509_cert_get_pkinit_max_life;
 		hx509_cert_get_serialnumber;
 		hx509_cert_get_subject;
 		hx509_cert_get_issuer_unique_id;
 		hx509_cert_get_subject_unique_id;
+		hx509_cert_have_private_key;
+		hx509_cert_have_private_key_only;
 		hx509_cert_init;
 		hx509_cert_init_data;
+		hx509_cert_init_private_key;
 		hx509_cert_keyusage_print;
 		hx509_cert_public_encrypt;
 		hx509_cert_ref;
@@ -80,6 +115,7 @@ HEIMDAL_X509_1.2 {
 		hx509_certs_add;
 		hx509_certs_append;
 		hx509_certs_end_seq;
+		hx509_certs_destroy;
 		hx509_certs_ref;
 		hx509_certs_filter;
 		hx509_certs_find;
@@ -101,6 +137,7 @@ HEIMDAL_X509_1.2 {
 		hx509_cms_unenvelope;
 		hx509_cms_unwrap_ContentInfo;
 		hx509_cms_verify_signed;
+		hx509_cms_verify_signed_ext;
 		hx509_cms_wrap_ContentInfo;
 		hx509_context_free;
 		hx509_context_init;
@@ -129,6 +166,7 @@ HEIMDAL_X509_1.2 {
 		hx509_crypto_set_padding;
 		hx509_crypto_set_params;
 		hx509_crypto_set_random_key;
+		hx509_empty_name;
 		hx509_env_add;
 		hx509_env_add_binding;
 		hx509_env_find;
@@ -142,6 +180,7 @@ HEIMDAL_X509_1.2 {
 		hx509_find_private_alg;
 		hx509_general_name_unparse;
 		hx509_get_error_string;
+		hx509_get_instance;
 		hx509_get_one_cert;
 		hx509_lock_add_cert;
 		hx509_lock_add_certs;
@@ -197,10 +236,17 @@ HEIMDAL_X509_1.2 {
 		hx509_query_match_option;
 		hx509_query_statistic_file;
 		hx509_query_unparse_stats;
+		hx509_request_get_eku;
+		hx509_request_get_exts;
+		hx509_request_get_ku;
 		hx509_request_get_name;
+		hx509_request_get_san;
 		hx509_request_get_SubjectPublicKeyInfo;
 		hx509_request_free;
 		hx509_request_init;
+		hx509_request_parse;
+		hx509_request_parse_der;
+		hx509_request_set_ku;
 		hx509_request_set_name;
 		hx509_request_set_SubjectPublicKeyInfo;
 		hx509_revoke_add_crl;
@@ -209,6 +255,7 @@ HEIMDAL_X509_1.2 {
 		hx509_revoke_init;
 		hx509_revoke_ocsp_print;
 		hx509_revoke_verify;
+		hx509_revoke_print;
 		hx509_set_error_string;
 		hx509_set_error_stringv;
 		hx509_signature_md5;
@@ -246,5 +293,10 @@ HEIMDAL_X509_1.2 {
 		C_GetFunctionList;
 	local:
 		*;
+};
+
+HEIMDAL_X509_1.3 {
+	global:
+		hx509_ca_tbs_set_signature_algorithm;
 };
 

@@ -33,7 +33,8 @@
 
 /* implemented from description in draft-kaukonen-cipher-arcfour-03.txt */
 
-#include "config.h"
+#include <config.h>
+#include <roken.h>
 
 #include <rc4.h>
 

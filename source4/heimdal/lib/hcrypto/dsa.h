@@ -41,6 +41,8 @@
 #include <hcrypto/bn.h>
 
 /* symbol renaming */
+#define DSA hc_DSA
+#define DSA_METHOD hc_DSA_METHOD
 #define DSA_null_method hc_DSA_null_method
 #define DSA_new hc_DSA_new
 #define DSA_free hc_DSA_free

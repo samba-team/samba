@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, PADL Software Pty Ltd.
+ * Copyright (c) 2004, 2020, PADL Software Pty Ltd.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,31 +40,63 @@ gss_set_sec_context_option (OM_uint32 *minor_status,
 {
 	struct _gss_context	*ctx;
 	OM_uint32		major_status;
-	gssapi_mech_interface	m;
+	gssapi_mech_interface	mi;
+	int			allocated_ctx;
 
 	*minor_status = 0;
 
 	if (context_handle == NULL)
-		return GSS_S_NO_CONTEXT;
+		return GSS_S_CALL_INACCESSIBLE_READ;
+
+	_gss_load_mech();
 
 	ctx = (struct _gss_context *) *context_handle;
+	if (ctx == NULL) {
+		ctx = calloc(1, sizeof(*ctx));
+		if (ctx == NULL) {
+			*minor_status = ENOMEM;
+			return GSS_S_FAILURE;
+		}
+		allocated_ctx = 1;
+	} else {
+		allocated_ctx = 0;
+	}
 
-	if (ctx == NULL)
-		return GSS_S_NO_CONTEXT;
+	major_status = GSS_S_BAD_MECH;
 
-	m = ctx->gc_mech;
+	if (allocated_ctx) {
+		struct _gss_mech_switch	*m;
 
-	if (m == NULL)
-		return GSS_S_BAD_MECH;
+		HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
+			mi = &m->gm_mech;
 
-	if (m->gm_set_sec_context_option != NULL) {
-		major_status = m->gm_set_sec_context_option(minor_status,
-		    &ctx->gc_ctx, object, value);
-		if (major_status != GSS_S_COMPLETE)
-			_gss_mg_error(m, major_status, *minor_status);
-	} else
-		major_status = GSS_S_BAD_MECH;
+			if (mi->gm_set_sec_context_option == NULL)
+				continue;
+			major_status = mi->gm_set_sec_context_option(minor_status,
+				&ctx->gc_ctx, object, value);
+			if (major_status == GSS_S_COMPLETE) {
+				ctx->gc_mech = mi;
+				break;
+			} else {
+				_gss_mg_error(mi, *minor_status);
+			}
+		}
+	} else {
+		mi = ctx->gc_mech;
+		if (mi->gm_set_sec_context_option != NULL) {
+			major_status = mi->gm_set_sec_context_option(minor_status,
+				&ctx->gc_ctx, object, value);
+			if (major_status != GSS_S_COMPLETE)
+				_gss_mg_error(mi, *minor_status);
+		}
+	}
+
+	if (allocated_ctx) {
+		if (major_status == GSS_S_COMPLETE)
+			*context_handle = (gss_ctx_id_t)ctx;
+		else
+			free(ctx);
+	}
 
 	return major_status;
 }
-

@@ -1,0 +1,42 @@
+TCG DEFINITIONS ::= BEGIN
+
+-- BEGIN Heimdal commentary
+--
+-- Copy-pasted from section 4 of
+--   https://trustedcomputinggroup.org/wp-content/uploads/TCG_IWG_EKCredentialProfile_v2p3_r2_pub.pdf
+--   https://trustedcomputinggroup.org/wp-content/uploads/Credential_Profile_EK_V2.0_R14_published.pdf
+-- and adjusted to compile as follows:
+--
+--  - Due to limitations of the Heimdal compiler we've moved all of this
+--    module's contents to rfc2459.asn1.
+--
+--  - Extensibility markers added to all SEQUENCEs as per the TCG's spec they
+--    reserve the right to add fields in the future.
+--  - Information Object System annotations commented out (Heimdal does not
+--    support them)
+--
+--  - Types sorted topologically (at the time I did that the Heimdal ASN.1
+--    compiler wouldn't do that on its own)
+--
+--  - Two otherwise equal ENUMERATED types share a definition now (at the time
+--    the Heimdal ASN.1 compiler did not prefix labels of ENUMERATED types)
+--
+-- A small note for anyone whoever finds this: do not add complex structures as
+-- DN attributes, or, indeed, never add DN attributes again.  If some metadata
+-- is name-like, then add a subjectAlternativeName otherName for it, otherwise
+-- add a certificate extension to carry that metadata.  And, for any name-like
+-- metadata, always always include query and display syntax for it.
+--
+-- Anyone designing anything but the simplest schema in ASN.1 should have to
+-- learn a bit more about ASN.1 and/or get a review from ASN.1 experts.
+--
+-- Anyone designing anything but the simplest x.509 extensions should have to
+-- learn a bit more about ASN.1 and x.509 and/or get a review from x.509
+-- experts.
+--
+-- Note that a module OID was not provided.  Indeed, a valid, complete ASN.1
+-- module was not provided.
+--
+-- END Heimdal commentary (though some minor Heimdal commentary appears below)
+
+END

@@ -71,7 +71,7 @@
  * @ingroup hx509_cms
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cms_wrap_ContentInfo(const heim_oid *oid,
 			   const heim_octet_string *buf,
 			   heim_octet_string *res)
@@ -125,7 +125,7 @@ hx509_cms_wrap_ContentInfo(const heim_oid *oid,
  * @ingroup hx509_cms
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cms_unwrap_ContentInfo(const heim_octet_string *in,
 			     heim_oid *oid,
 			     heim_octet_string *out,
@@ -182,7 +182,7 @@ fill_CMSIdentifier(const hx509_cert cert,
 						   &id->u.subjectKeyIdentifier);
 	if (ret == 0)
 	    break;
-	/* FALL THOUGH */
+	/* FALLTHROUGH */
     case CMS_ID_NAME: {
 	hx509_name name;
 
@@ -209,7 +209,7 @@ unparse_CMSIdentifier(hx509_context context,
 		      CMSIdentifier *id,
 		      char **str)
 {
-    int ret;
+    int ret = -1;
 
     *str = NULL;
     switch (id->element) {
@@ -227,8 +227,8 @@ unparse_CMSIdentifier(hx509_context context,
 	    free(name);
 	    return ret;
 	}
-	asprintf(str, "certificate issued by %s with serial number %s",
-		 name, serial);
+	ret = asprintf(str, "certificate issued by %s with serial number %s",
+		       name, serial);
 	free(name);
 	free(serial);
 	break;
@@ -242,15 +242,19 @@ unparse_CMSIdentifier(hx509_context context,
 	if (len < 0)
 	    return ENOMEM;
 
-	asprintf(str, "certificate with id %s", keyid);
+	ret = asprintf(str, "certificate with id %s", keyid);
 	free(keyid);
 	break;
     }
     default:
-	asprintf(str, "certificate have unknown CMSidentifier type");
+	ret = asprintf(str, "certificate have unknown CMSidentifier type");
 	break;
     }
-    if (*str == NULL)
+    /*
+     * In the following if, we check ret and *str which should be returned/set
+     * by asprintf(3) in every branch of the switch statement.
+     */
+    if (ret == -1 || *str == NULL)
 	return ENOMEM;
     return 0;
 }
@@ -340,10 +344,12 @@ find_CMSIdentifier(hx509_context context,
  * @param contentType output type oid, should be freed with der_free_oid().
  * @param content the data, free with der_free_octet_string().
  *
+ * @return an hx509 error code.
+ *
  * @ingroup hx509_cms
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cms_unenvelope(hx509_context context,
 		     hx509_certs certs,
 		     int flags,
@@ -531,7 +537,7 @@ out:
  *
  * @param context A hx509 context.
  * @param flags flags to control the behavior.
- *    - HX509_CMS_EV_NO_KU_CHECK - Dont check KU on certificate
+ *    - HX509_CMS_EV_NO_KU_CHECK - Don't check KU on certificate
  *    - HX509_CMS_EV_ALLOW_WEAK - Allow weak crytpo
  *    - HX509_CMS_EV_ID_NAME - prefer issuer name and serial number
  * @param cert Certificate to encrypt the EnvelopedData encryption key
@@ -544,10 +550,12 @@ out:
  * @param content the output of the function,
  * free with der_free_octet_string().
  *
+ * @return an hx509 error code.
+ *
  * @ingroup hx509_cms
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cms_envelope_1(hx509_context context,
 		     int flags,
 		     hx509_cert cert,
@@ -726,14 +734,18 @@ any_to_certs(hx509_context context, const SignedData *sd, hx509_certs certs)
 	return 0;
 
     for (i = 0; i < sd->certificates->len; i++) {
+	heim_error_t error;
 	hx509_cert c;
 
-	ret = hx509_cert_init_data(context,
-				   sd->certificates->val[i].data,
-				   sd->certificates->val[i].length,
-				   &c);
-	if (ret)
+	c = hx509_cert_init_data(context,
+				 sd->certificates->val[i].data,
+				 sd->certificates->val[i].length,
+				 &error);
+	if (c == NULL) {
+	    ret = heim_error_get_code(error);
+	    heim_release(error);
 	    return ret;
+	}
 	ret = hx509_certs_add(context, certs, c);
 	hx509_cert_free(c);
 	if (ret)
@@ -772,10 +784,12 @@ find_attribute(const CMSAttributes *attr, const heim_oid *oid)
  * @param signer_certs list of the cerficates used to sign this
  * request, free with hx509_certs_free().
  *
+ * @return an hx509 error code.
+ *
  * @ingroup hx509_cms
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cms_verify_signed(hx509_context context,
 			hx509_verify_ctx ctx,
 			unsigned int flags,
@@ -787,6 +801,60 @@ hx509_cms_verify_signed(hx509_context context,
 			heim_octet_string *content,
 			hx509_certs *signer_certs)
 {
+    unsigned int verify_flags;
+
+    return hx509_cms_verify_signed_ext(context,
+				       ctx,
+				       flags,
+				       data,
+				       length,
+				       signedContent,
+				       pool,
+				       contentType,
+				       content,
+				       signer_certs,
+				       &verify_flags);
+}
+
+/**
+ * Decode SignedData and verify that the signature is correct.
+ *
+ * @param context A hx509 context.
+ * @param ctx a hx509 verify context.
+ * @param flags to control the behaivor of the function.
+ *    - HX509_CMS_VS_NO_KU_CHECK - Don't check KeyUsage
+ *    - HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH - allow oid mismatch
+ *    - HX509_CMS_VS_ALLOW_ZERO_SIGNER - no signer, see below.
+ * @param data pointer to CMS SignedData encoded data.
+ * @param length length of the data that data point to.
+ * @param signedContent external data used for signature.
+ * @param pool certificate pool to build certificates paths.
+ * @param contentType free with der_free_oid().
+ * @param content the output of the function, free with
+ * der_free_octet_string().
+ * @param signer_certs list of the cerficates used to sign this
+ * request, free with hx509_certs_free().
+ * @param verify_flags flags indicating whether the certificate
+ * was verified or not
+ *
+ * @return an hx509 error code.
+ *
+ * @ingroup hx509_cms
+ */
+
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_cms_verify_signed_ext(hx509_context context,
+			    hx509_verify_ctx ctx,
+			    unsigned int flags,
+			    const void *data,
+			    size_t length,
+			    const heim_octet_string *signedContent,
+			    hx509_certs pool,
+			    heim_oid *contentType,
+			    heim_octet_string *content,
+			    hx509_certs *signer_certs,
+			    unsigned int *verify_flags)
+{
     SignerInfo *signer_info;
     hx509_cert cert = NULL;
     hx509_certs certs = NULL;
@@ -796,6 +864,8 @@ hx509_cms_verify_signed(hx509_context context,
     size_t i;
 
     *signer_certs = NULL;
+    *verify_flags = 0;
+
     content->data = NULL;
     content->length = 0;
     contentType->length = 0;
@@ -855,7 +925,7 @@ hx509_cms_verify_signed(hx509_context context,
     }
 
     for (found_valid_sig = 0, i = 0; i < sd.signerInfos.len; i++) {
-	heim_octet_string signed_data;
+	heim_octet_string signed_data = { 0, 0 };
 	const heim_oid *match_oid;
 	heim_oid decode_oid;
 
@@ -1016,27 +1086,26 @@ hx509_cms_verify_signed(hx509_context context,
 				       "Failed to verify signature in "
 				       "CMS SignedData");
 	}
-        if (signer_info->signedAttrs)
-	    free(signed_data.data);
+        if (signed_data.data != NULL && content->data != signed_data.data) {
+            free(signed_data.data);
+            signed_data.data = NULL;
+        }
 	if (ret)
 	    goto next_sigature;
 
 	/**
-	 * If HX509_CMS_VS_NO_VALIDATE flags is set, do not verify the
-	 * signing certificates and leave that up to the caller.
+	 * If HX509_CMS_VS_NO_VALIDATE flags is set, return the signer
+	 * certificate unconditionally but do not set HX509_CMS_VSE_VALIDATED.
 	 */
+	ret = hx509_verify_path(context, ctx, cert, certs);
+	if (ret == 0 || (flags & HX509_CMS_VS_NO_VALIDATE)) {
+	    if (ret == 0)
+		*verify_flags |= HX509_CMS_VSE_VALIDATED;
 
-	if ((flags & HX509_CMS_VS_NO_VALIDATE) == 0) {
-	    ret = hx509_verify_path(context, ctx, cert, certs);
-	    if (ret)
-		goto next_sigature;
+	    ret = hx509_certs_add(context, *signer_certs, cert);
+	    if (ret == 0)
+		found_valid_sig++;
 	}
-
-	ret = hx509_certs_add(context, *signer_certs, cert);
-	if (ret)
-	    goto next_sigature;
-
-	found_valid_sig++;
 
     next_sigature:
 	if (cert)
@@ -1137,10 +1206,12 @@ add_one_attribute(Attribute **attr,
  * @param signed_data the output of the function, free with
  * der_free_octet_string().
  *
+ * @return Returns an hx509 error code.
+ *
  * @ingroup hx509_cms
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cms_create_signed_1(hx509_context context,
 			  int flags,
 			  const heim_oid *eContentType,
@@ -1187,7 +1258,7 @@ struct sigctx {
     hx509_certs pool;
 };
 
-static int
+static int HX509_LIB_CALL
 sig_process(hx509_context context, void *ctx, hx509_cert cert)
 {
     struct sigctx *sigctx = ctx;
@@ -1405,7 +1476,7 @@ sig_process(hx509_context context, void *ctx, hx509_cert cert)
     return ret;
 }
 
-static int
+static int HX509_LIB_CALL
 cert_process(hx509_context context, void *ctx, hx509_cert cert)
 {
     struct sigctx *sigctx = ctx;
@@ -1433,7 +1504,7 @@ cmp_AlgorithmIdentifier(const AlgorithmIdentifier *p, const AlgorithmIdentifier 
     return der_heim_oid_cmp(&p->algorithm, &q->algorithm);
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cms_create_signed(hx509_context context,
 			int flags,
 			const heim_oid *eContentType,
@@ -1492,7 +1563,7 @@ hx509_cms_create_signed(hx509_context context,
     sigctx.anchors = anchors;
     sigctx.pool = pool;
 
-    sigctx.sd.version = CMSVersion_v3;
+    sigctx.sd.version = cMSVersion_v3;
 
     der_copy_oid(eContentType, &sigctx.sd.encapContentInfo.eContentType);
 
@@ -1582,7 +1653,7 @@ out:
     return ret;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cms_decrypt_encrypted(hx509_context context,
 			    hx509_lock lock,
 			    const void *data,

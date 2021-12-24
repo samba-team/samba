@@ -128,7 +128,7 @@ _gsskrb5_create_ctx(
     ctx->service_keyblock	= NULL;
     ctx->ticket			= NULL;
     krb5_data_zero(&ctx->fwd_data);
-    ctx->lifetime		= GSS_C_INDEFINITE;
+    ctx->endtime		= 0;
     ctx->order			= NULL;
     ctx->crypto			= NULL;
     HEIMDAL_MUTEX_init(&ctx->ctx_id_mutex);
@@ -206,8 +206,7 @@ gsskrb5_get_creds(
 	krb5_context context,
 	krb5_ccache ccache,
 	gsskrb5_ctx ctx,
-	const gss_name_t target_name,
-	int use_dns,
+	gss_const_name_t target_name,
 	OM_uint32 time_req,
 	OM_uint32 * time_rec)
 {
@@ -225,8 +224,8 @@ gsskrb5_get_creds(
 	ctx->kcred = NULL;
     }
 
-    ret = _gsskrb5_canon_name(minor_status, context, use_dns,
-			      ctx->source, target_name, &ctx->target);
+    ret = _gsskrb5_canon_name(minor_status, context, target_name,
+                              &ctx->target);
     if (ret)
 	return ret;
 
@@ -255,10 +254,17 @@ gsskrb5_get_creds(
 	return GSS_S_FAILURE;
     }
 
-    ctx->lifetime = ctx->kcred->times.endtime;
+    krb5_free_principal(context, ctx->target);
+    kret = krb5_copy_principal(context, ctx->kcred->server, &ctx->target);
+    if (kret) {
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    ctx->endtime = ctx->kcred->times.endtime;
 
     ret = _gsskrb5_lifetime_left(minor_status, context,
-				 ctx->lifetime, &lifetime_rec);
+				 ctx->endtime, &lifetime_rec);
     if (ret) return ret;
 
     if (lifetime_rec == 0) {
@@ -315,48 +321,28 @@ do_delegation (krb5_context context,
 	       krb5_auth_context ac,
 	       krb5_ccache ccache,
 	       krb5_creds *cred,
-	       krb5_const_principal name,
 	       krb5_data *fwd_data,
 	       uint32_t flagmask,
 	       uint32_t *flags)
 {
-    krb5_creds creds;
-    KDCOptions fwd_flags;
     krb5_error_code kret;
+    krb5_principal client;
+    const char *host;
 
-    memset (&creds, 0, sizeof(creds));
     krb5_data_zero (fwd_data);
 
-    kret = krb5_cc_get_principal(context, ccache, &creds.client);
+    kret = krb5_cc_get_principal(context, ccache, &client);
     if (kret)
 	goto out;
 
-    kret = krb5_make_principal(context,
-			       &creds.server,
-			       creds.client->realm,
-			       KRB5_TGS_NAME,
-			       creds.client->realm,
-			       NULL);
-    if (kret)
+    /* We can't generally enforce server.name_type == KRB5_NT_SRV_HST */
+    if (cred->server->name.name_string.len < 2)
 	goto out;
+    host = krb5_principal_get_comp_string(context, cred->server, 1);
 
-    creds.times.endtime = 0;
-
-    memset(&fwd_flags, 0, sizeof(fwd_flags));
-    fwd_flags.forwarded = 1;
-    fwd_flags.forwardable = 1;
-
-    if ( /*target_name->name.name_type != KRB5_NT_SRV_HST ||*/
-	name->name.name_string.len < 2)
-	goto out;
-
-    kret = krb5_get_forwarded_creds(context,
-				    ac,
-				    ccache,
-				    KDCOptions2int(fwd_flags),
-				    name->name.name_string.val[1],
-				    &creds,
-				    fwd_data);
+#define FWDABLE 1
+    kret = krb5_fwd_tgt_creds(context, ac, host, client, cred->server, ccache,
+			      FWDABLE, fwd_data);
 
  out:
     if (kret)
@@ -364,10 +350,8 @@ do_delegation (krb5_context context,
     else
 	*flags |= flagmask;
 
-    if (creds.client)
-	krb5_free_principal(context, creds.client);
-    if (creds.server)
-	krb5_free_principal(context, creds.server);
+    if (client)
+	krb5_free_principal(context, client);
 }
 
 /*
@@ -380,7 +364,7 @@ init_auth
  gsskrb5_cred cred,
  gsskrb5_ctx ctx,
  krb5_context context,
- gss_name_t name,
+ gss_const_name_t name,
  const gss_OID mech_type,
  OM_uint32 req_flags,
  OM_uint32 time_req,
@@ -393,12 +377,9 @@ init_auth
 {
     OM_uint32 ret = GSS_S_FAILURE;
     krb5_error_code kret;
-    krb5_data outbuf;
     krb5_data fwd_data;
     OM_uint32 lifetime_rec;
-    int allow_dns = 1;
 
-    krb5_data_zero(&outbuf);
     krb5_data_zero(&fwd_data);
 
     *minor_status = 0;
@@ -427,44 +408,17 @@ init_auth
     /*
      * This is hideous glue for (NFS) clients that wants to limit the
      * available enctypes to what it can support (encryption in
-     * kernel). If there is no enctypes selected for this credential,
-     * reset it to the default set of enctypes.
+     * kernel).
      */
-    {
-	krb5_enctype *enctypes = NULL;
+    if (cred && cred->enctypes)
+	krb5_set_default_in_tkt_etypes(context, cred->enctypes);
 
-	if (cred && cred->enctypes)
-	    enctypes = cred->enctypes;
-	krb5_set_default_in_tkt_etypes(context, enctypes);
-    }
-
-    /* canon name if needed for client + target realm */
-    kret = krb5_cc_get_config(context, ctx->ccache, NULL,
-			      "realm-config", &outbuf);
-    if (kret == 0) {
-	/* XXX 2 is no server canon */
-	if (outbuf.length < 1 || ((((unsigned char *)outbuf.data)[0]) & 2))
-	    allow_dns = 0;
-	krb5_data_free(&outbuf);
-    }
-
-    /*
-     * First we try w/o dns, hope that the KDC have register alias
-     * (and referrals if cross realm) for this principal. If that
-     * fails and if we are allowed to using this realm try again with
-     * DNS canonicalizion.
-     */
     ret = gsskrb5_get_creds(minor_status, context, ctx->ccache,
-			    ctx, name, 0, time_req,
-			    time_rec);
-    if (ret && allow_dns)
-	ret = gsskrb5_get_creds(minor_status, context, ctx->ccache,
-				ctx, name, 1, time_req,
-				time_rec);
+			    ctx, name, time_req, time_rec);
     if (ret)
 	goto failure;
 
-    ctx->lifetime = ctx->kcred->times.endtime;
+    ctx->endtime = ctx->kcred->times.endtime;
 
     ret = _gss_DES3_get_mic_compat(minor_status, ctx, context);
     if (ret)
@@ -472,7 +426,7 @@ init_auth
 
     ret = _gsskrb5_lifetime_left(minor_status,
 				 context,
-				 ctx->lifetime,
+				 ctx->endtime,
 				 &lifetime_rec);
     if (ret)
 	goto failure;
@@ -540,6 +494,17 @@ init_auth_restart
     *minor_status = 0;
 
     /*
+     * Check if our configuration requires us to follow the KDC's
+     * guidance.  If so, we transmogrify the GSS_C_DELEG_FLAG into
+     * the GSS_C_DELEG_POLICY_FLAG.
+     */
+    if ((context->flags & KRB5_CTX_F_ENFORCE_OK_AS_DELEGATE)
+	&& (req_flags & GSS_C_DELEG_FLAG)) {
+        req_flags &= ~GSS_C_DELEG_FLAG;
+        req_flags |= GSS_C_DELEG_POLICY_FLAG;
+    }
+
+    /*
      * If the credential doesn't have ok-as-delegate, check if there
      * is a realm setting and use that.
      */
@@ -572,7 +537,7 @@ init_auth_restart
     if (flagmask & GSS_C_DELEG_FLAG) {
 	do_delegation (context,
 		       ctx->deleg_auth_context,
-		       ctx->ccache, ctx->kcred, ctx->target,
+		       ctx->ccache, ctx->kcred,
 		       &fwd_data, flagmask, &flags);
     }
 
@@ -632,7 +597,10 @@ init_auth_restart
     if (ret == 0) {
 	if (timedata.length == 4) {
 	    const u_char *p = timedata.data;
-	    offset = (p[0] <<24) | (p[1] << 16) | (p[2] << 8) | (p[3] << 0);
+	    offset = ((uint32_t)p[0] << 24)
+		   | ((uint32_t)p[1] << 16)
+		   | ((uint32_t)p[2] << 8)
+		   | ((uint32_t)p[3] << 0);
 	}
 	krb5_data_free(&timedata);
     }
@@ -687,7 +655,7 @@ init_auth_restart
     free_Checksum(&cksum);
 
     if (flags & GSS_C_MUTUAL_FLAG) {
-	ctx->state = INITIATOR_WAIT_FOR_MUTAL;
+	ctx->state = INITIATOR_WAIT_FOR_MUTUAL;
 	return GSS_S_CONTINUE_NEEDED;
     }
 
@@ -819,14 +787,11 @@ repl_mutual
 			       repl);
 
     *minor_status = 0;
-    if (time_rec) {
-	ret = _gsskrb5_lifetime_left(minor_status,
-				     context,
-				     ctx->lifetime,
-				     time_rec);
-    } else {
-	ret = GSS_S_COMPLETE;
-    }
+    if (time_rec)
+        _gsskrb5_lifetime_left(minor_status,
+                               context,
+                               ctx->endtime,
+                               time_rec);
     if (ret_flags)
 	*ret_flags = ctx->flags;
 
@@ -867,9 +832,9 @@ repl_mutual
 
 OM_uint32 GSSAPI_CALLCONV _gsskrb5_init_sec_context
 (OM_uint32 * minor_status,
- const gss_cred_id_t cred_handle,
+ gss_const_cred_id_t cred_handle,
  gss_ctx_id_t * context_handle,
- const gss_name_t target_name,
+ gss_const_name_t target_name,
  const gss_OID mech_type,
  OM_uint32 req_flags,
  OM_uint32 time_req,
@@ -956,7 +921,7 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_init_sec_context
 			time_rec);
 	if (ret != GSS_S_COMPLETE)
 	    break;
-	/* FALL THOUGH */
+	/* FALLTHROUGH */
     case INITIATOR_RESTART:
 	ret = init_auth_restart(minor_status,
 				cred,
@@ -970,7 +935,7 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_init_sec_context
 				ret_flags,
 				time_rec);
 	break;
-    case INITIATOR_WAIT_FOR_MUTAL:
+    case INITIATOR_WAIT_FOR_MUTUAL:
 	ret = repl_mutual(minor_status,
 			  ctx,
 			  context,

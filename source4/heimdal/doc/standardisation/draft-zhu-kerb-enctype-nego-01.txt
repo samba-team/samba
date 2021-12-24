@@ -1,0 +1,395 @@
+
+
+NETWORK WORKING GROUP                                             L. Zhu
+Internet-Draft                                                  P. Leach
+Expires: October 2, 2005                                   K. Jaganathan
+                                                   Microsoft Corporation
+                                                          March 31, 2005
+
+
+              Kerberos Cryptosystem Negotiation Extension
+                      draft-zhu-kerb-enctype-nego-01
+
+Status of this Memo
+
+   This document is an Internet-Draft and is subject to all provisions
+   of Section 3 of RFC 3667.  By submitting this Internet-Draft, each
+   author represents that any applicable patent or other IPR claims of
+   which he or she is aware have been or will be disclosed, and any of
+   which he or she become aware will be disclosed, in accordance with
+   RFC 3668.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as
+   Internet-Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on October 2, 2005.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2005).
+
+Abstract
+
+   This document specifies an extension by Kerberos to negotiate new
+   encryption types between the client-server peers.
+
+
+
+
+
+
+Zhu, et al.              Expires October 2, 2005                [Page 1]
+
+Internet-Draft             Enctype Negotiation                March 2005
+
+
+Table of Contents
+
+   1.   Introduction . . . . . . . . . . . . . . . . . . . . . . . . . 3
+   2.   Conventions Used in This Document  . . . . . . . . . . . . . . 3
+   3.   Negotiation Extension  . . . . . . . . . . . . . . . . . . . . 3
+   4.   Security Considerations  . . . . . . . . . . . . . . . . . . . 4
+   5.   IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 4
+   6.   Normative References . . . . . . . . . . . . . . . . . . . . . 4
+        Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . 5
+   A.   Leveraging this Enctype Negotiation in Windows SPNEGO
+        Implementations  . . . . . . . . . . . . . . . . . . . . . . . 5
+        Intellectual Property and Copyright Statements . . . . . . . . 7
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires October 2, 2005                [Page 2]
+
+Internet-Draft             Enctype Negotiation                March 2005
+
+
+1.  Introduction
+
+   Under the current mechanism [CLAR], the KDC must limit the ticket
+   session key enctype chosen for a given server to one it believes is
+   supported by both the client and the server.  If both the client and
+   server understand a stronger enctype than the one selected by the
+   KDC, they can not negotiate it.  As the result, the protection of
+   application traffic is often weaker than necessary when the server
+   can support different sets of enctypes depending on the server
+   application software being used.
+
+   This document specifies an extension to Kerberos to allow clients and
+   servers to negotiate a different and possible stronger cryptosystem
+   to be used in subsequent communication.
+
+   This extension utilizes an authorization data element in the
+   authenticator of the AP-REQ message [CLAR].  The client sends the
+   list of enctypes that it supports to the server, the server then
+   informs the client its choice.  The negotiated subkey is sent in the
+   AP-REP message [CLAR].
+
+2.  Conventions Used in This Document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+3.  Negotiation Extension
+
+   If the client prefers an enctype over that of the service ticket
+   session key, then it MUST send the list of enctypes it supports
+   (including the one selected by the KDC) in decreasing preference
+   order.
+
+   The client sends the enctype list via the authorization-data of the
+   authenticator in the AP-REQ [CLAR].  A new authorization data element
+   type AD-ETYPE-NEGOTIATION (129) is defined.  This authorization data
+   element itself is enclosed in the AD-IF-RELEVANT container, thus a
+   correctly implemented server that does not understand this element
+   should ignore it [CLAR].  The value of this authorization element
+   contains the DER [X60] encoding of the following ASN.1 type:
+
+           EtypeList ::= SEQUENCE OF Int32
+              -- Specifies the enctypes supported by the client.
+              -- This enctype list is in decreasing preference order
+              -- (favorite choice first).
+              -- Int32 is defined in [CLAR].
+
+
+
+
+Zhu, et al.              Expires October 2, 2005                [Page 3]
+
+Internet-Draft             Enctype Negotiation                March 2005
+
+
+   If the EtypeList is present and the server prefers an enctype from
+   the client's enctype list over that of the AP-REQ authenticator
+   subkey (if that is present) or the service ticket session key, the
+   server MUST create a subkey using that enctype.  This negotiated
+   subkey is sent in the subkey field of AP-REP message and it MUST be
+   used for subsequent communication.
+
+   This negotiation extension MUST NOT be used when the client does not
+   expect the subkey in the AP-REP message from the server.
+
+   Note that to preserve the quality of randomness provided by the KDC,
+   implementations of this extension SHOULD consider using the service
+   ticket session key value as a source of additional entropy when
+   generating the negotiated subkey.  If the AP-REQ authenticator subkey
+   is present, it MAY also be used as a source of entropy.
+
+   The policy by which the client or the server chooses an enctype
+   (i.e., how the preference order for the supported enctypes is
+   selected) is an implementation-specific local matter.
+
+4.  Security Considerations
+
+   The client's enctype list and the server's reply enctype are part of
+   encrypted data, thus the security considerations are the same as
+   those of the Kerberos encrypted data.
+
+   In all cases, the communicating peers are exposed to the denial of
+   service threat.
+
+5.  IANA Considerations
+
+   No IANA actions are required for this document.
+
+6.  Normative References
+
+   [CLAR]     RFC-Editor: To be replaced by RFC number for draft-ietf-
+              krb-wg-kerberos-clarifications.  Work in Progress. 
+                            
+   [GSS-CFX]  RFC-Editor: To be replaced by RFC number for draft-ietf-
+              krb-wg-gssapi-cfx.  Work in Progress. 
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+
+
+
+Zhu, et al.              Expires October 2, 2005                [Page 4]
+
+Internet-Draft             Enctype Negotiation                March 2005
+
+
+   [SPNEGOBIS]
+              RFC-Editor: To be replaced by RFC number for draft-ietf-
+              kitten-2478bis.  Work in progress.
+
+   [X690]     ASN.1 encoding rules: Specification of Basic Encoding Rules 
+              (BER), Canonical Encoding Rules (CER) and Distinguished 
+              Encoding Rules (DER), ITU-T Recommendation X.690 (1997) | 
+              ISO/IEC International Standard 8825-1:1998.
+
+
+Authors' Addresses
+
+   Larry Zhu
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: lzhu@microsoft.com
+
+
+   Paul Leach
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: paulle@microsoft.com
+
+
+   Karthik Jaganathan
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: karthikj@microsoft.com
+
+Appendix A.  Leveraging this Enctype Negotiation in Windows SPNEGO
+            Implementations
+
+   The SPNEGO implementations in Windows 2000, Windows XP and Windows
+   2003 do not generate or verify the mechlistMIC field when it is
+   required [SPNEGOBIS].
+
+   When the SPNEGO implementations that are updated according to
+   [SPNEGOBIS], an SSPI initiator or acceptor needs to determine if the
+   peer is updated, so that it can generate the mechlistMIC token when
+   the peer can process it.  With the bidirectional negotiation, the
+   updated SPNEGO implementation can achieve the following two goals:
+
+
+
+
+
+Zhu, et al.              Expires October 2, 2005                [Page 5]
+
+Internet-Draft             Enctype Negotiation                March 2005
+
+
+   o  It can remain backward compatible with legacy implementations, if
+      local policy allows unsafe and unprotected negotiation with
+      downlevel implementations when the mechlistMIC token exchange
+      would otherwise be required by [SPNEGOBIS].
+
+   o  The mechanism negotiation is protected according to [SPNEGOBIS]
+      when both peers are updated.
+
+   However, the updated SPNEGO implementation itself can not securely
+   inform the peer whether the local implementation is updated, thus it
+   has to obtain such information from the negotiated mechanism.
+
+   For Windows SPNEGO implementations, both the initiator and the
+   acceptor are assumed to have been updated if a "newer" [CLAR] or
+   different enctype is negotiated for use by the Kerberos GSS-API
+   mechanism.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires October 2, 2005                [Page 6]
+
+Internet-Draft             Enctype Negotiation                March 2005
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2005).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Zhu, et al.              Expires October 2, 2005                [Page 7]
+
+

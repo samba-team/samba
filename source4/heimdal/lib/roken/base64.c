@@ -33,10 +33,17 @@
 
 #include <config.h>
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#ifdef TEST
+#include <stdio.h>
+#include <getarg.h>
+#include <err.h>
+#endif
 #include "base64.h"
+#include "roken.h"
 
 static const char base64_chars[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -52,7 +59,7 @@ pos(char c)
 }
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-base64_encode(const void *data, int size, char **str)
+rk_base64_encode(const void *data, int size, char **str)
 {
     char *s, *p;
     int i;
@@ -61,6 +68,7 @@ base64_encode(const void *data, int size, char **str)
 
     if (size > INT_MAX/4 || size < 0) {
 	*str = NULL;
+        errno = ERANGE;
 	return -1;
     }
 
@@ -121,7 +129,7 @@ token_decode(const char *token)
 }
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-base64_decode(const char *str, void *data)
+rk_base64_decode(const char *str, void *data)
 {
     const char *p;
     unsigned char *q;
@@ -130,13 +138,121 @@ base64_decode(const char *str, void *data)
     for (p = str; *p && (*p == '=' || strchr(base64_chars, *p)); p += 4) {
 	unsigned int val = token_decode(p);
 	unsigned int marker = (val >> 24) & 0xff;
-	if (val == DECODE_ERROR)
+	if (val == DECODE_ERROR) {
+            errno = EINVAL;
 	    return -1;
+        }
 	*q++ = (val >> 16) & 0xff;
 	if (marker < 2)
 	    *q++ = (val >> 8) & 0xff;
 	if (marker < 1)
 	    *q++ = val & 0xff;
     }
+    if (q - (unsigned char *) data > INT_MAX) {
+        errno = EOVERFLOW;
+        return -1;
+    }
     return q - (unsigned char *) data;
 }
+
+#ifdef TEST
+static int decode_flag;
+static int help_flag;
+
+/*
+ * The short options are compatible with a subset of the FreeBSD contrib
+ * vis(1).  Heimdal additions have long option names only.
+ */
+static struct getargs args[] = {
+    { "decode", 'd', arg_flag, &decode_flag, "Decode", NULL },
+    { "help", 'h', arg_flag, &help_flag, "Print help message", NULL },
+};
+static size_t num_args = sizeof(args)/sizeof(args[0]);
+
+int
+main(int argc, char **argv)
+{
+    unsigned char *buf = NULL;
+    size_t buflen = 0;
+    size_t bufsz = 0;
+    int goptind = 0;
+    int ret;
+
+    setprogname("rkbase64");
+    if (getarg(args, num_args, argc, argv, &goptind) || help_flag) {
+        arg_printusage(args, num_args, NULL, "FILE | -");
+        return help_flag ? 0 : 1;
+    }
+
+    argc -= goptind;
+    argv += goptind;
+
+    if (help_flag)
+        return arg_printusage(args, num_args, NULL, "FILE | -- -"), 0;
+    if (argc != 1)
+        return arg_printusage(args, num_args, NULL, "FILE | -- -"), 1;
+
+    if (strcmp(argv[0], "-") == 0) {
+        unsigned char *tmp;
+        unsigned char d[4096];
+        size_t bytes;
+
+        while (!feof(stdin) && !ferror(stdin)) {
+            bytes = fread(d, 1, sizeof(d), stdin);
+            if (bytes == 0)
+                continue;
+            if (buflen + bytes > bufsz) {
+                if ((tmp = realloc(buf, bufsz + (bufsz >> 2) + sizeof(d))) == NULL)
+                    err(1, "Could not read stdin");
+                buf = tmp;
+                bufsz = bufsz + (bufsz >> 2) + sizeof(d);
+            }
+            memcpy(buf + buflen, d, bytes);
+            buflen += bytes;
+        }
+        if (ferror(stdin))
+            err(1, "Could not read stdin");
+    } else {
+        void *d;
+        if ((ret = rk_undumpdata(argv[0], &d, &bufsz)))
+            err(1, "Could not read %s", argv[0]);
+        buflen = bufsz;
+        buf = d;
+    }
+
+    if (decode_flag) {
+        unsigned char *d;
+
+        if (buflen == bufsz) {
+            unsigned char *tmp;
+
+            if ((tmp = realloc(buf, bufsz + 1)) == NULL)
+                err(1, "Could not decode data");
+            buf = tmp;
+            bufsz++;
+        }
+        buf[buflen] = '\0';
+
+        if ((d = malloc(buflen * 3 / 4 + 4)) == NULL)
+            err(1, "Could not decode data");
+
+        if ((ret = rk_base64_decode((const char *)buf, d)) < 0)
+            err(1, "Could not decode data");
+        if (fwrite(d, ret, 1, stdout) != 1)
+            err(1, "Could not write decoded data");
+        free(d);
+    } else {
+        char *e;
+
+        if ((ret = rk_base64_encode(buf, buflen, &e)) < 0)
+            err(1, "Could not encode data");
+        if (fwrite(e, ret, 1, stdout) != 1)
+            err(1, "Could not write decoded data");
+        free(e);
+        if (fwrite("\n", 1, 1, stdout) != 1)
+            err(1, "Could not write decoded data");
+    }
+    free(buf);
+    return 0;
+}
+#endif

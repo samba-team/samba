@@ -48,9 +48,7 @@
  */
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_add_et_list (krb5_context context,
-		  void (*func)(struct et_list **))
+krb5_add_et_list(krb5_context context, void (*func)(struct et_list **))
 {
-    (*func)(&context->et_list);
-    return 0;
+    return heim_add_et_list(context->hcontext, func);
 }

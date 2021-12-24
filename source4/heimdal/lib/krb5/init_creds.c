@@ -60,18 +60,13 @@ krb5_get_init_creds_opt_alloc(krb5_context context,
 
     *opt = NULL;
     o = calloc(1, sizeof(*o));
-    if (o == NULL) {
-	krb5_set_error_message(context, ENOMEM,
-			       N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (o == NULL)
+	return krb5_enomem(context);
 
     o->opt_private = calloc(1, sizeof(*o->opt_private));
     if (o->opt_private == NULL) {
-	krb5_set_error_message(context, ENOMEM,
-			       N_("malloc: out of memory", ""));
 	free(o);
-	return ENOMEM;
+	return krb5_enomem(context);
     }
     o->opt_private->refcount = 1;
     *opt = o;
@@ -200,6 +195,13 @@ krb5_get_init_creds_opt_set_default_flags(krb5_context context,
 #endif
 }
 
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
+krb5_get_init_creds_opt_set_change_password_prompt(krb5_get_init_creds_opt *opt,
+                                                   int change_password_prompt)
+{
+	opt->flags |= KRB5_GET_INIT_CREDS_OPT_CHANGE_PASSWORD_PROMPT;
+	opt->change_password_prompt = change_password_prompt;
+}
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_get_init_creds_opt_set_tkt_life(krb5_get_init_creds_opt *opt,
@@ -364,9 +366,11 @@ krb5_get_init_creds_opt_set_win2k(krb5_context context,
     if (req) {
 	opt->opt_private->flags |= KRB5_INIT_CREDS_NO_C_CANON_CHECK;
 	opt->opt_private->flags |= KRB5_INIT_CREDS_NO_C_NO_EKU_CHECK;
+	opt->opt_private->flags |= KRB5_INIT_CREDS_PKINIT_NO_KRBTGT_OTHERNAME_CHECK;
     } else {
 	opt->opt_private->flags &= ~KRB5_INIT_CREDS_NO_C_CANON_CHECK;
 	opt->opt_private->flags &= ~KRB5_INIT_CREDS_NO_C_NO_EKU_CHECK;
+	opt->opt_private->flags &= ~KRB5_INIT_CREDS_PKINIT_NO_KRBTGT_OTHERNAME_CHECK;
     }
     return 0;
 }
@@ -423,10 +427,8 @@ krb5_get_init_creds_opt_get_error(krb5_context context,
     KRB5_DEPRECATED_FUNCTION("Use X instead")
 {
     *error = calloc(1, sizeof(**error));
-    if (*error == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (*error == NULL)
+	return krb5_enomem(context);
 
     return 0;
 }

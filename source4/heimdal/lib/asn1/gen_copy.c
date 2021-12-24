@@ -62,6 +62,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 	    copy_primitive ("heim_integer", from, to);
 	    break;
 	}
+        /* FALLTHROUGH */
     case TBoolean:
     case TEnumerated :
 	fprintf(codefile, "*(%s) = *(%s);\n", to, from);
@@ -70,7 +71,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 	copy_primitive ("octet_string", from, to);
 	break;
     case TBitString:
-	if (ASN1_TAILQ_EMPTY(t->members))
+	if (HEIM_TAILQ_EMPTY(t->members))
 	    copy_primitive ("bit_string", from, to);
 	else
 	    fprintf(codefile, "*(%s) = *(%s);\n", to, from);
@@ -98,7 +99,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 	    fprintf(codefile, "switch((%s)->element) {\n", from);
 	}
 
-	ASN1_TAILQ_FOREACH(m, t->members, members) {
+	HEIM_TAILQ_FOREACH(m, t->members, members) {
 	    char *fs;
 	    char *ts;
 
@@ -228,6 +229,9 @@ void
 generate_type_copy (const Symbol *s)
 {
   int preserve = preserve_type(s->name) ? TRUE : FALSE;
+  int save_used_fail = used_fail;
+  int deco_opt;
+  char *ft, *fn;
 
   used_fail = 0;
 
@@ -237,6 +241,19 @@ generate_type_copy (const Symbol *s)
 	   "memset(to, 0, sizeof(*to));\n",
 	   s->gen_name, s->gen_name, s->gen_name);
   copy_type ("from", "to", s->type, preserve);
+  if (decorate_type(s->gen_name, &ft, &fn, &deco_opt)) {
+      if (deco_opt) {
+          fprintf(codefile, "if (from->%s) {\n", fn);
+          fprintf(codefile, "(to)->%s = malloc(sizeof(*(to)->%s));\n", fn, fn);
+          fprintf(codefile, "if (copy_%s((from)->%s, (to)->%s)) goto fail;\n", ft, fn, fn);
+          fprintf(codefile, "}\n");
+      } else {
+          fprintf(codefile, "if (copy_%s(&(from)->%s, &(to)->%s)) goto fail;\n", ft, fn, fn);
+      }
+      used_fail++;
+      free(ft);
+      free(fn);
+  }
   fprintf (codefile, "return 0;\n");
 
   if (used_fail)
@@ -247,5 +264,6 @@ generate_type_copy (const Symbol *s)
 
   fprintf(codefile,
 	  "}\n\n");
+  used_fail = save_used_fail;
 }
 

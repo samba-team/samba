@@ -137,7 +137,7 @@ sub_wrap_size (
 OM_uint32 GSSAPI_CALLCONV
 _gsskrb5_wrap_size_limit (
             OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
+            gss_const_ctx_id_t context_handle,
             int conf_req_flag,
             gss_qop_t qop_req,
             OM_uint32 req_output_size,
@@ -528,7 +528,7 @@ wrap_des3
 OM_uint32 GSSAPI_CALLCONV
 _gsskrb5_wrap
            (OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
+            gss_const_ctx_id_t context_handle,
             int conf_req_flag,
             gss_qop_t qop_req,
             const gss_buffer_t input_message_buffer,

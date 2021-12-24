@@ -31,14 +31,12 @@
  * SUCH DAMAGE.
  */
 
-#include "config.h"
-
+#include <config.h>
+#include <roken.h>
 
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
-
-#include <string.h>
 
 #include "rijndael-alg-fst.h"
 #include "aes.h"

@@ -32,18 +32,14 @@
  */
 
 #include <config.h>
+#include <roken.h>
 
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <evp.h>
 #include <hmac.h>
-
-#include <roken.h>
 
 /**
  * As descriped in PKCS5, convert a password, salt, and iteration counter into a crypto key.
@@ -53,6 +49,7 @@
  * @param salt Salt
  * @param salt_len Length of salt.
  * @param iter iteration counter.
+ * @param md the digest function.
  * @param keylen the output key length.
  * @param key the output key.
  *
@@ -62,21 +59,23 @@
  */
 
 int
-PKCS5_PBKDF2_HMAC_SHA1(const void * password, size_t password_len,
-		       const void * salt, size_t salt_len,
-		       unsigned long iter,
-		       size_t keylen, void *key)
+PKCS5_PBKDF2_HMAC(const void * password, size_t password_len,
+		  const void * salt, size_t salt_len,
+		  unsigned long iter,
+		  const EVP_MD *md,
+		  size_t keylen, void *key)
 {
     size_t datalen, leftofkey, checksumsize;
     char *data, *tmpcksum;
     uint32_t keypart;
-    const EVP_MD *md;
     unsigned long i;
     int j;
     char *p;
     unsigned int hmacsize;
 
-    md = EVP_sha1();
+    if (md == NULL)
+	return 0;
+
     checksumsize = EVP_MD_size(md);
     datalen = salt_len + 4;
 
@@ -125,4 +124,29 @@ PKCS5_PBKDF2_HMAC_SHA1(const void * password, size_t password_len,
     free(tmpcksum);
 
     return 1;
+}
+
+/**
+ * As descriped in PKCS5, convert a password, salt, and iteration counter into a crypto key.
+ *
+ * @param password Password.
+ * @param password_len Length of password.
+ * @param salt Salt
+ * @param salt_len Length of salt.
+ * @param iter iteration counter.
+ * @param keylen the output key length.
+ * @param key the output key.
+ *
+ * @return 1 on success, non 1 on failure.
+ *
+ * @ingroup hcrypto_misc
+ */
+int
+PKCS5_PBKDF2_HMAC_SHA1(const void * password, size_t password_len,
+		       const void * salt, size_t salt_len,
+		       unsigned long iter,
+		       size_t keylen, void *key)
+{
+    return PKCS5_PBKDF2_HMAC(password, password_len, salt, salt_len, iter,
+			     EVP_sha1(), keylen, key);
 }

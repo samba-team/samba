@@ -33,50 +33,115 @@ gss_import_sec_context(OM_uint32 *minor_status,
     const gss_buffer_t interprocess_token,
     gss_ctx_id_t *context_handle)
 {
-	OM_uint32 major_status;
+        OM_uint32 ret = GSS_S_FAILURE, tmp_minor;
+        krb5_storage *sp;
 	gssapi_mech_interface m;
-	struct _gss_context *ctx;
-	gss_OID_desc mech_oid;
-	gss_buffer_desc buf;
-	unsigned char *p;
-	size_t len;
+        struct _gss_context *ctx = NULL;
+	gss_buffer_desc buf = GSS_C_EMPTY_BUFFER;
+        unsigned char verflags;
+
+        _gss_mg_log(10, "gss-isc called");
+
+        if (!minor_status || !context_handle) {
+            *minor_status = EFAULT;
+            return GSS_S_FAILURE;
+        }
 
 	*minor_status = 0;
 	*context_handle = GSS_C_NO_CONTEXT;
 
-	/*
-	 * We added an oid to the front of the token in
-	 * gss_export_sec_context.
-	 */
-	p = interprocess_token->value;
-	len = interprocess_token->length;
-	if (len < 2)
-		return (GSS_S_DEFECTIVE_TOKEN);
-	mech_oid.length = (p[0] << 8) | p[1];
-	if (len < mech_oid.length + 2)
-		return (GSS_S_DEFECTIVE_TOKEN);
-	mech_oid.elements = p + 2;
-	buf.length = len - 2 - mech_oid.length;
-	buf.value = p + 2 + mech_oid.length;
+        sp = krb5_storage_from_mem(interprocess_token->value,
+                                   interprocess_token->length);
+        if (!sp) {
+            *minor_status = ENOMEM;
+            return GSS_S_FAILURE;
+        }
+        krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_PACKED);
 
-	m = __gss_get_mechanism(&mech_oid);
-	if (!m)
-		return (GSS_S_DEFECTIVE_TOKEN);
+        ctx = calloc(1, sizeof(struct _gss_context));
+        if (!ctx) {
+            *minor_status = ENOMEM;
+            goto failure;
+        }
 
-	ctx = malloc(sizeof(struct _gss_context));
-	if (!ctx) {
-		*minor_status = ENOMEM;
-		return (GSS_S_FAILURE);
-	}
-	ctx->gc_mech = m;
-	major_status = m->gm_import_sec_context(minor_status,
-	    &buf, &ctx->gc_ctx);
-	if (major_status != GSS_S_COMPLETE) {
-		_gss_mg_error(m, major_status, *minor_status);
-		free(ctx);
-	} else {
-		*context_handle = (gss_ctx_id_t) ctx;
-	}
+        if (krb5_ret_uint8(sp, &verflags))
+            goto failure;
 
-	return (major_status);
+        if ((verflags & EXPORT_CONTEXT_VERSION_MASK) != 0) {
+            _gss_mg_log(10, "gss-isc failed, token version %d not recognised",
+                (int)(verflags & EXPORT_CONTEXT_VERSION_MASK));
+            /* We don't recognise the version */
+            goto failure;
+        }
+
+        if (verflags & EXPORT_CONTEXT_FLAG_ACCUMULATING) {
+            uint32_t target_len;
+
+            if (krb5_ret_uint8(sp, &ctx->gc_initial))
+                goto failure;
+
+            if (krb5_ret_uint32(sp, &target_len))
+                goto failure;
+
+	    ret = _gss_mg_ret_buffer(minor_status, sp, &buf);
+            if (ret != GSS_S_COMPLETE)
+                goto failure;
+
+            ctx->gc_input.value = calloc(target_len, 1);
+	    if (ctx->gc_input.value == NULL)
+		goto failure;
+
+            ctx->gc_target_len   = target_len;
+            ctx->gc_input.length = buf.length;
+	    if (buf.value)
+		memcpy(ctx->gc_input.value, buf.value, buf.length);
+
+	    gss_release_buffer(&tmp_minor, &buf);
+        }
+
+        if (verflags & EXPORT_CONTEXT_FLAG_MECH_CTX) {
+	    gss_OID mech_oid;
+
+	    ret = _gss_mg_ret_oid(minor_status, sp, &mech_oid);
+            if (ret != GSS_S_COMPLETE)
+                goto failure;
+
+	    if (mech_oid == GSS_C_NO_OID) {
+		ret = GSS_S_BAD_MECH;
+		goto failure;
+	    }
+
+            m = __gss_get_mechanism(mech_oid);
+            if (m == NULL) {
+                ret = GSS_S_DEFECTIVE_TOKEN;
+		goto failure;
+	    }
+            ctx->gc_mech = m;
+
+	    ret = _gss_mg_ret_buffer(minor_status, sp, &buf);
+	    if (ret != GSS_S_COMPLETE)
+		goto failure;
+
+	    if (buf.value == NULL) {
+		ret = GSS_S_DEFECTIVE_TOKEN;
+		goto failure;
+	    }
+
+            ret = m->gm_import_sec_context(minor_status, &buf, &ctx->gc_ctx);
+            if (ret != GSS_S_COMPLETE) {
+                _gss_mg_error(m, *minor_status);
+                goto failure;
+	    }
+        }
+
+	*context_handle = (gss_ctx_id_t) ctx;
+	ctx = NULL;
+
+	ret = GSS_S_COMPLETE;
+
+failure:
+        free(ctx);
+        krb5_storage_free(sp);
+	_gss_secure_release_buffer(&tmp_minor, &buf);
+        return ret;
 }

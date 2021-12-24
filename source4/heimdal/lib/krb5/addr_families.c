@@ -799,6 +799,7 @@ static struct addr_operations at[] = {
 	NULL,
 	NULL,
 	NULL,
+	NULL,
 	NULL
     }
 };
@@ -817,9 +818,8 @@ find_af(int af)
     size_t i;
 
     for (i = 0; i < num_addrs; i++) {
-	if (af == at[i].af) {
-		return &at[i];
-	}
+	if (af == at[i].af)
+	    return &at[i];
     }
     return NULL;
 }
@@ -830,9 +830,8 @@ find_atype(krb5_address_type atype)
     size_t i;
 
     for (i = 0; i < num_addrs; i++) {
-	if (atype == at[i].atype) {
-		return &at[i];
-	}
+	if (atype == at[i].atype)
+	    return &at[i];
     }
     return NULL;
 }
@@ -955,9 +954,8 @@ krb5_max_sockaddr_size (void)
     if (max_sockaddr_size == 0) {
 	size_t i;
 
-	for (i = 0; i < num_addrs; i++) {
+	for (i = 0; i < num_addrs; i++)
 	    max_sockaddr_size = max(max_sockaddr_size, at[i].max_sockaddr_size);
-	}
     }
     return max_sockaddr_size;
 }
@@ -1145,6 +1143,32 @@ krb5_print_address (const krb5_address *addr,
     return 0;
 }
 
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+_krb5_parse_address_no_lookup(krb5_context context,
+                              const char *string,
+                              krb5_addresses *addresses)
+{
+    int i;
+
+    addresses->len = 0;
+    addresses->val = NULL;
+
+    for(i = 0; i < num_addrs; i++) {
+	if(at[i].parse_addr) {
+	    krb5_address addr;
+	    if((*at[i].parse_addr)(context, string, &addr) == 0) {
+		ALLOC_SEQ(addresses, 1);
+		if (addresses->val == NULL)
+		    return krb5_enomem(context);
+		addresses->val[0] = addr;
+		return 0;
+	    }
+	}
+    }
+
+    return -1;
+}
+
 /**
  * krb5_parse_address returns the resolved hostname in string to the
  * krb5_addresses addresses .
@@ -1163,31 +1187,24 @@ krb5_parse_address(krb5_context context,
 		   const char *string,
 		   krb5_addresses *addresses)
 {
+    krb5_error_code ret;
     int i, n;
     struct addrinfo *ai, *a;
+    struct addrinfo hint;
     int error;
     int save_errno;
 
     addresses->len = 0;
     addresses->val = NULL;
 
-    for(i = 0; i < num_addrs; i++) {
-	if(at[i].parse_addr) {
-	    krb5_address addr;
-	    if((*at[i].parse_addr)(context, string, &addr) == 0) {
-		ALLOC_SEQ(addresses, 1);
-		if (addresses->val == NULL) {
-		    krb5_set_error_message(context, ENOMEM,
-					   N_("malloc: out of memory", ""));
-		    return ENOMEM;
-		}
-		addresses->val[0] = addr;
-		return 0;
-	    }
-	}
-    }
+    ret = _krb5_parse_address_no_lookup(context, string, addresses);
+    if (ret == 0 || ret != -1)
+        return ret;
 
-    error = getaddrinfo (string, NULL, NULL, &ai);
+    /* if not parsed as numeric address, do a name lookup */
+    memset(&hint, 0, sizeof(hint));
+    hint.ai_family = AF_UNSPEC;
+    error = getaddrinfo (string, NULL, &hint, &ai);
     if (error) {
 	krb5_error_code ret2;
 	save_errno = errno;
@@ -1203,15 +1220,13 @@ krb5_parse_address(krb5_context context,
 
     ALLOC_SEQ(addresses, n);
     if (addresses->val == NULL) {
-	krb5_set_error_message(context, ENOMEM,
-			       N_("malloc: out of memory", ""));
 	freeaddrinfo(ai);
-	return ENOMEM;
+	return krb5_enomem(context);
     }
 
     addresses->len = 0;
     for (a = ai, i = 0; a != NULL; a = a->ai_next) {
-	if (krb5_sockaddr2address (context, ai->ai_addr, &addresses->val[i]))
+	if (krb5_sockaddr2address (context, a->ai_addr, &addresses->val[i]))
 	    continue;
 	if(krb5_address_search(context, &addresses->val[i], addresses)) {
 	    krb5_free_address(context, &addresses->val[i]);
@@ -1416,7 +1431,7 @@ krb5_copy_addresses(krb5_context context,
     size_t i;
     ALLOC_SEQ(outaddr, inaddr->len);
     if(inaddr->len > 0 && outaddr->val == NULL)
-	return ENOMEM;
+	return krb5_enomem(context);
     for(i = 0; i < inaddr->len; i++)
 	krb5_copy_address(context, &inaddr->val[i], &outaddr->val[i]);
     return 0;
@@ -1445,11 +1460,8 @@ krb5_append_addresses(krb5_context context,
     size_t i;
     if(source->len > 0) {
 	tmp = realloc(dest->val, (dest->len + source->len) * sizeof(*tmp));
-	if(tmp == NULL) {
-	    krb5_set_error_message (context, ENOMEM,
-				    N_("malloc: out of memory", ""));
-	    return ENOMEM;
-	}
+	if (tmp == NULL)
+	    return krb5_enomem(context);
 	dest->val = tmp;
 	for(i = 0; i < source->len; i++) {
 	    /* skip duplicates */
@@ -1487,20 +1499,17 @@ krb5_make_addrport (krb5_context context,
     size_t len = addr->address.length + 2 + 4 * 4;
     u_char *p;
 
+    /* XXX Make this assume port == 0 -> port is absent */
+
     *res = malloc (sizeof(**res));
-    if (*res == NULL) {
-	krb5_set_error_message (context, ENOMEM,
-				N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (*res == NULL)
+	return krb5_enomem(context);
     (*res)->addr_type = KRB5_ADDRESS_ADDRPORT;
     ret = krb5_data_alloc (&(*res)->address, len);
     if (ret) {
-	krb5_set_error_message (context, ret,
-				N_("malloc: out of memory", ""));
 	free (*res);
 	*res = NULL;
-	return ret;
+	return krb5_enomem(context);
     }
     p = (*res)->address.data;
     *p++ = 0;

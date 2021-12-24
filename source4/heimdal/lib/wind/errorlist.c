@@ -51,7 +51,7 @@ error_entry_cmp(const void *a, const void *b)
 int
 _wind_stringprep_error(const uint32_t cp, wind_profile_flags flags)
 {
-    struct error_entry ee = {cp};
+    struct error_entry ee = {cp, 0, 0};
     const struct error_entry *s;
 
     s = (const struct error_entry *)

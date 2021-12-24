@@ -39,6 +39,10 @@
 /* symbol renaming */
 #define UI_UTIL_read_pw_string hc_UI_UTIL_read_pw_string
 
+/* OpenSSL API extensions */
+#define UI_UTIL_FLAG_VERIFY	    0x1 /* ask to verify password */
+#define UI_UTIL_FLAG_VERIFY_SILENT  0x2 /* silence on verify failure */
+
 int	UI_UTIL_read_pw_string(char *, int, const char *, int); /* XXX */
 
 #endif /* _HEIM_UI_H */

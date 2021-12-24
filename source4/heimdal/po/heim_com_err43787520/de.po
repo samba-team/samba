@@ -1,0 +1,277 @@
+# German translation of »heim_com_err43787520«.
+# This file is distributed under the same license as the Heimdal package.
+# Copyright (C) 1996-2000 Kungliga Tekniska Högskolan.
+# Copyright (C) of this file 2017 Chris Leick <c.leick@vollbio.de>.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Heimdal 1.7\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-09-07 15:23+0100\n"
+"PO-Revision-Date: 2017-02-23 21:16+0100\n"
+"Last-Translator: Chris Leick <c.leick@vollbio.de>\n"
+"Language-Team: German <debian-l10n-german@lists.debian.org>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+
+#. 000
+#: ../lib/kadm5/kadm5_err.c:11
+msgid "Operation failed for unspecified reason"
+msgstr "Aktion aus nicht angegebenem Grund fehlgeschlagen"
+
+#. 001
+#: ../lib/kadm5/kadm5_err.c:12
+msgid "Operation requires `get' privilege"
+msgstr "Aktion erfordert »get«-Rechte."
+
+#. 002
+#: ../lib/kadm5/kadm5_err.c:13
+msgid "Operation requires `add' privilege"
+msgstr "Aktion erfordert »add«-Rechte."
+
+#. 003
+#: ../lib/kadm5/kadm5_err.c:14
+msgid "Operation requires `modify' privilege"
+msgstr "Aktion erfordert »modify«-Rechte."
+
+#. 004
+#: ../lib/kadm5/kadm5_err.c:15
+msgid "Operation requires `delete' privilege"
+msgstr "Aktion erfordert »delete«-Rechte."
+
+#. 005
+#: ../lib/kadm5/kadm5_err.c:16
+msgid "Insufficient authorization for operation"
+msgstr "unzureichende Berechtigung für Aktion"
+
+#. 006
+#: ../lib/kadm5/kadm5_err.c:17
+msgid "Database inconsistency detected"
+msgstr "Datenbank-Unstimmigkeit entdeckt"
+
+#. 007
+#: ../lib/kadm5/kadm5_err.c:18
+msgid "Principal or policy already exists"
+msgstr "Principal oder Richtlinie existiert bereits."
+
+#. 008
+#: ../lib/kadm5/kadm5_err.c:19
+msgid "Communication failure with server"
+msgstr "Kommunikation mit dem Server fehlgeschlagen"
+
+#. 009
+#: ../lib/kadm5/kadm5_err.c:20
+msgid "No administration server found for realm"
+msgstr "kein Administrationsserver für den Realm gefunden"
+
+#. 010
+#: ../lib/kadm5/kadm5_err.c:21
+msgid "Password history principal key version mismatch"
+msgstr "Passwortchronik-Principal-Schlüsselversion stimmt nicht überein."
+
+#. 011
+#: ../lib/kadm5/kadm5_err.c:22
+msgid "Connection to server not initialized"
+msgstr "Verbindung zum Server nicht initialisiert"
+
+#. 012
+#: ../lib/kadm5/kadm5_err.c:23
+msgid "Principal does not exist"
+msgstr "Principal existiert nicht."
+
+#. 013
+#: ../lib/kadm5/kadm5_err.c:24
+msgid "Policy does not exist"
+msgstr "Richtlinie existiert nicht."
+
+#. 014
+#: ../lib/kadm5/kadm5_err.c:25
+msgid "Invalid field mask for operation"
+msgstr "ungültige Feldmaske für Aktion"
+
+#. 015
+#: ../lib/kadm5/kadm5_err.c:26
+msgid "Invalid number of character classes"
+msgstr "ungültige Anzahl von Zeichenklassen"
+
+#. 016
+#: ../lib/kadm5/kadm5_err.c:27
+msgid "Invalid password length"
+msgstr "ungültig Passwortlänge"
+
+#. 017
+#: ../lib/kadm5/kadm5_err.c:28
+msgid "Invalid policy name"
+msgstr "ungültiger Richtlinienname"
+
+#. 018
+#: ../lib/kadm5/kadm5_err.c:29
+msgid "Invalid principal name."
+msgstr "ungültiger Principal-Name"
+
+#. 019
+# FIXME s/auxillary/auxilary/
+#: ../lib/kadm5/kadm5_err.c:30
+msgid "Invalid auxillary attributes"
+msgstr "ungültige Hilfsattribute"
+
+#. 020
+#: ../lib/kadm5/kadm5_err.c:31
+msgid "Invalid password history count"
+msgstr "ungültige Passwortchronikanzahl"
+
+#. 021
+#: ../lib/kadm5/kadm5_err.c:32
+msgid "Password minimum life is greater than password maximum life"
+msgstr "Minimale Passwortlebenszeit ist größer als maximale Passwortlebenszeit."
+
+#. 022
+#: ../lib/kadm5/kadm5_err.c:33
+msgid "Password is too short"
+msgstr "Passwort ist zu kurz."
+
+#. 023
+#: ../lib/kadm5/kadm5_err.c:34
+msgid "Password does not contain enough character classes"
+msgstr "Passwort enthält nicht genug Zeichenklassen."
+
+#. 024
+#: ../lib/kadm5/kadm5_err.c:35
+msgid "Password is in the password dictionary"
+msgstr "Passwort steht im Passwortwörterbuch."
+
+#. 025
+#: ../lib/kadm5/kadm5_err.c:36
+msgid "Can't reuse password"
+msgstr "Passwort kann nicht erneut verwendet werden."
+
+#. 026
+#: ../lib/kadm5/kadm5_err.c:37
+msgid "Current password's minimum life has not expired"
+msgstr "Die minimale Passwortlebenszeit ist noch nicht abgelaufen."
+
+#. 027
+#: ../lib/kadm5/kadm5_err.c:38
+msgid "Policy is in use"
+msgstr "Richtlinie wird verwendet."
+
+#. 028
+#: ../lib/kadm5/kadm5_err.c:39
+msgid "Connection to server already initialized"
+msgstr "Verbindung zum Server ist bereits initialisiert."
+
+#. 029
+#: ../lib/kadm5/kadm5_err.c:40
+msgid "Incorrect password"
+msgstr "ungültiges Passwort"
+
+#. 030
+#: ../lib/kadm5/kadm5_err.c:41
+msgid "Can't change protected principal"
+msgstr "Geschützter Principal kann nicht geändert werden."
+
+#. 031
+#: ../lib/kadm5/kadm5_err.c:42
+msgid "Programmer error!  Bad Admin server handle"
+msgstr "Programmierfehler! Falsches Admin-Server-Handle"
+
+#. 032
+#: ../lib/kadm5/kadm5_err.c:43
+msgid "Programmer error!  Bad API structure version"
+msgstr "Programmierfehler! Falsche API-Strukturversion"
+
+#. 033
+#: ../lib/kadm5/kadm5_err.c:44
+msgid "API structure version specified by application is no longer supported"
+msgstr ""
+"Die durch die Anwendung angegebene API-Strukturversion wird nicht mehr "
+"unterstützt."
+
+#. 034
+#: ../lib/kadm5/kadm5_err.c:45
+msgid "API structure version specified by application is unknown to libraries"
+msgstr ""
+"Die durch die Anwendung angegebene API-Strukturversion ist den Bibliotheken "
+"nicht bekannt."
+
+#. 035
+#: ../lib/kadm5/kadm5_err.c:46
+msgid "Programmer error!  Bad API version"
+msgstr "Programmierfehler! Falsche API-Version"
+
+#. 036
+#: ../lib/kadm5/kadm5_err.c:47
+msgid ""
+"API version specified by application is no longer supported by libraries"
+msgstr ""
+"Die durch die Anwendung angegebene API-Version wird nicht mehr von "
+"Bibliotheken unterstützt."
+
+#. 037
+#: ../lib/kadm5/kadm5_err.c:48
+msgid "API version specified by application is no longer supported by server"
+msgstr ""
+"Die durch die Anwendung angegebene API-Version wird nicht mehr durch Server "
+"unterstützt."
+
+#. 038
+#: ../lib/kadm5/kadm5_err.c:49
+msgid "API version specified by application is unknown to libraries"
+msgstr ""
+"Die durch die Anwendung angegebene API-Version ist den Bibliotheken nicht "
+"bekannt."
+
+#. 039
+#: ../lib/kadm5/kadm5_err.c:50
+msgid "API version specified by application is unknown to server"
+msgstr ""
+"Die durch die Anwendung angegebene API-Version ist dem Server nicht bekannt."
+
+#. 040
+#: ../lib/kadm5/kadm5_err.c:51
+msgid "Database error! Required principal missing"
+msgstr "Datenbankfehler! Erforderlicher Principal fehlt"
+
+#. 041
+#: ../lib/kadm5/kadm5_err.c:52
+msgid "The salt type of the specified principal does not support renaming"
+msgstr "Der Salt-Typ des angegebenen Principals unterstützt kein Umbenennen."
+
+#. 042
+#: ../lib/kadm5/kadm5_err.c:53
+msgid "Invalid configuration parameter for remote KADM5 client"
+msgstr "ungültiger Konfigurationsparameter für fernen KADM5-Client"
+
+#. 043
+#: ../lib/kadm5/kadm5_err.c:54
+msgid "Invalid configuration parameter for local KADM5 client."
+msgstr "ungültiger Konfigurationsparameter für lokalen KADM5-Client"
+
+#. 044
+#: ../lib/kadm5/kadm5_err.c:55
+msgid "Operation requires `list' privilege"
+msgstr "Aktion erfordert das Recht »list«."
+
+#. 045
+#: ../lib/kadm5/kadm5_err.c:56
+msgid "Operation requires `change-password' privilege"
+msgstr "Aktion erfordert das Recht »change-password«."
+
+#. 046
+#: ../lib/kadm5/kadm5_err.c:57
+msgid "Invalid tagged data list element type"
+msgstr "ungültiger markierter Datenlistenelementtyp"
+
+#. 047
+#: ../lib/kadm5/kadm5_err.c:58
+msgid "Required parameters in kdc.conf missing"
+msgstr "Erforderliche Parameter in »kdc.conf« fehlen."
+
+#. 048
+#: ../lib/kadm5/kadm5_err.c:59
+msgid "Bad krb5 admin server hostname"
+msgstr "falscher Krb5-Admin-Server-Rechnername"

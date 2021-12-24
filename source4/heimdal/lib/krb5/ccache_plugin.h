@@ -33,7 +33,14 @@
 #define HEIMDAL_KRB5_CCACHE_PLUGIN_H 1
 
 #include <krb5.h>
+#include <common_plugin.h>
 
 #define KRB5_PLUGIN_CCACHE "ccache_ops"
+
+krb5_error_code KRB5_CALLCONV
+ccache_ops_plugin_load(krb5_context context,
+		       krb5_get_instance_func_t *func,
+		       size_t *n_ftables,
+		       heim_plugin_common_ftable_p **ftables);
 
 #endif /* HEIMDAL_KRB5_CCACHE_PLUGIN_H */

@@ -30,12 +30,22 @@
 #include <gssapi_mech.h>
 
 struct _gss_context {
-	gssapi_mech_interface	gc_mech;
-	gss_ctx_id_t		gc_ctx;
+        gss_buffer_desc          gc_input;
+        char                    *gc_free_this;
+        size_t                   gc_target_len;
+        size_t                   gc_oid_offset;
+        gssapi_mech_interface    gc_mech;
+        gss_ctx_id_t             gc_ctx;
+        uint8_t                  gc_initial;
 };
 
+#define EXPORT_CONTEXT_VERSION_MASK             0x03
+#define EXPORT_CONTEXT_FLAGS_MASK               0xfc
+#define EXPORT_CONTEXT_FLAG_ACCUMULATING        0x04
+#define EXPORT_CONTEXT_FLAG_MECH_CTX            0x08
+
 void
-_gss_mg_error(gssapi_mech_interface, OM_uint32, OM_uint32);
+_gss_mg_error(gssapi_mech_interface, OM_uint32);
 
 OM_uint32
-_gss_mg_get_error(const gss_OID, OM_uint32, OM_uint32, gss_buffer_t);
+_gss_mg_get_error(const gss_OID, OM_uint32, gss_buffer_t);

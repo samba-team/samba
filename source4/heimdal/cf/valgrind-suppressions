@@ -1,0 +1,168 @@
+{
+   linux db init brokenness
+   Memcheck:Param
+   pwrite64(buf)
+   fun:do_pwrite64
+   fun:__os_io
+   fun:__memp_pgwrite
+   fun:__memp_fsync
+   fun:__bam_read_root
+   fun:__bam_open
+   fun:__db_dbopen
+   fun:__db_open
+   fun:DB_open
+}
+{
+   linux strerror
+   Memcheck:Leak
+   fun:_vgrZU_libcZdsoZa_malloc
+   fun:rwlock_add_to_list
+   fun:rwlock_have_already
+   fun:pthread_rwlock_rdlock
+   fun:__dcigettext
+   fun:dcgettext
+   fun:strerror_r
+   fun:strerror
+}
+{
+   linux db close brokenness
+   Memcheck:Param
+   pwrite64(buf)
+   fun:do_pwrite64
+   fun:__os_io
+   fun:__memp_pgwrite
+   fun:__memp_fsync
+   fun:__db_sync
+   fun:__db_close
+   fun:DB_close
+}
+{
+   GLIBC 2.1.2 getservbyname defect
+   Memcheck:Leak
+   fun:_vgrZU_libcZdsoZa_malloc
+   fun:strdup
+   obj:*
+   obj:*
+   fun:getservbyname_r@@GLIBC_2.1.2
+   fun:getservbyname
+}
+{
+   glibc getaddrinfo defect
+   Memcheck:Leak
+   fun:_vgrZU_libcZdsoZa_malloc
+   fun:__libc_res_nsend
+   fun:__libc_res_nquery
+   fun:__libc_res_nquerydomain
+   fun:__libc_res_nsearch
+   obj:*
+   fun:gaih_inet
+   fun:getaddrinfo
+}
+{
+   glibc dlopen failure called from /bin/ls
+   Memcheck:Addr4
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+}
+{
+   Unknown suppression in runtime link editor
+   Memcheck:Cond
+   obj:/lib/ld-2.5.so
+   obj:/lib/ld-2.5.so
+   obj:/lib/ld-2.5.so
+   obj:/lib/ld-2.5.so
+}
+{
+   Unknown suppression in runtime link editor
+   Memcheck:Addr4
+   obj:/lib/ld-2.5.so
+   obj:/lib/ld-2.5.so
+   obj:/lib/ld-2.5.so
+   obj:/lib/ld-2.5.so
+}
+{
+   glibc sed leak 1
+   Memcheck:Leak
+   fun:calloc
+   obj:/bin/sed
+   obj:/bin/sed
+   obj:/bin/sed
+   obj:/bin/sed
+   obj:/bin/sed
+   fun:(below main)
+}
+{
+   Heimdal one-time init leak 1
+   Memcheck:Leak
+   ...
+   fun:heim_base_once_f
+   ...
+}
+{
+   Heimdal one-time init leak 2
+   Memcheck:Leak
+   fun:pthread_once
+   ...
+}
+{
+   Heimdal one-time init leak 3
+   Memcheck:Leak
+   fun:calloc
+   fun:_heim_alloc_object
+   fun:heim_dict_create
+   fun:_krb5_load_plugins
+   fun:init_context_once
+   fun:once_callback_caller
+   fun:pthread_once
+   fun:heim_base_once_f
+   fun:krb5_init_context
+   fun:main
+}
+{
+   Heimdal one-time init leak 4
+   Memcheck:Leak
+   fun:calloc
+   fun:heim_dict_create
+   fun:_krb5_load_plugins
+   fun:init_context_once
+   fun:once_callback_caller
+   fun:pthread_once
+   fun:heim_base_once_f
+   fun:krb5_init_context
+   fun:main
+}
+{
+   Heimdal ipropd-master leak 1
+   Memcheck:Leak
+   ...
+   fun:krb5_kt_resolve
+   fun:main
+   obj:*ipropd-master
+}
+{
+   Heimdal ipropd-master leak 2
+   Memcheck:Leak
+   ...
+   fun:kadm5_init_with_skey_ctx
+   fun:main
+   obj:*ipropd-master
+}
+{
+   Heimdal ipropd-slave leak 1
+   Memcheck:Leak
+   ...
+   fun:krb5_auth_con_init
+   ...
+   fun:krb5_sendauth
+   fun:main
+   obj:*ipropd-slave
+}
+{
+   Heimdal ipropd-slave leak 2
+   Memcheck:Leak
+   ...
+   fun:kadm5_init_with_password_ctx
+   fun:main
+   obj:*ipropd-slave
+}

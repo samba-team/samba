@@ -35,9 +35,6 @@
 
 #include "krb5_locl.h"
 #include <krb5_ccapi.h>
-#ifdef HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
 
 #ifndef KCM_IS_API_CACHE
 
@@ -52,6 +49,7 @@ static void *cc_handle;
 
 typedef struct krb5_acc {
     char *cache_name;
+    char *cache_subsidiary;
     cc_context_t context;
     cc_ccache_t ccache;
 } krb5_acc;
@@ -90,6 +88,7 @@ static krb5_error_code
 init_ccapi(krb5_context context)
 {
     const char *lib = NULL;
+    char *explib = NULL;
 
     HEIMDAL_MUTEX_lock(&acc_mutex);
     if (init_func) {
@@ -106,33 +105,19 @@ init_ccapi(krb5_context context)
     if (lib == NULL) {
 #ifdef __APPLE__
 	lib = "/System/Library/Frameworks/Kerberos.framework/Kerberos";
-#elif defined(KRB5_USE_PATH_TOKENS) && defined(_WIN32)
+#elif defined(_WIN32)
 	lib = "%{LIBDIR}/libkrb5_cc.dll";
 #else
-	lib = "/usr/lib/libkrb5_cc.so";
+	lib = "%{LIBDIR}/libkrb5_cc.so";
 #endif
     }
 
 #ifdef HAVE_DLOPEN
 
-#ifndef RTLD_LAZY
-#define RTLD_LAZY 0
-#endif
-#ifndef RTLD_LOCAL
-#define RTLD_LOCAL 0
-#endif
-
-#ifdef KRB5_USE_PATH_TOKENS
-    {
-      char * explib = NULL;
-      if (_krb5_expand_path_tokens(context, lib, &explib) == 0) {
-	cc_handle = dlopen(explib, RTLD_LAZY|RTLD_LOCAL);
-	free(explib);
-      }
+    if (_krb5_expand_path_tokens(context, lib, 0, &explib) == 0) {
+        cc_handle = dlopen(explib, RTLD_LAZY|RTLD_LOCAL|RTLD_GROUP);
+        free(explib);
     }
-#else
-    cc_handle = dlopen(lib, RTLD_LAZY|RTLD_LOCAL);
-#endif
 
     if (cc_handle == NULL) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
@@ -168,7 +153,7 @@ init_ccapi(krb5_context context)
 #endif
 }
 
-void
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 _heim_krb5_ipc_client_set_target_uid(uid_t uid)
 {
     init_ccapi(NULL);
@@ -176,7 +161,7 @@ _heim_krb5_ipc_client_set_target_uid(uid_t uid)
         (*set_target_uid)(uid);
 }
 
-void
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 _heim_krb5_ipc_client_clear_target(void)
 {
     init_ccapi(NULL);
@@ -303,8 +288,7 @@ make_cred_from_ccred(krb5_context context,
     return 0;
 
 nomem:
-    ret = ENOMEM;
-    krb5_set_error_message(context, ret, N_("malloc: out of memory", "malloc"));
+    ret = krb5_enomem(context);
 
 fail:
     krb5_free_cred_contents(context, cred);
@@ -453,41 +437,51 @@ get_cc_name(krb5_acc *a)
 }
 
 
-static const char* KRB5_CALLCONV
-acc_get_name(krb5_context context,
-	     krb5_ccache id)
+static krb5_error_code KRB5_CALLCONV
+acc_get_name_2(krb5_context context,
+	       krb5_ccache id,
+	       const char **name,
+	       const char **colname,
+	       const char **subsidiary)
 {
+    krb5_error_code ret = 0;
     krb5_acc *a = ACACHE(id);
     int32_t error;
 
-    if (a->cache_name == NULL) {
-	krb5_error_code ret;
-	krb5_principal principal;
-	char *name;
+    if (name)
+        *name = NULL;
+    if (colname)
+        *colname = NULL;
+    if (subsidiary)
+        *subsidiary = NULL;
+    if (a->cache_subsidiary == NULL) {
+	krb5_principal principal = NULL;
 
 	ret = _krb5_get_default_principal_local(context, &principal);
-	if (ret)
-	    return NULL;
-
-	ret = krb5_unparse_name(context, principal, &name);
+	if (ret == 0)
+            ret = krb5_unparse_name(context, principal, &a->cache_subsidiary);
 	krb5_free_principal(context, principal);
 	if (ret)
-	    return NULL;
-
-	error = (*a->context->func->create_new_ccache)(a->context,
-						       cc_credentials_v5,
-						       name,
-						       &a->ccache);
-	krb5_xfree(name);
-	if (error)
-	    return NULL;
-
-	error = get_cc_name(a);
-	if (error)
-	    return NULL;
+	    return ret;
     }
 
-    return a->cache_name;
+    if (a->cache_name == NULL) {
+        error = (*a->context->func->create_new_ccache)(a->context,
+                                                       cc_credentials_v5,
+                                                       a->cache_subsidiary,
+                                                       &a->ccache);
+        if (error == ccNoError)
+            error = get_cc_name(a);
+        if (error != ccNoError)
+            ret = translate_cc_error(context, error);
+    }
+    if (name)
+        *name = a->cache_name;
+    if (colname)
+        *colname = "";
+    if (subsidiary)
+        *subsidiary = a->cache_subsidiary;
+    return ret;
 }
 
 static krb5_error_code KRB5_CALLCONV
@@ -508,6 +502,10 @@ acc_alloc(krb5_context context, krb5_ccache *id)
     }
 
     a = ACACHE(*id);
+    a->cache_subsidiary = NULL;
+    a->cache_name = NULL;
+    a->context = NULL;
+    a->ccache = NULL;
 
     error = (*init_func)(&a->context, ccapi_version_3, NULL, NULL);
     if (error) {
@@ -515,17 +513,17 @@ acc_alloc(krb5_context context, krb5_ccache *id)
 	return translate_cc_error(context, error);
     }
 
-    a->cache_name = NULL;
-
     return 0;
 }
 
 static krb5_error_code KRB5_CALLCONV
-acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
+acc_resolve_2(krb5_context context, krb5_ccache *id, const char *res, const char *sub)
 {
     krb5_error_code ret;
+    cc_time_t offset;
     cc_int32 error;
     krb5_acc *a;
+    char *s = NULL;
 
     ret = acc_alloc(context, id);
     if (ret)
@@ -533,49 +531,60 @@ acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 
     a = ACACHE(*id);
 
-    error = (*a->context->func->open_ccache)(a->context, res, &a->ccache);
-    if (error == ccNoError) {
-	cc_time_t offset;
-	error = get_cc_name(a);
-	if (error != ccNoError) {
+    if (sub) {
+        /*
+         * For API there's no such thing as a collection name, there's only the
+         * default collection.  Though we could perhaps put a CCAPI shared
+         * object path in the collection name.
+         *
+         * So we'll treat (res && !sub) and (!res && sub) as the same cases.
+         *
+         * See also the KCM ccache type, where we have similar considerations.
+         */
+        if (asprintf(&s, "%s%s%s", res && *res ? res : "",
+                     res && *res ? ":" : "", sub) == -1 || s == NULL ||
+            (a->cache_subsidiary = strdup(sub)) == NULL) {
 	    acc_close(context, *id);
-	    *id = NULL;
-	    return translate_cc_error(context, error);
-	}
-
-	error = (*a->ccache->func->get_kdc_time_offset)(a->ccache,
-							cc_credentials_v5,
-							&offset);
-	if (error == 0)
-	    context->kdc_sec_offset = offset;
-
-    } else if (error == ccErrCCacheNotFound) {
-	a->ccache = NULL;
-	a->cache_name = NULL;
-    } else {
-	*id = NULL;
-	return translate_cc_error(context, error);
+            free(s);
+            return krb5_enomem(context);
+        }
+        res = s;
+        /*
+         * XXX With a bit of extra refactoring we could use the collection name
+         * as the path to the shared object implementing CCAPI...  For now we
+         * ignore the collection name.
+         */
     }
 
+    error = (*a->context->func->open_ccache)(a->context, res, &a->ccache);
+    if (error == ccErrCCacheNotFound) {
+        a->ccache = NULL;
+        a->cache_name = NULL;
+	free(s);
+	return 0;
+    }
+    if (error == ccNoError)
+        error = get_cc_name(a);
+    if (error != ccNoError) {
+        acc_close(context, *id);
+        *id = NULL;
+        free(s);
+        return translate_cc_error(context, error);
+    }
+
+    error = (*a->ccache->func->get_kdc_time_offset)(a->ccache,
+                                                    cc_credentials_v5,
+                                                    &offset);
+    if (error == 0)
+        context->kdc_sec_offset = offset;
+    free(s);
     return 0;
 }
 
 static krb5_error_code KRB5_CALLCONV
 acc_gen_new(krb5_context context, krb5_ccache *id)
 {
-    krb5_error_code ret;
-    krb5_acc *a;
-
-    ret = acc_alloc(context, id);
-    if (ret)
-	return ret;
-
-    a = ACACHE(*id);
-
-    a->ccache = NULL;
-    a->cache_name = NULL;
-
-    return 0;
+    return acc_alloc(context, id);
 }
 
 static krb5_error_code KRB5_CALLCONV
@@ -905,10 +914,8 @@ acc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 	return ret;
 
     iter = calloc(1, sizeof(*iter));
-    if (iter == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
-	return ENOMEM;
-    }
+    if (iter == NULL)
+	return krb5_enomem(context);
 
     error = (*init_func)(&iter->context, ccapi_version_3, NULL, NULL);
     if (error) {
@@ -1005,8 +1012,7 @@ acc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 
     error = (*ato->ccache->func->move)(afrom->ccache, ato->ccache);
 
-    acc_destroy(context, from);
-
+    krb5_cc_destroy(context, from);
     return translate_cc_error(context, error);
 }
 
@@ -1036,10 +1042,8 @@ acc_get_default_name(krb5_context context, char **str)
     (*name->func->release)(name);
     (*cc->func->release)(cc);
 
-    if (error < 0 || *str == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (error < 0 || *str == NULL)
+	return krb5_enomem(context);
     return 0;
 }
 
@@ -1091,10 +1095,10 @@ acc_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
  */
 
 KRB5_LIB_VARIABLE const krb5_cc_ops krb5_acc_ops = {
-    KRB5_CC_OPS_VERSION,
+    KRB5_CC_OPS_VERSION_5,
     "API",
-    acc_get_name,
-    acc_resolve,
+    NULL,
+    NULL,
     acc_gen_new,
     acc_initialize,
     acc_destroy,
@@ -1117,6 +1121,8 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_acc_ops = {
     acc_lastchange,
     NULL,
     NULL,
+    acc_get_name_2,
+    acc_resolve_2
 };
 
 #endif

@@ -1,0 +1,283 @@
+
+
+
+
+
+
+Network Working Group                             Love Hornquist Astrand
+<draft-hornquist-astrand-krb-wg-srp.txt>          Stockholms universitet
+Internet-Draft                                            December, 2003
+Expire in six months
+
+            Using SRP for Initial Authentication in Kerberos
+
+Status of this Memo
+
+ftp://ftp.rfc-editor.org/in-notes/rfc-editor/instructions2authors.txt
+
+   This memo provides information for the Internet community. ...
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2003).  All Rights Reserved. ...
+
+
+Abstract
+
+   This document describes how to use SRP as a preauthentication
+   mechanism in Kerberos 5 [RFC1510].  This mechanism makes the initial
+   ticket request and response secure against dictionary attacks on
+   users passwords.
+
+Introduction
+
+   Kerberos without preauthentication make the protocol susceptible to
+   both to password dictionary attacks on initial tickets.  There are
+   several pre-authentication mechanisms that tries to solve and/or
+   minimize this problem.
+
+   Encrypted time stamp have the same problem as Kerberos without
+   preauthentication, opportunities of the attacker to get key material
+   is only fewer.  SAM require hardware token and typically, for most
+   SAM types, still require the user to have a password since they don't
+   provide enough key-material for Kerberos to encrypt the response
+   with.  PKINIT large and complicated, and like SAM often require
+   hardware.  Extra-tgt requires infrastructure to use, a key/bootstrap
+   must be present on each host that the users are expected to use.
+
+   The dictionary attack can also be solved by forcing the users to
+   select good password.
+
+   XXX Jacques' DH preauth ?
+   XXX tls protected as-req
+
+   SRP, Secure Remote Password protocol, [RFC2945], is a password
+
+
+
+Hornquist Astrand                                               [Page 1]
+
+Internet Draft                                            December, 2003
+
+
+   authentication and key-exchange protocol that can be used over
+   untrusted networks.  SRP is designed to be resistable to dictionary
+   attacks (both by passive and active attackers).
+
+Specification
+
+   This document is based on SRP-6.
+
+   XXX read and think about rfc2944 (SRP over telnet)
+
+   SRP + Kerberos 5 preauthentication
+
+   Krb-srp-cookie in the protocol to enable the server be stateless.
+
+   TBA KRB-SRP-PREAUTH number
+
+   - Client send the AS-REQ
+
+   - Server looks up the principal, and finds N, g, v, salt, H.  Then
+   the server generates the random number b and calculate B.  All
+   operations are performed modulus N.
+
+        B = 3v + g^b
+
+   and sends back a KRB-SRP-CHALLENGE md-data in a KRB-ERROR. If the
+   server is stateless, it can store the information (encrypted) it
+   needs in krb-srp-cookie.
+
+   - If the client chooses to use the SRP preauthentication mechanism it
+   sends back KRB-SRP-CLIENT-RESPONSE.  If krb-srp-cookie is present in
+   KRB-SRP-CHALLENGE its copied to KRB-SRP-CLIENT-RESPONSE.  The client
+   generates the random number a and calculates
+
+        A = g^a
+        S = (B - 3g^x)^(a+ux)
+        M1 = H(DER(A) | DER(B) | DER(S))
+
+   u is H(DER(A) | DER(B)), where DER(n) is the n encoded with the
+   integer tag.
+
+   The client then it calculates the shared key K
+
+        K = s-to-key-bytes(S)
+
+   KRB-SRP-CLIENT-RESPONSE-ENC-DATA is filled in by the client,
+   encrypted with the shared key K
+
+   XXX should a keyed checksum just be used instead ?
+
+
+
+Hornquist Astrand                                               [Page 2]
+
+Internet Draft                                            December, 2003
+
+
+   XXX does this replace the need for M1
+
+   - When the server receives the KRB-SRP-CLIENT-RESPONSE response it
+   calculates
+
+        S = (Av^u)^b
+
+   and the shared key K,
+
+        K = s-to-key-bytes(S)
+
+   verifies the content in krb-srp-enc, and M1.  If everything checks
+   out ok, the server sends back the AS-REP.  The key that the AS-REP is
+   encrypted with is the SRP session key, K.
+
+   XXX Should the server send back M2 ?
+
+   s-to-key defined as:
+
+        b = DER(S)
+        if length of b is even, drop first char
+        b1 = H(b[0] | b[2] | b[4] | ...)
+        b2 = H(b[1] | b[3] | b[5] | ...)
+        K = random-to-key(b1 | b2).
+
+   random-to-key is the random to key function in [KCRYPTO].
+
+ASN.1 specification
+
+   XXX Krb-Nonce
+
+   KERBEROS-PREAUTH-SRP DEFINITIONS ::=
+
+   BEGIN
+
+   IMPORTS Checksum, Krb-Nonce FROM krb5;
+
+   KRB-SRP-CHALLENGE ::= SEQUENCE {
+           krb-srp-salt[0]         OCTET STRING,
+           krb-srp-N[1]            INTEGER,
+           krb-srp-g[2]            INTEGER,
+           krb-srp-B[3]            INTEGER,
+           krb-srp-hash[4]         OBJECT IDENTIFIER,
+           krb-srp-flags[5]        INTEGER (SIZE 4),
+           krb-srp-cookie[6]       OCTET STRING OPTIONAL -- must include nonce ?
+   }
+
+   -- flags: "use combined s2k + srp key" ?
+
+
+
+Hornquist Astrand                                               [Page 3]
+
+Internet Draft                                            December, 2003
+
+
+   KRB-SRP-CLIENT-RESPONSE ::= SEQUENCE {
+           krb-srp-A[0]            INTEGER,
+           krb-srp-M1[1]           OCTET STRING,
+           krb-srp-hash[2]         OBJECT IDENTIFIER,
+           krb-srp-enc[3]          EncryptedData, -- bind nonce to pa
+           krb-srp-cookie[4]       OCTET STRING OPTIONAL
+   }
+
+   KRB-SRP-CLIENT-RESPONSE-ENC-DATA :: SEQUENCE {
+           krb-srp-checksum[0]     Checksum,
+           krb-srp-flags[1]        INTEGER (SIZE 4),
+           krb-srp-nonce[2]        Krb-Nonce
+   }
+
+   KRB-SRP-SERVER-RESPONSE ::= SEQUENCE {
+           krb-srp-M2[0]           OCTET STRING
+   }
+
+   END
+
+Issues
+
+   send group/generator by name ?
+
+   how to bind request to pa data ?
+
+   what key should be used, the key from SRP, or the compiled key from
+   s2k + SRP, right now its a flag.
+
+Requirements on the KDC
+
+   The KDC needs to know more information for each principal.  At least
+   the KDC needs to store:
+
+   N, the safe prime
+   g, the generator
+   v, the password verifier
+   salt, that salt that the principal used to form the verifier, v
+   H, hash function used to form the verifier, v
+
+   Also, since the KDC no longer have a list of keys, and thus an
+   implicit list what encryption types the principal is allowed use, it
+   needs to have a list for all the encryption types a user is allowed
+   to use with SRP preauthentication mechanism.
+
+Security considerations
+
+   SRP
+
+
+
+Hornquist Astrand                                               [Page 4]
+
+Internet Draft                                            December, 2003
+
+
+   see Security considerations in Nisses SSH SRP draft.
+
+   Kerberos
+
+   Preauthentication
+
+   SRP preauthentication mechanism doesn't require the client to compute
+   something before the server sends "expensive" cryptographic
+   operations.
+
+   Preauthentication have the problem that the response is not
+   authenticated, so a active attacker can modify that response from the
+   KDC to remove SRP to have the client choose a weaker initial
+   authentication method.
+
+References
+
+   [RFC1510] Kohl, J. and Neuman, C., "The Kerberos Network
+   Authentication Service (V5)", RFC 1510, September 1993.
+
+   [SRP] T. Wu, "The Secure Remote Password Protocol", In Proceedings of
+   the 1998 ISOC Network and Distributed System Security Symposium, San
+   Diego, CA, pp. 97-111.
+
+   [RFC2945] Wu, T, "The SRP Authentication and Key Exchange System",
+   RFC2945, September 2000.
+
+   [KCRYPTO] Raeburn, K., "Encryption and Checksum Specifications for
+   Kerberos 5", draft-ietf-krb-wg-crypto-05.txt, June, 2003.  Work in
+   progress.
+
+Author's Address
+
+   Love Hornquist Astrand
+   Enheten for it och media
+   Stockholms universitet
+   S-106 91  STOCKHOLM
+   SWEDEN
+
+   EMail: lha@it.su.se
+
+Full Copyright Statement
+
+   Copyright (C) The Internet Society (2003). All Rights Reserved. ...
+
+
+
+
+
+
+
+Hornquist Astrand                                               [Page 5]
+

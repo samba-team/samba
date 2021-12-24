@@ -49,11 +49,8 @@ krb5_padata_add(krb5_context context, METHOD_DATA *md,
     PA_DATA *pa;
 
     pa = realloc (md->val, (md->len + 1) * sizeof(*md->val));
-    if (pa == NULL) {
-	krb5_set_error_message(context, ENOMEM,
-			       N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (pa == NULL)
+	return krb5_enomem(context);
     md->val = pa;
 
     pa[md->len].padata_type = type;

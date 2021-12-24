@@ -41,7 +41,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 	struct _gss_cred *cred = (struct _gss_cred *) *cred_handle;
 	OM_uint32	major_status = GSS_S_COMPLETE;
 	struct _gss_mechanism_cred *mc;
-	OM_uint32 one_ok = 0;
+	int one_ok = 0;
 
 	*minor_status = 0;
 
@@ -50,13 +50,13 @@ gss_set_cred_option (OM_uint32 *minor_status,
 	if (cred == NULL) {
 		struct _gss_mech_switch *m;
 
-		cred = malloc(sizeof(*cred));
-		if (cred == NULL)
+		cred = _gss_mg_alloc_cred();
+		if (cred == NULL) {
+		    *minor_status = ENOMEM;
 		    return GSS_S_FAILURE;
+		}
 
-		HEIM_SLIST_INIT(&cred->gc_mc);
-
-		HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+		HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
 
 			if (m->gm_mech.gm_set_cred_option == NULL)
 				continue;
@@ -70,7 +70,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 			}
 
 			mc->gmc_mech = &m->gm_mech;
-			mc->gmc_mech_oid = &m->gm_mech_oid;
+			mc->gmc_mech_oid = m->gm_mech_oid;
 			mc->gmc_cred = GSS_C_NO_CREDENTIAL;
 
 			major_status = m->gm_mech.gm_set_cred_option(
@@ -81,7 +81,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 				continue;
 			}
 			one_ok = 1;
-			HEIM_SLIST_INSERT_HEAD(&cred->gc_mc, mc, gmc_link);
+			HEIM_TAILQ_INSERT_TAIL(&cred->gc_mc, mc, gmc_link);
 		}
 		*cred_handle = (gss_cred_id_t)cred;
 		if (!one_ok) {
@@ -91,7 +91,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 	} else {
 		gssapi_mech_interface	m;
 
-		HEIM_SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
+		HEIM_TAILQ_FOREACH(mc, &cred->gc_mc, gmc_link) {
 			m = mc->gmc_mech;
 
 			if (m == NULL)
@@ -105,7 +105,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 			if (major_status == GSS_S_COMPLETE)
 				one_ok = 1;
 			else
-				_gss_mg_error(m, major_status, *minor_status);
+				_gss_mg_error(m, *minor_status);
 
 		}
 	}

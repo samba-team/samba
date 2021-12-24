@@ -1,22 +1,10 @@
-#include <tommath.h>
+#include "tommath_private.h"
 #ifdef BN_MP_REDUCE_IS_2K_L_C
-/* LibTomMath, multiple-precision integer library -- Tom St Denis
- *
- * LibTomMath is a library that provides multiple-precision
- * integer arithmetic as well as number theoretic functionality.
- *
- * The library was designed directly after the MPI library by
- * Michael Fromberger but has been written from scratch with
- * additional optimizations in place.
- *
- * The library is free for all purposes without any express
- * guarantee it works.
- *
- * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
- */
+/* LibTomMath, multiple-precision integer library -- Tom St Denis */
+/* SPDX-License-Identifier: Unlicense */
 
 /* determines if reduce_2k_l can be used */
-int mp_reduce_is_2k_l(mp_int *a)
+mp_bool mp_reduce_is_2k_l(const mp_int *a)
 {
    int ix, iy;
 
@@ -27,18 +15,14 @@ int mp_reduce_is_2k_l(mp_int *a)
    } else if (a->used > 1) {
       /* if more than half of the digits are -1 we're sold */
       for (iy = ix = 0; ix < a->used; ix++) {
-          if (a->dp[ix] == MP_MASK) {
-              ++iy;
-          }
+         if (a->dp[ix] == MP_DIGIT_MAX) {
+            ++iy;
+         }
       }
       return (iy >= (a->used/2)) ? MP_YES : MP_NO;
-
+   } else {
+      return MP_NO;
    }
-   return MP_NO;
 }
 
 #endif
-
-/* $Source: /cvs/libtom/libtommath/bn_mp_reduce_is_2k_l.c,v $ */
-/* $Revision: 1.4 $ */
-/* $Date: 2006/12/28 01:25:13 $ */

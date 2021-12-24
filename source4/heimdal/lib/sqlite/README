@@ -1,0 +1,25 @@
+
+This directory contains a copy of the SQLite3 amalgamation.
+
+In order to help update this copy to newer versions of SQLite3, please
+make NO changes to it that are not absolutely necessary:
+
+ - add no features that can't be added as loadable extensions or avoided
+   altogether
+ - fix no bugs that can't be worked around
+ - define macros via the Makefile as much as possible (-D...) rather
+   than via changes to the source
+ - fix absolutely no whitespace, formatting, or spelling errors
+ - fix no compiler warnings (the upstream community mostly doesn't care
+   to fix them) unless you're absolutely convinced that the warning(s)
+   represent a serious bug(s) that is relevant to Heimdal
+
+If you must make changes to this copy, DO:
+
+ - have a commit just for those changes and no other changes outside
+   this part of the tree
+
+ - provide enough information in the commit message that someone else
+   (or even yourself) can figure out whether and how to re-apply your
+   change years later when updating to a newer version of SQLite3
+

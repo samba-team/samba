@@ -31,7 +31,8 @@
  * SUCH DAMAGE.
  */
 
-#include "config.h"
+#include <config.h>
+#include <roken.h>
 
 #include "hash.h"
 #include "sha.h"
@@ -74,7 +75,7 @@ static const uint32_t constant_256[64] = {
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-void
+int
 SHA256_Init (SHA256_CTX *m)
 {
     m->sz[0] = 0;
@@ -87,6 +88,7 @@ SHA256_Init (SHA256_CTX *m)
     F = 0x9b05688c;
     G = 0x1f83d9ab;
     H = 0x5be0cd19;
+    return 1;
 }
 
 static void
@@ -162,7 +164,7 @@ struct x32{
     unsigned int b:32;
 };
 
-void
+int
 SHA256_Update (SHA256_CTX *m, const void *v, size_t len)
 {
     const unsigned char *p = v;
@@ -195,9 +197,10 @@ SHA256_Update (SHA256_CTX *m, const void *v, size_t len)
 	    offset = 0;
 	}
     }
+    return 1;
 }
 
-void
+int
 SHA256_Final (void *res, SHA256_CTX *m)
 {
     unsigned char zeros[72];
@@ -226,4 +229,5 @@ SHA256_Final (void *res, SHA256_CTX *m)
 	    r[4*i]   = (m->counter[i] >> 24) & 0xFF;
 	}
     }
+    return 1;
 }

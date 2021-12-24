@@ -69,6 +69,7 @@ _gsskrb5_init (krb5_context *context)
 
 	ret = krb5_init_context(context);
 	if (ret == 0) {
+	    krb5_add_et_list(*context, initialize_gk5_error_table_r);
 	    HEIMDAL_setspecific(context_key, *context, ret);
 	    if (ret) {
 		krb5_free_context(*context);

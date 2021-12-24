@@ -47,7 +47,10 @@ struct hx509_lock_data {
 };
 
 static struct hx509_lock_data empty_lock_data = {
-    { 0, NULL }
+    { 0, NULL },
+    NULL,
+    NULL,
+    NULL
 };
 
 hx509_lock _hx509_empty_lock = &empty_lock_data;
@@ -56,7 +59,7 @@ hx509_lock _hx509_empty_lock = &empty_lock_data;
  *
  */
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_lock_init(hx509_context context, hx509_lock *lock)
 {
     hx509_lock l;
@@ -83,7 +86,7 @@ hx509_lock_init(hx509_context context, hx509_lock *lock)
     return 0;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_lock_add_password(hx509_lock lock, const char *password)
 {
     void *d;
@@ -106,19 +109,19 @@ hx509_lock_add_password(hx509_lock lock, const char *password)
     return 0;
 }
 
-const struct _hx509_password *
+HX509_LIB_FUNCTION const struct _hx509_password * HX509_LIB_CALL
 _hx509_lock_get_passwords(hx509_lock lock)
 {
     return &lock->password;
 }
 
-hx509_certs
+HX509_LIB_FUNCTION hx509_certs HX509_LIB_CALL
 _hx509_lock_unlock_certs(hx509_lock lock)
 {
     return lock->certs;
 }
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_lock_reset_passwords(hx509_lock lock)
 {
     size_t i;
@@ -129,19 +132,19 @@ hx509_lock_reset_passwords(hx509_lock lock)
     lock->password.len = 0;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_lock_add_cert(hx509_context context, hx509_lock lock, hx509_cert cert)
 {
     return hx509_certs_add(context, lock->certs, cert);
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_lock_add_certs(hx509_context context, hx509_lock lock, hx509_certs certs)
 {
     return hx509_certs_merge(context, lock->certs, certs);
 }
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_lock_reset_certs(hx509_context context, hx509_lock lock)
 {
     hx509_certs certs = lock->certs;
@@ -158,14 +161,14 @@ hx509_lock_reset_certs(hx509_context context, hx509_lock lock)
 	lock->certs = certs;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 _hx509_lock_find_cert(hx509_lock lock, const hx509_query *q, hx509_cert *c)
 {
     *c = NULL;
     return 0;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_lock_set_prompter(hx509_lock lock, hx509_prompter_fct prompt, void *data)
 {
     lock->prompt = prompt;
@@ -173,7 +176,7 @@ hx509_lock_set_prompter(hx509_lock lock, hx509_prompter_fct prompt, void *data)
     return 0;
 }
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_lock_reset_promper(hx509_lock lock)
 {
     lock->prompt = NULL;
@@ -203,7 +206,7 @@ default_prompter(void *data, const hx509_prompt *prompter)
     return 0;
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_lock_prompt(hx509_lock lock, hx509_prompt *prompt)
 {
     if (lock->prompt == NULL)
@@ -211,7 +214,7 @@ hx509_lock_prompt(hx509_lock lock, hx509_prompt *prompt)
     return (*lock->prompt)(lock->prompt_data, prompt);
 }
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_lock_free(hx509_lock lock)
 {
     if (lock) {
@@ -222,7 +225,7 @@ hx509_lock_free(hx509_lock lock)
     }
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_prompt_hidden(hx509_prompt_type type)
 {
     /* default to hidden if unknown */
@@ -236,7 +239,7 @@ hx509_prompt_hidden(hx509_prompt_type type)
     }
 }
 
-int
+HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_lock_command_string(hx509_lock lock, const char *string)
 {
     if (strncasecmp(string, "PASS:", 5) == 0) {

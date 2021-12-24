@@ -1,0 +1,96 @@
+[libdefaults]
+	default_realm = TEST.H5L.SE
+	no-addresses = TRUE
+	allow_weak_crypto = TRUE
+        rdns = false
+        fcache_strict_checking = false
+        name_canon_rules = as-is:realm=TEST.H5L.SE
+
+[appdefaults]
+	pkinit_anchors = FILE:@objdir@/ca.crt
+	pkinit_pool = FILE:@objdir@/ca.crt
+
+[realms]
+	TEST.H5L.SE = {
+		kdc = localhost:@port@
+		pkinit_win2k = @w2k@
+	}
+
+[kdc]
+        num-kdc-processes = 1
+        strict-nametypes = true
+        synthetic_clients = true
+	enable-pkinit = true
+        pkinit_identity = FILE:@objdir@/kdc.crt,@srcdir@/../../lib/hx509/data/key2.der
+        pkinit_anchors = FILE:@objdir@/ca.crt
+	pkinit_mappings_file = @srcdir@/pki-mapping
+
+        # Locate kdc plugins for testing
+        plugin_dir =  @objdir@/../../kdc/.libs
+
+        # Configure kdc plugins for testing
+        simple_csr_authorizer_directory = @objdir@/simple_csr_authz
+ 
+	database = {
+		dbname = @objdir@/current-db
+		realm = TEST.H5L.SE
+		mkey_file = @objdir@/mkey.file
+                log_file = @objdir@/log.current-db.log
+                acl_file = @srcdir@/heimdal.acl
+	}
+
+        negotiate_token_validator = {
+                keytab = FILE:@objdir@/kt
+        }
+
+        realms = {
+                TEST.H5L.SE = {
+                        kx509 = {
+                                user = {
+                                        include_pkinit_san = true
+                                        subject_name = CN=${principal-name-without-realm},DC=test,DC=h5l,DC=se
+                                        ekus = 1.3.6.1.5.5.7.3.2
+                                        ca = PEM-FILE:@objdir@/user-issuer.pem
+                                }
+                                hostbased_service = {
+                                        HTTP = {
+                                                include_dnsname_san = true
+                                                ekus = 1.3.6.1.5.5.7.3.1
+                                                ca = PEM-FILE:@objdir@/server-issuer.pem
+                                        }
+                                }
+                                client = {
+                                        ekus = 1.3.6.1.5.5.7.3.2
+                                        ca = PEM-FILE:@objdir@/user-issuer.pem
+                                }
+                                server = {
+                                        ekus = 1.3.6.1.5.5.7.3.1
+                                        ca = PEM-FILE:@objdir@/server-issuer.pem
+                                }
+                                mixed = {
+                                        ekus = 1.3.6.1.5.5.7.3.1
+                                        ekus = 1.3.6.1.5.5.7.3.2
+                                        ca = PEM-FILE:@objdir@/mixed-issuer.pem
+                                }
+                        }
+                }
+        }
+
+[hdb]
+	db-dir = @objdir@
+        enable_virtual_hostbased_princs = true
+        virtual_hostbased_princ_mindots = 1
+        virtual_hostbased_princ_maxdots = 3
+        virtual_hostbased_princ_svcs = HTTP host
+ 
+[ext_keytab]
+        simple_csr_authorizer_directory = @objdir@/simple_csr_authz
+
+[logging]
+	kdc = 0-/FILE:@objdir@/messages.log
+	bx509d = 0-/FILE:@objdir@/messages.log
+	httpkadmind = 0-/FILE:@objdir@/messages.log
+	default = 0-/FILE:@objdir@/messages.log
+
+[domain_realm]
+        . = TEST.H5L.SE

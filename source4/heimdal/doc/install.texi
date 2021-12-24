@@ -1,0 +1,8 @@
+@node Building and Installing, Setting up a realm,  What is bx509?, Top
+@comment  node-name,  next,  previous,  up
+@chapter Building and Installing
+
+Build and install instructions are located here:
+
+@url{https://github.com/heimdal/heimdal/wiki}
+

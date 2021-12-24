@@ -64,10 +64,8 @@ gethostname_fallback (krb5_context context, krb5_addresses *res)
     }
     res->len = 1;
     res->val = malloc (sizeof(*res->val));
-    if (res->val == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (res->val == NULL)
+	return krb5_enomem(context);
     res->val[0].addr_type = hostent->h_addrtype;
     res->val[0].address.data = NULL;
     res->val[0].address.length = 0;
@@ -133,8 +131,7 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
 	if (flags & EXTRA_ADDRESSES)
 	    krb5_free_addresses(context, &ignore_addresses);
 	freeifaddrs(ifa0);
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
+	return krb5_enomem(context);
     }
 
     /* Now traverse the list. */

@@ -120,6 +120,7 @@ mem_no_trunc(krb5_storage *sp, off_t offset)
  * @sa krb5_storage_from_readonly_mem()
  * @sa krb5_storage_from_data()
  * @sa krb5_storage_from_fd()
+ * @sa krb5_storage_from_socket()
  */
 
 KRB5_LIB_FUNCTION krb5_storage * KRB5_LIB_CALL
@@ -144,6 +145,7 @@ krb5_storage_from_mem(void *buf, size_t len)
     sp->store = mem_store;
     sp->seek = mem_seek;
     sp->trunc = mem_trunc;
+    sp->fsync = NULL;
     sp->free = NULL;
     sp->max_alloc = UINT_MAX/8;
     return sp;
@@ -203,6 +205,7 @@ krb5_storage_from_readonly_mem(const void *buf, size_t len)
     sp->store = mem_no_store;
     sp->seek = mem_seek;
     sp->trunc = mem_no_trunc;
+    sp->fsync = NULL;
     sp->free = NULL;
     sp->max_alloc = UINT_MAX/8;
     return sp;

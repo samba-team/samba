@@ -1,79 +1,63 @@
-#include <tommath.h>
+#include "tommath_private.h"
 #ifdef BN_MP_DIV_3_C
-/* LibTomMath, multiple-precision integer library -- Tom St Denis
- *
- * LibTomMath is a library that provides multiple-precision
- * integer arithmetic as well as number theoretic functionality.
- *
- * The library was designed directly after the MPI library by
- * Michael Fromberger but has been written from scratch with
- * additional optimizations in place.
- *
- * The library is free for all purposes without any express
- * guarantee it works.
- *
- * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
- */
+/* LibTomMath, multiple-precision integer library -- Tom St Denis */
+/* SPDX-License-Identifier: Unlicense */
 
 /* divide by three (based on routine from MPI and the GMP manual) */
-int
-mp_div_3 (mp_int * a, mp_int *c, mp_digit * d)
+mp_err mp_div_3(const mp_int *a, mp_int *c, mp_digit *d)
 {
-  mp_int   q;
-  mp_word  w, t;
-  mp_digit b;
-  int      res, ix;
+   mp_int   q;
+   mp_word  w, t;
+   mp_digit b;
+   mp_err   err;
+   int      ix;
 
-  /* b = 2**DIGIT_BIT / 3 */
-  b = (((mp_word)1) << ((mp_word)DIGIT_BIT)) / ((mp_word)3);
+   /* b = 2**MP_DIGIT_BIT / 3 */
+   b = ((mp_word)1 << (mp_word)MP_DIGIT_BIT) / (mp_word)3;
 
-  if ((res = mp_init_size(&q, a->used)) != MP_OKAY) {
-     return res;
-  }
+   if ((err = mp_init_size(&q, a->used)) != MP_OKAY) {
+      return err;
+   }
 
-  q.used = a->used;
-  q.sign = a->sign;
-  w = 0;
-  for (ix = a->used - 1; ix >= 0; ix--) {
-     w = (w << ((mp_word)DIGIT_BIT)) | ((mp_word)a->dp[ix]);
+   q.used = a->used;
+   q.sign = a->sign;
+   w = 0;
+   for (ix = a->used - 1; ix >= 0; ix--) {
+      w = (w << (mp_word)MP_DIGIT_BIT) | (mp_word)a->dp[ix];
 
-     if (w >= 3) {
-        /* multiply w by [1/3] */
-        t = (w * ((mp_word)b)) >> ((mp_word)DIGIT_BIT);
+      if (w >= 3u) {
+         /* multiply w by [1/3] */
+         t = (w * (mp_word)b) >> (mp_word)MP_DIGIT_BIT;
 
-        /* now subtract 3 * [w/3] from w, to get the remainder */
-        w -= t+t+t;
+         /* now subtract 3 * [w/3] from w, to get the remainder */
+         w -= t+t+t;
 
-        /* fixup the remainder as required since
-         * the optimization is not exact.
-         */
-        while (w >= 3) {
-           t += 1;
-           w -= 3;
-        }
+         /* fixup the remainder as required since
+          * the optimization is not exact.
+          */
+         while (w >= 3u) {
+            t += 1u;
+            w -= 3u;
+         }
       } else {
-        t = 0;
+         t = 0;
       }
       q.dp[ix] = (mp_digit)t;
-  }
+   }
 
-  /* [optional] store the remainder */
-  if (d != NULL) {
-     *d = (mp_digit)w;
-  }
+   /* [optional] store the remainder */
+   if (d != NULL) {
+      *d = (mp_digit)w;
+   }
 
-  /* [optional] store the quotient */
-  if (c != NULL) {
-     mp_clamp(&q);
-     mp_exch(&q, c);
-  }
-  mp_clear(&q);
+   /* [optional] store the quotient */
+   if (c != NULL) {
+      mp_clamp(&q);
+      mp_exch(&q, c);
+   }
+   mp_clear(&q);
 
-  return res;
+   return err;
 }
 
 #endif
-
-/* $Source: /cvs/libtom/libtommath/bn_mp_div_3.c,v $ */
-/* $Revision: 1.4 $ */
-/* $Date: 2006/12/28 01:25:13 $ */

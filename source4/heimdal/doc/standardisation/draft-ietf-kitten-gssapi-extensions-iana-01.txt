@@ -1,0 +1,393 @@
+
+
+
+NETWORK WORKING GROUP                                        N. Williams
+Internet-Draft                                                       Sun
+Expires: April 19, 2006                                 October 16, 2005
+
+
+     Namespace Considerations and Registries for GSS-API Extensions
+            draft-ietf-kitten-gssapi-extensions-iana-01.txt
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on April 19, 2006.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2005).
+
+Abstract
+
+   This document describes the ways in which the GSS-API may be extended
+   and directs the creation of IANA registries for various GSS-API
+   namespaces.
+
+
+
+
+
+
+
+
+
+Williams                 Expires April 19, 2006                 [Page 1]
+
+Internet-Draft            GSS IANA Instructions             October 2005
+
+
+Table of Contents
+
+   1.  Conventions used in this document . . . . . . . . . . . . . . . 3
+   2.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . . . 3
+   3.  Extensions to the GSS-API . . . . . . . . . . . . . . . . . . . 3
+   4.  Generic GSS-API Namespaces  . . . . . . . . . . . . . . . . . . 3
+   5.  Language Binding-Specific GSS-API Namespaces  . . . . . . . . . 4
+   6.  Extension-Specific GSS-API Namespaces . . . . . . . . . . . . . 4
+   7.  Registration Form(s)  . . . . . . . . . . . . . . . . . . . . . 4
+   8.  Initial Namespace Registrations . . . . . . . . . . . . . . . . 5
+   9.  Security Considerations . . . . . . . . . . . . . . . . . . . . 5
+   10. Normative . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+       Author's Address  . . . . . . . . . . . . . . . . . . . . . . . 6
+       Intellectual Property and Copyright Statements  . . . . . . . . 7
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams                 Expires April 19, 2006                 [Page 2]
+
+Internet-Draft            GSS IANA Instructions             October 2005
+
+
+1.  Conventions used in this document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+2.  Introduction
+
+   There is a need for generic and mechanism-specific extensions to the
+   Generic Security Services Application Programming Interface (GSS-
+   API).  As such extensions are designed and standardized, both at the
+   IETF and elsewhere, there is a non-trivial risk of namespace
+   pollution and conflicts.  To avoid this we set out guidelines for
+   extending the GSS-API and create IANA registries of GSS-API
+   namespaces.
+
+   The registration of name prefixes and constant value ranges is
+   allowed so as to save the IANA the trouble of registering every GSS-
+   API name and constant, and to allow for reservation of portions of
+   some GSS namespaces for private extensions or extensions which lack
+   IETF Standards-Track extensions.
+
+
+3.  Extensions to the GSS-API
+
+   Extensions to the GSS-API can be categorized as follows:
+   o  Generic
+   o  Implementation-specific
+   o  Mechanism-specific
+   o  Language binding-specific
+   o  Any combination of two or all three of the last three
+
+   Extensions to the GSS-API may be purely semantic, without effect on
+   the GSS-API's namespaces.  Or they may introduce new functions,
+   constants, types, etc...; these clearly affect the GSS-API
+   namespaces.
+
+   Extensions that affect the GSS-API namespaces should be registered
+   with the IANA.
+
+
+4.  Generic GSS-API Namespaces
+
+   All the function, constant and type names, as well as all the
+   constant values specified in the base GSS-API specification for the
+   basic generic GSS-API namespace.
+
+
+
+
+Williams                 Expires April 19, 2006                 [Page 3]
+
+Internet-Draft            GSS IANA Instructions             October 2005
+
+
+   The generic GSS-API namespaces are:
+   o  Type names
+   o  Function names
+   o  Constant names for each type
+   o  Constant values for each type
+   o  Mechanism OIDs
+   o  Name Type OIDs
+   o  Mechanism Attribute OIDs (see [EXTENDED-INQUIRY])
+
+
+5.  Language Binding-Specific GSS-API Namespaces
+
+   <Add text; discuss header, module, library, class, method namespaces
+   and whatever else comes up that is language-specific and appropriate
+   for registration with the IANA.>
+
+
+6.  Extension-Specific GSS-API Namespaces
+
+   Extensions to the GSS-API may create additional namespaces.
+   Instructions to the IANA should included for the handling of such
+   namespaces.
+
+
+7.  Registration Form(s)
+
+   Registrations for GSS-API namespaces SHALL take the following form:
+
+   <TBD>
+
+   The IANA should create a single GSS-API namespace registry, or
+   multiple registries, one for symbolic names and one for constant
+   values, or it may create a registry per-programming language, at its
+   convenience.
+
+   Entries in these registries should consist of all the fields from
+   their corresponding registration entries.
+
+   Entries SHOULD be sorted by object type, proggamming language, symbol
+   name.
+
+   <Add text on guidelines for IANA consideration of registration
+   applications, particularly with respect to entries lacking normative
+   references, "magic" entries (e.g., special values of 'time' types
+   which indicate something other than absolute or relative time, such
+   as GSS_C_INDEFINITE), expert review requirements (if any) for
+   registrations lacking normative references, etc....>
+
+
+
+
+Williams                 Expires April 19, 2006                 [Page 4]
+
+Internet-Draft            GSS IANA Instructions             October 2005
+
+
+8.  Initial Namespace Registrations
+
+   <Add registration entries for namespaces (name prefixes) for RFC2743/
+   RFC2744/RFC2853.>
+
+   <Add registration entries for private namespaces (name prefixes) for
+   implementation- and/or platform-specific extensions.>
+
+
+9.  Security Considerations
+
+   This document has no security considerations.
+
+10.  Normative
+
+   [EXTENDED-INQUIRY]
+              Williams, N., "Extended Generic Security Service Mechanism
+              Inquiry APIs",
+              draft-ietf-kitten-extended-mech-inquiry-00.txt (work in
+              progress).
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+   [RFC2744]  Wray, J., "Generic Security Service API Version 2 :
+              C-bindings", RFC 2744, January 2000.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams                 Expires April 19, 2006                 [Page 5]
+
+Internet-Draft            GSS IANA Instructions             October 2005
+
+
+Author's Address
+
+   Nicolas Williams
+   Sun Microsystems
+   5300 Riata Trace Ct
+   Austin, TX  78727
+   US
+
+   Email: Nicolas.Williams@sun.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams                 Expires April 19, 2006                 [Page 6]
+
+Internet-Draft            GSS IANA Instructions             October 2005
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2005).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Williams                 Expires April 19, 2006                 [Page 7]
+
+

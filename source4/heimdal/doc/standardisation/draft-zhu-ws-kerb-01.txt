@@ -1,0 +1,505 @@
+
+
+NETWORK WORKING GROUP                                             L. Zhu
+Internet-Draft                                     Microsoft Corporation
+Updates: 4120 (if approved)                                 October 2006
+Intended status: Standards Track
+Expires: April 4, 2007
+
+
+                       Kerberos for Web Services
+                          draft-zhu-ws-kerb-01
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on April 4, 2007.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2006).
+
+Abstract
+
+   This document defines extensions to the Kerberos protocol and the
+   GSS-API Kerberos mechanism that enable a GSS-API Kerberos client to
+   exchange messages with the KDC using the GSS-API acceptor as the
+   proxy, by encapsulating the Kerberos messages inside GSS-API tokens.
+   With these extensions, Kerberos is suitable for securing
+   communication between the client and web services over the Internet.
+
+
+
+
+Zhu                       Expires April 4, 2007                 [Page 1]
+
+Internet-Draft                   WS-KERB                    October 2006
+
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . . . 3
+   2.  Conventions Used in This Document . . . . . . . . . . . . . . . 3
+   3.  GSS-API Encapsulation . . . . . . . . . . . . . . . . . . . . . 3
+   4.  Addresses in Tickets  . . . . . . . . . . . . . . . . . . . . . 6
+   5.  Security Considerations . . . . . . . . . . . . . . . . . . . . 6
+   6.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . 7
+   7.  IANA Considerations . . . . . . . . . . . . . . . . . . . . . . 7
+   8.  Normative References  . . . . . . . . . . . . . . . . . . . . . 7
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . . . 8
+   Intellectual Property and Copyright Statements  . . . . . . . . . . 9
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu                       Expires April 4, 2007                 [Page 2]
+
+Internet-Draft                   WS-KERB                    October 2006
+
+
+1.  Introduction
+
+   The Kerberos [RFC4120] pre-authentication framework [KRB-PAFW]
+   promises minimal or no exposure of weak client keys and strong client
+   authentication.  The Kerberos support of anonymity [KRB-ANON]
+   provides for privacy.  These advancements make Kerberos suitable over
+   the Internet.
+
+   The traditional client-push Kerberos protocol does not work well in
+   the Web services environments where the KDC is not accessible to the
+   client, but is accessible to the web server.  For example, the KDC is
+   commonly placed behind a firewall together with the application
+   server.  The lack of accessibility to the KDC by the client could
+   also occur are when the client does not have an IP address prior to
+   authenticating to an access point.
+
+   Generic Security Service Application Program Interface (GSS-API)
+   [RFC2743] allows security mechanisms exchange arbitrary messages
+   between the initiator and the acceptor via the application traffic,
+   independent of the underlying transports.  A protocol based on
+   [RFC4121] is thus defined to allow the GSS-API initiator to exchange
+   Kerberos messages with the KDC by using the GSS-API acceptor as the
+   proxy.  The acceptor-pull model defined in this specification is
+   benefical for initiators with limited processing power such as mobile
+   devices, or when the transport layer between the initiator and the
+   acceptor has high network latency.
+
+           Client --------- WS-KERB proxy ---------- KDC
+
+   The Kerberos client MUST avoid exposure of long term client keys to
+   the GSS-API acceptor, before and after the Kerberos server is
+   authenticated.  This can be accomplished by using Kerberos-FAST [KRB-
+   PAFW].  Furthermore, the initiator can use the anonymous option as
+   defined in Section 6.5.2 of [KRB-PAFW], to hide the client identity
+   from adversary who can eavesdrop the application traffic.
+
+
+2.  Conventions Used in This Document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+3.  GSS-API Encapsulation
+
+   The mechanism Objection Identifier (OID) for GSS-API WS-KERB, in
+   accordance with the mechanism proposed by [RFC4178] for negotiating
+
+
+
+Zhu                       Expires April 4, 2007                 [Page 3]
+
+Internet-Draft                   WS-KERB                    October 2006
+
+
+   protocol variations, is id-kerberos-ws.
+
+      id-kerberos-ws ::=
+        { iso(1) org(3) dod(6) internet(1) security(5) kerberosV5(2)
+          webService(6) }
+
+   The first token of the GSS-API WS-KERB mechanism MUST have the
+   generic token framing described in section 3.1 of [RFC2743] with the
+   mechanism OID being id-kerberos-ws, and any subsequent GSS-API WS-
+   KERB token MUST NOT have this framing.
+
+   The GSS-API WS-KERB mechanism MUST always provide mutual
+   authentication, even if the initiator does not ask for it.  When
+   mutual-authentication is performed, the GSS-API acceptor will always
+   send back an AP-REP, and as described later in this section this
+   mechanism provides integrity protection for all initiator-acceptor
+   proxy message exchanges.
+
+   The innerToken described in section 3.1 of [RFC2743] and subsequent
+   GSS-API tokens have the following formats: it starts with a two-octet
+   token-identifier (TOK_ID), followed by a WS-KERB message or a
+   Kerberos message.
+
+
+             Token/Message       TOK_ID Value in Hex
+           -----------------------------------------
+             WS_KRB_PROXY         05 01
+
+   Only one WS-KERB specific message, namely the WS_KRB_PROXY message,
+   is defined in this document.  The TOK_ID values for [RFC4120]
+   Kerberos messages are the same as those defined for the GSS-API
+   Kerberos mechanism [RFC4121].
+
+   The message of the WS_KRB_PROXY type is defined as a WS-KRB-HEADER
+   structure immediately followed by a Kerberos message.  The Kerberos
+   message can be an AS-REQ, an AS-REP, a TGS-REQ, a TGS-REP, or a KRB-
+   ERROR as defined in [RFC4120].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu                       Expires April 4, 2007                 [Page 4]
+
+Internet-Draft                   WS-KERB                    October 2006
+
+
+           WS-KRB-HEADER ::= SEQUENCE {
+               proxy-data      [1] ProxyData,
+               ...
+           }
+
+           ProxyData :: = SEQUENCE {
+               realm           [1] Realm,
+               cookie          [3] OCTET STRING OPTIONAL,
+                  -- opaque data, if sent by the acceptor,
+                  -- MUST be copied by the client unchanged into
+                  -- the next WS-KERB message.
+               ...
+           }
+
+
+   The WS-KRB-HEADER structure and all the Kerberos messages MUST be
+   encoded using Abstract Syntax Notation One (ASN.1) Distinguished
+   Encoding Rules (DER) [X680] [X690].
+
+   The GSS-API initiator fills out the realm field in the ProxyData of
+   the first request with the client realm.  If the client does not know
+   the client realm [REFERALS], it MUST fill it out using the client's
+   default realm name such as the realm of the client host.  Typically
+   the Kerberos message in the first WS_KRB_PROXY message from the
+   client is an AS-REQ message.
+
+   Upon receipt of the WS_KRB_PROXY message, the GSS-API WS-KERB
+   acceptor MUST use the proxy-data in the message from the client to
+   locate the KDC and sends the encapsulated Kerberos message to that
+   KDC.  Unless otherwise specified, the acceptor can locate the KDC per
+   Section 7.2.3.2 of [RFC4120].
+
+   In order to reduce the number of roundtrips between the initiator and
+   the acceptor, the acceptor SHOULD process any message exchange with
+   the KDC if the exchange is unauthenticated, such as client-referral
+   message exchange [REFERALS].  If the acceptor can not process the KDC
+   response by itself, for example when the knowledge of the client keys
+   is required, it sends back to the client the KDC reply message
+   encapsulated in a WS_KRB_PROXY message.  The acceptor MUST fill out
+   the realm name whose KDC produced the response.  The acceptor SHOULD
+   use the kdc-referrals option described in Section 6.5.2 of [KRB-PAFW]
+   to allow the KDC of the client's realm to obtain a service ticket
+   addressed to the acceptor, thus further reduce the number of
+   roundtrips between the GSS-API initiator and the GSS-API acceptor.
+   The GSS-API acceptor can send opaque data in the cookie field of the
+   WS-KRB-HEADER structure in the reply from the acceptor to the
+   initiator, in order to, for example, to facilitate state managements
+   on the GSS-API acceptor.  The content and the encoding of the cookie
+
+
+
+Zhu                       Expires April 4, 2007                 [Page 5]
+
+Internet-Draft                   WS-KERB                    October 2006
+
+
+   field is a local matter of the acceptor.  The initiator MUST copy the
+   verbatim cookie from the previous acceptor response, when the cookie
+   is present, whenever it sends an additional WS-KRB-PROXY message to
+   the acceptor.  The client processes the KDC response, and fills out
+   the realm name it believes to whom the acceptor should send the
+   encapsulated Kerberos message.
+
+   When the client obtains a service ticket, the initiator then sends a
+   KRB_AP_REQ message to the acceptor, and proceed as defined in
+   [RFC4121].  A GSS-API authenticator extension [GSS-EXTS] MUST be sent
+   by the initiator.  The extension type is 2 and the content is the
+   ASN.1 DER encoding of the type Checksum.  The checksum is performed
+   over all GSS-API messages as exchanged between the initiator and the
+   acceptor before the KRB_AP_REQ message, and in the order of the
+   exchange.  The checksum type is the required checksum type for the
+   enctype of the subkey in the authenticator, the protocol key is the
+   authenticator subkey, and the key usage number is TBA-1.  The
+   acceptor MUST verify this checksum in the GSS-API authenticator
+   extension, then respond with an AP-REP extension [GSS-EXTS].  The AP-
+   REP extension type is 2 and the the content is the ASN.1 DER encoding
+   of the type Checksum.  This checksum is performed over all GSS-API
+   messages as exchanged between the initiator and the acceptor before
+   the KRB_AP_REQ message, and in the order of the exchange.  The
+   checksum type is the required checksum type for the enctype of the
+   authenticator subkey in the request, and the protocol key is the
+   authenticator subkey, and the key usage number is TBA-2.  The
+   initiator MUST then verify this checksum.
+
+
+4.  Addresses in Tickets
+
+   In WS-KERB, the machine sending requests to the KDC is the GSS-API
+   acceptor and not the initiator.  As a result, the initiator should
+   not include its addresses in any KDC requests for two reasons.
+   First, the KDC may reject the forwarded request as being from the
+   wrong client.  Second, in the case of initial authentication for a
+   dial-up client, the client machine may not yet possess a network
+   address.  Hence, as allowed by [RFC4120], the addresses field of the
+   AS-REQ and TGS-REQ requests SHOULD be blank and the caddr field of
+   the ticket SHOULD similarly be left blank.
+
+
+5.  Security Considerations
+
+   Similar to other network access protocols, WS-KERB allows an
+   unauthenticated client (possibly outside the security perimeter of an
+   organization) to send messages that are proxied to interior servers.
+
+
+
+
+Zhu                       Expires April 4, 2007                 [Page 6]
+
+Internet-Draft                   WS-KERB                    October 2006
+
+
+   In a scenario where DNS SRV RR's are being used to locate the KDC,
+   WS-KERB is being used, and an external attacker can modify DNS
+   responses to the WS-KERB proxy, there are several countermeasures to
+   prevent arbitrary messages from being sent to internal servers:
+
+   1.  KDC port numbers can be statically configured on the WS-KERB
+       proxy.  In this case, the messages will always be sent to KDC's.
+       For an organization that runs KDC's on a static port (usually
+       port 88) and does not run any other servers on the same port,
+       this countermeasure would be easy to administer and should be
+       effective.
+
+   2.  The proxy can do application level sanity checking and filtering.
+       This countermeasure should eliminate many of the above attacks.
+
+   3.  DNS security can be deployed.  This countermeasure is probably
+       overkill for this particular problem, but if an organization has
+       already deployed DNS security for other reasons, then it might
+       make sense to leverage it here.  Note that Kerberos could be used
+       to protect the DNS exchanges.  The initial DNS SRV KDC lookup by
+       the proxy will be unprotected, but an attack here is at most a
+       denial of service (the initial lookup will be for the proxy's KDC
+       to facilitate Kerberos protection of subsequent DNS exchanges
+       between itself and the DNS server).
+
+
+6.  Acknowledgements
+
+   The acceptor-proxy idea is based on the early revisions of this
+   document written by Jonathan Trostle, Michael Swift, Bernard Aboba
+   and Glen Zorn.
+
+   The rest of the ideas mostly came from hallway conversations between
+   the author and Nicolas Williams.
+
+
+7.  IANA Considerations
+
+   There is no IANA action required for this document.
+
+
+8.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+
+
+Zhu                       Expires April 4, 2007                 [Page 7]
+
+Internet-Draft                   WS-KERB                    October 2006
+
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+   [RFC4121]  Zhu, L., Jaganathan, K., and S. Hartman, "The Kerberos
+              Version 5 Generic Security Service Application Program
+              Interface (GSS-API) Mechanism: Version 2", RFC 4121,
+              July 2005.
+
+   [RFC4178]  Zhu, L., Leach, P., Jaganathan, K., and W. Ingersoll, "The
+              Simple and Protected Generic Security Service Application
+              Program Interface (GSS-API) Negotiation Mechanism",
+              RFC 4178, October 2005.
+
+   [KRB-ANON] Zhu, L., Leach, P. and Jaganathan, K., "Kerberos Anonymity 
+              Support", draft-ietf-krb-wg-anon, work in progress.
+
+   [KRB-PAFW] Zhu, etl, "Kerberos Pre-Authentication framework", 
+              draft-ietf-krb-wg-preauth-framework, work in progress.
+              
+   [GSS-EXTS] Emery, S., draft-ietf-krb-wg-gss-cb-hash-agility, work in 
+              progess.
+
+   [REFERALS] Raeburn, K., "Generating KDC Referrals to Locate Kerberos 
+              Realms", draft-ietf-krb-wg-kerberos-referrals, work in
+              progress.
+              
+   [X680]     ITU-T Recommendation X.680 (2002) | ISO/IEC 8824-1:2002,
+              Information technology - Abstract Syntax Notation One
+              (ASN.1): Specification of basic notation.
+
+   [X690]     ITU-T Recommendation X.690 (2002) | ISO/IEC 8825-1:2002,
+              Information technology - ASN.1 encoding Rules:
+              Specification of Basic Encoding Rules (BER), Canonical
+              Encoding Rules (CER) and Distinguished Encoding Rules
+              (DER).
+
+
+Author's Address
+
+   Larry Zhu
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: lzhu@microsoft.com
+
+
+
+
+
+Zhu                       Expires April 4, 2007                 [Page 8]
+
+Internet-Draft                   WS-KERB                    October 2006
+
+
+Full Copyright Statement
+
+   Copyright (C) The Internet Society (2006).
+
+   This document is subject to the rights, licenses and restrictions
+   contained in BCP 78, and except as set forth therein, the authors
+   retain all their rights.
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Intellectual Property
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is provided by the IETF
+   Administrative Support Activity (IASA).
+
+
+
+
+
+Zhu                       Expires April 4, 2007                 [Page 9]
+
+

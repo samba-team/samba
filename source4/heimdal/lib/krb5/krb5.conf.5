@@ -1,0 +1,1446 @@
+.\" Copyright (c) 1999 - 2005 Kungliga Tekniska Högskolan
+.\" (Royal Institute of Technology, Stockholm, Sweden).
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the Institute nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\" $Id$
+.\"
+.Dd May  4, 2005
+.Dt KRB5.CONF 5
+.Os HEIMDAL
+.Sh NAME
+.Nm krb5.conf
+.Nd configuration file for Kerberos 5
+.Sh SYNOPSIS
+.In krb5.h
+.Sh DESCRIPTION
+The
+.Nm
+file specifies several configuration parameters for the Kerberos 5
+library, as well as for some programs.
+.Pp
+The file consists of one or more sections, containing a number of
+bindings.
+The value of each binding can be either a string or a list of other
+bindings.
+The grammar looks like:
+.Bd -literal -offset indent
+file:
+	/* empty */
+	sections
+        includes
+
+sections:
+	section sections
+	section
+
+section:
+	'[' section_name ']' bindings
+
+section_name:
+	STRING
+
+bindings:
+	binding bindings
+	binding
+
+binding:
+	name '=' STRING
+	name '=' '{' bindings '}'
+
+name:
+	STRING
+
+includes:
+	'include' path
+	'includedir' path
+
+path: STRING
+
+.Ed
+.Li STRINGs
+consists of one or more non-whitespace characters.
+.Pp
+Files and directories may be included by absolute path, with percent
+token expansion (see the TOKEN EXPANSION section).  Including a
+directory causes all files in the directory to be included as if each
+file had been included separately, but only files whose names consist of
+alphanumeric, hyphen, and underscore are included, though they may also
+end in '.conf'.
+.Pp
+STRINGs that are specified later in this man-page uses the following
+notation.
+.Bl -tag -width "xxx" -offset indent
+.It boolean
+values can be either yes/true or no/false.
+.It time
+values can be a list of year, month, day, hour, min, second.
+Example: 1 month 2 days 30 min.
+If no unit is given, seconds is assumed.
+.It etypes
+valid encryption types are: des-cbc-crc, des-cbc-md4, des-cbc-md5,
+des3-cbc-sha1, arcfour-hmac-md5, aes128-cts-hmac-sha1-96, aes256-cts-hmac-sha1-96,
+aes128-cts-hmac-sha256-128, and aes256-cts-hmac-sha384-192.
+.It address
+an address can be either a IPv4 or a IPv6 address.
+.El
+.Pp
+Currently recognised sections and bindings are:
+.Bl -tag -width "xxx" -offset indent
+.It Li [appdefaults]
+Specifies the default values to be used for Kerberos applications.
+You can specify defaults per application, realm, or a combination of
+these.
+The preference order is:
+.Bl -enum -compact
+.It
+.Va application Va realm Va option
+.It
+.Va application Va option
+.It
+.Va realm Va option
+.It
+.Va option
+.El
+.Pp
+The supported options are:
+.Bl -tag -width "xxx" -offset indent
+.It Li forwardable = Va boolean
+When obtaining initial credentials, make the credentials forwardable.
+.It Li proxiable = Va boolean
+When obtaining initial credentials, make the credentials proxiable.
+.It Li no-addresses = Va boolean
+When obtaining initial credentials, request them for an empty set of
+addresses, making the tickets valid from any address.
+.It Li ticket_lifetime = Va time
+Default ticket lifetime.
+.It Li renew_lifetime = Va time
+Default renewable ticket lifetime.
+.It Li encrypt = Va boolean
+Use encryption, when available.
+.It Li forward = Va boolean
+Forward credentials to remote host (for
+.Xr rsh 1 ,
+.Xr telnet 1 ,
+etc).
+.It Li historical_anon_pkinit = Va boolean
+Enable legacy anonymous pkinit command-line syntax.
+With this option set to
+.Li true,
+the
+.Xr kinit 1
+.Fl Fl anonymous
+command with no principal argument specified will request an anonymous pkinit
+ticket from the default realm.
+If a principal argument is specified, it is used as an explicit realm name for
+anonymous pkinit even without an
+.Li @
+prefix.
+.It Li delegate-destination-tgt = Va boolean
+When forwarding credentials to a remote host, forward a TGT for the
+realm of the destination host rather than a TGT for the user's realm.
+This is useful when hosts in the remote realm should not or cannot
+(e.g. firewalled from user realm's KDC) obtain tickets for services
+in the user's realm. When the user's realm and the host's realm are
+the same, this parameter has no effect.  The setting can be applied
+to a single realm as follows:
+.Bd -literal -offset indent
+EXAMPLE.COM = {
+	delegate-destination-tgt = true
+}
+.Ed
+.El
+.It Li [libdefaults]
+.Bl -tag -width "xxx" -offset indent
+.It Li default_realm = Va REALM
+Default realm to use, this is also known as your
+.Dq local realm .
+The default is the result of
+.Fn krb5_get_host_realm "local hostname" .
+.It Li allow_weak_crypto = Va boolean
+are weak crypto algorithms allowed to be used, among others, DES is
+considered weak.
+.It Li clockskew = Va time
+Maximum time differential (in seconds) allowed when comparing
+times.
+Default is 300 seconds (five minutes).
+.It Li kdc_timeout = Va time
+Maximum time to wait for a reply from the kdc, default is 3 seconds.
+.It Li capath = {
+.Bl -tag -width "xxx" -offset indent
+.It Va destination-realm Li = Va next-hop-realm
+.It ...
+.It Li }
+.El
+This is deprecated, see the
+.Li capaths
+section below.
+.It Li default_cc_type = Va cctype
+sets the default credentials type.
+.It Li default_cc_name = Va ccname
+the default credentials cache name.
+If you want to change the type only use
+.Li default_cc_type .
+The string can contain variables that are expanded at runtime. See the TOKEN
+EXPANSION section.
+.It Li default_file_cache_collections = Va FILE:/path/with/tokens ...
+This multi-valued parameter allows more than one path to be
+configured for the FILE credentials cache type to look in.  The FILE
+credentials cache type will also consider file names whose prefixes
+match these and end in
+.Va +name
+as subsidiary caches in the collection.  The values of this
+parameter are subject to token expansion.  See the TOKEN EXPANSION
+section.
+.It Li enable_file_cache_iteration = Va boolean
+If enabled, the
+.Va FILE
+credential cache type will support iteration of all subsidiary
+caches in the default collection, meaning that
+.Xr kinit 1
+.Va -l
+option will list them.  This does require scanning the directory
+containing a given
+.Va FILE
+ccache, which, if it is
+.Va /tmp
+may be a slow operation.  Defaults to false.
+.It Li default_etypes = Va etypes ...
+A list of default encryption types to use. (Default: all enctypes if
+allow_weak_crypto = TRUE, else all enctypes except single DES enctypes.)
+.It Li default_as_etypes = Va etypes ...
+A list of default encryption types to use in AS requests.  (Default: the
+value of default_etypes.)
+.It Li default_tgs_etypes = Va etypes ...
+A list of default encryption types to use in TGS requests.  (Default:
+the value of default_etypes.)
+.It Li default_etypes_des = Va etypes ...
+A list of default encryption types to use when requesting a DES credential.
+.It Li default_keytab_name = Va keytab
+The keytab to use if no other is specified, default is
+.Dq FILE:/etc/krb5.keytab .
+.It Li default_client_keytab_name = Va keytab
+The keytab to use for client credential acquisition if no other is
+specified, default is
+.Dq FILE:%{LOCALSTATEDIR}/user/%{euid}/client.keytab .
+See the TOKEN EXPANSION section.
+.It Li dns_lookup_kdc = Va boolean
+Use DNS SRV records to lookup KDC services location.
+.It Li dns_lookup_realm = Va boolean
+Use DNS TXT records to lookup domain to realm mappings.
+.It Li enforce_ok_as_delegate = Va boolean
+If this flag to true, GSSAPI credential delegation will be
+disabled when the 
+.Ar ok-as-delegate
+flag is not set in the service ticket.
+If this flag is false, the 
+.Ar ok-as-delegate
+ticket flag is only enforced when an application specifically
+requests enforcement.
+The default value is false.
+.It Li kdc_timesync = Va boolean
+Try to keep track of the time differential between the local machine
+and the KDC, and then compensate for that when issuing requests.
+.It Li max_retries = Va number
+The max number of times to try to contact each KDC.
+.It Li large_msg_size = Va number
+The threshold where protocols with tiny maximum message sizes are not
+considered usable to send messages to the KDC.
+.It Li ticket_lifetime = Va time
+Default ticket lifetime.
+.It Li renew_lifetime = Va time
+Default renewable ticket lifetime.
+.It Li forwardable = Va boolean
+When obtaining initial credentials, make the credentials forwardable.
+This option is also valid in the [realms] section.
+.It Li proxiable = Va boolean
+When obtaining initial credentials, make the credentials proxiable.
+This option is also valid in the [realms] section.
+.It Li verify_ap_req_nofail = Va boolean
+If enabled, failure to verify credentials against a local key is a
+fatal error.
+The application has to be able to read the corresponding service key
+for this to work.
+Some applications, like
+.Xr su 1 ,
+enable this option unconditionally.
+.It Li warn_pwexpire = Va time
+How soon to warn for expiring password.
+Default is seven days.
+.It Li http_proxy = Va proxy-spec
+A HTTP-proxy to use when talking to the KDC via HTTP.
+.It Li dns_proxy = Va proxy-spec
+Enable using DNS via HTTP.
+.It Li extra_addresses = Va address ...
+A list of addresses to get tickets for along with all local addresses.
+.It Li time_format = Va string
+How to print time strings in logs, this string is passed to
+.Xr strftime 3 .
+.It Li date_format = Va string
+How to print date strings in logs, this string is passed to
+.Xr strftime 3 .
+.It Li log_utc = Va boolean
+Write log-entries using UTC instead of your local time zone.
+.It Li scan_interfaces = Va boolean
+Scan all network interfaces for addresses, as opposed to simply using
+the address associated with the system's host name.
+.It Li fcache_version = Va int
+Use file credential cache format version specified.
+.It Li fcc-mit-ticketflags = Va boolean
+Use MIT compatible format for file credential cache.
+It's the field ticketflags that is stored in reverse bit order for
+older than Heimdal 0.7.
+Setting this flag to
+.Dv TRUE
+makes it store the MIT way, this is default for Heimdal 0.7.
+.It Li check-rd-req-server
+If set to "ignore", the framework will ignore any of the server input to
+.Xr krb5_rd_req 3 ,
+this is very useful when the GSS-API server input the
+wrong server name into the gss_accept_sec_context call.
+.It Li k5login_directory = Va directory
+Alternative location for user .k5login files. This option is provided
+for compatibility with MIT krb5 configuration files. This path is
+subject to percent token expansion (see TOKEN EXPANSION).
+.It Li k5login_authoritative = Va boolean
+If true then if a principal is not found in k5login files then
+.Xr krb5_userok 3
+will not fallback on principal to username mapping. This option is
+provided for compatibility with MIT krb5 configuration files.
+.It Li kuserok = Va rule ...
+Specifies
+.Xr krb5_userok 3
+behavior.  If multiple values are given, then
+.Xr krb5_userok 3
+will evaluate them in order until one succeeds or all fail.  Rules are
+implemented by plugins, with three built-in plugins
+described below. Default: USER-K5LOGIN SIMPLE DENY.
+.It Li kuserok = Va DENY
+If set and evaluated then
+.Xr krb5_userok 3
+will deny access to the given username no matter what the principal name
+might be.
+.It Li kuserok = Va SIMPLE
+If set and evaluated then
+.Xr krb5_userok 3
+will use principal to username mapping (see auth_to_local below).  If
+the principal maps to the requested username then access is allowed.
+.It Li kuserok = Va SYSTEM-K5LOGIN[:directory]
+If set and evaluated then
+.Xr krb5_userok 3
+will use k5login files named after the
+.Va luser
+argument to
+.Xr krb5_userok 3
+in the given directory or in
+.Pa /etc/k5login.d/ .
+K5login files are text files, with each line containing just a principal
+name; principals apearing in a user's k5login file are permitted access
+to the user's account. Note: this rule performs no ownership nor
+permissions checks on k5login files; proper ownership and
+permissions/ACLs are expected due to the k5login location being a
+system location.
+.It Li kuserok = Va USER-K5LOGIN
+If set and evaluated then
+.Xr krb5_userok 3
+will use
+.Pa ~luser/.k5login
+and
+.Pa ~luser/.k5login.d/* .
+User k5login files and directories must be owned by the user and must
+not have world nor group write permissions.
+.It Li aname2lname-text-db = Va filename
+The named file must be a sorted (in increasing order) text file where
+every line consists of an unparsed principal name optionally followed by
+whitespace and a username.  The aname2lname function will do a binary
+search on this file, if configured, looking for lines that match the
+given principal name, and if found the given username will be used, or,
+if the username is missing, an error will be returned.  If the file
+doesn't exist, or if no matching line is found then other plugins will
+be allowed to run.
+.It Li fcache_strict_checking
+strict checking in FILE credential caches that owner, no symlink and
+permissions is correct.
+.It Li moduli = Va FILE
+Names a file that contains acceptable modular Diffie-Hellman
+groups for PKINIT.
+The given file should contain lines with whitespace-separated
+fields in this order:
+.Va name, nbits, p, g, q .
+Lines starting with a
+.Va #
+are comments.
+.It Li pkinit_dh_min_bits = Va NUMBER
+PKINIT client's minimum acceptable modular Diffie-Hellman public
+key size in bits.
+.It Li enable-kx509 = Va boolean
+Enable use of kx509 so that every TGT that can has a corresponding
+PKIX certificate.  Default: false.
+.It Li kx509_gen_key_type = Va public-key-type
+Type of public key for kx509 private key generation.  Defaults to
+.Va rsa
+and currently only
+.Va rsa
+is supported.
+.It Li kx509_gen_rsa_key_size = Va number-of-bits
+RSA key size for kx509.  Defaults to 2048.
+.It Li kx509_store = path
+A file path into which to write a certificate obtained with
+kx509, and its private key, when attempting kx509 optimistically
+using credentials from a default ccache.  Tokens will be
+expanded.
+.It Li kx509_hostname = Va hostname
+If set, then the kx509 client will use this hostname for the
+kx509 service.  This can also be set in the
+.Li [realm]
+section on a per-realm basis.  If not set then a TGS name will be
+used.
+.It Li name_canon_rules = Va rules
+One or more service principal name canonicalization rules.  Each rule
+consists of one or more tokens separated by colon (':').  Currently
+these rules are used only for hostname canonicalization (usually when
+getting a service ticket, from a ccache or a TGS, but also when
+acquiring GSS initiator credentials from a keytab).  These rules can be
+used to implement DNS resolver-like search lists without having to use
+DNS.
+.Pp
+NOTE: Name canonicalization rules are an experimental feature.
+.Pp
+The first token is a rule type, one of:
+.Va as-is,
+.Va qualify, or
+.Va nss.
+.Pp
+Any remaining tokens must be options tokens:
+.Va use_fast
+(use FAST to protect TGS exchanges; currently not supported),
+.Va use_dnssec
+(use DNSSEC to protect hostname lookups; currently not supported),
+.Va ccache_only
+,
+.Va use_referrals,
+.Va no_referrals,
+.Va lookup_realm,
+.Va mindots=N,
+.Va maxdots=N,
+.Va order=N,
+domain=
+.Va domain,
+realm=
+.Va realm,
+match_domain=
+.Va domain,
+and match_realm=
+.Va realm.
+.Pp
+When trying to obtain a service ticket for a host-based service
+principal name, name canonicalization rules are applied to that name in
+the order given, one by one, until one succeds (a service ticket is
+obtained), or all fail.  Similarly when acquiring GSS initiator
+credentials from a keytab, and when comparing a non-canonical GSS name
+to a canonical one.
+.Pp
+For each rule the system checks that the hostname has at least
+.Va mindots
+periods (if given) in it, at most
+.Va maxdots
+periods (if given), that the hostname ends in the given
+.Va match_domain
+(if given),
+and that the realm of the principal matches the
+.Va match_realm
+(if given).
+.Pp
+.Va As-is
+rules leave the hostname unmodified but may set a realm.
+.Va Qualify
+rules qualify the hostname with the given
+.Va domain
+and also may set the realm.
+The
+.Va nss
+rule uses the system resolver to lookup the host's canonical name and is
+usually not secure.  Note that using the
+.Va nss
+rule type implies having to have principal aliases in the HDB (though
+not necessarily in keytabs).
+.Pp
+The empty realm denotes "ask the client's realm's TGS".  The empty realm
+may be set as well as matched.
+.Pp
+The order in which rules are applied is as follows: first all the rules
+with explicit
+.Va order
+then all other rules in the order in which they appear.  If any two
+rules have the same explicit
+.Va order ,
+their order of appearance in krb5.conf breaks the tie.  Explicitly
+specifying order can be useful where tools read and write the
+configuration file without preserving parameter order.
+.Pp
+Malformed rules are ignored.
+.It Li allow_hierarchical_capaths = Va boolean
+When validating cross-realm transit paths, absent any explicit capath from the
+client realm to the server realm, allow a hierarchical transit path via the
+common ancestor domain of the two realms.
+Defaults to true.
+Note, absent an explicit setting, hierarchical capaths are always used by
+the KDC when generating a referral to a destination with which is no direct
+trust.
+.It Li client_aware_channel_bindings = Va boolean
+If this flag is true, then all application protocol authentication
+requests will be flagged to indicate that the application supports
+channel bindings when operating over a secure channel.
+The default value is false.
+.It Li check_pac = Va boolean
+If this flag is true and a Windows Privilege Attribute Certificate (PAC)
+is present in the ticket authorization data, then
+.Xr krb5_rd_req 3
+will validate the PAC before returning success. The default value is true.
+.It Li report_canonical_client_name = Va boolean
+If this flag is true, then the canonical client name from the PAC will
+be used instead of the client name in the ticket. The default value is false.
+Note that setting it to true implicitly sets
+.Va check_pac
+to true.
+.El
+.It Li [domain_realm]
+This is a list of mappings from DNS domain to Kerberos realm.
+.Pp
+It is used by the client and the TGS both to determine the realm
+of host-based service principal names based on the principal's
+hostname component.
+.Pp
+The client may try DNS to determine a host's realm; see the
+`dns_lookup_realm' parameter, and see below.
+.Pp
+The TGS will issue a referral when a host-based service does not
+exist in the requested realm but can be mapped with these rules
+to a different realm.
+The TGS will also issue a referral when a host-based service
+exists in the requested realm as an alias of a service in another
+realm.
+.Pp
+Each binding in this section looks like:
+.Pp
+.Dl domain = realm
+.Pp
+The domain can be either a full name of a host or a trailing
+component, in the latter case the domain-string should start with a
+period.
+The trailing component only matches hosts that are in the same domain, ie
+.Dq .example.com
+matches
+.Dq foo.example.com ,
+but not
+.Dq foo.test.example.com .
+.Pp
+The realm may be the token `dns_locate', in which case the actual
+realm will be determined using DNS (independently of the setting
+of the `dns_lookup_realm' option).
+.It Li [realms]
+.Bl -tag -width "xxx" -offset indent
+.It Va REALM Li = {
+.Bl -tag -width "xxx" -offset indent
+.It Li kdc = Va [service/]host[:port]
+Specifies a list of kdcs for this realm.
+If the optional
+.Va port
+is absent, the
+default value for the
+.Dq kerberos/udp
+.Dq kerberos/tcp ,
+and
+.Dq http/tcp
+port (depending on service) will be used.
+The kdcs will be used in the order that they are specified.
+.Pp
+The optional
+.Va service
+specifies over what medium the kdc should be
+contacted.
+Possible services are
+.Dq udp ,
+.Dq tcp ,
+and
+.Dq http .
+Http can also be written as
+.Dq http:// .
+Default service is
+.Dq udp
+and
+.Dq tcp .
+.It Li admin_server = Va host[:port]
+Specifies the admin server for this realm, where all the modifications
+to the database are performed.
+.It Li kpasswd_server = Va host[:port]
+Points to the server where all the password changes are performed.
+If there is no such entry, the kpasswd port on the admin_server host
+will be tried.
+.It Li tgs_require_subkey
+a boolan variable that defaults to false.
+Old DCE secd (pre 1.1) might need this to be true.
+.It Li auth_to_local_names = {
+.Bl -tag -width "xxx" -offset indent
+.It Va principal_name = Va username
+The given
+.Va principal_name
+will be mapped to the given
+.Va username
+if the
+.Va REALM
+is a default realm.
+.El
+.It Li }
+.It Li auth_to_local = HEIMDAL_DEFAULT
+Use the Heimdal default principal to username mapping.
+Applies to principals from the
+.Va REALM
+if and only if
+.Va REALM
+is a default realm.
+.It Li auth_to_local = DEFAULT
+Use the MIT default principal to username mapping.
+Applies to principals from the
+.Va REALM
+if and only if
+.Va REALM
+is a default realm.
+.It Li auth_to_local = DB:/path/to/db.txt
+Use a binary search of the given DB.  The DB must be a flat-text
+file sortedf in the "C" locale, with each record being a line
+(separated by either LF or CRLF) consisting of a principal name
+followed by whitespace followed by a username.
+Applies to principals from the
+.Va REALM
+if and only if
+.Va REALM
+is a default realm.
+.It Li auth_to_local = DB:/path/to/db
+Use the given DB, if there's a plugin for it.
+Applies to principals from the
+.Va REALM
+if and only if
+.Va REALM
+is a default realm.
+.It Li auth_to_local = RULE:...
+Use the given rule, if there's a plugin for it.
+Applies to principals from the
+.Va REALM
+if and only if
+.Va REALM
+is a default realm.
+.It Li auth_to_local = NONE
+No additional principal to username mapping is done. Note that
+.Va auth_to_local_names
+and any preceding
+.Va auth_to_local
+rules have precedence.
+.It Li pkinit_require_eku = BOOL
+If
+.Va true
+then the KDC PKINIT Extended Key Usage (EKU) OID (1.3.6.5.2.3.5)
+must be present in KDCs' PKINIT certificates.
+Defaults to
+.Va true .
+.It Li pkinit_require_krbtgt_otherName = BOOL
+If
+.Va true
+then the PKINIT Subject Alternative Name (SAN) for the TGS must
+be present in KDCs' PKINIT certificates, and must match their
+realm.
+Defaults to
+.Va true .
+.It Li pkinit_require_hostname_match = BOOL
+If
+.Va true
+then KDCs' PKINIT certificates must match their hostnames.
+Defaults to
+.Va false .
+.It Li pkinit_trustedCertifiers = BOOL
+If
+.Va true
+then PKINIT client will tell KDCs which trust anchors it trusts.
+Defaults to
+.Va true .
+.It Li disable_pac = BOOL
+If
+.Va true
+then the KDC will not sign tickets with PAC, which disables S4U2Proxy support.
+Defaults to
+.Va false .
+.El
+.It Li }
+.El
+.It Li [capaths]
+.Bl -tag -width "xxx" -offset indent
+.It Va client-realm Li = {
+.Bl -tag -width "xxx" -offset indent
+.It Va server-realm Li = Va hop-realm ...
+This serves two purposes. First the first listed
+.Va hop-realm
+tells a client which realm it should contact in order to ultimately
+obtain credentials for a service in the
+.Va server-realm .
+Secondly, it tells the KDC (and other servers) which realms are
+allowed in a multi-hop traversal from
+.Va client-realm
+to
+.Va server-realm .
+Except for the client case, the order of the realms are not important.
+.El
+.It Va }
+.El
+.It Li [logging]
+.Bl -tag -width "xxx" -offset indent
+.It Va entity Li = Va destination
+Specifies that
+.Va entity
+should use the specified
+.Li destination
+for logging.
+See the
+.Xr krb5_openlog 3
+manual page for a list of defined destinations.
+.El
+.It Li [kdc]
+.Bl -tag -width "xxx" -offset indent
+.It Li database Li = {
+.Bl -tag -width "xxx" -offset indent
+.It Li dbname Li = Va [DATBASETYPE:]DATABASENAME
+Use this database for this realm.  The
+.Va DATABASETYPE
+should be one of 'lmdb', 'db3', 'db1', 'db', 'sqlite', or 'ldap'.
+See the info documetation how to configure different database backends.
+.It Li realm Li = Va REALM
+Specifies the realm that will be stored in this database.
+It realm isn't set, it will used as the default database, there can
+only be one entry that doesn't have a
+.Li realm
+stanza.
+.It Li mkey_file Li = Pa FILENAME
+Use this keytab file for the master key of this database.
+If not specified
+.Va DATABASENAME Ns .mkey
+will be used.
+.It Li acl_file Li = PA FILENAME
+Use this file for the ACL list of this database.
+.It Li log_file Li = Pa FILENAME
+Use this file as the log of changes performed to the database.
+This file is used by
+.Nm ipropd-master
+for propagating changes to slaves.  It is also used by
+.Nm kadmind
+and
+.Nm kadmin
+(when used with the
+.Li -l
+option), and by all applications using
+.Nm libkadm5
+with the local backend, for two-phase commit functionality.  Slaves also
+use this.  Setting this to
+.Nm /dev/null
+disables two-phase commit and incremental propagation.  Use
+.Nm iprop-log
+to show the contents of this log file.
+.It Li log-max-size = Pa number
+When the log reaches this size (in bytes), the log will be truncated,
+saving some entries, and keeping the latest version number so as to not
+disrupt incremental propagation.  If set to a negative value then
+automatic log truncation will be disabled.  Defaults to 52428800 (50MB).
+.El
+.It Li }
+.It Li max-request = Va SIZE
+Maximum size of a kdc request.
+.It Li require-preauth = Va BOOL
+If set pre-authentication is required.
+.It Li ports = Va "list of ports"
+List of ports the kdc should listen to.
+.It Li addresses = Va "list of interfaces"
+List of addresses the kdc should bind to.
+.It Li enable-http = Va BOOL
+Should the kdc answer kdc-requests over http.
+.It Li tgt-use-strongest-session-key = Va BOOL
+If this is TRUE then the KDC will prefer the strongest key from the
+client's AS-REQ or TGS-REQ enctype list for the ticket session key that
+is supported by the KDC and the target principal when the target
+principal is a krbtgt principal.  Else it will prefer the first key from
+the client's AS-REQ enctype list that is also supported by the KDC and
+the target principal.  Defaults to FALSE.
+.It Li svc-use-strongest-session-key = Va BOOL
+Like tgt-use-strongest-session-key, but applies to the session key
+enctype of tickets for services other than krbtgt principals. Defaults
+to FALSE.
+.It Li preauth-use-strongest-session-key = Va BOOL
+If TRUE then select the strongest possible enctype from the client's
+AS-REQ for PA-ETYPE-INFO2 (i.e., for password-based pre-authentication).
+Else pick the first supported enctype from the client's AS-REQ.  Defaults
+to FALSE.
+.It Li use-strongest-server-key = Va BOOL
+If TRUE then the KDC picks, for the ticket encrypted part's key, the
+first supported enctype from the target service principal's hdb entry's
+current keyset. Else the KDC picks the first supported enctype from the
+target service principal's hdb entry's current keyset.  Defaults to TRUE.
+.It Li check-ticket-addresses = Va BOOL
+Verify the addresses in the tickets used in tgs requests.
+.\" XXX
+.It Li warn_ticket_addresses = Va BOOL
+Warn about, but allow, usage of tickets from hosts that don't match the
+addresses in the tickets.
+.It Li allow-null-ticket-addresses = Va BOOL
+Allow address-less tickets.
+.\" XXX
+.It Li enable_armored_pa_enc_timestamp = Va BOOL
+Enable armored encrypted timestamp pre-authentication with key
+strengthening.
+RFC 6113 says not to use PA-ENC-TIMESTAMP in FAST armored tunnels
+as there is a newer replacement, PA-ENC-CHALLENGE, but for
+interoperability with earlier versions of Heimdal, this is
+enabled by default for now.
+.It Li enable_unarmored_pa_enc_timestamp = Va BOOL
+Enable unarmored encrypted timestamp pre-authentication.
+Enabled by default for now, but in a future release will be
+disabled.
+.It Li enable-pkinit = Va BOOL
+Enable PKINIT (disabled by default).
+.It Li allow-anonymous = Va BOOL
+If the kdc is allowed to hand out anonymous tickets.
+.It Li synthetic_clients = Va BOOL
+If enabled then the KDC will issue tickets for clients that don't
+exist in the HDB provided that they use PKINIT, that PKINIT is
+enabled, and that the client's have certificates with PKINIT
+subject alternative names (SANs).
+.It Li synthetic_clients_max_life = Va TIME
+Maximum ticket lifetime for synthetic clients.
+Default: 5 minutes.
+.It Li synthetic_clients_max_renew = Va TIME
+Maximum ticket renewable lifetime for synthetic clients.
+Default: 5 minutes.
+.It Li pkinit_identity = Va HX509-STORE
+This is an HX509 store containing the KDC's PKINIT credential
+(private key and end-entity certificate).
+This is single valued, though multiple stores can be specified by
+separating them with commas.
+An
+.Va HX509-STORE
+is of the form
+.Va TYPE:name
+where
+.Va TYPE
+is one of
+.Va FILE, Va PEM-FILE, Va DER-FILE, Va PKCS12, Va PKCS11,
+or on OX X,
+.Va KEYCHAIN .
+The form of the
+.Va name
+depends on the
+.Va TYPE .
+For
+.Va FILE, Va PEM-FILE, Va DER-FILE,
+and
+.Va PKCS12
+the
+.Va name
+is a file path.
+See the Heimdal hx509 documentation for more information.
+.It Li pkinit_pool = Va HX509-STORE
+This is a multi-valued parameter naming one or more stores of
+intermediate certification authority (CA) certificates for the
+KDC's end entity certificate.
+.It Li pkinit_anchors = Va HX509-STORE
+This is a multi-valued parameter naming one or more stores of
+anchors for PKINIT client certificates.
+Note that the
+.Va DIR
+type of
+.Va HX509-STORE
+is also supported here.
+.Va DIR
+type stores are OpenSSL-style CA certificate hash directories.
+.It Li pkinit_kdc_ocsp = Va PATH
+This names a file whose contents is the DER encoding of an
+OCSPResponse for the KDC's end entity certificate.
+.It Li pkinit_kdc_friendly_name = Va NAME
+This is an optional friendly name of the KDC's end entity
+certificate.
+This is only helpful when the
+.Li pkinit_identity
+store contains many credentials.
+.It Li pkinit_principal_in_certificate = Va BOOL
+If set to
+.Va true
+then the KDC will match AS-REQ client principal names to the
+PKINIT
+.Va subjectAlternativeName
+values from the clients' certificates.
+Defaults to
+.Va true .
+.It Li pkinit_dh_min_bits = Va NUMBER
+Minimum acceptable modular Diffie-Hellman public key size in
+bits.
+.It Li pkinit_max_life_from_cert_extension = Va BOOL
+If set to
+.Va true
+then the KDC will override the
+.Va max_life
+attribute of the client principal's HDB record with a maximum
+ticket life taken from a certificate extension with OID
+.Va { iso(1) member-body(2) se(752) su(43) heim-pkix(16) 4 }
+and the DER encoding of an
+.Va INTEGER
+number of seconds.
+Alternatively, if the extended key usage OID
+.Va { iso(1) member-body(2) se(752) su(43) heim-pkix(16) 3 }
+is included in the client's certificate, then the
+.Va notAfter
+minus the current time will be used.
+.It Li pkinit_max_life_bound = Va TIME
+If set, this will be a hard bound on the maximum ticket lifetime
+taken from the client's certificate.
+As usual,
+.Va TIME
+can be given as a number followed by a unit, such as
+.Dq 2d
+for
+.Dq two days .
+.It Li pkinit_max_life_from_cert = Va TIME
+If set, this will override the
+.Va max_life
+attribute of the client principal's HDB record with the
+.Va notAfter
+of the client's certificate minus the current time, bounded to
+the given relative
+.Va TIME
+unless the
+.Li pkinit_max_life_from_cert_extension
+parameter is set and the client's certificate has that extension.
+As usual,
+.Va TIME
+can be given as a number followed by a unit, such as
+.Dq 2d
+for
+.Dq two days .
+.It Li enable_gss_preauth = Va boolean
+Enables pre-authentication using a GSS-API mechanism supported by the client and KDC.
+The GSS-API initiator and AS request client names must match, unless the
+.Li WELLKNOWN/FEDERATED
+name was used in the AS request, in which case the AS reply will contain the
+GSS-API initiator name. Authorization and mapping behavior may be customized
+by plugins. If synthetic clients are enabled, then the GSS-API initiator need
+not exist in the local database. GSS-API pre-authentication is disabled by
+default.
+.It Li enable_gss_auth_data = Va boolean
+When using GSS-API pre-authentication, includes a Kerberos authorization data
+element containing naming attributes associated with the GSS-API initiator. This
+is disabled by default as it may significantly increase the size of returned
+tickets.
+.It Li gss_mechanisms_allowed = Va mechs ...
+A list of GSS-API mechanisms that may be used for GSS-API pre-authentication.
+.It Li gss_cross_realm_mechanisms_allowed = Va mechs ...
+A list of GSS-API mechanisms that, when using the default authorization
+mechanism, will be permitted to map Kerberos principals in foreign realms. The
+list is empty by default. Initiator names from mechanisms not on this list will
+be mapped to an enterprise principal in the AS-REQ realm. This option is
+intended to avoid conflating GSS-API pre-authentication and Kerberos
+cross-realm authentication. The behavior is provided by the default
+authorization mechanism and will be overridden by an authorization plugin.
+Mechanisms may be identified by dot-separated OID or a short name.
+.It Li historical_anon_realm = Va boolean
+Enables pre-7.0 non-RFC-comformant KDC behavior.
+With this option set to
+.Li true
+the client realm in anonymous pkinit AS replies will be the requested realm,
+rather than the RFC-conformant
+.Li WELLKNOWN:ANONYMOUS
+realm.
+This can have a security impact on servers that expect to grant access to
+anonymous-but-authenticated to the KDC users of the realm in question:
+they would also grant access to unauthenticated anonymous users.
+As such, it is not recommend to set this option to
+.Li true.
+.It Li encode_as_rep_as_tgs_rep = Va BOOL
+Encode as-rep as tgs-rep to be compatible with mistakes older DCE secd did.
+.\" XXX
+.It Li kdc_warn_pwexpire = Va TIME
+The time before expiration that the user should be warned that her
+password is about to expire.
+.It Li logging = Va Logging
+What type of logging the kdc should use, see also [logging]/kdc.
+.It Li hdb-ldap-structural-object Va structural object
+If the LDAP backend is used for storing principals, this is the
+structural object that will be used when creating and when reading
+objects.
+The default value is account .
+.It Li hdb-ldap-create-base Va creation dn
+is the dn that will be appended to the principal when creating entries.
+Default value is the search dn.
+.It Li enable-digest = Va BOOL
+Should the kdc answer digest requests. The default is FALSE.
+.It Li digests_allowed = Va list of digests
+Specifies the digests the kdc will reply to. The default is
+.Li ntlm-v2 .
+.It Li enable-kx509 = Va boolean
+Enables kx509 service.
+.Pp
+The kx509 service is configurable for a number of cases:
+.Bl -tag -width "" -offset indent
+.It Li default certificates for user or service principals,
+.It Li non-default certificate requests including subject alternative names (SAN) and extended key usage (EKU) certificate extensions, for either client, server, or mixed usage.
+.El
+.Pp
+Distinct configurations are supported for all of these cases as
+shown below:
+.Bd -literal -offset indent
+[kdc]
+    enable-kx509 = yes | no
+    require_csr  = yes | no
+    require_initial_kca_tickets = yes | no
+    realm = {
+        <REALM> = {
+            kx509 = {
+                <label> = {
+                    <param> = <value>
+                }
+                hostbased_service = {
+                    <service> = {
+                        <param> = <value>
+                    }
+                }
+            }
+        }
+    }
+.Ed
+where
+.Va label
+is one of:
+.Bl -tag -width "xxx" -offset indent
+.It Li user
+for default certificates for user principals,
+.It Li root_user
+for default certificates for root user principals,
+.It Li admin_user
+for default certificates for admin user principals,
+.It Li hostbased_service
+for default certificates for host-based service principals, in which case the
+service name is used as shown above,
+.It Li client
+for non-default client certificates,
+.It Li server
+for non-default server certificates,
+.It Li mixed
+for non-default client and server certificates.
+.El
+and where the parameters are as follows:
+.Bl -tag -width "xxx" -offset indent
+.It Li ca = Va file
+Specifies the PEM credentials for the kx509 / bx509d certification
+authority.
+If not specified for any specific use-case, then that use-case
+will be disabled.
+.It Li max_cert_lifetime = Va NUMunit
+Specifies the maximum certificate lifetime as a decimal number
+and an optional unit (the default unit is
+.Dq day
+).
+.It Li force_cert_lifetime = Va NUMunit
+Specifies a minimum certificate lifetime as a decimal number and
+an optional unit (the default unit is
+.Dq day
+).
+.It Li allow_extra_lifetime = Va boolean
+Indicates whether a client may request longer lifetimes than
+their authentication credentials.
+Defaults to false.
+If a
+.Li force_cert_lifetime
+is specified, then
+.Li allow_extra_lifetime
+is implicitly forced to
+.Va true .
+.It Li require_initial_kca_tickets = Va boolean
+Specified whether to require that tickets for the
+.Li kca_service
+service principal be INITIAL.
+This may be set on a per-realm basis as well as globally.
+Defaults to true for the global setting.
+.It Li include_pkinit_san = Va boolean
+If true then the kx509 client principal's name and realm will be
+included in an
+.Li id-pkinit-san
+subject alternative name certificate extension.
+This can be set on a per-realm basis as well as globally.
+Defaults to true for the global setting.
+.It Li email_domain = Va domain
+If set then the kx509 client user principal's name at the given
+domain will be included in an
+.Li rfc822Name
+subject alternative name certificate extension.
+This can be set on a per-realm basis as well as globally.
+Defaults to false for the global setting.
+.It Li include_dnsname_san = Va boolean
+If true then a kx509 host-based or domain-based client
+principal's hostname will be included in an
+.Li dNSName
+subject alternative name certificate extension, with the
+downcased realm as the domainname.  This can be set on a
+per-realm basis as well as
+globally.  Defaults to false for the global setting.
+.It Li ekus = Va OID
+List of OIDs to include as EKUs.
+.It Li subject_name = Va DN
+Specifies a subject name that should either be empty or contain
+variable interpolation as described below for
+.Va template_cert .
+The subject may be the empty string, causing the issued
+certificates' subject names to be empty.
+.It Li template_cert = Va store
+Specifies the hx509 store (e.g.,
+.Va PEM-FILE:path )
+with a template
+for the certificates to be issued to kx509 clients whose
+principal names have one component (i.e., are user principals).
+A template is a certificate with variables to be interpolated in
+the subjectName.  The following variables can be interpolated in
+the subject name using
+.Va ${variable}
+syntax:
+.Bl -tag -width "xxx" -offset indent
+.It principal-name
+The full name of the kx509 client principal.
+.It principal-name-without-realm
+The full name of the kx509 client principal, excluding the realm name.
+.It principal-name-realm
+The name of the client principal's realm.
+.It principal-component0
+The first component of the client principal.
+.It principal-component1
+The second component of the client principal.
+.It principal-component2
+The third component of the client principal.
+.It principal-service-name
+The name of the service.
+.It principal-host-name
+The name of the host.
+.El
+.Pp
+If a template and subject name are not specified and no default
+SANs are configured, then no certificate will be issued.
+Otherwise if a template and subject name are not specified, then
+subject of the certificate will be empty.
+.El
+.El
+.Pp
+.It Li [hdb]
+.Bl -tag -width "xxx" -offset indent
+.It Li db-dir = Va path
+This parameter defines a directory that can contain:
+.Bl -tag -width "xxx" -offset indent
+.It Va kdc.conf
+A configuration file with the same format as krb5.conf that will
+be included.
+.It Va m-key
+The master key file.
+.It Va kdc.log
+The default logfile for the KDC when a logfile is not specified in
+.Li [logging]
+.It Va kadm5.acl
+The access controls for
+.Nm kadmind .
+.It Va log
+The (binary) log of transactions used for
+.Nm HDB
+replication via the
+.Nm iprop
+protocol.
+See
+.Nm iprop-log(1)
+for more detail.
+.It Va pki-mapping
+The default PKINIT mapping file if one is not specified in
+.Va [kdc] pkinit_mappings_file .
+.El
+and other files related to
+.Nm iprop
+operation.
+.It Li new_service_key_delay = Va time
+Sets a bias such that new keys are not taken into service until
+after the given time has passed since they were set.
+This is useful for key rotation on concrete principals shared by
+multiple instances of an application: set this time to twice or
+more the keytab fetch period used by applications.
+.It Li enable_virtual_hostbased_princs = Va boolean
+Heimdal supports a notion of virtual host-based service
+principals whose keys are derived from those of a base namespace
+principal of the form
+.Nm WELLKNOWN/HOSTBASED-NAMESPACE/svc/hostname .
+The service name can be wild-carded as
+.Va _ .
+Non-wildcarded services have to be listed in the
+.Li virtual_hostbased_princ_svcs
+parameter (see below).
+This parameter enables this feature, which is disabled by
+default.
+.It Li virtual_hostbased_princ_ndots = Va Integer
+Minimum number of label-separating periods in virtual host-based
+service principals' hostname component.
+.It Li virtual_hostbased_princ_maxdots = Va Integer
+Maximum number of label-separating periods in namespaces'
+hostname component.
+.It Li virtual_hostbased_princ_svcs = Va service-name
+This multi-valued parameter lists service names not to wildcard
+when searching for a namespace for a virtual host-based service
+principal.
+Other service names will have keys derived from a matching
+namespace with a wild-carded service name.
+This allows one to have different attributes for different
+services.
+For example, the
+.Nm "host"
+service can be configured to have the ok-as-delegate flag while
+all others do not.
+.El
+.Pp
+.It Li [bx509]
+This section contains online certification authority configuration, much
+like
+.Li kx509
+in the
+.Li [kdc]
+section, but with the
+.Li kx509
+layer removed.
+.Bd -literal -offset indent
+[kdc]
+    realm = {
+        <REALM> = {
+            ...
+        }
+    }
+.Ed
+.It Li [get-tgt]
+.Bl -tag -width "xxx" -offset indent
+.It Li no_addresses = Va BOOL
+If set to
+.Va true
+then the
+.Va /get-tgt
+end-point of the
+.Xr bx509d 8
+service will issue address-less TGTs.
+If set to
+.Va false
+then the
+.Va /get-tgt
+end-point of the
+.Xr bx509d 8
+service will include the client's IP address in the TGT it issues
+it.
+Defaults to
+.Va true .
+.It Li allow_addresses = Va BOOL
+If set to
+.Va true
+then the
+.Va /get-tgt
+end-point of the
+.Xr bx509d 8
+service will add arbitrary addresses requested by clients to the
+TGTs it issues them.
+Defaults to
+.Va false .
+.El
+.Pp
+Certification authority related parameters are as for
+.Va bx509 .
+.It Li [kadmin]
+.Bl -tag -width "xxx" -offset indent
+.It Li password_lifetime = Va time
+If a principal already have its password set for expiration, this is
+the time it will be valid for after a change.
+.It Li default_keys = Va keytypes...
+For each entry in
+.Va default_keys
+try to parse it as a sequence of
+.Va etype:salttype:salt
+syntax of this if something like:
+.Pp
+[(des|des3|etype):](pw-salt|afs3-salt)[:string]
+.Pp
+If
+.Ar etype
+is omitted it means everything, and if string is omitted it means the
+default salt string (for that principal and encryption type).
+Additional special values of keytypes are:
+.Bl -tag -width "xxx" -offset indent
+.It Li v5
+The Kerberos 5 salt
+.Va pw-salt
+.El
+.It Li default_key_rules = Va {
+.Bl -tag -width "xxx" -offset indent
+.It Va globing-rule Li = Va keytypes...
+a globbing rule to matching a principal, and when true, use the
+keytypes as specified the same format as [kadmin]default_keys .
+.El
+.It Li }
+.It Li prune-key-history = Va BOOL
+When adding keys to the key history, drop keys that are too old to match
+unexpired tickets (based on the principal's maximum ticket lifetime).
+If the KDC keystore is later compromised traffic protected with the
+discarded older keys may remain protected.  This also keeps the HDB
+records for principals with key history from growing without bound.
+The default (backwards compatible) value is "false".
+.It Li use_v4_salt = Va BOOL
+When true, this is the same as
+.Pp
+.Va default_keys = Va des3:pw-salt Va v4
+.Pp
+and is only left for backwards compatibility.
+.It Li [password_quality]
+Check the Password quality assurance in the info documentation for
+more information.
+.Bl -tag -width "xxx" -offset indent
+.It Li check_library = Va library-name
+Library name that contains the password check_function
+.It Li check_function = Va function-name
+Function name for checking passwords in check_library
+.It Li policy_libraries = Va library1 ... libraryN
+List of libraries that can do password policy checks
+.It Li policies = Va policy1 ... policyN
+List of policy names to apply to the password. Builtin policies are
+among other minimum-length, character-class, external-check.
+.El
+.El
+.El
+.Sh TOKEN EXPANSION
+The values of some parameters are subject to percent token expansion.
+Expansions supported on all platforms:
+.Bl -tag -width "xxx" -offset indent
+.It %{LIBDIR}
+The install location of Heimdal libraries.
+.It %{BINDIR}
+The install location of Heimdal user programs.
+.It %{LIBEXEC}
+The install location of Heimdal services.
+.It %{SBINDIR}
+The install location of Heimdal admin programs.
+.It %{username}
+The current username.
+.It %{TEMP}
+A temporary directory.
+.It %{USERID}
+The current user's SID (Windows) or effective user ID (POSIX).
+.It %{uid}
+The current user's SID (Windows) or real user ID (POSIX).  On POSIX it is best
+to use the
+.Va %{euid}
+token instead (see below).
+.It %{null}
+The empty string.
+.El
+.Pp
+Expansions supported on POSIX-like platforms:
+.Bl -tag -width "xxx" -offset indent
+.It %{euid}
+The current effective user ID.
+.It %{loginname}
+The username of the logged-in user for this terminal.
+.It %{LOCALSTATEDIR}
+The install location of Heimdal databases.
+.El
+.Pp
+On Windows, several additional tokens can also be expanded:
+.Bl -tag -width "xxx" -offset indent
+.It %{APPDATA}
+Roaming application data (for current user).
+.It %{COMMON_APPDATA}
+Application data (all users).
+.It %{LOCAL_APPDATA}
+Local application data (for current user).
+.It %{SYSTEM}
+Windows System folder.
+.It %{WINDOWS}
+Windows folder.
+.It %{USERCONFIG}
+Per user Heimdal configuration file path.
+.It %{COMMONCONFIG}
+Common Heimdal configuration file path.
+.El
+.Sh ENVIRONMENT
+.Ev KRB5_CONFIG
+points to the configuration file to read.
+.Sh FILES
+.Bl -tag -width "/etc/krb5.conf"
+.It Pa /etc/krb5.conf
+configuration file for Kerberos 5.
+.El
+.Sh EXAMPLES
+.Bd -literal -offset indent
+[libdefaults]
+	default_realm = FOO.SE
+	name_canon_rules = as-is:realm=FOO.SE
+	name_canon_rules = qualify:domain=foo.se:realm=FOO.SE
+	name_canon_rules = qualify:domain=bar.se:realm=FOO.SE
+	name_canon_rules = nss
+[domain_realm]
+	.foo.se = FOO.SE
+	.bar.se = FOO.SE
+[realms]
+	FOO.SE = {
+		kdc = kerberos.foo.se
+		default_domain = foo.se
+	}
+[logging]
+	kdc = FILE:/var/heimdal/kdc.log
+	kdc = SYSLOG:INFO
+	default = SYSLOG:INFO:USER
+[kadmin]
+	default_key_rules = {
+		*/ppp@* = arcfour-hmac-md5:pw-salt
+	}
+.Ed
+.Sh DIAGNOSTICS
+Since
+.Nm
+is read and parsed by the krb5 library, there is not a lot of
+opportunities for programs to report parsing errors in any useful
+format.
+To help overcome this problem, there is a program
+.Nm verify_krb5_conf
+that reads
+.Nm
+and tries to emit useful diagnostics from parsing errors.
+Note that this program does not have any way of knowing what options
+are actually used and thus cannot warn about unknown or misspelled
+ones.
+.Sh SEE ALSO
+.Xr kinit 1 ,
+.Xr krb5_openlog 3 ,
+.Xr strftime 3 ,
+.Xr verify_krb5_conf 8

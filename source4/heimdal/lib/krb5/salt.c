@@ -43,6 +43,7 @@ krb5_salttype_to_string (krb5_context context,
     struct _krb5_encryption_type *e;
     struct salt_type *st;
 
+    *string = NULL;
     e = _krb5_find_enctype (etype);
     if (e == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
@@ -53,11 +54,8 @@ krb5_salttype_to_string (krb5_context context,
     for (st = e->keytype->string_to_key; st && st->type; st++) {
 	if (st->type == stype) {
 	    *string = strdup (st->name);
-	    if (*string == NULL) {
-		krb5_set_error_message (context, ENOMEM,
-					N_("malloc: out of memory", ""));
-		return ENOMEM;
-	    }
+	    if (*string == NULL)
+		return krb5_enomem(context);
 	    return 0;
 	}
     }
@@ -92,6 +90,69 @@ krb5_string_to_salttype (krb5_context context,
 			   N_("salttype %s not supported", ""), string);
     return HEIM_ERR_SALTTYPE_NOSUPP;
 }
+
+/*
+ * Like MIT's krb5_string_to_keysalts(), but simpler and with a context
+ * argument.
+ */
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_string_to_keysalts2(krb5_context context, const char *string,
+                         size_t *nksaltp, krb5_key_salt_tuple **ksaltp)
+{
+    /* deleted: tupleseps, ksaltseps, dups */
+    krb5_key_salt_tuple *tmp = NULL;
+    krb5_error_code ret = 0;
+    char *copy, *token, *stype_str;
+    char *lasts = NULL;
+    krb5_enctype etype;
+    krb5_salttype stype;
+    size_t i;
+
+    *ksaltp = NULL;
+    *nksaltp = 0;
+    if ((copy = strdup(string)) == NULL)
+        return krb5_enomem(context);
+    for (token = strtok_r(copy, ", \t", &lasts), ret = 0;
+         token != NULL;
+         token = strtok_r(NULL, ", \t", &lasts)) {
+        if ((stype_str = strchr(token, ':')) != NULL)
+            *(stype_str++) = '\0';
+        if ((ret = krb5_string_to_enctype(context, token, &etype)))
+            continue;
+        if (stype_str == NULL)
+            stype = KRB5_PW_SALT;
+        else if ((ret = krb5_string_to_salttype(context, etype, stype_str, &stype)))
+            continue;
+        for (i = 0; i < *nksaltp; i++) {
+            if ((*ksaltp)[i].ks_enctype == etype &&
+                (*ksaltp)[i].ks_salttype == stype)
+                goto skip;
+        }
+        tmp = realloc(*ksaltp, ((*nksaltp) + 1) * sizeof(**ksaltp));
+        if (tmp == NULL) {
+            ret = krb5_enomem(context);
+            break;
+        }
+        *ksaltp = tmp;
+        (*ksaltp)[*nksaltp].ks_enctype = etype;
+        (*ksaltp)[*nksaltp].ks_salttype = stype;
+        (*nksaltp)++;
+skip:
+        (void)1;
+    }
+    free(copy);
+    if (ret == ENOMEM) {
+        free(*ksaltp);
+        *nksaltp = 0;
+        *ksaltp = NULL;
+    } else if (*nksaltp) {
+        return 0;
+    } else if (ret == 0) {
+        return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    return ret;
+}
+
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_pw_salt(krb5_context context,
@@ -134,7 +195,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_string_to_key_data (krb5_context context,
 			 krb5_enctype enctype,
 			 krb5_data password,
-			 krb5_principal principal,
+			 krb5_const_principal principal,
 			 krb5_keyblock *key)
 {
     krb5_error_code ret;
@@ -152,7 +213,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_string_to_key (krb5_context context,
 		    krb5_enctype enctype,
 		    const char *password,
-		    krb5_principal principal,
+		    krb5_const_principal principal,
 		    krb5_keyblock *key)
 {
     krb5_data pw;
@@ -263,11 +324,8 @@ krb5_string_to_key_derived(krb5_context context,
     keylen = et->keytype->bits / 8;
 
     ALLOC(kd.key, 1);
-    if(kd.key == NULL) {
-	krb5_set_error_message (context, ENOMEM,
-				N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (kd.key == NULL)
+	return krb5_enomem(context);
     ret = krb5_data_alloc(&kd.key->keyvalue, et->keytype->size);
     if(ret) {
 	free(kd.key);
@@ -277,13 +335,12 @@ krb5_string_to_key_derived(krb5_context context,
     tmp = malloc (keylen);
     if(tmp == NULL) {
 	krb5_free_keyblock(context, kd.key);
-	krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
+	return krb5_enomem(context);
     }
     ret = _krb5_n_fold(str, len, tmp, keylen);
     if (ret) {
 	free(tmp);
-	krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
+	krb5_enomem(context);
 	return ret;
     }
     kd.schedule = NULL;

@@ -58,6 +58,7 @@
 
 #ifdef __STDC__
 #include <stdarg.h>
+#include <stddef.h>
 #endif
 
 struct error_table {

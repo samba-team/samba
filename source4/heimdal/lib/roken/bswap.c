@@ -34,6 +34,23 @@
 #include <config.h>
 #include "roken.h"
 
+#ifndef HAVE_BSWAP64
+
+ROKEN_LIB_FUNCTION uint64_t ROKEN_LIB_CALL
+bswap64 (uint64_t val)
+{
+    return
+        (val & 0xffULL) << 56 |
+	(val & 0xff00ULL) << 40 |
+	(val & 0xff0000ULL) << 24 |
+	(val & 0xff000000ULL) << 8 |
+	(val & 0xff00000000ULL) >> 8 |
+	(val & 0xff0000000000ULL) >> 24 |
+	(val & 0xff000000000000ULL) >> 40 |
+	(val & 0xff00000000000000ULL) >> 56 ;
+}
+#endif
+
 #ifndef HAVE_BSWAP32
 
 ROKEN_LIB_FUNCTION unsigned int ROKEN_LIB_CALL

@@ -1,0 +1,427 @@
+# German translation of »heim_com_err569856«.
+# This file is distributed under the same license as the Heimdal package.
+# Copyright (C) 1996-2000 Kungliga Tekniska Högskolan.
+# Copyright (C) of this file 2016 Chris Leick <c.leick@vollbio.de>.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Heimdal 1.7\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-09-07 15:23+0100\n"
+"PO-Revision-Date: 2016-12-22 19:09+0100\n"
+"Last-Translator: Chris Leick <c.leick@vollbio.de>\n"
+"Language-Team: German <debian-l10n-german@lists.debian.org>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#. 000
+#: ../lib/hx509/hx509_err.c:11
+msgid "ASN.1 failed call to system time library"
+msgstr ""
+"ASN.1 hat (fehlerhafterweise) die Systemzeitbibliothek nicht aufgerufen."
+
+#. 001
+#: ../lib/hx509/hx509_err.c:12
+msgid "Extension not found"
+msgstr "Erweiterung nicht gefunden"
+
+#. 002
+#: ../lib/hx509/hx509_err.c:13
+msgid "Certification path not found"
+msgstr "Zertifizierungspfad nicht gefunden"
+
+#. 003
+#: ../lib/hx509/hx509_err.c:14
+msgid "Parent certificate is not a CA"
+msgstr "übergeordnetes Zertifikat ist keine CA"
+
+#. 004
+#: ../lib/hx509/hx509_err.c:15
+msgid "CA path too deep"
+msgstr "CA-Pfad zu tief"
+
+#. 005
+#: ../lib/hx509/hx509_err.c:16
+msgid "Signature algorithm not supported"
+msgstr "Signaturalgorithmus nicht unterstützt"
+#. 006
+#: ../lib/hx509/hx509_err.c:17
+msgid "Signature algorithm doesn't match certificate key"
+msgstr "Signaturalgorithmus passt nicht zu Zertifikatsschlüssel"
+
+#. 007
+#: ../lib/hx509/hx509_err.c:18
+msgid "Certificate used before it became valid"
+msgstr "Zertifikat benutzt, bevor es gültig wurde"
+
+#. 008
+#: ../lib/hx509/hx509_err.c:19
+msgid "Certificate used after it became invalid"
+msgstr "Zertifikat benutzt, nachdem es ungültig wurde"
+
+#. 009
+#: ../lib/hx509/hx509_err.c:20
+msgid "Private key required for the operation is missing"
+msgstr "Der für die Transaktion benötigte private Schlüssel fehlt."
+
+#. 010
+#: ../lib/hx509/hx509_err.c:21
+msgid "Algorithm not supported"
+msgstr "Algorithmus nicht unterstützt"
+
+#. 011
+#: ../lib/hx509/hx509_err.c:22
+msgid "Issuer couldn't be found"
+msgstr "Aussteller konnte nicht gefunden werden."
+
+#. 012
+#: ../lib/hx509/hx509_err.c:23
+msgid "Error verifing constraints"
+msgstr "Fehler beim Prüfen der Bedingung"
+
+#. 013
+#: ../lib/hx509/hx509_err.c:24
+msgid "Number too large"
+msgstr "Zahl zu groß"
+
+#. 014
+#: ../lib/hx509/hx509_err.c:25
+msgid "Error while verifing name constraints"
+msgstr "Fehler beim Prüfen der Namensbedingungen"
+
+#. 015
+#: ../lib/hx509/hx509_err.c:26
+msgid "Path is too long, failed to find valid anchor"
+msgstr "Pfad ist zu lang, Suche nach gültigem Verankerungspunkt fehlgeschlagen."
+
+#. 016
+#: ../lib/hx509/hx509_err.c:27
+msgid "Required keyusage for this certificate is missing"
+msgstr "Schlüsselbenutzungsbedingung für dieses Zertifikat fehlt"
+
+#. 017
+#: ../lib/hx509/hx509_err.c:28
+msgid "Certificate not found"
+msgstr "Zertifikat nicht gefunden"
+
+#. 018
+#: ../lib/hx509/hx509_err.c:29
+msgid "Unknown lock command"
+msgstr "unbekannter Sperrbefehl"
+
+#. 019
+#: ../lib/hx509/hx509_err.c:30
+msgid "Parent certificate is a CA"
+msgstr "Übergeordnetes Zertifikat ist eine CA."
+
+#. 020
+#: ../lib/hx509/hx509_err.c:31
+msgid "Extra data was found after the structure"
+msgstr "Nach der Struktur wurden zusätzliche Daten gefunden."
+
+#. 021
+#: ../lib/hx509/hx509_err.c:32
+msgid "Proxy certificate is invalid"
+msgstr "Proxy-Zertifikat ist ungültig."
+
+#. 022
+#: ../lib/hx509/hx509_err.c:33
+msgid "Proxy certificate name is wrong"
+msgstr "Proxy-Zertifikatsname ist falsch."
+
+#. 023
+#: ../lib/hx509/hx509_err.c:34
+msgid "Name is malformated"
+msgstr "Name ist missgestaltet."
+
+#. 024
+#: ../lib/hx509/hx509_err.c:35
+msgid "Certificate is malformated"
+msgstr "Zertifikat ist missgestaltet."
+
+#. 025
+#: ../lib/hx509/hx509_err.c:36
+# EKU = Extended key usage
+msgid "Certificate is missing a required EKU"
+msgstr "Dem Zertifikat fehlt ein erforderlicher EKU."
+
+#. 026
+#: ../lib/hx509/hx509_err.c:37
+msgid "Proxy certificate not canonicalize"
+msgstr "Proxy-Zertifikat nicht in Normalform"
+
+#. 027
+#. 028
+#. 029
+#. 030
+#. 031
+#. 032
+#: ../lib/hx509/hx509_err.c:43
+msgid "Failed to create signature"
+msgstr "Erstellen der Signatur fehlgeschlagen"
+
+#. 033
+#: ../lib/hx509/hx509_err.c:44
+msgid "Missing signer data"
+msgstr "fehlende Unterzeichnerdaten"
+
+#. 034
+#: ../lib/hx509/hx509_err.c:45
+msgid "Couldn't find signers certificate"
+msgstr "Zertifikat des Unterzeichners konnte nicht gefunden werden."
+
+#. 035
+#: ../lib/hx509/hx509_err.c:46
+msgid "No data to perform the operation on"
+msgstr "keine Daten, mit denen die Transaktion durchgeführt werden kann"
+
+#. 036
+#: ../lib/hx509/hx509_err.c:47
+msgid "Data in the message is invalid"
+msgstr "Daten in Nachricht sind ungültig"
+
+#. 037
+#: ../lib/hx509/hx509_err.c:48
+msgid "Padding in the message invalid"
+msgstr "Füllzeichen in Nachricht ungültig"
+
+#. 038
+#: ../lib/hx509/hx509_err.c:49
+msgid "Couldn't find recipient certificate"
+msgstr "Empfängerzertifikat konnte nicht gefunden werden."
+
+#. 039
+#: ../lib/hx509/hx509_err.c:50
+msgid "Mismatch bewteen signed type and unsigned type"
+msgstr ""
+"keine Übereinstimmung zwischen vorzeichenbehafteten und vorzeichenlosen Typ"
+
+#. 040
+#. 041
+#. 042
+#. 043
+#. 044
+#. 045
+#. 046
+#. 047
+#. 048
+#. 049
+#. 050
+#. 051
+#. 052
+#. 053
+#. 054
+#. 055
+#. 056
+#. 057
+#. 058
+#. 059
+#. 060
+#. 061
+#. 062
+#. 063
+#. 064
+#: ../lib/hx509/hx509_err.c:75
+msgid "Internal error in the crypto engine"
+msgstr "interner Fehler im Verschlüsselungsprogramm"
+
+#. 065
+#: ../lib/hx509/hx509_err.c:76
+msgid "External error in the crypto engine"
+msgstr "externer Fehler im Verschlüsselungsprogramm"
+
+#. 066
+#: ../lib/hx509/hx509_err.c:77
+msgid "Signature missing for data"
+msgstr "Signatur für Daten fehlt."
+
+#. 067
+#: ../lib/hx509/hx509_err.c:78
+msgid "Signature is not valid"
+msgstr "Signatur ist ungültig."
+
+#. 068
+#: ../lib/hx509/hx509_err.c:79
+# FIXME s/Sigature/Signature/
+msgid "Sigature doesn't provide confidentiality"
+msgstr "Signatur stellt keine Vertraulichkeit bereit."
+
+#. 069
+#: ../lib/hx509/hx509_err.c:80
+msgid "Invalid format on signature"
+msgstr "ungültiges Format bei Signatur"
+
+#. 070
+#: ../lib/hx509/hx509_err.c:81
+msgid "Mismatch bewteen oids"
+msgstr "keine Übereinstimmung der Oids"
+
+#. 071
+#: ../lib/hx509/hx509_err.c:82
+msgid "No prompter function defined"
+msgstr "keine Eingabeaufforderungsfunktion definiert"
+
+#. 072
+# FIXME s/non/none/
+#: ../lib/hx509/hx509_err.c:83
+msgid "Signature require signer, but non available"
+msgstr "Signatur erfordert Unterzeichner, aber keiner verfügbar"
+
+#. 073
+#. 074
+#: ../lib/hx509/hx509_err.c:84 ../lib/hx509/hx509_err.c:85
+msgid "RSA public encyption failed"
+msgstr "RSA-Verschlüsselung mit öffentlichem Schlüssel fehlgeschlagen"
+
+#. 075
+#. 076
+#: ../lib/hx509/hx509_err.c:86 ../lib/hx509/hx509_err.c:87
+msgid "RSA private decryption failed"
+msgstr "RSA-Entschlüsselung mit privatem Schlüssel fehlgeschlagen"
+
+#. 077
+#. 078
+#. 079
+#. 080
+#. 081
+#. 082
+#. 083
+#. 084
+#. 085
+#. 086
+#. 087
+#. 088
+#. 089
+#. 090
+#. 091
+#. 092
+#. 093
+#. 094
+#. 095
+#. 096
+#: ../lib/hx509/hx509_err.c:107
+# CRL = Certificat revocation list
+msgid "CRL used before it became valid"
+msgstr "CRL benutzt, bevor sie gültig wurde"
+
+#. 097
+#: ../lib/hx509/hx509_err.c:108
+msgid "CRL used after it became invalid"
+msgstr "CRL benutzt, nachdem sie ungültig wurde"
+
+#. 098
+#: ../lib/hx509/hx509_err.c:109
+msgid "CRL have invalid format"
+msgstr "CRL hat ungültiges Format"
+
+#. 099
+#: ../lib/hx509/hx509_err.c:110
+msgid "Certificate is revoked"
+msgstr "Zertifikat wurde widerrufen"
+
+#. 100
+#: ../lib/hx509/hx509_err.c:111
+msgid "No revoke status found for certificates"
+msgstr "kein Widerrufsstatus für Zertifikate gefunden"
+
+#. 101
+#: ../lib/hx509/hx509_err.c:112
+msgid "Unknown extension"
+msgstr "unbekannte Erweiterung"
+
+#. 102
+# OSCP = online status certificate protocol
+#: ../lib/hx509/hx509_err.c:113
+msgid "Got wrong CRL/OCSP data from server"
+msgstr "falsche CRL-/OCSP-Daten vom Server bekommen"
+
+#. 103
+#: ../lib/hx509/hx509_err.c:114
+msgid "Doesn't have same parent as other certificates"
+msgstr "hat nicht dasselbe übergeordnete Zertifikat wie andere Zertifikate"
+
+#. 104
+#: ../lib/hx509/hx509_err.c:115
+msgid "Certificates not in OCSP reply"
+msgstr "Zertifikate nicht in OCSP-Antwort"
+
+#. 105
+#. 106
+#. 107
+#. 108
+#: ../lib/hx509/hx509_err.c:119
+msgid "No local key attribute"
+msgstr "kein lokales Schlüsselattribut"
+
+#. 109
+#: ../lib/hx509/hx509_err.c:120
+msgid "Failed to parse key"
+msgstr "Auswerten des Schlüssels fehlgeschlagen"
+
+#. 110
+#: ../lib/hx509/hx509_err.c:121
+msgid "Unsupported operation"
+msgstr "nicht unterstützte Transaktion"
+
+#. 111
+#: ../lib/hx509/hx509_err.c:122
+msgid "Unimplemented operation"
+msgstr "nicht implementierte Transaktion"
+
+#. 112
+#: ../lib/hx509/hx509_err.c:123
+msgid "Failed to parse name"
+msgstr "Auswerten des Namens fehlgeschlagen"
+
+#. 113
+#. 114
+#. 115
+#. 116
+#. 117
+#. 118
+#. 119
+#. 120
+#. 121
+#. 122
+#. 123
+#. 124
+#. 125
+#. 126
+#. 127
+#. 128
+#: ../lib/hx509/hx509_err.c:139
+msgid "No smartcard reader/device found"
+msgstr "kein Smartcard-Leser/-Gerät gefunden"
+
+#. 129
+#: ../lib/hx509/hx509_err.c:140
+msgid "No smartcard in reader"
+msgstr "keine Smartcard im Leser"
+
+#. 130
+#: ../lib/hx509/hx509_err.c:141
+msgid "No supported mech(s)"
+msgstr "keine unterstützten Mechs"
+
+#. 131
+#: ../lib/hx509/hx509_err.c:142
+msgid "Token or slot failed in inconsistent way"
+msgstr "Inkonsistenter Fehlschlag bei Token oder Slot"
+
+#. 132
+#: ../lib/hx509/hx509_err.c:143
+msgid "Failed to open session to slot"
+msgstr "Öffnen von Sitzung an Slot fehlgeschlagen"
+
+#. 133
+#: ../lib/hx509/hx509_err.c:144
+msgid "Failed to login to slot"
+msgstr "Anmelden an Slot fehlgeschlagen"
+
+#. 134
+#: ../lib/hx509/hx509_err.c:145
+msgid "Failed to load PKCS module"
+msgstr "Laden des PKCS-Moduls fehlgeschlagen"

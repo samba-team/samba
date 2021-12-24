@@ -32,11 +32,9 @@
  */
 
 #include <config.h>
+#include <roken.h>
 
 #include "rc2.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 /*
  * Implemented from Peter Gutmann's "Specification for Ron Rivests Cipher No.2"

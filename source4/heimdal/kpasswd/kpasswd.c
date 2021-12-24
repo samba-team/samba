@@ -64,25 +64,27 @@ change_password(krb5_context context,
     krb5_error_code ret;
     char pwbuf[BUFSIZ];
     char *msg, *name;
+    int aret;
 
     krb5_data_zero (&result_code_string);
     krb5_data_zero (&result_string);
 
     name = msg = NULL;
     if (principal == NULL)
-	asprintf(&msg, "New password: ");
+	aret = asprintf(&msg, "New password: ");
     else {
 	ret = krb5_unparse_name(context, principal, &name);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_unparse_name");
 
-	asprintf(&msg, "New password for %s: ", name);
+	aret = asprintf(&msg, "New password for %s: ", name);
     }
 
-    if (msg == NULL)
+    if (aret == -1 || msg == NULL)
 	krb5_errx (context, 1, "out of memory");
 
-    ret = UI_UTIL_read_pw_string (pwbuf, sizeof(pwbuf), msg, 1);
+    ret = UI_UTIL_read_pw_string (pwbuf, sizeof(pwbuf), msg,
+				  UI_UTIL_FLAG_VERIFY);
     free(msg);
     if (name)
 	free(name);

@@ -1,0 +1,5 @@
+#
+# Test GSS-API mechglue configuration file.
+#
+test_negoex_1 2.25.1414534758 @objdir@/../../lib/gssapi/.libs/test_negoex_mech.so
+test_negoex_2 2.25.1175737388 @objdir@/../../lib/gssapi/.libs/test_negoex_mech.so

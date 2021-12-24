@@ -81,14 +81,16 @@ rk_undumpdata(const char *filename, void **buf, size_t *size)
     sret = net_read(fd, *buf, *size);
     if (sret < 0)
 	ret = errno;
-    else if (sret != (ssize_t)*size) {
+    else if (sret != (ssize_t)*size)
 	ret = EINVAL;
-	free(*buf);
-	*buf = NULL;
-    } else
+    else
 	ret = 0;
 
- out:
+  out:
+    if (ret) {
+	free(*buf);
+	*buf = NULL;
+    }
     close(fd);
     return ret;
 }

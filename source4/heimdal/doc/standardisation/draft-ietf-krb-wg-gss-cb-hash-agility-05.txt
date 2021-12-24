@@ -1,0 +1,673 @@
+
+
+
+NETWORK WORKING GROUP                                           S. Emery
+Internet-Draft                                          Sun Microsystems
+Updates: 4121 (if approved)                             November 3, 2008
+Intended status: Standards Track
+Expires: May 7, 2009
+
+
+        Kerberos Version 5 GSS-API Channel Binding Hash Agility
+              draft-ietf-krb-wg-gss-cb-hash-agility-05.txt
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on May 7, 2009.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                  [Page 1]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+Abstract
+
+   Currently, channel bindings are implemented using a MD5 hash in the
+   Kerberos Version 5 Generic Security Services Application Programming
+   Interface (GSS-API) mechanism [RFC4121].  This document updates
+   RFC4121 to allow channel bindings using algorithms negotiated based
+   on Kerberos crypto framework as defined in RFC3961.  In addition,
+   because this update makes use of the last extensible field in the
+   Kerberos client-server exchange message, extensions are defined to
+   allow future protocol extensions.
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   2.  Conventions Used in This Document  . . . . . . . . . . . . . .  4
+   3.  Channel binding hash agility . . . . . . . . . . . . . . . . .  5
+   4.  Security considerations  . . . . . . . . . . . . . . . . . . .  7
+   5.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . .  8
+   6.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . .  9
+   7.  Normative References . . . . . . . . . . . . . . . . . . . . . 10
+   Author's Address . . . . . . . . . . . . . . . . . . . . . . . . . 11
+   Intellectual Property and Copyright Statements . . . . . . . . . . 12
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                  [Page 2]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+1.  Introduction
+
+   With the recently discovered weaknesses in the MD5 hash algorithm
+   there is a need to use stronger hash algorithms.  Kerberos Version 5
+   Generic Security Services Application Programming Interface (GSS-API)
+   mechanism [RFC4121] uses MD5 to calculate channel binding verifiers.
+   This document specifies an update to the mechanism that allows it to
+   create channel binding information based on negotiated algorithms.
+   This will allow deploying new algorithms incrementally without break
+   interoperability with older implementations, when new attacks arise
+   in the future.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                  [Page 3]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+2.  Conventions Used in This Document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+   The term "little endian order" is used for brevity to refer to the
+   least-significant-octet-first encoding, while the term "big endian
+   order" is for the most-significant-octet-first encoding.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                  [Page 4]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+3.  Channel binding hash agility
+
+   When generating a channel binding verifier, Bnd, a hash is computed
+   from the channel binding fields.  Initiators MUST populate the Bnd
+   field in order to maintain interoperability with existing acceptors.
+   In addition, initiators MUST populate the extension field, Exts.  All
+   fields before "Exts" do not change from what is described in
+   [RFC4121], they are listed for convenience.  The 0x8003 GSS checksum
+   MUST have the following structure:
+
+      Octet     Name       Description
+      -----------------------------------------------------------------
+      0..3      Lgth       Number of octets in Bnd field;  Represented
+                            in little-endian order;  Currently contains
+                            hex value 10 00 00 00 (16).
+      4..19     Bnd        Channel binding information, as described in
+                            section 4.1.1.2 [RFC4121].
+      20..23    Flags      Four-octet context-establishment flags in
+                            little-endian order as described in section
+                            4.1.1.1 [RFC4121].
+      24..25    DlgOpt     The delegation option identifier (=1) in
+                            little-endian order [optional].  This field
+                            and the next two fields are present if and
+                            only if GSS_C_DELEG_FLAG is set as described
+                            in section 4.1.1.1 [RFC4121].
+      26..27    Dlgth      The length of the Deleg field in
+                            little-endian order [optional].
+      28..(n-1) Deleg      KRB_CRED message (n = Dlgth + 28) [optional].
+      n..last   Exts       Extensions
+
+      where Exts is the concatenation of zero, one or more individual
+      extensions, each of which consists of, in order:
+
+        type -- big endian order unsigned integer, 32-bits, which
+                contains the type of extension
+        length -- big endian order unsigned integer, 32-bits, which
+                contains the length, in octets, of the extension data
+                encoded as an array of octets immediately following this
+                field
+        data -- octet string of extension information
+      in that order
+
+      If multiple extensions are present then there MUST be at most one
+      instance of a given extension type.
+
+   When channel binding is used the Exts MUST include the following
+   extension:
+
+
+
+
+Emery                      Expires May 7, 2009                  [Page 5]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+      data-type 0x00000000
+
+      data-value
+
+         The output obtained by applying the Kerberos V get_mic()
+         operation [RFC3961], using the sub-session key from the
+         authenticator and key usage number 43, to the channel binding
+         data as described in [RFC4121], section 4.1.1.2 (using get_mic
+         instead of MD5).
+
+   Initiators that are unwilling to use a MD5 hash of the channel
+   bindings MUST set the Bnd field to sixteen octets of hex value FF.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                  [Page 6]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+4.  Security considerations
+
+   Initiators do not know if the acceptor had ignored channel bindings
+   or whether it validated the MD5 hash of the channel bindings
+   [RFC4121].
+
+   Ultimately, it is up to the application whether to use channel
+   binding or not.  This is dependent upon the security policy of these
+   applications.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                  [Page 7]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+5.  IANA Considerations
+
+   The IANA is hereby requested to create a new registry of "Kerberos V
+   GSS-API mechanism extension types" with four-field entries (type
+   number, type name, description, and normative reference) and,
+   initially, a single registration: 0x00000000, "Channel Binding MIC,"
+   "Extension for the verifier of the channel bindings," <this RFC>.
+
+   Using the guidelines for allocation as described in [RFC5226], type
+   number assignments are as follows:
+
+      0x00000000 - 0x000003FF IETF Consensus
+
+      0x00000400 - 0xFFFFF3FF Specification Required
+
+      0xFFFFF400 - 0xFFFFFFFF Private Use
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                  [Page 8]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+6.  Acknowledgements
+
+   Larry Zhu helped in the review of this document overall and provided
+   the suggestions of typed-data.
+
+   Nicolas Williams and Sam Hartman suggested that the Bnd and Exts
+   fields be populated simultaneously.
+
+   Nicolas Williams and Jeffrey Hutzelman had also suggested a number
+   changes to this document.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                  [Page 9]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+7.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC3961]  Raeburn, K., "Encryption and Checksum Specifications for
+              Kerberos 5", RFC 3961, February 2005.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+   [RFC4121]  Zhu, L., Jaganathan, K., and S. Hartman, "The Kerberos
+              Version 5 Generic Security Service Application Program
+              Interface (GSS-API) Mechanism: Version 2", RFC 4121,
+              July 2005.
+
+   [RFC5226]  Narten, T. and H. Alvestrand, "Guidelines for Writing an
+              IANA Considerations Section in RFCs", BCP 26, RFC 5226,
+              May 2008.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                 [Page 10]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+Author's Address
+
+   Shawn Emery
+   Sun Microsystems
+   500 Eldorado Blvd
+   M/S UBRM05-171
+   Broomfield, CO  80021
+   US
+
+   Email: shawn.emery@sun.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                 [Page 11]
+
+Internet-Draft        Channel Binding Hash Agility         November 2008
+
+
+Full Copyright Statement
+
+   Copyright (C) The IETF Trust (2008).
+
+   This document is subject to the rights, licenses and restrictions
+   contained in BCP 78, and except as set forth therein, the authors
+   retain all their rights.
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY, THE IETF TRUST AND
+   THE INTERNET ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF
+   THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Intellectual Property
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+
+
+
+
+
+
+
+
+
+Emery                      Expires May 7, 2009                 [Page 12]
+
+

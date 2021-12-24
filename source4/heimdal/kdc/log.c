@@ -53,17 +53,21 @@ kdc_openlog(krb5_context context,
 	char *ss;
 	if (asprintf(&ss, "0-1/FILE:%s/%s", hdb_db_dir(context),
 	    KDC_LOG_FILE) < 0)
-	    err(1, NULL);
+	    err(1, "out of memory");
 	krb5_addlog_dest(context, config->logf, ss);
 	free(ss);
     }
     krb5_set_warn_dest(context, config->logf);
 }
 
+#undef __attribute__
+#define __attribute__(X)
+
 char*
 kdc_log_msg_va(krb5_context context,
 	       krb5_kdc_configuration *config,
 	       int level, const char *fmt, va_list ap)
+    __attribute__ ((__format__ (__printf__, 4, 0)))
 {
     char *msg;
     krb5_vlog_msg(context, config->logf, &msg, level, fmt, ap);
@@ -74,6 +78,7 @@ char*
 kdc_log_msg(krb5_context context,
 	    krb5_kdc_configuration *config,
 	    int level, const char *fmt, ...)
+    __attribute__ ((__format__ (__printf__, 4, 5)))
 {
     va_list ap;
     char *s;
@@ -84,14 +89,22 @@ kdc_log_msg(krb5_context context,
 }
 
 void
+kdc_vlog(krb5_context context,
+         krb5_kdc_configuration *config,
+         int level, const char *fmt, va_list ap)
+    __attribute__ ((__format__ (__printf__, 4, 0)))
+{
+    free(kdc_log_msg_va(context, config, level, fmt, ap));
+}
+
+void
 kdc_log(krb5_context context,
 	krb5_kdc_configuration *config,
 	int level, const char *fmt, ...)
+    __attribute__ ((__format__ (__printf__, 4, 5)))
 {
     va_list ap;
-    char *s;
     va_start(ap, fmt);
-    s = kdc_log_msg_va(context, config, level, fmt, ap);
-    if(s) free(s);
+    free(kdc_log_msg_va(context, config, level, fmt, ap));
     va_end(ap);
 }

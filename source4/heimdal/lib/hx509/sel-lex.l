@@ -1,6 +1,6 @@
 %{
 /*
- * Copyright (c) 2004, 2008 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2017 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -33,6 +33,11 @@
  */
 
 /* $Id$ */
+
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -114,6 +119,10 @@ handle_string(void)
     x[i] = '\0';
     return strdup(x);
 }
+
+#if !defined(yywrap)
+#define yywrap  _hx509_sel_yywrap
+#endif
 
 int
 yywrap ()

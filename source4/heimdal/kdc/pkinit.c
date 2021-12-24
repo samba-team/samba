@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2008 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2016 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -47,20 +47,20 @@
 
 struct pk_client_params {
     enum krb5_pk_type type;
-    enum { USE_RSA, USE_DH, USE_ECDH } keyex;
+    enum keyex_enum keyex;
     union {
 	struct {
 	    BIGNUM *public_key;
 	    DH *key;
 	} dh;
-#ifdef HAVE_OPENSSL
 	struct {
-	    EC_KEY *public_key;
-	    EC_KEY *key;
+	    void *public_key;
+	    void *key;
 	} ecdh;
-#endif
     } u;
     hx509_cert cert;
+    krb5_timestamp endtime;
+    krb5_timestamp max_life;
     unsigned nonce;
     EncryptionKey reply_key;
     char *dh_group_name;
@@ -101,7 +101,7 @@ pk_check_pkauthenticator_win2k(krb5_context context,
     krb5_timeofday (context, &now);
 
     /* XXX cusec */
-    if (a->ctime == 0 || abs(a->ctime - now) > context->max_skew) {
+    if (a->ctime == 0 || labs(a->ctime - now) > context->max_skew) {
 	krb5_clear_error_message(context);
 	return KRB5KRB_AP_ERR_SKEW;
     }
@@ -113,37 +113,25 @@ pk_check_pkauthenticator(krb5_context context,
 			 PKAuthenticator *a,
 			 const KDC_REQ *req)
 {
-    u_char *buf = NULL;
-    size_t buf_size;
     krb5_error_code ret;
-    size_t len = 0;
     krb5_timestamp now;
     Checksum checksum;
 
     krb5_timeofday (context, &now);
 
     /* XXX cusec */
-    if (a->ctime == 0 || abs(a->ctime - now) > context->max_skew) {
+    if (a->ctime == 0 || labs(a->ctime - now) > context->max_skew) {
 	krb5_clear_error_message(context);
 	return KRB5KRB_AP_ERR_SKEW;
     }
-
-    ASN1_MALLOC_ENCODE(KDC_REQ_BODY, buf, buf_size, &req->req_body, &len, ret);
-    if (ret) {
-	krb5_clear_error_message(context);
-	return ret;
-    }
-    if (buf_size != len)
-	krb5_abortx(context, "Internal error in ASN.1 encoder");
 
     ret = krb5_create_checksum(context,
 			       NULL,
 			       0,
 			       CKSUMTYPE_SHA1,
-			       buf,
-			       len,
+			       req->req_body._save.data,
+			       req->req_body._save.length,
 			       &checksum);
-    free(buf);
     if (ret) {
 	krb5_clear_error_message(context);
 	return ret;
@@ -181,14 +169,9 @@ _kdc_pk_free_client_param(krb5_context context, pk_client_params *cp)
 	if (cp->u.dh.public_key)
 	    BN_free(cp->u.dh.public_key);
     }
-#ifdef HAVE_OPENSSL
-    if (cp->keyex == USE_ECDH) {
-	if (cp->u.ecdh.key)
-	    EC_KEY_free(cp->u.ecdh.key);
-	if (cp->u.ecdh.public_key)
-	    EC_KEY_free(cp->u.ecdh.public_key);
-    }
-#endif
+    if (cp->keyex == USE_ECDH)
+        _kdc_pk_free_client_ec_param(context, cp->u.ecdh.key,
+                                     cp->u.ecdh.public_key);
     krb5_free_keyblock_contents(context, &cp->reply_key);
     if (cp->dh_group_name)
 	free(cp->dh_group_name);
@@ -216,7 +199,7 @@ generate_dh_keyblock(krb5_context context,
 
 	if (client_params->u.dh.public_key == NULL) {
 	    ret = KRB5KRB_ERR_GENERIC;
-	    krb5_set_error_message(context, ret, "public_key");
+	    krb5_set_error_message(context, ret, "missing DH public_key");
 	    goto out;
 	}
 
@@ -250,42 +233,18 @@ generate_dh_keyblock(krb5_context context,
 	}
 
 	ret = 0;
-#ifdef HAVE_OPENSSL
     } else if (client_params->keyex == USE_ECDH) {
-
 	if (client_params->u.ecdh.public_key == NULL) {
 	    ret = KRB5KRB_ERR_GENERIC;
-	    krb5_set_error_message(context, ret, "public_key");
+	    krb5_set_error_message(context, ret, "missing ECDH public_key");
 	    goto out;
 	}
-
-	client_params->u.ecdh.key = EC_KEY_new();
-	if (client_params->u.ecdh.key == NULL) {
-	    ret = ENOMEM;
-	    goto out;
-	}
-	EC_KEY_set_group(client_params->u.ecdh.key,
-			 EC_KEY_get0_group(client_params->u.ecdh.public_key));
-
-	if (EC_KEY_generate_key(client_params->u.ecdh.key) != 1) {
-	    ret = ENOMEM;
-	    goto out;
-	}
-
-	size = (EC_GROUP_get_degree(EC_KEY_get0_group(client_params->u.ecdh.key)) + 7) / 8;
-	dh_gen_key = malloc(size);
-	if (dh_gen_key == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret,
-				   N_("malloc: out of memory", ""));
-	    goto out;
-	}
-
-	dh_gen_keylen = ECDH_compute_key(dh_gen_key, size,
-					 EC_KEY_get0_public_key(client_params->u.ecdh.public_key),
-					 client_params->u.ecdh.key, NULL);
-
-#endif /* HAVE_OPENSSL */
+        ret = _kdc_generate_ecdh_keyblock(context,
+                                          client_params->u.ecdh.public_key,
+                                          &client_params->u.ecdh.key,
+                                          &dh_gen_key, &dh_gen_keylen);
+        if (ret)
+            goto out;
     } else {
 	ret = KRB5KRB_ERR_GENERIC;
 	krb5_set_error_message(context, ret,
@@ -422,79 +381,16 @@ get_dh_param(krb5_context context,
     return ret;
 }
 
-#ifdef HAVE_OPENSSL
-
-static krb5_error_code
-get_ecdh_param(krb5_context context,
-	       krb5_kdc_configuration *config,
-	       SubjectPublicKeyInfo *dh_key_info,
-	       pk_client_params *client_params)
-{
-    ECParameters ecp;
-    EC_KEY *public = NULL;
-    krb5_error_code ret;
-    const unsigned char *p;
-    size_t len;
-    int nid;
-
-    if (dh_key_info->algorithm.parameters == NULL) {
-	krb5_set_error_message(context, KRB5_BADMSGTYPE,
-			       "PKINIT missing algorithm parameter "
-			       "in clientPublicValue");
-	return KRB5_BADMSGTYPE;
-    }
-
-    memset(&ecp, 0, sizeof(ecp));
-
-    ret = decode_ECParameters(dh_key_info->algorithm.parameters->data,
-			      dh_key_info->algorithm.parameters->length, &ecp, &len);
-    if (ret)
-	goto out;
-
-    if (ecp.element != choice_ECParameters_namedCurve) {
-	ret = KRB5_BADMSGTYPE;
-	goto out;
-    }
-
-    if (der_heim_oid_cmp(&ecp.u.namedCurve, &asn1_oid_id_ec_group_secp256r1) == 0)
-	nid = NID_X9_62_prime256v1;
-    else {
-	ret = KRB5_BADMSGTYPE;
-	goto out;
-    }
-
-    /* XXX verify group is ok */
-
-    public = EC_KEY_new_by_curve_name(nid);
-
-    p = dh_key_info->subjectPublicKey.data;
-    len = dh_key_info->subjectPublicKey.length / 8;
-    if (o2i_ECPublicKey(&public, &p, len) == NULL) {
-	ret = KRB5_BADMSGTYPE;
-	krb5_set_error_message(context, ret,
-			       "PKINIT failed to decode ECDH key");
-	goto out;
-    }
-    client_params->u.ecdh.public_key = public;
-    public = NULL;
-
- out:
-    if (public)
-	EC_KEY_free(public);
-    free_ECParameters(&ecp);
-    return ret;
-}
-
-#endif /* HAVE_OPENSSL */
-
 krb5_error_code
-_kdc_pk_rd_padata(krb5_context context,
-		  krb5_kdc_configuration *config,
-		  const KDC_REQ *req,
+_kdc_pk_rd_padata(astgs_request_t priv,
 		  const PA_DATA *pa,
-		  hdb_entry_ex *client,
 		  pk_client_params **ret_params)
 {
+    /* XXXrcd: we use priv vs r due to a conflict */
+    krb5_context context = priv->context;
+    krb5_kdc_configuration *config = priv->config;
+    const KDC_REQ *req = &priv->req;
+    hdb_entry_ex *client = priv->client;
     pk_client_params *cp;
     krb5_error_code ret;
     heim_oid eContentType = { 0, NULL }, contentInfoOid = { 0, NULL };
@@ -508,7 +404,7 @@ _kdc_pk_rd_padata(krb5_context context,
     *ret_params = NULL;
 
     if (!config->enable_pkinit) {
-	kdc_log(context, config, 0, "PK-INIT request but PK-INIT not enabled");
+	kdc_log(context, config, 0, "PKINIT request but PKINIT not enabled");
 	krb5_clear_error_message(context);
 	return 0;
     }
@@ -543,11 +439,11 @@ _kdc_pk_rd_padata(krb5_context context,
 	unsigned int i;
 
 	for (i = 0; i < pc->len; i++) {
-	    ret = hx509_cert_init_data(context->hx509ctx,
-				       pc->val[i].cert.data,
-				       pc->val[i].cert.length,
-				       &cert);
-	    if (ret)
+	    cert = hx509_cert_init_data(context->hx509ctx,
+					pc->val[i].cert.data,
+					pc->val[i].cert.length,
+					NULL);
+	    if (cert == NULL)
 		continue;
 	    hx509_certs_add(context->hx509ctx, trust_anchors, cert);
 	    hx509_cert_free(cert);
@@ -573,10 +469,10 @@ _kdc_pk_rd_padata(krb5_context context,
 
 	type = "PK-INIT-Win2k";
 
-	if (req->req_body.kdc_options.request_anonymous) {
+	if (_kdc_is_anonymous(context, client->entry.principal)) {
 	    ret = KRB5_KDC_ERR_PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED;
 	    krb5_set_error_message(context, ret,
-				   "Anon not supported in RSA mode");
+		"Anonymous client not supported in RSA mode");
 	    goto out;
 	}
 
@@ -719,7 +615,8 @@ _kdc_pk_rd_padata(krb5_context context,
 	hx509_certs signer_certs;
 	int flags = HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH; /* BTMM */
 
-	if (req->req_body.kdc_options.request_anonymous)
+	if (_kdc_is_anonymous(context, client->entry.principal)
+	    || (config->historical_anon_realm && _kdc_is_anon_request(req)))
 	    flags |= HX509_CMS_VS_ALLOW_ZERO_SIGNER;
 
 	ret = hx509_cms_verify_signed(context->hx509ctx,
@@ -754,7 +651,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	der_heim_oid_cmp(&eContentType, &asn1_oid_id_pkauthdata) != 0)
     {
 	ret = KRB5_BADMSGTYPE;
-	krb5_set_error_message(context, ret, "got wrong oid for pkauthdata");
+	krb5_set_error_message(context, ret, "got wrong oid for PK AuthData");
 	goto out;
     }
 
@@ -785,7 +682,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	if (ap.clientPublicValue) {
 	    ret = KRB5KRB_ERR_GENERIC;
 	    krb5_set_error_message(context, ret,
-				   "DH not supported for windows");
+				   "DH not supported for Win2k");
 	    goto out;
 	}
 	free_AuthPack_Win2k(&ap);
@@ -804,12 +701,12 @@ _kdc_pk_rd_padata(krb5_context context,
 	    goto out;
 	}
 
-	if (req->req_body.kdc_options.request_anonymous &&
+	if (_kdc_is_anonymous(context, client->entry.principal) &&
 	    ap.clientPublicValue == NULL) {
 	    free_AuthPack(&ap);
 	    ret = KRB5_KDC_ERR_PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED;
 	    krb5_set_error_message(context, ret,
-				   "Anon not supported in RSA mode");
+		"Anonymous client not supported in RSA mode");
 	    goto out;
 	}
 
@@ -829,15 +726,15 @@ _kdc_pk_rd_padata(krb5_context context,
 		cp->keyex = USE_DH;
 		ret = get_dh_param(context, config,
 				   ap.clientPublicValue, cp);
-#ifdef HAVE_OPENSSL
 	    } else if (der_heim_oid_cmp(&ap.clientPublicValue->algorithm.algorithm, &asn1_oid_id_ecPublicKey) == 0) {
 		cp->keyex = USE_ECDH;
-		ret = get_ecdh_param(context, config,
-				     ap.clientPublicValue, cp);
-#endif /* HAVE_OPENSSL */
+                ret = _kdc_get_ecdh_param(context, config,
+                                          ap.clientPublicValue,
+                                          &cp->u.ecdh.public_key);
 	    } else {
 		ret = KRB5_BADMSGTYPE;
-		krb5_set_error_message(context, ret, "PKINIT unknown DH mechanism");
+		krb5_set_error_message(context, ret,
+		    "PKINIT unknown DH mechanism");
 	    }
 	    if (ret) {
 		free_AuthPack(&ap);
@@ -875,7 +772,7 @@ _kdc_pk_rd_padata(krb5_context context,
     } else
 	krb5_abortx(context, "internal pkinit error");
 
-    kdc_log(context, config, 0, "PK-INIT request of type %s", type);
+    kdc_log(context, config, 0, "PKINIT request of type %s", type);
 
 out:
     if (ret)
@@ -891,6 +788,18 @@ out:
     } else
 	*ret_params = cp;
     return ret;
+}
+
+krb5_timestamp
+_kdc_pk_endtime(pk_client_params *pkp)
+{
+    return pkp->endtime;
+}
+
+krb5_timestamp
+_kdc_pk_max_life(pk_client_params *pkp)
+{
+    return pkp->max_life;
 }
 
 /*
@@ -1134,26 +1043,13 @@ pk_mk_pa_reply_dh(krb5_context context,
 	dh_info.subjectPublicKey.length = buf.length * 8;
 	dh_info.subjectPublicKey.data = buf.data;
 	krb5_data_zero(&buf);
-#ifdef HAVE_OPENSSL
     } else if (cp->keyex == USE_ECDH) {
-	unsigned char *p;
-	int len;
-
-	len = i2o_ECPublicKey(cp->u.ecdh.key, NULL);
-	if (len <= 0)
-	    abort();
-
-	p = malloc(len);
-	if (p == NULL)
-	    abort();
-
-	dh_info.subjectPublicKey.length = len * 8;
-	dh_info.subjectPublicKey.data = p;
-
-	len = i2o_ECPublicKey(cp->u.ecdh.key, &p);
-	if (len <= 0)
-	    abort();
-#endif
+        unsigned char *p;
+        ret = _kdc_serialize_ecdh_key(context, cp->u.ecdh.key, &p,
+                                      &dh_info.subjectPublicKey.length);
+        dh_info.subjectPublicKey.data = p;
+        if (ret)
+            goto out;
     } else
 	krb5_abortx(context, "no keyex selected ?");
 
@@ -1233,17 +1129,15 @@ pk_mk_pa_reply_dh(krb5_context context,
  */
 
 krb5_error_code
-_kdc_pk_mk_pa_reply(krb5_context context,
-		    krb5_kdc_configuration *config,
-		    pk_client_params *cp,
-		    const hdb_entry_ex *client,
-		    krb5_enctype sessionetype,
-		    const KDC_REQ *req,
-		    const krb5_data *req_buffer,
-		    krb5_keyblock **reply_key,
-		    krb5_keyblock *sessionkey,
-		    METHOD_DATA *md)
+_kdc_pk_mk_pa_reply(astgs_request_t r, pk_client_params *cp)
 {
+    krb5_kdc_configuration *config = r->config;
+    krb5_enctype sessionetype = r->sessionetype;
+    const KDC_REQ *req = &r->req;
+    const krb5_data *req_buffer = &r->request;
+    krb5_keyblock *reply_key = &r->reply_key;
+    krb5_keyblock *sessionkey = &r->session_key;
+    METHOD_DATA *md = r->rep.padata;
     krb5_error_code ret;
     void *buf = NULL;
     size_t len = 0, size = 0;
@@ -1253,17 +1147,17 @@ _kdc_pk_mk_pa_reply(krb5_context context,
     size_t i;
 
     if (!config->enable_pkinit) {
-	krb5_clear_error_message(context);
+	krb5_clear_error_message(r->context);
 	return 0;
     }
 
     if (req->req_body.etype.len > 0) {
 	for (i = 0; i < req->req_body.etype.len; i++)
-	    if (krb5_enctype_valid(context, req->req_body.etype.val[i]) == 0)
+	    if (krb5_enctype_valid(r->context, req->req_body.etype.val[i]) == 0)
 		break;
 	if (req->req_body.etype.len <= i) {
 	    ret = KRB5KRB_ERR_GENERIC;
-	    krb5_set_error_message(context, ret,
+	    krb5_set_error_message(r->context, ret,
 				   "No valid enctype available from client");
 	    goto out;
 	}
@@ -1286,13 +1180,13 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
 
-	    ret = krb5_generate_random_keyblock(context, enctype,
+	    ret = krb5_generate_random_keyblock(r->context, enctype,
 						&cp->reply_key);
 	    if (ret) {
 		free_PA_PK_AS_REP(&rep);
 		goto out;
 	    }
-	    ret = pk_mk_pa_reply_enckey(context,
+	    ret = pk_mk_pa_reply_enckey(r->context,
 					config,
 					cp,
 					req,
@@ -1309,15 +1203,15 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 			       ret);
 	    free_ContentInfo(&info);
 	    if (ret) {
-		krb5_set_error_message(context, ret, "encoding of Key ContentInfo "
+		krb5_set_error_message(r->context, ret, "encoding of Key ContentInfo "
 				       "failed %d", ret);
 		free_PA_PK_AS_REP(&rep);
 		goto out;
 	    }
 	    if (rep.u.encKeyPack.length != size)
-		krb5_abortx(context, "Internal ASN.1 encoder error");
+		krb5_abortx(r->context, "Internal ASN.1 encoder error");
 
-	    ret = krb5_generate_random_keyblock(context, sessionetype,
+	    ret = krb5_generate_random_keyblock(r->context, sessionetype,
 						sessionkey);
 	    if (ret) {
 		free_PA_PK_AS_REP(&rep);
@@ -1329,10 +1223,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	    switch (cp->keyex) {
 	    case USE_DH: type = "dh"; break;
-#ifdef HAVE_OPENSSL
 	    case USE_ECDH: type = "ecdh"; break;
-#endif
-	    default: krb5_abortx(context, "unknown keyex"); break;
+	    default: krb5_abortx(r->context, "unknown keyex"); break;
 	    }
 
 	    if (cp->dh_group_name)
@@ -1340,17 +1232,17 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	    rep.element = choice_PA_PK_AS_REP_dhInfo;
 
-	    ret = generate_dh_keyblock(context, cp, enctype);
+	    ret = generate_dh_keyblock(r->context, cp, enctype);
 	    if (ret)
 		return ret;
 
-	    ret = pk_mk_pa_reply_dh(context, config,
+	    ret = pk_mk_pa_reply_dh(r->context, config,
 				    cp,
 				    &info,
 				    &kdc_cert);
 	    if (ret) {
 		free_PA_PK_AS_REP(&rep);
-		krb5_set_error_message(context, ret,
+		krb5_set_error_message(r->context, ret,
 				       "create pa-reply-dh "
 				       "failed %d", ret);
 		goto out;
@@ -1361,25 +1253,96 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 			       ret);
 	    free_ContentInfo(&info);
 	    if (ret) {
-		krb5_set_error_message(context, ret,
+		krb5_set_error_message(r->context, ret,
 				       "encoding of Key ContentInfo "
 				       "failed %d", ret);
 		free_PA_PK_AS_REP(&rep);
 		goto out;
 	    }
 	    if (rep.u.encKeyPack.length != size)
-		krb5_abortx(context, "Internal ASN.1 encoder error");
+		krb5_abortx(r->context, "Internal ASN.1 encoder error");
 
-	    /* XXX KRB-FX-CF2 */
-	    ret = krb5_generate_random_keyblock(context, sessionetype,
-						sessionkey);
-	    if (ret) {
-		free_PA_PK_AS_REP(&rep);
-		goto out;
+	    /* generate the session key using the method from RFC6112 */
+	    {
+		krb5_keyblock kdc_contribution_key;
+		krb5_crypto reply_crypto;
+		krb5_crypto kdccont_crypto;
+		krb5_data p1 = { strlen("PKINIT"), "PKINIT"};
+		krb5_data p2 = { strlen("KEYEXCHANGE"), "KEYEXCHANGE"};
+		void *kckdata;
+		size_t kcklen;
+		EncryptedData kx;
+		void *kxdata;
+		size_t kxlen;
+
+		ret = krb5_generate_random_keyblock(r->context, sessionetype,
+						&kdc_contribution_key);
+		if (ret) {
+		    free_PA_PK_AS_REP(&rep);
+		    goto out;
+		}
+		ret = krb5_crypto_init(r->context, &cp->reply_key, enctype, &reply_crypto);
+		if (ret) {
+		    krb5_free_keyblock_contents(r->context, &kdc_contribution_key);
+		    free_PA_PK_AS_REP(&rep);
+		    goto out;
+		}
+		ret = krb5_crypto_init(r->context, &kdc_contribution_key, sessionetype, &kdccont_crypto);
+		if (ret) {
+		    krb5_crypto_destroy(r->context, reply_crypto);
+		    krb5_free_keyblock_contents(r->context, &kdc_contribution_key);
+		    free_PA_PK_AS_REP(&rep);
+		    goto out;
+		}
+		/* KRB-FX-CF2 */
+		ret = krb5_crypto_fx_cf2(r->context, kdccont_crypto, reply_crypto,
+					 &p1, &p2, sessionetype, sessionkey);
+		krb5_crypto_destroy(r->context, kdccont_crypto);
+		if (ret) {
+		    krb5_crypto_destroy(r->context, reply_crypto);
+		    krb5_free_keyblock_contents(r->context, &kdc_contribution_key);
+		    free_PA_PK_AS_REP(&rep);
+		    goto out;
+		}
+		ASN1_MALLOC_ENCODE(EncryptionKey, kckdata, kcklen,
+				   &kdc_contribution_key, &size, ret);
+		krb5_free_keyblock_contents(r->context, &kdc_contribution_key);
+		if (ret) {
+		    krb5_set_error_message(r->context, ret, "encoding of PKINIT-KX Key failed %d", ret);
+		    krb5_crypto_destroy(r->context, reply_crypto);
+		    free_PA_PK_AS_REP(&rep);
+		    goto out;
+		}
+		if (kcklen != size)
+		    krb5_abortx(r->context, "Internal ASN.1 encoder error");
+		ret = krb5_encrypt_EncryptedData(r->context, reply_crypto, KRB5_KU_PA_PKINIT_KX,
+					kckdata, kcklen, 0, &kx);
+		krb5_crypto_destroy(r->context, reply_crypto);
+		free(kckdata);
+		if (ret) {
+		    free_PA_PK_AS_REP(&rep);
+		    goto out;
+		}
+		ASN1_MALLOC_ENCODE(EncryptedData, kxdata, kxlen,
+				   &kx, &size, ret);
+		free_EncryptedData(&kx);
+		if (ret) {
+		    krb5_set_error_message(r->context, ret,
+				"encoding of PKINIT-KX failed %d", ret);
+		    free_PA_PK_AS_REP(&rep);
+		    goto out;
+		}
+		if (kxlen != size)
+		    krb5_abortx(r->context, "Internal ASN.1 encoder error");
+		/* Add PA-PKINIT-KX */
+		ret = krb5_padata_add(r->context, md, KRB5_PADATA_PKINIT_KX, kxdata, kxlen);
+		if (ret) {
+		    krb5_set_error_message(r->context, ret,
+					   "Failed adding PKINIT-KX %d", ret);
+		    free(buf);
+		    goto out;
+		}
 	    }
-
-	    /* XXX Add PA-PKINIT-KX */
-
 	}
 
 #define use_btmm_with_enckey 0
@@ -1400,14 +1363,14 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	free_PA_PK_AS_REP(&rep);
 	if (ret) {
-	    krb5_set_error_message(context, ret,
+	    krb5_set_error_message(r->context, ret,
 				   "encode PA-PK-AS-REP failed %d", ret);
 	    goto out;
 	}
 	if (len != size)
-	    krb5_abortx(context, "Internal ASN.1 encoder error");
+	    krb5_abortx(r->context, "Internal ASN.1 encoder error");
 
-	kdc_log(context, config, 0, "PK-INIT using %s %s", type, other);
+	kdc_log(r->context, config, 0, "PKINIT using %s %s", type, other);
 
     } else if (cp->type == PKINIT_WIN2K) {
 	PA_PK_AS_REP_Win2k rep;
@@ -1415,8 +1378,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	if (cp->keyex != USE_RSA) {
 	    ret = KRB5KRB_ERR_GENERIC;
-	    krb5_set_error_message(context, ret,
-				   "Windows PK-INIT doesn't support DH");
+	    krb5_set_error_message(r->context, ret,
+				   "Win2k PKINIT doesn't support DH");
 	    goto out;
 	}
 
@@ -1425,13 +1388,13 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	pa_type = KRB5_PADATA_PK_AS_REP_19;
 	rep.element = choice_PA_PK_AS_REP_Win2k_encKeyPack;
 
-	ret = krb5_generate_random_keyblock(context, enctype,
+	ret = krb5_generate_random_keyblock(r->context, enctype,
 					    &cp->reply_key);
 	if (ret) {
 	    free_PA_PK_AS_REP_Win2k(&rep);
 	    goto out;
 	}
-	ret = pk_mk_pa_reply_enckey(context,
+	ret = pk_mk_pa_reply_enckey(r->context,
 				    config,
 				    cp,
 				    req,
@@ -1448,25 +1411,25 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 			   ret);
 	free_ContentInfo(&info);
 	if (ret) {
-	    krb5_set_error_message(context, ret, "encoding of Key ContentInfo "
+	    krb5_set_error_message(r->context, ret, "encoding of Key ContentInfo "
 				  "failed %d", ret);
 	    free_PA_PK_AS_REP_Win2k(&rep);
 	    goto out;
 	}
 	if (rep.u.encKeyPack.length != size)
-	    krb5_abortx(context, "Internal ASN.1 encoder error");
+	    krb5_abortx(r->context, "Internal ASN.1 encoder error");
 
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REP_Win2k, buf, len, &rep, &size, ret);
 	free_PA_PK_AS_REP_Win2k(&rep);
 	if (ret) {
-	    krb5_set_error_message(context, ret,
+	    krb5_set_error_message(r->context, ret,
 				  "encode PA-PK-AS-REP-Win2k failed %d", ret);
 	    goto out;
 	}
 	if (len != size)
-	    krb5_abortx(context, "Internal ASN.1 encoder error");
+	    krb5_abortx(r->context, "Internal ASN.1 encoder error");
 
-	ret = krb5_generate_random_keyblock(context, sessionetype,
+	ret = krb5_generate_random_keyblock(r->context, sessionetype,
 					    sessionkey);
 	if (ret) {
 	    free(buf);
@@ -1474,12 +1437,12 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	}
 
     } else
-	krb5_abortx(context, "PK-INIT internal error");
+	krb5_abortx(r->context, "PKINIT internal error");
 
 
-    ret = krb5_padata_add(context, md, pa_type, buf, len);
+    ret = krb5_padata_add(r->context, md, pa_type, buf, len);
     if (ret) {
-	krb5_set_error_message(context, ret,
+	krb5_set_error_message(r->context, ret,
 			       "Failed adding PA-PK-AS-REP %d", ret);
 	free(buf);
 	goto out;
@@ -1498,44 +1461,44 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	    fd = open(config->pkinit_kdc_ocsp_file, O_RDONLY);
 	    if (fd < 0) {
-		kdc_log(context, config, 0,
-			"PK-INIT failed to open ocsp data file %d", errno);
+		kdc_log(r->context, config, 0,
+			"PKINIT failed to open ocsp data file %d", errno);
 		goto out_ocsp;
 	    }
 	    ret = fstat(fd, &sb);
 	    if (ret) {
 		ret = errno;
 		close(fd);
-		kdc_log(context, config, 0,
-			"PK-INIT failed to stat ocsp data %d", ret);
+		kdc_log(r->context, config, 0,
+			"PKINIT failed to stat ocsp data %d", ret);
 		goto out_ocsp;
 	    }
 
 	    ret = krb5_data_alloc(&ocsp.data, sb.st_size);
 	    if (ret) {
 		close(fd);
-		kdc_log(context, config, 0,
-			"PK-INIT failed to stat ocsp data %d", ret);
+		kdc_log(r->context, config, 0,
+			"PKINIT failed to stat ocsp data %d", ret);
 		goto out_ocsp;
 	    }
 	    ocsp.data.length = sb.st_size;
 	    ret = read(fd, ocsp.data.data, sb.st_size);
 	    close(fd);
 	    if (ret != sb.st_size) {
-		kdc_log(context, config, 0,
-			"PK-INIT failed to read ocsp data %d", errno);
+		kdc_log(r->context, config, 0,
+			"PKINIT failed to read ocsp data %d", errno);
 		goto out_ocsp;
 	    }
 
-	    ret = hx509_ocsp_verify(context->hx509ctx,
+	    ret = hx509_ocsp_verify(r->context->hx509ctx,
 				    kdc_time,
 				    kdc_cert,
 				    0,
 				    ocsp.data.data, ocsp.data.length,
 				    &ocsp.expire);
 	    if (ret) {
-		kdc_log(context, config, 0,
-			"PK-INIT failed to verify ocsp data %d", ret);
+		kdc_log(r->context, config, 0,
+			"PKINIT failed to verify ocsp data %d", ret);
 		krb5_data_free(&ocsp.data);
 		ocsp.expire = 0;
 	    } else if (ocsp.expire > 180) {
@@ -1550,11 +1513,11 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	if (ocsp.expire != 0 && ocsp.expire > kdc_time) {
 
-	    ret = krb5_padata_add(context, md,
+	    ret = krb5_padata_add(r->context, md,
 				  KRB5_PADATA_PA_PK_OCSP_RESPONSE,
 				  ocsp.data.data, ocsp.data.length);
 	    if (ret) {
-		krb5_set_error_message(context, ret,
+		krb5_set_error_message(r->context, ret,
 				       "Failed adding OCSP response %d", ret);
 		goto out;
 	    }
@@ -1566,7 +1529,7 @@ out:
 	hx509_cert_free(kdc_cert);
 
     if (ret == 0)
-	*reply_key = &cp->reply_key;
+	ret = krb5_copy_keyblock_contents(r->context, &cp->reply_key, reply_key);
     return ret;
 }
 
@@ -1601,16 +1564,17 @@ match_rfc_san(krb5_context context,
 	if (ret) {
 	    const char *msg = krb5_get_error_message(context, ret);
 	    kdc_log(context, config, 0,
-		    "Decoding kerberos name in certificate failed: %s", msg);
+		    "Decoding Kerberos principal name in certificate failed: %s", msg);
 	    krb5_free_error_message(context, msg);
 	    break;
 	}
 	if (size != list.val[i].length) {
 	    kdc_log(context, config, 0,
-		    "Decoding kerberos name have extra bits on the end");
+		    "Decoded Kerberos principal name did not have expected length");
 	    return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 	}
 
+	memset(&principal, 0, sizeof (principal));
 	principal.name = kn.principalName;
 	principal.realm = kn.realm;
 
@@ -1655,7 +1619,8 @@ match_ms_upn_san(krb5_context context,
 
     if (list.len != 1) {
 	kdc_log(context, config, 0,
-		"More then one PK-INIT MS UPN SAN");
+		"More than one PKINIT MS UPN SAN");
+	ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 	goto out;
     }
 
@@ -1702,13 +1667,13 @@ out:
 }
 
 krb5_error_code
-_kdc_pk_check_client(krb5_context context,
-		     krb5_kdc_configuration *config,
-		     HDB *clientdb,
-		     hdb_entry_ex *client,
+_kdc_pk_check_client(astgs_request_t r,
 		     pk_client_params *cp,
 		     char **subject_name)
 {
+    krb5_kdc_configuration *config = r->config;
+    HDB *clientdb = r->clientdb;
+    hdb_entry_ex *client = r->client;
     const HDB_Ext_PKINIT_acl *acl;
     const HDB_Ext_PKINIT_cert *pc;
     krb5_error_code ret;
@@ -1716,14 +1681,29 @@ _kdc_pk_check_client(krb5_context context,
     size_t i;
 
     if (cp->cert == NULL) {
+	if (!_kdc_is_anonymous(r->context, client->entry.principal)
+	    && !config->historical_anon_realm)
+	    return KRB5KDC_ERR_BADOPTION;
 
-	*subject_name = strdup("anonymous client client");
+	*subject_name = strdup("<unauthenticated anonymous client>");
 	if (*subject_name == NULL)
 	    return ENOMEM;
 	return 0;
     }
 
-    ret = hx509_cert_get_base_subject(context->hx509ctx,
+    cp->endtime = hx509_cert_get_notAfter(cp->cert);
+    cp->max_life = 0;
+    if (config->pkinit_max_life_from_cert_extension)
+        cp->max_life =
+            hx509_cert_get_pkinit_max_life(r->context->hx509ctx, cp->cert,
+                                           config->pkinit_max_life_bound);
+    if (cp->max_life == 0 && config->pkinit_max_life_from_cert > 0) {
+        cp->max_life = cp->endtime - hx509_cert_get_notBefore(cp->cert);
+        if (cp->max_life > config->pkinit_max_life_from_cert)
+            cp->max_life = config->pkinit_max_life_from_cert;
+    }
+
+    ret = hx509_cert_get_base_subject(r->context->hx509ctx,
 				      cp->cert,
 				      &name);
     if (ret)
@@ -1734,8 +1714,8 @@ _kdc_pk_check_client(krb5_context context,
     if (ret)
 	return ret;
 
-    kdc_log(context, config, 0,
-	    "Trying to authorize PK-INIT subject DN %s",
+    kdc_log(r->context, config, 0,
+	    "Trying to authorize PKINIT subject DN %s",
 	    *subject_name);
 
     ret = hdb_entry_get_pkinit_cert(&client->entry, &pc);
@@ -1744,17 +1724,17 @@ _kdc_pk_check_client(krb5_context context,
 	size_t j;
 
 	for (j = 0; j < pc->len; j++) {
-	    ret = hx509_cert_init_data(context->hx509ctx,
-				       pc->val[j].cert.data,
-				       pc->val[j].cert.length,
-				       &cert);
-	    if (ret)
+	    cert = hx509_cert_init_data(r->context->hx509ctx,
+					pc->val[j].cert.data,
+					pc->val[j].cert.length,
+					NULL);
+	    if (cert == NULL)
 		continue;
 	    ret = hx509_cert_cmp(cert, cp->cert);
 	    hx509_cert_free(cert);
 	    if (ret == 0) {
-		kdc_log(context, config, 5,
-			"Found matching PK-INIT cert in hdb");
+		kdc_log(r->context, config, 5,
+			"Found matching PKINIT cert in hdb");
 		return 0;
 	    }
 	}
@@ -1762,22 +1742,22 @@ _kdc_pk_check_client(krb5_context context,
 
 
     if (config->pkinit_princ_in_cert) {
-	ret = match_rfc_san(context, config,
-			    context->hx509ctx,
+	ret = match_rfc_san(r->context, config,
+			    r->context->hx509ctx,
 			    cp->cert,
 			    client->entry.principal);
 	if (ret == 0) {
-	    kdc_log(context, config, 5,
-		    "Found matching PK-INIT SAN in certificate");
+	    kdc_log(r->context, config, 5,
+		    "Found matching PKINIT SAN in certificate");
 	    return 0;
 	}
-	ret = match_ms_upn_san(context, config,
-			       context->hx509ctx,
+	ret = match_ms_upn_san(r->context, config,
+			       r->context->hx509ctx,
 			       cp->cert,
 			       clientdb,
 			       client);
 	if (ret == 0) {
-	    kdc_log(context, config, 5,
+	    kdc_log(r->context, config, 5,
 		    "Found matching MS UPN SAN in certificate");
 	    return 0;
 	}
@@ -1799,8 +1779,8 @@ _kdc_pk_check_client(krb5_context context,
 	    if (acl->val[0].anchor)
 		continue;
 
-	    kdc_log(context, config, 5,
-		    "Found matching PK-INIT database ACL");
+	    kdc_log(r->context, config, 5,
+		    "Found matching PKINIT database ACL");
 	    return 0;
 	}
     }
@@ -1808,24 +1788,24 @@ _kdc_pk_check_client(krb5_context context,
     for (i = 0; i < principal_mappings.len; i++) {
 	krb5_boolean b;
 
-	b = krb5_principal_compare(context,
+	b = krb5_principal_compare(r->context,
 				   client->entry.principal,
 				   principal_mappings.val[i].principal);
 	if (b == FALSE)
 	    continue;
 	if (strcmp(principal_mappings.val[i].subject, *subject_name) != 0)
 	    continue;
-	kdc_log(context, config, 5,
-		"Found matching PK-INIT FILE ACL");
+	kdc_log(r->context, config, 5,
+		"Found matching PKINIT FILE ACL");
 	return 0;
     }
 
     ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
-    krb5_set_error_message(context, ret,
+    krb5_set_error_message(r->context, ret,
 			  "PKINIT no matching principals for %s",
 			  *subject_name);
 
-    kdc_log(context, config, 5,
+    kdc_log(r->context, config, 5,
 	    "PKINIT no matching principals for %s",
 	    *subject_name);
 
@@ -1867,10 +1847,10 @@ add_principal_mapping(krb5_context context,
 }
 
 krb5_error_code
-_kdc_add_inital_verified_cas(krb5_context context,
-			     krb5_kdc_configuration *config,
-			     pk_client_params *cp,
-			     EncTicketPart *tkt)
+_kdc_add_initial_verified_cas(krb5_context context,
+			      krb5_kdc_configuration *config,
+			      pk_client_params *cp,
+			      EncTicketPart *tkt)
 {
     AD_INITIAL_VERIFIED_CAS cas;
     krb5_error_code ret;
@@ -1963,7 +1943,7 @@ krb5_kdc_pk_initialize(krb5_context context,
 
     ret = _krb5_parse_moduli(context, file, &moduli);
     if (ret)
-	krb5_err(context, 1, ret, "PKINIT: failed to load modidi file");
+	krb5_err(context, 1, ret, "PKINIT: failed to load moduli file");
 
     principal_mappings.len = 0;
     principal_mappings.val = NULL;
@@ -2011,7 +1991,7 @@ krb5_kdc_pk_initialize(krb5_context context,
 		if (ret == 0) {
 		    hx509_name_to_string(name, &str);
 		    krb5_warnx(context, "WARNING Found KDC certificate (%s)"
-			       "is missing the PK-INIT KDC EKU, this is bad for "
+			       "is missing the PKINIT KDC EKU, this is bad for "
 			       "interoperability.", str);
 		    hx509_name_free(&name);
 		    free(str);
@@ -2020,7 +2000,7 @@ krb5_kdc_pk_initialize(krb5_context context,
 	    hx509_cert_free(cert);
 	} else
 	    krb5_warnx(context, "PKINIT: failed to find a signing "
-		       "certifiate with a public key");
+		       "certificate with a public key");
     }
 
     if (krb5_config_get_bool_default(context,
@@ -2037,7 +2017,14 @@ krb5_kdc_pk_initialize(krb5_context context,
 				  "pkinit_mappings_file",
 				  NULL);
     if (file == NULL) {
-	asprintf(&fn, "%s/pki-mapping", hdb_db_dir(context));
+	int aret;
+
+	aret = asprintf(&fn, "%s/pki-mapping", hdb_db_dir(context));
+	if (aret == -1) {
+	    krb5_warnx(context, "PKINIT: out of memory");
+	    return ENOMEM;
+	}
+
 	file = fn;
     }
 

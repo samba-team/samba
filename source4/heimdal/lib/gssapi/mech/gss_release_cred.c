@@ -54,18 +54,11 @@ GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)
 {
 	struct _gss_cred *cred = (struct _gss_cred *) *cred_handle;
-	struct _gss_mechanism_cred *mc;
 
-	if (*cred_handle == GSS_C_NO_CREDENTIAL)
+	if (cred == NULL)
 	    return (GSS_S_COMPLETE);
 
-	while (HEIM_SLIST_FIRST(&cred->gc_mc)) {
-		mc = HEIM_SLIST_FIRST(&cred->gc_mc);
-		HEIM_SLIST_REMOVE_HEAD(&cred->gc_mc, gmc_link);
-		mc->gmc_mech->gm_release_cred(minor_status, &mc->gmc_cred);
-		free(mc);
-	}
-	free(cred);
+	_gss_mg_release_cred(cred);
 
 	*minor_status = 0;
 	*cred_handle = GSS_C_NO_CREDENTIAL;

@@ -127,7 +127,7 @@ compat_decomp(const uint32_t *in, size_t in_len,
     unsigned o = 0;
 
     for (i = 0; i < in_len; ++i) {
-	struct translation ts = {in[i]};
+	struct translation ts = {in[i], 0, 0};
 	size_t sub_len = *out_len - o;
 	int ret;
 
@@ -227,9 +227,9 @@ find_composition(const uint32_t *in, unsigned in_len)
 	unsigned i;
 
 	if (n % 5 == 0) {
-	    cur = *in++;
 	    if (in_len-- == 0)
 		return c->val;
+	    cur = *in++;
 	}
 
 	i = cur >> 16;

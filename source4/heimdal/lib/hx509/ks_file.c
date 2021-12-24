@@ -32,6 +32,9 @@
  */
 
 #include "hx_locl.h"
+#ifndef WIN32
+#include <libgen.h>
+#endif
 
 typedef enum { USE_PEM, USE_DER } outformat;
 
@@ -46,18 +49,22 @@ struct ks_file {
  */
 
 static int
-parse_certificate(hx509_context context, const char *fn,
+parse_certificate(hx509_context context, const char *fn, int flags,
 		  struct hx509_collector *c,
 		  const hx509_pem_header *headers,
 		  const void *data, size_t len,
 		  const AlgorithmIdentifier *ai)
 {
+    heim_error_t error = NULL;
     hx509_cert cert;
     int ret;
 
-    ret = hx509_cert_init_data(context, data, len, &cert);
-    if (ret)
+    cert = hx509_cert_init_data(context, data, len, &error);
+    if (cert == NULL) {
+	ret = heim_error_get_code(error);
+	heim_release(error);
 	return ret;
+    }
 
     ret = _hx509_collector_certs_add(context, c, cert);
     hx509_cert_free(cert);
@@ -67,6 +74,7 @@ parse_certificate(hx509_context context, const char *fn,
 static int
 try_decrypt(hx509_context context,
 	    struct hx509_collector *collector,
+            int flags,
 	    const AlgorithmIdentifier *alg,
 	    const EVP_CIPHER *c,
 	    const void *ivdata,
@@ -92,9 +100,10 @@ try_decrypt(hx509_context context,
 			 password, passwordlen,
 			 1, key, NULL);
     if (ret <= 0) {
-	hx509_set_error_string(context, 0, HX509_CRYPTO_INTERNAL_ERROR,
+	ret = HX509_CRYPTO_INTERNAL_ERROR;
+	hx509_set_error_string(context, 0, ret,
 			       "Failed to do string2key for private key");
-	return HX509_CRYPTO_INTERNAL_ERROR;
+        goto out;
     }
 
     clear.data = malloc(len);
@@ -114,23 +123,20 @@ try_decrypt(hx509_context context,
 	EVP_CIPHER_CTX_cleanup(&ctx);
     }
 
-    ret = _hx509_collector_private_key_add(context,
-					   collector,
-					   alg,
-					   NULL,
-					   &clear,
-					   NULL);
+    if (!(flags & HX509_CERTS_NO_PRIVATE_KEYS))
+        ret = _hx509_collector_private_key_add(context, collector, alg, NULL,
+                                               &clear, NULL);
 
-    memset(clear.data, 0, clear.length);
+    memset_s(clear.data, clear.length, 0, clear.length);
     free(clear.data);
 out:
-    memset(key, 0, keylen);
+    memset_s(key, keylen, 0, keylen);
     free(key);
     return ret;
 }
 
 static int
-parse_pkcs8_private_key(hx509_context context, const char *fn,
+parse_pkcs8_private_key(hx509_context context, const char *fn, int flags,
 			struct hx509_collector *c,
 			const hx509_pem_header *headers,
 			const void *data, size_t length,
@@ -138,28 +144,28 @@ parse_pkcs8_private_key(hx509_context context, const char *fn,
 {
     PKCS8PrivateKeyInfo ki;
     heim_octet_string keydata;
-
     int ret;
 
     ret = decode_PKCS8PrivateKeyInfo(data, length, &ki, NULL);
     if (ret)
 	return ret;
 
-    keydata.data = rk_UNCONST(data);
-    keydata.length = length;
-
-    ret = _hx509_collector_private_key_add(context,
-					   c,
-					   &ki.privateKeyAlgorithm,
-					   NULL,
-					   &ki.privateKey,
-					   &keydata);
+    if (!(flags & HX509_CERTS_NO_PRIVATE_KEYS)) {
+        keydata.data = rk_UNCONST(data);
+        keydata.length = length;
+        ret = _hx509_collector_private_key_add(context,
+                                               c,
+                                               &ki.privateKeyAlgorithm,
+                                               NULL,
+                                               &ki.privateKey,
+                                               &keydata);
+    }
     free_PKCS8PrivateKeyInfo(&ki);
     return ret;
 }
 
 static int
-parse_pem_private_key(hx509_context context, const char *fn,
+parse_pem_private_key(hx509_context context, const char *fn, int flags,
 		      struct hx509_collector *c,
 		      const hx509_pem_header *headers,
 		      const void *data, size_t len,
@@ -263,7 +269,7 @@ parse_pem_private_key(hx509_context context, const char *fn,
 		password = pw->val[i];
 		passwordlen = strlen(password);
 
-		ret = try_decrypt(context, c, ai, cipher, ivdata,
+		ret = try_decrypt(context, c, flags, ai, cipher, ivdata,
 				  password, passwordlen, data, len);
 		if (ret == 0) {
 		    decrypted = 1;
@@ -284,21 +290,21 @@ parse_pem_private_key(hx509_context context, const char *fn,
 
 	    ret = hx509_lock_prompt(lock, &prompt);
 	    if (ret == 0)
-		ret = try_decrypt(context, c, ai, cipher, ivdata, password,
-				  strlen(password), data, len);
+                ret = try_decrypt(context, c, flags, ai, cipher, ivdata,
+                                  password, strlen(password), data, len);
 	    /* XXX add password to lock password collection ? */
-	    memset(password, 0, sizeof(password));
+	    memset_s(password, sizeof(password), 0, sizeof(password));
 	}
 	free(ivdata);
 
-    } else {
+    } else if (!(flags & HX509_CERTS_NO_PRIVATE_KEYS)) {
 	heim_octet_string keydata;
 
 	keydata.data = rk_UNCONST(data);
 	keydata.length = len;
 
-	ret = _hx509_collector_private_key_add(context, c, ai, NULL,
-					       &keydata, NULL);
+        ret = _hx509_collector_private_key_add(context, c, ai, NULL,
+                                               &keydata, NULL);
     }
 
     return ret;
@@ -307,7 +313,7 @@ parse_pem_private_key(hx509_context context, const char *fn,
 
 struct pem_formats {
     const char *name;
-    int (*func)(hx509_context, const char *, struct hx509_collector *,
+    int (*func)(hx509_context, const char *, int, struct hx509_collector *,
 		const hx509_pem_header *, const void *, size_t,
 		const AlgorithmIdentifier *);
     const AlgorithmIdentifier *(*ai)(void);
@@ -315,7 +321,9 @@ struct pem_formats {
     { "CERTIFICATE", parse_certificate, NULL },
     { "PRIVATE KEY", parse_pkcs8_private_key, NULL },
     { "RSA PRIVATE KEY", parse_pem_private_key, hx509_signature_rsa },
+#ifdef HAVE_HCRYPTO_W_OPENSSL
     { "EC PRIVATE KEY", parse_pem_private_key, hx509_signature_ecPublicKey }
+#endif
 };
 
 
@@ -337,11 +345,12 @@ pem_func(hx509_context context, const char *type,
 	const char *q = formats[j].name;
 	if (strcasecmp(type, q) == 0) {
 	    const AlgorithmIdentifier *ai = NULL;
+
 	    if (formats[j].ai != NULL)
 		ai = (*formats[j].ai)();
 
-	    ret = (*formats[j].func)(context, NULL, pem_ctx->c,
-				     header, data, len, ai);
+            ret = (*formats[j].func)(context, NULL, pem_ctx->flags, pem_ctx->c,
+                                     header, data, len, ai);
 	    if (ret && (pem_ctx->flags & HX509_CERTS_UNPROTECT_ALL)) {
 		hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 				       "Failed parseing PEM format %s", type);
@@ -377,6 +386,12 @@ file_init_common(hx509_context context,
     pem_ctx.flags = flags;
     pem_ctx.c = NULL;
 
+    if (residue == NULL || residue[0] == '\0') {
+        hx509_set_error_string(context, 0, EINVAL,
+                               "PEM file name not specified");
+        return EINVAL;
+    }
+
     *data = NULL;
 
     if (lock == NULL)
@@ -402,6 +417,10 @@ file_init_common(hx509_context context,
      */
 
     if (flags & HX509_CERTS_CREATE) {
+        /*
+         * Note that the file creation is deferred until file_store() is
+         * called.
+         */
 	ret = hx509_certs_init(context, "MEMORY:ks-file-create",
 			       0, lock, &ksf->certs);
 	if (ret)
@@ -448,10 +467,12 @@ file_init_common(hx509_context context,
 
 	    for (i = 0; i < sizeof(formats)/sizeof(formats[0]); i++) {
 		const AlgorithmIdentifier *ai = NULL;
+
 		if (formats[i].ai != NULL)
 		    ai = (*formats[i].ai)();
 
-		ret = (*formats[i].func)(context, p, pem_ctx.c, NULL, ptr, length, ai);
+                ret = (*formats[i].func)(context, p, pem_ctx.flags, pem_ctx.c,
+                                         NULL, ptr, length, ai);
 		if (ret == 0)
 		    break;
 	    }
@@ -519,42 +540,104 @@ file_free(hx509_certs certs, void *data)
 struct store_ctx {
     FILE *f;
     outformat format;
+    int store_flags;
 };
 
-static int
+static int HX509_LIB_CALL
 store_func(hx509_context context, void *ctx, hx509_cert c)
 {
     struct store_ctx *sc = ctx;
     heim_octet_string data;
     int ret;
 
-    ret = hx509_cert_binary(context, c, &data);
-    if (ret)
-	return ret;
+    if (hx509_cert_have_private_key_only(c)) {
+        data.length = 0;
+        data.data = NULL;
+    } else {
+        ret = hx509_cert_binary(context, c, &data);
+        if (ret)
+            return ret;
+    }
 
     switch (sc->format) {
     case USE_DER:
-	fwrite(data.data, data.length, 1, sc->f);
-	free(data.data);
+        /* Can't store both.  Well, we could, but nothing will support it */
+        if (data.data) {
+            fwrite(data.data, data.length, 1, sc->f);
+            free(data.data);
+        } else if (_hx509_cert_private_key_exportable(c) &&
+                   !(sc->store_flags & HX509_CERTS_STORE_NO_PRIVATE_KEYS)) {
+            hx509_private_key key = _hx509_cert_private_key(c);
+
+            ret = _hx509_private_key_export(context, key,
+                                            HX509_KEY_FORMAT_DER, &data);
+            fwrite(data.data, data.length, 1, sc->f);
+            free(data.data);
+        }
 	break;
     case USE_PEM:
-	hx509_pem_write(context, "CERTIFICATE", NULL, sc->f,
-			data.data, data.length);
-	free(data.data);
-	if (_hx509_cert_private_key_exportable(c)) {
+	if (_hx509_cert_private_key_exportable(c) &&
+            !(sc->store_flags & HX509_CERTS_STORE_NO_PRIVATE_KEYS)) {
+            heim_octet_string priv_key;
 	    hx509_private_key key = _hx509_cert_private_key(c);
+
 	    ret = _hx509_private_key_export(context, key,
-					    HX509_KEY_FORMAT_DER, &data);
-	    if (ret)
+					    HX509_KEY_FORMAT_DER, &priv_key);
+	    if (ret) {
+                free(data.data);
 		break;
+            }
 	    hx509_pem_write(context, _hx509_private_pem_name(key), NULL, sc->f,
-			    data.data, data.length);
-	    free(data.data);
+			    priv_key.data, priv_key.length);
+	    free(priv_key.data);
 	}
+        if (data.data) {
+            hx509_pem_write(context, "CERTIFICATE", NULL, sc->f,
+                            data.data, data.length);
+            free(data.data);
+        }
 	break;
     }
 
     return 0;
+}
+
+static int
+mk_temp(const char *fn, char **tfn)
+{
+    char *ds;
+    int ret = -1;
+
+#ifdef WIN32
+    char buf[PATH_MAX];
+    char *p;
+
+    *tfn = NULL;
+
+    if ((ds = _fullpath(buf, fn, sizeof(buf))) == NULL) {
+        errno = errno ? errno : ENAMETOOLONG;
+        return -1;
+    }
+
+    if ((p = strrchr(ds, '\\')) == NULL) {
+        ret = asprintf(tfn, ".%s-XXXXXX", ds); /* XXX can't happen */
+    } else {
+        *(p++) = '\0';
+        ret = asprintf(tfn, "%s/.%s-XXXXXX", ds, p);
+    }
+#else
+    *tfn = NULL;
+    if ((ds = strdup(fn)))
+        ret = asprintf(tfn, "%s/.%s-XXXXXX", dirname(ds), basename(ds));
+    free(ds);
+#endif
+
+    /*
+     * Using mkostemp() risks leaving garbage files lying around.  To do better
+     * without resorting to file locks (which have their own problems) we need
+     * O_TMPFILE and linkat(2), which only Linux has.
+     */
+    return  (ret == -1 || *tfn == NULL) ? -1 : mkostemp(*tfn, O_CLOEXEC);
 }
 
 static int
@@ -563,19 +646,35 @@ file_store(hx509_context context,
 {
     struct ks_file *ksf = data;
     struct store_ctx sc;
+    char *tfn;
     int ret;
+    int fd;
 
-    sc.f = fopen(ksf->fn, "w");
+    sc.f = NULL;
+    fd = mk_temp(ksf->fn, &tfn);
+    if (fd > -1)
+        sc.f = fdopen(fd, "w");
     if (sc.f == NULL) {
-	hx509_set_error_string(context, 0, ENOENT,
-			       "Failed to open file %s for writing");
-	return ENOENT;
+	hx509_set_error_string(context, 0, ret = errno,
+			       "Failed to open file %s for writing", ksf->fn);
+        if (fd > -1)
+            (void) close(fd);
+	return ret;
     }
     rk_cloexec_file(sc.f);
+    sc.store_flags = flags;
     sc.format = ksf->format;
 
     ret = hx509_certs_iter_f(context, ksf->certs, store_func, &sc);
-    fclose(sc.f);
+    if (ret == 0)
+        ret = fclose(sc.f);
+    else
+        (void) fclose(sc.f);
+    if (ret)
+        (void) unlink(tfn);
+    else
+        (void) rename(tfn, ksf->fn);
+    free(tfn);
     return ret;
 }
 
@@ -632,6 +731,15 @@ file_addkey(hx509_context context,
     return _hx509_certs_keys_add(context, ksf->certs, key);
 }
 
+static int
+file_destroy(hx509_context context,
+             hx509_certs certs,
+             void *data)
+{
+    struct ks_file *ksf = data;
+    return _hx509_erase_file(context, ksf->fn);
+}
+
 static struct hx509_keyset_ops keyset_file = {
     "FILE",
     0,
@@ -645,7 +753,8 @@ static struct hx509_keyset_ops keyset_file = {
     file_iter_end,
     NULL,
     file_getkeys,
-    file_addkey
+    file_addkey,
+    file_destroy
 };
 
 static struct hx509_keyset_ops keyset_pemfile = {
@@ -661,7 +770,8 @@ static struct hx509_keyset_ops keyset_pemfile = {
     file_iter_end,
     NULL,
     file_getkeys,
-    file_addkey
+    file_addkey,
+    file_destroy
 };
 
 static struct hx509_keyset_ops keyset_derfile = {
@@ -677,11 +787,12 @@ static struct hx509_keyset_ops keyset_derfile = {
     file_iter_end,
     NULL,
     file_getkeys,
-    file_addkey
+    file_addkey,
+    file_destroy
 };
 
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 _hx509_ks_file_register(hx509_context context)
 {
     _hx509_ks_register(context, &keyset_file);

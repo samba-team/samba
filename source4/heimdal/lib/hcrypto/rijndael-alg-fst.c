@@ -28,10 +28,9 @@
 
 /* "$NetBSD: rijndael-alg-fst.c,v 1.5 2001/11/13 01:40:10 lukem Exp $" */
 
-#include "config.h"
+#include <config.h>
+#include <roken.h>
 
-
-#include <stdlib.h>
 #ifdef KRB5
 #include <krb5-types.h>
 #endif

@@ -32,15 +32,11 @@
  */
 
 #include <config.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <roken.h>
 #include <signal.h>
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
-#include <roken.h>
 
 #include <ui.h>
 #ifdef HAVE_CONIO_H
@@ -198,7 +194,7 @@ UI_UTIL_read_pw_string(char *buf, int length, const char *prompt, int verify)
     if (ret)
 	return ret;
 
-    if (verify) {
+    if (verify & UI_UTIL_FLAG_VERIFY) {
 	char *buf2;
 	buf2 = malloc(length);
 	if (buf2 == NULL)
@@ -209,8 +205,13 @@ UI_UTIL_read_pw_string(char *buf, int length, const char *prompt, int verify)
 	    free(buf2);
 	    return ret;
 	}
-	if (strcmp(buf2, buf) != 0)
+	if (strcmp(buf2, buf) != 0) {
+	    if (!(verify & UI_UTIL_FLAG_VERIFY_SILENT)) {
+		fprintf(stderr, "Verify failure\n");
+		fflush(stderr);
+	    }
 	    ret = 1;
+	}
 	free(buf2);
     }
     return ret;

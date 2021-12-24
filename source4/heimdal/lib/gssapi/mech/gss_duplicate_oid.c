@@ -47,22 +47,5 @@ gss_duplicate_oid (
 	return GSS_S_COMPLETE;
     }
 
-    *dest_oid = malloc(sizeof(**dest_oid));
-    if (*dest_oid == GSS_C_NO_OID) {
-	*minor_status = ENOMEM;
-	return GSS_S_FAILURE;
-    }
-
-    (*dest_oid)->elements = malloc(src_oid->length);
-    if ((*dest_oid)->elements == NULL) {
-	free(*dest_oid);
-	*dest_oid = GSS_C_NO_OID;
-	*minor_status = ENOMEM;
-	return GSS_S_FAILURE;
-    }
-    memcpy((*dest_oid)->elements, src_oid->elements, src_oid->length);
-    (*dest_oid)->length = src_oid->length;
-
-    *minor_status = 0;
-    return GSS_S_COMPLETE;
+    return _gss_intern_oid(minor_status, src_oid, dest_oid);
 }

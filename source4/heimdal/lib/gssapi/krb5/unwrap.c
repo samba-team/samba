@@ -109,7 +109,7 @@ unwrap_des
       EVP_Cipher(&des_ctx, p, p, input_message_buffer->length - len);
       EVP_CIPHER_CTX_cleanup(&des_ctx);
 
-      memset (&schedule, 0, sizeof(schedule));
+      memset (&deskey, 0, sizeof(deskey));
   }
 
   if (IS_DCE_STYLE(context_handle)) {
@@ -135,8 +135,11 @@ unwrap_des
   DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 &schedule, &zero);
-  if (ct_memcmp (p - 8, hash, 8) != 0)
+  if (ct_memcmp (p - 8, hash, 8) != 0) {
+    memset_s(&deskey, sizeof(deskey), 0, sizeof(deskey));
+    memset_s(&schedule, sizeof(schedule), 0, sizeof(schedule));
     return GSS_S_BAD_MIC;
+  }
 
   /* verify sequence number */
 
@@ -382,7 +385,7 @@ unwrap_des3
 
 OM_uint32 GSSAPI_CALLCONV _gsskrb5_unwrap
            (OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
+            gss_const_ctx_id_t context_handle,
             const gss_buffer_t input_message_buffer,
             gss_buffer_t output_message_buffer,
             int * conf_state,

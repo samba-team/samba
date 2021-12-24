@@ -1,0 +1,64 @@
+-- $Id$
+PKCS10 DEFINITIONS ::=
+
+BEGIN
+
+IMPORTS
+	Name, SubjectPublicKeyInfo, AlgorithmIdentifier, Attribute, Extensions
+	FROM rfc2459
+        HEIM_ANY FROM heim;
+
+PKCS10-Version ::= INTEGER { pkcs10-v1(0) }
+
+CertificationRequestInfo ::= SEQUENCE {
+    version       PKCS10-Version,
+    subject       Name,
+    subjectPKInfo SubjectPublicKeyInfo,
+    attributes    [0] IMPLICIT SET OF Attribute OPTIONAL 
+}
+
+CertificationRequest ::= SEQUENCE {
+    certificationRequestInfo CertificationRequestInfo,
+    signatureAlgorithm	     AlgorithmIdentifier,
+    signature                BIT STRING
+}
+
+IOSCertificationRequestInfo ::= SEQUENCE {
+    version       PKCS10-Version,
+    subject       Name,
+    subjectPKInfo SubjectPublicKeyInfo,
+    attributes    [0] IMPLICIT SET OF CRIAttributeSet OPTIONAL 
+}
+
+IOSCertificationRequest ::= SEQUENCE {
+    certificationRequestInfo IOSCertificationRequestInfo,
+    signatureAlgorithm	     AlgorithmIdentifier,
+    signature                BIT STRING
+}
+
+-- Copied from rfc2459.asn1 because we can't IMPORT classes and parameterized
+-- types yet.
+_ATTRIBUTE ::= CLASS {
+    &id             OBJECT IDENTIFIER UNIQUE,
+    &Type           OPTIONAL,
+    &minCount       INTEGER DEFAULT 1,
+    &maxCount       INTEGER OPTIONAL
+}
+
+id-pkcs9-extReq-copy OBJECT IDENTIFIER ::= {
+ iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) pkcs-9(9) 14
+}
+
+-- Workaround compiler limitation:
+CRIExtensions ::= Extensions
+
+at-extReq _ATTRIBUTE ::= { &Type CRIExtensions, &id id-pkcs9-extReq-copy }
+CRIAttributes _ATTRIBUTE ::= { at-extReq }
+CRIAttributeSet{_ATTRIBUTE:AttrSet} ::= SEQUENCE {
+    type      _ATTRIBUTE.&id({AttrSet}),
+    values    SET --SIZE (1..MAX)-- OF _ATTRIBUTE.&Type({AttrSet}{@type})
+}
+CRIAttributeSet ::= CRIAttributeSet{CRIAttributes}
+
+END
+

@@ -65,7 +65,7 @@ hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
     }
     db = name;
     mkey = strstr(name, ":mkey=");
-    if(mkey == NULL || mkey[5] == '\0') {
+    if(mkey == NULL || mkey[6] == '\0') {
 	if(*name == '\0')
 	    d->dbname = NULL;
 	else {
@@ -87,7 +87,7 @@ hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
 	memmove(d->dbname, db, mkey - db);
 	d->dbname[mkey - db] = '\0';
 
-	d->mkey = strdup(mkey + 5);
+	d->mkey = strdup(mkey + 6);
 	if(d->mkey == NULL) {
 	    free(d->dbname);
 	    free(d);
@@ -159,8 +159,9 @@ find_db (krb5_context context,
 	}
     }
     hdb_free_dbinfo(context, &head);
-    if (*dbname == NULL)
-	*dbname = strdup(HDB_DEFAULT_DB);
+    if (*dbname == NULL &&
+        (*dbname = strdup(hdb_default_db(context))) == NULL)
+        return krb5_enomem(context);
     return 0;
 }
 
@@ -211,10 +212,10 @@ hdb_get_entry(krb5_context context,
 	goto out2;
     }
 
-    ret = (*db->hdb_fetch_kvno)(context, db, principal,
-				HDB_F_DECRYPT|HDB_F_KVNO_SPECIFIED|
-				HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
-				kvno, &ent);
+    ret = hdb_fetch_kvno(context, db, principal,
+                         HDB_F_DECRYPT|HDB_F_KVNO_SPECIFIED|
+                         HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
+                         0, 0, kvno, &ent);
 
     if(ret == HDB_ERR_NOENTRY) {
 	ret = KRB5_KT_NOTFOUND;
@@ -420,5 +421,23 @@ krb5_kt_ops hdb_kt_ops = {
     hdb_next_entry,
     hdb_end_seq_get,
     NULL,		/* add */
-    NULL		/* remove */
+    NULL,		/* remove */
+    NULL,
+    0
+};
+
+krb5_kt_ops hdb_get_kt_ops = {
+    "HDBGET",
+    hdb_resolve,
+    hdb_get_name,
+    hdb_close,
+    NULL,
+    hdb_get_entry,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    0
 };

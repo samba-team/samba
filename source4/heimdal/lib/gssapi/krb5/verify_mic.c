@@ -89,8 +89,8 @@ verify_mic_des
   DES_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 &schedule, &zero);
   if (ct_memcmp (p - 8, hash, 8) != 0) {
-    memset (deskey, 0, sizeof(deskey));
-    memset (&schedule, 0, sizeof(schedule));
+    memset_s(deskey, sizeof(deskey), 0, sizeof(deskey));
+    memset_s(&schedule, sizeof(schedule), 0, sizeof(schedule));
     return GSS_S_BAD_MIC;
   }
 
@@ -105,8 +105,8 @@ verify_mic_des
   EVP_Cipher(&des_ctx, p, p, 8);
   EVP_CIPHER_CTX_cleanup(&des_ctx);
 
-  memset (deskey, 0, sizeof(deskey));
-  memset (&schedule, 0, sizeof(schedule));
+  memset_s(deskey, sizeof(deskey), 0, sizeof(deskey));
+  memset_s(&schedule, sizeof(schedule), 0, sizeof(schedule));
 
   seq = p;
   _gsskrb5_decode_om_uint32(seq, &seq_number);
@@ -254,15 +254,11 @@ retry:
   krb5_crypto_destroy (context, crypto);
   ret = krb5_crypto_init(context, key,
 			 ETYPE_DES3_CBC_SHA1, &crypto);
-  if (ret){
-      *minor_status = ret;
-      return GSS_S_FAILURE;
-  }
-
-  ret = krb5_verify_checksum (context, crypto,
-			      KRB5_KU_USAGE_SIGN,
-			      tmp, message_buffer->length + 8,
-			      &csum);
+  if (ret == 0)
+      ret = krb5_verify_checksum(context, crypto,
+                                 KRB5_KU_USAGE_SIGN,
+                                 tmp, message_buffer->length + 8,
+                                 &csum);
   free (tmp);
   if (ret) {
       krb5_crypto_destroy (context, crypto);
@@ -340,7 +336,7 @@ _gsskrb5_verify_mic_internal
 OM_uint32 GSSAPI_CALLCONV
 _gsskrb5_verify_mic
            (OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
+            gss_const_ctx_id_t context_handle,
             const gss_buffer_t message_buffer,
             const gss_buffer_t token_buffer,
             gss_qop_t * qop_state

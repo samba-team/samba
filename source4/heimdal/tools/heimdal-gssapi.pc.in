@@ -1,0 +1,14 @@
+# $Id$
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=@libdir@
+includedir=@includedir@
+
+Name: @PACKAGE@
+Description: Heimdal is an implementation of Kerberos 5, freely available under a three clause BSD style license.
+Version: @VERSION@
+URL: http://www.pdc.kth.se/heimdal/
+Requires.private: heimdal-krb5
+Libs: -L${libdir} -lgssapi
+Libs.private: -lheimntlm @LIB_crypt@
+Cflags: -I${includedir}

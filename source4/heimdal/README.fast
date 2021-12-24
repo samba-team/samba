@@ -1,0 +1,13 @@
+
+-- in order of preference
+
+- client: plugin support for fast plugins
+	note GSS-API can be used as PA plugin interface
+
+- kdc: plugin support for fast plugins
+	partly done with "struct kdc_patypes"
+
+- kcm: support FAST armor ticket
+-- using PK-INIT anonymous
+-- using host key
+

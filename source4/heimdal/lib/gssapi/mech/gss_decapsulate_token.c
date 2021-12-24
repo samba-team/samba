@@ -54,7 +54,7 @@ gss_decapsulate_token(gss_const_buffer_t input_token,
 				    &ct, NULL);
     if (ret) {
 	der_free_oid(&o);
-	return GSS_S_FAILURE;
+	return GSS_S_DEFECTIVE_TOKEN;
     }
 
     if (der_heim_oid_cmp(&ct.thisMech, &o) == 0) {
@@ -64,7 +64,7 @@ gss_decapsulate_token(gss_const_buffer_t input_token,
 	der_free_oid(&ct.thisMech);
     } else {
 	free_GSSAPIContextToken(&ct);
- 	status = GSS_S_FAILURE;
+	status = GSS_S_BAD_MECH;
     }
     der_free_oid(&o);
 

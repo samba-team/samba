@@ -35,17 +35,19 @@
 
 #include "der_locl.h"
 #include "heim_asn1.h"
+#include <vis.h>
+#include <vis-extras.h>
 
 RCSID("$Id$");
 
-int
+int ASN1CALL
 encode_heim_any(unsigned char *p, size_t len,
 		const heim_any *data, size_t *size)
 {
     return der_put_octet_string (p, len, data, size);
 }
 
-int
+int ASN1CALL
 decode_heim_any(const unsigned char *p, size_t len,
 		heim_any *data, size_t *size)
 {
@@ -84,58 +86,200 @@ decode_heim_any(const unsigned char *p, size_t len,
     return 0;
 }
 
-void
+void ASN1CALL
 free_heim_any(heim_any *data)
 {
     der_free_octet_string(data);
 }
 
-size_t
+char * ASN1CALL
+print_heim_any(const heim_any *data, int flags)
+{
+    char *s2 = NULL;
+    char *s = der_print_octet_string(data, 0);
+    int r = -1;
+
+    (void)flags;
+    if (s)
+        r = rk_strasvis(&s2, s, VIS_CSTYLE|VIS_TAB|VIS_NL, "\"");
+    free(s);
+    s = NULL;
+    if (r > -1)
+        r = asprintf(&s, "\"%s\"", s2);
+    free(s2);
+    return s;
+}
+
+size_t ASN1CALL
 length_heim_any(const heim_any *data)
 {
     return data->length;
 }
 
-int
+int ASN1CALL
 copy_heim_any(const heim_any *from, heim_any *to)
 {
     return der_copy_octet_string(from, to);
 }
 
-int
+int ASN1CALL
+encode_HEIM_ANY(unsigned char *p, size_t len,
+		const heim_any *data, size_t *size)
+{
+    return encode_heim_any(p, len, data, size);
+}
+
+int ASN1CALL
+decode_HEIM_ANY(const unsigned char *p, size_t len,
+		heim_any *data, size_t *size)
+{
+    return decode_heim_any(p, len, data, size);
+}
+
+void ASN1CALL
+free_HEIM_ANY(heim_any *data)
+{
+    der_free_octet_string(data);
+}
+
+char * ASN1CALL
+print_HEIM_ANY(const heim_any *data, int flags)
+{
+    char *s2 = NULL;
+    char *s = der_print_octet_string(data, 0);
+    int r = -1;
+
+    (void)flags;
+    if (s)
+        r = rk_strasvis(&s2, s, VIS_CSTYLE|VIS_TAB|VIS_NL, "\"");
+    free(s);
+    s = NULL;
+    if (r > -1)
+        r = asprintf(&s, "\"%s\"", s2);
+    free(s2);
+    return s;
+}
+
+size_t ASN1CALL
+length_HEIM_ANY(const heim_any *data)
+{
+    return data->length;
+}
+
+int ASN1CALL
+copy_HEIM_ANY(const heim_any *from, heim_any *to)
+{
+    return der_copy_octet_string(from, to);
+}
+
+int ASN1CALL
 encode_heim_any_set(unsigned char *p, size_t len,
 		    const heim_any_set *data, size_t *size)
 {
     return der_put_octet_string (p, len, data, size);
 }
 
-int
+int ASN1CALL
 decode_heim_any_set(const unsigned char *p, size_t len,
 		heim_any_set *data, size_t *size)
 {
     return der_get_octet_string(p, len, data, size);
 }
 
-void
+void ASN1CALL
 free_heim_any_set(heim_any_set *data)
 {
     der_free_octet_string(data);
 }
 
-size_t
+char * ASN1CALL
+print_heim_any_set(const heim_any_set *data, int flags)
+{
+    char *s2 = NULL;
+    char *s = der_print_octet_string(data, 0);
+    int r = -1;
+
+    (void)flags;
+    if (s)
+        r = rk_strasvis(&s2, s, VIS_CSTYLE|VIS_TAB|VIS_NL, "\"");
+    free(s);
+    s = NULL;
+    if (r > -1)
+        r = asprintf(&s, "\"%s\"", s2);
+    free(s2);
+    return s;
+}
+
+size_t ASN1CALL
 length_heim_any_set(const heim_any *data)
 {
     return data->length;
 }
 
-int
+int ASN1CALL
 copy_heim_any_set(const heim_any_set *from, heim_any_set *to)
 {
     return der_copy_octet_string(from, to);
 }
 
-int
+int ASN1CALL
 heim_any_cmp(const heim_any_set *p, const heim_any_set *q)
+{
+    return der_heim_octet_string_cmp(p, q);
+}
+
+int ASN1CALL
+encode_HEIM_ANY_SET(unsigned char *p, size_t len,
+		    const heim_any_set *data, size_t *size)
+{
+    return encode_heim_any_set(p, len, data, size);
+}
+
+int ASN1CALL
+decode_HEIM_ANY_SET(const unsigned char *p, size_t len,
+                    heim_any_set *data, size_t *size)
+{
+    return decode_heim_any_set(p, len, data, size);
+}
+
+void ASN1CALL
+free_HEIM_ANY_SET(heim_any_set *data)
+{
+    der_free_octet_string(data);
+}
+
+char * ASN1CALL
+print_HEIM_ANY_SET(const heim_any_set *data, int flags)
+{
+    char *s2 = NULL;
+    char *s = der_print_octet_string(data, 0);
+    int r = -1;
+
+    (void)flags;
+    if (s)
+        r = rk_strasvis(&s2, s, VIS_CSTYLE|VIS_TAB|VIS_NL, "\"");
+    free(s);
+    s = NULL;
+    if (r > -1)
+        r = asprintf(&s, "\"%s\"", s2);
+    free(s2);
+    return s;
+}
+
+size_t ASN1CALL
+length_HEIM_ANY_SET(const heim_any *data)
+{
+    return data->length;
+}
+
+int ASN1CALL
+copy_HEIM_ANY_SET(const heim_any_set *from, heim_any_set *to)
+{
+    return der_copy_octet_string(from, to);
+}
+
+int ASN1CALL
+HEIM_ANY_cmp(const heim_any_set *p, const heim_any_set *q)
 {
     return der_heim_octet_string_cmp(p, q);
 }

@@ -64,8 +64,7 @@ routine_error(OM_uint32 v)
 	"Incorrect channel bindings were supplied",
 	"An invalid status code was supplied",
 	"A token had an invalid MIC",
-	"No credentials were supplied, "
-	"or the credentials were unavailable or inaccessible.",
+	"No credentials were supplied, or the credentials were unavailable or inaccessible.",
 	"No context has been established",
 	"A token was invalid",
 	"A credential was invalid",
@@ -159,7 +158,7 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_display_status
     if (gss_oid_equal(mech_type, GSS_C_NO_OID) == 0 &&
 	gss_oid_equal(mech_type, GSS_KRB5_MECHANISM) == 0) {
 	*minor_status = 0;
-	return GSS_C_GSS_CODE;
+	return GSS_S_BAD_MECH;
     }
 
     if (status_type == GSS_C_GSS_CODE) {

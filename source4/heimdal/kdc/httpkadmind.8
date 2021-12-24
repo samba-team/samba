@@ -1,0 +1,424 @@
+.\" Copyright (c) 2020 Kungliga Tekniska Högskolan
+.\" (Royal Institute of Technology, Stockholm, Sweden).
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the Institute nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.Dd January  2, 2020
+.Dt HTTPKADMIND 8
+.Os HEIMDAL
+.Sh NAME
+.Nm httpkadmind
+.Nd HTTP HDB Administration Interface
+.Sh SYNOPSIS
+.Nm
+.Op Fl h | Fl Fl help
+.Op Fl Fl version
+.Op Fl H Ar HOSTNAME
+.Op Fl d | Fl Fl daemon
+.Op Fl Fl daemon-child
+.Op Fl Fl reverse-proxied
+.Op Fl p Ar port number (default: 443)
+.Op Fl Fl temp-dir= Ns Ar DIRECTORY
+.Op Fl Fl cert=HX509-STORE
+.Op Fl Fl private-key=HX509-STORE
+.Op Fl T | Fl Fl token-authentication-type=Negotiate|Bearer
+.Op Fl Fl realm=REALM
+.Op Fl Fl read-only
+.Op Fl l | Fl Fl local
+.Op Fl Fl local-read-only
+.Op Fl Fl hdb=HDB
+.Op Fl Fl stash-file=FILENAME
+.Op Fl Fl primary-server-uri=URI
+.Op Fl Fl read-only-admin-server=HOSTNAME[:PORT]
+.Op Fl Fl writable-admin-server=HOSTNAME[:PORT]
+.Op Fl Fl kadmin-client-name=PRINCIPAL
+.Op Fl Fl kadmin-client-keytab=KEYTAB
+.Op Fl t | Fl Fl thread-per-client
+.Oo Fl v \*(Ba Xo
+.Fl Fl verbose= Ns Ar run verbosely
+.Xc
+.Oc
+.Sh DESCRIPTION
+Serves the following resources:
+.Ar /get-keys and
+.Ar /get-config .
+.Pp
+The
+.Ar /get-keys
+end-point allows callers to get keytab content for named
+principals, possibly performing write operations such as creating
+a non-existent principal, or rotating its keys, if requested.
+.Pp
+The
+.Ar /get-config
+end-point allows callers to get
+.Nm krb5.conf
+contents for a given principal.
+.Pp
+This service can run against a local HDB, or against a remote HDB
+via the
+.Nm kadmind(8)
+protocol.
+Read operations are always allowed, but write operations can be
+preformed either against writable
+.Nm kadmind(8)
+server(s) or redirected to another
+.Nm httpkadmind(8).
+.Pp
+The
+.Ar /get-config
+end-point accepts a single query parameter:
+.Bl -tag -width Ds -offset indent
+.It Ar princ=PRINCIPAL .
+.El
+.Pp
+The
+.Ar /get-keys
+end-point accepts various parameters:
+.Bl -tag -width Ds -offset indent
+.It Ar spn=PRINCIPAL
+Names the host-based service principal whose keys to get.
+May be given multiple times, and all named principal's keys will
+be fetched.
+.It Ar dNSName=HOSTNAME
+Names the host-based service principal's hostname whose keys to get.
+May be given multiple times, and all named principal's keys will
+be fetched.
+.It Ar service=SERVICE
+Hostnames given with
+.Ar dNSName=HOSTNAME
+will be qualified with this service name to form a host-based
+service principal.
+May be given multiple times, in which case the cartesian product
+of
+.Ar dNSName=HOSTNAME
+ad
+.Ar service=SERVICE
+will be used.
+Defaults to
+.Ar HTTP .
+.It realm=REALM
+Must be present if the
+.Nm httpkadmind
+daemon's default realm is not desired.
+.It Ar enctypes=ENCTYPE,...
+A comma-separated list of enctypes that the principal is expected
+to support (used for Kerberos Ticket session key negotiation).
+Defaults to the
+.Ar supported_enctypes
+configured in
+.Nm krb5.conf(5) .
+.It Ar materialize=true
+If the named principal(s) is (are) virtual, this will cause it
+(them) to be materialized as a concrete principal.
+(Currently not supported.)
+.It Ar create=true
+If the named principal(s) does not (do not) exist, this will
+cause it (them) to be created.
+.It Ar rotate=true
+This will cause the keys of concrete principals to be rotated.
+.It Ar revoke=true
+This will cause old keys of concrete principals to be deleted
+if their keys are being rotated.
+This means that extant service tickets with those principals as
+the target will not be able to be decrypted by the caller as it
+will not have the necessary keys.
+.El
+.Pp
+Authorization is handled via the same mechanism as in
+.Nm bx509d(8)
+which was originally intended to authorize certification requests
+(CSRs).
+Authorization for extracting keys is specified like for
+.Nm bx509d(8) ,
+but using
+.Nm [ext_keytab]
+as the
+.Nm krb5.conf(5) section.
+Clients with host-based principals for the the host service can
+create and extract keys for their own service name, but otherwise
+a number of service names are not denied:
+.Bl -tag -width Ds -offset indent
+.It Dq host
+.It Dq root
+.It Dq exceed
+.El
+as well as all the service names for Heimdal-specific services:
+.Bl -tag -width Ds -offset indent
+.It Dq krbtgt
+.It Dq iprop
+.It Dq kadmin
+.It Dq hprop
+.It Dq WELLKNOWN
+.It Dq K
+.El
+.Pp
+Supported options:
+.Bl -tag -width Ds -offset indent
+.It Xo
+.Fl h ,
+.Fl Fl help
+.Xc
+Print usage message.
+.It Xo
+.Fl Fl version
+.Xc
+Print version.
+.It Xo
+.Fl H Ar HOSTNAME
+.Xc
+Expected audience(s) of bearer tokens (i.e., acceptor name).
+.It Xo
+.Fl d ,
+.Fl Fl daemon
+.Xc
+Detach from TTY and run in the background.
+.It Xo
+.Fl Fl reverse-proxied
+.Xc
+Serves HTTP instead of HTTPS, accepting only looped-back connections.
+.It Xo
+.Fl p Ar port number (default: 443)
+.Xc
+PORT
+.It Xo
+.Fl Fl temp-dir= Ns Ar DIRECTORY
+.Xc
+Directory for temp files.
+If not specified then a temporary directory will be made.
+.It Xo
+.Fl Fl cert= Ns Ar HX509-STORE
+.Xc
+Certificate file path (PEM) for HTTPS service.
+May contain private key as well.
+.It Xo
+.Fl Fl private-key= Ns Ar HX509-STORE
+.Xc
+Private key file path (PEM), if the private key is not stored along with the
+certificiate.
+.It Xo
+.Fl T Ar HTTP-AUTH-TYPE,
+.Fl Fl token-authentication-type= Ns Ar HTTP-AUTH-TYPE
+.Xc
+HTTP bearer token authentication type(s) supported (may be given more than
+once).
+For example,
+.Ar Negotiate
+or
+.Ar Bearer
+(JWT).
+.It Xo
+.Fl t ,
+.Fl Fl thread-per-client
+.Xc
+Uses a thread per-client instead of as many threads as there are CPUs.
+.It Xo
+.Fl Fl realm= Ns Ar REALM
+.Xc
+The realm to serve, if not the default realm.
+Note that clients can request keys for principals in other realms, and
+.Nm httpkadmind
+will attempt to satisfy those requests too.
+.It Xo
+.Fl Fl read-only
+.Xc
+Do not perform write operations.
+Write operations will either fail or if a primary
+.Nm httpkadmind
+URI is configured, then they will be redirected there.
+.It Xo
+.Fl Fl local
+.Xc
+Use a local HDB, at least for read operations, and, if
+.Fl Fl local-read-only
+is not given, then also write operations.
+.It Xo
+.Fl Fl local-read-only
+.Xc
+Do not perform writes on a local HDB.
+Either redirect write operations if a primary
+.Nm httpkadmind
+URI is configured, or use a writable remote
+.Nm kadmind
+server.
+.It Xo
+.Fl Fl hdb=HDB
+.Xc
+A local HDB to serve.
+Note that this can be obtained from the
+.Nm krb5.conf .
+.It Xo
+.Fl Fl stash-file=FILENAME
+.Xc
+A stash file containing a master key for a local HDB.
+Note that this can be obtained from the
+.Nm krb5.conf .
+.It Xo
+.Fl Fl primary-server-uri=URI
+.Xc
+The URL of an httpkadmind to which to redirect write operations.
+.It Xo
+.Fl Fl read-only-admin-server=HOSTNAME[:PORT]
+.Xc
+The hostname (and possibly port number) of a
+.Nm kadmind(8)
+service to use for read-only operations.
+Recall that the
+.Nm kadmind(8)
+service's principal name is
+.Ar kadmin/admin .
+The
+.Ar HOSTNAME
+given here can be a name that resolves to the IP addresses of all
+the
+.Nm kadmind(8)
+services for the
+.Ar REALM .
+If not specified, but needed, this will be obtained by looking for
+.Nm readonly_admin_server
+in
+.Nm krb5.conf
+or, if enabled, performing
+DNS lookups for SRV resource records named
+.Ar _kerberos-adm-readonly._tcp.<realm> .
+.It Xo
+.Fl Fl writable-admin-server=HOSTNAME[:PORT]
+.Xc
+The hostname (and possibly port number) of a
+.Nm kadmind(8)
+service to use for write operations.
+If not specified, but needed, this will be obtained by looking for
+.Nm admin_server
+in
+.Nm krb5.conf
+or, if enabled, performing DNS lookups for SRV resource records named
+.Ar _kerberos-adm._tcp.<realm> .
+.It Xo
+.Fl Fl kadmin-client-name=PRINCIPAL
+.Xc
+The client principal name to use when connecting to a
+.Nm kadmind(8)
+server.
+Defaults to
+.Ar httpkadmind/admin .
+.It Xo
+.Fl Fl kadmin-client-keytab=KEYTAB
+.Xc
+The keytab containing keys for the
+.Ar kadmin-client-name .
+Note that you may use an
+.Ar HDB
+as a keytab as
+.Ar HDBGET:/var/heimdal/heimdal.db
+(or whatever the HDB specification is).
+.It Xo
+.Fl v ,
+.Fl Fl verbose= Ns Ar run verbosely
+.Xc
+verbose
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev KRB5_CONFIG
+The file name of
+.Pa krb5.conf ,
+the default being
+.Pa /etc/krb5.conf .
+.El
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa /etc/krb5.conf
+.El
+.Sh CONFIGURATION
+Authorizer configuration goes in
+.Br
+.Ar [ext_keytab]
+in
+.Nm krb5.conf(5).  For example:
+.Pp
+[ext_keytab]
+  simple_csr_authorizer_directory = /etc/krb5/simple_csr_authz
+  ipc_csr_authorizer = {
+    service = UNIX:/var/heimdal/csr_authorizer_sock
+  }
+.Sh EXAMPLES
+To start
+.Nm httpkadmind
+on a primary KDC:
+.Pp
+.Ar $ httpkadmind -d --cert=PEM-FILE:/etc/httpkadmind.pem
+\\
+.Br
+   --local -T Negotiate
+.Pp
+To start
+.Nm httpkadmind
+on a secondary KDC, using redirects for write operations:
+.Pp
+.Ar $ httpkadmind -d --cert=PEM-FILE:/etc/httpkadmind.pem
+\\
+.Br
+  --local-read-only -T Negotiate
+\\
+.Br
+  --primary-server-uri=https://the-primary-server.fqdn/
+.Pp
+To start
+.Nm httpkadmind
+on a secondary KDC, proxying kadmin to perform writes at the primary KDC, using
+DNS to discover the kadmin server:
+.Pp
+.Ar $ httpkadmind -d --cert=PEM-FILE:/etc/httpkadmind.pem
+\\
+.Br
+  --local-read-only -T Negotiate
+\\
+.Br
+  --kadmin-client-keytab=FILE:/etc/krb5.keytab
+.Pp
+To start
+.Nm httpkadmind
+on a non-KDC:
+.Pp
+.Ar $ httpkadmind -d --cert=PEM-FILE:/etc/httpkadmind.pem
+\\
+.Br
+  -T Negotiate --kadmin-client-keytab=FILE:/etc/krb5.keytab
+.Pp
+.Sh DIAGNOSTICS
+See logging section of
+.Nm krb5.conf.5
+.Sh SEE ALSO
+.Xr bx509d 8 ,
+.Xr kadmin 1 ,
+.Xr kadmind 8 ,
+.Xr krb5.conf 5 .
+.\".Sh STANDARDS
+.\".Sh HISTORY
+.\".Sh AUTHORS
+.\".Sh BUGS

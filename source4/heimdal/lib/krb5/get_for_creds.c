@@ -33,6 +33,14 @@
 
 #include "krb5_locl.h"
 
+static krb5_error_code set_tgs_creds(krb5_context, krb5_ccache,
+                                     krb5_const_principal,
+                                     krb5_const_principal, krb5_creds *);
+static krb5_error_code get_cred(krb5_context, krb5_ccache, krb5_creds *,
+                                krb5_flags, const char *, krb5_creds **);
+static krb5_error_code get_addresses(krb5_context, krb5_ccache, krb5_creds *,
+                                     const char *, krb5_addresses *);
+
 static krb5_error_code
 add_addrs(krb5_context context,
 	  krb5_addresses *addr,
@@ -49,8 +57,7 @@ add_addrs(krb5_context context,
 
     tmp = realloc(addr->val, (addr->len + n) * sizeof(*addr->val));
     if (tmp == NULL && (addr->len + n) != 0) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	ret = krb5_enomem(context);
 	goto fail;
     }
     addr->val = tmp;
@@ -82,9 +89,15 @@ fail:
 }
 
 /**
- * Forward credentials for client to host hostname , making them
+ * Forward credentials for client to host hostname, making them
  * forwardable if forwardable, and returning the blob of data to sent
  * in out_data.  If hostname == NULL, pick it from server.
+ *
+ * If the server's realm is configured for delegation of destination
+ * TGTs, forward a TGT for the server realm, rather than the client
+ * realm. This works better with destinations on the far side of a
+ * firewall. We also forward the destination TGT when the client
+ * TGT is not available (we may have just the destination TGT).
  *
  * @param context A kerberos 5 context.
  * @param auth_context the auth context with the key to encrypt the out_data.
@@ -101,19 +114,18 @@ fail:
  */
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_fwd_tgt_creds (krb5_context	context,
-		    krb5_auth_context	auth_context,
-		    const char		*hostname,
-		    krb5_principal	client,
-		    krb5_principal	server,
-		    krb5_ccache		ccache,
-		    int			forwardable,
-		    krb5_data		*out_data)
+krb5_fwd_tgt_creds(krb5_context	context,
+		   krb5_auth_context	auth_context,
+		   const char		*hostname,
+		   krb5_const_principal	client,
+		   krb5_const_principal	server,
+		   krb5_ccache		ccache,
+		   int			forwardable,
+		   krb5_data		*out_data)
 {
     krb5_flags flags = 0;
     krb5_creds creds;
     krb5_error_code ret;
-    krb5_const_realm client_realm;
 
     flags |= KDC_OPT_FORWARDED;
 
@@ -132,17 +144,11 @@ krb5_fwd_tgt_creds (krb5_context	context,
 	    hostname = host;
     }
 
-    client_realm = krb5_principal_get_realm(context, client);
-
-    memset (&creds, 0, sizeof(creds));
-    creds.client = client;
-
-    ret = krb5_make_principal(context,
-			      &creds.server,
-			      client_realm,
-			      KRB5_TGS_NAME,
-			      client_realm,
-			      NULL);
+    /*
+     * Fill-in the request creds, the server principal will be the TGS
+     * of either the client's or the server's realm.
+     */
+    ret = set_tgs_creds(context, ccache, client, server, &creds);
     if (ret)
 	return ret;
 
@@ -153,6 +159,8 @@ krb5_fwd_tgt_creds (krb5_context	context,
 				    hostname,
 				    &creds,
 				    out_data);
+
+    krb5_free_cred_contents(context, &creds);
     return ret;
 }
 
@@ -193,267 +201,167 @@ krb5_get_forwarded_creds (krb5_context	    context,
 			  krb5_data         *out_data)
 {
     krb5_error_code ret;
-    krb5_creds *out_creds;
-    krb5_addresses addrs, *paddrs;
-    KRB_CRED cred;
-    KrbCredInfo *krb_cred_info;
-    EncKrbCredPart enc_krb_cred_part;
-    size_t len;
-    unsigned char *buf;
-    size_t buf_size;
-    krb5_kdc_flags kdc_flags;
-    krb5_crypto crypto;
-    struct addrinfo *ai;
-    krb5_creds *ticket;
+    krb5_creds *creds;
 
-    paddrs = NULL;
+    /* Obtain the requested TGT */
+    ret = get_cred(context, ccache, in_creds, flags, hostname, &creds);
+    if (ret)
+        return ret;
+
+    /* Forward obtained creds */
+    ret = _krb5_mk_1cred(context, auth_context, creds, out_data, NULL);
+    krb5_free_creds(context, creds);
+    return ret;
+}
+
+/*
+ * Get a TGT for forwarding to hostname. If the client TGT is
+ * addressless, the forwarded ticket will also be addressless.
+ *
+ * If the TGT has any addresses, hostname will be used to determine
+ * the address to forward the ticket to. Thus, since this might use DNS,
+ * it's insecure and also may not capture all the addresses of the host.
+ * In general addressless tickets are more robust, be it at a small
+ * security penalty.
+ *
+ * @param context A kerberos 5 context.
+ * @param ccache The credential cache to use
+ * @param creds Creds with client and server principals
+ * @param flags The flags to control the resulting ticket flags
+ * @param hostname The hostname of server
+ * @param out_creds The resulting credential
+ *
+ * @return Return an error code or 0.
+ */
+
+static krb5_error_code
+get_cred(krb5_context      context,
+	 krb5_ccache       ccache,
+	 krb5_creds	   *creds,
+	 krb5_flags        flags,
+	 const char        *hostname,
+	 krb5_creds        **out_creds)
+{
+    krb5_error_code ret;
+    krb5_kdc_flags kdc_flags;
+    krb5_addresses addrs;
+
     addrs.len = 0;
     addrs.val = NULL;
+    ret = get_addresses(context, ccache, creds, hostname, &addrs);
+    if (ret)
+	return ret;
 
-    ret = krb5_get_credentials(context, 0, ccache, in_creds, &ticket);
-    if(ret == 0) {
-	if (ticket->addresses.len)
-	    paddrs = &addrs;
-	krb5_free_creds (context, ticket);
-    } else {
-	krb5_boolean noaddr;
-	krb5_appdefault_boolean(context, NULL,
-				krb5_principal_get_realm(context,
-							 in_creds->client),
-				"no-addresses", KRB5_ADDRESSLESS_DEFAULT,
-				&noaddr);
-	if (!noaddr)
-	    paddrs = &addrs;
+    kdc_flags.b = int2KDCOptions(flags);
+    ret = krb5_get_kdc_cred(context, ccache, kdc_flags, &addrs, NULL,
+			    creds, out_creds);
+
+    krb5_free_addresses(context, &addrs);
+    return ret;
+}
+
+static krb5_error_code
+set_tgs_creds(krb5_context		context,
+	      krb5_ccache		ccache,
+	      krb5_const_principal	client,
+	      krb5_const_principal	server,
+	      krb5_creds		*creds)
+{
+    krb5_error_code ret;
+    krb5_const_realm client_realm;
+    krb5_const_realm server_realm;
+    krb5_boolean fwd_dest_tgt;
+    krb5_creds *client_tgt;
+
+    client_realm = krb5_principal_get_realm(context, client);
+    server_realm = krb5_principal_get_realm(context, server);
+
+    memset (creds, 0, sizeof(*creds));
+    ret = krb5_copy_principal(context, client, &creds->client);
+    if (ret)
+	return ret;
+    ret = krb5_make_principal(context, &creds->server, client_realm,
+			      KRB5_TGS_NAME, client_realm, NULL);
+    if (ret) {
+	krb5_free_principal(context, creds->client);
+	return ret;
     }
 
     /*
-     * If tickets have addresses, get the address of the remote host.
+     * Optionally delegate a TGT for the server's realm, rather than
+     * the client's. Do this also when we don't have a client realm TGT.
+     *
+     * XXX: Note, when we have a start-realm, and delegate-destination-tgt
+     * is not set, we must use the start-realm.
      */
+    krb5_appdefault_boolean(context, NULL, server_realm,
+			    "delegate-destination-tgt", FALSE, &fwd_dest_tgt);
 
-    if (paddrs != NULL) {
-
-	ret = getaddrinfo (hostname, NULL, NULL, &ai);
-	if (ret) {
-	    krb5_error_code ret2 = krb5_eai_to_heim_errno(ret, errno);
-	    krb5_set_error_message(context, ret2,
-				   N_("resolving host %s failed: %s",
-				      "hostname, error"),
-				  hostname, gai_strerror(ret));
-	    return ret2;
-	}
-
-	ret = add_addrs (context, &addrs, ai);
-	freeaddrinfo (ai);
-	if (ret)
+    if (!fwd_dest_tgt) {
+	ret = krb5_get_credentials(context, KRB5_GC_CACHED, ccache, creds,
+				   &client_tgt);
+	if (ret == 0) {
+	    krb5_free_creds(context, client_tgt);
 	    return ret;
-    }
-
-    kdc_flags.b = int2KDCOptions(flags);
-
-    ret = krb5_get_kdc_cred (context,
-			     ccache,
-			     kdc_flags,
-			     paddrs,
-			     NULL,
-			     in_creds,
-			     &out_creds);
-    krb5_free_addresses (context, &addrs);
-    if (ret)
-	return ret;
-
-    memset (&cred, 0, sizeof(cred));
-    cred.pvno = 5;
-    cred.msg_type = krb_cred;
-    ALLOC_SEQ(&cred.tickets, 1);
-    if (cred.tickets.val == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	goto out2;
-    }
-    ret = decode_Ticket(out_creds->ticket.data,
-			out_creds->ticket.length,
-			cred.tickets.val, &len);
-    if (ret)
-	goto out3;
-
-    memset (&enc_krb_cred_part, 0, sizeof(enc_krb_cred_part));
-    ALLOC_SEQ(&enc_krb_cred_part.ticket_info, 1);
-    if (enc_krb_cred_part.ticket_info.val == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	goto out4;
-    }
-
-    if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
-	krb5_timestamp sec;
-	int32_t usec;
-
-	krb5_us_timeofday (context, &sec, &usec);
-
-	ALLOC(enc_krb_cred_part.timestamp, 1);
-	if (enc_krb_cred_part.timestamp == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	    goto out4;
-	}
-	*enc_krb_cred_part.timestamp = sec;
-	ALLOC(enc_krb_cred_part.usec, 1);
-	if (enc_krb_cred_part.usec == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	    goto out4;
-	}
-	*enc_krb_cred_part.usec      = usec;
-    } else {
-	enc_krb_cred_part.timestamp = NULL;
-	enc_krb_cred_part.usec = NULL;
-    }
-
-    if (auth_context->local_address && auth_context->local_port && paddrs) {
-
-	ret = krb5_make_addrport (context,
-				  &enc_krb_cred_part.s_address,
-				  auth_context->local_address,
-				  auth_context->local_port);
-	if (ret)
-	    goto out4;
-    }
-
-    if (auth_context->remote_address) {
-	if (auth_context->remote_port) {
-	    krb5_boolean noaddr;
-	    krb5_const_realm srealm;
-
-	    srealm = krb5_principal_get_realm(context, out_creds->server);
-	    /* Is this correct, and should we use the paddrs == NULL
-               trick here as well? Having an address-less ticket may
-               indicate that we don't know our own global address, but
-               it does not necessary mean that we don't know the
-               server's. */
-	    krb5_appdefault_boolean(context, NULL, srealm, "no-addresses",
-				    FALSE, &noaddr);
-	    if (!noaddr) {
-		ret = krb5_make_addrport (context,
-					  &enc_krb_cred_part.r_address,
-					  auth_context->remote_address,
-					  auth_context->remote_port);
-		if (ret)
-		    goto out4;
-	    }
-	} else {
-	    ALLOC(enc_krb_cred_part.r_address, 1);
-	    if (enc_krb_cred_part.r_address == NULL) {
-		ret = ENOMEM;
-		krb5_set_error_message(context, ret,
-				       N_("malloc: out of memory", ""));
-		goto out4;
-	    }
-
-	    ret = krb5_copy_address (context, auth_context->remote_address,
-				     enc_krb_cred_part.r_address);
-	    if (ret)
-		goto out4;
 	}
     }
 
-    /* fill ticket_info.val[0] */
-
-    enc_krb_cred_part.ticket_info.len = 1;
-
-    krb_cred_info = enc_krb_cred_part.ticket_info.val;
-
-    copy_EncryptionKey (&out_creds->session, &krb_cred_info->key);
-    ALLOC(krb_cred_info->prealm, 1);
-    copy_Realm (&out_creds->client->realm, krb_cred_info->prealm);
-    ALLOC(krb_cred_info->pname, 1);
-    copy_PrincipalName(&out_creds->client->name, krb_cred_info->pname);
-    ALLOC(krb_cred_info->flags, 1);
-    *krb_cred_info->flags          = out_creds->flags.b;
-    ALLOC(krb_cred_info->authtime, 1);
-    *krb_cred_info->authtime       = out_creds->times.authtime;
-    ALLOC(krb_cred_info->starttime, 1);
-    *krb_cred_info->starttime      = out_creds->times.starttime;
-    ALLOC(krb_cred_info->endtime, 1);
-    *krb_cred_info->endtime        = out_creds->times.endtime;
-    ALLOC(krb_cred_info->renew_till, 1);
-    *krb_cred_info->renew_till = out_creds->times.renew_till;
-    ALLOC(krb_cred_info->srealm, 1);
-    copy_Realm (&out_creds->server->realm, krb_cred_info->srealm);
-    ALLOC(krb_cred_info->sname, 1);
-    copy_PrincipalName (&out_creds->server->name, krb_cred_info->sname);
-    ALLOC(krb_cred_info->caddr, 1);
-    copy_HostAddresses (&out_creds->addresses, krb_cred_info->caddr);
-
-    krb5_free_creds (context, out_creds);
-
-    /* encode EncKrbCredPart */
-
-    ASN1_MALLOC_ENCODE(EncKrbCredPart, buf, buf_size,
-		       &enc_krb_cred_part, &len, ret);
-    free_EncKrbCredPart (&enc_krb_cred_part);
-    if (ret) {
-	free_KRB_CRED(&cred);
-	return ret;
-    }
-    if(buf_size != len)
-	krb5_abortx(context, "internal error in ASN.1 encoder");
-
-    /**
-     * Some older of the MIT gssapi library used clear-text tickets
-     * (warped inside AP-REQ encryption), use the krb5_auth_context
-     * flag KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED to support those
-     * tickets. The session key is used otherwise to encrypt the
-     * forwarded ticket.
+    /*
+     * Client TGT inapplicable or unavailable
      */
+    krb5_free_principal(context, creds->server);
+    creds->server = 0;
+    return krb5_make_principal(context, &creds->server, server_realm,
+			       KRB5_TGS_NAME, server_realm, NULL);
+}
 
-    if (auth_context->flags & KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED) {
-	cred.enc_part.etype = KRB5_ENCTYPE_NULL;
-	cred.enc_part.kvno = NULL;
-	cred.enc_part.cipher.data = buf;
-	cred.enc_part.cipher.length = buf_size;
+/*
+ * Obtain address list for hostname if server realm policy is not addressless.
+ */
+static krb5_error_code
+get_addresses(krb5_context      context,
+	      krb5_ccache       ccache,
+	      krb5_creds        *creds,
+	      const char        *hostname,
+	      krb5_addresses    *addrs)
+{
+    krb5_error_code ret;
+    krb5_creds *ticket;
+    krb5_const_realm realm;
+    krb5_boolean noaddr;
+    struct addrinfo *ai;
+    int eai;
+
+    if (hostname == 0)
+	return 0;
+
+    ret = krb5_get_credentials(context, 0, ccache, creds, &ticket);
+    if (ret == 0) {
+        noaddr = (ticket->addresses.len == 0) ? TRUE : FALSE;
+	krb5_free_creds(context, ticket);
     } else {
-	/*
-	 * Here older versions then 0.7.2 of Heimdal used the local or
-	 * remote subkey. That is wrong, the session key should be
-	 * used. Heimdal 0.7.2 and newer have code to try both in the
-	 * receiving end.
-	 */
-
-	ret = krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
-	if (ret) {
-	    free(buf);
-	    free_KRB_CRED(&cred);
-	    return ret;
-	}
-	ret = krb5_encrypt_EncryptedData (context,
-					  crypto,
-					  KRB5_KU_KRB_CRED,
-					  buf,
-					  len,
-					  0,
-					  &cred.enc_part);
-	free(buf);
-	krb5_crypto_destroy(context, crypto);
-	if (ret) {
-	    free_KRB_CRED(&cred);
-	    return ret;
-	}
+	realm = krb5_principal_get_realm(context, creds->server);
+	krb5_appdefault_boolean(context, NULL, realm, "no-addresses",
+				KRB5_ADDRESSLESS_DEFAULT, &noaddr);
     }
 
-    ASN1_MALLOC_ENCODE(KRB_CRED, buf, buf_size, &cred, &len, ret);
-    free_KRB_CRED (&cred);
-    if (ret)
+    if (noaddr)
+	return 0;
+
+    /* Need addresses, get the address of the remote host. */
+
+    eai = getaddrinfo (hostname, NULL, NULL, &ai);
+    if (eai) {
+	ret = krb5_eai_to_heim_errno(eai, errno);
+	krb5_set_error_message(context, ret,
+			       N_("resolving host %s failed: %s",
+				  "hostname, error"),
+			       hostname, gai_strerror(eai));
 	return ret;
-    if(buf_size != len)
-	krb5_abortx(context, "internal error in ASN.1 encoder");
-    out_data->length = len;
-    out_data->data   = buf;
-    return 0;
- out4:
-    free_EncKrbCredPart(&enc_krb_cred_part);
- out3:
-    free_KRB_CRED(&cred);
- out2:
-    krb5_free_creds (context, out_creds);
+    }
+
+    ret = add_addrs(context, addrs, ai);
+    freeaddrinfo(ai);
+
     return ret;
 }

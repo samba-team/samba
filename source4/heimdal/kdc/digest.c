@@ -223,7 +223,7 @@ _kdc_do_digest(krb5_context context,
     krb5_data serverNonce;
 
     if(!config->enable_digest) {
-	kdc_log(context, config, 0,
+	kdc_log(context, config, 2,
 		"Rejected digest request (disabled) from %s", from);
 	return KRB5KDC_ERR_POLICY;
     }
@@ -236,9 +236,9 @@ _kdc_do_digest(krb5_context context,
     memset(&rep, 0, sizeof(rep));
     memset(&res, 0, sizeof(res));
 
-    kdc_log(context, config, 0, "Digest request from %s", from);
+    kdc_log(context, config, 3, "Digest request from %s", from);
 
-    ret = krb5_kt_resolve(context, "HDB:", &id);
+    ret = krb5_kt_resolve(context, "HDBGET:", &id);
     if (ret) {
 	kdc_log(context, config, 0, "Can't open database for digest");
 	goto out;
@@ -320,7 +320,7 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 
 	if (client->entry.flags.allow_digest == 0) {
-	    kdc_log(context, config, 0,
+	    kdc_log(context, config, 2,
 		    "Client %s tried to use digest "
 		    "but is not allowed to",
 		    client_name);
@@ -364,7 +364,7 @@ _kdc_do_digest(krb5_context context,
 	goto out;
     }
 
-    kdc_log(context, config, 0, "Valid digest request from %s (%s)",
+    kdc_log(context, config, 3, "Valid digest request from %s (%s)",
 	    client_name, from);
 
     /*
@@ -406,11 +406,12 @@ _kdc_do_digest(krb5_context context,
 
 	if (ireq.u.init.channel) {
 	    char *s;
+	    int aret;
 
-	    asprintf(&s, "%s-%s:%s", r.u.initReply.nonce,
-		     ireq.u.init.channel->cb_type,
-		     ireq.u.init.channel->cb_binding);
-	    if (s == NULL) {
+	    aret = asprintf(&s, "%s-%s:%s", r.u.initReply.nonce,
+			    ireq.u.init.channel->cb_type,
+			    ireq.u.init.channel->cb_binding);
+	    if (aret == -1 || s == NULL) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret,
 				       "Failed to allocate channel binding");
@@ -427,6 +428,8 @@ _kdc_do_digest(krb5_context context,
 	}
 
 	if (strcasecmp(ireq.u.init.type, "CHAP") == 0) {
+	    int aret;
+
 	    r.u.initReply.identifier =
 		malloc(sizeof(*r.u.initReply.identifier));
 	    if (r.u.initReply.identifier == NULL) {
@@ -435,8 +438,8 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 
-	    asprintf(r.u.initReply.identifier, "%02X", identifier & 0xff);
-	    if (*r.u.initReply.identifier == NULL) {
+	    aret = asprintf(r.u.initReply.identifier, "%02X", identifier&0xff);
+	    if (aret == -1 || *r.u.initReply.identifier == NULL) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out;
@@ -495,7 +498,7 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 	}
 
-	kdc_log(context, config, 0, "Digest %s init request successful from %s",
+	kdc_log(context, config, 3, "Digest %s init request successful from %s",
 		ireq.u.init.type, from);
 
 	break;
@@ -583,9 +586,9 @@ _kdc_do_digest(krb5_context context,
 	if (ret)
 	    goto out;
 
-	ret = krb5_verify_checksum(context, crypto,
+	ret = _kdc_verify_checksum(context, crypto,
 				   KRB5_KU_DIGEST_OPAQUE,
-				   buf.data, buf.length, &res);
+				   &buf, &res);
 	free_Checksum(&res);
 	krb5_data_free(&buf);
 	krb5_crypto_destroy(context, crypto);
@@ -605,7 +608,7 @@ _kdc_do_digest(krb5_context context,
 	    }
 	    t = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
 
-	    if (abs((kdc_time & 0xffffffff) - t) > context->max_skew) {
+	    if (labs((kdc_time & 0xffffffff) - t) > context->max_skew) {
 		ret = EINVAL;
 		krb5_set_error_message(context, ret, "time screw in server nonce ");
 		goto out;
@@ -619,7 +622,7 @@ _kdc_do_digest(krb5_context context,
 	    char idx;
 
 	    if ((config->digests_allowed & CHAP_MD5) == 0) {
-		kdc_log(context, config, 0, "Digest CHAP MD5 not allowed");
+		kdc_log(context, config, 2, "Digest CHAP MD5 not allowed");
 		goto out;
 	    }
 
@@ -666,7 +669,7 @@ _kdc_do_digest(krb5_context context,
 	    if (ret == 0) {
 		r.u.response.success = TRUE;
 	    } else {
-		kdc_log(context, config, 0,
+		kdc_log(context, config, 2,
 			"CHAP reply mismatch for %s",
 			ireq.u.digestRequest.username);
 		r.u.response.success = FALSE;
@@ -679,7 +682,7 @@ _kdc_do_digest(krb5_context context,
 	    char *A1, *A2;
 
 	    if ((config->digests_allowed & DIGEST_MD5) == 0) {
-		kdc_log(context, config, 0, "Digest SASL MD5 not allowed");
+		kdc_log(context, config, 2, "Digest SASL MD5 not allowed");
 		goto out;
 	    }
 
@@ -791,14 +794,14 @@ _kdc_do_digest(krb5_context context,
 	    if (ret == 0) {
 		r.u.response.success = TRUE;
 	    } else {
-		kdc_log(context, config, 0,
+		kdc_log(context, config, 2,
 			"DIGEST-MD5 reply mismatch for %s",
 			ireq.u.digestRequest.username);
 		r.u.response.success = FALSE;
 	    }
 
 	} else if (strcasecmp(ireq.u.digestRequest.type, "MS-CHAP-V2") == 0) {
-	    unsigned char md[SHA_DIGEST_LENGTH], challange[SHA_DIGEST_LENGTH];
+	    unsigned char md[SHA_DIGEST_LENGTH], challenge[SHA_DIGEST_LENGTH];
 	    krb5_principal clientprincipal = NULL;
 	    char *mdx;
 	    const char *username;
@@ -807,7 +810,7 @@ _kdc_do_digest(krb5_context context,
 	    EVP_MD_CTX *ctp;
 
 	    if ((config->digests_allowed & MS_CHAP_V2) == 0) {
-		kdc_log(context, config, 0, "MS-CHAP-V2 not allowed");
+		kdc_log(context, config, 2, "MS-CHAP-V2 not allowed");
 		goto failed;
 	    }
 
@@ -833,7 +836,7 @@ _kdc_do_digest(krb5_context context,
 
 	    ctp = EVP_MD_CTX_create();
 
-	    /* ChallangeHash */
+	    /* ChallengeHash */
 	    EVP_DigestInit_ex(ctp, EVP_sha1(), NULL);
 	    {
 		ssize_t ssize;
@@ -864,7 +867,7 @@ _kdc_do_digest(krb5_context context,
 	    EVP_DigestUpdate(ctp, serverNonce.data, serverNonce.length);
 	    EVP_DigestUpdate(ctp, username, strlen(username));
 
-	    EVP_DigestFinal_ex(ctp, challange, NULL);
+	    EVP_DigestFinal_ex(ctp, challenge, NULL);
 
 	    EVP_MD_CTX_destroy(ctp);
 
@@ -883,7 +886,7 @@ _kdc_do_digest(krb5_context context,
 		goto failed;
 	    }
 
-	    ret = hdb_enctype2key(context, &user->entry,
+	    ret = hdb_enctype2key(context, &user->entry, NULL,
 				  ETYPE_ARCFOUR_HMAC_MD5, &key);
 	    if (ret) {
 		krb5_set_error_message(context, ret,
@@ -895,7 +898,7 @@ _kdc_do_digest(krb5_context context,
 	    /* ChallengeResponse */
 	    ret = heim_ntlm_calculate_ntlm1(key->key.keyvalue.data,
 					    key->key.keyvalue.length,
-					    challange, &answer);
+					    challenge, &answer);
 	    if (ret) {
 		krb5_set_error_message(context, ret, "NTLM missing arcfour key");
 		goto failed;
@@ -914,7 +917,7 @@ _kdc_do_digest(krb5_context context,
 	    if (ret == 0) {
 		r.u.response.success = TRUE;
 	    } else {
-		kdc_log(context, config, 0,
+		kdc_log(context, config, 2,
 			"MS-CHAP-V2 hash mismatch for %s",
 			ireq.u.digestRequest.username);
 		r.u.response.success = FALSE;
@@ -946,7 +949,7 @@ _kdc_do_digest(krb5_context context,
 
 		EVP_DigestInit_ex(ctxp, EVP_sha1(), NULL);
 		EVP_DigestUpdate(ctxp, md, sizeof(md));
-		EVP_DigestUpdate(ctxp, challange, 8);
+		EVP_DigestUpdate(ctxp, challenge, 8);
 		EVP_DigestUpdate(ctxp, ms_chap_v2_magic2,
 				 sizeof(ms_chap_v2_magic2));
 		EVP_DigestFinal_ex(ctxp, md, NULL);
@@ -997,10 +1000,12 @@ _kdc_do_digest(krb5_context context,
 	    }
 
 	} else {
+	    int aret;
+
 	    r.element = choice_DigestRepInner_error;
-	    asprintf(&r.u.error.reason, "Unsupported digest type %s",
-		     ireq.u.digestRequest.type);
-	    if (r.u.error.reason == NULL) {
+	    aret = asprintf(&r.u.error.reason, "Unsupported digest type %s",
+			    ireq.u.digestRequest.type);
+	    if (aret == -1 || r.u.error.reason == NULL) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto out;
@@ -1008,7 +1013,7 @@ _kdc_do_digest(krb5_context context,
 	    r.u.error.code = EINVAL;
 	}
 
-	kdc_log(context, config, 0, "Digest %s request successful %s",
+	kdc_log(context, config, 3, "Digest %s request successful %s",
 		ireq.u.digestRequest.type, ireq.u.digestRequest.username);
 
 	break;
@@ -1016,7 +1021,7 @@ _kdc_do_digest(krb5_context context,
     case choice_DigestReqInner_ntlmInit:
 
 	if ((config->digests_allowed & (NTLM_V1|NTLM_V1_SESSION|NTLM_V2)) == 0) {
-	    kdc_log(context, config, 0, "NTLM not allowed");
+	    kdc_log(context, config, 2, "NTLM not allowed");
 	    goto failed;
 	}
 
@@ -1025,14 +1030,14 @@ _kdc_do_digest(krb5_context context,
 	r.u.ntlmInitReply.flags = NTLM_NEG_UNICODE;
 
 	if ((ireq.u.ntlmInit.flags & NTLM_NEG_UNICODE) == 0) {
-	    kdc_log(context, config, 0, "NTLM client have no unicode");
+	    kdc_log(context, config, 2, "NTLM client have no unicode");
 	    goto failed;
 	}
 
 	if (ireq.u.ntlmInit.flags & NTLM_NEG_NTLM)
 	    r.u.ntlmInitReply.flags |= NTLM_NEG_NTLM;
 	else {
-	    kdc_log(context, config, 0, "NTLM client doesn't support NTLM");
+	    kdc_log(context, config, 2, "NTLM client doesn't support NTLM");
 	    goto failed;
 	}
 
@@ -1059,15 +1064,15 @@ _kdc_do_digest(krb5_context context,
 	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
-	r.u.ntlmInitReply.challange.data = malloc(8);
-	if (r.u.ntlmInitReply.challange.data == NULL) {
+	r.u.ntlmInitReply.challenge.data = malloc(8);
+	if (r.u.ntlmInitReply.challenge.data == NULL) {
 	    ret = ENOMEM;
 	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
-	r.u.ntlmInitReply.challange.length = 8;
-	if (RAND_bytes(r.u.ntlmInitReply.challange.data,
-		       r.u.ntlmInitReply.challange.length) != 1)
+	r.u.ntlmInitReply.challenge.length = 8;
+	if (RAND_bytes(r.u.ntlmInitReply.challenge.data,
+		       r.u.ntlmInitReply.challenge.length) != 1)
 	    {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "out of random error");
@@ -1102,10 +1107,10 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 	}
 
-	ret = krb5_storage_write(sp, r.u.ntlmInitReply.challange.data, 8);
+	ret = krb5_storage_write(sp, r.u.ntlmInitReply.challenge.data, 8);
 	if (ret != 8) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "storage write challange");
+	    krb5_set_error_message(context, ret, "storage write challenge");
 	    goto out;
 	}
 	ret = krb5_store_uint32(sp, r.u.ntlmInitReply.flags);
@@ -1132,14 +1137,14 @@ _kdc_do_digest(krb5_context context,
 	if (ret)
 	    goto out;
 
-	kdc_log(context, config, 0, "NTLM init from %s", from);
+	kdc_log(context, config, 3, "NTLM init from %s", from);
 
 	break;
 
     case choice_DigestReqInner_ntlmRequest: {
 	krb5_principal clientprincipal;
 	unsigned char sessionkey[16];
-	unsigned char challange[8];
+	unsigned char challenge[8];
 	uint32_t flags;
 	Key *key = NULL;
 	int version;
@@ -1176,7 +1181,7 @@ _kdc_do_digest(krb5_context context,
 	krb5_crypto_destroy(context, crypto);
 	crypto = NULL;
 	if (ret) {
-	    kdc_log(context, config, 0,
+	    kdc_log(context, config, 2,
 		    "Failed to decrypt nonce from %s", from);
 	    goto failed;
 	}
@@ -1188,10 +1193,10 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 	}
 
-	ret = krb5_storage_read(sp, challange, sizeof(challange));
-	if (ret != sizeof(challange)) {
+	ret = krb5_storage_read(sp, challenge, sizeof(challenge));
+	if (ret != sizeof(challenge)) {
 	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret, "NTLM storage read challange");
+	    krb5_set_error_message(context, ret, "NTLM storage read challenge");
 	    goto out;
 	}
 	ret = krb5_ret_uint32(sp, &flags);
@@ -1209,7 +1214,7 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 	}
 
-	ret = hdb_enctype2key(context, &user->entry,
+	ret = hdb_enctype2key(context, &user->entry, NULL,
 			      ETYPE_ARCFOUR_HMAC_MD5, &key);
 	if (ret) {
 	    krb5_set_error_message(context, ret, "NTLM missing arcfour key");
@@ -1222,7 +1227,7 @@ _kdc_do_digest(krb5_context context,
 	    char *targetname;
 
 	    if ((config->digests_allowed & NTLM_V2) == 0) {
-		kdc_log(context, config, 0, "NTLM v2 not allowed");
+		kdc_log(context, config, 2, "NTLM v2 not allowed");
 		goto out;
 	    }
 
@@ -1243,7 +1248,7 @@ _kdc_do_digest(krb5_context context,
 					 ireq.u.ntlmRequest.username,
 					 targetname,
 					 0,
-					 challange,
+					 challenge,
 					 &answer,
 					 &infotarget,
 					 sessionkey);
@@ -1268,7 +1273,7 @@ _kdc_do_digest(krb5_context context,
 		EVP_MD_CTX *ctx;
 
 		if ((config->digests_allowed & NTLM_V1_SESSION) == 0) {
-		    kdc_log(context, config, 0, "NTLM v1-session not allowed");
+		    kdc_log(context, config, 2, "NTLM v1-session not allowed");
 		    ret = EINVAL;
 		    goto failed;
 		}
@@ -1284,23 +1289,23 @@ _kdc_do_digest(krb5_context context,
 
 		EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
 
-		EVP_DigestUpdate(ctx, challange, sizeof(challange));
+		EVP_DigestUpdate(ctx, challenge, sizeof(challenge));
 		EVP_DigestUpdate(ctx, ireq.u.ntlmRequest.lm.data, 8);
 		EVP_DigestFinal_ex(ctx, sessionhash, NULL);
-		memcpy(challange, sessionhash, sizeof(challange));
+		memcpy(challenge, sessionhash, sizeof(challenge));
 
 		EVP_MD_CTX_destroy(ctx);
 
 	    } else {
 		if ((config->digests_allowed & NTLM_V1) == 0) {
-		    kdc_log(context, config, 0, "NTLM v1 not allowed");
+		    kdc_log(context, config, 2, "NTLM v1 not allowed");
 		    goto failed;
 		}
 	    }
 
 	    ret = heim_ntlm_calculate_ntlm1(key->key.keyvalue.data,
 					    key->key.keyvalue.length,
-					    challange, &answer);
+					    challenge, &answer);
 	    if (ret) {
 		krb5_set_error_message(context, ret, "NTLM missing arcfour key");
 		goto failed;
@@ -1384,7 +1389,7 @@ _kdc_do_digest(krb5_context context,
     }
     case choice_DigestReqInner_supportedMechs:
 
-	kdc_log(context, config, 0, "digest supportedMechs from %s", from);
+	kdc_log(context, config, 4, "digest supportedMechs from %s", from);
 
 	r.element = choice_DigestRepInner_supportedMechs;
 	memset(&r.u.supportedMechs, 0, sizeof(r.u.supportedMechs));
@@ -1416,7 +1421,7 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 	}
 
-	kdc_log(context, config, 0, "Digest failed with: %s", s);
+	kdc_log(context, config, 2, "Digest failed with: %s", s);
 
 	r.element = choice_DigestRepInner_error;
 	r.u.error.reason = strdup("unknown error");

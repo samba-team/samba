@@ -34,15 +34,12 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <roken.h>
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <krb5-types.h>
 #include <rfc2459_asn1.h>
 
 #include <dh.h>
-
-#include <roken.h>
 
 /**
  * @page page_dh DH - Diffie-Hellman key exchange
@@ -308,7 +305,7 @@ DH_check_pubkey(const DH *dh, const BIGNUM *pub_key, int *codes)
 	unsigned i, n = BN_num_bits(pub_key);
 	unsigned bits = 0;
 
-	for (i = 0; i <= n; i++)
+	for (i = 0; i < n; i++)
 	    if (BN_is_bit_set(pub_key, i))
 		bits++;
 

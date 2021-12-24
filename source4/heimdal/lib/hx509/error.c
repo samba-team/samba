@@ -45,17 +45,6 @@ struct hx509_error_data {
     char *msg;
 };
 
-static void
-free_error_string(hx509_error msg)
-{
-    while(msg) {
-	hx509_error m2 = msg->next;
-	free(msg->msg);
-	free(msg);
-	msg = m2;
-    }
-}
-
 /**
  * Resets the error strings the hx509 context.
  *
@@ -64,11 +53,11 @@ free_error_string(hx509_error msg)
  * @ingroup hx509_error
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_clear_error_string(hx509_context context)
 {
     if (context) {
-	free_error_string(context->error);
+	heim_release(context->error);
 	context->error = NULL;
     }
 }
@@ -87,35 +76,22 @@ hx509_clear_error_string(hx509_context context)
  * @ingroup hx509_error
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_set_error_stringv(hx509_context context, int flags, int code,
 			const char *fmt, va_list ap)
 {
-    hx509_error msg;
+    heim_error_t msg;
 
     if (context == NULL)
 	return;
 
-    msg = calloc(1, sizeof(*msg));
-    if (msg == NULL) {
-	hx509_clear_error_string(context);
-	return;
+    msg = heim_error_createv(code, fmt, ap);
+    if (msg) {
+	if (flags & HX509_ERROR_APPEND)
+	    heim_error_append(msg, context->error);
+	heim_release(context->error);
     }
-
-    if (vasprintf(&msg->msg, fmt, ap) == -1) {
-	hx509_clear_error_string(context);
-	free(msg);
-	return;
-    }
-    msg->code = code;
-
-    if (flags & HX509_ERROR_APPEND) {
-	msg->next = context->error;
-	context->error = msg;
-    } else  {
-	free_error_string(context->error);
-	context->error = msg;
-    }
+    context->error = msg;
 }
 
 /**
@@ -132,7 +108,7 @@ hx509_set_error_stringv(hx509_context context, int flags, int code,
  * @ingroup hx509_error
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_set_error_string(hx509_context context, int flags, int code,
 		       const char *fmt, ...)
 {
@@ -141,6 +117,20 @@ hx509_set_error_string(hx509_context context, int flags, int code,
     va_start(ap, fmt);
     hx509_set_error_stringv(context, flags, code, fmt, ap);
     va_end(ap);
+}
+
+/**
+ * Sets ENOMEM as the error on a hx509 context.
+ *
+ * @param context A hx509 context.
+ *
+ * @ingroup hx509_error
+ */
+
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_enomem(hx509_context context)
+{
+    return heim_enomem(context->hcontext);
 }
 
 /**
@@ -154,15 +144,32 @@ hx509_set_error_string(hx509_context context, int flags, int code,
  * @ingroup hx509_error
  */
 
-char *
+HX509_LIB_FUNCTION char * HX509_LIB_CALL
 hx509_get_error_string(hx509_context context, int error_code)
 {
-    struct rk_strpool *p = NULL;
-    hx509_error msg = context->error;
+    heim_error_t msg;
+    heim_string_t s;
+    char *str = NULL;
 
-    if (msg == NULL || msg->code != error_code) {
+    if (context == NULL) {
+        const char *sys_err_msg;
+
+        /* This case should only happen on hx509_context_init() failure */
+        if ((sys_err_msg = strerror(error_code))) {
+            if (asprintf(&str, "hx509_context_init system error: %s (%d)",
+                         sys_err_msg, error_code) == -1)
+                return NULL;
+            return str;
+        }
+        if (asprintf(&str, "hx509_context_init unknown error: %d",
+                     error_code) == -1)
+            return NULL;
+        return str;
+    }
+
+    msg = context->error;
+    if (msg == NULL || heim_error_get_code(msg) != error_code) {
 	const char *cstr;
-	char *str;
 
 	cstr = com_right(context->et_list, error_code);
 	if (cstr)
@@ -175,11 +182,14 @@ hx509_get_error_string(hx509_context context, int error_code)
 	return str;
     }
 
-    for (msg = context->error; msg; msg = msg->next)
-	p = rk_strpoolprintf(p, "%s%s", msg->msg,
-			     msg->next != NULL ? "; " : "");
-
-    return rk_strpoolcollect(p);
+    s = heim_error_copy_string(msg);
+    if (s) {
+	const char *cstr = heim_string_get_utf8(s);
+	if (cstr)
+	    str = strdup(cstr);
+	heim_release(s);
+    }
+    return str;
 }
 
 /**
@@ -190,7 +200,7 @@ hx509_get_error_string(hx509_context context, int error_code)
  * @ingroup hx509_error
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_free_error_string(char *str)
 {
     free(str);
@@ -208,20 +218,21 @@ hx509_free_error_string(char *str)
  * @ingroup hx509_error
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 hx509_err(hx509_context context, int exit_code,
 	  int error_code, const char *fmt, ...)
 {
     va_list ap;
     const char *msg;
     char *str;
+    int ret;
 
     va_start(ap, fmt);
-    vasprintf(&str, fmt, ap);
+    ret = vasprintf(&str, fmt, ap);
     va_end(ap);
     msg = hx509_get_error_string(context, error_code);
     if (msg == NULL)
 	msg = "no error";
 
-    errx(exit_code, "%s: %s", str, msg);
+    errx(exit_code, "%s: %s", ret != -1 ? str : "ENOMEM", msg);
 }

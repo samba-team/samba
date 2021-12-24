@@ -39,10 +39,9 @@
  * A = A xor B. A & B are 8 bytes.
  */
 
-void
-_krb5_xor (DES_cblock *key, const unsigned char *b)
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
+_krb5_xor8(unsigned char *a, const unsigned char *b)
 {
-    unsigned char *a = (unsigned char*)key;
     a[0] ^= b[0];
     a[1] ^= b[1];
     a[2] ^= b[2];
@@ -54,45 +53,47 @@ _krb5_xor (DES_cblock *key, const unsigned char *b)
 }
 
 #if defined(DES3_OLD_ENCTYPE) || defined(HEIM_WEAK_CRYPTO)
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_des_checksum(krb5_context context,
 		   const EVP_MD *evp_md,
 		   struct _krb5_key_data *key,
-		   const void *data,
-		   size_t len,
+		   const struct krb5_crypto_iov *iov,
+		   int niov,
 		   Checksum *cksum)
 {
     struct _krb5_evp_schedule *ctx = key->schedule->data;
     EVP_MD_CTX *m;
     DES_cblock ivec;
+    int i;
     unsigned char *p = cksum->checksum.data;
 
     krb5_generate_random_block(p, 8);
 
     m = EVP_MD_CTX_create();
-    if (m == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (m == NULL)
+	return krb5_enomem(context);
 
     EVP_DigestInit_ex(m, evp_md, NULL);
     EVP_DigestUpdate(m, p, 8);
-    EVP_DigestUpdate(m, data, len);
+    for (i = 0; i < niov; i++) {
+	if (_krb5_crypto_iov_should_sign(&iov[i]))
+	    EVP_DigestUpdate(m, iov[i].data.data, iov[i].data.length);
+    }
     EVP_DigestFinal_ex (m, p + 8, NULL);
     EVP_MD_CTX_destroy(m);
-    memset (&ivec, 0, sizeof(ivec));
+    memset_s(&ivec, sizeof(ivec), 0, sizeof(ivec));
     EVP_CipherInit_ex(&ctx->ectx, NULL, NULL, NULL, (void *)&ivec, -1);
     EVP_Cipher(&ctx->ectx, p, p, 24);
 
     return 0;
 }
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_des_verify(krb5_context context,
 		 const EVP_MD *evp_md,
 		 struct _krb5_key_data *key,
-		 const void *data,
-		 size_t len,
+		 const struct krb5_crypto_iov *iov,
+		 int niov,
 		 Checksum *C)
 {
     struct _krb5_evp_schedule *ctx = key->schedule->data;
@@ -101,28 +102,30 @@ _krb5_des_verify(krb5_context context,
     unsigned char res[16];
     DES_cblock ivec;
     krb5_error_code ret = 0;
+    int i;
 
     m = EVP_MD_CTX_create();
-    if (m == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (m == NULL)
+	return krb5_enomem(context);
 
-    memset(&ivec, 0, sizeof(ivec));
+    memset_s(&ivec, sizeof(ivec), 0, sizeof(ivec));
     EVP_CipherInit_ex(&ctx->dctx, NULL, NULL, NULL, (void *)&ivec, -1);
     EVP_Cipher(&ctx->dctx, tmp, C->checksum.data, 24);
 
     EVP_DigestInit_ex(m, evp_md, NULL);
     EVP_DigestUpdate(m, tmp, 8); /* confounder */
-    EVP_DigestUpdate(m, data, len);
+    for (i = 0; i < niov; i++) {
+	if (_krb5_crypto_iov_should_sign(&iov[i]))
+	    EVP_DigestUpdate(m, iov[i].data.data, iov[i].data.length);
+    }
     EVP_DigestFinal_ex (m, res, NULL);
     EVP_MD_CTX_destroy(m);
     if(ct_memcmp(res, tmp + 8, sizeof(res)) != 0) {
 	krb5_clear_error_message (context);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
     }
-    memset(tmp, 0, sizeof(tmp));
-    memset(res, 0, sizeof(res));
+    memset_s(tmp, sizeof(tmp), 0, sizeof(tmp));
+    memset_s(res, sizeof(res), 0, sizeof(res));
     return ret;
 }
 
@@ -130,14 +133,17 @@ _krb5_des_verify(krb5_context context,
 
 static krb5_error_code
 RSA_MD5_checksum(krb5_context context,
+		 krb5_crypto crypto,
 		 struct _krb5_key_data *key,
-		 const void *data,
-		 size_t len,
 		 unsigned usage,
+		 const struct krb5_crypto_iov *iov,
+		 int niov,
 		 Checksum *C)
 {
-    if (EVP_Digest(data, len, C->checksum.data, NULL, EVP_md5(), NULL) != 1)
+    if (_krb5_evp_digest_iov(crypto, iov, niov, C->checksum.data,
+			     NULL, EVP_md5(), NULL) != 1)
 	krb5_abortx(context, "md5 checksum failed");
+
     return 0;
 }
 

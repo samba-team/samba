@@ -42,6 +42,8 @@
 #define EVP_cc_md5 hc_EVP_cc_md5
 #define EVP_cc_sha1 hc_EVP_cc_sha1
 #define EVP_cc_sha256 hc_EVP_cc_sha256
+#define EVP_cc_sha384 hc_EVP_cc_sha384
+#define EVP_cc_sha512 hc_EVP_cc_sha512
 #define EVP_cc_des_cbc hc_EVP_cc_des_cbc
 #define EVP_cc_des_ede3_cbc hc_EVP_cc_des_ede3_cbc
 #define EVP_cc_aes_128_cbc hc_EVP_cc_aes_128_cbc
@@ -70,6 +72,8 @@ const EVP_MD * EVP_cc_md4(void);
 const EVP_MD * EVP_cc_md5(void);
 const EVP_MD * EVP_cc_sha1(void);
 const EVP_MD * EVP_cc_sha256(void);
+const EVP_MD * EVP_cc_sha384(void);
+const EVP_MD * EVP_cc_sha512(void);
 
 const EVP_CIPHER * EVP_cc_rc2_cbc(void);
 const EVP_CIPHER * EVP_cc_rc2_40_cbc(void);

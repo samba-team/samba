@@ -14,6 +14,7 @@ id-pkcs9-contentType		OBJECT IDENTIFIER ::= {id-pkcs-9 3 }
 id-pkcs9-messageDigest		OBJECT IDENTIFIER ::= {id-pkcs-9 4 }
 id-pkcs9-signingTime		OBJECT IDENTIFIER ::= {id-pkcs-9 5 }
 id-pkcs9-countersignature	OBJECT IDENTIFIER ::= {id-pkcs-9 6 }
+id-pkcs9-extReq			OBJECT IDENTIFIER ::= {id-pkcs-9 14}
 
 id-pkcs-9-at-friendlyName	OBJECT IDENTIFIER ::= {id-pkcs-9 20}
 id-pkcs-9-at-localKeyId		OBJECT IDENTIFIER ::= {id-pkcs-9 21}

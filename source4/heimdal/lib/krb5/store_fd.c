@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2017 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -43,13 +43,49 @@ typedef struct fd_storage {
 static ssize_t
 fd_fetch(krb5_storage * sp, void *data, size_t size)
 {
-    return net_read(FD(sp), data, size);
+    char *cbuf = (char *)data;
+    ssize_t count;
+    size_t rem = size;
+
+    /* similar pattern to net_read() to support pipes */
+    while (rem > 0) {
+	count = read (FD(sp), cbuf, rem);
+	if (count < 0) {
+	    if (errno == EINTR)
+		continue;
+	    else if (rem == size)
+		return count;
+            else
+                return size - rem;
+	} else if (count == 0) {
+	    return count;
+	}
+	cbuf += count;
+	rem -= count;
+    }
+    return size;
 }
 
 static ssize_t
 fd_store(krb5_storage * sp, const void *data, size_t size)
 {
-    return net_write(FD(sp), data, size);
+    const char *cbuf = (const char *)data;
+    ssize_t count;
+    size_t rem = size;
+
+    /* similar pattern to net_write() to support pipes */
+    while (rem > 0) {
+	count = write(FD(sp), cbuf, rem);
+	if (count < 0) {
+	    if (errno == EINTR)
+		continue;
+	    else
+		return size - rem;
+	}
+	cbuf += count;
+	rem -= count;
+    }
+    return size;
 }
 
 static off_t
@@ -61,7 +97,28 @@ fd_seek(krb5_storage * sp, off_t offset, int whence)
 static int
 fd_trunc(krb5_storage * sp, off_t offset)
 {
+    off_t tmpoff;
+
     if (ftruncate(FD(sp), offset) == -1)
+	return errno;
+
+    tmpoff = lseek(FD(sp), 0, SEEK_CUR);
+    if (tmpoff == -1)
+	return errno;
+
+    if (tmpoff > offset) {
+	tmpoff = lseek(FD(sp), offset, SEEK_SET);
+	if (tmpoff == -1)
+	    return errno;
+    }
+
+    return 0;
+}
+
+static int
+fd_sync(krb5_storage * sp)
+{
+    if (fsync(FD(sp)) == -1)
 	return errno;
     return 0;
 }
@@ -69,7 +126,9 @@ fd_trunc(krb5_storage * sp, off_t offset)
 static void
 fd_free(krb5_storage * sp)
 {
-    close(FD(sp));
+    int save_errno = errno;
+    if (close(FD(sp)) == 0)
+        errno = save_errno;
 }
 
 /**
@@ -83,41 +142,48 @@ fd_free(krb5_storage * sp)
  * @sa krb5_storage_from_mem()
  * @sa krb5_storage_from_readonly_mem()
  * @sa krb5_storage_from_data()
+ * @sa krb5_storage_from_socket()
  */
 
 KRB5_LIB_FUNCTION krb5_storage * KRB5_LIB_CALL
-krb5_storage_from_fd(krb5_socket_t fd_in)
+krb5_storage_from_fd(int fd_in)
 {
     krb5_storage *sp;
+    int saved_errno;
     int fd;
 
-#ifdef SOCKET_IS_NOT_AN_FD
 #ifdef _MSC_VER
-    if (_get_osfhandle(fd_in) != -1) {
-	fd = dup(fd_in);
-    } else {
-	fd = _open_osfhandle(fd_in, 0);
-    }
+    /*
+     * This function used to try to pass the input to
+     * _get_osfhandle() to test if the value is a HANDLE
+     * but this doesn't work because doing so throws an
+     * exception that will result in Watson being triggered
+     * to file a Windows Error Report.
+     */
+    fd = _dup(fd_in);
 #else
-#error Dont know how to deal with fd that may or may not be a socket.
-#endif
-#else  /* SOCKET_IS_NOT_AN_FD */
     fd = dup(fd_in);
 #endif
 
     if (fd < 0)
 	return NULL;
 
+    errno = ENOMEM;
     sp = malloc(sizeof(krb5_storage));
     if (sp == NULL) {
+	saved_errno = errno;
 	close(fd);
+	errno = saved_errno;
 	return NULL;
     }
 
+    errno = ENOMEM;
     sp->data = malloc(sizeof(fd_storage));
     if (sp->data == NULL) {
+	saved_errno = errno;
 	close(fd);
 	free(sp);
+	errno = saved_errno;
 	return NULL;
     }
     sp->flags = 0;
@@ -127,6 +193,7 @@ krb5_storage_from_fd(krb5_socket_t fd_in)
     sp->store = fd_store;
     sp->seek = fd_seek;
     sp->trunc = fd_trunc;
+    sp->fsync = fd_sync;
     sp->free = fd_free;
     sp->max_alloc = UINT_MAX/8;
     return sp;

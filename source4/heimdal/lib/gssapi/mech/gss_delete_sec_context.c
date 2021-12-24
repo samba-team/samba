@@ -40,18 +40,23 @@ gss_delete_sec_context(OM_uint32 *minor_status,
 	    _mg_buffer_zero(output_token);
 
 	*minor_status = 0;
-	if (ctx) {
-		/*
-		 * If we have an implementation ctx, delete it,
-		 * otherwise fake an empty token.
-		 */
-		if (ctx->gc_ctx) {
-			major_status = ctx->gc_mech->gm_delete_sec_context(
-				minor_status, &ctx->gc_ctx, output_token);
-		}
-		free(ctx);
-		*context_handle = GSS_C_NO_CONTEXT;
-	}
+	major_status = GSS_S_COMPLETE;
 
-	return (GSS_S_COMPLETE);
+        if (!ctx)
+                return GSS_S_COMPLETE;
+
+        free(ctx->gc_free_this);
+
+        /*
+         * If we have an implementation ctx, delete it,
+         * otherwise fake an empty token.
+         */
+        if (ctx->gc_ctx) {
+                major_status = ctx->gc_mech->gm_delete_sec_context(
+                        minor_status, &ctx->gc_ctx, output_token);
+        }
+        free(ctx);
+        *context_handle = GSS_C_NO_CONTEXT;
+
+	return major_status;
 }

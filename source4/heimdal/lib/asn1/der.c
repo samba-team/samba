@@ -66,7 +66,7 @@ static const char *tag_names[] = {
     NULL,			/* 9 */
     "Enumerated",		/* 10 */
     NULL,			/* 11 */
-    NULL,			/* 12 */
+    "UTF8String",		/* 12 */
     NULL,			/* 13 */
     NULL,			/* 14 */
     NULL,			/* 15 */
@@ -99,7 +99,7 @@ get_type(const char *name, const char *list[], unsigned len)
 
 #define SIZEOF_ARRAY(a) (sizeof((a))/sizeof((a)[0]))
 
-const char *
+const char * ASN1CALL
 der_get_class_name(unsigned num)
 {
     if (num >= SIZEOF_ARRAY(class_names))
@@ -107,13 +107,13 @@ der_get_class_name(unsigned num)
     return class_names[num];
 }
 
-int
+int ASN1CALL
 der_get_class_num(const char *name)
 {
     return get_type(name, class_names, SIZEOF_ARRAY(class_names));
 }
 
-const char *
+const char * ASN1CALL
 der_get_type_name(unsigned num)
 {
     if (num >= SIZEOF_ARRAY(type_names))
@@ -121,13 +121,13 @@ der_get_type_name(unsigned num)
     return type_names[num];
 }
 
-int
+int ASN1CALL
 der_get_type_num(const char *name)
 {
     return get_type(name, type_names, SIZEOF_ARRAY(type_names));
 }
 
-const char *
+const char * ASN1CALL
 der_get_tag_name(unsigned num)
 {
     if (num >= SIZEOF_ARRAY(tag_names))
@@ -135,7 +135,7 @@ der_get_tag_name(unsigned num)
     return tag_names[num];
 }
 
-int
+int ASN1CALL
 der_get_tag_num(const char *name)
 {
     return get_type(name, tag_names, SIZEOF_ARRAY(tag_names));

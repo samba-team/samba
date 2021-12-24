@@ -1,0 +1,133 @@
+.\" Copyright (c) 2019 Kungliga Tekniska Högskolan
+.\" (Royal Institute of Technology, Stockholm, Sweden).
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the Institute nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\" $Id$
+.\"
+.Dd October  6, 2005
+.Dt KLIST 1
+.Os HEIMDAL
+.Sh NAME
+.Nm kx509
+.Nd acquire or extract certificates using Kerberos credentials
+.Sh SYNOPSIS
+.Nm
+.Bk -words
+.Oo Fl c Ar cache \*(Ba Xo
+.Fl Fl cache= Ns Ar cache
+.Xc
+.Oc
+.Oo Fl s \*(Ba Xo
+.Fl Fl save
+.Xc
+.Oc
+.Oo Fl o Ar store \*(Ba Xo
+.Fl Fl out= Ns Ar store
+.Xc
+.Oc
+.Oo Fl x \*(Ba Xo
+.Fl Fl extract
+.Xc
+.Oc
+.Oo Fl t Ar time-left \*(Ba Xo
+.Fl Fl test= Ns Ar time-left
+.Xc
+.Oc
+.Oo Fl C Ar PKCS10:filename \*(Ba Xo
+.Fl Fl csr= Ns Ar PKCS10:filename
+.Xc
+.Oc
+.Oo Fl C Ar PKCS10:filename \*(Ba Xo
+.Fl Fl csr= Ns Ar PKCS10:filename
+.Xc
+.Oc
+.Oo Fl K Ar hx509-store \*(Ba Xo
+.Fl Fl private-key= Ns Ar hx509-store
+.Xc
+.Oc
+.Oo Fl r Ar realm \*(Ba Xo
+.Fl Fl realm= Ns Ar realm
+.Xc
+.Oc
+.Op Fl Fl help
+.Ek
+.Sh DESCRIPTION
+.Nm
+acquires PKIX credentials from a credential cache using the kx509
+protocol, or extracts PKIX credentials stored in a credential
+cache.
+.Pp
+Options supported:
+.Bl -tag -width Ds
+.It Fl c Ar cache , Fl Fl cache= Ns Ar cache
+credential cache to use (if not given, then the default will be
+used).
+.It Fl t Ar time-left , Fl Fl test= Ns Ar time-left
+Test for there being an active and valid certificate in the
+credential cache, with at least
+.Ar time-left
+seconds left of valid life.  If given with the
+.Fl o
+then the certificates in the hx509 store are tested along with
+those in the credentials cache (if any).
+.It Fl x , Fl Fl extract
+Extract, rather than acquire credentials.
+.It Fl s , Fl Fl save
+save the acquired certificate and the private key used in the
+given credential cache.
+.It Fl o , Fl Fl out= Ns Ar hx509-store
+An hx509 store specification, such as
+.Va DER-FILE:/path/to/der/file ,
+.Va PEM-FILE:/path/to/PEM/file ,
+.Va FILE:/path/to/PEM/file ,
+or
+.Va PKCS12:/path/to/PKCS#12/file
+into which to store any PKIX certificate and private key
+(unencrypted) that may have been acquired with the kx509 protocol
+and stored in the
+.Ns Ar ccache.
+.It Fl r Ar realm, Fl Fl realm= Ns Ar realm
+specify the name of the realm whose kx509 service to use.
+.It Fl K Ar store, Fl Fl private-key= Ns Ar store
+use the private key from the given hx509 store for requesting a
+certificate.
+.It Fl C Ar csr, Fl Fl csr= Ns Ar certificate-request
+specify a CSR to use, which must be a string of the form
+PKCS10:filename and which must contain the DER encoding of a
+PKCS#10 certification request.
+.El
+.Pp
+The
+.Nm hxtool(1)
+command can be used to create private keys and CSRs.
+.Sh SEE ALSO
+.Xr kdestroy 1 ,
+.Xr kinit 1 ,
+.Xr hxtool 1

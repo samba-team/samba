@@ -588,8 +588,10 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 
     len = min(len, size);
     r = parse_reply(reply, len);
-    resolve_free_handle(handle);
     free(reply);
+
+    resolve_free_handle(handle);
+
     return r;
 }
 
@@ -626,20 +628,18 @@ rk_dns_srv_order(struct rk_dns_reply *r)
 {
     struct rk_resource_record **srvs, **ss, **headp;
     struct rk_resource_record *rr;
-    size_t num_srv = 0;
-
-#if defined(HAVE_INITSTATE) && defined(HAVE_SETSTATE)
-    int state[256 / sizeof(int)];
-    char *oldstate;
-#endif
+    int num_srv = 0;
+    unsigned int srv_found = FALSE;
 
     rk_random_init();
 
     for(rr = r->head; rr; rr = rr->next)
-	if(rr->type == rk_ns_t_srv)
+	if(rr->type == rk_ns_t_srv) {
 	    num_srv++;
+	    srv_found = TRUE;
+	}
 
-    if(num_srv == 0)
+    if(srv_found == FALSE)
 	return;
 
     srvs = malloc(num_srv * sizeof(*srvs));
@@ -660,53 +660,65 @@ rk_dns_srv_order(struct rk_dns_reply *r)
     /* sort them by priority and weight */
     qsort(srvs, num_srv, sizeof(*srvs), compare_srv);
 
-#if defined(HAVE_INITSTATE) && defined(HAVE_SETSTATE)
-    oldstate = initstate(time(NULL), (char*)state, sizeof(state));
-#endif
-
     headp = &r->head;
 
-    for(ss = srvs; ss < srvs + num_srv; ) {
-	int sum, rnd, count;
+    for (ss = srvs; ss < srvs + num_srv; ) {
+	int sum, zeros, rnd, count; /* zeros -> weight scaling */
 	struct rk_resource_record **ee, **tt;
-	/* find the last record with the same priority and count the
-           sum of all weights */
-	for(sum = 0, tt = ss; tt < srvs + num_srv; tt++) {
+
+	/*
+	 * find the last record with the same priority and count the sum of all
+	 * weights
+	 */
+	for (sum = 0, zeros = 0, tt = ss; tt < srvs + num_srv; tt++) {
 	    assert(*tt != NULL);
 	    if((*tt)->u.srv->priority != (*ss)->u.srv->priority)
 		break;
 	    sum += (*tt)->u.srv->weight;
+	    if ((*tt)->u.srv->weight == 0)
+		zeros++;
 	}
+	/* make sure scale (`zeros') is > 0 then scale out */
+	sum += zeros ? 1 : zeros++;
+	sum *= zeros;
 	ee = tt;
-	/* ss is now the first record of this priority and ee is the
-           first of the next */
-	while(ss < ee) {
-	    rnd = rk_random() % (sum + 1);
-	    for(count = 0, tt = ss; ; tt++) {
-		if(*tt == NULL)
-		    continue;
-		count += (*tt)->u.srv->weight;
-		if(count >= rnd)
+
+	/*
+	 * ss is now the first record of this priority and ee is the first of
+	 * the next or the first past the end of srvs
+	 */
+	while (ss < ee) {
+	    rnd = rk_random() % sum + 1;
+	    for (count = 0, tt = ss; tt < ee; tt++) {
+		if (*tt == NULL)
+		    continue;   /* this one's already been picked */
+		if ((*tt)->u.srv->weight == 0)
+		    count++;
+		else
+		    count += (*tt)->u.srv->weight * zeros;
+		if (count >= rnd)
 		    break;
 	    }
-
 	    assert(tt < ee);
 
-	    /* insert the selected record at the tail (of the head) of
-               the list */
+	    /* push the selected record */
 	    (*tt)->next = *headp;
 	    *headp = *tt;
 	    headp = &(*tt)->next;
-	    sum -= (*tt)->u.srv->weight;
+	    /*
+	     * reduce the sum so the next iteration is sure to reach the random
+	     * total after examining all the remaining records.
+	     */
+	    if ((*tt)->u.srv->weight == 0)
+		sum--;
+	    else
+		sum -= (*tt)->u.srv->weight * zeros;
 	    *tt = NULL;
-	    while(ss < ee && *ss == NULL)
+	    while (ss < ee && *ss == NULL)
 		ss++;
 	}
     }
 
-#if defined(HAVE_INITSTATE) && defined(HAVE_SETSTATE)
-    setstate(oldstate);
-#endif
     free(srvs);
     return;
 }

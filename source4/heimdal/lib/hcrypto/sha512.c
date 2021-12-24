@@ -31,7 +31,8 @@
  * SUCH DAMAGE.
  */
 
-#include "config.h"
+#include <config.h>
+#include <roken.h>
 
 #include "hash.h"
 #include "sha.h"
@@ -98,7 +99,7 @@ static const uint64_t constant_512[80] = {
     0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL
 };
 
-void
+int
 SHA512_Init (SHA512_CTX *m)
 {
     m->sz[0] = 0;
@@ -111,6 +112,7 @@ SHA512_Init (SHA512_CTX *m)
     F = 0x9b05688c2b3e6c1fULL;
     G = 0x1f83d9abfb41bd6bULL;
     H = 0x5be0cd19137e2179ULL;
+    return 1;
 }
 
 static void
@@ -184,7 +186,7 @@ struct x64{
 };
 #endif
 
-void
+int
 SHA512_Update (SHA512_CTX *m, const void *v, size_t len)
 {
     const unsigned char *p = v;
@@ -217,9 +219,10 @@ SHA512_Update (SHA512_CTX *m, const void *v, size_t len)
 	    offset = 0;
 	}
     }
+    return 1;
 }
 
-void
+int
 SHA512_Final (void *res, SHA512_CTX *m)
 {
     unsigned char zeros[128 + 16];
@@ -261,9 +264,10 @@ SHA512_Final (void *res, SHA512_CTX *m)
 	    r[8*i]   = (m->counter[i] >> 56) & 0xFF;
 	}
     }
+    return 1;
 }
 
-void
+int
 SHA384_Init(SHA384_CTX *m)
 {
     m->sz[0] = 0;
@@ -276,19 +280,22 @@ SHA384_Init(SHA384_CTX *m)
     F = 0x8eb44a8768581511ULL;
     G = 0xdb0c2e0d64f98fa7ULL;
     H = 0x47b5481dbefa4fa4ULL;
+    return 1;
 }
 
-void
+int
 SHA384_Update (SHA384_CTX *m, const void *v, size_t len)
 {
     SHA512_Update(m, v, len);
+    return 1;
 }
 
-void
+int
 SHA384_Final (void *res, SHA384_CTX *m)
 {
     unsigned char data[SHA512_DIGEST_LENGTH];
     SHA512_Final(data, m);
     memcpy(res, data, SHA384_DIGEST_LENGTH);
+    return 1;
 }
 

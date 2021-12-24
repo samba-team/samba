@@ -35,7 +35,8 @@
 #include "compile_et.h"
 #include "lex.h"
 
-void yyerror (char *s);
+void yyerror (const char *s);
+#define yyerror yyerror
 static long name2number(const char *str);
 
 extern char *yytext;
@@ -168,7 +169,7 @@ name2number(const char *str)
 }
 
 void
-yyerror (char *s)
+yyerror (const char *s)
 {
      _lex_error_message ("%s\n", s);
 }

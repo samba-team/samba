@@ -33,45 +33,111 @@ gss_export_sec_context(OM_uint32 *minor_status,
     gss_ctx_id_t *context_handle,
     gss_buffer_t interprocess_token)
 {
-	OM_uint32 major_status;
-	struct _gss_context *ctx = (struct _gss_context *) *context_handle;
-	gssapi_mech_interface m = ctx->gc_mech;
-	gss_buffer_desc buf;
+        OM_uint32 major_status = GSS_S_FAILURE, tmp_minor;
+        krb5_storage *sp;
+        krb5_data data;
+        krb5_error_code kret;
+	struct _gss_context *ctx;
+	gssapi_mech_interface m;
+	gss_buffer_desc buf = GSS_C_EMPTY_BUFFER;
+        unsigned char verflags;
 
-	_mg_buffer_zero(interprocess_token);
+	*minor_status = 0;
 
-	major_status = m->gm_export_sec_context(minor_status,
-	    &ctx->gc_ctx, &buf);
+        if (!interprocess_token)
+	    return GSS_S_CALL_INACCESSIBLE_READ;
 
-	if (major_status == GSS_S_COMPLETE) {
-		unsigned char *p;
+        _mg_buffer_zero(interprocess_token);
 
-		free(ctx);
-		*context_handle = GSS_C_NO_CONTEXT;
-		interprocess_token->length = buf.length
-			+ 2 + m->gm_mech_oid.length;
-		interprocess_token->value = malloc(interprocess_token->length);
-		if (!interprocess_token->value) {
-			/*
-			 * We are in trouble here - the context is
-			 * already gone. This is allowed as long as we
-			 * set the caller's context_handle to
-			 * GSS_C_NO_CONTEXT, which we did above.
-			 * Return GSS_S_FAILURE.
-			 */
-			_mg_buffer_zero(interprocess_token);
-			*minor_status = ENOMEM;
-			return (GSS_S_FAILURE);
-		}
-		p = interprocess_token->value;
-		p[0] = m->gm_mech_oid.length >> 8;
-		p[1] = m->gm_mech_oid.length;
-		memcpy(p + 2, m->gm_mech_oid.elements, m->gm_mech_oid.length);
-		memcpy(p + 2 + m->gm_mech_oid.length, buf.value, buf.length);
-		gss_release_buffer(minor_status, &buf);
-	} else {
-		_gss_mg_error(m, major_status, *minor_status);
+	if (context_handle == NULL)
+	    return GSS_S_NO_CONTEXT;
+
+	ctx = (struct _gss_context *) *context_handle;
+        if (ctx == NULL)
+            return GSS_S_NO_CONTEXT;
+
+        sp = krb5_storage_emem();
+        if (sp == NULL) {
+            *minor_status = ENOMEM;
+	    goto failure;
+        }
+        krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_PACKED);
+
+        verflags = 0x00;                /* Version 0 */
+
+        if (ctx->gc_target_len)
+            verflags |= EXPORT_CONTEXT_FLAG_ACCUMULATING;
+
+        if (ctx->gc_ctx)
+            verflags |= EXPORT_CONTEXT_FLAG_MECH_CTX;
+
+        kret = krb5_store_uint8(sp, verflags);
+
+        if (ctx->gc_target_len) {
+            _gss_mg_log(10, "gss-esc: exporting partial token %zu/%zu",
+                ctx->gc_input.length, ctx->gc_target_len);
+            kret = krb5_store_uint8(sp, ctx->gc_initial);
+            if (kret) {
+                *minor_status = kret;
+                goto failure;
+            }
+            kret = krb5_store_uint32(sp, ctx->gc_target_len);
+            if (kret) {
+                *minor_status = kret;
+                goto failure;
+            }
+	    major_status = _gss_mg_store_buffer(minor_status, sp,
+						&ctx->gc_input);
+            if (major_status != GSS_S_COMPLETE)
+                goto failure;
+        } else if (ctx->gc_ctx == GSS_C_NO_CONTEXT) {
+	    gss_delete_sec_context(&tmp_minor, context_handle,
+				   GSS_C_NO_BUFFER);
+	    return GSS_S_NO_CONTEXT;
+        }
+
+	if (ctx->gc_ctx) {
+	    m = ctx->gc_mech;
+
+	    major_status = m->gm_export_sec_context(minor_status,
+						    &ctx->gc_ctx, &buf);
+
+	    if (major_status != GSS_S_COMPLETE) {
+		_gss_mg_error(m, *minor_status);
+		goto failure;
+	    }
+
+	    major_status = _gss_mg_store_oid(minor_status, sp,
+					     &m->gm_mech_oid);
+	    if (major_status != GSS_S_COMPLETE)
+		goto failure;
+
+	    major_status = _gss_mg_store_buffer(minor_status, sp, &buf);
+	    if (major_status != GSS_S_COMPLETE)
+		goto failure;
 	}
 
-	return (major_status);
+        kret = krb5_storage_to_data(sp, &data);
+        if (kret) {
+            *minor_status = kret;
+            goto failure;
+        }
+
+        interprocess_token->length = data.length;
+        interprocess_token->value  = data.data;
+
+	major_status = GSS_S_COMPLETE;
+
+        _gss_mg_log(1, "gss-esc: token length %zu", data.length);
+
+failure:
+	if (major_status == GSS_S_COMPLETE && *minor_status == 0)
+	    gss_delete_sec_context(&tmp_minor, context_handle,
+				   GSS_C_NO_BUFFER);
+	else if (*minor_status)
+	    major_status = GSS_S_FAILURE;
+
+	_gss_secure_release_buffer(minor_status, &buf);
+        krb5_storage_free(sp);
+        return major_status;
 }

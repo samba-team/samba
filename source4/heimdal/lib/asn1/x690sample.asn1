@@ -1,0 +1,181 @@
+x690sample DEFINITIONS ::= BEGIN
+
+-- This is taken from Appendix A of X.690.  The same module is used by all
+-- X.690 series specifications of ASN.1 Encoding Rules.
+--
+-- This doesn't exercise every feature, like OPTIONAL, not really DEFAULT, not
+-- EXPLICIT tagging, extensibility markers, etc., but it exercises some hard
+-- ones like SET and IMPLICIT tagging.
+--
+-- Because we don't yet have an option to add a namespace prefix to generated
+-- symbols, to avoid conflicts with rfc2459's Name we're prefixing the type
+-- names here manually.
+--
+-- WARNING: The encoding rules used for the sample encoding given in Appendix A
+--          of X.690, and used in lib/asn1/check-gen.c, is not specified in
+--          X.690!  It seems very likely that it is neither CER nor DER but BER
+--          because the tags in the X690SamplePersonnelRecord (a SET { ... })
+--          are not in canonical order:
+--
+--      APPL CONS tag 0 = 133 bytes [0]
+--        APPL CONS tag 1 = 16 bytes [1]
+--          UNIV PRIM VisibleString = "John"
+--          UNIV PRIM VisibleString = "P"
+--          UNIV PRIM VisibleString = "Smith"
+--    ->  CONTEXT CONS tag 0 = 10 bytes [0]
+--          UNIV PRIM VisibleString = "Director"
+--    ->  APPL PRIM tag 2 = 1 bytes [2] IMPLICIT content
+--        ...
+--
+--          The canonical ordering of members in SET { ... } types is by tag,
+--          with UNIVERSAL tags before APPLICATION tags, those before CONTEXT,
+--          and those before PRIVATE, and within each class from lowest to
+--          highest numeric tag value.  See X.680, section 8.6, which is
+--          referenced from X.690, section 10.3.
+--
+--          Here we can see that the `title` member should come _after_ the
+--          `number` member, but it does not.
+--
+--          Our test relies on our compiler producing the same test data when
+--          encoding the structure that the given test data decodes to.  That
+--          works here only because our compiler does NOT sort SET { ... }
+--          members as it should (since we always produce DER).
+--
+--          Sorting SET members in the compiler is hard currently because we
+--          don't parse imported modules, so we don't know the tags of imported
+--          types, so we can only sort at run-time, which we don't do.
+--
+--          There is an obvious workaround, however: sort the SET { ... }
+--          definition manually!
+
+X690SamplePersonnelRecord ::= [APPLICATION 0] IMPLICIT SET {
+    name X690SampleName,
+    title [0] VisibleString,
+    number X690SampleEmployeeNumber,
+    dateOfHire [1] X690SampleDate,
+    nameOfSpouse [2] X690SampleName,
+    -- Heimdal's ASN.1 compiler doesn't handle DEFAULT values for types for
+    -- which it doesn't support literal values.
+    children [3] IMPLICIT SEQUENCE OF X690SampleChildInformation -- DEFAULT  {}
+}
+
+X690SampleChildInformation ::= SET {
+    name X690SampleName,
+    dateOfBirth [0] X690SampleDate
+}
+
+X690SampleName ::= [APPLICATION 1] IMPLICIT SEQUENCE {
+    givenName VisibleString,
+    initial VisibleString,
+    familyName VisibleString
+}
+
+-- Range added for test convenience.
+X690SampleEmployeeNumber ::= [APPLICATION 2] IMPLICIT INTEGER (0..4294967295)
+
+X690SampleDate::= [APPLICATION 3] IMPLICIT VisibleString  --YYYYMMDD
+
+-- The following is value syntax for the above, but Heimdal's ASN.1 compiler
+-- does not yet support value syntax for anything other than OIDs, booleans,
+-- integers, and UTF-8 strings:
+--
+--  { name { givenName "John", initial "P", familyName "Smith" },
+--    title "Director",
+--    number 51,
+--    dateOfHire "19710917",
+--    nameOfSpouse {givenName "Mary", initial "T", familyName "Smith" },
+--    children {
+--        {name {givenName "Ralph", initial "T", familyName "Smith" },
+--         dateOfBirth "19571111"},
+--        {name {givenName "Susan", initial "B", familyName "Jones" },
+--        I dateOfBirth "19590717"}
+--   }
+--  }
+--
+-- The encoding of this value is supposed to be (all hex) (adapted from X.690
+-- Appendix A):
+--
+--   60818561101A044A6F686E1A01501A05536D697468A00A1A084469726563746F
+--   72420133A10A43083139373130393137A21261101A044D6172791A01541A0553
+--   6D697468A342311F61111A0552616C70681A01541A05536D697468A00A430831
+--   39353731313131311F61111A05537573616E1A01421A05536D697468A00A4308
+--   3139353930373137
+--
+--  And a rough visualization of this is (adapted from X.690 Appendix A):
+--
+--  T  L
+--  60 8185                                     # 3
+--      Name
+--      T  L
+--      61 10                                   # 2
+--          T  L  "John"
+--          1A 04 4A6F686E                      # 6
+--          T  L  "P"
+--          1A 01 50                            # 3
+--          T  L  "Smith"
+--          1A 05 536D697468                    # 7
+--      Title
+--      T  L  T  L  "Director"
+--      A0 0A 1A 08 4469726563746F72            #12
+--      Emp. #
+--      42 01 33                                # 3
+--      Date of hire
+--      A1 0A 43 08 3139373130393137            #12
+--      Spouse
+--      A2 12                                   # 2
+--          Name
+--          61 10                               # 2
+--              1A 04 4D617279                  # 6
+--              1A 01 54                        # 3
+--              1A 05 536D697468                # 7
+--      Children
+--      A3 42                                   # 2
+--          31 1F                               # 2
+--              Name
+--              61 11 1A 05 52616C7068          # 9
+--                    1A 01 54                  # 3
+--                    1A 05 536D697468          # 7
+--              DoB
+--              A0 0A 43 08 3139353731313131    #12
+--          31 1F                               # 2 bytes
+--              61 11 1A 05 537573616E          # 9 bytes
+--                    1A 01 42                  # 3 bytes
+--                    1A 05 536D697468          # 7 bytes
+--              A0 0A 43 08 3139353930373137    #12 bytes
+-- 
+-- Our asn1_print program dumps this as follows, which looks correct:
+--
+--  APPL CONS tag 0 = 133 bytes [0]
+--    APPL CONS tag 1 = 16 bytes [1]
+--      UNIV PRIM VisibleString = "John"
+--      UNIV PRIM VisibleString = "P"
+--      UNIV PRIM VisibleString = "Smith"
+--    CONTEXT CONS tag 0 = 10 bytes [0]
+--      UNIV PRIM VisibleString = "Director"
+--    APPL PRIM tag 2 = 1 bytes [2] IMPLICIT content
+--    CONTEXT CONS tag 1 = 10 bytes [1]
+--      APPL PRIM tag 3 = 8 bytes [3] IMPLICIT content
+--    CONTEXT CONS tag 2 = 18 bytes [2]
+--      APPL CONS tag 1 = 16 bytes [1]
+--        UNIV PRIM VisibleString = "Mary"
+--        UNIV PRIM VisibleString = "T"
+--        UNIV PRIM VisibleString = "Smith"
+--    CONTEXT CONS tag 3 = 66 bytes [3]
+--      UNIV CONS Set = 31 bytes {
+--        APPL CONS tag 1 = 17 bytes [1]
+--          UNIV PRIM VisibleString = "Ralph"
+--          UNIV PRIM VisibleString = "T"
+--          UNIV PRIM VisibleString = "Smith"
+--        CONTEXT CONS tag 0 = 10 bytes [0]
+--          APPL PRIM tag 3 = 8 bytes [3] IMPLICIT content
+--      }
+--      UNIV CONS Set = 31 bytes {
+--        APPL CONS tag 1 = 17 bytes [1]
+--          UNIV PRIM VisibleString = "Susan"
+--          UNIV PRIM VisibleString = "B"
+--          UNIV PRIM VisibleString = "Smith"
+--        CONTEXT CONS tag 0 = 10 bytes [0]
+--          APPL PRIM tag 3 = 8 bytes [3] IMPLICIT content
+--      }
+
+END

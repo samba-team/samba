@@ -1,0 +1,784 @@
+
+
+
+Network Working Group                                       S. Josefsson
+Internet-Draft                                                    SJD AB
+Intended status: Informational                             July 31, 2009
+Expires: February 1, 2010
+
+
+   Using Kerberos V5 over the Transport Layer Security (TLS) protocol
+                 draft-josefsson-kerberos5-starttls-07
+
+Status of this Memo
+
+   This Internet-Draft is submitted to IETF in full conformance with the
+   provisions of BCP 78 and BCP 79.  This document may contain material
+   from IETF Documents or IETF Contributions published or made publicly
+   available before November 10, 2008.  The person(s) controlling the
+   copyright in some of this material may not have granted the IETF
+   Trust the right to allow modifications of such material outside the
+   IETF Standards Process.  Without obtaining an adequate license from
+   the person(s) controlling the copyright in such materials, this
+   document may not be modified outside the IETF Standards Process, and
+   derivative works of it may not be created outside the IETF Standards
+   Process, except to format it for publication as an RFC or to
+   translate it into languages other than English.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on February 1, 2010.
+
+Copyright Notice
+
+   Copyright (c) 2009 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+
+
+
+Josefsson               Expires February 1, 2010                [Page 1]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+   Provisions Relating to IETF Documents in effect on the date of
+   publication of this document (http://trustee.ietf.org/license-info).
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010                [Page 2]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+Abstract
+
+   This document specify how the Kerberos V5 protocol can be transported
+   over the Transport Layer Security (TLS) protocol, to provide
+   additional security features.
+
+
+Table of Contents
+
+   1.  Introduction and Background  . . . . . . . . . . . . . . . . .  4
+   2.  Kerberos V5 STARTTLS Extension . . . . . . . . . . . . . . . .  6
+   3.  Examples . . . . . . . . . . . . . . . . . . . . . . . . . . .  7
+   4.  STARTTLS aware KDC Discovery . . . . . . . . . . . . . . . . .  8
+   5.  Server Certificates  . . . . . . . . . . . . . . . . . . . . .  9
+   6.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 10
+   7.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 11
+   8.  Security Considerations  . . . . . . . . . . . . . . . . . . . 12
+   9.  References . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+     9.1.  Normative References . . . . . . . . . . . . . . . . . . . 13
+     9.2.  Informative References . . . . . . . . . . . . . . . . . . 13
+   Author's Address . . . . . . . . . . . . . . . . . . . . . . . . . 14
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010                [Page 3]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+1.  Introduction and Background
+
+   This document describe how a Kerberos V5 [RFC4120] implementation may
+   upgrade communication between clients and Key Distribution Centers
+   (KDCs) to use the Transport Layer Security (TLS) [RFC5246] protocol.
+
+   The TLS protocol offer integrity and privacy protected exchanges that
+   can be authentication using X.509 certificates, OpenPGP keys
+   [RFC5081], and user name and passwords via SRP [RFC5054].
+
+   There are several reasons to use Kerberos V5 over TLS.
+
+   o  Prevents downgrade attacks affecting, e.g., encryption types and
+      pre-auth data negotiation.  The encryption type field in KDC-REQ,
+      and the METHOD-DATA field with the requested pre-auth types from
+      the server in KDC_ERR_PREAUTH_REQUIRED errors in KDC-REP, are sent
+      without integrity or privacy protection in Kerberos 5.  This
+      allows an active attacker to replace the encryption type with a
+      compromised encryption type, e.g., 56-bit DES, or request that
+      clients should use a broken pre-auth type.  Since clients in
+      general cannot know the encryption types other servers support, or
+      the pre-auth types servers prefer or require, it is difficult for
+      the client to detect if there was a man-in-the-middle or if the
+      remote server simply did not support a stronger encryption type or
+      preferred another pre-auth type.
+
+   o  Kerberos exchanges are privacy protected.  Part of many Kerberos
+      packets are transferred without privacy protection (i.e.,
+      encryption).  That part contains information, such as the client
+      principal name, the server principal name, the encryption types
+      supported by the client, the lifetime of tickets, etc.  Revealing
+      such information is, in some threat models, considered a problem.
+
+   o  Additional authentication against the KDC.  In some situations,
+      users are equipped with smart cards with a RSA authentication key.
+      In others, users have a OpenPGP client on their desktop, with a
+      public OpenPGP key known to the server.
+
+   o  The TLS protocol has been studied by many parties.  In some threat
+      models, the designer prefer to reduce the number of protocols that
+      can hurt the overall system security if they are compromised.
+
+   o  Explicit server authentication of the KDC to the client.  In
+      traditional Kerberos 5, authentication of the KDC is proved as a
+      side effect that the KDC knows your encryption key (i.e., your
+      password).
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+
+
+
+Josefsson               Expires February 1, 2010                [Page 4]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in RFC 2119 [RFC2119].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010                [Page 5]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+2.  Kerberos V5 STARTTLS Extension
+
+   The STARTTLS extension uses the Kerberos V5 TCP extension mechanism
+   [RFC5021].  The extension uses bit #TBD in the extension bitmask.
+
+   The protocol is as follows.  After the server has sent the 4-octet
+   value 0x00000000 to indicate support of this extension, the stream
+   will be controlled by the TLS protocol and its framing.  The TLS
+   protocol is initiated by the client.
+
+   Typically, the client initiate the TLS handshake protocol by sending
+   a client hello, and the server responds, and the handshake continues
+   until it either succeed or fails.
+
+   If for any reason the handshake fails, the STARTTLS protocol will
+   also fail, and the TLS error is used as the error indication.  In
+   this case, no further messages can be exchanged over the same TCP
+   session.
+
+   If the handshake succeeds, the Kerberos V5 authentication protocol is
+   performed within the protected TLS channel, like a normal TCP
+   Kerberos V5 exchange.  In particular, this means that every Kerberos
+   V5 packet will be prefixed by a 4-octet length field, that indicate
+   the length of the Kerberos V5 packet.
+
+   When no further Kerberos V5 messages needs to be transferred in the
+   TLS session, the TLS session MUST be shut down properly using the
+   close_notify alert.  When the TLS session is shut down, the TCP
+   connection cannot be re-used to send any further data and MUST be
+   closed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010                [Page 6]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+3.  Examples
+
+   A complete packet flow for a successful AS-REQ/REP exchange protected
+   by this mechanism will be as follows.  The "STARTTLS-bit" is a
+   4-octet value with only the bit allocated for this extension set.
+
+       Client                                               Server
+
+        [ Kerberos V5 TCP extension mechanism negotiation starts ]
+
+       [0x70000000 & STARTTLS-bit]  -------->
+                                                       [0x00000000]
+                                    <--------
+
+                            [ TLS negotiation starts ]
+
+
+       ClientHello                  -------->
+                                                       ServerHello
+                                                      Certificate*
+                                                ServerKeyExchange*
+                                               CertificateRequest*
+                                    <--------      ServerHelloDone
+       Certificate*
+       ClientKeyExchange
+       CertificateVerify*
+       [ChangeCipherSpec]
+       Finished                     -------->
+                                                [ChangeCipherSpec]
+                                    <--------             Finished
+
+                       [ Kerberos V5 negotiation starts ]
+
+       4 octet length field
+       Kerberos V5 AS-REQ           -------->
+                                                4 octet length field
+                                                Kerberos V5 AS-REP
+                                    <--------
+
+       * Indicates optional or situation-dependent messages that are not
+         always sent.
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010                [Page 7]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+4.  STARTTLS aware KDC Discovery
+
+   Section 7.2.3 of Kerberos V5 [RFC4120] describe how Domain Name
+   System (DNS) SRV records [RFC2782] can be used to find the address of
+   an KDC.  We define a new Proto of "tls" to indicate that the
+   particular KDC is intended to support this STARTTLS extension.  The
+   Service, Realm, TTL, Class, SRV, Priority, Weight, Port and Target
+   have the same meaning as in RFC 4120.
+
+   For example:
+
+   _kerberos._tls.EXAMPLE.COM. IN SRV 0 0 88 kdc1.example.com.
+   _kerberos._tls.EXAMPLE.COM. IN SRV 1 0 88 kdc2.example.com.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010                [Page 8]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+5.  Server Certificates
+
+   The TLS protocol may be used in a mode that provides server
+   authentication using, for example, X.509 and OpenPGP.
+
+   The Kerberos V5 STARTTLS protocol do not require clients to verify
+   the server certificate.  The goal is that support for TLS in Kerberos
+   V5 clients should be as easy to implement and deploy as support for
+   UDP/TCP.  Use of TLS, even without server certificate validation,
+   protects against some attacks that Kerberos V5 over UDP/TCP do not.
+   Requiring server certificates to be used at all times would enable
+   attacks in those situations.
+
+   Many client environments do not have secure long-term storage, which
+   is required to validate certificates.  This makes it impossible to
+   use server certificate validation on a large number of client
+   systems.
+
+   When clients have the ability, they need to be able to validate the
+   server certificate.  For this reason, if a KDC presents a X.509
+   server certificate over TLS, it MUST contain an otherName Subject
+   Alternative Name (SAN) identified using a type-id of id-krb5starttls-
+   san.  The intention is to bind the server certificate to the Kerberos
+   realm for the purpose of using Kerberos V5 STARTTLS.  The value field
+   of the otherName should contain the realm as the "Realm" ASN.1 type.
+
+          id-krb5starttls-san OBJECT IDENTIFIER ::=
+            { iso(1) identified-organization(3) dod(6) internet(1)
+              private(4) enterprise(1) gnu(11591)
+              shishi(6) krb5starttls-san(1) }
+
+   To validate a server certificate, the client MAY use local
+   configuration (e.g., a list that map realm names to a copy of the
+   server's certificate) and compare that with the authentication
+   information provided from the server via TLS.  For illustration, the
+   server certificate could be a X.509 certificate or an OpenPGP key.
+   In this mode, the client need no processing related to id-
+   krb5starttls-san.
+
+   When the server presents a X.509 server certificate, clients MAY use
+   "Certification Path Validation" as described in [RFC5280] to validate
+   the KDC server certificate.  In addition, unless the client can
+   otherwise verify that the server certificate is bound to the KDC of
+   the target realm, the client MUST verify that the server certificate
+   contains the id-krb5starttls-san SAN and that the value is identical
+   to the intended Kerberos realm.
+
+
+
+
+
+Josefsson               Expires February 1, 2010                [Page 9]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+6.  IANA Considerations
+
+   The IANA is requested to allocate a bit in the "Kerberos TCP
+   Extensions" registry for the extension described in this document, as
+   per [RFC5021].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010               [Page 10]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+7.  Acknowledgements
+
+   Jeffrey Hutzelman and Sam Hartman provided comments that improved the
+   protocol and document.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010               [Page 11]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+8.  Security Considerations
+
+   The security considerations in Kerberos V5, TLS, and the Kerberos V5
+   TCP extension mechanism are inherited.
+
+   Note that TLS does not protect against Man-In-The-Middle (MITM)
+   attacks unless clients verify the KDC's credentials (X.509
+   certificate, OpenPGP key, etc) correctly.
+
+   If server authentication is used, some information about the server
+   (such as its name) is visible to passive attackers.
+
+   To protect against the inherent downgrade attack in the extension
+   framework, implementations SHOULD offer a policy mode that requires
+   this extension to always be successfully negotiated, for a particular
+   realm, or generally.  For interoperability with implementations that
+   do not support this extension, the policy mode SHOULD be disabled by
+   default.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010               [Page 12]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+9.  References
+
+9.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2782]  Gulbrandsen, A., Vixie, P., and L. Esibov, "A DNS RR for
+              specifying the location of services (DNS SRV)", RFC 2782,
+              February 2000.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+   [RFC5246]  Dierks, T. and E. Rescorla, "The Transport Layer Security
+              (TLS) Protocol Version 1.2", RFC 5246, August 2008.
+
+   [RFC5021]  Josefsson, S., "Extended Kerberos Version 5 Key
+              Distribution Center (KDC) Exchanges over TCP", RFC 5021,
+              August 2007.
+
+   [RFC5280]  Cooper, D., Santesson, S., Farrell, S., Boeyen, S.,
+              Housley, R., and W. Polk, "Internet X.509 Public Key
+              Infrastructure Certificate and Certificate Revocation List
+              (CRL) Profile", RFC 5280, May 2008.
+
+9.2.  Informative References
+
+   [RFC5054]  Taylor, D., Wu, T., Mavrogiannopoulos, N., and T. Perrin,
+              "Using the Secure Remote Password (SRP) Protocol for TLS
+              Authentication", RFC 5054, November 2007.
+
+   [RFC5081]  Mavrogiannopoulos, N., "Using OpenPGP Keys for Transport
+              Layer Security (TLS) Authentication", RFC 5081,
+              November 2007.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010               [Page 13]
+
+Internet-Draft       Protecting Kerberos V5 with TLS           July 2009
+
+
+Author's Address
+
+   Simon Josefsson
+   Simon Josefsson Datakonsult AB
+   Hagagatan 24
+   Stockholm  113 47
+   Sweden
+
+   Email: simon@josefsson.org
+   URI:   http://josefsson.org/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Josefsson               Expires February 1, 2010               [Page 14]
+

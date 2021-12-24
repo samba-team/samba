@@ -1,0 +1,13 @@
+id "$Id$"
+
+error_table k5e1
+
+index 4
+
+prefix KRB5_DCC
+error_code CANNOT_CREATE,	"Can't create new subsidiary cache"
+
+prefix KRB5_KCC
+error_code INVALID_ANCHOR,	"Invalid keyring anchor name"
+error_code UNKNOWN_VERSION,	"Unknown keyring collection version"
+error_code INVALID_UID,		"Invalid UID in persistent keyring name"

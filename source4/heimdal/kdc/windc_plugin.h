@@ -33,10 +33,11 @@
 
 /* $Id$ */
 
-#ifndef HEIMDAL_KRB5_PAC_PLUGIN_H
-#define HEIMDAL_KRB5_PAC_PLUGIN_H 1
+#ifndef HEIMDAL_KDC_WINDC_PLUGIN_H
+#define HEIMDAL_KDC_WINDC_PLUGIN_H 1
 
 #include <krb5.h>
+#include <kdc.h>
 
 /*
  * The PAC generate function should allocate a krb5_pac using
@@ -53,22 +54,15 @@
 struct hdb_entry_ex;
 
 typedef krb5_error_code
-(*krb5plugin_windc_pac_generate)(void *, krb5_context,
-				 struct hdb_entry_ex *, /* client */
-				 struct hdb_entry_ex *, /* server */
-				 const krb5_boolean *, /* pac_request */
-				 krb5_pac *);
+(KRB5_CALLCONV *krb5plugin_windc_pac_generate)(void *, krb5_context,
+					       struct hdb_entry_ex *, /* client */
+					       struct hdb_entry_ex *, /* server */
+					       const krb5_keyblock *, /* pk_replykey */
+					       uint64_t,	      /* pac_attributes */
+					       krb5_pac *);
 
 typedef krb5_error_code
-(*krb5plugin_windc_pac_pk_generate)(void *, krb5_context,
-				    struct hdb_entry_ex *, /* client */
-				    struct hdb_entry_ex *, /* server */
-				    const krb5_keyblock *, /* pk_replykey */
-				    const krb5_boolean *, /* pac_request */
-				    krb5_pac *);
-
-typedef krb5_error_code
-(*krb5plugin_windc_pac_verify)(void *, krb5_context,
+(KRB5_CALLCONV *krb5plugin_windc_pac_verify)(void *, krb5_context,
 			       const krb5_principal, /* new ticket client */
 			       const krb5_principal, /* delegation proxy */
 			       struct hdb_entry_ex *,/* client */
@@ -77,26 +71,22 @@ typedef krb5_error_code
 			       krb5_pac *);
 
 typedef krb5_error_code
-(*krb5plugin_windc_client_access)(
-	void *, krb5_context,
-	krb5_kdc_configuration *config,
-	hdb_entry_ex *, const char *,
-	hdb_entry_ex *, const char *,
-	KDC_REQ *, krb5_data *);
+(KRB5_CALLCONV *krb5plugin_windc_client_access)(void *, astgs_request_t);
 
+typedef krb5_error_code
+(KRB5_CALLCONV *krb5plugin_windc_finalize_reply)(void *, astgs_request_t r);
 
-#define KRB5_WINDC_PLUGIN_MINOR			6
+#define KRB5_WINDC_PLUGIN_MINOR			8
 #define KRB5_WINDC_PLUGING_MINOR KRB5_WINDC_PLUGIN_MINOR
 
 typedef struct krb5plugin_windc_ftable {
     int			minor_version;
-    krb5_error_code	(*init)(krb5_context, void **);
-    void		(*fini)(void *);
+    krb5_error_code	(KRB5_CALLCONV *init)(krb5_context, void **);
+    void		(KRB5_CALLCONV *fini)(void *);
     krb5plugin_windc_pac_generate	pac_generate;
     krb5plugin_windc_pac_verify		pac_verify;
     krb5plugin_windc_client_access	client_access;
-    krb5plugin_windc_pac_pk_generate    pac_pk_generate;
+    krb5plugin_windc_finalize_reply	finalize_reply;
 } krb5plugin_windc_ftable;
 
-#endif /* HEIMDAL_KRB5_PAC_PLUGIN_H */
-
+#endif /* HEIMDAL_KDC_WINDC_PLUGIN_H */

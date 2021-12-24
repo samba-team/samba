@@ -42,6 +42,12 @@
  * ct_memcmp() can't be used to order memory regions like memcmp(),
  * for example, use ct_memcmp() with qsort().
  *
+ * We use volatile to avoid optimizations where the compiler and/or
+ * linker turn this ct_memcmp() into a plain memcmp().  The pointers
+ * themselves are also marked volatile (not just the memory pointed at)
+ * because in some GCC versions there is a bug which can be worked
+ * around by doing this.
+ *
  * @param p1 memory region 1 to compare
  * @param p2 memory region 2 to compare
  * @param len length of memory
@@ -52,9 +58,21 @@
  */
 
 int
-ct_memcmp(const void *p1, const void *p2, size_t len)
+ct_memcmp(const volatile void * volatile p1,
+          const volatile void * volatile p2,
+          size_t len)
 {
-    const unsigned char *s1 = p1, *s2 = p2;
+    /*
+     * There's no need for s1 and s2 to be volatile; only p1 and p2 have
+     * to be in order to work around GCC bugs.
+     *
+     * However, s1 and s2 do have to point to volatile, as we don't know
+     * if the object was originally defined as volatile, and if it was
+     * then we'd get undefined behavior here if s1/s2 were declared to
+     * point to non-volatile memory.
+     */
+    const volatile unsigned char *s1 = p1;
+    const volatile unsigned char *s2 = p2;
     size_t i;
     int r = 0;
 

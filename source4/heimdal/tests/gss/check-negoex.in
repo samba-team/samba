@@ -1,0 +1,278 @@
+#!/bin/sh
+#
+# Copyright (c) 2006 Kungliga Tekniska Högskolan
+# (Royal Institute of Technology, Stockholm, Sweden). 
+# All rights reserved. 
+#
+# Redistribution and use in source and binary forms, with or without 
+# modification, are permitted provided that the following conditions 
+# are met: 
+#
+# 1. Redistributions of source code must retain the above copyright 
+#    notice, this list of conditions and the following disclaimer. 
+#
+# 2. Redistributions in binary form must reproduce the above copyright 
+#    notice, this list of conditions and the following disclaimer in the 
+#    documentation and/or other materials provided with the distribution. 
+#
+# 3. Neither the name of the Institute nor the names of its contributors 
+#    may be used to endorse or promote products derived from this software 
+#    without specific prior written permission. 
+#
+# THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+# SUCH DAMAGE. 
+#
+# $Id$
+#
+
+env_setup="@env_setup@"
+srcdir="@srcdir@"
+objdir="@objdir@"
+
+. ${env_setup}
+
+R=TEST.H5L.SE
+
+port=@port@
+
+keytabfile="${objdir}/server.keytab-no"
+keytab="FILE:${keytabfile}-no"
+cache="FILE:krb5ccfile-no"
+cacheds="FILE:krb5ccfile-ds-no"
+
+context="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_context"
+
+KRB5_CONFIG="${objdir}/krb5.conf"
+export KRB5_CONFIG
+
+KRB5_KTNAME="${keytab}-no"
+export KRB5_KTNAME
+KRB5CCNAME="${cache}-no"
+export KRB5CCNAME
+unset NTLM_ACCEPTOR_CCACHE
+unset NTLM_USER_FILE
+
+GSSAPI_SPNEGO_NAME=host@host.test.h5l.se
+export GSSAPI_SPNEGO_NAME
+
+GSS_MECH_CONFIG="${objdir}/mech"
+export GSS_MECH_CONFIG
+
+> messages.log
+
+exitcode=0
+
+echo "======context building for negoex"
+
+for HOPS in 1 2 3 4 5
+do
+    echo "test_negoex_1 $HOPS hops"
+    ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se || \
+	{ exitcode=1 ; echo test failed; }
+done
+
+for HOPS in 1 2 3 4 5
+do
+    echo "test_negoex_1 $HOPS hops early keys"
+    KEY=always ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se || \
+	{ exitcode=1 ; echo test failed; }
+done
+
+HOPS=1
+echo "test_negoex_1 no keys"
+    KEY=never ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se 2>/dev/null && \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 no optimistic token"
+    NEGOEX_NO_OPTIMISTIC_TOKEN=1 ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se || \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 initiator query fail, test_negoex_2 pass"
+    INIT_QUERY_FAIL=102 ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_2 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se 2>/dev/null || \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 acceptor query fail, test_negoex_2 pass"
+    ACCEPT_QUERY_FAIL=102 ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_2 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se 2>/dev/null || \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 acceptor exchange fail, test_negoex_2 pass"
+    ACCEPT_EXCHANGE_FAIL=102 ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_2 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se 2>/dev/null || \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 first mech initiator exchange fail"
+    INIT_EXCHANGE_FAIL=102 ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se 2>/dev/null && \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 first mech initiator exchange fail, two hops"
+    HOPS=2 INIT_EXCHANGE_FAIL=102 ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se 2>/dev/null && \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 first mech initiator exchange fail, two hops, early keys"
+    HOPS=2 KEY=always INIT_EXCHANGE_FAIL=102 ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se 2>/dev/null && \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 first mech init_sec_context fail"
+    INIT_FAIL=102 ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se 2>/dev/null && \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 first mech accept_sec_context fail"
+    HOPS=2 ACCEPT_FAIL=102 ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se 2>/dev/null && \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 alert from acceptor to initiator"
+    HOPS=3 KEY=init-always ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se || \
+	{ exitcode=1 ; echo test failed; }
+
+echo "test_negoex_1 alert from initiator to acceptor"
+    HOPS=4 KEY=accept-always ${context} \
+	--mech-type=spnego --ret-mech-type=test_negoex_1 \
+	--name-type=hostbased-service \
+	host@host.test.h5l.se || \
+	{ exitcode=1 ; echo test failed; }
+
+unset GSS_MECH_CONFIG
+
+echo "======test context building for sanon-x25519"
+for mech in sanon-x25519 sanon-x25519iov spnego spnegoiov; do
+	iov=""
+	if [ "$mech" = "sanon-x25519iov" ] ; then
+	    mech="sanon-x25519"
+	    iov="--iov"
+	fi
+	if [ "$mech" = "spnegoiov" ] ; then
+	    mech="spnego"
+	    iov="--iov"
+	fi
+
+	echo "${mech} anon-flag ${iov}" ; > messages.log
+	${context} --mech-type=${mech} \
+	    --anonymous \
+	    --ret-mech-type=sanon-x25519 \
+	    --i-channel-bindings=negoex_sanon_test_h5l_se \
+	    --a-channel-bindings=negoex_sanon_test_h5l_se \
+	    --wrapunwrap ${iov} \
+	    host@lucid.test.h5l.se || \
+		{ eval "$testfailed"; }
+
+	echo "${mech} anon-initiator ${iov}" ; > messages.log
+	${context} --mech-type=${mech} \
+	    --client-name=WELLKNOWN/ANONYMOUS@WELLKNOWN:ANONYMOUS \
+	    --ret-mech-type=sanon-x25519 \
+	    --i-channel-bindings=negoex_sanon_test_h5l_se \
+	    --a-channel-bindings=negoex_sanon_test_h5l_se \
+	    --wrapunwrap ${iov} \
+	    host@lucid.test.h5l.se || \
+		{ eval "$testfailed"; }
+
+	echo "${mech} anon-acceptor ${iov}" ; > messages.log
+	${context} --mech-type=${mech} \
+	    --ret-mech-type=sanon-x25519 \
+	    --i-channel-bindings=negoex_sanon_test_h5l_se \
+	    --a-channel-bindings=negoex_sanon_test_h5l_se \
+	    --wrapunwrap ${iov} \
+	    WELLKNOWN@ANONYMOUS || \
+		{ eval "$testfailed"; }
+done
+
+echo "======export-import-context for sanon-x25519"
+for mech in sanon-x25519 sanon-x25519iov spnego spnegoiov; do
+	iov=""
+	if [ "$mech" = "sanon-x25519iov" ] ; then
+	    mech="sanon-x25519"
+	    iov="--iov"
+	fi
+	if [ "$mech" = "spnegoiov" ] ; then
+	    mech="spnego"
+	    iov="--iov"
+	fi
+
+	echo "${mech}: export-import-context ${iov}" ; > messages.log
+	${context} \
+	    --mech-type=${mech} \
+	    --anonymous \
+	    --export-import-context \
+	    --wrapunwrap ${iov} \
+	    --name-type=hostbased-service host@lucid.test.h5l.se || \
+	    { eval "$testfailed"; }
+
+	echo "${mech}: export-import-context ${iov} (split tokens)" ; > messages.log
+	${context} \
+	    --mech-type=${mech} \
+	    --anonymous \
+	    --export-import-context \
+	    --wrapunwrap ${iov} \
+	    --token-split=128 \
+	    --name-type=hostbased-service host@lucid.test.h5l.se || \
+	    { eval "$testfailed"; }
+
+done
+
+echo "======dce-style for sanon-x25519"
+for mech in spnego spnegoiov; do
+	iov=""
+	if [ "$mech" = "spnegoiov" ] ; then
+	    mech="spnego"
+	    iov="--iov"
+	fi
+
+	echo "${mech}: dce-style ${iov}" ; > messages.log
+	${context} \
+	    --mech-type=${mech} \
+	    --anonymous --dce-style \
+	    --wrapunwrap ${iov} \
+	    --name-type=hostbased-service host@lucid.test.h5l.se || \
+	    { eval "$testfailed"; }
+
+done
+
+trap "" EXIT
+
+exit $exitcode

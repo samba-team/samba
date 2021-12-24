@@ -121,8 +121,8 @@ mic_des
 			       ++seq_number);
   HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
-  memset (deskey, 0, sizeof(deskey));
-  memset (&schedule, 0, sizeof(schedule));
+  memset_s(deskey, sizeof(deskey), 0, sizeof(deskey));
+  memset_s(&schedule, sizeof(schedule), 0, sizeof(schedule));
 
   *minor_status = 0;
   return GSS_S_COMPLETE;
@@ -275,7 +275,7 @@ mic_des3
 
 OM_uint32 GSSAPI_CALLCONV _gsskrb5_get_mic
            (OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
+            gss_const_ctx_id_t context_handle,
             gss_qop_t qop_req,
             const gss_buffer_t message_buffer,
             gss_buffer_t message_token

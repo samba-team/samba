@@ -37,58 +37,70 @@
 
 RCSID("$Id$");
 
-void
+void ASN1CALL
 der_free_general_string (heim_general_string *str)
 {
     free(*str);
     *str = NULL;
 }
 
-void
+void ASN1CALL
 der_free_integer (int *i)
 {
     *i = 0;
 }
 
-void
+void ASN1CALL
+der_free_integer64 (int64_t *i)
+{
+    *i = 0;
+}
+
+void ASN1CALL
 der_free_unsigned (unsigned *u)
 {
     *u = 0;
 }
 
-void
+void ASN1CALL
+der_free_unsigned64 (uint64_t *u)
+{
+    *u = 0;
+}
+
+void ASN1CALL
 der_free_generalized_time(time_t *t)
 {
     *t = 0;
 }
 
-void
+void ASN1CALL
 der_free_utctime(time_t *t)
 {
     *t = 0;
 }
 
 
-void
+void ASN1CALL
 der_free_utf8string (heim_utf8_string *str)
 {
     free(*str);
     *str = NULL;
 }
 
-void
+void ASN1CALL
 der_free_printable_string (heim_printable_string *str)
 {
     der_free_octet_string(str);
 }
 
-void
+void ASN1CALL
 der_free_ia5_string (heim_ia5_string *str)
 {
     der_free_octet_string(str);
 }
 
-void
+void ASN1CALL
 der_free_bmp_string (heim_bmp_string *k)
 {
     free(k->data);
@@ -96,7 +108,7 @@ der_free_bmp_string (heim_bmp_string *k)
     k->length = 0;
 }
 
-void
+void ASN1CALL
 der_free_universal_string (heim_universal_string *k)
 {
     free(k->data);
@@ -104,14 +116,14 @@ der_free_universal_string (heim_universal_string *k)
     k->length = 0;
 }
 
-void
+void ASN1CALL
 der_free_visible_string (heim_visible_string *str)
 {
     free(*str);
     *str = NULL;
 }
 
-void
+void ASN1CALL
 der_free_octet_string (heim_octet_string *k)
 {
     free(k->data);
@@ -119,7 +131,7 @@ der_free_octet_string (heim_octet_string *k)
     k->length = 0;
 }
 
-void
+void ASN1CALL
 der_free_heim_integer (heim_integer *k)
 {
     free(k->data);
@@ -127,7 +139,7 @@ der_free_heim_integer (heim_integer *k)
     k->length = 0;
 }
 
-void
+void ASN1CALL
 der_free_oid (heim_oid *k)
 {
     free(k->components);
@@ -135,7 +147,7 @@ der_free_oid (heim_oid *k)
     k->length = 0;
 }
 
-void
+void ASN1CALL
 der_free_bit_string (heim_bit_string *k)
 {
     free(k->data);

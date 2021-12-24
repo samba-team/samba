@@ -55,11 +55,11 @@ init_error_table (const char**, long, int);
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 com_err_va (const char *, long, const char *, va_list)
-    __attribute__((format(printf, 3, 0)));
+    __attribute__ ((__format__ (__printf__, 3, 0)));
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 com_err (const char *, long, const char *, ...)
-    __attribute__((format(printf, 3, 4)));
+    __attribute__ ((__format__ (__printf__, 3, 4)));
 
 KRB5_LIB_FUNCTION errf KRB5_LIB_CALL
 set_com_err_hook (errf);

@@ -73,17 +73,13 @@ mkt_resolve(krb5_context context, const char *name, krb5_keytab id)
     d = calloc(1, sizeof(*d));
     if(d == NULL) {
 	HEIMDAL_MUTEX_unlock(&mkt_mutex);
-	krb5_set_error_message(context, ENOMEM,
-			       N_("malloc: out of memory", ""));
-	return ENOMEM;
+	return krb5_enomem(context);
     }
     d->name = strdup(name);
     if (d->name == NULL) {
 	HEIMDAL_MUTEX_unlock(&mkt_mutex);
 	free(d);
-	krb5_set_error_message(context, ENOMEM,
-			       N_("malloc: out of memory", ""));
-	return ENOMEM;
+	return krb5_enomem(context);
     }
     d->entries = NULL;
     d->num_entries = 0;
@@ -175,11 +171,8 @@ mkt_add_entry(krb5_context context,
     struct mkt_data *d = id->data;
     krb5_keytab_entry *tmp;
     tmp = realloc(d->entries, (d->num_entries + 1) * sizeof(*d->entries));
-    if(tmp == NULL) {
-	krb5_set_error_message(context, ENOMEM,
-			       N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (tmp == NULL)
+	return krb5_enomem(context);
     d->entries = tmp;
     return krb5_kt_copy_entry_contents(context, entry,
 				       &d->entries[d->num_entries++]);
@@ -232,5 +225,7 @@ const krb5_kt_ops krb5_mkt_ops = {
     mkt_next_entry,
     mkt_end_seq_get,
     mkt_add_entry,
-    mkt_remove_entry
+    mkt_remove_entry,
+    NULL,
+    0
 };

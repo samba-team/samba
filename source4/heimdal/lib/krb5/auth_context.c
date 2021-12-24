@@ -33,6 +33,16 @@
 
 #include "krb5_locl.h"
 
+/**
+ * Allocate and initialize an autentication context.
+ *
+ * @param context      A kerberos context.
+ * @param auth_context The authentication context to be initialized.
+ *
+ * Use krb5_auth_con_free() to release the memory when done using the context.
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ */
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_init(krb5_context context,
 		   krb5_auth_context *auth_context)
@@ -40,16 +50,13 @@ krb5_auth_con_init(krb5_context context,
     krb5_auth_context p;
 
     ALLOC(p, 1);
-    if(!p) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (!p)
+	return krb5_enomem(context);
     memset(p, 0, sizeof(*p));
     ALLOC(p->authenticator, 1);
     if (!p->authenticator) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	free(p);
-	return ENOMEM;
+	return krb5_enomem(context);
     }
     memset (p->authenticator, 0, sizeof(*p->authenticator));
     p->flags = KRB5_AUTH_CONTEXT_DO_TIME;
@@ -60,16 +67,27 @@ krb5_auth_con_init(krb5_context context,
     p->remote_port    = 0;
     p->keytype        = KRB5_ENCTYPE_NULL;
     p->cksumtype      = CKSUMTYPE_NONE;
+    p->auth_data      = NULL;
     *auth_context     = p;
     return 0;
 }
 
+/**
+ * Deallocate an authentication context previously initialized with
+ * krb5_auth_con_init().
+ *
+ * @param context      A kerberos context.
+ * @param auth_context The authentication context to be deallocated.
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ */
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_free(krb5_context context,
 		   krb5_auth_context auth_context)
 {
     if (auth_context != NULL) {
-	krb5_free_authenticator(context, &auth_context->authenticator);
+	if (auth_context->authenticator)
+	    krb5_free_authenticator(context, &auth_context->authenticator);
 	if(auth_context->local_address){
 	    free_HostAddress(auth_context->local_address);
 	    free(auth_context->local_address);
@@ -81,6 +99,10 @@ krb5_auth_con_free(krb5_context context,
 	krb5_free_keyblock(context, auth_context->keyblock);
 	krb5_free_keyblock(context, auth_context->remote_subkey);
 	krb5_free_keyblock(context, auth_context->local_subkey);
+	if (auth_context->auth_data) {
+	    free_AuthorizationData(auth_context->auth_data);
+	    free(auth_context->auth_data);
+	}
 	free (auth_context);
     }
     return 0;
@@ -140,7 +162,7 @@ krb5_auth_con_setaddrs(krb5_context context,
 	    krb5_free_address (context, auth_context->local_address);
 	else
 	    if ((auth_context->local_address = malloc(sizeof(krb5_address))) == NULL)
-		return ENOMEM;
+		return krb5_enomem(context);
 	krb5_copy_address(context, local_addr, auth_context->local_address);
     }
     if (remote_addr) {
@@ -148,12 +170,18 @@ krb5_auth_con_setaddrs(krb5_context context,
 	    krb5_free_address (context, auth_context->remote_address);
 	else
 	    if ((auth_context->remote_address = malloc(sizeof(krb5_address))) == NULL)
-		return ENOMEM;
+		return krb5_enomem(context);
 	krb5_copy_address(context, remote_addr, auth_context->remote_address);
     }
     return 0;
 }
 
+/**
+ * Update the authentication context \a auth_context with the local
+ * and remote addresses from socket \a fd, according to \a flags.
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ */
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_genaddrs(krb5_context context,
 		       krb5_auth_context auth_context,
@@ -239,10 +267,8 @@ krb5_auth_con_getaddrs(krb5_context context,
     if(*local_addr)
 	krb5_free_address (context, *local_addr);
     *local_addr = malloc (sizeof(**local_addr));
-    if (*local_addr == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (*local_addr == NULL)
+	return krb5_enomem(context);
     krb5_copy_address(context,
 		      auth_context->local_address,
 		      *local_addr);
@@ -251,10 +277,9 @@ krb5_auth_con_getaddrs(krb5_context context,
 	krb5_free_address (context, *remote_addr);
     *remote_addr = malloc (sizeof(**remote_addr));
     if (*remote_addr == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	krb5_free_address (context, *local_addr);
 	*local_addr = NULL;
-	return ENOMEM;
+	return krb5_enomem(context);
     }
     krb5_copy_address(context,
 		      auth_context->remote_address,
@@ -268,9 +293,9 @@ copy_key(krb5_context context,
 	 krb5_keyblock *in,
 	 krb5_keyblock **out)
 {
-    if(in)
+    *out = NULL;
+    if (in)
 	return krb5_copy_keyblock(context, in, out);
-    *out = NULL; /* is this right? */
     return 0;
 }
 
@@ -385,6 +410,83 @@ krb5_auth_con_getkeytype (krb5_context context,
     return 0;
 }
 
+krb5_error_code
+_krb5_add_1auth_data(krb5_context context,
+                     krb5int32 ad_type, krb5_data *ad_data, int critical,
+                     krb5_authdata **dst)
+{
+    AuthorizationDataElement e;
+
+    e.ad_type = ad_type;
+    e.ad_data = *ad_data;
+
+    if (!critical) {
+        AuthorizationData ad;
+        krb5_error_code ret;
+        krb5_data ir;
+        size_t len;
+
+        /* Build an AD-IF-RELEVANT with the new element inside it */
+        ad.len = 0;
+        ad.val = NULL;
+        ret = add_AuthorizationData(&ad, &e);
+
+        /* Encode the AD-IF-RELEVANT */
+        if (ret == 0)
+            ASN1_MALLOC_ENCODE(AuthorizationData, ir.data, ir.length, &ad,
+                               &len, ret);
+        if (ret == 0 && ir.length != len)
+            krb5_abortx(context, "internal error in ASN.1 encoder");
+
+        /* Re-enter to add the encoded AD-IF-RELEVANT */
+        ret = _krb5_add_1auth_data(context, KRB5_AUTHDATA_IF_RELEVANT, &ir, 1,
+                                   dst);
+
+        free_AuthorizationData(&ad);
+        krb5_data_free(&ir);
+        return ret;
+    }
+
+    if (*dst == NULL) {
+        ALLOC(*dst, 1);
+        if (*dst == NULL)
+            return krb5_enomem(context);
+    }
+    return add_AuthorizationData(*dst, &e);
+}
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_auth_con_add_AuthorizationData(krb5_context context,
+				    krb5_auth_context auth_context,
+				    int type,
+				    krb5_data *data)
+{
+    if (auth_context->auth_data == NULL) {
+	auth_context->auth_data = calloc(1, sizeof(*auth_context->auth_data));
+	if (auth_context->auth_data == NULL)
+	    return krb5_enomem(context);
+    }
+    return _krb5_add_1auth_data(context, type, data, 1,
+                                &auth_context->auth_data);
+}
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_auth_con_add_AuthorizationDataIfRelevant(krb5_context context,
+                                              krb5_auth_context auth_context,
+                                              krb5int32 type,
+                                              krb5_data *data)
+{
+    if (auth_context->auth_data == NULL) {
+	auth_context->auth_data = calloc(1, sizeof(*auth_context->auth_data));
+	if (auth_context->auth_data == NULL)
+	    return krb5_enomem(context);
+    }
+    return _krb5_add_1auth_data(context, type, data, 0,
+                                &auth_context->auth_data);
+}
+
+
+
 #if 0
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_auth_con_setenctype(krb5_context context,
@@ -395,7 +497,7 @@ krb5_auth_con_setenctype(krb5_context context,
 	krb5_free_keyblock(context, auth_context->keyblock);
     ALLOC(auth_context->keyblock, 1);
     if(auth_context->keyblock == NULL)
-	return ENOMEM;
+	return krb5_enomem(context);
     auth_context->keyblock->keytype = etype;
     return 0;
 }
@@ -452,10 +554,8 @@ krb5_auth_con_getauthenticator(krb5_context context,
 			   krb5_authenticator *authenticator)
 {
     *authenticator = malloc(sizeof(**authenticator));
-    if (*authenticator == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (*authenticator == NULL)
+	return krb5_enomem(context);
 
     copy_Authenticator(auth_context->authenticator,
 		       *authenticator);

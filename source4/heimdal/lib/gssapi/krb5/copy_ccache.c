@@ -62,9 +62,18 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
 #endif
 
 
+/*
+ * WARNING: Takes ownership of `id'.  Because MEMORY:anonymous is now not
+ * linked into to the MEMORY ccache namespace, we can't use krb5_cc_resolve()
+ * with the cache's name anymore.  We need a krb5_cc_clone() or some such, with
+ * attendant new method for ccops.  Or we could create a new MEMORY:anonymous
+ * ccache and copy all the creds from `id' into it.  But we know callers of
+ * this function don't need `id' after calling it, so for now we'll just take
+ * ownershipd of it.
+ */
 OM_uint32
 _gsskrb5_krb5_import_cred(OM_uint32 *minor_status,
-			  krb5_ccache id,
+			  krb5_ccache *id,
 			  krb5_principal keytab_principal,
 			  krb5_keytab keytab,
 			  gss_cred_id_t *cred)
@@ -87,13 +96,15 @@ _gsskrb5_krb5_import_cred(OM_uint32 *minor_status,
     HEIMDAL_MUTEX_init(&handle->cred_id_mutex);
 
     handle->usage = 0;
+    handle->destination_realm = NULL;
 
-    if (id) {
-	char *str;
+    if (*id) {
+	time_t now;
+	OM_uint32 left;
 
 	handle->usage |= GSS_C_INITIATE;
 
-	kret = krb5_cc_get_principal(context, id,
+	kret = krb5_cc_get_principal(context, *id,
 				     &handle->principal);
 	if (kret) {
 	    free(handle);
@@ -116,24 +127,21 @@ _gsskrb5_krb5_import_cred(OM_uint32 *minor_status,
 	    }
 	}
 
+	krb5_timeofday(context, &now);
 	ret = __gsskrb5_ccache_lifetime(minor_status,
 					context,
-					id,
+					*id,
 					handle->principal,
-					&handle->lifetime);
+					&left);
 	if (ret != GSS_S_COMPLETE) {
 	    krb5_free_principal(context, handle->principal);
 	    free(handle);
 	    return ret;
 	}
+	handle->endtime = now + left;
 
-
-	kret = krb5_cc_get_full_name(context, id, &str);
-	if (kret)
-	    goto out;
-
-	kret = krb5_cc_resolve(context, str, &handle->ccache);
-	free(str);
+        handle->ccache = *id;
+        *id = NULL;
 	if (kret)
 	    goto out;
     }

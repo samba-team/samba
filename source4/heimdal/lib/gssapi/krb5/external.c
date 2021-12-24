@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2018 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -202,67 +202,123 @@ static gss_mo_desc krb5_mo[] = {
     },
     {
 	GSS_C_MA_MECH_CONCRETE,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_ITOK_FRAMED,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_AUTH_INIT,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_AUTH_TARG,
-	GSS_MO_MA
-    },
-    {
-	GSS_C_MA_AUTH_INIT_ANON,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_DELEG_CRED,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_INTEG_PROT,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_CONF_PROT,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_MIC,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_WRAP,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_PROT_READY,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_REPLAY_DET,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_OOS_DET,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_CBINDINGS,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_PFS,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     },
     {
 	GSS_C_MA_CTX_TRANS,
-	GSS_MO_MA
+	GSS_MO_MA,
+	NULL,
+	NULL,
+	NULL,
+	NULL
     }
 };
 
@@ -272,10 +328,10 @@ static gss_mo_desc krb5_mo[] = {
 
 static gssapi_mech_interface_desc krb5_mech = {
     GMI_VERSION,
-    "kerberos 5",
+    "krb5",
     {9, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02") },
     0,
-    _gsskrb5_acquire_cred,
+    NULL, /* gm_acquire_cred */
     _gsskrb5_release_cred,
     _gsskrb5_init_sec_context,
     _gsskrb5_accept_sec_context,
@@ -296,7 +352,7 @@ static gssapi_mech_interface_desc krb5_mech = {
     _gsskrb5_inquire_cred,
     _gsskrb5_inquire_context,
     _gsskrb5_wrap_size_limit,
-    _gsskrb5_add_cred,
+    NULL, /* gm_add_cred */
     _gsskrb5_inquire_cred_by_mech,
     _gsskrb5_export_sec_context,
     _gsskrb5_import_sec_context,
@@ -312,10 +368,11 @@ static gssapi_mech_interface_desc krb5_mech = {
     _gk_wrap_iov,
     _gk_unwrap_iov,
     _gk_wrap_iov_length,
-    _gsskrb5_store_cred,
+    NULL, /* gm_store_cred */
     _gsskrb5_export_cred,
     _gsskrb5_import_cred,
-    _gsskrb5_acquire_cred_ext,
+    _gsskrb5_acquire_cred_from,
+    NULL, /* gm_acquire_cred_impersonate_name */
     NULL,
     NULL,
     NULL,
@@ -324,15 +381,22 @@ static gssapi_mech_interface_desc krb5_mech = {
     NULL,
     krb5_mo,
     sizeof(krb5_mo) / sizeof(krb5_mo[0]),
-    _gsskrb5_pname_to_uid,
+    _gsskrb5_localname,
     _gsskrb5_authorize_localname,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
+    NULL, /* gm_display_name_ext */
+    NULL, /* gm_inquire_name */
+    NULL, /* gm_get_name_attribute */
+    NULL, /* gm_set_name_attribute */
+    NULL, /* gm_delete_name_attribute */
+    NULL, /* gm_export_name_composite */
+    _gsskrb5_duplicate_cred,
+    _gsskrb5_add_cred_from,
+    _gsskrb5_store_cred_into,
+    NULL, /* gm_query_mechanism_info */
+    NULL, /* gm_query_meta_data */
+    NULL, /* gm_exchange_meta_data */
+    _gsskrb5_store_cred_into2,
+    NULL  /* gm_compat */
 };
 
 gssapi_mech_interface

@@ -30,7 +30,7 @@
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_inquire_cred_by_mech(OM_uint32 *minor_status,
-    const gss_cred_id_t cred_handle,
+    gss_const_cred_id_t cred_handle,
     const gss_OID mech_type,
     gss_name_t *cred_name,
     OM_uint32 *initiator_lifetime,
@@ -55,12 +55,12 @@ gss_inquire_cred_by_mech(OM_uint32 *minor_status,
 	    *cred_usage = 0;
 
 	m = __gss_get_mechanism(mech_type);
-	if (!m)
+	if (m == NULL || m->gm_inquire_cred_by_mech == NULL)
 		return (GSS_S_NO_CRED);
 
 	if (cred_handle != GSS_C_NO_CREDENTIAL) {
 		struct _gss_cred *cred = (struct _gss_cred *) cred_handle;
-		HEIM_SLIST_FOREACH(mcp, &cred->gc_mc, gmc_link)
+		HEIM_TAILQ_FOREACH(mcp, &cred->gc_mc, gmc_link)
 			if (mcp->gmc_mech == m)
 				break;
 		if (!mcp)
@@ -73,12 +73,12 @@ gss_inquire_cred_by_mech(OM_uint32 *minor_status,
 	major_status = m->gm_inquire_cred_by_mech(minor_status, mc, mech_type,
 	    &mn, initiator_lifetime, acceptor_lifetime, cred_usage);
 	if (major_status != GSS_S_COMPLETE) {
-		_gss_mg_error(m, major_status, *minor_status);
+		_gss_mg_error(m, *minor_status);
 		return (major_status);
 	}
 
 	if (cred_name) {
-	    name = _gss_make_name(m, mn);
+	    name = _gss_create_name(mn, m);
 	    if (!name) {
 		m->gm_release_name(minor_status, &mn);
 		return (GSS_S_NO_CRED);

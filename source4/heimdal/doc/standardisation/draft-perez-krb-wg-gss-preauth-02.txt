@@ -1,0 +1,616 @@
+
+
+
+Kerberos Working Group                                   A. Perez-Mendez
+Internet-Draft                                            R. Marin-Lopez
+Intended status: Experimental                       F. Pereniguez-Garcia
+Expires: March 5, 2013                                   G. Lopez-Millan
+                                                    University of Murcia
+                                                                Sep 2012
+
+
+                GSS-API pre-authentication for Kerberos
+                   draft-perez-krb-wg-gss-preauth-02
+
+Abstract
+
+   This document describes a pre-authentication mechanism for Kerberos
+   based on the Generic Security Service Application Program Interface
+   (GSS-API), which allows a Key Distribution Center (KDC) to
+   authenticate clients by using a GSS mechanism.
+
+Status of this Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at http://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on March 5, 2013.
+
+Copyright Notice
+
+   Copyright (c) 2012 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (http://trustee.ietf.org/license-info) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with respect
+   to this document.  Code Components extracted from this document must
+   include Simplified BSD License text as described in Section 4.e of
+   the Trust Legal Provisions and are provided without warranty as
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                 [Page 1]
+
+Internet-Draft                 GSS preauth                      Sep 2012
+
+
+   described in the Simplified BSD License.
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+     1.1.  Requirements Language  . . . . . . . . . . . . . . . . . .  4
+   2.  Motivation . . . . . . . . . . . . . . . . . . . . . . . . . .  4
+   3.  Definition of the Kerberos GSS padata  . . . . . . . . . . . .  4
+   4.  GSS Pre-authentication Operation . . . . . . . . . . . . . . .  5
+     4.1.  Generation of GSS preauth requests . . . . . . . . . . . .  5
+     4.2.  Processing of GSS preauth requests . . . . . . . . . . . .  6
+     4.3.  Generation of GSS preauth responses  . . . . . . . . . . .  6
+     4.4.  Processing of GSS preauth responses  . . . . . . . . . . .  7
+   5.  Data in the KDC_ERR_PREAUTH_REQUIRED . . . . . . . . . . . . .  7
+   6.  Derivation of the reply key from the GSS context . . . . . . .  7
+   7.  KDC state management . . . . . . . . . . . . . . . . . . . . .  8
+   8.  Support for federated users  . . . . . . . . . . . . . . . . .  8
+   9.  GSS channel bindings . . . . . . . . . . . . . . . . . . . . .  9
+   10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . .  9
+   11. Security Considerations  . . . . . . . . . . . . . . . . . . .  9
+   12. IANA Considerations  . . . . . . . . . . . . . . . . . . . . .  9
+   13. Normative References . . . . . . . . . . . . . . . . . . . . .  9
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 10
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                 [Page 2]
+
+Internet-Draft                 GSS preauth                      Sep 2012
+
+
+1.  Introduction
+
+   The GSS-API (Generic Security Service Application Programming
+   Interface) [RFC2743] provides a generic toolset of functions that
+   allow applications to establish security contexts in order to protect
+   their communications through security services such as
+   authentication, confidentiality and integrity protection.  Thanks to
+   the GSS-API, applications remain independent from the specific
+   underlying mechanism used to establish the context and provide
+   security.
+
+   On the other hand, Kerberos [RFC4120] defines a process called pre-
+   authentication.  This feature is intended to avoid the security risk
+   of providing tickets encrypted with the user's long-term key to
+   attackers, by requiring clients to proof their knowledge over these
+   credentials.  The execution of a pre-authentication mechanism may
+   require the exchange of several KRB_AS_REQ/KRB_ERROR messages before
+   the KDC delivers the TGT requested by the client within a KRB_AS_REP.
+   These messages transport authentication information by means of pre-
+   authentication elements.
+
+   There exists a variety of pre-authentication mechanisms, like PKINIT
+   [RFC4556] and encrypted time-stamp [RFC4120].  Furthermore,
+   [I-D.ietf-krb-wg-preauth-framework] provides a generic framework for
+   Kerberos pre-authentication, which aims to describe the features that
+   a pre-authentication mechanism may provide (e.g. mutual
+   authentication, replace reply key, etc.).  Additionally, in order to
+   simplify the definition of new pre-authentication mechanisms, it
+   defines a mechanism called FAST (Flexible Authentication Secure
+   Tunneling), which provides a generic and secure transport for pre-
+   authentication elements.  More specifically, FAST establishes a
+   secure tunnel providing confidentiality and integrity protection
+   between the client and the KDC prior to the exchange of any specific
+   pre-authentication data.  Within this tunnel, different pre-
+   authentication methods can be executed.  This inner mechanism is
+   called a FAST factor.  It is important to note that FAST factors
+   cannot usually be used outside the FAST pre-authentication method
+   since they assume the underlying security layer provided by FAST.
+
+   The aim of this draft is to define a new pre-authentication
+   mechanism, following the recommendations of
+   [I-D.ietf-krb-wg-preauth-framework], that relies on the GSS-API
+   security services to pre-authenticate clients.  This pre-
+   authentication mechanism will allow the KDC to authenticate clients
+   making use of any current or future GSS mechanism, as long as they
+   satisfy the minimum security requirements described in this
+   specification.  The Kerberos client will play the role of the GSS
+   initiator, while the Authentication Server (AS) in the KDC will play
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                 [Page 3]
+
+Internet-Draft                 GSS preauth                      Sep 2012
+
+
+   the role of the GSS acceptor.
+
+1.1.  Requirements Language
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in RFC 2119 [RFC2119].
+
+
+2.  Motivation
+
+   This work is mainly motivated by the necessity of a way to allow the
+   KDC to make use of the technologies defined in the ABFAB WG to
+   perform the access control of federated users.  Specifically, the
+   ABFAB architecture requires relying parties to make use of the GSS-
+   EAP mechanism to perform authentication.
+   [I-D.perez-abfab-eap-gss-preauth] defines how GSS-EAP is transported
+   on top of the GSS pre-authentication mechanism defined in this
+   document.
+
+
+3.  Definition of the Kerberos GSS padata
+
+   To establish the security context, the GSS-API defines the exchange
+   of GSS tokens between the initiator and the acceptor.  These tokens,
+   which contain mechanism-specific information, are completely opaque
+   to the application.  However, how these tokens are transported
+   between the initiator and the responder depends on the specific
+   application.  Since GSS-API is defined as independent of the
+   underlying communications service, its use does not require to
+   implement any specific security feature for the transport.  For
+   instance, tokens could just be sent by means of plain UDP datagrams.
+   For this reason, security and ordered delivery of information must be
+   implemented by each specific GSS mechanism (if required).
+
+   Therefore, GSS tokens are the atomic piece of information from the
+   application point of view when using GSS-API, which require a proper
+   transport between the initiator (Kerberos client) and the acceptor
+   (AS).  In particular, the proposed GSS-based pre-authentication
+   mechanism defines a new pre-authentication element (hereafter padata)
+   called PA-GSS, to transport a generic GSS token from the Kerberos
+   client to the AS and vice-versa.  This padata also transport state
+   information required to maintain the KDC stateless (see section
+   Section 7.
+
+       PA-GSS          To be defined (TBD)
+
+   A PA-GSS padata element contains the ASN.1 DER encoding of the PA-GSS
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                 [Page 4]
+
+Internet-Draft                 GSS preauth                      Sep 2012
+
+
+   structure:
+
+       PA-GSS ::= SEQUENCE {
+          sec-ctx-token [0] OCTET STRING,
+          state [1] EncryptedData OPTIONAL -- contains PA-GSS-STATE
+       }
+
+       PA-GSS-STATE ::= SEQUENCE {
+          timestamp [0] KerberosTime,
+          exported-sec-ctx-token [1] OCTET STRING,
+          ...
+       }
+
+   The sec-ctx-token element of the PA-GSS structure contains the
+   output_token token returned by either, the GSS_Init_sec_context and
+   the GSS_Accept_sec_context calls.  The state element of the PA-GSS
+   structure is optional, and will be absent in the first AS_REQ message
+   from the client to the KDC and in the last AS_REP message from the
+   KDC to the client.  It contains a PA-GSS-STATE structure encrypted
+   with the first krbtgt key and a key usage in the 512-1023 range (to
+   be defined TBD).  The state element is generated by the KDC, while
+   the client just copy it from the previously received PA-GSS structure
+   (if present).
+
+   The PA-GSS-STATE contains a timestamp element, meant to detect
+   possible replay situations, and a exported-sec-ctx-token element,
+   representing the whole GSS security context state corresponding to
+   the current authentication process.  This value is generated by the
+   KDC by calling to the GSS_Export_sec_context, when the
+   GSS_Accept_sec_context returns GSS_S_CONTINUE_NEEDED.
+
+
+4.  GSS Pre-authentication Operation
+
+4.1.  Generation of GSS preauth requests
+
+   The Kerberos client (initiator) starts by calling to the
+   GSS_Init_sec_context function.  In the first call to this function,
+   the client provides GSS_C_NO_CTX as the value of the context_handle
+   and NULL as the input_token, given that no context has been initiated
+   yet.  When using multi round-trip GSS mechanisms, in subsequent calls
+   to this routine the client will use both, the context_handle value
+   obtained after the first call, and the input_token received from the
+   KDC.  The mutual_req_flag, replay_det_req_flag and sequence_req_flag
+   MUST be set, as the GSS token is meant to be tranported over
+   cleartext channels.
+
+   The GSS_Init_sec_context returns a context_handle, an output_token
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                 [Page 5]
+
+Internet-Draft                 GSS preauth                      Sep 2012
+
+
+   and a status value.  In this first call, the only acceptable status
+   value is GSS_S_CONTINUE_NEEDED, as the KDC is expected to provide a
+   token in order to continue with the context establishment process.
+   The Kerberos client creates a new PA-GSS padata, with the obtained
+   output_token as the sec-ctx-token element, and with the state element
+   absent.  The PA-GSS padata is sent to the KDC through a KRB_AS_REQ
+   message.
+
+4.2.  Processing of GSS preauth requests
+
+   When the KDC (GSS acceptor) receives a KRB_AS_REQ message containing
+   a PA-GSS padata, but a state element (see Section 7) is not included,
+   the KDC assumes that this is the first message of a context
+   establishment, and thus GSS_C_NO_CTX is used as context_handle to
+   invoke the GSS_Accept_sec_context routine.  Conversely, if a state
+   element is included, the KDC assumes that this message is part an
+   ongoing authentication and the value of the state element is
+   decrypted and used to recover the state of the authentication (see
+   Section 7).  In both cases, after receiving the message, the KDC
+   calls to the GSS_Accept_sec_context function, using the adequate
+   context_handle value and using the received token in the PA-GSS
+   padata as input_token.
+
+   Once the execution of the GSS_Accept_sec_context function is
+   completed, the KDC obtains a context_handle, an output_token that
+   MUST be sent to the initiator in order to continue with the
+   authentication process, and a status value.  If the obtained status
+   is GSS_S_COMPLETE, the client is considered authenticated.  If the
+   status is GSS_S_CONTINUE_NEEDED, further information is required to
+   complete the process.
+
+4.3.  Generation of GSS preauth responses
+
+   Once the KDC has processed the input_token provided by the client (as
+   described in Section 4.2), two main different situations may occur
+   depending on the status value.  If the client is successfully
+   authenticated (GSS_S_COMPLETE), the KDC will reply to the client with
+   a KRB_AS_REP message.  This message will transport the final
+   output_token in a PA-GSS padata type.  This PA-GSS padata will not
+   contain the state element.  The reply key used to encrypt the enc-
+   part field of the KRB_AS_REP message is derived from the GSS security
+   context cryptographic material.  Section 6 provides further details
+   regarding this derivation.  At this moment, the KDC also verifies
+   that the cname provided in the AS_REQ matches the src_name obtained
+   through the final GSS_Accept_sec_ctx call (except when WELLKNOWN/
+   FEDERATED is used as cname Section 8).
+
+   On the contrary, if further data is required to complete the
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                 [Page 6]
+
+Internet-Draft                 GSS preauth                      Sep 2012
+
+
+   establishment process (GSS_S_CONTINUE_NEEDED), the KDC will reply to
+   the client with a KDC_ERR_MORE_PREAUTH_DATA_REQUIRED error message
+   [I-D.ietf-krb-wg-preauth-framework].  In the e-data field of the
+   message, the KDC will include the PA-GSS padata, containing both, the
+   GSS token (sec-ctx-token) and the exported GSS security context
+   (state) (see Section 7).
+
+4.4.  Processing of GSS preauth responses
+
+   When the client receives a KDC_ERR_MORE_PREAUTH_DATA_REQUIRED error,
+   it extracts the token from the PA-GSS element and invokes the
+   GSS_Init_sec_context function, as described in section Section 4.1.
+   If present, the state element of the PA-GSS padata is treated as an
+   opaque element, and it is simply copied and included into the
+   generated PA-GSS element without further processing.
+
+   On the other hand, when the client receives a KRB_AS_REP, it knows
+   the context establishment has finalized successfully.  The client
+   invokes the GSS_Init_sec_context function using the transported GSS
+   token.  Note that, to be consistent, this call MUST return
+   GSS_S_COMPLETE and not generate any output_token, since the KDC does
+   not expect further data from the client.
+
+   If the context establishment is completed correctly, the client MUST
+   use the same key derivation process followed by the KDC (Section 4.3)
+   to obtain the reply key to decrypt the enc-part of the KRB_AS_REP.
+
+
+5.  Data in the KDC_ERR_PREAUTH_REQUIRED
+
+   When the KDC sends a KDC_ERR_PREAUTH_REQUIRED error to the client, it
+   includes a sequence of padata, each corresponding to an acceptable
+   pre-authentication method.  Optionally, these padata elements contain
+   data valuable for the client to configure the selected mechanism.
+   The data to be included in the padata for this message is described
+   in this section.
+
+   TBD.  (For example, list of the OIDs of the GSS mechanisms supported
+   by the KDC)
+
+
+6.  Derivation of the reply key from the GSS context
+
+   The GSS pre-authentication mechanism proposed in this draft provides
+   the "Replacing-reply-key" facility
+   [I-D.ietf-krb-wg-preauth-framework].
+
+   After a successful authentication, client and KDC may decide to
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                 [Page 7]
+
+Internet-Draft                 GSS preauth                      Sep 2012
+
+
+   completely replace the reply key used to encrypt the KRB_AS_REP by a
+   new one that is cryptographically independent from the client's
+   password stored in client password on the Kerberos users database.
+   This additional keying material can be obtained by means of calls to
+   the GSS_Pseudo_random [RFC4401] function, using "KRB-GSS" as the
+   prf_in parameter.
+
+
+7.  KDC state management
+
+   The Kerberos standard [RFC4120] defines the KDC as a stateless
+   entity.  This means that, if the GSS mechanism requires more than one
+   round-trip, the client MUST provide enough data to the KDC in the
+   following interactions to allow recovering the complete state of the
+   ongoing authentication.  This is specially relevant when the client
+   switches from one KDC to different one (within the same realm) during
+   a pre-authentication process.  This second KDC must be able to
+   continue with the process in a seamless way.
+
+   The GSS-API manages the so-called security contexts.  They represent
+   the whole context of an authentication, including all the state and
+   relevant data of the ongoing security context.  Thus, this
+   information MUST be serialized and sent to the client in order to
+   ensure that the KDC receiving it will be able to reconstruct the
+   associated state.  In order to prevent attacks, this information must
+   be confidentiality and integrity protected using a key shared amongst
+   all the KDCs deployed in the realm, and must be sent along with a
+   timestamp to prevent replay attacks.  How this information is encoded
+   is described in section Section 3.
+
+   To generate the serialized security context information, the
+   GSS_Export_sec_ctx() call is used.  The main drawback of this
+   approach is that the current GSS-API specifications does not allow
+   the exportation of a security context which has not been completely
+   established.  Nevertheless, some GSS mechanisms do allow the
+   exportation of partially established context (e.g.
+   [I-D.ietf-abfab-gss-eap]), and we expect that other GSS mechanisms
+   will do the same in the future.
+
+
+8.  Support for federated users
+
+   This draft supports the authentication of users belonging to a
+   different domain than the authenticating KDC.  This is achieved by
+   letting the GSS-API to provide both, the client name and the reply
+   key to be used.  That means that the requested username may not be
+   present in the KDC's database.  To avoid the generation of an error
+   of type KDC_ERR_C_PRINCIPAL_UNKNOWN, when the Kerberos client knows
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                 [Page 8]
+
+Internet-Draft                 GSS preauth                      Sep 2012
+
+
+   it is operating in a federated environment, it MUST set the value of
+   the cname field of the KRB_AS_REQ message to a new wellknown value,
+   WELLKNOWN/FEDERATED, following the model proposed in [RFC6111].  In
+   this way, the KDC will be completely authenticated by the GSS-API
+   calls, and thus no local verification of credentials should be done.
+
+
+9.  GSS channel bindings
+
+   In order to link the GSS authentication with the actual Kerberos
+   exchange transporting GSS tokens, the DER-encoded KDC-REQ-BODY from
+   the AS-REQ is used as channel bindings.
+
+
+10.  Acknowledgements
+
+   This work is supported by the project MULTIGIGABIT EUROPEAN ACADEMIC
+   NETWORK (FP7-INFRASTRUCTURES-2009-1).  It is also funded by a Seneca
+   Foundation grant from the Human Resources Researching Training
+   Program 2007.  Authors finally thank the Funding Program for Research
+   Groups of Excellence with code 04552/GERM/06 granted by the Fundacion
+   Seneca.
+
+
+11.  Security Considerations
+
+   Protection of Request/Responses with FAST, restriction on GSS
+   mechanism, etc.  TBD.
+
+
+12.  IANA Considerations
+
+   This document has no actions for IANA.
+
+
+13.  Normative References
+
+   [I-D.ietf-abfab-gss-eap]
+              Hartman, S. and J. Howlett, "A GSS-API Mechanism for the
+              Extensible Authentication Protocol",
+              draft-ietf-abfab-gss-eap-09 (work in progress),
+              August 2012.
+
+   [I-D.ietf-krb-wg-preauth-framework]
+              Hartman, S. and L. Zhu, "A Generalized Framework for
+              Kerberos Pre-Authentication",
+              draft-ietf-krb-wg-preauth-framework-17 (work in progress),
+              June 2010.
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                 [Page 9]
+
+Internet-Draft                 GSS preauth                      Sep 2012
+
+
+   [I-D.perez-abfab-eap-gss-preauth]
+              Perez-Mendez, A., Lopez, R., Pereniguez-Garcia, F., and G.
+              Lopez-Millan, "GSS-EAP pre-authentication for Kerberos",
+              draft-perez-abfab-eap-gss-preauth-01 (work in progress),
+              March 2012.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+   [RFC4401]  Williams, N., "A Pseudo-Random Function (PRF) API
+              Extension for the Generic Security Service Application
+              Program Interface (GSS-API)", RFC 4401, February 2006.
+
+   [RFC4556]  Zhu, L. and B. Tung, "Public Key Cryptography for Initial
+              Authentication in Kerberos (PKINIT)", RFC 4556, June 2006.
+
+   [RFC6111]  Zhu, L., "Additional Kerberos Naming Constraints",
+              RFC 6111, April 2011.
+
+
+Authors' Addresses
+
+   Alejandro Perez-Mendez (Ed.)
+   University of Murcia
+   Campus de Espinardo S/N, Faculty of Computer Science
+   Murcia,   30100
+   Spain
+
+   Phone: +34 868 88 46 44
+   Email: alex@um.es
+
+
+   Rafa Marin-Lopez
+   University of Murcia
+   Campus de Espinardo S/N, Faculty of Computer Science
+   Murcia,   30100
+   Spain
+
+   Phone: +34 868 88 85 01
+   Email: rafa@um.es
+
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                [Page 10]
+
+Internet-Draft                 GSS preauth                      Sep 2012
+
+
+   Fernando Pereniguez-Garcia
+   University of Murcia
+   Campus de Espinardo S/N, Faculty of Computer Science
+   Murcia,   30100
+   Spain
+
+   Phone: +34 868 88 78 82
+   Email: pereniguez@um.es
+
+
+   Gabriel Lopez-Millan
+   University of Murcia
+   Campus de Espinardo S/N, Faculty of Computer Science
+   Murcia,   30100
+   Spain
+
+   Phone: +34 868 88 85 04
+   Email: gabilm@um.es
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Perez-Mendez, et al.      Expires March 5, 2013                [Page 11]
+

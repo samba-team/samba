@@ -1,0 +1,39 @@
+#
+# Error messages for the krb5 library
+#
+# This might look like a com_err file, but is not
+#
+
+# RFC6171 says:
+#
+#   +------------+-----------------------------+------------------------+
+#   | error-code | Condition                   | Example                |
+#   +------------+-----------------------------+------------------------+
+#   | 1          | Permanent problem with      | Incompatible version   |
+#   |            | client request              |                        |
+#   | 2          | Solvable problem with       | Expired Kerberos       |
+#   |            | client request              | credentials            |
+#   | 3          | Temporary problem with      | Packet loss            |
+#   |            | client request              |                        |
+#   | 4          | Permanent problem with the  | Internal               |
+#   |            | server                      | misconfiguration       |
+#   | 5          | Temporary problem with the  | Server overloaded      |
+#   |            | server                      |                        |
+#   +------------+-----------------------------+------------------------+
+#
+# Error 3 makes no sense on the wire, and in the library it only makes sense as
+# a timeout, so we'll name it KX509_ERR_TIMEOUT.
+
+# Error table names must be no more than four characters...
+error_table kx59
+
+prefix KX509_ERR
+
+error_code NONE,		"Kx509 success"
+error_code CLNT_FATAL,		"Kx509 request error, possibly unsupported version"
+error_code CLNT_SOLVABLE,	"Kx509 request error such as expired credentials"
+error_code TIMEOUT,		"Kx509 request timed out"
+error_code SRV_FATAL,		"Permanent server problem"
+error_code SRV_OVERLOADED,	"Kx509 server is overloaded"
+
+end

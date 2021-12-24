@@ -1,0 +1,135 @@
+#!/bin/sh
+#
+# Copyright (c) 2005 - 2007 Kungliga Tekniska Högskolan
+# (Royal Institute of Technology, Stockholm, Sweden). 
+# All rights reserved. 
+#
+# Redistribution and use in source and binary forms, with or without 
+# modification, are permitted provided that the following conditions 
+# are met: 
+#
+# 1. Redistributions of source code must retain the above copyright 
+#    notice, this list of conditions and the following disclaimer. 
+#
+# 2. Redistributions in binary form must reproduce the above copyright 
+#    notice, this list of conditions and the following disclaimer in the 
+#    documentation and/or other materials provided with the distribution. 
+#
+# 3. Neither the name of the Institute nor the names of its contributors 
+#    may be used to endorse or promote products derived from this software 
+#    without specific prior written permission. 
+#
+# THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+# SUCH DAMAGE. 
+#
+# $Id$
+#
+
+srcdir="@srcdir@"
+objdir="@objdir@"
+
+stat="--statistic-file=${objdir}/statfile"
+
+hxtool="${TESTS_ENVIRONMENT} ./hxtool ${stat}"
+
+if ${hxtool} info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
+    exit 77
+fi
+if ${hxtool} info | grep 'rand: not available' > /dev/null ; then
+    exit 77
+fi
+
+${hxtool} request-create \
+	 --subject="CN=Love,DC=it,DC=su,DC=se" \
+	 --key="FILE:$srcdir/data/key.der" \
+	 "${objdir}/request.out" || exit 1
+
+${hxtool} request-print \
+	 PKCS10:request.out > /dev/null || exit 1
+
+${hxtool} request-create \
+	 --subject="CN=Love,DC=it,DC=su,DC=se" \
+         --eku=1.2.3.4.5.6.7 --eku=1.2.3.4.5.6.8 \
+         --registered=1.2.3.4.5.6.9 --eku=1.2.3.4.5.6.10 \
+	 --dnsname=nutcracker.test.h5l.se \
+	 --dnsname=foo.nutcracker.test.h5l.se \
+	 --kerberos=HTTP/foo.nutcracker.it.su.se@TEST.H5L.SE \
+	 --kerberos=host/foo.nutcracker.it.su.se@TEST.H5L.SE \
+	 --email=foo@test.h5l.se \
+	 --key="FILE:$srcdir/data/key.der" \
+	 "${objdir}/request.out" || exit 1
+
+cat > "$objdir/expected" <<EOF
+request print
+PKCS#10 CertificationRequest:
+  name: CN=Love,DC=it,DC=su,DC=se
+  eku: {1.2.3.4.5.6.7}, {1.2.3.4.5.6.8}, {1.2.3.4.5.6.10}
+  san: rfc822Name: foo@test.h5l.se
+  san: dNSName: nutcracker.test.h5l.se
+  san: dNSName: foo.nutcracker.test.h5l.se
+  san: pkinit: HTTP/foo.nutcracker.it.su.se@TEST.H5L.SE
+  san: pkinit: host/foo.nutcracker.it.su.se@TEST.H5L.SE
+  san: registeredID: 1.2.3.4.5.6.9
+EOF
+
+# Check that we got what we wanted:
+${hxtool} request-print \
+	 PKCS10:request.out > "${objdir}/actual" || exit 1
+
+diff "$objdir/expected" "${objdir}/actual" || exit 1
+
+# Check that OpenSSL can parse our request:
+if openssl version > /dev/null; then
+    openssl req -inform DER -in "${objdir}/request.out" -text | head -25 > "${objdir}/actual"
+
+    # Various versions of openssl differ slightly in their text output for our
+    # CSR.  Figure out what to expect:
+    if grep "Version: 0" "${objdir}/actual" > /dev/null; then
+        v=0
+    else
+        v=1
+    fi
+    if grep "RSA Public-Key:" "${objdir}/actual" > /dev/null; then
+        k="RSA "
+    else
+        k=""
+    fi
+    # Note interpolation of $v and $k in the here doc below:
+    cat > "$objdir/expected" <<EOF
+Certificate Request:
+    Data:
+        Version: $v (0x0)
+        Subject: DC = se, DC = su, DC = it, CN = Love
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                ${k}Public-Key: (1024 bit)
+                Modulus:
+                    00:c2:aa:a2:42:b7:5b:99:a3:fd:ba:f0:9b:75:db:
+                    ef:3c:9b:8c:cf:63:5f:46:d8:95:be:09:4a:a7:76:
+                    79:77:61:30:ef:0b:98:d2:47:ea:9c:09:b9:b9:b7:
+                    15:ac:4b:9c:2d:3f:f0:d9:99:9d:4d:5a:68:67:24:
+                    58:5e:65:60:13:9f:4d:dc:2f:03:1d:cd:e9:b6:33:
+                    c2:5c:c6:de:c9:93:6c:ec:8d:9a:67:0e:dd:31:20:
+                    ac:91:39:7a:c1:8f:39:65:ff:b3:1f:cf:7a:aa:79:
+                    8b:ed:eb:ad:a0:be:01:10:4c:5a:a7:47:1d:c6:ee:
+                    79:39:5c:c7:11:6c:b9:e7:2b
+                Exponent: 65537 (0x10001)
+        Attributes:
+        Requested Extensions:
+            X509v3 Extended Key Usage: critical
+                1.2.3.4.5.6.7, 1.2.3.4.5.6.8, 1.2.3.4.5.6.10
+            X509v3 Subject Alternative Name:
+                email:foo@test.h5l.se, DNS:nutcracker.test.h5l.se, DNS:foo.nutcracker.test.h5l.se, othername:<unsupported>, othername:<unsupported>, Registered ID:1.2.3.4.5.6.9
+    Signature Algorithm: sha256WithRSAEncryption
+EOF
+    diff -w "${objdir}/expected" "${objdir}/actual" || exit 1
+fi

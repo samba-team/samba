@@ -53,7 +53,7 @@ typedef OM_uint32 GSSAPI_CALLCONV _gss_inquire_attrs_for_mech_t (
 
 typedef OM_uint32 GSSAPI_CALLCONV _gss_acquire_cred_with_password_t
 	      (OM_uint32 *,            /* minor_status */
-	       const gss_name_t,       /* desired_name */
+	       gss_const_name_t,       /* desired_name */
 	       const gss_buffer_t,     /* password */
 	       OM_uint32,              /* time_req */
 	       const gss_OID_set,      /* desired_mechs */
@@ -65,8 +65,8 @@ typedef OM_uint32 GSSAPI_CALLCONV _gss_acquire_cred_with_password_t
 
 typedef OM_uint32 GSSAPI_CALLCONV _gss_add_cred_with_password_t (
 	       OM_uint32 *,            /* minor_status */
-	       const gss_cred_id_t,    /* input_cred_handle */
-	       const gss_name_t,       /* desired_name */
+	       gss_const_cred_id_t,    /* input_cred_handle */
+	       gss_const_name_t,       /* desired_name */
 	       const gss_OID,          /* desired_mech */
 	       const gss_buffer_t,     /* password */
 	       gss_cred_usage_t,       /* cred_usage */

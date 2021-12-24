@@ -120,7 +120,7 @@ _gss_import_export_name(OM_uint32 *minor_status,
 		return (GSS_S_BAD_NAME);
 
 	m = __gss_get_mechanism(&mech_oid);
-	if (!m)
+	if (!m || !m->gm_import_name)
 		return (GSS_S_BAD_MECH);
 
 	/*
@@ -129,14 +129,14 @@ _gss_import_export_name(OM_uint32 *minor_status,
 	major_status = m->gm_import_name(minor_status,
 	    input_name_buffer, GSS_C_NT_EXPORT_NAME, &new_canonical_name);
 	if (major_status != GSS_S_COMPLETE) {
-		_gss_mg_error(m, major_status, *minor_status);
+		_gss_mg_error(m, *minor_status);
 		return major_status;
 	}
 
 	/*
 	 * Now we make a new name and mark it as an MN.
 	 */
-	name = _gss_make_name(m, new_canonical_name);
+	name = _gss_create_name(new_canonical_name, m);
 	if (!name) {
 		m->gm_release_name(minor_status, &new_canonical_name);
 		return (GSS_S_FAILURE);
@@ -149,7 +149,7 @@ _gss_import_export_name(OM_uint32 *minor_status,
 }
 
 /**
- * Import a name internal or mechanism name
+ * Convert a GGS-API name from contiguous string to internal form.
  *
  * Type of name and their format:
  * - GSS_C_NO_OID
@@ -159,12 +159,12 @@ _gss_import_export_name(OM_uint32 *minor_status,
  * - GSS_C_NT_ANONYMOUS
  * - GSS_KRB5_NT_PRINCIPAL_NAME
  *
- * For more information about @ref internalVSmechname.
+ * @sa gss_export_name(), @ref internalVSmechname.
  *
- * @param minor_status minor status code
- * @param input_name_buffer import name buffer
- * @param input_name_type type of the import name buffer
- * @param output_name the resulting type, release with
+ * @param minor_status       minor status code
+ * @param input_name_buffer  import name buffer
+ * @param input_name_type    type of the import name buffer
+ * @param output_name        the resulting type, release with
  *        gss_release_name(), independent of input_name
  *
  * @returns a gss_error code, see gss_display_status() about printing
@@ -186,12 +186,14 @@ gss_import_name(OM_uint32 *minor_status,
         struct _gss_mech_switch	*m;
 	gss_name_t		rname;
 
+	if (input_name_buffer == GSS_C_NO_BUFFER)
+		return GSS_S_CALL_INACCESSIBLE_READ;
+	if (output_name == NULL)
+		return GSS_S_CALL_INACCESSIBLE_WRITE;
+
 	*output_name = GSS_C_NO_NAME;
 
-	if (input_name_buffer->length == 0) {
-		*minor_status = 0;
-		return (GSS_S_BAD_NAME);
-	}
+	/* Allow empty names since that's valid (ANONYMOUS for example) */
 
 	_gss_load_mech();
 
@@ -213,18 +215,17 @@ gss_import_name(OM_uint32 *minor_status,
 
 
 	*minor_status = 0;
-	name = calloc(1, sizeof(struct _gss_name));
+	name = _gss_create_name(NULL, NULL);
 	if (!name) {
 		*minor_status = ENOMEM;
 		return (GSS_S_FAILURE);
 	}
 
-	HEIM_SLIST_INIT(&name->gn_mn);
-
-	major_status = _gss_copy_oid(minor_status,
+	major_status = _gss_intern_oid(minor_status,
 	    name_type, &name->gn_type);
 	if (major_status) {
-		free(name);
+		rname = (gss_name_t)name;
+		gss_release_name(&ms, (gss_name_t *)&rname);
 		return (GSS_S_FAILURE);
 	}
 
@@ -238,8 +239,11 @@ gss_import_name(OM_uint32 *minor_status,
 	 * for those supported this nametype.
 	 */
 
-	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
 		int present = 0;
+
+                if ((m->gm_mech.gm_flags & GM_USE_MG_NAME))
+                    continue;
 
 		major_status = gss_test_oid_set_member(minor_status,
 		    name_type, m->gm_name_types, &present);
@@ -256,25 +260,31 @@ gss_import_name(OM_uint32 *minor_status,
 
 		major_status = (*m->gm_mech.gm_import_name)(minor_status,
 		    &name->gn_value,
-		    (name->gn_type.elements
-			? &name->gn_type : GSS_C_NO_OID),
+		    name->gn_type,
 		    &mn->gmn_name);
 		if (major_status != GSS_S_COMPLETE) {
-			_gss_mg_error(&m->gm_mech, major_status, *minor_status);
+			_gss_mg_error(&m->gm_mech, *minor_status);
 			free(mn);
-			goto out;
+			/**
+			 * If we failed to import the name in a mechanism, it
+			 * will be ignored as long as its possible to import
+			 * name in some other mechanism. We will catch the
+			 * failure later though in gss_init_sec_context() or
+			 * another function.
+			 */
+			continue;
 		}
 
 		mn->gmn_mech = &m->gm_mech;
-		mn->gmn_mech_oid = &m->gm_mech_oid;
-		HEIM_SLIST_INSERT_HEAD(&name->gn_mn, mn, gmn_link);
+		mn->gmn_mech_oid = m->gm_mech_oid;
+		HEIM_TAILQ_INSERT_TAIL(&name->gn_mn, mn, gmn_link);
 	}
 
 	/*
 	 * If we can't find a mn for the name, bail out already here.
 	 */
 
-	mn = HEIM_SLIST_FIRST(&name->gn_mn);
+	mn = HEIM_TAILQ_FIRST(&name->gn_mn);
 	if (!mn) {
 		*minor_status = 0;
 		major_status = GSS_S_NAME_NOT_MN;

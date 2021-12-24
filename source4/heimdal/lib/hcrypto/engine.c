@@ -32,19 +32,9 @@
  */
 
 #include <config.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <roken.h>
 
 #include <engine.h>
-
-#ifdef HAVE_DLFCN_H
-#include <dlfcn.h>
-#ifndef RTLD_NOW
-#define RTLD_NOW 0
-#endif
-#endif
 
 struct hc_engine {
     int references;
@@ -316,7 +306,7 @@ ENGINE_by_dso(const char *path, const char *id)
     if (engine == NULL)
 	return NULL;
 
-    handle = dlopen(path, RTLD_NOW);
+    handle = dlopen(path, RTLD_NOW | RTLD_LOCAL | RTLD_GROUP);
     if (handle == NULL) {
 	/* printf("error: %s\n", dlerror()); */
 	free(engine);

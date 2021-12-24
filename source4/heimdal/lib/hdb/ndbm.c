@@ -53,7 +53,8 @@ struct ndbm_db {
 static krb5_error_code
 NDBM_destroy(krb5_context context, HDB *db)
 {
-    hdb_clear_master_key (context, db);
+    hdb_clear_master_key(context, db);
+    krb5_config_free_strings(db->virtual_hostbased_princ_svcs);
     free(db->hdb_name);
     free(db);
     return 0;
@@ -136,6 +137,7 @@ static krb5_error_code
 open_lock_file(krb5_context context, const char *db_name, int *fd)
 {
     char *lock_file;
+    int ret = 0;
 
     /* lock old and new databases */
     asprintf(&lock_file, "%s.lock", db_name);
@@ -145,14 +147,13 @@ open_lock_file(krb5_context context, const char *db_name, int *fd)
     }
 
     *fd = open(lock_file, O_RDWR | O_CREAT, 0600);
-    free(lock_file);
     if(*fd < 0) {
-	int ret = errno;
+	ret = errno;
 	krb5_set_error_message(context, ret, "open(%s): %s", lock_file,
 			       strerror(ret));
-	return ret;
     }
-    return 0;
+    free(lock_file);
+    return ret;
 }
 
 

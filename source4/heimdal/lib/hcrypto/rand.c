@@ -34,13 +34,10 @@
  */
 
 #include <config.h>
+#include <roken.h>
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <rand.h>
 #include <randi.h>
-
-#include <roken.h>
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -56,7 +53,7 @@
  * See the library functions here: @ref hcrypto_rand
  */
 
-const static RAND_METHOD *selected_meth = NULL;
+static const RAND_METHOD *selected_meth = NULL;
 static ENGINE *selected_engine = NULL;
 
 static void
@@ -209,6 +206,8 @@ RAND_set_rand_method(const RAND_METHOD *meth)
 /**
  * Get the default random method.
  *
+ * @return Returns a RAND_METHOD
+ *
  * @ingroup hcrypto_rand
  */
 
@@ -264,6 +263,8 @@ RAND_set_rand_engine(ENGINE *engine)
  *
  * @param filename name of file to read.
  * @param size minimum size to read.
+ *
+ * @return Returns the number of seed bytes loaded (0 indicates failure)
  *
  * @ingroup hcrypto_rand
  */
@@ -349,13 +350,11 @@ RAND_file_name(char *filename, size_t size)
     const char *e = NULL;
     int pathp = 0, ret;
 
-    if (!issuid()) {
-	e = getenv("RANDFILE");
-	if (e == NULL)
-	    e = getenv("HOME");
-	if (e)
-	    pathp = 1;
-    }
+    e = secure_getenv("RANDFILE");
+    if (e == NULL)
+        e = secure_getenv("HOME");
+    if (e)
+        pathp = 1;
 
 #ifndef _WIN32
     /*

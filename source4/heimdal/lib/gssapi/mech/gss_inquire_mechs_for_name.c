@@ -30,7 +30,7 @@
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_inquire_mechs_for_name(OM_uint32 *minor_status,
-    const gss_name_t input_name,
+    gss_const_name_t input_name,
     gss_OID_set *mech_types)
 {
 	OM_uint32		major_status;
@@ -52,19 +52,19 @@ gss_inquire_mechs_for_name(OM_uint32 *minor_status,
 	 * name's type is supported by the mechanism. If it is, add
 	 * the mechanism to the set.
 	 */
-	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
 		major_status = gss_inquire_names_for_mech(minor_status,
-		    &m->gm_mech_oid, &name_types);
+		    m->gm_mech_oid, &name_types);
 		if (major_status) {
 			gss_release_oid_set(minor_status, mech_types);
 			return (major_status);
 		}
 		gss_test_oid_set_member(minor_status,
-		    &name->gn_type, name_types, &present);
+		    name->gn_type, name_types, &present);
 		gss_release_oid_set(minor_status, &name_types);
 		if (present) {
 			major_status = gss_add_oid_set_member(minor_status,
-			    &m->gm_mech_oid, mech_types);
+			    m->gm_mech_oid, mech_types);
 			if (major_status) {
 				gss_release_oid_set(minor_status, mech_types);
 				return (major_status);

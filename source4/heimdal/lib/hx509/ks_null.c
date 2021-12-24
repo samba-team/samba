@@ -87,10 +87,14 @@ struct hx509_keyset_ops keyset_null = {
     NULL,
     null_iter_start,
     null_iter,
-    null_iter_end
+    null_iter_end,
+    NULL,
+    NULL,
+    NULL,
+    NULL
 };
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 _hx509_ks_null_register(hx509_context context)
 {
     _hx509_ks_register(context, &keyset_null);

@@ -1,0 +1,395 @@
+
+
+NETWORK WORKING GROUP                                             L. Zhu
+Internet-Draft                                              A. Medvinsky
+Updates: 4120 (if approved)                        Microsoft Corporation
+Intended status: Standards Track                               J. Altman
+Expires: May 11, 2007                                  Secure End Points
+                                                        November 7, 2006
+
+
+  Public Key Cryptography based User to User Authentication - (PKU2U)
+                           draft-zhu-pku2u-00
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on May 11, 2007.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2006).
+
+Abstract
+
+   This document defines the Public Key Cryptography based User to User
+   authentication protocol - PKU2U. PKU2U is based on RFC4456 and
+   RFC4120.  This enables peer to peer authentication using Kerberos
+   messages without requiring an online trusted third party.  In
+   addition, the binding of PKU2U for the Generic Security Service
+   Application Program Interface (GSS-API) per RFC2743 is defined based
+
+
+
+Zhu, et al.               Expires May 11, 2007                  [Page 1]
+
+Internet-Draft                    PKU2U                    November 2006
+
+
+   on RFC4121.
+
+
+Table of Contents
+
+   1  Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+   2  Conventions Used in This Document  . . . . . . . . . . . . . . . 3
+   3  Protocol description . . . . . . . . . . . . . . . . . . . . . . 3
+   4  Security Considerations  . . . . . . . . . . . . . . . . . . . . 4
+   5  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . . 5
+   6  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . . 5
+   7  Normative References . . . . . . . . . . . . . . . . . . . . . . 5
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . . . 5
+   Intellectual Property and Copyright Statements  . . . . . . . . . . 7
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.               Expires May 11, 2007                  [Page 2]
+
+Internet-Draft                    PKU2U                    November 2006
+
+
+1  Introduction
+
+   Peer-to-peer systems are increasingly popular today.  In a peer-to-
+   peer system, all clients provide resources that contribute positively
+   to the total capacity of the overall system and there is no single
+   point of failure.  This distributed nature makes the system highly
+   scalable and robust.  In addition, the peer-to-peer system is self-
+   organized.  These enable services that just work.
+
+   In a peer-to-peer system, if the initiator can authenticate the
+   acceptor and then establish trust in the information received from
+   the peer, many attacks such as poisoning (e.g. providing data
+   contents are different from the description) and polluting (e.g.
+   inserting "bad" chunks/packets) can be mitigated or eliminated.
+   However, currently there is no interoperable GSS-API mechanism for
+   use in these environments.
+
+   The PKU2U protocol defined in this document extends PKINIT to support
+   peer-to-peer authentications without the use of Key Distribution
+   Center (KDC) [RFC4120].  Thus it enables peer to peer authentication
+   based on public key cryptography.  In addition, this document defines
+   the binding for GSS-API based on [RFC4121] and [WS-KERB], which makes
+   PKU2U readily available to the widely deployed GSS-API applications.
+
+
+2  Conventions Used in This Document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+3  Protocol description
+
+   The PKU2U realm name is a reserved name that is defined according to
+   [KRB-NAME].  It has the value of "RESERVED:PKU2U".
+
+   PKU2U replaces the KDC in [RFC4556] with the identity of the
+   acceptor, and it updates the protocol with the following changes:
+
+   All the realm names in Kerberos messages are filled with the PKU2U
+   reserved realm.
+
+   The client name in AS-REQ [RFC4120] contains the name of the
+   initiator, and the server name contains the Kerberos name of the
+   acceptor.
+
+   The initiator signs the pre-authentication data as needed per
+
+
+
+Zhu, et al.               Expires May 11, 2007                  [Page 3]
+
+Internet-Draft                    PKU2U                    November 2006
+
+
+   [RFC4120] and constructs an AS-REQ, and then sends the request to the
+   acceptor using the same GSS-API encapsulation defined in [WS-KERB],
+   except the mechanism Objection Identifier (OID) for PKU2U is id-
+   kerberos-pku2u.
+
+      id-kerberos-pku2u ::=
+        { iso(1) org(3) dod(6) internet(1) security(5) kerberosV5(2)
+          pku2u(7) }
+
+   The client fills out the realm field in the ProxyData [WS-KERB] using
+   the reserved PKU2U realm.  Upon receipt of the WS_KRB_PROXY message,
+   the GSS-API acceptor processes the Kerberos message (an AS-REQ) that
+   follows the WS_KRB_PROXY header.
+
+   The acceptor validates the pre-authentication data in the request per
+   Section 3.2.2 of [RFC4556] and it MUST verify the binding between the
+   client name and the client's signing key, if the pre-authentication
+   data in the request is signed.  The client's X.509 certificate, if
+   present, MUST contain id-pkinit-KPClientAuth [RFC4556] or id-kp-
+   clientAuth [RFC3280].  If the client is authenticated as expected,
+   the acceptor issues a service ticket to the initiator per [RFC4120].
+
+   Upon receipt of the reply, the initiator validates the pre-
+   authentication data in the reply per Section 3.2.4 of [RFC4556].  As
+   stated earlier, there is no KDC in PKU2U, thus the requirement of the
+   id-pkinit-KPKdc is not applicable when PKU2U is used.  The initiator
+   MUST verify the binding between the signing key in the reply and the
+   acceptor.  When the GSS-API acceptor is identified using the
+   targ_name parameter of the GSS_Init_sec_context() call, the signing
+   key MUST be bound with the targ_name.  The acceptor's X.509
+   certificate MUST contain id-kp-clientAuth [RFC3280] or id-kp-
+   serverAuth [RFC3280] or id-pkinit-KPClientAuth [RFC4556].
+
+   The Kerberos principal name form and the host-based service Name
+   described in [RFC1964] MUST be supported by conforming
+   implementations of this specification.
+
+   Once the AS-REP in the reply is accepted, the initiator can use the
+   obtained service to construct an AP-REQ and communicate with the
+   acceptor.  The rest of the protocol and the GSS-API binding are the
+   same as defined in [WS-KERB] and [RFC4121].
+
+
+4  Security Considerations
+
+   The security considerations in [RFC4556] apply here.  In addition,
+   the initiator and the acceptor MUST be able to verify the binding
+   between the signing key and the associated identity.
+
+
+
+Zhu, et al.               Expires May 11, 2007                  [Page 4]
+
+Internet-Draft                    PKU2U                    November 2006
+
+
+5  Acknowledgements
+
+   The authors would like thanks Jeffery Hutzelman for his comments with
+   regarding to unifying [WS-KERB] with PKU2U .
+
+
+6  IANA Considerations
+
+   Section 3 defines the PKU2U realm.  The IANA registry for the
+   reserved names should be updated to reference this document.
+
+
+7.  Normative References
+
+   [KRB-NAME] L. Zhu, "Additional Kerberos Naming Constraints", 
+              draft-ietf-krb-wg-naming, work in progress.
+
+   [RFC1964]  Linn, J., "The Kerberos Version 5 GSS-API Mechanism",
+              RFC 1964, June 1996.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+   [RFC3280]  Housley, R., Polk, W., Ford, W., and D. Solo, "Internet
+              X.509 Public Key Infrastructure Certificate and
+              Certificate Revocation List (CRL) Profile", RFC 3280,
+              April 2002.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+   [RFC4121]  Zhu, L., Jaganathan, K., and S. Hartman, "The Kerberos
+              Version 5 Generic Security Service Application Program
+              Interface (GSS-API) Mechanism: Version 2", RFC 4121,
+              July 2005.
+
+   [RFC4178]  Zhu, L., Leach, P., Jaganathan, K., and W. Ingersoll, "The
+              Simple and Protected Generic Security Service Application
+              Program Interface (GSS-API) Negotiation Mechanism",
+              RFC 4178, October 2005.
+
+   [RFC4556]  Zhu, L. and B. Tung, "Public Key Cryptography for Initial
+              Authentication in Kerberos (PKINIT)", RFC 4556, June 2006.
+
+
+
+
+Zhu, et al.               Expires May 11, 2007                  [Page 5]
+
+Internet-Draft                    PKU2U                    November 2006
+
+
+   [WS-KERB] L. Zhu, "Kerberos for Web Services", draft-zhu-ws-kerb, work
+             in progress.
+             
+Authors' Addresses
+
+   Larry Zhu
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: lzhu@microsoft.com
+
+
+   Ari Medvinsky
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: arimed@microsoft.com
+
+
+   Jeffery
+   Secure End Points
+   612 West 115th Street Room 716
+   New York, NY  10025
+   US
+
+   Email: jaltman@secureendpoint.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.               Expires May 11, 2007                  [Page 6]
+
+Internet-Draft                    PKU2U                    November 2006
+
+
+Full Copyright Statement
+
+   Copyright (C) The Internet Society (2006).
+
+   This document is subject to the rights, licenses and restrictions
+   contained in BCP 78, and except as set forth therein, the authors
+   retain all their rights.
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Intellectual Property
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is provided by the IETF
+   Administrative Support Activity (IASA).
+
+
+
+
+
+Zhu, et al.               Expires May 11, 2007                  [Page 7]
+
+

@@ -1,0 +1,249 @@
+
+
+GSSAPI Java CSharp                                             C. Morris
+INTERNET-DRAFT                                               Novell, Inc.
+draft-morris-java-gssapi-update-for-csharp-00.txt     comorris@novell.com
+Expires 10 March 2004                                           July 2004
+
+
+         Generic Security Service API Version 2 : Java & C# Bindings
+
+Status of this Memo
+
+   Comments should be submitted to comorris@novell.com.
+
+   By submitting this Internet-Draft, I certify that any applicable
+   patent or other IPR claims of which I am aware have been disclosed, or
+   will be disclosed, and any of which I become aware will be disclosed,
+   in accordance with RFC 3668.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that other
+   groups may also distribute working documents as Internet-Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than a "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/1id-abstracts.html
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html
+
+Abstract
+
+   The Generic Security Services Application Program Interface (GSS-API)
+   offers application programmers uniform access to security services
+   atop a variety of underlying cryptographic mechanisms. This document
+   proposes an update to RFC 2853, Generic Security Service API Version 
+   2 : Java Bindings, to include C# bindings.
+
+4.17.  C# Modifications
+
+   This section describes the language dependent modifications necessary
+   to implement the interface in C#. 
+   
+4.17.1   C# Assembly Name
+
+   The C# namespace is org.ietf.gss. See section 4.17.5 for an example.
+   
+4.17.2   C# Class Definitions
+   
+   All class definitions & methods remain the same as specified in the 
+   Java bindings.
+   
+4.17.3   C# Data Types
+
+   All data types remain the same.
+
+4.17.4   C# Exception Handling
+
+   All exception codes remain the same as specified in the Java bindings.
+   However, C# does not have a 'throws' statement. Therefore, method prototypes do
+   not include the exception type. For example,
+   
+   Java method prototype :
+   
+      public abstract GSSName createName(String nameStr, Oid nameType)
+         throws GSSException;
+  
+   Equivalent C# method prototype :
+  
+      public abstract GSSName createName(String nameStr, Oid nameType);
+    
+   C# does implement the throw and catch keywords, for example:
+   
+      public class GSSName createName(String nameStr, Oid nameType)
+      {
+         int majorCode = 0;
+         ...
+         
+         majorCode = validateParms(nameStr, nameType);
+         
+         if (majorCode)
+            throw new GSSException(majorCode);
+            
+         ...
+      }
+
+
+4.17.5   C# Example Code
+
+   Client example : 
+   
+   using ietf.org.gss;
+
+   class GssapiClient
+   {
+      private static TcpClient client;
+      private static NetworkStream stream;
+
+	   static void Main(string[] args)
+	   {
+		   Connect("127.0.0.1", "message from client");
+
+	   try
+	   {
+	      GSSManager manager = GSSManager.getInstance();
+
+	      Oid krb5Mechanism = new Oid("1.2.840.113554.1.2.2");
+	      Oid krb5PrincipalNameType = new Oid("1.2.840.113554.1.2.2.1");
+
+	      // Optionally Identify who the client wishes to be
+	      // GSSName name = manager.createName("test@gsserver", GSSName.NT_USER_NAME);
+      	
+	      // Obtain default credential
+	      GSSCredential userCreds = manager.createCredential(GSSCredential.INITIATE_ONLY);
+	      GSSName name = userCreds.getName(krb5PrincipalNameType);
+
+	      Console.WriteLine("Just acquired credentials for " + name.toString());
+
+	      int acceptLife = userCreds.getRemainingAcceptLifetime(new Oid("2.3.4"));
+	      int initLife   = userCreds.getRemainingInitLifetime(new Oid("1..3."));
+	      int remLife    = userCreds.getRemainingLifetime();
+	      int usage      = userCreds.getUsage();
+   	   
+	      GSSName namea = userCreds.getName();
+	      Oid[] oa = userCreds.getMechs();
+
+         // Instantiate and initialize a security context that will be
+         // established with the server
+	      GSSContext context = manager.createContext(name,
+						      krb5Mechanism,
+						      userCreds,
+						      GSSContext.DEFAULT_LIFETIME);
+
+	      userCreds.dispose();
+
+	      // Optionally Set Context Options, must be done before iniSecContext call
+	      context.requestMutualAuth(true);
+	      context.requestConf(true);
+	      context.requestInteg(true);
+	      context.requestSequenceDet(true);
+	      context.requestCredDeleg(true);
+
+	      MemoryStream ins = new MemoryStream();
+	      MemoryStream outs = new MemoryStream();
+
+	      // loop until context is setup and no more tokens to receive
+	      while (!context.isEstablished())
+	      {
+   	      outs = new MemoryStream();
+	         context.initSecContext(ins, outs);
+
+	         // send token if present
+	         if (outs.Length > 0)
+	         {
+		         Console.WriteLine("Sending token...");
+		         sendToken(outs);
+	         }
+
+	         // check if we should expect more tokens
+	         if (context.isEstablished())
+		         break;
+
+	         // another token expected from peer
+	         Console.WriteLine("Still expecting another token from server...");
+	         ins = recvToken();
+	      }
+
+	      //
+	      // display context information
+	      //
+
+	      // Did the server authenticate back to client?
+	      Console.WriteLine("\n{0} Mutual Authentication", 
+	      context.getMutualAuthState() ? "Using" : "Not using");
+	      Console.WriteLine("Credentials were delegated = " 
+   	      + context.getCredDelegState());
+	      Console.WriteLine("Remaining lifetime in seconds = " 
+	         + context.getLifetime());
+	      Console.WriteLine("Context mechanism = " + context.getMech());
+	      Console.WriteLine("Initiator = " + context.getSrcName().toString());
+	      Console.WriteLine("Acceptor = " + context.getTargName().toString());
+	      Console.WriteLine("Confidentiality (i.e., privacy) is {0}available", 
+	      context.getConfState() ? "" : "not ");
+	      Console.WriteLine("Integrity is {0}available", 
+	      context.getIntegState() ? "" : "not ");
+	      Console.WriteLine("Is initiator = " + context.isInitiator());
+	      Console.WriteLine("Is transferable = " + context.isTransferable());
+	      Console.WriteLine("Is protReady = " + context.isProtReady());
+	      Console.WriteLine("ReplayDetState = " + 
+	      context.getReplayDetState());
+	      Console.WriteLine("SequenceDetState = " + 
+	      context.getSequenceDetState());
+
+	      // perform wrap on an application supplied message
+	      // using QOP = 0, and requesting privacy service
+
+	      MessageProp msgProp = new MessageProp(0, true);
+	      byte [] message = System.Text.Encoding.ASCII.GetBytes("Hello GSS-API!");
+	      byte [] token = System.Text.Encoding.ASCII.GetBytes("tok");
+
+	      // Byte aray method is equivalent to stream method
+	      //byte []token = context.wrap(message, 0, appMsg.length, msgProp);
+	      //sendToken(token);
+
+	      ins = new MemoryStream();
+	      outs = new MemoryStream();
+	      ins.Write(token, 0, token.Length);
+	      context.getMIC(ins, outs, msgProp);
+	      sendToken(outs);
+
+	      outs = new MemoryStream();
+	      outs.Write(message, 0, message.Length);
+	      sendToken(outs);
+
+	      ins = new MemoryStream();
+	      outs = new MemoryStream();
+	      ins.Write(message, 0, message.Length);
+	      context.wrap(ins, outs, msgProp);
+	      sendToken(outs);
+
+         // Optionally export context to another thead
+	      GSSContext ctx = manager.createContext(context.export());
+	      Console.WriteLine("New context isTransferable = " + ctx.isTransferable());
+	      Console.WriteLine("New context isInitiator = " +ctx.isInitiator());
+	      Console.WriteLine("New context protReady = " +ctx.isProtReady());
+	      Console.WriteLine("New context srcName = " +ctx.getSrcName().toString());
+	      Console.WriteLine("New context targName = " +ctx.getTargName().toString());
+
+	      // release the local-end of the context
+	      ctx.dispose();
+
+	      stream.Close();
+	      Console.WriteLine("Leaving...");
+	   }
+	   catch (GSSException e)
+	   {
+	      Console.WriteLine(e.getMessage());
+	      Console.WriteLine(e.StackTrace);
+	   }
+	}
+
+
+Expires 10 March 2004                                 
+
+

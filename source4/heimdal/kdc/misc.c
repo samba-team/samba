@@ -33,7 +33,94 @@
 
 #include "kdc_locl.h"
 
+static int
+name_type_ok(krb5_context context,
+             krb5_kdc_configuration *config,
+             krb5_const_principal principal)
+{
+    int nt = krb5_principal_get_type(context, principal);
+
+    if (!krb5_principal_is_krbtgt(context, principal))
+        return 1;
+    if (nt == KRB5_NT_SRV_INST || nt == KRB5_NT_UNKNOWN)
+        return 1;
+    if (config->strict_nametypes == 0)
+        return 1;
+    return 0;
+}
+
 struct timeval _kdc_now;
+
+static krb5_error_code
+synthesize_hdb_close(krb5_context context, struct HDB *db)
+{
+    (void) context;
+    (void) db;
+    return 0;
+}
+
+/*
+ * Synthesize an HDB entry suitable for PKINIT and only PKINIT.
+ */
+static krb5_error_code
+synthesize_client(krb5_context context,
+                  krb5_kdc_configuration *config,
+                  krb5_const_principal princ,
+                  HDB **db,
+                  hdb_entry_ex **h)
+{
+    static HDB null_db;
+    krb5_error_code ret;
+    hdb_entry_ex *e;
+
+    /* Hope this works! */
+    null_db.hdb_destroy = synthesize_hdb_close;
+    null_db.hdb_close = synthesize_hdb_close;
+    if (db)
+        *db = &null_db;
+
+    ret = (e = calloc(1, sizeof(*e))) ? 0 : krb5_enomem(context);
+    if (ret == 0) {
+        e->entry.flags.client = 1;
+        e->entry.flags.immutable = 1;
+        e->entry.flags.virtual = 1;
+        e->entry.flags.synthetic = 1;
+        e->entry.flags.do_not_store = 1;
+        e->entry.kvno = 1;
+        e->entry.keys.len = 0;
+        e->entry.keys.val = NULL;
+        e->entry.created_by.time = time(NULL);
+        e->entry.modified_by = NULL;
+        e->entry.valid_start = NULL;
+        e->entry.valid_end = NULL;
+        e->entry.pw_end = NULL;
+        e->entry.etypes = NULL;
+        e->entry.generation = NULL;
+        e->entry.extensions = NULL;
+    }
+    if (ret == 0)
+        ret = (e->entry.max_renew = calloc(1, sizeof(*e->entry.max_renew))) ?
+            0 : krb5_enomem(context);
+    if (ret == 0)
+        ret = (e->entry.max_life = calloc(1, sizeof(*e->entry.max_life))) ?
+            0 : krb5_enomem(context);
+    if (ret == 0)
+        ret = krb5_copy_principal(context, princ, &e->entry.principal);
+    if (ret == 0)
+        ret = krb5_copy_principal(context, princ, &e->entry.created_by.principal);
+    if (ret == 0) {
+        /*
+         * We can't check OCSP in the TGS path, so we can't let tickets for
+         * synthetic principals live very long.
+         */
+        *(e->entry.max_renew) = config->synthetic_clients_max_renew;
+        *(e->entry.max_life) = config->synthetic_clients_max_life;
+        *h = e;
+    } else {
+        hdb_free_entry(context, e);
+    }
+    return ret;
+}
 
 krb5_error_code
 _kdc_db_fetch(krb5_context context,
@@ -44,7 +131,7 @@ _kdc_db_fetch(krb5_context context,
 	      HDB **db,
 	      hdb_entry_ex **h)
 {
-    hdb_entry_ex *ent;
+    hdb_entry_ex *ent = NULL;
     krb5_error_code ret = HDB_ERR_NOENTRY;
     int i;
     unsigned kvno = 0;
@@ -53,9 +140,15 @@ _kdc_db_fetch(krb5_context context,
 
     *h = NULL;
 
-    if (kvno_ptr) {
-	    kvno = *kvno_ptr;
-	    flags |= HDB_F_KVNO_SPECIFIED;
+    if (!name_type_ok(context, config, principal))
+        return HDB_ERR_NOENTRY;
+
+    flags |= HDB_F_DECRYPT;
+    if (kvno_ptr != NULL && *kvno_ptr != 0) {
+	kvno = *kvno_ptr;
+	flags |= HDB_F_KVNO_SPECIFIED;
+    } else {
+	flags |= HDB_F_ALL_KVNOS;
     }
 
     ent = calloc(1, sizeof (*ent));
@@ -78,7 +171,12 @@ _kdc_db_fetch(krb5_context context,
     }
 
     for (i = 0; i < config->num_db; i++) {
-	ret = config->db[i]->hdb_open(context, config->db[i], O_RDONLY, 0);
+	HDB *curdb = config->db[i];
+
+        if (db)
+            *db = curdb;
+
+	ret = curdb->hdb_open(context, curdb, O_RDONLY, 0);
 	if (ret) {
 	    const char *msg = krb5_get_error_message(context, ret);
 	    kdc_log(context, config, 0, "Failed to open database: %s", msg);
@@ -87,51 +185,60 @@ _kdc_db_fetch(krb5_context context,
 	}
 
         princ = principal;
-        if (!(config->db[i]->hdb_capability_flags & HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL) && enterprise_principal)
+        if (!(curdb->hdb_capability_flags & HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL) && enterprise_principal)
             princ = enterprise_principal;
 
-	ret = config->db[i]->hdb_fetch_kvno(context,
-					    config->db[i],
-					    princ,
-					    flags | HDB_F_DECRYPT,
-					    kvno,
-					    ent);
-	config->db[i]->hdb_close(context, config->db[i]);
+        ret = hdb_fetch_kvno(context, curdb, princ, flags, 0, 0, kvno, ent);
+	curdb->hdb_close(context, curdb);
 
-	switch (ret) {
-	case HDB_ERR_WRONG_REALM:
-	    /*
-	     * the ent->entry.principal just contains hints for the client
-	     * to retry. This is important for enterprise principal routing
-	     * between trusts.
-	     */
-	    /* fall through */
-	case 0:
-	    if (db)
-		*db = config->db[i];
-	    *h = ent;
-            ent = NULL;
-            goto out;
+        if (ret == HDB_ERR_NOENTRY)
+            continue; /* Check the other databases */
 
-	case HDB_ERR_NOENTRY:
-	    /* Check the other databases */
-	    continue;
-
-	default:
-	    /* 
-	     * This is really important, because errors like
-	     * HDB_ERR_NOT_FOUND_HERE (used to indicate to Samba that
-	     * the RODC on which this code is running does not have
-	     * the key we need, and so a proxy to the KDC is required)
-	     * have specific meaning, and need to be propogated up.
-	     */
-	    goto out;
-	}
+        /*
+         * This is really important, because errors like
+         * HDB_ERR_NOT_FOUND_HERE (used to indicate to Samba that
+         * the RODC on which this code is running does not have
+         * the key we need, and so a proxy to the KDC is required)
+         * have specific meaning, and need to be propogated up.
+         */
+        break;
     }
 
-    if (ret == HDB_ERR_NOENTRY) {
-	krb5_set_error_message(context, ret, "no such entry found in hdb");
+    switch (ret) {
+    case HDB_ERR_WRONG_REALM:
+    case 0:
+        /*
+         * the ent->entry.principal just contains hints for the client
+         * to retry. This is important for enterprise principal routing
+         * between trusts.
+         */
+        *h = ent;
+        ent = NULL;
+        break;
+
+    case HDB_ERR_NOENTRY:
+        if (db)
+            *db = NULL;
+        if ((flags & HDB_F_GET_CLIENT) && (flags & HDB_F_SYNTHETIC_OK) &&
+            config->synthetic_clients) {
+            ret = synthesize_client(context, config, principal, db, h);
+            if (ret) {
+                krb5_set_error_message(context, ret, "could not synthesize "
+                                       "HDB client principal entry");
+                ret = HDB_ERR_NOENTRY;
+                krb5_prepend_error_message(context, ret, "no such entry found in hdb");
+            }
+        } else {
+            krb5_set_error_message(context, ret, "no such entry found in hdb");
+        }
+        break;
+
+    default:
+        if (db)
+            *db = NULL;
+        break;
     }
+
 out:
     krb5_free_principal(context, enterprise_principal);
     free(ent);
@@ -164,10 +271,11 @@ _kdc_get_preferred_key(krb5_context context,
     if (config->use_strongest_server_key) {
 	const krb5_enctype *p = krb5_kerberos_enctypes(context);
 
-	for (i = 0; p[i] != ETYPE_NULL; i++) {
-	    if (krb5_enctype_valid(context, p[i]) != 0)
+	for (i = 0; p[i] != (krb5_enctype)ETYPE_NULL; i++) {
+	    if (krb5_enctype_valid(context, p[i]) != 0 &&
+		!_kdc_is_weak_exception(h->entry.principal, p[i]))
 		continue;
-	    ret = hdb_enctype2key(context, &h->entry, p[i], key);
+	    ret = hdb_enctype2key(context, &h->entry, NULL, p[i], key);
 	    if (ret != 0)
 		continue;
 	    if (enctype != NULL)
@@ -178,11 +286,11 @@ _kdc_get_preferred_key(krb5_context context,
 	*key = NULL;
 
 	for (i = 0; i < h->entry.keys.len; i++) {
-	    if (krb5_enctype_valid(context, h->entry.keys.val[i].key.keytype)
-		!= 0)
+	    if (krb5_enctype_valid(context, h->entry.keys.val[i].key.keytype) != 0 &&
+		!_kdc_is_weak_exception(h->entry.principal, h->entry.keys.val[i].key.keytype))
 		continue;
-	    ret = hdb_enctype2key(context, &h->entry,
-		h->entry.keys.val[i].key.keytype, key);
+	    ret = hdb_enctype2key(context, &h->entry, NULL,
+				  h->entry.keys.val[i].key.keytype, key);
 	    if (ret != 0)
 		continue;
 	    if (enctype != NULL)
@@ -196,3 +304,35 @@ _kdc_get_preferred_key(krb5_context context,
     return EINVAL; /* XXX */
 }
 
+krb5_error_code
+_kdc_verify_checksum(krb5_context context,
+		     krb5_crypto crypto,
+		     krb5_key_usage usage,
+		     const krb5_data *data,
+		     Checksum *cksum)
+{
+    krb5_error_code ret;
+
+    ret = krb5_verify_checksum(context, crypto, usage,
+			       data->data, data->length,
+			       cksum);
+    if (ret == KRB5_PROG_SUMTYPE_NOSUPP)
+	ret = KRB5KDC_ERR_SUMTYPE_NOSUPP;
+
+    return ret;
+}
+
+/*
+ * Returns TRUE if a PAC should be included in ticket authorization data.
+ *
+ * Per [MS-KILE] 3.3.5.3, PACs are always included for TGTs; for service
+ * tickets, policy is governed by whether the client explicitly requested
+ * a PAC be omitted when requesting a TGT, or if the no-auth-data-reqd
+ * flag is set on the service principal entry.
+ */
+
+krb5_boolean
+_kdc_include_pac_p(astgs_request_t r)
+{
+    return TRUE;
+}

@@ -33,53 +33,38 @@
 #include "gsskrb5_locl.h"
 
 OM_uint32 GSSAPI_CALLCONV
-_gsskrb5_pname_to_uid(OM_uint32 *minor_status,
-                      const gss_name_t pname,
-                      const gss_OID mech_type,
-                      uid_t *uidp)
+_gsskrb5_localname(OM_uint32 *minor_status,
+                   gss_const_name_t pname,
+                   const gss_OID mech_type,
+                   gss_buffer_t localname)
 {
-#ifdef NO_LOCALNAME
-    *minor_status = KRB5_NO_LOCALNAME;
-    return GSS_S_FAILURE;
-#else
     krb5_error_code ret;
     krb5_context context;
     krb5_const_principal princ = (krb5_const_principal)pname;
-    char localname[256];
-#ifdef POSIX_GETPWNAM_R
-    char pwbuf[2048];
-    struct passwd pw, *pwd;
-#else
-    struct passwd *pwd;
-#endif
+    char lnamebuf[256];
 
     GSSAPI_KRB5_INIT(&context);
 
     *minor_status = 0;
 
     ret = krb5_aname_to_localname(context, princ,
-                                  sizeof(localname), localname);
+                                  sizeof(lnamebuf), lnamebuf);
     if (ret != 0) {
         *minor_status = ret;
         return GSS_S_FAILURE;
     }
 
-#ifdef POSIX_GETPWNAM_R
-    if (getpwnam_r(localname, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0) {
-        *minor_status = KRB5_NO_LOCALNAME;
-        return GSS_S_FAILURE;
-    }
-#else
-    pwd = getpwnam(localname);
-#endif
+    localname->length = strlen(lnamebuf);
 
-    if (pwd == NULL) {
-        *minor_status = KRB5_NO_LOCALNAME;
+    localname->value = malloc(localname->length + 1);
+    if (localname->value == NULL) {
+        localname->length = 0;
+        *minor_status = ENOMEM;
         return GSS_S_FAILURE;
     }
 
-    *uidp = pwd->pw_uid;
+    memcpy(localname->value, lnamebuf, localname->length + 1);
+    *minor_status = 0;
 
     return GSS_S_COMPLETE;
-#endif /* NO_LOCALNAME */
 }

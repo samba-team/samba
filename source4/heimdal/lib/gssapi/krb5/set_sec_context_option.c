@@ -98,6 +98,119 @@ set_int32(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
+/*
+ * GSS_KRB5_IMPORT_RFC4121_CONTEXT_X is an internal, private interface
+ * to allow SAnon to create a skeletal context for using RFC4121 message
+ * protection services.
+ *
+ * rfc4121_args ::= initiator_flag || flags || enctype || session key
+ */
+static OM_uint32
+make_rfc4121_context(OM_uint32 *minor,
+		     krb5_context context,
+		     gss_ctx_id_t *context_handle,
+		     gss_const_buffer_t rfc4121_args)
+{
+    OM_uint32 major = GSS_S_FAILURE, tmp;
+    krb5_error_code ret;
+    krb5_storage *sp = NULL;
+    gsskrb5_ctx ctx = NULL;
+    uint8_t initiator_flag;
+    int32_t enctype;
+    size_t keysize;
+    krb5_keyblock *key;
+
+    *minor = 0;
+
+    sp = krb5_storage_from_readonly_mem(rfc4121_args->value, rfc4121_args->length);
+    if (sp == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+
+    krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_HOST);
+
+    ctx = calloc(1, sizeof(*ctx));
+    if (ctx == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+
+    ret = krb5_ret_uint8(sp, &initiator_flag);
+    if (ret != 0)
+	goto out;
+
+    ret = krb5_ret_uint32(sp, &ctx->flags);
+    if (ret != 0)
+	goto out;
+
+    ctx->more_flags = IS_CFX | ACCEPTOR_SUBKEY | OPEN;
+    if (initiator_flag)
+	ctx->more_flags |= LOCAL;
+
+    ctx->state = initiator_flag ? INITIATOR_READY : ACCEPTOR_READY;
+
+    ret = krb5_ret_int32(sp, &enctype);
+    if (ret != 0)
+	goto out;
+
+    ret = krb5_enctype_keysize(context, enctype, &keysize);
+    if (ret != 0)
+	goto out;
+
+    ctx->auth_context = calloc(1, sizeof(*ctx->auth_context));
+    if (ctx->auth_context == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+
+    key = calloc(1, sizeof(*key));
+    if (key == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+    if (initiator_flag)
+	ctx->auth_context->remote_subkey = key;
+    else
+	ctx->auth_context->local_subkey = key;
+
+    key->keytype = enctype;
+    key->keyvalue.data = malloc(keysize);
+    if (key->keyvalue.data == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+
+    if (krb5_storage_read(sp, key->keyvalue.data, keysize) != keysize) {
+	ret = EINVAL;
+	goto out;
+    }
+    key->keyvalue.length = keysize;
+
+    ret = krb5_crypto_init(context, key, 0, &ctx->crypto);
+    if (ret != 0)
+	goto out;
+
+    major = _gssapi_msg_order_create(minor, &ctx->order,
+				     _gssapi_msg_order_f(ctx->flags),
+				     0, 0, 1);
+    if (major != GSS_S_COMPLETE)
+	goto out;
+
+out:
+    krb5_storage_free(sp);
+
+    if (major != GSS_S_COMPLETE) {
+	if (*minor == 0)
+	    *minor = ret;
+	_gsskrb5_delete_sec_context(&tmp, (gss_ctx_id_t *)&ctx, GSS_C_NO_BUFFER);
+    } else {
+	*context_handle = (gss_ctx_id_t)ctx;
+    }
+
+    return major;
+}
+
 OM_uint32 GSSAPI_CALLCONV
 _gsskrb5_set_sec_context_option
            (OM_uint32 *minor_status,
@@ -178,40 +291,9 @@ _gsskrb5_set_sec_context_option
 
     } else if (gss_oid_equal(desired_object, GSS_KRB5_SEND_TO_KDC_X)) {
 
-	if (value == NULL || value->length == 0) {
-	    krb5_set_send_to_kdc_func(context, NULL, NULL);
-	} else {
-	    struct gsskrb5_send_to_kdc c;
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
 
-	    if (value->length != sizeof(c)) {
-		*minor_status = EINVAL;
-		return GSS_S_FAILURE;
-	    }
-	    memcpy(&c, value->value, sizeof(c));
-	    krb5_set_send_to_kdc_func(context,
-				      (krb5_send_to_kdc_func)c.func,
-				      c.ptr);
-	}
-
-	*minor_status = 0;
-	return GSS_S_COMPLETE;
-    } else if (gss_oid_equal(desired_object, GSS_KRB5_CCACHE_NAME_X)) {
-	char *str;
-
-	maj_stat = get_string(minor_status, value, &str);
-	if (maj_stat != GSS_S_COMPLETE)
-	    return maj_stat;
-	if (str == NULL) {
-	    *minor_status = 0;
-	    return GSS_S_CALL_INACCESSIBLE_READ;
-	}
-
-	*minor_status = krb5_cc_set_default_name(context, str);
-	free(str);
-	if (*minor_status)
-	    return GSS_S_FAILURE;
-
-	return GSS_S_COMPLETE;
     } else if (gss_oid_equal(desired_object, GSS_KRB5_SET_TIME_OFFSET_X)) {
 	OM_uint32 offset;
 	time_t t;
@@ -253,6 +335,17 @@ _gsskrb5_set_sec_context_option
 
 	*minor_status = 0;
 	return GSS_S_COMPLETE;
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_CCACHE_NAME_X)) {
+	struct gsskrb5_ccache_name_args *args = value->value;
+
+	if (value->length != sizeof(*args)) {
+	    *minor_status = EINVAL;
+	    return GSS_S_FAILURE;
+	}
+
+	return _gsskrb5_krb5_ccache_name(minor_status, args->name, &args->out_name);
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_IMPORT_RFC4121_CONTEXT_X)) {
+	return make_rfc4121_context(minor_status, context, context_handle, value);
     }
 
     *minor_status = EINVAL;

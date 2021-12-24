@@ -86,7 +86,6 @@ hdb_replace_extension(krb5_context context,
 		      const HDB_extension *ext)
 {
     HDB_extension *ext2;
-    HDB_extension *es;
     int ret;
 
     ext2 = NULL;
@@ -101,7 +100,7 @@ hdb_replace_extension(krb5_context context,
 	ext2 = hdb_find_extension(entry, ext->data.element);
     } else {
 	/*
-	 * This is an unknown extention, and we are asked to replace a
+	 * This is an unknown extension, and we are asked to replace a
 	 * possible entry in `entry' that is of the same type. This
 	 * might seem impossible, but ASN.1 CHOICE comes to our
 	 * rescue. The first tag in each branch in the CHOICE is
@@ -120,7 +119,7 @@ hdb_replace_extension(krb5_context context,
 			  &size);
 	if (ret) {
 	    krb5_set_error_message(context, ret, "hdb: failed to decode "
-				   "replacement hdb extention");
+				   "replacement hdb extension");
 	    return ret;
 	}
 
@@ -136,7 +135,7 @@ hdb_replace_extension(krb5_context context,
 			      &size);
 	    if (ret) {
 		krb5_set_error_message(context, ret, "hdb: failed to decode "
-				       "present hdb extention");
+				       "present hdb extension");
 		return ret;
 	    }
 
@@ -153,26 +152,11 @@ hdb_replace_extension(krb5_context context,
 	ret = copy_HDB_extension(ext, ext2);
 	if (ret)
 	    krb5_set_error_message(context, ret, "hdb: failed to copy replacement "
-				   "hdb extention");
+				   "hdb extension");
 	return ret;
     }
 
-    es = realloc(entry->extensions->val,
-		 (entry->extensions->len+1)*sizeof(entry->extensions->val[0]));
-    if (es == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
-	return ENOMEM;
-    }
-    entry->extensions->val = es;
-
-    ret = copy_HDB_extension(ext,
-			     &entry->extensions->val[entry->extensions->len]);
-    if (ret == 0)
-	entry->extensions->len++;
-    else
-	krb5_set_error_message(context, ret, "hdb: failed to copy new extension");
-
-    return ret;
+    return add_HDB_extensions(entry->extensions, ext);
 }
 
 krb5_error_code
@@ -185,14 +169,11 @@ hdb_clear_extension(krb5_context context,
     if (entry->extensions == NULL)
 	return 0;
 
-    for (i = 0; i < entry->extensions->len; i++) {
-	if (entry->extensions->val[i].data.element == (unsigned)type) {
-	    free_HDB_extension(&entry->extensions->val[i]);
-	    memmove(&entry->extensions->val[i],
-		    &entry->extensions->val[i + 1],
-		    sizeof(entry->extensions->val[i]) * (entry->extensions->len - i - 1));
-	    entry->extensions->len--;
-	}
+    for (i = 0; i < entry->extensions->len; ) {
+	if (entry->extensions->val[i].data.element == (unsigned)type)
+            (void) remove_HDB_extensions(entry->extensions, i);
+        else
+            i++;
     }
     if (entry->extensions->len == 0) {
 	free(entry->extensions->val);
@@ -244,6 +225,33 @@ hdb_entry_get_pkinit_cert(const hdb_entry *entry, const HDB_Ext_PKINIT_cert **a)
 	*a = NULL;
 
     return 0;
+}
+
+krb5_error_code
+hdb_entry_get_krb5_config(const hdb_entry *entry, heim_octet_string *c)
+{
+    const HDB_extension *ext;
+
+    c->data = NULL;
+    c->length = 0;
+    ext = hdb_find_extension(entry, choice_HDB_extension_data_krb5_config);
+    if (ext)
+	*c = ext->data.u.krb5_config;
+    return 0;
+}
+
+krb5_error_code
+hdb_entry_set_krb5_config(krb5_context context,
+                          hdb_entry *entry,
+                          heim_octet_string *s)
+{
+    HDB_extension ext;
+
+    ext.mandatory = FALSE;
+    ext.data.element = choice_HDB_extension_data_last_pw_change;
+    /* hdb_replace_extension() copies this, so no need to copy it here */
+    ext.data.u.krb5_config = *s;
+    return hdb_replace_extension(context, entry, &ext);
 }
 
 krb5_error_code
@@ -453,6 +461,7 @@ hdb_entry_set_kvno_diff_clnt(krb5_context context, hdb_entry *entry,
 
     if (diff > 16384)
 	return EINVAL;
+    ext.mandatory = FALSE;
     ext.data.element = choice_HDB_extension_data_hist_kvno_diff_clnt;
     ext.data.u.hist_kvno_diff_clnt = diff;
     return hdb_replace_extension(context, entry, &ext);
@@ -485,6 +494,7 @@ hdb_entry_set_kvno_diff_svc(krb5_context context, hdb_entry *entry,
 
     if (diff > 16384)
 	return EINVAL;
+    ext.mandatory = FALSE;
     ext.data.element = choice_HDB_extension_data_hist_kvno_diff_svc;
     ext.data.u.hist_kvno_diff_svc = diff;
     return hdb_replace_extension(context, entry, &ext);
@@ -495,4 +505,284 @@ hdb_entry_clear_kvno_diff_svc(krb5_context context, hdb_entry *entry)
 {
     return hdb_clear_extension(context, entry,
 			       choice_HDB_extension_data_hist_kvno_diff_svc);
+}
+
+krb5_error_code
+hdb_set_last_modified_by(krb5_context context, hdb_entry *entry,
+                         krb5_principal modby, time_t modtime)
+{
+    krb5_error_code ret;
+    Event *old_ev;
+    Event *ev;
+
+    old_ev = entry->modified_by;
+
+    ev = calloc(1, sizeof (*ev));
+    if (!ev)
+        return ENOMEM;
+    if (modby)
+        ret = krb5_copy_principal(context, modby, &ev->principal);
+    else
+        ret = krb5_parse_name(context, "root/admin", &ev->principal);
+    if (ret) {
+        free(ev);
+        return ret;
+    }
+    ev->time = modtime;
+    if (!ev->time)
+        time(&ev->time);
+
+    entry->modified_by = ev;
+    if (old_ev)
+        free_Event(old_ev);
+    return 0;
+}
+
+krb5_error_code
+hdb_entry_get_key_rotation(krb5_context context,
+	                   const hdb_entry *entry,
+                           const HDB_Ext_KeyRotation **kr)
+{
+    HDB_extension *ext =
+        hdb_find_extension(entry, choice_HDB_extension_data_key_rotation);
+
+    *kr = ext ? &ext->data.u.key_rotation : NULL;
+    return 0;
+}
+
+krb5_error_code
+hdb_validate_key_rotation(krb5_context context,
+                          const KeyRotation *past_kr,
+                          const KeyRotation *new_kr)
+{
+    unsigned int last_kvno;
+
+    if (new_kr->period < 1) {
+        krb5_set_error_message(context, EINVAL,
+                               "Key rotation periods must be non-zero "
+                               "and positive");
+        return EINVAL;
+    }
+    if (new_kr->base_key_kvno < 1 || new_kr->base_kvno < 1) {
+        krb5_set_error_message(context, EINVAL,
+                               "Key version number zero not allowed "
+                               "for key rotation");
+        return EINVAL;
+    }
+    if (!past_kr)
+        return 0;
+
+    if (past_kr->base_key_kvno == new_kr->base_key_kvno) {
+        /*
+         * The new base keys can be the same as the old, but must have
+         * different kvnos.  (Well, not must must.  It's a convention for now.)
+         */
+        krb5_set_error_message(context, EINVAL,
+                               "Base key version numbers for KRs must differ");
+        return EINVAL;
+    }
+    if (new_kr->epoch - past_kr->epoch <= 0) {
+        krb5_set_error_message(context, EINVAL,
+                               "New key rotation periods must start later "
+                               "than existing ones");
+        return EINVAL;
+    }
+
+    last_kvno = 1 + ((new_kr->epoch - past_kr->epoch) / past_kr->period);
+    if (new_kr->base_kvno <= last_kvno) {
+        krb5_set_error_message(context, EINVAL,
+                               "New key rotation base kvno must be larger "
+                               "the last kvno for the current key "
+                               "rotation (%u)", last_kvno);
+        return EINVAL;
+    }
+    return 0;
+}
+
+static int
+kr_eq(const KeyRotation *a, const KeyRotation *b)
+{
+    return !!(
+        a->epoch == b->epoch &&
+        a->period == b->period &&
+        a->base_kvno == b->base_kvno &&
+        a->base_key_kvno == b->base_key_kvno &&
+        KeyRotationFlags2int(a->flags) == KeyRotationFlags2int(b->flags)
+    );
+}
+
+krb5_error_code
+hdb_validate_key_rotations(krb5_context context,
+                           const HDB_Ext_KeyRotation *existing,
+                           const HDB_Ext_KeyRotation *krs)
+{
+    krb5_error_code ret = 0;
+    size_t added = 0;
+    size_t i;
+
+    if ((!existing || !existing->len) && (!krs || !krs->len))
+        return 0; /* Nothing to do; weird */
+
+    /*
+     * HDB_Ext_KeyRotation has to have 1..3 elements, and this is enforced by
+     * the ASN.1 compiler and the code it generates.  Nonetheless we'll check
+     * that there's not zero elements.
+     */
+    if ((!krs || !krs->len)) {
+        /*
+         * NOTE: We can clear this on concrete principals with virtual keys
+         *       though.  The caller can check for that case.
+         */
+        krb5_set_error_message(context, EINVAL,
+                               "Cannot clear key rotation metadata on "
+                               "virtual principal namespaces");
+        ret = EINVAL;
+    }
+
+    /* Validate the new KRs by themselves */
+    for (i = 0; ret == 0 && i < krs->len; i++) {
+        ret = hdb_validate_key_rotation(context,
+                                        i+1 < krs->len ? &krs->val[i+1] : 0,
+                                        &krs->val[i]);
+    }
+    if (ret || !existing || !existing->len)
+        return ret;
+
+    if (existing->len == krs->len) {
+        /* Check for no change */
+        for (i = 0; i < krs->len; i++)
+            if (!kr_eq(&existing->val[i], &krs->val[i]))
+                break;
+        if (i == krs->len)
+            return 0; /* No change */
+    }
+
+    /*
+     * Check that new KRs make sense in the context of the previous KRs.
+     *
+     * Permitted changes:
+     *
+     *  - add one new KR in front
+     *  - drop old KRs
+     *
+     * Start by checking if we're adding a KR, then go on to check for dropped
+     * KRs and/or last KR alteration.
+     */
+    if (existing->val[0].epoch == krs->val[0].epoch ||
+        existing->val[0].base_kvno == krs->val[0].base_kvno) {
+        if (!kr_eq(&existing->val[0], &krs->val[0])) {
+            krb5_set_error_message(context, EINVAL,
+                                   "Key rotation change not sensible");
+            ret = EINVAL;
+        }
+        /* Key rotation *not* added */
+    } else {
+        /* Key rotation added; check it first */
+        ret = hdb_validate_key_rotation(context,
+                                        &existing->val[0],
+                                        &krs->val[0]);
+        added = 1;
+    }
+    for (i = 0; ret == 0 && i < existing->len && i + added < krs->len; i++)
+        if (!kr_eq(&existing->val[i], &krs->val[i + added]))
+            krb5_set_error_message(context, ret = EINVAL,
+                                   "Only last key rotation may be truncated");
+    return ret;
+}
+
+/* XXX We need a function to "revoke" the past */
+
+/**
+ * This function adds a KeyRotation value to an entry, validating the
+ * change.  One of `entry' and `krs' must be NULL, and the other non-NULL, and
+ * whichever is given will be altered.
+ *
+ * @param context Context
+ * @param entry An HDB entry
+ * @param krs A key rotation extension for hdb_entry
+ * @param kr A new KeyRotation value
+ *
+ * @return Zero on success, an error otherwise.
+ */
+krb5_error_code
+hdb_entry_add_key_rotation(krb5_context context,
+                           hdb_entry *entry,
+                           HDB_Ext_KeyRotation *krs,
+                           const KeyRotation *kr)
+{
+    krb5_error_code ret;
+    HDB_extension new_ext;
+    HDB_extension *ext = 0;
+    KeyRotation tmp;
+    size_t i, sz;
+
+    if (kr->period < 1) {
+        krb5_set_error_message(context, EINVAL,
+                               "Key rotation period cannot be zero");
+        return EINVAL;
+    }
+
+    new_ext.mandatory = TRUE;
+    new_ext.data.element = choice_HDB_extension_data_key_rotation;
+    new_ext.data.u.key_rotation.len = 0;
+    new_ext.data.u.key_rotation.val = 0;
+
+    if (entry && krs)
+        return EINVAL;
+
+    if (entry) {
+        ext = hdb_find_extension(entry, choice_HDB_extension_data_key_rotation);
+        if (!ext)
+            ext = &new_ext;
+        else
+            krs = &ext->data.u.key_rotation;
+    } else {
+        const KeyRotation *prev_kr = &krs->val[0];
+        unsigned int last_kvno = 0;
+
+        if (kr->epoch - prev_kr->epoch <= 0) {
+            krb5_set_error_message(context, EINVAL,
+                                   "New key rotation periods must start later "
+                                   "than existing ones");
+            return EINVAL;
+        }
+
+        if (kr->base_kvno <= prev_kr->base_kvno ||
+            kr->base_kvno - prev_kr->base_kvno <=
+                (last_kvno = 1 +
+                 ((kr->epoch - prev_kr->epoch) / prev_kr->period))) {
+            krb5_set_error_message(context, EINVAL,
+                                   "New key rotation base kvno must be larger "
+                                   "the last kvno for the current key "
+                                   "rotation (%u)", last_kvno);
+            return EINVAL;
+        }
+    }
+
+    /* First, append */
+    ret = add_HDB_Ext_KeyRotation(&ext->data.u.key_rotation, kr);
+    if (ret)
+        return ret;
+
+    /* Rotate new to front */
+    tmp = ext->data.u.key_rotation.val[ext->data.u.key_rotation.len - 1];
+    sz = sizeof(ext->data.u.key_rotation.val[0]);
+    memmove(&ext->data.u.key_rotation.val[1], &ext->data.u.key_rotation.val[0],
+            (ext->data.u.key_rotation.len - 1) * sz);
+    ext->data.u.key_rotation.val[0] = tmp;
+
+    /* Drop too old entries */
+    for (i = 3; i < ext->data.u.key_rotation.len; i++)
+        free_KeyRotation(&ext->data.u.key_rotation.val[i]);
+    ext->data.u.key_rotation.len =
+        ext->data.u.key_rotation.len > 3 ? 3 : ext->data.u.key_rotation.len;
+
+    if (ext != &new_ext)
+        return 0;
+
+    /* Install new extension */
+    if (ret == 0 && entry)
+        ret = hdb_replace_extension(context, entry, ext);
+    free_HDB_extension(&new_ext);
+    return ret;
 }

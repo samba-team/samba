@@ -12,14 +12,15 @@ HEIMDAL_GSS_2.0 {
 		__gss_c_nt_user_name_oid_desc;
 		__gss_krb5_nt_principal_name_oid_desc;
 		__gss_c_attr_stream_sizes_oid_desc;
-		__gss_c_cred_password_oid_desc;
-		__gss_c_cred_certificate_oid_desc;
 		__gss_c_attr_local_login_user;
 		gss_accept_sec_context;
 		gss_acquire_cred;
+		gss_acquire_cred_from;
+		gss_acquire_cred_impersonate_name;
 		gss_acquire_cred_with_password;
 		gss_add_buffer_set_member;
 		gss_add_cred;
+		gss_add_cred_from;
 		gss_add_cred_with_password;
 		gss_add_oid_set_member;
 		gss_authorize_localname;
@@ -37,12 +38,15 @@ HEIMDAL_GSS_2.0 {
 		gss_display_status;
 		gss_duplicate_name;
 		gss_duplicate_oid;
+		gss_duplicate_oid_set;
 		gss_encapsulate_token;
 		gss_export_cred;
 		gss_export_name;
 		gss_export_name_composite;
 		gss_export_sec_context;
+		gss_get_instance;
 		gss_get_mic;
+		gss_get_neg_mechs;
 		gss_get_name_attribute;
 		gss_import_cred;
 		gss_import_name;
@@ -65,6 +69,7 @@ HEIMDAL_GSS_2.0 {
 		gss_krb5_get_tkt_flags;
 		gss_krb5_import_cred;
 		gss_krb5_set_allowable_enctypes;
+		gss_localname;
 		gss_mg_collect_error;
 		gss_oid_equal;
 		gss_oid_to_str;
@@ -81,17 +86,23 @@ HEIMDAL_GSS_2.0 {
 		gss_seal;
 		gss_set_cred_option;
 		gss_set_name_attribute;
+		gss_set_log_function;
+		gss_set_neg_mechs;
 		gss_set_sec_context_option;
 		gss_sign;
 		gss_store_cred;
+		gss_store_cred_into;
+		gss_store_cred_into2;
 		gss_test_oid_set_member;
 		gss_unseal;
 		gss_unwrap;
+		gss_unwrap_aead;
 		gss_unwrap_iov;
 		gss_userok;
 		gss_verify;
 		gss_verify_mic;
 		gss_wrap;
+		gss_wrap_aead;
 		gss_wrap_iov;
 		gss_wrap_iov_length;
 		gss_wrap_size_limit;
@@ -162,7 +173,7 @@ HEIMDAL_GSS_2.0 {
 		__gss_krb5_mechanism_oid_desc;
 		__gss_ntlm_mechanism_oid_desc;
 		__gss_spnego_mechanism_oid_desc;
-		__gss_c_peer_has_updated_spnego_oid_desc;
+		__gss_sanon_x25519_mechanism_oid_desc;
 		__gss_c_ma_mech_concrete_oid_desc;
 		__gss_c_ma_mech_pseudo_oid_desc;
 		__gss_c_ma_mech_composite_oid_desc;
@@ -190,6 +201,9 @@ HEIMDAL_GSS_2.0 {
 		__gss_c_ma_pfs_oid_desc;
 		__gss_c_ma_compress_oid_desc;
 		__gss_c_ma_ctx_trans_oid_desc;
+		__gss_c_ma_negoex_and_spnego_oid_desc;
+		__gss_c_inq_negoex_key_oid_desc;
+		__gss_c_inq_negoex_verify_key_oid_desc;
 
 	local:
 		*;

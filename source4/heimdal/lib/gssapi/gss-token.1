@@ -1,0 +1,108 @@
+.\"
+.\"
+.Dd May 12, 2014
+.Os
+.Dt GSS-TOKEN 1
+.Sh NAME
+.Nm gss-token
+.Nd generate and consume base64 GSS tokens
+.Sh SYNOPSIS
+.Nm
+.Op Fl DNn
+.Op Fl c count
+.Ar service@host
+.Nm
+.Fl r
+.Op Fl MNln
+.Op Fl C Ar ccache
+.Op Fl S Ar maxsize
+.Op Fl c count
+.Op Fl m mech
+.Op Ar service@host
+.Sh DESCRIPTION
+.Nm
+generates and consumes base64 encoded GSS tokens.
+By default, it runs as an initiator and with the
+.Fl r
+flag it becomes an acceptor.
+.Pp
+.Nm
+supports the following options:
+.Bl -tag -width indentxxxx
+.It Fl C Ar ccache
+write an accepted delegated credential into
+.Ar ccache .
+This only makes sense if
+.Fl r
+is specified.
+.It Fl D
+delegate credentials.
+This only makes sense as a client, that is when
+.Fl r
+is not specified.
+.It Fl M
+copy the default ccache to a MEMORY: ccache before each
+separate write operation.
+The default ccache will not pick up any obtained service
+tickets.
+If specified with
+.Fl c ,
+the cache will revert to its original state before each
+new token is written.
+This can be used to load test the KDC.
+.It Fl N
+prepend
+.Dq Negotiate\ 
+to generated tokens and expect it on consumed tokens.
+.It Fl S Ar maxsize
+split each token that is generated into components of maximum
+size
+.Ar maxsize .
+Each token is base64 encoded and output separately.
+.It Fl c Ar count
+repeat the operation
+.Ar count
+times.
+This flag only changes the behaviour when operating in initiator mode.
+This is good for very basic benchmarking.
+.It Fl l
+loop indefinitely in acceptor mode.
+.It Fl m Ar mech
+specifies the GSS mechanism that will be used in initiator mode.
+If a mechanism name of
+.Do ? Dc
+is specified, a list of supported mechanisms will be output and
+.Nm
+will exit.
+.It Fl n
+do not output the generated tokens.
+.It Fl r
+run in acceptor mode.
+.El
+.Pp
+.Nm
+takes one argument, a
+.Ar host@service
+specifier.
+The argument is required when running as an initiator but is optional as
+an acceptor.
+.Pp
+.Nm
+will try to read a token whenever the GSS mechanism expects one
+and will output a token whenever the GSS mechanism provides one.
+Tokens are base64 encoded and terminated by either two successive
+newlines or one newline and EOF.
+The base64 encoding may be broken up by single newlines which will
+be ignored when read.  No extra whitespace will be ignored.
+.Sh EXAMPLES
+To test a simple GSS mechanism which doesn't require a round trip,
+a single
+.Pa /bin/sh
+pipeline will suffice:
+.Bd -literal -offset indent
+$ export KRB5_KTNAME=/path/to/keytab
+$ gss-token HTTP@$(hostname) | gss-token -r
+.Ed
+.Sh SEE ALSO
+.Xr gssapi 3 ,
+.Xr kerberos 8 .

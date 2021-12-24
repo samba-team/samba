@@ -64,7 +64,7 @@ gss_pseudo_random(OM_uint32 *minor_status,
 					  prf_key, prf_in, desired_output_len,
 					  prf_out);
     if (major_status != GSS_S_COMPLETE)
-	_gss_mg_error(m, major_status, *minor_status);
+	_gss_mg_error(m, *minor_status);
 
     return major_status;
 }

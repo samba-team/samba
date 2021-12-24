@@ -1,0 +1,728 @@
+
+
+
+Network Working Group                               L. Hornquist Astrand
+Internet-Draft                                                Apple, Inc
+Intended status: Standards Track                         August 13, 2008
+Expires: February 14, 2009
+
+
+                       Kerberos ticket extensions
+                 draft-lha-krb-wg-ticket-extensions-00
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on February 14, 2009.
+
+Copyright Notice
+
+   Copyright (C) The IETF Trust (2008).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009               [Page 1]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+Abstract
+
+   The Kerberos protocol does not allow ticket extensions.  This make it
+   harder to deploy features like referrals and PKCROSS.
+
+   Since the Kerberos protocol did not specified extensibility for the
+   Ticket structure and the current implementations are aware of the
+   contents of tickets, the extension protocol cannot simply extend the
+   Ticket ASN.1 structure.  Instead, the extension data needs to be
+   hidden inside the ticket.
+
+
+Table of Contents
+
+   1.  Requirements Notation  . . . . . . . . . . . . . . . . . . . .  3
+   2.  Protocol . . . . . . . . . . . . . . . . . . . . . . . . . . .  4
+   3.  How to request a new assignment for a ticket extension . . . .  6
+   4.  Security Considerations  . . . . . . . . . . . . . . . . . . .  7
+   5.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . .  8
+   6.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . .  9
+   7.  Normative References . . . . . . . . . . . . . . . . . . . . . 10
+   Appendix A.  Ticket-extensions ASN.1 Module  . . . . . . . . . . . 11
+   Author's Address . . . . . . . . . . . . . . . . . . . . . . . . . 12
+   Intellectual Property and Copyright Statements . . . . . . . . . . 13
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009               [Page 2]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+1.  Requirements Notation
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009               [Page 3]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+2.  Protocol
+
+   The ticket and enc-part as defined by [RFC4120] is defined as follow:
+
+
+   Ticket          ::= [APPLICATION 1] SEQUENCE {
+           tkt-vno         [0] INTEGER (5),
+           realm           [1] Realm,
+           sname           [2] PrincipalName,
+           enc-part        [3] EncryptedData -- EncTicketPart
+   }
+
+   EncryptedData   ::= SEQUENCE {
+           etype   [0] Int32 -- EncryptionType --,
+           kvno    [1] UInt32 OPTIONAL,
+           cipher  [2] OCTET STRING -- ciphertext
+   }
+
+
+
+   This document uses the special encryption type etype-TBETicket to
+   signal that enc-part.cipher contains the DER-encoded TBETicket
+   structure, instead of an encrypted EncTicketPart.
+
+
+
+   etype-TBETicket INTEGER ::= 4711 -- TBA XXX --
+
+   krb5int32  ::= INTEGER (-2147483648..2147483647)
+
+   TBETicket ::= SEQUENCE {
+           etype           [0] krb5int32 -- EncryptionType --,
+           cipher          [1] OCTET STRING
+           extensions      [2] SEQUENCE OF TicketExtension OPTIONAL
+
+   }
+
+   TicketExtension ::= SEQUENCE {
+           te-type [0] krb5int32,
+           te-data [1] OCTET STRING
+           te-csum [2] Checksum OPTIONAL
+   }
+
+
+   The content of cipher data and encryption type fields is moved inside
+   TBETicket.
+
+   Negative ticket extensions types (te-type) is private extensions and
+
+
+
+Hornquist Astrand       Expires February 14, 2009               [Page 4]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+   MUST only be used for experimentation.
+
+   The te-type field is specificing the type of the content in te-data.
+   Unknown te-types MUST be ignored both by the client and the server.
+
+   The te-csum field is optional for the type, when in use by type type
+   specifed in te-type, the key have to be specifed (usually the session
+   key of the ticket) and the key usage number.
+
+   The KDC MUST only return this extension in the AS-REQ if all other
+   KDCs for the same realm also supports this extension.
+
+   The KDC MUST only return this extension in the TGS-REQ to server the
+   KDC knows supports these extension.  This includes both cross realm
+   tickets and service tickets.
+
+   The KDC MAY return extended tickets to servers supporting ticket
+   extensions even if the extended ticket does not contain any
+   extensions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009               [Page 5]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+3.  How to request a new assignment for a ticket extension
+
+   When anyone is writing a internet-draft for which a new assignment
+   for te-type is needed/wanted under the ticket extension, then the
+   proper way to do so is as follows:
+
+
+         EXAMPLE-MODULE DEFINITIONS ::= BEGIN
+
+         krb5-ticket-extension-Name ::= INTEGER nnn
+         -- IANA: please assign nnn
+         -- RFC-Editor: replace nnn with IANA-assigned
+         --             number and remove this note
+         END
+
+
+   IANA: Don't do note above, its an example, remove this note RFC-
+   Editor: Don't do note above, its an example, remove this note IANA
+   will assign the number as part of the RFC publication process.
+
+   When reviewing the document, the reviewer should take sure to check
+   that if te-csum is used, the siging key and key usage is specifed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009               [Page 6]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+4.  Security Considerations
+
+   This document describes how to extend Kerberos tickets to include
+   additional data in the ticket.  This does have a security
+   implications since the extension data in the TBETicket is only
+   optionally signed, not encrypted and is not replay protected.  It is
+   up to the consumers of this interface to make sure its used safely.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009               [Page 7]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+5.  Acknowledgements
+
+   Thanks to Leif Johansson, and Kamada Ken'ichi for reviewing the
+   document and provided suggestions for improvements.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009               [Page 8]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+6.  IANA Considerations
+
+   There are currently no ticket extensions.  Future ticket extensions
+   will be published at:
+
+
+         http://www.iana.org/assignments/NNNNNNNN
+         -- IANA: please name registry, proposal: krb5-ticket-extensions
+
+
+   IANA is requested to maintain this registry for future assignments.
+   New assignments can only be made via Specification Required as
+   described in [RFC2434].
+
+   IANA will assign the number as part of the RFC publication process.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009               [Page 9]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+7.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2434]  Narten, T. and H. Alvestrand, "Guidelines for Writing an
+              IANA Considerations Section in RFCs", BCP 26, RFC 2434,
+              October 1998.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009              [Page 10]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+Appendix A.  Ticket-extensions ASN.1 Module
+
+
+
+KerberosV5-TicketExtensions {
+       iso(1) identified-organization(3) dod(6) internet(1)
+       security(5) kerberosV5(2) modules(4) ticket-extensions(TBA)
+--- XXX who is the registerar for this number ?
+} DEFINITIONS EXPLICIT TAGS ::= BEGIN
+
+IMPORTS
+        -- as defined in RFC 4120
+        Int32, Checksum
+                FROM KerberosV5Spec2 { iso(1) identified-organization(3)
+                     dod(6) internet(1) security(5) kerberosV5(2)
+                     modules(4) krb5spec2(2) }
+
+
+etype-TBETicket INTEGER ::= 4711 -- XXX TBA --
+
+TBETicket ::= SEQUENCE {
+        etype           [0] Int32 -- EncryptionType --,
+        cipher          [1] OCTET STRING
+        extensions      [2] SEQUENCE OF TicketExtension OPTIONAL
+}
+
+TicketExtension ::= SEQUENCE {
+        te-type [0] krb5int32,
+        te-data [1] OCTET STRING
+        te-csum [2] Checksum
+}
+
+END
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009              [Page 11]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+Author's Address
+
+   Love Hornquist Astrand
+   Apple, Inc
+   Cupertino
+   USA
+
+   Email: lha@apple.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009              [Page 12]
+
+Internet-Draft         Kerberos ticket extensions            August 2008
+
+
+Full Copyright Statement
+
+   Copyright (C) The IETF Trust (2008).
+
+   This document is subject to the rights, licenses and restrictions
+   contained in BCP 78, and except as set forth therein, the authors
+   retain all their rights.
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY, THE IETF TRUST AND
+   THE INTERNET ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF
+   THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Intellectual Property
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is provided by the IETF
+   Administrative Support Activity (IASA).
+
+
+
+
+
+Hornquist Astrand       Expires February 14, 2009              [Page 13]
+

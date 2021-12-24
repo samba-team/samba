@@ -1,0 +1,25 @@
+#
+# NegoEx error messages
+#
+
+id "$Id$"
+
+error_table ngex
+
+prefix NEGOEX
+
+error_code INVALID_MESSAGE_SIGNATURE, "Invalid NegoEx signature"
+error_code INVALID_MESSAGE_TYPE, "Invalid NegoEx message type"
+error_code INVALID_MESSAGE_SIZE, "Invalid NegoEx message size"
+error_code INVALID_CONVERSATION_ID, "Invalid NegoEx conversation ID"
+error_code AUTH_SCHEME_NOT_FOUND, "NegoEx authentication scheme not found"
+error_code MISSING_NEGO_MESSAGE, "Missing NegoEx negotiate message"
+error_code MISSING_AP_REQUEST_MESSAGE, "Missing NegoEx authentication protocol request message"
+error_code NO_AVAILABLE_MECHS, "No mutually supported NegoEx authentication schemes"
+error_code NO_VERIFY_KEY, "No NegoEx verify key"
+error_code UNKNOWN_CHECKSUM_SCHEME, "Unknown NegoEx checksum scheme"
+error_code INVALID_CHECKSUM, "Invalid NegoEx checksum"
+error_code UNSUPPORTED_CRITICAL_EXTENSION, "Unsupported critical NegoEx extension"
+error_code UNSUPPORTED_VERSION, "Unsupported NegoEx version"
+error_code MESSAGE_OUT_OF_SEQUENCE, "NegoEx message out of sequence"
+

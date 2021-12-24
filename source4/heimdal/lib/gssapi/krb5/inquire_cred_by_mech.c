@@ -35,7 +35,7 @@
 
 OM_uint32 GSSAPI_CALLCONV _gsskrb5_inquire_cred_by_mech (
     OM_uint32 * minor_status,
-	const gss_cred_id_t cred_handle,
+	gss_const_cred_id_t cred_handle,
 	const gss_OID mech_type,
 	gss_name_t * name,
 	OM_uint32 * initiator_lifetime,
@@ -47,6 +47,10 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_inquire_cred_by_mech (
     OM_uint32 maj_stat;
     OM_uint32 lifetime;
 
+    /*
+     * XXX This is busted.  _gsskrb5_inquire_cred() should be implemented in
+     * terms of _gsskrb5_inquire_cred_by_mech(), NOT the other way around.
+     */
     maj_stat =
 	_gsskrb5_inquire_cred (minor_status, cred_handle,
 			       name, &lifetime, &usage, NULL);

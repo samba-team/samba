@@ -41,9 +41,77 @@
 #include "headers.h"
 
 typedef struct pk_client_params pk_client_params;
-struct DigestREQ;
-struct Kx509Request;
+typedef struct gss_client_params gss_client_params;
+
 #include <kdc-private.h>
+
+#define FAST_EXPIRATION_TIME (3 * 60)
+
+/* KFE == KDC_FIND_ETYPE */
+#define KFE_IS_TGS	0x1
+#define KFE_IS_PREAUTH	0x2
+#define KFE_USE_CLIENT	0x4
+
+#define heim_pcontext krb5_context
+#define heim_pconfig krb5_kdc_configuration *
+#include <heimbase-svc.h>
+
+#define KDC_AUDIT_EATWHITE      HEIM_SVC_AUDIT_EATWHITE
+#define KDC_AUDIT_VIS           HEIM_SVC_AUDIT_VIS
+#define KDC_AUDIT_VISLAST       HEIM_SVC_AUDIT_VISLAST
+
+struct kdc_request_desc {
+    HEIM_SVC_REQUEST_DESC_COMMON_ELEMENTS;
+};
+
+struct as_request_pa_state;
+struct kdc_patypes;
+
+struct astgs_request_desc {
+    ASTGS_REQUEST_DESC_COMMON_ELEMENTS;
+
+    /* Only AS */
+    const struct kdc_patypes *pa_used;
+    struct as_request_pa_state *pa_state;
+
+    /* PA methods can affect both the reply key and the session key (pkinit) */
+    krb5_enctype sessionetype;
+    krb5_keyblock session_key;
+
+    krb5_timestamp pa_endtime;
+    krb5_timestamp pa_max_life;
+
+    krb5_keyblock strengthen_key;
+    const Key *ticket_key;
+
+    /* only valid for tgs-req */
+    unsigned int rk_is_subkey : 1;
+    unsigned int fast_asserted : 1;
+
+    krb5_crypto armor_crypto;
+    hdb_entry_ex *armor_server;
+    krb5_ticket *armor_ticket;
+    Key *armor_key;
+
+    KDCFastState fast;
+};
+
+typedef struct kx509_req_context_desc {
+    HEIM_SVC_REQUEST_DESC_COMMON_ELEMENTS;
+
+    struct Kx509Request req;
+    Kx509CSRPlus csr_plus;
+    krb5_auth_context ac;
+    const char *realm; /* XXX Confusion: is this crealm or srealm? */
+    krb5_keyblock *key;
+    hx509_request csr;
+    krb5_times ticket_times;
+    unsigned int send_chain:1;          /* Client expects a full chain */
+    unsigned int have_csr:1;            /* Client sent a CSR */
+} *kx509_req_context;
+
+#undef heim_pconfig
+#undef heim_pcontext
 
 extern sig_atomic_t exit_flag;
 extern size_t max_request_udp;
@@ -54,12 +122,11 @@ extern krb5_addresses explicit_addresses;
 
 extern int enable_http;
 
-#ifdef SUPPORT_DETACH
-
-#define DETACH_IS_DEFAULT FALSE
-
 extern int detach_from_console;
-#endif
+extern int daemon_child;
+extern int do_bonjour;
+
+extern int testing_flag;
 
 extern const struct units _kdc_digestunits[];
 
@@ -72,10 +139,10 @@ extern char *runas_string;
 extern char *chroot_string;
 
 void
-loop(krb5_context context, krb5_kdc_configuration *config);
+start_kdc(krb5_context context, krb5_kdc_configuration *config, const char *argv0);
 
 krb5_kdc_configuration *
-configure(krb5_context context, int argc, char **argv);
+configure(krb5_context context, int argc, char **argv, int *optidx);
 
 #ifdef __APPLE__
 void bonjour_announce(krb5_context, krb5_kdc_configuration *);

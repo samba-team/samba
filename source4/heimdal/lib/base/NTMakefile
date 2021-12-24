@@ -1,0 +1,134 @@
+########################################################################
+#
+# Copyright (c) 2010, Secure Endpoints Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# - Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+#
+# - Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in
+#   the documentation and/or other materials provided with the
+#   distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+
+RELDIR=lib\base
+
+intcflags=-I$(SRCDIR) -I$(OBJ)
+
+!include ../../windows/NTMakefile.w32
+
+INCFILES=				\
+	$(INCDIR)\heimbase.h		\
+	$(INCDIR)\heimbase-protos.h	\
+	$(INCDIR)\heimbase-atomics.h	\
+	$(INCDIR)\heimbase-svc.h	\
+	$(INCDIR)\heim_err.h		\
+	$(INCDIR)\common_plugin.h
+
+test_binaries = $(OBJ)\test_base.exe
+
+libheimbase_SOURCES =		\
+	array.c			\
+	bool.c			\
+	bsearch.c		\
+	config_file.c		\
+	config_reg.c		\
+	context.c		\
+	data.c			\
+	db.c			\
+	dict.c			\
+	dll.c			\
+	error.c			\
+	error_string.c		\
+	expand_path.c		\
+	heimbase.c		\
+	json.c			\
+	log.c			\
+	null.c			\
+	number.c		\
+	plugin.c		\
+	string.c		\
+	warn.c
+
+libheimbase_OBJS =		\
+	$(OBJ)\array.obj	\
+	$(OBJ)\bool.obj		\
+	$(OBJ)\bsearch.obj	\
+	$(OBJ)\config_file.obj	\
+	$(OBJ)\config_reg.obj	\
+	$(OBJ)\context.obj	\
+	$(OBJ)\data.obj		\
+	$(OBJ)\db.obj		\
+	$(OBJ)\dict.obj		\
+	$(OBJ)\dll.obj		\
+	$(OBJ)\error.obj	\
+	$(OBJ)\error_string.obj	\
+	$(OBJ)\expand_path.obj	\
+	$(OBJ)\heimbase.obj	\
+	$(OBJ)\json.obj		\
+	$(OBJ)\log.obj		\
+	$(OBJ)\null.obj		\
+	$(OBJ)\number.obj	\
+	$(OBJ)\plugin.obj	\
+	$(OBJ)\string.obj	\
+	$(OBJ)\warn.obj
+
+libheimbase_gen_OBJS= $(OBJ)\heim_err.obj
+
+$(LIBHEIMBASE): $(libheimbase_OBJS) $(libheimbase_gen_OBJS)
+	$(LIBCON_C) -OUT:$@ $(LIBROKEN) $(LIBCOMERR) $(PTHREAD_LIB) Secur32.lib Shell32.lib Advapi32.lib Shlwapi.lib @<<
+$(libheimbase_OBJS: =
+)
+$(libheimbase_gen_OBJS: =
+)
+<<
+
+$(OBJ)\heimbase-protos.h: $(libheimbase_SOURCES)
+	$(PERL) ..\..\cf\make-proto.pl -E KRB5_LIB -q -P remove -o $(OBJ)\heimbase-protos.h $(libheimbase_SOURCES) || $(RM) -f $(OBJ)\heimbase-protos.h
+
+$(OBJ)\heimbase-private.h: $(libheimbase_SOURCES)
+	$(PERL) ..\..\cf\make-proto.pl -q -P remove -p $(OBJ)\heimbase-private.h $(libheimbase_SOURCES) || $(RM) -f $(OBJ)\heimbase-private.h
+
+$(OBJ)\heim_err.c $(OBJ)\heim_err.h: heim_err.et
+	cd $(OBJ)
+	$(BINDIR)\compile_et.exe $(SRCDIR)\heim_err.et
+	cd $(SRCDIR)
+
+test:: test-binaries test-run
+
+test-run:
+	cd $(OBJ)
+	-test_base.exe
+	cd $(SRCDIR)
+
+all:: $(INCFILES) $(LIBHEIMBASE)
+
+clean::
+	-$(RM) $(INCFILES)
+
+test-binaries: $(test_binaries)
+
+$(test_binaries): $$(@R).obj $(LIBHEIMBASE) $(LIBVERS) $(LIBROKEN)
+	$(EXECONLINK)
+	$(EXEPREP_NODIST)
+
+$(test_binaries:.exe=.obj): $$(@B).c
+	$(C2OBJ_C) -Fo$@ -Fd$(@D)\ $** -DBlah

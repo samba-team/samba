@@ -25,6 +25,11 @@
 extern "C" {
 #endif
 
+/* symbol renaming */
+#define Camellia_DecryptBlock hc_Camellia_DecryptBlock
+#define Camellia_Ekeygen hc_Camellia_Ekeygen
+#define Camellia_EncryptBlock hc_Camellia_EncryptBlock
+
 #define CAMELLIA_BLOCK_SIZE 16
 #define CAMELLIA_TABLE_BYTE_LEN 272
 #define CAMELLIA_TABLE_WORD_LEN (CAMELLIA_TABLE_BYTE_LEN / 4)

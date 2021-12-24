@@ -136,7 +136,9 @@ krb5_kcm_storage_request(krb5_context context,
 }
 
 static krb5_error_code
-kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
+kcm_alloc(krb5_context context,
+          const char *name,
+          krb5_ccache *id)
 {
     krb5_kcmcache *k;
 
@@ -224,22 +226,47 @@ kcm_free(krb5_context context, krb5_ccache *id)
     if (k != NULL) {
 	if (k->name != NULL)
 	    free(k->name);
-	memset(k, 0, sizeof(*k));
+	memset_s(k, sizeof(*k), 0, sizeof(*k));
 	krb5_data_free(&(*id)->data);
     }
 }
 
-static const char *
-kcm_get_name(krb5_context context,
-	     krb5_ccache id)
+static krb5_error_code KRB5_CALLCONV
+kcm_get_name_2(krb5_context context,
+	       krb5_ccache id,
+	       const char **name,
+	       const char **col,
+	       const char **sub)
 {
-    return CACHENAME(id);
+    /*
+     * TODO:
+     *
+     *  - name should be <IPC-name>:<cache-name>
+     *  - col  should be <IPC-name>
+     *  - sub  should be <cache-name>
+     */
+    if (name)
+        *name = CACHENAME(id);
+    if (col)
+        *col = NULL;
+    if (sub)
+        *sub = CACHENAME(id);
+    return 0;
 }
 
 static krb5_error_code
-kcm_resolve(krb5_context context, krb5_ccache *id, const char *res)
+kcm_resolve_2(krb5_context context,
+	      krb5_ccache *id,
+	      const char *res,
+	      const char *sub)
 {
-    return kcm_alloc(context, res, id);
+    /*
+     * For now, for KCM the `res' is the `sub'.
+     *
+     * TODO: We should use `res' as the IPC name instead of the one currently
+     *       hard-coded in `kcm_ipc_name'.
+     */
+    return kcm_alloc(context, sub && *sub ? sub : res, id);
 }
 
 /*
@@ -553,9 +580,7 @@ kcm_get_first (krb5_context context,
 
     c = calloc(1, sizeof(*c));
     if (c == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret,
-			       N_("malloc: out of memory", ""));
+	ret = krb5_enomem(context);
 	return ret;
     }
 
@@ -577,9 +602,7 @@ kcm_get_first (krb5_context context,
 	if (ptr == NULL) {
 	    free(c->uuids);
 	    free(c);
-	    krb5_set_error_message(context, ENOMEM,
-				   N_("malloc: out of memory", ""));
-	    return ENOMEM;
+	    return krb5_enomem(context);
 	}
 	c->uuids = ptr;
 
@@ -651,7 +674,8 @@ kcm_get_next (krb5_context context,
     krb5_storage_free(request);
     if (ret == KRB5_CC_END) {
 	goto again;
-    }
+    } else if (ret)
+	return ret;
 
     ret = krb5_ret_creds(response, creds);
     if (ret)
@@ -788,9 +812,7 @@ kcm_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 
     c = calloc(1, sizeof(*c));
     if (c == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret,
-			       N_("malloc: out of memory", ""));
+	ret = krb5_enomem(context);
 	goto out;
     }
 
@@ -819,9 +841,7 @@ kcm_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 
 	ptr = realloc(c->uuids, sizeof(c->uuids[0]) * (c->length + 1));
 	if (ptr == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_message(context, ret,
-				   N_("malloc: out of memory", ""));
+	    ret = krb5_enomem(context);
 	    goto out;
 	}
 	c->uuids = ptr;
@@ -883,6 +903,8 @@ kcm_get_cache_next(krb5_context context, krb5_cc_cursor cursor, const krb5_cc_op
     krb5_storage_free(request);
     if (ret == KRB5_CC_END)
 	goto again;
+    else if (ret)
+	return ret;
 
     ret = krb5_ret_stringz(response, &name);
     krb5_storage_free(response);
@@ -952,6 +974,9 @@ kcm_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     ret = krb5_kcm_call(context, request, NULL, NULL);
 
     krb5_storage_free(request);
+
+    if (ret == 0)
+        krb5_cc_destroy(context, from);
     return ret;
 }
 
@@ -963,6 +988,7 @@ kcm_get_default_name(krb5_context context, const krb5_cc_ops *ops,
     krb5_storage *request, *response;
     krb5_data response_data;
     char *name;
+    int aret;
 
     *str = NULL;
 
@@ -981,9 +1007,9 @@ kcm_get_default_name(krb5_context context, const krb5_cc_ops *ops,
     if (ret)
 	return ret;
 
-    asprintf(str, "%s:%s", ops->prefix, name);
+    aret = asprintf(str, "%s:%s", ops->prefix, name);
     free(name);
-    if (str == NULL)
+    if (aret == -1 || str == NULL)
 	return ENOMEM;
 
     return 0;
@@ -1103,10 +1129,10 @@ kcm_get_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat *kdc_offset
  */
 
 KRB5_LIB_VARIABLE const krb5_cc_ops krb5_kcm_ops = {
-    KRB5_CC_OPS_VERSION,
+    KRB5_CC_OPS_VERSION_5,
     "KCM",
-    kcm_get_name,
-    kcm_resolve,
+    NULL,
+    NULL,
     kcm_gen_new,
     kcm_initialize,
     kcm_destroy,
@@ -1128,14 +1154,16 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_kcm_ops = {
     kcm_set_default,
     kcm_lastchange,
     kcm_set_kdc_offset,
-    kcm_get_kdc_offset
+    kcm_get_kdc_offset,
+    kcm_get_name_2,
+    kcm_resolve_2
 };
 
 KRB5_LIB_VARIABLE const krb5_cc_ops krb5_akcm_ops = {
-    KRB5_CC_OPS_VERSION,
+    KRB5_CC_OPS_VERSION_5,
     "API",
-    kcm_get_name,
-    kcm_resolve,
+    NULL,
+    NULL,
     kcm_gen_new,
     kcm_initialize,
     kcm_destroy,
@@ -1157,7 +1185,9 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_akcm_ops = {
     kcm_set_default,
     kcm_lastchange,
     NULL,
-    NULL
+    NULL,
+    kcm_get_name_2,
+    kcm_resolve_2
 };
 
 

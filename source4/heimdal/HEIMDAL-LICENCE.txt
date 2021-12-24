@@ -11,7 +11,7 @@ cooperation in the use of the heimdal code in Samba.
 
 
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan and others.
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan and others.
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *

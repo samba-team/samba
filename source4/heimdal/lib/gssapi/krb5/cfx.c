@@ -206,11 +206,36 @@ gss_iov_buffer_desc *
 _gk_find_buffer(gss_iov_buffer_desc *iov, int iov_count, OM_uint32 type)
 {
     int i;
+    gss_iov_buffer_t iovp = GSS_C_NO_IOV_BUFFER;
 
-    for (i = 0; i < iov_count; i++)
-	if (type == GSS_IOV_BUFFER_TYPE(iov[i].type))
-	    return &iov[i];
-    return NULL;
+    if (iov == GSS_C_NO_IOV_BUFFER)
+	return GSS_C_NO_IOV_BUFFER;
+
+    /*
+     * This function is used to find header, padding or trailer buffers
+     * which are singletons; return NULL if multiple instances are found.
+     */
+    for (i = 0; i < iov_count; i++) {
+	if (type == GSS_IOV_BUFFER_TYPE(iov[i].type)) {
+	    if (iovp == GSS_C_NO_IOV_BUFFER)
+		iovp = &iov[i];
+	    else
+		return GSS_C_NO_IOV_BUFFER;
+	}
+    }
+
+    /*
+     * For compatibility with SSPI, an empty padding buffer is treated
+     * equivalent to an absent padding buffer (unless the caller is
+     * requesting that a padding buffer be allocated).
+     */
+    if (iovp &&
+	iovp->buffer.length == 0 &&
+	type == GSS_IOV_BUFFER_TYPE_PADDING &&
+	(GSS_IOV_BUFFER_FLAGS(iovp->type) & GSS_IOV_BUFFER_FLAG_ALLOCATE) == 0)
+	iovp = NULL;
+
+    return iovp;
 }
 
 OM_uint32
@@ -239,7 +264,8 @@ _gk_verify_buffers(OM_uint32 *minor_status,
 		   const gsskrb5_ctx ctx,
 		   const gss_iov_buffer_desc *header,
 		   const gss_iov_buffer_desc *padding,
-		   const gss_iov_buffer_desc *trailer)
+		   const gss_iov_buffer_desc *trailer,
+		   int block_cipher)
 {
     if (header == NULL) {
 	*minor_status = EINVAL;
@@ -260,9 +286,12 @@ _gk_verify_buffers(OM_uint32 *minor_status,
 	}
     } else {
 	/*
-	 * In non-DCE style mode we require having a padding buffer
+	 * In non-DCE style mode we require having a padding buffer for
+	 * encryption types that do not behave as stream ciphers. This
+	 * check is superfluous for now, as only RC4 and RFC4121 enctypes
+	 * are presently implemented for the IOV APIs; be defensive.
 	 */
-	if (padding == NULL) {
+	if (block_cipher && padding == NULL) {
 	    *minor_status = EINVAL;
 	    return GSS_S_FAILURE;
 	}
@@ -306,7 +335,8 @@ _gssapi_wrap_cfx_iov(OM_uint32 *minor_status,
 
     trailer = _gk_find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_TRAILER);
 
-    major_status = _gk_verify_buffers(minor_status, ctx, header, padding, trailer);
+    major_status = _gk_verify_buffers(minor_status, ctx, header,
+				      padding, trailer, FALSE);
     if (major_status != GSS_S_COMPLETE) {
 	    return major_status;
     }
@@ -391,7 +421,6 @@ _gssapi_wrap_cfx_iov(OM_uint32 *minor_status,
 	if (IS_DCE_STYLE(ctx))
 	    rrc -= ec;
 	gsshsize += gsstsize;
-	gsstsize = 0;
     } else if (GSS_IOV_BUFFER_FLAGS(trailer->type) & GSS_IOV_BUFFER_FLAG_ALLOCATE) {
 	major_status = _gk_allocate_buffer(minor_status, trailer, gsstsize);
 	if (major_status)
@@ -683,6 +712,7 @@ unrotate_iov(OM_uint32 *minor_status, size_t rrc, gss_iov_buffer_desc *iov, int 
 	    if (iov[i].buffer.length <= skip) {
 		skip -= iov[i].buffer.length;
 	    } else {
+                /* copy back to original buffer */
 		memcpy(((uint8_t *)iov[i].buffer.value) + skip, q, iov[i].buffer.length - skip);
 		q += iov[i].buffer.length - skip;
 		skip = 0;
@@ -697,13 +727,14 @@ unrotate_iov(OM_uint32 *minor_status, size_t rrc, gss_iov_buffer_desc *iov, int 
 	    GSS_IOV_BUFFER_TYPE(iov[i].type) == GSS_IOV_BUFFER_TYPE_PADDING ||
 	    GSS_IOV_BUFFER_TYPE(iov[i].type) == GSS_IOV_BUFFER_TYPE_TRAILER)
 	{
-	    memcpy(q, iov[i].buffer.value, min(iov[i].buffer.length, skip));
+	    memcpy(iov[i].buffer.value, q, min(iov[i].buffer.length, skip));
 	    if (iov[i].buffer.length > skip)
 		break;
 	    skip -= iov[i].buffer.length;
 	    q += iov[i].buffer.length;
 	}
     }
+    free(p);
     return GSS_S_COMPLETE;
 }
 
@@ -746,7 +777,8 @@ _gssapi_unwrap_cfx_iov(OM_uint32 *minor_status,
 
     trailer = _gk_find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_TRAILER);
 
-    major_status = _gk_verify_buffers(minor_status, ctx, header, padding, trailer);
+    major_status = _gk_verify_buffers(minor_status, ctx, header,
+				      padding, trailer, FALSE);
     if (major_status != GSS_S_COMPLETE) {
 	    return major_status;
     }
@@ -930,7 +962,6 @@ _gssapi_unwrap_cfx_iov(OM_uint32 *minor_status,
 	    }
 
 	    gsshsize += gsstsize;
-	    gsstsize = 0;
 	} else if (trailer->buffer.length != gsstsize) {
 	    major_status = GSS_S_DEFECTIVE_TOKEN;
 	    goto failure;
@@ -1069,7 +1100,8 @@ _gssapi_wrap_iov_length_cfx(OM_uint32 *minor_status,
 	}
     }
 
-    major_status = _gk_verify_buffers(minor_status, ctx, header, padding, trailer);
+    major_status = _gk_verify_buffers(minor_status, ctx, header,
+				      padding, trailer, FALSE);
     if (major_status != GSS_S_COMPLETE) {
 	    return major_status;
     }

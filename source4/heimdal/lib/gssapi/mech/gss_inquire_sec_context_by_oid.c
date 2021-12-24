@@ -34,7 +34,7 @@
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_inquire_sec_context_by_oid (OM_uint32 *minor_status,
-	                        const gss_ctx_id_t context_handle,
+	                        gss_const_ctx_id_t context_handle,
 	                        const gss_OID desired_object,
 	                        gss_buffer_set_t *data_set)
 {
@@ -61,7 +61,7 @@ gss_inquire_sec_context_by_oid (OM_uint32 *minor_status,
 		major_status = m->gm_inquire_sec_context_by_oid(minor_status,
 		    ctx->gc_ctx, desired_object, data_set);
 		if (major_status != GSS_S_COMPLETE)
-			_gss_mg_error(m, major_status, *minor_status);
+			_gss_mg_error(m, *minor_status);
 	} else
 		major_status = GSS_S_BAD_MECH;
 

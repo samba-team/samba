@@ -44,7 +44,7 @@ updateusage(gss_cred_usage_t usage, int *usagemask)
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_inquire_cred(OM_uint32 *minor_status,
-    const gss_cred_id_t cred_handle,
+    gss_const_cred_id_t cred_handle,
     gss_name_t *name_ret,
     OM_uint32 *lifetime,
     gss_cred_usage_t *cred_usage,
@@ -56,7 +56,7 @@ gss_inquire_cred(OM_uint32 *minor_status,
 	struct _gss_name *name;
 	struct _gss_mechanism_name *mn;
 	OM_uint32 min_lifetime;
-	int found = 0;
+	int found = FALSE;
 	int usagemask = 0;
 	gss_cred_usage_t usage;
 
@@ -73,12 +73,11 @@ gss_inquire_cred(OM_uint32 *minor_status,
 		*mechanisms = GSS_C_NO_OID_SET;
 
 	if (name_ret) {
-		name = calloc(1, sizeof(*name));
+		name = _gss_create_name(NULL, NULL);
 		if (name == NULL) {
 			*minor_status = ENOMEM;
 			return (GSS_S_FAILURE);
 		}
-		HEIM_SLIST_INIT(&name->gn_mn);
 	} else {
 		name = NULL;
 	}
@@ -96,9 +95,15 @@ gss_inquire_cred(OM_uint32 *minor_status,
 	if (cred) {
 		struct _gss_mechanism_cred *mc;
 
-		HEIM_SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
-			gss_name_t mc_name;
-			OM_uint32 mc_lifetime;
+		HEIM_TAILQ_FOREACH(mc, &cred->gc_mc, gmc_link) {
+			gss_name_t mc_name = GSS_C_NO_NAME;
+			OM_uint32 mc_lifetime = GSS_C_INDEFINITE;
+
+			heim_assert((mc->gmc_mech->gm_flags & GM_USE_MG_CRED) == 0,
+				    "should not have mech creds for GM_USE_MG_CRED mechs");
+
+			if (mc->gmc_mech->gm_inquire_cred == NULL)
+				continue;
 
 			major_status = mc->gmc_mech->gm_inquire_cred(minor_status,
 			    mc->gmc_cred, &mc_name, &mc_lifetime, &usage, NULL);
@@ -116,7 +121,7 @@ gss_inquire_cred(OM_uint32 *minor_status,
 				mn->gmn_mech = mc->gmc_mech;
 				mn->gmn_mech_oid = mc->gmc_mech_oid;
 				mn->gmn_name = mc_name;
-				HEIM_SLIST_INSERT_HEAD(&name->gn_mn, mn, gmn_link);
+				HEIM_TAILQ_INSERT_TAIL(&name->gn_mn, mn, gmn_link);
 			} else {
 				mc->gmc_mech->gm_release_name(minor_status,
 				    &mc_name);
@@ -128,12 +133,16 @@ gss_inquire_cred(OM_uint32 *minor_status,
 			if (mechanisms)
 				gss_add_oid_set_member(minor_status,
 				    mc->gmc_mech_oid, mechanisms);
-			found++;
+			found = TRUE;
 		}
 	} else {
-		HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+		HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
 			gss_name_t mc_name;
 			OM_uint32 mc_lifetime;
+
+			if (m->gm_mech.gm_inquire_cred == NULL ||
+			    (m->gm_mech.gm_flags & GM_USE_MG_CRED))
+				continue;
 
 			major_status = m->gm_mech.gm_inquire_cred(minor_status,
 			    GSS_C_NO_CREDENTIAL, &mc_name, &mc_lifetime,
@@ -151,9 +160,9 @@ gss_inquire_cred(OM_uint32 *minor_status,
 					continue;
 				}
 				mn->gmn_mech = &m->gm_mech;
-				mn->gmn_mech_oid = &m->gm_mech_oid;
+				mn->gmn_mech_oid = m->gm_mech_oid;
 				mn->gmn_name = mc_name;
-				HEIM_SLIST_INSERT_HEAD(&name->gn_mn, mn, gmn_link);
+				HEIM_TAILQ_INSERT_TAIL(&name->gn_mn, mn, gmn_link);
 			} else if (mc_name) {
 				m->gm_mech.gm_release_name(minor_status,
 				    &mc_name);
@@ -164,17 +173,31 @@ gss_inquire_cred(OM_uint32 *minor_status,
 
 			if (mechanisms)
 				gss_add_oid_set_member(minor_status,
-				    &m->gm_mech_oid, mechanisms);
-			found++;
+				    m->gm_mech_oid, mechanisms);
+			found = TRUE;
 		}
 	}
 
-	if (found == 0) {
+	if (found && mechanisms) {
+		/* GM_USE_MG_CRED mechs (SPNEGO) always can be used */
+		HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
+			if ((m->gm_mech.gm_flags & GM_USE_MG_CRED) == 0)
+				continue;
+
+			gss_add_oid_set_member(minor_status,
+					       m->gm_mech_oid, mechanisms);
+		}
+	}
+
+	if (found == FALSE || min_lifetime == 0) {
 		gss_name_t n = (gss_name_t)name;
 		if (n)
 			gss_release_name(minor_status, &n);
 		gss_release_oid_set(minor_status, mechanisms);
 		*minor_status = 0;
+		if (min_lifetime == 0)
+			return (GSS_S_CREDENTIALS_EXPIRED);
+
 		return (GSS_S_NO_CRED);
 	}
 

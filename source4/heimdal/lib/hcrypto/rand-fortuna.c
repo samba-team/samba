@@ -30,16 +30,13 @@
  */
 
 #include <config.h>
-
-#include <stdio.h>
-#include <stdlib.h>
+#include <roken.h>
 #include <rand.h>
 #include <heim_threads.h>
 
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
-#include <roken.h>
 
 #include "randi.h"
 #include "aes.h"
@@ -162,7 +159,7 @@ md_result(MD_CTX * ctx, unsigned char *dst)
 
     memcpy(&tmp, ctx, sizeof(*ctx));
     SHA256_Final(dst, &tmp);
-    memset(&tmp, 0, sizeof(tmp));
+    memset_s(&tmp, sizeof(tmp), 0, sizeof(tmp));
 }
 
 /*
@@ -237,7 +234,7 @@ enough_time_passed(FState * st)
     if (ok)
 	memcpy(last, &tv, sizeof(tv));
 
-    memset(&tv, 0, sizeof(tv));
+    memset_s(&tv, sizeof(tv), 0, sizeof(tv));
 
     return ok;
 }
@@ -287,8 +284,8 @@ reseed(FState * st)
     /* use new key */
     ciph_init(&st->ciph, st->key, BLOCK);
 
-    memset(&key_md, 0, sizeof(key_md));
-    memset(buf, 0, BLOCK);
+    memset_s(&key_md, sizeof(key_md), 0, sizeof(key_md));
+    memset_s(buf, sizeof(buf), 0, sizeof(buf));
 }
 
 /*
@@ -338,8 +335,8 @@ add_entropy(FState * st, const unsigned char *data, unsigned len)
     if (pos == 0)
 	st->pool0_bytes += len;
 
-    memset(hash, 0, BLOCK);
-    memset(&md, 0, sizeof(md));
+    memset_s(hash, sizeof(hash), 0, sizeof(hash));
+    memset_s(&md, sizeof(hash), 0, sizeof(md));
 }
 
 /*
@@ -375,7 +372,7 @@ startup_tricks(FState * st)
 	encrypt_counter(st, buf + CIPH_BLOCK);
 	md_update(&st->pool[i], buf, BLOCK);
     }
-    memset(buf, 0, BLOCK);
+    memset_s(buf, sizeof(buf), 0, sizeof(buf));
 
     /* Hide the key. */
     rekey(st);
@@ -449,7 +446,7 @@ static unsigned	resend_bytes;
 static HEIMDAL_MUTEX fortuna_mutex = HEIMDAL_MUTEX_INITIALIZER;
 
 /*
- * Try our best to do an inital seed
+ * Try our best to do an initial seed
  */
 #define INIT_BYTES	128
 
@@ -471,7 +468,7 @@ fortuna_reseed(void)
 	if ((*hc_rand_unix_method.bytes)(buf, sizeof(buf)) == 1) {
 	    add_entropy(&main_state, buf, sizeof(buf));
 	    entropy_p = 1;
-	    memset(buf, 0, sizeof(buf));
+	    memset_s(buf, sizeof(buf), 0, sizeof(buf));
 	}
     }
 #endif
@@ -484,20 +481,6 @@ fortuna_reseed(void)
 	    buf[i] = arc4random();
 	add_entropy(&main_state, (void *)buf, sizeof(buf));
 	entropy_p = 1;
-    }
-#endif
-#ifndef NO_RAND_EGD_METHOD
-    /*
-     * Only to get egd entropy if /dev/random or arc4rand failed since
-     * it can be horribly slow to generate new bits.
-     */
-    if (!entropy_p) {
-	unsigned char buf[INIT_BYTES];
-	if ((*hc_rand_egd_method.bytes)(buf, sizeof(buf)) == 1) {
-	    add_entropy(&main_state, buf, sizeof(buf));
-	    entropy_p = 1;
-	    memset(buf, 0, sizeof(buf));
-	}
     }
 #endif
     /*
@@ -526,7 +509,7 @@ fortuna_reseed(void)
 	    close(fd);
 	}
 
-	memset(&u, 0, sizeof(u));
+	memset_s(&u, sizeof(u), 0, sizeof(u));
 
 	entropy_p = 1; /* sure about this ? */
     }
@@ -610,7 +593,7 @@ fortuna_cleanup(void)
 
     init_done = 0;
     have_entropy = 0;
-    memset(&main_state, 0, sizeof(main_state));
+    memset_s(&main_state, sizeof(main_state), 0, sizeof(main_state));
 
     HEIMDAL_MUTEX_unlock(&fortuna_mutex);
 }
@@ -639,6 +622,16 @@ fortuna_status(void)
     return result ? 1 : 0;
 }
 
+#if defined(__GNUC__) || (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901)
+const RAND_METHOD hc_rand_fortuna_method = {
+    .seed = fortuna_seed,
+    .bytes = fortuna_bytes,
+    .cleanup = fortuna_cleanup,
+    .add = fortuna_add,
+    .pseudorand = fortuna_pseudorand,
+    .status = fortuna_status
+};
+#else
 const RAND_METHOD hc_rand_fortuna_method = {
     fortuna_seed,
     fortuna_bytes,
@@ -647,6 +640,7 @@ const RAND_METHOD hc_rand_fortuna_method = {
     fortuna_pseudorand,
     fortuna_status
 };
+#endif
 
 const RAND_METHOD *
 RAND_fortuna_method(void)

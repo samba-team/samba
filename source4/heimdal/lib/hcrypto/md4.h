@@ -55,8 +55,8 @@ struct md4 {
 
 typedef struct md4 MD4_CTX;
 
-void MD4_Init (struct md4 *m);
-void MD4_Update (struct md4 *m, const void *p, size_t len);
-void MD4_Final (void *res, struct md4 *m);
+int MD4_Init (struct md4 *m);
+int MD4_Update (struct md4 *m, const void *p, size_t len);
+int MD4_Final (void *res, struct md4 *m);
 
 #endif /* HEIM_MD4_H */

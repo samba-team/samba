@@ -27,67 +27,33 @@
  */
 
 #include "mech_locl.h"
-
-#include <krb5.h>
-#include <roken.h>
-
+#include "krb5/gsskrb5_locl.h"
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_krb5_copy_ccache(OM_uint32 *minor_status,
 		     gss_cred_id_t cred,
 		     krb5_ccache out)
 {
-    gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
+    gss_key_value_element_desc cred_store_kvs[1];
+    gss_key_value_set_desc cred_store;
     krb5_context context;
-    krb5_error_code kret;
-    krb5_ccache id;
-    OM_uint32 ret;
-    char *str = NULL;
+    OM_uint32 major = GSS_S_FAILURE;
+    char *fullname = NULL;
 
-    ret = gss_inquire_cred_by_oid(minor_status,
-				  cred,
-				  GSS_KRB5_COPY_CCACHE_X,
-				  &data_set);
-    if (ret)
-	return ret;
-
-    if (data_set == GSS_C_NO_BUFFER_SET || data_set->count < 1) {
-	gss_release_buffer_set(minor_status, &data_set);
-	*minor_status = EINVAL;
-	return GSS_S_FAILURE;
+    GSSAPI_KRB5_INIT(&context);
+    *minor_status = krb5_cc_get_full_name(context, out, &fullname);
+    if (*minor_status == 0) {
+        cred_store_kvs[0].key = "ccache";
+        cred_store_kvs[0].value = fullname;
+        cred_store.count = 1;
+        cred_store.elements = cred_store_kvs;
+        major = gss_store_cred_into2(minor_status, cred, GSS_C_INITIATE,
+                                     GSS_KRB5_MECHANISM,
+                                     GSS_C_STORE_CRED_OVERWRITE, &cred_store,
+                                     NULL, NULL, NULL);
+        free(fullname);
     }
-
-    kret = krb5_init_context(&context);
-    if (kret) {
-	*minor_status = kret;
-	gss_release_buffer_set(minor_status, &data_set);
-	return GSS_S_FAILURE;
-    }
-
-    kret = asprintf(&str, "%.*s", (int)data_set->elements[0].length,
-		    (char *)data_set->elements[0].value);
-    gss_release_buffer_set(minor_status, &data_set);
-    if (kret < 0 || str == NULL) {
-	*minor_status = ENOMEM;
-	return GSS_S_FAILURE;
-    }
-
-    kret = krb5_cc_resolve(context, str, &id);
-    free(str);
-    if (kret) {
-	*minor_status = kret;
-	return GSS_S_FAILURE;
-    }
-
-    kret = krb5_cc_copy_cache(context, id, out);
-    krb5_cc_close(context, id);
-    krb5_free_context(context);
-    if (kret) {
-	*minor_status = kret;
-	return GSS_S_FAILURE;
-    }
-
-    return ret;
+    return major;
 }
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
@@ -225,7 +191,7 @@ gsskrb5_set_dns_canonicalize(int flag)
 	buffer.value = &b;
 	buffer.length = sizeof(b);
 
-	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_set_sec_context_option == NULL)
 			continue;
 		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -383,15 +349,16 @@ gss_krb5_export_lucid_sec_context(OM_uint32 *minor_status,
     *rctx = ctx;
 
 out:
-    gss_release_buffer_set(minor_status, &data_set);
+    _gss_secure_release_buffer_set(minor_status, &data_set);
     if (sp)
 	krb5_storage_free(sp);
     if (context)
 	krb5_free_context(context);
 
     if (ret) {
+	OM_uint32 junk;
 	if (ctx)
-	    gss_krb5_free_lucid_sec_context(NULL, ctx);
+	    gss_krb5_free_lucid_sec_context(&junk, ctx);
 
 	*minor_status = ret;
 	return GSS_S_FAILURE;
@@ -499,7 +466,7 @@ gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
 	buffer.length = 0;
     }
 
-    HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+    HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
 	if (m->gm_mech.gm_set_sec_context_option == NULL)
 	    continue;
 	m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -519,25 +486,43 @@ gss_krb5_ccache_name(OM_uint32 *minor_status,
 		     const char **out_name)
 {
     struct _gss_mech_switch *m;
-    gss_buffer_desc buffer;
-    OM_uint32 junk;
+    gss_buffer_desc buffer = GSS_C_EMPTY_BUFFER;
+    OM_uint32 major_status;
+    struct gsskrb5_ccache_name_args args;
 
     _gss_load_mech();
+
+    *minor_status = 0;
 
     if (out_name)
 	*out_name = NULL;
 
-    buffer.value = rk_UNCONST(name);
-    buffer.length = strlen(name);
+    args.name = name;
+    args.out_name = NULL;
 
-    HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+    buffer.value = &args;
+    buffer.length = sizeof(args);
+
+    major_status = GSS_S_UNAVAILABLE;
+
+    HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
+	OM_uint32 mech_major, mech_minor;
+
 	if (m->gm_mech.gm_set_sec_context_option == NULL)
 	    continue;
-	m->gm_mech.gm_set_sec_context_option(&junk, NULL,
-	    GSS_KRB5_CCACHE_NAME_X, &buffer);
+
+	mech_major = m->gm_mech.gm_set_sec_context_option(&mech_minor,
+	    NULL, GSS_KRB5_CCACHE_NAME_X, &buffer);
+	if (mech_major != GSS_S_UNAVAILABLE) {
+	    major_status = mech_major;
+	    *minor_status = mech_minor;
+	    break;
+	}
     }
 
-    return (GSS_S_COMPLETE);
+    *out_name = args.out_name;
+
+    return major_status;
 }
 
 
@@ -607,7 +592,7 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
 					    gss_buffer_t ad_data)
 {
     gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
-    OM_uint32 maj_stat;
+    OM_uint32 maj_stat, tmp;
     gss_OID_desc oid_flat;
     heim_oid baseoid, oid;
     size_t size;
@@ -642,7 +627,7 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
 
     oid.components[oid.length - 1] = ad_type;
 
-    oid_flat.length = der_length_oid(&oid);
+    oid_flat.length = (OM_uint32)der_length_oid(&oid);
     oid_flat.elements = malloc(oid_flat.length);
     if (oid_flat.elements == NULL) {
 	free(oid.components);
@@ -653,7 +638,7 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
     if (der_put_oid((unsigned char *)oid_flat.elements + oid_flat.length - 1,
 		    oid_flat.length, &oid, &size) != 0) {
 	free(oid.components);
-	free(oid_flat.elements);
+	_gss_free_oid(&tmp, &oid_flat);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
@@ -669,7 +654,7 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
 					       &oid_flat,
 					       &data_set);
 
-    free(oid_flat.elements);
+    _gss_free_oid(&tmp, &oid_flat);
 
     if (maj_stat)
 	return maj_stat;
@@ -731,7 +716,7 @@ gsskrb5_extract_key(OM_uint32 *minor_status,
 	return major_status;
 
     if (data_set == GSS_C_NO_BUFFER_SET || data_set->count != 1) {
-	gss_release_buffer_set(minor_status, &data_set);
+	_gss_secure_release_buffer_set(minor_status, &data_set);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
@@ -752,7 +737,7 @@ gsskrb5_extract_key(OM_uint32 *minor_status,
     ret = krb5_ret_keyblock(sp, *keyblock);
 
 out:
-    gss_release_buffer_set(minor_status, &data_set);
+    _gss_secure_release_buffer_set(minor_status, &data_set);
     if (sp)
 	krb5_storage_free(sp);
     if (ret && keyblock) {
@@ -818,7 +803,7 @@ gsskrb5_set_default_realm(const char *realm)
 	buffer.value = rk_UNCONST(realm);
 	buffer.length = strlen(realm);
 
-	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_set_sec_context_option == NULL)
 			continue;
 		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -880,7 +865,7 @@ gsskrb5_set_time_offset(int offset)
 	buffer.value = &o;
 	buffer.length = sizeof(o);
 
-	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_set_sec_context_option == NULL)
 			continue;
 		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -903,7 +888,7 @@ gsskrb5_get_time_offset(int *offset)
 	buffer.value = &o;
 	buffer.length = sizeof(o);
 
-	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_set_sec_context_option == NULL)
 			continue;
 		maj_stat = m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -930,7 +915,7 @@ gsskrb5_plugin_register(struct gsskrb5_krb5_plugin *c)
     buffer.value = c;
     buffer.length = sizeof(*c);
 
-    HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+    HEIM_TAILQ_FOREACH(m, &_gss_mechs, gm_link) {
 	if (m->gm_mech.gm_set_sec_context_option == NULL)
 	    continue;
 	m->gm_mech.gm_set_sec_context_option(&junk, NULL,

@@ -36,12 +36,17 @@
 #ifndef __HDB_H__
 #define __HDB_H__
 
+#include <stdio.h>
+
 #include <krb5.h>
 
 #include <hdb_err.h>
 
 #include <heim_asn1.h>
 #include <hdb_asn1.h>
+typedef HDB_keyset hdb_keyset;
+typedef HDB_entry hdb_entry;
+typedef HDB_entry_alias hdb_entry_alias;
 
 struct hdb_dbinfo;
 
@@ -63,23 +68,98 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_ALL_KVNOS		2048	/* we want all the keys, live or not */
 #define HDB_F_FOR_AS_REQ	4096	/* fetch is for a AS REQ */
 #define HDB_F_FOR_TGS_REQ	8192	/* fetch is for a TGS REQ */
-#define HDB_F_FORCE_CANON	16384	/* force canonicalition */
+#define HDB_F_PRECHECK		16384	/* check that the operation would succeed */
+#define HDB_F_DELAY_NEW_KEYS	32768	/* apply [hdb] new_service_key_delay */
+#define HDB_F_SYNTHETIC_OK	65536	/* synthetic principal for PKINIT or GSS preauth OK */
+#define HDB_F_GET_FAST_COOKIE  131072	/* fetch the FX-COOKIE key (not a normal principal) */
 
 /* hdb_capability_flags */
 #define HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL 1
 #define HDB_CAP_F_HANDLE_PASSWORDS	2
 #define HDB_CAP_F_PASSWORD_UPDATE_KEYS	4
+#define HDB_CAP_F_SHARED_DIRECTORY      8
 
 /* auth status values */
-#define HDB_AUTHZ_SUCCESS		0
-#define HDB_AUTH_WRONG_PASSWORD		1
-#define HDB_AUTH_INVALID_SIGNATURE	2
-#define HDB_AUTH_CORRECT_PASSWORD	3
-#define HDB_AUTH_PKINIT_SUCCESS 	4
-#define HDB_AUTH_CLIENT_UNKNOWN		5
+
+/*
+ * Un-initialised value, not permitted, used to indicate that a value
+ * wasn't set for the benifit of logic in the caller, must not be
+ * passed to hdb_auth_status()
+ */
+
+#define HDB_AUTHSTATUS_INVALID                  0
+
+/*
+ * A ticket was issued after authorization was successfully completed
+ * (eg flags on the entry and expiry times were checked)
+ */
+#define HDB_AUTHSTATUS_AUTHORIZATION_SUCCESS	1
+
+/*
+ * The user supplied the wrong password to a password-based
+ * authentication mechanism (eg ENC-TS, ENC-CHAL)
+ *
+ * The HDB backend might increment a bad password count.
+ */
+#define HDB_AUTHSTATUS_WRONG_PASSWORD		2
+
+/*
+ * The user supplied a correct password to a password-based
+ * authentication mechanism (eg ENC-TS, ENC-CHAL)
+ *
+ * The HDB backend might reset a bad password count.
+ */
+#define HDB_AUTHSTATUS_CORRECT_PASSWORD	        3
+
+/*
+ * Attempted authenticaton with an unknown user
+ */
+#define HDB_AUTHSTATUS_CLIENT_UNKNOWN	        4
+
+/*
+ * Attempted authenticaton with an known user that is already locked
+ * out.
+ */
+#define HDB_AUTHSTATUS_CLIENT_LOCKED_OUT	5
+
+/*
+ * Successful authentication with a pre-authentication mechanism
+ */
+#define HDB_AUTHSTATUS_GENERIC_SUCCESS	        6
+
+/*
+ * Failed authentication with a pre-authentication mechanism
+ */
+#define HDB_AUTHSTATUS_GENERIC_FAILURE	        7
+
+/*
+ * Successful pre-authentication with PKINIT (smart card login etc)
+ */
+#define HDB_AUTHSTATUS_PKINIT_SUCCESS	        8
+
+/*
+ * Failed pre-authentication with PKINIT (smart card login etc)
+ */
+#define HDB_AUTHSTATUS_PKINIT_FAILURE	        9
+
+/*
+ * Successful pre-authentication with GSS pre-authentication
+ */
+#define HDB_AUTHSTATUS_GSS_SUCCESS		10
+
+/*
+ * Failed pre-authentication with GSS pre-authentication
+ */
+#define HDB_AUTHSTATUS_GSS_FAILURE		11
 
 /* key usage for master key */
 #define HDB_KU_MKEY	0x484442
+
+/*
+ * Second component of WELLKNOWN namespace principals, the third component is
+ * the common DNS suffix of the implied virtual hosts.
+ */
+#define HDB_WK_NAMESPACE "HOSTBASED-NAMESPACE"
 
 typedef struct hdb_master_key_data *hdb_master_key;
 
@@ -104,9 +184,10 @@ typedef struct hdb_entry_ex {
  * query the backend database when talking about principals.
  */
 
-typedef struct HDB{
+typedef struct HDB {
     void *hdb_db;
     void *hdb_dbc; /** don't use, only for DB3 */
+    const char *hdb_method_name;
     char *hdb_name;
     int hdb_master_key_set;
     hdb_master_key hdb_master_key;
@@ -114,6 +195,17 @@ typedef struct HDB{
     int hdb_capability_flags;
     int lock_count;
     int lock_type;
+    /*
+     * These fields cache config values.
+     *
+     * XXX Move these into a structure that we point to so that we
+     * don't need to break the ABI every time we add a field.
+     */
+    int enable_virtual_hostbased_princs;
+    size_t virtual_hostbased_princ_ndots;   /* Min. # of .s in hostname */
+    size_t virtual_hostbased_princ_maxdots; /* Max. # of .s in namespace */
+    char **virtual_hostbased_princ_svcs;    /* Which svcs are not wildcarded */
+    time_t new_service_key_delay;           /* Delay for new keys */
     /**
      * Open (or create) the a Kerberos database.
      *
@@ -156,7 +248,7 @@ typedef struct HDB{
      * Remove an entry from the database.
      */
     krb5_error_code (*hdb_remove)(krb5_context, struct HDB*,
-				  krb5_const_principal);
+				  unsigned, krb5_const_principal);
     /**
      * As part of iteration, fetch one entry
      */
@@ -188,25 +280,33 @@ typedef struct HDB{
     /**
      * Get an hdb_entry from a classical DB backend
      *
-     * If the database is a classical DB (ie BDB, NDBM, GDBM, etc)
-     * backend, this function will take a principal key (krb5_data)
-     * and return all data related to principal in the return
-     * krb5_data. The returned encoded entry is of type hdb_entry or
-     * hdb_entry_alias.
+     * This function takes a principal key (krb5_data) and returns all
+     * data related to principal in the return krb5_data. The returned
+     * encoded entry is of type hdb_entry or hdb_entry_alias.
      */
     krb5_error_code (*hdb__get)(krb5_context, struct HDB*,
 				krb5_data, krb5_data*);
     /**
      * Store an hdb_entry from a classical DB backend
      *
-     * Same discussion as in @ref HDB::hdb__get
+     * This function takes a principal key (krb5_data) and encoded
+     * hdb_entry or hdb_entry_alias as the data to store.
+     *
+     * For a file-based DB, this must synchronize to disk when done.
+     * This is sub-optimal for kadm5_s_rename_principal(), and for
+     * kadm5_s_modify_principal() when using principal aliases; to
+     * improve this so that only one fsync() need be done
+     * per-transaction will require HDB API extensions.
      */
     krb5_error_code (*hdb__put)(krb5_context, struct HDB*, int,
 				krb5_data, krb5_data);
     /**
      * Delete and hdb_entry from a classical DB backend
      *
-     * Same discussion as in @ref HDB::hdb__get
+     * This function takes a principal key (krb5_data) naming the record
+     * to delete.
+     *
+     * Same discussion as in @ref HDB::hdb__put
      */
     krb5_error_code (*hdb__del)(krb5_context, struct HDB*, krb5_data);
     /**
@@ -248,12 +348,15 @@ typedef struct HDB{
      * In case the entry is locked out, the backend should set the
      * hdb_entry.flags.locked-out flag.
      */
-    krb5_error_code (*hdb_auth_status)(krb5_context, struct HDB *,
-				       hdb_entry_ex *, struct sockaddr *from_addr,
-				       struct timeval *start_time,
+    krb5_error_code (*hdb_auth_status)(krb5_context,
+				       struct HDB *,
+				       hdb_entry_ex *,
+				       const struct timeval *start_time,
+				       const struct sockaddr *from_addr,
 				       const char *original_client_name,
-				       const char *auth_type,
-				       int);
+				       int auth_type,
+				       const char *auth_details,
+				       const char *pa_type);
     /**
      * Check if delegation is allowed.
      */
@@ -265,28 +368,46 @@ typedef struct HDB{
     krb5_error_code (*hdb_check_pkinit_ms_upn_match)(krb5_context, struct HDB *, hdb_entry_ex *, krb5_const_principal);
 
     /**
-     * Check if s4u2self is allowed from this client to this server
+     * Check if s4u2self is allowed from this client to this server or the SPN is a valid SPN of this client (for user2user)
      */
-    krb5_error_code (*hdb_check_s4u2self)(krb5_context, struct HDB *, hdb_entry_ex *, hdb_entry_ex *);
+    krb5_error_code (*hdb_check_client_matches_target_service)(krb5_context, struct HDB *, hdb_entry_ex *, hdb_entry_ex *);
+
+    /**
+     * Enable/disable synchronous updates
+     *
+     * Calling this with 0 disables sync.  Calling it with non-zero enables
+     * sync and does an fsync().
+     */
+    krb5_error_code (*hdb_set_sync)(krb5_context, struct HDB *, int);
 }HDB;
 
-#define HDB_INTERFACE_VERSION	7
+#define HDB_INTERFACE_VERSION	11
 
-struct hdb_so_method {
-    int version;
+struct hdb_method {
+    int			version;
+    unsigned int	is_file_based:1;
+    unsigned int	can_taste:1;
+    krb5_error_code	(*init)(krb5_context, void **);
+    void		(*fini)(void *);
     const char *prefix;
     krb5_error_code (*create)(krb5_context, HDB **, const char *filename);
+};
+
+/* dump entry format, for hdb_print_entry() */
+typedef enum hdb_dump_format {
+    HDB_DUMP_HEIMDAL = 0,
+    HDB_DUMP_MIT = 1,
+} hdb_dump_format_t;
+
+struct hdb_print_entry_arg {
+    FILE *out;
+    hdb_dump_format_t fmt;
 };
 
 typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
 					      hdb_entry_ex*, void*);
 extern krb5_kt_ops hdb_kt_ops;
-
-struct hdb_method {
-    int interface_version;
-    const char *prefix;
-    krb5_error_code (*create)(krb5_context, HDB **, const char *filename);
-};
+extern krb5_kt_ops hdb_get_kt_ops;
 
 extern const int hdb_interface_version;
 

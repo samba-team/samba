@@ -35,6 +35,9 @@
 
 #ifdef HAVE_FRAMEWORK_SECURITY
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 #include <Security/Security.h>
 
 /* Missing function decls in pre Leopard */
@@ -246,6 +249,7 @@ static const RSA_METHOD kc_rsa_pkcs1_method = {
     0,
     NULL,
     NULL,
+    NULL,
     NULL
 };
 
@@ -324,6 +328,13 @@ keychain_init(hx509_context context,
 {
     struct ks_keychain *ctx;
 
+    if (flags & HX509_CERTS_NO_PRIVATE_KEYS) {
+        hx509_set_error_string(context, 0, ENOTSUP,
+                               "KEYCHAIN store does not support not reading "
+                               "private keys");
+        return ENOTSUP;
+    }
+
     ctx = calloc(1, sizeof(*ctx));
     if (ctx == NULL) {
 	hx509_clear_error_string(context);
@@ -340,11 +351,13 @@ keychain_init(hx509_context context,
 	    if (ret != noErr) {
 		hx509_set_error_string(context, 0, ENOENT,
 				       "Failed to open %s", residue);
+		free(ctx);
 		return ENOENT;
 	    }
 	} else {
 	    hx509_set_error_string(context, 0, ENOENT,
 				   "Unknown subtype %s", residue);
+	    free(ctx);
 	    return ENOENT;
 	}
     }
@@ -420,8 +433,8 @@ keychain_iter_start(hx509_context context,
 
 	    SecCertificateGetData(cr, &cssm);
 
-	    ret = hx509_cert_init_data(context, cssm.Data, cssm.Length, &cert);
-	    if (ret)
+	    cert = hx509_cert_init_data(context, cssm.Data, cssm.Length, NULL);
+	    if (cert == NULL)
 		continue;
 
 	    ret = hx509_certs_add(context, iter->certs, cert);
@@ -470,6 +483,7 @@ keychain_iter(hx509_context context,
     UInt32 attrFormat[1] = { 0 };
     SecKeychainItemRef itemRef;
     SecItemAttr item[1];
+    heim_error_t error = NULL;
     struct iter *iter = cursor;
     OSStatus ret;
     UInt32 len;
@@ -501,9 +515,12 @@ keychain_iter(hx509_context context,
     if (ret)
 	return EINVAL;
 
-    ret = hx509_cert_init_data(context, ptr, len, cert);
-    if (ret)
+    *cert = hx509_cert_init_data(context, ptr, len, &error);
+    if (*cert == NULL) {
+	ret = heim_error_get_code(error);
+	heim_release(error);
 	goto out;
+    }
 
     /*
      * Find related private key if there is one by looking at
@@ -586,8 +603,14 @@ struct hx509_keyset_ops keyset_keychain = {
     NULL,
     keychain_iter_start,
     keychain_iter,
-    keychain_iter_end
+    keychain_iter_end,
+    NULL,
+    NULL,
+    NULL,
+    NULL
 };
+
+#pragma clang diagnostic pop
 
 #endif /* HAVE_FRAMEWORK_SECURITY */
 
@@ -595,7 +618,7 @@ struct hx509_keyset_ops keyset_keychain = {
  *
  */
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 _hx509_ks_keychain_register(hx509_context context)
 {
 #ifdef HAVE_FRAMEWORK_SECURITY

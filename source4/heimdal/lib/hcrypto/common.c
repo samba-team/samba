@@ -34,11 +34,7 @@
  */
 
 #include <config.h>
-
-#include <errno.h>
-
-#include <stdio.h>
-#include <stdlib.h>
+#include <roken.h>
 
 #include <krb5-types.h>
 #include <rfc2459_asn1.h>

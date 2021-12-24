@@ -30,7 +30,7 @@
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_process_context_token(OM_uint32 *minor_status,
-    const gss_ctx_id_t context_handle,
+    gss_const_ctx_id_t context_handle,
     const gss_buffer_t token_buffer)
 {
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;

@@ -37,6 +37,7 @@
 #define GSSAPI_KRB5_H_
 
 #include <gssapi.h>
+#include <gssapi/gssapi_oid.h>
 
 GSSAPI_CPP_START
 
@@ -59,9 +60,6 @@ extern gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_nt_principal_name_oid_desc;
 #define GSS_KRB5_NT_USER_NAME (&__gss_c_nt_user_name_oid_desc)
 #define GSS_KRB5_NT_MACHINE_UID_NAME (&__gss_c_nt_machine_uid_name_oid_desc)
 #define GSS_KRB5_NT_STRING_UID_NAME (&__gss_c_nt_string_uid_name_oid_desc)
-
-extern gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_mechanism_oid_desc;
-#define GSS_KRB5_MECHANISM (&__gss_krb5_mechanism_oid_desc)
 
 /* for compatibility with MIT api */
 

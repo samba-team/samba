@@ -40,6 +40,7 @@ struct hdb_master_key_data {
     krb5_keytab_entry keytab;
     krb5_crypto crypto;
     struct hdb_master_key_data *next;
+    unsigned int key_usage;
 };
 
 void
@@ -68,6 +69,7 @@ hdb_process_master_key(krb5_context context,
 	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
+    (*mkey)->key_usage = HDB_KU_MKEY;
     (*mkey)->keytab.vno = kvno;
     ret = krb5_parse_name(context, "K/M", &(*mkey)->keytab.principal);
     if(ret)
@@ -117,6 +119,7 @@ read_master_keytab(krb5_context context, const char *filename,
     krb5_keytab_entry entry;
     hdb_master_key p;
 
+    *mkey = NULL;
     ret = krb5_kt_resolve(context, filename, &id);
     if(ret)
 	return ret;
@@ -124,22 +127,26 @@ read_master_keytab(krb5_context context, const char *filename,
     ret = krb5_kt_start_seq_get(context, id, &cursor);
     if(ret)
 	goto out;
-    *mkey = NULL;
     while(krb5_kt_next_entry(context, id, &entry, &cursor) == 0) {
 	p = calloc(1, sizeof(*p));
-	if(p == NULL) {
-	    krb5_kt_end_seq_get(context, id, &cursor);
+	if (p == NULL) {
 	    ret = ENOMEM;
-	    goto out;
+	    break;
 	}
 	p->keytab = entry;
-	ret = krb5_crypto_init(context, &p->keytab.keyblock, 0, &p->crypto);
 	p->next = *mkey;
 	*mkey = p;
+	ret = krb5_crypto_init(context, &p->keytab.keyblock, 0, &p->crypto);
+	if (ret)
+	    break;
     }
     krb5_kt_end_seq_get(context, id, &cursor);
   out:
     krb5_kt_close(context, id);
+    if (ret) {
+	hdb_free_master_key(context, *mkey);
+	*mkey = NULL;
+    }
     return ret;
 }
 
@@ -219,7 +226,7 @@ read_master_encryptionkey(krb5_context context, const char *filename,
     }
 
     ret = decode_EncryptionKey(buf, len, &key, &ret_len);
-    memset(buf, 0, sizeof(buf));
+    memset_s(buf, sizeof(buf), 0, sizeof(buf));
     if(ret)
 	return ret;
 
@@ -272,7 +279,7 @@ read_master_krb4(krb5_context context, const char *filename,
     memset(&key, 0, sizeof(key));
     key.keytype = ETYPE_DES_PCBC_NONE;
     ret = krb5_data_copy(&key.keyvalue, buf, len);
-    memset(buf, 0, sizeof(buf));
+    memset_s(buf, sizeof(buf), 0, sizeof(buf));
     if(ret)
 	return ret;
 
@@ -362,8 +369,17 @@ hdb_write_master_key(krb5_context context, const char *filename,
     return ret;
 }
 
+krb5_error_code
+_hdb_set_master_key_usage(krb5_context context, HDB *db, unsigned int key_usage)
+{
+    if (db->hdb_master_key_set == 0)
+	return HDB_ERR_NO_MKEY;
+    db->hdb_master_key->key_usage = key_usage;
+    return 0;
+}
+
 hdb_master_key
-_hdb_find_master_key(uint32_t *mkvno, hdb_master_key mkey)
+_hdb_find_master_key(unsigned int *mkvno, hdb_master_key mkey)
 {
     hdb_master_key ret = NULL;
     while(mkey) {
@@ -479,6 +495,14 @@ hdb_unseal_keys(krb5_context context, HDB *db, hdb_entry *ent)
     return hdb_unseal_keys_mkey(context, ent, db->hdb_master_key);
 }
 
+/*
+ * Unseal the keys for the given kvno (or all of them) of entry.
+ *
+ * If kvno == 0 -> unseal all.
+ * if kvno != 0 -> unseal the requested kvno and make sure it's the one listed
+ *                 as the current keyset for the entry (swapping it with a
+ *                 historical keyset if need be).
+ */
 krb5_error_code
 hdb_unseal_keys_kvno(krb5_context context, HDB *db, krb5_kvno kvno,
 		     unsigned flags, hdb_entry *ent)
@@ -494,7 +518,6 @@ hdb_unseal_keys_kvno(krb5_context context, HDB *db, krb5_kvno kvno,
     size_t i, k;
     int exclude_dead = 0;
     KerberosTime now = 0;
-    time_t *set_time;
 
     if (kvno == 0)
 	ret = 0;
@@ -509,8 +532,8 @@ hdb_unseal_keys_kvno(krb5_context context, HDB *db, krb5_kvno kvno,
     }
 
     ext = hdb_find_extension(ent, choice_HDB_extension_data_hist_keys);
-    if (ext == NULL)
-	return ret;
+    if (ext == NULL || (&ext->data.u.hist_keys)->len == 0)
+	return hdb_unseal_keys_mkey(context, ent, db->hdb_master_key);
 
     /* For swapping; see below */
     tmp_len = ent->keys.len;
@@ -579,9 +602,6 @@ hdb_unseal_keys_kvno(krb5_context context, HDB *db, krb5_kvno kvno,
 	 * so there's no danger that we'll dump this entry and load it
 	 * again, repeatedly causing the history to grow boundelessly.
 	 */
-	set_time = malloc(sizeof (*set_time));
-	if (set_time == NULL)
-	    return ENOMEM;
 
 	/* Swap key sets */
 	ent->kvno = hist_keys->val[i].kvno;
@@ -698,9 +718,9 @@ hdb_seal_key(krb5_context context, HDB *db, Key *k)
 }
 
 krb5_error_code
-hdb_set_master_key (krb5_context context,
-		    HDB *db,
-		    krb5_keyblock *key)
+hdb_set_master_key(krb5_context context,
+		   HDB *db,
+		   krb5_keyblock *key)
 {
     krb5_error_code ret;
     hdb_master_key mkey;
@@ -713,6 +733,7 @@ hdb_set_master_key (krb5_context context,
     des_set_random_generator_seed(key.keyvalue.data);
 #endif
     db->hdb_master_key_set = 1;
+    db->hdb_master_key->key_usage = HDB_KU_MKEY;
     return 0;
 }
 

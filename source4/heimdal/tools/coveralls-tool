@@ -1,0 +1,277 @@
+#!/bin/bash
+
+# This script collates gcov data after one has configured with --enable-gcov,
+# built, and run tests.  It either outputs or POSTs to Coveralls a JSON text in
+# the schema for the Coveralls API, which is documented here:
+#
+# https://docs.coveralls.io/api-introduction
+# https://docs.coveralls.io/api-reference
+#
+# Currently only files in source languages supported by gcov(1) are reported
+# on, though this can easily be extended.  Currently that's only C/C++ files.
+#
+# This script is specifically written for Heimdal, which is an open source C
+# codebases that uses autoconf and libtool for its build system.  This means
+# that sometimes the gcov notes and data files are not necessarily where the
+# gcov(1) utility would find them, which is why this script exists instead of
+# using some other integration script.
+#
+# Although this is specific to Heimdal, it can be extended.
+#
+# Note that one side effect of running this script, gcov(1) will be run for all
+# C/C++ source files in the workspace.  As well, some gcov notes and data files
+# maybe hard-linked to other names.  However, this script should be idempotent.
+
+set -euo pipefail
+set +o noglob
+
+PROG=${0##*/}
+
+job=${TRAVIS_JOB_ID:-}
+out=
+post=false
+repo=
+flst=
+quiet=false
+branch=
+srcdir=$PWD
+objdir=
+token=${COVERALLS_REPO_TOKEN:-}
+origin=
+verbose=0
+
+function usage {
+    ((${1:-1})) && exec 1>&2
+    cat <<EOF
+Usage: $PROG [OPTIONS]
+    Options:
+
+     -q         Quiet.  Do not even emit warnings.
+     -v         Verbose (on stderr).  May be given multiple times.
+     -o -       Output to stdout instead of POSTing to Coveralls.
+     -o FILE    Output to FILE   instead of POSTing to Coveralls.
+     -s CI-NAME Name of CI (e.g., "travis-ci")
+                Defaults to travis-ci.
+     -t TOKEN   Token for Coveralls.
+                Defaults to \$COVERALLS_REPO_TOKEN.
+     -b BRANCH  Name of branch the report is for.
+                Defaults to \$TRAVIS_BRANCH or currently-checked out branch in
+                SRCDIR.
+     -J ID      Job ID (e.g., Travis-CI job ID)
+                Defaults to \${TRAVIS_JOB_ID}.
+     -i FILE    Lists source files to run gcov(1) against
+                Defaults to \<(git ls-files -- '*.c' '*.cpp').
+     -S SRCDIR  Path to workspace
+                Defaults to \${PWD}.
+     -O OBJDIR  Path to object directory if workspace is built out of tree
+                Defaults to SRCDIR.
+     -U ORIGIN  Name of origin.
+                Defaults to tracked upstream remote of BRANCH.
+     -R URI     Repository URI
+                Defaults to git@github.com:\${TRAVIS_REPO_SLUG} or the push URI
+                for the ORIGIN remote of the workspace at SRCDIR.
+
+    $PROG will look for .gcno and .gcda files in OBJDIR for source files
+    in the workspace at SRCDIR and will run gcov on them, and produce
+    a request body as JSON in FILE (or stdout if -o FILE not given)
+    for the Coveralls API.
+
+    If -o FILE is not given, then $PROG will POST the JSON to Coveralls.
+    If -o FILE is given, then $PROG will not POST it to Coveralls.
+
+    If SRCDIR == OBJDIR == \$PWD, then -S and -O need not be given.
+    If running in a Travis-CI build, -J, -R, and -b need not be given, and -t
+    should not be given -- instead you should set a secret COVERALLS_REPO_TOKEN
+    environment variable in your project's Travis-CI's settings.
+
+    Only C and C++ source files are reported on.  E.g., Yacc/Bison/Flex
+    source files are not reported.
+
+    The resulting JSON output is or can be POSTed to Coveralls with:
+
+      $ curl -sfg -X POST -F "json_file=@\${FILE}" -F "Filename=json_file" \\
+             https://coveralls.io/api/v1/jobs
+EOF
+    exit ${1:-1}
+}
+
+while getopts +:J:O:R:S:U:b:hi:o:qs:t:vx opt; do
+case "$opt" in
+J) job=$OPTARG;;
+O) cd "$OPTARG"; objdir=$PWD; cd "$OLDPWD";;
+R) repo=$OPTARG;;
+S) cd "$OPTARG"; srcdir=$PWD; cd "$OLDPWD";;
+U) origin=$OPTARG;;
+b) branch=;;
+h) usage 0;;
+i) flst=$OPTARG;;
+o) out=$OPTARG;;
+q) quiet=true; verbose=0;;
+s) ci=$OPTARG;;
+t) token=$OPTARG;;
+v) quiet=false; ((verbose++)) || true; ((verbose > 3)) && set -vx;;
+*) usage 1;;
+esac
+done
+
+# Note: we don't cd to $srcdir or $objdir or anywhere, so if $out is a relative
+# path, we do the right thing.
+
+: ${objdir:=${srcdir}}
+: ${branch:=${TRAVIS_BRANCH:-$(cd "$srcdir" && git rev-parse --abbrev-ref HEAD)}}
+
+if [[ -z ${origin:-} ]]; then
+    origin=$(
+        git for-each-ref \
+            --format="%(refname:short) %(upstream:remotename)" refs/heads |
+            while read gb gr; do
+                [[ $gb = $branch ]] || continue
+                printf '%s\n' "$gr"
+                break
+            done
+    )
+fi
+
+if [[ -z ${repo:-} ]]; then
+    if [[ -n ${TRAVIS_REPO_SLUG:-} ]]; then
+        repo=git@github.com:${TRAVIS_REPO_SLUG:-heimdal/heimdal}
+    else
+        repo=$(cd "$srcdir" && git remote get-url --push "$origin")
+    fi
+fi
+
+if ((verbose > 1)); then
+    exec 3>&2
+else
+    exec 3>/dev/null
+fi
+
+d=
+function cleanup {
+    [[ -n $d ]] && rm -rf "$d"
+}
+
+trap cleanup EXIT
+d=$(mktemp -d)
+touch "${d}/f"
+
+declare -a gcov
+
+(cd "$srcdir" &&
+ if [[ -n $flst ]]; then cat "$flst"; else git ls-files -- '*.c' '*.cpp'; fi) |
+while read f; do
+    # Remember to be careful to refer to ${srcdir}/${f}
+    ((verbose)) && printf 'Processing: %s\n' "$f" 1>&2
+
+    dir=${f%/*}
+    base=${f##*/}
+    base=${base%.*}
+
+    if [[ ! -f ${objdir}/${dir}/.libs/${base}.gcda && ! -f ${objdir}/${dir}/${base}.gcda ]]; then
+        # Look for .libs/libfoo_la-${base}.gcda -- we don't know "foo", and
+        # there may be more than one!
+        gcda=
+        for gcda in ${objdir}/${dir}/.libs/*_la-${base}.gcda; do
+            break
+        done
+        gcno=
+        for gcno in ${objdir}/${dir}/.libs/*_la-${base}.gcno; do
+            break
+        done
+        [[ -n $gcno && -f $gcno ]] && ln -f "$gcno" "${objdir}/${dir}/.libs/${base}.gcno"
+        [[ -n $gcda && -f $gcda ]] && ln -f "$gcda" "${objdir}/${dir}/.libs/${base}.gcda"
+        if [[ ( -n $gcda && ! -f $gcda ) || ( -n $gcno && ! -f $gcno ) ]]; then
+            $quiet || printf 'Warning: %s has no gcov notes file\n' "$f" 1>&2
+            continue
+        fi
+    fi
+
+    if [[ -f ${objdir}/${dir}/.libs/${base}.gcda ]]; then
+        ((verbose > 1)) && printf 'Running gcov for %s using gcda from .libs\n' "$f" 1>&2
+        if ! (cd "${objdir}/${f%/*}"; ((verbose > 2)) && set -vx; gcov -o .libs "${f##*/}") 1>&3; then
+            $quiet || printf 'Warning: gcov failed for %s\n' "$f" 1>&2
+            continue
+        fi
+    elif [[ -f ${objdir}/${dir}/${base}.gcda ]]; then
+        if ! (cd "${objdir}/${f%/*}"; ((verbose > 2)) && set -vx; gcov "${f##*/}") 1>&3; then
+            $quiet || printf 'Warning: gcov failed for %s\n' "$f" 1>&2
+            continue
+        fi
+    fi
+
+    if [[ ! -f ${objdir}/${f}.gcov ]]; then
+        $quiet || printf 'Warning: gcov did not produce a .gcov file for %s\n' "$f" 1>&2
+        continue
+    fi
+
+    md5=$(md5sum "${srcdir}/${f}")
+    md5=${md5%% *}
+
+    jq -Rn --arg sum "${md5}" --arg f "$f" '
+        {
+            name: $f,
+            source_digest: $sum,
+            coverage: [
+                inputs
+              | split(":")
+              | (.[1] |= tonumber)
+              | select(.[1] > 0)
+              | if .[0]|endswith("#")
+                then 0
+                elif .[0]|endswith("-")
+                then null
+                else .[0]|tonumber
+                end
+            ]
+        }
+    ' "${objdir}/${f}.gcov" >> "${d}/f"
+done
+
+function make_report {
+    jq -s --arg job "$job" \
+          --arg ci "${ci:-travis-ci}" \
+          --arg token "$token" \
+          --arg repo "$repo" \
+          --arg branch "$branch" \
+          --arg upstream "$origin" \
+          --arg head "$(git log -n1 --format=%H)" \
+          --arg subject "$(git log -n1 --format=%s)" \
+          --arg aN "$(git log -n1 --format=%aN)" \
+          --arg ae "$(git log -n1 --format=%ae)" \
+          --arg cN "$(git log -n1 --format=%cN)" \
+          --arg ce "$(git log -n1 --format=%ce)" \
+        '{
+            service_job_id: $job,
+            service_name: $ci,
+            repo_token: $token,
+            git: {
+                id: $head,
+                author_name:  $aN,
+                author_email: $ae,
+                committer_name:  $cN,
+                committer_email: $ce,
+                message: $subject,
+                branch: $branch,
+                remotes: [ {
+                    "name": $upstream,
+                    "url": $repo
+                    }
+                ]
+            },
+            source_files: .
+        }' "${d}/f"
+}
+
+if [[ -z $out ]]; then
+    post=true
+    make_report > "${d}/out"
+elif [[ $out = - ]]; then
+    make_report
+else
+    make_report > "${out}"
+fi
+
+if $post && [[ $out != /dev/stdout ]]; then
+    curl -sfg -X POST -F "json_file=@${d}/out" -F "Filename=json_file" \
+         https://coveralls.io/api/v1/jobs
+fi

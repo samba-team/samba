@@ -135,10 +135,8 @@ krb5_mk_priv(krb5_context context,
 
     ret = krb5_data_copy(outbuf, buf + buf_size - len, len);
     if (ret) {
-	krb5_set_error_message(context, ENOMEM,
-			       N_("malloc: out of memory", ""));
 	free(buf);
-	return ENOMEM;
+	return krb5_enomem(context);
     }
     free (buf);
     if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE)

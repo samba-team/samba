@@ -595,7 +595,7 @@ struct getargs args[] = {
 int main(int argc, char **argv)
 {
     int goptind = 0;
-    while(getarg(args, 5, argc, argv, &goptind))
+    while (getarg(args, 5, argc, argv, &goptind))
 	printf("Bad arg: %s\n", argv[goptind]);
     printf("flag1 = %d\n", flag1);
     printf("flag2 = %d\n", flag2);

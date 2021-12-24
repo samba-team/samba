@@ -45,8 +45,11 @@
 #include <krb5_err.h>
 #include <heim_err.h>
 #include <k524_err.h>
+#include <k5e1_err.h>
 
 #include <krb5_asn1.h>
+typedef Krb5Int32 krb5int32;
+typedef Krb5UInt32 krb5uint32;
 
 /* name confusion with MIT */
 #ifndef KRB5KDC_ERR_KEY_EXP
@@ -55,8 +58,10 @@
 
 #ifdef _WIN32
 #define KRB5_CALLCONV __stdcall
+#define KRB5_LIB_CALL __stdcall
 #else
 #define KRB5_CALLCONV
+#define KRB5_LIB_CALL
 #endif
 
 /* simple constants */
@@ -150,6 +155,8 @@ enum {
     ETYPE_DES3_CBC_SHA1		= KRB5_ENCTYPE_DES3_CBC_SHA1,
     ETYPE_AES128_CTS_HMAC_SHA1_96	= KRB5_ENCTYPE_AES128_CTS_HMAC_SHA1_96,
     ETYPE_AES256_CTS_HMAC_SHA1_96	= KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+    ETYPE_AES128_CTS_HMAC_SHA256_128	= KRB5_ENCTYPE_AES128_CTS_HMAC_SHA256_128,
+    ETYPE_AES256_CTS_HMAC_SHA384_192	= KRB5_ENCTYPE_AES256_CTS_HMAC_SHA384_192,
     ETYPE_ARCFOUR_HMAC_MD5	= KRB5_ENCTYPE_ARCFOUR_HMAC_MD5,
     ETYPE_ARCFOUR_HMAC_MD5_56	= KRB5_ENCTYPE_ARCFOUR_HMAC_MD5_56,
     ETYPE_ENCTYPE_PK_CROSS	= KRB5_ENCTYPE_ENCTYPE_PK_CROSS,
@@ -274,14 +281,28 @@ typedef enum krb5_key_usage {
     /* Encryption type of the kdc session contribution in pk-init */
     KRB5_KU_AS_REQ = 56,
     /* Checksum of over the AS-REQ send by the KDC in PA-REQ-ENC-PA-REP */
+    KRB5_KU_FAST_REQ_CHKSUM = 50,
+    /* FAST armor checksum */
+    KRB5_KU_FAST_ENC = 51,
+    /* FAST armor encryption */
+    KRB5_KU_FAST_REP = 52,
+    /* FAST armor reply */
+    KRB5_KU_FAST_FINISHED = 53,
+    /* FAST finished checksum */
+    KRB5_KU_ENC_CHALLENGE_CLIENT = 54,
+    /* fast challenge from client */
+    KRB5_KU_ENC_CHALLENGE_KDC = 55,
+    /* fast challenge from kdc */
     KRB5_KU_DIGEST_ENCRYPT = -18,
     /* Encryption key usage used in the digest encryption field */
     KRB5_KU_DIGEST_OPAQUE = -19,
     /* Checksum key usage used in the digest opaque field */
     KRB5_KU_KRB5SIGNEDPATH = -21,
     /* Checksum key usage on KRB5SignedPath */
-    KRB5_KU_CANONICALIZED_NAMES = -23
+    KRB5_KU_CANONICALIZED_NAMES = -23,
     /* Checksum key usage on PA-CANONICALIZED */
+    KRB5_KU_H5L_COOKIE = -25
+    /* encrypted foo */
 } krb5_key_usage;
 
 typedef krb5_key_usage krb5_keyusage;
@@ -344,15 +365,7 @@ typedef AP_REQ krb5_ap_req;
 
 struct krb5_cc_ops;
 
-#ifdef _WIN32
-#define KRB5_USE_PATH_TOKENS 1
-#endif
-
-#ifdef KRB5_USE_PATH_TOKENS
 #define KRB5_DEFAULT_CCFILE_ROOT "%{TEMP}/krb5cc_"
-#else
-#define KRB5_DEFAULT_CCFILE_ROOT "/tmp/krb5cc_"
-#endif
 
 #define KRB5_DEFAULT_CCROOT "FILE:" KRB5_DEFAULT_CCFILE_ROOT
 
@@ -367,6 +380,10 @@ typedef struct krb5_cccol_cursor_data *krb5_cccol_cursor;
 typedef struct krb5_ccache_data {
     const struct krb5_cc_ops *ops;
     krb5_data data;
+    unsigned int cc_initialized:1;      /* if 1: krb5_cc_initialize() called */
+    unsigned int cc_need_start_realm:1;
+    unsigned int cc_start_tgt_stored:1;
+    unsigned int cc_kx509_done:1;
 }krb5_ccache_data;
 
 typedef struct krb5_ccache_data *krb5_ccache;
@@ -422,6 +439,7 @@ typedef union {
 /* flags for krb5_verify_ap_req */
 
 #define KRB5_VERIFY_AP_REQ_IGNORE_INVALID	(1 << 0)
+#define KRB5_VERIFY_AP_REQ_IGNORE_ADDRS		(1 << 1)
 
 #define KRB5_GC_CACHED			(1U << 0)
 #define KRB5_GC_USER_USER		(1U << 1)
@@ -431,6 +449,7 @@ typedef union {
 #define KRB5_GC_NO_TRANSIT_CHECK	(1U << 5)
 #define KRB5_GC_CONSTRAINED_DELEGATION	(1U << 6)
 #define KRB5_GC_CANONICALIZE		(1U << 7)
+#define KRB5_GC_ANONYMOUS		(1U << 8)
 
 /* constants for compare_creds (and cc_retrieve_cred) */
 #define KRB5_TC_DONT_MATCH_REALM	(1U << 31)
@@ -467,9 +486,15 @@ typedef struct krb5_creds {
 
 typedef struct krb5_cc_cache_cursor_data *krb5_cc_cache_cursor;
 
-#define KRB5_CC_OPS_VERSION 3
+#define KRB5_CC_OPS_VERSION_0	0
+#define KRB5_CC_OPS_VERSION_1	1
+#define KRB5_CC_OPS_VERSION_2	2
+#define KRB5_CC_OPS_VERSION_3	3
+#define KRB5_CC_OPS_VERSION_5	5
 
+/* Only extend the structure. Do not change signatures. */
 typedef struct krb5_cc_ops {
+    /* Version 0 */
     int version;
     const char *prefix;
     const char* (KRB5_CALLCONV * get_name)(krb5_context, krb5_ccache);
@@ -496,27 +521,43 @@ typedef struct krb5_cc_ops {
     krb5_error_code (KRB5_CALLCONV * end_cache_get)(krb5_context, krb5_cc_cursor);
     krb5_error_code (KRB5_CALLCONV * move)(krb5_context, krb5_ccache, krb5_ccache);
     krb5_error_code (KRB5_CALLCONV * get_default_name)(krb5_context, char **);
+    /* Version 1 */
     krb5_error_code (KRB5_CALLCONV * set_default)(krb5_context, krb5_ccache);
+    /* Version 2 */
     krb5_error_code (KRB5_CALLCONV * lastchange)(krb5_context, krb5_ccache, krb5_timestamp *);
+    /* Version 3 */
     krb5_error_code (KRB5_CALLCONV * set_kdc_offset)(krb5_context, krb5_ccache, krb5_deltat);
     krb5_error_code (KRB5_CALLCONV * get_kdc_offset)(krb5_context, krb5_ccache, krb5_deltat *);
+    /* Version 5 */
+    krb5_error_code (KRB5_CALLCONV * get_name_2)(krb5_context, krb5_ccache,
+						 const char **id, const char **res,
+						 const char **sub);
+    krb5_error_code (KRB5_CALLCONV * resolve_2)(krb5_context, krb5_ccache *id, const char *res,
+						const char *sub);
+    /* Add new functions here for versions 6 and above */
 } krb5_cc_ops;
 
-struct krb5_log_facility;
-
+/*
+ * krb5_config_binding is identical to struct heim_config_binding
+ * within heimbase.h.  Its format is public and used by callers of
+ * krb5_config_get_list() and krb5_config_vget_list().
+ */
+enum krb5_config_type {
+    krb5_config_string,
+    krb5_config_list,
+};
 struct krb5_config_binding {
-    enum { krb5_config_string, krb5_config_list } type;
+    enum krb5_config_type type;
     char *name;
     struct krb5_config_binding *next;
     union {
-	char *string;
-	struct krb5_config_binding *list;
-	void *generic;
+        char *string;
+        struct krb5_config_binding *list;
+        void *generic;
     } u;
 };
 
 typedef struct krb5_config_binding krb5_config_binding;
-
 typedef krb5_config_binding krb5_config_section;
 
 typedef struct krb5_ticket {
@@ -537,8 +578,9 @@ typedef Authenticator krb5_donot_replay;
 #define KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS	0x02
 #define KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE		0x04
 #define KRB5_STORAGE_KEYBLOCK_KEYTYPE_TWICE		0x08
-#define KRB5_STORAGE_BYTEORDER_MASK			0x60
+#define KRB5_STORAGE_BYTEORDER_MASK			0x70
 #define KRB5_STORAGE_BYTEORDER_BE			0x00 /* default */
+#define KRB5_STORAGE_BYTEORDER_PACKED			0x10
 #define KRB5_STORAGE_BYTEORDER_LE			0x20
 #define KRB5_STORAGE_BYTEORDER_HOST			0x40
 #define KRB5_STORAGE_CREDS_FLAGS_WRONG_BITORDER		0x80
@@ -641,6 +683,8 @@ typedef struct krb5_auth_context_data {
 
     krb5_keytype keytype;	/* ¿requested key type ? */
     krb5_cksumtype cksumtype;	/* ¡requested checksum type! */
+    
+    AuthorizationData *auth_data;
 
 }krb5_auth_context_data, *krb5_auth_context;
 
@@ -652,14 +696,13 @@ typedef struct {
 
 extern const char *heimdal_version, *heimdal_long_version;
 
-typedef void (KRB5_CALLCONV * krb5_log_log_func_t)(const char*, const char*, void*);
+typedef void (KRB5_CALLCONV * krb5_log_log_func_t)(krb5_context,
+						   const char*,
+						   const char*,
+						   void*);
 typedef void (KRB5_CALLCONV * krb5_log_close_func_t)(void*);
 
-typedef struct krb5_log_facility {
-    char *program;
-    int len;
-    struct facility *val;
-} krb5_log_facility;
+typedef struct heim_log_facility_s krb5_log_facility;
 
 typedef EncAPRepPart krb5_ap_rep_enc_part;
 
@@ -671,7 +714,17 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 #define KRB5_TGS_NAME ("krbtgt")
 #define KRB5_WELLKNOWN_NAME ("WELLKNOWN")
 #define KRB5_ANON_NAME ("ANONYMOUS")
+#define KRB5_ANON_REALM ("WELLKNOWN:ANONYMOUS")
+#define KRB5_FEDERATED_NAME ("FEDERATED")
+#define KRB5_FEDERATED_REALM ("WELLKNOWN:FEDERATED")
+#define KRB5_WELLKNOWN_ORG_H5L_REALM ("WELLKNOWN:ORG.H5L")
 #define KRB5_DIGEST_NAME ("digest")
+
+#define KRB5_PKU2U_REALM_NAME ("WELLKNOWN:PKU2U")
+#define KRB5_LKDC_REALM_NAME ("WELLKNOWN:COM.APPLE.LKDC")
+
+#define KRB5_GSS_HOSTBASED_SERVICE_NAME ("WELLKNOWN:ORG.H5L.HOSTBASED-SERVICE")
+#define KRB5_GSS_REFERALS_REALM_NAME ("WELLKNOWN:ORG.H5L.REFERALS-REALM")
 
 typedef enum {
     KRB5_PROMPT_TYPE_PASSWORD		= 0x1,
@@ -720,6 +773,7 @@ struct _krb5_get_init_creds_opt {
     int forwardable;
     int proxiable;
     int anonymous;
+    int change_password_prompt;
     krb5_enctype *etype_list;
     int etype_list_length;
     krb5_addresses *address_list;
@@ -743,6 +797,7 @@ typedef struct _krb5_get_init_creds_opt krb5_get_init_creds_opt;
 #define KRB5_GET_INIT_CREDS_OPT_SALT		0x0080 /* no supported */
 #define KRB5_GET_INIT_CREDS_OPT_ANONYMOUS	0x0100
 #define KRB5_GET_INIT_CREDS_OPT_DISABLE_TRANSITED_CHECK	0x0200
+#define KRB5_GET_INIT_CREDS_OPT_CHANGE_PASSWORD_PROMPT	0x0400
 
 /* krb5_init_creds_step flags argument */
 #define KRB5_INIT_CREDS_STEP_FLAG_CONTINUE	0x0001
@@ -783,11 +838,13 @@ typedef struct krb5_verify_opt {
 struct krb5_krbhst_data;
 typedef struct krb5_krbhst_data *krb5_krbhst_handle;
 
-#define KRB5_KRBHST_KDC		1
-#define KRB5_KRBHST_ADMIN	2
-#define KRB5_KRBHST_CHANGEPW	3
-#define KRB5_KRBHST_KRB524	4
-#define KRB5_KRBHST_KCA		5
+#define KRB5_KRBHST_KDC			1
+#define KRB5_KRBHST_ADMIN		2
+#define KRB5_KRBHST_CHANGEPW		3
+#define KRB5_KRBHST_KRB524		4
+#define KRB5_KRBHST_KCA			5
+#define KRB5_KRBHST_READONLY_ADMIN	6
+#define KRB5_KRBHST_TKTBRIDGEAP		7
 
 typedef struct krb5_krbhst_info {
     enum { KRB5_KRBHST_UDP,
@@ -806,6 +863,7 @@ enum {
     KRB5_KRBHST_FLAGS_LARGE_MSG	  = 2
 };
 
+typedef krb5_error_code (*krb5_sendto_prexmit)(krb5_context, int, void *, int, krb5_data *);
 typedef krb5_error_code
 (KRB5_CALLCONV * krb5_send_to_kdc_func)(krb5_context, void *, krb5_krbhst_info *, time_t,
 					const krb5_data *, krb5_data *);
@@ -814,7 +872,9 @@ typedef krb5_error_code
 enum {
     KRB5_PRINCIPAL_PARSE_NO_REALM = 1, /**< Require that there are no realm */
     KRB5_PRINCIPAL_PARSE_REQUIRE_REALM = 2, /**< Require a realm present */
-    KRB5_PRINCIPAL_PARSE_ENTERPRISE = 4 /**< Parse as a NT-ENTERPRISE name */
+    KRB5_PRINCIPAL_PARSE_ENTERPRISE = 4, /**< Parse as a NT-ENTERPRISE name */
+    KRB5_PRINCIPAL_PARSE_IGNORE_REALM = 8, /**< Ignore realm if present */
+    KRB5_PRINCIPAL_PARSE_NO_DEF_REALM = 16 /**< Don't default the realm */
 };
 
 /** flags for krb5_unparse_name_flags */
@@ -827,18 +887,42 @@ enum {
 typedef struct krb5_sendto_ctx_data *krb5_sendto_ctx;
 
 #define KRB5_SENDTO_DONE	0
-#define KRB5_SENDTO_RESTART	1
+#define KRB5_SENDTO_RESET	1
 #define KRB5_SENDTO_CONTINUE	2
+#define KRB5_SENDTO_TIMEOUT	3
+#define KRB5_SENDTO_INITIAL	4
+#define KRB5_SENDTO_FILTER	5
+#define KRB5_SENDTO_FAILED	6
+#define KRB5_SENDTO_KRBHST	7
 
 typedef krb5_error_code
 (KRB5_CALLCONV * krb5_sendto_ctx_func)(krb5_context, krb5_sendto_ctx, void *,
 				       const krb5_data *, int *);
 
-struct krb5_plugin;
 enum krb5_plugin_type {
     PLUGIN_TYPE_DATA = 1,
-    PLUGIN_TYPE_FUNC
+    PLUGIN_TYPE_FUNC /* no longer supported */
 };
+
+/*
+ * Since <krb5/common_plugin.h> is new with Heimdal 8, users looking to write
+ * portable plugins across Heimdal 7 and 8 need a conditional compilation
+ * predicate from a header file that does exist in both major releases.  This
+ * is as good a place as any to define a plugin source-compatibility version
+ * number.
+ *
+ * When this macro is defined and is equal to 1, the Heimdal 8 plugin source
+ * API, and <krb5/common_plugin.h> header are available and should be used.
+ *
+ * In Heimdal 7, this macro is not defined, and <krb5/common_plugin.h> may not
+ * be available.
+ */
+#define KRB5_PLUGIN_COMMON_SPI_VERSION 1
+
+#define KRB5_PLUGIN_INVOKE_ALL  1
+
+typedef uintptr_t
+(KRB5_LIB_CALL *krb5_get_instance_func_t)(const char *);
 
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
@@ -884,10 +968,48 @@ typedef struct {
 }krb5_key_salt_tuple;
 
 /*
+ * Name canonicalization rule options
+ */
+
+typedef enum krb5_name_canon_rule_options {
+        KRB5_NCRO_GC_ONLY       = 1 << 0,
+        KRB5_NCRO_USE_REFERRALS = 1 << 1,
+        KRB5_NCRO_NO_REFERRALS  = 1 << 2,
+        KRB5_NCRO_USE_FAST      = 1 << 3,
+        KRB5_NCRO_USE_DNSSEC    = 1 << 4,
+        KRB5_NCRO_LOOKUP_REALM  = 1 << 5
+} krb5_name_canon_rule_options;
+
+typedef struct krb5_name_canon_rule_data *krb5_name_canon_rule;
+typedef const struct krb5_name_canon_rule_data *krb5_const_name_canon_rule;
+typedef struct krb5_name_canon_iterator_data *krb5_name_canon_iterator;
+
+/*
+ * krb5_get_init_creds_opt_set_pkinit flags
+ */
+
+#define KRB5_GIC_OPT_PKINIT_USE_ENCKEY	    2 /* use RSA, not DH */
+#define KRB5_GIC_OPT_PKINIT_ANONYMOUS	    4 /* anonymous PKINIT */
+#define KRB5_GIC_OPT_PKINIT_BTMM	    8 /* reserved by Apple */
+#define KRB5_GIC_OPT_PKINIT_NO_KDC_ANCHOR   16 /* do not authenticate KDC */
+
+/*
+ * _krb5_principal_is_anonymous() flags 
+ */
+#define KRB5_ANON_MATCH_AUTHENTICATED	1 /* authenticated with anon flag */
+#define KRB5_ANON_MATCH_UNAUTHENTICATED	2 /* anonymous PKINIT */
+#define KRB5_ANON_IGNORE_NAME_TYPE	4 /* don't check the name type */
+#define KRB5_ANON_MATCH_ANY	        ( KRB5_ANON_MATCH_AUTHENTICATED | \
+                                          KRB5_ANON_MATCH_UNAUTHENTICATED )
+#define KRB5_ANON_MATCH_ANY_NONT	( KRB5_ANON_MATCH_ANY | \
+                                          KRB5_ANON_IGNORE_NAME_TYPE )
+
+/*
  *
  */
 
 struct hx509_certs_data;
+typedef struct krb5_kx509_req_ctx_data *krb5_kx509_req_ctx;
 
 #include <krb5-protos.h>
 
@@ -898,11 +1020,13 @@ extern KRB5_LIB_VARIABLE const char *krb5_defkeyname;
 
 
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_acc_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_dcc_ops;
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_fcc_ops;
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_mcc_ops;
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_kcm_ops;
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_akcm_ops;
 extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_scc_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_krcc_ops;
 
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_fkt_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_wrfkt_ops;
@@ -916,6 +1040,8 @@ extern KRB5_LIB_VARIABLE const char *krb5_cc_type_file;
 extern KRB5_LIB_VARIABLE const char *krb5_cc_type_memory;
 extern KRB5_LIB_VARIABLE const char *krb5_cc_type_kcm;
 extern KRB5_LIB_VARIABLE const char *krb5_cc_type_scc;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_dcc;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_keyring;
 
 #endif /* __KRB5_H__ */
 

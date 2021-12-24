@@ -54,6 +54,7 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_release_cred
 
     HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
 
+    free(cred->destination_realm);
     if (cred->principal != NULL)
         krb5_free_principal(context, cred->principal);
     if (cred->keytab != NULL)

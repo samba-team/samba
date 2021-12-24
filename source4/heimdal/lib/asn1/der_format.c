@@ -36,7 +36,7 @@
 
 RCSID("$Id$");
 
-int
+int ASN1CALL
 der_parse_hex_heim_integer (const char *p, heim_integer *data)
 {
     ssize_t len;
@@ -84,7 +84,7 @@ der_parse_hex_heim_integer (const char *p, heim_integer *data)
     return 0;
 }
 
-int
+int ASN1CALL
 der_print_hex_heim_integer (const heim_integer *data, char **p)
 {
     ssize_t len;
@@ -104,7 +104,7 @@ der_print_hex_heim_integer (const heim_integer *data, char **p)
     return 0;
 }
 
-int
+int ASN1CALL
 der_print_heim_oid (const heim_oid *oid, char delim, char **str)
 {
     struct rk_strpool *p = NULL;
@@ -129,7 +129,7 @@ der_print_heim_oid (const heim_oid *oid, char delim, char **str)
     return 0;
 }
 
-int
+int ASN1CALL
 der_parse_heim_oid (const char *str, const char *sep, heim_oid *data)
 {
     char *s, *w, *brkt, *endptr;
@@ -163,7 +163,7 @@ der_parse_heim_oid (const char *str, const char *sep, heim_oid *data)
 	    free(s);
 	    return EINVAL;
 	}
-	data->components[data->length++] = l;
+	data->components[data->length++] = (unsigned int)l;
     }
     free(s);
     return 0;

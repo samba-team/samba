@@ -41,34 +41,24 @@ krb5_build_ap_req (krb5_context context,
 		   krb5_data authenticator,
 		   krb5_data *retdata)
 {
-  krb5_error_code ret = 0;
-  AP_REQ ap;
-  Ticket t;
-  size_t len;
+    krb5_error_code ret = 0;
+    AP_REQ ap;
+    size_t len;
 
-  ap.pvno = 5;
-  ap.msg_type = krb_ap_req;
-  memset(&ap.ap_options, 0, sizeof(ap.ap_options));
-  ap.ap_options.use_session_key = (ap_options & AP_OPTS_USE_SESSION_KEY) > 0;
-  ap.ap_options.mutual_required = (ap_options & AP_OPTS_MUTUAL_REQUIRED) > 0;
+    ap.pvno = 5;
+    ap.msg_type = krb_ap_req;
+    memset(&ap.ap_options, 0, sizeof(ap.ap_options));
+    ap.ap_options.use_session_key = (ap_options & AP_OPTS_USE_SESSION_KEY) > 0;
+    ap.ap_options.mutual_required = (ap_options & AP_OPTS_MUTUAL_REQUIRED) > 0;
 
-  ap.ticket.tkt_vno = 5;
-  copy_Realm(&cred->server->realm, &ap.ticket.realm);
-  copy_PrincipalName(&cred->server->name, &ap.ticket.sname);
+    decode_Ticket(cred->ticket.data, cred->ticket.length, &ap.ticket, &len);
+    ap.authenticator.etype = enctype;
+    ap.authenticator.kvno  = NULL;
+    ap.authenticator.cipher = authenticator;
 
-  decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
-  copy_EncryptedData(&t.enc_part, &ap.ticket.enc_part);
-  free_Ticket(&t);
-
-  ap.authenticator.etype = enctype;
-  ap.authenticator.kvno  = NULL;
-  ap.authenticator.cipher = authenticator;
-
-  ASN1_MALLOC_ENCODE(AP_REQ, retdata->data, retdata->length,
-		     &ap, &len, ret);
-  if(ret == 0 && retdata->length != len)
-      krb5_abortx(context, "internal error in ASN.1 encoder");
-  free_AP_REQ(&ap);
-  return ret;
-
+    ASN1_MALLOC_ENCODE(AP_REQ, retdata->data, retdata->length, &ap, &len, ret);
+    if (ret == 0 && retdata->length != len)
+        krb5_abortx(context, "internal error in ASN.1 encoder");
+    free_AP_REQ(&ap);
+    return ret;
 }

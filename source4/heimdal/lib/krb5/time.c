@@ -127,3 +127,12 @@ krb5_string_to_deltat(const char *string, krb5_deltat *deltat)
 	return KRB5_DELTAT_BADFORMAT;
     return 0;
 }
+
+krb5_deltat
+krb5_time_abs(krb5_deltat t1, krb5_deltat t2)
+{
+    krb5_deltat t = t1 - t2;
+    if (t < 0)
+	return -t;
+    return t;
+}

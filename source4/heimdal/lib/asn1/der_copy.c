@@ -37,7 +37,7 @@
 
 RCSID("$Id$");
 
-int
+int ASN1CALL
 der_copy_general_string (const heim_general_string *from,
 			 heim_general_string *to)
 {
@@ -47,41 +47,55 @@ der_copy_general_string (const heim_general_string *from,
     return 0;
 }
 
-int
+int ASN1CALL
 der_copy_integer (const int *from, int *to)
 {
     *to = *from;
     return 0;
 }
 
-int
+int ASN1CALL
+der_copy_integer64 (const int64_t *from, int64_t *to)
+{
+    *to = *from;
+    return 0;
+}
+
+int ASN1CALL
 der_copy_unsigned (const unsigned *from, unsigned *to)
 {
     *to = *from;
     return 0;
 }
 
-int
+int ASN1CALL
+der_copy_unsigned64 (const uint64_t *from, uint64_t *to)
+{
+    *to = *from;
+    return 0;
+}
+
+int ASN1CALL
 der_copy_generalized_time (const time_t *from, time_t *to)
 {
     *to = *from;
     return 0;
 }
 
-int
+int ASN1CALL
 der_copy_utctime (const time_t *from, time_t *to)
 {
     *to = *from;
     return 0;
 }
 
-int
+int ASN1CALL
 der_copy_utf8string (const heim_utf8_string *from, heim_utf8_string *to)
 {
     return der_copy_general_string(from, to);
 }
 
-int
+int ASN1CALL
 der_copy_printable_string (const heim_printable_string *from,
 		       heim_printable_string *to)
 {
@@ -89,30 +103,32 @@ der_copy_printable_string (const heim_printable_string *from,
     to->data   = malloc(to->length + 1);
     if(to->data == NULL)
 	return ENOMEM;
-    memcpy(to->data, from->data, to->length);
+    if (from->data != NULL)
+	memcpy(to->data, from->data, to->length);
     ((char *)to->data)[to->length] = '\0';
     return 0;
 }
 
-int
+int ASN1CALL
 der_copy_ia5_string (const heim_ia5_string *from,
 		     heim_ia5_string *to)
 {
     return der_copy_printable_string(from, to);
 }
 
-int
+int ASN1CALL
 der_copy_bmp_string (const heim_bmp_string *from, heim_bmp_string *to)
 {
     to->length = from->length;
     to->data   = malloc(to->length * sizeof(to->data[0]));
     if(to->length != 0 && to->data == NULL)
 	return ENOMEM;
-    memcpy(to->data, from->data, to->length * sizeof(to->data[0]));
+    if (to->data != NULL && from->data != NULL)
+	memcpy(to->data, from->data, to->length * sizeof(to->data[0]));
     return 0;
 }
 
-int
+int ASN1CALL
 der_copy_universal_string (const heim_universal_string *from,
 			   heim_universal_string *to)
 {
@@ -120,53 +136,57 @@ der_copy_universal_string (const heim_universal_string *from,
     to->data   = malloc(to->length * sizeof(to->data[0]));
     if(to->length != 0 && to->data == NULL)
 	return ENOMEM;
-    memcpy(to->data, from->data, to->length * sizeof(to->data[0]));
+    if (to->data != NULL && from->data != NULL)
+	memcpy(to->data, from->data, to->length * sizeof(to->data[0]));
     return 0;
 }
 
-int
+int ASN1CALL
 der_copy_visible_string (const heim_visible_string *from,
 			 heim_visible_string *to)
 {
     return der_copy_general_string(from, to);
 }
 
-int
+int ASN1CALL
 der_copy_octet_string (const heim_octet_string *from, heim_octet_string *to)
 {
     to->length = from->length;
     to->data   = malloc(to->length);
     if(to->length != 0 && to->data == NULL)
 	return ENOMEM;
-    memcpy(to->data, from->data, to->length);
+    if (to->data != NULL && from->data != NULL)
+	memcpy(to->data, from->data, to->length);
     return 0;
 }
 
-int
+int ASN1CALL
 der_copy_heim_integer (const heim_integer *from, heim_integer *to)
 {
     to->length = from->length;
     to->data   = malloc(to->length);
     if(to->length != 0 && to->data == NULL)
 	return ENOMEM;
-    memcpy(to->data, from->data, to->length);
+    if (to->data != NULL && from->data != NULL)
+	memcpy(to->data, from->data, to->length);
     to->negative = from->negative;
     return 0;
 }
 
-int
+int ASN1CALL
 der_copy_oid (const heim_oid *from, heim_oid *to)
 {
     to->length     = from->length;
     to->components = malloc(to->length * sizeof(*to->components));
     if (to->length != 0 && to->components == NULL)
 	return ENOMEM;
-    memcpy(to->components, from->components,
-	   to->length * sizeof(*to->components));
+    if (to->components != NULL && from->components != NULL)
+	memcpy(to->components, from->components,
+	       to->length * sizeof(*to->components));
     return 0;
 }
 
-int
+int ASN1CALL
 der_copy_bit_string (const heim_bit_string *from, heim_bit_string *to)
 {
     size_t len;
@@ -176,6 +196,7 @@ der_copy_bit_string (const heim_bit_string *from, heim_bit_string *to)
     to->data   = malloc(len);
     if(len != 0 && to->data == NULL)
 	return ENOMEM;
-    memcpy(to->data, from->data, len);
+    if (to->data != NULL && from->data != NULL)
+	memcpy(to->data, from->data, len);
     return 0;
 }

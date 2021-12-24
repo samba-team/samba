@@ -1,0 +1,188 @@
+.\" Copyright (c) 1999, 2001 - 2002 Kungliga Tekniska Högskolan
+.\" (Royal Institute of Technology, Stockholm, Sweden).
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the Institute nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\" $Id$
+.\"
+.Dd March 12, 2004
+.Dt KGETCRED 1
+.Os HEIMDAL
+.Sh NAME
+.Nm kgetcred
+.Nd "get a ticket for a particular service"
+.Sh SYNOPSIS
+.Nm
+.Op Fl Fl canonicalize
+.Op Fl Fl canonical
+.Oo Fl c cache \*(Ba Xo
+.Fl Fl cache= Ns Ar cache
+.Xc
+.Oc
+.Oo Fl e Ar enctype \*(Ba Xo
+.Fl Fl enctype= Ns Ar enctype
+.Xc
+.Oc
+.Op Fl Fl debug
+.Oo Fl H \*(Ba Xo
+.Fl Fl hostbased
+.Xc
+.Oc
+.Op Fl Fl name-type= Ns Ar name-type
+.Op Fl Fl no-transit-check
+.Op Fl Fl no-store
+.Op Fl Fl cached-only
+.Op Fl n \*(Ba Fl Fl anonymous
+.Op Fl Fl version
+.Op Fl Fl help
+.Ar principal
+.Nm
+.Op options
+.Fl Fl hostbased
+.Ar principal
+.Nm
+.Op options
+.Fl Fl hostbased
+.Ar service
+.Ar hostname
+.Ar [extra-components]
+.Sh DESCRIPTION
+.Nm
+obtains a ticket for the given service principal.
+Usually tickets for services are obtained automatically when needed
+but sometimes for some odd reason you want to obtain a particular
+ticket or of a special type.
+.Pp
+If
+.Fl Fl hostbased
+is given then the given service principal name will be canonicalized
+(see below).
+.Pp
+The third form constructs a host-based principal from the given service
+name and hostname.  The service name "host" is used if the given
+.Ar service
+name in the third usage is the empty string.
+.Pp
+For host-based names, the local host's hostname is used if the given
+.Ar hostname
+is the empty string or if the
+.Ar principal
+has a single component.
+.Pp
+Any additional components will be included, even for host-based service
+principal names, but there are no defaults nor local canonicalization
+rules for additional components.
+.Pp
+Local name canonicalization rules are applied unless the
+.Fl Fl canonical
+option is given.  Currently local name canonicalization rules are
+supported only for host-based principal names' hostname component.
+.Pp
+The principal's realm name may be canonicalized by following Kerberos
+referrals from the client principal's home realm if the
+.Fl Fl canonicalize
+option is given or if the local name canonicalization rules are
+configured to use referrals.
+.Pp
+Supported options:
+.Bl -tag -width Ds
+.It Fl Fl canonicalize
+requests that the KDC canonicalize the principal.  Currently this only
+canonicalizes the realm by chasing referrals from the user's start
+realm, but in the future this may also enable the KDC to canonicalize
+the complete principal name.
+.It Fl Fl canonical
+turns off local canonicalization of the principal name.
+.It Fl Fl name-type= Ns Ar name-type
+the name-type to use when parsing the principal name.
+.It Fl Fl hostbased
+is short for
+.Fl Fl name-type=srv_hst .
+.It Fl c Ar cache , Fl Fl cache= Ns Ar cache
+the credential cache to use.
+.It Fl Fl delegation-credential-cache= Ns Ar cache
+the credential cache to use for delegation.
+.It Fl e Ar enctype , Fl Fl enctype= Ns Ar enctype
+encryption type to use.
+.It Fl Fl no-transit-check
+requests that the KDC doesn't do transit checking.
+.It Fl Fl no-store
+do not store tickets in the ccache.
+.It Fl Fl cached-only
+do not talk the TGS, search only the ccache.
+.It Fl Fl anonymous
+obtain an anonymous service ticket.
+.It Fl Fl forwardable
+.It Fl Fl debug
+enables debug output to stderr.
+.It Fl Fl version
+.It Fl Fl help
+.El
+.Pp
+If the
+.Fl Fl canonical
+option is used, then no further canonicalization should be done locally
+by the client (for example, DNS), but if
+.Fl Fl canonicalize
+is used, then the client will ask that the KDC canonicalize the name.
+.Pp
+If the
+.Fl Fl canonicalize
+option is used with
+.Fl Fl hostbased
+a host-based name-type, and
+.Fl Fl canonical
+is not used, then the hostname will be canonicalized according to the
+name canonicalization rules in
+.Va krb5.conf .
+.Pp
+GSS-API initiator applications with host-based services will get the
+same behavior as using the
+.Fl Fl canonicalize
+.Fl Fl hostbased
+options here.
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev KRB5CCNAME
+Specifies the default credentials cache.
+.It Ev KRB5_CONFIG
+The file name of
+.Pa krb5.conf ,
+the default being
+.Pa /etc/krb5.conf .
+.It Ev KRB5_NO_TICKET_STORE
+If this variable is present in the environment, any service tickets obtained
+are not added to the credential cache.  This affects all heimdal applications
+and library clients, not just kgetcred.
+.El
+.Sh SEE ALSO
+.Xr kinit 1 ,
+.Xr klist 1 ,
+.Xr krb5.conf 5 ,
+.Xr krb5_openlog 3

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Kungliga Tekniska Högskolan
+ * Copyright (c) 2009 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -65,7 +65,8 @@ hkt_destroy(krb5_context context, HDB *db)
     hdb_keytab k = (hdb_keytab)db->hdb_db;
     krb5_error_code ret;
 
-    ret = hdb_clear_master_key (context, db);
+    ret = hdb_clear_master_key(context, db);
+    krb5_config_free_strings(db->virtual_hostbased_princ_svcs);
 
     free(k->path);
     free(k);
@@ -162,7 +163,7 @@ hkt_fetch_kvno(krb5_context context, HDB * db, krb5_const_principal principal,
 
  out:
     if (ret) {
-	free_hdb_entry(&entry->entry);
+	free_HDB_entry(&entry->entry);
 	memset(&entry->entry, 0, sizeof(entry->entry));
     }
     krb5_kt_free_entry(context, &ktentry);

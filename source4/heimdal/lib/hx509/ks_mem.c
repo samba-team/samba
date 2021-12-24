@@ -213,10 +213,11 @@ static struct hx509_keyset_ops keyset_mem = {
     mem_iter_end,
     NULL,
     mem_getkeys,
-    mem_addkey
+    mem_addkey,
+    NULL
 };
 
-void
+HX509_LIB_FUNCTION void HX509_LIB_CALL
 _hx509_ks_mem_register(hx509_context context)
 {
     _hx509_ks_register(context, &keyset_mem);

@@ -32,9 +32,7 @@
  */
 
 #include <config.h>
-
-#include <stdio.h>
-#include <stdlib.h>
+#include <roken.h>
 #include <krb5-types.h>
 #include <rfc2459_asn1.h>
 
@@ -43,8 +41,6 @@
 #include <rsa.h>
 
 #include "common.h"
-
-#include <roken.h>
 
 /**
  * @page page_rsa RSA - public-key cryptography
@@ -506,6 +502,7 @@ static const RSA_METHOD rsa_null_method = {
     null_rsa_init,
     null_rsa_finish,
     0,
+    NULL,
     NULL,
     NULL,
     NULL

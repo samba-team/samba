@@ -33,8 +33,11 @@
 
 #include "gen_locl.h"
 #include "lex.h"
+#include "lex.h"
 
 static Hashtab *htab;
+
+struct symhead symbols;
 
 static int
 cmp(void *a, void *b)
@@ -78,14 +81,32 @@ addsym(char *name)
     key.name = name;
     s = (Symbol *) hashtabsearch(htab, (void *) &key);
     if (s == NULL) {
-	s = (Symbol *) emalloc(sizeof(*s));
+	s = (Symbol *) ecalloc(1, sizeof(*s));
 	s->name = name;
 	s->gen_name = estrdup(name);
 	output_name(s->gen_name);
 	s->stype = SUndefined;
 	hashtabadd(htab, s);
+        //HEIM_TAILQ_INSERT_TAIL(&symbols, s, symlist);
+        do {
+            if (((s)->symlist.tqe_next = (&symbols)->tqh_first) != NULL)
+                (&symbols)->tqh_first->symlist.tqe_prev = &(s)->symlist.tqe_next;
+            else
+                (&symbols)->tqh_last = &(s)->symlist.tqe_next;
+            (&symbols)->tqh_first = (s);
+            (s)->symlist.tqe_prev = &(&symbols)->tqh_first;
+        } while (0);
     }
     return s;
+}
+
+Symbol *
+getsym(char *name)
+{
+    Symbol key;
+
+    key.name = name;
+    return (Symbol *) hashtabsearch(htab, (void *) &key);
 }
 
 static int
@@ -105,4 +126,48 @@ checkundefined(void)
     int f = 0;
     hashtabforeach(htab, checkfunc, &f);
     return f;
+}
+
+#if 0
+static int
+generate_1type(void *ptr, void *arg)
+{
+    Symbol *s = ptr;
+
+    if (s->stype == Stype && s->type)
+        generate_type(s);
+    return 0;
+}
+#endif
+
+void
+generate_types(void)
+{
+    Symbol *s;
+
+    if (checkundefined())
+        errx(1, "Some types are undefined");
+    HEIM_TAILQ_FOREACH_REVERSE(s, &symbols, symhead, symlist) {
+        if (s->stype == Stype && s->type)
+            generate_type(s);
+    }
+    //hashtabforeach(htab, generate_1type, NULL);
+}
+
+void
+emitted_declaration(const Symbol *s)
+{
+    ((Symbol *)(uintptr_t)s)->emitted_declaration = 1;
+}
+
+void
+emitted_definition(const Symbol *s)
+{
+    ((Symbol *)(uintptr_t)s)->emitted_definition = 1;
+}
+
+void
+emitted_tag_enums(const Symbol *s)
+{
+    ((Symbol *)(uintptr_t)s)->emitted_tag_enums = 1;
 }
