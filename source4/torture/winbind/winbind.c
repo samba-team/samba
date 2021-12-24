@@ -54,6 +54,11 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 	TALLOC_CTX *tmp_ctx;
 	struct pac_data *pac_data;
 
+	if (pac_blob == NULL) {
+		DBG_ERR("pac_blob missing\n");
+		return NT_STATUS_NO_IMPERSONATION_TOKEN;
+	}
+
 	tmp_ctx = talloc_named(mem_ctx, 0, "gensec_gssapi_session_info context");
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
