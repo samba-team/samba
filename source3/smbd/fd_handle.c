@@ -37,6 +37,12 @@ struct fd_handle {
 	uint64_t gen_id;
 };
 
+static int fd_handle_destructor(struct fd_handle *fh)
+{
+	SMB_ASSERT((fh->fd == -1) || (fh->fd == AT_FDCWD));
+	return 0;
+}
+
 struct fd_handle *fd_handle_create(TALLOC_CTX *mem_ctx)
 {
 	struct fd_handle *fh = NULL;
@@ -46,6 +52,9 @@ struct fd_handle *fd_handle_create(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 	fh->fd = -1;
+
+	talloc_set_destructor(fh, fd_handle_destructor);
+
 	return fh;
 }
 
