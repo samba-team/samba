@@ -208,8 +208,7 @@ const char *fsp_fnum_dbg(const struct files_struct *fsp)
 		return "fnum [invalid value]";
 	}
 
-	str = talloc_asprintf(talloc_tos(), "fnum %llu",
-			      (unsigned long long)fsp->fnum);
+	str = talloc_asprintf(talloc_tos(), "fnum %"PRIu64, fsp->fnum);
 	if (str == NULL) {
 		DEBUG(1, ("%s: talloc_asprintf failed\n", __FUNCTION__));
 		return "fnum [talloc failed!]";
