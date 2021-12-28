@@ -1542,6 +1542,7 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 	} else if (fsp->print_file != NULL) {
 		/* FIXME: return spool errors */
 		print_spool_end(fsp, close_type);
+		fd_close(fsp);
 		file_free(req, fsp);
 		status = NT_STATUS_OK;
 	} else if (!fsp->fsp_flags.is_fsa) {
