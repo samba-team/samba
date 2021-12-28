@@ -282,7 +282,7 @@ static NTSTATUS set_nt_acl_conn(const char *fname,
 		DBG_ERR("init_files_struct failed: %s\n",
 			nt_errstr(status));
 		if (fsp != NULL) {
-			SMB_VFS_CLOSE(fsp);
+			fd_close(fsp);
 		}
 		TALLOC_FREE(frame);
 		return status;
@@ -293,7 +293,7 @@ static NTSTATUS set_nt_acl_conn(const char *fname,
 		DEBUG(0,("set_nt_acl_no_snum: fset_nt_acl returned %s.\n", nt_errstr(status)));
 	}
 
-	SMB_VFS_CLOSE(fsp);
+	fd_close(fsp);
 
 	TALLOC_FREE(frame);
 	return status;
@@ -631,7 +631,7 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 		DBG_ERR("init_files_struct failed: %s\n",
 			nt_errstr(status));
 		if (fsp != NULL) {
-			SMB_VFS_CLOSE(fsp);
+			fd_close(fsp);
 		}
 		TALLOC_FREE(frame);
 		/*
@@ -644,13 +644,13 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 	ret = SMB_VFS_FCHOWN(fsp, uid, gid);
 	if (ret != 0) {
 		int saved_errno = errno;
-		SMB_VFS_CLOSE(fsp);
+		fd_close(fsp);
 		TALLOC_FREE(frame);
 		errno = saved_errno;
 		return PyErr_SetFromErrno(PyExc_OSError);
 	}
 
-	SMB_VFS_CLOSE(fsp);
+	fd_close(fsp);
 	TALLOC_FREE(frame);
 
 	Py_RETURN_NONE;
@@ -1230,7 +1230,7 @@ static PyObject *py_smbd_create_file(PyObject *self, PyObject *args, PyObject *k
 		DBG_ERR("init_files_struct failed: %s\n",
 			nt_errstr(status));
 	} else if (fsp != NULL) {
-		SMB_VFS_CLOSE(fsp);
+		fd_close(fsp);
 	}
 
 	TALLOC_FREE(frame);

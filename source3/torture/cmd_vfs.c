@@ -429,7 +429,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		SMB_VFS_CLOSE(fsp);
+		fd_close(fsp);
 		TALLOC_FREE(fsp);
 		TALLOC_FREE(smb_fname);
 		return status;
@@ -513,7 +513,8 @@ static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 
 static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	int fd, ret;
+	int fd;
+	NTSTATUS status;
 
 	if (argc != 2) {
 		printf("Usage: close <fd>\n");
@@ -526,15 +527,15 @@ static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	ret = SMB_VFS_CLOSE(vfs->files[fd]);
-	if (ret == -1 )
-		printf("close: error=%d (%s)\n", errno, strerror(errno));
+	status = fd_close(vfs->files[fd]);
+	if (!NT_STATUS_IS_OK(status))
+		printf("close: error=%s\n", nt_errstr(status));
 	else
 		printf("close: ok\n");
 
 	TALLOC_FREE(vfs->files[fd]);
 	vfs->files[fd] = NULL;
-	return NT_STATUS_OK;
+	return status;
 }
 
 
@@ -1816,9 +1817,9 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 out:
 	TALLOC_FREE(sd);
 
-	ret = SMB_VFS_CLOSE(fsp);
-	if (ret == -1 )
-		printf("close: error=%d (%s)\n", errno, strerror(errno));
+	status = fd_close(fsp);
+	if (!NT_STATUS_IS_OK(status))
+		printf("close: error= (%s)\n", nt_errstr(status));
 
 	TALLOC_FREE(fsp);
 

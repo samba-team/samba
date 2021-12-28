@@ -801,10 +801,8 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 		 * and errno=ELOOP.
 		 */
 		if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
-			ret = SMB_VFS_CLOSE(fsp);
-			SMB_ASSERT(ret == 0);
-
-			fsp_set_fd(fsp, -1);
+			status = fd_close(fsp);
+			SMB_ASSERT(NT_STATUS_IS_OK(status));
 			fd = -1;
 			status = NT_STATUS_STOPPED_ON_SYMLINK;
 		}
@@ -1158,7 +1156,6 @@ static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
 	int old_fd;
 	int new_fd;
 	NTSTATUS status;
-	int ret;
 
 	if (!fsp->fsp_flags.have_proc_fds) {
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
@@ -1197,15 +1194,13 @@ static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
 				mode);
 	if (new_fd == -1) {
 		status = map_nt_error_from_unix(errno);
-		SMB_VFS_CLOSE(fsp);
-		fsp_set_fd(fsp, -1);
+		fd_close(fsp);
 		return status;
 	}
 
-	ret = SMB_VFS_CLOSE(fsp);
-	fsp_set_fd(fsp, -1);
-	if (ret != 0) {
-		return map_nt_error_from_unix(errno);
+	status = fd_close(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	fsp_set_fd(fsp, new_fd);
