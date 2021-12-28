@@ -244,6 +244,7 @@ static int commit_openat(struct vfs_handle_struct *handle,
 		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 			int saved_errno = errno;
 			SMB_VFS_CLOSE(fsp);
+			fsp_set_fd(fsp, -1);
 			errno = saved_errno;
                         return -1;
                 }
