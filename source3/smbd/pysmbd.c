@@ -156,6 +156,13 @@ static int set_sys_acl_conn(const char *fname,
 
 	ret = SMB_VFS_SYS_ACL_SET_FD(smb_fname->fsp, acltype, theacl);
 
+	status = fd_close(smb_fname->fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
 	TALLOC_FREE(frame);
 	return ret;
 }
@@ -331,6 +338,12 @@ static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("fget_nt_acl_at returned %s.\n",
 			nt_errstr(status));
+	}
+
+	status = fd_close(smb_fname->fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	TALLOC_FREE(frame);
@@ -1040,6 +1053,13 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 	if (!acl) {
 		TALLOC_FREE(frame);
 		return PyErr_SetFromErrno(PyExc_OSError);
+	}
+
+	status = fd_close(smb_fname->fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		PyErr_SetNTSTATUS(status);
+		return NULL;
 	}
 
 	py_acl = py_return_ndr_struct("samba.dcerpc.smb_acl", "t", acl, acl);
