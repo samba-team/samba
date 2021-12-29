@@ -230,10 +230,10 @@ static int ip_from_string(const char *str, ctdb_sock_addr *addr)
 
 	/* IPv4 or IPv6 address?
 	 *
-	 * Use rindex() because we need the right-most ':' below for
+	 * Use strrchr() because we need the right-most ':' below for
 	 * IPv4-mapped IPv6 addresses anyway...
 	 */
-	p = rindex(str, ':');
+	p = strrchr(str, ':');
 	if (p == NULL) {
 		ret = ipv4_from_string(str, &addr->ip);
 	} else {
@@ -286,7 +286,7 @@ int ctdb_sock_addr_from_string(const char *str,
 		return EINVAL;
 	}
 
-	p = rindex(s, ':');
+	p = strrchr(s, ':');
 	if (p == NULL) {
 		return EINVAL;
 	}
@@ -324,7 +324,7 @@ int ctdb_sock_addr_mask_from_string(const char *str,
 		return EINVAL;
 	}
 
-	p = rindex(s, '/');
+	p = strrchr(s, '/');
 	if (p == NULL) {
 		return EINVAL;
 	}
