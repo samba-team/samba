@@ -237,7 +237,7 @@ static int ip_from_string(const char *str, ctdb_sock_addr *addr)
 	if (p == NULL) {
 		ret = ipv4_from_string(str, &addr->ip);
 	} else {
-		uint8_t ipv4_mapped_prefix[12] = {
+		static const uint8_t ipv4_mapped_prefix[12] = {
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff
 		};
 
