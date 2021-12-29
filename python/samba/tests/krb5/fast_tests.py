@@ -113,6 +113,84 @@ class FAST_Tests(KDCBaseTest):
             }
         ], client_account=self.AccountType.COMPUTER)
 
+    def test_simple_as_req_self_no_auth_data(self):
+        self._run_test_sequence(
+            [
+                {
+                    'rep_type': KRB_AS_REP,
+                    'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                    'use_fast': False,
+                    'as_req_self': True
+                },
+                {
+                    'rep_type': KRB_AS_REP,
+                    'expected_error_mode': 0,
+                    'use_fast': False,
+                    'gen_padata_fn': self.generate_enc_timestamp_padata,
+                    'as_req_self': True,
+                    'expect_pac': True
+                }
+            ],
+            client_account=self.AccountType.COMPUTER,
+            client_opts={'no_auth_data_required': True})
+
+    def test_simple_as_req_self_pac_request_false(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': False,
+                'as_req_self': True
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': 0,
+                'use_fast': False,
+                'gen_padata_fn': self.generate_enc_timestamp_padata,
+                'as_req_self': True,
+                'pac_request': False,
+                'expect_pac': False
+            }
+        ], client_account=self.AccountType.COMPUTER)
+
+    def test_simple_as_req_self_pac_request_none(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': False,
+                'as_req_self': True
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': 0,
+                'use_fast': False,
+                'gen_padata_fn': self.generate_enc_timestamp_padata,
+                'as_req_self': True,
+                'pac_request': None,
+                'expect_pac': True
+            }
+        ], client_account=self.AccountType.COMPUTER)
+
+    def test_simple_as_req_self_pac_request_true(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': False,
+                'as_req_self': True
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': 0,
+                'use_fast': False,
+                'gen_padata_fn': self.generate_enc_timestamp_padata,
+                'as_req_self': True,
+                'pac_request': True,
+                'expect_pac': True
+            }
+        ], client_account=self.AccountType.COMPUTER)
+
     def test_simple_tgs(self):
         self._run_test_sequence([
             {
@@ -1381,14 +1459,16 @@ class FAST_Tests(KDCBaseTest):
         return fast_padata
 
     def _run_test_sequence(self, test_sequence,
-                           client_account=KDCBaseTest.AccountType.USER):
+                           client_account=KDCBaseTest.AccountType.USER,
+                           client_opts=None):
         if self.strict_checking:
             self.check_kdc_fast_support()
 
         kdc_options_default = str(krb5_asn1.KDCOptions('forwardable,'
                                                        'canonicalize'))
 
-        client_creds = self.get_cached_creds(account_type=client_account)
+        client_creds = self.get_cached_creds(account_type=client_account,
+                                             opts=client_opts)
         target_creds = self.get_service_creds()
         krbtgt_creds = self.get_krbtgt_creds()
 
@@ -1564,6 +1644,9 @@ class FAST_Tests(KDCBaseTest):
                                       padata):
                 return list(padata), req_body
 
+            pac_request = kdc_dict.pop('pac_request', None)
+            expect_pac = kdc_dict.pop('expect_pac', True)
+
             pac_options = kdc_dict.pop('pac_options', '1')  # claims support
 
             kdc_options = kdc_dict.pop('kdc_options', kdc_options_default)
@@ -1666,7 +1749,8 @@ class FAST_Tests(KDCBaseTest):
                     kdc_options=kdc_options,
                     inner_req=inner_req,
                     outer_req=outer_req,
-                    pac_request=True,
+                    expect_pac=expect_pac,
+                    pac_request=pac_request,
                     pac_options=pac_options,
                     fast_ap_options=fast_ap_options,
                     strict_edata_checking=strict_edata_checking,
@@ -1702,7 +1786,8 @@ class FAST_Tests(KDCBaseTest):
                     kdc_options=kdc_options,
                     inner_req=inner_req,
                     outer_req=outer_req,
-                    pac_request=None,
+                    expect_pac=expect_pac,
+                    pac_request=pac_request,
                     pac_options=pac_options,
                     fast_ap_options=fast_ap_options,
                     strict_edata_checking=strict_edata_checking,
@@ -1724,6 +1809,14 @@ class FAST_Tests(KDCBaseTest):
 
                     fast_cookie = None
                     preauth_etype_info2 = None
+
+                    # Check whether the ticket contains a PAC.
+                    ticket = kdc_exchange_dict['rep_ticket_creds']
+                    pac = self.get_ticket_pac(ticket, expect_pac=expect_pac)
+                    if expect_pac:
+                        self.assertIsNotNone(pac)
+                    else:
+                        self.assertIsNone(pac)
                 else:
                     self.check_error_rep(rep, expected_error_mode)
 

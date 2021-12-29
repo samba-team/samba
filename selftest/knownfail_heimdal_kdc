@@ -52,6 +52,7 @@
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_outer_wrong_realm.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_outer_wrong_till.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_unknown_critical_option.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_as_req_self_pac_request_false
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_enc_pa_rep.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_tgs_enc_pa_rep.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_unarmored_as_req.ad_dc
