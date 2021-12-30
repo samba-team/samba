@@ -1227,25 +1227,25 @@ static NTSTATUS reopen_from_fsp(struct files_struct *fsp,
 	status = reopen_from_procfd(fsp,
 				    flags,
 				    mode);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		/*
-		 * Close the existing pathref fd and set the fsp flag
-		 * is_pathref to false so we get a "normal" fd this
-		 * time.
-		 */
-		status = fd_close(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		fsp->fsp_flags.is_pathref = false;
-
-		status = fd_open_atomic(fsp,
-					flags,
-					mode,
-					p_file_created);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return status;
 	}
 
+	/*
+	 * Close the existing pathref fd and set the fsp flag
+	 * is_pathref to false so we get a "normal" fd this time.
+	 */
+	status = fd_close(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	fsp->fsp_flags.is_pathref = false;
+
+	status = fd_open_atomic(fsp,
+				flags,
+				mode,
+				p_file_created);
 	return status;
 }
 
