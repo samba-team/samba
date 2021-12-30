@@ -224,6 +224,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 		}
 		ret = hdb_enctype2key(context, &krbtgt->entry, etype, &key);
 		if (ret != 0) {
+			talloc_free(mem_ctx);
 			return ret;
 		}
 
