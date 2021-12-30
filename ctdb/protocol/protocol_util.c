@@ -119,6 +119,7 @@ int ctdb_sock_addr_to_buf(char *buf, socklen_t buflen,
 			  ctdb_sock_addr *addr, bool with_port)
 {
 	const char *t;
+	size_t len = 0;
 
 	switch (addr->sa.sa_family) {
 	case AF_INET:
@@ -127,15 +128,36 @@ int ctdb_sock_addr_to_buf(char *buf, socklen_t buflen,
 		if (t == NULL) {
 			return errno;
 		}
+		if (with_port) {
+			len = strlen(buf);
+		}
 		break;
 
-	case AF_INET6:
-		t = inet_ntop(addr->ip6.sin6_family, &addr->ip6.sin6_addr,
-			      buf, buflen);
+	case AF_INET6: {
+		char tmp[INET6_ADDRSTRLEN];
+
+		t = inet_ntop(addr->ip6.sin6_family,
+			      &addr->ip6.sin6_addr,
+			      tmp,
+			      sizeof(tmp));
 		if (t == NULL) {
 			return errno;
 		}
+
+		if (with_port) {
+			int ret = snprintf(buf, buflen, "[%s]", tmp);
+			if (ret < 0) {
+				return ENOSPC;
+			}
+			len = (size_t)ret;
+		} else {
+			len = strlcpy(buf, tmp, buflen);
+		}
+		if (len >= buflen){
+			return ENOSPC;
+		}
 		break;
+	}
 
 	default:
 		return EAFNOSUPPORT;
@@ -143,7 +165,6 @@ int ctdb_sock_addr_to_buf(char *buf, socklen_t buflen,
 	}
 
 	if (with_port) {
-		size_t len = strlen(buf);
 		int ret;
 
 		ret = snprintf(buf+len, buflen-len,
