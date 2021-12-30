@@ -392,6 +392,7 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
  * fsp's as well.
  */
 static NTSTATUS open_pathref_base_fsp(const struct files_struct *dirfsp,
+				      struct smb_filename *smb_fname,
 				      struct files_struct *fsp)
 {
 	struct smb_filename *smb_fname_base = NULL;
@@ -399,11 +400,11 @@ static NTSTATUS open_pathref_base_fsp(const struct files_struct *dirfsp,
 	int ret;
 
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					     fsp->fsp_name->base_name,
+					     smb_fname->base_name,
 					     NULL,
 					     NULL,
-					     fsp->fsp_name->twrp,
-					     fsp->fsp_name->flags);
+					     smb_fname->twrp,
+					     smb_fname->flags);
 	if (smb_fname_base == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -498,7 +499,13 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
 	    && is_ntfs_stream_smb_fname(fsp->fsp_name))
 	{
-		status = open_pathref_base_fsp(dirfsp, fsp);
+		/*
+		 * We must use smb_fname here, not fsp->fsp_name
+		 * as smb_fname is relative to dirfsp, whereas
+		 * fsp->fsp_name has been changed above to be
+		 * full_fname, relative to the base of the share.
+		 */
+		status = open_pathref_base_fsp(dirfsp, smb_fname, fsp);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
