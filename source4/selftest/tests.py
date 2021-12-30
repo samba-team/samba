@@ -957,7 +957,7 @@ planoldpythontestsuite("ad_dc:local", "samba.tests.dckeytab", extra_args=['-U"$U
 for env in ['fileserver_smb1', 'nt4_member', 'clusteredmember', 'ktest', 'nt4_dc', 'nt4_dc_smb1_done', 'nt4_dc_smb1', 'simpleserver', 'fileserver_smb1_done', 'fileserver', 'maptoguest', 'nt4_dc_schannel']:
     planoldpythontestsuite(env, "samba.tests.imports")
 
-have_fast_support = int('SAMBA_USES_MITKDC' in config_hash)
+have_fast_support = 1
 tkt_sig_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
 expect_pac = int('SAMBA4_USES_HEIMDAL' in config_hash)
 extra_pac_buffers = int('SAMBA4_USES_HEIMDAL' in config_hash)
