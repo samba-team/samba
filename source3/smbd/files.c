@@ -456,14 +456,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		return NT_STATUS_OK;
 	}
 
-	if (!VALID_STAT(smb_fname->st)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (S_ISLNK(smb_fname->st.st_ex_mode)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
 	status = fsp_new(conn, conn, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -532,19 +524,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 			 */
 			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
-		goto fail;
-	}
-
-	if (!check_same_dev_ino(&smb_fname->st, &fsp->fsp_name->st)) {
-		DBG_DEBUG("file [%s] - dev/ino mismatch. "
-			  "Old (dev=%ju, ino=%ju). "
-			  "New (dev=%ju, ino=%ju).\n",
-			  smb_fname_str_dbg(smb_fname),
-			  (uintmax_t)smb_fname->st.st_ex_dev,
-			  (uintmax_t)smb_fname->st.st_ex_ino,
-			  (uintmax_t)fsp->fsp_name->st.st_ex_dev,
-			  (uintmax_t)fsp->fsp_name->st.st_ex_ino);
-		status = NT_STATUS_ACCESS_DENIED;
 		goto fail;
 	}
 
