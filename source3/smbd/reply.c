@@ -7585,7 +7585,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	NTSTATUS status = NT_STATUS_OK;
 	int create_options = 0;
 	struct smb2_create_blobs *posx = NULL;
-	int rc;
 	struct files_struct *fsp = NULL;
 	bool posix_pathname = (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH);
 	bool case_sensitive = posix_pathname ? true : conn->case_sensitive;
@@ -7613,12 +7612,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		  dst_original_lcomp);
 
 	ZERO_STRUCT(smb_fname_src->st);
-
-	rc = vfs_stat(conn, smb_fname_src);
-	if (rc == -1) {
-		status = map_nt_error_from_unix_common(errno);
-		goto out;
-	}
 
 	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_src);
 	if (!NT_STATUS_IS_OK(status)) {

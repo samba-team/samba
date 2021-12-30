@@ -5009,11 +5009,6 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 			goto fail;
 		}
 
-		if (SMB_VFS_STAT(conn, smb_fname_cp) == -1) {
-			DEBUG(10, ("Unable to stat stream: %s\n",
-				   smb_fname_str_dbg(smb_fname_cp)));
-		}
-
 		status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_cp);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("Unable to open stream [%s]: %s\n",

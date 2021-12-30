@@ -1208,12 +1208,6 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 
 		DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
 
-		rc = vfs_stat(handle->conn, stream_name);
-		if (rc == -1 && errno != ENOENT) {
-			ok = false;
-			goto fail;
-		}
-
 		status = openat_pathref_fsp(handle->conn->cwd_fsp, stream_name);
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
@@ -1307,7 +1301,6 @@ static bool ad_convert_finderinfo(vfs_handle_struct *handle,
 	NTSTATUS status;
 	int saved_errno = 0;
 	int cmp;
-	int rc;
 
 	cmp = memcmp(ad->ad_filler, AD_FILLER_TAG_OSX, ADEDLEN_FILLER);
 	if (cmp != 0) {
@@ -1351,11 +1344,6 @@ static bool ad_convert_finderinfo(vfs_handle_struct *handle,
 	}
 
 	DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
-
-	rc = vfs_stat(handle->conn, stream_name);
-	if (rc == -1 && errno != ENOENT) {
-		return false;
-	}
 
 	status = openat_pathref_fsp(handle->conn->cwd_fsp, stream_name);
 	if (!NT_STATUS_IS_OK(status) &&
@@ -1607,16 +1595,10 @@ static bool ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	int ret;
 
-	ret = vfs_stat(handle->conn, adpath);
-	if (ret == -1 && errno != ENOENT) {
+	status = openat_pathref_fsp(handle->conn->cwd_fsp, adpath);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		return false;
-	}
-
-	if (VALID_STAT(adpath->st)) {
-		status = openat_pathref_fsp(handle->conn->cwd_fsp, adpath);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
 	}
 
 	status = SMB_VFS_CREATE_FILE(
@@ -1669,10 +1651,6 @@ static bool ad_unconvert_get_streams(struct vfs_handle_struct *handle,
 {
 	files_struct *fsp = NULL;
 	NTSTATUS status;
-
-	if (!VALID_STAT(smb_fname->st)) {
-		return false;
-	}
 
 	status = openat_pathref_fsp(handle->conn->cwd_fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1749,7 +1727,6 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 	size_t needed_size;
 	ssize_t nread;
 	NTSTATUS status;
-	int ret;
 	bool ok;
 
 	sname = synthetic_smb_fname(ad,
@@ -1768,13 +1745,6 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 	}
 
 	DBG_DEBUG("Collecting stream [%s]\n", smb_fname_str_dbg(sname));
-
-	ret = SMB_VFS_STAT(handle->conn, sname);
-	if (ret != 0) {
-		DBG_ERR("SMB_VFS_STAT [%s] failed\n", smb_fname_str_dbg(sname));
-		ok = false;
-		goto out;
-	}
 
 	status = openat_pathref_fsp(handle->conn->cwd_fsp, sname);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -397,7 +397,6 @@ static NTSTATUS open_pathref_base_fsp(const struct files_struct *dirfsp,
 {
 	struct smb_filename *smb_fname_base = NULL;
 	NTSTATUS status;
-	int ret;
 
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),
 					     smb_fname->base_name,
@@ -407,11 +406,6 @@ static NTSTATUS open_pathref_base_fsp(const struct files_struct *dirfsp,
 					     smb_fname->flags);
 	if (smb_fname_base == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = vfs_stat(fsp->conn, smb_fname_base);
-	if (ret != 0) {
-		return map_nt_error_from_unix(errno);
 	}
 
 	status = openat_pathref_fsp(dirfsp, smb_fname_base);
@@ -626,7 +620,6 @@ NTSTATUS synthetic_pathref(TALLOC_CTX *mem_ctx,
 {
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
-	int ret;
 
 	smb_fname = synthetic_smb_fname(mem_ctx,
 					base_name,
@@ -636,19 +629,6 @@ NTSTATUS synthetic_pathref(TALLOC_CTX *mem_ctx,
 					flags);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!VALID_STAT(smb_fname->st)) {
-		ret = vfs_stat(dirfsp->conn, smb_fname);
-		if (ret != 0) {
-			int err = errno;
-			int lvl = err == ENOENT ? DBGLVL_INFO : DBGLVL_ERR;
-			DBG_PREFIX(lvl, ("stat [%s] failed: %s\n",
-				smb_fname_str_dbg(smb_fname),
-				strerror(err)));
-			TALLOC_FREE(smb_fname);
-			return map_nt_error_from_unix(err);
-		}
 	}
 
 	status = openat_pathref_fsp(dirfsp, smb_fname);
@@ -686,7 +666,6 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 	struct smb_filename *parent = NULL;
 	struct smb_filename *atname = NULL;
 	NTSTATUS status;
-	int ret;
 
 	status = SMB_VFS_PARENT_PATHNAME(dirfsp->conn,
 					 mem_ctx,
@@ -706,12 +685,6 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 	 * POSIX-SYMLINK-PARENT for details.
 	 */
 	parent->flags &= ~SMB_FILENAME_POSIX_PATH;
-
-	ret = vfs_stat(dirfsp->conn, parent);
-	if (ret != 0) {
-		TALLOC_FREE(parent);
-		return map_nt_error_from_unix(errno);
-	}
 
 	status = openat_pathref_fsp(dirfsp, parent);
 	if (!NT_STATUS_IS_OK(status)) {
