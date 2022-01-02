@@ -3996,7 +3996,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		{
 			uint32_t flags = 0;
 			uint32_t sid_bytes;
-			int i;
+			uint32_t i;
 
 			if (!lp_unix_extensions()) {
 				return NT_STATUS_INVALID_LEVEL;
@@ -4677,7 +4677,7 @@ static const struct {unsigned stat_fflag; unsigned smb_fflag;}
 static void map_info2_flags_from_sbuf(const SMB_STRUCT_STAT *psbuf,
 				uint32_t *smb_fflags, uint32_t *smb_fmask)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(info2_flags_map); ++i) {
 	    *smb_fmask |= info2_flags_map[i].smb_fflag;
@@ -4693,7 +4693,7 @@ static bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
 				int *stat_fflags)
 {
 	uint32_t max_fmask = 0;
-	int i;
+	size_t i;
 
 	*stat_fflags = psbuf->st_ex_flags;
 
