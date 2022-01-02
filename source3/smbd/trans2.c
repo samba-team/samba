@@ -1709,8 +1709,10 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 			return false;
 		}
 		return true;
-	} else if (!VALID_STAT(smb_fname->st) &&
-		   SMB_VFS_STAT(state->conn, smb_fname) != 0) {
+	}
+
+	if (!VALID_STAT(smb_fname->st) &&
+	    SMB_VFS_STAT(state->conn, smb_fname) != 0) {
 		/* Needed to show the msdfs symlinks as
 		 * directories */
 
