@@ -617,6 +617,12 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	   library for HMAC_MD4 encryption */
 	mech = "NTLMSSP";
 
+	if (!(ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP)) {
+		DBG_WARNING("We can't use NTLMSSP, it is not allowed.\n");
+		status = ADS_ERROR_NT(NT_STATUS_NETWORK_CREDENTIAL_CONFLICT);
+		goto done;
+	}
+
 	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED) {
 		DBG_WARNING("We can't fallback to NTLMSSP, weak crypto is"
 			    " disallowed.\n");
