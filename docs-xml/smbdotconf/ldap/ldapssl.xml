@@ -34,13 +34,7 @@
 	</itemizedlist>
 	<para>
 	Please note that this parameter does only affect <emphasis>rpc</emphasis>
-	methods. To enable the LDAPv3 StartTLS extended operation (RFC2830) for 
-	<emphasis>ads</emphasis>, set
-	<smbconfoption name="ldap ssl">start tls</smbconfoption> 
-	<emphasis>and</emphasis>
-	<smbconfoption name="ldap ssl ads">yes</smbconfoption>.
-	See <refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
-	for more information on	<smbconfoption name="ldap ssl ads"/>.
+	methods.
         </para>
 
 </description>
