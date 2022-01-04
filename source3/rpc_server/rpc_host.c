@@ -998,7 +998,7 @@ static struct tevent_req *rpc_host_bind_read_send(
 		peer_addr,
 		&state->client->npa_info5);
 	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_error(req, ENOMEM);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 
