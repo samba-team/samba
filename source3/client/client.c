@@ -6169,6 +6169,7 @@ static int do_host_query(const char *query_host)
 
 		cli_shutdown(cli);
 		d_printf("Reconnecting with SMB1 for workgroup listing.\n");
+		lp_set_cmdline("client max protocol", "NT1");
 		status = cli_cm_open(talloc_tos(), NULL,
 				     query_host,
 				     "IPC$",
