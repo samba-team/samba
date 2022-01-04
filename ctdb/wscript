@@ -977,7 +977,7 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-tests-basic',
                         source=bld.SUBDIR('tests/src',
                                           'protocol_common_basic.c'),
-                        deps='replace talloc')
+                        deps='samba-util replace talloc')
 
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-tests-common',
                         source=bld.SUBDIR('tests/src',

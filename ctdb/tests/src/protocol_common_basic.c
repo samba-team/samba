@@ -21,6 +21,8 @@
 
 #include <assert.h>
 
+#include "lib/util/fault.h"
+
 #include "tests/src/protocol_common_basic.h"
 
 uint8_t BUFFER[1024*1024];
@@ -242,6 +244,7 @@ static void protocol_test_iterate_abort_handler(int sig)
        if (protocol_test_iterate_buf[0] != '\0') {
 	       fprintf(stderr, " tag: %s\n", protocol_test_iterate_buf);
        }
+       log_stack_trace();
        sigaction(SIGABRT, &act, NULL);
        abort();
 }
