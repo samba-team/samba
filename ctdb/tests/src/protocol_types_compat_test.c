@@ -2317,13 +2317,8 @@ COMPAT_TYPE1_TEST(struct ctdb_g_lock, ctdb_g_lock);
 
 COMPAT_TYPE3_TEST(struct ctdb_g_lock_list, ctdb_g_lock_list);
 
-int main(int argc, char *argv[])
+static void protocol_types_compat_test(void)
 {
-	if (argc == 2) {
-		int seed = atoi(argv[1]);
-		srandom(seed);
-	}
-
 	COMPAT_TEST_FUNC(ctdb_statistics)();
 	COMPAT_TEST_FUNC(ctdb_vnn_map)();
 	COMPAT_TEST_FUNC(ctdb_dbid_map)();
@@ -2367,6 +2362,10 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_server_id)();
 	COMPAT_TEST_FUNC(ctdb_g_lock)();
 	COMPAT_TEST_FUNC(ctdb_g_lock_list)();
+}
 
+int main(int argc, const char *argv[])
+{
+	protocol_test_iterate(argc, argv, protocol_types_compat_test);
 	return 0;
 }

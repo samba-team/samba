@@ -4,6 +4,4 @@
 
 ok_null
 
-for i in $(seq 1 100) ; do
-    unit_test protocol_ctdb_compat_test $i
-done
+unit_test protocol_ctdb_compat_test 1 100

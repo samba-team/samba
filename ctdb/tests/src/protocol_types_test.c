@@ -128,13 +128,8 @@ static void test_ctdb_rec_buffer_read_write(void)
 	talloc_free(mem_ctx);
 }
 
-int main(int argc, char *argv[])
+static void protocol_types_test(void)
 {
-	if (argc == 2) {
-		int seed = atoi(argv[1]);
-		srandom(seed);
-	}
-
 	TEST_FUNC(ctdb_tdb_data)();
 	TEST_FUNC(ctdb_tdb_datan)();
 	TEST_FUNC(ctdb_latency_counter)();
@@ -190,6 +185,10 @@ int main(int argc, char *argv[])
 	TEST_FUNC(sock_packet_header)();
 
 	test_ctdb_rec_buffer_read_write();
+}
 
+int main(int argc, const char *argv[])
+{
+	protocol_test_iterate(argc, argv, protocol_types_test);
 	return 0;
 }

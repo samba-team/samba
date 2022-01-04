@@ -78,13 +78,8 @@ static void test_ctdb_padding(void)
 	assert(np == buflen);
 }
 
-int main(int argc, char *argv[])
+static void protocol_basic_test(void)
 {
-	if (argc == 2) {
-		int seed = atoi(argv[1]);
-		srandom(seed);
-	}
-
 	TEST_FUNC(ctdb_uint8)();
 	TEST_FUNC(ctdb_uint16)();
 	TEST_FUNC(ctdb_int32)();
@@ -102,6 +97,10 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_timeval)();
 
 	test_ctdb_padding();
+}
 
+int main(int argc, const char *argv[])
+{
+	protocol_test_iterate(argc, argv, protocol_basic_test);
 	return 0;
 }

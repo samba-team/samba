@@ -1212,7 +1212,7 @@ COMPAT_CTDB4_TEST(struct ctdb_req_tunnel, ctdb_req_tunnel, CTDB_REQ_TUNNEL);
 
 #define NUM_CONTROLS	151
 
-int main(int argc, char *argv[])
+static void protocol_ctdb_compat_test(void)
 {
 	uint32_t opcode;
 	uint64_t test_srvid[] = {
@@ -1239,11 +1239,6 @@ int main(int argc, char *argv[])
 	};
 	unsigned int i;
 
-	if (argc == 2) {
-		int seed = atoi(argv[1]);
-		srandom(seed);
-	}
-
 	COMPAT_TEST_FUNC(ctdb_req_header)();
 
 	COMPAT_TEST_FUNC(ctdb_req_call)();
@@ -1266,6 +1261,10 @@ int main(int argc, char *argv[])
 
 	COMPAT_TEST_FUNC(ctdb_req_keepalive)();
 	COMPAT_TEST_FUNC(ctdb_req_tunnel)();
+}
 
+int main(int argc, const char *argv[])
+{
+	protocol_test_iterate(argc, argv, protocol_ctdb_compat_test);
 	return 0;
 }

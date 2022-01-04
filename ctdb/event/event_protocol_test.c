@@ -311,8 +311,7 @@ static void TEST_FUNC(NAME)(uint32_t cmd) \
 	size_t buflen, np; \
 	int ret; \
 \
-	printf("%s %u\n", #NAME, cmd); \
-	fflush(stdout); \
+	protocol_test_iterate_tag("%s %u\n", #NAME, cmd); \
 	mem_ctx = talloc_new(NULL); \
 	assert(mem_ctx != NULL); \
 	FILL_FUNC(NAME)(mem_ctx, &c1, cmd); \
@@ -340,8 +339,7 @@ static void TEST_FUNC(NAME)(uint32_t cmd) \
 	size_t buflen, len; \
 	int ret; \
 \
-	printf("%s %u\n", #NAME, cmd); \
-	fflush(stdout); \
+	protocol_test_iterate_tag("%s %u\n", #NAME, cmd); \
 	mem_ctx = talloc_new(NULL); \
 	assert(mem_ctx != NULL); \
 	fill_ctdb_event_header(&h1); \
@@ -379,14 +377,9 @@ EVENT_PROTOCOL1_TEST(struct ctdb_event_reply, ctdb_event_reply_data);
 EVENT_PROTOCOL2_TEST(struct ctdb_event_request, ctdb_event_request);
 EVENT_PROTOCOL2_TEST(struct ctdb_event_reply, ctdb_event_reply);
 
-int main(int argc, const char **argv)
+static void event_protocol_test(void)
 {
 	uint32_t cmd;
-
-	if (argc == 2) {
-		int seed = atoi(argv[1]);
-		srandom(seed);
-	}
 
 	TEST_FUNC(ctdb_event_script)();
 	TEST_FUNC(ctdb_event_script_list)();
@@ -410,6 +403,10 @@ int main(int argc, const char **argv)
 	for (cmd=1; cmd<CTDB_EVENT_CMD_MAX; cmd++) {
 		TEST_FUNC(ctdb_event_reply)(cmd);
 	}
+}
 
+int main(int argc, const char **argv)
+{
+	protocol_test_iterate(argc, argv, event_protocol_test);
 	return 0;
 }

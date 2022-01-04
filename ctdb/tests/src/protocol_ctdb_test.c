@@ -46,8 +46,7 @@ static void TEST_FUNC(NAME)(void) \
 	size_t pkt_len, buflen, np; \
 	int ret; \
 \
-	printf("%s\n", #NAME); \
-	fflush(stdout); \
+	protocol_test_iterate_tag("%s\n", #NAME);	\
 	mem_ctx = talloc_new(NULL); \
 	assert(mem_ctx != NULL); \
 	FILL_FUNC(NAME)(&c1); \
@@ -77,8 +76,7 @@ static void TEST_FUNC(NAME)(uint32_t opcode) \
 	size_t pkt_len, buflen, np; \
 	int ret; \
 \
-	printf("%s %u\n", #NAME, opcode); \
-	fflush(stdout); \
+	protocol_test_iterate_tag("%s %u\n", #NAME, opcode); \
 	mem_ctx = talloc_new(NULL); \
 	assert(mem_ctx != NULL); \
 	FILL_FUNC(NAME)(mem_ctx, &c1, opcode); \
@@ -108,8 +106,7 @@ static void TEST_FUNC(NAME)(uint64_t srvid) \
 	size_t pkt_len, buflen, np; \
 	int ret; \
 \
-	printf("%s %"PRIx64"\n", #NAME, srvid); \
-	fflush(stdout); \
+	protocol_test_iterate_tag("%s %"PRIx64"\n", #NAME, srvid); \
 	mem_ctx = talloc_new(NULL); \
 	assert(mem_ctx != NULL); \
 	FILL_FUNC(NAME)(mem_ctx, &c1, srvid); \
@@ -140,8 +137,7 @@ static void TEST_FUNC(NAME)(void) \
 	size_t pkt_len, buflen, len; \
 	int ret; \
 \
-	printf("%s\n", #NAME); \
-	fflush(stdout); \
+	protocol_test_iterate_tag("%s\n", #NAME); \
 	mem_ctx = talloc_new(NULL); \
 	assert(mem_ctx != NULL); \
 	fill_ctdb_req_header(&h1); \
@@ -176,8 +172,7 @@ static void TEST_FUNC(NAME)(uint32_t opcode) \
 	size_t pkt_len, buflen, len; \
 	int ret; \
 \
-	printf("%s %u\n", #NAME, opcode); \
-	fflush(stdout); \
+	protocol_test_iterate_tag("%s %u\n", #NAME, opcode); \
 	mem_ctx = talloc_new(NULL); \
 	assert(mem_ctx != NULL); \
 	fill_ctdb_req_header(&h1); \
@@ -212,8 +207,7 @@ static void TEST_FUNC(NAME)(uint32_t opcode) \
 	size_t pkt_len, buflen, len; \
 	int ret; \
 \
-	printf("%s %u\n", #NAME, opcode); \
-	fflush(stdout); \
+	protocol_test_iterate_tag("%s %u\n", #NAME, opcode); \
 	mem_ctx = talloc_new(NULL); \
 	assert(mem_ctx != NULL); \
 	fill_ctdb_req_header(&h1); \
@@ -248,8 +242,7 @@ static void TEST_FUNC(NAME)(uint64_t srvid) \
 	size_t pkt_len, buflen, len; \
 	int ret; \
 \
-	printf("%s %"PRIx64"\n", #NAME, srvid); \
-	fflush(stdout); \
+	protocol_test_iterate_tag("%s %"PRIx64"\n", #NAME, srvid); \
 	mem_ctx = talloc_new(NULL); \
 	assert(mem_ctx != NULL); \
 	fill_ctdb_req_header(&h1); \
@@ -304,7 +297,7 @@ PROTOCOL_CTDB4_TEST(struct ctdb_req_keepalive, ctdb_req_keepalive,
 			CTDB_REQ_KEEPALIVE);
 PROTOCOL_CTDB4_TEST(struct ctdb_req_tunnel, ctdb_req_tunnel, CTDB_REQ_TUNNEL);
 
-int main(int argc, char *argv[])
+static void protocol_ctdb_test(void)
 {
 	uint32_t opcode;
 	uint64_t test_srvid[] = {
@@ -330,11 +323,6 @@ int main(int argc, char *argv[])
 		CTDB_SRVID_DISABLE_IP_CHECK,
 	};
 	size_t i;
-
-	if (argc == 2) {
-		int seed = atoi(argv[1]);
-		srandom(seed);
-	}
 
 	TEST_FUNC(ctdb_req_header)();
 
@@ -368,6 +356,10 @@ int main(int argc, char *argv[])
 
 	TEST_FUNC(ctdb_req_keepalive)();
 	TEST_FUNC(ctdb_req_tunnel)();
+}
 
+int main(int argc, const char *argv[])
+{
+	protocol_test_iterate(argc, argv, protocol_ctdb_test);
 	return 0;
 }
