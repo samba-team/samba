@@ -165,6 +165,11 @@ void verify_ctdb_pid(pid_t *p1, pid_t *p2);
 void fill_ctdb_timeval(struct timeval *p);
 void verify_ctdb_timeval(struct timeval *p1, struct timeval *p2);
 
+void protocol_test_iterate_tag(const char *fmt, ...) PRINTF_ATTRIBUTE(1,0);
+void protocol_test_iterate(int argc,
+			    const char *argv[],
+			   void (*test_func)(void));
+
 #endif /* __CTDB_PROTOCOL_COMMON_BASIC_H__ */
 
 

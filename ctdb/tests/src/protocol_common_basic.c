@@ -229,3 +229,73 @@ void verify_ctdb_timeval(struct timeval *p1, struct timeval *p2)
 	assert(p1->tv_usec == p2->tv_usec);
 }
 
+static unsigned int seed;
+static char protocol_test_iterate_buf[1024];
+
+static void protocol_test_iterate_abort_handler(int sig)
+{
+       struct sigaction act = {
+	       .sa_handler = SIG_DFL,
+       };
+
+       fprintf(stderr, "Failed with seed: %d\n", seed);
+       if (protocol_test_iterate_buf[0] != '\0') {
+	       fprintf(stderr, " tag: %s\n", protocol_test_iterate_buf);
+       }
+       sigaction(SIGABRT, &act, NULL);
+       abort();
+}
+
+void protocol_test_iterate_tag(const char *fmt, ...)
+{
+	va_list ap;
+	int count;
+
+	va_start(ap,fmt);
+	count = vsnprintf(protocol_test_iterate_buf,
+			  sizeof(protocol_test_iterate_buf),
+			  fmt,
+			  ap);
+	va_end(ap);
+
+	assert(count >= 0);
+	protocol_test_iterate_buf[sizeof(protocol_test_iterate_buf) - 1] = '\0';
+}
+
+void protocol_test_iterate(int argc,
+			   const char *argv[],
+			   void (*test_func)(void))
+{
+       struct sigaction act = {
+	       .sa_handler = protocol_test_iterate_abort_handler,
+       };
+       unsigned int min, max;
+
+       if (argc == 2 || argc == 3) {
+	       min = atoi(argv[1]);
+
+	       if (argc == 3) {
+		       max = atoi(argv[2]);
+		       if (min >= max) {
+			       fprintf(stderr,
+				       "%s: min must be less than max\n",
+				       argv[0]);
+			       exit(1);
+		       }
+
+	       } else {
+		       max = min;
+	       }
+       } else {
+	       fprintf(stderr, "usage: %s min [max]\n", argv[0]);
+	       exit(1);
+       }
+
+       sigaction(SIGABRT, &act, NULL);
+
+       for (seed = min; seed <= max ; seed++) {
+	       srandom(seed);
+
+	       test_func();
+       }
+}
