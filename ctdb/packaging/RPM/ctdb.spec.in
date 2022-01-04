@@ -16,7 +16,7 @@ Source: ctdb-%{version}.tar.gz
 # Packages
 Requires: coreutils, sed, gawk, iptables, iproute, procps, ethtool, sudo
 # Commands - package name might vary
-Requires: /usr/bin/killall, /bin/kill, /bin/netstat
+Requires: /usr/bin/killall, /bin/kill, /bin/ss
 
 Provides: ctdb = %{version}
 
