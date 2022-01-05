@@ -367,6 +367,25 @@ int main(int argc, char *argv[])
 	test_sock_addr_cmp("fe80::6af7:28ff:fefa:d136:123",
 			   "fe80::6af7:28ff:fefa:d136:122" , true, 1);
 
+	/*
+	 * Confirm equivalence of IPv6 sockets with and without
+	 * square-brackets
+	 */
+	test_sock_addr_cmp("[::1]:234", "::1:234", true, 0);
+	test_sock_addr_cmp("[fe80::6af7:28ff:fefa:d136]:234",
+			   "fe80::6af7:28ff:fefa:d136:234",
+			   true,
+			   0);
+	/* Check IPv4-mapped IPv6 addresses */
+	test_sock_addr_cmp("::ffff:172.16.0.27:977",
+			   "172.16.0.27:977",
+			   true,
+			   0);
+	test_sock_addr_cmp("[::ffff:172.16.0.27]:977",
+			   "172.16.0.27:977",
+			   true,
+			   0);
+
 	test_sock_addr_mask_from_string("127.0.0.1/8");
 	test_sock_addr_mask_from_string("::1/128");
 	test_sock_addr_mask_from_string("fe80::6af7:28ff:fefa:d136/64");
