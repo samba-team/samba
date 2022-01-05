@@ -311,6 +311,58 @@ void init_stat_ex_from_stat (struct stat_ex *dst,
 }
 
 /*******************************************************************
+ Create a clock-derived itime (imaginary) time. Used to generate
+ the fileid.
+********************************************************************/
+
+void create_clock_itime(struct stat_ex *dst)
+{
+	NTTIME tval;
+	struct timespec itime;
+	uint64_t mixin;
+	uint8_t rval;
+
+	/* Start with the system clock. */
+	clock_gettime_mono(&itime);
+
+	/* Convert to NTTIME. */
+	tval = unix_timespec_to_nt_time(itime);
+
+	/*
+	 * In case the system clock is poor granularity
+	 * (happens on VM or docker images) then mix in
+	 * 8 bits of randomness.
+	 */
+	generate_random_buffer((unsigned char *)&rval, 1);
+	mixin = rval;
+
+	/*
+	 * Shift up by 55 bits. This gives us approx 114 years
+	 * of headroom.
+	 */
+	mixin <<= 55;
+
+	/* And OR into the nttime. */
+	tval |= mixin;
+
+	/*
+	 * Convert to a unix timespec, ignoring any
+	 * constraints on seconds being higher than
+	 * TIME_T_MAX or lower than TIME_T_MIN. These
+	 * are only needed to allow unix display time functions
+	 * to work correctly, and this is being used to
+	 * generate a fileid. All we care about is the
+	 * NTTIME being valid across all NTTIME ranges
+	 * (which we carefully ensured above).
+	 */
+
+	itime = nt_time_to_unix_timespec_raw(tval);
+
+	/* And set as a generated itime. */
+	update_stat_ex_itime(dst, itime);
+}
+
+/*******************************************************************
 A stat() wrapper.
 ********************************************************************/
 
