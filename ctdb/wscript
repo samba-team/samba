@@ -1013,7 +1013,10 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('ctdb-tests-common',
                         source=bld.SUBDIR('tests/src',
-                                          'cluster_wait.c test_options.c'),
+                                          '''cluster_wait.c
+                                             test_options.c
+                                             test_backtrace.c
+                                          '''),
                         deps='''ctdb-client
                                 samba-util
                                 replace
