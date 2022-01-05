@@ -4169,13 +4169,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * If we created a file and it's not a stream, this is the point where
 	 * we set the itime (aka invented time) that get's stored in the DOS
 	 * attribute xattr. The value is going to be either what the filesystem
-	 * provided or a copy of the creation date.
+	 * provided or a generated itime value.
 	 *
 	 * Either way, we turn the itime into a File-ID, unless the filesystem
 	 * provided one (unlikely).
 	 */
 	if (info == FILE_WAS_CREATED && !is_named_stream(smb_fname)) {
-		smb_fname->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_ITIME;
+		create_clock_itime(&smb_fname->st);
 
 		if (lp_store_dos_attributes(SNUM(conn)) &&
 		    smb_fname->st.st_ex_iflags & ST_EX_IFLAG_CALCULATED_FILE_ID)
@@ -4387,7 +4387,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	smb_dname->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_ITIME;
+	create_clock_itime(&smb_dname->st);
 
 	if (lp_store_dos_attributes(SNUM(conn))) {
 		if (smb_dname->st.st_ex_iflags & ST_EX_IFLAG_CALCULATED_FILE_ID)
