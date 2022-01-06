@@ -747,14 +747,18 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 								 server_creds),
 						 0, "krb5_free_cred_contents failed");
 
+			torture_assert_int_equal(tctx,
+						 test_context->packet_count,
+						 1, "Expected krb5_get_creds to send one packet");
+
 		} else {
 			torture_assert_int_equal(tctx, k5ret, KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN,
 						 assertion_message);
+			/* Account for get_cred_kdc_capath() and get_cred_kdc_referral() fallback */
+			torture_assert_int_equal(tctx,
+						 test_context->packet_count,
+						 2, "Expected krb5_get_creds to send 2 packets");
 		}
-
-		torture_assert_int_equal(tctx,
-					 test_context->packet_count,
-					 1, "Expected krb5_get_creds to send packets");
 	}
 
 	/*
@@ -816,7 +820,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 			torture_assert(tctx,
 				       test_accept_ticket(tctx,
 							  samba_cmdline_get_creds(),
-							  spn,
+							  expected_principal_string,
 							  client_to_server),
 				       "test_accept_ticket failed - failed to accept the ticket we just created");
 		} else if (test_data->canonicalize == true
@@ -828,7 +832,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 			torture_assert(tctx,
 				       test_accept_ticket(tctx,
 							  samba_cmdline_get_creds(),
-							  principal_string,
+							  expected_principal_string,
 							  client_to_server),
 				       "test_accept_ticket failed - failed to accept the ticket we just created");
 		} else if (test_data->canonicalize == false
