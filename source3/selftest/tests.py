@@ -935,6 +935,8 @@ for t in tests:
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "smb2.fileid":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit_xattr -U$USERNAME%$PASSWORD')
+    elif t == "smb2.fileid_unique":
+        plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
     elif t == "smb2.acls_non_canonical":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/acls_non_canonical -U$USERNAME%$PASSWORD')
     elif t == "rpc.wkssvc":
