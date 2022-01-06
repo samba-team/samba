@@ -867,6 +867,36 @@ _PUBLIC_ int get_time_zone(time_t t)
 	return tm_diff(&tm_utc,tm);
 }
 
+/*
+ * Raw convert an NTTIME to a unix timespec.
+ */
+
+struct timespec nt_time_to_unix_timespec_raw(
+			NTTIME nt)
+{
+	int64_t d;
+	struct timespec ret;
+
+	d = (int64_t)nt;
+	/* d is now in 100ns units, since jan 1st 1601".
+	   Save off the ns fraction. */
+
+	/*
+	 * Take the last seven decimal digits and multiply by 100.
+	 * to convert from 100ns units to 1ns units.
+	 */
+        ret.tv_nsec = (long) ((d % (1000 * 1000 * 10)) * 100);
+
+	/* Convert to seconds */
+	d /= 1000*1000*10;
+
+	/* Now adjust by 369 years to make the secs since 1970 */
+	d -= TIME_FIXUP_CONSTANT_INT;
+
+	ret.tv_sec = (time_t)d;
+	return ret;
+}
+
 struct timespec nt_time_to_unix_timespec(NTTIME nt)
 {
 	int64_t d;
