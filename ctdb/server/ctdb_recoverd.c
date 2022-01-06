@@ -1264,17 +1264,6 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 					goto fail;
 				}
 
-				if (ctdb->runstate ==
-				    CTDB_RUNSTATE_FIRST_RECOVERY) {
-					/*
-					 * First recovery?  Perhaps
-					 * current node does not yet
-					 * know who the recmaster is.
-					 */
-					D_ERR("Retrying recovery\n");
-					goto fail;
-				}
-
 				D_ERR("Abort recovery, ban this node\n");
 				ctdb_ban_node(rec, rec->pnn);
 				goto fail;
