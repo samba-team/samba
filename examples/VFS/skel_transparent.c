@@ -473,6 +473,16 @@ static int skel_lstat(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 }
 
+static int skel_fstatat(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname,
+	SMB_STRUCT_STAT *sbuf,
+	int flags)
+{
+	return SMB_VFS_NEXT_FSTATAT(handle, dirfsp, smb_fname, sbuf, flags);
+}
+
 static uint64_t skel_get_alloc_size(struct vfs_handle_struct *handle,
 				    struct files_struct *fsp,
 				    const SMB_STRUCT_STAT *sbuf)
@@ -1316,6 +1326,7 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.stat_fn = skel_stat,
 	.fstat_fn = skel_fstat,
 	.lstat_fn = skel_lstat,
+	.fstatat_fn = skel_fstatat,
 	.get_alloc_size_fn = skel_get_alloc_size,
 	.unlinkat_fn = skel_unlinkat,
 	.fchmod_fn = skel_fchmod,

@@ -2037,6 +2037,17 @@ int smb_vfs_call_lstat(struct vfs_handle_struct *handle,
 	return handle->fns->lstat_fn(handle, smb_filename);
 }
 
+int smb_vfs_call_fstatat(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname,
+	SMB_STRUCT_STAT *sbuf,
+	int flags)
+{
+	VFS_FIND(fstatat);
+	return handle->fns->fstatat_fn(handle, dirfsp, smb_fname, sbuf, flags);
+}
+
 uint64_t smb_vfs_call_get_alloc_size(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp,
 				     const SMB_STRUCT_STAT *sbuf)

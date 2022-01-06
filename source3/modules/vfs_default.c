@@ -1314,6 +1314,33 @@ static int vfswrap_lstat(vfs_handle_struct *handle,
 	return result;
 }
 
+static int vfswrap_fstatat(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname,
+	SMB_STRUCT_STAT *sbuf,
+	int flags)
+{
+	int result = -1;
+
+	START_PROFILE(syscall_fstatat);
+
+	if (is_named_stream(smb_fname)) {
+		errno = ENOENT;
+		goto out;
+	}
+
+	result = sys_fstatat(
+		fsp_get_pathref_fd(dirfsp),
+		smb_fname->base_name,
+		sbuf,
+		flags,
+		lp_fake_directory_create_times(SNUM(handle->conn)));
+ out:
+	END_PROFILE(syscall_fstatat);
+	return result;
+}
+
 static NTSTATUS vfswrap_translate_name(struct vfs_handle_struct *handle,
 				       const char *name,
 				       enum vfs_translate_direction direction,
@@ -3968,6 +3995,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.stat_fn = vfswrap_stat,
 	.fstat_fn = vfswrap_fstat,
 	.lstat_fn = vfswrap_lstat,
+	.fstatat_fn = vfswrap_fstatat,
 	.get_alloc_size_fn = vfswrap_get_alloc_size,
 	.unlinkat_fn = vfswrap_unlinkat,
 	.fchmod_fn = vfswrap_fchmod,

@@ -1414,6 +1414,102 @@ out:
 	return ret;
 }
 
+static int shadow_copy2_fstatat(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname_in,
+	SMB_STRUCT_STAT *sbuf,
+	int flags)
+{
+	struct shadow_copy2_private *priv = NULL;
+	struct smb_filename *smb_fname = NULL;
+	time_t timestamp = 0;
+	char *stripped = NULL;
+	char *abspath = NULL;
+	bool converted = false;
+	int ret;
+	bool ok;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
+				return -1);
+
+	smb_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						 dirfsp,
+						 smb_fname_in);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ok = shadow_copy2_strip_snapshot_converted(talloc_tos(),
+						   handle,
+						   smb_fname,
+						   &timestamp,
+						   &stripped,
+						   &converted);
+	if (!ok) {
+		return -1;
+	}
+	if (timestamp == 0) {
+		TALLOC_FREE(stripped);
+		ret = SMB_VFS_NEXT_FSTATAT(
+			handle, dirfsp, smb_fname_in, sbuf, flags);
+		if (ret != 0) {
+			return ret;
+		}
+		if (!converted) {
+			return 0;
+		}
+
+		abspath = make_path_absolute(
+			talloc_tos(), priv, smb_fname->base_name);
+		if (abspath == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+
+		convert_sbuf(handle, abspath, sbuf);
+		TALLOC_FREE(abspath);
+		return 0;
+	}
+
+	smb_fname->base_name = shadow_copy2_convert(
+		smb_fname, handle, stripped, timestamp);
+	TALLOC_FREE(stripped);
+	if (smb_fname->base_name == NULL) {
+		TALLOC_FREE(smb_fname);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_FSTATAT(handle,
+				   dirfsp,
+				   smb_fname,
+				   sbuf,
+				   flags);
+	if (ret != 0) {
+		int saved_errno = errno;
+		TALLOC_FREE(smb_fname);
+		errno = saved_errno;
+		return -1;
+	}
+
+	abspath = make_path_absolute(
+		talloc_tos(), priv, smb_fname->base_name);
+	if (abspath == NULL) {
+		TALLOC_FREE(smb_fname);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	convert_sbuf(handle, abspath, sbuf);
+	TALLOC_FREE(abspath);
+
+	TALLOC_FREE(smb_fname);
+
+	return 0;
+}
+
 static int shadow_copy2_openat(vfs_handle_struct *handle,
 			       const struct files_struct *dirfsp,
 			       const struct smb_filename *smb_fname_in,
@@ -3248,6 +3344,7 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.stat_fn = shadow_copy2_stat,
 	.lstat_fn = shadow_copy2_lstat,
 	.fstat_fn = shadow_copy2_fstat,
+	.fstatat_fn = shadow_copy2_fstatat,
 	.openat_fn = shadow_copy2_openat,
 	.unlinkat_fn = shadow_copy2_unlinkat,
 	.fchmod_fn = shadow_copy2_fchmod,

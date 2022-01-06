@@ -228,6 +228,13 @@
 #define SMB_VFS_NEXT_LSTAT(handle, smb_fname) \
 	smb_vfs_call_lstat((handle)->next, (smb_fname))
 
+#define SMB_VFS_FSTATAT(conn, dirfsp, smb_fname, sbuf, flags) \
+	smb_vfs_call_fstatat((conn)->vfs_handles, (dirfsp), (smb_fname), \
+			     (sbuf), (flags))
+#define SMB_VFS_NEXT_FSTATAT(conn, dirfsp, smb_fname, sbuf, flags) \
+	smb_vfs_call_fstatat((handle)->next, (dirfsp), (smb_fname), \
+			     (sbuf), (flags))
+
 #define SMB_VFS_GET_ALLOC_SIZE(conn, fsp, sbuf) \
 	smb_vfs_call_get_alloc_size((conn)->vfs_handles, (fsp), (sbuf))
 #define SMB_VFS_NEXT_GET_ALLOC_SIZE(conn, fsp, sbuf) \

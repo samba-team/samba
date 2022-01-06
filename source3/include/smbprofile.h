@@ -66,6 +66,7 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_stat) \
 	SMBPROFILE_STATS_BASIC(syscall_fstat) \
 	SMBPROFILE_STATS_BASIC(syscall_lstat) \
+	SMBPROFILE_STATS_BASIC(syscall_fstatat) \
 	SMBPROFILE_STATS_BASIC(syscall_get_alloc_size) \
 	SMBPROFILE_STATS_BASIC(syscall_unlinkat) \
 	SMBPROFILE_STATS_BASIC(syscall_chmod) \

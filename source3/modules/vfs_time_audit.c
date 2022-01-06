@@ -1107,6 +1107,29 @@ static int smb_time_audit_lstat(vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_time_audit_fstatat(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname,
+	SMB_STRUCT_STAT *sbuf,
+	int flags)
+{
+	int result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_FSTATAT(handle, dirfsp, smb_fname, sbuf, flags);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_smb_fname("fstatat", timediff, smb_fname);
+	}
+
+	return result;
+}
+
 static uint64_t smb_time_audit_get_alloc_size(vfs_handle_struct *handle,
 					      files_struct *fsp,
 					      const SMB_STRUCT_STAT *sbuf)
@@ -2745,6 +2768,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.stat_fn = smb_time_audit_stat,
 	.fstat_fn = smb_time_audit_fstat,
 	.lstat_fn = smb_time_audit_lstat,
+	.fstatat_fn = smb_time_audit_fstatat,
 	.get_alloc_size_fn = smb_time_audit_get_alloc_size,
 	.unlinkat_fn = smb_time_audit_unlinkat,
 	.fchmod_fn = smb_time_audit_fchmod,

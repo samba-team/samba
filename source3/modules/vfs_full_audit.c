@@ -140,6 +140,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_STAT,
 	SMB_VFS_OP_FSTAT,
 	SMB_VFS_OP_LSTAT,
+	SMB_VFS_OP_FSTATAT,
 	SMB_VFS_OP_GET_ALLOC_SIZE,
 	SMB_VFS_OP_UNLINKAT,
 	SMB_VFS_OP_FCHMOD,
@@ -276,6 +277,7 @@ static struct {
 	{ SMB_VFS_OP_STAT,	"stat" },
 	{ SMB_VFS_OP_FSTAT,	"fstat" },
 	{ SMB_VFS_OP_LSTAT,	"lstat" },
+	{ SMB_VFS_OP_FSTATAT,	"fstatat" },
 	{ SMB_VFS_OP_GET_ALLOC_SIZE,	"get_alloc_size" },
 	{ SMB_VFS_OP_UNLINKAT,	"unlinkat" },
 	{ SMB_VFS_OP_FCHMOD,	"fchmod" },
@@ -1568,6 +1570,26 @@ static int smb_full_audit_lstat(vfs_handle_struct *handle,
 	return result;    
 }
 
+static int smb_full_audit_fstatat(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname,
+	SMB_STRUCT_STAT *sbuf,
+	int flags)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_FSTATAT(handle, dirfsp, smb_fname, sbuf, flags);
+
+	do_log(SMB_VFS_OP_FSTATAT,
+	       (result >= 0),
+	       handle,
+	       "%s/%s",
+	       fsp_str_do_log(dirfsp),
+	       smb_fname_str_do_log(handle->conn, smb_fname));
+
+	return result;
+}
 static uint64_t smb_full_audit_get_alloc_size(vfs_handle_struct *handle,
 		       files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
 {
@@ -2930,6 +2952,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.stat_fn = smb_full_audit_stat,
 	.fstat_fn = smb_full_audit_fstat,
 	.lstat_fn = smb_full_audit_lstat,
+	.fstatat_fn = smb_full_audit_fstatat,
 	.get_alloc_size_fn = smb_full_audit_get_alloc_size,
 	.unlinkat_fn = smb_full_audit_unlinkat,
 	.fchmod_fn = smb_full_audit_fchmod,

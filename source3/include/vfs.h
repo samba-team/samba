@@ -362,6 +362,7 @@
  * Version 45 - Remove SMB_VFS_GETXATTR
  * Version 46 - Rename SMB_VFS_KERNEL_FLOCK to SMB_VFS_FILESYSTEM_SHAREMODE
  * Version 46 - Add flags and xferlen args to SMB_VFS_OFFLOAD_READ_RECV
+ * Version 46 - Add SMB_VFS_FSTATAT
  */
 
 #define SMB_VFS_INTERFACE_VERSION 46
@@ -1016,6 +1017,12 @@ struct vfs_fn_pointers {
 	int (*stat_fn)(struct vfs_handle_struct *handle, struct smb_filename *smb_fname);
 	int (*fstat_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_STAT *sbuf);
 	int (*lstat_fn)(struct vfs_handle_struct *handle, struct smb_filename *smb_filename);
+	int (*fstatat_fn)(
+		struct vfs_handle_struct *handle,
+		const struct files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		SMB_STRUCT_STAT *sbuf,
+		int flags);
 	uint64_t (*get_alloc_size_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 	int (*unlinkat_fn)(struct vfs_handle_struct *handle,
 			struct files_struct *srcdir_fsp,
@@ -1514,6 +1521,12 @@ int smb_vfs_call_fstat(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, SMB_STRUCT_STAT *sbuf);
 int smb_vfs_call_lstat(struct vfs_handle_struct *handle,
 		       struct smb_filename *smb_filename);
+int smb_vfs_call_fstatat(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname,
+	SMB_STRUCT_STAT *sbuf,
+	int flags);
 uint64_t smb_vfs_call_get_alloc_size(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp,
 				     const SMB_STRUCT_STAT *sbuf);
@@ -1942,6 +1955,12 @@ int vfs_not_implemented_fstat(vfs_handle_struct *handle, files_struct *fsp,
 			SMB_STRUCT_STAT *sbuf);
 int vfs_not_implemented_lstat(vfs_handle_struct *handle,
 			      struct smb_filename *smb_fname);
+int vfs_not_implemented_fstatat(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname,
+	SMB_STRUCT_STAT *sbuf,
+	int flags);
 uint64_t vfs_not_implemented_get_alloc_size(struct vfs_handle_struct *handle,
 					    struct files_struct *fsp,
 					    const SMB_STRUCT_STAT *sbuf);

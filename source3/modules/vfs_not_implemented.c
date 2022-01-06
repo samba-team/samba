@@ -382,6 +382,18 @@ int vfs_not_implemented_lstat(vfs_handle_struct *handle,
 }
 
 _PUBLIC_
+int vfs_not_implemented_fstatat(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname,
+	SMB_STRUCT_STAT *sbuf,
+	int flags)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+_PUBLIC_
 uint64_t vfs_not_implemented_get_alloc_size(struct vfs_handle_struct *handle,
 					    struct files_struct *fsp,
 					    const SMB_STRUCT_STAT *sbuf)
@@ -1104,6 +1116,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.stat_fn = vfs_not_implemented_stat,
 	.fstat_fn = vfs_not_implemented_fstat,
 	.lstat_fn = vfs_not_implemented_lstat,
+	.fstatat_fn = vfs_not_implemented_fstatat,
 	.get_alloc_size_fn = vfs_not_implemented_get_alloc_size,
 	.unlinkat_fn = vfs_not_implemented_unlinkat,
 	.fchmod_fn = vfs_not_implemented_fchmod,
