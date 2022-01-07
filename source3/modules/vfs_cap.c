@@ -448,7 +448,7 @@ static int cap_symlinkat(vfs_handle_struct *handle,
 	int saved_errno = 0;
 	int ret;
 
-	if (!capold || !capnew) {
+	if (capold == NULL) {
 		errno = ENOMEM;
 		return -1;
 	}
