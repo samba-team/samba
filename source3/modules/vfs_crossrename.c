@@ -82,7 +82,7 @@ static NTSTATUS copy_reg(vfs_handle_struct *handle,
 	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
 						      srcfsp,
 						      source);
-	if (full_fname_dst == NULL) {
+	if (full_fname_src == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
