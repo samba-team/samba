@@ -586,13 +586,13 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 							p.service, p.hostname,
 							blob);
 			if (!ADS_ERR_OK(status)) {
-				DEBUG(0,("kinit succeeded but "
-					"ads_sasl_spnego_gensec_bind(KRB5) failed "
-					"for %s/%s with user[%s] realm[%s]: %s\n",
+				DBG_ERR("kinit succeeded but "
+					"SPNEGO bind with Kerberos failed "
+					"for %s/%s - user[%s], realm[%s]: %s\n",
 					p.service, p.hostname,
 					ads->auth.user_name,
 					ads->auth.realm,
-					ads_errstr(status)));
+					ads_errstr(status));
 			}
 		}
 
@@ -602,13 +602,13 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 			goto done;
 		}
 
-		DEBUG(1,("ads_sasl_spnego_gensec_bind(KRB5) failed "
-			 "for %s/%s with user[%s] realm[%s]: %s, "
-			 "try to fallback to NTLMSSP\n",
-			 p.service, p.hostname,
-			 ads->auth.user_name,
-			 ads->auth.realm,
-			 ads_errstr(status)));
+		DBG_WARNING("SASL bind with Kerberos failed "
+			    "for %s/%s - user[%s], realm[%s]: %s, "
+			    "try to fallback to NTLMSSP\n",
+			    p.service, p.hostname,
+			    ads->auth.user_name,
+			    ads->auth.realm,
+			    ads_errstr(status));
 	}
 #endif
 
