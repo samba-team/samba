@@ -1135,7 +1135,6 @@ NTTIME full_timespec_to_nt_time(const struct timespec *_ts)
  **/
 struct timespec nt_time_to_full_timespec(NTTIME nt)
 {
-	int64_t d;
 	struct timespec ret;
 
 	if (nt == NTTIME_OMIT) {
@@ -1152,29 +1151,14 @@ struct timespec nt_time_to_full_timespec(NTTIME nt)
 		nt = NTTIME_MAX;
 	}
 
-	d = (int64_t)nt;
-	/* d is now in 100ns units, since jan 1st 1601".
-	   Save off the ns fraction. */
+	ret = nt_time_to_unix_timespec_raw(nt);
 
-	/*
-	 * Take the last seven decimal digits and multiply by 100.
-	 * to convert from 100ns units to 1ns units.
-	 */
-        ret.tv_nsec = (long) ((d % (1000 * 1000 * 10)) * 100);
-
-	/* Convert to seconds */
-	d /= 1000*1000*10;
-
-	/* Now adjust by 369 years to make the secs since 1970 */
-	d -= TIME_FIXUP_CONSTANT_INT;
-
-	if (d >= (int64_t)TIME_T_MAX) {
+	if (ret.tv_sec >= TIME_T_MAX) {
 		ret.tv_sec = TIME_T_MAX;
 		ret.tv_nsec = 0;
 		return ret;
 	}
 
-	ret.tv_sec = (time_t)d;
 	return ret;
 }
 
