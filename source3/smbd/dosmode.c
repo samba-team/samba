@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    dos mode handling functions
    Copyright (C) Andrew Tridgell 1992-1998
@@ -86,7 +86,7 @@ static uint32_t filter_mode_by_protocol(uint32_t mode)
     Base permission for files:
          if creating file and inheriting (i.e. parent_dir != NULL)
            apply read/write bits from parent directory.
-         else   
+         else
            everybody gets read bit set
          dos readonly is represented in unix by removing everyone's write bit
          dos archive is represented in unix by the user's execute bit
@@ -134,7 +134,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 			 smb_fname_str_dbg(smb_fname), (int)dir_mode));
 		/* Clear "result" */
 		result = 0;
-	} 
+	}
 
 	if (IS_DOS_DIR(dosmode)) {
 		/* We never make directories read only for the owner as under DOS a user
@@ -146,14 +146,14 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 			result |= dir_mode;
 		} else {
 			/* Provisionally add all 'x' bits */
-			result |= (S_IXUSR | S_IXGRP | S_IXOTH);                 
+			result |= (S_IXUSR | S_IXGRP | S_IXOTH);
 
 			/* Apply directory mask */
 			result &= lp_directory_mask(SNUM(conn));
 			/* Add in force bits */
 			result |= lp_force_directory_mode(SNUM(conn));
 		}
-	} else { 
+	} else {
 		if (lp_map_archive(SNUM(conn)) && IS_DOS_ARCHIVE(dosmode))
 			result |= S_IXUSR;
 
@@ -161,7 +161,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 			result |= S_IXGRP;
 
 		if (lp_map_hidden(SNUM(conn)) && IS_DOS_HIDDEN(dosmode))
-			result |= S_IXOTH;  
+			result |= S_IXOTH;
 
 		if (dir_mode) {
 			/* Inherit 666 component of parent directory mode */
@@ -1000,7 +1000,7 @@ int file_set_dosmode(connection_struct *conn,
 		unixmode |= tmp;
 	}
 
-	/* if we previously had any w bits set then leave them alone 
+	/* if we previously had any w bits set then leave them alone
 		whilst adding in the new w bits, if the new mode is not rdonly */
 	if (!IS_DOS_READONLY(dosmode)) {
 		unixmode |= (smb_fname->st.st_ex_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
@@ -1180,7 +1180,7 @@ int file_ntimes(connection_struct *conn,
 	/* Don't update the time on read-only shares */
 	/* We need this as set_filetime (which can be called on
 	   close and other paths) can end up calling this function
-	   without the NEED_WRITE protection. Found by : 
+	   without the NEED_WRITE protection. Found by :
 	   Leo Weppelman <leo@wau.mis.ah.nl>
 	*/
 
