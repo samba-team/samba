@@ -2669,7 +2669,6 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	ADS_STATUS ads_status;
 #endif /* HAVE_ADS */
 	const char *pre_connect_realm = NULL;
-	const char *numeric_dcip = NULL;
 	const char *sitename = NULL;
 	struct netr_DsRGetDCNameInfo *info;
 	const char *dc;
@@ -2731,7 +2730,6 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		return WERR_NERR_DCNOTFOUND;
 	}
 
-	numeric_dcip = info->dc_address + 2;
 	sitename = info->dc_site_name;
 	/* info goes out of scope but the memory stays
 	   allocated on the talloc context */
@@ -2741,8 +2739,9 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 
 	if (pre_connect_realm != NULL) {
 		struct sockaddr_storage ss = {0};
+		const char *numeric_dcip = info->dc_address + 2;
 
-		if (numeric_dcip != NULL) {
+		if (numeric_dcip[0] == '\0') {
 			if (!interpret_string_addr(&ss, numeric_dcip,
 						   AI_NUMERICHOST)) {
 				DBG_ERR(
