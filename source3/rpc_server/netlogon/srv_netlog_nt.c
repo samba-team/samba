@@ -1512,14 +1512,9 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
-		const char *computer_name = "<unknown>";
-
-		if (creds && creds->computer_name) {
-			computer_name = creds->computer_name;
-		}
-		DEBUG(2,("_netr_ServerPasswordSet2: netlogon_creds_server_step "
-			"failed. Rejecting auth request from client %s machine account %s\n",
-			r->in.computer_name, computer_name));
+		DBG_NOTICE("netlogon_creds_server_step failed. "
+			   "Rejecting auth request from client %s\n",
+			   r->in.computer_name);
 		TALLOC_FREE(creds);
 		return status;
 	}
@@ -1527,7 +1522,8 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	DBG_NOTICE("Server Password Set2 by remote "
 		   "machine:[%s] on account [%s]\n",
 		   r->in.computer_name,
-		   creds->computer_name);
+		   creds->computer_name != NULL ?
+			creds->computer_name : "<unknown>");
 
 	memcpy(password_buf.data, r->in.new_password->data, 512);
 	SIVAL(password_buf.data, 512, r->in.new_password->length);
