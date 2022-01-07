@@ -722,10 +722,12 @@ static void lost_reclock_handler(void *private_data)
 	struct ctdb_recoverd *rec = talloc_get_type_abort(
 		private_data, struct ctdb_recoverd);
 
-	D_ERR("Recovery lock helper terminated, triggering an election\n");
+	D_ERR("Recovery lock helper terminated\n");
 	TALLOC_FREE(rec->recovery_lock_handle);
 
-	force_election(rec);
+	if (this_node_can_be_leader(rec)) {
+		force_election(rec);
+	}
 }
 
 static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
