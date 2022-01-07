@@ -30,30 +30,42 @@
 #include "lib/tdb/common/tdb_private.h"
 #include "lib/tdb/common/mutex.c"
 
-static uint8_t *hex_decode(const char *hex_in, size_t *len)
+static uint8_t *hex_decode(const char *hex_in, size_t *plen)
 {
 	size_t i;
 	int num;
 	uint8_t *buffer;
+	size_t len;
 
-	*len = strlen(hex_in) / 2;
-	buffer = malloc(*len);
+	len = strlen(hex_in) / 2;
+	if (len == 0) {
+		return NULL;
+	}
 
-	for (i=0; i<*len; i++) {
+	buffer = malloc(len);
+	if (buffer == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; i < len; i++) {
 		sscanf(&hex_in[i*2], "%02X", &num);
 		buffer[i] = (uint8_t)num;
 	}
+
+	*plen = len;
 
 	return buffer;
 }
 
 static int get_hash_chain(struct tdb_context *tdb, const char *hex_key)
 {
-	TDB_DATA key;
+	TDB_DATA key = {
+		.dsize = 0,
+	};
 	unsigned int hash;
 
 	key.dptr = hex_decode(hex_key, &key.dsize);
-	if (key.dsize == 0) {
+	if (key.dptr == NULL || key.dsize == 0) {
 		return -1;
 	}
 	hash = tdb_jenkins_hash(&key);
