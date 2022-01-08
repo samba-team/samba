@@ -9993,8 +9993,7 @@ static bool run_eatest(int dummy)
 	const char *fname = "\\eatest.txt";
 	bool correct = True;
 	uint16_t fnum;
-	int i;
-	size_t num_eas;
+	size_t i, num_eas;
 	struct ea_struct *ea_list = NULL;
 	TALLOC_CTX *mem_ctx = talloc_init("eatest");
 	NTSTATUS status;
@@ -10021,7 +10020,7 @@ static bool run_eatest(int dummy)
 	for (i = 0; i < 10; i++) {
 		fstring ea_name, ea_val;
 
-		slprintf(ea_name, sizeof(ea_name), "EA_%d", i);
+		slprintf(ea_name, sizeof(ea_name), "EA_%zu", i);
 		memset(ea_val, (char)i+1, i+1);
 		status = cli_set_ea_fnum(cli, fnum, ea_name, ea_val, i+1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -10036,7 +10035,7 @@ static bool run_eatest(int dummy)
 	for (i = 0; i < 10; i++) {
 		fstring ea_name, ea_val;
 
-		slprintf(ea_name, sizeof(ea_name), "EA_%d", i+10);
+		slprintf(ea_name, sizeof(ea_name), "EA_%zu", i+10);
 		memset(ea_val, (char)i+1, i+1);
 		status = cli_set_ea_path(cli, fname, ea_name, ea_val, i+1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -10061,7 +10060,7 @@ static bool run_eatest(int dummy)
 	}
 
 	for (i = 0; i < num_eas; i++) {
-		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
+		printf("%zu: ea_name = %s. Val = ", i, ea_list[i].name);
 		dump_data(0, ea_list[i].value.data,
 			  ea_list[i].value.length);
 	}
@@ -10093,7 +10092,7 @@ static bool run_eatest(int dummy)
 
 	printf("num_eas = %d\n", (int)num_eas);
 	for (i = 0; i < num_eas; i++) {
-		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
+		printf("%zu: ea_name = %s. Val = ", i, ea_list[i].name);
 		dump_data(0, ea_list[i].value.data,
 			  ea_list[i].value.length);
 	}
@@ -10694,10 +10693,9 @@ static void torture_createdels_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct torture_createdels_state *state = tevent_req_data(
 		req, struct torture_createdels_state);
-	size_t num_parallel = talloc_array_length(state->reqs);
+	size_t i, num_parallel = talloc_array_length(state->reqs);
 	NTSTATUS status;
 	char *name;
-	int i;
 
 	status = torture_createdel_recv(subreq);
 	if (!NT_STATUS_IS_OK(status)){
@@ -14387,7 +14385,7 @@ static bool run_local_hex_encode_buf(int dummy)
 {
 	char buf[17];
 	uint8_t src[8];
-	int i;
+	size_t i;
 
 	for (i=0; i<sizeof(src); i++) {
 		src[i] = i;
