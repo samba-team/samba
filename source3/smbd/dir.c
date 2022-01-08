@@ -478,7 +478,7 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 		}
 	}
 
-	/* Stat failed. We know this is authoratiative if we are
+	/* Stat failed. We know this is authoritative if we are
 	 * providing case sensitive semantics or the underlying
 	 * filesystem is case sensitive.
 	 */
