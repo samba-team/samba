@@ -897,23 +897,10 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				binding, "target_hostname");
 
 		if (remote_host != NULL) {
-			int af = AF_UNSPEC;
-
-			if (remote_name == NULL) {
-				remote_name = dcerpc_binding_get_string_option(
-						binding, "host");
-			}
-
-			if (is_ipaddress_v4(remote_host)) {
-				af = AF_INET;
-			} else if (is_ipaddress_v6(remote_host)) {
-				af = AF_INET6;
-			}
-			if (af != AF_UNSPEC) {
-				int ok = inet_pton(af, remote_host, &remote_ss);
-				if (ok) {
-					remote_sockaddr = &remote_ss;
-				}
+			bool ok = interpret_string_addr(
+				&remote_ss, remote_host, 0);
+			if (ok) {
+				remote_sockaddr = &remote_ss;
 			}
 		}
 	}
