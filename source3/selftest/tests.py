@@ -1054,6 +1054,14 @@ for s in signseal_options:
                  "none",
                  f'ncalrpc:[{a}{s}{e}] -c epmmap',
                  configuration])
+            if s != ",connect":
+                plantestsuite(
+                    f'samba3.blackbox.rpcclient over ncacn_ip_tcp with [{a}{s}{e}] ',
+                    "nt4_dc:local",
+                    [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+                     "none",
+                     f'ncacn_ip_tcp:"$SERVER_IP"[{a}{s}{e}] -c epmmap -U"$USERNAME"%"$PASSWORD"',
+                     configuration])
 
     # We should try more combinations in future, but this is all
     # the pre-calculated credentials cache supports at the moment
