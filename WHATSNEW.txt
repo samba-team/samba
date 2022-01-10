@@ -1,4 +1,73 @@
                    ===============================
+                   Release Notes for Samba 4.13.16
+                          January 10, 2022
+                   ===============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2021-43566:  mkdir race condition allows share escape in Samba 4.x.
+                   https://www.samba.org/samba/security/CVE-2021-43566.html
+
+
+=======
+Details
+=======
+
+o  CVE-2021-43566:
+   All versions of Samba prior to 4.13.16 are vulnerable to a malicious
+   client using an SMB1 or NFS symlink race to allow a directory to be
+   created in an area of the server file system not exported under the
+   share definition. Note that SMB1 has to be enabled, or the share
+   also available via NFS in order for this attack to succeed.
+
+   Clients that have write access to the exported part of the file system
+   under a share via SMB1 unix extensions or NFS can create symlinks that
+   can race the server by renaming an existing path and then replacing it
+   with a symlink. If the client wins the race it can cause the server to
+   create a directory under the new symlink target after the exported
+   share path check has been done. This new symlink target can point to
+   anywhere on the server file system. The authenticated user must have
+   permissions to create a directory under the target directory of the
+   symlink.
+
+   This is a difficult race to win, but theoretically possible. Note that
+   the proof of concept code supplied wins the race only when the server
+   is slowed down and put under heavy load. Exploitation of this bug has
+   not been seen in the wild.
+
+
+Changes since 4.13.15
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13979: CVE-2021-43566: mkdir race condition allows share escape in Samba 4.x
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.libera.chat or the
+#samba-technical:matrix.org matrix channel.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ===============================
                    Release Notes for Samba 4.13.15
                           December 15, 2021
                    ===============================
@@ -70,8 +139,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ===============================
                    Release Notes for Samba 4.13.14
                            November 9, 2021
