@@ -323,7 +323,7 @@ void create_clock_itime(struct stat_ex *dst)
 	uint8_t rval;
 
 	/* Start with the system clock. */
-	clock_gettime_mono(&itime);
+	itime = timespec_current();
 
 	/* Convert to NTTIME. */
 	tval = unix_timespec_to_nt_time(itime);
