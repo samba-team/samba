@@ -282,10 +282,13 @@ int main(int argc, const char *argv[])
 		goto fail;
 	}
 
-	if (ctdb_config.recovery_lock == NULL) {
-		D_WARNING("Recovery lock not set\n");
+	if (ctdb_config.cluster_lock != NULL) {
+		ctdb->recovery_lock = ctdb_config.cluster_lock;
+	} else if (ctdb_config.recovery_lock != NULL) {
+		ctdb->recovery_lock = ctdb_config.recovery_lock;
+	} else {
+		D_WARNING("Cluster lock not set\n");
 	}
-	ctdb->recovery_lock = ctdb_config.recovery_lock;
 
 	/* tell ctdb what address to listen on */
 	if (ctdb_config.node_address) {

@@ -28,7 +28,7 @@
 
 #define CTDB_MUTEX_CEPH_LOCK_NAME	"ctdb_reclock_mutex"
 #define CTDB_MUTEX_CEPH_LOCK_COOKIE	CTDB_MUTEX_CEPH_LOCK_NAME
-#define CTDB_MUTEX_CEPH_LOCK_DESC	"CTDB recovery lock"
+#define CTDB_MUTEX_CEPH_LOCK_DESC	"CTDB cluster lock"
 /*
  * During failover it may take up to <lock duration> seconds before the
  * newly elected recovery master can obtain the lock.

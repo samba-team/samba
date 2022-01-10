@@ -60,7 +60,7 @@
     <para>
       ctdb_etcd_lock is intended to be run as a mutex helper for CTDB. It
       will try to connect to an existing etcd cluster and grab a lock in that
-      cluster to function as CTDB's recovery lock. Please see
+      cluster to function as CTDB's cluster lock. Please see
       <emphasis>ctdb/doc/cluster_mutex_helper.txt</emphasis> for details on
       the mutex helper API. To use this, include the following line in
       the <literal>[cluster]</literal> section of
@@ -68,7 +68,7 @@
       <manvolnum>5</manvolnum></citerefentry>:
     </para>
     <screen format="linespecific">
-recovery lock = !/usr/local/usr/libexec/ctdb/ctdb_etcd_lock
+cluster lock = !/usr/local/usr/libexec/ctdb/ctdb_etcd_lock
     </screen>
     <para>
       You can also pass "-v", "-vv", or "-vvv" to include verbose output in

@@ -113,6 +113,24 @@ good:
 					  mode);
 }
 
+static bool validate_recovery_lock(const char *key,
+				   const char *old_reclock,
+				   const char *new_reclock,
+				   enum conf_update_mode mode)
+{
+	bool status;
+
+	if (new_reclock != NULL) {
+		D_WARNING("Configuration option [%s] -> %s is deprecated\n",
+			  CLUSTER_CONF_SECTION,
+			  key);
+	}
+
+	status = check_static_string_change(key, old_reclock, new_reclock, mode);
+
+	return status;
+}
+
 void cluster_conf_init(struct conf_context *conf)
 {
 	conf_define_section(conf, CLUSTER_CONF_SECTION, NULL);
@@ -129,7 +147,12 @@ void cluster_conf_init(struct conf_context *conf)
 			   validate_node_address);
 	conf_define_string(conf,
 			   CLUSTER_CONF_SECTION,
-			   CLUSTER_CONF_RECOVERY_LOCK,
+			   CLUSTER_CONF_CLUSTER_LOCK,
 			   NULL,
 			   check_static_string_change);
+	conf_define_string(conf,
+			   CLUSTER_CONF_SECTION,
+			   CLUSTER_CONF_RECOVERY_LOCK,
+			   NULL,
+			   validate_recovery_lock);
 }

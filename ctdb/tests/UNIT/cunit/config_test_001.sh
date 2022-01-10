@@ -34,6 +34,7 @@ ok <<EOF
 [cluster]
 	# transport = tcp
 	# node address = 
+	# cluster lock = 
 	# recovery lock = 
 [database]
 	# volatile database directory = ${database_volatile_dbdir}

@@ -51,6 +51,10 @@ static void setup_config_pointers(struct conf_context *conf)
 				   &ctdb_config.node_address);
 	conf_assign_string_pointer(conf,
 				   CLUSTER_CONF_SECTION,
+				   CLUSTER_CONF_CLUSTER_LOCK,
+				   &ctdb_config.cluster_lock);
+	conf_assign_string_pointer(conf,
+				   CLUSTER_CONF_SECTION,
 				   CLUSTER_CONF_RECOVERY_LOCK,
 				   &ctdb_config.recovery_lock);
 

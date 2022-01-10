@@ -26,6 +26,7 @@ struct ctdb_config {
 	/* Cluster */
 	const char *transport;
 	const char *node_address;
+	const char *cluster_lock;
 	const char *recovery_lock;
 
 	/* Database */

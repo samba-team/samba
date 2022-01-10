@@ -19,7 +19,7 @@
   <refsect1>
     <title>DESCRIPTION</title>
     <para>
-      ctdb_mutex_ceph_rados_helper can be used as a recovery lock provider
+      ctdb_mutex_ceph_rados_helper can be used as a cluster lock provider
       for CTDB.  When configured, split brain avoidance during CTDB recovery
       will be handled using locks against an object located in a Ceph RADOS
       pool.
@@ -29,7 +29,7 @@
       <manvolnum>5</manvolnum></citerefentry>:
     </para>
     <screen format="linespecific">
-recovery lock = !ctdb_mutex_ceph_rados_helper [Cluster] [User] [Pool] [Object]
+cluster lock = !ctdb_mutex_ceph_rados_helper [Cluster] [User] [Pool] [Object]
 
 Cluster: Ceph cluster name (e.g. ceph)
 User: Ceph cluster user name (e.g. client.admin)
@@ -44,7 +44,7 @@ Object: Ceph RADOS object name
     </para>
     <para>
       For informational purposes, ctdb_mutex_ceph_rados_helper will also
-      register the recovery lock holder in Ceph Manager's service map.
+      register the cluster lock holder in Ceph Manager's service map.
     </para>
   </refsect1>
 

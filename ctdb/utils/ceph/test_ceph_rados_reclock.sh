@@ -84,7 +84,7 @@ LOCKER_COOKIE="$(jq -r '.lockers[0].cookie' ${TMP_DIR}/lock_state_first)"
 [ "$LOCKER_COOKIE" == "ctdb_reclock_mutex" ] \
 	|| _fail "unexpected locker cookie: $LOCKER_COOKIE"
 LOCKER_DESC="$(jq -r '.lockers[0].description' ${TMP_DIR}/lock_state_first)"
-[ "$LOCKER_DESC" == "CTDB recovery lock" ] \
+[ "$LOCKER_DESC" == "CTDB cluster lock" ] \
 	|| _fail "unexpected locker description: $LOCKER_DESC"
 LOCKER_EXP="$(jq -r '.lockers[0].expiration' ${TMP_DIR}/lock_state_first)"
 [ "$LOCKER_EXP" == "0.000000" ] \
@@ -146,7 +146,7 @@ LOCKER_COOKIE="$(jq -r '.lockers[0].cookie' ${TMP_DIR}/lock_state_fourth)"
 [ "$LOCKER_COOKIE" == "ctdb_reclock_mutex" ] \
 	|| _fail "unexpected locker cookie: $LOCKER_COOKIE"
 LOCKER_DESC="$(jq -r '.lockers[0].description' ${TMP_DIR}/lock_state_fourth)"
-[ "$LOCKER_DESC" == "CTDB recovery lock" ] \
+[ "$LOCKER_DESC" == "CTDB cluster lock" ] \
 	|| _fail "unexpected locker description: $LOCKER_DESC"
 
 kill $locker_pid || exit 1

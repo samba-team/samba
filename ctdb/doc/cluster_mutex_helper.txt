@@ -5,11 +5,11 @@ CTDB uses cluster-wide mutexes to protect against a "split brain",
 which could occur if the cluster becomes partitioned due to network
 failure or similar.
 
-CTDB uses a cluster-wide mutex for its "recovery lock", which is used
+CTDB uses a cluster-wide mutex for its "cluster lock", which is used
 to ensure that only one database recovery can happen at a time.  For
-an overview of recovery lock configuration see the RECOVERY LOCK
+an overview of cluster lock configuration see the CLUSTER LOCK
 section in ctdb(7).  CTDB tries to ensure correct operation of the
-recovery lock by attempting to take the recovery lock when CTDB knows
+cluster lock by attempting to take the cluster lock when CTDB knows
 that it should already be held.
 
 By default, CTDB uses a supplied mutex helper that uses a fcntl(2)

@@ -29,7 +29,7 @@ unit_test ctdb-config get "cluster" "node address"
 
 ok <<EOF
 EOF
-unit_test ctdb-config get "cluster" "recovery lock"
+unit_test ctdb-config get "cluster" "cluster lock"
 
 cat > "$conffile" <<EOF
 [cluster]
@@ -72,3 +72,22 @@ conf: validation for option "node address" failed
 Failed to load config file $conffile
 EOF
 unit_test ctdb-config validate
+
+cat > "$conffile" <<EOF
+[cluster]
+    cluster lock = /foo/bar
+EOF
+
+required_result 0 <<EOF
+EOF
+unit_test ctdb-config validate
+
+cat > "$conffile" <<EOF
+[cluster]
+    recovery lock = /foo/bar
+EOF
+
+required_result 0 <<EOF
+Configuration option [cluster] -> recovery lock is deprecated
+EOF
+unit_test ctdb-config -d WARNING validate

@@ -19,11 +19,11 @@
 
 This script is intended to be run as a mutex helper for CTDB. It will try to
 connect to an existing etcd cluster and grab an etcd.Lock() to function as
-CTDB's recovery lock. Please see ctdb/doc/cluster_mutex_helper.txt for
+CTDB's cluster lock. Please see ctdb/doc/cluster_mutex_helper.txt for
 details on what we're SUPPOSED to be doing. :) To use this, include
 the following line in the ctdb.conf:
 
-    recovery lock = !/path/to/script
+    cluster lock = !/path/to/script
 
 You can also pass "-v", "-vv", or "-vvv" to include verbose output in the
 CTDB log. Additional "v"s indicate increases in verbosity.
