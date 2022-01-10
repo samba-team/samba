@@ -82,10 +82,30 @@
 </refsect1>
 
   <refsect1>
-    <title>Recovery Lock</title>
+    <title>Cluster leader</title>
 
     <para>
-      CTDB uses a <emphasis>recovery lock</emphasis> to avoid a
+      CTDB uses a <emphasis>cluster leader and follower</emphasis>
+      model of cluster management.  All nodes in a cluster elect one
+      node to be the leader.  The leader node coordinates privileged
+      operations such as database recovery and IP address failover.
+    </para>
+
+    <para>
+      CTDB previously referred to the leader as the <emphasis>recovery
+      master</emphasis> or <emphasis>recmaster</emphasis>.  References
+      to these terms may still be found in documentation and code.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Cluster Lock</title>
+
+    <para>
+      CTDB uses a cluster lock to assert its privileged role in the
+      cluster.  This node takes the cluster lock when it becomes
+      leader and holds the lock until it is no longer leader.  The
+      <emphasis>cluster lock</emphasis> helps CTDB to avoid a
       <emphasis>split brain</emphasis>, where a cluster becomes
       partitioned and each partition attempts to operate
       independently.  Issues that can result from a split brain
@@ -94,34 +114,50 @@
     </para>
 
     <para>
-      CTDB uses a <emphasis>cluster leader and follower</emphasis>
-      model of cluster management.  All nodes in a cluster elect one
-      node to be the leader.  The leader node coordinates privileged
-      operations such as database recovery and IP address failover.
-      CTDB refers to the leader node as the <emphasis>recovery
-      master</emphasis>.  This node takes and holds the recovery lock
-      to assert its privileged role in the cluster.
+      CTDB previously referred to the cluster lock as the
+      <emphasis>recovery lock</emphasis>.  The abbreviation
+      <emphasis>reclock</emphasis> is still used - just "clock" would
+      be confusing.
     </para>
 
     <para>
-      By default, the recovery lock is implemented using a file
-      (specified by <parameter>recovery lock</parameter> in the
+      <emphasis>CTDB is unable configure a default cluster
+      lock</emphasis>, because this would depend on factors such as
+      cluster filesystem mountpoints.  However, <emphasis>running CTDB
+      without a cluster lock is not recommended</emphasis> as there
+      will be no split brain protection.
+    </para>
+
+    <para>
+      When a cluster lock is configured it is used as the election
+      mechanism.  Nodes race to take the cluster lock and the winner
+      is the cluster leader.  This avoids problems when a node wins an
+      election but is unable to take the lock - this can occur if a
+      cluster becomes partitioned (for example, due to a communication
+      failure) and a different leader is elected by the nodes in each
+      partition, or if the cluster filesystem has a high failover
+      latency.
+    </para>
+
+    <para>
+      By default, the cluster lock is implemented using a file
+      (specified by <parameter>cluster lock</parameter> in the
       <literal>[cluster]</literal> section of
       <citerefentry><refentrytitle>ctdb.conf</refentrytitle>
       <manvolnum>5</manvolnum></citerefentry>) residing in shared
       storage (usually) on a cluster filesystem.  To support a
-      recovery lock the cluster filesystem must support lock
+      cluster lock the cluster filesystem must support lock
       coherence.  See
       <citerefentry><refentrytitle>ping_pong</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry> for more details.
     </para>
 
     <para>
-      The recovery lock can also be implemented using an arbitrary
+      The cluster lock can also be implemented using an arbitrary
       cluster mutex helper (or call-out).  This is indicated by using
       an exclamation point ('!') as the first character of the
-      <parameter>recovery lock</parameter> parameter.  For example, a
-      value of <command>!/usr/local/bin/myhelper recovery</command>
+      <parameter>cluster lock</parameter> parameter.  For example, a
+      value of <command>!/usr/local/bin/myhelper cluster</command>
       would run the given helper with the specified arguments.  The
       helper will continue to run as long as it holds its mutex.  See
       <filename>ctdb/doc/cluster_mutex_helper.txt</filename> in the
@@ -129,7 +165,7 @@
     </para>
 
     <para>
-      When a file is specified for the <parameter>recovery
+      When a file is specified for the <parameter>cluster
       lock</parameter> parameter (i.e. no leading '!') the file lock
       is implemented by a default helper
       (<command>/usr/local/libexec/ctdb/ctdb_mutex_fcntl_helper</command>).
@@ -148,25 +184,8 @@
     </para>
 
     <para>
-      If a cluster becomes partitioned (for example, due to a
-      communication failure) and a different recovery master is
-      elected by the nodes in each partition, then only one of these
-      recovery masters will be able to take the recovery lock.  The
-      recovery master in the "losing" partition will not be able to
-      take the recovery lock and will be excluded from the cluster.
-      The nodes in the "losing" partition will elect each node in turn
-      as their recovery master so eventually all the nodes in that
-      partition will be excluded.
-    </para>
-
-    <para>
-      CTDB does sanity checks to ensure that the recovery lock is held
+      CTDB does sanity checks to ensure that the cluster lock is held
       as expected.
-    </para>
-
-    <para>
-      CTDB can run without a recovery lock but this is not recommended
-      as there will be no protection from split brains.
     </para>
   </refsect1>
 
