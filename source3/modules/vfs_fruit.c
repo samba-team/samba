@@ -1604,6 +1604,12 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 	 * on close.
 	 */
 	fio = fruit_get_complete_fio(handle, fsp);
+	if (fio == NULL) {
+		DBG_ERR("fio=NULL for [%s]\n", fsp_str_dbg(fsp));
+		errno = EBADF;
+		rc = -1;
+		goto exit;
+	}
 
 	ref_fio = VFS_ADD_FSP_EXTENSION(handle, ad_fsp,
 					struct fio,
@@ -1780,19 +1786,19 @@ static int fruit_openat(vfs_handle_struct *handle,
 static int fruit_close_meta(vfs_handle_struct *handle,
 			    files_struct *fsp)
 {
-	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	int ret;
 	struct fruit_config_data *config = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
-	if (fio == NULL) {
-		return -1;
-	}
-
 	switch (config->meta) {
 	case FRUIT_META_STREAM:
+	{
+		struct fio *fio = fruit_get_complete_fio(handle, fsp);
+		if (fio == NULL) {
+			return -1;
+		}
 		if (fio->fake_fd) {
 			ret = vfs_fake_fd_close(fsp_get_pathref_fd(fsp));
 			fsp_set_fd(fsp, -1);
@@ -1800,7 +1806,7 @@ static int fruit_close_meta(vfs_handle_struct *handle,
 			ret = SMB_VFS_NEXT_CLOSE(handle, fsp);
 		}
 		break;
-
+	}
 	case FRUIT_META_NETATALK:
 		ret = vfs_fake_fd_close(fsp_get_pathref_fd(fsp));
 		fsp_set_fd(fsp, -1);
@@ -1818,7 +1824,6 @@ static int fruit_close_meta(vfs_handle_struct *handle,
 static int fruit_close_rsrc(vfs_handle_struct *handle,
 			    files_struct *fsp)
 {
-	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	int ret;
 	struct fruit_config_data *config = NULL;
 
@@ -1831,10 +1836,16 @@ static int fruit_close_rsrc(vfs_handle_struct *handle,
 		break;
 
 	case FRUIT_RSRC_ADFILE:
+	{
+		struct fio *fio = fruit_get_complete_fio(handle, fsp);
+		if (fio == NULL) {
+			return -1;
+		}
 		fio_close_ad_fsp(fio);
 		ret = vfs_fake_fd_close(fsp_get_pathref_fd(fsp));
 		fsp_set_fd(fsp, -1);
 		break;
+	}
 
 	case FRUIT_RSRC_XATTR:
 		ret = vfs_fake_fd_close(fsp_get_pathref_fd(fsp));
@@ -2448,8 +2459,8 @@ static ssize_t fruit_pread_rsrc_adouble(vfs_handle_struct *handle,
 	struct adouble *ad = NULL;
 	ssize_t nread;
 
-	if (fio->ad_fsp == NULL) {
-		DBG_ERR("ad_fsp=NULL for [%s]\n", fsp_str_dbg(fsp));
+	if (fio == NULL || fio->ad_fsp == NULL) {
+		DBG_ERR("fio/ad_fsp=NULL for [%s]\n", fsp_str_dbg(fsp));
 		errno = EBADF;
 		return -1;
 	}
@@ -2876,8 +2887,8 @@ static ssize_t fruit_pwrite_rsrc_adouble(vfs_handle_struct *handle,
 	ssize_t nwritten;
 	int ret;
 
-	if (fio->ad_fsp == NULL) {
-		DBG_ERR("ad_fsp=NULL for [%s]\n", fsp_str_dbg(fsp));
+	if (fio == NULL || fio->ad_fsp == NULL) {
+		DBG_ERR("fio/ad_fsp=NULL for [%s]\n", fsp_str_dbg(fsp));
 		errno = EBADF;
 		return -1;
 	}
@@ -3457,8 +3468,8 @@ static int fruit_fstat_rsrc_adouble(vfs_handle_struct *handle,
 	struct adouble *ad = NULL;
 	int ret;
 
-	if (fio->ad_fsp == NULL) {
-		DBG_ERR("ad_fsp=NULL for [%s]\n", fsp_str_dbg(fsp));
+	if (fio == NULL || fio->ad_fsp == NULL) {
+		DBG_ERR("fio/ad_fsp=NULL for [%s]\n", fsp_str_dbg(fsp));
 		errno = EBADF;
 		return -1;
 	}
@@ -4002,8 +4013,8 @@ static int fruit_ftruncate_rsrc_adouble(struct vfs_handle_struct *handle,
 	struct adouble *ad = NULL;
 	off_t ad_off;
 
-	if (fio->ad_fsp == NULL) {
-		DBG_ERR("ad_fsp=NULL for [%s]\n", fsp_str_dbg(fsp));
+	if (fio == NULL || fio->ad_fsp == NULL) {
+		DBG_ERR("fio/ad_fsp=NULL for [%s]\n", fsp_str_dbg(fsp));
 		errno = EBADF;
 		return -1;
 	}
