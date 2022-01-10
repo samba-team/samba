@@ -769,7 +769,7 @@ static int get_leader(TALLOC_CTX *mem_ctx,
 	if (ret == ETIMEDOUT) {
 		ret = 0;
 	} else if (ret != 0) {
-		fprintf(stderr, "Error getting recovery master\n");
+		fprintf(stderr, "Error getting leader\n");
 		return ret;
 	}
 
@@ -903,10 +903,13 @@ static void print_nodemap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 }
 
-static void print_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			 struct ctdb_node_map *nodemap, uint32_t mypnn,
-			 struct ctdb_vnn_map *vnnmap, int recmode,
-			 uint32_t recmaster)
+static void print_status(TALLOC_CTX *mem_ctx,
+			 struct ctdb_context *ctdb,
+			 struct ctdb_node_map *nodemap,
+			 uint32_t mypnn,
+			 struct ctdb_vnn_map *vnnmap,
+			 int recmode,
+			 uint32_t leader)
 {
 	unsigned int i;
 
@@ -925,8 +928,8 @@ static void print_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	printf("Recovery mode:%s (%d)\n",
 	       recmode == CTDB_RECOVERY_NORMAL ? "NORMAL" : "RECOVERY",
 	       recmode);
-	printf("Recovery master:");
-	print_pnn(recmaster);
+	printf("Leader:");
+	print_pnn(leader);
 }
 
 static int control_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
@@ -935,7 +938,7 @@ static int control_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	struct ctdb_node_map *nodemap;
 	struct ctdb_vnn_map *vnnmap;
 	int recmode;
-	uint32_t recmaster;
+	uint32_t leader;
 	int ret;
 
 	if (argc != 0) {
@@ -964,13 +967,18 @@ static int control_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = get_leader(mem_ctx, ctdb, &recmaster);
+	ret = get_leader(mem_ctx, ctdb, &leader);
 	if (ret != 0) {
 		return ret;
 	}
 
-	print_status(mem_ctx, ctdb, nodemap, ctdb->cmd_pnn, vnnmap,
-		     recmode, recmaster);
+	print_status(mem_ctx,
+		     ctdb,
+		     nodemap,
+		     ctdb->cmd_pnn,
+		     vnnmap,
+		     recmode,
+		     leader);
 	return 0;
 }
 
@@ -2282,13 +2290,13 @@ static int control_getcapabilities(TALLOC_CTX *mem_ctx,
 	if (options.machinereadable == 1) {
 		printf("%s%s%s%s%s\n",
 		       options.sep,
-		       "RECMASTER", options.sep,
+		       "LEADER", options.sep,
 		       "LMASTER", options.sep);
 		printf("%s%d%s%d%s\n", options.sep,
 		       !! (caps & CTDB_CAP_RECMASTER), options.sep,
 		       !! (caps & CTDB_CAP_LMASTER), options.sep);
 	} else {
-		printf("RECMASTER: %s\n",
+		printf("LEADER: %s\n",
 		       (caps & CTDB_CAP_RECMASTER) ? "YES" : "NO");
 		printf("LMASTER: %s\n",
 		       (caps & CTDB_CAP_LMASTER) ? "YES" : "NO");
@@ -2923,23 +2931,28 @@ static int control_shutdown(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 static int get_generation(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			  uint32_t *generation)
 {
-	uint32_t recmaster;
+	uint32_t leader;
 	int recmode;
 	struct ctdb_vnn_map *vnnmap;
 	int ret;
 
 again:
-	ret = get_leader(mem_ctx, ctdb, &recmaster);
+	ret = get_leader(mem_ctx, ctdb, &leader);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to find recovery master\n");
+		fprintf(stderr, "Failed to find leader\n");
 		return ret;
 	}
 
-	ret = ctdb_ctrl_get_recmode(mem_ctx, ctdb->ev, ctdb->client,
-				    recmaster, TIMEOUT(), &recmode);
+	ret = ctdb_ctrl_get_recmode(mem_ctx,
+				    ctdb->ev,
+				    ctdb->client,
+				    leader,
+				    TIMEOUT(),
+				    &recmode);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to get recovery mode from node %u\n",
-			recmaster);
+		fprintf(stderr,
+			"Failed to get recovery mode from node %u\n",
+			leader);
 		return ret;
 	}
 
@@ -2948,11 +2961,16 @@ again:
 		goto again;
 	}
 
-	ret = ctdb_ctrl_getvnnmap(mem_ctx, ctdb->ev, ctdb->client,
-				  recmaster, TIMEOUT(), &vnnmap);
+	ret = ctdb_ctrl_getvnnmap(mem_ctx,
+				  ctdb->ev,
+				  ctdb->client,
+				  leader,
+				  TIMEOUT(),
+				  &vnnmap);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to get generation from node %u\n",
-			recmaster);
+		fprintf(stderr,
+			"Failed to get generation from node %u\n",
+			leader);
 		return ret;
 	}
 
@@ -3873,7 +3891,7 @@ static int rebalancenode(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 					  CTDB_BROADCAST_CONNECTED, pnn);
 	if (ret != 0) {
 		fprintf(stderr,
-			"Failed to ask recovery master to distribute IPs\n");
+			"Failed to ask leader to distribute IPs\n");
 		return ret;
 	}
 
@@ -4586,18 +4604,20 @@ failed:
 	return ret;
 }
 
-static int control_recmaster(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			     int argc, const char **argv)
+static int control_leader(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
-	uint32_t recmaster;
+	uint32_t leader;
 	int ret;
 
-	ret = get_leader(mem_ctx, ctdb, &recmaster);
+	ret = get_leader(mem_ctx, ctdb, &leader);
 	if (ret != 0) {
 		return ret;
 	}
 
-	print_pnn(recmaster);
+	print_pnn(leader);
 
 	return 0;
 }
@@ -4752,28 +4772,32 @@ static int control_setlmasterrole(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static int control_setrecmasterrole(TALLOC_CTX *mem_ctx,
-				    struct ctdb_context *ctdb,
-				    int argc, const char **argv)
+static int control_setleaderrole(TALLOC_CTX *mem_ctx,
+				 struct ctdb_context *ctdb,
+				 int argc,
+				 const char **argv)
 {
-	uint32_t recmasterrole = 0;
+	uint32_t leaderrole = 0;
 	int ret;
 
 	if (argc != 1) {
-		usage("setrecmasterrole");
+		usage("setleaderrole");
 	}
 
 	if (strcmp(argv[0], "on") == 0) {
-		recmasterrole = 1;
+		leaderrole = 1;
 	} else if (strcmp(argv[0], "off") == 0) {
-		recmasterrole = 0;
+		leaderrole = 0;
 	} else {
-		usage("setrecmasterrole");
+		usage("setleaderrole");
 	}
 
-	ret = ctdb_ctrl_set_recmasterrole(mem_ctx, ctdb->ev, ctdb->client,
-					  ctdb->cmd_pnn, TIMEOUT(),
-					  recmasterrole);
+	ret = ctdb_ctrl_set_recmasterrole(mem_ctx,
+					  ctdb->ev,
+					  ctdb->client,
+					  ctdb->cmd_pnn,
+					  TIMEOUT(),
+					  leaderrole);
 	if (ret != 0) {
 		return ret;
 	}
@@ -6013,8 +6037,8 @@ static const struct ctdb_cmd {
 		"dump database from a backup file", "<file>" },
 	{ "wipedb", control_wipedb, false, false,
 		"wipe the contents of a database.", "<dbname|dbid>"},
-	{ "recmaster", control_recmaster, false, true,
-		"show the pnn for the recovery master", NULL },
+	{ "leader", control_leader, false, true,
+		"show the pnn of the leader", NULL },
 	{ "event", control_event, true, false,
 		"event and event script commands", NULL },
 	{ "scriptstatus", control_scriptstatus, true, false,
@@ -6026,8 +6050,8 @@ static const struct ctdb_cmd {
 		"get recovery lock file", NULL },
 	{ "setlmasterrole", control_setlmasterrole, false, true,
 		"set LMASTER role", "on|off" },
-	{ "setrecmasterrole", control_setrecmasterrole, false, true,
-		"set RECMASTER role", "on|off"},
+	{ "setleaderrole", control_setleaderrole, false, true,
+		"set LEADER role", "on|off"},
 	{ "setdbreadonly", control_setdbreadonly, false, true,
 		"enable readonly records", "<dbname|dbid>" },
 	{ "setdbsticky", control_setdbsticky, false, true,

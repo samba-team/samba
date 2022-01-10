@@ -649,7 +649,7 @@ _leader_get ()
 {
 	local node="$1"
 
-	ctdb_onnode "$node" recmaster
+	ctdb_onnode "$node" leader
 	# shellcheck disable=SC2154
 	# $out set by ctdb_onnode() above
 	leader="$out"

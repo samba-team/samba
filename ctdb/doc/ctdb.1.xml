@@ -299,10 +299,10 @@
 	  RECOVERY - The cluster databases have all been frozen, pausing all services while the cluster awaits a recovery process to complete. A recovery process should finish within seconds. If a cluster is stuck in the RECOVERY state this would indicate a cluster malfunction which needs to be investigated.
 	</para>
 	<para>
-	  Once the recovery master detects an inconsistency, for example a node 
+	  Once the leader detects an inconsistency, for example a node 
 	  becomes disconnected/connected, the recovery daemon will trigger a 
 	  cluster recovery process, where all databases are remerged across the
-	  cluster. When this process starts, the recovery master will first
+	  cluster. When this process starts, the leader will first
 	  "freeze" all databases to prevent applications such as samba from 
 	  accessing the databases and it will also mark the recovery mode as
 	  RECOVERY.
@@ -316,13 +316,16 @@
 	</para>
       </refsect3>
       <refsect3>
-	<title>Recovery master</title>
+	<title>Leader</title>
 	<para>
-	  This is the cluster node that is currently designated as the recovery master. This node is responsible of monitoring the consistency of the cluster and to perform the actual recovery process when reqired.
+	  This is the cluster node that is currently designated as the
+	  leader. This node is responsible of monitoring the
+	  consistency of the cluster and to perform the actual
+	  recovery process when reqired.
 	</para>
 	<para>
-	  Only one node at a time can be the designated recovery master. Which
-	  node is designated the recovery master is decided by an election
+	  Only one node at a time can be the designated leader. Which
+	  node is designated the leader is decided by an election
 	  process in the recovery daemons running on each node.
 	</para>
       </refsect3>
@@ -343,7 +346,7 @@ hash:1 lmaster:1
 hash:2 lmaster:2
 hash:3 lmaster:3
 Recovery mode:NORMAL (0)
-Recovery master:0
+Leader:0
 	</screen>
       </refsect3>
     </refsect2>
@@ -397,9 +400,9 @@ pnn:1 10.0.0.31        OK
     </refsect2>
 
     <refsect2>
-      <title>recmaster</title>
+      <title>leader</title>
       <para>
-	This command shows the pnn of the node which is currently the recmaster.
+	This command shows the pnn of the node which is currently the leader.
       </para>
 
       <para>
@@ -939,7 +942,7 @@ pnn:3 10.0.0.14        OK
 	Example output:
       </para>
       <screen>
-RECMASTER: YES
+LEADER: YES
 LMASTER: YES
       </screen>
 
@@ -1217,13 +1220,20 @@ DB Statistics: locking.tdb
     </refsect2>
 
     <refsect2>
-      <title>setrecmasterrole on|off</title>
+      <title>setleaderrole on|off</title>
       <para>
-	This command is used to enable/disable the RECMASTER capability for a node at runtime. This capability determines whether or not a node can be used as an RECMASTER for the cluster. A node that does not have the RECMASTER capability can not win a recmaster election. A node that already is the recmaster for the cluster when the capability is stripped off the node will remain the recmaster until the next cluster election.
+	This command is used to enable/disable the LEADER capability
+	for a node at runtime. This capability determines whether or
+	not a node can be elected leader of the cluster. A node that
+	does not have the LEADER capability can not be elected
+	leader. If the current leader has this capability removed then
+	an election will occur.
       </para>
 
       <para>
-	Nodes will by default have this capability, but it can be stripped off nodes by the setting in the sysconfig file or by using this command.
+	Nodes have this capability enabled by default, but it can be
+	removed via the <command>cluster:leader capability</command>
+	configuration setting or by using this command.
       </para>
       <para>
 	See also "ctdb getcapabilities"
@@ -1740,7 +1750,13 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
     <refsect2>
       <title>ipreallocate, sync</title>
       <para>
-	This command will force the recovery master to perform a full ip reallocation process and redistribute all ip addresses. This is useful to "reset" the allocations back to its default state if they have been changed using the "moveip" command. While a "recover" will also perform this reallocation, a recovery is much more hevyweight since it will also rebuild all the databases.
+	This command will force the leader to perform a full ip
+	reallocation process and redistribute all ip addresses. This
+	is useful to "reset" the allocations back to its default state
+	if they have been changed using the "moveip" command. While a
+	"recover" will also perform this reallocation, a recovery is
+	much more hevyweight since it will also rebuild all the
+	databases.
       </para>
     </refsect2>
 

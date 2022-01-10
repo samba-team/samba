@@ -33,7 +33,7 @@ hash:0 lmaster:0
 hash:1 lmaster:1
 hash:2 lmaster:2
 Recovery mode:NORMAL (0)
-Recovery master:0
+Leader:0
 EOF
 simple_test
 

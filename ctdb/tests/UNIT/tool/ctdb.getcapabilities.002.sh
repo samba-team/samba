@@ -12,7 +12,7 @@ NODEMAP
 EOF
 
 required_result 0 <<EOF
-RECMASTER: YES
+LEADER: YES
 LMASTER: YES
 EOF
 

@@ -14,7 +14,7 @@ EOF
 # node 0
 
 required_result 0 <<EOF
-RECMASTER: YES
+LEADER: YES
 LMASTER: YES
 EOF
 
@@ -23,7 +23,7 @@ simple_test -n 0
 # node 1
 
 required_result 0 <<EOF
-RECMASTER: YES
+LEADER: YES
 LMASTER: NO
 EOF
 
@@ -32,7 +32,7 @@ simple_test -n 1
 # node 2
 
 required_result 0 <<EOF
-RECMASTER: NO
+LEADER: NO
 LMASTER: YES
 EOF
 

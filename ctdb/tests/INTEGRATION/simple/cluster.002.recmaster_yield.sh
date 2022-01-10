@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Verify that 'ctdb stop' causes a node to yield the recovery master role
+# Verify that 'ctdb stop' causes a node to yield the leader role
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
