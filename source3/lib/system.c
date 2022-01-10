@@ -311,7 +311,7 @@ void init_stat_ex_from_stat (struct stat_ex *dst,
 }
 
 /*******************************************************************
- Create a clock-derived itime (imaginary) time. Used to generate
+ Create a clock-derived itime (invented) time. Used to generate
  the fileid.
 ********************************************************************/
 
