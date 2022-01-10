@@ -358,7 +358,7 @@ int main(int argc, const char *argv[])
 	if (!ctdb_config.lmaster_capability) {
 		ctdb->capabilities &= ~CTDB_CAP_LMASTER;
 	}
-	if (!ctdb_config.recmaster_capability) {
+	if (!ctdb_config.leader_capability) {
 		ctdb->capabilities &= ~CTDB_CAP_RECMASTER;
 	}
 

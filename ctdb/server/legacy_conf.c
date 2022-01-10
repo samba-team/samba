@@ -59,11 +59,6 @@ void legacy_conf_init(struct conf_context *conf)
 			    NULL);
 	conf_define_boolean(conf,
 			    LEGACY_CONF_SECTION,
-			    LEGACY_CONF_RECMASTER_CAPABILITY,
-			    true,
-			    NULL);
-	conf_define_boolean(conf,
-			    LEGACY_CONF_SECTION,
 			    LEGACY_CONF_LMASTER_CAPABILITY,
 			    true,
 			    NULL);

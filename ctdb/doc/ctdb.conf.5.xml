@@ -195,6 +195,30 @@
       </varlistentry>
 
       <varlistentry>
+	<term>leader capability = true|false</term>
+	<listitem>
+	  <para>
+	    Indicates whether a node can become the leader
+	    for the cluster. If this is set to
+	    <literal>false</literal> then the node will not be able to
+	    become the leader for the cluster. This feature
+	    is primarily used for making a cluster span across a WAN
+	    link and use CTDB as a WAN-accelerator.
+	  </para>
+	  <para>
+	    Please see the <citetitle>REMOTE CLUSTER NODES</citetitle>
+	    section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry> for more
+	    information.
+	  </para>
+	  <para>
+	    Default: <literal>true</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>node address = <parameter>IPADDR</parameter></term>
 	<listitem>
 	  <para>
@@ -490,30 +514,6 @@
 	    there are thousands of Samba clients. If you are running
 	    CTDB on a platform that does not support real-time
 	    priority, you can set this to <literal>false</literal>.
-	  </para>
-	  <para>
-	    Default: <literal>true</literal>
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>recmaster capability = true|false</term>
-	<listitem>
-	  <para>
-	    Indicates whether a node can become the recovery master
-	    for the cluster. If this is set to
-	    <literal>false</literal> then the node will not be able to
-	    become the recovery master for the cluster. This feature
-	    is primarily used for making a cluster span across a WAN
-	    link and use CTDB as a WAN-accelerator.
-	  </para>
-	  <para>
-	    Please see the <citetitle>REMOTE CLUSTER NODES</citetitle>
-	    section in
-	    <citerefentry><refentrytitle>ctdb</refentrytitle>
-	    <manvolnum>7</manvolnum></citerefentry> for more
-	    information.
 	  </para>
 	  <para>
 	    Default: <literal>true</literal>

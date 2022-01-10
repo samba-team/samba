@@ -26,11 +26,6 @@ unit_test ctdb-config get "legacy" "realtime scheduling"
 ok <<EOF
 true
 EOF
-unit_test ctdb-config get "legacy" "recmaster capability"
-
-ok <<EOF
-true
-EOF
 unit_test ctdb-config get "legacy" "lmaster capability"
 
 ok <<EOF

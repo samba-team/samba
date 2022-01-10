@@ -155,4 +155,9 @@ void cluster_conf_init(struct conf_context *conf)
 			   CLUSTER_CONF_RECOVERY_LOCK,
 			   NULL,
 			   validate_recovery_lock);
+	conf_define_boolean(conf,
+			    CLUSTER_CONF_SECTION,
+			    CLUSTER_CONF_LEADER_CAPABILITY,
+			    true,
+			    NULL);
 }

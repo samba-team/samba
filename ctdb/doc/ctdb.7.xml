@@ -478,11 +478,11 @@ Node 3:/usr/local/etc/ctdb/public_addresses
     <variablelist>
 
       <varlistentry>
-	<term>RECMASTER</term>
+	<term>LEADER</term>
 	<listitem>
 	  <para>
-	    Indicates that a node can become the CTDB cluster recovery
-	    master.  The current recovery master is decided via an
+	    Indicates that a node can become the CTDB cluster leader.
+	    The current leader is decided via an
 	    election held by all active nodes with this capability.
 	  </para>
 	  <para>
@@ -508,7 +508,7 @@ Node 3:/usr/local/etc/ctdb/public_addresses
     </variablelist>
 
     <para>
-      The RECMASTER and LMASTER capabilities can be disabled when CTDB
+      The LEADER and LMASTER capabilities can be disabled when CTDB
       is used to create a cluster spanning across WAN links. In this
       case CTDB acts as a WAN accelerator.
     </para>
@@ -1088,13 +1088,13 @@ correct CIFS semantics to clients.
         <screen format="linespecific">
 [legacy]
   lmaster capability = false
-  recmaster capability = false
+  leader capability = false
 	</screen>
     </para>
 
     <para>
 	Verify with the command "ctdb getcapabilities" that that node no longer
-	has the recmaster or the lmaster capabilities.
+	has the leader or the lmaster capabilities.
     </para>
 
   </refsect1>

@@ -57,6 +57,10 @@ static void setup_config_pointers(struct conf_context *conf)
 				   CLUSTER_CONF_SECTION,
 				   CLUSTER_CONF_RECOVERY_LOCK,
 				   &ctdb_config.recovery_lock);
+	conf_assign_boolean_pointer(conf,
+				    CLUSTER_CONF_SECTION,
+				    CLUSTER_CONF_LEADER_CAPABILITY,
+				    &ctdb_config.leader_capability);
 
 	/*
 	 * Database
@@ -107,10 +111,6 @@ static void setup_config_pointers(struct conf_context *conf)
 				    LEGACY_CONF_SECTION,
 				    LEGACY_CONF_REALTIME_SCHEDULING,
 				    &ctdb_config.realtime_scheduling);
-	conf_assign_boolean_pointer(conf,
-				    LEGACY_CONF_SECTION,
-				    LEGACY_CONF_RECMASTER_CAPABILITY,
-				    &ctdb_config.recmaster_capability);
 	conf_assign_boolean_pointer(conf,
 				    LEGACY_CONF_SECTION,
 				    LEGACY_CONF_LMASTER_CAPABILITY,

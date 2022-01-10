@@ -31,6 +31,11 @@ ok <<EOF
 EOF
 unit_test ctdb-config get "cluster" "cluster lock"
 
+ok <<EOF
+true
+EOF
+unit_test ctdb-config get "cluster" "leader capability"
+
 cat > "$conffile" <<EOF
 [cluster]
     transport = invalid
@@ -91,3 +96,12 @@ required_result 0 <<EOF
 Configuration option [cluster] -> recovery lock is deprecated
 EOF
 unit_test ctdb-config -d WARNING validate
+
+cat > "$conffile" <<EOF
+[cluster]
+    leader capability = false
+EOF
+
+required_result 0 <<EOF
+EOF
+unit_test ctdb-config validate
