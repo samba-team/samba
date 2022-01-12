@@ -432,66 +432,25 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 				return -1;
 		}
 
-		argl = talloc_zero_array(talloc_tos(), char *, 11);
+		argl = str_list_make_empty(talloc_tos());
+		str_list_add_printf(&argl, "%s", set_quota_command);
+		str_list_add_printf(&argl, "%s", path);
+		str_list_add_printf(&argl, "%d", qtype);
+		str_list_add_printf(&argl, "%d", _id);
+		str_list_add_printf(&argl, "%u", dp->qflags);
+		str_list_add_printf(
+			&argl, "%llu", (long long unsigned)dp->softlimit);
+		str_list_add_printf(
+			&argl, "%llu", (long long unsigned)dp->hardlimit);
+		str_list_add_printf(
+			&argl, "%llu", (long long unsigned)dp->isoftlimit);
+		str_list_add_printf(
+			&argl, "%llu", (long long unsigned)dp->ihardlimit);
+		str_list_add_printf(
+			&argl, "%llu", (long long unsigned)dp->bsize);
 		if (argl == NULL) {
 			return -1;
 		}
-		argl[0] = talloc_strdup(argl, set_quota_command);
-		if (argl[0] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[1] = talloc_strdup(argl, path);
-		if (argl[1] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[2] = talloc_asprintf(argl, "%d", qtype);
-		if (argl[2] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[3] = talloc_asprintf(argl, "%d", _id);
-		if (argl[3] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[4] = talloc_asprintf(argl, "%u", dp->qflags);
-		if (argl[4] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[5] = talloc_asprintf(argl, "%llu",
-				(long long unsigned)dp->softlimit);
-		if (argl[5] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[6] = talloc_asprintf(argl, "%llu",
-				(long long unsigned)dp->hardlimit);
-		if (argl[6] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[7] = talloc_asprintf(argl, "%llu",
-				(long long unsigned)dp->isoftlimit);
-		if (argl[7] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[8] = talloc_asprintf(argl, "%llu",
-				(long long unsigned)dp->ihardlimit);
-		if (argl[8] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[9] = talloc_asprintf(argl, "%llu",
-				(long long unsigned)dp->bsize);
-		if (argl[9] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[10] = NULL;
 
 		DBG_NOTICE("Running command "
 			"%s %s %d %d "
