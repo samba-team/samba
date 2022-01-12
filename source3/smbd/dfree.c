@@ -80,20 +80,12 @@ static uint64_t sys_disk_free(connection_struct *conn,
 		char **lines = NULL;
 		char **argl = NULL;
 
-		argl = talloc_zero_array(talloc_tos(),
-					char *,
-					3);
+		argl = str_list_make_empty(talloc_tos());
+		str_list_add_printf(&argl, "%s", dfree_command);
+		str_list_add_printf(&argl, "%s", path);
 		if (argl == NULL) {
 			return (uint64_t)-1;
 		}
-
-		argl[0] = talloc_strdup(argl, dfree_command);
-		if (argl[0] == NULL) {
-			TALLOC_FREE(argl);
-			return (uint64_t)-1;
-		}
-		argl[1] = path;
-		argl[2] = NULL;
 
 		DBG_NOTICE("Running command '%s %s'\n",
 			dfree_command,
