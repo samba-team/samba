@@ -1430,6 +1430,8 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				DEBUG(5, ("delete_all_streams failed: %s\n",
 					  nt_errstr(status)));
 				file_free(req, fsp);
+				/* unbecome user. */
+				pop_sec_ctx();
 				return status;
 			}
 		}
