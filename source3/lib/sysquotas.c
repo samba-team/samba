@@ -272,31 +272,14 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 				return -1;
 		}
 
-		argl = talloc_zero_array(talloc_tos(), char *, 5);
+		argl = str_list_make_empty(talloc_tos());
+		str_list_add_printf(&argl, "%s", get_quota_command);
+		str_list_add_printf(&argl, "%s", path);
+		str_list_add_printf(&argl, "%d", qtype);
+		str_list_add_printf(&argl, "%d", _id);
 		if (argl == NULL) {
 			return -1;
 		}
-		argl[0] = talloc_strdup(argl, get_quota_command);
-		if (argl[0] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[1] = talloc_strdup(argl, path);
-		if (argl[1] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[2] = talloc_asprintf(argl, "%d", qtype);
-		if (argl[2] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[3] = talloc_asprintf(argl, "%d", _id);
-		if (argl[3] == NULL) {
-			TALLOC_FREE(argl);
-			return -1;
-		}
-		argl[4] = NULL;
 
 		DBG_NOTICE("Running command %s %s %d %d\n",
 			get_quota_command,
