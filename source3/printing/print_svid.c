@@ -49,21 +49,12 @@ bool sysv_cache_reload(struct pcap_cache **_pcache)
 	DEBUG(5, ("reloading sysv printcap cache\n"));
 #endif
 
-	argl = talloc_zero_array(talloc_tos(), char *, 3);
+	argl = str_list_make_empty(talloc_tos());
+	str_list_add_printf(&argl, "/usr/bin/lpstat");
+	str_list_add_printf(&argl, "-v");
 	if (argl == NULL) {
 		return false;
 	}
-	argl[0] = talloc_strdup(argl, "/usr/bin/lpstat");
-	if (argl[0] == NULL) {
-		TALLOC_FREE(argl);
-		return false;
-	}
-	argl[1] = talloc_strdup(argl, "-v");
-	if (argl[1] == NULL) {
-		TALLOC_FREE(argl);
-		return false;
-	}
-	argl[2] = NULL;
 
 	lines = file_lines_ploadv(talloc_tos(), argl, NULL);
 	if (lines == NULL) {
