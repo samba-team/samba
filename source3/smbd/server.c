@@ -1554,7 +1554,6 @@ extern void build_options(bool screen);
 	char *profile_level = NULL;
 	int opt;
 	poptContext pc;
-	bool print_build_options = False;
 	struct server_id main_server_id = {0};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1657,7 +1656,8 @@ extern void build_options(bool screen);
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt)  {
 		case 'b':
-			print_build_options = True;
+			build_options(true); /* Display output to screen as well as debug */
+			exit(0);
 			break;
 		default:
 			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",
@@ -1672,11 +1672,6 @@ extern void build_options(bool screen);
 
         if (cmdline_daemon_cfg->interactive) {
 		log_stdout = True;
-	}
-
-	if (print_build_options) {
-		build_options(True); /* Display output to screen as well as debug */
-		exit(0);
 	}
 
 #ifdef HAVE_SETLUID
