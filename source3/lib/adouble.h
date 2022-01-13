@@ -101,6 +101,8 @@ typedef enum {ADOUBLE_META, ADOUBLE_RSRC} adouble_type_t;
 #define ADEDLEN_MACFILEI        4
 #define ADEDLEN_PRODOSFILEI     8
 #define ADEDLEN_MSDOSFILEI      2
+#define ADEDLEN_ICONBW          128
+#define ADEDLEN_ICONCOL         1024
 #define ADEDLEN_DID             4
 #define ADEDLEN_PRIVDEV         8
 #define ADEDLEN_PRIVINO         8
