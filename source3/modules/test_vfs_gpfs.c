@@ -43,12 +43,14 @@ static void test_share_deny_mapping(void **state)
 			 0); /* GPFS limitation, cannot deny only delete. */
 }
 
+#ifdef HAVE_KERNEL_OPLOCKS_LINUX
 static void test_gpfs_lease_mapping(void **state)
 {
 	assert_int_equal(lease_type_to_gpfs(F_RDLCK), GPFS_LEASE_READ);
 	assert_int_equal(lease_type_to_gpfs(F_WRLCK), GPFS_LEASE_WRITE);
 	assert_int_equal(lease_type_to_gpfs(F_UNLCK), GPFS_LEASE_NONE);
 }
+#endif /* #ifdef HAVE_KERNEL_OPLOCKS_LINUX */
 
 static void test_gpfs_winattrs_to_dosmode(void **state)
 {
@@ -139,7 +141,9 @@ int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_share_deny_mapping),
+#ifdef HAVE_KERNEL_OPLOCKS_LINUX
 		cmocka_unit_test(test_gpfs_lease_mapping),
+#endif /* #ifdef HAVE_KERNEL_OPLOCKS_LINUX */
 		cmocka_unit_test(test_gpfs_winattrs_to_dosmode),
 		cmocka_unit_test(test_dosmode_to_gpfs_winattrs),
 		cmocka_unit_test(test_gpfs_get_file_id),

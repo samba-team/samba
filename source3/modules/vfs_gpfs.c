@@ -220,6 +220,7 @@ static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
 	return SMB_VFS_NEXT_CLOSE(handle, fsp);
 }
 
+#ifdef HAVE_KERNEL_OPLOCKS_LINUX
 static int lease_type_to_gpfs(int leasetype)
 {
 	if (leasetype == F_RDLCK) {
@@ -276,6 +277,16 @@ failure:
 
 	return ret;
 }
+
+#else /* HAVE_KERNEL_OPLOCKS_LINUX */
+
+static int vfs_gpfs_setlease(vfs_handle_struct *handle,
+				files_struct *fsp,
+				int leasetype)
+{
+	return ENOSYS;
+}
+#endif /* HAVE_KERNEL_OPLOCKS_LINUX */
 
 static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 				      const struct smb_filename *path,
