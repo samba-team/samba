@@ -32,112 +32,112 @@ Build.BuildContext.SAMBA_MKVERSION = SAMBA_MKVERSION
 
 def write_build_options_header(fp):
     '''write preamble for build_options.c'''
-    fp.write("/*\n")
-    fp.write("   Unix SMB/CIFS implementation.\n")
-    fp.write("   Build Options for Samba Suite\n")
-    fp.write("   Copyright (C) Vance Lankhaar <vlankhaar@linux.ca> 2003\n")
-    fp.write("   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001\n")
-    fp.write("\n")
-    fp.write("   This program is free software; you can redistribute it and/or modify\n")
-    fp.write("   it under the terms of the GNU General Public License as published by\n")
-    fp.write("   the Free Software Foundation; either version 3 of the License, or\n")
-    fp.write("   (at your option) any later version.\n")
-    fp.write("\n")
-    fp.write("   This program is distributed in the hope that it will be useful,\n")
-    fp.write("   but WITHOUT ANY WARRANTY; without even the implied warranty of\n")
-    fp.write("   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n")
-    fp.write("   GNU General Public License for more details.\n")
-    fp.write("\n")
-    fp.write("   You should have received a copy of the GNU General Public License\n")
-    fp.write("   along with this program; if not, see <http://www.gnu.org/licenses/>.\n")
-    fp.write("*/\n")
-    fp.write("\n")
-    fp.write("#include \"includes.h\"\n")
-    fp.write("#include \"dynconfig/dynconfig.h\"\n")
-    fp.write("#include \"lib/cluster_support.h\"\n")
+    fp.write("/*\n"
+             "   Unix SMB/CIFS implementation.\n"
+             "   Build Options for Samba Suite\n"
+             "   Copyright (C) Vance Lankhaar <vlankhaar@linux.ca> 2003\n"
+             "   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001\n"
+             "\n"
+             "   This program is free software; you can redistribute it and/or modify\n"
+             "   it under the terms of the GNU General Public License as published by\n"
+             "   the Free Software Foundation; either version 3 of the License, or\n"
+             "   (at your option) any later version.\n"
+             "\n"
+             "   This program is distributed in the hope that it will be useful,\n"
+             "   but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+             "   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+             "   GNU General Public License for more details.\n"
+             "\n"
+             "   You should have received a copy of the GNU General Public License\n"
+             "   along with this program; if not, see <http://www.gnu.org/licenses/>.\n"
+             "*/\n"
+             "\n"
+             "#include \"includes.h\"\n"
+             "#include \"dynconfig/dynconfig.h\"\n"
+             "#include \"lib/cluster_support.h\"\n"
 
-    fp.write("\n")
-    fp.write("static int output(bool screen, const char *format, ...) PRINTF_ATTRIBUTE(2,3);\n")
-    fp.write("void build_options(bool screen);\n")
-    fp.write("\n")
-    fp.write("\n")
-    fp.write("/****************************************************************************\n")
-    fp.write("helper function for build_options\n")
-    fp.write("****************************************************************************/\n")
-    fp.write("static int output(bool screen, const char *format, ...)\n")
-    fp.write("{\n")
-    fp.write("       char *ptr = NULL;\n")
-    fp.write("       int ret = 0;\n")
-    fp.write("       va_list ap;\n")
-    fp.write("       \n")
-    fp.write("       va_start(ap, format);\n")
-    fp.write("       ret = vasprintf(&ptr,format,ap);\n")
-    fp.write("       va_end(ap);\n")
-    fp.write("\n")
-    fp.write("       if (screen) {\n")
-    fp.write("              d_printf(\"%s\", ptr ? ptr : \"\");\n")
-    fp.write("       } else {\n")
-    fp.write("              DEBUG(4,(\"%s\", ptr ? ptr : \"\"));\n")
-    fp.write("       }\n")
-    fp.write("       \n")
-    fp.write("       SAFE_FREE(ptr);\n")
-    fp.write("       return ret;\n")
-    fp.write("}\n")
-    fp.write("\n")
-    fp.write("/****************************************************************************\n")
-    fp.write("options set at build time for the samba suite\n")
-    fp.write("****************************************************************************/\n")
-    fp.write("void build_options(bool screen)\n")
-    fp.write("{\n")
-    fp.write("       if ((DEBUGLEVEL < 4) && (!screen)) {\n")
-    fp.write("              return;\n")
-    fp.write("       }\n")
-    fp.write("\n")
-    fp.write("\n")
-    fp.write("       /* Output various paths to files and directories */\n")
-    fp.write("       output(screen,\"\\nPaths:\\n\");\n")
-    fp.write("       output(screen,\"   SBINDIR: %s\\n\", get_dyn_SBINDIR());\n")
-    fp.write("       output(screen,\"   BINDIR: %s\\n\", get_dyn_BINDIR());\n")
-    fp.write("       output(screen,\"   CONFIGFILE: %s\\n\", get_dyn_CONFIGFILE());\n")
-    fp.write("       output(screen,\"   LOGFILEBASE: %s\\n\", get_dyn_LOGFILEBASE());\n")
-    fp.write("       output(screen,\"   LMHOSTSFILE: %s\\n\",get_dyn_LMHOSTSFILE());\n")
-    fp.write("       output(screen,\"   LIBDIR: %s\\n\",get_dyn_LIBDIR());\n")
-    fp.write("       output(screen,\"   DATADIR: %s\\n\",get_dyn_DATADIR());\n")
-    fp.write("       output(screen,\"   SAMBA_DATADIR: %s\\n\",get_dyn_SAMBA_DATADIR());\n")
-    fp.write("       output(screen,\"   MODULESDIR: %s\\n\",get_dyn_MODULESDIR());\n")
-    fp.write("       output(screen,\"   SHLIBEXT: %s\\n\",get_dyn_SHLIBEXT());\n")
-    fp.write("       output(screen,\"   LOCKDIR: %s\\n\",get_dyn_LOCKDIR());\n")
-    fp.write("       output(screen,\"   STATEDIR: %s\\n\",get_dyn_STATEDIR());\n")
-    fp.write("       output(screen,\"   CACHEDIR: %s\\n\",get_dyn_CACHEDIR());\n")
-    fp.write("       output(screen,\"   PIDDIR: %s\\n\", get_dyn_PIDDIR());\n")
-    fp.write("       output(screen,\"   SMB_PASSWD_FILE: %s\\n\",get_dyn_SMB_PASSWD_FILE());\n")
-    fp.write("       output(screen,\"   PRIVATE_DIR: %s\\n\",get_dyn_PRIVATE_DIR());\n")
-    fp.write("       output(screen,\"   BINDDNS_DIR: %s\\n\",get_dyn_BINDDNS_DIR());\n")
-    fp.write("\n")
+             "\n"
+             "static int output(bool screen, const char *format, ...) PRINTF_ATTRIBUTE(2,3);\n"
+             "void build_options(bool screen);\n"
+             "\n"
+             "\n"
+             "/****************************************************************************\n"
+             "helper function for build_options\n"
+             "****************************************************************************/\n"
+             "static int output(bool screen, const char *format, ...)\n"
+             "{\n"
+             "       char *ptr = NULL;\n"
+             "       int ret = 0;\n"
+             "       va_list ap;\n"
+             "       \n"
+             "       va_start(ap, format);\n"
+             "       ret = vasprintf(&ptr,format,ap);\n"
+             "       va_end(ap);\n"
+             "\n"
+             "       if (screen) {\n"
+             "              d_printf(\"%s\", ptr ? ptr : \"\");\n"
+             "       } else {\n"
+             "              DEBUG(4,(\"%s\", ptr ? ptr : \"\"));\n"
+             "       }\n"
+             "       \n"
+             "       SAFE_FREE(ptr);\n"
+             "       return ret;\n"
+             "}\n"
+             "\n"
+             "/****************************************************************************\n"
+             "options set at build time for the samba suite\n"
+             "****************************************************************************/\n"
+             "void build_options(bool screen)\n"
+             "{\n"
+             "       if ((DEBUGLEVEL < 4) && (!screen)) {\n"
+             "              return;\n"
+             "       }\n"
+             "\n"
+             "\n"
+             "       /* Output various paths to files and directories */\n"
+             "       output(screen,\"\\nPaths:\\n\");\n"
+             "       output(screen,\"   SBINDIR: %s\\n\", get_dyn_SBINDIR());\n"
+             "       output(screen,\"   BINDIR: %s\\n\", get_dyn_BINDIR());\n"
+             "       output(screen,\"   CONFIGFILE: %s\\n\", get_dyn_CONFIGFILE());\n"
+             "       output(screen,\"   LOGFILEBASE: %s\\n\", get_dyn_LOGFILEBASE());\n"
+             "       output(screen,\"   LMHOSTSFILE: %s\\n\",get_dyn_LMHOSTSFILE());\n"
+             "       output(screen,\"   LIBDIR: %s\\n\",get_dyn_LIBDIR());\n"
+             "       output(screen,\"   DATADIR: %s\\n\",get_dyn_DATADIR());\n"
+             "       output(screen,\"   SAMBA_DATADIR: %s\\n\",get_dyn_SAMBA_DATADIR());\n"
+             "       output(screen,\"   MODULESDIR: %s\\n\",get_dyn_MODULESDIR());\n"
+             "       output(screen,\"   SHLIBEXT: %s\\n\",get_dyn_SHLIBEXT());\n"
+             "       output(screen,\"   LOCKDIR: %s\\n\",get_dyn_LOCKDIR());\n"
+             "       output(screen,\"   STATEDIR: %s\\n\",get_dyn_STATEDIR());\n"
+             "       output(screen,\"   CACHEDIR: %s\\n\",get_dyn_CACHEDIR());\n"
+             "       output(screen,\"   PIDDIR: %s\\n\", get_dyn_PIDDIR());\n"
+             "       output(screen,\"   SMB_PASSWD_FILE: %s\\n\",get_dyn_SMB_PASSWD_FILE());\n"
+             "       output(screen,\"   PRIVATE_DIR: %s\\n\",get_dyn_PRIVATE_DIR());\n"
+             "       output(screen,\"   BINDDNS_DIR: %s\\n\",get_dyn_BINDDNS_DIR());\n"
+             "\n")
 
 def write_build_options_footer(fp):
-    fp.write("       /* Output the sizes of the various cluster features */\n")
-    fp.write("       output(screen, \"\\n%s\", cluster_support_features());\n")
-    fp.write("\n")
-    fp.write("       /* Output the sizes of the various types */\n")
-    fp.write("       output(screen, \"\\nType sizes:\\n\");\n")
-    fp.write("       output(screen, \"   sizeof(char):         %lu\\n\",(unsigned long)sizeof(char));\n")
-    fp.write("       output(screen, \"   sizeof(int):          %lu\\n\",(unsigned long)sizeof(int));\n")
-    fp.write("       output(screen, \"   sizeof(long):         %lu\\n\",(unsigned long)sizeof(long));\n")
-    fp.write("       output(screen, \"   sizeof(long long):    %lu\\n\",(unsigned long)sizeof(long long));\n")
-    fp.write("       output(screen, \"   sizeof(uint8_t):      %lu\\n\",(unsigned long)sizeof(uint8_t));\n")
-    fp.write("       output(screen, \"   sizeof(uint16_t):     %lu\\n\",(unsigned long)sizeof(uint16_t));\n")
-    fp.write("       output(screen, \"   sizeof(uint32_t):     %lu\\n\",(unsigned long)sizeof(uint32_t));\n")
-    fp.write("       output(screen, \"   sizeof(short):        %lu\\n\",(unsigned long)sizeof(short));\n")
-    fp.write("       output(screen, \"   sizeof(void*):        %lu\\n\",(unsigned long)sizeof(void*));\n")
-    fp.write("       output(screen, \"   sizeof(size_t):       %lu\\n\",(unsigned long)sizeof(size_t));\n")
-    fp.write("       output(screen, \"   sizeof(off_t):        %lu\\n\",(unsigned long)sizeof(off_t));\n")
-    fp.write("       output(screen, \"   sizeof(ino_t):        %lu\\n\",(unsigned long)sizeof(ino_t));\n")
-    fp.write("       output(screen, \"   sizeof(dev_t):        %lu\\n\",(unsigned long)sizeof(dev_t));\n")
-    fp.write("\n")
-    fp.write("       output(screen, \"\\nBuiltin modules:\\n\");\n")
-    fp.write("       output(screen, \"   %s\\n\", STRING_STATIC_MODULES);\n")
-    fp.write("}\n")
+    fp.write("       /* Output the sizes of the various cluster features */\n"
+             "       output(screen, \"\\n%s\", cluster_support_features());\n"
+             "\n"
+             "       /* Output the sizes of the various types */\n"
+             "       output(screen, \"\\nType sizes:\\n\");\n"
+             "       output(screen, \"   sizeof(char):         %lu\\n\",(unsigned long)sizeof(char));\n"
+             "       output(screen, \"   sizeof(int):          %lu\\n\",(unsigned long)sizeof(int));\n"
+             "       output(screen, \"   sizeof(long):         %lu\\n\",(unsigned long)sizeof(long));\n"
+             "       output(screen, \"   sizeof(long long):    %lu\\n\",(unsigned long)sizeof(long long));\n"
+             "       output(screen, \"   sizeof(uint8_t):      %lu\\n\",(unsigned long)sizeof(uint8_t));\n"
+             "       output(screen, \"   sizeof(uint16_t):     %lu\\n\",(unsigned long)sizeof(uint16_t));\n"
+             "       output(screen, \"   sizeof(uint32_t):     %lu\\n\",(unsigned long)sizeof(uint32_t));\n"
+             "       output(screen, \"   sizeof(short):        %lu\\n\",(unsigned long)sizeof(short));\n"
+             "       output(screen, \"   sizeof(void*):        %lu\\n\",(unsigned long)sizeof(void*));\n"
+             "       output(screen, \"   sizeof(size_t):       %lu\\n\",(unsigned long)sizeof(size_t));\n"
+             "       output(screen, \"   sizeof(off_t):        %lu\\n\",(unsigned long)sizeof(off_t));\n"
+             "       output(screen, \"   sizeof(ino_t):        %lu\\n\",(unsigned long)sizeof(ino_t));\n"
+             "       output(screen, \"   sizeof(dev_t):        %lu\\n\",(unsigned long)sizeof(dev_t));\n"
+             "\n"
+             "       output(screen, \"\\nBuiltin modules:\\n\");\n"
+             "       output(screen, \"   %s\\n\", STRING_STATIC_MODULES);\n"
+             "}\n")
 
 def write_build_options_section(fp, keys, section):
     fp.write("\n\t/* Show %s */\n" % section)
