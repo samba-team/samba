@@ -8,13 +8,19 @@ set -e
 
 ctdb_test_init
 
-leader_get 0
+# This is the node used to execute commands
+select_test_node
+echo
+
+# test_node set by select_test_node()
+# shellcheck disable=SC2154
+leader_get "$test_node"
 
 # leader set by leader_get()
 # shellcheck disable=SC2154
 echo "Stopping leader ${leader}..."
-ctdb_onnode 1 stop -n "$leader"
+ctdb_onnode "$test_node" stop -n "$leader"
 
 wait_until_node_has_status "$leader" stopped
 
-wait_until_leader_has_changed 0
+wait_until_leader_has_changed "$test_node"
