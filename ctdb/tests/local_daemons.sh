@@ -123,6 +123,7 @@ local_daemons_setup_usage ()
 $0 <directory> setup [ <options>... ]
 
 Options:
+  -C            Comment out given config item (default: item uncommented)
   -F            Disable failover (default: failover enabled)
   -N <file>     Nodes file (default: automatically generated)
   -n <num>      Number of nodes (default: 3)
@@ -138,6 +139,7 @@ EOF
 
 local_daemons_setup ()
 {
+	_commented_config=""
 	_disable_failover=false
 	_nodes_file=""
 	_num_nodes=3
@@ -149,8 +151,11 @@ local_daemons_setup ()
 
 	set -e
 
-	while getopts "FN:n:P:Rr:S:6h?" _opt ; do
+	while getopts "C:FN:n:P:Rr:S:6h?" _opt ; do
 		case "$_opt" in
+		C) _t="${_commented_config}${_commented_config:+|}"
+		   _commented_config="${_t}${OPTARG}"
+		   ;;
 		F) _disable_failover=true ;;
 		N) _nodes_file="$OPTARG" ;;
 		n) _num_nodes="$OPTARG" ;;
@@ -255,6 +260,15 @@ local_daemons_setup ()
 [event]
 	debug script = debug-hung-script.sh
 EOF
+
+		(
+			IFS='|'
+			for _c in $_commented_config ; do
+				# Quote all backslashes due to double-quotes
+				sed -i -e "s|^\\t\\(${_c}\\) = |\\t# \\1 = |" \
+				    "${CTDB_BASE}/ctdb.conf"
+			done
+		)
 	done
 }
 
