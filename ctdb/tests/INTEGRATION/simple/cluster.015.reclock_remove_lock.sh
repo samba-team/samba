@@ -54,11 +54,7 @@ echo "Recovery lock setting is \"${reclock_setting}\""
 echo "Recovery lock file is \"${reclock}\""
 echo
 
-echo "Get current recovery master"
-ctdb_onnode "$test_node" recmaster
-recmaster="$out"
-echo "Recovery master is node ${recmaster}"
-echo
+leader_get "$test_node"
 
 echo "Get initial generation"
 ctdb_onnode "$test_node" status
@@ -79,15 +75,17 @@ echo
 echo "Generation changed to ${generation_new}"
 echo
 
-echo "Get current recovery master"
-ctdb_onnode "$test_node" recmaster
-recmaster_new="$out"
+# shellcheck disable=SC2154
+# $leader set by leader_get() above
+leader_old="$leader"
 
-if [ "$recmaster" != "$recmaster_new" ] ; then
+leader_get "$test_node"
+
+if [ "$leader" != "$leader_old" ] ; then
 	ctdb_test_fail \
-		"BAD: Recovery master has changed to node ${recmaster_new}"
+		"BAD: Leader has changed to node ${leader}"
 fi
-echo "GOOD: Recovery master is still node ${recmaster_new}"
+echo "GOOD: Leader is still node ${leader}"
 echo
 
 cluster_is_healthy

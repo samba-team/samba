@@ -75,12 +75,10 @@ else
 	exit 1
 fi
 
-echo "Find out which node is recmaster"
-try_command_on_node 0 $CTDB recmaster
-recmaster="$out"
-
+echo
+leader_get 0
 # Set RecBufferSizeLimit to 10000
-try_command_on_node $recmaster $CTDB setvar RecBufferSizeLimit 10000
+ctdb_onnode "$leader" setvar RecBufferSizeLimit 10000
 
 # Do a recovery
 echo "force recovery"

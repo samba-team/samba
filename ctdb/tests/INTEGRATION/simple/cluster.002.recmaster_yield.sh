@@ -8,22 +8,13 @@ set -e
 
 ctdb_test_init
 
-echo "Finding out which node is the recovery master..."
-try_command_on_node -v 0 "$CTDB recmaster"
-test_node=$out
+leader_get 0
 
-echo "Stopping node ${test_node} - it is the current recmaster..."
-try_command_on_node 1 $CTDB stop -n $test_node
+# leader set by leader_get()
+# shellcheck disable=SC2154
+echo "Stopping leader ${leader}..."
+ctdb_onnode 1 stop -n "$leader"
 
-wait_until_node_has_status $test_node stopped
+wait_until_node_has_status "$leader" stopped
 
-echo "Checking which node is the recovery master now..."
-try_command_on_node -v 0 "$CTDB recmaster"
-recmaster=$out
-
-if [ "$recmaster" != "$test_node" ] ; then
-    echo "OK: recmaster moved to node $recmaster"
-else
-    echo "BAD: recmaster did not move"
-    exit 1
-fi
+wait_until_leader_has_changed 0
