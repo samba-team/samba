@@ -74,6 +74,64 @@ listen on port 53. Starting with this version it is possible to configure the
 port using host:port notation. See smb.conf for more details. Existing setups
 are not affected, as the default port is 53.
 
+CTDB changes
+------------
+
+* The "recovery master" role has been renamed "leader"
+
+  Documentation and logs now refer to "leader".
+
+  The following ctdb tool command names have changed:
+
+    recmaster -> leader
+    setrecmasterrole -> setleaderrole
+
+  Command output has changed for the following commands:
+
+    status
+    getcapabilities
+
+  The "[legacy] -> recmaster capability" configuration option has been
+  renamed and moved to the cluster section, so this is now:
+
+    [cluster] -> leader capability
+
+* The "recovery lock" has been renamed "cluster lock"
+
+  Documentation and logs now refer to "cluster lock".
+
+  The "[cluster] -> recovery lock" configuration option has been
+  deprecated and will be removed in a future version.  Please use
+  "[cluster] -> cluster lock" instead.
+
+  If the cluster lock is enabled then traditional elections are not
+  done and leader elections use a race for the cluster lock.  This
+  avoids various conditions where a node is elected leader but can not
+  take the cluster lock.  Such conditions included:
+
+  - At startup, a node elects itself leader of its own cluster before
+    connecting to other nodes
+
+  - Cluster filesystem failover is slow
+
+  The abbreviation "reclock" is still used in many places, because a
+  better abbreviation eludes us (i.e. "clock" is obvious bad) and
+  changing all instances would require a lot of churn.  If the
+  abbreviation "reclock" for "cluster lock" is confusing, please
+  consider mentally prefixing it with "really excellent".
+
+* CTDB now uses leader broadcasts and an associated timeout to
+  determine if an election is required
+
+  The leader broadcast timeout can be configured via new configuration
+  option
+
+    [cluster] -> leader timeout
+
+  This specifies the number of seconds without leader broadcasts
+  before a node calls an election.  The default is 5.
+
+
 REMOVED FEATURES
 ================
 
