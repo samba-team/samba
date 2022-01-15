@@ -131,6 +131,20 @@ static bool validate_recovery_lock(const char *key,
 	return status;
 }
 
+static bool validate_leader_timeout(const char *key,
+				    int old_timeout,
+				    int new_timeout,
+				    enum conf_update_mode mode)
+{
+	if (new_timeout <= 0) {
+		D_ERR("Invalid value for [cluster] -> leader timeout = %d\n",
+		      new_timeout);
+		return false;
+	}
+
+	return true;
+}
+
 void cluster_conf_init(struct conf_context *conf)
 {
 	conf_define_section(conf, CLUSTER_CONF_SECTION, NULL);
@@ -155,6 +169,11 @@ void cluster_conf_init(struct conf_context *conf)
 			   CLUSTER_CONF_RECOVERY_LOCK,
 			   NULL,
 			   validate_recovery_lock);
+	conf_define_integer(conf,
+			    CLUSTER_CONF_SECTION,
+			    CLUSTER_CONF_LEADER_TIMEOUT,
+			    5,
+			    validate_leader_timeout);
 	conf_define_boolean(conf,
 			    CLUSTER_CONF_SECTION,
 			    CLUSTER_CONF_LEADER_CAPABILITY,

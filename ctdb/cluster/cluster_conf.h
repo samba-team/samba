@@ -28,6 +28,7 @@
 #define CLUSTER_CONF_NODE_ADDRESS    "node address"
 #define CLUSTER_CONF_CLUSTER_LOCK    "cluster lock"
 #define CLUSTER_CONF_RECOVERY_LOCK   "recovery lock"
+#define CLUSTER_CONF_LEADER_TIMEOUT  "leader timeout"
 #define CLUSTER_CONF_LEADER_CAPABILITY "leader capability"
 
 void cluster_conf_init(struct conf_context *conf);

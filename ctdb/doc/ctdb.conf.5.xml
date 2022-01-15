@@ -219,6 +219,19 @@
       </varlistentry>
 
       <varlistentry>
+	<term>leader timeout = <parameter>SECONDS</parameter></term>
+	<listitem>
+	  <para>
+	    Number of SECONDS without a leader broadcast before a node
+	    triggers an election.
+	  </para>
+	  <para>
+	    Default: <literal>5</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>node address = <parameter>IPADDR</parameter></term>
 	<listitem>
 	  <para>

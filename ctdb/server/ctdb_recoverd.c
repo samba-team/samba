@@ -48,8 +48,6 @@
 
 #include "ctdb_cluster_mutex.h"
 
-#define LEADER_BROADCAST_TIMEOUT 5
-
 /* List of SRVID requests that need to be processed */
 struct srvid_list {
 	struct srvid_list *next, *prev;
@@ -253,7 +251,6 @@ struct ctdb_recoverd {
 	uint32_t leader;
 	struct tevent_timer *leader_broadcast_te;
 	struct tevent_timer *leader_broadcast_timeout_te;
-	unsigned int leader_broadcast_timeout;
 	uint32_t pnn;
 	uint32_t last_culprit_node;
 	struct ctdb_node_map_old *nodemap;
@@ -2006,7 +2003,7 @@ static int leader_broadcast_timeout_start(struct ctdb_recoverd *rec)
 		tevent_add_timer(
 			ctdb->ev,
 			rec,
-			timeval_current_ofs(rec->leader_broadcast_timeout, 0),
+			timeval_current_ofs(ctdb_config.leader_timeout, 0),
 			leader_broadcast_timeout_handler,
 			rec);
 	if (rec->leader_broadcast_timeout_te == NULL) {
@@ -2979,7 +2976,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	rec->leader = CTDB_UNKNOWN_PNN;
 	rec->pnn = ctdb_get_pnn(ctdb);
 	rec->cluster_lock_handle = NULL;
-	rec->leader_broadcast_timeout = LEADER_BROADCAST_TIMEOUT;
 	rec->helper_pid = -1;
 
 	rec->takeover_run = ctdb_op_init(rec, "takeover runs");

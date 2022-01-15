@@ -32,6 +32,11 @@ EOF
 unit_test ctdb-config get "cluster" "cluster lock"
 
 ok <<EOF
+5
+EOF
+unit_test ctdb-config get "cluster" "leader timeout"
+
+ok <<EOF
 true
 EOF
 unit_test ctdb-config get "cluster" "leader capability"
@@ -96,6 +101,38 @@ required_result 0 <<EOF
 Configuration option [cluster] -> recovery lock is deprecated
 EOF
 unit_test ctdb-config -d WARNING validate
+
+cat > "$conffile" <<EOF
+[cluster]
+    leader timeout = 10
+EOF
+
+required_result 0 <<EOF
+EOF
+unit_test ctdb-config validate
+
+cat > "$conffile" <<EOF
+[cluster]
+    leader timeout = 0
+EOF
+
+required_result 22 <<EOF
+Invalid value for [cluster] -> leader timeout = 0
+conf: validation for option "leader timeout" failed
+Failed to load config file $conffile
+EOF
+unit_test ctdb-config validate
+
+cat > "$conffile" <<EOF
+[cluster]
+    leader timeout = -5
+EOF
+
+required_result 22 <<EOF
+conf: invalid value [cluster] -> "leader timeout" = "-5"
+Failed to load config file $conffile
+EOF
+unit_test ctdb-config validate
 
 cat > "$conffile" <<EOF
 [cluster]

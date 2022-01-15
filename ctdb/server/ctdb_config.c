@@ -57,6 +57,10 @@ static void setup_config_pointers(struct conf_context *conf)
 				   CLUSTER_CONF_SECTION,
 				   CLUSTER_CONF_RECOVERY_LOCK,
 				   &ctdb_config.recovery_lock);
+	conf_assign_integer_pointer(conf,
+				    CLUSTER_CONF_SECTION,
+				    CLUSTER_CONF_LEADER_TIMEOUT,
+				    &ctdb_config.leader_timeout);
 	conf_assign_boolean_pointer(conf,
 				    CLUSTER_CONF_SECTION,
 				    CLUSTER_CONF_LEADER_CAPABILITY,

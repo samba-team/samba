@@ -36,6 +36,7 @@ ok <<EOF
 	# node address = 
 	# cluster lock = 
 	# recovery lock = 
+	# leader timeout = 5
 	# leader capability = true
 [database]
 	# volatile database directory = ${database_volatile_dbdir}
