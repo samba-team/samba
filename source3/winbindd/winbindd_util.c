@@ -2119,8 +2119,12 @@ static void winbindd_set_locator_kdc_env(const struct winbindd_domain *domain)
 		return;
 	}
 
-	if (asprintf_strupper_m(&var, "%s_%s", WINBINDD_LOCATOR_KDC_ADDRESS,
-				domain->alt_name) == -1) {
+	var = talloc_asprintf_strupper_m(
+		talloc_tos(),
+		"%s_%s",
+		WINBINDD_LOCATOR_KDC_ADDRESS,
+		domain->alt_name);
+	if (var == NULL) {
 		return;
 	}
 
@@ -2128,7 +2132,7 @@ static void winbindd_set_locator_kdc_env(const struct winbindd_domain *domain)
 		var, kdc));
 
 	setenv(var, kdc, 1);
-	free(var);
+	TALLOC_FREE(var);
 }
 
 /*********************************************************************
@@ -2156,13 +2160,17 @@ void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain)
 		return;
 	}
 
-	if (asprintf_strupper_m(&var, "%s_%s", WINBINDD_LOCATOR_KDC_ADDRESS,
-				domain->alt_name) == -1) {
+	var = talloc_asprintf_strupper_m(
+		talloc_tos(),
+		"%s_%s",
+		WINBINDD_LOCATOR_KDC_ADDRESS,
+		domain->alt_name);
+	if (var == NULL) {
 		return;
 	}
 
 	unsetenv(var);
-	free(var);
+	TALLOC_FREE(var);
 }
 #else
 
