@@ -132,8 +132,9 @@ get_ctdb_conf_option ()
 		}
 	    }' <<EOF
 cluster	  node-address			CTDB_NODE_ADDRESS
-cluster   recovery-lock			CTDB_RECOVERY_LOCK
+cluster   cluster-lock			CTDB_RECOVERY_LOCK
 cluster   transport			CTDB_TRANSPORT
+cluster   leader-capability		CTDB_CAPABILITY_RECMASTER       no  false
 database  lock-debug-script		CTDB_DEBUG_LOCKS
 database  persistent-database-directory CTDB_DBDIR_PERSISTENT
 database  state-database-directory	CTDB_DBDIR_STATE
@@ -141,7 +142,6 @@ database  volatile-database-directory	CTDB_DBDIR
 event     debug-script			CTDB_DEBUG_HUNG_SCRIPT
 legacy    lmaster-capability		CTDB_CAPABILITY_LMASTER		no  false
 legacy    realtime-scheduling		CTDB_NOSETSCHED			yes false
-legacy    recmaster-capability		CTDB_CAPABILITY_RECMASTER       no  false
 legacy    script-log-level		CTDB_SCRIPT_LOG_LEVEL
 legacy    start-as-disabled		CTDB_START_AS_DISABLED		yes true
 legacy    start-as-stopped		CTDB_START_AS_STOPPED		yes true
