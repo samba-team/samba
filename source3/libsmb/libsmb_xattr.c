@@ -2077,7 +2077,7 @@ SMBC_getxattr_ctx(SMBCCTX *context,
 		return -1;
         }
 
-        if (!user || user[0] == (char)0) {
+        if (!user || user[0] == '\0') {
 		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
 			errno = ENOMEM;
