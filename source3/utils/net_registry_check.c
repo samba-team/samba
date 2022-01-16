@@ -948,7 +948,7 @@ static bool
 write_subkeylist(struct db_context *db, struct regkey *key, char sep)
 {
 	cbuf *buf = cbuf_new(talloc_tos());
-	int i;
+	size_t i;
 	bool ret;
 
 	cbuf_putdw(buf, key->nsubkeys);
@@ -977,7 +977,7 @@ static bool write_sorted(struct db_context *db, struct regkey *key, char sep)
 {
 	cbuf *buf = cbuf_new(talloc_tos());
 	char *path;
-	int i;
+	size_t i;
 	bool ret = false;
 	char **sorted = talloc_zero_array(buf, char*, key->nsubkeys);
 	int offset =  (1 + key->nsubkeys) * sizeof(uint32_t);
@@ -1014,7 +1014,7 @@ static bool write_values(struct db_context *db, struct regkey *key, char sep)
 {
 	cbuf *buf = cbuf_new(talloc_tos());
 	char *path;
-	int i;
+	size_t i;
 	bool ret = false;
 
 	cbuf_putdw(buf, key->nvalues);
