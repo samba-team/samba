@@ -523,32 +523,6 @@ uint64_t conv_str_size(const char * str)
 	return lval;
 }
 
-/*
- * asprintf into a string and strupper_m it after that.
- */
-
-int asprintf_strupper_m(char **strp, const char *fmt, ...)
-{
-	va_list ap;
-	char *result;
-	int ret;
-
-	va_start(ap, fmt);
-	ret = vasprintf(&result, fmt, ap);
-	va_end(ap);
-
-	if (ret == -1)
-		return -1;
-
-	if (!strupper_m(result)) {
-		SAFE_FREE(result);
-		return -1;
-	}
-
-	*strp = result;
-	return ret;
-}
-
 char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...)
 {
 	va_list ap;
