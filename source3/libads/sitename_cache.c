@@ -28,14 +28,10 @@
 
 #define SITENAME_KEY	"AD_SITENAME/DOMAIN/%s"
 
-static char *sitename_key(const char *realm)
+static char *sitename_key(TALLOC_CTX *mem_ctx, const char *realm)
 {
-	char *keystr;
-
-	if (asprintf_strupper_m(&keystr, SITENAME_KEY, realm) == -1) {
-		return NULL;
-	}
-
+	char *keystr = talloc_asprintf_strupper_m(
+		mem_ctx, SITENAME_KEY, realm);
 	return keystr;
 }
 
@@ -56,12 +52,12 @@ bool sitename_store(const char *realm, const char *sitename)
 		return False;
 	}
 
-	key = sitename_key(realm);
+	key = sitename_key(talloc_tos(), realm);
 
 	if (!sitename || (sitename && !*sitename)) {
 		DEBUG(5,("sitename_store: deleting empty sitename!\n"));
 		ret = gencache_del(key);
-		SAFE_FREE(key);
+		TALLOC_FREE(key);
 		return ret;
 	}
 
@@ -71,7 +67,7 @@ bool sitename_store(const char *realm, const char *sitename)
 		realm, sitename, (unsigned int)expire ));
 
 	ret = gencache_set( key, sitename, expire );
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 	return ret;
 }
 
@@ -94,10 +90,10 @@ char *sitename_fetch(TALLOC_CTX *mem_ctx, const char *realm)
 		query_realm = realm;
 	}
 
-	key = sitename_key(query_realm);
+	key = sitename_key(talloc_tos(), query_realm);
 
 	ret = gencache_get( key, mem_ctx, &sitename, &timeout );
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 	if ( !ret ) {
 		DBG_INFO("No stored sitename for realm '%s'\n", query_realm);
 	} else {
