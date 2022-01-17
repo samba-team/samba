@@ -6,6 +6,10 @@ def parse_version(v):
 
 gnutls_min_required_version = "3.4.7"
 
+conf.CHECK_FUNCS('getrandom', headers='sys/random.h')
+if not conf.CONFIG_SET('HAVE_GETRANDOM'):
+   gnutls_min_required_version = "3.7.2"
+
 gnutls_required_version = gnutls_min_required_version
 
 conf.CHECK_CFG(package='gnutls',
