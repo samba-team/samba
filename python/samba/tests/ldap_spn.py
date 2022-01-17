@@ -268,6 +268,8 @@ class LdapSpnTestBase(TestCase):
             for k in ('dNSHostName', 'servicePrincipalName'):
                 if isinstance(m.get(k), str):
                     m[k] = m[k].format(dnsname=f"x.{REALM}")
+                elif isinstance(m.get(k), list):
+                    m[k] = [x.format(dnsname=f"x.{REALM}") for x in m[k]]
 
             msg = ldb.Message.from_dict(samdb, m, op)
 
@@ -726,6 +728,11 @@ class LdapSpnSambaOnlyTest(LdapSpnTestBase):
         ("add a conflict, host first both on user, service rights",
          ('user:C', 'host/{dnsname}', '*', ok),
          ('user:D', 'www/{dnsname}', 'D', denied),
+        ),
+        ("add a conflict, along with a re-added SPN",
+         ('A', 'cifs/{dnsname}', '*', ok),
+         ('B', 'cifs/heeble.example.net', 'B', ok),
+         ('B', ['cifs/heeble.example.net', 'host/{dnsname}'], 'B', constraint),
         ),
 
         ("changing dNSHostName after host",

@@ -1,1 +1,2 @@
 samba.tests.ldap_spn.+LdapSpnTest.test_spn_dodgy_spns
+samba.tests.ldap_spn.+LdapSpnSambaOnlyTest.test_spn_add_a_conflict_along_with_a_re_added_SPN
