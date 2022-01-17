@@ -4001,8 +4001,7 @@ static int samldb_spn_uniqueness_check(struct samldb_ctx *ac,
 						 ac->msg->dn);
 		if (ret == LDB_ERR_COMPARE_TRUE) {
 			DBG_INFO("SPN %s re-added to the same object\n", spn);
-			talloc_free(tmp_ctx);
-			return LDB_SUCCESS;
+			continue;
 		}
 		if (ret != LDB_SUCCESS) {
 			DBG_ERR("SPN %s failed direct uniqueness check\n", spn);
