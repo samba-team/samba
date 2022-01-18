@@ -5066,8 +5066,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
  as the NT ACL when read.
 *********************************************************************/
 
-static NTSTATUS inherit_new_acl(struct smb_filename *parent_dir_fname,
-				files_struct *fsp)
+static NTSTATUS inherit_new_acl(files_struct *dirfsp, files_struct *fsp)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct security_descriptor *parent_desc = NULL;
@@ -5089,7 +5088,7 @@ static NTSTATUS inherit_new_acl(struct smb_filename *parent_dir_fname,
 	size_t size = 0;
 	bool ok;
 
-	status = SMB_VFS_FGET_NT_ACL(parent_dir_fname->fsp,
+	status = SMB_VFS_FGET_NT_ACL(dirfsp,
 				(SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL),
 				frame,
 				&parent_desc);
@@ -6094,7 +6093,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			}
 		} else if (lp_inherit_acls(SNUM(conn))) {
 			/* Inherit from parent. Errors here are not fatal. */
-			status = inherit_new_acl(parent_dir_fname, fsp);
+			status = inherit_new_acl(
+				parent_dir_fname->fsp, fsp);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(10,("inherit_new_acl: failed for %s with %s\n",
 					fsp_str_dbg(fsp),
