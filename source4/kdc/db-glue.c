@@ -2381,7 +2381,21 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 				      flags, kvno,
 				      realm_dn, msg, entry);
 	if (ret != 0) {
-		krb5_warnx(context, "samba_kdc_fetch: message2entry failed");
+		char *client_name = NULL;
+		krb5_error_code code;
+
+		code = krb5_unparse_name(context, principal, &client_name);
+		if (code == 0) {
+			krb5_warnx(context,
+				   "samba_kdc_fetch: message2entry failed for "
+				   "%s",
+				   client_name);
+		} else {
+			krb5_warnx(context,
+				   "samba_kdc_fetch: message2entry and "
+				   "krb5_unparse_name failed");
+		}
+		SAFE_FREE(client_name);
 	}
 
 	return ret;
