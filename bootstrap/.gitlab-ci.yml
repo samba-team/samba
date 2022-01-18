@@ -106,6 +106,9 @@ fedora34:
 fedora35:
   extends: .build_image_template
 
+f35mit120:
+  extends: .build_image_template
+
 centos8s:
   extends: .build_image_template
 

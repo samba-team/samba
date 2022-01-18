@@ -267,6 +267,23 @@ dnf install -y \
 dnf clean all
 """
 
+DNF_BOOTSTRAP_MIT = r"""
+#!/bin/bash
+{GENERATED_MARKER}
+set -xueo pipefail
+
+dnf update -y
+dnf install -y dnf-plugins-core
+dnf copr -y enable abbra/krb5-test
+dnf update -y
+
+dnf install -y \
+    --setopt=install_weak_deps=False \
+    {pkgs}
+
+dnf clean all
+"""
+
 ZYPPER_BOOTSTRAP = r"""
 #!/bin/bash
 {GENERATED_MARKER}
@@ -494,6 +511,17 @@ RPM_DISTS = {
         'docker_image': 'fedora:35',
         'vagrant_box': 'fedora/35-cloud-base',
         'bootstrap': DNF_BOOTSTRAP,
+        'replace': {
+            'lsb-release': 'redhat-lsb',
+            'perl-FindBin': '',
+            'python3-iso8601': 'python3-dateutil',
+            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
+        }
+    },
+    'f35mit120': {
+        'docker_image': 'fedora:35',
+        'vagrant_box': 'fedora/35-cloud-base',
+        'bootstrap': DNF_BOOTSTRAP_MIT,
         'replace': {
             'lsb-release': 'redhat-lsb',
             'perl-FindBin': '',
