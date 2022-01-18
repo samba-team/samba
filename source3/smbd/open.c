@@ -1057,7 +1057,9 @@ static NTSTATUS change_dir_owner_to_parent_fsp(struct files_struct *parent_fsp,
  file was created or not.
 ****************************************************************************/
 
-static NTSTATUS fd_open_atomic(files_struct *fsp,
+static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
+			       struct smb_filename *smb_fname,
+			       files_struct *fsp,
 			       int flags,
 			       mode_t mode,
 			       bool *file_created)
@@ -1071,7 +1073,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		/*
 		 * We're not creating the file, just pass through.
 		 */
-		status = fd_openat(fsp->conn->cwd_fsp, fsp->fsp_name, fsp, flags, mode);
+		status = fd_openat(dirfsp, smb_fname, fsp, flags, mode);
 		*file_created = false;
 		return status;
 	}
@@ -1080,7 +1082,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		/*
 		 * Fail if already exists, just pass through.
 		 */
-		status = fd_openat(fsp->conn->cwd_fsp, fsp->fsp_name, fsp, flags, mode);
+		status = fd_openat(dirfsp, smb_fname, fsp, flags, mode);
 
 		/*
 		 * Here we've opened with O_CREAT|O_EXCL. If that went
@@ -1120,7 +1122,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		retry_status = NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	status = fd_openat(fsp->conn->cwd_fsp, fsp->fsp_name, fsp, curr_flags, mode);
+	status = fd_openat(dirfsp, smb_fname, fsp, curr_flags, mode);
 	if (NT_STATUS_IS_OK(status)) {
 		*file_created = !file_existed;
 		return NT_STATUS_OK;
@@ -1139,7 +1141,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 			curr_flags = flags | O_EXCL;
 		}
 
-		status = fd_openat(fsp->conn->cwd_fsp, fsp->fsp_name, fsp, curr_flags, mode);
+		status = fd_openat(dirfsp, smb_fname, fsp, curr_flags, mode);
 	}
 
 	*file_created = (NT_STATUS_IS_OK(status) && !file_existed);
@@ -1242,10 +1244,13 @@ static NTSTATUS reopen_from_fsp(struct files_struct *fsp,
 
 	fsp->fsp_flags.is_pathref = false;
 
-	status = fd_open_atomic(fsp,
-				flags,
-				mode,
-				p_file_created);
+	status = fd_open_atomic(
+		fsp->conn->cwd_fsp,
+		fsp->fsp_name,
+		fsp,
+		flags,
+		mode,
+		p_file_created);
 	return status;
 }
 
