@@ -222,6 +222,10 @@ others:
     - .shared_runner_test
   stage: test_only
   script:
+    # Print the Kerberos version to check we ended up with the right one
+    # in the runner. We do not have configure output to recognize it
+    # otherwise.
+    - if [ -x "$(command -v krb5-config)" ]; then krb5-config --version; fi
     # We unpack the artifacts file created by the .shared_template_build_only
     # run we depend on
     - ls -la samba-testbase.tar.gz
