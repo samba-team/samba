@@ -326,7 +326,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("query_user_list: No incoming trust for domain %s\n",
-			  domain->name));		
+			  domain->name));
 		return NT_STATUS_OK;
 	}
 
@@ -432,7 +432,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("enum_dom_groups: No incoming trust for domain %s\n",
-			  domain->name));		
+			  domain->name));
 		return NT_STATUS_OK;
 	}
 
@@ -447,7 +447,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	 * According to Section 5.1(4) of RFC 2251 if a value of a type is it's
 	 * default value, it MUST be absent. In case of extensible matching the
 	 * "dnattr" boolean defaults to FALSE and so it must be only be present
-	 * when set to TRUE. 
+	 * when set to TRUE.
 	 *
 	 * When it is set to FALSE and the OpenLDAP lib (correctly) encodes a
 	 * filter using bitwise matching rule then the buggy AD fails to decode
@@ -458,9 +458,9 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	 *
 	 * Thanks to Ralf Haferkamp for input and testing - Guenther */
 
-	filter = talloc_asprintf(mem_ctx, "(&(objectCategory=group)(&(groupType:dn:%s:=%d)(!(groupType:dn:%s:=%d))))", 
+	filter = talloc_asprintf(mem_ctx, "(&(objectCategory=group)(&(groupType:dn:%s:=%d)(!(groupType:dn:%s:=%d))))",
 				 ADS_LDAP_MATCHING_RULE_BIT_AND, GROUP_TYPE_SECURITY_ENABLED,
-				 ADS_LDAP_MATCHING_RULE_BIT_AND, 
+				 ADS_LDAP_MATCHING_RULE_BIT_AND,
 				 enum_dom_local_groups ? GROUP_TYPE_BUILTIN_LOCAL_GROUP : GROUP_TYPE_RESOURCE_GROUP);
 
 	if (filter == NULL) {
@@ -529,7 +529,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	DEBUG(3,("ads enum_dom_groups gave %d entries\n", (*num_entries)));
 
 done:
-	if (res) 
+	if (res)
 		ads_msgfree(ads, res);
 
 	return status;
@@ -542,12 +542,12 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 				struct wb_acct_info **info)
 {
 	/*
-	 * This is a stub function only as we returned the domain 
+	 * This is a stub function only as we returned the domain
 	 * local groups in enum_dom_groups() if the domain->native field
 	 * was true.  This is a simple performance optimization when
 	 * using LDAP.
 	 *
-	 * if we ever need to enumerate domain local groups separately, 
+	 * if we ever need to enumerate domain local groups separately,
 	 * then this optimization in enum_dom_groups() will need
 	 * to be split out
 	 */
@@ -601,7 +601,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
    tokenGroups are not available. */
 static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 					 TALLOC_CTX *mem_ctx,
-					 const char *user_dn, 
+					 const char *user_dn,
 					 struct dom_sid *primary_group,
 					 uint32_t *p_num_groups, struct dom_sid **user_sids)
 {
@@ -620,7 +620,7 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("lookup_usergroups_members: No incoming trust for domain %s\n",
-			  domain->name));		
+			  domain->name));
 		return NT_STATUS_OK;
 	}
 
@@ -702,7 +702,7 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 
 	DEBUG(3,("ads lookup_usergroups (member) succeeded for dn=%s\n", user_dn));
 done:
-	if (res) 
+	if (res)
 		ads_msgfree(ads, res);
 
 	return status;
@@ -883,14 +883,14 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (count != 1) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: "
-			 "invalid number of results (count=%d)\n", 
+			 "invalid number of results (count=%d)\n",
 			 dom_sid_str_buf(sid, &buf),
 			 count));
 		goto done;
 	}
 
 	if (!msg) {
-		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: NULL msg\n", 
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: NULL msg\n",
 			 dom_sid_str_buf(sid, &buf)));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -903,7 +903,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group_rid)) {
-		DEBUG(1,("%s: No primary group for sid=%s !?\n", 
+		DEBUG(1,("%s: No primary group for sid=%s !?\n",
 			 domain->name,
 			 dom_sid_str_buf(sid, &buf)));
 		goto done;
@@ -913,7 +913,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids);
 
-	/* there must always be at least one group in the token, 
+	/* there must always be at least one group in the token,
 	   unless we are talking to a buggy Win2k server */
 
 	/* actually this only happens when the machine account has no read
@@ -937,7 +937,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		/* lookup what groups this user is a member of by DN search on
 		 * "member" */
 
-		status = lookup_usergroups_member(domain, mem_ctx, user_dn, 
+		status = lookup_usergroups_member(domain, mem_ctx, user_dn,
 						  &primary_group,
 						  &num_groups, user_sids);
 		*p_num_groups = num_groups;
@@ -1302,7 +1302,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 			DEBUG(10, ("lookup_groupmem: lsa_lookup_sids could "
 				   "not map any SIDs at all.\n"));
 			/* Don't handle this as an error here.
-			 * There is nothing left to do with respect to the 
+			 * There is nothing left to do with respect to the
 			 * overall result... */
 		}
 		else if (!NT_STATUS_IS_OK(status)) {
@@ -1367,13 +1367,13 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			NETR_TRUST_FLAG_IN_FOREST;
 	} else {
 		flags = NETR_TRUST_FLAG_IN_FOREST;
-	}	
+	}
 
 	result = cm_connect_netlogon(domain, &cli);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("trusted_domains: Could not open a connection to %s "
-			  "for PIPE_NETLOGON (%s)\n", 
+			  "for PIPE_NETLOGON (%s)\n",
 			  domain->name, nt_errstr(result)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
