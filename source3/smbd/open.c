@@ -1241,7 +1241,9 @@ static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS reopen_from_fsp(struct files_struct *fsp,
+static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
+				struct smb_filename *smb_fname,
+				struct files_struct *fsp,
 				int flags,
 				mode_t mode,
 				bool *p_file_created)
@@ -1277,8 +1279,8 @@ static NTSTATUS reopen_from_fsp(struct files_struct *fsp,
 	fsp->fsp_flags.is_pathref = false;
 
 	status = fd_open_atomic(
-		fsp->conn->cwd_fsp,
-		fsp->fsp_name,
+		dirfsp,
+		smb_fname,
 		fsp,
 		flags,
 		mode,
@@ -1472,7 +1474,9 @@ static NTSTATUS open_file(files_struct *fsp,
 		 * Actually do the open - if O_TRUNC is needed handle it
 		 * below under the share mode lock.
 		 */
-		status = reopen_from_fsp(fsp,
+		status = reopen_from_fsp(fsp->conn->cwd_fsp,
+					 fsp->fsp_name,
+					 fsp,
 					 local_flags & ~O_TRUNC,
 					 unx_mode,
 					 p_file_created);
@@ -4646,7 +4650,13 @@ static NTSTATUS open_directory(connection_struct *conn,
 		FILE_ADD_SUBDIRECTORY;
 
 	if (access_mask & need_fd_access) {
-		status = reopen_from_fsp(fsp, O_RDONLY | O_DIRECTORY, 0, NULL);
+		status = reopen_from_fsp(
+			fsp->conn->cwd_fsp,
+			fsp->fsp_name,
+			fsp,
+			O_RDONLY | O_DIRECTORY,
+			0,
+			NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_INFO("Could not open fd for [%s]: %s\n",
 				 smb_fname_str_dbg(smb_dname),
