@@ -488,7 +488,7 @@ pages:
 coverity:
   extends: .shared_runner_build_image
   variables:
-    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora35}
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora34}
   stage: build
   script:
     - wget https://scan.coverity.com/download/linux64 --post-data "token=$COVERITY_SCAN_TOKEN&project=$COVERITY_SCAN_PROJECT_NAME" -O /tmp/coverity_tool.tgz
