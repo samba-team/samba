@@ -958,15 +958,15 @@ int file_set_dosmode(connection_struct *conn,
 		}
 		smb_fname->st.st_ex_mode = unixmode;
 		return 0;
-	} else {
-		/*
-		 * Only fall back to using UNIX modes if
-		 * we get NOT_IMPLEMENTED.
-		 */
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-			errno = map_errno_from_nt_status(status);
-			return -1;
-		}
+	}
+
+	/*
+	 * Only fall back to using UNIX modes if
+	 * we get NOT_IMPLEMENTED.
+	 */
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
 	}
 
 	/* Fall back to UNIX modes. */
