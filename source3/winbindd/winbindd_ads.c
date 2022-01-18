@@ -34,6 +34,7 @@
 #include "../libds/common/flag_mapping.h"
 #include "libsmb/samlogon_cache.h"
 #include "passdb.h"
+#include "auth/credentials/credentials.h"
 
 #ifdef HAVE_ADS
 
@@ -102,6 +103,7 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 	ADS_STATUS status;
 	struct sockaddr_storage dc_ss;
 	fstring dc_name;
+	enum credentials_use_kerberos krb5_state;
 
 	if (auth_realm == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
@@ -125,7 +127,22 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 	ads->auth.renewable = renewable;
 	ads->auth.password = password;
 
-	ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
+	/* In FIPS mode, client use kerberos is forced to required. */
+	krb5_state = lp_client_use_kerberos();
+	switch (krb5_state) {
+	case CRED_USE_KERBEROS_REQUIRED:
+		ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
+		ads->auth.flags &= ~ADS_AUTH_ALLOW_NTLMSSP;
+		break;
+	case CRED_USE_KERBEROS_DESIRED:
+		ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
+		ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
+		break;
+	case CRED_USE_KERBEROS_DISABLED:
+		ads->auth.flags |= ADS_AUTH_DISABLE_KERBEROS;
+		ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
+		break;
+	}
 
 	ads->auth.realm = SMB_STRDUP(auth_realm);
 	if (!strupper_m(ads->auth.realm)) {
