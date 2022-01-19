@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "heimdal/lib/hdb/hdb_locl.h"
+#include "../heimdal/lib/hdb/hdb_locl.h"
 
 krb5_error_code
 hdb_sqlite_create(krb5_context context, HDB **db, const char *argument)

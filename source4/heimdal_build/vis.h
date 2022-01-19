@@ -11,5 +11,5 @@
 #define __END_DECLS
 #endif
 
-#include "heimdal/lib/roken/vis.hin"
+#include "../heimdal/lib/roken/vis.hin"
 #endif

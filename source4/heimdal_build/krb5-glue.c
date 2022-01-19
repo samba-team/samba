@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "heimdal/lib/krb5/krb5_locl.h"
+#include "../heimdal/lib/krb5/krb5_locl.h"
 
 const krb5_cc_ops krb5_scc_ops = {
     .version = KRB5_CC_OPS_VERSION,

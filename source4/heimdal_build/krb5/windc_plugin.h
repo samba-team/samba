@@ -1,1 +1,1 @@
-#include "heimdal/kdc/windc_plugin.h"
+#include "../../heimdal/kdc/windc_plugin.h"

@@ -20,7 +20,7 @@
 */
 
 #include "../replace/replace.h"
-#include "heimdal/lib/gssapi/gssapi_mech.h"
+#include "../heimdal/lib/gssapi/gssapi_mech.h"
 
 gssapi_mech_interface __gss_ntlm_initialize(void)
 {

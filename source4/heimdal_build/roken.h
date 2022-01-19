@@ -157,7 +157,7 @@
  * we include socket_wrapper via "system/network.h"
  */
 #undef SOCKET_WRAPPER_REPLACE
-#include "heimdal/lib/roken/roken.h.in"
+#include "../heimdal/lib/roken/roken.h.in"
 
 extern const char *heimdal_version;
 extern const char *heimdal_long_version;
