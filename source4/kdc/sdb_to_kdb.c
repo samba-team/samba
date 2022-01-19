@@ -65,9 +65,16 @@ static int SDBFlags_to_kflags(const struct SDBFlags *s,
 	if (s->change_pw) {
 		*k |= KRB5_KDB_PWCHANGE_SERVICE;
 	}
+#if 0
+	/*
+	 * Do not set KRB5_KDB_REQUIRES_HW_AUTH as this would tell the client
+	 * to enforce hardware authentication. It prevents the use of files
+	 * based public key authentication which we use for testing.
+	 */
 	if (s->require_hwauth) {
 		*k |= KRB5_KDB_REQUIRES_HW_AUTH;
 	}
+#endif
 	if (s->ok_as_delegate) {
 		*k |= KRB5_KDB_OK_AS_DELEGATE;
 	}
@@ -290,7 +297,11 @@ int sdb_entry_to_krb5_db_entry(krb5_context context,
 
 	/* FIXME: TODO HDB Extensions */
 
-	if (s->keys.len > 0) {
+	/*
+	 * Don't copy keys (allow password auth) if s->flags.require_hwauth is
+	 * set which translates to UF_SMARTCARD_REQUIRED.
+	 */
+	if (s->keys.len > 0 && s->flags.require_hwauth == 0) {
 		k->key_data = malloc(s->keys.len * sizeof(krb5_key_data));
 		if (k->key_data == NULL) {
 			free_krb5_db_entry(context, k);
