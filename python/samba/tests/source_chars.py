@@ -66,10 +66,10 @@ IGNORED_FILES = (
 )
 
 IGNORED_RE = (
-    r'^source4/heimdal/lib/hcrypto/passwd_dialog',
-    r'^source4/heimdal/lib/hx509/data/',
-    r'^source4/heimdal/po',
-    r'^source4/heimdal/tests/kdc/hdb-mitdb',
+    r'^third_party/heimdal/lib/hcrypto/passwd_dialog',
+    r'^third_party/heimdal/lib/hx509/data/',
+    r'^third_party/heimdal/po',
+    r'^third_party/heimdal/tests/kdc/hdb-mitdb',
 )
 
 IGNORED_EXTENSIONS = {
@@ -110,7 +110,7 @@ SAFE_FORMAT_CHARS = {
 # In the real world mixing directions would be normal in bilingual
 # documents, but it is rare in Samba source code.
 BIDI_FILES = {
-    'source4/heimdal/lib/wind/NormalizationTest.txt',
+    'third_party/heimdal/lib/wind/NormalizationTest.txt',
     'testdata/source-chars-bidi.py',
 }
 
@@ -164,8 +164,8 @@ def is_latin1_file(name):
     for pattern in (
             r'^source4/setup/ad-schema/\w+.ldf$',
             r'^source4/setup/display-specifiers/D[\w-]+.txt$',
-            r'^source4/heimdal/cf/pkg.m4$',
-            r'^source4/heimdal/doc/standardisation/',
+            r'^third_party/heimdal/cf/pkg.m4$',
+            r'^third_party/heimdal/doc/standardisation/',
     ):
         if re.match(pattern, name):
             return True

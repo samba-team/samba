@@ -2,4 +2,4 @@ from waflib import Logs
 
 if bld.__class__.__name__ != "ClangDbContext":
     Logs.info("\tSelected embedded Heimdal build")
-bld.RECURSE('source4/heimdal_build')
+bld.RECURSE('third_party/heimdal_build')

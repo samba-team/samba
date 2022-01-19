@@ -1,7 +1,7 @@
 import sys
 from waflib import Logs
 
-conf.RECURSE('source4/heimdal_build')
+conf.RECURSE('third_party/heimdal_build')
 
 heimdal_includedirs = []
 heimdal_libdirs = []

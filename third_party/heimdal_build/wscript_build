@@ -198,7 +198,7 @@ def HEIMDAL_AUTOPROTO(header, source, options=None, group='prototypes'):
             update_outputs=True,
             ext_out='.c',
             before='c')
-    t.env.HEIMDAL = os.path.join(bld.srcnode.abspath(), 'source4/heimdal')
+    t.env.HEIMDAL = os.path.join(bld.srcnode.abspath(), 'third_party/heimdal')
     t.env.OPTIONS = options
 
 
