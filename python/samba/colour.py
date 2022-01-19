@@ -88,3 +88,41 @@ def xterm_256_colour(n, bg=False, bold=False):
     target = '48' if bg else '38'
 
     return "\033[%s%s;5;%dm" % (weight, target, int(n))
+
+
+def is_colour_wanted(stream, hint='auto'):
+    """The hint is presumably a --color argument.
+
+    We follow the behaviour of GNU `ls` in what we accept.
+    * `git` is stricter, accepting only {always,never,auto}.
+    * `grep` is looser, accepting mixed case variants.
+    * historically we have used {yes,no,auto}.
+    * {always,never,auto} appears the commonest convention.
+    * if the caller tries to opt out of choosing and sets hint to None
+      or '', we assume 'auto'.
+    """
+    if hint in ('no', 'never', 'none'):
+        return False
+
+    if hint in ('yes', 'always', 'force'):
+        return True
+
+    if hint not in ('auto', 'tty', 'if-tty', None, ''):
+        raise ValueError("unexpected colour hint: {hint}; "
+                         "try always|never|auto")
+
+    from os import environ
+    if environ.get('NO_COLOR'):
+        # Note: per spec, we treat the empty string as if unset.
+        return False
+
+    if (hasattr(stream, 'isatty') and stream.isatty()):
+        return True
+    return False
+
+
+def colour_if_wanted(stream, hint='auto'):
+    if is_colour_wanted(stream, hint):
+        switch_colour_on()
+    else:
+        switch_colour_off()
