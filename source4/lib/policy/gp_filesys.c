@@ -487,6 +487,7 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 						strerror(errno));
 					status = NT_STATUS_UNSUCCESSFUL;
 					close(local_fd);
+					local_fd = -1;
 					goto done;
 				}
 				smbcli_write(gp_ctx->cli->tree, remote_fd, 0,
