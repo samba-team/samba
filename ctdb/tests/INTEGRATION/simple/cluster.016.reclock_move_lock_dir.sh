@@ -16,7 +16,7 @@ ctdb_test_skip_on_cluster
 
 ctdb_test_init -n
 
-echo "Starting CTDB with cluster lock recheck time set to 5s..."
+echo "Starting CTDB with cluster lock recheck interval set to 5s..."
 ctdb_nodes_start_custom -r 5
 
 select_test_node

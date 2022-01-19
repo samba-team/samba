@@ -166,7 +166,7 @@ struct wait_for_lost_state {
 	struct tevent_context *ev;
 	const char *lock_file;
 	ino_t inode;
-	unsigned long recheck_time;
+	unsigned long recheck_interval;
 };
 
 static void wait_for_lost_check(struct tevent_req *subreq);
@@ -175,7 +175,7 @@ static struct tevent_req *wait_for_lost_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
 					     const char *lock_file,
 					     int fd,
-					     unsigned long recheck_time)
+					     unsigned long recheck_interval)
 {
 	struct tevent_req *req, *subreq;
 	struct wait_for_lost_state *state;
@@ -189,7 +189,7 @@ static struct tevent_req *wait_for_lost_send(TALLOC_CTX *mem_ctx,
 
 	state->ev = ev;
 	state->lock_file = lock_file;
-	state->recheck_time = recheck_time;
+	state->recheck_interval = recheck_interval;
 
 	ret = fstat(fd, &sb);
 	if (ret != 0) {
@@ -207,7 +207,7 @@ static struct tevent_req *wait_for_lost_send(TALLOC_CTX *mem_ctx,
 	subreq = tevent_wakeup_send(
 			state,
 			ev,
-			tevent_timeval_current_ofs(state->recheck_time, 0));
+			tevent_timeval_current_ofs(state->recheck_interval, 0));
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -257,7 +257,7 @@ static void wait_for_lost_check(struct tevent_req *subreq)
 	subreq = tevent_wakeup_send(
 			state,
 			state->ev,
-			tevent_timeval_current_ofs(state->recheck_time, 0));
+			tevent_timeval_current_ofs(state->recheck_interval, 0));
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -288,7 +288,7 @@ static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 					     pid_t ppid,
 					     const char *lock_file,
 					     int fd,
-					     unsigned long recheck_time)
+					     unsigned long recheck_interval)
 {
 	struct tevent_req *req, *subreq;
 	struct wait_for_exit_state *state;
@@ -304,12 +304,12 @@ static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, wait_for_exit_parent_done, req);
 
-	if (recheck_time > 0) {
+	if (recheck_interval > 0) {
 		subreq = wait_for_lost_send(state,
 					    ev,
 					    lock_file,
 					    fd,
-					    recheck_time);
+					    recheck_interval);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -372,7 +372,7 @@ static bool wait_for_exit_recv(struct tevent_req *req, int *perr)
 
 static void usage(void)
 {
-	fprintf(stderr, "Usage: %s <file> [recheck_time]\n", progname);
+	fprintf(stderr, "Usage: %s <file> [recheck_interval]\n", progname);
 }
 
 int main(int argc, char *argv[])
@@ -381,7 +381,7 @@ int main(int argc, char *argv[])
 	char result;
 	int ppid;
 	const char *file = NULL;
-	unsigned long recheck_time;
+	unsigned long recheck_interval;
 	int ret;
 	int fd = -1;
 	struct tevent_req *req;
@@ -405,13 +405,13 @@ int main(int argc, char *argv[])
 
 	file = argv[1];
 
-	recheck_time = 5;
+	recheck_interval = 5;
 	if (argc == 3) {
-		recheck_time = smb_strtoul(argv[2],
-					   NULL,
-					   10,
-					   &ret,
-					   SMB_STR_STANDARD);
+		recheck_interval = smb_strtoul(argv[2],
+					       NULL,
+					       10,
+					       &ret,
+					       SMB_STR_STANDARD);
 		if (ret != 0) {
 			usage();
 			exit(1);
@@ -425,7 +425,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	req = wait_for_exit_send(ev, ev, ppid, file, fd, recheck_time);
+	req = wait_for_exit_send(ev, ev, ppid, file, fd, recheck_interval);
 	if (req == NULL) {
 		fprintf(stderr,
 			"%s: wait_for_exit_send() failed\n",
