@@ -239,6 +239,7 @@ static int paged_search_by_dn_guid(struct ldb_module *module,
 
 static int paged_results(struct paged_context *ac, struct ldb_reply *ares)
 {
+	struct ldb_extended *response = (ares != NULL ? ares->response : NULL);
 	struct ldb_paged_control *paged;
 	unsigned int i, num_ctrls;
 	int ret;
@@ -246,7 +247,7 @@ static int paged_results(struct paged_context *ac, struct ldb_reply *ares)
 	if (ac->store == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		return ldb_module_done(
-			ac->req, ac->controls, ares->response, ret);
+			ac->req, ac->controls, response, ret);
 	}
 
 	while (ac->store->last_i < ac->store->num_entries && ac->size > 0) {
@@ -276,7 +277,7 @@ static int paged_results(struct paged_context *ac, struct ldb_reply *ares)
 			continue;
 		} else if (ret != LDB_SUCCESS) {
 			return ldb_module_done(
-				ac->req, ac->controls, ares->response, ret);
+				ac->req, ac->controls, response, ret);
 		}
 
 		ret = ldb_module_send_entry(ac->req, result->msgs[0],
@@ -318,7 +319,7 @@ static int paged_results(struct paged_context *ac, struct ldb_reply *ares)
 	if (ac->controls == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		return ldb_module_done(
-			ac->req, ac->controls, ares->response, ret);
+			ac->req, ac->controls, response, ret);
 	}
 	ac->controls[num_ctrls] = NULL;
 
@@ -331,7 +332,7 @@ static int paged_results(struct paged_context *ac, struct ldb_reply *ares)
 	if (ac->controls[i] == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		return ldb_module_done(
-			ac->req, ac->controls, ares->response, ret);
+			ac->req, ac->controls, response, ret);
 	}
 
 	ac->controls[i]->oid = talloc_strdup(ac->controls[i],
@@ -339,7 +340,7 @@ static int paged_results(struct paged_context *ac, struct ldb_reply *ares)
 	if (ac->controls[i]->oid == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		return ldb_module_done(
-			ac->req, ac->controls, ares->response, ret);
+			ac->req, ac->controls, response, ret);
 	}
 
 	ac->controls[i]->critical = 0;
@@ -348,7 +349,7 @@ static int paged_results(struct paged_context *ac, struct ldb_reply *ares)
 	if (paged == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		return ldb_module_done(
-			ac->req, ac->controls, ares->response, ret);
+			ac->req, ac->controls, response, ret);
 	}
 
 	ac->controls[i]->data = paged;
@@ -803,7 +804,11 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 
 		ret = paged_results(ac, NULL);
 		if (ret != LDB_SUCCESS) {
-			return ldb_module_done(req, NULL, NULL, ret);
+			/*
+			 * paged_results() will have called ldb_module_done
+			 * if an error occurred
+			 */
+			return ret;
 		}
 		return ldb_module_done(req, ac->controls, NULL, LDB_SUCCESS);
 	}
