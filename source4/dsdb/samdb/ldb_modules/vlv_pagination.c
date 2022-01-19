@@ -389,6 +389,7 @@ static int vlv_calc_real_offset(int offset, int denominator, int n_entries)
 
 static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 {
+	struct ldb_extended *response = (ares != NULL ? ares->response : NULL);
 	struct ldb_vlv_resp_control *vlv;
 	unsigned int num_ctrls;
 	int ret, i, first_i, last_i;
@@ -399,7 +400,7 @@ static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 	if (ac->store == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		return ldb_module_done(
-			ac->req, ac->controls, ares->response, ret);
+			ac->req, ac->controls, response, ret);
 	}
 
 	if (ac->store->first_ref) {
@@ -428,7 +429,7 @@ static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 				return ldb_module_done(
 					ac->req,
 					ac->controls,
-					ares->response,
+					response,
 					ret);
 			}
 		} else {
@@ -440,7 +441,7 @@ static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 				return ldb_module_done(
 					ac->req,
 					ac->controls,
-					ares->response,
+					response,
 					ret);
 			}
 		}
@@ -480,7 +481,7 @@ static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 				return ldb_module_done(
 					ac->req,
 					ac->controls,
-					ares->response,
+					response,
 					ret);
 			}
 
@@ -513,7 +514,7 @@ static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 	if (ac->controls == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		return ldb_module_done(
-			ac->req, ac->controls, ares->response, ret);
+			ac->req, ac->controls, response, ret);
 	}
 	ac->controls[num_ctrls] = NULL;
 
@@ -525,7 +526,7 @@ static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 	if (ac->controls[i] == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		return ldb_module_done(
-			ac->req, ac->controls, ares->response, ret);
+			ac->req, ac->controls, response, ret);
 	}
 
 	ac->controls[i]->oid = talloc_strdup(ac->controls[i],
@@ -533,7 +534,7 @@ static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 	if (ac->controls[i]->oid == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		return ldb_module_done(
-			ac->req, ac->controls, ares->response, ret);
+			ac->req, ac->controls, response, ret);
 	}
 
 	ac->controls[i]->critical = 0;
@@ -542,7 +543,7 @@ static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 	if (vlv == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		return ldb_module_done(
-			ac->req, ac->controls, ares->response, ret);
+			ac->req, ac->controls, response, ret);
 	}
 	ac->controls[i]->data = vlv;
 
@@ -891,6 +892,10 @@ static int vlv_search(struct ldb_module *module, struct ldb_request *req)
 
 		ret = vlv_results(ac, NULL);
 		if (ret != LDB_SUCCESS) {
+			/*
+			 * vlv_results() will have called ldb_module_done
+			 * if there was an error.
+			 */
 			return ret;
 		}
 		return ldb_module_done(req, ac->controls, NULL,
