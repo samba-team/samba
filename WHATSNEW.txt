@@ -1,4 +1,69 @@
                    ==============================
+                   Release Notes for Samba 4.15.4
+                          January 19, 2022
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.15 release series.
+
+
+Changes since 4.15.3
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14928: Duplicate SMB file_ids leading to Windows client cache
+     poisoning.
+   * BUG 14939: smbclient -L doesn't set "client max protocol" to NT1 before
+     calling the "Reconnecting with SMB1 for workgroup listing" path.
+   * BUG 14944: Missing pop_sec_ctx() in error path inside close_directory().
+
+o  Pavel Filipenský <pfilipen@redhat.com>
+   * BUG 14940: Cross device copy of the crossrename module always fails.
+   * BUG 14941: symlinkat function from VFS cap module always fails with an
+     error.
+   * BUG 14942: Fix possible fsp pointer deference.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14934: kill_tcp_connections does not work.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14932: Failed to parse NTLMv2_RESPONSE length 95 - Buffer Size Error -
+     NT_STATUS_BUFFER_TOO_SMALL.
+   * BUG 14935: Can't connect to Windows shares not requiring authentication
+     using KDE/Gnome.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14945: "smbd --build-options" no longer works without an smb.conf file.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 14928: Duplicate SMB file_ids leading to Windows client cache
+     poisoning.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.libera.chat or the
+#samba-technical:matrix.org matrix channel.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.15.3
                          December 08, 2021
                    ==============================
@@ -115,8 +180,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.15.2
                            November 9, 2021
