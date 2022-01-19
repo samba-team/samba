@@ -786,7 +786,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["status"] ==
                         "NT_STATUS_NO_SUCH_USER") and
                     (msg["Authentication"]["authDescription"] ==
-                        "ENC-TS Pre-authentication") and
+                        "AS-REQ") and
                     (msg["Authentication"]["eventId"] ==
                         EVT_ID_UNSUCCESSFUL_LOGON) and
                     (msg["Authentication"]["logonType"] ==
