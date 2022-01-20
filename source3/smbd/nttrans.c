@@ -2215,6 +2215,37 @@ static NTSTATUS smbd_fetch_security_desc(connection_struct *conn,
 }
 
 /****************************************************************************
+ Write a securty descriptor into marshalled format.
+****************************************************************************/
+
+static NTSTATUS smbd_marshall_security_desc(TALLOC_CTX *mem_ctx,
+					files_struct *fsp,
+					struct security_descriptor *psd,
+					uint32_t max_data_count,
+					uint8_t **ppmarshalled_sd,
+					size_t *psd_size)
+{
+	*psd_size = ndr_size_security_descriptor(psd, 0);
+
+	DBG_NOTICE("sd_size = %zu.\n", *psd_size);
+
+	if (DEBUGLEVEL >= 10) {
+		DBG_DEBUG("security desc for file %s\n",
+			fsp_str_dbg(fsp));
+		NDR_PRINT_DEBUG(security_descriptor, psd);
+	}
+
+	if (max_data_count < *psd_size) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	return marshall_sec_desc(mem_ctx,
+				 psd,
+				 ppmarshalled_sd,
+				 psd_size);
+}
+
+/****************************************************************************
  Reply to query a security descriptor.
  Callable from SMB1 and SMB2.
  If it returns NT_STATUS_BUFFER_TOO_SMALL, psd_size is initialized with
@@ -2247,32 +2278,14 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 		return status;
 	}
 
-	*psd_size = ndr_size_security_descriptor(psd, 0);
-
-	DEBUG(3,("smbd_do_query_security_desc: sd_size = %lu.\n",
-		(unsigned long)*psd_size));
-
-	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("smbd_do_query_security_desc for file %s\n",
-			  fsp_str_dbg(fsp)));
-		NDR_PRINT_DEBUG(security_descriptor, psd);
-	}
-
-	if (max_data_count < *psd_size) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	status = marshall_sec_desc(mem_ctx, psd,
-				   ppmarshalled_sd, psd_size);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
-	}
-
+	status = smbd_marshall_security_desc(mem_ctx,
+					fsp,
+					psd,
+					max_data_count,
+					ppmarshalled_sd,
+					psd_size);
 	TALLOC_FREE(frame);
-	return NT_STATUS_OK;
+	return status;
 }
 
 /****************************************************************************
