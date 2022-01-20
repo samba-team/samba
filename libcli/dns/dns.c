@@ -475,11 +475,42 @@ static void dns_cli_request_udp_done(struct tevent_req *subreq)
 		req, struct dns_cli_request_state);
 	DATA_BLOB reply;
 	enum ndr_err_code ndr_err;
+	uint16_t reply_id, operation;
 	int ret;
 
 	ret = dns_udp_request_recv(subreq, state, &reply.data, &reply.length);
 	TALLOC_FREE(subreq);
 	if (tevent_req_error(req, ret)) {
+		return;
+	}
+
+	if (reply.length < 4) {
+		DBG_DEBUG("Short DNS packet: length=%zu\n", reply.length);
+		tevent_req_error(req, EINVAL);
+		return;
+	}
+
+	reply_id = PULL_BE_U16(reply.data, 0);
+	if (reply_id != state->req_id) {
+		DBG_DEBUG("Got id %"PRIu16", expected %"PRIu16"\n",
+			  state->reply->id, state->req_id);
+		tevent_req_error(req, ENOMSG);
+		return;
+	}
+
+	operation = PULL_BE_U16(reply.data, 2);
+	if ((operation & DNS_FLAG_TRUNCATION) != 0) {
+		DBG_DEBUG("Reply was truncated, retrying TCP\n");
+		subreq = dns_tcp_request_send(
+			state,
+			state->ev,
+			state->nameserver,
+			state->query.data,
+			state->query.length);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, dns_cli_request_tcp_done, req);
 		return;
 	}
 
@@ -497,32 +528,7 @@ static void dns_cli_request_udp_done(struct tevent_req *subreq)
 	}
 	TALLOC_FREE(reply.data);
 
-	if (state->reply->id != state->req_id) {
-		DBG_DEBUG("Got id %"PRIu16", expected %"PRIu16"\n",
-			  state->reply->id, state->req_id);
-		tevent_req_error(req, ENOMSG);
-		return;
-	}
-
-	if ((state->reply->operation & DNS_FLAG_TRUNCATION) == 0) {
-		DBG_DEBUG("Got op=%x %"PRIu16"/%"PRIu16"/%"PRIu16"/%"PRIu16
-			  " recs\n", (int)state->reply->operation,
-			  state->reply->qdcount, state->reply->ancount,
-			  state->reply->nscount, state->reply->nscount);
-		tevent_req_done(req);
-		return;
-	}
-
-	DBG_DEBUG("Reply was truncated, retrying TCP\n");
-
-	TALLOC_FREE(state->reply);
-
-	subreq = dns_tcp_request_send(state, state->ev, state->nameserver,
-				      state->query.data, state->query.length);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, dns_cli_request_tcp_done, req);
+	tevent_req_done(req);
 }
 
 static void dns_cli_request_tcp_done(struct tevent_req *subreq)
