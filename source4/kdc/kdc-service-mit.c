@@ -146,6 +146,7 @@ NTSTATUS mitkdc_task_init(struct task_server *task)
 	kadm5_ret_t ret;
 	kadm5_config_params config;
 	void *server_handle;
+	int dbglvl = 0;
 
 	task_server_set_title(task, "task[mitkdc_parent]");
 
@@ -187,6 +188,21 @@ NTSTATUS mitkdc_task_init(struct task_server *task)
 	}
 	setenv("KRB5_KDC_PROFILE", kdc_config, 0);
 	TALLOC_FREE(kdc_config);
+
+	dbglvl = debuglevel_get_class(DBGC_KERBEROS);
+	if (dbglvl >= 10) {
+		char *kdc_trace_file = talloc_asprintf(task,
+						       "%s/mit_kdc_trace.log",
+						       get_dyn_LOGFILEBASE());
+		if (kdc_trace_file == NULL) {
+			task_server_terminate(task,
+					"KDC: no memory",
+					false);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		setenv("KRB5_TRACE", kdc_trace_file, 1);
+	}
 
 	/* start it as a child process */
 	kdc_cmd = lpcfg_mit_kdc_command(task->lp_ctx);
