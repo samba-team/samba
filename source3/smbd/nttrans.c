@@ -2103,23 +2103,18 @@ static NTSTATUS get_null_nt_acl(TALLOC_CTX *mem_ctx, struct security_descriptor 
 }
 
 /****************************************************************************
- Reply to query a security descriptor.
- Callable from SMB1 and SMB2.
- If it returns NT_STATUS_BUFFER_TOO_SMALL, pdata_size is initialized with
- the required size.
+ Get a security descriptor from the file system, normalize for components
+ requested.
 ****************************************************************************/
 
-NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
-					TALLOC_CTX *mem_ctx,
-					files_struct *fsp,
-					uint32_t security_info_wanted,
-					uint32_t max_data_count,
-					uint8_t **ppmarshalled_sd,
-					size_t *psd_size)
+static NTSTATUS smbd_fetch_security_desc(connection_struct *conn,
+				TALLOC_CTX *mem_ctx,
+				files_struct *fsp,
+				uint32_t security_info_wanted,
+				struct security_descriptor **ppsd)
 {
 	NTSTATUS status;
 	struct security_descriptor *psd = NULL;
-	TALLOC_CTX *frame = talloc_stackframe();
 	bool need_to_read_sd = false;
 
 	/*
@@ -2129,14 +2124,12 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 	if ((security_info_wanted & SECINFO_SACL) &&
 			!(fsp->access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
 		DEBUG(10, ("Access to SACL denied.\n"));
-		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if ((security_info_wanted & (SECINFO_DACL|SECINFO_OWNER|SECINFO_GROUP)) &&
 			!(fsp->access_mask & SEC_STD_READ_CONTROL)) {
 		DEBUG(10, ("Access to DACL, OWNER, or GROUP denied.\n"));
-		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -2144,7 +2137,6 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("ACL get on symlink %s denied.\n",
 			fsp_str_dbg(fsp));
-		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -2176,13 +2168,12 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 			sd_fsp = fsp->base_fsp;
 		}
 		status = SMB_VFS_FGET_NT_ACL(
-			sd_fsp, security_info_wanted, frame, &psd);
+			sd_fsp, security_info_wanted, mem_ctx, &psd);
 	} else {
-		status = get_null_nt_acl(frame, &psd);
+		status = get_null_nt_acl(mem_ctx, &psd);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -2217,6 +2208,43 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 		psd->dacl = NULL;
 		psd->sacl = NULL;
 		psd->type &= ~(SEC_DESC_DACL_PRESENT|SEC_DESC_SACL_PRESENT);
+	}
+
+	*ppsd = psd;
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Reply to query a security descriptor.
+ Callable from SMB1 and SMB2.
+ If it returns NT_STATUS_BUFFER_TOO_SMALL, psd_size is initialized with
+ the required size.
+****************************************************************************/
+
+NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
+					TALLOC_CTX *mem_ctx,
+					files_struct *fsp,
+					uint32_t security_info_wanted,
+					uint32_t max_data_count,
+					uint8_t **ppmarshalled_sd,
+					size_t *psd_size)
+{
+	NTSTATUS status;
+	struct security_descriptor *psd = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	/*
+	 * Get the permissions to return.
+	 */
+
+	status = smbd_fetch_security_desc(conn,
+					frame,
+					fsp,
+					security_info_wanted,
+					&psd);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	*psd_size = ndr_size_security_descriptor(psd, 0);
