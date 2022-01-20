@@ -24,7 +24,7 @@ yum install -y \
     bison \
     ccache \
     chrpath \
-    compat-gnutls34-devel \
+    compat-gnutls37-devel \
     cups-devel \
     curl \
     dbus-devel \

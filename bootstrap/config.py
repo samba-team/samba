@@ -454,7 +454,7 @@ RPM_DISTS = {
             'glusterfs-api-devel': '',
             'glusterfs-devel': '',
             'libcephfs-devel': '',
-            'gnutls-devel': 'compat-gnutls34-devel',
+            'gnutls-devel': 'compat-gnutls37-devel',
             'liburing-devel': '',   # not available
             'python3-setproctitle': 'python36-setproctitle',
             'tracker-devel': '', # do not install
