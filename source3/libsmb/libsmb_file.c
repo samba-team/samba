@@ -402,6 +402,7 @@ SMBC_close_ctx(SMBCCTX *context,
                SMBCFILE *file)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	if (!context || !context->internal->initialized) {
 		errno = EINVAL;
@@ -421,19 +422,20 @@ SMBC_close_ctx(SMBCCTX *context,
 		return smbc_getFunctionClosedir(context)(context, file);
 	}
 
-	if (!NT_STATUS_IS_OK(cli_close(file->targetcli, file->cli_fd))) {
+	status = cli_close(file->targetcli, file->cli_fd);
+	if (!NT_STATUS_IS_OK(status)) {
 		SMBCSRV *srv;
 		DEBUG(3, ("cli_close failed on %s. purging server.\n",
 			  file->fname));
 		/* Deallocate slot and remove the server
 		 * from the server cache if unused */
-		errno = SMBC_errno(context, file->targetcli);
 		srv = file->srv;
 		DLIST_REMOVE(context->internal->files, file);
 		SAFE_FREE(file->fname);
 		SAFE_FREE(file);
 		smbc_getFunctionRemoveUnusedServer(context)(context, srv);
 		TALLOC_FREE(frame);
+		errno = cli_status_to_errno(status);
 		return -1;
 	}
 
