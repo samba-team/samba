@@ -2,7 +2,7 @@
 
 import os, sys, re
 
-from waflib import Build, Options, Logs, Utils, Errors
+from waflib import Build, Options, Logs, Utils, Errors, Task
 from waflib.Logs import debug
 from waflib.Configure import conf
 from waflib import ConfigSet
@@ -1164,6 +1164,52 @@ def load_samba_deps(bld, tgt_list):
     return True
 
 
+def generate_clangdb(bld):
+    classes = []
+    for x in ('c', 'cxx'):
+        cls = Task.classes.get(x)
+        if cls:
+            classes.append(cls)
+    task_classes = tuple(classes)
+
+    tasks = []
+    for g in bld.groups:
+        for tg in g:
+            if isinstance(tg, Task.Task):
+                lst = [tg]
+            else:
+                lst = tg.tasks
+            for task in lst:
+                try:
+                    cmd = task.last_cmd
+                except AttributeError:
+                    continue
+                if isinstance(task, task_classes):
+                    tasks.append(task)
+    if len(tasks) == 0:
+        return
+
+    database_file = bld.bldnode.make_node('compile_commands.json')
+    Logs.info('Build commands will be stored in %s',
+              database_file.path_from(bld.path))
+    try:
+        root = database_file.read_json()
+    except IOError:
+        root = []
+    clang_db = dict((x['file'], x) for x in root)
+    for task in tasks:
+        f_node = task.inputs[0]
+        cmd = task.last_cmd
+        filename = f_node.path_from(task.get_cwd())
+        entry = {
+            "directory": task.get_cwd().abspath(),
+            "arguments": cmd,
+            "file": filename,
+        }
+        clang_db[filename] = entry
+    root = list(clang_db.values())
+    database_file.write_json(root)
+
 
 def check_project_rules(bld):
     '''check the project rules - ensuring the targets are sane'''
@@ -1251,6 +1297,10 @@ def check_project_rules(bld):
     debug("deps: save_samba_deps: %s" % str(timer))
 
     Logs.info("Project rules pass")
+
+    if bld.cmd == 'build':
+        Task.Task.keep_last_cmd = True
+        bld.add_post_fun(generate_clangdb)
 
 
 def CHECK_PROJECT_RULES(bld):
