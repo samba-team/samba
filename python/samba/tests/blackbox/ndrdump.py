@@ -481,6 +481,10 @@ pull returned Success
 WARNING! orig bytes:29 validated pushed bytes:16
 WARNING! orig and validated differ at byte 0x04 (4)
 WARNING! orig byte[0x04] = 0xC6 validated byte[0x04] = 0x00
+-[0000] 40 F3 38 41 C6 92 87 04   00 00 00 00 00 00 00 06   @.8A.... ........
++[0000] 40 F3 38 41 00 00 00 00   00 00 00 00 00 00 00 00   @.8A.... ........
+-[0010] F5 FF 00 3C 3C 25 FF 70   16 1F A0 12 84            ...<<%.p .....
++[0010]                                                     EMPTY   BLOCK
 dump OK
 '''
         try:
