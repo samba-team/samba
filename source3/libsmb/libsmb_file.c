@@ -601,6 +601,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
         uint16_t fd;
         int ret;
 	uint32_t lattr = (uint32_t)attr;
+	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (attr == (uint16_t)-1) {
@@ -644,9 +645,10 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                 srv->no_pathinfo = True;
 
                 /* Open the file */
-                if (!NT_STATUS_IS_OK(cli_open(srv->cli, path, O_RDWR, DENY_NONE, &fd))) {
-                        errno = SMBC_errno(context, srv->cli);
+		status = cli_open(srv->cli, path, O_RDWR, DENY_NONE, &fd);
+		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(frame);
+                        errno = cli_status_to_errno(status);
                         return False;
                 }
 
