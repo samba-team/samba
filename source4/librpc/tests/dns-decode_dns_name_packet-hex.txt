@@ -30,6 +30,6 @@ pull returned Success
                 cname_record             : ''
                 unexpected               : DATA_BLOB length=18
 [0000] 0F 62 6E 61 6D 65 64 6F   74 70 72 65 66 69 78 32   .bnamedo tprefix2
-[0010] C0 0C                                              .. 
+[0010] C0 0C                                               ..
         additional: ARRAY(0)
 dump OK
