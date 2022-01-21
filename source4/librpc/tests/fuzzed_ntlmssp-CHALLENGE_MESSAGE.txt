@@ -38,6 +38,52 @@ pull returned Success
         TargetInfoLen            : 0x0000 (0)
         TargetInfoMaxLen         : 0x0000 (0)
         TargetInfo               : NULL
-ndr_push_subcontext_end: ndr_push_error(Subcontext Error): Bad subcontext (PUSH) content_size 1 is larger than size_is(0) at ../../librpc/ndr/ndr.c:901
-push returned Subcontext Error
-validate push FAILED
+push returned Success
+pull returned Success
+    CHALLENGE_MESSAGE: struct CHALLENGE_MESSAGE
+        Signature                : 'NTLMSSP'
+        MessageType              : NtLmChallenge (0x2)
+        TargetNameLen            : 0x0000 (0)
+        TargetNameMaxLen         : 0x0000 (0)
+        TargetName               : *
+            TargetName               : ''
+        NegotiateFlags           : 0x00000000 (0)
+               0: NTLMSSP_NEGOTIATE_UNICODE
+               0: NTLMSSP_NEGOTIATE_OEM    
+               0: NTLMSSP_REQUEST_TARGET   
+               0: NTLMSSP_NEGOTIATE_SIGN   
+               0: NTLMSSP_NEGOTIATE_SEAL   
+               0: NTLMSSP_NEGOTIATE_DATAGRAM
+               0: NTLMSSP_NEGOTIATE_LM_KEY 
+               0: NTLMSSP_NEGOTIATE_NETWARE
+               0: NTLMSSP_NEGOTIATE_NTLM   
+               0: NTLMSSP_NEGOTIATE_NT_ONLY
+               0: NTLMSSP_ANONYMOUS        
+               0: NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED
+               0: NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED
+               0: NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL
+               0: NTLMSSP_NEGOTIATE_ALWAYS_SIGN
+               0: NTLMSSP_TARGET_TYPE_DOMAIN
+               0: NTLMSSP_TARGET_TYPE_SERVER
+               0: NTLMSSP_TARGET_TYPE_SHARE
+               0: NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY
+               0: NTLMSSP_NEGOTIATE_IDENTIFY
+               0: NTLMSSP_REQUEST_NON_NT_SESSION_KEY
+               0: NTLMSSP_NEGOTIATE_TARGET_INFO
+               0: NTLMSSP_NEGOTIATE_VERSION
+               0: NTLMSSP_NEGOTIATE_128    
+               0: NTLMSSP_NEGOTIATE_KEY_EXCH
+               0: NTLMSSP_NEGOTIATE_56     
+        ServerChallenge          : 00801b846f2eca4f
+        Reserved                 : 5d00bd26404ef730
+        TargetInfoLen            : 0x0000 (0)
+        TargetInfoMaxLen         : 0x0000 (0)
+        TargetInfo               : NULL
+WARNING! orig and validated differ at byte 0x00 (0)
+WARNING! orig byte[0x00] = 0x00 validated byte[0x00] = 0x4E
+-[0000] 00 00 00 0B 02 00 00 00   00 27 02 00 00 00 00 00   ........ .'......
++[0000] 4E 54 4C 4D 53 53 50 00   02 00 00 00 00 00 00 00   NTLMSSP. ........
+-[0010] 07 00 00 00 00 00 00 00   00 80 1B 84 6F 2E CA 4F   ........ ....o..O
++[0010] 30 00 00 00 00 00 00 00   00 80 1B 84 6F 2E CA 4F   0....... ....o..O
+ [0020] 5D 00 BD 26 40 4E F7 30   00 00 00 00 00 00 00 00   ]..&@N.0 ........
+dump OK
