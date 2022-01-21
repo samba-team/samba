@@ -4293,7 +4293,7 @@ static size_t calc_max_read_pdu(const struct smb_request *req)
 		return 0x1FFFF;
 	}
 
-	if (!lp_unix_extensions()) {
+	if (!lp_smb1_unix_extensions()) {
 		return 0x1FFFF;
 	}
 

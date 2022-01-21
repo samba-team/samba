@@ -715,7 +715,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.lock_spin_time = WINDOWS_MINIMUM_LOCK_TIMEOUT_MS; /* msec. */
 	Globals.use_mmap = true;
 	Globals.unicode = true;
-	Globals.unix_extensions = true;
+	Globals.smb1_unix_extensions = true;
 	Globals.reset_on_zero_vc = false;
 	Globals.log_writeable_files_on_exit = false;
 	Globals.create_krb5_conf = true;
@@ -4660,7 +4660,7 @@ void widelinks_warning(int snum)
 		return;
 	}
 
-	if (lp_unix_extensions() && lp_wide_links(snum)) {
+	if (lp_smb1_unix_extensions() && lp_wide_links(snum)) {
 		DBG_ERR("Share '%s' has wide links and unix extensions enabled. "
 			"These parameters are incompatible. "
 			"Wide links will be disabled for this share.\n",
@@ -4671,7 +4671,7 @@ void widelinks_warning(int snum)
 bool lp_widelinks(int snum)
 {
 	/* wide links is always incompatible with unix extensions */
-	if (lp_unix_extensions()) {
+	if (lp_smb1_unix_extensions()) {
 		/*
 		 * Unless we have "allow insecure widelinks"
 		 * turned on.

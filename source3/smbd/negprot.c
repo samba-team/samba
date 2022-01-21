@@ -320,7 +320,7 @@ static NTSTATUS reply_nt1(struct smb_request *req, uint16_t choice)
 		capabilities |= CAP_UNICODE;
 	}
 
-	if (lp_unix_extensions()) {
+	if (lp_smb1_unix_extensions()) {
 		capabilities |= CAP_UNIX;
 	}
 

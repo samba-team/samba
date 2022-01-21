@@ -2720,7 +2720,7 @@ static void call_trans2findfirst(connection_struct *conn,
 			break;
 		case SMB_FIND_FILE_UNIX:
 		case SMB_FIND_FILE_UNIX_INFO2:
-			if (!lp_unix_extensions()) {
+			if (!lp_smb1_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				goto out;
 			}
@@ -3190,7 +3190,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		case SMB_FIND_FILE_UNIX_INFO2:
 			/* Always use filesystem for UNIX mtime query. */
 			ask_sharemode = false;
-			if (!lp_unix_extensions()) {
+			if (!lp_smb1_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
@@ -3918,7 +3918,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			bool large_read = !srv_is_signing_active(xconn);
 			int encrypt_caps = 0;
 
-			if (!lp_unix_extensions()) {
+			if (!lp_smb1_unix_extensions()) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
@@ -3964,7 +3964,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			int rc;
 			vfs_statvfs_struct svfs;
 
-			if (!lp_unix_extensions()) {
+			if (!lp_smb1_unix_extensions()) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
@@ -3998,7 +3998,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			uint32_t sid_bytes;
 			uint32_t i;
 
-			if (!lp_unix_extensions()) {
+			if (!lp_smb1_unix_extensions()) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
@@ -4303,7 +4303,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 
 	switch(info_level) {
 		case SMB_SET_CIFS_UNIX_INFO:
-			if (!lp_unix_extensions()) {
+			if (!lp_smb1_unix_extensions()) {
 				DEBUG(2,("call_trans2setfsinfo: "
 					"SMB_SET_CIFS_UNIX_INFO is invalid with "
 					"unix extensions off\n"));
@@ -4359,7 +4359,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 				size_t param_len = 0;
 				size_t data_len = total_data;
 
-				if (!lp_unix_extensions()) {
+				if (!lp_smb1_unix_extensions()) {
 					reply_nterror(
 						req,
 						NT_STATUS_INVALID_LEVEL);
@@ -5163,7 +5163,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	size_t len = 0;
 
 	if (INFO_LEVEL_IS_UNIX(info_level)) {
-		if (!lp_unix_extensions()) {
+		if (!lp_smb1_unix_extensions()) {
 			return NT_STATUS_INVALID_LEVEL;
 		}
 		if (!req->posix_pathnames) {
@@ -5983,7 +5983,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
-			if (!lp_unix_extensions()) {
+			if (!lp_smb1_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
@@ -6066,7 +6066,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QPATHINFO: level = %d\n", info_level));
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
-			if (!lp_unix_extensions()) {
+			if (!lp_smb1_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
@@ -9052,7 +9052,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 	int data_return_size = 0;
 
 	if (INFO_LEVEL_IS_UNIX(info_level)) {
-		if (!lp_unix_extensions()) {
+		if (!lp_smb1_unix_extensions()) {
 			return NT_STATUS_INVALID_LEVEL;
 		}
 		if (!req->posix_pathnames) {
@@ -9280,7 +9280,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		info_level = SVAL(params,2);
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
-			if (!lp_unix_extensions()) {
+			if (!lp_smb1_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
@@ -9359,7 +9359,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		info_level = SVAL(params,0);
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
-			if (!lp_unix_extensions()) {
+			if (!lp_smb1_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
