@@ -1734,9 +1734,11 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>rmdir: resolved path as %s\n", targetpath);*/
 
-	if (!NT_STATUS_IS_OK(cli_rmdir(targetcli, targetpath))) {
+	status = cli_rmdir(targetcli, targetpath);
 
-		errno = SMBC_errno(context, targetcli);
+	if (!NT_STATUS_IS_OK(status)) {
+
+		errno = cli_status_to_errno(status);
 
 		if (errno == EACCES) {  /* Check if the dir empty or not */
 
@@ -1759,9 +1761,8 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 
 			if (!NT_STATUS_IS_OK(status)) {
 				/* Fix errno to ignore latest error ... */
-				DEBUG(5, ("smbc_rmdir: "
-                                          "cli_list returned an error: %d\n",
-					  SMBC_errno(context, targetcli)));
+				DBG_INFO("cli_list returned an error: %s\n",
+					 nt_errstr(status));
 				errno = EACCES;
 
 			}
