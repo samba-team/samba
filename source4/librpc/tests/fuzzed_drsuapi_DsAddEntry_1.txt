@@ -60,7 +60,7 @@ WARNING! 47 unread bytes
                                                     values: ARRAY(1)
                                                         values: struct drsuapi_DsAttributeValue
                                                             attid                    : DATA_BLOB length=3
-[0000] 2F 00 17                                           /.. 
+[0000] 2F 00 17                                            /..
                                         attributes: struct drsuapi_DsReplicaAttribute
                                             attid                    : DRSUAPI_ATTID_objectCategory (0x9030E)
                                             value_ctr: struct drsuapi_DsAttributeValueCtr
@@ -82,7 +82,7 @@ skipping zero buffer bytes
 [0090] 6D 00 62 00 61 00 32 00   30 00 30 00 38 00 72 00   m.b.a.2. 0.0.8.r.
 [00A0] 32 00 2C 00 44 00 43 00   3D 00 65 00 78 00 61 00   2.,.D.C. =.e.x.a.
 [00B0] 6D 00 70 00 6C 00 65 00   2C 00 44 00 43 00 3D 00   m.p.l.e. ,.D.C.=.
-[00C0] 63 00 6F 00 6D 00 00 00                             c.o.m... 
+[00C0] 63 00 6F 00 6D 00 00 00                             c.o.m...
                                         attributes: struct drsuapi_DsReplicaAttribute
                                             attid                    : DRSUAPI_ATTID_invocationId (0x20073)
                                             value_ctr: struct drsuapi_DsAttributeValueCtr
@@ -218,7 +218,7 @@ skipping zero buffer bytes
                                                             __ndr_size               : 0x00000004 (4)
                                                             blob                     : *
                                                                 blob                     : DATA_BLOB length=4
-[0000] 04 00 00 00                                        .... 
+[0000] 04 00 00 00                                         ....
                                         attributes: struct drsuapi_DsReplicaAttribute
                                             attid                    : DRSUAPI_ATTID_systemFlags (0x90177)
                                             value_ctr: struct drsuapi_DsAttributeValueCtr
@@ -229,7 +229,7 @@ skipping zero buffer bytes
                                                             __ndr_size               : 0x00000004 (4)
                                                             blob                     : *
                                                                 blob                     : DATA_BLOB length=4
-[0000] 00 00 00 02                                        .... 
+[0000] 00 00 00 02                                         ....
                                         attributes: struct drsuapi_DsReplicaAttribute
                                             attid                    : DRSUAPI_ATTID_replPropertyMetaData (0x90003)
                                             value_ctr: struct drsuapi_DsAttributeValueCtr
@@ -250,7 +250,7 @@ skipping zero buffer bytes
 [0080] 61 00 32 00 30 00 30 00   38 00 72 00 32 00 2C 00   a.2.0.0. 8.r.2.,.
 [0090] 44 00 43 00 3D 00 65 00   78 00 61 00 6D 00 70 00   D.C.=.e. x.a.m.p.
 [00A0] 6C 00 65 00 2C 00 44 00   43 00 3D 00 63 00 6F 00   l.e.,.D. C.=.c.o.
-[00B0] 6D 00 EB 00                                        m... 
+[00B0] 6D 00 EB 00                                         m...
 push returned Success
 pull returned Success
     drsuapi_DsAddEntry: struct drsuapi_DsAddEntry
@@ -310,7 +310,7 @@ pull returned Success
                                                     values: ARRAY(1)
                                                         values: struct drsuapi_DsAttributeValue
                                                             attid                    : DATA_BLOB length=3
-[0000] 2F 00 17                                           /.. 
+[0000] 2F 00 17                                            /..
                                         attributes: struct drsuapi_DsReplicaAttribute
                                             attid                    : DRSUAPI_ATTID_objectCategory (0x9030E)
                                             value_ctr: struct drsuapi_DsAttributeValueCtr
@@ -332,7 +332,7 @@ skipping zero buffer bytes
 [0090] 6D 00 62 00 61 00 32 00   30 00 30 00 38 00 72 00   m.b.a.2. 0.0.8.r.
 [00A0] 32 00 2C 00 44 00 43 00   3D 00 65 00 78 00 61 00   2.,.D.C. =.e.x.a.
 [00B0] 6D 00 70 00 6C 00 65 00   2C 00 44 00 43 00 3D 00   m.p.l.e. ,.D.C.=.
-[00C0] 63 00 6F 00 6D 00 00 00                             c.o.m... 
+[00C0] 63 00 6F 00 6D 00 00 00                             c.o.m...
                                         attributes: struct drsuapi_DsReplicaAttribute
                                             attid                    : DRSUAPI_ATTID_invocationId (0x20073)
                                             value_ctr: struct drsuapi_DsAttributeValueCtr
@@ -468,7 +468,7 @@ skipping zero buffer bytes
                                                             __ndr_size               : 0x00000004 (4)
                                                             blob                     : *
                                                                 blob                     : DATA_BLOB length=4
-[0000] 04 00 00 00                                        .... 
+[0000] 04 00 00 00                                         ....
                                         attributes: struct drsuapi_DsReplicaAttribute
                                             attid                    : DRSUAPI_ATTID_systemFlags (0x90177)
                                             value_ctr: struct drsuapi_DsAttributeValueCtr
@@ -479,7 +479,7 @@ skipping zero buffer bytes
                                                             __ndr_size               : 0x00000004 (4)
                                                             blob                     : *
                                                                 blob                     : DATA_BLOB length=4
-[0000] 00 00 00 02                                        .... 
+[0000] 00 00 00 02                                         ....
                                         attributes: struct drsuapi_DsReplicaAttribute
                                             attid                    : DRSUAPI_ATTID_replPropertyMetaData (0x90003)
                                             value_ctr: struct drsuapi_DsAttributeValueCtr
@@ -500,7 +500,7 @@ skipping zero buffer bytes
 [0080] 61 00 32 00 30 00 30 00   38 00 72 00 32 00 2C 00   a.2.0.0. 8.r.2.,.
 [0090] 44 00 43 00 3D 00 65 00   78 00 61 00 6D 00 70 00   D.C.=.e. x.a.m.p.
 [00A0] 6C 00 65 00 2C 00 44 00   43 00 3D 00 63 00 6F 00   l.e.,.D. C.=.c.o.
-[00B0] 6D 00 EB 00                                        m... 
+[00B0] 6D 00 EB 00                                         m...
 WARNING! orig bytes:2555 validated pushed bytes:2504
 WARNING! orig pulled bytes:2508 validated pulled bytes:2504
 WARNING! orig and validated differ at byte 0x30 (48)
