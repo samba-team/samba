@@ -230,9 +230,9 @@ static void wait_for_parent_check(struct tevent_req *subreq)
 	tevent_req_set_callback(subreq, wait_for_parent_check, req);
 }
 
-static bool wait_for_parent_recv(struct tevent_req *req)
+static bool wait_for_parent_recv(struct tevent_req *req, int *perr)
 {
-	if (tevent_req_is_unix_error(req, NULL)) {
+	if (tevent_req_is_unix_error(req, perr)) {
 		return false;
 	}
 
@@ -273,6 +273,7 @@ int main(int argc, char *argv[])
 	int ppid;
 	const char *lock_type;
 	bool status;
+	int err;
 
 	reset_scheduler();
 
@@ -336,9 +337,11 @@ int main(int argc, char *argv[])
 
 	tevent_req_poll(req, ev);
 
-	status = wait_for_parent_recv(req);
+	status = wait_for_parent_recv(req, &err);
 	if (! status) {
-		fprintf(stderr, "locking: wait_for_parent_recv() failed\n");
+		fprintf(stderr,
+			"locking: wait_for_parent_recv() failed (%d)\n",
+			err);
 	}
 
 	talloc_free(ev);
