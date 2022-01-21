@@ -2049,6 +2049,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          expected_srealm=None,
                          expected_sname=None,
                          expected_account_name=None,
+                         expected_groups=None,
                          expected_upn_name=None,
                          expected_sid=None,
                          expected_supported_etypes=None,
@@ -2109,6 +2110,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
             'expected_account_name': expected_account_name,
+            'expected_groups': expected_groups,
             'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
             'expected_supported_etypes': expected_supported_etypes,
@@ -2165,6 +2167,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expected_srealm=None,
                           expected_sname=None,
                           expected_account_name=None,
+                          expected_groups=None,
                           expected_upn_name=None,
                           expected_sid=None,
                           expected_supported_etypes=None,
@@ -2226,6 +2229,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
             'expected_account_name': expected_account_name,
+            'expected_groups': expected_groups,
             'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
             'expected_supported_etypes': expected_supported_etypes,
@@ -2800,6 +2804,7 @@ class RawKerberosTest(TestCaseInTempDir):
             require_strict=require_strict)
 
         expected_account_name = kdc_exchange_dict['expected_account_name']
+        expected_groups = kdc_exchange_dict['expected_groups']
         expected_sid = kdc_exchange_dict['expected_sid']
 
         expect_upn_dns_info_ex = kdc_exchange_dict['expect_upn_dns_info_ex']
@@ -2832,7 +2837,8 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertEqual(account_name, pac_buffer.info.account_name)
 
             elif pac_buffer.type == krb5pac.PAC_TYPE_LOGON_INFO:
-                logon_info = pac_buffer.info.info.info3.base
+                info3 = pac_buffer.info.info.info3
+                logon_info = info3.base
 
                 if expected_account_name is not None:
                     self.assertEqual(expected_account_name,
@@ -2841,6 +2847,20 @@ class RawKerberosTest(TestCaseInTempDir):
                 if expected_sid is not None:
                     expected_rid = int(expected_sid.rsplit('-', 1)[1])
                     self.assertEqual(expected_rid, logon_info.rid)
+
+                if expected_groups is not None:
+                    self.assertIsNotNone(info3.sids)
+                    got_sids = {str(sid_attr.sid) for sid_attr in info3.sids}
+                    self.assertEqual(info3.sidcount,
+                                     len(got_sids),
+                                     'Found duplicate SIDs')
+
+                    match_count = 0
+                    for g in expected_groups:
+                        for sid_attr in info3.sids:
+                            if g == str(sid_attr.sid):
+                                match_count += 1
+                    self.assertEqual(match_count, len(expected_groups))
 
             elif pac_buffer.type == krb5pac.PAC_TYPE_UPN_DNS_INFO:
                 upn_dns_info = pac_buffer.info
@@ -3943,6 +3963,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           kdc_options,
                           renew_time=None,
                           expected_account_name=None,
+                          expected_groups=None,
                           expected_upn_name=None,
                           expected_sid=None,
                           expected_flags=None,
@@ -3983,6 +4004,7 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_srealm=expected_srealm,
             expected_sname=expected_sname,
             expected_account_name=expected_account_name,
+            expected_groups=expected_groups,
             expected_upn_name=expected_upn_name,
             expected_sid=expected_sid,
             expected_supported_etypes=expected_supported_etypes,
