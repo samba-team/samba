@@ -1836,7 +1836,7 @@ static void cluster_lock_election(struct ctdb_recoverd *rec)
 		if (cluster_lock_held(rec)) {
 			cluster_lock_release(rec);
 		}
-		return;
+		goto done;
 	}
 
 	/*
@@ -1844,7 +1844,7 @@ static void cluster_lock_election(struct ctdb_recoverd *rec)
 	 * attempt to retake it.  This provides stability.
 	 */
 	if (cluster_lock_held(rec)) {
-		return;
+		goto done;
 	}
 
 	rec->leader = CTDB_UNKNOWN_PNN;
@@ -1856,6 +1856,7 @@ static void cluster_lock_election(struct ctdb_recoverd *rec)
 		D_WARNING("Took cluster lock, leader=%"PRIu32"\n", rec->leader);
 	}
 
+done:
 	rec->election_in_progress = false;
 }
 
