@@ -499,10 +499,9 @@ dump OK
     def test_ndrdump_fuzzed_NULL_struct_ntlmssp_CHALLENGE_MESSAGE(self):
         expected =  open(self.data_path("fuzzed_ntlmssp-CHALLENGE_MESSAGE.txt")).read().encode('utf8')
         try:
-            actual = self.check_exit_code(
+            actual = self.check_output(
                 "ndrdump --debug-stdout ntlmssp CHALLENGE_MESSAGE struct --validate --input " +\
-                "'AAAACwIAAAAAJwIAAAAAAAcAAAAAAAAAAIAbhG8uyk9dAL0mQE73MAAAAAAAAAAA' --base64-input",
-                1)
+                "'AAAACwIAAAAAJwIAAAAAAAcAAAAAAAAAAIAbhG8uyk9dAL0mQE73MAAAAAAAAAAA' --base64-input")
         except BlackboxProcessError as e:
             self.fail(e)
 
