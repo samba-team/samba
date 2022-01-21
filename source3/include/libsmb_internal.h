@@ -400,7 +400,7 @@ int
 SMBC_close_ctx(SMBCCTX *context,
                SMBCFILE *file);
 
-bool
+NTSTATUS
 SMBC_getatr(SMBCCTX * context,
             SMBCSRV *srv,
             const char *path,

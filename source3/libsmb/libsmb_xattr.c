@@ -552,6 +552,7 @@ dos_attr_query(SMBCCTX *context,
 {
 	struct stat sb = {0};
         struct DOS_ATTR_DESC *ret = NULL;
+	NTSTATUS status;
 
         ret = talloc(ctx, struct DOS_ATTR_DESC);
         if (!ret) {
@@ -560,10 +561,11 @@ dos_attr_query(SMBCCTX *context,
         }
 
         /* Obtain the DOS attributes */
-        if (!SMBC_getatr(context, srv, filename, &sb)) {
-                errno = SMBC_errno(context, srv->cli);
+	status = SMBC_getatr(context, srv, filename, &sb);
+	if (!NT_STATUS_IS_OK(status)) {
                 DEBUG(5, ("dos_attr_query Failed to query old attributes\n"));
 		TALLOC_FREE(ret);
+                errno = cli_status_to_errno(status);
                 return NULL;
         }
 
@@ -1151,13 +1153,15 @@ cacl_get(SMBCCTX *context,
 		off_t size = 0;
 		uint16_t mode = 0;
 		SMB_INO_T ino = 0;
+		NTSTATUS status;
 
                 /* Point to the portion after "system.dos_attr." */
                 name += 16;     /* if (all) this will be invalid but unused */
 
                 /* Obtain the DOS attributes */
-                if (!SMBC_getatr(context, srv, filename, &sb)) {
-                        errno = SMBC_errno(context, srv->cli);
+		status = SMBC_getatr(context, srv, filename, &sb);
+		if (!NT_STATUS_IS_OK(status)) {
+                        errno = cli_status_to_errno(status);
                         return -1;
                 }
 

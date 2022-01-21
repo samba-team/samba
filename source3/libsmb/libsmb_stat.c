@@ -173,6 +173,7 @@ SMBC_stat_ctx(SMBCCTX *context,
 	char *workgroup = NULL;
 	char *path = NULL;
 	uint16_t port = 0;
+	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
@@ -221,9 +222,10 @@ SMBC_stat_ctx(SMBCCTX *context,
 		return -1;  /* errno set by SMBC_server */
 	}
 
-	if (!SMBC_getatr(context, srv, path, st)) {
-		errno = SMBC_errno(context, srv->cli);
+	status = SMBC_getatr(context, srv, path, st);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
+		errno = cli_status_to_errno(status);
 		return -1;
 	}
 

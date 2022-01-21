@@ -985,10 +985,12 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                          */
                                         path[path_len] = '\0'; /* restore original path */
 
-                                        if (SMBC_getatr(context,
-							srv,
-							path,
-							&sb) &&
+					status = SMBC_getatr(
+						context,
+						srv,
+						path,
+						&sb);
+					if (NT_STATUS_IS_OK(status) &&
                                             !S_ISDIR(sb.st_mode)) {
 
                                                 /* It is.  Correct the error value */
@@ -2255,14 +2257,13 @@ SMBC_unlink_ctx(SMBCCTX *context,
 
 			int saverr = errno;
 			struct stat sb = {0};
-			bool ok;
 
-			ok = SMBC_getatr(context, srv, path, &sb);
-			if (!ok) {
+			status = SMBC_getatr(context, srv, path, &sb);
+			if (!NT_STATUS_IS_OK(status)) {
 				/* Hmmm, bad error ... What? */
 
-				errno = SMBC_errno(context, targetcli);
 				TALLOC_FREE(frame);
+				errno = cli_status_to_errno(status);
 				return -1;
 
 			}

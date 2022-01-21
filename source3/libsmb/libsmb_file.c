@@ -450,7 +450,7 @@ SMBC_close_ctx(SMBCCTX *context,
  * Get info from an SMB server on a file. Use a qpathinfo call first
  * and if that fails, use getatr, as Win95 sometimes refuses qpathinfo
  */
-bool
+NTSTATUS
 SMBC_getatr(SMBCCTX * context,
             SMBCSRV *srv,
             const char *path,
@@ -472,25 +472,22 @@ SMBC_getatr(SMBCCTX * context,
 	NTSTATUS status;
 
 	if (!context || !context->internal->initialized) {
-		errno = EINVAL;
 		TALLOC_FREE(frame);
- 		return False;
+		return NT_STATUS_INVALID_PARAMETER;
  	}
 
 	/* path fixup for . and .. */
 	if (ISDOT(path) || ISDOTDOT(path)) {
 		fixedpath = talloc_strdup(frame, "\\");
 		if (!fixedpath) {
-			errno = ENOMEM;
 			TALLOC_FREE(frame);
-			return False;
+			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
 		fixedpath = talloc_strdup(frame, path);
 		if (!fixedpath) {
-			errno = ENOMEM;
 			TALLOC_FREE(frame);
-			return False;
+			return NT_STATUS_NO_MEMORY;
 		}
 		trim_string(fixedpath, NULL, "\\..");
 		trim_string(fixedpath, NULL, "\\.");
@@ -505,9 +502,8 @@ SMBC_getatr(SMBCCTX * context,
 				  &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Couldn't resolve %s\n", path);
-                errno = ENOENT;
 		TALLOC_FREE(frame);
-		return False;
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	if (!srv->no_pathinfo2) {
@@ -571,15 +567,14 @@ setup_stat:
 		   write_time_ts);
 
 	TALLOC_FREE(frame);
-	return true;
+	return NT_STATUS_OK;
 
 all_failed:
 	srv->no_pathinfo2 = False;
 	srv->no_pathinfo3 = False;
 
-        errno = EPERM;
 	TALLOC_FREE(frame);
-	return False;
+	return NT_STATUS_ACCESS_DENIED;
 }
 
 /*
