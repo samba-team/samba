@@ -2050,6 +2050,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          expected_sname=None,
                          expected_account_name=None,
                          expected_groups=None,
+                         unexpected_groups=None,
                          expected_upn_name=None,
                          expected_sid=None,
                          expected_supported_etypes=None,
@@ -2111,6 +2112,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_sname': expected_sname,
             'expected_account_name': expected_account_name,
             'expected_groups': expected_groups,
+            'unexpected_groups': unexpected_groups,
             'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
             'expected_supported_etypes': expected_supported_etypes,
@@ -2168,6 +2170,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expected_sname=None,
                           expected_account_name=None,
                           expected_groups=None,
+                          unexpected_groups=None,
                           expected_upn_name=None,
                           expected_sid=None,
                           expected_supported_etypes=None,
@@ -2230,6 +2233,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_sname': expected_sname,
             'expected_account_name': expected_account_name,
             'expected_groups': expected_groups,
+            'unexpected_groups': unexpected_groups,
             'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
             'expected_supported_etypes': expected_supported_etypes,
@@ -2805,6 +2809,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
         expected_account_name = kdc_exchange_dict['expected_account_name']
         expected_groups = kdc_exchange_dict['expected_groups']
+        unexpected_groups = kdc_exchange_dict['unexpected_groups']
         expected_sid = kdc_exchange_dict['expected_sid']
 
         expect_upn_dns_info_ex = kdc_exchange_dict['expect_upn_dns_info_ex']
@@ -2861,6 +2866,16 @@ class RawKerberosTest(TestCaseInTempDir):
                             if g == str(sid_attr.sid):
                                 match_count += 1
                     self.assertEqual(match_count, len(expected_groups))
+
+                if unexpected_groups is not None:
+                    match_count = 0
+
+                    for g in unexpected_groups:
+                        self.assertIsNotNone(info3.sids)
+                        for sid_attr in info3.sids:
+                            if g == str(sid_attr.sid):
+                                match_count += 1
+                    self.assertEqual(match_count, 0)
 
             elif pac_buffer.type == krb5pac.PAC_TYPE_UPN_DNS_INFO:
                 upn_dns_info = pac_buffer.info
@@ -3964,6 +3979,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           renew_time=None,
                           expected_account_name=None,
                           expected_groups=None,
+                          unexpected_groups=None,
                           expected_upn_name=None,
                           expected_sid=None,
                           expected_flags=None,
@@ -4005,6 +4021,7 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_sname=expected_sname,
             expected_account_name=expected_account_name,
             expected_groups=expected_groups,
+            unexpected_groups=unexpected_groups,
             expected_upn_name=expected_upn_name,
             expected_sid=expected_sid,
             expected_supported_etypes=expected_supported_etypes,

@@ -284,6 +284,7 @@ class S4UKerberosTests(KDCBaseTest):
 
         expect_edata = kdc_dict.pop('expect_edata', None)
         expected_groups = kdc_dict.pop('expected_groups', None)
+        unexpected_groups = kdc_dict.pop('unexpected_groups', None)
 
         def generate_s4u2self_padata(_kdc_exchange_dict,
                                      _callback_dict,
@@ -302,7 +303,7 @@ class S4UKerberosTests(KDCBaseTest):
             expected_srealm=realm,
             expected_sname=service_sname,
             expected_account_name=client_name,
-            expected_groups=expected_groups,
+            unexpected_groups=unexpected_groups,
             expected_sid=sid,
             expected_flags=expected_flags,
             unexpected_flags=unexpected_flags,
@@ -573,6 +574,7 @@ class S4UKerberosTests(KDCBaseTest):
                 opts=service1_opts)
 
         expected_groups = kdc_dict.pop('expected_groups', None)
+        unexpected_groups = kdc_dict.pop('unexpected_groups', None)
 
         client_tkt_options = kdc_dict.pop('client_tkt_options', 'forwardable')
         expected_flags = krb5_asn1.TicketFlags(client_tkt_options)
@@ -659,6 +661,7 @@ class S4UKerberosTests(KDCBaseTest):
             expected_sname=service2_sname,
             expected_account_name=client_username,
             expected_groups=expected_groups,
+            unexpected_groups=unexpected_groups,
             expected_sid=sid,
             expected_supported_etypes=service2_etypes,
             ticket_decryption_key=service2_decryption_key,
