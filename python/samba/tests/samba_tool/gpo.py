@@ -35,6 +35,42 @@ import xml.etree.ElementTree as etree
 from tempfile import NamedTemporaryFile
 from time import sleep
 
+gpo_load_json = \
+b"""
+[
+    {
+        "keyname": "Software\\\\Policies\\\\Mozilla\\\\Firefox\\\\Homepage",
+        "valuename": "StartPage",
+        "class": "USER",
+        "type": "REG_SZ",
+        "data": "homepage"
+    },
+    {
+        "keyname": "Software\\\\Policies\\\\Mozilla\\\\Firefox\\\\Homepage",
+        "valuename": "URL",
+        "class": "USER",
+        "type": 1,
+        "data": "samba.org"
+    }
+]
+"""
+
+gpo_remove_json = \
+b"""
+[
+    {
+        "keyname": "Software\\\\Policies\\\\Mozilla\\\\Firefox\\\\Homepage",
+        "valuename": "StartPage",
+        "class": "USER"
+    },
+    {
+        "keyname": "Software\\\\Policies\\\\Mozilla\\\\Firefox\\\\Homepage",
+        "valuename": "URL",
+        "class": "USER"
+    }
+]
+"""
+
 source_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.."))
 
 def has_difference(path1, path2, binary=True, xml=True, sortlines=False):
@@ -1500,6 +1536,43 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertNotIn(text, out, 'The test entry was still found!')
+
+    def test_load_show_remove(self):
+        with NamedTemporaryFile() as f:
+            f.write(gpo_load_json)
+            f.flush()
+            (result, out, err) = self.runsubcmd("gpo", "load",
+                                                 self.gpo_guid,
+                                                 "--content=%s" % f.name,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+            self.assertCmdSuccess(result, out, err, 'Loading policy failed')
+
+        (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H",
+                                            "ldap://%s" % os.environ["SERVER"])
+        self.assertCmdSuccess(result, out, err, 'Failed to fetch gpos')
+        self.assertIn('samba.org', out, 'Homepage policy not loaded')
+
+        with NamedTemporaryFile() as f:
+            f.write(gpo_remove_json)
+            f.flush()
+            (result, out, err) = self.runsubcmd("gpo", "remove",
+                                                 self.gpo_guid,
+                                                 "--content=%s" % f.name,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+            self.assertCmdSuccess(result, out, err, 'Removing policy failed')
+
+        (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H",
+                                            "ldap://%s" % os.environ["SERVER"])
+        self.assertCmdSuccess(result, out, err, 'Failed to fetch gpos')
+        self.assertNotIn('samba.org', out, 'Homepage policy not removed')
 
     def setUp(self):
         """set up a temporary GPO to work with"""
