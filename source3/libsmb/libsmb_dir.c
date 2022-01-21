@@ -972,7 +972,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 					SAFE_FREE(dir->fname);
 					SAFE_FREE(dir);
 				}
-				saved_errno = SMBC_errno(context, targetcli);
+				saved_errno = cli_status_to_errno(status);
 
                                 if (saved_errno == EINVAL) {
 					struct stat sb = {0};
