@@ -465,8 +465,7 @@ def RECURSE(ctx, directory):
                     'CleanContext',
                     'InstallContext',
                     'UninstallContext',
-                    'ListContext',
-                    'ClangDbContext']:
+                    'ListContext']:
         return ctx.recurse(relpath)
     if 'waflib.extras.compat15' in sys.modules:
         return ctx.recurse(relpath)
