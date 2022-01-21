@@ -24,6 +24,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/network.h"
+#include "system/wait.h"
 
 #include <tevent.h>
 
@@ -35,6 +36,7 @@
 /* protocol.h is just needed for ctdb_sock_addr, which is used in system.h */
 #include "protocol/protocol.h"
 #include "common/system.h"
+#include "common/tmon.h"
 
 static char progpath[PATH_MAX];
 static char *progname = NULL;
@@ -174,13 +176,11 @@ static void lock_io_check_loop(struct tevent_req *subreq);
 static struct tevent_req *lock_io_check_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
 					     const char *lock_file,
-					     int fd,
+					     ino_t inode,
 					     unsigned long recheck_interval)
 {
 	struct tevent_req *req, *subreq;
 	struct lock_io_check_state *state;
-	struct stat sb;
-	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct lock_io_check_state);
 	if (req == NULL) {
@@ -189,20 +189,8 @@ static struct tevent_req *lock_io_check_send(TALLOC_CTX *mem_ctx,
 
 	state->ev = ev;
 	state->lock_file = lock_file;
+	state->inode = inode;
 	state->recheck_interval = recheck_interval;
-
-	ret = fstat(fd, &sb);
-	if (ret != 0) {
-		fprintf(stderr,
-			"%s: "
-			"lock lost - lock file \"%s\" check failed (ret=%d)\n",
-			progname,
-			state->lock_file,
-			errno);
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-	state->inode = sb.st_ino;
 
 	subreq = tevent_wakeup_send(
 			state,
@@ -273,6 +261,276 @@ static bool lock_io_check_recv(struct tevent_req *req, int *perr)
 	return true;
 }
 
+struct lock_test_child_state {
+};
+
+static void lock_test_child_ping_done(struct tevent_req *subreq);
+static void lock_test_child_io_check_done(struct tevent_req *subreq);
+
+static struct tevent_req *lock_test_child_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       const char *lock_file,
+					       int fd,
+					       ino_t inode,
+					       unsigned long recheck_interval)
+{
+	struct tevent_req *req, *subreq;
+	struct lock_test_child_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct lock_test_child_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = tmon_ping_send(state, ev, fd, TMON_FD_BOTH, 0, 0);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, lock_test_child_ping_done, req);
+
+	subreq = lock_io_check_send(state,
+				    ev,
+				    lock_file,
+				    inode,
+				    recheck_interval);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, lock_test_child_io_check_done, req);
+
+	return req;
+}
+
+static void lock_test_child_ping_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	bool status;
+	int err;
+
+	status = tmon_ping_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (!status) {
+		tevent_req_error(req, err);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static void lock_test_child_io_check_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	bool status;
+	int err;
+
+	status = lock_io_check_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (!status) {
+		tevent_req_error(req, err);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static bool lock_test_child_recv(struct tevent_req *req, int *perr)
+{
+	if (tevent_req_is_unix_error(req, perr)) {
+		/* Parent exit is expected */
+		if (*perr == EPIPE) {
+			return true;
+		}
+		return false;
+	}
+
+	return true;
+}
+
+static void lock_test_child(const char *lock_file,
+			    int lock_fd,
+			    int pipe_fd,
+			    unsigned long recheck_interval)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	struct stat sb;
+	ino_t inode;
+	bool status;
+	int ret;
+
+	ret = fstat(lock_fd, &sb);
+	if (ret != 0) {
+		fprintf(stderr,
+			"%s: lock lost - "
+			"lock file \"%s\" stat failed (ret=%d)\n",
+			progname,
+			lock_file,
+			errno);
+		_exit(1);
+	}
+	inode = sb.st_ino;
+	close(lock_fd);
+
+	ev = tevent_context_init(NULL);
+	if (ev == NULL) {
+		fprintf(stderr, "%s: tevent_context_init() failed\n", progname);
+		_exit(1);
+	}
+
+	req = lock_test_child_send(ev,
+				   ev,
+				   lock_file,
+				   pipe_fd,
+				   inode,
+				   recheck_interval);
+	if (req == NULL) {
+		fprintf(stderr,
+			"%s: lock_test_child_send() failed\n",
+			progname);
+		_exit(1);
+	}
+
+	tevent_req_poll(req, ev);
+
+	status = lock_test_child_recv(req, &ret);
+	if (! status) {
+		fprintf(stderr,
+			"%s: lock_test_child_recv() failed (%d)\n",
+			progname,
+			ret);
+		_exit(1);
+	}
+
+	_exit(0);
+}
+
+struct lock_test_state {
+	int *lock_fdp;
+	int pipe_fd;
+	pid_t child_pid;
+};
+
+static void lock_test_ping_done(struct tevent_req *subreq);
+
+static struct tevent_req *lock_test_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 const char *lock_file,
+					 int *fdp,
+					 unsigned long recheck_interval)
+{
+	struct tevent_req *req, *subreq;
+	struct lock_test_state *state;
+	pid_t pid;
+	int sv[2];
+	int ret;
+
+	req = tevent_req_create(mem_ctx, &state, struct lock_test_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
+	if (ret != 0) {
+		fprintf(stderr,
+			"%s: socketpair() failed (errno=%d)\n",
+			progname,
+			errno);
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
+	}
+
+	pid = fork();
+	if (pid == -1) {
+
+		int err = errno;
+		fprintf(stderr, "%s: fork() failed (errno=%d)\n", progname, err);
+		close(sv[0]);
+		close(sv[1]);
+		tevent_req_error(req, err);
+		return tevent_req_post(req, ev);
+	}
+	if (pid == 0) {
+		/* Child */
+		close(sv[0]);
+		TALLOC_FREE(ev);
+
+		lock_test_child(lock_file, *fdp, sv[1], recheck_interval);
+		/* Above does not return */
+	}
+
+	/* Parent */
+	close(sv[1]);
+
+	state->lock_fdp = fdp;
+	state->pipe_fd = sv[0];
+	state->child_pid = pid;
+
+	subreq = tmon_ping_send(state, ev, sv[0], TMON_FD_BOTH, 0, 0);
+	if (tevent_req_nomem(subreq, req)) {
+		close(sv[0]);
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, lock_test_ping_done, req);
+
+	return req;
+}
+
+static void lock_test_ping_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct lock_test_state *state = tevent_req_data(
+		req, struct lock_test_state);
+	int wstatus;
+	bool status;
+	int err;
+
+	status = tmon_ping_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		switch (err) {
+		case EPIPE:
+			/* Child exit, child already printed message */
+			break;
+		case ETIMEDOUT:
+			fprintf(stderr,
+				"%s: ping timeout from lock test child\n",
+				progname);
+			break;
+		default:
+			fprintf(stderr,
+				"%s: tmon_ping_recv() failed (%d)\n",
+				progname,
+				err);
+		}
+		/* Ignore error */
+	}
+
+	/*
+	 * Lock checking child is gone or not sending pings.  Release
+	 * the lock, close this end of pipe, send SIGKILL to the child
+	 * process and wait for the child to exit.
+	 */
+	close(*state->lock_fdp);
+	*state->lock_fdp = -1;
+	close(state->pipe_fd);
+	kill(state->child_pid, SIGKILL);
+	waitpid(state->child_pid, &wstatus, 0);
+
+	tevent_req_done(req);
+}
+
+static bool lock_test_recv(struct tevent_req *req, int *perr)
+{
+	if (tevent_req_is_unix_error(req, perr)) {
+		return false;
+	}
+
+	return true;
+}
+
 /*
  * Wait for a reason to exit, indicating that parent has exited or I/O
  * on lock failed
@@ -282,13 +540,13 @@ struct wait_for_exit_state {
 };
 
 static void wait_for_exit_parent_done(struct tevent_req *subreq);
-static void wait_for_exit_io_check_done(struct tevent_req *subreq);
+static void wait_for_exit_lock_test_done(struct tevent_req *subreq);
 
 static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
 					     pid_t ppid,
 					     const char *lock_file,
-					     int fd,
+					     int *fdp,
 					     unsigned long recheck_interval)
 {
 	struct tevent_req *req, *subreq;
@@ -306,16 +564,16 @@ static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 	tevent_req_set_callback(subreq, wait_for_exit_parent_done, req);
 
 	if (recheck_interval > 0) {
-		subreq = lock_io_check_send(state,
-					    ev,
-					    lock_file,
-					    fd,
-					    recheck_interval);
+		subreq = lock_test_send(state,
+					ev,
+					lock_file,
+					fdp,
+					recheck_interval);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
 		tevent_req_set_callback(subreq,
-					wait_for_exit_io_check_done,
+					wait_for_exit_lock_test_done,
 					req);
 	}
 
@@ -343,22 +601,22 @@ static void wait_for_exit_parent_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static void wait_for_exit_io_check_done(struct tevent_req *subreq)
+static void wait_for_exit_lock_test_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
 	bool status;
 	int err;
 
-	status = lock_io_check_recv(subreq, &err);
+	status = lock_test_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (! status) {
-		/* Ignore error */
 		fprintf(stderr,
 			"%s: "
-			"wait_for_lost_recv() failed (%d)\n",
+			"lock_test_recv() failed (%d)\n",
 			progname,
 			err);
+		/* Ignore error, fall through to done */
 	}
 
 	tevent_req_done(req);
@@ -428,7 +686,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	req = wait_for_exit_send(ev, ev, ppid, file, fd, recheck_interval);
+	req = wait_for_exit_send(ev, ev, ppid, file, &fd, recheck_interval);
 	if (req == NULL) {
 		fprintf(stderr,
 			"%s: wait_for_exit_send() failed\n",

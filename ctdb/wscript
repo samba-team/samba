@@ -665,7 +665,7 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb_mutex_fcntl_helper',
                      source='server/ctdb_mutex_fcntl_helper.c',
-                     deps='''sys_rw ctdb-system tevent-util
+                     deps='''sys_rw ctdb-system tevent-util ctdb-util
                              talloc tevent
                           ''',
                      includes='include',
