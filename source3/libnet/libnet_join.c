@@ -139,6 +139,7 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 	ADS_STATUS status;
 	ADS_STRUCT *my_ads = NULL;
 	char *cp;
+	enum credentials_use_kerberos krb5_state;
 
 	my_ads = ads_init(dns_domain_name,
 			  netbios_domain_name,
@@ -148,7 +149,22 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 	}
 
-	my_ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
+	/* In FIPS mode, client use kerberos is forced to required. */
+	krb5_state = lp_client_use_kerberos();
+	switch (krb5_state) {
+	case CRED_USE_KERBEROS_REQUIRED:
+		my_ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
+		my_ads->auth.flags &= ~ADS_AUTH_ALLOW_NTLMSSP;
+		break;
+	case CRED_USE_KERBEROS_DESIRED:
+		my_ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
+		my_ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
+		break;
+	case CRED_USE_KERBEROS_DISABLED:
+		my_ads->auth.flags |= ADS_AUTH_DISABLE_KERBEROS;
+		my_ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
+		break;
+	}
 
 	if (user_name) {
 		SAFE_FREE(my_ads->auth.user_name);
