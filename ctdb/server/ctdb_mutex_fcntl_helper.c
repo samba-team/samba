@@ -150,9 +150,9 @@ static void wait_for_parent_check(struct tevent_req *subreq)
 	tevent_req_set_callback(subreq, wait_for_parent_check, req);
 }
 
-static bool wait_for_parent_recv(struct tevent_req *req)
+static bool wait_for_parent_recv(struct tevent_req *req, int *perr)
 {
-	if (tevent_req_is_unix_error(req, NULL)) {
+	if (tevent_req_is_unix_error(req, perr)) {
 		return false;
 	}
 
@@ -265,9 +265,9 @@ static void wait_for_lost_check(struct tevent_req *subreq)
 	tevent_req_set_callback(subreq, wait_for_lost_check, req);
 }
 
-static bool wait_for_lost_recv(struct tevent_req *req)
+static bool wait_for_lost_recv(struct tevent_req *req, int *perr)
 {
-	if (tevent_req_is_unix_error(req, NULL)) {
+	if (tevent_req_is_unix_error(req, perr)) {
 		return false;
 	}
 
@@ -325,14 +325,16 @@ static void wait_for_exit_parent_done(struct tevent_req *subreq)
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
 	bool status;
+	int err;
 
-	status = wait_for_parent_recv(subreq);
+	status = wait_for_parent_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (! status) {
 		/* Ignore error */
 		fprintf(stderr,
 			"ctdb_mutex_fcntl_helper: "
-			"wait_for_parent_recv() failed\n");
+			"wait_for_parent_recv() failed (%d)\n",
+			err);
 	}
 
 	tevent_req_done(req);
@@ -343,22 +345,24 @@ static void wait_for_exit_lost_done(struct tevent_req *subreq)
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
 	bool status;
+	int err;
 
-	status = wait_for_lost_recv(subreq);
+	status = wait_for_lost_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (! status) {
 		/* Ignore error */
 		fprintf(stderr,
 			"ctdb_mutex_fcntl_helper: "
-			"wait_for_lost_recv() failed\n");
+			"wait_for_lost_recv() failed (%d)\n",
+			err);
 	}
 
 	tevent_req_done(req);
 }
 
-static bool wait_for_exit_recv(struct tevent_req *req)
+static bool wait_for_exit_recv(struct tevent_req *req, int *perr)
 {
-	if (tevent_req_is_unix_error(req, NULL)) {
+	if (tevent_req_is_unix_error(req, perr)) {
 		return false;
 	}
 
@@ -429,11 +433,12 @@ int main(int argc, char *argv[])
 
 	tevent_req_poll(req, ev);
 
-	status = wait_for_exit_recv(req);
+	status = wait_for_exit_recv(req, &ret);
 	if (! status) {
 		fprintf(stderr,
-			"%s: wait_for_exit_recv() failed\n",
-			progname);
+			"%s: wait_for_exit_recv() failed (%d)\n",
+			progname,
+			ret);
 	}
 
 	if (fd != -1) {
