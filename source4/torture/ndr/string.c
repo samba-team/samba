@@ -19,6 +19,7 @@ static const char utf8[] = { 0x6b, 0x61, 0x6d, 0x65, 0x6c, 0xc3, 0xa5,
 
 /* purely for convenience */
 static int fl_ascii_null = LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM;
+static int fl_ascii_noterm = LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING;
 static int fl_utf8_null = LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM;
 static int fl_raw8_null = LIBNDR_FLAG_STR_RAW8|LIBNDR_FLAG_STR_NULLTERM;
 
@@ -40,20 +41,31 @@ test_ndr_push_string (struct torture_context *tctx, const char *string,
 	}
 
 	mem_ctx = talloc_named (NULL, 0, "test_ndr_push_string");
-	ndr = talloc_zero (mem_ctx, struct ndr_push);
+	ndr = ndr_push_init_ctx(mem_ctx);
 	ndr_set_flags (&ndr->flags, flags);
 
 	err = ndr_push_string (ndr, NDR_SCALARS, string);
-	torture_assert(tctx, err == exp_ndr_err,
+	torture_assert_ndr_err_equal(tctx, err, exp_ndr_err,
 	               "ndr_push_string: unexpected return code");
 
 	if (exp_ndr_err == NDR_ERR_SUCCESS) {
+		uint32_t expected_offset = strlen(string);
+
+		if (flags & LIBNDR_FLAG_STR_NULLTERM) {
+			expected_offset += 1;
+		}
+
+		torture_assert_int_equal(tctx,
+					 ndr->offset, expected_offset,
+					 "ndr_push_string: invalid length");
+
 		torture_assert(tctx, ndr->data != NULL,
 		               "ndr_push_string: succeeded but NULL data");
 
 		torture_assert(tctx,
 			       strcmp_pass == !strcmp(string, (char *)ndr->data),
 		               "ndr_push_string: post-push strcmp");
+
 	}
 
 	talloc_free(mem_ctx);
@@ -86,7 +98,7 @@ test_ndr_pull_string (struct torture_context *tctx, const char *string,
 	ndr_set_flags (&ndr->flags, flags);
 
 	err = ndr_pull_string (ndr, NDR_SCALARS, &result);
-	torture_assert(tctx, err == exp_ndr_err,
+	torture_assert_ndr_err_equal(tctx, err, exp_ndr_err,
 	               "ndr_pull_string: unexpected return code");
 
 	if (exp_ndr_err == NDR_ERR_SUCCESS) {
@@ -111,6 +123,18 @@ torture_ndr_string(struct torture_context *torture)
 	               test_ndr_push_string (torture, ascii, fl_ascii_null,
 	                                     NDR_ERR_SUCCESS, true),
 	               "test_ndr_push_string(ASCII, STR_ASCII|STR_NULL)");
+	torture_assert(torture,
+	               test_ndr_push_string (torture, ascii, fl_ascii_noterm,
+	                                     NDR_ERR_SUCCESS, true),
+	               "test_ndr_push_string(ASCII, STR_ASCII|STR_NOTERM|REMAINING)");
+	torture_assert(torture,
+	               test_ndr_push_string (torture, "", fl_ascii_null,
+	                                     NDR_ERR_SUCCESS, true),
+	               "test_ndr_push_string('', STR_ASCII|STR_NULL)");
+	torture_assert(torture,
+	               test_ndr_push_string (torture, "", fl_ascii_noterm,
+	                                     NDR_ERR_SUCCESS, true),
+	               "test_ndr_push_string('', STR_ASCII|STR_NOTERM|REMAINING)");
 	torture_assert(torture,
 	               test_ndr_push_string (torture, utf8, fl_utf8_null,
 	                                     NDR_ERR_SUCCESS, true),
