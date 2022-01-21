@@ -113,7 +113,7 @@ pull returned Success
 [03D0] 60 CA 17 FF 8E 66 80 76   CB 35 46 26 C3 BD CA 83   `....f.v .5F&....
 [03E0] F0 04 08 0D 4C 5D B2 E4   7C 1C 82 28 D7 2C 42 B1   ....L].. |..(.,B.
 [03F0] 36 72 60 5E 26 4A 79 D0   41 94 3C 2C 65 0E 32 18   6r`^&Jy. A.<,e.2.
-[0400] B8 56 26 9D D3 84 78 BB                             .V&...x. 
+[0400] B8 56 26 9D D3 84 78 BB                             .V&...x.
             second_ticket            : DATA_BLOB length=0
         further_creds            : DATA_BLOB length=4748
 [0000] 00 00 00 01 00 00 00 01   00 00 00 17 4B 54 45 53   ........ ....KTES
@@ -529,7 +529,7 @@ pull returned Success
 [03D0] 60 CA 17 FF 8E 66 80 76   CB 35 46 26 C3 BD CA 83   `....f.v .5F&....
 [03E0] F0 04 08 0D 4C 5D B2 E4   7C 1C 82 28 D7 2C 42 B1   ....L].. |..(.,B.
 [03F0] 36 72 60 5E 26 4A 79 D0   41 94 3C 2C 65 0E 32 18   6r`^&Jy. A.<,e.2.
-[0400] B8 56 26 9D D3 84 78 BB                             .V&...x. 
+[0400] B8 56 26 9D D3 84 78 BB                             .V&...x.
             second_ticket            : DATA_BLOB length=0
         further_creds            : DATA_BLOB length=4748
 [0000] 00 00 00 01 00 00 00 01   00 00 00 17 4B 54 45 53   ........ ....KTES

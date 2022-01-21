@@ -170,7 +170,7 @@ dump OK
     def test_ndrdump_input_cmdline_short_struct_name_dump(self):
         expected = '''pull returned Buffer Size Error
 6 bytes consumed
-[0000] 61 62 63 64 65 66 67                               abcdefg ''' \
+[0000] 61 62 63 64 65 66 67                                abcdefg''' \
         '''
 '''
         try:
@@ -186,10 +186,10 @@ dump OK
     def test_ndrdump_input_cmdline_short_struct_name_print_fail(self):
         expected = '''pull returned Buffer Size Error
 6 bytes consumed
-[0000] 61 62 63 64 65 66 67                               abcdefg ''' \
+[0000] 61 62 63 64 65 66 67                                abcdefg''' \
         '''
 WARNING! 1 unread bytes
-[0000] 67                                                 g ''' \
+[0000] 67                                                  g''' \
     '''
 WARNING: pull of GUID was incomplete, therefore the parse below may SEGFAULT
     GUID                     : 64636261-6665-0000-0000-000000000000
@@ -211,7 +211,7 @@ WARNING! 53 unread bytes
 [0000] 00 FF 00 00 FF 00 00 00   00 09 00 00 00 08 00 33   ........ .......3
 [0010] 33 32 37 36 32 36 39 33   32 37 36 38 34 01 00 00   32762693 27684...
 [0020] 80 32 0D FF 00 00 FF 00   00 00 00 08 00 00 00 1C   .2...... ........
-[0030] F1 29 08 00 00                                     .)... ''' \
+[0030] F1 29 08 00 00                                      .)...''' \
         b'''
     clusapi_QueryAllValues: struct clusapi_QueryAllValues
         out: struct clusapi_QueryAllValues
@@ -396,7 +396,7 @@ dump OK
     def test_ndrdump_fuzzed_spoolss_EnumForms(self):
         expected_head = b'''pull returned Success
 WARNING! 2 unread bytes
-[0000] 00 00                                              .. ''' b'''
+[0000] 00 00                                               ..''' b'''
     spoolss_EnumForms: struct spoolss_EnumForms
         out: struct spoolss_EnumForms
             count                    : *
