@@ -2242,9 +2242,14 @@ SMBC_unlink_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>unlink: resolved path as %s\n", targetpath);*/
 
-	if (!NT_STATUS_IS_OK(cli_unlink(targetcli, targetpath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
+	status = cli_unlink(
+		targetcli,
+		targetpath,
+		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-		errno = SMBC_errno(context, targetcli);
+	if (!NT_STATUS_IS_OK(status)) {
+
+		errno = cli_status_to_errno(status);
 
 		if (errno == EACCES) { /* Check if the file is a directory */
 
