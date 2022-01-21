@@ -1,6 +1,6 @@
 pull returned Success
 WARNING! 4 unread bytes
-[0000] 00 00 00 00                                        .... 
+[0000] 00 00 00 00                                         ....
     drsuapi_DsGetNCChanges: struct drsuapi_DsGetNCChanges
         out: struct drsuapi_DsGetNCChanges
             level_out                : *
