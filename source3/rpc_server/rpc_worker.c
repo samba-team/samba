@@ -718,6 +718,8 @@ static struct rpc_worker *rpc_worker_new(
 	worker->cb = (struct dcesrv_context_callbacks) {
 		.log.successful_authz = dcesrv_log_successful_authz,
 		.auth.gensec_prepare = dcesrv_auth_gensec_prepare,
+		.auth.become_root = become_root,
+		.auth.unbecome_root = unbecome_root,
 		.assoc_group.find = rpc_worker_assoc_group_find,
 		.assoc_group.private_data = worker,
 	};
