@@ -601,7 +601,6 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
             uint16_t attr)
 {
         uint16_t fd;
-        int ret;
 	uint32_t lattr = (uint32_t)attr;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -655,10 +654,12 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                 }
 
                 /* Set the new attributes */
-                ret = NT_STATUS_IS_OK(cli_setattrE(srv->cli, fd,
-                                   change_time.tv_sec,
-                                   access_time.tv_sec,
-                                   write_time.tv_sec));
+		status = cli_setattrE(
+			srv->cli,
+			fd,
+			change_time.tv_sec,
+			access_time.tv_sec,
+			write_time.tv_sec);
 
                 /* Close the file */
                 cli_close(srv->cli, fd);
@@ -669,13 +670,13 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                  * cli_setatr() for that, and with only this parameter, it
                  * seems to work on win98.
                  */
-                if (ret && attr != (uint16_t) -1) {
-                        ret = NT_STATUS_IS_OK(cli_setatr(srv->cli, path, (uint32_t)attr, 0));
+                if (NT_STATUS_IS_OK(status) && attr != (uint16_t) -1) {
+			status = cli_setatr(srv->cli, path, (uint32_t)attr, 0);
                 }
 
-                if (! ret) {
-                        errno = SMBC_errno(context, srv->cli);
+                if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(frame);
+                        errno = cli_status_to_errno(status);
                         return False;
                 }
         }
