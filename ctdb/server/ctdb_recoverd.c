@@ -1848,7 +1848,6 @@ static void cluster_lock_election(struct ctdb_recoverd *rec)
 	}
 
 	rec->leader = CTDB_UNKNOWN_PNN;
-	rec->election_in_progress = true;
 
 	ok = cluster_lock_take(rec);
 	if (ok) {
@@ -1877,13 +1876,14 @@ static void force_election(struct ctdb_recoverd *rec)
 		return;
 	}
 
+	rec->election_in_progress = true;
+
 	if (cluster_lock_enabled(rec)) {
 		cluster_lock_election(rec);
 		return;
 	}
 
 	talloc_free(rec->election_timeout);
-	rec->election_in_progress = true;
 	rec->election_timeout = tevent_add_timer(
 			ctdb->ev, ctdb,
 			fast_start ?
