@@ -1877,6 +1877,8 @@ static void force_election(struct ctdb_recoverd *rec)
 	}
 
 	rec->election_in_progress = true;
+	/* Let other nodes know that an election is underway */
+	leader_broadcast_send(rec, CTDB_UNKNOWN_PNN);
 
 	if (cluster_lock_enabled(rec)) {
 		cluster_lock_election(rec);
@@ -1975,9 +1977,6 @@ static void leader_broadcast_timeout_handler(struct tevent_context *ev,
 		private_data, struct ctdb_recoverd);
 
 	rec->leader_broadcast_timeout_te = NULL;
-
-	/* Let other nodes know that an election is underway */
-	leader_broadcast_send(rec, CTDB_UNKNOWN_PNN);
 
 	D_NOTICE("Leader broadcast timeout. Force election\n");
 	force_election(rec);
