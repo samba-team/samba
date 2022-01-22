@@ -1867,7 +1867,7 @@ static void force_election(struct ctdb_recoverd *rec)
 	int ret;
 	struct ctdb_context *ctdb = rec->ctdb;
 
-	DEBUG(DEBUG_INFO,(__location__ " Force an election\n"));
+	D_ERR("Start election\n");
 
 	/* set all nodes to recovery mode to stop all internode traffic */
 	ret = set_recovery_mode(ctdb, rec, rec->nodemap, CTDB_RECOVERY_ACTIVE);
@@ -1978,7 +1978,8 @@ static void leader_broadcast_timeout_handler(struct tevent_context *ev,
 
 	rec->leader_broadcast_timeout_te = NULL;
 
-	D_NOTICE("Leader broadcast timeout. Force election\n");
+	D_NOTICE("Leader broadcast timeout\n");
+
 	force_election(rec);
 }
 
