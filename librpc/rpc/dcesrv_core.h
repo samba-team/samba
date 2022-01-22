@@ -392,6 +392,8 @@ struct dcesrv_context_callbacks {
 			struct gensec_security **out,
 			void *private_data);
 		void *private_data;
+		void (*become_root)(void);
+		void (*unbecome_root)(void);
 	} auth;
 	struct {
 		NTSTATUS (*find)(
