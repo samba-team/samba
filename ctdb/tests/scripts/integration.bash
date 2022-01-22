@@ -688,6 +688,50 @@ wait_until_leader_has_changed ()
 
 #######################################
 
+# sets: generation
+_generation_get ()
+{
+	local node="$1"
+
+	ctdb_onnode "$node" status
+	# shellcheck disable=SC2154
+	# $outfile set by ctdb_onnode() above
+	generation=$(sed -n -e 's/^Generation:\([0-9]*\)/\1/p' "$outfile")
+}
+
+generation_get ()
+{
+	local node="$1"
+
+	echo "Get generation"
+	_generation_get "$node"
+	echo "Generation is ${generation}"
+	echo
+}
+
+_generation_has_changed ()
+{
+	local node="$1"
+	local generation_old="$2"
+
+	_generation_get "$node"
+
+	[ "$generation" != "$generation_old" ]
+}
+
+# uses: generation
+wait_until_generation_has_changed ()
+{
+	local node="$1"
+
+	echo "Wait until generation changes..."
+	wait_until 30 _generation_has_changed "$node" "$generation"
+	echo "Generation changed to ${generation}"
+	echo
+}
+
+#######################################
+
 wait_for_monitor_event ()
 {
     local pnn="$1"

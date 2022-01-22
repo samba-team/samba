@@ -56,24 +56,14 @@ echo
 
 leader_get "$test_node"
 
-echo "Get initial generation"
-ctdb_onnode "$test_node" status
-# shellcheck disable=SC2154
-# $outfile set by ctdb_onnode() above
-generation_init=$(sed -n -e 's/^Generation:\([0-9]*\)/\1/p' "$outfile")
-echo "Initial generation is ${generation_init}"
-echo
+generation_get
 
 echo "Remove recovery lock"
 rm "$reclock"
 echo
 
 # This will mean an election has taken place and a recovery has occured
-echo "Wait until generation changes"
-wait_until 30 generation_has_changed "$test_node" "$generation_init"
-echo
-echo "Generation changed to ${generation_new}"
-echo
+wait_until_generation_has_changed "$test_node"
 
 # shellcheck disable=SC2154
 # $leader set by leader_get() above
