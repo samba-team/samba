@@ -81,6 +81,7 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = call->auth_state;
+	struct dcesrv_context_callbacks *cb = &call->conn->dce_ctx->callbacks;
 	NTSTATUS status;
 
 	if (auth->auth_started) {
@@ -129,9 +130,11 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 	auth->auth_level = call->in_auth_info.auth_level;
 	auth->auth_context_id = call->in_auth_info.auth_context_id;
 
+	cb->auth.become_root();
 	status = call->conn->dce_ctx->callbacks.auth.gensec_prepare(auth,
 						call,
 						&auth->gensec_security);
+	cb->auth.unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to call samba_server_gensec_start %s\n",
 			  nt_errstr(status)));
@@ -324,6 +327,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 {
 	struct dcesrv_auth *auth = call->auth_state;
+	struct dcesrv_context_callbacks *cb = &call->conn->dce_ctx->callbacks;
 	const char *pdu = "<unknown>";
 
 	switch (call->pkt.ptype) {
@@ -354,9 +358,11 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 		return status;
 	}
 
+	cb->auth.become_root();
 	status = gensec_session_info(auth->gensec_security,
 				     auth,
 				     &auth->session_info);
+	cb->auth.unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to establish session_info: %s\n",
 			  nt_errstr(status)));

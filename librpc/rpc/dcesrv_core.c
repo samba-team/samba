@@ -951,6 +951,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	struct dcerpc_binding *ep_2nd_description = NULL;
 	const char *endpoint = NULL;
 	struct dcesrv_auth *auth = call->auth_state;
+	struct dcesrv_context_callbacks *cb = &call->conn->dce_ctx->callbacks;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
 	struct dcerpc_ack_ctx *ack_features = NULL;
 	struct tevent_req *subreq = NULL;
@@ -1155,9 +1156,11 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return dcesrv_auth_reply(call);
 	}
 
+	cb->auth.become_root();
 	subreq = gensec_update_send(call, call->event_ctx,
 				    auth->gensec_security,
 				    call->in_auth_info.credentials);
+	cb->auth.unbecome_root();
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1172,10 +1175,13 @@ static void dcesrv_bind_done(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 		struct dcesrv_call_state);
 	struct dcesrv_connection *conn = call->conn;
+	struct dcesrv_context_callbacks *cb = &call->conn->dce_ctx->callbacks;
 	NTSTATUS status;
 
+	cb->auth.become_root();
 	status = gensec_update_recv(subreq, call,
 				    &call->out_auth_info->credentials);
+	cb->auth.unbecome_root();
 	TALLOC_FREE(subreq);
 
 	status = dcesrv_auth_complete(call, status);
@@ -1233,6 +1239,7 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 {
 	struct dcesrv_connection *conn = call->conn;
 	struct dcesrv_auth *auth = call->auth_state;
+	struct dcesrv_context_callbacks *cb = &call->conn->dce_ctx->callbacks;
 	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 
@@ -1277,9 +1284,11 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 		return NT_STATUS_OK;
 	}
 
+	cb->auth.become_root();
 	subreq = gensec_update_send(call, call->event_ctx,
 				    auth->gensec_security,
 				    call->in_auth_info.credentials);
+	cb->auth.unbecome_root();
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1295,10 +1304,13 @@ static void dcesrv_auth3_done(struct tevent_req *subreq)
 		struct dcesrv_call_state);
 	struct dcesrv_connection *conn = call->conn;
 	struct dcesrv_auth *auth = call->auth_state;
+	struct dcesrv_context_callbacks *cb = &call->conn->dce_ctx->callbacks;
 	NTSTATUS status;
 
+	cb->auth.become_root();
 	status = gensec_update_recv(subreq, call,
 				    &call->out_auth_info->credentials);
+	cb->auth.unbecome_root();
 	TALLOC_FREE(subreq);
 
 	status = dcesrv_auth_complete(call, status);
@@ -1570,6 +1582,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	struct ncacn_packet *pkt = &call->ack_pkt;
 	uint32_t extra_flags = 0;
 	struct dcesrv_auth *auth = call->auth_state;
+	struct dcesrv_context_callbacks *cb = &call->conn->dce_ctx->callbacks;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
 	struct tevent_req *subreq = NULL;
 	size_t i;
@@ -1681,9 +1694,11 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return dcesrv_auth_reply(call);
 	}
 
+	cb->auth.become_root();
 	subreq = gensec_update_send(call, call->event_ctx,
 				    auth->gensec_security,
 				    call->in_auth_info.credentials);
+	cb->auth.unbecome_root();
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1698,10 +1713,13 @@ static void dcesrv_alter_done(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 		struct dcesrv_call_state);
 	struct dcesrv_connection *conn = call->conn;
+	struct dcesrv_context_callbacks *cb = &call->conn->dce_ctx->callbacks;
 	NTSTATUS status;
 
+	cb->auth.become_root();
 	status = gensec_update_recv(subreq, call,
 				    &call->out_auth_info->credentials);
+	cb->auth.unbecome_root();
 	TALLOC_FREE(subreq);
 
 	status = dcesrv_auth_complete(call, status);

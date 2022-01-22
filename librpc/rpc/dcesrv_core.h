@@ -386,6 +386,8 @@ struct dcesrv_context_callbacks {
 		NTSTATUS (*gensec_prepare)(TALLOC_CTX *mem_ctx,
 					struct dcesrv_call_state *call,
 					struct gensec_security **out);
+		void (*become_root)(void);
+		void (*unbecome_root)(void);
 	} auth;
 	struct {
 		NTSTATUS (*find)(struct dcesrv_call_state *);
