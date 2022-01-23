@@ -58,9 +58,9 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 	c->status = socket_connect_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
-		DEBUG(0, ("Failed to connect host %s on port %d - %s\n", 
+		DBG_NOTICE("Failed to connect host %s on port %d - %s\n",
 			  s->server->addr, s->server->port,
-			  nt_errstr(c->status)));
+			  nt_errstr(c->status));
 		composite_error(c, c->status);
 		return;
 	}
@@ -240,9 +240,9 @@ static void continue_ip_open_socket(struct composite_context *ctx)
 	c->status = dcerpc_pipe_open_socket_recv(ctx, s, &localaddr);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		/* something went wrong... */
-		DEBUG(0, ("Failed to connect host %s (%s) on port %d - %s.\n",
+		DBG_NOTICE("Failed to connect host %s (%s) on port %d - %s.\n",
 			  s->addresses[s->index - 1], s->target_hostname,
-			  s->port, nt_errstr(c->status)));
+			  s->port, nt_errstr(c->status));
 		if (s->addresses[s->index]) {
 			struct composite_context *sock_ip_req;
 			talloc_free(s->srvaddr);
