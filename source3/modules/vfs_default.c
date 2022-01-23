@@ -1326,7 +1326,7 @@ static NTSTATUS vfswrap_translate_name(struct vfs_handle_struct *handle,
 /**
  * Return allocated parent directory and basename of path
  *
- * Note: if requesting name, it is returned as talloc child of the
+ * Note: if requesting atname, it is returned as talloc child of the
  * parent. Freeing the parent is thus sufficient to free both.
  */
 static NTSTATUS vfswrap_parent_pathname(struct vfs_handle_struct *handle,
