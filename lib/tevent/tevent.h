@@ -31,6 +31,7 @@
 #include <stdint.h>
 #include <talloc.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <stdbool.h>
 
 /* for old gcc releases that don't have the feature test macro __has_attribute */
