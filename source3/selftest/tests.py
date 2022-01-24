@@ -275,9 +275,7 @@ plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-DEL-ON-CLOSE-NONEMPTY",
 
 shares = [
     "vfs_aio_pthread_async_dosmode_default1",
-    "vfs_aio_pthread_async_dosmode_default2",
-    "vfs_aio_pthread_async_dosmode_force_sync1",
-    "vfs_aio_pthread_async_dosmode_force_sync2"
+    "vfs_aio_pthread_async_dosmode_default2"
 ]
 for s in shares:
     plantestsuite("samba3.smbtorture_s3.%s(simpleserver).SMB2-BASIC" % s, "simpleserver", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), 'SMB2-BASIC', '//$SERVER_IP/' + s, '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
