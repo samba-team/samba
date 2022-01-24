@@ -19,7 +19,7 @@ from samba.samdb import SamDB
 from samba.auth import AuthContext
 from samba.ndr import ndr_unpack
 from samba import gensec
-from samba.credentials import Credentials, DONT_USE_KERBEROS
+from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS, AUTO_USE_KERBEROS
 from samba.dsdb import GTYPE_SECURITY_GLOBAL_GROUP, GTYPE_SECURITY_UNIVERSAL_GROUP
 import samba.tests
 from samba.tests import delete_force
@@ -62,6 +62,9 @@ class StaticTokenTest(samba.tests.TestCase):
 
     def setUp(self):
         super(StaticTokenTest, self).setUp()
+
+        self.assertNotEqual(creds.get_kerberos_state(), AUTO_USE_KERBEROS)
+
         self.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
         self.base_dn = self.ldb.domain_dn()
 
@@ -84,6 +87,11 @@ class StaticTokenTest(samba.tests.TestCase):
         for s in token.sids:
             self.user_sids.append(str(s))
 
+        # Add asserted identity for Kerberos
+        if creds.get_kerberos_state() == MUST_USE_KERBEROS:
+            self.user_sids.append(str(security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY))
+
+
     def test_rootDSE_tokenGroups(self):
         """Testing rootDSE tokengroups against internal calculation"""
         if not url.startswith("ldap"):
@@ -99,11 +107,11 @@ class StaticTokenTest(samba.tests.TestCase):
 
         sidset1 = set(tokengroups)
         sidset2 = set(self.user_sids)
-        if len(sidset1.difference(sidset2)):
+        if len(sidset1.symmetric_difference(sidset2)):
             print("token sids don't match")
             print("tokengroups: %s" % tokengroups)
             print("calculated : %s" % self.user_sids)
-            print("difference : %s" % sidset1.difference(sidset2))
+            print("difference : %s" % sidset1.symmetric_difference(sidset2))
             self.fail(msg="calculated groups don't match against rootDSE tokenGroups")
 
     def test_dn_tokenGroups(self):
@@ -117,13 +125,43 @@ class StaticTokenTest(samba.tests.TestCase):
 
         sidset1 = set(dn_tokengroups)
         sidset2 = set(self.user_sids)
+
+        # The tokenGroups is just a subset of the user_sids
+        # so we don't check symmetric_difference() here.
         if len(sidset1.difference(sidset2)):
-            print("token sids don't match")
+            print("dn token sids no subset of user token")
+            print("tokengroups: %s" % dn_tokengroups)
+            print("user sids : %s" % self.user_sids)
             print("difference : %s" % sidset1.difference(sidset2))
-            self.fail(msg="calculated groups don't match against user DN tokenGroups")
+            self.fail(msg="DN tokenGroups no subset of full user token")
+
+        missing_sidset = sidset2.difference(sidset1)
+
+        extra_sids = []
+        extra_sids.append(self.user_sids[0])
+        extra_sids.append(security.SID_WORLD)
+        extra_sids.append(security.SID_NT_NETWORK)
+        extra_sids.append(security.SID_NT_AUTHENTICATED_USERS)
+        extra_sids.append(security.SID_BUILTIN_PREW2K)
+        if creds.get_kerberos_state() == MUST_USE_KERBEROS:
+            extra_sids.append(security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY)
+        if creds.get_kerberos_state() == DONT_USE_KERBEROS:
+            extra_sids.append(security.SID_NT_NTLM_AUTHENTICATION)
+
+        extra_sidset = set(extra_sids)
+
+        if len(missing_sidset.symmetric_difference(extra_sidset)):
+            print("dn token sids unexpeted")
+            print("tokengroups: %s" % dn_tokengroups)
+            print("user sids: %s" % self.user_sids)
+            print("actual difference: %s" % missing_sidset)
+            print("expected difference: %s" % extra_sidset)
+            print("unexpected difference : %s" %
+                    missing_sidset.symmetric_difference(extra_sidset))
+            self.fail(msg="DN tokenGroups unexpected difference to full user token")
 
     def test_pac_groups(self):
-        if creds.get_kerberos_state() == DONT_USE_KERBEROS:
+        if creds.get_kerberos_state() != MUST_USE_KERBEROS:
             self.skipTest("Kerberos disabled, skipping PAC test")
 
         settings = {}
@@ -168,9 +206,11 @@ class StaticTokenTest(samba.tests.TestCase):
 
         sidset1 = set(pac_sids)
         sidset2 = set(self.user_sids)
-        if len(sidset1.difference(sidset2)):
+        if len(sidset1.symmetric_difference(sidset2)):
             print("token sids don't match")
-            print("difference : %s" % sidset1.difference(sidset2))
+            print("pac sids: %s" % pac_sids)
+            print("user sids : %s" % self.user_sids)
+            print("difference : %s" % sidset1.symmetric_difference(sidset2))
             self.fail(msg="calculated groups don't match against user PAC tokenGroups")
 
 
@@ -182,6 +222,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         creds_tmp.set_password(target_password)
         creds_tmp.set_domain(creds.get_domain())
         creds_tmp.set_realm(creds.get_realm())
+        creds_tmp.set_kerberos_state(creds.get_kerberos_state())
         creds_tmp.set_workstation(creds.get_workstation())
         creds_tmp.set_gensec_features(creds_tmp.get_gensec_features()
                                       | gensec.FEATURE_SEAL)
@@ -194,6 +235,9 @@ class DynamicTokenTest(samba.tests.TestCase):
 
     def setUp(self):
         super(DynamicTokenTest, self).setUp()
+
+        self.assertNotEqual(creds.get_kerberos_state(), AUTO_USE_KERBEROS)
+
         self.admin_ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
 
         self.base_dn = self.admin_ldb.domain_dn()
@@ -297,6 +341,10 @@ class DynamicTokenTest(samba.tests.TestCase):
         for s in token.sids:
             self.user_sids.append(str(s))
 
+        # Add asserted identity for Kerberos
+        if creds.get_kerberos_state() == MUST_USE_KERBEROS:
+            self.user_sids.append(str(security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY))
+
     def tearDown(self):
         super(DynamicTokenTest, self).tearDown()
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
@@ -331,11 +379,11 @@ class DynamicTokenTest(samba.tests.TestCase):
 
         sidset1 = set(tokengroups)
         sidset2 = set(self.user_sids)
-        if len(sidset1.difference(sidset2)):
+        if len(sidset1.symmetric_difference(sidset2)):
             print("token sids don't match")
             print("tokengroups: %s" % tokengroups)
             print("calculated : %s" % self.user_sids)
-            print("difference : %s" % sidset1.difference(sidset2))
+            print("difference : %s" % sidset1.symmetric_difference(sidset2))
             self.fail(msg="calculated groups don't match against rootDSE tokenGroups")
 
     def test_dn_tokenGroups(self):
@@ -350,15 +398,44 @@ class DynamicTokenTest(samba.tests.TestCase):
         sidset1 = set(dn_tokengroups)
         sidset2 = set(self.user_sids)
 
-        # The SIDs on the DN do not include the NTLM authentication SID
-        sidset2.discard(samba.dcerpc.security.SID_NT_NTLM_AUTHENTICATION)
-
+        # The tokenGroups is just a subset of the user_sids
+        # so we don't check symmetric_difference() here.
         if len(sidset1.difference(sidset2)):
-            print("token sids don't match")
+            print("dn token sids no subset of user token")
+            print("tokengroups: %s" % dn_tokengroups)
+            print("user sids : %s" % self.user_sids)
             print("difference : %s" % sidset1.difference(sidset2))
-            self.fail(msg="calculated groups don't match against user DN tokenGroups")
+            self.fail(msg="DN tokenGroups no subset of full user token")
+
+        missing_sidset = sidset2.difference(sidset1)
+
+        extra_sids = []
+        extra_sids.append(self.user_sids[0])
+        extra_sids.append(security.SID_WORLD)
+        extra_sids.append(security.SID_NT_NETWORK)
+        extra_sids.append(security.SID_NT_AUTHENTICATED_USERS)
+        extra_sids.append(security.SID_BUILTIN_PREW2K)
+        if creds.get_kerberos_state() == MUST_USE_KERBEROS:
+            extra_sids.append(security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY)
+        if creds.get_kerberos_state() == DONT_USE_KERBEROS:
+            extra_sids.append(security.SID_NT_NTLM_AUTHENTICATION)
+
+        extra_sidset = set(extra_sids)
+
+        if len(missing_sidset.symmetric_difference(extra_sidset)):
+            print("dn token sids unexpeted")
+            print("tokengroups: %s" % dn_tokengroups)
+            print("user sids: %s" % self.user_sids)
+            print("actual difference: %s" % missing_sidset)
+            print("expected difference: %s" % extra_sidset)
+            print("unexpected difference : %s" %
+                    missing_sidset.symmetric_difference(extra_sidset))
+            self.fail(msg="DN tokenGroups unexpected difference to full user token")
 
     def test_pac_groups(self):
+        if creds.get_kerberos_state() != MUST_USE_KERBEROS:
+            self.skipTest("Kerberos disabled, skipping PAC test")
+
         settings = {}
         settings["lp_ctx"] = lp
         settings["target_hostname"] = lp.get("netbios name")
@@ -401,9 +478,11 @@ class DynamicTokenTest(samba.tests.TestCase):
 
         sidset1 = set(pac_sids)
         sidset2 = set(self.user_sids)
-        if len(sidset1.difference(sidset2)):
+        if len(sidset1.symmetric_difference(sidset2)):
             print("token sids don't match")
-            print("difference : %s" % sidset1.difference(sidset2))
+            print("pac sids: %s" % pac_sids)
+            print("user sids : %s" % self.user_sids)
+            print("difference : %s" % sidset1.symmetric_difference(sidset2))
             self.fail(msg="calculated groups don't match against user PAC tokenGroups")
 
     def test_tokenGroups_manual(self):
