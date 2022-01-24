@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.16.  This is *not*
+This is the first pre release of Samba 4.17.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.16 will be the next version of the Samba suite.
+Samba 4.17 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -16,150 +16,9 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
-New samba-dcerpcd binary to provide DCERPC in the member server setup
----------------------------------------------------------------------
-
-In order to make it much easier to break out the DCERPC services
-from smbd, a new samba-dcerpcd binary has been created.
-
-samba-dcerpcd can be used in two ways. In the normal case without
-startup script modification it is invoked on demand from smbd or
-winbind --np-helper to serve DCERPC over named pipes. Note that
-in order to run in this mode the smb.conf [global] section has
-a new parameter "rpc start on demand helpers = [true|false]".
-This parameter is set to "true" by default, meaning no changes to
-smb.conf files are needed to run samba-dcerpcd on demand as a named
-pipe helper.
-
-It can also be used in a standalone mode where it is started
-separately from smbd or winbind but this requires changes to system
-startup scripts, and in addition a change to smb.conf, setting the new
-[global] parameter "rpc start on demand helpers = false". If "rpc
-start on demand helpers" is not set to false, samba-dcerpcd will
-refuse to start in standalone mode.
-
-Note that when Samba is run in the Active Directory Domain Controller
-mode the samba binary that provides the AD code will still provide its
-normal DCERPC services whilst allowing samba-dcerpcd to provide
-services like SRVSVC in the same way that smbd used to in this
-configuration.
-
-The parameters that allowed some smbd-hosted services to be started
-externally are now gone (detailed below) as this is now the default
-setting.
-
-samba-dcerpcd can also be useful for use outside of the Samba
-framework, for example, use with the Linux kernel SMB2 server ksmbd or
-possibly other SMB2 server implementations.
-
-Certificate Auto Enrollment
----------------------------
-
-Certificate Auto Enrollment allows devices to enroll for certificates from
-Active Directory Certificate Services. It is enabled by Group Policy.
-To enable Certificate Auto Enrollment, Samba's group policy will need to be
-enabled by setting the smb.conf option `apply group policies` to Yes. Samba
-Certificate Auto Enrollment depends on certmonger, the cepces certmonger
-plugin, and sscep. Samba uses sscep to download the CA root chain, then uses
-certmonger paired with cepces to monitor the host certificate templates.
-Certificates are installed in /var/lib/samba/certs and private keys are
-installed in /var/lib/samba/private/certs.
-
-Ability to add ports to dns forwarder addresses in internal DNS backend
------------------------------------------------------------------------
-
-The internal DNS server of Samba forwards queries non-AD zones to one or more
-configured forwarders. Up until now it has been assumed that these forwarders
-listen on port 53. Starting with this version it is possible to configure the
-port using host:port notation. See smb.conf for more details. Existing setups
-are not affected, as the default port is 53.
-
-CTDB changes
-------------
-
-* The "recovery master" role has been renamed "leader"
-
-  Documentation and logs now refer to "leader".
-
-  The following ctdb tool command names have changed:
-
-    recmaster -> leader
-    setrecmasterrole -> setleaderrole
-
-  Command output has changed for the following commands:
-
-    status
-    getcapabilities
-
-  The "[legacy] -> recmaster capability" configuration option has been
-  renamed and moved to the cluster section, so this is now:
-
-    [cluster] -> leader capability
-
-* The "recovery lock" has been renamed "cluster lock"
-
-  Documentation and logs now refer to "cluster lock".
-
-  The "[cluster] -> recovery lock" configuration option has been
-  deprecated and will be removed in a future version.  Please use
-  "[cluster] -> cluster lock" instead.
-
-  If the cluster lock is enabled then traditional elections are not
-  done and leader elections use a race for the cluster lock.  This
-  avoids various conditions where a node is elected leader but can not
-  take the cluster lock.  Such conditions included:
-
-  - At startup, a node elects itself leader of its own cluster before
-    connecting to other nodes
-
-  - Cluster filesystem failover is slow
-
-  The abbreviation "reclock" is still used in many places, because a
-  better abbreviation eludes us (i.e. "clock" is obvious bad) and
-  changing all instances would require a lot of churn.  If the
-  abbreviation "reclock" for "cluster lock" is confusing, please
-  consider mentally prefixing it with "really excellent".
-
-* CTDB now uses leader broadcasts and an associated timeout to
-  determine if an election is required
-
-  The leader broadcast timeout can be configured via new configuration
-  option
-
-    [cluster] -> leader timeout
-
-  This specifies the number of seconds without leader broadcasts
-  before a node calls an election.  The default is 5.
-
 
 REMOVED FEATURES
 ================
-
-SMB1 CORE and LANMAN1 protocol wildcard copy, unlink and rename removed
-=======================================================================
-
-In preparation for the removal of the SMB1 server, the unused
-SMB1 command SMB_COM_COPY (SMB1 command number 0x29) has been
-removed from the Samba smbd server. In addition, the ability
-to process file name wildcards in requests using the SMB1 commands
-SMB_COM_COPY (SMB1 command number 0x2A), SMB_COM_RENAME (SMB1 command
-number 0x7), SMB_COM_NT_RENAME (SMB1 command number 0xA5) and
-SMB_COM_DELETE (SMB1 command number 0x6) have been removed.
-
-This only affects clients using MS-DOS based versions of
-SMB1, the last release of which was Windows 98. Users requiring
-support for these features will need to use older versions
-of Samba.
-
-No longer using Linux mandatory locks for sharemodes
-====================================================
-
-smbd mapped sharemodes to Linux mandatory locks. This code in the Linux kernel
-was broken for a long time, and is planned to be removed with Linux 5.15. This
-Samba release removes the usage of mandatory locks for sharemodes and the
-"kernel share modes" config parameter is changed to default to "no". The Samba
-VFS interface is kept, so that file-system specific VFS modules can still use
-private calls for enforcing sharemodes.
 
 
 smb.conf changes
@@ -167,16 +26,12 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
-  kernel share modes                      New default     No
-  dns forwarder                           Changed
-  rpc_daemon                              Removed
-  rpc_server                              Removed
-  rpc start on demand helpers             Added           true
+
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.16#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.17#Release_blocking_bugs
 
 
 #######################################
