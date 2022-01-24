@@ -3982,12 +3982,10 @@ static int copy_access_posix_acl(connection_struct *conn,
  Check for an existing default POSIX ACL on a directory.
 ****************************************************************************/
 
-static bool directory_has_default_posix_acl(connection_struct *conn,
-			const struct smb_filename *smb_fname)
+static bool directory_has_default_posix_acl(struct files_struct *dirfsp)
 {
-	SMB_ACL_T def_acl = SMB_VFS_SYS_ACL_GET_FD(smb_fname->fsp,
-						     SMB_ACL_TYPE_DEFAULT,
-						     talloc_tos());
+	SMB_ACL_T def_acl = SMB_VFS_SYS_ACL_GET_FD(
+		dirfsp, SMB_ACL_TYPE_DEFAULT, talloc_tos());
 	bool has_acl = False;
 	SMB_ACL_ENTRY_T entry;
 
@@ -4011,7 +4009,7 @@ int inherit_access_posix_acl(connection_struct *conn,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
 {
-	if (directory_has_default_posix_acl(conn, inherit_from_dir))
+	if (directory_has_default_posix_acl(inherit_from_dir->fsp))
 		return 0;
 
 	return copy_access_posix_acl(conn, inherit_from_dir, smb_fname, mode);
