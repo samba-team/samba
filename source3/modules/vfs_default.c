@@ -1785,6 +1785,14 @@ static struct tevent_req *vfswrap_get_dos_attributes_send(
 		.smb_fname = smb_fname,
 	};
 
+	if (!lp_store_dos_attributes(SNUM(dir_fsp->conn))) {
+		DBG_ERR("%s: \"smbd async dosmode\" enabled, but "
+			"\"store dos attributes\" is disabled\n",
+			dir_fsp->conn->connectpath);
+		tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+		return tevent_req_post(req, ev);
+	}
+
 	subreq = SMB_VFS_GETXATTRAT_SEND(state,
 					 ev,
 					 dir_fsp,
