@@ -361,7 +361,14 @@ sub mk_krb5_conf($$)
 	}
 
         if (defined($ctx->{tlsdir})) {
-	       print KRB5CONF "
+		if (defined($ENV{MITKRB5})) {
+			print KRB5CONF "
+ pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
+ pkinit_kdc_hostname = $ctx->{hostname}.$ctx->{dnsname}
+
+";
+		} else {
+			print KRB5CONF "
 
 [appdefaults]
 	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
@@ -372,6 +379,7 @@ sub mk_krb5_conf($$)
 	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
 
 ";
+		}
         }
 
 	print KRB5CONF "
@@ -464,16 +472,31 @@ sub mk_mitkdc_conf($$)
 	$ctx->{realm} = {
 		master_key_type = aes256-cts
 		default_principal_flags = +preauth
+		pkinit_identity = FILE:$ctx->{tlsdir}/kdc.pem,$ctx->{tlsdir}/key.pem
+		pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
+		pkinit_eku_checking = scLogin
+		pkinit_indicator = pkinit
+		pkinit_allow_upn = true
 	}
 
 	$ctx->{dnsname} = {
 		master_key_type = aes256-cts
 		default_principal_flags = +preauth
+		pkinit_identity = FILE:$ctx->{tlsdir}/kdc.pem,$ctx->{tlsdir}/key.pem
+		pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
+		pkinit_eku_checking = scLogin
+		pkinit_indicator = pkinit
+		pkinit_allow_upn = true
 	}
 
 	$ctx->{domain} = {
 		master_key_type = aes256-cts
 		default_principal_flags = +preauth
+		pkinit_identity = FILE:$ctx->{tlsdir}/kdc.pem,$ctx->{tlsdir}/key.pem
+		pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
+		pkinit_eku_checking = scLogin
+		pkinit_indicator = pkinit
+		pkinit_allow_upn = true
 	}
 
 [dbmodules]
