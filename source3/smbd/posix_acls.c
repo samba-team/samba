@@ -3953,26 +3953,25 @@ static int chmod_acl_internals(SMB_ACL_T posix_acl, mode_t mode)
  resulting ACL on TO.  Note that name is in UNIX character set.
 ****************************************************************************/
 
-static int copy_access_posix_acl(connection_struct *conn,
-				const struct smb_filename *smb_fname_from,
-				const struct smb_filename *smb_fname_to,
-				mode_t mode)
+static int copy_access_posix_acl(struct files_struct *from,
+				 struct files_struct *to,
+				 mode_t mode)
 {
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FD(smb_fname_from->fsp,
-						  SMB_ACL_TYPE_ACCESS,
-						  talloc_tos())) == NULL)
+	posix_acl = SMB_VFS_SYS_ACL_GET_FD(
+		from, SMB_ACL_TYPE_ACCESS, talloc_tos());
+	if (from == NULL) {
 		return -1;
+	}
 
 	ret = chmod_acl_internals(posix_acl, mode);
 	if (ret == -1) {
 		goto done;
 	}
 
-	ret = SMB_VFS_SYS_ACL_SET_FD(smb_fname_to->fsp,
-			SMB_ACL_TYPE_ACCESS, posix_acl);
+	ret = SMB_VFS_SYS_ACL_SET_FD(to, SMB_ACL_TYPE_ACCESS, posix_acl);
 
  done:
 
@@ -4011,10 +4010,14 @@ int inherit_access_posix_acl(connection_struct *conn,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
 {
+	int ret;
+
 	if (directory_has_default_posix_acl(inherit_from_dir->fsp))
 		return 0;
 
-	return copy_access_posix_acl(conn, inherit_from_dir, smb_fname, mode);
+	ret = copy_access_posix_acl(
+		inherit_from_dir->fsp, smb_fname->fsp, mode);
+	return ret;
 }
 
 /****************************************************************************
