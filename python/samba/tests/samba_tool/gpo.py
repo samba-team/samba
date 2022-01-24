@@ -51,6 +51,20 @@ b"""
         "class": "USER",
         "type": 1,
         "data": "samba.org"
+    },
+    {
+        "keyname": "Software\\\\Microsoft\\\\Internet Explorer\\\\Toolbar",
+        "valuename": "IEToolbar",
+        "class": "USER",
+        "type": "REG_BINARY",
+        "data": [0]
+    },
+    {
+        "keyname": "Software\\\\Policies\\\\Microsoft\\\\InputPersonalization",
+        "valuename": "RestrictImplicitTextCollection",
+        "class": "USER",
+        "type": "REG_DWORD",
+        "data": 1
     }
 ]
 """
@@ -66,6 +80,16 @@ b"""
     {
         "keyname": "Software\\\\Policies\\\\Mozilla\\\\Firefox\\\\Homepage",
         "valuename": "URL",
+        "class": "USER"
+    },
+    {
+        "keyname": "Software\\\\Microsoft\\\\Internet Explorer\\\\Toolbar",
+        "valuename": "IEToolbar",
+        "class": "USER"
+    },
+    {
+        "keyname": "Software\\\\Policies\\\\Microsoft\\\\InputPersonalization",
+        "valuename": "RestrictImplicitTextCollection",
         "class": "USER"
     }
 ]
@@ -1554,7 +1578,16 @@ class GpoCmdTestCase(SambaToolCmdTest):
         (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H",
                                             "ldap://%s" % os.environ["SERVER"])
         self.assertCmdSuccess(result, out, err, 'Failed to fetch gpos')
+        self.assertIn('homepage', out, 'Homepage policy not loaded')
         self.assertIn('samba.org', out, 'Homepage policy not loaded')
+        toolbar_data = '"valuename": "IEToolbar",\n        "class": "USER",' + \
+                       '\n        "type": "REG_BINARY",' + \
+                       '\n        "data": [\n            0\n        ]'
+        self.assertIn(toolbar_data, out, 'Toolbar policy not loaded')
+        restrict_data = '"valuename": "RestrictImplicitTextCollection",' + \
+                        '\n        "class": "USER",' + \
+                        '\n        "type": "REG_DWORD",\n        "data": 1\n'
+        self.assertIn(restrict_data, out, 'Restrict policy not loaded')
 
         with NamedTemporaryFile() as f:
             f.write(gpo_remove_json)

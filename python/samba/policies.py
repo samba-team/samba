@@ -84,20 +84,26 @@ class RegistryGroupPolicies(object):
             for i in range(12):
                 if str_regtype(i) == entry['type'].upper():
                     return i
-        return 0 # REG_NONE
+        raise TypeError('Unknown type %s' % entry['type'])
+
+    def __set_data(self, rtype, data):
+        # JSON can't store bytes, and have to be set via an int array
+        if rtype == 3 and type(data) == list: # REG_BINARY
+            return bytes(data)
+        return data
 
     def __pol_replace(self, pol_data, entry):
         for e in pol_data.entries:
             if e.keyname == entry['keyname'] and \
                e.valuename == entry['valuename']:
-                e.data = entry['data']
+                e.data = self.__set_data(e.type, entry['data'])
                 break
         else:
             e = preg.entry()
             e.keyname = entry['keyname']
             e.valuename = entry['valuename']
             e.type = self.__determine_data_type(entry)
-            e.data = entry['data']
+            e.data = self.__set_data(e.type, entry['data'])
             entries = list(pol_data.entries)
             entries.append(e)
             pol_data.entries = entries

@@ -668,6 +668,9 @@ class cmd_show(GPOCommand):
                 defs['class'] = policy_class
                 defs['type'] = str_regtype(entry.type)
                 defs['data'] = entry.data
+                # Bytes aren't JSON serializable
+                if type(defs['data']) == bytes:
+                    defs['data'] = list(defs['data'])
                 policy_defs.append(defs)
         self.outf.write("Policies     :\n")
         json.dump(policy_defs, self.outf, indent=4)
@@ -696,7 +699,24 @@ class cmd_load(GPOCommand):
             "type": "REG_SZ",
             "data": "google.com"
         },
+        {
+            "keyname": "Software\\Microsoft\\Internet Explorer\\Toolbar",
+            "valuename": "IEToolbar",
+            "class": "USER",
+            "type": "REG_BINARY",
+            "data": [0]
+        },
+        {
+            "keyname": "Software\\Policies\\Microsoft\\InputPersonalization",
+            "valuename": "RestrictImplicitTextCollection",
+            "class": "USER",
+            "type": "REG_DWORD",
+            "data": 1
+        }
     ]
+
+    Valid class attributes: MACHINE|USER|BOTH
+    Data arrays are interpreted as bytes.
     """
 
     synopsis = "%prog <gpo> [options]"
@@ -755,7 +775,19 @@ class cmd_remove(GPOCommand):
             "valuename": "URL",
             "class": "USER",
         },
+        {
+            "keyname": "Software\\Microsoft\\Internet Explorer\\Toolbar",
+            "valuename": "IEToolbar",
+            "class": "USER"
+        },
+        {
+            "keyname": "Software\\Policies\\Microsoft\\InputPersonalization",
+            "valuename": "RestrictImplicitTextCollection",
+            "class": "USER"
+        }
     ]
+
+    Valid class attributes: MACHINE|USER|BOTH
     """
 
     synopsis = "%prog <gpo> [options]"
