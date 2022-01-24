@@ -3885,7 +3885,7 @@ int get_acl_group_bits( connection_struct *conn,
  and set the mask to rwx. Needed to preserve complex ACLs set by NT.
 ****************************************************************************/
 
-static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mode_t mode)
+static int chmod_acl_internals(SMB_ACL_T posix_acl, mode_t mode)
 {
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
@@ -3966,8 +3966,10 @@ static int copy_access_posix_acl(connection_struct *conn,
 						  talloc_tos())) == NULL)
 		return -1;
 
-	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
+	ret = chmod_acl_internals(posix_acl, mode);
+	if (ret == -1) {
 		goto done;
+	}
 
 	ret = SMB_VFS_SYS_ACL_SET_FD(smb_fname_to->fsp,
 			SMB_ACL_TYPE_ACCESS, posix_acl);
