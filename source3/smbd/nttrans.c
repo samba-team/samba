@@ -2262,19 +2262,17 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 {
 	NTSTATUS status;
 	struct security_descriptor *psd = NULL;
-	TALLOC_CTX *frame = talloc_stackframe();
 
 	/*
 	 * Get the permissions to return.
 	 */
 
 	status = smbd_fetch_security_desc(conn,
-					frame,
+					mem_ctx,
 					fsp,
 					security_info_wanted,
 					&psd);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -2284,7 +2282,7 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 					max_data_count,
 					ppmarshalled_sd,
 					psd_size);
-	TALLOC_FREE(frame);
+	TALLOC_FREE(psd);
 	return status;
 }
 
