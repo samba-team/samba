@@ -188,6 +188,7 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_smb2_session_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_replay_init(suite));
 	torture_suite_add_simple_test(suite, "dosmode", torture_smb2_dosmode);
+	torture_suite_add_simple_test(suite, "async_dosmode", torture_smb2_async_dosmode);
 	torture_suite_add_simple_test(suite, "maxfid", torture_smb2_maxfid);
 	torture_suite_add_simple_test(suite, "hold-sharemode",
 				      torture_smb2_hold_sharemode);
