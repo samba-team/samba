@@ -262,18 +262,11 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 #
 ^netr-bdc-arcfour.verify-sig-arcfour
 ^netr-bdc-arcfour.verify-sig-arcfour
-^samba4.blackbox.pkinit_pac.STEP1 remote.pac verification.ad_dc:local
-^samba4.blackbox.pkinit_pac.STEP1 remote.pac verification.ad_dc_ntvfs:local
 ^samba4.blackbox.pkinit_pac.netr-bdc-aes.verify-sig-aes.ad_dc:local
-^samba4.blackbox.pkinit_pac.netr-bdc-aes.verify-sig-aes.ad_dc_ntvfs:local
 ^samba4.blackbox.pkinit_pac.netr-mem-aes.s4u2proxy-aes.ad_dc:local
-^samba4.blackbox.pkinit_pac.netr-mem-aes.s4u2proxy-aes.ad_dc_ntvfs:local
 ^samba4.blackbox.pkinit_pac.netr-mem-aes.verify-sig-aes.ad_dc:local
-^samba4.blackbox.pkinit_pac.netr-mem-aes.verify-sig-aes.ad_dc_ntvfs:local
 ^samba4.blackbox.pkinit_pac.netr-mem-arcfour.s4u2proxy-arcfour.ad_dc:local
-^samba4.blackbox.pkinit_pac.netr-mem-arcfour.s4u2proxy-arcfour.ad_dc_ntvfs:local
 ^samba4.blackbox.pkinit_pac.netr-mem-arcfour.verify-sig-arcfour.ad_dc:local
-^samba4.blackbox.pkinit_pac.netr-mem-arcfour.verify-sig-arcfour.ad_dc_ntvfs:local
 ^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2000dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2003dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-aes.s4u2proxy-aes.fl2008dc
