@@ -555,9 +555,28 @@ plantestsuite("samba4.blackbox.test_primary_group", "ad_dc:local", [os.path.join
 plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.join(bbdir, "test_old_enctypes.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$NETBIOSNAME', '$PREFIX_ABS'])
 
 if have_heimdal_support:
-    for env in ["ad_dc_ntvfs", "ad_dc"]:
-        plantestsuite("samba4.blackbox.pkinit", "%s:local" % env, [os.path.join(bbdir, "test_pkinit_heimdal.sh"), '$SERVER', 'pkinit', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX/%s' % env, "aes256-cts-hmac-sha1-96", smbclient3, configuration])
-        plantestsuite("samba4.blackbox.pkinit_pac", "%s:local" % env, [os.path.join(bbdir, "test_pkinit_pac_heimdal.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX/%s' % env, "aes256-cts-hmac-sha1-96", configuration])
+    plantestsuite("samba4.blackbox.pkinit",
+                  "ad_dc:local",
+                  [os.path.join(bbdir, "test_pkinit_heimdal.sh"),
+                   '$SERVER',
+                   'pkinit',
+                   '$PASSWORD',
+                   '$REALM',
+                   '$DOMAIN',
+                   '$PREFIX/ad_dc',
+                   "aes256-cts-hmac-sha1-96",
+                   smbclient3, configuration])
+    plantestsuite("samba4.blackbox.pkinit_pac",
+                  "ad_dc:local",
+                  [os.path.join(bbdir, "test_pkinit_pac_heimdal.sh"),
+                   '$SERVER',
+                   '$USERNAME',
+                   '$PASSWORD',
+                   '$REALM',
+                   '$DOMAIN',
+                   '$PREFIX/ad_dc',
+                   "aes256-cts-hmac-sha1-96",
+                   configuration])
     plantestsuite("samba4.blackbox.kinit", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_kinit_heimdal.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", smbclient4, configuration])
     plantestsuite("samba4.blackbox.kinit", "fl2000dc:local", [os.path.join(bbdir, "test_kinit_heimdal.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "arcfour-hmac-md5", smbclient3, configuration])
     plantestsuite("samba4.blackbox.kinit", "fl2008r2dc:local", [os.path.join(bbdir, "test_kinit_heimdal.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", smbclient3, configuration])
