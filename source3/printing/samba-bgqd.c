@@ -329,6 +329,9 @@ int main(int argc, const char *argv[])
 
 	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
 
+	/* main process will notify systemd */
+	daemon_sd_notifications(false);
+
 	if (!cmdline_daemon_cfg->fork) {
 		daemon_status(progname, "Starting process ... ");
 	} else {
