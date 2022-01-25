@@ -213,7 +213,7 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 	};
 	krb5_db_entry *kentry;
 	int ret;
-	int sflags = 0;
+	uint32_t sflags = 0;
 	krb5_principal referral_principal = NULL;
 
 	kentry = calloc(1, sizeof(krb5_db_entry));
