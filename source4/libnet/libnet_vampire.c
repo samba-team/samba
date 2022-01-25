@@ -1,22 +1,22 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   
+
    Extract the user/system database from a remote server
 
    Copyright (C) Stefan Metzmacher	2004-2006
    Copyright (C) Brad Henry 2005
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -45,16 +45,16 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS            DBGC_DRS_REPL
 
-/* 
+/*
 List of tasks vampire.py must perform:
 - Domain Join
  - but don't write the secrets.ldb
  - results for this should be enough to handle the provision
-- if vampire method is samsync 
- - Provision using these results 
+- if vampire method is samsync
+ - Provision using these results
   - do we still want to support this NT4 technology?
 - Start samsync with libnet code
- - provision in the callback 
+ - provision in the callback
 - Write out the secrets database, using the code from libnet_Join
 
 */
@@ -211,7 +211,7 @@ NTSTATUS libnet_vampire_cb_check_options(void *private_data,
 	DEBUG(0,("Options:crossRef behavior_version[%u]\n"
 		       "\tschema object_version[%u]\n"
 		       "\tdomain behavior_version[%u]\n"
-		       "\tdomain w2k3_update_revision[%u]\n", 
+		       "\tdomain w2k3_update_revision[%u]\n",
 		o->forest->crossref_behavior_version,
 		o->forest->schema_object_version,
 		o->domain->behavior_version,
