@@ -589,7 +589,7 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 	struct repsFromTo1 *s_dsa;
 	char *tmp_dns_name;
 	uint32_t i;
-	uint64_t seq_num;
+	uint64_t seq_num = 0;
 	bool is_exop = false;
 	struct ldb_dn *partition_dn = NULL;
 	struct ldb_dn *nc_root = NULL;
