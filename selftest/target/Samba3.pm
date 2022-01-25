@@ -1545,6 +1545,12 @@ sub setup_simpleserver
 	aio_pthread:aio open = yes
 	smbd async dosmode = yes
 
+[async_dosmode_shadow_copy2]
+	path = $prefix_abs/share
+	read only = no
+	vfs objects = shadow_copy2 xattr_tdb
+	smbd async dosmode = yes
+
 [vfs_aio_fork]
 	path = $prefix_abs/share
         vfs objects = aio_fork

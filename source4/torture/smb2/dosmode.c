@@ -181,3 +181,74 @@ done:
 	smb2_deltree(tree, dname);
 	return ret;
 }
+
+bool torture_smb2_async_dosmode(struct torture_context *tctx)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_tree *tree = NULL;
+	const char *dname = "torture_dosmode";
+	const char *fname = "torture_dosmode\\file";
+	struct smb2_handle h = {{0}};
+	struct smb2_create io;
+	union smb_setfileinfo sfinfo;
+	struct smb2_find f;
+	union smb_search_data *d;
+	unsigned int count;
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		return false;
+	}
+
+	smb2_deltree(tree, dname);
+
+	status = torture_smb2_testdir(tree, dname, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed");
+
+	ZERO_STRUCT(io);
+	io.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.in.create_options = 0;
+	io.in.fname = fname;
+
+	status = smb2_create(tree, tctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed");
+
+	ZERO_STRUCT(sfinfo);
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_HIDDEN;
+	sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
+	sfinfo.generic.in.file.handle = io.out.file.handle;
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_filefailed");
+
+	smb2_util_close(tree, io.out.file.handle);
+
+	ZERO_STRUCT(f);
+	f.in.file.handle	= h;
+	f.in.pattern		= "file";
+	f.in.continue_flags	= SMB2_CONTINUE_FLAG_RESTART;
+	f.in.max_response_size	= 0x1000;
+	f.in.level              = SMB2_FIND_BOTH_DIRECTORY_INFO;
+
+	status = smb2_find_level(tree, tree, &f, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
+
+	smb2_util_close(tree, h);
+	ZERO_STRUCT(h);
+
+	torture_assert_goto(tctx,
+			    d->both_directory_info.attrib & FILE_ATTRIBUTE_HIDDEN,
+			    ret, done,
+			    "FILE_ATTRIBUTE_HIDDEN is not set\n");
+
+done:
+	if (!smb2_util_handle_empty(h)) {
+		smb2_util_close(tree, h);
+	}
+	smb2_deltree(tree, dname);
+	return ret;
+}
