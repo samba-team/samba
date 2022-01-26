@@ -223,6 +223,8 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 	struct samba_kdc_db_context *kdc_db_ctx;
 	struct sdb_entry_ex sdb_entry_ex = {};
 	krb5_error_code code, ret;
+	uint32_t sflags;
+
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
 
@@ -232,10 +234,12 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 						    entry_ex);
 	}
 
+	sflags = (flags & SDB_F_HDB_MASK);
+
 	ret = samba_kdc_fetch(context,
 			      kdc_db_ctx,
 			      principal,
-			      flags,
+			      sflags,
 			      kvno,
 			      &sdb_entry_ex);
 	switch (ret) {
