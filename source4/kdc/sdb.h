@@ -116,6 +116,18 @@ struct sdb_entry_ex {
 #define SDB_F_KVNO_SPECIFIED	128	/* we want a particular KVNO */
 #define SDB_F_FOR_AS_REQ	4096	/* fetch is for a AS REQ */
 #define SDB_F_FOR_TGS_REQ	8192	/* fetch is for a TGS REQ */
+
+#define SDB_F_HDB_MASK		(SDB_F_DECRYPT | \
+				 SDB_F_GET_CLIENT| \
+				 SDB_F_GET_SERVER | \
+				 SDB_F_GET_KRBTGT | \
+				 SDB_F_CANON | \
+				 SDB_F_ADMIN_DATA | \
+				 SDB_F_KVNO_SPECIFIED | \
+				 SDB_F_FOR_AS_REQ | \
+				 SDB_F_FOR_TGS_REQ)
+
+/* This is not supported by HDB */
 #define SDB_F_FORCE_CANON	16384	/* force canonicalition */
 
 void sdb_free_entry(struct sdb_entry_ex *e);
