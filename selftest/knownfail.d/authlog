@@ -1,0 +1,4 @@
+samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_ldap_simple_bind
+samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_ldap_simple_bind_bad_password
+samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_ldap_simple_bind_bad_user
+samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_ldap_simple_bind_unparseable_user
