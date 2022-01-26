@@ -486,12 +486,12 @@ static void send_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 
 	req.in.validation_level = 3;
 
-	/* 
+	/*
 	 * The memory in identity_info and user_info only needs to be
 	 * valid until the end of this function call, as it will be
-	 * pushed to NDR during this call 
+	 * pushed to NDR during this call
 	 */
-	
+
 	dcerpc_winbind_SamLogon_r_send(mem_ctx, kdc_db_ctx->ev_ctx,
 				       irpc_handle, &req);
 }
