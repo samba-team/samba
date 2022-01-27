@@ -158,6 +158,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	struct smb2_negotiate_context *in_cipher = NULL;
 	struct smb2_negotiate_context *in_sign_algo = NULL;
 	struct smb2_negotiate_contexts out_c = { .num_contexts = 0, };
+	struct smb2_negotiate_context *in_posix = NULL;
 	const struct smb311_capabilities default_smb3_capabilities =
 		smb311_capabilities_parse("server",
 			lp_server_smb3_signing_algorithms(),
@@ -269,6 +270,43 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 						      &in_c);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
+		}
+
+		if (lp_smb2_unix_extensions()) {
+			in_posix = smb2_negotiate_context_find(&in_c,
+					SMB2_POSIX_EXTENSIONS_AVAILABLE);
+
+			if (in_posix != NULL) {
+				const uint8_t *inbuf = in_posix->data.data;
+				size_t inbuflen = in_posix->data.length;
+				bool posix_found = false;
+				/*
+				 * For now the server only supports one variant.
+				 * Check it's the right one.
+				 */
+				if ((inbuflen % 16) != 0) {
+					return smbd_smb2_request_error(req,
+						NT_STATUS_INVALID_PARAMETER);
+				}
+				SMB_ASSERT(strlen(SMB2_CREATE_TAG_POSIX) == 16);
+				for (ofs=0; ofs<inbuflen; ofs+=16) {
+					if (memcmp(inbuf+ofs,
+							SMB2_CREATE_TAG_POSIX,
+							16) == 0) {
+						posix_found = true;
+						break;
+					}
+				}
+				if (posix_found) {
+					DBG_DEBUG("Client requested SMB2 unix "
+						"extensions\n");
+				} else {
+					DBG_DEBUG("Client requested unknown "
+						"SMB2 unix extensions:\n");
+					dump_data(10, inbuf, inbuflen);
+					in_posix = NULL;
+				}
+			}
 		}
 	}
 
@@ -646,6 +684,21 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	/* for now we want raw NTLMSSP */
 	security_buffer = data_blob_const(NULL, 0);
 #endif
+
+	if (in_posix != NULL) {
+		/* Client correctly negotiated SMB2 unix extensions. */
+		const uint8_t *buf = (const uint8_t *)SMB2_CREATE_TAG_POSIX;
+		status = smb2_negotiate_context_add(
+				req,
+				&out_c,
+				SMB2_POSIX_EXTENSIONS_AVAILABLE,
+				buf,
+				16);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
+		xconn->smb2.server.posix_extensions_negotiated = true;
+	}
 
 	if (out_c.num_contexts != 0) {
 		status = smb2_negotiate_context_push(req,
