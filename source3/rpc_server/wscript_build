@@ -250,6 +250,9 @@ if bld.env.spotlight_backend_es:
                           '''
     rpc_mdssvc_deps += ' http jansson'
 
+    bld.INSTALL_FILES(bld.env.SAMBA_DATADIR,
+                      'mdssvc/elasticsearch_mappings.json')
+
 bld.SAMBA3_BINARY('rpcd_mdssvc',
                   source='rpcd_mdssvc.c ' + rpc_mdssvc_sources,
                   deps='''
