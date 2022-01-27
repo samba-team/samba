@@ -709,7 +709,7 @@ static bool test_smb2_open(struct torture_context *tctx,
 	struct smb2_handle h = {{0}};
 	struct smb2_handle h1 = {{0}};
 	bool ret = true;
-	int i;
+	size_t i;
 	struct {
 		uint32_t create_disp;
 		bool with_file;
@@ -760,7 +760,7 @@ static bool test_smb2_open(struct torture_context *tctx,
 			status= smb2_create(tree, tctx, &(io.smb2));
 			if (!NT_STATUS_IS_OK(status)) {
 				torture_comment(tctx,
-				    "Failed to create file %s status %s %d\n",
+				    "Failed to create file %s status %s %zu\n",
 				    fname, nt_errstr(status), i);
 
 				ret = false;
@@ -772,7 +772,7 @@ static bool test_smb2_open(struct torture_context *tctx,
 		status = smb2_create(tree, tctx, &(io.smb2));
 		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
 			torture_comment(tctx,
-			    "(%s) incorrect status %s should be %s (i=%d "
+			    "(%s) incorrect status %s should be %s (i=%zu "
 			    "with_file=%d open_disp=%d)\n",
 			 __location__, nt_errstr(status),
 			nt_errstr(open_funcs[i].correct_status),
