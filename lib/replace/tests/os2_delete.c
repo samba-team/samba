@@ -66,8 +66,8 @@ static int os2_delete(DIR *d)
 	char names[READDIR_SIZE][256];
 
 	/* scan, remembering offsets */
-	for (i=0, de=readdir(d); 
-	     de && i < READDIR_SIZE; 
+	for (i=0, de=readdir(d);
+	     de && i < READDIR_SIZE;
 	     de=readdir(d), i++) {
 		offsets[i] = telldir(d);
 		/* strlcpy not available here */
