@@ -106,7 +106,7 @@ int test_readdir_os2_delete(void)
 	d = opendir(TESTDIR "/test0.txt");
 	if (d != NULL) FAILED("opendir() on file succeed");
 	if (errno != ENOTDIR) FAILED("opendir() on file didn't give ENOTDIR");
-	closedir(d);
+	if (d != NULL) closedir(d);
 
 	d = opendir(TESTDIR);
 
