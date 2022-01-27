@@ -532,6 +532,7 @@ struct smbXsrv_connection {
 			uint32_t max_write;
 			uint16_t sign_algo;
 			uint16_t cipher;
+			bool posix_extensions_negotiated;
 		} server;
 
 		struct smbXsrv_preauth preauth;
