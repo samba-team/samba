@@ -675,6 +675,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/smb2_getinfo.c
                           smbd/smb2_setinfo.c
                           smbd/smb2_break.c
+                          smbd/smb2_posix.c
                           smbd/smbXsrv_version.c
                           smbd/smbXsrv_client.c
                           smbd/smbXsrv_session.c
