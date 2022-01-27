@@ -4811,3 +4811,9 @@ uint32_t lp_get_async_dns_timeout(void)
 	 */
 	return MAX(Globals.async_dns_timeout, 1);
 }
+
+/* SMB2 POSIX extensions. For now, *always* disabled. */
+bool lp_smb2_unix_extensions(void)
+{
+	return false;
+}
