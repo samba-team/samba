@@ -4671,7 +4671,7 @@ void widelinks_warning(int snum)
 bool lp_widelinks(int snum)
 {
 	/* wide links is always incompatible with unix extensions */
-	if (lp_smb1_unix_extensions()) {
+	if (lp_smb1_unix_extensions() || lp_smb2_unix_extensions()) {
 		/*
 		 * Unless we have "allow insecure widelinks"
 		 * turned on.
