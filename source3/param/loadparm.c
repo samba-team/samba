@@ -4660,11 +4660,20 @@ void widelinks_warning(int snum)
 		return;
 	}
 
-	if (lp_smb1_unix_extensions() && lp_wide_links(snum)) {
-		DBG_ERR("Share '%s' has wide links and unix extensions enabled. "
+	if (lp_wide_links(snum)) {
+		if (lp_smb1_unix_extensions()) {
+			DBG_ERR("Share '%s' has wide links and SMB1 unix "
+			"extensions enabled. "
 			"These parameters are incompatible. "
 			"Wide links will be disabled for this share.\n",
 			 lp_const_servicename(snum));
+		} else if (lp_smb2_unix_extensions()) {
+			DBG_ERR("Share '%s' has wide links and SMB2 unix "
+			"extensions enabled. "
+			"These parameters are incompatible. "
+			"Wide links will be disabled for this share.\n",
+			 lp_const_servicename(snum));
+		}
 	}
 }
 
