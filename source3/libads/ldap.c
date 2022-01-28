@@ -605,7 +605,9 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
 	char addr[INET6_ADDRSTRLEN];
-	struct sockaddr_storage existing_ss = {0};
+	struct sockaddr_storage existing_ss;
+
+	zero_sockaddr(&existing_ss);
 
 	/*
 	 * ads_connect can be passed in a reused ADS_STRUCT
