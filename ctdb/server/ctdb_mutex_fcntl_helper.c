@@ -272,17 +272,19 @@ static struct tevent_req *lock_test_child_send(TALLOC_CTX *mem_ctx,
 					       const char *lock_file,
 					       int fd,
 					       ino_t inode,
-					       unsigned long recheck_interval)
+					       unsigned long recheck_interval,
+					       bool send_pings)
 {
 	struct tevent_req *req, *subreq;
 	struct lock_test_child_state *state;
+	unsigned int interval = send_pings ? 1 : 0;
 
 	req = tevent_req_create(mem_ctx, &state, struct lock_test_child_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	subreq = tmon_ping_send(state, ev, fd, TMON_FD_BOTH, 0, 0);
+	subreq = tmon_ping_send(state, ev, fd, TMON_FD_BOTH, 0, interval);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -351,7 +353,8 @@ static bool lock_test_child_recv(struct tevent_req *req, int *perr)
 static void lock_test_child(const char *lock_file,
 			    int lock_fd,
 			    int pipe_fd,
-			    unsigned long recheck_interval)
+			    unsigned long recheck_interval,
+			    bool send_pings)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -384,7 +387,8 @@ static void lock_test_child(const char *lock_file,
 				   lock_file,
 				   pipe_fd,
 				   inode,
-				   recheck_interval);
+				   recheck_interval,
+				   send_pings);
 	if (req == NULL) {
 		fprintf(stderr,
 			"%s: lock_test_child_send() failed\n",
@@ -418,7 +422,8 @@ static struct tevent_req *lock_test_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 const char *lock_file,
 					 int *fdp,
-					 unsigned long recheck_interval)
+					 unsigned long recheck_interval,
+					 unsigned long ping_timeout)
 {
 	struct tevent_req *req, *subreq;
 	struct lock_test_state *state;
@@ -456,7 +461,11 @@ static struct tevent_req *lock_test_send(TALLOC_CTX *mem_ctx,
 		close(sv[0]);
 		TALLOC_FREE(ev);
 
-		lock_test_child(lock_file, *fdp, sv[1], recheck_interval);
+		lock_test_child(lock_file,
+				*fdp,
+				sv[1],
+				recheck_interval,
+				ping_timeout != 0);
 		/* Above does not return */
 	}
 
@@ -467,7 +476,7 @@ static struct tevent_req *lock_test_send(TALLOC_CTX *mem_ctx,
 	state->pipe_fd = sv[0];
 	state->child_pid = pid;
 
-	subreq = tmon_ping_send(state, ev, sv[0], TMON_FD_BOTH, 0, 0);
+	subreq = tmon_ping_send(state, ev, sv[0], TMON_FD_BOTH, ping_timeout, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		close(sv[0]);
 		return tevent_req_post(req, ev);
@@ -547,7 +556,8 @@ static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 					     pid_t ppid,
 					     const char *lock_file,
 					     int *fdp,
-					     unsigned long recheck_interval)
+					     unsigned long recheck_interval,
+					     unsigned long ping_timeout)
 {
 	struct tevent_req *req, *subreq;
 	struct wait_for_exit_state *state;
@@ -568,7 +578,8 @@ static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 					ev,
 					lock_file,
 					fdp,
-					recheck_interval);
+					recheck_interval,
+					ping_timeout);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -633,7 +644,9 @@ static bool wait_for_exit_recv(struct tevent_req *req, int *perr)
 
 static void usage(void)
 {
-	fprintf(stderr, "Usage: %s <file> [recheck_interval]\n", progname);
+	fprintf(stderr,
+		"Usage: %s <file> [recheck_interval [ping_timeout]]\n",
+		progname);
 }
 
 int main(int argc, char *argv[])
@@ -643,6 +656,7 @@ int main(int argc, char *argv[])
 	int ppid;
 	const char *file = NULL;
 	unsigned long recheck_interval;
+	unsigned long ping_timeout;
 	int ret;
 	int fd = -1;
 	struct tevent_req *req;
@@ -651,7 +665,7 @@ int main(int argc, char *argv[])
 	strlcpy(progpath, argv[0], sizeof(progpath));
 	progname = basename(progpath);
 
-	if (argc < 2 || argc > 3) {
+	if (argc < 2 || argc > 4) {
 		usage();
 		exit(1);
 	}
@@ -667,12 +681,24 @@ int main(int argc, char *argv[])
 	file = argv[1];
 
 	recheck_interval = 5;
-	if (argc == 3) {
+	ping_timeout = 0;
+	if (argc >= 3) {
 		recheck_interval = smb_strtoul(argv[2],
 					       NULL,
 					       10,
 					       &ret,
 					       SMB_STR_STANDARD);
+		if (ret != 0) {
+			usage();
+			exit(1);
+		}
+	}
+	if (argc >= 4) {
+		ping_timeout = smb_strtoul(argv[3],
+					   NULL,
+					   10,
+					   &ret,
+					   SMB_STR_STANDARD);
 		if (ret != 0) {
 			usage();
 			exit(1);
@@ -686,7 +712,13 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	req = wait_for_exit_send(ev, ev, ppid, file, &fd, recheck_interval);
+	req = wait_for_exit_send(ev,
+				 ev,
+				 ppid,
+				 file,
+				 &fd,
+				 recheck_interval,
+				 ping_timeout);
 	if (req == NULL) {
 		fprintf(stderr,
 			"%s: wait_for_exit_send() failed\n",
