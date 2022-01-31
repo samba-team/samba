@@ -2707,7 +2707,7 @@ sub setup_ad_dc_no_ntlm
 					 "ADNONTLMDOMAIN",
 					 "adnontlmdom.samba.example.com",
 					 undef,
-					 "ntlm auth = disabled",
+					 "ntlm auth = disabled\nnt hash store = never",
 					 undef);
 	unless ($env) {
 		return undef;

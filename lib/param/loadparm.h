@@ -262,6 +262,13 @@ enum samba_weak_crypto {
 	SAMBA_WEAK_CRYPTO_DISALLOWED,
 };
 
+/* Controlling the storage of the NT password has on the AD DC */
+enum store_nt_hash {
+	NT_HASH_STORE_AUTO,
+	NT_HASH_STORE_NEVER,
+	NT_HASH_STORE_ALWAYS
+};
+
 /*
  * Default passwd chat script.
  */

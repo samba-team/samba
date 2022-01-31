@@ -1,0 +1,70 @@
+<samba:parameter name="nt hash store"
+                 context="G"
+                 type="enum"
+                 enumlist="enum_nt_hash_store"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>This parameter determines whether or not <citerefentry><refentrytitle>samba</refentrytitle>
+    <manvolnum>8</manvolnum></citerefentry> will, as an AD DC, attempt to
+    store the NT password hash used in NTLM and NTLMv2 authentication for
+    users in this domain. </para>
+
+    <para>If so configured, the Samba Active Directory Domain Controller,
+    will, except for trust accounts (computers, domain
+    controllers and inter-domain trusts) the
+    <emphasis>NOT store the NT hash</emphasis>
+    for new and changed accounts in the sam.ldb database.</para>
+
+    <para>This avoids the storage of an unsalted hash for these
+    user-created passwords.  As a consequence the
+    <constant>arcfour-hmac-md5</constant> Kerberos key type is
+    also unavailable in the KDC for these users - thankfully
+    <emphasis>modern clients will select an AES based key
+    instead.</emphasis></para>
+
+    <para>NOTE: As the password history in Active Directory is
+    stored as an NT hash (and thus unavailable), a workaround is
+    used, relying instead on Kerberos password hash values.
+    This stores three passwords, the current, previous and second previous
+    password.  This allows some checking against reuse. </para>
+
+    <para>However as these values are salted, changing the
+    sAMAccountName, userAccountControl or userPrincipalName of
+    an account will cause the salt to change.  After the rare
+    combination of both a rename and a password change only the
+    current password will be recognised for password history
+    purposes.
+    </para>
+    <para>The available settings are:</para>
+
+    <itemizedlist>
+        <listitem>
+          <para><constant>always</constant> - Always store the NT hash
+	  (as machine accounts will also always store an NT hash,
+	  a hash will be stored for all accounts).</para>
+
+	  <para>This setting may be useful if <parameter
+	  moreinfo="none">ntlm auth</parameter> is set to <constant>disabled</constant>
+	  for a trial period</para>
+
+        </listitem>
+
+        <listitem>
+          <para><constant>never</constant> - Never store the NT hash
+	  for user accounts, only for machine accounts</para>
+        </listitem>
+
+        <listitem>
+          <para><constant>auto</constant> - Store an NT hash if <parameter
+	  moreinfo="none">ntlm auth</parameter> is not set to <constant>disabled</constant>.
+	  </para>
+
+        </listitem>
+
+    </itemizedlist>
+
+</description>
+
+<related>ntlm auth</related>
+<value type="default">always</value>
+</samba:parameter>

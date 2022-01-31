@@ -403,6 +403,13 @@ static const struct enum_list enum_ntlm_auth[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_nt_hash_store[] = {
+	{NT_HASH_STORE_AUTO, "auto"},
+	{NT_HASH_STORE_NEVER, "never"},
+	{NT_HASH_STORE_ALWAYS, "always"},
+};
+
+
 static const struct enum_list enum_spotlight_backend[] = {
 	{SPOTLIGHT_BACKEND_NOINDEX, "noindex"},
 	{SPOTLIGHT_BACKEND_TRACKER, "tracker"},

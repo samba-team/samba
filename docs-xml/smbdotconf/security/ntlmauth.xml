@@ -62,6 +62,14 @@
 	  authentication to forward to a full DC.  Setting this option
 	  to <constant>disabled</constant> will cause these forwarded
 	  authentications to fail.</para>
+
+	  <para>Additionally, for Samba acting as an Active Directory
+	  Domain Controller, for user accounts, if <parameter moreinfo="none">nt hash store</parameter>
+	  is set to the default setting of <constant>auto</constant>,
+	  the <emphasis>NT hash will not be stored</emphasis>
+	  in the sam.ldb database for new users and after a
+	  password change.</para>
+
         </listitem>
 
     </itemizedlist>
@@ -72,6 +80,7 @@
     behaviour is unchanged.</para>
 </description>
 
+<related>nt hash store</related>
 <related>lanman auth</related>
 <related>raw NTLMv2 auth</related>
 <value type="default">ntlmv2-only</value>

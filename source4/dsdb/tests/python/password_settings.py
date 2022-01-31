@@ -869,11 +869,8 @@ unicodePwd:: %s
         # we can set the exact same password again because there's no history
         self.assert_password_valid(user, "NewPwd12#")
 
-        # There is a difference in behaviour here between Windows and Samba.
         # When going from zero to non-zero password-history, Windows treats
         # the current user's password as invalid (even though the password has
-        # not been altered since the setting changed). Whereas Samba accepts
-        # the current password (because it's not in the history until the
-        # *next* time the user's password changes.
+        # not been altered since the setting changed).
         self.set_domain_pwdHistoryLength("1")
         self.assert_password_invalid(user, "NewPwd12#")
