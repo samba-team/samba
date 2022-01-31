@@ -18,10 +18,15 @@
 */
 
 #include "replace.h"
+#include "system/filesys.h"
 #include "system/locale.h"
 #include "system/network.h"
 
 #include <talloc.h>
+
+#include "lib/util/debug.h"
+#include "lib/util/smb_strtox.h"
+#include "lib/util/tini.h"
 
 #include "protocol/protocol.h"
 
@@ -279,4 +284,118 @@ char *ctdb_tunable_names_to_string(TALLOC_CTX *mem_ctx)
 	str[strlen(str)-1] = '\0';
 
 	return str;
+}
+
+struct tunable_load_state {
+	struct ctdb_tunable_list *tun_list;
+	bool status;
+	const char *func;
+};
+
+static bool tunable_section(const char *section, void *private_data)
+{
+	struct tunable_load_state *state =
+		(struct tunable_load_state *)private_data;
+
+	D_ERR("%s: Invalid line for section [%s] - sections not supported \n",
+	      state->func,
+	      section);
+	state->status = false;
+
+	return true;
+}
+
+static bool tunable_option(const char *name,
+			   const char *value,
+			   void *private_data)
+{
+	struct tunable_load_state *state =
+		(struct tunable_load_state *)private_data;
+	unsigned long num;
+	bool obsolete;
+	bool ok;
+	int ret;
+
+	if (value[0] == '\0') {
+		D_ERR("%s: Invalid line containing \"%s\"\n", state->func, name);
+		state->status = false;
+		return true;
+	}
+
+	num = smb_strtoul(value, NULL, 0, &ret, SMB_STR_FULL_STR_CONV);
+	if (ret != 0) {
+		D_ERR("%s: Invalid value \"%s\" for tunable \"%s\"\n",
+		      state->func,
+		      value,
+		      name);
+		state->status = false;
+		return true;
+	}
+
+	ok = ctdb_tunable_set_value(state->tun_list,
+				    name,
+				    (uint32_t)num,
+				    &obsolete);
+	if (!ok) {
+		D_ERR("%s: Unknown tunable \"%s\"\n", state->func, name);
+		state->status = false;
+		return true;
+	}
+	if (obsolete) {
+		D_ERR("%s: Obsolete tunable \"%s\"\n", state->func, name);
+		state->status = false;
+		return true;
+	}
+
+	return true;
+}
+
+bool ctdb_tunable_load_file(TALLOC_CTX *mem_ctx,
+			    struct ctdb_tunable_list *tun_list,
+			    const char *file)
+{
+	struct tunable_load_state state = {
+		.tun_list = tun_list,
+		.status = true,
+		.func = __FUNCTION__,
+	};
+	FILE *fp;
+	bool status;
+
+	ctdb_tunable_set_defaults(tun_list);
+
+	fp = fopen(file, "r");
+	if (fp == NULL) {
+		if (errno == ENOENT) {
+			/* Doesn't need to exist */
+			return true;
+		}
+
+		DBG_ERR("Failed to open %s\n", file);
+		return false;
+	}
+
+	D_NOTICE("Loading tunables from %s\n", file);
+	/*
+	 * allow_empty_value=true is somewhat counter-intuitive.
+	 * However, if allow_empty_value=false then a tunable with no
+	 * equals or value is regarded as empty and is simply ignored.
+	 * Use true so an "empty value" can be caught in
+	 * tunable_option().
+	 *
+	 * tunable_section() and tunable_option() return true while
+	 * setting state.status=false, allowing all possible errors
+	 * with tunables and values to be reported.  This helps to
+	 * avoid a potential game of whack-a-mole in a well-formed
+	 * file with multiple minor errors.
+	 */
+	status = tini_parse(fp, true, tunable_section, tunable_option, &state);
+
+	fclose(fp);
+
+	if (!status) {
+		DBG_ERR("Syntax error\n");
+	}
+
+	return status && state.status;
 }
