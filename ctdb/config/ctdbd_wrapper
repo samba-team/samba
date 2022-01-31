@@ -29,24 +29,6 @@ ctdbd="${CTDBD:-/usr/local/sbin/ctdbd}"
 start()
 {
     eval "$ctdbd" || return 1
-
-    # Wait until ctdbd has started and is ready to respond to clients.
-    _timeout="${CTDB_STARTUP_TIMEOUT:-10}"
-    _count=0
-    while [ "$_count" -lt "$_timeout" ] ; do
-	if $CTDB runstate first_recovery startup running >/dev/null 2>&1 ; then
-	    return 0
-	fi
-
-	_count=$((_count + 1))
-	sleep 1
-    done
-
-    echo "Timed out waiting for initialisation - check logs"
-    # Attempt a shutdown just in case things are still running
-    $CTDB shutdown >/dev/null 2>&1
-    drop_all_public_ips >/dev/null 2>&1
-    return 1
 }
 
 stop()

@@ -65,24 +65,6 @@
 	</listitem>
       </varlistentry>
 
-      <varlistentry>
-	<term>CTDB_STARTUP_TIMEOUT=<parameter>NUM</parameter></term>
-	<listitem>
-	  <para>
-	    NUM is the number of seconds to wait for
-	    <citerefentry><refentrytitle>ctdbd</refentrytitle>
-	    <manvolnum>1</manvolnum></citerefentry> complete early
-	    initialisation up to a point where it is unlikely to
-	    abort.  If <command>ctdbd</command> doesn't complete the
-	    "setup" event before this timeout then it is killed.
-	  </para>
-
-	  <para>
-	    Defaults: 10
-	  </para>
-	</listitem>
-      </varlistentry>
-
     </variablelist>
   </refsect1>
 
