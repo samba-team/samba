@@ -10,8 +10,8 @@ LimitCORE=infinity
 LimitNOFILE=1048576
 TasksMax=4096
 PIDFile=@CTDB_RUNDIR@/ctdbd.pid
-ExecStart=@SBINDIR@/ctdbd_wrapper start
-ExecStop=@SBINDIR@/ctdbd_wrapper stop
+ExecStart=@SBINDIR@/ctdbd
+ExecStop=@BINDIR@/ctdb shutdown
 KillMode=control-group
 Restart=no
 

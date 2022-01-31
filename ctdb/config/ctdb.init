@@ -55,7 +55,7 @@ detect_init_style
 export CTDB_INIT_STYLE
 
 ctdbd="${CTDBD:-/usr/sbin/ctdbd}"
-ctdbd_wrapper="${CTDBD_WRAPPER:-/usr/sbin/ctdbd_wrapper}"
+ctdb="${CTDB:-/usr/bin/ctdb}"
 pidfile="/var/run/ctdb/ctdbd.pid"
 
 ############################################################
@@ -66,21 +66,18 @@ start()
 
     case "$CTDB_INIT_STYLE" in
 	suse)
-	    startproc \
-		"$ctdbd_wrapper" "start"
+	    startproc "$ctdbd"
 	    rc_status -v
 	    ;;
 	redhat)
-	    daemon --pidfile "$pidfile" \
-		"$ctdbd_wrapper" "start"
+	    daemon --pidfile "$pidfile" "$ctdbd"
 	    RETVAL=$?
 	    echo
 	    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
 	    return $RETVAL
 	    ;;
 	debian)
-	    eval start-stop-daemon --start --quiet --background --exec \
-		"$ctdbd_wrapper" "start"
+	    eval start-stop-daemon --start --quiet --background --exec "$ctdbd"
 	    ;;
     esac
 }
@@ -91,11 +88,11 @@ stop()
 
     case "$CTDB_INIT_STYLE" in
 	suse)
-	    "$ctdbd_wrapper" "stop"
+	    "$ctdb" "shutdown"
 	    rc_status -v
 	    ;;
 	redhat)
-	    "$ctdbd_wrapper" "stop"
+	    "$ctdb" "shutdown"
 	    RETVAL=$?
 	    # Common idiom in Red Hat init scripts - success() always
 	    # succeeds so this does behave like if-then-else
@@ -106,7 +103,7 @@ stop()
 	    return $RETVAL
 	    ;;
 	debian)
-	    "$ctdbd_wrapper" "stop"
+	    "$ctdb" "shutdown"
 	    log_end_msg $?
 	    ;;
     esac
