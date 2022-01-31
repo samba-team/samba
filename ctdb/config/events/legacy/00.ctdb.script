@@ -101,27 +101,6 @@ EOF
     done
 }
 
-set_ctdb_variables ()
-{
-	_f="${CTDB_BASE}/ctdb.tunables"
-	if [ ! -r "$_f" ] ; then
-		return
-	fi
-
-	while IFS="=" read _var _val ; do
-		case "$_var" in
-		\#*|"") continue ;;
-		esac
-
-		if $CTDB setvar "$_var" "$_val" ; then
-			echo "Set $_var to $_val"
-		else
-			echo "Invalid tunable: ${_var}=${_val}"
-			return 1
-		fi
-	done <"$_f"
-}
-
 ############################################################
 
 ctdb_check_args "$@"
@@ -140,12 +119,6 @@ init)
 	    check_persistent_databases || exit $?
 	    check_non_persistent_databases
 	fi
-	;;
-
-setup)
-	# Set any tunables from the config file
-	set_ctdb_variables || \
-	    die "Aborting setup due to invalid configuration - fix typos, remove unknown tunables"
 	;;
 
 startup)
