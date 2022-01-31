@@ -920,6 +920,7 @@ def build(bld):
         'conf_test',
         'line_test',
         'event_script_test',
+        'tunable_test',
     ]
 
     for target in ctdb_unit_tests:
