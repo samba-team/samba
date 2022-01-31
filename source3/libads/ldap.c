@@ -605,7 +605,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
 	char addr[INET6_ADDRSTRLEN];
-	struct samba_sockaddr existing_sa = {0};
+	struct sockaddr_storage existing_ss = {0};
 
 	/*
 	 * ads_connect can be passed in a reused ADS_STRUCT
@@ -627,11 +627,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	 */
 	if (ads->server.ldap_server == NULL && !is_zero_addr(&ads->ldap.ss)) {
 		/* Save off the address we previously found by ads_find_dc(). */
-		bool ok = sockaddr_storage_to_samba_sockaddr(&existing_sa,
-							     &ads->ldap.ss);
-		if (!ok) {
-			return ADS_ERROR_NT(NT_STATUS_INVALID_ADDRESS);
-		}
+		existing_ss = ads->ldap.ss;
 	}
 
 	ads_zero_ldap(ads);
@@ -679,11 +675,11 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		}
 	}
 
-	if (!is_zero_addr(&existing_sa.u.ss)) {
+	if (!is_zero_addr(&existing_ss)) {
 		/* We saved off who we should talk to. */
 		bool ok = ads_try_connect(ads,
 					  ads->server.gc,
-					  &existing_sa.u.ss);
+					  &existing_ss);
 		if (ok) {
 			goto got_connection;
 		}
