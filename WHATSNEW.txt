@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.16.  This is *not*
+This is the second release candidate of Samba 4.16.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -172,6 +172,34 @@ smb.conf changes
   rpc_daemon                              Removed
   rpc_server                              Removed
   rpc start on demand helpers             Added           true
+
+
+CHANGES SINCE 4.16.0rc1
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14911: CVE-2021-44141: UNIX extensions in SMB1 disclose whether the
+     outside target of a symlink exists.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14914: CVE-2021-44142: Out-of-Bound Read/Write on Samba vfs_fruit
+     module.
+   * BUG 14961: install elasticsearch_mappings.json
+
+o  FeRD (Frank Dana) <ferdnyc@gmail.com>
+   * BUG 14947: samba-bgqd still notifying systemd, triggering log warnings
+     without NotifyAccess=all.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14867: Printing no longer works on Windows 7 with 2021-10 monthly
+     rollup patch.
+   * BUG 14956: ndr_push_string() adds implicit termination for
+     STR_NOTERM|REMAINING empty strings.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 14950: CVE-2022-0336: Re-adding an SPN skips subsequent SPN conflict
+     checks.
+
 
 KNOWN ISSUES
 ============
