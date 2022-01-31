@@ -679,7 +679,7 @@ static void mds_es_search_http_read_done(struct tevent_req *subreq)
 	json_t *match = NULL;
 	size_t i;
 	json_error_t error;
-	int hits;
+	size_t hits;
 	NTSTATUS status;
 	int ret;
 	bool ok;
@@ -770,7 +770,7 @@ static void mds_es_search_http_read_done(struct tevent_req *subreq)
 		DBG_ERR("Hu?! No results?\n");
 		goto fail;
 	}
-	DBG_DEBUG("Hits: %d\n", hits);
+	DBG_DEBUG("Hits: %zu\n", hits);
 
 	for (i = 0; i < hits; i++) {
 		const char *path = NULL;
