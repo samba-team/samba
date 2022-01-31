@@ -773,9 +773,16 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 						ctext_size,
 						ptext,
 						&ptext_size);
-		if (rc < 0 || ptext_size != m_total) {
+		if (rc < 0) {
 			TALLOC_FREE(ptext);
 			TALLOC_FREE(ctext);
+			status = gnutls_error_to_ntstatus(rc, NT_STATUS_INTERNAL_ERROR);
+			goto out;
+		}
+		if (ptext_size != m_total) {
+			TALLOC_FREE(ptext);
+			TALLOC_FREE(ctext);
+			rc = GNUTLS_E_SHORT_MEMORY_BUFFER;
 			status = gnutls_error_to_ntstatus(rc, NT_STATUS_INTERNAL_ERROR);
 			goto out;
 		}
