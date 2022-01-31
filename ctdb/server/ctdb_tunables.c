@@ -28,6 +28,7 @@
 
 #include "common/common.h"
 #include "common/logging.h"
+#include "common/path.h"
 #include "common/tunable.h"
 
 /*
@@ -137,4 +138,33 @@ int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata)
 	talloc_free(list);
 
 	return 0;
+}
+
+bool ctdb_tunables_load(struct ctdb_context *ctdb)
+{
+	bool status;
+	TALLOC_CTX *tmp_ctx;
+	char *file = NULL;
+
+	/* Fail by default */
+	status = false;
+
+	tmp_ctx = talloc_new(ctdb);
+	if (tmp_ctx == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		goto done;
+	}
+
+	file = path_etcdir_append(tmp_ctx, "ctdb.tunables");
+	if (file == NULL) {
+		D_ERR("Failed to construct path for ctdb.tunables\n");
+		goto done;
+	}
+
+	status = ctdb_tunable_load_file(tmp_ctx, &ctdb->tunable, file);
+	/* No need to log error, already logged above */
+
+done:
+	talloc_free(tmp_ctx);
+	return status;
 }

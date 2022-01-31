@@ -965,6 +965,7 @@ int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb,
 				   TDB_DATA *outdata);
+bool ctdb_tunables_load(struct ctdb_context *ctdb);
 
 /* from ctdb_tunnel.c */
 
