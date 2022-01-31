@@ -33,18 +33,7 @@ start()
 
 stop()
 {
-	$CTDB shutdown
-
-	# The above command is important and needs to stand out, so
-	# post-check exit status
-	# shellcheck disable=SC2181
-	if [ $? -ne 0 ] ; then
-		echo "Error while shutting down CTDB"
-		drop_all_public_ips >/dev/null 2>&1
-		return 1
-	fi
-
-	return 0
+	$CTDB shutdown || return 1
 }
 
 ############################################################
