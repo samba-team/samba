@@ -214,7 +214,6 @@ fi
 %{_sysconfdir}/ctdb/statd-callout
 %{_sysconfdir}/ctdb/nfs-linux-kernel-callout
 %{_sbindir}/ctdbd
-%{_sbindir}/ctdbd_wrapper
 %{_bindir}/ctdb
 %{_bindir}/ping_pong
 %{_bindir}/ltdbtool
@@ -230,7 +229,6 @@ fi
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdb_diagnostics.1.gz
 %{_mandir}/man1/ctdbd.1.gz
-%{_mandir}/man1/ctdbd_wrapper.1.gz
 %{_mandir}/man1/onnode.1.gz
 %{_mandir}/man1/ltdbtool.1.gz
 %{_mandir}/man1/ping_pong.1.gz

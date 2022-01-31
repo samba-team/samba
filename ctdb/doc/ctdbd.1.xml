@@ -31,12 +31,6 @@
     </para>
 
     <para>
-      Note that ctdbd is not usually invoked directly.  It is invoked
-      via <citerefentry><refentrytitle>ctdbd_wrapper</refentrytitle>
-      <manvolnum>1</manvolnum></citerefentry> or via the initscript.
-    </para>
-
-    <para>
       See <citerefentry><refentrytitle>ctdb</refentrytitle>
       <manvolnum>7</manvolnum></citerefentry> for an overview of CTDB.
     </para>
@@ -78,9 +72,6 @@
     <title>SEE ALSO</title>
     <para>
       <citerefentry><refentrytitle>ctdb</refentrytitle>
-      <manvolnum>1</manvolnum></citerefentry>,
-
-      <citerefentry><refentrytitle>ctdbd_wrapper</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry>,
 
       <citerefentry><refentrytitle>onnode</refentrytitle>

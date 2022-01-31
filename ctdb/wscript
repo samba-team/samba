@@ -46,7 +46,6 @@ manpages_binary = [
 
 manpages_misc = [
     'ctdb_diagnostics.1',
-    'ctdbd_wrapper.1',
     'onnode.1',
     'ctdb.conf.5',
     'ctdb-script.options.5',
@@ -779,13 +778,6 @@ def build(bld):
                         rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
     bld.INSTALL_FILES('${CTDB_HELPER_BINDIR}', 'ctdb_lvs',
                       destname='ctdb_lvs', chmod=MODE_755)
-
-    bld.SAMBA_GENERATOR('ctdbd-wrapper',
-                        source='config/ctdbd_wrapper',
-                        target='ctdbd_wrapper',
-                        rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
-    bld.INSTALL_FILES('${SBINDIR}', 'ctdbd_wrapper',
-                      destname='ctdbd_wrapper', chmod=MODE_755)
 
     def SUBDIR_MODE_callback(arg, dirname, fnames):
         for f in fnames:
