@@ -368,7 +368,7 @@ int main(int argc, const char *argv[])
 	 * Miscellaneous setup
 	 */
 
-	ctdb_tunables_set_defaults(ctdb);
+	ctdb_tunables_load(ctdb);
 
 	ctdb->event_script_dir = talloc_asprintf(ctdb,
 						 "%s/events/legacy",
