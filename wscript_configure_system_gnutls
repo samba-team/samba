@@ -35,6 +35,9 @@ conf.CHECK_FUNCS_IN('gnutls_set_default_priority_append', 'gnutls')
 if (parse_version(gnutls_version) > parse_version('3.6.14')):
     conf.CHECK_FUNCS_IN('gnutls_aead_cipher_encryptv2', 'gnutls')
 
+if (parse_version(gnutls_version) < parse_version('3.5.2')):
+    conf.DEFINE('HAVE_GNUTLS_AEAD_CIPHER_DECRYPT_PTEXT_LEN_BUG', 1)
+
 # Check if we have support for crypto policies
 if conf.CHECK_FUNCS_IN('gnutls_get_system_config_file', 'gnutls'):
     conf.DEFINE('HAVE_GNUTLS_CRYPTO_POLICIES', 1)
