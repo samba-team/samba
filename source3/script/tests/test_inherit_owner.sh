@@ -79,7 +79,7 @@ unix_owner_id_is() {
     local fname=$2
     local expected_id=$3
     local actual_id
-    actual_id=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null | sed -rn 's/^# owner: (.*)/\1/p')
+    actual_id=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "posix; getfacl $fname" 2>/dev/null | sed -rn 's/^# owner: (.*)/\1/p')
     if ! test "x$actual_id" = "x$expected_id" ; then
         echo "Actual uid of $share/$fname is [$actual_id] expected [$expected_id]"
         exit 1

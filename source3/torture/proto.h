@@ -74,6 +74,7 @@ bool torture_ioctl_test(int dummy);
 bool torture_chkpath_test(int dummy);
 NTSTATUS torture_setup_unix_extensions(struct cli_state *cli);
 void torture_conn_set_sockopt(struct cli_state *cli);
+void torture_deltree(struct cli_state *cli, const char *dname);
 
 /* The following definitions come from torture/utable.c  */
 

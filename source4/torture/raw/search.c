@@ -297,16 +297,66 @@ static union smb_search_data *find(const char *name)
 	return NULL;
 }
 
+/*
+ * Negotiate SMB1+POSIX.
+ */
+
+static NTSTATUS setup_smb1_posix(struct torture_context *tctx,
+				 struct smbcli_state *cli_unix)
+{
+	struct smb_trans2 tp;
+	uint16_t setup;
+	uint8_t data[12];
+	uint8_t params[4];
+	uint32_t cap = cli_unix->transport->negotiate.capabilities;
+
+	if ((cap & CAP_UNIX) == 0) {
+		/*
+		 * Server doesn't support SMB1+POSIX.
+		 * The caller will skip the UNIX info
+		 * level anyway.
+		 */
+		torture_comment(tctx,
+			"Server doesn't support SMB1+POSIX\n");
+		return NT_STATUS_OK;
+	}
+
+	/* Setup POSIX on this connection. */
+	SSVAL(data, 0, CIFS_UNIX_MAJOR_VERSION);
+	SSVAL(data, 2, CIFS_UNIX_MINOR_VERSION);
+	SBVAL(data,4,((uint64_t)(
+		CIFS_UNIX_POSIX_ACLS_CAP|
+		CIFS_UNIX_POSIX_PATHNAMES_CAP|
+		CIFS_UNIX_FCNTL_LOCKS_CAP|
+		CIFS_UNIX_EXTATTR_CAP|
+		CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)));
+	setup = TRANSACT2_SETFSINFO;
+	tp.in.max_setup = 0;
+	tp.in.flags = 0;
+	tp.in.timeout = 0;
+	tp.in.setup_count = 1;
+	tp.in.max_param = 0;
+	tp.in.max_data = 0;
+	tp.in.setup = &setup;
+	tp.in.trans_name = NULL;
+	SSVAL(params, 0, 0);
+	SSVAL(params, 2, SMB_SET_CIFS_UNIX_INFO);
+	tp.in.params = data_blob_talloc(tctx, params, 4);
+	tp.in.data = data_blob_talloc(tctx, data, 12);
+	return smb_raw_trans2(cli_unix->tree, tctx, &tp);
+}
+
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
 */
-static bool test_one_file(struct torture_context *tctx, 
-			  struct smbcli_state *cli)
+static bool test_one_file(struct torture_context *tctx,
+			  struct smbcli_state *cli,
+			  struct smbcli_state *cli_unix)
 {
 	bool ret = true;
 	int fnum;
-	const char *fname = "\\torture_search.txt";
-	const char *fname2 = "\\torture_search-NOTEXIST.txt";
+	const char *fname = "torture_search.txt";
+	const char *fname2 = "torture_search-NOTEXIST.txt";
 	NTSTATUS status;
 	int i;
 	union smb_fileinfo all_info, alt_info, name_info, internal_info;
@@ -314,9 +364,23 @@ static bool test_one_file(struct torture_context *tctx,
 	    internal_info_supported;
 	union smb_search_data *s;
 
+	status = setup_smb1_posix(tctx, cli_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_result(tctx,
+			TORTURE_FAIL,
+			__location__"setup_smb1_posix() failed (%s)\n",
+			nt_errstr(status));
+		ret = false;
+		goto done;
+	}
+
 	fnum = create_complex_file(cli, tctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
+		torture_result(tctx,
+			TORTURE_FAIL,
+			__location__"ERROR: open of %s failed (%s)\n",
+			fname,
+			smbcli_errstr(cli->tree));
 		ret = false;
 		goto done;
 	}
@@ -325,10 +389,19 @@ static bool test_one_file(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		NTSTATUS expected_status;
 		uint32_t cap = cli->transport->negotiate.capabilities;
+		struct smbcli_state *cli_search = cli;
 
 		torture_comment(tctx, "Testing %s\n", levels[i].name);
 
-		levels[i].status = torture_single_search(cli, tctx, fname, 
+		if (levels[i].data_level == RAW_SEARCH_DATA_UNIX_INFO) {
+			/*
+			 * For an SMB1+POSIX info level, use the cli_unix
+			 * connection.
+			 */
+			cli_search = cli_unix;
+		}
+
+		levels[i].status = torture_single_search(cli_search, tctx, fname,
 							 levels[i].level,
 							 levels[i].data_level,
 							 0,
@@ -343,14 +416,16 @@ static bool test_one_file(struct torture_context *tctx,
 		}
 
 		if (!NT_STATUS_IS_OK(levels[i].status)) {
-			printf("search level %s(%d) failed - %s\n",
-			       levels[i].name, (int)levels[i].level, 
-			       nt_errstr(levels[i].status));
+			torture_result(tctx,
+				TORTURE_FAIL,
+				__location__"search level %s(%d) failed - %s\n",
+				levels[i].name, (int)levels[i].level,
+				nt_errstr(levels[i].status));
 			ret = false;
 			continue;
 		}
 
-		status = torture_single_search(cli, tctx, fname2, 
+		status = torture_single_search(cli_search, tctx, fname2,
 					       levels[i].level,
 					       levels[i].data_level,
 					       0,
@@ -363,7 +438,9 @@ static bool test_one_file(struct torture_context *tctx,
 			expected_status = STATUS_NO_MORE_FILES;
 		}
 		if (!NT_STATUS_EQUAL(status, expected_status)) {
-			printf("search level %s(%d) should fail with %s - %s\n",
+			torture_result(tctx,
+				TORTURE_FAIL,
+				__location__"search level %s(%d) should fail with %s - %s\n",
 			       levels[i].name, (int)levels[i].level, 
 			       nt_errstr(expected_status),
 			       nt_errstr(status));
@@ -400,8 +477,10 @@ static bool test_one_file(struct torture_context *tctx,
 	s = find(name); \
 	if (s) { \
 		if ((s->sname1.field1) != (v.sname2.out.field2)) { \
-			printf("(%s) %s/%s [0x%x] != %s/%s [0x%x]\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [0x%x] != %s/%s [0x%x]\n", \
+				__location__, \
 				#sname1, #field1, (int)s->sname1.field1, \
 				#sname2, #field2, (int)v.sname2.out.field2); \
 			ret = false; \
@@ -412,8 +491,10 @@ static bool test_one_file(struct torture_context *tctx,
 	s = find(name); \
 	if (s) { \
 		if (s->sname1.field1 != (~1 & nt_time_to_unix(v.sname2.out.field2))) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s/%s [%s]\n", \
+				__location__, \
 				#sname1, #field1, timestring(tctx, s->sname1.field1), \
 				#sname2, #field2, nt_time_string(tctx, v.sname2.out.field2)); \
 			ret = false; \
@@ -424,8 +505,10 @@ static bool test_one_file(struct torture_context *tctx,
 	s = find(name); \
 	if (s) { \
 		if (s->sname1.field1 != v.sname2.out.field2) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s/%s [%s]\n", \
+				__location__, \
 				#sname1, #field1, nt_time_string(tctx, s->sname1.field1), \
 				#sname2, #field2, nt_time_string(tctx, v.sname2.out.field2)); \
 			ret = false; \
@@ -436,8 +519,10 @@ static bool test_one_file(struct torture_context *tctx,
 	s = find(name); \
 	if (s) { \
 		if (!s->sname1.field1 || strcmp(s->sname1.field1, v.sname2.out.field2.s)) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s/%s [%s]\n", \
+				__location__, \
 				#sname1, #field1, s->sname1.field1, \
 				#sname2, #field2, v.sname2.out.field2.s); \
 			ret = false; \
@@ -450,8 +535,10 @@ static bool test_one_file(struct torture_context *tctx,
 		if (!s->sname1.field1.s || \
 		    strcmp(s->sname1.field1.s, v.sname2.out.field2.s) || \
 		    wire_bad_flags(&s->sname1.field1, flags, cli->transport)) { \
-			printf("(%s) %s/%s [%s] != %s/%s [%s]\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s/%s [%s]\n", \
+				__location__, \
 				#sname1, #field1, s->sname1.field1.s, \
 				#sname2, #field2, v.sname2.out.field2.s); \
 			ret = false; \
@@ -464,8 +551,10 @@ static bool test_one_file(struct torture_context *tctx,
 		if (!s->sname1.field1.s || \
 		    strcmp(s->sname1.field1.s, fname) || \
 		    wire_bad_flags(&s->sname1.field1, flags, cli->transport)) { \
-			printf("(%s) %s/%s [%s] != %s\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s\n", \
+				__location__, \
 				#sname1, #field1, s->sname1.field1.s, \
 				fname); \
 			ret = false; \
@@ -477,8 +566,10 @@ static bool test_one_file(struct torture_context *tctx,
 	if (s) { \
 		if (!s->sname1.field1 || \
 		    strcmp(s->sname1.field1, fname)) { \
-			printf("(%s) %s/%s [%s] != %s\n", \
-			       __location__, \
+			torture_result(tctx,\
+				TORTURE_FAIL,\
+				"(%s) %s/%s [%s] != %s\n", \
+				__location__, \
 				#sname1, #field1, s->sname1.field1, \
 				fname); \
 			ret = false; \
@@ -559,20 +650,20 @@ static bool test_one_file(struct torture_context *tctx,
 		    short_name, alt_info, alt_name_info, fname, STR_UNICODE);
 	}
 
-	CHECK_NAME("STANDARD",            standard,            name, fname+1, 0);
-	CHECK_NAME("EA_SIZE",             ea_size,             name, fname+1, 0);
-	CHECK_NAME("DIRECTORY_INFO",      directory_info,      name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_NAME("FULL_DIRECTORY_INFO", full_directory_info, name, fname+1, STR_TERMINATE_ASCII);
+	CHECK_NAME("STANDARD",            standard,            name, fname, 0);
+	CHECK_NAME("EA_SIZE",             ea_size,             name, fname, 0);
+	CHECK_NAME("DIRECTORY_INFO",      directory_info,      name, fname, STR_TERMINATE_ASCII);
+	CHECK_NAME("FULL_DIRECTORY_INFO", full_directory_info, name, fname, STR_TERMINATE_ASCII);
 
 	if (name_info_supported) {
-		CHECK_NAME("NAME_INFO", name_info, name, fname+1,
+		CHECK_NAME("NAME_INFO", name_info, name, fname,
 		    STR_TERMINATE_ASCII);
 	}
 
-	CHECK_NAME("BOTH_DIRECTORY_INFO", both_directory_info, name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_NAME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_NAME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           name, fname+1, STR_TERMINATE_ASCII);
-	CHECK_UNIX_NAME("UNIX_INFO",           unix_info,           name, fname+1, STR_TERMINATE_ASCII);
+	CHECK_NAME("BOTH_DIRECTORY_INFO", both_directory_info, name, fname, STR_TERMINATE_ASCII);
+	CHECK_NAME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           name, fname, STR_TERMINATE_ASCII);
+	CHECK_NAME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           name, fname, STR_TERMINATE_ASCII);
+	CHECK_UNIX_NAME("UNIX_INFO",           unix_info,           name, fname, STR_TERMINATE_ASCII);
 
 	if (internal_info_supported) {
 		CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info,
@@ -1549,7 +1640,7 @@ struct torture_suite *torture_raw_search(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "search");
 
-	torture_suite_add_1smb_test(suite, "one file search", test_one_file);
+	torture_suite_add_2smb_test(suite, "one file search", test_one_file);
 	torture_suite_add_1smb_test(suite, "many files", test_many_files);
 	torture_suite_add_1smb_test(suite, "sorted", test_sorted);
 	torture_suite_add_1smb_test(suite, "modify search", test_modify_search);

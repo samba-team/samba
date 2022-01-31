@@ -225,7 +225,7 @@ static void test_mask(int argc, char *argv[],
 
 	smbcli_mkdir(cli->tree, "\\masktest");
 
-	smbcli_unlink(cli->tree, "\\masktest\\*");
+	smbcli_unlink_wcard(cli->tree, "\\masktest\\*");
 
 	if (argc >= 2) {
 		while (argc >= 2) {

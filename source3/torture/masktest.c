@@ -355,9 +355,8 @@ static void test_mask(int argc, char *argv[],
 	int fc_len = strlen(filechars);
 	TALLOC_CTX *ctx = talloc_tos();
 
+	torture_deltree(cli, "\\masktest");
 	cli_mkdir(cli, "\\masktest");
-
-	cli_unlink(cli, "\\masktest\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 	if (argc >= 2) {
 		while (argc >= 2) {

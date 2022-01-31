@@ -61,7 +61,7 @@ struct trans_state {
  * unix_convert_flags
  */
 /* UCF_SAVE_LCOMP 0x00000001 is no longer used. */
-#define UCF_ALWAYS_ALLOW_WCARD_LCOMP	0x00000002
+/* UCF_ALWAYS_ALLOW_WCARD_LCOMP	0x00000002 is no longer used. */
 /* UCF_COND_ALLOW_WCARD_LCOMP 0x00000004 is no longer used. */
 #define UCF_POSIX_PATHNAMES		0x00000008
 /* #define UCF_UNIX_NAME_LOOKUP 0x00000010 is no longer used. */

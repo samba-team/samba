@@ -113,7 +113,7 @@ fileserver_tests = [
          "UNLINK", "BROWSE", "ATTR", "TRANS2", "TORTURE",
          "OPLOCK1", "OPLOCK2", "OPLOCK4", "STREAMERROR",
          "DIR", "DIR1", "DIR-CREATETIME", "TCON", "TCONDEV", "RW1", "RW2", "RW3", "LARGE_READX", "RW-SIGNING",
-         "OPEN", "XCOPY", "RENAME", "DELETE", "DELETE-LN", "WILDDELETE", "PROPERTIES", "W2K",
+         "OPEN", "XCOPY", "RENAME", "DELETE", "DELETE-LN", "PROPERTIES", "W2K",
          "TCON2", "IOCTL", "CHKPATH", "FDSESS", "CHAIN1", "CHAIN2", "OWNER-RIGHTS",
          "CHAIN3", "PIDHIGH", "CLI_SPLICE",
          "UID-REGRESSION-TEST", "SHORTNAME-TEST",
@@ -578,6 +578,26 @@ for env in ["fileserver"]:
                   '$PASSWORD',
                   smbclient3,
                   "-mSMB3"])
+
+    plantestsuite("samba3.blackbox.test_symlink_traversal.SMB2", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_symlink_traversal_smb2.sh"),
+                  '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/local_symlinks',
+                  '$PREFIX', smbclient3])
+
+    plantestsuite("samba3.blackbox.test_symlink_traversal.SMB1", env + "_smb1_done",
+                  [os.path.join(samba3srcdir, "script/tests/test_symlink_traversal_smb1.sh"),
+                  '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/local_symlinks',
+                  '$PREFIX', smbclient3])
+
+    plantestsuite("samba3.blackbox.test_symlink_traversal.SMB1.posix", env + "_smb1_done",
+                  [os.path.join(samba3srcdir, "script/tests/test_symlink_traversal_smb1_posix.sh"),
+                  '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/local_symlinks',
+                  '$PREFIX', smbclient3])
+
+    plantestsuite("samba3.blackbox.test_symlink_rename.SMB1.posix", env + "_smb1_done",
+                  [os.path.join(samba3srcdir, "script/tests/test_symlink_rename_smb1_posix.sh"),
+                  '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/local_symlinks',
+                  '$PREFIX', smbclient3])
 
     #
     # tar command tests

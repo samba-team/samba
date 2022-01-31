@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "libcli/libcli.h"
+#include "libcli/raw/raw_proto.h"
 #include "torture/util.h"
 #include "torture/unix/proto.h"
 #include "lib/cmdline/cmdline.h"
@@ -53,6 +54,10 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx)
 	const char *share = torture_setting_string(tctx, "share", NULL);
 	struct smbcli_options options;
 	struct smbcli_session_options session_options;
+	struct smb_trans2 tp;
+	uint16_t setup;
+	uint8_t data[12];
+	uint8_t params[4];
 
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 	lpcfg_smbcli_session_options(tctx->lp_ctx, &session_options);
@@ -71,6 +76,33 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx)
 		torture_fail(tctx, "Failed to connect to server");
 		return NULL;
 	}
+
+	/* Setup POSIX on the server. */
+	SSVAL(data, 0, CIFS_UNIX_MAJOR_VERSION);
+	SSVAL(data, 2, CIFS_UNIX_MINOR_VERSION);
+	SBVAL(data,4,((uint64_t)(
+		CIFS_UNIX_POSIX_ACLS_CAP|
+		CIFS_UNIX_POSIX_PATHNAMES_CAP|
+		CIFS_UNIX_FCNTL_LOCKS_CAP|
+		CIFS_UNIX_EXTATTR_CAP|
+		CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)));
+	setup = TRANSACT2_SETFSINFO;
+	tp.in.max_setup = 0;
+	tp.in.flags = 0;
+	tp.in.timeout = 0;
+	tp.in.setup_count = 1;
+	tp.in.max_param = 0;
+	tp.in.max_data = 0;
+	tp.in.setup = &setup;
+	tp.in.trans_name = NULL;
+	SSVAL(params, 0, 0);
+	SSVAL(params, 2, SMB_SET_CIFS_UNIX_INFO);
+	tp.in.params = data_blob_talloc(tctx, params, 4);
+	tp.in.data = data_blob_talloc(tctx, data, 12);
+
+	status = smb_raw_trans2(cli->tree, tctx, &tp);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
+		"doing SMB_SET_CIFS_UNIX_INFO");
 
 	return cli;
 }
@@ -245,8 +277,14 @@ static bool find_single_info2(void *mem_ctx,
 
 	torture_assert_int_equal(torture, search.t2ffirst.out.count, 1,
 			"expected exactly one result");
-	torture_assert_int_equal(torture, search.t2ffirst.out.end_of_search, 1,
-			"expected end_of_search to be true");
+	/*
+	 * In smbd directory listings using POSIX extensions
+	 * always treat the search pathname as a wildcard,
+	 * so don't expect end_of_search to be set here. Wildcard
+	 * searches always need a findnext to end the search.
+	 */
+	torture_assert_int_equal(torture, search.t2ffirst.out.end_of_search, 0,
+			"expected end_of_search to be false");
 
 	return check_unix_info2(torture, info2);
 }

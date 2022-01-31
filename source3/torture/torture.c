@@ -458,6 +458,133 @@ void torture_conn_set_sockopt(struct cli_state *cli)
 	smbXcli_conn_set_sockopt(cli->conn, sockops);
 }
 
+static NTSTATUS torture_delete_fn(struct file_info *finfo,
+				  const char *pattern,
+				  void *state)
+{
+	NTSTATUS status;
+	char *filename = NULL;
+	char *dirname = NULL;
+	char *p = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cli_state *cli = (struct cli_state *)state;
+
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	dirname = talloc_strdup(frame, pattern);
+	if (dirname == NULL) {
+		TALLOC_FREE(frame);
+                return NT_STATUS_NO_MEMORY;
+        }
+        p = strrchr_m(dirname, '\\');
+        if (p != NULL) {
+                /* Remove the terminating '\' */
+                *p = '\0';
+        }
+        if (dirname[0] != '\0') {
+                filename = talloc_asprintf(frame,
+                                           "%s\\%s",
+                                           dirname,
+                                           finfo->name);
+        } else {
+                filename = talloc_asprintf(frame,
+                                           "%s",
+                                           finfo->name);
+        }
+        if (filename == NULL) {
+                TALLOC_FREE(frame);
+                return NT_STATUS_NO_MEMORY;
+        }
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
+		char *subdirname = talloc_asprintf(frame,
+						   "%s\\*",
+						   filename);
+		if (subdirname == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		status = cli_list(cli,
+				  subdirname,
+				  FILE_ATTRIBUTE_DIRECTORY |
+					  FILE_ATTRIBUTE_HIDDEN |
+					  FILE_ATTRIBUTE_SYSTEM,
+				  torture_delete_fn,
+				  cli);
+		if (NT_STATUS_IS_OK(status)) {
+			printf("torture_delete_fn: cli_list "
+				"of %s failed (%s)\n",
+				subdirname,
+				nt_errstr(status));
+			TALLOC_FREE(frame);
+			return status;
+		}
+		status = cli_rmdir(cli, filename);
+	} else {
+		status = cli_unlink(cli,
+				    filename,
+				    FILE_ATTRIBUTE_SYSTEM |
+					FILE_ATTRIBUTE_HIDDEN);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
+			printf("torture_delete_fn: cli_rmdir"
+				" of %s failed (%s)\n",
+				filename,
+				nt_errstr(status));
+		} else {
+			printf("torture_delete_fn: cli_unlink"
+				" of %s failed (%s)\n",
+				filename,
+				nt_errstr(status));
+		}
+	}
+	TALLOC_FREE(frame);
+	return status;
+}
+
+void torture_deltree(struct cli_state *cli, const char *dname)
+{
+	char *mask = NULL;
+	NTSTATUS status;
+
+	/* It might be a file */
+	(void)cli_unlink(cli,
+			 dname,
+			 FILE_ATTRIBUTE_SYSTEM |
+				FILE_ATTRIBUTE_HIDDEN);
+
+	mask = talloc_asprintf(cli,
+			       "%s\\*",
+			       dname);
+	if (mask == NULL) {
+		printf("torture_deltree: talloc_asprintf failed\n");
+		return;
+	}
+
+	status = cli_list(cli,
+			mask,
+			FILE_ATTRIBUTE_DIRECTORY |
+				FILE_ATTRIBUTE_HIDDEN|
+				FILE_ATTRIBUTE_SYSTEM,
+			torture_delete_fn,
+			cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("torture_deltree: cli_list of %s failed (%s)\n",
+			mask,
+			nt_errstr(status));
+	}
+	TALLOC_FREE(mask);
+	status = cli_rmdir(cli, dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("torture_deltree: cli_rmdir of %s failed (%s)\n",
+			dname,
+			nt_errstr(status));
+	}
+}
+
 /* check if the server produced the expected dos or nt error code */
 static bool check_both_error(int line, NTSTATUS status,
 			     uint8_t eclass, uint32_t ecode, NTSTATUS nterr)
@@ -5994,71 +6121,6 @@ static bool run_delete_print_test(int dummy)
 	return correct;
 }
 
-/*
-  Test wildcard delete.
- */
-static bool run_wild_deletetest(int dummy)
-{
-	struct cli_state *cli = NULL;
-	const char *dname = "\\WTEST";
-	const char *fname = "\\WTEST\\A";
-	const char *wunlink_name = "\\WTEST\\*";
-	uint16_t fnum1 = (uint16_t)-1;
-	bool correct = false;
-	NTSTATUS status;
-
-	printf("starting wildcard delete test\n");
-
-	if (!torture_open_connection(&cli, 0)) {
-		return false;
-	}
-
-	smbXcli_conn_set_sockopt(cli->conn, sockops);
-
-	cli_unlink(cli, fname, 0);
-	cli_rmdir(cli, dname);
-	status = cli_mkdir(cli, dname);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("mkdir of %s failed %s!\n", dname, nt_errstr(status));
-		goto fail;
-	}
-	status = cli_openx(cli, fname, O_CREAT|O_RDONLY, DENY_NONE, &fnum1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("open of %s failed %s!\n", fname, nt_errstr(status));
-		goto fail;
-	}
-	status = cli_close(cli, fnum1);
-	fnum1 = -1;
-
-	/*
-	 * Note the unlink attribute-type of zero. This should
-	 * map into FILE_ATTRIBUTE_NORMAL at the server even
-	 * on a wildcard delete.
-	 */
-
-	status = cli_unlink(cli, wunlink_name, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("unlink of %s failed %s!\n",
-			wunlink_name, nt_errstr(status));
-		goto fail;
-	}
-
-	printf("finished wildcard delete test\n");
-
-	correct = true;
-
-  fail:
-
-	if (fnum1 != (uint16_t)-1) cli_close(cli, fnum1);
-	cli_unlink(cli, fname, 0);
-	cli_rmdir(cli, dname);
-
-	if (cli && !torture_close_connection(cli)) {
-		correct = false;
-	}
-	return correct;
-}
-
 static bool run_deletetest_ln(int dummy)
 {
 	struct cli_state *cli;
@@ -7922,9 +7984,9 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	} else {
 		if (!check_both_error(__LINE__, status, ERRDOS, ERRbadpath,
-				NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+				NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			printf("POSIX open of %s should have failed "
-				"with NT_STATUS_OBJECT_PATH_NOT_FOUND, "
+				"with NT_STATUS_OBJECT_NAME_NOT_FOUND, "
 				"failed with %s instead.\n",
 				sname, nt_errstr(status));
 			goto out;
@@ -8863,6 +8925,11 @@ static bool run_posix_blocking_lock(int dummy)
 	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	status = torture_setup_unix_extensions(cli1);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	status = torture_setup_unix_extensions(cli2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -9806,9 +9873,7 @@ bool torture_chkpath_test(int dummy)
 	printf("starting chkpath test\n");
 
 	/* cleanup from an old run */
-	cli_rmdir(cli, "\\chkpath.dir\\dir2");
-	cli_unlink(cli, "\\chkpath.dir\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_rmdir(cli, "\\chkpath.dir");
+	torture_deltree(cli, "\\chkpath.dir");
 
 	status = cli_mkdir(cli, "\\chkpath.dir");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -9869,9 +9934,7 @@ bool torture_chkpath_test(int dummy)
 		ret = False;
 	}
 
-	cli_rmdir(cli, "\\chkpath.dir\\dir2");
-	cli_unlink(cli, "\\chkpath.dir\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_rmdir(cli, "\\chkpath.dir");
+	torture_deltree(cli, "\\chkpath.dir");
 
 	if (!torture_close_connection(cli)) {
 		return False;
@@ -12341,8 +12404,7 @@ static bool run_streamerror(int dummy)
 		return false;
 	}
 
-	cli_unlink(cli, "\\testdir_streamerror\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_rmdir(cli, dname);
+	torture_deltree(cli, dname);
 
 	status = cli_mkdir(cli, dname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -12687,10 +12749,7 @@ static bool run_smb1_wild_mangle_unlink_test(int dummy)
 	}
 
 	/* Start fresh. */
-	cli_unlink(cli,
-		star_name,
-		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_rmdir(cli, dname);
+	torture_deltree(cli, dname);
 
 	/*
 	 * Create two files - 'a' and '*'.
@@ -12800,10 +12859,7 @@ static bool run_smb1_wild_mangle_unlink_test(int dummy)
 	TALLOC_FREE(mangled_name);
 
 	if (cli != NULL) {
-		cli_unlink(cli,
-			star_name,
-			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-		cli_rmdir(cli, dname);
+		torture_deltree(cli, dname);
 		torture_close_connection(cli);
 	}
 
@@ -12825,7 +12881,7 @@ static bool run_smb1_wild_mangle_rename_test(int dummy)
 	const char *foostar_name = "smb1_wild_mangle_rename/fo*";
 	const char *wild_name = "smb1_wild_mangle_rename/*";
 	char *windows_rename_src = NULL;
-	const char *windows_rename_dst = "smb1_wild_mangle_rename\\ba*";
+	const char *windows_rename_dst = "smb1_wild_mangle_rename\\bar";
 	char *mangled_name = NULL;
 	NTSTATUS status;
 
@@ -12851,10 +12907,7 @@ static bool run_smb1_wild_mangle_rename_test(int dummy)
 	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	/* Ensure we start from fresh. */
-	cli_unlink(cli,
-		wild_name,
-		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_posix_rmdir(cli_posix, dname);
+	torture_deltree(cli, dname);
 
 	/*
 	 * Create two files - 'foo' and 'fo*'.
@@ -12973,13 +13026,10 @@ static bool run_smb1_wild_mangle_rename_test(int dummy)
 	TALLOC_FREE(windows_rename_src);
 
 	if (cli != NULL) {
-		cli_unlink(cli,
-			wild_name,
-			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		torture_deltree(cli, dname);
 		torture_close_connection(cli);
 	}
 
-	cli_posix_rmdir(cli_posix, dname);
 	torture_close_connection(cli_posix);
 
 	return correct;
@@ -15037,10 +15087,6 @@ static struct {
 	{
 		.name  = "DELETE-PRINT",
 		.fn    = run_delete_print_test,
-	},
-	{
-		.name  = "WILDDELETE",
-		.fn    = run_wild_deletetest,
 	},
 	{
 		.name  = "DELETE-LN",

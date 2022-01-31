@@ -1125,179 +1125,6 @@ struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 /*******************************************************************
  Reduce a file name, removing .. elements and checking that
  it is below dir in the hierarchy. This uses realpath.
- This function must run as root, and will return names
- and valid stat structs that can be checked on open.
-********************************************************************/
-
-NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
-			const struct smb_filename *smb_fname,
-			struct smb_request *smbreq)
-{
-	NTSTATUS status;
-	TALLOC_CTX *ctx = talloc_tos();
-	const char *conn_rootdir;
-	size_t rootdir_len;
-	char *resolved_name = NULL;
-	struct smb_filename *resolved_fname = NULL;
-	struct smb_filename *saved_dir_fname = NULL;
-	struct smb_filename *smb_fname_cwd = NULL;
-	int ret;
-	struct smb_filename *parent_name = NULL;
-	struct smb_filename *file_name = NULL;
-
-	DEBUG(3,("check_reduced_name_with_privilege [%s] [%s]\n",
-			smb_fname->base_name,
-			conn->connectpath));
-
-	status = SMB_VFS_PARENT_PATHNAME(conn,
-					 ctx,
-					 smb_fname,
-					 &parent_name,
-					 &file_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto err;
-	}
-
-	if (SMB_VFS_STAT(conn, parent_name) != 0) {
-		status = map_nt_error_from_unix(errno);
-		goto err;
-	}
-	/* Remember where we were. */
-	saved_dir_fname = vfs_GetWd(ctx, conn);
-	if (!saved_dir_fname) {
-		status = map_nt_error_from_unix(errno);
-		goto err;
-	}
-
-	if (vfs_ChDir(conn, parent_name) == -1) {
-		status = map_nt_error_from_unix(errno);
-		goto err;
-	}
-
-	smb_fname_cwd = synthetic_smb_fname(talloc_tos(),
-					    ".",
-					    NULL,
-					    NULL,
-					    parent_name->twrp,
-					    0);
-	if (smb_fname_cwd == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err;
-	}
-
-	/* Get the absolute path of the parent directory. */
-	resolved_fname = SMB_VFS_REALPATH(conn, ctx, smb_fname_cwd);
-	if (resolved_fname == NULL) {
-		status = map_nt_error_from_unix(errno);
-		goto err;
-	}
-	resolved_name = resolved_fname->base_name;
-
-	if (*resolved_name != '/') {
-		DEBUG(0,("check_reduced_name_with_privilege: realpath "
-			"doesn't return absolute paths !\n"));
-		status = NT_STATUS_OBJECT_NAME_INVALID;
-		goto err;
-	}
-
-	DBG_DEBUG("realpath [%s] -> [%s]\n",
-		  smb_fname_str_dbg(parent_name),
-		  resolved_name);
-
-	/* Now check the stat value is the same. */
-	if (SMB_VFS_LSTAT(conn, smb_fname_cwd) != 0) {
-		status = map_nt_error_from_unix(errno);
-		goto err;
-	}
-
-	/* Ensure we're pointing at the same place. */
-	if (!check_same_stat(&smb_fname_cwd->st, &parent_name->st)) {
-		DBG_ERR("device/inode/uid/gid on directory %s changed. "
-			"Denying access !\n",
-			smb_fname_str_dbg(parent_name));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto err;
-	}
-
-	/* Ensure we're below the connect path. */
-
-	conn_rootdir = SMB_VFS_CONNECTPATH(conn, smb_fname);
-	if (conn_rootdir == NULL) {
-		DEBUG(2, ("check_reduced_name_with_privilege: Could not get "
-			"conn_rootdir\n"));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto err;
-	}
-
-	rootdir_len = strlen(conn_rootdir);
-
-	/*
-	 * In the case of rootdir_len == 1, we know that conn_rootdir is
-	 * "/", and we also know that resolved_name starts with a slash.
-	 * So, in this corner case, resolved_name is automatically a
-	 * sub-directory of the conn_rootdir. Thus we can skip the string
-	 * comparison and the next character checks (which are even
-	 * wrong in this case).
-	 */
-	if (rootdir_len != 1) {
-		bool matched;
-
-		matched = (strncmp(conn_rootdir, resolved_name,
-				rootdir_len) == 0);
-
-		if (!matched || (resolved_name[rootdir_len] != '/' &&
-				 resolved_name[rootdir_len] != '\0')) {
-			DBG_WARNING("%s is a symlink outside the "
-				    "share path\n",
-				    smb_fname_str_dbg(parent_name));
-			DEBUGADD(1, ("conn_rootdir =%s\n", conn_rootdir));
-			DEBUGADD(1, ("resolved_name=%s\n", resolved_name));
-			status = NT_STATUS_ACCESS_DENIED;
-			goto err;
-		}
-	}
-
-	/* Now ensure that the last component either doesn't
-	   exist, or is *NOT* a symlink. */
-
-	ret = SMB_VFS_LSTAT(conn, file_name);
-	if (ret == -1) {
-		/* Errno must be ENOENT for this be ok. */
-		if (errno != ENOENT) {
-			status = map_nt_error_from_unix(errno);
-			DBG_WARNING("LSTAT on %s failed with %s\n",
-				    smb_fname_str_dbg(file_name),
-				    nt_errstr(status));
-			goto err;
-		}
-	}
-
-	if (VALID_STAT(file_name->st) &&
-	    S_ISLNK(file_name->st.st_ex_mode))
-	{
-		DBG_WARNING("Last component %s is a symlink. Denying"
-			    "access.\n",
-			    smb_fname_str_dbg(file_name));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto err;
-	}
-
-	status = NT_STATUS_OK;
-
-  err:
-
-	if (saved_dir_fname != NULL) {
-		vfs_ChDir(conn, saved_dir_fname);
-		TALLOC_FREE(saved_dir_fname);
-	}
-	TALLOC_FREE(resolved_fname);
-	TALLOC_FREE(parent_name);
-	return status;
-}
-
-/*******************************************************************
- Reduce a file name, removing .. elements and checking that
- it is below dir in the hierarchy. This uses realpath.
 
  If cwd_name == NULL then fname is a client given path relative
  to the root path of the share.
@@ -1319,6 +1146,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	bool allow_symlinks = true;
 	const char *conn_rootdir;
 	size_t rootdir_len;
+	bool parent_dir_checked = false;
 
 	DBG_DEBUG("check_reduced_name [%s] [%s]\n", fname, conn->connectpath);
 
@@ -1380,6 +1208,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 		if (resolved_name == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		parent_dir_checked = true;
 	} else {
 		resolved_name = resolved_fname->base_name;
 	}
@@ -1429,7 +1258,13 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 				conn_rootdir,
 				resolved_name);
 			TALLOC_FREE(resolved_fname);
-			return NT_STATUS_ACCESS_DENIED;
+			if (parent_dir_checked) {
+				/* Part of a component path. */
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			} else {
+				/* End of a path. */
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
 		}
 	}
 
@@ -1484,7 +1319,13 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 				p);
 			TALLOC_FREE(resolved_fname);
 			TALLOC_FREE(new_fname);
-			return NT_STATUS_ACCESS_DENIED;
+			if (parent_dir_checked) {
+				/* Part of a component path. */
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			} else {
+				/* End of a path. */
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
 		}
 	}
 

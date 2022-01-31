@@ -146,39 +146,6 @@ static bool test_mv(struct torture_context *tctx,
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
-
-	torture_comment(tctx, "trying wildcard rename\n");
-	io.rename.in.pattern1 = BASEDIR "\\*.txt";
-	io.rename.in.pattern2 = fname1;
-	
-	status = smb_raw_rename(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	torture_comment(tctx, "and again\n");
-	status = smb_raw_rename(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	torture_comment(tctx, "Trying extension change\n");
-	io.rename.in.pattern1 = BASEDIR "\\*.txt";
-	io.rename.in.pattern2 = BASEDIR "\\*.bak";
-	status = smb_raw_rename(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	status = smb_raw_rename(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
-
-	torture_comment(tctx, "Checking attrib handling\n");
-	torture_set_file_attribute(cli->tree, BASEDIR "\\test1.bak", FILE_ATTRIBUTE_HIDDEN);
-	io.rename.in.pattern1 = BASEDIR "\\test1.bak";
-	io.rename.in.pattern2 = BASEDIR "\\*.txt";
-	io.rename.in.attrib = 0;
-	status = smb_raw_rename(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
-
-	io.rename.in.attrib = FILE_ATTRIBUTE_HIDDEN;
-	status = smb_raw_rename(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
 done:
 	smbcli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);

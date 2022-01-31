@@ -215,12 +215,6 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	if (pdp->posix_path) {
 		status = check_path_syntax_posix(pdp->reqpath);
 	} else {
-		if (!allow_wcards) {
-			bool has_wcard = ms_has_wild(pdp->reqpath);
-			if (has_wcard) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-		}
 		status = check_path_syntax(pdp->reqpath);
 	}
 
@@ -680,10 +674,6 @@ bool is_msdfs_link(struct files_struct *dirfsp,
  Used by other functions to decide if a dfs path is remote,
  and to get the list of referred locations for that remote path.
 
- search_flag: For findfirsts, dfs links themselves are not
- redirected, but paths beyond the links are. For normal smb calls,
- even dfs links need to be redirected.
-
  consumedcntp: how much of the dfs path is being redirected. the client
  should try the remaining path on the redirected server.
 
@@ -697,6 +687,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		const struct dfs_path *pdp, /* Parsed out
 					       server+share+extrapath. */
 		uint32_t ucf_flags,
+		NTTIME *_twrp,
 		int *consumedcntp,
 		struct referral **ppreflist,
 		size_t *preferral_count)
@@ -754,15 +745,6 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		TALLOC_FREE(parent_fname);
 
 		if (NT_STATUS_IS_OK(status)) {
-			/* XX_ALLOW_WCARD_XXX is called from search functions.*/
-			if (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP) {
-				DBG_INFO("(FindFirst) No redirection "
-					 "for dfs link %s.\n",
-					 dfspath);
-				status = NT_STATUS_OK;
-				goto out;
-			}
-
 			DBG_INFO("%s resolves to a valid dfs link\n",
 				 dfspath);
 
@@ -867,6 +849,10 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		}
 	}
 
+	if ((ucf_flags & UCF_GMT_PATHNAME) && _twrp != NULL) {
+		*_twrp = smb_fname->twrp;
+	}
+
 	status = NT_STATUS_OK;
  out:
 
@@ -896,19 +882,19 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			const char *path_in,
 			uint32_t ucf_flags,
 			bool allow_broken_path,
+			NTTIME *_twrp,
 			char **pp_path_out)
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	NTSTATUS status;
-	bool search_wcard_flag = (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP);
 	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
 
 	if (!pdp) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = parse_dfs_path(conn, path_in, search_wcard_flag,
+	status = parse_dfs_path(conn, path_in, false,
 				allow_broken_path, pdp);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
@@ -965,6 +951,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 				path_in,
 				pdp,
 				ucf_flags,
+				_twrp, /* twrp. */
 				NULL, /* int *consumedcntp */
 				NULL, /* struct referral **ppreflist */
 				NULL); /* size_t *preferral_count */
@@ -1189,6 +1176,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 				dfs_path,
 				pdp,
 				0, /* ucf_flags */
+				NULL,
 				consumedcntp,
 				&jucn->referral_list,
 				&jucn->referral_count);

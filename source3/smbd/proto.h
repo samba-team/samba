@@ -358,8 +358,6 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      NTTIME twrp,
 		      struct smb_filename **smb_fname,
 		      uint32_t ucf_flags);
-NTSTATUS check_name(connection_struct *conn,
-			const struct smb_filename *smb_fname);
 NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 				    uint32_t ucf_flags,
 				    NTTIME twrp);
@@ -384,12 +382,12 @@ NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			uint32_t ucf_flags,
 			NTTIME twrp,
 			struct smb_filename **pp_smb_fname);
-NTSTATUS filename_convert_with_privilege(TALLOC_CTX *mem_ctx,
-			connection_struct *conn,
-			struct smb_request *smbreq,
-			const char *name_in,
-			uint32_t ucf_flags,
-			struct smb_filename **pp_smb_fname);
+NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
+					   connection_struct *conn,
+					   const char *name_in,
+					   uint32_t ucf_flags,
+					   struct smb_filename **_smb_fname_out,
+					   char **_mask_out);
 
 /* The following definitions come from smbd/files.c  */
 
@@ -575,6 +573,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			const char *name_in,
 			uint32_t ucf_flags,
 			bool allow_broken_path,
+			NTTIME *twrp,
 			char **pp_name_out);
 struct connection_struct;
 struct smb_filename;
@@ -995,8 +994,7 @@ void reply_ctemp(struct smb_request *req);
 NTSTATUS unlink_internals(connection_struct *conn,
 			struct smb_request *req,
 			uint32_t dirtype,
-			struct smb_filename *smb_fname,
-			bool has_wcard);
+			struct smb_filename *smb_fname);
 void reply_unlink(struct smb_request *req);
 ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
 		      off_t startpos, size_t nread);
@@ -1042,7 +1040,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			struct smb_request *req,
 			struct smb_filename *smb_fname_src,
-			const char *src_original_lcomp,
 			struct smb_filename *smb_fname_dst,
 			const char *dst_original_lcomp,
 			uint32_t attrs,
@@ -1310,9 +1307,6 @@ struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
 NTSTATUS check_reduced_name(connection_struct *conn,
 			const struct smb_filename *cwd_fname,
 			const struct smb_filename *smb_fname);
-NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
-			const struct smb_filename *smb_fname,
-			struct smb_request *smbreq);
 int vfs_stat(struct connection_struct *conn,
 	     struct smb_filename *smb_fname);
 int vfs_stat_smb_basename(struct connection_struct *conn,

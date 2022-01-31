@@ -1732,7 +1732,6 @@ void reply_ntrename(struct smb_request *req)
 	const char *dst_original_lcomp = NULL;
 	const char *p;
 	NTSTATUS status;
-	bool dest_has_wcard = False;
 	uint32_t attrs;
 	uint32_t ucf_flags_src = ucf_flags_from_smb_request(req);
 	uint32_t ucf_flags_dst = ucf_flags_from_smb_request(req);
@@ -1771,6 +1770,11 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
+	if (!req->posix_pathnames && ms_has_wild(newname)) {
+		reply_nterror(req, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+		goto out;
+	}
+
 	if (!req->posix_pathnames) {
 		/* The newname must begin with a ':' if the
 		   oldname contains a ':'. */
@@ -1781,14 +1785,6 @@ void reply_ntrename(struct smb_request *req)
 			}
 			stream_rename = true;
 		}
-	}
-
-	/*
-	 * If this is a rename operation, allow wildcards and save the
-	 * destination's last component.
-	 */
-	if (rename_type == RENAME_FLAG_RENAME) {
-		ucf_flags_dst |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
 	}
 
 	/* rename_internals() calls unix_convert(), so don't call it here. */
@@ -1817,10 +1813,6 @@ void reply_ntrename(struct smb_request *req)
 	if (dst_original_lcomp == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		goto out;
-	}
-
-	if (!req->posix_pathnames) {
-		dest_has_wcard = ms_has_wild(dst_original_lcomp);
 	}
 
 	status = filename_convert(ctx, conn,
@@ -1861,7 +1853,6 @@ void reply_ntrename(struct smb_request *req)
 						conn,
 						req,
 						smb_fname_old,
-						NULL,
 						smb_fname_new,
 						dst_original_lcomp,
 						attrs,
@@ -1869,27 +1860,20 @@ void reply_ntrename(struct smb_request *req)
 						DELETE_ACCESS);
 			break;
 		case RENAME_FLAG_HARD_LINK:
-			if (dest_has_wcard) {
-				/* No wildcards. */
-				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-			} else {
-				status = hardlink_internals(ctx, conn,
-							    req,
-							    false,
-							    smb_fname_old,
-							    smb_fname_new);
-			}
+			status = hardlink_internals(ctx,
+						    conn,
+						    req,
+						    false,
+						    smb_fname_old,
+						    smb_fname_new);
 			break;
 		case RENAME_FLAG_COPY:
-			if (dest_has_wcard) {
-				/* No wildcards. */
-				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-			} else {
-				status = copy_internals(ctx, conn, req,
-							smb_fname_old,
-							smb_fname_new,
-							attrs);
-			}
+			status = copy_internals(ctx,
+						conn,
+						req,
+						smb_fname_old,
+						smb_fname_new,
+						attrs);
 			break;
 		case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
 			status = NT_STATUS_INVALID_PARAMETER;

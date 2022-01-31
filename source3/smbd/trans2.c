@@ -46,6 +46,7 @@
 #include "libcli/smb/smb2_posix.h"
 #include "lib/util/string_wrappers.h"
 #include "source3/lib/substitute.h"
+#include "source3/lib/adouble.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
@@ -203,6 +204,7 @@ bool samba_private_attr_name(const char *unix_ea_name)
 		SAMBA_XATTR_DOS_ATTRIB,
 		SAMBA_XATTR_MARKER,
 		XATTR_NTACL_NAME,
+		AFPINFO_EA_NETATALK,
 		NULL
 	};
 
@@ -2663,14 +2665,12 @@ static void call_trans2findfirst(connection_struct *conn,
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
 	struct smbd_server_connection *sconn = req->sconn;
-	uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
-			ucf_flags_from_smb_request(req);
+	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	bool backup_priv = false;
 	bool as_root = false;
 	files_struct *fsp = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	int ret;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2717,6 +2717,10 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				goto out;
 			}
+			if (!req->posix_pathnames) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				goto out;
+			}
 			break;
 		default:
 			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
@@ -2755,19 +2759,13 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 	if (backup_priv) {
 		become_root();
 		as_root = true;
-		ntstatus = filename_convert_with_privilege(talloc_tos(),
-				conn,
-				req,
-				directory,
-				ucf_flags,
-				&smb_dname);
-	} else {
-		ntstatus = filename_convert(talloc_tos(), conn,
-				    directory,
-				    ucf_flags,
-				    0,
-				    &smb_dname);
 	}
+	ntstatus = filename_convert_smb1_search_path(talloc_tos(),
+						     conn,
+						     directory,
+						     ucf_flags,
+						     &smb_dname,
+						     &mask);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
@@ -2779,71 +2777,8 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 		goto out;
 	}
 
-	/*
-	 * The above call to filename_convert() is on the path from the client
-	 * including the search mask. Until the code that chops of the search
-	 * mask from the path below is moved before the call to
-	 * filename_convert(), we close a possible pathref fsp to ensure
-	 * SMB_VFS_CREATE_FILE() below will internally open a pathref fsp on the
-	 * correct path.
-	 */
-	if (smb_dname->fsp != NULL) {
-		ntstatus = fd_close(smb_dname->fsp);
-		if (!NT_STATUS_IS_OK(ntstatus)) {
-			reply_nterror(req, ntstatus);
-			goto out;
-		}
-		/*
-		 * The pathref fsp link destructor will set smb_dname->fsp to
-		 * NULL. Turning this into an assert to give a hint at readers
-		 * of the code trying to understand the mechanics.
-		 */
-		file_free(req, smb_dname->fsp);
-		SMB_ASSERT(smb_dname->fsp == NULL);
-	}
-
-	mask = get_original_lcomp(talloc_tos(),
-				conn,
-				directory,
-				ucf_flags);
-	if (mask == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		goto out;
-	}
-
+	TALLOC_FREE(directory);
 	directory = smb_dname->base_name;
-
-	p = strrchr_m(directory,'/');
-	if(p == NULL) {
-		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
-		if((directory[0] == '.') && (directory[1] == '\0')) {
-			mask = talloc_strdup(talloc_tos(),"*");
-			if (!mask) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				goto out;
-			}
-		}
-	} else {
-		*p = 0;
-	}
-
-	if (p == NULL || p == directory) {
-		struct smb_filename *old_name = smb_dname;
-
-		/* Ensure we don't have a directory name of "". */
-		smb_dname = synthetic_smb_fname(talloc_tos(),
-						".",
-						NULL,
-						&old_name->st,
-						old_name->twrp,
-						old_name->flags);
-		TALLOC_FREE(old_name);
-		if (smb_dname == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-		directory = smb_dname->base_name;
-	}
 
 	DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
 
@@ -2901,25 +2836,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		goto out;
 	}
 	params = *pparams;
-
-	/*
-	 * As we've cut off the last component from
-	 * smb_fname we need to re-stat smb_dname
-	 * so FILE_OPEN disposition knows the directory
-	 * exists.
-	 */
-	ret = vfs_stat(conn, smb_dname);
-	if (ret == -1) {
-		ntstatus = map_nt_error_from_unix(errno);
-		reply_nterror(req, ntstatus);
-		goto out;
-	}
-
-	ntstatus = openat_pathref_fsp(conn->cwd_fsp, smb_dname);
-	if (!NT_STATUS_IS_OK(ntstatus)) {
-		reply_nterror(req, ntstatus);
-		goto out;
-	}
 
 	/*
 	 * Open an fsp on this directory for the dptr.
@@ -3268,6 +3184,10 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			/* Always use filesystem for UNIX mtime query. */
 			ask_sharemode = false;
 			if (!lp_unix_extensions()) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+			if (!req->posix_pathnames) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
@@ -5232,8 +5152,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	uint32_t access_mask = 0;
 	size_t len = 0;
 
-	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
-		return NT_STATUS_INVALID_LEVEL;
+	if (INFO_LEVEL_IS_UNIX(info_level)) {
+		if (!lp_unix_extensions()) {
+			return NT_STATUS_INVALID_LEVEL;
+		}
+		if (!req->posix_pathnames) {
+			return NT_STATUS_INVALID_LEVEL;
+		}
 	}
 
 	DEBUG(5,("smbd_do_qfilepathinfo: %s (%s) level=%d max_data=%u\n",
@@ -6046,9 +5971,15 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
 
-		if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
-			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-			return;
+		if (INFO_LEVEL_IS_UNIX(info_level)) {
+			if (!lp_unix_extensions()) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+			if (!req->posix_pathnames) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
 		}
 
 		/* Initial check for valid fsp ptr. */
@@ -6138,6 +6069,10 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			if (!lp_unix_extensions()) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+			if (!req->posix_pathnames) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
@@ -6512,8 +6447,7 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 			status = unlink_internals(conn,
 						req,
 						FILE_ATTRIBUTE_NORMAL,
-						smb_fname_new,
-						false);
+						smb_fname_new);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto out;
 			}
@@ -7437,8 +7371,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		 * the newname instead.
 		 */
 		char *base_name = NULL;
-		uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP|
-				ucf_flags_from_smb_request(req);
+		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 
 		/* newname must *not* be a stream name. */
 		if (newname[0] == ':') {
@@ -7477,25 +7410,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					  0,
 					  &smb_fname_dst);
 
-		/* If an error we expect this to be
-		 * NT_STATUS_OBJECT_PATH_NOT_FOUND */
-
 		if (!NT_STATUS_IS_OK(status)) {
-			if(!NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND,
-					    status)) {
-				goto out;
-			}
-			/* Create an smb_fname to call rename_internals_fsp() */
-			smb_fname_dst = synthetic_smb_fname(ctx,
-						base_name,
-						NULL,
-						NULL,
-						smb_fname_src->twrp,
-						smb_fname_src->flags);
-			if (smb_fname_dst == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto out;
-			}
+			goto out;
 		}
 		dst_original_lcomp = get_original_lcomp(smb_fname_dst,
 					conn,
@@ -7527,7 +7443,6 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					conn,
 					req,
 					smb_fname_src,
-					NULL,
 					smb_fname_dst,
 					dst_original_lcomp,
 					0,
@@ -9169,7 +9084,9 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		if (!lp_unix_extensions()) {
 			return NT_STATUS_INVALID_LEVEL;
 		}
-
+		if (!req->posix_pathnames) {
+			return NT_STATUS_INVALID_LEVEL;
+		}
 		status = smbd_do_posix_setfilepathinfo(conn,
 						       req,
 						       req,
@@ -9390,6 +9307,17 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 		info_level = SVAL(params,2);
 
+		if (INFO_LEVEL_IS_UNIX(info_level)) {
+			if (!lp_unix_extensions()) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+			if (!req->posix_pathnames) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+		}
+
 		smb_fname = fsp->fsp_name;
 
 		if (fsp_get_pathref_fd(fsp) == -1) {
@@ -9468,6 +9396,18 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		info_level = SVAL(params,0);
+
+		if (INFO_LEVEL_IS_UNIX(info_level)) {
+			if (!lp_unix_extensions()) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+			if (!req->posix_pathnames) {
+				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+				return;
+			}
+		}
+
 		if (req->posix_pathnames) {
 			srvstr_get_path_posix(req,
 				params,
