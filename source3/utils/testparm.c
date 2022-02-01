@@ -128,6 +128,21 @@ static bool lp_scan_idmap_found_domain(const char *string,
 	return false; /* Keep scanning */
 }
 
+static int idmap_config_int(const char *domname, const char *option, int def)
+{
+	int len = snprintf(NULL, 0, "idmap config %s", domname);
+
+	if (len == -1) {
+		return def;
+	}
+	{
+		char config_option[len+1];
+		snprintf(config_option, sizeof(config_option),
+			 "idmap config %s", domname);
+		return lp_parm_int(-1, config_option, option, def);
+	}
+}
+
 static bool do_idmap_check(void)
 {
 	struct idmap_domains *d;
@@ -157,6 +172,42 @@ static bool do_idmap_check(void)
 			rc);
 	}
 
+	/* Check autorid backend */
+	if (strequal(lp_idmap_default_backend(), "autorid")) {
+		struct idmap_config *c = NULL;
+		bool found = false;
+
+		for (i = 0; i < d->count; i++) {
+			c = &d->c[i];
+
+			if (strequal(c->backend, "autorid")) {
+				found = true;
+				break;
+			}
+		}
+
+		if (found) {
+			uint32_t rangesize =
+				idmap_config_int("*", "rangesize", 100000);
+			uint32_t maxranges =
+				(c->high - c->low  + 1) / rangesize;
+
+			if (maxranges < 2) {
+				fprintf(stderr,
+					"ERROR: The idmap autorid range "
+					"[%u-%u] needs to be at least twice as"
+					"big as the rangesize [%u]!"
+					"\n\n",
+					c->low,
+					c->high,
+					rangesize);
+				ok = false;
+				goto done;
+			}
+		}
+	}
+
+	/* Check for overlapping idmap ranges */
 	for (i = 0; i < d->count; i++) {
 		struct idmap_config *c = &d->c[i];
 		uint32_t j;
