@@ -1532,12 +1532,10 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 
 	if (fsp->fake_file_handle != NULL) {
 		status = close_fake_file(req, fsp);
-		file_free(req, fsp);
 	} else if (fsp->print_file != NULL) {
 		/* FIXME: return spool errors */
 		print_spool_end(fsp, close_type);
 		fd_close(fsp);
-		file_free(req, fsp);
 		status = NT_STATUS_OK;
 	} else if (!fsp->fsp_flags.is_fsa) {
 		if (close_type == NORMAL_CLOSE) {
@@ -1550,15 +1548,14 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 		}
 		SMB_ASSERT(close_type != NORMAL_CLOSE);
 		fd_close(fsp);
-		file_free(req, fsp);
 		status = NT_STATUS_OK;
 	} else if (fsp->fsp_flags.is_directory) {
 		status = close_directory(req, fsp, close_type);
-		file_free(req, fsp);
 	} else {
 		status = close_normal_file(req, fsp, close_type);
-		file_free(req, fsp);
 	}
+
+	file_free(req, fsp);
 
 	if (close_base_fsp) {
 
