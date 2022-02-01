@@ -299,6 +299,8 @@ class KDCBaseTest(RawKerberosTest):
             details["userPrincipalName"] = upn
         if additional_details is not None:
             details.update(additional_details)
+        # Save the account name so it can be deleted in tearDownClass
+        self.accounts.append(dn)
         samdb.add(details)
 
         creds = KerberosCredentials()
@@ -314,9 +316,6 @@ class KDCBaseTest(RawKerberosTest):
         creds.set_dn(ldb.Dn(samdb, dn))
         creds.set_upn(upn)
         creds.set_spn(spn)
-        #
-        # Save the account name so it can be deleted in tearDownClass
-        self.accounts.append(dn)
 
         self.creds_set_enctypes(creds)
 
