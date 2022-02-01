@@ -48,7 +48,13 @@
 			and the corresponding map is discarded.  It is
 			intended as a way to avoid accidental UID/GID
 			overlaps between local and remotely defined
-			IDs.
+			IDs. Note that the range should be a multiple
+			of the rangesize and needs to be at least twice
+			as large in order to have sufficient id range
+			space for the mandatory BUILTIN domain.
+			With a default rangesize of 100000 the range
+			needs to span at least 200000.
+			This would be: range = 100000 - 299999.
 		</para></listitem>
 		</varlistentry>
 
