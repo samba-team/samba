@@ -1379,7 +1379,6 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for "
 			  "%s\n", fsp_str_dbg(fsp)));
-		file_free(req, fsp);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1429,7 +1428,6 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(5, ("delete_all_streams failed: %s\n",
 					  nt_errstr(status)));
-				file_free(req, fsp);
 				/* unbecome user. */
 				pop_sec_ctx();
 				return status;
@@ -1471,11 +1469,6 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 			  fsp_str_dbg(fsp), fsp_get_pathref_fd(fsp), errno,
 			  strerror(errno)));
 	}
-
-	/*
-	 * Do the code common to files and directories.
-	 */
-	file_free(req, fsp);
 
 	if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(status1)) {
 		status = status1;
@@ -1562,6 +1555,7 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 		status = NT_STATUS_OK;
 	} else if (fsp->fsp_flags.is_directory) {
 		status = close_directory(req, fsp, close_type);
+		file_free(req, fsp);
 	} else {
 		status = close_normal_file(req, fsp, close_type);
 	}
