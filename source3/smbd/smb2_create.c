@@ -915,7 +915,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		status = smbd_smb2_create_durable_lease_check(
 			smb1req, state->fname, state->result, state->lease_ptr);
 		if (!NT_STATUS_IS_OK(status)) {
-			close_file(smb1req, state->result, SHUTDOWN_CLOSE);
+			close_file_free(
+				smb1req, &state->result, SHUTDOWN_CLOSE);
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}

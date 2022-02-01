@@ -874,8 +874,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			    (long)old_create_time));
 	}
 
-	close_file(NULL, fsp, NORMAL_CLOSE);
-	fsp = NULL;
+	close_file_free(NULL, &fsp, NORMAL_CLOSE);
 
 	/* Get file version info (if available) for new file */
 	status = driver_unix_convert(conn, new_file, &smb_fname);
@@ -935,8 +934,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			    (long)new_create_time));
 	}
 
-	close_file(NULL, fsp, NORMAL_CLOSE);
-	fsp = NULL;
+	close_file_free(NULL, &fsp, NORMAL_CLOSE);
 
 	if (use_version && (new_major != old_major || new_minor != old_minor)) {
 		/* Compare versions and choose the larger version number */
@@ -969,7 +967,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
  error_exit:
 	if(fsp)
-		close_file(NULL, fsp, NORMAL_CLOSE);
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	ret = -1;
  done:
 	TALLOC_FREE(smb_fname);
@@ -1177,7 +1175,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 	unbecome_user_without_service();
  error_free_conn:
 	if (fsp != NULL) {
-		close_file(NULL, fsp, NORMAL_CLOSE);
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	}
 	if (!W_ERROR_IS_OK(*perr)) {
 		cversion = -1;

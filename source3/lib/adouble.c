@@ -1254,13 +1254,13 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		if (nwritten == -1) {
 			DBG_ERR("SMB_VFS_PWRITE failed\n");
 			saved_errno = errno;
-			close_file(NULL, fsp, ERROR_CLOSE);
+			close_file_free(NULL, &fsp, ERROR_CLOSE);
 			errno = saved_errno;
 			ok = false;
 			goto fail;
 		}
 
-		status = close_file(NULL, fsp, NORMAL_CLOSE);
+		status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		if (!NT_STATUS_IS_OK(status)) {
 			ok = false;
 			goto fail;
@@ -1395,12 +1395,12 @@ static bool ad_convert_finderinfo(vfs_handle_struct *handle,
 	if (nwritten == -1) {
 		DBG_ERR("SMB_VFS_PWRITE failed\n");
 		saved_errno = errno;
-		close_file(NULL, fsp, ERROR_CLOSE);
+		close_file_free(NULL, &fsp, ERROR_CLOSE);
 		errno = saved_errno;
 		return false;
 	}
 
-	status = close_file(NULL, fsp, NORMAL_CLOSE);
+	status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -1652,7 +1652,7 @@ static bool ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
 		if (ret != 0) {
 			DBG_ERR("SMB_VFS_FCHOWN [%s] failed: %s\n",
 				fsp_str_dbg(fsp), nt_errstr(status));
-			close_file(NULL, fsp, NORMAL_CLOSE);
+			close_file_free(NULL, &fsp, NORMAL_CLOSE);
 			return false;
 		}
 	}
@@ -1710,14 +1710,14 @@ static bool ad_unconvert_get_streams(struct vfs_handle_struct *handle,
 				num_streams,
 				streams);
 	if (!NT_STATUS_IS_OK(status)) {
-		close_file(NULL, fsp, NORMAL_CLOSE);
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		DBG_ERR("streaminfo on [%s] failed: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status));
 		return false;
 	}
 
-	status = close_file(NULL, fsp, NORMAL_CLOSE);
+	status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("close_file [%s] failed: %s\n",
 			smb_fname_str_dbg(smb_fname),
@@ -1975,7 +1975,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 out:
 	TALLOC_FREE(sname);
 	if (fsp != NULL) {
-		status = close_file(NULL, fsp, NORMAL_CLOSE);
+		status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("close_file [%s] failed: %s\n",
 				smb_fname_str_dbg(smb_fname),
@@ -2117,9 +2117,9 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 
 out:
 	if (fsp != NULL) {
-		status = close_file(NULL, fsp, NORMAL_CLOSE);
+		status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("close_file [%s] failed: %s\n",
+			DBG_ERR("close_file_free() [%s] failed: %s\n",
 				smb_fname_str_dbg(smb_fname),
 				nt_errstr(status));
 			ok = false;

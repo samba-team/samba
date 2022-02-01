@@ -2539,7 +2539,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 error_exit:
 
 	if (fsp) {
-		close_file(NULL, fsp, NORMAL_CLOSE);
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	}
 
 	TALLOC_FREE(frame);
@@ -2659,7 +2659,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 error_exit:
 
 	if (fsp) {
-		close_file(NULL, fsp, NORMAL_CLOSE);
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	}
 
 	TALLOC_FREE(frame);

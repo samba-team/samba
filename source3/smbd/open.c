@@ -4760,7 +4760,7 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 		NULL, NULL);				/* create context */
 
 	if (NT_STATUS_IS_OK(status)) {
-		close_file(req, fsp, NORMAL_CLOSE);
+		close_file_free(req, &fsp, NORMAL_CLOSE);
 	}
 
 	return status;
@@ -5010,7 +5010,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 
 		DEBUG(10, ("Closing stream # %d, %s\n", j,
 			   fsp_str_dbg(streams[j])));
-		close_file(NULL, streams[j], NORMAL_CLOSE);
+		close_file_free(NULL, &streams[j], NORMAL_CLOSE);
 	}
 
  fail:
@@ -6053,12 +6053,10 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * fsp->base_fsp.
 		 */
 		base_fsp = NULL;
-		close_file(req, fsp, ERROR_CLOSE);
-		fsp = NULL;
+		close_file_free(req, &fsp, ERROR_CLOSE);
 	}
 	if (base_fsp != NULL) {
-		close_file(req, base_fsp, ERROR_CLOSE);
-		base_fsp = NULL;
+		close_file_free(req, &base_fsp, ERROR_CLOSE);
 	}
 
 	TALLOC_FREE(parent_dir_fname);
@@ -6236,8 +6234,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 	DEBUG(10, ("create_file: %s\n", nt_errstr(status)));
 
 	if (fsp != NULL) {
-		close_file(req, fsp, ERROR_CLOSE);
-		fsp = NULL;
+		close_file_free(req, &fsp, ERROR_CLOSE);
 	}
 	return status;
 }

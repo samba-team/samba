@@ -1649,7 +1649,7 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		close_file(NULL, fsp1, ERROR_CLOSE);
+		close_file_free(NULL, &fsp1, ERROR_CLOSE);
 		goto out;
 	}
 
@@ -1663,12 +1663,12 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	 * Thus we don't look at the error return from the
 	 * close of fsp1.
 	 */
-	close_file(NULL, fsp1, NORMAL_CLOSE);
+	close_file_free(NULL, &fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
 	set_close_write_time(fsp2, smb_fname_src->st.st_ex_mtime);
 
-	status = close_file(NULL, fsp2, NORMAL_CLOSE);
+	status = close_file_free(NULL, &fsp2, NORMAL_CLOSE);
 
 	/* Grrr. We have to do this as open_file_ntcreate adds FILE_ATTRIBUTE_ARCHIVE when it
 	   creates the file. This isn't the correct thing to do in the copy
