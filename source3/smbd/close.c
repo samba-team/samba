@@ -1532,6 +1532,7 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 
 	if (fsp->fake_file_handle != NULL) {
 		status = close_fake_file(req, fsp);
+		file_free(req, fsp);
 	} else if (fsp->print_file != NULL) {
 		/* FIXME: return spool errors */
 		print_spool_end(fsp, close_type);
