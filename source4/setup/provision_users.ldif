@@ -178,6 +178,15 @@ sAMAccountName: Denied RODC Password Replication Group
 groupType: -2147483644
 isCriticalSystemObject: TRUE
 
+dn: CN=Protected Users,CN=Users,${DOMAINDN}
+objectClass: top
+objectClass: group
+description: Members of this group are afforded additional protections against authentication security threats
+objectSid: ${DOMAINSID}-525
+sAMAccountName: Protected Users
+groupType: -2147483646
+isCriticalSystemObject: TRUE
+
 # NOTICE: Some other users and groups which rely on automatic SIDs are located
 # in "provision_self_join_modify.ldif"
 
