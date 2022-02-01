@@ -782,7 +782,6 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		DEBUG(10, ("%s disconnected durable handle for file %s\n",
 			   conn->session_info->unix_info->unix_name,
 			   fsp_str_dbg(fsp)));
-		file_free(req, fsp);
 		return NT_STATUS_OK;
 	}
 
@@ -833,7 +832,6 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		conn->num_files_open - 1,
 		nt_errstr(status) ));
 
-	file_free(req, fsp);
 	return status;
 }
 /****************************************************************************
@@ -1558,6 +1556,7 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 		file_free(req, fsp);
 	} else {
 		status = close_normal_file(req, fsp, close_type);
+		file_free(req, fsp);
 	}
 
 	if (close_base_fsp) {
