@@ -609,6 +609,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 						 bool *authoritative)
 {
 	NTSTATUS nt_status;
+	int result;
 	const char *account_name = user_info->mapped.account_name;
 	struct ldb_message *msg;
 	struct ldb_dn *domain_dn;
@@ -699,6 +700,31 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return nt_status;
 	}
 
+	nt_status = authsam_make_user_info_dc(tmp_ctx, ctx->auth_ctx->sam_ctx,
+					     lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
+					     lpcfg_sam_name(ctx->auth_ctx->lp_ctx),
+					     lpcfg_sam_dnsname(ctx->auth_ctx->lp_ctx),
+					     domain_dn,
+					     msg,
+					     data_blob_null, data_blob_null,
+					     user_info_dc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
+
+	result = dsdb_is_protected_user(ctx->auth_ctx->sam_ctx,
+					(*user_info_dc)->sids,
+					(*user_info_dc)->num_sids);
+	/*
+	 * We also consider an error result (a negative value) as denying the
+	 * authentication.
+	 */
+	if (result != 0) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_ACCOUNT_RESTRICTION;
+	}
+
 	nt_status = authsam_authenticate(ctx->auth_ctx, tmp_ctx, ctx->auth_ctx->sam_ctx, domain_dn, msg, user_info,
 					 &user_sess_key, &lm_sess_key, authoritative);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -706,17 +732,24 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return nt_status;
 	}
 
-	nt_status = authsam_make_user_info_dc(tmp_ctx, ctx->auth_ctx->sam_ctx,
-					     lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
-					     lpcfg_sam_name(ctx->auth_ctx->lp_ctx),
-					     lpcfg_sam_dnsname(ctx->auth_ctx->lp_ctx),
-					     domain_dn,
-					     msg,
-					     user_sess_key, lm_sess_key,
-					     user_info_dc);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return nt_status;
+	(*user_info_dc)->user_session_key = data_blob_talloc(*user_info_dc,
+							     user_sess_key.data,
+							     user_sess_key.length);
+	if (user_sess_key.data) {
+		if ((*user_info_dc)->user_session_key.data == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	(*user_info_dc)->lm_session_key = data_blob_talloc(*user_info_dc,
+							   lm_sess_key.data,
+							   lm_sess_key.length);
+	if (lm_sess_key.data) {
+		if ((*user_info_dc)->lm_session_key.data == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	talloc_steal(mem_ctx, *user_info_dc);

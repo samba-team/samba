@@ -53,8 +53,4 @@
 # This test fails, which is fine, as we have an alternate test that considers a policy error as successful.
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_proxiable_as_protected.ad_dc
 #
-^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_ntlm_protected.ad_dc
-^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_ntlm_protected_nested.ad_dc
-^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_samlogon_interactive_protected.ad_dc
-^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_samlogon_network_protected.ad_dc
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_samr_change_password_protected.ad_dc
