@@ -33,6 +33,7 @@ rpc.join
 rpc.handles
 rpc.echo
 smb.signing
+smb2.session
 drs.unit
 samba4.blackbox.dbcheck.dc
 # This needs to be here to get testing of crypt_r()
