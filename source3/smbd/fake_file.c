@@ -206,6 +206,8 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 
 NTSTATUS close_fake_file(struct smb_request *req, files_struct *fsp)
 {
-	file_free(req, fsp);
+	/*
+	 * Nothing to do, fake files don't hold any resources
+	 */
 	return NT_STATUS_OK;
 }
