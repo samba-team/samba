@@ -75,7 +75,6 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_PA_ENC_TIMESTAMP,
     KU_TICKET,
     NT_PRINCIPAL,
-    NT_SRV_HST,
     NT_SRV_INST,
     PADATA_ENCRYPTED_CHALLENGE,
     PADATA_ENC_TIMESTAMP,
