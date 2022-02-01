@@ -24,6 +24,14 @@ AES128_CTS_HMAC_SHA1_96 = int(
     krb5_asn1.EncryptionTypeValues('kRB5-ENCTYPE-AES128-CTS-HMAC-SHA1-96'))
 ARCFOUR_HMAC_MD5 = int(
     krb5_asn1.EncryptionTypeValues('kRB5-ENCTYPE-ARCFOUR-HMAC-MD5'))
+DES_CBC_CRC = int(
+    krb5_asn1.EncryptionTypeValues('kRB5-ENCTYPE-DES-CBC-CRC'))
+DES_CBC_MD5 = int(
+    krb5_asn1.EncryptionTypeValues('kRB5-ENCTYPE-DES-CBC-MD5'))
+DES3_CBC_MD5 = int(
+    krb5_asn1.EncryptionTypeValues('kRB5-ENCTYPE-DES3-CBC-MD5'))
+DES3_CBC_SHA1 = int(
+    krb5_asn1.EncryptionTypeValues('kRB5-ENCTYPE-DES3-CBC-SHA1'))
 
 # Message types
 KRB_ERROR = int(krb5_asn1.MessageTypeValues('krb-error'))
