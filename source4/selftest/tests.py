@@ -1666,6 +1666,10 @@ planoldpythontestsuite(
     'ad_dc',
     'samba.tests.krb5.pac_align_tests',
     environ=krb5_environ)
+planoldpythontestsuite(
+    'ad_dc:local',
+    'samba.tests.krb5.protected_users_tests',
+    environ=krb5_environ)
 
 for env in [
         'vampire_dc',

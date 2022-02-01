@@ -1214,18 +1214,28 @@ class RawKerberosTest(TestCaseInTempDir):
 
     def PasswordKey_from_etype_info2(self, creds, etype_info2, kvno=None):
         e = etype_info2['etype']
-
         salt = etype_info2.get('salt')
-
-        if e == kcrypto.Enctype.RC4:
-            nthash = creds.get_nt_hash()
-            return self.SessionKey_create(etype=e, contents=nthash, kvno=kvno)
-
         params = etype_info2.get('s2kparams')
+        return self.PasswordKey_from_etype(creds, e,
+                                           kvno=kvno,
+                                           salt=salt,
+                                           params=params)
 
-        password = creds.get_password()
+    def PasswordKey_from_creds(self, creds, etype):
+        kvno = creds.get_kvno()
+        salt = creds.get_salt()
+        return self.PasswordKey_from_etype(creds, etype,
+                                           kvno=kvno,
+                                           salt=salt)
+
+    def PasswordKey_from_etype(self, creds, etype, kvno=None, salt=None, params=None):
+        if etype == kcrypto.Enctype.RC4:
+            nthash = creds.get_nt_hash()
+            return self.SessionKey_create(etype=etype, contents=nthash, kvno=kvno)
+
+        password = creds.get_password().encode('utf-8')
         return self.PasswordKey_create(
-            etype=e, pwd=password, salt=salt, kvno=kvno, params=params)
+            etype=etype, pwd=password, salt=salt, kvno=kvno)
 
     def TicketDecryptionKey_from_creds(self, creds, etype=None):
 
@@ -2076,6 +2086,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          expect_pac_attrs=None,
                          expect_pac_attrs_pac_request=None,
                          expect_requester_sid=None,
+                         rc4_support=True,
                          to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2135,6 +2146,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_pac_attrs': expect_pac_attrs,
             'expect_pac_attrs_pac_request': expect_pac_attrs_pac_request,
             'expect_requester_sid': expect_requester_sid,
+            'rc4_support': rc4_support,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -2191,6 +2203,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expect_requester_sid=None,
                           expected_proxy_target=None,
                           expected_transited_services=None,
+                          rc4_support=True,
                           to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -2251,6 +2264,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expect_requester_sid': expect_requester_sid,
             'expected_proxy_target': expected_proxy_target,
             'expected_transited_services': expected_transited_services,
+            'rc4_support': rc4_support,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -3042,6 +3056,8 @@ class RawKerberosTest(TestCaseInTempDir):
         if rep_msg_type == KRB_TGS_REP:
             self.assertTrue(sent_fast)
 
+        rc4_support = kdc_exchange_dict['rc4_support']
+
         expect_etype_info2 = ()
         expect_etype_info = False
         expected_aes_type = 0
@@ -3056,7 +3072,7 @@ class RawKerberosTest(TestCaseInTempDir):
                 if etype > expected_aes_type:
                     expected_aes_type = etype
             if etype in (kcrypto.Enctype.RC4,) and error_code != 0:
-                if etype > expected_rc4_type:
+                if etype > expected_rc4_type and rc4_support:
                     expected_rc4_type = etype
 
         if expected_aes_type != 0:
@@ -3076,7 +3092,8 @@ class RawKerberosTest(TestCaseInTempDir):
                 expected_patypes += (PADATA_PAC_OPTIONS,)
         elif error_code != KDC_ERR_GENERIC:
             if expect_etype_info:
-                self.assertGreater(len(expect_etype_info2), 0)
+                if rc4_support:
+                    self.assertGreater(len(expect_etype_info2), 0)
                 expected_patypes += (PADATA_ETYPE_INFO,)
             if len(expect_etype_info2) != 0:
                 expected_patypes += (PADATA_ETYPE_INFO2,)
@@ -3229,7 +3246,8 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertEqual(len(etype_info), 1)
             e = self.getElementValue(etype_info[0], 'etype')
             self.assertEqual(e, kcrypto.Enctype.RC4)
-            self.assertEqual(e, expect_etype_info2[0])
+            if rc4_support:
+                self.assertEqual(e, expect_etype_info2[0])
             salt = self.getElementValue(etype_info[0], 'salt')
             if self.strict_checking:
                 self.assertIsNotNone(salt)
@@ -3919,6 +3937,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           etypes,
                           padata,
                           kdc_options,
+                          renew_time=None,
                           expected_account_name=None,
                           expected_upn_name=None,
                           expected_sid=None,
@@ -3934,6 +3953,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           expect_pac_attrs_pac_request=None,
                           expect_requester_sid=None,
                           expect_edata=None,
+                          rc4_support=True,
                           to_rodc=False):
 
         def _generate_padata_copy(_kdc_exchange_dict,
@@ -3981,6 +4001,7 @@ class RawKerberosTest(TestCaseInTempDir):
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             expect_requester_sid=expect_requester_sid,
             expect_edata=expect_edata,
+            rc4_support=rc4_support,
             to_rodc=to_rodc)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
@@ -3988,6 +4009,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                          realm=realm,
                                          sname=sname,
                                          till_time=till,
+                                         renew_time=renew_time,
                                          etypes=etypes)
 
         return rep, kdc_exchange_dict
