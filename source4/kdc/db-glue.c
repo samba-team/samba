@@ -1234,7 +1234,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					        kdc_db_ctx->policy.usr_tkt_lifetime);
 	}
 
-	entry_ex->entry.max_renew = malloc(sizeof(*entry_ex->entry.max_life));
+	entry_ex->entry.max_renew = malloc(sizeof(*entry_ex->entry.max_renew));
 	if (entry_ex->entry.max_renew == NULL) {
 		ret = ENOMEM;
 		goto out;
