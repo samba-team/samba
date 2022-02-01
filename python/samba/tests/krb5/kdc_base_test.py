@@ -115,8 +115,8 @@ class KDCBaseTest(RawKerberosTest):
         cls.account_base = f'{secrets.token_hex(4)}_'
         cls.account_id = 0
 
-        # A set containing DNs of accounts created as part of testing.
-        cls.accounts = set()
+        # A list containing DNs of accounts created as part of testing.
+        cls.accounts = []
 
         cls.account_cache = {}
         cls.tkt_cache = {}
@@ -137,7 +137,7 @@ class KDCBaseTest(RawKerberosTest):
                 except ldb.LdbError:
                     pass
 
-            for dn in cls.accounts:
+            for dn in reversed(cls.accounts):
                 delete_force(cls._ldb, dn)
 
         if cls._rodc_ctx is not None:
@@ -316,7 +316,7 @@ class KDCBaseTest(RawKerberosTest):
         creds.set_spn(spn)
         #
         # Save the account name so it can be deleted in tearDownClass
-        self.accounts.add(dn)
+        self.accounts.append(dn)
 
         self.creds_set_enctypes(creds)
 
