@@ -441,10 +441,19 @@ def build(bld):
                                              run_proc.c
                                              sock_client.c
                                              srvid.c
+                                             tmon.c
                                              tunable.c
                                           '''),
-                        deps='''samba-util sys_rw tevent-util
-                                replace talloc tevent tdb popt''')
+                        deps='''samba-util
+                                LIBASYNC_REQ
+                                sys_rw
+                                tevent-util
+                                replace
+                                talloc
+                                tevent
+                                tdb
+                                popt
+                             ''')
 
     bld.SAMBA_SUBSYSTEM('ctdb-logging-conf',
                         source='common/logging_conf.c',
