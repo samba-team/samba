@@ -283,23 +283,22 @@ static int net_vfs_get_ntacl(struct net_context *net,
 		goto done;
 	}
 
-	status = close_file(NULL, fsp, NORMAL_CLOSE);
+	status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("close_file [%s] failed: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status));
 		goto done;
 	}
-	fsp = NULL;
 
 	sec_desc_print(NULL, stdout, sd, true);
 
 	rc = 0;
 done:
 	if (fsp != NULL) {
-		status = close_file(NULL, fsp, NORMAL_CLOSE);
+		status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("close_file [%s] failed: %s\n",
+			DBG_ERR("close_file_free() [%s] failed: %s\n",
 				smb_fname_str_dbg(smb_fname),
 				nt_errstr(status));
 			rc = 1;

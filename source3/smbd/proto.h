@@ -130,8 +130,9 @@ bool smbd_smb1_brl_finish_by_mid(
 /* The following definitions come from smbd/close.c  */
 
 void set_close_write_time(struct files_struct *fsp, struct timespec ts);
-NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
-		    enum file_close_type close_type);
+NTSTATUS close_file_free(struct smb_request *req,
+			 struct files_struct **_fsp,
+			 enum file_close_type close_type);
 void msg_close_file(struct messaging_context *msg_ctx,
 		    void *private_data,
 		    uint32_t msg_type,

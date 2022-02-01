@@ -778,7 +778,7 @@ void file_close_conn(connection_struct *conn)
 			 */
 			fsp->op->global->durable = false;
 		}
-		close_file(NULL, fsp, SHUTDOWN_CLOSE);
+		close_file_free(NULL, &fsp, SHUTDOWN_CLOSE);
 	}
 }
 
@@ -848,7 +848,7 @@ void file_close_user(struct smbd_server_connection *sconn, uint64_t vuid)
 	for (fsp=sconn->files; fsp; fsp=next) {
 		next=fsp->next;
 		if (fsp->vuid == vuid) {
-			close_file(NULL, fsp, SHUTDOWN_CLOSE);
+			close_file_free(NULL, &fsp, SHUTDOWN_CLOSE);
 		}
 	}
 }

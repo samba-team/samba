@@ -1821,8 +1821,7 @@ void reply_search(struct smb_request *req)
 			 * as this is not a client visible handle so
 			 * can'tbe part of an SMB1 chain.
 			 */
-			close_file(NULL, fsp, NORMAL_CLOSE);
-			fsp = NULL;
+			close_file_free(NULL, &fsp, NORMAL_CLOSE);
 			reply_nterror(req, nt_status);
 			goto out;
 		}
@@ -1953,15 +1952,13 @@ void reply_search(struct smb_request *req)
 	if (numentries == 0) {
 		dptr_num = -1;
 		if (fsp != NULL) {
-			close_file(NULL, fsp, NORMAL_CLOSE);
-			fsp = NULL;
+			close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		}
 	} else if(expect_close && status_len == 0) {
 		/* Close the dptr - we know it's gone */
 		dptr_num = -1;
 		if (fsp != NULL) {
-			close_file(NULL, fsp, NORMAL_CLOSE);
-			fsp = NULL;
+			close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		}
 	}
 
@@ -1970,8 +1967,7 @@ void reply_search(struct smb_request *req)
 		dptr_num = -1;
 		/* fsp may have been closed above. */
 		if (fsp != NULL) {
-			close_file(NULL, fsp, NORMAL_CLOSE);
-			fsp = NULL;
+			close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		}
 	}
 
@@ -2073,8 +2069,7 @@ void reply_fclose(struct smb_request *req)
 	fsp = dptr_fetch_fsp(sconn, status+12,&dptr_num);
 	if(fsp != NULL) {
 		/*  Close the file - we know it's gone */
-		close_file(NULL, fsp, NORMAL_CLOSE);
-		fsp = NULL;
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		dptr_num = -1;
 	}
 
@@ -2216,7 +2211,7 @@ void reply_open(struct smb_request *req)
 	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
 		DEBUG(3,("attempt to open a directory %s\n",
 			 fsp_str_dbg(fsp)));
-		close_file(req, fsp, ERROR_CLOSE);
+		close_file_free(req, &fsp, ERROR_CLOSE);
 		reply_botherror(req, NT_STATUS_ACCESS_DENIED,
 			ERRDOS, ERRnoaccess);
 		goto out;
@@ -2401,19 +2396,19 @@ void reply_open_and_X(struct smb_request *req)
 	if (((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) && allocation_size) {
 		fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-			close_file(req, fsp, ERROR_CLOSE);
+			close_file_free(req, &fsp, ERROR_CLOSE);
 			reply_nterror(req, NT_STATUS_DISK_FULL);
 			goto out;
 		}
 		retval = vfs_set_filelen(fsp, (off_t)allocation_size);
 		if (retval < 0) {
-			close_file(req, fsp, ERROR_CLOSE);
+			close_file_free(req, &fsp, ERROR_CLOSE);
 			reply_nterror(req, NT_STATUS_DISK_FULL);
 			goto out;
 		}
 		status = vfs_stat_fsp(fsp);
 		if (!NT_STATUS_IS_OK(status)) {
-			close_file(req, fsp, ERROR_CLOSE);
+			close_file_free(req, &fsp, ERROR_CLOSE);
 			reply_nterror(req, status);
 			goto out;
 		}
@@ -2421,7 +2416,7 @@ void reply_open_and_X(struct smb_request *req)
 
 	fattr = fdos_mode(fsp);
 	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
-		close_file(req, fsp, ERROR_CLOSE);
+		close_file_free(req, &fsp, ERROR_CLOSE);
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
 	}
@@ -3189,7 +3184,7 @@ NTSTATUS unlink_internals(connection_struct *conn,
 			"(%s)\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status));
-		close_file(req, fsp, NORMAL_CLOSE);
+		close_file_free(req, &fsp, NORMAL_CLOSE);
 		return status;
 	}
 
@@ -3197,11 +3192,11 @@ NTSTATUS unlink_internals(connection_struct *conn,
 	if (!set_delete_on_close(fsp, True,
 				conn->session_info->security_token,
 				conn->session_info->unix_token)) {
-		close_file(req, fsp, NORMAL_CLOSE);
+		close_file_free(req, &fsp, NORMAL_CLOSE);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return close_file(req, fsp, NORMAL_CLOSE);
+	return close_file_free(req, &fsp, NORMAL_CLOSE);
 }
 
 /****************************************************************************
@@ -5661,7 +5656,7 @@ static void reply_exit_done(struct tevent_req *req)
 			smb_request_done(smb1req);
 			END_PROFILE(SMBexit);
 		}
-		close_file(NULL, fsp, SHUTDOWN_CLOSE);
+		close_file_free(NULL, &fsp, SHUTDOWN_CLOSE);
 	}
 
 	reply_outbuf(smb1req, 0, 0);
@@ -5737,12 +5732,12 @@ void reply_close(struct smb_request *smb1req)
 	}
 
 	/*
-	 * close_file() returns the unix errno if an error was detected on
+	 * close_file_free() returns the unix errno if an error was detected on
 	 * close - normally this is due to a disk full error. If not then it
 	 * was probably an I/O error.
 	 */
 
-	status = close_file(smb1req, fsp, NORMAL_CLOSE);
+	status = close_file_free(smb1req, &fsp, NORMAL_CLOSE);
 done:
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(smb1req, status);
@@ -5868,7 +5863,7 @@ static void reply_close_done(struct tevent_req *req)
 		return;
 	}
 
-	status = close_file(smb1req, state->fsp, NORMAL_CLOSE);
+	status = close_file_free(smb1req, &state->fsp, NORMAL_CLOSE);
 	if (NT_STATUS_IS_OK(status)) {
 		reply_outbuf(smb1req, 0, 0);
 	} else {
@@ -5967,8 +5962,7 @@ void reply_writeclose(struct smb_request *req)
 	if (numtowrite) {
 		DEBUG(3,("reply_writeclose: zero length write doesn't close "
 			 "file %s\n", fsp_str_dbg(fsp)));
-		close_status = close_file(req, fsp, NORMAL_CLOSE);
-		fsp = NULL;
+		close_status = close_file_free(req, &fsp, NORMAL_CLOSE);
 	}
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
@@ -6516,7 +6510,7 @@ void reply_printclose(struct smb_request *req)
 	DEBUG(3,("printclose fd=%d %s\n",
 		 fsp_get_io_fd(fsp), fsp_fnum_dbg(fsp)));
 
-	status = close_file(req, fsp, NORMAL_CLOSE);
+	status = close_file_free(req, &fsp, NORMAL_CLOSE);
 
 	if(!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -6919,7 +6913,7 @@ void reply_rmdir(struct smb_request *req)
 
 	status = can_set_delete_on_close(fsp, FILE_ATTRIBUTE_DIRECTORY);
 	if (!NT_STATUS_IS_OK(status)) {
-		close_file(req, fsp, ERROR_CLOSE);
+		close_file_free(req, &fsp, ERROR_CLOSE);
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -6927,12 +6921,12 @@ void reply_rmdir(struct smb_request *req)
 	if (!set_delete_on_close(fsp, true,
 			conn->session_info->security_token,
 			conn->session_info->unix_token)) {
-		close_file(req, fsp, ERROR_CLOSE);
+		close_file_free(req, &fsp, ERROR_CLOSE);
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
 	}
 
-	status = close_file(req, fsp, NORMAL_CLOSE);
+	status = close_file_free(req, &fsp, NORMAL_CLOSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 	} else {
@@ -7680,7 +7674,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 					attrs,
 					replace_if_exists);
 
-	close_file(req, fsp, NORMAL_CLOSE);
+	close_file_free(req, &fsp, NORMAL_CLOSE);
 
 	DBG_NOTICE("Error %s rename %s -> %s\n",
 		  nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
@@ -7974,7 +7968,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		close_file(NULL, fsp1, ERROR_CLOSE);
+		close_file_free(NULL, &fsp1, ERROR_CLOSE);
 		goto out;
 	}
 
@@ -7984,8 +7978,8 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			DEBUG(0, ("error - vfs lseek returned error %s\n",
 				strerror(errno)));
 			status = map_nt_error_from_unix(errno);
-			close_file(NULL, fsp1, ERROR_CLOSE);
-			close_file(NULL, fsp2, ERROR_CLOSE);
+			close_file_free(NULL, &fsp1, ERROR_CLOSE);
+			close_file_free(NULL, &fsp2, ERROR_CLOSE);
 			goto out;
 		}
 	}
@@ -7997,7 +7991,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		ret = 0;
 	}
 
-	close_file(NULL, fsp1, NORMAL_CLOSE);
+	close_file_free(NULL, &fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
 	set_close_write_time(fsp2, smb_fname_src->st.st_ex_mtime);
@@ -8008,7 +8002,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	 * Thus we don't look at the error return from the
 	 * close of fsp1.
 	 */
-	status = close_file(NULL, fsp2, NORMAL_CLOSE);
+	status = close_file_free(NULL, &fsp2, NORMAL_CLOSE);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;

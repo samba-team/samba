@@ -1002,7 +1002,7 @@ static bool readdir_attr_meta_finderi_stream(
 
 fail:
 	if (fsp != NULL) {
-		close_file(NULL, fsp, NORMAL_CLOSE);
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	}
 
 	return ok;
@@ -4247,8 +4247,8 @@ fail:
 	DEBUG(10, ("fruit_create_file: %s\n", nt_errstr(status)));
 
 	if (fsp) {
-		close_file(req, fsp, ERROR_CLOSE);
-		*result = fsp = NULL;
+		close_file_free(req, &fsp, ERROR_CLOSE);
+		*result = NULL;
 	}
 
 	return status;
@@ -4993,8 +4993,7 @@ static bool fruit_get_bandsize(vfs_handle_struct *handle,
 
 	}
 
-	status = close_file(NULL, fsp, NORMAL_CLOSE);
-	fsp = NULL;
+	status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("close_file failed: %s\n", nt_errstr(status));
 		ok = false;
@@ -5028,11 +5027,10 @@ static bool fruit_get_bandsize(vfs_handle_struct *handle,
 
 out:
 	if (fsp != NULL) {
-		status = close_file(NULL, fsp, NORMAL_CLOSE);
+		status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("close_file failed: %s\n", nt_errstr(status));
 		}
-		fsp = NULL;
 	}
 	TALLOC_FREE(plist);
 	TALLOC_FREE(smb_fname);

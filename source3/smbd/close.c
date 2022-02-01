@@ -1478,10 +1478,12 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
  Close a files_struct.
 ****************************************************************************/
   
-NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
-		    enum file_close_type close_type)
+NTSTATUS close_file_free(struct smb_request *req,
+			 struct files_struct **_fsp,
+			 enum file_close_type close_type)
 {
 	NTSTATUS status;
+	struct files_struct *fsp = *_fsp;
 	struct files_struct *base_fsp = fsp->base_fsp;
 	bool close_base_fsp = false;
 
@@ -1569,8 +1571,10 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 		 * those loops will become confused.
 		 */
 
-		close_file(req, base_fsp, close_type);
+		close_file_free(req, &base_fsp, close_type);
 	}
+
+	*_fsp = NULL;
 
 	return status;
 }
@@ -1610,5 +1614,5 @@ void msg_close_file(struct messaging_context *msg_ctx,
 		DEBUG(10,("msg_close_file: failed to find file.\n"));
 		return;
 	}
-	close_file(NULL, fsp, NORMAL_CLOSE);
+	close_file_free(NULL, &fsp, NORMAL_CLOSE);
 }

@@ -75,7 +75,7 @@ static NTSTATUS vfs_worm_create_file(vfs_handle_struct *handle,
 	 * Access via MAXIMUM_ALLOWED_ACCESS?
 	 */
 	if (readonly && ((*result)->access_mask & write_access_flags)) {
-		close_file(req, *result, NORMAL_CLOSE);
+		close_file_free(req, result, NORMAL_CLOSE);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	return NT_STATUS_OK;

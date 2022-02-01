@@ -1396,7 +1396,7 @@ static void call_trans2open(connection_struct *conn,
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 	inode = smb_fname->st.st_ex_ino;
 	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
-		close_file(req, fsp, ERROR_CLOSE);
+		close_file_free(req, &fsp, ERROR_CLOSE);
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
 	}
@@ -2896,8 +2896,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 * as this is not a client visible handle so
 		 * can'tbe part of an SMB1 chain.
 		 */
-		close_file(NULL, fsp, NORMAL_CLOSE);
-		fsp = NULL;
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		reply_nterror(req, ntstatus);
 		goto out;
 	}
@@ -2987,8 +2986,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	if(close_after_first || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
 		dptr_num = -1;
-		close_file(NULL, fsp, NORMAL_CLOSE);
-		fsp = NULL;
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	}
 
 	/*
@@ -3005,8 +3003,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 * close_after_first or finished case above.
 		 */
 		if (fsp != NULL) {
-			close_file(NULL, fsp, NORMAL_CLOSE);
-			fsp = NULL;
+			close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		}
 		if (get_Protocol() < PROTOCOL_NT1) {
 			reply_force_doserror(req, ERRDOS, ERRnofiles);
@@ -3409,8 +3406,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	if(close_after_request || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
 		dptr_num = -1;
-		close_file(NULL, fsp, NORMAL_CLOSE);
-		fsp = NULL;
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	}
 
 	if (as_root) {
@@ -5043,8 +5039,7 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 		 * date. Structure copy.
 		 */
 		smb_fname->st = fsp->fsp_name->st;
-		(void)close_file(req, fsp, NORMAL_CLOSE);
-		fsp = NULL;
+		(void)close_file_free(req, &fsp, NORMAL_CLOSE);
 	}
 
 	TALLOC_FREE(file_acl);
@@ -6687,18 +6682,18 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 
 	/* See RAW-SFILEINFO-END-OF-FILE */
 	if (fail_after_createfile) {
-		close_file(req, new_fsp,NORMAL_CLOSE);
+		close_file_free(req, &new_fsp, NORMAL_CLOSE);
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	if (vfs_set_filelen(new_fsp, size) == -1) {
 		status = map_nt_error_from_unix(errno);
-		close_file(req, new_fsp,NORMAL_CLOSE);
+		close_file_free(req, &new_fsp, NORMAL_CLOSE);
 		return status;
 	}
 
 	trigger_write_time_update_immediate(new_fsp);
-	close_file(req, new_fsp,NORMAL_CLOSE);
+	close_file_free(req, &new_fsp, NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
 
@@ -7583,8 +7578,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
   out:
 
 	if (close_fsp) {
-		(void)close_file(req, fsp, NORMAL_CLOSE);
-		fsp = NULL;
+		(void)close_file_free(req, &fsp, NORMAL_CLOSE);
 	}
 	return status;
 }
@@ -7960,7 +7954,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	if (allocation_size != get_file_size_stat(&smb_fname->st)) {
 		if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
 			status = map_nt_error_from_unix(errno);
-			close_file(req, new_fsp, NORMAL_CLOSE);
+			close_file_free(req, &new_fsp, NORMAL_CLOSE);
 			return status;
 		}
 	}
@@ -7971,7 +7965,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	 * if there are no pending writes.
 	 */
 	trigger_write_time_update_immediate(new_fsp);
-	close_file(req, new_fsp, NORMAL_CLOSE);
+	close_file_free(req, &new_fsp, NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
 
@@ -8476,7 +8470,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	TALLOC_FREE(posx);
 
         if (NT_STATUS_IS_OK(status)) {
-                close_file(req, fsp, NORMAL_CLOSE);
+                close_file_free(req, &fsp, NORMAL_CLOSE);
         }
 
 	info_level_return = SVAL(pdata,16);
@@ -8744,7 +8738,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	/* Realloc the data size */
 	*ppdata = (char *)SMB_REALLOC(*ppdata,*pdata_return_size);
 	if (*ppdata == NULL) {
-		close_file(req, fsp, ERROR_CLOSE);
+		close_file_free(req, &fsp, ERROR_CLOSE);
 		*pdata_return_size = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -8872,7 +8866,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	if (lck == NULL) {
 		DEBUG(0, ("smb_posix_unlink: Could not get share mode "
 			  "lock for file %s\n", fsp_str_dbg(fsp)));
-		close_file(req, fsp, NORMAL_CLOSE);
+		close_file_free(req, &fsp, NORMAL_CLOSE);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -8880,7 +8874,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	if (other_nonposix_opens) {
 		/* Fail with sharing violation. */
 		TALLOC_FREE(lck);
-		close_file(req, fsp, NORMAL_CLOSE);
+		close_file_free(req, &fsp, NORMAL_CLOSE);
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
@@ -8896,10 +8890,10 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	TALLOC_FREE(lck);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		close_file(req, fsp, NORMAL_CLOSE);
+		close_file_free(req, &fsp, NORMAL_CLOSE);
 		return status;
 	}
-	return close_file(req, fsp, NORMAL_CLOSE);
+	return close_file_free(req, &fsp, NORMAL_CLOSE);
 }
 
 static NTSTATUS smbd_do_posix_setfilepathinfo(struct connection_struct *conn,
@@ -9666,8 +9660,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
  out:
 	if (fsp != NULL) {
-		close_file(NULL, fsp, NORMAL_CLOSE);
-		fsp = NULL;
+		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	}
 	TALLOC_FREE(smb_dname);
 	return;
@@ -9904,8 +9897,7 @@ void reply_findclose(struct smb_request *req)
 		fsp = dptr_fetch_lanman2_fsp(sconn, dptr_num);
 		dptr_num = -1;
 		if (fsp != NULL) {
-			close_file(NULL, fsp, NORMAL_CLOSE);
-			fsp = NULL;
+			close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		}
 	}
 
