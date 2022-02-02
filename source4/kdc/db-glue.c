@@ -323,9 +323,10 @@ static int samba_kdc_sort_encryption_keys(struct sdb_entry_ex *entry_ex)
 int samba_kdc_set_fixed_keys(krb5_context context,
 			     struct samba_kdc_db_context *kdc_db_ctx,
 			     const struct ldb_val *secretbuffer,
+			     bool is_protected,
 			     struct sdb_entry_ex *entry_ex)
 {
-	const uint32_t supported_enctypes = ENC_ALL_TYPES;
+	uint32_t supported_enctypes = ENC_ALL_TYPES;
 	uint16_t allocated_keys = 0;
 	int ret;
 
@@ -336,6 +337,10 @@ int samba_kdc_set_fixed_keys(krb5_context context,
 		memset(secretbuffer->data, 0, secretbuffer->length);
 		ret = ENOMEM;
 		goto out;
+	}
+
+	if (is_protected) {
+		supported_enctypes &= ~ENC_RC4_HMAC_MD5;
 	}
 
 	if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
@@ -396,7 +401,8 @@ out:
 
 static int samba_kdc_set_random_keys(krb5_context context,
 				     struct samba_kdc_db_context *kdc_db_ctx,
-				     struct sdb_entry_ex *entry_ex)
+				     struct sdb_entry_ex *entry_ex,
+				     bool is_protected)
 {
 	struct ldb_val secret_val;
 	uint8_t secretbuffer[32];
@@ -414,6 +420,7 @@ static int samba_kdc_set_random_keys(krb5_context context,
 				     sizeof(secretbuffer));
 	return samba_kdc_set_fixed_keys(context, kdc_db_ctx,
 					&secret_val,
+					is_protected,
 					entry_ex);
 }
 
@@ -427,6 +434,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    uint32_t userAccountControl,
 						    enum samba_kdc_ent_type ent_type,
 						    struct sdb_entry_ex *entry_ex,
+						    bool is_protected,
 						    uint32_t *supported_enctypes_out)
 {
 	krb5_error_code ret = 0;
@@ -481,6 +489,10 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		supported_enctypes |= ENC_RC4_HMAC_MD5;
 	}
 
+	if (is_protected) {
+		supported_enctypes &= ~ENC_RC4_HMAC_MD5;
+	}
+
 	/* Is this the krbtgt or a RODC krbtgt */
 	if (is_rodc) {
 		rodc_krbtgt_number = ldb_msg_find_attr_as_int(msg, "msDS-SecondaryKrbTgtNumber", -1);
@@ -498,7 +510,8 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	    && (userAccountControl & UF_SMARTCARD_REQUIRED)) {
 		ret = samba_kdc_set_random_keys(context,
 						kdc_db_ctx,
-						entry_ex);
+						entry_ex,
+						is_protected);
 
 		*supported_enctypes_out = supported_enctypes;
 
@@ -869,6 +882,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	uint32_t supported_enctypes = 0;
 	NTTIME acct_expiry;
 	NTSTATUS status;
+	bool protected_user = false;
 	uint32_t rid;
 	bool is_rodc = false;
 	struct ldb_message_element *objectclasses;
@@ -1239,10 +1253,50 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	*entry_ex->entry.max_renew = kdc_db_ctx->policy.renewal_lifetime;
 
+	if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT && (flags & SDB_F_FOR_AS_REQ)) {
+		int result;
+		struct auth_user_info_dc *user_info_dc = NULL;
+		/*
+		 * These protections only apply to clients, so servers in the
+		 * Protected Users group may still have service tickets to them
+		 * encrypted with RC4. For accounts looked up as servers, note
+		 * that 'msg' does not contain the 'memberOf' attribute for
+		 * determining whether the account is a member of Protected
+		 * Users.
+		 *
+		 * Additionally, Microsoft advises that accounts for services
+		 * and computers should never be members of Protected Users, or
+		 * they may fail to authenticate.
+		 */
+		status = samba_kdc_get_user_info_from_db(p, msg, &user_info_dc);
+		if (!NT_STATUS_IS_OK(status)) {
+			ret = EINVAL;
+			goto out;
+		}
+
+		result = dsdb_is_protected_user(kdc_db_ctx->samdb,
+						user_info_dc->sids,
+						user_info_dc->num_sids);
+		if (result == -1) {
+			ret = EINVAL;
+			goto out;
+		}
+
+		protected_user = result;
+
+		if (protected_user) {
+			*entry_ex->entry.max_life = MIN(*entry_ex->entry.max_life, 4 * 60 * 60);
+			*entry_ex->entry.max_renew = MIN(*entry_ex->entry.max_renew, 4 * 60 * 60);
+
+			entry_ex->entry.flags.forwardable = 0;
+			entry_ex->entry.flags.proxiable = 0;
+		}
+	}
+
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, kdc_db_ctx, p, msg,
 					   rid, is_rodc, userAccountControl,
-					   ent_type, entry_ex, &supported_enctypes);
+					   ent_type, entry_ex, protected_user, &supported_enctypes);
 	if (ret) {
 		/* Could be bogus data in the entry, or out of memory */
 		goto out;

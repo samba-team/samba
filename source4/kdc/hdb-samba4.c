@@ -221,7 +221,7 @@ static krb5_error_code hdb_samba4_fetch_fast_cookie(krb5_context context,
 	}
 
 	ret = samba_kdc_set_fixed_keys(context, kdc_db_ctx,
-				       val, &sdb_entry_ex);
+				       val, false, &sdb_entry_ex);
 	if (ret != 0) {
 		return ret;
 	}
