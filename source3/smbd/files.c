@@ -759,32 +759,8 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
- Close all open files for a connection.
-****************************************************************************/
-
-struct file_close_conn_state {
-	struct connection_struct *conn;
-	bool fsp_left_behind;
-};
-
-static struct files_struct *file_close_conn_fn(
-	struct files_struct *fsp,
-	void *private_data)
+static bool close_file_in_loop(struct files_struct *fsp)
 {
-	struct file_close_conn_state *state = private_data;
-
-	if (fsp->conn != state->conn) {
-		return NULL;
-	}
-
-	if (fsp->op != NULL && fsp->op->global->durable) {
-		/*
-		 * A tree disconnect closes a durable handle
-		 */
-		fsp->op->global->durable = false;
-	}
-
 	if (fsp->base_fsp != NULL) {
 		/*
 		 * This is a stream, it can't be a base
@@ -822,11 +798,45 @@ static struct files_struct *file_close_conn_fn(
 		 * Have us called back a second time. In the second
 		 * round, "fsp" now looks like a normal fsp.
 		 */
-		state->fsp_left_behind = true;
-		return NULL;
+		return false;
 	}
 
 	close_file_free(NULL, &fsp, SHUTDOWN_CLOSE);
+	return true;
+}
+
+/****************************************************************************
+ Close all open files for a connection.
+****************************************************************************/
+
+struct file_close_conn_state {
+	struct connection_struct *conn;
+	bool fsp_left_behind;
+};
+
+static struct files_struct *file_close_conn_fn(
+	struct files_struct *fsp,
+	void *private_data)
+{
+	struct file_close_conn_state *state = private_data;
+	bool did_close;
+
+	if (fsp->conn != state->conn) {
+		return NULL;
+	}
+
+	if (fsp->op != NULL && fsp->op->global->durable) {
+		/*
+		 * A tree disconnect closes a durable handle
+		 */
+		fsp->op->global->durable = false;
+	}
+
+	did_close = close_file_in_loop(fsp);
+	if (!did_close) {
+		state->fsp_left_behind = true;
+	}
+
 	return NULL;
 }
 
