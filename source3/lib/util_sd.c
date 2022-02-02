@@ -50,6 +50,7 @@ static const struct perm_value special_values[] = {
 static const struct perm_value standard_values[] = {
 	{ "READ",   SEC_RIGHTS_DIR_READ|SEC_DIR_TRAVERSE },
 	{ "CHANGE", SEC_RIGHTS_DIR_READ|SEC_STD_DELETE|\
+	  SEC_DIR_DELETE_CHILD|\
 	  SEC_RIGHTS_DIR_WRITE|SEC_DIR_TRAVERSE },
 	{ "FULL",   SEC_RIGHTS_DIR_ALL },
 	{ NULL, 0 },
