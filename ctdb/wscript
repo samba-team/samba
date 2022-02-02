@@ -1003,6 +1003,24 @@ def build(bld):
                              ctdb-util samba-util talloc tevent replace''',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
+    for target in ['tmon_ping_test', 'tmon_test']:
+        src = 'tests/src/' + target + '.c'
+
+        bld.SAMBA_BINARY(target,
+                         source=src,
+                         deps='''ctdb-util
+                                 ctdb-tests-backtrace
+                                 LIBASYNC_REQ
+                                 samba-util
+                                 sys_rw
+                                 tevent-util
+                                 talloc
+                                 tevent
+                                 tdb
+                                 popt
+                              ''',
+                         install_path='${CTDB_TEST_LIBEXECDIR}')
+
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-tests-basic',
                         source=bld.SUBDIR('tests/src',
                                           'protocol_common_basic.c'),
