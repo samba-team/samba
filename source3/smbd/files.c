@@ -763,22 +763,83 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
  Close all open files for a connection.
 ****************************************************************************/
 
+struct file_close_conn_state {
+	struct connection_struct *conn;
+	bool fsp_left_behind;
+};
+
+static struct files_struct *file_close_conn_fn(
+	struct files_struct *fsp,
+	void *private_data)
+{
+	struct file_close_conn_state *state = private_data;
+
+	if (fsp->conn != state->conn) {
+		return NULL;
+	}
+
+	if (fsp->op != NULL && fsp->op->global->durable) {
+		/*
+		 * A tree disconnect closes a durable handle
+		 */
+		fsp->op->global->durable = false;
+	}
+
+	if (fsp->base_fsp != NULL) {
+		/*
+		 * This is a stream, it can't be a base
+		 */
+		SMB_ASSERT(fsp->stream_fsp == NULL);
+		SMB_ASSERT(fsp->base_fsp->stream_fsp == fsp);
+
+		/*
+		 * Remove the base<->stream link so that
+		 * close_file_free() does not close fsp->base_fsp as
+		 * well. This would destroy walking the linked list of
+		 * fsps.
+		 */
+		fsp->base_fsp->stream_fsp = NULL;
+		fsp->base_fsp = NULL;
+
+		close_file_free(NULL, &fsp, SHUTDOWN_CLOSE);
+		return NULL;
+	}
+
+	if (fsp->stream_fsp != NULL) {
+		/*
+		 * This is the base of a stream.
+		 */
+		SMB_ASSERT(fsp->stream_fsp->base_fsp == fsp);
+
+		/*
+		 * Remove the base<->stream link. This will make fsp
+		 * look like a normal fsp for the next round.
+		 */
+		fsp->stream_fsp->base_fsp = NULL;
+		fsp->stream_fsp = NULL;
+
+		/*
+		 * Have us called back a second time. In the second
+		 * round, "fsp" now looks like a normal fsp.
+		 */
+		state->fsp_left_behind = true;
+		return NULL;
+	}
+
+	close_file_free(NULL, &fsp, SHUTDOWN_CLOSE);
+	return NULL;
+}
+
 void file_close_conn(connection_struct *conn)
 {
-	files_struct *fsp, *next;
+	struct file_close_conn_state state = { .conn = conn };
 
-	for (fsp=conn->sconn->files; fsp; fsp=next) {
-		next = fsp->next;
-		if (fsp->conn != conn) {
-			continue;
-		}
-		if (fsp->op != NULL && fsp->op->global->durable) {
-			/*
-			 * A tree disconnect closes a durable handle
-			 */
-			fsp->op->global->durable = false;
-		}
-		close_file_free(NULL, &fsp, SHUTDOWN_CLOSE);
+	files_forall(conn->sconn, file_close_conn_fn, &state);
+
+	if (state.fsp_left_behind) {
+		state.fsp_left_behind = false;
+		files_forall(conn->sconn, file_close_conn_fn, &state);
+		SMB_ASSERT(!state.fsp_left_behind);
 	}
 }
 
