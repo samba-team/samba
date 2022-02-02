@@ -912,15 +912,40 @@ bool file_init(struct smbd_server_connection *sconn)
  Close files open by a specified vuid.
 ****************************************************************************/
 
+struct file_close_user_state {
+	uint64_t vuid;
+	bool fsp_left_behind;
+};
+
+static struct files_struct *file_close_user_fn(
+	struct files_struct *fsp,
+	void *private_data)
+{
+	struct file_close_user_state *state = private_data;
+	bool did_close;
+
+	if (fsp->vuid != state->vuid) {
+		return NULL;
+	}
+
+	did_close = close_file_in_loop(fsp);
+	if (!did_close) {
+		state->fsp_left_behind = true;
+	}
+
+	return NULL;
+}
+
 void file_close_user(struct smbd_server_connection *sconn, uint64_t vuid)
 {
-	files_struct *fsp, *next;
+	struct file_close_user_state state = { .vuid = vuid };
 
-	for (fsp=sconn->files; fsp; fsp=next) {
-		next=fsp->next;
-		if (fsp->vuid == vuid) {
-			close_file_free(NULL, &fsp, SHUTDOWN_CLOSE);
-		}
+	files_forall(sconn, file_close_user_fn, &state);
+
+	if (state.fsp_left_behind) {
+		state.fsp_left_behind = false;
+		files_forall(sconn, file_close_user_fn, &state);
+		SMB_ASSERT(!state.fsp_left_behind);
 	}
 }
 
