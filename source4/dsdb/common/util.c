@@ -5938,3 +5938,34 @@ done:
 
 	return ret;
 }
+
+/*
+ * Returns 1 if 'sids' contains the Protected Users group SID for the domain, 0
+ * if not. Returns a negative value on error.
+ */
+int dsdb_is_protected_user(struct ldb_context *ldb,
+			   const struct dom_sid *sids,
+			   uint32_t num_sids)
+{
+	const struct dom_sid *domain_sid = NULL;
+	struct dom_sid protected_users_sid;
+	uint32_t i;
+
+	domain_sid = samdb_domain_sid(ldb);
+	if (domain_sid == NULL) {
+		return -1;
+	}
+
+	protected_users_sid = *domain_sid;
+	if (!sid_append_rid(&protected_users_sid, DOMAIN_RID_PROTECTED_USERS)) {
+		return -1;
+	}
+
+	for (i = 0; i < num_sids; ++i) {
+		if (dom_sid_equal(&protected_users_sid, &sids[i])) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
