@@ -1489,6 +1489,7 @@ NTSTATUS cli_rename(struct cli_state *cli,
 	}
 
 	status = cli_rename_recv(req);
+	cli->raw_status = status; /* cli_smb2_rename_recv doesn't set this */
 
  fail:
 	TALLOC_FREE(frame);
