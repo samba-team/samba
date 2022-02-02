@@ -1303,6 +1303,115 @@ out:
 	return ok;
 }
 
+static bool torture_libsmbclient_rename(struct torture_context *tctx)
+{
+	SMBCCTX *ctx = NULL;
+	int fhandle = -1;
+	bool success = false;
+	const char *filename_src = NULL;
+	const char *filename_dst = NULL;
+	int ret;
+	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
+
+	if (smburl == NULL) {
+		torture_fail(tctx,
+			"option --option=torture:smburl="
+			"smb://user:password@server/share missing\n");
+	}
+
+	torture_assert_goto(tctx,
+				torture_libsmbclient_init_context(tctx, &ctx),
+				success,
+				done,
+				"");
+
+	smbc_set_context(ctx);
+
+	filename_src = talloc_asprintf(tctx,
+			"%s/src",
+			smburl);
+	if (filename_src == NULL) {
+		torture_fail_goto(tctx, done, "talloc fail\n");
+	}
+
+	filename_dst = talloc_asprintf(tctx,
+			"%s/dst",
+			smburl);
+	if (filename_dst == NULL) {
+		torture_fail_goto(tctx, done, "talloc fail\n");
+	}
+
+	/* Ensure the files don't exist. */
+	smbc_unlink(filename_src);
+	smbc_unlink(filename_dst);
+
+	/* Create them. */
+	fhandle = smbc_creat(filename_src, 0666);
+	if (fhandle < 0) {
+		torture_fail_goto(tctx,
+			done,
+			talloc_asprintf(tctx,
+				"failed to create file '%s': %s",
+				filename_src,
+				strerror(errno)));
+	}
+	ret = smbc_close(fhandle);
+	torture_assert_int_equal_goto(tctx,
+		ret,
+		0,
+		success,
+		done,
+		talloc_asprintf(tctx,
+			"failed to close handle for '%s'",
+			filename_src));
+
+	fhandle = smbc_creat(filename_dst, 0666);
+	if (fhandle < 0) {
+		torture_fail_goto(tctx,
+			done,
+			talloc_asprintf(tctx,
+				"failed to create file '%s': %s",
+				filename_dst,
+				strerror(errno)));
+	}
+	ret = smbc_close(fhandle);
+	torture_assert_int_equal_goto(tctx,
+		ret,
+		0,
+		success,
+		done,
+		talloc_asprintf(tctx,
+			"failed to close handle for '%s'",
+			filename_dst));
+
+	ret = smbc_rename(filename_src, filename_dst);
+
+	/*
+	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14938
+	 * gives ret == -1, but errno = 0 for overwrite renames
+	 * over SMB2.
+	 */
+	torture_assert_int_equal_goto(tctx,
+		ret,
+		0,
+		success,
+		done,
+		talloc_asprintf(tctx,
+			"smbc_rename '%s' -> '%s' failed with %s\n",
+			filename_src,
+			filename_dst,
+			strerror(errno)));
+
+	/* Remove them again. */
+	smbc_unlink(filename_src);
+	smbc_unlink(filename_dst);
+	success = true;
+
+  done:
+	smbc_free_context(ctx, 1);
+	return success;
+}
+
 NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
@@ -1326,6 +1435,9 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 		suite, "utimes", torture_libsmbclient_utimes);
 	torture_suite_add_simple_test(
 		suite, "noanon_list", torture_libsmbclient_noanon_list);
+	torture_suite_add_simple_test(suite,
+					"rename",
+					torture_libsmbclient_rename);
 
 	suite->description = talloc_strdup(suite, "libsmbclient interface tests");
 
