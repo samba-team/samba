@@ -3783,6 +3783,7 @@ class SamTests(samba.tests.TestCase):
             ["CN=Enterprise Admins", "CN=Users,"],
             ["CN=Administrator", "CN=Users,"],
             ["CN=Domain Controllers", "CN=Users,"],
+            ["CN=Protected Users", "CN=Users,"],
         ]
 
         for pr_object in protected_list:
