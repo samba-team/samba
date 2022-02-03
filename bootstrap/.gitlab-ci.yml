@@ -106,7 +106,7 @@ fedora34:
 fedora35:
   extends: .build_image_template
 
-centos8:
+centos8s:
   extends: .build_image_template
 
 centos7:
