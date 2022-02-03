@@ -278,11 +278,26 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 			spn = talloc_array(mem_ctx, char *, num_spns);
 			for (count = 0; count < num_spns; count++) {
 				blob = attr->value_ctr.values[count].blob;
+				if (blob == NULL) {
+					continue;
+				}
 				pull_string_talloc(spn, NULL, 0,
 						   &spn[count],
 						   blob->data, blob->length,
 						   STR_UNICODE);
 			}
+		}
+
+		if (attr->attid == DRSUAPI_ATTID_unicodePwd &&
+		    cur->meta_data_ctr != NULL &&
+		    cur->meta_data_ctr->count ==
+		    cur->object.attribute_ctr.num_attributes)
+		{
+			/*
+			 * pick the kvno from the unicodePwd
+			 * meta data, even without a unicodePwd blob
+			 */
+			kvno = cur->meta_data_ctr->meta_data[i].version;
 		}
 
 		if (attr->value_ctr.num_values != 1) {
@@ -304,18 +319,6 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 
 				memcpy(&nt_passwd, blob->data, 16);
 				got_pwd = true;
-
-				/* pick the kvno from the meta_data version,
-				 * thanks, metze, for explaining this */
-
-				if (!cur->meta_data_ctr) {
-					break;
-				}
-				if (cur->meta_data_ctr->count !=
-				    cur->object.attribute_ctr.num_attributes) {
-					break;
-				}
-				kvno = cur->meta_data_ctr->meta_data[i].version;
 				break;
 			case DRSUAPI_ATTID_ntPwdHistory:
 				pwd_history_len = blob->length / 16;
@@ -351,11 +354,6 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 			default:
 				break;
 		}
-	}
-
-	if (!got_pwd) {
-		DEBUG(10, ("no password (unicodePwd) found - skipping.\n"));
-		return NT_STATUS_OK;
 	}
 
 	if (name) {
@@ -422,12 +420,14 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	}
 	DEBUGADD(1,("\n"));
 
-	status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, kvno, name, NULL,
-						     ENCTYPE_ARCFOUR_HMAC,
-						     data_blob_talloc(mem_ctx, nt_passwd, 16));
+	if (got_pwd) {
+		status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, kvno, name, NULL,
+							     ENCTYPE_ARCFOUR_HMAC,
+							     data_blob_talloc(mem_ctx, nt_passwd, 16));
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	/* add kerberos keys (if any) */
