@@ -1682,12 +1682,26 @@ static struct tevent_req *cli_smb2_hardlink_send(
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_smb2_hardlink_state *state = NULL;
+	NTSTATUS status;
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct cli_smb2_hardlink_state);
 	if (req == NULL) {
 		return NULL;
 	}
+
+	/*
+	 * Strip a MSDFS path from fname_dst if we were given one.
+	 */
+	status = cli_dfs_target_check(state,
+				cli,
+				fname_src,
+				fname_dst,
+				&fname_dst);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
 	state->ev = ev;
 	state->cli = cli;
 	state->fname_dst = fname_dst;
