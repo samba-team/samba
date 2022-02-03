@@ -162,6 +162,12 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 			char **pp_newshare,
 			struct cli_credentials *creds);
 
+NTSTATUS cli_dfs_target_check(TALLOC_CTX *mem_ctx,
+			struct cli_state *cli,
+			const char *fname_src,
+			const char *fname_dst,
+			const char **fname_dst_out);
+
 /* The following definitions come from libsmb/clientgen.c  */
 
 unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout);
