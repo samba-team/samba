@@ -1234,6 +1234,18 @@ static struct tevent_req *cli_smb1_rename_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	/*
+	 * Strip a MSDFS path from fname_dst if we were given one.
+	 */
+	status = cli_dfs_target_check(state,
+				cli,
+				fname_src,
+				fname_dst,
+				&fname_dst);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
 	if (!push_ucs2_talloc(talloc_tos(), &converted_str, fname_dst,
 			      &converted_size_bytes)) {
 		status = NT_STATUS_INVALID_PARAMETER;
