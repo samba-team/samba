@@ -447,6 +447,8 @@ NTSTATUS libnet_keytab_add_to_keytab_entries(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(entry.principal);
 	NT_STATUS_HAVE_NO_MEMORY(entry.password.data);
 
+	DBG_INFO("%s: kvno:%d enctype:%d\n", entry.principal, kvno, enctype);
+
 	ADD_TO_ARRAY(mem_ctx, struct libnet_keytab_entry, entry,
 		     &ctx->entries, &ctx->count);
 	NT_STATUS_HAVE_NO_MEMORY(ctx->entries);
