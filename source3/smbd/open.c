@@ -5533,6 +5533,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	int info = FILE_WAS_OPENED;
 	files_struct *base_fsp = NULL;
 	files_struct *fsp = NULL;
+	bool free_fsp_on_error = false;
 	NTSTATUS status;
 	int ret;
 	struct smb_filename *parent_dir_fname = NULL;
@@ -5784,6 +5785,11 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			 * them from each other.
 			 */
 			smb_fname_fsp_unlink(smb_fname);
+
+			/*
+			 * "fsp" is ours now
+			 */
+			free_fsp_on_error = true;
 		}
 
 		status = fsp_bind_smb(fsp, req);
@@ -5807,6 +5813,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		if(!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
+		free_fsp_on_error = true;
 
 		status = fsp_set_smb_fname(fsp, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6053,7 +6060,11 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * fsp->base_fsp.
 		 */
 		base_fsp = NULL;
-		close_file_free(req, &fsp, ERROR_CLOSE);
+		close_file_smb(req, fsp, ERROR_CLOSE);
+		if (free_fsp_on_error) {
+			file_free(req, fsp);
+			fsp = NULL;
+		}
 	}
 	if (base_fsp != NULL) {
 		close_file_free(req, &base_fsp, ERROR_CLOSE);
