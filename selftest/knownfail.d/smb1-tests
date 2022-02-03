@@ -29,6 +29,7 @@
 ^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.volume\((ad_member|nt4_member)\)
 ^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.delete a non empty directory\((ad_member|nt4_member)\)
 ^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.Recursive ls across MS-DFS links\((ad_member|nt4_member)\)
+^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.Hardlink on MS-DFS share\((ad_member|nt4_member)\)
 ^samba3.blackbox.smbclient_s3.*valid.users.nt4.*
 ^samba3.blackbox.smbclient_s3.NT1.*valid.users.*
 ^samba3.unix.whoami machine account.whoami\(ad_member:local\)
