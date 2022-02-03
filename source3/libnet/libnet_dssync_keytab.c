@@ -233,9 +233,9 @@ done:
 	return status;
 }
 
-static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
-			     struct libnet_keytab_context *ctx,
-			     struct drsuapi_DsReplicaObjectListItemEx *cur)
+static NTSTATUS parse_user(TALLOC_CTX *mem_ctx,
+			   struct libnet_keytab_context *ctx,
+			   struct drsuapi_DsReplicaObjectListItemEx *cur)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	uchar nt_passwd[16];
@@ -266,7 +266,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(3, ("parsing object '%s'\n", object_dn));
+	DEBUG(3, ("parsing user '%s'\n", object_dn));
 
 	for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
 
@@ -526,6 +526,68 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	}
 
 	return status;
+}
+
+static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
+			     struct libnet_keytab_context *ctx,
+			     struct drsuapi_DsReplicaObjectListItemEx *cur)
+{
+	uint32_t i;
+
+	if (cur->object.identifier->dn == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	for (i = 0; i < cur->object.attribute_ctr.num_attributes; i++) {
+		struct drsuapi_DsReplicaAttribute *attr =
+			&cur->object.attribute_ctr.attributes[i];
+		const DATA_BLOB *blob = NULL;
+		uint32_t val;
+
+		switch (attr->attid) {
+		case DRSUAPI_ATTID_isDeleted:
+		case DRSUAPI_ATTID_isRecycled:
+			break;
+		default:
+			continue;
+		}
+
+		if (attr->value_ctr.num_values != 1) {
+			continue;
+		}
+
+		if (attr->value_ctr.values[0].blob == NULL) {
+			continue;
+		}
+
+		blob = attr->value_ctr.values[0].blob;
+
+		if (blob->length != 4) {
+			continue;
+		}
+
+		val = PULL_LE_U32(blob->data, 0);
+		if (val != 0) {
+			/* ignore deleted object */
+			return NT_STATUS_OK;
+		}
+	}
+
+	for (i = 0; i < cur->object.attribute_ctr.num_attributes; i++) {
+		struct drsuapi_DsReplicaAttribute *attr =
+			&cur->object.attribute_ctr.attributes[i];
+
+		switch (attr->attid) {
+		case DRSUAPI_ATTID_unicodePwd:
+		case DRSUAPI_ATTID_ntPwdHistory:
+		case DRSUAPI_ATTID_supplementalCredentials:
+			return parse_user(mem_ctx, ctx, cur);
+		default:
+			continue;
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
 static bool dn_is_in_object_list(struct dssync_context *ctx,
