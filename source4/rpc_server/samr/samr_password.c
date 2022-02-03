@@ -138,8 +138,9 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct samr_Password nt_verifier;
 	const char *user_samAccountName = NULL;
 	struct dom_sid *user_objectSid = NULL;
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	enum ntlm_auth_level ntlm_auth_level
-		= lpcfg_ntlm_auth(dce_call->conn->dce_ctx->lp_ctx);
+		= lpcfg_ntlm_auth(lp_ctx);
 	gnutls_cipher_hd_t cipher_hnd = NULL;
 	gnutls_datum_t nt_session_key;
 	int rc;
@@ -182,7 +183,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	user_samAccountName = ldb_msg_find_attr_as_string(res[0], "samAccountName", NULL);
 	user_objectSid = samdb_result_dom_sid(res, res[0], "objectSid");
 
-	status = samdb_result_passwords(mem_ctx, dce_call->conn->dce_ctx->lp_ctx,
+	status = samdb_result_passwords(mem_ctx, lp_ctx,
 					res[0], &nt_pwd);
 	if (!NT_STATUS_IS_OK(status) ) {
 		goto failed;
@@ -284,7 +285,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 failed:
 
 	log_password_change_event(imsg_ctx,
-				  dce_call->conn->dce_ctx->lp_ctx,
+				  lp_ctx,
 				  dce_call->conn->remote_address,
 				  dce_call->conn->local_address,
 				  "samr_ChangePasswordUser3",
