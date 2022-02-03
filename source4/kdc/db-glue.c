@@ -3302,6 +3302,10 @@ struct samba_kdc_seq {
 	unsigned int index;
 	unsigned int count;
 	struct ldb_message **msgs;
+	enum trust_direction trust_direction;
+	unsigned int trust_index;
+	unsigned int trust_count;
+	struct ldb_message **trust_msgs;
 	struct ldb_dn *realm_dn;
 };
 
@@ -3329,6 +3333,10 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 		goto out;
 	}
 
+	if (priv->index == priv->count) {
+		goto trusts;
+	}
+
 	while (priv->index < priv->count) {
 		msg = priv->msgs[priv->index++];
 
@@ -3339,8 +3347,13 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 	}
 
 	if (sAMAccountName == NULL) {
-		ret = SDB_ERR_NOENTRY;
-		goto out;
+		/*
+		 * This is not really possible,
+		 * but instead returning
+		 * SDB_ERR_NOENTRY, we
+		 * go on with trusts
+		 */
+		goto trusts;
 	}
 
 	ret = smb_krb5_make_principal(context, &principal,
@@ -3365,6 +3378,60 @@ out:
 	}
 
 	return ret;
+
+trusts:
+	while (priv->trust_index < priv->trust_count) {
+		enum trust_direction trust_direction = priv->trust_direction;
+
+		msg = priv->trust_msgs[priv->trust_index];
+
+		if (trust_direction == INBOUND) {
+			/*
+			 * This time we try INBOUND keys,
+			 * next time we'll do OUTBOUND
+			 * for the same trust.
+			 */
+			priv->trust_direction = OUTBOUND;
+
+			/*
+			 * samba_kdc_trust_message2entry()
+			 * will likely steal msg from us,
+			 * so we need to make a copy for
+			 * the first run with INBOUND,
+			 * and let it steal without
+			 * a copy in the OUTBOUND run.
+			 */
+			msg = ldb_msg_copy(priv->trust_msgs, msg);
+			if (msg == NULL) {
+				return ENOMEM;
+			}
+		} else {
+			/*
+			 * This time we try OUTBOUND keys,
+			 * next time we'll do INBOUND for
+			 * the next trust.
+			 */
+			priv->trust_direction = INBOUND;
+			priv->trust_index++;
+		}
+
+		ret = samba_kdc_trust_message2entry(context,
+						    kdc_db_ctx,
+						    mem_ctx,
+						    trust_direction,
+						    priv->realm_dn,
+						    SDB_F_ADMIN_DATA|SDB_F_GET_ANY,
+						    0, /* kvno */
+						    msg,
+						    entry);
+		if (ret == SDB_ERR_NOENTRY) {
+			continue;
+		}
+		goto out;
+	}
+
+	ret = SDB_ERR_NOENTRY;
+	goto out;
 }
 
 krb5_error_code samba_kdc_firstkey(krb5_context context,
@@ -3377,23 +3444,21 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 	struct ldb_result *res = NULL;
 	krb5_error_code ret;
 	int lret;
+	NTSTATUS status;
 
 	if (priv) {
 		TALLOC_FREE(priv);
 		kdc_db_ctx->seq_ctx = NULL;
 	}
 
-	priv = (struct samba_kdc_seq *) talloc(kdc_db_ctx, struct samba_kdc_seq);
+	priv = talloc_zero(kdc_db_ctx, struct samba_kdc_seq);
 	if (!priv) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "talloc: out of memory");
 		return ret;
 	}
 
-	priv->index = 0;
-	priv->msgs = NULL;
 	priv->realm_dn = ldb_get_default_basedn(ldb_ctx);
-	priv->count = 0;
 
 	ret = krb5_get_default_realm(context, &realm);
 	if (ret != 0) {
@@ -3413,8 +3478,25 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 	}
 
 	priv->count = res->count;
-	priv->msgs = talloc_steal(priv, res->msgs);
-	talloc_free(res);
+	priv->msgs = talloc_move(priv, &res->msgs);
+	TALLOC_FREE(res);
+
+	status = dsdb_trust_search_tdos(ldb_ctx,
+					NULL, /* exclude */
+					trust_attrs,
+					priv,
+					&res);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("dsdb_trust_search_tdos() - %s\n",
+			nt_errstr(status));
+		TALLOC_FREE(priv);
+		return SDB_ERR_NOENTRY;
+	}
+
+	priv->trust_direction = INBOUND;
+	priv->trust_count = res->count;
+	priv->trust_msgs = talloc_move(priv, &res->msgs);
+	TALLOC_FREE(res);
 
 	kdc_db_ctx->seq_ctx = priv;
 
