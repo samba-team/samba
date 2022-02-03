@@ -1274,3 +1274,60 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 
 	return true;
 }
+
+/********************************************************************
+ Windows and NetApp (and arguably the SMB1/2/3 specs) expect a non-DFS
+ path for the targets of rename and hardlink. If we have been given
+ a DFS path for these calls, convert it back into a local path by
+ stripping off the DFS prefix.
+********************************************************************/
+
+NTSTATUS cli_dfs_target_check(TALLOC_CTX *mem_ctx,
+			struct cli_state *cli,
+			const char *fname_src,
+			const char *fname_dst,
+			const char **fname_dst_out)
+{
+	char *dfs_prefix = NULL;
+	size_t prefix_len = 0;
+	struct smbXcli_tcon *tcon = NULL;
+
+	if (!smbXcli_conn_dfs_supported(cli->conn)) {
+		goto copy_fname_out;
+	}
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		tcon = cli->smb2.tcon;
+	} else {
+		tcon = cli->smb1.tcon;
+	}
+	if (!smbXcli_tcon_is_dfs_share(tcon)) {
+		goto copy_fname_out;
+	}
+	dfs_prefix = cli_dfs_make_full_path(mem_ctx, cli, "");
+	if (dfs_prefix == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	prefix_len = strlen(dfs_prefix);
+	if (strncmp(fname_dst, dfs_prefix, prefix_len) != 0) {
+		/*
+		 * Prefix doesn't match. Assume it was
+		 * already stripped or not added in the
+		 * first place.
+		 */
+		goto copy_fname_out;
+	}
+	/* Return the trailing name after the prefix. */
+	*fname_dst_out = &fname_dst[prefix_len];
+	TALLOC_FREE(dfs_prefix);
+	return NT_STATUS_OK;
+
+  copy_fname_out:
+
+	/*
+	 * No change to the destination name. Just
+	 * point it at the incoming destination name.
+	 */
+	*fname_dst_out = fname_dst;
+	TALLOC_FREE(dfs_prefix);
+	return NT_STATUS_OK;
+}
