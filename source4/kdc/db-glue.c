@@ -1337,7 +1337,7 @@ out:
  */
 static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					       struct samba_kdc_db_context *kdc_db_ctx,
-					       TALLOC_CTX *mem_ctx, krb5_const_principal principal,
+					       TALLOC_CTX *mem_ctx,
 					       enum trust_direction direction,
 					       struct ldb_dn *realm_dn,
 					       unsigned flags,
@@ -2064,7 +2064,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		}
 
 		ret = samba_kdc_trust_message2entry(context, kdc_db_ctx, mem_ctx,
-						    principal, direction,
+						    direction,
 						    realm_dn, flags, kvno, msg, entry_ex);
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch: trust_message2entry failed for %s",
