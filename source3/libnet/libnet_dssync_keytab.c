@@ -233,6 +233,73 @@ done:
 	return status;
 }
 
+static NTSTATUS store_or_fetch_attribute(TALLOC_CTX *mem_ctx,
+					 struct libnet_keytab_context *ctx,
+					 const char *object_dn,
+					 const char *attr,
+					 char **value)
+{
+	DATA_BLOB blob = { .length = 0, };
+	NTSTATUS status;
+
+	if (*value == NULL) {
+		/* look into keytab ... */
+		struct libnet_keytab_entry *entry = NULL;
+		char *principal = NULL;
+
+		D_DEBUG("looking for %s/%s@%s in keytayb...\n",
+			attr, object_dn, ctx->dns_domain_name);
+
+		principal = talloc_asprintf(mem_ctx,
+					    "%s/%s@%s",
+					    attr,
+					    object_dn,
+					    ctx->dns_domain_name);
+		if (principal == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		entry = libnet_keytab_search(ctx,
+					     principal,
+					     0,
+					     ENCTYPE_NULL,
+					     mem_ctx);
+		if (entry != NULL) {
+			*value = talloc_strndup(mem_ctx,
+						(char *)entry->password.data,
+						entry->password.length);
+			if (*value == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			D_DEBUG("found %s: %s\n", attr, *value);
+			TALLOC_FREE(entry);
+		} else {
+			*value = NULL;
+			D_DEBUG("entry not found\n");
+		}
+		TALLOC_FREE(principal);
+		return NT_STATUS_OK;
+	}
+
+	blob = data_blob_string_const_null(*value);
+	blob = data_blob_dup_talloc(mem_ctx, blob);
+	if (blob.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = libnet_keytab_add_to_keytab_entries(mem_ctx,
+						     ctx,
+						     0,
+						     object_dn,
+						     attr,
+						     ENCTYPE_NULL,
+						     blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS parse_user(TALLOC_CTX *mem_ctx,
 			   struct libnet_keytab_context *ctx,
 			   struct drsuapi_DsReplicaObjectListItemEx *cur)
@@ -356,48 +423,16 @@ static NTSTATUS parse_user(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (name) {
-		status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, 0, object_dn,
-							     "SAMACCOUNTNAME",
-							     ENCTYPE_NULL,
-							     data_blob_talloc(mem_ctx, name,
-							     strlen(name) + 1));
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	} else {
-		/* look into keytab ... */
-		struct libnet_keytab_entry *entry = NULL;
-		char *principal = NULL;
-
-		DEBUG(10, ("looking for SAMACCOUNTNAME/%s@%s in keytayb...\n",
-			   object_dn, ctx->dns_domain_name));
-
-		principal = talloc_asprintf(mem_ctx, "%s/%s@%s",
-					    "SAMACCOUNTNAME",
-					    object_dn,
-					    ctx->dns_domain_name);
-		if (!principal) {
-			DEBUG(1, ("talloc failed\n"));
-			return NT_STATUS_NO_MEMORY;
-		}
-		entry = libnet_keytab_search(ctx, principal, 0, ENCTYPE_NULL,
-					     mem_ctx);
-		if (entry) {
-			name = (char *)talloc_memdup(mem_ctx,
-						     entry->password.data,
-						     entry->password.length);
-			if (!name) {
-				DEBUG(1, ("talloc failed!\n"));
-				return NT_STATUS_NO_MEMORY;
-			} else {
-				DEBUG(10, ("found name %s\n", name));
-			}
-			TALLOC_FREE(entry);
-		} else {
-			DEBUG(10, ("entry not found\n"));
-		}
-		TALLOC_FREE(principal);
+	status = store_or_fetch_attribute(mem_ctx,
+					  ctx,
+					  object_dn,
+					  "SAMACCOUNTNAME",
+					  &name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("store_or_fetch_attribute(%s, %s, %s): %s\n",
+			object_dn, "SAMACCOUNTNAME", name,
+			nt_errstr(status));
+		return status;
 	}
 
 	if (!name) {
