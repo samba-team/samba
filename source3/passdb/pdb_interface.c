@@ -1402,6 +1402,7 @@ static bool pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 {
 	struct samu *sampw = NULL;
 	struct passwd *unix_pw;
+	fstring pw_name = { 0 };
 	bool ret;
 
 	unix_pw = getpwuid( uid );
@@ -1412,14 +1413,23 @@ static bool pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 		return False;
 	}
 
+	if (unix_pw->pw_name == NULL) {
+		DBG_DEBUG("No pw_name for uid %d\n", (int)uid);
+		return false;
+	}
+
+	/*
+	 * Make a copy, "unix_pw" might go away soon.
+	 */
+	fstrcpy(pw_name, unix_pw->pw_name);
+
 	if ( !(sampw = samu_new( NULL )) ) {
 		DEBUG(0,("pdb_default_uid_to_sid: samu_new() failed!\n"));
 		return False;
 	}
 
 	become_root();
-	ret = NT_STATUS_IS_OK(
-		methods->getsampwnam(methods, sampw, unix_pw->pw_name ));
+	ret = NT_STATUS_IS_OK(methods->getsampwnam(methods, sampw, pw_name));
 	unbecome_root();
 
 	if (!ret) {
