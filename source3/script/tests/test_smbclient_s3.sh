@@ -438,6 +438,53 @@ EOF
     return 0
 }
 
+# Test doing a normal file rename on an msdfs path.
+test_msdfs_rename()
+{
+    tmpfile="$PREFIX/smbclient.in.$$"
+    filename_src="src.$$"
+    filename_dst="dest.$$"
+    filename_src_path="$PREFIX/$filename_src"
+    rm -f "$filename_src_path"
+    touch "$filename_src_path"
+
+#
+# Use both non-force and force rename to
+# ensure we test both codepaths inside libsmb.
+#
+    cat > $tmpfile <<EOF
+lcd $PREFIX
+put $filename_src
+ren $filename_src $filename_dst -f
+ren $filename_dst $filename_src
+del $filename_src
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/msdfs-share -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f "$tmpfile"
+    rm -f "$filename_src_path"
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed renaming $filename_src $filename_dst with error $ret"
+	return 1
+    fi
+
+    echo "$out" | grep "NT_STATUS" >/dev/null 2>&1
+
+    ret="$?"
+    if [ "$ret" -eq 0 ] ; then
+	echo "$out"
+	echo "renaming $filename_src $filename_dst got NT_STATUS_ error"
+	return 1
+    fi
+    return 0
+}
+
 # Test doing a normal file hardlink on an msdfs path.
 test_msdfs_hardlink()
 {
@@ -2068,6 +2115,10 @@ testit "Accessing an MS-DFS link" \
 testit "Recursive ls across MS-DFS links" \
    test_msdfs_recursive_dir || \
    failed=`expr $failed + 1`
+
+testit "Rename on MS-DFS share" \
+    test_msdfs_rename || \
+    failed=`expr $failed + 1`
 
 testit "Hardlink on MS-DFS share" \
     test_msdfs_hardlink || \
