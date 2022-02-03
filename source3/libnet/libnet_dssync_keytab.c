@@ -23,6 +23,7 @@
 #include "libnet/libnet_dssync.h"
 #include "libnet/libnet_keytab.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "lib/crypto/md4.h"
 
 #if defined(HAVE_ADS)
 
@@ -563,6 +564,364 @@ static NTSTATUS parse_user(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+static NTSTATUS parse_AuthenticationInformation(TALLOC_CTX *mem_ctx,
+						struct libnet_keytab_context *ctx,
+						const char *dn,
+						const char *trust_name,
+						const char *attr_name,
+						const char *salt_principal,
+						const char *type,
+						uint32_t *kvno,
+						const struct AuthenticationInformationArray *ia)
+{
+	uint32_t i;
+	struct samr_Password _nthash = {{ 0, }};
+	const struct samr_Password *nthash = NULL;
+	const struct AuthInfoClear *clear = NULL;
+	DATA_BLOB password_utf8 = data_blob_null;
+
+	for (i = 0; i < ia->count; i++) {
+		const struct AuthenticationInformation *a = &ia->array[i];
+
+		switch (a->AuthType) {
+		case TRUST_AUTH_TYPE_VERSION:
+			*kvno = a->AuthInfo.version.version;
+			break;
+		case TRUST_AUTH_TYPE_NT4OWF:
+			nthash = &a->AuthInfo.nt4owf.password;
+			break;
+		case TRUST_AUTH_TYPE_CLEAR:
+			clear = &a->AuthInfo.clear;
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (clear != NULL && clear->size != 0) {
+		DATA_BLOB password_utf16 = data_blob_null;
+		bool ok;
+
+		password_utf16 = data_blob_const(clear->password,
+						 clear->size);
+
+		if (nthash == NULL) {
+			mdfour(_nthash.hash,
+			       password_utf16.data,
+			       password_utf16.length);
+			nthash = &_nthash;
+		}
+
+		ok = convert_string_talloc(mem_ctx,
+					   CH_UTF16MUNGED, CH_UTF8,
+					   password_utf16.data,
+					   password_utf16.length,
+					   (void *)&password_utf8.data,
+					   &password_utf8.length);
+		if (!ok) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (password_utf8.length != 0) {
+		krb5_principal salt_princ = NULL;
+		krb5_data salt = { 0, };
+		krb5_data cleartext_data = { 0, };
+		krb5_enctype enctypes[] = {
+			ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+			ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+		};
+		size_t ei;
+		krb5_error_code kret;
+		NTSTATUS status;
+
+		kret = smb_krb5_parse_name(ctx->context,
+					   salt_principal,
+					   &salt_princ);
+		if (kret != 0) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		cleartext_data.data = discard_const_p(char, password_utf8.data);
+		cleartext_data.length = password_utf8.length;
+
+		kret = smb_krb5_get_pw_salt(ctx->context,
+					    salt_princ,
+					    &salt);
+		if (kret != 0) {
+			krb5_free_principal(ctx->context, salt_princ);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (ei = 0; ei < ARRAY_SIZE(enctypes); ei++) {
+			krb5_keyblock keyb = { 0, };
+			DATA_BLOB blob = data_blob_null;
+
+			kret = smb_krb5_create_key_from_string(ctx->context,
+							       salt_princ,
+							       &salt,
+							       &cleartext_data,
+							       enctypes[ei],
+							       &keyb);
+			if (kret != 0) {
+				smb_krb5_free_data_contents(ctx->context, &salt);
+				krb5_free_principal(ctx->context, salt_princ);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			blob = data_blob_talloc(mem_ctx,
+						KRB5_KEY_DATA(&keyb),
+						KRB5_KEY_LENGTH(&keyb));
+			krb5_free_keyblock_contents(ctx->context, &keyb);
+
+			status = libnet_keytab_add_to_keytab_entries(mem_ctx,
+								     ctx,
+								     *kvno,
+								     trust_name,
+								     attr_name,
+								     enctypes[ei],
+								     blob);
+			if (!NT_STATUS_IS_OK(status)) {
+				smb_krb5_free_data_contents(ctx->context, &salt);
+				krb5_free_principal(ctx->context, salt_princ);
+				return status;
+			}
+		}
+
+		smb_krb5_free_data_contents(ctx->context, &salt);
+		krb5_free_principal(ctx->context, salt_princ);
+	}
+
+	if (nthash != NULL) {
+		DATA_BLOB blob = data_blob_null;
+		NTSTATUS status;
+
+		blob = data_blob_talloc(mem_ctx, nthash->hash, sizeof(nthash->hash));
+
+		status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx,
+							     *kvno,
+							     trust_name,
+							     attr_name,
+							     ENCTYPE_ARCFOUR_HMAC,
+							     blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS parse_trustAuthInOutBlob(TALLOC_CTX *mem_ctx,
+					 struct libnet_keytab_context *ctx,
+					 const char *dn,
+					 const char *trust_name,
+					 const char *attr_name,
+					 const char *salt_principal,
+					 const DATA_BLOB *blob)
+{
+	NTSTATUS status;
+	enum ndr_err_code ndr_err;
+	struct trustAuthInOutBlob taiob;
+	uint32_t kvno = 0;
+
+	ndr_err = ndr_pull_struct_blob_all(blob, mem_ctx, &taiob,
+			(ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		goto done;
+	}
+
+	D_WARNING("# %s %s/%s\n", dn, attr_name, trust_name);
+
+	status = parse_AuthenticationInformation(mem_ctx,
+						 ctx,
+						 dn,
+						 trust_name,
+						 attr_name,
+						 salt_principal,
+						 "current",
+						 &kvno,
+						 &taiob.current);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("parsing of %s %s/current failed: %s\n",
+			dn, attr_name, nt_errstr(status));
+	}
+
+	kvno -= 1;
+	status = parse_AuthenticationInformation(mem_ctx,
+						 ctx,
+						 dn,
+						 trust_name,
+						 attr_name,
+						 salt_principal,
+						 "previous",
+						 &kvno,
+						 &taiob.previous);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("parsing of %s %s/previous failed: %s\n",
+			dn, attr_name, nt_errstr(status));
+	}
+
+	status = NT_STATUS_OK;
+done:
+	return status;
+}
+
+static NTSTATUS parse_tdo(TALLOC_CTX *mem_ctx,
+			  struct libnet_keytab_context *ctx,
+			  struct drsuapi_DsReplicaObjectListItemEx *cur)
+{
+	uint32_t i;
+	const char *dn = cur->object.identifier->dn;
+	char *trustPartner = NULL;
+	char *flatName = NULL;
+	char *cn = NULL;
+	char *trust_name = NULL;
+	char *trust_realm = NULL;
+	char *our_realm = NULL;
+	const char *incoming_salt = NULL;
+	const char *outgoing_salt = NULL;
+	NTSTATUS status;
+
+	D_NOTICE("parsing trust '%s'\n", dn);
+
+	for (i = 0; i < cur->object.attribute_ctr.num_attributes; i++) {
+		struct drsuapi_DsReplicaAttribute *attr =
+			&cur->object.attribute_ctr.attributes[i];
+		const DATA_BLOB *blob = NULL;
+
+		if (attr->value_ctr.num_values != 1) {
+			continue;
+		}
+
+		if (attr->value_ctr.values[0].blob == NULL) {
+			continue;
+		}
+
+		blob = attr->value_ctr.values[0].blob;
+
+		switch (attr->attid) {
+		case DRSUAPI_ATTID_trustPartner:
+			pull_string_talloc(mem_ctx, NULL, 0, &trustPartner,
+					   blob->data, blob->length,
+					   STR_UNICODE);
+			break;
+		case DRSUAPI_ATTID_flatName:
+			pull_string_talloc(mem_ctx, NULL, 0, &flatName,
+					   blob->data, blob->length,
+					   STR_UNICODE);
+			break;
+		case DRSUAPI_ATTID_cn:
+			pull_string_talloc(mem_ctx, NULL, 0, &cn,
+					   blob->data, blob->length,
+					   STR_UNICODE);
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (trustPartner != NULL) {
+		trust_name = trustPartner;
+	} else if (flatName != NULL) {
+		trust_name = flatName;
+	} else {
+		trust_name = cn;
+	}
+
+	status = store_or_fetch_attribute(mem_ctx,
+					  ctx,
+					  dn,
+					  "REMOTETRUSTNAME",
+					  &trust_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("store_or_fetch_attribute(%s, %s, %s): %s\n",
+			dn, "REMOTETRUSTNAME", trust_name,
+			nt_errstr(status));
+		return status;
+	}
+
+	if (trust_name == NULL) {
+		D_DEBUG("no trust_name (trustPartner, flatName, cn) found - "
+			"skipping.\n");
+		return NT_STATUS_OK;
+	}
+
+	trust_realm = strupper_talloc(mem_ctx, trust_name);
+	if (trust_realm == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	our_realm = strupper_talloc(mem_ctx, ctx->dns_domain_name);
+	if (our_realm == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	incoming_salt = talloc_asprintf(mem_ctx,
+					"krbtgt/%s@%s",
+					trust_realm,
+					our_realm);
+	if (incoming_salt == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	outgoing_salt = talloc_asprintf(mem_ctx,
+					"krbtgt/%s@%s",
+					our_realm,
+					trust_realm);
+	if (outgoing_salt == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < cur->object.attribute_ctr.num_attributes; i++) {
+		struct drsuapi_DsReplicaAttribute *attr =
+			&cur->object.attribute_ctr.attributes[i];
+		const char *attr_name = NULL;
+		const DATA_BLOB *blob = NULL;
+		const char *salt_principal = NULL;
+
+		if (attr->value_ctr.num_values != 1) {
+			continue;
+		}
+
+		if (attr->value_ctr.values[0].blob == NULL) {
+			continue;
+		}
+
+		blob = attr->value_ctr.values[0].blob;
+
+		switch (attr->attid) {
+		case DRSUAPI_ATTID_trustAuthIncoming:
+			attr_name = "trustAuthIncoming";
+			salt_principal = incoming_salt;
+			break;
+		case DRSUAPI_ATTID_trustAuthOutgoing:
+			attr_name = "trustAuthOutgoing";
+			salt_principal = outgoing_salt;
+			break;
+		default:
+			break;
+		}
+
+		if (attr_name == NULL) {
+			continue;
+		}
+
+		status = parse_trustAuthInOutBlob(mem_ctx,
+						  ctx,
+						  dn,
+						  trust_name,
+						  attr_name,
+						  salt_principal,
+						  blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("parsing of %s attr %s failed: %s\n",
+				dn, attr_name, nt_errstr(status));
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 			     struct libnet_keytab_context *ctx,
 			     struct drsuapi_DsReplicaObjectListItemEx *cur)
@@ -617,6 +976,9 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		case DRSUAPI_ATTID_ntPwdHistory:
 		case DRSUAPI_ATTID_supplementalCredentials:
 			return parse_user(mem_ctx, ctx, cur);
+		case DRSUAPI_ATTID_trustAuthIncoming:
+		case DRSUAPI_ATTID_trustAuthOutgoing:
+			return parse_tdo(mem_ctx, ctx, cur);
 		default:
 			continue;
 		}
