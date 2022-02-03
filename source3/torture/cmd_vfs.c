@@ -2169,6 +2169,86 @@ cleanup:
 	return status;
 }
 
+/*
+ * This is a quick hack to demonstrate a crash in the full_audit
+ * module when passing fsp->smb_fname into SMB_VFS_CREATE_FILE leading
+ * to an error.
+ *
+ * Feel free to expand with more options as needed
+ */
+static NTSTATUS cmd_create_file(
+	struct vfs_state *vfs,
+	TALLOC_CTX *mem_ctx,
+	int argc,
+	const char **argv)
+{
+	struct smb_filename *fname = NULL;
+	struct files_struct *fsp = NULL;
+	int info, ret;
+	NTSTATUS status;
+
+	if (argc != 2) {
+		DBG_ERR("Usage: create_file filename\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	fname = synthetic_smb_fname(
+		talloc_tos(), argv[1], NULL, NULL, 0, 0);
+	if (fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = vfs_stat(vfs->conn, fname);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("vfs_stat() failed: %s\n", strerror(errno));
+		TALLOC_FREE(fname);
+		return status;
+	}
+
+	status = openat_pathref_fsp(vfs->conn->cwd_fsp, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Could not open %s: %s\n",
+			  fname->base_name,
+			  nt_errstr(status));
+		TALLOC_FREE(fname);
+		return status;
+	}
+
+	status = SMB_VFS_CREATE_FILE(
+		vfs->conn,
+		NULL,
+
+		/*
+		 * Using fname->fsp->fsp_name seems to be legal,
+		 * there's code to handle this in
+		 * create_file_unixpath(). And it is actually very
+		 * worthwhile re-using the fsp_name, we can save quite
+		 * a few copies of smb_filename with that.
+		 */
+		fname->fsp->fsp_name,
+		SEC_FILE_ALL,
+		FILE_SHARE_NONE,
+		FILE_OPEN,
+		FILE_NON_DIRECTORY_FILE,
+		0,
+		0,
+		NULL,
+		0,
+		0,
+		NULL,
+		NULL,
+		&fsp,
+		&info,
+		NULL,
+		NULL
+		);
+	DBG_DEBUG("create_file returned %s\n", nt_errstr(status));
+
+	TALLOC_FREE(fname);
+
+	return NT_STATUS_OK;
+}
 
 struct cmd_set vfs_commands[] = {
 
@@ -2237,5 +2317,10 @@ struct cmd_set vfs_commands[] = {
 	{ "test_chain", cmd_test_chain, "test chain code",
 	  "test_chain" },
 	{ "translate_name", cmd_translate_name, "VFS translate_name()", "translate_name unix_filename" },
+	{ "create_file",
+	  cmd_create_file,
+	  "VFS create_file()",
+	  "create_file <filename>"
+	},
 	{0}
 };
