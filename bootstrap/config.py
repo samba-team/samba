@@ -235,6 +235,10 @@ CENTOS8_YUM_BOOTSTRAP = r"""
 {GENERATED_MARKER}
 set -xueo pipefail
 
+# CentOS8 is EOL
+sed -i -e "s|^mirrorlist=|#mirrorlist=|g" /etc/yum.repos.d/CentOS-*
+sed -i -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-*
+
 yum update -y
 yum install -y dnf-plugins-core
 yum install -y epel-release
@@ -244,6 +248,11 @@ yum config-manager --set-enabled PowerTools -y || \
     yum config-manager --set-enabled powertools -y
 yum config-manager --set-enabled Devel -y || \
     yum config-manager --set-enabled devel -y
+
+# CentOS8 is EOL
+sed -i -e "s|^mirrorlist=|#mirrorlist=|g" /etc/yum.repos.d/CentOS-*
+sed -i -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-*
+
 yum update -y
 
 yum install -y \
