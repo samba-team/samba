@@ -542,7 +542,8 @@ static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd;
-	size_t size, rsize;
+	size_t size;
+	ssize_t rsize;
 
 	if (argc != 3) {
 		printf("Usage: read <fd> <size>\n");
@@ -572,7 +573,8 @@ static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 static NTSTATUS cmd_write(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	int fd, size, wsize;
+	int fd, wsize;
+	size_t size;
 
 	if (argc != 3) {
 		printf("Usage: write <fd> <size>\n");
