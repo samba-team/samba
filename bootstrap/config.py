@@ -230,28 +230,18 @@ if [ ! -f /usr/bin/python3 ]; then
 fi
 """
 
-CENTOS8_YUM_BOOTSTRAP = r"""
+CENTOS8S_YUM_BOOTSTRAP = r"""
 #!/bin/bash
 {GENERATED_MARKER}
 set -xueo pipefail
-
-# CentOS8 is EOL
-sed -i -e "s|^mirrorlist=|#mirrorlist=|g" /etc/yum.repos.d/CentOS-*
-sed -i -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-*
 
 yum update -y
 yum install -y dnf-plugins-core
 yum install -y epel-release
 
 yum -v repolist all
-yum config-manager --set-enabled PowerTools -y || \
+yum config-manager --set-enabled powertools -y || \
     yum config-manager --set-enabled powertools -y
-yum config-manager --set-enabled Devel -y || \
-    yum config-manager --set-enabled devel -y
-
-# CentOS8 is EOL
-sed -i -e "s|^mirrorlist=|#mirrorlist=|g" /etc/yum.repos.d/CentOS-*
-sed -i -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-*
 
 yum update -y
 
@@ -480,10 +470,10 @@ RPM_DISTS = {
             'tracker-devel': '', # do not install
         }
     },
-    'centos8': {
-        'docker_image': 'centos:8',
-        'vagrant_box': 'centos/8',
-        'bootstrap': CENTOS8_YUM_BOOTSTRAP,
+    'centos8s': {
+        'docker_image': 'quay.io/centos/centos:stream8',
+        'vagrant_box': 'centos/stream8',
+        'bootstrap': CENTOS8S_YUM_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
             '@development-tools': '"@Development Tools"',  # add quotes

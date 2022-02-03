@@ -3,7 +3,7 @@
 # See also bootstrap/config.py
 #
 
-FROM centos:8
+FROM quay.io/centos/centos:stream8
 
 # pass in with --build-arg while build
 ARG SHA1SUM
