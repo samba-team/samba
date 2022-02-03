@@ -1323,6 +1323,7 @@ static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
 	uint8_t additional_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint8_t *bytes = NULL;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_cifs_rename_state);
 	if (req == NULL) {
@@ -1334,6 +1335,18 @@ static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
 		 * CIFS doesn't support replace
 		 */
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * Strip a MSDFS path from fname_dst if we were given one.
+	 */
+	status = cli_dfs_target_check(state,
+				cli,
+				fname_src,
+				fname_dst,
+				&fname_dst);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 
