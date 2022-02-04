@@ -88,21 +88,10 @@ bool pm_process(const char *filename,
 			      void *private_data),
 		void *private_data)
 {
-	FILE *f;
-	bool ret;
-
-	f = fopen(filename, "r");
-	if (f == NULL) {
-		return false;
-	}
-
-	ret = tini_parse(f, false, sfunc, pfunc, private_data);
-
-	fclose(f);
-
+	bool ret = pm_process_with_flags(
+		filename, false, sfunc, pfunc, private_data);
 	return ret;
 }
-
 
 bool pm_process_with_flags(const char *filename,
 			   bool allow_empty_values,
