@@ -122,7 +122,7 @@ CLEAN_SOURCE_TREE_CMD = "cd ${TEST_SOURCE_DIR} && script/clean-source-tree.sh"
 
 def nm_grep_symbols(sofile, expected_symbols=""):
     return "nm " + sofile + " | " + \
-           "egrep -v ' (__bss_start|_edata|_init|_fini|_end)' | " + \
+           "egrep -v ' (__bss_start|_edata|_init|_fini|_end|__gcov_)' | " + \
            "egrep -v '" + expected_symbols + "' |" + \
            "egrep ' [BDGTRVWS] ' && exit 1; exit 0;"
 
