@@ -411,7 +411,6 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-system',
                         source=bld.SUBDIR('common',
                                           'system_socket.c system.c'),
-                        includes='include',
                         deps='replace talloc tevent tdb pcap samba-util')
 
     bld.SAMBA_SUBSYSTEM('ctdb-common',
@@ -456,7 +455,6 @@ def build(bld):
                                              protocol_client.c
                                              protocol_debug.c
                                              protocol_sock.c'''),
-                        includes='include',
                         deps='ctdb-protocol-basic replace talloc tdb')
 
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-util',
@@ -472,7 +470,6 @@ def build(bld):
                                              client_db.c client_util.c
                                              client_tunnel.c
                                           '''),
-                        includes='include',
                         deps='replace talloc tevent tdb tdb-wrap')
 
     bld.SAMBA_SUBSYSTEM('ctdb-server-util',
@@ -685,7 +682,6 @@ def build(bld):
     if bld.env.HAVE_PMDA:
         bld.SAMBA_BINARY('pmdactdb',
                          source='utils/pmda/pmda_ctdb.c',
-                         includes='include',
                          deps='''ctdb-client ctdb-protocol ctdb-util
                                  samba-util pcp_pmda pcp''',
                          install_path='${CTDB_PMDADIR}')
@@ -977,7 +973,6 @@ def build(bld):
                                           '''protocol_common.c
                                              protocol_common_ctdb.c
                                           '''),
-                        includes='include',
                         deps='ctdb-protocol-tests-basic replace talloc tdb')
 
     bld.SAMBA_BINARY('protocol_basic_test',
@@ -1011,7 +1006,6 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-tests-common',
                         source=bld.SUBDIR('tests/src',
                                           'cluster_wait.c test_options.c'),
-                        includes='include',
                         deps='samba-util replace popt talloc tevent tdb')
 
     # Test binaries
