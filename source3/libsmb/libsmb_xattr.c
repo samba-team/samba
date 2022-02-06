@@ -764,7 +764,7 @@ cacl_get(SMBCCTX *context,
         }
 
         /* Copy name so we can strip off exclusions (if any are specified) */
-        strncpy(name_sandbox, attr_name, sizeof(name_sandbox) - 1);
+        fstrcpy(name_sandbox, attr_name);
 
         /* Ensure name is null terminated */
         name_sandbox[sizeof(name_sandbox) - 1] = '\0';
