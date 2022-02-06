@@ -3962,7 +3962,7 @@ static int copy_access_posix_acl(struct files_struct *from,
 
 	posix_acl = SMB_VFS_SYS_ACL_GET_FD(
 		from, SMB_ACL_TYPE_ACCESS, talloc_tos());
-	if (from == NULL) {
+	if (posix_acl == NULL) {
 		return -1;
 	}
 
