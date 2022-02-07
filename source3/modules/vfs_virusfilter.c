@@ -1309,21 +1309,21 @@ static int virusfilter_vfs_openat(struct vfs_handle_struct *handle,
 		 */
 		goto virusfilter_vfs_open_next;
 	}
-	ret = S_ISREG(smb_fname->st.st_ex_mode);
+	ret = S_ISREG(sbuf.st_ex_mode);
 	if (ret == 0) {
 		DBG_INFO("Not scanned: Directory or special file: %s/%s\n",
 			 cwd_fname, fname);
 		goto virusfilter_vfs_open_next;
 	}
 	if (config->max_file_size > 0 &&
-	    smb_fname->st.st_ex_size > config->max_file_size)
+	    sbuf.st_ex_size > config->max_file_size)
 	{
 		DBG_INFO("Not scanned: file size > max file size: %s/%s\n",
 			 cwd_fname, fname);
 		goto virusfilter_vfs_open_next;
 	}
 	if (config->min_file_size > 0 &&
-	    smb_fname->st.st_ex_size < config->min_file_size)
+	    sbuf.st_ex_size < config->min_file_size)
 	{
 		DBG_INFO("Not scanned: file size < min file size: %s/%s\n",
 		      cwd_fname, fname);
