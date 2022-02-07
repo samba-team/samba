@@ -155,13 +155,13 @@ static bool check_stream(struct torture_context *tctx,
 static bool check_stream_list(struct smb2_tree *tree,
 			      struct torture_context *tctx,
 			      const char *fname,
-			      int num_exp,
+			      unsigned int num_exp,
 			      const char **exp,
 			      struct smb2_handle h)
 {
 	union smb_fileinfo finfo;
 	NTSTATUS status;
-	int i;
+	unsigned int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	char **exp_sort;
 	struct stream_struct *stream_sort;
