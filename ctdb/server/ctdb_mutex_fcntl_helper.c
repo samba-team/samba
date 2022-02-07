@@ -159,30 +159,30 @@ static bool wait_for_parent_recv(struct tevent_req *req, int *perr)
 }
 
 /*
- * Wait and check for lost lock - file removed or replaced
+ * Perform I/O on lock in a loop - complete when file removed or replaced
  */
 
-struct wait_for_lost_state {
+struct lock_io_check_state {
 	struct tevent_context *ev;
 	const char *lock_file;
 	ino_t inode;
 	unsigned long recheck_interval;
 };
 
-static void wait_for_lost_check(struct tevent_req *subreq);
+static void lock_io_check_loop(struct tevent_req *subreq);
 
-static struct tevent_req *wait_for_lost_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *lock_io_check_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
 					     const char *lock_file,
 					     int fd,
 					     unsigned long recheck_interval)
 {
 	struct tevent_req *req, *subreq;
-	struct wait_for_lost_state *state;
+	struct lock_io_check_state *state;
 	struct stat sb;
 	int ret;
 
-	req = tevent_req_create(mem_ctx, &state, struct wait_for_lost_state);
+	req = tevent_req_create(mem_ctx, &state, struct lock_io_check_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -211,17 +211,17 @@ static struct tevent_req *wait_for_lost_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wait_for_lost_check, req);
+	tevent_req_set_callback(subreq, lock_io_check_loop, req);
 
 	return req;
 }
 
-static void wait_for_lost_check(struct tevent_req *subreq)
+static void lock_io_check_loop(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct wait_for_lost_state *state = tevent_req_data(
-		req, struct wait_for_lost_state);
+	struct lock_io_check_state *state = tevent_req_data(
+		req, struct lock_io_check_state);
 	bool status;
 	struct stat sb;
 	int ret;
@@ -261,10 +261,10 @@ static void wait_for_lost_check(struct tevent_req *subreq)
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, wait_for_lost_check, req);
+	tevent_req_set_callback(subreq, lock_io_check_loop, req);
 }
 
-static bool wait_for_lost_recv(struct tevent_req *req, int *perr)
+static bool lock_io_check_recv(struct tevent_req *req, int *perr)
 {
 	if (tevent_req_is_unix_error(req, perr)) {
 		return false;
@@ -274,14 +274,15 @@ static bool wait_for_lost_recv(struct tevent_req *req, int *perr)
 }
 
 /*
- * Wait for a reason to exit, indicating that the lock is lost
+ * Wait for a reason to exit, indicating that parent has exited or I/O
+ * on lock failed
  */
 
 struct wait_for_exit_state {
 };
 
 static void wait_for_exit_parent_done(struct tevent_req *subreq);
-static void wait_for_exit_lost_done(struct tevent_req *subreq);
+static void wait_for_exit_io_check_done(struct tevent_req *subreq);
 
 static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
@@ -305,7 +306,7 @@ static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 	tevent_req_set_callback(subreq, wait_for_exit_parent_done, req);
 
 	if (recheck_interval > 0) {
-		subreq = wait_for_lost_send(state,
+		subreq = lock_io_check_send(state,
 					    ev,
 					    lock_file,
 					    fd,
@@ -313,7 +314,9 @@ static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(subreq, wait_for_exit_lost_done, req);
+		tevent_req_set_callback(subreq,
+					wait_for_exit_io_check_done,
+					req);
 	}
 
 	return req;
@@ -340,14 +343,14 @@ static void wait_for_exit_parent_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static void wait_for_exit_lost_done(struct tevent_req *subreq)
+static void wait_for_exit_io_check_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
 	bool status;
 	int err;
 
-	status = wait_for_lost_recv(subreq, &err);
+	status = lock_io_check_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (! status) {
 		/* Ignore error */
