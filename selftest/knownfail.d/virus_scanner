@@ -1,2 +1,0 @@
-^samba3.blackbox.virus_scanner.check_infected_read  # test download infected file ('vfs objects = virusfilter')
-^samba3.blackbox.virus_scanner.check_infected_write # test upload infected file ('vfs objects = virusfilter')
