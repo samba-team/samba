@@ -705,9 +705,15 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 			struct ldb_request *req_extended_dn;
 			struct ldb_extended_dn_control *ext_ctrl_data;
 			req_extended_dn = talloc_zero(req, struct ldb_request);
+			if (req_extended_dn == NULL) {
+				return ldb_module_oom(module);
+			}
 			req_extended_dn->controls = req->controls;
 			ext_ctrl_data = talloc_zero(req,
 					struct ldb_extended_dn_control);
+			if (ext_ctrl_data == NULL) {
+				return ldb_module_oom(module);
+			}
 			ext_ctrl_data->type = 1;
 
 			ret = ldb_request_add_control(req_extended_dn,
@@ -736,8 +742,16 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 		ac->store->expr = talloc_steal(ac->store, req->op.search.tree);
 		ac->store->expr_str = ldb_filter_from_tree(ac->store,
 							  req->op.search.tree);
-		ac->store->attrs = paged_copy_attrs(ac->store,
-						    req->op.search.attrs);
+		if (ac->store->expr_str == NULL) {
+			return ldb_module_oom(module);
+		}
+		if (req->op.search.attrs != NULL) {
+			ac->store->attrs = paged_copy_attrs(ac->store,
+							    req->op.search.attrs);
+			if (ac->store->attrs == NULL) {
+				return ldb_module_oom(module);
+			}
+		}
 
 		/* save it locally and remove it from the list */
 		/* we do not need to replace them later as we
