@@ -553,10 +553,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		blob = hexdump_to_data_blob(mem_ctx, (const char *)data, size);
 	} else if (base64_input) {
 		/* Use talloc_strndup() to ensure null termination */
-		blob = base64_decode_data_blob(talloc_strndup(mem_ctx,
-							      (const char *)data, size));
-		/* base64_decode_data_blob() allocates on NULL */
-		talloc_steal(mem_ctx, blob.data);
+		blob = base64_decode_data_blob_talloc(
+			mem_ctx,
+			talloc_strndup(mem_ctx, (const char *)data, size));
 	} else {
 		blob = data_blob_const(data, size);
 	}
