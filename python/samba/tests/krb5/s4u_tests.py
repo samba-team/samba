@@ -1336,20 +1336,9 @@ class S4UKerberosTests(KDCBaseTest):
                                     modify_pac_fn=modify_pac_fn)
 
     def set_ticket_forwardable(self, ticket, flag, update_pac_checksums=True):
-        flag = '1' if flag else '0'
-
-        def modify_fn(enc_part):
-            # Reset the forwardable flag
-            forwardable_pos = (len(tuple(krb5_asn1.TicketFlags('forwardable')))
-                               - 1)
-
-            flags = enc_part['flags']
-            self.assertLessEqual(forwardable_pos, len(flags))
-            enc_part['flags'] = (flags[:forwardable_pos] +
-                                 flag +
-                                 flags[forwardable_pos+1:])
-
-            return enc_part
+        modify_fn = functools.partial(self.modify_ticket_flag,
+                                      flag='forwardable',
+                                      value=flag)
 
         if update_pac_checksums:
             checksum_keys = self.get_krbtgt_checksum_key()
