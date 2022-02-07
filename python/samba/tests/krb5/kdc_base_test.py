@@ -1630,6 +1630,20 @@ class KDCBaseTest(RawKerberosTest):
             enc_part, asn1Spec=krb5_asn1.EncTicketPart())
         return enc_ticket_part
 
+    def modify_ticket_flag(self, enc_part, flag, value):
+        self.assertIsInstance(value, bool)
+
+        flag = krb5_asn1.TicketFlags(flag)
+        pos = len(tuple(flag)) - 1
+
+        flags = enc_part['flags']
+        self.assertLessEqual(pos, len(flags))
+
+        new_flags = flags[:pos] + str(int(value)) + flags[pos + 1:]
+        enc_part['flags'] = new_flags
+
+        return enc_part
+
     def get_objectSid(self, samdb, dn):
         ''' Get the objectSID for a DN
             Note: performs an Ldb query.

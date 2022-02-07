@@ -2419,14 +2419,7 @@ class KdcTgsTests(KDCBaseTest):
 
     def _modify_renewable(self, enc_part):
         # Set the renewable flag.
-        renewable_flag = krb5_asn1.TicketFlags('renewable')
-        pos = len(tuple(renewable_flag)) - 1
-
-        flags = enc_part['flags']
-        self.assertLessEqual(pos, len(flags))
-
-        new_flags = flags[:pos] + '1' + flags[pos + 1:]
-        enc_part['flags'] = new_flags
+        enc_part = self.modify_ticket_flag(enc_part, 'renewable', value=True)
 
         # Set the renew-till time to be in the future.
         renew_till = self.get_KerberosTime(offset=100 * 60 * 60)
@@ -2436,14 +2429,7 @@ class KdcTgsTests(KDCBaseTest):
 
     def _modify_invalid(self, enc_part):
         # Set the invalid flag.
-        invalid_flag = krb5_asn1.TicketFlags('invalid')
-        pos = len(tuple(invalid_flag)) - 1
-
-        flags = enc_part['flags']
-        self.assertLessEqual(pos, len(flags))
-
-        new_flags = flags[:pos] + '1' + flags[pos + 1:]
-        enc_part['flags'] = new_flags
+        enc_part = self.modify_ticket_flag(enc_part, 'invalid', value=True)
 
         # Set the ticket start time to be in the past.
         past_time = self.get_KerberosTime(offset=-100 * 60 * 60)
