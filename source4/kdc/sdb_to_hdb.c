@@ -147,6 +147,31 @@ static int sdb_keys_to_Keys(const struct sdb_keys *s, Keys *h)
 	return 0;
 }
 
+static int sdb_keys_to_HistKeys(krb5_context context,
+				const struct sdb_keys *s,
+				krb5_kvno kvno,
+				hdb_entry *h)
+{
+	unsigned int i;
+
+	for (i = 0; i < s->len; i++) {
+		Key k = { 0, };
+		int ret;
+
+		ret = sdb_key_to_Key(&s->val[i], &k);
+		if (ret != 0) {
+			return ENOMEM;
+		}
+		ret = hdb_add_history_key(context, h, kvno, &k);
+		free_Key(&k);
+		if (ret != 0) {
+			return ENOMEM;
+		}
+	}
+
+	return 0;
+}
+
 static int sdb_event_to_Event(krb5_context context,
 			      const struct sdb_event *s, Event *h)
 {
@@ -190,6 +215,26 @@ int sdb_entry_to_hdb_entry(krb5_context context,
 	rc = sdb_keys_to_Keys(&s->keys, &h->keys);
 	if (rc != 0) {
 		goto error;
+	}
+
+	if (h->kvno > 1) {
+		rc = sdb_keys_to_HistKeys(context,
+					  &s->old_keys,
+					  h->kvno - 1,
+					  h);
+		if (rc != 0) {
+			goto error;
+		}
+	}
+
+	if (h->kvno > 2) {
+		rc = sdb_keys_to_HistKeys(context,
+					  &s->older_keys,
+					  h->kvno - 2,
+					  h);
+		if (rc != 0) {
+			goto error;
+		}
 	}
 
 	rc = sdb_event_to_Event(context,
