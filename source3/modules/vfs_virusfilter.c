@@ -35,12 +35,14 @@
 
 enum virusfilter_scanner_enum {
 	VIRUSFILTER_SCANNER_CLAMAV,
+	VIRUSFILTER_SCANNER_DUMMY,
 	VIRUSFILTER_SCANNER_FSAV,
 	VIRUSFILTER_SCANNER_SOPHOS
 };
 
 static const struct enum_list scanner_list[] = {
 	{ VIRUSFILTER_SCANNER_CLAMAV,	"clamav" },
+	{ VIRUSFILTER_SCANNER_DUMMY,	"dummy" },
 	{ VIRUSFILTER_SCANNER_FSAV,	"fsav" },
 	{ VIRUSFILTER_SCANNER_SOPHOS,	"sophos" },
 	{ -1,				NULL }
@@ -199,6 +201,7 @@ static int virusfilter_vfs_connect(
 	int snum = SNUM(handle->conn);
 	struct virusfilter_config *config = NULL;
 	const char *exclude_files = NULL;
+	const char *infected_files = NULL;
 	const char *temp_quarantine_dir_mode = NULL;
 	const char *infected_file_command = NULL;
 	const char *scan_error_command = NULL;
@@ -253,6 +256,12 @@ static int virusfilter_vfs_connect(
 		snum, "virusfilter", "exclude files", NULL);
 	if (exclude_files != NULL) {
 		set_namearray(&config->exclude_files, exclude_files);
+	}
+
+	infected_files = lp_parm_const_string(
+		snum, "virusfilter", "infected files", NULL);
+	if (infected_files != NULL) {
+		set_namearray(&config->infected_files, infected_files);
 	}
 
 	config->cache_entry_limit = lp_parm_int(
@@ -531,6 +540,9 @@ static int virusfilter_vfs_connect(
 		break;
 	case VIRUSFILTER_SCANNER_CLAMAV:
 		ret = virusfilter_clamav_init(config);
+		break;
+	case VIRUSFILTER_SCANNER_DUMMY:
+		ret = virusfilter_dummy_init(config);
 		break;
 	default:
 		DBG_ERR("Unhandled scanner %d\n", backend);
