@@ -459,9 +459,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	const struct ldb_val *sc_val;
 	struct supplementalCredentialsBlob scb;
 	struct supplementalCredentialsPackage *scpk = NULL;
-	bool newer_keys = false;
 	struct package_PrimaryKerberosBlob _pkb;
-	struct package_PrimaryKerberosCtr3 *pkb3 = NULL;
 	struct package_PrimaryKerberosCtr4 *pkb4 = NULL;
 	bool is_krbtgt = false;
 	int krbtgt_number = 0;
@@ -586,23 +584,17 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 					scpk = NULL;
 					continue;
 				}
-				newer_keys = true;
 				break;
-			} else if (strcmp("Primary:Kerberos", scb.sub.packages[i].name) == 0) {
-				scpk = &scb.sub.packages[i];
-				if (!scpk->data || !scpk->data[0]) {
-					scpk = NULL;
-				}
-				/*
-				 * we don't break here in hope to find
-				 * a Kerberos-Newer-Keys package
-				 */
 			}
 		}
 	}
 	/*
-	 * Primary:Kerberos-Newer-Keys or Primary:Kerberos element
+	 * Primary:Kerberos-Newer-Keys element
 	 * of supplementalCredentials
+	 *
+	 * The legacy Primary:Kerberos only contains
+	 * single DES keys, which are completely ignored
+	 * now.
 	 */
 	if (scpk) {
 		DATA_BLOB blob;
@@ -623,27 +615,15 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 			goto out;
 		}
 
-		if (newer_keys && _pkb.version != 4) {
+		if (_pkb.version != 4) {
 			ret = EINVAL;
 			krb5_set_error_message(context, ret, "samba_kdc_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
 			krb5_warnx(context, "samba_kdc_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
 			goto out;
 		}
 
-		if (!newer_keys && _pkb.version != 3) {
-			ret = EINVAL;
-			krb5_set_error_message(context, ret, "samba_kdc_message2entry_keys: could not parse Primary:Kerberos not version 3");
-			krb5_warnx(context, "samba_kdc_message2entry_keys: could not parse Primary:Kerberos not version 3");
-			goto out;
-		}
-
-		if (_pkb.version == 4) {
-			pkb4 = &_pkb.ctr.ctr4;
-			allocated_keys += pkb4->num_keys;
-		} else if (_pkb.version == 3) {
-			pkb3 = &_pkb.ctr.ctr3;
-			allocated_keys += pkb3->num_keys;
-		}
+		pkb4 = &_pkb.ctr.ctr4;
+		allocated_keys += pkb4->num_keys;
 	}
 
 	if (allocated_keys == 0) {
@@ -737,66 +717,6 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 				if (ret == KRB5_PROG_ETYPE_NOSUPP) {
 					DEBUG(2,("Unsupported keytype ignored - type %u\n",
 						 pkb4->keys[i].keytype));
-					ret = 0;
-					continue;
-				}
-				goto out;
-			}
-
-			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-			entry_ex->entry.keys.len++;
-
-			*supported_enctypes_out |= enctype_bit;
-		}
-	} else if (pkb3) {
-		for (i=0; i < pkb3->num_keys; i++) {
-			struct sdb_key key = {};
-			uint32_t enctype_bit;
-
-			if (!pkb3->keys[i].value) continue;
-
-			enctype_bit = kerberos_enctype_to_bitmap(pkb3->keys[i].keytype);
-			if (!(enctype_bit & supported_enctypes)) {
-				continue;
-			}
-
-			if (pkb3->salt.string) {
-				DATA_BLOB salt;
-
-				salt = data_blob_string_const(pkb3->salt.string);
-
-				key.salt = calloc(1, sizeof(*key.salt));
-				if (key.salt == NULL) {
-					ret = ENOMEM;
-					goto out;
-				}
-
-				key.salt->type = KRB5_PW_SALT;
-
-				ret = smb_krb5_copy_data_contents(&key.salt->salt,
-								  salt.data,
-								  salt.length);
-				if (ret) {
-					free(key.salt);
-					key.salt = NULL;
-					goto out;
-				}
-			}
-
-			ret = smb_krb5_keyblock_init_contents(context,
-							      pkb3->keys[i].keytype,
-							      pkb3->keys[i].value->data,
-							      pkb3->keys[i].value->length,
-							      &key.key);
-			if (ret) {
-				if (key.salt) {
-					smb_krb5_free_data_contents(context, &key.salt->salt);
-					free(key.salt);
-					key.salt = NULL;
-				}
-				if (ret == KRB5_PROG_ETYPE_NOSUPP) {
-					DEBUG(2,("Unsupported keytype ignored - type %u\n",
-						 pkb3->keys[i].keytype));
 					ret = 0;
 					continue;
 				}
