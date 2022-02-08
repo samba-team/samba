@@ -265,6 +265,23 @@ static void lock_io_check_loop(struct tevent_req *subreq)
 		goto done;
 	}
 
+	/*
+	 * Attempt to lock a 2nd byte range.  Using a blocking lock
+	 * encourages ping timeouts if the cluster filesystem is in a
+	 * bad state.  It also makes testing easier.
+	 */
+	ret = fcntl_lock_fd(fd, true, 1);
+	if (ret != 0) {
+		fprintf(stderr,
+			"%s: "
+			"lock fail - lock file \"%s\" test lock error (%d)\n",
+			progname,
+			state->lock_file,
+			ret);
+		goto done;
+	}
+
+	/* Unlock occurs on close */
 	close(fd);
 
 	subreq = tevent_wakeup_send(
