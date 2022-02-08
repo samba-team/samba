@@ -1688,6 +1688,9 @@ sub setup_fileserver
 	my $veto_sharedir="$share_dir/veto";
 	push(@dirs,$veto_sharedir);
 
+	my $virusfilter_sharedir="$share_dir/virusfilter";
+	push(@dirs,$virusfilter_sharedir);
+
 	my $ip4 = Samba::get_ipv4_addr("FILESERVER");
 	my $fileserver_options = "
 	kernel change notify = yes
@@ -1812,6 +1815,15 @@ sub setup_fileserver
 [delete_veto_files_only]
 	path = $veto_sharedir
 	delete veto files = yes
+
+[virusfilter]
+	path = $virusfilter_sharedir
+	vfs objects = acl_xattr virusfilter
+	virusfilter:scanner = dummy
+	virusfilter:min file size = 0
+	virusfilter:infected files = *infected*
+	virusfilter:infected file action = rename
+	virusfilter:scan on close = yes
 
 [homes]
 	comment = Home directories
