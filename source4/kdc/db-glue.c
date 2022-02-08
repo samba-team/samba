@@ -283,9 +283,9 @@ static int samba_kdc_entry_destructor(struct samba_kdc_entry *p)
  * in the server keys (unless the string attribute is set on the server
  * principal overriding that set).
  */
-static int samba_kdc_sort_encryption_keys(struct sdb_entry_ex *entry_ex)
+
+static int sdb_key_strength_priority(krb5_enctype etype)
 {
-	unsigned int i, j, idx = 0;
 	static const krb5_enctype etype_list[] = {
 		ENCTYPE_AES256_CTS_HMAC_SHA1_96,
 		ENCTYPE_AES128_CTS_HMAC_SHA1_96,
@@ -296,41 +296,43 @@ static int samba_kdc_sort_encryption_keys(struct sdb_entry_ex *entry_ex)
 		ENCTYPE_DES_CBC_CRC,
 		ENCTYPE_NULL
 	};
-	size_t etype_len = ARRAY_SIZE(etype_list);
-	size_t keys_size = entry_ex->entry.keys.len;
-	struct sdb_key *keys = entry_ex->entry.keys.val;
-	struct sdb_key *sorted_keys;
+	int i;
 
-	sorted_keys = calloc(keys_size, sizeof(struct sdb_key));
-	if (sorted_keys == NULL) {
-		return -1;
-	}
-
-	for (i = 0; i < etype_len; i++) {
-		for (j = 0; j < keys_size; j++) {
-			const struct sdb_key skey = keys[j];
-
-			if (idx == keys_size) {
-				break;
-			}
-
-			if (KRB5_KEY_TYPE(&skey.key) == etype_list[i]) {
-				sorted_keys[idx] = skey;
-				idx++;
-			}
+	for (i = 0; i < ARRAY_SIZE(etype_list); i++) {
+		if (etype == etype_list[i]) {
+			break;
 		}
 	}
 
-	/* Paranoia: Something went wrong during data copy */
-	if (idx != keys_size) {
-		free(sorted_keys);
-		return -1;
+	return ARRAY_SIZE(etype_list) - i;
+}
+
+static int sdb_key_strength_cmp(const struct sdb_key *k1, const struct sdb_key *k2)
+{
+	int p1 = sdb_key_strength_priority(KRB5_KEY_TYPE(&k1->key));
+	int p2 = sdb_key_strength_priority(KRB5_KEY_TYPE(&k2->key));
+
+	if (p1 == p2) {
+		return 0;
 	}
 
-	free(entry_ex->entry.keys.val);
-	entry_ex->entry.keys.val = sorted_keys;
+	if (p1 > p2) {
+		/*
+		 * Higher priority comes first
+		 */
+		return -1;
+	} else {
+		return 1;
+	}
+}
 
-	return 0;
+static void samba_kdc_sort_keys(struct sdb_keys *keys)
+{
+	if (keys == NULL) {
+		return;
+	}
+
+	TYPESAFE_QSORT(keys->val, keys->len, sdb_key_strength_cmp);
 }
 
 int samba_kdc_set_fixed_keys(krb5_context context,
@@ -834,11 +836,7 @@ out:
 		entry_ex->entry.keys.len = 0;
 	} else if (entry_ex->entry.keys.len > 0 &&
 		   entry_ex->entry.keys.val != NULL) {
-		ret = samba_kdc_sort_encryption_keys(entry_ex);
-		if (ret != 0) {
-			entry_ex->entry.keys.len = 0;
-			ret = ENOMEM;
-		}
+		samba_kdc_sort_keys(&entry_ex->entry.keys);
 	}
 	if (entry_ex->entry.keys.len == 0 && entry_ex->entry.keys.val) {
 		free(entry_ex->entry.keys.val);
@@ -1758,12 +1756,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	/* Match Windows behavior and allow forwardable flag in cross-realm. */
 	entry_ex->entry.flags.forwardable = 1;
 
-	ret = samba_kdc_sort_encryption_keys(entry_ex);
-	if (ret != 0) {
-		krb5_clear_error_message(context);
-		ret = ENOMEM;
-		goto out;
-	}
+	samba_kdc_sort_keys(&entry_ex->entry.keys);
 
 	p->msg = talloc_steal(p, msg);
 
