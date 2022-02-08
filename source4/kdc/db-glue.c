@@ -864,19 +864,15 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	uint32_t msDS_User_Account_Control_Computed;
 	krb5_error_code ret = 0;
 	krb5_boolean is_computer = FALSE;
-
 	struct samba_kdc_entry *p;
 	uint32_t supported_enctypes = 0;
 	NTTIME acct_expiry;
 	NTSTATUS status;
-
 	uint32_t rid;
 	bool is_rodc = false;
 	struct ldb_message_element *objectclasses;
-	struct ldb_val computer_val;
+	struct ldb_val computer_val = data_blob_string_const("computer");
 	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
-	computer_val.data = discard_const_p(uint8_t,"computer");
-	computer_val.length = strlen((const char *)computer_val.data);
 
 	if (ldb_msg_find_element(msg, "msDS-SecondaryKrbTgtNumber")) {
 		is_rodc = true;
