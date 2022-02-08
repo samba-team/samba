@@ -3438,7 +3438,8 @@ bool set_global_winbindd_state_offline(void)
 	}
 
 	if (!lp_winbind_offline_logon()) {
-		DBG_ERR("Rejecting to set winbind offline\n");
+		DBG_DEBUG("Rejecting request to set winbind offline, "
+			"offline logons are disabled in smb.conf\n");
 		return false;
 	}
 
@@ -3466,7 +3467,8 @@ void set_global_winbindd_state_online(void)
 	DEBUG(10,("set_global_winbindd_state_online: online requested.\n"));
 
 	if (!lp_winbind_offline_logon()) {
-		DEBUG(10,("set_global_winbindd_state_online: rejecting.\n"));
+		DBG_DEBUG("Rejecting request to set winbind online, "
+			"offline logons are disabled in smb.conf.\n");
 		return;
 	}
 
