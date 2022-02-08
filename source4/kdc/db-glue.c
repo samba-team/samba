@@ -507,10 +507,6 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		}
 	}
 
-	entry_ex->entry.keys.val = NULL;
-	entry_ex->entry.keys.len = 0;
-	entry_ex->entry.kvno = 0;
-
 	if ((ent_type == SAMBA_KDC_ENT_TYPE_CLIENT)
 	    && (userAccountControl & UF_SMARTCARD_REQUIRED)) {
 		ret = samba_kdc_set_random_keys(context,
@@ -919,6 +915,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	struct ldb_val computer_val = data_blob_string_const("computer");
 	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 
+	ZERO_STRUCTP(entry_ex);
+
 	if (ldb_msg_find_element(msg, "msDS-SecondaryKrbTgtNumber")) {
 		is_rodc = true;
 	}
@@ -934,8 +932,6 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	if (objectclasses && ldb_msg_find_val(objectclasses, &computer_val)) {
 		is_computer = TRUE;
 	}
-
-	ZERO_STRUCTP(entry_ex);
 
 	p = talloc_zero(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
@@ -1339,7 +1335,6 @@ out:
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
 		sdb_free_entry(entry_ex);
-		ZERO_STRUCTP(entry_ex);
 	} else {
 		talloc_steal(kdc_db_ctx, p);
 	}
@@ -1388,6 +1383,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
 	struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
 	NTSTATUS status;
+
+	ZERO_STRUCTP(entry_ex);
 
 	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
 		supported_enctypes = ldb_msg_find_attr_as_uint(msg,
@@ -1477,9 +1474,6 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	p->supported_enctypes = supported_enctypes;
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
-
-	/* make sure we do not have bogus data in there */
-	memset(&entry_ex->entry, 0, sizeof(struct sdb_entry));
 
 	entry_ex->entry.skdc_entry = p;
 
