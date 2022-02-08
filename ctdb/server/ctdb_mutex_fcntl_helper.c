@@ -41,10 +41,28 @@
 static char progpath[PATH_MAX];
 static char *progname = NULL;
 
+static int fcntl_lock_fd(int fd, bool block, off_t start)
+{
+	static struct flock lock = {
+		.l_type = F_WRLCK,
+		.l_whence = SEEK_SET,
+		.l_len = 1,
+		.l_pid = 0,
+	};
+	int cmd = block ? F_SETLKW : F_SETLK;
+
+	lock.l_start = start;
+	if (fcntl(fd, cmd, &lock) != 0) {
+		return errno;
+	}
+
+	return 0;
+}
+
 static char fcntl_lock(const char *file, int *outfd)
 {
 	int fd;
-	struct flock lock;
+	int ret;
 
 	fd = open(file, O_RDWR|O_CREAT, 0600);
 	if (fd == -1) {
@@ -53,17 +71,10 @@ static char fcntl_lock(const char *file, int *outfd)
 		return '3';
 	}
 
-	lock.l_type = F_WRLCK;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = 0;
-	lock.l_len = 1;
-	lock.l_pid = 0;
-
-	if (fcntl(fd, F_SETLK, &lock) != 0) {
-		int saved_errno = errno;
+	ret = fcntl_lock_fd(fd, false, 0);
+	if (ret != 0) {
 		close(fd);
-		if (saved_errno == EACCES ||
-		    saved_errno == EAGAIN) {
+		if (ret == EACCES || ret == EAGAIN) {
 			/* Lock contention, fail silently */
 			return '1';
 		}
@@ -71,7 +82,9 @@ static char fcntl_lock(const char *file, int *outfd)
 		/* Log an error for any other failure */
 		fprintf(stderr,
 			"%s: Failed to get lock on '%s' - (%s)\n",
-			progname, file, strerror(saved_errno));
+			progname,
+			file,
+			strerror(ret));
 		return '3';
 	}
 
