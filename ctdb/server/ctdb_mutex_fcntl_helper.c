@@ -225,6 +225,7 @@ static void lock_io_check_loop(struct tevent_req *subreq)
 		req, struct lock_io_check_state);
 	bool status;
 	struct stat sb;
+	int fd = -1;
 	int ret;
 
 	status = tevent_wakeup_recv(subreq);
@@ -234,7 +235,18 @@ static void lock_io_check_loop(struct tevent_req *subreq)
 		fprintf(stderr, "%s: tevent_wakeup_recv() failed\n", progname);
 	}
 
-	ret = stat(state->lock_file, &sb);
+	fd = open(state->lock_file, O_RDWR);
+	if (fd == -1) {
+		fprintf(stderr,
+			"%s: "
+			"lock lost - lock file \"%s\" open failed (ret=%d)\n",
+			progname,
+			state->lock_file,
+			errno);
+		goto done;
+	}
+
+	ret = fstat(fd, &sb);
 	if (ret != 0) {
 		fprintf(stderr,
 			"%s: "
@@ -242,8 +254,7 @@ static void lock_io_check_loop(struct tevent_req *subreq)
 			progname,
 			state->lock_file,
 			errno);
-		tevent_req_done(req);
-		return;
+		goto done;
 	}
 
 	if (sb.st_ino != state->inode) {
@@ -251,9 +262,10 @@ static void lock_io_check_loop(struct tevent_req *subreq)
 			"%s: lock lost - lock file \"%s\" inode changed\n",
 			progname,
 			state->lock_file);
-		tevent_req_done(req);
-		return;
+		goto done;
 	}
+
+	close(fd);
 
 	subreq = tevent_wakeup_send(
 			state,
@@ -263,6 +275,14 @@ static void lock_io_check_loop(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, lock_io_check_loop, req);
+
+	return;
+
+done:
+	if (fd != -1) {
+		close(fd);
+	}
+	tevent_req_done(req);
 }
 
 static bool lock_io_check_recv(struct tevent_req *req, int *perr)

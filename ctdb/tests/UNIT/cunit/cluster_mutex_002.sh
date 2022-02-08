@@ -88,7 +88,7 @@ unit_test cluster_mutex_test lock-file-wait-recheck-unlock \
 test_case "Recheck on, lock file removed"
 ok <<EOF
 LOCK
-ctdb_mutex_fcntl_helper: lock lost - lock file "${lockfile}" check failed (ret=2)
+ctdb_mutex_fcntl_helper: lock lost - lock file "${lockfile}" open failed (ret=2)
 LOST
 EOF
 unit_test cluster_mutex_test lock-file-removed "$helper 5" "$lockfile"
