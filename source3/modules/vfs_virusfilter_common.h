@@ -83,6 +83,9 @@ struct virusfilter_config {
 	/* Exclude files */
 	name_compare_entry		*exclude_files;
 
+	/* Infected files */
+	name_compare_entry		*infected_files;
+
 	/* Scan result cache */
 	struct virusfilter_cache	*cache;
 	int				cache_entry_limit;
@@ -149,5 +152,6 @@ struct virusfilter_backend {
 int virusfilter_sophos_init(struct virusfilter_config *config);
 int virusfilter_fsav_init(struct virusfilter_config *config);
 int virusfilter_clamav_init(struct virusfilter_config *config);
+int virusfilter_dummy_init(struct virusfilter_config *config);
 
 #endif /* _VIRUSFILTER_COMMON_H */
