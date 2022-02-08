@@ -188,7 +188,7 @@ sub getlog_env_app($$$)
 	close(LOG);
 
 	return "" if $out eq $title;
- 
+
 	return $out;
 }
 
@@ -2205,7 +2205,7 @@ sub provision($$)
 	my $nmbdsockdir="$prefix_abs/nmbd";
 	unlink($nmbdsockdir);
 
-	## 
+	##
 	## create the test directory layout
 	##
 	die ("prefix_abs = ''") if $prefix_abs eq "";
@@ -3057,7 +3057,7 @@ sub provision($$)
 	unless (open(PASSWD, ">$nss_wrapper_passwd")) {
            warn("Unable to open $nss_wrapper_passwd");
            return undef;
-        } 
+        }
 	print PASSWD "nobody:x:$uid_nobody:$gid_nobody:nobody gecos:$prefix_abs:/bin/false
 $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 pdbtest:x:$uid_pdbtest:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
