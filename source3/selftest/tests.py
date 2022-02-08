@@ -1113,6 +1113,15 @@ plantestsuite("samba3.blackbox.smbclient.encryption_off", "simpleserver",
                "$USERNAME", "$PASSWORD", "$SERVER",
                smbclient3])
 
+env = 'fileserver'
+plantestsuite("samba3.blackbox.virus_scanner", "%s:local" % (env),
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_virus_scanner.sh"),
+               '$SERVER_IP',
+               "virusfilter",
+               '$LOCAL_PATH',
+               smbclient3])
+
 for env in ['fileserver', 'simpleserver']:
     plantestsuite("samba3.blackbox.smbclient.encryption", env,
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_encryption.sh"),
