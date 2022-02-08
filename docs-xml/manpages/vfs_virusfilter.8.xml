@@ -48,6 +48,10 @@
 		  scanner</para></listitem>
 		  <listitem><para><emphasis>clamav</emphasis>, the ClamAV
 		  scanner</para></listitem>
+		  <listitem><para><emphasis>dummy</emphasis>, dummy scanner used in
+		  tests. Checks against the <emphasis>infected files</emphasis>
+		  parameter and flags any name that matches as infected.
+		  </para></listitem>
 		</itemizedlist>
 		</listitem>
 		</varlistentry>
@@ -260,6 +264,14 @@
 		<term>virusfilter:exclude files = empty</term>
 		<listitem>
 		<para>Files to exclude from scanning.</para>
+		<para>If this option is not set, the default is empty.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>virusfilter:infected files = empty</term>
+		<listitem>
+		<para>Files that virusfilter <emphasis>dummy</emphasis> flags as infected.</para>
 		<para>If this option is not set, the default is empty.</para>
 		</listitem>
 		</varlistentry>
