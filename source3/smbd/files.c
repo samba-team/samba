@@ -1217,11 +1217,11 @@ static void fsp_free(files_struct *fsp)
 	TALLOC_FREE(fsp);
 }
 
-void file_free(struct smb_request *req, files_struct *fsp)
+/*
+ * Rundown of all smb-related sub-structures of an fsp
+ */
+void fsp_unbind_smb(struct smb_request *req, files_struct *fsp)
 {
-	struct smbd_server_connection *sconn = fsp->conn->sconn;
-	uint64_t fnum = fsp->fnum;
-
 	if (fsp == fsp->conn->cwd_fsp) {
 		return;
 	}
@@ -1262,6 +1262,14 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	 * pointers in the SMB2 request queue.
 	 */
 	remove_smb2_chained_fsp(fsp);
+}
+
+void file_free(struct smb_request *req, files_struct *fsp)
+{
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	uint64_t fnum = fsp->fnum;
+
+	fsp_unbind_smb(req, fsp);
 
 	/* Drop all remaining extensions. */
 	vfs_remove_all_fsp_extensions(fsp);
