@@ -2332,7 +2332,7 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 		change->old_password_checked = old_password_checked;
 
 		ret = ldb_request_add_control(req,
-					      DSDB_CONTROL_PASSWORD_CHANGE_OID,
+					      DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID,
 					      true, change);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(req);

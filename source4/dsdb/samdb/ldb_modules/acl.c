@@ -1042,12 +1042,12 @@ static int acl_check_password_rights(
 	 */
 	*control_for_response = pav;
 
-	c = ldb_request_get_control(req, DSDB_CONTROL_PASSWORD_CHANGE_OID);
+	c = ldb_request_get_control(req, DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID);
 	if (c != NULL) {
 		pav->pwd_reset = false;
 
 		/*
-		 * The "DSDB_CONTROL_PASSWORD_CHANGE_OID" control means that we
+		 * The "DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID" control means that we
 		 * have a user password change and not a set as the message
 		 * looks like. In it's value blob it contains the NT and/or LM
 		 * hash of the old password specified by the user.  This control
@@ -1075,7 +1075,7 @@ static int acl_check_password_rights(
 
 		/*
 		 * The "DSDB_CONTROL_PASSWORD_HASH_VALUES_OID" control, without
-		 * "DSDB_CONTROL_PASSWORD_CHANGE_OID" control means that we
+		 * "DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID" control means that we
 		 * have a force password set.
 		 * This control is used by the SAMR/NETLOGON/LSA password
 		 * reset mechanisms.

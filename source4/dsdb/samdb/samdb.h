@@ -101,7 +101,7 @@ struct dsdb_control_password_change_status {
 
 #define DSDB_CONTROL_PASSWORD_HASH_VALUES_OID "1.3.6.1.4.1.7165.4.3.9"
 
-#define DSDB_CONTROL_PASSWORD_CHANGE_OID "1.3.6.1.4.1.7165.4.3.10"
+#define DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID "1.3.6.1.4.1.7165.4.3.10"
 struct dsdb_control_password_change {
 	enum dsdb_password_checked old_password_checked;
 };

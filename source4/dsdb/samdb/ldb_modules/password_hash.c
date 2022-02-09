@@ -3864,7 +3864,7 @@ static void ph_apply_controls(struct ph_context *ac)
 	}
 
 	ctrl = ldb_request_get_control(ac->req,
-				       DSDB_CONTROL_PASSWORD_CHANGE_OID);
+				       DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID);
 	if (ctrl != NULL) {
 		ac->change = (struct dsdb_control_password_change *) ctrl->data;
 
