@@ -1,0 +1,3 @@
+^samba4.ldap.password_lockout.python\(ad_dc_slowtests\).__main__.PasswordTestsWithoutSleep.test_ntlm_lockout_protected.ad_dc_slowtests
+^samba4.ldap.password_lockout.python\(ad_dc_slowtests\).__main__.PasswordTestsWithoutSleep.test_samr_change_password_protected.ad_dc_slowtests
+^samba4.ldap.password_lockout.python\(ad_dc_slowtests\).__main__.PasswordTestsWithoutSleep.test_samr_set_password_protected.ad_dc_slowtests
