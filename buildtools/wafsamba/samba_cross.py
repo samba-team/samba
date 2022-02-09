@@ -134,7 +134,7 @@ class cross_Popen(Utils.subprocess.Popen):
                 cross_answers_incomplete = True
                 add_answer(ca_file, msg, ans)
             (retcode, retstring) = ans
-            args = ['/bin/sh', '-c', "echo -n '%s'; exit %d" % (retstring, retcode)]
+            args = ['/bin/sh', '-c', "printf %%s '%s'; exit %d" % (retstring, retcode)]
         real_Popen.__init__(*(obj, args), **kw)
 
 
