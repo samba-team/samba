@@ -2153,7 +2153,7 @@ sub make_bin_cmd
 {
 	my ($self, $binary, $env_vars, $options, $valgrind, $dont_log_stdout) = @_;
 
-	my @optargs = ("-d0");
+	my @optargs = ();
 	if (defined($options)) {
 		@optargs = split(/ /, $options);
 	}
