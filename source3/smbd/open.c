@@ -5761,42 +5761,27 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	/*
-	 * Now either reuse smb_fname->fsp or allocate a new fsp if
-	 * smb_fname->fsp is NULL. The latter will be the case when processing a
-	 * request to create a file that doesn't exist.
-	 */
 	if (smb_fname->fsp != NULL) {
-		bool need_fsp_unlink = true;
-
-		/*
-		 * This is really subtle. If someone passes in an smb_fname
-		 * where smb_fname actually is taken from fsp->fsp_name, then
-		 * the lifetime of these objects is meant to be the same.
-		 *
-		 * This is commonly the case from an SMB1 path-based call,
-		 * (call_trans2qfilepathinfo) where we use the pathref fsp
-		 * (smb_fname->fsp) as the handle. In this case we must not
-		 * unlink smb_fname->fsp from it's owner.
-		 *
-		 * The asserts below:
-		 *
-		 * SMB_ASSERT(fsp->fsp_name->fsp != NULL);
-		 * SMB_ASSERT(fsp->fsp_name->fsp == fsp);
-		 *
-		 * ensure the required invarients are met.
-		 */
-		if (smb_fname->fsp->fsp_name == smb_fname) {
-			need_fsp_unlink = false;
-		}
 
 		fsp = smb_fname->fsp;
 
-		if (need_fsp_unlink) {
+		/*
+		 * We're about to use smb_fname->fsp for the fresh open.
+		 *
+		 * Every fsp passed in via smb_fname->fsp already
+		 * holds a fsp->fsp_name. If it is already this
+		 * fsp->fsp_name that we got passed in as our input
+		 * argument smb_fname, these two are assumed to have
+		 * the same lifetime: Every fsp hangs of "conn", and
+		 * fsp->fsp_name is its talloc child.
+		 */
+
+		if (smb_fname != smb_fname->fsp->fsp_name) {
 			/*
-			 * Unlink the fsp from the smb_fname so the fsp is not
-			 * autoclosed by the smb_fname pathref fsp talloc
-			 * destructor.
+			 * "smb_fname" is temporary in this case, but
+			 * the destructor of smb_fname would also tear
+			 * down the fsp we're about to use. Unlink
+			 * them from each other.
 			 */
 			smb_fname_fsp_unlink(smb_fname);
 		}
@@ -5814,10 +5799,10 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			fd_close(tmp_base_fsp);
 			file_free(NULL, tmp_base_fsp);
 		}
-	}
-
-	if (fsp == NULL) {
-		/* Creating file */
+	} else {
+		/*
+		 * No fsp passed in that we can use, create one
+		 */
 		status = file_new(req, conn, &fsp);
 		if(!NT_STATUS_IS_OK(status)) {
 			goto fail;
