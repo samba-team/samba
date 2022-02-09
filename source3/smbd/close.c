@@ -1475,15 +1475,14 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 }
 
 /****************************************************************************
- Close a files_struct.
+ Rundown all SMB-related dependencies of a files struct
 ****************************************************************************/
   
-NTSTATUS close_file_free(struct smb_request *req,
-			 struct files_struct **_fsp,
-			 enum file_close_type close_type)
+NTSTATUS close_file_smb(struct smb_request *req,
+			struct files_struct *fsp,
+			enum file_close_type close_type)
 {
 	NTSTATUS status;
-	struct files_struct *fsp = *_fsp;
 
 	/*
 	 * This fsp can never be an internal dirfsp. They must
@@ -1541,9 +1540,22 @@ NTSTATUS close_file_free(struct smb_request *req,
 		close_file_free(req, &fsp->base_fsp, close_type);
 	}
 
-	file_free(req, fsp);
+	fsp_unbind_smb(req, fsp);
 
-	*_fsp = NULL;
+	return status;
+}
+
+NTSTATUS close_file_free(struct smb_request *req,
+			 struct files_struct **_fsp,
+			 enum file_close_type close_type)
+{
+	struct files_struct *fsp = *_fsp;
+	NTSTATUS status;
+
+	status = close_file_smb(req, fsp, close_type);
+
+	file_free(req, fsp);
+        *_fsp = NULL;
 
 	return status;
 }
