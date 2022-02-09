@@ -412,6 +412,7 @@ struct files_struct *file_find_one_fsp_from_lease_key(
 	struct smbd_server_connection *sconn,
 	const struct smb2_lease_key *lease_key);
 bool file_find_subpath(files_struct *dir_fsp);
+void fsp_unbind_smb(struct smb_request *req, files_struct *fsp);
 void file_free(struct smb_request *req, files_struct *fsp);
 files_struct *file_fsp(struct smb_request *req, uint16_t fid);
 struct files_struct *file_fsp_get(struct smbd_smb2_request *smb2req,
