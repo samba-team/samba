@@ -2815,8 +2815,13 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 		return LDB_SUCCESS;
 	}
 
-	/* First check the old password is correct, for password changes */
-	if (!io->ac->pwd_reset) {
+	/*
+	 * First check the old password is correct, for password
+	 * changes when this hasn't already been checked by a
+	 * trustwrothy layer above
+	 */
+	if (!io->ac->pwd_reset && !(io->ac->change
+				    && io->ac->change->old_password_checked == DSDB_PASSWORD_CHECKED_AND_CORRECT)) {
 		bool nt_hash_checked = false;
 
 		/* we need the old nt or lm hash given by the client */
@@ -3627,17 +3632,7 @@ static int setup_io(struct ph_context *ac,
 	 */
 	if (ac->change != NULL) {
 		io->og.nt_hash = NULL;
-		if (ac->change->old_nt_pwd_hash != NULL) {
-			io->og.nt_hash = talloc_memdup(io->ac,
-						       ac->change->old_nt_pwd_hash,
-						       sizeof(struct samr_Password));
-		}
 		io->og.lm_hash = NULL;
-		if (lpcfg_lanman_auth(lp_ctx) && (ac->change->old_lm_pwd_hash != NULL)) {
-			io->og.lm_hash = talloc_memdup(io->ac,
-						       ac->change->old_lm_pwd_hash,
-						       sizeof(struct samr_Password));
-		}
 	}
 
 	/* refuse the change if someone wants to change the clear-
@@ -3677,13 +3672,16 @@ static int setup_io(struct ph_context *ac,
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	/* refuse the change if someone wants to compare against a plaintext
-	   or hash at the same time for a "password modify" operation... */
+	/*
+	 * refuse the change if someone wants to compare against a
+	 * plaintext or dsdb_control_password_change at the same time
+	 * for a "password modify" operation...
+	 */
 	if ((io->og.cleartext_utf8 || io->og.cleartext_utf16)
-	    && (io->og.nt_hash || io->og.lm_hash)) {
+	    && ac->change) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
-			"it's only allowed to provide the old password in form of cleartext attributes or as hashes");
+			"it's only allowed to provide the old password in form of cleartext attributes or as the dsdb_control_password_change");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -3730,9 +3728,12 @@ static int setup_io(struct ph_context *ac,
 			 */
 			ac->pwd_reset = pav->pwd_reset;
 		} else if (io->og.cleartext_utf8 || io->og.cleartext_utf16
-		    || io->og.nt_hash || io->og.lm_hash) {
-			/* If we have an old password specified then for sure it
-			 * is a user "password change" */
+		    || ac->change) {
+			/*
+			 * If we have an old password specified or the
+			 * dsdb_control_password_change then for sure
+			 * it is a user "password change"
+			 */
 			ac->pwd_reset = false;
 		} else {
 			/* Otherwise we have also here a "password reset" */

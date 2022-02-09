@@ -2257,8 +2257,7 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 			    const DATA_BLOB *new_password,
 			    const struct samr_Password *lmNewHash,
 			    const struct samr_Password *ntNewHash,
-			    const struct samr_Password *lmOldHash,
-			    const struct samr_Password *ntOldHash,
+			    enum dsdb_password_checked old_password_checked,
 			    enum samPwdChangeReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo,
 			    bool permit_interdomain_trust)
@@ -2320,7 +2319,7 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
         }
 
 	/* A password change operation */
-	if ((ntOldHash != NULL) || (lmOldHash != NULL)) {
+	if (old_password_checked == DSDB_PASSWORD_CHECKED_AND_CORRECT) {
 		struct dsdb_control_password_change *change;
 
 		change = talloc(req, struct dsdb_control_password_change);
@@ -2330,8 +2329,7 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		change->old_nt_pwd_hash = ntOldHash;
-		change->old_lm_pwd_hash = lmOldHash;
+		change->old_password_checked = old_password_checked;
 
 		ret = ldb_request_add_control(req,
 					      DSDB_CONTROL_PASSWORD_CHANGE_OID,
@@ -2453,8 +2451,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			    const DATA_BLOB *new_password,
 			    const struct samr_Password *lmNewHash,
 			    const struct samr_Password *ntNewHash,
-			    const struct samr_Password *lmOldHash,
-			    const struct samr_Password *ntOldHash,
+			    enum dsdb_password_checked old_password_checked,
 			    enum samPwdChangeReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo)
 {
@@ -2462,7 +2459,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			    user_dn, domain_dn,
 			    new_password,
 			    lmNewHash, ntNewHash,
-			    lmOldHash, ntOldHash,
+			    old_password_checked,
 			    reject_reason, _dominfo,
 			    false); /* reject trusts */
 }
@@ -2491,8 +2488,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				const DATA_BLOB *new_password,
 				const struct samr_Password *lmNewHash,
 				const struct samr_Password *ntNewHash,
-				const struct samr_Password *lmOldHash,
-				const struct samr_Password *ntOldHash,
+				enum dsdb_password_checked old_password_checked,
 				enum samPwdChangeReason *reject_reason,
 				struct samr_DomInfo1 **_dominfo) 
 {
@@ -2858,7 +2854,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 						user_msg->dn, NULL,
 						new_password,
 						lmNewHash, ntNewHash,
-						lmOldHash, ntOldHash,
+						old_password_checked,
 						reject_reason, _dominfo,
 						true); /* permit trusts */
 	if (!NT_STATUS_IS_OK(nt_status)) {

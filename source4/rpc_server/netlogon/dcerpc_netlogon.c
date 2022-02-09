@@ -787,7 +787,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 					   NULL, /* Don't have version */
 					   NULL, /* Don't have plaintext */
 					   NULL, r->in.new_password,
-					   NULL, oldNtHash, /* Password change */
+					   DSDB_PASSWORD_CHECKED_AND_CORRECT, /* Password change */
 					   NULL, NULL);
 	return nt_status;
 }
@@ -948,7 +948,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 					   new_version,
 					   &new_password, /* we have plaintext */
 					   NULL, NULL,
-					   oldLmHash, oldNtHash, /* Password change */
+					   DSDB_PASSWORD_CHECKED_AND_CORRECT, /* Password change */
 					   NULL, NULL);
 	return nt_status;
 }

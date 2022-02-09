@@ -103,8 +103,7 @@ NTSTATUS samdb_kpasswd_change_password(TALLOC_CTX *mem_ctx,
 					password,
 					NULL,
 					NULL,
-					oldLmHash,
-					oldNtHash, /* this is a user password change */
+					DSDB_PASSWORD_CHECKED_AND_CORRECT,
 					reject_reason,
 					dominfo);
 	if (!NT_STATUS_IS_OK(status)) {

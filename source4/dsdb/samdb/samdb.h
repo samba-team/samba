@@ -31,6 +31,12 @@ struct tevent_context;
 struct tsocket_address;
 struct dsdb_trust_routing_table;
 
+enum dsdb_password_checked {
+	DSDB_PASSWORD_NOT_CHECKED = 0, /* unused */
+	DSDB_PASSWORD_RESET,
+	DSDB_PASSWORD_CHECKED_AND_CORRECT
+};
+
 #include "librpc/gen_ndr/security.h"
 #include <ldb.h>
 #include "lib/ldb-samba/ldif_handlers.h"
@@ -97,8 +103,7 @@ struct dsdb_control_password_change_status {
 
 #define DSDB_CONTROL_PASSWORD_CHANGE_OID "1.3.6.1.4.1.7165.4.3.10"
 struct dsdb_control_password_change {
-	const struct samr_Password *old_nt_pwd_hash;
-	const struct samr_Password *old_lm_pwd_hash;
+	enum dsdb_password_checked old_password_checked;
 };
 
 /**
