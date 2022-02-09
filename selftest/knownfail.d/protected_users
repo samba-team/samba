@@ -1,3 +1,11 @@
 ^samba4.ldap.password_lockout.python\(ad_dc_slowtests\).__main__.PasswordTestsWithoutSleep.test_ntlm_lockout_protected.ad_dc_slowtests
 ^samba4.ldap.password_lockout.python\(ad_dc_slowtests\).__main__.PasswordTestsWithoutSleep.test_samr_change_password_protected.ad_dc_slowtests
 ^samba4.ldap.password_lockout.python\(ad_dc_slowtests\).__main__.PasswordTestsWithoutSleep.test_samr_set_password_protected.ad_dc_slowtests
+^samba4.ldap.passwords.python\(fl2003dc\).__main__.PasswordTests.test_protected_unicodePwd_clear_change.fl2003dc
+^samba4.ldap.passwords.python\(fl2003dc\).__main__.PasswordTests.test_protected_unicodePwd_clear_set.fl2003dc
+^samba4.ldap.passwords.python\(fl2008dc\).__main__.PasswordTests.test_protected_unicodePwd_clear_change.fl2008dc
+^samba4.ldap.passwords.python\(fl2008dc\).__main__.PasswordTests.test_protected_unicodePwd_clear_set.fl2008dc
+^samba4.ldap.passwords.python\(fl2008r2dc\).__main__.PasswordTests.test_protected_unicodePwd_clear_change.fl2008r2dc
+^samba4.ldap.passwords.python\(fl2008r2dc\).__main__.PasswordTests.test_protected_unicodePwd_clear_set.fl2008r2dc
+^samba4.ldap.passwords.python\(schema_dc\).__main__.PasswordTests.test_protected_unicodePwd_clear_change.schema_dc
+^samba4.ldap.passwords.python\(schema_dc\).__main__.PasswordTests.test_protected_unicodePwd_clear_set.schema_dc

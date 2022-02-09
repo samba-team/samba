@@ -24,6 +24,7 @@ import samba.getopt as options
 
 from samba.auth import system_session
 from samba.credentials import Credentials
+from samba.dcerpc import security
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_ATTRIBUTE_OR_VALUE_EXISTS
 from ldb import ERR_UNWILLING_TO_PERFORM, ERR_INSUFFICIENT_ACCESS_RIGHTS
@@ -236,6 +237,82 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
             (num, msg) = e5.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('0000052D' in msg)
+
+    def test_protected_unicodePwd_clear_set(self):
+        """Performs a password cleartext set operation on 'unicodePwd' with the user in
+the Protected Users group"""
+
+        user_dn = f'cn=testuser,cn=users,{self.base_dn}'
+
+        # Add the user to the Protected Users group.
+
+        # Search for the Protected Users group.
+        group_dn = Dn(self.ldb,
+                      f'<SID={self.ldb.get_domain_sid()}-'
+                      f'{security.DOMAIN_RID_PROTECTED_USERS}>')
+        try:
+            group_res = self.ldb.search(base=group_dn,
+                                        scope=SCOPE_BASE,
+                                        attrs=['member'])
+        except LdbError as err:
+            self.fail(err)
+
+        # Add the user to the list of members.
+        members = list(group_res[0].get('member', ()))
+        members.append(user_dn)
+
+        m = Message(group_dn)
+        m['member'] = MessageElement(members,
+                                     FLAG_MOD_REPLACE,
+                                     'member')
+        self.ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(self.ldb, user_dn)
+        m['unicodePwd'] = MessageElement(
+            '"thatsAcomplPASS2"'.encode('utf-16-le'),
+            FLAG_MOD_REPLACE, 'unicodePwd')
+        self.ldb.modify(m)
+
+    def test_protected_unicodePwd_clear_change(self):
+        """Performs a password cleartext change operation on 'unicodePwd' with the user
+in the Protected Users group"""
+
+        user_dn = f'cn=testuser,cn=users,{self.base_dn}'
+
+        # Add the user to the Protected Users group.
+
+        # Search for the Protected Users group.
+        group_dn = Dn(self.ldb,
+                      f'<SID={self.ldb.get_domain_sid()}-'
+                      f'{security.DOMAIN_RID_PROTECTED_USERS}>')
+        try:
+            group_res = self.ldb.search(base=group_dn,
+                                        scope=SCOPE_BASE,
+                                        attrs=['member'])
+        except LdbError as err:
+            self.fail(err)
+
+        # Add the user to the list of members.
+        members = list(group_res[0].get('member', ()))
+        members.append(user_dn)
+
+        m = Message(group_dn)
+        m['member'] = MessageElement(members,
+                                     FLAG_MOD_REPLACE,
+                                     'member')
+        self.ldb.modify(m)
+
+        self.ldb2.modify_ldif(f"""
+dn: cn=testuser,cn=users,{self.base_dn}
+changetype: modify
+delete: unicodePwd
+unicodePwd:: {base64.b64encode('"thatsAcomplPASS1"'.encode('utf-16-le'))
+        .decode('utf8')}
+add: unicodePwd
+unicodePwd:: {base64.b64encode('"thatsAcomplPASS2"'.encode('utf-16-le'))
+        .decode('utf8')}
+""")
 
     def test_dBCSPwd_hash_set(self):
         """Performs a password hash set operation on 'dBCSPwd' which should be prevented"""
