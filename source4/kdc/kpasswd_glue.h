@@ -23,7 +23,6 @@
 NTSTATUS samdb_kpasswd_change_password(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx,
 				       struct tevent_context *event_ctx,
-				       struct ldb_context *samdb,
 				       struct auth_session_info *session_info,
 				       const DATA_BLOB *password,
 				       enum samPwdChangeReason *reject_reason,

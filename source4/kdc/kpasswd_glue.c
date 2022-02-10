@@ -37,7 +37,6 @@
 NTSTATUS samdb_kpasswd_change_password(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx,
 				       struct tevent_context *event_ctx,
-				       struct ldb_context *samdb,
 				       struct auth_session_info *session_info,
 				       const DATA_BLOB *password,
 				       enum samPwdChangeReason *reject_reason,
@@ -45,38 +44,8 @@ NTSTATUS samdb_kpasswd_change_password(TALLOC_CTX *mem_ctx,
 				       const char **error_string,
 				       NTSTATUS *result)
 {
-	struct samr_Password *oldLmHash, *oldNtHash;
-	const char * const attrs[] = { "dBCSPwd", "unicodePwd", NULL };
-	struct ldb_message *msg;
 	NTSTATUS status;
-	int ret;
-
-	/* Fetch the old hashes to get the old password in order to perform
-	 * the password change operation. Naturally it would be much better to
-	 * have a password hash from an authentication around but this doesn't
-	 * seem to be the case here. */
-	ret = dsdb_search_one(samdb, mem_ctx, &msg, ldb_get_default_basedn(samdb),
-			      LDB_SCOPE_SUBTREE,
-			      attrs,
-			      DSDB_SEARCH_NO_GLOBAL_CATALOG,
-			      "(&(objectClass=user)(sAMAccountName=%s))",
-			      session_info->info->account_name);
-	if (ret != LDB_SUCCESS) {
-		*error_string = "No such user when changing password";
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	/*
-	 * No need to check for password lockout here, the KDC will
-	 * have done that when issuing the ticket, which is not based
-	 * on the user's password
-	 */
-	status = samdb_result_passwords_no_lockout(mem_ctx, lp_ctx, msg,
-						   &oldLmHash, &oldNtHash);
-	if (!NT_STATUS_IS_OK(status)) {
-		*error_string = "Not permitted to change password";
-		return NT_STATUS_ACCESS_DENIED;
-	}
+	struct ldb_context *samdb = NULL;
 
 	/* Start a SAM with user privileges for the password change */
 	samdb = samdb_connect(mem_ctx,
@@ -106,7 +75,9 @@ NTSTATUS samdb_kpasswd_change_password(TALLOC_CTX *mem_ctx,
 					DSDB_PASSWORD_CHECKED_AND_CORRECT,
 					reject_reason,
 					dominfo);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		*error_string = "No such user when changing password";
+	} else if (!NT_STATUS_IS_OK(status)) {
 		*error_string = nt_errstr(status);
 	}
 	*result = status;
