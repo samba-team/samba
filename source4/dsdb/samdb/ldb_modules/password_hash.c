@@ -225,6 +225,12 @@ static int password_hash_bypass(struct ldb_module *module, struct ldb_request *r
 } while(0)
 
 	GET_VALUES(nte, "unicodePwd");
+
+	/*
+	 * Even as Samba contiuues to ignore the LM hash, and reset it
+	 * when practical, we keep the constraint that it must be a 16
+	 * byte value if specified.
+	 */
 	GET_VALUES(lme, "dBCSPwd");
 	GET_VALUES(nthe, "ntPwdHistory");
 	GET_VALUES(lmhe, "lmPwdHistory");
@@ -3611,14 +3617,12 @@ static int setup_io(struct ph_context *ac,
 			status = samdb_result_passwords_no_lockout(ac,
 								   lp_ctx,
 								   existing_msg,
-								   NULL,
 								   &io->o.nt_hash);
 		} else {
 			/* Get the old password from the database */
 			status = samdb_result_passwords(ac,
 							lp_ctx,
 							existing_msg,
-							NULL,
 							&io->o.nt_hash);
 		}
 

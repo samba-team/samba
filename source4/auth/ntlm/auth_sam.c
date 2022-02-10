@@ -221,7 +221,6 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 	struct ldb_context *sam_ctx = auth_context->sam_ctx;
 	const char * const attrs[] = { "pwdHistoryLength", NULL };
 	struct ldb_message *dom_msg;
-	struct samr_Password *lm_pwd;
 	struct samr_Password *nt_pwd;
 	bool am_rodc;
 
@@ -239,13 +238,13 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 	 * locked out, to avoid mistakes like CVE-2013-4496.
 	 */
 	nt_status = samdb_result_passwords(tmp_ctx, auth_context->lp_ctx,
-					   msg, &lm_pwd, &nt_pwd);
+					   msg, &nt_pwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
 	}
 
-	if (lm_pwd == NULL && nt_pwd == NULL) {
+	if (nt_pwd == NULL) {
 		if (samdb_rodc(auth_context->sam_ctx, &am_rodc) == LDB_SUCCESS && am_rodc) {
 			/*
 			 * we don't have passwords for this

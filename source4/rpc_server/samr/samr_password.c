@@ -183,7 +183,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	user_objectSid = samdb_result_dom_sid(res, res[0], "objectSid");
 
 	status = samdb_result_passwords(mem_ctx, dce_call->conn->dce_ctx->lp_ctx,
-					res[0], NULL, &nt_pwd);
+					res[0], &nt_pwd);
 	if (!NT_STATUS_IS_OK(status) ) {
 		goto failed;
 	}

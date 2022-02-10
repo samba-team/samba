@@ -556,10 +556,9 @@ NTSTATUS samdb_result_passwords_from_history(TALLOC_CTX *mem_ctx,
 NTSTATUS samdb_result_passwords_no_lockout(TALLOC_CTX *mem_ctx,
 					   struct loadparm_context *lp_ctx,
 					   const struct ldb_message *msg,
-					   struct samr_Password **lm_pwd,
 					   struct samr_Password **nt_pwd)
 {
-	struct samr_Password *lmPwdHash, *ntPwdHash;
+	struct samr_Password *ntPwdHash;
 
 	if (nt_pwd) {
 		unsigned int num_nt;
@@ -572,31 +571,12 @@ NTSTATUS samdb_result_passwords_no_lockout(TALLOC_CTX *mem_ctx,
 			*nt_pwd = &ntPwdHash[0];
 		}
 	}
-	if (lm_pwd) {
-		/* Ensure that if we have turned off LM
-		 * authentication, that we never use the LM hash, even
-		 * if we store it */
-		if (lpcfg_lanman_auth(lp_ctx)) {
-			unsigned int num_lm;
-			num_lm = samdb_result_hashes(mem_ctx, msg, "dBCSPwd", &lmPwdHash);
-			if (num_lm == 0) {
-				*lm_pwd = NULL;
-			} else if (num_lm > 1) {
-				return NT_STATUS_INTERNAL_DB_CORRUPTION;
-			} else {
-				*lm_pwd = &lmPwdHash[0];
-			}
-		} else {
-			*lm_pwd = NULL;
-		}
-	}
 	return NT_STATUS_OK;
 }
 
 NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx,
 				struct loadparm_context *lp_ctx,
 				const struct ldb_message *msg,
-				struct samr_Password **lm_pwd,
 				struct samr_Password **nt_pwd)
 {
 	uint16_t acct_flags;
@@ -611,7 +591,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx,
 	}
 
 	return samdb_result_passwords_no_lockout(mem_ctx, lp_ctx, msg,
-						 lm_pwd, nt_pwd);
+						 nt_pwd);
 }
 
 /*

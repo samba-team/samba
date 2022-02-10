@@ -442,7 +442,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	if (!(user_account_control & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
 		nt_status = samdb_result_passwords_no_lockout(mem_ctx,
 					dce_call->conn->dce_ctx->lp_ctx,
-					msgs[0], NULL, &curNtHash);
+					msgs[0], &curNtHash);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -4280,7 +4280,7 @@ static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_cal
 	default:
 		nt_status = samdb_result_passwords_no_lockout(mem_ctx, lp_ctx,
 							      res[0],
-							      NULL, &curNtHash);
+							      &curNtHash);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}

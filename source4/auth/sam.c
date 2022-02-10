@@ -49,7 +49,6 @@
 	"msDS-AllowedToActOnBehalfOfOtherIdentity", \
 						\
 	/* passwords */				\
-	"dBCSPwd",				\
 	"unicodePwd",				\
 						\
 	"userAccountControl",	                \
