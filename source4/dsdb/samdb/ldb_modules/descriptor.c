@@ -55,6 +55,7 @@ struct descriptor_changes {
 	bool force_children;
 	struct ldb_dn *stopped_dn;
 	size_t ref_count;
+	size_t sort_count;
 };
 
 struct descriptor_transaction {
@@ -85,6 +86,7 @@ struct descriptor_transaction {
 		struct db_context *map;
 		size_t num_registrations;
 		size_t num_registered;
+		size_t num_toplevel;
 		size_t num_processed;
 	} changes;
 	struct {
@@ -1258,11 +1260,39 @@ static int descriptor_sd_propagation_object(struct ldb_module *module,
 	struct ldb_request *sub_req;
 	struct ldb_result *mod_res;
 	struct ldb_control *sd_propagation_control;
+	struct GUID guid;
 	int ret;
+	TDB_DATA key;
+	NTSTATUS status;
+	struct descriptor_changes *c = NULL;
 
 	*stop = false;
 
 	t->objects.num_processed += 1;
+
+	/*
+	 * We get the GUID of the object
+	 * in order to check if there's
+	 * a descriptor_changes in our list.
+	 */
+
+	status = dsdb_get_extended_dn_guid(msg->dn, &guid, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		return ldb_operr(ldb);
+	}
+
+	key = make_tdb_data((const void*)&guid, sizeof(guid));
+	status = dbwrap_parse_record(t->changes.map, key, descriptor_changes_parser, &c);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		c = NULL;
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "dbwrap_parse_record() - %s\n",
+			  nt_errstr(status));
+		return ldb_module_operr(module);
+	}
 
 	mod_res = talloc_zero(msg, struct ldb_result);
 	if (mod_res == NULL) {
@@ -1315,7 +1345,34 @@ static int descriptor_sd_propagation_object(struct ldb_module *module,
 	}
 
 	if (sd_propagation_control->critical != 0) {
-		*stop = true;
+		if (c == NULL) {
+			/*
+			 * If we don't have a
+			 * descriptor_changes structure
+			 * we're done.
+			 */
+			*stop = true;
+		} else if (!c->force_children) {
+			/*
+			 * If we don't need to
+			 * propagate to children,
+			 * we're done.
+			 */
+			*stop = true;
+		}
+	}
+
+	if (c != NULL && !c->force_children) {
+		/*
+		 * Remove the pending change,
+		 * we already done all required work,
+		 * there's no need to do it again.
+		 *
+		 * Note DLIST_REMOVE() is a noop
+		 * if the element is not part of
+		 * the list.
+		 */
+		DLIST_REMOVE(t->changes.list, c);
 	}
 
 	talloc_free(mod_res);
@@ -1373,7 +1430,8 @@ static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_FLAG_AS_SYSTEM |
 				 DSDB_SEARCH_SHOW_DELETED |
-				 DSDB_SEARCH_SHOW_RECYCLED,
+				 DSDB_SEARCH_SHOW_RECYCLED |
+				 DSDB_SEARCH_SHOW_EXTENDED_DN,
 				 NULL, /* parent_req */
 				 "(objectGUID=%s)",
 				 GUID_buf_string(&change->guid,
@@ -1468,7 +1526,8 @@ static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 				 LDB_SCOPE_SUBTREE,
 				 no_attrs,
 				 DSDB_FLAG_NEXT_MODULE |
-				 DSDB_FLAG_AS_SYSTEM,
+				 DSDB_FLAG_AS_SYSTEM |
+				 DSDB_SEARCH_SHOW_EXTENDED_DN,
 				 NULL, /* parent_req */
 				 "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
@@ -1550,6 +1609,7 @@ static int descriptor_prepare_commit(struct ldb_module *module)
 		talloc_get_type_abort(ldb_module_get_private(module),
 		struct descriptor_data);
 	struct descriptor_transaction *t = &descriptor_private->transaction;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct descriptor_changes *c, *n;
 	int ret;
 
@@ -1558,11 +1618,125 @@ static int descriptor_prepare_commit(struct ldb_module *module)
 	DBG_NOTICE("changes: num_registered=%zu\n",
 		   t->changes.num_registered);
 
+	/*
+	 * The security descriptor propagation
+	 * needs to apply the inheritance from
+	 * an object to itself and/or all it's
+	 * children.
+	 *
+	 * In the initial replication during
+	 * a join, we have every object in our
+	 * list.
+	 *
+	 * In order to avoid useless work it's
+	 * better to start with toplevel objects and
+	 * move down to the leaf object from there.
+	 *
+	 * So if the parent_guid is also in our list,
+	 * we better move the object behind its parent.
+	 *
+	 * It allows that the recursive processing of
+	 * the parent already does the work needed
+	 * for the child.
+	 *
+	 * If we have a list for this directory tree:
+	 *
+	 *  A
+	 *    -> B
+	 *        -> C
+	 *            -> D
+	 *                -> E
+	 *
+	 * The initial list would have the order D, E, B, A, C
+	 *
+	 * By still processing from the front, we ensure that,
+	 * when D is found to be below C, that E follows because
+	 * we keep peeling items off the front for checking and
+	 * move them behind their parent.
+	 *
+	 * So we would go:
+	 *
+	 * E B A C D
+	 *
+	 * B A C D E
+	 *
+	 * A B C D E
+	 */
 	for (c = t->changes.list; c; c = n) {
+		struct descriptor_changes *pc = NULL;
 		n = c->next;
+
+		if (c->sort_count >= t->changes.num_registered) {
+			/*
+			 * This should never happen, but it's
+			 * a sanity check in order to avoid
+			 * endless loops. Just stop sorting.
+			 */
+			break;
+		}
+
+		/*
+		 * Check if we have the parent also in the list.
+		 */
+		if (!GUID_all_zero((const void*)&c->parent_guid)) {
+			TDB_DATA pkey;
+			NTSTATUS status;
+
+			pkey = make_tdb_data((const void*)&c->parent_guid,
+					     sizeof(c->parent_guid));
+
+			status = dbwrap_parse_record(t->changes.map, pkey,
+						     descriptor_changes_parser, &pc);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+				pc = NULL;
+				status = NT_STATUS_OK;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				ldb_debug(ldb, LDB_DEBUG_FATAL,
+					  "dbwrap_parse_record() - %s\n",
+					  nt_errstr(status));
+				return ldb_module_operr(module);
+			}
+		}
+
+		if (pc == NULL) {
+			/*
+			 * There is no parent in the list
+			 */
+			t->changes.num_toplevel += 1;
+			continue;
+		}
+
+		/*
+		 * Move the child after the parent
+		 *
+		 * Note that we do that multiple times
+		 * in case the parent already moved itself.
+		 *
+		 * See the comment above the loop.
+		 */
+		DLIST_REMOVE(t->changes.list, c);
+		DLIST_ADD_AFTER(t->changes.list, c, pc);
+
+		/*
+		 * Remember how often we moved the object
+		 * in order to avoid endless loops.
+		 */
+		c->sort_count += 1;
+	}
+
+	DBG_NOTICE("changes: num_toplevel=%zu\n", t->changes.num_toplevel);
+
+	while (t->changes.list != NULL) {
+		c = t->changes.list;
 
 		DLIST_REMOVE(t->changes.list, c);
 
+		/*
+		 * Note that descriptor_sd_propagation_recursive()
+		 * may also remove other elements of the list,
+		 * so we can't use a next pointer
+		 */
 		ret = descriptor_sd_propagation_recursive(module, c);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			continue;
