@@ -19,13 +19,14 @@
 import samba.getopt as options
 from samba.netcmd import Command, SuperCommand, CommandError, Option
 import ldb
-from samba.ndr import ndr_unpack
+from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dsdb import (
     ATYPE_SECURITY_GLOBAL_GROUP,
+    DS_GUID_USERS_CONTAINER,
     GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
     GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
     GTYPE_SECURITY_GLOBAL_GROUP,
@@ -33,11 +34,14 @@ from samba.dsdb import (
     GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP,
     GTYPE_DISTRIBUTION_GLOBAL_GROUP,
     GTYPE_DISTRIBUTION_UNIVERSAL_GROUP,
+    SYSTEM_FLAG_DISALLOW_DELETE,
+    SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE,
+    SYSTEM_FLAG_DOMAIN_DISALLOW_RENAME,
     UF_ACCOUNTDISABLE,
 )
 from collections import defaultdict
 from subprocess import check_call, CalledProcessError
-from samba.common import get_bytes
+from samba.common import get_bytes, normalise_int32
 import os
 import tempfile
 from . import common
@@ -106,13 +110,15 @@ Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (b
         Option("--notes", help="Groups's notes", type=str),
         Option("--gid-number", help="Group's Unix/RFC2307 GID number", type=int),
         Option("--nis-domain", help="SFU30 NIS Domain", type=str),
+        Option("--special", help="Add a special predefined group", action="store_true", default=False),
     ]
 
     takes_args = ["groupname"]
 
     def run(self, groupname, credopts=None, sambaopts=None,
             versionopts=None, H=None, groupou=None, group_scope=None,
-            group_type=None, description=None, mail_address=None, notes=None, gid_number=None, nis_domain=None):
+            group_type=None, description=None, mail_address=None, notes=None, gid_number=None, nis_domain=None,
+            special=False):
 
         if (group_type or "Security") == "Security":
             gtype = security_group.get(group_scope, GTYPE_SECURITY_GLOBAL_GROUP)
@@ -128,6 +134,191 @@ Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (b
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
+        except Exception as e:
+            # FIXME: catch more specific exception
+            raise CommandError(f'Failed to add group "{groupname}"', e)
+
+        if special:
+            invalid_option = None
+            if group_scope is not None:
+                invalid_option = 'group-scope'
+            elif group_type is not None:
+                invalid_option = 'group-type'
+            elif description is not None:
+                invalid_option = 'description'
+            elif mail_address is not None:
+                invalid_option = 'mail-address'
+            elif notes is not None:
+                invalid_option = 'notes'
+            elif gid_number is not None:
+                invalid_option = 'gid-number'
+            elif nis_domain is not None:
+                invalid_option = 'nis-domain'
+
+            if invalid_option is not None:
+                raise CommandError(f'Superfluous option --{invalid_option} '
+                                   f'specified with --special')
+
+            if not samdb.am_pdc():
+                raise CommandError('Adding special groups is only permitted '
+                                   'against the PDC!')
+
+            special_groups = {
+                # On Windows, this group is added automatically when the PDC
+                # role is held by a DC running Windows Server 2012 R2 or later.
+                # https://docs.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/protected-users-security-group#BKMK_Requirements
+                'Protected Users'.lower(): (
+                    'Protected Users',
+                    GTYPE_SECURITY_GLOBAL_GROUP,
+                    security.DOMAIN_RID_PROTECTED_USERS,
+                    'Members of this group are afforded additional '
+                    'protections against authentication security threats'),
+            }
+
+            special_group = special_groups.get(groupname.lower())
+            if special_group is None:
+                raise CommandError(f'Unknown special group "{groupname}".')
+
+            groupname, gtype, rid, description = special_group
+            group_type = normalise_int32(gtype)
+
+            group_dn = samdb.get_default_basedn()
+
+            if gtype == GTYPE_SECURITY_GLOBAL_GROUP:
+                object_sid = security.dom_sid(
+                    f'{samdb.get_domain_sid()}-{rid}')
+                system_flags = None
+
+                if not groupou:
+                    group_dn = samdb.get_wellknown_dn(group_dn,
+                                                      DS_GUID_USERS_CONTAINER)
+
+            elif gtype == GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
+                object_sid = security.dom_sid(f'S-1-5-32-{rid}')
+                system_flags = (SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE |
+                                SYSTEM_FLAG_DOMAIN_DISALLOW_RENAME |
+                                SYSTEM_FLAG_DISALLOW_DELETE)
+
+                if not groupou and not group_dn.add_child('CN=Builtin'):
+                    raise RuntimeError('Error getting Builtin objects DN')
+            else:
+                raise RuntimeError(f'Unknown group type {gtype}')
+
+            if groupou and not group_dn.add_child(groupou):
+                raise CommandError(f'Invalid group OU "{groupou}"')
+
+            if not group_dn.add_child(f'CN={groupname}'):
+                raise CommandError(f'Invalid group name "{groupname}"')
+
+            msg = {
+                'dn': group_dn,
+                'sAMAccountName': groupname,
+                'objectClass': 'group',
+                'groupType': group_type,
+                'description': description,
+                'objectSid': ndr_pack(object_sid),
+                'isCriticalSystemObject': 'TRUE',
+            }
+
+            if system_flags is not None:
+                msg['systemFlags'] = system_flags
+
+            try:
+                samdb.add(msg, controls=['relax:0'])
+            except ldb.LdbError as e:
+                num, estr = e.args
+                if num == ldb.ERR_CONSTRAINT_VIOLATION:
+                    try:
+                        res = samdb.search(
+                            expression=f'(objectSid={object_sid})',
+                            attrs=['sAMAccountName'])
+                    except ldb.LdbError:
+                        raise CommandError(
+                            f'Failed to add group "{groupname}"', e)
+
+                    if len(res) != 1:
+                        raise CommandError(
+                            f'Failed to add group "{groupname}"', e)
+
+                    name = res[0].get('sAMAccountName', idx=0)
+                    if name:
+                        with_name = f' with name "{name}"'
+                    else:
+                        with_name = ''
+
+                    raise CommandError(
+                        f'Failed to add group "{groupname}" - Special group '
+                        f'already exists{with_name} at "{res[0].dn}".')
+
+                elif num == ldb.ERR_ENTRY_ALREADY_EXISTS:
+                    try:
+                        res = samdb.search(base=group_dn,
+                                           scope=ldb.SCOPE_BASE,
+                                           attrs=['sAMAccountName',
+                                                  'objectSid',
+                                                  'groupType'])
+                    except ldb.LdbError:
+                        try:
+                            res = samdb.search(
+                                expression=f'(sAMAccountName={groupname})',
+                                attrs=['sAMAccountName',
+                                       'objectSid',
+                                       'groupType'])
+                        except ldb.LdbError:
+                            raise CommandError(
+                                f'Failed to add group "{groupname}"', e)
+
+                    if len(res) != 1:
+                        raise CommandError(
+                            f'Failed to add group "{groupname}"', e)
+
+                    got_name = res[0].get('sAMAccountName', idx=0)
+                    if got_name:
+                        named = f'named "{got_name}"'
+                    else:
+                        named = 'with no name'
+
+                    got_group_type = res[0].get('groupType',
+                                                idx=0).decode('utf-8')
+                    if group_type != got_group_type:
+                        raise CommandError(
+                            f'Failed to add group "{groupname}" - An object '
+                            f'{named} at "{res[0].dn}" already exists, but it '
+                            f'is not a security group. Rename or remove this '
+                            f'existing object before attempting to add this '
+                            f'special group.')
+
+                    sid = res[0].get('objectSid', idx=0)
+                    if sid is None:
+                        raise CommandError(
+                            f'Failed to add group "{groupname}" - A security '
+                            f'group {named} at "{res[0].dn}" already exists, '
+                            f'but it lacks a SID. Rename or remove this '
+                            f'existing object before attempting to add this '
+                            f'special group.')
+                    else:
+                        sid = ndr_unpack(security.dom_sid, sid)
+                        if sid == object_sid:
+                            raise CommandError(
+                                f'Failed to add group "{groupname}" - The '
+                                f'security group {named} at "{res[0].dn}" '
+                                f'already exists.')
+                        else:
+                            raise CommandError(
+                                f'Failed to add group "{groupname}" - A '
+                                f'security group {named} at "{res[0].dn}" '
+                                f'already exists, but it has the wrong SID, '
+                                f'and will not function as expected. Rename '
+                                f'or remove this existing object before '
+                                f'attempting to add this special group.')
+                else:
+                    raise CommandError(f'Failed to add group "{groupname}"', e)
+            else:
+                self.outf.write(f'Added group {groupname}\n')
+
+            return
+
+        try:
             samdb.newgroup(groupname, groupou=groupou, grouptype=gtype,
                            description=description, mailaddress=mail_address, notes=notes,
                            gidnumber=gid_number, nisdomain=nis_domain)
