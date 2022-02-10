@@ -156,17 +156,13 @@ struct setup_password_fields_io {
 		const struct ldb_val *cleartext_utf8;
 		const struct ldb_val *cleartext_utf16;
 		struct samr_Password *nt_hash;
-		struct samr_Password *lm_hash;
 	} n, og;
 
 	/* old credentials */
 	struct {
 		struct samr_Password *nt_hash;
-		struct samr_Password *lm_hash;
 		uint32_t nt_history_len;
 		struct samr_Password *nt_history;
-		uint32_t lm_history_len;
-		struct samr_Password *lm_history;
 		const struct ldb_val *supplemental;
 		struct supplementalCredentialsBlob scb;
 	} o;
@@ -174,11 +170,8 @@ struct setup_password_fields_io {
 	/* generated credentials */
 	struct {
 		struct samr_Password *nt_hash;
-		struct samr_Password *lm_hash;
 		uint32_t nt_history_len;
 		struct samr_Password *nt_history;
-		uint32_t lm_history_len;
-		struct samr_Password *lm_history;
 		const char *salt;
 		DATA_BLOB aes_256;
 		DATA_BLOB aes_128;
@@ -651,44 +644,6 @@ static int setup_nt_fields(struct setup_password_fields_io *io)
 		 * the simular behavior is correct for the lm history case
 		 */
 		E_md4hash("", io->g.nt_history[0].hash);
-	}
-
-	return LDB_SUCCESS;
-}
-
-/* Get the LANMAN hash, and fill it in as an entry in the password history, 
-   and specify it into io->g.lm_hash */
-
-static int setup_lm_fields(struct setup_password_fields_io *io)
-{
-	struct ldb_context *ldb;
-	uint32_t i;
-
-	io->g.lm_hash = io->n.lm_hash;
-	ldb = ldb_module_get_ctx(io->ac->module);
-
-	if (io->ac->status->domain_data.pwdHistoryLength == 0) {
-		return LDB_SUCCESS;
-	}
-
-	/* We might not have an old LM password */
-	io->g.lm_history = talloc_array(io->ac,
-					struct samr_Password,
-					io->ac->status->domain_data.pwdHistoryLength);
-	if (!io->g.lm_history) {
-		return ldb_oom(ldb);
-	}
-
-	for (i = 0; i < MIN(io->ac->status->domain_data.pwdHistoryLength-1,
-			    io->o.lm_history_len); i++) {
-		io->g.lm_history[i+1] = io->o.lm_history[i];
-	}
-	io->g.lm_history_len = i + 1;
-
-	if (io->g.lm_hash) {
-		io->g.lm_history[0] = *io->g.lm_hash;
-	} else {
-		E_deshash("", io->g.lm_history[0].hash);
 	}
 
 	return LDB_SUCCESS;
@@ -2400,7 +2355,6 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 				 struct setup_password_fields_given *g)
 {
 	struct ldb_context *ldb;
-	bool ok;
 
 	ldb = ldb_module_get_ctx(io->ac->module);
 
@@ -2477,32 +2431,12 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 		       g->cleartext_utf16->length);
 	}
 
-	if (g->cleartext_utf8) {
-		struct samr_Password *lm_hash;
-
-		lm_hash = talloc(io->ac, struct samr_Password);
-		if (!lm_hash) {
-			return ldb_oom(ldb);
-		}
-
-		/* compute the new lm hash */
-		ok = E_deshash((char *)g->cleartext_utf8->data, lm_hash->hash);
-		if (ok) {
-			g->lm_hash = lm_hash;
-		} else {
-			talloc_free(lm_hash);
-		}
-	}
-
 	return LDB_SUCCESS;
 }
 
 static int setup_password_fields(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
-	struct loadparm_context *lp_ctx =
-		talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-				struct loadparm_context);
 	int ret;
 
 	ret = setup_last_set_field(io);
@@ -2591,16 +2525,6 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		return ret;
 	}
 
-	if (lpcfg_lanman_auth(lp_ctx)) {
-		ret = setup_lm_fields(io);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	} else {
-		io->g.lm_hash = NULL;
-		io->g.lm_history_len = 0;
-	}
-
 	ret = setup_supplemental_field(io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -2612,8 +2536,6 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 static int setup_smartcard_reset(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
-	struct loadparm_context *lp_ctx = talloc_get_type(
-		ldb_get_opaque(ldb, "loadparm"), struct loadparm_context);
 	struct supplementalCredentialsBlob scb = { .__ndr_size = 0 };
 	enum ndr_err_code ndr_err;
 
@@ -2628,18 +2550,6 @@ static int setup_smartcard_reset(struct setup_password_fields_io *io)
 	generate_secret_buffer(io->g.nt_hash->hash,
 			       sizeof(io->g.nt_hash->hash));
 	io->g.nt_history_len = 0;
-
-	if (lpcfg_lanman_auth(lp_ctx)) {
-		io->g.lm_hash = talloc(io->ac, struct samr_Password);
-		if (io->g.lm_hash == NULL) {
-			return ldb_module_oom(io->ac->module);
-		}
-		generate_secret_buffer(io->g.lm_hash->hash,
-				       sizeof(io->g.lm_hash->hash));
-	} else {
-		io->g.lm_hash = NULL;
-	}
-	io->g.lm_history_len = 0;
 
 	/*
 	 * We take the "old" value and store it
@@ -2822,10 +2732,12 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 	 */
 	if (!io->ac->pwd_reset && !(io->ac->change
 				    && io->ac->change->old_password_checked == DSDB_PASSWORD_CHECKED_AND_CORRECT)) {
-		bool nt_hash_checked = false;
-
-		/* we need the old nt or lm hash given by the client */
-		if (!io->og.nt_hash && !io->og.lm_hash) {
+		/*
+		 * we need the old nt hash given by the client (this
+		 * is for the plaintext over LDAP password change,
+		 * Kpasswd and SAMR supply the control)
+		 */
+		if (!io->og.nt_hash) {
 			ldb_asprintf_errstring(ldb,
 				"check_password_restrictions: "
 				"You need to provide the old password in order "
@@ -2835,23 +2747,8 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 
 		/* The password modify through the NT hash is encouraged and
 		   has no problems at all */
-		if (io->og.nt_hash) {
-			if (!io->o.nt_hash || memcmp(io->og.nt_hash->hash, io->o.nt_hash->hash, 16) != 0) {
-				return make_error_and_update_badPwdCount(io, werror);
-			}
-
-			nt_hash_checked = true;
-		}
-
-		/* But it is also possible to change a password by the LM hash
-		 * alone for compatibility reasons. This check is optional if
-		 * the NT hash was already checked - otherwise it's mandatory.
-		 * (as the SAMR operations request it). */
-		if (io->og.lm_hash) {
-			if ((!io->o.lm_hash && !nt_hash_checked)
-			    || (io->o.lm_hash && memcmp(io->og.lm_hash->hash, io->o.lm_hash->hash, 16) != 0)) {
-				return make_error_and_update_badPwdCount(io, werror);
-			}
+		if (!io->o.nt_hash || memcmp(io->og.nt_hash->hash, io->o.nt_hash->hash, 16) != 0) {
+			return make_error_and_update_badPwdCount(io, werror);
 		}
 	}
 
@@ -2939,26 +2836,6 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 		/* checks the NT hash password history */
 		for (i = 0; i < io->o.nt_history_len; i++) {
 			ret = memcmp(io->n.nt_hash, io->o.nt_history[i].hash, 16);
-			if (ret == 0) {
-				ret = LDB_ERR_CONSTRAINT_VIOLATION;
-				*werror = WERR_PASSWORD_RESTRICTION;
-				ldb_asprintf_errstring(ldb,
-					"%08X: %s - check_password_restrictions: "
-					"the password was already used (in history)!",
-					W_ERROR_V(*werror),
-					ldb_strerror(ret));
-				io->ac->status->reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
-				return ret;
-			}
-		}
-	}
-
-	if (io->n.lm_hash) {
-		uint32_t i;
-
-		/* checks the LM hash password history */
-		for (i = 0; i < io->o.lm_history_len; i++) {
-			ret = memcmp(io->n.lm_hash, io->o.lm_history[i].hash, 16);
 			if (ret == 0) {
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				*werror = WERR_PASSWORD_RESTRICTION;
@@ -3129,6 +3006,14 @@ static int update_final_msg(struct setup_password_fields_io *io)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+
+		/*
+		 * This wipes any old LM password after any password
+		 * update operation.
+		 *
+		 * This is the same as the previous default behaviour
+		 * of 'lanman auth = no'
+		 */
 		ret = ldb_msg_add_empty(io->ac->update_msg,
 					"dBCSPwd",
 					el_flags, NULL);
@@ -3141,6 +3026,13 @@ static int update_final_msg(struct setup_password_fields_io *io)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+		/*
+		 * This wipes any LM password history after any password
+		 * update operation.
+		 *
+		 * This is the same as the previous default behaviour
+		 * of 'lanman auth = no'
+		 */
 		ret = ldb_msg_add_empty(io->ac->update_msg,
 					"lmPwdHistory",
 					el_flags, NULL);
@@ -3174,31 +3066,13 @@ static int update_final_msg(struct setup_password_fields_io *io)
 			return ret;
 		}
 	}
-	if (io->g.lm_hash != NULL) {
-		ret = samdb_msg_add_hash(ldb, io->ac,
-					 io->ac->update_msg,
-					 "dBCSPwd",
-					 io->g.lm_hash);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
+
 	if (io->g.nt_history_len > 0) {
 		ret = samdb_msg_add_hashes(ldb, io->ac,
 					   io->ac->update_msg,
 					   "ntPwdHistory",
 					   io->g.nt_history,
 					   io->g.nt_history_len);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	if (io->g.lm_history_len > 0) {
-		ret = samdb_msg_add_hashes(ldb, io->ac,
-					   io->ac->update_msg,
-					   "lmPwdHistory",
-					   io->g.lm_history,
-					   io->g.lm_history_len);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -3593,7 +3467,6 @@ static int setup_io(struct ph_context *ac,
 	}
 
 	/* Handles the "dBCSPwd" attribute (LM hash) */
-	io->n.lm_hash = NULL; io->og.lm_hash = NULL;
 	ret = msg_find_old_and_new_pwd_val(client_msg, "dBCSPwd",
 					   ac->req->operation,
 					   &lm_hash, &old_lm_hash);
@@ -3604,24 +3477,12 @@ static int setup_io(struct ph_context *ac,
 		return ret;
 	}
 
-	if (((lm_hash != NULL) || (old_lm_hash != NULL)) && (!ac->hash_values)) {
-		/* refuse the change if someone wants to change the hash
-		   without control specified... */
+	if (((lm_hash != NULL) || (old_lm_hash != NULL))) {
+		/* refuse the change if someone wants to change the LM hash */
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
-			"it's not allowed to set the LM hash password directly'");
+			"it's not allowed to set the LM hash password (dBCSPwd)'");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	if (lpcfg_lanman_auth(lp_ctx) && (lm_hash != NULL)) {
-		io->n.lm_hash = talloc(io->ac, struct samr_Password);
-		memcpy(io->n.lm_hash->hash, lm_hash->data, MIN(lm_hash->length,
-		       sizeof(io->n.lm_hash->hash)));
-	}
-	if (lpcfg_lanman_auth(lp_ctx) && (old_lm_hash != NULL)) {
-		io->og.lm_hash = talloc(io->ac, struct samr_Password);
-		memcpy(io->og.lm_hash->hash, old_lm_hash->data, MIN(old_lm_hash->length,
-		       sizeof(io->og.lm_hash->hash)));
 	}
 
 	/*
@@ -3632,13 +3493,12 @@ static int setup_io(struct ph_context *ac,
 	 */
 	if (ac->change != NULL) {
 		io->og.nt_hash = NULL;
-		io->og.lm_hash = NULL;
 	}
 
 	/* refuse the change if someone wants to change the clear-
 	   text and supply his own hashes at the same time... */
 	if ((io->n.cleartext_utf8 || io->n.cleartext_utf16)
-			&& (io->n.nt_hash || io->n.lm_hash)) {
+			&& (io->n.nt_hash)) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
 			"it's only allowed to set the password in form of cleartext attributes or as hashes");
@@ -3655,11 +3515,10 @@ static int setup_io(struct ph_context *ac,
 	}
 
 	/* refuse the change if someone tries to set/change the password by
-	 * the lanman hash alone and we've deactivated that mechanism. This
-	 * would end in an account without any password! */
+	 * any method that would leave us without a password! */
 	if (io->ac->update_password
 	    && (!io->n.cleartext_utf8) && (!io->n.cleartext_utf16)
-	    && (!io->n.nt_hash) && (!io->n.lm_hash)) {
+	    && (!io->n.nt_hash)) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
 			"It's not possible to delete the password (changes using the LAN Manager hash alone could be deactivated)!");
@@ -3752,14 +3611,14 @@ static int setup_io(struct ph_context *ac,
 			status = samdb_result_passwords_no_lockout(ac,
 								   lp_ctx,
 								   existing_msg,
-								   &io->o.lm_hash,
+								   NULL,
 								   &io->o.nt_hash);
 		} else {
 			/* Get the old password from the database */
 			status = samdb_result_passwords(ac,
 							lp_ctx,
 							existing_msg,
-							&io->o.lm_hash,
+							NULL,
 							&io->o.nt_hash);
 		}
 
@@ -3782,9 +3641,6 @@ static int setup_io(struct ph_context *ac,
 		io->o.nt_history_len = samdb_result_hashes(ac, existing_msg,
 							   "ntPwdHistory",
 							   &io->o.nt_history);
-		io->o.lm_history_len = samdb_result_hashes(ac, existing_msg,
-							   "lmPwdHistory",
-							   &io->o.lm_history);
 		io->o.supplemental = ldb_msg_find_ldb_val(existing_msg,
 							  "supplementalCredentials");
 
