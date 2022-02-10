@@ -5724,6 +5724,9 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 		ret = dsdb_module_schedule_sd_propagation(ar->module,
 							  ar->objs->partition_dn,
 							  ar->objs->objects[ar->index_current].object_guid,
+							  ar->objs->objects[ar->index_current].parent_guid ?
+							  *ar->objs->objects[ar->index_current].parent_guid :
+							  GUID_zero(),
 							  true);
 		if (ret != LDB_SUCCESS) {
 			return replmd_replicated_request_error(ar, ret);
@@ -6430,6 +6433,9 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		ret = dsdb_module_schedule_sd_propagation(ar->module,
 							  ar->objs->partition_dn,
 							  ar->objs->objects[ar->index_current].object_guid,
+							  ar->objs->objects[ar->index_current].parent_guid ?
+							  *ar->objs->objects[ar->index_current].parent_guid :
+							  GUID_zero(),
 							  true);
 		if (ret != LDB_SUCCESS) {
 			return ldb_operr(ldb);
@@ -6450,6 +6456,9 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		ret = dsdb_module_schedule_sd_propagation(ar->module,
 							  ar->objs->partition_dn,
 							  ar->objs->objects[ar->index_current].object_guid,
+							  ar->objs->objects[ar->index_current].parent_guid ?
+							  *ar->objs->objects[ar->index_current].parent_guid :
+							  GUID_zero(),
 							  false);
 		if (ret != LDB_SUCCESS) {
 			return ldb_operr(ldb);

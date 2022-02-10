@@ -327,6 +327,7 @@ uint32_t dsdb_request_sd_flags(struct ldb_request *req, bool *explicit)
 int dsdb_module_schedule_sd_propagation(struct ldb_module *module,
 					struct ldb_dn *nc_root,
 					struct GUID guid,
+					struct GUID parent_guid,
 					bool include_self)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -341,6 +342,7 @@ int dsdb_module_schedule_sd_propagation(struct ldb_module *module,
 	op->nc_root = nc_root;
 	op->guid = guid;
 	op->include_self = include_self;
+	op->parent_guid = parent_guid;
 
 	ret = dsdb_module_extended(module, op, NULL,
 				   DSDB_EXTENDED_SEC_DESC_PROPAGATION_OID,

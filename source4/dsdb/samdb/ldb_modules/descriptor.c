@@ -50,6 +50,7 @@ struct descriptor_changes {
 	struct descriptor_changes *prev, *next;
 	struct ldb_dn *nc_root;
 	struct GUID guid;
+	struct GUID parent_guid;
 	bool force_self;
 	bool force_children;
 	struct ldb_dn *stopped_dn;
@@ -751,6 +752,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	static const char * const current_attrs[] = { "nTSecurityDescriptor",
 						      "instanceType",
 						      "objectClass", NULL };
+	struct GUID parent_guid = { .time_low = 0 };
 	struct ldb_control *sd_propagation_control;
 	int cmp_ret = -1;
 
@@ -826,6 +828,8 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	 * use for calculation */
 	if (!ldb_dn_is_null(current_res->msgs[0]->dn) &&
 	    !(instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
+		NTSTATUS status;
+
 		parent_dn = ldb_dn_get_parent(req, dn);
 		if (parent_dn == NULL) {
 			return ldb_oom(ldb);
@@ -834,7 +838,8 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 					    parent_attrs,
 					    DSDB_FLAG_NEXT_MODULE |
 					    DSDB_FLAG_AS_SYSTEM |
-					    DSDB_SEARCH_SHOW_RECYCLED,
+					    DSDB_SEARCH_SHOW_RECYCLED |
+					    DSDB_SEARCH_SHOW_EXTENDED_DN,
 					    req);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "descriptor_modify: Could not find SD for %s\n",
@@ -845,6 +850,13 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 			return ldb_operr(ldb);
 		}
 		parent_sd = ldb_msg_find_ldb_val(parent_res->msgs[0], "nTSecurityDescriptor");
+
+		status = dsdb_get_extended_dn_guid(parent_res->msgs[0]->dn,
+						   &parent_guid,
+						   "GUID");
+		if (!NT_STATUS_IS_OK(status)) {
+			return ldb_operr(ldb);
+		}
 	}
 
 	schema = dsdb_get_schema(ldb, req);
@@ -935,6 +947,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 		ret = dsdb_module_schedule_sd_propagation(module,
 							  nc_root,
 							  guid,
+							  parent_guid,
 							  false);
 		if (ret != LDB_SUCCESS) {
 			return ldb_operr(ldb);
@@ -1035,10 +1048,22 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 			 * does not exit, force SD propagation on
 			 * this record (get a new inherited SD from
 			 * the potentially new parent
+			 *
+			 * We don't now the parent guid here,
+			 * but we're not in a hot code path here,
+			 * as the "descriptor" module is located
+			 * above the "repl_meta_data", only
+			 * originating changes are handled here.
+			 *
+			 * If it turns out to be a problem we may
+			 * search for the new parent guid.
 			 */
+			struct GUID parent_guid = { .time_low = 0 };
+
 			ret = dsdb_module_schedule_sd_propagation(module,
 								  nc_root,
 								  guid,
+								  parent_guid,
 								  true);
 			if (ret != LDB_SUCCESS) {
 				return ldb_operr(ldb);
@@ -1084,6 +1109,17 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 	}
 
 	if (t->mem == NULL) {
+		return ldb_module_operr(module);
+	}
+
+	if (GUID_equal(&op->parent_guid, &op->guid)) {
+		/*
+		 * This is an unexpected situation,
+		 * it should never happen!
+		 */
+		DBG_ERR("ERROR: Object %s is its own parent (nc_root=%s)\n",
+			GUID_string(t->mem, &op->guid),
+			ldb_dn_get_extended_linearized(t->mem, op->nc_root, 1));
 		return ldb_module_operr(module);
 	}
 
@@ -1137,6 +1173,11 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 	}
 
 	c->ref_count += 1;
+
+	/*
+	 * always use the last known parent_guid.
+	 */
+	c->parent_guid = op->parent_guid;
 
 	/*
 	 * Note that we only set, but don't clear values here,

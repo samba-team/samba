@@ -299,6 +299,7 @@ struct dsdb_extended_sec_desc_propagation_op {
 	struct ldb_dn *nc_root;
 	struct GUID guid;
 	bool include_self;
+	struct GUID parent_guid;
 };
 
 /* this takes no data */
