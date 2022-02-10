@@ -53,7 +53,6 @@ extern const char *domain_ref_attrs[];
 static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 				    TALLOC_CTX *mem_ctx,
 				    uint16_t acct_flags,
-				    const struct samr_Password *lm_pwd, 
 				    const struct samr_Password *nt_pwd,
 				    const struct auth_usersupplied_info *user_info, 
 				    DATA_BLOB *user_sess_key, 
@@ -84,7 +83,7 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 					     user_info->password.hash.lanman,
 					     user_info->password.hash.nt,
 					     user_info->mapped.account_name,
-					     lm_pwd, nt_pwd);
+					     NULL, nt_pwd);
 		NT_STATUS_NOT_OK_RETURN(status);
 		break;
 		
@@ -99,7 +98,7 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 					     user_info->mapped.account_name,
 					     user_info->client.account_name, 
 					     user_info->client.domain_name, 
-					     lm_pwd, nt_pwd,
+					     NULL, nt_pwd,
 					     user_sess_key, lm_sess_key);
 		NT_STATUS_NOT_OK_RETURN(status);
 		break;
@@ -276,7 +275,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 
 	auth_status = authsam_password_ok(auth_context, tmp_ctx,
 					  acct_flags,
-					  lm_pwd, nt_pwd,
+					  nt_pwd,
 					  user_info,
 					  user_sess_key, lm_sess_key);
 	if (NT_STATUS_IS_OK(auth_status)) {
@@ -320,9 +319,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 
 	for (i = 1; i < MIN(history_len, 3); i++) {
 		struct samr_Password zero_string_hash;
-		struct samr_Password zero_string_des_hash;
 		struct samr_Password *nt_history_pwd = NULL;
-		struct samr_Password *lm_history_pwd = NULL;
 		NTTIME pwdLastSet;
 		struct timeval tv_now;
 		NTTIME now;
@@ -332,7 +329,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		nt_status = samdb_result_passwords_from_history(tmp_ctx,
 							auth_context->lp_ctx,
 							msg, i,
-							&lm_history_pwd,
+							NULL,
 							&nt_history_pwd);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			/*
@@ -372,14 +369,8 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 			continue;
 		}
 
-		E_deshash("", zero_string_des_hash.hash);
-		if (!lm_history_pwd || memcmp(lm_history_pwd->hash, zero_string_des_hash.hash, 16) == 0) {
-			lm_history_pwd = NULL;
-		}
-
 		auth_status = authsam_password_ok(auth_context, tmp_ctx,
 						  acct_flags,
-						  lm_history_pwd,
 						  nt_history_pwd,
 						  user_info,
 						  user_sess_key,
