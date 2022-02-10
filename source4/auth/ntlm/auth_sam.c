@@ -90,8 +90,8 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 		
 	case AUTH_PASSWORD_RESPONSE:
 		status = ntlm_password_check(mem_ctx, 
-					     lpcfg_lanman_auth(auth_context->lp_ctx),
-						 lpcfg_ntlm_auth(auth_context->lp_ctx),
+					     false,
+					     lpcfg_ntlm_auth(auth_context->lp_ctx),
 					     user_info->logon_parameters, 
 					     &auth_context->challenge.data, 
 					     &user_info->password.response.lanman, 
