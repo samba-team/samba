@@ -936,7 +936,7 @@ class DCJoinContext(object):
     def join_replicate(ctx):
         """Replicate the SAM."""
 
-        print("Starting replication")
+        ctx.logger.info("Starting replication")
         ctx.local_samdb.transaction_start()
         try:
             source_dsa_invocation_id = misc.GUID(ctx.samdb.get_invocation_id())
@@ -1016,12 +1016,13 @@ class DCJoinContext(object):
             ctx.source_dsa_invocation_id = source_dsa_invocation_id
             ctx.destination_dsa_guid = destination_dsa_guid
 
-            print("Committing SAM database")
+            ctx.logger.info("Committing SAM database - this may take some time")
         except:
             ctx.local_samdb.transaction_cancel()
             raise
         else:
             ctx.local_samdb.transaction_commit()
+            ctx.logger.info("Committed SAM database")
 
         # A large replication may have caused our LDB connection to the
         # remote DC to timeout, so check the connection is still alive
