@@ -53,9 +53,15 @@ struct descriptor_changes {
 	struct ldb_dn *stopped_dn;
 };
 
+struct descriptor_transaction {
+	TALLOC_CTX *mem;
+	struct {
+		struct descriptor_changes *list;
+	} changes;
+};
+
 struct descriptor_data {
-	TALLOC_CTX *trans_mem;
-	struct descriptor_changes *changes;
+	struct descriptor_transaction transaction;
 };
 
 struct descriptor_context {
@@ -1018,9 +1024,9 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 	struct descriptor_data *descriptor_private =
 		talloc_get_type_abort(ldb_module_get_private(module),
 		struct descriptor_data);
+	struct descriptor_transaction *t = &descriptor_private->transaction;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_extended_sec_desc_propagation_op *op;
-	TALLOC_CTX *parent_mem = NULL;
 	struct descriptor_changes *c;
 
 	op = talloc_get_type(req->op.extended.data,
@@ -1032,13 +1038,11 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
-	if (descriptor_private->trans_mem == NULL) {
+	if (t->mem == NULL) {
 		return ldb_module_operr(module);
 	}
 
-	parent_mem = descriptor_private->trans_mem;
-
-	c = talloc_zero(parent_mem, struct descriptor_changes);
+	c = talloc_zero(t->mem, struct descriptor_changes);
 	if (c == NULL) {
 		return ldb_module_oom(module);
 	}
@@ -1053,7 +1057,7 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 		c->force_children = true;
 	}
 
-	DLIST_ADD_END(descriptor_private->changes, c);
+	DLIST_ADD_END(t->changes.list, c);
 
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
@@ -1355,16 +1359,17 @@ static int descriptor_start_transaction(struct ldb_module *module)
 	struct descriptor_data *descriptor_private =
 		talloc_get_type_abort(ldb_module_get_private(module),
 		struct descriptor_data);
+	struct descriptor_transaction *t = &descriptor_private->transaction;
 
-	if (descriptor_private->trans_mem != NULL) {
+	if (t->mem != NULL) {
 		return ldb_module_operr(module);
 	}
 
-	descriptor_private->trans_mem = talloc_new(descriptor_private);
-	if (descriptor_private->trans_mem == NULL) {
+	*t = (struct descriptor_transaction) { .mem = NULL, };
+	t->mem = talloc_new(descriptor_private);
+	if (t->mem == NULL) {
 		return ldb_module_oom(module);
 	}
-	descriptor_private->changes = NULL;
 
 	return ldb_next_start_trans(module);
 }
@@ -1374,12 +1379,14 @@ static int descriptor_prepare_commit(struct ldb_module *module)
 	struct descriptor_data *descriptor_private =
 		talloc_get_type_abort(ldb_module_get_private(module),
 		struct descriptor_data);
+	struct descriptor_transaction *t = &descriptor_private->transaction;
 	struct descriptor_changes *c, *n;
 	int ret;
 
-	for (c = descriptor_private->changes; c; c = n) {
+	for (c = t->changes.list; c; c = n) {
 		n = c->next;
-		DLIST_REMOVE(descriptor_private->changes, c);
+
+		DLIST_REMOVE(t->changes.list, c);
 
 		ret = descriptor_sd_propagation_recursive(module, c);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
@@ -1398,9 +1405,10 @@ static int descriptor_end_transaction(struct ldb_module *module)
 	struct descriptor_data *descriptor_private =
 		talloc_get_type_abort(ldb_module_get_private(module),
 		struct descriptor_data);
+	struct descriptor_transaction *t = &descriptor_private->transaction;
 
-	TALLOC_FREE(descriptor_private->trans_mem);
-	descriptor_private->changes = NULL;
+	TALLOC_FREE(t->mem);
+	*t = (struct descriptor_transaction) { .mem = NULL, };
 
 	return ldb_next_end_trans(module);
 }
@@ -1410,9 +1418,10 @@ static int descriptor_del_transaction(struct ldb_module *module)
 	struct descriptor_data *descriptor_private =
 		talloc_get_type_abort(ldb_module_get_private(module),
 		struct descriptor_data);
+	struct descriptor_transaction *t = &descriptor_private->transaction;
 
-	TALLOC_FREE(descriptor_private->trans_mem);
-	descriptor_private->changes = NULL;
+	TALLOC_FREE(t->mem);
+	*t = (struct descriptor_transaction) { .mem = NULL, };
 
 	return ldb_next_del_trans(module);
 }
