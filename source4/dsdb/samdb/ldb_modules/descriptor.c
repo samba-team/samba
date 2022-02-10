@@ -90,7 +90,9 @@ struct descriptor_transaction {
 		size_t num_processed;
 	} changes;
 	struct {
+		struct db_context *map;
 		size_t num_processed;
+		size_t num_skipped;
 	} objects;
 };
 
@@ -1088,6 +1090,11 @@ static void descriptor_changes_parser(TDB_DATA key, TDB_DATA data, void *private
 	*c_ptr = talloc_get_type_abort((void *)ptr, struct descriptor_changes);
 }
 
+static void descriptor_object_parser(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	SMB_ASSERT(data.dsize == 0);
+}
+
 static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 						    struct ldb_request *req)
 {
@@ -1263,25 +1270,63 @@ static int descriptor_sd_propagation_object(struct ldb_module *module,
 	struct GUID guid;
 	int ret;
 	TDB_DATA key;
+	TDB_DATA empty_val = { .dsize = 0, };
 	NTSTATUS status;
 	struct descriptor_changes *c = NULL;
 
 	*stop = false;
 
-	t->objects.num_processed += 1;
-
 	/*
 	 * We get the GUID of the object
-	 * in order to check if there's
-	 * a descriptor_changes in our list.
+	 * in order to have the cache key
+	 * for the object.
 	 */
 
 	status = dsdb_get_extended_dn_guid(msg->dn, &guid, "GUID");
 	if (!NT_STATUS_IS_OK(status)) {
 		return ldb_operr(ldb);
 	}
-
 	key = make_tdb_data((const void*)&guid, sizeof(guid));
+
+	/*
+	 * Check if we already processed this object.
+	 */
+	status = dbwrap_parse_record(t->objects.map, key,
+				     descriptor_object_parser, NULL);
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * All work is already one
+		 */
+		t->objects.num_skipped += 1;
+		*stop = true;
+		return LDB_SUCCESS;
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "dbwrap_parse_record() - %s\n",
+			  nt_errstr(status));
+		return ldb_module_operr(module);
+	}
+
+	t->objects.num_processed += 1;
+
+	/*
+	 * Remember that we're processing this object.
+	 */
+	status = dbwrap_store(t->objects.map, key, empty_val, TDB_INSERT);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "dbwrap_parse_record() - %s\n",
+			  nt_errstr(status));
+		return ldb_module_operr(module);
+	}
+
+	/*
+	 * Check that if there's a descriptor_change in our list,
+	 * which we may be able to remove from the pending list
+	 * when we processed the object.
+	 */
+
 	status = dbwrap_parse_record(t->changes.map, key, descriptor_changes_parser, &c);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		c = NULL;
@@ -1599,6 +1644,12 @@ static int descriptor_start_transaction(struct ldb_module *module)
 		*t = (struct descriptor_transaction) { .mem = NULL, };
 		return ldb_module_oom(module);
 	}
+	t->objects.map = db_open_rbt(t->mem);
+	if (t->objects.map == NULL) {
+		TALLOC_FREE(t->mem);
+		*t = (struct descriptor_transaction) { .mem = NULL, };
+		return ldb_module_oom(module);
+	}
 
 	return ldb_next_start_trans(module);
 }
@@ -1748,6 +1799,7 @@ static int descriptor_prepare_commit(struct ldb_module *module)
 
 	DBG_NOTICE("changes: num_processed=%zu\n", t->changes.num_processed);
 	DBG_NOTICE("objects: num_processed=%zu\n", t->objects.num_processed);
+	DBG_NOTICE("objects: num_skipped=%zu\n", t->objects.num_skipped);
 
 	return ldb_next_prepare_commit(module);
 }
