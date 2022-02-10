@@ -42,7 +42,9 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
-#include "lib/util/binsearch.h"
+#include "lib/util/util_tdb.h"
+#include "lib/dbwrap/dbwrap.h"
+#include "lib/dbwrap/dbwrap_rbt.h"
 
 struct descriptor_changes {
 	struct descriptor_changes *prev, *next;
@@ -51,12 +53,36 @@ struct descriptor_changes {
 	bool force_self;
 	bool force_children;
 	struct ldb_dn *stopped_dn;
+	size_t ref_count;
 };
 
 struct descriptor_transaction {
 	TALLOC_CTX *mem;
 	struct {
+		/*
+		 * We used to have a list of changes, appended with each
+		 * DSDB_EXTENDED_SEC_DESC_PROPAGATION_OID operation.
+		 *
+		 * But the main problem was that a replication
+		 * cycle (mainly the initial replication) calls
+		 * DSDB_EXTENDED_SEC_DESC_PROPAGATION_OID for the
+		 * same object[GUID] more than once. With
+		 * DRSUAPI_DRS_GET_TGT we'll get the naming
+		 * context head object and other top level
+		 * containers, every often.
+		 *
+		 * It means we'll process objects more
+		 * than once and waste a lot of time
+		 * doing the same work again and again.
+		 *
+		 * We use an objectGUID based map in order to
+		 * avoid registering objects more than once.
+		 * In an domain with 22000 object it can
+		 * reduce the work from 4 hours down to ~ 3.5 minutes.
+		 */
 		struct descriptor_changes *list;
+		struct db_context *map;
+		size_t num_registrations;
 		size_t num_registered;
 		size_t num_processed;
 	} changes;
@@ -1023,6 +1049,18 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
+static void descriptor_changes_parser(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct descriptor_changes **c_ptr = (struct descriptor_changes **)private_data;
+	uintptr_t ptr = 0;
+
+	SMB_ASSERT(data.dsize == sizeof(ptr));
+
+	memcpy(&ptr, data.dptr, data.dsize);
+
+	*c_ptr = talloc_get_type_abort((void *)ptr, struct descriptor_changes);
+}
+
 static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 						    struct ldb_request *req)
 {
@@ -1032,7 +1070,9 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 	struct descriptor_transaction *t = &descriptor_private->transaction;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_extended_sec_desc_propagation_op *op;
-	struct descriptor_changes *c;
+	struct descriptor_changes *c = NULL;
+	TDB_DATA key;
+	NTSTATUS status;
 
 	op = talloc_get_type(req->op.extended.data,
 			     struct dsdb_extended_sec_desc_propagation_op);
@@ -1047,22 +1087,88 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 		return ldb_module_operr(module);
 	}
 
-	c = talloc_zero(t->mem, struct descriptor_changes);
+	/*
+	 * First we check if we already have an registration
+	 * for the given object.
+	 */
+
+	key = make_tdb_data((const void*)&op->guid, sizeof(op->guid));
+	status = dbwrap_parse_record(t->changes.map, key,
+				     descriptor_changes_parser, &c);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		c = NULL;
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "dbwrap_parse_record() - %s\n",
+			  nt_errstr(status));
+		return ldb_module_operr(module);
+	}
+
 	if (c == NULL) {
-		return ldb_module_oom(module);
+		/*
+		 * Create a new structure if we
+		 * don't know about the object yet.
+		 */
+
+		c = talloc_zero(t->mem, struct descriptor_changes);
+		if (c == NULL) {
+			return ldb_module_oom(module);
+		}
+		c->nc_root = ldb_dn_copy(c, op->nc_root);
+		if (c->nc_root == NULL) {
+			return ldb_module_oom(module);
+		}
+		c->guid = op->guid;
 	}
-	c->nc_root = ldb_dn_copy(c, op->nc_root);
-	if (c->nc_root == NULL) {
-		return ldb_module_oom(module);
+
+	if (ldb_dn_compare(c->nc_root, op->nc_root) != 0) {
+		/*
+		 * This is an unexpected situation,
+		 * we don't expect the nc root to change
+		 * during a replication cycle.
+		 */
+		DBG_ERR("ERROR: Object %s nc_root changed %s => %s\n",
+			GUID_string(c, &c->guid),
+			ldb_dn_get_extended_linearized(c, c->nc_root, 1),
+			ldb_dn_get_extended_linearized(c, op->nc_root, 1));
+		return ldb_module_operr(module);
 	}
-	c->guid = op->guid;
+
+	c->ref_count += 1;
+
+	/*
+	 * Note that we only set, but don't clear values here,
+	 * it means c->force_self and c->force_children can
+	 * both be true in the end.
+	 */
 	if (op->include_self) {
 		c->force_self = true;
 	} else {
 		c->force_children = true;
 	}
 
-	t->changes.num_registered += 1;
+	if (c->ref_count == 1) {
+		struct TDB_DATA val = make_tdb_data((const void*)&c, sizeof(c));
+
+		/*
+		 * Remember the change by objectGUID in order
+		 * to avoid processing it more than once.
+		 */
+
+		status = dbwrap_store(t->changes.map, key, val, TDB_INSERT);
+		if (!NT_STATUS_IS_OK(status)) {
+			ldb_debug(ldb, LDB_DEBUG_FATAL,
+				  "dbwrap_parse_record() - %s\n",
+				  nt_errstr(status));
+			return ldb_module_operr(module);
+		}
+
+		DLIST_ADD_END(t->changes.list, c);
+		t->changes.num_registered += 1;
+	}
+	t->changes.num_registrations += 1;
 
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
@@ -1387,6 +1493,12 @@ static int descriptor_start_transaction(struct ldb_module *module)
 	if (t->mem == NULL) {
 		return ldb_module_oom(module);
 	}
+	t->changes.map = db_open_rbt(t->mem);
+	if (t->changes.map == NULL) {
+		TALLOC_FREE(t->mem);
+		*t = (struct descriptor_transaction) { .mem = NULL, };
+		return ldb_module_oom(module);
+	}
 
 	return ldb_next_start_trans(module);
 }
@@ -1400,6 +1512,8 @@ static int descriptor_prepare_commit(struct ldb_module *module)
 	struct descriptor_changes *c, *n;
 	int ret;
 
+	DBG_NOTICE("changes: num_registrations=%zu\n",
+		   t->changes.num_registrations);
 	DBG_NOTICE("changes: num_registered=%zu\n",
 		   t->changes.num_registered);
 
