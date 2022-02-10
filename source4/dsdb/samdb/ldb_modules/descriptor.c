@@ -57,7 +57,12 @@ struct descriptor_transaction {
 	TALLOC_CTX *mem;
 	struct {
 		struct descriptor_changes *list;
+		size_t num_registered;
+		size_t num_processed;
 	} changes;
+	struct {
+		size_t num_processed;
+	} objects;
 };
 
 struct descriptor_data {
@@ -1057,7 +1062,7 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 		c->force_children = true;
 	}
 
-	DLIST_ADD_END(t->changes.list, c);
+	t->changes.num_registered += 1;
 
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
@@ -1098,6 +1103,10 @@ static int descriptor_sd_propagation_object(struct ldb_module *module,
 					    struct ldb_message *msg,
 					    bool *stop)
 {
+	struct descriptor_data *descriptor_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+		struct descriptor_data);
+	struct descriptor_transaction *t = &descriptor_private->transaction;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_request *sub_req;
 	struct ldb_result *mod_res;
@@ -1105,6 +1114,8 @@ static int descriptor_sd_propagation_object(struct ldb_module *module,
 	int ret;
 
 	*stop = false;
+
+	t->objects.num_processed += 1;
 
 	mod_res = talloc_zero(msg, struct ldb_result);
 	if (mod_res == NULL) {
@@ -1180,6 +1191,10 @@ static int descriptor_sd_propagation_msg_sort(struct ldb_message **m1,
 static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 					       struct descriptor_changes *change)
 {
+	struct descriptor_data *descriptor_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+		struct descriptor_data);
+	struct descriptor_transaction *t = &descriptor_private->transaction;
 	struct ldb_result *guid_res = NULL;
 	struct ldb_result *res = NULL;
 	unsigned int i;
@@ -1188,6 +1203,8 @@ static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 	struct GUID_txt_buf guid_buf;
 	int ret;
 	bool stop = false;
+
+	t->changes.num_processed += 1;
 
 	/*
 	 * First confirm this object has children, or exists
@@ -1383,6 +1400,9 @@ static int descriptor_prepare_commit(struct ldb_module *module)
 	struct descriptor_changes *c, *n;
 	int ret;
 
+	DBG_NOTICE("changes: num_registered=%zu\n",
+		   t->changes.num_registered);
+
 	for (c = t->changes.list; c; c = n) {
 		n = c->next;
 
@@ -1396,6 +1416,9 @@ static int descriptor_prepare_commit(struct ldb_module *module)
 			return ret;
 		}
 	}
+
+	DBG_NOTICE("changes: num_processed=%zu\n", t->changes.num_processed);
+	DBG_NOTICE("objects: num_processed=%zu\n", t->objects.num_processed);
 
 	return ldb_next_prepare_commit(module);
 }
