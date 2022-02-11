@@ -1597,3 +1597,8 @@ void fsp_set_base_fsp(struct files_struct *fsp, struct files_struct *base_fsp)
 		fsp->base_fsp->stream_fsp = fsp;
 	}
 }
+
+bool fsp_is_alternate_stream(const struct files_struct *fsp)
+{
+	return (fsp->base_fsp != NULL);
+}
