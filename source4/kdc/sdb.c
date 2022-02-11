@@ -28,20 +28,6 @@
 
 void sdb_free_entry(struct sdb_entry_ex *ent)
 {
-	struct sdb_key *k;
-	size_t i;
-
-	for (i = 0; i < ent->entry.keys.len; i++) {
-		k = &ent->entry.keys.val[i];
-
-		/*
-		 * Passing NULL as the Kerberos context is intentional here, as
-		 * both Heimdal and MIT libraries don't use the context when
-		 * clearing the keyblocks.
-		 */
-		krb5_free_keyblock_contents(NULL, &k->key);
-	}
-
 	free_sdb_entry(&ent->entry);
 	ZERO_STRUCTP(ent);
 }
@@ -52,7 +38,12 @@ static void free_sdb_key(struct sdb_key *k)
 		return;
 	}
 
-	/* keyblock not alloced */
+	/*
+	 * Passing NULL as the Kerberos context is intentional here, as
+	 * both Heimdal and MIT libraries don't use the context when
+	 * clearing the keyblocks.
+	 */
+	krb5_free_keyblock_contents(NULL, &k->key);
 
 	if (k->salt) {
 		smb_krb5_free_data_contents(NULL, &k->salt->salt);
