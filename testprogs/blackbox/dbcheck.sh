@@ -24,7 +24,7 @@ dbcheck_fix_one_way_links() {
 
 # This list of attributes can be freely extended
 dbcheck_fix_stale_links() {
-	$PYTHON $BINDIR/samba-tool dbcheck --quiet --fix --yes remove_plausible_deleted_DN_links --attrs="member msDS-NC-Replica-Locations msDS-NC-RO-Replica-Locations msDS-RevealOnDemandGroup msDS-NeverRevealGroup" --cross-ncs $ARGS
+	$PYTHON $BINDIR/samba-tool dbcheck --quiet --fix --yes remove_plausible_deleted_DN_links --attrs="member msDS-NC-Replica-Locations msDS-NC-RO-Replica-Locations msDS-RevealOnDemandGroup msDS-NeverRevealGroup msDS-RevealedUsers" --cross-ncs $ARGS
 }
 
 # This list of attributes can be freely extended
