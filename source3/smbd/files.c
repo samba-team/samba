@@ -469,10 +469,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		goto fail;
 	}
 
-	if (is_ntfs_default_stream_smb_fname(full_fname)) {
-		full_fname->stream_name = NULL;
-	}
-
 	status = fsp_attach_smb_fname(fsp, &full_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
