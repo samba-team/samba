@@ -51,7 +51,7 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 from math import gcd
 from functools import reduce
 from struct import pack, unpack
-from binascii import crc32
+from binascii import crc32, b2a_hex
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import hmac
 from cryptography.hazmat.primitives.ciphers import algorithms as ciphers
@@ -616,6 +616,9 @@ class Key(object):
         self.enctype = enctype
         self.contents = contents
 
+    def __str__(self):
+        return "enctype=%d contents=%s" % (self.enctype,
+                b2a_hex(self.contents).decode('ascii'))
 
 def seedsize(enctype):
     e = _get_enctype_profile(enctype)
