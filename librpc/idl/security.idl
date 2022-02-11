@@ -298,7 +298,18 @@ interface security
 	const string SID_NT_TRUSTED_INSTALLER =
 		"S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464";
 
+	/*
+	 * This is added during the AS-REQ/AS-REP exchange after
+	 * pre-authentication was successful.
+	 */
 	const string SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY = "S-1-18-1";
+	/*
+	 * This is added during S4U2Self PAC creation.
+	 *
+	 * It won't replace a possible
+	 * SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY
+	 * during S4U2Proxy.
+	 */
 	const string SID_SERVICE_ASSERTED_IDENTITY = "S-1-18-2";
 
 	const string SID_COMPOUNDED_AUTHENTICATION = "S-1-5-21-0-0-0-496";
