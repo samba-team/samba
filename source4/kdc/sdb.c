@@ -34,7 +34,7 @@ void sdb_free_entry(struct sdb_entry_ex *ent)
 	ZERO_STRUCTP(ent);
 }
 
-static void free_sdb_key(struct sdb_key *k)
+void sdb_key_free(struct sdb_key *k)
 {
 	if (k == NULL) {
 		return;
@@ -68,7 +68,7 @@ static void free_sdb_entry(struct sdb_entry *s)
 
 	if (s->keys.len) {
 		for (i=0; i < s->keys.len; i++) {
-			free_sdb_key(&s->keys.val[i]);
+			sdb_key_free(&s->keys.val[i]);
 		}
 		free(s->keys.val);
 	}

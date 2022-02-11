@@ -129,6 +129,7 @@ struct sdb_entry_ex {
 #define SDB_F_FORCE_CANON	16384	/* force canonicalition */
 
 void sdb_free_entry(struct sdb_entry_ex *e);
+void sdb_key_free(struct sdb_key *key);
 struct SDBFlags int2SDBFlags(unsigned n);
 
 #endif /* _KDC_SDB_H_ */
