@@ -254,7 +254,7 @@ static int samba_kdc_entry_destructor(struct samba_kdc_entry *p)
 {
 	if (p->entry_ex != NULL) {
 		struct sdb_entry_ex *entry_ex = p->entry_ex;
-		free_sdb_entry(&entry_ex->entry);
+		sdb_free_entry(entry_ex);
 	}
 
 	return 0;
