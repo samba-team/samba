@@ -458,7 +458,7 @@ static int aio_pthread_openat_fn(vfs_handle_struct *handle,
 	bool aio_allow_open = lp_parm_bool(
 		SNUM(handle->conn), "aio_pthread", "aio open", false);
 
-	if (smb_fname->stream_name != NULL) {
+	if (is_named_stream(smb_fname)) {
 		/* Don't handle stream opens. */
 		errno = ENOENT;
 		return -1;
