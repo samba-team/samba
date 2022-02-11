@@ -986,7 +986,7 @@ static void canonicalize_inheritance_bits(struct files_struct *fsp,
 NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 		       uint32_t security_info_sent)
 {
-	files_struct *sd_fsp = fsp;
+	files_struct *sd_fsp = NULL;
 	NTSTATUS status;
 
 	if (!CAN_WRITE(fsp->conn)) {
@@ -1064,13 +1064,7 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
-	if (fsp->base_fsp != NULL) {
-		/*
-		 * This is a stream handle. Use
-		 * the underlying pathref handle.
-		 */
-		sd_fsp = fsp->base_fsp;
-	}
+	sd_fsp = metadata_fsp(fsp);
 	status = SMB_VFS_FSET_NT_ACL(sd_fsp, security_info_sent, psd);
 
 	TALLOC_FREE(psd);
@@ -2159,14 +2153,7 @@ static NTSTATUS smbd_fetch_security_desc(connection_struct *conn,
 	    ((security_info_wanted & SECINFO_LABEL) == 0) &&
 	    need_to_read_sd)
 	{
-		files_struct *sd_fsp = fsp;
-		if (fsp->base_fsp != NULL) {
-			/*
-			 * This is a stream handle. Use
-			 * the underlying pathref handle.
-			 */
-			sd_fsp = fsp->base_fsp;
-		}
+		files_struct *sd_fsp = metadata_fsp(fsp);
 		status = SMB_VFS_FGET_NT_ACL(
 			sd_fsp, security_info_wanted, mem_ctx, &psd);
 	} else {

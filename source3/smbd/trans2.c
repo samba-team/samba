@@ -671,9 +671,7 @@ static unsigned int estimate_ea_size(files_struct *fsp)
 	 * estimated ea len from the main file, not the stream
 	 * (streams cannot have EAs), but the estimate isn't just 0 in
 	 * this case! */
-	if (is_ntfs_stream_smb_fname(fsp->fsp_name)) {
-		fsp = fsp->base_fsp;
-	}
+	fsp = metadata_fsp(fsp);
 	(void)get_ea_list_from_fsp(mem_ctx,
 				   fsp,
 				   &total_ea_len,
@@ -6478,7 +6476,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	set_fsp = fsp->base_fsp == NULL ? fsp : fsp->base_fsp;
+	set_fsp = metadata_fsp(fsp);
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
 	if (is_omit_timespec(&ft->create_time)) {
@@ -6568,7 +6566,7 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	dos_fsp = fsp->base_fsp != NULL ? fsp->base_fsp : fsp;
+	dos_fsp = metadata_fsp(fsp);
 
 	if (dosmode != 0) {
 		if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {

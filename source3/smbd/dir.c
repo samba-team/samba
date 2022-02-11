@@ -1373,10 +1373,7 @@ bool is_visible_fsp(struct files_struct *fsp)
 		return true;
 	}
 
-	if (fsp->base_fsp != NULL) {
-		/* Only operate on non-stream files. */
-		fsp = fsp->base_fsp;
-	}
+	fsp = metadata_fsp(fsp);
 
 	/* Get the last component of the base name. */
 	last_component = strrchr_m(fsp->fsp_name->base_name, '/');

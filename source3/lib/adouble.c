@@ -2143,9 +2143,7 @@ static ssize_t ad_read_meta(vfs_handle_struct *handle,
 
 	DEBUG(10, ("reading meta xattr for %s\n", smb_fname->base_name));
 
-	if (fsp->base_fsp != NULL) {
-		fsp = fsp->base_fsp;
-	}
+	fsp = metadata_fsp(fsp);
 
 	ealen = SMB_VFS_FGETXATTR(fsp,
 				  AFPINFO_EA_NETATALK,

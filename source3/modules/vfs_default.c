@@ -3622,11 +3622,7 @@ static void vfswrap_getxattrat_do_sync(struct tevent_req *req)
 {
 	struct vfswrap_getxattrat_state *state = tevent_req_data(
 		req, struct vfswrap_getxattrat_state);
-	struct files_struct *fsp = state->smb_fname->fsp;
-
-	if (fsp->base_fsp != NULL) {
-		fsp = fsp->base_fsp;
-	}
+	struct files_struct *fsp = metadata_fsp(state->smb_fname->fsp);
 
 	state->xattr_size = vfswrap_fgetxattr(state->handle,
 					      fsp,
@@ -3649,11 +3645,7 @@ static void vfswrap_getxattrat_do_async(void *private_data)
 	struct timespec start_time;
 	struct timespec end_time;
 	int ret;
-	struct files_struct *fsp = state->smb_fname->fsp;
-
-	if (fsp->base_fsp != NULL) {
-		fsp = fsp->base_fsp;
-	}
+	struct files_struct *fsp = metadata_fsp(state->smb_fname->fsp);
 
 	PROFILE_TIMESTAMP(&start_time);
 	SMBPROFILE_BYTES_ASYNC_SET_BUSY(state->profile_bytes);

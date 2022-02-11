@@ -94,14 +94,7 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 	}
 
 	if (smb_fname->fsp != NULL) {
-		fsp = smb_fname->fsp;
-		if (fsp->base_fsp != NULL) {
-			/*
-			 * This is a stream pathname. Use
-			 * the base_fsp to get the xattr.
-			 */
-			fsp = fsp->base_fsp;
-		}
+		fsp = metadata_fsp(smb_fname->fsp);
 	} else {
 		NTSTATUS status;
 
