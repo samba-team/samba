@@ -34,6 +34,10 @@
 #include "modules/vfs_hpuxacl.h"
 #endif
 
+#if defined(HAVE_AIX_ACLS)
+#include "modules/vfs_aixacl.h"
+#endif
+
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
 
