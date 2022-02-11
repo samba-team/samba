@@ -47,6 +47,7 @@ static void free_sdb_key(struct sdb_key *k)
 
 	if (k->salt) {
 		smb_krb5_free_data_contents(NULL, &k->salt->salt);
+		SAFE_FREE(k->salt);
 	}
 
 	ZERO_STRUCTP(k);
