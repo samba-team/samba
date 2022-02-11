@@ -441,7 +441,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	}
 
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
-	    && !is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+	    && !fsp_is_alternate_stream(fsp)) {
 
 		status = delete_all_streams(conn, fsp->fsp_name);
 
