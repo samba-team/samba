@@ -439,6 +439,146 @@ static int samba_kdc_set_random_keys(krb5_context context,
 					keys);
 }
 
+struct samba_kdc_user_keys {
+	struct sdb_keys *skeys;
+	uint32_t kvno;
+	uint32_t *returned_kvno;
+	uint32_t supported_enctypes;
+	uint32_t *available_enctypes;
+	const struct samr_Password *nthash;
+	const char *salt_string;
+	uint16_t num_pkeys;
+	const struct package_PrimaryKerberosKey4 *pkeys;
+};
+
+static krb5_error_code samba_kdc_fill_user_keys(krb5_context context,
+						struct samba_kdc_user_keys *p)
+{
+	/*
+	 * Make sure we'll never reveal DES keys
+	 */
+	uint32_t supported_enctypes = p->supported_enctypes & ENC_ALL_TYPES;
+	uint32_t _available_enctypes = 0;
+	uint32_t *available_enctypes = p->available_enctypes;
+	uint32_t _returned_kvno = 0;
+	uint32_t *returned_kvno = p->returned_kvno;
+	uint32_t num_pkeys = p->num_pkeys;
+	uint32_t allocated_keys = num_pkeys;
+	uint32_t i;
+	int ret;
+
+	if (available_enctypes == NULL) {
+		available_enctypes = &_available_enctypes;
+	}
+
+	*available_enctypes = 0;
+
+	if (returned_kvno == NULL) {
+		returned_kvno = &_returned_kvno;
+	}
+
+	*returned_kvno = p->kvno;
+
+	if (p->nthash != NULL) {
+		allocated_keys += 1;
+	}
+
+	allocated_keys = MAX(1, allocated_keys);
+
+	/* allocate space to decode into */
+	p->skeys->len = 0;
+	p->skeys->val = calloc(allocated_keys, sizeof(struct sdb_key));
+	if (p->skeys->val == NULL) {
+		return ENOMEM;
+	}
+
+	for (i=0; i < num_pkeys; i++) {
+		struct sdb_key key = {};
+		uint32_t enctype_bit;
+
+		if (p->pkeys[i].value == NULL) {
+			continue;
+		}
+
+		enctype_bit = kerberos_enctype_to_bitmap(p->pkeys[i].keytype);
+		if (!(enctype_bit & supported_enctypes)) {
+			continue;
+		}
+
+		if (p->salt_string != NULL) {
+			DATA_BLOB salt;
+
+			salt = data_blob_string_const(p->salt_string);
+
+			key.salt = calloc(1, sizeof(*key.salt));
+			if (key.salt == NULL) {
+				ret = ENOMEM;
+				goto fail;
+			}
+
+			key.salt->type = KRB5_PW_SALT;
+
+			ret = smb_krb5_copy_data_contents(&key.salt->salt,
+							  salt.data,
+							  salt.length);
+			if (ret) {
+				ZERO_STRUCTP(key.salt);
+				sdb_key_free(&key);
+				goto fail;
+			}
+		}
+
+		ret = smb_krb5_keyblock_init_contents(context,
+						      p->pkeys[i].keytype,
+						      p->pkeys[i].value->data,
+						      p->pkeys[i].value->length,
+						      &key.key);
+		if (ret == 0) {
+			p->skeys->val[p->skeys->len++] = key;
+			*available_enctypes |= enctype_bit;
+			continue;
+		}
+		ZERO_STRUCT(key.key);
+		sdb_key_free(&key);
+		if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+			DEBUG(2,("Unsupported keytype ignored - type %u\n",
+				 p->pkeys[i].keytype));
+			ret = 0;
+			continue;
+		}
+
+		goto fail;
+	}
+
+	if (p->nthash != NULL && (supported_enctypes & ENC_RC4_HMAC_MD5)) {
+		struct sdb_key key = {};
+
+		ret = smb_krb5_keyblock_init_contents(context,
+						      ENCTYPE_ARCFOUR_HMAC,
+						      p->nthash->hash,
+						      sizeof(p->nthash->hash),
+						      &key.key);
+		if (ret == 0) {
+			p->skeys->val[p->skeys->len++] = key;
+
+			*available_enctypes |= ENC_RC4_HMAC_MD5;
+		} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+			DEBUG(2,("Unsupported keytype ignored - type %u\n",
+				 ENCTYPE_ARCFOUR_HMAC));
+			ret = 0;
+		}
+		if (ret != 0) {
+			goto fail;
+		}
+	}
+
+	samba_kdc_sort_keys(p->skeys);
+
+	return 0;
+fail:
+	sdb_keys_free(p->skeys);
+	return ret;
+}
 
 static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    struct samba_kdc_db_context *kdc_db_ctx,
@@ -466,7 +606,8 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	uint32_t current_kvno;
 	uint32_t returned_kvno = 0;
 	uint16_t i;
-	uint16_t allocated_keys = 0;
+	struct samba_kdc_user_keys keys = { .num_pkeys = 0, };
+	uint32_t available_enctypes = 0;
 	uint32_t supported_enctypes
 		= ldb_msg_find_attr_as_uint(msg,
 					    "msDS-SupportedEncryptionTypes",
@@ -554,11 +695,6 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	hash = samdb_result_hash(mem_ctx, msg, "unicodePwd");
 	sc_val = ldb_msg_find_ldb_val(msg, "supplementalCredentials");
 
-	/* unicodePwd for enctype 0x17 (23) if present */
-	if (hash) {
-		allocated_keys++;
-	}
-
 	/* supplementalCredentials if present */
 	if (sc_val) {
 		ndr_err = ndr_pull_struct_blob_all(sc_val, mem_ctx, &scb,
@@ -623,119 +759,34 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		}
 
 		pkb4 = &_pkb.ctr.ctr4;
-		allocated_keys += pkb4->num_keys;
 	}
 
-	if (allocated_keys == 0) {
-		if (kdc_db_ctx->rodc) {
-			/* We are on an RODC, but don't have keys for this account.  Signal this to the caller */
-			auth_sam_trigger_repl_secret(kdc_db_ctx, kdc_db_ctx->msg_ctx,
-						     kdc_db_ctx->ev_ctx, msg->dn);
-			return SDB_ERR_NOT_FOUND_HERE;
-		}
+	keys = (struct samba_kdc_user_keys) {
+		.kvno = current_kvno,
+		.supported_enctypes = supported_enctypes,
+		.nthash = hash,
+		.salt_string = pkb4 != NULL ? pkb4->salt.string : NULL,
+		.num_pkeys = pkb4 != NULL ? pkb4->num_keys : 0,
+		.pkeys = pkb4 != NULL ? pkb4->keys : NULL,
+		.skeys = &entry->keys,
+		.available_enctypes = &available_enctypes,
+		.returned_kvno = &returned_kvno,
+	};
 
-		/* oh, no password.  Apparently (comment in
-		 * hdb-ldap.c) this violates the ASN.1, but this
-		 * allows an entry with no keys (yet). */
-		return 0;
-	}
-
-	/* allocate space to decode into */
-	entry_ex->entry.keys.len = 0;
-	entry_ex->entry.keys.val = calloc(allocated_keys, sizeof(struct sdb_key));
-	if (entry_ex->entry.keys.val == NULL) {
-		ret = ENOMEM;
-		goto out;
-	}
-
-	if (hash && (supported_enctypes & ENC_RC4_HMAC_MD5)) {
-		struct sdb_key key = {};
-
-		ret = smb_krb5_keyblock_init_contents(context,
-						      ENCTYPE_ARCFOUR_HMAC,
-						      hash->hash,
-						      sizeof(hash->hash),
-						      &key.key);
-		if (ret) {
+	if (keys.skeys != NULL) {
+		ret = samba_kdc_fill_user_keys(context, &keys);
+		if (ret != 0) {
 			goto out;
 		}
-
-		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-		entry_ex->entry.keys.len++;
-
-		*supported_enctypes_out |= ENC_RC4_HMAC_MD5;
 	}
 
-	if (pkb4) {
-		for (i=0; i < pkb4->num_keys; i++) {
-			struct sdb_key key = {};
-			uint32_t enctype_bit;
-
-			if (!pkb4->keys[i].value) continue;
-
-			enctype_bit = kerberos_enctype_to_bitmap(pkb4->keys[i].keytype);
-			if (!(enctype_bit & supported_enctypes)) {
-				continue;
-			}
-
-			if (pkb4->salt.string) {
-				DATA_BLOB salt;
-
-				salt = data_blob_string_const(pkb4->salt.string);
-
-				key.salt = calloc(1, sizeof(*key.salt));
-				if (key.salt == NULL) {
-					ret = ENOMEM;
-					goto out;
-				}
-
-				key.salt->type = KRB5_PW_SALT;
-
-				ret = smb_krb5_copy_data_contents(&key.salt->salt,
-								  salt.data,
-								  salt.length);
-				if (ret) {
-					free(key.salt);
-					key.salt = NULL;
-					goto out;
-				}
-			}
-
-			/* TODO: maybe pass the iteration_count somehow... */
-
-			ret = smb_krb5_keyblock_init_contents(context,
-							      pkb4->keys[i].keytype,
-							      pkb4->keys[i].value->data,
-							      pkb4->keys[i].value->length,
-							      &key.key);
-			if (ret) {
-				if (key.salt) {
-					smb_krb5_free_data_contents(context, &key.salt->salt);
-					free(key.salt);
-					key.salt = NULL;
-				}
-				if (ret == KRB5_PROG_ETYPE_NOSUPP) {
-					DEBUG(2,("Unsupported keytype ignored - type %u\n",
-						 pkb4->keys[i].keytype));
-					ret = 0;
-					continue;
-				}
-				goto out;
-			}
-
-			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-			entry_ex->entry.keys.len++;
-
-			*supported_enctypes_out |= enctype_bit;
-		}
-	}
+	*supported_enctypes_out |= available_enctypes;
 
 	/* Set FAST support bits */
 	*supported_enctypes_out |= supported_enctypes & (ENC_FAST_SUPPORTED |
 							 ENC_COMPOUND_IDENTITY_SUPPORTED |
 							 ENC_CLAIMS_SUPPORTED);
 
-	returned_kvno = current_kvno;
 	if (is_krbtgt) {
 		/*
 		 * Even for the main krbtgt account
@@ -751,17 +802,22 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	}
 	entry->kvno = returned_kvno;
 
+	if (entry->keys.len == 0) {
+		if (kdc_db_ctx->rodc) {
+			/* We are on an RODC, but don't have keys for this account.  Signal this to the caller */
+			auth_sam_trigger_repl_secret(kdc_db_ctx, kdc_db_ctx->msg_ctx,
+						     kdc_db_ctx->ev_ctx, msg->dn);
+			return SDB_ERR_NOT_FOUND_HERE;
+		}
+
+		/*
+		 * oh, no password.  Apparently (comment in
+		 * hdb-ldap.c) this violates the ASN.1, but this
+		 * allows an entry with no keys (yet).
+		 */
+	}
+
 out:
-	if (ret != 0) {
-		entry_ex->entry.keys.len = 0;
-	} else if (entry_ex->entry.keys.len > 0 &&
-		   entry_ex->entry.keys.val != NULL) {
-		samba_kdc_sort_keys(&entry_ex->entry.keys);
-	}
-	if (entry_ex->entry.keys.len == 0 && entry_ex->entry.keys.val) {
-		free(entry_ex->entry.keys.val);
-		entry_ex->entry.keys.val = NULL;
-	}
 	return ret;
 }
 
