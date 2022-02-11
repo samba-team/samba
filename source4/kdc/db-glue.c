@@ -597,6 +597,10 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	krb5_error_code ret = 0;
 	enum ndr_err_code ndr_err;
 	struct samr_Password *hash;
+	unsigned int num_ntPwdHistory = 0;
+	struct samr_Password *ntPwdHistory = NULL;
+	struct samr_Password *old_hash = NULL;
+	struct samr_Password *older_hash = NULL;
 	const struct ldb_val *sc_val;
 	struct supplementalCredentialsBlob scb;
 	struct supplementalCredentialsPackage *scpk = NULL;
@@ -605,9 +609,13 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	bool is_krbtgt = false;
 	int krbtgt_number = 0;
 	uint32_t current_kvno;
+	uint32_t old_kvno = 0;
+	uint32_t older_kvno = 0;
 	uint32_t returned_kvno = 0;
 	uint16_t i;
 	struct samba_kdc_user_keys keys = { .num_pkeys = 0, };
+	struct samba_kdc_user_keys old_keys = { .num_pkeys = 0, };
+	struct samba_kdc_user_keys older_keys = { .num_pkeys = 0, };
 	uint32_t available_enctypes = 0;
 	uint32_t supported_enctypes
 		= ldb_msg_find_attr_as_uint(msg,
@@ -677,6 +685,12 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	}
 
 	current_kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
+	if (current_kvno > 1) {
+		old_kvno = current_kvno - 1;
+	}
+	if (current_kvno > 2) {
+		older_kvno = current_kvno - 2;
+	}
 	if (is_krbtgt) {
 		/*
 		 * Even for the main krbtgt account
@@ -689,12 +703,23 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		 * See https://bugzilla.samba.org/show_bug.cgi?id=14951
 		 */
 		current_kvno = SAMBA_KVNO_GET_VALUE(current_kvno);
+		old_kvno = SAMBA_KVNO_GET_VALUE(old_kvno);
+		older_kvno = SAMBA_KVNO_GET_VALUE(older_kvno);
 		requested_kvno = SAMBA_KVNO_GET_VALUE(requested_kvno);
 	}
 
 	/* Get keys from the db */
 
 	hash = samdb_result_hash(mem_ctx, msg, "unicodePwd");
+	num_ntPwdHistory = samdb_result_hashes(mem_ctx, msg,
+					       "ntPwdHistory",
+					       &ntPwdHistory);
+	if (num_ntPwdHistory > 1) {
+		old_hash = &ntPwdHistory[1];
+	}
+	if (num_ntPwdHistory > 2) {
+		older_hash = &ntPwdHistory[1];
+	}
 	sc_val = ldb_msg_find_ldb_val(msg, "supplementalCredentials");
 
 	/* supplementalCredentials if present */
@@ -770,13 +795,96 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		.salt_string = pkb4 != NULL ? pkb4->salt.string : NULL,
 		.num_pkeys = pkb4 != NULL ? pkb4->num_keys : 0,
 		.pkeys = pkb4 != NULL ? pkb4->keys : NULL,
-		.skeys = &entry->keys,
-		.available_enctypes = &available_enctypes,
-		.returned_kvno = &returned_kvno,
 	};
+
+	old_keys = (struct samba_kdc_user_keys) {
+		.kvno = old_kvno,
+		.supported_enctypes = supported_enctypes,
+		.nthash = old_hash,
+		.salt_string = pkb4 != NULL ? pkb4->salt.string : NULL,
+		.num_pkeys = pkb4 != NULL ? pkb4->num_old_keys : 0,
+		.pkeys = pkb4 != NULL ? pkb4->old_keys : NULL,
+	};
+	older_keys = (struct samba_kdc_user_keys) {
+		.kvno = older_kvno,
+		.supported_enctypes = supported_enctypes,
+		.nthash = older_hash,
+		.salt_string = pkb4 != NULL ? pkb4->salt.string : NULL,
+		.num_pkeys = pkb4 != NULL ? pkb4->num_older_keys : 0,
+		.pkeys = pkb4 != NULL ? pkb4->older_keys : NULL,
+	};
+
+	if (flags & SDB_F_KVNO_SPECIFIED) {
+		if (requested_kvno == keys.kvno) {
+			/*
+			 * The current kvno was requested,
+			 * so we return it.
+			 */
+			keys.skeys = &entry->keys;
+			keys.available_enctypes = &available_enctypes;
+			keys.returned_kvno = &returned_kvno;
+		} else if (requested_kvno == 0) {
+			/*
+			 * don't return any keys
+			 */
+		} else if (requested_kvno == old_keys.kvno) {
+			/*
+			 * return the old keys as default keys
+			 * with the requested kvno.
+			 */
+			old_keys.skeys = &entry->keys;
+			old_keys.available_enctypes = &available_enctypes;
+			old_keys.returned_kvno = &returned_kvno;
+		} else if (requested_kvno == older_keys.kvno) {
+			/*
+			 * return the older keys as default keys
+			 * with the requested kvno.
+			 */
+			older_keys.skeys = &entry->keys;
+			older_keys.available_enctypes = &available_enctypes;
+			older_keys.returned_kvno = &returned_kvno;
+		} else {
+			/*
+			 * don't return any keys
+			 */
+		}
+	} else {
+		bool include_history = false;
+
+		if ((flags & SDB_F_GET_CLIENT) && (flags & SDB_F_FOR_AS_REQ)) {
+			include_history = true;
+		} else if (flags & SDB_F_ADMIN_DATA) {
+			include_history = true;
+		}
+
+		keys.skeys = &entry->keys;
+		keys.available_enctypes = &available_enctypes;
+		keys.returned_kvno = &returned_kvno;
+
+		if (include_history && old_keys.kvno != 0) {
+			old_keys.skeys = &entry->old_keys;
+		}
+		if (include_history && older_keys.kvno != 0) {
+			older_keys.skeys = &entry->older_keys;
+		}
+	}
 
 	if (keys.skeys != NULL) {
 		ret = samba_kdc_fill_user_keys(context, &keys);
+		if (ret != 0) {
+			goto out;
+		}
+	}
+
+	if (old_keys.skeys != NULL) {
+		ret = samba_kdc_fill_user_keys(context, &old_keys);
+		if (ret != 0) {
+			goto out;
+		}
+	}
+
+	if (older_keys.skeys != NULL) {
+		ret = samba_kdc_fill_user_keys(context, &older_keys);
 		if (ret != 0) {
 			goto out;
 		}
