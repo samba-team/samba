@@ -55,10 +55,24 @@ void sdb_key_free(struct sdb_key *k)
 	ZERO_STRUCTP(k);
 }
 
-static void free_sdb_entry(struct sdb_entry *s)
+void sdb_keys_free(struct sdb_keys *keys)
 {
 	unsigned int i;
 
+	if (keys == NULL) {
+		return;
+	}
+
+	for (i=0; i < keys->len; i++) {
+		sdb_key_free(&keys->val[i]);
+	}
+
+	SAFE_FREE(keys->val);
+	ZERO_STRUCTP(keys);
+}
+
+static void free_sdb_entry(struct sdb_entry *s)
+{
 	/*
 	 * Passing NULL as the Kerberos context is intentional here, as both
 	 * Heimdal and MIT libraries don't use the context when clearing the
@@ -66,12 +80,7 @@ static void free_sdb_entry(struct sdb_entry *s)
 	 */
 	krb5_free_principal(NULL, s->principal);
 
-	if (s->keys.len) {
-		for (i=0; i < s->keys.len; i++) {
-			sdb_key_free(&s->keys.val[i]);
-		}
-		free(s->keys.val);
-	}
+	sdb_keys_free(&s->keys);
 	krb5_free_principal(NULL, s->created_by.principal);
 	if (s->modified_by) {
 		krb5_free_principal(NULL, s->modified_by->principal);
