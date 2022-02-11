@@ -26,6 +26,8 @@
 #include "sdb.h"
 #include "lib/krb5_wrap/krb5_samba.h"
 
+static void free_sdb_entry(struct sdb_entry *s);
+
 void sdb_free_entry(struct sdb_entry_ex *ent)
 {
 	free_sdb_entry(&ent->entry);
@@ -53,7 +55,7 @@ static void free_sdb_key(struct sdb_key *k)
 	ZERO_STRUCTP(k);
 }
 
-void free_sdb_entry(struct sdb_entry *s)
+static void free_sdb_entry(struct sdb_entry *s)
 {
 	unsigned int i;
 
