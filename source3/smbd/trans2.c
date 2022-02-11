@@ -5526,7 +5526,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			}
 			string_replace(nfname, '/', '\\');
 
-			if (smb_fname->stream_name != NULL) {
+			if (fsp_is_alternate_stream(fsp)) {
 				const char *s = smb_fname->stream_name;
 				const char *e = NULL;
 				size_t n;
