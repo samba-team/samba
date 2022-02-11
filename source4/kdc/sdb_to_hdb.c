@@ -86,15 +86,7 @@ static int sdb_key_to_Key(const struct sdb_key *s, Key *h)
 {
 	int rc;
 
-	if (s->mkvno != NULL) {
-		h->mkvno = malloc(sizeof(unsigned int));
-		if (h->mkvno == NULL) {
-			goto error_nomem;
-		}
-		*h->mkvno = *s->mkvno;
-	} else {
-		h->mkvno = NULL;
-	}
+	ZERO_STRUCTP(h);
 
 	h->key.keytype = s->key.keytype;
 	rc = smb_krb5_copy_data_contents(&h->key.keyvalue,

@@ -30,7 +30,6 @@ struct sdb_salt {
 };
 
 struct sdb_key {
-	unsigned int *mkvno;
 	krb5_keyblock key;
 	struct sdb_salt *salt;
 };

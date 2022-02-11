@@ -55,10 +55,6 @@ static void free_sdb_key(struct sdb_key *k)
 		return;
 	}
 
-	if (k->mkvno) {
-		free(k->mkvno);
-	}
-
 	/* keyblock not alloced */
 
 	if (k->salt) {
