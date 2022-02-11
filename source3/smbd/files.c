@@ -1492,3 +1492,11 @@ bool fsp_is_alternate_stream(const struct files_struct *fsp)
 {
 	return (fsp->base_fsp != NULL);
 }
+
+struct files_struct *metadata_fsp(struct files_struct *fsp)
+{
+	if (fsp_is_alternate_stream(fsp)) {
+		return fsp->base_fsp;
+	}
+	return fsp;
+}
