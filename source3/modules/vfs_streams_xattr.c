@@ -474,7 +474,7 @@ static int streams_xattr_close(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
+static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			int flags)
@@ -489,6 +489,9 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 					smb_fname,
 					flags);
 	}
+
+	/* A stream can never be rmdir'ed */
+	SMB_ASSERT((flags & AT_REMOVEDIR) == 0);
 
 	status = streams_xattr_get_name(handle, talloc_tos(),
 					smb_fname->stream_name, &xattr_name);
@@ -511,26 +514,6 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 
  fail:
 	TALLOC_FREE(xattr_name);
-	return ret;
-}
-
-static int streams_xattr_unlinkat(vfs_handle_struct *handle,
-			struct files_struct *dirfsp,
-			const struct smb_filename *smb_fname,
-			int flags)
-{
-	int ret;
-	if (flags & AT_REMOVEDIR) {
-		ret = SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
-				smb_fname,
-				flags);
-	} else {
-		ret = streams_xattr_unlink_internal(handle,
-				dirfsp,
-				smb_fname,
-				flags);
-	}
 	return ret;
 }
 
