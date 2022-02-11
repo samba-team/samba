@@ -2234,8 +2234,8 @@ static NTSTATUS vfswrap_offload_copy_file_range(struct tevent_req *req)
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
 
-	if (is_named_stream(state->src_fsp->fsp_name) ||
-	    is_named_stream(state->dst_fsp->fsp_name))
+	if (fsp_is_alternate_stream(state->src_fsp) ||
+	    fsp_is_alternate_stream(state->dst_fsp))
 	{
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
@@ -2761,7 +2761,7 @@ static int vfswrap_fntimes(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_fntimes);
 
-	if (is_named_stream(fsp->fsp_name)) {
+	if (fsp_is_alternate_stream(fsp)) {
 		errno = ENOENT;
 		goto out;
 	}

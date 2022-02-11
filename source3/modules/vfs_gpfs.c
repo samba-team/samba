@@ -178,7 +178,7 @@ static int vfs_gpfs_filesystem_sharemode(vfs_handle_struct *handle,
 	 * fd, so lacking a distinct fd for the stream we have to skip
 	 * set_gpfs_sharemode for stream.
 	 */
-	if (is_named_stream(fsp->fsp_name)) {
+	if (fsp_is_alternate_stream(fsp)) {
 		DBG_NOTICE("Not requesting GPFS sharemode on stream: %s/%s\n",
 			   fsp->conn->connectpath,
 			   fsp_str_dbg(fsp));

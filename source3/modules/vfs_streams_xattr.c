@@ -464,7 +464,7 @@ static int streams_xattr_close(vfs_handle_struct *handle,
 	DBG_DEBUG("streams_xattr_close called [%s] fd [%d]\n",
 			smb_fname_str_dbg(fsp->fsp_name), fd);
 
-	if (!is_named_stream(fsp->fsp_name)) {
+	if (!fsp_is_alternate_stream(fsp)) {
 		return SMB_VFS_NEXT_CLOSE(handle, fsp);
 	}
 

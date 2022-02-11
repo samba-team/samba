@@ -452,7 +452,7 @@ static NTSTATUS get_relative_fid_filename(connection_struct *conn,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (is_ntfs_stream_smb_fname(dir_fsp->fsp_name)) {
+	if (fsp_is_alternate_stream(dir_fsp)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 

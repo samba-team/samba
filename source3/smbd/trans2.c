@@ -427,7 +427,7 @@ static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+	if (fsp_is_alternate_stream(fsp)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -759,7 +759,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 	}
 
 	/* Setting EAs on streams isn't supported. */
-	if (is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+	if (fsp_is_alternate_stream(fsp)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

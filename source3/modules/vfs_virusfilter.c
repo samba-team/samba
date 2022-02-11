@@ -1459,7 +1459,7 @@ static int virusfilter_vfs_close(
 		return close_result;
 	}
 
-	if (is_named_stream(fsp->fsp_name)) {
+	if (fsp_is_alternate_stream(fsp)) {
 		if (config->scan_on_open && fsp->fsp_flags.modified) {
 			if (config->cache) {
 				DBG_DEBUG("Removing cache entry (if existent)"

@@ -79,7 +79,7 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+	if (fsp_is_alternate_stream(fsp)) {
 		/*
 		 * We do not support durable handles
 		 * on streams for now.
