@@ -1520,12 +1520,12 @@ NTSTATUS close_file_smb(struct smb_request *req,
 		status = close_normal_file(req, fsp, close_type);
 	}
 
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		/*
 		 * fsp was a stream, its base_fsp can't be a stream
 		 * as well
 		 */
-		SMB_ASSERT(fsp->base_fsp->base_fsp == NULL);
+		SMB_ASSERT(!fsp_is_alternate_stream(fsp->base_fsp));
 
 		/*
 		 * There's a 1:1 relationship between fsp and a base_fsp

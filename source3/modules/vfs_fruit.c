@@ -1473,7 +1473,7 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 	 * We know this is a stream open, so fsp->base_fsp must
 	 * already be open.
 	 */
-	SMB_ASSERT(fsp->base_fsp != NULL);
+	SMB_ASSERT(fsp_is_alternate_stream(fsp));
 	SMB_ASSERT(fsp->base_fsp->fsp_name->fsp == fsp->base_fsp);
 
 	ad = ad_get(talloc_tos(), handle, fsp->base_fsp->fsp_name, ADOUBLE_META);
@@ -1963,7 +1963,7 @@ static int fruit_unlink_meta_netatalk(vfs_handle_struct *handle,
 				      const struct smb_filename *smb_fname)
 {
 	SMB_ASSERT(smb_fname->fsp != NULL);
-	SMB_ASSERT(smb_fname->fsp->base_fsp != NULL);
+	SMB_ASSERT(fsp_is_alternate_stream(smb_fname->fsp));
 	return SMB_VFS_FREMOVEXATTR(smb_fname->fsp->base_fsp,
 				   AFPINFO_EA_NETATALK);
 }

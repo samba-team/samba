@@ -5802,7 +5802,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			goto fail;
 		}
 
-		if (fsp->base_fsp != NULL) {
+		if (fsp_is_alternate_stream(fsp)) {
 			struct files_struct *tmp_base_fsp = fsp->base_fsp;
 
 			fsp_set_base_fsp(fsp, NULL);
@@ -5988,8 +5988,9 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		fsp->initial_allocation_size = 0;
 	}
 
-	if ((info == FILE_WAS_CREATED) && lp_nt_acl_support(SNUM(conn)) &&
-				fsp->base_fsp == NULL) {
+	if ((info == FILE_WAS_CREATED) &&
+	    lp_nt_acl_support(SNUM(conn)) &&
+	    !fsp_is_alternate_stream(fsp)) {
 		if (sd != NULL) {
 			/*
 			 * According to the MS documentation, the only time the security

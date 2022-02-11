@@ -3480,8 +3480,10 @@ static void send_file_readbraw(connection_struct *conn,
 	 * reply_readbraw has already checked the length.
 	 */
 
-	if ( !req_is_in_chain(req) && (nread > 0) && (fsp->base_fsp == NULL) &&
-	    lp_use_sendfile(SNUM(conn), xconn->smb1.signing_state) ) {
+	if ( !req_is_in_chain(req) &&
+	     (nread > 0) &&
+	     !fsp_is_alternate_stream(fsp) &&
+	     lp_use_sendfile(SNUM(conn), xconn->smb1.signing_state) ) {
 		ssize_t sendfile_read = -1;
 		char header[4];
 		DATA_BLOB header_blob;
@@ -4065,7 +4067,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 	if (!req_is_in_chain(req) &&
 	    !req->encrypted &&
-	    (fsp->base_fsp == NULL) &&
+	    !fsp_is_alternate_stream(fsp) &&
 	    lp_use_sendfile(SNUM(conn), xconn->smb1.signing_state) ) {
 		uint8_t headerbuf[smb_size + 12 * 2 + 1 /* padding byte */];
 		DATA_BLOB header;
@@ -5062,7 +5064,7 @@ bool is_valid_writeX_buffer(struct smbXsrv_connection *xconn,
 		DEBUG(10,("is_valid_writeX_buffer: printing tid\n"));
 		return false;
 	}
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		DEBUG(10,("is_valid_writeX_buffer: stream fsp\n"));
 		return false;
 	}

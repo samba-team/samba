@@ -182,7 +182,7 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	struct stream_io *io = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
-	if (io == NULL || fsp->base_fsp == NULL) {
+	if (io == NULL || !fsp_is_alternate_stream(fsp)) {
 		return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
 	}
 
@@ -498,7 +498,7 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 	}
 
 	SMB_ASSERT(smb_fname->fsp != NULL);
-	SMB_ASSERT(smb_fname->fsp->base_fsp != NULL);
+	SMB_ASSERT(fsp_is_alternate_stream(smb_fname->fsp));
 
 	ret = SMB_VFS_FREMOVEXATTR(smb_fname->fsp->base_fsp, xattr_name);
 

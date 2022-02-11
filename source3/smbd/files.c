@@ -368,7 +368,7 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 		return 0;
 	}
 
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		struct files_struct *tmp_base_fsp = fsp->base_fsp;
 
 		fsp_set_base_fsp(fsp, NULL);
@@ -583,7 +583,7 @@ fail:
 	if (fsp == NULL) {
 		return status;
 	}
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		struct files_struct *tmp_base_fsp = fsp->base_fsp;
 
 		fsp_set_base_fsp(fsp, NULL);
@@ -761,7 +761,7 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 
 static bool close_file_in_loop(struct files_struct *fsp)
 {
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		/*
 		 * This is a stream, it can't be a base
 		 */
@@ -1600,4 +1600,9 @@ void fsp_set_base_fsp(struct files_struct *fsp, struct files_struct *base_fsp)
 	if (fsp->base_fsp != NULL) {
 		fsp->base_fsp->stream_fsp = fsp;
 	}
+}
+
+bool fsp_is_alternate_stream(const struct files_struct *fsp)
+{
+	return (fsp->base_fsp != NULL);
 }

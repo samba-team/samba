@@ -171,8 +171,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp->base_fsp != NULL) {
-		/* No AIO on streams yet */
+	if (fsp_is_alternate_stream(fsp)) {
 		DEBUG(10, ("AIO on streams not yet supported\n"));
 		return NT_STATUS_RETRY;
 	}
@@ -443,8 +442,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 	struct tevent_req *req;
 
-	if (fsp->base_fsp != NULL) {
-		/* No AIO on streams yet */
+	if (fsp_is_alternate_stream(fsp)) {
 		DEBUG(10, ("AIO on streams not yet supported\n"));
 		return NT_STATUS_RETRY;
 	}
@@ -693,8 +691,7 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp->base_fsp != NULL) {
-		/* No AIO on streams yet */
+	if (fsp_is_alternate_stream(fsp)) {
 		DEBUG(10, ("AIO on streams not yet supported\n"));
 		return NT_STATUS_RETRY;
 	}
@@ -833,7 +830,7 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 	struct tevent_req *req;
 
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		/* No AIO on streams yet */
 		DEBUG(10, ("AIO on streams not yet supported\n"));
 		return NT_STATUS_RETRY;

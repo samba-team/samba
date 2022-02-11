@@ -1382,7 +1382,7 @@ static int shadow_copy2_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	orig_smb_fname = fsp->fsp_name;
 	fsp->fsp_name = &vss_smb_fname;
 
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		vss_base_smb_fname = *fsp->base_fsp->fsp_name;
 		vss_base_smb_fname.base_name = vss_smb_fname.base_name;
 		orig_base_smb_fname = fsp->base_fsp->fsp_name;
@@ -1407,7 +1407,7 @@ static int shadow_copy2_fstat(vfs_handle_struct *handle, files_struct *fsp,
 
 out:
 	fsp->fsp_name = orig_smb_fname;
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		fsp->base_fsp->fsp_name = orig_base_smb_fname;
 	}
 

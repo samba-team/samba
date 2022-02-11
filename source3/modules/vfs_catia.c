@@ -286,7 +286,7 @@ static struct catia_cache *catia_validate_and_apply_cc(
 
 		if ((cc->fname != fsp->fsp_name->base_name)
 		    ||
-		    ((fsp->base_fsp != NULL) &&
+		    (fsp_is_alternate_stream(fsp) &&
 		     (cc->base_fname != fsp->base_fsp->fsp_name->base_name)))
 		{
 			CATIA_DEBUG_CC(10, cc, fsp);
@@ -312,7 +312,7 @@ static struct catia_cache *catia_validate_and_apply_cc(
 
 	if ((cc->orig_fname != fsp->fsp_name->base_name)
 	    ||
-	    ((fsp->base_fsp != NULL) &&
+	    (fsp_is_alternate_stream(fsp) &&
 	     (cc->orig_base_fname != fsp->base_fsp->fsp_name->base_name)))
 	{
 		/*
@@ -331,7 +331,7 @@ static struct catia_cache *catia_validate_and_apply_cc(
 	 * names from the cache and mark the cc as busy.
 	 */
 	fsp->fsp_name->base_name = cc->fname;
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		fsp->base_fsp->fsp_name->base_name = cc->base_fname;
 	}
 
@@ -407,7 +407,7 @@ static int catia_fetch_fsp_pre_next(TALLOC_CTX *mem_ctx,
 	}
 	talloc_steal(mem_ctx, cc->fname);
 
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		status = catia_string_replace_allocate(
 			handle->conn,
 			fsp->base_fsp->fsp_name->base_name,
@@ -424,7 +424,7 @@ static int catia_fetch_fsp_pre_next(TALLOC_CTX *mem_ctx,
 	cc->orig_fname = fsp->fsp_name->base_name;
 	fsp->fsp_name->base_name = cc->fname;
 
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		cc->orig_base_fname = fsp->base_fsp->fsp_name->base_name;
 		fsp->base_fsp->fsp_name->base_name = cc->base_fname;
 	}
@@ -472,7 +472,7 @@ static void catia_fetch_fsp_post_next(struct catia_cache **_cc,
 	*_cc = NULL;
 
 	fsp->fsp_name->base_name = cc->orig_fname;
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		fsp->base_fsp->fsp_name->base_name = cc->orig_base_fname;
 	}
 

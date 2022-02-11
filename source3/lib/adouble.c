@@ -2290,7 +2290,7 @@ NTSTATUS adouble_open_from_base_fsp(const struct files_struct *dirfsp,
 	*_ad_fsp = NULL;
 
 	SMB_ASSERT(base_fsp != NULL);
-	SMB_ASSERT(base_fsp->base_fsp == NULL);
+	SMB_ASSERT(!fsp_is_alternate_stream(base_fsp));
 
 	switch (type) {
 	case ADOUBLE_META:
@@ -2590,7 +2590,7 @@ static struct adouble *ad_get_internal(TALLOC_CTX *ctx,
 	int mode;
 
 	if (fsp != NULL) {
-		if (fsp->base_fsp != NULL) {
+		if (fsp_is_alternate_stream(fsp)) {
 			smb_fname = fsp->base_fsp->fsp_name;
 		} else {
 			smb_fname = fsp->fsp_name;

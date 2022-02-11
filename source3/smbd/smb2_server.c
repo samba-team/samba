@@ -4461,7 +4461,7 @@ static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 	if (IS_PRINT(fsp->conn)) {
 		return false;
 	}
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		return false;
 	}
 

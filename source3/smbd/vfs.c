@@ -755,7 +755,7 @@ int vfs_fill_sparse(files_struct *fsp, off_t len)
 	num_to_write = len - fsp->fsp_name->st.st_ex_size;
 
 	/* Only do this on non-stream file handles. */
-	if (fsp->base_fsp == NULL) {
+	if (!fsp_is_alternate_stream(fsp)) {
 		/* for allocation try fallocate first. This can fail on some
 		 * platforms e.g. when the filesystem doesn't support it and no
 		 * emulation is being done by the libc (like on AIX with JFS1). In that
