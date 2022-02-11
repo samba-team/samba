@@ -544,7 +544,7 @@ plantestsuite("samba4.blackbox.smbtorture_subunit_names", "none",
                  smbtorture4
               ])
 
-for env in ["ad_member", "s4member", "ad_dc_ntvfs", "chgdcpass"]:
+for env in ["ad_member", "ad_dc_ntvfs", "chgdcpass"]:
     plantestsuite("samba4.blackbox.smbclient(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "utils/tests/test_smbclient.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', smbclient4])
 
 plantestsuite("samba4.blackbox.samba_tool(ad_dc_default:local)", "ad_dc_default:local", [os.path.join(samba4srcdir, "utils/tests/test_samba_tool.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', smbclient3])
@@ -744,7 +744,6 @@ for mech in [
     "-k yes"]:
     signoptions = "%s --client-protection=off" % mech
     name = "smb.signing disabled on with %s" % signoptions
-    plansmbtorture4testsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s domain-creds" % name)
     plansmbtorture4testsuite('base.xcopy', "ad_member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s domain-creds" % name)
     plansmbtorture4testsuite('base.xcopy', "ad_dc", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$USERNAME%$PASSWORD'], "samba4.%s" % name)
     plansmbtorture4testsuite('base.xcopy', "ad_dc",
@@ -771,7 +770,7 @@ wb_opts_default = ["--option=\"torture:strict mode=no\"", "--option=\"torture:ti
 
 winbind_ad_client_tests = smbtorture4_testsuites("winbind.struct") + smbtorture4_testsuites("winbind.pac")
 winbind_wbclient_tests = smbtorture4_testsuites("winbind.wbclient")
-for env in ["ad_dc", "s4member", "ad_member", "nt4_member"]:
+for env in ["ad_dc", "ad_member", "nt4_member"]:
     wb_opts = wb_opts_default[:]
     if env in ["ad_member"]:
         wb_opts += ["--option=\"torture:winbindd_domain_without_prefix=$DOMAIN\""]
@@ -782,7 +781,7 @@ for env in ["nt4_dc", "fl2003dc"]:
     for t in winbind_wbclient_tests:
         plansmbtorture4testsuite(t, "%s:local" % env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
 
-for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_member", "s4member", "chgdcpass", "rodc"]:
+for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_member", "chgdcpass", "rodc"]:
     tests = ["--ping", "--separator",
              "--own-domain",
              "--all-domains",
