@@ -4034,8 +4034,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	/* Delete streams if create_disposition requires it */
-	if (!new_file_created && clear_ads(create_disposition) &&
-	    !is_ntfs_stream_smb_fname(smb_fname)) {
+	if (!new_file_created &&
+	    clear_ads(create_disposition) &&
+	    !fsp_is_alternate_stream(fsp)) {
 		status = delete_all_streams(conn, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			del_share_mode(lck, fsp);
