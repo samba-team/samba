@@ -231,6 +231,10 @@ class Krb5EncryptionKey:
         self.ctype = EncTypeChecksum[self.etype]
         self.kvno = kvno
 
+    def __str__(self):
+        return "etype=%d ctype=%d kvno=%d key=%s" % (
+                self.etype, self.ctype, self.kvno, self.key)
+
     def encrypt(self, usage, plaintext):
         ciphertext = kcrypto.encrypt(self.key, usage, plaintext)
         return ciphertext
