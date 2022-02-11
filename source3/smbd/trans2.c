@@ -5249,7 +5249,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		if (!dos_fname) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		if (is_ntfs_stream_smb_fname(smb_fname)) {
+		if (is_named_stream(smb_fname)) {
 			dos_fname = talloc_asprintf(dos_fname, "%s",
 						    smb_fname->stream_name);
 			if (!dos_fname) {
