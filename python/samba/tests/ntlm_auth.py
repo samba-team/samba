@@ -18,6 +18,7 @@
 
 import os
 from subprocess import Popen, PIPE
+from samba.tests import BlackboxProcessError
 from samba.tests.ntlm_auth_base import NTLMAuthTestCase
 from samba.common import get_string
 
@@ -322,4 +323,7 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
                     "--password", self.password,
                     "--domain", self.domain,
                     "--diagnostics"]
-        self.check_exit_code(cmd_line, 0)
+        try:
+            self.check_exit_code(cmd_line, 0)
+        except BlackboxProcessError as e:
+            self.fail(e)
