@@ -67,6 +67,7 @@ dnf install -y \
     lmdb-devel \
     make \
     mingw64-gcc \
+    mold \
     ncurses-devel \
     openldap-devel \
     pam-devel \

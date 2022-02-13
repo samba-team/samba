@@ -131,6 +131,7 @@ PKGS = [
     ('', 'libtirpc-devel'),  # for <rpc/rpc.h> header on fedora
     ('', 'rpcsvc-proto-devel'), # for <rpcsvc/rquota.h> header
     ('mawk', 'gawk'),
+    ('', 'mold'),
 
     ('python3', 'python3'),
     ('python3-cryptography', 'python3-cryptography'), # for krb5 tests
@@ -459,6 +460,7 @@ RPM_DISTS = {
             'liburing-devel': '',   # not available
             'python3-setproctitle': 'python36-setproctitle',
             'tracker-devel': '', # do not install
+            'mold': '',
         }
     },
     'centos8s': {
@@ -473,6 +475,7 @@ RPM_DISTS = {
             'perl-Test-Base': 'perl-Test-Simple',
             'perl-FindBin': '',
             'liburing-devel': '', # not available yet, Add me back, once available!
+            'mold': '',
         }
     },
     'fedora34': {
@@ -484,6 +487,7 @@ RPM_DISTS = {
             'perl-FindBin': '',
             'python3-iso8601': 'python3-dateutil',
             'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
+            'mold': '',
         }
     },
     'fedora35': {
@@ -526,6 +530,7 @@ RPM_DISTS = {
             'libtasn1-tools': '', # asn1Parser is part of libtasn1
             'mingw64-gcc': '', # doesn't exist
             'liburing-devel': '',   # not available
+            'mold': '',
         }
     },
     'opensuse152': {
@@ -556,6 +561,7 @@ RPM_DISTS = {
             'quota-devel': '',
             'glusterfs-api-devel': '',
             'libtasn1-tools': '', # asn1Parser is part of libtasn1
+            'mold': '',
         }
     }
 }
