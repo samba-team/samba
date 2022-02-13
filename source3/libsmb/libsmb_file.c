@@ -197,12 +197,11 @@ SMBC_open_ctx(SMBCCTX *context,
 	/* Check if opendir needed ... */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		int eno = 0;
-
-		eno = SMBC_errno(context, srv->cli);
 		file = smbc_getFunctionOpendir(context)(context, fname);
-		if (!file) errno = eno;
 		TALLOC_FREE(frame);
+		if (file == NULL) {
+			errno = cli_status_to_errno(status);
+		}
 		return file;
 	}
 
