@@ -52,16 +52,18 @@ static const char *fix_char_ptr(unsigned int datap, unsigned int converter,
 call fn() on each entry in a print queue
 ****************************************************************************/
 
-int cli_print_queue(struct cli_state *cli,
-		    void (*fn)(struct print_job_info *))
+NTSTATUS cli_print_queue(struct cli_state *cli,
+			 void (*fn)(struct print_job_info *))
 {
-	char *rparam = NULL;
-	char *rdata = NULL;
-	char *p;
-	unsigned int rdrcnt, rprcnt;
+	uint8_t *rparam = NULL;
+	uint8_t *rdata = NULL;
+	char *p = NULL;
+	uint32_t rdrcnt, rprcnt;
 	char param[1024];
+	int converter;
 	int result_code=0;
 	int i = -1;
+	NTSTATUS status;
 
 	memset(param,'\0',sizeof(param));
 
@@ -82,43 +84,68 @@ int cli_print_queue(struct cli_state *cli,
 
 	DEBUG(4,("doing cli_print_queue for %s\n", cli->share));
 
-	if (cli_api(cli,
-		    param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
-		    NULL, 0, CLI_BUFFER_SIZE,            /* data, length, maxlen */
-		    &rparam, &rprcnt,                /* return params, length */
-		    &rdata, &rdrcnt)) {               /* return data, length */
-		int converter;
-		result_code = SVAL(rparam,0);
-		converter = SVAL(rparam,2);       /* conversion factor */
+	status = cli_trans(
+		talloc_tos(),
+		cli,
+		SMBtrans,	   /* trans_cmd */
+		"\\PIPE\\LANMAN",  /* name */
+		0,		   /* fid */
+		0,		   /* function */
+		0,		   /* flags */
+		NULL,		   /* setup */
+		0,		   /* num_setup */
+		0,		   /* max_setup */
+		(uint8_t *)param,  /* param */
+		PTR_DIFF(p,param), /* num_param */
+		1024,		   /* max_param */
+		NULL,		   /* data */
+		0,		   /* num_data */
+		CLI_BUFFER_SIZE,   /* max_data */
+		NULL,		   /* recv_flags2 */
+		NULL,		   /* rsetup */
+		0,		   /* min_rsetup */
+		NULL,		   /* num_rsetup */
+		&rparam,	   /* rparam */
+		8,		   /* min_rparam */
+		&rprcnt,	   /* num_rparam */
+		&rdata,		   /* rdata */
+		0,		   /* min_rdata */
+		&rdrcnt);	   /* num_rdata */
+	if (!NT_STATUS_IS_OK(status)) {
+		cli->raw_status = status;
+		return status;
+	}
 
-		if (result_code == 0) {
-			struct print_job_info job;
+	result_code = SVAL(rparam,0);
+	converter = SVAL(rparam,2);       /* conversion factor */
 
-			p = rdata;
+	if (result_code == 0) {
+		struct print_job_info job;
 
-			for (i = 0; i < SVAL(rparam,4); ++i) {
-				job.id = SVAL(p,0);
-				job.priority = SVAL(p,2);
-				fstrcpy(job.user,
-					fix_char_ptr(SVAL(p,4), converter,
-						     rdata, rdrcnt));
-				job.t = make_unix_date3(
-					p + 12, smb1cli_conn_server_time_zone(cli->conn));
-				job.size = IVAL(p,16);
-				fstrcpy(job.name,fix_char_ptr(SVAL(p,24),
-							      converter,
-							      rdata, rdrcnt));
-				fn(&job);
-				p += 28;
-			}
+		p = (char *)rdata;
+
+		for (i = 0; i < SVAL(rparam,4); ++i) {
+			job.id = SVAL(p,0);
+			job.priority = SVAL(p,2);
+			fstrcpy(job.user,
+				fix_char_ptr(SVAL(p,4), converter,
+					     (char *)rdata, rdrcnt));
+			job.t = make_unix_date3(
+				p + 12, smb1cli_conn_server_time_zone(cli->conn));
+			job.size = IVAL(p,16);
+			fstrcpy(job.name,fix_char_ptr(SVAL(p,24),
+						      converter,
+						      (char *)rdata, rdrcnt));
+			fn(&job);
+			p += 28;
 		}
 	}
 
 	/* If any parameters or data were returned, free the storage. */
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
+	TALLOC_FREE(rparam);
+	TALLOC_FREE(rdata);
 
-	return i;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

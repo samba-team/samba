@@ -801,8 +801,8 @@ NTSTATUS cli_oplock_ack_recv(struct tevent_req *req);
 
 /* The following definitions come from libsmb/cliprint.c  */
 
-int cli_print_queue(struct cli_state *cli,
-		    void (*fn)(struct print_job_info *));
+NTSTATUS cli_print_queue(struct cli_state *cli,
+			 void (*fn)(struct print_job_info *));
 int cli_printjob_del(struct cli_state *cli, int job);
 
 /* The following definitions come from libsmb/cliquota.c  */

@@ -194,6 +194,7 @@ SMBC_list_print_jobs_ctx(SMBCCTX *context,
 	char *path = NULL;
 	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	if (!context || !context->internal->initialized) {
                 errno = EINVAL;
@@ -242,10 +243,11 @@ SMBC_list_print_jobs_ctx(SMBCCTX *context,
                 return -1;  /* errno set by SMBC_server */
         }
 
-        if (cli_print_queue(srv->cli,
-                            (void (*)(struct print_job_info *))fn) < 0) {
-                errno = SMBC_errno(context, srv->cli);
+	status = cli_print_queue(srv->cli,
+				 (void (*)(struct print_job_info *))fn);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
+		errno = cli_status_to_errno(status);
                 return -1;
         }
 
