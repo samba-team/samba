@@ -76,7 +76,11 @@ from samba.ntstatus import (
     NT_STATUS_OBJECT_PATH_NOT_FOUND,
     NT_STATUS_ACCESS_DENIED
 )
-from samba.netcmd.gpcommon import create_directory_hier, smb_connection
+from samba.netcmd.gpcommon import (
+    create_directory_hier,
+    smb_connection,
+    get_gpo_dn
+)
 from samba.policies import RegistryGroupPolicies
 
 
@@ -136,15 +140,6 @@ def dc_url(lp, creds, url=None, dc=None):
                 raise RuntimeError("Could not find a DC for domain", e)
         url = 'ldap://' + dc
     return url
-
-
-def get_gpo_dn(samdb, gpo):
-    '''Construct the DN for gpo'''
-
-    dn = samdb.get_default_basedn()
-    dn.add_child(ldb.Dn(samdb, "CN=Policies,CN=System"))
-    dn.add_child(ldb.Dn(samdb, "CN=%s" % gpo))
-    return dn
 
 
 def get_gpo_info(samdb, gpo=None, displayname=None, dn=None,
@@ -746,7 +741,9 @@ class cmd_load(GPOCommand):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
-        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, H)
+        self.url = dc_url(self.lp, self.creds, H)
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
         try:
             reg.merge_s(policy_defs)
         except NTSTATUSError as e:
@@ -817,7 +814,9 @@ class cmd_remove(GPOCommand):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
-        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, H)
+        self.url = dc_url(self.lp, self.creds, H)
+        self.samdb_connect()
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
         try:
             reg.remove_s(policy_defs)
         except NTSTATUSError as e:

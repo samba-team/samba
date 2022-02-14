@@ -16,10 +16,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+from io import StringIO
+import ldb
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import preg
 from samba.netcmd.common import netcmd_finddc
-from samba.netcmd.gpcommon import create_directory_hier, smb_connection
+from samba.netcmd.gpcommon import (
+    create_directory_hier,
+    smb_connection,
+    get_gpo_dn
+)
 from samba import NTSTATUSError
 from numbers import Number
 from samba.registry import str_regtype
@@ -28,12 +34,20 @@ from samba.ntstatus import (
     NT_STATUS_OBJECT_NAME_NOT_FOUND,
     NT_STATUS_OBJECT_PATH_NOT_FOUND
 )
+from samba.gp_parse.gp_ini import GPTIniParser
+
+GPT_EMPTY = \
+"""
+[General]
+Version=0
+"""
 
 class RegistryGroupPolicies(object):
-    def __init__(self, gpo, lp, creds, host=None):
+    def __init__(self, gpo, lp, creds, samdb, host=None):
         self.gpo = gpo
         self.lp = lp
         self.creds = creds
+        self.samdb = samdb
         realm = self.lp.get('realm')
         self.pol_dir = '\\'.join([realm.lower(), 'Policies', gpo, '%s'])
         self.pol_file = '\\'.join([self.pol_dir, 'Registry.pol'])
@@ -118,6 +132,53 @@ class RegistryGroupPolicies(object):
         pol_data.entries = entries
         pol_data.num_entries = len(entries)
 
+    def increment_gpt_ini(self, machine_changed=False, user_changed=False):
+        if not machine_changed and not user_changed:
+            return
+        GPT_INI = self.pol_dir % 'GPT.INI'
+        try:
+            data = self.conn.loadfile(GPT_INI)
+        except NTSTATUSError as e:
+            if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                             NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                             NT_STATUS_OBJECT_PATH_NOT_FOUND]:
+                data = GPT_EMPTY
+            else:
+                raise
+        parser = GPTIniParser()
+        parser.parse(data)
+        version = 0
+        machine_version = 0
+        user_version = 0
+        if parser.ini_conf.has_option('General', 'Version'):
+            version = int(parser.ini_conf.get('General',
+                                              'Version').encode('utf-8'))
+            machine_version = version & 0x0000FFFF
+            user_version = version >> 16
+        if machine_changed:
+            machine_version += 1
+        if user_changed:
+            user_version += 1
+        version = (user_version << 16) + machine_version
+
+        # Set the new version in the GPT.INI
+        if not parser.ini_conf.has_section('General'):
+            parser.ini_conf.add_section('General')
+        parser.ini_conf.set('General', 'Version', str(version))
+        with StringIO() as out_data:
+            parser.ini_conf.write(out_data)
+            out_data.seek(0)
+            create_directory_hier(self.conn, self.pol_dir % '')
+            self.conn.savefile(GPT_INI, out_data.read().encode('utf-8'))
+
+        # Set the new versionNumber on the ldap object
+        policy_dn = get_gpo_dn(self.samdb, self.gpo)
+        m = ldb.Message()
+        m.dn = policy_dn
+        m['new_value'] = ldb.MessageElement(str(version), ldb.FLAG_MOD_REPLACE,
+                                            'versionNumber')
+        self.samdb.modify(m)
+
     def remove_s(self, json_input):
         '''remove_s
         json_input: JSON list of entries to remove from GPO
@@ -140,18 +201,25 @@ class RegistryGroupPolicies(object):
         user_pol_data = self.__load_registry_pol(self.pol_file % 'User')
         machine_pol_data = self.__load_registry_pol(self.pol_file % 'Machine')
 
+        machine_changed = False
+        user_changed = False
         for entry in json_input:
             cls = entry['class'].lower()
             if cls == 'machine' or cls == 'both':
+                machine_changed = True
                 self.__pol_remove(machine_pol_data, entry)
             if cls == 'user' or cls == 'both':
+                user_changed = True
                 self.__pol_remove(user_pol_data, entry)
-        self.__save_registry_pol(self.pol_dir % 'User',
-                                 self.pol_file % 'User',
-                                 user_pol_data)
-        self.__save_registry_pol(self.pol_dir % 'Machine',
-                                 self.pol_file % 'Machine',
-                                 machine_pol_data)
+        if user_changed:
+            self.__save_registry_pol(self.pol_dir % 'User',
+                                     self.pol_file % 'User',
+                                     user_pol_data)
+        if machine_changed:
+            self.__save_registry_pol(self.pol_dir % 'Machine',
+                                     self.pol_file % 'Machine',
+                                     machine_pol_data)
+        self.increment_gpt_ini(machine_changed, user_changed)
 
     def merge_s(self, json_input):
         '''merge_s
@@ -179,18 +247,25 @@ class RegistryGroupPolicies(object):
         user_pol_data = self.__load_registry_pol(self.pol_file % 'User')
         machine_pol_data = self.__load_registry_pol(self.pol_file % 'Machine')
 
+        machine_changed = False
+        user_changed = False
         for entry in json_input:
             cls = entry['class'].lower()
             if cls == 'machine' or cls == 'both':
+                machine_changed = True
                 self.__pol_replace(machine_pol_data, entry)
             if cls == 'user' or cls == 'both':
+                user_changed = True
                 self.__pol_replace(user_pol_data, entry)
-        self.__save_registry_pol(self.pol_dir % 'User',
-                                 self.pol_file % 'User',
-                                 user_pol_data)
-        self.__save_registry_pol(self.pol_dir % 'Machine',
-                                 self.pol_file % 'Machine',
-                                 machine_pol_data)
+        if user_changed:
+            self.__save_registry_pol(self.pol_dir % 'User',
+                                     self.pol_file % 'User',
+                                     user_pol_data)
+        if machine_changed:
+            self.__save_registry_pol(self.pol_dir % 'Machine',
+                                     self.pol_file % 'Machine',
+                                     machine_pol_data)
+        self.increment_gpt_ini(machine_changed, user_changed)
 
     def replace_s(self, json_input):
         '''replace_s
@@ -216,17 +291,22 @@ class RegistryGroupPolicies(object):
         user_pol_data = preg.file()
         machine_pol_data = preg.file()
 
+        machine_changed = False
+        user_changed = False
         for entry in json_input:
             cls = entry['class'].lower()
             if cls == 'machine' or cls == 'both':
+                machine_changed = True
                 self.__pol_replace(machine_pol_data, entry)
             if cls == 'user' or cls == 'both':
+                user_changed = True
                 self.__pol_replace(user_pol_data, entry)
-        if user_pol_data.num_entries > 0:
+        if user_changed:
             self.__save_registry_pol(self.pol_dir % 'User',
                                      self.pol_file % 'User',
                                      user_pol_data)
-        if machine_pol_data.num_entries > 0:
+        if machine_changed:
             self.__save_registry_pol(self.pol_dir % 'Machine',
                                      self.pol_file % 'Machine',
                                      machine_pol_data)
+        self.increment_gpt_ini(machine_changed, user_changed)

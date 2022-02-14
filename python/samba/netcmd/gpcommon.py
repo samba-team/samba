@@ -16,10 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import ldb
 from samba.credentials import SMB_SIGNING_REQUIRED
 from samba.samba3 import param as s3param
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.netcmd import CommandError
+
+def get_gpo_dn(samdb, gpo):
+    '''Construct the DN for gpo'''
+
+    dn = samdb.get_default_basedn()
+    dn.add_child(ldb.Dn(samdb, "CN=Policies,CN=System"))
+    dn.add_child(ldb.Dn(samdb, "CN=%s" % gpo))
+    return dn
 
 def create_directory_hier(conn, remotedir):
     elems = remotedir.replace('/', '\\').split('\\')
