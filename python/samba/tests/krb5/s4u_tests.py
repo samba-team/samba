@@ -573,11 +573,23 @@ class S4UKerberosTests(KDCBaseTest):
                 account_type=self.AccountType.COMPUTER,
                 opts=service1_opts)
 
+        service1_tgt = self.get_tgt(service1_creds)
+
+        client_username = client_creds.get_username()
+        client_realm = client_creds.get_realm()
+        client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                                 names=[client_username])
+
+        expect_pac = kdc_dict.pop('expect_pac', True)
+
         expected_groups = kdc_dict.pop('expected_groups', None)
         unexpected_groups = kdc_dict.pop('unexpected_groups', None)
 
         client_tkt_options = kdc_dict.pop('client_tkt_options', 'forwardable')
         expected_flags = krb5_asn1.TicketFlags(client_tkt_options)
+
+        etypes = kdc_dict.pop('etypes', (AES256_CTS_HMAC_SHA1_96,
+                                         ARCFOUR_HMAC_MD5))
 
         client_tgt = self.get_tgt(client_creds,
                                   kdc_options=client_tkt_options,
@@ -587,8 +599,6 @@ class S4UKerberosTests(KDCBaseTest):
             service1_creds,
             kdc_options=client_tkt_options,
             expected_flags=expected_flags)
-
-        service1_tgt = self.get_tgt(service1_creds)
 
         modify_client_tkt_fn = kdc_dict.pop('modify_client_tkt_fn', None)
         if modify_client_tkt_fn is not None:
@@ -603,14 +613,6 @@ class S4UKerberosTests(KDCBaseTest):
         kdc_options = kdc_dict.pop('kdc_options', None)
         if kdc_options is None:
             kdc_options = str(krb5_asn1.KDCOptions('cname-in-addl-tkt'))
-
-        client_username = client_creds.get_username()
-        client_realm = client_creds.get_realm()
-        client_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                                 names=[client_username])
-
-        service1_name = service1_creds.get_username()[:-1]
-        service1_realm = service1_creds.get_realm()
 
         service2_name = service2_creds.get_username()[:-1]
         service2_realm = service2_creds.get_realm()
@@ -641,9 +643,6 @@ class S4UKerberosTests(KDCBaseTest):
 
         authenticator_subkey = self.RandomKey(Enctype.AES256)
 
-        etypes = kdc_dict.pop('etypes', (AES256_CTS_HMAC_SHA1_96,
-                                         ARCFOUR_HMAC_MD5))
-
         expected_proxy_target = service2_creds.get_spn()
 
         expected_transited_services = kdc_dict.pop(
@@ -651,8 +650,6 @@ class S4UKerberosTests(KDCBaseTest):
 
         transited_service = f'host/{service1_name}@{service1_realm}'
         expected_transited_services.append(transited_service)
-
-        expect_pac = kdc_dict.pop('expect_pac', True)
 
         kdc_exchange_dict = self.tgs_exchange_dict(
             expected_crealm=client_realm,
