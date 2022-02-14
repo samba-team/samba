@@ -302,8 +302,8 @@ static struct aio_open_private_data *create_private_open_data(
 		return NULL;
 	}
 
-	if (fsp_get_io_fd(dirfsp) != AT_FDCWD) {
-		opd->dir_fd = fsp_get_io_fd(dirfsp);
+	if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
+		opd->dir_fd = fsp_get_pathref_fd(dirfsp);
 	} else {
 #if defined(O_DIRECTORY)
 		opd->dir_fd = open(".", O_RDONLY|O_DIRECTORY);
@@ -473,7 +473,7 @@ static int aio_pthread_openat_fn(vfs_handle_struct *handle,
 
 	if (!aio_allow_open) {
 		/* aio opens turned off. */
-		return openat(fsp_get_io_fd(dirfsp),
+		return openat(fsp_get_pathref_fd(dirfsp),
 			      smb_fname->base_name,
 			      flags,
 			      mode);
@@ -481,7 +481,7 @@ static int aio_pthread_openat_fn(vfs_handle_struct *handle,
 
 	if (!(flags & O_CREAT)) {
 		/* Only creates matter. */
-		return openat(fsp_get_io_fd(dirfsp),
+		return openat(fsp_get_pathref_fd(dirfsp),
 			      smb_fname->base_name,
 			      flags,
 			      mode);
@@ -489,7 +489,7 @@ static int aio_pthread_openat_fn(vfs_handle_struct *handle,
 
 	if (!(flags & O_EXCL)) {
 		/* Only creates with O_EXCL matter. */
-		return openat(fsp_get_io_fd(dirfsp),
+		return openat(fsp_get_pathref_fd(dirfsp),
 			      smb_fname->base_name,
 			      flags,
 			      mode);
