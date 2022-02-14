@@ -804,7 +804,7 @@ static bool torture_drs_unit_ldb_setup(struct torture_context *tctx, struct drsu
 		msg->dn = ldb_get_schema_basedn(priv->ldb_ctx);
 		ldb_err = ldb_msg_add_string(msg, "prefixMap", "prefixMap");
 		torture_assert_int_equal_goto(tctx, ldb_err, LDB_SUCCESS, bret, DONE,
-					      "ldb_msg_add_empty() failed");
+					      "ldb_msg_add_string() failed");
 
 		ldb_err = ldb_add(priv->ldb_ctx, msg);
 		torture_assert_int_equal_goto(tctx, ldb_err, LDB_SUCCESS, bret, DONE, "ldb_add() failed");
