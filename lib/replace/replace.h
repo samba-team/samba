@@ -998,7 +998,7 @@ static inline bool __rep_cwrap_enabled_fn(struct __rep_cwrap_enabled_state *stat
 	state->retval = false;
 	state->cached = true;
 
-	__wrapper_enabled_fn = dlsym(RTLD_DEFAULT, state->fnname);
+	__wrapper_enabled_fn = (bool (*)(void))dlsym(RTLD_DEFAULT, state->fnname);
 	if (__wrapper_enabled_fn == NULL) {
 		return state->retval;
 	}
