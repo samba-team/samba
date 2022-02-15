@@ -308,6 +308,7 @@ tasks = {
             "fl2008r2dc",
             "ad_member",
             "ad_member_idmap_rid",
+            "admem_idmap_autorid",
             "ad_member_idmap_ad",
             "ad_member_rfc2307",
             "ad_member_oneway",
@@ -376,6 +377,7 @@ tasks = {
             "fl2008r2dc",
             "ad_member",
             "ad_member_idmap_rid",
+            "admem_idmap_autorid",
             "ad_member_idmap_ad",
             "ad_member_rfc2307",
             "ad_member_oneway",
@@ -475,6 +477,7 @@ tasks = {
             ("test", make_test(include_envs=[
             "ad_member",
             "ad_member_idmap_rid",
+            "admem_idmap_autorid",
             "ad_member_idmap_ad",
             "ad_member_rfc2307",
             "ad_member_offlogon",
@@ -680,6 +683,7 @@ tasks = {
             ("test", make_test(include_envs=[
             "ad_member",
             "ad_member_idmap_rid",
+            "admem_idmap_autorid",
             "ad_member_idmap_ad",
             "ad_member_rfc2307",
             "ad_member_offlogon",
