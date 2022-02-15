@@ -868,7 +868,6 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	union smb_notify notify;
 	union smb_open io, io1;
 	struct smb2_handle h1, h2;
-	uint32_t mask;
 	int i;
 	char c = 1;
 	union smb_setfileinfo sinfo;
@@ -906,7 +905,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 #define NOTIFY_MASK_TEST(test_name, setup, op, cleanup, Action, \
 			 expected, nchanges) \
 	do { \
-	do { for (mask=i=0;i<32;i++) { \
+	do { for (i=0;i<32;i++) { \
 		struct smb2_request *req; \
 		status = smb2_create(tree1, torture, &(io.smb2)); \
 		CHECK_STATUS(status, NT_STATUS_OK); \
@@ -965,7 +964,6 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 			       notify.smb2.out.changes[0].name.s);	\
 			ret = false; \
 		} \
-		mask |= ((uint32_t)1<<i); \
 	} \
 	} while (0); \
 	} while (0);
