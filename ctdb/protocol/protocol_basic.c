@@ -162,7 +162,7 @@ int ctdb_double_pull(uint8_t *buf, size_t buflen, double *out, size_t *npull)
 
 size_t ctdb_bool_len(bool *in)
 {
-	uint8_t u8 = *in;
+	uint8_t u8 = 0;
 
 	return ctdb_uint8_len(&u8);
 }
