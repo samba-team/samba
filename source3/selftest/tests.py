@@ -878,6 +878,12 @@ for t in tests:
         plantestsuite(t, "ad_member_rfc2307", [os.path.join(samba3srcdir, "../nsswitch/tests/test_idmap_nss.sh"), '$DOMAIN'])
     elif t == "idmap.rid":
         plantestsuite(t, "ad_member_idmap_rid", [os.path.join(samba3srcdir, "../nsswitch/tests/test_idmap_rid.sh"), '$DOMAIN', '2000000'])
+        plantestsuite(t,
+                      "admem_idmap_autorid",
+                      [os.path.join(samba3srcdir,
+                                    "../nsswitch/tests/test_idmap_rid.sh"),
+                       '$DOMAIN',
+                       '2000000'])
     elif t == "idmap.ad":
         plantestsuite(t, "ad_member_idmap_ad", [os.path.join(samba3srcdir, "../nsswitch/tests/test_idmap_ad.sh"), '$DOMAIN', '$DC_SERVER', '$DC_PASSWORD', '$TRUST_DOMAIN', '$TRUST_SERVER', '$TRUST_PASSWORD'])
     elif t == "raw.acls":
