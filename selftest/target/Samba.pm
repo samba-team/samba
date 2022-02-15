@@ -620,6 +620,7 @@ sub get_interface($)
 		s2kmember         => 59,
 		admemidmapnss     => 60,
 		localadmember2    => 61,
+		admemautorid      => 62,
 
 		rootdnsforwarder  => 64,
 
