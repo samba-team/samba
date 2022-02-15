@@ -1802,7 +1802,6 @@ static bool torture_ntdenytest(struct torture_context *tctx,
 
 	for (i=0;i<torture_numops;i++) {
 		NTSTATUS status1, status2, status2_p;
-		int64_t tdif;
 		TALLOC_CTX *mem_ctx = talloc_new(NULL);
 		enum deny_result res, res2;
 		int b_sa1 = random() & ((1<<nbits1)-1);
@@ -1873,8 +1872,6 @@ static bool torture_ntdenytest(struct torture_context *tctx,
 						   &res2);
 		
 		clock_gettime_mono(&tv);
-		tdif = nsec_time_diff(&tv, &tv_start);
-		tdif /= 1000000;
 		if (torture_setting_bool(tctx, "showall", false) || 
 		    !NT_STATUS_EQUAL(status2, status2_p) ||
 		    res != res2) {
