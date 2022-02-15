@@ -8152,8 +8152,8 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 					   const struct dsdb_attribute *attr,
 					   struct la_entry *la_entry,
 					   struct ldb_request *parent,
-					   struct ldb_message_element *old_el,
 					   TALLOC_CTX *element_ctx,
+					   struct ldb_message_element *old_el,
 					   struct parsed_dn *pdn_list,
 					   replmd_link_changed *change)
 {
