@@ -2780,7 +2780,6 @@ static bool set_canon_ace_list(files_struct *fsp,
 	SMB_ACL_PERMSET_T mask_permset;
 	SMB_ACL_TYPE_T the_acl_type = (default_ace ? SMB_ACL_TYPE_DEFAULT : SMB_ACL_TYPE_ACCESS);
 	bool needs_mask = False;
-	mode_t mask_perms = 0;
 	int sret;
 
 	/* Use the psbuf that was passed in. */
@@ -2818,9 +2817,6 @@ static bool set_canon_ace_list(files_struct *fsp,
 
 		if (p_ace->type == SMB_ACL_USER || p_ace->type == SMB_ACL_GROUP) {
 			needs_mask = True;
-			mask_perms |= p_ace->perms;
-		} else if (p_ace->type == SMB_ACL_GROUP_OBJ) {
-			mask_perms |= p_ace->perms;
 		}
 
 		/*
