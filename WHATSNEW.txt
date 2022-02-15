@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.16.  This is *not*
+This is the third release candidate of Samba 4.16.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -172,6 +172,36 @@ smb.conf changes
   rpc_daemon                              Removed
   rpc_server                              Removed
   rpc start on demand helpers             Added           true
+
+
+CHANGES SINCE 4.16.0rc2
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14169: Renaming file on DFS root fails with
+     NT_STATUS_OBJECT_PATH_NOT_FOUND.
+   * BUG 14938: NT error code is not set when overwriting a file during rename
+     in libsmbclient.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14674: net ads info shows LDAP Server: 0.0.0.0 depending on contacted
+     server.
+
+o  Pavel Filipenský <pfilipen@redhat.com>
+   * BUG 14971: virusfilter_vfs_openat: Not scanned: Directory or special file.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14900: Regression: Samba 4.15.2 on macOS segfaults intermittently
+     during strcpy in tdbsam_getsampwnam.
+   * BUG 14975: Fix a crash in vfs_full_audit - CREATE_FILE can free a used fsp.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14968: smb2_signing_decrypt_pdu() may not decrypt with
+     gnutls_aead_cipher_decrypt() from gnutls before 3.5.2.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14960: SDB uses HDB flags directly which can lead to unwanted side
+     effects.
 
 
 CHANGES SINCE 4.16.0rc1
