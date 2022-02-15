@@ -32,9 +32,12 @@ from samba.registry import str_regtype
 from samba.ntstatus import (
     NT_STATUS_OBJECT_NAME_INVALID,
     NT_STATUS_OBJECT_NAME_NOT_FOUND,
-    NT_STATUS_OBJECT_PATH_NOT_FOUND
+    NT_STATUS_OBJECT_PATH_NOT_FOUND,
+    NT_STATUS_INVALID_PARAMETER
 )
 from samba.gp_parse.gp_ini import GPTIniParser
+from samba.common import get_string
+from samba.dcerpc.misc import GUID
 
 GPT_EMPTY = \
 """
@@ -51,7 +54,7 @@ class RegistryGroupPolicies(object):
         realm = self.lp.get('realm')
         self.pol_dir = '\\'.join([realm.lower(), 'Policies', gpo, '%s'])
         self.pol_file = '\\'.join([self.pol_dir, 'Registry.pol'])
-
+        self.policy_dn = get_gpo_dn(self.samdb, self.gpo)
 
         if host and host.startswith('ldap://'):
             dc_hostname = host[7:]
@@ -172,11 +175,60 @@ class RegistryGroupPolicies(object):
             self.conn.savefile(GPT_INI, out_data.read().encode('utf-8'))
 
         # Set the new versionNumber on the ldap object
-        policy_dn = get_gpo_dn(self.samdb, self.gpo)
         m = ldb.Message()
-        m.dn = policy_dn
+        m.dn = self.policy_dn
         m['new_value'] = ldb.MessageElement(str(version), ldb.FLAG_MOD_REPLACE,
                                             'versionNumber')
+        self.samdb.modify(m)
+
+    def __validate_extension_registration(self, ext_name, ext_attr):
+        try:
+            ext_name_guid = GUID(ext_name)
+        except samba.NTSTATUSError as e:
+            if e.args[0] == NT_STATUS_INVALID_PARAMETER:
+                raise SyntaxError('Extension name not formated correctly')
+            raise
+        if ext_attr not in ['gPCMachineExtensionNames',
+                            'gPCUserExtensionNames']:
+            raise SyntaxError('Extension attribute incorrect')
+        return '{%s}' % ext_name_guid
+
+    def register_extension_name(self, ext_name, ext_attr):
+        ext_name = self.__validate_extension_registration(ext_name, ext_attr)
+        res = self.samdb.search(base=self.policy_dn, scope=ldb.SCOPE_BASE,
+                                attrs=[ext_attr])
+        if len(res) == 0 or ext_attr not in res[0]:
+            ext_names = '[]'
+        else:
+            ext_names = get_string(res[0][ext_attr][-1])
+        if ext_name not in ext_names:
+            ext_names = '[' + ext_names.strip('[]') + ext_name + ']'
+        else:
+            return
+
+        m = ldb.Message()
+        m.dn = self.policy_dn
+        m['new_value'] = ldb.MessageElement(ext_names, ldb.FLAG_MOD_REPLACE,
+                                            ext_attr)
+        self.samdb.modify(m)
+
+    def unregister_extension_name(self, ext_name, ext_attr):
+        ext_name = self.__validate_extension_registration(ext_name, ext_attr)
+        res = self.samdb.search(base=self.policy_dn, scope=ldb.SCOPE_BASE,
+                                attrs=[ext_attr])
+        if len(res) == 0 or ext_attr not in res[0]:
+            return
+        else:
+            ext_names = get_string(res[0][ext_attr][-1])
+        if ext_name in ext_names:
+            ext_names = ext_names.replace(ext_name, '')
+        else:
+            return
+
+        m = ldb.Message()
+        m.dn = self.policy_dn
+        m['new_value'] = ldb.MessageElement(ext_names, ldb.FLAG_MOD_REPLACE,
+                                            ext_attr)
         self.samdb.modify(m)
 
     def remove_s(self, json_input):

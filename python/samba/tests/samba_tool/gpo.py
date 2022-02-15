@@ -95,6 +95,11 @@ b"""
 ]
 """
 
+# These are new GUIDs, not used elsewhere, made up for the use of testing the
+# adding of extension GUIDs in `samba-tool gpo load`.
+ext_guids = ['{123d2b56-7b14-4516-bbc4-763d29d57654}',
+             '{d000e91b-e70f-481b-9549-58de7929bcee}']
+
 source_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.."))
 
 def has_difference(path1, path2, binary=True, xml=True, sortlines=False):
@@ -1568,6 +1573,10 @@ class GpoCmdTestCase(SambaToolCmdTest):
             (result, out, err) = self.runsubcmd("gpo", "load",
                                                  self.gpo_guid,
                                                  "--content=%s" % f.name,
+                                                 "--machine-ext-name=%s" %
+                                                 ext_guids[0],
+                                                 "--user-ext-name=%s" %
+                                                 ext_guids[1],
                                                  "-H", "ldap://%s" %
                                                  os.environ["SERVER"],
                                                  "-U%s%%%s" %
@@ -1580,6 +1589,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err, 'Failed to fetch gpos')
         self.assertIn('homepage', out, 'Homepage policy not loaded')
         self.assertIn('samba.org', out, 'Homepage policy not loaded')
+        self.assertIn(ext_guids[0], out, 'Machine extension not loaded')
+        self.assertIn(ext_guids[1], out, 'User extension not loaded')
         toolbar_data = '"valuename": "IEToolbar",\n        "class": "USER",' + \
                        '\n        "type": "REG_BINARY",' + \
                        '\n        "data": [\n            0\n        ]'
@@ -1595,6 +1606,10 @@ class GpoCmdTestCase(SambaToolCmdTest):
             (result, out, err) = self.runsubcmd("gpo", "remove",
                                                  self.gpo_guid,
                                                  "--content=%s" % f.name,
+                                                 "--machine-ext-name=%s" %
+                                                 ext_guids[0],
+                                                 "--user-ext-name=%s" %
+                                                 ext_guids[1],
                                                  "-H", "ldap://%s" %
                                                  os.environ["SERVER"],
                                                  "-U%s%%%s" %
@@ -1606,6 +1621,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                             "ldap://%s" % os.environ["SERVER"])
         self.assertCmdSuccess(result, out, err, 'Failed to fetch gpos')
         self.assertNotIn('samba.org', out, 'Homepage policy not removed')
+        self.assertNotIn(ext_guids[0], out, 'Machine extension not unloaded')
+        self.assertNotIn(ext_guids[1], out, 'User extension not unloaded')
 
     def setUp(self):
         """set up a temporary GPO to work with"""

@@ -625,6 +625,10 @@ class cmd_show(GPOCommand):
         self.outf.write("GPO          : %s\n" % msg['name'][0])
         self.outf.write("display name : %s\n" % msg['displayName'][0])
         self.outf.write("path         : %s\n" % msg['gPCFileSysPath'][0])
+        if 'gPCMachineExtensionNames' in msg:
+            self.outf.write("Machine Exts : %s\n" % msg['gPCMachineExtensionNames'][0])
+        if 'gPCUserExtensionNames' in msg:
+            self.outf.write("User Exts    : %s\n" % msg['gPCUserExtensionNames'][0])
         self.outf.write("dn           : %s\n" % msg.dn)
         self.outf.write("version      : %s\n" % attr_default(msg, 'versionNumber', '0'))
         self.outf.write("flags        : %s\n" % gpo_flags_string(int(attr_default(msg, 'flags', 0))))
@@ -712,6 +716,13 @@ class cmd_load(GPOCommand):
 
     Valid class attributes: MACHINE|USER|BOTH
     Data arrays are interpreted as bytes.
+
+    The --machine-ext-name and --user-ext-name options are multi-value inputs
+    which respectively set the gPCMachineExtensionNames and gPCUserExtensionNames
+    ldap attributes on the GPO. These attributes must be set to the correct GUID
+    names for Windows Group Policy to work correctly. These GUIDs represent
+    the client side extensions to apply on the machine. Linux Group Policy does
+    not enforce this constraint.
     """
 
     synopsis = "%prog <gpo> [options]"
@@ -726,11 +737,17 @@ class cmd_load(GPOCommand):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
-        Option("--content", help="JSON file of policy inputs", type=str)
+        Option("--content", help="JSON file of policy inputs", type=str),
+        Option("--machine-ext-name",
+            action="append", default=[], dest="machine_exts",
+            help="A machine extension name to add to gPCMachineExtensionNames"),
+        Option("--user-ext-name",
+            action="append", default=[], dest="user_exts",
+            help="A user extension name to add to gPCUserExtensionNames")
     ]
 
-    def run(self, gpo, H=None, content=None, sambaopts=None, credopts=None,
-            versionopts=None):
+    def run(self, gpo, H=None, content=None, machine_exts=[], user_exts=[],
+            sambaopts=None, credopts=None, versionopts=None):
         if content is None:
             policy_defs = json.loads(sys.stdin.read())
         elif os.path.exists(content):
@@ -744,6 +761,10 @@ class cmd_load(GPOCommand):
         self.url = dc_url(self.lp, self.creds, H)
         self.samdb_connect()
         reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+        for ext_name in machine_exts:
+            reg.register_extension_name(ext_name, 'gPCMachineExtensionNames')
+        for ext_name in user_exts:
+            reg.register_extension_name(ext_name, 'gPCUserExtensionNames')
         try:
             reg.merge_s(policy_defs)
         except NTSTATUSError as e:
@@ -799,11 +820,17 @@ class cmd_remove(GPOCommand):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
-        Option("--content", help="JSON file of policy inputs", type=str)
+        Option("--content", help="JSON file of policy inputs", type=str),
+        Option("--machine-ext-name",
+            action="append", default=[], dest="machine_exts",
+            help="A machine extension name to remove from gPCMachineExtensionNames"),
+        Option("--user-ext-name",
+            action="append", default=[], dest="user_exts",
+            help="A user extension name to remove from gPCUserExtensionNames")
     ]
 
-    def run(self, gpo, H=None, content=None, sambaopts=None, credopts=None,
-            versionopts=None):
+    def run(self, gpo, H=None, content=None, machine_exts=[], user_exts=[],
+            sambaopts=None, credopts=None, versionopts=None):
         if content is None:
             policy_defs = json.loads(sys.stdin.read())
         elif os.path.exists(content):
@@ -817,6 +844,10 @@ class cmd_remove(GPOCommand):
         self.url = dc_url(self.lp, self.creds, H)
         self.samdb_connect()
         reg = RegistryGroupPolicies(gpo, self.lp, self.creds, self.samdb, H)
+        for ext_name in machine_exts:
+            reg.unregister_extension_name(ext_name, 'gPCMachineExtensionNames')
+        for ext_name in user_exts:
+            reg.unregister_extension_name(ext_name, 'gPCUserExtensionNames')
         try:
             reg.remove_s(policy_defs)
         except NTSTATUSError as e:
