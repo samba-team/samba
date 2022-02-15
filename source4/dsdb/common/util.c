@@ -795,7 +795,7 @@ int samdb_msg_add_addval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 			 const char *value)
 {
 	struct ldb_message_element *el;
-	struct ldb_val val, *vals;
+	struct ldb_val val;
 	char *v;
 	unsigned int i;
 	bool found = false;
@@ -830,14 +830,10 @@ int samdb_msg_add_addval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	vals = talloc_realloc(msg->elements, el->values, struct ldb_val,
-			      el->num_values + 1);
-	if (vals == NULL) {
+	ret = ldb_msg_element_add_value(msg->elements, el, &val);
+	if (ret != LDB_SUCCESS) {
 		return ldb_oom(sam_ldb);
 	}
-	el->values = vals;
-	el->values[el->num_values] = val;
-	++(el->num_values);
 
 	return LDB_SUCCESS;
 }
@@ -851,7 +847,7 @@ int samdb_msg_add_delval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 			 const char *value)
 {
 	struct ldb_message_element *el;
-	struct ldb_val val, *vals;
+	struct ldb_val val;
 	char *v;
 	unsigned int i;
 	bool found = false;
@@ -886,14 +882,10 @@ int samdb_msg_add_delval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	vals = talloc_realloc(msg->elements, el->values, struct ldb_val,
-			      el->num_values + 1);
-	if (vals == NULL) {
+	ret = ldb_msg_element_add_value(msg->elements, el, &val);
+	if (ret != LDB_SUCCESS) {
 		return ldb_oom(sam_ldb);
 	}
-	el->values = vals;
-	el->values[el->num_values] = val;
-	++(el->num_values);
 
 	return LDB_SUCCESS;
 }
