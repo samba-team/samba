@@ -500,11 +500,11 @@ vsyslog
                 Logs.info('Using HPUX ACLs')
                 conf.DEFINE('HAVE_HPUX_ACLS',1)
                 conf.DEFINE('POSIX_ACL_NEEDS_MASK',1)
-                default_static_modules.extend(['vfs_hpuxacl'])
+                required_static_modules.extend(['vfs_hpuxacl'])
         elif (host_os.rfind('aix') > -1):
                 Logs.info('Using AIX ACLs')
                 conf.DEFINE('HAVE_AIX_ACLS',1)
-                default_static_modules.extend(['vfs_aixacl', 'vfs_aixacl2'])
+                required_static_modules.extend(['vfs_aixacl', 'vfs_aixacl2'])
         elif (host_os.rfind('darwin') > -1):
             Logs.warn('ACLs on Darwin currently not supported')
             conf.fatal("ACL support not available on Darwin/MacOS. "
@@ -537,7 +537,7 @@ return acl_get_perm_np(permset_d, perm);
             elif conf.CHECK_FUNCS_IN(['facl'], 'sec'):
                 Logs.info('Using solaris or UnixWare ACLs')
                 conf.DEFINE('HAVE_SOLARIS_UNIXWARE_ACLS',1)
-                default_static_modules.extend(['vfs_solarisacl'])
+                required_static_modules.extend(['vfs_solarisacl'])
             else:
                 conf.fatal("ACL support not found. Try installing libacl1-dev "
                            "or libacl-devel.  "
