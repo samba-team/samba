@@ -2387,7 +2387,7 @@ static bool deltest23(struct torture_context *tctx,
 	torture_assert_ntstatus_equal(tctx, smbcli_nt_error(cli1->tree),
 	    NT_STATUS_DELETE_PENDING, "smbcli_open failed");
 
-	return true;
+	return correct;
 }
 
 /* Test 24 ... */
