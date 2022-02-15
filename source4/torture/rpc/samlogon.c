@@ -1793,11 +1793,12 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	torture_assert_ntstatus_ok_goto(torture, s.out.result, ret, failed,
 		talloc_asprintf(torture, "SetUserInfo (list of workstations) failed - %s\n", nt_errstr(s.out.result)));
 
-	status = torture_rpc_binding(torture, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = false;
-		goto failed;
-	}
+
+	torture_assert_ntstatus_ok_goto(torture,
+					torture_rpc_binding(torture, &b),
+					ret,
+					failed,
+					"Obtaining binding");
 
 	/* We have to use schannel, otherwise the SamLogonEx fails
 	 * with INTERNAL_ERROR */
@@ -1816,11 +1817,11 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	torture_assert_ntstatus_ok_goto(torture, status, ret, failed,
 		talloc_asprintf(torture, "RPC pipe connect as domain member failed: %s\n", nt_errstr(status)));
 
-	creds = cli_credentials_get_netlogon_creds(machine_credentials);
-	if (creds == NULL) {
-		ret = false;
-		goto failed;
-	}
+	torture_assert_not_null_goto(torture,
+				     creds = cli_credentials_get_netlogon_creds(machine_credentials),
+				     ret,
+				     failed,
+				     "obtaining credentails");
 
 	{
 
@@ -2011,31 +2012,35 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 		/* Try all the tests for different username forms */
 		for (ci = 0; ci < ARRAY_SIZE(usercreds); ci++) {
 
-			if (!test_InteractiveLogon(p, mem_ctx, torture, creds,
-						   usercreds[ci].comment,
-						   TEST_MACHINE_NAME,
-						   usercreds[ci].domain,
-						   usercreds[ci].username,
-						   usercreds[ci].password,
-						   usercreds[ci].parameter_control,
-						   usercreds[ci].expected_interactive_error)) {
-				ret = false;
-				goto failed;
-			}
+			torture_assert_goto(torture,
+					    test_InteractiveLogon(p, mem_ctx, torture, creds,
+								  usercreds[ci].comment,
+								  TEST_MACHINE_NAME,
+								  usercreds[ci].domain,
+								  usercreds[ci].username,
+								  usercreds[ci].password,
+								  usercreds[ci].parameter_control,
+								  usercreds[ci].expected_interactive_error),
+					    ret,
+					    failed,
+					    talloc_asprintf(mem_ctx, "InteractiveLogon: %s",
+							    usercreds[ci].comment));
 
 			if (usercreds[ci].network_login) {
-				if (!test_SamLogon(p, mem_ctx, torture, creds,
-						   usercreds[ci].comment,
-						   usercreds[ci].domain,
-						   usercreds[ci].username,
-						   usercreds[ci].password,
-						   usercreds[ci].parameter_control,
-						   usercreds[ci].expected_network_error,
-						   usercreds[ci].old_password,
-						   0)) {
-					ret = false;
-					goto failed;
-				}
+				torture_assert_goto(torture,
+						    test_SamLogon(p, mem_ctx, torture, creds,
+								  usercreds[ci].comment,
+								  usercreds[ci].domain,
+								  usercreds[ci].username,
+								  usercreds[ci].password,
+								  usercreds[ci].parameter_control,
+								  usercreds[ci].expected_network_error,
+								  usercreds[ci].old_password,
+								  0),
+						    ret,
+						    failed,
+						    talloc_asprintf(mem_ctx, "SamLogon: %s",
+								    usercreds[ci].comment));
 			}
 		}
 
@@ -2050,31 +2055,37 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 					"Testing with flags: 0x%08x\n",
 					credential_flags[i]);
 
-			if (!test_InteractiveLogon(p, mem_ctx, torture, creds,
-						   usercreds[0].comment,
-						   TEST_MACHINE_NAME,
-						   usercreds[0].domain,
-						   usercreds[0].username,
-						   usercreds[0].password,
-						   usercreds[0].parameter_control,
-						   usercreds[0].expected_interactive_error)) {
-				ret = false;
-				goto failed;
-			}
+			torture_assert_goto(torture,
+					    test_InteractiveLogon(p, mem_ctx, torture, creds,
+								  usercreds[0].comment,
+								  TEST_MACHINE_NAME,
+								  usercreds[0].domain,
+								  usercreds[0].username,
+								  usercreds[0].password,
+								  usercreds[0].parameter_control,
+								  usercreds[0].expected_interactive_error),
+					    ret,
+					    failed,
+					    talloc_asprintf(mem_ctx,
+							    "Testing InteractiveLogon with flags: 0x%08x\n",
+							    credential_flags[i]));
 
 			if (usercreds[0].network_login) {
-				if (!test_SamLogon(p, mem_ctx, torture, creds,
-						   usercreds[0].comment,
-						   usercreds[0].domain,
-						   usercreds[0].username,
-						   usercreds[0].password,
-						   usercreds[0].parameter_control,
-						   usercreds[0].expected_network_error,
-						   usercreds[0].old_password,
-						   1)) {
-					ret = false;
-					goto failed;
-				}
+				torture_assert_goto(torture,
+						    test_SamLogon(p, mem_ctx, torture, creds,
+								  usercreds[0].comment,
+								  usercreds[0].domain,
+								  usercreds[0].username,
+								  usercreds[0].password,
+								  usercreds[0].parameter_control,
+								  usercreds[0].expected_network_error,
+								  usercreds[0].old_password,
+								  1),
+						    ret,
+						    failed,
+						    talloc_asprintf(mem_ctx,
+								    "Testing SamLogon with flags: 0x%08x\n",
+								    credential_flags[i]));
 			}
 		}
 
