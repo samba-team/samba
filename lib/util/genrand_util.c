@@ -96,7 +96,6 @@ _PUBLIC_ uint64_t generate_unique_u64(uint64_t veto_value)
 _PUBLIC_ bool check_password_quality(const char *pwd)
 {
 	size_t ofs = 0;
-	size_t num_chars = 0;
 	size_t num_digits = 0;
 	size_t num_upper = 0;
 	size_t num_lower = 0;
@@ -120,7 +119,6 @@ _PUBLIC_ bool check_password_quality(const char *pwd)
 			break;
 		}
 		ofs += len;
-		num_chars += 1;
 
 		if (len == 1) {
 			const char *na = "~!@#$%^&*_-+=`|\\(){}[]:;\"'<>,.?/";
