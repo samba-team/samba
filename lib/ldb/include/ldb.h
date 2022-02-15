@@ -1982,6 +1982,12 @@ int ldb_msg_add_empty(struct ldb_message *msg,
 		struct ldb_message_element **return_el);
 
 /**
+   add a value to a message element
+*/
+int ldb_msg_element_add_value(TALLOC_CTX *mem_ctx,
+			      struct ldb_message_element *el,
+			      const struct ldb_val *val);
+/**
    add a element to a ldb_message
 */
 int ldb_msg_add(struct ldb_message *msg,
