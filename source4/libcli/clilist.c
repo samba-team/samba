@@ -108,7 +108,6 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	struct search_private state;  /* for callbacks */
 	int received = 0;
 	bool first = true;
-	int num_received = 0;
 	int max_matches = 512;
 	char *mask;
 	int ff_eos = 0, i;
@@ -185,8 +184,6 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 			if (received <= 0) break;
 			if (ff_eos) break;
 		}
-		
-		num_received += received;
 	}
 
 	for (i=0;i<state.total_received;i++) {
@@ -265,7 +262,6 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	const int num_asked = 500;
 	int received = 0;
 	bool first = true;
-	int num_received = 0;
 	char *mask;
 	int i;
 
@@ -327,8 +323,6 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 			received = next_parms.search_next.out.count;
 			if (received <= 0) break;
 		}
-		
-		num_received += received;
 	}
 
 	for (i=0;i<state.total_received;i++) {
