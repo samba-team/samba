@@ -545,7 +545,7 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 	if (e != NULL) {
 		ldb_asprintf_errstring(ldb, "Modify of 'distinguishedName' on %s not permitted, must use 'rename' operation instead",
 				       ldb_dn_get_linearized(req->op.mod.message->dn));
-		if (e->flags == LDB_FLAG_MOD_REPLACE) {
+		if (LDB_FLAG_MOD_TYPE(e->flags) == LDB_FLAG_MOD_REPLACE) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		} else {
 			return LDB_ERR_UNWILLING_TO_PERFORM;
