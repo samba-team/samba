@@ -1566,10 +1566,6 @@ delete some files
 static int cmd_del(struct smbclient_context *ctx, const char **args)
 {
 	char *mask;
-	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
-
-	if (ctx->recurse)
-		attribute |= FILE_ATTRIBUTE_DIRECTORY;
 	
 	if (!args[1]) {
 		d_printf("del <filename>\n");
