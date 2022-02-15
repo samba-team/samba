@@ -591,7 +591,6 @@ uint64_t vfs_not_implemented_fs_file_id(vfs_handle_struct *handle,
 	return 0;
 }
 
-_PUBLIC_
 struct vfs_not_implemented_offload_read_state {
 	bool dummy;
 };
@@ -639,7 +638,6 @@ NTSTATUS vfs_not_implemented_offload_read_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_
 struct vfs_not_implemented_offload_write_state {
 	uint64_t unused;
 };
