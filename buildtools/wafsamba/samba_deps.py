@@ -1023,10 +1023,10 @@ def show_object_duplicates(bld, tgt_list):
 
     Logs.info("showing indirect dependency counts (sorted by count)")
 
-    def indirect_count(t1, t2):
-        return len(t2.indirect_objects) - len(t1.indirect_objects)
+    def indirect_count(t):
+        return len(t.indirect_objects)
 
-    sorted_list = sorted(tgt_list, cmp=indirect_count)
+    sorted_list = sorted(tgt_list, key=indirect_count, reverse=True)
     for t in sorted_list:
         if len(t.indirect_objects) > 1:
             Logs.info("%s depends on %u indirect objects" % (t.sname, len(t.indirect_objects)))
