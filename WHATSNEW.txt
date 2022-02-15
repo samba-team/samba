@@ -301,7 +301,7 @@ Reporting bugs & Development Discussion
 #######################################
 
 Please discuss this release on the samba-technical mailing list or by
-joining the #samba-technical IRC channel on irc.freenode.net.
+joining the #samba-technical IRC channel on irc.libera.chat.
 
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
