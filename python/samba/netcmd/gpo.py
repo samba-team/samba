@@ -723,6 +723,8 @@ class cmd_load(GPOCommand):
     names for Windows Group Policy to work correctly. These GUIDs represent
     the client side extensions to apply on the machine. Linux Group Policy does
     not enforce this constraint.
+    {35378EAC-683F-11D2-A89A-00C04FBBCFA2} is provided by default, which
+    enables most Registry policies.
     """
 
     synopsis = "%prog <gpo> [options]"
@@ -739,14 +741,18 @@ class cmd_load(GPOCommand):
         Option("-H", help="LDB URL for database or target server", type=str),
         Option("--content", help="JSON file of policy inputs", type=str),
         Option("--machine-ext-name",
-            action="append", default=[], dest="machine_exts",
+            action="append", dest="machine_exts",
+            default=['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}'],
             help="A machine extension name to add to gPCMachineExtensionNames"),
         Option("--user-ext-name",
-            action="append", default=[], dest="user_exts",
+            action="append", dest="user_exts",
+            default=['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}'],
             help="A user extension name to add to gPCUserExtensionNames")
     ]
 
-    def run(self, gpo, H=None, content=None, machine_exts=[], user_exts=[],
+    def run(self, gpo, H=None, content=None,
+            machine_exts=['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}'],
+            user_exts=['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}'],
             sambaopts=None, credopts=None, versionopts=None):
         if content is None:
             policy_defs = json.loads(sys.stdin.read())

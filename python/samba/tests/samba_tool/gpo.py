@@ -1583,6 +1583,20 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
             self.assertCmdSuccess(result, out, err, 'Loading policy failed')
+        # Write the default registry extension
+        with NamedTemporaryFile() as f:
+            f.write(b'[]') # Intentionally empty policy
+            f.flush()
+            # Load an empty policy, taking the default client extension
+            (result, out, err) = self.runsubcmd("gpo", "load",
+                                                 self.gpo_guid,
+                                                 "--content=%s" % f.name,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+            self.assertCmdSuccess(result, out, err, 'Loading policy failed')
 
         (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H",
                                             "ldap://%s" % os.environ["SERVER"])
@@ -1591,6 +1605,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertIn('samba.org', out, 'Homepage policy not loaded')
         self.assertIn(ext_guids[0], out, 'Machine extension not loaded')
         self.assertIn(ext_guids[1], out, 'User extension not loaded')
+        self.assertIn('{35378eac-683f-11d2-a89a-00c04fbbcfa2}', out,
+                      'Default extension not loaded')
         toolbar_data = '"valuename": "IEToolbar",\n        "class": "USER",' + \
                        '\n        "type": "REG_BINARY",' + \
                        '\n        "data": [\n            0\n        ]'
