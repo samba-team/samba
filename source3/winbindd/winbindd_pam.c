@@ -1709,10 +1709,9 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				DEBUG(3, ("This is the third problem for this "
 					  "particular call, adding DC to the "
 					  "negative cache list: %s %s\n", domain->name, domain->dcname));
-				add_failed_connection_entry(domain->name,
+				winbind_add_failed_connection_entry(domain,
 							    domain->dcname,
 							    result);
-				saf_delete(domain->name);
 			}
 
 			/* Only allow 3 retries */
