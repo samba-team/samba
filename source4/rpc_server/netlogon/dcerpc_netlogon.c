@@ -766,7 +766,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 					   creds->sid,
 					   NULL, /* Don't have version */
 					   NULL, /* Don't have plaintext */
-					   NULL, r->in.new_password,
+					   r->in.new_password,
 					   DSDB_PASSWORD_CHECKED_AND_CORRECT, /* Password change */
 					   NULL, NULL);
 	return nt_status;
@@ -907,7 +907,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 					   creds->sid,
 					   new_version,
 					   &new_password, /* we have plaintext */
-					   NULL, NULL,
+					   NULL,
 					   DSDB_PASSWORD_CHECKED_AND_CORRECT, /* Password change */
 					   NULL, NULL);
 	return nt_status;

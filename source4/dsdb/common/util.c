@@ -2235,7 +2235,6 @@ int samdb_set_password_callback(struct ldb_request *req, struct ldb_reply *ares)
 static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
 			    const DATA_BLOB *new_password,
-			    const struct samr_Password *lmNewHash,
 			    const struct samr_Password *ntNewHash,
 			    enum dsdb_password_checked old_password_checked,
 			    enum samPwdChangeReason *reject_reason,
@@ -2262,21 +2261,15 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 	}
 	msg->dn = user_dn;
 	if ((new_password != NULL)
-			&& ((lmNewHash == NULL) && (ntNewHash == NULL))) {
+			&& ((ntNewHash == NULL))) {
 		/* we have the password as plaintext UTF16 */
 		CHECK_RET(ldb_msg_add_value(msg, "clearTextPassword",
 					    new_password, NULL));
 		el = ldb_msg_find_element(msg, "clearTextPassword");
 		el->flags = LDB_FLAG_MOD_REPLACE;
 	} else if ((new_password == NULL)
-			&& ((lmNewHash != NULL) || (ntNewHash != NULL))) {
-		/* we have a password as LM and/or NT hash */
-		if (lmNewHash != NULL) {
-			CHECK_RET(samdb_msg_add_hash(ldb, mem_ctx, msg,
-				"dBCSPwd", lmNewHash));
-			el = ldb_msg_find_element(msg, "dBCSPwd");
-			el->flags = LDB_FLAG_MOD_REPLACE;
-		}
+			&& ((ntNewHash != NULL))) {
+		/* we have a password as NT hash */
 		if (ntNewHash != NULL) {
 			CHECK_RET(samdb_msg_add_hash(ldb, mem_ctx, msg,
 				"unicodePwd", ntNewHash));
@@ -2429,7 +2422,6 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
 			    const DATA_BLOB *new_password,
-			    const struct samr_Password *lmNewHash,
 			    const struct samr_Password *ntNewHash,
 			    enum dsdb_password_checked old_password_checked,
 			    enum samPwdChangeReason *reject_reason,
@@ -2438,7 +2430,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	return samdb_set_password_internal(ldb, mem_ctx,
 			    user_dn, domain_dn,
 			    new_password,
-			    lmNewHash, ntNewHash,
+			    ntNewHash,
 			    old_password_checked,
 			    reject_reason, _dominfo,
 			    false); /* reject trusts */
@@ -2466,7 +2458,6 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				const struct dom_sid *user_sid,
 				const uint32_t *new_version, /* optional for trusts */
 				const DATA_BLOB *new_password,
-				const struct samr_Password *lmNewHash,
 				const struct samr_Password *ntNewHash,
 				enum dsdb_password_checked old_password_checked,
 				enum samPwdChangeReason *reject_reason,
@@ -2833,7 +2824,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	nt_status = samdb_set_password_internal(ldb, mem_ctx,
 						user_msg->dn, NULL,
 						new_password,
-						lmNewHash, ntNewHash,
+						ntNewHash,
 						old_password_checked,
 						reject_reason, _dominfo,
 						true); /* permit trusts */

@@ -259,7 +259,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	status = samdb_set_password(sam_ctx, mem_ctx,
 				    user_dn, NULL,
 				    &new_password,
-				    NULL, NULL,
+				    NULL,
 				    DSDB_PASSWORD_CHECKED_AND_CORRECT,
 				    &reason,
 				    &dominfo);
@@ -421,7 +421,6 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 				       domain_dn,
 				       &new_password,
 				       NULL,
-				       NULL,
 				       DSDB_PASSWORD_RESET,
 				       NULL,
 				       NULL);
@@ -492,7 +491,6 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 				       domain_dn,
 				       &new_password,
 				       NULL,
-				       NULL,
 				       DSDB_PASSWORD_RESET,
 				       NULL,
 				       NULL);
@@ -540,18 +538,6 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 		return nt_status;
 	}
 
-	if (lm_pwd_hash != NULL) {
-		in = data_blob_const(lm_pwd_hash, 16);
-		out = data_blob_talloc_zero(mem_ctx, 16);
-
-		rc = sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_DECRYPT);
-		if (rc != 0) {
-			return gnutls_error_to_ntstatus(rc,
-							NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
-		}
-
-		d_lm_pwd_hash = (struct samr_Password *) out.data;
-	}
 	if (nt_pwd_hash != NULL) {
 		in = data_blob_const(nt_pwd_hash, 16);
 		out = data_blob_talloc_zero(mem_ctx, 16);
@@ -568,7 +554,7 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 	if ((d_lm_pwd_hash != NULL) || (d_nt_pwd_hash != NULL)) {
 		nt_status = samdb_set_password(sam_ctx, mem_ctx, account_dn,
 					       domain_dn, NULL,
-					       d_lm_pwd_hash, d_nt_pwd_hash,
+					       d_nt_pwd_hash,
 					       DSDB_PASSWORD_RESET,
 					       NULL, NULL);
 	}

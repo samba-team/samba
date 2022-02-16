@@ -71,7 +71,6 @@ NTSTATUS samdb_kpasswd_change_password(TALLOC_CTX *mem_ctx,
 					NULL,
 					password,
 					NULL,
-					NULL,
 					DSDB_PASSWORD_CHECKED_AND_CORRECT,
 					reject_reason,
 					dominfo);

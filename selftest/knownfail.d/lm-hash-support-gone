@@ -1,5 +1,3 @@
-^samba4.rpc.samr.passwords .*
-^samba4.rpc.samr.passwords.pwdlastset*
 ^samba4.blackbox.smbclient .*LANMAN*
 ^samba.tests.ntlm_auth.samba.tests.ntlm_auth.NTLMAuthHelpersTests.test_diagnostics\(ad_dc:local\)
 ^samba.tests.ntlm_auth.samba.tests.ntlm_auth.NTLMAuthHelpersTests.test_diagnostics\(ad_member:local\)
