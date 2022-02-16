@@ -577,23 +577,74 @@ static const struct ntlm_tests {
 	bool (*fn)(void);
 	const char *name;
 } test_table[] = {
-	{test_lm, "LM"},
-	{test_lm_ntlm, "LM and NTLM"},
-	{test_ntlm, "NTLM"},
-	{test_ntlm_in_lm, "NTLM in LM"},
-	{test_ntlm_in_both, "NTLM in both"},
-	{test_ntlmv2, "NTLMv2"},
-	{test_lmv2_ntlmv2, "NTLMv2 and LMv2"},
-	{test_lmv2, "LMv2"},
-	{test_ntlmv2_lmv2_broken, "NTLMv2 and LMv2, LMv2 broken"},
-	{test_ntlmv2_ntlmv2_broken, "NTLMv2 and LMv2, NTLMv2 broken"},
-	{test_ntlm_lm_broken, "NTLM and LM, LM broken"},
-	{test_ntlm_ntlm_broken, "NTLM and LM, NTLM broken"},
-	{test_plaintext_none_broken, "Plaintext"},
-	{test_plaintext_lm_broken, "Plaintext LM broken"},
-	{test_plaintext_nt_broken, "Plaintext NT broken"},
-	{test_plaintext_nt_only, "Plaintext NT only"},
-	{test_plaintext_lm_only, "Plaintext LM only"},
+	{
+		.fn = test_lm,
+		.name = "LM",
+	},
+	{
+		.fn = test_lm_ntlm,
+		.name = "LM and NTLM"
+	},
+	{
+		.fn = test_ntlm,
+		.name = "NTLM"
+	},
+	{
+		.fn = test_ntlm_in_lm,
+		.name = "NTLM in LM"
+	},
+	{
+		.fn = test_ntlm_in_both,
+		.name = "NTLM in both"
+	},
+	{
+		.fn = test_ntlmv2,
+		.name = "NTLMv2"
+	},
+	{
+		.fn = test_lmv2_ntlmv2,
+		.name = "NTLMv2 and LMv2"
+	},
+	{
+		.fn = test_lmv2,
+		.name = "LMv2"
+	},
+	{
+		.fn = test_ntlmv2_lmv2_broken,
+		.name = "NTLMv2 and LMv2, LMv2 broken"
+	},
+	{
+		.fn = test_ntlmv2_ntlmv2_broken,
+		.name = "NTLMv2 and LMv2, NTLMv2 broken"
+	},
+	{
+		.fn = test_ntlm_lm_broken,
+		.name = "NTLM and LM, LM broken"
+	},
+	{
+		.fn = test_ntlm_ntlm_broken,
+		.name = "NTLM and LM, NTLM broken"
+	},
+	{
+		.fn = test_plaintext_none_broken,
+		.name = "Plaintext"
+	},
+	{
+		.fn = test_plaintext_lm_broken,
+		.name = "Plaintext LM broken"
+	},
+	{
+		.fn = test_plaintext_nt_broken,
+		.name = "Plaintext NT broken"
+	},
+	{
+		.fn = test_plaintext_nt_only,
+		.name = "Plaintext NT only"
+	},
+	{
+		.fn = test_plaintext_lm_only,
+		.name = "Plaintext LM only"
+	},
 	{NULL, NULL}
 };
 
