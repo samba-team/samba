@@ -751,7 +751,7 @@ static int samldb_schema_add_handle_linkid(struct samldb_ctx *ac)
 		return ret;
 	}
 
-	if (el == NULL) {
+	if (el == NULL || el->num_values == 0) {
 		return LDB_SUCCESS;
 	}
 
@@ -919,7 +919,7 @@ static int samldb_schema_add_handle_mapiid(struct samldb_ctx *ac)
 		return ret;
 	}
 
-	if (el == NULL) {
+	if (el == NULL || el->num_values == 0) {
 		return LDB_SUCCESS;
 	}
 
