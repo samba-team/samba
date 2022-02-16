@@ -1546,7 +1546,7 @@ int dsdb_get_expected_new_values(TALLOC_CTX *mem_ctx,
 
 	v = _el->values;
 
-	for (i = 0; i < val_count; i++) {
+	for (i = 0; i < msg->num_elements; i++) {
 		if (ldb_attr_cmp(msg->elements[i].name, attr_name) == 0) {
 			if ((operation == LDB_MODIFY) &&
 			    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags)
