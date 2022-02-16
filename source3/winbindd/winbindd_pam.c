@@ -1649,6 +1649,15 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		struct rpc_pipe_client *netlogon_pipe;
 		struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
 
+		/*
+		 * We should always reset authoritative to 1
+		 * before calling a server again.
+		 *
+		 * Otherwise we could treat a local problem as
+		 * non-authoritative.
+		 */
+		*authoritative = 1;
+
 		retry = false;
 
 		result = cm_connect_netlogon_secure(domain, &netlogon_pipe,
