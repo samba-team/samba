@@ -45,6 +45,9 @@
 #define SAMBA_KVNO_GET_KRBTGT(kvno) \
 	((uint16_t)(((uint32_t)kvno) >> 16))
 
+#define SAMBA_KVNO_GET_VALUE(kvno) \
+	((uint16_t)(((uint32_t)kvno) & 0xFFFF))
+
 #define SAMBA_KVNO_AND_KRBTGT(kvno, krbtgt) \
 	((krb5_kvno)((((uint32_t)kvno) & 0xFFFF) | \
 	 ((((uint32_t)krbtgt) << 16) & 0xFFFF0000)))
@@ -427,6 +430,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    struct sdb_entry_ex *entry_ex,
 						    uint32_t *supported_enctypes_out)
 {
+	struct sdb_entry *entry = &entry_ex->entry;
 	krb5_error_code ret = 0;
 	enum ndr_err_code ndr_err;
 	struct samr_Password *hash;
@@ -437,10 +441,12 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	struct package_PrimaryKerberosBlob _pkb;
 	struct package_PrimaryKerberosCtr3 *pkb3 = NULL;
 	struct package_PrimaryKerberosCtr4 *pkb4 = NULL;
+	bool is_krbtgt = false;
+	int krbtgt_number = 0;
+	uint32_t current_kvno;
+	uint32_t returned_kvno = 0;
 	uint16_t i;
 	uint16_t allocated_keys = 0;
-	int rodc_krbtgt_number = 0;
-	int kvno = 0;
 	uint32_t supported_enctypes
 		= ldb_msg_find_attr_as_uint(msg,
 					    "msDS-SupportedEncryptionTypes",
@@ -452,6 +458,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 		/* KDCs (and KDCs on RODCs) use AES */
 		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
+		is_krbtgt = true;
 
 		enable_fast = lpcfg_kdc_enable_fast(kdc_db_ctx->lp_ctx);
 		if (enable_fast) {
@@ -481,9 +488,12 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 	/* Is this the krbtgt or a RODC krbtgt */
 	if (is_rodc) {
-		rodc_krbtgt_number = ldb_msg_find_attr_as_int(msg, "msDS-SecondaryKrbTgtNumber", -1);
+		krbtgt_number = ldb_msg_find_attr_as_int(msg, "msDS-SecondaryKrbTgtNumber", -1);
 
-		if (rodc_krbtgt_number == -1) {
+		if (krbtgt_number == -1) {
+			return EINVAL;
+		}
+		if (krbtgt_number == 0) {
 			return EINVAL;
 		}
 	}
@@ -503,11 +513,20 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		goto out;
 	}
 
-	kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
-	if (is_rodc) {
-		kvno = SAMBA_KVNO_AND_KRBTGT(kvno, rodc_krbtgt_number);
+	current_kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
+	if (is_krbtgt) {
+		/*
+		 * Even for the main krbtgt account
+		 * we have to strictly split the kvno into
+		 * two 16-bit parts and the upper 16-bit
+		 * need to be all zero, even if
+		 * the msDS-KeyVersionNumber has a value
+		 * larger than 65535.
+		 *
+		 * See https://bugzilla.samba.org/show_bug.cgi?id=14951
+		 */
+		current_kvno = SAMBA_KVNO_GET_VALUE(current_kvno);
 	}
-	entry_ex->entry.kvno = kvno;
 
 	/* Get keys from the db */
 
@@ -772,6 +791,22 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	*supported_enctypes_out |= supported_enctypes & (ENC_FAST_SUPPORTED |
 							 ENC_COMPOUND_IDENTITY_SUPPORTED |
 							 ENC_CLAIMS_SUPPORTED);
+
+	returned_kvno = current_kvno;
+	if (is_krbtgt) {
+		/*
+		 * Even for the main krbtgt account
+		 * we have to strictly split the kvno into
+		 * two 16-bit parts and the upper 16-bit
+		 * need to be all zero, even if
+		 * the msDS-KeyVersionNumber has a value
+		 * larger than 65535.
+		 *
+		 * See https://bugzilla.samba.org/show_bug.cgi?id=14951
+		 */
+		returned_kvno = SAMBA_KVNO_AND_KRBTGT(returned_kvno, krbtgt_number);
+	}
+	entry->kvno = returned_kvno;
 
 out:
 	if (ret != 0) {
