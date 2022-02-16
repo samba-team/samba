@@ -552,9 +552,6 @@ bool parse_xidlist(TALLOC_CTX *mem_ctx, const char *xidstr,
 
 void winbindd_wins_byname(struct winbindd_cli_state *state);
 
-enum winbindd_result winbindd_dual_ping(struct winbindd_domain *domain,
-					struct winbindd_cli_state *state);
-
 struct dcerpc_binding_handle *wbint_binding_handle(TALLOC_CTX *mem_ctx,
 						struct winbindd_domain *domain,
 						struct winbindd_child *child);

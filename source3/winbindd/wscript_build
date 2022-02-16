@@ -190,7 +190,6 @@ bld.SAMBA3_SUBSYSTEM('winbindd-lib',
                     winbindd_dual.c
                     winbindd_dual_ndr.c
                     winbindd_dual_srv.c
-                    winbindd_async.c
                     winbindd_creds.c
                     winbindd_cred_cache.c
                     winbindd_ccache_access.c

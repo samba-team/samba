@@ -27,10 +27,6 @@
 
 static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 	{
-		.name		= "PING",
-		.struct_cmd	= WINBINDD_PING,
-		.struct_fn	= winbindd_dual_ping,
-	},{
 		.name		= "INIT_CONNECTION",
 		.struct_cmd	= WINBINDD_INIT_CONNECTION,
 		.struct_fn	= winbindd_dual_init_connection,

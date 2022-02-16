@@ -41,10 +41,6 @@ struct dcerpc_binding_handle *locator_child_handle(void)
 
 static const struct winbindd_child_dispatch_table locator_dispatch_table[] = {
 	{
-		.name		= "PING",
-		.struct_cmd	= WINBINDD_PING,
-		.struct_fn	= winbindd_dual_ping,
-	},{
 		.name		= "NDRCMD",
 		.struct_cmd	= WINBINDD_DUAL_NDRCMD,
 		.struct_fn	= winbindd_dual_ndrcmd,

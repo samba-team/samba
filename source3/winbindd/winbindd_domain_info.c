@@ -21,10 +21,12 @@
 #include "winbindd.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 
 struct winbindd_domain_info_state {
 	struct winbindd_domain *domain;
-	struct winbindd_request ping_request;
+	uint32_t in;
+	uint32_t out;
 };
 
 static void winbindd_domain_info_done(struct tevent_req *subreq);
@@ -62,14 +64,17 @@ struct tevent_req *winbindd_domain_info_send(
 		return tevent_req_post(req, ev);
 	}
 
-	state->ping_request.cmd = WINBINDD_PING;
-
 	/*
 	 * Send a ping down. This implicitly initializes the domain.
 	 */
 
-	subreq = wb_domain_request_send(state, global_event_context(),
-					state->domain, &state->ping_request);
+	state->in = cli->pid;
+	state->out = 0;
+	subreq = dcerpc_wbint_Ping_send(state,
+					global_event_context(),
+					dom_child_handle(state->domain),
+					state->in,
+					&state->out);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -84,19 +89,24 @@ static void winbindd_domain_info_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct winbindd_domain_info_state *state = tevent_req_data(
 		req, struct winbindd_domain_info_state);
-	struct winbindd_response *response;
-	int ret, err;
+	NTSTATUS status, result;
 
-	ret = wb_domain_request_recv(subreq, state, &response, &err);
+	status = dcerpc_wbint_Ping_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
-	if (ret == -1) {
-		DBG_DEBUG("wb_domain_request failed: %s\n", strerror(err));
-		tevent_req_nterror(req, map_nt_error_from_unix(err));
+	if (tevent_req_nterror(req, status)) {
+		DBG_NOTICE("dcerpc_wbint_Ping call failed: %s\n",
+			   nt_errstr(status));
+		return;
+	}
+
+	if (tevent_req_nterror(req, result)) {
+		DBG_NOTICE("dcerpc_wbint_Ping failed: %s\n",
+			   nt_errstr(result));
 		return;
 	}
 
 	if (!state->domain->initialized) {
-		DBG_INFO("wb_domain_request did not initialize domain %s\n",
+		DBG_INFO("dcerpc_wbint_Ping did not initialize domain %s\n",
 			 state->domain->name);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
@@ -114,8 +124,8 @@ NTSTATUS winbindd_domain_info_recv(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
-		DBG_DEBUG("winbindd_domain_info failed: %s\n",
-			  nt_errstr(status));
+		DBG_NOTICE("winbindd_domain_info failed: %s\n",
+			   nt_errstr(status));
 		return status;
 	}
 
