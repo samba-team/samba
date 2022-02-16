@@ -147,8 +147,9 @@ NTSTATUS check_negative_conn_cache( const char *domain, const char *server)
 	if (gencache_get(key, talloc_tos(), &value, NULL))
 		result = negative_conn_cache_valuedecode(value);
  done:
-	DEBUG(9,("check_negative_conn_cache returning result %d for domain %s "
-		  "server %s\n", NT_STATUS_V(result), domain, server));
+	DBG_PREFIX(NT_STATUS_IS_OK(result) ? DBGLVL_DEBUG : DBGLVL_INFO,
+		   ("returning result %s for domain %s "
+		    "server %s\n", nt_errstr(result), domain, server));
 	TALLOC_FREE(key);
 	TALLOC_FREE(value);
 	return result;
@@ -187,7 +188,8 @@ void add_failed_connection_entry(const char *domain, const char *server,
 	if (gencache_set(key, value,
 			 time(NULL) + FAILED_CONNECTION_CACHE_TIMEOUT))
 		DEBUG(9,("add_failed_connection_entry: added domain %s (%s) "
-			  "to failed conn cache\n", domain, server ));
+			  "to failed conn cache %s\n", domain, server,
+			 nt_errstr(result)));
 	else
 		DEBUG(1,("add_failed_connection_entry: failed to add "
 			  "domain %s (%s) to failed conn cache\n",
