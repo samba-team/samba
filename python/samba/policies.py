@@ -37,6 +37,8 @@ from samba.ntstatus import (
 )
 from samba.gp_parse.gp_ini import GPTIniParser
 from samba.common import get_string
+from samba.dcerpc import security
+from samba.ntacls import dsacl2fsacl
 from samba.dcerpc.misc import GUID
 
 GPT_EMPTY = \
@@ -66,6 +68,20 @@ class RegistryGroupPolicies(object):
                                    lp=self.lp,
                                    creds=self.creds)
 
+        # Get new security descriptor
+        ds_sd_flags = (security.SECINFO_OWNER |
+                       security.SECINFO_GROUP |
+                       security.SECINFO_DACL)
+        msg = self.samdb.search(base=self.policy_dn, scope=ldb.SCOPE_BASE,
+                                attrs=['nTSecurityDescriptor'])[0]
+        ds_sd_ndr = msg['nTSecurityDescriptor'][0]
+        ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
+
+        # Create a file system security descriptor
+        domain_sid = security.dom_sid(self.samdb.get_domain_sid())
+        sddl = dsacl2fsacl(ds_sd, domain_sid)
+        self.fs_sd = security.descriptor.from_sddl(sddl, domain_sid)
+
     def __load_registry_pol(self, pol_file):
         try:
             pol_data = ndr_unpack(preg.file, self.conn.loadfile(pol_file))
@@ -78,9 +94,13 @@ class RegistryGroupPolicies(object):
                 raise
         return pol_data
 
+    def __save_file(self, file_dir, file_name, data):
+        create_directory_hier(self.conn, file_dir)
+        self.conn.savefile(file_name, data)
+        self.conn.set_acl(file_name, self.fs_sd)
+
     def __save_registry_pol(self, pol_dir, pol_file, pol_data):
-        create_directory_hier(self.conn, pol_dir)
-        self.conn.savefile(pol_file, ndr_pack(pol_data))
+        self.__save_file(pol_dir, pol_file, ndr_pack(pol_data))
 
     def __validate_json(self, json_input, remove=False):
         if type(json_input) != list:
@@ -171,8 +191,8 @@ class RegistryGroupPolicies(object):
         with StringIO() as out_data:
             parser.ini_conf.write(out_data)
             out_data.seek(0)
-            create_directory_hier(self.conn, self.pol_dir % '')
-            self.conn.savefile(GPT_INI, out_data.read().encode('utf-8'))
+            self.__save_file(self.pol_dir % '', GPT_INI,
+                             out_data.read().encode('utf-8'))
 
         # Set the new versionNumber on the ldap object
         m = ldb.Message()
