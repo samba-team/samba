@@ -535,6 +535,30 @@ again:
 
 		cldap_reply = &responses[i]->data.nt5_ex;
 
+		if (cldap_reply->pdc_dns_name != NULL) {
+			status = check_negative_conn_cache(
+				domain,
+				cldap_reply->pdc_dns_name);
+			if (!NT_STATUS_IS_OK(status)) {
+				/*
+				 * only use the server if it's not black listed
+				 * by name
+				 */
+				DBG_NOTICE("realm=[%s] server=[%s][%s] "
+					   "black listed: %s\n",
+					   ads->server.realm,
+					   server,
+					   cldap_reply->pdc_dns_name,
+					   nt_errstr(status));
+				/* propagate blacklisting from name to ip */
+				add_failed_connection_entry(domain,
+							    server,
+							    status);
+				retry = true;
+				continue;
+			}
+		}
+
 		/* Returns ok only if it matches the correct server type */
 		ok = ads_fill_cldap_reply(ads,
 					  false,
