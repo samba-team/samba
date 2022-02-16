@@ -1641,6 +1641,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 {
 	int attempts = 0;
 	int netr_attempts = 0;
+	int invalid_servers = 0;
 	bool retry = false;
 	bool valid_result = false;
 	NTSTATUS result;
@@ -1799,6 +1800,98 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				flags,
 				&validation_level,
 				&validation);
+		}
+
+		/*
+		 * MS-NRPC 3.5.4.5.1 NetrLogonSamLogonEx (Opnum 39) says:
+		 *   ...
+		 *
+		 *   Authoritative: ...
+		 *    This Boolean value indicates whether the validation
+		 *    information is final. This field is necessary because
+		 *    the request might be forwarded through multiple servers.
+		 *
+		 *    The value TRUE indicates that the validation information
+		 *    is an authoritative response and MUST remain unchanged.
+		 *
+		 *    The value FALSE indicates that the validation information
+		 *    is not an authoritative response and that the client can
+		 *    resend the request to another server.
+		 *
+		 *   ...
+		 *   If the server cannot service the request due to an
+		 *   implementation-specific condition, the server
+		 *   returns STATUS_ACCESS_DENIED.
+		 *   ...
+		 *
+		 * One reason for this is that SysvolReady is still 0 in
+		 * HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters
+		 * It means there are problems with sysvol replication.
+		 *
+		 * The response looks like this:
+		 *
+		 * netr_LogonSamLogonEx: struct netr_LogonSamLogonEx
+		 *    out: struct netr_LogonSamLogonEx
+		 *        validation               : *
+		 *            validation               : union netr_Validation(case 6)
+		 *            sam6                     : NULL
+		 *        authoritative            : *
+		 *            authoritative            : 0x00 (0)
+		 *        flags                    : *
+		 *            flags                    : 0x00000000 (0)
+		 *                   0: NETLOGON_SAMLOGON_FLAG_PASS_TO_FOREST_ROOT
+		 *                   0: NETLOGON_SAMLOGON_FLAG_PASS_CROSS_FOREST_HOP
+		 *                   0: NETLOGON_SAMLOGON_FLAG_RODC_TO_OTHER_DOMAIN
+		 *                   0: NETLOGON_SAMLOGON_FLAG_RODC_NTLM_REQUEST
+		 *        result                   : NT_STATUS_ACCESS_DENIED
+		 *
+		 * In that case we'll mark the dc as broken and retry.
+		 * In order to prevent a fallback to a local user due to
+		 * authoritative=0, we reset authoritative=1 and continue
+		 * with NT_STATUS_NETLOGON_NOT_STARTED.
+		 *
+		 * In the end we may result in NT_STATUS_NO_LOGON_SERVERS
+		 * if we never reach 'valid_result = true'.
+		 * This matches what windows does. In a chain of transitive
+		 * trusts the ACCESS_DENIED/authoritative=0 is not propagated
+		 * instead of NT_STATUS_NO_LOGON_SERVERS/authoritative=1 is
+		 * passed along the chain if there's no other DC is available.
+		 */
+		if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
+		    *authoritative == 0)
+		{
+			reset_cm_connection_on_error(
+				domain,
+				netlogon_pipe->binding_handle,
+				result);
+
+			*authoritative = true;
+			result = NT_STATUS_NETLOGON_NOT_STARTED;
+			DBG_WARNING("sam_logon[%s\\%s] returned ACCESS_DENIED "
+				    "authoritative=0.\n"
+				    "The DC may have set SysvolReady=0 in "
+				    "HKLM\\SYSTEM\\CurrentControlSet\\Services"
+				    "\\Netlogon\\Parameters\n"
+				    "%s: Adding DC to the negative cache list: "
+				    "%s %s\n",
+				    domainname,
+				    username,
+				    nt_errstr(result),
+				    domain->name,
+				    domain->dcname);
+
+			winbind_add_failed_connection_entry(domain,
+							    domain->dcname,
+							    result);
+
+			/* Only allow 3 retries */
+			if (invalid_servers < 3) {
+				DBG_NOTICE("Retry another server\n");
+				invalid_servers++;
+				retry = true;
+				continue;
+			}
+			break;
 		}
 
 		/*
