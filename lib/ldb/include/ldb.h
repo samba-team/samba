@@ -2002,12 +2002,36 @@ int ldb_msg_add_steal_value(struct ldb_message *msg,
 		      struct ldb_val *val);
 int ldb_msg_add_steal_string(struct ldb_message *msg,
 			     const char *attr_name, char *str);
+int ldb_msg_add_string_flags(struct ldb_message *msg,
+			     const char *attr_name, const char *str,
+			     int flags);
 int ldb_msg_add_string(struct ldb_message *msg,
 		       const char *attr_name, const char *str);
 int ldb_msg_add_linearized_dn(struct ldb_message *msg, const char *attr_name,
 			      struct ldb_dn *dn);
 int ldb_msg_add_fmt(struct ldb_message *msg,
 		    const char *attr_name, const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
+/**
+   append a element to a ldb_message
+*/
+int ldb_msg_append_value(struct ldb_message *msg,
+			 const char *attr_name,
+			 const struct ldb_val *val,
+			 int flags);
+int ldb_msg_append_steal_value(struct ldb_message *msg,
+			       const char *attr_name,
+			       struct ldb_val *val,
+			       int flags);
+int ldb_msg_append_steal_string(struct ldb_message *msg,
+				const char *attr_name, char *str,
+				int flags);
+int ldb_msg_append_string(struct ldb_message *msg,
+			  const char *attr_name, const char *str,
+			  int flags);
+int ldb_msg_append_linearized_dn(struct ldb_message *msg, const char *attr_name,
+				 struct ldb_dn *dn, int flags);
+int ldb_msg_append_fmt(struct ldb_message *msg, int flags,
+		       const char *attr_name, const char *fmt, ...) PRINTF_ATTRIBUTE(4,5);
 
 /**
    compare two message elements - return 0 on match
