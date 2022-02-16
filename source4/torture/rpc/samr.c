@@ -2096,6 +2096,18 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p,
 			__location__, __FUNCTION__,
 			oldpass, newpass, nt_errstr(r.out.result));
 
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		torture_assert_ntstatus_equal(tctx,
+					      r.out.result,
+					      NT_STATUS_NOT_IMPLEMENTED,
+					      "Samba4 should refuse LM password change");
+		/*
+		 * No point continuing, once we have checked this is not
+		 * implemented
+		 */
+		return true;
+	}
+
 	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_PASSWORD_RESTRICTION)
 	    && !NT_STATUS_EQUAL(r.out.result, NT_STATUS_WRONG_PASSWORD)) {
 		torture_result(tctx, TORTURE_FAIL, "OemChangePasswordUser2 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalid password verifier - %s\n",
