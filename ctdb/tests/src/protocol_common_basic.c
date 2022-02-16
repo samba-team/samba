@@ -18,6 +18,7 @@
 */
 
 #include "replace.h"
+#include "system/wait.h"
 
 #include <assert.h>
 
