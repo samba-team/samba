@@ -509,12 +509,15 @@ int ldb_msg_add_steal_value(struct ldb_message *msg,
 
 
 /*
-  add a string element to a message
+  add a string element to a message, specifying flags
 */
-int ldb_msg_add_string(struct ldb_message *msg,
-		       const char *attr_name, const char *str)
+int ldb_msg_add_string_flags(struct ldb_message *msg,
+			     const char *attr_name, const char *str,
+			     int flags)
 {
 	struct ldb_val val;
+	int ret;
+	struct ldb_message_element *el = NULL;
 
 	val.data = discard_const_p(uint8_t, str);
 	val.length = strlen(str);
@@ -524,7 +527,25 @@ int ldb_msg_add_string(struct ldb_message *msg,
 		return LDB_SUCCESS;
 	}
 
-	return ldb_msg_add_value(msg, attr_name, &val, NULL);
+	ret = ldb_msg_add_value(msg, attr_name, &val, &el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (flags != 0) {
+		el->flags = flags;
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
+  add a string element to a message
+*/
+int ldb_msg_add_string(struct ldb_message *msg,
+		       const char *attr_name, const char *str)
+{
+	return ldb_msg_add_string_flags(msg, attr_name, str, 0);
 }
 
 /*
@@ -584,6 +605,142 @@ int ldb_msg_add_fmt(struct ldb_message *msg,
 	val.length = strlen(str);
 
 	return ldb_msg_add_steal_value(msg, attr_name, &val);
+}
+
+static int ldb_msg_append_value_impl(struct ldb_message *msg,
+				     const char *attr_name,
+				     const struct ldb_val *val,
+				     int flags,
+				     struct ldb_message_element **return_el)
+{
+	struct ldb_message_element *el = NULL;
+	int ret;
+
+	ret = ldb_msg_add_empty(msg, attr_name, flags, &el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_msg_element_add_value(msg->elements, el, val);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (return_el != NULL) {
+		*return_el = el;
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
+  append a value to a message
+*/
+int ldb_msg_append_value(struct ldb_message *msg,
+			 const char *attr_name,
+			 const struct ldb_val *val,
+			 int flags)
+{
+	return ldb_msg_append_value_impl(msg, attr_name, val, flags, NULL);
+}
+
+/*
+  append a value to a message, stealing it into the 'right' place
+*/
+int ldb_msg_append_steal_value(struct ldb_message *msg,
+			       const char *attr_name,
+			       struct ldb_val *val,
+			       int flags)
+{
+	int ret;
+	struct ldb_message_element *el = NULL;
+
+	ret = ldb_msg_append_value_impl(msg, attr_name, val, flags, &el);
+	if (ret == LDB_SUCCESS) {
+		talloc_steal(el->values, val->data);
+	}
+	return ret;
+}
+
+/*
+  append a string element to a message, stealing it into the 'right' place
+*/
+int ldb_msg_append_steal_string(struct ldb_message *msg,
+				const char *attr_name, char *str,
+				int flags)
+{
+	struct ldb_val val;
+
+	val.data = (uint8_t *)str;
+	val.length = strlen(str);
+
+	if (val.length == 0) {
+		/* allow empty strings as non-existent attributes */
+		return LDB_SUCCESS;
+	}
+
+	return ldb_msg_append_steal_value(msg, attr_name, &val, flags);
+}
+
+/*
+  append a string element to a message
+*/
+int ldb_msg_append_string(struct ldb_message *msg,
+			  const char *attr_name, const char *str, int flags)
+{
+	struct ldb_val val;
+
+	val.data = discard_const_p(uint8_t, str);
+	val.length = strlen(str);
+
+	if (val.length == 0) {
+		/* allow empty strings as non-existent attributes */
+		return LDB_SUCCESS;
+	}
+
+	return ldb_msg_append_value(msg, attr_name, &val, flags);
+}
+
+/*
+  append a DN element to a message
+  WARNING: this uses the linearized string from the dn, and does not
+  copy the string.
+*/
+int ldb_msg_append_linearized_dn(struct ldb_message *msg, const char *attr_name,
+				 struct ldb_dn *dn, int flags)
+{
+	char *str = ldb_dn_alloc_linearized(msg, dn);
+
+	if (str == NULL) {
+		/* we don't want to have unknown DNs added */
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return ldb_msg_append_steal_string(msg, attr_name, str, flags);
+}
+
+/*
+  append a printf formatted element to a message
+*/
+int ldb_msg_append_fmt(struct ldb_message *msg, int flags,
+		       const char *attr_name, const char *fmt, ...)
+{
+	struct ldb_val val;
+	va_list ap;
+	char *str = NULL;
+
+	va_start(ap, fmt);
+	str = talloc_vasprintf(msg, fmt, ap);
+	va_end(ap);
+
+	if (str == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	val.data   = (uint8_t *)str;
+	val.length = strlen(str);
+
+	return ldb_msg_append_steal_value(msg, attr_name, &val, flags);
 }
 
 /*
