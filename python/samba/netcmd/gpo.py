@@ -747,13 +747,15 @@ class cmd_load(GPOCommand):
         Option("--user-ext-name",
             action="append", dest="user_exts",
             default=['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}'],
-            help="A user extension name to add to gPCUserExtensionNames")
+            help="A user extension name to add to gPCUserExtensionNames"),
+        Option("--replace", action='store_true', default=False,
+               help="Replace the existing Group Policies, rather than merging")
     ]
 
     def run(self, gpo, H=None, content=None,
             machine_exts=['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}'],
             user_exts=['{35378EAC-683F-11D2-A89A-00C04FBBCFA2}'],
-            sambaopts=None, credopts=None, versionopts=None):
+            replace=False, sambaopts=None, credopts=None, versionopts=None):
         if content is None:
             policy_defs = json.loads(sys.stdin.read())
         elif os.path.exists(content):
@@ -772,7 +774,10 @@ class cmd_load(GPOCommand):
         for ext_name in user_exts:
             reg.register_extension_name(ext_name, 'gPCUserExtensionNames')
         try:
-            reg.merge_s(policy_defs)
+            if replace:
+                reg.replace_s(policy_defs)
+            else:
+                reg.merge_s(policy_defs)
         except NTSTATUSError as e:
             if e.args[0] == NT_STATUS_ACCESS_DENIED:
                 raise CommandError("The authenticated user does "
