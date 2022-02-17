@@ -652,7 +652,7 @@ bool netlogon_creds_cli_validate(struct netlogon_creds_cli_context *context,
 		return false;
 	}
 
-	cmp = data_blob_cmp(&blob1, &blob2);
+	cmp = data_blob_cmp_const_time(&blob1, &blob2);
 
 	TALLOC_FREE(frame);
 
@@ -3227,8 +3227,8 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 		return;
 	}
 
-	cmp = memcmp(state->new_owf_password.hash,
-		     zero.hash, sizeof(zero.hash));
+	cmp = memcmp_const_time(state->new_owf_password.hash,
+				zero.hash, sizeof(zero.hash));
 	if (cmp != 0) {
 		status = netlogon_creds_des_decrypt(&state->tmp_creds,
 						    &state->new_owf_password);
@@ -3237,8 +3237,8 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 			return;
 		}
 	}
-	cmp = memcmp(state->old_owf_password.hash,
-		     zero.hash, sizeof(zero.hash));
+	cmp = memcmp_const_time(state->old_owf_password.hash,
+				zero.hash, sizeof(zero.hash));
 	if (cmp != 0) {
 		status = netlogon_creds_des_decrypt(&state->tmp_creds,
 						    &state->old_owf_password);

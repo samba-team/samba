@@ -240,7 +240,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
 		goto failed;
 	}
-	if (memcmp(nt_verifier.hash, r->in.nt_verifier->hash, 16) != 0) {
+	if (memcmp_const_time(nt_verifier.hash, r->in.nt_verifier->hash, 16) != 0) {
 		status = NT_STATUS_WRONG_PASSWORD;
 		goto failed;
 	}

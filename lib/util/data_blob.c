@@ -21,6 +21,7 @@
 #include "replace.h"
 #include "attr.h"
 #include "data_blob.h"
+#include "lib/util/samba_util.h"
 
 const DATA_BLOB data_blob_null = { NULL, 0 };
 
@@ -123,6 +124,29 @@ _PUBLIC_ int data_blob_cmp(const DATA_BLOB *d1, const DATA_BLOB *d2)
 		return d1->length - d2->length;
 	}
 	ret = memcmp(d1->data, d2->data, MIN(d1->length, d2->length));
+	if (ret == 0) {
+		return d1->length - d2->length;
+	}
+	return ret;
+}
+
+/**
+check if two data blobs are equal, where the time taken should not depend on the
+contents of either blob.
+**/
+_PUBLIC_ int data_blob_cmp_const_time(const DATA_BLOB *d1, const DATA_BLOB *d2)
+{
+	int ret;
+	if (d1->data == NULL && d2->data != NULL) {
+		return -1;
+	}
+	if (d1->data != NULL && d2->data == NULL) {
+		return 1;
+	}
+	if (d1->data == d2->data) {
+		return d1->length - d2->length;
+	}
+	ret = memcmp_const_time(d1->data, d2->data, MIN(d1->length, d2->length));
 	if (ret == 0) {
 		return d1->length - d2->length;
 	}

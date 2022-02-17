@@ -659,7 +659,7 @@ bool netlogon_creds_client_check(struct netlogon_creds_CredentialState *creds,
 			const struct netr_Credential *received_credentials)
 {
 	if (!received_credentials ||
-	    memcmp(received_credentials->data, creds->server.data, 8) != 0) {
+	    memcmp_const_time(received_credentials->data, creds->server.data, 8) != 0) {
 		DEBUG(2,("credentials check failed\n"));
 		return false;
 	}
@@ -678,7 +678,7 @@ next comes the server specific functions
 static bool netlogon_creds_server_check_internal(const struct netlogon_creds_CredentialState *creds,
 						 const struct netr_Credential *received_credentials)
 {
-	if (memcmp(received_credentials->data, creds->client.data, 8) != 0) {
+	if (memcmp_const_time(received_credentials->data, creds->client.data, 8) != 0) {
 		DEBUG(2,("credentials check failed\n"));
 		dump_data_pw("client creds", creds->client.data, 8);
 		dump_data_pw("calc   creds", received_credentials->data, 8);

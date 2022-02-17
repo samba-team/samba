@@ -1536,12 +1536,12 @@ reconnect:
 		}
 	}
 
-	cmp_new = memcmp(new_owf_password.hash,
-			 cur_nt_hash->hash,
-			 sizeof(cur_nt_hash->hash));
-	cmp_old = memcmp(old_owf_password.hash,
-			 cur_nt_hash->hash,
-			 sizeof(cur_nt_hash->hash));
+	cmp_new = memcmp_const_time(new_owf_password.hash,
+				    cur_nt_hash->hash,
+				    sizeof(cur_nt_hash->hash));
+	cmp_old = memcmp_const_time(old_owf_password.hash,
+				    cur_nt_hash->hash,
+				    sizeof(cur_nt_hash->hash));
 	if (cmp_new != 0 && cmp_old != 0) {
 		DEBUG(1,("%s:Error: credentials for domain[%s/%s] doesn't match "
 			 "any password known to dcname[%s]\n",

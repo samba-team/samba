@@ -1873,9 +1873,9 @@ static NTSTATUS secrets_check_password_change(const struct secrets_domain_info1 
 		return NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
 	}
 
-	cmp = memcmp(sn->password->nt_hash.hash,
-		     cn->password->nt_hash.hash,
-		     16);
+	cmp = memcmp_const_time(sn->password->nt_hash.hash,
+				cn->password->nt_hash.hash,
+				16);
 	if (cmp != 0) {
 		DBG_ERR("next password.nt_hash differs for %s.\n",
 			domain);
@@ -1883,9 +1883,9 @@ static NTSTATUS secrets_check_password_change(const struct secrets_domain_info1 
 		return NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
 	}
 
-	cmp = memcmp(stored->password->nt_hash.hash,
-		     cookie->password->nt_hash.hash,
-		     16);
+	cmp = memcmp_const_time(stored->password->nt_hash.hash,
+				cookie->password->nt_hash.hash,
+				16);
 	if (cmp != 0) {
 		DBG_ERR("password.nt_hash differs for %s.\n",
 			domain);

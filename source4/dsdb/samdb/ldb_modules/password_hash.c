@@ -601,7 +601,7 @@ static int password_hash_bypass(struct ldb_module *module, struct ldb_request *r
 					 "supplementalCredentialsBlob length differ");
 		}
 
-		if (memcmp(sce->values[0].data, blob.data, blob.length) != 0) {
+		if (memcmp_const_time(sce->values[0].data, blob.data, blob.length) != 0) {
 			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
 					 "supplementalCredentialsBlob memcmp differ");
 		}
@@ -2754,7 +2754,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 
 		/* The password modify through the NT hash is encouraged and
 		   has no problems at all */
-		if (!io->o.nt_hash || memcmp(io->og.nt_hash->hash, io->o.nt_hash->hash, 16) != 0) {
+		if (!io->o.nt_hash || memcmp_const_time(io->og.nt_hash->hash, io->o.nt_hash->hash, 16) != 0) {
 			return make_error_and_update_badPwdCount(io, werror);
 		}
 	}
@@ -2842,7 +2842,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 
 		/* checks the NT hash password history */
 		for (i = 0; i < io->o.nt_history_len; i++) {
-			int pw_cmp = memcmp(io->n.nt_hash, io->o.nt_history[i].hash, 16);
+			int pw_cmp = memcmp_const_time(io->n.nt_hash, io->o.nt_history[i].hash, 16);
 			if (pw_cmp == 0) {
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				*werror = WERR_PASSWORD_RESTRICTION;

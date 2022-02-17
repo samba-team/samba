@@ -1095,8 +1095,8 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 		}
 		gnutls_hmac_deinit(hmac_hnd, mic_buffer);
 
-		cmp = memcmp(request.data + NTLMSSP_MIC_OFFSET,
-			     mic_buffer, NTLMSSP_MIC_SIZE);
+		cmp = memcmp_const_time(request.data + NTLMSSP_MIC_OFFSET,
+					mic_buffer, NTLMSSP_MIC_SIZE);
 		if (cmp != 0) {
 			DEBUG(1,("%s: invalid NTLMSSP_MIC for "
 				 "user=[%s] domain=[%s] workstation=[%s]\n",

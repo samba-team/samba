@@ -198,7 +198,7 @@ bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac
 
 		gnutls_hash_deinit(hash_hnd, calc_md5_mac);
 
-		ok = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
+		ok = (memcmp_const_time(server_sent_mac, calc_md5_mac, 8) == 0);
 
 		if (i == 0) {
 			if (!ok) {

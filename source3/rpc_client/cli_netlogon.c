@@ -325,9 +325,9 @@ again:
 	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
 
 	if (NT_STATUS_IS_OK(status)) {
-		int cmp = memcmp(found_session_key,
-				 creds->session_key,
-				 sizeof(found_session_key));
+		int cmp = memcmp_const_time(found_session_key,
+					    creds->session_key,
+					    sizeof(found_session_key));
 		found_existing_creds = (cmp != 0);
 
 		memcpy(found_session_key,
@@ -356,9 +356,9 @@ again:
 		status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
 
 		if (NT_STATUS_IS_OK(status)) {
-			int cmp = memcmp(found_session_key,
-					 creds->session_key,
-					 sizeof(found_session_key));
+			int cmp = memcmp_const_time(found_session_key,
+						    creds->session_key,
+						    sizeof(found_session_key));
 			found_existing_creds = (cmp != 0);
 
 			memcpy(found_session_key, creds->session_key,

@@ -87,6 +87,12 @@ check if two data blobs are equal
 _PUBLIC_ int data_blob_cmp(const DATA_BLOB *d1, const DATA_BLOB *d2);
 
 /**
+check if two data blobs are equal, where the time taken should not depend on the
+contents of either blob.
+**/
+_PUBLIC_ int data_blob_cmp_const_time(const DATA_BLOB *d1, const DATA_BLOB *d2);
+
+/**
 print the data_blob as hex string
 **/
 _PUBLIC_ char *data_blob_hex_string_upper(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob);

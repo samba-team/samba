@@ -3998,9 +3998,9 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			if (signing_key) {
 				int cmp;
 
-				cmp = memcmp(inhdr+SMB2_HDR_SIGNATURE,
-					     state->smb2.hdr+SMB2_HDR_SIGNATURE,
-					     16);
+				cmp = memcmp_const_time(inhdr+SMB2_HDR_SIGNATURE,
+							state->smb2.hdr+SMB2_HDR_SIGNATURE,
+							16);
 				if (cmp == 0) {
 					state->smb2.signing_skipped = true;
 					signing_key = NULL;

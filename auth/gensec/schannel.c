@@ -649,7 +649,7 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	ret = memcmp(checksum, sig->data+16, checksum_length);
+	ret = memcmp_const_time(checksum, sig->data+16, checksum_length);
 	if (ret != 0) {
 		dump_data_pw("calc digest:", checksum, checksum_length);
 		dump_data_pw("wire digest:", sig->data+16, checksum_length);
@@ -665,7 +665,7 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 
 	ZERO_ARRAY(checksum);
 
-	ret = memcmp(seq_num, sig->data+8, 8);
+	ret = memcmp_const_time(seq_num, sig->data+8, 8);
 	if (ret != 0) {
 		dump_data_pw("calc seq num:", seq_num, 8);
 		dump_data_pw("wire seq num:", sig->data+8, 8);
