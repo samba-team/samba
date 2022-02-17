@@ -5308,8 +5308,42 @@ static void lease_match_parser(
 
 		/* Everything should be the same. */
 		if (!file_id_equal(&state->id, &f->id)) {
-			/* This should catch all dynamic share cases. */
-			state->match_status = NT_STATUS_OPLOCK_NOT_GRANTED;
+			/*
+			 * The client asked for a lease on a
+			 * file that doesn't match the file_id
+			 * in the database.
+			 *
+			 * Maybe this is a dynamic share, i.e.
+			 * a share where the servicepath is
+			 * different for different users (e.g.
+			 * the [HOMES] share.
+			 *
+			 * If the servicepath is different, but the requested
+			 * file name + stream name is the same then this is
+			 * a dynamic share, the client is using the same share
+			 * name and doesn't know that the underlying servicepath
+			 * is different. It was expecting a lease on the
+			 * same file. Return NT_STATUS_OPLOCK_NOT_GRANTED
+			 * to break leases
+			 *
+			 * Otherwise the client has messed up, or is
+			 * testing our error codes, so return
+			 * NT_STATUS_INVALID_PARAMETER.
+			 */
+			if (!strequal(f->servicepath, state->servicepath) &&
+			    strequal(f->base_name, state->fname->base_name) &&
+			    strequal(f->stream_name, state->fname->stream_name))
+			{
+				/*
+				 * Name is the same but servicepath is
+				 * different, dynamic share. Break leases.
+				 */
+				state->match_status =
+					NT_STATUS_OPLOCK_NOT_GRANTED;
+			} else {
+				state->match_status =
+					NT_STATUS_INVALID_PARAMETER;
+			}
 			break;
 		}
 		if (!strequal(f->servicepath, state->servicepath)) {
