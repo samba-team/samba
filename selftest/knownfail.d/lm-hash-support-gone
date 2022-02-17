@@ -7,4 +7,3 @@
 ^samba.tests.ntlm_auth.samba.tests.ntlm_auth.NTLMAuthHelpersTests.test_diagnostics\(nt4_dc:local\)
 ^samba.tests.ntlm_auth.samba.tests.ntlm_auth.NTLMAuthHelpersTests.test_diagnostics\(nt4_member:local\)
 ^samba4.rpc.samlogon on ncacn_np with .samlogon\(ad_dc_slowtests\)
-^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_rap_change_password\(ad_dc_smb1\)

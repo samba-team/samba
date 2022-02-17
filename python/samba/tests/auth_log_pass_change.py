@@ -200,35 +200,6 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertTrue(self.waitForMessages(isLastExpectedMessage),
                         "Did not receive the expected message")
 
-    # net rap password changes are broken, but they trigger enough of the
-    # server side behaviour to exercise the code paths of interest.
-    # if we used the real password it would be too long and does not hash
-    # correctly, so we just check it triggers the wrong password path.
-    def test_rap_change_password(self):
-        def isLastExpectedMessage(msg):
-            return ((msg["type"] == "Authentication") and
-                    (msg["Authentication"]["serviceDescription"] ==
-                        "SAMR Password Change") and
-                    (msg["Authentication"]["status"] ==
-                        "NT_STATUS_WRONG_PASSWORD") and
-                    (msg["Authentication"]["authDescription"] ==
-                        "OemChangePasswordUser2") and
-                    (msg["Authentication"]["eventId"] ==
-                        EVT_ID_UNSUCCESSFUL_LOGON) and
-                    (msg["Authentication"]["logonType"] ==
-                        EVT_LOGON_NETWORK))
-
-        username = os.environ["USERNAME"]
-        server = os.environ["SERVER"]
-        password = os.environ["PASSWORD"]
-        server_param = "--server=%s" % server
-        creds = "-U%s%%%s" % (username, password)
-        call(["bin/net", "rap", server_param,
-              "password", USER_NAME, "notMyPassword", "notGoingToBeMyPassword",
-              server, creds, "--option=client ipc max protocol=nt1"])
-        self.assertTrue(self.waitForMessages(isLastExpectedMessage),
-                        "Did not receive the expected message")
-
     def test_ldap_change_password(self):
         def isLastExpectedMessage(msg):
             return ((msg["type"] == "Authentication") and
