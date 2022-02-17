@@ -4293,6 +4293,58 @@ done:
 	return ret;
 }
 
+static bool test_lease_duplicate_create(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
+	NTSTATUS status;
+	const char *fname1 = "duplicate_create1.dat";
+	const char *fname2 = "duplicate_create2.dat";
+	bool ret = true;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(
+		tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	/* Ensure files don't exist. */
+	smb2_util_unlink(tree, fname1);
+	smb2_util_unlink(tree, fname2);
+
+	/* Create file1 - LEASE1 key. */
+	smb2_lease_create(&io, &ls, false, fname1, LEASE1,
+			  smb2_util_lease_state("RWH"));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+
+	/*
+	 * Create file2 with the same LEASE1 key - this should fail with.
+	 * INVALID_PARAMETER.
+	 */
+	smb2_lease_create(&io, &ls, false, fname2, LEASE1,
+			  smb2_util_lease_state("RWH"));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	smb2_util_close(tree, h1);
+
+done:
+	smb2_util_close(tree, h2);
+	smb2_util_close(tree, h1);
+	smb2_util_unlink(tree, fname1);
+	smb2_util_unlink(tree, fname2);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -4336,6 +4388,8 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "unlink", test_lease_unlink);
 	torture_suite_add_1smb2_test(suite, "rename_wait",
 				test_lease_rename_wait);
+	torture_suite_add_1smb2_test(suite, "duplicate_create",
+				test_lease_duplicate_create);
 
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
