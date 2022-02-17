@@ -74,6 +74,8 @@ popd || cleanup_and_exit 1
 echo
 echo "Now please change VERSION in buildtools/bin/waf and"
 echo "Context.HEXVERSION in buildtools/wafsamba/wafsamba.py"
+grep WAFVERSION "${WAF_SAMBA_DIR}/waflib/Context.py"
+grep HEXVERSION "${WAF_SAMBA_DIR}/waflib/Context.py"
 echo
 
 cleanup_and_exit 0
