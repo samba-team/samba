@@ -46,7 +46,8 @@ enum ntlm_break {
  * Test the normal 'LM and NTLM' combination
  */
 
-static bool test_lm_ntlm_broken(enum ntlm_break break_which) 
+static bool test_lm_ntlm_broken(enum ntlm_break break_which,
+				bool lanman_support_expected)
 {
 	bool pass = True;
 	NTSTATUS nt_status;
@@ -114,14 +115,26 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which)
 		return break_which == BREAK_NT;
 	}
 
-	if (memcmp(lm_hash, lm_key, 
-		   sizeof(lm_key)) != 0) {
-		DEBUG(1, ("LM Key does not match expectations!\n"));
- 		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
-		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
-		pass = False;
+	/* If we are told the DC is Samba4, expect an LM key of zeros */
+	if (!lanman_support_expected) {
+		if (!all_zero(lm_key,
+			      sizeof(lm_key))) {
+			DEBUG(1, ("LM Key does not match expectations!\n"));
+			DEBUG(1, ("lm_key:\n"));
+			dump_data(1, lm_key, 8);
+			DEBUG(1, ("expected: all zeros\n"));
+			pass = False;
+		}
+	} else {
+		if (memcmp(lm_hash, lm_key,
+			   sizeof(lm_key)) != 0) {
+			DEBUG(1, ("LM Key does not match expectations!\n"));
+			DEBUG(1, ("lm_key:\n"));
+			dump_data(1, lm_key, 8);
+			DEBUG(1, ("expected:\n"));
+			dump_data(1, lm_hash, 8);
+			pass = False;
+		}
 	}
 
 	if (break_which == NO_NT) {
@@ -152,26 +165,26 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which)
  * Test LM authentication, no NT response supplied
  */
 
-static bool test_lm(void) 
+static bool test_lm(bool lanman_support_expected)
 {
 
-	return test_lm_ntlm_broken(NO_NT);
+	return test_lm_ntlm_broken(NO_NT, lanman_support_expected);
 }
 
 /* 
  * Test the NTLM response only, no LM.
  */
 
-static bool test_ntlm(void) 
+static bool test_ntlm(bool lanman_support_expected)
 {
-	return test_lm_ntlm_broken(NO_LM);
+	return test_lm_ntlm_broken(NO_LM, lanman_support_expected);
 }
 
 /* 
  * Test the NTLM response only, but in the LM field.
  */
 
-static bool test_ntlm_in_lm(void) 
+static bool test_ntlm_in_lm(bool lanman_support_expected)
 {
 	bool pass = True;
 	NTSTATUS nt_status;
@@ -214,22 +227,42 @@ static bool test_ntlm_in_lm(void)
 		return False;
 	}
 
-	if (memcmp(lm_hash, lm_key, 
-		   sizeof(lm_key)) != 0) {
-		DEBUG(1, ("LM Key does not match expectations!\n"));
- 		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
-		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
-		pass = False;
-	}
-	if (memcmp(lm_hash, user_session_key, 8) != 0) {
-		DEBUG(1, ("Session Key (first 8 lm hash) does not match expectations!\n"));
- 		DEBUG(1, ("user_session_key:\n"));
-		dump_data(1, user_session_key, 16);
- 		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
-		pass = False;
+	/* If we are told the DC is Samba4, expect an LM key of zeros */
+	if (!lanman_support_expected) {
+		if (!all_zero(lm_key,
+			      sizeof(lm_key))) {
+			DEBUG(1, ("LM Key does not match expectations!\n"));
+			DEBUG(1, ("lm_key:\n"));
+			dump_data(1, lm_key, 8);
+			DEBUG(1, ("expected: all zeros\n"));
+			pass = False;
+		}
+		if (!all_zero(user_session_key,
+			      sizeof(user_session_key))) {
+			DEBUG(1, ("Session Key (normally first 8 lm hash) does not match expectations!\n"));
+			DEBUG(1, ("user_session_key:\n"));
+			dump_data(1, user_session_key, 16);
+			DEBUG(1, ("expected all zeros:\n"));
+			pass = False;
+		}
+	} else {
+		if (memcmp(lm_hash, lm_key,
+			   sizeof(lm_key)) != 0) {
+			DEBUG(1, ("LM Key does not match expectations!\n"));
+			DEBUG(1, ("lm_key:\n"));
+			dump_data(1, lm_key, 8);
+			DEBUG(1, ("expected:\n"));
+			dump_data(1, lm_hash, 8);
+			pass = False;
+		}
+		if (memcmp(lm_hash, user_session_key, 8) != 0) {
+			DEBUG(1, ("Session Key (first 8 lm hash) does not match expectations!\n"));
+			DEBUG(1, ("user_session_key:\n"));
+			dump_data(1, user_session_key, 16);
+			DEBUG(1, ("expected:\n"));
+			dump_data(1, lm_hash, 8);
+			pass = False;
+		}
 	}
         return pass;
 }
@@ -238,7 +271,7 @@ static bool test_ntlm_in_lm(void)
  * Test the NTLM response only, but in the both the NT and LM fields.
  */
 
-static bool test_ntlm_in_both(void) 
+static bool test_ntlm_in_both(bool lanman_support_expected)
 {
 	bool pass = True;
 	NTSTATUS nt_status;
@@ -286,14 +319,26 @@ static bool test_ntlm_in_both(void)
 		return False;
 	}
 
-	if (memcmp(lm_hash, lm_key, 
-		   sizeof(lm_key)) != 0) {
-		DEBUG(1, ("LM Key does not match expectations!\n"));
- 		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 8);
-		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_hash, 8);
-		pass = False;
+	/* If we are told the DC is Samba4, expect an LM key of zeros */
+	if (!lanman_support_expected) {
+		if (!all_zero(lm_key,
+			      sizeof(lm_key))) {
+			DEBUG(1, ("LM Key does not match expectations!\n"));
+			DEBUG(1, ("lm_key:\n"));
+			dump_data(1, lm_key, 8);
+			DEBUG(1, ("expected: all zeros\n"));
+			pass = False;
+		}
+	} else {
+		if (memcmp(lm_hash, lm_key,
+			   sizeof(lm_key)) != 0) {
+			DEBUG(1, ("LM Key does not match expectations!\n"));
+			DEBUG(1, ("lm_key:\n"));
+			dump_data(1, lm_key, 8);
+			DEBUG(1, ("expected:\n"));
+			dump_data(1, lm_hash, 8);
+			pass = False;
+		}
 	}
 	if (memcmp(session_key.data, user_session_key, 
 		   sizeof(user_session_key)) != 0) {
@@ -395,7 +440,7 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
  * Test the NTLMv2 and LMv2 responses
  */
 
-static bool test_lmv2_ntlmv2(void) 
+static bool test_lmv2_ntlmv2(bool lanman_support_expected)
 {
 	return test_lmv2_ntlmv2_broken(BREAK_NONE);
 }
@@ -404,7 +449,7 @@ static bool test_lmv2_ntlmv2(void)
  * Test the LMv2 response only
  */
 
-static bool test_lmv2(void) 
+static bool test_lmv2(bool lanman_support_expected)
 {
 	return test_lmv2_ntlmv2_broken(NO_NT);
 }
@@ -413,32 +458,32 @@ static bool test_lmv2(void)
  * Test the NTLMv2 response only
  */
 
-static bool test_ntlmv2(void) 
+static bool test_ntlmv2(bool lanman_support_expected)
 {
 	return test_lmv2_ntlmv2_broken(NO_LM);
 }
 
-static bool test_lm_ntlm(void) 
+static bool test_lm_ntlm(bool lanman_support_expected)
 {
-	return test_lm_ntlm_broken(BREAK_NONE);
+	return test_lm_ntlm_broken(BREAK_NONE, lanman_support_expected);
 }
 
-static bool test_ntlm_lm_broken(void) 
+static bool test_ntlm_lm_broken(bool lanman_support_expected)
 {
-	return test_lm_ntlm_broken(BREAK_LM);
+	return test_lm_ntlm_broken(BREAK_LM, lanman_support_expected);
 }
 
-static bool test_ntlm_ntlm_broken(void) 
+static bool test_ntlm_ntlm_broken(bool lanman_support_expected)
 {
-	return test_lm_ntlm_broken(BREAK_NT);
+	return test_lm_ntlm_broken(BREAK_NT, lanman_support_expected);
 }
 
-static bool test_ntlmv2_lmv2_broken(void) 
+static bool test_ntlmv2_lmv2_broken(bool lanman_support_expected)
 {
 	return test_lmv2_ntlmv2_broken(BREAK_LM);
 }
 
-static bool test_ntlmv2_ntlmv2_broken(void) 
+static bool test_ntlmv2_ntlmv2_broken(bool lanman_support_expected)
 {
 	return test_lmv2_ntlmv2_broken(BREAK_NT);
 }
@@ -535,23 +580,23 @@ static bool test_plaintext(enum ntlm_break break_which)
         return break_which != BREAK_NT;
 }
 
-static bool test_plaintext_none_broken(void) {
+static bool test_plaintext_none_broken(bool lanman_support_expected) {
 	return test_plaintext(BREAK_NONE);
 }
 
-static bool test_plaintext_lm_broken(void) {
+static bool test_plaintext_lm_broken(bool lanman_support_expected) {
 	return test_plaintext(BREAK_LM);
 }
 
-static bool test_plaintext_nt_broken(void) {
+static bool test_plaintext_nt_broken(bool lanman_support_expected) {
 	return test_plaintext(BREAK_NT);
 }
 
-static bool test_plaintext_nt_only(void) {
+static bool test_plaintext_nt_only(bool lanman_support_expected) {
 	return test_plaintext(NO_LM);
 }
 
-static bool test_plaintext_lm_only(void) {
+static bool test_plaintext_lm_only(bool lanman_support_expected) {
 	return test_plaintext(NO_NT);
 }
 
@@ -574,12 +619,14 @@ static bool test_plaintext_lm_only(void) {
 */
 
 static const struct ntlm_tests {
-	bool (*fn)(void);
+	bool (*fn)(bool lanman_support_expected);
 	const char *name;
+	bool lanman;
 } test_table[] = {
 	{
 		.fn = test_lm,
 		.name = "LM",
+		.lanman = true
 	},
 	{
 		.fn = test_lm_ntlm,
@@ -643,19 +690,31 @@ static const struct ntlm_tests {
 	},
 	{
 		.fn = test_plaintext_lm_only,
-		.name = "Plaintext LM only"
+		.name = "Plaintext LM only",
+		.lanman = true
 	},
-	{NULL, NULL}
+	{
+		.fn = NULL
+	}
 };
 
-bool diagnose_ntlm_auth(void)
+bool diagnose_ntlm_auth(bool lanman_support_expected)
 {
 	unsigned int i;
 	bool pass = True;
 
 	for (i=0; test_table[i].fn; i++) {
-		if (!test_table[i].fn()) {
-			DEBUG(1, ("Test %s failed!\n", test_table[i].name));
+		bool test_pass = test_table[i].fn(lanman_support_expected);
+		if (!lanman_support_expected
+		    && test_table[i].lanman) {
+			if (test_pass) {
+				DBG_ERR("Test %s unexpectedly passed "
+					"(server should have rejected LM)!\n",
+					test_table[i].name);
+				pass = false;
+			}
+		} else if (!test_pass) {
+			DBG_ERR("Test %s failed!\n", test_table[i].name);
 			pass = False;
 		}
 	}

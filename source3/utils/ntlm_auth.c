@@ -2588,7 +2588,7 @@ enum {
 			.argInfo    = POPT_ARG_NONE,
 			.arg        = &request_lm_key,
 			.val        = OPT_LM_KEY,
-			.descrip    = "Retrieve LM session key"
+			.descrip    = "Retrieve LM session key (or, with --diagnostics, expect LM support)"
 		},
 		{
 			.longName   = "request-nt-key",
@@ -2817,7 +2817,7 @@ enum {
 	}
 
 	if (diagnostics) {
-		if (!diagnose_ntlm_auth()) {
+		if (!diagnose_ntlm_auth(request_lm_key)) {
 			poptFreeContext(pc);
 			return 1;
 		}

@@ -45,7 +45,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 
 /* The following definitions come from utils/ntlm_auth_diagnostics.c  */
 
-bool diagnose_ntlm_auth(void);
+bool diagnose_ntlm_auth(bool lanman_support_expected);
 int get_pam_winbind_config(void);
 
 #endif /*  _NTLM_AUTH_PROTO_H_  */
