@@ -32,7 +32,6 @@ from waflib.Tools import c_preproc, c, cxx, msvc
 from waflib.TaskGen import feature, before_method
 
 lock = threading.Lock()
-nodes = {} # Cache the path -> Node lookup
 
 PREPROCESSOR_FLAG = '/showIncludes'
 INCLUDE_PATTERN = 'Note: including file:'
@@ -50,23 +49,47 @@ def apply_msvcdeps_flags(taskgen):
 		if taskgen.env.get_flat(flag).find(PREPROCESSOR_FLAG) < 0:
 			taskgen.env.append_value(flag, PREPROCESSOR_FLAG)
 
+
+def get_correct_path_case(base_path, path):
+	'''
+	Return a case-corrected version of ``path`` by searching the filesystem for
+	``path``, relative to ``base_path``, using the case returned by the filesystem.
+	'''
+	components = Utils.split_path(path)
+
+	corrected_path = ''
+	if os.path.isabs(path):
+		corrected_path = components.pop(0).upper() + os.sep
+
+	for part in components:
+		part = part.lower()
+		search_path = os.path.join(base_path, corrected_path)
+		if part == '..':
+			corrected_path = os.path.join(corrected_path, part)
+			search_path = os.path.normpath(search_path)
+			continue
+
+		for item in sorted(os.listdir(search_path)):
+			if item.lower() == part:
+				corrected_path = os.path.join(corrected_path, item)
+				break
+		else:
+			raise ValueError("Can't find %r in %r" % (part, search_path))
+
+	return corrected_path
+
+
 def path_to_node(base_node, path, cached_nodes):
 	'''
 	Take the base node and the path and return a node
 	Results are cached because searching the node tree is expensive
 	The following code is executed by threads, it is not safe, so a lock is needed...
 	'''
-	# normalize the path because ant_glob() does not understand
-	# parent path components (..)
+	# normalize the path to remove parent path components (..)
 	path = os.path.normpath(path)
 
 	# normalize the path case to increase likelihood of a cache hit
-	path = os.path.normcase(path)
-
-	# ant_glob interprets [] and () characters, so those must be replaced
-	path = path.replace('[', '?').replace(']', '?').replace('(', '[(]').replace(')', '[)]')
-
-	node_lookup_key = (base_node, path)
+	node_lookup_key = (base_node, os.path.normcase(path))
 
 	try:
 		node = cached_nodes[node_lookup_key]
@@ -76,8 +99,8 @@ def path_to_node(base_node, path, cached_nodes):
 			try:
 				node = cached_nodes[node_lookup_key]
 			except KeyError:
-				node_list = base_node.ant_glob([path], ignorecase=True, remove=False, quiet=True, regex=False)
-				node = cached_nodes[node_lookup_key] = node_list[0] if node_list else None
+				path = get_correct_path_case(base_node.abspath(), path)
+				node = cached_nodes[node_lookup_key] = base_node.find_node(path)
 
 	return node
 
@@ -89,9 +112,9 @@ def post_run(self):
 	if getattr(self, 'cached', None):
 		return Task.Task.post_run(self)
 
-	bld = self.generator.bld
-	unresolved_names = []
 	resolved_nodes = []
+	unresolved_names = []
+	bld = self.generator.bld
 
 	# Dynamically bind to the cache
 	try:
@@ -124,10 +147,13 @@ def post_run(self):
 					continue
 
 			if id(node) == id(self.inputs[0]):
-				# Self-dependency
+				# ignore the source file, it is already in the dependencies
+				# this way, successful config tests may be retrieved from the cache
 				continue
 
 			resolved_nodes.append(node)
+
+	Logs.debug('deps: msvcdeps for %s returned %s', self, resolved_nodes)
 
 	bld.node_deps[self.uid()] = resolved_nodes
 	bld.raw_deps[self.uid()] = unresolved_names

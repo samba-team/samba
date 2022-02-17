@@ -17,7 +17,7 @@ tasks have to be added dynamically:
 
 SWIG_EXTS = ['.swig', '.i']
 
-re_module = re.compile(r'%module(?:\s*\(.*\))?\s+(.+)', re.M)
+re_module = re.compile(r'%module(?:\s*\(.*\))?\s+([^\r\n]+)', re.M)
 
 re_1 = re.compile(r'^%module.*?\s+([\w]+)\s*?$', re.M)
 re_2 = re.compile(r'[#%](?:include|import(?:\(module=".*"\))+|python(?:begin|code)) [<"](.*)[">]', re.M)

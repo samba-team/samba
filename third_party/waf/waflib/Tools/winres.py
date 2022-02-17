@@ -4,10 +4,12 @@
 
 "Process *.rc* files for C/C++: X{.rc -> [.res|.rc.o]}"
 
+import os
 import re
 from waflib import Task
 from waflib.TaskGen import extension
 from waflib.Tools import c_preproc
+from waflib import Utils
 
 @extension('.rc')
 def rc_file(self, node):
@@ -60,6 +62,39 @@ class winrc(Task.Task):
 		tmp = rc_parser(self.generator.includes_nodes)
 		tmp.start(self.inputs[0], self.env)
 		return (tmp.nodes, tmp.names)
+
+	def exec_command(self, cmd, **kw):
+		if self.env.WINRC_TGT_F == '/fo':
+			# Since winres include paths may contain spaces, they do not fit in
+			# response files and are best passed as environment variables
+			replace_cmd = []
+			incpaths = []
+			while cmd:
+				# filter include path flags
+				flag = cmd.pop(0)
+				if flag.upper().startswith('/I'):
+					if len(flag) == 2:
+						incpaths.append(cmd.pop(0))
+					else:
+						incpaths.append(flag[2:])
+				else:
+					replace_cmd.append(flag)
+			cmd = replace_cmd
+			if incpaths:
+				# append to existing environment variables in INCLUDE
+				env = kw['env'] = dict(kw.get('env') or self.env.env or os.environ)
+				pre_includes = env.get('INCLUDE', '')
+				env['INCLUDE'] = pre_includes + os.pathsep + os.pathsep.join(incpaths)
+
+		return super(winrc, self).exec_command(cmd, **kw)
+
+	def quote_flag(self, flag):
+		if self.env.WINRC_TGT_F == '/fo':
+			# winres does not support quotes around flags in response files
+			return flag
+
+		return super(winrc, self).quote_flag(flag)
+
 
 def configure(conf):
 	"""

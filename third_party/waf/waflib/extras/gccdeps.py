@@ -29,13 +29,6 @@ if not c_preproc.go_absolute:
 # Third-party tools are allowed to add extra names in here with append()
 supported_compilers = ['gas', 'gcc', 'icc', 'clang']
 
-def scan(self):
-	if not self.__class__.__name__ in self.env.ENABLE_GCCDEPS:
-		return super(self.derived_gccdeps, self).scan()
-	nodes = self.generator.bld.node_deps.get(self.uid(), [])
-	names = []
-	return (nodes, names)
-
 re_o = re.compile(r"\.o$")
 re_splitter = re.compile(r'(?<!\\)\s+') # split by space, except when spaces are escaped
 
@@ -61,28 +54,30 @@ def path_to_node(base_node, path, cached_nodes):
 	else:
 		# Not hashable, assume it is a list and join into a string
 		node_lookup_key = (base_node, os.path.sep.join(path))
+
 	try:
-		lock.acquire()
 		node = cached_nodes[node_lookup_key]
 	except KeyError:
-		node = base_node.find_resource(path)
-		cached_nodes[node_lookup_key] = node
-	finally:
-		lock.release()
+		# retry with lock on cache miss
+		with lock:
+			try:
+				node = cached_nodes[node_lookup_key]
+			except KeyError:
+				node = cached_nodes[node_lookup_key] = base_node.find_resource(path)
+
 	return node
 
 def post_run(self):
 	if not self.__class__.__name__ in self.env.ENABLE_GCCDEPS:
 		return super(self.derived_gccdeps, self).post_run()
 
-	name = self.outputs[0].abspath()
-	name = re_o.sub('.d', name)
+	deps_filename = self.outputs[0].abspath()
+	deps_filename = re_o.sub('.d', deps_filename)
 	try:
-		txt = Utils.readf(name)
+		deps_txt = Utils.readf(deps_filename)
 	except EnvironmentError:
 		Logs.error('Could not find a .d dependency file, are cflags/cxxflags overwritten?')
 		raise
-	#os.remove(name)
 
 	# Compilers have the choice to either output the file's dependencies
 	# as one large Makefile rule:
@@ -102,15 +97,16 @@ def post_run(self):
 	# So the first step is to sanitize the input by stripping out the left-
 	# hand side of all these lines. After that, whatever remains are the
 	# implicit dependencies of task.outputs[0]
-	txt = '\n'.join([remove_makefile_rule_lhs(line) for line in txt.splitlines()])
+	deps_txt = '\n'.join([remove_makefile_rule_lhs(line) for line in deps_txt.splitlines()])
 
 	# Now join all the lines together
-	txt = txt.replace('\\\n', '')
+	deps_txt = deps_txt.replace('\\\n', '')
 
-	val = txt.strip()
-	val = [x.replace('\\ ', ' ') for x in re_splitter.split(val) if x]
+	dep_paths = deps_txt.strip()
+	dep_paths = [x.replace('\\ ', ' ') for x in re_splitter.split(dep_paths) if x]
 
-	nodes = []
+	resolved_nodes = []
+	unresolved_names = []
 	bld = self.generator.bld
 
 	# Dynamically bind to the cache
@@ -119,39 +115,41 @@ def post_run(self):
 	except AttributeError:
 		cached_nodes = bld.cached_nodes = {}
 
-	for x in val:
+	for path in dep_paths:
 
 		node = None
-		if os.path.isabs(x):
-			node = path_to_node(bld.root, x, cached_nodes)
+		if os.path.isabs(path):
+			node = path_to_node(bld.root, path, cached_nodes)
 		else:
 			# TODO waf 1.9 - single cwd value
-			path = getattr(bld, 'cwdx', bld.bldnode)
+			base_node = getattr(bld, 'cwdx', bld.bldnode)
 			# when calling find_resource, make sure the path does not contain '..'
-			x = [k for k in Utils.split_path(x) if k and k != '.']
-			while '..' in x:
-				idx = x.index('..')
+			path = [k for k in Utils.split_path(path) if k and k != '.']
+			while '..' in path:
+				idx = path.index('..')
 				if idx == 0:
-					x = x[1:]
-					path = path.parent
+					path = path[1:]
+					base_node = base_node.parent
 				else:
-					del x[idx]
-					del x[idx-1]
+					del path[idx]
+					del path[idx-1]
 
-			node = path_to_node(path, x, cached_nodes)
+			node = path_to_node(base_node, path, cached_nodes)
 
 		if not node:
-			raise ValueError('could not find %r for %r' % (x, self))
+			raise ValueError('could not find %r for %r' % (path, self))
+
 		if id(node) == id(self.inputs[0]):
 			# ignore the source file, it is already in the dependencies
 			# this way, successful config tests may be retrieved from the cache
 			continue
-		nodes.append(node)
 
-	Logs.debug('deps: gccdeps for %s returned %s', self, nodes)
+		resolved_nodes.append(node)
 
-	bld.node_deps[self.uid()] = nodes
-	bld.raw_deps[self.uid()] = []
+	Logs.debug('deps: gccdeps for %s returned %s', self, resolved_nodes)
+
+	bld.node_deps[self.uid()] = resolved_nodes
+	bld.raw_deps[self.uid()] = unresolved_names
 
 	try:
 		del self.cache_sig
@@ -159,6 +157,14 @@ def post_run(self):
 		pass
 
 	Task.Task.post_run(self)
+
+def scan(self):
+	if not self.__class__.__name__ in self.env.ENABLE_GCCDEPS:
+		return super(self.derived_gccdeps, self).scan()
+
+	resolved_nodes = self.generator.bld.node_deps.get(self.uid(), [])
+	unresolved_names = []
+	return (resolved_nodes, unresolved_names)
 
 def sig_implicit_deps(self):
 	if not self.__class__.__name__ in self.env.ENABLE_GCCDEPS:

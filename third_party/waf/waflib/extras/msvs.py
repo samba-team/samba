@@ -787,8 +787,12 @@ class msvs_generator(BuildContext):
 		self.collect_dirs()
 		default_project = getattr(self, 'default_project', None)
 		def sortfun(x):
-			if x.name == default_project:
+			# folders should sort to the top
+			if getattr(x, 'VS_GUID_SOLUTIONFOLDER', None):
 				return ''
+			# followed by the default project
+			elif x.name == default_project:
+				return ' '
 			return getattr(x, 'path', None) and x.path.win32path() or x.name
 		self.all_projects.sort(key=sortfun)
 
