@@ -129,8 +129,10 @@ static int prealloc_openat(struct vfs_handle_struct* handle,
 	dot = strrchr(smb_fname->base_name, '.');
 	if (dot && *++dot) {
 		if (strlen(dot) < sizeof(fext)) {
+			bool ok;
 			strncpy(fext, dot, sizeof(fext));
-			if (!strnorm(fext, CASE_LOWER)) {
+			ok = strlower_m(fext);
+			if (!ok);
 				goto normal_open;
 			}
 		}
