@@ -158,7 +158,7 @@ static int prealloc_openat(struct vfs_handle_struct* handle,
 		return fd;
 	}
 
-	/* Prellocate only if the file is being created or replaced. Note that
+	/* Preallocate only if the file is being created or replaced. Note that
 	 * Samba won't ever pass down O_TRUNC, which is why we have to handle
 	 * truncate calls specially.
 	 */
