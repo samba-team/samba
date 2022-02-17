@@ -10,6 +10,9 @@ Usage:
 def options(opt):
 	opt.load('eclipse')
 
+To add additional targets beside standard ones (configure, dist, install, check)
+the environment ECLIPSE_EXTRA_TARGETS can be set (ie. to ['test', 'lint', 'docs'])
+
 $ waf configure eclipse
 """
 
@@ -25,6 +28,8 @@ cdt_core = oe_cdt + '.core'
 cdt_bld = oe_cdt + '.build.core'
 extbuilder_dir = '.externalToolBuilders'
 extbuilder_name = 'Waf_Builder.launch'
+settings_dir = '.settings'
+settings_name = 'language.settings.xml'
 
 class eclipse(Build.BuildContext):
 	cmd = 'eclipse'
@@ -131,9 +136,11 @@ class eclipse(Build.BuildContext):
 					path = p.path_from(self.srcnode)
 
 					if (path.startswith("/")):
-						cpppath.append(path)
+						if path not in cpppath:
+							cpppath.append(path)
 					else:
-						workspace_includes.append(path)
+						if path not in workspace_includes:
+							workspace_includes.append(path)
 
 					if is_cc and path not in source_dirs:
 						source_dirs.append(path)
@@ -155,6 +162,61 @@ class eclipse(Build.BuildContext):
 		if hasjava:
 			project = self.impl_create_javaproject(javasrcpath, javalibpath)
 			self.write_conf_to_xml('.classpath', project)
+
+		# Create editor language settings to have correct standards applied in IDE, as per project configuration
+		try:
+			os.mkdir(settings_dir)
+		except OSError:
+			pass	# Ignore if dir already exists
+
+		lang_settings = Document()
+		project = lang_settings.createElement('project')
+
+		# Language configurations for C and C++ via cdt
+		if hasc:
+			configuration = self.add(lang_settings, project, 'configuration',
+							{'id' : 'org.eclipse.cdt.core.default.config.1', 'name': 'Default'})
+
+			extension = self.add(lang_settings, configuration, 'extension', {'point': 'org.eclipse.cdt.core.LanguageSettingsProvider'})
+
+			provider = self.add(lang_settings, extension, 'provider',
+							{ 'copy-of': 'extension',
+							  'id': 'org.eclipse.cdt.ui.UserLanguageSettingsProvider'})
+
+			provider = self.add(lang_settings, extension, 'provider-reference',
+							{ 'id': 'org.eclipse.cdt.core.ReferencedProjectsLanguageSettingsProvider',
+							  'ref': 'shared-provider'})
+
+			provider = self.add(lang_settings, extension, 'provider-reference',
+							{ 'id': 'org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider',
+							  'ref': 'shared-provider'})
+
+			# C and C++ are kept as separated providers so appropriate flags are used also in mixed projects
+			if self.env.CC:
+				provider = self.add(lang_settings, extension, 'provider',
+							{ 'class': 'org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector',
+							  'console': 'false',
+							  'id': 'org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector.1',
+							  'keep-relative-paths' : 'false',
+							  'name': 'CDT GCC Built-in Compiler Settings',
+							  'parameter': '%s %s ${FLAGS} -E -P -v -dD "${INPUTS}"'%(self.env.CC[0],' '.join(self.env['CFLAGS'])),
+							  'prefer-non-shared': 'true' })
+
+				self.add(lang_settings, provider, 'language-scope', { 'id': 'org.eclipse.cdt.core.gcc'})
+
+			if self.env.CXX:
+				provider = self.add(lang_settings, extension, 'provider',
+							{ 'class': 'org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector',
+							  'console': 'false',
+							  'id': 'org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector.2',
+							  'keep-relative-paths' : 'false',
+							  'name': 'CDT GCC Built-in Compiler Settings',
+							  'parameter': '%s %s ${FLAGS} -E -P -v -dD "${INPUTS}"'%(self.env.CXX[0],' '.join(self.env['CXXFLAGS'])),
+							  'prefer-non-shared': 'true' })
+				self.add(lang_settings, provider, 'language-scope', { 'id': 'org.eclipse.cdt.core.g++'})
+
+		lang_settings.appendChild(project)
+		self.write_conf_to_xml('%s%s%s'%(settings_dir, os.path.sep, settings_name), lang_settings)
 
 	def impl_create_project(self, executable, appname, hasc, hasjava, haspython, waf_executable):
 		doc = Document()
@@ -341,12 +403,20 @@ class eclipse(Build.BuildContext):
 		addTargetWrap('dist', False)
 		addTargetWrap('install', False)
 		addTargetWrap('check', False)
+		for addTgt in self.env.ECLIPSE_EXTRA_TARGETS or []:
+			addTargetWrap(addTgt, False)
 
 		storageModule = self.add(doc, cproject, 'storageModule',
 							{'moduleId': 'cdtBuildSystem',
 							 'version': '4.0.0'})
 
 		self.add(doc, storageModule, 'project', {'id': '%s.null.1'%appname, 'name': appname})
+
+		storageModule = self.add(doc, cproject, 'storageModule',
+							{'moduleId': 'org.eclipse.cdt.core.LanguageSettingsProviders'})
+
+		storageModule = self.add(doc, cproject, 'storageModule',
+							{'moduleId': 'scannerConfiguration'})
 
 		doc.appendChild(cproject)
 		return doc

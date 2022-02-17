@@ -71,7 +71,7 @@ class Consumer(Utils.threading.Thread):
 		"""Task to execute"""
 		self.spawner = spawner
 		"""Coordinator object"""
-		self.setDaemon(1)
+		self.daemon = True
 		self.start()
 	def run(self):
 		"""
@@ -98,7 +98,7 @@ class Spawner(Utils.threading.Thread):
 		""":py:class:`waflib.Runner.Parallel` producer instance"""
 		self.sem = Utils.threading.Semaphore(master.numjobs)
 		"""Bounded semaphore that prevents spawning more than *n* concurrent consumers"""
-		self.setDaemon(1)
+		self.daemon = True
 		self.start()
 	def run(self):
 		"""

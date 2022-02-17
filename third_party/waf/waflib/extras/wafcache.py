@@ -258,6 +258,19 @@ def build(bld):
 	"""
 	Called during the build process to enable file caching
 	"""
+	if WAFCACHE_STATS:
+		# Init counter for statistics and hook to print results at the end
+		bld.cache_reqs = bld.cache_hits = bld.cache_puts = 0
+
+		def printstats(bld):
+			hit_ratio = 0
+			if bld.cache_reqs > 0:
+				hit_ratio = (bld.cache_hits / bld.cache_reqs) * 100
+			Logs.pprint('CYAN', '  wafcache stats: requests: %s, hits, %s, ratio: %.2f%%, writes %s' %
+					 (bld.cache_reqs, bld.cache_hits, hit_ratio, bld.cache_puts) )
+
+		bld.add_post_fun(printstats)
+
 	if process_pool:
 		# already called once
 		return
@@ -272,19 +285,6 @@ def build(bld):
 	Build.BuildContext.hash_env_vars = hash_env_vars
 	for x in reversed(list(Task.classes.values())):
 		make_cached(x)
-
-	if WAFCACHE_STATS:
-		# Init counter for statistics and hook to print results at the end
-		bld.cache_reqs = bld.cache_hits = bld.cache_puts = 0
-
-		def printstats(bld):
-			hit_ratio = 0
-			if bld.cache_reqs > 0:
-				hit_ratio = (bld.cache_hits / bld.cache_reqs) * 100
-			Logs.pprint('CYAN', '  wafcache stats: requests: %s, hits, %s, ratio: %.2f%%, writes %s' %
-					 (bld.cache_reqs, bld.cache_hits, hit_ratio, bld.cache_puts) )
-
-		bld.add_post_fun(printstats)
 
 def cache_command(sig, files_from, files_to):
 	"""

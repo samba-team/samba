@@ -416,8 +416,13 @@ def check_python_headers(conf, features='pyembed pyext'):
 
 		if not result:
 			path = [os.path.join(dct['prefix'], "libs")]
-			conf.to_log("\n\n# try again with -L$prefix/libs, and pythonXY name rather than pythonX.Y (win32)\n")
+			conf.to_log("\n\n# try again with -L$prefix/libs, and pythonXY rather than pythonX.Y (win32)\n")
 			result = conf.check(lib=name, uselib='PYEMBED', libpath=path, mandatory=False, msg='Checking for library %s in $prefix/libs' % name)
+
+		if not result:
+			path = [os.path.normpath(os.path.join(dct['INCLUDEPY'], '..', 'libs'))]
+			conf.to_log("\n\n# try again with -L$INCLUDEPY/../libs, and pythonXY rather than pythonX.Y (win32)\n")
+			result = conf.check(lib=name, uselib='PYEMBED', libpath=path, mandatory=False, msg='Checking for library %s in $INCLUDEPY/../libs' % name)
 
 		if result:
 			break # do not forget to set LIBPATH_PYEMBED
