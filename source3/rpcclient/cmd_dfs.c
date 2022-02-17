@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RPC pipe client
 
@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -62,7 +62,7 @@ static WERROR cmd_dfs_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 5) {
-		printf("Usage: %s path servername sharename comment\n", 
+		printf("Usage: %s path servername sharename comment\n",
 		       argv[0]);
 		return WERR_OK;
 	}
@@ -162,7 +162,7 @@ static void display_dfs_info(uint32_t level, union dfs_Info *ctr)
 			display_dfs_info_3(ctr->info3);
 			break;
 		default:
-			printf("unsupported info level %d\n", 
+			printf("unsupported info level %d\n",
 			       level);
 			break;
 	}
@@ -171,7 +171,7 @@ static void display_dfs_info(uint32_t level, union dfs_Info *ctr)
 static void display_dfs_enumstruct(struct dfs_EnumStruct *ctr)
 {
 	int i;
-	
+
 	/* count is always the first element, so we can just use info1 here */
 	for (i = 0; i < ctr->e.info1->count; i++) {
 		switch (ctr->level) {
@@ -179,7 +179,7 @@ static void display_dfs_enumstruct(struct dfs_EnumStruct *ctr)
 		case 2: display_dfs_info_2(&ctr->e.info2->s[i]); break;
 		case 3: display_dfs_info_3(&ctr->e.info3->s[i]); break;
 		default:
-				printf("unsupported info level %d\n", 
+				printf("unsupported info level %d\n",
 			       ctr->level);
 				return;
 		}
