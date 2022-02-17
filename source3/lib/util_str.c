@@ -53,18 +53,6 @@ bool strnequal(const char *s1,const char *s2,size_t n)
 }
 
 /**
- Convert a string to "normal" form.
-**/
-
-bool strnorm(char *s, int case_default)
-{
-	if (case_default == CASE_UPPER)
-		return strupper_m(s);
-	else
-		return strlower_m(s);
-}
-
-/**
  Skip past a string in a buffer. Buffer may not be
  null terminated. end_ptr points to the first byte after
  then end of the buffer.

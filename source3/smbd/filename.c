@@ -418,6 +418,14 @@ NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 	return NT_STATUS_OK;
 }
 
+static bool strnorm(char *s, int case_default)
+{
+	if (case_default == CASE_UPPER)
+		return strupper_m(s);
+	else
+		return strlower_m(s);
+}
+
 /*
  * Utility function to normalize case on an incoming client filename
  * if required on this connection struct.

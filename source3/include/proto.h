@@ -525,7 +525,6 @@ int poll_intr_one_fd(int fd, int events, int timeout, int *revents);
 bool next_token(const char **ptr, char *buff, const char *sep, size_t bufsize);
 bool strnequal(const char *s1,const char *s2,size_t n);
 bool strcsequal(const char *s1,const char *s2);
-bool strnorm(char *s, int case_default);
 char *skip_string(const char *base, size_t len, char *buf);
 size_t str_charnum(const char *s);
 bool trim_char(char *s,char cfront,char cback);
