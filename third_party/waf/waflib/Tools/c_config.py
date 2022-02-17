@@ -69,6 +69,7 @@ MACRO_TO_DEST_CPU = {
 '__sh__'      : 'sh',
 '__xtensa__'  : 'xtensa',
 '__e2k__'     : 'e2k',
+'__riscv'     : 'riscv',
 }
 
 @conf
