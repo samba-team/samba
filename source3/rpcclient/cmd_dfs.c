@@ -222,7 +222,7 @@ static WERROR cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	case 300: str.e.info300 = &info300; ZERO_STRUCT(info300); break;
 	default:
 			  printf("Unknown info level %d\n", str.level);
-			  break;
+			  return WERR_OK;
 	}
 
 	result = dcerpc_dfs_Enum(b, mem_ctx, str.level, 0xFFFFFFFF, &str,
@@ -274,7 +274,7 @@ static WERROR cmd_dfs_enumex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	case 300: str.e.info300 = &info300; ZERO_STRUCT(info300); break;
 	default:
 		  printf("Unknown info level %d\n", str.level);
-		  break;
+		  return WERR_OK;
 	}
 
 	result = dcerpc_dfs_EnumEx(b, mem_ctx, argv[1], str.level,
