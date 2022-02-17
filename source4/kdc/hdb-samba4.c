@@ -846,6 +846,17 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 				status = NT_STATUS_WRONG_PASSWORD;
 			}
 			rwdc_fallback = kdc_db_ctx->rodc;
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_HISTORIC_LONG_TERM_KEY) {
+			/*
+			 * The pre-authentication succeeds with a password
+			 * from the password history, so we don't
+			 * update the badPwdCount, but still return
+			 * PREAUTH_FAILED and need to forward to
+			 * a RWDC in order to produce an autoritative
+			 * response for the client.
+			 */
+			status = NT_STATUS_WRONG_PASSWORD;
+			rwdc_fallback = kdc_db_ctx->rodc;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_LOCKED_OUT) {
 			edata_status = status = NT_STATUS_ACCOUNT_LOCKED_OUT;
 			rwdc_fallback = kdc_db_ctx->rodc;
