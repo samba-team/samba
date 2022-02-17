@@ -35,6 +35,7 @@
 #include "rpc_server/rpc_config.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_dce.h"
+#include "lib/tsocket/tsocket.h"
 
 struct wbint_bh_state {
 	struct winbindd_domain *domain;
@@ -449,6 +450,55 @@ fail:
 	return status;
 }
 
+static NTSTATUS set_remote_addresses(struct dcesrv_connection *conn,
+				     int sock)
+{
+	struct sockaddr_storage st = { 0 };
+	struct sockaddr *sar = (struct sockaddr *)&st;
+	struct tsocket_address *remote = NULL;
+	struct tsocket_address *local = NULL;
+	socklen_t sa_len = sizeof(st);
+	NTSTATUS status;
+	int ret;
+
+	ZERO_STRUCT(st);
+	ret = getpeername(sock, sar, &sa_len);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(ret);
+		DBG_ERR("getpeername failed: %s", nt_errstr(status));
+		return status;
+	}
+
+	ret = tsocket_address_bsd_from_sockaddr(conn, sar, sa_len, &remote);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(ret);
+		DBG_ERR("tsocket_address_bsd_from_sockaddr failed: %s",
+			nt_errstr(status));
+		return status;
+	}
+
+	ZERO_STRUCT(st);
+	ret = getsockname(sock, sar, &sa_len);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(ret);
+		DBG_ERR("getsockname failed: %s", nt_errstr(status));
+		return status;
+	}
+
+	ret = tsocket_address_bsd_from_sockaddr(conn, sar, sa_len, &local);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(ret);
+		DBG_ERR("tsocket_address_bsd_from_sockaddr failed: %s",
+			nt_errstr(status));
+		return status;
+	}
+
+	conn->local_address = talloc_move(conn, &local);
+	conn->remote_address = talloc_move(conn, &remote);
+
+	return NT_STATUS_OK;
+}
+
 /* initialise a wbint binding handle */
 struct dcerpc_binding_handle *wbint_binding_handle(TALLOC_CTX *mem_ctx,
 						struct winbindd_domain *domain,
@@ -506,6 +556,11 @@ enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 						 &ndr_table_winbind,
 						 ncacn_conn,
 						 &dcesrv_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = set_remote_addresses(dcesrv_conn, state->sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
