@@ -234,6 +234,8 @@ static int sdb_entry_ex_to_krb5_db_entry(krb5_context context,
 	krb5_error_code ret;
 	int i;
 
+	ZERO_STRUCTP(k);
+
 	k->magic = KRB5_KDB_MAGIC_NUMBER;
 	k->len = KRB5_KDB_V1_BASE_LENGTH;
 
@@ -342,7 +344,12 @@ int sdb_entry_ex_to_kdb_entry_ex(krb5_context context,
 				 const struct sdb_entry_ex *s,
 				 krb5_db_entry *k)
 {
-	ZERO_STRUCTP(k);
+	int ret;
+
+	ret = sdb_entry_ex_to_krb5_db_entry(context, &s->entry, k);
+	if (ret != 0) {
+		return ret;
+	}
 
 	if (s->ctx != NULL) {
 		struct samba_kdc_entry *skdc_entry;
@@ -355,5 +362,5 @@ int sdb_entry_ex_to_kdb_entry_ex(krb5_context context,
 				      samba_kdc_kdb_entry_destructor);
 	}
 
-	return sdb_entry_ex_to_krb5_db_entry(context, &s->entry, k);
+	return 0;
 }
