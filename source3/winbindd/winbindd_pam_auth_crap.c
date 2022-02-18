@@ -177,22 +177,6 @@ static void winbindd_pam_auth_crap_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (NT_STATUS_IS_OK(NT_STATUS(state->response->data.auth.nt_status)) &&
-	    (state->flags & WBFLAG_PAM_INFO3_TEXT))
-	{
-		bool ok;
-
-		ok = add_trusted_domain_from_auth(
-			state->response->data.auth.validation_level,
-			&state->response->data.auth.info3,
-			&state->response->data.auth.info6);
-		if (!ok) {
-			DBG_ERR("add_trusted_domain_from_auth failed\n");
-			tevent_req_nterror(req, NT_STATUS_LOGON_FAILURE);
-			return;
-		}
-	}
-
 	tevent_req_done(req);
 }
 
@@ -207,6 +191,24 @@ NTSTATUS winbindd_pam_auth_crap_recv(struct tevent_req *req,
 		set_auth_errors(response, status);
 		response->data.auth.authoritative = state->authoritative;
 		return status;
+	}
+
+	if (NT_STATUS_IS_OK(NT_STATUS(state->response->data.auth.nt_status)) &&
+	    (state->flags & WBFLAG_PAM_INFO3_TEXT)) {
+		bool ok;
+
+		ok = add_trusted_domain_from_auth(
+			state->response->data.auth.validation_level,
+			&state->response->data.auth.info3,
+			&state->response->data.auth.info6);
+		if (!ok) {
+			status = NT_STATUS_LOGON_FAILURE;
+			DBG_ERR("add_trusted_domain_from_auth failed\n");
+			set_auth_errors(response, status);
+			response->data.auth.authoritative =
+				state->authoritative;
+			return status;
+		}
 	}
 
 	*response = *state->response;
