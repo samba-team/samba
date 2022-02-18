@@ -1741,8 +1741,9 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 		ensure_hostname();
 		state.hs_len = snprintf(state.header_str,
 					sizeof(state.header_str),
-					"%s %s %s[%u]: ",
+					"%s %.*s %s[%u]: ",
 					tvbuf.buf,
+					(int)(sizeof(state.hostname) - 1),
 					state.hostname,
 					state.prog_name,
 					(unsigned int) getpid());
