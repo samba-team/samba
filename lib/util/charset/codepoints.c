@@ -16441,9 +16441,6 @@ void smb_init_locale(void)
 **/
 _PUBLIC_ codepoint_t toupper_m(codepoint_t val)
 {
-	if (val < 128) {
-		return toupper(val);
-	}
 	if (val >= ARRAY_SIZE(upcase_table)) {
 		return val;
 	}
@@ -16455,9 +16452,6 @@ _PUBLIC_ codepoint_t toupper_m(codepoint_t val)
 **/
 _PUBLIC_ codepoint_t tolower_m(codepoint_t val)
 {
-	if (val < 128) {
-		return tolower(val);
-	}
 	if (val >= ARRAY_SIZE(lowcase_table)) {
 		return val;
 	}
