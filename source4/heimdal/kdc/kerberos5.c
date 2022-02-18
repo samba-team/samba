@@ -1357,13 +1357,19 @@ _kdc_as_rep(krb5_context context,
 
 		free_EncryptedData(&enc_data);
 
-		if (clientdb->hdb_auth_status)
-		    (clientdb->hdb_auth_status)(context, clientdb, client,
+		if (clientdb->hdb_auth_status) {
+		    ret = (clientdb->hdb_auth_status)(context, clientdb, client,
 						from_addr,
 						&_kdc_now,
 						client_name,
 						str ? str : "unknown enctype",
 						HDB_AUTH_WRONG_PASSWORD);
+		    if (ret == HDB_ERR_NOT_FOUND_HERE) {
+			kdc_log(context, config, 5, "client %s HDB_AUTH_WRONG_PASSWORD at this KDC, forward to proxy", client_name);
+			free(str);
+			goto out;
+		    }
+		}
 
 		free(str);
 
