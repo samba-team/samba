@@ -374,7 +374,6 @@
 ^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_rap_change_password\(ad_dc_ntvfs\)
 # We currently don't send referrals for LDAP modify of non-replicated attrs
 ^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*
-^samba4.ldap.rodc_rwdc.python.*.__main__.RodcRwdcTests.test_change_password_reveal_on_demand_kerberos
 # NETLOGON is disabled in any non-DC environments
 ^samba.tests.netlogonsvc.python\(ad_member\)
 ^samba.tests.netlogonsvc.python\(simpleserver\)
