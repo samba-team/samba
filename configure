@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PREVPATH=`dirname $0`
+PREVPATH=$(dirname $0)
 
 WAF=./buildtools/bin/waf
 
