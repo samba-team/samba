@@ -21,20 +21,17 @@ echo "<!DOCTYPE section [
 ]>"
 
 DIR=.
-if [ "x$1" != "x" ]
-then
+if [ "x$1" != "x" ]; then
 	DIR="$1"
 fi
 
-OLD=`pwd`
+OLD=$(pwd)
 cd $DIR
 
 echo "<section>"
-for I in `find . -mindepth 2 -type f -name '*.xml' | sort -t/ -k3 | xargs`
-do 
+for I in $(find . -mindepth 2 -type f -name '*.xml' | sort -t/ -k3 | xargs); do
 	cat $I
 done
 echo "</section>"
-
 
 cd $OLD
