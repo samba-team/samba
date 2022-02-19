@@ -1,6 +1,6 @@
 #!/bin/sh
 
-p=`dirname $0`
+p=$(dirname $0)
 
 echo "Setting up for waf build"
 
@@ -13,12 +13,12 @@ echo "Found buildtools in $p/$d"
 
 echo "Setting up configure"
 rm -f $p/configure $p/include/config*.h*
-sed "s|BUILDTOOLS|$d|g;s|BUILDPATH|$p|g" < "$p/$d/scripts/configure.waf" > $p/configure
+sed "s|BUILDTOOLS|$d|g;s|BUILDPATH|$p|g" <"$p/$d/scripts/configure.waf" >$p/configure
 chmod +x $p/configure
 
 echo "Setting up Makefile"
 rm -f $p/makefile $p/Makefile
-sed "s|BUILDTOOLS|$d|g" < "$p/$d/scripts/Makefile.waf" > $p/Makefile
+sed "s|BUILDTOOLS|$d|g" <"$p/$d/scripts/Makefile.waf" >$p/Makefile
 
 echo "done. Now run $p/configure or $p/configure.developer then make."
 if [ $p != "." ]; then
