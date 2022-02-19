@@ -9,16 +9,17 @@ dn: @MODULES
 @LIST: rdn_name
 EOF
 
-checkcount() {
-    count=$1
-    expression="$2"
-    n=`$VALGRIND ldbsearch "$expression" | grep '^dn' | wc -l`
-    if [ $n != $count ]; then
-	echo "Got $n but expected $count for $expression"
-	$VALGRIND ldbsearch "$expression"
-	exit 1
-    fi
-    echo "OK: $count $expression"
+checkcount()
+{
+	count=$1
+	expression="$2"
+	n=$($VALGRIND ldbsearch "$expression" | grep '^dn' | wc -l)
+	if [ $n != $count ]; then
+		echo "Got $n but expected $count for $expression"
+		$VALGRIND ldbsearch "$expression"
+		exit 1
+	fi
+	echo "OK: $count $expression"
 }
 
 echo "Testing case sensitive search"
@@ -120,17 +121,18 @@ checkcount 1 '(test=foo)'
 checkcount 0 '(test=FOO)'
 checkcount 1 '(test=f*o*)'
 
-checkone() {
-    count=$1
-    base="$2"
-    expression="$3"
-    n=`$VALGRIND ldbsearch --scope=one -b "$base" "$expression" | grep '^dn' | wc -l`
-    if [ $n != $count ]; then
-	echo "Got $n but expected $count for $expression"
-	$VALGRIND ldbsearch --scope=one -b "$base" "$expression"
-	exit 1
-    fi
-    echo "OK: $count $expression"
+checkone()
+{
+	count=$1
+	base="$2"
+	expression="$3"
+	n=$($VALGRIND ldbsearch --scope=one -b "$base" "$expression" | grep '^dn' | wc -l)
+	if [ $n != $count ]; then
+		echo "Got $n but expected $count for $expression"
+		$VALGRIND ldbsearch --scope=one -b "$base" "$expression"
+		exit 1
+	fi
+	echo "OK: $count $expression"
 }
 
 echo "Removing wildcard attribute"
@@ -175,4 +177,3 @@ test: one
 EOF
 checkone 3 "cn=t1,cn=TEST" '(test=one)'
 checkone 1 "cn=t1,cn=TEST" '(cn=two)'
-

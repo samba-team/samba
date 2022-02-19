@@ -14,8 +14,8 @@ PATH=$BINDIR:$PATH
 export PATH
 
 if [ -z "$LDBDIR" ]; then
-    LDBDIR=`dirname $0`/..
-    export LDBDIR
+	LDBDIR=$(dirname $0)/..
+	export LDBDIR
 fi
 
 cd $LDBDIR

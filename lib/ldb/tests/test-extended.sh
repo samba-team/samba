@@ -35,16 +35,17 @@ groupType: 2147483649
 samAccountType: 805306369
 EOF
 
-checkcount() {
-    count=$1
-    expression="$2"
-    n=`$VALGRIND ldbsearch "$expression" | grep '^dn' | wc -l`
-    if [ $n != $count ]; then
-	echo "Got $n but expected $count for $expression"
-	$VALGRIND ldbsearch "$expression"
-	exit 1
-    fi
-    echo "OK: $count $expression"
+checkcount()
+{
+	count=$1
+	expression="$2"
+	n=$($VALGRIND ldbsearch "$expression" | grep '^dn' | wc -l)
+	if [ $n != $count ]; then
+		echo "Got $n but expected $count for $expression"
+		$VALGRIND ldbsearch "$expression"
+		exit 1
+	fi
+	echo "OK: $count $expression"
 }
 
 checkcount 1 '(i3=1234)'
@@ -66,4 +67,3 @@ checkcount 1 '(i1:1.2.840.113556.1.4.804:=8388608)'
 
 # this is one that w2k gives
 checkcount 3 '(|(|(&(!(groupType:1.2.840.113556.1.4.803:=1))(groupType:1.2.840.113556.1.4.803:=2147483648)(groupType:1.2.840.113556.1.4.804:=10))(samAccountType=805306368))(samAccountType=805306369))'
-

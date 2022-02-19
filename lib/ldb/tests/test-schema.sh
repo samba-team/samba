@@ -30,5 +30,4 @@ if [ "$?" = "0" ]; then
 fi
 
 echo "Showing modified record"
-$VALGRIND bin/ldbsearch '(cn=Test)'  || exit 1
-
+$VALGRIND bin/ldbsearch '(cn=Test)' || exit 1

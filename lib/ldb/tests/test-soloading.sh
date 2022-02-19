@@ -13,8 +13,8 @@ export PATH
 rm -f $LDB_URL*
 
 if [ -z "$LDBDIR" ]; then
-    LDBDIR=`dirname $0`/..
-    export LDBDIR
+	LDBDIR=$(dirname $0)/..
+	export LDBDIR
 fi
 
 cat <<EOF | $VALGRIND ldbadd || exit 1
@@ -29,4 +29,3 @@ someThing: someThingElse
 EOF
 
 $VALGRIND ldbsearch "(touchedBy=sample)" | grep "touchedBy: sample" || exit 1
-
