@@ -20,7 +20,7 @@
 
 ITERATIONS=100
 
-source `dirname $0`/utils.sh
+source $(dirname $0)/utils.sh
 
 PRINCIPAL=$(get_principal $1)
 PASSWORD=$(get_password $1)
@@ -28,9 +28,10 @@ REALM=$(get_realm $1)
 NT_DOM=$(get_nt_dom $1)
 SERVER=$2
 
-add_user () {
+add_user()
+{
 	USER=$1
-	${NET} ads user add "${USER}" 'Sup3rS3cr3T!' -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads user add "${USER}" 'Sup3rS3cr3T!' -k --configfile=$CONFIG_FILE -S ${SERVER} >/dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} ads user add returned error: $RET"
@@ -38,9 +39,10 @@ add_user () {
 	fi
 }
 
-del_user () {
+del_user()
+{
 	USER=$1
-	${NET} ads user delete "${USER}" -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads user delete "${USER}" -k --configfile=$CONFIG_FILE -S ${SERVER} >/dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -48,8 +50,9 @@ del_user () {
 	fi
 }
 
-enum_user () {
-	${NET} ads user -k --configfile=$CONFIG_FILE -S $SERVER > /dev/null
+enum_user()
+{
+	${NET} ads user -k --configfile=$CONFIG_FILE -S $SERVER >/dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -57,9 +60,10 @@ enum_user () {
 	fi
 }
 
-info_user () {
+info_user()
+{
 	USER=$1
-	${NET} ads user info "${USER}" -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads user info "${USER}" -k --configfile=$CONFIG_FILE -S ${SERVER} >/dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -67,14 +71,16 @@ info_user () {
 	fi
 }
 
-set_up () {
+set_up()
+{
 	set_krb_env
 	setup_kinit
 	call_kinit "${PRINCIPAL}" "${PASSWORD}"
 	write_configfile "${REALM}" "${NT_DOM}"
 }
 
-tear_down () {
+tear_down()
+{
 	${KDESTROY}
 	restore_krb_env
 }
@@ -86,8 +92,8 @@ echo -e "\tUSER $SERVER"
 START_TIME=$(start_timer)
 
 echo -en "\t"
-for i in $( ${SEQ} 1 $ITERATIONS ); do
-	USER=$( echo "ad_test_$(pad_number $i 3)" )
+for i in $(${SEQ} 1 $ITERATIONS); do
+	USER=$(echo "ad_test_$(pad_number $i 3)")
 	add_user $USER
 	echo -n "."
 done
@@ -105,8 +111,8 @@ enum_user
 #echo "done"
 
 echo -en "\t"
-for i in $( ${SEQ} 1 $ITERATIONS ); do
-	USER=$( echo "ad_test_$(pad_number $i 3)" )
+for i in $(${SEQ} 1 $ITERATIONS); do
+	USER=$(echo "ad_test_$(pad_number $i 3)")
 	del_user $USER
 	echo -n "."
 done
@@ -114,7 +120,7 @@ echo "done"
 
 STOP_TIME=$(stop_timer)
 
-TOTAL_TIME=$( total_time $START_TIME $STOP_TIME )
+TOTAL_TIME=$(total_time $START_TIME $STOP_TIME)
 
 echo -e "\t\ttotal time:\t\t${TOTAL_TIME}s"
 

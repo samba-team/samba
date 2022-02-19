@@ -18,68 +18,79 @@
 # You should have received a copy of the GNU General Public License
 # along with AD-Bench.  If not, see <http://www.gnu.org/licenses/>.
 
-source `dirname $0`/settings.sh
+source $(dirname $0)/settings.sh
 
-start_timer () {
-	START_TIME=$( ${DATE} ${DATE_FORMATSTR} )
+start_timer()
+{
+	START_TIME=$(${DATE} ${DATE_FORMATSTR})
 	echo "$START_TIME"
 }
 
-stop_timer () {
-	STOP_TIME=$( ${DATE} ${DATE_FORMATSTR} )
+stop_timer()
+{
+	STOP_TIME=$(${DATE} ${DATE_FORMATSTR})
 	echo "$STOP_TIME"
 }
 
-total_time () {
+total_time()
+{
 	START_TIME=$1
 	END_TIME=$2
-	TOTAL_TIME=$( echo "scale=9;$STOP_TIME - $START_TIME" | ${BC} )
+	TOTAL_TIME=$(echo "scale=9;$STOP_TIME - $START_TIME" | ${BC})
 	echo "$TOTAL_TIME"
 }
 
-iterations_per_minute () {
+iterations_per_minute()
+{
 	START_TIME=$1
 	STOP_TIME=$2
 	TOTAL_RUNS=$3
 
-	TOTAL_TIME=$( total_time $START_TIME $STOP_TIME )
+	TOTAL_TIME=$(total_time $START_TIME $STOP_TIME)
 
-	ITER_PER_MIN=$( echo "scale=2; 60 * $TOTAL_RUNS / $TOTAL_TIME" | ${BC} )
+	ITER_PER_MIN=$(echo "scale=2; 60 * $TOTAL_RUNS / $TOTAL_TIME" | ${BC})
 	echo "$ITER_PER_MIN"
 }
 
-get_principal () {
-	PRINCIPAL=$( echo $1 | ${SED} -e "s/\(.*\)%.*/\1/" )
+get_principal()
+{
+	PRINCIPAL=$(echo $1 | ${SED} -e "s/\(.*\)%.*/\1/")
 	echo "$PRINCIPAL"
 }
 
-get_password () {
-	PASSWORD=$( echo $1 | ${SED} -e "s/.*%\(.*\)/\1/" )
+get_password()
+{
+	PASSWORD=$(echo $1 | ${SED} -e "s/.*%\(.*\)/\1/")
 	echo "$PASSWORD"
 }
 
-get_realm () {
-	REALM=$( echo $1 | ${SED} -e "s/.*@\(.*\)%.*/\1/" )
+get_realm()
+{
+	REALM=$(echo $1 | ${SED} -e "s/.*@\(.*\)%.*/\1/")
 	echo "$REALM"
 }
 
-get_nt_dom () {
-	NT_DOM=$( echo $1 | ${SED} -e "s/.*@\([A-Z1-9-]*\)\..*/\1/" )
+get_nt_dom()
+{
+	NT_DOM=$(echo $1 | ${SED} -e "s/.*@\([A-Z1-9-]*\)\..*/\1/")
 	echo "$NT_DOM"
 }
 
-set_krb_env () {
+set_krb_env()
+{
 	OLD_KRB5CCNAME="${KRB5CCNAME}"
 	KRB5CCNAME="${NEW_KRB5CCNAME}"
 	export KRB5CCNAME
 }
 
-restore_krb_env () {
+restore_krb_env()
+{
 	KRB5CCNAME="${OLD_KRB5CCNAME}"
 	export KRB5CCNAME
 }
 
-setup_kinit () {
+setup_kinit()
+{
 	${KINIT} --invalid 2>&1 | grep -q "password-file"
 	if [ $? -eq 0 ]; then
 		KINIT="${KINIT} ${KINIT_PARAM_OLD}"
@@ -88,19 +99,21 @@ setup_kinit () {
 	fi
 }
 
-write_configfile () {
+write_configfile()
+{
 	REALM=$1
 	NT_DOM=$2
-	echo -e "[global]" > $CONFIG_FILE
-	echo -e "\trealm = $REALM" >> $CONFIG_FILE
-	echo -e "\tworkgroup = $NT_DOM" >> $CONFIG_FILE
-	echo -e "\tsecurity = ADS" >> $CONFIG_FILE
+	echo -e "[global]" >$CONFIG_FILE
+	echo -e "\trealm = $REALM" >>$CONFIG_FILE
+	echo -e "\tworkgroup = $NT_DOM" >>$CONFIG_FILE
+	echo -e "\tsecurity = ADS" >>$CONFIG_FILE
 }
 
-call_kinit () {
+call_kinit()
+{
 	PRINCIPAL=$1
 	PASSWORD=$2
-	echo "${PASSWORD}" | ${KINIT} ${PRINCIPAL} > /dev/null
+	echo "${PASSWORD}" | ${KINIT} ${PRINCIPAL} >/dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "kinit returned an error: $RET"
@@ -108,7 +121,8 @@ call_kinit () {
 	fi
 }
 
-pad_number () {
+pad_number()
+{
 	NUMBER=$1
 	DIGITS=$2
 	PADDED_NO=$(printf "%0${DIGITS}d" $NUMBER)

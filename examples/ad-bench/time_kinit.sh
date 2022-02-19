@@ -22,25 +22,27 @@
 # often
 ITERATIONS=100
 
-source `dirname $0`/utils.sh
+source $(dirname $0)/utils.sh
 
-set_up () {
+set_up()
+{
 	set_krb_env
 	setup_kinit
 }
 
-tear_down () {
+tear_down()
+{
 	restore_krb_env
 }
 
 set_up
 
-PRINCIPAL=$( get_principal $1)
-PASSWORD=$( get_password $1)
+PRINCIPAL=$(get_principal $1)
+PASSWORD=$(get_password $1)
 
 echo -e "\tKINIT ${PRINCIPAL}"
 
-START_TIME=$( start_timer )
+START_TIME=$(start_timer)
 
 echo -en "\t"
 for i in $(${SEQ} 1 $ITERATIONS); do
@@ -50,9 +52,9 @@ for i in $(${SEQ} 1 $ITERATIONS); do
 done
 echo "done"
 
-STOP_TIME=$( stop_timer )
+STOP_TIME=$(stop_timer)
 
-TOTAL_TIME=$( total_time $START_TIME $STOP_TIME )
+TOTAL_TIME=$(total_time $START_TIME $STOP_TIME)
 
 echo -e "\t\ttotal time:\t\t${TOTAL_TIME}s"
 

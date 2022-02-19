@@ -2,10 +2,11 @@
 #
 # solaris_panic_action -- capture supporting information after a failure
 #
-ProgName=`basename $0`
+ProgName=$(basename $0)
 LOGDIR=/usr/local/samba/var
 
-main() {
+main()
+{
 	pid=$1
 
 	if [ $# -lt 1 ]; then
@@ -15,40 +16,41 @@ main() {
 	fi
 	cat >>$LOGDIR/log.solaris_panic_action <<!
 
-`date`
+$(date)
 State information and vountary core dump for process $pid
 
 Related processes were:
-`/usr/bin/ptree $pid`
+$(/usr/bin/ptree $pid)
 
 Stack(s) were:
-`/usr/bin/pstack $pid`
+$(/usr/bin/pstack $pid)
 
 Flags were:
-`/usr/bin/pflags $pid`
+$(/usr/bin/pflags $pid)
 
 Credentials were:
-`/usr/bin/pcred $pid`
+$(/usr/bin/pcred $pid)
 
 Libraries used were:
-`/usr/bin/pldd $pid`
+$(/usr/bin/pldd $pid)
 
 Signal-handler settings were:
-`/usr/bin/psig $pid`
+$(/usr/bin/psig $pid)
 
 Files and devices in use were:
-`/usr/bin/pfiles $pid`
+$(/usr/bin/pfiles $pid)
 
 Directory in use was:
-`/usr/bin/pwdx $pid`
+$(/usr/bin/pwdx $pid)
 
 
 A voluntary core dump was placed in /var/tmp/samba_solaris_panic_action_gcore.$pid
-`gcore -o /var/tmp/samba_solaris_panic_action_gcore $pid`
+$(gcore -o /var/tmp/samba_solaris_panic_action_gcore $pid)
 !
 }
 
-say() {
+say()
+{
 	echo "$@" 1>&2
 }
 

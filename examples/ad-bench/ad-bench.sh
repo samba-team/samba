@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with AD-Bench.  If not, see <http://www.gnu.org/licenses/>.
 
-source `dirname $0`/utils.sh
+source $(dirname $0)/utils.sh
 
 if [ ! -f $RUNS ]; then
 	echo "Error: please fill in $RUNS"
@@ -27,12 +27,12 @@ if [ ! -f $RUNS ]; then
 	exit 1
 fi
 
-for run in `cat $RUNS`; do
+for run in $(cat $RUNS); do
 	echo "START RUN"
-	bash `dirname $0`/time_kinit.sh `echo $run|cut -d ":" -f 1`
-	bash `dirname $0`/time_join.sh `echo $run|cut -d ":" -f 1` `echo $run|cut -d ":" -f 2`
-	bash `dirname $0`/time_user.sh `echo $run|cut -d ":" -f 1` `echo $run|cut -d ":" -f 2`
-	bash `dirname $0`/time_group.sh `echo $run|cut -d ":" -f 1` `echo $run|cut -d ":" -f 2`
-	bash `dirname $0`/time_ldap.sh `echo $run|cut -d ":" -f 1` `echo $run|cut -d ":" -f 2`
+	bash $(dirname $0)/time_kinit.sh $(echo $run | cut -d ":" -f 1)
+	bash $(dirname $0)/time_join.sh $(echo $run | cut -d ":" -f 1) $(echo $run | cut -d ":" -f 2)
+	bash $(dirname $0)/time_user.sh $(echo $run | cut -d ":" -f 1) $(echo $run | cut -d ":" -f 2)
+	bash $(dirname $0)/time_group.sh $(echo $run | cut -d ":" -f 1) $(echo $run | cut -d ":" -f 2)
+	bash $(dirname $0)/time_ldap.sh $(echo $run | cut -d ":" -f 1) $(echo $run | cut -d ":" -f 2)
 	echo "END RUN"
 done

@@ -288,20 +288,20 @@ probe end {
 	}
 }'
 
-cat <<EOF > $outfile
+cat <<EOF >$outfile
 $header
 EOF
 
-printf "$child_funcs\n" | while read func ; do
-	printf "$domchild_req_template\n" | sed -e s/XXX/$func/g >> $outfile
+printf "$child_funcs\n" | while read func; do
+	printf "$domchild_req_template\n" | sed -e s/XXX/$func/g >>$outfile
 done
 
-printf "$backend_funcs\n" | while read func ; do
-	printf "$backend_req_template\n" | sed -e "s|XXX|$func|g" >> $outfile
+printf "$backend_funcs\n" | while read func; do
+	printf "$backend_req_template\n" | sed -e "s|XXX|$func|g" >>$outfile
 done
 
-printf "$async_funcs\n" | while read func ; do
-	printf "$async_req_template\n" | sed -e s/XXX/$func/g >> $outfile
+printf "$async_funcs\n" | while read func; do
+	printf "$async_req_template\n" | sed -e s/XXX/$func/g >>$outfile
 done
 
 cat <<EOF >>$outfile

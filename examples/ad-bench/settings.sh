@@ -18,7 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with AD-Bench.  If not, see <http://www.gnu.org/licenses/>.
 
-
 DATE=date
 BC=bc
 SED=sed
@@ -36,6 +35,6 @@ SEQ=seq
 NEW_KRB5CCNAME=/tmp/ad_test_ccname
 
 NET="${HOME}/samba/bin/net"
-CONFIG_FILE=`dirname $0`/smb.conf
+CONFIG_FILE=$(dirname $0)/smb.conf
 
-RUNS=`dirname $0`/runs.txt
+RUNS=$(dirname $0)/runs.txt

@@ -20,7 +20,7 @@
 
 ITERATIONS=100
 
-source `dirname $0`/utils.sh
+source $(dirname $0)/utils.sh
 
 PRINCIPAL=$(get_principal $1)
 PASSWORD=$(get_password $1)
@@ -28,9 +28,10 @@ REALM=$(get_realm $1)
 NT_DOM=$(get_nt_dom $1)
 SERVER=$2
 
-add_group () {
+add_group()
+{
 	GROUP=$1
-	${NET} ads group add "${GROUP}" -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads group add "${GROUP}" -k --configfile=$CONFIG_FILE -S ${SERVER} >/dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} ads group add returned error: $RET"
@@ -38,9 +39,10 @@ add_group () {
 	fi
 }
 
-del_group () {
+del_group()
+{
 	GROUP=$1
-	${NET} ads group delete "${GROUP}" -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads group delete "${GROUP}" -k --configfile=$CONFIG_FILE -S ${SERVER} >/dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -48,8 +50,9 @@ del_group () {
 	fi
 }
 
-enum_group () {
-	${NET} ads group -k --configfile=$CONFIG_FILE -S $SERVER > /dev/null
+enum_group()
+{
+	${NET} ads group -k --configfile=$CONFIG_FILE -S $SERVER >/dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -57,9 +60,10 @@ enum_group () {
 	fi
 }
 
-info_group () {
+info_group()
+{
 	GROUP=$1
-	${NET} ads group info "${GROUP}" -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads group info "${GROUP}" -k --configfile=$CONFIG_FILE -S ${SERVER} >/dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -67,14 +71,16 @@ info_group () {
 	fi
 }
 
-set_up () {
+set_up()
+{
 	set_krb_env
 	setup_kinit
 	call_kinit "${PRINCIPAL}" "${PASSWORD}"
 	write_configfile "${REALM}" "${NT_DOM}"
 }
 
-tear_down () {
+tear_down()
+{
 	${KDESTROY}
 	restore_krb_env
 }
@@ -86,8 +92,8 @@ echo -e "\tGROUP $SERVER"
 START_TIME=$(start_timer)
 
 echo -en "\t"
-for i in $( ${SEQ} 1 $ITERATIONS ); do
-	GROUP=$( echo "ad_test_$(pad_number $i 3)" )
+for i in $(${SEQ} 1 $ITERATIONS); do
+	GROUP=$(echo "ad_test_$(pad_number $i 3)")
 	add_group $GROUP
 	echo -n "."
 done
@@ -105,8 +111,8 @@ enum_group
 #echo "done"
 
 echo -en "\t"
-for i in $( ${SEQ} 1 $ITERATIONS ); do
-	GROUP=$( echo "ad_test_$(pad_number $i 3)" )
+for i in $(${SEQ} 1 $ITERATIONS); do
+	GROUP=$(echo "ad_test_$(pad_number $i 3)")
 	del_group $GROUP
 	echo -n "."
 done
@@ -114,7 +120,7 @@ echo "done"
 
 STOP_TIME=$(stop_timer)
 
-TOTAL_TIME=$( total_time $START_TIME $STOP_TIME )
+TOTAL_TIME=$(total_time $START_TIME $STOP_TIME)
 
 echo -e "\t\ttotal time:\t\t${TOTAL_TIME}s"
 

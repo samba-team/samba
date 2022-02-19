@@ -48,7 +48,7 @@ if [ $# -lt 4 ]; then
 	exit 1
 fi
 
-NSUPDATE=`which nsupdate`
+NSUPDATE=$(which nsupdate)
 [ -x "$NSUPDATE" ] || NSUPDATE=/usr/bin/nsupdate
 [ -x "$NSUPDATE" ] || NSUPDATE=/sbin/nsupdate
 [ -x "$NSUPDATE" ] || NSUPDATE=/usr/sbin/nsupdate
@@ -65,8 +65,7 @@ shift 4
 IP_ADDRS="$@"
 
 do_update=0
-for i in $USEFUL_TYPES
-do
+for i in $USEFUL_TYPES; do
 	[ "$TYPE" = "$i" ] && do_update=1
 done
 [ $do_update = 1 ] || exit 0
@@ -84,8 +83,7 @@ fi
 
 {
 	echo update delete $NAME.$DOMAIN
-	for i in $IP_ADDRS
-	do
+	for i in $IP_ADDRS; do
 		echo update add $NAME.$DOMAIN $TTL A $i
 	done
 	echo

@@ -18,14 +18,12 @@
 # You should have received a copy of the GNU General Public License
 # along with AD-Bench.  If not, see <http://www.gnu.org/licenses/>.
 
-
-source `dirname $0`/utils.sh
+source $(dirname $0)/utils.sh
 
 INPUT="administrator@AD.EXAMPLE.COM%secret"
-echo "Principal for $INPUT is " $( get_principal $INPUT )
-echo "Password  for $INPUT is " $( get_password $INPUT )
-echo "Realm     for $INPUT is " $( get_realm $INPUT )
-echo "NT_DOM    for $INPUT is " $( get_nt_dom $INPUT )
+echo "Principal for $INPUT is " $(get_principal $INPUT)
+echo "Password  for $INPUT is " $(get_password $INPUT)
+echo "Realm     for $INPUT is " $(get_realm $INPUT)
+echo "NT_DOM    for $INPUT is " $(get_nt_dom $INPUT)
 
-
-echo "Padding 2: " $( pad_number 1 2 ) " 4: " $(pad_number 23 4)
+echo "Padding 2: " $(pad_number 1 2) " 4: " $(pad_number 23 4)
