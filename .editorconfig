@@ -18,10 +18,10 @@ indent_size = 4
 tab_width = 4
 insert_final_newline = true
 
-[*.{sh}]
-indent_style = space
-indent_size = 4
-tab_width = 4
+[*.sh]
+indent_style = tab
+indent_size = 8
+tab_width = 8
 
 [*.{pl,pm}]
 indent_style = tab
