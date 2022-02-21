@@ -34,9 +34,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			    const char *principal,
 			    const char **error_string)
 {
-	struct sdb_entry_ex sentry = {
-		.free_entry = NULL,
-	};
+	struct sdb_entry_ex sentry = {};
 	krb5_keytab keytab;
 	krb5_error_code code = 0;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -93,9 +91,6 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 		if (sentry.entry.keys.len == 0) {
 			SAFE_FREE(entry_principal);
 			sdb_free_entry(&sentry);
-			sentry = (struct sdb_entry_ex) {
-				.free_entry = NULL,
-			};
 
 			continue;
 		}
@@ -136,9 +131,6 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 
 		SAFE_FREE(entry_principal);
 		sdb_free_entry(&sentry);
-		sentry = (struct sdb_entry_ex) {
-			.free_entry = NULL,
-		};
 	}
 
 	if (code != 0 && code != SDB_ERR_NOENTRY) {
