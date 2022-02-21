@@ -45,6 +45,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "lib/messaging/irpc.h"
+#include "hdb.h"
 
 static krb5_error_code hdb_samba4_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
@@ -514,6 +515,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	heim_object_t auth_details_obj = NULL;
 	const char *auth_details = NULL;
 
+	char *etype_str = NULL;
+
 	heim_object_t hdb_auth_status_obj = NULL;
 	int hdb_auth_status;
 
@@ -524,7 +527,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 
 	size_t sa_socklen = 0;
 
-	hdb_auth_status_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_AUTH_EVENT_TYPE);
+	hdb_auth_status_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_AUTH_EVENT);
 	if (hdb_auth_status_obj == NULL) {
 		/* No status code found, so just return. */
 		return 0;
@@ -537,9 +540,37 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		pa_type = heim_string_get_utf8(pa_type_obj);
 	}
 
-	auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_AUTH_EVENT_DETAILS);
-	if (auth_details_obj != NULL) {
-		auth_details = heim_string_get_utf8(auth_details_obj);
+	switch (hdb_auth_status) {
+	case HDB_AUTH_EVENT_PKINIT_SUCCEEDED:
+	case HDB_AUTH_EVENT_PKINIT_FAILED:
+		auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_PKINIT_CLIENT_CERT);
+		if (auth_details_obj != NULL) {
+			auth_details = heim_string_get_utf8(auth_details_obj);
+		}
+		break;
+
+	case HDB_AUTH_EVENT_GSS_PA_SUCCEEDED:
+	case HDB_AUTH_EVENT_GSS_PA_FAILED:
+		auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_GSS_INITIATOR);
+		if (auth_details_obj != NULL) {
+			auth_details = heim_string_get_utf8(auth_details_obj);
+		}
+		break;
+
+	default:
+	{
+		heim_object_t etype_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_PA_ETYPE);
+		if (etype_obj != NULL) {
+			int etype = heim_number_get_int(etype_obj);
+
+			krb5_error_code ret = krb5_enctype_to_string(r->context, etype, &etype_str);
+			if (ret == 0) {
+				auth_details = etype_str;
+			} else {
+				auth_details = "unknown enctype";
+			}
+		}
+	}
 	}
 
 	/*
@@ -706,6 +737,9 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		break;
 	}
 	}
+
+	free(etype_str);
+
 	return 0;
 }
 
