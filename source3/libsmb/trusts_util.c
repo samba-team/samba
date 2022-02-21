@@ -55,10 +55,18 @@ char *trust_pw_new_value(TALLOC_CTX *mem_ctx,
 			 int security)
 {
 	/*
-	 * use secure defaults.
+	 * use secure defaults, which match
+	 * what windows uses for computer passwords.
+	 *
+	 * We used to have min=128 and max=255 here, but
+	 * it's a bad idea because of bugs in the Windows
+	 * RODC/RWDC PasswordUpdateForward handling via
+	 * NetrLogonSendToSam.
+	 *
+	 * See https://bugzilla.samba.org/show_bug.cgi?id=14984
 	 */
-	size_t min = 128;
-	size_t max = 255;
+	size_t min = 120;
+	size_t max = 120;
 
 	switch (sec_channel_type) {
 	case SEC_CHAN_WKSTA:
