@@ -584,7 +584,7 @@ def update_machine_account_password(samdb, secrets_ldb, names):
         assert(len(res) == 1)
 
         msg = ldb.Message(res[0].dn)
-        machinepass = samba.generate_random_machine_password(128, 255)
+        machinepass = samba.generate_random_machine_password(120, 120)
         mputf16 = machinepass.encode('utf-16-le')
         msg["clearTextPassword"] = ldb.MessageElement(mputf16,
                                                       ldb.FLAG_MOD_REPLACE,
