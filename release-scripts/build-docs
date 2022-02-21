@@ -1,24 +1,25 @@
 #!/bin/sh
 
-_exit() {
+_exit()
+{
 	echo $@
 	popd
 	exit 1
 }
 
-DOCSRCDIR=`dirname $0`/../docs-xml
+DOCSRCDIR=$(dirname $0)/../docs-xml
 
 pushd $DOCSRCDIR || exit 1
 
 git clean -d -x -f
 export XML_CATALOG_FILES="file:///etc/xml/catalog file://$(pwd)/build/catalog.xml"
-autoconf && \
-	./configure --with-papersize=letter && \
-	make smbdotconf/parameters.all.xml && \
+autoconf &&
+	./configure --with-papersize=letter &&
+	make smbdotconf/parameters.all.xml &&
 	make release
 
 if [ $? != 0 ]; then
-        _exit "Docs build failed!"
+	_exit "Docs build failed!"
 fi
 
 mkdir -p ../docs
