@@ -1915,14 +1915,12 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	char *talloced = NULL;
 	SMB_STRUCT_STAT st;
 	struct connection_struct *conn = fsp->conn;
-	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(),
-					conn,
-					fsp->fsp_name,
-					NULL,
-					0);
+	struct smb_Dir *dir_hnd = NULL;
 
-	if (!dir_hnd) {
-		return map_nt_error_from_unix(errno);
+	status = OpenDir_ntstatus(
+		talloc_tos(), conn, fsp->fsp_name, NULL, 0, &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced))) {
