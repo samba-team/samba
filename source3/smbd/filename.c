@@ -1546,6 +1546,7 @@ int get_real_filename_full_scan(connection_struct *conn,
 	char *unmangled_name = NULL;
 	long curpos;
 	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
 
 	/* handle null paths */
 	if ((path == NULL) || (*path == 0)) {
@@ -1598,10 +1599,15 @@ int get_real_filename_full_scan(connection_struct *conn,
 	}
 
 	/* open the directory */
-	if (!(cur_dir = OpenDir(talloc_tos(), conn, smb_fname, NULL, 0))) {
-		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
+	status = OpenDir_ntstatus(
+		talloc_tos(), conn, smb_fname, NULL, 0, &cur_dir);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_NOTICE("scan dir didn't open dir [%s]: %s\n",
+			   path,
+			   nt_errstr(status));
 		TALLOC_FREE(unmangled_name);
 		TALLOC_FREE(smb_fname);
+		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
 
