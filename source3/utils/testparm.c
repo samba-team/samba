@@ -195,7 +195,7 @@ static bool do_idmap_check(void)
 			if (maxranges < 2) {
 				fprintf(stderr,
 					"ERROR: The idmap autorid range "
-					"[%u-%u] needs to be at least twice as"
+					"[%u-%u] needs to be at least twice as "
 					"big as the rangesize [%u]!"
 					"\n\n",
 					c->low,
@@ -954,4 +954,3 @@ done:
 	TALLOC_FREE(frame);
 	return ret;
 }
-
