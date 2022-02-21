@@ -28,6 +28,7 @@
 #include "sdb.h"
 #include "sdb_hdb.h"
 #include "librpc/gen_ndr/auth.h"
+#include <krb5_locl.h>
 
 /*
  * Given the right private pointer from hdb_samba4,
@@ -952,6 +953,12 @@ static void samba_wdc_plugin_fini(void *ptr)
 	return;
 }
 
+static krb5_error_code samba_wdc_referral_policy(void *priv,
+						 astgs_request_t r)
+{
+	return r->error_code;
+}
+
 struct krb5plugin_windc_ftable windc_plugin_table = {
 	.minor_version = KRB5_WINDC_PLUGIN_MINOR,
 	.init = samba_wdc_plugin_init,
@@ -960,6 +967,7 @@ struct krb5plugin_windc_ftable windc_plugin_table = {
 	.client_access = samba_wdc_check_client_access,
 	.finalize_reply = samba_wdc_finalize_reply,
 	.pac_generate = samba_wdc_get_pac,
+	.referral_policy = samba_wdc_referral_policy,
 };
 
 
