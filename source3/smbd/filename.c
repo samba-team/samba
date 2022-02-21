@@ -1540,7 +1540,7 @@ int get_real_filename_full_scan(connection_struct *conn,
 				TALLOC_CTX *mem_ctx,
 				char **found_name)
 {
-	struct smb_Dir *cur_dir;
+	struct smb_Dir *cur_dir = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
 	char *unmangled_name = NULL;
