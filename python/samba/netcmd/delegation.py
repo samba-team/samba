@@ -25,6 +25,7 @@ from samba import dsdb
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.dcerpc import security
+from samba.ndr import ndr_unpack
 from samba.netcmd.common import _get_user_realm_domain
 from samba.netcmd import (
     Command,
@@ -67,6 +68,8 @@ class cmd_delegation_show(Command):
             self.errf.write(f'Warning: DACL in {warning_info} lacks '
                             f'SELF_RELATIVE flag!\n')
             return
+
+        first = True
 
         for ace in dacl.aces:
             trustee = ace.trustee
@@ -124,6 +127,11 @@ class cmd_delegation_show(Command):
                 ignore = True
 
             if not ignore:
+                if first:
+                    self.outf.write(f'  Principals that may delegate to this '
+                                    f'account:\n')
+                    first = False
+
                 self.outf.write(f'msDS-AllowedToActOnBehalfOfOtherIdentity: '
                                 f'{trustee}\n')
 
@@ -147,13 +155,15 @@ class cmd_delegation_show(Command):
         res = sam.search(expression="sAMAccountName=%s" %
                          ldb.binary_encode(cleanedaccount),
                          scope=ldb.SCOPE_SUBTREE,
-                         attrs=["userAccountControl", "msDS-AllowedToDelegateTo"])
+                         attrs=["userAccountControl", "msDS-AllowedToDelegateTo",
+                                "msDS-AllowedToActOnBehalfOfOtherIdentity"])
         if len(res) == 0:
             raise CommandError("Unable to find account name '%s'" % accountname)
         assert(len(res) == 1)
 
         uac = int(res[0].get("userAccountControl")[0])
         allowed = res[0].get("msDS-AllowedToDelegateTo")
+        allowed_from = res[0].get("msDS-AllowedToActOnBehalfOfOtherIdentity", idx=0)
 
         self.outf.write("Account-DN: %s\n" % str(res[0].dn))
         self.outf.write("UF_TRUSTED_FOR_DELEGATION: %s\n"
@@ -161,9 +171,19 @@ class cmd_delegation_show(Command):
         self.outf.write("UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION: %s\n" %
                         bool(uac & dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION))
 
-        if allowed is not None:
+        if allowed:
+            self.outf.write("  Services this account may delegate to:\n")
             for a in allowed:
                 self.outf.write("msDS-AllowedToDelegateTo: %s\n" % a)
+        if allowed_from is not None:
+            try:
+                security_descriptor = ndr_unpack(security.descriptor, allowed_from)
+            except RuntimeError:
+                self.errf.write("Warning: Security Descriptor of attribute "
+                                "msDS-AllowedToActOnBehalfOfOtherIdentity "
+                                "could not be unmarshalled!\n")
+            else:
+                self.show_security_descriptor(sam, security_descriptor)
 
 
 class cmd_delegation_for_any_service(Command):
