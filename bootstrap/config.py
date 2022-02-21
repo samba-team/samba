@@ -133,6 +133,8 @@ PKGS = [
     ('', 'rpcsvc-proto-devel'), # for <rpcsvc/rquota.h> header
     ('mawk', 'gawk'),
     ('', 'mold'),
+    ('', 'ShellCheck'),
+    ('', 'shfmt'),
 
     ('python3', 'python3'),
     ('python3-cryptography', 'python3-cryptography'), # for krb5 tests
@@ -472,6 +474,8 @@ RPM_DISTS = {
             'python3-setproctitle': 'python36-setproctitle',
             'tracker-devel': '', # do not install
             'mold': '',
+            'ShellCheck': '',
+            'shfmt': '',
         }
     },
     'centos8s': {
@@ -487,6 +491,8 @@ RPM_DISTS = {
             'perl-FindBin': '',
             'liburing-devel': '', # not available yet, Add me back, once available!
             'mold': '',
+            'ShellCheck': '',
+            'shfmt': '',
         }
     },
     'fedora36': {
@@ -540,6 +546,8 @@ RPM_DISTS = {
             'glusterfs-api-devel': '',
             'libtasn1-tools': '', # asn1Parser is part of libtasn1
             'mold': '',
+            'ShellCheck': '',
+            'shfmt': '',
         }
     }
 }

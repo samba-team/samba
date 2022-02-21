@@ -1,6 +1,7 @@
 ---
 packages:
   - @development-tools
+  - ShellCheck
   - acl
   - attr
   - autoconf
@@ -95,6 +96,7 @@ packages:
   - rpcsvc-proto-devel
   - rsync
   - sed
+  - shfmt
   - sudo
   - systemd-devel
   - tar

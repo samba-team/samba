@@ -12,6 +12,7 @@ dnf update -y
 dnf install -y \
     --setopt=install_weak_deps=False \
     @development-tools \
+    ShellCheck \
     acl \
     attr \
     autoconf \
@@ -106,6 +107,7 @@ dnf install -y \
     rpcsvc-proto-devel \
     rsync \
     sed \
+    shfmt \
     sudo \
     systemd-devel \
     tar \
