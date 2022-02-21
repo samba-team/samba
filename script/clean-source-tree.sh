@@ -1,8 +1,8 @@
 #!/bin/sh
 #
 
-N=`git clean -n | wc -l`
-C=`git diff --stat HEAD | wc -l`
+N=$(git clean -n | wc -l)
+C=$(git diff --stat HEAD | wc -l)
 
 test x"$N" != x"0" && {
 	echo "The tree has $N new uncommitted files!!! see stderr"

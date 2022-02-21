@@ -9,9 +9,9 @@ set -eu
 unset GIT_LITERAL_PATHSPECS
 
 gitdir=$(git rev-parse --show-toplevel)
-if [ $? -ne 0 ] ; then
-    echo "git rev-parse --show-toplevel failed"
-    exit 1
+if [ $? -ne 0 ]; then
+	echo "git rev-parse --show-toplevel failed"
+	exit 1
 fi
 
 ${gitdir}/script/git-hooks/check-trailing-whitespace || exit $?

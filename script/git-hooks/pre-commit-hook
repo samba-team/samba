@@ -3,13 +3,13 @@
 set -eu
 
 gitdir=$(git rev-parse --show-toplevel)
-if [ $? -ne 0 ] ; then
-    echo "git rev-parse --show-toplevel failed"
-    exit 1
+if [ $? -ne 0 ]; then
+	echo "git rev-parse --show-toplevel failed"
+	exit 1
 fi
 
-if [ ! -f ${gitdir}/script/git-hooks/pre-commit-script ] ; then
-    exit 0
+if [ ! -f ${gitdir}/script/git-hooks/pre-commit-script ]; then
+	exit 0
 fi
 
 ${gitdir}/script/git-hooks/pre-commit-script || exit $?
