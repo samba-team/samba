@@ -1477,11 +1477,12 @@ static int smb_Dir_OpenDir_destructor(struct smb_Dir *dir_hnd)
 	return 0;
 }
 
-struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
-			connection_struct *conn,
-			const struct smb_filename *smb_dname,
-			const char *mask,
-			uint32_t attr)
+NTSTATUS OpenDir_ntstatus(TALLOC_CTX *mem_ctx,
+			  connection_struct *conn,
+			  const struct smb_filename *smb_dname,
+			  const char *mask,
+			  uint32_t attr,
+			  struct smb_Dir **_dir_hnd)
 {
 	struct files_struct *fsp = NULL;
 	struct smb_Dir *dir_hnd = NULL;
@@ -1492,15 +1493,12 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
 				      O_RDONLY,
 				      &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
-		/* Ensure we return the actual error from status in errno. */
-		errno = map_errno_from_nt_status(status);
-		return NULL;
+		return status;
 	}
 
 	status = OpenDir_fsp(mem_ctx, conn, fsp, mask, attr, &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return NULL;
+		return status;
 	}
 
 	/*
@@ -1508,9 +1506,30 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
 	 * but smb_Dir_OpenDir_destructor() calls the OpenDir_fsp() destructor.
 	 */
 	talloc_set_destructor(dir_hnd, smb_Dir_OpenDir_destructor);
-	return dir_hnd;
+
+	*_dir_hnd = dir_hnd;
+	return NT_STATUS_OK;
 }
 
+struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
+			connection_struct *conn,
+			const struct smb_filename *smb_dname,
+			const char *mask,
+			uint32_t attr)
+{
+	struct smb_Dir *dir_hnd = NULL;
+	NTSTATUS status;
+
+	status = OpenDir_ntstatus(
+		mem_ctx, conn, smb_dname, mask, attr, &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Ensure we return the actual error from status in errno. */
+		errno = map_errno_from_nt_status(status);
+		return NULL;
+	}
+
+	return dir_hnd;
+}
 /*******************************************************************
  Open a directory from an fsp.
 ********************************************************************/
