@@ -742,10 +742,6 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		}
 		
 		mod_msg->dn = ldb_dn_new(mod_msg, ldb, DSDB_PARTITION_DN);
-		ret = ldb_msg_add_empty(mod_msg, DSDB_PARTITION_ATTR, LDB_FLAG_MOD_ADD, NULL);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
 		
 		casefold_dn = ldb_dn_get_casefold(dn);
 		
@@ -785,18 +781,16 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		}
 		partition_record = talloc_asprintf(mod_msg, "%s:%s", casefold_dn, filename);
 
-		ret = ldb_msg_add_steal_string(mod_msg, DSDB_PARTITION_ATTR, partition_record);
+		ret = ldb_msg_append_steal_string(mod_msg, DSDB_PARTITION_ATTR, partition_record,
+						  LDB_FLAG_MOD_ADD);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 
 		if (ldb_request_get_control(req, DSDB_CONTROL_PARTIAL_REPLICA)) {
 			/* this new partition is a partial replica */
-			ret = ldb_msg_add_empty(mod_msg, "partialReplica", LDB_FLAG_MOD_ADD, NULL);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-			ret = ldb_msg_add_fmt(mod_msg, "partialReplica", "%s", ldb_dn_get_linearized(dn));
+			ret = ldb_msg_append_fmt(mod_msg, LDB_FLAG_MOD_ADD,
+						 "partialReplica", "%s", ldb_dn_get_linearized(dn));
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}

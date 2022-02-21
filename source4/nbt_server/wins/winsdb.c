@@ -102,13 +102,11 @@ uint64_t winsdb_set_maxVersion(struct winsdb_handle *h, uint64_t newMaxVersion)
 	msg->dn = dn;
 
 
-	ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE, NULL);
+	ret = ldb_msg_append_string(msg, "objectClass", "winsMaxVersion",
+				    LDB_FLAG_MOD_REPLACE);
 	if (ret != LDB_SUCCESS) goto failed;
-	ret = ldb_msg_add_string(msg, "objectClass", "winsMaxVersion");
-	if (ret != LDB_SUCCESS) goto failed;
-	ret = ldb_msg_add_empty(msg, "maxVersion", LDB_FLAG_MOD_REPLACE, NULL);
-	if (ret != LDB_SUCCESS) goto failed;
-	ret = ldb_msg_add_fmt(msg, "maxVersion", "%llu", (long long)newMaxVersion);
+	ret = ldb_msg_append_fmt(msg, LDB_FLAG_MOD_REPLACE,
+				 "maxVersion", "%llu", (long long)newMaxVersion);
 	if (ret != LDB_SUCCESS) goto failed;
 
 	ret = ldb_modify(wins_db, msg);
@@ -779,8 +777,7 @@ static struct ldb_message *winsdb_message(struct ldb_context *ldb,
 		ret |= ldb_msg_add_winsdb_addr(msg, rec, "address", rec->addresses[i]);
 	}
 	if (rec->registered_by) {
-		ret |= ldb_msg_add_empty(msg, "registeredBy", 0, NULL);
-		ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
+		ret |= ldb_msg_append_string(msg, "registeredBy", rec->registered_by, 0);
 	}
 	if (ret != LDB_SUCCESS) goto failed;
 	return msg;

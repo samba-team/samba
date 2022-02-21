@@ -41,7 +41,6 @@
 */
 static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 {
-	struct ldb_message_element *el;
 	char *s;
 	int ret;
 
@@ -54,15 +53,12 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_msg_add_string(msg, attr, s);
+	/* always set as replace. This works because on add ops, the flag
+	   is ignored */
+	ret = ldb_msg_append_string(msg, attr, s, LDB_FLAG_MOD_REPLACE);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-
-	el = ldb_msg_find_element(msg, attr);
-	/* always set as replace. This works because on add ops, the flag
-	   is ignored */
-	el->flags = LDB_FLAG_MOD_REPLACE;
 
 	return LDB_SUCCESS;
 }
@@ -73,22 +69,18 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 static int add_uint64_element(struct ldb_context *ldb, struct ldb_message *msg,
 			      const char *attr, uint64_t v)
 {
-	struct ldb_message_element *el;
 	int ret;
 
 	if (ldb_msg_find_element(msg, attr) != NULL) {
 		return LDB_SUCCESS;
 	}
 
-	ret = samdb_msg_add_uint64(ldb, msg, msg, attr, v);
+	/* always set as replace. This works because on add ops, the flag
+	   is ignored */
+	ret = samdb_msg_append_uint64(ldb, msg, msg, attr, v, LDB_FLAG_MOD_REPLACE);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-
-	el = ldb_msg_find_element(msg, attr);
-	/* always set as replace. This works because on add ops, the flag
-	   is ignored */
-	el->flags = LDB_FLAG_MOD_REPLACE;
 
 	return LDB_SUCCESS;
 }

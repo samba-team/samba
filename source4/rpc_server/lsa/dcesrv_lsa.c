@@ -1778,12 +1778,7 @@ static NTSTATUS update_uint32_t_value(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ret = ldb_msg_add_empty(dest, attribute, flags, NULL);
-	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = samdb_msg_add_uint(sam_ldb, dest, dest, attribute, value);
+	ret = samdb_msg_append_uint(sam_ldb, dest, dest, attribute, value, flags);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1874,13 +1869,7 @@ static NTSTATUS update_trust_user(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		ret = ldb_msg_add_empty(msg, attribute,
-					LDB_FLAG_MOD_REPLACE, NULL);
-		if (ret != LDB_SUCCESS) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		ret = ldb_msg_add_value(msg, attribute, &v, NULL);
+		ret = ldb_msg_append_value(msg, attribute, &v, LDB_FLAG_MOD_REPLACE);
 		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -2166,28 +2155,30 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	}
 
 	if (add_incoming || del_incoming) {
-		ret = ldb_msg_add_empty(msg, "trustAuthIncoming",
-					LDB_FLAG_MOD_REPLACE, NULL);
-		if (ret != LDB_SUCCESS) {
-			return NT_STATUS_NO_MEMORY;
-		}
 		if (add_incoming) {
-			ret = ldb_msg_add_value(msg, "trustAuthIncoming",
-						&trustAuthIncoming, NULL);
+			ret = ldb_msg_append_value(msg, "trustAuthIncoming",
+						   &trustAuthIncoming, LDB_FLAG_MOD_REPLACE);
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			ret = ldb_msg_add_empty(msg, "trustAuthIncoming",
+						LDB_FLAG_MOD_REPLACE, NULL);
 			if (ret != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
 	}
 	if (add_outgoing || del_outgoing) {
-		ret = ldb_msg_add_empty(msg, "trustAuthOutgoing",
-					LDB_FLAG_MOD_REPLACE, NULL);
-		if (ret != LDB_SUCCESS) {
-			return NT_STATUS_NO_MEMORY;
-		}
 		if (add_outgoing) {
-			ret = ldb_msg_add_value(msg, "trustAuthOutgoing",
-						&trustAuthOutgoing, NULL);
+			ret = ldb_msg_append_value(msg, "trustAuthOutgoing",
+						   &trustAuthOutgoing, LDB_FLAG_MOD_REPLACE);
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			ret = ldb_msg_add_empty(msg, "trustAuthOutgoing",
+						LDB_FLAG_MOD_REPLACE, NULL);
 			if (ret != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -4635,14 +4626,8 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 		goto done;
 	}
 
-	ret = ldb_msg_add_empty(msg, "msDS-TrustForestTrustInfo",
-				LDB_FLAG_MOD_REPLACE, NULL);
-	if (ret != LDB_SUCCESS) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	ret = ldb_msg_add_value(msg, "msDS-TrustForestTrustInfo",
-				&ft_blob, NULL);
+	ret = ldb_msg_append_value(msg, "msDS-TrustForestTrustInfo",
+				   &ft_blob, LDB_FLAG_MOD_REPLACE);
 	if (ret != LDB_SUCCESS) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;

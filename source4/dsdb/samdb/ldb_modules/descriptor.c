@@ -861,14 +861,8 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 			return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 		}
 
-		ret = ldb_msg_add_empty(msg, "nTSecurityDescriptor",
-					LDB_FLAG_MOD_REPLACE,
-					&sd_element);
-		if (ret != LDB_SUCCESS) {
-			return ldb_oom(ldb);
-		}
-		ret = ldb_msg_add_value(msg, "nTSecurityDescriptor",
-					sd, NULL);
+		ret = ldb_msg_append_value(msg, "nTSecurityDescriptor",
+					   sd, LDB_FLAG_MOD_REPLACE);
 		if (ret != LDB_SUCCESS) {
 			return ldb_oom(ldb);
 		}
