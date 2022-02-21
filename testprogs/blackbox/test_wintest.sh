@@ -29,7 +29,7 @@ unset SOCKET_WRAPPER_DIR
 
 failed=0
 
-$basedir=$(pwd)
+basedir=$(pwd)
 
 samba4bindir=$(dirname $0)/../../source4/bin
 smbtorture=$samba4bindir/smbtorture
