@@ -23,10 +23,9 @@ helper_script="$(dirname $0)/nsenter-helper.sh $exports_file"
 
 # generate the dynamic script
 dyn_script="$(dirname $2)/nsenter.sh"
-echo "#!/bin/sh" > $dyn_script
-echo "$nsenter_cmd $helper_script" >> $dyn_script
+echo "#!/bin/sh" >$dyn_script
+echo "$nsenter_cmd $helper_script" >>$dyn_script
 chmod 755 $dyn_script
 
 # return the script we created
 echo "$dyn_script"
-

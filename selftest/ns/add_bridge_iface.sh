@@ -10,13 +10,11 @@ bridge=$2
 
 # we need to wait for the child namespace to start up and add the new
 # interface back to our new namespace
-while ! ip link show $interface > /dev/null 2>&1
-do
-    sleep 0.1
-    echo "Waiting for $interface to be created..."
+while ! ip link show $interface >/dev/null 2>&1; do
+	sleep 0.1
+	echo "Waiting for $interface to be created..."
 done
 
 # bring the bridge-end of the link up and add it to the bridge
 ip link set dev $interface up
 ip link set $interface master $bridge
-

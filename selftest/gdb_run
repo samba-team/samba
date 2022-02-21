@@ -4,13 +4,13 @@ ENV="$1"
 
 shift 1
 
-TMPFILE=`mktemp --tmpdir gdb_run.XXXXXXXXXX`
+TMPFILE=$(mktemp --tmpdir gdb_run.XXXXXXXXXX)
 test -n "${TMPFILE}" || {
 	echo "mktemp doesn't work" 1>&2
 	exit 1
 }
 
-cat << EOF  > $TMPFILE
+cat <<EOF >$TMPFILE
 run
 bt
 EOF

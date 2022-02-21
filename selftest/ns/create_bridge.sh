@@ -15,5 +15,3 @@ ip link add $br_name type bridge
 ip addr add $ip_addr/24 dev $br_name
 ip addr add $ipv6_addr/112 dev $br_name
 ip link set $br_name up
-
-

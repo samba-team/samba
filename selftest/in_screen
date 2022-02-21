@@ -7,12 +7,12 @@ SERVERNAME="$ENVNAME"
 basedir=$TMPDIR
 
 [ -r $basedir/$SERVERNAME.pid ] && {
-    for i in {2..100}; do
-	if [ ! -r "$basedir/${SERVERNAME}-$i.pid" ]; then
-	    SERVERNAME="${SERVERNAME}-$i"
-	    break
-	fi
-    done
+	for i in {2..100}; do
+		if [ ! -r "$basedir/${SERVERNAME}-$i.pid" ]; then
+			SERVERNAME="${SERVERNAME}-$i"
+			break
+		fi
+	done
 }
 
 rm -f $basedir/$SERVERNAME.{launch,log,parent.pid,pid,status}
@@ -20,11 +20,11 @@ rm -f $basedir/$SERVERNAME.{launch,log,parent.pid,pid,status}
 # set most of the environment vars we have in the screen session too
 _ENV=""
 printenv |
-  egrep -v '^TERMCAP|^WINDOW|^SHELL|^STY|^SHLVL|^SAMBA_VALGRIND|\$' |
-  egrep '^[A-Z]' |
-  sed "s/\(^[^=]*=\)\(.*\)/export \1'\2'/g" > $basedir/$SERVERNAME.vars
+	egrep -v '^TERMCAP|^WINDOW|^SHELL|^STY|^SHLVL|^SAMBA_VALGRIND|\$' |
+	egrep '^[A-Z]' |
+	sed "s/\(^[^=]*=\)\(.*\)/export \1'\2'/g" >$basedir/$SERVERNAME.vars
 
-cat <<EOF > $basedir/$SERVERNAME.launch
+cat <<EOF >$basedir/$SERVERNAME.launch
 cd $PWD
  echo \$\$ > $basedir/$SERVERNAME.pid
  . $basedir/$SERVERNAME.vars
@@ -36,58 +36,59 @@ cd $PWD
 EOF
 pid=$$
 
-cleanup() {
-    trap "exit 1" SIGINT SIGTERM SIGPIPE
-    [ -r $basedir/$SERVERNAME.status ] && {
-	read status < $basedir/$SERVERNAME.status
-	echo "$(date) samba exited with status $status" >> $basedir/$SERVERNAME.log
-	exit $status
-    }
+cleanup()
+{
+	trap "exit 1" SIGINT SIGTERM SIGPIPE
+	[ -r $basedir/$SERVERNAME.status ] && {
+		read status <$basedir/$SERVERNAME.status
+		echo "$(date) samba exited with status $status" >>$basedir/$SERVERNAME.log
+		exit $status
+	}
 
-    case $ENVNAME in
-	*.nmbd|*.smbd|*.winbindd|*.samba|*.samba_dcerpcd)
-	    kill $(cat $basedir/../"${ENVNAME%\.*}"/pid/"${ENVNAME##*\.}".pid)
-	    ;;
-    esac
+	case $ENVNAME in
+	*.nmbd | *.smbd | *.winbindd | *.samba | *.samba_dcerpcd)
+		kill $(cat $basedir/../"${ENVNAME%\.*}"/pid/"${ENVNAME##*\.}".pid)
+		;;
+	esac
 
-    read pid < $basedir/$SERVERNAME.pid
-    echo "$(date) Killing samba pid $pid from $$" >> $basedir/$SERVERNAME.log
-    if [ "$pid" = "$$" ]; then
+	read pid <$basedir/$SERVERNAME.pid
+	echo "$(date) Killing samba pid $pid from $$" >>$basedir/$SERVERNAME.log
+	if [ "$pid" = "$$" ]; then
+		exit 1
+	fi
+	kill -9 $pid 2>&1
 	exit 1
-    fi
-    kill -9 $pid 2>&1
-    exit 1
 }
 
-echo $$ > $basedir/$SERVERNAME.parent.pid
+echo $$ >$basedir/$SERVERNAME.parent.pid
 trap cleanup SIGINT SIGTERM SIGPIPE
 
 if [[ "$TMUX" ]]; then
-    TMUX_CMD=tmux
-    if [[ $TMUX = *tmate* ]]; then
-        TMUX_CMD=tmate
-    fi
+	TMUX_CMD=tmux
+	if [[ $TMUX = *tmate* ]]; then
+		TMUX_CMD=tmate
+	fi
 
-    $TMUX_CMD new-window -n test:$SERVERNAME "bash $basedir/$SERVERNAME.launch"
+	$TMUX_CMD new-window -n test:$SERVERNAME "bash $basedir/$SERVERNAME.launch"
 
-    # tmux seems to lag a bit for new sessions. Don't create them too
-    # quickly one after another
-    sleep .1
+	# tmux seems to lag a bit for new sessions. Don't create them too
+	# quickly one after another
+	sleep .1
 else
-    screen -r -X screen -t test:$SERVERNAME bash $basedir/$SERVERNAME.launch
+	screen -r -X screen -t test:$SERVERNAME bash $basedir/$SERVERNAME.launch
 fi
-echo "$(date) waiting in $$" >> $basedir/$SERVERNAME.log
+echo "$(date) waiting in $$" >>$basedir/$SERVERNAME.log
 read stdin_var
-echo "$(date) EOF on stdin" >> $basedir/$SERVERNAME.log
+echo "$(date) EOF on stdin" >>$basedir/$SERVERNAME.log
 
 case $ENVNAME in
-    *.nmbd|*.smbd|*.winbindd|*.samba|*.samba_dcerpcd)
+*.nmbd | *.smbd | *.winbindd | *.samba | *.samba_dcerpcd)
 	kill $(cat $basedir/../"${ENVNAME%\.*}"/pid/"${ENVNAME##*\.}".pid)
 	;;
 esac
 
-read pid < $basedir/$SERVERNAME.pid
-echo "$(date) killing $pid" >> $basedir/$SERVERNAME.log
-kill $pid 2> /dev/null
-echo "$(date) exiting" >> $basedir/$SERVERNAME.log
+read pid <$basedir/$SERVERNAME.pid
+echo "$(date) killing $pid" >>$basedir/$SERVERNAME.log
+kill $pid 2>/dev/null
+echo "$(date) exiting" >>$basedir/$SERVERNAME.log
 exit 0
