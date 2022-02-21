@@ -543,6 +543,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	switch (hdb_auth_status) {
 	case HDB_AUTH_EVENT_PKINIT_SUCCEEDED:
 	case HDB_AUTH_EVENT_PKINIT_FAILED:
+	case HDB_AUTH_EVENT_PKINIT_NOT_AUTHORIZED:
 		auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_PKINIT_CLIENT_CERT);
 		if (auth_details_obj != NULL) {
 			auth_details = heim_string_get_utf8(auth_details_obj);
@@ -551,6 +552,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 
 	case HDB_AUTH_EVENT_GSS_PA_SUCCEEDED:
 	case HDB_AUTH_EVENT_GSS_PA_FAILED:
+	case HDB_AUTH_EVENT_GSS_PA_NOT_AUTHORIZED:
 		auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_GSS_INITIATOR);
 		if (auth_details_obj != NULL) {
 			auth_details = heim_string_get_utf8(auth_details_obj);
