@@ -7,14 +7,14 @@ winbind_offline_logon=$(testparm -s --parameter-name "winbind offline logon" 2>/
 test "${winbind_offline_logon}" = "Yes" || exit 0
 
 case "$2" in
-	up|vpn-up)
-		nmb_is_active=$($SYSTEMCTL is-active nmb.service)
-		if test "${nmb_is_active}" = "active"; then
-			$SYSTEMCTL try-restart nmb.service || :
-		fi
-		/usr/bin/smbcontrol winbind online || :
+up | vpn-up)
+	nmb_is_active=$($SYSTEMCTL is-active nmb.service)
+	if test "${nmb_is_active}" = "active"; then
+		$SYSTEMCTL try-restart nmb.service || :
+	fi
+	/usr/bin/smbcontrol winbind online || :
 	;;
-	down)
-		/usr/bin/smbcontrol winbind offline
+down)
+	/usr/bin/smbcontrol winbind offline
 	;;
 esac

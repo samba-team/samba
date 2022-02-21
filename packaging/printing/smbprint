@@ -47,7 +47,7 @@
 #   Concat this with /.config to get the config file.
 #
 eval acct_file=\${$#}
-spool_dir=`dirname $acct_file`
+spool_dir=$(dirname $acct_file)
 config_file=$spool_dir/.config
 
 # Should read the following variables set in the config file:
@@ -56,29 +56,29 @@ config_file=$spool_dir/.config
 #   user
 #   password
 
-eval `cat $config_file`
+eval $(cat $config_file)
 
-share=`echo $share | sed "s/[\]/\//g"`
+share=$(echo $share | sed "s/[\]/\//g")
 
 if [ "$user" != "" ]; then
-   usercmd="-U"
+	usercmd="-U"
 else
-   usercmd=""
+	usercmd=""
 fi
 
 if [ "$workgroup" != "" ]; then
-   workgroupcmd="-W"
+	workgroupcmd="-W"
 else
-   workgroupcmd=""
+	workgroupcmd=""
 fi
 
 if [ "$translate" = "yes" ]; then
- command="translate ; print -"
+	command="translate ; print -"
 else
- command="print -"
+	command="print -"
 fi
 #echo $share $password $translate $x_command > /tmp/smbprint.log
 
 cat | /usr/bin/smbclient "$share" "$password" -E ${hostip:+-I} \
-     $hostip -N -P $usercmd "$user" $workgroupcmd "$workgroup" \
-     -c "$command" 2>/dev/null
+	$hostip -N -P $usercmd "$user" $workgroupcmd "$workgroup" \
+	-c "$command" 2>/dev/null

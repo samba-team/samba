@@ -4,12 +4,14 @@
 tar xvf skeleton.tar
 
 # Now link the skeleton directory structure into the final install tree.
-( cd /usr/local;
-	mv man man.orig;
-	mv samba samba.orig;
-	NOWDIR=`pwd`;
-		ln -sf $NOWDIR/usr/local/man man;
-		ln -sf $NOWDIR/usr/local/samba samba; )
+(
+	cd /usr/local
+	mv man man.orig
+	mv samba samba.orig
+	NOWDIR=$(pwd)
+	ln -sf $NOWDIR/usr/local/man man
+	ln -sf $NOWDIR/usr/local/samba samba
+)
 
 # Unpack the master source tarball
 gunzip samba-X.X.X.tar.gz

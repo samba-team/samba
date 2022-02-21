@@ -17,31 +17,31 @@ TOPDIR=${DIRNAME}/../..
 SRCDIR=${TOPDIR}/source3
 VERSION_H=${SRCDIR}/include/version.h
 
-pushd ${SRCDIR} > /dev/null 2>&1
+pushd ${SRCDIR} >/dev/null 2>&1
 ./script/mkversion.sh
-popd > /dev/null 2>&1
+popd >/dev/null 2>&1
 
-if [ ! -f ${VERSION_H} ] ; then
+if [ ! -f ${VERSION_H} ]; then
 	echo "Error creating version.h"
 	exit 1
 fi
 
-VERSION=`grep "define SAMBA_VERSION_OFFICIAL_STRING" ${VERSION_H} | awk '{print $3}'`
+VERSION=$(grep "define SAMBA_VERSION_OFFICIAL_STRING" ${VERSION_H} | awk '{print $3}')
 
-vendor_version=`grep "define SAMBA_VERSION_VENDOR_SUFFIX" ${VERSION_H} | awk '{print $3}'`
-if test "x${vendor_version}" != "x" ; then
+vendor_version=$(grep "define SAMBA_VERSION_VENDOR_SUFFIX" ${VERSION_H} | awk '{print $3}')
+if test "x${vendor_version}" != "x"; then
 	VERSION="${VERSION}-${vendor_version}"
 fi
 
-vendor_patch=`grep "define SAMBA_VERSION_VENDOR_PATCH" ${VERSION_H} | awk '{print $3}'`
-if test "x${vendor_patch}" != "x" ; then
+vendor_patch=$(grep "define SAMBA_VERSION_VENDOR_PATCH" ${VERSION_H} | awk '{print $3}')
+if test "x${vendor_patch}" != "x"; then
 	VERSION="${VERSION}-${vendor_patch}"
 fi
 
-VERSION=`echo ${VERSION} | sed 's/\"//g'`
+VERSION=$(echo ${VERSION} | sed 's/\"//g')
 
 echo "VERSION: ${VERSION}"
 
-pushd ${TOPDIR}/packaging > /dev/null 2>&1
+pushd ${TOPDIR}/packaging >/dev/null 2>&1
 ./bin/update-pkginfo "${VERSION}" 1 ""
-popd > /dev/null 2>&1
+popd >/dev/null 2>&1
