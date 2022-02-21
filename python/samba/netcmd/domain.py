@@ -691,8 +691,6 @@ class cmd_domain_join(Command):
                     os.rename(f.name, smb_conf)
                 s3_lp = s3param.get_context()
                 s3_lp.load(smb_conf)
-                if machinepass is None:
-                    machinepass = samba.generate_random_machine_password(14, 40)
                 s3_net = s3_Net(creds, s3_lp, server=server)
                 (sid, domain_name) = s3_net.join_member(netbios_name,
                                                         machinepass=machinepass,
