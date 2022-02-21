@@ -7437,7 +7437,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		parent_dir_fname_src = parent_dir_fname_dst;
 	} else {
 		/*
-		 * source and destingation parent directories are
+		 * source and destination parent directories are
 		 * different.
 		 *
 		 * Get a pathref on the source parent directory, so
