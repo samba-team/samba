@@ -81,10 +81,13 @@ struct dptr_struct {
 	struct memcache *dptr_cache;
 };
 
-static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
-			files_struct *fsp,
-			const char *mask,
-			uint32_t attr);
+static NTSTATUS OpenDir_fsp(
+	TALLOC_CTX *mem_ctx,
+	connection_struct *conn,
+	files_struct *fsp,
+	const char *mask,
+	uint32_t attr,
+	struct smb_Dir **_dir_hnd);
 
 static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset);
 
@@ -217,6 +220,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 	struct smbd_server_connection *sconn = conn->sconn;
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd = NULL;
+	NTSTATUS status;
 
 	DBG_INFO("dir=%s\n", fsp_str_dbg(fsp));
 
@@ -235,9 +239,9 @@ NTSTATUS dptr_create(connection_struct *conn,
 			fsp_str_dbg(fsp));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	dir_hnd = OpenDir_fsp(NULL, conn, fsp, wcard, attr);
-	if (!dir_hnd) {
-		return map_nt_error_from_unix(errno);
+	status = OpenDir_fsp(NULL, conn, fsp, wcard, attr, &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	dptr = talloc_zero(NULL, struct dptr_struct);
@@ -1493,8 +1497,9 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	dir_hnd = OpenDir_fsp(mem_ctx, conn, fsp, mask, attr);
-	if (dir_hnd == NULL) {
+	status = OpenDir_fsp(mem_ctx, conn, fsp, mask, attr, &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return NULL;
 	}
 
@@ -1510,24 +1515,28 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
  Open a directory from an fsp.
 ********************************************************************/
 
-static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
-			files_struct *fsp,
-			const char *mask,
-			uint32_t attr)
+static NTSTATUS OpenDir_fsp(
+	TALLOC_CTX *mem_ctx,
+	connection_struct *conn,
+	files_struct *fsp,
+	const char *mask,
+	uint32_t attr,
+	struct smb_Dir **_dir_hnd)
 {
 	struct smb_Dir *dir_hnd = talloc_zero(mem_ctx, struct smb_Dir);
+	NTSTATUS status;
 
 	if (!dir_hnd) {
-		goto fail;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!fsp->fsp_flags.is_directory) {
-		errno = EBADF;
+		status = NT_STATUS_INVALID_HANDLE;
 		goto fail;
 	}
 
 	if (fsp_get_io_fd(fsp) == -1) {
-		errno = EBADF;
+		status = NT_STATUS_INVALID_HANDLE;
 		goto fail;
 	}
 
@@ -1546,12 +1555,13 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 
 	dir_hnd->dir_smb_fname = cp_smb_filename(dir_hnd, fsp->fsp_name);
 	if (!dir_hnd->dir_smb_fname) {
-		errno = ENOMEM;
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
 	dir_hnd->dir = SMB_VFS_FDOPENDIR(fsp, mask, attr);
 	if (dir_hnd->dir == NULL) {
+		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}
 	dir_hnd->fsp = fsp;
@@ -1563,11 +1573,12 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 
 	talloc_set_destructor(dir_hnd, smb_Dir_destructor);
 
-	return dir_hnd;
+	*_dir_hnd = dir_hnd;
+	return NT_STATUS_OK;
 
   fail:
 	TALLOC_FREE(dir_hnd);
-	return NULL;
+	return status;
 }
 
 
