@@ -12,7 +12,8 @@ PATH_TO_ASN1_INPUT_FILE=$2
 set -u
 set -e
 
-usage() {
+usage()
+{
 	echo "usage: $0 PATH_TO_ASN1ATE_CHECKOUT PATH_TO_ASN1_INPUT_FILE > PATH_TO_PYASN1_OUTPUT_FILE"
 }
 

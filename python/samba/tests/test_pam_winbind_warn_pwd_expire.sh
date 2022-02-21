@@ -41,10 +41,10 @@ export PAM_WRAPPER_DEBUGLEVEL
 WARN_PWD_EXPIRE="50"
 export WARN_PWD_EXPIRE
 
-echo "auth        required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" > $service_file
-echo "account     required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >> $service_file
-echo "password    required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >> $service_file
-echo "session     required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >> $service_file
+echo "auth        required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >$service_file
+echo "account     required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >>$service_file
+echo "password    required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >>$service_file
+echo "session     required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >>$service_file
 
 PYTHONPATH="$PYTHONPATH:$PAM_WRAPPER_PATH:$(dirname $0)" $PYTHON -m samba.subunit.run samba.tests.pam_winbind_warn_pwd_expire
 exit_code=$?
@@ -58,10 +58,10 @@ fi
 WARN_PWD_EXPIRE="0"
 export WARN_PWD_EXPIRE
 
-echo "auth        required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" > $service_file
-echo "account     required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >> $service_file
-echo "password    required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >> $service_file
-echo "session     required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >> $service_file
+echo "auth        required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >$service_file
+echo "account     required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >>$service_file
+echo "password    required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >>$service_file
+echo "session     required    $pam_winbind debug debug_state warn_pwd_expire=$WARN_PWD_EXPIRE $PAM_OPTIONS" >>$service_file
 
 PYTHONPATH="$PYTHONPATH:$PAM_WRAPPER_PATH:$(dirname $0)" $PYTHON -m samba.subunit.run samba.tests.pam_winbind_warn_pwd_expire
 exit_code=$?
