@@ -551,6 +551,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 	const char *dname = NULL;
 	long offset = 0;
 	char *talloced = NULL;
+	NTSTATUS status;
 
 	dirname = stream_dir(handle, smb_fname_base, &smb_fname_base->st,
 			     false);
@@ -594,13 +595,14 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 	orig_connectpath = handle->conn->connectpath;
 	handle->conn->connectpath = rootdir;
 
-	dir_hnd = OpenDir(talloc_tos(), handle->conn, dir_smb_fname, NULL, 0);
-	if (dir_hnd == NULL) {
+	status = OpenDir_ntstatus(
+		talloc_tos(), handle->conn, dir_smb_fname, NULL, 0, &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
 		handle->conn->connectpath = orig_connectpath;
 		TALLOC_FREE(rootdir);
 		TALLOC_FREE(dir_smb_fname);
 		TALLOC_FREE(dirname);
-		return map_nt_error_from_unix(errno);
+		return status;
 	}
 
         while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
