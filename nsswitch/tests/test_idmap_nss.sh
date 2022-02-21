@@ -11,7 +11,7 @@ wbinfo="$VALGRIND $BINDIR/wbinfo"
 
 failed=0
 
-. `dirname $0`/../../testprogs/blackbox/subunit.sh
+. $(dirname $0)/../../testprogs/blackbox/subunit.sh
 
 testit "wbinfo returns domain SID" $wbinfo -n "$DOMAIN/" || exit 1
 DOMAIN_SID=$($wbinfo -n "$DOMAIN/" | cut -f 1 -d " ")
@@ -19,15 +19,15 @@ echo "Domain $DOMAIN has SID $DOMAIN_SID"
 
 # Find an unused uid and SID
 RID=66666
-while true ; do
-    id $RID
-    if [ $? -ne 0 ] ; then
-	$wbinfo -s $DOMAIN_SID-$RID
-	if [ $? -ne 0 ] ; then
-	    break
+while true; do
+	id $RID
+	if [ $? -ne 0 ]; then
+		$wbinfo -s $DOMAIN_SID-$RID
+		if [ $? -ne 0 ]; then
+			break
+		fi
 	fi
-    fi
-    RID=$(expr $RID + 1)
+	RID=$(expr $RID + 1)
 done
 
 echo "Using non-existing SID $DOMAIN_SID-$RID to check no id allocation is done by the backend"

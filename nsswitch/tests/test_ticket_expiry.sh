@@ -2,8 +2,8 @@
 # Test winbind ad backend behaviour when the kerberos ticket expires
 
 if [ $# -ne 1 ]; then
-    echo Usage: $0 DOMAIN
-    exit 1
+	echo Usage: $0 DOMAIN
+	exit 1
 fi
 
 DOMAIN="$1"
@@ -13,12 +13,12 @@ net="$VALGRIND $BINDIR/net"
 
 failed=0
 
-. `dirname $0`/../../testprogs/blackbox/subunit.sh
+. $(dirname $0)/../../testprogs/blackbox/subunit.sh
 
 DOMAIN_SID=$($wbinfo -n "$DOMAIN/" | cut -f 1 -d " ")
-if [ $? -ne 0 ] ; then
-    echo "Could not find domain SID" | subunit_fail_test "test_idmap_ad"
-    exit 1
+if [ $? -ne 0 ]; then
+	echo "Could not find domain SID" | subunit_fail_test "test_idmap_ad"
+	exit 1
 fi
 ADMINS_SID="$DOMAIN_SID-512"
 
@@ -35,13 +35,13 @@ $net cache del IDMAP/SID2XID/"$ADMINS_SID"
 # connection.
 
 testit_expect_failure "Deleting0 IDMAP/SID2XID/$ADMINS_SID" $net cache del IDMAP/SID2XID/"$ADMINS_SID" ||
-    failed=$(expr $failed + 1)
+	failed=$(expr $failed + 1)
 
 testit_expect_failure "Expecting failure1, no mapping in AD" $wbinfo --sid-to-gid "$ADMINS_SID" ||
-    failed=$(expr $failed + 1)
+	failed=$(expr $failed + 1)
 
 testit "Deleting1 IDMAP/SID2XID/$ADMINS_SID" $net cache del IDMAP/SID2XID/"$ADMINS_SID" ||
-    failed=$(expr $failed + 1)
+	failed=$(expr $failed + 1)
 
 # allow our kerberos ticket to expire
 testit "Sleeping for 6 seconds" sleep 6 || failed=$(expr $failed + 1)
@@ -62,13 +62,13 @@ testit "Sleeping for 6 seconds" sleep 6 || failed=$(expr $failed + 1)
 
 START=$(date +%s)
 testit_expect_failure "Expecting failure2, no mapping in AD" $wbinfo --sid-to-gid "$ADMINS_SID" ||
-    failed=$(expr $failed + 1)
+	failed=$(expr $failed + 1)
 END=$(date +%s)
 DURATION=$(expr $END - $START)
 testit "timeout DURATION[$DURATION] < 8" test "$DURATION" -le 8 ||
-    failed=$(expr $failed + 1)
+	failed=$(expr $failed + 1)
 
 testit "Deleting2 IDMAP/SID2XID/$ADMINS_SID" $net cache del IDMAP/SID2XID/"$ADMINS_SID" ||
-    failed=$(expr $failed + 1)
+	failed=$(expr $failed + 1)
 
 exit $failed

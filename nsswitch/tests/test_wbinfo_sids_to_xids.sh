@@ -1,6 +1,6 @@
 #!/bin/sh
 
-incdir=`dirname $0`/../../testprogs/blackbox
+incdir=$(dirname $0)/../../testprogs/blackbox
 . $incdir/subunit.sh
 
 #
@@ -9,7 +9,7 @@ incdir=`dirname $0`/../../testprogs/blackbox
 #
 wbinfo_some_mapped()
 {
-	output=`$VALGRIND $BINDIR/wbinfo --sids-to-unix-ids=S-1-5-123456789,S-1-5-11`
+	output=$($VALGRIND $BINDIR/wbinfo --sids-to-unix-ids=S-1-5-123456789,S-1-5-11)
 	test x"$?" = x"0" || {
 		return 1
 	}
@@ -27,6 +27,6 @@ wbinfo_some_mapped()
 	return 0
 }
 
-testit "wbinfo some mapped" wbinfo_some_mapped || failed=`expr $failed + 1`
+testit "wbinfo some mapped" wbinfo_some_mapped || failed=$(expr $failed + 1)
 
 testok $0 $failed

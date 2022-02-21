@@ -21,30 +21,30 @@ ldbsearch="$VALGRIND $BINDIR/ldbsearch"
 
 failed=0
 
-. `dirname $0`/../../testprogs/blackbox/subunit.sh
+. $(dirname $0)/../../testprogs/blackbox/subunit.sh
 
 DOMAIN_SID=$($wbinfo -n "$DOMAIN/" | cut -f 1 -d " ")
-if [ $? -ne 0 ] ; then
-    echo "Could not find domain SID" | subunit_fail_test "test_idmap_ad"
-    exit 1
+if [ $? -ne 0 ]; then
+	echo "Could not find domain SID" | subunit_fail_test "test_idmap_ad"
+	exit 1
 fi
 
 TRUST_DOMAIN_SID=$($wbinfo -n "$TRUST_DOMAIN/" | cut -f 1 -d " ")
-if [ $? -ne 0 ] ; then
-    echo "Could not find trusted domain SID" | subunit_fail_test "test_idmap_ad"
-    exit 1
+if [ $? -ne 0 ]; then
+	echo "Could not find trusted domain SID" | subunit_fail_test "test_idmap_ad"
+	exit 1
 fi
 
 BASE_DN=$($ldbsearch -H ldap://$DC_SERVER -b "" --scope=base defaultNamingContext | awk '/^defaultNamingContext/ {print $2}')
-if [ $? -ne 0 ] ; then
-    echo "Could not find base DN" | subunit_fail_test "test_idmap_ad"
-    exit 1
+if [ $? -ne 0 ]; then
+	echo "Could not find base DN" | subunit_fail_test "test_idmap_ad"
+	exit 1
 fi
 
 TRUST_BASE_DN=$($ldbsearch -H ldap://$TRUST_SERVER -b "" --scope=base defaultNamingContext | awk '/^defaultNamingContext/ {print $2}')
-if [ $? -ne 0 ] ; then
-    echo "Could not find trusted base DN" | subunit_fail_test "test_idmap_ad"
-    exit 1
+if [ $? -ne 0 ]; then
+	echo "Could not find trusted base DN" | subunit_fail_test "test_idmap_ad"
+	exit 1
 fi
 
 #
@@ -83,7 +83,7 @@ EOF
 # Add POSIX ids to trusted domain
 #
 cat <<EOF | $ldbmodify -H ldap://$TRUST_SERVER \
-		       -U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
+	-U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
 dn: CN=Administrator,CN=Users,$TRUST_BASE_DN
 changetype: modify
 add: uidNumber
@@ -91,7 +91,7 @@ uidNumber: 2500000
 EOF
 
 cat <<EOF | $ldbmodify -H ldap://$TRUST_SERVER \
-		       -U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
+	-U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
 dn: CN=Domain Users,CN=Users,$TRUST_BASE_DN
 changetype: modify
 add: gidNumber
@@ -99,7 +99,7 @@ gidNumber: 2500001
 EOF
 
 cat <<EOF | $ldbmodify -H ldap://$TRUST_SERVER \
-		       -U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
+	-U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
 dn: CN=Domain Admins,CN=Users,$TRUST_BASE_DN
 changetype: modify
 add: gidNumber
@@ -222,7 +222,7 @@ EOF
 # Remove POSIX ids from trusted domain
 #
 cat <<EOF | $ldbmodify -H ldap://$TRUST_SERVER \
-		       -U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
+	-U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
 dn: CN=Administrator,CN=Users,$TRUST_BASE_DN
 changetype: modify
 delete: uidNumber
@@ -230,7 +230,7 @@ uidNumber: 2500000
 EOF
 
 cat <<EOF | $ldbmodify -H ldap://$TRUST_SERVER \
-		       -U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
+	-U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
 dn: CN=Domain Users,CN=Users,$TRUST_BASE_DN
 changetype: modify
 delete: gidNumber
@@ -238,7 +238,7 @@ gidNumber: 2500001
 EOF
 
 cat <<EOF | $ldbmodify -H ldap://$TRUST_SERVER \
-		       -U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
+	-U "$TRUST_DOMAIN\Administrator%$TRUST_PASSWORD"
 dn: CN=Domain Admins,CN=Users,$TRUST_BASE_DN
 changetype: modify
 delete: gidNumber

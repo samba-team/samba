@@ -3,10 +3,10 @@
 # Copyright (c) 2018 Andreas Schneider <asn@samba.org>
 
 if [ $# -lt 6 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: $(basename $0) DOMAIN REALM OWN_DOMAIN USERNAME1 UPN_NAME1 USERNAME2 UPN_NAME2 ENVNAME
 EOF
-exit 1;
+	exit 1
 fi
 
 DOMAIN=$1
@@ -120,16 +120,16 @@ testit "getpwnam.domain.$DOMAIN.$USERNAME1" test_getpwnam "$DOMAIN/$USERNAME1" 0
 testit "getpwnam.upn.$UPN_NAME1" test_getpwnam "$UPN1" 0 "$DOMAIN/$USERNAME1" || failed=$(expr $failed + 1)
 
 case ${ENVNAME} in
-	ad_member*)
+ad_member*)
 	# We should not be able to lookup the user just by the name
 	test_ret=2
 	test_output=""
 	;;
-	fl2008r2dc*)
+fl2008r2dc*)
 	test_ret=0
 	test_output="$OWN_DOMAIN/$USERNAME1"
 	;;
-	*)
+*)
 	test_ret=0
 	test_output="$DOMAIN/$USERNAME1"
 	;;

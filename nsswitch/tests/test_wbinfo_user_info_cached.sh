@@ -3,10 +3,10 @@
 # Copyright (c) 2020 Andreas Schneider <asn@samba.org>
 
 if [ $# -lt 5 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: $(basename $0) DOMAIN REALM USERNAME PASSWORD PRIMARY_GROUP
 EOF
-exit 1;
+	exit 1
 fi
 
 DOMAIN=$1

@@ -14,31 +14,31 @@ RANGE_START="$2"
 wbinfo="$VALGRIND $BINDIR/wbinfo"
 failed=0
 
-. `dirname $0`/../../testprogs/blackbox/subunit.sh
+. $(dirname $0)/../../testprogs/blackbox/subunit.sh
 
 DOMAIN_SID=$($wbinfo -n "$DOMAIN/" | cut -f 1 -d " ")
-if [ $? -ne 0 ] ; then
-    echo "Could not find domain SID" | subunit_fail_test "test_idmap_rid"
-    exit 1
+if [ $? -ne 0 ]; then
+	echo "Could not find domain SID" | subunit_fail_test "test_idmap_rid"
+	exit 1
 fi
 
 # Find an unused uid and SID
 RID=66666
 MAX_RID=77777
-while true ; do
-    id $RID
-    if [ $? -ne 0 ] ; then
-	SID="$DOMAIN_SID-$RID"
-	$wbinfo -s $SID
-	if [ $? -ne 0 ] ; then
-	    break
+while true; do
+	id $RID
+	if [ $? -ne 0 ]; then
+		SID="$DOMAIN_SID-$RID"
+		$wbinfo -s $SID
+		if [ $? -ne 0 ]; then
+			break
+		fi
 	fi
-    fi
-    RID=$(expr $RID + 1)
-    if [ $RID -eq $MAX_RID ] ; then
-	echo "Could not find free SID" | subunit_fail_test "test_idmap_rid"
-	exit 1
-    fi
+	RID=$(expr $RID + 1)
+	if [ $RID -eq $MAX_RID ]; then
+		echo "Could not find free SID" | subunit_fail_test "test_idmap_rid"
+		exit 1
+	fi
 done
 
 #
@@ -72,60 +72,60 @@ GROUP_SID=$($wbinfo --name-to-sid="$GROUP" | sed -e 's/ .*//')
 
 uid=$($wbinfo --sid-to-uid=$GROUP_SID)
 ret=$?
-testit "ID_TYPE_BOTH group map to uid succeeds" test $ret -eq 0 ||\
+testit "ID_TYPE_BOTH group map to uid succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
-testit "ID_TYPE_BOTH group map to uid has result" test -n $uid ||\
+testit "ID_TYPE_BOTH group map to uid has result" test -n $uid ||
 	failed=$(expr $failed + 1)
 
 gid=$($wbinfo --sid-to-gid=$GROUP_SID)
 ret=$?
-testit "ID_TYPE_BOTH group map to gid succeeds" test $ret -eq 0 ||\
+testit "ID_TYPE_BOTH group map to gid succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
-testit "ID_TYPE_BOTH group map to gid has result" test -n $gid ||\
+testit "ID_TYPE_BOTH group map to gid has result" test -n $gid ||
 	failed=$(expr $failed + 1)
 
-testit "ID_TYPE_BOTH group uid equals gid" test $uid -eq $gid ||\
+testit "ID_TYPE_BOTH group uid equals gid" test $uid -eq $gid ||
 	failed=$(expr $failed + 1)
 
 group_pw="$DOMAIN/domain users:*:$uid:$gid::/home/$DOMAIN/domain users:/bin/false"
 
 out=$(getent passwd "$GROUP")
 ret=$?
-testit "getpwnam for ID_TYPE_BOTH group succeeds" test $ret -eq 0 ||\
+testit "getpwnam for ID_TYPE_BOTH group succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
 test "$out" = "$group_pw"
 ret=$?
-testit "getpwnam for ID_TYPE_BOTH group output" test $ret -eq 0 ||\
+testit "getpwnam for ID_TYPE_BOTH group output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
 out=$(getent passwd $uid)
 ret=$?
-testit "getpwuid for ID_TYPE_BOTH group succeeds" test $ret -eq 0 ||\
+testit "getpwuid for ID_TYPE_BOTH group succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 test "$out" = "$group_pw"
 ret=$?
-testit "getpwuid for ID_TYPE_BOTH group output" test $ret -eq 0 ||\
+testit "getpwuid for ID_TYPE_BOTH group output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
 group_gr="$DOMAIN/domain users:x:$gid:"
 
 out=$(getent group "$GROUP")
 ret=$?
-testit "getgrnam for ID_TYPE_BOTH group succeeds" test $ret -eq 0 ||\
+testit "getgrnam for ID_TYPE_BOTH group succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 test "$out" = "$group_gr"
 ret=$?
-testit "getgrnam for ID_TYPE_BOTH group output" test $ret -eq 0 ||\
+testit "getgrnam for ID_TYPE_BOTH group output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
 out=$(getent group "$gid")
 ret=$?
-testit "getgrgid for ID_TYPE_BOTH group succeeds" test $ret -eq 0 ||\
+testit "getgrgid for ID_TYPE_BOTH group succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 test "$out" = "$group_gr"
 ret=$?
-testit "getgrgid for ID_TYPE_BOTH group output" test $ret -eq 0 ||\
+testit "getgrgid for ID_TYPE_BOTH group output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
 #
@@ -139,60 +139,60 @@ USER_SID=$($wbinfo --name-to-sid="$USER" | sed -e 's/ .*//')
 
 uid=$($wbinfo --sid-to-uid=$USER_SID)
 ret=$?
-testit "ID_TYPE_BOTH user map to uid succeeds" test $ret -eq 0 ||\
+testit "ID_TYPE_BOTH user map to uid succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
-testit "ID_TYPE_BOTH user map to uid has result" test -n $uid ||\
+testit "ID_TYPE_BOTH user map to uid has result" test -n $uid ||
 	failed=$(expr $failed + 1)
 
 gid=$($wbinfo --sid-to-gid=$USER_SID)
 ret=$?
-testit "ID_TYPE_BOTH user map to gid succeeds" test $ret -eq 0 ||\
+testit "ID_TYPE_BOTH user map to gid succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
-testit "ID_TYPE_BOTH user map to gid has result" test -n $gid ||\
+testit "ID_TYPE_BOTH user map to gid has result" test -n $gid ||
 	failed=$(expr $failed + 1)
 
-testit "ID_TYPE_BOTH user uid equals gid" test $uid -eq $gid ||\
+testit "ID_TYPE_BOTH user uid equals gid" test $uid -eq $gid ||
 	failed=$(expr $failed + 1)
 
 user_pw="$DOMAIN/administrator:*:$uid:$dom_users_gid::/home/$DOMAIN/administrator:/bin/false"
 
 out=$(getent passwd "$USER")
 ret=$?
-testit "getpwnam for ID_TYPE_BOTH user succeeds" test $ret -eq 0 ||\
+testit "getpwnam for ID_TYPE_BOTH user succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
 test "$out" = "$user_pw"
 ret=$?
-testit "getpwnam for ID_TYPE_BOTH user output" test $ret -eq 0 ||\
+testit "getpwnam for ID_TYPE_BOTH user output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
 out=$(getent passwd $uid)
 ret=$?
-testit "getpwuid for ID_TYPE_BOTH user succeeds" test $ret -eq 0 ||\
+testit "getpwuid for ID_TYPE_BOTH user succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 test "$out" = "$user_pw"
 ret=$?
-testit "getpwuid for ID_TYPE_BOTH user output" test $ret -eq 0 ||\
+testit "getpwuid for ID_TYPE_BOTH user output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
 user_gr="$DOMAIN/administrator:x:$gid:$DOMAIN/administrator"
 
 out=$(getent group "$USER")
 ret=$?
-testit "getgrnam for ID_TYPE_BOTH user succeeds" test $ret -eq 0 ||\
+testit "getgrnam for ID_TYPE_BOTH user succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 test "$out" = "$user_gr"
 ret=$?
-testit "getgrnam for ID_TYPE_BOTH user output" test $ret -eq 0 ||\
+testit "getgrnam for ID_TYPE_BOTH user output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
 out=$(getent group "$gid")
 ret=$?
-testit "getgrgid for ID_TYPE_BOTH user succeeds" test $ret -eq 0 ||\
+testit "getgrgid for ID_TYPE_BOTH user succeeds" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 test "$out" = "$user_gr"
 ret=$?
-testit "getgrgid for ID_TYPE_BOTH user output" test $ret -eq 0 ||\
+testit "getgrgid for ID_TYPE_BOTH user output" test $ret -eq 0 ||
 	failed=$(expr $failed + 1)
 
 exit $failed
