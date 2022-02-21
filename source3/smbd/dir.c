@@ -216,7 +216,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 {
 	struct smbd_server_connection *sconn = conn->sconn;
 	struct dptr_struct *dptr = NULL;
-	struct smb_Dir *dir_hnd;
+	struct smb_Dir *dir_hnd = NULL;
 
 	DBG_INFO("dir=%s\n", fsp_str_dbg(fsp));
 
