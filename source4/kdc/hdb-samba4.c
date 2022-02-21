@@ -466,60 +466,6 @@ static void reset_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 					irpc_handle, &req);
 }
 
-static void send_bad_password_netlogon(TALLOC_CTX *mem_ctx,
-				       struct samba_kdc_db_context *kdc_db_ctx,
-				       struct auth_usersupplied_info *user_info)
-{
-	struct dcerpc_binding_handle *irpc_handle;
-	struct winbind_SamLogon req;
-	struct netr_IdentityInfo *identity_info;
-	struct netr_NetworkInfo *network_info;
-
-	irpc_handle = irpc_binding_handle_by_name(mem_ctx, kdc_db_ctx->msg_ctx,
-						  "winbind_server",
-						  &ndr_table_winbind);
-	if (irpc_handle == NULL) {
-		DEBUG(0, ("Winbind forwarding for [%s]\\[%s] failed, "
-			  "no winbind_server running!\n",
-			  user_info->mapped.domain_name, user_info->mapped.account_name));
-		return;
-	}
-
-	network_info = talloc_zero(mem_ctx, struct netr_NetworkInfo);
-	if (network_info == NULL) {
-		DEBUG(0, ("Winbind forwarding failed: No memory\n"));
-		return;
-	}
-
-	identity_info = &network_info->identity_info;
-	req.in.logon_level = 2;
-	req.in.logon.network = network_info;
-
-	identity_info->domain_name.string = user_info->mapped.domain_name;
-	identity_info->parameter_control = user_info->logon_parameters; /* TODO */
-	identity_info->logon_id = user_info->logon_id;
-	identity_info->account_name.string = user_info->mapped.account_name;
-	identity_info->workstation.string
-		= talloc_asprintf(identity_info, "krb5-bad-pw on RODC from %s",
-				  tsocket_address_string(user_info->remote_host,
-							 identity_info));
-	if (identity_info->workstation.string == NULL) {
-		DEBUG(0, ("Winbind forwarding failed: No memory allocating workstation string\n"));
-		return;
-	}
-
-	req.in.validation_level = 3;
-
-	/*
-	 * The memory in identity_info and user_info only needs to be
-	 * valid until the end of this function call, as it will be
-	 * pushed to NDR during this call
-	 */
-
-	dcerpc_winbind_SamLogon_r_send(mem_ctx, kdc_db_ctx->ev_ctx,
-				       irpc_handle, &req);
-}
-
 static krb5_error_code hdb_samba4_audit(krb5_context context,
 					HDB *db,
 					hdb_entry *entry,
@@ -527,24 +473,18 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 {
 	struct samba_kdc_db_context *kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 									struct samba_kdc_db_context);
-
 	struct ldb_dn *domain_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 	uint64_t logon_id = generate_random_u64();
-
 	heim_object_t auth_details_obj = NULL;
 	const char *auth_details = NULL;
-
 	char *etype_str = NULL;
-
 	heim_object_t hdb_auth_status_obj = NULL;
 	int hdb_auth_status;
-
 	heim_object_t pa_type_obj = NULL;
 	const char *pa_type = NULL;
-
 	struct auth_usersupplied_info ui;
-
 	size_t sa_socklen = 0;
+	int final_ret = 0;
 
 	hdb_auth_status_obj = heim_audit_getkv((heim_svc_req_desc)r, KDC_REQUEST_KV_AUTH_EVENT);
 	if (hdb_auth_status_obj == NULL) {
@@ -645,6 +585,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		const char *auth_description = NULL;
 		NTSTATUS status;
 		int ret;
+		bool rwdc_fallback = false;
 
 		ret = tsocket_address_bsd_from_sockaddr(frame, r->addr,
 							sa_socklen,
@@ -677,32 +618,42 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY) {
 			authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
 			status = NT_STATUS_WRONG_PASSWORD;
-			/*
-			 * TODO We currently send a bad password via NETLOGON,
-			 * however, it should probably forward the ticket to
-			 * another KDC to allow login after password changes.
-			 */
-			if (kdc_db_ctx->rodc) {
-				send_bad_password_netlogon(frame, kdc_db_ctx, &ui);
-			}
+			rwdc_fallback = kdc_db_ctx->rodc;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_LOCKED_OUT) {
 			status = NT_STATUS_ACCOUNT_LOCKED_OUT;
+			rwdc_fallback = kdc_db_ctx->rodc;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_NAME_UNAUTHORIZED) {
 			if (pa_type != NULL && strncmp(pa_type, "PK-INIT", strlen("PK-INIT")) == 0) {
 				status = NT_STATUS_PKINIT_NAME_MISMATCH;
 			} else {
 				status = NT_STATUS_ACCOUNT_RESTRICTION;
 			}
+			rwdc_fallback = kdc_db_ctx->rodc;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_PREAUTH_FAILED) {
 			if (pa_type != NULL && strncmp(pa_type, "PK-INIT", strlen("PK-INIT")) == 0) {
 				status = NT_STATUS_PKINIT_FAILURE;
 			} else {
 				status = NT_STATUS_GENERIC_COMMAND_FAILED;
 			}
+			rwdc_fallback = kdc_db_ctx->rodc;
 		} else {
 			DBG_ERR("Unhandled hdb_auth_status=%d => INTERNAL_ERROR\n",
 				hdb_auth_status);
 			status = NT_STATUS_INTERNAL_ERROR;
+		}
+
+		if (rwdc_fallback) {
+			/*
+			 * Forward the request to an RWDC in order
+			 * to give an authoritative answer to the client.
+			 */
+			auth_description = talloc_asprintf(frame,
+							   "%s,Forward-To-RWDC",
+							   ui.auth_description);
+			if (auth_description != NULL) {
+				ui.auth_description = auth_description;
+			}
+			final_ret = HDB_ERR_NOT_FOUND_HERE;
 		}
 
 		log_authentication_event(kdc_db_ctx->msg_ctx,
@@ -736,6 +687,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 
 		ui.auth_description = pa_type;
 
+		/* Note this is not forwarded to an RWDC */
+
 		log_authentication_event(kdc_db_ctx->msg_ctx,
 					 kdc_db_ctx->lp_ctx,
 					 &r->tv_start,
@@ -750,7 +703,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 
 	free(etype_str);
 
-	return 0;
+	return final_ret;
 }
 
 /* This interface is to be called by the KDC and libnet_keytab_dump,
