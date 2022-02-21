@@ -293,7 +293,7 @@ class cmd_delegation_for_any_protocol(Command):
 
 
 class cmd_delegation_add_service(Command):
-    """Add a service principal as msDS-AllowedToDelegateTo."""
+    """Add a service principal to msDS-AllowedToDelegateTo so that an account may delegate to it."""
 
     synopsis = "%prog <accountname> <principal> [options]"
 
@@ -347,7 +347,7 @@ class cmd_delegation_add_service(Command):
 
 
 class cmd_delegation_del_service(Command):
-    """Delete a service principal as msDS-AllowedToDelegateTo."""
+    """Delete a service principal from msDS-AllowedToDelegateTo so that an account may no longer delegate to it."""
 
     synopsis = "%prog <accountname> <principal> [options]"
 
