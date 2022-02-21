@@ -40,10 +40,10 @@ def HEIMDAL_ASN1(name, source,
     bld.set_group('build_source')
 
     out_files = heimdal_paths([
-        "%s/asn1_%s_asn1.x" % (directory, bname),
-        "%s/%s_asn1.hx" % (directory, bname),
-        "%s/%s_asn1-priv.hx" % (directory, bname),
-        "%s/%s_asn1_oids.x" % (directory, bname),
+        "%s/asn1_%s_asn1.c" % (directory, bname),
+        "%s/%s_asn1.h" % (directory, bname),
+        "%s/%s_asn1-priv.h" % (directory, bname),
+        "%s/%s_asn1_oids.c" % (directory, bname),
         ])
 
     # the ${TGT[0].parent.abspath(env)} expression gives us the parent directory of
@@ -81,7 +81,7 @@ def HEIMDAL_ASN1(name, source,
         deps = 'asn1_compile'
 
     t = bld(rule=asn1_rule,
-            ext_out = '.x',
+            ext_out = '.c',
             before = 'c',
             update_outputs = True,
             shell = True,
@@ -97,40 +97,9 @@ def HEIMDAL_ASN1(name, source,
         t.env.OPTION_FILE = "--option-file='%s'" % \
             os.path.normpath(os.path.join(bld.path.abspath(), option_file))
 
-    cfile = out_files[0][0:-2] + '.c'
-    hfile = out_files[1][0:-3] + '.h'
-    hpriv = out_files[2][0:-3] + '.h'
-
-    # now generate a .c file from the .x file
-    t = bld(rule='''( echo '#include "config.h"' && cat ${SRC} ) > ${TGT}''',
-            source = out_files[0],
-            target = cfile,
-            shell = True,
-            update_outputs=True,
-            ext_out = '.c',
-            ext_in = '.x',
-            depends_on = name + '_ASN1',
-            name = name + '_C')
-
-    # and generate a .h file from the .hx file
-    t = bld(rule='cp ${SRC} ${TGT}',
-            source = out_files[1],
-            ext_out = '.c',
-            ext_in = '.x',
-            update_outputs=True,
-            target = hfile,
-            depends_on = name + '_ASN1',
-            name = name + '_H')
-
-    # and generate a .h file from the .hx file
-    t = bld(rule='cp ${SRC} ${TGT}',
-            source = out_files[2],
-            ext_out = '.c',
-            ext_in = '.x',
-            update_outputs=True,
-            target = hpriv,
-            depends_on = name + '_ASN1',
-            name = name + '_PRIV_H')
+    cfile = out_files[0]
+    hfile = out_files[1]
+    hpriv = out_files[2]
 
     bld.set_group('main')
 
