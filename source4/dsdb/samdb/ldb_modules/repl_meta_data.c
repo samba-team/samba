@@ -3888,22 +3888,12 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 				       ldb_operr(ldb));
 	}
 
-	if (ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+	if (ldb_msg_append_value(msg, rdn_name, rdn_val, LDB_FLAG_MOD_REPLACE) != 0) {
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
 				       ldb_oom(ldb));
 	}
-	if (ldb_msg_add_value(msg, rdn_name, rdn_val, NULL) != 0) {
-		talloc_free(ares);
-		return ldb_module_done(ac->req, NULL, NULL,
-				       ldb_oom(ldb));
-	}
-	if (ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
-		talloc_free(ares);
-		return ldb_module_done(ac->req, NULL, NULL,
-				       ldb_oom(ldb));
-	}
-	if (ldb_msg_add_value(msg, "name", rdn_val, NULL) != 0) {
+	if (ldb_msg_append_value(msg, "name", rdn_val, LDB_FLAG_MOD_REPLACE) != 0) {
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
 				       ldb_oom(ldb));
@@ -5161,16 +5151,10 @@ static int replmd_name_modify(struct replmd_replicated_request *ar,
 		goto failed;
 	}
 
-	if (ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+	if (ldb_msg_append_value(msg, rdn_name, rdn_val, LDB_FLAG_MOD_REPLACE) != 0) {
 		goto failed;
 	}
-	if (ldb_msg_add_value(msg, rdn_name, rdn_val, NULL) != 0) {
-		goto failed;
-	}
-	if (ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
-		goto failed;
-	}
-	if (ldb_msg_add_value(msg, "name", rdn_val, NULL) != 0) {
+	if (ldb_msg_append_value(msg, "name", rdn_val, LDB_FLAG_MOD_REPLACE) != 0) {
 		goto failed;
 	}
 

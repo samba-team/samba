@@ -2776,18 +2776,10 @@ static bool pdb_samba_dsdb_set_trusteddom_pw(struct pdb_methods *m,
 	}
 
 	msg->num_elements = 0;
-	ret = ldb_msg_add_empty(msg, "trustAuthOutgoing",
-				LDB_FLAG_MOD_REPLACE, NULL);
+	ret = ldb_msg_append_value(msg, "trustAuthOutgoing",
+				   &new_val, LDB_FLAG_MOD_REPLACE);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("ldb_msg_add_empty() failed\n"));
-		TALLOC_FREE(tmp_ctx);
-		ldb_transaction_cancel(state->ldb);
-		return false;
-	}
-	ret = ldb_msg_add_value(msg, "trustAuthOutgoing",
-				&new_val, NULL);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("ldb_msg_add_value() failed\n"));
+		DEBUG(0, ("ldb_msg_append_value() failed\n"));
 		TALLOC_FREE(tmp_ctx);
 		ldb_transaction_cancel(state->ldb);
 		return false;

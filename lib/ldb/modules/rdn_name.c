@@ -308,16 +308,10 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 	rdn_val = ldb_val_dup(msg, rdn_val_p);
 
-	if (ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+	if (ldb_msg_append_value(msg, rdn_name, &rdn_val, LDB_FLAG_MOD_REPLACE) != 0) {
 		goto error;
 	}
-	if (ldb_msg_add_value(msg, rdn_name, &rdn_val, NULL) != 0) {
-		goto error;
-	}
-	if (ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
-		goto error;
-	}
-	if (ldb_msg_add_value(msg, "name", &rdn_val, NULL) != 0) {
+	if (ldb_msg_append_value(msg, "name", &rdn_val, LDB_FLAG_MOD_REPLACE) != 0) {
 		goto error;
 	}
 
@@ -466,11 +460,7 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 		if (ret != 0) {
 			return ldb_module_oom(module);
 		}
-		ret = ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_ADD, NULL);
-		if (ret != 0) {
-			return ldb_module_oom(module);
-		}
-		ret = ldb_msg_add_value(msg, rdn_name, &rdn_val, NULL);
+		ret = ldb_msg_append_value(msg, rdn_name, &rdn_val, LDB_FLAG_MOD_ADD);
 		if (ret != 0) {
 			return ldb_module_oom(module);
 		}
@@ -479,11 +469,7 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 		if (ret != 0) {
 			return ldb_module_oom(module);
 		}
-		ret = ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_ADD, NULL);
-		if (ret != 0) {
-			return ldb_module_oom(module);
-		}
-		ret = ldb_msg_add_value(msg, "name", &rdn_val, NULL);
+		ret = ldb_msg_append_value(msg, "name", &rdn_val, LDB_FLAG_MOD_ADD);
 		if (ret != 0) {
 			return ldb_module_oom(module);
 		}
