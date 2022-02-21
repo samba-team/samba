@@ -924,6 +924,16 @@ int samdb_msg_add_int(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct l
 	return ldb_msg_add_string(msg, attr_name, s);
 }
 
+int samdb_msg_add_int_flags(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			    const char *attr_name, int v, int flags)
+{
+	const char *s = talloc_asprintf(mem_ctx, "%d", v);
+	if (s == NULL) {
+		return ldb_oom(sam_ldb);
+	}
+	return ldb_msg_add_string_flags(msg, attr_name, s, flags);
+}
+
 /*
  * Add an unsigned int element to a message
  *
@@ -940,6 +950,12 @@ int samdb_msg_add_uint(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct 
 		       const char *attr_name, unsigned int v)
 {
 	return samdb_msg_add_int(sam_ldb, mem_ctx, msg, attr_name, (int)v);
+}
+
+int samdb_msg_add_uint_flags(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			     const char *attr_name, unsigned int v, int flags)
+{
+	return samdb_msg_add_int_flags(sam_ldb, mem_ctx, msg, attr_name, (int)v, flags);
 }
 
 /*
@@ -971,6 +987,68 @@ int samdb_msg_add_uint64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 			const char *attr_name, uint64_t v)
 {
 	return samdb_msg_add_int64(sam_ldb, mem_ctx, msg, attr_name, (int64_t)v);
+}
+
+/*
+  append a int element to a message
+*/
+int samdb_msg_append_int(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+		      const char *attr_name, int v, int flags)
+{
+	const char *s = talloc_asprintf(mem_ctx, "%d", v);
+	if (s == NULL) {
+		return ldb_oom(sam_ldb);
+	}
+	return ldb_msg_append_string(msg, attr_name, s, flags);
+}
+
+/*
+ * Append an unsigned int element to a message
+ *
+ * The issue here is that we have not yet first cast to int32_t explicitly,
+ * before we cast to an signed int to printf() into the %d or cast to a
+ * int64_t before we then cast to a long long to printf into a %lld.
+ *
+ * There are *no* unsigned integers in Active Directory LDAP, even the RID
+ * allocations and ms-DS-Secondary-KrbTgt-Number are *signed* quantities.
+ * (See the schema, and the syntax definitions in schema_syntax.c).
+ *
+ */
+int samdb_msg_append_uint(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			  const char *attr_name, unsigned int v, int flags)
+{
+	return samdb_msg_append_int(sam_ldb, mem_ctx, msg, attr_name, (int)v, flags);
+}
+
+/*
+  append a (signed) int64_t element to a message
+*/
+int samdb_msg_append_int64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			   const char *attr_name, int64_t v, int flags)
+{
+	const char *s = talloc_asprintf(mem_ctx, "%lld", (long long)v);
+	if (s == NULL) {
+		return ldb_oom(sam_ldb);
+	}
+	return ldb_msg_append_string(msg, attr_name, s, flags);
+}
+
+/*
+ * Append an unsigned int64_t (uint64_t) element to a message
+ *
+ * The issue here is that we have not yet first cast to int32_t explicitly,
+ * before we cast to an signed int to printf() into the %d or cast to a
+ * int64_t before we then cast to a long long to printf into a %lld.
+ *
+ * There are *no* unsigned integers in Active Directory LDAP, even the RID
+ * allocations and ms-DS-Secondary-KrbTgt-Number are *signed* quantities.
+ * (See the schema, and the syntax definitions in schema_syntax.c).
+ *
+ */
+int samdb_msg_append_uint64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			    const char *attr_name, uint64_t v, int flags)
+{
+	return samdb_msg_append_int64(sam_ldb, mem_ctx, msg, attr_name, (int64_t)v, flags);
 }
 
 /*
@@ -2814,15 +2892,8 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		tdo_msg->num_elements = 0;
 		TALLOC_FREE(tdo_msg->elements);
 
-		ret = ldb_msg_add_empty(tdo_msg, "trustAuthIncoming",
-					LDB_FLAG_MOD_REPLACE, NULL);
-		if (ret != LDB_SUCCESS) {
-			ldb_transaction_cancel(ldb);
-			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
-		}
-		ret = ldb_msg_add_value(tdo_msg, "trustAuthIncoming",
-					&new_val, NULL);
+		ret = ldb_msg_append_value(tdo_msg, "trustAuthIncoming",
+					   &new_val, LDB_FLAG_MOD_REPLACE);
 		if (ret != LDB_SUCCESS) {
 			ldb_transaction_cancel(ldb);
 			TALLOC_FREE(frame);
@@ -3187,6 +3258,7 @@ int dsdb_find_guid_by_dn(struct ldb_context *ldb,
 /*
  adds the given GUID to the given ldb_message. This value is added
  for the given attr_name (may be either "objectGUID" or "parentGUID").
+ This function is used in processing 'add' requests.
  */
 int dsdb_msg_add_guid(struct ldb_message *msg,
 		struct GUID *guid,
@@ -5656,7 +5728,8 @@ int dsdb_user_obj_set_defaults(struct ldb_context *ldb,
 }
 
 /**
- * Sets 'sAMAccountType on user object based on userAccountControl
+ * Sets 'sAMAccountType on user object based on userAccountControl.
+ * This function is used in processing both 'add' and 'modify' requests.
  * @param ldb Current ldb_context
  * @param usr_obj ldb_message representing User object
  * @param user_account_control Value for userAccountControl flags
@@ -5668,21 +5741,19 @@ int dsdb_user_obj_set_account_type(struct ldb_context *ldb, struct ldb_message *
 {
 	int ret;
 	uint32_t account_type;
-	struct ldb_message_element *el;
 
 	account_type = ds_uf2atype(user_account_control);
 	if (account_type == 0) {
 		ldb_set_errstring(ldb, "dsdb: Unrecognized account type!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
-	ret = samdb_msg_add_uint(ldb, usr_obj, usr_obj,
-				 "sAMAccountType",
-				 account_type);
+	ret = samdb_msg_add_uint_flags(ldb, usr_obj, usr_obj,
+				       "sAMAccountType",
+				       account_type,
+				       LDB_FLAG_MOD_REPLACE);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	el = ldb_msg_find_element(usr_obj, "sAMAccountType");
-	el->flags = LDB_FLAG_MOD_REPLACE;
 
 	if (account_type_p) {
 		*account_type_p = account_type;
@@ -5692,7 +5763,8 @@ int dsdb_user_obj_set_account_type(struct ldb_context *ldb, struct ldb_message *
 }
 
 /**
- * Determine and set primaryGroupID based on userAccountControl value
+ * Determine and set primaryGroupID based on userAccountControl value.
+ * This function is used in processing both 'add' and 'modify' requests.
  * @param ldb Current ldb_context
  * @param usr_obj ldb_message representing User object
  * @param user_account_control Value for userAccountControl flags
@@ -5704,17 +5776,15 @@ int dsdb_user_obj_set_primary_group_id(struct ldb_context *ldb, struct ldb_messa
 {
 	int ret;
 	uint32_t rid;
-	struct ldb_message_element *el;
 
 	rid = ds_uf2prim_group_rid(user_account_control);
 
-	ret = samdb_msg_add_uint(ldb, usr_obj, usr_obj,
-				 "primaryGroupID", rid);
+	ret = samdb_msg_add_uint_flags(ldb, usr_obj, usr_obj,
+				       "primaryGroupID", rid,
+				       LDB_FLAG_MOD_REPLACE);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	el = ldb_msg_find_element(usr_obj, "primaryGroupID");
-	el->flags = LDB_FLAG_MOD_REPLACE;
 
 	if (group_rid_p) {
 		*group_rid_p = rid;
