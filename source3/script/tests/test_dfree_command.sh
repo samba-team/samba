@@ -62,6 +62,6 @@ elif [ $protocol = "NT1" ]; then
 
 else
 	echo "unsupported protocol $protocol" | subunit_fail_test "Test dfree command"
-	$failed=$(expr $failed + 1)
+	failed=$(expr $failed + 1)
 fi
 exit $failed
