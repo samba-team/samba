@@ -24,6 +24,7 @@ from samba import provision
 from samba import dsdb
 from samba.samdb import SamDB
 from samba.auth import system_session
+from samba.dcerpc import security
 from samba.netcmd.common import _get_user_realm_domain
 from samba.netcmd import (
     Command,
@@ -50,6 +51,82 @@ class cmd_delegation_show(Command):
     ]
 
     takes_args = ["accountname"]
+
+    def show_security_descriptor(self, sam, security_descriptor):
+        dacl = security_descriptor.dacl
+        desc_type = security_descriptor.type
+
+        warning_info = ('Security Descriptor of attribute '
+                        'msDS-AllowedToActOnBehalfOfOtherIdentity')
+
+        if dacl is None or not desc_type & security.SEC_DESC_DACL_PRESENT:
+            self.errf.write(f'Warning: DACL not present in {warning_info}!\n')
+            return
+
+        if not desc_type & security.SEC_DESC_SELF_RELATIVE:
+            self.errf.write(f'Warning: DACL in {warning_info} lacks '
+                            f'SELF_RELATIVE flag!\n')
+            return
+
+        for ace in dacl.aces:
+            trustee = ace.trustee
+
+            # Convert the trustee SID into a DN if we can.
+            try:
+                res = sam.search(f'<SID={trustee}>',
+                                 scope=ldb.SCOPE_BASE)
+            except ldb.LdbError as err:
+                num, _ = err.args
+                if num != ldb.ERR_NO_SUCH_OBJECT:
+                    raise
+            else:
+                if len(res) == 1:
+                    trustee = res[0].dn
+
+            ignore = False
+
+            if (ace.type == security.SEC_ACE_TYPE_ACCESS_DENIED
+                    or ace.type == security.SEC_ACE_TYPE_ACCESS_DENIED_OBJECT):
+                self.errf.write(f'Warning: ACE in {warning_info} denies '
+                                f'access for trustee {trustee}!\n')
+                # Ignore the ACE if it denies access
+                ignore = True
+            elif (ace.type != security.SEC_ACE_TYPE_ACCESS_ALLOWED
+                    and ace.type != security.SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT):
+                # Ignore the ACE if it doesn't explicitly allow access
+                ignore = True
+
+            inherit_only = ace.flags & security.SEC_ACE_FLAG_INHERIT_ONLY
+            object_inherit = ace.flags & security.SEC_ACE_FLAG_OBJECT_INHERIT
+            container_inherit = (
+                ace.flags & security.SEC_ACE_FLAG_CONTAINER_INHERIT)
+            inherited_ace = ace.flags & security.SEC_ACE_FLAG_INHERITED_ACE
+
+            if inherit_only and not object_inherit and not container_inherit:
+                # Ignore the ACE if it is propagated only to child objects, but
+                # neither of the object and container inherit flags are set.
+                ignore = True
+            else:
+                if container_inherit:
+                    self.errf.write(f'Warning: ACE for trustee {trustee} has '
+                                    f'unexpected CONTAINER_INHERIT flag set in '
+                                    f'{warning_info}!\n')
+                    ignore = True
+
+                if inherited_ace:
+                    self.errf.write(f'Warning: ACE for trustee {trustee} has '
+                                    f'unexpected INHERITED_ACE flag set in '
+                                    f'{warning_info}!\n')
+                    ignore = True
+
+            if not ace.access_mask:
+                # Ignore the ACE if it doesn't grant any permissions.
+                ignore = True
+
+            if not ignore:
+                self.outf.write(f'msDS-AllowedToActOnBehalfOfOtherIdentity: '
+                                f'{trustee}\n')
+
 
     def run(self, accountname, H=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
