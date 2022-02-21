@@ -84,7 +84,7 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 		return NULL;
 	}
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|sssssssp:Join",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|sssssszp:Join",
 					 discard_const_p(char *, kwnames),
 					 &r->in.dnshostname,
 					 &r->in.upn,
