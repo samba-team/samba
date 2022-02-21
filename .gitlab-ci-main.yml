@@ -256,6 +256,7 @@ samba-def-build:
   needs:
     - job: samba-def-build
       artifacts: true
+    - job: samba-shellcheck
 
 samba-mit-build:
   extends: .shared_template_build_only
@@ -277,6 +278,7 @@ samba-mit120-build:
   needs:
     - job: samba-mit-build
       artifacts: true
+    - job: samba-shellcheck
 
 .needs_samba-mit120-build:
   extends: .shared_template_test_only
@@ -398,6 +400,13 @@ samba-fips:
   extends: .shared_template
   variables:
     SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora36}
+
+samba-shellcheck:
+  extends: .shared_template
+  needs:
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora36}
+  stage: build_first
 
 .private_test_only:
   extends: .private_runner_test

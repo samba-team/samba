@@ -1020,6 +1020,12 @@ tasks = {
         ],
     },
 
+    "samba-shellcheck": {
+        "sequence": [
+            ("run", "script/check-shell-scripts.sh ."),
+        ],
+    },
+
     "ldb": {
         "sequence": [
             ("random-sleep", random_sleep(60, 600)),
