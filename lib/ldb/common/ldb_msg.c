@@ -833,11 +833,7 @@ void ldb_msg_sort_elements(struct ldb_message *msg)
 		       ldb_msg_element_compare_name);
 }
 
-/*
-  shallow copy a message - copying only the elements array so that the caller
-  can safely add new elements without changing the message
-*/
-struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx,
+static struct ldb_message *ldb_msg_copy_shallow_impl(TALLOC_CTX *mem_ctx,
 					 const struct ldb_message *msg)
 {
 	struct ldb_message *msg2;
@@ -863,6 +859,35 @@ failed:
 	return NULL;
 }
 
+/*
+  shallow copy a message - copying only the elements array so that the caller
+  can safely add new elements without changing the message
+*/
+struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx,
+					 const struct ldb_message *msg)
+{
+	struct ldb_message *msg2;
+	unsigned int i;
+
+	msg2 = ldb_msg_copy_shallow_impl(mem_ctx, msg);
+	if (msg2 == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; i < msg2->num_elements; ++i) {
+		/*
+		 * Mark this message's elements as sharing their values with the
+		 * original message, so that we don't inadvertently modify or
+		 * free them. We don't mark the original message element as
+		 * shared, so the original message element should not be
+		 * modified or freed while the shallow copy lives.
+		 */
+		struct ldb_message_element *el = &msg2->elements[i];
+		el->flags |= LDB_FLAG_INTERNAL_SHARED_VALUES;
+	}
+
+        return msg2;
+}
 
 /*
   copy a message, allocating new memory for all parts
@@ -873,7 +898,7 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg2;
 	unsigned int i, j;
 
-	msg2 = ldb_msg_copy_shallow(mem_ctx, msg);
+	msg2 = ldb_msg_copy_shallow_impl(mem_ctx, msg);
 	if (msg2 == NULL) return NULL;
 
 	if (msg2->dn != NULL) {
@@ -894,6 +919,12 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 				goto failed;
 			}
 		}
+
+                /*
+                 * Since we copied this element's values, we can mark them as
+                 * not shared.
+		 */
+		el->flags &= ~LDB_FLAG_INTERNAL_SHARED_VALUES;
 	}
 
 	return msg2;
