@@ -500,15 +500,10 @@ static void send_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 				       irpc_handle, &req);
 }
 
-static krb5_error_code hdb_samba4_auth_status(krb5_context context,
-					      HDB *db,
-					      hdb_entry_ex *entry,
-					      const struct timeval *start_time,
-					      const struct sockaddr *from_addr,
-					      const char *original_client_name,
-					      int hdb_auth_status,
-					      const char *auth_details,
-					      const char *pa_type)
+static krb5_error_code hdb_samba4_audit(krb5_context context,
+					HDB *db,
+					hdb_entry_ex *entry,
+					hdb_request_t r)
 {
 	struct samba_kdc_db_context *kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 									struct samba_kdc_db_context);
@@ -516,16 +511,47 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context,
 	struct ldb_dn *domain_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 	uint64_t logon_id = generate_random_u64();
 
+	heim_object_t auth_details_obj = NULL;
+	const char *auth_details = NULL;
+
+	heim_object_t hdb_auth_status_obj = NULL;
+	int hdb_auth_status;
+
+	heim_object_t pa_type_obj = NULL;
+	const char *pa_type = NULL;
+
+	struct auth_usersupplied_info ui;
+
+	size_t sa_socklen = 0;
+
+	hdb_auth_status_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_AUTH_EVENT_TYPE);
+	if (hdb_auth_status_obj == NULL) {
+		/* No status code found, so just return. */
+		return 0;
+	}
+
+	hdb_auth_status = heim_number_get_int(hdb_auth_status_obj);
+
+	pa_type_obj = heim_audit_getkv((heim_svc_req_desc)r, "pa");
+	if (pa_type_obj != NULL) {
+		pa_type = heim_string_get_utf8(pa_type_obj);
+	}
+
+	auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_AUTH_EVENT_DETAILS);
+	if (auth_details_obj != NULL) {
+		auth_details = heim_string_get_utf8(auth_details_obj);
+	}
+
 	/*
 	 * Forcing this via the NTLM auth structure is not ideal, but
 	 * it is the most practical option right now, and ensures the
 	 * logs are consistent, even if some elements are always NULL.
 	 */
-	struct auth_usersupplied_info ui = {
+	ui = (struct auth_usersupplied_info) {
 		.mapped_state = true,
 		.was_mapped = true,
 		.client = {
-			.account_name = original_client_name,
+			.account_name = r->cname,
 			.domain_name = NULL,
 		},
 		.service_description = "Kerberos KDC",
@@ -534,9 +560,7 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context,
 		.logon_id = logon_id
 	};
 
-	size_t sa_socklen = 0;
-
-	switch (from_addr->sa_family) {
+	switch (r->addr->sa_family) {
 	case AF_INET:
 		sa_socklen = sizeof(struct sockaddr_in);
 		break;
@@ -548,7 +572,7 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context,
 	}
 
 	switch (hdb_auth_status) {
-	case HDB_AUTHSTATUS_AUTHORIZATION_SUCCESS:
+	case HDB_AUTH_EVENT_CLIENT_AUTHORIZED:
 	{
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct samba_kdc_entry *p = talloc_get_type(entry->ctx,
@@ -568,13 +592,13 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context,
 		talloc_free(frame);
 		break;
 	}
-	case HDB_AUTHSTATUS_CLIENT_LOCKED_OUT:
-	case HDB_AUTHSTATUS_CORRECT_PASSWORD:
-	case HDB_AUTHSTATUS_WRONG_PASSWORD:
-	case HDB_AUTHSTATUS_GENERIC_SUCCESS:
-	case HDB_AUTHSTATUS_GENERIC_FAILURE:
-	case HDB_AUTHSTATUS_PKINIT_SUCCESS:
-	case HDB_AUTHSTATUS_PKINIT_FAILURE:
+	case HDB_AUTH_EVENT_CLIENT_LOCKED_OUT:
+	case HDB_AUTH_EVENT_LTK_PREAUTH_SUCCEEDED:
+	case HDB_AUTH_EVENT_LTK_PREAUTH_FAILED:
+	case HDB_AUTH_EVENT_OTHER_PREAUTH_SUCCEEDED:
+	case HDB_AUTH_EVENT_OTHER_PREAUTH_FAILED:
+	case HDB_AUTH_EVENT_PKINIT_SUCCEEDED:
+	case HDB_AUTH_EVENT_PKINIT_FAILED:
 	{
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct samba_kdc_entry *p = talloc_get_type(entry->ctx,
@@ -589,7 +613,7 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context,
 		NTSTATUS status;
 		int ret;
 
-		ret = tsocket_address_bsd_from_sockaddr(frame, from_addr,
+		ret = tsocket_address_bsd_from_sockaddr(frame, r->addr,
 							sa_socklen,
 							&remote_host);
 		if (ret != 0) {
@@ -613,7 +637,7 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context,
 		}
 		ui.auth_description = auth_description;
 
-		if (hdb_auth_status == HDB_AUTHSTATUS_WRONG_PASSWORD) {
+		if (hdb_auth_status == HDB_AUTH_EVENT_LTK_PREAUTH_FAILED) {
 			authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
 			status = NT_STATUS_WRONG_PASSWORD;
 			/*
@@ -624,17 +648,17 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context,
 			if (kdc_db_ctx->rodc) {
 				send_bad_password_netlogon(frame, kdc_db_ctx, &ui);
 			}
-		} else if (hdb_auth_status == HDB_AUTHSTATUS_CLIENT_LOCKED_OUT) {
+		} else if (hdb_auth_status == HDB_AUTH_EVENT_CLIENT_LOCKED_OUT) {
 			status = NT_STATUS_ACCOUNT_LOCKED_OUT;
-		} else if (hdb_auth_status == HDB_AUTHSTATUS_CORRECT_PASSWORD) {
+		} else if (hdb_auth_status == HDB_AUTH_EVENT_LTK_PREAUTH_SUCCEEDED) {
 			status = NT_STATUS_OK;
-		} else if (hdb_auth_status == HDB_AUTHSTATUS_GENERIC_SUCCESS) {
+		} else if (hdb_auth_status == HDB_AUTH_EVENT_OTHER_PREAUTH_SUCCEEDED) {
 			status = NT_STATUS_OK;
-		} else if (hdb_auth_status == HDB_AUTHSTATUS_GENERIC_FAILURE) {
+		} else if (hdb_auth_status == HDB_AUTH_EVENT_OTHER_PREAUTH_FAILED) {
 			status = NT_STATUS_GENERIC_COMMAND_FAILED;
-		} else if (hdb_auth_status == HDB_AUTHSTATUS_PKINIT_SUCCESS) {
+		} else if (hdb_auth_status == HDB_AUTH_EVENT_PKINIT_SUCCEEDED) {
 			status = NT_STATUS_OK;
-		} else if (hdb_auth_status == HDB_AUTHSTATUS_PKINIT_FAILURE) {
+		} else if (hdb_auth_status == HDB_AUTH_EVENT_PKINIT_FAILED) {
 			status = NT_STATUS_PKINIT_FAILURE;
 		} else {
 			status = NT_STATUS_INTERNAL_ERROR;
@@ -642,7 +666,7 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context,
 
 		log_authentication_event(kdc_db_ctx->msg_ctx,
 					 kdc_db_ctx->lp_ctx,
-					 start_time,
+					 &r->tv_start,
 					 &ui,
 					 status,
 					 domain_name,
@@ -651,12 +675,12 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context,
 		TALLOC_FREE(frame);
 		break;
 	}
-	case HDB_AUTHSTATUS_CLIENT_UNKNOWN:
+	case HDB_AUTH_EVENT_CLIENT_UNKNOWN:
 	{
 		struct tsocket_address *remote_host;
 		int ret;
 		TALLOC_CTX *frame = talloc_stackframe();
-		ret = tsocket_address_bsd_from_sockaddr(frame, from_addr,
+		ret = tsocket_address_bsd_from_sockaddr(frame, r->addr,
 							sa_socklen,
 							&remote_host);
 		if (ret != 0) {
@@ -673,7 +697,7 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context,
 
 		log_authentication_event(kdc_db_ctx->msg_ctx,
 					 kdc_db_ctx->lp_ctx,
-					 start_time,
+					 &r->tv_start,
 					 &ui,
 					 NT_STATUS_NO_SUCH_USER,
 					 NULL, NULL,
@@ -736,7 +760,7 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 	(*db)->hdb__del = NULL;
 	(*db)->hdb_destroy = hdb_samba4_destroy;
 
-	(*db)->hdb_auth_status = hdb_samba4_auth_status;
+	(*db)->hdb_audit = hdb_samba4_audit;
 	(*db)->hdb_check_constrained_delegation = hdb_samba4_check_constrained_delegation;
 	(*db)->hdb_check_pkinit_ms_upn_match = hdb_samba4_check_pkinit_ms_upn_match;
 	(*db)->hdb_check_client_matches_target_service = hdb_samba4_check_client_matches_target_service;
