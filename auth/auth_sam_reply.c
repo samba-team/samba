@@ -616,11 +616,13 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (pac_upn_dns_info != NULL) {
-		user_info_dc->info->user_principal_name =
-			talloc_strdup(user_info_dc->info,
-				      pac_upn_dns_info->upn_name);
-		if (user_info_dc->info->user_principal_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
+		if (pac_upn_dns_info->upn_name != NULL) {
+			user_info_dc->info->user_principal_name =
+				talloc_strdup(user_info_dc->info,
+					      pac_upn_dns_info->upn_name);
+			if (user_info_dc->info->user_principal_name == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 
 		user_info_dc->info->dns_domain_name =
