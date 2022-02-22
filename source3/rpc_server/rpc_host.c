@@ -1347,10 +1347,10 @@ again:
 		goto done;
 	}
 
-	DBG_WARNING("Sending new client %s to %d with %"PRIu32" clients\n",
-		    server->rpc_server_exe,
-		    worker->pid,
-		    worker->num_clients);
+	DBG_INFO("Sending new client %s to %d with %"PRIu32" clients\n",
+		 server->rpc_server_exe,
+		 worker->pid,
+		 worker->num_clients);
 
 	iov = (struct iovec) {
 		.iov_base = blob.data, .iov_len = blob.length,
