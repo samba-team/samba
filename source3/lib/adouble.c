@@ -2757,17 +2757,14 @@ int adouble_path(TALLOC_CTX *ctx,
 {
 	char *parent;
 	const char *base;
-	struct smb_filename *smb_fname = cp_smb_filename(ctx,
-						smb_fname_in);
+	struct smb_filename *smb_fname = NULL;
 
+	smb_fname = cp_smb_filename_nostream(ctx, smb_fname_in);
 	if (smb_fname == NULL) {
 		return -1;
 	}
 
-	/* We need streamname to be NULL */
-	TALLOC_FREE(smb_fname->stream_name);
-
-	/* And we're replacing base_name. */
+	/* We're replacing base_name. */
 	TALLOC_FREE(smb_fname->base_name);
 
 	SET_STAT_INVALID(smb_fname->st);
