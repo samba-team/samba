@@ -405,6 +405,22 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		goto fail;
 	}
 
+	if (is_named_stream(smb_fname)) {
+		struct smb_filename *base_name = NULL;
+
+		base_name = cp_smb_filename_nostream(NULL, smb_fname);
+		if (base_name == NULL) {
+			goto nomem;
+		}
+
+		status = openat_pathref_fsp(fspcwd, base_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+
+		fsp->base_fsp = base_name->fsp;
+	}
+
 	fd = SMB_VFS_OPENAT(vfs->conn,
 			    fspcwd,
 			    smb_fname,
