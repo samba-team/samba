@@ -1106,7 +1106,10 @@ krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,
 
 	ret = krb5_get_renewed_creds(context, &creds, client, ccache, discard_const_p(char, service_string));
 	if (ret) {
-		DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
+		DBG_DEBUG("krb5_get_renewed_creds using ccache '%s' "
+			  "for client '%s' and service '%s' failed: %s\n",
+			  ccache_string, client_string, service_string,
+			  error_message(ret));
 		goto done;
 	}
 
