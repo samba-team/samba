@@ -30,7 +30,6 @@
 #include "common/logging.h"
 
 #include "common/common.h"
-#include "common/rb_tree.h"
 
 #include "protocol/protocol_util.h"
 

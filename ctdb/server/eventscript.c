@@ -36,7 +36,6 @@
 
 #include "ctdb_private.h"
 
-#include "common/rb_tree.h"
 #include "common/common.h"
 #include "common/logging.h"
 #include "common/reqid.h"

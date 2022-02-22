@@ -38,7 +38,6 @@
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
-#include "common/rb_tree.h"
 #include "common/reqid.h"
 #include "common/system.h"
 #include "common/system_socket.h"
