@@ -789,6 +789,8 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 				     WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
 				     NULL,
 				     local_service,
+				     NULL,
+				     NULL,
 				     &pac_data_ctr);
 	if (user_ccache_file != NULL) {
 		gain_root_privilege();
