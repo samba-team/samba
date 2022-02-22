@@ -687,6 +687,8 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	const char *local_service;
 	uint32_t i;
 	struct netr_SamInfo6 *info6_copy = NULL;
+	char *canon_principal = NULL;
+	char *canon_realm = NULL;
 	bool ok;
 
 	*info6 = NULL;
@@ -789,8 +791,8 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 				     WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
 				     NULL,
 				     local_service,
-				     NULL,
-				     NULL,
+				     &canon_principal,
+				     &canon_realm,
 				     &pac_data_ctr);
 	if (user_ccache_file != NULL) {
 		gain_root_privilege();
@@ -856,7 +858,9 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 					    time(NULL),
 					    ticket_lifetime,
 					    renewal_until,
-					    false);
+					    false,
+					    canon_principal,
+					    canon_realm);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_raw_kerberos_login: failed to add ccache to list: %s\n",
@@ -1233,7 +1237,9 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 							    time(NULL),
 							    time(NULL) + lp_winbind_cache_time(),
 							    time(NULL) + WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
-							    true);
+							    true,
+							    principal_s,
+							    realm);
 
 				if (!NT_STATUS_IS_OK(result)) {
 					DEBUG(10,("winbindd_dual_pam_auth_cached: failed "
