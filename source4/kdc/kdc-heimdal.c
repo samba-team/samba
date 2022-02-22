@@ -42,7 +42,7 @@
 
 NTSTATUS server_service_kdc_init(TALLOC_CTX *);
 
-extern struct krb5plugin_windc_ftable windc_plugin_table;
+extern struct krb5plugin_kdc_ftable kdc_plugin_table;
 
 /**
    Wrapper for krb5_kdc_process_krb5_request, converting to/from Samba
@@ -470,19 +470,19 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 		return;
 	}
 
-	/* Register WinDC hooks */
+	/* Register KDC hooks */
 	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context,
-				   PLUGIN_TYPE_DATA, "windc",
-				   &windc_plugin_table);
+				   PLUGIN_TYPE_DATA, "kdc",
+				   &kdc_plugin_table);
 	if(ret) {
-		task_server_terminate(task, "kdc: failed to register windc plugin", true);
+		task_server_terminate(task, "kdc: failed to register kdc plugin", true);
 		return;
 	}
 
-	ret = krb5_kdc_windc_init(kdc->smb_krb5_context->krb5_context);
+	ret = krb5_kdc_plugin_init(kdc->smb_krb5_context->krb5_context);
 
 	if(ret) {
-		task_server_terminate(task, "kdc: failed to init windc plugin", true);
+		task_server_terminate(task, "kdc: failed to init kdc plugin", true);
 		return;
 	}
 
