@@ -383,12 +383,11 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 	fsp = talloc_zero(vfs, struct files_struct);
 	if (fsp == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 	fsp->fh = fd_handle_create(fsp);
 	if (fsp->fh == NULL) {
-		TALLOC_FREE(fsp);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 	fsp->conn = vfs->conn;
 
@@ -396,15 +395,14 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 					argv[1],
 					lp_posix_pathnames());
 	if (smb_fname == NULL) {
-		TALLOC_FREE(fsp);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	fsp->fsp_name = smb_fname;
 
 	status = vfs_at_fspcwd(fsp, vfs->conn, &fspcwd);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto fail;
 	}
 
 	fd = SMB_VFS_OPENAT(vfs->conn,
@@ -415,9 +413,8 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 			    mode);
 	if (fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
-		TALLOC_FREE(fsp);
-		TALLOC_FREE(smb_fname);
-		return NT_STATUS_UNSUCCESSFUL;
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 	fsp_set_fd(fsp, fd);
 
@@ -435,9 +432,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 	if (!NT_STATUS_IS_OK(status)) {
 		fd_close(fsp);
-		TALLOC_FREE(fsp);
-		TALLOC_FREE(smb_fname);
-		return status;
+		goto fail;
 	}
 
 	fsp->file_id = vfs_file_id_from_sbuf(vfs->conn, &smb_fname->st);
@@ -454,6 +449,13 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	vfs->files[fsp_get_pathref_fd(fsp)] = fsp;
 	printf("open: fd=%d\n", fsp_get_pathref_fd(fsp));
 	return NT_STATUS_OK;
+
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+fail:
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(fsp);
+	return status;
 }
 
 
