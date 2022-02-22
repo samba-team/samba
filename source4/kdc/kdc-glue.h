@@ -28,7 +28,7 @@
 #include <hdb.h>
 #include <heimbase.h>
 #include <kdc.h>
-#include <krb5/windc_plugin.h>
+#include <krb5/kdc-plugin.h>
 #include "kdc/samba_kdc.h"
 #include "kdc/kdc-server.h"
 
