@@ -61,7 +61,10 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 {
 	krb5_error_code ret;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-	DATA_BLOB tkt, tkt_wrapped, ap_rep, sesskey1;
+	DATA_BLOB tkt = data_blob_null;
+	DATA_BLOB tkt_wrapped = data_blob_null;
+	DATA_BLOB ap_rep = data_blob_null;
+	DATA_BLOB sesskey1 = data_blob_null;
 	const char *auth_princ = NULL;
 	const char *cc = "MEMORY:kerberos_return_pac";
 	struct auth_session_info *session_info;
@@ -81,7 +84,8 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(sesskey1);
 
 	if (!name || !pass) {
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
 	if (cache_name) {
@@ -131,7 +135,8 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 
 	if (expire_time && renew_till_time &&
 	    (*expire_time == 0) && (*renew_till_time == 0)) {
-		return NT_STATUS_INVALID_LOGON_TYPE;
+		status = NT_STATUS_INVALID_LOGON_TYPE;
+		goto out;
 	}
 
 	ret = ads_krb5_cli_get_ticket(mem_ctx,
