@@ -1079,7 +1079,7 @@ krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,
 		goto done;
 	}
 
-	DEBUG(10,("smb_krb5_renew_ticket: using %s as ccache\n", ccache_string));
+	DBG_DEBUG("Using %s as ccache for '%s'\n", ccache_string, client_string);
 
 	/* FIXME: we should not fall back to defaults */
 	ret = krb5_cc_resolve(context, discard_const_p(char, ccache_string), &ccache);
