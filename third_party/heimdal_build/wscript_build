@@ -549,6 +549,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
         lib/gssapi/krb5/inquire_names_for_mech.c
         lib/gssapi/krb5/indicate_mechs.c
         lib/gssapi/krb5/inquire_sec_context_by_oid.c
+        lib/gssapi/krb5/name_attrs.c
         lib/gssapi/krb5/export_sec_context.c
         lib/gssapi/krb5/import_sec_context.c
         lib/gssapi/krb5/duplicate_name.c
@@ -658,6 +659,8 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
         lib/gssapi/mech/gss_release_name.c
         lib/gssapi/mech/gss_set_cred_option.c
         lib/gssapi/mech/gss_pseudo_random.c
+        lib/gssapi/mech/gss_authorize_localname.c
+        lib/gssapi/mech/gss_get_name_attribute.c
         lib/gssapi/mech/gssspi_exchange_meta_data.c
         lib/gssapi/mech/gssspi_query_mechanism_info.c
         lib/gssapi/mech/gssspi_query_meta_data.c
