@@ -21,5 +21,5 @@ set -e
 set -x
 set -u
 
-$(dirname $0)/do_build.sh $@
-$(dirname $0)/check_build.sh $OUT
+"$(dirname "${0}")"/do_build.sh "$@"
+"$(dirname "${0}")"/check_build.sh "${OUT}"
