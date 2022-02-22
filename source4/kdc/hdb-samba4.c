@@ -79,7 +79,7 @@ static krb5_error_code hdb_samba4_rename(krb5_context context, HDB *db, const ch
 	return HDB_ERR_DB_INUSE;
 }
 
-static krb5_error_code hdb_samba4_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+static krb5_error_code hdb_samba4_store(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
 	return HDB_ERR_DB_INUSE;
 }
@@ -91,6 +91,24 @@ static krb5_error_code hdb_samba4_store(krb5_context context, HDB *db, unsigned 
 static krb5_error_code hdb_samba4_set_sync(krb5_context context, struct HDB *db, int set_sync)
 {
 	return 0;
+}
+
+static void hdb_samba4_free_entry_context(krb5_context context, struct HDB *db, hdb_entry *entry)
+{
+	/*
+	 * This function is now called for every HDB entry, not just those with
+	 * 'context' set, so we have to check that the context is not NULL.
+	*/
+	if (entry->context != NULL) {
+		/* this function is called only from hdb_free_entry().
+		 * Make sure we neutralize the destructor or we will
+		 * get a double free later when hdb_free_entry() will
+		 * try to call free_hdb_entry() */
+		talloc_set_destructor(entry->context, NULL);
+
+		/* now proceed to free the talloc part */
+		talloc_free(entry->context);
+	}
 }
 
 static int hdb_samba4_fill_fast_cookie(krb5_context context,
@@ -131,7 +149,7 @@ static int hdb_samba4_fill_fast_cookie(krb5_context context,
 
 static krb5_error_code hdb_samba4_fetch_fast_cookie(krb5_context context,
 						    struct samba_kdc_db_context *kdc_db_ctx,
-						    hdb_entry_ex *entry_ex)
+						    hdb_entry *entry_ex)
 {
 	krb5_error_code ret = SDB_ERR_NOENTRY;
 	TALLOC_CTX *mem_ctx;
@@ -219,7 +237,7 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 					     krb5_const_principal principal,
 					     unsigned flags,
 					     krb5_kvno kvno,
-					     hdb_entry_ex *entry_ex)
+					     hdb_entry *entry_ex)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
 	struct sdb_entry_ex sdb_entry_ex = {};
@@ -273,7 +291,7 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 }
 
 static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsigned flags,
-					hdb_entry_ex *entry)
+					hdb_entry *entry)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
 	struct sdb_entry_ex sdb_entry_ex = {};
@@ -302,7 +320,7 @@ static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsign
 }
 
 static krb5_error_code hdb_samba4_nextkey(krb5_context context, HDB *db, unsigned flags,
-				   hdb_entry_ex *entry)
+				   hdb_entry *entry)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
 	struct sdb_entry_ex sdb_entry_ex = {};
@@ -338,7 +356,7 @@ static krb5_error_code hdb_samba4_destroy(krb5_context context, HDB *db)
 
 static krb5_error_code
 hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
-					hdb_entry_ex *entry,
+					hdb_entry *entry,
 					krb5_const_principal target_principal)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
@@ -347,7 +365,7 @@ hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
 
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
-	skdc_entry = talloc_get_type_abort(entry->ctx,
+	skdc_entry = talloc_get_type_abort(entry->context,
 					   struct samba_kdc_entry);
 
 	ret = samba_kdc_check_s4u2proxy(context, kdc_db_ctx,
@@ -374,7 +392,7 @@ hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
 
 static krb5_error_code
 hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db,
-				     hdb_entry_ex *entry,
+				     hdb_entry *entry,
 				     krb5_const_principal certificate_principal)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
@@ -383,7 +401,7 @@ hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db,
 
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
-	skdc_entry = talloc_get_type_abort(entry->ctx,
+	skdc_entry = talloc_get_type_abort(entry->context,
 					   struct samba_kdc_entry);
 
 	ret = samba_kdc_check_pkinit_ms_upn_match(context, kdc_db_ctx,
@@ -410,14 +428,14 @@ hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db,
 
 static krb5_error_code
 hdb_samba4_check_client_matches_target_service(krb5_context context, HDB *db,
-			  hdb_entry_ex *client_entry,
-			  hdb_entry_ex *server_target_entry)
+			  hdb_entry *client_entry,
+			  hdb_entry *server_target_entry)
 {
 	struct samba_kdc_entry *skdc_client_entry
-		= talloc_get_type_abort(client_entry->ctx,
+		= talloc_get_type_abort(client_entry->context,
 					struct samba_kdc_entry);
 	struct samba_kdc_entry *skdc_server_target_entry
-		= talloc_get_type_abort(server_target_entry->ctx,
+		= talloc_get_type_abort(server_target_entry->context,
 					struct samba_kdc_entry);
 
 	return samba_kdc_check_client_matches_target_service(context,
@@ -503,7 +521,7 @@ static void send_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 
 static krb5_error_code hdb_samba4_audit(krb5_context context,
 					HDB *db,
-					hdb_entry_ex *entry,
+					hdb_entry *entry,
 					hdb_request_t r)
 {
 	struct samba_kdc_db_context *kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
@@ -595,7 +613,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	case HDB_AUTH_EVENT_CLIENT_AUTHORIZED:
 	{
 		TALLOC_CTX *frame = talloc_stackframe();
-		struct samba_kdc_entry *p = talloc_get_type(entry->ctx,
+		struct samba_kdc_entry *p = talloc_get_type(entry->context,
 							    struct samba_kdc_entry);
 		struct netr_SendToSamBase *send_to_sam = NULL;
 
@@ -619,7 +637,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	case HDB_AUTH_EVENT_PREAUTH_FAILED:
 	{
 		TALLOC_CTX *frame = talloc_stackframe();
-		struct samba_kdc_entry *p = talloc_get_type(entry->ctx,
+		struct samba_kdc_entry *p = talloc_get_type(entry->context,
 							    struct samba_kdc_entry);
 		struct dom_sid *sid
 			= samdb_result_dom_sid(frame, p->msg, "objectSid");
@@ -766,6 +784,7 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 	(*db)->hdb_dbc = NULL;
 	(*db)->hdb_open = hdb_samba4_open;
 	(*db)->hdb_close = hdb_samba4_close;
+	(*db)->hdb_free_entry_context = hdb_samba4_free_entry_context;
 	(*db)->hdb_fetch_kvno = hdb_samba4_fetch_kvno;
 	(*db)->hdb_store = hdb_samba4_store;
 	(*db)->hdb_firstkey = hdb_samba4_firstkey;

@@ -50,5 +50,5 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 int kdc_check_pac(krb5_context krb5_context,
 		  DATA_BLOB server_sig,
 		  struct PAC_SIGNATURE_DATA *kdc_sig,
-		  hdb_entry_ex *ent);
+		  hdb_entry *ent);
 #endif
