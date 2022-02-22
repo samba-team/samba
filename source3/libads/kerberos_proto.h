@@ -78,6 +78,8 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     time_t renewable_time,
 			     const char *impersonate_princ_s,
 			     const char *local_service,
+			     char **_canon_principal,
+			     char **_canon_realm,
 			     struct PAC_DATA_CTR **pac_data_ctr);
 
 /* The following definitions come from libads/krb5_setpw.c  */
