@@ -37,8 +37,9 @@
  * For PKINIT we also get pk_reply_key and can add PAC_CREDENTIAL_INFO.
  */
 static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
-					 struct hdb_entry_ex *client,
-					 struct hdb_entry_ex *server,
+					 krb5_kdc_configuration *config,
+					 hdb_entry *client,
+					 hdb_entry *server,
 					 const krb5_keyblock *pk_reply_key,
 					 uint64_t pac_attributes,
 					 krb5_pac *pac)
@@ -55,11 +56,11 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct samba_kdc_entry *skdc_entry =
-		talloc_get_type_abort(client->ctx,
+		talloc_get_type_abort(client->context,
 		struct samba_kdc_entry);
 	bool is_krbtgt;
 
-	mem_ctx = talloc_named(client->ctx, 0, "samba_get_pac context");
+	mem_ctx = talloc_named(client->context, 0, "samba_get_pac context");
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
@@ -68,7 +69,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 		cred_ndr_ptr = &cred_ndr;
 	}
 
-	is_krbtgt = krb5_principal_is_krbtgt(context, server->entry.principal);
+	is_krbtgt = krb5_principal_is_krbtgt(context, server->principal);
 
 	nt_status = samba_kdc_get_pac_blobs(mem_ctx, skdc_entry,
 					    &logon_blob,
@@ -112,17 +113,17 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 
 static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 					    const krb5_principal delegated_proxy_principal,
-					    struct hdb_entry_ex *client,
-					    struct hdb_entry_ex *server,
-					    struct hdb_entry_ex *krbtgt,
+					    hdb_entry *client,
+					    hdb_entry *server,
+					    hdb_entry *krbtgt,
 					    krb5_pac *pac,
 					    krb5_cksumtype ctype)
 {
 	struct samba_kdc_entry *server_skdc_entry =
-		talloc_get_type_abort(server->ctx,
+		talloc_get_type_abort(server->context,
 		struct samba_kdc_entry);
 	struct samba_kdc_entry *krbtgt_skdc_entry =
-		talloc_get_type_abort(krbtgt->ctx,
+		talloc_get_type_abort(krbtgt->context,
 		struct samba_kdc_entry);
 	TALLOC_CTX *mem_ctx = talloc_named(server_skdc_entry,
 					   0,
@@ -157,7 +158,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 	if (client != NULL) {
 		struct samba_kdc_entry *client_skdc_entry = NULL;
 
-		client_skdc_entry = talloc_get_type_abort(client->ctx,
+		client_skdc_entry = talloc_get_type_abort(client->context,
 							  struct samba_kdc_entry);
 
 		/*
@@ -214,7 +215,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 				return ret;
 			}
 		}
-		ret = hdb_enctype2key(context, &krbtgt->entry, NULL, etype, &key);
+		ret = hdb_enctype2key(context, krbtgt, NULL, etype, &key);
 		if (ret != 0) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -241,7 +242,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 
 		nt_status = samba_kdc_update_delegation_info_blob(mem_ctx,
 					context, *pac,
-					server->entry.principal,
+					server->principal,
 					delegated_proxy_principal,
 					deleg_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -261,7 +262,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 		}
 
-		client_skdc_entry = talloc_get_type_abort(client->ctx,
+		client_skdc_entry = talloc_get_type_abort(client->context,
 							  struct samba_kdc_entry);
 
 		nt_status = samba_kdc_get_pac_blobs(mem_ctx, client_skdc_entry,
@@ -485,7 +486,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 		goto out;
 	}
 
-	is_krbtgt = krb5_principal_is_krbtgt(context, server->entry.principal);
+	is_krbtgt = krb5_principal_is_krbtgt(context, server->principal);
 
 	if (!is_untrusted && !is_krbtgt) {
 		/*
@@ -663,19 +664,20 @@ out:
 /* Resign (and reform, including possibly new groups) a PAC */
 
 static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
+					   krb5_kdc_configuration *config,
 					   const krb5_principal client_principal,
 					   const krb5_principal delegated_proxy_principal,
-					   struct hdb_entry_ex *client,
-					   struct hdb_entry_ex *server,
-					   struct hdb_entry_ex *krbtgt,
+					   hdb_entry *client,
+					   hdb_entry *server,
+					   hdb_entry *krbtgt,
 					   krb5_pac *pac)
 {
 	struct samba_kdc_entry *krbtgt_skdc_entry =
-		talloc_get_type_abort(krbtgt->ctx,
+		talloc_get_type_abort(krbtgt->context,
 				      struct samba_kdc_entry);
 	krb5_error_code ret;
 	krb5_cksumtype ctype = CKSUMTYPE_NONE;
-	struct hdb_entry_ex signing_krbtgt_hdb;
+	hdb_entry signing_krbtgt_hdb;
 
 	if (delegated_proxy_principal) {
 		uint16_t rodc_id;
@@ -726,7 +728,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 			 * different KDC than the one that issued the header
 			 * ticket.
 			 */
-			if (rodc_id != krbtgt->entry.kvno >> 16) {
+			if (rodc_id != krbtgt->kvno >> 16) {
 				struct sdb_entry_ex signing_krbtgt_sdb;
 
 				/*
@@ -745,7 +747,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 				 */
 				ret = samba_kdc_fetch(context,
 						      krbtgt_skdc_entry->kdc_db_ctx,
-						      krbtgt->entry.principal,
+						      krbtgt->principal,
 						      SDB_F_GET_KRBTGT | SDB_F_CANON,
 						      0,
 						      &signing_krbtgt_sdb);
@@ -779,7 +781,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 				   ctype);
 
 	if (krbtgt == &signing_krbtgt_hdb) {
-		hdb_free_entry(context, &signing_krbtgt_hdb);
+		hdb_free_entry(context, config->db[0], &signing_krbtgt_hdb);
 	}
 
 	return ret;
@@ -844,9 +846,9 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 	char *workstation;
 	NTSTATUS nt_status;
 
-	kdc_entry = talloc_get_type(r->client->ctx, struct samba_kdc_entry);
-	password_change = (r->server && r->server->entry.flags.change_pw);
-	workstation = get_netbios_name((TALLOC_CTX *)r->client->ctx,
+	kdc_entry = talloc_get_type(r->client->context, struct samba_kdc_entry);
+	password_change = (r->server && r->server->flags.change_pw);
+	workstation = get_netbios_name((TALLOC_CTX *)r->client->context,
 					r->req.req_body.addresses);
 
 	nt_status = samba_kdc_check_client_access(kdc_entry,
@@ -905,7 +907,7 @@ static krb5_error_code samba_wdc_finalize_reply(void *priv,
 	struct samba_kdc_entry *server_kdc_entry;
 	uint32_t supported_enctypes;
 
-	server_kdc_entry = talloc_get_type(r->server->ctx, struct samba_kdc_entry);
+	server_kdc_entry = talloc_get_type(r->server->context, struct samba_kdc_entry);
 
 	/*
 	 * If the canonicalize flag is set, add PA-SUPPORTED-ENCTYPES padata
@@ -960,7 +962,7 @@ static krb5_error_code samba_wdc_referral_policy(void *priv,
 }
 
 struct krb5plugin_kdc_ftable kdc_plugin_table = {
-	.minor_version = KRB5_PLUGIN_KDC_VERSION_9,
+	.minor_version = KRB5_PLUGIN_KDC_VERSION_10,
 	.init = samba_wdc_plugin_init,
 	.fini = samba_wdc_plugin_fini,
 	.pac_verify = samba_wdc_reget_pac,

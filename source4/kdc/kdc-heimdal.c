@@ -191,7 +191,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 		(krb5_kdc_configuration *)kdc->private_data;
 	enum ndr_err_code ndr_err;
 	int ret;
-	hdb_entry_ex ent;
+	hdb_entry ent;
 	krb5_principal principal;
 
 
@@ -235,7 +235,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 						 &ent);
 
 	if (ret != 0) {
-		hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);
+		hdb_free_entry(kdc->smb_krb5_context->krb5_context, kdc_config->db[0], &ent);
 		krb5_free_principal(kdc->smb_krb5_context->krb5_context, principal);
 
 		return NT_STATUS_LOGON_FAILURE;
@@ -247,7 +247,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 
 	ret = kdc_check_pac(kdc->smb_krb5_context->krb5_context, srv_sig, &kdc_sig, &ent);
 
-	hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);
+	hdb_free_entry(kdc->smb_krb5_context->krb5_context, kdc_config->db[0], &ent);
 	krb5_free_principal(kdc->smb_krb5_context->krb5_context, principal);
 
 	if (ret != 0) {

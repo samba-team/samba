@@ -180,8 +180,6 @@ static int sdb_entry_to_hdb_entry(krb5_context context,
 	unsigned int i;
 	int rc;
 
-	ZERO_STRUCTP(h);
-
 	rc = krb5_copy_principal(context,
 				 s->principal,
 				 &h->principal);
@@ -311,28 +309,15 @@ error:
 
 static int samba_kdc_hdb_entry_destructor(struct samba_kdc_entry *p)
 {
-	struct hdb_entry_ex *entry_ex = p->entry_ex;
-	free_hdb_entry(&entry_ex->entry);
+	hdb_entry *entry_ex = p->entry_ex;
+	free_hdb_entry(entry_ex);
 
 	return 0;
 }
 
-static void samba_kdc_free_hdb_entry(krb5_context context,
-				     struct hdb_entry_ex *entry_ex)
-{
-	/* this function is called only from hdb_free_entry().
-	 * Make sure we neutralize the destructor or we will
-	 * get a double free later when hdb_free_entry() will
-	 * try to call free_hdb_entry() */
-	talloc_set_destructor(entry_ex->ctx, NULL);
-
-	/* now proceed to free the talloc part */
-	talloc_free(entry_ex->ctx);
-}
-
 int sdb_entry_ex_to_hdb_entry_ex(krb5_context context,
 				 const struct sdb_entry_ex *s,
-				 struct hdb_entry_ex *h)
+				 hdb_entry *h)
 {
 	struct samba_kdc_entry *skdc_entry;
 
@@ -341,12 +326,11 @@ int sdb_entry_ex_to_hdb_entry_ex(krb5_context context,
 	if (s->ctx != NULL) {
 		skdc_entry = talloc_get_type(s->ctx, struct samba_kdc_entry);
 
-		h->ctx		= skdc_entry;
-		h->free_entry	= samba_kdc_free_hdb_entry;
+		h->context = skdc_entry;
 
 		talloc_set_destructor(skdc_entry,
 				      samba_kdc_hdb_entry_destructor);
 	}
 
-	return sdb_entry_to_hdb_entry(context, &s->entry, &h->entry);
+	return sdb_entry_to_hdb_entry(context, &s->entry, h);
 }
