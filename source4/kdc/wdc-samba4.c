@@ -846,13 +846,14 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 	char *workstation;
 	NTSTATUS nt_status;
 
-	kdc_entry = talloc_get_type(r->client->context, struct samba_kdc_entry);
-	password_change = (r->server && r->server->flags.change_pw);
-	workstation = get_netbios_name((TALLOC_CTX *)r->client->context,
-					r->req.req_body.addresses);
+
+	kdc_entry = talloc_get_type(kdc_request_get_client(r)->context, struct samba_kdc_entry);
+	password_change = (kdc_request_get_server(r) && kdc_request_get_server(r)->flags.change_pw);
+	workstation = get_netbios_name((TALLOC_CTX *)kdc_request_get_client(r)->context,
+				       kdc_request_get_req(r)->req_body.addresses);
 
 	nt_status = samba_kdc_check_client_access(kdc_entry,
-						  r->cname,
+						  kdc_request_get_cname((kdc_request_t)r),
 						  workstation,
 						  password_change);
 
@@ -861,12 +862,12 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 			return ENOMEM;
 		}
 
-		if (r->rep.padata) {
+		if (kdc_request_get_rep(r)->padata) {
 			int ret;
 			krb5_data kd;
 
 			samba_kdc_build_edata_reply(nt_status, &kd);
-			ret = krb5_padata_add(r->context, r->rep.padata,
+			ret = krb5_padata_add(kdc_request_get_context((kdc_request_t)r), kdc_request_get_rep(r)->padata,
 					      KRB5_PADATA_PW_SALT,
 					      kd.data, kd.length);
 			if (ret != 0) {
@@ -907,37 +908,32 @@ static krb5_error_code samba_wdc_finalize_reply(void *priv,
 	struct samba_kdc_entry *server_kdc_entry;
 	uint32_t supported_enctypes;
 
-	server_kdc_entry = talloc_get_type(r->server->context, struct samba_kdc_entry);
+	server_kdc_entry = talloc_get_type(kdc_request_get_server(r)->context, struct samba_kdc_entry);
 
 	/*
 	 * If the canonicalize flag is set, add PA-SUPPORTED-ENCTYPES padata
 	 * type to indicate what encryption types the server supports.
 	 */
 	supported_enctypes = server_kdc_entry->supported_enctypes;
-	if (r->req.req_body.kdc_options.canonicalize && supported_enctypes != 0) {
+	if (kdc_request_get_req(r)->req_body.kdc_options.canonicalize && supported_enctypes != 0) {
 		krb5_error_code ret;
-		krb5_data kd;
 
-		if (r->ek.encrypted_pa_data == NULL) {
-			r->ek.encrypted_pa_data = calloc(1, sizeof *(r->ek.encrypted_pa_data));
-			if (r->ek.encrypted_pa_data == NULL) {
-				return ENOMEM;
-			}
-		}
+		PA_DATA md;
 
-		ret = samba_kdc_build_supported_etypes(supported_enctypes, &kd);
+		ret = samba_kdc_build_supported_etypes(supported_enctypes, &md.padata_value);
 		if (ret != 0) {
 			return ret;
 		}
-		ret = krb5_padata_add(r->context, r->ek.encrypted_pa_data,
-				      KRB5_PADATA_SUPPORTED_ETYPES,
-				      kd.data, kd.length);
+
+		md.padata_type = KRB5_PADATA_SUPPORTED_ETYPES;
+
+		ret = kdc_request_add_encrypted_padata(r, &md);
 		if (ret != 0) {
 			/*
 			 * So we do not leak the allocated
 			 * memory on kd in the error case
 			 */
-			krb5_data_free(&kd);
+			krb5_data_free(&md.padata_value);
 		}
 	}
 
@@ -958,7 +954,7 @@ static void samba_wdc_plugin_fini(void *ptr)
 static krb5_error_code samba_wdc_referral_policy(void *priv,
 						 astgs_request_t r)
 {
-	return r->error_code;
+	return kdc_request_get_error_code((kdc_request_t)r);
 }
 
 struct krb5plugin_kdc_ftable kdc_plugin_table = {
