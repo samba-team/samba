@@ -960,7 +960,7 @@ static krb5_error_code samba_wdc_referral_policy(void *priv,
 }
 
 struct krb5plugin_kdc_ftable kdc_plugin_table = {
-	.minor_version = KRB5_KDC_PLUGIN_MINOR,
+	.minor_version = KRB5_PLUGIN_KDC_VERSION_8,
 	.init = samba_wdc_plugin_init,
 	.fini = samba_wdc_plugin_fini,
 	.pac_verify = samba_wdc_reget_pac,
