@@ -351,7 +351,7 @@ static bool create_special_id(TALLOC_CTX *mem_ctx,
 	char *s = talloc_strdup(mem_ctx, id);
 
 	if (s == NULL) {
-		DBG_ERR("talloc_memdup failed\n");
+		DBG_ERR("talloc_strdup failed\n");
 		return false;
 	}
 	nace->who.utf8string_val = s;
