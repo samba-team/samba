@@ -209,7 +209,7 @@ rekinit:
 	set_effective_uid(entry->uid);
 
 	ret = smb_krb5_renew_ticket(entry->ccname,
-				    entry->principal_name,
+				    entry->canon_principal,
 				    entry->service,
 				    &new_start);
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
