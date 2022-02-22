@@ -3246,6 +3246,8 @@ static int net_ads_kerberos_pac_common(struct net_context *c, int argc, const ch
 				     2592000, /* one month */
 				     impersonate_princ_s,
 				     local_service,
+				     NULL,
+				     NULL,
 				     pac_data_ctr);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("failed to query kerberos PAC: %s\n"),
