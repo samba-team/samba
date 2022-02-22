@@ -236,7 +236,9 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			    time_t create_time,
 			    time_t ticket_end,
 			    time_t renew_until,
-			    bool postponed_request);
+			    bool postponed_request,
+			    const char *canon_principal,
+			    const char *canon_realm);
 NTSTATUS remove_ccache(const char *username);
 struct WINBINDD_MEMORY_CREDS *find_memory_creds_by_name(const char *username);
 NTSTATUS winbindd_add_memory_creds(const char *username,

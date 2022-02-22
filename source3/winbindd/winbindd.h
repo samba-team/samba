@@ -344,6 +344,8 @@ struct WINBINDD_CCACHE_ENTRY {
 	const char *service;
 	const char *username;
 	const char *realm;
+	const char *canon_principal;
+	const char *canon_realm;
 	struct WINBINDD_MEMORY_CREDS *cred_ptr;
 	int ref_count;
 	uid_t uid;
