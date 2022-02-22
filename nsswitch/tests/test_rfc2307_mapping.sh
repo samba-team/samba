@@ -63,10 +63,12 @@ knownfail()
 }
 
 # Create new testing account
-testit "user add" $PYTHON $samba_tool user create --given-name="rfc2307" --surname="Tester" --initial="UT" rfc2307_test_user testp@ssw0Rd $@
+testit "user add" $PYTHON $samba_tool user create --given-name="rfc2307" \
+	--surname="Tester" --initial="UT" rfc2307_test_user testp@ssw0Rd "$@"
 
 #test creation of six different groups
-testit "group add" $PYTHON $samba_tool group add $CONFIG --group-scope='Domain' --group-type='Security' rfc2307_test_group $@
+testit "group add" $PYTHON $samba_tool group add $CONFIG \
+	--group-scope='Domain' --group-type='Security' rfc2307_test_group "$@"
 
 # Create new testing group
 
@@ -115,7 +117,9 @@ add: uidNumber
 uidNumber: $UID_RFC2307TEST
 EOF
 
-testit "modify gidNumber on group" $VALGRIND $ldbmodify -H ldap://$SERVER $PREFIX/tmpldbmodify -U$DOMAIN/$USERNAME%$PASSWORD $@ || failed=$(expr $failed + 1)
+testit "modify gidNumber on group" $VALGRIND $ldbmodify -H ldap://$SERVER \
+	$PREFIX/tmpldbmodify -U$DOMAIN/$USERNAME%$PASSWORD "$@" ||
+	failed=$(expr $failed + 1)
 
 # Then add a gidNumber to the group record using ldbmodify
 cat >$PREFIX/tmpldbmodify <<EOF
@@ -125,7 +129,9 @@ add: gidNumber
 gidNumber: $GID_RFC2307TEST
 EOF
 
-testit "modify gidNumber on group" $VALGRIND $ldbmodify -H ldap://$SERVER $PREFIX/tmpldbmodify -U$DOMAIN/$USERNAME%$PASSWORD $@ || failed=$(expr $failed + 1)
+testit "modify gidNumber on group" $VALGRIND $ldbmodify -H ldap://$SERVER \
+	$PREFIX/tmpldbmodify -U$DOMAIN/$USERNAME%$PASSWORD "$@" ||
+	failed=$(expr $failed + 1)
 
 rm -f $PREFIX/tmpldbmodify
 
@@ -181,7 +187,7 @@ else
 	echo "success: wbinfo -Y check for sane mapping"
 fi
 
-testit "group delete" $PYTHON $samba_tool group delete rfc2307_test_group $@
-testit "user delete" $PYTHON $samba_tool user delete rfc2307_test_user $@
+testit "group delete" $PYTHON $samba_tool group delete rfc2307_test_group "$@"
+testit "user delete" $PYTHON $samba_tool user delete rfc2307_test_user "$@"
 
 exit $failed
