@@ -1429,10 +1429,10 @@ bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
 
 	len = p-dir;
 
-	if (!(*parent = (char *)talloc_memdup(mem_ctx, dir, len+1))) {
+	*parent = talloc_strndup(mem_ctx, dir, len);
+	if (*parent == NULL) {
 		return False;
 	}
-	(*parent)[len] = '\0';
 
 	if (name) {
 		*name = p+1;
