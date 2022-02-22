@@ -23,7 +23,7 @@
 
 ######################################################################
 ## Here an example calling sequence
-##!/bin/sh 
+##!/bin/sh
 ## set -x
 ## source VampireDriversFunctions
 
@@ -48,7 +48,7 @@
 ##
 
 ## fetchenumdrivers3listfromNThost      # repeat, if no success at first
-## createdrivernamelist 
+## createdrivernamelist
 ## createprinterlistwithUNCnames        # repeat, if no success at first
 ## createmapofprinterstodriver
 ## splitenumdrivers3list
@@ -71,7 +71,7 @@ function vampiredrivers_readme()
 {
 echo -e " \n\
 ############################################################################
-# 
+#
 #    About the \"Vampire Printer Drivers\" set of functions....
 #    --------------------------------------------------------
 #
@@ -80,7 +80,7 @@ echo -e " \n\
 #
 # ------------------------------------------------------------
 #
-# Version: 0.8 (largely \"self-documented\" now, but not yet 
+# Version: 0.8 (largely \"self-documented\" now, but not yet
 #               completely -- if it ever will be....)
 #
 # Thanks a lot to Fabian Franz for helping me with some important
@@ -104,68 +104,68 @@ echo -e " \n\
 # driver. Also, driver versions \"0\", \"2\" and \"3\" are placed in
 # further subdirectories.
 #
-# 
-# Known problems:  
-# --------------- 
-# 
-# 1) I found one printer driver containing a \"slash\" which is not 
-#    handled by this script: \"HP Color LaserJet 5/5M PS\". (There 
-#    are more of these in the wild, of course.)  -- The reason: I 
+#
+# Known problems:
+# ---------------
+#
+# 1) I found one printer driver containing a \"slash\" which is not
+#    handled by this script: \"HP Color LaserJet 5/5M PS\". (There
+#    are more of these in the wild, of course.)  -- The reason: I
 #    didn't find a way to create a Unix directory containing a \"slash\".
 #    UPDATE: The script replaces the \"/\" with a \"_\" and also renames
-#    the drivername accordingly, when it is uploaded to the Samba 
+#    the drivername accordingly, when it is uploaded to the Samba
 #    [print$] share....
-# 
-# 2) There is an unsolved problem in case a real file name deviates  
-#    in its case sensitive spelling from how it is displayed by the 
-#    \"rpcclient enumdrivers\" command. I encountered cases where 
-#    rpcclient displayed \"PS5UI.DLL\" as a file name, but \"smbclient 
-#    mget\" retrieved \"ps5ui.dll\" from the NT printserver, and the 
-#    driverinstallation failed because \"smbclient mput\" tried to put 
+#
+# 2) There is an unsolved problem in case a real file name deviates
+#    in its case sensitive spelling from how it is displayed by the
+#    \"rpcclient enumdrivers\" command. I encountered cases where
+#    rpcclient displayed \"PS5UI.DLL\" as a file name, but \"smbclient
+#    mget\" retrieved \"ps5ui.dll\" from the NT printserver, and the
+#    driverinstallation failed because \"smbclient mput\" tried to put
 #    \"PS5UI.DLL\" back onto the Samba server where UNIX only had
 #    \"ps5ui.dll\" available (which of course failed). -- UPDATE: this
-#    is now solved. All files are renamed now to the same 
-#    case-sensitive spelling as \"rpcclient ... enumdrivers 3\" 
+#    is now solved. All files are renamed now to the same
+#    case-sensitive spelling as \"rpcclient ... enumdrivers 3\"
 #    announces. This includes renaming into both, uppercase or
 #    lowercase, as the case might be....
-# 
+#
 # 3) This script is probably not portable at all and relies on lots
 #    of Bash-isms.
-# 
+#
 # 4) This script runs with rpcclient from Samba-3.0.2a (or later) only
 #    (because it uses the \"Version\" parameter for \"adddriver\").
 #
 # The following functions use a few external variables to log
-# into the 2 hosts. We suggest that you create a file which 
+# into the 2 hosts. We suggest that you create a file which
 # contains the variables and that you source that file at the
-# beginning of this script... 
-# 
+# beginning of this script...
+#
 # #################################################################
 #
-# ntprinteradmin=Administrator   # any account on the NT host 
+# ntprinteradmin=Administrator   # any account on the NT host
 #                                # with SePrintOperatorPrivilege privileges
 # ntadminpasswd=not4you          # the printer admin password on
 #                                # the NT print server
-# nthost=windowsntprintserverbox # the netbios name of the NT print 
+# nthost=windowsntprintserverbox # the netbios name of the NT print
 #                                # server
-#	
-# smbprinteradmin=knoppix        # an account on the Samba server 
+#
+# smbprinteradmin=knoppix        # an account on the Samba server
 #                                # with SePrintOperatorPrivilege privileges
 # smbadminpasswd=2secret4you     # the printer admin password on
 #                                # the Samba server
-# smbhost=knoppix                # the netbios name of the Samba 
+# smbhost=knoppix                # the netbios name of the Samba
 #                                # print server
 #
 # #################################################################
 #
-# 
-# NOTE: these functions also work for 2 NT print servers: snatch all 
-# drivers from the first, and upload them to the second server (which 
-# takes the role of the \"Samba\" server). Of course they also work 
-# for 2 Samba servers: snatch all drivers from the first (which takes 
+#
+# NOTE: these functions also work for 2 NT print servers: snatch all
+# drivers from the first, and upload them to the second server (which
+# takes the role of the \"Samba\" server). Of course they also work
+# for 2 Samba servers: snatch all drivers from the first (which takes
 # the role of the NT print server) and upload them to the second....
-# 
-# 
+#
+#
 #           ............PRESS \"q\" TO QUIT............" \
 |less
 }
@@ -218,23 +218,23 @@ else
 	echo "--> Running now function enumallfunctions()..."
 	echo "=============================================="
 	echo -e " \n\
-   
-       NOTE: run the listed functions in the same order as listed below. 
-   
-    EXAMPLE: \"knoppix@ttyp6[knoppix]$ helpwithvampiredrivers\"
-   
-       HELP: the \"--help\" parameter prints usage hints regarding a function.
-   	 
-    EXAMPLE: \"knoppix@ttyp6[knoppix]$ fetchenumdrivers3listfromNThost --help\"      
 
-   
+       NOTE: run the listed functions in the same order as listed below.
+
+    EXAMPLE: \"knoppix@ttyp6[knoppix]$ helpwithvampiredrivers\"
+
+       HELP: the \"--help\" parameter prints usage hints regarding a function.
+
+    EXAMPLE: \"knoppix@ttyp6[knoppix]$ fetchenumdrivers3listfromNThost --help\"
+
+
    function vampiredrivers_readme()
-   function enumallfunctions() 
+   function enumallfunctions()
    function helpwithvampiredrivers()
    function fetchenumdrivers3listfromNThost()  # repeat, if no success at first
-   function createdrivernamelist() 
+   function createdrivernamelist()
    function createprinterlistwithUNCnames()    # repeat, if no success at first
-   function createmapofprinterstodrivers() 
+   function createmapofprinterstodrivers()
    function splitenumdrivers3list()
    function makesubdirsforW32X86driverlist()
      function splitW32X86fileintoindividualdriverfiles()
@@ -251,10 +251,10 @@ fi
 # this is a helperfunction (Thanks to Fabian Franz!)
 function stringinstring()
 {
-	case "$2" in *$1*) 
-		return 0 
+	case "$2" in *$1*)
+		return 0
 		;;
-	esac 
+	esac
 		return 1
 }
 
@@ -267,17 +267,17 @@ function helpwithfetchenumdrivers3listfromNThost()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 #                About fetchenumdrivers3listfromNThost()....
 #                -------------------------------------------
 #
-# PRECONDITIONS: 1) This function expects write access to the current directory. 
-#		 2) This function expects to have the '\$nthosts', 
-#		    '\$ntprinteradmin' and '\$ntadminpasswd' variables set to 
+# PRECONDITIONS: 1) This function expects write access to the current directory.
+#		 2) This function expects to have the '\$nthosts',
+#		    '\$ntprinteradmin' and '\$ntadminpasswd' variables set to
 #		    according values.
 #
 # WHAT IT DOES: This function connects to the '\$nthost' (using the credentials
-#		'\$ntprinteradmin' with '\$ntadminpasswd', retrieves a list of 
+#		'\$ntprinteradmin' with '\$ntadminpasswd', retrieves a list of
 #		drivers (with related file names) from that host, and saves the
 #		list under the name of '\${nthost}/enumdrivers3list.txt' (ie. it
 #		also creates the '\$nthost' subdirectory in the current one). It
@@ -285,13 +285,13 @@ echo -e " \n\
 #
 # IF IT DOESN'T WORK: It may happen that the function doesn't work at the first
 #		      time (there may be a connection problem). Just repeat a
-#		      few times. It may work then. You will recognize if it 
+#		      few times. It may work then. You will recognize if it
 #		      does.
 #
 # HINT: The current values: 'nthost'=\"$nthost\"
 #			    'ntprinteradmin'=\"$ntprinteradmin\"
 #			    'ntadminpasswd'=<not shown here, check yourself!>
-# 
+#
 ################################################################################"
 echo " "
 }
@@ -312,7 +312,7 @@ else
 	| sed  -e '/^.*Driver Name: \[.*\]/ y/\//_/' \
 	| tee \
 	${nthost}/enumdrivers3list.txt;
-	
+
 	NUMBEROFDIFFERENTDRIVERNAMES=$( grep "Driver Name:" ${nthost}/enumdrivers3list.txt \
 	| sort -f \
 	| uniq \
@@ -340,23 +340,23 @@ function helpwithcreatedrivernamelist()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 #                About createdrivernamelist()...
 #                -------------------------------
 #
-# PRECONDITIONS: 1) This function expects to find the subdirectory '\$nthost' 
+# PRECONDITIONS: 1) This function expects to find the subdirectory '\$nthost'
 #		    and the file '\${nthost}/enumdrivers3list.txt' to exist.
-#		 2) This function expects to have the '\$nthosts' variable set 
+#		 2) This function expects to have the '\$nthosts' variable set
 #		    to an according value.
 #
-# WHAT IT DOES: This function dissects the '\${nthost}/enumdrivers3list.txt' 
+# WHAT IT DOES: This function dissects the '\${nthost}/enumdrivers3list.txt'
 #		and creates other textfiles from its contents:
 #		- '\${nthost}/drvrlst.txt'
 #		- '\${nthost}/completedriverlist.txt'
 #		and further prints some more info to stdout.
 #
 # HINT: The current value: 'nthost'=\"$nthost\"
-# 
+#
 ################################################################################"
 }
 
@@ -382,7 +382,7 @@ else
 	| tee \
 	${nthost}/drvrlst.txt;
 	drvrlst=$(echo ${nthost}/drvrlst.txt);
-	
+
 	cat ${nthost}/enumdrivers3list.txt \
 	| grep "Driver Name:" \
 	| awk -F "[" '{ print $2 }' \
@@ -394,7 +394,7 @@ else
 	| sed -e 's/^ */DRIVERNAME/' -e 's/\t/\="/' \
 	| tee \
 	${nthost}/completedriverlist.txt;
-	
+
 	NUMBEROFDRIVERS=`cat ${nthost}/completedriverlist.txt| wc -l`;
 	echo " ";
 	echo "--> Finished in running function createdrivernamelist....";
@@ -422,12 +422,12 @@ function helpwithcreateprinterlistwithUNCnames()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 #                About createprinterlistwithUNCnames()...
 #                ----------------------------------------
 #
-# PRECONDITIONS: 1) This function expects write access to the current directory. 
-#		 2) This function expects to have the '\$nthost', 
+# PRECONDITIONS: 1) This function expects write access to the current directory.
+#		 2) This function expects to have the '\$nthost',
 #		    '\$ntprinteradmin' and '\$ntadminpasswd' variables set to
 #		    according values.
 #
@@ -436,7 +436,7 @@ echo -e " \n\
 #		printqueues (with associated driver names) from that host (with
 #		the help of the 'rpcclient ... enumprinters' utility, and saves
 #		it under name and path '\${nthost}/printerlistwithUNCnames.txt'
-#		(ie. it also creates the '\$nthost' subdirectory in the current 
+#		(ie. it also creates the '\$nthost' subdirectory in the current
 #		one). It further prints some more info to stdout.
 #
 # IF IT DOESN'T WORK: It may happen that the function doesn't work at the first
@@ -446,7 +446,7 @@ echo -e " \n\
 # HINT: The current values: 'nthost'=\"$nthost\"
 #			    'ntprinteradmin'=\"$ntprinteradmin\"
 #			    'ntadminpasswd'=<not shown here, check yourself!>
-# 
+#
 ################################################################################"
 }
 
@@ -494,16 +494,16 @@ function helpwithcreatemapofprinterstodrivers()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 #                About createmapofprinterdrivers()...
 #                ------------------------------------
 #
 # PRECONDITIONS: 1) This function expects to find a subdirectory '\$nthost' and
 #		    the file '\${nthost}/printerlistwithUNCnames.txt' to exist.
-#		 2) This functions expects to have the '\$nthosts' variable set 
+#		 2) This functions expects to have the '\$nthosts' variable set
 #		    to an according value.
 #
-# WHAT IT DOES: This function dissects '\${nthost}/printerlistwithUNCnames.txt' 
+# WHAT IT DOES: This function dissects '\${nthost}/printerlistwithUNCnames.txt'
 #		and creates some other textfiles from its contents:
 #		- '\${nthost}/allprinternames.txt'
 #		- '\${nthost}/alldrivernames.txt'
@@ -519,7 +519,7 @@ echo -e " \n\
 #			    - '${nthost}/allnonrawprinters.txt'
 #			    - '${nthost}/allrawprinters.txt'
 #			    - '${nthost}/printertodrivermap.txt'
-#               
+#
 ################################################################################"
 }
 
@@ -545,8 +545,8 @@ else
 	| sort -f \
 	| uniq \
 	| tee \
-	${nthost}/allprinternames.txt; 
-	
+	${nthost}/allprinternames.txt;
+
 	echo " "
 	echo " "
 	echo "ALL non-RAW PRINTERS:"
@@ -559,8 +559,8 @@ else
 	| sort -f \
 	| uniq \
 	| tee \
-	${nthost}/allnonrawprinters.txt; 
-	
+	${nthost}/allnonrawprinters.txt;
+
 	echo " "
 	echo " "
 	echo "ALL RAW PRINTERS:"
@@ -573,8 +573,8 @@ else
 	| sort -f \
 	| uniq \
 	| tee \
-	${nthost}/allrawprinters.txt; 
-	
+	${nthost}/allrawprinters.txt;
+
 	echo " "
 	echo " "
 	echo "THE DRIVERNAMES:"
@@ -594,7 +594,7 @@ else
 	| awk -F "," '{ print "\"" $1 "\":\"" $2 "\"" }' \
 	| grep -v ":\"\"$" \
 	| tee \
-	${nthost}/printertodrivermap.txt 
+	${nthost}/printertodrivermap.txt
 	echo -e "##########################\n#  printer:driver  #" >> ${nthost}/printertodrivermap.txt
 fi
 }
@@ -609,7 +609,7 @@ function helpwithgetdrivernamelist()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 #                About getdrivernamelist()...
 #                ----------------------------
 #
@@ -620,13 +620,13 @@ echo -e " \n\
 #		and also prints it to <stdout>. To do so, it must contact the
 #		'\$nthost' via rpcclient (which in turn needs '\$ntprinteradmin'
 #		'\$ntadminpasswd' to log in....).
-# 
+#
 # HINT: The current values: 'nthost'=\"$nthost\"
 #			    'ntprinteradmin'=\"$ntprinteradmin\"
 #			    'ntadminpasswd'=<not shown here, check yourself!>
 #       which resolves above mentioned path to:
 #				    - '${nthost}/printernamelist.txt'
-#               
+#
 ################################################################################"
 }
 
@@ -663,27 +663,27 @@ function helpwithsplitenumdrivers3list()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 #                About splitenumdrivers3list()...
 #                --------------------------------
 #
 # PRECONDITIONS: 1) This function expects write access to the current directory
-#		    and its subdirs '\$nthost/*'. 
+#		    and its subdirs '\$nthost/*'.
 #		 2) This function expects to have the '\$nthost' variable set to
 #		    the according value.
-# 
-# WHAT IT DOES: This function dissects the '\$nthost/enumdrivers3list.txt' 
+#
+# WHAT IT DOES: This function dissects the '\$nthost/enumdrivers3list.txt'
 #		(using "sed", "cat", "awk" and "grep"). It splits the list up
 #		into two different files representing a complete list of drivers
-#		and files for each of the 2 supported architectures. It creates 
+#		and files for each of the 2 supported architectures. It creates
 #		'\${nthost}/W32X86/${nthost}-enumdrivers3list-NTx86.txt'
 #		and '\${nthost}/WIN40/${nthost}-enumdrivers3list-WIN40.txt'.
-# 
-# IF IT DOESN'T WORK: The function "fetchenumdrivers3listfromNThost" may not 
+#
+# IF IT DOESN'T WORK: The function "fetchenumdrivers3listfromNThost" may not
 #		      have been run successfully. This is a precondition for
 #		      the current function.
 #
-# HINT: You currently have defined: 'nthost'=\"$nthost\", which resolves above 
+# HINT: You currently have defined: 'nthost'=\"$nthost\", which resolves above
 # mentioned paths to:
 #		      - '${nthost}/WIN40/${nthost}-enumdrivers3list-NTx86.txt'
 #		      - '${nthost}/W32X86/${nthost}-enumdrivers3list-NTx86.txt'
@@ -702,15 +702,15 @@ else
 	echo " "
 	echo "--> Running now function splitenumdrivers3list()...."
 	echo "===================================================="
-	
+
 	[ -d ${nthost}/WIN40 ]  || mkdir -p ${nthost}/WIN40;
 	[ -d ${nthost}/W32X86 ] || mkdir -p ${nthost}/W32X86;
-	
+
 	cat ${nthost}/enumdrivers3list.txt \
 	| sed -e '/^\[Windows NT x86\]/,$ d' \
 	| tee \
 	${nthost}/WIN40/${nthost}-enumdrivers3list-WIN40.txt ;
-	
+
 	cat ${nthost}/WIN40/${nthost}-enumdrivers3list-WIN40.txt \
 	| grep Version \
 	| sort -f \
@@ -722,12 +722,12 @@ else
 #	cd ${nthost}/WIN40/ ;
 #	mkdir $( cat availableversionsWIN40.txt ) 2> /dev/null ;
 #	cd - ;
-	
+
 	cat ${nthost}/enumdrivers3list.txt \
 	| sed -e '/^\[Windows NT x86\]/,$! d' \
 	| tee \
 	${nthost}/W32X86/${nthost}-enumdrivers3list-NTx86.txt ;
-	
+
 	cat ${nthost}/W32X86/${nthost}-enumdrivers3list-NTx86.txt \
 	| grep Version \
 	| sort -f \
@@ -752,27 +752,27 @@ function helpwithmakesubdirsforWIN40driverlist()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 # About makesubdirsforWIN40driverlist() and makesubdirsforWIN40driverlist ()...
 # -----------------------------------------------------------------------------
 #
 # PRECONDITIONS: 1) These functions expect write access to the current directory
-#		 2) These functions expect to have the '\$nthost' variable set 
+#		 2) These functions expect to have the '\$nthost' variable set
 #		    to the according value.
 #		 3) These functions expect to find the two files
 #		    '\${nthost}/WIN40/\${nthost}-enumdrivers3list-WIN40.txt' and
 #		    '\${nthost}/W32X86/\${nthost}-enumdrivers3list-NTx86.txt' to
 #		    work on.
 #
-# WHAT IT DOES: These functions dissect the '$nthost/enumdrivers3list.txt' 
-#		(using "sed", "cat", "awk" and "grep"). They split the input 
+# WHAT IT DOES: These functions dissect the '$nthost/enumdrivers3list.txt'
+#		(using "sed", "cat", "awk" and "grep"). They split the input
 #		files up into individual files representing driver(version)s and
-#		create appropriate subdirectories for each driver and version 
+#		create appropriate subdirectories for each driver and version
 #		underneath './\$nthost/<architecture>'. They use the drivernames
-#		(including spaces) for the directory names. ("/" -- slashes -- 
+#		(including spaces) for the directory names. ("/" -- slashes --
 #		in drivernames are converted to underscores).
 #
-# IF IT DOESN'T WORK: The function "fetchenumdrivers3listfromNThost" and 
+# IF IT DOESN'T WORK: The function "fetchenumdrivers3listfromNThost" and
 #		      consecutive ones may not have been run successfully. This
 #		      is a precondition for the current function.
 #
@@ -780,16 +780,16 @@ echo -e " \n\
 #	mentioned paths to:
 #		     - '\${nthost}/WIN40/\${nthost}-enumdrivers3list-NTx86.txt'
 #		     - '\${nthost}/W32X86/\${nthost}-enumdrivers3list-NTx86.txt'
-# 
+#
 ################################################################################
 #           ............PRESS \"q\" TO QUIT............" \
 |less
-}               
+}
 
 # -----------------------------------------------------------------------------
 
 function makesubdirsforWIN40driverlist()
-{	
+{
 if stringinstring help $@ ; then
 helpwithmakesubdirsforWIN40driverlist ;
 else
@@ -804,7 +804,7 @@ else
 	| sed -e 's/^/mkdir -p '"\"${nthost}"'\/WIN40\//' \
 	| tee \
 	${nthost}/makesubdirsforWIN40driverlist.txt;
-	
+
 	sh -x ${nthost}/makesubdirsforWIN40driverlist.txt;
 
 #	rm ${nthost}/makesubdirsforWIN40driverlist.txt;
@@ -818,7 +818,7 @@ fi
 #
 
 function makesubdirsforW32X86driverlist()
-{	
+{
 if stringinstring help $@ ; then
 helpwithvampiredrivers ;
 else
@@ -833,7 +833,7 @@ else
 	| sed -e 's/^ */mkdir '\""${nthost}"'\/W32X86\//' \
 	| tee \
 	${nthost}/makesubdirsforW32X86driverlist.txt;
-	
+
 	sh -x ${nthost}/makesubdirsforW32X86driverlist.txt;
 
 #	rm ${nthost}/makesubdirsforW32X86driverlist.txt;
@@ -853,13 +853,13 @@ function helpwithmakesubdirsforWIN40driverlist()
 {
 echo -e " \n\
 ################################################################################
-# 
-#	    About splitWIN40fileintoindividualdriverfiles() and 
+#
+#	    About splitWIN40fileintoindividualdriverfiles() and
 #	       splitW32X86fileintoindividualdriverfiles()...
 #           ---------------------------------------------------
 #
 # PRECONDITIONS: 1) These functions expect write access to the current directory
-#		    and its subdirs '\$nthost/*/'. 
+#		    and its subdirs '\$nthost/*/'.
 #		 2) These functions expect to have the '\$nthost' variable set
 #		    to the according value.
 #		 3) These functions expect to find the two files
@@ -867,44 +867,44 @@ echo -e " \n\
 #		    '\${nthost}/W32X86/\${nthost}-enumdrivers3list-NTx86.txt' to
 #		    work on.
 #
-# WHAT IT DOES: 1) These functions create a directory for each printer driver. 
-#		   The directory name is identical to the driver name. 
+# WHAT IT DOES: 1) These functions create a directory for each printer driver.
+#		   The directory name is identical to the driver name.
 #		2) For each supported driver version (\"0\", \"2\" and \"3\") it
-#		   creates a subdirectory as required underneath 
-#		   './\$nthost/<architecture>'. 
-#		3) The directories use the drivernames (including spaces) for 
+#		   creates a subdirectory as required underneath
+#		   './\$nthost/<architecture>'.
+#		3) The directories use the drivernames (including spaces) for
 #		   their names. ("/" - slashes - in drivernames are converted to
 #		   underscores).
-#		4) In each subdirectory they dissect the original 
-#		   '\$nthost/enumdrivers3list.txt' (using "sed", "cat", "awk" 
+#		4) In each subdirectory they dissect the original
+#		   '\$nthost/enumdrivers3list.txt' (using "sed", "cat", "awk"
 #		   and "grep") and store that part describing the related driver
-#		   (under the name \"driverfilesversion.txt\". 
-#		5) For each driver the files \"Drivername\", \"DriverPath\", 
+#		   (under the name \"driverfilesversion.txt\".
+#		5) For each driver the files \"Drivername\", \"DriverPath\",
 #		   \"Drivername\", \"Configfile\", \"Helpfile\", \"AllFiles\" and
 #		   \"Dependentfilelist\" are stored in the according directory
-#		   which hold contend that is used by other (downstream) 
+#		   which hold contend that is used by other (downstream)
 #		   functions.
-#		6) It creates a file named \"AllFilesIAskFor\" which holds the 
-#		   case sensitive names of files it wanted to download. It also 
-#		   creates a file named \"AllFilesIGot\" which holds the case 
-#		   sensitive spelling of the downloaded files. (Due to 
-#		   Microsoft's ingenious file naming tradition, you may have 
+#		6) It creates a file named \"AllFilesIAskFor\" which holds the
+#		   case sensitive names of files it wanted to download. It also
+#		   creates a file named \"AllFilesIGot\" which holds the case
+#		   sensitive spelling of the downloaded files. (Due to
+#		   Microsoft's ingenious file naming tradition, you may have
 #		   asked for a \"PS5UI.DLL\" but gotten a \"ps5ui.dll\".
 #		7) The 2 files from 6) will be later compared with the help of
 #		   the \"sdiff\" utility to decide how to re-name the files so
-#		   that the subsequent driver upload command's spelling 
+#		   that the subsequent driver upload command's spelling
 #		   convention is met.
 #
-# IF IT DOESN'T WORK: The function \"fetchenumdrivers3listfromNThost\" and 
+# IF IT DOESN'T WORK: The function \"fetchenumdrivers3listfromNThost\" and
 #		      consecutive ones may not have been run successfully. This
 #		      is a precondition for the current function.
 #
 # HINT: You currently have defined: 'nthost'=\"$nthost\".
-# 
+#
 ################################################################################
 #           ............PRESS \"q\" TO QUIT............" \
 |less
-}               
+}
 
 # -----------------------------------------------------------------------------
 
@@ -917,7 +917,7 @@ else
 	echo " "
 	echo "--> Running now function splitWIN40fileintoindividualdriverfiles()..."
 	echo "====================================================================="
-	
+
 	for i in ${nthost}/WIN40/*/; do
 		CWD1="$( pwd )" ;
 		cd "${i}" ;
@@ -945,7 +945,7 @@ else
 	cat ${nthost}-enumdrivers3list-WIN40.lnk \
 	| sed -e '/\['"$(basename "$(echo "$PWD")")"'\]/,/Monitor/ w alldriverfiles.txt' -n ;
 
-	for i in */; do 
+	for i in */; do
 	CWD2="$( pwd )" ;
 	cd "${i}";
 	echo "yes" | cp ../alldriverfiles.txt . 2> /dev/null ;
@@ -1015,8 +1015,8 @@ else
 	echo "${Dependentfiles}" \
 	| tee Dependentfiles
 
-	AllFiles=$( echo ${Dependentfilelist}; echo ${Helpfile}; echo ${Configfile}; echo ${Datafile}; echo ${DriverPath} ); 
-	
+	AllFiles=$( echo ${Dependentfilelist}; echo ${Helpfile}; echo ${Configfile}; echo ${Datafile}; echo ${DriverPath} );
+
 	echo "${AllFiles}" \
 	| sort -f \
 	| uniq \
@@ -1064,7 +1064,7 @@ else
 	echo " "
 	echo "--> Running now function splitW32X86fileintoindividualdriverfiles()..."
 	echo "======================================================================"
-	
+
 	for i in ${nthost}/W32X86/*/; do
 		CWD1="$( pwd )" ;
 		cd "${i}" ;
@@ -1092,7 +1092,7 @@ else
 	cat ${nthost}-enumdrivers3list-NTx86.lnk \
 	| sed -e '/\['"$(basename "$(echo "$PWD")")"'\]/,/Monitor/ w alldriverfiles.txt' -n ;
 
-	for i in */; do 
+	for i in */; do
 	CWD2="$( pwd )" ;
 	cd "${i}";
 	echo "yes" | cp ../alldriverfiles.txt . 2> /dev/null ;
@@ -1161,12 +1161,12 @@ else
 
 	Dependentfiles=$( echo $Dependentfilelist \
 	| sed -e 's/ /,/g ' ) ;
-	
+
 	echo "${Dependentfiles}" \
 	| tee Dependentfiles
 
 	AllFiles=$( echo ${Dependentfilelist}; echo ${Helpfile}; echo ${Configfile}; echo ${Datafile}; echo ${DriverPath} ) ;
-	
+
 	echo "${AllFiles}" \
 	| sort -f \
 	| uniq \
@@ -1207,33 +1207,33 @@ function helpwithfetchallW32X86driverfiles()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 #		    About fetchallW32X86driverfiles()...
 #           	    ------------------------------------
 #
 # PRECONDITIONS: 1) This function expects to have the \'\$nthost\' variable set
 #		    to the according value.
-#		 2) This function expects to find files \"AllFiles\", 
-#		    \"AllFilesIAskFor\", and \"AllFilesIGot\" in the directories 
-#		    \'\${nthost}/<architecture>/<drivername>/<version>/\'. 
+#		 2) This function expects to find files \"AllFiles\",
+#		    \"AllFilesIAskFor\", and \"AllFilesIGot\" in the directories
+#		    \'\${nthost}/<architecture>/<drivername>/<version>/\'.
 #
-# WHAT IT DOES: These functions use \"smbclient\" to connect to the NT print 
-#		server \"\$nthost\" and download the printer driver files from 
-#		there. To achieve that in an orderly fashion, the previously 
-#		created subdirectories (named like the drivers to fetch) are 
-#		visited in turn and the related files are downloaded for each 
+# WHAT IT DOES: These functions use \"smbclient\" to connect to the NT print
+#		server \"\$nthost\" and download the printer driver files from
+#		there. To achieve that in an orderly fashion, the previously
+#		created subdirectories (named like the drivers to fetch) are
+#		visited in turn and the related files are downloaded for each
 #		driver/directory.
 #
-# IF IT DOESN'T WORK: The function \"fetchenumdrivers3listfromNThost\" and 
+# IF IT DOESN'T WORK: The function \"fetchenumdrivers3listfromNThost\" and
 #		      consecutive ones may not have been run successfully. This
 #		      is a precondition for the current function.
-#               
+#
 # HINT: The current values: 'nthost'=\"$nthost\"
 #			    'ntprinteradmin'=\"$ntprinteradmin\"
 #			    'ntadminpasswd'=<not shown here, check yourself!>
-# 
+#
 ################################################################################"
-}               
+}
 
 # -----------------------------------------------------------------------------
 
@@ -1249,23 +1249,23 @@ else
 
 	CURRENTWD=${PWD} ;
 	for i in ${nthost}/W32X86/*/*/ ; do \
-	cd "${i}"; 
-	
+	cd "${i}";
+
 	driverversion="$(basename "$(echo "$PWD")")" ;
 	echo "$(basename "$(echo "$PWD")")" > driverversion ;
-	
+
 	AllFiles=$( cat AllFiles ) ;
-	
-	[ -d TheFiles ] || mkdir TheFiles; 
-	
+
+	[ -d TheFiles ] || mkdir TheFiles;
+
 	cd TheFiles;
-	
+
 	echo " "
 	echo "===================================================="
 	echo "Downloading files now to ${PWD}....";
 	echo "===================================================="
 	echo " "
-	
+
 	# Fetch the Driver files from the Windoze box (printserver)
 	smbclient -U"${ntprinteradmin}%${ntadminpasswd}" -d 2 \
 	//${nthost}/print\$ -c \
@@ -1293,15 +1293,15 @@ function helpwithuploadallW32X86drivers()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 #		    About uploadallW32X86drivers()...
 #           	    ---------------------------------
 #
-# PRECONDITIONS: 1) This function expects to have the '\$nthost', 
+# PRECONDITIONS: 1) This function expects to have the '\$nthost',
 #		    '\$ntprinteradmin' and '\$ntadminpasswd' variables set to
 #		    according values.
 #		 2) This function expects to find the files \"AllFiles\",
-#		    \"AllFilesIGot\" and \"AllFilesIAskFor\" in the 
+#		    \"AllFilesIGot\" and \"AllFilesIAskFor\" in the
 #		    \"\${nthost}/W32X86<drivername>/<driverversion>/TheFiles\"
 #		    subdirectory.
 #
@@ -1310,24 +1310,24 @@ echo -e " \n\
 #		\"[print\$]\" share there. To achieve that in orderly fashion,
 #		the previously created subdirectories (named like the drivers
 #		fetched previously from \$smbhost) are visited in turn and the
-#		related files are uploaded for each driver/directory. For this 
+#		related files are uploaded for each driver/directory. For this
 #		to really succeed, the files \"AllFilesIGot\" and \"AllFilesIAskFor\"
 #		are compared with the help of the \"sdiff\" utility to decide
-#		how to re-name the mis-matching filenams, so that the used 
+#		how to re-name the mis-matching filenams, so that the used
 #		driver upload command's spelling convention is met....
 #
-# IF IT DOESN'T WORK: The function "fetchenumdrivers3listfromNThost" and 
+# IF IT DOESN'T WORK: The function "fetchenumdrivers3listfromNThost" and
 #		      consecutive ones may not have been run successfully. This
 #		      is a precondition for the current function.
-#               
+#
 # HINT: The current values: 'nthost'=\"$nthost\"
 #			    'ntprinteradmin'=\"$ntprinteradmin\"
 #			    'ntadminpasswd'=<not shown here, check yourself!>
-# 
+#
 ################################################################################
 #           ............PRESS \"q\" TO QUIT............" \
 |less
-}               
+}
 
 # -----------------------------------------------------------------------------
 
@@ -1340,12 +1340,12 @@ else
 	echo " "
 	echo "--> Running now function uploadallW32X86drivers()...."
 	echo "====================================================="
-	
+
 	for i in ${nthost}/W32X86/*/*/; do \
 	CURRENTWD=${PWD} ;
 	cd "${i}" ;
-							# we are now in [..]/W32X86/[drvrname]/[2|3]/ 
-	
+							# we are now in [..]/W32X86/[drvrname]/[2|3]/
+
 	driverversion="$(basename "$(echo "$PWD")")" ;
 
 	echo "$(basename "$(echo "$PWD")")" > driverversion ;
@@ -1358,13 +1358,13 @@ else
 	echo "===================================================="
 	echo " "
 	set -x ;
-	
+
 	smbclient -U"${smbprinteradmin}%${smbadminpasswd}" -d 2 \
 	//${smbhost}/print\$ \
 	-c "mkdir W32X86;cd W32X86;prompt;mput $( cat ../AllFilesIGot )";
 
 	cd .. ;
-							# we are now in [..]/W32X86/[drvrname]/[2|3]/ 
+							# we are now in [..]/W32X86/[drvrname]/[2|3]/
 
 # Now tell Samba that those files are *printerdriver* files....
 # The "adddriver" command will move them to the "0" subdir and create or
@@ -1380,7 +1380,7 @@ else
 	[ -s sdiff-of-Requested-and-Received.txt ] \
 	|| rm -f sdiff-of-Requested-and-Received.txt \
 	&& cat sdiff-of-Requested-and-Received.txt > ../sdiff-of-Requested-and-Received.txt ;
-	
+
 	cat sdiff-of-Requested-and-Received.txt \
 	| sed -e 's/^/mv /' \
 	| sed -e 's/ *|/  /' \
@@ -1395,13 +1395,13 @@ else
 	-c \'adddriver \"Windows NT x86\" \"$( cat Drivername ):$( cat DriverPath ):$( cat Datafile ):$( cat Configfile ):$( cat Helpfile ):NULL:RAW:$( cat Dependentfiles )\" $( cat driverversion )" \
 	${smbhost} \' ;
         echo " ################ E N D  DEBUGGING STATEMENT ################"
-	
+
 	rpcclient -U"${smbprinteradmin}%${smbadminpasswd}" -d 2 \
 	-c "adddriver \"Windows NT x86\" \"$( cat Drivername ):$( cat DriverPath ):$( cat Datafile ):$( cat Configfile ):$( cat Helpfile ):NULL:RAW:$( cat Dependentfiles )\" $( cat driverversion )" \
 	${smbhost} ;
 
 	set +x ;
-	
+
 	cd ${CURRENTWD} ;
 							# we are now back to where we started
 	done;
@@ -1436,11 +1436,11 @@ function helpwithfetchallWIN40driverfiles()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 #		    About fetchallWIN40driverfiles()...
 #           	    -----------------------------------
 #
-# PRECONDITIONS: 1) This function expects to have the \$nthost variable set to 
+# PRECONDITIONS: 1) This function expects to have the \$nthost variable set to
 #		    the according value.
 #		 2) This function expects to find the \"AllFiles\" file in
 #		    \"\${nthost}/WIN40<drivername>/<driverversion>/TheFiles\".
@@ -1449,21 +1449,21 @@ echo -e " \n\
 #		"\$nthost" and download the printer driver files from there. To
 #		achieve that in an orderly fashion, the previously created
 #		subdirectories (named like the drivers to fetch) are visited in
-#		turn and the related files are downloaded for each 
+#		turn and the related files are downloaded for each
 #		driver/directory.
 #
 # IF IT DOESN'T WORK: The function "fetchenumdrivers3listfromNThost" and
 #		      consecutive ones may not have been run successfully. This
 #		      is a precondition for the current function.
-#               
+#
 # HINT: The current values: 'nthost'=\"$nthost\"
 #			    'ntprinteradmin'=\"$ntprinteradmin\"
 #			    'ntadminpasswd'=<not shown here, check yourself!>
-# 
+#
 ################################################################################
 #           ............PRESS \"q\" TO QUIT............" \
 |less
-}               
+}
 
 # -----------------------------------------------------------------------------
 
@@ -1480,17 +1480,17 @@ else
 	CURRENTWD=${PWD} ;
 
 	for i in ${nthost}/WIN40/*/*/; do \
-	cd "${i}"; 
-	
+	cd "${i}";
+
 	driverversion="$(basename "$(echo "$PWD")")" ;
 	echo "$(basename "$(echo "$PWD")")" > driverversion ;
 
 	AllFiles=$( cat AllFiles ) ;
-	
-	[ -d TheFiles ] || mkdir TheFiles; 
-	
+
+	[ -d TheFiles ] || mkdir TheFiles;
+
 	cd TheFiles;
-	
+
 	echo " "
 	echo "===================================================="
 	echo "Downloading files now to ${PWD}....";
@@ -1524,14 +1524,14 @@ function helpwithuploadallWIN40drivers()
 {
 echo -e " \n\
 ################################################################################
-# 
+#
 #		    About uploadallWIN40drivers()...
 #           	    --------------------------------
 #
 # PRECONDITIONS: 1) This function expects to have '\$smbhost', '\$smbprinteradmin'
 #		    and '\$smbadminpasswd' variables set to according values.
 #		 2) This function expects to find \"AllFiles\", \"AllFilesIGot\"
-#		    and \"AllFilesIAskFor\" in the subdirectory 
+#		    and \"AllFilesIAskFor\" in the subdirectory
 #		    \"\${nthost}/WINI40/<drivername>/<driverversion>/TheFiles\".
 #
 # WHAT IT DOES: These function uses \"smbclient\" to connect to the new Samba
@@ -1549,15 +1549,15 @@ echo -e " \n\
 # IF IT DOESN'T WORK: The function \"fetchenumdrivers3listfromNThost\" and
 #		      consecutive ones may not have been run successfully. This
 #		      is a precondition for the current function.
-#               
+#
 # HINT: The current values: 'nthost'=\"$nthost\"
 #			    'ntprinteradmin'=\"$ntprinteradmin\"
 #			    'ntadminpasswd'=<not shown here, check yourself!>
-# 
+#
 ################################################################################
 #           ............PRESS \"q\" TO QUIT............" \
 |less
-}               
+}
 function uploadallWIN40drivers()
 {
 if stringinstring help $@ ; then
@@ -1567,14 +1567,14 @@ else
 	echo " "
 	echo "--> Running now function uploadallWIN40drivers()...."
 	echo "===================================================="
-	
+
 	for i in ${nthost}/WIN40/*/*/; do \
 	CURRENTWD=${PWD} ;
-	cd "${i}" ; 
+	cd "${i}" ;
 							# we are now in [..]/WIN40/[drvrname]/[0]/
-	
+
 	driverversion="$(basename "$(echo "$PWD")")" ;
-	
+
 	echo "$(basename "$(echo "$PWD")")" > driverversion ;
 
 	cd TheFiles ;
@@ -1585,7 +1585,7 @@ else
 	echo "===================================================="
 	echo " "
 	set -x ;
-	
+
 	smbclient -U"${smbprinteradmin}%${smbadminpasswd}" -d 2 \
 	//${smbhost}/print\$ \
 	-c "mkdir WIN40;cd WIN40;prompt;mput $( cat ../AllFilesIGot )";
@@ -1597,7 +1597,7 @@ else
 # The "adddriver" command will move them to the "0" subdir and create or
 # update the associated *.tdb files (faking the MS Windows Registry on Samba)
 	Drivername="$( cat Drivername )"
-	
+
 	set -x ;
 	[ x"$( cat Dependentfiles)" == x"" ] && echo NULL > Dependentfiles;
 
@@ -1607,7 +1607,7 @@ else
 	[ -s sdiff-of-Requested-and-Received.txt ] \
 	|| rm -f sdiff-of-Requested-and-Received.txt \
 	&& cat sdiff-of-Requested-and-Received.txt > ../sdiff-of-Requested-and-Received.txt ;
-	
+
 	cat sdiff-of-Requested-and-Received.txt \
 	| sed -e 's/^/mv /' \
 	| sed -e 's/ *|/  /' \
@@ -1626,7 +1626,7 @@ else
 	rpcclient -U"${smbprinteradmin}%${smbadminpasswd}" -d 2 \
 	-c "adddriver \"Windows 4.0\" \"$( cat Drivername ):$( cat DriverPath ):$( cat Datafile ):$( cat Configfile ):$( cat Helpfile ):NULL:RAW:$( cat Dependentfiles )\" $( cat driverversion )" \
 	${smbhost} ;
-	
+
 	set +x ;
 	cd ${CURRENTWD} ;
 							# we are now back to where we started
@@ -1649,7 +1649,7 @@ fi
 #	${smbhost}
 #  -- NOT YET IMPLEMENTED IN THIS SCRIPT ---
 #
-	
+
 
 #source ${0} ;
 
