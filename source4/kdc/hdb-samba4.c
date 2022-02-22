@@ -540,39 +540,26 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		pa_type = heim_string_get_utf8(pa_type_obj);
 	}
 
-	switch (hdb_auth_status) {
-	case HDB_AUTH_EVENT_PKINIT_SUCCEEDED:
-	case HDB_AUTH_EVENT_PKINIT_FAILED:
-	case HDB_AUTH_EVENT_PKINIT_NOT_AUTHORIZED:
-		auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_PKINIT_CLIENT_CERT);
-		if (auth_details_obj != NULL) {
-			auth_details = heim_string_get_utf8(auth_details_obj);
-		}
-		break;
-
-	case HDB_AUTH_EVENT_GSS_PA_SUCCEEDED:
-	case HDB_AUTH_EVENT_GSS_PA_FAILED:
-	case HDB_AUTH_EVENT_GSS_PA_NOT_AUTHORIZED:
+	auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_PKINIT_CLIENT_CERT);
+	if (auth_details_obj != NULL) {
+		auth_details = heim_string_get_utf8(auth_details_obj);
+	} else {
 		auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_GSS_INITIATOR);
 		if (auth_details_obj != NULL) {
 			auth_details = heim_string_get_utf8(auth_details_obj);
-		}
-		break;
+		} else {
+			heim_object_t etype_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_PA_ETYPE);
+			if (etype_obj != NULL) {
+				int etype = heim_number_get_int(etype_obj);
 
-	default:
-	{
-		heim_object_t etype_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_PA_ETYPE);
-		if (etype_obj != NULL) {
-			int etype = heim_number_get_int(etype_obj);
-
-			krb5_error_code ret = krb5_enctype_to_string(r->context, etype, &etype_str);
-			if (ret == 0) {
-				auth_details = etype_str;
-			} else {
-				auth_details = "unknown enctype";
+				krb5_error_code ret = krb5_enctype_to_string(r->context, etype, &etype_str);
+				if (ret == 0) {
+					auth_details = etype_str;
+				} else {
+					auth_details = "unknown enctype";
+				}
 			}
 		}
-	}
 	}
 
 	/*
@@ -626,12 +613,10 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		break;
 	}
 	case HDB_AUTH_EVENT_CLIENT_LOCKED_OUT:
-	case HDB_AUTH_EVENT_LTK_PREAUTH_SUCCEEDED:
-	case HDB_AUTH_EVENT_LTK_PREAUTH_FAILED:
-	case HDB_AUTH_EVENT_OTHER_PREAUTH_SUCCEEDED:
-	case HDB_AUTH_EVENT_OTHER_PREAUTH_FAILED:
-	case HDB_AUTH_EVENT_PKINIT_SUCCEEDED:
-	case HDB_AUTH_EVENT_PKINIT_FAILED:
+	case HDB_AUTH_EVENT_VALIDATED_LONG_TERM_KEY:
+	case HDB_AUTH_EVENT_WRONG_LONG_TERM_KEY:
+	case HDB_AUTH_EVENT_PREAUTH_SUCCEEDED:
+	case HDB_AUTH_EVENT_PREAUTH_FAILED:
 	{
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct samba_kdc_entry *p = talloc_get_type(entry->ctx,
@@ -670,7 +655,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		}
 		ui.auth_description = auth_description;
 
-		if (hdb_auth_status == HDB_AUTH_EVENT_LTK_PREAUTH_FAILED) {
+		if (hdb_auth_status == HDB_AUTH_EVENT_WRONG_LONG_TERM_KEY) {
 			authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
 			status = NT_STATUS_WRONG_PASSWORD;
 			/*
@@ -683,16 +668,16 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			}
 		} else if (hdb_auth_status == HDB_AUTH_EVENT_CLIENT_LOCKED_OUT) {
 			status = NT_STATUS_ACCOUNT_LOCKED_OUT;
-		} else if (hdb_auth_status == HDB_AUTH_EVENT_LTK_PREAUTH_SUCCEEDED) {
+		} else if (hdb_auth_status == HDB_AUTH_EVENT_VALIDATED_LONG_TERM_KEY) {
 			status = NT_STATUS_OK;
-		} else if (hdb_auth_status == HDB_AUTH_EVENT_OTHER_PREAUTH_SUCCEEDED) {
+		} else if (hdb_auth_status == HDB_AUTH_EVENT_PREAUTH_SUCCEEDED) {
 			status = NT_STATUS_OK;
-		} else if (hdb_auth_status == HDB_AUTH_EVENT_OTHER_PREAUTH_FAILED) {
-			status = NT_STATUS_GENERIC_COMMAND_FAILED;
-		} else if (hdb_auth_status == HDB_AUTH_EVENT_PKINIT_SUCCEEDED) {
-			status = NT_STATUS_OK;
-		} else if (hdb_auth_status == HDB_AUTH_EVENT_PKINIT_FAILED) {
-			status = NT_STATUS_PKINIT_FAILURE;
+		} else if (hdb_auth_status == HDB_AUTH_EVENT_PREAUTH_FAILED) {
+			if (pa_type != NULL && strncmp(pa_type, "PK-INIT", strlen("PK-INIT")) == 0) {
+				status = NT_STATUS_PKINIT_FAILURE;
+			} else {
+				status = NT_STATUS_GENERIC_COMMAND_FAILED;
+			}
 		} else {
 			status = NT_STATUS_INTERNAL_ERROR;
 		}
