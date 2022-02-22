@@ -1721,6 +1721,7 @@ static int fruit_open_rsrc(vfs_handle_struct *handle,
 
 	default:
 		DBG_ERR("Unexpected rsrc config [%d]\n", config->rsrc);
+		errno = EINVAL;
 		return -1;
 	}
 
