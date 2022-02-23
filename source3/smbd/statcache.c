@@ -190,7 +190,7 @@ void stat_cache_add( const char *full_orig_name,
  * 		  of the name up.
  * @param psd     A stat buffer, NOT from the cache, but just a side-effect.
  *
- * @return True if we translated (and did a scuccessful stat on) the entire
+ * @return True if we translated (and did a successful stat on) the entire
  * 		  name.
  *
  */
