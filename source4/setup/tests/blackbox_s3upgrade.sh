@@ -1,13 +1,13 @@
 #!/bin/sh
 
 if [ $# -lt 1 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: blackbox_s3upgrade.sh PREFIX
 EOF
-exit 1;
+	exit 1
 fi
 
-PREFIX=`pwd`"/$1"
+PREFIX=$(pwd)"/$1"
 shift 1
 
 samba4bindir="$BINDIR"
@@ -15,14 +15,14 @@ samba_tool="$samba4bindir/samba-tool"
 samba_net="$samba4bindir/net"
 testparm="$samba4bindir/testparm"
 
-. `dirname $0`/../../../testprogs/blackbox/subunit.sh
+. $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 
 rm -rf $PREFIX/samba3-upgrade
 mkdir -p $PREFIX/samba3-upgrade
 cp -a $SRCDIR/testdata/samba3 $PREFIX/samba3-upgrade
 
 # Test 1 (s3 member)
-cat - > $PREFIX/samba3-upgrade/samba3/smb1.conf <<EOF
+cat - >$PREFIX/samba3-upgrade/samba3/smb1.conf <<EOF
 [global]
    workgroup = SAMBA
    security = user
@@ -43,7 +43,7 @@ testit "samba3-upgrade-member" $PYTHON $samba_tool domain classicupgrade $PREFIX
 testit "samba3-upgrade-member-getlocalsid" $samba_net getlocalsid s3upgrade --configfile=$PREFIX/samba3-upgrade/s4_1/etc/smb.conf
 
 # Test 2 (s3 dc)
-cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
+cat - >$PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
 [global]
    workgroup = SAMBA
    netbiosname = S3UPGRADE
@@ -72,7 +72,7 @@ testit "samba3-upgrade-dc-getdomainsid" $samba_net getdomainsid --configfile=$PR
 rm -f $PREFIX/samba3-upgrade/samba3/wins.dat
 
 # Test 3 (s3 dc using testparm hook)
-cat - > $PREFIX/samba3-upgrade/samba3/smb3.conf <<EOF
+cat - >$PREFIX/samba3-upgrade/samba3/smb3.conf <<EOF
 [global]
    workgroup = SAMBA
    netbiosname = S3UPGRADE

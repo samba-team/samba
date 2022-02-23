@@ -1,17 +1,16 @@
 #!/bin/sh
 
 if [ $# -lt 1 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: blackbox_group.sh PREFIX
 EOF
-exit 1;
+	exit 1
 fi
 
 PREFIX="$1"
 shift 1
 
-. `dirname $0`/../../../testprogs/blackbox/subunit.sh
-
+. $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 
 samba_tool="./bin/samba-tool"
 

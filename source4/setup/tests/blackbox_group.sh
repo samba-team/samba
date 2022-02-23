@@ -1,17 +1,16 @@
 #!/bin/sh
 
 if [ $# -lt 1 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: blackbox_group.sh PREFIX
 EOF
-exit 1;
+	exit 1
 fi
 
 PREFIX="$1"
 shift 1
 
-. `dirname $0`/../../../testprogs/blackbox/subunit.sh
-
+. $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 
 rm -rf $PREFIX/simple-dc
 mkdir -p $PREFIX
@@ -25,7 +24,8 @@ testit "user add" $PYTHON $samba_tool user create $CONFIG --given-name="User" --
 testit "user add" $PYTHON $samba_tool user create $CONFIG --given-name="User1" --surname="Tester" --initial="UT" testuser1 testp@ssw0Rd
 
 # test samba-tool user getgroups command
-user_getgroups_primary_only() {
+user_getgroups_primary_only()
+{
 	res=$($PYTHON $samba_tool user getgroups $CONFIG testuser)
 
 	primary_group=$(echo $res)
@@ -50,11 +50,12 @@ testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG gdg testu
 testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG udg testuser,testuser1
 
 # test samba-tool user getgroups command
-user_getgroups() {
+user_getgroups()
+{
 	groups="dsg gsg usg ddg gdg udg"
 
 	res=$($PYTHON $samba_tool user getgroups $CONFIG testuser)
-	for g in $groups ; do
+	for g in $groups; do
 		echo "$res" | grep -q "^${g}$" || return 1
 	done
 
@@ -65,11 +66,12 @@ user_getgroups() {
 testit "user getgroups" user_getgroups
 
 # test samba-tool user getgroups --full-dn command
-user_getgroups_full_dn() {
+user_getgroups_full_dn()
+{
 	groups="dsg gsg usg ddg gdg udg"
 
 	res=$($PYTHON $samba_tool user getgroups --full-dn $CONFIG testuser)
-	for g in $groups ; do
+	for g in $groups; do
 		group_dn=$($PYTHON $samba_tool group show $CONFIG $g --attributes=dn)
 		echo "$res" | grep -q "^${group_dn}$" || return 1
 	done
@@ -82,7 +84,8 @@ user_getgroups_full_dn() {
 testit "user getgroups full-dn" user_getgroups
 
 # test settings a users primary group
-user_getgroups_primary_first() {
+user_getgroups_primary_first()
+{
 	expected_primary_group=$1
 	res=$($PYTHON $samba_tool user getgroups $CONFIG testuser)
 

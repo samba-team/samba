@@ -1,16 +1,16 @@
 #!/bin/sh
 
 if [ $# -lt 1 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: blackbox_provision.sh PREFIX
 EOF
-exit 1;
+	exit 1
 fi
 
 PREFIX="$1"
 shift 1
 
-. `dirname $0`/../../../testprogs/blackbox/subunit.sh
+. $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 
 #Prepare an empty smb.conf to ensure it is overwritten
 rm -rf $PREFIX/simple-default
@@ -20,7 +20,7 @@ testit "simple-default" $PYTHON $BINDIR/samba-tool domain provision --domain=FOO
 #And try with just whitespace
 rm -rf $PREFIX/simple-dc
 mkdir -p $PREFIX/simple-dc/etc
-echo "  " > $PREFIX/simple-dc/etc/smb.conf
+echo "  " >$PREFIX/simple-dc/etc/smb.conf
 testit "simple-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc --use-ntvfs
 #The rest of these tests are with no smb.conf file present
 
@@ -35,7 +35,8 @@ testit "simple-standalone" $PYTHON $BINDIR/samba-tool domain provision --server-
 rm -rf $PREFIX/blank-dc
 testit "blank-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/blank-dc --blank --use-ntvfs
 
-reprovision() {
+reprovision()
+{
 	$PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/simple-default" --use-ntvfs
 }
 
@@ -44,29 +45,30 @@ testit "reprovision" reprovision
 V_2012_R2=69
 V_2008_R2=47
 
-check_baseschema() {
+check_baseschema()
+{
 	ldbsearch="ldbsearch"
 	if [ -x "$BINDIR/ldbsearch" ]; then
-	    ldbsearch="$BINDIR/ldbsearch"
+		ldbsearch="$BINDIR/ldbsearch"
 	fi
 
 	base=$($ldbsearch -H $PREFIX/$1/private/sam.ldb --scope=base dn)
-	dom=$(echo "$base" | grep "dn: " | cut -d " " -f 2);
+	dom=$(echo "$base" | grep "dn: " | cut -d " " -f 2)
 
 	if [ -z "$dom" ]; then
-		echo "Unexpected ldbsearch output: $base";
+		echo "Unexpected ldbsearch output: $base"
 	fi
 
 	version=$($ldbsearch -H $PREFIX/$1/private/sam.ldb --scope=base \
-		  "objectVersion" -b "CN=SCHEMA,CN=CONFIGURATION,$dom");
-	version_num=$(echo "$version" | grep "objectVersion: " | cut -d " " -f 2);
+		"objectVersion" -b "CN=SCHEMA,CN=CONFIGURATION,$dom")
+	version_num=$(echo "$version" | grep "objectVersion: " | cut -d " " -f 2)
 
 	if [ "$version_num" -eq "$2" ]; then
-		return 0;
+		return 0
 	fi
 
-	echo "Fail: schema version $version_num != $2";
-	return 1;
+	echo "Fail: schema version $version_num != $2"
+	return 1
 }
 
 tname="schema version"
