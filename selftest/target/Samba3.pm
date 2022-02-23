@@ -3167,6 +3167,7 @@ sub provision($$)
 	error_inject:pwrite = EBADF
 	shadow:mountpoint = $shadow_tstdir
 	shadow:fixinodes = yes
+	smbd async dosmode = yes
 
 [dfq]
 	path = $shrdir/dfree
