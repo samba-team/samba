@@ -70,6 +70,16 @@ bld.SAMBA_LIBRARY('dlz_bind9_16',
                   deps='samba-hostconfig samdb-common gensec popt dnsserver_common',
                   enabled=bld.AD_DC_BUILD_IS_ENABLED())
 
+bld.SAMBA_LIBRARY('dlz_bind9_18',
+                  source='dlz_bind9.c',
+                  cflags='-DBIND_VERSION_9_18',
+                  private_library=True,
+                  link_name='modules/bind9/dlz_bind9_18.so',
+                  realname='dlz_bind9_18.so',
+                  install_path='${MODULESDIR}/bind9',
+                  deps='samba-hostconfig samdb-common gensec popt dnsserver_common',
+                  enabled=bld.AD_DC_BUILD_IS_ENABLED())
+
 bld.SAMBA_LIBRARY('dlz_bind9_for_torture',
                   source='dlz_bind9.c',
                   cflags='-DBIND_VERSION_9_16',

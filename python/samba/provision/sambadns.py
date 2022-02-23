@@ -1015,6 +1015,7 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
         bind9_12 = '#'
         bind9_14 = '#'
         bind9_16 = '#'
+        bind9_18 = '#'
         if bind_info.upper().find('BIND 9.8') != -1:
             bind9_8 = ''
         elif bind_info.upper().find('BIND 9.9') != -1:
@@ -1029,6 +1030,8 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
             bind9_14 = ''
         elif bind_info.upper().find('BIND 9.16') != -1:
             bind9_16 = ''
+        elif bind_info.upper().find('BIND 9.18') != -1:
+            bind9_18 = ''
         elif bind_info.upper().find('BIND 9.7') != -1:
             raise ProvisioningError("DLZ option incompatible with BIND 9.7.")
         elif bind_info.upper().find('BIND_9.13') != -1:
@@ -1048,7 +1051,8 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
                     "BIND9_11": bind9_11,
                     "BIND9_12": bind9_12,
                     "BIND9_14": bind9_14,
-                    "BIND9_16": bind9_16
+                    "BIND9_16": bind9_16,
+                    "BIND9_18": bind9_18
                     })
 
 
