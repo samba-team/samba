@@ -48,6 +48,9 @@
 #elif defined (BIND_VERSION_9_16)
 # define DLZ_DLOPEN_VERSION 3
 # define DNS_CLIENTINFO_VERSION 2
+#elif defined (BIND_VERSION_9_18)
+# define DLZ_DLOPEN_VERSION 3
+# define DNS_CLIENTINFO_VERSION 2
 #else
 # error Unsupported BIND version
 #endif
