@@ -1586,7 +1586,7 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 		goto exit;
 	}
 
-	status = adouble_open_from_base_fsp(dirfsp,
+	status = adouble_open_from_base_fsp(fsp->conn->cwd_fsp,
 					    fsp->base_fsp,
 					    ADOUBLE_RSRC,
 					    flags,
