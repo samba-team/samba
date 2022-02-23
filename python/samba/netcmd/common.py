@@ -20,6 +20,7 @@
 import re
 from samba.dcerpc import nbt
 from samba.net import Net
+from samba.netcmd import CommandError
 import ldb
 
 
@@ -27,26 +28,44 @@ import ldb
 NEVER_TIMESTAMP = int(-0x8000000000000000)
 
 
-def _get_user_realm_domain(user):
+def _get_user_realm_domain(user, sam=None):
     r""" get the realm or the domain and the base user
         from user like:
         * username
         * DOMAIN\username
         * username@REALM
+
+         A SamDB object can also be passed in to check
+        our domain or realm against the obtained ones.
     """
     baseuser = user
-    realm = ""
-    domain = ""
     m = re.match(r"(\w+)\\(\w+$)", user)
     if m:
         domain = m.group(1)
         baseuser = m.group(2)
-        return (baseuser.lower(), realm, domain.upper())
+
+        if sam is not None:
+            our_domain = sam.domain_netbios_name()
+            if domain.lower() != our_domain.lower():
+                raise CommandError(f"Given domain '{domain}' does not match "
+                                   f"our domain '{our_domain}'!")
+
+        return (baseuser.lower(), "", domain.upper())
+
+    realm = ""
     m = re.match(r"(\w+)@(\w+)", user)
     if m:
         baseuser = m.group(1)
         realm = m.group(2)
-    return (baseuser.lower(), realm.upper(), domain)
+
+        if sam is not None:
+            our_realm = sam.domain_dns_name()
+            our_realm_initial = our_realm.split('.', 1)[0]
+            if realm.lower() != our_realm_initial.lower():
+                raise CommandError(f"Given realm '{realm}' does not match our "
+                                   f"realm '{our_realm}'!")
+
+    return (baseuser.lower(), realm.upper(), "")
 
 
 def netcmd_dnsname(lp):

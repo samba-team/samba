@@ -56,7 +56,7 @@ class cmd_spn_list(Command):
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
-        (cleaneduser, realm, domain) = _get_user_realm_domain(user)
+        (cleaneduser, realm, domain) = _get_user_realm_domain(user, sam)
         self.outf.write(cleaneduser + "\n")
         res = sam.search(
             expression="samaccountname=%s" % ldb.binary_encode(cleaneduser),
@@ -107,7 +107,7 @@ class cmd_spn_add(Command):
             raise CommandError("Service principal %s already"
                                " affected to another user" % name)
 
-        (cleaneduser, realm, domain) = _get_user_realm_domain(user)
+        (cleaneduser, realm, domain) = _get_user_realm_domain(user, sam)
         res = sam.search(
             expression="samaccountname=%s" % ldb.binary_encode(cleaneduser),
             scope=ldb.SCOPE_SUBTREE, attrs=["servicePrincipalName"])

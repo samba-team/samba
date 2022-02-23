@@ -150,7 +150,8 @@ class cmd_delegation_show(Command):
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
-        (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
+        (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname,
+                                                                 sam)
 
         res = sam.search(expression="sAMAccountName=%s" %
                          ldb.binary_encode(cleanedaccount),
@@ -227,7 +228,8 @@ class cmd_delegation_for_any_service(Command):
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
-        (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
+        (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname,
+                                                                 sam)
 
         search_filter = "sAMAccountName=%s" % ldb.binary_encode(cleanedaccount)
         flag = dsdb.UF_TRUSTED_FOR_DELEGATION
@@ -280,7 +282,8 @@ class cmd_delegation_for_any_protocol(Command):
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
-        (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
+        (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname,
+                                                                 sam)
 
         search_filter = "sAMAccountName=%s" % ldb.binary_encode(cleanedaccount)
         flag = dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
@@ -325,7 +328,8 @@ class cmd_delegation_add_service(Command):
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
-        (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
+        (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname,
+                                                                 sam)
 
         res = sam.search(expression="sAMAccountName=%s" %
                          ldb.binary_encode(cleanedaccount),
@@ -379,7 +383,8 @@ class cmd_delegation_del_service(Command):
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
-        (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
+        (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname,
+                                                                 sam)
 
         res = sam.search(expression="sAMAccountName=%s" %
                          ldb.binary_encode(cleanedaccount),
@@ -433,7 +438,7 @@ class cmd_delegation_add_principal(Command):
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
-        cleanedaccount, _, _ = _get_user_realm_domain(accountname)
+        cleanedaccount, _, _ = _get_user_realm_domain(accountname, sam)
 
         account_res = sam.search(
             expression="sAMAccountName=%s" %
@@ -476,7 +481,7 @@ class cmd_delegation_add_principal(Command):
 
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
-        cleanedprinc, _, _ = _get_user_realm_domain(principal)
+        cleanedprinc, _, _ = _get_user_realm_domain(principal, sam)
 
         princ_res = sam.search(expression="sAMAccountName=%s" %
                                ldb.binary_encode(cleanedprinc),
@@ -576,7 +581,7 @@ class cmd_delegation_del_principal(Command):
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
-        cleanedaccount, _, _ = _get_user_realm_domain(accountname)
+        cleanedaccount, _, _ = _get_user_realm_domain(accountname, sam)
 
         account_res = sam.search(
             expression="sAMAccountName=%s" %
@@ -611,8 +616,7 @@ class cmd_delegation_del_principal(Command):
 
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
-        cleanedprinc, _, _ = _get_user_realm_domain(
-            principal)
+        cleanedprinc, _, _ = _get_user_realm_domain(principal, sam)
 
         princ_res = sam.search(expression="sAMAccountName=%s" %
                                ldb.binary_encode(cleanedprinc),
