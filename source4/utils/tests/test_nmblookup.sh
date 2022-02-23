@@ -11,7 +11,8 @@ TORTURE_OPTIONS=$*
 
 failed=0
 
-testit() {
+testit()
+{
 	name="$1"
 	shift
 	cmdline="$*"
@@ -22,7 +23,7 @@ testit() {
 		echo "success: $name"
 	else
 		echo "failure: $name"
-		failed=`expr $failed + 1`
+		failed=$(expr $failed + 1)
 	fi
 	return $status
 }
