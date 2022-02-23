@@ -7,9 +7,9 @@
 TARGET=$1
 shift
 for f in $*; do
-if nm $f 2>&1 | grep $TARGET > /dev/null; then
-  echo [$f]
-  nm $f | grep $TARGET
-  echo
-fi
+	if nm $f 2>&1 | grep $TARGET >/dev/null; then
+		echo [$f]
+		nm $f | grep $TARGET
+		echo
+	fi
 done

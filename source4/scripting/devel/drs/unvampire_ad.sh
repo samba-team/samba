@@ -2,10 +2,10 @@
 
 set -x
 
-. `dirname $0`/vars
+. $(dirname $0)/vars
 
 if [ -z "$site" ]; then
-    site="Default-First-Site-Name"
+	site="Default-First-Site-Name"
 fi
 
 bin/ldbdel -r -H ldap://$server.$DNSDOMAIN -U$workgroup/administrator%$pass "CN=$machine,CN=Computers,$dn"

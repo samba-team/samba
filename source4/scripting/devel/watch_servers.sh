@@ -1,8 +1,8 @@
 #!/bin/sh
 
 [ $# -ge 3 ] || {
-    echo "Usage: watch_servers.sh DB1 DB2 PASSWORD SEARCH <attrs>"
-    exit 1
+	echo "Usage: watch_servers.sh DB1 DB2 PASSWORD SEARCH <attrs>"
+	exit 1
 }
 
 host1="$1"
