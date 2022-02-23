@@ -41,12 +41,12 @@ def _get_user_realm_domain(user):
     if m:
         domain = m.group(1)
         baseuser = m.group(2)
-        return (baseuser.lower(), domain.upper(), realm)
+        return (baseuser.lower(), realm, domain.upper())
     m = re.match(r"(\w+)@(\w+)", user)
     if m:
         baseuser = m.group(1)
         realm = m.group(2)
-    return (baseuser.lower(), domain, realm.upper())
+    return (baseuser.lower(), realm.upper(), domain)
 
 
 def netcmd_dnsname(lp):
