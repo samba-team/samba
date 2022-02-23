@@ -970,6 +970,38 @@ static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_creds_encrypt_samr_password(PyObject *self,
+						PyObject *args)
+{
+	DATA_BLOB data = data_blob_null;
+	struct cli_credentials *creds  = NULL;
+	struct samr_Password   *pwd    = NULL;
+	NTSTATUS status;
+	PyObject *py_cp = Py_None;
+
+	creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "O", &py_cp)) {
+		return NULL;
+	}
+
+	pwd = pytalloc_get_type(py_cp, struct samr_Password);
+	if (pwd == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+	data = data_blob_const(pwd->hash, sizeof(pwd->hash));
+	status = netlogon_creds_session_encrypt(creds->netlogon_creds, data);
+
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_creds_get_smb_signing(PyObject *self, PyObject *unused)
 {
 	enum smb_signing_setting signing_state;
@@ -1389,10 +1421,19 @@ static PyMethodDef py_creds_methods[] = {
 		.ml_name  = "encrypt_netr_crypt_password",
 		.ml_meth  = py_creds_encrypt_netr_crypt_password,
 		.ml_flags = METH_VARARGS,
-		.ml_doc   = "S.encrypt_netr_crypt_password(password) -> NTSTATUS\n"
+		.ml_doc   = "S.encrypt_netr_crypt_password(password) -> None\n"
 			    "Encrypt the supplied password using the session key and\n"
 			    "the negotiated encryption algorithm in place\n"
 			    "i.e. it overwrites the original data"},
+	{
+		.ml_name  = "encrypt_samr_password",
+		.ml_meth  = py_creds_encrypt_samr_password,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.encrypt_samr_password(password) -> None\n"
+			    "Encrypt the supplied password using the session key and\n"
+			    "the negotiated encryption algorithm in place\n"
+			    "i.e. it overwrites the original data"
+	},
 	{
 		.ml_name  = "get_smb_signing",
 		.ml_meth  = py_creds_get_smb_signing,
