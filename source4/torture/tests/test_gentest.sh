@@ -4,10 +4,10 @@
 # based on test_smbclient.sh
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_gentest.sh SERVER USERNAME PASSWORD DOMAIN PREFIX
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
@@ -21,14 +21,14 @@ failed=0
 samba4bindir="$BINDIR"
 gentest="$samba4bindir/gentest"
 
-. `dirname $0`/../../../testprogs/blackbox/subunit.sh
+. $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 
-cat <<EOF > $PREFIX/gentest.ignore
+cat <<EOF >$PREFIX/gentest.ignore
 all_info.out.fname
 internal_information.out.file_id
 EOF
 
-testit "gentest" $VALGRIND $gentest //$SERVER/test1 //$SERVER/test2 --seed=1 --seedsfile=$PREFIX/gentest_seeds.dat --num-ops=100 --ignore=$PREFIX/gentest.ignore -W "$DOMAIN" --user1="$USERNAME%$PASSWORD" --user2="$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
+testit "gentest" $VALGRIND $gentest //$SERVER/test1 //$SERVER/test2 --seed=1 --seedsfile=$PREFIX/gentest_seeds.dat --num-ops=100 --ignore=$PREFIX/gentest.ignore -W "$DOMAIN" --user1="$USERNAME%$PASSWORD" --user2="$USERNAME%$PASSWORD" $@ || failed=$(expr $failed + 1)
 
 rm -f $PREFIX/gentest.ignore
 

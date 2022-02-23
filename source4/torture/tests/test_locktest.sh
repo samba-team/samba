@@ -4,10 +4,10 @@
 # based on test_smbclient.sh
 
 if [ $# -lt 5 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_locktest.sh SERVER USERNAME PASSWORD DOMAIN PREFIX
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
@@ -21,8 +21,8 @@ failed=0
 samba4bindir="$BINDIR"
 locktest="$samba4bindir/locktest"
 
-. `dirname $0`/../../../testprogs/blackbox/subunit.sh
+. $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 
-testit "locktest" $VALGRIND $locktest //$SERVER/test1 //$SERVER/test2 --num-ops=100  -W "$DOMAIN" --user1="$DOMAIN\\$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
+testit "locktest" $VALGRIND $locktest //$SERVER/test1 //$SERVER/test2 --num-ops=100 -W "$DOMAIN" --user1="$DOMAIN\\$USERNAME%$PASSWORD" $@ || failed=$(expr $failed + 1)
 
 exit $failed

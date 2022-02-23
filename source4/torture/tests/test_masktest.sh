@@ -4,10 +4,10 @@
 # based on test_smbclient.sh
 
 if [ $# -lt 5 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_masktest.sh SERVER USERNAME PASSWORD DOMAIN PREFIX
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
@@ -21,8 +21,8 @@ failed=0
 samba4bindir="$BINDIR"
 masktest="$samba4bindir/masktest"
 
-. `dirname $0`/../../../testprogs/blackbox/subunit.sh
+. $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 
-testit "masktest" $VALGRIND $masktest //$SERVER/tmp --num-ops=200 --dieonerror -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
+testit "masktest" $VALGRIND $masktest //$SERVER/tmp --num-ops=200 --dieonerror -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=$(expr $failed + 1)
 
 exit $failed
