@@ -3,10 +3,10 @@
 # our source tree for users that don't have them installed on their system
 
 # Third party directory
-THIRD_PARTY_DIR="`dirname $0`"
+THIRD_PARTY_DIR="$(dirname $0)"
 # Library directory where projects live that haven't been migrated to
 # $THIRD_PARTY_DIR yet.
-WORKDIR="`mktemp -d`"
+WORKDIR="$(mktemp -d)"
 
 echo "Updating zlib..."
 git clone git://git.samba.org/third_party/zlib "$WORKDIR/zlib"
