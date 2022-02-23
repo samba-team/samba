@@ -1141,6 +1141,13 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 					  &state->name,
 					  state->smb_fname->twrp,
 					  &state->smb_fname->st);
+		/*
+		 * stat_cache_lookup() allocates on talloc_tos() even
+		 * when !found, reparent correctly
+		 */
+		talloc_steal(state->smb_fname, state->smb_fname->base_name);
+		talloc_steal(state->mem_ctx, state->dirpath);
+
 		if (found) {
 			goto done;
 		}
