@@ -3,10 +3,10 @@
 # this runs the file serving tests that are expected to pass with win2003
 
 if [ $# -lt 3 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_w2k3_file.sh UNC USERNAME PASSWORD <first> <smbtorture args>
 EOF
-exit 1;
+	exit 1
 fi
 
 unc="$1"
@@ -16,7 +16,7 @@ start="$4"
 shift 4
 ADDARGS="$*"
 
-incdir=`dirname $0`
+incdir=$(dirname $0)
 . $incdir/test_functions.sh
 
 tests="BASE-FDPASS BASE-LOCK "
@@ -40,5 +40,5 @@ fail="RAW-SEARCH RAW-ACLS RAW-QFSINFO"
 echo "Skipping tests expected to fail: $fail"
 
 for t in $tests; do
-    testit "$t" smb $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
+	testit "$t" smb $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t
 done

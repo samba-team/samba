@@ -9,8 +9,8 @@
 setup_share_test()
 {
 	echo -e "\nSetting up windows environment."
-	cat $WINTEST_DIR/common.exp > $TMPDIR/setup.exp
-	cat $WINTEST_DIR/wintest_setup.exp >> $TMPDIR/setup.exp
+	cat $WINTEST_DIR/common.exp >$TMPDIR/setup.exp
+	cat $WINTEST_DIR/wintest_setup.exp >>$TMPDIR/setup.exp
 	expect $TMPDIR/setup.exp
 	err_rtn=$?
 	rm -f $TMPDIR/setup.exp
@@ -20,8 +20,8 @@ setup_share_test()
 remove_share_test()
 {
 	echo -e "\nCleaning up windows environment."
-	cat $WINTEST_DIR/common.exp > $TMPDIR/remove.exp
-	cat $WINTEST_DIR/wintest_remove.exp >> $TMPDIR/remove.exp
+	cat $WINTEST_DIR/common.exp >$TMPDIR/remove.exp
+	cat $WINTEST_DIR/wintest_remove.exp >>$TMPDIR/remove.exp
 	expect $TMPDIR/remove.exp
 	err_rtn=$?
 	rm -f $TMPDIR/remove.exp

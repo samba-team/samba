@@ -9,7 +9,7 @@
 
 . selftest/test_functions.sh
 
-export SMBTORTURE_REMOTE_HOST=`perl -I$WINTEST_DIR $WINTEST_DIR/vm_get_ip.pl VM_CFG_PATH`
+export SMBTORTURE_REMOTE_HOST=$(perl -I$WINTEST_DIR $WINTEST_DIR/vm_get_ip.pl VM_CFG_PATH)
 if [ -z $SMBTORTURE_REMOTE_HOST ]; then
 	# Restore snapshot to ensure VM is in a known state, then exit.
 	restore_snapshot "Test failed to get the IP address of the windows host." "$VM_CFG_PATH"

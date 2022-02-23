@@ -8,10 +8,10 @@
 . $WINTESTCONF
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_net.sh SERVER USERNAME PASSWORD DOMAIN
 EOF
-exit 1;
+	exit 1
 fi
 
 server="$1"
@@ -35,19 +35,20 @@ test_type="ncalrpc ncacn_np ncacn_ip_tcp"
 
 all_errs=0
 
-on_error() { 
+on_error()
+{
 	errstr=$1
 
-	all_errs=`expr $all_errs + 1`
+	all_errs=$(expr $all_errs + 1)
 	restore_snapshot "$errstr" "$VM_CFG_PATH"
 }
 
 for o in $bind_options; do
 	for transport in $test_type; do
 		case $transport in
-			ncalrpc) net_test=$ncalrpc_tests ;;
-			ncacn_np) net_test=$ncacn_np_tests ;;
-			ncacn_ip_tcp) net_test=$ncacn_ip_tcp_tests ;;
+		ncalrpc) net_test=$ncalrpc_tests ;;
+		ncacn_np) net_test=$ncacn_np_tests ;;
+		ncacn_ip_tcp) net_test=$ncacn_ip_tcp_tests ;;
 		esac
 
 		for t in $net_test; do

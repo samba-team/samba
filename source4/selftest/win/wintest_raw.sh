@@ -8,10 +8,10 @@
 . $WINTESTCONF
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_net.sh SERVER USERNAME PASSWORD DOMAIN
 EOF
-exit 1;
+	exit 1
 fi
 
 server="$1"
@@ -28,9 +28,10 @@ raw_tests="RAW-QFILEINFO RAW-SFILEINFO-BASE RAW-MKDIR RAW-SEEK RAW-OPEN RAW-WRIT
 all_errs=0
 err=0
 
-on_error() {
+on_error()
+{
 	errstr=$1
-	all_errs=`expr $all_errs + 1`
+	all_errs=$(expr $all_errs + 1)
 
 	restore_snapshot "$errstr" "$VM_CFG_PATH"
 }

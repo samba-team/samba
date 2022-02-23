@@ -8,10 +8,10 @@
 . $WINTESTCONF
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_net.sh SERVER USERNAME PASSWORD DOMAIN
 EOF
-exit 1;
+	exit 1
 fi
 
 server="$1"
@@ -27,10 +27,11 @@ base_tests="BASE-UNLINK BASE-ATTR BASE-DELETE BASE-TCON BASE-OPEN BASE-CHKPATH"
 all_errs=0
 err=0
 
-on_error() {
+on_error()
+{
 	errstr=$1
 
-	all_errs=`expr $all_errs + 1`
+	all_errs=$(expr $all_errs + 1)
 	restore_snapshot $errstr "$VM_CFG_PATH"
 }
 
