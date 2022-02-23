@@ -150,6 +150,47 @@ test_shadow_copy_fix_inodes()
     echo $out | grep "hardlink: for read/write fnum 1" || return 1
 }
 
+build_hiddenfile()
+{
+    local snapdir
+
+    snapdir=$WORKDIR/.snapshots
+
+    #delete snapshots from previous tests
+    find $WORKDIR -name ".snapshots" -exec rm -rf {} \; 1>/dev/null 2>&1
+    build_snapshots
+
+    touch $WORKDIR/hiddenfile
+
+    # Create a file with hidden attribute
+    $SMBCLIENT -U $USERNAME%$PASSWORD \
+	       "//$SERVER/shadow_write" \
+	       -c "put $WORKDIR/hiddenfile hiddenfile; setmode hiddenfile +h"
+    # ...and move it to the snapshot directory
+    mv $WORKDIR/hiddenfile $snapdir/$SNAPSHOT/
+}
+
+test_hiddenfile()
+{
+    build_hiddenfile
+
+    out=$($SMBCLIENT \
+	   -U $USERNAME%$PASSWORD \
+	   "//$SERVER/shadow_write" \
+	   -c "allinfo $SNAPSHOT/hiddenfile") || return 1
+    echo $out
+    echo $out | grep "attributes: HA (22)" || return 1
+
+    out=$($SMBCLIENT \
+	   -U $USERNAME%$PASSWORD \
+	   "//$SERVER/shadow_write" \
+	   -c "ls $SNAPSHOT/hiddenfile") || return 1
+    echo $out
+    echo $out | grep "hiddenfile[[:blank:]]*AH" || return 1
+
+    return 0
+}
+
 build_files $WORKDIR
 
 # test open for writing and write behaviour of snapshoted files
@@ -160,5 +201,7 @@ test_shadow_copy_stream "reading stream of snapshotted file"
 test_shadow_copy_openroot "opening root of shadow copy share"
 
 testit "fix inodes with hardlink" test_shadow_copy_fix_inodes || failed=`expr $failed + 1`
+
+testit "Test reading DOS attribute" test_hiddenfile || failed=`expr $failed + 1`
 
 exit $failed
