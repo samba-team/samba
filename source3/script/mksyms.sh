@@ -30,7 +30,7 @@ symsfile="$1"
 shift
 symsfile_tmp="$symsfile.$$.tmp~"
 
-proto_src="$(echo $@ | tr ' ' '\n' | sort | uniq)"
+proto_src="$(echo "$@" | tr ' ' '\n' | sort | uniq)"
 
 echo creating $symsfile
 
