@@ -206,3 +206,5 @@ if conf.CONFIG_SET('USING_EMBEDDED_HEIMDAL'):
     conf.define('HAVE_KRB5_ADDLOG_FUNC_NEED_CONTEXT', 1)
 else:
     pass # TODO
+
+conf.CHECK_SIGN('time_t')
