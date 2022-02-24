@@ -122,7 +122,7 @@ test_smbclient_dfree()
 	shift
 	subunit_start_test "$name"
 	setup_conf $confs
-	output=$($VALGRIND $smbclient //$SERVER/$share -c "cd $dir; l" $@ 2>&1)
+	output=$($VALGRIND $smbclient //$SERVER/$share -c "cd $dir; l" "$@" 2>&1)
 	status=$?
 	if [ "$status" = "0" ]; then
 		received=$(echo "$output" | awk '/blocks of size/ {print $1, $5, $6}')
@@ -150,7 +150,7 @@ test_smbclient_dfree_2()
 	subunit_start_test "$name"
 	setup_conf $confs
 	output=$($VALGRIND $smbclient //$SERVER/$share \
-		-c "cd $dir1; du; cd ..; cd $dir2 ; du" $@ 2>&1)
+		-c "cd $dir1; du; cd ..; cd $dir2 ; du" "$@" 2>&1)
 	status=$?
 	if [ "$status" = "0" ]; then
 		received=$(echo "$output" |
@@ -187,7 +187,7 @@ test_smbcquotas()
 		mproto="-m SMB1"
 	fi
 
-	output=$($VALGRIND $smbcquotas $mproto //$SERVER/dfq $@ 2>/dev/null | tr '\\' '/')
+	output=$($VALGRIND $smbcquotas $mproto //$SERVER/dfq "$@" 2>/dev/null | tr '\\' '/')
 	status=$?
 	if [ "$status" = "0" ]; then
 		received=$(echo "$output" | awk "/$SERVER\\/$user/ {printf \"%s%s%s\", \$3, \$4, \$5}")
