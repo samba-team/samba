@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 }
 _EOF
 
-for arg in $@; do
+for arg in "$@"; do
 	case "$arg" in
 	"") ;;
 
