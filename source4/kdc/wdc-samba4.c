@@ -36,14 +36,15 @@
  *
  * For PKINIT we also get pk_reply_key and can add PAC_CREDENTIAL_INFO.
  */
-static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
-					 krb5_kdc_configuration *config,
+static krb5_error_code samba_wdc_get_pac(void *priv,
+					 astgs_request_t r,
 					 hdb_entry *client,
 					 hdb_entry *server,
 					 const krb5_keyblock *pk_reply_key,
 					 uint64_t pac_attributes,
 					 krb5_pac *pac)
 {
+	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB *logon_blob = NULL;
 	DATA_BLOB *cred_ndr = NULL;
@@ -663,8 +664,7 @@ out:
 
 /* Resign (and reform, including possibly new groups) a PAC */
 
-static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
-					   krb5_kdc_configuration *config,
+static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 					   const krb5_principal client_principal,
 					   const krb5_principal delegated_proxy_principal,
 					   hdb_entry *client,
@@ -672,6 +672,8 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 					   hdb_entry *krbtgt,
 					   krb5_pac *pac)
 {
+	krb5_context context = kdc_request_get_context((kdc_request_t)r);
+	krb5_kdc_configuration *config = kdc_request_get_config((kdc_request_t)r);
 	struct samba_kdc_entry *krbtgt_skdc_entry =
 		talloc_get_type_abort(krbtgt->context,
 				      struct samba_kdc_entry);
