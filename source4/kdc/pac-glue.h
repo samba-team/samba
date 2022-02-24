@@ -48,6 +48,9 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *pac_attrs_blob,
 				    const DATA_BLOB *requester_sid_blob,
 				    const DATA_BLOB *deleg_blob,
+				    const DATA_BLOB *client_claims_blob,
+				    const DATA_BLOB *device_info_blob,
+				    const DATA_BLOB *device_claims_blob,
 				    krb5_pac pac);
 
 bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry);

@@ -503,6 +503,15 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
  * @param[in] deleg_blob Fill the delegation info PAC buffer with the given
  *                       blob, use NULL to ignore it.
  *
+ * @param[in] client_claims_blob Fill the client claims info PAC buffer with the
+ *                               given blob, use NULL to ignore it.
+ *
+ * @param[in] device_info_blob Fill the device info PAC buffer with the given
+ *                             blob, use NULL to ignore it.
+ *
+ * @param[in] device_claims_blob Fill the device claims info PAC buffer with the given
+ *                               blob, use NULL to ignore it.
+ *
  * @param[in] pac        The pac buffer to fill. This should be allocated with
  *                       krb5_pac_init() already.
  *
@@ -515,6 +524,9 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *pac_attrs_blob,
 				    const DATA_BLOB *requester_sid_blob,
 				    const DATA_BLOB *deleg_blob,
+				    const DATA_BLOB *client_claims_blob,
+				    const DATA_BLOB *device_info_blob,
+				    const DATA_BLOB *device_claims_blob,
 				    krb5_pac pac)
 {
 	krb5_data logon_data;
@@ -533,6 +545,36 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	ret = krb5_pac_add_buffer(context, pac, PAC_TYPE_LOGON_INFO, &logon_data);
 	if (ret != 0) {
 		return ret;
+	}
+
+	if (device_info_blob != NULL) {
+		krb5_data device_info_data = smb_krb5_data_from_blob(*device_info_blob);
+		ret = krb5_pac_add_buffer(context, pac,
+					  PAC_TYPE_DEVICE_INFO,
+					  &device_info_data);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	if (client_claims_blob != NULL) {
+		krb5_data client_claims_data = smb_krb5_data_from_blob(*client_claims_blob);
+		ret = krb5_pac_add_buffer(context, pac,
+					  PAC_TYPE_CLIENT_CLAIMS_INFO,
+					  &client_claims_data);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	if (device_claims_blob != NULL) {
+		krb5_data device_claims_data = smb_krb5_data_from_blob(*device_claims_blob);
+		ret = krb5_pac_add_buffer(context, pac,
+					  PAC_TYPE_DEVICE_CLAIMS_INFO,
+					  &device_claims_data);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	if (cred_blob != NULL) {

@@ -535,6 +535,9 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 				   pac_attrs_blob,
 				   requester_sid_blob,
 				   NULL,
+				   NULL,
+				   NULL,
+				   NULL,
 				   *pac);
 
 	talloc_free(tmp_ctx);

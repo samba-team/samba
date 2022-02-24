@@ -161,7 +161,9 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 
 	ret = samba_make_krb5_pac(context, logon_blob, cred_blob,
 				  upn_blob, pac_attrs_blob,
-				  requester_sid_blob, NULL, *pac);
+				  requester_sid_blob, NULL,
+				  NULL, NULL, NULL,
+				  *pac);
 
 	talloc_free(mem_ctx);
 	return ret;
