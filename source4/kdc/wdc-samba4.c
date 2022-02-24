@@ -33,6 +33,38 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_KERBEROS
 
+static int samba_wdc_pac_options(astgs_request_t r, PAC_OPTIONS_FLAGS *flags)
+{
+	const KDC_REQ *req = kdc_request_get_req(r);
+	const PA_DATA *padata_pac_options = NULL;
+
+	ZERO_STRUCTP(flags);
+
+	if (req->padata != NULL) {
+		int idx = 0;
+
+		padata_pac_options = krb5_find_padata(req->padata->val,
+						      req->padata->len,
+						      KRB5_PADATA_PAC_OPTIONS,
+						      &idx);
+	}
+
+	if (padata_pac_options != NULL) {
+		PA_PAC_OPTIONS pa_pac_options = {};
+		int ret;
+
+		ret = decode_PA_PAC_OPTIONS(padata_pac_options->padata_value.data,
+					    padata_pac_options->padata_value.length,
+					    &pa_pac_options, NULL);
+		if (ret) {
+			return ret;
+		}
+		*flags = pa_pac_options.flags;
+	}
+
+	return 0;
+}
+
 static bool samba_wdc_is_s4u2self_req(astgs_request_t r)
 {
 	krb5_kdc_configuration *config = kdc_request_get_config((kdc_request_t)r);
@@ -104,6 +136,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *pac_attrs_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
+	DATA_BLOB *claims_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct samba_kdc_entry *skdc_entry =
@@ -115,6 +148,12 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		(is_s4u2self) ?
 			SAMBA_ASSERTED_IDENTITY_SERVICE :
 			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
+	PAC_OPTIONS_FLAGS pac_options = {};
+
+	ret = samba_wdc_pac_options(r, &pac_options);
+	if (ret != 0) {
+		return ret;
+	}
 
 	mem_ctx = talloc_named(client->context, 0, "samba_get_pac context");
 	if (!mem_ctx) {
@@ -135,7 +174,8 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 					    is_krbtgt ? &pac_attrs_blob : NULL,
 					    pac_attributes,
 					    is_krbtgt ? &requester_sid_blob : NULL,
-					    NULL);
+					    pac_options.claims ?
+					    &claims_blob : NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return EINVAL;
@@ -176,7 +216,9 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 					    hdb_entry *server,
 					    hdb_entry *krbtgt,
 					    krb5_pac *pac,
-					    krb5_cksumtype ctype)
+					    krb5_cksumtype ctype,
+					    const hdb_entry *device,
+					    krb5_const_pac *device_pac)
 {
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	struct samba_kdc_entry *client_skdc_entry = NULL;
@@ -191,6 +233,12 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 	bool is_in_db = false;
 	bool is_untrusted = false;
 	uint32_t flags = 0;
+	PAC_OPTIONS_FLAGS pac_options = {};
+
+	ret = samba_wdc_pac_options(r, &pac_options);
+	if (ret != 0) {
+		return ret;
+	}
 
 	mem_ctx = talloc_named(NULL, 0, "samba_kdc_reget_pac2 context");
 	if (mem_ctx == NULL) {
@@ -200,6 +248,25 @@ static krb5_error_code samba_wdc_reget_pac2(astgs_request_t r,
 	if (client != NULL) {
 		client_skdc_entry = talloc_get_type_abort(client->context,
 							  struct samba_kdc_entry);
+	}
+
+	if (device != NULL) {
+		struct samba_kdc_entry *device_skdc_entry = NULL;
+
+		device_skdc_entry = talloc_get_type_abort(device->context,
+							  struct samba_kdc_entry);
+
+		/*
+		 * Check the objectSID of the device and pac data are the same.
+		 * Does a parse and SID check, but no crypto.
+		 */
+		ret = samba_kdc_validate_pac_blob(context,
+						  device_skdc_entry,
+						  *device_pac);
+		if (ret != 0) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
 	}
 
 	/*
@@ -329,6 +396,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	krb5_error_code ret;
 	krb5_cksumtype ctype = CKSUMTYPE_NONE;
 	hdb_entry signing_krbtgt_hdb;
+	const hdb_entry *explicit_armor_client =
+		kdc_request_get_explicit_armor_client(r);
+	krb5_const_pac explicit_armor_pac =
+		kdc_request_get_explicit_armor_pac(r);
 
 	if (delegated_proxy_principal) {
 		uint16_t rodc_id;
@@ -455,7 +526,9 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 				   server,
 				   krbtgt,
 				   pac,
-				   ctype);
+				   ctype,
+				   explicit_armor_client,
+				   &explicit_armor_pac);
 
 	if (krbtgt == &signing_krbtgt_hdb) {
 		hdb_free_entry(context, config->db[0], &signing_krbtgt_hdb);
