@@ -517,9 +517,10 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	krb5_data deleg_data;
 	krb5_error_code ret;
 #ifdef SAMBA4_USES_HEIMDAL
+	char null_byte = '\0';
 	krb5_data null_data = {
-		.length = 0,
-		.data = NULL,
+		.length = 1,
+		.data = &null_byte,
 	};
 #endif
 
