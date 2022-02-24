@@ -28,6 +28,9 @@ struct winbindd_pam_auth_crap_state {
 	struct winbindd_response *response;
 	uint8_t authoritative;
 	uint32_t flags;
+	bool pac_is_trusted;
+	uint16_t validation_level;
+	union netr_Validation *validation;
 };
 
 static void winbindd_pam_auth_crap_done(struct tevent_req *subreq);
@@ -52,51 +55,15 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 	state->flags = request->flags;
 
 	if (state->flags & WBFLAG_PAM_AUTH_PAC) {
-		bool is_trusted = false;
-		uint16_t validation_level;
-		union netr_Validation *validation = NULL;
 		NTSTATUS status;
 
 		status = winbindd_pam_auth_pac_verify(cli,
 						      state,
-						      &is_trusted,
-						      &validation_level,
-						      &validation);
+						      &state->pac_is_trusted,
+						      &state->validation_level,
+						      &state->validation);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
-		}
-
-		state->response = talloc_zero(state,
-					      struct winbindd_response);
-		if (tevent_req_nomem(state->response, req)) {
-			return tevent_req_post(req, ev);
-		}
-		state->response->result = WINBINDD_PENDING;
-		state->response->length = sizeof(struct winbindd_response);
-
-		status = append_auth_data(state->response,
-					  state->response,
-					  state->flags,
-					  validation_level,
-					  validation,
-					  NULL, NULL);
-		TALLOC_FREE(validation);
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
-		}
-
-		if (is_trusted && (state->flags & WBFLAG_PAM_INFO3_TEXT)) {
-			bool ok;
-
-			ok = add_trusted_domain_from_auth(
-				state->response->data.auth.validation_level,
-				&state->response->data.auth.info3,
-				&state->response->data.auth.info6);
-			if (!ok) {
-				DBG_ERR("add_trusted_domain_from_auth failed\n");
-				tevent_req_nterror(req, NT_STATUS_LOGON_FAILURE);
-				return tevent_req_post(req, ev);
-			}
 		}
 
 		tevent_req_done(req);
@@ -191,6 +158,39 @@ NTSTATUS winbindd_pam_auth_crap_recv(struct tevent_req *req,
 		set_auth_errors(response, status);
 		response->data.auth.authoritative = state->authoritative;
 		return status;
+	}
+
+	if (state->flags & WBFLAG_PAM_AUTH_PAC) {
+		state->response = talloc_zero(state,
+					      struct winbindd_response);
+		if (state->response == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			set_auth_errors(response, status);
+			response->data.auth.authoritative = state->authoritative;
+			return status;
+		}
+		state->response->result = WINBINDD_PENDING;
+		state->response->length = sizeof(struct winbindd_response);
+
+		status = append_auth_data(state->response,
+					  state->response,
+					  state->flags,
+					  state->validation_level,
+					  state->validation,
+					  NULL, NULL);
+		if (NT_STATUS_IS_ERR(status)) {
+			set_auth_errors(response, status);
+			response->data.auth.authoritative = state->authoritative;
+			return status;
+		}
+
+		if (!state->pac_is_trusted) {
+			/*
+			 * Clear the flag in state to do no add the domain
+			 * from auth below.
+			 */
+			state->flags &= ~WBFLAG_PAM_INFO3_TEXT;
+		}
 	}
 
 	if (NT_STATUS_IS_OK(NT_STATUS(state->response->data.auth.nt_status)) &&
