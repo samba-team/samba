@@ -134,7 +134,8 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 					    &upn_blob,
 					    is_krbtgt ? &pac_attrs_blob : NULL,
 					    pac_attributes,
-					    is_krbtgt ? &requester_sid_blob : NULL);
+					    is_krbtgt ? &requester_sid_blob : NULL,
+					    NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return EINVAL;

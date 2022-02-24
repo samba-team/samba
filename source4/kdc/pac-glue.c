@@ -847,7 +847,8 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB **_upn_info_blob,
 				 DATA_BLOB **_pac_attrs_blob,
 				 uint64_t pac_attributes,
-				 DATA_BLOB **_requester_sid_blob)
+				 DATA_BLOB **_requester_sid_blob,
+				 DATA_BLOB **_client_claims_blob)
 {
 	struct auth_user_info_dc *user_info_dc = NULL;
 	DATA_BLOB *logon_blob = NULL;
@@ -855,6 +856,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *pac_attrs_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
+	DATA_BLOB *client_claims_blob = NULL;
 	NTSTATUS nt_status;
 
 	*_logon_info_blob = NULL;
@@ -867,6 +869,9 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	}
 	if (_requester_sid_blob != NULL) {
 		*_requester_sid_blob = NULL;
+	}
+	if (_client_claims_blob != NULL) {
+		*_client_claims_blob = NULL;
 	}
 
 	logon_blob = talloc_zero(mem_ctx, DATA_BLOB);
@@ -896,6 +901,19 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	if (_requester_sid_blob != NULL) {
 		requester_sid_blob = talloc_zero(mem_ctx, DATA_BLOB);
 		if (requester_sid_blob == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (_client_claims_blob != NULL) {
+		/*
+		 * Until we support claims we just
+		 * return an empty blob,
+		 * that matches what Windows is doing
+		 * without defined claims
+		 */
+		client_claims_blob = talloc_zero(mem_ctx, DATA_BLOB);
+		if (client_claims_blob == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -969,6 +987,9 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 	}
 	if (_requester_sid_blob != NULL) {
 		*_requester_sid_blob = requester_sid_blob;
+	}
+	if (_client_claims_blob != NULL) {
+		*_client_claims_blob = client_claims_blob;
 	}
 	return NT_STATUS_OK;
 }
@@ -1154,7 +1175,7 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 }
 
 static krb5_error_code samba_get_requester_sid(TALLOC_CTX *mem_ctx,
-					       krb5_pac pac,
+					       krb5_const_pac pac,
 					       krb5_context context,
 					       struct dom_sid *sid)
 {
@@ -1202,8 +1223,8 @@ static krb5_error_code samba_get_requester_sid(TALLOC_CTX *mem_ctx,
 /* Does a parse and SID check, but no crypto. */
 krb5_error_code samba_kdc_validate_pac_blob(
 		krb5_context context,
-		struct samba_kdc_entry *client_skdc_entry,
-		const krb5_pac pac)
+		const struct samba_kdc_entry *client_skdc_entry,
+		const krb5_const_pac pac)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct auth_user_info_dc *pac_user_info = NULL;
@@ -1400,6 +1421,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *deleg_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
+	DATA_BLOB *client_claims_blob = NULL;
 	bool is_untrusted = flags & SAMBA_KDC_FLAG_KRBTGT_IS_UNTRUSTED;
 	int is_tgs = false;
 	size_t num_types = 0;
@@ -1486,7 +1508,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						    &upn_blob,
 						    NULL,
 						    PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY,
-						    &requester_sid_blob);
+						    &requester_sid_blob,
+						    &client_claims_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_pac_blobs failed: %s\n",
 				nt_errstr(nt_status));

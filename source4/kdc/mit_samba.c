@@ -505,7 +505,8 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 					    &upn_dns_info_blob,
 					    is_krbtgt ? &pac_attrs_blob : NULL,
 					    PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY,
-					    is_krbtgt ? &requester_sid_blob : NULL);
+					    is_krbtgt ? &requester_sid_blob : NULL,
+					    NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		if (NT_STATUS_EQUAL(nt_status,
