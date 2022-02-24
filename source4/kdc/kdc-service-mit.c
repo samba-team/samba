@@ -357,7 +357,7 @@ NTSTATUS server_service_mitkdc_init(TALLOC_CTX *mem_ctx)
 {
 	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
-		/* 
+		/*
 		 * Need to prevent pre-forking on kdc.
 		 * The task_init function is run on the master process only
 		 * and the irpc process name is registered in it's event loop.
