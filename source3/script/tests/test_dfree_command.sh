@@ -35,7 +35,7 @@ test_smbclient_dfree()
 	shift
 	shift
 	subunit_start_test "$name"
-	output=$($VALGRIND $smbclient //$SERVER/$share -c "$cmd" $@ 2>&1)
+	output=$($VALGRIND $smbclient //$SERVER/$share -c "$cmd" "$@" 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		received=$(echo "$output" | awk '/blocks of size/ {print $1, $5, $6}')
