@@ -3443,6 +3443,7 @@ out:
 }
 
 NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
+				      TALLOC_CTX *mem_ctx,
 				      bool *p_is_trusted,
 				      uint16_t *p_validation_level,
 				      union netr_Validation **p_validation)
@@ -3459,19 +3460,25 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 	NTSTATUS result;
 	bool is_trusted = false;
 	uint32_t i;
+	TALLOC_CTX *tmp_ctx = NULL;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	*p_is_trusted = false;
 	*p_validation_level = 0;
 	*p_validation = NULL;
 
 	pac_blob = data_blob_const(req->extra_data.data, req->extra_len);
-	result = extract_pac_vrfy_sigs(state->mem_ctx, pac_blob, &pac_data);
+	result = extract_pac_vrfy_sigs(tmp_ctx, pac_blob, &pac_data);
 	if (NT_STATUS_IS_OK(result)) {
 		is_trusted = true;
 	}
 	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
 		/* Try without signature verification */
-		result = kerberos_decode_pac(state->mem_ctx,
+		result = kerberos_decode_pac(tmp_ctx,
 					     pac_blob,
 					     NULL, /* krb5_context */
 					     NULL, /* krbtgt_keyblock */
@@ -3483,7 +3490,7 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("Error during PAC signature verification: %s\n",
 			  nt_errstr(result)));
-		return result;
+		goto out;
 	}
 
 	for (i=0; i < pac_data->num_buffers; i++) {
@@ -3497,12 +3504,12 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 		}
 	}
 
-	result = create_info6_from_pac(state->mem_ctx,
+	result = create_info6_from_pac(tmp_ctx,
 				       logon_info,
 				       upn_dns_info,
 				       &info6);
 	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+		goto out;
 	}
 
 	if (!is_allowed_domain(info6->base.logon_domain.string)) {
@@ -3510,23 +3517,24 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 			   "from firewalled domain [%s]\n",
 			   info6->base.account_name.string,
 			   info6->base.logon_domain.string);
-		return NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
+		result = NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
+		goto out;
 	}
 
-	result = map_info6_to_validation(state->mem_ctx,
+	result = map_info6_to_validation(tmp_ctx,
 					 info6,
 					 &validation_level,
 					 &validation);
 	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+		goto out;
 	}
 
-	result = map_validation_to_info3(state->mem_ctx,
+	result = map_validation_to_info3(tmp_ctx,
 					 validation_level,
 					 validation,
 					 &info3_copy);
 	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+		goto out;
 	}
 
 	if (is_trusted) {
@@ -3570,11 +3578,16 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 
 	*p_is_trusted = is_trusted;
 	*p_validation_level = validation_level;
-	*p_validation = validation;
-	return NT_STATUS_OK;
+	*p_validation = talloc_move(mem_ctx, &validation);
+
+	result = NT_STATUS_OK;
+out:
+	TALLOC_FREE(tmp_ctx);
+	return result;
 }
 #else /* HAVE_KRB5 */
 NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
+				      TALLOC_CTX *mem_ctx,
 				      bool *p_is_trusted,
 				      uint16_t *p_validation_level,
 				      union netr_Validation **p_validation);

@@ -58,6 +58,7 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 		NTSTATUS status;
 
 		status = winbindd_pam_auth_pac_verify(cli,
+						      state,
 						      &is_trusted,
 						      &validation_level,
 						      &validation);
