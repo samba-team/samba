@@ -375,7 +375,7 @@ NTSTATUS map_info6_to_validation(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = copy_netr_SamInfo6(mem_ctx,
+	status = copy_netr_SamInfo6(validation,
 				    info6,
 				    &validation->sam6);
 	if (!NT_STATUS_IS_OK(status)) {
