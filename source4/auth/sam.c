@@ -454,12 +454,15 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	user_info_dc->info = info = talloc_zero(user_info_dc, struct auth_user_info);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->info);
 
-	info->account_name = talloc_steal(info,
-		ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL));
+	str = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
+	info->account_name = talloc_strdup(info, str);
+	if (info->account_name == NULL) {
+		TALLOC_FREE(user_info_dc);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	info->user_principal_name = talloc_steal(info,
-		ldb_msg_find_attr_as_string(msg, "userPrincipalName", NULL));
-	if (info->user_principal_name == NULL && dns_domain_name != NULL) {
+	str = ldb_msg_find_attr_as_string(msg, "userPrincipalName", NULL);
+	if (str == NULL && dns_domain_name != NULL) {
 		info->user_principal_name = talloc_asprintf(info, "%s@%s",
 					info->account_name,
 					dns_domain_name);
@@ -468,6 +471,12 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		info->user_principal_constructed = true;
+	} else if (str != NULL) {
+		info->user_principal_name = talloc_strdup(info, str);
+		if (info->user_principal_name == NULL) {
+			TALLOC_FREE(user_info_dc);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	info->domain_name = talloc_strdup(info, domain_name);
