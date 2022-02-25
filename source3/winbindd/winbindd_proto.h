@@ -441,8 +441,8 @@ struct pipes_struct;
 struct wbint_PamAuth;
 NTSTATUS _wbint_PamAuth(struct pipes_struct *p,
 			struct wbint_PamAuth *r);
-enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
-						 struct winbindd_cli_state *state) ;
+NTSTATUS _wbint_PamAuthCrap(struct pipes_struct *p,
+			    struct wbint_PamAuthCrap *r);
 enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact_domain,
 						 struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,

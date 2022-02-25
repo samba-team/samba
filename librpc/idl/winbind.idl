@@ -196,6 +196,27 @@ interface winbind
         [out,ref] wbint_Validation *validation
         );
 
+    typedef [public] struct {
+        uint16 level;
+        [switch_is(level)] netr_Validation *validation;
+    } wbint_PamAuthCrapValidation;
+
+    NTSTATUS wbint_PamAuthCrap(
+        [in,string,charset(UTF8)] char *client_name,
+        [in] hyper client_pid,
+        [in] uint32 flags,
+        [in, string,charset(UTF8)] char *user,
+        [in, string,charset(UTF8)] char *domain,
+        [in, string,charset(UTF8)] char *workstation,
+        [in] DATA_BLOB lm_resp,
+        [in] DATA_BLOB nt_resp,
+        [in] DATA_BLOB chal,
+        [in] uint32 logon_parameters,
+        [in] wbint_SidArray *require_membership_of_sid,
+        [out,ref] uint8 *authoritative,
+        [out,ref] wbint_PamAuthCrapValidation *validation
+        );
+
   /* Public methods available via IRPC */
 
     typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;

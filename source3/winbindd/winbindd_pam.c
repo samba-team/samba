@@ -2115,7 +2115,7 @@ done:
  * @brief build a tsocket_address for the remote address of the supplied socket
  *
  */
-static struct tsocket_address *get_remote_address(TALLOC_CTX *mem_ctx, int sock)
+_UNUSED_ static struct tsocket_address *get_remote_address(TALLOC_CTX *mem_ctx, int sock)
 {
 	struct sockaddr_storage st = {0};
 	struct sockaddr *sar = (struct sockaddr *)&st;
@@ -2141,7 +2141,7 @@ static struct tsocket_address *get_remote_address(TALLOC_CTX *mem_ctx, int sock)
  * @brief build a tsocket_address for the local address of the supplied socket
  *
  */
-static struct tsocket_address *get_local_address(TALLOC_CTX *mem_ctx, int sock)
+_UNUSED_ static struct tsocket_address *get_local_address(TALLOC_CTX *mem_ctx, int sock)
 {
 	struct sockaddr_storage st = {0};
 	struct sockaddr *sar = (struct sockaddr *)&st;
@@ -2836,71 +2836,52 @@ done:
 	return NT_STATUS_OK;
 }
 
-enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
-						 struct winbindd_cli_state *state)
+NTSTATUS _wbint_PamAuthCrap(struct pipes_struct *p, struct wbint_PamAuthCrap *r)
 {
+	struct winbindd_domain *domain = wb_child_domain();
 	NTSTATUS result;
-	const char *name_user = NULL;
-	const char *name_domain = NULL;
-	const char *workstation;
 	uint64_t logon_id = 0;
 	uint8_t authoritative = 1;
 	uint32_t flags = 0;
 	uint16_t validation_level = UINT16_MAX;
 	union netr_Validation *validation = NULL;
-	DATA_BLOB lm_resp = { 0 }, nt_resp = { 0 };
-	DATA_BLOB chal = data_blob_null;
 	const struct timeval start_time = timeval_current();
 	const struct tsocket_address *remote = NULL;
 	const struct tsocket_address *local = NULL;
 	struct netr_SamInfo3 *info3 = NULL;
-	struct wbint_SidArray *sid_array = NULL;
+	pid_t client_pid;
 
-	/* This is child-only, so no check for privileged access is needed
-	   anymore */
-
-	/* Ensure null termination */
-	state->request->data.auth_crap.user[sizeof(state->request->data.auth_crap.user)-1]=0;
-	state->request->data.auth_crap.domain[sizeof(state->request->data.auth_crap.domain)-1]=0;
-
-	name_user = state->request->data.auth_crap.user;
-	name_domain = state->request->data.auth_crap.domain;
-	workstation = state->request->data.auth_crap.workstation;
-	logon_id = generate_random_u64();
-	remote = get_remote_address(state->mem_ctx, state->sock);
-	local = get_local_address(state->mem_ctx, state->sock);
-
-	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n", (unsigned long)state->pid,
-		  name_domain, name_user));
-
-	lm_resp = data_blob_talloc(state->mem_ctx, state->request->data.auth_crap.lm_resp,
-					state->request->data.auth_crap.lm_resp_len);
-
-	if (state->request->flags & WBFLAG_BIG_NTLMV2_BLOB) {
-		nt_resp = data_blob_talloc(state->mem_ctx,
-					   state->request->extra_data.data,
-					   state->request->data.auth_crap.nt_resp_len);
-	} else {
-		nt_resp = data_blob_talloc(state->mem_ctx,
-					   state->request->data.auth_crap.nt_resp,
-					   state->request->data.auth_crap.nt_resp_len);
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
-	chal = data_blob_const(state->request->data.auth_crap.chal, 8);
+
+	/* Cut client_pid to 32bit */
+	client_pid = r->in.client_pid;
+	if ((uint64_t)client_pid != r->in.client_pid) {
+		DBG_DEBUG("pid out of range\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	logon_id = generate_random_u64();
+	remote = dcesrv_connection_get_remote_address(p->dce_call->conn);
+	local = dcesrv_connection_get_local_address(p->dce_call->conn);
+
+	DBG_NOTICE("[%"PRIu32"]: pam auth crap domain: %s user: %s\n",
+		   client_pid, r->in.domain, r->in.user);
 
 	result = winbind_dual_SamLogon(domain,
-				       state->mem_ctx,
+				       p->mem_ctx,
 				       false, /* interactive */
-				       state->request->data.auth_crap.logon_parameters,
-				       name_user,
-				       name_domain,
-				       /* Bug #3248 - found by Stefan Burkei. */
-				       workstation, /* We carefully set this above so use it... */
+				       r->in.logon_parameters,
+				       r->in.user,
+				       r->in.domain,
+				       r->in.workstation,
 				       logon_id,
-				       state->request->client_name,
-				       state->request->pid,
-				       chal,
-				       lm_resp,
-				       nt_resp,
+				       r->in.client_name,
+				       client_pid,
+				       r->in.chal,
+				       r->in.lm_resp,
+				       r->in.nt_resp,
 				       remote,
 				       local,
 				       &authoritative,
@@ -2912,7 +2893,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	result = map_validation_to_info3(state->mem_ctx,
+	result = map_validation_to_info3(p->mem_ctx,
 					 validation_level,
 					 validation,
 					 &info3);
@@ -2920,32 +2901,19 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	result = extra_data_to_sid_array(
-		state->request->data.auth_crap.require_membership_of_sid,
-		state->mem_ctx,
-		&sid_array);
-	if (!NT_STATUS_IS_OK(result)) {
-		DBG_ERR("Failed to parse '%s' into a sid array: %s\n",
-			state->request->data.auth_crap.require_membership_of_sid,
-			nt_errstr(result));
-		goto done;
-	}
-
 	/* Check if the user is in the right group */
-	result = check_info3_in_group(info3, sid_array);
+	result = check_info3_in_group(info3, r->in.require_membership_of_sid);
 	if (!NT_STATUS_IS_OK(result)) {
-		char *s = NDR_PRINT_STRUCT_STRING(state->mem_ctx,
+		char *s = NDR_PRINT_STRUCT_STRING(p->mem_ctx,
 						  wbint_SidArray,
-						  sid_array);
+						  r->in.require_membership_of_sid);
 		DBG_NOTICE("User %s is not in the required groups:\n",
-			   state->request->data.auth_crap.user);
+			   r->in.user);
 		DEBUGADD(DBGLVL_NOTICE, ("%s", s));
 		DEBUGADD(DBGLVL_NOTICE,
 			 ("CRAP authentication is rejected\n"));
-		TALLOC_FREE(sid_array);
 		goto done;
 	}
-	TALLOC_FREE(sid_array);
 
 	if (!is_allowed_domain(info3->base.logon_domain.string)) {
 		DBG_NOTICE("Authentication failed for user [%s] "
@@ -2956,45 +2924,48 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	result = append_auth_data(state->mem_ctx, state->response,
-				  state->request->flags,
-				  validation_level,
-				  validation,
-				  name_domain, name_user);
+	r->out.validation = talloc_zero(p->mem_ctx,
+					struct wbint_PamAuthCrapValidation);
+	if (r->out.validation == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
+	r->out.validation->level = validation_level;
+	r->out.validation->validation = talloc_move(r->out.validation,
+						    &validation);
 done:
 
-	if (state->request->flags & WBFLAG_PAM_NT_STATUS_SQUASH) {
+	if (r->in.flags & WBFLAG_PAM_NT_STATUS_SQUASH) {
 		result = nt_status_squash(result);
 	}
 
-	set_auth_errors(state->response, result);
-	state->response->data.auth.authoritative = authoritative;
+	*r->out.authoritative = authoritative;
 
 	/*
 	 * Log the winbind pam authentication, the logon_id will tie this to
 	 * any of the logons invoked from this request.
 	 */
 	log_authentication(
-	    state->mem_ctx,
+	    p->mem_ctx,
 	    domain,
-	    state->request->client_name,
-	    state->pid,
-	    validation_level,
-	    validation,
+	    r->in.client_name,
+	    client_pid,
+	    r->out.validation->level,
+	    r->out.validation->validation,
 	    start_time,
 	    logon_id,
 	    "NTLM_AUTH",
-	    name_user,
-	    name_domain,
-	    workstation,
-	    lm_resp,
-            nt_resp,
+	    r->in.user,
+	    r->in.domain,
+	    r->in.workstation,
+	    r->in.lm_resp,
+	    r->in.nt_resp,
 	    remote,
 	    local,
 	    result);
 
-	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+	return result;
 }
 
 enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact_domain,

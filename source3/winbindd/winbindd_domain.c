@@ -31,10 +31,6 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_INIT_CONNECTION,
 		.struct_fn	= winbindd_dual_init_connection,
 	},{
-		.name		= "AUTH_CRAP",
-		.struct_cmd	= WINBINDD_PAM_AUTH_CRAP,
-		.struct_fn	= winbindd_dual_pam_auth_crap,
-	},{
 		.name		= "PAM_LOGOFF",
 		.struct_cmd	= WINBINDD_PAM_LOGOFF,
 		.struct_fn	= winbindd_dual_pam_logoff,
