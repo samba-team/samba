@@ -140,18 +140,16 @@ userPassword: %s
         # for Kerberos, logging in with the old password fails
         if creds.get_kerberos_state() == MUST_USE_KERBEROS:
             self.assertLoginFailure(ldap_url, test_creds, self.lp)
-            info_msg = 'Test Kerberos login with old password fails'
-            expectBadPwdTime = ("greater", badPasswordTime)
+            info_msg = 'Test Kerberos login with old password fails (but badPwdCount=0)'
             res = self._check_account(userdn,
-                                      badPwdCount=1,
-                                      badPasswordTime=expectBadPwdTime,
+                                      badPwdCount=0,
+                                      badPasswordTime=badPasswordTime,
                                       logonCount=logonCount,
                                       lastLogon=lastLogon,
                                       lastLogonTimestamp=lastLogonTimestamp,
                                       userAccountControl=UF_NORMAL_ACCOUNT,
                                       msDSUserAccountControlComputed=0,
                                       msg=info_msg)
-            badPasswordTime = int(res[0]["badPasswordTime"][0])
         else:
             # for NTLM, logging in with the old password succeeds
             user_ldb = self.assertLoginSuccess(ldap_url, test_creds, self.lp)
