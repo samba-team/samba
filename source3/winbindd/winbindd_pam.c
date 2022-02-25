@@ -2112,58 +2112,6 @@ done:
 }
 
 /*
- * @brief build a tsocket_address for the remote address of the supplied socket
- *
- */
-_UNUSED_ static struct tsocket_address *get_remote_address(TALLOC_CTX *mem_ctx, int sock)
-{
-	struct sockaddr_storage st = {0};
-	struct sockaddr *sar = (struct sockaddr *)&st;
-	socklen_t sa_len = sizeof(st);
-	struct tsocket_address *remote = NULL;
-	int ret = 0;
-
-	ret = getpeername(sock, sar, &sa_len);
-	if (ret != 0) {
-		DBG_ERR("getpeername failed - %s", strerror(errno));
-		return NULL;
-	}
-	ret = tsocket_address_bsd_from_sockaddr(mem_ctx, sar, sa_len, &remote);
-	if (ret != 0) {
-		DBG_ERR("tsocket_address_bsd_from_sockaddr failed - %s",
-			strerror(errno));
-		return NULL;
-	}
-	return remote;
-}
-
-/*
- * @brief build a tsocket_address for the local address of the supplied socket
- *
- */
-_UNUSED_ static struct tsocket_address *get_local_address(TALLOC_CTX *mem_ctx, int sock)
-{
-	struct sockaddr_storage st = {0};
-	struct sockaddr *sar = (struct sockaddr *)&st;
-	socklen_t sa_len = sizeof(st);
-	struct tsocket_address *local = NULL;
-	int ret = 0;
-
-	ret = getsockname(sock, sar, &sa_len);
-	if (ret != 0) {
-		DBG_ERR("getsockname failed - %s", strerror(errno));
-		return NULL;
-	}
-	ret = tsocket_address_bsd_from_sockaddr(mem_ctx, sar, sa_len, &local);
-	if (ret != 0) {
-		DBG_ERR("tsocket_address_bsd_from_sockaddr failed - %s",
-			strerror(errno));
-		return NULL;
-	}
-	return local;
-}
-
-/*
  * @brief generate an authentication message in the logs.
  *
  */
