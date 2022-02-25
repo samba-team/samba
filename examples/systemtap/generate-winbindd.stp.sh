@@ -10,6 +10,7 @@ winbindd_dual_pam_chng_pswd_auth_crap
 winbindd_dual_pam_chauthtok
 _wbint_Ping
 _wbint_PamAuth
+_wbint_PamAuthCrap
 _wbint_ListTrustedDomains
 _wbint_LookupSid
 _wbint_LookupSids
