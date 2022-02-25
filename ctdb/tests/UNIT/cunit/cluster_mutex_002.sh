@@ -100,3 +100,33 @@ ctdb_mutex_fcntl_helper: lock lost - lock file "${lockfile}" inode changed
 LOST
 EOF
 unit_test cluster_mutex_test lock-file-changed "$helper 10" "$lockfile"
+
+test_case "Recheck on, ping on, child isn't blocked"
+ok <<EOF
+LOCK
+UNLOCK
+EOF
+unit_test cluster_mutex_test lock-io-timeout "$helper 5 7" "$lockfile" 0 0
+
+test_case "Recheck on, ping on, child waits, child isn't blocked"
+ok <<EOF
+LOCK
+UNLOCK
+EOF
+unit_test cluster_mutex_test lock-io-timeout "$helper 5 3" "$lockfile" 7 0
+
+test_case "Recheck on, ping on, child waits, child blocks for short time"
+ok <<EOF
+LOCK
+UNLOCK
+EOF
+unit_test cluster_mutex_test lock-io-timeout "$helper 5 7" "$lockfile" 1 2
+
+
+test_case "Recheck on, ping on, child waits, child blocks causing ping timout"
+ok <<EOF
+LOCK
+ctdb_mutex_fcntl_helper: ping timeout from lock test child
+LOST
+EOF
+unit_test cluster_mutex_test lock-io-timeout "$helper 5 3" "$lockfile" 1 7

@@ -615,6 +615,86 @@ static void test_lock_file_changed(TALLOC_CTX *mem_ctx,
 	}
 }
 
+static void test_lock_io_timeout(TALLOC_CTX *mem_ctx,
+				 struct ctdb_context *ctdb,
+				 const char *mutex_string,
+				 const char *lock_file,
+				 unsigned long block_wait,
+				 unsigned long block_time)
+{
+	struct do_lock_context *dl;
+	int pipefd[2];
+	int ret;
+	pid_t pid, pid2;
+	ssize_t nwritten;
+
+	dl = talloc_zero(mem_ctx, struct do_lock_context);
+	assert(dl != NULL);
+	dl->ctdb = ctdb;
+
+	ret = pipe(pipefd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		static struct flock lock = {
+			.l_type = F_WRLCK,
+			.l_whence = SEEK_SET,
+			.l_start = 1,
+			.l_len = 1,
+			.l_pid = 0,
+		};
+		ssize_t nread;
+		int fd;
+
+		close(pipefd[1]);
+
+		/* Only continue when the parent is ready */
+		nread = read(pipefd[0], &ret, sizeof(ret));
+		assert(nread == sizeof(ret));
+		assert(ret == 0);
+
+		sleep(block_wait);
+
+		fd = open(lock_file, O_RDWR, 0600);
+		assert(fd != -1);
+
+		ret = fcntl(fd, F_SETLKW, &lock);
+		assert(ret == 0);
+
+		sleep(block_time);
+
+		close(fd);
+
+		sleep(999);
+
+		_exit(0);
+	}
+
+	close(pipefd[0]);
+
+	/* LOCK */
+	do_lock(dl, mutex_string);
+	assert(dl->mh != NULL);
+
+	nwritten = write(pipefd[1], &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+
+	do_lock_wait_time(dl, block_wait + block_time * 2);
+	if (dl->mh != NULL) {
+		/* UNLOCK */
+		do_unlock(dl);
+		assert(dl->mh == NULL);
+	}
+
+	ret = kill(pid, SIGKILL);
+	assert(ret == 0);
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+}
+
 /*
  * Main
  */
@@ -735,6 +815,24 @@ int main(int argc, const char *argv[])
 				       ctdb,
 				       mutex_string,
 				       lock_file);
+	} else if (strcmp(test, "lock-io-timeout") == 0) {
+		unsigned long block_wait;
+		unsigned long block_time;
+
+		if (argc != 6) {
+			usage();
+		}
+
+		lock_file = argv[3];
+		block_wait = (unsigned long)atol(argv[4]);
+		block_time = (unsigned long)atol(argv[5]);
+
+		test_lock_io_timeout(mem_ctx,
+				     ctdb,
+				     mutex_string,
+				     lock_file,
+				     block_wait,
+				     block_time);
 	} else {
 		fprintf(stderr, "Unknown test\n");
 		exit(1);
