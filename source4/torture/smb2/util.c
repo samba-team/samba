@@ -904,7 +904,6 @@ void smb2_generic_create_share(struct smb2_create *io, struct smb2_lease *ls,
 	if (dir) {
 		io->in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 		io->in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
-		io->in.create_disposition = NTCREATEX_DISP_CREATE;
 	}
 
 	if (ls) {
