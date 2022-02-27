@@ -384,13 +384,11 @@ static bool test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 		return false;
 	}
 
-	if (memcmp(lm_hash, lm_key,
-		   sizeof(lm_key)) != 0) {
+	if (!all_zero(lm_key, sizeof(lm_key)) != 0) {
 		torture_comment(samlogon_state->tctx, "LM Key does not match expectations!\n");
 		torture_comment(samlogon_state->tctx, "lm_key:\n");
 		dump_data(1, lm_key, 8);
-		torture_comment(samlogon_state->tctx, "expected:\n");
-		dump_data(1, lm_hash, 8);
+		torture_comment(samlogon_state->tctx, "expected (all zeros):\n");
 		pass = false;
 	}
 
@@ -398,11 +396,11 @@ static bool test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 	case NO_NT:
 	{
 		uint8_t lm_key_expected[16];
-		memcpy(lm_key_expected, lm_hash, 8);
+		memcpy(lm_key_expected, session_key.data, 8);
 		memset(lm_key_expected+8, '\0', 8);
 		if (memcmp(lm_key_expected, user_session_key,
 			   16) != 0) {
-			*error_string = strdup("NT Session Key does not match expectations (should be first-8 LM hash)!\n");
+			*error_string = strdup("NT Session Key does not match expectations (should be first-8 session key)!\n");
 			torture_comment(samlogon_state->tctx, "user_session_key:\n");
 			dump_data(1, user_session_key, sizeof(user_session_key));
 			torture_comment(samlogon_state->tctx, "expected:\n");
@@ -611,13 +609,12 @@ static bool test_ntlm_in_both(struct samlogon_state *samlogon_state, char **erro
 		return false;
 	}
 
-	if (memcmp(lm_hash, lm_key,
-		   sizeof(lm_key)) != 0) {
+	if (!all_zero(lm_key,
+		      sizeof(lm_key)) != 0) {
 		torture_comment(samlogon_state->tctx, "LM Key does not match expectations!\n");
 		torture_comment(samlogon_state->tctx, "lm_key:\n");
 		dump_data(1, lm_key, 8);
-		torture_comment(samlogon_state->tctx, "expected:\n");
-		dump_data(1, lm_hash, 8);
+		torture_comment(samlogon_state->tctx, "expected (all zero)\n");
 		pass = false;
 	}
 	if (memcmp(session_key.data, user_session_key,
@@ -929,24 +926,12 @@ static bool test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 			dump_data(1, ntlm_session_key.data, ntlm_session_key.length);
 			pass = false;
 		}
-		if (lm_good) {
-			if (memcmp(lm_hash, lm_session_key,
-				   sizeof(lm_session_key)) != 0) {
-				torture_comment(samlogon_state->tctx, "LM Session Key does not match expectations!\n");
-				torture_comment(samlogon_state->tctx, "lm_session_key:\n");
-				dump_data(1, lm_session_key, 8);
-				torture_comment(samlogon_state->tctx, "expected:\n");
-				dump_data(1, lm_hash, 8);
-				pass = false;
-			}
-		} else {
-			if (!all_zero(lm_session_key,
-				      sizeof(lm_session_key))) {
-				torture_comment(samlogon_state->tctx, "LM Session Key does not match expectations (zeros)!\n");
-				torture_comment(samlogon_state->tctx, "lm_session_key:\n");
-				dump_data(1, lm_session_key, 8);
-				pass = false;
-			}
+		if (!all_zero(lm_session_key,
+			      sizeof(lm_session_key))) {
+			torture_comment(samlogon_state->tctx, "LM Session Key does not match expectations (zeros)!\n");
+			torture_comment(samlogon_state->tctx, "lm_session_key:\n");
+			dump_data(1, lm_session_key, 8);
+			pass = false;
 		}
 		break;
 	default:
@@ -1113,7 +1098,6 @@ static bool test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 	DATA_BLOB lm_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
 	DATA_BLOB nt_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
 
-	bool lm_good;
 	uint8_t lm_key[8];
 	uint8_t nt_hash[16];
 	uint8_t lm_hash[16];
@@ -1136,7 +1120,7 @@ static bool test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 	gnutls_hash_deinit(hash_hnd, session_nonce_hash);
 
 	E_md4hash(samlogon_state->password, (uint8_t *)nt_hash);
-	lm_good = E_deshash(samlogon_state->password, (uint8_t *)lm_hash);
+	E_deshash(samlogon_state->password, (uint8_t *)lm_hash);
 	SMBsesskeygen_ntv1((const uint8_t *)nt_hash,
 			   nt_key);
 
@@ -1184,23 +1168,11 @@ static bool test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 		return false;
 	}
 
-	if (lm_good) {
-		if (memcmp(lm_hash, lm_key,
-			   sizeof(lm_key)) != 0) {
-			torture_comment(samlogon_state->tctx, "LM Key does not match expectations!\n");
-			torture_comment(samlogon_state->tctx, "lm_key:\n");
-			dump_data(1, lm_key, 8);
-			torture_comment(samlogon_state->tctx, "expected:\n");
-			dump_data(1, lm_hash, 8);
-			pass = false;
-		}
-	} else {
-		if (!all_zero(lm_key, sizeof(lm_key))) {
-			torture_comment(samlogon_state->tctx, "LM Session Key does not match expectations (zeros)!\n");
-			torture_comment(samlogon_state->tctx, "lm_key:\n");
-			dump_data(1, lm_key, 8);
-			pass = false;
-		}
+	if (!all_zero(lm_key, sizeof(lm_key))) {
+		torture_comment(samlogon_state->tctx, "LM Session Key does not match expectations (zeros)!\n");
+		torture_comment(samlogon_state->tctx, "lm_key:\n");
+		dump_data(1, lm_key, 8);
+		pass = false;
 	}
 	if (memcmp(nt_key, user_session_key, 16) != 0) {
 		torture_comment(samlogon_state->tctx, "NT Session Key does not match expectations (should be NT Key)!\n");
