@@ -357,6 +357,12 @@ static bool test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 		if (break_which == NO_NT && !lm_good) {
 			return true;
 		}
+		/* for modern servers, the LM password is invalid */
+		if (break_which == NO_NT
+		    && !torture_setting_bool(samlogon_state->tctx, "samba3", false)) {
+			return true;
+		}
+
 		/* for 'old' passwords, we allow the server to be OK or wrong password */
 		if (samlogon_state->old_password) {
 			return true;
@@ -381,6 +387,13 @@ static bool test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 
 	if (break_which == NO_NT && !lm_good) {
 	        *error_string = strdup("LM password is 'long' (> 14 chars and therefore invalid) but login did not fail!");
+		return false;
+	}
+
+	/* for modern servers, the LM password is invalid */
+	if (break_which == NO_NT
+	    && !torture_setting_bool(samlogon_state->tctx, "samba3", false)) {
+	        *error_string = strdup("LM password is OK but should have failed against a modern server");
 		return false;
 	}
 
@@ -1241,6 +1254,12 @@ static bool test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 		if (break_which == NO_NT && !lm_good) {
 			return true;
 		}
+		/* for modern servers, the LM password is invalid */
+		if (break_which == NO_NT
+		    && !torture_setting_bool(samlogon_state->tctx, "samba3", false)) {
+			return true;
+		}
+
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
 	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, nt_status) && strchr_m(samlogon_state->account_name, '@')) {
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH) || (break_which == NO_NT));
@@ -1261,6 +1280,13 @@ static bool test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 
 	if (break_which == NO_NT && !lm_good) {
 	        *error_string = strdup("LM password is 'long' (> 14 chars and therefore invalid) but login did not fail!");
+		return false;
+	}
+
+	/* for modern servers, the LM password is invalid */
+	if (break_which == NO_NT
+	    && !torture_setting_bool(samlogon_state->tctx, "samba3", false)) {
+	        *error_string = strdup("LM password is OK but should have failed against a modern server");
 		return false;
 	}
 
