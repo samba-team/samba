@@ -5055,6 +5055,7 @@ static bool fruit_get_num_bands(vfs_handle_struct *handle,
 	char *talloced = NULL;
 	long offset = 0;
 	size_t nbands;
+	NTSTATUS status;
 
 	path = talloc_asprintf(talloc_tos(),
 			       "%s/%s/bands",
@@ -5075,9 +5076,15 @@ static bool fruit_get_num_bands(vfs_handle_struct *handle,
 		return false;
 	}
 
-	dir_hnd = OpenDir(talloc_tos(), handle->conn, bands_dir, NULL, 0);
-	if (dir_hnd == NULL) {
+	status = OpenDir_ntstatus(talloc_tos(),
+				  handle->conn,
+				  bands_dir,
+				  NULL,
+				  0,
+				  &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(bands_dir);
+		errno = map_errno_from_nt_status(status);
 		return false;
 	}
 
@@ -5198,6 +5205,7 @@ static uint64_t fruit_disk_free(vfs_handle_struct *handle,
 	uint64_t dfree;
 	uint64_t dsize;
 	bool ok;
+	NTSTATUS status;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data,
@@ -5213,8 +5221,14 @@ static uint64_t fruit_disk_free(vfs_handle_struct *handle,
 					      _dsize);
 	}
 
-	dir_hnd = OpenDir(talloc_tos(), handle->conn, smb_fname, NULL, 0);
-	if (dir_hnd == NULL) {
+	status = OpenDir_ntstatus(talloc_tos(),
+				  handle->conn,
+				  smb_fname,
+				  NULL,
+				  0,
+				  &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return UINT64_MAX;
 	}
 
