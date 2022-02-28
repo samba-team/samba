@@ -248,6 +248,22 @@ interface winbind
         [out,ref] samPwdChangeReason *reject_reason
         );
 
+    typedef [enum16bit] enum {
+        WB_DOMINFO_DOMAIN_UNKNOWN = 0x0000,
+        WB_DOMINFO_DOMAIN_NATIVE  = 0x0001,
+        WB_DOMINFO_DOMAIN_AD      = 0x0002,
+        WB_DOMINFO_DOMAIN_PRIMARY = 0x0004,
+        WB_DOMINFO_DOMAIN_OFFLINE = 0x0008
+    } DomainInfoFlags;
+
+    NTSTATUS wbint_InitConnection(
+        [in,string,charset(UTF8)] char *dcname,
+        [out,string,charset(UTF8)] char **name,
+        [out,string,charset(UTF8)] char **alt_name,
+        [out,ref] dom_sid *sid,
+        [out,ref] DomainInfoFlags *flags
+        );
+
   /* Public methods available via IRPC */
 
     typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;

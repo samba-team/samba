@@ -39,7 +39,6 @@
 #include "rpc_client/util_netlogon.h"
 #include "libsmb/dsgetdcname.h"
 #include "lib/global_contexts.h"
-#include "lib/util/string_wrappers.h"
 
 NTSTATUS _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {
@@ -47,21 +46,16 @@ NTSTATUS _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 	return NT_STATUS_OK;
 }
 
-enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
-						   struct winbindd_cli_state *state)
+NTSTATUS _wbint_InitConnection(struct pipes_struct *p,
+			       struct wbint_InitConnection *r)
 {
-	/* Ensure null termination */
-	state->request->domain_name
-		[sizeof(state->request->domain_name)-1]='\0';
-	state->request->data.init_conn.dcname
-		[sizeof(state->request->data.init_conn.dcname)-1]='\0';
+	struct winbindd_domain *domain = wb_child_domain();
 
-	if (strlen(state->request->data.init_conn.dcname) > 0) {
+	if (r->in.dcname != NULL && strlen(r->in.dcname) > 0) {
 		TALLOC_FREE(domain->dcname);
-		domain->dcname = talloc_strdup(domain,
-				state->request->data.init_conn.dcname);
+		domain->dcname = talloc_strdup(domain, r->in.dcname);
 		if (domain->dcname == NULL) {
-			return WINBINDD_ERROR;
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -79,18 +73,35 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 			 domain->name, (int)domain->online);
 	}
 
-	fstrcpy(state->response->data.domain_info.name, domain->name);
-	fstrcpy(state->response->data.domain_info.alt_name, domain->alt_name);
-	sid_to_fstring(state->response->data.domain_info.sid, &domain->sid);
+	*r->out.name = talloc_strdup(p->mem_ctx, domain->name);
+	if (*r->out.name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	state->response->data.domain_info.native_mode
-		= domain->native_mode;
-	state->response->data.domain_info.active_directory
-		= domain->active_directory;
-	state->response->data.domain_info.primary
-		= domain->primary;
+	if (domain->alt_name != NULL) {
+		*r->out.alt_name = talloc_strdup(p->mem_ctx, domain->alt_name);
+		if (*r->out.alt_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
-	return WINBINDD_OK;
+	r->out.sid = dom_sid_dup(p->mem_ctx, &domain->sid);
+	if (r->out.sid == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*r->out.flags = 0;
+	if (domain->native_mode) {
+		*r->out.flags |= WB_DOMINFO_DOMAIN_NATIVE;
+	}
+	if (domain->active_directory) {
+		*r->out.flags |= WB_DOMINFO_DOMAIN_AD;
+	}
+	if (domain->primary) {
+		*r->out.flags |= WB_DOMINFO_DOMAIN_PRIMARY;
+	}
+
+	return NT_STATUS_OK;
 }
 
 bool reset_cm_connection_on_error(struct winbindd_domain *domain,

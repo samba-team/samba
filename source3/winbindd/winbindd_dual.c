@@ -47,6 +47,7 @@
 #include "idmap.h"
 #include "libcli/auth/netlogon_creds_cli.h"
 #include "../lib/util/pidfile.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -467,6 +468,7 @@ struct wb_domain_request_state {
 	struct winbindd_request *init_req;
 	struct winbindd_response *response;
 	struct tevent_req *pending_subreq;
+	struct wbint_InitConnection r;
 };
 
 static void wb_domain_request_cleanup(struct tevent_req *req,
@@ -575,13 +577,15 @@ static void wb_domain_request_trigger(struct tevent_req *req,
 
 	if (IS_DC || domain->primary || domain->internal) {
 		/* The primary domain has to find the DC name itself */
-		state->init_req->cmd = WINBINDD_INIT_CONNECTION;
-		fstrcpy(state->init_req->domain_name, domain->name);
-		state->init_req->data.init_conn.is_primary = domain->primary;
-		fstrcpy(state->init_req->data.init_conn.dcname, "");
+		state->r.in.dcname = talloc_strdup(state, "");
+		if (tevent_req_nomem(state->r.in.dcname, req)) {
+			return;
+		}
 
-		subreq = wb_child_request_send(state, state->ev, state->child,
-					       state->init_req);
+		subreq = dcerpc_wbint_InitConnection_r_send(state,
+						state->ev,
+						state->child->binding_handle,
+						&state->r);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -633,16 +637,18 @@ static void wb_domain_request_gotdc(struct tevent_req *subreq)
 	while (dcname != NULL && *dcname == '\\') {
 		dcname++;
 	}
-	state->init_req->cmd = WINBINDD_INIT_CONNECTION;
-	fstrcpy(state->init_req->domain_name, state->domain->name);
-	state->init_req->data.init_conn.is_primary = False;
-	fstrcpy(state->init_req->data.init_conn.dcname,
-		dcname);
+
+	state->r.in.dcname = talloc_strdup(state, dcname);
+	if (tevent_req_nomem(state->r.in.dcname, req)) {
+		return;
+	}
 
 	TALLOC_FREE(dcinfo);
 
-	subreq = wb_child_request_send(state, state->ev, state->child,
-				       state->init_req);
+	subreq = dcerpc_wbint_InitConnection_r_send(state,
+						state->ev,
+						state->child->binding_handle,
+						&state->r);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -656,51 +662,49 @@ static void wb_domain_request_initialized(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_domain_request_state *state = tevent_req_data(
 		req, struct wb_domain_request_state);
-	struct winbindd_response *response;
-	int ret, err;
+	NTSTATUS status;
 
 	state->pending_subreq = NULL;
 
-	ret = wb_child_request_recv(subreq, talloc_tos(), &response, &err);
+	status = dcerpc_wbint_InitConnection_r_recv(subreq, state);
 	TALLOC_FREE(subreq);
-	if (ret == -1) {
-		tevent_req_error(req, err);
+	if (NT_STATUS_IS_ERR(status)) {
+		tevent_req_error(req, map_errno_from_nt_status(status));
 		return;
 	}
 
-	if (!string_to_sid(&state->domain->sid,
-			   response->data.domain_info.sid)) {
-		DEBUG(1,("init_child_recv: Could not convert sid %s "
-			"from string\n", response->data.domain_info.sid));
-		tevent_req_error(req, EINVAL);
+	status = state->r.out.result;
+	if (NT_STATUS_IS_ERR(status)) {
+		tevent_req_error(req, map_errno_from_nt_status(status));
 		return;
 	}
+
+	state->domain->sid = *state->r.out.sid;
 
 	talloc_free(state->domain->name);
-	state->domain->name = talloc_strdup(state->domain,
-					    response->data.domain_info.name);
+	state->domain->name = talloc_strdup(state->domain, *state->r.out.name);
 	if (state->domain->name == NULL) {
 		tevent_req_error(req, ENOMEM);
 		return;
 	}
 
-	if (response->data.domain_info.alt_name[0] != '\0') {
+	if (*state->r.out.alt_name != NULL &&
+	    strlen(*state->r.out.alt_name) > 0) {
 		talloc_free(state->domain->alt_name);
 
 		state->domain->alt_name = talloc_strdup(state->domain,
-				response->data.domain_info.alt_name);
+							*state->r.out.alt_name);
 		if (state->domain->alt_name == NULL) {
 			tevent_req_error(req, ENOMEM);
 			return;
 		}
 	}
 
-	state->domain->native_mode = response->data.domain_info.native_mode;
+	state->domain->native_mode =
+			(*state->r.out.flags & WB_DOMINFO_DOMAIN_NATIVE);
 	state->domain->active_directory =
-		response->data.domain_info.active_directory;
+			(*state->r.out.flags & WB_DOMINFO_DOMAIN_AD);
 	state->domain->initialized = true;
-
-	TALLOC_FREE(response);
 
 	subreq = wb_child_request_send(state, state->ev, state->child,
 				       state->request);

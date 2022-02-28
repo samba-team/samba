@@ -492,8 +492,6 @@ void winbindd_ping_offline_domains(struct tevent_context *ev,
 				   struct tevent_timer *te,
 				   struct timeval now,
 				   void *private_data);
-enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
-						   struct winbindd_cli_state *state);
 bool init_domain_list(void);
 struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name);
 struct winbindd_domain *find_trust_from_name_noinit(const char *domain_name);

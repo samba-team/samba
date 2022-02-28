@@ -27,10 +27,6 @@
 
 static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 	{
-		.name		= "INIT_CONNECTION",
-		.struct_cmd	= WINBINDD_INIT_CONNECTION,
-		.struct_fn	= winbindd_dual_init_connection,
-	},{
 		.name		= "NDRCMD",
 		.struct_cmd	= WINBINDD_DUAL_NDRCMD,
 		.struct_fn	= winbindd_dual_ndrcmd,

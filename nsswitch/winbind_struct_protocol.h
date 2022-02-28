@@ -62,6 +62,7 @@ typedef char fstring[FSTRING_LEN];
  * 30: added "validation_level" and "info6" to response.data.auth
  * 31: added "client_name" to the request
  * 32: added "traceid" to the request
+ *     removed WINBINDD_INIT_CONNECTION
  */
 #define WINBIND_INTERFACE_VERSION 32
 
@@ -163,9 +164,6 @@ enum winbindd_cmd {
 
 	/* lookup local groups */
 	WINBINDD_GETSIDALIASES,
-
-	/* Initialize connection in a child */
-	WINBINDD_INIT_CONNECTION,
 
 	/* Blocking calls that are not allowed on the main winbind pipe, only
 	 * between parent and children */
