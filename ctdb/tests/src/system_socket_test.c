@@ -36,6 +36,8 @@
 
 #include "protocol/protocol_util.h"
 
+#include "tests/src/test_backtrace.h"
+
 static void hexdump(uint8_t *buf, size_t len)
 {
 	size_t i;
@@ -237,6 +239,8 @@ int main(int argc, char **argv)
 	if (argc < 2) {
 		usage(argv[0]);
 	}
+
+	test_backtrace_setup();
 
 	if (strcmp(argv[1], "types") == 0) {
 		test_types();

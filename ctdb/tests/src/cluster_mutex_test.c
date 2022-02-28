@@ -29,6 +29,8 @@
 #include "lib/util/util.h"
 #include "lib/util/smb_strtox.h"
 
+#include "tests/src/test_backtrace.h"
+
 /*
  * ctdb_cluster_mutex.c is included below.  This requires a few hacks...
  */
@@ -662,6 +664,8 @@ int main(int argc, const char *argv[])
 	ret = sigaction(SIGALRM, &sa, NULL);
 	assert(ret == 0);
 	alarm(60);
+
+	test_backtrace_setup();
 
 	test = argv[1];
 	mutex_string = argv[2];
