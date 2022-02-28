@@ -36,6 +36,7 @@
 #include "protocol/protocol.h"
 #include "common/system.h"
 
+static char progpath[PATH_MAX];
 static char *progname = NULL;
 
 static char fcntl_lock(const char *file, int *outfd)
@@ -131,9 +132,7 @@ static void wait_for_parent_check(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (! status) {
 		/* Ignore error */
-		fprintf(stderr,
-			"ctdb_mutex_fcntl_helper: "
-			"tevent_wakeup_recv() failed\n");
+		fprintf(stderr, "%s: tevent_wakeup_recv() failed\n", progname);
 	}
 
 	if (kill(state->ppid, 0) == -1 && errno == ESRCH) {
@@ -195,8 +194,9 @@ static struct tevent_req *wait_for_lost_send(TALLOC_CTX *mem_ctx,
 	ret = fstat(fd, &sb);
 	if (ret != 0) {
 		fprintf(stderr,
-			"ctdb_mutex_fcntl_helper: "
+			"%s: "
 			"lock lost - lock file \"%s\" check failed (ret=%d)\n",
+			progname,
 			state->lock_file,
 			errno);
 		tevent_req_done(req);
@@ -230,16 +230,15 @@ static void wait_for_lost_check(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (! status) {
 		/* Ignore error */
-		fprintf(stderr,
-			"ctdb_mutex_fcntl_helper: "
-			"tevent_wakeup_recv() failed\n");
+		fprintf(stderr, "%s: tevent_wakeup_recv() failed\n", progname);
 	}
 
 	ret = stat(state->lock_file, &sb);
 	if (ret != 0) {
 		fprintf(stderr,
-			"ctdb_mutex_fcntl_helper: "
+			"%s: "
 			"lock lost - lock file \"%s\" check failed (ret=%d)\n",
+			progname,
 			state->lock_file,
 			errno);
 		tevent_req_done(req);
@@ -248,8 +247,8 @@ static void wait_for_lost_check(struct tevent_req *subreq)
 
 	if (sb.st_ino != state->inode) {
 		fprintf(stderr,
-			"ctdb_mutex_fcntl_helper: "
-			"lock lost - lock file \"%s\" inode changed\n",
+			"%s: lock lost - lock file \"%s\" inode changed\n",
+			progname,
 			state->lock_file);
 		tevent_req_done(req);
 		return;
@@ -332,8 +331,9 @@ static void wait_for_exit_parent_done(struct tevent_req *subreq)
 	if (! status) {
 		/* Ignore error */
 		fprintf(stderr,
-			"ctdb_mutex_fcntl_helper: "
+			"%s: "
 			"wait_for_parent_recv() failed (%d)\n",
+			progname,
 			err);
 	}
 
@@ -352,8 +352,9 @@ static void wait_for_exit_lost_done(struct tevent_req *subreq)
 	if (! status) {
 		/* Ignore error */
 		fprintf(stderr,
-			"ctdb_mutex_fcntl_helper: "
+			"%s: "
 			"wait_for_lost_recv() failed (%d)\n",
+			progname,
 			err);
 	}
 
@@ -386,7 +387,8 @@ int main(int argc, char *argv[])
 	struct tevent_req *req;
 	bool status;
 
-	progname = argv[0];
+	strlcpy(progpath, argv[0], sizeof(progpath));
+	progname = basename(progpath);
 
 	if (argc < 2 || argc > 3) {
 		usage();
