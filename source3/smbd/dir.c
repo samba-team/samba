@@ -1477,12 +1477,12 @@ static int smb_Dir_OpenDir_destructor(struct smb_Dir *dir_hnd)
 	return 0;
 }
 
-NTSTATUS OpenDir_ntstatus(TALLOC_CTX *mem_ctx,
-			  connection_struct *conn,
-			  const struct smb_filename *smb_dname,
-			  const char *mask,
-			  uint32_t attr,
-			  struct smb_Dir **_dir_hnd)
+NTSTATUS OpenDir(TALLOC_CTX *mem_ctx,
+		 connection_struct *conn,
+		 const struct smb_filename *smb_dname,
+		 const char *mask,
+		 uint32_t attr,
+		 struct smb_Dir **_dir_hnd)
 {
 	struct files_struct *fsp = NULL;
 	struct smb_Dir *dir_hnd = NULL;
@@ -1898,7 +1898,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	struct connection_struct *conn = fsp->conn;
 	struct smb_Dir *dir_hnd = NULL;
 
-	status = OpenDir_ntstatus(
+	status = OpenDir(
 		talloc_tos(), conn, fsp->fsp_name, NULL, 0, &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

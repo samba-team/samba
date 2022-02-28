@@ -166,12 +166,12 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = OpenDir_ntstatus(vfs->conn,
-				  vfs->conn,
-				  smb_fname,
-				  NULL,
-				  0,
-				  &vfs->currentdir);
+	status = OpenDir(vfs->conn,
+			 vfs->conn,
+			 smb_fname,
+			 NULL,
+			 0,
+			 &vfs->currentdir);
 	if (!NT_STATUS_IS_OK(status)) {
 		int err = map_errno_from_nt_status(status);
 		printf("opendir error=%d (%s)\n", err, strerror(err));
@@ -2111,12 +2111,12 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = OpenDir_ntstatus(vfs->conn,
-				  vfs->conn,
-				  smb_fname,
-				  NULL,
-				  0,
-				  &vfs->currentdir);
+	status = OpenDir(vfs->conn,
+			 vfs->conn,
+			 smb_fname,
+			 NULL,
+			 0,
+			 &vfs->currentdir);
 	if (!NT_STATUS_IS_OK(status)) {
 		int err = map_errno_from_nt_status(status);
 		DEBUG(0, ("cmd_translate_name: opendir error=%d (%s)\n",

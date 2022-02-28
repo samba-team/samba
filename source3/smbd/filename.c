@@ -1606,7 +1606,7 @@ int get_real_filename_full_scan(connection_struct *conn,
 	}
 
 	/* open the directory */
-	status = OpenDir_ntstatus(
+	status = OpenDir(
 		talloc_tos(), conn, smb_fname, NULL, 0, &cur_dir);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_NOTICE("scan dir didn't open dir [%s]: %s\n",

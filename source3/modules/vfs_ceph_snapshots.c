@@ -236,12 +236,12 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 	 * via readdir.
 	 */
 
-	status = OpenDir_ntstatus(frame,
-				  handle->conn,
-				  snaps_dname,
-				  NULL,
-				  0,
-				  &dir_hnd);
+	status = OpenDir(frame,
+			 handle->conn,
+			 snaps_dname,
+			 NULL,
+			 0,
+			 &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = -map_errno_from_nt_status(status);
 		goto err_out;
@@ -564,12 +564,12 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 	DBG_DEBUG("enumerating shadow copy dir at %s\n",
 		  snaps_dname->base_name);
 
-	status = OpenDir_ntstatus(tmp_ctx,
-				  handle->conn,
-				  snaps_dname,
-				  NULL,
-				  0,
-				  &dir_hnd);
+	status = OpenDir(tmp_ctx,
+			 handle->conn,
+			 snaps_dname,
+			 NULL,
+			 0,
+			 &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = -map_errno_from_nt_status(status);
 		goto err_out;

@@ -231,12 +231,12 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		bool ask_sharemode);
 struct smb_Dir;
 bool is_visible_fsp(files_struct *fsp);
-NTSTATUS OpenDir_ntstatus(TALLOC_CTX *mem_ctx,
-			  connection_struct *conn,
-			  const struct smb_filename *smb_dname,
-			  const char *mask,
-			  uint32_t attr,
-			  struct smb_Dir **_dir_hnd);
+NTSTATUS OpenDir(TALLOC_CTX *mem_ctx,
+		 connection_struct *conn,
+		 const struct smb_filename *smb_dname,
+		 const char *mask,
+		 uint32_t attr,
+		 struct smb_Dir **_dir_hnd);
 const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
 			SMB_STRUCT_STAT *sbuf, char **talloced);
 void RewindDir(struct smb_Dir *dir_hnd, long *poffset);

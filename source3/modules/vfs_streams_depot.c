@@ -595,7 +595,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 	orig_connectpath = handle->conn->connectpath;
 	handle->conn->connectpath = rootdir;
 
-	status = OpenDir_ntstatus(
+	status = OpenDir(
 		talloc_tos(), handle->conn, dir_smb_fname, NULL, 0, &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		handle->conn->connectpath = orig_connectpath;

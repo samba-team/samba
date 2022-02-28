@@ -855,12 +855,12 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
-	status = OpenDir_ntstatus(talloc_tos(),
-				  conn,
-				  smb_dname,
-				  NULL,
-				  0,
-				  &dir_hnd);
+	status = OpenDir(talloc_tos(),
+			 conn,
+			 smb_dname,
+			 NULL,
+			 0,
+			 &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return False;
@@ -1052,12 +1052,12 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	 * files non-visible to the client. If not, fail the delete.
 	 */
 
-	status = OpenDir_ntstatus(talloc_tos(),
-				  conn,
-				  smb_dname,
-				  NULL,
-				  0,
-				  &dir_hnd);
+	status = OpenDir(talloc_tos(),
+			 conn,
+			 smb_dname,
+			 NULL,
+			 0,
+			 &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * Note, we deliberately squash the error here

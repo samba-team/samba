@@ -1647,12 +1647,12 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 	}
 
 	/* Now enumerate all dfs links */
-	status = OpenDir_ntstatus(frame,
-				  conn,
-				  smb_fname,
-				  NULL,
-				  0,
-				  &dir_hnd);
+	status = OpenDir(frame,
+			 conn,
+			 smb_fname,
+			 NULL,
+			 0,
+			 &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto out;
@@ -1790,12 +1790,12 @@ static int form_junctions(TALLOC_CTX *ctx,
 	}
 
 	/* Now enumerate all dfs links */
-	status = OpenDir_ntstatus(frame,
-				  conn,
-				  smb_fname,
-				  NULL,
-				  0,
-				  &dir_hnd);
+	status = OpenDir(frame,
+			 conn,
+			 smb_fname,
+			 NULL,
+			 0,
+			 &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto out;
