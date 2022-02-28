@@ -242,7 +242,7 @@ static void do_lock_wait_time(struct do_lock_context *dl,
 			      &done);
 	assert(tt != NULL);
 
-	while (! done) {
+	while (!done && dl->mh != NULL) {
 		tevent_loop_once(dl->ctdb->ev);
 	}
 }
