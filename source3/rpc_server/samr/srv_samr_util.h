@@ -79,3 +79,9 @@ NTSTATUS check_password_complexity(const char *username,
 				   const char *fullname,
 				   const char *password,
 				   enum samPwdChangeReason *samr_reject_reason);
+NTSTATUS samr_set_password_aes(TALLOC_CTX *mem_ctx,
+			       struct samu *sampass,
+			       const char *rhost,
+			       const DATA_BLOB *cdk,
+			       struct samr_EncryptedPasswordAES *pwbuf,
+			       enum samPwdChangeReason *reject_reason);

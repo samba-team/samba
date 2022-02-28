@@ -7677,8 +7677,115 @@ void _samr_Opnum72NotUsedOnWire(struct pipes_struct *p,
 NTSTATUS _samr_ChangePasswordUser4(struct pipes_struct *p,
 				   struct samr_ChangePasswordUser4 *r)
 {
+#ifdef HAVE_GNUTLS_PBKDF2
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *remote_address =
+		dcesrv_connection_get_remote_address(dcesrv_conn);
+	enum samPwdChangeReason reject_reason;
+	char *rhost = NULL;
+	struct samu *sampass = NULL;
+	char *username = NULL;
+	uint32_t acct_ctrl = 0;
+	const uint8_t *nt_pw = NULL;
+	gnutls_datum_t nt_key;
+	gnutls_datum_t salt = {
+		.data = r->in.password->salt,
+		.size = sizeof(r->in.password->salt),
+	};
+	uint8_t cdk_data[16] = {0};
+	DATA_BLOB cdk = {
+		.data = cdk_data,
+		.length = sizeof(cdk_data),
+	};
+	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
+	bool ok;
+	int rc;
+
+	r->out.result = NT_STATUS_WRONG_PASSWORD;
+
+	DBG_NOTICE("_samr_ChangePasswordUser4\n");
+
+	if (r->in.account->string == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (r->in.password == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (r->in.password->PBKDF2Iterations < 5000 ||
+	    r->in.password->PBKDF2Iterations > 1000000) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	(void)map_username(frame, r->in.account->string, &username);
+	if (username == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rhost = tsocket_address_inet_addr_string(remote_address, frame);
+	if (rhost == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	sampass = samu_new(frame);
+	if (sampass == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	become_root();
+	ok = pdb_getsampwnam(sampass, username);
+	unbecome_root();
+	if (!ok) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
+
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	if (acct_ctrl & ACB_AUTOLOCK) {
+		status = NT_STATUS_ACCOUNT_LOCKED_OUT;
+		goto done;
+	}
+
+	nt_pw = pdb_get_nt_passwd(sampass);
+	nt_key = (gnutls_datum_t){
+		.data = discard_const_p(uint8_t, nt_pw),
+		.size = NT_HASH_LEN,
+	};
+
+	rc = gnutls_pbkdf2(GNUTLS_MAC_SHA512,
+			   &nt_key,
+			   &salt,
+			   r->in.password->PBKDF2Iterations,
+			   cdk.data,
+			   cdk.length);
+	if (rc < 0) {
+		BURN_DATA(cdk_data);
+		status = NT_STATUS_WRONG_PASSWORD;
+		goto done;
+	}
+
+	status = samr_set_password_aes(frame,
+				       sampass,
+				       rhost,
+				       &cdk,
+				       r->in.password,
+				       &reject_reason);
+	BURN_DATA(cdk_data);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+done:
+	TALLOC_FREE(frame);
+
+	return status;
+#else  /* HAVE_GNUTLS_PBKDF2 */
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
+#endif /* HAVE_GNUTLS_PBKDF2 */
 }
 
 /* include the generated boilerplate */
