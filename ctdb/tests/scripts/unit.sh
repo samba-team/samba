@@ -184,10 +184,20 @@ test_fail()
 	return 1
 }
 
+test_case_string=""
+test_case()
+{
+	test_case_string="$*"
+}
+
 test_header_default()
 {
 	echo "=================================================="
-	echo "Running \"$*\""
+	if [ -n "$test_case_string" ]; then
+		echo "Summary: ${test_case_string}"
+		test_case_string=""
+	fi
+	echo "Running: $*"
 }
 
 reset_test_header()
