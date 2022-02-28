@@ -848,16 +848,23 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 	bool ret = True;
 	long offset = 0;
 	SMB_STRUCT_STAT st;
-	struct smb_Dir *dir_hnd;
+	struct smb_Dir *dir_hnd = NULL;
 	struct files_struct *dirfsp = NULL;
 	int retval;
 	NTSTATUS status;
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
-	dir_hnd = OpenDir(talloc_tos(), conn, smb_dname, NULL, 0);
-	if (dir_hnd == NULL)
+	status = OpenDir_ntstatus(talloc_tos(),
+				  conn,
+				  smb_dname,
+				  NULL,
+				  0,
+				  &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return False;
+	}
 
 	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
 
