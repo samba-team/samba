@@ -149,6 +149,7 @@ static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
 
 	if (argc != 2) {
 		printf("Usage: opendir <fname>\n");
@@ -165,10 +166,17 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	vfs->currentdir = OpenDir(vfs->conn, vfs->conn, smb_fname, NULL, 0);
-	if (vfs->currentdir == NULL) {
-		printf("opendir error=%d (%s)\n", errno, strerror(errno));
+	status = OpenDir_ntstatus(vfs->conn,
+				  vfs->conn,
+				  smb_fname,
+				  NULL,
+				  0,
+				  &vfs->currentdir);
+	if (!NT_STATUS_IS_OK(status)) {
+		int err = map_errno_from_nt_status(status);
+		printf("opendir error=%d (%s)\n", err, strerror(err));
 		TALLOC_FREE(smb_fname);
+		errno = err;
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2103,15 +2111,18 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	vfs->currentdir = OpenDir(talloc_tos(),
+	status = OpenDir_ntstatus(vfs->conn,
 				  vfs->conn,
 				  smb_fname,
 				  NULL,
-				  0);
-	if (vfs->currentdir == NULL) {
+				  0,
+				  &vfs->currentdir);
+	if (!NT_STATUS_IS_OK(status)) {
+		int err = map_errno_from_nt_status(status);
 		DEBUG(0, ("cmd_translate_name: opendir error=%d (%s)\n",
-			  errno, strerror(errno)));
+			  err, strerror(err)));
 		TALLOC_FREE(smb_fname);
+		errno = err;
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	vfs->currentdir_offset = 0;
