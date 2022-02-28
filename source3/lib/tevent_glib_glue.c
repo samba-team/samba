@@ -538,7 +538,6 @@ static bool get_glib_fds_and_timeout(struct tevent_glib_glue *glue)
 
 static bool tevent_glib_update_events(struct tevent_glib_glue *glue)
 {
-	uint64_t microsec;
 	struct timeval tv;
 	bool ok;
 
@@ -580,9 +579,8 @@ static bool tevent_glib_update_events(struct tevent_glib_glue *glue)
 		return true;
 	}
 
-	microsec = glue->gtimeout * 1000;
-	tv = tevent_timeval_current_ofs(microsec / 1000000,
-					microsec % 1000000);
+	tv = tevent_timeval_current_ofs(glue->gtimeout / 1000,
+					(glue->gtimeout % 1000) * 1000);
 
 	glue->timer = tevent_add_timer(glue->ev,
 				       glue,
