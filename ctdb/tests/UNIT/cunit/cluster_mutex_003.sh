@@ -19,12 +19,14 @@ else
 	helper="!${t} ${lockfile}"
 fi
 
+test_case "No contention: lock, unlock"
 ok <<EOF
 LOCK
 UNLOCK
 EOF
 unit_test cluster_mutex_test lock-unlock "$helper"
 
+test_case "Contention: lock, lock, unlock"
 ok <<EOF
 LOCK
 CONTENTION
@@ -33,6 +35,7 @@ UNLOCK
 EOF
 unit_test cluster_mutex_test lock-lock-unlock "$helper"
 
+test_case "No contention: lock, unlock, lock, unlock"
 ok <<EOF
 LOCK
 UNLOCK
@@ -41,24 +44,28 @@ UNLOCK
 EOF
 unit_test cluster_mutex_test lock-unlock-lock-unlock "$helper"
 
+test_case "Cancelled: unlock while lock still in progress"
 ok <<EOF
 CANCEL
 NOLOCK
 EOF
 unit_test cluster_mutex_test lock-cancel-check "$helper"
 
+test_case "Cancelled: unlock while lock still in progress, unlock again"
 ok <<EOF
 CANCEL
 UNLOCK
 EOF
 unit_test cluster_mutex_test lock-cancel-unlock "$helper"
 
+test_case "PPID doesn't go away: lock, wait, unlock"
 ok <<EOF
 LOCK
 UNLOCK
 EOF
 unit_test cluster_mutex_test lock-wait-unlock "$helper"
 
+test_case "PPID goes away: lock, wait, lock, unlock"
 ok <<EOF
 LOCK
 parent gone
