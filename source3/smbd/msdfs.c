@@ -1790,8 +1790,14 @@ static int form_junctions(TALLOC_CTX *ctx,
 	}
 
 	/* Now enumerate all dfs links */
-	dir_hnd = OpenDir(frame, conn, smb_fname, NULL, 0);
-	if (dir_hnd == NULL) {
+	status = OpenDir_ntstatus(frame,
+				  conn,
+				  smb_fname,
+				  NULL,
+				  0,
+				  &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		goto out;
 	}
 
