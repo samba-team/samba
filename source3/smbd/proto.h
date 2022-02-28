@@ -237,11 +237,6 @@ NTSTATUS OpenDir_ntstatus(TALLOC_CTX *mem_ctx,
 			  const char *mask,
 			  uint32_t attr,
 			  struct smb_Dir **_dir_hnd);
-struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
-			connection_struct *conn,
-			const struct smb_filename *smb_fname,
-			const char *mask,
-			uint32_t attr);
 const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
 			SMB_STRUCT_STAT *sbuf, char **talloced);
 void RewindDir(struct smb_Dir *dir_hnd, long *poffset);

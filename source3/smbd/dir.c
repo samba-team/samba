@@ -1511,25 +1511,6 @@ NTSTATUS OpenDir_ntstatus(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
-			connection_struct *conn,
-			const struct smb_filename *smb_dname,
-			const char *mask,
-			uint32_t attr)
-{
-	struct smb_Dir *dir_hnd = NULL;
-	NTSTATUS status;
-
-	status = OpenDir_ntstatus(
-		mem_ctx, conn, smb_dname, mask, attr, &dir_hnd);
-	if (!NT_STATUS_IS_OK(status)) {
-		/* Ensure we return the actual error from status in errno. */
-		errno = map_errno_from_nt_status(status);
-		return NULL;
-	}
-
-	return dir_hnd;
-}
 /*******************************************************************
  Open a directory from an fsp.
 ********************************************************************/
