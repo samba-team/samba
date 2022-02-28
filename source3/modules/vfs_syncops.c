@@ -77,13 +77,16 @@ static void syncops_sync_directory(connection_struct *conn,
 	struct smb_Dir *dir_hnd = NULL;
 	struct files_struct *dirfsp = NULL;
 	struct smb_filename smb_dname = { .base_name = dname };
+	NTSTATUS status;
 
-	dir_hnd = OpenDir(talloc_tos(),
-			  conn,
-			  &smb_dname,
-			  "*",
-			  0);
-	if (dir_hnd == NULL) {
+	status = OpenDir_ntstatus(talloc_tos(),
+				  conn,
+				  &smb_dname,
+				  "*",
+				  0,
+				  &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return;
 	}
 
