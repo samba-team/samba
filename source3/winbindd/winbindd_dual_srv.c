@@ -1979,16 +1979,6 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 		}
 	}
 
-	if (state->request->data.list_all_domains && !have_own_domain) {
-		struct dom_sid_buf buf;
-		extra_data = talloc_asprintf_append_buffer(
-			extra_data, "%s\\%s\\%s\n", domain->name,
-			domain->alt_name != NULL ?
-				domain->alt_name :
-				domain->name,
-			dom_sid_str_buf(&domain->sid, &buf));
-	}
-
 	extra_data_len = strlen(extra_data);
 	if (extra_data_len > 0) {
 
