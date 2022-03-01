@@ -276,7 +276,8 @@ check_hmac(void)
 	              "\x6f\xd1\x52\x4d\x54\x58\x73\x0f\xf3\x24";
 
     HMAC_CTX_init(&c);
-    HMAC_Init_ex(&c, hmackey, hmackey_size, EVP_sha1(), NULL);
+    if (HMAC_Init_ex(&c, hmackey, hmackey_size, EVP_sha1(), NULL) == 0)
+        errx(1, "HMAC_Init_ex() out of memory");
     HMAC_Update(&c, buf, sizeof(buf));
     HMAC_Final(&c, hmac, &hmaclen);
     HMAC_CTX_cleanup(&c);

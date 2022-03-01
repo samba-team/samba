@@ -92,8 +92,6 @@ otp_md_init (OtpKey key,
     char *p;
     int len;
 
-    ctx = EVP_MD_CTX_create();
-
     len = strlen(pwd) + strlen(seed);
     p = malloc (len + 1);
     if (p == NULL)
@@ -101,6 +99,8 @@ otp_md_init (OtpKey key,
     strlcpy (p, seed, len + 1);
     strlwr (p);
     strlcat (p, pwd, len + 1);
+
+    ctx = EVP_MD_CTX_create();
 
     EVP_DigestInit_ex(ctx, md, NULL);
     EVP_DigestUpdate(ctx, p, len);

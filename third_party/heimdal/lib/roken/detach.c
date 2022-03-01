@@ -75,7 +75,8 @@ roken_detach_prep(int argc, char **argv, char *special_arg)
     if (pipefds[1] == -1)
         err(1, "Out of memory");
 #else
-    fcntl(pipefds[1], F_SETFD, fcntl(pipefds[1], F_GETFD & ~(O_CLOEXEC)));
+    (void) fcntl(pipefds[1], F_SETFD,
+                 fcntl(pipefds[1], F_GETFD & ~(O_CLOEXEC)));
 #endif
 
     if (snprintf(fildes, sizeof(fildes), "%d", pipefds[1]) >= sizeof(fildes))

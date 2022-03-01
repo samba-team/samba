@@ -12,6 +12,8 @@ endif
 
 AM_CFLAGS = $(WFLAGS)
 
+CLANG_FORMAT_STYLE = '{BasedOnStyle: Mozilla, AlwaysBreakAfterReturnType: TopLevelDefinitions, IndentWidth: 4, SortIncludes: false}'
+
 CP	= cp
 
 ## set build_HEADERZ to headers that should just be installed in build tree
@@ -139,22 +141,7 @@ check-local::
 	  test "$$failed" -eq 0 || exit 1; \
 	fi
 
-SUFFIXES += .x .z .hx
-
-# It's useful for debugging to format generated sources.  The default for all
-# clang-format styles is to sort includes, but in many cases in-tree we really
-# don't want to do that.
-.x.c:
-	@if [ ! -x "$(CLANG_FORMAT)" ]; then \
-	    cmp -s $< $@ 2> /dev/null || cp $< $@; \
-	else \
-	    cp $< $@.tmp.c; \
-            $(CLANG_FORMAT) -style='{BasedOnStyle: Mozilla, AlwaysBreakAfterReturnType: TopLevelDefinitions, IndentWidth: 4, SortIncludes: false}' -i $@.tmp.c; \
-	    cmp -s $@.tmp.c $@ 2> /dev/null || mv $@.tmp.c $@; \
-	fi
-
-.hx.h:
-	@cmp -s $< $@ 2> /dev/null || cp $< $@;
+SUFFIXES += .x .z
 
 SUFFIXES += .1 .3 .5 .7 .8 .cat1 .cat3 .cat5 .cat7 .cat8
 

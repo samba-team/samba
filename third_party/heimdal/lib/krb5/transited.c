@@ -274,13 +274,17 @@ decode_realms(krb5_context context,
 	}
 	if(tr[i] == ','){
 	    tmp = malloc(tr + i - start + 1);
-	    if(tmp == NULL)
+	    if(tmp == NULL) {
+		free_realms(*realms);
+                *realms = NULL;
 		return krb5_enomem(context);
+            }
 	    memcpy(tmp, start, tr + i - start);
 	    tmp[tr + i - start] = '\0';
 	    r = make_realm(tmp);
 	    if(r == NULL){
 		free_realms(*realms);
+                *realms = NULL;
 		return krb5_enomem(context);
 	    }
 	    *realms = append_realm(*realms, r);
@@ -289,7 +293,8 @@ decode_realms(krb5_context context,
     }
     tmp = malloc(tr + i - start + 1);
     if(tmp == NULL){
-	free(*realms);
+        free_realms(*realms);
+        *realms = NULL;
 	return krb5_enomem(context);
     }
     memcpy(tmp, start, tr + i - start);
@@ -297,6 +302,7 @@ decode_realms(krb5_context context,
     r = make_realm(tmp);
     if(r == NULL){
 	free_realms(*realms);
+        *realms = NULL;
 	return krb5_enomem(context);
     }
     *realms = append_realm(*realms, r);
@@ -353,8 +359,6 @@ krb5_domain_x500_decode(krb5_context context,
     {
 	char **R;
 	R = malloc((*num_realms + 1) * sizeof(*R));
-	if (R == NULL)
-	    return krb5_enomem(context);
 	*realms = R;
 	while(r){
 	    *R++ = r->realm;
@@ -362,6 +366,8 @@ krb5_domain_x500_decode(krb5_context context,
 	    free(r);
 	    r = p;
 	}
+	if (*realms == NULL)
+	    return krb5_enomem(context);
     }
     return 0;
 }
@@ -621,11 +627,12 @@ krb5_check_transited(krb5_context context,
         return ret;
 
     for (i = 0; i < num_realms; i++) {
-	for (j = 0; j < num_capath; ++j) {
+	for (j = 0; j < num_capath && capath[j]; ++j) {
+            /* `capath[j]' can't be NULL, but compilers be dumb */
 	    if (strcmp(realms[i], capath[j]) == 0)
 		break;
 	}
-	if (j == num_capath) {
+	if (j == num_capath || !capath[j]) {
             _krb5_free_capath(context, capath);
 	    krb5_set_error_message (context, KRB5KRB_AP_ERR_ILL_CR_TKT,
 				    N_("no transit allowed "

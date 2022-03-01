@@ -112,7 +112,7 @@ struct heim_dso {
     void *dsohandle;
 };
 
-static void
+static void HEIM_CALLCONV
 dso_dealloc(void *ptr)
 {
     struct heim_dso *p = ptr;
@@ -156,7 +156,7 @@ struct heim_plugin {
     void *ctx;
 };
 
-static void
+static void HEIM_CALLCONV
 plugin_free(void *ptr)
 {
     struct heim_plugin *pl = ptr;
@@ -590,34 +590,37 @@ add_dso_plugins_load_fn(heim_context context,
     heim_error_code ret;
     heim_array_t plugins;
     heim_plugin_load_t load_fn;
-    char *sym;
+    char *sym = NULL;
     size_t i;
     heim_get_instance_func_t get_instance;
     size_t n_ftables;
     heim_plugin_common_ftable_cp *ftables;
 
-    if (asprintf(&sym, "%s_plugin_load", caller->name) == -1)
+    if (asprintf(&sym, "%s_plugin_load", caller->name) == -1 || sym == NULL)
         return NULL;
 
     /* suppress error here because we may be looking for a different plugin type */
     load_fn = (heim_plugin_load_t)dlsym(dsohandle, sym);
-    free(sym);
     if (load_fn == NULL) {
         heim_debug(context, 15, "Symbol %s not found in %s", sym, dsopath);
+        free(sym);
         return NULL;
     }
 
     ret = load_fn(pcontext, &get_instance, &n_ftables, &ftables);
     if (ret) {
         heim_warn(context, ret, "plugin %s failed to load", dsopath);
+        free(sym);
 
         /* fallback to loading structure directly */
         return add_dso_plugin_struct(context, pcontext, dsopath,
                                      dsohandle, caller->name);
     }
 
-    if (!validate_plugin_deps(context, caller, dsopath, get_instance))
+    if (!validate_plugin_deps(context, caller, dsopath, get_instance)) {
+        free(sym);
         return NULL;
+    }
 
     plugins = heim_array_create();
 
@@ -639,6 +642,7 @@ add_dso_plugins_load_fn(heim_context context,
     }
 
     heim_debug(context, 15, "DSO %s loaded (%s)", dsopath, sym);
+    free(sym);
     return plugins;
 }
 #endif /* HAVE_DLOPEN */

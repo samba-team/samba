@@ -670,6 +670,8 @@ test_move(krb5_context context, const char *type)
 	krb5_err(context, 1, ret, "krb5_cc_new_unique");
 
     ret = krb5_cc_move(context, fromid, toid);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_move");
 
     ret = krb5_cc_get_principal(context, toid, &p2);
     if (ret)
@@ -916,7 +918,7 @@ test_cccol_dcache(krb5_context context)
     ret = test_cccol(context, dcc, &what);
     free(dcc);
     if (ret)
-        krb5_err(context, 1, errno, "%s", what);
+        krb5_err(context, 1, ret, "%s", what);
 }
 
 static void
@@ -1117,9 +1119,6 @@ main(int argc, char **argv)
 
     test_move(context, krb5_cc_type_file);
     test_move(context, krb5_cc_type_memory);
-#ifdef HAVE_KCM
-    test_move(context, krb5_cc_type_kcm);
-#endif
     test_move(context, krb5_cc_type_scc);
 #if 0
     test_move(context, krb5_cc_type_dcc);
@@ -1204,6 +1203,9 @@ main(int argc, char **argv)
         ret = test_cccol(context, fname, &what);
         if (ret)
             krb5_err(context, 1, ret, "%s", what);
+        free(config);
+        free(fname);
+        free(d);
     }
 
     krb5_free_context(context);

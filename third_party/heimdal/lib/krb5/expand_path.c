@@ -55,8 +55,8 @@ _krb5_expand_path_tokens(krb5_context context,
 			 int filepath,
 			 char **ppath_out)
 {
-    return heim_expand_path_tokens(context->hcontext, path_in, filepath,
-                                   ppath_out, NULL);
+    return heim_expand_path_tokens(context ? context->hcontext : NULL, path_in,
+                                   filepath, ppath_out, NULL);
 }
 
 /**

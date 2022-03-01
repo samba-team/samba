@@ -712,7 +712,7 @@ hdb_entry_add_key_rotation(krb5_context context,
 {
     krb5_error_code ret;
     HDB_extension new_ext;
-    HDB_extension *ext = 0;
+    HDB_extension *ext = &new_ext;
     KeyRotation tmp;
     size_t i, sz;
 
@@ -734,8 +734,6 @@ hdb_entry_add_key_rotation(krb5_context context,
         ext = hdb_find_extension(entry, choice_HDB_extension_data_key_rotation);
         if (!ext)
             ext = &new_ext;
-        else
-            krs = &ext->data.u.key_rotation;
     } else {
         const KeyRotation *prev_kr = &krs->val[0];
         unsigned int last_kvno = 0;

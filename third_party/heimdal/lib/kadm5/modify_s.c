@@ -97,7 +97,7 @@ modify_principal(void *server_handle,
 		 uint32_t forbidden_mask)
 {
     kadm5_server_context *context = server_handle;
-    hdb_entry_ex ent;
+    hdb_entry ent;
     kadm5_ret_t ret;
 
     memset(&ent, 0, sizeof(ent));
@@ -139,7 +139,7 @@ modify_principal(void *server_handle,
     ret = _kadm5_setup_entry(context, &ent, mask, princ, mask, NULL, 0);
     if (ret)
 	goto out3;
-    ret = _kadm5_set_modifier(context, &ent.entry);
+    ret = _kadm5_set_modifier(context, &ent);
     if (ret)
 	goto out3;
 
@@ -157,7 +157,7 @@ modify_principal(void *server_handle,
 	goto out3;
     }
 
-    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
+    ret = hdb_seal_keys(context->context, context->db, &ent);
     if (ret)
 	goto out3;
 
@@ -174,21 +174,21 @@ modify_principal(void *server_handle,
 	    goto out3;
 	}
 	/* This calls free_HDB_extension(), freeing ext.data.u.policy */
-	ret = hdb_replace_extension(context->context, &ent.entry, &ext);
+	ret = hdb_replace_extension(context->context, &ent, &ext);
         free(ext.data.u.policy);
 	if (ret)
 	    goto out3;
     }
 
     /* This logs the change for iprop and writes to the HDB */
-    ret = kadm5_log_modify(context, &ent.entry,
+    ret = kadm5_log_modify(context, &ent,
                            mask | KADM5_MOD_NAME | KADM5_MOD_TIME);
 
     (void) modify_principal_hook(context, KADM5_HOOK_STAGE_POSTCOMMIT,
 				 ret, princ, mask);
 
  out3:
-    hdb_free_entry(context->context, &ent);
+    hdb_free_entry(context->context, context->db, &ent);
  out2:
     (void) kadm5_log_end(context);
  out:

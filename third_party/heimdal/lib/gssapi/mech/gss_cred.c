@@ -262,8 +262,7 @@ gss_import_cred(OM_uint32 * minor_status,
 	    goto out;
 	}
 
-	if (m->gm_import_cred == NULL &&
-	    !gss_oid_equal(&m->gm_mech_oid, GSS_SPNEGO_MECHANISM)) {
+	if (m->gm_import_cred == NULL) {
 	    *minor_status = 0;
 	    major = GSS_S_BAD_MECH;
 	    goto out;
@@ -287,8 +286,7 @@ gss_import_cred(OM_uint32 * minor_status,
 		continue;
 	}
 
-	major = m->gm_import_cred(minor_status,
-				  &buffer, &mcred);
+	major = m->gm_import_cred(minor_status, &buffer, &mcred);
 	gss_release_buffer(&junk, &buffer);
 	if (major != GSS_S_COMPLETE)
 	    goto out;

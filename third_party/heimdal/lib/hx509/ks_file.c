@@ -548,7 +548,7 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
 {
     struct store_ctx *sc = ctx;
     heim_octet_string data;
-    int ret;
+    int ret = 0;
 
     if (hx509_cert_have_private_key_only(c)) {
         data.length = 0;
@@ -564,15 +564,17 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
         /* Can't store both.  Well, we could, but nothing will support it */
         if (data.data) {
             fwrite(data.data, data.length, 1, sc->f);
-            free(data.data);
         } else if (_hx509_cert_private_key_exportable(c) &&
                    !(sc->store_flags & HX509_CERTS_STORE_NO_PRIVATE_KEYS)) {
             hx509_private_key key = _hx509_cert_private_key(c);
 
+            free(data.data);
+            data.length = 0;
+            data.data = NULL;
             ret = _hx509_private_key_export(context, key,
                                             HX509_KEY_FORMAT_DER, &data);
-            fwrite(data.data, data.length, 1, sc->f);
-            free(data.data);
+            if (ret == 0 && data.length)
+                fwrite(data.data, data.length, 1, sc->f);
         }
 	break;
     case USE_PEM:
@@ -583,23 +585,20 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
 
 	    ret = _hx509_private_key_export(context, key,
 					    HX509_KEY_FORMAT_DER, &priv_key);
-	    if (ret) {
-                free(data.data);
-		break;
-            }
-	    hx509_pem_write(context, _hx509_private_pem_name(key), NULL, sc->f,
-			    priv_key.data, priv_key.length);
+            if (ret == 0)
+                ret = hx509_pem_write(context, _hx509_private_pem_name(key), NULL,
+                                      sc->f, priv_key.data, priv_key.length);
 	    free(priv_key.data);
 	}
-        if (data.data) {
-            hx509_pem_write(context, "CERTIFICATE", NULL, sc->f,
-                            data.data, data.length);
-            free(data.data);
+        if (ret == 0 && data.data) {
+            ret = hx509_pem_write(context, "CERTIFICATE", NULL, sc->f,
+                                  data.data, data.length);
         }
 	break;
     }
 
-    return 0;
+    free(data.data);
+    return ret;
 }
 
 static int

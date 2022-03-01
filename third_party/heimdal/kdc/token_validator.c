@@ -78,7 +78,7 @@ static struct heim_plugin_data token_validator_data = {
  * Invoke a plugin to validate a JWT/SAML/OIDC token and partially-evaluate
  * access control.
  */
-krb5_error_code
+KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
 kdc_validate_token(krb5_context context,
                    const char *realm,
                    const char *token_kind,

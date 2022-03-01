@@ -358,29 +358,29 @@ _hx509_Name_to_string(const Name *n, char **str)
     return 0;
 }
 
-#define COPYCHARARRAY(_ds,_el,_l,_n)		\
-        (_l) = strlen(_ds->u._el);		\
-	(_n) = malloc((_l) * sizeof((_n)[0]));	\
-	if ((_n) == NULL)			\
-	    return ENOMEM;			\
-	for (i = 0; i < (_l); i++)		\
+#define COPYCHARARRAY(_ds,_el,_l,_n)			\
+        (_l) = strlen(_ds->u._el);			\
+	(_n) = malloc((_l + 1) * sizeof((_n)[0]));	\
+	if ((_n) == NULL)				\
+	    return ENOMEM;				\
+	for (i = 0; i < (_l); i++)			\
 	    (_n)[i] = _ds->u._el[i]
 
 
-#define COPYVALARRAY(_ds,_el,_l,_n)		\
-        (_l) = _ds->u._el.length;		\
-	(_n) = malloc((_l) * sizeof((_n)[0]));	\
-	if ((_n) == NULL)			\
-	    return ENOMEM;			\
-	for (i = 0; i < (_l); i++)		\
+#define COPYVALARRAY(_ds,_el,_l,_n)			\
+        (_l) = _ds->u._el.length;			\
+	(_n) = malloc((_l + 1) * sizeof((_n)[0]));	\
+	if ((_n) == NULL)				\
+	    return ENOMEM;				\
+	for (i = 0; i < (_l); i++)			\
 	    (_n)[i] = _ds->u._el.data[i]
 
-#define COPYVOIDARRAY(_ds,_el,_l,_n)		\
-        (_l) = _ds->u._el.length;		\
-	(_n) = malloc((_l) * sizeof((_n)[0]));	\
-	if ((_n) == NULL)			\
-	    return ENOMEM;			\
-	for (i = 0; i < (_l); i++)		\
+#define COPYVOIDARRAY(_ds,_el,_l,_n)			\
+        (_l) = _ds->u._el.length;			\
+	(_n) = malloc((_l + 1) * sizeof((_n)[0]));	\
+	if ((_n) == NULL)				\
+	    return ENOMEM;				\
+	for (i = 0; i < (_l); i++)			\
 	    (_n)[i] = ((unsigned char *)_ds->u._el.data)[i]
 
 
@@ -423,7 +423,7 @@ dsstringprep(const DirectoryString *ds, uint32_t **rname, size_t *rlen)
 	ret = wind_utf8ucs4_length(ds->u.utf8String, &len);
 	if (ret)
 	    return ret;
-	name = malloc(len * sizeof(name[0]));
+	name = malloc((len + 1) * sizeof(name[0]));
 	if (name == NULL)
 	    return ENOMEM;
 	ret = wind_utf8ucs4(ds->u.utf8String, name, &len);
@@ -440,7 +440,7 @@ dsstringprep(const DirectoryString *ds, uint32_t **rname, size_t *rlen)
     /* try a couple of times to get the length right, XXX gross */
     for (i = 0; i < 4; i++) {
 	*rlen = *rlen * 2;
-	if ((*rname = malloc(*rlen * sizeof((*rname)[0]))) == NULL) {
+	if ((*rname = malloc((rlen[0] + 1) * sizeof((*rname)[0]))) == NULL) {
             ret = ENOMEM;
             break;
         }
@@ -579,9 +579,9 @@ _hx509_name_modify(hx509_context context,
 {
     RelativeDistinguishedName rdn;
     size_t max_len = oidtomaxlen(oid);
-    int type_choice, ret;
-    const char *a = oidtostring(oid, &type_choice);
     char *s = NULL;
+    int type_choice = choice_DirectoryString_printableString;
+    int ret;
 
     /*
      * Check string length upper bounds.
@@ -591,10 +591,13 @@ _hx509_name_modify(hx509_context context,
      * here.
      */
     if (max_len && strlen(str) > max_len) {
+        char *a = oidtostring(oid, &type_choice);
+
         ret = HX509_PARSING_NAME_FAILED;
         hx509_set_error_string(context, 0, ret, "RDN attribute %s value too "
                                "long (max %llu): %s", a ? a : "<unknown>",
                                max_len, str);
+        free(a);
         return ret;
     }
 
@@ -622,7 +625,7 @@ _hx509_name_modify(hx509_context context,
      */
     rdn.val[0].value.element = type_choice;
     if ((s = strdup(str)) == NULL ||
-        (ret = der_copy_oid(oid, &rdn.val[0].type))) {
+        der_copy_oid(oid, &rdn.val[0].type)) {
         free(rdn.val);
         free(s);
 	return hx509_enomem(context);
@@ -934,9 +937,6 @@ hx509_name_expand(hx509_context context,
 		    return ENOMEM;
 		}
 	    }
-            free(s);
-            sval = NULL;
-            s = NULL;
 
 	    while (p != NULL) {
 		/* expand variables */
@@ -945,6 +945,7 @@ hx509_name_expand(hx509_context context,
 		if (p2 == NULL) {
 		    hx509_set_error_string(context, 0, EINVAL, "missing }");
 		    rk_strpoolfree(strpool);
+                    free(s);
 		    return EINVAL;
 		}
 		p += 2;
@@ -954,11 +955,13 @@ hx509_name_expand(hx509_context context,
 					   "variable %.*s missing",
 					   (int)(p2 - p), p);
 		    rk_strpoolfree(strpool);
+                    free(s);
 		    return EINVAL;
 		}
 		strpool = rk_strpoolprintf(strpool, "%s", value);
 		if (strpool == NULL) {
 		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+                    free(s);
 		    return ENOMEM;
 		}
 		p2++;
@@ -971,9 +974,14 @@ hx509_name_expand(hx509_context context,
 		    strpool = rk_strpoolprintf(strpool, "%s", p2);
 		if (strpool == NULL) {
 		    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+                    free(s);
 		    return ENOMEM;
 		}
 	    }
+
+            free(s);
+            s = NULL;
+
 	    if (strpool) {
                 size_t max_bytes;
 
@@ -1392,7 +1400,9 @@ hx509_general_name_unparse(GeneralName *name, char **str)
 
     if ((ret = hx509_context_init(&context)))
         return ret;
-    return hx509_general_name_unparse2(context, name, str);
+    ret = hx509_general_name_unparse2(context, name, str);
+    hx509_context_free(&context);
+    return ret;
 }
 
 /**
@@ -1511,8 +1521,9 @@ hx509_general_name_unparse2(hx509_context context,
     default:
 	return EINVAL;
     }
-    if (strpool == NULL ||
-        (*str = rk_strpoolcollect(strpool)) == NULL)
+    if (ret)
+        rk_strpoolfree(strpool);
+    else if (strpool == NULL || (*str = rk_strpoolcollect(strpool)) == NULL)
 	return ENOMEM;
-    return 0;
+    return ret;
 }

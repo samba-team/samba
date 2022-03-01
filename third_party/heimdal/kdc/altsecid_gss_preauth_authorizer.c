@@ -272,7 +272,7 @@ ad_lookup(krb5_context context,
           gss_const_name_t initiator_name,
           gss_const_OID mech_type,
           krb5_principal *canon_principal,
-          krb5_data *requestor_sid)
+          kdc_data_t *requestor_sid)
 {
     krb5_error_code ret;
     OM_uint32 minor;
@@ -286,7 +286,8 @@ ad_lookup(krb5_context context,
     struct berval **values = NULL;
 
     *canon_principal = NULL;
-    krb5_data_zero(requestor_sid);
+    if (requestor_sid)
+	*requestor_sid = NULL;
 
     mech_type_str = gss_oid_to_name(mech_type);
     if (mech_type_str == NULL) {
@@ -335,18 +336,6 @@ ad_lookup(krb5_context context,
     if (m0 == NULL)
         goto out;
 
-    if (requestor_sid) {
-	values = ldap_get_values_len(server->ld, m0, "objectSid");
-	if (values == NULL ||
-	    ldap_count_values_len(values) == 0)
-	    goto out;
-
-	if (krb5_data_copy(requestor_sid, values[0]->bv_val, values[0]->bv_len) != 0)
-	    goto enomem;
-
-	ldap_value_free_len(values);
-    }
-
     values = ldap_get_values_len(server->ld, m0, "sAMAccountName");
     if (values == NULL ||
         ldap_count_values_len(values) == 0)
@@ -354,6 +343,22 @@ ad_lookup(krb5_context context,
 
     ret = krb5_make_principal(context, canon_principal, realm,
                               values[0]->bv_val, NULL);
+    if (ret)
+	goto out;
+
+    if (requestor_sid) {
+	ldap_value_free_len(values);
+
+	values = ldap_get_values_len(server->ld, m0, "objectSid");
+	if (values == NULL ||
+	    ldap_count_values_len(values) == 0)
+	    goto out;
+
+	*requestor_sid = kdc_data_create(values[0]->bv_val, values[0]->bv_len);
+	if (*requestor_sid == NULL)
+	    goto enomem;
+    }
+
     goto out;
 
 enomem:
@@ -361,6 +366,16 @@ enomem:
     goto out;
 
 out:
+    if (ret) {
+	krb5_free_principal(context, *canon_principal);
+	*canon_principal = NULL;
+
+	if (requestor_sid) {
+	    kdc_object_release(*requestor_sid);
+	    *requestor_sid = NULL;
+	}
+    }
+
     ldap_value_free_len(values);
     ldap_msgfree(m);
     ldap_memfree(basedn);
@@ -377,25 +392,27 @@ authorize(void *ctx,
           gss_const_OID mech_type,
           OM_uint32 ret_flags,
           krb5_boolean *authorized,
-          krb5_principal *mapped_name,
-	  krb5_data *requestor_sid)
+          krb5_principal *mapped_name)
 {
     struct altsecid_gss_preauth_authorizer_context *c = ctx;
     struct ad_server_tuple *server = NULL;
     krb5_error_code ret;
-    krb5_const_realm realm = krb5_principal_get_realm(r->context, r->client->entry.principal);
+    krb5_context context = kdc_request_get_context((kdc_request_t)r);
+    const hdb_entry *client = kdc_request_get_client(r);
+    krb5_const_principal server_princ = kdc_request_get_server_princ(r);
+    krb5_const_realm realm = krb5_principal_get_realm(context, client->principal);
     krb5_boolean reconnect_p = FALSE;
     krb5_boolean is_tgs;
+    kdc_data_t requestor_sid = NULL;
 
     *authorized = FALSE;
     *mapped_name = NULL;
-    krb5_data_zero(requestor_sid);
 
-    if (!krb5_principal_is_federated(r->context, r->client->entry.principal) ||
+    if (!krb5_principal_is_federated(context, client->principal) ||
         (ret_flags & GSS_C_ANON_FLAG))
         return KRB5_PLUGIN_NO_HANDLE;
 
-    is_tgs = krb5_principal_is_krbtgt(r->context, r->server_princ);
+    is_tgs = krb5_principal_is_krbtgt(context, server_princ);
 
     HEIM_TAILQ_FOREACH(server, &c->servers, link) {
         if (strcmp(realm, server->realm) == 0)
@@ -405,12 +422,12 @@ authorize(void *ctx,
     if (server == NULL) {
         server = calloc(1, sizeof(*server));
         if (server == NULL)
-            return krb5_enomem(r->context);
+            return krb5_enomem(context);
 
         server->realm = strdup(realm);
         if (server->realm == NULL) {
             free(server);
-            return krb5_enomem(r->context);
+            return krb5_enomem(context);
         }
 
         HEIM_TAILQ_INSERT_HEAD(&c->servers, server, link);
@@ -418,14 +435,14 @@ authorize(void *ctx,
 
     do {
         if (server->ld == NULL) {
-            ret = ad_connect(r->context, realm, server);
+            ret = ad_connect(context, realm, server);
             if (ret)
                 return ret;
         }
 
-        ret = ad_lookup(r->context, realm, server,
+        ret = ad_lookup(context, realm, server,
                         initiator_name, mech_type,
-                        mapped_name, is_tgs ? requestor_sid : NULL);
+                        mapped_name, is_tgs ? &requestor_sid : NULL);
         if (ret == KRB5KDC_ERR_SVC_UNAVAILABLE) {
             ldap_unbind_ext_s(server->ld, NULL, NULL);
             server->ld = NULL;
@@ -437,17 +454,29 @@ authorize(void *ctx,
         *authorized = (ret == 0);
     } while (reconnect_p);
 
+    if (requestor_sid) {
+	kdc_request_set_attribute((kdc_request_t)r,
+				  HSTR("org.h5l.gss-pa-requestor-sid"), requestor_sid);
+	kdc_object_release(requestor_sid);
+    }
+
     return ret;
 }
 
 static KRB5_LIB_CALL krb5_error_code
-finalize_pac(void *ctx, astgs_request_t r, krb5_data *requestor_sid)
+finalize_pac(void *ctx, astgs_request_t r)
 {
-    if (requestor_sid->length == 0)
+    kdc_data_t requestor_sid;
+
+    requestor_sid = kdc_request_get_attribute((kdc_request_t)r,
+					      HSTR("org.h5l.gss-pa-requestor-sid"));
+    if (requestor_sid == NULL)
 	return 0;
 
-    return krb5_pac_add_buffer(r->context, r->pac,
-			       PAC_REQUESTOR_SID, requestor_sid);
+    kdc_audit_setkv_object((kdc_request_t)r, "gss_requestor_sid", requestor_sid);
+
+    return kdc_request_add_pac_buffer(r, PAC_REQUESTOR_SID,
+				      kdc_data_get_data(requestor_sid));
 }
 
 static KRB5_LIB_CALL krb5_error_code
@@ -494,8 +523,6 @@ altsecid_gss_preauth_authorizer_get_instance(const char *libname)
         return krb5_get_instance(libname);
     if (strcmp(libname, "kdc") == 0)
         return kdc_get_instance(libname);
-    if (strcmp(libname, "gssapi") == 0)
-        return gss_get_instance(libname);
     return 0;
 }
 

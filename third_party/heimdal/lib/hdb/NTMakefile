@@ -31,16 +31,14 @@
 
 RELDIR=lib\hdb
 
+intcflags=-DASN1_LIB
+
 !include ../../windows/NTMakefile.w32 
 
-gen_files_hdb = $(OBJ)\asn1_hdb_asn1.x
-
-$(gen_files_hdb) $(OBJ)\hdb_asn1.hx $(OBJ)\hdb_asn1-priv.hx: $(BINDIR)\asn1_compile.exe hdb.asn1
+$(OBJ)\asn1_hdb_asn1.c $(OBJ)\hdb_asn1.h $(OBJ)\hdb_asn1-priv.h: $(BINDIR)\asn1_compile.exe hdb.asn1
 	cd $(OBJ)
-	$(BINDIR)\asn1_compile.exe --sequence=HDB-extensions --sequence=HDB-Ext-KeyRotation --sequence=HDB-Ext-KeySet --sequence=Keys --one-code-file $(SRCDIR)\hdb.asn1 hdb_asn1
+	$(BINDIR)\asn1_compile.exe --one-code-file --option-file=$(SRCDIR)\hdb.opt $(SRCDIR)\hdb.asn1 hdb_asn1
 	cd $(SRCDIR)
-
-$(gen_files_hdb:.x=.c): $$(@R).x
 
 !ifdef OPENLDAP_MODULE
 
@@ -98,7 +96,7 @@ libhdb_OBJs = \
 	$(OBJ)\mkey.obj		\
 	$(OBJ)\ndbm.obj		\
 	$(OBJ)\print.obj	\
-	$(gen_files_hdb:.x=.obj)	\
+	$(OBJ)\asn1_hdb_asn1.obj \
 	$(OBJ)\hdb_err.obj
 
 $(OBJ)\hdb_err.c $(OBJ)\hdb_err.h: hdb_err.et

@@ -3,7 +3,7 @@
 /* LibTomMath, multiple-precision integer library -- Tom St Denis */
 /* SPDX-License-Identifier: Unlicense */
 
-#if defined(__STDC_IEC_559__) || defined(__GCC_IEC_559)
+#if defined(__STDC_IEC_559__) || defined(__GCC_IEC_559) || defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64) || defined(__i386__) || defined(_M_X86) || defined(__aarch64__) || defined(__arm__)
 mp_err mp_set_double(mp_int *a, double b)
 {
    uint64_t frac;

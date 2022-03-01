@@ -233,6 +233,7 @@ typedef OM_uint32 gss_qop_t;
 #define GSS_C_NO_CREDENTIAL ((gss_cred_id_t) 0)
 #define GSS_C_NO_CHANNEL_BINDINGS ((gss_channel_bindings_t) 0)
 #define GSS_C_EMPTY_BUFFER {0, NULL}
+#define GSS_C_EMPTY_BUFFER_SET {0, NULL}
 #define GSS_C_NO_IOV_BUFFER ((gss_iov_buffer_t)0)
 #define GSS_C_NO_CRED_STORE ((gss_key_value_set_t)0)
 
@@ -392,6 +393,18 @@ extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_nt_anonymous_oid_desc;
  */
 extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_nt_export_name_oid_desc;
 #define GSS_C_NT_EXPORT_NAME (&__gss_c_nt_export_name_oid_desc)
+
+/*
+ * The implementation must reserve static storage for a
+ * gss_OID_desc object containing the value
+ * {6, (void *)"\x2b\x06\x01\x05\x06\x06"}, corresponding to an
+ * object-identifier value of {iso(1) identified-organization(3) dod(6)
+ * internet(1) security(5) nametypes(6) gss-composite-export(6)}.
+ * The constant GSS_C_NT_COMPOSITE_EXPORT [RFC6680] should be initialized to
+ * point to that gss_OID_desc.
+ */
+extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_nt_composite_export_oid_desc;
+#define GSS_C_NT_COMPOSITE_EXPORT (&__gss_c_nt_composite_export_oid_desc)
 
 /* Major status codes */
 
@@ -1239,9 +1252,6 @@ gss_set_log_function(void *ctx, void (*func)(void * ctx, int level, const char *
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_destroy_cred(OM_uint32 *minor_status,
 		 gss_cred_id_t *cred_handle);
-
-GSSAPI_LIB_FUNCTION uintptr_t GSSAPI_CALLCONV
-gss_get_instance(const char *libname);
 
 /*
  * S4UProxy and S4USelf extensions.

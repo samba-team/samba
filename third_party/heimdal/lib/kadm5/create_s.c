@@ -57,7 +57,7 @@ static kadm5_ret_t
 create_principal(kadm5_server_context *context,
 		 kadm5_principal_ent_t princ,
 		 uint32_t mask,
-		 hdb_entry_ex *ent,
+		 hdb_entry *ent,
 		 uint32_t required_mask,
 		 uint32_t forbidden_mask)
 {
@@ -74,7 +74,7 @@ create_principal(kadm5_server_context *context,
 	/* XXX no real policies for now */
 	return KADM5_UNK_POLICY;
     ret  = krb5_copy_principal(context->context, princ->principal,
-			       &ent->entry.principal);
+			       &ent->principal);
     if(ret)
 	return ret;
 
@@ -96,10 +96,10 @@ create_principal(kadm5_server_context *context,
     if (ret)
 	return ret;
 
-    ent->entry.created_by.time = time(NULL);
+    ent->created_by.time = time(NULL);
 
     return krb5_copy_principal(context->context, context->caller,
-			       &ent->entry.created_by.principal);
+			       &ent->created_by.principal);
 }
 
 struct create_principal_hook_ctx {
@@ -167,7 +167,7 @@ kadm5_s_create_principal_with_key(void *server_handle,
 				  uint32_t mask)
 {
     kadm5_ret_t ret;
-    hdb_entry_ex ent;
+    hdb_entry ent;
     kadm5_server_context *context = server_handle;
 
     if ((mask & KADM5_KVNO) == 0) {
@@ -194,7 +194,7 @@ kadm5_s_create_principal_with_key(void *server_handle,
     if (!context->keep_open) {
         ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
         if (ret) {
-            hdb_free_entry(context->context, &ent);
+            hdb_free_entry(context->context, context->db, &ent);
             return ret;
         }
     }
@@ -203,7 +203,7 @@ kadm5_s_create_principal_with_key(void *server_handle,
     if (ret)
         goto out;
 
-    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
+    ret = hdb_seal_keys(context->context, context->db, &ent);
     if (ret)
 	goto out2;
 
@@ -213,7 +213,7 @@ kadm5_s_create_principal_with_key(void *server_handle,
      * Creation of would-be virtual principals w/o the materialize flag will be
      * rejected in kadm5_log_create().
      */
-    ret = kadm5_log_create(context, &ent.entry);
+    ret = kadm5_log_create(context, &ent);
 
     (void) create_principal_hook(context, KADM5_HOOK_STAGE_POSTCOMMIT,
 				 ret, princ, mask, NULL);
@@ -227,7 +227,7 @@ kadm5_s_create_principal_with_key(void *server_handle,
         if (ret == 0 && ret2 != 0)
             ret = ret2;
     }
-    hdb_free_entry(context->context, &ent);
+    hdb_free_entry(context->context, context->db, &ent);
     return _kadm5_error_code(ret);
 }
 
@@ -241,7 +241,7 @@ kadm5_s_create_principal(void *server_handle,
 			 const char *password)
 {
     kadm5_ret_t ret;
-    hdb_entry_ex ent;
+    hdb_entry ent;
     kadm5_server_context *context = server_handle;
     int use_pw = 1;
 
@@ -315,7 +315,7 @@ kadm5_s_create_principal(void *server_handle,
     if (!context->keep_open) {
         ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
         if (ret) {
-            hdb_free_entry(context->context, &ent);
+            hdb_free_entry(context->context, context->db, &ent);
             return ret;
         }
     }
@@ -324,20 +324,20 @@ kadm5_s_create_principal(void *server_handle,
     if (ret)
         goto out;
 
-    free_Keys(&ent.entry.keys);
+    free_Keys(&ent.keys);
 
     if (use_pw) {
-        ret = _kadm5_set_keys(context, &ent.entry, n_ks_tuple, ks_tuple, password);
+        ret = _kadm5_set_keys(context, &ent, n_ks_tuple, ks_tuple, password);
         if (ret)
             goto out2;
     }
 
-    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
+    ret = hdb_seal_keys(context->context, context->db, &ent);
     if (ret)
 	goto out2;
 
     /* This logs the change for iprop and writes to the HDB */
-    ret = kadm5_log_create(context, &ent.entry);
+    ret = kadm5_log_create(context, &ent);
 
     (void) create_principal_hook(context, KADM5_HOOK_STAGE_POSTCOMMIT,
 				 ret, princ, mask, password);
@@ -351,7 +351,7 @@ kadm5_s_create_principal(void *server_handle,
         if (ret == 0 && ret2 != 0)
             ret = ret2;
     }
-    hdb_free_entry(context->context, &ent);
+    hdb_free_entry(context->context, context->db, &ent);
     return _kadm5_error_code(ret);
 }
 

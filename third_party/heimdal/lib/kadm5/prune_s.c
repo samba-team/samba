@@ -95,7 +95,7 @@ kadm5_s_prune_principal(void *server_handle,
                         int kvno)
 {
     kadm5_server_context *context = server_handle;
-    hdb_entry_ex ent;
+    hdb_entry ent;
     kadm5_ret_t ret;
 
     memset(&ent, 0, sizeof(ent));
@@ -121,21 +121,21 @@ kadm5_s_prune_principal(void *server_handle,
     if (ret)
         goto out3;
 
-    ret = hdb_prune_keys_kvno(context->context, &ent.entry, kvno);
+    ret = hdb_prune_keys_kvno(context->context, &ent, kvno);
     if (ret)
         goto out3;
 
-    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
+    ret = hdb_seal_keys(context->context, context->db, &ent);
     if (ret)
         goto out3;
 
-    ret = kadm5_log_modify(context, &ent.entry, KADM5_KEY_DATA);
+    ret = kadm5_log_modify(context, &ent, KADM5_KEY_DATA);
 
     (void) prune_principal_hook(context, KADM5_HOOK_STAGE_POSTCOMMIT,
 				ret, princ, kvno);
 
 out3:
-    hdb_free_entry(context->context, &ent);
+    hdb_free_entry(context->context, context->db, &ent);
 out2:
     (void) kadm5_log_end(context);
 out:

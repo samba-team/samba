@@ -102,10 +102,17 @@ copy_import(void)
     if (!equal)
 	errx(1, "names not equal");
 
-    /* FIXME: This check is racy! */
-    if (lifetime1 != lifetime2)
+    /*
+     * This check is racy!  It tends to fail when run with valgrind.
+     *
+     * make check-valgrind sets TESTS_ENVIRONMENT in the environment...
+     */
+    if (getenv("TESTS_ENVIRONMENT") == NULL && lifetime1 != lifetime2)
 	errx(1, "lifetime not equal %lu != %lu",
 	     (unsigned long)lifetime1, (unsigned long)lifetime2);
+    if (lifetime1 != lifetime2)
+	warnx("lifetime not equal %lu != %lu",
+              (unsigned long)lifetime1, (unsigned long)lifetime2);
 
     if (usage1 != usage2) {
 	/* as long any of them is both are everything it ok */
@@ -127,10 +134,13 @@ copy_import(void)
     if (!equal)
 	errx(1, "names not equal");
 
-    /* FIXME: This check is racy! */
-    if (lifetime1 != lifetime2)
+    /* This check is racy! */
+    if (getenv("TESTS_ENVIRONMENT") == NULL && lifetime1 != lifetime2)
 	errx(1, "lifetime not equal %lu != %lu",
 	     (unsigned long)lifetime1, (unsigned long)lifetime2);
+    if (lifetime1 != lifetime2)
+	warnx("lifetime not equal %lu != %lu",
+              (unsigned long)lifetime1, (unsigned long)lifetime2);
 
     gss_release_cred(&min_stat, &cred1);
     gss_release_cred(&min_stat, &cred2);

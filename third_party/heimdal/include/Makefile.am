@@ -36,21 +36,28 @@ CLEANFILES =			\
 	base64.h		\
 	ccache_plugin.h		\
 	cms_asn1.h 		\
+	cms_template_asn1.h 	\
 	com_err.h		\
 	com_right.h		\
+	common_plugin.h		\
 	crmf_asn1.h		\
+	crmf_template_asn1.h	\
 	db_plugin.h		\
 	der-private.h 		\
 	der-protos.h 		\
 	der.h			\
 	digest_asn1.h 		\
+	digest_template_asn1.h 	\
 	editline.h		\
 	err.h			\
 	getarg.h		\
 	glob.h			\
+	gss-preauth-protos.h	\
+	gss-preauth-private.h	\
 	gssapi.h		\
 	gssapi_asn1.h		\
 	gssapi_mech.h		\
+	gssapi/gssapi_preauth.h	\
 	hdb-private.h		\
 	hdb-protos.h		\
 	hdb.h			\
@@ -60,6 +67,8 @@ CLEANFILES =			\
 	heim_asn1.h		\
 	heim_err.h		\
 	heimbase.h		\
+	heimbase-svc.h		\
+	heimbase-protos.h	\
 	heimntlm-protos.h	\
 	heimntlm.h		\
 	hex.h			\
@@ -79,26 +88,38 @@ CLEANFILES =			\
 	krb5-types.h		\
 	krb5.h			\
 	krb5_asn1.h		\
+	krb5_template_asn1.h	\
 	krb5_ccapi.h		\
 	krb5_err.h		\
 	krb_err.h		\
+	kuserok_plugin.h	\
 	kx509_asn1.h		\
+	kx509_template_asn1.h	\
 	kx509_err.h		\
 	locate_plugin.h		\
 	login-protos.h		\
 	ntlm_err.h		\
 	ocsp_asn1.h		\
+	ocsp_template_asn1.h	\
 	otp.h			\
 	parse_bytes.h		\
 	parse_time.h		\
 	parse_units.h		\
 	pkcs10_asn1.h		\
+	pkcs10_template_asn1.h	\
 	pkcs12_asn1.h		\
+	pkcs12_template_asn1.h	\
 	pkcs8_asn1.h		\
+	pkcs8_template_asn1.h	\
 	pkcs9_asn1.h		\
+	pkcs9_template_asn1.h	\
 	pkinit_asn1.h		\
+	pkinit_template_asn1.h	\
 	resolve.h		\
 	rfc2459_asn1.h		\
+	rfc2459_template_asn1.h	\
+	rfc4108_asn1.h		\
+	rfc4108_template_asn1.h	\
 	roken-common.h		\
 	roken.h			\
 	rtbl.h			\
@@ -111,8 +132,16 @@ CLEANFILES =			\
 	vis.h			\
 	wind.h			\
 	wind_err.h		\
-	windc_plugin.h		\
-	xdbm.h
+	kdc-plugin.h		\
+	kdc-accessors.h		\
+	kdc-audit.h		\
+	csr_authorizer_plugin.h	\
+	gss_preauth_authorizer_plugin.h	\
+	token_validator_plugin.h	\
+	xdbm.h			\
+	x25519_ref10.h		\
+	x690sample_asn1.h	\
+	x690sample_template_asn1.h
 
 DISTCLEANFILES = 	\
 	version.h	\

@@ -21,7 +21,7 @@ AM_CPPFLAGS += -I$(DBHEADER)
 endif
 
 bin_PROGRAMS = rkvis rkbase32 rkbase64
-noinst_PROGRAMS = snprintf-test resolve-test rkpty test-detach test-auxval rtbl
+noinst_PROGRAMS = snprintf-test resolve-test rkpty test-detach test-auxval rtbl timeval
 
 CHECK_LOCAL = snprintf-test resolve-test rkpty make-roken
 
@@ -40,6 +40,7 @@ check_PROGRAMS = 				\
 		parse_time-test			\
 		snprintf-test			\
 		strpftime-test			\
+		timeval				\
 		tsearch-test
 
 TESTS = $(check_PROGRAMS)
@@ -88,6 +89,9 @@ vis_h =
 else
 vis_h = vis.h
 endif
+
+timeval_SOURCES = timeval.c
+timeval_CPPFLAGS = -DTEST
 
 rkvis_SOURCES = vis.c $(vis_h) vis-extras.h
 rkvis_CPPFLAGS = -DTEST

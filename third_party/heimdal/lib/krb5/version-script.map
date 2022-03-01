@@ -24,6 +24,8 @@ HEIMDAL_KRB5_2.0 {
 		krb5_appdefault_time;
 		krb5_append_addresses;
 		krb5_auth_con_addflags;
+		krb5_auth_con_add_AuthorizationData;
+		krb5_auth_con_add_AuthorizationDataIfRelevant;
 		krb5_auth_con_free;
 		krb5_auth_con_genaddrs;
 		krb5_auth_con_generatelocalsubkey;
@@ -493,6 +495,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_pac_add_buffer;
 		krb5_pac_free;
 		krb5_pac_get_buffer;
+		_krb5_pac_get_buffer_by_name;
 		krb5_pac_get_kdc_checksum_info;
 		krb5_pac_get_types;
 		krb5_pac_init;
@@ -739,6 +742,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_cccol_cursor_new;
 		krb5_cccol_cursor_next;
 		krb5_cccol_cursor_free;
+		krb5_cccol_get_default_ccname;
 
 		# com_err error tables
 		initialize_krb5_error_table_r;
@@ -828,6 +832,8 @@ HEIMDAL_KRB5_2.0 {
 		_krb5_plugin_run_f;
 		_krb5_principal2principalname;
 		_krb5_principalname2krb5_principal;
+		_krb5_kdcrep2krb5_principal;
+		_krb5_ticket2krb5_principal;
 		_krb5_put_int;
 		_krb5_s4u2self_to_checksumdata;
 		_krb5_HMAC_MD5_checksum;
@@ -842,6 +848,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_init_creds_init;
 		krb5_init_creds_set_service;
 		krb5_init_creds_set_fast_anon_pkinit;
+		_krb5_init_creds_set_fast_anon_pkinit_optimistic;
 		krb5_init_creds_set_fast_ccache;
 		krb5_init_creds_set_keytab;
 		krb5_init_creds_set_kdc_hostname;

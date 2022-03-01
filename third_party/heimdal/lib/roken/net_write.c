@@ -71,7 +71,7 @@ net_write (rk_socket_t fd, const void *buf, size_t nbytes)
     return nbytes;
 }
 
-#else
+#else /* defined(_WIN32) */
 
 ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
 net_write(rk_socket_t sock, const void *buf, size_t nbytes)
@@ -102,6 +102,7 @@ net_write(rk_socket_t sock, const void *buf, size_t nbytes)
 	count = send (sock, cbuf, rem, 0);
 #endif
 	if (count < 0) {
+#ifdef SOCKET_IS_NOT_AN_FD
             if (!use_write) {
                 switch (rk_SOCK_ERRNO) {
                 case WSAEINTR:
@@ -111,7 +112,9 @@ net_write(rk_socket_t sock, const void *buf, size_t nbytes)
                 default:
                     return count;
                 }
-            } else {
+            } else
+#endif
+	    {
                 switch (errno) {
                 case EINTR:
                     continue;

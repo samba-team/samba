@@ -561,11 +561,14 @@ hx509_certs_find(hx509_context context,
 	    break;
 	if (_hx509_query_match_cert(context, q, c)) {
 	    *r = c;
+            c = NULL;
 	    break;
 	}
 	hx509_cert_free(c);
+        c = NULL;
     }
 
+    hx509_cert_free(c);
     hx509_certs_end_seq(context, certs, cursor);
     if (ret)
 	return ret;
@@ -573,7 +576,7 @@ hx509_certs_find(hx509_context context,
      * Return HX509_CERT_NOT_FOUND if no certificate in certs matched
      * the query.
      */
-    if (c == NULL) {
+    if (*r == NULL) {
 	hx509_clear_error_string(context);
 	return HX509_CERT_NOT_FOUND;
     }

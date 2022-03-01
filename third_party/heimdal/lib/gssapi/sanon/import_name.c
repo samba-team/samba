@@ -36,7 +36,8 @@ is_anonymous_identity_p(gss_buffer_t name_string, gss_OID name_type)
 {
     if (gss_oid_equal(name_type, GSS_C_NT_ANONYMOUS))
 	return TRUE;
-    else if ((gss_oid_equal(name_type, GSS_C_NT_USER_NAME) ||
+    else if ((name_type == GSS_C_NO_OID ||
+	      gss_oid_equal(name_type, GSS_C_NT_USER_NAME) ||
 	      gss_oid_equal(name_type, GSS_KRB5_NT_PRINCIPAL_NAME)) &&
 	buffer_equal_p(name_string, _gss_sanon_wellknown_user_name))
 	return TRUE;
@@ -58,16 +59,14 @@ storage_ret_der_oid(krb5_storage *sp, gss_OID_desc *oid)
     oid->elements = NULL;
 
     ret = krb5_ret_uint16(sp, &der_oid_len);
-    if (ret != 0)
+    if (ret == 0)
+        ret = krb5_ret_uint8(sp, &tag);
+    if (ret == 0)
+        ret = krb5_ret_uint8(sp, &oid_len);
+    if (ret)
 	return ret;
-
-    ret = krb5_ret_uint8(sp, &tag);
     if (tag != 0x06)
 	return EINVAL;
-
-    ret = krb5_ret_uint8(sp, &oid_len);
-    if (ret != 0)
-	return ret;
 
     if (der_oid_len != 2 + oid_len)
 	return EINVAL;
@@ -125,10 +124,11 @@ import_export_name(OM_uint32 *minor,
     }
     if (ret == 0)
 	ret = krb5_ret_uint32(sp, &name_len);
-    if (name_len != 1)
-	ret = EINVAL;
-    ret = krb5_ret_uint8(sp, &is_anonymous);
+    if (ret == 0)
+        ret = krb5_ret_uint8(sp, &is_anonymous);
     if (ret == 0) {
+        if (name_len != 1)
+            ret = EINVAL;
 	if (is_anonymous == 1) {
 	    *output_name = _gss_sanon_anonymous_identity;
 	    major = GSS_S_COMPLETE;
@@ -151,9 +151,6 @@ _gss_sanon_import_name(OM_uint32 *minor,
 		       const gss_OID input_name_type,
 		       gss_name_t *output_name)
 {
-    heim_assert(input_name_type != GSS_C_NO_OID,
-		"Mechglue passed null OID to _gss_sanon_import_name");
-
     if (gss_oid_equal(input_name_type, GSS_C_NT_EXPORT_NAME))
 	return import_export_name(minor, input_name_buffer, output_name);
 

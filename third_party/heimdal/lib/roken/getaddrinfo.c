@@ -366,10 +366,10 @@ get_nodes (const char *nodename,
  */
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-getaddrinfo(const char *nodename,
-	    const char *servname,
-	    const struct addrinfo *hints,
-	    struct addrinfo **res)
+rk_getaddrinfo(const char *nodename,
+	       const char *servname,
+	       const struct addrinfo *hints,
+	       struct addrinfo **res)
 {
     int ret;
     int port     = 0;
@@ -409,6 +409,6 @@ getaddrinfo(const char *nodename,
 	ret = get_null (hints, port, protocol, socktype, res);
     }
     if (ret)
-	freeaddrinfo (*res);
+	rk_freeaddrinfo(*res);
     return ret;
 }

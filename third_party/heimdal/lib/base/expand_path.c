@@ -59,10 +59,9 @@ expand_temp_folder(heim_context context, PTYPE param, const char *postfix,
     size_t len;
 
     if (!GetTempPath(sizeof(tpath)/sizeof(tpath[0]), tpath)) {
-        if (context)
-            heim_set_error_message(context, EINVAL,
-                                   "Failed to get temporary path (GLE=%d)",
-                                   GetLastError());
+        heim_set_error_message(context, EINVAL,
+                               "Failed to get temporary path (GLE=%d)",
+                               GetLastError());
         return EINVAL;
     }
 
@@ -170,55 +169,52 @@ expand_userid(heim_context context, PTYPE param, const char *postfix,
         }
 
         if (le != 0) {
-            if (context)
-                heim_set_error_message(context, rv,
-                                       "Can't open thread token (GLE=%d)", le);
+            heim_set_error_message(context, rv,
+                                   "Can't open thread token (GLE=%d)", le);
             goto _exit;
         }
     }
 
     if (!GetTokenInformation(hToken, TokenOwner, NULL, 0, &len)) {
         if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-            if (context)
-                heim_set_error_message(context, rv,
-                                       "Unexpected error reading token information (GLE=%d)",
-                                       GetLastError());
+            heim_set_error_message(context, rv,
+                                   "Unexpected error reading token information (GLE=%d)",
+                                   GetLastError());
             goto _exit;
         }
 
         if (len == 0) {
-            if (context)
-                heim_set_error_message(context, rv,
-                                      "GetTokenInformation() returned truncated buffer");
+            heim_set_error_message(context, rv,
+                                   "GetTokenInformation() returned truncated buffer");
             goto _exit;
         }
 
         pOwner = malloc(len);
         if (pOwner == NULL) {
-            if (context)
-                heim_set_error_message(context, rv, "Out of memory");
+            heim_set_error_message(context, rv, "Out of memory");
             goto _exit;
         }
     } else {
-        if (context)
-            heim_set_error_message(context, rv, "GetTokenInformation() returned truncated buffer");
+        heim_set_error_message(context, rv, "GetTokenInformation() returned truncated buffer");
         goto _exit;
     }
 
     if (!GetTokenInformation(hToken, TokenOwner, pOwner, len, &len)) {
-        if (context)
-            heim_set_error_message(context, rv, "GetTokenInformation() failed. GLE=%d", GetLastError());
+        heim_set_error_message(context, rv,
+                               "GetTokenInformation() failed. GLE=%d",
+                               GetLastError());
         goto _exit;
     }
 
     if (!ConvertSidToStringSid(pOwner->Owner, &strSid)) {
-        if (context)
-            heim_set_error_message(context, rv, "Can't convert SID to string. GLE=%d", GetLastError());
+        heim_set_error_message(context, rv,
+                               "Can't convert SID to string. GLE=%d",
+                               GetLastError());
         goto _exit;
     }
 
     *ret = strdup(strSid);
-    if (*ret == NULL && context)
+    if (*ret == NULL)
         heim_set_error_message(context, rv, "Out of memory");
 
     rv = 0;
@@ -248,8 +244,7 @@ expand_csidl(heim_context context, PTYPE folder, const char *postfix,
     size_t len;
 
     if (SHGetFolderPath(NULL, folder, NULL, SHGFP_TYPE_CURRENT, path) != S_OK) {
-        if (context)
-            heim_set_error_message(context, EINVAL, "Unable to determine folder path");
+        heim_set_error_message(context, EINVAL, "Unable to determine folder path");
         return EINVAL;
     }
 
@@ -387,7 +382,7 @@ expand_strftime(heim_context context, PTYPE param, const char *postfix,
     t = time(NULL);
     len = strftime(buf, sizeof(buf), arg, localtime(&t));
     if (len == 0 || len >= sizeof(buf))
-        return ENOMEM;
+        return heim_enomem(context);
     *ret = strdup(buf);
     return 0;
 }
@@ -488,8 +483,7 @@ expand_token(heim_context context,
 
     if (token[0] != '%' || token[1] != '{' || token_end[0] != '}' ||
         token_end - token <= 2) {
-        if (context)
-            heim_set_error_message(context, EINVAL,"Invalid token.");
+        heim_set_error_message(context, EINVAL,"Invalid token.");
         return EINVAL;
     }
 
@@ -521,8 +515,7 @@ expand_token(heim_context context,
             return errcode;
         }
 
-    if (context)
-        heim_set_error_message(context, EINVAL, "Invalid token.");
+    heim_set_error_message(context, EINVAL, "Invalid token.");
     return EINVAL;
 }
 
@@ -630,7 +623,6 @@ heim_expand_path_tokensv(heim_context context,
                 break;
             extra_tokens[i] = strdup(s);
             if (extra_tokens[i++] == NULL) {
-                va_end(ap);
                 free_extra_tokens(extra_tokens);
                 return heim_enomem(context);
             }
@@ -639,7 +631,6 @@ heim_expand_path_tokensv(heim_context context,
                 s = "";
             extra_tokens[i] = strdup(s);
             if (extra_tokens[i] == NULL) {
-                va_end(ap);
                 free_extra_tokens(extra_tokens);
                 return heim_enomem(context);
             }
@@ -667,8 +658,7 @@ heim_expand_path_tokensv(heim_context context,
                 if (*ppath_out)
                     free(*ppath_out);
                 *ppath_out = NULL;
-                if (context)
-                    heim_set_error_message(context, EINVAL, "variable missing }");
+                heim_set_error_message(context, EINVAL, "variable missing }");
                 return EINVAL;
             }
 

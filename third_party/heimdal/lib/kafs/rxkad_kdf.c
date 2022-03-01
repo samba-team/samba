@@ -89,12 +89,16 @@ rxkad_derive_des_key(const void *in, size_t insize, char out[8])
     /* stop when 8 bit counter wraps to 0 */
     for (i = 1; i; i++) {
 	HMAC_CTX_init(&mctx);
-	HMAC_Init_ex(&mctx, in, insize, EVP_md5(), NULL);
+	if (HMAC_Init_ex(&mctx, in, insize, EVP_md5(), NULL) == 0) {
+            HMAC_CTX_cleanup(&mctx);
+            return ENOMEM;
+        }
 	HMAC_Update(&mctx, &i, 1);
 	HMAC_Update(&mctx, label, sizeof(label));   /* includes label and separator */
 	HMAC_Update(&mctx, Lbuf, 4);
 	mdsize = sizeof(tmp);
 	HMAC_Final(&mctx, tmp, &mdsize);
+        HMAC_CTX_cleanup(&mctx);
 	memcpy(ktmp, tmp, 8);
 	DES_set_odd_parity(&ktmp);
 	if (!DES_is_weak_key(&ktmp)) {
@@ -205,7 +209,7 @@ _kafs_derive_des_key(krb5_enctype enctype, void *keydata, size_t keylen,
 	ret = compress_parity_bits(keydata, &keylen);
 	if (ret)
 	    return ret;
-	/* FALLTHROUGH */
+        fallthrough;
     default:
 	if (enctype < 0)
 	    return KRB5_PROG_ETYPE_NOSUPP;

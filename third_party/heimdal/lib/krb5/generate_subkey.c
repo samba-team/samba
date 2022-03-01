@@ -58,7 +58,7 @@ krb5_generate_subkey_extended(krb5_context context,
     if (*subkey == NULL)
 	return krb5_enomem(context);
 
-    if (etype == (krb5_enctype)ETYPE_NULL)
+    if (etype == ETYPE_NULL)
 	etype = key->keytype; /* use session key etype */
 
     /* XXX should we use the session key as input to the RF? */

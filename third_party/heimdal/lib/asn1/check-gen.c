@@ -51,6 +51,24 @@
 
 #include "check-common.h"
 
+static int my_copy_vers_called;
+static int my_free_vers_called;
+
+int
+my_copy_vers(const my_vers *from, my_vers *to)
+{
+    my_copy_vers_called++;
+    *to = *from;
+    return 0;
+}
+
+void
+my_free_vers(my_vers *v)
+{
+    my_free_vers_called++;
+    v->v = -1;
+}
+
 static char *lha_principal[] = { "lha" };
 static char *lharoot_princ[] = { "lha", "root" };
 static char *datan_princ[] = { "host", "nutcracker.e.kth.se" };
@@ -1021,7 +1039,7 @@ static int
 test_decorated(void)
 {
     TESTNotDecorated tnd;
-    TESTDecorated td;
+    TESTDecorated td, td_copy;
     size_t len, size;
     void *ptr;
     int ret;
@@ -1029,7 +1047,12 @@ test_decorated(void)
     memset(&td, 0, sizeof(td));
     memset(&tnd, 0, sizeof(tnd));
 
+    my_copy_vers_called = 0;
+    my_free_vers_called = 0;
+
     td.version = 3;
+    td.version3.v = 5;
+    td.privthing = &td;
     if ((td.version2 = malloc(sizeof(*td.version2))) == NULL)
         errx(1, "out of memory");
     *td.version2 = 5;
@@ -1043,6 +1066,7 @@ test_decorated(void)
         warnx("could not decode a TESTDecorated struct as TESTNotDecorated");
         return 1;
     }
+    free(ptr);
     if (size != len) {
         warnx("TESTDecorated encoded size mismatch");
         return 1;
@@ -1051,9 +1075,122 @@ test_decorated(void)
         warnx("TESTDecorated did not decode as a TESTNotDecorated correctly");
         return 1;
     }
+    if (copy_TESTDecorated(&td, &td_copy)) {
+        warnx("copy_TESTDecorated() failed");
+        return 1;
+    }
+    if (td.version != td_copy.version) {
+        warnx("copy_TESTDecorated() did not work correctly (1)");
+        return 1;
+    }
+    if (td_copy.version2 == NULL || *td.version2 != *td_copy.version2) {
+        warnx("copy_TESTDecorated() did not work correctly (2)");
+        return 1;
+    }
+    if (td.version3.v != td_copy.version3.v ||
+        my_copy_vers_called != 1) {
+        warnx("copy_TESTDecorated() did not work correctly (3)");
+        return 1;
+    }
+    if (td_copy.privthing != 0) {
+        warnx("copy_TESTDecorated() did not work correctly (4)");
+        return 1;
+    }
+
+    free_TESTDecorated(&td_copy);
     free_TESTDecorated(&td);
     if (td.version2) {
-        warnx("free_TESTDecorated() did not work correctly");
+        warnx("free_TESTDecorated() did not work correctly (1)");
+        return 1;
+    }
+    if (td.version3.v != 0 || my_free_vers_called != 2) {
+        warnx("free_TESTDecorated() did not work correctly (2)");
+        return 1;
+    }
+    if (td.privthing != 0) {
+        warnx("free_TESTDecorated() did not work correctly (3)");
+        return 1;
+    }
+    return 0;
+}
+
+static int
+test_decorated_choice(void)
+{
+    TESTNotDecoratedChoice tndc;
+    TESTDecoratedChoice tdc, tdc_copy;
+    size_t len, size;
+    void *ptr;
+    int ret;
+
+    memset(&tdc, 0, sizeof(tdc));
+    memset(&tndc, 0, sizeof(tndc));
+
+    my_copy_vers_called = 0;
+    my_free_vers_called = 0;
+
+    tdc.element = choice_TESTDecoratedChoice_version;
+    tdc.u.version = 3;
+    tdc.version3.v = 5;
+    tdc.privthing = &tdc;
+    if ((tdc.version2 = malloc(sizeof(*tdc.version2))) == NULL)
+        errx(1, "out of memory");
+    *tdc.version2 = 5;
+    ASN1_MALLOC_ENCODE(TESTDecoratedChoice, ptr, len, &tdc, &size, ret);
+    if (ret) {
+        warnx("could not encode a TESTDecoratedChoice struct");
+        return 1;
+    }
+    ret = decode_TESTNotDecoratedChoice(ptr, len, &tndc, &size);
+    if (ret) {
+        warnx("could not decode a TESTDecoratedChoice struct as TESTNotDecoratedChoice");
+        return 1;
+    }
+    free(ptr);
+    if (size != len) {
+        warnx("TESTDecoratedChoice encoded size mismatch");
+        return 1;
+    }
+    if ((int)tdc.element != (int)tndc.element ||
+        tdc.u.version != tndc.u.version) {
+        warnx("TESTDecoratedChoice did not decode as a TESTNotDecoratedChoice correctly");
+        return 1;
+    }
+    if (copy_TESTDecoratedChoice(&tdc, &tdc_copy)) {
+        warnx("copy_TESTDecoratedChoice() failed");
+        return 1;
+    }
+    if ((int)tdc.element != (int)tdc_copy.element ||
+        tdc.u.version != tdc_copy.u.version) {
+        warnx("copy_TESTDecoratedChoice() did not work correctly (1)");
+        return 1;
+    }
+    if (tdc_copy.version2 == NULL || *tdc.version2 != *tdc_copy.version2) {
+        warnx("copy_TESTDecoratedChoice() did not work correctly (2)");
+        return 1;
+    }
+    if (tdc.version3.v != tdc_copy.version3.v ||
+        my_copy_vers_called != 1) {
+        warnx("copy_TESTDecoratedChoice() did not work correctly (3)");
+        return 1;
+    }
+    if (tdc_copy.privthing != 0) {
+        warnx("copy_TESTDecoratedChoice() did not work correctly (4)");
+        return 1;
+    }
+
+    free_TESTDecoratedChoice(&tdc_copy);
+    free_TESTDecoratedChoice(&tdc);
+    if (tdc.version2) {
+        warnx("free_TESTDecoratedChoice() did not work correctly (1)");
+        return 1;
+    }
+    if (tdc.version3.v != 0 || my_free_vers_called != 2) {
+        warnx("free_TESTDecoratedChoice() did not work correctly (2)");
+        return 1;
+    }
+    if (tdc.privthing != 0) {
+        warnx("free_TESTDecoratedChoice() did not work correctly (3)");
         return 1;
     }
     return 0;
@@ -1521,7 +1658,7 @@ static int
 check_seq(void)
 {
     TESTSeqOf seq;
-    TESTInteger i;
+    TESTInteger i = 0;
     int ret;
 
     seq.val = NULL;
@@ -2537,6 +2674,7 @@ main(int argc, char **argv)
 
     DO_ONE(test_default);
 
+    DO_ONE(test_decorated_choice);
     DO_ONE(test_decorated);
 
 #if ASN1_IOS_SUPPORTED

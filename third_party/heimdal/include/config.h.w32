@@ -32,6 +32,8 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#define fallthrough do {} while(0) /* fallthrough */
+
 #ifndef RCSID
 #define RCSID(msg) \
 static const char *const rcsid[] = { (const char *)rcsid, "@(#)" msg }
@@ -122,6 +124,24 @@ static const char *const rcsid[] = { (const char *)rcsid, "@(#)" msg }
 #endif
 #endif
 
+
+#ifdef BUILD_KDC_LIB
+#ifndef KDC_LIB
+#ifdef _WIN32
+#define KDC_LIB_FUNCTION
+#define KDC_LIB_NORETURN_FUNCTION __declspec(noreturn)
+#define KDC_LIB_CALL     __stdcall
+#define KDC_LIB_VARIABLE
+#else
+#define KDC_LIB_FUNCTION
+#define KDC_LIB_NORETURN_FUNCTION
+#define KDC_LIB_CALL
+#define KDC_LIB_VARIABLE
+#endif
+#endif
+#endif
+
+
 /* Feature macros */
 
 @FEATURE_DEFS@
@@ -198,9 +218,6 @@ static const char *const rcsid[] = { (const char *)rcsid, "@(#)" msg }
 
 /* Define to 1 if you have the `cap_set_proc' function. */
 /* #undef HAVE_CAP_SET_PROC */
-
-/* Define to 1 if you have the `cgetent' function. */
-/* #undef HAVE_CGETENT */
 
 /* Define if the system defines 'CHAR' type */
 #define HAVE_CHAR 1
@@ -793,9 +810,6 @@ static const char *const rcsid[] = { (const char *)rcsid, "@(#)" msg }
 /* Define to 1 if you have the `setstate' function. */
 /* #define HAVE_SETSTATE 1 */
 
-/* Define to 1 if you have the `sgi_getcapabilitybyname' function. */
-/* #undef HAVE_SGI_GETCAPABILITYBYNAME */
-
 /* Define to 1 if you have the <sgtty.h> header file. */
 /* #undef HAVE_SGTTY_H */
 
@@ -886,6 +900,17 @@ static const char *const rcsid[] = { (const char *)rcsid, "@(#)" msg }
 
 /* Define if you have the function `strtok_r'. */
 /* #define HAVE_STRTOK_R 1 */
+
+#if defined(__has_include)
+# if __has_include(<corecrt.h>)
+#  define HAVE_UCRT 1
+# endif
+#endif
+
+#ifdef HAVE_UCRT
+#define HAVE_STRTOLL 1
+#define HAVE_STRTOULL 1
+#endif
 
 /* Define to 1 if the system has the type `struct addrinfo'. */
 #define HAVE_STRUCT_ADDRINFO 1

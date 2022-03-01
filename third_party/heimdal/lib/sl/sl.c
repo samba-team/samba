@@ -460,6 +460,8 @@ sl_did_you_mean(SL_cmd *cmds, const char *match)
 
     for (n = 0, c = cmds; c->name; c++, n++)
         ;
+    if (n == 0)
+        return;
     metrics = calloc(n, sizeof(metrics[0]));
     if (metrics == NULL)
         return;

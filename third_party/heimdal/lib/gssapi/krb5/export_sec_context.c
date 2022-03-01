@@ -195,7 +195,7 @@ _gsskrb5_export_sec_context(
     }
 
     if (ctx->target) {
-        kret = krb5_store_principal(sp, ctx->source);
+        kret = krb5_store_principal(sp, ctx->target);
 	if (kret) {
 	    *minor_status = kret;
 	    goto failure;

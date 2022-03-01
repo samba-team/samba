@@ -58,7 +58,8 @@ main(int argc, char **argv)
     for(t = tests; t->data; t++) {
 	char *str;
 	int len;
-	len = rk_base64_encode(t->data, t->len, &str);
+
+	(void) rk_base64_encode(t->data, t->len, &str);
 	if(strcmp(str, t->result) != 0) {
 	    fprintf(stderr, "failed test %d: %s != %s\n", numtest,
 		    str, t->result);

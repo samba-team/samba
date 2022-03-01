@@ -904,12 +904,14 @@ cleanup:
 
     if (GSS_ERROR(major)) {
 	if (!mech_error) {
-	   krb5_context context = _gss_mg_krb5_context();
+	    krb5_context context = _gss_mg_krb5_context();
+	    const char *emsg = krb5_get_error_message(context, *minor);
 
-	   gss_mg_set_error_string(GSS_SPNEGO_MECHANISM,
-				   major, *minor,
-				   "NegoEx failed to initialize security context: %s",
-				   krb5_get_error_message(context, *minor));
+	    gss_mg_set_error_string(GSS_SPNEGO_MECHANISM,
+				    major, *minor,
+				    "NegoEx failed to initialize security context: %s",
+				    emsg);
+	    krb5_free_error_message(context, emsg);
 	}
 
 	_gss_negoex_release_context(ctx);
@@ -1022,12 +1024,14 @@ cleanup:
 
     if (GSS_ERROR(major)) {
 	if (!mech_error) {
-	   krb5_context context = _gss_mg_krb5_context();
+	    krb5_context context = _gss_mg_krb5_context();
+	    const char *emsg = krb5_get_error_message(context, *minor);
 
-	   gss_mg_set_error_string(GSS_SPNEGO_MECHANISM,
-				   major, *minor,
-				   "NegoEx failed to accept security context: %s",
-				   krb5_get_error_message(context, *minor));
+	    gss_mg_set_error_string(GSS_SPNEGO_MECHANISM,
+				    major, *minor,
+				    "NegoEx failed to accept security context: %s",
+				    emsg);
+	    krb5_free_error_message(context, emsg);
 	}
 
 	_gss_negoex_release_context(ctx);

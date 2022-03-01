@@ -119,8 +119,11 @@ main(int argc, char **argv)
 	during = "decode_Ticket";
 	memset(&t, 0, sizeof (t));
 	ret = decode_Ticket(cred.ticket.data, cred.ticket.length, &t, &len);
-	if (ret == ASN1_MISSING_FIELD)
+	if (ret == ASN1_MISSING_FIELD) {
+            krb5_free_cred_contents(context, &cred);
+            memset(&cred, 0, sizeof (cred));
 	    continue;
+        }
 	if (ret) goto err;
 	if (t.enc_part.kvno) {
 	    *t.enc_part.kvno = 0;

@@ -82,9 +82,7 @@ encode_ticket(krb5_context context,
     et.flags = cred->flags.b;
     et.key = cred->session;
     et.crealm = cred->client->realm;
-    ret = copy_PrincipalName(&cred->client->name, &et.cname);
-    if (ret)
-	krb5_err(context, 1, ret, "copy_PrincipalName");
+    et.cname = cred->client->name;
     {
 	krb5_data empty_string;
 
@@ -129,16 +127,11 @@ encode_ticket(krb5_context context,
 
     ticket.tkt_vno = 5;
     ticket.realm = cred->server->realm;
-    ret = copy_PrincipalName(&cred->server->name, &ticket.sname);
-    if (ret)
-	krb5_err(context, 1, ret, "copy_PrincipalName");
-
-    ASN1_MALLOC_ENCODE(Ticket, buf, len, &ticket, &size, ret);
+    ticket.sname = cred->server->name;
+    ASN1_MALLOC_ENCODE(Ticket, cred->ticket.data, cred->ticket.length, &ticket, &size, ret);
+    free_EncryptedData(&ticket.enc_part);
     if(ret)
 	krb5_err(context, 1, ret, "encode_Ticket");
-
-    krb5_data_copy(&cred->ticket, buf, len);
-    free(buf);
 }
 
 /*
@@ -173,12 +166,13 @@ create_krb5_tickets(krb5_context context, krb5_keytab kt)
 
 
     ret = krb5_copy_principal(context, client_principal, &cred.client);
+    if (ret == 0)
+        ret = krb5_copy_principal(context, server_principal, &cred.server);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_copy_principal");
-    ret = krb5_copy_principal(context, server_principal, &cred.server);
+    ret = krb5_generate_random_keyblock(context, session_etype, &cred.session);
     if (ret)
-	krb5_err(context, 1, ret, "krb5_copy_principal");
-    krb5_generate_random_keyblock(context, session_etype, &cred.session);
+	krb5_err(context, 1, ret, "krb5_generate_random_keyblock");
 
     cred.times.authtime = time(NULL);
     cred.times.starttime = time(NULL);
@@ -283,13 +277,13 @@ setup_env(krb5_context context, krb5_keytab *kt)
 	krb5_errx(context, 1, "missing client principal");
     ret = krb5_parse_name(context, client_principal_str, &client_principal);
     if (ret)
-	krb5_err(context, 1, ret, "resolvning client name");
+	krb5_err(context, 1, ret, "resolving client name");
 
     if (server_principal_str == NULL)
 	krb5_errx(context, 1, "missing server principal");
     ret = krb5_parse_name(context, server_principal_str, &server_principal);
     if (ret)
-	krb5_err(context, 1, ret, "resolvning server name");
+	krb5_err(context, 1, ret, "resolving server name");
 
     /* If no session-enc-type specified on command line and this is an afs */
     /* service ticket, change default of session_enc_type to DES.       */
@@ -395,6 +389,7 @@ main(int argc, char **argv)
 	create_krb5_tickets(context, kt);
 
     krb5_kt_close(context, kt);
+    krb5_free_context(context);
 
     return 0;
 }

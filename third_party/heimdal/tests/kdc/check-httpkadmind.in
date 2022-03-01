@@ -519,7 +519,7 @@ ${hxtool} issue-certificate \
          { echo "Failed to make PKINIT client cert"; exit 1; }
 
 echo "Starting kdc needed for httpkadmind authentication to kadmind"
-${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
 echo "Starting httpkadmind with remote HDBs only"

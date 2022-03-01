@@ -184,6 +184,8 @@ ihave(krb5_context context, krb5_auth_context auth_context,
     krb5_data data;
 
     sp = krb5_storage_from_mem(buf, 8);
+    if (sp == NULL)
+        krb5_err(context, IPROPD_RESTART_SLOW, ENOMEM, "Out of memory");
     ret = krb5_store_uint32(sp, I_HAVE);
     if (ret == 0)
         ret = krb5_store_uint32(sp, version);
@@ -571,7 +573,7 @@ receive_everything(krb5_context context, int fd,
 	krb5_ret_uint32(sp, &opcode);
 	if (opcode == ONE_PRINC) {
 	    krb5_data fake_data;
-	    hdb_entry_ex entry;
+	    hdb_entry entry;
 
 	    krb5_storage_free(sp);
 
@@ -580,7 +582,7 @@ receive_everything(krb5_context context, int fd,
 
 	    memset(&entry, 0, sizeof(entry));
 
-	    ret = hdb_value2entry(context, &fake_data, &entry.entry);
+	    ret = hdb_value2entry(context, &fake_data, &entry);
 	    if (ret)
 		krb5_err(context, IPROPD_RESTART, ret, "hdb_value2entry");
 	    ret = mydb->hdb_store(server_context->context,
@@ -589,7 +591,7 @@ receive_everything(krb5_context context, int fd,
 	    if (ret)
 		krb5_err(context, IPROPD_RESTART_SLOW, ret, "hdb_store");
 
-	    hdb_free_entry(context, &entry);
+	    hdb_free_entry(context, mydb, &entry);
 	    krb5_data_free(&data);
 	} else if (opcode == NOW_YOU_HAVE)
 	    ;

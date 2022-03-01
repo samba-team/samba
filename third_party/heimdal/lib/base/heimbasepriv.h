@@ -42,7 +42,7 @@
 typedef void (*heim_type_init)(void *);
 typedef heim_object_t (*heim_type_copy)(void *);
 typedef int (*heim_type_cmp)(void *, void *);
-typedef unsigned long (*heim_type_hash)(void *);
+typedef uintptr_t (*heim_type_hash)(void *);
 typedef heim_string_t (*heim_type_description)(void *);
 
 typedef struct heim_type_data *heim_type_t;
@@ -65,6 +65,7 @@ enum {
     HEIM_TID_DATA = 134,
     HEIM_TID_DB = 135,
     HEIM_TID_PA_AUTH_MECH = 136,
+    HEIM_TID_PAC = 137,
     HEIM_TID_USER = 255
 
 };

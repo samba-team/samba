@@ -103,6 +103,8 @@ krb5_free_principal(krb5_context context,
 		    krb5_principal p)
 {
     if(p){
+	if (p->nameattrs && p->nameattrs->pac)
+	    heim_release(p->nameattrs->pac);
 	free_Principal(p);
 	free(p);
     }
@@ -456,6 +458,22 @@ unparse_name_fixed(krb5_context context,
     int short_form = (flags & KRB5_PRINCIPAL_UNPARSE_SHORT) != 0;
     int no_realm = (flags & KRB5_PRINCIPAL_UNPARSE_NO_REALM) != 0;
     int display = (flags & KRB5_PRINCIPAL_UNPARSE_DISPLAY) != 0;
+
+    if (name == NULL) {
+	krb5_set_error_message(context, EINVAL,
+			       N_("Invalid name buffer, "
+				  "can't unparse", ""));
+	return EINVAL;
+    }
+
+    if (len == 0) {
+	krb5_set_error_message(context, ERANGE,
+			       N_("Invalid name buffer length, "
+				  "can't unparse", ""));
+	return ERANGE;
+    }
+
+    name[0] = '\0';
 
     if (!no_realm && princ_realm(principal) == NULL) {
 	krb5_set_error_message(context, ERANGE,
@@ -932,6 +950,9 @@ krb5_copy_principal(krb5_context context,
 	free(p);
 	return krb5_enomem(context);
     }
+    if (inprinc->nameattrs && inprinc->nameattrs->pac)
+	p->nameattrs->pac = heim_retain(inprinc->nameattrs->pac);
+
     *outprinc = p;
     return 0;
 }
@@ -1766,7 +1787,7 @@ _krb5_get_name_canon_rules(krb5_context context, krb5_name_canon_rule *rules)
                                      "libdefaults", "safe_name_canon", NULL))
         make_rules_safe(context, *rules);
 
-    heim_assert(rules != NULL && (*rules)[0].type != KRB5_NCRT_BOGUS,
+    heim_assert((*rules)[0].type != KRB5_NCRT_BOGUS,
                 "internal error in parsing principal name "
                 "canonicalization rules");
 
@@ -1968,10 +1989,12 @@ apply_name_canon_rule(krb5_context context, krb5_name_canon_rule rules,
         new_hostname = hostname_with_port;
     }
 
-    if (new_realm != NULL)
-        krb5_principal_set_realm(context, *out_princ, new_realm);
-    if (new_hostname != NULL)
-        krb5_principal_set_comp_string(context, *out_princ, 1, new_hostname);
+    if (new_realm != NULL &&
+        (ret = krb5_principal_set_realm(context, *out_princ, new_realm)))
+        goto out;
+    if (new_hostname != NULL &&
+        (ret = krb5_principal_set_comp_string(context, *out_princ, 1, new_hostname)))
+        goto out;
     if (princ_type(*out_princ) == KRB5_NT_SRV_HST_NEEDS_CANON)
         princ_type(*out_princ) = KRB5_NT_SRV_HST;
 

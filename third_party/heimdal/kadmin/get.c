@@ -349,6 +349,7 @@ format_field(struct get_entry_data *data,
                     if (i)
                         strlcat(buf, ",", buf_len);
                     strlcat(buf, str, buf_len);
+		    krb5_xfree(str);
                 }
             }
             free_HDB_EncTypeList(&etypes);
@@ -632,6 +633,7 @@ list_princs(struct list_options *opt, int argc, char **argv)
 	krb5_warnx(context, "programmer error: sizeof(struct get_options) != sizeof(struct list_options)");
 	return 0;
     }
+    memset(&get_opt, 0, sizeof(get_opt));
     get_opt.long_flag = opt->long_flag;
     get_opt.short_flag = opt->short_flag;
     get_opt.terse_flag = opt->terse_flag;

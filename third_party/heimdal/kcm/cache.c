@@ -168,9 +168,9 @@ krb5_error_code kcm_debug_ccache(krb5_context context)
 	    ncreds++;
 
 	if (p->client != NULL)
-	    krb5_unparse_name(context, p->client, &cpn);
+	    (void) krb5_unparse_name(context, p->client, &cpn);
 	if (p->server != NULL)
-	    krb5_unparse_name(context, p->server, &spn);
+	    (void) krb5_unparse_name(context, p->server, &spn);
 
 	kcm_log(7, "cache %08x: name %s refcnt %d flags %04x mode %04o "
 		"uid %d gid %d client %s server %s ncreds %d",
@@ -179,10 +179,8 @@ krb5_error_code kcm_debug_ccache(krb5_context context)
 		(spn == NULL) ? "<none>" : spn,
 		ncreds);
 
-	if (cpn != NULL)
-	    free(cpn);
-	if (spn != NULL)
-	    free(spn);
+        free(cpn);
+        free(spn);
     }
 
     return 0;

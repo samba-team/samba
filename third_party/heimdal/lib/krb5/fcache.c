@@ -477,7 +477,6 @@ fcc_open(krb5_context context,
         return krb5_einval(context, 2);
 
     if ((flags & O_EXCL)) {
-        flags &= ~O_EXCL;
         /*
          * FIXME Instead of mkostemp()... we could instead try to use a .new
          * file... with care.  Or the O_TMPFILE / linkat() extensions.  We need
@@ -1177,7 +1176,7 @@ fcc_remove_cred(krb5_context context,
 	krb5_free_cred_contents(context, &found_cred);
     }
     ret2 = krb5_cc_end_seq_get(context, id, &cursor);
-    if (ret == 0)
+    if (ret2)	/* not expected to fail */
 	return ret2;
     if (ret == KRB5_CC_END)
 	return 0;
@@ -1548,8 +1547,10 @@ static krb5_error_code KRB5_CALLCONV
 fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 {
     krb5_error_code ret = 0;
+    krb5_fcache *f = FCACHE(from);
+    krb5_fcache *t = FCACHE(to);
 
-    if (TMPFILENAME(from)) {
+    if (f->tmpfn) {
         /*
          * If `from' has a temp file and we haven't renamed it into place yet,
          * then we should rename TMPFILENAME(from) to FILENAME(to).
@@ -1557,13 +1558,13 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
          * This can only happen if we're moving a ccache where only cc config
          * entries, or no entries, have been written.  That's not likely.
          */
-        if (rk_rename(TMPFILENAME(from), FILENAME(to))) {
+        if (rk_rename(f->tmpfn, t->filename)) {
             ret = errno;
         } else {
-            free(TMPFILENAME(from));
-            TMPFILENAME(from) = NULL;
+            free(f->tmpfn);
+            f->tmpfn = NULL;
         }
-    } else if ((ret = rk_rename(FILENAME(from), FILENAME(to)))) {
+    } else if (rk_rename(f->filename, t->filename)) {
         ret = errno;
     }
     /*

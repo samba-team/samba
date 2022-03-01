@@ -78,6 +78,8 @@ server=host/datan.test.h5l.se
 server2=host/computer.example.com
 server3=host/refer-me-out.test.h5l.se
 server4=host/no-auth-data-reqd.test.h5l.se
+server5=host/a-host.refer-all-out.test.h5l.se
+namespace=WELLKNOWN/HOSTBASED-NAMESPACE/_/refer-all-out.test.h5l.se
 serverip=host/10.11.12.13
 serveripname=host/ip.test.h5l.org
 serveripname2=host/10.11.12.14
@@ -240,6 +242,9 @@ ${kadmin} add -p foo  --use-defaults referral-placeholder@${R5} || exit 1
 ${kadmin} add_alias referral-placeholder@${R5} ${server3}@${R} || exit 1
 ${kadmin5} add -p kaka --use-defaults ${server3}@${R5} || exit 1
 ${kadmin5} ext -k ${keytab} ${server3}@${R5} || exit 1
+${kadmin} add_alias referral-placeholder@${R5} ${namespace}@${R} || exit 1
+${kadmin5} add -p kaka --use-defaults ${server5}@${R5} || exit 1
+${kadmin5} ext -k ${keytab} ${server5}@${R5} || exit 1
 ${kadmin} add -p kaka --use-defaults ${serverip}@${R} || exit 1
 ${kadmin} ext -k ${keytab} ${serverip}@${R} || exit 1
 ${kadmin} add -p kaka --use-defaults ${serveripname}@${R} || exit 1
@@ -364,7 +369,7 @@ echo notfoo > ${objdir}/notfoopassword
 echo Starting kdc ; > messages.log
 env MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=${objdir}/malloc-log \
 ${kdc} --detach --testing ||
-    { echo "kdc failed to start"; exit 1; }
+    { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
 echo Starting kpasswdd; > messages.log
@@ -444,6 +449,8 @@ echo "Getting x-realm tickets with capaths for $R -> $R5"
 ${kgetcred} foo@${R5} || { ec=1 ; eval "${testfailed}"; }
 echo "Testing HDB referral entry"
 ${kgetcred} --canonicalize ${server3}@${R} || { ec=1 ; eval "${testfailed}"; }
+echo "Testing HDB namespace referral entry"
+${kgetcred} --canonicalize ${server5}@${R} || { ec=1 ; eval "${testfailed}"; }
 ${klist}
 ${kdestroy}
 

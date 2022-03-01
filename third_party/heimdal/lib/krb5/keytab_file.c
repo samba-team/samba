@@ -371,6 +371,7 @@ fkt_start_seq_get_int(krb5_context context,
     struct fkt_data *d = id->data;
     const char *stdio_mode = "rb";
 
+    memset(c, 0, sizeof(*c));
     c->fd = open (d->filename, flags);
     if (c->fd < 0) {
 	ret = errno;
@@ -797,7 +798,7 @@ fkt_remove_entry(krb5_context context,
         krb5_set_error_message(context, ret,
                                N_("Could not remove keytab entry from %s: %s", ""),
                                fkt->filename,
-                               krb5_get_error_message(context, ret));
+                               emsg);
         krb5_free_error_message(context, emsg);
     } else if (!found) {
 	krb5_clear_error_message(context);

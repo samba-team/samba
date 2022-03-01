@@ -97,7 +97,7 @@ get_cf(krb5_context context,
 /*
  * Build a certifate for `principal' and its CSR.
  */
-krb5_error_code
+KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
 kdc_issue_certificate(krb5_context context,
                       const char *app_name,
                       krb5_log_facility *logf,
@@ -129,5 +129,5 @@ kdc_issue_certificate(krb5_context context,
                                           out);
     if (ret == EACCES)
         ret = KRB5KDC_ERR_POLICY;
-    return (ret == EACCES) ? KRB5KDC_ERR_POLICY : ret;
+    return ret;
 }

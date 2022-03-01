@@ -4,55 +4,51 @@
 # users, and is free for public repositories.
 #
 
+version: '1.0.{build}'
+
+image:
+  - Visual Studio 2019
+
 install:
   # HACK -- pacman installation in Appveyor seems broken
   # Taken from https://github.com/johnkerl/miller/blob/master/appveyor.yml
-  - set PATH=C:\msys64\usr\bin;%PATH%
-  - bash -lc "curl -Lo pacman-5.2.1-6-x86_64.pkg.tar.xz.sig http://repo.msys2.org/msys/x86_64/pacman-5.2.1-6-x86_64.pkg.tar.xz.sig"
-  - bash -lc "curl -Lo pacman-5.2.1-6-x86_64.pkg.tar.xz http://repo.msys2.org/msys/x86_64/pacman-5.2.1-6-x86_64.pkg.tar.xz"
-  - bash -lc "curl -Lo zstd-1.4.4-2-x86_64.pkg.tar.xz.sig http://repo.msys2.org/msys/x86_64/zstd-1.4.4-2-x86_64.pkg.tar.xz.sig"
-  - bash -lc "curl -Lo zstd-1.4.4-2-x86_64.pkg.tar.xz http://repo.msys2.org/msys/x86_64/zstd-1.4.4-2-x86_64.pkg.tar.xz"
-  - bash -lc "curl -Lo autoconf-2.69-5-any.pkg.tar.xz.sig http://repo.msys2.org/msys/x86_64/autoconf-2.69-5-any.pkg.tar.xz.sig"
-  - bash -lc "curl -Lo autoconf-2.69-5-any.pkg.tar.xz http://repo.msys2.org/msys/x86_64/autoconf-2.69-5-any.pkg.tar.xz"
-  - bash -lc "curl -Lo automake1.16-1.16.2-2-any.pkg.tar.zst.sig http://repo.msys2.org/msys/x86_64/automake1.16-1.16.2-2-any.pkg.tar.zst.sig"
-  - bash -lc "curl -Lo automake1.16-1.16.2-2-any.pkg.tar.zst http://repo.msys2.org/msys/x86_64/automake1.16-1.16.2-2-any.pkg.tar.zst"
-  - bash -lc "curl -Lo bison-3.5.4-1-x86_64.pkg.tar.xz.sig http://repo.msys2.org/msys/x86_64/bison-3.5.4-1-x86_64.pkg.tar.xz.sig"
-  - bash -lc "curl -Lo bison-3.5.4-1-x86_64.pkg.tar.xz http://repo.msys2.org/msys/x86_64/bison-3.5.4-1-x86_64.pkg.tar.xz"
-  - bash -lc "curl -Lo flex-2.6.4-1-x86_64.pkg.tar.xz.sig http://repo.msys2.org/msys/x86_64/flex-2.6.4-1-x86_64.pkg.tar.xz.sig"
-  - bash -lc "curl -Lo flex-2.6.4-1-x86_64.pkg.tar.xz http://repo.msys2.org/msys/x86_64/flex-2.6.4-1-x86_64.pkg.tar.xz"
-  - bash -lc "curl -Lo perl-5.30.2-1-x86_64.pkg.tar.xz.sig http://repo.msys2.org/msys/x86_64/perl-5.30.2-1-x86_64.pkg.tar.xz.sig"
-  - bash -lc "curl -Lo perl-5.30.2-1-x86_64.pkg.tar.xz http://repo.msys2.org/msys/x86_64/perl-5.30.2-1-x86_64.pkg.tar.xz"
-  - bash -lc "curl -Lo perl-JSON-4.02-1-any.pkg.tar.zst.sig http://repo.msys2.org/msys/x86_64/perl-JSON-4.02-1-any.pkg.tar.zst.sig"
-  - bash -lc "curl -Lo perl-JSON-4.02-1-any.pkg.tar.zst http://repo.msys2.org/msys/x86_64/perl-JSON-4.02-1-any.pkg.tar.zst"
+  # (which is gone)
+  #- ps: dir 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\Windows' -Recurse
+  - set "PATH=C:\msys64\usr\bin;%PATH%"
+  - set "PATH=C:\%MSYS2_DIR%\%MSYSTEM%\bin;C:\%MSYS2_DIR%\usr\bin;%PATH%"
+  - bash -lc "mkdir -p /var/lib/pacman/sync/"
   - bash -lc "pacman-key --init"
   - bash -lc "pacman-key --populate msys2"
-  - bash -lc "pwd; ls -l"
-  - bash -lc "pacman-key --verify pacman-5.2.1-6-x86_64.pkg.tar.xz.sig"
-  - bash -lc "pacman --noconfirm -S zstd || pacman --ask 20 -U file://$PWD/zstd-1.4.4-2-x86_64.pkg.tar.xz"
-    #- bash -lc "pacman --ask 20 -U file://$PWD/pacman-5.2.1-6-x86_64.pkg.tar.xz"
-    #- bash -lc "pacman-key --populate zstd"
-    #- bash -lc "pacman-key --verify zstd-1.4.4-2-x86_64.pkg.tar.xz.sig"
-    #- bash -lc "pacman --ask 20 -U file://$PWD/zstd-1.4.4-2-x86_64.pkg.tar.xz"
-  - bash -lc "pacman --noconfirm -S autoconf || pacman --ask 20 -U file://$PWD/autoconf-2.69-5-any.pkg.tar.xz.sig"
-  - bash -lc "pacman --noconfirm -S automake || pacman --ask 20 -U file://$PWD/automake1.16-1.16.2-2-any.pkg.tar.zst"
-  - bash -lc "pacman --noconfirm -S flex || pacman --ask 20 -U file://$PWD/flex-2.6.4-1-x86_64.pkg.tar.xz"
-  - bash -lc "pacman --noconfirm -S bison || pacman --ask 20 -U file://$PWD/bison-3.5.4-1-x86_64.pkg.tar.xz"
-  - bash -lc "pacman --noconfirm -S perl || pacman --ask 20 -U file://$PWD/perl-5.30.2-1-x86_64.pkg.tar.xz"
-  - bash -lc "pacman --noconfirm -S perl-JSON || pacman --ask 20 -U file://$PWD/perl-JSON-4.02-1-any.pkg.tar.zst"
+  - bash -lc "curl -O http://repo.msys2.org/msys/x86_64/msys2-keyring-1~20211228-1-any.pkg.tar.zst"
+  - bash -lc "curl -O http://repo.msys2.org/msys/x86_64/msys2-keyring-1~20211228-1-any.pkg.tar.zst.sig"
+  - bash -lc "pacman --noconfirm -U --config <(echo) msys2-keyring-1~20211228-1-any.pkg.tar.zst"
+  - bash -lc "mkdir -p /var/lib/pacman/sync/"
+  - bash -lc "pacman-key --init"
+  - bash -lc "pacman-key --populate msys2"
+  - bash -lc "pacman -S --noconfirm --refresh pacman"
+  - bash -lc "pacman -S --needed --noconfirm pacman-mirrors"
+  - bash -lc "pacman -S --needed --noconfirm mingw-w64-x86_64-toolchain autoconf automake libtool make patch mingw-w64-x86_64-libtool"
+  - bash -lc "pacman -S --needed --noconfirm bison flex"
+  - bash -lc "pacman -S --needed --noconfirm perl perl-JSON"
 
 build_script:
-  - set PSDKDir=C:\Program Files\Microsoft SDKs\Windows\v7.1
-  - call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.Cmd" /xp /x64 /Release
-  - set WIXDIR="c:\Program Files (x86)\Windows Installer XML v3.5"
+  # build using Windows 10 SDK
+  - set "WINSDKVER=10.0.22000.0"
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" amd64 %WINSDKVER%
+  - set "WIXDIR=c:\Program Files (x86)\Windows Installer XML v3.5"
   # We're not doing any codesigning in the Appveyor build yet.
-  - SET CODESIGN_PKT=0000000000000000
-  - set PATH=%PATH%;C:\Python26;C:\Perl64\bin;C:\tools\cygwin\bin;C:\Program Files (x86)\HTML Help Workshop
-  - set PATH=%PATH%;C:/msys64/usr/bin
-  - set PATH=%PATH%;C:\program files (x86)\windows installer xml v3.5\bin;C:\cygwin\bin
+  - SET "CODESIGN_PKT=0000000000000000"
+  - set "PATH=%PATH%;C:\Perl64\bin;C:\tools\cygwin\bin;C:\Program Files (x86)\HTML Help Workshop"
+  - set "PATH=%PATH%;C:/msys64/usr/bin"
+  - set "PATH=%PATH%;C:\program files (x86)\windows installer xml v3.5\bin;C:\cygwin\bin"
+  # double check this, should it be x86 or x64?
+  - set "PATH=%PATH%;%WindowsSdkVerBinPath%\x86"
+  - set "PATH=C:\Python310-x64;%PATH%"
   - set dbg__type=Debug
   - title Heimdal Build %CPU% %dbg__type%
   - echo PATH=%PATH%
-  - C:\msys64\usr\bin\bash -lc "cp /c/Windows/System32/msvcr100d.dll /c/projects/heimdal"
+  # target Windows 10 API
+  - set APPVER=10.0
   # Newer texinfo has no .exe's, so we have to invoke it as
   # "perl ...\makeinfo ...".  See doc/NTMakefile.
   - nmake /f NTMakefile APPVEYOR=1 MAKEINFO=makeinfo NO_INSTALLERS=1

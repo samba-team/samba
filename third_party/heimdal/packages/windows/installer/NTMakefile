@@ -133,7 +133,13 @@ clean::
 ######################################################################
 # Runtime modules
 
-!if [ $(PERL) $(SRC)\cf\w32-detect-vc-version.pl $(CC) ]==16
+!if [ $(PERL) $(SRC)\cf\w32-detect-vc-version.pl $(CC) ]==19
+VCVER=VC2019
+!elseif [ $(PERL) $(SRC)\cf\w32-detect-vc-version.pl $(CC) ]==18
+VCVER=VC2018
+!elseif [ $(PERL) $(SRC)\cf\w32-detect-vc-version.pl $(CC) ]==17
+VCVER=VC2017
+!elseif [ $(PERL) $(SRC)\cf\w32-detect-vc-version.pl $(CC) ]==16
 VCVER=VC100
 !elseif [ $(PERL) $(SRC)\cf\w32-detect-vc-version.pl $(CC) ]==15
 VCVER=VC90
@@ -164,21 +170,26 @@ MMDIR=$(SystemDrive)\Program Files (x86)\Common Files\Merge Modules
 !endif
 !endif
 
-!if exist("$(MMDIR)")
-
+#
+# Don't specify a runtime module when the Universal C Runtime
+# is available.
+#
+!if "$(APPVER)"=="10.0"
+RUNTIMEMODULE32=""
+RUNTIMEMODULE64=""
+!else
+! if exist("$(MMDIR)")
 RUNTIMEMODULE32="$(MMDIR)\Microsoft_$(VCVER)_$(CRTNAME)_x86.msm"
-!if "$(VCVER)"=="VC100"
-RUNTIMEMODULE64="$(MMDIR)\Microsoft_$(VCVER)_$(CRTNAME)_x64.msm"
-!else
+!  if "$(VCVER)"=="VC90" || "$(VCVER)"=="VC80"
 RUNTIMEMODULE64="$(MMDIR)\Microsoft_$(VCVER)_$(CRTNAME)_x86_x64.msm"
-!endif
-
-!else
+!  else
+RUNTIMEMODULE64="$(MMDIR)\Microsoft_$(VCVER)_$(CRTNAME)_x64.msm"
+!  endif
+! else
 RUNTIMEMODULE32="$(MSSDK)\Redist\VC\microsoft.vcxx.crt.x86_msm.msm"
 RUNTIMEMODULE64="$(MSSDK)\Redist\VC\microsoft.vcxx.crt.x64_msm.msm"
-
+! endif
 !endif
-
 
 ######################################################################
 # Heimdal installer

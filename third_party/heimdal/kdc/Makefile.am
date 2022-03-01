@@ -2,6 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+WFLAGS += $(WFLAGS_ENUM_CONV)
+
 AM_CPPFLAGS += $(INCLUDE_libintl) $(INCLUDE_openssl_crypto) -I$(srcdir)/../lib/krb5
 
 lib_LTLIBRARIES = simple_csr_authorizer.la  ipc_csr_authorizer.la \
@@ -112,6 +114,8 @@ altsecid_gss_preauth_authorizer_la_LDFLAGS = -module \
 					     $(LIB_openldap)
 endif
 
+libkdc_la_CPPFLAGS = -DBUILD_KDC_LIB $(AM_CPPFLAGS)
+
 libkdc_la_SOURCES = 		\
 	default_config.c 	\
 	ca.c			\
@@ -123,15 +127,15 @@ libkdc_la_SOURCES = 		\
 	krb5tgs.c		\
 	pkinit.c		\
 	pkinit-ec.c		\
+	mssfu.c			\
 	log.c			\
 	misc.c			\
 	kx509.c			\
 	token_validator.c	\
 	csr_authorizer.c	\
 	process.c		\
-	windc.c			\
-	gss_preauth.c		\
-	rx.h
+	kdc-plugin.c		\
+	gss_preauth.c
 
 KDC_PROTOS = $(srcdir)/kdc-protos.h $(srcdir)/kdc-private.h
 
@@ -168,7 +172,7 @@ endif
 $(libkdc_la_OBJECTS): $(srcdir)/version-script.map
 
 $(srcdir)/kdc-protos.h: $(libkdc_la_SOURCES)
-	cd $(srcdir) && perl ../cf/make-proto.pl -q -P comment -o kdc-protos.h $(libkdc_la_SOURCES) || rm -f kdc-protos.h
+	cd $(srcdir) && perl ../cf/make-proto.pl -E KDC_LIB -q -P comment -o kdc-protos.h $(libkdc_la_SOURCES) || rm -f kdc-protos.h
 
 $(srcdir)/kdc-private.h: $(libkdc_la_SOURCES)
 	cd $(srcdir) && perl ../cf/make-proto.pl -q -P comment -p kdc-private.h $(libkdc_la_SOURCES) || rm -f kdc-private.h
@@ -240,7 +244,7 @@ include_HEADERS = kdc.h $(srcdir)/kdc-protos.h
 noinst_HEADERS = $(srcdir)/kdc-private.h
 
 krb5dir = $(includedir)/krb5
-krb5_HEADERS = windc_plugin.h token_validator_plugin.h csr_authorizer_plugin.h
+krb5_HEADERS = kdc-audit.h kdc-plugin.h kdc-accessors.h token_validator_plugin.h csr_authorizer_plugin.h gss_preauth_authorizer_plugin.h
 
 build_HEADERZ = $(krb5_HEADERS) # XXX
 

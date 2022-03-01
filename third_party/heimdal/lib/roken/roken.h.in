@@ -356,18 +356,18 @@ ROKEN_CPP_START
 
 #define fsync   _commit
 
-/* The MSVC implementation of snprintf is not C99 compliant.  */
+#define _PIPE_BUFFER_SZ 8192
+#define pipe(fds) _pipe((fds), _PIPE_BUFFER_SZ, O_BINARY);
+
+#define ftruncate(fd, sz) _chsize((fd), (sz))
+
+#if !defined(HAVE_UCRT)
 #define snprintf    rk_snprintf
 #define vsnprintf   rk_vsnprintf
 #define vasnprintf  rk_vasnprintf
 #define vasprintf   rk_vasprintf
 #define asnprintf   rk_asnprintf
 #define asprintf    rk_asprintf
-
-#define _PIPE_BUFFER_SZ 8192
-#define pipe(fds) _pipe((fds), _PIPE_BUFFER_SZ, O_BINARY);
-
-#define ftruncate(fd, sz) _chsize((fd), (sz))
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rk_snprintf (char *str, size_t sz, const char *format, ...);
@@ -386,6 +386,7 @@ rk_vasnprintf (char **ret, size_t max_sz, const char *format, va_list args);
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
 rk_vsnprintf (char *str, size_t sz, const char *format, va_list args);
+#endif /* !defined(HAVE_UCRT) */
 
 /* missing stat.h predicates */
 
@@ -716,13 +717,6 @@ ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL mkostemp(char *, int);
 ROKEN_LIB_FUNCTION char * ROKEN_LIB_CALL mkdtemp(char *);
 #endif
 
-#ifndef HAVE_CGETENT
-#define cgetent rk_cgetent
-#define cgetstr rk_cgetstr
-ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL cgetent(char **, char **, const char *);
-ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL cgetstr(char *, const char *, char **);
-#endif
-
 #ifndef HAVE_INITGROUPS
 #define initgroups rk_initgroups
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL initgroups(const char *, gid_t);
@@ -912,27 +906,27 @@ ROKEN_LIB_VARIABLE extern int opterr;
 
 #ifndef HAVE_GETIPNODEBYNAME
 #define getipnodebyname rk_getipnodebyname
-ROKEN_LIB_FUNCTION struct hostent * ROKEN_LIB_CALL
-getipnodebyname (const char *, int, int, int *);
 #endif
+ROKEN_LIB_FUNCTION struct hostent * ROKEN_LIB_CALL
+rk_getipnodebyname(const char *, int, int, int *);
 
 #ifndef HAVE_GETIPNODEBYADDR
 #define getipnodebyaddr rk_getipnodebyaddr
-ROKEN_LIB_FUNCTION struct hostent * ROKEN_LIB_CALL
-getipnodebyaddr (const void *, size_t, int, int *);
 #endif
+ROKEN_LIB_FUNCTION struct hostent * ROKEN_LIB_CALL
+rk_getipnodebyaddr(const void *, size_t, int, int *);
 
 #ifndef HAVE_FREEHOSTENT
 #define freehostent rk_freehostent
-ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
-freehostent (struct hostent *);
 #endif
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+rk_freehostent(struct hostent *);
 
 #ifndef HAVE_COPYHOSTENT
 #define copyhostent rk_copyhostent
-ROKEN_LIB_FUNCTION struct hostent * ROKEN_LIB_CALL
-copyhostent (const struct hostent *);
 #endif
+ROKEN_LIB_FUNCTION struct hostent * ROKEN_LIB_CALL
+rk_copyhostent(const struct hostent *);
 
 #ifndef HAVE_SOCKLEN_T
 typedef int socklen_t;
@@ -998,27 +992,27 @@ struct addrinfo {
 
 #ifndef HAVE_GETADDRINFO
 #define getaddrinfo rk_getaddrinfo
-ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-getaddrinfo(const char *,
-	    const char *,
-	    const struct addrinfo *,
-	    struct addrinfo **);
 #endif
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+rk_getaddrinfo(const char *,
+	       const char *,
+	       const struct addrinfo *,
+	       struct addrinfo **);
 
 #ifndef HAVE_GETNAMEINFO
 #define getnameinfo rk_getnameinfo
-ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-getnameinfo(const struct sockaddr *, socklen_t,
-		char *, size_t,
-		char *, size_t,
-		int);
 #endif
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+rk_getnameinfo(const struct sockaddr *, socklen_t,
+	       char *, size_t,
+	       char *, size_t,
+	       int);
 
 #ifndef HAVE_FREEADDRINFO
 #define freeaddrinfo rk_freeaddrinfo
-ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
-freeaddrinfo(struct addrinfo *);
 #endif
+ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
+rk_freeaddrinfo(struct addrinfo *);
 
 #ifndef HAVE_GAI_STRERROR
 #define gai_strerror rk_gai_strerror

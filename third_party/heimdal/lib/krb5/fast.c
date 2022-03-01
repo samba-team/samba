@@ -138,6 +138,12 @@ make_local_fast_ap_fxarmor(krb5_context context,
     krb5_data empty;
     krb5_const_realm tgs_realm;
 
+    if (armor_ccache == NULL) {
+	krb5_set_error_message(context, EINVAL,
+			       "Armor credential cache required");
+	return EINVAL;
+    }
+
     krb5_data_zero(&empty);
     memset(&cred, 0, sizeof(cred));
 
@@ -224,6 +230,8 @@ make_fast_ap_fxarmor(krb5_context context,
 {
     KrbFastArmor *fxarmor = NULL;
     krb5_error_code ret;
+
+    *armor = NULL;
 
     ALLOC(fxarmor, 1);
     if (fxarmor == NULL) {
@@ -429,6 +437,7 @@ _krb5_fast_create_armor(krb5_context context,
 	    if (state->armor_data) {
 		free_KrbFastArmor(state->armor_data);
 		free(state->armor_data);
+                state->armor_data = NULL;
 	    }
 	    ret = make_fast_ap_fxarmor(context, state, realm,
 				       &state->armor_data);
@@ -539,8 +548,6 @@ _krb5_fast_wrap_req(krb5_context context,
     if (state->type == choice_PA_FX_FAST_REQUEST_armored_data) {
 	fxreq.u.armored_data.armor = state->armor_data;
 	state->armor_data = NULL;
-	if (ret)
-	    goto out;
 
 	heim_assert(state->armor_crypto != NULL,
 		    "FAST armor key missing when FAST started");
@@ -850,7 +857,7 @@ _krb5_fast_anon_pkinit_step(krb5_context context,
 
     ret = krb5_cc_set_config(context, ccache, cred.server,
 			     "fast_avail", &data);
-    if (ret)
+    if (ret && ret != KRB5_CC_NOSUPP)
 	return ret;
 
     if (_krb5_pk_is_kdc_verified(context, state->anon_pkinit_opt))

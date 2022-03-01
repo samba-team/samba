@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -33,47 +33,35 @@
 
 /* $Id$ */
 
-#ifndef __RX_H__
-#define __RX_H__
+#ifndef HEIMDAL_KDC_KDC_AUDIT_H
+#define HEIMDAL_KDC_KDC_AUDIT_H 1
 
-/* header of a RPC packet */
+/*
+ * KDC auditing
+ */
 
-enum rx_header_type {
-     HT_DATA = 1,
-     HT_ACK = 2,
-     HT_BUSY = 3,
-     HT_ABORT = 4,
-     HT_ACKALL = 5,
-     HT_CHAL = 6,
-     HT_RESP = 7,
-     HT_DEBUG = 8
-};
+/* auth event type enumeration, currently for AS only */
+#define KDC_AUTH_EVENT_INVALID			0   /* no event logged */
+#define KDC_AUTH_EVENT_CLIENT_AUTHORIZED	1   /* all authn/authz checks passed */
+#define KDC_AUTH_EVENT_CLIENT_UNKNOWN	        2   /* client unknown */
+#define KDC_AUTH_EVENT_CLIENT_LOCKED_OUT	3   /* client locked out */
+#define KDC_AUTH_EVENT_CLIENT_TIME_SKEW		4   /* client time skew */
+#define KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY	5   /* PA failed to validate long term key */
+#define KDC_AUTH_EVENT_VALIDATED_LONG_TERM_KEY	6   /* PA validated long term key */
+#define KDC_AUTH_EVENT_CLIENT_NAME_UNAUTHORIZED	7   /* couldn't map GSS/PKINIT name to principal */
+#define KDC_AUTH_EVENT_PREAUTH_FAILED		8   /* generic PA failure */
+#define KDC_AUTH_EVENT_PREAUTH_SUCCEEDED	9   /* generic (non-long term key) PA success */
 
-/* For flags in header */
+/*
+ * Audit keys to be queried using kdc_audit_getkv(). There are other keys
+ * intended for logging that are not defined below; the constants below are
+ * there to ease migration from the older auth_status HDB API.
+ */
 
-enum rx_header_flag {
-     HF_CLIENT_INITIATED = 1,
-     HF_REQ_ACK = 2,
-     HF_LAST = 4,
-     HF_MORE = 8
-};
+#define KDC_REQUEST_KV_AUTH_EVENT		"#auth_event"		/* heim_number_t */
+#define KDC_REQUEST_KV_PA_NAME			"pa"			/* heim_string_t */
+#define KDC_REQUEST_KV_PA_ETYPE			"pa-etype"		/* heim_number_t */
+#define KDC_REQUEST_KV_GSS_INITIATOR		"gss_initiator"		/* heim_string_t */
+#define KDC_REQUEST_KV_PKINIT_CLIENT_CERT	"pkinit_client_cert"	/* heim_string_t */
 
-struct rx_header {
-     uint32_t epoch;
-     uint32_t connid;		/* And channel ID */
-     uint32_t callid;
-     uint32_t seqno;
-     uint32_t serialno;
-     u_char type;
-     u_char flags;
-     u_char status;
-     u_char secindex;
-     uint16_t reserved;	/* ??? verifier? */
-     uint16_t serviceid;
-/* This should be the other way around according to everything but */
-/* tcpdump */
-};
-
-#define RX_HEADER_SIZE 28
-
-#endif /* __RX_H__ */
+#endif /* HEIMDAL_KDC_KDC_AUDIT_H */

@@ -2,6 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+WFLAGS += $(WFLAGS_ENUM_CONV)
+
 AM_CPPFLAGS += -I../asn1 -I$(srcdir)/../asn1
 AM_CPPFLAGS += $(INCLUDE_openldap) -DHDB_DB_DIR=\"$(DIR_hdbdir)\"
 AM_CPPFLAGS += -I$(srcdir)/../krb5
@@ -13,38 +15,40 @@ AM_CPPFLAGS += -I$(DBHEADER)
 endif
 
 BUILT_SOURCES = \
-	$(gen_files_hdb:.x=.c)	\
+	$(gen_files_hdb)	\
 	hdb_err.c \
 	hdb_err.h
 
 gen_files_hdb = \
-	asn1_Salt.x \
-	asn1_Key.x \
-	asn1_Event.x \
-	asn1_HDBFlags.x \
-	asn1_GENERATION.x \
-	asn1_HDB_Ext_PKINIT_acl.x \
-	asn1_HDB_Ext_PKINIT_cert.x \
-	asn1_HDB_Ext_PKINIT_hash.x \
-	asn1_HDB_Ext_Constrained_delegation_acl.x \
-	asn1_HDB_Ext_KeyRotation.x \
-	asn1_HDB_Ext_Lan_Manager_OWF.x \
-	asn1_HDB_Ext_Password.x \
-	asn1_HDB_Ext_Aliases.x \
-	asn1_HDB_Ext_KeySet.x \
-	asn1_HDB_extension.x \
-	asn1_HDB_extensions.x \
-	asn1_HDB_EncTypeList.x \
-	asn1_HDB_EntryOrAlias.x \
-	asn1_KeyRotation.x \
-	asn1_KeyRotationFlags.x \
-	asn1_HDB_entry.x \
-	asn1_HDB_entry_alias.x \
-	asn1_HDB_keyset.x \
-	asn1_Keys.x
+	asn1_Event.c \
+	asn1_GENERATION.c \
+	asn1_HDB_EncTypeList.c \
+	asn1_HDB_Ext_Aliases.c \
+	asn1_HDB_Ext_Constrained_delegation_acl.c \
+	asn1_HDB_Ext_KeyRotation.c \
+	asn1_HDB_Ext_KeySet.c \
+	asn1_HDB_Ext_Lan_Manager_OWF.c \
+	asn1_HDB_Ext_Password.c \
+	asn1_HDB_Ext_PKINIT_acl.c \
+	asn1_HDB_Ext_PKINIT_cert.c \
+	asn1_HDB_Ext_PKINIT_hash.c \
+	asn1_HDB_EntryOrAlias.c \
+	asn1_HDB_entry_alias.c \
+	asn1_HDB_entry.c \
+	asn1_HDB_extension.c \
+	asn1_HDB_extensions.c \
+	asn1_HDB_keyset.c \
+	asn1_HDBFlags.c \
+	asn1_Key.c \
+	asn1_KeyRotation.c \
+	asn1_KeyRotationFlags.c \
+	asn1_Keys.c \
+	asn1_Salt.c
 
 CLEANFILES = $(BUILT_SOURCES) $(gen_files_hdb) \
-	hdb_asn1{,-priv}.h* hdb_asn1_files hdb_asn1-template.[cx]
+	hdb_asn1{,-priv}.h hdb_asn1_files hdb_asn1-template.c \
+	hdb_asn1_syms.c hdb_asn1_oids.c hdb_asn1.json \
+	testhdb-*
 
 LDADD = libhdb.la \
 	../krb5/libkrb5.la \
@@ -139,13 +143,14 @@ $(srcdir)/hdb-protos.h: $(dist_libhdb_la_SOURCES)
 $(srcdir)/hdb-private.h: $(dist_libhdb_la_SOURCES)
 	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -p hdb-private.h $(dist_libhdb_la_SOURCES) || rm -f hdb-private.h
 
-$(gen_files_hdb) hdb_asn1.hx hdb_asn1-priv.hx: hdb_asn1_files
+$(gen_files_hdb) hdb_asn1.h hdb_asn1-priv.h: hdb_asn1_files
+	for genfile in '$(gen_files_hdb)'; do \
+		$(CLANG_FORMAT) -style=$(CLANG_FORMAT_STYLE) -i $${genfile}; \
+	done
 
 hdb_asn1_files: $(ASN1_COMPILE_DEP) $(srcdir)/hdb.asn1
-	$(ASN1_COMPILE) --sequence=HDB-extensions	\
-			--sequence=HDB-Ext-KeyRotation	\
-			--sequence=HDB-Ext-KeySet	\
-			--sequence=Keys $(srcdir)/hdb.asn1 hdb_asn1
+	$(ASN1_COMPILE) --option-file=$(srcdir)/hdb.opt $(srcdir)/hdb.asn1 hdb_asn1
+	@$(CLANG_FORMAT) -style=$(CLANG_FORMAT_STYLE) -i $$(cat hdb_asn1_files)
 
 # to help stupid solaris make
 

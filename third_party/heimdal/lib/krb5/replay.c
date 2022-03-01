@@ -220,8 +220,10 @@ krb5_rc_store(krb5_context context,
     }
     rk_cloexec_file(f);
     count = fread(&tmp, sizeof(ent), 1, f);
-    if(count != 1)
+    if (count != 1) {
+	fclose(f);
 	return KRB5_RC_IO_UNKNOWN;
+    }
     t = ent.stamp - tmp.stamp;
     while(fread(&tmp, sizeof(ent), 1, f)){
 	if(tmp.stamp < t)

@@ -728,6 +728,7 @@ DES_cfb64_encrypt(const void *in, void *out,
 	int i = *num;
 	unsigned char c;
 
+	memset(tmp, 0, DES_CBLOCK_LEN);
 	while (length > 0) {
 	    if (i == 0) {
 		DES_encrypt(uiv, ks, 1);

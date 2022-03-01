@@ -108,7 +108,8 @@ get_fastuser_crypto(astgs_request_t r,
 		    krb5_crypto *crypto)
 {
     krb5_principal fast_princ;
-    hdb_entry_ex *fast_user = NULL;
+    HDB *fast_db;
+    hdb_entry *fast_user = NULL;
     Key *cookie_key = NULL;
     krb5_crypto fast_crypto = NULL;
     krb5_error_code ret;
@@ -122,7 +123,7 @@ get_fastuser_crypto(astgs_request_t r,
 	goto out;
 
     ret = _kdc_db_fetch(r->context, r->config, fast_princ,
-			HDB_F_GET_FAST_COOKIE, NULL, NULL, &fast_user);
+			HDB_F_GET_FAST_COOKIE, NULL, &fast_db, &fast_user);
     if (ret)
 	goto out;
 
@@ -130,7 +131,7 @@ get_fastuser_crypto(astgs_request_t r,
 	ret = _kdc_get_preferred_key(r->context, r->config, fast_user,
 				     "fast-cookie", &enctype, &cookie_key);
     else
-	ret = hdb_enctype2key(r->context, &fast_user->entry, NULL,
+	ret = hdb_enctype2key(r->context, fast_user, NULL,
 			      enctype, &cookie_key);
     if (ret)
 	goto out;
@@ -148,7 +149,7 @@ get_fastuser_crypto(astgs_request_t r,
 
  out:
     if (fast_user)
-	_kdc_free_ent(r->context, fast_user);
+	_kdc_free_ent(r->context, fast_db, fast_user);
     if (fast_crypto)
 	krb5_crypto_destroy(r->context, fast_crypto);
     krb5_free_principal(r->context, fast_princ);
@@ -457,7 +458,7 @@ fast_unwrap_request(astgs_request_t r,
     krb5_principal armor_server_principal = NULL;
     char *armor_client_principal_name = NULL;
     char *armor_server_principal_name = NULL;
-    PA_FX_FAST_REQUEST fxreq = {0};
+    PA_FX_FAST_REQUEST fxreq;
     krb5_auth_context ac = NULL;
     krb5_ticket *ticket = NULL;
     krb5_flags ap_req_options;
@@ -466,11 +467,14 @@ fast_unwrap_request(astgs_request_t r,
     krb5_boolean explicit_armor;
     krb5_error_code ret;
     krb5_ap_req ap_req;
-    KrbFastReq fastreq = {0};
+    KrbFastReq fastreq;
     const PA_DATA *pa;
     krb5_data data;
     size_t len;
     int i = 0;
+
+    memset(&fxreq, 0, sizeof(fxreq));
+    memset(&fastreq, 0, sizeof(fastreq));
 
     pa = _kdc_find_padata(&r->req, &i, KRB5_PADATA_FX_FAST);
     if (pa == NULL) {
@@ -548,7 +552,7 @@ fast_unwrap_request(astgs_request_t r,
 	ret = _kdc_db_fetch(r->context, r->config, armor_server_principal,
 			    HDB_F_GET_KRBTGT | HDB_F_DELAY_NEW_KEYS,
 			    (krb5uint32 *)ap_req.ticket.enc_part.kvno,
-			    NULL, &r->armor_server);
+			    &r->armor_serverdb, &r->armor_server);
 	if(ret == HDB_ERR_NOT_FOUND_HERE) {
 	    free_AP_REQ(&ap_req);
 	    kdc_log(r->context, r->config, 5,
@@ -561,7 +565,7 @@ fast_unwrap_request(astgs_request_t r,
 	    goto out;
 	}
 
-	ret = hdb_enctype2key(r->context, &r->armor_server->entry, NULL,
+	ret = hdb_enctype2key(r->context, r->armor_server, NULL,
 			      ap_req.ticket.enc_part.etype,
 			      &r->armor_key);
 	if (ret) {
@@ -591,8 +595,8 @@ fast_unwrap_request(astgs_request_t r,
 				&r->armor_ticket->ticket,
 				armor_server_principal_name);
 	if (ret) {
-	    _kdc_audit_addreason((kdc_request_t)r,
-				 "Armor TGT expired or invalid");
+	    kdc_audit_addreason((kdc_request_t)r,
+				"Armor TGT expired or invalid");
 	    goto out;
 	}
 	ticket = r->armor_ticket;
@@ -603,8 +607,8 @@ fast_unwrap_request(astgs_request_t r,
     }
 
     krb5_unparse_name(r->context, ticket->client, &armor_client_principal_name);
-    _kdc_audit_addkv((kdc_request_t)r, 0, "armor_client_name", "%s",
-		      armor_client_principal_name ? armor_client_principal_name : "<unknown>");
+    kdc_audit_addkv((kdc_request_t)r, 0, "armor_client_name", "%s",
+		    armor_client_principal_name ? armor_client_principal_name : "<unknown>");
 
     if (ac->remote_subkey == NULL) {
 	krb5_auth_con_free(r->context, ac);
@@ -833,7 +837,8 @@ _kdc_fast_check_armor_pac(astgs_request_t r)
     krb5_boolean ad_kdc_issued = FALSE;
     krb5_pac mspac = NULL;
     krb5_principal armor_client_principal = NULL;
-    hdb_entry_ex *armor_client = NULL;
+    HDB *armor_db;
+    hdb_entry *armor_client = NULL;
     char *armor_client_principal_name = NULL;
 
     flags = HDB_F_FOR_TGS_REQ;
@@ -856,7 +861,7 @@ _kdc_fast_check_armor_pac(astgs_request_t r)
 
     ret = _kdc_db_fetch_client(r->context, r->config, flags,
 			       armor_client_principal, armor_client_principal_name,
-			       r->req.req_body.realm, NULL, &armor_client);
+			       r->req.req_body.realm, &armor_db, &armor_client);
     if (ret)
 	goto out;
 
@@ -885,7 +890,7 @@ _kdc_fast_check_armor_pac(astgs_request_t r)
 out:
     krb5_xfree(armor_client_principal_name);
     if (armor_client)
-	_kdc_free_ent(r->context, armor_client);
+	_kdc_free_ent(r->context, armor_db, armor_client);
     krb5_free_principal(r->context, armor_client_principal);
     krb5_pac_free(r->context, mspac);
 

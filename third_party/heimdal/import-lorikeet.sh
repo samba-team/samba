@@ -101,33 +101,33 @@ samba_create() {
 		echo "git clean -d -x -f"
 		git clean -d -x -f
 		echo "git read-tree..."
-		git read-tree -u --prefix=source4/heimdal-new/ local-heimdal/$lorikeet_branch || bailout $?
+		git read-tree -u --prefix=third_party/heimdal-new/ local-heimdal/$lorikeet_branch || bailout $?
 		echo "git reset --mixed HEAD"
 		git reset --mixed HEAD
 		echo "swap old -> new"
-		mv source4/heimdal source4/heimdal-old || bailout $?
-		rsync -a source4/heimdal-new/ source4/heimdal || bailout $?
+		mv third_party/heimdal third_party/heimdal-old || bailout $?
+		rsync -a third_party/heimdal-new/ third_party/heimdal || bailout $?
 	#	echo "PS1=\"'import-heimdal shell'>\"" > ../.bashrc.samba_create
 	#	bash --rcfile ../.bashrc.samba_create
 	#	bailout 255
 		echo "add changed files to the index"
-		git add -u source4/heimdal
+		git add -u third_party/heimdal
 		echo "commit the changed files blindly"
-		git commit --no-verify -m "s4:heimdal: import $lorikeet_branch (commit $lorikeet_commit)"
-		echo "cleanup source4/heimdal"
-		rm -rf source4/heimdal
-		git checkout source4/heimdal
+		git commit --no-verify -m "third_party/heimdal: import $lorikeet_branch (commit $lorikeet_commit)"
+		echo "cleanup third_party/heimdal"
+		rm -rf third_party/heimdal
+		git checkout third_party/heimdal
 		echo "try to build samba"
 		build_samba || {
 			echo ""
 			echo "Now build the tree and make it compile."
-			echo "Missing files can be copied from source4/heimdal-new/"
+			echo "Missing files can be copied from third_party/heimdal-new/"
 			echo "Also run make test!"
 		}
 		echo ""
-		echo "Then do a 'git add source4/heimdal' and a 'git commit --amend'"
+		echo "Then do a 'git add third_party/heimdal' and a 'git commit --amend'"
 		echo "and write a useful commit message..."
-		echo "Then commit all needed changes outside of source4/heimdal"
+		echo "Then commit all needed changes outside of third_party/heimdal"
 		echo "maybe splitted into multiple commits."
 		echo ""
 		echo "!!!!!!!!!"

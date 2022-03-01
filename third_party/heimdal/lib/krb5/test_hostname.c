@@ -48,10 +48,10 @@ expand_hostname(krb5_context context, const char *host)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_expand_hostname(%s)", host);
 
-    free(h);
-
     if (debug_flag)
 	printf("hostname: %s -> %s\n", host, h);
+
+    free(h);
 
     ret = krb5_expand_hostname_realms(context, host, &h, &r);
     if (ret)

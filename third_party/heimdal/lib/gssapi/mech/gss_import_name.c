@@ -31,6 +31,7 @@
 static OM_uint32
 _gss_import_export_name(OM_uint32 *minor_status,
     const gss_buffer_t input_name_buffer,
+    const gss_OID name_type,
     gss_name_t *output_name)
 {
 	OM_uint32 major_status;
@@ -64,6 +65,24 @@ _gss_import_export_name(OM_uint32 *minor_status,
 	}
 	p += 2;
 	len -= 2;
+
+        /*
+         * If the name token is a composite token (TOK_ID 0x04 0x02) then per
+         * RFC6680 everything after that is implementation-specific.  This
+         * mech-glue is pluggable however, so we need the format of the rest of
+         * the header to be stable, otherwise we couldn't reliably determine
+         * what mechanism the token is for and we'd have to try all of them.
+         *
+         * So... we keep the same format for the exported composite name token
+         * as for normal exported name tokens (see RFC2743, section 3.2), with
+         * the TOK_ID 0x04 0x02, but only up to the mechanism OID.  We don't
+         * enforce that there be a NAME_LEN in the exported composite name
+         * token, or that it match the length of the remainder of the token.
+         *
+         * FYI, at least one out-of-tree mechanism implements exported
+         * composite name tokens as the same as exported name tokens with
+         * attributes appended and the NAME_LEN not modified to match.
+         */
 
 	/*
 	 * Get the mech length and the name length and sanity
@@ -107,17 +126,19 @@ _gss_import_export_name(OM_uint32 *minor_status,
 
 	mech_oid.elements = p;
 
-	if (len < t + 4)
-		return (GSS_S_BAD_NAME);
-	p += t;
-	len -= t;
+        if (!composite) {
+                if (len < t + 4)
+                        return (GSS_S_BAD_NAME);
+                p += t;
+                len -= t;
 
-	t = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
-	p += 4;
-	len -= 4;
+                t = ((unsigned long)p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
+                /* p += 4; // we're done using `p' now */
+                len -= 4;
 
-	if (!composite && len != t)
-		return (GSS_S_BAD_NAME);
+                if (len != t)
+                        return (GSS_S_BAD_NAME);
+        }
 
 	m = __gss_get_mechanism(&mech_oid);
 	if (!m || !m->gm_import_name)
@@ -127,7 +148,7 @@ _gss_import_export_name(OM_uint32 *minor_status,
 	 * Ask the mechanism to import the name.
 	 */
 	major_status = m->gm_import_name(minor_status,
-	    input_name_buffer, GSS_C_NT_EXPORT_NAME, &new_canonical_name);
+            input_name_buffer, name_type, &new_canonical_name);
 	if (major_status != GSS_S_COMPLETE) {
 		_gss_mg_error(m, *minor_status);
 		return major_status;
@@ -156,6 +177,7 @@ _gss_import_export_name(OM_uint32 *minor_status,
  * - GSS_C_NT_USER_NAME
  * - GSS_C_NT_HOSTBASED_SERVICE
  * - GSS_C_NT_EXPORT_NAME
+ * - GSS_C_NT_COMPOSITE_EXPORT
  * - GSS_C_NT_ANONYMOUS
  * - GSS_KRB5_NT_PRINCIPAL_NAME
  *
@@ -198,19 +220,14 @@ gss_import_name(OM_uint32 *minor_status,
 	_gss_load_mech();
 
 	/*
-	 * Use GSS_NT_USER_NAME as default name type.
-	 */
-	if (name_type == GSS_C_NO_OID)
-		name_type = GSS_C_NT_USER_NAME;
-
-	/*
 	 * If this is an exported name, we need to parse it to find
 	 * the mechanism and then import it as an MN. See RFC 2743
 	 * section 3.2 for a description of the format.
 	 */
-	if (gss_oid_equal(name_type, GSS_C_NT_EXPORT_NAME)) {
-		return _gss_import_export_name(minor_status,
-		    input_name_buffer, output_name);
+	if (gss_oid_equal(name_type, GSS_C_NT_EXPORT_NAME) ||
+            gss_oid_equal(name_type, GSS_C_NT_COMPOSITE_EXPORT)) {
+                return _gss_import_export_name(minor_status, input_name_buffer,
+                                               name_type, output_name);
 	}
 
 
@@ -221,13 +238,16 @@ gss_import_name(OM_uint32 *minor_status,
 		return (GSS_S_FAILURE);
 	}
 
-	major_status = _gss_intern_oid(minor_status,
-	    name_type, &name->gn_type);
-	if (major_status) {
-		rname = (gss_name_t)name;
-		gss_release_name(&ms, (gss_name_t *)&rname);
-		return (GSS_S_FAILURE);
-	}
+	if (name_type != GSS_C_NO_OID) {
+		major_status = _gss_intern_oid(minor_status,
+					       name_type, &name->gn_type);
+		if (major_status) {
+			rname = (gss_name_t)name;
+			gss_release_name(&ms, (gss_name_t *)&rname);
+			return (GSS_S_FAILURE);
+		}
+	} else
+		name->gn_type = GSS_C_NO_OID;
 
 	major_status = _gss_copy_buffer(minor_status,
 	    input_name_buffer, &name->gn_value);
@@ -245,11 +265,13 @@ gss_import_name(OM_uint32 *minor_status,
                 if ((m->gm_mech.gm_flags & GM_USE_MG_NAME))
                     continue;
 
-		major_status = gss_test_oid_set_member(minor_status,
-		    name_type, m->gm_name_types, &present);
+		if (name_type != GSS_C_NO_OID) {
+			    major_status = gss_test_oid_set_member(minor_status,
+				    name_type, m->gm_name_types, &present);
 
-		if (major_status || present == 0)
-			continue;
+			    if (GSS_ERROR(major_status) || present == 0)
+					continue;
+		}
 
 		mn = malloc(sizeof(struct _gss_mechanism_name));
 		if (!mn) {

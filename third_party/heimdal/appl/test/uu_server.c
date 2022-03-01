@@ -102,6 +102,8 @@ proto (int sock, const char *service)
 				  &in_creds, &out_creds);
     if(status)
 	krb5_err(context, 1, status, "krb5_get_credentials");
+    krb5_cc_close(context, ccache);
+    ccache = NULL;
 
     status = krb5_cc_default(context, &ccache);
     if(status)
@@ -120,6 +122,8 @@ proto (int sock, const char *service)
 			   NULL,
 			   NULL,
 			   NULL);
+    krb5_cc_close(context, ccache);
+    ccache = NULL;
 
     if (status)
 	krb5_err(context, 1, status, "krb5_sendauth");
@@ -133,6 +137,9 @@ proto (int sock, const char *service)
 	printf ("Server is `%s'\n", str);
 	free(str);
     }
+
+    krb5_free_principal(context, in_creds.client);
+    krb5_free_principal(context, in_creds.server);
 
     krb5_data_zero (&data);
     krb5_data_zero (&packet);

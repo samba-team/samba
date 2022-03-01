@@ -36,6 +36,11 @@
 #include "strpftime-test.h"
 #endif
 
+#if defined(_WIN32)
+# define timezone _timezone
+# define tzname   _tzname
+#endif
+
 static const char *abb_weekdays[] = {
     "Sun",
     "Mon",
@@ -372,7 +377,7 @@ strftime (char *buf, size_t maxsize, const char *format,
 		break;
 	    case '\0' :
 		--format;
-		/* FALLTHROUGH */
+                fallthrough;
 	    case '%' :
 		ret = snprintf (buf, maxsize - n,
 				"%%");

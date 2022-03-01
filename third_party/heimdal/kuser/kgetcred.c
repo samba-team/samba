@@ -283,6 +283,9 @@ main(int argc, char **argv)
 
 	    ret = krb5_sname_to_principal(context, hname, sname,
 					   KRB5_NT_SRV_HST, &server2);
+            if (ret)
+                krb5_err(context, 1, ret, "krb5_sname_to_principal %s %s",
+                         sname, hname);
             sname = krb5_principal_get_comp_string(context, server2, 0);
             hname = krb5_principal_get_comp_string(context, server2, 1);
 

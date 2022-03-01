@@ -57,7 +57,7 @@ const struct units _kdc_digestunits[] = {
 static krb5_error_code
 get_digest_key(krb5_context context,
 	       krb5_kdc_configuration *config,
-	       hdb_entry_ex *server,
+	       hdb_entry *server,
 	       krb5_crypto *crypto)
 {
     krb5_error_code ret;
@@ -81,12 +81,12 @@ get_digest_key(krb5_context context,
 
 static char *
 get_ntlm_targetname(krb5_context context,
-		    hdb_entry_ex *client)
+		    hdb_entry *client)
 {
     char *targetname, *p;
 
     targetname = strdup(krb5_principal_get_realm(context,
-						 client->entry.principal));
+						 client->principal));
     if (targetname == NULL)
 	return NULL;
 
@@ -101,7 +101,7 @@ get_ntlm_targetname(krb5_context context,
 static krb5_error_code
 fill_targetinfo(krb5_context context,
 		char *targetname,
-		hdb_entry_ex *client,
+		hdb_entry *client,
 		krb5_data *data)
 {
     struct ntlm_targetinfo ti;
@@ -113,7 +113,7 @@ fill_targetinfo(krb5_context context,
     memset(&ti, 0, sizeof(ti));
 
     ti.domainname = targetname;
-    p = client->entry.principal;
+    p = client->principal;
     str = krb5_principal_get_comp_string(context, p, 0);
     if (str != NULL &&
 	(strcmp("host", str) == 0 ||
@@ -168,7 +168,7 @@ get_password_entry(krb5_context context,
 {
     krb5_principal clientprincipal;
     krb5_error_code ret;
-    hdb_entry_ex *user;
+    hdb_entry *user;
     HDB *db;
 
     /* get username */
@@ -182,7 +182,7 @@ get_password_entry(krb5_context context,
     if (ret)
 	return ret;
 
-    ret = hdb_entry_get_password(context, db, &user->entry, password);
+    ret = hdb_entry_get_password(context, db, user, password);
     if (ret || password == NULL) {
 	if (ret == 0) {
 	    ret = EINVAL;
@@ -190,7 +190,7 @@ get_password_entry(krb5_context context,
 	}
 	memset(user, 0, sizeof(*user));
     }
-    _kdc_free_ent (context, user);
+    _kdc_free_ent (context, db, user);
     return ret;
 }
 
@@ -217,8 +217,10 @@ _kdc_do_digest(krb5_context context,
     size_t size;
     krb5_storage *sp = NULL;
     Checksum res;
-    hdb_entry_ex *server = NULL, *user = NULL;
-    hdb_entry_ex *client = NULL;
+    HDB *serverdb, *userdb;
+    hdb_entry *server = NULL, *user = NULL;
+    HDB *clientdb;
+    hdb_entry *client = NULL;
     char *client_name = NULL, *password = NULL;
     krb5_data serverNonce;
 
@@ -292,7 +294,7 @@ _kdc_do_digest(krb5_context context,
 	krb5_clear_error_message(context);
 
 	ret = _kdc_db_fetch(context, config, principal,
-			    HDB_F_GET_SERVER, NULL, NULL, &server);
+			    HDB_F_GET_SERVER, NULL, &serverdb, &server);
 	if (ret)
 	    goto out;
 
@@ -314,12 +316,12 @@ _kdc_do_digest(krb5_context context,
 	}
 
 	ret = _kdc_db_fetch(context, config, principal,
-			    HDB_F_GET_CLIENT, NULL, NULL, &client);
+			    HDB_F_GET_CLIENT, NULL, &clientdb, &client);
 	krb5_free_principal(context, principal);
 	if (ret)
 	    goto out;
 
-	if (client->entry.flags.allow_digest == 0) {
+	if (client->flags.allow_digest == 0) {
 	    kdc_log(context, config, 2,
 		    "Client %s tried to use digest "
 		    "but is not allowed to",
@@ -877,7 +879,7 @@ _kdc_do_digest(krb5_context context,
 		goto failed;
 
 	    ret = _kdc_db_fetch(context, config, clientprincipal,
-				HDB_F_GET_CLIENT, NULL, NULL, &user);
+				HDB_F_GET_CLIENT, NULL, &userdb, &user);
 	    krb5_free_principal(context, clientprincipal);
 	    if (ret) {
 		krb5_set_error_message(context, ret,
@@ -886,7 +888,7 @@ _kdc_do_digest(krb5_context context,
 		goto failed;
 	    }
 
-	    ret = hdb_enctype2key(context, &user->entry, NULL,
+	    ret = hdb_enctype2key(context, user, NULL,
 				  ETYPE_ARCFOUR_HMAC_MD5, &key);
 	    if (ret) {
 		krb5_set_error_message(context, ret,
@@ -1163,7 +1165,7 @@ _kdc_do_digest(krb5_context context,
 	    goto failed;
 
 	ret = _kdc_db_fetch(context, config, clientprincipal,
-			    HDB_F_GET_CLIENT, NULL, NULL, &user);
+			    HDB_F_GET_CLIENT, NULL, &userdb, &user);
 	krb5_free_principal(context, clientprincipal);
 	if (ret) {
 	    krb5_set_error_message(context, ret, "NTLM user %s not in database",
@@ -1214,7 +1216,7 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 	}
 
-	ret = hdb_enctype2key(context, &user->entry, NULL,
+	ret = hdb_enctype2key(context, user, NULL,
 			      ETYPE_ARCFOUR_HMAC_MD5, &key);
 	if (ret) {
 	    krb5_set_error_message(context, ret, "NTLM missing arcfour key");
@@ -1466,6 +1468,10 @@ _kdc_do_digest(krb5_context context,
     ret = krb5_encrypt_EncryptedData(context, crypto, KRB5_KU_DIGEST_ENCRYPT,
 				     buf.data, buf.length, 0,
 				     &rep.innerRep);
+    if (ret) {
+        krb5_prepend_error_message(context, ret, "Failed to encrypt digest: ");
+        goto out;
+    }
 
     ASN1_MALLOC_ENCODE(DigestREP, reply->data, reply->length, &rep, &size, ret);
     if (ret) {
@@ -1490,11 +1496,11 @@ _kdc_do_digest(krb5_context context,
     if (sp)
 	krb5_storage_free(sp);
     if (user)
-	_kdc_free_ent (context, user);
+	_kdc_free_ent (context, userdb, user);
     if (server)
-	_kdc_free_ent (context, server);
+	_kdc_free_ent (context, serverdb, server);
     if (client)
-	_kdc_free_ent (context, client);
+	_kdc_free_ent (context, clientdb, client);
     if (password) {
 	memset(password, 0, strlen(password));
 	free (password);

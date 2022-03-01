@@ -95,7 +95,7 @@ echo $password > ${objdir}/foopassword
 
 echo "Starting kdc" ; > messages.log
 env ${HEIM_MALLOC_DEBUG} ${kdc} --detach --testing ||
-    { echo "kdc failed to start"; exit 1; }
+    { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
 trap "kill -9 ${kdcpid}; echo signal killing kdc; cat messages.log; exit 1;" EXIT

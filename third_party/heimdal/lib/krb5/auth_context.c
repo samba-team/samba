@@ -557,9 +557,8 @@ krb5_auth_con_getauthenticator(krb5_context context,
     if (*authenticator == NULL)
 	return krb5_enomem(context);
 
-    copy_Authenticator(auth_context->authenticator,
-		       *authenticator);
-    return 0;
+    return copy_Authenticator(auth_context->authenticator,
+                              *authenticator);
 }
 
 

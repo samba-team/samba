@@ -314,7 +314,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo Starting kdc ; > messages.log
-${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
 echo "starting master" ; > messages.log

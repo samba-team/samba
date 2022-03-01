@@ -97,11 +97,15 @@
 
 #ifdef LIBINTL
 #include <libintl.h>
+#undef N_
 #define N_(x,y) gettext(x)
+#undef NP_
 #define NP_(x,y) (x)
 #define getarg_i18n gettext
 #else
+#undef N_
 #define N_(x,y) (x)
+#undef NP_
 #define NP_(x,y) (x)
 #define getarg_i18n NULL
 #define bindtextdomain(package, localedir)

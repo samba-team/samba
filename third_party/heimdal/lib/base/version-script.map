@@ -29,8 +29,14 @@ HEIMDAL_BASE_1.0 {
 		heim_array_iterate_reverse_f;
 		heim_array_set_value;
 		heim_audit_addkv;
+		heim_audit_addkv_number;
+		heim_audit_addkv_object;
 		heim_audit_addkv_timediff;
+		heim_audit_setkv_bool;
+		heim_audit_setkv_number;
+		heim_audit_setkv_object;
 		heim_audit_addreason;
+		heim_audit_getkv;
 		heim_audit_trail;
 		heim_audit_vaddkv;
 		heim_audit_vaddreason;
@@ -147,6 +153,7 @@ HEIMDAL_BASE_1.0 {
 		heim_null_create;
 		heim_number_create;
 		heim_number_get_int;
+		heim_number_get_long;
 		heim_number_get_type_id;
 		heim_openlog;
 		heim_path_copy;

@@ -361,6 +361,7 @@ check_authorityKeyIdentifier(hx509_validate_ctx ctx,
 	}
     }
 
+    free_AuthorityKeyIdentifier(&ai);
     return 0;
 }
 
@@ -771,6 +772,7 @@ check_certificatePolicies(hx509_validate_ctx ctx,
                         validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
                                        " Unknown:%s", qoid);
                     }
+                    free_UserNotice(&un);
                 }
             } else {
                 validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
@@ -842,8 +844,11 @@ check_policyMappings(hx509_validate_ctx ctx,
         else
             validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
                            "ret=%d while decoding PolicyMappings\n", ret);
+        free(sdpoid);
+        free(idpoid);
     }
 
+    free_PolicyMappings(&pm);
     return 0;
 }
 

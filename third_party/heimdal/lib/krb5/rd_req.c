@@ -351,11 +351,6 @@ krb5_verify_ap_req2(krb5_context context,
 					     ap_req->ticket.sname,
 					     ap_req->ticket.realm);
     if (ret) goto out;
-    ret = _krb5_principalname2krb5_principal(context,
-					     &t->client,
-					     t->ticket.cname,
-					     t->ticket.crealm);
-    if (ret) goto out;
 
     ret = decrypt_authenticator (context,
 				 &t->ticket.key,
@@ -386,6 +381,27 @@ krb5_verify_ap_req2(krb5_context context,
 	    goto out;
 	}
     }
+
+    /*
+     * The ticket authenticates the client, and conveys naming attributes that
+     * we want to expose in GSS using RFC6680 APIs.
+     *
+     * So we same the ticket enc-part in the client's krb5_principal object
+     * (note though that the session key will be absent in that copy of the
+     * ticket enc-part).
+     */
+    ret = _krb5_ticket2krb5_principal(context, &t->client, &t->ticket,
+                                      ac->authenticator->authorization_data);
+    if (ret) goto out;
+
+    t->client->nameattrs->peer_realm =
+        calloc(1, sizeof(t->client->nameattrs->peer_realm[0]));
+    if (t->client->nameattrs->peer_realm == NULL) {
+        ret = krb5_enomem(context);
+        goto out;
+    }
+    ret = copy_Realm(&ap_req->ticket.realm, t->client->nameattrs->peer_realm);
+    if (ret) goto out;
 
     /* check addresses */
 
@@ -458,7 +474,7 @@ krb5_verify_ap_req2(krb5_context context,
 
     if (ap_req_options) {
 	*ap_req_options = 0;
-	if (ac->keytype != (krb5_enctype)ETYPE_NULL)
+	if (ac->keytype != ETYPE_NULL)
 	    *ap_req_options |= AP_OPTS_USE_SUBKEY;
 	if (ap_req->ap_options.use_session_key)
 	    *ap_req_options |= AP_OPTS_USE_SESSION_KEY;
@@ -791,11 +807,10 @@ get_key_from_keytab(krb5_context context,
 			     kvno,
 			     ap_req->ticket.enc_part.etype,
 			     &entry);
-    if(ret)
-	goto out;
-    ret = krb5_copy_keyblock(context, &entry.keyblock, out_key);
-    krb5_kt_free_entry (context, &entry);
-out:
+    if(ret == 0) {
+        ret = krb5_copy_keyblock(context, &entry.keyblock, out_key);
+        krb5_kt_free_entry(context, &entry);
+    }
     if(keytab == NULL)
 	krb5_kt_close(context, real_keytab);
 
@@ -840,7 +855,8 @@ krb5_rd_req_ctx(krb5_context context,
     krb5_keytab id = NULL, keytab = NULL;
     krb5_principal service = NULL;
 
-    *outctx = NULL;
+    if (outctx)
+        *outctx = NULL;
 
     o = calloc(1, sizeof(*o));
     if (o == NULL)
@@ -1021,6 +1037,12 @@ krb5_rd_req_ctx(krb5_context context,
             goto out;
     }
 
+    ret = krb5_ticket_get_authorization_data_type(context, o->ticket,
+                                                  KRB5_AUTHDATA_KDC_ISSUED,
+                                                  NULL);
+    if (ret == 0)
+        o->ticket->client->nameattrs->kdc_issued_verified = 1;
+
     /* If there is a PAC, verify its server signature */
     if (inctx == NULL || inctx->check_pac) {
 	krb5_pac pac;
@@ -1042,28 +1064,36 @@ krb5_rd_req_ctx(krb5_context context,
 				  o->ticket->client,
 				  o->keyblock,
 				  NULL);
+            if (ret == 0)
+                o->ticket->client->nameattrs->pac_verified = 1;
 	    if (ret == 0 && (context->flags & KRB5_CTX_F_REPORT_CANONICAL_CLIENT_NAME)) {
 		krb5_error_code ret2;
 		krb5_principal canon_name;
 
 		ret2 = _krb5_pac_get_canon_principal(context, pac, &canon_name);
 		if (ret2 == 0) {
-		    krb5_free_principal(context, o->ticket->client);
-		    o->ticket->client = canon_name;
+                    free_Realm(&o->ticket->client->realm);
+                    free_PrincipalName(&o->ticket->client->name);
+                    ret = copy_Realm(&canon_name->realm, &o->ticket->client->realm);
+                    if (ret == 0)
+                        ret = copy_PrincipalName(&canon_name->name, &o->ticket->client->name);
+                    krb5_free_principal(context, canon_name);
 		} else if (ret2 != ENOENT)
 		    ret = ret2;
 	    }
-	    krb5_pac_free(context, pac);
-	    if (ret)
+	    if (ret) {
+		krb5_pac_free(context, pac);
 		goto out;
+	    }
+	    o->ticket->client->nameattrs->pac = pac;
 	} else
 	  ret = 0;
     }
 out:
 
-    if (ret || outctx == NULL) {
+    if (ret || outctx == NULL)
 	krb5_rd_req_out_ctx_free(context, o);
-    } else
+    else
 	*outctx = o;
 
     free_AP_REQ(&ap_req);

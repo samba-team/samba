@@ -53,23 +53,7 @@ struct prop_data{
 #define NEVERDATE ((1U << 31) - 1)
 #endif
 
-krb5_error_code v5_prop(krb5_context, HDB*, hdb_entry_ex*, void*);
+krb5_error_code v5_prop(krb5_context, HDB*, hdb_entry*, void*);
 int mit_prop_dump(void*, const char*);
-
-struct v4_principal {
-    char name[64];
-    char instance[64];
-    DES_cblock key;
-    int kvno;
-    int mkvno;
-    time_t exp_date;
-    time_t mod_date;
-    char mod_name[64];
-    char mod_instance[64];
-    int max_life;
-};
-
-int v4_prop(void*, struct v4_principal*);
-int v4_prop_dump(void *arg, const char*);
 
 #endif /* __HPROP_H__ */

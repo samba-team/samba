@@ -81,8 +81,8 @@ test_alname(krb5_context context, krb5_const_realm realm,
 	}
 	krb5_err(context, 1, ret, "krb5_aname_to_localname: %s -> %s",
 		 princ, localuser);
-	free(princ);
     }
+    free(princ);
 
     if (strcmp(localname, localuser) != 0) {
 	if (ok)

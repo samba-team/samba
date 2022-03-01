@@ -91,7 +91,7 @@ struct member {
     char *name;
     char *gen_name;
     char *label;
-    int val;
+    int64_t val;
     int optional;
     int ellipsis;
     struct type *type;
@@ -120,7 +120,7 @@ struct range {
     int64_t max;
 };
 
-enum ctype { CT_CONTENTS, CT_USER, CT_TABLE_CONSTRAINT } ;
+enum ctype { CT_CONTENTS, CT_USER, CT_TABLE_CONSTRAINT, CT_RANGE } ;
 
 struct constraint_spec;
 
@@ -217,6 +217,7 @@ struct constraint_spec {
 	    struct value *encoding;
             struct component_relation_constraint crel;
 	} content;
+        struct range *range;
     } u;
 };
 

@@ -55,12 +55,12 @@ add_princ(krb5_context context, struct foreach_data *d, char *princ)
 }
 
 static krb5_error_code
-foreach(krb5_context context, HDB *db, hdb_entry_ex *ent, void *data)
+foreach(krb5_context context, HDB *db, hdb_entry *ent, void *data)
 {
     struct foreach_data *d = data;
     char *princ;
     krb5_error_code ret;
-    ret = krb5_unparse_name(context, ent->entry.principal, &princ);
+    ret = krb5_unparse_name(context, ent->principal, &princ);
     if(ret)
 	return ret;
     if(d->exp){
@@ -98,7 +98,9 @@ kadm5_s_get_principals(void *server_handle,
 	krb5_realm r;
 	int aret;
 
-	krb5_get_default_realm(context->context, &r);
+	ret = krb5_get_default_realm(context->context, &r);
+        if (ret)
+            goto out;
 	aret = asprintf(&d.exp2, "%s@%s", expression, r);
 	free(r);
 	if (aret == -1 || d.exp2 == NULL) {

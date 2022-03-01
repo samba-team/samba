@@ -70,7 +70,7 @@ threaded_reader(void *d)
     krb5_error_code ret;
     krb5_context context;
     struct tsync *s = d;
-    hdb_entry_ex entr;
+    hdb_entry entr;
     HDB *dbr = NULL;
 
     printf("Reader thread opening HDB\n");
@@ -101,7 +101,7 @@ threaded_reader(void *d)
         //(void) unlink(s->fname);
         krb5_err(context, 1, ret, "Could not iterate HDB %s", s->hdb_name);
     }
-    free_HDB_entry(&entr.entry);
+    free_HDB_entry(&entr);
 
     /* Tell the writer to go ahead and write */
     printf("Reader thread iterated one entry; telling writer to write more\n");
@@ -124,7 +124,7 @@ threaded_reader(void *d)
                  "Could not iterate while writing to HDB %s", s->hdb_name);
     }
     printf("Reader thread iterated another entry\n");
-    free_HDB_entry(&entr.entry);
+    free_HDB_entry(&entr);
     if ((ret = dbr->hdb_nextkey(context, dbr, 0, &entr)) == 0) {
         //(void) unlink(s->fname);
         krb5_warn(context, ret,
@@ -154,7 +154,7 @@ forked_reader(struct tsync *s)
 {
     krb5_error_code ret;
     krb5_context context;
-    hdb_entry_ex entr;
+    hdb_entry entr;
     ssize_t bytes;
     char b[1];
     HDB *dbr = NULL;
@@ -172,6 +172,8 @@ forked_reader(struct tsync *s)
     while ((bytes = read(s->reader_go_pipe[0], b, sizeof(b))) == -1 &&
            errno == EINTR)
         ;
+    if (bytes == -1)
+        err(1, "Could not read from reader-go pipe (error)");
 
     /* Open a new HDB handle to read */
     if ((ret = hdb_create(context, &dbr, s->hdb_name))) {
@@ -188,13 +190,15 @@ forked_reader(struct tsync *s)
         krb5_err(context, 1, ret, "Could not iterate HDB %s", s->hdb_name);
     }
     printf("Reader process iterated one entry\n");
-    free_HDB_entry(&entr.entry);
+    free_HDB_entry(&entr);
 
     /* Tell the writer to go ahead and write */
     printf("Reader process iterated one entry; telling writer to write more\n");
     while ((bytes = write(s->writer_go_pipe[1], "", sizeof(""))) == -1 &&
            errno == EINTR)
         ;
+    if (bytes == -1)
+        err(1, "Could not write to writer-go pipe (error)");
 
 
     /* Wait for the writer to have written one more entry to the HDB */
@@ -213,13 +217,13 @@ forked_reader(struct tsync *s)
         krb5_err(context, 1, ret,
                  "Could not iterate while writing to HDB %s", s->hdb_name);
     }
-    free_HDB_entry(&entr.entry);
+    free_HDB_entry(&entr);
     printf("Reader process iterated another entry\n");
     if ((ret = dbr->hdb_nextkey(context, dbr, 0, &entr)) == 0) {
         //(void) unlink(s->fname);
         krb5_warn(context, ret,
                  "HDB %s sees writes committed since starting iteration (%s)",
-                 s->hdb_name, entr.entry.principal->name.name_string.val[0]);
+                 s->hdb_name, entr.principal->name.name_string.val[0]);
     } else if (ret != HDB_ERR_NOENTRY) {
         //(void) unlink(s->fname);
         krb5_err(context, 1, ret,
@@ -231,6 +235,8 @@ forked_reader(struct tsync *s)
     while ((bytes = write(s->writer_go_pipe[1], "", sizeof(""))) == -1 &&
            errno == EINTR)
         ;
+    if (bytes == -1)
+        err(1, "Could not write to writer-go pipe (error)");
 
     dbr->hdb_close(context, dbr);
     dbr->hdb_destroy(context, dbr);
@@ -242,27 +248,27 @@ forked_reader(struct tsync *s)
 }
 
 static krb5_error_code
-make_entry(krb5_context context, hdb_entry_ex *entry, const char *name)
+make_entry(krb5_context context, hdb_entry *entry, const char *name)
 {
     krb5_error_code ret;
 
     memset(entry, 0, sizeof(*entry));
-    entry->entry.kvno = 2;
-    entry->entry.keys.len = 0;
-    entry->entry.keys.val = NULL;
-    entry->entry.created_by.time = time(NULL);
-    entry->entry.modified_by = NULL;
-    entry->entry.valid_start = NULL;
-    entry->entry.valid_end = NULL;
-    entry->entry.max_life = NULL;
-    entry->entry.max_renew = NULL;
-    entry->entry.etypes = NULL;
-    entry->entry.generation = NULL;
-    entry->entry.extensions = NULL;
-    if ((ret = krb5_make_principal(context, &entry->entry.principal,
+    entry->kvno = 2;
+    entry->keys.len = 0;
+    entry->keys.val = NULL;
+    entry->created_by.time = time(NULL);
+    entry->modified_by = NULL;
+    entry->valid_start = NULL;
+    entry->valid_end = NULL;
+    entry->max_life = NULL;
+    entry->max_renew = NULL;
+    entry->etypes = NULL;
+    entry->generation = NULL;
+    entry->extensions = NULL;
+    if ((ret = krb5_make_principal(context, &entry->principal,
                                    "TEST.H5L.SE", name, NULL)))
         return ret;
-    if ((ret = krb5_make_principal(context, &entry->entry.created_by.principal,
+    if ((ret = krb5_make_principal(context, &entry->created_by.principal,
                                    "TEST.H5L.SE", "tester", NULL)))
         return ret;
     return 0;
@@ -320,7 +326,7 @@ test_hdb_concurrency(char *name, const char *ext, int threaded)
     char *fname_ext = NULL;
     pthread_t reader_thread;
     struct tsync ts;
-    hdb_entry_ex entw;
+    hdb_entry entw;
     pid_t child = getpid();
     HDB *dbw = NULL;
     int status;
@@ -387,14 +393,14 @@ test_hdb_concurrency(char *name, const char *ext, int threaded)
         krb5_err(context, 1, ret,
                  "Could not store entry for \"foo\" in HDB %s", name);
     }
-    free_HDB_entry(&entw.entry);
+    free_HDB_entry(&entw);
     if ((ret = make_entry(context, &entw, "bar")) ||
         (ret = dbw->hdb_store(context, dbw, 0, &entw))) {
         (void) unlink(fname_ext);
         krb5_err(context, 1, ret,
                  "Could not store entry for \"foo\" in HDB %s", name);
     }
-    free_HDB_entry(&entw.entry);
+    free_HDB_entry(&entw);
 
     /* Tell the reader to start reading */
     readers_turn(&ts, child, threaded);
@@ -407,7 +413,7 @@ test_hdb_concurrency(char *name, const char *ext, int threaded)
                  "Could not store entry for \"foobar\" in HDB %s "
                  "while iterating it", name);
     }
-    free_HDB_entry(&entw.entry);
+    free_HDB_entry(&entw);
 
     /* Tell the reader to go again */
     readers_turn(&ts, child, threaded);

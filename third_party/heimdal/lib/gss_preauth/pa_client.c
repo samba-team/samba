@@ -95,9 +95,10 @@ pa_gss_step(krb5_context context,
     gss_name_t target_name = GSS_C_NO_NAME;
     OM_uint32 req_flags = GSS_C_MUTUAL_FLAG;
     OM_uint32 ret_flags;
-    struct gss_channel_bindings_struct cb = { 0 };
+    struct gss_channel_bindings_struct cb;
     gss_buffer_desc input_token, output_token = GSS_C_EMPTY_BUFFER;
 
+    memset(&cb, 0, sizeof(cb));
     krb5_data_zero(out);
 
     if (flags.request_anonymous)

@@ -194,7 +194,10 @@ v2_sign_message(gss_buffer_t in,
     HMAC_CTX c;
 
     HMAC_CTX_init(&c);
-    HMAC_Init_ex(&c, signkey, 16, EVP_md5(), NULL);
+    if (HMAC_Init_ex(&c, signkey, 16, EVP_md5(), NULL) == 0) {
+        HMAC_CTX_cleanup(&c);
+        return GSS_S_FAILURE;
+    }
 
     encode_le_uint32(seq, hmac);
     HMAC_Update(&c, hmac, 4);

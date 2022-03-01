@@ -158,6 +158,10 @@ gss_pname_to_uid(OM_uint32 *minor_status,
     major = gss_localname(minor_status, pname, mech_type, &localname);
     if (GSS_ERROR(major))
         return major;
+    if (localname.length == 0) {
+        *minor_status = KRB5_NO_LOCALNAME;
+        return GSS_S_FAILURE;
+    }
 
     szLocalname = malloc(localname.length + 1);
     if (szLocalname == NULL) {

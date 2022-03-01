@@ -200,9 +200,12 @@ krb5_copy_data(krb5_context context,
 KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 krb5_data_cmp(const krb5_data *data1, const krb5_data *data2)
 {
-    if (data1->length != data2->length)
+    size_t len = data1->length < data2->length ? data1->length : data2->length;
+    int cmp = memcmp(data1->data, data2->data, len);
+
+    if (cmp == 0)
 	return data1->length - data2->length;
-    return memcmp(data1->data, data2->data, data1->length);
+    return cmp;
 }
 
 /**

@@ -121,10 +121,9 @@ init_ccapi(krb5_context context)
 
     if (cc_handle == NULL) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
-	if (context)
-	    krb5_set_error_message(context, KRB5_CC_NOSUPP,
-				   N_("Failed to load API cache module %s", "file"),
-				   lib);
+        krb5_set_error_message(context, KRB5_CC_NOSUPP,
+                               N_("Failed to load API cache module %s", "file"),
+                               lib);
 	return KRB5_CC_NOSUPP;
     }
 
@@ -135,10 +134,9 @@ init_ccapi(krb5_context context)
 	dlsym(cc_handle, "krb5_ipc_client_clear_target");
     HEIMDAL_MUTEX_unlock(&acc_mutex);
     if (init_func == NULL) {
-	if (context)
-	    krb5_set_error_message(context, KRB5_CC_NOSUPP,
-				   N_("Failed to find cc_initialize"
-				      "in %s: %s", "file, error"), lib, dlerror());
+        krb5_set_error_message(context, KRB5_CC_NOSUPP,
+                               N_("Failed to find cc_initialize"
+                                  "in %s: %s", "file, error"), lib, dlerror());
 	dlclose(cc_handle);
 	return KRB5_CC_NOSUPP;
     }
@@ -146,9 +144,8 @@ init_ccapi(krb5_context context)
     return 0;
 #else
     HEIMDAL_MUTEX_unlock(&acc_mutex);
-    if (context)
-	krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			       N_("no support for shared object", ""));
+    krb5_set_error_message(context, KRB5_CC_NOSUPP,
+                           N_("no support for shared object", ""));
     return KRB5_CC_NOSUPP;
 #endif
 }
@@ -988,6 +985,7 @@ acc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
 static krb5_error_code KRB5_CALLCONV
 acc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 {
+    krb5_error_code ret;
     krb5_acc *afrom = ACACHE(from);
     krb5_acc *ato = ACACHE(to);
     int32_t error;
@@ -1011,9 +1009,10 @@ acc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     }
 
     error = (*ato->ccache->func->move)(afrom->ccache, ato->ccache);
-
-    krb5_cc_destroy(context, from);
-    return translate_cc_error(context, error);
+    ret = translate_cc_error(context, error);
+    if (ret == 0)
+        krb5_cc_destroy(context, from);
+    return ret;
 }
 
 static krb5_error_code KRB5_CALLCONV

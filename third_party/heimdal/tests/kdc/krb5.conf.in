@@ -126,6 +126,9 @@
 
 [hdb]
 	db-dir = @objdir@
+	enable_virtual_hostbased_princs = true
+	virtual_hostbased_princ_mindots = 1
+	virtual_hostbased_princ_maxdots = 3
 
 [logging]
 	kdc = 0-/FILE:@objdir@/@messages@.log

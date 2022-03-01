@@ -18,6 +18,7 @@ EXPORTS
 	CKSUMTYPE,
 	ChangePasswdDataMS,
 	Checksum,
+        CompositePrincipal,
 	ENCTYPE,
 	ETYPE-INFO,
 	ETYPE-INFO-ENTRY,
@@ -440,9 +441,9 @@ Checksum ::= SEQUENCE {
 --
 -- Attributes have three possible sources in Heimdal Kerberos at this time:
 --
---  - the EncKDCRepPart
---  - the EncTicketPart
---  - the Authenticator's AuthorizationData (if any)
+--  - the EncKDCRepPart (for the client's attributes on the client side)
+--  - the EncTicketPart (for the client's attributes on the server side)
+--  - the Authenticator's AuthorizationData (if any; server-side)
 --
 -- In principle there can be more:
 --
@@ -461,18 +462,47 @@ PrincipalNameAttrSrc ::= CHOICE {
         enc-ticket-part     [1] EncTicketPart   -- minus session key
 }
 PrincipalNameAttrs ::= SEQUENCE {
+        -- True if this name was authenticated via an AP-REQ or a KDC-REP
         authenticated       [0]     BOOLEAN,
-        -- These are compiled from the Ticket and Authenticator:
+        -- These are compiled from the Ticket, KDC-REP, and/or Authenticator
         source              [1]     PrincipalNameAttrSrc OPTIONAL,
-        authenticator-ad    [2]     AuthorizationData OPTIONAL
+        authenticator-ad    [2]     AuthorizationData OPTIONAL,
+        -- For the server on the client side we should keep track of the
+        -- transit path taken to reach it (if absent -> unknown).
+        --
+        -- We don't learn much more about the server from the KDC.
+        peer-realm          [3]     Realm OPTIONAL,
+        transited           [4]     TransitedEncoding OPTIONAL,
+        -- True if the PAC was verified
+        pac-verified        [5]     BOOLEAN,
+        -- True if any AD-KDC-ISSUEDs in the Ticket were validated
+        kdc-issued-verified [6]     BOOLEAN,
+        -- TODO: Add requested attributes, for gss_set_name_attribute(), which
+        --       should cause corresponding authz-data elements to be added to
+        --       any TGS-REQ or to the AP-REQ's Authenticator as appropriate.
+        want-ad             [7]     AuthorizationData OPTIONAL
+}
+-- This is our type for exported composite name tokens for GSS [RFC6680].
+-- It's the same as Principal (below) as decorated with (see krb5.opt file and
+-- asn1_compile usage), except it's not decorated, so the name attributes are
+-- encoded/decoded.
+CompositePrincipal ::= [APPLICATION 48] SEQUENCE {
+	name[0]			PrincipalName,
+	realm[1]		Realm,
+        nameattrs[2]            PrincipalNameAttrs OPTIONAL
 }
 
--- this is not part of RFC1510
+-- This is not part of RFC1510/RFC4120.  We use this internally as our
+-- krb5_principal (which is a typedef of *Principal), and in HDB entries.
 Principal ::= SEQUENCE {
 	name[0]			PrincipalName,
 	realm[1]		Realm
-        -- This will be decorated with a name-attrs field of
-        -- PrincipalNameAttrs type that doesn't get encoded
+        -- This will be decorated with an optional nameattrs field of
+        -- PrincipalNameAttrs type that doesn't get encoded.  Same as
+        -- CompositePrincipal above, except that CompositePrincipal's
+        -- nameattrs field does get encoded, while Principal's does not:
+        --
+        -- nameattrs[2]         PrincipalNameAttrs OPTIONAL
 }
 
 Principals ::= SEQUENCE OF Principal

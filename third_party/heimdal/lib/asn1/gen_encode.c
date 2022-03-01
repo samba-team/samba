@@ -226,7 +226,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	    fprintf (codefile,
 		     "if((%s)->%s) {\n"
 		     "c |= 1<<%d;\n",
-		     name, m->gen_name, 7 - m->val % 8);
+		     name, m->gen_name, (int)(7 - m->val % 8));
 	    fprintf (codefile,
 		     "}\n");
 	}
@@ -313,7 +313,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 		name);
 
 	fprintf(codefile,
-		"val = malloc(sizeof(val[0]) * (%s)->len);\n"
+		"val = calloc(1, sizeof(val[0]) * (%s)->len);\n"
 		"if (val == NULL && (%s)->len != 0) return ENOMEM;\n",
 		name, name);
 
@@ -461,23 +461,24 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 
         if (replace_tag)
             fprintf(codefile,
-                    "{ unsigned char *psave_%s = p;\n"
+                    "{ unsigned char *psave_%s = p, *pfree_%s = NULL;\n"
                     "size_t l2_%s, lensave_%s = len;\n"
                     "len = length_%s(%s);\n"
                     /* Allocate a temp buffer for the encoder */
-                    "if ((p = malloc(len)) == NULL) return ENOMEM;\n"
+                    "if ((p = pfree_%s = calloc(1, len)) == NULL) return ENOMEM;\n"
                     /* Make p point to the last byte of the allocated buf */
                     "p += len - 1;\n",
-                    tmpstr, tmpstr, tmpstr,
-                    t->subtype->symbol->gen_name, name);
+                    tmpstr, tmpstr, tmpstr, tmpstr,
+                    t->subtype->symbol->gen_name, name, tmpstr);
 
+        /* XXX Currently we generate code that leaks `pfree_%s` here.  */
 	c = encode_type (name, t->subtype, tname);
         /* Explicit non-UNIVERSAL tags are always constructed */
         if (!c && t->tag.tagclass != ASN1_C_UNIV && t->tag.tagenv == TE_EXPLICIT)
             c = 1;
         if (replace_tag)
             fprintf(codefile,
-                    "if (len) abort();\n"
+                    "if (len) { free(pfree_%s); return EINVAL; }\n"
                     /*
                      * Here we have `p' pointing to one byte before the buffer
                      * we allocated above.
@@ -552,16 +553,16 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
                      *                 +-- psave_<fieldName>
                      */
                     "e = der_put_tag(psave_%s, %lu, %s, %s, %d, &l2_%s);\n"
-                    "if (e) return e;\n"
+                    "if (e) { free(pfree_%s); return e; }\n"
                     /* Restore `len' and adjust it (see `p' below) */
-                    "len = lensave_%s - (l + %lu - asn1_tag_length_%s);\n"
+                    "len = lensave_%s - (l + %zu - asn1_tag_length_%s);\n"
                     /*
                      * Adjust `ret' to account for the difference in size
                      * between the length of the right and wrong tags.
                      */
-                    "ret += %lu - asn1_tag_length_%s;\n"
+                    "ret += %zu - asn1_tag_length_%s;\n"
                     /* Free the buffer and restore `p' */
-                    "free(p + 1);\n"
+                    "free(pfree_%s);\n"
                     /*
                      * Make `p' point into the original buffer again, to one
                      * byte before the bytes we wrote:
@@ -573,7 +574,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
                      *       +-- p
                      */
                     "p = psave_%s - (1 + %lu - asn1_tag_length_%s); }\n",
-                    tmpstr, tmpstr, t->subtype->symbol->name,
+                    tmpstr, tmpstr, tmpstr, t->subtype->symbol->name,
                     tmpstr, t->subtype->symbol->name, t->subtype->symbol->name,
                     tmpstr, length_tag(t->tag.tagvalue),
                     classname(t->tag.tagclass),
@@ -581,9 +582,9 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
                     t->tag.tagvalue,
                     tmpstr,
 
-                    tmpstr, length_tag(t->tag.tagvalue), t->subtype->symbol->name,
+                    tmpstr, tmpstr, length_tag(t->tag.tagvalue), t->subtype->symbol->name,
                     length_tag(t->tag.tagvalue), t->subtype->symbol->name,
-                    tmpstr, length_tag(t->tag.tagvalue), t->subtype->symbol->name);
+                    tmpstr, tmpstr, length_tag(t->tag.tagvalue), t->subtype->symbol->name);
         else
             fprintf(codefile,
                     "e = der_put_length_and_tag (p, len, ret, %s, %s, %s, &l);\n"

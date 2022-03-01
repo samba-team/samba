@@ -35,7 +35,8 @@
  */
 
 #include "krb5_locl.h"
-#include "../base/heimbasepriv.h" /* XXX */
+
+#include <heimbasepriv.h>
 
 struct pa_info_data {
     krb5_enctype etype;
@@ -431,8 +432,8 @@ krb5_init_creds_warn_user(krb5_context context,
 	if (!suppress) {
 	    char *str = NULL, *p = NULL;
 	    int aret;
-	    krb5_enctype_to_string(context, weak_enctype, &str);
 
+	    (void) krb5_enctype_to_string(context, weak_enctype, &str);
 	    aret = asprintf(&p, "Encryption type %s(%d) used for authentication is weak and will be deprecated",
 			    str ? str : "unknown", weak_enctype);
 	    if (aret >= 0 && p) {
@@ -467,7 +468,9 @@ get_init_creds_common(krb5_context context,
     if (options == NULL) {
 	const char *realm = krb5_principal_get_realm(context, client);
 
-        krb5_get_init_creds_opt_alloc (context, &default_opt);
+        ret = krb5_get_init_creds_opt_alloc(context, &default_opt);
+        if (ret)
+            return ret;
 	options = default_opt;
 	krb5_get_init_creds_opt_set_default_flags(context, NULL, realm, options);
     }
@@ -501,11 +504,8 @@ get_init_creds_common(krb5_context context,
     ctx->pre_auth_types = NULL;
 
     ret = init_cred(context, &ctx->cred, client, start_time, options);
-    if (ret) {
-	if (default_opt)
-	    krb5_get_init_creds_opt_free(context, default_opt);
-	return ret;
-    }
+    if (ret)
+        goto out;
 
     ret = krb5_init_creds_set_service(context, ctx, NULL);
     if (ret)
@@ -578,10 +578,6 @@ get_init_creds_common(krb5_context context,
 	ctx->runflags.change_password_prompt = 0;
     else
 	ctx->runflags.change_password_prompt = ctx->prompter != NULL;
-
-    if (default_opt)
-        krb5_get_init_creds_opt_free(context, default_opt);
-    return 0;
 
  out:
     if (default_opt)
@@ -703,8 +699,7 @@ change_password (krb5_context context,
 	strlcpy (newpw, buf1, newpw_sz);
 	ret = 0;
     } else {
-	ret = ENOTTY;
-	krb5_set_error_message(context, ret,
+	krb5_set_error_message(context, ret = KRB5_CHPW_FAIL,
 			       N_("failed changing password: %s", ""), p);
     }
     free (p);
@@ -1089,7 +1084,7 @@ add_enc_ts_padata(krb5_context context,
     if (!enctypes) {
 	enctypes = context->etypes;
 	netypes = 0;
-	for (ep = enctypes; *ep != (krb5_enctype)ETYPE_NULL; ep++)
+	for (ep = enctypes; *ep != ETYPE_NULL; ep++)
 	    netypes++;
     }
 
@@ -1427,12 +1422,13 @@ pa_gss_step(krb5_context context,
 	char *from = NULL;
 	char *to = NULL;
 
-	if (krb5_unparse_name(context, ctx->cred.client, &from) == 0 &&
-	    krb5_unparse_name(context, cname, &to) == 0) {
-	    _krb5_debug(context, 1, "pa_gss_step: %s as %s",
-			from, to);
+	if (krb5_unparse_name(context, ctx->cred.client, &from) == 0) {
+	    if (krb5_unparse_name(context, cname, &to) == 0) {
+		_krb5_debug(context, 1, "pa_gss_step: %s as %s",
+			    from, to);
+		krb5_xfree(to);
+	    }
 	    krb5_xfree(from);
-	    krb5_xfree(to);
 	}
     }
 
@@ -1660,11 +1656,6 @@ enc_chal_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, P
     if (rep) {
 	EncryptedData enc_data;
 	size_t size;
-
-	if (ret) {
-	    _krb5_debug(context, 5, "enc-chal: failed to create reply key");
-	    return ret;
-	}
 
 	_krb5_debug(context, 5, "ENC_CHAL rep key");
 
@@ -2139,28 +2130,30 @@ process_pa_info(krb5_context context,
     return p;
 }
 
-static void
+static krb5_error_code
 pa_announce(krb5_context context,
 	    int types,
 	    krb5_init_creds_context ctx,
 	    METHOD_DATA *in_md,
 	    METHOD_DATA *out_md)
 {
+    krb5_error_code ret = 0;
     size_t n;
 
-    for (n = 0; n < sizeof(patypes)/sizeof(patypes[0]); n++) {
+    for (n = 0; ret == 0 && n < sizeof(patypes)/sizeof(patypes[0]); n++) {
 	if ((patypes[n].flags & types) == 0)
 	    continue;
 
 	if (patypes[n].step)
 	    patypes[n].step(context, ctx, NULL, NULL, NULL, NULL, NULL, in_md, out_md);
 	else
-	    krb5_padata_add(context, out_md, patypes[n].type, NULL, 0);
+	    ret = krb5_padata_add(context, out_md, patypes[n].type, NULL, 0);
     }
+    return ret;
 }
 
 
-static void
+static void HEIM_CALLCONV
 mech_dealloc(void *ctx)
 {
     struct pa_auth_mech *pa_mech = ctx;
@@ -2406,8 +2399,7 @@ process_pa_data_to_md(krb5_context context,
      * Send announcement (what we support) and configuration (user
      * introduced behavior change)
      */
-
-    pa_announce(context, PA_F_ANNOUNCE|PA_F_CONFIG, ctx, in_md, *out_md);
+    ret = pa_announce(context, PA_F_ANNOUNCE|PA_F_CONFIG, ctx, in_md, *out_md);
 
     /*
      *
@@ -2418,7 +2410,7 @@ process_pa_data_to_md(krb5_context context,
 	*out_md = NULL;
     }
 
-    return 0;
+    return ret;
 }
 
 static krb5_error_code
@@ -2634,7 +2626,11 @@ krb5_init_creds_set_service(krb5_context context,
 	ret = krb5_parse_name (context, service, &principal);
 	if (ret)
 	    return ret;
-	krb5_principal_set_realm (context, principal, client_realm);
+	ret = krb5_principal_set_realm (context, principal, client_realm);
+	if (ret) {
+	    krb5_free_principal(context, principal);
+	    return ret;
+	}
     } else {
 	ret = krb5_make_principal(context, &principal,
 				  client_realm, KRB5_TGS_NAME, client_realm,
@@ -2704,27 +2700,23 @@ keytab_key_proc(krb5_context context, krb5_enctype enctype,
     krb5_keytab keytab = args->keytab;
     krb5_principal principal = args->principal;
     krb5_error_code ret;
-    krb5_keytab real_keytab;
+    krb5_keytab real_keytab = NULL;
     krb5_keytab_entry entry;
 
     if (keytab == NULL) {
 	ret = krb5_kt_default(context, &real_keytab);
 	if (ret)
 	    return ret;
-    } else
-	real_keytab = keytab;
+        keytab = real_keytab;
+    }
 
-    ret = krb5_kt_get_entry (context, real_keytab, principal,
-			     0, enctype, &entry);
+    ret = krb5_kt_get_entry (context, keytab, principal, 0, enctype, &entry);
+    if (ret == 0) {
+        ret = krb5_copy_keyblock(context, &entry.keyblock, key);
+        krb5_kt_free_entry(context, &entry);
+    }
 
-    if (keytab == NULL)
-	krb5_kt_close (context, real_keytab);
-
-    if (ret)
-	return ret;
-
-    ret = krb5_copy_keyblock (context, &entry.keyblock, key);
-    krb5_kt_free_entry(context, &entry);
+    krb5_kt_close(context, real_keytab);
     return ret;
 }
 
@@ -2870,25 +2862,9 @@ krb5_init_creds_set_fast_ccache(krb5_context context,
 				krb5_init_creds_context ctx,
 				krb5_ccache fast_ccache)
 {
-    krb5_creds *cred = NULL;
-    krb5_error_code ret;
-    krb5_data data;
-
-    ret = _krb5_get_krbtgt(context, fast_ccache, NULL, &cred);
-    if (ret)
-	return ret;
-
-    ret = krb5_cc_get_config(context, fast_ccache, cred->server,
-			     "fast_avail", &data);
-    krb5_free_creds(context, cred);
-    if (ret == 0) {
-	ctx->fast_state.armor_ccache = fast_ccache;
-	ctx->fast_state.flags |= KRB5_FAST_REQUIRED;
-	ctx->fast_state.flags |= KRB5_FAST_KDC_VERIFIED;
-    } else {
-	krb5_set_error_message(context, EINVAL, N_("FAST not available for the KDC in the armor ccache", ""));
-	return EINVAL;
-    }
+    ctx->fast_state.armor_ccache = fast_ccache;
+    ctx->fast_state.flags |= KRB5_FAST_REQUIRED;
+    ctx->fast_state.flags |= KRB5_FAST_KDC_VERIFIED;
     return 0;
 }
 
@@ -2953,6 +2929,19 @@ krb5_init_creds_set_fast_anon_pkinit(krb5_context context,
 
     ctx->fast_state.flags |= KRB5_FAST_REQUIRED;
     ctx->fast_state.flags |= KRB5_FAST_ANON_PKINIT_ARMOR;
+    return 0;
+}
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+_krb5_init_creds_set_fast_anon_pkinit_optimistic(krb5_context context,
+                                                 krb5_init_creds_context ctx)
+{
+    if (ctx->fast_state.armor_ccache)
+	return EINVAL;
+
+    ctx->fast_state.flags |= KRB5_FAST_REQUIRED;
+    ctx->fast_state.flags |= KRB5_FAST_ANON_PKINIT_ARMOR;
+    ctx->fast_state.flags |= KRB5_FAST_OPTIMISTIC;
     return 0;
 }
 
@@ -3352,16 +3341,6 @@ init_creds_step(krb5_context context,
 		    goto out;
 		}
 
-		if ((ctx->fast_state.flags & KRB5_FAST_OPTIMISTIC) == 0) {
-		    _krb5_debug(context, 10, "Preauth failed");
-		    goto out;
-		}
-
-		_krb5_debug(context, 10, "preauth failed with optimistic FAST, trying w/o FAST");
-
-		ctx->fast_state.flags &= ~KRB5_FAST_OPTIMISTIC;
-		ctx->fast_state.flags |= KRB5_FAST_DISABLED;
-
 	    retry:
 		pa_restart(context, ctx);
 
@@ -3370,6 +3349,8 @@ init_creds_step(krb5_context context,
 			    "Some other error %d failed with optimistic FAST, trying w/o FAST", ret);
 
 		ctx->fast_state.flags &= ~KRB5_FAST_OPTIMISTIC;
+                ctx->fast_state.flags &= ~KRB5_FAST_REQUIRED;
+                ctx->fast_state.flags &= ~KRB5_FAST_ANON_PKINIT_ARMOR;
 		ctx->fast_state.flags |= KRB5_FAST_DISABLED;
 		pa_restart(context, ctx);
 	    } else {
@@ -3485,9 +3466,15 @@ krb5_init_creds_step(krb5_context context,
 	ctx->fast_state.armor_ccache == NULL) {
 	ret = _krb5_fast_anon_pkinit_step(context, ctx, &ctx->fast_state,
 					  in, out, hostinfo, flags);
-	if (ret ||
-	    ((*flags & KRB5_INIT_CREDS_STEP_FLAG_CONTINUE) == 0) ||
-	    out->length)
+        if (ret && (ctx->fast_state.flags & KRB5_FAST_OPTIMISTIC)) {
+            _krb5_debug(context, 5, "Preauth failed with optimistic "
+                        "FAST, trying w/o FAST");
+            ctx->fast_state.flags &= ~KRB5_FAST_OPTIMISTIC;
+            ctx->fast_state.flags &= ~KRB5_FAST_REQUIRED;
+            ctx->fast_state.flags &= ~KRB5_FAST_ANON_PKINIT_ARMOR;
+        } else if (ret ||
+                   ((*flags & KRB5_INIT_CREDS_STEP_FLAG_CONTINUE) == 0) ||
+                   out->length)
 	    return ret;
 
 	in = &empty;
@@ -3649,7 +3636,7 @@ krb5_init_creds_store(krb5_context context,
 	krb5_data data = { 3, rk_UNCONST("yes") };
 	ret = krb5_cc_set_config(context, id, ctx->cred.server,
 				 "fast_avail", &data);
-	if (ret)
+	if (ret && ret != KRB5_CC_NOSUPP)
 	    return ret;
     }
 
@@ -4001,7 +3988,7 @@ _krb5_init_creds_init_gss(krb5_context context,
 			  const struct gss_OID_desc_struct *gss_mech,
 			  unsigned int flags)
 {
-    krb5_gss_init_ctx gssic = ctx->gss_init_ctx;
+    krb5_gss_init_ctx gssic;
 
     gssic = calloc(1, sizeof(*gssic));
     if (gssic == NULL)

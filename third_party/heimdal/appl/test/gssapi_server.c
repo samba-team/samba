@@ -159,6 +159,8 @@ process_it(int sock,
 			 input_token,
 			 NULL,
 			 output_token);
+    if (GSS_ERROR(maj_stat))
+	gss_err(1, min_stat, "gss_wrap");
 
     write_token (sock, output_token);
     gss_release_buffer (&min_stat, output_token);
@@ -184,7 +186,7 @@ proto (int sock, const char *service)
     gss_name_t client_name;
     struct gss_channel_bindings_struct input_chan_bindings;
     gss_cred_id_t delegated_cred_handle = NULL;
-    krb5_ccache ccache;
+    krb5_ccache ccache = NULL;
     u_char init_buf[4];
     u_char acct_buf[4];
     gss_OID mech_oid;
@@ -270,15 +272,21 @@ proto (int sock, const char *service)
     printf("Using mech: %s\n", mech);
 
     if (delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
-       krb5_context context;
+       krb5_context context = NULL;
 
        printf("Delegated cred found\n");
 
-       maj_stat = krb5_init_context(&context);
-       maj_stat = krb5_cc_resolve(context, "FILE:/tmp/krb5cc_test", &ccache);
-       maj_stat = gss_krb5_copy_ccache(&min_stat,
-				       delegated_cred_handle,
-				       ccache);
+       min_stat = krb5_init_context(&context);
+       if (min_stat)
+	    gss_err(1, min_stat, "krb5_init_context");
+       if (min_stat == 0)
+           min_stat = krb5_cc_resolve(context, "FILE:/tmp/krb5cc_test", &ccache);
+       if (min_stat == 0)
+           maj_stat = gss_krb5_copy_ccache(&min_stat,
+                                           delegated_cred_handle,
+                                           ccache);
+       else
+           maj_stat = GSS_S_FAILURE;
        if (maj_stat == 0) {
 	   krb5_principal p;
 	   maj_stat = krb5_cc_get_principal(context, ccache, &p);
@@ -293,6 +301,7 @@ proto (int sock, const char *service)
 	   }
        }
        krb5_cc_close(context, ccache);
+       krb5_free_context(context);
        gss_release_cred(&min_stat, &delegated_cred_handle);
     }
 

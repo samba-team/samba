@@ -176,7 +176,7 @@ struct krb5_sendto_ctx_data {
     unsigned int stid;
 };
 
-static void
+static void KRB5_CALLCONV
 dealloc_sendto_ctx(void *ptr)
 {
     krb5_sendto_ctx ctx = (krb5_sendto_ctx)ptr;
@@ -386,7 +386,7 @@ debug_host(krb5_context context, int level, struct host *host, const char *fmt, 
 }
 
 
-static void
+static void HEIM_CALLCONV
 deallocate_host(void *ptr)
 {
     struct host *host = ptr;
@@ -1180,7 +1180,7 @@ krb5_sendto_context(krb5_context context,
 
     action = KRB5_SENDTO_INITIAL;
 
-    while (action != KRB5_SENDTO_DONE && action != KRB5_SENDTO_FAILED) {
+    while (1) {
 	krb5_krbhst_info *hi;
 
 	switch (action) {
@@ -1192,7 +1192,7 @@ krb5_sendto_context(krb5_context context,
 		break;
 	    }
 	    action = KRB5_SENDTO_KRBHST;
-	    /* FALLTHROUGH */
+            fallthrough;
 	case KRB5_SENDTO_KRBHST:
 	    if (ctx->krbhst == NULL) {
 		ret = krb5_krbhst_init_flags(context, realm, type,
@@ -1214,7 +1214,7 @@ krb5_sendto_context(krb5_context context,
 		handle = heim_retain(ctx->krbhst);
 	    }
 	    action = KRB5_SENDTO_TIMEOUT;
-	    /* FALLTHROUGH */
+            fallthrough;
 	case KRB5_SENDTO_TIMEOUT:
 
 	    /*
@@ -1308,10 +1308,10 @@ krb5_sendto_context(krb5_context context,
 	    break;
 	case KRB5_SENDTO_FAILED:
 	    ret = KRB5_KDC_UNREACH;
-	    break;
+	    goto out;
 	case KRB5_SENDTO_DONE:
 	    ret = 0;
-	    break;
+	    goto out;
 	default:
 	    heim_abort("invalid krb5_sendto_context state");
 	}

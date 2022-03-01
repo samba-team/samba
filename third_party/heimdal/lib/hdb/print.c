@@ -453,7 +453,8 @@ entry2mit_string_int(krb5_context context, krb5_storage *sp, hdb_entry *ent)
         unsigned char *ptr;
         
         ptr = (unsigned char *)&last_pw_chg;
-        val = ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24);
+        val = ((unsigned long)ptr[3] << 24) | (ptr[2] << 16)
+	    | (ptr[1] << 8) | ptr[0];
         d.data = &val;
         d.length = sizeof (last_pw_chg);
         sz = append_string(context, sp, "\t%u\t%u\t",
@@ -474,12 +475,16 @@ entry2mit_string_int(krb5_context context, krb5_storage *sp, hdb_entry *ent)
         d.data = &val;
         d.length = sizeof (ent->modified_by->time);
         ret = krb5_unparse_name(context, ent->modified_by->principal, &modby_p);
-        if (ret) return ret;
+        if (ret)
+	    return ret;
         plen = strlen(modby_p);
         sz = append_string(context, sp, "\t%u\t%u\t",
                            mit_KRB5_TL_MOD_PRINC,
                            d.length + plen + 1 /* NULL counted */);
-        if (sz == -1) return ENOMEM;
+        if (sz == -1) {
+	    free(modby_p);
+	    return ENOMEM;
+	}
         sz = append_hex(context, sp, 1, 1, &d);
         if (sz == -1) {
             free(modby_p);
@@ -489,7 +494,8 @@ entry2mit_string_int(krb5_context context, krb5_storage *sp, hdb_entry *ent)
         d.length = plen + 1;
         sz = append_hex(context, sp, 1, 1, &d);
         free(modby_p);
-        if (sz == -1) return ENOMEM;
+        if (sz == -1)
+	    return ENOMEM;
     }
     /*
      * Dump keys (remembering to not include any with kvno higher than
@@ -556,7 +562,7 @@ hdb_entry2string(krb5_context context, hdb_entry *ent, char **str)
 /* print a hdb_entry to (FILE*)data; suitable for hdb_foreach */
 
 krb5_error_code
-hdb_print_entry(krb5_context context, HDB *db, hdb_entry_ex *entry,
+hdb_print_entry(krb5_context context, HDB *db, hdb_entry *entry,
                 void *data)
 {
     struct hdb_print_entry_arg *parg = data;
@@ -572,10 +578,10 @@ hdb_print_entry(krb5_context context, HDB *db, hdb_entry_ex *entry,
 
     switch (parg->fmt) {
     case HDB_DUMP_HEIMDAL:
-        ret = entry2string_int(context, sp, &entry->entry);
+        ret = entry2string_int(context, sp, entry);
         break;
     case HDB_DUMP_MIT:
-        ret = entry2mit_string_int(context, sp, &entry->entry);
+        ret = entry2mit_string_int(context, sp, entry);
         break;
     default:
         heim_abort("Only two dump formats supported: Heimdal and MIT");

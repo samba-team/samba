@@ -36,6 +36,8 @@
 #include "ndbm_wrap.h"
 #if defined(HAVE_DBHEADER)
 #include <db.h>
+#elif defined(HAVE_DB6_DB_H)
+#include <db6/db.h>
 #elif defined(HAVE_DB5_DB_H)
 #include <db5/db.h>
 #elif defined(HAVE_DB4_DB_H)

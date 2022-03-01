@@ -86,16 +86,17 @@ kswitch(struct kswitch_options *opt, int argc, char **argv)
 	    krb5_err(heimtools_context, 1, ret, "krb5_cc_cache_get_first");
 
 	while (krb5_cc_cache_next(heimtools_context, cursor, &id) == 0) {
-	    krb5_principal p;
+	    krb5_principal p = NULL;
 	    char num[10];
 
 	    ret = krb5_cc_get_principal(heimtools_context, id, &p);
+            if (ret == 0)
+                ret = krb5_unparse_name(heimtools_context, p, &name);
 	    if (ret) {
                 krb5_cc_close(heimtools_context, id);
 		continue;
             }
 
-	    ret = krb5_unparse_name(heimtools_context, p, &name);
 	    krb5_free_principal(heimtools_context, p);
 
 	    snprintf(num, sizeof(num), "%d", (int)(len + 1));

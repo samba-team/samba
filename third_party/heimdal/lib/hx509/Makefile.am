@@ -11,7 +11,7 @@ BUILT_SOURCES =				\
 	hx509_err.c			\
 	hx509_err.h
 
-AM_YFLAGS = -d
+AM_YFLAGS = -o sel-gram.c
 
 dist_libhx509_la_SOURCES = \
 	ca.c \
@@ -50,6 +50,7 @@ dist_libhx509_la_SOURCES = \
 
 dist_libhx509template_la_SOURCES = $(dist_libhx509_la_SOURCES)
 
+sel-gram.h: sel-gram.c
 sel-lex.c: sel-gram.h
 
 libhx509_la_DEPENDENCIES = version-script.map

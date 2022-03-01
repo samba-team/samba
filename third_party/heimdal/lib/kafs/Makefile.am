@@ -2,6 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+WFLAGS += $(WFLAGS_ENUM_CONV)
+
 AM_CPPFLAGS += $(AFS_EXTRA_DEFS) $(ROKEN_RENAME)
 
 if KRB5

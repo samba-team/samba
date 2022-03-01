@@ -100,10 +100,10 @@ rk_base32_encode(const void *data, int size, char **str, enum rk_base32_flags fl
 	p[6] = chars[(c & 0x0000000000000003e0ULL) >> 5];
 	p[7] = chars[(c & 0x00000000000000001fULL) >> 0];
         switch (i - size) {
-        case 4: p[2] = p[3] = '=';  /*fallthrough*/
-        case 3: p[4] = '=';         /*fallthrough*/
-        case 2: p[5] = p[6] = '=';  /*fallthrough*/
-        case 1: p[7] = '=';         /*fallthrough*/
+        case 4: p[2] = p[3] = '=';  fallthrough;
+        case 3: p[4] = '=';         fallthrough;
+        case 2: p[5] = p[6] = '=';  fallthrough;
+        case 1: p[7] = '=';         fallthrough;
         default:                    break;
         }
 	p += 8;
@@ -271,7 +271,7 @@ main(int argc, char **argv)
     } else {
         void *d;
 
-        if ((ret = rk_undumpdata(argv[0], &d, &bufsz)))
+        if ((errno = rk_undumpdata(argv[0], &d, &bufsz)))
             err(1, "Could not read %s", argv[0]);
         buflen = bufsz;
         buf = d;
@@ -298,7 +298,7 @@ main(int argc, char **argv)
         if (fwrite(d, ret, 1, stdout) != 1)
             err(1, "Could not write decoded data");
         free(d);
-    } else {
+    } else if (buf) { /* buf can be NULL if we read from an empty file */
         char *e;
 
         if ((ret = rk_base32_encode(buf, buflen, &e, flags)) < 0)

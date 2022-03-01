@@ -69,7 +69,6 @@ EXPORTS
 	hdb_prune_keys
 	hdb_prune_keys_kvno
 	hdb_read_master_key
-	hdb_remove_base_keys
 	hdb_remove_keys
 	hdb_replace_extension
 	hdb_seal_key

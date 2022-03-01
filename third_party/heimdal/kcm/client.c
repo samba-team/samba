@@ -47,6 +47,43 @@ kcm_ccache_resolve_client(krb5_context context,
 
     ret = kcm_ccache_resolve(context, name, ccache);
     if (ret) {
+        char *uid = NULL;
+
+        /*
+         * Both MIT and Heimdal are unable to, in krb5_cc_default(), call to
+         * KCM (or CCAPI, or LSA, or...) to get the user's default ccache name
+         * in their collection.  Instead, the default ccache name is obtained
+         * in a static way, and for KCM that's "%{UID}".  When we
+         * krb5_cc_switch(), we simply maintain a pointer to the name of the
+         * ccache that was made the default, but klist can't make use of this
+         * because krb5_cc_default() can't.
+         *
+         * The solution here is to first try resolving the ccache name given by
+         * the client, and if that fails but the name happens to be what would
+         * be the library's default KCM ccache name for that user, then try
+         * resolving it through the default ccache name pointer saved at switch
+         * time.
+         */
+        if (asprintf(&uid, "%llu", (unsigned long long)client->uid) == -1 ||
+            uid == NULL)
+            return ENOMEM;
+
+        if (strcmp(name, uid) == 0) {
+            struct kcm_default_cache *c;
+
+            for (c = default_caches; c != NULL; c = c->next) {
+                if (kcm_is_same_session(client, c->uid, c->session)) {
+                    if (strcmp(c->name, name) != 0) {
+                        ret = kcm_ccache_resolve(context, c->name, ccache);
+                        break;
+                    }
+                }
+            }
+        }
+        free(uid);
+    }
+
+    if (ret) {
 	estr = krb5_get_error_message(context, ret);
 	kcm_log(1, "Failed to resolve cache %s: %s", name, estr);
 	krb5_free_error_message(context, estr);

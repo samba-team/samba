@@ -40,6 +40,7 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <vis.h>
+#include <base64.h>
 
 struct heim_log_facility_internal {
     int min;
@@ -204,10 +205,13 @@ open_syslog(heim_context context,
             heim_log_facility *facility, int min, int max,
             const char *sev, const char *fac)
 {
-    struct _heimdal_syslog_data *sd = malloc(sizeof(*sd));
+    struct _heimdal_syslog_data *sd;
+    heim_error_code ret;
     int i;
 
-    if (sd == NULL)
+    if (facility == NULL)
+        return EINVAL;
+    if ((sd = calloc(1, sizeof(*sd))) == NULL)
         return heim_enomem(context);
     i = find_value(sev, syslogvals);
     if (i == -1)
@@ -218,8 +222,11 @@ open_syslog(heim_context context,
         i = LOG_AUTH;
     sd->priority |= i;
     roken_openlog(facility->program, LOG_PID | LOG_NDELAY, i);
-    return heim_addlog_func(context, facility, min, max,
-                            log_syslog, close_syslog, sd);
+    ret = heim_addlog_func(context, facility, min, max, log_syslog,
+                           close_syslog, sd);
+    if (ret)
+        free(sd);
+    return ret;
 }
 
 struct file_data {
@@ -247,7 +254,7 @@ log_file(heim_context context, const char *timestr, const char *msg, void *data)
     size_t i = 0;
     size_t j;
 
-    if (logf == NULL || (f->disp & FILEDISP_REOPEN)) {
+    if (f->filename && (logf == NULL || (f->disp & FILEDISP_REOPEN))) {
         int flags = O_WRONLY|O_APPEND;
         int fd;
 
@@ -338,9 +345,9 @@ open_file(heim_context context, heim_log_facility *fac, int min, int max,
     if (ret) {
         free(fd->filename);
         free(fd);
-    }
-    if (disp & FILEDISP_KEEPOPEN)
+    } else if (disp & FILEDISP_KEEPOPEN) {
         log_file(context, NULL, NULL, fd);
+    }
     return ret;
 }
 
@@ -384,7 +391,7 @@ heim_addlog_dest(heim_context context, heim_log_facility *f, const char *orig)
         p++;
     }
     if (strcmp(p, "STDERR") == 0) {
-        ret = open_file(context, f, min, max, NULL, NULL, stderr,
+        ret = open_file(context, f, min, max, NULL, "a", stderr,
                         FILEDISP_KEEPOPEN, 0);
     } else if (strcmp(p, "CONSOLE") == 0) {
         /* XXX WIN32 */
@@ -608,10 +615,7 @@ __attribute__ ((__format__ (__printf__, 3, 0)))
 heim_error_code
 heim_have_debug(heim_context context, int level)
 {
-    heim_log_facility *fac;
-
-    return (context != NULL &&
-        (fac = heim_get_debug_dest(context)) != NULL);
+    return (context != NULL && heim_get_debug_dest(context) != NULL);
 }
 
 heim_error_code
@@ -655,32 +659,34 @@ heim_add_debug_dest(heim_context context, const char *program,
     return 0;
 }
 
-static heim_string_t
+struct heim_audit_kv_tuple {
+    heim_string_t key;
+    heim_object_t value;
+};
+
+static struct heim_audit_kv_tuple zero_tuple;
+
+static struct heim_audit_kv_tuple
 fmtkv(int flags, const char *k, const char *fmt, va_list ap)
         __attribute__ ((__format__ (__printf__, 3, 0)))
 {
-    heim_string_t str;
     size_t i;
     ssize_t j;
-    char *buf1;
-    char *buf2;
-    char *buf3;
-    int ret = vasprintf(&buf1, fmt, ap);
-    if (ret < 0 || !buf1)
-	return NULL;;
+    struct heim_audit_kv_tuple kv;
+    char *value;
+    char *value_vis;
 
-    j = asprintf(&buf2, "%s=%s", k, buf1);
-    free(buf1);
-    if (j < 0 || !buf2)
-	return NULL;;
+    j = vasprintf(&value, fmt, ap);
+    if (j < 0 || value == NULL)
+	return zero_tuple;
 
     /* We optionally eat the whitespace. */
 
     if (flags & HEIM_SVC_AUDIT_EATWHITE) {
-	for (i=0, j=0; buf2[i]; i++)
-	    if (buf2[i] != ' ' && buf2[i] != '\t')
-		buf2[j++] = buf2[i];
-	buf2[j] = '\0';
+	for (i=0, j=0; value[i]; i++)
+	    if (value[i] != ' ' && value[i] != '\t')
+		value[j++] = value[i];
+	value[j] = '\0';
     }
 
     if (flags & (HEIM_SVC_AUDIT_VIS | HEIM_SVC_AUDIT_VISLAST)) {
@@ -688,48 +694,52 @@ fmtkv(int flags, const char *k, const char *fmt, va_list ap)
 
         if (flags & HEIM_SVC_AUDIT_VIS)
             vis_flags |= VIS_WHITE;
-	buf3 = malloc((j + 1) * 4 + 1);
-        if (buf3)
-            strvisx(buf3, buf2, j, vis_flags);
-	free(buf2);
-        if (buf3 == NULL)
-            return NULL;
+	value_vis = malloc((j + 1) * 4 + 1);
+        if (value_vis)
+            strvisx(value_vis, value, j, vis_flags);
+	free(value);
+        if (value_vis == NULL)
+            return zero_tuple;
     } else
-	buf3 = buf2;
+	value_vis = value;
 
-    str = heim_string_create(buf3);
-    free(buf3);
-    return str;
+    if (k)
+	kv.key = heim_string_create(k);
+    else
+	kv.key = NULL;
+    kv.value = heim_string_ref_create(value_vis, free);
+
+    return kv;
 }
 
 void
 heim_audit_vaddreason(heim_svc_req_desc r, const char *fmt, va_list ap)
 	__attribute__ ((__format__ (__printf__, 2, 0)))
 {
-    heim_string_t str;
+    struct heim_audit_kv_tuple kv;
 
-    str = fmtkv(HEIM_SVC_AUDIT_VISLAST, "reason", fmt, ap);
-    if (!str) {
+    kv = fmtkv(HEIM_SVC_AUDIT_VISLAST, NULL, fmt, ap);
+    if (kv.value == NULL) {
         heim_log(r->hcontext, r->logf, 1, "heim_audit_vaddreason: "
                  "failed to add reason (out of memory)");
         return;
     }
 
     heim_log(r->hcontext, r->logf, 7, "heim_audit_vaddreason(): "
-             "adding reason %s", heim_string_get_utf8(str));
+             "adding reason %s", heim_string_get_utf8(kv.value));
     if (r->reason) {
         heim_string_t str2;
 
         str2 = heim_string_create_with_format("%s: %s",
-                                              heim_string_get_utf8(str),
+                                              heim_string_get_utf8(kv.value),
                                               heim_string_get_utf8(r->reason));
         if (str2) {
-            heim_release(str);
-            str = str2;
+            heim_release(kv.value);
+            kv.value = str2;
         }
     }
     heim_release(r->reason);
-    r->reason = str;
+    r->reason = kv.value;
 }
 
 void
@@ -743,10 +753,37 @@ heim_audit_addreason(heim_svc_req_desc r, const char *fmt, ...)
     va_end(ap);
 }
 
+size_t
+addkv(heim_svc_req_desc r, heim_object_t key, heim_object_t value)
+{
+    size_t index;
+    heim_object_t obj;
+
+    obj = heim_dict_get_value(r->kv, key);
+    if (obj) {
+	if (heim_get_tid(obj) == HEIM_TID_ARRAY) {
+	    index = heim_array_get_length(obj);
+	    heim_array_append_value(obj, value);
+	} else {
+	    heim_array_t array = heim_array_create();
+
+	    index = 1;
+	    heim_array_append_value(array, obj);
+	    heim_array_append_value(array, value);
+	    heim_dict_set_value(r->kv, key, array);
+	    heim_release(array); /* retained by r->kv */
+	}
+    } else {
+	index = 0;
+	heim_dict_set_value(r->kv, key, value);
+    }
+
+    return index;
+}
+
 /*
- * append_token adds a token which is optionally a kv-pair and it
- * also optionally eats the whitespace.  If k == NULL, then it's
- * not a kv-pair.
+ * add a key-value token. if the key already exists, the value is
+ * promoted to an array of values.
  */
 
 void
@@ -754,19 +791,26 @@ heim_audit_vaddkv(heim_svc_req_desc r, int flags, const char *k,
 		  const char *fmt, va_list ap)
 	__attribute__ ((__format__ (__printf__, 4, 0)))
 {
-    heim_string_t str;
+    struct heim_audit_kv_tuple kv;
+    size_t index;
 
-    str = fmtkv(flags, k, fmt, ap);
-    if (!str) {
+    kv = fmtkv(flags, k, fmt, ap);
+    if (kv.key == NULL || kv.value == NULL) {
         heim_log(r->hcontext, r->logf, 1, "heim_audit_vaddkv: "
                  "failed to add kv pair (out of memory)");
+	heim_release(kv.key);
+	heim_release(kv.value);
         return;
     }
 
+    index = addkv(r, kv.key, kv.value);
+
     heim_log(r->hcontext, r->logf, 7, "heim_audit_vaddkv(): "
-             "adding kv pair %s", heim_string_get_utf8(str));
-    heim_array_append_value(r->kv, str);
-    heim_release(str);
+             "kv pair[%zu] %s=%s", index,
+	     heim_string_get_utf8(kv.key), heim_string_get_utf8(kv.value));
+
+    heim_release(kv.key);
+    heim_release(kv.value);
 }
 
 void
@@ -809,18 +853,196 @@ heim_audit_addkv_timediff(heim_svc_req_desc r, const char *k,
 }
 
 void
+heim_audit_setkv_bool(heim_svc_req_desc r, const char *k, int v)
+{
+    heim_string_t key = heim_string_create(k);
+    heim_number_t value;
+
+    if (key == NULL)
+	return;
+
+    heim_log(r->hcontext, r->logf, 7, "heim_audit_setkv_bool(): "
+	     "setting kv pair %s=%s", k, v ? "true" : "false");
+
+    value = heim_bool_create(v);
+    heim_dict_set_value(r->kv, key, value);
+    heim_release(key);
+    heim_release(value);
+}
+
+void
+heim_audit_addkv_number(heim_svc_req_desc r, const char *k, int64_t v)
+{
+    heim_string_t key = heim_string_create(k);
+    heim_number_t value;
+
+    if (key == NULL)
+	return;
+
+    heim_log(r->hcontext, r->logf, 7, "heim_audit_addkv_number(): "
+	     "adding kv pair %s=%lld", k, (long long)v);
+
+    value = heim_number_create(v);
+    addkv(r, key, value);
+    heim_release(key);
+    heim_release(value);
+}
+
+void
+heim_audit_setkv_number(heim_svc_req_desc r, const char *k, int64_t v)
+{
+    heim_string_t key = heim_string_create(k);
+    heim_number_t value;
+
+    if (key == NULL)
+	return;
+
+    heim_log(r->hcontext, r->logf, 7, "heim_audit_setkv_number(): "
+	     "setting kv pair %s=%lld", k, (long long)v);
+
+    value = heim_number_create(v);
+    heim_dict_set_value(r->kv, key, value);
+    heim_release(key);
+    heim_release(value);
+}
+
+void
+heim_audit_addkv_object(heim_svc_req_desc r, const char *k, heim_object_t value)
+{
+    heim_string_t key = heim_string_create(k);
+    heim_string_t descr;
+
+    if (key == NULL)
+	return;
+
+    descr = heim_json_copy_serialize(value, HEIM_JSON_F_NO_DATA_DICT, NULL);
+    heim_log(r->hcontext, r->logf, 7, "heim_audit_addkv_object(): "
+	     "adding kv pair %s=%s",
+	     k, descr ? heim_string_get_utf8(descr) : "<unprintable>");
+    addkv(r, key, value);
+    heim_release(key);
+    heim_release(descr);
+}
+
+void
+heim_audit_setkv_object(heim_svc_req_desc r, const char *k, heim_object_t value)
+{
+    heim_string_t key = heim_string_create(k);
+    heim_string_t descr;
+
+    if (key == NULL)
+	return;
+
+    descr = heim_json_copy_serialize(value, HEIM_JSON_F_NO_DATA_DICT, NULL);
+    heim_log(r->hcontext, r->logf, 7, "heim_audit_setkv_object(): "
+	     "setting kv pair %s=%s",
+	     k, descr ? heim_string_get_utf8(descr) : "<unprintable>");
+    heim_dict_set_value(r->kv, key, value);
+    heim_release(key);
+    heim_release(descr);
+}
+
+heim_object_t
+heim_audit_getkv(heim_svc_req_desc r, const char *k)
+{
+    heim_string_t key;
+    heim_object_t value;
+
+    key = heim_string_create(k);
+    if (key == NULL)
+	return NULL;
+
+    value = heim_dict_get_value(r->kv, key);
+    heim_release(key);
+    return value;
+}
+
+struct heim_audit_kv_buf {
+    char buf[1024];
+    size_t pos;
+    heim_object_t iter;
+};
+
+static void
+audit_trail_iterator(heim_object_t key, heim_object_t value, void *arg);
+
+static void
+audit_trail_iterator_array(heim_object_t value, void *arg, int *stop)
+{
+    struct heim_audit_kv_buf *kvb = arg;
+
+    audit_trail_iterator(kvb->iter, value, kvb);
+}
+
+static void
+audit_trail_iterator(heim_object_t key, heim_object_t value, void *arg)
+{
+    struct heim_audit_kv_buf *kvb = arg;
+    char num[32];
+    const char *k = heim_string_get_utf8(key), *v = NULL;
+    char *b64 = NULL;
+
+    if (k == NULL || *k == '#') /* # keys are hidden */
+	return;
+
+    switch (heim_get_tid(value)) {
+    case HEIM_TID_STRING:
+	v = heim_string_get_utf8(value);
+	break;
+    case HEIM_TID_NUMBER:
+	snprintf(num, sizeof(num), "%lld", (long long)heim_number_get_long(value));
+	v = num;
+	break;
+    case HEIM_TID_NULL:
+	v = "null";
+	break;
+    case HEIM_TID_BOOL:
+	v = heim_bool_val(value) ? "true" : "false";
+	break;
+    case HEIM_TID_ARRAY:
+	if (kvb->iter)
+	    break; /* arrays cannot be nested */
+
+	kvb->iter = key;
+	heim_array_iterate_f(value, kvb, audit_trail_iterator_array);
+	kvb->iter = NULL;
+	break;
+    case HEIM_TID_DATA: {
+	const heim_octet_string *data = heim_data_get_data(value);
+	if (rk_base64_encode(data->data, data->length, &b64) >= 0)
+	    v = b64;
+	break;
+    }
+    default:
+	break;
+    }
+
+    if (v == NULL)
+	return;
+
+    if (kvb->pos < sizeof(kvb->buf) - 1)
+	kvb->buf[kvb->pos++] = ' ';
+    for (; *k && kvb->pos < sizeof(kvb->buf) - 1; kvb->pos++)
+	kvb->buf[kvb->pos] = *k++;
+    if (kvb->pos < sizeof(kvb->buf) - 1)
+	kvb->buf[kvb->pos++] = '=';
+    for (; *v && kvb->pos < sizeof(kvb->buf) - 1; kvb->pos++)
+	kvb->buf[kvb->pos] = *v++;
+
+    free(b64);
+}
+
+void
 heim_audit_trail(heim_svc_req_desc r, heim_error_code ret, const char *retname)
 {
     const char *retval;
-    char kvbuf[1024];
+    struct heim_audit_kv_buf kvb;
     char retvalbuf[30]; /* Enough for UNKNOWN-%d */
-    size_t nelem;
-    size_t i, j;
 
 #define CASE(x)	case x : retval = #x; break
     if (retname) {
         retval = retname;
-    } else switch (ret ? ret : r->ret) {
+    } else switch (ret ? ret : r->error_code) {
     CASE(ENOMEM);
     CASE(ENOENT);
     CASE(EACCES);
@@ -838,26 +1060,15 @@ heim_audit_trail(heim_svc_req_desc r, heim_error_code ret, const char *retname)
     if (r->e_text && r->kv)
 	heim_audit_addkv(r, HEIM_SVC_AUDIT_VIS, "e-text", "%s", r->e_text);
 
-    nelem = r->kv ? heim_array_get_length(r->kv) : 0;
-    for (i=0, j=0; i < nelem; i++) {
-	heim_string_t s;
-	const char *kvpair;
-
-        /* We know these are strings... */
-	s = heim_array_get_value(r->kv, i);
-	kvpair = heim_string_get_utf8(s);
-
-	if (j < sizeof(kvbuf) - 1)
-	    kvbuf[j++] = ' ';
-	for (; *kvpair && j < sizeof(kvbuf) - 1; j++)
-	    kvbuf[j] = *kvpair++;
-    }
-    kvbuf[j] = '\0';
+    memset(&kvb, 0, sizeof(kvb));
+    if (r->kv)
+        heim_dict_iterate_f(r->kv, &kvb, audit_trail_iterator);
+    kvb.buf[kvb.pos] = '\0';
 
     heim_log(r->hcontext, r->logf, 3, "%s %s %s %s %s%s%s%s",
              r->reqtype, retval, r->from,
              r->cname ? r->cname : "<unknown>",
              r->sname ? r->sname : "<unknown>",
-             kvbuf, r->reason ? " " : "",
+             kvb.buf, r->reason ? " reason=" : "",
              r->reason ? heim_string_get_utf8(r->reason) : "");
 }

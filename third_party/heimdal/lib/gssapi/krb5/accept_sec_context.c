@@ -157,39 +157,31 @@ gsskrb5_accept_delegated_token(OM_uint32 *minor_status,
     krb5_ccache ccache = NULL;
     krb5_error_code kret;
     int32_t ac_flags, ret = GSS_S_COMPLETE;
+    gsskrb5_cred handle;
 
     *minor_status = 0;
 
     /* XXX Create a new delegated_cred_handle? */
-    if (delegated_cred_handle == NULL) {
-        ret = GSS_S_COMPLETE;
-        goto out;
-    }
+    if (delegated_cred_handle == NULL)
+        return GSS_S_COMPLETE;
 
     *delegated_cred_handle = NULL;
     kret = krb5_cc_resolve(context, "MEMORY:anonymous", &ccache);
-    if (kret) {
-	ctx->flags &= ~GSS_C_DELEG_FLAG;
-	goto out;
+    if (kret == 0)
+        kret = krb5_cc_initialize(context, ccache, ctx->source);
+    if (kret == 0) {
+        (void) krb5_auth_con_removeflags(context,
+                                         ctx->auth_context,
+                                         KRB5_AUTH_CONTEXT_DO_TIME,
+                                         &ac_flags);
+        kret = krb5_rd_cred2(context,
+                             ctx->auth_context,
+                             ccache,
+                             &ctx->fwd_data);
+        (void) krb5_auth_con_setflags(context,
+                                      ctx->auth_context,
+                                      ac_flags);
     }
-
-    kret = krb5_cc_initialize(context, ccache, ctx->source);
-    if (kret) {
-	ctx->flags &= ~GSS_C_DELEG_FLAG;
-	goto out;
-    }
-
-    krb5_auth_con_removeflags(context,
-			      ctx->auth_context,
-			      KRB5_AUTH_CONTEXT_DO_TIME,
-			      &ac_flags);
-    kret = krb5_rd_cred2(context,
-			 ctx->auth_context,
-			 ccache,
-			 &ctx->fwd_data);
-    krb5_auth_con_setflags(context,
-			   ctx->auth_context,
-			   ac_flags);
     if (kret) {
 	ctx->flags &= ~GSS_C_DELEG_FLAG;
 	ret = GSS_S_FAILURE;
@@ -197,62 +189,54 @@ gsskrb5_accept_delegated_token(OM_uint32 *minor_status,
 	goto out;
     }
 
-    if (delegated_cred_handle) {
-	gsskrb5_cred handle;
+    ret = _gsskrb5_krb5_import_cred(minor_status,
+                                    &ccache,
+                                    NULL,
+                                    NULL,
+                                    delegated_cred_handle);
+    if (ret != GSS_S_COMPLETE)
+        goto out;
 
-	ret = _gsskrb5_krb5_import_cred(minor_status,
-					&ccache,
-					NULL,
-					NULL,
-					delegated_cred_handle);
-	if (ret != GSS_S_COMPLETE)
-	    goto out;
+    handle = (gsskrb5_cred) *delegated_cred_handle;
+    handle->cred_flags |= GSS_CF_DESTROY_CRED_ON_RELEASE;
 
-	handle = (gsskrb5_cred) *delegated_cred_handle;
-	handle->cred_flags |= GSS_CF_DESTROY_CRED_ON_RELEASE;
-
-        /*
-         * A root TGT is one of the form krbtgt/REALM@SAME-REALM.
-         *
-         * A destination TGT is a root TGT for the same realm as the acceptor
-         * service's realm.
-         *
-         * Normally clients delegate a root TGT for the client's realm.
-         *
-         * In some deployments clients may want to delegate destination TGTs as
-         * a form of constrained delegation: so that the destination service
-         * cannot use the delegated credential to impersonate the client
-         * principal to services in its home realm (due to KDC lineage/transit
-         * checks).  In those deployments there may not even be a route back to
-         * the KDCs of the client's realm, and attempting to use a
-         * non-destination TGT might even lead to timeouts.
-         *
-         * We could simply pretend not to have obtained a credential, except
-         * that a) we don't (yet) have an app name here for the appdefault we
-         * need to check, b) the application really wants to be able to log a
-         * message about the delegated credential being no good.
-         *
-         * Thus we leave it to _gsskrb5_store_cred_into2() to decide what to do
-         * with non-destination TGTs.  To do that, it needs the realm of the
-         * acceptor service, which we record here.
-         */
-        handle->destination_realm =
-            strdup(krb5_principal_get_realm(context, ctx->target));
-        if (handle->destination_realm == NULL) {
-            _gsskrb5_release_cred(minor_status, delegated_cred_handle);
-            *minor_status = krb5_enomem(context);
-            ret = GSS_S_FAILURE;
-            goto out;
-        }
+    /*
+     * A root TGT is one of the form krbtgt/REALM@SAME-REALM.
+     *
+     * A destination TGT is a root TGT for the same realm as the acceptor
+     * service's realm.
+     *
+     * Normally clients delegate a root TGT for the client's realm.
+     *
+     * In some deployments clients may want to delegate destination TGTs as
+     * a form of constrained delegation: so that the destination service
+     * cannot use the delegated credential to impersonate the client
+     * principal to services in its home realm (due to KDC lineage/transit
+     * checks).  In those deployments there may not even be a route back to
+     * the KDCs of the client's realm, and attempting to use a
+     * non-destination TGT might even lead to timeouts.
+     *
+     * We could simply pretend not to have obtained a credential, except
+     * that a) we don't (yet) have an app name here for the appdefault we
+     * need to check, b) the application really wants to be able to log a
+     * message about the delegated credential being no good.
+     *
+     * Thus we leave it to _gsskrb5_store_cred_into2() to decide what to do
+     * with non-destination TGTs.  To do that, it needs the realm of the
+     * acceptor service, which we record here.
+     */
+    handle->destination_realm =
+        strdup(krb5_principal_get_realm(context, ctx->target));
+    if (handle->destination_realm == NULL) {
+        _gsskrb5_release_cred(minor_status, delegated_cred_handle);
+        *minor_status = krb5_enomem(context);
+        ret = GSS_S_FAILURE;
+        goto out;
     }
 
 out:
     if (ccache) {
-	/* Don't destroy the default cred cache */
-	if (delegated_cred_handle == NULL)
-	    krb5_cc_close(context, ccache);
-	else
-	    krb5_cc_destroy(context, ccache);
+        krb5_cc_close(context, ccache);
     }
     return ret;
 }
@@ -478,6 +462,10 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	     * lets only send the error token on clock skew, that
 	     * limit when send error token for non-MUTUAL.
 	     */
+            krb5_auth_con_free(context, ctx->auth_context);
+            krb5_auth_con_free(context, ctx->deleg_auth_context);
+            ctx->deleg_auth_context = NULL;
+            ctx->auth_context = NULL;
 	    return send_error_token(minor_status, context, kret,
 				    server, &indata, output_token);
 	} else if (kret) {

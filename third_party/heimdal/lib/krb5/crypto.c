@@ -2152,7 +2152,10 @@ krb5_crypto_length(krb5_context context,
 	    *len = 0;
 	return 0;
     case KRB5_CRYPTO_TYPE_TRAILER:
-	*len = CHECKSUMSIZE(crypto->et->keyed_checksum);
+        if (crypto->et->keyed_checksum)
+            *len = CHECKSUMSIZE(crypto->et->keyed_checksum);
+        else
+            *len = 0;
 	return 0;
     case KRB5_CRYPTO_TYPE_CHECKSUM:
 	if (crypto->et->keyed_checksum)
@@ -2572,7 +2575,7 @@ krb5_crypto_init(krb5_context context,
     ALLOC(*crypto, 1);
     if (*crypto == NULL)
 	return krb5_enomem(context);
-    if(etype == (krb5_enctype)ETYPE_NULL)
+    if(etype == ETYPE_NULL)
 	etype = key->keytype;
     (*crypto)->et = _krb5_find_enctype(etype);
     if((*crypto)->et == NULL || ((*crypto)->et->flags & F_DISABLED)) {

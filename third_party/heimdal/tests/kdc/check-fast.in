@@ -88,7 +88,7 @@ echo bar > ${objdir}/barpassword
 
 echo Starting kdc ; > messages.log
 env MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=${objdir}/malloc-log \
-${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
 trap "kill -9 ${kdcpid}; echo signal killing kdc; cat messages.log; exit 1;" EXIT

@@ -60,18 +60,18 @@ synthesize_hdb_close(krb5_context context, struct HDB *db)
 }
 
 /*
- * Synthesize an HDB entry suitable for PKINIT and only PKINIT.
+ * Synthesize an HDB entry suitable for PKINIT and GSS preauth.
  */
 static krb5_error_code
 synthesize_client(krb5_context context,
                   krb5_kdc_configuration *config,
                   krb5_const_principal princ,
                   HDB **db,
-                  hdb_entry_ex **h)
+                  hdb_entry **h)
 {
     static HDB null_db;
     krb5_error_code ret;
-    hdb_entry_ex *e;
+    hdb_entry *e;
 
     /* Hope this works! */
     null_db.hdb_destroy = synthesize_hdb_close;
@@ -81,57 +81,57 @@ synthesize_client(krb5_context context,
 
     ret = (e = calloc(1, sizeof(*e))) ? 0 : krb5_enomem(context);
     if (ret == 0) {
-        e->entry.flags.client = 1;
-        e->entry.flags.immutable = 1;
-        e->entry.flags.virtual = 1;
-        e->entry.flags.synthetic = 1;
-        e->entry.flags.do_not_store = 1;
-        e->entry.kvno = 1;
-        e->entry.keys.len = 0;
-        e->entry.keys.val = NULL;
-        e->entry.created_by.time = time(NULL);
-        e->entry.modified_by = NULL;
-        e->entry.valid_start = NULL;
-        e->entry.valid_end = NULL;
-        e->entry.pw_end = NULL;
-        e->entry.etypes = NULL;
-        e->entry.generation = NULL;
-        e->entry.extensions = NULL;
+        e->flags.client = 1;
+        e->flags.immutable = 1;
+        e->flags.virtual = 1;
+        e->flags.synthetic = 1;
+        e->flags.do_not_store = 1;
+        e->kvno = 1;
+        e->keys.len = 0;
+        e->keys.val = NULL;
+        e->created_by.time = time(NULL);
+        e->modified_by = NULL;
+        e->valid_start = NULL;
+        e->valid_end = NULL;
+        e->pw_end = NULL;
+        e->etypes = NULL;
+        e->generation = NULL;
+        e->extensions = NULL;
     }
     if (ret == 0)
-        ret = (e->entry.max_renew = calloc(1, sizeof(*e->entry.max_renew))) ?
+        ret = (e->max_renew = calloc(1, sizeof(*e->max_renew))) ?
             0 : krb5_enomem(context);
     if (ret == 0)
-        ret = (e->entry.max_life = calloc(1, sizeof(*e->entry.max_life))) ?
+        ret = (e->max_life = calloc(1, sizeof(*e->max_life))) ?
             0 : krb5_enomem(context);
     if (ret == 0)
-        ret = krb5_copy_principal(context, princ, &e->entry.principal);
+        ret = krb5_copy_principal(context, princ, &e->principal);
     if (ret == 0)
-        ret = krb5_copy_principal(context, princ, &e->entry.created_by.principal);
+        ret = krb5_copy_principal(context, princ, &e->created_by.principal);
     if (ret == 0) {
         /*
          * We can't check OCSP in the TGS path, so we can't let tickets for
          * synthetic principals live very long.
          */
-        *(e->entry.max_renew) = config->synthetic_clients_max_renew;
-        *(e->entry.max_life) = config->synthetic_clients_max_life;
+        *(e->max_renew) = config->synthetic_clients_max_renew;
+        *(e->max_life) = config->synthetic_clients_max_life;
         *h = e;
-    } else {
-        hdb_free_entry(context, e);
+    } else if (e) {
+        hdb_free_entry(context, &null_db, e);
     }
     return ret;
 }
 
-krb5_error_code
+KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
 _kdc_db_fetch(krb5_context context,
 	      krb5_kdc_configuration *config,
 	      krb5_const_principal principal,
 	      unsigned flags,
 	      krb5uint32 *kvno_ptr,
 	      HDB **db,
-	      hdb_entry_ex **h)
+	      hdb_entry **h)
 {
-    hdb_entry_ex *ent = NULL;
+    hdb_entry *ent = NULL;
     krb5_error_code ret = HDB_ERR_NOENTRY;
     int i;
     unsigned kvno = 0;
@@ -245,10 +245,10 @@ out:
     return ret;
 }
 
-void
-_kdc_free_ent(krb5_context context, hdb_entry_ex *ent)
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+_kdc_free_ent(krb5_context context, HDB *db, hdb_entry *ent)
 {
-    hdb_free_entry (context, ent);
+    hdb_free_entry (context, db, ent);
     free (ent);
 }
 
@@ -260,7 +260,7 @@ _kdc_free_ent(krb5_context context, hdb_entry_ex *ent)
 krb5_error_code
 _kdc_get_preferred_key(krb5_context context,
 		       krb5_kdc_configuration *config,
-		       hdb_entry_ex *h,
+		       hdb_entry *h,
 		       const char *name,
 		       krb5_enctype *enctype,
 		       Key **key)
@@ -271,11 +271,11 @@ _kdc_get_preferred_key(krb5_context context,
     if (config->use_strongest_server_key) {
 	const krb5_enctype *p = krb5_kerberos_enctypes(context);
 
-	for (i = 0; p[i] != (krb5_enctype)ETYPE_NULL; i++) {
+	for (i = 0; p[i] != ETYPE_NULL; i++) {
 	    if (krb5_enctype_valid(context, p[i]) != 0 &&
-		!_kdc_is_weak_exception(h->entry.principal, p[i]))
+		!_kdc_is_weak_exception(h->principal, p[i]))
 		continue;
-	    ret = hdb_enctype2key(context, &h->entry, NULL, p[i], key);
+	    ret = hdb_enctype2key(context, h, NULL, p[i], key);
 	    if (ret != 0)
 		continue;
 	    if (enctype != NULL)
@@ -285,12 +285,12 @@ _kdc_get_preferred_key(krb5_context context,
     } else {
 	*key = NULL;
 
-	for (i = 0; i < h->entry.keys.len; i++) {
-	    if (krb5_enctype_valid(context, h->entry.keys.val[i].key.keytype) != 0 &&
-		!_kdc_is_weak_exception(h->entry.principal, h->entry.keys.val[i].key.keytype))
+	for (i = 0; i < h->keys.len; i++) {
+	    if (krb5_enctype_valid(context, h->keys.val[i].key.keytype) != 0 &&
+		!_kdc_is_weak_exception(h->principal, h->keys.val[i].key.keytype))
 		continue;
-	    ret = hdb_enctype2key(context, &h->entry, NULL,
-				  h->entry.keys.val[i].key.keytype, key);
+	    ret = hdb_enctype2key(context, h, NULL,
+				  h->keys.val[i].key.keytype, key);
 	    if (ret != 0)
 		continue;
 	    if (enctype != NULL)
@@ -335,4 +335,23 @@ krb5_boolean
 _kdc_include_pac_p(astgs_request_t r)
 {
     return TRUE;
+}
+
+/*
+ * Notify the HDB backend and KDC plugin of the audited event.
+ */
+
+krb5_error_code
+_kdc_audit_request(astgs_request_t r)
+{
+    krb5_error_code ret;
+    struct HDB *hdb;
+
+    ret = _kdc_plugin_audit(r);
+    if (ret == 0 &&
+	(hdb = r->clientdb ? r->clientdb : r->config->db[0]) &&
+	hdb->hdb_audit)
+	ret = hdb->hdb_audit(r->context, hdb, r->client, (hdb_request_t)r);
+
+    return ret;
 }

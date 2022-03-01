@@ -169,6 +169,7 @@ cmd_append(struct rk_strpool **cmd, const char *s0, ...)
 {
     va_list ap;
     const char *arg;
+    int ret = 0;
 
     if ((*cmd = rk_strpoolprintf(*cmd, "%s", s0)) == NULL)
         return ENOMEM;
@@ -177,14 +178,23 @@ cmd_append(struct rk_strpool **cmd, const char *s0, ...)
     while ((arg = va_arg(ap, const char *))) {
         char *s;
 
-        if ((s = string_encode(arg)) == NULL)
-            return rk_strpoolfree(*cmd), *cmd = NULL, ENOMEM;
+        if ((s = string_encode(arg)) == NULL) {
+            rk_strpoolfree(*cmd);
+	    *cmd = NULL;
+	    ret = ENOMEM;
+	    goto out;
+	}
         *cmd = rk_strpoolprintf(*cmd, "%s", s);
         free(s);
-        if (*cmd == NULL)
-            return ENOMEM;
+        if (*cmd == NULL) {
+            ret = ENOMEM;
+	    goto out;
+	}
     }
-    return 0;
+
+ out:
+    va_end(ap);
+    return ret;
 }
 
 static int

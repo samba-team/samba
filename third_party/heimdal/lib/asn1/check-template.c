@@ -48,6 +48,19 @@
 #include "check-common.h"
 #include "der_locl.h"
 
+int
+my_copy_vers(const my_vers *from, my_vers *to)
+{
+    *to = *from;
+    return 0;
+}
+
+void
+my_free_vers(my_vers *v)
+{
+    v->v = -1;
+}
+
 static int
 cmp_dummy (void *a, void *b)
 {

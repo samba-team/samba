@@ -42,9 +42,9 @@ gss_import_sec_context(OM_uint32 *minor_status,
 
         _gss_mg_log(10, "gss-isc called");
 
-        if (!minor_status || !context_handle) {
+        if (!context_handle) {
             *minor_status = EFAULT;
-            return GSS_S_FAILURE;
+            return GSS_S_CALL_INACCESSIBLE_WRITE;
         }
 
 	*minor_status = 0;
@@ -87,7 +87,7 @@ gss_import_sec_context(OM_uint32 *minor_status,
             if (ret != GSS_S_COMPLETE)
                 goto failure;
 
-            ctx->gc_input.value = calloc(target_len, 1);
+            ctx->gc_free_this = ctx->gc_input.value = calloc(target_len, 1);
 	    if (ctx->gc_input.value == NULL)
 		goto failure;
 

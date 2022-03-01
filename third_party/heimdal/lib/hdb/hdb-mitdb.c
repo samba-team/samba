@@ -555,7 +555,7 @@ _hdb_mdb_value2entry(krb5_context context, krb5_data *data,
                 goto out;
             }
             CHECK(ret = krb5_parse_name(context, p, &modby));
-            ret = hdb_set_last_modified_by(context, entry, modby, u32);
+            CHECK(ret = hdb_set_last_modified_by(context, entry, modby, u32));
             krb5_free_principal(context, modby);
             free(p);
             break;
@@ -765,7 +765,7 @@ mdb_unlock(krb5_context context, HDB *db)
 
 static krb5_error_code
 mdb_seq(krb5_context context, HDB *db,
-       unsigned flags, hdb_entry_ex *entry, int flag)
+       unsigned flags, hdb_entry *entry, int flag)
 {
     DB *d = (DB*)db->hdb_db;
     DBT key, value;
@@ -796,13 +796,13 @@ mdb_seq(krb5_context context, HDB *db,
     data.length = value.size;
     memset(entry, 0, sizeof(*entry));
 
-    if (_hdb_mdb_value2entry(context, &data, 0, &entry->entry))
+    if (_hdb_mdb_value2entry(context, &data, 0, entry))
 	return mdb_seq(context, db, flags, entry, R_NEXT);
 
     if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {
-	code = hdb_unseal_keys (context, db, &entry->entry);
+	code = hdb_unseal_keys (context, db, entry);
 	if (code)
-	    hdb_free_entry (context, entry);
+	    hdb_free_entry (context, db, entry);
     }
 
     return code;
@@ -810,14 +810,14 @@ mdb_seq(krb5_context context, HDB *db,
 
 
 static krb5_error_code
-mdb_firstkey(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+mdb_firstkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
     return mdb_seq(context, db, flags, entry, R_FIRST);
 }
 
 
 static krb5_error_code
-mdb_nextkey(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+mdb_nextkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
     return mdb_seq(context, db, flags, entry, R_NEXT);
 }
@@ -941,7 +941,7 @@ mdb__del(krb5_context context, HDB *db, krb5_data key)
 
 static krb5_error_code
 mdb_fetch_kvno(krb5_context context, HDB *db, krb5_const_principal principal,
-	       unsigned flags, krb5_kvno kvno, hdb_entry_ex *entry)
+	       unsigned flags, krb5_kvno kvno, hdb_entry *entry)
 {
     krb5_data key, value;
     krb5_error_code ret;
@@ -953,15 +953,15 @@ mdb_fetch_kvno(krb5_context context, HDB *db, krb5_const_principal principal,
     krb5_data_free(&key);
     if(ret)
 	return ret;
-    ret = _hdb_mdb_value2entry(context, &value, kvno, &entry->entry);
+    ret = _hdb_mdb_value2entry(context, &value, kvno, entry);
     krb5_data_free(&value);
     if (ret)
 	return ret;
 
     if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {
-	ret = hdb_unseal_keys (context, db, &entry->entry);
+	ret = hdb_unseal_keys (context, db, entry);
 	if (ret) {
-	    hdb_free_entry(context, entry);
+	    hdb_free_entry(context, db, entry);
             return ret;
         }
     }
@@ -970,7 +970,7 @@ mdb_fetch_kvno(krb5_context context, HDB *db, krb5_const_principal principal,
 }
 
 static krb5_error_code
-mdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+mdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
     krb5_error_code ret;
     krb5_storage *sp = NULL;
@@ -985,7 +985,7 @@ mdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
         return 0;
 
     if ((flags & HDB_F_PRECHECK)) {
-        ret = mdb_principal2key(context, entry->entry.principal, &key);
+        ret = mdb_principal2key(context, entry->principal, &key);
         if (ret) return ret;
         ret = db->hdb__get(context, db, key, &value);
         krb5_data_free(&key);
@@ -999,9 +999,9 @@ mdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
     sp = krb5_storage_emem();
     if (!sp) return ENOMEM;
     ret = _hdb_set_master_key_usage(context, db, 0); /* MIT KDB uses KU 0 */
-    ret = hdb_seal_keys(context, db, &entry->entry);
+    ret = hdb_seal_keys(context, db, entry);
     if (ret) return ret;
-    ret = entry2mit_string_int(context, sp, &entry->entry);
+    ret = entry2mit_string_int(context, sp, entry);
     if (ret) goto out;
     sz = krb5_storage_write(sp, "\n", 2); /* NUL-terminate */
     ret = ENOMEM;
@@ -1016,7 +1016,7 @@ mdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
     if (ret) goto out;
     ret = krb5_storage_to_data(spent, &kdb_ent);
     if (ret) goto out;
-    ret = mdb_principal2key(context, entry->entry.principal, &key);
+    ret = mdb_principal2key(context, entry->principal, &key);
     if (ret) goto out;
     ret = mdb__put(context, db, 1, key, kdb_ent);
 
@@ -1253,17 +1253,16 @@ getdata(char **p, unsigned char *buf, size_t len, const char *what)
 }
 
 static int
-getint(char **p, const char *what)
+getint(char **p, const char *what, int *val)
 {
-    int val;
     char *q = nexttoken(p, 0, what);
     if (!q) {
         warnx("Failed to find a signed integer (%s) in dump", what);
-        return -1;
+        return 1;
     }
-    if (sscanf(q, "%d", &val) != 1)
-        return -1;
-    return val;
+    if (sscanf(q, "%d", val) != 1)
+        return 1;
+    return 0;
 }
 
 static unsigned int
@@ -1327,7 +1326,7 @@ _hdb_mit_dump2mitdb_entry(krb5_context context, char *line, krb5_storage *sp)
               "'policy', nor 'princ'");
         return -1;
     }
-    if (getint(&p, "constant '38'") != 38) {
+    if (getint(&p, "constant '38'", &tmp) || tmp != 38) {
         warnx("Dump entry does not start with '38<TAB>'");
         return EINVAL;
     }
@@ -1343,7 +1342,7 @@ _hdb_mit_dump2mitdb_entry(krb5_context context, char *line, krb5_storage *sp)
     }
     num_tl_data = getuint(&p, "number of TL data");
     num_key_data = getuint(&p, "number of key data");
-    getint(&p, "5th field, length of 'extra data'");
+    (void) getint(&p, "5th field, length of 'extra data'", &tmp);
     princ = nexttoken(&p, (int)princ_len, "principal name");
     if (princ == NULL) {
         warnx("Failed to read principal name (expected length %llu)",
@@ -1355,38 +1354,31 @@ _hdb_mit_dump2mitdb_entry(krb5_context context, char *line, krb5_storage *sp)
     ret = krb5_store_uint32(sp, attributes);
     if (ret) return ret;
 
-    tmp = getint(&p, "max life");
-    CHECK_UINT(tmp);
+    if (getint(&p, "max life", &tmp)) return EINVAL;
     ret = krb5_store_uint32(sp, tmp);
     if (ret) return ret;
 
-    tmp = getint(&p, "max renewable life");
-    CHECK_UINT(tmp);
+    if (getint(&p, "max renewable life", &tmp)) return EINVAL;
     ret = krb5_store_uint32(sp, tmp);
     if (ret) return ret;
 
-    tmp = getint(&p, "expiration");
-    CHECK_UINT(tmp);
+    if (getint(&p, "expiration", &tmp)) return EINVAL;
     ret = krb5_store_uint32(sp, tmp);
     if (ret) return ret;
 
-    tmp = getint(&p, "pw expiration");
-    CHECK_UINT(tmp);
+    if (getint(&p, "pw expiration", &tmp)) return EINVAL;
     ret = krb5_store_uint32(sp, tmp);
     if (ret) return ret;
 
-    tmp = getint(&p, "last auth");
-    CHECK_UINT(tmp);
+    if (getint(&p, "last auth", &tmp)) return EINVAL;
     ret = krb5_store_uint32(sp, tmp);
     if (ret) return ret;
 
-    tmp = getint(&p, "last failed auth");
-    CHECK_UINT(tmp);
+    if (getint(&p, "last failed auth", &tmp)) return EINVAL;
     ret = krb5_store_uint32(sp, tmp);
     if (ret) return ret;
 
-    tmp = getint(&p,"fail auth count");
-    CHECK_UINT(tmp);
+    if (getint(&p,"fail auth count", &tmp)) return EINVAL;
     ret = krb5_store_uint32(sp, tmp);
     if (ret) return ret;
 
@@ -1414,8 +1406,9 @@ _hdb_mit_dump2mitdb_entry(krb5_context context, char *line, krb5_storage *sp)
         int tl_type, tl_length;
         unsigned char *buf;
 
-        tl_type = getint(&p, "TL data type");
-        tl_length = getint(&p, "data length");
+        if (getint(&p, "TL data type", &tl_type) ||
+            getint(&p, "data length", &tl_length))
+            return EINVAL;
 
         if (asprintf(&reading_what, "TL data type %d (length %d)",
                      tl_type, tl_length) < 0)
@@ -1435,8 +1428,10 @@ _hdb_mit_dump2mitdb_entry(krb5_context context, char *line, krb5_storage *sp)
         if (tl_length) {
             buf = malloc(tl_length);
             if (!buf) return ENOMEM;
-            if (getdata(&p, buf, tl_length, reading_what) != tl_length)
+            if (getdata(&p, buf, tl_length, reading_what) != tl_length) {
+                free(buf);
                 return EINVAL;
+            }
             sz = krb5_storage_write(sp, buf, tl_length);
             free(buf);
             if (sz != tl_length) return ENOMEM;
@@ -1454,23 +1449,23 @@ _hdb_mit_dump2mitdb_entry(krb5_context context, char *line, krb5_storage *sp)
         int keylen;
         size_t k;
 
-        key_versions = getint(&p, "key data 'version'");
+        if (getint(&p, "key data 'version'", &key_versions)) return EINVAL;
         CHECK_UINT16(key_versions);
         ret = krb5_store_int16(sp, key_versions);
         if (ret) return ret;
 
-        kvno = getint(&p, "kvno");
+        if (getint(&p, "kvno", &kvno)) return EINVAL;
         CHECK_UINT16(kvno);
         ret = krb5_store_int16(sp, kvno);
         if (ret) return ret;
 
         for (k = 0; k < key_versions; k++) {
-            keytype = getint(&p, "enctype");
+            if (getint(&p, "enctype", &keytype)) return EINVAL;
             CHECK_UINT16(keytype);
             ret = krb5_store_int16(sp, keytype);
             if (ret) return ret;
 
-            keylen = getint(&p, "encrypted key length");
+            if (getint(&p, "encrypted key length", &keylen)) return EINVAL;
             CHECK_UINT16(keylen);
             ret = krb5_store_int16(sp, keylen);
             if (ret) return ret;
@@ -1478,8 +1473,10 @@ _hdb_mit_dump2mitdb_entry(krb5_context context, char *line, krb5_storage *sp)
             if (keylen) {
                 buf = malloc(keylen);
                 if (!buf) return ENOMEM;
-                if (getdata(&p, buf, keylen, "key (or salt) data") != keylen)
+                if (getdata(&p, buf, keylen, "key (or salt) data") != keylen) {
+                    free(buf);
                     return EINVAL;
+                }
                 sz = krb5_storage_write(sp, buf, keylen);
                 free(buf);
                 if (sz != keylen) return ENOMEM;

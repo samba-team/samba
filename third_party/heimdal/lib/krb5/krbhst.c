@@ -107,8 +107,24 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
     }
 
     for(num_srv = 0, rr = r->head; rr; rr = rr->next)
-	if(rr->type == rk_ns_t_srv)
+	if(rr->type == rk_ns_t_srv) {
+	    if (num_srv >= INT_MAX) {
+		rk_dns_free_data(r);
+		return KRB5_KDC_UNREACH;
+	    }
+	    if (num_srv >= SIZE_MAX / sizeof(**res)) {
+		rk_dns_free_data(r);
+		return KRB5_KDC_UNREACH;
+	    }
 	    num_srv++;
+	}
+
+    if (num_srv == 0) {
+	_krb5_debug(context, 0,
+		    "DNS SRV RR lookup domain nodata: %s", domain);
+	rk_dns_free_data(r);
+	return KRB5_KDC_UNREACH;
+    }
 
     *res = malloc(num_srv * sizeof(**res));
     if(*res == NULL) {
@@ -431,7 +447,7 @@ krb5_krbhst_get_addrinfo(krb5_context context, krb5_krbhst_info *host,
 static krb5_boolean
 get_next(struct krb5_krbhst_data *kd, krb5_krbhst_info **host)
 {
-    struct krb5_krbhst_info *hi = *kd->index;
+    struct krb5_krbhst_info *hi = kd ? *kd->index : NULL;
     if(hi != NULL) {
 	*host = hi;
 	kd->index = &(*kd->index)->next;
@@ -555,6 +571,7 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 			   "Realm %s needs immediate attention "
 			   "see https://icann.org/namecollision",
 			   kd->realm);
+		freeaddrinfo(ai);
 		return KRB5_KDC_UNREACH;
 	    }
 	}
@@ -563,6 +580,7 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 	hi = calloc(1, sizeof(*hi) + hostlen);
 	if(hi == NULL) {
 	    free(host);
+	    freeaddrinfo(ai);
 	    return krb5_enomem(context);
 	}
 
@@ -920,7 +938,7 @@ kpasswd_get_next(krb5_context context,
     return KRB5_KDC_UNREACH;
 }
 
-static void
+static void KRB5_CALLCONV
 krbhost_dealloc(void *ptr)
 {
     struct krb5_krbhst_data *handle = (struct krb5_krbhst_data *)ptr;

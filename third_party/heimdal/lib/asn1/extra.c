@@ -105,7 +105,7 @@ print_heim_any(const heim_any *data, int flags)
     free(s);
     s = NULL;
     if (r > -1)
-        r = asprintf(&s, "\"%s\"", s2);
+        (void) asprintf(&s, "\"%s\"", s2);
     free(s2);
     return s;
 }
@@ -155,7 +155,7 @@ print_HEIM_ANY(const heim_any *data, int flags)
     free(s);
     s = NULL;
     if (r > -1)
-        r = asprintf(&s, "\"%s\"", s2);
+        (void) asprintf(&s, "\"%s\"", s2);
     free(s2);
     return s;
 }
@@ -205,7 +205,7 @@ print_heim_any_set(const heim_any_set *data, int flags)
     free(s);
     s = NULL;
     if (r > -1)
-        r = asprintf(&s, "\"%s\"", s2);
+        (void) asprintf(&s, "\"%s\"", s2);
     free(s2);
     return s;
 }
@@ -261,7 +261,7 @@ print_HEIM_ANY_SET(const heim_any_set *data, int flags)
     free(s);
     s = NULL;
     if (r > -1)
-        r = asprintf(&s, "\"%s\"", s2);
+        (void) asprintf(&s, "\"%s\"", s2);
     free(s2);
     return s;
 }

@@ -33,6 +33,12 @@
 
 #include "gsskrb5_locl.h"
 
+static OM_uint32
+gsskrb5_set_authorization_data(OM_uint32 *,
+                               krb5_context,
+                               krb5_auth_context,
+                               gss_const_name_t);
+
 /*
  * copy the addresses from `input_chan_bindings' (if any) to
  * the auth context `ac'
@@ -415,6 +421,11 @@ init_auth
 
     ret = gsskrb5_get_creds(minor_status, context, ctx->ccache,
 			    ctx, name, time_req, time_rec);
+    if (ret)
+	goto failure;
+
+    ret = gsskrb5_set_authorization_data(minor_status, context,
+                                         ctx->auth_context, name);
     if (ret)
 	goto failure;
 
@@ -921,7 +932,7 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_init_sec_context
 			time_rec);
 	if (ret != GSS_S_COMPLETE)
 	    break;
-	/* FALLTHROUGH */
+        fallthrough;
     case INITIATOR_RESTART:
 	ret = init_auth_restart(minor_status,
 				cred,
@@ -979,4 +990,32 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_init_sec_context
 
     return ret;
 
+}
+
+static OM_uint32
+gsskrb5_set_authorization_data(OM_uint32 *minor_status,
+                               krb5_context context,
+                               krb5_auth_context auth_context,
+                               gss_const_name_t gn)
+{
+    const CompositePrincipal *name = (const void *)gn;
+    AuthorizationData *ad;
+    krb5_error_code kret = 0;
+    size_t i;
+
+    if (name->nameattrs == NULL || name->nameattrs->want_ad == NULL)
+        return GSS_S_COMPLETE;
+
+    ad = name->nameattrs->want_ad;
+    for (i = 0; kret == 0 && i < ad->len; i++) {
+        kret = krb5_auth_con_add_AuthorizationData(context, auth_context,
+                                                   ad->val[0].ad_type,
+                                                   &ad->val[0].ad_data);
+    }
+
+    if (kret) {
+        *minor_status = kret;
+        return GSS_S_FAILURE;
+    }
+    return GSS_S_COMPLETE;
 }

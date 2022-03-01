@@ -33,7 +33,7 @@ RELDIR=kdc
 
 !include ../windows/NTMakefile.w32 
 
-intcflags=-I$(OBJ) -I$(SRC)\lib\gssapi -I$(OBJDIR)\lib\gssapi -I$(OBJDIR)\lib\gss_preauth
+intcflags=-I$(OBJ) -I$(SRC)\lib\gssapi -I$(OBJDIR)\lib\gssapi -I$(OBJDIR)\lib\gss_preauth -DBUILD_KDC_LIB
 
 BINPROGRAMS=$(BINDIR)\string2key.exe
 
@@ -51,7 +51,9 @@ INCFILES=\
 	$(INCDIR)\kdc.h		\
 	$(INCDIR)\kdc-protos.h	\
 	$(INCDIR)\kdc-private.h	\
-	$(INCDIR)\krb5\windc_plugin.h
+	$(INCDIR)\krb5\kdc-audit.h \
+	$(INCDIR)\krb5\kdc-plugin.h \
+	$(INCDIR)\krb5\kdc-accessors.h
 
 all:: $(INCFILES) $(LIBKDC) $(BINPROGRAMS) $(SBINPROGRAMS) $(LIBEXECPROGRAMS)
 
@@ -103,13 +105,14 @@ LIBKDC_OBJS=\
 	$(OBJ)\krb5tgs.obj		\
 	$(OBJ)\pkinit.obj		\
 	$(OBJ)\pkinit-ec.obj		\
+	$(OBJ)\mssfu.obj			\
 	$(OBJ)\log.obj			\
 	$(OBJ)\misc.obj			\
 	$(OBJ)\kx509.obj		\
 	$(OBJ)\token_validator.obj	\
 	$(OBJ)\csr_authorizer.obj	\
 	$(OBJ)\process.obj		\
-	$(OBJ)\windc.obj		\
+	$(OBJ)\kdc-plugin.obj		\
 	$(OBJ)\gss_preauth.obj
 
 LIBKDC_LIBS=\
@@ -144,18 +147,19 @@ libkdc_la_SOURCES = 		\
 	krb5tgs.c		\
 	pkinit.c		\
 	pkinit-ec.c		\
+	mssfu.c			\
 	log.c			\
 	misc.c			\
 	kx509.c			\
 	token_validator.c	\
 	csr_authorizer.c	\
 	process.c		\
-	windc.c			\
-	gss_preauth.c		\
-	rx.h
+	kdc-plugin.c		\
+	gss_preauth.c
 
 $(OBJ)\kdc-protos.h: $(libkdc_la_SOURCES)
-	$(PERL) ..\cf\make-proto.pl -q -P remove -o $@ $(libkdc_la_SOURCES) \
+	cd $(SRCDIR)
+	$(PERL) ..\cf\make-proto.pl -E KDC_LIB -q -P remove -o $@ $(libkdc_la_SOURCES) \
 	|| $(RM) $@
 
 $(OBJ)\kdc-private.h: $(libkdc_la_SOURCES)

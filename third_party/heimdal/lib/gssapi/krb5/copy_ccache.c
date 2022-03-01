@@ -82,6 +82,7 @@ _gsskrb5_krb5_import_cred(OM_uint32 *minor_status,
     krb5_error_code kret;
     gsskrb5_cred handle;
     OM_uint32 ret;
+    int id_given = (*id != NULL);
 
     *cred = NULL;
 
@@ -142,8 +143,6 @@ _gsskrb5_krb5_import_cred(OM_uint32 *minor_status,
 
         handle->ccache = *id;
         *id = NULL;
-	if (kret)
-	    goto out;
     }
 
 
@@ -171,7 +170,7 @@ _gsskrb5_krb5_import_cred(OM_uint32 *minor_status,
     }
 
 
-    if (id || keytab) {
+    if (id_given || keytab) {
 	ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
 	if (ret == GSS_S_COMPLETE)
 	    ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,

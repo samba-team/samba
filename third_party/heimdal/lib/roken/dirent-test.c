@@ -28,7 +28,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  **********************************************************************/
-
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -148,7 +148,7 @@ int teardown_test(void)
 
         strcmp(dirname + len + 1 - sizeof(TESTDIR)/sizeof(char), TESTDIR) == 0) {
 
-        /* fallthrough */
+        fallthrough;
 
     } else {
         /* did we create the directory? */
@@ -162,7 +162,7 @@ int teardown_test(void)
                     fprintf(stderr, "Can't change to test directory. Aborting cleanup.\n");
                     return -1;
                 } else {
-                    /* fallthrough */
+                    fallthrough;
                 }
             } else {
                 return -1;

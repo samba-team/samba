@@ -112,10 +112,10 @@ again:
         if (strcmp(m->name, m_c->name) == 0)
             break;
     if (m_c) {
-        free(m->name);
-        free(m);
         if (name && !create_anonymous) {
             /* We raced with another thread to create this cache */
+            free(m->name);
+            free(m);
             m = m_c;
             HEIMDAL_MUTEX_lock(&(m->mutex));
             m->refcnt++;

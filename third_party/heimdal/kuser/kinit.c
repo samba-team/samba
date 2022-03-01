@@ -34,6 +34,8 @@
  */
 
 #include "kuser_locl.h"
+#undef HC_DEPRECATED_CRYPTO
+#include <krb5_locl.h>
 
 #ifdef HAVE_FRAMEWORK_SECURITY
 #include <Security/Security.h>
@@ -78,7 +80,7 @@ int pk_enterprise_flag = 0;
 struct hx509_certs_data *ent_user_id = NULL;
 char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
-int pk_anon_fast_armor	= 0;
+int pk_anon_fast_armor	= -1;
 char *gss_preauth_mech	= NULL;
 char *gss_preauth_name	= NULL;
 char *kdc_hostname	= NULL;
@@ -500,7 +502,7 @@ renew_validate(krb5_context context,
 	 * no need to check the error here, it's only to be
 	 * friendly to the user
 	 */
-	krb5_get_credentials(context, KRB5_GC_CACHED, cache, &in, &out);
+	(void) krb5_get_credentials(context, KRB5_GC_CACHED, cache, &in, &out);
     }
 
     flags.i = 0;
@@ -828,6 +830,8 @@ get_new_tickets(krb5_context context,
     if (pk_enterprise_flag || enterprise_flag || canonicalize_flag || windows_flag)
 	krb5_get_init_creds_opt_set_win2k(context, opt, TRUE);
     if (pk_user_id || ent_user_id || anonymous_pkinit) {
+        if (pk_anon_fast_armor == -1)
+            pk_anon_fast_armor = 0;
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 principal,
 						 pk_user_id,
@@ -936,13 +940,22 @@ get_new_tickets(krb5_context context,
 	}
     }
 
+    if (anonymous_flag && pk_anon_fast_armor == -1)
+        pk_anon_fast_armor = 0;
+    if (!gss_preauth_mech && anonymous_flag && pk_anon_fast_armor) {
+        krb5_warnx(context, N_("Ignoring --pk-anon-fast-armor because "
+                               "--anonymous given", ""));
+        pk_anon_fast_armor = 0;
+    }
+
     if (fast_armor_cache_string) {
 	krb5_ccache fastid = NULL;
 
-	if (pk_anon_fast_armor)
+	if (pk_anon_fast_armor > 0)
 	    krb5_errx(context, 1,
 		N_("cannot specify FAST armor cache with FAST "
 		     "anonymous PKINIT option", ""));
+        pk_anon_fast_armor = 0;
 
 	ret = krb5_cc_resolve(context, fast_armor_cache_string, &fastid);
 	if (ret) {
@@ -953,6 +966,12 @@ get_new_tickets(krb5_context context,
 	ret = krb5_init_creds_set_fast_ccache(context, ctx, fastid);
 	if (ret) {
 	    krb5_warn(context, ret, "krb5_init_creds_set_fast_ccache");
+	    goto out;
+	}
+    } else if (pk_anon_fast_armor == -1) {
+	ret = _krb5_init_creds_set_fast_anon_pkinit_optimistic(context, ctx);
+	if (ret) {
+	    krb5_warn(context, ret, "_krb5_init_creds_set_fast_anon_pkinit_optimistic");
 	    goto out;
 	}
     } else if (pk_anon_fast_armor) {
@@ -1659,6 +1678,10 @@ main(int argc, char **argv)
 	    krb5_err(context, 1, ret, "krb5_pk_enterprise_certs");
 
 	pk_user_id = NULL;
+        if (pk_anon_fast_armor > 0)
+            krb5_warnx(context, N_("Ignoring --pk-anon-fast-armor "
+                                   "because --pk-user given", ""));
+        pk_anon_fast_armor = 0;
     } else if (argc && argv[0][0] == '@' &&
 	(gss_preauth_mech || anonymous_flag)) {
 	const char *instance;
@@ -1673,6 +1696,11 @@ main(int argc, char **argv)
 	ret = make_wellknown_name(context, &argv[0][1], instance, &principal);
 	if (ret)
 	    krb5_err(context, 1, ret, "make_wellknown_name");
+        if (!gss_preauth_mech && pk_anon_fast_armor > 1) {
+            krb5_warnx(context, N_("Ignoring --pk-anon-fast-armor "
+                                   "because --anonymous given", ""));
+            pk_anon_fast_armor = 0;
+        }
     } else if (anonymous_flag && historical_anon_pkinit) {
         char *realm = argc == 0 ? get_default_realm(context) :
                       argv[0][0] == '@' ? &argv[0][1] : argv[0];

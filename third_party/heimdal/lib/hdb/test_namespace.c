@@ -106,7 +106,7 @@ TDB_unlock(krb5_context context, HDB *db)
 }
 
 static krb5_error_code
-TDB_firstkey(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+TDB_firstkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
     /* XXX Implement */
     /* Tricky thing: heim_dict_iterate_f() is inconvenient here */
@@ -115,7 +115,7 @@ TDB_firstkey(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 }
 
 static krb5_error_code
-TDB_nextkey(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+TDB_nextkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
     /* XXX Implement */
     /* Tricky thing: heim_dict_iterate_f() is inconvenient here */
@@ -151,14 +151,13 @@ TDB__put(krb5_context context, HDB *db, int rplc, krb5_data kd, krb5_data vd)
 {
     krb5_error_code ret = 0;
     TEST_HDB *tdb = (void *)db;
-    heim_object_t e = NULL;
     heim_object_t k = NULL;
     heim_object_t v = NULL;
 
     if ((k = heim_data_create(kd.data, kd.length)) == NULL ||
         (v = heim_data_create(vd.data, vd.length)) == NULL)
         ret = krb5_enomem(context);
-    if (ret == 0 && !rplc && (e = heim_dict_get_value(tdb->dict, k)) != NULL)
+    if (ret == 0 && !rplc && heim_dict_get_value(tdb->dict, k) != NULL)
         ret = HDB_ERR_EXISTS;
     if (ret == 0 && heim_dict_set_value(tdb->dict, k, v))
         ret = krb5_enomem(context);
@@ -172,11 +171,11 @@ TDB__del(krb5_context context, HDB *db, krb5_data key)
 {
     krb5_error_code ret = 0;
     TEST_HDB *tdb = (void *)db;
-    heim_object_t k, v;
+    heim_object_t k;
 
     if ((k = heim_data_create(key.data, key.length)) == NULL)
         ret = krb5_enomem(context);
-    if (ret == 0 && (v = heim_dict_get_value(tdb->dict, k)) == NULL)
+    if (ret == 0 && heim_dict_get_value(tdb->dict, k) == NULL)
         ret = HDB_ERR_NOENTRY;
     if (ret == 0)
         heim_dict_delete_key(tdb->dict, k);
@@ -198,7 +197,8 @@ hdb_test_create(krb5_context context, struct HDB **db, const char *arg)
     if ((tdb = calloc(1, sizeof(tdb[0]))) == NULL ||
         (tdb->hdb.hdb_name = strdup(arg)) == NULL ||
         (tdb->dict = heim_dict_create(10)) == NULL) {
-        free(tdb->hdb.hdb_name);
+        if (tdb)
+            free(tdb->hdb.hdb_name);
         free(tdb);
         return krb5_enomem(context);
     }
@@ -337,7 +337,7 @@ static void
 make_namespace(krb5_context context, HDB *db, const char *name)
 {
     krb5_error_code ret = 0;
-    hdb_entry_ex e;
+    hdb_entry e;
     Key k;
 
     memset(&k, 0, sizeof(k));
@@ -346,85 +346,83 @@ make_namespace(krb5_context context, HDB *db, const char *name)
 
     /* Setup the HDB entry */
     memset(&e, 0, sizeof(e));
-    e.ctx = 0;
-    e.free_entry = 0;
-    e.entry.created_by.time = krs[0].epoch;
-    e.entry.valid_start = e.entry.valid_end = e.entry.pw_end = 0;
-    e.entry.generation = 0;
-    e.entry.flags = int2HDBFlags(0);
-    e.entry.flags.server = e.entry.flags.client = 1;
-    e.entry.flags.virtual = 1;
+    e.created_by.time = krs[0].epoch;
+    e.valid_start = e.valid_end = e.pw_end = 0;
+    e.generation = 0;
+    e.flags = int2HDBFlags(0);
+    e.flags.server = e.flags.client = 1;
+    e.flags.virtual = 1;
 
     /* Setup etypes */
     if (ret == 0 &&
-        (e.entry.etypes = malloc(sizeof(*e.entry.etypes))) == NULL)
+        (e.etypes = malloc(sizeof(*e.etypes))) == NULL)
         ret = krb5_enomem(context);
     if (ret == 0)
-        e.entry.etypes->len = 3;
+        e.etypes->len = 3;
     if (ret == 0 &&
-        (e.entry.etypes->val = calloc(e.entry.etypes->len,
-                                      sizeof(e.entry.etypes->val[0]))) == NULL)
+        (e.etypes->val = calloc(e.etypes->len,
+                                      sizeof(e.etypes->val[0]))) == NULL)
         ret = krb5_enomem(context);
     if (ret == 0) {
-        e.entry.etypes->val[0] = KRB5_ENCTYPE_AES128_CTS_HMAC_SHA256_128;
-        e.entry.etypes->val[1] = KRB5_ENCTYPE_AES256_CTS_HMAC_SHA384_192;
-        e.entry.etypes->val[2] = KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+        e.etypes->val[0] = KRB5_ENCTYPE_AES128_CTS_HMAC_SHA256_128;
+        e.etypes->val[1] = KRB5_ENCTYPE_AES256_CTS_HMAC_SHA384_192;
+        e.etypes->val[2] = KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
     }
 
     /* Setup max_life and max_renew */
     if (ret == 0 &&
-        (e.entry.max_life = malloc(sizeof(*e.entry.max_life))) == NULL)
+        (e.max_life = malloc(sizeof(*e.max_life))) == NULL)
         ret = krb5_enomem(context);
     if (ret == 0 &&
-        (e.entry.max_renew = malloc(sizeof(*e.entry.max_renew))) == NULL)
+        (e.max_renew = malloc(sizeof(*e.max_renew))) == NULL)
         ret = krb5_enomem(context);
     if (ret == 0)
         /* Make it long, so we see the clamped max */
-        *e.entry.max_renew = 2 * ((*e.entry.max_life = 15 * 24 * 3600));
+        *e.max_renew = 2 * ((*e.max_life = 15 * 24 * 3600));
 
     /* Setup principal name and created_by */
     if (ret == 0)
-        ret = krb5_parse_name(context, name, &e.entry.principal);
+        ret = krb5_parse_name(context, name, &e.principal);
     if (ret == 0)
         ret = krb5_parse_name(context, "admin@BAR.EXAMPLE",
-                              &e.entry.created_by.principal);
+                              &e.created_by.principal);
 
     /* Make base keys for first epoch */
     if (ret == 0)
-        ret = make_base_key(context, e.entry.principal, base_pw[0], &k.key);
+        ret = make_base_key(context, e.principal, base_pw[0], &k.key);
     if (ret == 0)
-        add_Keys(&e.entry.keys, &k);
+        add_Keys(&e.keys, &k);
     if (ret == 0)
-        ret = hdb_entry_set_pw_change_time(context, &e.entry, krs[0].epoch);
+        ret = hdb_entry_set_pw_change_time(context, &e, krs[0].epoch);
     free_Key(&k);
-    e.entry.kvno = krs[0].base_key_kvno;
+    e.kvno = krs[0].base_key_kvno;
 
     /* Move them to history */
     if (ret == 0)
-        ret = hdb_add_current_keys_to_history(context, &e.entry);
-    free_Keys(&e.entry.keys);
+        ret = hdb_add_current_keys_to_history(context, &e);
+    free_Keys(&e.keys);
 
     /* Make base keys for second epoch */
     if (ret == 0)
-        ret = make_base_key(context, e.entry.principal, base_pw[1], &k.key);
+        ret = make_base_key(context, e.principal, base_pw[1], &k.key);
     if (ret == 0)
-        add_Keys(&e.entry.keys, &k);
-    e.entry.kvno = krs[1].base_key_kvno;
+        add_Keys(&e.keys, &k);
+    e.kvno = krs[1].base_key_kvno;
     if (ret == 0)
-        ret = hdb_entry_set_pw_change_time(context, &e.entry, krs[1].epoch);
+        ret = hdb_entry_set_pw_change_time(context, &e, krs[1].epoch);
 
     /* Add the key rotation metadata */
     if (ret == 0)
-        ret = hdb_entry_add_key_rotation(context, &e.entry, 0, &krs[0]);
+        ret = hdb_entry_add_key_rotation(context, &e, 0, &krs[0]);
     if (ret == 0)
-        ret = hdb_entry_add_key_rotation(context, &e.entry, 0, &krs[1]);
+        ret = hdb_entry_add_key_rotation(context, &e, 0, &krs[1]);
 
     if (ret == 0)
         ret = db->hdb_store(context, db, 0, &e);
     if (ret)
         krb5_err(context, 1, ret, "failed to setup a namespace principal");
     free_Key(&k);
-    hdb_free_entry(context, &e);
+    hdb_free_entry(context, db, &e);
 }
 
 #define WK_PREFIX "WELLKNOWN/" HDB_WK_NAMESPACE "/"
@@ -449,7 +447,7 @@ static const char *unexpected[] = {
  * different time offsets in each period.
  */
 #define NUM_OFFSETS 5
-static hdb_entry_ex e[
+static hdb_entry e[
     (sizeof(expected) / sizeof(expected[0])) *
     (sizeof(krs) / sizeof(krs[0])) *
     NUM_OFFSETS
@@ -481,8 +479,8 @@ fetch_entries(krb5_context context,
     krb5_error_code ret = 0;
     krb5_principal p = NULL;
     krb5_keyblock base_key, dk;
-    hdb_entry_ex *ep;
-    hdb_entry_ex no;
+    hdb_entry *ep;
+    hdb_entry no;
     size_t i, b;
     int toffset = 0;
 
@@ -543,14 +541,14 @@ fetch_entries(krb5_context context,
             }
         } else {
             if (ret == 0 &&
-                !krb5_principal_compare(context, p, ep->entry.principal))
+                !krb5_principal_compare(context, p, ep->principal))
             krb5_errx(context, 1, "wrong principal in fetched entry");
         }
 
         {
             HDB_Ext_KeySet *hist_keys;
             HDB_extension *ext;
-            ext = hdb_find_extension(&ep->entry,
+            ext = hdb_find_extension(ep,
                                      choice_HDB_extension_data_hist_keys);
             if (ext) {
                 /* Sort key history by kvno, why not */
@@ -613,23 +611,23 @@ fetch_entries(krb5_context context,
         if (ret)
             krb5_err(context, 1, ret, "deriving keys for comparison");
 
-        if (kvno != ep->entry.kvno)
-            krb5_errx(context, 1, "kvno mismatch (%u != %u)", kvno, ep->entry.kvno);
-        (void) hdb_entry_get_pw_change_time(&ep->entry, &chg_time);
+        if (kvno != ep->kvno)
+            krb5_errx(context, 1, "kvno mismatch (%u != %u)", kvno, ep->kvno);
+        (void) hdb_entry_get_pw_change_time(ep, &chg_time);
         if (set_time != chg_time)
             krb5_errx(context, 1, "key change time mismatch");
-        if (ep->entry.keys.len == 0)
+        if (ep->keys.len == 0)
             krb5_errx(context, 1, "no keys!");
-        if (ep->entry.keys.val[0].key.keytype != dk.keytype)
+        if (ep->keys.val[0].key.keytype != dk.keytype)
             krb5_errx(context, 1, "enctype mismatch!");
-        if (ep->entry.keys.val[0].key.keyvalue.length !=
+        if (ep->keys.val[0].key.keyvalue.length !=
             dk.keyvalue.length)
             krb5_errx(context, 1, "key length mismatch!");
-        if (memcmp(ep->entry.keys.val[0].key.keyvalue.data,
+        if (memcmp(ep->keys.val[0].key.keyvalue.data,
                    dk.keyvalue.data, dk.keyvalue.length) != 0)
             krb5_errx(context, 1, "key mismatch!");
-        if (memcmp(ep->entry.keys.val[0].key.keyvalue.data,
-                   e[b + i - 1].entry.keys.val[0].key.keyvalue.data,
+        if (memcmp(ep->keys.val[0].key.keyvalue.data,
+                   e[b + i - 1].keys.val[0].key.keyvalue.data,
                    dk.keyvalue.length) == 0)
             krb5_errx(context, 1, "different virtual principals have the same keys!");
         /* XXX Add check that we have the expected number of history keys */
@@ -655,14 +653,14 @@ check_kvnos(krb5_context context)
         for (k = 0; k < sizeof(e)/sizeof(e[0]); k++) {
             HDB_Ext_KeySet *hist_keys;
             HDB_extension *ext;
-            hdb_entry_ex *ep;
+            hdb_entry *ep;
             int match = 0;
 
             if ((k % NUM_OFFSETS) != i)
                 continue;
 
             ep = &e[k];
-            if (ep->entry.principal == NULL)
+            if (ep->principal == NULL)
                 continue; /* Didn't fetch this one */
 
             /*
@@ -670,15 +668,15 @@ check_kvnos(krb5_context context)
              * or else add them to `keysets'.
              */
             for (m = 0; m < keysets.len; m++) {
-                if (ep->entry.kvno == keysets.val[m].kvno) {
+                if (ep->kvno == keysets.val[m].kvno) {
                     /* Check the key is the same */
-                    if (ep->entry.keys.val[0].key.keytype !=
+                    if (ep->keys.val[0].key.keytype !=
                         keysets.val[m].keys.val[0].key.keytype ||
-                        ep->entry.keys.val[0].key.keyvalue.length !=
+                        ep->keys.val[0].key.keyvalue.length !=
                         keysets.val[m].keys.val[0].key.keyvalue.length ||
-                        memcmp(ep->entry.keys.val[0].key.keyvalue.data,
+                        memcmp(ep->keys.val[0].key.keyvalue.data,
                                keysets.val[m].keys.val[0].key.keyvalue.data,
-                               ep->entry.keys.val[0].key.keyvalue.length) != 0)
+                               ep->keys.val[0].key.keyvalue.length) != 0)
                         krb5_errx(context, 1,
                                   "key mismatch for same princ & kvno");
                     match = 1;
@@ -687,8 +685,8 @@ check_kvnos(krb5_context context)
             if (m == keysets.len) {
                 hdb_keyset ks;
 
-                ks.kvno = ep->entry.kvno;
-                ks.keys = ep->entry.keys;
+                ks.kvno = ep->kvno;
+                ks.keys = ep->keys;
                 ks.set_time = 0;
                 if (add_HDB_Ext_KeySet(&keysets, &ks))
                     krb5_err(context, 1, ENOMEM, "out of memory");
@@ -698,7 +696,7 @@ check_kvnos(krb5_context context)
                 continue;
 
             /* For all non-current keysets, repeat the above */
-            ext = hdb_find_extension(&ep->entry,
+            ext = hdb_find_extension(ep,
                                      choice_HDB_extension_data_hist_keys);
             if (!ext)
                 continue;
@@ -706,20 +704,20 @@ check_kvnos(krb5_context context)
             for (p = 0; p < hist_keys->len; p++) {
                 for (m = 0; m < keysets.len; m++) {
                     if (keysets.val[m].kvno == hist_keys->val[p].kvno)
-                        if (ep->entry.keys.val[0].key.keytype !=
+                        if (ep->keys.val[0].key.keytype !=
                             keysets.val[m].keys.val[0].key.keytype ||
-                            ep->entry.keys.val[0].key.keyvalue.length !=
+                            ep->keys.val[0].key.keyvalue.length !=
                             keysets.val[m].keys.val[0].key.keyvalue.length ||
-                            memcmp(ep->entry.keys.val[0].key.keyvalue.data,
+                            memcmp(ep->keys.val[0].key.keyvalue.data,
                                    keysets.val[m].keys.val[0].key.keyvalue.data,
-                                   ep->entry.keys.val[0].key.keyvalue.length) != 0)
+                                   ep->keys.val[0].key.keyvalue.length) != 0)
                             krb5_errx(context, 1,
                                       "key mismatch for same princ & kvno");
                 }
                 if (m == keysets.len) {
                     hdb_keyset ks;
-                    ks.kvno = ep->entry.kvno;
-                    ks.keys = ep->entry.keys;
+                    ks.kvno = ep->kvno;
+                    ks.keys = ep->keys;
                     ks.set_time = 0;
                     if (add_HDB_Ext_KeySet(&keysets, &ks))
                         krb5_err(context, 1, ENOMEM, "out of memory");
@@ -743,15 +741,14 @@ print_em(krb5_context context)
 
         if (0 == i % (sizeof(expected)/sizeof(expected[0])))
             continue;
-        if (e[i].entry.principal == NULL)
+        if (e[i].principal == NULL)
             continue;
-        hex_encode(e[i].entry.keys.val[0].key.keyvalue.data,
-                   e[i].entry.keys.val[0].key.keyvalue.length, &x);
-        printf("%s %u %s\n", x, e[i].entry.kvno, name);
+        hex_encode(e[i].keys.val[0].key.keyvalue.data,
+                   e[i].keys.val[0].key.keyvalue.length, &x);
+        printf("%s %u %s\n", x, e[i].kvno, name);
         free(x);
 
-        ext = hdb_find_extension(&e[i].entry,
-                                 choice_HDB_extension_data_hist_keys);
+        ext = hdb_find_extension(&e[i], choice_HDB_extension_data_hist_keys);
         if (!ext)
             continue;
         hist_keys = &ext->data.u.hist_keys;
@@ -759,6 +756,7 @@ print_em(krb5_context context)
             hex_encode(hist_keys->val[p].keys.val[0].key.keyvalue.data,
                        hist_keys->val[p].keys.val[0].key.keyvalue.length, &x);
             printf("%s %u %s\n", x, hist_keys->val[p].kvno, name);
+	    free(x);
         }
     }
 }
@@ -773,12 +771,12 @@ check_expected_kvnos(krb5_context context)
 
     for (i = 0; i < sizeof(expected)/sizeof(expected[0]); i++) {
         for (k = 0; k < sizeof(krs)/sizeof(krs[0]); k++) {
-            hdb_entry_ex *ep = &e[k * sizeof(expected)/sizeof(expected[0]) + i];
+            hdb_entry *ep = &e[k * sizeof(expected)/sizeof(expected[0]) + i];
 
-            if (ep->entry.principal == NULL)
+            if (ep->principal == NULL)
                 continue;
             for (m = 0; m < NUM_OFFSETS; m++) {
-                ext = hdb_find_extension(&ep->entry,
+                ext = hdb_find_extension(ep,
                                          choice_HDB_extension_data_hist_keys);
                 if (!ext)
                     continue;
@@ -789,7 +787,7 @@ check_expected_kvnos(krb5_context context)
                 }
             }
             fprintf(stderr, "%s at %lu: kvno %u\n", expected[i], k,
-                    ep->entry.kvno);
+                    ep->kvno);
         }
     }
 }
@@ -936,7 +934,7 @@ main(int argc, char **argv)
 
     /* Cleanup */
     for (i = 0; ret == 0 && i < sizeof(e) / sizeof(e[0]); i++)
-        hdb_free_entry(context, &e[i]);
+        hdb_free_entry(context, db, &e[i]);
     db->hdb_destroy(context, db);
     krb5_free_context(context);
     return 0;

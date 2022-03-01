@@ -148,7 +148,7 @@ fetch_entry_or_alias(krb5_context context,
                      HDB *db,
                      krb5_const_principal principal,
                      unsigned flags,
-                     hdb_entry_ex *entry)
+                     hdb_entry *entry)
 {
     HDB_EntryOrAlias eoa;
     krb5_principal enterprise_principal = NULL;
@@ -180,7 +180,7 @@ fetch_entry_or_alias(krb5_context context,
     if (ret == 0)
         ret = decode_HDB_EntryOrAlias(value.data, value.length, &eoa, NULL);
     if (ret == 0 && eoa.element == choice_HDB_EntryOrAlias_entry) {
-        entry->entry = eoa.u.entry;
+        *entry = eoa.u.entry;
     } else if (ret == 0 && eoa.element == choice_HDB_EntryOrAlias_alias) {
         krb5_data_free(&key);
 	ret = hdb_principal2key(context, eoa.u.alias.principal, &key);
@@ -190,7 +190,7 @@ fetch_entry_or_alias(krb5_context context,
 	}
         if (ret == 0)
             /* No alias chaining */
-            ret = hdb_value2entry(context, &value, &entry->entry);
+            ret = hdb_value2entry(context, &value, entry);
 	krb5_free_principal(context, eoa.u.alias.principal);
     } else if (ret == 0)
         ret = ENOTSUP;
@@ -200,7 +200,7 @@ fetch_entry_or_alias(krb5_context context,
 	 * the canonicalize flag is unset, the original specification in
 	 * draft-ietf-krb-wg-kerberos-referrals-03.txt says we should.
 	 */
-	entry->entry.flags.force_canonicalize = 1;
+	entry->flags.force_canonicalize = 1;
     }
 
     /* HDB_F_GET_ANY indicates request originated from KDC (not kadmin) */
@@ -208,7 +208,7 @@ fetch_entry_or_alias(krb5_context context,
         (flags & (HDB_F_CANON|HDB_F_GET_ANY)) == 0) {
 
         /* `principal' was alias but canon not req'd */
-        free_HDB_entry(&entry->entry);
+        free_HDB_entry(entry);
         ret = HDB_ERR_NOENTRY;
     }
 
@@ -221,7 +221,7 @@ fetch_entry_or_alias(krb5_context context,
 
 krb5_error_code
 _hdb_fetch_kvno(krb5_context context, HDB *db, krb5_const_principal principal,
-		unsigned flags, krb5_kvno kvno, hdb_entry_ex *entry)
+		unsigned flags, krb5_kvno kvno, hdb_entry *entry)
 {
     krb5_error_code ret;
 
@@ -231,23 +231,23 @@ _hdb_fetch_kvno(krb5_context context, HDB *db, krb5_const_principal principal,
 
     if ((flags & HDB_F_DECRYPT) && (flags & HDB_F_ALL_KVNOS)) {
 	/* Decrypt the current keys */
-	ret = hdb_unseal_keys(context, db, &entry->entry);
+	ret = hdb_unseal_keys(context, db, entry);
 	if (ret) {
-	    hdb_free_entry(context, entry);
+	    hdb_free_entry(context, db, entry);
 	    return ret;
 	}
 	/* Decrypt the key history too */
-	ret = hdb_unseal_keys_kvno(context, db, 0, flags, &entry->entry);
+	ret = hdb_unseal_keys_kvno(context, db, 0, flags, entry);
 	if (ret) {
-	    hdb_free_entry(context, entry);
+	    hdb_free_entry(context, db, entry);
 	    return ret;
 	}
     } else if ((flags & HDB_F_DECRYPT)) {
-	if ((flags & HDB_F_KVNO_SPECIFIED) == 0 || kvno == entry->entry.kvno) {
+	if ((flags & HDB_F_KVNO_SPECIFIED) == 0 || kvno == entry->kvno) {
 	    /* Decrypt the current keys */
-	    ret = hdb_unseal_keys(context, db, &entry->entry);
+	    ret = hdb_unseal_keys(context, db, entry);
 	    if (ret) {
-		hdb_free_entry(context, entry);
+		hdb_free_entry(context, db, entry);
 		return ret;
 	    }
 	} else {
@@ -257,9 +257,9 @@ _hdb_fetch_kvno(krb5_context context, HDB *db, krb5_const_principal principal,
 	     * Find and decrypt the keys from the history that we want,
 	     * and swap them with the current keys
 	     */
-	    ret = hdb_unseal_keys_kvno(context, db, kvno, flags, &entry->entry);
+	    ret = hdb_unseal_keys_kvno(context, db, kvno, flags, entry);
 	    if (ret) {
-		hdb_free_entry(context, entry);
+		hdb_free_entry(context, db, entry);
 		return ret;
 	    }
 	}
@@ -271,9 +271,9 @@ _hdb_fetch_kvno(krb5_context context, HDB *db, krb5_const_principal principal,
 	 * key was generated, but given the salt will be ignored by a keytab
 	 * client it doesn't hurt to include the default salt.
 	 */
-	ret = add_default_salts(context, db, &entry->entry);
+	ret = add_default_salts(context, db, entry);
 	if (ret) {
-	    hdb_free_entry(context, entry);
+	    hdb_free_entry(context, db, entry);
 	    return ret;
 	}
     }
@@ -325,20 +325,20 @@ hdb_remove_aliases(krb5_context context, HDB *db, krb5_data *key)
 
 static krb5_error_code
 hdb_add_aliases(krb5_context context, HDB *db,
-		unsigned flags, hdb_entry_ex *entry)
+		unsigned flags, hdb_entry *entry)
 {
     const HDB_Ext_Aliases *aliases;
     krb5_error_code code;
     krb5_data key, value;
     size_t i;
 
-    code = hdb_entry_get_aliases(&entry->entry, &aliases);
+    code = hdb_entry_get_aliases(entry, &aliases);
     if (code || aliases == NULL)
 	return code;
 
     for (i = 0; i < aliases->aliases.len; i++) {
 	hdb_entry_alias entryalias;
-	entryalias.principal = entry->entry.principal;
+	entryalias.principal = entry->principal;
 
 	code = hdb_entry_alias2value(context, &entryalias, &value);
 	if (code)
@@ -358,7 +358,7 @@ hdb_add_aliases(krb5_context context, HDB *db,
 
 /* Check if new aliases are already used for other entries */
 static krb5_error_code
-hdb_check_aliases(krb5_context context, HDB *db, hdb_entry_ex *entry)
+hdb_check_aliases(krb5_context context, HDB *db, hdb_entry *entry)
 {
     const HDB_Ext_Aliases *aliases = NULL;
     HDB_EntryOrAlias eoa;
@@ -370,7 +370,7 @@ hdb_check_aliases(krb5_context context, HDB *db, hdb_entry_ex *entry)
     krb5_data_zero(&value);
     akey = value;
 
-    ret = hdb_entry_get_aliases(&entry->entry, &aliases);
+    ret = hdb_entry_get_aliases(entry, &aliases);
     for (i = 0; ret == 0 && aliases && i < aliases->aliases.len; i++) {
 	ret = hdb_principal2key(context, &aliases->aliases.val[i], &akey);
         if (ret == 0)
@@ -385,7 +385,7 @@ hdb_check_aliases(krb5_context context, HDB *db, hdb_entry_ex *entry)
             ret = HDB_ERR_EXISTS;
         if (ret == 0 && eoa.element == choice_HDB_EntryOrAlias_alias &&
             !krb5_principal_compare(context, eoa.u.alias.principal,
-                                    entry->entry.principal))
+                                    entry->principal))
             /* New alias names an existing alias of a different entry */
             ret = HDB_ERR_EXISTS;
         if (ret == HDB_ERR_NOENTRY) /* from db->hdb__get */
@@ -433,14 +433,8 @@ hdb_derive_etypes(krb5_context context, hdb_entry *e, HDB_Ext_KeySet *base_keys)
         free(e->etypes->val);
         e->etypes->len = 0;
         e->etypes->val = 0;
-    }
-
-    if (e->etypes == NULL &&
-        (e->etypes = malloc(sizeof(e->etypes[0]))) == NULL)
+    } else if ((e->etypes = calloc(1, sizeof(e->etypes[0]))) == NULL) {
         ret = krb5_enomem(context);
-    if (ret == 0) {
-        e->etypes->len = 0;
-        e->etypes->val = 0;
     }
     if (ret == 0 &&
         (e->etypes->val = calloc(netypes, sizeof(e->etypes->val[0]))) == NULL)
@@ -465,13 +459,13 @@ hdb_derive_etypes(krb5_context context, hdb_entry *e, HDB_Ext_KeySet *base_keys)
 }
 
 krb5_error_code
-_hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+_hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
     krb5_data key, value;
     int code;
 
-    if (entry->entry.flags.do_not_store ||
-	entry->entry.flags.force_canonicalize)
+    if (entry->flags.do_not_store ||
+	entry->flags.force_canonicalize)
 	return HDB_ERR_MISUSE;
     /* check if new aliases already is used */
     code = hdb_check_aliases(context, db, entry);
@@ -482,7 +476,7 @@ _hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
         return 0;
 
     if ((flags & HDB_F_PRECHECK)) {
-        code = hdb_principal2key(context, entry->entry.principal, &key);
+        code = hdb_principal2key(context, entry->principal, &key);
         if (code)
             return code;
         code = db->hdb__get(context, db, key, &value);
@@ -494,29 +488,31 @@ _hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
         return code ? code : HDB_ERR_EXISTS;
     }
 
-    if ((entry->entry.etypes == NULL || entry->entry.etypes->len == 0) &&
-        (code = hdb_derive_etypes(context, &entry->entry, NULL)))
+    if ((entry->etypes == NULL || entry->etypes->len == 0) &&
+        (code = hdb_derive_etypes(context, entry, NULL)))
         return code;
 
-    if (entry->entry.generation == NULL) {
+    if (entry->generation == NULL) {
 	struct timeval t;
-	entry->entry.generation = malloc(sizeof(*entry->entry.generation));
-	if(entry->entry.generation == NULL) {
+	entry->generation = malloc(sizeof(*entry->generation));
+	if(entry->generation == NULL) {
 	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	gettimeofday(&t, NULL);
-	entry->entry.generation->time = t.tv_sec;
-	entry->entry.generation->usec = t.tv_usec;
-	entry->entry.generation->gen = 0;
+	entry->generation->time = t.tv_sec;
+	entry->generation->usec = t.tv_usec;
+	entry->generation->gen = 0;
     } else
-	entry->entry.generation->gen++;
+	entry->generation->gen++;
 
-    code = hdb_seal_keys(context, db, &entry->entry);
+    code = hdb_seal_keys(context, db, entry);
     if (code)
 	return code;
 
-    hdb_principal2key(context, entry->entry.principal, &key);
+    code = hdb_principal2key(context, entry->principal, &key);
+    if (code)
+        return code;
 
     /* remove aliases */
     code = hdb_remove_aliases(context, db, &key);
@@ -524,8 +520,9 @@ _hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 	krb5_data_free(&key);
 	return code;
     }
-    hdb_entry2value(context, &entry->entry, &value);
-    code = db->hdb__put(context, db, flags & HDB_F_REPLACE, key, value);
+    code = hdb_entry2value(context, entry, &value);
+    if (code == 0)
+        code = db->hdb__put(context, db, flags & HDB_F_REPLACE, key, value);
     krb5_data_free(&value);
     krb5_data_free(&key);
     if (code)
@@ -554,8 +551,9 @@ _hdb_remove(krb5_context context, HDB *db,
      * HDB_entry_alias instead and assume it's an entry if decoding fails...
      */
 
-    hdb_principal2key(context, principal, &key);
-    code = db->hdb__get(context, db, key, &value);
+    code = hdb_principal2key(context, principal, &key);
+    if (code == 0)
+        code = db->hdb__get(context, db, key, &value);
     if (code == 0) {
         code = decode_HDB_EntryOrAlias(value.data, value.length, &eoa, NULL);
         krb5_data_free(&value);
@@ -573,7 +571,8 @@ _hdb_remove(krb5_context context, HDB *db,
         return code;
     }
 
-    code = hdb_remove_aliases(context, db, &key);
+    if (code == 0)
+        code = hdb_remove_aliases(context, db, &key);
     if (code == 0)
         code = db->hdb__del(context, db, key);
     krb5_data_free(&key);
@@ -714,7 +713,7 @@ derive_keyset(krb5_context context,
 {
     dks->kvno = kvno;
     dks->keys.val = 0;
-    dks->set_time = malloc(sizeof(*dks->set_time));
+    dks->set_time = malloc(sizeof(*(dks->set_time)));
     if (dks->set_time == NULL)
         return krb5_enomem(context);
     *dks->set_time = set_time;
@@ -724,7 +723,7 @@ derive_keyset(krb5_context context,
 /* Possibly derive and install in `h' a keyset identified by `t' */
 static krb5_error_code
 derive_keys_for_kr(krb5_context context,
-                   hdb_entry_ex *h,
+                   hdb_entry *h,
                    HDB_Ext_KeySet *base_keys,
                    int is_current_keyset,
                    int rotation_period_offset,
@@ -798,7 +797,7 @@ derive_keys_for_kr(krb5_context context,
     ret = derive_keyset(context, &base_keys->val[i].keys, princ, etype, kvno,
                         set_time, &dks);
     if (ret == 0)
-        ret = hdb_install_keyset(context, &h->entry, is_current_keyset, &dks);
+        ret = hdb_install_keyset(context, h, is_current_keyset, &dks);
 
     free_HDB_keyset(&dks);
     return ret;
@@ -807,7 +806,7 @@ derive_keys_for_kr(krb5_context context,
 /* Derive and install current keys, and possibly preceding or next keys */
 static krb5_error_code
 derive_keys_for_current_kr(krb5_context context,
-                           hdb_entry_ex *h, 
+                           hdb_entry *h, 
                            HDB_Ext_KeySet *base_keys,
                            const char *princ,
                            unsigned int flags,
@@ -873,12 +872,12 @@ derive_keys_for_current_kr(krb5_context context,
  * Arguments:
  *
  *  - `flags' is the flags passed to `hdb_fetch_kvno()'
- *  - `princ' is the name of the principal we'll end up with in `h->entry'
+ *  - `princ' is the name of the principal we'll end up with in `entry'
  *  - `h_is_namespace' indicates whether `h' is for a namespace or a concrete
  *     principal (that might nonetheless have virtual/derived keys)
  *  - `t' is the time such that the derived keys are for kvnos needed at `t'
  *  - `etype' indicates what enctype to derive keys for (0 for all enctypes in
- *    `h->entry.etypes')
+ *    `entry->etypes')
  *  - `kvno' requests a particular kvno, or all if zero
  *
  * The caller doesn't know if the principal needs key derivation -- we make
@@ -970,7 +969,7 @@ derive_keys(krb5_context context,
             krb5_timestamp t,
             krb5int32 etype,
             krb5uint32 kvno,
-            hdb_entry_ex *h)
+            hdb_entry *h)
 {
     HDB_Ext_KeyRotation kr;
     HDB_Ext_KeySet base_keys;
@@ -979,14 +978,9 @@ derive_keys(krb5_context context,
     char *p = NULL;
     int valid = 1;
 
-    if (!h_is_namespace && !h->entry.flags.virtual_keys)
+    if (!h_is_namespace && !h->flags.virtual_keys)
         return 0;
-    h->entry.flags.virtual = 1;
-    if (h_is_namespace) {
-        /* Set the entry's principal name */
-        free_Principal(h->entry.principal);
-        ret = copy_Principal(princ, h->entry.principal);
-    }
+    h->flags.virtual = 1;
 
     kr.len = 0;
     kr.val = 0;
@@ -994,7 +988,7 @@ derive_keys(krb5_context context,
         const HDB_Ext_KeyRotation *ckr;
 
         /* Installing keys invalidates `ckr', so we copy it */
-        ret = hdb_entry_get_key_rotation(context, &h->entry, &ckr);
+        ret = hdb_entry_get_key_rotation(context, h, &ckr);
         if (!ckr)
             return ret;
         if (ret == 0)
@@ -1005,11 +999,11 @@ derive_keys(krb5_context context,
     base_keys.val = 0;
     base_keys.len = 0;
     if (ret == 0)
-        ret = hdb_remove_base_keys(context, &h->entry, &base_keys);
+        ret = _hdb_remove_base_keys(context, h, &base_keys, &kr);
 
-    /* Make sure we have h->entry.etypes */
-    if (ret == 0 && !h->entry.etypes)
-        ret = hdb_derive_etypes(context, &h->entry, &base_keys);
+    /* Make sure we have h->etypes */
+    if (ret == 0 && !h->etypes)
+        ret = hdb_derive_etypes(context, h, &base_keys);
 
     /* Keys not desired?  Don't derive them! */
     if (ret || !(flags & HDB_F_DECRYPT)) {
@@ -1019,7 +1013,7 @@ derive_keys(krb5_context context,
     }
 
     /* The principal name will be used in key derivation and error messages */
-    if (ret == 0 && h_is_namespace)
+    if (ret == 0)
         ret = krb5_unparse_name(context, princ, &p);
 
     /* Sanity check key rotations, determine current & last kr */
@@ -1101,10 +1095,10 @@ derive_keys(krb5_context context,
     /*
      * Derive and set in `h' its current kvno and current keys.
      *
-     * This will set h->entry.kvno as well.
+     * This will set h->kvno as well.
      *
      * This may set up to TWO keysets for the current key rotation period:
-     *  - current keys (h->entry.keys and h->entry.kvno)
+     *  - current keys (h->keys and h->kvno)
      *  - possibly one future
      *    OR
      *    possibly one past keyset in hist_keys for the current_kr
@@ -1137,14 +1131,14 @@ derive_keys(krb5_context context,
                                  kr.val[current_kr].epoch - 1, &kr.val[past_kr]);
 
     /*
-     * Impose a bound on h->entry.max_life so that [when the KDC is the caller]
+     * Impose a bound on h->max_life so that [when the KDC is the caller]
      * the KDC won't issue tickets longer lived than this.
      */
-    if (ret == 0 && !h->entry.max_life &&
-        (h->entry.max_life = malloc(sizeof(h->entry.max_life[0]))) == NULL)
+    if (ret == 0 && !h->max_life &&
+        (h->max_life = calloc(1, sizeof(h->max_life[0]))) == NULL)
         ret = krb5_enomem(context);
-    if (ret == 0 && *h->entry.max_life > kr.val[current_kr].period >> 1)
-        *h->entry.max_life = kr.val[current_kr].period >> 1;
+    if (ret == 0 && *h->max_life > kr.val[current_kr].period >> 1)
+        *h->max_life = kr.val[current_kr].period >> 1;
 
     free_HDB_Ext_KeyRotation(&kr);
     free_HDB_Ext_KeySet(&base_keys);
@@ -1153,6 +1147,10 @@ derive_keys(krb5_context context,
 }
 
 /*
+ * Pick a best kvno for the given principal at the given time.
+ *
+ * Implements the [hdb] new_service_key_delay configuration parameter.
+ *
  * In order for disparate keytab provisioning systems such as OSKT and our own
  * kadmin ext_keytab and httpkadmind's get-keys to coexist, we need to be able
  * to force keys set by the former to not become current keys until users of
@@ -1163,9 +1161,9 @@ derive_keys(krb5_context context,
  * The context is that OSKT's krb5_keytab is very happy to change keys in a way
  * that requires all members of a cluster to rekey together.  If one also
  * wishes to have cluster members that opt out of this and just fetch current,
- * past, and future keys periodically, then the keys set by OSKT need to not
- * come into effect until all the opt-out members have had a chance to fetch
- * the new keys.
+ * past, and future keys periodically, then the keys set by OSKT must not come
+ * into effect until all the opt-out members have had a chance to fetch the new
+ * keys.
  *
  * The assumption is that services will fetch new keys periodically, say, every
  * four hours.  Then one can set `[hdb] new_service_key_delay = 8h' in the
@@ -1175,12 +1173,12 @@ derive_keys(krb5_context context,
  * Naturally, this applies only to concrete principals with concrete keys.
  */
 static krb5_error_code
-fix_keys(krb5_context context,
-         HDB *db,
-         unsigned flags,
-         krb5_timestamp now,
-         krb5uint32 kvno,
-         hdb_entry_ex *h)
+pick_kvno(krb5_context context,
+          HDB *db,
+          unsigned flags,
+          krb5_timestamp now,
+          krb5uint32 kvno,
+          hdb_entry *h)
 {
     HDB_extension *ext;
     HDB_Ext_KeySet keys;
@@ -1193,25 +1191,25 @@ fix_keys(krb5_context context,
      * delayed, or if there's no new-key delay configured, or we're not
      * fetching for use as a service principal, then we're out.
      */
-    if (!(flags & HDB_F_DELAY_NEW_KEYS) || kvno || h->entry.flags.virtual ||
-        h->entry.flags.virtual_keys || db->new_service_key_delay <= 0)
+    if (!(flags & HDB_F_DELAY_NEW_KEYS) || kvno || h->flags.virtual ||
+        h->flags.virtual_keys || db->new_service_key_delay <= 0)
         return 0;
 
     /* No history -> current keyset is the only one and therefore the best */
-    ext = hdb_find_extension(&h->entry, choice_HDB_extension_data_hist_keys);
+    ext = hdb_find_extension(h, choice_HDB_extension_data_hist_keys);
     if (!ext)
         return 0;
 
     /* Assume the current keyset is the best to start with */
-    (void) hdb_entry_get_pw_change_time(&h->entry, &current);
-    if (current == 0 && h->entry.modified_by)
-        current = h->entry.modified_by->time;
+    (void) hdb_entry_get_pw_change_time(h, &current);
+    if (current == 0 && h->modified_by)
+        current = h->modified_by->time;
     if (current == 0)
-        current = h->entry.created_by.time;
+        current = h->created_by.time;
 
     /* Current keyset starts out as best */
     best = current;
-    kvno = h->entry.kvno;
+    kvno = h->kvno;
 
     /* Look for a better keyset in the history */
     keys = ext->data.u.hist_keys;
@@ -1251,7 +1249,7 @@ fix_keys(krb5_context context,
         best = keys.val[i].set_time[0];
         kvno = keys.val[i].kvno;
     }
-    return hdb_change_kvno(context, kvno, &h->entry);
+    return hdb_change_kvno(context, kvno, h);
 }
 
 /*
@@ -1296,7 +1294,7 @@ make_namespace_princ(krb5_context context,
 
     /* First go around, need a namespace princ.  Make it! */
     ret = krb5_build_principal(context, namespace, strlen(realm),
-                                realm, "WELLKNOWN",
+                                realm, KRB5_WELLKNOWN_NAME,
                                 HDB_WK_NAMESPACE, comp0, NULL);
     if (ret == 0)
         ret = krb5_principal_set_comp_string(context, *namespace, 3, comp1);
@@ -1304,6 +1302,138 @@ make_namespace_princ(krb5_context context,
         /* Support domain-based names */
         ret = krb5_principal_set_comp_string(context, *namespace, 4, comp2);
     /* Caller frees `*namespace' on error */
+    return ret;
+}
+
+static int
+is_namespace_princ_p(krb5_context context,
+                     krb5_const_principal princ)
+{
+    return
+        krb5_principal_get_num_comp(context, princ) >= 4
+        && strcmp(krb5_principal_get_comp_string(context, princ, 0),
+                  KRB5_WELLKNOWN_NAME) == 0
+        && strcmp(krb5_principal_get_comp_string(context, princ, 1),
+                  HDB_WK_NAMESPACE) == 0;
+}
+
+/* See call site */
+static krb5_error_code
+rewrite_hostname(krb5_context context,
+                 krb5_const_principal wanted_princ,
+                 krb5_const_principal ns_princ,
+                 krb5_const_principal found_ns_princ,
+                 char **s)
+{
+    const char *ns_host_part, *wanted_host_part, *found_host_part;
+    const char *p, *r;
+    size_t ns_host_part_len, wanted_host_part_len;
+
+    wanted_host_part = krb5_principal_get_comp_string(context, wanted_princ, 1);
+    wanted_host_part_len = strlen(wanted_host_part);
+    if (wanted_host_part_len > 256) {
+	krb5_set_error_message(context, HDB_ERR_NOENTRY,
+                               "Aliases of host-based principals longer than "
+                               "256 bytes not supported");
+        return HDB_ERR_NOENTRY;
+    }
+
+    ns_host_part = krb5_principal_get_comp_string(context, ns_princ, 3);
+    ns_host_part_len = strlen(ns_host_part);
+
+    /* Find `ns_host_part' as the tail of `wanted_host_part' */
+    for (r = p = strstr(wanted_host_part, ns_host_part);
+         r && strnlen(r, ns_host_part_len + 1) > ns_host_part_len;
+         p = (r = strstr(r, ns_host_part)) ? r : p)
+        ;
+    if (!p || strnlen(p, ns_host_part_len + 1) != ns_host_part_len)
+        return HDB_ERR_NOENTRY; /* Can't happen */
+    if (p == wanted_host_part || p[-1] != '.')
+        return HDB_ERR_NOENTRY;
+
+    found_host_part =
+        krb5_principal_get_comp_string(context, found_ns_princ, 3);
+    return
+        asprintf(s, "%.*s%s", (int)(p - wanted_host_part), wanted_host_part,
+                 found_host_part) < 0 ||
+        *s == NULL ? krb5_enomem(context) : 0;
+}
+
+/*
+ * Fix `h->principal' to match the desired `princ' in the namespace
+ * `nsprinc' (which is either the same as `h->principal' or an alias
+ * of it).
+ */
+static krb5_error_code
+fix_princ_name(krb5_context context,
+               krb5_const_principal princ,
+               krb5_const_principal nsprinc,
+               hdb_entry *h)
+{
+    krb5_error_code ret = 0;
+    char *s = NULL;
+
+    if (!nsprinc)
+        return 0;
+    if (krb5_principal_get_num_comp(context, princ) < 2)
+        return HDB_ERR_NOENTRY;
+
+    /* `nsprinc' must be a namespace principal */
+
+    if (krb5_principal_compare(context, nsprinc, h->principal)) {
+        /*
+         * `h' is the HDB entry for `nsprinc', and `nsprinc' is its canonical
+         * name.
+         *
+         * Set the entry's principal name to the desired name.  The keys will
+         * be fixed next (upstairs, but don't forget to!).
+         */
+        free_Principal(h->principal);
+        return copy_Principal(princ, h->principal);
+    }
+
+    if (!is_namespace_princ_p(context, h->principal)) {
+        /*
+         * The alias is a namespace, but the canonical name is not.  WAT.
+         *
+         * Well, the KDC will just issue a referral anyways, so we can leave
+         * `h->principal' as is...
+         *
+         * Remove all of `h's keys just in case, and leave
+         * `h->principal' as-is.
+         */
+        free_Keys(&h->keys);
+        (void) hdb_entry_clear_password(context, h);
+        return hdb_clear_extension(context, h,
+                                   choice_HDB_extension_data_hist_keys);
+    }
+
+    /*
+     * A namespace alias of a namespace entry.
+     *
+     * We'll want to rewrite the original principal accordingly.
+     *
+     * E.g., if the caller wanted host/foo.ns.test.h5l.se and we
+     * found WELLKNOWN/HOSTBASED-NAMESPACE/ns.test.h5l.se is an
+     * alias of WELLKNOWN/HOSTBASED-NAMESPACE/ns.example.org, then
+     * we'll want to treat host/foo.ns.test.h5l.se as an alias of
+     * host/foo.ns.example.org.
+     */
+    if (krb5_principal_get_num_comp(context, h->principal) !=
+        2 + krb5_principal_get_num_comp(context, princ))
+        ret = HDB_ERR_NOENTRY; /* Only host-based services for now */
+    if (ret == 0)
+        ret = rewrite_hostname(context, princ, nsprinc, h->principal, &s);
+    if (ret == 0) {
+        krb5_free_principal(context, h->principal);
+        h->principal = NULL;
+        ret = krb5_make_principal(context, &h->principal,
+                                  krb5_principal_get_realm(context, princ),
+                                  krb5_principal_get_comp_string(context,
+                                                                 princ, 0),
+                                  s,
+                                  NULL);
+    }
     return ret;
 }
 
@@ -1316,10 +1446,10 @@ fetch_it(krb5_context context,
          krb5_timestamp t,
          krb5int32 etype,
          krb5uint32 kvno,
-         hdb_entry_ex *ent)
+         hdb_entry *ent)
 {
     krb5_const_principal tmpprinc = princ;
-    krb5_principal baseprinc = NULL;
+    krb5_principal nsprinc = NULL;
     krb5_error_code ret = 0;
     const char *comp0 = krb5_principal_get_comp_string(context, princ, 0);
     const char *comp1 = krb5_principal_get_comp_string(context, princ, 1);
@@ -1330,8 +1460,10 @@ fetch_it(krb5_context context,
     char *host = NULL;
     int do_search = 0;
 
+    if (!db->enable_virtual_hostbased_princs)
+        maxdots = mindots = 0;
     if (db->enable_virtual_hostbased_princs && comp1 &&
-        strcmp("krbtgt", comp0) != 0 && strcmp("WELLKNOWN", comp0) != 0) {
+        strcmp("krbtgt", comp0) != 0 && strcmp(KRB5_WELLKNOWN_NAME, comp0) != 0) {
         char *htmp;
 
         if ((host = strdup(comp1)) == NULL)
@@ -1358,7 +1490,7 @@ fetch_it(krb5_context context,
     }
 
     tmp = host ? host : comp1;
-    for (ret = HDB_ERR_NOENTRY; ret == HDB_ERR_NOENTRY; tmpprinc = baseprinc) {
+    for (ret = HDB_ERR_NOENTRY; ret == HDB_ERR_NOENTRY; tmpprinc = nsprinc) {
         krb5_error_code ret2 = 0;
 
         /*
@@ -1376,7 +1508,7 @@ fetch_it(krb5_context context,
 	ret = db->hdb_fetch_kvno(context, db, tmpprinc, flags, kvno, ent);
 	if (ret != HDB_ERR_NOENTRY || hdots == 0 || hdots < mindots || !tmp ||
             !do_search)
-	    break;
+            break;
 
         /*
          * Breadcrumb:
@@ -1398,17 +1530,22 @@ fetch_it(krb5_context context,
          */
         while (maxdots && hdots > maxdots && tmp) {
             tmp = strchr(tmp, '.');
-            /* tmp != NULL because maxdots > 0 */
+            /* tmp != NULL because maxdots > 0; we check to quiet linters */
+            if (tmp == NULL) {
+                ret = HDB_ERR_NOENTRY;
+                goto out;
+            }
             tmp++;
             hdots--;
         }
 
-        if (baseprinc == NULL)
+        if (nsprinc == NULL)
             /* First go around, need a namespace princ.  Make it! */
-            ret2 = make_namespace_princ(context, db, tmpprinc, &baseprinc);
-            /* Update the hostname component */
+            ret2 = make_namespace_princ(context, db, tmpprinc, &nsprinc);
+
+        /* Update the hostname component of the namespace principal */
         if (ret2 == 0)
-            ret2 = krb5_principal_set_comp_string(context, baseprinc, 3, tmp);
+            ret2 = krb5_principal_set_comp_string(context, nsprinc, 3, tmp);
         if (ret2)
             ret = ret2;
 
@@ -1425,14 +1562,22 @@ fetch_it(krb5_context context,
      * key derivation to do, but that's decided in derive_keys().
      */
     if (ret == 0) {
-        ret = derive_keys(context, flags, princ, !!baseprinc, t, etype, kvno,
-                          ent);
+        /* Fix the principal name if namespaced */
+        ret = fix_princ_name(context, princ, nsprinc, ent);
+
+        /* Derive keys if namespaced or virtual */
         if (ret == 0)
-            ret = fix_keys(context, db, flags, t, kvno, ent);
-        if (ret)
-            hdb_free_entry(context, ent);
+            ret = derive_keys(context, flags, princ, !!nsprinc, t, etype, kvno,
+                              ent);
+        /* Pick the best kvno for this principal at the given time */
+        if (ret == 0)
+            ret = pick_kvno(context, db, flags, t, kvno, ent);
     }
-    krb5_free_principal(context, baseprinc);
+
+out:
+    if (ret != 0 && ret != HDB_ERR_WRONG_REALM)
+        hdb_free_entry(context, db, ent);
+    krb5_free_principal(context, nsprinc);
     free(host);
     return ret;
 }
@@ -1468,7 +1613,7 @@ hdb_fetch_kvno(krb5_context context,
                krb5_timestamp t,
                krb5int32 etype,
                krb5uint32 kvno,
-               hdb_entry_ex *h)
+               hdb_entry *h)
 {
     krb5_error_code ret = HDB_ERR_NOENTRY;
 
@@ -1485,8 +1630,8 @@ hdb_fetch_kvno(krb5_context context,
      * independently of principal aliases (used by Samba).
      */
     if (ret == 0 && !(flags & HDB_F_ADMIN_DATA) &&
-        !h->entry.flags.force_canonicalize &&
-        !krb5_realm_compare(context, principal, h->entry.principal))
+        !h->flags.force_canonicalize &&
+        !krb5_realm_compare(context, principal, h->principal))
             ret = HDB_ERR_WRONG_REALM;
     return ret;
 }

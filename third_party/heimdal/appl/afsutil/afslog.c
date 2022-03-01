@@ -118,7 +118,7 @@ expand_cell_name(const char *cell)
 	if(c)
 	    return c;
     }
-    return cell;
+    return NULL;
 }
 
 static void

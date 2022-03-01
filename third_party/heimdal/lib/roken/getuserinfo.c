@@ -53,12 +53,12 @@ roken_get_shell(char *shell, size_t shellsz)
     char *p;
 
 #ifndef WIN32
-    char user[128];
-    const char *username = roken_get_username(user, sizeof(user));
+#ifdef HAVE_GETPWNAM_R
     size_t buflen = 2048;
 
     if (sysconf(_SC_GETPW_R_SIZE_MAX) > 0)
         buflen = sysconf(_SC_GETPW_R_SIZE_MAX);
+#endif
 
     if (issuid())
         return "/bin/sh";
@@ -76,8 +76,11 @@ roken_get_shell(char *shell, size_t shellsz)
         struct passwd pwd;
         struct passwd *pwdp;
         char buf[buflen];
+        char user[128];
+        const char *username = roken_get_username(user, sizeof(user));
 
-        if (getpwnam_r(username, &pwd, buf, buflen, &pwdp) == 0 &&
+        if (username &&
+            getpwnam_r(username, &pwd, buf, buflen, &pwdp) == 0 &&
             pwdp != NULL && pwdp->pw_shell != NULL) {
             if (strlcpy(shell, pwdp->pw_shell, shellsz) < shellsz)
                 return shell;
@@ -133,14 +136,14 @@ roken_get_homedir(char *home, size_t homesz)
         }
         return home;
     }
-    /* Fallthru to return NULL */
+    fallthrough;
 #else
-    char user[128];
-    const char *username = roken_get_username(user, sizeof(user));
+#ifdef HAVE_GETPWNAM_R
     size_t buflen = 2048;
 
     if (sysconf(_SC_GETPW_R_SIZE_MAX) > 0)
         buflen = sysconf(_SC_GETPW_R_SIZE_MAX);
+#endif
 
     if (issuid()) {
         errno = 0;
@@ -156,12 +159,15 @@ roken_get_homedir(char *home, size_t homesz)
     }
 
 #ifdef HAVE_GETPWNAM_R
-    if (username) {
+    {
+        char user[128];
+        const char *username = roken_get_username(user, sizeof(user));
         struct passwd pwd;
         struct passwd *pwdp;
         char buf[buflen];
 
-        if (getpwnam_r(username, &pwd, buf, buflen, &pwdp) == 0 &&
+        if (username &&
+            getpwnam_r(username, &pwd, buf, buflen, &pwdp) == 0 &&
             pwdp != NULL && pwdp->pw_dir != NULL) {
             if (strlcpy(home, pwdp->pw_dir, homesz) < homesz)
                 return home;
@@ -255,7 +261,12 @@ roken_get_username(char *user, size_t usersz)
         }
     }
 #else
+#ifdef HAVE_GETPWUID_R
     size_t buflen = 2048;
+
+    if (sysconf(_SC_GETPW_R_SIZE_MAX) > 0)
+        buflen = sysconf(_SC_GETPW_R_SIZE_MAX);
+#endif
 
     p = secure_getenv("USER");
     if (p == NULL || p[0] == '\0')
@@ -268,9 +279,6 @@ roken_get_username(char *user, size_t usersz)
     }
 
 #ifdef HAVE_GETPWUID_R
-    if (sysconf(_SC_GETPW_R_SIZE_MAX) > 0)
-        buflen = sysconf(_SC_GETPW_R_SIZE_MAX);
-
     {
         struct passwd pwd;
         struct passwd *pwdp;

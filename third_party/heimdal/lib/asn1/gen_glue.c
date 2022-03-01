@@ -62,7 +62,7 @@ generate_2int (const Type *t, const char *gen_name)
 
     HEIM_TAILQ_FOREACH(m, t->members, members) {
 	fprintf (get_code_file(), "if(f.%s) r |= (1ULL << %d);\n",
-		 m->gen_name, m->val);
+		 m->gen_name, (int)m->val);
     }
     fprintf (get_code_file(), "return r;\n"
 	     "}\n\n");
@@ -87,7 +87,7 @@ generate_int2 (const Type *t, const char *gen_name)
     if(t->members) {
 	HEIM_TAILQ_FOREACH(m, t->members, members) {
 	    fprintf (get_code_file(), "\tflags.%s = (n >> %d) & 1;\n",
-		     m->gen_name, m->val);
+		     m->gen_name, (int)m->val);
 	}
     }
     fprintf (get_code_file(), "\treturn flags;\n"
@@ -114,7 +114,7 @@ generate_units (const Type *t, const char *gen_name)
     if(t->members) {
 	HEIM_TAILQ_FOREACH_REVERSE(m, t->members, memhead, members) {
 	    fprintf (get_code_file(),
-		     "\t{\"%s\",\t1ULL << %d},\n", m->name, m->val);
+		     "\t{\"%s\",\t1ULL << %d},\n", m->name, (int)m->val);
 	}
     }
 
@@ -144,8 +144,11 @@ generate_glue (const Type *t, const char *gen_name)
         if (HEIM_TAILQ_EMPTY(t->members))
             break;
         HEIM_TAILQ_FOREACH(m, t->members, members) {
-            if (m->val > 63)
+            if (m->val > 63) {
+                warnx("Not generating 2int, int2, or units for %s due to "
+                      "having a member valued more than 63", gen_name);
                 return;
+            }
         }
         generate_2int (t, gen_name);
         generate_int2 (t, gen_name);

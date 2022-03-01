@@ -231,8 +231,6 @@ generate_dh_keyblock(krb5_context context,
 	    memmove(dh_gen_key + size, dh_gen_key, dh_gen_keylen);
 	    memset(dh_gen_key, 0, size);
 	}
-
-	ret = 0;
     } else if (client_params->keyex == USE_ECDH) {
 	if (client_params->u.ecdh.public_key == NULL) {
 	    ret = KRB5KRB_ERR_GENERIC;
@@ -390,7 +388,7 @@ _kdc_pk_rd_padata(astgs_request_t priv,
     krb5_context context = priv->context;
     krb5_kdc_configuration *config = priv->config;
     const KDC_REQ *req = &priv->req;
-    hdb_entry_ex *client = priv->client;
+    hdb_entry *client = priv->client;
     pk_client_params *cp;
     krb5_error_code ret;
     heim_oid eContentType = { 0, NULL }, contentInfoOid = { 0, NULL };
@@ -433,7 +431,7 @@ _kdc_pk_rd_padata(astgs_request_t priv,
     }
 
     /* Add any registered certificates for this client as trust anchors */
-    ret = hdb_entry_get_pkinit_cert(&client->entry, &pc);
+    ret = hdb_entry_get_pkinit_cert(client, &pc);
     if (ret == 0 && pc != NULL) {
 	hx509_cert cert;
 	unsigned int i;
@@ -469,7 +467,7 @@ _kdc_pk_rd_padata(astgs_request_t priv,
 
 	type = "PK-INIT-Win2k";
 
-	if (_kdc_is_anonymous(context, client->entry.principal)) {
+	if (_kdc_is_anonymous(context, client->principal)) {
 	    ret = KRB5_KDC_ERR_PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED;
 	    krb5_set_error_message(context, ret,
 		"Anonymous client not supported in RSA mode");
@@ -615,7 +613,7 @@ _kdc_pk_rd_padata(astgs_request_t priv,
 	hx509_certs signer_certs;
 	int flags = HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH; /* BTMM */
 
-	if (_kdc_is_anonymous(context, client->entry.principal)
+	if (_kdc_is_anonymous(context, client->principal)
 	    || (config->historical_anon_realm && _kdc_is_anon_request(req)))
 	    flags |= HX509_CMS_VS_ALLOW_ZERO_SIGNER;
 
@@ -701,7 +699,7 @@ _kdc_pk_rd_padata(astgs_request_t priv,
 	    goto out;
 	}
 
-	if (_kdc_is_anonymous(context, client->entry.principal) &&
+	if (_kdc_is_anonymous(context, client->principal) &&
 	    ap.clientPublicValue == NULL) {
 	    free_AuthPack(&ap);
 	    ret = KRB5_KDC_ERR_PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED;
@@ -1600,7 +1598,7 @@ match_ms_upn_san(krb5_context context,
 		 hx509_context hx509ctx,
 		 hx509_cert client_cert,
 		 HDB *clientdb,
-		 hdb_entry_ex *client)
+		 hdb_entry *client)
 {
     hx509_octet_string_list list;
     krb5_principal principal = NULL;
@@ -1654,7 +1652,7 @@ match_ms_upn_san(krb5_context context,
 	 */
 	strupr(principal->realm);
 
-	if (krb5_principal_compare(context, principal, client->entry.principal) == FALSE)
+	if (krb5_principal_compare(context, principal, client->principal) == FALSE)
 	    ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
     }
 
@@ -1673,7 +1671,7 @@ _kdc_pk_check_client(astgs_request_t r,
 {
     krb5_kdc_configuration *config = r->config;
     HDB *clientdb = r->clientdb;
-    hdb_entry_ex *client = r->client;
+    hdb_entry *client = r->client;
     const HDB_Ext_PKINIT_acl *acl;
     const HDB_Ext_PKINIT_cert *pc;
     krb5_error_code ret;
@@ -1681,7 +1679,7 @@ _kdc_pk_check_client(astgs_request_t r,
     size_t i;
 
     if (cp->cert == NULL) {
-	if (!_kdc_is_anonymous(r->context, client->entry.principal)
+	if (!_kdc_is_anonymous(r->context, client->principal)
 	    && !config->historical_anon_realm)
 	    return KRB5KDC_ERR_BADOPTION;
 
@@ -1718,7 +1716,7 @@ _kdc_pk_check_client(astgs_request_t r,
 	    "Trying to authorize PKINIT subject DN %s",
 	    *subject_name);
 
-    ret = hdb_entry_get_pkinit_cert(&client->entry, &pc);
+    ret = hdb_entry_get_pkinit_cert(client, &pc);
     if (ret == 0 && pc) {
 	hx509_cert cert;
 	size_t j;
@@ -1745,7 +1743,7 @@ _kdc_pk_check_client(astgs_request_t r,
 	ret = match_rfc_san(r->context, config,
 			    r->context->hx509ctx,
 			    cp->cert,
-			    client->entry.principal);
+			    client->principal);
 	if (ret == 0) {
 	    kdc_log(r->context, config, 5,
 		    "Found matching PKINIT SAN in certificate");
@@ -1763,7 +1761,7 @@ _kdc_pk_check_client(astgs_request_t r,
 	}
     }
 
-    ret = hdb_entry_get_pkinit_acl(&client->entry, &acl);
+    ret = hdb_entry_get_pkinit_acl(client, &acl);
     if (ret == 0 && acl != NULL) {
 	/*
 	 * Cheat here and compare the generated name with the string
@@ -1789,7 +1787,7 @@ _kdc_pk_check_client(astgs_request_t r,
 	krb5_boolean b;
 
 	b = krb5_principal_compare(r->context,
-				   client->entry.principal,
+				   client->principal,
 				   principal_mappings.val[i].principal);
 	if (b == FALSE)
 	    continue;
@@ -1926,7 +1924,7 @@ load_mappings(krb5_context context, const char *fn)
  *
  */
 
-krb5_error_code
+KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
 krb5_kdc_pk_initialize(krb5_context context,
 		       krb5_kdc_configuration *config,
 		       const char *user_id,

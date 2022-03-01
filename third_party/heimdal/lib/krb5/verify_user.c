@@ -40,7 +40,7 @@ verify_common (krb5_context context,
 	       krb5_keytab keytab,
 	       krb5_boolean secure,
 	       const char *service,
-	       krb5_creds cred)
+	       krb5_creds *cred)
 {
     krb5_error_code ret;
     krb5_principal server;
@@ -56,7 +56,7 @@ verify_common (krb5_context context,
     krb5_verify_init_creds_opt_set_ap_req_nofail(&vopt, secure);
 
     ret = krb5_verify_init_creds(context,
-				 &cred,
+				 cred,
 				 server,
 				 keytab,
 				 NULL,
@@ -71,12 +71,11 @@ verify_common (krb5_context context,
     if(ret == 0){
 	ret = krb5_cc_initialize(context, id, principal);
 	if(ret == 0){
-	    ret = krb5_cc_store_cred(context, id, &cred);
+	    ret = krb5_cc_store_cred(context, id, cred);
 	}
 	if(ccache == NULL)
 	    krb5_cc_close(context, id);
     }
-    krb5_free_cred_contents(context, &cred);
     return ret;
 }
 
@@ -172,10 +171,12 @@ verify_user_opt_int(krb5_context context,
     if(ret)
 	return ret;
 #define OPT(V, D) ((vopt && (vopt->V)) ? (vopt->V) : (D))
-    return verify_common (context, principal, OPT(ccache, NULL),
+    ret = verify_common (context, principal, OPT(ccache, NULL),
 			  OPT(keytab, NULL), vopt ? vopt->secure : TRUE,
-			  OPT(service, "host"), cred);
+			  OPT(service, "host"), &cred);
 #undef OPT
+    krb5_free_cred_contents(context, &cred);
+    return ret;
 }
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL

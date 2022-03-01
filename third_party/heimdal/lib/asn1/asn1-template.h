@@ -42,43 +42,16 @@
  * TBD:
  * 
  *  - For OER also encode number of optional/default/extension elements into
- *    header entry's ptr field, not just the number of entries that follow it
+ *    header entry's ptr field, not just the number of entries that follow it.
  *
- *  - For JER/GSER/whatver, and probably for not-C-coded template interpreters,
- *    we'll need to have an entry type for the names of structures and their
- *    fields.
+ *  - For JER we'll need to encode encoding options (encode as array, encode as
+ *    object, etc.)
  *
- *  - For auto open types we need a new opcode, let's call it
- *    A1_OP_OPENTYPE_OBJSET, and we need to encode into its entry:
- *    a) the index of the template entry for the type ID field, and
- *    b) the index of the template entry for the open type field,
- *    c) 1 bit to indicate whether the object set is sorted by type ID value,
- *    d) a pointer to the object set's template.
- *    With that we can then find the struct offsets of those, and also their
- *    types (since we can find their template entries).
- *    The object set entries should be encoded into two template entries each:
- *    one pointing to the value of the type ID field for that object (unless
- *    the value is an integer, in which case the ptr should be the integer
- *    value directly), and the other pointing to the template for the type
- *    identified by the type ID.  These will need an opcode each...
- *    A1_OP_OPENTYPE_ID and A1_OP_OPENTYPE.
- *    We should also end the object set with an A1_OP_OPENTYPE_OBJSET entry so
- *    that iterating backwards can be fast.  Unless... unless we don't inline
- *    the object set and its objects but point to the object set's template.
- *    Also, for extensible object sets we can point to the object set's name,
- *    and we can then have a function to get an object set template by name,
- *    one to release that, and one to add an object to the object set (there's
- *    no need to remove objects from object sets, which helps with thread-
- *    safety).  And then we don't need (c) either.
- *    The decoder will then not see these entries until after decoding the type
- *    ID and open type field (as its outer type, so OCTET STRING, BIT STRING,
- *    or HEIM_ANY) and so it will be able to find those values in the struct at
- *    their respective offsets.
- *    The encoder and decoder both need to identify the relevant object in the
- *    object set, either by linear search or binary search if they are sorted
- *    by type ID value, then interpret the template for the identified type.
- *    The encoder needs to place the encoding into the normal location for it
- *    in the struct, then it can execute the normal template entry for it.
+ *  - For open types we'll need to be able to indicate what encoding rules the
+ *    type uses.
+ *
+ *  - We have too many bits for tags (20) and probably not enough for ops (4
+ *    bits, and we've used all but one).
  */
 
 /* header:
@@ -155,21 +128,23 @@
  * 28..31 op
  */
 
-#define A1_OP_MASK		(0xf0000000)
-#define A1_OP_TYPE		(0x10000000)
-#define A1_OP_TYPE_EXTERN	(0x20000000)
-#define A1_OP_TAG		(0x30000000)
-#define A1_OP_PARSE		(0x40000000)
-#define A1_OP_SEQOF		(0x50000000)
-#define A1_OP_SETOF		(0x60000000)
-#define A1_OP_BMEMBER		(0x70000000)
-#define A1_OP_CHOICE		(0x80000000)
-#define A1_OP_DEFVAL		(0x90000000)
-#define A1_OP_OPENTYPE_OBJSET	(0xa0000000)
-#define A1_OP_OPENTYPE_ID	(0xb0000000)
-#define A1_OP_OPENTYPE		(0xc0000000)
-#define A1_OP_NAME		(0xd0000000)
-#define A1_OP_TYPE_DECORATE	(0xe0000000)
+#define A1_OP_MASK			(0xf0000000)
+#define A1_OP_TYPE			(0x10000000) /* templated type */
+#define A1_OP_TYPE_EXTERN		(0x20000000) /* templated type (imported) */
+#define A1_OP_TAG			(0x30000000) /* a tag */
+#define A1_OP_PARSE			(0x40000000) /* primitive type */
+#define A1_OP_SEQOF			(0x50000000) /* sequence of */
+#define A1_OP_SETOF			(0x60000000) /* set      of */
+#define A1_OP_BMEMBER			(0x70000000) /* BIT STRING member */
+#define A1_OP_CHOICE			(0x80000000) /* CHOICE */
+#define A1_OP_DEFVAL			(0x90000000) /* def. value */
+#define A1_OP_OPENTYPE_OBJSET		(0xa0000000) /* object set for open type */
+#define A1_OP_OPENTYPE_ID		(0xb0000000) /* open type id field */
+#define A1_OP_OPENTYPE			(0xc0000000) /* open type    field */
+#define A1_OP_NAME			(0xd0000000) /* symbol */
+#define A1_OP_TYPE_DECORATE		(0xe0000000) /* decoration w/ templated type */
+#define A1_OP_TYPE_DECORATE_EXTERN	(0xf0000000) /* decoration w/ some C type */
+						     /* 0x00.. is still free */
 
 #define A1_FLAG_MASK		(0x0f000000)
 #define A1_FLAG_OPTIONAL	(0x01000000)

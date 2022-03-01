@@ -525,7 +525,7 @@ arange_parse_addr (krb5_context context,
 	    return ret;
 	}
 
-	if(high.len != 1 && high.val[0].addr_type != low.val[0].addr_type) {
+	if(high.len != 1 || high.val[0].addr_type != low.val[0].addr_type) {
 	    krb5_free_addresses(context, &low);
 	    krb5_free_addresses(context, &high);
 	    return -1;
@@ -543,7 +543,13 @@ arange_parse_addr (krb5_context context,
 	    return ret;
     }
 
-    krb5_data_alloc(&addr->address, sizeof(*a));
+    ret = krb5_data_alloc(&addr->address, sizeof(*a));
+    if (ret) {
+	krb5_free_address(context, &low0);
+	krb5_free_address(context, &high0);
+        return ret;
+    }
+
     addr->addr_type = KRB5_ADDRESS_ARANGE;
     a = addr->address.data;
 
@@ -1208,7 +1214,7 @@ krb5_parse_address(krb5_context context,
     if (error) {
 	krb5_error_code ret2;
 	save_errno = errno;
-	ret2 = krb5_eai_to_heim_errno(error, save_errno);
+	ret2 = krb5_eai_to_heim_errno(save_errno, error);
 	krb5_set_error_message (context, ret2, "%s: %s",
 				string, gai_strerror(error));
 	return ret2;
@@ -1377,12 +1383,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_free_addresses(krb5_context context,
 		    krb5_addresses *addresses)
 {
-    size_t i;
-    for(i = 0; i < addresses->len; i++)
-	krb5_free_address(context, &addresses->val[i]);
-    free(addresses->val);
-    addresses->len = 0;
-    addresses->val = NULL;
+    free_HostAddresses(addresses);
     return 0;
 }
 

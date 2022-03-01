@@ -73,6 +73,8 @@ kcm_send_request(krb5_context context,
     krb5_error_code ret = 0;
     krb5_data request_data;
 
+    krb5_data_zero(response_data);
+
     HEIMDAL_MUTEX_lock(&kcm_mutex);
     if (kcm_ipc == NULL)
 	ret = heim_ipc_init_context(kcm_ipc_name, &kcm_ipc);
@@ -82,18 +84,11 @@ kcm_send_request(krb5_context context,
 
     ret = krb5_storage_to_data(request, &request_data);
     if (ret) {
-	krb5_clear_error_message(context);
-	return KRB5_CC_NOMEM;
+	return krb5_enomem(context);
     }
 
     ret = heim_ipc_call(kcm_ipc, &request_data, response_data, NULL);
     krb5_data_free(&request_data);
-
-    if (ret) {
-	krb5_clear_error_message(context);
-	ret = KRB5_CC_NOSUPP;
-    }
-
     return ret;
 }
 
@@ -108,10 +103,8 @@ krb5_kcm_storage_request(krb5_context context,
     *storage_p = NULL;
 
     sp = krb5_storage_emem();
-    if (sp == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, N_("malloc: out of memory", ""));
-	return KRB5_CC_NOMEM;
-    }
+    if (sp == NULL)
+	return krb5_enomem(context);
 
     /* Send MAJOR | VERSION | OPCODE */
     ret  = krb5_store_int8(sp, KCM_PROTOCOL_VERSION_MAJOR);
@@ -135,31 +128,166 @@ krb5_kcm_storage_request(krb5_context context,
     return ret;
 }
 
+/*
+ * A sort of a state() for caches -- we use this to see if the local default
+ * cache name for KCM happens to exist.  See kcm_alloc() below.
+ */
+static krb5_error_code
+kcm_stat(krb5_context context, const char *name)
+{
+    krb5_error_code ret;
+    krb5_storage *request = NULL;
+    krb5_data response_data;
+
+    krb5_data_zero(&response_data);
+
+    ret = krb5_kcm_storage_request(context, KCM_OP_GET_PRINCIPAL, &request);
+    if (ret == 0)
+        ret = krb5_store_stringz(request, name);
+    if (ret == 0)
+        ret = krb5_kcm_call(context, request, NULL, &response_data);
+    krb5_storage_free(request);
+    krb5_data_free(&response_data);
+    return ret;
+}
+
+static krb5_error_code kcm_get_default_name(krb5_context,
+                                            const krb5_cc_ops *,
+                                            const char *, char **);
+
 static krb5_error_code
 kcm_alloc(krb5_context context,
-          const char *name,
+          const krb5_cc_ops *ops,
+          const char *residual,
+          const char *sub,
           krb5_ccache *id)
 {
+    krb5_error_code ret;
     krb5_kcmcache *k;
+    size_t ops_prefix_len = strlen(ops->prefix);
+    size_t plen = 0;
+    size_t local_def_name_len;
+    char *local_def_name = NULL; /* Our idea of default KCM cache name */
+    char *kcm_def_name = NULL; /* KCM's knowledge of default cache name */
+    int aret;
 
-    k = malloc(sizeof(*k));
-    if (k == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM,
-			       N_("malloc: out of memory", ""));
-	return KRB5_CC_NOMEM;
+    /* Get the KCM:%{UID} default */
+    if (ops == &krb5_kcm_ops)
+        ret = _krb5_expand_default_cc_name(context, KRB5_DEFAULT_CCNAME_KCM_KCM, &local_def_name);
+    else
+        ret = _krb5_expand_default_cc_name(context, KRB5_DEFAULT_CCNAME_KCM_API, &local_def_name);
+    if (ret)
+        return ret;
+    local_def_name_len = strlen(local_def_name);
+
+    /* Get the default ccache name from KCM if possible */
+    (void) kcm_get_default_name(context, ops, NULL, &kcm_def_name);
+
+    /*
+     * We have a sticky situation in that applications that call
+     * krb5_cc_default() will be getting the locally configured or compiled-in
+     * default KCM cache name, which may not exist in the user's KCM session,
+     * and which the KCM daemon may not be able to alias to the actual default
+     * for the user's session.
+     *
+     * To deal with this we heuristically detect when an application uses the
+     * default KCM ccache name.
+     *
+     * If the residual happens to be the local default KCM name we may end up
+     * using whatever the default KCM cache name is instead of the local
+     * default.
+     *
+     * Note that here `residual' may be any of:
+     *
+     *  - %{UID}
+     *  - %{UID}:
+     *  - %{UID}:<subsidiary>
+     *  - <something not starting with %{UID}:>
+     *  - <empty string>
+     *  - <NULL>
+     *
+     * Only the first two count as "maybe I mean the default KCM cache".
+     */
+    if (residual && !sub &&
+        strncmp(residual, local_def_name + ops_prefix_len + 1,
+                local_def_name_len - (ops_prefix_len + 1)) == 0) {
+        if (residual[local_def_name_len - (ops_prefix_len + 1)] == '\0' ||
+            (residual[local_def_name_len - (ops_prefix_len + 1)] == ':' &&
+             residual[local_def_name_len - ops_prefix_len] == '\0')) {
+            /*
+             * If we got a default cache name from KCM and the requested default
+             * cache does not exist, use the former.
+             */
+            if (kcm_def_name && kcm_stat(context, residual))
+                residual = kcm_def_name + ops_prefix_len + 1;
+        }
     }
 
-    if (name != NULL) {
-	k->name = strdup(name);
-	if (k->name == NULL) {
-	    free(k);
-	    krb5_set_error_message(context, KRB5_CC_NOMEM,
-				   N_("malloc: out of memory", ""));
-	    return KRB5_CC_NOMEM;
-	}
-    } else
-	k->name = NULL;
+    if (residual && residual[0] == '\0')
+        residual = NULL;
+    if (sub && sub[0] == '\0')
+        sub = NULL;
 
+    if (residual == NULL && sub == NULL) {
+        /* Use the default cache name, either from KCM or local default */
+        if (kcm_def_name)
+            residual = kcm_def_name + ops_prefix_len + 1;
+        else
+            residual = local_def_name + ops_prefix_len + 1;
+    }
+
+    if (residual) {
+        /* KCM cache names must start with {UID} or {UID}: */
+        if (residual[0] != '0')
+            plen = strspn(residual, "0123456789");
+        if (plen && residual[plen] != ':' && residual[plen] != '\0')
+            plen = 0;
+        /*
+         * If `plen', then residual is such a residual, else we'll want to
+         * prefix the {UID}:.
+         */
+    }
+
+    k = calloc(1, sizeof(*k));
+    if (k == NULL) {
+        free(local_def_name);
+        free(kcm_def_name);
+	return krb5_enomem(context);
+    }
+    k->name = NULL;
+
+    if (residual == NULL && sub == NULL) {
+        /* One more way to get a default */
+        aret = asprintf(&k->name, "%llu", (unsigned long long)getuid());
+    } else if (residual == NULL) {
+        /*
+         * Treat the subsidiary as the residual (maybe this will turn out to be
+         * wrong).
+         */
+        aret = asprintf(&k->name, "%llu:%s", (unsigned long long)getuid(),
+                        sub);
+    } else if (plen) {
+        /* The residual is a UID */
+        aret = asprintf(&k->name, "%s%s%s", residual,
+                        sub ? ":" : "", sub ? sub : "");
+    } else if (sub == NULL) {
+        /* The residual is NOT a UID */
+        aret = asprintf(&k->name, "%llu:%s", (unsigned long long)getuid(),
+                        residual);
+    } else {
+        /* Ditto, plus we have a subsidiary.  `residual && sub && !plen' */
+        aret = asprintf(&k->name, "%llu:%s:%s", (unsigned long long)getuid(),
+                        residual, sub);
+    }
+    if (aret == -1 || k->name == NULL) {
+        free(local_def_name);
+        free(kcm_def_name);
+        free(k);
+        return krb5_enomem(context);
+    }
+
+    free(local_def_name);
+    free(kcm_def_name);
     (*id)->data.data = k;
     (*id)->data.length = sizeof(*k);
 
@@ -181,10 +309,11 @@ krb5_kcm_call(krb5_context context,
 	*response_p = NULL;
 
     krb5_data_zero(&response_data);
-
     ret = kcm_send_request(context, request, &response_data);
-    if (ret)
-	return ret;
+    if (ret) {
+        krb5_data_free(&response_data);
+        return ret;
+    }
 
     response = krb5_storage_from_data(&response_data);
     if (response == NULL) {
@@ -224,8 +353,7 @@ kcm_free(krb5_context context, krb5_ccache *id)
     krb5_kcmcache *k = KCMCACHE(*id);
 
     if (k != NULL) {
-	if (k->name != NULL)
-	    free(k->name);
+        free(k->name);
 	memset_s(k, sizeof(*k), 0, sizeof(*k));
 	krb5_data_free(&(*id)->data);
     }
@@ -255,10 +383,10 @@ kcm_get_name_2(krb5_context context,
 }
 
 static krb5_error_code
-kcm_resolve_2(krb5_context context,
-	      krb5_ccache *id,
-	      const char *res,
-	      const char *sub)
+kcm_resolve_2_kcm(krb5_context context,
+                  krb5_ccache *id,
+                  const char *res,
+                  const char *sub)
 {
     /*
      * For now, for KCM the `res' is the `sub'.
@@ -266,7 +394,22 @@ kcm_resolve_2(krb5_context context,
      * TODO: We should use `res' as the IPC name instead of the one currently
      *       hard-coded in `kcm_ipc_name'.
      */
-    return kcm_alloc(context, sub && *sub ? sub : res, id);
+    return kcm_alloc(context, &krb5_kcm_ops, res, sub, id);
+}
+
+static krb5_error_code
+kcm_resolve_2_api(krb5_context context,
+                  krb5_ccache *id,
+                  const char *res,
+                  const char *sub)
+{
+    /*
+     * For now, for KCM the `res' is the `sub'.
+     *
+     * TODO: We should use `res' as the IPC name instead of the one currently
+     *       hard-coded in `kcm_ipc_name'.
+     */
+    return kcm_alloc(context, &krb5_akcm_ops, res, sub, id);
 }
 
 /*
@@ -276,14 +419,14 @@ kcm_resolve_2(krb5_context context,
  *      NameZ
  */
 static krb5_error_code
-kcm_gen_new(krb5_context context, krb5_ccache *id)
+kcm_gen_new(krb5_context context, const krb5_cc_ops *ops, krb5_ccache *id)
 {
     krb5_kcmcache *k;
     krb5_error_code ret;
     krb5_storage *request, *response;
     krb5_data response_data;
 
-    ret = kcm_alloc(context, NULL, id);
+    ret = kcm_alloc(context, ops, NULL, NULL, id);
     if (ret)
 	return ret;
 
@@ -302,6 +445,8 @@ kcm_gen_new(krb5_context context, krb5_ccache *id)
 	return ret;
     }
 
+    free(k->name);
+    k->name = NULL;
     ret = krb5_ret_stringz(response, &k->name);
     if (ret)
 	ret = KRB5_CC_IO;
@@ -314,6 +459,18 @@ kcm_gen_new(krb5_context context, krb5_ccache *id)
 	kcm_free(context, id);
 
     return ret;
+}
+
+static krb5_error_code
+kcm_gen_new_kcm(krb5_context context, krb5_ccache *id)
+{
+    return kcm_gen_new(context, &krb5_kcm_ops, id);
+}
+
+static krb5_error_code
+kcm_gen_new_api(krb5_context context, krb5_ccache *id)
+{
+    return kcm_gen_new(context, &krb5_akcm_ops, id);
 }
 
 /*
@@ -666,8 +823,7 @@ kcm_get_next (krb5_context context,
     c->offset++;
     if (sret != sizeof(c->uuids[c->offset])) {
 	krb5_storage_free(request);
-	krb5_clear_error_message(context);
-	return ENOMEM;
+	return krb5_enomem(context);
     }
 
     ret = krb5_kcm_call(context, request, &response, &response_data);
@@ -895,8 +1051,7 @@ kcm_get_cache_next(krb5_context context, krb5_cc_cursor cursor, const krb5_cc_op
     c->offset++;
     if (sret != sizeof(c->uuids[c->offset])) {
 	krb5_storage_free(request);
-	krb5_clear_error_message(context);
-	return ENOMEM;
+	return krb5_enomem(context);
     }
 
     ret = krb5_kcm_call(context, request, &response, &response_data);
@@ -913,7 +1068,7 @@ kcm_get_cache_next(krb5_context context, krb5_cc_cursor cursor, const krb5_cc_op
     if (ret == 0) {
 	ret = _krb5_cc_allocate(context, ops, id);
 	if (ret == 0)
-	    ret = kcm_alloc(context, name, id);
+	    ret = kcm_alloc(context, ops, name, NULL, id);
 	krb5_xfree(name);
     }
 
@@ -998,8 +1153,11 @@ kcm_get_default_name(krb5_context context, const krb5_cc_ops *ops,
 
     ret = krb5_kcm_call(context, request, &response, &response_data);
     krb5_storage_free(request);
-    if (ret)
-	return _krb5_expand_default_cc_name(context, defstr, str);
+    if (ret) {
+        if (defstr)
+            return _krb5_expand_default_cc_name(context, defstr, str);
+        return ret;
+    }
 
     ret = krb5_ret_stringz(response, &name);
     krb5_storage_free(response);
@@ -1009,8 +1167,8 @@ kcm_get_default_name(krb5_context context, const krb5_cc_ops *ops,
 
     aret = asprintf(str, "%s:%s", ops->prefix, name);
     free(name);
-    if (aret == -1 || str == NULL)
-	return ENOMEM;
+    if (aret == -1 || *str == NULL)
+	return krb5_enomem(context);
 
     return 0;
 }
@@ -1133,7 +1291,7 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_kcm_ops = {
     "KCM",
     NULL,
     NULL,
-    kcm_gen_new,
+    kcm_gen_new_kcm,
     kcm_initialize,
     kcm_destroy,
     kcm_close,
@@ -1156,7 +1314,7 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_kcm_ops = {
     kcm_set_kdc_offset,
     kcm_get_kdc_offset,
     kcm_get_name_2,
-    kcm_resolve_2
+    kcm_resolve_2_kcm
 };
 
 KRB5_LIB_VARIABLE const krb5_cc_ops krb5_akcm_ops = {
@@ -1164,7 +1322,7 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_akcm_ops = {
     "API",
     NULL,
     NULL,
-    kcm_gen_new,
+    kcm_gen_new_api,
     kcm_initialize,
     kcm_destroy,
     kcm_close,
@@ -1187,9 +1345,8 @@ KRB5_LIB_VARIABLE const krb5_cc_ops krb5_akcm_ops = {
     NULL,
     NULL,
     kcm_get_name_2,
-    kcm_resolve_2
+    kcm_resolve_2_api
 };
-
 
 KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 _krb5_kcm_is_running(krb5_context context)
@@ -1199,7 +1356,7 @@ _krb5_kcm_is_running(krb5_context context)
     krb5_ccache id = &ccdata;
     krb5_boolean running;
 
-    ret = kcm_alloc(context, NULL, &id);
+    ret = kcm_alloc(context, NULL, NULL, NULL, &id);
     if (ret)
 	return 0;
 

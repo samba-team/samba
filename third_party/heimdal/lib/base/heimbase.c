@@ -53,7 +53,7 @@ struct heim_base_mem {
     HEIM_TAILQ_ENTRY(heim_base) autorel;
     heim_auto_release_t autorelpool;
     const char *name;
-    void (*dealloc)(void *);
+    void (HEIM_CALLCONV *dealloc)(void *);
     uintptr_t isaextra[1];
 };
 
@@ -83,10 +83,10 @@ struct heim_auto_release {
  * @return the same object as passed in
  */
 
-void *
-heim_retain(void *ptr)
+heim_object_t
+heim_retain(heim_object_t ptr)
 {
-    struct heim_base *p = NULL;
+    struct heim_base *p;
 
     if (ptr == NULL || heim_base_is_tagged(ptr))
 	return ptr;
@@ -111,7 +111,7 @@ void
 heim_release(void *ptr)
 {
     heim_base_atomic_integer_type old;
-    struct heim_base *p = NULL;
+    struct heim_base *p;
 
     if (ptr == NULL || heim_base_is_tagged(ptr))
 	return;
@@ -214,13 +214,13 @@ heim_get_tid(heim_object_t ptr)
  * @return a hash value
  */
 
-unsigned long
+uintptr_t
 heim_get_hash(heim_object_t ptr)
 {
     heim_type_t isa = _heim_get_isa(ptr);
     if (isa->hash)
 	return isa->hash(ptr);
-    return (unsigned long)ptr;
+    return (uintptr_t)ptr;
 }
 
 /**
@@ -257,7 +257,7 @@ heim_cmp(heim_object_t a, heim_object_t b)
  * Private - allocates an memory object
  */
 
-static void
+static void HEIM_CALLCONV
 memory_dealloc(void *ptr)
 {
     struct heim_base_mem *p = (struct heim_base_mem *)PTR2BASE(ptr);
@@ -346,7 +346,7 @@ _heim_alloc_object(heim_type_t type, size_t size)
 void *
 _heim_get_isaextra(heim_object_t ptr, size_t idx)
 {
-    struct heim_base *p = NULL;
+    struct heim_base *p;
 
     heim_assert(ptr != NULL, "internal error");
     p = (struct heim_base *)PTR2BASE(ptr);
@@ -585,7 +585,7 @@ autorel_tls(void)
 
 }
 
-static void
+static void HEIM_CALLCONV
 autorel_dealloc(void *ptr)
 {
     heim_auto_release_t ar = ptr;
@@ -614,10 +614,10 @@ autorel_cmp(void *a, void *b)
     return (a == b);
 }
 
-static unsigned long
+static uintptr_t
 autorel_hash(void *ptr)
 {
-    return (unsigned long)ptr;
+    return (uintptr_t)ptr;
 }
 
 
@@ -671,7 +671,7 @@ heim_auto_release_create(void)
 heim_object_t
 heim_auto_release(heim_object_t ptr)
 {
-    struct heim_base *p = NULL;
+    struct heim_base *p;
     struct ar_tls *tls = autorel_tls();
     heim_auto_release_t ar;
 
@@ -763,9 +763,10 @@ heim_path_vget2(heim_object_t ptr, heim_object_t *parent, heim_object_t *key,
 	    next_node = heim_dict_get_value(node, path_element);
 	} else if (node_type == HEIM_TID_DB) {
 	    next_node = _heim_db_get_value(node, NULL, path_element, NULL);
-	} else if (node_type == HEIM_TID_ARRAY) {
+	} else {
 	    int idx = -1;
 
+            /* node_type == HEIM_TID_ARRAY */
 	    if (heim_get_tid(path_element) == HEIM_TID_NUMBER)
 		idx = heim_number_get_int(path_element);
 	    if (idx < 0) {
@@ -777,12 +778,6 @@ heim_path_vget2(heim_object_t ptr, heim_object_t *parent, heim_object_t *key,
 		return NULL;
 	    }
 	    next_node = heim_array_get_value(node, idx);
-	} else {
-	    if (error)
-		*error = heim_error_create(EINVAL,
-					   "heim_path_get() node in path "
-					   "not a container type");
-	    return NULL;
 	}
 	node = next_node;
     }

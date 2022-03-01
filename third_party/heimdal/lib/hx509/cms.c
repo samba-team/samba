@@ -182,7 +182,7 @@ fill_CMSIdentifier(const hx509_cert cert,
 						   &id->u.subjectKeyIdentifier);
 	if (ret == 0)
 	    break;
-	/* FALLTHROUGH */
+        fallthrough;
     case CMS_ID_NAME: {
 	hx509_name name;
 
@@ -1565,7 +1565,9 @@ hx509_cms_create_signed(hx509_context context,
 
     sigctx.sd.version = cMSVersion_v3;
 
-    der_copy_oid(eContentType, &sigctx.sd.encapContentInfo.eContentType);
+    ret = der_copy_oid(eContentType, &sigctx.sd.encapContentInfo.eContentType);
+    if (ret)
+        goto out;
 
     /**
      * Use HX509_CMS_SIGNATURE_DETACHED to create detached signatures.

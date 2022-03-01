@@ -157,6 +157,13 @@ string_encode(const char *in)
     return s;
 }
 
+static void
+frees(char **s)
+{
+    free(*s);
+    *s = NULL;
+}
+
 static KRB5_LIB_CALL krb5_error_code
 authorize(void *ctx,
           krb5_context context,
@@ -228,17 +235,19 @@ authorize(void *ctx,
 
         if ((san = string_encode(s)) == NULL ||
             asprintf(&p, "%s/%s/%s-%s", d, princ, prefix, san) == -1 ||
-            p == NULL)
+            p == NULL) {
+            free(san);
             goto enomem;
+        }
         ret = stat(p, &st) == -1 ? errno : 0;
         free(san);
         free(p);
-        free(s);
-        s = NULL;
+        frees(&s);
         if (ret)
             goto skip;
         ret = hx509_request_authorize_san(csr, i);
     }
+    frees(&s);
     if (ret == HX509_NO_ITEM)
         ret = 0;
     if (ret)
@@ -251,14 +260,11 @@ authorize(void *ctx,
         ret = hx509_request_get_eku(csr, i, &s);
         if (ret)
             break;
-        if (asprintf(&p, "%s/%s/eku-%s", d, princ, s) == -1 || p == NULL) {
-            free(princ);
-            free(s);
-        }
+        if (asprintf(&p, "%s/%s/eku-%s", d, princ, s) == -1 || p == NULL)
+            goto enomem;
         ret = stat(p, &st) == -1 ? errno : 0;
         free(p);
-        free(s);
-        s = NULL;
+        frees(&s);
         if (ret)
             goto skip;
         ret = hx509_request_authorize_eku(csr, i);

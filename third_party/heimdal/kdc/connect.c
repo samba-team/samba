@@ -263,7 +263,8 @@ init_socket(krb5_context context,
 #if defined(HAVE_SETSOCKOPT) && defined(SOL_SOCKET) && defined(SO_REUSEADDR)
     {
 	int one = 1;
-	setsockopt(d->s, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
+        (void) setsockopt(d->s, SOL_SOCKET, SO_REUSEADDR, (void *)&one,
+                          sizeof(one));
     }
 #endif
     d->type = type;
@@ -620,15 +621,22 @@ handle_vanilla_tcp (krb5_context context,
 		    krb5_kdc_configuration *config,
 		    struct descr *d)
 {
+    krb5_error_code ret;
     krb5_storage *sp;
     uint32_t len;
 
+    if (d->len < 4)
+        return 0;
     sp = krb5_storage_from_mem(d->buf, d->len);
     if (sp == NULL) {
 	kdc_log (context, config, 1, "krb5_storage_from_mem failed");
 	return -1;
     }
-    krb5_ret_uint32(sp, &len);
+    ret = krb5_ret_uint32(sp, &len);
+    if (ret) {
+	kdc_log(context, config, 4, "failed to read request length");
+	return -1;
+    }
     krb5_storage_free(sp);
     if(d->len - 4 >= len) {
 	memmove(d->buf, d->buf + 4, d->len - 4);
@@ -1064,7 +1072,7 @@ reap_kid(krb5_context context, krb5_kdc_configuration *config,
 	 pid_t *pids, int max_kids, int options)
 {
     pid_t pid;
-    char *what;
+    char *what = "untracked";
     int status;
     int i = 0; /* quiet warnings */
     int ret = 0;
@@ -1090,7 +1098,6 @@ reap_kid(krb5_context context, krb5_kdc_configuration *config,
 
         if (i == max_kids) {
             /* should not happen */
-            what = "untracked";
             sev = "warning: ";
             level = 2;
         }
@@ -1156,7 +1163,7 @@ start_kdc(krb5_context context,
 #endif
 
 #ifdef __APPLE__
-    if (do_bonjour > 0)
+    if (!testing_flag && do_bonjour > 0)
         bonjour_kid(context, config, argv0, NULL);
 #endif
 
@@ -1191,7 +1198,7 @@ start_kdc(krb5_context context,
 #ifdef HAVE_FORK
 
 # ifdef __APPLE__
-    if (do_bonjour < 0)
+    if (!testing_flag && do_bonjour < 0)
         bonjour_kid(context, config, argv0, islive);
 # endif
 

@@ -305,7 +305,7 @@ hdb_add_history_keyset(krb5_context context,
     HDB_Ext_KeySet *hist_keys;
     HDB_extension ext;
     HDB_extension *extp;
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
 
     memset(&ext, 0, sizeof (ext));
 

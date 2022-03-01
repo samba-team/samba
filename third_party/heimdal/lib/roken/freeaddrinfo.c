@@ -40,7 +40,7 @@
  */
 
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
-freeaddrinfo(struct addrinfo *ai)
+rk_freeaddrinfo(struct addrinfo *ai)
 {
     struct addrinfo *tofree;
 

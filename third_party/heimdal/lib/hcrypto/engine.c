@@ -44,15 +44,22 @@ struct hc_engine {
     const RSA_METHOD *rsa;
     const DH_METHOD *dh;
     const RAND_METHOD *rand;
+    void *dso_handle;
 };
 
-ENGINE	*
+ENGINE *
 ENGINE_new(void)
 {
     ENGINE *engine;
 
     engine = calloc(1, sizeof(*engine));
+    if (engine == NULL)
+        return NULL;
     engine->references = 1;
+    engine->destroy = 0;
+    engine->dh = 0;
+    engine->rand = 0;
+    engine->dso_handle = 0;
 
     return engine;
 }
@@ -77,6 +84,8 @@ ENGINE_finish(ENGINE *engine)
 	free(engine->id);
     if(engine->destroy)
 	(*engine->destroy)(engine);
+    if (engine->dso_handle)
+	dlclose(engine->dso_handle);
 
     memset(engine, 0, sizeof(*engine));
     engine->references = -1;
@@ -299,15 +308,17 @@ ENGINE_by_dso(const char *path, const char *id)
 {
 #ifdef HAVE_DLOPEN
     ENGINE *engine;
-    void *handle;
     int ret;
 
     engine = calloc(1, sizeof(*engine));
     if (engine == NULL)
 	return NULL;
-
-    handle = dlopen(path, RTLD_NOW | RTLD_LOCAL | RTLD_GROUP);
-    if (handle == NULL) {
+    engine->references = 0; /* ref will be added below */
+    engine->destroy = 0;
+    engine->dh = 0;
+    engine->rand = 0;
+    engine->dso_handle = dlopen(path, RTLD_NOW | RTLD_LOCAL | RTLD_GROUP);
+    if (engine->dso_handle == NULL) {
 	/* printf("error: %s\n", dlerror()); */
 	free(engine);
 	return NULL;
@@ -317,16 +328,16 @@ ENGINE_by_dso(const char *path, const char *id)
 	unsigned long version;
 	openssl_v_check v_check;
 
-	v_check = (openssl_v_check)dlsym(handle, "v_check");
+	v_check = (openssl_v_check)dlsym(engine->dso_handle, "v_check");
 	if (v_check == NULL) {
-	    dlclose(handle);
+	    dlclose(engine->dso_handle);
 	    free(engine);
 	    return NULL;
 	}
 
 	version = (*v_check)(OPENSSL_DYNAMIC_VERSION);
 	if (version == 0) {
-	    dlclose(handle);
+	    dlclose(engine->dso_handle);
 	    free(engine);
 	    return NULL;
 	}
@@ -335,16 +346,17 @@ ENGINE_by_dso(const char *path, const char *id)
     {
 	openssl_bind_engine bind_engine;
 
-	bind_engine = (openssl_bind_engine)dlsym(handle, "bind_engine");
+	bind_engine =
+            (openssl_bind_engine)dlsym(engine->dso_handle, "bind_engine");
 	if (bind_engine == NULL) {
-	    dlclose(handle);
+	    dlclose(engine->dso_handle);
 	    free(engine);
 	    return NULL;
 	}
 
 	ret = (*bind_engine)(engine, id, NULL); /* XXX fix third arg */
 	if (ret != 1) {
-	    dlclose(handle);
+	    dlclose(engine->dso_handle);
 	    free(engine);
 	    return NULL;
 	}
@@ -354,7 +366,6 @@ ENGINE_by_dso(const char *path, const char *id)
 
     ret = add_engine(engine);
     if (ret != 1) {
-	dlclose(handle);
 	ENGINE_finish(engine);
 	return NULL;
     }

@@ -50,7 +50,8 @@ main(void)
     char buf2[MAX_PATH * 2];
     int ret = 0;
     if (!issuid() && getuid() != 0) {
-        const char *s, *s2;
+        const char *s = NULL;
+        const char *s2 = NULL;
 
         if (getenv("USER") != NULL && strlen(getenv("USER")) != 0 &&
             (s = roken_get_username(buf, sizeof(buf))) == NULL) {

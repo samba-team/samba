@@ -242,6 +242,7 @@ static unsigned long idcounter;
 %type <type> BooleanType
 %type <type> ChoiceType
 %type <type> ConstrainedType
+%type <type> UnconstrainedType
 %type <type> EnumeratedType
 %type <type> IntegerType
 %type <type> NullType
@@ -288,12 +289,12 @@ static unsigned long idcounter;
 
 %type <constraint_spec> Constraint
 %type <constraint_spec> ConstraintSpec
+%type <constraint_spec> SubtypeConstraint
 %type <constraint_spec> GeneralConstraint
 %type <constraint_spec> ContentsConstraint
 %type <constraint_spec> UserDefinedConstraint
 %type <constraint_spec> SimpleTableConstraint TableConstraint
 %type <constraint_spec> ComponentRelationConstraint
-
 
 
 %start ModuleDefinition
@@ -304,6 +305,9 @@ static unsigned long idcounter;
  * We have sinned by allowing types to have names that start with lower-case,
  * and values that have names that start with upper-case.
  *
+ * UPDATE: We sin no more.  However, parts of this block comment are still
+ * relevant.
+ *
  * That worked when we only supported basic X.680 because the rules for
  * TypeAssignment and ValueAssignment are clearly unambiguous in spite of the
  * case issue.
@@ -312,35 +316,41 @@ static unsigned long idcounter;
  * have to help us distinguish certain rules is the form of an identifier: the
  * case of its first letter.
  *
- * We have begun to undo our sin by not allowing wrong-case identifiers in
- * certain situations.
+ * We have cleansed our sin by not allowing wrong-case identifiers any more.
  *
  * Some historical instances of this sin in-tree:
  *
- *  - DOMAIN-X500-COMPRESS (value (enum) but name starts with upper-case)
- *  - krb5int32		   (type         but name starts with lower-case)
- *  - krb5uint32	   (type         but name starts with lower-case)
- *  - hdb_keyset	   (type         but name starts with lower-case)
- *  - hdb_entry		   (type         but name starts with lower-case)
- *  - hdb_entry_alias      (type         but name starts with lower-case)
+ *  - DOMAIN-X500-COMPRESS  (value (enum) but name starts with upper-case)
+ *  - krb5int32		    (type         but name starts with lower-case)
+ *  - krb5uint32	    (type         but name starts with lower-case)
+ *  - hdb_keyset	    (type         but name starts with lower-case)
+ *  - hdb_entry		    (type         but name starts with lower-case)
+ *  - hdb_entry_alias       (type         but name starts with lower-case)
+ *  - HDB_DB_FORMAT INTEGER (value (int)  but name starts with upper-case)
  *
- * We have fixed most of these, in some cases leaving behind aliases in header
- * files as needed.
+ * We have fixed all of these and others, in some cases leaving behind aliases
+ * in header files as needed.
  *
- * This issue is probably also the source of remaining shift/reduce conflicts.
+ * We have one shift/reduce conflict (shift ObjectClassAssignment, reduce
+ * TypeAssignment) and one reduce/reduce conflict (ObjectAssignment vs
+ * ValueAssignment) that we avoid by requiring CLASS names to start with an
+ * underscore.
  *
- * In the FieldSetting rule in particular, we get a reduce/reduce conflict if
- * we use `Identifier' instead of `TYPE_IDENTIFIER' for type field settings and
+ * In the FieldSetting rule, also, we get a reduce/reduce conflict if we use
+ * `Identifier' instead of `TYPE_IDENTIFIER' for type field settings and
  * `VALUE_IDENTIFIER' for value field settings, and then we can't make
  * progress.
  *
  * Looking forward, we may not (will not) be able to distinguish ValueSet and
- * ObjectSet field settings from each other either even without committing this
- * leading-identifier-character-case sin, and we may not (will not) be able
- * distinguish Object and Value field settings from each other as well.  To
- * deal with those we will have to run-time type-tag/pun the C structures for
- * valueset/objectset and value/object, and have one rule for each of those
- * that inspects the type of the item to decide what kind of setting it is.
+ * ObjectSet field settings from each other either, and we may not (will not)
+ * be able distinguish Object and Value field settings from each other as well.
+ * To deal with those we will have to run-time type-tag and type-pun the C
+ * structures for valueset/objectset and value/object, and have one rule for
+ * each of those that inspects the type of the item to decide what kind of
+ * setting it is.
+ *
+ * Sadly, the extended syntax for ASN.1 (x.680 + x.681/2/3) appears to have
+ * ambiguities that cannot be resolved with bison/yacc.
  */
 Identifier	: TYPE_IDENTIFIER { $$ = $1; }
 		| VALUE_IDENTIFIER { $$ = $1; };
@@ -364,8 +374,6 @@ ModuleDefinition: Identifier objid_opt kw_DEFINITIONS TagDefault ExtensionDefaul
                     fprintf(jsonfile, "]}\n");
                     free(o);
 		}
-		| CLASS_IDENTIFIER objid_opt kw_DEFINITIONS TagDefault ExtensionDefault
-			EEQUAL kw_BEGIN ModuleBody kw_END
 		;
 
 TagDefault	: kw_EXPLICIT kw_TAGS
@@ -914,10 +922,20 @@ ParamGovernor   : DefinedObjectClass
 	     /* | Type */
 		;
 
-Type		: BuiltinType
-		| ReferencedType
-		| ConstrainedType
-		;
+UnconstrainedType : BitStringType
+                  | BooleanType
+                  | CharacterStringType
+                  | ChoiceType
+                  | EnumeratedType
+                  | IntegerType
+                  | NullType
+                  | ObjectIdentifierType
+                  | OctetStringType
+                  | SequenceType
+                  | SetType
+                  | ObjectClassFieldType; /* X.681 */
+
+Type		: BuiltinType | ReferencedType | ConstrainedType ;
 
 BuiltinType	: BitStringType
 		| BooleanType
@@ -948,39 +966,49 @@ BooleanType	: kw_BOOLEAN
 		}
 		;
 
-range		: '(' Value RANGE Value ')'
+             /*
+              * The spec says the values in a ValueRange are Values, but a) all
+              * the various value ranges do not involve OBJECT IDENTIFIER, b)
+              * we only support integer value ranges at this time (as opposed
+              * to, e.g., time ranges, and we don't even support time values at
+              * this time), c) allowing OBJECT IDENTIFIER here causes a
+              * shift-reduce conflict, so we limit ourselves to integer values
+              * in ranges.  We could always define IntegerValueRange,
+              * TimeValueRange, etc. when we add support for more value types.
+              */
+range		: IntegerValue RANGE IntegerValue
 		{
-		    if($2->type != integervalue)
+		    if($1->type != integervalue)
 			lex_error_message("Non-integer used in first part of range");
-		    if($2->type != integervalue)
+		    if($1->type != integervalue)
 			lex_error_message("Non-integer in second part of range");
 		    $$ = ecalloc(1, sizeof(*$$));
-		    $$->min = $2->u.integervalue;
-		    $$->max = $4->u.integervalue;
+		    $$->min = $1->u.integervalue;
+		    $$->max = $3->u.integervalue;
 		}
-		| '(' Value RANGE kw_MAX ')'
+		| IntegerValue RANGE kw_MAX
 		{
-		    if($2->type != integervalue)
+		    if($1->type != integervalue)
 			lex_error_message("Non-integer in first part of range");
 		    $$ = ecalloc(1, sizeof(*$$));
-		    $$->min = $2->u.integervalue;
+		    $$->min = $1->u.integervalue;
 		    $$->max = INT_MAX;
 		}
-		| '(' kw_MIN RANGE Value ')'
+		| kw_MIN RANGE IntegerValue
 		{
-		    if($4->type != integervalue)
+		    if($3->type != integervalue)
 			lex_error_message("Non-integer in second part of range");
 		    $$ = ecalloc(1, sizeof(*$$));
 		    $$->min = INT_MIN;
-		    $$->max = $4->u.integervalue;
+		    $$->max = $3->u.integervalue;
 		}
-		| '(' Value ')'
+		| IntegerValue
 		{
-		    if($2->type != integervalue)
+		    if($1->type != integervalue)
 			lex_error_message("Non-integer used in limit");
 		    $$ = ecalloc(1, sizeof(*$$));
-		    $$->min = $2->u.integervalue;
-		    $$->max = $2->u.integervalue;
+		    $$->min = $1->u.integervalue;
+		    $$->max = $1->u.integervalue;
 		}
 		;
 
@@ -989,12 +1017,6 @@ IntegerType	: kw_INTEGER
 		{
 			$$ = new_tag(ASN1_C_UNIV, UT_Integer,
 				     TE_EXPLICIT, new_type(TInteger));
-		}
-		| kw_INTEGER range
-		{
-			$$ = new_type(TInteger);
-			$$->range = $2;
-			$$ = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, $$);
 		}
 		| kw_INTEGER '{' NamedNumberList '}'
 		{
@@ -1101,8 +1123,8 @@ NullType	: kw_NULL
 
 size		:
 		{ $$ = NULL; }
-		| kw_SIZE range
-		{ $$ = $2; }
+		| kw_SIZE '(' range ')'
+		{ $$ = $3; }
 		;
 
 
@@ -1250,10 +1272,17 @@ UsefulType	: kw_GeneralizedTime
 		}
 		;
 
-ConstrainedType	: Type Constraint
+ConstrainedType	: UnconstrainedType Constraint
 		{
 		    $$ = $1;
-		    $$->constraint = $2;
+                    if ($2->ctype == CT_RANGE) {
+                        if ($1->type != TTag || $1->subtype->type != TInteger)
+                            lex_error_message("RANGE constraints apply only to INTEGER types");
+                        $$->subtype->range = $2->u.range;
+                        free($2);
+                    } else {
+                        $$->constraint = $2;
+                    }
 		    /* if (Constraint.type == contentConstraint) {
 		       assert(Constraint.u.constraint.type == octetstring|bitstring-w/o-NamedBitList); // remember to check type reference too
 		       if (Constraint.u.constraint.type) {
@@ -1274,8 +1303,14 @@ Constraint	: '(' ConstraintSpec ')'
 		}
 		;
 
-ConstraintSpec	: GeneralConstraint
+ConstraintSpec	: SubtypeConstraint | GeneralConstraint
 		;
+
+SubtypeConstraint: range
+		{
+                        $$ = new_constraint_spec(CT_RANGE);
+                        $$->u.range = $1;
+		}
 
 GeneralConstraint: ContentsConstraint
 		| UserDefinedConstraint
@@ -1452,7 +1487,7 @@ tagenv		: /* */
 		;
 
 
-ValueAssignment	: Identifier Type EEQUAL Value
+ValueAssignment	: VALUE_IDENTIFIER Type EEQUAL Value
 		{
 			Symbol *s;
 			s = addsym ($1);

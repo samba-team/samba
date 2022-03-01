@@ -106,7 +106,7 @@ init_context_from_config_file(krb5_context context)
     krb5_error_code ret;
     const char * tmp;
     char **s;
-    krb5_enctype *tmptypes;
+    krb5_enctype *tmptypes = NULL;
 
     INIT_FIELD(context, time, max_skew, 5 * 60, "clockskew");
     INIT_FIELD(context, time, kdc_timeout, 30, "kdc_timeout");
@@ -246,10 +246,10 @@ init_context_from_config_file(krb5_context context)
     if (context->flags & KRB5_CTX_F_REPORT_CANONICAL_CLIENT_NAME)
 	context->flags |= KRB5_CTX_F_CHECK_PAC;
 
-    if (context->default_cc_name)
-	free(context->default_cc_name);
+    free(context->default_cc_name);
     context->default_cc_name = NULL;
     context->default_cc_name_set = 0;
+    free(context->configured_default_cc_name);
     context->configured_default_cc_name = NULL;
 
     tmp = secure_getenv("KRB5_TRACE");
@@ -646,12 +646,9 @@ KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_free_context(krb5_context context)
 {
     _krb5_free_name_canon_rules(context, context->name_canon_rules);
-    if (context->default_cc_name)
-	free(context->default_cc_name);
-    if (context->default_cc_name_env)
-	free(context->default_cc_name_env);
-    if (context->configured_default_cc_name)
-	free(context->configured_default_cc_name);
+    free(context->default_cc_name);
+    free(context->default_cc_name_env);
+    free(context->configured_default_cc_name);
     free(context->etypes);
     free(context->cfg_etypes);
     free(context->etypes_des);

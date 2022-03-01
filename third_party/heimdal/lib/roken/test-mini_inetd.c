@@ -144,7 +144,7 @@ test_simple_echo_client(void)
 	}
 
 	if (rv != strlen(test_strings[i])) {
-	    fprintf (stderr, "[%s] Data length mismatch %d != %d\n", prog, rv, strlen(test_strings[i]));
+	    fprintf (stderr, "[%s] Data length mismatch %d != %zu\n", prog, rv, strlen(test_strings[i]));
 	    rk_closesocket(s);
 	    return 1;
 	}

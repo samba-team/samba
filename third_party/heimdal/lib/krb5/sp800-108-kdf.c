@@ -73,7 +73,10 @@ _krb5_SP800_108_HMAC_KDF(krb5_context context,
 	unsigned char tmp[4];
 	size_t len;
 
-	HMAC_Init_ex(&c, kdf_K1->data, kdf_K1->length, md, NULL);
+        if (HMAC_Init_ex(&c, kdf_K1->data, kdf_K1->length, md, NULL) == 0) {
+            HMAC_CTX_cleanup(&c);
+            return krb5_enomem(context);
+        }
 
 	_krb5_put_int(tmp, i + 1, 4);
 	HMAC_Update(&c, tmp, 4);

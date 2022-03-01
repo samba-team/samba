@@ -42,7 +42,7 @@ struct hdb_data {
 
 struct hdb_cursor {
     HDB *db;
-    hdb_entry_ex hdb_entry;
+    hdb_entry hdb_entry;
     int first, next;
     int key_idx;
 };
@@ -160,8 +160,11 @@ find_db (krb5_context context,
     }
     hdb_free_dbinfo(context, &head);
     if (*dbname == NULL &&
-        (*dbname = strdup(hdb_default_db(context))) == NULL)
+        (*dbname = strdup(hdb_default_db(context))) == NULL) {
+        free(*mkey);
+        *mkey = NULL;
         return krb5_enomem(context);
+    }
     return 0;
 }
 
@@ -178,7 +181,7 @@ hdb_get_entry(krb5_context context,
 	      krb5_enctype enctype,
 	      krb5_keytab_entry *entry)
 {
-    hdb_entry_ex ent;
+    hdb_entry ent;
     krb5_error_code ret;
     struct hdb_data *d = id->data;
     const char *dbname = d->dbname;
@@ -186,6 +189,9 @@ hdb_get_entry(krb5_context context,
     char *fdbname = NULL, *fmkey = NULL;
     HDB *db;
     size_t i;
+
+    if (!principal)
+        return KRB5_KT_NOTFOUND;
 
     memset(&ent, 0, sizeof(ent));
 
@@ -223,27 +229,27 @@ hdb_get_entry(krb5_context context,
     }else if(ret)
 	goto out;
 
-    if(kvno && (krb5_kvno)ent.entry.kvno != kvno) {
-	hdb_free_entry(context, &ent);
+    if(kvno && (krb5_kvno)ent.kvno != kvno) {
+	hdb_free_entry(context, db, &ent);
  	ret = KRB5_KT_NOTFOUND;
 	goto out;
     }
     if(enctype == 0)
-	if(ent.entry.keys.len > 0)
-	    enctype = ent.entry.keys.val[0].key.keytype;
+	if(ent.keys.len > 0)
+	    enctype = ent.keys.val[0].key.keytype;
     ret = KRB5_KT_NOTFOUND;
-    for(i = 0; i < ent.entry.keys.len; i++) {
-	if(ent.entry.keys.val[i].key.keytype == enctype) {
+    for(i = 0; i < ent.keys.len; i++) {
+	if(ent.keys.val[i].key.keytype == enctype) {
 	    krb5_copy_principal(context, principal, &entry->principal);
-	    entry->vno = ent.entry.kvno;
+	    entry->vno = ent.kvno;
 	    krb5_copy_keyblock_contents(context,
-					&ent.entry.keys.val[i].key,
+					&ent.keys.val[i].key,
 					&entry->keyblock);
 	    ret = 0;
 	    break;
 	}
     }
-    hdb_free_entry(context, &ent);
+    hdb_free_entry(context, db, &ent);
  out:
     (*db->hdb_close)(context, db);
     (*db->hdb_destroy)(context, db);
@@ -333,8 +339,8 @@ hdb_next_entry(krb5_context context,
 	else if (ret)
 	    return ret;
 
-	if (c->hdb_entry.entry.keys.len == 0)
-	    hdb_free_entry(context, &c->hdb_entry);
+	if (c->hdb_entry.keys.len == 0)
+	    hdb_free_entry(context, c->db, &c->hdb_entry);
 	else
 	    c->next = FALSE;
     }
@@ -350,8 +356,8 @@ hdb_next_entry(krb5_context context,
 	    return ret;
 
 	/* If no keys on this entry, try again */
-	if (c->hdb_entry.entry.keys.len == 0)
-	    hdb_free_entry(context, &c->hdb_entry);
+	if (c->hdb_entry.keys.len == 0)
+	    hdb_free_entry(context, c->db, &c->hdb_entry);
 	else
 	    c->next = FALSE;
     }
@@ -362,14 +368,14 @@ hdb_next_entry(krb5_context context,
      */
 
     ret = krb5_copy_principal(context,
-			      c->hdb_entry.entry.principal,
+			      c->hdb_entry.principal,
 			      &entry->principal);
     if (ret)
 	return ret;
 
-    entry->vno = c->hdb_entry.entry.kvno;
+    entry->vno = c->hdb_entry.kvno;
     ret = krb5_copy_keyblock_contents(context,
-				      &c->hdb_entry.entry.keys.val[c->key_idx].key,
+				      &c->hdb_entry.keys.val[c->key_idx].key,
 				      &entry->keyblock);
     if (ret) {
 	krb5_free_principal(context, entry->principal);
@@ -383,8 +389,8 @@ hdb_next_entry(krb5_context context,
      * next entry
      */
 
-    if ((size_t)c->key_idx == c->hdb_entry.entry.keys.len) {
-	hdb_free_entry(context, &c->hdb_entry);
+    if ((size_t)c->key_idx == c->hdb_entry.keys.len) {
+	hdb_free_entry(context, c->db, &c->hdb_entry);
 	c->next = TRUE;
 	c->key_idx = 0;
     }
@@ -401,7 +407,7 @@ hdb_end_seq_get(krb5_context context,
     struct hdb_cursor *c = cursor->data;
 
     if (!c->next)
-	hdb_free_entry(context, &c->hdb_entry);
+	hdb_free_entry(context, c->db, &c->hdb_entry);
 
     (c->db->hdb_close)(context, c->db);
     (c->db->hdb_destroy)(context, c->db);

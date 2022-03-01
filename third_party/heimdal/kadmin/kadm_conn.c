@@ -261,12 +261,9 @@ start_server(krb5_context contextp, const char *port_str)
 	for(ap = ai; ap; ap = ap->ai_next)
 	    i++;
 	tmp = realloc(socks, (num_socks + i) * sizeof(*socks));
-	if(tmp == NULL) {
-	    krb5_warnx(contextp, "failed to reallocate %lu bytes",
-		       (unsigned long)(num_socks + i) * sizeof(*socks));
-            freeaddrinfo(ai);
-	    continue;
-	}
+	if(tmp == NULL)
+	    krb5_err(contextp, 1, errno, "failed to reallocate %lu bytes",
+		     (unsigned long)(num_socks + i) * sizeof(*socks));
 	socks = tmp;
 	for(ap = ai; ap; ap = ap->ai_next) {
 	    krb5_socket_t s = socket(ap->ai_family, ap->ai_socktype, ap->ai_protocol);

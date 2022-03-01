@@ -218,6 +218,8 @@ gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status,
 				OM_uint32 num_enctypes,
 				int32_t *enctypes);
 
+#define GSS_KRB5_NAME_ATTRIBUTE_BASE_URN "urn:ietf:kerberos:nameattr-"
+
 GSSAPI_CPP_END
 
 #endif /* GSSAPI_SPNEGO_H_ */

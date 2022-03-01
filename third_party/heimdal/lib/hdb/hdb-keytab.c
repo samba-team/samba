@@ -90,14 +90,14 @@ hkt_unlock(krb5_context context, HDB *db)
 
 static krb5_error_code
 hkt_firstkey(krb5_context context, HDB *db,
-	     unsigned flags, hdb_entry_ex *entry)
+	     unsigned flags, hdb_entry *entry)
 {
     return HDB_ERR_DB_INUSE;
 }
 
 static krb5_error_code
 hkt_nextkey(krb5_context context, HDB * db, unsigned flags,
-	     hdb_entry_ex * entry)
+	     hdb_entry * entry)
 {
     return HDB_ERR_DB_INUSE;
 }
@@ -119,7 +119,7 @@ hkt_open(krb5_context context, HDB * db, int flags, mode_t mode)
 
 static krb5_error_code
 hkt_fetch_kvno(krb5_context context, HDB * db, krb5_const_principal principal,
-	       unsigned flags, krb5_kvno kvno, hdb_entry_ex * entry)
+	       unsigned flags, krb5_kvno kvno, hdb_entry * entry)
 {
     hdb_keytab k = (hdb_keytab)db->hdb_db;
     krb5_error_code ret;
@@ -132,13 +132,13 @@ hkt_fetch_kvno(krb5_context context, HDB * db, krb5_const_principal principal,
 
     memset(&ktentry, 0, sizeof(ktentry));
 
-    entry->entry.flags.server = 1;
-    entry->entry.flags.forwardable = 1;
-    entry->entry.flags.renewable = 1;
+    entry->flags.server = 1;
+    entry->flags.forwardable = 1;
+    entry->flags.renewable = 1;
 
     /* Not recorded in the OD backend, make something up */
     ret = krb5_parse_name(context, "hdb/keytab@WELL-KNOWN:KEYTAB-BACKEND",
-			  &entry->entry.created_by.principal);
+			  &entry->created_by.principal);
     if (ret)
 	goto out;
 
@@ -155,7 +155,7 @@ hkt_fetch_kvno(krb5_context context, HDB * db, krb5_const_principal principal,
 	goto out;
     }
 
-    ret = krb5_copy_principal(context, principal, &entry->entry.principal);
+    ret = krb5_copy_principal(context, principal, &entry->principal);
     if (ret)
 	goto out;
 
@@ -163,8 +163,8 @@ hkt_fetch_kvno(krb5_context context, HDB * db, krb5_const_principal principal,
 
  out:
     if (ret) {
-	free_HDB_entry(&entry->entry);
-	memset(&entry->entry, 0, sizeof(entry->entry));
+	free_HDB_entry(entry);
+	memset(entry, 0, sizeof(*entry));
     }
     krb5_kt_free_entry(context, &ktentry);
 
@@ -173,7 +173,7 @@ hkt_fetch_kvno(krb5_context context, HDB * db, krb5_const_principal principal,
 
 static krb5_error_code
 hkt_store(krb5_context context, HDB * db, unsigned flags,
-	  hdb_entry_ex * entry)
+	  hdb_entry * entry)
 {
     return HDB_ERR_DB_INUSE;
 }

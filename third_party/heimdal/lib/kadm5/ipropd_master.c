@@ -95,7 +95,7 @@ make_listen_socket (krb5_context context, const char *port_str)
     fd = socket (AF_INET, SOCK_STREAM, 0);
     if (rk_IS_BAD_SOCKET(fd))
 	krb5_err (context, 1, rk_SOCK_ERRNO, "socket AF_INET");
-    setsockopt (fd, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
+    (void) setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
     memset (&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
 
@@ -392,14 +392,14 @@ error:
 }
 
 static int
-dump_one (krb5_context context, HDB *db, hdb_entry_ex *entry, void *v)
+dump_one (krb5_context context, HDB *db, hdb_entry *entry, void *v)
 {
     krb5_error_code ret;
     krb5_storage *dump = (krb5_storage *)v;
     krb5_storage *sp;
     krb5_data data;
 
-    ret = hdb_entry2value (context, &entry->entry, &data);
+    ret = hdb_entry2value (context, entry, &data);
     if (ret)
 	return ret;
     ret = krb5_data_realloc (&data, data.length + 4);
@@ -450,6 +450,8 @@ write_dump (krb5_context context, krb5_storage *dump,
      */
 
     ret = krb5_store_uint32(dump, 0);
+    if (ret)
+        return ret;
 
     ret = hdb_create (context, &db, database);
     if (ret)
@@ -1117,7 +1119,7 @@ send_diffs(kadm5_server_context *server_context, slave *s, int log_fd,
     krb5_storage *sp;
     uint32_t initial_version;
     uint32_t initial_tstamp;
-    uint32_t ver;
+    uint32_t ver = 0;
     off_t left = 0;
     off_t right = 0;
     krb5_ssize_t bytes;
@@ -1251,7 +1253,8 @@ fill_input(krb5_context context, slave *s)
             return EWOULDBLOCK;
 
         buf = s->input.header_buf;
-        len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+        len = ((unsigned long)buf[0] << 24) | (buf[1] << 16)
+	    | (buf[2] << 8) | buf[3];
         if (len > SLAVE_MSG_MAX)
             return EINVAL;
         ret = krb5_data_alloc(&s->input.packet, len);
@@ -1432,11 +1435,13 @@ write_master_down(krb5_context context)
         fp = fopen(slave_stats_temp_file, "w");
     if (fp == NULL)
 	return;
-    krb5_format_time(context, t, str, sizeof(str), TRUE);
-    fprintf(fp, "master down at %s\n", str);
+    if (krb5_format_time(context, t, str, sizeof(str), TRUE) == 0)
+        fprintf(fp, "master down at %s\n", str);
+    else
+        fprintf(fp, "master down\n");
 
     if (fclose(fp) != EOF)
-        rk_rename(slave_stats_temp_file, slave_stats_file);
+        (void) rk_rename(slave_stats_temp_file, slave_stats_file);
 }
 
 static void
@@ -1452,7 +1457,8 @@ write_stats(krb5_context context, slave *slaves, uint32_t current_version)
     if (fp == NULL)
 	return;
 
-    krb5_format_time(context, t, str, sizeof(str), TRUE);
+    if (krb5_format_time(context, t, str, sizeof(str), TRUE))
+        snprintf(str, sizeof(str), "<unknown-time>");
     fprintf(fp, "Status for slaves, last updated: %s\n\n", str);
 
     fprintf(fp, "Master version: %lu\n\n", (unsigned long)current_version);
@@ -1494,7 +1500,10 @@ write_stats(krb5_context context, slave *slaves, uint32_t current_version)
 	    rtbl_add_column_entry(tbl, SLAVE_STATUS, "Up");
 
 	ret = krb5_format_time(context, slaves->seen, str, sizeof(str), TRUE);
-	rtbl_add_column_entry(tbl, SLAVE_SEEN, str);
+        if (ret)
+            rtbl_add_column_entry(tbl, SLAVE_SEEN, "<error-formatting-time>");
+        else
+            rtbl_add_column_entry(tbl, SLAVE_SEEN, str);
 
 	slaves = slaves->next;
     }
@@ -1503,7 +1512,7 @@ write_stats(krb5_context context, slave *slaves, uint32_t current_version)
     rtbl_destroy(tbl);
 
     if (fclose(fp) != EOF)
-        rk_rename(slave_stats_temp_file, slave_stats_file);
+        (void) rk_rename(slave_stats_temp_file, slave_stats_file);
 }
 
 
