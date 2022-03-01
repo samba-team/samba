@@ -19,7 +19,12 @@ required_result()
 		if [ "$2" = "--" ]; then
 			required_output=""
 		else
-			required_output="$2"
+			# Use a sub-shell to strip trailing newlines.
+			# They can't be matched anyway because the
+			# test is run in a sub-shell, which strips
+			# trailing newlines.
+			# shellcheck disable=SC2116
+			required_output=$(echo "$2")
 		fi
 	else
 		if ! tty -s; then
