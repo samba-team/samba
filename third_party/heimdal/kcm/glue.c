@@ -55,7 +55,7 @@ kcmss_get_name_2(krb5_context context,
         *name = CACHENAME(id);
     if (col)
         *col = NULL;
-    if (name)
+    if (sub)
         *sub = CACHENAME(id);
     return 0;
 }

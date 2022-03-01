@@ -252,6 +252,7 @@ kdc_type2(OM_uint32 *minor_status,
     krb5_data ti;
 
     memset(&type2, 0, sizeof(type2));
+    memset(out, 0, sizeof(*out));
 
     /*
      * Request data for type 2 packet from the KDC.

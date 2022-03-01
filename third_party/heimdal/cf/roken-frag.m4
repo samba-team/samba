@@ -183,7 +183,6 @@ AC_CHECK_FUNCS([				\
 	asnprintf				\
 	asprintf				\
 	atexit					\
-	cgetent					\
 	getauxval				\
 	getconfattr				\
 	getprogname				\
@@ -215,11 +214,6 @@ AC_CHECK_FUNCS([				\
 	vasprintf				\
 	vis					\
 ])
-
-if test "$ac_cv_func_cgetent" = no; then
-	AC_LIBOBJ(getcap)
-fi
-AM_CONDITIONAL(have_cgetent, test "$ac_cv_func_cgetent" = yes)
 
 AC_REQUIRE([AC_FUNC_GETLOGIN])
 

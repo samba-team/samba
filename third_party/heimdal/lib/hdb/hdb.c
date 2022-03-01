@@ -232,38 +232,25 @@ hdb_remove_keys(krb5_context context,
  * @param context Context
  * @param e The HDB entry
  * @param ks A pointer to a variable of type HDB_Ext_KeySet
+ * @param ckr A pointer to stable (copied) HDB_Ext_KeyRotation
  *
  * @return Zero on success, an error code otherwise.
  */
 krb5_error_code
-hdb_remove_base_keys(krb5_context context,
-                     hdb_entry *e,
-                     HDB_Ext_KeySet *base_keys)
+_hdb_remove_base_keys(krb5_context context,
+                      hdb_entry *e,
+                      HDB_Ext_KeySet *base_keys,
+                      const HDB_Ext_KeyRotation *ckr)
 {
-    krb5_error_code ret;
-    const HDB_Ext_KeyRotation *ckr;
-    HDB_Ext_KeyRotation kr;
+    krb5_error_code ret = 0;
     size_t i, k;
 
-    ret = hdb_entry_get_key_rotation(context, e, &ckr);
-    if (!ckr)
-        return 0;
-
-    if (ret == 0) {
-        /*
-         * Changing the entry's extensions invalidates extensions obtained
-         * before the change.
-         */
-        ret = copy_HDB_Ext_KeyRotation(ckr, &kr);
-        ckr = NULL;
-    }
     base_keys->len = 0;
-    if (ret == 0 &&
-        (base_keys->val = calloc(kr.len, sizeof(base_keys->val[0]))) == NULL)
+    if ((base_keys->val = calloc(ckr->len, sizeof(base_keys->val[0]))) == NULL)
         ret = krb5_enomem(context);
 
-    for (k = i = 0; ret == 0 && i < kr.len; i++) {
-        const KeyRotation *krp = &kr.val[i];
+    for (k = i = 0; ret == 0 && i < ckr->len; i++) {
+        const KeyRotation *krp = &ckr->val[i];
 
         /*
          * WARNING: O(N * M) where M is number of keysets and N is the number
@@ -284,7 +271,6 @@ hdb_remove_base_keys(krb5_context context,
         base_keys->len = k;
     else
         free_HDB_Ext_KeySet(base_keys);
-    free_HDB_Ext_KeyRotation(&kr);
     return 0;
 }
 
@@ -312,12 +298,12 @@ hdb_install_keyset(krb5_context context,
             (ret = hdb_add_current_keys_to_history(context, e)))
             return ret;
         free_Keys(&e->keys);
+        e->kvno = ks->kvno;
         if (ret == 0)
             ret = copy_Keys(&ks->keys, &e->keys);
-        e->kvno = ks->kvno;
-        if (ks->set_time)
-            return hdb_entry_set_pw_change_time(context, e, *ks->set_time);
-        return 0;
+        if (ret == 0 && ks->set_time)
+            ret = hdb_entry_set_pw_change_time(context, e, *ks->set_time);
+        return ret;
     }
     return hdb_add_history_keyset(context, e, ks);
 }
@@ -359,9 +345,10 @@ hdb_enctype2key(krb5_context context,
 void
 hdb_free_key(Key *key)
 {
-    memset(key->key.keyvalue.data,
-	   0,
-	   key->key.keyvalue.length);
+    memset_s(key->key.keyvalue.data,
+	     key->key.keyvalue.length,
+	     0,
+	     key->key.keyvalue.length);
     free_Key(key);
     free(key);
 }
@@ -396,20 +383,23 @@ hdb_unlock(int fd)
 }
 
 void
-hdb_free_entry(krb5_context context, hdb_entry_ex *ent)
+hdb_free_entry(krb5_context context, HDB *db, hdb_entry *ent)
 {
     Key *k;
     size_t i;
 
-    if (ent->free_entry)
-	(*ent->free_entry)(context, ent);
+    if (db && db->hdb_free_entry_context)
+	db->hdb_free_entry_context(context, db, ent);
 
-    for(i = 0; i < ent->entry.keys.len; i++) {
-	k = &ent->entry.keys.val[i];
+    for(i = 0; i < ent->keys.len; i++) {
+	k = &ent->keys.val[i];
 
-	memset (k->key.keyvalue.data, 0, k->key.keyvalue.length);
+	memset_s(k->key.keyvalue.data,
+		 k->key.keyvalue.length,
+		 0,
+		 k->key.keyvalue.length);
     }
-    free_HDB_entry(&ent->entry);
+    free_HDB_entry(ent);
 }
 
 krb5_error_code
@@ -420,13 +410,13 @@ hdb_foreach(krb5_context context,
 	    void *data)
 {
     krb5_error_code ret;
-    hdb_entry_ex entry;
+    hdb_entry entry;
     ret = db->hdb_firstkey(context, db, flags, &entry);
     if (ret == 0)
 	krb5_clear_error_message(context);
     while(ret == 0){
 	ret = (*func)(context, db, &entry, data);
-	hdb_free_entry(context, &entry);
+	hdb_free_entry(context, db, &entry);
 	if(ret == 0)
 	    ret = db->hdb_nextkey(context, db, flags, &entry);
     }
@@ -661,22 +651,22 @@ hdb_list_builtin(krb5_context context, char **list)
 krb5_error_code
 _hdb_keytab2hdb_entry(krb5_context context,
 		      const krb5_keytab_entry *ktentry,
-		      hdb_entry_ex *entry)
+		      hdb_entry *entry)
 {
-    entry->entry.kvno = ktentry->vno;
-    entry->entry.created_by.time = ktentry->timestamp;
+    entry->kvno = ktentry->vno;
+    entry->created_by.time = ktentry->timestamp;
 
-    entry->entry.keys.val = calloc(1, sizeof(entry->entry.keys.val[0]));
-    if (entry->entry.keys.val == NULL)
+    entry->keys.val = calloc(1, sizeof(entry->keys.val[0]));
+    if (entry->keys.val == NULL)
 	return ENOMEM;
-    entry->entry.keys.len = 1;
+    entry->keys.len = 1;
 
-    entry->entry.keys.val[0].mkvno = NULL;
-    entry->entry.keys.val[0].salt = NULL;
+    entry->keys.val[0].mkvno = NULL;
+    entry->keys.val[0].salt = NULL;
 
     return krb5_copy_keyblock_contents(context,
 				       &ktentry->keyblock,
-				       &entry->entry.keys.val[0].key);
+				       &entry->keys.val[0].key);
 }
 
 static krb5_error_code
@@ -789,7 +779,7 @@ hdb_create(krb5_context context, HDB **db, const char *filename)
             return ret;
         }
         for (cb_ctx.h = methods; cb_ctx.h->prefix != NULL; cb_ctx.h++) {
-            if (cb_ctx.h->is_file_based && !pathish)
+            if (cb_ctx.h->is_file_based)
                 continue;
             if (!cb_ctx.h->can_taste)
                 continue;
@@ -805,9 +795,11 @@ hdb_create(krb5_context context, HDB **db, const char *filename)
                 (*db)->hdb_destroy(context, *db);
             *db = NULL;
         }
+	if (cb_ctx.h->prefix == NULL)
+            cb_ctx.h = NULL;
     }
 #ifdef HDB_DEFAULT_DB_TYPE
-    if (cb_ctx.h == NULL || cb_ctx.h->prefix == NULL) {
+    if (cb_ctx.h == NULL) {
         /*
          * If still we've not picked a backend, use a build configuration time
          * default.
@@ -815,12 +807,14 @@ hdb_create(krb5_context context, HDB **db, const char *filename)
         for (cb_ctx.h = methods; cb_ctx.h->prefix != NULL; cb_ctx.h++)
             if (strcmp(cb_ctx.h->prefix, HDB_DEFAULT_DB_TYPE) == 0)
                 break;
+        if (cb_ctx.h->prefix == NULL)
+            cb_ctx.h = NULL;
     }
 #endif
-    if (cb_ctx.h == NULL || cb_ctx.h->prefix == NULL)
+    if (cb_ctx.h == NULL)
         /* Last resort default */
         cb_ctx.h = &default_dbmethod;
-    if (cb_ctx.h == NULL || cb_ctx.h->prefix == NULL) {
+    if (cb_ctx.h->prefix == NULL) {
         krb5_set_error_message(context, ENOTSUP,
                                "Could not determine default DB backend for %s",
                                filename);

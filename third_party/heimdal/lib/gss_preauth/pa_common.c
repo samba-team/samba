@@ -64,11 +64,6 @@ _krb5_gss_map_error(OM_uint32 major, OM_uint32 minor)
         ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
         break;
     case GSS_S_FAILURE:
-        if (minor == (OM_uint32)KRB5KRB_AP_ERR_BAD_INTEGRITY ||
-            minor == (OM_uint32)HNTLM_ERR_AUTH) {
-            ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-            break;
-        }
     default:
         ret = KRB5KDC_ERR_PREAUTH_FAILED;
         break;

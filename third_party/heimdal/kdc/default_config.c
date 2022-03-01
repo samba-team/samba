@@ -69,7 +69,7 @@ load_kdc_plugins_once(void *ctx)
 #endif
 }
 
-krb5_error_code
+KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
 krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 {
     static heim_base_once_t load_kdc_plugins = HEIM_BASE_ONCE_INIT;
@@ -93,7 +93,6 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
     c->preauth_use_strongest_session_key = FALSE;
     c->svc_use_strongest_session_key = FALSE;
     c->use_strongest_server_key = TRUE;
-    c->autodetect_referrals = TRUE;
     c->check_ticket_addresses = TRUE;
     c->warn_ticket_addresses = FALSE;
     c->allow_null_ticket_addresses = TRUE;
@@ -392,7 +391,7 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
     return 0;
 }
 
-krb5_error_code
+KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
 krb5_kdc_pkinit_config(krb5_context context, krb5_kdc_configuration *config)
 {
 #ifdef PKINIT

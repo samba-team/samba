@@ -974,14 +974,12 @@ kadm5_log_create(kadm5_server_context *context, hdb_entry *entry)
     krb5_ssize_t bytes;
     kadm5_ret_t ret;
     krb5_data value;
-    hdb_entry_ex ent, existing;
+    hdb_entry ent, existing;
     kadm5_log_context *log_context = &context->log_context;
 
     memset(&existing, 0, sizeof(existing));
     memset(&ent, 0, sizeof(ent));
-    ent.ctx = 0;
-    ent.free_entry = 0;
-    ent.entry = *entry;
+    ent = *entry;
 
     /*
      * Do not allow creation of concrete entries within namespaces unless
@@ -991,14 +989,14 @@ kadm5_log_create(kadm5_server_context *context, hdb_entry *entry)
                          0, 0, 0, &existing);
     if (ret != 0 && ret != HDB_ERR_NOENTRY)
         return ret;
-    if (ret == 0 && !ent.entry.flags.materialize &&
-        (existing.entry.flags.virtual || existing.entry.flags.virtual_keys)) {
-        hdb_free_entry(context->context, &existing);
+    if (ret == 0 && !ent.flags.materialize &&
+        (existing.flags.virtual || existing.flags.virtual_keys)) {
+        hdb_free_entry(context->context, context->db, &existing);
         return HDB_ERR_EXISTS;
     }
     if (ret == 0)
-        hdb_free_entry(context->context, &existing);
-    ent.entry.flags.materialize = 0; /* Clear in stored entry */
+        hdb_free_entry(context->context, context->db, &existing);
+    ent.flags.materialize = 0; /* Clear in stored entry */
 
     /*
      * If we're not logging then we can't recover-to-perform, so just
@@ -1057,7 +1055,7 @@ kadm5_log_replay_create(kadm5_server_context *context,
 {
     krb5_error_code ret;
     krb5_data data;
-    hdb_entry_ex ent;
+    hdb_entry ent;
 
     memset(&ent, 0, sizeof(ent));
 
@@ -1067,7 +1065,7 @@ kadm5_log_replay_create(kadm5_server_context *context,
 	return ret;
     }
     krb5_storage_read(sp, data.data, len);
-    ret = hdb_value2entry(context->context, &data, &ent.entry);
+    ret = hdb_value2entry(context->context, &data, &ent);
     krb5_data_free(&data);
     if (ret) {
 	krb5_set_error_message(context->context, ret,
@@ -1076,7 +1074,7 @@ kadm5_log_replay_create(kadm5_server_context *context,
 	return ret;
     }
     ret = context->db->hdb_store(context->context, context->db, 0, &ent);
-    hdb_free_entry(context->context, &ent);
+    hdb_free_entry(context->context, context->db, &ent);
     return ret;
 }
 
@@ -1198,13 +1196,11 @@ kadm5_log_rename(kadm5_server_context *context,
     off_t end_off = 0;  /* Ditto; this allows de-indentation by two levels */
     off_t off;
     krb5_data value;
-    hdb_entry_ex ent;
+    hdb_entry ent;
     kadm5_log_context *log_context = &context->log_context;
 
     memset(&ent, 0, sizeof(ent));
-    ent.ctx = 0;
-    ent.free_entry = 0;
-    ent.entry = *entry;
+    ent = *entry;
 
     if (strcmp(log_context->log_file, "/dev/null") == 0) {
         ret = context->db->hdb_store(context->context, context->db, 0, &ent);
@@ -1310,7 +1306,7 @@ kadm5_log_replay_rename(kadm5_server_context *context,
 {
     krb5_error_code ret;
     krb5_principal source;
-    hdb_entry_ex target_ent;
+    hdb_entry target_ent;
     krb5_data value;
     off_t off;
     size_t princ_len, data_len;
@@ -1332,7 +1328,7 @@ kadm5_log_replay_rename(kadm5_server_context *context,
 	return ret;
     }
     krb5_storage_read(sp, value.data, data_len);
-    ret = hdb_value2entry(context->context, &value, &target_ent.entry);
+    ret = hdb_value2entry(context->context, &value, &target_ent);
     krb5_data_free(&value);
     if (ret) {
 	krb5_free_principal(context->context, source);
@@ -1340,7 +1336,7 @@ kadm5_log_replay_rename(kadm5_server_context *context,
     }
     ret = context->db->hdb_store(context->context, context->db,
 				 0, &target_ent);
-    hdb_free_entry(context->context, &target_ent);
+    hdb_free_entry(context->context, context->db, &target_ent);
     if (ret) {
 	krb5_free_principal(context->context, source);
 	return ret;
@@ -1364,13 +1360,11 @@ kadm5_log_modify(kadm5_server_context *context,
     kadm5_ret_t ret;
     krb5_data value;
     uint32_t len;
-    hdb_entry_ex ent;
+    hdb_entry ent;
     kadm5_log_context *log_context = &context->log_context;
 
     memset(&ent, 0, sizeof(ent));
-    ent.ctx = 0;
-    ent.free_entry = 0;
-    ent.entry = *entry;
+    ent = *entry;
 
     if (strcmp(log_context->log_file, "/dev/null") == 0)
         return context->db->hdb_store(context->context, context->db,
@@ -1434,7 +1428,7 @@ kadm5_log_replay_modify(kadm5_server_context *context,
     krb5_error_code ret;
     uint32_t mask;
     krb5_data value;
-    hdb_entry_ex ent, log_ent;
+    hdb_entry ent, log_ent;
 
     memset(&log_ent, 0, sizeof(log_ent));
 
@@ -1452,7 +1446,7 @@ kadm5_log_replay_modify(kadm5_server_context *context,
         ret = errno ? errno : EIO;
         return ret;
     }
-    ret = hdb_value2entry (context->context, &value, &log_ent.entry);
+    ret = hdb_value2entry (context->context, &value, &log_ent);
     krb5_data_free(&value);
     if (ret)
 	return ret;
@@ -1460,37 +1454,37 @@ kadm5_log_replay_modify(kadm5_server_context *context,
     memset(&ent, 0, sizeof(ent));
     /* NOTE: We do not use hdb_fetch_kvno() here */
     ret = context->db->hdb_fetch_kvno(context->context, context->db,
-				      log_ent.entry.principal,
+				      log_ent.principal,
 				      HDB_F_DECRYPT|HDB_F_ALL_KVNOS|
 				      HDB_F_GET_ANY|HDB_F_ADMIN_DATA, 0, &ent);
     if (ret)
 	goto out;
     if (mask & KADM5_PRINC_EXPIRE_TIME) {
-	if (log_ent.entry.valid_end == NULL) {
-	    ent.entry.valid_end = NULL;
+	if (log_ent.valid_end == NULL) {
+	    ent.valid_end = NULL;
 	} else {
-	    if (ent.entry.valid_end == NULL) {
-		ent.entry.valid_end = malloc(sizeof(*ent.entry.valid_end));
-		if (ent.entry.valid_end == NULL) {
+	    if (ent.valid_end == NULL) {
+		ent.valid_end = malloc(sizeof(*ent.valid_end));
+		if (ent.valid_end == NULL) {
 		    ret = krb5_enomem(context->context);
 		    goto out;
 		}
 	    }
-	    *ent.entry.valid_end = *log_ent.entry.valid_end;
+	    *ent.valid_end = *log_ent.valid_end;
 	}
     }
     if (mask & KADM5_PW_EXPIRATION) {
-	if (log_ent.entry.pw_end == NULL) {
-	    ent.entry.pw_end = NULL;
+	if (log_ent.pw_end == NULL) {
+	    ent.pw_end = NULL;
 	} else {
-	    if (ent.entry.pw_end == NULL) {
-		ent.entry.pw_end = malloc(sizeof(*ent.entry.pw_end));
-		if (ent.entry.pw_end == NULL) {
+	    if (ent.pw_end == NULL) {
+		ent.pw_end = malloc(sizeof(*ent.pw_end));
+		if (ent.pw_end == NULL) {
 		    ret = krb5_enomem(context->context);
 		    goto out;
 		}
 	    }
-	    *ent.entry.pw_end = *log_ent.entry.pw_end;
+	    *ent.pw_end = *log_ent.pw_end;
 	}
     }
     if (mask & KADM5_LAST_PWD_CHANGE) {
@@ -1498,39 +1492,39 @@ kadm5_log_replay_modify(kadm5_server_context *context,
                     "Unimplemented mask KADM5_LAST_PWD_CHANGE");
     }
     if (mask & KADM5_ATTRIBUTES) {
-	ent.entry.flags = log_ent.entry.flags;
+	ent.flags = log_ent.flags;
     }
     if (mask & KADM5_MAX_LIFE) {
-	if (log_ent.entry.max_life == NULL) {
-	    ent.entry.max_life = NULL;
+	if (log_ent.max_life == NULL) {
+	    ent.max_life = NULL;
 	} else {
-	    if (ent.entry.max_life == NULL) {
-		ent.entry.max_life = malloc (sizeof(*ent.entry.max_life));
-		if (ent.entry.max_life == NULL) {
+	    if (ent.max_life == NULL) {
+		ent.max_life = malloc (sizeof(*ent.max_life));
+		if (ent.max_life == NULL) {
 		    ret = krb5_enomem(context->context);
 		    goto out;
 		}
 	    }
-	    *ent.entry.max_life = *log_ent.entry.max_life;
+	    *ent.max_life = *log_ent.max_life;
 	}
     }
     if ((mask & KADM5_MOD_TIME) && (mask & KADM5_MOD_NAME)) {
-	if (ent.entry.modified_by == NULL) {
-	    ent.entry.modified_by = malloc(sizeof(*ent.entry.modified_by));
-	    if (ent.entry.modified_by == NULL) {
+	if (ent.modified_by == NULL) {
+	    ent.modified_by = malloc(sizeof(*ent.modified_by));
+	    if (ent.modified_by == NULL) {
 		ret = krb5_enomem(context->context);
 		goto out;
 	    }
 	} else
-	    free_Event(ent.entry.modified_by);
-	ret = copy_Event(log_ent.entry.modified_by, ent.entry.modified_by);
+	    free_Event(ent.modified_by);
+	ret = copy_Event(log_ent.modified_by, ent.modified_by);
 	if (ret) {
 	    ret = krb5_enomem(context->context);
 	    goto out;
 	}
     }
     if (mask & KADM5_KVNO) {
-	ent.entry.kvno = log_ent.entry.kvno;
+	ent.kvno = log_ent.kvno;
     }
     if (mask & KADM5_MKVNO) {
         krb5_warnx(context->context, "Unimplemented mask KADM5_KVNO");
@@ -1543,17 +1537,17 @@ kadm5_log_replay_modify(kadm5_server_context *context,
         krb5_warnx(context->context, "Unimplemented mask KADM5_POLICY_CLR");
     }
     if (mask & KADM5_MAX_RLIFE) {
-	if (log_ent.entry.max_renew == NULL) {
-	    ent.entry.max_renew = NULL;
+	if (log_ent.max_renew == NULL) {
+	    ent.max_renew = NULL;
 	} else {
-	    if (ent.entry.max_renew == NULL) {
-		ent.entry.max_renew = malloc (sizeof(*ent.entry.max_renew));
-		if (ent.entry.max_renew == NULL) {
+	    if (ent.max_renew == NULL) {
+		ent.max_renew = malloc (sizeof(*ent.max_renew));
+		if (ent.max_renew == NULL) {
 		    ret = krb5_enomem(context->context);
 		    goto out;
 		}
 	    }
-	    *ent.entry.max_renew = *log_ent.entry.max_renew;
+	    *ent.max_renew = *log_ent.max_renew;
 	}
     }
     if (mask & KADM5_LAST_SUCCESS) {
@@ -1579,70 +1573,70 @@ kadm5_log_replay_modify(kadm5_server_context *context,
 	 */
 	mask |= KADM5_TL_DATA;
 
-	for (i = 0; i < ent.entry.keys.len; ++i)
-	    free_Key(&ent.entry.keys.val[i]);
-	free (ent.entry.keys.val);
+	for (i = 0; i < ent.keys.len; ++i)
+	    free_Key(&ent.keys.val[i]);
+	free (ent.keys.val);
 
-	num = log_ent.entry.keys.len;
+	num = log_ent.keys.len;
 
-	ent.entry.keys.len = num;
-	ent.entry.keys.val = malloc(len * sizeof(*ent.entry.keys.val));
-	if (ent.entry.keys.val == NULL) {
+	ent.keys.len = num;
+	ent.keys.val = malloc(len * sizeof(*ent.keys.val));
+	if (ent.keys.val == NULL) {
 	    krb5_enomem(context->context);
 	    goto out;
 	}
-	for (i = 0; i < ent.entry.keys.len; ++i) {
-	    ret = copy_Key(&log_ent.entry.keys.val[i],
-			   &ent.entry.keys.val[i]);
+	for (i = 0; i < ent.keys.len; ++i) {
+	    ret = copy_Key(&log_ent.keys.val[i],
+			   &ent.keys.val[i]);
 	    if (ret) {
 		krb5_set_error_message(context->context, ret, "out of memory");
 		goto out;
 	    }
 	}
     }
-    if ((mask & KADM5_TL_DATA) && log_ent.entry.etypes) {
-        if (ent.entry.etypes)
-            free_HDB_EncTypeList(ent.entry.etypes);
-        free(ent.entry.etypes);
-        ent.entry.etypes = calloc(1, sizeof(*ent.entry.etypes));
-        if (ent.entry.etypes == NULL)
+    if ((mask & KADM5_TL_DATA) && log_ent.etypes) {
+        if (ent.etypes)
+            free_HDB_EncTypeList(ent.etypes);
+        free(ent.etypes);
+        ent.etypes = calloc(1, sizeof(*ent.etypes));
+        if (ent.etypes == NULL)
             ret = ENOMEM;
         if (ret == 0)
-            ret = copy_HDB_EncTypeList(log_ent.entry.etypes, ent.entry.etypes);
+            ret = copy_HDB_EncTypeList(log_ent.etypes, ent.etypes);
         if (ret) {
             ret = krb5_enomem(context->context);
-            free(ent.entry.etypes);
-            ent.entry.etypes = NULL;
+            free(ent.etypes);
+            ent.etypes = NULL;
             goto out;
         }
     }
 
-    if ((mask & KADM5_TL_DATA) && log_ent.entry.extensions) {
-	if (ent.entry.extensions) {
-	    free_HDB_extensions(ent.entry.extensions);
-	    free(ent.entry.extensions);
-            ent.entry.extensions = NULL;
+    if ((mask & KADM5_TL_DATA) && log_ent.extensions) {
+	if (ent.extensions) {
+	    free_HDB_extensions(ent.extensions);
+	    free(ent.extensions);
+            ent.extensions = NULL;
 	}
 
-	ent.entry.extensions = calloc(1, sizeof(*ent.entry.extensions));
-	if (ent.entry.extensions == NULL)
+	ent.extensions = calloc(1, sizeof(*ent.extensions));
+	if (ent.extensions == NULL)
 	    ret = ENOMEM;
 
         if (ret == 0)
-            ret = copy_HDB_extensions(log_ent.entry.extensions,
-                                      ent.entry.extensions);
+            ret = copy_HDB_extensions(log_ent.extensions,
+                                      ent.extensions);
 	if (ret) {
 	    ret = krb5_enomem(context->context);
-	    free(ent.entry.extensions);
-	    ent.entry.extensions = NULL;
+	    free(ent.extensions);
+	    ent.extensions = NULL;
 	    goto out;
 	}
     }
     ret = context->db->hdb_store(context->context, context->db,
 				 HDB_F_REPLACE, &ent);
  out:
-    hdb_free_entry(context->context, &ent);
-    hdb_free_entry(context->context, &log_ent);
+    hdb_free_entry(context->context, context->db, &ent);
+    hdb_free_entry(context->context, context->db, &log_ent);
     return ret;
 }
 

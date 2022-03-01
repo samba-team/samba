@@ -275,11 +275,12 @@ bsearch_common(const char *buf, size_t sz, const char *key,
 	    ret = 0;
 	    if (val_len && value) {
 		/* Avoid strndup() so we don't need libroken here yet */
-		*value = malloc(val_len + 1);
-		if (!*value)
-		    ret = errno;
-		(void) memcpy(*value, &buf[val_start], val_len);
-		(*value)[val_len] = '\0';
+		if ((*value = malloc(val_len + 1))) {
+                    (void) memcpy(*value, &buf[val_start], val_len);
+                    (*value)[val_len] = '\0';
+                } else {
+                    ret = errno;
+                }
 	    }
 	    break;
 	}
@@ -708,17 +709,16 @@ _bsearch_file(bsearch_file_handle bfh, const char *key,
 
     if (reads)
 	*reads = 0;
+    if (value)
+	*value = NULL;
+    if (loops)
+	*loops = 0;
 
     /* If whole file is in memory then search that and we're done */
     if (bfh->file_sz == bfh->cache_sz)
 	return _bsearch_text(bfh->cache, bfh->cache_sz, key, value, location, loops);
 
     /* Else block-wise binary search */
-
-    if (value)
-	*value = NULL;
-    if (loops)
-	*loops = 0;
 
     l = 0;
     r = (bfh->file_sz / bfh->page_sz) + 1;
@@ -851,7 +851,7 @@ stdb_copy_value(void *db, heim_string_t table, heim_data_t key,
 {
     bsearch_file_handle bfh = db;
     const char *k;
-    char *v;
+    char *v = NULL;
     heim_data_t value;
     int ret;
 
@@ -869,6 +869,8 @@ stdb_copy_value(void *db, heim_string_t table, heim_data_t key,
     else
 	k = (const char *)heim_data_get_ptr(key);
     ret = _bsearch_file(bfh, k, &v, NULL, NULL, NULL);
+    if (ret == 0 && v == NULL)
+        ret = -1; /* Quiet lint */
     if (ret != 0) {
 	if (ret > 0 && error)
 	    *error = heim_error_create(ret, "%s", strerror(ret));

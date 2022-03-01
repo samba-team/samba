@@ -46,7 +46,7 @@ add_enctype(struct add_enctype_options*opt, int argc, char **argv)
     krb5_error_code ret;
     const char *princ_name;
     int i, j;
-    krb5_key_data *new_key_data;
+    krb5_key_data *new_key_data = NULL;
     int n_etypes;
     krb5_enctype *etypes;
 
@@ -108,7 +108,6 @@ add_enctype(struct add_enctype_options*opt, int argc, char **argv)
 		/* XXX Should this be an error?  The admin can del_enctype... */
 		krb5_warnx(context, "enctype %d already exists",
 			   (int)etypes[j]);
-		free(new_key_data);
 		goto out;
 	    }
 	}
@@ -163,6 +162,7 @@ add_enctype(struct add_enctype_options*opt, int argc, char **argv)
     if (ret)
 	krb5_warn(context, ret, "kadm5_modify_principal");
 out:
+    free(new_key_data);
     krb5_free_principal (context, princ_ent);
     kadm5_free_principal_ent(kadm_handle, &princ);
 out2:

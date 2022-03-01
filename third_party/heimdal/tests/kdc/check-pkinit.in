@@ -199,7 +199,7 @@ echo foo > ${objdir}/foopassword
 
 echo Starting kdc ; > messages.log
 KRB5_CONFIG="${objdir}/krb5-pkinit2.conf"
-${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
 trap 'kill -9 ${kdcpid}; echo signal killing kdc; cat ca.crt kdc.crt pkinit.crt pkinit-synthetic.crt; exit 1;' EXIT
@@ -232,7 +232,7 @@ ${kdestroy}
 echo "Restarting kdc ($kdcpid)"
 sh ${leaks_kill} kdc $kdcpid || ec=1
 KRB5_CONFIG="${objdir}/krb5-pkinit.conf"
-${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
 echo "Trying pk-init (principal in cert)"; > messages.log

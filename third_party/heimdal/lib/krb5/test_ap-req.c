@@ -153,6 +153,7 @@ test_ap(krb5_context context,
 	    krb5_err(context, 1, ret, "pac parse");
 
 	krb5_pac_free(context, pac);
+        krb5_data_free(&data);
     }
 
     krb5_free_ticket(context, ticket);

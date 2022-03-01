@@ -428,7 +428,7 @@ ${kadmin} add -r --use-defaults HTTP/${otherserver}@${R} || exit 1
 ${kadmin} ext_keytab -r -k $ukeytab foo@${R} || exit 1
 
 echo "Starting kdc";
-${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 trap "kill -9 ${kdcpid} ${bx509pid}; echo signal killing kdc and bx509d; exit 1;" EXIT
 
@@ -590,7 +590,8 @@ KRB5CCNAME=$cache $gsstoken HTTP@$server | KRB5_KTNAME="$keytab" $gsstoken -r ||
     { echo "Trivial offline CA test failed (gss-token)"; exit 2; }
 
 # Check that we get up to three tixaddrs k/v in the log
-grep 'REQ.*numtixaddrs=4 tixaddrs=IPv4:8.8.8.8 tixaddrs=IPv4:8.9.10.11 tixaddrs=IPv4:11.11.11.11.*wrongaddr=yes' ${objdir}/messages.log ||
+grep 'REQ.*wrongaddr=true' ${objdir}/messages.log |
+    grep 'tixaddrs=IPv4:11.11.11.11' ||
     { echo "KDC not warning about requests from wrong address"; exit 2; }
 
 echo "Fetching a Negotiate token"

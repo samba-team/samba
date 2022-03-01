@@ -171,12 +171,14 @@ _gss_ntlm_accept_sec_context
 	output_token->value = malloc(out.length);
 	if (output_token->value == NULL && out.length != 0) {
 	    OM_uint32 gunk;
+	    heim_ntlm_free_buf(&out);
 	    _gss_ntlm_delete_sec_context(&gunk, context_handle, NULL);
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
 	}
 	memcpy(output_token->value, out.data, out.length);
 	output_token->length = out.length;
+	heim_ntlm_free_buf(&out);
 
 	ctx->flags = retflags;
 

@@ -436,6 +436,8 @@ rsa_private_key2SPKI(hx509_context context,
     memset(spki, 0, sizeof(*spki));
 
     len = i2d_RSAPublicKey(private_key->private_key.rsa, NULL);
+    if (len < 0)
+	return -1;
 
     spki->subjectPublicKey.data = malloc(len);
     if (spki->subjectPublicKey.data == NULL) {
@@ -1625,6 +1627,8 @@ _hx509_private_key_export(hx509_context context,
 			  hx509_key_format_t format,
 			  heim_octet_string *data)
 {
+    data->length = 0;
+    data->data = NULL;
     if (key->ops->export == NULL) {
 	hx509_clear_error_string(context);
 	return HX509_UNIMPLEMENTED_OPERATION;

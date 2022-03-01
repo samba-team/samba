@@ -376,10 +376,13 @@ load_priv_key(krb5_context context,
         ret = ENOENT;
     if (ret == 0)
         kx509_ctx->priv_key = _hx509_private_key_ref(keys[0]);
-    if (ret)
+    if (ret) {
+	char *emsg = hx509_get_error_string(context->hx509ctx, ret);
+
         krb5_set_error_message(context, ret, "Could not load private key "
-                               "from %s for kx509: %s", fn,
-                               hx509_get_error_string(context->hx509ctx, ret));
+                               "from %s for kx509: %s", fn, emsg);
+	hx509_free_error_string(emsg);
+    }
     hx509_certs_free(&certs);
     return ret;
 }
@@ -443,10 +446,13 @@ gen_priv_key(krb5_context context,
     if (ret == 0)
         ret = _hx509_generate_private_key(context->hx509ctx, key_gen_ctx, key);
     _hx509_generate_private_key_free(&key_gen_ctx);
-    if (ret)
+    if (ret) {
+	char *emsg = hx509_get_error_string(context->hx509ctx, ret);
+
         krb5_set_error_message(context, ret,
-                               "Could not generate a private key: %s",
-                               hx509_get_error_string(context->hx509ctx, ret));
+                               "Could not generate a private key: %s", emsg);
+	hx509_free_error_string(emsg);
+    }
     return ret;
 }
 
@@ -848,21 +854,28 @@ mk_kx509_req(krb5_context context,
 
     /* Add the the key and HMAC to the message */
     HMAC_CTX_init(&ctx);
-    HMAC_Init_ex(&ctx, kx509_ctx->hmac_key->keyvalue.data,
-                 kx509_ctx->hmac_key->keyvalue.length, EVP_sha1(), NULL);
-    HMAC_Update(&ctx, version_2_0, sizeof(version_2_0));
-    if (private_key || kx509_ctx->given_csr.data) {
-        HMAC_Update(&ctx, kx509_req.pk_key.data, kx509_req.pk_key.length);
+    if (HMAC_Init_ex(&ctx, kx509_ctx->hmac_key->keyvalue.data,
+                     kx509_ctx->hmac_key->keyvalue.length,
+                     EVP_sha1(), NULL) == 0) {
+        HMAC_CTX_cleanup(&ctx);
+        ret = krb5_enomem(context);
     } else {
-        /* Probe */
-        HMAC_Update(&ctx, kx509_req.authenticator.data, kx509_req.authenticator.length);
+        HMAC_Update(&ctx, version_2_0, sizeof(version_2_0));
+        if (private_key || kx509_ctx->given_csr.data) {
+            HMAC_Update(&ctx, kx509_req.pk_key.data, kx509_req.pk_key.length);
+        } else {
+            /* Probe */
+            HMAC_Update(&ctx, kx509_req.authenticator.data, kx509_req.authenticator.length);
+        }
+        HMAC_Final(&ctx, kx509_req.pk_hash.data, 0);
+        HMAC_CTX_cleanup(&ctx);
     }
-    HMAC_Final(&ctx, kx509_req.pk_hash.data, 0);
-    HMAC_CTX_cleanup(&ctx);
 
     /* Encode the message, prefix `version_2_0', output the result */
-    ASN1_MALLOC_ENCODE(Kx509Request, pre_req.data, pre_req.length, &kx509_req, &len, ret);
-    ret = krb5_data_alloc(req, pre_req.length + sizeof(version_2_0));
+    if (ret == 0)
+        ASN1_MALLOC_ENCODE(Kx509Request, pre_req.data, pre_req.length, &kx509_req, &len, ret);
+    if (ret == 0)
+        ret = krb5_data_alloc(req, pre_req.length + sizeof(version_2_0));
     if (ret == 0) {
         memcpy(req->data, version_2_0, sizeof(version_2_0));
         memcpy(((unsigned char *)req->data) + sizeof(version_2_0),
@@ -984,8 +997,13 @@ rd_kx509_resp(krb5_context context,
     }
 
     HMAC_CTX_init(&ctx);
-    HMAC_Init_ex(&ctx, kx509_ctx->hmac_key->keyvalue.data,
-                 kx509_ctx->hmac_key->keyvalue.length, EVP_sha1(), NULL);
+    if (HMAC_Init_ex(&ctx, kx509_ctx->hmac_key->keyvalue.data,
+                     kx509_ctx->hmac_key->keyvalue.length, EVP_sha1(), NULL) == 0) {
+        free_Kx509Response(&r);
+        HMAC_CTX_cleanup(&ctx);
+        return krb5_enomem(context);
+    }
+
     HMAC_Update(&ctx, version_2_0, sizeof(version_2_0));
 
     {
@@ -1090,7 +1108,7 @@ rd_kx509_resp(krb5_context context,
             ret = errno;
     }
     free_Kx509Response(&r);
-    if (cert) {
+    if (*cert) {
         heim_release(herr);
         return 0;
     }
@@ -1250,7 +1268,9 @@ krb5_kx509(krb5_context context, krb5_ccache cc, const char *realm)
     char *store_exp = NULL;
 
     ret = krb5_kx509_ctx_init(context, &kx509_ctx);
-    if (ret == 0 && realm)
+    if (ret)
+        return ret;
+    if (realm)
         ret = krb5_kx509_ctx_set_realm(context, kx509_ctx, realm);
 
     /*

@@ -61,12 +61,15 @@ do_del_ns_entry(krb5_principal nsp, void *data)
     krb5_principal p = NULL;
     const char *comp0 = krb5_principal_get_comp_string(context, nsp, 0);
     const char *comp1 = krb5_principal_get_comp_string(context, nsp, 1);
-    char *unsp = NULL;
 
     if (krb5_principal_get_num_comp(context, nsp) != 2) {
-        (void) krb5_unparse_name(context, nsp, &unsp);
-        krb5_warn(context, ret = EINVAL, "Not a valid namespace name %s",
-                   unsp ? unsp : "<Out of memory>");
+        char *unsp = NULL;
+
+        ret = krb5_unparse_name(context, nsp, &unsp);
+        krb5_warn(context, ret,
+                  "Not a valid namespace name (component count is not 2): %s",
+                  unsp ? unsp : "<out of memory>");
+        free(unsp);
         return EINVAL;
     }
 
@@ -80,7 +83,6 @@ do_del_ns_entry(krb5_principal nsp, void *data)
     if (ret == 0)
         ret = kadm5_delete_principal(kadm_handle, p);
     krb5_free_principal(context, p);
-    free(unsp);
     return ret;
 }
 

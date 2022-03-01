@@ -449,14 +449,17 @@ add_line_pointer(struct templatehead *t,
 	errx(1, "malloc");
     va_end(ap);
 
-    q = add_line(t, "{ %s, %s, asn1_%s }", tt, offset, ptr);
+    if (ptr[0] == '&')
+        q = add_line(t, "{ %s, %s, %s }", tt, offset, ptr);
+    else
+        q = add_line(t, "{ %s, %s, asn1_%s }", tt, offset, ptr);
     q->tt = tt;
     q->offset = strdup(offset);
     q->ptr = strdup(ptr);
 }
 
 /*
- * Add an entry to a template where the pointer firled is a string literal.
+ * Add an entry to a template where the pointer field is a string literal.
  */
 static void
 add_line_string(struct templatehead *t,
@@ -549,11 +552,11 @@ defval(struct templatehead *temp, Member *m)
 {
     switch (m->defval->type) {
     case booleanvalue:
-        add_line(temp, "{ A1_OP_DEFVAL|A1_DV_BOOLEAN, ~0, (void *)%u }",
+	add_line(temp, "{ A1_OP_DEFVAL|A1_DV_BOOLEAN, ~0, (void *)(uintptr_t)%u }",
                  m->defval->u.booleanvalue);
         break;
     case nullvalue:
-        add_line(temp, "{ A1_OP_DEFVAL|A1_DV_NULL, ~0, (void *)0 }");
+	add_line(temp, "{ A1_OP_DEFVAL|A1_DV_NULL, ~0, (void *)(uintptr_t)0 }");
         break;
     case integervalue: {
         const char *dv = "A1_DV_INTEGER";
@@ -576,16 +579,16 @@ defval(struct templatehead *temp, Member *m)
 
         if (t->members)
             dv = "A1_DV_INTEGER32"; /* XXX Enum size assumptions!  No good! */
-        else if (t->range->min < 0 &&
+        else if (t->range && t->range->min < 0 &&
                  (t->range->min < INT_MIN || t->range->max > INT_MAX))
             dv = "A1_DV_INTEGER64";
-        else if (t->range->min < 0)
+        else if (t->range && t->range->min < 0)
             dv = "A1_DV_INTEGER32";
-        else if (t->range->max > UINT_MAX)
+        else if (t->range && t->range->max > UINT_MAX)
             dv = "A1_DV_INTEGER64";
         else
             dv = "A1_DV_INTEGER32";
-        add_line(temp, "{ A1_OP_DEFVAL|%s, ~0, (void *)%llu }",
+	add_line(temp, "{ A1_OP_DEFVAL|%s, ~0, (void *)(uintptr_t)%llu }",
                  dv, (long long)m->defval->u.integervalue);
         break;
     }
@@ -595,7 +598,7 @@ defval(struct templatehead *temp, Member *m)
         if (rk_strasvis(&quoted, m->defval->u.stringvalue,
                         VIS_CSTYLE | VIS_NL, "\"") < 0)
             err(1, "Could not quote a string");
-        add_line(temp, "{ A1_OP_DEFVAL|A1_DV_UTF8STRING, ~0, (void *)\"%s\" }",
+	add_line(temp, "{ A1_OP_DEFVAL|A1_DV_UTF8STRING, ~0, (void *)(uintptr_t)\"%s\" }",
                  quoted);
         free(quoted);
         break;
@@ -624,11 +627,13 @@ defval(struct templatehead *temp, Member *m)
             sz -= len;
             p += len;
         }
-        len = snprintf(p, sz, " }");
+        if ((len = snprintf(p, sz, " }")) >= sz)
+            abort();
         sz -= len;
-        p += len;
+        if (sz != 0)
+            abort();
 
-        add_line(temp, "{ A1_OP_DEFVAL|A1_DV_INTEGER, ~0, (void *)\"%s\" }", s);
+	add_line(temp, "{ A1_OP_DEFVAL|A1_DV_INTEGER, ~0, (void *)(uintptr_t)\"%s\" }", s);
         free(s);
         break;
     }
@@ -711,6 +716,8 @@ sort_object_set(IOSObjectSet *os,       /* Object set to sort fields of */
     IOSObject *o;
     size_t i, nobjs = 0;
 
+    *objectsp = NULL;
+
     HEIM_TAILQ_FOREACH(o, os->objects, objects) {
         ObjectField *typeidobjf = NULL;
         ObjectField *of;
@@ -729,6 +736,9 @@ sort_object_set(IOSObjectSet *os,       /* Object set to sort fields of */
         nobjs++;
     }
     *nobjsp = nobjs;
+
+    if (nobjs == 0)
+        return;
 
     if ((objects = calloc(nobjs, sizeof(*objects))) == NULL)
         err(1, "Out of memory");
@@ -752,7 +762,7 @@ sort_object_set(IOSObjectSet *os,       /* Object set to sort fields of */
 static void
 template_object_set(IOSObjectSet *os, Field *typeidfield, Field *opentypefield)
 {
-    IOSObject **objects;
+    IOSObject **objects = NULL;
     IOSObject *o;
     struct tlist *tl;
     size_t nobjs, i;
@@ -794,7 +804,7 @@ template_object_set(IOSObjectSet *os, Field *typeidfield, Field *opentypefield)
         switch (typeidobjf->value->type) {
         case integervalue:
             add_line(&tl->template,
-                     "{ A1_OP_OPENTYPE_ID | A1_OTI_IS_INTEGER, 0, (void *)%lld }",
+		     "{ A1_OP_OPENTYPE_ID | A1_OTI_IS_INTEGER, 0, (void *)(uintptr_t)%lld }",
                      (long long)typeidobjf->value->u.integervalue);
             break;
         case objectidentifiervalue:
@@ -820,7 +830,7 @@ template_object_set(IOSObjectSet *os, Field *typeidfield, Field *opentypefield)
     }
     free(objects);
 
-    tlist_header(tl, "{ 0, 0, ((void *)%lu) }", nobjs);
+    tlist_header(tl, "{ 0, 0, ((void *)(uintptr_t)%lu) }", nobjs);
     tlist_print(tl);
     tlist_add(tl);
     os->symbol->emitted_template = 1;
@@ -952,12 +962,15 @@ template_members(struct templatehead *temp,
              */
             HEIM_TAILQ_FOREACH(m, t->members, members) {
                 if (m->val > UINT32_MAX)
-                    continue; /* Wouldn't fit in the offset field */
+                    errx(1, "Cannot handle %s type %s with named bit %s "
+                         "larger than 63",
+                         t->type == TEnumerated ? "ENUMERATED" : "INTEGER",
+                         name, m->gen_name);
                 add_line(&tl->template,
-                         "{ A1_OP_NAME, %d, \"%s\" }", m->val, m->name);
+                         "{ A1_OP_NAME, %d, \"%s\" }", (int)m->val, m->name);
                 nmemb++;
             }
-            tlist_header(tl, "{ 0, 0, ((void *)%lu) }", nmemb);
+	    tlist_header(tl, "{ 0, 0, ((void *)(uintptr_t)%lu) }", nmemb);
             /* XXX Accidentally O(N^2)? */
             if (!tlist_find_dup(tl)) {
                 tlist_print(tl);
@@ -1031,7 +1044,10 @@ template_members(struct templatehead *temp,
 	output_name(bname);
 
 	HEIM_TAILQ_FOREACH(m, t->members, members) {
-	    add_line(&template, "{ 0, %d, \"%s\" }", m->val, m->gen_name);
+            if (m->val > UINT32_MAX)
+                errx(1, "Cannot handle BIT STRING type %s with named bit %s "
+                     "larger than 63", name, m->gen_name);
+	    add_line(&template, "{ 0, %d, \"%s\" }", (int)m->val, m->gen_name);
 	}
 
 	HEIM_TAILQ_FOREACH(q, &template, members) {
@@ -1039,7 +1055,7 @@ template_members(struct templatehead *temp,
 	}
 
 	fprintf(f, "static const struct asn1_template asn1_%s_%s[] = {\n", basetype, bname);
-	fprintf(f, "/* 0 */ { 0%s, sizeof(%s), ((void *)%lu) },\n",
+	fprintf(f, "/* 0 */ { 0%s, sizeof(%s), ((void *)(uintptr_t)%lu) },\n",
 		rfc1510_bitstring ? "|A1_HBF_RFC1510" : "",
 		basetype, (unsigned long)count);
 	i = 1;
@@ -1061,10 +1077,10 @@ template_members(struct templatehead *temp,
         Field *opentypefield = NULL;
         Field *typeidfield = NULL;
 	Member *m;
+        struct decoration deco;
+        ssize_t more_deco = -1;
         size_t i = 0, typeididx = 0, opentypeidx = 0;
         int is_array_of_open_type = 0;
-        int deco_opt;
-        char *ft, *fn;
 
         if (isstruct && t->actual_parameter)
             get_open_type_defn_fields(t, &typeidmember, &opentypemember,
@@ -1104,15 +1120,29 @@ template_members(struct templatehead *temp,
                                typeidfield, opentypefield, opentypemember,
                                is_array_of_open_type);
 
-        if (decorate_type(basetype, &ft, &fn, &deco_opt)) {
+        while (decorate_type(basetype, &deco, &more_deco)) {
             char *poffset2;
 
-            poffset2 = partial_offset(basetype, fn, 1, isstruct);
-	    add_line_pointer(temp, ft, poffset2, "A1_OP_TYPE_DECORATE %s",
-			     deco_opt ? "|A1_FLAG_OPTIONAL" : "");
+            poffset2 = partial_offset(basetype, deco.field_name, 1, isstruct);
+
+            if (deco.ext) {
+                char *ptr = NULL;
+
+                /* Decorated with external C type */
+                if (asprintf(&ptr, "&asn1_extern_%s_%s",
+                             basetype, deco.field_name) == -1 || ptr == NULL)
+                    err(1, "out of memory");
+                add_line_pointer(temp, ptr, poffset2,
+                                 "A1_OP_TYPE_DECORATE_EXTERN %s",
+                                 deco.opt ? "|A1_FLAG_OPTIONAL" : "");
+                free(ptr);
+            } else
+                /* Decorated with a templated ASN.1 type */
+                add_line_pointer(temp, deco.field_type, poffset2,
+                                 "A1_OP_TYPE_DECORATE %s",
+                                 deco.opt ? "|A1_FLAG_OPTIONAL" : "");
             free(poffset2);
-            free(ft);
-            free(fn);
+            free(deco.field_type);
         }
 
         if (isstruct)
@@ -1125,10 +1155,10 @@ template_members(struct templatehead *temp,
         Field *opentypefield = NULL;
         Field *typeidfield = NULL;
 	Member *m;
+        struct decoration deco;
+        ssize_t more_deco = -1;
         size_t i = 0, typeididx = 0, opentypeidx = 0;
         int is_array_of_open_type = 0;
-        int deco_opt;
-        char *ft, *fn;
 
         if (isstruct && t->actual_parameter)
             get_open_type_defn_fields(t, &typeidmember, &opentypemember,
@@ -1168,15 +1198,29 @@ template_members(struct templatehead *temp,
                                typeidfield, opentypefield, opentypemember,
                                is_array_of_open_type);
 
-        if (decorate_type(basetype, &ft, &fn, &deco_opt)) {
+        while (decorate_type(basetype, &deco, &more_deco)) {
             char *poffset2;
 
-            poffset2 = partial_offset(basetype, fn, 1, isstruct);
-	    add_line_pointer(temp, ft, poffset2, "A1_OP_TYPE_DECORATE %s",
-			     deco_opt ? "|A1_FLAG_OPTIONAL" : "");
+            poffset2 = partial_offset(basetype, deco.field_name, 1, isstruct);
+
+            if (deco.ext) {
+                char *ptr = NULL;
+
+                /* Decorated with external C type */
+                if (asprintf(&ptr, "&asn1_extern_%s_%s",
+                             basetype, deco.field_name) == -1 || ptr == NULL)
+                    err(1, "out of memory");
+                add_line_pointer(temp, ptr, poffset2,
+                                 "A1_OP_TYPE_DECORATE_EXTERN %s",
+                                 deco.opt ? "|A1_FLAG_OPTIONAL" : "");
+                free(ptr);
+            } else
+                /* Decorated with a templated ASN.1 type */
+                add_line_pointer(temp, deco.field_type, poffset2,
+                                 "A1_OP_TYPE_DECORATE %s",
+                                 deco.opt ? "|A1_FLAG_OPTIONAL" : "");
             free(poffset2);
-            free(ft);
-            free(fn);
+            free(deco.field_type);
         }
 
         if (isstruct)
@@ -1273,6 +1317,8 @@ template_members(struct templatehead *temp,
 	break;
     }
     case TChoice: {
+        struct decoration deco;
+        ssize_t more_deco = -1;
 	struct templatehead template;
 	struct template *q;
 	size_t count = 0, i;
@@ -1343,7 +1389,7 @@ template_members(struct templatehead *temp,
 	}
 
 	fprintf(f, "static const struct asn1_template %s[] = {\n", tname);
-	fprintf(f, "/* 0 */ { %s, offsetof(%s%s, element), ((void *)%lu) },\n",
+	fprintf(f, "/* 0 */ { %s, offsetof(%s%s, element), ((void *)(uintptr_t)%lu) },\n",
 		e ? e : "0", isstruct ? "struct " : "", basetype, (unsigned long)count);
 	i = 1;
 	HEIM_TAILQ_FOREACH(q, &template, members) {
@@ -1353,6 +1399,31 @@ template_members(struct templatehead *temp,
 	fprintf(f, "};\n");
 
 	add_line(temp, "{ A1_OP_CHOICE, %s, %s }", poffset, tname);
+
+        while (decorate_type(basetype, &deco, &more_deco)) {
+            char *poffset2;
+
+            poffset2 = partial_offset(basetype, deco.field_name, 1, isstruct);
+
+            if (deco.ext) {
+                char *ptr = NULL;
+
+                /* Decorated with external C type */
+                if (asprintf(&ptr, "&asn1_extern_%s_%s",
+                             basetype, deco.field_name) == -1 || ptr == NULL)
+                    err(1, "out of memory");
+                add_line_pointer(temp, ptr, poffset2,
+                                 "A1_OP_TYPE_DECORATE_EXTERN %s",
+                                 deco.opt ? "|A1_FLAG_OPTIONAL" : "");
+                free(ptr);
+            } else
+                /* Decorated with a templated ASN.1 type */
+                add_line_pointer(temp, deco.field_type, poffset2,
+                                 "A1_OP_TYPE_DECORATE %s",
+                                 deco.opt ? "|A1_FLAG_OPTIONAL" : "");
+            free(poffset2);
+            free(deco.field_type);
+        }
 
 	free(e);
 	free(tname);
@@ -1464,7 +1535,7 @@ generate_template_type(const char *varname,
 
     fprintf(get_code_file(), "/* generate_template_type: %s */\n", tl->name);
 
-    tlist_header(tl, "{ 0%s%s, sizeof(%s), ((void *)%lu) }",
+    tlist_header(tl, "{ 0%s%s, sizeof(%s), ((void *)(uintptr_t)%lu) }",
 		 (symname && preserve_type(symname)) ? "|A1_HF_PRESERVE" : "",
 		 have_ellipsis ? "|A1_HF_ELLIPSIS" : "", szt, tlist_count(tl));
 
@@ -1491,10 +1562,35 @@ generate_template(const Symbol *s)
 {
     FILE *f = get_code_file();
     const char *dupname;
+    struct decoration deco;
+    ssize_t more_deco = -1;
 
     if (use_extern(s)) {
 	gen_extern_stubs(f, s->gen_name);
 	return;
+    }
+
+    while (decorate_type(s->gen_name, &deco, &more_deco)) {
+        if (!deco.ext)
+            continue;
+        if (deco.void_star && deco.header_name)
+	    fprintf(f, "#include %s\n", deco.header_name);
+        fprintf(f,
+                "static const struct asn1_type_func asn1_extern_%s_%s = {\n"
+                "\t(asn1_type_encode)0,\n"
+                "\t(asn1_type_decode)0,\n"
+                "\t(asn1_type_length)0,\n"
+                "\t(asn1_type_copy)%s,\n"
+                "\t(asn1_type_release)%s,\n"
+                "\t(asn1_type_print)0,\n"
+                "\tsizeof(%s)\n"
+                "};\n", s->gen_name, deco.field_name,
+                deco.copy_function_name && deco.copy_function_name[0] ?
+                deco.copy_function_name : "0",
+                deco.free_function_name && deco.free_function_name[0] ?
+                deco.free_function_name : "0",
+                deco.void_star ? "void *" : deco.field_type);
+        free(deco.field_type);
     }
 
     generate_template_type(s->gen_name, &dupname, s->name, s->gen_name, NULL, s->type, 0, 0, 1);

@@ -56,6 +56,7 @@ static char *localname_string;
 static char *client_name;
 static char *client_password;
 static char *localname_string;
+static char *on_behalf_of_string;
 static int dns_canon_flag = -1;
 static int mutual_auth_flag = 0;
 static int dce_style_flag = 0;
@@ -135,6 +136,112 @@ string_to_oids(gss_OID_set *oidsetp, char *names)
 }
 
 static void
+show_pac_client_info(gss_name_t n)
+{
+    gss_buffer_desc dv = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc v = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc a;
+    OM_uint32 maj, min;
+    int authenticated, complete, more, name_is_MN, found;
+    gss_OID MN_mech;
+    gss_buffer_set_t attrs = GSS_C_NO_BUFFER_SET;
+    size_t i;
+
+    krb5_error_code ret;
+    krb5_storage *sp = NULL;
+    uint16_t len = 0, *s;
+    uint64_t tmp;
+    char *logon_string = NULL;
+
+    maj = gss_inquire_name(&min, n, &name_is_MN, &MN_mech, &attrs);
+    if (maj != GSS_S_COMPLETE)
+	errx(1, "gss_inquire_name: %s",
+	     gssapi_err(maj, min, GSS_KRB5_MECHANISM));
+
+    a.value = "urn:mspac:client-info";
+    a.length = sizeof("urn:mspac:client-info") - 1;
+
+    for (found = 0, i = 0; i < attrs->count; i++) {
+	gss_buffer_t attr = &attrs->elements[i];
+
+	if (attr->length == a.length &&
+	    memcmp(attr->value, a.value, a.length) == 0) {
+	    found++;
+	    break;
+	}
+    }
+
+    gss_release_buffer_set(&min, &attrs);
+
+    if (!found)
+	errx(1, "gss_inquire_name: attribute %.*s not enumerated",
+	     (int)a.length, (char *)a.value);
+
+    more = 0;
+    maj = gss_get_name_attribute(&min, n, &a, &authenticated, &complete, &v,
+                                 &dv, &more);
+    if (maj != GSS_S_COMPLETE)
+	errx(1, "gss_get_name_attribute: %s",
+	     gssapi_err(maj, min, GSS_KRB5_MECHANISM));
+
+
+    sp = krb5_storage_from_readonly_mem(v.value, v.length);
+    if (sp == NULL)
+	errx(1, "show_pac_client_info: out of memory");
+
+    krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
+
+    ret = krb5_ret_uint64(sp, &tmp); /* skip over time */
+    if (ret == 0)
+	ret = krb5_ret_uint16(sp, &len);
+    if (ret || len == 0)
+	errx(1, "show_pac_client_info: invalid PAC logon info length");
+
+    s = malloc(len);
+    ret = krb5_storage_read(sp, s, len);
+    if (ret != len)
+	errx(1, "show_pac_client_info:, failed to read PAC logon name");
+
+    krb5_storage_free(sp);
+
+    {
+	size_t ucs2len = len / 2;
+	uint16_t *ucs2;
+	size_t u8len;
+	unsigned int flags = WIND_RW_LE;
+
+	ucs2 = malloc(sizeof(ucs2[0]) * ucs2len);
+	if (ucs2 == NULL)
+	    errx(1, "show_pac_client_info: out of memory");
+
+	ret = wind_ucs2read(s, len, &flags, ucs2, &ucs2len);
+	free(s);
+	if (ret)
+	    errx(1, "failed to convert string to UCS-2");
+
+	ret = wind_ucs2utf8_length(ucs2, ucs2len, &u8len);
+	if (ret)
+	    errx(1, "failed to count length of UCS-2 string");
+
+	u8len += 1; /* Add space for NUL */
+	logon_string = malloc(u8len);
+	if (logon_string == NULL)
+	    errx(1, "show_pac_client_info: out of memory");
+
+	ret = wind_ucs2utf8(ucs2, ucs2len, logon_string, &u8len);
+	free(ucs2);
+	if (ret)
+	    errx(1, "failed to convert to UTF-8");
+    }
+
+    printf("logon name: %s\n", logon_string);
+    free(logon_string);
+
+    gss_release_buffer(&min, &dv);
+    gss_release_buffer(&min, &v);
+}
+
+static void
 loop(gss_OID mechoid,
      gss_OID nameoid, const char *target,
      gss_cred_id_t init_cred,
@@ -155,11 +262,14 @@ loop(gss_OID mechoid,
     OM_uint32 flags = 0, ret_cflags = 0, ret_sflags = 0;
     gss_OID actual_mech_client = GSS_C_NO_OID;
     gss_OID actual_mech_server = GSS_C_NO_OID;
-    struct gss_channel_bindings_struct i_channel_bindings_data = {0};
-    struct gss_channel_bindings_struct a_channel_bindings_data = {0};
+    struct gss_channel_bindings_struct i_channel_bindings_data;
+    struct gss_channel_bindings_struct a_channel_bindings_data;
     gss_channel_bindings_t i_channel_bindings_p = GSS_C_NO_CHANNEL_BINDINGS;
     gss_channel_bindings_t a_channel_bindings_p = GSS_C_NO_CHANNEL_BINDINGS;
     size_t offset = 0;
+
+    memset(&i_channel_bindings_data, 0, sizeof(i_channel_bindings_data));
+    memset(&a_channel_bindings_data, 0, sizeof(a_channel_bindings_data));
 
     *actual_mech = GSS_C_NO_OID;
 
@@ -187,6 +297,32 @@ loop(gss_OID mechoid,
 			       &gss_target_name);
     if (GSS_ERROR(maj_stat))
 	err(1, "import name creds failed with: %d", maj_stat);
+
+    if (on_behalf_of_string) {
+        AuthorizationDataElement e;
+        gss_buffer_desc attr, value;
+        int32_t kret;
+        size_t sz;
+
+        memset(&e, 0, sizeof(e));
+        e.ad_type = KRB5_AUTHDATA_ON_BEHALF_OF;
+        e.ad_data.length = strlen(on_behalf_of_string);
+        e.ad_data.data = on_behalf_of_string;
+        ASN1_MALLOC_ENCODE(AuthorizationDataElement, value.value, value.length,
+                           &e, &sz, kret);
+        if (kret)
+            errx(1, "Could not encode AD-ON-BEHALF-OF AuthorizationDataElement");
+        attr.value =
+            GSS_KRB5_NAME_ATTRIBUTE_BASE_URN "authenticator-authz-data";
+        attr.length =
+            sizeof(GSS_KRB5_NAME_ATTRIBUTE_BASE_URN "authenticator-authz-data") - 1;
+        maj_stat = gss_set_name_attribute(&min_stat, gss_target_name, 1, &attr,
+                                          &value);
+        if (maj_stat != GSS_S_COMPLETE)
+            errx(1, "gss_set_name_attribute() failed with: %s",
+                 gssapi_err(maj_stat, min_stat, GSS_KRB5_MECHANISM));
+        free(value.value);
+    }
 
     input_token.length = 0;
     input_token.value = NULL;
@@ -351,6 +487,25 @@ loop(gss_OID mechoid,
 	errx(1, "mech mismatch");
     *actual_mech = actual_mech_server;
 
+    if (on_behalf_of_string) {
+        gss_buffer_desc attr, value;
+
+        attr.value =
+            GSS_KRB5_NAME_ATTRIBUTE_BASE_URN "authz-data#580";
+        attr.length =
+            sizeof(GSS_KRB5_NAME_ATTRIBUTE_BASE_URN "authz-data#580") - 1;
+        maj_stat = gss_get_name_attribute(&min_stat, src_name, &attr, NULL,
+                                          NULL, &value, NULL, NULL);
+        if (maj_stat != GSS_S_COMPLETE)
+            errx(1, "gss_get_name_attribute(authz-data#580) failed with %s",
+                 gssapi_err(maj_stat, min_stat, GSS_KRB5_MECHANISM));
+
+        if (value.length != strlen(on_behalf_of_string) ||
+            strncmp(value.value, on_behalf_of_string,
+                    strlen(on_behalf_of_string)) != 0)
+            errx(1, "AD-ON-BEHALF-OF did not match");
+        (void) gss_release_buffer(&min_stat, &value);
+    }
     if (localname_string) {
         gss_buffer_desc lname;
 
@@ -393,6 +548,9 @@ loop(gss_OID mechoid,
         } else
             warnx("display_name: %s",
                  gssapi_err(maj_stat, min_stat, GSS_C_NO_OID));
+	if (!anon_flag &&
+	    gss_oid_equal(actual_mech_server, GSS_KRB5_MECHANISM))
+	    show_pac_client_info(src_name);
     }
     gss_release_name(&min_stat, &src_name);
 
@@ -756,6 +914,8 @@ static struct getargs args[] = {
     {"server-time-offset",	0, arg_integer,	&server_time_offset, "time", NULL },
     {"max-loops",	0, arg_integer,	&max_loops, "time", NULL },
     {"token-split",	0, arg_integer, &token_split, "bytes", NULL },
+    {"on-behalf-of",	0, arg_string, &on_behalf_of_string, "principal",
+        "send authenticator authz-data AD-ON-BEHALF-OF" },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
     {"verbose",	'v',	arg_flag,	&verbose_flag, "verbose", NULL },
     {"help",	0,	arg_flag,	&help_flag,  NULL, NULL }
@@ -1102,7 +1262,7 @@ main(int argc, char **argv)
 
 	if (maj_stat != GSS_S_COMPLETE)
 	    keyblock2 = NULL;
-	else if (limit_enctype && keyblock->keytype != limit_enctype)
+	else if (limit_enctype && keyblock && keyblock->keytype != limit_enctype)
 	    errx(1, "gsskrb5_get_subkey wrong enctype");
 
 	if (keyblock || keyblock2) {
@@ -1130,7 +1290,7 @@ main(int argc, char **argv)
 	    if (ret)
 		krb5_err(context, 1, ret, "krb5_string_to_enctype");
 
-	    if (enctype != keyblock->keytype)
+	    if (keyblock && enctype != keyblock->keytype)
 		errx(1, "keytype is not the expected %d != %d",
 		     (int)enctype, (int)keyblock2->keytype);
 	}

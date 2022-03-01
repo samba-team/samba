@@ -311,7 +311,7 @@ add_st_object(void)
 	return NULL;
 
     for (i = 0; i < soft_token.object.num_objs; i++) {
-	if (soft_token.object.objs == NULL) {
+	if (soft_token.object.objs[i] == NULL) {
 	    soft_token.object.objs[i] = o;
 	    break;
 	}
@@ -342,6 +342,9 @@ add_object_attribute(struct st_object *o,
     struct st_attr *a;
     int i;
 
+    if (pValue == NULL && ulValueLen)
+        return CKR_ARGUMENTS_BAD;
+
     i = o->num_attributes;
     a = realloc(o->attrs, (i + 1) * sizeof(o->attrs[0]));
     if (a == NULL)
@@ -352,7 +355,8 @@ add_object_attribute(struct st_object *o,
     o->attrs[i].attribute.pValue = malloc(ulValueLen);
     if (o->attrs[i].attribute.pValue == NULL && ulValueLen != 0)
 	return CKR_DEVICE_MEMORY;
-    memcpy(o->attrs[i].attribute.pValue, pValue, ulValueLen);
+    if (ulValueLen)
+        memcpy(o->attrs[i].attribute.pValue, pValue, ulValueLen);
     o->attrs[i].attribute.ulValueLen = ulValueLen;
     o->num_attributes++;
 

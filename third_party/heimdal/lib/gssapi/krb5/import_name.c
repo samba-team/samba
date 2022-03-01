@@ -183,9 +183,12 @@ import_export_name (OM_uint32 *minor_status,
 		    const gss_buffer_t input_name_buffer,
 		    gss_name_t *output_name)
 {
+    CompositePrincipal *composite;
     unsigned char *p;
     uint32_t length;
+    size_t sz;
     OM_uint32 ret;
+    int is_composite;
     char *name;
 
     if (input_name_buffer->length < 10 + GSS_KRB5_MECHANISM->length)
@@ -195,13 +198,17 @@ import_export_name (OM_uint32 *minor_status,
 
     p = input_name_buffer->value;
 
-    if (memcmp(&p[0], "\x04\x01\x00", 3) != 0 ||
+    if (p[0] != 0x04 ||
+        (p[1] != 0x01 && p[1] != 0x02) ||
+        p[2] != 0x00 ||
 	p[3] != GSS_KRB5_MECHANISM->length + 2 ||
 	p[4] != 0x06 ||
 	p[5] != GSS_KRB5_MECHANISM->length ||
 	memcmp(&p[6], GSS_KRB5_MECHANISM->elements,
 	       GSS_KRB5_MECHANISM->length) != 0)
 	return GSS_S_BAD_NAME;
+
+    is_composite = p[1] == 0x02;
 
     p += 6 + GSS_KRB5_MECHANISM->length;
 
@@ -210,6 +217,28 @@ import_export_name (OM_uint32 *minor_status,
 
     if (length > input_name_buffer->length - 10 - GSS_KRB5_MECHANISM->length)
 	return GSS_S_BAD_NAME;
+
+    if (is_composite) {
+        if ((composite = calloc(1, sizeof(*composite))) == NULL) {
+            *minor_status = ENOMEM;
+            return GSS_S_FAILURE;
+        }
+
+        ret = decode_CompositePrincipal(p, length, composite, &sz);
+	if (ret) {
+            *minor_status = ret;
+            return GSS_S_FAILURE;
+	}
+        if (sz != length) {
+            free_CompositePrincipal(composite);
+            free(composite);
+            *minor_status = EINVAL;
+            return GSS_S_FAILURE;
+        }
+
+        *output_name = (void *)composite;
+        return GSS_S_COMPLETE;
+    }
 
     name = malloc(length + 1);
     if (name == NULL) {
@@ -221,7 +250,6 @@ import_export_name (OM_uint32 *minor_status,
 
     ret = parse_krb5_name(minor_status, context, name, output_name);
     free(name);
-
     return ret;
 }
 
@@ -253,7 +281,8 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_import_name
 				 context,
 				 input_name_buffer,
 				 output_name);
-    else if (gss_oid_equal(input_name_type, GSS_C_NT_EXPORT_NAME)) {
+    else if (gss_oid_equal(input_name_type, GSS_C_NT_EXPORT_NAME) ||
+             gss_oid_equal(input_name_type, GSS_C_NT_COMPOSITE_EXPORT)) {
 	return import_export_name(minor_status,
 				  context,
 				  input_name_buffer,

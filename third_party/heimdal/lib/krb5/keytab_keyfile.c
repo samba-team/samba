@@ -403,7 +403,7 @@ akf_add_entry(krb5_context context,
 	ret = errno;
 	krb5_set_error_message (context, ret,
 				N_("keytab keyfile failed new length", ""));
-	return ret;
+	goto out;
     }
 
     if(krb5_storage_seek(sp, (len - 1) * (8 + 4), SEEK_CUR) < 0) {

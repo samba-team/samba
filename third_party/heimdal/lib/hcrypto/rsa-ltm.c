@@ -456,8 +456,11 @@ mpz2BN(mp_int *s)
     void *p;
 
     size = mp_ubin_size(s);
+    if (size == 0)
+	return NULL;
+
     p = malloc(size);
-    if (p == NULL && size != 0)
+    if (p == NULL)
 	return NULL;
 
     ret = mp_to_ubin(s, p, SIZE_MAX, NULL);
@@ -533,8 +536,6 @@ ltm_rsa_generate_key(RSA *rsa, int bits, BIGNUM *e, BN_GENCB *cb)
 	return -1;
 
     bitsp = (bits + 1) / 2;
-
-    ret = -1;
 
     FIRST(mp_init_multi(&el, &p, &q, &n, &d,
                         &dmp1, &dmq1, &iqmp,

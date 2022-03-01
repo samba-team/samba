@@ -97,7 +97,7 @@ kadm5_s_rename_principal(void *server_handle,
 {
     kadm5_server_context *context = server_handle;
     kadm5_ret_t ret;
-    hdb_entry_ex ent;
+    hdb_entry ent;
     krb5_principal oldname;
     size_t i;
 
@@ -121,14 +121,14 @@ kadm5_s_rename_principal(void *server_handle,
                                       0, &ent);
     if (ret)
 	goto out2;
-    oldname = ent.entry.principal;
+    oldname = ent.principal;
 
     ret = rename_principal_hook(context, KADM5_HOOK_STAGE_PRECOMMIT,
 				0, source, target);
     if (ret)
 	goto out3;
 
-    ret = _kadm5_set_modifier(context, &ent.entry);
+    ret = _kadm5_set_modifier(context, &ent);
     if (ret)
 	goto out3;
     {
@@ -136,17 +136,19 @@ kadm5_s_rename_principal(void *server_handle,
 	Salt salt;
 	krb5_salt salt2;
 	memset(&salt, 0, sizeof(salt));
-	krb5_get_pw_salt(context->context, source, &salt2);
+	ret = krb5_get_pw_salt(context->context, source, &salt2);
+        if (ret)
+            goto out3;
 	salt.type = hdb_pw_salt;
 	salt.salt = salt2.saltvalue;
-	for(i = 0; i < ent.entry.keys.len; i++){
-	    if(ent.entry.keys.val[i].salt == NULL){
-		ent.entry.keys.val[i].salt =
-		    malloc(sizeof(*ent.entry.keys.val[i].salt));
-		if (ent.entry.keys.val[i].salt == NULL)
+	for(i = 0; i < ent.keys.len; i++){
+	    if(ent.keys.val[i].salt == NULL){
+		ent.keys.val[i].salt =
+		    malloc(sizeof(*ent.keys.val[i].salt));
+		if (ent.keys.val[i].salt == NULL)
 		    ret = krb5_enomem(context->context);
                 else
-                    ret = copy_Salt(&salt, ent.entry.keys.val[i].salt);
+                    ret = copy_Salt(&salt, ent.keys.val[i].salt);
 		if (ret)
 		    break;
 	    }
@@ -157,20 +159,20 @@ kadm5_s_rename_principal(void *server_handle,
 	goto out3;
 
     /* Borrow target */
-    ent.entry.principal = target;
-    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
+    ent.principal = target;
+    ret = hdb_seal_keys(context->context, context->db, &ent);
     if (ret)
 	goto out3;
 
     /* This logs the change for iprop and writes to the HDB */
-    ret = kadm5_log_rename(context, source, &ent.entry);
+    ret = kadm5_log_rename(context, source, &ent);
 
     (void) rename_principal_hook(context, KADM5_HOOK_STAGE_POSTCOMMIT,
 				 ret, source, target);
 
  out3:
-    ent.entry.principal = oldname; /* Unborrow target */
-    hdb_free_entry(context->context, &ent);
+    ent.principal = oldname; /* Unborrow target */
+    hdb_free_entry(context->context, context->db, &ent);
 
  out2:
     (void) kadm5_log_end(context);

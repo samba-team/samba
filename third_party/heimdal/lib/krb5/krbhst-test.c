@@ -59,6 +59,7 @@ usage (int ret)
 int
 main(int argc, char **argv)
 {
+    krb5_error_code ret;
     int i, j;
     krb5_context context;
     int types[] = {KRB5_KRBHST_KDC, KRB5_KRBHST_ADMIN, KRB5_KRBHST_CHANGEPW,
@@ -82,7 +83,9 @@ main(int argc, char **argv)
     argc -= optidx;
     argv += optidx;
 
-    krb5_init_context (&context);
+    ret = krb5_init_context(&context);
+    if (ret)
+        krb5_err(NULL, 1, ret, "Failed to initialize context");
     for(i = 0; i < argc; i++) {
 	krb5_krbhst_handle handle;
 	char host[MAXHOSTNAMELEN];
@@ -90,12 +93,16 @@ main(int argc, char **argv)
 	for (j = 0; j < sizeof(types)/sizeof(*types); ++j) {
 	    printf ("%s for %s:\n", type_str[j], argv[i]);
 
-	    krb5_krbhst_init(context, argv[i], types[j], &handle);
-	    while(krb5_krbhst_next_as_string(context, handle,
-					     host, sizeof(host)) == 0)
+	    ret = krb5_krbhst_init(context, argv[i], types[j], &handle);
+            if (ret)
+                krb5_err(context, 1, ret, "Could not init krbhst iterator");
+	    while ((ret = krb5_krbhst_next_as_string(context, handle, host,
+                                                     sizeof(host))) == 0)
 		printf("\thost: %s\n", host);
 	    krb5_krbhst_reset(context, handle);
-	    printf ("\n");
+	    printf("\n");
+            if (ret)
+                krb5_err(context, 1, ret, "Could not iterate all krbhst");
 	}
     }
     return 0;

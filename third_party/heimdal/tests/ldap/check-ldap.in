@@ -120,7 +120,7 @@ ${kadmin} list '*' > /dev/null || exit 1
 echo "$foopassword" > ${objdir}/foopassword
 
 echo Starting kdc
-${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
 trap "kill ${kdcpid}; echo signal killing kdc; sh ${srcdir}/slapd-stop ; exit 1;" EXIT

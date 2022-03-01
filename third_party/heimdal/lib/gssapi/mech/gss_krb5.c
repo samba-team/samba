@@ -520,7 +520,8 @@ gss_krb5_ccache_name(OM_uint32 *minor_status,
 	}
     }
 
-    *out_name = args.out_name;
+    if (out_name)
+        *out_name = args.out_name;
 
     return major_status;
 }
@@ -571,7 +572,7 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 
     {
 	unsigned char *buf = data_set->elements[0].value;
-	*authtime = (buf[3] <<24) | (buf[2] << 16) |
+	*authtime = ((unsigned long)buf[3] <<24) | (buf[2] << 16) |
 	    (buf[1] << 8) | (buf[0] << 0);
     }
 
@@ -729,7 +730,7 @@ gsskrb5_extract_key(OM_uint32 *minor_status,
     }
 
     *keyblock = calloc(1, sizeof(**keyblock));
-    if (keyblock == NULL) {
+    if (*keyblock == NULL) {
 	ret = ENOMEM;
 	goto out;
     }

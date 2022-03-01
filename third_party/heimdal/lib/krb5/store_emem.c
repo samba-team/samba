@@ -33,6 +33,7 @@
 
 #include "krb5_locl.h"
 #include "store-int.h"
+#include <assert.h>
 
 typedef struct emem_storage{
     unsigned char *base;
@@ -45,10 +46,12 @@ static ssize_t
 emem_fetch(krb5_storage *sp, void *data, size_t size)
 {
     emem_storage *s = (emem_storage*)sp->data;
+
+    assert(data != NULL && s->ptr != NULL);
+
     if((size_t)(s->base + s->len - s->ptr) < size)
 	size = s->base + s->len - s->ptr;
-    if (data != NULL)
-	memmove(data, s->ptr, size);
+    memmove(data, s->ptr, size);
     sp->seek(sp, size, SEEK_CUR);
     return size;
 }
@@ -56,7 +59,17 @@ emem_fetch(krb5_storage *sp, void *data, size_t size)
 static ssize_t
 emem_store(krb5_storage *sp, const void *data, size_t size)
 {
-    emem_storage *s = (emem_storage*)sp->data;
+    emem_storage *s;
+
+    if (size == 0) {
+	sp->seek(sp, 0, SEEK_CUR);
+	return 0;
+    }
+
+    s = (emem_storage*)sp->data;
+
+    assert(data != NULL);
+
     if(size > (size_t)(s->base + s->size - s->ptr)){
 	void *base;
 	size_t sz, off;
@@ -71,8 +84,7 @@ emem_store(krb5_storage *sp, const void *data, size_t size)
 	s->base = base;
 	s->ptr = (unsigned char*)base + off;
     }
-    if (data != NULL)
-	memmove(s->ptr, data, size);
+    memmove(s->ptr, data, size);
     sp->seek(sp, size, SEEK_CUR);
     return size;
 }
@@ -141,6 +153,9 @@ static void
 emem_free(krb5_storage *sp)
 {
     emem_storage *s = sp->data;
+
+    assert(s->base != NULL);
+
     memset_s(s->base, s->len, 0, s->len);
     free(s->base);
 }

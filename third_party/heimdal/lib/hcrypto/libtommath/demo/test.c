@@ -625,7 +625,7 @@ LBL_ERR:
 
 }
 
-#if defined(__STDC_IEC_559__) || defined(__GCC_IEC_559)
+#if defined(__STDC_IEC_559__) || defined(__GCC_IEC_559) || defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64) || defined(__i386__) || defined(_M_X86) || defined(__aarch64__) || defined(__arm__)
 static int test_mp_set_double(void)
 {
    int i;

@@ -41,7 +41,7 @@ struct heim_error {
     struct heim_error *next;
 };
 
-static void
+static void HEIM_CALLCONV
 error_dealloc(void *ptr)
 {
     struct heim_error *p = ptr;
@@ -58,7 +58,7 @@ error_cmp(void *a, void *b)
     return heim_cmp(ap->msg, bp->msg);
 }
 
-static unsigned long
+static uintptr_t
 error_hash(void *ptr)
 {
     struct heim_error *p = ptr;

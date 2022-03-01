@@ -39,7 +39,7 @@ prep::
 
 all:: prep
 
-!include <Win32.Mak>
+!include "NTMakefile.sdk"
 
 !ifdef NODEBUG
 BUILD=rel
@@ -206,6 +206,8 @@ EXECONLINK_C = $(LINK) $(ldebug) $(conlflags) $(conlibsdll) $(libmach)
 EXEGUILINK_C = $(LINK) $(ldebug) $(guilflags) $(guilibsdll) $(libmach)
 DLLCONLINK_C = $(LINK) $(ldebug) $(dlllflags) $(conlibsdll) $(libmach)
 DLLGUILINK_C = $(LINK) $(ldebug) $(dlllflags) $(guilibsdll) $(libmach)
+
+C2OBJ_C_MT = $(CC) $(cdebug) $(cflags) $(cvarsmt) $(AUXCFLAGS) $(intcflags) $(cdefines) $(cincdirs) $(cwarn)
 
 !else # STATICRUNTIME
 
@@ -440,7 +442,7 @@ clean::
 	-$(RM) $(OBJ)\*.*
 !endif
 
-.SUFFIXES: .c .cpp .hin .h .x .hx
+.SUFFIXES: .c .cpp .hin .h .hx
 
 #----------------------------------------------------------------------
 # Manifest handling
@@ -574,6 +576,7 @@ DLLPREP_MERGE=\
 #
 
 LIBASN1	    =$(LIBDIR)\libasn1.lib
+LIBASN1_S   =$(LIBDIR)\libasn1_s.lib
 LIBCOMERR   =$(LIBDIR)\libcom_err.lib
 LIBEDITLINE =$(LIBDIR)\libeditline.lib
 LIBGSSAPI   =$(LIBDIR)\libgssapi.lib

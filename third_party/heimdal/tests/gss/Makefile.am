@@ -95,7 +95,9 @@ EXTRA_DIST = \
 	check-spnego.in \
 	check-ntlm.in \
 	check-context.in \
+	check-negoex.in \
 	ntlm-user-file.txt \
 	krb5.conf.in \
+	include-krb5.conf \
 	new_clients_k5.conf.in \
 	mech.in

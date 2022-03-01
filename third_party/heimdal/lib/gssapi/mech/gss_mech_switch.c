@@ -137,6 +137,8 @@ _gss_string_to_oid(const char* s, gss_OID *oidp)
 				}
 			}
 		}
+                if (byte_count == 0)
+                    return EINVAL;
 		if (!res) {
 			res = malloc(byte_count);
 			if (!res)
@@ -228,8 +230,12 @@ add_builtin(gssapi_mech_interface mech)
 	free(m);
 	return minor_status;
     }
-    gss_add_oid_set_member(&minor_status,
-			   &m->gm_mech.gm_mech_oid, &_gss_mech_oids);
+
+    if (gss_add_oid_set_member(&minor_status, &m->gm_mech.gm_mech_oid,
+			       &_gss_mech_oids) != GSS_S_COMPLETE) {
+	free(m);
+	return ENOMEM;
+    }
 
     /* pick up the oid sets of names */
 
@@ -237,8 +243,12 @@ add_builtin(gssapi_mech_interface mech)
 	(*m->gm_mech.gm_inquire_names_for_mech)(&minor_status,
 	    &m->gm_mech.gm_mech_oid, &m->gm_name_types);
 
-    if (m->gm_name_types == NULL)
-	gss_create_empty_oid_set(&minor_status, &m->gm_name_types);
+    if (m->gm_name_types == NULL &&
+	gss_create_empty_oid_set(&minor_status,
+                                 &m->gm_name_types) != GSS_S_COMPLETE) {
+	free(m);
+	return ENOMEM;
+    }
 
     HEIM_TAILQ_INSERT_TAIL(&_gss_mechs, m, gm_link);
     return 0;
@@ -288,9 +298,15 @@ _gss_load_mech(void)
 		return;
 	}
 
-	add_builtin(__gss_krb5_initialize());
-	add_builtin(__gss_spnego_initialize());
-	add_builtin(__gss_ntlm_initialize());
+	if (add_builtin(__gss_krb5_initialize()))
+            _gss_mg_log(1, "Out of memory while adding builtin Kerberos GSS "
+                        "mechanism to the GSS mechanism switch");
+	if (add_builtin(__gss_spnego_initialize()))
+            _gss_mg_log(1, "Out of memory while adding builtin SPNEGO "
+                        "mechanism to the GSS mechanism switch");
+	if (add_builtin(__gss_ntlm_initialize()))
+            _gss_mg_log(1, "Out of memory while adding builtin NTLM "
+                        "mechanism to the GSS mechanism switch");
 
 #ifdef HAVE_DLOPEN
 	fp = fopen(conf ? conf : _PATH_GSS_MECH, "r");
@@ -461,7 +477,9 @@ _gss_load_mech(void)
 out:
 
 #endif
-	add_builtin(__gss_sanon_initialize());
+	if (add_builtin(__gss_sanon_initialize()))
+            _gss_mg_log(1, "Out of memory while adding builtin SANON "
+                        "mechanism to the GSS mechanism switch");
 	HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 }
 
@@ -564,17 +582,4 @@ gss_oid_to_name(gss_const_OID oid)
 	}
 
 	return NULL;
-}
-
-GSSAPI_LIB_FUNCTION uintptr_t GSSAPI_CALLCONV
-gss_get_instance(const char *libname)
-{
-    static const char *instance = "libgssapi";
-
-    if (strcmp(libname, "gssapi") == 0)
-	return (uintptr_t)instance;
-    else if (strcmp(libname, "krb5") == 0)
-	return krb5_get_instance(libname);
-
-    return 0;
 }

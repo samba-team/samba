@@ -137,6 +137,8 @@ stdio_trunc(krb5_storage * sp, off_t offset)
     if (fflush(F(sp)) == EOF)
         return errno;
     tmpoff = ftello(F(sp));
+    if (tmpoff < 0)
+	return errno;
     if (tmpoff > offset)
 	tmpoff = offset;
     if (ftruncate(fileno(F(sp)), offset) == -1)

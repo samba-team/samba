@@ -2,7 +2,6 @@ HEIMDAL_ROKEN_2.0 {
 	global:
 		arg_printusage;
 		arg_printusage_i18n;
-		cgetcap;
 		cgetclose;
 		cgetmatch;
 		cgetnum;
@@ -40,8 +39,6 @@ HEIMDAL_ROKEN_2.0 {
 		rk_bswap16;
 		rk_bswap32;
 		rk_bswap64;
-		rk_cgetent;
-		rk_cgetstr;
 		rk_cloexec;
 		rk_cloexec_dir;
 		rk_cloexec_file;
@@ -164,6 +161,8 @@ HEIMDAL_ROKEN_2.0 {
 		rk_tdelete;
 		rk_tfind;
 		rk_timegm;
+		rk_time_add;
+		rk_time_sub;
 		rk_timevaladd;
 		rk_timevalfix;
 		rk_timevalsub;

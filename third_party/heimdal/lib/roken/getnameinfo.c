@@ -92,10 +92,10 @@ doit (int af,
  */
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-getnameinfo(const struct sockaddr *sa, socklen_t salen,
-	    char *host, size_t hostlen,
-	    char *serv, size_t servlen,
-	    int flags)
+rk_getnameinfo(const struct sockaddr *sa, socklen_t salen,
+	       char *host, size_t hostlen,
+	       char *serv, size_t servlen,
+	       int flags)
 {
     switch (sa->sa_family) {
 #ifdef HAVE_IPV6

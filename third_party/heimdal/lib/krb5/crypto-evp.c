@@ -137,8 +137,11 @@ _krb5_evp_hmac_iov(krb5_context context,
     if (ctx == NULL)
         return krb5_enomem(context);
 
-    HMAC_Init_ex(ctx, key->key->keyvalue.data, key->key->keyvalue.length,
-                 md, engine);
+    if (HMAC_Init_ex(ctx, key->key->keyvalue.data, key->key->keyvalue.length,
+                     md, engine) == 0) {
+        HMAC_CTX_free(ctx);
+        return krb5_enomem(context);
+    }
 
     for (i = 0; i < niov; i++) {
         if (_krb5_crypto_iov_should_sign(&iov[i])) {

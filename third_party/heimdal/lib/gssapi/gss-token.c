@@ -250,7 +250,7 @@ write_and_free_token(gss_buffer_t out, int negotiate)
 
 bail:
 	gss_release_buffer(&min, out);
-	return 0;
+	return ret;
 }
 
 static int
@@ -402,7 +402,7 @@ static int
 initiate_many(gss_name_t service, int delegate, int negotiate, int memcache,
 	      size_t count)
 {
-	krb5_error_code	kret;
+	krb5_error_code	kret = 0;
 	krb5_context	kctx = NULL;
 	krb5_ccache	def_cache = NULL;
 	krb5_ccache	mem_cache = NULL;
@@ -443,7 +443,8 @@ accept_one(gss_name_t service, const char *ccname, int negotiate)
         gss_OID          mech_oid;
         gss_ctx_id_t     ctx = GSS_C_NO_CONTEXT;
         gss_buffer_desc  in = GSS_C_EMPTY_BUFFER;
-        gss_buffer_desc  out, dname;
+        gss_buffer_desc  out;
+        gss_buffer_desc  dname = GSS_C_EMPTY_BUFFER;
 	krb5_context	 kctx = NULL;
 	krb5_ccache	 ccache = NULL;
 	krb5_error_code	 kret;
@@ -488,6 +489,8 @@ accept_one(gss_name_t service, const char *ccname, int negotiate)
 	if (!nflag)
 		printf("Authenticated: %.*s\n", (int)dname.length,
 		    (char *)dname.value);
+	(void) gss_release_buffer(&min, &dname);
+	(void) gss_release_name(&min, &client);
 
 	if (ccname) {
 #ifdef HAVE_GSS_STORE_CRED_INTO
@@ -565,7 +568,7 @@ print_all_mechs(void)
 	for (i=0; i < mech_set->count; i++)
 		printf("%s\n", gss_oid_to_name(&mech_set->elements[i]));
 
-	maj = gss_release_oid_set(&min, &mech_set);
+	(void) gss_release_oid_set(&min, &mech_set);
 
 bail:
 	exit(ret);

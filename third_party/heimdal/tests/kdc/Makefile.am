@@ -4,6 +4,7 @@ noinst_DATA = \
 	an2ln-db.txt \
 	kdc-tester4.json \
 	krb5.conf \
+	krb5-kcm.conf \
 	krb5-cccol.conf \
 	krb5-authz.conf \
 	krb5-authz2.conf \
@@ -204,6 +205,13 @@ krb5.conf: krb5.conf.in Makefile
 	   -e 's,[@]kdc[@],,g' < $(srcdir)/krb5.conf.in > krb5.conf.tmp && \
 	mv krb5.conf.tmp krb5.conf
 
+krb5-kcm.conf: krb5-kcm.conf.in Makefile
+	$(do_subst) \
+	   -e 's,[@]WEAK[@],false,g' \
+	   -e 's,[@]dk[@],,g' \
+	   -e 's,[@]kdc[@],,g' < $(srcdir)/krb5-kcm.conf.in > krb5-kcm.conf.tmp && \
+	mv krb5-kcm.conf.tmp krb5-kcm.conf
+
 krb5-cccol.conf: krb5-cccol.conf.in Makefile
 	$(do_subst) \
 	   -e 's,[@]WEAK[@],false,g' \
@@ -383,23 +391,23 @@ EXTRA_DIST = \
 	NTMakefile \
 	an2ln-db.txt \
 	check-authz.in \
+	check-bx509.in \
 	check-canon.in \
 	check-cc.in \
 	check-delegation.in \
 	check-des.in \
 	check-digest.in \
 	check-fast.in \
+	check-hdb-mitdb.in \
+	check-httpkadmind.in \
 	check-iprop.in \
 	check-kadmin.in \
-	check-kinit.in \
-	check-hdb-mitdb.in \
-	check-kdc.in \
 	check-kdc-weak.in \
+	check-kdc.in \
 	check-keys.in \
+	check-kinit.in \
 	check-kpasswdd.in \
 	check-pkinit.in \
-	check-bx509.in \
-	check-httpkadmind.in \
 	check-referral.in \
 	check-tester.in \
 	check-uu.in \
@@ -409,23 +417,25 @@ EXTRA_DIST = \
 	hdb-mitdb.mkey \
 	heimdal.acl \
 	iprop-acl \
+	k5login/foo \
+	k5login/mapped_user1 \
 	kdc-tester1.json \
 	kdc-tester2.json \
 	kdc-tester3.json \
 	kdc-tester4.json.in \
-	krb5-pkinit.conf.in \
-	krb5-bx509.conf.in \
-	krb5-httpkadmind.conf.in \
-	krb5.conf.in \
 	krb5-authz.conf.in \
 	krb5-authz2.conf.in \
+	krb5-bx509.conf.in \
 	krb5-canon.conf.in \
 	krb5-canon2.conf.in \
+	krb5-cccol.conf.in \
 	krb5-hdb-mitdb.conf.in \
+	krb5-httpkadmind.conf.in \
+	krb5-pkinit.conf.in \
+	krb5.conf.in \
 	krb5.conf.keys.in \
-	k5login/foo \
-	ntlm-user-file.txt \
 	leaks-kill.sh \
+	ntlm-user-file.txt \
 	pki-mapping \
 	uuserver.txt \
 	wait-kdc.sh

@@ -33,6 +33,8 @@
 
 RELDIR=lib\gssapi 
 
+intcflags=-DASN1_LIB
+
 !include ../../windows/NTMakefile.w32 
 
 krb5src = \
@@ -77,6 +79,7 @@ krb5src = \
 	krb5/inquire_mechs_for_name.c \
 	krb5/inquire_names_for_mech.c \
 	krb5/inquire_sec_context_by_oid.c \
+        krb5/name_attrs.c \
         krb5/pname_to_uid.c \
 	krb5/process_context_token.c \
 	krb5/prf.c \
@@ -274,22 +277,14 @@ $(OBJ)\spnego\spnego-private.h: $(spnegosrc)
 $(OBJ)\sanon\sanon-private.h: $(sanonsrc)
 	$(PERL) ../../cf/make-proto.pl -q -P remove -p $@ $(sanonsrc)
 
-gssapi_files = $(OBJ)\gssapi\asn1_gssapi_asn1.x
-
-spnego_files = $(OBJ)\spnego\asn1_spnego_asn1.x
-
-$(gssapi_files:.x=.c): $$(@R).x
-
-$(spnego_files:.x=.c): $$(@R).x
-
-$(gssapi_files) $(OBJ)\gssapi\gssapi_asn1.hx $(OBJ)\gssapi\gssapi_asn1-priv.hx: \
+$(OBJ)\gssapi\asn1_gssapi_asn1.c $(OBJ)\gssapi\gssapi_asn1.h $(OBJ)\gssapi\gssapi_asn1-priv.h: \
 $(BINDIR)\asn1_compile.exe mech\gssapi.asn1
 	cd $(OBJ)\gssapi
 	$(BINDIR)\asn1_compile.exe --one-code-file $(SRCDIR)\mech\gssapi.asn1 gssapi_asn1 \
 	|| ( $(RM) $(OBJ)\gssapi\gssapi_asn1.h ; exit /b 1 )
 	cd $(SRCDIR)
 
-$(spnego_files) $(OBJ)\spnego\spnego_asn1.hx $(OBJ)\spnego\spnego_asn1-priv.hx: \
+$(OBJ)\spnego\asn1_spnego_asn1.c $(OBJ)\spnego\spnego_asn1.h $(OBJ)\spnego\spnego_asn1-priv.h: \
 $(BINDIR)\asn1_compile.exe spnego\spnego.asn1
 	cd $(OBJ)\spnego
 	$(BINDIR)\asn1_compile --one-code-file --sequence=MechTypeList \
@@ -368,6 +363,7 @@ libgssapi_OBJs = \
 	$(OBJ)\krb5/inquire_mechs_for_name.obj \
 	$(OBJ)\krb5/inquire_names_for_mech.obj \
 	$(OBJ)\krb5/inquire_sec_context_by_oid.obj \
+        $(OBJ)\krb5/name_attrs.obj \
         $(OBJ)\krb5/pname_to_uid.obj \
 	$(OBJ)\krb5/process_context_token.obj \
 	$(OBJ)\krb5/prf.obj \
@@ -537,8 +533,8 @@ libgssapi_OBJs = \
 	$(OBJ)\sanon/release_name.obj \
 	$(OBJ)\gkrb5_err.obj \
 	$(OBJ)\negoex_err.obj \
-	$(spnego_files:.x=.obj) \
-	$(gssapi_files:.x=.obj)
+	$(OBJ)\spnego\asn1_spnego_asn1.obj \
+	$(OBJ)\gssapi\asn1_gssapi_asn1.obj
 
 GCOPTS=-I$(SRCDIR) -I$(OBJ) -Igssapi -DBUILD_GSSAPI_LIB
 
@@ -578,22 +574,10 @@ GCOPTS=-I$(SRCDIR) -I$(OBJ) -Igssapi -DBUILD_GSSAPI_LIB
 {$(OBJ)}.c{$(OBJ)}.obj::
 	$(C2OBJ_P) $(GCOPTS)
 
-{$(OBJ)\spnego}.x{$(OBJ)\spnego}.c:
-	$(CP) $** $@
-
-{$(OBJ)\gssapi}.x{$(OBJ)\gssapi}.c:
-	$(CP) $** $@
-
 {gssapi}.h{$(INCDIR)\gssapi}.h:
 	$(CP) $** $@
 
 {$(OBJ)}.h{$(INCDIR)\gssapi}.h:
-	$(CP) $** $@
-
-{$(OBJ)\gssapi}.hx{$(OBJ)\gssapi}.h:
-	$(CP) $** $@
-
-{$(OBJ)\spnego}.hx{$(OBJ)\spnego}.h:
 	$(CP) $** $@
 
 LIBGSSAPI_LIBS=\
@@ -690,8 +674,8 @@ $(OBJ)\gss-commands.c $(OBJ)\gss-commands.h: gss-commands.in
 (generate-obj-macro "libgssapi_OBJs"
 	            (concat "\t$(OBJ)\\gkrb5_err.obj \\\n"
                             "\t$(OBJ)\\negoex_err.obj \\\n"
-                            "\t$(spnego_files:.x=.obj) \\\n"
-                            "\t$(gssapi_files:.x=.obj)")
+			    "\t$(OBJ)\\spnego\\asn1_spnego_asn1.obj \\\n"
+			    "\t$(OBJ)\\gssapi\\asn1_gssapi_asn1.obj")
                     "krb5src" "mechsrc" "spnegosrc" "ntlmsrc")
 !endif
 
@@ -715,7 +699,7 @@ $(OBJ)\test_oid.exe: $(OBJ)\test_oid.obj $(LIBGSSAPI) $(LIBROKEN)
 	$(EXECONLINK)
 	$(EXEPREP_NODIST)
 
-$(OBJ)\test_names.exe: $(OBJ)\test_names.obj $(LIBGSSAPI) $(LIBROKEN) $(LIBVERS)
+$(OBJ)\test_names.exe: $(OBJ)\test_names.obj $(LIBGSSAPI) $(LIBHEIMDAL) $(LIBROKEN) $(LIBVERS)
 	$(EXECONLINK)
 	$(EXEPREP_NODIST)
 

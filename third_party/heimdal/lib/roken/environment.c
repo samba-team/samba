@@ -62,7 +62,8 @@ find_var(char **env, char *assignment, size_t len)
 static int
 read_env_file(FILE *F, char ***env, int *assigned)
 {
-    int idx = 0;
+    size_t alloced = 0;
+    size_t idx = 0;
     int i;
     char **l;
     char buf[BUFSIZ], *p, *r;
@@ -71,8 +72,11 @@ read_env_file(FILE *F, char ***env, int *assigned)
 
     *assigned = 0;
 
-    for(idx = 0; *env != NULL && (*env)[idx] != NULL; idx++);
     l = *env;
+    for (idx = 0; l != NULL && l[idx] != NULL; idx++)
+        ;
+    if (l)
+        alloced = idx + 1;
 
     /* This is somewhat more relaxed on what it accepts then
      * Wietses sysv_environ from K4 was...
@@ -90,7 +94,11 @@ read_env_file(FILE *F, char ***env, int *assigned)
 	    continue;
 
 	if((i = find_var(l, p, r - p + 1)) >= 0) {
-	    char *val = strdup(p);
+	    char *val;
+
+            if ((size_t)i >= alloced)
+                continue; /* Doesn't happen (fix scan-build noise) */
+	    val = strdup(p);
 	    if(val == NULL) {
 		ret = ENOMEM;
 		break;
@@ -114,6 +122,7 @@ read_env_file(FILE *F, char ***env, int *assigned)
 	    break;
 	}
 	l[++idx] = NULL;
+        alloced = idx + 1;
 	(*assigned)++;
     }
     if(ferror(F))

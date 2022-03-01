@@ -75,7 +75,7 @@ void    HMAC_CTX_free(HMAC_CTX *ctx);
 
 size_t	HMAC_size(const HMAC_CTX *ctx);
 
-void	HMAC_Init_ex(HMAC_CTX *, const void *, size_t,
+int	HMAC_Init_ex(HMAC_CTX *, const void *, size_t,
 		     const EVP_MD *, ENGINE *);
 void	HMAC_Update(HMAC_CTX *ctx, const void *data, size_t len);
 void	HMAC_Final(HMAC_CTX *ctx, void *md, unsigned int *len);

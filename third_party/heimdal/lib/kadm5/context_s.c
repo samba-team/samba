@@ -161,29 +161,37 @@ find_db_spec(kadm5_server_context *ctx)
 	    p = hdb_dbinfo_get_dbname(context, d);
 	    if (p) {
 		ctx->config.dbname = strdup(p);
-                if (ctx->config.dbname == NULL)
+                if (ctx->config.dbname == NULL) {
+		    hdb_free_dbinfo(context, &info);
 		    return krb5_enomem(context);
+		}
             }
 
 	    p = hdb_dbinfo_get_acl_file(context, d);
 	    if (p) {
 		ctx->config.acl_file = strdup(p);
-                if (ctx->config.acl_file == NULL)
+                if (ctx->config.acl_file == NULL) {
+		    hdb_free_dbinfo(context, &info);
 		    return krb5_enomem(context);
+		}
             }
 
 	    p = hdb_dbinfo_get_mkey_file(context, d);
 	    if (p) {
 		ctx->config.stash_file = strdup(p);
-                if (ctx->config.stash_file == NULL)
+                if (ctx->config.stash_file == NULL) {
+		    hdb_free_dbinfo(context, &info);
 		    return krb5_enomem(context);
+		}
             }
 
 	    p = hdb_dbinfo_get_log_file(context, d);
 	    if (p) {
 		ctx->log_context.log_file = strdup(p);
-                if (ctx->log_context.log_file == NULL)
+                if (ctx->log_context.log_file == NULL) {
+		    hdb_free_dbinfo(context, &info);
 		    return krb5_enomem(context);
+		}
             }
 	    break;
 	}

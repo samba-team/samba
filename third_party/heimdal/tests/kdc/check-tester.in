@@ -46,6 +46,9 @@ testfailed="echo test failed; cat messages.log; exit 1"
 # If there is no useful db support compiled in, disable test
 ${have_db} || exit 77
 
+# Do not run in GutHub valgrind builds -- too slow / not necessary
+[ -n "$CHECK_TESTER_NO_VALGRIND" ] && exit 77
+
 R=TEST.H5L.SE
 
 keytabfile=${objdir}/server.keytab

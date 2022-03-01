@@ -45,7 +45,6 @@ EXTRA_DIST = \
 	cf/ChangeLog \
 	cf/have-pragma-weak.m4 \
 	cf/have-types.m4 \
-	cf/krb-func-getcwd-broken.m4 \
 	cf/krb-prog-ranlib.m4 \
 	cf/krb-prog-yacc.m4 \
 	cf/krb-sys-aix.m4 \

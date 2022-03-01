@@ -42,15 +42,15 @@
 #undef  __attribute__
 #define __attribute__(x)
 
-void
-_kdc_audit_vaddreason(kdc_request_t r, const char *fmt, va_list ap)
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_vaddreason(kdc_request_t r, const char *fmt, va_list ap)
 	__attribute__ ((__format__ (__printf__, 2, 0)))
 {
     heim_audit_vaddreason((heim_svc_req_desc)r, fmt, ap);
 }
 
-void
-_kdc_audit_addreason(kdc_request_t r, const char *fmt, ...)
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_addreason(kdc_request_t r, const char *fmt, ...)
 	__attribute__ ((__format__ (__printf__, 2, 3)))
 {
     va_list ap;
@@ -66,16 +66,16 @@ _kdc_audit_addreason(kdc_request_t r, const char *fmt, ...)
  * not a kv-pair.
  */
 
-void
-_kdc_audit_vaddkv(kdc_request_t r, int flags, const char *k,
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_vaddkv(kdc_request_t r, int flags, const char *k,
 		  const char *fmt, va_list ap)
 	__attribute__ ((__format__ (__printf__, 4, 0)))
 {
     heim_audit_vaddkv((heim_svc_req_desc)r, flags, k, fmt, ap);
 }
 
-void
-_kdc_audit_addkv(kdc_request_t r, int flags, const char *k,
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_addkv(kdc_request_t r, int flags, const char *k,
 		 const char *fmt, ...)
 	__attribute__ ((__format__ (__printf__, 4, 5)))
 {
@@ -86,20 +86,56 @@ _kdc_audit_addkv(kdc_request_t r, int flags, const char *k,
     va_end(ap);
 }
 
-void
-_kdc_audit_addkv_timediff(kdc_request_t r, const char *k,
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_addkv_timediff(kdc_request_t r, const char *k,
 			  const struct timeval *start,
 			  const struct timeval *end)
 {
     heim_audit_addkv_timediff((heim_svc_req_desc)r,k, start, end);
 }
 
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_setkv_bool(kdc_request_t r, const char *k, krb5_boolean v)
+{
+    heim_audit_setkv_bool((heim_svc_req_desc)r, k, (int)v);
+}
+
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_addkv_number(kdc_request_t r, const char *k, int64_t v)
+{
+    heim_audit_addkv_number((heim_svc_req_desc)r, k, v);
+}
+
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_setkv_number(kdc_request_t r, const char *k, int64_t v)
+{
+    heim_audit_setkv_number((heim_svc_req_desc)r, k, v);
+}
+
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_addkv_object(kdc_request_t r, const char *k, kdc_object_t obj)
+{
+    heim_audit_addkv_object((heim_svc_req_desc)r, k, obj);
+}
+
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_setkv_object(kdc_request_t r, const char *k, kdc_object_t obj)
+{
+    heim_audit_setkv_object((heim_svc_req_desc)r, k, obj);
+}
+
+KDC_LIB_FUNCTION kdc_object_t KDC_LIB_CALL
+kdc_audit_getkv(kdc_request_t r, const char *k)
+{
+    return heim_audit_getkv((heim_svc_req_desc)r, k);
+}
+
 /*
  * Add up to 3 key value pairs to record HostAddresses from request body or
  * PA-TGS ticket or whatever.
  */
-void
-_kdc_audit_addaddrs(kdc_request_t r, HostAddresses *a, const char *key)
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_audit_addaddrs(kdc_request_t r, HostAddresses *a, const char *key)
 {
     size_t i;
     char buf[128];
@@ -109,23 +145,23 @@ _kdc_audit_addaddrs(kdc_request_t r, HostAddresses *a, const char *key)
 
         if (snprintf(numkey, sizeof(numkey), "num%s", key) >= sizeof(numkey))
             numkey[31] = '\0';
-        _kdc_audit_addkv(r, 0, numkey, "%llu", (unsigned long long)a->len);
+        kdc_audit_addkv(r, 0, numkey, "%llu", (unsigned long long)a->len);
     }
 
     for (i = 0; i < 3 && i < a->len; i++) {
         if (krb5_print_address(&a->val[i], buf, sizeof(buf), NULL) == 0)
-            _kdc_audit_addkv(r, 0, key, "%s", buf);
+            kdc_audit_addkv(r, 0, key, "%s", buf);
     }
 }
 
-void
+KDC_LIB_FUNCTION void KDC_LIB_CALL
 _kdc_audit_trail(kdc_request_t r, krb5_error_code ret)
 {
     const char *retname = NULL;
 
     /* Get a symbolic name for some error codes */
 #define CASE(x)	case x : retname = #x; break
-    switch (ret ? ret : r->ret) {
+    switch (ret ? ret : r->error_code) {
     CASE(ENOMEM);
     CASE(EACCES);
     CASE(HDB_ERR_NOT_FOUND_HERE);
@@ -171,7 +207,7 @@ _kdc_audit_trail(kdc_request_t r, krb5_error_code ret)
     heim_audit_trail((heim_svc_req_desc)r, ret, retname);
 }
 
-void
+KDC_LIB_FUNCTION void KDC_LIB_CALL
 krb5_kdc_update_time(struct timeval *tv)
 {
     if (tv == NULL)
@@ -334,8 +370,11 @@ process_request(krb5_context context,
     r->request.length = len;
     r->datagram_reply = datagram_reply;
     r->reply = reply;
-    r->kv = heim_array_create();
-    if (!r->kv) {
+    r->kv = heim_dict_create(10);
+    r->attributes = heim_dict_create(1);
+    if (r->kv == NULL || r->attributes == NULL) {
+	heim_release(r->kv);
+	heim_release(r->attributes);
 	free(r);
 	return krb5_enomem(context);
     }
@@ -361,6 +400,7 @@ process_request(krb5_context context,
 
             heim_release(r->reason);
             heim_release(r->kv);
+	    heim_release(r->attributes);
             free(r);
 	    return ret;
 	}
@@ -368,6 +408,7 @@ process_request(krb5_context context,
 
     heim_release(r->reason);
     heim_release(r->kv);
+    heim_release(r->attributes);
     free(r);
     return -1;
 }
@@ -377,7 +418,7 @@ process_request(krb5_context context,
  * sending a reply in `reply'.
  */
 
-int
+KDC_LIB_FUNCTION int KDC_LIB_CALL
 krb5_kdc_process_request(krb5_context context,
 			 krb5_kdc_configuration *config,
 			 unsigned char *buf,
@@ -399,7 +440,7 @@ krb5_kdc_process_request(krb5_context context,
  * This only processes krb5 requests
  */
 
-int
+KDC_LIB_FUNCTION int KDC_LIB_CALL
 krb5_kdc_process_krb5_request(krb5_context context,
 			      krb5_kdc_configuration *config,
 			      unsigned char *buf,
@@ -418,7 +459,7 @@ krb5_kdc_process_krb5_request(krb5_context context,
  *
  */
 
-int
+KDC_LIB_FUNCTION int KDC_LIB_CALL
 krb5_kdc_save_request(krb5_context context,
 		      const char *fn,
 		      const unsigned char *buf,
@@ -428,56 +469,109 @@ krb5_kdc_save_request(krb5_context context,
 {
     krb5_storage *sp;
     krb5_address a;
-    int fd, ret;
+    int fd = -1;
+    int ret = 0;
     uint32_t t;
     krb5_data d;
 
     memset(&a, 0, sizeof(a));
 
-    d.data = rk_UNCONST(buf);
+    d.data = rk_UNCONST(buf); /* do not free here */
     d.length = len;
     t = _kdc_now.tv_sec;
 
-    fd = open(fn, O_WRONLY|O_CREAT|O_APPEND, 0600);
-    if (fd < 0) {
-	int saved_errno = errno;
-	krb5_set_error_message(context, saved_errno, "Failed to open: %s", fn);
-	return saved_errno;
-    }
+    sp = krb5_storage_emem();
+    if (sp == NULL)
+        ret = krb5_enomem(context);
 
-    sp = krb5_storage_from_fd(fd);
-    close(fd);
-    if (sp == NULL) {
-	krb5_set_error_message(context, ENOMEM, "Storage failed to open fd");
-	return ENOMEM;
-    }
-
-    ret = krb5_sockaddr2address(context, sa, &a);
-    if (ret)
-	goto out;
-
-    krb5_store_uint32(sp, 1);
-    krb5_store_uint32(sp, t);
-    krb5_store_address(sp, a);
-    krb5_store_data(sp, d);
-    {
+    if (ret == 0)
+        ret = krb5_sockaddr2address(context, sa, &a);
+    if (ret == 0)
+        ret = krb5_store_uint32(sp, 1);
+    if (ret == 0)
+        ret = krb5_store_uint32(sp, t);
+    if (ret == 0)
+        ret = krb5_store_address(sp, a);
+    if (ret == 0)
+        ret = krb5_store_data(sp, d);
+    d.length = 0;
+    d.data = NULL;
+    if (ret == 0) {
 	Der_class cl;
 	Der_type ty;
 	unsigned int tag;
 	ret = der_get_tag (reply->data, reply->length,
 			   &cl, &ty, &tag, NULL);
 	if (ret) {
-	    krb5_store_uint32(sp, 0xffffffff);
-	    krb5_store_uint32(sp, 0xffffffff);
-	} else {
-	    krb5_store_uint32(sp, MAKE_TAG(cl, ty, 0));
-	    krb5_store_uint32(sp, tag);
+            ret = krb5_store_uint32(sp, 0xffffffff);
+            if (ret == 0)
+                ret = krb5_store_uint32(sp, 0xffffffff);
+        } else {
+            ret = krb5_store_uint32(sp, MAKE_TAG(cl, ty, 0));
+            if (ret == 0)
+                ret = krb5_store_uint32(sp, tag);
 	}
     }
 
-    krb5_free_address(context, &a);
-out:
+    if (ret == 0)
+        ret = krb5_storage_to_data(sp, &d);
     krb5_storage_free(sp);
+    sp = NULL;
 
-    return 0;
+    /*
+     * We've got KDC concurrency, so we're going to try to do a single O_APPEND
+     * write(2).  Hopefully we manage to write enough of the header that one
+     * can skip this request if it fails to write completely.
+     */
+    if (ret == 0)
+        fd = open(fn, O_WRONLY|O_CREAT|O_APPEND, 0600);
+    if (fd < 0)
+	krb5_set_error_message(context, ret = errno, "Failed to open: %s", fn);
+    if (ret == 0) {
+        sp = krb5_storage_from_fd(fd);
+        if (sp == NULL)
+            krb5_set_error_message(context, ret = ENOMEM,
+                                   "Storage failed to open fd");
+    }
+    (void) close(fd);
+    if (ret == 0)
+        ret = krb5_store_data(sp, d);
+    krb5_free_address(context, &a);
+    /*
+     * krb5_storage_free() currently always returns 0, but for FDs it sets
+     * errno to whatever close() set it to if it failed.
+     */
+    errno = 0;
+    if (ret == 0)
+        ret = krb5_storage_free(sp);
+    else
+        (void) krb5_storage_free(sp);
+    if (ret == 0 && errno)
+        ret = errno;
+
+    return ret;
+}
+
+KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
+kdc_request_set_attribute(kdc_request_t r, kdc_object_t key, kdc_object_t value)
+{
+    return heim_dict_set_value(r->attributes, key, value);
+}
+
+KDC_LIB_FUNCTION kdc_object_t KDC_LIB_CALL
+kdc_request_get_attribute(kdc_request_t r, kdc_object_t key)
+{
+    return heim_dict_get_value(r->attributes, key);
+}
+
+KDC_LIB_FUNCTION kdc_object_t KDC_LIB_CALL
+kdc_request_copy_attribute(kdc_request_t r, kdc_object_t key)
+{
+    return heim_dict_copy_value(r->attributes, key);
+}
+
+KDC_LIB_FUNCTION void KDC_LIB_CALL
+kdc_request_delete_attribute(kdc_request_t r, kdc_object_t key)
+{
+    heim_dict_delete_key(r->attributes, key);
 }

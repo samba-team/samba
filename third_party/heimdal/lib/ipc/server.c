@@ -1014,15 +1014,12 @@ process_loop(void)
 	for (n = 0 ; n < num_fds; n++) {
 	    if (clients[n] == NULL)
 		continue;
-	    if (fds[n].revents & POLLERR) {
-		clients[n]->flags |= WAITING_CLOSE;
-		continue;
-	    }
-
 	    if (fds[n].revents & POLLIN)
 		handle_read(clients[n]);
 	    if (fds[n].revents & POLLOUT)
 		handle_write(clients[n]);
+	    if (fds[n].revents & POLLERR)
+		clients[n]->flags |= WAITING_CLOSE;
 	}
 
 	n = 0;
@@ -1055,11 +1052,15 @@ heim_sipc_stream_listener(int fd, int type,
 			  heim_ipc_callback callback,
 			  void *user, heim_sipc *ctx)
 {
-    heim_sipc ct = calloc(1, sizeof(*ct));
+    heim_sipc ct;
     struct client *c;
 
     if ((type & HEIM_SIPC_TYPE_IPC) && (type & (HEIM_SIPC_TYPE_UINT32|HEIM_SIPC_TYPE_HTTP)))
 	return EINVAL;
+
+    ct = calloc(1, sizeof(*ct));
+    if (ct == NULL)
+	return ENOMEM;
 
     switch (type) {
     case HEIM_SIPC_TYPE_IPC:
@@ -1111,7 +1112,7 @@ heim_sipc_service_unix(const char *service,
 #ifdef LOCAL_CREDS
     {
 	int one = 1;
-	setsockopt(fd, 0, LOCAL_CREDS, (void *)&one, sizeof(one));
+	(void) setsockopt(fd, 0, LOCAL_CREDS, (void *)&one, sizeof(one));
     }
 #endif
 

@@ -65,17 +65,17 @@ set_random_password (krb5_principal principal, int keepold)
 {
     krb5_error_code ret;
     char pw[128];
+    char *princ_name;
 
-    random_password (pw, sizeof(pw));
+    ret = krb5_unparse_name(context, principal, &princ_name);
+    if (ret)
+	return ret;
+
+    random_password(pw, sizeof(pw));
     ret = kadm5_chpass_principal_3(kadm_handle, principal, keepold, 0, NULL, pw);
-    if (ret == 0) {
-	char *princ_name;
-
-	krb5_unparse_name(context, principal, &princ_name);
-
+    if (ret == 0)
 	printf ("%s's password set to \"%s\"\n", princ_name, pw);
-	free (princ_name);
-    }
+    free(princ_name);
     memset_s(pw, sizeof(pw), 0, sizeof(pw));
     return ret;
 }

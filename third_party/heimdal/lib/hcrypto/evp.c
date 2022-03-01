@@ -485,17 +485,20 @@ EVP_md2(void) HC_DEPRECATED_CRYPTO
  *
  */
 
-static void
+static int
 null_Init (void *m)
 {
+    return 1;
 }
-static void
+static int
 null_Update (void *m, const void * data, size_t size)
 {
+    return 1;
 }
-static void
+static int
 null_Final(void *res, void *m)
 {
+    return 1;
 }
 
 /**

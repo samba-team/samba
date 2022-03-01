@@ -115,7 +115,7 @@ kadm5_s_setkey_principal_3(void *server_handle,
 			   krb5_keyblock *keyblocks, int n_keys)
 {
     kadm5_server_context *context = server_handle;
-    hdb_entry_ex ent;
+    hdb_entry ent;
     kadm5_ret_t ret = 0;
     size_t i;
 
@@ -154,9 +154,9 @@ kadm5_s_setkey_principal_3(void *server_handle,
     }
 
     if (keepold) {
-        ret = hdb_add_current_keys_to_history(context->context, &ent.entry);
+        ret = hdb_add_current_keys_to_history(context->context, &ent);
     } else
-	ret = hdb_clear_extension(context->context, &ent.entry,
+	ret = hdb_clear_extension(context->context, &ent,
 				  choice_HDB_extension_data_hist_keys);
 
     /*
@@ -167,7 +167,7 @@ kadm5_s_setkey_principal_3(void *server_handle,
      * each ks_tuple's enctype matches the corresponding key enctype.
      */
     if (ret == 0) {
-	free_Keys(&ent.entry.keys);
+	free_Keys(&ent.keys);
 	for (i = 0; i < n_keys; ++i) {
 	    Key k;
 	    Salt s;
@@ -186,22 +186,22 @@ kadm5_s_setkey_principal_3(void *server_handle,
 		s.opaque = 0;
 		k.salt = &s;
 	    }
-	    if ((ret = add_Keys(&ent.entry.keys, &k)) != 0)
+	    if ((ret = add_Keys(&ent.keys, &k)) != 0)
 		break;
 	}
     }
 
     if (ret == 0) {
-	ent.entry.kvno++;
-	ent.entry.flags.require_pwchange = 0;
-	hdb_entry_set_pw_change_time(context->context, &ent.entry, 0);
-	hdb_entry_clear_password(context->context, &ent.entry);
+	ent.kvno++;
+	ent.flags.require_pwchange = 0;
+	hdb_entry_set_pw_change_time(context->context, &ent, 0);
+	hdb_entry_clear_password(context->context, &ent);
 
 	if ((ret = hdb_seal_keys(context->context, context->db,
-				 &ent.entry)) == 0
-	    && (ret = _kadm5_set_modifier(context, &ent.entry)) == 0
-	    && (ret = _kadm5_bump_pw_expire(context, &ent.entry)) == 0)
-	    ret = kadm5_log_modify(context, &ent.entry,
+				 &ent)) == 0
+	    && (ret = _kadm5_set_modifier(context, &ent)) == 0
+	    && (ret = _kadm5_bump_pw_expire(context, &ent)) == 0)
+	    ret = kadm5_log_modify(context, &ent,
                                    KADM5_ATTRIBUTES | KADM5_PRINCIPAL |
                                    KADM5_MOD_NAME | KADM5_MOD_TIME |
                                    KADM5_KEY_DATA | KADM5_KVNO |
@@ -212,7 +212,7 @@ kadm5_s_setkey_principal_3(void *server_handle,
 				 princ, keepold, n_ks_tuple, ks_tuple,
 				 n_keys, keyblocks);
 
-    hdb_free_entry(context->context, &ent);
+    hdb_free_entry(context->context, context->db, &ent);
     (void) kadm5_log_end(context);
     if (!context->keep_open)
 	context->db->hdb_close(context->context, context->db);

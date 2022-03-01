@@ -214,7 +214,7 @@ main(int argc, char **argv)
             err(1, "Could not read stdin");
     } else {
         void *d;
-        if ((ret = rk_undumpdata(argv[0], &d, &bufsz)))
+        if ((errno = rk_undumpdata(argv[0], &d, &bufsz)))
             err(1, "Could not read %s", argv[0]);
         buflen = bufsz;
         buf = d;
@@ -241,7 +241,7 @@ main(int argc, char **argv)
         if (fwrite(d, ret, 1, stdout) != 1)
             err(1, "Could not write decoded data");
         free(d);
-    } else {
+    } else if (buf) { /* buf can be NULL if we read from an empty file */
         char *e;
 
         if ((ret = rk_base64_encode(buf, buflen, &e)) < 0)

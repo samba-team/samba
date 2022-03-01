@@ -45,14 +45,16 @@ kadm5_s_init_with_context(krb5_context context,
 			  void **server_handle)
 {
     kadm5_ret_t ret;
-    kadm5_server_context *ctx;
+    kadm5_server_context *ctx = NULL;
     char *dbname;
     char *stash_file;
 
     *server_handle = NULL;
     ret = _kadm5_s_init_context(&ctx, realm_params, context);
-    if (ret)
+    if (ret) {
+        kadm5_s_destroy(ctx);
 	return ret;
+    }
 
     if (realm_params->mask & KADM5_CONFIG_DBNAME)
 	dbname = realm_params->dbname;

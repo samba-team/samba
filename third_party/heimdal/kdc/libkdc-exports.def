@@ -6,8 +6,9 @@ EXPORTS
 	kdc_log_msg
 	kdc_log_msg_va
 	kdc_openlog
+	kdc_check_flags
 	kdc_validate_token
-	krb5_kdc_windc_init
+	krb5_kdc_plugin_init
 	krb5_kdc_get_config
 	krb5_kdc_pkinit_config
 	krb5_kdc_set_dbinfo
@@ -16,8 +17,80 @@ EXPORTS
 	krb5_kdc_save_request
 	krb5_kdc_update_time
 	krb5_kdc_pk_initialize
-	_kdc_audit_addkv
-	_kdc_audit_addreason
-	_kdc_audit_vaddkv
-	_kdc_audit_vaddreason
+	kdc_request_set_attribute
+	kdc_request_get_attribute
+	kdc_request_copy_attribute
+	kdc_request_delete_attribute
+	kdc_request_add_encrypted_padata
+	kdc_request_add_pac_buffer
+	kdc_request_add_reply_padata
+	kdc_request_get_addr
+	kdc_request_get_canon_client_princ
+	kdc_request_get_client
+	kdc_request_get_clientdb
+	kdc_request_get_client_princ
+	kdc_request_get_context
+	kdc_request_get_config
+	kdc_request_get_cname
+	kdc_request_get_error_code
+	kdc_request_get_from
+	kdc_request_get_krbtgt
+	kdc_request_get_krbtgtdb
+	kdc_request_get_krbtgt_princ
+	kdc_request_get_pac
+	kdc_request_get_pac_attributes
+	kdc_request_get_rep
+	kdc_request_get_reply_key
+	kdc_request_get_req
+	kdc_request_get_request
+	kdc_request_get_server
+	kdc_request_get_serverdb
+	kdc_request_get_server_princ
+	kdc_request_get_sname
+	kdc_request_get_ticket
+	kdc_request_get_tv_end
+	kdc_request_get_tv_start
+	kdc_request_set_canon_client_princ
+	kdc_request_set_client_princ
+	kdc_request_set_cname
+	kdc_request_set_error_code
+	kdc_request_set_krbtgt_princ
+	kdc_request_set_pac
+	kdc_request_set_pac_attributes
+	kdc_request_set_rep
+	kdc_request_set_reply_key
+	kdc_request_set_server_princ
+	kdc_request_set_sname
+	kdc_audit_addkv
+	kdc_audit_addkv_number
+	kdc_audit_addkv_object
+	kdc_audit_addkv_timediff
+	kdc_audit_addaddrs
+	kdc_audit_addreason
+	kdc_audit_getkv
+	kdc_audit_setkv_bool
+	kdc_audit_setkv_number
+	kdc_audit_setkv_object
+	kdc_audit_vaddkv
+	kdc_audit_vaddreason
 	_kdc_audit_trail
+
+	kdc_object_alloc
+	kdc_object_retain
+	kdc_object_release
+	kdc_bool_create
+	kdc_bool_get_value
+	kdc_array_iterate
+	kdc_array_get_length
+	kdc_array_get_value
+	kdc_array_copy_value
+	kdc_string_create
+	kdc_string_get_utf8
+	kdc_data_create
+	kdc_data_get_data
+	kdc_number_create
+	kdc_number_get_value
+
+	; needed for digest-service
+	_kdc_db_fetch
+	_kdc_free_ent

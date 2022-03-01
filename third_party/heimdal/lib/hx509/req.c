@@ -518,14 +518,13 @@ get_exts(hx509_context context,
          const hx509_request req,
          Extensions *exts)
 {
-    uint64_t ku_num;
     size_t size;
     int ret = 0;
 
     exts->val = NULL;
     exts->len = 0;
 
-    if ((ku_num = KeyUsage2int(req->ku))) {
+    if (KeyUsage2int(req->ku)) {
         Extension e;
 
         memset(&e, 0, sizeof(e));
@@ -718,6 +717,7 @@ hx509_request_to_pkcs10(hx509_context context,
 	abort();
 
     free_CertificationRequest(&r);
+    free_Extensions(&exts);
     return ret;
 }
 
@@ -899,9 +899,9 @@ hx509_request_parse_der(hx509_context context,
 
 out:
     free_CertificationRequest(&r);
+    free_Extensions(&exts);
     if (ret)
         hx509_request_free(req);
-    free_CertificationRequest(&r);
     return ret;
 }
 
@@ -1046,7 +1046,7 @@ authorize_feat(hx509_request req, abitstring a, size_t n, int idx)
     switch (ret) {
     case 0:
         req->nauthorized++;
-        /*fallthrough*/
+        fallthrough;
     case -1:
         return 0;
     default:
@@ -1063,7 +1063,7 @@ reject_feat(hx509_request req, abitstring a, size_t n, int idx)
     switch (ret) {
     case 0:
         req->nauthorized--;
-        /*fallthrough*/
+        fallthrough;
     case -1:
         return 0;
     default:
@@ -1245,7 +1245,7 @@ san_map_type(GeneralName *san)
             if (der_heim_oid_cmp(&san->u.otherName.type_id, map[i].oid) == 0)
                 return map[i].type;
     }
-        /*fallthrough*/
+        fallthrough;
     default:                               return HX509_SAN_TYPE_UNSUPPORTED;
     }
 }
@@ -1360,14 +1360,13 @@ hx509_request_get_san(hx509_request req,
     case HX509_SAN_TYPE_REGISTERED_ID:
         return der_print_heim_oid(&san->u.registeredID, '.', out);
     case HX509_SAN_TYPE_XMPP:
-        /*fallthrough*/
+        fallthrough;
     case HX509_SAN_TYPE_MS_UPN: {
         int ret;
 
         ret = _hx509_unparse_utf8_string_name(req->context, &pool,
                                               &san->u.otherName.value);
-        if (ret == 0 &&
-            (*out = rk_strpoolcollect(pool)) == NULL)
+        if ((*out = rk_strpoolcollect(pool)) == NULL)
             return hx509_enomem(req->context);
         return ret;
     }
@@ -1376,10 +1375,9 @@ hx509_request_get_san(hx509_request req,
 
         ret = _hx509_unparse_KRB5PrincipalName(req->context, &pool,
                                                &san->u.otherName.value);
-        if (ret == 0 &&
-            (*out = rk_strpoolcollect(pool)) == NULL)
+        if ((*out = rk_strpoolcollect(pool)) == NULL)
             return hx509_enomem(req->context);
-        return 0;
+        return ret;
     }
     default:
         *type = HX509_SAN_TYPE_UNSUPPORTED;

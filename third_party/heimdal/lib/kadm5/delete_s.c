@@ -92,7 +92,7 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
 {
     kadm5_server_context *context = server_handle;
     kadm5_ret_t ret;
-    hdb_entry_ex ent;
+    hdb_entry ent;
 
     memset(&ent, 0, sizeof(ent));
     if (!context->keep_open) {
@@ -112,7 +112,7 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
                                       0, &ent);
     if (ret == HDB_ERR_NOENTRY)
 	goto out2;
-    if (ent.entry.flags.immutable) {
+    if (ent.flags.immutable) {
 	ret = KADM5_PROTECT_PRINCIPAL;
 	goto out3;
     }
@@ -121,7 +121,7 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
     if (ret)
 	goto out3;
 
-    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
+    ret = hdb_seal_keys(context->context, context->db, &ent);
     if (ret)
 	goto out3;
 
@@ -131,7 +131,7 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
     (void) delete_principal_hook(context, KADM5_HOOK_STAGE_POSTCOMMIT, ret, princ);
 
  out3:
-    hdb_free_entry(context->context, &ent);
+    hdb_free_entry(context->context, context->db, &ent);
  out2:
     (void) kadm5_log_end(context);
  out:

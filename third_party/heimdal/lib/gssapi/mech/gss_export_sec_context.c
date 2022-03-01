@@ -72,6 +72,10 @@ gss_export_sec_context(OM_uint32 *minor_status,
             verflags |= EXPORT_CONTEXT_FLAG_MECH_CTX;
 
         kret = krb5_store_uint8(sp, verflags);
+        if (kret) {
+            *minor_status = kret;
+            goto failure;
+        }
 
         if (ctx->gc_target_len) {
             _gss_mg_log(10, "gss-esc: exporting partial token %zu/%zu",

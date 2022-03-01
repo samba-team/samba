@@ -84,7 +84,7 @@ static int open_file(const char *, int , int, int *, heim_error_t *);
 static int read_json(const char *, heim_object_t *, heim_error_t *);
 static struct heim_db_type json_dbt;
 
-static void db_dealloc(void *ptr);
+static void HEIM_CALLCONV db_dealloc(void *ptr);
 
 struct heim_type_data db_object = {
     HEIM_TID_DB,
@@ -150,7 +150,7 @@ db_init_plugins_once(void *arg)
     db_plugins = heim_retain(arg);
 }
 
-static void
+static void HEIM_CALLCONV
 plugin_dealloc(void *arg)
 {
     db_plugin plug = arg;
@@ -242,7 +242,7 @@ heim_db_register(const char *dbtype,
     return ret;
 }
 
-static void
+static void HEIM_CALLCONV
 db_dealloc(void *arg)
 {
     heim_db_t db = arg;
@@ -577,7 +577,7 @@ heim_db_commit(heim_db_t db, heim_error_t *error)
 	goto done;
     }
 
-    if (db->options == NULL)
+    if (db->options)
 	journal_fname = heim_dict_get_value(db->options, HSTR("journal-filename"));
 
     if (journal_fname != NULL) {
@@ -1144,21 +1144,15 @@ enomem:
 static
 heim_data_t from_base64(heim_string_t s, heim_error_t *error)
 {
+    ssize_t len = -1;
     void *buf;
-    size_t len;
     heim_data_t d;
 
     buf = malloc(strlen(heim_string_get_utf8(s)));
-    if (buf == NULL)
-	goto enomem;
-
-    len = rk_base64_decode(heim_string_get_utf8(s), buf);
-    d = heim_data_ref_create(buf, len, free);
-    if (d == NULL)
-	goto enomem;
-    return d;
-
-enomem:
+    if (buf)
+        len = rk_base64_decode(heim_string_get_utf8(s), buf);
+    if (len > -1 && (d = heim_data_ref_create(buf, len, free)))
+        return d;
     free(buf);
     if (error)
 	*error = heim_error_create_enomem();

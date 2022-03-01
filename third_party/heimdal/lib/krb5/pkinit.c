@@ -114,6 +114,14 @@ select_dh_group(krb5_context context, DH *dh, unsigned long bits,
 {
     const struct krb5_dh_moduli *m;
 
+    if (moduli[0] == NULL) {
+        krb5_set_error_message(context, EINVAL,
+                               N_("Did not find a DH group parameter "
+                                  "matching requirement of %lu bits", ""),
+                               bits);
+        return EINVAL;
+    }
+
     if (bits == 0) {
 	m = moduli[1]; /* XXX */
 	if (m == NULL)
@@ -1198,11 +1206,13 @@ pk_rd_pa_reply_enckey(krb5_context context,
 			 &contentType,
 			 &unwrapped,
 			 &host);
+    if (ret == 0) {
+        krb5_data_free(&content);
+        ret = krb5_data_copy(&content, unwrapped.data, unwrapped.length);
+        der_free_octet_string(&unwrapped);
+    }
     if (ret)
 	goto out;
-    krb5_data_free(&content);
-    ret = krb5_data_copy(&content, unwrapped.data, unwrapped.length);
-    der_free_octet_string(&unwrapped);
 
     heim_assert(host || (ctx->id->flags & PKINIT_NO_KDC_ANCHOR),
 		"KDC signature must be verified unless PKINIT_NO_KDC_ANCHOR set");
@@ -1831,7 +1841,7 @@ _krb5_pk_set_user_id(krb5_context context,
 	ret = der_print_hex_heim_integer(&i, &sn);
 	der_free_heim_integer(&i);
 	if (ret) {
-	    free(name);
+	    free(str);
 	    goto out;
 	}
 
@@ -1857,7 +1867,7 @@ _krb5_pk_load_id(krb5_context context,
 {
     struct krb5_pk_identity *id = NULL;
     struct prompter p;
-    int ret;
+    krb5_error_code ret;
 
     *ret_id = NULL;
 
@@ -2100,7 +2110,6 @@ _krb5_parse_moduli_line(krb5_context context,
         m1->q.length = 0;
         m1->q.data = 0;
         krb5_clear_error_message(context);
-	ret = 0;
     }
 
     *m = m1;

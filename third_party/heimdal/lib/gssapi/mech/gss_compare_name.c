@@ -44,7 +44,15 @@ gss_compare_name(OM_uint32 *minor_status,
 	 * names have one. Otherwise, try to find common mechanism
 	 * names and compare them.
 	 */
-	if (name1->gn_value.value && name2->gn_value.value) {
+       if (name1->gn_value.value && name2->gn_value.value &&
+	    name1->gn_type == GSS_C_NO_OID && name2->gn_type == GSS_C_NO_OID) {
+	    *name_equal =
+		name1->gn_value.length == name2->gn_value.length &&
+		memcmp(name1->gn_value.value, name2->gn_value.value,
+		       name1->gn_value.length) == 0;
+	} else if (name1->gn_value.value && name2->gn_value.value &&
+		   name1->gn_type != GSS_C_NO_OID &&
+		   name2->gn_type != GSS_C_NO_OID) {
 		*name_equal = 1;
 		/* RFC 2743: anonymous names always compare false */
 		if (gss_oid_equal(name1->gn_type, GSS_C_NT_ANONYMOUS) ||

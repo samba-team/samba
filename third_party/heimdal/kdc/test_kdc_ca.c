@@ -137,8 +137,9 @@ main(int argc, char **argv)
             if (ret == 0)
                 hx509_request_authorize_san(req, i);
         }
-        if (ret == HX509_NO_ITEM)
-            ret = 0;
+        if (ret && ret != HX509_NO_ITEM)
+            krb5_err(context, 1, ret,
+                     "Failed to mark requested extensions authorized");
     } else if ((ret = kdc_authorize_csr(context, app_string, req, p))) {
         krb5_err(context, 1, ret,
                  "Requested certificate extensions rejected by policy");

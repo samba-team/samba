@@ -37,6 +37,7 @@
 #include <com_err.h>
 #include <vis.h>
 #include <vis-extras.h>
+#include <heimbase.h>
 
 #ifndef ENOTSUP
 /* Very old MSVC CRTs don't have ENOTSUP */
@@ -774,6 +775,7 @@ _asn1_decode(const struct asn1_template *t, unsigned flags,
                 return ret;
             break;
         }
+	case A1_OP_TYPE_DECORATE_EXTERN: break;
 	case A1_OP_TYPE_DECORATE: break;
         case A1_OP_NAME: break;
 	case A1_OP_DEFVAL:
@@ -829,6 +831,8 @@ _asn1_decode(const struct asn1_template *t, unsigned flags,
 	    if (ret) {
 		if (t->tt & A1_FLAG_OPTIONAL) {
 		} else if (t->tt & A1_FLAG_DEFAULT) {
+                    if (!tdefval)
+                        return ASN1_PARSE_ERROR; /* Can't happen */
                     /*
                      * Defaulted field not present in encoding, presumably,
                      * though we should really look more carefully at `ret'.
@@ -895,6 +899,8 @@ _asn1_decode(const struct asn1_template *t, unsigned flags,
                     data = olddata;
 		    break;
                 } else if (t->tt & A1_FLAG_DEFAULT) {
+                    if (!tdefval)
+                        return ASN1_PARSE_ERROR; /* Can't happen */
                     /*
                      * Defaulted field not present in encoding, presumably,
                      * though we should really look more carefully at `ret'.
@@ -1418,6 +1424,7 @@ _asn1_encode(const struct asn1_template *t, unsigned char *p, size_t len, const 
         }
         case A1_OP_NAME: break;
 	case A1_OP_DEFVAL: break;
+	case A1_OP_TYPE_DECORATE_EXTERN: break;
 	case A1_OP_TYPE_DECORATE: break;
 	case A1_OP_TYPE:
 	case A1_OP_TYPE_EXTERN: {
@@ -1583,10 +1590,9 @@ _asn1_encode(const struct asn1_template *t, unsigned char *p, size_t len, const 
                 }
                 if (ret == 0) {
                     /* Copy the encoding where it belongs */
-                    len -= l; p -= l;
                     psave -= (datalen + l - oldtaglen);
                     lensave -= (datalen + l - oldtaglen);
-                    memcpy(psave + 1, p + 1, datalen + l - oldtaglen);
+                    memcpy(psave + 1, p + 1 - l, datalen + l - oldtaglen);
                     p = psave;
                     len = lensave;
                 }
@@ -1828,7 +1834,7 @@ _asn1_length_open_type_id(const struct asn1_template *t,
                           const void *data)
 {
     struct asn1_template pretend[2] = {
-        { 0, 0, ((void*)1) },
+	{ 0, 0, ((void*)(uintptr_t)1) },
     };
     pretend[1] = *t;
     while ((t->tt & A1_OP_MASK) == A1_OP_TAG)
@@ -1895,8 +1901,6 @@ _asn1_length_open_type(const struct asn1_template *tbase,
         break;
     default: return 0;
     }
-    if (!typeid_is_int && !typeid_is_oid)
-        return 0;
     if (!(t->tt & A1_OS_OT_IS_ARRAY)) {
         struct heim_base_data *os = DPO(data, topentype->offset);
 
@@ -1994,6 +1998,7 @@ _asn1_length(const struct asn1_template *t, const void *data)
         }
         case A1_OP_NAME: break;
 	case A1_OP_DEFVAL: break;
+	case A1_OP_TYPE_DECORATE_EXTERN: break;
 	case A1_OP_TYPE_DECORATE: break;
 	case A1_OP_TYPE:
 	case A1_OP_TYPE_EXTERN: {
@@ -2256,6 +2261,7 @@ _asn1_free(const struct asn1_template *t, void *data)
         }
         case A1_OP_NAME: break;
 	case A1_OP_DEFVAL: break;
+	case A1_OP_TYPE_DECORATE_EXTERN:
 	case A1_OP_TYPE_DECORATE:
 	case A1_OP_TYPE:
 	case A1_OP_TYPE_EXTERN: {
@@ -2270,9 +2276,17 @@ _asn1_free(const struct asn1_template *t, void *data)
 
 	    if ((t->tt & A1_OP_MASK) == A1_OP_TYPE || (t->tt & A1_OP_MASK) == A1_OP_TYPE_DECORATE) {
 		_asn1_free(t->ptr, el);
-	    } else {
+	    } else if ((t->tt & A1_OP_MASK) == A1_OP_TYPE_EXTERN) {
 		const struct asn1_type_func *f = t->ptr;
 		(f->release)(el);
+	    } else {
+                /* A1_OP_TYPE_DECORATE_EXTERN */
+		const struct asn1_type_func *f = t->ptr;
+
+                if (f && f->release)
+                    (f->release)(el);
+                else if (f)
+                    memset(el, 0, f->size);
 	    }
 	    if (t->tt & A1_FLAG_OPTIONAL) {
 		free(el);
@@ -2432,9 +2446,9 @@ _asn1_print_open_type(const struct asn1_template *t, /* object set template */
             if (s)
                 r = rk_strpoolprintf(r, ",%s\"_%s\":%s",
                                      indents ? indents : "", opentype_name, s);
-            free(indents);
             free(s);
         }
+	free(indents);
         return r;
     }
 
@@ -2450,8 +2464,7 @@ _asn1_print_open_type(const struct asn1_template *t, /* object set template */
                          opentype_name);
     free(indents);
     indents = getindent(flags, indent + 1);
-    if (indents)
-        r = rk_strpoolprintf(r, "%s", indents ? indents : "");
+    r = rk_strpoolprintf(r, "%s", indents ? indents : "");
     for (i = 0; r && i < len; i++) {
         struct rk_strpool *r2 = NULL;
         char *s = NULL;;
@@ -2545,6 +2558,7 @@ _asn1_print(const struct asn1_template *t,
             break;
         case A1_OP_NAME: break;
 	case A1_OP_DEFVAL: break;
+	case A1_OP_TYPE_DECORATE_EXTERN: break;
 	case A1_OP_TYPE_DECORATE: break; /* We could probably print this though */
 	case A1_OP_TYPE:
 	case A1_OP_TYPE_EXTERN: {
@@ -2816,7 +2830,7 @@ _asn1_copy_open_type(const struct asn1_template *t, /* object set template */
     *dtop = NULL;
     if ((valto = calloc(len, sizeof(valto[0]))) == NULL)
         ret = ENOMEM;
-    for (i = 0, len = *lenfromp; ret == 0 && i < len; (*lentop)++, i++) {
+    for (i = 0, len = *lenfromp; ret == 0 && i < len; i++) {
         if (valfrom[i] == NULL) {
             valto[i] = NULL;
             continue;
@@ -2825,17 +2839,19 @@ _asn1_copy_open_type(const struct asn1_template *t, /* object set template */
             ret = ENOMEM;
         else
             ret = _asn1_copy(tactual_type->ptr, valfrom[i], valto[i]);
+        (*lentop)++;
     }
 
-    for (i = 0; ret && i < len; i++) {
+    for (i = 0; ret && i < (*lentop); i++) {
         if (valto[i]) {
             _asn1_free(tactual_type->ptr, valto[i]);
             free(valto[i]);
         }
     }
-    if (ret)
+    if (ret) {
         free(valto);
-    else
+        *lentop = 0;
+    } else
         *dtop = valto;
     return ret;
 }
@@ -2863,6 +2879,7 @@ _asn1_copy(const struct asn1_template *t, const void *from, void *to)
         }
         case A1_OP_NAME: break;
 	case A1_OP_DEFVAL: break;
+	case A1_OP_TYPE_DECORATE_EXTERN:
 	case A1_OP_TYPE_DECORATE:
 	case A1_OP_TYPE:
 	case A1_OP_TYPE_EXTERN: {
@@ -2871,7 +2888,8 @@ _asn1_copy(const struct asn1_template *t, const void *from, void *to)
 	    void **ptel = (void **)tel;
 	    size_t size;
 
-	    if ((t->tt & A1_OP_MASK) == A1_OP_TYPE) {
+	    if ((t->tt & A1_OP_MASK) == A1_OP_TYPE ||
+                (t->tt & A1_OP_MASK) == A1_OP_TYPE_DECORATE) {
 		size = _asn1_sizeofType(t->ptr);
 	    } else {
 		const struct asn1_type_func *f = t->ptr;
@@ -2892,9 +2910,17 @@ _asn1_copy(const struct asn1_template *t, const void *from, void *to)
 	    if ((t->tt & A1_OP_MASK) == A1_OP_TYPE ||
                 (t->tt & A1_OP_MASK) == A1_OP_TYPE_DECORATE) {
 		ret = _asn1_copy(t->ptr, fel, tel);
+	    } else if ((t->tt & A1_OP_MASK) == A1_OP_TYPE_EXTERN) {
+		const struct asn1_type_func *f = t->ptr;
+                ret = (f->copy)(fel, tel);
 	    } else {
 		const struct asn1_type_func *f = t->ptr;
-		ret = (f->copy)(fel, tel);
+
+                /* A1_OP_TYPE_DECORATE_EXTERN */
+                if (f && f->copy)
+                    ret = (f->copy)(fel, tel);
+                else if (f)
+                    memset(tel, 0, f->size);
 	    }
 
 	    if (ret) {

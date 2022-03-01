@@ -514,7 +514,7 @@ krb5_cc_get_subsidiary(krb5_context context, krb5_ccache id)
     const char *name = NULL;
 
     if (id->ops->version >= KRB5_CC_OPS_VERSION_5
-	&& id->ops->get_name_2 == NULL)
+	&& id->ops->get_name_2 != NULL)
         (void) id->ops->get_name_2(context, id, NULL, NULL, &name);
     return name;
 }
@@ -822,6 +822,17 @@ krb5_cc_configured_default_name(krb5_context context)
     return context->configured_default_cc_name = expanded;
 }
 
+KRB5_LIB_FUNCTION char * KRB5_LIB_CALL
+krb5_cccol_get_default_ccname(krb5_context context)
+{
+    const char *cfg = get_default_cc_type(context, 1);
+    char *cccol_default_ccname;
+    const krb5_cc_ops *ops = krb5_cc_get_prefix_ops(context, cfg);
+
+    (void) (*ops->get_default_name)(context, &cccol_default_ccname);
+    return cccol_default_ccname;
+}
+
 /**
  * Open the default ccache in `id'.
  *
@@ -923,7 +934,7 @@ krb5_cc_destroy(krb5_context context,
     /*
      * Destroy associated hx509 PKIX credential store created by krb5_kx509*().
      */
-    if ((ret = krb5_cc_get_config(context, id, NULL, "kx509store", &d)) == 0) {
+    if (krb5_cc_get_config(context, id, NULL, "kx509store", &d) == 0) {
         char *name;
 
         if ((name = strndup(d.data, d.length)) == NULL) {
@@ -1001,7 +1012,6 @@ krb5_cc_close(krb5_context context,
                 _krb5_debug(context, 2, "failed to fetch a certificate");
             else
                 _krb5_debug(context, 2, "fetched a certificate");
-            ret = 0;
         }
     }
 
@@ -1607,8 +1617,7 @@ krb5_cc_cache_match (krb5_context context,
     } else if (cache == NULL) {
 	char *str;
 
-	krb5_unparse_name(context, client, &str);
-
+	(void) krb5_unparse_name(context, client, &str);
 	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
 			       N_("Principal %s not found in any "
 				  "credential cache", ""),
@@ -1653,7 +1662,8 @@ krb5_cc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
         ret = (*to->ops->move)(context, from, to);
         if (ret == 0)
             return 0;
-        if (ret != EXDEV && ret != ENOTSUP)
+        if (ret != EXDEV && ret != ENOTSUP && ret != KRB5_CC_NOSUPP &&
+            ret != KRB5_FCC_INTERNAL)
             return ret;
         /* Fallback to high-level copy */
     }   /* Else        high-level copy */
@@ -1766,7 +1776,8 @@ krb5_cc_set_config(krb5_context context, krb5_ccache id,
 
     /* Remove old configuration */
     ret = krb5_cc_remove_cred(context, id, 0, &cred);
-    if (ret && ret != KRB5_CC_NOTFOUND)
+    if (ret && ret != KRB5_CC_NOTFOUND && ret != KRB5_CC_NOSUPP &&
+        ret != KRB5_FCC_INTERNAL)
         goto out;
 
     if (data) {

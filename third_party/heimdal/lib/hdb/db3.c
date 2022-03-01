@@ -136,7 +136,7 @@ DB_unlock(krb5_context context, HDB *db)
 
 static krb5_error_code
 DB_seq(krb5_context context, HDB *db,
-       unsigned flags, hdb_entry_ex *entry, int flag)
+       unsigned flags, hdb_entry *entry, int flag)
 {
     DBT key, value;
     DBC *dbcp = db->hdb_dbc;
@@ -156,21 +156,21 @@ DB_seq(krb5_context context, HDB *db,
     data.data = value.data;
     data.length = value.size;
     memset(entry, 0, sizeof(*entry));
-    if (hdb_value2entry(context, &data, &entry->entry))
+    if (hdb_value2entry(context, &data, entry))
 	return DB_seq(context, db, flags, entry, DB_NEXT);
     if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {
-	code = hdb_unseal_keys (context, db, &entry->entry);
+	code = hdb_unseal_keys (context, db, entry);
 	if (code)
-	    hdb_free_entry (context, entry);
+	    hdb_free_entry (context, db, entry);
     }
-    if (entry->entry.principal == NULL) {
-	entry->entry.principal = malloc(sizeof(*entry->entry.principal));
-	if (entry->entry.principal == NULL) {
-	    hdb_free_entry (context, entry);
+    if (entry->principal == NULL) {
+	entry->principal = malloc(sizeof(*entry->principal));
+	if (entry->principal == NULL) {
+	    hdb_free_entry (context, db, entry);
 	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	} else {
-	    hdb_key2principal(context, &key_data, entry->entry.principal);
+	    hdb_key2principal(context, &key_data, entry->principal);
 	}
     }
     return 0;
@@ -178,14 +178,14 @@ DB_seq(krb5_context context, HDB *db,
 
 
 static krb5_error_code
-DB_firstkey(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+DB_firstkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
     return DB_seq(context, db, flags, entry, DB_FIRST);
 }
 
 
 static krb5_error_code
-DB_nextkey(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+DB_nextkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
     return DB_seq(context, db, flags, entry, DB_NEXT);
 }

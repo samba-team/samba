@@ -99,7 +99,7 @@ ${kadmin} check ${R3} || exit 1
 echo foo > ${objdir}/foopassword
 
 echo "Starting kdc" ; > messages.log
-${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
 trap "kill -9 ${kdcpid}; echo signal killing kdc; exit 1;" EXIT

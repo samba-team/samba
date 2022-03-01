@@ -69,11 +69,9 @@ typedef struct krb5plugin_gss_preauth_authorizer_ftable_desc {
                                                    gss_const_OID,       /*mech_type*/
                                                    OM_uint32,           /*ret_flags*/
                                                    krb5_boolean *,      /*authorized*/
-                                                   krb5_principal *,    /*mapped_name*/
-                                                   krb5_data *);        /*pac_data*/
+                                                   krb5_principal *);	/*mapped_name*/
     krb5_error_code     (KRB5_LIB_CALL *finalize_pac)(void *,           /*plug_ctx*/
-                                                      astgs_request_t,  /*r*/
-                                                      krb5_data *);     /*pac_data*/
+                                                      astgs_request_t); /*r*/
 } krb5plugin_gss_preauth_authorizer_ftable;
 
 #endif /* HEIMDAL_KDC_GSS_PREAUTH_AUTHORIZER_PLUGIN_H */

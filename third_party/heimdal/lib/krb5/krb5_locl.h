@@ -87,8 +87,10 @@ struct mbuf;
 
 #ifdef LIBINTL
 #include <libintl.h>
+#undef N_
 #define N_(x,y) dgettext(HEIMDAL_TEXTDOMAIN, x)
 #else
+#undef N_
 #define N_(x,y) (x)
 #define bindtextdomain(package, localedir)
 #endif

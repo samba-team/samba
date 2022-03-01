@@ -50,7 +50,7 @@ get_cred_kdc_capath(krb5_context, krb5_kdc_flags,
 
 static krb5_error_code
 make_pa_tgs_req(krb5_context context,
-		krb5_auth_context ac,
+		krb5_auth_context *ac,
 		KDC_REQ_BODY *body,
 		krb5_ccache ccache,
 		krb5_creds *creds,
@@ -71,7 +71,7 @@ make_pa_tgs_req(krb5_context context,
 
     in_data.length = len;
     in_data.data   = buf;
-    ret = _krb5_mk_req_internal(context, &ac, 0, &in_data,
+    ret = _krb5_mk_req_internal(context, ac, 0, &in_data,
 				creds, tgs_req,
 				KRB5_KU_TGS_REQ_AUTH_CKSUM,
 				KRB5_KU_TGS_REQ_AUTH);
@@ -114,19 +114,20 @@ set_auth_data (krb5_context context,
 	    req_body->enc_authorization_data = NULL;
 	    return ret;
 	}
-	krb5_encrypt_EncryptedData(context,
-				   crypto,
-				   KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY,
-				   buf,
-				   len,
-				   0,
-				   req_body->enc_authorization_data);
+        ret = krb5_encrypt_EncryptedData(context,
+                                         crypto,
+                                         KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY,
+                                         buf,
+                                         len,
+                                         0,
+                                         req_body->enc_authorization_data);
 	free (buf);
 	krb5_crypto_destroy(context, crypto);
+        return ret;
     } else {
 	req_body->enc_authorization_data = NULL;
+        return 0;
     }
-    return 0;
 }
 
 /*
@@ -286,7 +287,7 @@ init_tgs_req (krb5_context context,
     }
 
     ret = make_pa_tgs_req(context,
-			  ac,
+			  &ac,
 			  &t->req_body,
 			  ccache,
 			  krbtgt,
@@ -516,7 +517,7 @@ get_cred_kdc(krb5_context context,
     TGS_REQ req;
     krb5_data enc;
     krb5_data resp;
-    krb5_kdc_rep rep = {0};
+    krb5_kdc_rep rep;
     krb5_error_code ret;
     unsigned nonce;
     krb5_keyblock *subkey = NULL;
@@ -524,6 +525,7 @@ get_cred_kdc(krb5_context context,
     Ticket second_ticket_data;
     METHOD_DATA padata;
 
+    memset(&rep, 0, sizeof(rep));
     krb5_data_zero(&resp);
     krb5_data_zero(&enc);
     padata.val = NULL;
@@ -777,7 +779,9 @@ get_cred_kdc_address(krb5_context context,
 				"no-addresses", FALSE, &noaddr);
 
 	if (!noaddr) {
-	    krb5_get_all_client_addrs(context, &addresses);
+	    ret = krb5_get_all_client_addrs(context, &addresses);
+            if (ret)
+                return ret;
 	    /* XXX this sucks. */
 	    addrs = &addresses;
 	    if(addresses.len == 0)
@@ -1375,6 +1379,8 @@ _krb5_get_cred_kdc_any(krb5_context context,
     krb5_deltat offset;
     krb5_data data;
 
+    krb5_data_zero(&data);
+
     /*
      * If we are using LKDC, lets pull out the addreses from the
      * ticket and use that.
@@ -1382,23 +1388,19 @@ _krb5_get_cred_kdc_any(krb5_context context,
     
     ret = krb5_cc_get_config(context, ccache, NULL, "lkdc-hostname", &data);
     if (ret == 0) {
-	kdc_hostname = malloc(data.length + 1);
-	if (kdc_hostname == NULL)
-	    return krb5_enomem(context);
-	
-	memcpy(kdc_hostname, data.data, data.length);
-	kdc_hostname[data.length] = '\0';
+	if ((kdc_hostname = strndup(data.data, data.length)) == NULL) {
+            ret = krb5_enomem(context);
+            goto out;
+        }
 	krb5_data_free(&data);
     }
 
     ret = krb5_cc_get_config(context, ccache, NULL, "sitename", &data);
     if (ret == 0) {
-	sitename = malloc(data.length + 1);
-	if (sitename == NULL)
-	    return krb5_enomem(context);
-
-	memcpy(sitename, data.data, data.length);
-	sitename[data.length] = '\0';
+	if ((sitename = strndup(data.data, data.length)) == NULL) {
+	    ret = krb5_enomem(context);
+            goto out;
+        }
 	krb5_data_free(&data);
     }
 
@@ -1441,9 +1443,9 @@ _krb5_get_cred_kdc_any(krb5_context context,
                                 out_creds);
     
 out:
+    krb5_data_free(&data);
     free(kdc_hostname);
     free(sitename);
-
     return ret;
 }
 

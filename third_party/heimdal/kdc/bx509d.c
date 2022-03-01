@@ -112,6 +112,22 @@
 #define heim_pconfig krb5_context
 #include <heimbase-svc.h>
 
+#if MHD_VERSION < 0x00097002 || defined(MHD_YES)
+/* libmicrohttpd changed these from int valued macros to an enum in 0.9.71 */
+#ifdef MHD_YES
+#undef MHD_YES
+#undef MHD_NO
+#endif
+enum MHD_Result { MHD_NO = 0, MHD_YES = 1 };
+#define MHD_YES 1
+#define MHD_NO 0
+typedef int heim_mhd_result;
+#else
+typedef enum MHD_Result heim_mhd_result;
+#endif
+
+enum k5_creds_kind { K5_CREDS_EPHEMERAL, K5_CREDS_CACHED };
+
 typedef struct bx509_request_desc {
     HEIM_SVC_REQUEST_DESC_COMMON_ELEMENTS;
 
@@ -122,6 +138,7 @@ typedef struct bx509_request_desc {
     const char *for_cname;
     const char *target;
     const char *redir;
+    enum k5_creds_kind cckind;
     char *pkix_store;
     char *ccname;
     char *freeme1;
@@ -485,8 +502,8 @@ bad_reqv(struct bx509_request_desc *r,
     char *formatted = NULL;
     char *msg = NULL;
 
-    heim_audit_addkv((heim_svc_req_desc)r, 0, "http-status-code", "%d",
-                     http_status_code);
+    heim_audit_setkv_number((heim_svc_req_desc)r, "http-status-code",
+			    http_status_code);
     (void) gettimeofday(&r->tv_end, NULL);
     if (code == ENOMEM) {
         if (r->context)
@@ -511,7 +528,7 @@ bad_reqv(struct bx509_request_desc *r,
         msg = formatted;
         formatted = NULL;
     }
-    heim_audit_addreason((heim_svc_req_desc)r, "%s", formatted);
+    heim_audit_addreason((heim_svc_req_desc)r, "%s", msg);
     audit_trail(r, code);
     krb5_free_error_message(context, k5msg);
 
@@ -606,10 +623,20 @@ static krb5_error_code
 good_bx509(struct bx509_request_desc *r)
 {
     krb5_error_code ret;
+    const char *fn;
     size_t bodylen;
     void *body;
 
-    ret = rk_undumpdata(strchr(r->pkix_store, ':') + 1, &body, &bodylen);
+    /*
+     * This `fn' thing is just to quiet linters that think "hey, strchr() can
+     * return NULL so...", but here we've build `r->pkix_store' and know it has
+     * a ':'.
+     */
+    if (r->pkix_store == NULL)
+        return bad_503(r, EINVAL, "Internal error"); /* Quiet warnings */
+    fn = strchr(r->pkix_store, ':');
+    fn = fn ? fn + 1 : r->pkix_store;
+    ret = rk_undumpdata(fn, &body, &bodylen);
     if (ret)
         return bad_503(r, ret, "Could not recover issued certificate "
                        "from PKIX store");
@@ -621,7 +648,7 @@ good_bx509(struct bx509_request_desc *r)
     return ret;
 }
 
-static int
+static heim_mhd_result
 bx509_param_cb(void *d,
                enum MHD_ValueKind kind,
                const char *key,
@@ -633,53 +660,53 @@ bx509_param_cb(void *d,
     if (strcmp(key, "eku") == 0 && val) {
         heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS, "requested_eku",
                          "%s", val);
-        r->ret = der_parse_heim_oid(val, ".", &oid);
-        if (r->ret == 0)
-            r->ret = hx509_request_add_eku(r->context->hx509ctx, r->req, &oid);
+        r->error_code = der_parse_heim_oid(val, ".", &oid);
+        if (r->error_code == 0)
+            r->error_code = hx509_request_add_eku(r->context->hx509ctx, r->req, &oid);
         der_free_oid(&oid);
     } else if (strcmp(key, "dNSName") == 0 && val) {
         heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
                          "requested_dNSName", "%s", val);
-        r->ret = hx509_request_add_dns_name(r->context->hx509ctx, r->req, val);
+        r->error_code = hx509_request_add_dns_name(r->context->hx509ctx, r->req, val);
     } else if (strcmp(key, "rfc822Name") == 0 && val) {
         heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
                          "requested_rfc822Name", "%s", val);
-        r->ret = hx509_request_add_email(r->context->hx509ctx, r->req, val);
+        r->error_code = hx509_request_add_email(r->context->hx509ctx, r->req, val);
     } else if (strcmp(key, "xMPPName") == 0 && val) {
         heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
                          "requested_xMPPName", "%s", val);
-        r->ret = hx509_request_add_xmpp_name(r->context->hx509ctx, r->req,
+        r->error_code = hx509_request_add_xmpp_name(r->context->hx509ctx, r->req,
                                              val);
     } else if (strcmp(key, "krb5PrincipalName") == 0 && val) {
         heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
                          "requested_krb5PrincipalName", "%s", val);
-        r->ret = hx509_request_add_pkinit(r->context->hx509ctx, r->req,
+        r->error_code = hx509_request_add_pkinit(r->context->hx509ctx, r->req,
                                           val);
     } else if (strcmp(key, "ms-upn") == 0 && val) {
         heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
                          "requested_ms_upn", "%s", val);
-        r->ret = hx509_request_add_ms_upn_name(r->context->hx509ctx, r->req,
+        r->error_code = hx509_request_add_ms_upn_name(r->context->hx509ctx, r->req,
                                                val);
     } else if (strcmp(key, "registeredID") == 0 && val) {
         heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
                          "requested_registered_id", "%s", val);
-        r->ret = der_parse_heim_oid(val, ".", &oid);
-        if (r->ret == 0)
-            r->ret = hx509_request_add_registered(r->context->hx509ctx, r->req,
+        r->error_code = der_parse_heim_oid(val, ".", &oid);
+        if (r->error_code == 0)
+            r->error_code = hx509_request_add_registered(r->context->hx509ctx, r->req,
                                                   &oid);
         der_free_oid(&oid);
     } else if (strcmp(key, "csr") == 0 && val) {
-        heim_audit_addkv((heim_svc_req_desc)r, 0, "requested_csr", "true");
-        r->ret = 0; /* Handled upstairs */
+        heim_audit_setkv_bool((heim_svc_req_desc)r, "requested_csr", TRUE);
+        r->error_code = 0; /* Handled upstairs */
     } else if (strcmp(key, "lifetime") == 0 && val) {
         r->req_life = parse_time(val, "day");
     } else {
         /* Produce error for unknown params */
-        heim_audit_addkv((heim_svc_req_desc)r, 0, "requested_unknown", "true");
-        krb5_set_error_message(r->context, r->ret = ENOTSUP,
+        heim_audit_setkv_bool((heim_svc_req_desc)r, "requested_unknown", TRUE);
+        krb5_set_error_message(r->context, r->error_code = ENOTSUP,
                                "Query parameter %s not supported", key);
     }
-    return r->ret == 0 ? MHD_YES : MHD_NO /* Stop iterating */;
+    return r->error_code == 0 ? MHD_YES : MHD_NO /* Stop iterating */;
 }
 
 static krb5_error_code
@@ -693,10 +720,10 @@ authorize_CSR(struct bx509_request_desc *r,
     if (ret)
         return bad_req(r, ret, MHD_HTTP_SERVICE_UNAVAILABLE,
                        "Could not parse CSR");
-    r->ret = 0;
+    r->error_code = 0;
     (void) MHD_get_connection_values(r->connection, MHD_GET_ARGUMENT_KIND,
                                      bx509_param_cb, r);
-    ret = r->ret;
+    ret = r->error_code;
     if (ret)
         return bad_req(r, ret, MHD_HTTP_SERVICE_UNAVAILABLE,
                        "Could not handle query parameters");
@@ -771,6 +798,7 @@ do_CA(struct bx509_request_desc *r, const char *csr)
     /* Set CSR */
     if ((d.data = malloc(strlen(csr2))) == NULL) {
         krb5_free_principal(r->context, p);
+        free(csr2);
         return bad_enomem(r, ENOMEM);
     }
 
@@ -818,11 +846,9 @@ do_CA(struct bx509_request_desc *r, const char *csr)
 
     ret = store_certs(r->context->hx509ctx, r->pkix_store, certs, NULL);
     hx509_certs_free(&certs);
-    if (ret) {
-        (void) unlink(strchr(r->pkix_store, ':') + 1);
-        return bad_500(r, ret,
-                       "Failed convert issued certificate and chain to PEM");
-    }
+    if (ret)
+        return bad_500(r, ret, "Failed to convert issued"
+                       " certificate and chain to PEM");
     return 0;
 }
 
@@ -864,7 +890,7 @@ set_req_desc(struct MHD_Connection *connection,
     r->from = r->frombuf;
     r->tgt_addresses.len = 0;
     r->tgt_addresses.val = 0;
-    r->hcontext = r->context->hcontext;
+    r->hcontext = r->context ? r->context->hcontext : NULL;
     r->config = NULL;
     r->logf = logfac;
     r->reqtype = url;
@@ -880,8 +906,11 @@ set_req_desc(struct MHD_Connection *connection,
     r->addr = NULL;
     r->req = NULL;
     r->req_life = 0;
-    r->ret = 0;
-    r->kv = heim_array_create();
+    r->error_code = ret;
+    r->kv = heim_dict_create(10);
+    r->attributes = heim_dict_create(1);
+    if (ret == 0 && (r->kv == NULL || r->attributes == NULL))
+        r->error_code = ret = ENOMEM;
     ci = MHD_get_connection_info(connection,
                                  MHD_CONNECTION_INFO_CLIENT_ADDRESS);
     if (ci) {
@@ -905,10 +934,6 @@ set_req_desc(struct MHD_Connection *connection,
 
     }
 
-    if (ret == 0 && r->kv == NULL) {
-        krb5_log_msg(r->context, logfac, 1, NULL, "Out of memory");
-        ret = ENOMEM;
-    }
     return ret;
 }
 
@@ -917,12 +942,28 @@ clean_req_desc(struct bx509_request_desc *r)
 {
     if (!r)
         return;
-    if (r->pkix_store)
-        (void) unlink(strchr(r->pkix_store, ':') + 1);
+    if (r->pkix_store) {
+        const char *fn = strchr(r->pkix_store, ':');
+
+        /*
+         * This `fn' thing is just to quiet linters that think "hey, strchr() can
+         * return NULL so...", but here we've build `r->pkix_store' and know it has
+         * a ':'.
+         */
+        fn = fn ? fn + 1 : r->pkix_store;
+        (void) unlink(fn);
+    }
     krb5_free_addresses(r->context, &r->tgt_addresses);
     hx509_request_free(&r->req);
     heim_release(r->reason);
     heim_release(r->kv);
+    if (r->ccname && r->cckind == K5_CREDS_EPHEMERAL) {
+        const char *fn = r->ccname;
+
+        if (strncmp(fn, "FILE:", sizeof("FILE:") - 1) == 0)
+            fn += sizeof("FILE:") - 1;
+        (void) unlink(fn);
+    }
     free(r->pkix_store);
     free(r->freeme1);
     free(r->ccname);
@@ -966,6 +1007,8 @@ bx509(struct bx509_request_desc *r)
  * '~' and '.' also get encoded, and '@' does not.
  *
  * A corresponding decoder is not needed.
+ *
+ * XXX Maybe use krb5_cc_default_for()!
  */
 static size_t
 princ_fs_encode_sz(const char *in)
@@ -1045,8 +1088,10 @@ find_ccache(krb5_context context, const char *princ, char **ccname)
      */
     if ((s = princ_fs_encode(princ)) == NULL ||
         asprintf(ccname, "FILE:%s/%s.cc", cache_dir, s) == -1 ||
-        *ccname == NULL)
+        *ccname == NULL) {
+        free(s);
         return ENOMEM;
+    }
     free(s);
 
     if ((ret = krb5_cc_resolve(context, *ccname, &cc))) {
@@ -1067,13 +1112,10 @@ find_ccache(krb5_context context, const char *princ, char **ccname)
     return ret ? ret : ENOENT;
 }
 
-enum k5_creds_kind { K5_CREDS_EPHEMERAL, K5_CREDS_CACHED };
-
 static krb5_error_code
 get_ccache(struct bx509_request_desc *r, krb5_ccache *cc, int *won)
 {
     krb5_error_code ret = 0;
-    struct stat st1, st2;
     char *temp_ccname = NULL;
     const char *fn = NULL;
     time_t life;
@@ -1103,6 +1145,7 @@ get_ccache(struct bx509_request_desc *r, krb5_ccache *cc, int *won)
     if (ret == 0)
         fn = temp_ccname + sizeof("FILE:") - 1;
     if (ret == 0) do {
+        struct stat st1, st2;
         /*
          * Open and flock the temp ccache file.
          *
@@ -1115,6 +1158,8 @@ get_ccache(struct bx509_request_desc *r, krb5_ccache *cc, int *won)
             fd = -1;
         }
         errno = 0;
+        memset(&st1, 0, sizeof(st1));
+        memset(&st2, 0xff, sizeof(st2));
         if (ret == 0 &&
             ((fd = open(fn, O_RDWR | O_CREAT, 0600)) == -1 ||
              flock(fd, LOCK_EX) == -1 ||
@@ -1186,7 +1231,8 @@ do_pkinit(struct bx509_request_desc *r, enum k5_creds_kind kind)
         ret = krb5_cc_new_unique(r->context, "FILE", NULL, &temp_cc);
     }
 
-    ret = krb5_parse_name(r->context, cname, &p);
+    if (ret == 0)
+        ret = krb5_parse_name(r->context, cname, &p);
     if (ret == 0)
         crealm = krb5_principal_get_realm(r->context, p);
     if (ret == 0)
@@ -1304,7 +1350,7 @@ k5_do_CA(struct bx509_request_desc *r)
     if (ret == 0)
         ret = krb5_parse_name(r->context, cname, &p);
     if (ret == 0)
-        hx509_private_key2SPKI(r->context->hx509ctx, key, &spki);
+        ret = hx509_private_key2SPKI(r->context->hx509ctx, key, &spki);
     if (ret == 0)
         hx509_request_set_SubjectPublicKeyInfo(r->context->hx509ctx, req,
                                                &spki);
@@ -1366,6 +1412,7 @@ k5_get_creds(struct bx509_request_desc *r, enum k5_creds_kind kind)
     const char *cname = r->for_cname ? r->for_cname : r->cname;
 
     /* If we have a live ccache for `cprinc', we're done */
+    r->cckind = kind;
     if (kind == K5_CREDS_CACHED &&
         (ret = find_ccache(r->context, cname, &r->ccname)) == 0)
         return ret; /* Success */
@@ -1638,8 +1685,7 @@ bnegotiate(struct bx509_request_desc *r)
     if (ret == 0) {
         heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS, "target", "%s",
                          r->target ? r->target : "<unknown>");
-        heim_audit_addkv((heim_svc_req_desc)r, 0, "redir", "%s",
-                         r->redir ? "yes" : "no");
+        heim_audit_setkv_bool((heim_svc_req_desc)r, "redir", !!r->redir);
         ret = validate_token(r);
     }
     /* bnegotiate_get_target() and validate_token() call bad_req() */
@@ -1688,7 +1734,8 @@ authorize_TGT_REQ(struct bx509_request_desc *r)
         return 0;
 
     ret = krb5_parse_name(r->context, r->cname, &p);
-    ret = hx509_request_init(r->context->hx509ctx, &r->req);
+    if (ret == 0)
+        ret = hx509_request_init(r->context->hx509ctx, &r->req);
     if (ret)
         return bad_500(r, ret, "Out of resources");
     heim_audit_addkv((heim_svc_req_desc)r, KDC_AUDIT_VIS,
@@ -1707,7 +1754,7 @@ authorize_TGT_REQ(struct bx509_request_desc *r)
     return ret;
 }
 
-static int
+static heim_mhd_result
 get_tgt_param_cb(void *d,
                  enum MHD_ValueKind kind,
                  const char *key,
@@ -1719,15 +1766,15 @@ get_tgt_param_cb(void *d,
         if (!krb5_config_get_bool_default(r->context, NULL,
                                          FALSE,
                                          "get-tgt", "allow_addresses", NULL)) {
-            krb5_set_error_message(r->context, r->ret = ENOTSUP,
+            krb5_set_error_message(r->context, r->error_code = ENOTSUP,
                                    "Query parameter %s not allowed", key);
         } else {
             krb5_addresses addresses;
 
-            r->ret = _krb5_parse_address_no_lookup(r->context, val,
+            r->error_code = _krb5_parse_address_no_lookup(r->context, val,
                                                    &addresses);
-            if (r->ret == 0)
-                r->ret = krb5_append_addresses(r->context, &r->tgt_addresses,
+            if (r->error_code == 0)
+                r->error_code = krb5_append_addresses(r->context, &r->tgt_addresses,
                                                &addresses);
             krb5_free_addresses(r->context, &addresses);
         }
@@ -1738,11 +1785,11 @@ get_tgt_param_cb(void *d,
         r->req_life = parse_time(val, "day");
     } else {
         /* Produce error for unknown params */
-        heim_audit_addkv((heim_svc_req_desc)r, 0, "requested_unknown", "true");
-        krb5_set_error_message(r->context, r->ret = ENOTSUP,
+        heim_audit_setkv_bool((heim_svc_req_desc)r, "requested_unknown", TRUE);
+        krb5_set_error_message(r->context, r->error_code = ENOTSUP,
                                "Query parameter %s not supported", key);
     }
-    return r->ret == 0 ? MHD_YES : MHD_NO /* Stop iterating */;
+    return r->error_code == 0 ? MHD_YES : MHD_NO /* Stop iterating */;
 }
 
 /*
@@ -1772,13 +1819,14 @@ get_tgt(struct bx509_request_desc *r)
     if (ret)
         return ret;
 
-    r->ret = 0;
+    r->error_code = 0;
     (void) MHD_get_connection_values(r->connection, MHD_GET_ARGUMENT_KIND,
                                      get_tgt_param_cb, r);
-    ret = r->ret;
+    ret = r->error_code;
 
     /* k5_get_creds() calls bad_req() */
-    ret = k5_get_creds(r, K5_CREDS_EPHEMERAL);
+    if (ret == 0)
+        ret = k5_get_creds(r, K5_CREDS_EPHEMERAL);
     if (ret)
         return ret;
 
@@ -1786,10 +1834,8 @@ get_tgt(struct bx509_request_desc *r)
     if (fn == NULL)
         return bad_500(r, ret, "Impossible error");
     fn++;
-    if ((errno = rk_undumpdata(fn, &body, &bodylen))) {
-        (void) unlink(fn);
+    if ((errno = rk_undumpdata(fn, &body, &bodylen)))
         return bad_503(r, ret, "Could not get TGT");
-    }
 
     ret = resp(r, MHD_HTTP_OK, MHD_RESPMEM_MUST_COPY,
                "application/x-krb5-ccache", body, bodylen, NULL);
@@ -1811,7 +1857,7 @@ health(const char *method, struct bx509_request_desc *r)
 }
 
 /* Implements the entirety of this REST service */
-static int
+static heim_mhd_result
 route(void *cls,
       struct MHD_Connection *connection,
       const char *url,
@@ -2013,6 +2059,8 @@ main(int argc, char **argv)
 
     argc -= optidx;
     argv += optidx;
+    if (argc != 0)
+        usage(1);
 
     if ((errno = pthread_key_create(&k5ctx, k5_free_context)))
         err(1, "Could not create thread-specific storage");

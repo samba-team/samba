@@ -115,10 +115,10 @@ ${kadmin} check ${R} || exit 1
 echo u1 > ${objdir}/foopassword
 
 echo Starting kdc
-${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
-trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+trap "kill -9 ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
 
 testfailed="echo test failed; cat messages.log; exit 1"
 
@@ -244,6 +244,14 @@ for mech in krb5 krb5iov spnego spnegoiov; do
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 		{ eval "$testfailed"; }
 done
+
+echo "======test authz-data (krb5)"
+${context} --mech-type=krb5 \
+    --mutual \
+    --wrapunwrap \
+    --on-behalf-of=foo@BAR.TEST.H5L.SE \
+    --name-type=hostbased-service host@lucid.test.h5l.se ||
+    { eval "$testfailed"; }
 
 echo "======dce-style"
 for mech in krb5 krb5iov spnego; do

@@ -35,23 +35,16 @@
 
 #include <config.h>
 
+#include <roken.h>
+
 #include <krb5-types.h>
 
-#include <sys/types.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <ctype.h>
-#include <dlfcn.h>
-#include <errno.h>
 
 #include <heimbase.h>
 
 #include <gssapi_asn1.h>
 #include <der.h>
-
-#include <roken.h>
 
 #include <gssapi.h>
 #include <gssapi_mech.h>

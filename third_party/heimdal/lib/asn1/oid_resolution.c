@@ -59,19 +59,19 @@ struct sym_oid {
     { #sym, &asn1_oid_ ## sym },
 
 static const struct sym_oid sym_oids[] = {
-#include "cms_asn1_oids.x"
-#include "crmf_asn1_oids.x"
-#include "digest_asn1_oids.x"
-#include "krb5_asn1_oids.x"
-#include "kx509_asn1_oids.x"
-#include "ocsp_asn1_oids.x"
-#include "pkcs10_asn1_oids.x"
-#include "pkcs12_asn1_oids.x"
-#include "pkcs8_asn1_oids.x"
-#include "pkcs9_asn1_oids.x"
-#include "pkinit_asn1_oids.x"
-#include "rfc2459_asn1_oids.x"
-#include "rfc4108_asn1_oids.x"
+#include "cms_asn1_oids.c"
+#include "crmf_asn1_oids.c"
+#include "digest_asn1_oids.c"
+#include "krb5_asn1_oids.c"
+#include "kx509_asn1_oids.c"
+#include "ocsp_asn1_oids.c"
+#include "pkcs10_asn1_oids.c"
+#include "pkcs12_asn1_oids.c"
+#include "pkcs8_asn1_oids.c"
+#include "pkcs9_asn1_oids.c"
+#include "pkinit_asn1_oids.c"
+#include "rfc2459_asn1_oids.c"
+#include "rfc4108_asn1_oids.c"
 };
 
 static size_t num_sym_oids = sizeof(sym_oids) / sizeof(sym_oids[0]);
@@ -95,18 +95,18 @@ static size_t
 count_sym_oids(void)
 {
     size_t c = 0;
-#include "cms_asn1_oids.x"
-#include "crmf_asn1_oids.x"
-#include "digest_asn1_oids.x"
-#include "krb5_asn1_oids.x"
-#include "kx509_asn1_oids.x"
-#include "ocsp_asn1_oids.x"
-#include "pkcs10_asn1_oids.x"
-#include "pkcs12_asn1_oids.x"
-#include "pkcs8_asn1_oids.x"
-#include "pkcs9_asn1_oids.x"
-#include "pkinit_asn1_oids.x"
-#include "rfc2459_asn1_oids.x"
+#include "cms_asn1_oids.c"
+#include "crmf_asn1_oids.c"
+#include "digest_asn1_oids.c"
+#include "krb5_asn1_oids.c"
+#include "kx509_asn1_oids.c"
+#include "ocsp_asn1_oids.c"
+#include "pkcs10_asn1_oids.c"
+#include "pkcs12_asn1_oids.c"
+#include "pkcs8_asn1_oids.c"
+#include "pkcs9_asn1_oids.c"
+#include "pkinit_asn1_oids.c"
+#include "rfc2459_asn1_oids.c"
     return c;
 }
 #undef DEFINE_OID_WITH_NAME
@@ -125,18 +125,18 @@ init_sym_oids(void)
     if (!sym_oids &&
         (c = count_sym_oids()) &&
         (tmp = calloc(c, sizeof(tmp[0])))) {
-#include "cms_asn1_oids.x"
-#include "crmf_asn1_oids.x"
-#include "digest_asn1_oids.x"
-#include "krb5_asn1_oids.x"
-#include "kx509_asn1_oids.x"
-#include "ocsp_asn1_oids.x"
-#include "pkcs10_asn1_oids.x"
-#include "pkcs12_asn1_oids.x"
-#include "pkcs8_asn1_oids.x"
-#include "pkcs9_asn1_oids.x"
-#include "pkinit_asn1_oids.x"
-#include "rfc2459_asn1_oids.x"
+#include "cms_asn1_oids.c"
+#include "crmf_asn1_oids.c"
+#include "digest_asn1_oids.c"
+#include "krb5_asn1_oids.c"
+#include "kx509_asn1_oids.c"
+#include "ocsp_asn1_oids.c"
+#include "pkcs10_asn1_oids.c"
+#include "pkcs12_asn1_oids.c"
+#include "pkcs8_asn1_oids.c"
+#include "pkcs9_asn1_oids.c"
+#include "pkinit_asn1_oids.c"
+#include "rfc2459_asn1_oids.c"
         num_sym_oids = c;
         sym_oids = tmp;
     }
@@ -331,7 +331,6 @@ der_print_heim_oid_sym(const heim_oid *oid, char delim, char **strp)
         *strp = s1;
         return 0;
     }
-    p = s2 + strlen(s1) + 1;
     for (p = s2 + strlen(s1) + 1; *p; p++) {
         if (*p == '_')
             *p = '-';

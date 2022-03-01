@@ -34,7 +34,7 @@
 #include "baselocl.h"
 #include <string.h>
 
-static void
+static void HEIM_CALLCONV
 data_dealloc(void *ptr)
 {
     heim_data_t d = ptr;
@@ -61,7 +61,7 @@ data_cmp(void *a, void *b)
     return memcmp(osa->data, osb->data, osa->length);
 }
 
-static unsigned long
+static uintptr_t
 data_hash(void *ptr)
 {
     heim_octet_string *os = ptr;
@@ -69,8 +69,9 @@ data_hash(void *ptr)
 
     if (os->length < 4)
 	return os->length;
-    return s[0] | (s[1] << 8) |
-	(s[os->length - 2] << 16) | (s[os->length - 1] << 24);
+
+    return ((unsigned long)s[os->length - 1] << 24)
+	| (s[os->length - 2] << 16) | (s[1] << 8) | s[0];
 }
 
 struct heim_type_data _heim_data_object = {

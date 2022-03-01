@@ -148,7 +148,7 @@ do_ext_keytab(krb5_principal principal, void *data)
     }
     free(unparsed);
     free(keys);
-    return 0;
+    return ret;
 }
 
 int

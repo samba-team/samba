@@ -258,15 +258,16 @@ _krb5_mk_ncred(krb5_context context,
          */
 
         ret = krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
+        if (ret == 0)
+            ret = krb5_encrypt_EncryptedData(context,
+                                             crypto,
+                                             KRB5_KU_KRB_CRED,
+                                             buf,
+                                             len,
+                                             0,
+                                             &cred.enc_part);
         if (ret)
             goto out;
-        ret = krb5_encrypt_EncryptedData(context,
-                                         crypto,
-                                         KRB5_KU_KRB_CRED,
-                                         buf,
-                                         len,
-                                         0,
-                                         &cred.enc_part);
         DISOWN_BUF(buf);
         krb5_crypto_destroy(context, crypto);
     }

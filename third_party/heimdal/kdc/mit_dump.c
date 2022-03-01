@@ -146,7 +146,7 @@ mit_prop_dump(void *arg, const char *file)
     char *line = NULL;
     int lineno = 0;
     FILE *f;
-    struct hdb_entry_ex ent;
+    hdb_entry ent;
     struct prop_data *pd = arg;
     krb5_storage *sp = NULL;
     krb5_data kdb_ent;
@@ -202,14 +202,14 @@ mit_prop_dump(void *arg, const char *file)
         }
         ret = krb5_storage_to_data(sp, &kdb_ent);
         if (ret) break;
-        ret = _hdb_mdb_value2entry(pd->context, &kdb_ent, 0, &ent.entry);
+        ret = _hdb_mdb_value2entry(pd->context, &kdb_ent, 0, &ent);
         krb5_data_free(&kdb_ent);
         if (ret) {
             warnx("line: %d: failed to store; ignoring", lineno);
             continue;
         }
 	ret = v5_prop(pd->context, NULL, &ent, arg);
-        hdb_free_entry(pd->context, &ent);
+        hdb_free_entry(pd->context, NULL, &ent); /* XXX */
         if (ret) break;
     }
 

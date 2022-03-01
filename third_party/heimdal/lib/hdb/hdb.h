@@ -42,8 +42,12 @@
 
 #include <hdb_err.h>
 
+#include <heimbase-svc.h>
 #include <heim_asn1.h>
 #include <hdb_asn1.h>
+
+#define HDB_DB_FORMAT hdb_db_format
+
 typedef HDB_keyset hdb_keyset;
 typedef HDB_entry hdb_entry;
 typedef HDB_entry_alias hdb_entry_alias;
@@ -53,25 +57,26 @@ struct hdb_dbinfo;
 enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 
 /* flags for various functions */
-#define HDB_F_DECRYPT		1	/* decrypt keys */
-#define HDB_F_REPLACE		2	/* replace entry */
-#define HDB_F_GET_CLIENT	4	/* fetch client */
-#define HDB_F_GET_SERVER	8	/* fetch server */
-#define HDB_F_GET_KRBTGT	16	/* fetch krbtgt */
-#define HDB_F_GET_ANY		28	/* fetch any of client,server,krbtgt */
-#define HDB_F_CANON		32	/* want canonicalition */
-#define HDB_F_ADMIN_DATA	64	/* want data that kdc don't use  */
-#define HDB_F_KVNO_SPECIFIED	128	/* we want a particular KVNO */
-#define HDB_F_CURRENT_KVNO	256	/* we want the current KVNO */
-#define HDB_F_LIVE_CLNT_KVNOS	512	/* we want all live keys for pre-auth */
-#define HDB_F_LIVE_SVC_KVNOS	1024	/* we want all live keys for tix */
-#define HDB_F_ALL_KVNOS		2048	/* we want all the keys, live or not */
-#define HDB_F_FOR_AS_REQ	4096	/* fetch is for a AS REQ */
-#define HDB_F_FOR_TGS_REQ	8192	/* fetch is for a TGS REQ */
-#define HDB_F_PRECHECK		16384	/* check that the operation would succeed */
-#define HDB_F_DELAY_NEW_KEYS	32768	/* apply [hdb] new_service_key_delay */
-#define HDB_F_SYNTHETIC_OK	65536	/* synthetic principal for PKINIT or GSS preauth OK */
-#define HDB_F_GET_FAST_COOKIE  131072	/* fetch the FX-COOKIE key (not a normal principal) */
+#define HDB_F_DECRYPT		0x00001	/* decrypt keys */
+#define HDB_F_REPLACE		0x00002	/* replace entry */
+#define HDB_F_GET_CLIENT	0x00004	/* fetch client */
+#define HDB_F_GET_SERVER	0x00008	/* fetch server */
+#define HDB_F_GET_KRBTGT	0x00010	/* fetch krbtgt */
+#define HDB_F_GET_ANY		( HDB_F_GET_CLIENT | \
+				  HDB_F_GET_SERVER | \
+				  HDB_F_GET_KRBTGT ) /* fetch any of client,server,krbtgt */
+#define HDB_F_CANON		0x00020	/* want canonicalition */
+#define HDB_F_ADMIN_DATA	0x00040	/* want data that kdc don't use  */
+#define HDB_F_KVNO_SPECIFIED	0x00080	/* we want a particular KVNO */
+#define HDB_F_LIVE_CLNT_KVNOS	0x00200	/* we want all live keys for pre-auth */
+#define HDB_F_LIVE_SVC_KVNOS	0x00400	/* we want all live keys for tix */
+#define HDB_F_ALL_KVNOS		0x00800	/* we want all the keys, live or not */
+#define HDB_F_FOR_AS_REQ	0x01000	/* fetch is for a AS REQ */
+#define HDB_F_FOR_TGS_REQ	0x02000	/* fetch is for a TGS REQ */
+#define HDB_F_PRECHECK		0x04000	/* check that the operation would succeed */
+#define HDB_F_DELAY_NEW_KEYS	0x08000	/* apply [hdb] new_service_key_delay */
+#define HDB_F_SYNTHETIC_OK	0x10000	/* synthetic principal for PKINIT or GSS preauth OK */
+#define HDB_F_GET_FAST_COOKIE	0x20000	/* fetch the FX-COOKIE key (not a normal principal) */
 
 /* hdb_capability_flags */
 #define HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL 1
@@ -79,78 +84,15 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_CAP_F_PASSWORD_UPDATE_KEYS	4
 #define HDB_CAP_F_SHARED_DIRECTORY      8
 
-/* auth status values */
+#define heim_pcontext krb5_context
+#define heim_pconfig void *
 
-/*
- * Un-initialised value, not permitted, used to indicate that a value
- * wasn't set for the benifit of logic in the caller, must not be
- * passed to hdb_auth_status()
- */
+typedef struct hdb_request_desc {
+    HEIM_SVC_REQUEST_DESC_COMMON_ELEMENTS;
+} *hdb_request_t;
 
-#define HDB_AUTHSTATUS_INVALID                  0
-
-/*
- * A ticket was issued after authorization was successfully completed
- * (eg flags on the entry and expiry times were checked)
- */
-#define HDB_AUTHSTATUS_AUTHORIZATION_SUCCESS	1
-
-/*
- * The user supplied the wrong password to a password-based
- * authentication mechanism (eg ENC-TS, ENC-CHAL)
- *
- * The HDB backend might increment a bad password count.
- */
-#define HDB_AUTHSTATUS_WRONG_PASSWORD		2
-
-/*
- * The user supplied a correct password to a password-based
- * authentication mechanism (eg ENC-TS, ENC-CHAL)
- *
- * The HDB backend might reset a bad password count.
- */
-#define HDB_AUTHSTATUS_CORRECT_PASSWORD	        3
-
-/*
- * Attempted authenticaton with an unknown user
- */
-#define HDB_AUTHSTATUS_CLIENT_UNKNOWN	        4
-
-/*
- * Attempted authenticaton with an known user that is already locked
- * out.
- */
-#define HDB_AUTHSTATUS_CLIENT_LOCKED_OUT	5
-
-/*
- * Successful authentication with a pre-authentication mechanism
- */
-#define HDB_AUTHSTATUS_GENERIC_SUCCESS	        6
-
-/*
- * Failed authentication with a pre-authentication mechanism
- */
-#define HDB_AUTHSTATUS_GENERIC_FAILURE	        7
-
-/*
- * Successful pre-authentication with PKINIT (smart card login etc)
- */
-#define HDB_AUTHSTATUS_PKINIT_SUCCESS	        8
-
-/*
- * Failed pre-authentication with PKINIT (smart card login etc)
- */
-#define HDB_AUTHSTATUS_PKINIT_FAILURE	        9
-
-/*
- * Successful pre-authentication with GSS pre-authentication
- */
-#define HDB_AUTHSTATUS_GSS_SUCCESS		10
-
-/*
- * Failed pre-authentication with GSS pre-authentication
- */
-#define HDB_AUTHSTATUS_GSS_FAILURE		11
+#undef heim_pcontext
+#undef heim_pconfig
 
 /* key usage for master key */
 #define HDB_KU_MKEY	0x484442
@@ -162,20 +104,6 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_WK_NAMESPACE "HOSTBASED-NAMESPACE"
 
 typedef struct hdb_master_key_data *hdb_master_key;
-
-/**
- * hdb_entry_ex is a wrapper structure around the hdb_entry structure
- * that allows backends to keep a pointer to the backing store, ie in
- * ->hdb_fetch_kvno(), so that we the kadmin/kpasswd backend gets around to
- * ->hdb_store(), the backend doesn't need to lookup the entry again.
- */
-
-typedef struct hdb_entry_ex {
-    void *ctx;
-    hdb_entry entry;
-    void (*free_entry)(krb5_context, struct hdb_entry_ex *);
-} hdb_entry_ex;
-
 
 /**
  * HDB backend function pointer structure
@@ -226,9 +154,9 @@ typedef struct HDB {
      */
     krb5_error_code (*hdb_close)(krb5_context, struct HDB*);
     /**
-     * Free an entry after use.
+     * Free backend-specific entry context.
      */
-    void	    (*hdb_free)(krb5_context, struct HDB*, hdb_entry_ex*);
+    void	    (*hdb_free_entry_context)(krb5_context, struct HDB*, hdb_entry*);
     /**
      * Fetch an entry from the backend
      *
@@ -238,12 +166,12 @@ typedef struct HDB {
      */
     krb5_error_code (*hdb_fetch_kvno)(krb5_context, struct HDB*,
 				      krb5_const_principal, unsigned, krb5_kvno,
-				      hdb_entry_ex*);
+				      hdb_entry*);
     /**
      * Store an entry to database
      */
     krb5_error_code (*hdb_store)(krb5_context, struct HDB*,
-				 unsigned, hdb_entry_ex*);
+				 unsigned, hdb_entry*);
     /**
      * Remove an entry from the database.
      */
@@ -253,12 +181,12 @@ typedef struct HDB {
      * As part of iteration, fetch one entry
      */
     krb5_error_code (*hdb_firstkey)(krb5_context, struct HDB*,
-				    unsigned, hdb_entry_ex*);
+				    unsigned, hdb_entry*);
     /**
      * As part of iteration, fetch next entry
      */
     krb5_error_code (*hdb_nextkey)(krb5_context, struct HDB*,
-				   unsigned, hdb_entry_ex*);
+				   unsigned, hdb_entry*);
     /**
      * Lock database
      *
@@ -337,40 +265,35 @@ typedef struct HDB {
      * The backend needs to call _kadm5_set_keys() and perform password
      * quality checks.
      */
-    krb5_error_code (*hdb_password)(krb5_context, struct HDB*, hdb_entry_ex*, const char *, int);
+    krb5_error_code (*hdb_password)(krb5_context, struct HDB*, hdb_entry*, const char *, int);
 
     /**
-     * Auth feedback
+     * Authentication auditing. Note that this function is called by
+     * both the AS and TGS, but currently only the AS sets the auth
+     * event type. This may change in a future version.
      *
-     * This is a feedback call that allows backends that provides
-     * lockout functionality to register failure and/or successes.
+     * Event details are available by querying the request using
+     * heim_audit_getkv(HDB_REQUEST_KV_...).
      *
      * In case the entry is locked out, the backend should set the
      * hdb_entry.flags.locked-out flag.
      */
-    krb5_error_code (*hdb_auth_status)(krb5_context,
-				       struct HDB *,
-				       hdb_entry_ex *,
-				       const struct timeval *start_time,
-				       const struct sockaddr *from_addr,
-				       const char *original_client_name,
-				       int auth_type,
-				       const char *auth_details,
-				       const char *pa_type);
+    krb5_error_code (*hdb_audit)(krb5_context, struct HDB *, hdb_entry *, hdb_request_t);
+
     /**
      * Check if delegation is allowed.
      */
-    krb5_error_code (*hdb_check_constrained_delegation)(krb5_context, struct HDB *, hdb_entry_ex *, krb5_const_principal);
+    krb5_error_code (*hdb_check_constrained_delegation)(krb5_context, struct HDB *, hdb_entry *, krb5_const_principal);
 
     /**
      * Check if this name is an alias for the supplied client for PKINIT userPrinicpalName logins
      */
-    krb5_error_code (*hdb_check_pkinit_ms_upn_match)(krb5_context, struct HDB *, hdb_entry_ex *, krb5_const_principal);
+    krb5_error_code (*hdb_check_pkinit_ms_upn_match)(krb5_context, struct HDB *, hdb_entry *, krb5_const_principal);
 
     /**
      * Check if s4u2self is allowed from this client to this server or the SPN is a valid SPN of this client (for user2user)
      */
-    krb5_error_code (*hdb_check_client_matches_target_service)(krb5_context, struct HDB *, hdb_entry_ex *, hdb_entry_ex *);
+    krb5_error_code (*hdb_check_client_matches_target_service)(krb5_context, struct HDB *, hdb_entry *, hdb_entry *);
 
     /**
      * Enable/disable synchronous updates
@@ -405,7 +328,7 @@ struct hdb_print_entry_arg {
 };
 
 typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
-					      hdb_entry_ex*, void*);
+					      hdb_entry*, void*);
 extern krb5_kt_ops hdb_kt_ops;
 extern krb5_kt_ops hdb_get_kt_ops;
 

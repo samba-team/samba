@@ -177,6 +177,8 @@ _kadm5_set_keys2(kadm5_server_context *context,
 	    /* A current key; add to current key set */
 	    setup_Key(&key, &salt, key_data, i);
 	    ret = add_Keys(&keys, &key);
+            if (ret)
+                goto out;
 	    continue;
 	}
 

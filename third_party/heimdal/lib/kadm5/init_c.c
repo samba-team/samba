@@ -427,12 +427,15 @@ _kadm5_c_get_cred_cache(krb5_context context,
                 user = roken_get_username(userbuf, sizeof(userbuf));
 	    if (user == NULL) {
 		krb5_set_error_message(context, KADM5_FAILURE, "Unable to find local user name");
+		krb5_free_principal(context, client);
 		return KADM5_FAILURE;
 	    }
 	    ret = krb5_make_principal(context, &default_client,
 				      NULL, user, "admin", NULL);
-	    if(ret)
+	    if (ret) {
+		krb5_free_principal(context, client);
 		return ret;
+	    }
 	}
     }
 
@@ -509,9 +512,9 @@ kadm_connect(kadm5_client_context *ctx)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    snprintf(portstr, sizeof(portstr), "%u", ntohs(ctx->kadmind_port));
+    snprintf(portstr, sizeof(portstr), "%u", ntohs(kadmin_port));
 
-    hostname = ctx->admin_server;
+    hostname = admin_server;
     slash = strchr(hostname, '/');
     if (slash != NULL)
 	hostname = slash + 1;
@@ -530,6 +533,7 @@ kadm_connect(kadm5_client_context *ctx)
 	if (connect(s, a->ai_addr, a->ai_addrlen) < 0) {
 	    krb5_warn(context, errno, "connect(%s)", hostname);
 	    rk_closesocket(s);
+	    s = rk_INVALID_SOCKET;
 	    continue;
 	}
 	break;
@@ -640,7 +644,7 @@ kadm5_c_init_with_context(krb5_context context,
 			  void **server_handle)
 {
     kadm5_ret_t ret;
-    kadm5_client_context *ctx;
+    kadm5_client_context *ctx = NULL;
     krb5_ccache cc;
 
     ret = _kadm5_c_init_context(&ctx, realm_params, context);

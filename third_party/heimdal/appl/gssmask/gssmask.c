@@ -951,7 +951,9 @@ HandleOP(WrapExt)
     memcpy(p, iov[4].buffer.value, iov[4].buffer.length);
     p += iov[4].buffer.length;
     memcpy(p, iov[5].buffer.value, iov[5].buffer.length);
+#if 0 /* Would be needed to keep going, but presently unused */
     p += iov[5].buffer.length;
+#endif
 
     gss_release_iov_buffer(NULL, iov, iov_len);
 

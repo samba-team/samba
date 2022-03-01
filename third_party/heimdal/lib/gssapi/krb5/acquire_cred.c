@@ -203,7 +203,8 @@ acquire_cred_with_password(OM_uint32 *minor_status,
 {
     OM_uint32 ret = GSS_S_FAILURE;
     krb5_creds cred;
-    krb5_get_init_creds_opt *opt;
+    krb5_init_creds_context ctx = NULL;
+    krb5_get_init_creds_opt *opt = NULL;
     krb5_ccache ccache = NULL;
     krb5_error_code kret;
     time_t now;
@@ -236,13 +237,19 @@ acquire_cred_with_password(OM_uint32 *minor_status,
         if (kret)
             goto end;
     }
-    kret = krb5_get_init_creds_opt_alloc(context, &opt);
-    if (kret)
-        goto end;
-
     realm = krb5_principal_get_realm(context, handle->principal);
 
-    krb5_get_init_creds_opt_set_default_flags(context, "gss_krb5", realm, opt);
+    kret = krb5_get_init_creds_opt_alloc(context, &opt);
+    if (kret == 0) {
+        krb5_get_init_creds_opt_set_default_flags(context, "gss_krb5", realm,
+                                                  opt);
+        kret = krb5_init_creds_init(context, handle->principal, NULL, NULL, 0,
+                                    opt, &ctx);
+    }
+    if (kret == 0)
+        kret = _krb5_init_creds_set_fast_anon_pkinit_optimistic(context, ctx);
+    if (kret == 0)
+        kret = krb5_init_creds_set_password(context, ctx, password);
 
     /*
      * Get the current time before the AS exchange so we don't
@@ -256,21 +263,18 @@ acquire_cred_with_password(OM_uint32 *minor_status,
      */
     krb5_timeofday(context, &now);
 
-    kret = krb5_get_init_creds_password(context, &cred, handle->principal,
-                                        password, NULL, NULL, 0, NULL, opt);
-    krb5_get_init_creds_opt_free(context, opt);
-    if (kret)
-        goto end;
-
-    kret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, &ccache);
-    if (kret)
-        goto end;
-
-    kret = krb5_cc_initialize(context, ccache, cred.client);
-    if (kret)
-        goto end;
-
-    kret = krb5_cc_store_cred(context, ccache, &cred);
+    if (kret == 0)
+        kret = krb5_init_creds_get(context, ctx);
+    if (kret == 0)
+        kret = krb5_init_creds_get_creds(context, ctx, &cred);
+    if (kret == 0)
+        kret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, &ccache);
+    if (kret == 0)
+        kret = krb5_cc_initialize(context, ccache, cred.client);
+    if (kret == 0)
+        kret = krb5_init_creds_store(context, ctx, ccache);
+    if (kret == 0)
+        kret = krb5_cc_store_cred(context, ccache, &cred);
     if (kret)
         goto end;
 
@@ -284,14 +288,16 @@ acquire_cred_with_password(OM_uint32 *minor_status,
     handle->ccache = ccache;
     ccache = NULL;
     ret = GSS_S_COMPLETE;
-    kret = 0;
 
 end:
+    krb5_get_init_creds_opt_free(context, opt);
+    if (ctx)
+        krb5_init_creds_free(context, ctx);
     if (ccache != NULL)
         krb5_cc_destroy(context, ccache);
     if (cred.client != NULL)
 	krb5_free_cred_contents(context, &cred);
-    if (ret != GSS_S_COMPLETE && kret != 0)
+    if (ret != GSS_S_COMPLETE)
 	*minor_status = kret;
     return (ret);
 }

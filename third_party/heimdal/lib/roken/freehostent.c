@@ -40,7 +40,7 @@
  */
 
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
-freehostent (struct hostent *h)
+rk_freehostent(struct hostent *h)
 {
     char **p;
 

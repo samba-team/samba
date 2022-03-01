@@ -133,6 +133,7 @@ time_hmac_evp(krb5_context context, size_t size, int iterations)
 
     free(buf);
     krb5_free_keyblock_contents(context, &key);
+    krb5_crypto_destroy(context, crypto);
 }
 
 static void

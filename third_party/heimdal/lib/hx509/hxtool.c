@@ -412,17 +412,19 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     size_t sz;
     void *p;
     int ret, flags = 0;
-    char *infile, *outfile = NULL;
+    const char *outfile = NULL;
+    char *infile, *freeme = NULL;
 
     memset(&contentType, 0, sizeof(contentType));
 
     infile = argv[0];
 
     if (argc < 2) {
-	ret = asprintf(&outfile, "%s.%s", infile,
+	ret = asprintf(&freeme, "%s.%s", infile,
 		       opt->pem_flag ? "pem" : "cms-signeddata");
-	if (ret == -1 || outfile == NULL)
+	if (ret == -1 || freeme == NULL)
 	    errx(1, "out of memory");
+        outfile = freeme;
     } else
 	outfile = argv[1];
 
@@ -549,6 +551,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 
     hx509_certs_free(&signer);
     free(o.data);
+    free(freeme);
 
     return 0;
 }
@@ -843,6 +846,7 @@ pcert_validate(struct validate_options *opt, int argc, char **argv)
 	hx509_certs_iter_f(context, certs, validate_f, ctx);
 	hx509_certs_free(&certs);
 	argv++;
+        free(sn);
     }
     hx509_validate_ctx_free(ctx);
 
@@ -1263,6 +1267,7 @@ revoke_print(struct revoke_print_options *opt, int argc, char **argv)
     if (ret)
 	warnx("hx509_revoke_print: %d", ret);
 
+    hx509_revoke_free(&revoke_ctx);
     return ret;
 }
 
@@ -1363,7 +1368,7 @@ get_key(const char *fn, const char *type, int optbits,
     int ret = 0;
 
     if (type) {
-        struct hx509_generate_private_context *gen_ctx;
+        struct hx509_generate_private_context *gen_ctx = NULL;
 
 	if (strcasecmp(type, "rsa") != 0)
 	    errx(1, "can only handle rsa keys for now");
@@ -1375,6 +1380,7 @@ get_key(const char *fn, const char *type, int optbits,
             ret = _hx509_generate_private_key_bits(context, gen_ctx, optbits);
         if (ret == 0)
             ret = _hx509_generate_private_key(context, gen_ctx, signer);
+        _hx509_generate_private_key_free(&gen_ctx);
         if (ret)
             hx509_err(context, 1, ret, "failed to generate private key of type %s", type);
 
@@ -1420,6 +1426,7 @@ generate_key(struct generate_key_options *opt, int argc, char **argv)
     const char *type = opt->type_string ? opt->type_string : "rsa";
     int bits = opt->key_bits_integer ? opt->key_bits_integer : 2048;
 
+    memset(&signer, 0, sizeof(signer));
     get_key(argv[0], type, bits, &signer);
     hx509_private_key_free(&signer);
     return 0;
@@ -1436,6 +1443,7 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     const char *outfile = argv[0];
 
     memset(&key, 0, sizeof(key));
+    memset(&signer, 0, sizeof(signer));
 
     get_key(opt->key_string,
 	    opt->generate_key_string,
@@ -2416,6 +2424,7 @@ test_crypto(struct test_crypto_options *opt, int argc, char ** argv)
 	hx509_err(context, 1, ret, "hx509_cert_iter");
 
     hx509_certs_free(&certs);
+    hx509_verify_destroy_ctx(vctx);
 
     return 0;
 }
@@ -2507,6 +2516,7 @@ crl_sign(struct crl_sign_options *opt, int argc, char **argv)
 	    ret = hx509_certs_append(context, revoked, lock, sn);
 	    if (ret)
 		hx509_err(context, 1, ret, "hx509_certs_append: %s", sn);
+            free(sn);
 	}
 
 	hx509_crl_add_revoked_certs(context, crl, revoked);
@@ -2775,9 +2785,12 @@ acert1_kus(struct acert_options *opt,
     size_t unwanted = 0;
     size_t wanted = opt->has_ku_strings.num_strings;
     size_t i, k, sz;
+    int ret;
 
     memset(&ku, 0, sizeof(ku));
-    decode_KeyUsage(e->extnValue.data, e->extnValue.length, &ku, &sz);
+    ret = decode_KeyUsage(e->extnValue.data, e->extnValue.length, &ku, &sz);
+    if (ret)
+        return ret;
     ku_num = KeyUsage2int(ku);
 
     /* Validate requested key usage values */
@@ -2983,7 +2996,7 @@ acert1(struct acert_options *opt, size_t cert_num, hx509_cert cert, int *matched
     ekus_wanted = opt->has_eku_strings.num_strings;
     kus_wanted = opt->has_ku_strings.num_strings;
     wanted = sans_wanted + ekus_wanted + kus_wanted;
-    found = sans_found = ekus_found = kus_found = 0;
+    sans_found = ekus_found = kus_found = 0;
 
     if (e == NULL) {
         if (wanted)
@@ -3080,6 +3093,8 @@ acert(struct acert_options *opt, int argc, char **argv)
             ret = acert1(opt, n++, cert, &matched);
             if (matched)
                 break;
+            hx509_cert_free(cert);
+            cert = NULL;
         }
         if (cursor)
             (void) hx509_certs_end_seq(context, certs, cursor);
@@ -3093,6 +3108,7 @@ acert(struct acert_options *opt, int argc, char **argv)
     if (ret)
         hx509_err(context, 1, ret, "Matching certificate did not meet "
                   "requirements");
+    hx509_cert_free(cert);
     free(sn);
     return 0;
 }

@@ -1438,6 +1438,7 @@ kadm5_ad_init_with_password_ctx(krb5_context context,
 	ret = ad_get_cred(ctx, NULL);
     if(ret) {
 	kadm5_ad_destroy(ctx);
+	free(ctx);
 	return ret;
     }
 
@@ -1445,6 +1446,7 @@ kadm5_ad_init_with_password_ctx(krb5_context context,
     ret = _kadm5_ad_connect(ctx);
     if (ret) {
 	kadm5_ad_destroy(ctx);
+	free(ctx);
 	return ret;
     }
 #endif

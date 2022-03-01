@@ -168,12 +168,12 @@ typedef long heim_base_once_t; /* XXX arch dependant */
 #endif
 
 
-void *	heim_retain(heim_object_t);
+heim_object_t	heim_retain(heim_object_t);
 void	heim_release(heim_object_t);
 
 void	heim_show(heim_object_t);
 
-typedef void (*heim_type_dealloc)(void *);
+typedef void (HEIM_CALLCONV *heim_type_dealloc)(void *);
 
 void *
 heim_alloc(size_t size, const char *name, heim_type_dealloc dealloc);
@@ -184,7 +184,7 @@ heim_get_tid(heim_object_t object);
 int
 heim_cmp(heim_object_t a, heim_object_t b);
 
-unsigned long
+uintptr_t
 heim_get_hash(heim_object_t ptr);
 
 void
@@ -436,9 +436,10 @@ void    heim_db_iterate(heim_db_t, heim_string_t,
 
 typedef struct heim_number_data *heim_number_t;
 
-heim_number_t heim_number_create(int);
+heim_number_t heim_number_create(int64_t);
 heim_tid_t heim_number_get_type_id(void);
 int heim_number_get_int(heim_number_t);
+int64_t heim_number_get_long(heim_number_t);
 
 /*
  *

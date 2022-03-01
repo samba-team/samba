@@ -40,7 +40,7 @@
  */
 
 ROKEN_LIB_FUNCTION struct hostent * ROKEN_LIB_CALL
-copyhostent (const struct hostent *h)
+rk_copyhostent(const struct hostent *h)
 {
     struct hostent *res;
     char **p;
@@ -96,4 +96,3 @@ copyhostent (const struct hostent *h)
     }
     return res;
 }
-

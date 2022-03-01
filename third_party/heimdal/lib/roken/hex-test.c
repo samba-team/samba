@@ -43,7 +43,7 @@ main(int argc, char **argv)
     int numtest = 1;
     struct test {
 	void *data;
-	size_t len;
+	ssize_t len;
 	const char *result;
     } *t, tests[] = {
 	{ "", 0 , "" },
@@ -55,26 +55,35 @@ main(int argc, char **argv)
 	{ "abcdef", 6, "616263646566" },
 	{ "abcdefg", 7, "61626364656667" },
 	{ "=", 1, "3D" },
+        /* Embedded NUL, non-ASCII / binary */
+	{ "\0\x01\x1a\xad\xf1\xff", 6, "00011AADF1FF" },
+        /* Invalid encodings */
+	{ "", -1, "00.11AADF1FF" },
+	{ "", -1, "000x1AADF1FF" },
+	{ "", -1, "00011?ADF1FF" },
 	{ NULL, 0, NULL }
     };
     for(t = tests; t->data; t++) {
+	ssize_t len;
 	char *str;
-	int len;
-	len = hex_encode(t->data, t->len, &str);
-	if(strcmp(str, t->result) != 0) {
-	    fprintf(stderr, "failed test %d: %s != %s\n", numtest,
-		    str, t->result);
-	    numerr++;
-	}
-	free(str);
+
+        if (t->len > -1) {
+            (void) hex_encode(t->data, t->len, &str);
+            if (strcmp(str, t->result) != 0) {
+                fprintf(stderr, "failed test %d: %s != %s\n", numtest,
+                        str, t->result);
+                numerr++;
+            }
+            free(str);
+        }
 	str = strdup(t->result);
 	len = strlen(str);
 	len = hex_decode(t->result, str, len);
-	if(len != t->len) {
-	    fprintf(stderr, "failed test %d: len %lu != %lu\n", numtest,
-		    (unsigned long)len, (unsigned long)t->len);
+	if (len != t->len) {
+	    fprintf(stderr, "failed test %d: len %lu != %ld\n", numtest,
+		    (long)len, (long)t->len);
 	    numerr++;
-	} else if(memcmp(str, t->data, t->len) != 0) {
+	} else if (t->len > -1 && memcmp(str, t->data, t->len) != 0) {
 	    fprintf(stderr, "failed test %d: data\n", numtest);
 	    numerr++;
 	}

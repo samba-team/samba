@@ -2,9 +2,12 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+WFLAGS += $(WFLAGS_ENUM_CONV)
+
 AUTOMAKE_OPTIONS = subdir-objects
 
 AM_CPPFLAGS += \
+	-I$(top_srcdir)/lib \
 	-I$(srcdir)/../krb5 \
 	-I$(srcdir) \
 	-I$(srcdir)/gssapi \
@@ -59,6 +62,7 @@ krb5src = \
 	krb5/inquire_mechs_for_name.c \
 	krb5/inquire_names_for_mech.c \
 	krb5/inquire_sec_context_by_oid.c \
+	krb5/name_attrs.c \
 	krb5/pname_to_uid.c \
 	krb5/process_context_token.c \
 	krb5/prf.c \
@@ -249,6 +253,7 @@ sanonsrc = \
 	sanon/process_context_token.c \
 	sanon/release_cred.c \
 	sanon/release_name.c \
+	sanon/sanon_locl.h \
 	sanon/sanon-private.h
 
 dist_libgssapi_la_SOURCES  = \
@@ -302,19 +307,20 @@ nobase_include_HEADERS = \
 gssapidir = $(includedir)/gssapi
 nodist_gssapi_HEADERS = gkrb5_err.h negoex_err.h
 
-gssapi_files = asn1_GSSAPIContextToken.x
+gssapi_files = 					\
+	asn1_GSSAPIContextToken.c
 
 spnego_files =					\
-	asn1_ContextFlags.x			\
-	asn1_MechType.x				\
-	asn1_MechTypeList.x			\
-	asn1_NegotiationToken.x			\
-	asn1_NegotiationToken2.x		\
-	asn1_NegHints.x				\
-	asn1_NegTokenInit.x			\
-	asn1_NegTokenInit2.x			\
-	asn1_NegTokenResp.x			\
-	asn1_NegStateEnum.x
+	asn1_ContextFlags.c			\
+	asn1_MechType.c				\
+	asn1_MechTypeList.c			\
+	asn1_NegHints.c				\
+	asn1_NegStateEnum.c			\
+	asn1_NegTokenInit.c			\
+	asn1_NegTokenInit2.c			\
+	asn1_NegTokenResp.c			\
+	asn1_NegotiationToken.c			\
+	asn1_NegotiationToken2.c
 
 BUILTHEADERS = \
 	$(srcdir)/krb5/gsskrb5-private.h \
@@ -327,7 +333,7 @@ $(test_context_OBJECTS): $(BUILTHEADERS)
 
 $(libgssapi_la_OBJECTS): $(srcdir)/version-script.map
 
-BUILT_SOURCES = $(spnego_files:.x=.c) $(gssapi_files:.x=.c)
+BUILT_SOURCES = $(spnego_files) $(gssapi_files)
 
 $(libgssapi_la_OBJECTS): gkrb5_err.h negoex_err.h
 gkrb5_err.h: $(srcdir)/krb5/gkrb5_err.et
@@ -337,16 +343,27 @@ CLEANFILES = $(BUILT_SOURCES) \
 	gkrb5_err.[ch] negoex_err.[ch] \
 	$(spnego_files) spnego_asn1*.h* spnego_asn1_files spnego_asn1-template.[cx] \
 	$(gssapi_files) gssapi_asn1*.h* gssapi_asn1_files gssapi_asn1-template.[cx] \
-	gss-commands.h gss-commands.c
+	gss-commands.h gss-commands.c \
+	gssapi_asn1.json gssapi_asn1_oids.c gssapi_asn1_syms.c \
+	spnego_asn1.json spnego_asn1_oids.c spnego_asn1_syms.c
 
-$(spnego_files) spnego_asn1.hx spnego_asn1-priv.hx: spnego_asn1_files
-$(gssapi_files) gssapi_asn1.hx gssapi_asn1-priv.hx: gssapi_asn1_files
+$(spnego_files) spnego_asn1.h spnego_asn1-priv.h: spnego_asn1_files
+	for genfile in '$(spnego_files)'; do \
+		$(CLANG_FORMAT) -style=$(CLANG_FORMAT_STYLE) -i $${genfile}; \
+	done
+
+$(gssapi_files) gssapi_asn1.h gssapi_asn1-priv.h: gssapi_asn1_files
+	for genfile in '$(gssapi_files)'; do \
+		$(CLANG_FORMAT) -style=$(CLANG_FORMAT_STYLE) -i $${genfile}; \
+	done
 
 spnego_asn1_files: $(ASN1_COMPILE_DEP) $(srcdir)/spnego/spnego.asn1 $(srcdir)/spnego/spnego.opt
 	$(ASN1_COMPILE) --option-file=$(srcdir)/spnego/spnego.opt $(srcdir)/spnego/spnego.asn1 spnego_asn1
+	@$(CLANG_FORMAT) -style=$(CLANG_FORMAT_STYLE) -i $$(cat spnego_asn1_files)
 
 gssapi_asn1_files: $(ASN1_COMPILE_DEP) $(srcdir)/mech/gssapi.asn1
 	$(ASN1_COMPILE) $(srcdir)/mech/gssapi.asn1 gssapi_asn1
+	@$(CLANG_FORMAT) -style=$(CLANG_FORMAT_STYLE) -i $$(cat gssapi_asn1_files)
 
 $(srcdir)/krb5/gsskrb5-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p krb5/gsskrb5-private.h $(krb5src) || rm -f krb5/gsskrb5-private.h
@@ -358,7 +375,7 @@ $(srcdir)/sanon/sanon-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p sanon/sanon-private.h $(sanonsrc) || rm -f sanon/sanon-private.h
 
 TESTS = test_oid test_names test_cfx
-# test_sequence 
+# test_sequence
 
 test_cfx_SOURCES = krb5/test_cfx.c
 
@@ -380,6 +397,9 @@ test_ntlm_LDADD = \
 LDADD = libgssapi.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_roken)
+
+test_names_LDADD = $(LDADD) $(top_builddir)/lib/asn1/libasn1.la
+test_context_LDADD = $(LDADD) $(top_builddir)/lib/asn1/libasn1.la $(top_builddir)/lib/wind/libwind.la
 
 # gss
 
@@ -441,9 +461,8 @@ $(srcdir)/gssapi/gssapi_oid.h $(srcdir)/mech/gss_oid.c:
 # NegoEx test mechanism, uses decode_GSSAPIContextToken
 #
 
-test_negoex_mech_la_SOURCES = test_negoex_mech.c $(gssapi_files:.x=.c)
+test_negoex_mech_la_SOURCES = test_negoex_mech.c $(gssapi_files)
 test_negoex_mech_la_LDFLAGS = -module
 test_negoex_mech_la_LIBADD = \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	libgssapi.la
-

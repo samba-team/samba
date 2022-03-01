@@ -40,7 +40,7 @@
 
 #include "tommath.h"
 
-static void
+static int
 BN2mpz(mp_int *s, const BIGNUM *bn)
 {
     size_t len;
@@ -49,8 +49,12 @@ BN2mpz(mp_int *s, const BIGNUM *bn)
     len = BN_num_bytes(bn);
     p = malloc(len);
     BN_bn2bin(bn, p);
-    mp_read_unsigned_bin(s, p, len);
+    if (mp_from_ubin(s, p, len) != MP_OKAY) {
+	free(p);
+	return -1;
+    }
     free(p);
+    return 0;
 }
 
 
@@ -61,11 +65,14 @@ mpz2BN(mp_int *s)
     BIGNUM *bn;
     void *p;
 
-    size = mp_unsigned_bin_size(s);
+    size = mp_ubin_size(s);
     p = malloc(size);
-    if (p == NULL && size != 0)
+    if (p == NULL)
 	return NULL;
-    mp_to_unsigned_bin(s, p);
+    if (mp_to_ubin(s, p, SIZE_MAX, NULL) != MP_OKAY) {
+	free(p);
+	return NULL;
+    };
 
     bn = BN_bin2bn(p, size, NULL);
     free(p);
@@ -110,11 +117,17 @@ ltm_dh_generate_key(DH *dh)
 	    dh->pub_key = NULL;
 	}
 
-	mp_init_multi(&pub, &priv_key, &g, &p, NULL);
+	if (mp_init_multi(&pub, &priv_key, &g, &p, NULL) != MP_OKAY)
+	    continue;
 
-	BN2mpz(&priv_key, dh->priv_key);
-	BN2mpz(&g, dh->g);
-	BN2mpz(&p, dh->p);
+	if (BN2mpz(&priv_key, dh->priv_key) != 0)
+	    continue;
+
+	if (BN2mpz(&g, dh->g) != 0)
+	    continue;
+
+	if (BN2mpz(&p, dh->p) != 0)
+	    continue;
 
 	res = mp_exptmod(&g, &priv_key, &p, &pub);
 
@@ -157,9 +170,18 @@ ltm_dh_compute_key(unsigned char *shared, const BIGNUM * pub, DH *dh)
     if (dh->pub_key == NULL || dh->g == NULL || dh->priv_key == NULL)
 	return -1;
 
-    mp_init_multi(&s, &priv_key, &p, &peer_pub, NULL);
-    BN2mpz(&p, dh->p);
-    BN2mpz(&peer_pub, pub);
+    if (mp_init_multi(&s, &priv_key, &p, &peer_pub, NULL) != MP_OKAY)
+        return -1;
+
+    if (BN2mpz(&p, dh->p) != 0) {
+	ret = -1;
+	goto out;
+    }
+
+    if (BN2mpz(&peer_pub, pub) != 0) {
+	ret = 1;
+	goto out;
+    }
 
     /* check if peers pubkey is reasonable */
     if (mp_isneg(&peer_pub)
@@ -170,17 +192,20 @@ ltm_dh_compute_key(unsigned char *shared, const BIGNUM * pub, DH *dh)
 	goto out;
     }
 
-    BN2mpz(&priv_key, dh->priv_key);
+    if (BN2mpz(&priv_key, dh->priv_key) != 0) {
+	ret = -1;
+	goto out;
+    }
 
     ret = mp_exptmod(&peer_pub, &priv_key, &p, &s);
-
     if (ret != 0) {
 	ret = -1;
 	goto out;
     }
 
-    ret = mp_unsigned_bin_size(&s);
-    mp_to_unsigned_bin(&s, shared);
+    ret = mp_ubin_size(&s);
+    if (mp_to_ubin(&s, shared, SIZE_MAX, NULL) != MP_OKAY)
+        ret = -1;
 
  out:
     mp_clear_multi(&s, &priv_key, &p, &peer_pub, NULL);

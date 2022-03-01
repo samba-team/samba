@@ -45,7 +45,7 @@ static int h_errno = NO_RECOVERY;
  */
 
 ROKEN_LIB_FUNCTION struct hostent * ROKEN_LIB_CALL
-getipnodebyname (const char *name, int af, int flags, int *error_num)
+rk_getipnodebyname(const char *name, int af, int flags, int *error_num)
 {
     struct hostent *tmp;
 

@@ -358,10 +358,11 @@ krb5_kt_read_service_key(krb5_context context,
 			 krb5_enctype enctype,
 			 krb5_keyblock **key)
 {
-    krb5_keytab keytab;
+    krb5_keytab keytab = NULL; /* Quiet lint */
     krb5_keytab_entry entry;
     krb5_error_code ret;
 
+    memset(&entry, 0, sizeof(entry));
     if (keyprocarg)
 	ret = krb5_kt_resolve (context, keyprocarg, &keytab);
     else
@@ -371,11 +372,11 @@ krb5_kt_read_service_key(krb5_context context,
 	return ret;
 
     ret = krb5_kt_get_entry (context, keytab, principal, vno, enctype, &entry);
+    if (ret == 0) {
+        ret = krb5_copy_keyblock (context, &entry.keyblock, key);
+        krb5_kt_free_entry(context, &entry);
+    }
     krb5_kt_close (context, keytab);
-    if (ret)
-	return ret;
-    ret = krb5_copy_keyblock (context, &entry.keyblock, key);
-    krb5_kt_free_entry(context, &entry);
     return ret;
 }
 
@@ -482,11 +483,13 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_kt_close(krb5_context context,
 	      krb5_keytab id)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
 
-    ret = (*id->close)(context, id);
-    memset(id, 0, sizeof(*id));
-    free(id);
+    if (id) {
+        ret = (id->close)(context, id);
+        memset(id, 0, sizeof(*id));
+        free(id);
+    }
     return ret;
 }
 
@@ -579,29 +582,31 @@ _krb5_kt_principal_not_found(krb5_context context,
 			     krb5_enctype enctype,
 			     int kvno)
 {
-    char princ[256], kvno_str[25], *kt_name;
+    char kvno_str[25];
     char *enctype_str = NULL;
+    char *kt_name = NULL;
+    char *princ = NULL;
 
-    krb5_unparse_name_fixed (context, principal, princ, sizeof(princ));
-    krb5_kt_get_full_name (context, id, &kt_name);
+    (void) krb5_unparse_name(context, principal, &princ);
+    (void) krb5_kt_get_full_name(context, id, &kt_name);
     if (enctype)
-	krb5_enctype_to_string(context, enctype, &enctype_str);
+	(void) krb5_enctype_to_string(context, enctype, &enctype_str);
 
     if (kvno)
 	snprintf(kvno_str, sizeof(kvno_str), "(kvno %d)", kvno);
     else
 	kvno_str[0] = '\0';
 
-    krb5_set_error_message (context, ret,
-			    N_("Failed to find %s%s in keytab %s (%s)",
-			       "principal, kvno, keytab file, enctype"),
-			    princ,
-			    kvno_str,
-			    kt_name ? kt_name : "unknown keytab",
-			    enctype_str ? enctype_str : "unknown enctype");
+    krb5_set_error_message(context, ret,
+			   N_("Failed to find %s%s in keytab %s (%s)",
+			      "principal, kvno, keytab file, enctype"),
+			   princ ? princ : "<unknown>",
+			   kvno_str,
+			   kt_name ? kt_name : "unknown keytab",
+			   enctype_str ? enctype_str : "unknown enctype");
+    free(princ);
     free(kt_name);
-    if (enctype_str)
-	free(enctype_str);
+    free(enctype_str);
     return ret;
 }
 
@@ -620,6 +625,7 @@ krb5_kt_get_entry_wrapped(krb5_context context,
     if(id->get)
 	return (*id->get)(context, id, principal, kvno, enctype, entry);
 
+    memset(&tmp, 0, sizeof(tmp));
     ret = krb5_kt_start_seq_get (context, id, &cursor);
     if (ret) {
 	/* This is needed for krb5_verify_init_creds, but keep error
@@ -683,7 +689,8 @@ krb5_kt_get_entry(krb5_context context,
     krb5_name_canon_iterator name_canon_iter;
 
     if (!principal)
-	return krb5_kt_get_entry_wrapped(context, id, principal, kvno, enctype,
+        /* Use `NULL' instead of `principal' to quiet static analizers */
+	return krb5_kt_get_entry_wrapped(context, id, NULL, kvno, enctype,
 					 entry);
 
     ret = krb5_name_canon_iterator_start(context, principal, &name_canon_iter);
@@ -731,21 +738,21 @@ krb5_kt_copy_entry_contents(krb5_context context,
     krb5_error_code ret;
 
     memset(out, 0, sizeof(*out));
-    out->vno = in->vno;
 
     ret = krb5_copy_principal (context, in->principal, &out->principal);
     if (ret)
-	goto fail;
+	return ret;
     ret = krb5_copy_keyblock_contents (context,
 				       &in->keyblock,
 				       &out->keyblock);
-    if (ret)
-	goto fail;
+    if (ret) {
+        krb5_free_principal(context, out->principal);
+        memset(out, 0, sizeof(*out));
+        return ret;
+    }
+    out->vno = in->vno;
     out->timestamp = in->timestamp;
     return 0;
-fail:
-    krb5_kt_free_entry (context, out);
-    return ret;
 }
 
 /**
@@ -927,6 +934,7 @@ krb5_kt_have_content(krb5_context context,
     krb5_error_code ret;
     char *name;
 
+    memset(&entry, 0, sizeof(entry));
     ret = krb5_kt_start_seq_get(context, id, &cursor);
     if (ret)
 	goto notfound;

@@ -472,6 +472,12 @@ vstrcollect(va_list *ap);
 ROKEN_LIB_FUNCTION char ** ROKEN_LIB_CALL
 strcollect(char *first, ...);
 
+ROKEN_LIB_FUNCTION time_t ROKEN_LIB_CALL
+rk_time_add(time_t, time_t);
+
+ROKEN_LIB_FUNCTION time_t ROKEN_LIB_CALL
+rk_time_sub(time_t, time_t);
+
 #define timevalfix rk_timevalfix
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 timevalfix(struct timeval *t1);

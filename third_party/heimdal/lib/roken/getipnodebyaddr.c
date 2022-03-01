@@ -41,7 +41,7 @@
  */
 
 ROKEN_LIB_FUNCTION struct hostent * ROKEN_LIB_CALL
-getipnodebyaddr (const void *src, size_t len, int af, int *error_num)
+rk_getipnodebyaddr(const void *src, size_t len, int af, int *error_num)
 {
     struct hostent *tmp;
 

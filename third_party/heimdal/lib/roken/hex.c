@@ -39,14 +39,15 @@
 
 static const char hexchar[16] = "0123456789ABCDEF";
 
-static int
+static inline int
 pos(char c)
 {
-    const char *p;
-    c = toupper((unsigned char)c);
-    for (p = hexchar; *p; p++)
-	if (*p == c)
-	    return p - hexchar;
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'A' && c <= 'F')
+        return 10 + c - 'A';
+    if (c >= 'a' && c <= 'f')
+        return 10 + c - 'a';
     return -1;
 }
 
@@ -86,6 +87,7 @@ hex_decode(const char *str, void *data, size_t len)
     size_t l;
     unsigned char *p = data;
     size_t i;
+    int d;
 
     l = strlen(str);
 
@@ -94,11 +96,19 @@ hex_decode(const char *str, void *data, size_t len)
 	return -1;
 
     if (l & 1) {
-	p[0] = pos(str[0]);
+        if ((d = pos(str[0])) == -1)
+            return -1;
+	p[0] = d;
 	str++;
 	p++;
     }
-    for (i = 0; i < l / 2; i++)
-	p[i] = pos(str[i * 2]) << 4 | pos(str[(i * 2) + 1]);
+    for (i = 0; i < l / 2; i++) {
+        if ((d = pos(str[i * 2])) == -1)
+            return -1;
+	p[i] = d << 4;
+        if ((d = pos(str[(i * 2) + 1])) == -1)
+            return -1;
+	p[i] |= d;
+    }
     return i + (l & 1);
 }

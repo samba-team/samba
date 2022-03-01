@@ -89,12 +89,21 @@ add_one_principal(const char *name,
     int mask = 0;
     int default_mask = 0;
     char pwbuf[1024];
+    char *princ_name = NULL;
 
     memset(&princ, 0, sizeof(princ));
     ret = krb5_parse_name(context, name, &princ_ent);
     if (ret) {
 	krb5_warn(context, ret, "krb5_parse_name");
 	return ret;
+    }
+
+    if (rand_password) {
+	ret = krb5_unparse_name(context, princ_ent, &princ_name);
+	if (ret) {
+	    krb5_warn(context, ret, "krb5_parse_name");
+	    goto out;
+	}
     }
     princ.principal = princ_ent;
     mask |= KADM5_PRINCIPAL;
@@ -129,7 +138,6 @@ add_one_principal(const char *name,
 	random_password (pwbuf, sizeof(pwbuf));
 	password = pwbuf;
     } else if(password == NULL) {
-	char *princ_name;
 	char *prompt;
 	int aret;
 
@@ -137,7 +145,6 @@ add_one_principal(const char *name,
 	if (ret)
 	    goto out;
 	aret = asprintf (&prompt, "%s's Password: ", princ_name);
-	free (princ_name);
 	if (aret == -1) {
 	    ret = ENOMEM;
 	    krb5_set_error_message(context, ret, "out of memory");
@@ -205,18 +212,17 @@ add_one_principal(const char *name,
 	kadm5_modify_principal(kadm_handle, &princ,
 			       KADM5_PW_EXPIRATION | KADM5_ATTRIBUTES);
     } else if (rand_password) {
-	char *princ_name;
-
-	krb5_unparse_name(context, princ_ent, &princ_name);
 	printf ("added %s with password \"%s\"\n", princ_name, password);
-	free (princ_name);
     }
 out:
+    free(princ_name);
     kadm5_free_principal_ent(kadm_handle, &princ); /* frees princ_ent */
     if(default_ent)
 	kadm5_free_principal_ent (kadm_handle, default_ent);
-    if (password != NULL)
-	memset (password, 0, strlen(password));
+    if (password != NULL) {
+	size_t len = strlen(password);
+	memset_s(password, len, 0, len);
+    }
     return ret;
 }
 
@@ -354,7 +360,6 @@ add_one_namespace(const char *name,
 {
     krb5_error_code ret;
     kadm5_principal_ent_rec princ;
-    kadm5_principal_ent_rec *default_ent = NULL;
     krb5_principal princ_ent = NULL;
     int mask = 0;
     int default_mask = 0;
@@ -391,6 +396,8 @@ add_one_namespace(const char *name,
         ret = krb5_parse_name(context, name, &princ_ent);
         if (ret)
             krb5_warn(context, ret, "krb5_parse_name");
+	else
+	    princ.principal = princ_ent;
     }
     if (ret != 0)
 	return ret;
@@ -449,7 +456,6 @@ add_one_namespace(const char *name,
     }
 
     if (ret == 0) {
-        princ.principal = princ_ent;
         mask |= KADM5_PRINCIPAL | KADM5_KVNO;
 
         ret = set_entry(context, &princ, &mask,
@@ -457,21 +463,21 @@ add_one_namespace(const char *name,
                         "never", "never", attributes, NSPOLICY);
     }
     if (ret == 0)
-        ret = edit_entry(&princ, &mask, default_ent, default_mask);
+        ret = edit_entry(&princ, &mask, NULL, default_mask);
 
     if (ret == 0)
         ret = kstuple2etypes(&princ, &mask, nkstuple, kstuple);
 
     /* XXX Shouldn't need a password for this */
     random_password(pwbuf, sizeof(pwbuf));
-    ret = kadm5_create_principal_3(kadm_handle, &princ, mask,
-                                   nkstuple, kstuple, pwbuf);
-    if (ret)
-	krb5_warn(context, ret, "kadm5_create_principal_3");
+    if (ret == 0) {
+        ret = kadm5_create_principal_3(kadm_handle, &princ, mask,
+                                       nkstuple, kstuple, pwbuf);
+        if (ret)
+            krb5_warn(context, ret, "kadm5_create_principal_3");
+    }
 
     kadm5_free_principal_ent(kadm_handle, &princ); /* frees princ_ent */
-    if (default_ent)
-	kadm5_free_principal_ent(kadm_handle, default_ent);
     memset(pwbuf, 0, sizeof(pwbuf));
     return ret;
 }

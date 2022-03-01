@@ -83,7 +83,8 @@ struct tls_values {
 
 static HEIMDAL_THREAD_LOCAL struct tls_values values;
 
-#define DEAD_KEY ((void *)8)
+static char dead_key;
+#define DEAD_KEY ((void *)&dead_key)
 
 void
 heim_w32_service_thread_detach(void *unused)

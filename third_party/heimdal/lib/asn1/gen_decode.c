@@ -328,9 +328,9 @@ decode_type(const char *name, const Type *t, int optional, struct value *defval,
 			 "if (len < 1) break;\n");
 		pos += 8;
 	    }
-	    fprintf (codefile,
-		     "(%s)->%s = (*p >> %d) & 1;\n",
-		     name, m->gen_name, 7 - m->val % 8);
+	    fprintf(codefile,
+		    "(%s)->%s = (*p >> %d) & 1;\n",
+		    name, m->gen_name, (int)(7 - m->val % 8));
 	}
 	fprintf(codefile,
 		"} while(0);\n");

@@ -377,12 +377,12 @@ rk_strsvisx(char *dst, const char *csrc, size_t len, int flag, const char *extra
 	if (flag & VIS_HTTPSTYLE) {
 		for (start = dst; len > 0; len--) {
 			c = *src++;
-			dst = do_hvis(dst, c, flag, len ? *src : '\0', nextra);
+			dst = do_hvis(dst, c, flag, *src, nextra);
 		}
 	} else {
 		for (start = dst; len > 0; len--) {
 			c = *src++;
-			dst = do_svis(dst, c, flag, len ? *src : '\0', nextra);
+			dst = do_svis(dst, c, flag, *src, nextra);
 		}
 	}
 	free(nextra);
@@ -440,16 +440,18 @@ rk_strrasvisx(char **out,
 		return -1;
 	}
 	if (have < want) {
-		if ((s = realloc(*out, want)) == NULL)
+		if ((s = realloc(s, want)) == NULL)
 			return -1;
 		*outsz = want;
 		*out = s;
 	}
+        if (*out == NULL) {
+            errno = EINVAL;
+            return -1;
+        }
 	**out = '\0'; /* Makes source debugging nicer, that's all */
-	if ((r = strsvisx(*out, csrc, len, flag, extra)) < 0)
-		return r;
-	errno = *out ? errno : EINVAL;
-	return *out ? r : -1;
+	r = strsvisx(*out, csrc, len, flag, extra);
+        return r;
 }
 
 #if !HAVE_VIS
@@ -641,6 +643,7 @@ main(int argc, char **argv)
     }
 
     free(nextra);
+    free(s);
     return 0;
 }
 #endif

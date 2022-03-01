@@ -185,7 +185,8 @@ _gsskrb5_store_cred_into2(OM_uint32         *minor_status,
     const char *cs_user_name = NULL;
     const char *cs_app_name = NULL;
     char *ccache_name = NULL;
-    OM_uint32 major_status, junk;
+    OM_uint32 major_status = GSS_S_FAILURE;
+    OM_uint32 junk;
     OM_uint32 overwrite_cred = store_cred_flags & GSS_C_STORE_CRED_OVERWRITE;
     int default_for = 0;
 
@@ -346,7 +347,7 @@ _gsskrb5_store_cred_into2(OM_uint32         *minor_status,
     (void) gss_release_buffer_set(&junk, &env);
     free(ccache_name);
     *minor_status = ret;
-    return ret ? GSS_S_FAILURE : GSS_S_COMPLETE;
+    return ret ? major_status : GSS_S_COMPLETE;
 }
 
 OM_uint32 GSSAPI_CALLCONV

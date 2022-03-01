@@ -159,7 +159,7 @@ test_rk_dns_srv_order(size_t run)
         if (rr->u.srv->priority < prio0 ||
 	    (rr->u.srv->priority != prio0 &&
 	     (i % 4 != 0 || rr->u.srv->priority > prio0 + 1))) {
-            printf("SRV RR order run %lu failed\n", run);
+            printf("SRV RR order run %zu failed\n", run);
             fail = 1;
         }
 	prio0 = rr->u.srv->priority;

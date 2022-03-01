@@ -367,6 +367,9 @@ parse_residual(krb5_context context,
     *pcollection_name = NULL;
     *psubsidiary_name = NULL;
 
+    if (residual == NULL)
+        residual = "";
+
     /* Parse out the anchor name.  Use the legacy anchor if not present. */
     sep = strchr(residual, ':');
     if (sep == NULL) {
@@ -473,7 +476,7 @@ make_subsidiary_residual(krb5_context context,
 			 char **presidual)
 {
     if (asprintf(presidual, "%s:%s:%s", anchor_name, collection_name,
-		 subsidiary_name) < 0) {
+		 subsidiary_name ? subsidiary_name : "tkt") < 0) {
 	*presidual = NULL;
 	return krb5_enomem(context);
     }
@@ -497,6 +500,9 @@ get_collection(krb5_context context,
     uid_t uidnum;
 
     heim_base_atomic_init(pcollection_id, 0);
+
+    if (!anchor_name || !collection_name)
+	return KRB5_KCC_INVALID_ANCHOR;
 
     if (strcmp(anchor_name, KRCC_PERSISTENT_ANCHOR) == 0) {
 	/*
@@ -1262,7 +1268,7 @@ alloc_cache(krb5_context context,
 				   subsidiary_name, &data->krc_name);
     if (ret ||
         (data->krc_collection = strdup(collection_name)) == NULL ||
-        (data->krc_subsidiary = strdup(subsidiary_name)) == NULL) {
+        (data->krc_subsidiary = strdup(subsidiary_name ? subsidiary_name : "tkt")) == NULL) {
         if (data) {
             free(data->krc_collection);
             free(data->krc_name);
@@ -1702,7 +1708,7 @@ krcc_get_kdc_offset(krb5_context context,
     key_serial_t key, cache_id;
     krb5_storage *sp = NULL;
     krb5_data payload;
-    int32_t sec_offset, usec_offset;
+    int32_t sec_offset = 0;
 
     if (data == NULL)
 	return krb5_einval(context, 2);
@@ -1730,26 +1736,22 @@ krcc_get_kdc_offset(krb5_context context,
 
     sp = krb5_storage_from_data(&payload);
     if (sp == NULL) {
-	ret = KRB5_CC_IO;
+	ret = krb5_enomem(context);;
 	goto cleanup;
     }
 
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
 
     ret = krb5_ret_int32(sp, &sec_offset);
-    if (ret == 0)
-	krb5_ret_int32(sp, &usec_offset);
-    if (ret) {
-	ret = KRB5_CC_END;
-	goto cleanup;
-    }
-
-    *offset = sec_offset;
+    /*
+     * We can't output nor use the usec_offset here, so we don't bother to read
+     * it, though we do write it.
+     */
 
 cleanup:
+    *offset = sec_offset;
     krb5_storage_free(sp);
     krb5_data_free(&payload);
-
     return ret;
 }
 
@@ -1887,7 +1889,8 @@ krcc_get_cache_next(krb5_context context,
 	    continue;
 
 	/* Don't repeat the primary cache. */
-	if (strcmp(subsidiary_name, iter->primary_name) == 0)
+	if (iter->primary_name &&
+            strcmp(subsidiary_name, iter->primary_name) == 0)
 	    continue;
 
 	/* We found a valid key */

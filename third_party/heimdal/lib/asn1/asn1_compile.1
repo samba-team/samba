@@ -46,9 +46,9 @@
 .Op Fl Fl encode-rfc1510-bit-string
 .Op Fl Fl decode-dce-ber
 .Op Fl Fl support-ber
-.Op Fl Fl preserve-binary=TYPE-NAME
-.Op Fl Fl sequence=TYPE-NAME
-.Op Fl Fl decorate=TYPE-NAME:FIELD-TYPE:field-name[?]
+.Op Fl Fl preserve-binary=TYPE
+.Op Fl Fl sequence=TYPE
+.Op Fl Fl decorate=DECORATION
 .Op Fl Fl one-code-file
 .Op Fl Fl gen-name=NAME
 .Op Fl Fl option-file=FILE
@@ -61,7 +61,117 @@
 .Ek
 .Sh DESCRIPTION
 .Nm
-Compiles an ASN.1 module into C source code and header files.
+compiles an ASN.1 module into C source code and header files.
+.Pp
+A fairly large subset of ASN.1 as specified in X.680, and the
+ASN.1 Information Object System as specified in X.681, X.682, and
+X.683 is supported, with support for the Distinguished Encoding
+Rules (DER), partial Basic Encoding Rules (BER) support, and
+experimental JSON support (encoding only at this time).
+.Pp
+See the compiler's README files for details about the C code and
+interfaces it generates.
+.Pp
+The Information Object System support includes automatic codec
+support for encoding and decoding through
+.Dq open types
+which are also known as
+.Dq typed holes .
+See RFC 5912 for examples of how to use the ASN.1
+Information Object System via X.681/X.682/X.683 annotations.  See
+the compiler's README files for more information on ASN.1
+Information Object System support.
+.Pp
+Extensions specific to Heimdal are generally not syntactic in
+nature but rather command-line options to this program.
+For example, one can use command-line options to:
+.Bl -bullet -compact -width Ds -offset indent
+.It
+enable decoding of BER-encoded values;
+.It
+enable RFC1510-style handling of
+.Sq BIT STRING
+types;
+.It
+enable saving of as-received encodings of specific types for the
+purpose of signature validation;
+.It
+generate add/remove utility functions for array types;
+.It
+decorate generated
+.Sq struct
+types with fields that are neither encoded nor decoded;
+.El
+etc.
+.Pp
+ASN.1 x.680 features supported:
+.Bl -bullet -compact -width Ds -offset indent
+.It
+most primitive types (except BMPString and REAL);
+.It
+all constructed types, including SET and SET OF;
+.It
+explicit and implicit tagging.
+.El
+.Pp
+Size and range constraints on the
+.Sq INTEGER
+type cause the compiler to generate appropriate C types such as
+.Sq int ,
+.Sq unsigned int ,
+.Sq int64_t ,
+.Sq uint64_t .
+Unconstrained
+.Sq INTEGER
+is treated as
+.Sq heim_integer ,
+which represents an integer of arbitrary size.
+.Pp
+Caveats and ASN.1 x.680 features not supported:
+.Bl -bullet -compact -width Ds -offset indent
+.It
+JSON encoding support is not quite X.697 (JER) compatible.
+Its JSON schema is subject to change without notice.
+.It
+Control over C types generated is very limited, mainly only for
+integer types.
+.It
+When using the template backend, `SET { .. }` types are currently
+not sorted by tag as they should be, but if the module author
+sorts them by hand then correct DER will be produced.
+.It
+.Sq AUTOMATIC TAGS
+is not supported.
+.It
+The
+.Va REAL
+type is not supported.
+.It
+The
+.Va EmbeddedPDV
+type is not supported.
+.It
+The
+.Va BMPString
+type is not supported.
+.It
+The
+.Va IA5String
+is not properly supported, as it's essentially treated as a
+.Va UTF8String
+with a different tag.
+.It
+All supported non-octet strings are treated as like the
+.Va UTF8String
+type.
+.It
+Only types can be imported into ASN.1 modules at this time.
+.It
+Only simple value syntax is supported.
+Constructed value syntax (i.e., values of SET, SEQUENCE, SET OF,
+and SEQUENCE OF types), is not supported.
+Values of `CHOICE` types are also not supported.
+.El
 .Pp
 Options supported:
 .Bl -tag -width Ds
@@ -71,20 +181,21 @@ Use the
 backend instead of the
 .Dq codegen
 backend (which is the default backend).
+.Pp
 The template backend generates
 .Dq templates
 which are akin to bytecode, and which are interpreted at
 run-time.
+.Pp
 The codegen backend generates C code for all functions directly,
 with no template interpretation.
+.Pp
 The template backend scales better than the codegen backend
-because as we add support for more encoding rules the templates
-stay mostly the same, thus scaling linearly with size of module.
+because as we add support for more encoding rules and more
+operations (we may add value comparators) the templates stay
+mostly the same, thus scaling linearly with size of module.
 Whereas the codegen backend scales linear with the product of
 module size and number of encoding rules supported.
-More importantly, currently only the template backend supports
-automatic decoding of open types via X.681/X.682/X.683
-annotations.
 .It Fl Fl prefix-enum
 This option should be removed because ENUMERATED types should
 always have their labels prefixed.
@@ -97,34 +208,118 @@ Use RFC1510, non-standard handling of
 types.
 .It Fl Fl decode-dce-ber
 .It Fl Fl support-ber
-.It Fl Fl preserve-binary=TYPE-NAME
-Generate
+.It Fl Fl preserve-binary=TYPE
+Generate a field named
 .Sq _save
-fields in structs to preserve the original encoding of some
-sub-value.
-This is useful for cryptographic applications to avoid having to
-re-encode values to check signatures, etc.
-.It Fl Fl sequence=TYPE-NAME
-Generate add/remove functions for
+in the C struct generated for the named
+.Ar TYPE .
+This field is used to preserve the original encoding of the value
+of the
+.Ar TYPE .
+.Pp
+This is useful for cryptographic applications so that they can
+check signatures of encoded values as-received without having to
+re-encode those values.
+.Pp
+For example, the TBSCertificate type should have values preserved
+so that Certificate validation can check the signatureValue over
+the tbsCertificate's value as-received.
+.Pp
+The alternative of encoding a value to check a signature of it is
+brittle.
+For types where non-canonical encodings (such as BER) are
+allowed, this alternative is bound to fail.
+Thus the point of this option.
+.It Fl Fl sequence=TYPE
+Generate add/remove functions for the named ASN.1
+.Ar TYPE
+which must be a
 .Sq SET OF
-and
+or
 .Sq SEQUENCE OF
-types.
-.It Fl Fl decorate=TYPE-NAME:FIELD-TYPE:field-name[?]
-Add to the
-.Va TYPE-NAME
-SET or SEQUENCE type a field of the given
-.Va FIELD-TYPE
-and
-.Va field-name ,
+type.
+.It Fl Fl decorate=ASN1-TYPE:FIELD-ASN1-TYPE:fname[?]
+Add to the C struct generated for the given ASN.1 SET, SEQUENCE, or
+CHOICE type named
+.Ar ASN1-TYPE
+a
+.Dq hidden
+field named
+.Ar fname
+of the given ASN.1 type
+.Ar FIELD-ASN1-TYPE ,
+but do not encode or decode it.
+If the
+.Ar fname
+ends in a question mark, then treat the field as OPTIONAL.
+.Pp
+This is useful for adding fields to existing types that can be
+used for internal bookkeeping but which do not affect
+interoperability because they are neither encoded nor decoded.
+For example, one might decorate a request type with state needed
+during processing of the request.
+.It Fl Fl decorate=ASN1-TYPE:void*:fname
+Add to the C struct generated for the given ASN.1 SET, SEQUENCE, or
+CHOICE type named
+.Ar ASN1-TYPE
+a
+.Dq hidden
+field named
+.Ar fname
+of type
+.Sq void *
+(but do not encode or decode it.
+.Pp
+The destructor and copy constructor functions generated by this
+compiler for
+.Ar ASN1-TYPE
+will set this field to the
+.Sq NULL
+pointer.
+.It Fl Fl decorate=ASN1-TYPE:FIELD-C-TYPE:fname[?]:[copyfn]:[freefn]:header
+Add to the C struct generated for the given ASN.1 SET, SEQUENCE, or
+CHOICE type named
+.Ar ASN1-TYPE
+a
+.Dq hidden
+field named
+.Ar fname
+of the given external C type
+.Ar FIELD-C-TYPE ,
+declared in the given
+.Ar header
 but do not encode or decode this field.
 If the
-.Va field-name
-ends in a question mark, then treat the field as OPTIONAL for
-the purposes of copy/free function stubs.
-This is useful for adding fields to existing types that can be used
-for internal bookkeeping but which do not affect interoperability
-because they are not encoded.
+.Ar fname
+ends in a question mark, then treat the field as OPTIONAL.
+.Pp
+The
+.Ar header
+must include double quotes or angle brackets.
+The
+.Ar copyfn
+must be the name of a copy constructor function that takes a
+pointer to a source value of the type, and a pointer to a
+destination value of the type, in that order, and which returns
+zero on success or else a system error code on failure.
+The
+.Ar freefn
+must be the name of a destructor function that takes a pointer to
+a value of the type and which releases resources referenced by
+that value, but does not free the value itself (the run-time
+allocates this value as needed from the C heap).
+The
+.Ar freefn
+should also reset the value to a pristine state (such as all
+zeros).
+.Pp
+If the
+.Ar copyfn
+and
+.Ar freefn
+are empty strings, then the decoration field will neither be
+copied nor freed by the functions generated for the
+.Ar TYPE .
 .It Fl Fl one-code-file
 Generate a single source code file.
 Otherwise a separate code file will be generated for every type.
@@ -149,3 +344,7 @@ for common type defintions.
 .It Fl Fl version
 .It Fl Fl help
 .El
+.Sh NOTES
+Currently only the template backend supports automatic encoding
+and decoding of open types via the ASN.1 Information Object
+System and X.681/X.682/X.683 annotations.

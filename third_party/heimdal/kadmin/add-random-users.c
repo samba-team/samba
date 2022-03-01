@@ -58,7 +58,7 @@ read_words (const char *filename, char ***ret_w)
 	buf[strcspn(buf, "\r\n")] = '\0';
 	if (n >= alloc) {
 	    alloc = max(alloc + 16, alloc * 2);
-	    w = erealloc (w, alloc * sizeof(char **));
+	    w = erealloc (w, alloc * sizeof(char *));
 	}
 	len = strlen(buf);
 	if (wptr + len + 1 >= wend) {

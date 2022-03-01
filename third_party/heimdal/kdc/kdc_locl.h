@@ -64,15 +64,95 @@ struct kdc_request_desc {
     HEIM_SVC_REQUEST_DESC_COMMON_ELEMENTS;
 };
 
-struct as_request_pa_state;
 struct kdc_patypes;
 
+struct krb5_kdc_configuration {
+    KRB5_KDC_CONFIGURATION_COMMON_ELEMENTS;
+
+    int num_kdc_processes;
+
+    size_t max_datagram_reply_length;
+
+    time_t kdc_warn_pwexpire; /* time before expiration to print a warning */
+
+    unsigned int require_preauth : 1; /* require preauth for all principals */
+    unsigned int encode_as_rep_as_tgs_rep : 1; /* bug compatibility */
+
+    unsigned int check_ticket_addresses : 1;
+    unsigned int warn_ticket_addresses : 1;
+    unsigned int allow_null_ticket_addresses : 1;
+    unsigned int allow_anonymous : 1;
+    unsigned int historical_anon_realm : 1;
+    unsigned int strict_nametypes : 1;
+    enum krb5_kdc_trpolicy trpolicy;
+
+    unsigned int enable_unarmored_pa_enc_timestamp : 1;
+
+    unsigned int enable_pkinit : 1;
+    unsigned int pkinit_princ_in_cert : 1;
+    const char *pkinit_kdc_identity;
+    const char *pkinit_kdc_anchors;
+    const char *pkinit_kdc_friendly_name;
+    const char *pkinit_kdc_ocsp_file;
+    char **pkinit_kdc_cert_pool;
+    char **pkinit_kdc_revoke;
+    int pkinit_dh_min_bits;
+    unsigned int pkinit_require_binding : 1;
+    unsigned int pkinit_allow_proxy_certs : 1;
+    unsigned int synthetic_clients : 1;
+    unsigned int pkinit_max_life_from_cert_extension : 1;
+    krb5_timestamp pkinit_max_life_from_cert;
+    krb5_timestamp pkinit_max_life_bound;
+    krb5_timestamp synthetic_clients_max_life;
+    krb5_timestamp synthetic_clients_max_renew;
+
+    int digests_allowed;
+    unsigned int enable_digest : 1;
+
+    unsigned int enable_kx509 : 1;
+
+    unsigned int enable_gss_preauth : 1;
+    unsigned int enable_gss_auth_data : 1;
+    gss_OID_set gss_mechanisms_allowed;
+    gss_OID_set gss_cross_realm_mechanisms_allowed;
+
+};
+
 struct astgs_request_desc {
-    ASTGS_REQUEST_DESC_COMMON_ELEMENTS;
+    HEIM_SVC_REQUEST_DESC_COMMON_ELEMENTS;
+
+    /* AS-REQ or TGS-REQ */
+    KDC_REQ req;
+
+    /* AS-REP or TGS-REP */
+    KDC_REP rep;
+    EncTicketPart et;
+    EncKDCRepPart ek;
+
+    /* client principal (AS) or TGT/S4U principal (TGS) */
+    krb5_principal client_princ;
+    hdb_entry *client;
+    HDB *clientdb;
+    krb5_principal canon_client_princ;
+
+    /* server principal */
+    krb5_principal server_princ;
+    HDB *serverdb;
+    hdb_entry *server;
+
+    /* presented ticket in TGS-REQ (unused by AS) */
+    krb5_principal krbtgt_princ;
+    hdb_entry *krbtgt;
+    HDB *krbtgtdb;
+    krb5_ticket *ticket;
+
+    krb5_keyblock reply_key;
+
+    krb5_pac pac;
+    uint64_t pac_attributes;
 
     /* Only AS */
     const struct kdc_patypes *pa_used;
-    struct as_request_pa_state *pa_state;
 
     /* PA methods can affect both the reply key and the session key (pkinit) */
     krb5_enctype sessionetype;
@@ -89,7 +169,8 @@ struct astgs_request_desc {
     unsigned int fast_asserted : 1;
 
     krb5_crypto armor_crypto;
-    hdb_entry_ex *armor_server;
+    hdb_entry *armor_server;
+    HDB *armor_serverdb;
     krb5_ticket *armor_ticket;
     Key *armor_key;
 
@@ -147,5 +228,25 @@ configure(krb5_context context, int argc, char **argv, int *optidx);
 #ifdef __APPLE__
 void bonjour_announce(krb5_context, krb5_kdc_configuration *);
 #endif
+
+/* no-copy setters */
+
+#undef _KDC_REQUEST_GET_ACCESSOR
+#undef _KDC_REQUEST_SET_ACCESSOR
+
+#undef _KDC_REQUEST_GET_ACCESSOR_PTR
+#undef _KDC_REQUEST_SET_ACCESSOR_PTR
+#define _KDC_REQUEST_SET_ACCESSOR_PTR(R, T, t, f)	    \
+    void						    \
+    _kdc_request_set_ ## f ## _nocopy(R r, T *v);
+
+#undef _KDC_REQUEST_GET_ACCESSOR_STRUCT
+#undef _KDC_REQUEST_SET_ACCESSOR_STRUCT
+#define _KDC_REQUEST_SET_ACCESSOR_STRUCT(R, T, t, f)	    \
+    void						    \
+    _kdc_request_set_ ## f ## _nocopy(R r, T *v);
+
+#undef HEIMDAL_KDC_KDC_ACCESSORS_H
+#include "kdc-accessors.h"
 
 #endif /* __KDC_LOCL_H__ */

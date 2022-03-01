@@ -335,6 +335,7 @@ EXPORTS
 	copy_CommonCriteriaMeasures
 	copy_CommunityIdentifier
 	copy_CommunityIdentifiers
+	copy_CompositePrincipal
 	copy_ContentEncryptionAlgorithmIdentifier
 	copy_ContentInfo
 	copy_ContentType
@@ -691,6 +692,7 @@ EXPORTS
 	decode_CommonCriteriaMeasures
 	decode_CommunityIdentifier
 	decode_CommunityIdentifiers
+	decode_CompositePrincipal
 	decode_ContentEncryptionAlgorithmIdentifier
 	decode_ContentInfo
 	decode_ContentType
@@ -1196,6 +1198,7 @@ EXPORTS
 	encode_CommonCriteriaMeasures
 	encode_CommunityIdentifier
 	encode_CommunityIdentifiers
+	encode_CompositePrincipal
 	encode_ContentEncryptionAlgorithmIdentifier
 	encode_ContentInfo
 	encode_ContentType
@@ -1556,6 +1559,7 @@ EXPORTS
 	free_CommonCriteriaMeasures
 	free_CommunityIdentifier
 	free_CommunityIdentifiers
+	free_CompositePrincipal
 	free_ContentEncryptionAlgorithmIdentifier
 	free_ContentInfo
 	free_ContentType
@@ -1938,6 +1942,7 @@ EXPORTS
 	length_CommonCriteriaMeasures
 	length_CommunityIdentifier
 	length_CommunityIdentifiers
+	length_CompositePrincipal
 	length_ContentEncryptionAlgorithmIdentifier
 	length_ContentInfo
 	length_ContentType
@@ -2294,6 +2299,7 @@ EXPORTS
 	print_CommonCriteriaMeasures
 	print_CommunityIdentifier
 	print_CommunityIdentifiers
+	print_CompositePrincipal
 	print_ContentEncryptionAlgorithmIdentifier
 	print_ContentInfo
 	print_ContentType

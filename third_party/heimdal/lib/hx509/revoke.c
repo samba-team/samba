@@ -202,6 +202,8 @@ verify_ocsp(hx509_context context,
     ret = hx509_certs_find(context, certs, &q, &signer);
     if (ret && ocsp->certs)
 	ret = hx509_certs_find(context, ocsp->certs, &q, &signer);
+    if (ret == 0 && signer == NULL)
+        ret = HX509_CERT_NOT_FOUND;
     if (ret)
 	goto out;
 
@@ -500,6 +502,8 @@ verify_crl(hx509_context context,
 	q.subject_name = &crl->tbsCertList.issuer;
 
 	ret = hx509_certs_find(context, certs, &q, &signer);
+        if (ret == 0 && signer == NULL)
+            ret = HX509_CERT_NOT_FOUND;
 	if (ret) {
 	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 				   "Failed to find certificate for CRL");

@@ -90,7 +90,7 @@ ${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
 ${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
 
 echo Starting kdc
-${kdc} --detach --testing || { echo "kdc failed to start"; exit 1; }
+${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
 trap "kill -9 ${kdcpid}; echo signal killing kdc; exit 1;" EXIT

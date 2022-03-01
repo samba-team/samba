@@ -142,7 +142,8 @@ BN_bin2bn(const void *s, int len, BIGNUM *bn)
 	return NULL;
     }
     hi->length = len;
-    memcpy(hi->data, s, len);
+    if (len)
+        memcpy(hi->data, s, len);
     return (BIGNUM *)hi;
 }
 
@@ -250,7 +251,7 @@ BN_set_bit(BIGNUM *bn, int bit)
     unsigned char *p;
 
     if ((bit / 8) > hi->length || hi->length == 0) {
-	size_t len = (bit + 7) / 8;
+	size_t len = bit == 0 ? 1 : (bit + 7) / 8;
 	void *d = realloc(hi->data, len);
 	if (d == NULL)
 	    return 0;
@@ -285,6 +286,9 @@ BN_set_word(BIGNUM *bn, unsigned long num)
     unsigned char p[sizeof(num)];
     unsigned long num2;
     int i, len;
+
+    if (bn == NULL)
+	return 0;
 
     for (num2 = num, i = 0; num2 > 0; i++)
 	num2 = num2 >> 8;

@@ -80,6 +80,20 @@
 #define heim_pconfig krb5_context
 #include <heimbase-svc.h>
 
+#if MHD_VERSION < 0x00097002 || defined(MHD_YES)
+/* libmicrohttpd changed these from int valued macros to an enum in 0.9.71 */
+#ifdef MHD_YES
+#undef MHD_YES
+#undef MHD_NO
+#endif
+enum MHD_Result { MHD_NO = 0, MHD_YES = 1 };
+#define MHD_YES 1
+#define MHD_NO 0
+typedef int heim_mhd_result;
+#else
+typedef enum MHD_Result heim_mhd_result;
+#endif
+
 #define BODYLEN_IS_STRLEN (~0)
 
 /*
@@ -565,7 +579,7 @@ redirect_uri_appends(struct redirect_uri *redirect,
         redirect->len += len;
 }
 
-static int
+static heim_mhd_result
 make_redirect_uri_param_cb(void *d,
                            enum MHD_ValueKind kind,
                            const char *key,
@@ -700,9 +714,10 @@ bad_reqv(kadmin_request_desc r,
     if (r && r->context)
         context = r->context;
     if (r && r->hcontext && r->kv)
-        heim_audit_addkv((heim_svc_req_desc)r, 0, "http-status-code", "%d",
-                         http_status_code);
-    (void) gettimeofday(&r->tv_end, NULL);
+        heim_audit_setkv_number((heim_svc_req_desc)r, "http-status-code",
+				http_status_code);
+    if (r)
+        (void) gettimeofday(&r->tv_end, NULL);
     if (code == ENOMEM) {
         if (context)
             krb5_log_msg(context, logfac, 1, NULL, "Out of memory");
@@ -881,7 +896,7 @@ check_service_name(kadmin_request_desc r, const char *name)
     return EACCES;
 }
 
-static int
+static heim_mhd_result
 param_cb(void *d,
          enum MHD_ValueKind kind,
          const char *key,
@@ -1046,12 +1061,12 @@ param_cb(void *d,
 #endif
     } else {
         /* Produce error for unknown params */
-        heim_audit_addkv((heim_svc_req_desc)r, 0, "requested_unknown", "true");
+        heim_audit_setkv_bool((heim_svc_req_desc)r, "requested_unknown", TRUE);
         krb5_set_error_message(r->context, ret = ENOTSUP,
                                "Query parameter %s not supported", key);
     }
-    if (ret && !r->ret)
-        r->ret = ret;
+    if (ret && !r->error_code)
+        r->error_code = ret;
     heim_release(s);
     return ret ? MHD_NO /* Stop iterating */ : MHD_YES;
 }
@@ -1067,7 +1082,7 @@ authorize_req(kadmin_request_desc r)
         return bad_enomem(r, ret);
     (void) MHD_get_connection_values(r->connection, MHD_GET_ARGUMENT_KIND,
                                      param_cb, r);
-    ret = r->ret;
+    ret = r->error_code;
     if (ret == EACCES)
         return bad_403(r, ret, "Not authorized to requested principal(s)");
     if (ret)
@@ -1189,7 +1204,7 @@ make_kstuple(krb5_context context,
 
     if (p->n_key_data < 1)
         return 0;
-    *kstuple = calloc(p->n_key_data, sizeof (*kstuple));
+    *kstuple = calloc(p->n_key_data, sizeof (**kstuple));
     for (i = 0; *kstuple && i < p->n_key_data; i++) {
         if (p->key_data[i].key_data_kvno == p->kvno) {
             (*kstuple)[i].ks_enctype = p->key_data[i].key_data_type[0];
@@ -1417,6 +1432,8 @@ get_keysN(kadmin_request_desc r, const char *method)
             ret = heim_array_append_value(r->service_names, s);
         heim_release(s);
         nsvcs = 1;
+        if (ret)
+            return bad_503(r, ret, "Out of memory");
     }
 
     /* FIXME: Make this configurable */
@@ -1528,7 +1545,8 @@ set_req_desc(struct MHD_Connection *connection,
     r->sname = NULL;
     r->cname = NULL;
     r->addr = NULL;
-    r->kv = heim_array_create();
+    r->kv = heim_dict_create(10);
+    r->attributes = heim_dict_create(1);
     /* Our fields */
     r->connection = connection;
     r->kadm_handle = NULL;
@@ -1570,7 +1588,7 @@ set_req_desc(struct MHD_Connection *connection,
 
     if (ret == 0 && r->kv == NULL) {
         krb5_log_msg(r->context, logfac, 1, NULL, "Out of memory");
-        ret = r->ret = ENOMEM;
+        ret = r->error_code = ENOMEM;
     }
     return ret;
 }
@@ -1643,6 +1661,8 @@ get_config(kadmin_request_desc r)
 
     ret = get_kadm_handle(r->context, r->realm ? r->realm : realm,
                           0 /* want_write */, &r->kadm_handle);
+    if (ret)
+        return bad_503(r, ret, "Could not access KDC database");
 
     memset(&princ, 0, sizeof(princ));
     princ.key_data = NULL;
@@ -1665,7 +1685,7 @@ get_config(kadmin_request_desc r)
                 break;
             }
         } else {
-            r->ret = ret;
+            r->error_code = ret;
             return bad_404(r, "/get-config");
         }
     }
@@ -1725,15 +1745,22 @@ mac_csrf_token(kadmin_request_desc r, krb5_storage *sp)
             ret = krb5_enomem(r->context);
     /* HMAC the token body and the client principal name */
     if (ret == 0) {
-        HMAC_Init_ex(ctx, princ.key_data[i].key_data_contents[0], princ.key_data[i].key_data_length[0], EVP_sha256(), NULL);
-        HMAC_Update(ctx, data.data, data.length);
-        HMAC_Update(ctx, r->cname, strlen(r->cname));
-        HMAC_Final(ctx, mac, &maclen);
-        krb5_data_free(&data);
-        data.length = maclen;
-        data.data = mac;
-        if (krb5_storage_write(sp, mac, maclen) != maclen)
+        if (HMAC_Init_ex(ctx, princ.key_data[i].key_data_contents[0],
+                         princ.key_data[i].key_data_length[0], EVP_sha256(),
+                         NULL) == 0) {
+            HMAC_CTX_cleanup(ctx);
             ret = krb5_enomem(r->context);
+        } else {
+            HMAC_Update(ctx, data.data, data.length);
+            HMAC_Update(ctx, r->cname, strlen(r->cname));
+            HMAC_Final(ctx, mac, &maclen);
+            HMAC_CTX_cleanup(ctx);
+            krb5_data_free(&data);
+            data.length = maclen;
+            data.data = mac;
+            if (krb5_storage_write(sp, mac, maclen) != maclen)
+                ret = krb5_enomem(r->context);
+        }
     }
     krb5_free_principal(r->context, p);
     if (freeit)
@@ -1874,7 +1901,7 @@ health(const char *method, kadmin_request_desc r)
 }
 
 /* Implements the entirety of this REST service */
-static int
+static heim_mhd_result
 route(void *cls,
       struct MHD_Connection *connection,
       const char *url,
@@ -2100,6 +2127,8 @@ main(int argc, char **argv)
 
     argc -= optidx;
     argv += optidx;
+    if (argc != 0)
+        usage(1);
 
     if ((errno = pthread_key_create(&k5ctx, k5_free_context)))
         err(1, "Could not create thread-specific storage");

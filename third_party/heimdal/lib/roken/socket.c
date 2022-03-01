@@ -221,16 +221,16 @@ ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_portrange (rk_socket_t sock, int restr, int af)
 {
 #if defined(IP_PORTRANGE)
-	if (af == AF_INET) {
-		int on = restr ? IP_PORTRANGE_HIGH : IP_PORTRANGE_DEFAULT;
-		setsockopt (sock, IPPROTO_IP, IP_PORTRANGE, &on, sizeof(on));
-	}
+    if (af == AF_INET) {
+        int on = restr ? IP_PORTRANGE_HIGH : IP_PORTRANGE_DEFAULT;
+        (void) setsockopt(sock, IPPROTO_IP, IP_PORTRANGE, &on, sizeof(on));
+    }
 #endif
 #if defined(IPV6_PORTRANGE)
-	if (af == AF_INET6) {
-		int on = restr ? IPV6_PORTRANGE_HIGH : IPV6_PORTRANGE_DEFAULT;
-		setsockopt (sock, IPPROTO_IPV6, IPV6_PORTRANGE, &on, sizeof(on));
-	}
+    if (af == AF_INET6) {
+        int on = restr ? IPV6_PORTRANGE_HIGH : IPV6_PORTRANGE_DEFAULT;
+        (void) setsockopt(sock, IPPROTO_IPV6, IPV6_PORTRANGE, &on, sizeof(on));
+    }
 #endif
 }
 
@@ -243,7 +243,7 @@ socket_set_debug (rk_socket_t sock)
 {
 #if defined(SO_DEBUG) && defined(HAVE_SETSOCKOPT)
     int on = 1;
-    setsockopt (sock, SOL_SOCKET, SO_DEBUG, (void *) &on, sizeof (on));
+    (void) setsockopt(sock, SOL_SOCKET, SO_DEBUG, (void *) &on, sizeof (on));
 #endif
 }
 
@@ -255,7 +255,7 @@ ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_tos (rk_socket_t sock, int tos)
 {
 #if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
-    setsockopt (sock, IPPROTO_IP, IP_TOS, (void *) &tos, sizeof(int));
+    (void) setsockopt (sock, IPPROTO_IP, IP_TOS, (void *) &tos, sizeof(int));
 #endif
 }
 
@@ -289,7 +289,8 @@ ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_reuseaddr (rk_socket_t sock, int val)
 {
 #if defined(SO_REUSEADDR) && defined(HAVE_SETSOCKOPT)
-    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&val, sizeof(val));
+    (void) setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&val,
+                      sizeof(val));
 #endif
 }
 
@@ -301,7 +302,8 @@ ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_ipv6only (rk_socket_t sock, int val)
 {
 #if defined(IPV6_V6ONLY) && defined(HAVE_SETSOCKOPT)
-    setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&val, sizeof(val));
+    (void) setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&val,
+                      sizeof(val));
 #endif
 }
 
@@ -312,7 +314,8 @@ socket_set_ipv6only (rk_socket_t sock, int val)
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_keepalive(rk_socket_t sock, int val)
 {
-    setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&val, sizeof(val));
+    (void) setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&val,
+                      sizeof(val));
 }
 
 /**

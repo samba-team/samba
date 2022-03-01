@@ -137,21 +137,29 @@ print_entry(kadm5_server_context *server_context,
 	    entry_kind, op_names[op], ver, t, len);
     switch(op) {
     case kadm_delete:
-	krb5_ret_principal(sp, &source);
-	krb5_unparse_name(scontext, source, &name1);
+        ret = krb5_ret_principal(sp, &source);
+        if (ret == 0)
+            ret = krb5_unparse_name(scontext, source, &name1);
+        if (ret)
+            krb5_err(scontext, 1, ret, "Failed to read a delete record");
 	printf("    %s\n", name1);
 	free(name1);
 	krb5_free_principal(scontext, source);
 	break;
     case kadm_rename:
 	ret = krb5_data_alloc(&data, len);
-	if (ret)
-	    krb5_err (scontext, 1, ret, "kadm_rename: data alloc: %d", len);
-	krb5_ret_principal(sp, &source);
-	krb5_storage_read(sp, data.data, data.length);
-	hdb_value2entry(scontext, &data, &ent);
-	krb5_unparse_name(scontext, source, &name1);
-	krb5_unparse_name(scontext, ent.principal, &name2);
+        if (ret == 0)
+            ret = krb5_ret_principal(sp, &source);
+        if (ret == 0 && krb5_storage_read(sp, data.data, data.length) == -1)
+            ret = errno;
+        if (ret == 0)
+            ret = hdb_value2entry(scontext, &data, &ent);
+        if (ret == 0)
+            ret = krb5_unparse_name(scontext, source, &name1);
+        if (ret == 0)
+            ret = krb5_unparse_name(scontext, ent.principal, &name2);
+        if (ret)
+            krb5_err(scontext, 1, ret, "Failed to read a rename record");
 	printf("    %s -> %s\n", name1, name2);
 	free(name1);
 	free(name2);
@@ -160,26 +168,30 @@ print_entry(kadm5_server_context *server_context,
 	break;
     case kadm_create:
 	ret = krb5_data_alloc(&data, len);
+        if (ret == 0 && krb5_storage_read(sp, data.data, data.length) == -1)
+            ret = errno;
+        if (ret == 0)
+            ret = hdb_value2entry(scontext, &data, &ent);
 	if (ret)
-	    krb5_err (scontext, 1, ret, "kadm_create: data alloc: %d", len);
-	krb5_storage_read(sp, data.data, data.length);
-	ret = hdb_value2entry(scontext, &data, &ent);
-	if(ret)
-	    abort();
+            krb5_err(scontext, 1, ret, "Failed to read a create record");
 	mask = ~0;
 	goto foo;
     case kadm_modify:
 	ret = krb5_data_alloc(&data, len);
+        if (ret == 0)
+            ret = krb5_ret_int32(sp, &mask);
+        if (ret == 0 && krb5_storage_read(sp, data.data, data.length) == -1)
+            ret = errno;
+        if (ret == 0)
+            ret = hdb_value2entry(scontext, &data, &ent);
 	if (ret)
-	    krb5_err (scontext, 1, ret, "kadm_modify: data alloc: %d", len);
-	krb5_ret_int32(sp, &mask);
-	krb5_storage_read(sp, data.data, data.length);
-	ret = hdb_value2entry(scontext, &data, &ent);
-	if(ret)
-	    abort();
+            krb5_err(scontext, 1, ret, "Failed to read a modify record");
     foo:
 	if(ent.principal /* mask & KADM5_PRINCIPAL */) {
-	    krb5_unparse_name(scontext, ent.principal, &name1);
+	    ret = krb5_unparse_name(scontext, ent.principal, &name1);
+            if (ret)
+                krb5_err(scontext, 1, ret,
+                         "Failed to process a create or modify record");
 	    printf("    principal = %s\n", name1);
 	    free(name1);
 	}
@@ -263,14 +275,19 @@ print_entry(kadm5_server_context *server_context,
     case kadm_nop :
         if (len == 16) {
             uint64_t off;
-            krb5_ret_uint64(sp, &off);
+            ret = krb5_ret_uint64(sp, &off);
+            if (ret)
+                krb5_err(scontext, 1, ret, "Failed to read a no-op record");
             printf("uberblock offset %llu ", (unsigned long long)off);
         } else {
             printf("nop");
         }
         if (len == 16 || len == 8) {
-            krb5_ret_int32(sp, &nop_time);
-            krb5_ret_uint32(sp, &nop_ver);
+            ret = krb5_ret_int32(sp, &nop_time);
+            if (ret == 0)
+                ret = krb5_ret_uint32(sp, &nop_ver);
+            if (ret)
+                krb5_err(scontext, 1, ret, "Failed to read a no-op record");
 
             timestamp = nop_time;
             strftime(t, sizeof(t), "%Y-%m-%d %H:%M:%S", localtime(&timestamp));
@@ -279,7 +296,7 @@ print_entry(kadm5_server_context *server_context,
         printf("\n");
 	break;
     default:
-	abort();
+        krb5_errx(scontext, 1, "Unknown record type");
     }
     krb5_data_free(&data);
 

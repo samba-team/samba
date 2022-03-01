@@ -47,10 +47,8 @@ ARCFOUR_string_to_key(krb5_context context,
     EVP_MD_CTX *m;
 
     m = EVP_MD_CTX_create();
-    if (m == NULL) {
-	ret = krb5_enomem(context);
-	goto out;
-    }
+    if (m == NULL)
+	return krb5_enomem(context);
 
     EVP_DigestInit_ex(m, EVP_md4(), NULL);
 

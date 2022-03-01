@@ -754,6 +754,9 @@ krb_enc_test(krb5_context context)
 	kb.keyvalue.data = krbencs[i].key;
 
 	ret = krb5_crypto_init(context, &kb, krbencs[i].enctype, &crypto);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_crypto_init failed with %d for test %d",
+                     ret, i);
 
 	cipher.length = krbencs[i].elen;
 	cipher.data = krbencs[i].edata;
@@ -763,20 +766,24 @@ krb_enc_test(krb5_context context)
 	ret = krb_enc(context, crypto, krbencs[i].usage, &cipher, &plain);
 
 	if (ret)
-	    errx(1, "krb_enc failed with %d for test %d", ret, i);
+	    krb5_err(context, 1, ret, "krb_enc failed with %d for test %d",
+                     ret, i);
 
 	ret = krb_enc_iov(context, crypto, krbencs[i].usage, &cipher, &plain);
 	if (ret)
-	    errx(1, "krb_enc_iov failed with %d for test %d", ret, i);
+	    krb5_err(context, 1, ret, "krb_enc_iov failed with %d for test %d",
+                     ret, i);
 
 	ret = krb_enc_iov2(context, crypto, krbencs[i].usage,
 			   cipher.length, &plain);
 	if (ret)
-	    errx(1, "krb_enc_iov2 failed with %d for test %d", ret, i);
+	    krb5_err(context, 1, ret, "krb_enc_iov2 failed with %d for test %d",
+                     ret, i);
 
 	ret = krb_checksum_iov(context, crypto, krbencs[i].usage, &plain, NULL);
 	if (ret)
-	    errx(1, "krb_checksum_iov failed with %d for test %d", ret, i);
+            krb5_err(context, 1, ret,
+                     "krb_checksum_iov failed with %d for test %d", ret, i);
 
 	if (krbencs[i].cdata) {
 	    krb5_data checksum;
@@ -787,7 +794,9 @@ krb_enc_test(krb5_context context)
 	    ret = krb_checksum_iov(context, crypto, krbencs[i].usage,
 				   &plain, &checksum);
 	    if (ret)
-		errx(1, "krb_checksum_iov(2) failed with %d for test %d", ret, i);
+		krb5_err(context, 1, ret,
+                         "krb_checksum_iov(2) failed with %d for test %d",
+                         ret, i);
 	}
 
 	krb5_crypto_destroy(context, crypto);
@@ -795,7 +804,8 @@ krb_enc_test(krb5_context context)
 	ret = krb_enc_mit(context, krbencs[i].enctype, &kb,
 			  krbencs[i].usage, &cipher, &plain);
 	if (ret)
-	    errx(1, "krb_enc_mit failed with %d for test %d", ret, i);
+	    krb5_err(context, 1, ret, "krb_enc_mit failed with %d for test %d",
+                     ret, i);
     }
 
     return 0;

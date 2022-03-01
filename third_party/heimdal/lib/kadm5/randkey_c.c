@@ -93,7 +93,7 @@ kadm5_c_randkey_principal(void *server_handle,
     for (i = 0; ret == 0 && i < n_ks_tuple; i++) {
 	ret = krb5_store_int32(sp, ks_tuple[i].ks_enctype);
         if (ret == 0)
-            krb5_store_int32(sp, ks_tuple[i].ks_salttype);
+            ret = krb5_store_int32(sp, ks_tuple[i].ks_salttype);
     }
     /* Future extensions go here */
     if (ret)

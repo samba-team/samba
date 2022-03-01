@@ -65,7 +65,7 @@ static struct heim_plugin_data csr_authorizer_data = {
  * Invoke a plugin to validate a JWT/SAML/OIDC token and partially-evaluate
  * access control.
  */
-krb5_error_code
+KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
 kdc_authorize_csr(krb5_context context,
                   const char *app,
                   hx509_request csr,

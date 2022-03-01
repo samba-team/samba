@@ -128,9 +128,9 @@ main(int argc, char **argv)
     if(ret)
 	krb5_err(context, 1, ret, "krb5_string_to_enctype");
 
-    if((etype != (krb5_enctype)ETYPE_DES_CBC_CRC &&
-	etype != (krb5_enctype)ETYPE_DES_CBC_MD4 &&
-	etype != (krb5_enctype)ETYPE_DES_CBC_MD5) &&
+    if((etype != ETYPE_DES_CBC_CRC &&
+	etype != ETYPE_DES_CBC_MD4 &&
+	etype != ETYPE_DES_CBC_MD5) &&
        (afs || version4)) {
 	if(!version5) {
 	    etype = ETYPE_DES_CBC_CRC;

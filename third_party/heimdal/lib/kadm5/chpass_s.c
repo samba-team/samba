@@ -111,7 +111,7 @@ change(void *server_handle,
        int cond)
 {
     kadm5_server_context *context = server_handle;
-    hdb_entry_ex ent;
+    hdb_entry ent;
     kadm5_ret_t ret;
     Key *keys;
     size_t num_keys;
@@ -167,7 +167,7 @@ change(void *server_handle,
 	 * We save these for now so we can handle password history checking;
 	 * we handle keepold further below.
 	 */
-	ret = hdb_add_current_keys_to_history(context->context, &ent.entry);
+	ret = hdb_add_current_keys_to_history(context->context, &ent);
 	if (ret)
 	    goto out3;
     }
@@ -179,13 +179,13 @@ change(void *server_handle,
 	    goto out3;
     } else {
 
-	num_keys = ent.entry.keys.len;
-	keys     = ent.entry.keys.val;
+	num_keys = ent.keys.len;
+	keys     = ent.keys.val;
 
-	ent.entry.keys.len = 0;
-	ent.entry.keys.val = NULL;
+	ent.keys.len = 0;
+	ent.keys.val = NULL;
 
-	ret = _kadm5_set_keys(context, &ent.entry, n_ks_tuple, ks_tuple,
+	ret = _kadm5_set_keys(context, &ent, n_ks_tuple, ks_tuple,
 			      password);
 	if(ret) {
 	    _kadm5_free_keys(context->context, num_keys, keys);
@@ -196,10 +196,10 @@ change(void *server_handle,
 	if (cond) {
 	    HDB_extension *ext;
 
-	    ext = hdb_find_extension(&ent.entry, choice_HDB_extension_data_hist_keys);
+	    ext = hdb_find_extension(&ent, choice_HDB_extension_data_hist_keys);
 	    if (ext != NULL)
-		existsp = _kadm5_exists_keys_hist(ent.entry.keys.val,
-						  ent.entry.keys.len,
+		existsp = _kadm5_exists_keys_hist(ent.keys.val,
+						  ent.keys.len,
 						  &ext->data.u.hist_keys);
 	}
 
@@ -210,9 +210,9 @@ change(void *server_handle,
 	    goto out3;
 	}
     }
-    ent.entry.kvno++;
+    ent.kvno++;
 
-    ent.entry.flags.require_pwchange = 0;
+    ent.flags.require_pwchange = 0;
 
     if (!keepold) {
 	HDB_extension ext;
@@ -220,25 +220,25 @@ change(void *server_handle,
 	memset(&ext, 0, sizeof (ext));
         ext.mandatory = FALSE;
 	ext.data.element = choice_HDB_extension_data_hist_keys;
-	ret = hdb_replace_extension(context->context, &ent.entry, &ext);
+	ret = hdb_replace_extension(context->context, &ent, &ext);
 	if (ret)
 	    goto out3;
     }
 
-    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
+    ret = hdb_seal_keys(context->context, context->db, &ent);
     if (ret)
         goto out3;
 
-    ret = _kadm5_set_modifier(context, &ent.entry);
+    ret = _kadm5_set_modifier(context, &ent);
     if(ret)
 	goto out3;
 
-    ret = _kadm5_bump_pw_expire(context, &ent.entry);
+    ret = _kadm5_bump_pw_expire(context, &ent);
     if (ret)
 	goto out3;
 
     /* This logs the change for iprop and writes to the HDB */
-    ret = kadm5_log_modify(context, &ent.entry,
+    ret = kadm5_log_modify(context, &ent,
                            KADM5_ATTRIBUTES | KADM5_PRINCIPAL |
                            KADM5_MOD_NAME | KADM5_MOD_TIME |
                            KADM5_KEY_DATA | KADM5_KVNO |
@@ -249,7 +249,7 @@ change(void *server_handle,
 				 n_ks_tuple, ks_tuple, password);
 
  out3:
-    hdb_free_entry(context->context, &ent);
+    hdb_free_entry(context->context, context->db, &ent);
  out2:
     (void) kadm5_log_end(context);
  out:
@@ -367,7 +367,7 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
 				  krb5_key_data *key_data)
 {
     kadm5_server_context *context = server_handle;
-    hdb_entry_ex ent;
+    hdb_entry ent;
     kadm5_ret_t ret;
     uint32_t hook_flags = 0;
 
@@ -396,23 +396,23 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
 	goto out3;
 
     if (keepold) {
-	ret = hdb_add_current_keys_to_history(context->context, &ent.entry);
+	ret = hdb_add_current_keys_to_history(context->context, &ent);
 	if (ret)
 	    goto out3;
     }
-    ret = _kadm5_set_keys2(context, &ent.entry, n_key_data, key_data);
+    ret = _kadm5_set_keys2(context, &ent, n_key_data, key_data);
     if (ret)
 	goto out3;
-    ent.entry.kvno++;
-    ret = _kadm5_set_modifier(context, &ent.entry);
+    ent.kvno++;
+    ret = _kadm5_set_modifier(context, &ent);
     if (ret)
 	goto out3;
-    ret = _kadm5_bump_pw_expire(context, &ent.entry);
+    ret = _kadm5_bump_pw_expire(context, &ent);
     if (ret)
 	goto out3;
 
     if (keepold) {
-	ret = hdb_seal_keys(context->context, context->db, &ent.entry);
+	ret = hdb_seal_keys(context->context, context->db, &ent);
 	if (ret)
 	    goto out3;
     } else {
@@ -423,11 +423,11 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
 	ext.data.element = choice_HDB_extension_data_hist_keys;
 	ext.data.u.hist_keys.len = 0;
 	ext.data.u.hist_keys.val = NULL;
-	hdb_replace_extension(context->context, &ent.entry, &ext);
+	hdb_replace_extension(context->context, &ent, &ext);
     }
 
     /* This logs the change for iprop and writes to the HDB */
-    ret = kadm5_log_modify(context, &ent.entry,
+    ret = kadm5_log_modify(context, &ent,
                            KADM5_PRINCIPAL | KADM5_MOD_NAME |
                            KADM5_MOD_TIME | KADM5_KEY_DATA | KADM5_KVNO |
                            KADM5_PW_EXPIRATION | KADM5_TL_DATA);
@@ -437,7 +437,7 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
 					  n_key_data, key_data);
 
  out3:
-    hdb_free_entry(context->context, &ent);
+    hdb_free_entry(context->context, context->db, &ent);
  out2:
     (void) kadm5_log_end(context);
  out:

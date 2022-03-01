@@ -96,7 +96,7 @@ static mp_err s_read_urandom(void *p, size_t n)
    if (fd == -1) return MP_ERR;
 
    while (n > 0u) {
-      ssize_t ret = read(fd, p, n);
+      ssize_t ret = read(fd, q, n);
       if (ret < 0) {
          if (errno == EINTR) {
             continue;

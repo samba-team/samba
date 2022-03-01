@@ -49,7 +49,7 @@ read_words (const char *filename, char ***ret_w)
 	buf[strcspn(buf, "\r\n")] = '\0';
 	if (n >= alloc) {
 	    alloc += 16;
-	    w = erealloc (w, alloc * sizeof(char **));
+	    w = erealloc (w, alloc * sizeof(*w));
 	}
 	w[n++] = estrdup (buf);
     }

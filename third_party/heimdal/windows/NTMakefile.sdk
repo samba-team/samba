@@ -1,0 +1,130 @@
+########################################################################
+#
+# Copyright (c) 2021, PADL Software Pty Ltd.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# - Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+#
+# - Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in
+#   the documentation and/or other materials provided with the
+#   distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN if ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+
+!if !defined(CPU) || "$(CPU)" == ""
+CPU         =AMD64
+!endif
+
+!if "$(CPU)" == "X86" || "$(CPU)" == "x86"
+CPU         =i386
+!endif
+
+!if !defined(APPVER)
+APPVER      =6.1
+!endif
+
+!if "$(APPVER)" == "5.0"
+NMAKE_WINVER=0x0500
+!elseif "$(APPVER)" == "5.01"
+NMAKE_WINVER=0x0501
+!elseif "$(APPVER)" == "5.02"
+NMAKE_WINVER=0x0502
+!elseif "$(APPVER)" == "6.0"
+NMAKE_WINVER=0x0600
+!elseif "$(APPVER)" == "6.1"
+NMAKE_WINVER=0x0601
+!elseif "$(APPVER)" == "10.0"
+NMAKE_WINVER=0x0A00
+!else
+!error Unknown value for APPVER
+!endif
+
+cc          = cl
+link        = link
+implib      = lib
+
+cflags      = -c -DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -nologo -GS -W4
+
+!if "$(CPU)" == "i386"
+cflags      = $(cflags) -D_X86_=1
+!endif
+!if "$(CPU)" == "AMD64"
+cflags      = $(cflags) -D_AMD64_=1
+!endif
+!if "$(CPU)" == "ARM"
+cflags      = $(cflags) -D_ARM_=1
+!endif
+!if "$(CPU)" == "ARM64"
+cflags      = $(cflags) -D_ARM64_=1
+!endif
+
+cflags      = $(cflags) -DWIN32 -D_WIN32
+!if "$(CPU)" == "AMD64" || "$(CPU)" == "ARM64"
+cflags      = $(cflags) -DWIN64 -D_WIN64
+!endif
+
+cflags      = $(cflags) -D_WINNT -D_WIN32_WINNT=$(NMAKE_WINVER)
+cflags      = $(cflags) -DNTDDI_VERSION=$(NMAKE_WINVER)0000
+cflags      = $(cflags) -D_WIN32_IE=$(NMAKE_WINVER) -DWINVER=$(NMAKE_WINVER)
+
+!ifdef NODEBUG
+cdebug      = -Ox -DNDEBUG
+!else
+cdebug      = -Zi -Od -DDEBUG
+!endif
+
+cvarsmt     = -D_MT
+cvarsdll    = -D_MT -D_DLL
+!ifdef NODEBUG
+cvarsmt     = $(cvarsmt) -MT
+cvarsdll    = $(cvarsdll) -MD
+!else
+cvarsmt     = $(cvarsmt) -MTd
+cvarsdll    = $(cvarsdll) -MDd
+!endif
+cvars       = $(cvarsmt)
+
+lflags      = $(lflags) /INCREMENTAL:NO /NOLOGO
+!ifdef NODEBUG
+ldebug      = /RELEASE
+!else
+ldebug      = /DEBUG /DEBUGTYPE:cv
+!endif
+
+!if "$(CPU)" == "i386"
+dllentry    = _DllMainCRTStartup@12
+!else
+dllentry    = _DllMainCRTStartup
+!endif
+
+conlflags   = $(lflags) -subsystem:console,$(APPVER)
+guilflags   = $(lflags) -subsystem:windows,$(APPVER)
+dlllflags   = $(lflags) -entry:$(dllentry) -dll
+
+baselibs    = kernel32.lib ws2_32.lib mswsock.lib advapi32.lib
+conlibs     = $(baselibs)
+conlibsmt   = $(baselibs)
+conlibsdll  = $(baselibs)
+
+winlibs     = $(baselibs) user32.lib gdi32.lib comdlg32.lib winspool.lib
+guilibs     = $(winlibs)
+guilibsmt   = $(winlibs)
+guilibsdll  = $(winlibs)

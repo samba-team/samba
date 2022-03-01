@@ -743,6 +743,7 @@ acceptor_start
 	}
     } else {
 	*minor_status = 0;
+	gss_release_oid_set(&junk, &supported_mechs);
 	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	return gss_mg_set_error_string(GSS_C_NO_OID, GSS_S_NO_CONTEXT,
 				       *minor_status,

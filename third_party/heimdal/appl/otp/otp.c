@@ -118,16 +118,22 @@ verify_user_otp(char *username)
 {
     OtpContext ctx;
     char passwd[OTP_MAX_PASSPHRASE + 1];
-    char prompt[128], ss[256];
+    char ss[256];
+    char *prompt = NULL;
 
     if (otp_challenge (&ctx, username, ss, sizeof(ss)) != 0) {
 	warnx("no otp challenge found for %s", username);
 	return 1;
     }
 
-    snprintf (prompt, sizeof(prompt), "%s's %s Password: ", username, ss);
-    if(UI_UTIL_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0))
+    if (asprintf(&prompt, "%s's %s Password: ", username, ss) == -1 ||
+        prompt == NULL)
+        err(1, "out of memory");
+    if (UI_UTIL_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0)) {
+        free(prompt);
 	return 1;
+    }
+    free(prompt);
     return otp_verify_user (&ctx, passwd);
 }
 

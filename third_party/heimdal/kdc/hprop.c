@@ -87,28 +87,28 @@ open_socket(krb5_context context, const char *hostname, const char *port)
 }
 
 krb5_error_code
-v5_prop(krb5_context context, HDB *db, hdb_entry_ex *entry, void *appdata)
+v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
 {
     krb5_error_code ret;
     struct prop_data *pd = appdata;
     krb5_data data;
 
     if(encrypt_flag) {
-	ret = hdb_seal_keys_mkey(context, &entry->entry, mkey5);
+	ret = hdb_seal_keys_mkey(context, entry, mkey5);
 	if (ret) {
 	    krb5_warn(context, ret, "hdb_seal_keys_mkey");
 	    return ret;
 	}
     }
     if(decrypt_flag) {
-	ret = hdb_unseal_keys_mkey(context, &entry->entry, mkey5);
+	ret = hdb_unseal_keys_mkey(context, entry, mkey5);
 	if (ret) {
 	    krb5_warn(context, ret, "hdb_unseal_keys_mkey");
 	    return ret;
 	}
     }
 
-    ret = hdb_entry2value(context, &entry->entry, &data);
+    ret = hdb_entry2value(context, entry, &data);
     if(ret) {
 	krb5_warn(context, ret, "hdb_entry2value");
 	return ret;
@@ -316,9 +316,18 @@ propagate_database (krb5_context context, int type,
 
         if (local_realm) {
             krb5_realm my_realm;
-            krb5_get_default_realm(context,&my_realm);
-            krb5_principal_set_realm(context,server,my_realm);
-	    krb5_xfree(my_realm);
+            ret = krb5_get_default_realm(context,&my_realm);
+	    if (ret == 0) {
+		ret = krb5_principal_set_realm(context,server,my_realm);
+		krb5_xfree(my_realm);
+	    }
+	    if (ret) {
+		failed++;
+		krb5_warn(context, ret, "unable to obtain default or set realm");
+		krb5_free_principal(context, server);
+		close(fd);
+		continue;
+	    }
         }
 
 	auth_context = NULL;

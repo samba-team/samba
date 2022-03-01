@@ -309,7 +309,7 @@ configure(krb5_context context, int argc, char **argv, int *optidx)
 	krb5_enctype_disable(context, ETYPE_DES_PCBC_NONE);
     }
 
-    krb5_kdc_windc_init(context);
+    krb5_kdc_plugin_init(context);
 
     krb5_kdc_pkinit_config(context, config);
 

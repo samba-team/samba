@@ -36,6 +36,8 @@
 #ifndef HEIMBASE_SVC_H
 #define HEIMBASE_SVC_H 1
 
+#include <heimbase.h>
+
 /*
  * This file is meant to be included in services, which can
  *
@@ -68,7 +70,9 @@
     const char *e_text;                                         \
     char *e_text_buf;                                           \
     heim_string_t reason;                                       \
-    heim_array_t kv;                                            \
-    int32_t ret
+    /* auditing key/value store */                              \
+    heim_dict_t kv;                                             \
+    heim_dict_t attributes;                                     \
+    int32_t error_code
 
 #endif /* HEIMBASE_SVC_H */

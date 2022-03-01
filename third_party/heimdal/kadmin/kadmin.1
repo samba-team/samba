@@ -166,13 +166,20 @@ and
 sub-commands rather than having to edit the KDC's configuration
 file and having to restart the KDC.
 .Pp
-However, there is currently no way to alias namespaces via HDB
-entry aliases.
-To issue referrals for entire namespaces use the
+There are two methods for issuing referrals for entire namespaces
+of hostnames.
+An alias of the form
+.Ar  WELLKNOWN/HOSTBASED-NAMESPACE/service/namespace-fqdn@REALM
+(see
+.Nm add_namespace
+below) will cause all requests for host-based principals in the
+given namespace to be referred to the given realm.
+Alternatively, the KDC will issue referrals for all host-based
+service principals whose hostname component matches a
 .Ar [domain_realm]
-section of the KDC's
+entry in the KDC's
 .Ar krb5.conf
-file.
+file referring to a different realm.
 .Ed
 .Pp
 .Nm add_namespace
@@ -182,17 +189,22 @@ file.
 .Op Fl Fl max-ticket-life= Ns Ar lifetime
 .Op Fl Fl max-renewable-life= Ns Ar lifetime
 .Op Fl Fl attributes= Ns Ar attributes
-.Ar principal...
+.Ar host-based-principal...
 .Bd -ragged -offset indent
 Adds a new namespace of virtual host-based or domain-based
 principals to the database, whose keys will be automatically
 derived from base keys stored in the namespace record, and which
 keys will be rotated automatically.
-The namespace names should look like
-.Ar hostname@REALM
+The namespace names are of the same form as host-based principal
+names:
+.Ar service/hostname@REALM
 and these will match all host-based or domain-based service names
 where hostname component of such a principal ends in the labels
 of the hostname in the namespace name.
+.Pp
+The service name component may be a wild-card (underscore,
+.Ar _ ),
+in which case it will match any service.
 .Pp
 For example,
 .Ar bar.baz.example@BAZ.EXAMPLE
@@ -222,6 +234,11 @@ The default key rotation period is
 The default enctypes is as for the
 .Nm add
 command.
+.Pp
+Note that namespaces are stored as principals whose names are of the form
+.Ar WELLKNOWN/HOSTBASED-NAMESPACE/service/namespace.fqdn@REALM ,
+with the
+.Ar service
 .Pp
 This command has the following alias:
 .Nm add_ns .

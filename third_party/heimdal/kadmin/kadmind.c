@@ -134,6 +134,8 @@ main(int argc, char **argv)
 
     argc -= optidx;
     argv += optidx;
+    if (argc != 0)
+        usage(1);
 
     if (config_file == NULL) {
 	int aret;

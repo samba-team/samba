@@ -96,7 +96,7 @@ krb5_rd_cred(krb5_context context,
 	goto out;
     }
 
-    if (cred.enc_part.etype == (krb5_enctype)ETYPE_NULL) {
+    if (cred.enc_part.etype == ETYPE_NULL) {
 	/* DK: MIT GSS-API Compatibility */
 	enc_krb_cred_part_data.length = cred.enc_part.cipher.length;
 	enc_krb_cred_part_data.data   = cred.enc_part.cipher.data;

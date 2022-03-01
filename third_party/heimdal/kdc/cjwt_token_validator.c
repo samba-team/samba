@@ -107,13 +107,13 @@ get_issuer_pubkeys(krb5_context context,
     if (!previous->length && !current->length && !next->length)
         krb5_set_error_message(context, save_ret,
                                "Could not read jwk issuer public key files");
-    if (current->length == next->length &&
+    if (current->length && current->length == next->length &&
         memcmp(current->data, next->data, next->length) == 0) {
         free(next->data);
         next->data = 0;
         next->length = 0;
     }
-    if (current->length == previous->length &&
+    if (current->length && current->length == previous->length &&
         memcmp(current->data, previous->data, previous->length) == 0) {
         free(previous->data);
         previous->data = 0;
@@ -255,6 +255,11 @@ validate(void *ctx,
     tokstr = NULL;
     switch (ret) {
     case 0:
+        if (jwt == NULL) {
+            krb5_set_error_message(context, EINVAL, "JWT validation failed");
+            free(defrealm);
+            return EPERM;
+        }
         if (jwt->header.alg == alg_none) {
             krb5_set_error_message(context, EINVAL, "JWT signature algorithm "
                                    "not supported");

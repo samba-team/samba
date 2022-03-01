@@ -900,6 +900,8 @@ test_heim_oid_format_same(const char *str, const heim_oid *oid)
     ret = der_heim_oid_cmp(&o2, oid);
     der_free_oid(&o2);
 
+    if (ret != 0)
+        return 1;
     return 0;
 }
 

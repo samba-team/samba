@@ -114,7 +114,7 @@ RSA_new_method(ENGINE *engine)
     if (rsa->engine) {
 	rsa->meth = ENGINE_get_RSA(rsa->engine);
 	if (rsa->meth == NULL) {
-	    ENGINE_finish(engine);
+	    ENGINE_finish(rsa->engine);
 	    free(rsa);
 	    return 0;
 	}
@@ -272,7 +272,10 @@ RSA_check_key(const RSA *key)
      * and then decrypt/verify.
      */
 
-    if ((rsa->d == NULL || rsa->n == NULL) &&
+    if (rsa->n == NULL)
+	return 0;
+
+    if (rsa->d == NULL &&
 	(rsa->p == NULL || rsa->q || rsa->dmp1 == NULL || rsa->dmq1 == NULL || rsa->iqmp == NULL))
 	return 0;
 

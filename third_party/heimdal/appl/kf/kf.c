@@ -312,7 +312,9 @@ doit (const char *hostname, int port, const char *svc,
 	    continue;
 	}
 	freeaddrinfo (ai);
-	return proto (s, hostname, svc, message, len);
+	error = proto(s, hostname, svc, message, len);
+	close(s);
+	return error;
     }
     warnx ("failed to contact %s", hostname);
     freeaddrinfo (ai);

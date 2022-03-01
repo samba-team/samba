@@ -20,6 +20,7 @@ AM_PROG_CC_C_O
 AC_PROG_CPP
 AM_PATH_PYTHON
 AC_CHECK_PROG(CLANG_FORMAT, clang-format, [clang-format], [no])
+test "$CLANG_FORMAT" = no && CLANG_FORMAT=true
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
@@ -58,8 +59,8 @@ if ! test -f "$srcdir/lib/asn1/der-protos.h" ||
     AC_KRB_PERL_MOD(JSON)
 fi
 
-dnl AC_KRB_PROG_YACC
-AC_PROG_YACC
+AC_KRB_PROG_YACC
+dnl AC_PROG_YACC
 AM_PROG_LEX
 AS_IF([$LEX --nounput -V > /dev/null 2>&1 && test $? -eq 0],
       [AC_SUBST([FLEXNOUNPUTARGS], ["--nounput"])],
@@ -86,8 +87,6 @@ AM_CONDITIONAL([ENABLE_GCOV], [test "x$enable_gcov" = xyes])
 dnl
 dnl Helper bits for cross compiling
 dnl
-
-
 
 AM_CONDITIONAL(CROSS_COMPILE, test "${cross_compiling}" = yes)
 
@@ -117,6 +116,14 @@ else
 
 fi
 
+AX_CHECK_COMPILE_FLAG([-Wno-error=enum-conversion],
+                      [WFLAGS_ENUM_CONV=-Wno-error=enum-conversion],
+                      [WFLAGS_ENUM_CONV=], [-Werror])
+AX_CHECK_COMPILE_FLAG([-Wno-unused-but-set-variable],
+                      [WFLAGS_UNUSED_BUT_SET_VAR=-Wno-unused-but-set-variable],
+                      [WFLAGS_UNUSED_BUT_SET_VAR=], [-Werror])
+
+AC_SUBST([WFLAGS_ENUM_CONV])
 AC_SUBST([ASN1_COMPILE])
 AC_SUBST([ASN1_COMPILE_DEP])
 AC_SUBST([SLC])
@@ -496,6 +503,20 @@ dnl export symbols
 rk_WIN32_EXPORT(BUILD_KRB5_LIB, KRB5_LIB)
 rk_WIN32_EXPORT(BUILD_ROKEN_LIB, ROKEN_LIB)
 rk_WIN32_EXPORT(BUILD_GSSAPI_LIB, GSSAPI_LIB)
+rk_WIN32_EXPORT(BUILD_KDC_LIB, KDC_LIB)
+
+dnl Deal with switch FALLTHROUGH
+AH_TOP([
+#if defined(__GNUC__)
+#if __GNUC__ >= 7
+# define fallthrough __attribute__((fallthrough))
+#else
+# define fallthrough do {} while (0) /* fallthrough */
+#endif
+#else
+# define fallthrough  do {} while (0) /* fallthrough */
+#endif
+])
 
 dnl Checks for libraries.
 
@@ -604,6 +625,15 @@ fi
 AM_CONDITIONAL(HAVE_KEYUTILS, test "$ac_cv_func_keyctl_get_persistent" = yes)
 
 AC_CHECK_SIZEOF([time_t])
+
+AX_CHECK_SIGN([time_t],
+  [ AC_DEFINE(TIME_T_SIGNED, 1, [Define if time_t is signed]) ],
+  [ AC_DEFINE(TIME_T_UNSIGNED, 1, [Define if time_t is unsigned]) ], [
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
+])
+
 
 AC_CHECK_TYPES([int8_t, int16_t, int32_t, int64_t, 
 	u_int8_t, u_int16_t, u_int32_t, u_int64_t,

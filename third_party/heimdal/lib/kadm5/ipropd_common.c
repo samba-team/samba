@@ -53,6 +53,7 @@ setup_signal(void)
     {
 	struct sigaction sa;
 
+        memset(&sa, 0, sizeof(sa));
 	sa.sa_flags = 0;
 	sa.sa_handler = sigterm;
 	sigemptyset(&sa.sa_mask);

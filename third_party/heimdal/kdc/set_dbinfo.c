@@ -64,7 +64,7 @@ add_db(krb5_context context, struct krb5_kdc_configuration *c,
     return 0;
 }
 
-krb5_error_code
+KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
 krb5_kdc_set_dbinfo(krb5_context context, struct krb5_kdc_configuration *c)
 {
     struct hdb_dbinfo *info, *d;
