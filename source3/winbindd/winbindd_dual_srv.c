@@ -1927,4 +1927,79 @@ reconnect:
 	return status;
 }
 
+enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
+							struct winbindd_cli_state *state)
+{
+	uint32_t i;
+	int extra_data_len = 0;
+	char *extra_data;
+	NTSTATUS result;
+	bool have_own_domain = False;
+	struct netr_DomainTrustList trusts;
+
+	DBG_NOTICE("[%s %u]: list trusted domains\n",
+		   state->client_name,
+		   (unsigned int)state->pid);
+
+	result = wb_cache_trusted_domains(domain, state->mem_ctx, &trusts);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DBG_NOTICE("wb_cache_trusted_domains returned %s\n",
+			   nt_errstr(result));
+		return WINBINDD_ERROR;
+	}
+
+	extra_data = talloc_strdup(state->mem_ctx, "");
+
+	for (i=0; i<trusts.count; i++) {
+		struct dom_sid_buf buf;
+
+		if (trusts.array[i].sid == NULL) {
+			continue;
+		}
+		if (dom_sid_equal(trusts.array[i].sid, &global_sid_NULL)) {
+			continue;
+		}
+
+		extra_data = talloc_asprintf_append_buffer(
+		    extra_data, "%s\\%s\\%s\\%u\\%u\\%u\n",
+		    trusts.array[i].netbios_name, trusts.array[i].dns_name,
+		    dom_sid_str_buf(trusts.array[i].sid, &buf),
+		    trusts.array[i].trust_flags,
+		    (uint32_t)trusts.array[i].trust_type,
+		    trusts.array[i].trust_attributes);
+	}
+
+	/* add our primary domain */
+
+	for (i=0; i<trusts.count; i++) {
+		if (strequal(trusts.array[i].netbios_name, domain->name)) {
+			have_own_domain = True;
+			break;
+		}
+	}
+
+	if (state->request->data.list_all_domains && !have_own_domain) {
+		struct dom_sid_buf buf;
+		extra_data = talloc_asprintf_append_buffer(
+			extra_data, "%s\\%s\\%s\n", domain->name,
+			domain->alt_name != NULL ?
+				domain->alt_name :
+				domain->name,
+			dom_sid_str_buf(&domain->sid, &buf));
+	}
+
+	extra_data_len = strlen(extra_data);
+	if (extra_data_len > 0) {
+
+		/* Strip the last \n */
+		extra_data[extra_data_len-1] = '\0';
+
+		state->response->extra_data.data = extra_data;
+		state->response->length += extra_data_len;
+	}
+
+	return WINBINDD_OK;
+}
+
 #include "librpc/gen_ndr/ndr_winbind_scompat.c"
