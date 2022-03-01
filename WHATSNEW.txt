@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.16.  This is *not*
+This is the fourth release candidate of Samba 4.16.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -172,6 +172,25 @@ smb.conf changes
   rpc_daemon                              Removed
   rpc_server                              Removed
   rpc start on demand helpers             Added           true
+
+
+CHANGES SINCE 4.16.0rc3
+=======================
+
+o  Samuel Cabrero <scabrero@suse.de>
+   * BUG 14979: Problem when winbind renews Kerberos.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 13631: DFS fix for AIX broken.
+   * BUG 14974: Solaris and AIX acl modules: wrong function arguments.
+   * BUG 7239: Function aixacl_sys_acl_get_file not declared / coredump.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14967: Samba autorid fails to map AD users if id rangesize fits in the
+     id range only once.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14958: CTDB can get stuck in election and recovery.
 
 
 CHANGES SINCE 4.16.0rc2
