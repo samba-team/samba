@@ -48,7 +48,7 @@ if bld.CONFIG_GET('SAMBA_USES_MITKDC'):
 
 bld.SAMBA_LIBRARY('HDB_SAMBA4',
                   source='hdb-samba4.c hdb-samba4-plugin.c',
-                  deps='ldb auth4_sam common_auth samba-credentials hdb db-glue samba-hostconfig com_err sdb_hdb RPC_NDR_WINBIND',
+                  deps='ldb auth4_sam common_auth samba-credentials hdb kdc db-glue samba-hostconfig com_err sdb_hdb RPC_NDR_WINBIND',
                   includes=kdc_include,
                   private_library=True,
                   enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')

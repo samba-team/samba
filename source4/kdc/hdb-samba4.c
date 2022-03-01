@@ -46,6 +46,7 @@
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "lib/messaging/irpc.h"
 #include "hdb.h"
+#include <kdc-audit.h>
 
 static krb5_error_code hdb_samba4_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
@@ -545,7 +546,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 
 	size_t sa_socklen = 0;
 
-	hdb_auth_status_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_AUTH_EVENT);
+	hdb_auth_status_obj = heim_audit_getkv((heim_svc_req_desc)r, KDC_REQUEST_KV_AUTH_EVENT);
 	if (hdb_auth_status_obj == NULL) {
 		/* No status code found, so just return. */
 		return 0;
@@ -558,15 +559,15 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		pa_type = heim_string_get_utf8(pa_type_obj);
 	}
 
-	auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_PKINIT_CLIENT_CERT);
+	auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, KDC_REQUEST_KV_PKINIT_CLIENT_CERT);
 	if (auth_details_obj != NULL) {
 		auth_details = heim_string_get_utf8(auth_details_obj);
 	} else {
-		auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_GSS_INITIATOR);
+		auth_details_obj = heim_audit_getkv((heim_svc_req_desc)r, KDC_REQUEST_KV_GSS_INITIATOR);
 		if (auth_details_obj != NULL) {
 			auth_details = heim_string_get_utf8(auth_details_obj);
 		} else {
-			heim_object_t etype_obj = heim_audit_getkv((heim_svc_req_desc)r, HDB_REQUEST_KV_PA_ETYPE);
+			heim_object_t etype_obj = heim_audit_getkv((heim_svc_req_desc)r, KDC_REQUEST_KV_PA_ETYPE);
 			if (etype_obj != NULL) {
 				int etype = heim_number_get_int(etype_obj);
 
@@ -610,7 +611,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	}
 
 	switch (hdb_auth_status) {
-	case HDB_AUTH_EVENT_CLIENT_AUTHORIZED:
+	case KDC_AUTH_EVENT_CLIENT_AUTHORIZED:
 	{
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct samba_kdc_entry *p = talloc_get_type(entry->context,
@@ -630,11 +631,11 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		talloc_free(frame);
 		break;
 	}
-	case HDB_AUTH_EVENT_CLIENT_LOCKED_OUT:
-	case HDB_AUTH_EVENT_VALIDATED_LONG_TERM_KEY:
-	case HDB_AUTH_EVENT_WRONG_LONG_TERM_KEY:
-	case HDB_AUTH_EVENT_PREAUTH_SUCCEEDED:
-	case HDB_AUTH_EVENT_PREAUTH_FAILED:
+	case KDC_AUTH_EVENT_CLIENT_LOCKED_OUT:
+	case KDC_AUTH_EVENT_VALIDATED_LONG_TERM_KEY:
+	case KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY:
+	case KDC_AUTH_EVENT_PREAUTH_SUCCEEDED:
+	case KDC_AUTH_EVENT_PREAUTH_FAILED:
 	{
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct samba_kdc_entry *p = talloc_get_type(entry->context,
@@ -673,7 +674,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		}
 		ui.auth_description = auth_description;
 
-		if (hdb_auth_status == HDB_AUTH_EVENT_WRONG_LONG_TERM_KEY) {
+		if (hdb_auth_status == KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY) {
 			authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
 			status = NT_STATUS_WRONG_PASSWORD;
 			/*
@@ -684,13 +685,13 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			if (kdc_db_ctx->rodc) {
 				send_bad_password_netlogon(frame, kdc_db_ctx, &ui);
 			}
-		} else if (hdb_auth_status == HDB_AUTH_EVENT_CLIENT_LOCKED_OUT) {
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_LOCKED_OUT) {
 			status = NT_STATUS_ACCOUNT_LOCKED_OUT;
-		} else if (hdb_auth_status == HDB_AUTH_EVENT_VALIDATED_LONG_TERM_KEY) {
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_VALIDATED_LONG_TERM_KEY) {
 			status = NT_STATUS_OK;
-		} else if (hdb_auth_status == HDB_AUTH_EVENT_PREAUTH_SUCCEEDED) {
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_PREAUTH_SUCCEEDED) {
 			status = NT_STATUS_OK;
-		} else if (hdb_auth_status == HDB_AUTH_EVENT_PREAUTH_FAILED) {
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_PREAUTH_FAILED) {
 			if (pa_type != NULL && strncmp(pa_type, "PK-INIT", strlen("PK-INIT")) == 0) {
 				status = NT_STATUS_PKINIT_FAILURE;
 			} else {
@@ -711,7 +712,7 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		TALLOC_FREE(frame);
 		break;
 	}
-	case HDB_AUTH_EVENT_CLIENT_UNKNOWN:
+	case KDC_AUTH_EVENT_CLIENT_UNKNOWN:
 	{
 		struct tsocket_address *remote_host;
 		int ret;
