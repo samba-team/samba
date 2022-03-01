@@ -41,10 +41,17 @@ def options(opt):
                         +" Can be used multiple times."),
                   action="append", dest="systemd_samba_extra", default=[])
 
+    gr.add_option('--systemd-ctdb-extra',
+                  metavar="Option=Value",
+                  help=("Extra directives added to the ctdb service file."
+                        +" Can be given multiple times."),
+                  action="append", dest="systemd_ctdb_extra", default=[])
+
 def configure(conf):
     conf.env.systemd_install_services = Options.options.systemd_install_services
     conf.env.systemd_smb_extra = '\n'.join(Options.options.systemd_smb_extra)
     conf.env.systemd_nmb_extra = '\n'.join(Options.options.systemd_nmb_extra)
     conf.env.systemd_winbind_extra = '\n'.join(Options.options.systemd_winbind_extra)
     conf.env.systemd_samba_extra = '\n'.join(Options.options.systemd_samba_extra)
+    conf.env.systemd_ctdb_extra = '\n'.join(Options.options.systemd_ctdb_extra)
     conf.env.SYSTEMDDIR = Options.options.SYSTEMDDIR
