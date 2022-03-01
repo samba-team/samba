@@ -629,13 +629,9 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			reset_bad_password_netlogon(frame, kdc_db_ctx, send_to_sam);
 		}
 		talloc_free(frame);
-		break;
 	}
-	case KDC_AUTH_EVENT_CLIENT_LOCKED_OUT:
-	case KDC_AUTH_EVENT_VALIDATED_LONG_TERM_KEY:
-	case KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY:
-	case KDC_AUTH_EVENT_PREAUTH_SUCCEEDED:
-	case KDC_AUTH_EVENT_PREAUTH_FAILED:
+	FALL_THROUGH;
+	default:
 	{
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct samba_kdc_entry *p = talloc_get_type(entry->context,
@@ -674,7 +670,11 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		}
 		ui.auth_description = auth_description;
 
-		if (hdb_auth_status == KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY) {
+		if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_AUTHORIZED) {
+			status = NT_STATUS_OK;
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_TIME_SKEW) {
+			status = NT_STATUS_TIME_DIFFERENCE_AT_DC;
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY) {
 			authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
 			status = NT_STATUS_WRONG_PASSWORD;
 			/*
@@ -687,10 +687,12 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			}
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_LOCKED_OUT) {
 			status = NT_STATUS_ACCOUNT_LOCKED_OUT;
-		} else if (hdb_auth_status == KDC_AUTH_EVENT_VALIDATED_LONG_TERM_KEY) {
-			status = NT_STATUS_OK;
-		} else if (hdb_auth_status == KDC_AUTH_EVENT_PREAUTH_SUCCEEDED) {
-			status = NT_STATUS_OK;
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_NAME_UNAUTHORIZED) {
+			if (pa_type != NULL && strncmp(pa_type, "PK-INIT", strlen("PK-INIT")) == 0) {
+				status = NT_STATUS_PKINIT_NAME_MISMATCH;
+			} else {
+				status = NT_STATUS_ACCOUNT_RESTRICTION;
+			}
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_PREAUTH_FAILED) {
 			if (pa_type != NULL && strncmp(pa_type, "PK-INIT", strlen("PK-INIT")) == 0) {
 				status = NT_STATUS_PKINIT_FAILURE;
@@ -698,6 +700,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 				status = NT_STATUS_GENERIC_COMMAND_FAILED;
 			}
 		} else {
+			DBG_ERR("Unhandled hdb_auth_status=%d => INTERNAL_ERROR\n",
+				hdb_auth_status);
 			status = NT_STATUS_INTERNAL_ERROR;
 		}
 
