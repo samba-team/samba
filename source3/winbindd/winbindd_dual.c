@@ -43,6 +43,9 @@
 #include "passdb.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
+#include "idmap.h"
+#include "libcli/auth/netlogon_creds_cli.h"
+#include "../lib/util/pidfile.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1899,4 +1902,106 @@ void winbind_msg_ip_dropped_parent(struct messaging_context *msg_ctx,
 			       server_id, data);
 
 	forall_children(winbind_msg_relay_fn, &state);
+}
+
+void winbindd_terminate(bool is_parent)
+{
+	if (is_parent) {
+		/* When parent goes away we should
+		 * remove the socket file. Not so
+		 * when children terminate.
+		 */
+		char *path = NULL;
+
+		if (asprintf(&path, "%s/%s",
+			lp_winbindd_socket_directory(), WINBINDD_SOCKET_NAME) > 0) {
+			unlink(path);
+			SAFE_FREE(path);
+		}
+	}
+
+	idmap_close();
+
+	netlogon_creds_cli_close_global_db();
+
+#if 0
+	if (interactive) {
+		TALLOC_CTX *mem_ctx = talloc_init("end_description");
+		char *description = talloc_describe_all(mem_ctx);
+
+		DEBUG(3, ("tallocs left:\n%s\n", description));
+		talloc_destroy(mem_ctx);
+	}
+#endif
+
+	if (is_parent) {
+		pidfile_unlink(lp_pid_directory(), "winbindd");
+	}
+
+	exit(0);
+}
+
+static void winbindd_sig_term_handler(struct tevent_context *ev,
+				      struct tevent_signal *se,
+				      int signum,
+				      int count,
+				      void *siginfo,
+				      void *private_data)
+{
+	bool *p = talloc_get_type_abort(private_data, bool);
+	bool is_parent = *p;
+
+	TALLOC_FREE(p);
+
+	DEBUG(0,("Got sig[%d] terminate (is_parent=%d)\n",
+		 signum, is_parent));
+	winbindd_terminate(is_parent);
+}
+
+bool winbindd_setup_sig_term_handler(bool parent)
+{
+	struct tevent_signal *se;
+	bool *is_parent;
+
+	is_parent = talloc(global_event_context(), bool);
+	if (!is_parent) {
+		return false;
+	}
+
+	*is_parent = parent;
+
+	se = tevent_add_signal(global_event_context(),
+			       is_parent,
+			       SIGTERM, 0,
+			       winbindd_sig_term_handler,
+			       is_parent);
+	if (!se) {
+		DEBUG(0,("failed to setup SIGTERM handler"));
+		talloc_free(is_parent);
+		return false;
+	}
+
+	se = tevent_add_signal(global_event_context(),
+			       is_parent,
+			       SIGINT, 0,
+			       winbindd_sig_term_handler,
+			       is_parent);
+	if (!se) {
+		DEBUG(0,("failed to setup SIGINT handler"));
+		talloc_free(is_parent);
+		return false;
+	}
+
+	se = tevent_add_signal(global_event_context(),
+			       is_parent,
+			       SIGQUIT, 0,
+			       winbindd_sig_term_handler,
+			       is_parent);
+	if (!se) {
+		DEBUG(0,("failed to setup SIGINT handler"));
+		talloc_free(is_parent);
+		return false;
+	}
+
+	return true;
 }

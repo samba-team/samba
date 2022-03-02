@@ -25,6 +25,7 @@
 
 /* The following definitions come from winbindd/winbindd.c  */
 struct imessaging_context *winbind_imessaging_context(void);
+void winbindd_terminate(bool is_parent);
 bool winbindd_setup_sig_term_handler(bool parent);
 bool winbindd_setup_stdin_handler(bool parent, bool foreground);
 bool winbindd_setup_sig_hup_handler(const char *lfile);
