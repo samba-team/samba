@@ -415,3 +415,63 @@ bool winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 
 	return true;
 }
+
+static void winbindd_setup_max_fds(void)
+{
+	int num_fds = MAX_OPEN_FUDGEFACTOR;
+	int actual_fds;
+
+	num_fds += lp_winbind_max_clients();
+	/* Add some more to account for 2 sockets open
+	   when the client transitions from unprivileged
+	   to privileged socket
+	*/
+	num_fds += lp_winbind_max_clients() / 10;
+
+	/* Add one socket per child process
+	   (yeah there are child processes other than the
+	   domain children but only domain children can vary
+	   with configuration
+	*/
+	num_fds += lp_winbind_max_domain_connections() *
+		   (lp_allow_trusted_domains() ? WINBIND_MAX_DOMAINS_HINT : 1);
+
+	actual_fds = set_maxfiles(num_fds);
+
+	if (actual_fds < num_fds) {
+		DEBUG(1, ("winbindd_setup_max_fds: Information only: "
+			  "requested %d open files, %d are available.\n",
+			  num_fds, actual_fds));
+	}
+}
+
+bool winbindd_reload_services_file(const char *lfile)
+{
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	bool ret;
+
+	if (lp_loaded()) {
+		char *fname = lp_next_configfile(talloc_tos(), lp_sub);
+
+		if (file_exist(fname) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
+			set_dyn_CONFIGFILE(fname);
+		}
+		TALLOC_FREE(fname);
+	}
+
+	reopen_logs();
+	ret = lp_load_global(get_dyn_CONFIGFILE());
+
+	/* if this is a child, restore the logfile to the special
+	   name - <domain>, idmap, etc. */
+	if (lfile && *lfile) {
+		lp_set_logfile(lfile);
+	}
+
+	reopen_logs();
+	load_interfaces();
+	winbindd_setup_max_fds();
+
+	return(ret);
+}
