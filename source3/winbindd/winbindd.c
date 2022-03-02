@@ -87,31 +87,6 @@ static void winbindd_status(void)
 	}
 }
 
-/* Flush client cache */
-
-static void flush_caches_noinit(void)
-{
-	/*
-	 * We need to invalidate cached user list entries on a SIGHUP
-         * otherwise cached access denied errors due to restrict anonymous
-         * hang around until the sequence number changes.
-	 * NB
-	 * Skip uninitialized domains when flush cache.
-	 * If domain is not initialized, it means it is never
-	 * used or never become online. look, wcache_invalidate_cache()
-	 * -> get_cache() -> init_dc_connection(). It causes a lot of traffic
-	 * for unused domains and large traffic for primay domain's DC if there
-	 * are many domains..
-	 */
-
-	if (!wcache_invalidate_cache_noinit()) {
-		DEBUG(0, ("invalidating the cache failed; revalidate the cache\n"));
-		if (!winbindd_cache_validate_and_initialize()) {
-			exit(1);
-		}
-	}
-}
-
 /*
   handle stdin becoming readable when we are in --foreground mode
  */
@@ -162,45 +137,6 @@ bool winbindd_setup_stdin_handler(bool parent, bool foreground)
 					winbindd_stdin_handler,
 					is_parent);
 		}
-	}
-
-	return true;
-}
-
-static void winbindd_sig_hup_handler(struct tevent_context *ev,
-				     struct tevent_signal *se,
-				     int signum,
-				     int count,
-				     void *siginfo,
-				     void *private_data)
-{
-	const char *file = (const char *)private_data;
-
-	DEBUG(1,("Reloading services after SIGHUP\n"));
-	flush_caches_noinit();
-	winbindd_reload_services_file(file);
-}
-
-bool winbindd_setup_sig_hup_handler(const char *lfile)
-{
-	struct tevent_signal *se;
-	char *file = NULL;
-
-	if (lfile) {
-		file = talloc_strdup(global_event_context(),
-				     lfile);
-		if (!file) {
-			return false;
-		}
-	}
-
-	se = tevent_add_signal(global_event_context(),
-			       global_event_context(),
-			       SIGHUP, 0,
-			       winbindd_sig_hup_handler,
-			       file);
-	if (!se) {
-		return false;
 	}
 
 	return true;
