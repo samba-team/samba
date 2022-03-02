@@ -21,6 +21,7 @@
 import os
 import sys
 import re
+import platform
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../../selftest")))
 import selftesthelpers
 from selftesthelpers import bindir, srcdir, scriptdir, binpath
@@ -75,8 +76,9 @@ try:
 finally:
     f.close()
 
-if config_hash["SYSTEM_UNAME_SYSNAME"] == '"Linux"':
-    m = re.search(r'(\d+).(\d+).(\d+)', config_hash["SYSTEM_UNAME_RELEASE"])
+linux_kernel_version = None
+if platform.system() == 'Linux':
+    m = re.search(r'(\d+).(\d+).(\d+)', platform.release())
     if m:
         linux_kernel_version = [int(m.group(1)), int(m.group(2)), int(m.group(3))]
 
