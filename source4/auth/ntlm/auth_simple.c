@@ -26,6 +26,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
+#include "lib/param/param.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -80,7 +81,7 @@ _PUBLIC_ struct tevent_req *authenticate_ldap_simple_bind_send(TALLOC_CTX *mem_c
 	/* No client.domain_name, use account_name instead */
 	/* user_info->mapped.* will be filled below */
 
-	user_info->workstation_name = NULL;
+	user_info->workstation_name = lpcfg_netbios_name(lp_ctx);
 
 	user_info->remote_host = remote_address;
 	user_info->local_host = local_address;
