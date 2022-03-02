@@ -100,7 +100,8 @@ NTSTATUS gp_create_gpt_security_descriptor (TALLOC_CTX *mem_ctx, struct security
 		struct security_ace *ace;
 
 		/* Don't add the allow for SID_BUILTIN_PREW2K */
-		if (!(ds_sd->dacl->aces[i].type & SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) &&
+		if ((ds_sd->dacl->aces[i].type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
+		     ds_sd->dacl->aces[i].type == SEC_ACE_TYPE_ACCESS_ALLOWED) &&
 				strcmp(trustee, SID_BUILTIN_PREW2K) == 0) {
 			talloc_free(trustee);
 			continue;
