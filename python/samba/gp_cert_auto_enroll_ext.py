@@ -27,6 +27,7 @@ from subprocess import Popen, PIPE
 import re
 from glob import glob
 import json
+from samba.gp.util.logging import log
 
 cert_wrap = b"""
 -----BEGIN CERTIFICATE-----
@@ -76,7 +77,7 @@ def find_cepces_submit():
                        '/usr/libexec/certmonger']
     return which('cepces-submit', path=':'.join(certmonger_dirs))
 
-def get_supported_templates(server, logger):
+def get_supported_templates(server):
     cepces_submit = find_cepces_submit()
     if os.path.exists(cepces_submit):
         env = os.environ
@@ -85,12 +86,12 @@ def get_supported_templates(server, logger):
                        stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
         if p.returncode != 0:
-            logger.warn('Failed to fetch the list of supported templates.')
-            logger.debug(err.decode())
+            log.warn('Failed to fetch the list of supported templates.')
+            log.debug(err.decode())
         return out.strip().split()
     return []
 
-def cert_enroll(ca, trust_dir, private_dir, logger):
+def cert_enroll(ca, trust_dir, private_dir):
     # Install the root certificate chain
     data = {'files': [], 'templates': []}
     sscep = which('sscep')
@@ -101,9 +102,9 @@ def cert_enroll(ca, trust_dir, private_dir, logger):
         ret = Popen([sscep, 'getca', '-F', 'sha1', '-c',
                      root_cert, '-u', url]).wait()
         if ret != 0:
-            logger.warn('sscep failed to fetch the root certificate chain.')
-            logger.warn('Ensure you have installed and configured the' +
-                        ' Network Device Enrollment Service.')
+            log.warn('sscep failed to fetch the root certificate chain.')
+            log.warn('Ensure you have installed and configured the' +
+                     ' Network Device Enrollment Service.')
         root_certs = glob('%s*' % root_cert)
         data['files'].extend(root_certs)
         for src in root_certs:
@@ -113,21 +114,20 @@ def cert_enroll(ca, trust_dir, private_dir, logger):
                 os.symlink(src, dst)
                 data['files'].append(dst)
             except PermissionError:
-                logger.warn('Failed to symlink root certificate to the' +
-                            ' admin trust anchors')
+                log.warn('Failed to symlink root certificate to the' +
+                         ' admin trust anchors')
             except FileNotFoundError:
-                logger.warn('Failed to symlink root certificate to the' +
-                            ' admin trust anchors.' +
-                            ' The directory %s was not found' % \
-                                                        global_trust_dir)
+                log.warn('Failed to symlink root certificate to the' +
+                         ' admin trust anchors.' +
+                         ' The directory was not found', global_trust_dir)
             except FileExistsError:
                 # If we're simply downloading a renewed cert, the symlink
                 # already exists. Ignore the FileExistsError. Preserve the
                 # existing symlink in the unapply data.
                 data['files'].append(dst)
     else:
-        logger.warn('sscep is not installed, which prevents the installation' +
-                    ' of the root certificate chain.')
+        log.warn('sscep is not installed, which prevents the installation' +
+                 ' of the root certificate chain.')
     update = which('update-ca-certificates')
     if update is not None:
         Popen([update]).wait()
@@ -139,11 +139,10 @@ def cert_enroll(ca, trust_dir, private_dir, logger):
                   '%s --server=%s' % (cepces_submit, ca['dNSHostName'][0])],
                   stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
-        logger.debug(out.decode())
+        log.debug(out.decode())
         if p.returncode != 0:
-            logger.debug(err.decode())
-        supported_templates = get_supported_templates(ca['dNSHostName'][0],
-                                                      logger)
+            log.debug(err.decode())
+        supported_templates = get_supported_templates(ca['dNSHostName'][0])
         for template, attrs in ca['certificateTemplates'].items():
             if template not in supported_templates:
                 continue
@@ -156,16 +155,16 @@ def cert_enroll(ca, trust_dir, private_dir, logger):
                        '-g', attrs['msPKI-Minimal-Key-Size'][0]],
                        stdout=PIPE, stderr=PIPE)
             out, err = p.communicate()
-            logger.debug(out.decode())
+            log.debug(out.decode())
             if p.returncode != 0:
-                logger.debug(err.decode())
+                log.debug(err.decode())
             data['files'].extend([keyfile, certfile])
             data['templates'].append(nickname)
         if update is not None:
             Popen([update]).wait()
     else:
-        logger.warn('certmonger and cepces must be installed for ' +
-                    'certificate auto enrollment to work')
+        log.warn('certmonger and cepces must be installed for ' +
+                 'certificate auto enrollment to work')
     return json.dumps(data)
 
 class gp_cert_auto_enroll_ext(gp_pol_ext):
@@ -225,8 +224,7 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                                       lp=self.lp, credentials=self.creds)
                             cas = fetch_certification_authorities(ldb)
                             for ca in cas:
-                                data = cert_enroll(ca, trust_dir,
-                                                   private_dir, self.logger)
+                                data = cert_enroll(ca, trust_dir, private_dir)
                                 self.gp_db.store(str(self),
                                      base64.b64encode(ca['cn'][0]).decode(),
                                      data)
@@ -260,8 +258,7 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                         output[policy][cn]['Auto Enrollment Server'] = \
                             ca['dNSHostName'][0]
                         supported_templates = \
-                            get_supported_templates(ca['dNSHostName'][0],
-                                                    self.logger)
+                            get_supported_templates(ca['dNSHostName'][0])
                         output[policy][cn]['Templates'] = \
                             [t.decode() for t in supported_templates]
         return output

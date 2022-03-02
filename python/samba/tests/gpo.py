@@ -45,7 +45,6 @@ from samba.gp_cert_auto_enroll_ext import gp_cert_auto_enroll_ext
 from samba.gp_firefox_ext import gp_firefox_ext
 from samba.gp_chromium_ext import gp_chromium_ext
 from samba.gp_firewalld_ext import gp_firewalld_ext
-import logging
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
 from samba.common import get_bytes
@@ -7116,7 +7115,6 @@ class GPOTests(tests.TestCase):
                  '{6AC1786C-016F-11D2-945F-00C04FB984F9}']
         gpofile = '%s/' + policies + '/%s/MACHINE/MICROSOFT/' \
                   'WINDOWS NT/SECEDIT/GPTTMPL.INF'
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7125,7 +7123,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_krb_ext(logger, self.lp, machine_creds,
+        ext = gp_krb_ext(self.lp, machine_creds,
                          machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -7171,7 +7169,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
                                'MACHINE/REGISTRY.POL')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7180,7 +7177,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_scripts_ext(logger, self.lp, machine_creds,
+        ext = gp_scripts_ext(self.lp, machine_creds,
                              machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -7230,7 +7227,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
                                'MACHINE/REGISTRY.POL')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7239,7 +7235,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_sudoers_ext(logger, self.lp, machine_creds,
+        ext = gp_sudoers_ext(self.lp, machine_creds,
                              machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -7282,7 +7278,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         manifest = os.path.join(local_path, policies, guid, 'MACHINE',
             'VGP/VTLA/SUDO/SUDOERSCONFIGURATION/MANIFEST.XML')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7291,7 +7286,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_sudoers_ext(logger, self.lp, machine_creds,
+        ext = vgp_sudoers_ext(self.lp, machine_creds,
                               machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -7377,7 +7372,6 @@ class GPOTests(tests.TestCase):
         unstage_file(manifest)
 
     def test_gp_inf_ext_utf(self):
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7385,7 +7379,7 @@ class GPOTests(tests.TestCase):
         machine_creds.guess(self.lp)
         machine_creds.set_machine_account()
 
-        ext = gp_inf_ext(logger, self.lp, machine_creds,
+        ext = gp_inf_ext(self.lp, machine_creds,
                          machine_creds.get_username(), store)
         test_data = '[Kerberos Policy]\nMaxTicketAge = 99\n'
 
@@ -7411,7 +7405,6 @@ class GPOTests(tests.TestCase):
                               '99', 'MaxTicketAge was not read from the file')
 
     def test_rsop(self):
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         local_path = self.lp.cache_path('gpo_cache')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
@@ -7471,7 +7464,7 @@ class GPOTests(tests.TestCase):
             self.assertTrue(ret, 'Could not create the target %s' %
                                  (reg_pol % g.name))
             for ext in gp_extensions:
-                ext = ext(logger, self.lp, machine_creds,
+                ext = ext(self.lp, machine_creds,
                           machine_creds.get_username(), store)
                 ret = ext.rsop(g)
                 self.assertEquals(len(ret.keys()), 1,
@@ -7520,7 +7513,6 @@ class GPOTests(tests.TestCase):
         self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
     def test_gp_unapply(self):
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         local_path = self.lp.cache_path('gpo_cache')
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
@@ -7571,7 +7563,7 @@ class GPOTests(tests.TestCase):
         remove = []
         with TemporaryDirectory() as dname:
             for ext in gp_extensions:
-                ext = ext(logger, self.lp, machine_creds,
+                ext = ext(self.lp, machine_creds,
                           machine_creds.get_username(), store)
                 if type(ext) == gp_krb_ext:
                     ext.process_group_policy([], gpos)
@@ -7605,7 +7597,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
                                'MACHINE/REGISTRY.POL')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7648,7 +7639,7 @@ class GPOTests(tests.TestCase):
             lp = LoadParm(f.name)
 
             # Initialize the group policy extension
-            ext = gp_smb_conf_ext(logger, lp, machine_creds,
+            ext = gp_smb_conf_ext(lp, machine_creds,
                                   machine_creds.get_username(), store)
             ext.process_group_policy([], gpos)
             lp = LoadParm(f.name)
@@ -7687,7 +7678,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
                                'MACHINE/REGISTRY.POL')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7696,7 +7686,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_msgs_ext(logger, self.lp, machine_creds,
+        ext = gp_msgs_ext(self.lp, machine_creds,
                           machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -7751,7 +7741,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         manifest = os.path.join(local_path, policies, guid, 'MACHINE',
             'VGP/VTLA/UNIX/SYMLINK/MANIFEST.XML')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7760,7 +7749,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_symlink_ext(logger, self.lp, machine_creds,
+        ext = vgp_symlink_ext(self.lp, machine_creds,
                               machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -7829,7 +7818,6 @@ class GPOTests(tests.TestCase):
         source_data = '#!/bin/sh\necho hello world'
         ret = stage_file(source_file, source_data)
         self.assertTrue(ret, 'Could not create the target %s' % source_file)
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7838,7 +7826,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_files_ext(logger, self.lp, machine_creds,
+        ext = vgp_files_ext(self.lp, machine_creds,
                             machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -7914,7 +7902,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         manifest = os.path.join(local_path, policies, guid, 'MACHINE',
             'VGP/VTLA/SSHCFG/SSHD/MANIFEST.XML')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7923,7 +7910,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_openssh_ext(logger, self.lp, machine_creds,
+        ext = vgp_openssh_ext(self.lp, machine_creds,
                               machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -7985,7 +7972,6 @@ class GPOTests(tests.TestCase):
         test_data = '#!/bin/sh\necho $@ hello world'
         ret = stage_file(test_script, test_data)
         self.assertTrue(ret, 'Could not create the target %s' % test_script)
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -7994,7 +7980,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_startup_scripts_ext(logger, self.lp, machine_creds,
+        ext = vgp_startup_scripts_ext(self.lp, machine_creds,
                                       machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -8102,7 +8088,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         manifest = os.path.join(local_path, policies, guid, 'MACHINE',
             'VGP/VTLA/UNIX/MOTD/MANIFEST.XML')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -8111,7 +8096,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_motd_ext(logger, self.lp, machine_creds,
+        ext = vgp_motd_ext(self.lp, machine_creds,
                            machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -8152,7 +8137,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         manifest = os.path.join(local_path, policies, guid, 'MACHINE',
             'VGP/VTLA/UNIX/ISSUE/MANIFEST.XML')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -8161,7 +8145,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_issue_ext(logger, self.lp, machine_creds,
+        ext = vgp_issue_ext(self.lp, machine_creds,
                             machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -8204,7 +8188,6 @@ class GPOTests(tests.TestCase):
             'VGP/VTLA/VAS/HOSTACCESSCONTROL/ALLOW/MANIFEST.XML')
         deny = os.path.join(local_path, policies, guid, 'MACHINE',
             'VGP/VTLA/VAS/HOSTACCESSCONTROL/DENY/MANIFEST.XML')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -8213,7 +8196,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_access_ext(logger, self.lp, machine_creds,
+        ext = vgp_access_ext(self.lp, machine_creds,
                              machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -8333,7 +8316,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
                                'MACHINE/REGISTRY.POL')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -8342,7 +8324,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_gnome_settings_ext(logger, self.lp, machine_creds,
+        ext = gp_gnome_settings_ext(self.lp, machine_creds,
                                     machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -8556,7 +8538,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
                                'MACHINE/REGISTRY.POL')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -8565,7 +8546,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_cert_auto_enroll_ext(logger, self.lp, machine_creds,
+        ext = gp_cert_auto_enroll_ext(self.lp, machine_creds,
                                       machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -8655,7 +8636,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
                                'USER/REGISTRY.POL')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -8664,7 +8644,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_user_scripts_ext(logger, self.lp, machine_creds,
+        ext = gp_user_scripts_ext(self.lp, machine_creds,
                                   os.environ.get('DC_USERNAME'), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -8716,7 +8696,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
                                'MACHINE/REGISTRY.POL')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -8725,7 +8704,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_firefox_ext(logger, self.lp, machine_creds,
+        ext = gp_firefox_ext(self.lp, machine_creds,
                              machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -8774,7 +8753,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
                                'MACHINE/REGISTRY.POL')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -8783,7 +8761,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_chromium_ext(logger, self.lp, machine_creds,
+        ext = gp_chromium_ext(self.lp, machine_creds,
                               machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
@@ -8850,7 +8828,6 @@ class GPOTests(tests.TestCase):
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
                                'MACHINE/REGISTRY.POL')
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
@@ -8859,7 +8836,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_firewalld_ext(logger, self.lp, machine_creds,
+        ext = gp_firewalld_ext(self.lp, machine_creds,
                                machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)

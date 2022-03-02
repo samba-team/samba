@@ -35,11 +35,10 @@ class GPOTests(tests.TestCase):
         super(GPOTests, self).tearDown()
 
     def test_sec_ext_load_on_member(self):
-        logger = logging.getLogger('gpo_tests')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
         try:
-            gp_access_ext(logger, self.lp, self.creds,
+            gp_access_ext(self.lp, self.creds,
                           self.creds.get_username(), store)
         except Exception:
             self.fail('Initializing gp_access_ext should not require ad-dc')

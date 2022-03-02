@@ -19,6 +19,7 @@ from samba.gpclass import gp_pol_ext
 from base64 import b64encode
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
+from samba.gp.util.logging import log
 
 def find_executable(executable, path):
     paths = path.split(os.pathsep)
@@ -88,8 +89,7 @@ class gp_sudoers_ext(gp_pol_ext):
                                                      attribute,
                                                      f.name)
                             else:
-                                self.logger.warn('Sudoers apply "%s" failed'
-                                        % e.data)
+                                log.error('Sudoers apply failed', e.data)
                         self.gp_db.commit()
 
     def rsop(self, gpo):

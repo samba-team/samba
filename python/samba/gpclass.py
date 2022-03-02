@@ -41,6 +41,7 @@ from samba.dcerpc import preg
 from samba.dcerpc import misc
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.credentials import SMB_SIGNING_REQUIRED
+from samba.gp.util.logging import log
 
 try:
     from enum import Enum
@@ -295,8 +296,7 @@ class GPOStorage:
 class gp_ext(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self, logger, lp, creds, username, store):
-        self.logger = logger
+    def __init__(self, lp, creds, username, store):
         self.lp = lp
         self.creds = creds
         self.username = username
@@ -436,7 +436,7 @@ def gpo_version(lp, path):
     return int(gpo.gpo_get_sysvol_gpt_version(gpt_path)[1])
 
 
-def apply_gp(lp, creds, logger, store, gp_extensions, username, target, force=False):
+def apply_gp(lp, creds, store, gp_extensions, username, target, force=False):
     gp_db = store.get_gplog(username)
     dc_hostname = get_dc_hostname(creds, lp)
     gpos = get_gpo_list(dc_hostname, creds, lp, username)
@@ -444,8 +444,8 @@ def apply_gp(lp, creds, logger, store, gp_extensions, username, target, force=Fa
     try:
         check_refresh_gpo_list(dc_hostname, lp, creds, gpos)
     except:
-        logger.error('Failed downloading gpt cache from \'%s\' using SMB'
-                     % dc_hostname)
+        log.error('Failed downloading gpt cache from \'%s\' using SMB'
+                  % dc_hostname)
         return
 
     if force:
@@ -460,23 +460,23 @@ def apply_gp(lp, creds, logger, store, gp_extensions, username, target, force=Fa
             path = check_safe_path(gpo_obj.file_sys_path).upper()
             version = gpo_version(lp, path)
             if version != store.get_int(guid):
-                logger.info('GPO %s has changed' % guid)
+                log.info('GPO %s has changed' % guid)
                 changed_gpos.append(gpo_obj)
         gp_db.state(GPOSTATE.APPLY)
 
     store.start()
     for ext in gp_extensions:
         try:
-            ext = ext(logger, lp, creds, username, store)
+            ext = ext(lp, creds, username, store)
             if target == 'Computer':
                 ext.process_group_policy(del_gpos, changed_gpos)
             else:
                 drop_privileges(creds.get_principal(), ext.process_group_policy,
                                 del_gpos, changed_gpos)
         except Exception as e:
-            logger.error('Failed to apply extension  %s' % str(ext))
-            logger.error('Message was: %s: %s' % (type(e).__name__, str(e)))
-            logger.debug(traceback.format_exc())
+            log.error('Failed to apply extension  %s' % str(ext))
+            log.error('Message was: %s: %s' % (type(e).__name__, str(e)))
+            log.debug(traceback.format_exc())
             continue
     for gpo_obj in gpos:
         if not gpo_obj.file_sys_path:
@@ -488,7 +488,7 @@ def apply_gp(lp, creds, logger, store, gp_extensions, username, target, force=Fa
     store.commit()
 
 
-def unapply_gp(lp, creds, logger, store, gp_extensions, username, target):
+def unapply_gp(lp, creds, store, gp_extensions, username, target):
     gp_db = store.get_gplog(username)
     gp_db.state(GPOSTATE.UNAPPLY)
     # Treat all applied gpos as deleted
@@ -496,15 +496,15 @@ def unapply_gp(lp, creds, logger, store, gp_extensions, username, target):
     store.start()
     for ext in gp_extensions:
         try:
-            ext = ext(logger, lp, creds, username, store)
+            ext = ext(lp, creds, username, store)
             if target == 'Computer':
                 ext.process_group_policy(del_gpos, [])
             else:
                 drop_privileges(username, ext.process_group_policy,
                                 del_gpos, [])
         except Exception as e:
-            logger.error('Failed to unapply extension  %s' % str(ext))
-            logger.error('Message was: ' + str(e))
+            log.error('Failed to unapply extension  %s' % str(ext))
+            log.error('Message was: ' + str(e))
             continue
     store.commit()
 
@@ -520,7 +520,7 @@ def __rsop_vals(vals, level=4):
     else:
         return vals
 
-def rsop(lp, creds, logger, store, gp_extensions, username, target):
+def rsop(lp, creds, store, gp_extensions, username, target):
     dc_hostname = get_dc_hostname(creds, lp)
     gpos = get_gpo_list(dc_hostname, creds, lp, username)
     check_refresh_gpo_list(dc_hostname, lp, creds, gpos)
@@ -534,7 +534,7 @@ def rsop(lp, creds, logger, store, gp_extensions, username, target):
         print('GPO: %s' % gpo.display_name)
         print('='*term_width)
         for ext in gp_extensions:
-            ext = ext(logger, lp, creds, username, store)
+            ext = ext(lp, creds, username, store)
             cse_name_m = re.findall("'([\w\.]+)'", str(type(ext)))
             if len(cse_name_m) > 0:
                 cse_name = cse_name_m[-1].split('.')[-1]

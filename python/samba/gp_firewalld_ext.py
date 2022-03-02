@@ -20,6 +20,7 @@ from hashlib import blake2b
 from shutil import which
 import json
 from samba.gpclass import gp_pol_ext
+from samba.gp.util.logging import log
 
 def firewall_cmd(*args):
     fw_cmd = which('firewall-cmd')
@@ -47,19 +48,18 @@ class gp_firewalld_ext(gp_pol_ext):
     def apply_zone(self, zone):
         ret = firewall_cmd('--permanent', '--new-zone=%s' % zone)[0]
         if ret != 0:
-            self.logger.error('Failed to add new zone %s' % zone)
+            log.error('Failed to add new zone', zone)
         else:
             self.gp_db.store(str(self), 'zone:%s' % zone, zone)
         # Default to matching the interface(s) for the default zone
         ret, out = firewall_cmd('--list-interfaces')
         if ret != 0:
-            self.logger.error('Failed to set interfaces for zone: %s' % zone)
+            log.error('Failed to set interfaces for zone', zone)
         for interface in out.strip().split():
             ret = firewall_cmd('--permanent', '--zone=%s' % zone,
                                '--add-interface=%s' % interface.decode())
             if ret != 0:
-                self.logger.error('Failed to set interfaces for zone: %s' % \
-                                  zone)
+                log.error('Failed to set interfaces for zone', zone)
 
     def apply_rules(self, rule_dict):
         for zone, rules in rule_dict.items():
@@ -82,12 +82,11 @@ class gp_firewalld_ext(gp_pol_ext):
                     rule_parsed += rule_segment_parse(list(action)[0],
                                                       rule[list(action)[0]])
                 else:
-                    self.logger.error('Invalid firewall rule syntax')
+                    log.error('Invalid firewall rule syntax')
                 ret = firewall_cmd('--permanent', '--zone=%s' % zone,
                                    '--add-rich-rule', rule_parsed.strip())[0]
                 if ret != 0:
-                    self.logger.error('Failed to add firewall rule: %s' % \
-                                      rule_parsed)
+                    log.error('Failed to add firewall rule', rule_parsed)
                 else:
                     rhash = blake2b(rule_parsed.encode()).hexdigest()
                     self.gp_db.store(str(self), 'rule:%s:%s' % (zone, rhash),
@@ -102,8 +101,7 @@ class gp_firewalld_ext(gp_pol_ext):
                         ret = firewall_cmd('--permanent',
                                            '--delete-zone=%s' % value)[0]
                         if ret != 0:
-                            self.logger.error('Failed to remove zone: %s' % \
-                                              value)
+                            log.error('Failed to remove zone', value)
                         else:
                             self.gp_db.delete(str(self), attribute)
                     elif attribute.startswith('rule'):
@@ -111,8 +109,7 @@ class gp_firewalld_ext(gp_pol_ext):
                         ret = firewall_cmd('--permanent', '--zone=%s' % zone,
                                            '--remove-rich-rule', value)[0]
                         if ret != 0:
-                            self.logger.error('Failed to remove firewall'
-                                              ' rule: %s' % value)
+                            log.error('Failed to remove firewall rule', value)
                         else:
                             self.gp_db.delete(str(self), attribute)
             self.gp_db.commit()

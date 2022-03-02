@@ -19,6 +19,7 @@ from samba.gpclass import gp_xml_ext, check_safe_path
 from tempfile import NamedTemporaryFile
 from shutil import copyfile, move
 from hashlib import blake2b
+from samba.gp.util.logging import log
 
 def calc_mode(entry):
     mode = 0o000
@@ -89,8 +90,7 @@ class vgp_files_ext(gp_xml_ext):
                         os.path.dirname(check_safe_path(path)).upper(),
                                         source.upper())
                     if not os.path.exists(source_file):
-                        self.logger.warn('Source file "%s" does not exist'
-                                         % source_file)
+                        log.warn('Source file does not exist', source_file)
                         continue
                     source_hash = \
                         blake2b(open(source_file, 'rb').read()).hexdigest()
@@ -103,8 +103,7 @@ class vgp_files_ext(gp_xml_ext):
                     if old_val == value:
                         continue
                     if os.path.exists(target):
-                        self.logger.warn('Target file "%s" already exists'
-                                         % target)
+                        log.warn('Target file already exists', target)
                         continue
                     with NamedTemporaryFile(dir=os.path.dirname(target),
                                             delete=False) as f:

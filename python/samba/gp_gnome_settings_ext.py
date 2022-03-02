@@ -23,8 +23,9 @@ from subprocess import Popen, PIPE
 from samba.common import get_bytes, get_string
 from glob import glob
 import xml.etree.ElementTree as etree
+from samba.gp.util.logging import log
 
-def dconf_update(log, test_dir):
+def dconf_update(test_dir):
     if test_dir is not None:
         return
     dconf = shutil.which('dconf')
@@ -34,7 +35,7 @@ def dconf_update(log, test_dir):
     p = Popen([dconf, 'update'], stdout=PIPE, stderr=PIPE)
     out, err = p.communicate()
     if p.returncode != 0:
-        log.error('Failed to update dconf: %s' % get_string(err))
+        log.error('Failed to update dconf', get_string(err))
 
 def create_locks_dir(test_dir):
     locks_dir = '/etc/dconf/db/local.d/locks'
@@ -124,8 +125,7 @@ class gp_gnome_settings_ext(gp_pol_ext):
                      'Scroll Lock': 'compose:sclk'
                    }
         if data['Key Name'] not in data_map.keys():
-            self.logger.error('Compose Key \'%s\' not recognized' % \
-                              data['Key Name'])
+            log.error('Compose Key not recognized', data)
             return
         parser = ConfigParser()
         section = 'org/gnome/desktop/input-sources'
@@ -143,7 +143,7 @@ class gp_gnome_settings_ext(gp_pol_ext):
         with open(lock, 'w') as w:
             w.write('/org/gnome/desktop/input-sources/xkb-options')
 
-        dconf_update(self.logger, self.test_dir)
+        dconf_update(self.test_dir)
         self.gp_db.store(str(self), attribute, ';'.join([local_db, lock]))
 
     def __apply_dim_idle(self, data):
@@ -184,7 +184,7 @@ class gp_gnome_settings_ext(gp_pol_ext):
             w.write('/org/gnome/settings-daemon/plugins/power/idle-brightness\n')
             w.write('/org/gnome/desktop/session/idle-delay')
 
-        dconf_update(self.logger, self.test_dir)
+        dconf_update(self.test_dir)
         self.gp_db.store(str(self), attribute, ';'.join([local_power_db,
                                                          local_session_db,
                                                          lock]))
@@ -203,7 +203,7 @@ class gp_gnome_settings_ext(gp_pol_ext):
         with open(policy_file, 'w') as w:
             for key in data.keys():
                 w.write('%s\n' % key)
-        dconf_update(self.logger, self.test_dir)
+        dconf_update(self.test_dir)
         self.gp_db.store(str(self), attribute, policy_file)
 
     def __apply_whitelisted_account(self, data):
@@ -216,7 +216,7 @@ class gp_gnome_settings_ext(gp_pol_ext):
         policy_files = self.__lockdown(local_db_dir, locks_dir, 'goa',
                                        'whitelisted-providers', val, old_val,
                                        'org/gnome/online-accounts')
-        dconf_update(self.logger, self.test_dir)
+        dconf_update(self.test_dir)
         self.gp_db.store(str(self), attribute, ';'.join(policy_files))
 
     def __apply_enabled_extensions(self, data):
@@ -238,7 +238,7 @@ class gp_gnome_settings_ext(gp_pol_ext):
         parser.set(section, 'development-tools', 'false')
         with open(policy_file, 'w') as w:
             parser.write(w)
-        dconf_update(self.logger, self.test_dir)
+        dconf_update(self.test_dir)
         self.gp_db.store(str(self), attribute, policy_file)
 
     def __lockdown(self, local_db_dir, locks_dir, name, key, val,
@@ -357,9 +357,9 @@ class gp_gnome_settings_ext(gp_pol_ext):
                 xml_data.write(w, encoding='UTF-8', xml_declaration=True)
             policy_files.append(udisk2_etc)
         else:
-            self.logger.error('Unable to apply %s' % k)
+            log.error('Unable to apply', k)
             return
-        dconf_update(self.logger, self.test_dir)
+        dconf_update(self.test_dir)
         self.gp_db.store(str(self), k, ';'.join(policy_files))
 
     def __unapply(self, fnames):

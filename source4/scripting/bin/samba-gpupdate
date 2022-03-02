@@ -50,7 +50,7 @@ from samba.gp_firefox_ext import gp_firefox_ext
 from samba.gp_chromium_ext import gp_chromium_ext, gp_chrome_ext
 from samba.gp_firewalld_ext import gp_firewalld_ext
 from samba.credentials import Credentials
-import logging
+from samba.gp.util.logging import logger_init
 
 if __name__ == "__main__":
     parser = optparse.OptionParser('samba-gpupdate [options]')
@@ -88,24 +88,12 @@ if __name__ == "__main__":
     creds.set_machine_account(lp)
 
     # Set up logging
-    logger = logging.getLogger('samba-gpupdate')
-    logger.addHandler(logging.StreamHandler(sys.stdout))
-    logger.setLevel(logging.CRITICAL)
-    log_level = lp.log_level()
-    if log_level == 1:
-        logger.setLevel(logging.ERROR)
-    elif log_level == 2:
-        logger.setLevel(logging.WARNING)
-    elif log_level == 3:
-        logger.setLevel(logging.INFO)
-    elif log_level >= 4:
-        logger.setLevel(logging.DEBUG)
+    logger_init('samba-gpupdate', lp.log_level())
 
     cache_dir = lp.get('cache directory')
     store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
-    machine_exts, user_exts = get_gp_client_side_extensions(logger,
-                                                            lp.configfile)
+    machine_exts, user_exts = get_gp_client_side_extensions(lp.configfile)
     gp_extensions = []
     if opts.target == 'Computer':
         gp_extensions.append(gp_access_ext)
@@ -134,11 +122,11 @@ if __name__ == "__main__":
         gp_extensions.extend(user_exts)
 
     if opts.rsop:
-        rsop(lp, creds, logger, store, gp_extensions, username, opts.target)
+        rsop(lp, creds, store, gp_extensions, username, opts.target)
     elif not opts.unapply:
-        apply_gp(lp, creds, logger, store, gp_extensions, username,
+        apply_gp(lp, creds, store, gp_extensions, username,
                  opts.target, opts.force)
     else:
-        unapply_gp(lp, creds, logger, store, gp_extensions, username,
+        unapply_gp(lp, creds, store, gp_extensions, username,
                    opts.target)
 

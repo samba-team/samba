@@ -17,6 +17,7 @@
 import os, re, numbers
 from samba.gpclass import gp_pol_ext
 from tempfile import NamedTemporaryFile
+from samba.gp.util.logging import log
 
 def is_number(x):
     return isinstance(x, numbers.Number) and \
@@ -70,8 +71,7 @@ class gp_smb_conf_ext(gp_pol_ext):
             os.chmod(f.name, mode)
             os.rename(f.name, self.lp.configfile)
 
-        self.logger.info('smb.conf [global] %s was changed from %s to %s' % \
-                         (attribute, old_val, str(val)))
+        log.info('smb.conf [global] was changed', { attribute : str(val) })
 
         if is_number(old_val):
             old_val = str(old_val)

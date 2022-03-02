@@ -20,6 +20,7 @@ from base64 import b64encode
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
 from samba.gp_sudoers_ext import visudo, intro
+from samba.gp.util.logging import log
 
 class vgp_sudoers_ext(gp_xml_ext):
     def __str__(self):
@@ -82,8 +83,7 @@ class vgp_sudoers_ext(gp_xml_ext):
                                                  attribute,
                                                  f.name)
                         else:
-                            self.logger.warn('Sudoers apply "%s" failed'
-                                    % p)
+                            log.error('Sudoers apply failed', p)
                     self.gp_db.commit()
 
     def rsop(self, gpo):

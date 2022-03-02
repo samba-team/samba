@@ -18,6 +18,7 @@ import os
 from samba.gpclass import gp_xml_ext
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
+from samba.gp.util.logging import log
 
 class vgp_symlink_ext(gp_xml_ext):
     def __str__(self):
@@ -53,8 +54,7 @@ class vgp_symlink_ext(gp_xml_ext):
                             os.symlink(source, target)
                             self.gp_db.store(str(self), attribute, target)
                         else:
-                            self.logger.warn('Symlink destination "%s" exists'
-                                             % target)
+                            log.warn('Symlink destination exists', target)
                     self.gp_db.commit()
 
     def rsop(self, gpo):

@@ -19,6 +19,7 @@ import json
 from samba.gpclass import gp_pol_ext
 from samba.dcerpc import misc
 from samba.common import get_string
+from samba.gp.util.logging import log
 
 def parse_entry_data(name, e):
     dict_entries = ['VirtualKeyboardFeatures',
@@ -389,11 +390,10 @@ class gp_chromium_ext(gp_pol_ext):
             os.makedirs(self.__managed_policies_path, exist_ok=True)
             with open(managed_policies, 'w') as f:
                 json.dump(managed, f)
-                self.logger.debug('Wrote Chromium preferences to %s' % \
-                                  managed_policies)
+                log.debug('Wrote Chromium preferences', managed_policies)
         except PermissionError:
-            self.logger.debug('Failed to write Chromium preferences to %s' % \
-                              managed_policies)
+            log.debug('Failed to write Chromium preferences',
+                      managed_policies)
 
 
     def set_recommended_machine_policy(self, recommended):
@@ -403,11 +403,10 @@ class gp_chromium_ext(gp_pol_ext):
             os.makedirs(self.__recommended_policies_path, exist_ok=True)
             with open(recommended_policies, 'w') as f:
                 json.dump(recommended, f)
-                self.logger.debug('Wrote Chromium preferences to %s' % \
-                                  recommended_policies)
+                log.debug('Wrote Chromium preferences', recommended_policies)
         except PermissionError:
-            self.logger.debug('Failed to write Chromium preferences to %s' % \
-                              recommended_policies)
+            log.debug('Failed to write Chromium preferences',
+                      recommended_policies)
 
     def get_managed_machine_policy(self):
         managed_policies = os.path.join(self.__managed_policies_path,
@@ -415,8 +414,7 @@ class gp_chromium_ext(gp_pol_ext):
         if os.path.exists(managed_policies):
             with open(managed_policies, 'r') as r:
                 managed = json.load(r)
-                self.logger.debug('Read Chromium preferences from %s' % \
-                                  managed_policies)
+                log.debug('Read Chromium preferences', managed_policies)
         else:
             managed = {}
         return managed
@@ -427,8 +425,7 @@ class gp_chromium_ext(gp_pol_ext):
         if os.path.exists(recommended_policies):
             with open(recommended_policies, 'r') as r:
                 recommended = json.load(r)
-                self.logger.debug('Read Chromium preferences from %s' % \
-                                  recommended_policies)
+                log.debug('Read Chromium preferences', recommended_policies)
         else:
             recommended = {}
         return recommended

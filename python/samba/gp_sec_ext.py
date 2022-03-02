@@ -24,6 +24,7 @@ try:
     from samba.samdb import SamDB
 except ImportError:
     pass
+from samba.gp.util.logging import log
 
 def mins_to_hours(val):
     return '%d' % (int(val) / 60)
@@ -73,8 +74,7 @@ class gp_krb_ext(gp_inf_ext):
 
     def set_kdc_tdb(self, attribute, val):
         old_val = self.gp_db.gpostore.get(attribute)
-        self.logger.info('%s was changed from %s to %s' % (attribute,
-                                                           old_val, val))
+        log.info('%s was changed from %s to %s' % (attribute, old_val, val))
         if val is not None:
             self.gp_db.gpostore.store(attribute, get_string(val))
             self.gp_db.store(str(self), attribute, get_string(old_val) \
@@ -160,30 +160,29 @@ class gp_access_ext(gp_inf_ext):
 
     def ch_minPwdAge(self, attribute, val):
         old_val = self.ldb.get_minPwdAge()
-        self.logger.info('KDC Minimum Password age was changed from %s to %s'
-                         % (old_val, val))
+        log.info('KDC Minimum Password age was changed from %s to %s'
+                 % (old_val, val))
         self.gp_db.store(str(self), attribute, str(old_val))
         self.ldb.set_minPwdAge(val)
 
     def ch_maxPwdAge(self, attribute, val):
         old_val = self.ldb.get_maxPwdAge()
-        self.logger.info('KDC Maximum Password age was changed from %s to %s'
-                         % (old_val, val))
+        log.info('KDC Maximum Password age was changed from %s to %s'
+                 % (old_val, val))
         self.gp_db.store(str(self), attribute, str(old_val))
         self.ldb.set_maxPwdAge(val)
 
     def ch_minPwdLength(self, attribute, val):
         old_val = self.ldb.get_minPwdLength()
-        self.logger.info(
-            'KDC Minimum Password length was changed from %s to %s'
-            % (old_val, val))
+        log.info('KDC Minimum Password length was changed from %s to %s'
+                 % (old_val, val))
         self.gp_db.store(str(self), attribute, str(old_val))
         self.ldb.set_minPwdLength(val)
 
     def ch_pwdProperties(self, attribute, val):
         old_val = self.ldb.get_pwdProperties()
-        self.logger.info('KDC Password Properties were changed from %s to %s'
-                         % (old_val, val))
+        log.info('KDC Password Properties were changed from %s to %s'
+                  % (old_val, val))
         self.gp_db.store(str(self), attribute, str(old_val))
         self.ldb.set_pwdProperties(val)
 

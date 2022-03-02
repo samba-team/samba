@@ -19,6 +19,7 @@ import json
 from samba.gpclass import gp_pol_ext
 from samba.dcerpc import misc
 from samba.common import get_string
+from samba.gp.util.logging import log
 
 def parse_entry_data(e):
     if e.type == misc.REG_MULTI_SZ:
@@ -96,33 +97,29 @@ class gp_firefox_ext(gp_pol_ext):
             os.makedirs(self.__firefox_installdir1, exist_ok=True)
             with open(self.__destfile1, 'w') as f:
                 json.dump(policies, f)
-                self.logger.debug('Wrote Firefox preferences to %s' % \
-                                  self.__destfile1)
+                log.debug('Wrote Firefox preferences', self.__destfile1)
         except PermissionError:
-            self.logger.debug('Failed to write Firefox preferences to %s' % \
+            log.debug('Failed to write Firefox preferences',
                               self.__destfile1)
 
         try:
             os.makedirs(self.__firefox_installdir2, exist_ok=True)
             with open(self.__destfile2, 'w') as f:
                 json.dump(policies, f)
-                self.logger.debug('Wrote Firefox preferences to %s' % \
-                                  self.__destfile2)
+                log.debug('Wrote Firefox preferences', self.__destfile2)
         except PermissionError:
-            self.logger.debug('Failed to write Firefox preferences to %s' % \
+            log.debug('Failed to write Firefox preferences',
                               self.__destfile2)
 
     def get_machine_policy(self):
         if os.path.exists(self.__destfile2):
             with open(self.__destfile2, 'r') as r:
                 policies = json.load(r)
-                self.logger.debug('Read Firefox preferences from %s' % \
-                                  self.__destfile2)
+                log.debug('Read Firefox preferences', self.__destfile2)
         elif os.path.exists(self.__destfile1):
             with open(self.__destfile1, 'r') as r:
                 policies = json.load(r)
-                self.logger.debug('Read Firefox preferences from %s' % \
-                                  self.__destfile1)
+                log.debug('Read Firefox preferences', self.__destfile1)
         else:
             policies = {'policies': {}}
         return policies
