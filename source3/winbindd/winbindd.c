@@ -1222,11 +1222,6 @@ static void winbindd_listen_fde_handler(struct tevent_context *ev,
  * Winbindd socket accessor functions
  */
 
-char *get_winbind_priv_pipe_dir(void)
-{
-	return state_path(talloc_tos(), WINBINDD_PRIV_SOCKET_SUBDIR);
-}
-
 static void winbindd_setup_max_fds(void)
 {
 	int num_fds = MAX_OPEN_FUDGEFACTOR;

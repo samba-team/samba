@@ -387,6 +387,11 @@ bool winbindd_netbios_name(struct winbindd_cli_state *state)
 
 /* Where can I find the privileged pipe? */
 
+char *get_winbind_priv_pipe_dir(void)
+{
+	return state_path(talloc_tos(), WINBINDD_PRIV_SOCKET_SUBDIR);
+}
+
 bool winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 {
 	char *priv_dir;
