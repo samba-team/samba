@@ -32,6 +32,43 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "lib/global_contexts.h"
+#include "lib/param/param.h"
+#include "messages.h"
+
+struct imessaging_context *winbind_imessaging_context(void)
+{
+	static struct imessaging_context *msg = NULL;
+	struct messaging_context *msg_ctx;
+	struct server_id myself;
+	struct loadparm_context *lp_ctx;
+
+	if (msg != NULL) {
+		return msg;
+	}
+
+	msg_ctx = global_messaging_context();
+	if (msg_ctx == NULL) {
+		smb_panic("global_messaging_context failed\n");
+	}
+	myself = messaging_server_id(msg_ctx);
+
+	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		smb_panic("Could not load smb.conf to init winbindd's imessaging context.\n");
+	}
+
+	/*
+	 * Note we MUST use the NULL context here, not the autofree context,
+	 * to avoid side effects in forked children exiting.
+	 */
+	msg = imessaging_init(NULL, lp_ctx, myself, global_event_context());
+	talloc_unlink(NULL, lp_ctx);
+
+	if (msg == NULL) {
+		smb_panic("Could not init winbindd's messaging context.\n");
+	}
+	return msg;
+}
 
 struct wb_irpc_forward_state {
 	struct irpc_message *msg;

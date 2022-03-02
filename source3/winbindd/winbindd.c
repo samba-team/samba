@@ -64,41 +64,6 @@ static void winbindd_setup_max_fds(void);
 
 static bool interactive = False;
 
-struct imessaging_context *winbind_imessaging_context(void)
-{
-	static struct imessaging_context *msg = NULL;
-	struct messaging_context *msg_ctx;
-	struct server_id myself;
-	struct loadparm_context *lp_ctx;
-
-	if (msg != NULL) {
-		return msg;
-	}
-
-	msg_ctx = global_messaging_context();
-	if (msg_ctx == NULL) {
-		smb_panic("global_messaging_context failed\n");
-	}
-	myself = messaging_server_id(msg_ctx);
-
-	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		smb_panic("Could not load smb.conf to init winbindd's imessaging context.\n");
-	}
-
-	/*
-	 * Note we MUST use the NULL context here, not the autofree context,
-	 * to avoid side effects in forked children exiting.
-	 */
-	msg = imessaging_init(NULL, lp_ctx, myself, global_event_context());
-	talloc_unlink(NULL, lp_ctx);
-
-	if (msg == NULL) {
-		smb_panic("Could not init winbindd's messaging context.\n");
-	}
-	return msg;
-}
-
 /* Reload configuration */
 
 bool winbindd_reload_services_file(const char *lfile)
