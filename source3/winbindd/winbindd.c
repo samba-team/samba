@@ -114,7 +114,7 @@ static void flush_caches_noinit(void)
 
 /* Handle the signal by unlinking socket and exiting */
 
-static void terminate(bool is_parent)
+static void winbindd_terminate(bool is_parent)
 {
 	if (is_parent) {
 		/* When parent goes away we should
@@ -165,7 +165,7 @@ static void winbindd_sig_term_handler(struct tevent_context *ev,
 
 	DEBUG(0,("Got sig[%d] terminate (is_parent=%d)\n",
 		 signum, is_parent));
-	terminate(is_parent);
+	winbindd_terminate(is_parent);
 }
 
 /*
@@ -184,7 +184,7 @@ static void winbindd_stdin_handler(struct tevent_context *ev,
 		   parent has exited. Shutdown the server */
 		DEBUG(0,("EOF on stdin (is_parent=%d)\n",
 			 (int)*is_parent));
-		terminate(*is_parent);
+		winbindd_terminate(*is_parent);
 	}
 }
 
@@ -375,7 +375,7 @@ static void msg_shutdown(struct messaging_context *msg,
 {
 	/* only the parent waits for this message */
 	DEBUG(0,("Got shutdown message\n"));
-	terminate(true);
+	winbindd_terminate(true);
 }
 
 
