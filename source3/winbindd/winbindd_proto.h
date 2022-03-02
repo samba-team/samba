@@ -30,6 +30,7 @@ bool winbindd_setup_stdin_handler(bool parent, bool foreground);
 bool winbindd_setup_sig_hup_handler(const char *lfile);
 bool winbindd_use_idmap_cache(void);
 bool winbindd_use_cache(void);
+void winbindd_set_use_cache(bool use_cache);
 char *get_winbind_priv_pipe_dir(void);
 void winbindd_flush_caches(void);
 bool winbindd_reload_services_file(const char *lfile);

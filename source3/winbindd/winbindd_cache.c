@@ -59,6 +59,8 @@ extern struct winbindd_methods sam_passdb_methods;
 
 static void wcache_flush_cache(void);
 
+static bool opt_nocache = False;
+
 /*
  * JRA. KEEP THIS LIST UP TO DATE IF YOU ADD CACHE ENTRIES.
  * Here are the list of entry types that are *not* stored
@@ -71,6 +73,21 @@ static const char *non_centry_keys[] = {
 	WINBINDD_CACHE_VERSION_KEYSTR,
 	NULL
 };
+
+bool winbindd_use_idmap_cache(void)
+{
+	return !opt_nocache;
+}
+
+bool winbindd_use_cache(void)
+{
+	return !opt_nocache;
+}
+
+void winbindd_set_use_cache(bool use_cache)
+{
+	opt_nocache = !use_cache;
+}
 
 /************************************************************************
  Is this key a non-centry type ?

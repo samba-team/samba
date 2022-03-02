@@ -62,7 +62,6 @@ static bool client_is_idle(struct winbindd_cli_state *state);
 static void remove_client(struct winbindd_cli_state *state);
 static void winbindd_setup_max_fds(void);
 
-static bool opt_nocache = False;
 static bool interactive = False;
 
 struct imessaging_context *winbind_imessaging_context(void)
@@ -1367,16 +1366,6 @@ failed:
 	return false;
 }
 
-bool winbindd_use_idmap_cache(void)
-{
-	return !opt_nocache;
-}
-
-bool winbindd_use_cache(void)
-{
-	return !opt_nocache;
-}
-
 static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 				       bool foreground)
 {
@@ -1666,7 +1655,7 @@ int main(int argc, const char **argv)
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'n':
-			opt_nocache = true;
+			winbindd_set_use_cache(false);
 			break;
 		default:
 			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",
