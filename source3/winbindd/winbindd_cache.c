@@ -89,6 +89,20 @@ void winbindd_set_use_cache(bool use_cache)
 	opt_nocache = !use_cache;
 }
 
+void winbindd_flush_caches(void)
+{
+	/* We need to invalidate cached user list entries on a SIGHUP
+           otherwise cached access denied errors due to restrict anonymous
+           hang around until the sequence number changes. */
+
+	if (!wcache_invalidate_cache()) {
+		DEBUG(0, ("invalidating the cache failed; revalidate the cache\n"));
+		if (!winbindd_cache_validate_and_initialize()) {
+			exit(1);
+		}
+	}
+}
+
 /************************************************************************
  Is this key a non-centry type ?
 ************************************************************************/
