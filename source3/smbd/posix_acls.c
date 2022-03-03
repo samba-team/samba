@@ -4002,17 +4002,17 @@ static bool directory_has_default_posix_acl(struct files_struct *dirfsp)
 ****************************************************************************/
 
 int inherit_access_posix_acl(connection_struct *conn,
-			struct smb_filename *inherit_from_dir,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
+			     struct files_struct *inherit_from_dirfsp,
+			     const struct smb_filename *smb_fname,
+			     mode_t mode)
 {
 	int ret;
 
-	if (directory_has_default_posix_acl(inherit_from_dir->fsp))
+	if (directory_has_default_posix_acl(inherit_from_dirfsp))
 		return 0;
 
 	ret = copy_access_posix_acl(
-		inherit_from_dir->fsp, smb_fname->fsp, mode);
+		inherit_from_dirfsp, smb_fname->fsp, mode);
 	return ret;
 }
 

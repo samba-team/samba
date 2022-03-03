@@ -8105,7 +8105,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 
 	if (lp_inherit_permissions(SNUM(conn))) {
 		inherit_access_posix_acl(conn,
-					 parent_fname,
+					 parent_fname->fsp,
 					 smb_fname,
 					 unixmode);
 	}
