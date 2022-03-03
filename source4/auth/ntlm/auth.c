@@ -220,16 +220,11 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	state->user_info	= user_info;
 	state->authoritative	= 1;
 
-	if (!user_info->mapped_state) {
+	if (user_info->mapped.account_name == NULL) {
 		struct auth_usersupplied_info *user_info_tmp;
 
 		/*
 		 * We don't really do any mapping here.
-		 *
-		 * So we don't set user_info->mapped_state,
-		 * but we set mapped.domain_name and
-		 * mapped.account_name to the client
-		 * provided values.
 		 *
 		 * It's up to the backends to do mappings
 		 * for their authentication.
