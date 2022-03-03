@@ -923,7 +923,7 @@ int file_set_dosmode(connection_struct *conn,
 	int mask=0;
 	mode_t tmp;
 	mode_t unixmode;
-	int ret = -1, lret = -1;
+	int ret = -1;
 	NTSTATUS status;
 
 	if (!CAN_WRITE(conn)) {
@@ -1039,7 +1039,7 @@ int file_set_dosmode(connection_struct *conn,
 
 	ret = SMB_VFS_FCHMOD(smb_fname->fsp, unixmode);
 	if (ret == 0) {
-		if(!newfile || (lret != -1)) {
+		if (!newfile) {
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 				     FILE_NOTIFY_CHANGE_ATTRIBUTES,
 				     smb_fname->base_name);
