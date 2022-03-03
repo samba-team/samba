@@ -34,15 +34,15 @@ $SAMBATOOL dns add "$SERVER" -U "$USERNAME"%"$PASSWORD" \
 
 # global lookup
 testit_grep global 10.53.57.30:389 $NET lookup ldap "$DNSZONE" ||
-	failed = $(expr $failed + 1)
+	failed=$(expr $failed + 1)
 
 # correct site-aware lookup
 testit_grep site-aware 1.2.3.4:389 $NET lookup ldap "$DNSZONE" "$SITE" ||
-	failed = $(expr $failed + 1)
+	failed=$(expr $failed + 1)
 
 # lookup with nonexisting site -- global fallback
 testit_grep global 10.53.57.30:389 $NET lookup ldap "$DNSZONE" nosite ||
-	failed = $(expr $failed + 1)
+	failed=$(expr $failed + 1)
 
 $SAMBATOOL dns delete "$SERVER" -U "$USERNAME"%"$PASSWORD" \
 	"$DNSZONE" mydc \
