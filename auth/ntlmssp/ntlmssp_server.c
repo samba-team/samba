@@ -771,7 +771,6 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 
 	user_info->logon_parameters = MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
 	user_info->flags = 0;
-	user_info->mapped_state = false;
 	user_info->client.account_name = ntlmssp_state->user;
 	user_info->client.domain_name = ntlmssp_state->domain;
 	user_info->workstation_name = ntlmssp_state->client.netbios_name;
