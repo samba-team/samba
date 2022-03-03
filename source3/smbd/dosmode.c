@@ -958,13 +958,8 @@ int file_set_dosmode(connection_struct *conn,
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
-		if (!newfile) {
-			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-				FILE_NOTIFY_CHANGE_ATTRIBUTES,
-				smb_fname->base_name);
-		}
-		smb_fname->st.st_ex_mode = unixmode;
-		return 0;
+		ret = 0;
+		goto done;
 	}
 
 	/*
@@ -1039,13 +1034,7 @@ int file_set_dosmode(connection_struct *conn,
 
 	ret = SMB_VFS_FCHMOD(smb_fname->fsp, unixmode);
 	if (ret == 0) {
-		if (!newfile) {
-			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-				     FILE_NOTIFY_CHANGE_ATTRIBUTES,
-				     smb_fname->base_name);
-		}
-		smb_fname->st.st_ex_mode = unixmode;
-		return 0;
+		goto done;
 	}
 
 	if((errno != EPERM) && (errno != EACCES))
@@ -1068,6 +1057,7 @@ int file_set_dosmode(connection_struct *conn,
 	ret = SMB_VFS_FCHMOD(smb_fname->fsp, unixmode);
 	unbecome_root();
 
+done:
 	if (!newfile) {
 		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
