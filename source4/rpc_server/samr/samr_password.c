@@ -56,7 +56,6 @@ static void log_password_change_event(struct imessaging_context *msg_ctx,
 	 * logs are consistent, even if some elements are always NULL.
 	 */
 	struct auth_usersupplied_info ui = {
-		.mapped_state = true,
 		.was_mapped = true,
 		.client = {
 			.account_name = original_client_name,
