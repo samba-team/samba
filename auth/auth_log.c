@@ -152,6 +152,12 @@ static void log_authentication_event_json(
 	char negotiate_flags[11];
 	char logon_id[19];
 	int rc = 0;
+	const char *clientDomain = ui->orig_client.domain_name ?
+				   ui->orig_client.domain_name :
+				   ui->client.domain_name;
+	const char *clientAccount = ui->orig_client.account_name ?
+				    ui->orig_client.account_name :
+				    ui->client.account_name;
 
 	authentication = json_new_object();
 	if (json_is_invalid(&authentication)) {
@@ -203,12 +209,12 @@ static void log_authentication_event_json(
 		goto failure;
 	}
 	rc = json_add_string(
-	    &authentication, "clientDomain", ui->client.domain_name);
+	    &authentication, "clientDomain", clientDomain);
 	if (rc != 0) {
 		goto failure;
 	}
 	rc = json_add_string(
-	    &authentication, "clientAccount", ui->client.account_name);
+	    &authentication, "clientAccount", clientAccount);
 	if (rc != 0) {
 		goto failure;
 	}
@@ -594,6 +600,12 @@ static void log_authentication_event_human_readable(
 	char *trust_account_name = NULL;
 	char *logon_line = NULL;
 	const char *password_type = NULL;
+	const char *clientDomain = ui->orig_client.domain_name ?
+				   ui->orig_client.domain_name :
+				   ui->client.domain_name;
+	const char *clientAccount = ui->orig_client.account_name ?
+				    ui->orig_client.account_name :
+				    ui->client.account_name;
 
 	frame = talloc_stackframe();
 
@@ -640,8 +652,8 @@ static void log_authentication_event_human_readable(
 		" %s\n",
 		ui->service_description,
 		ui->auth_description,
-		log_escape(frame, ui->client.domain_name),
-		log_escape(frame, ui->client.account_name),
+		log_escape(frame, clientDomain),
+		log_escape(frame, clientAccount),
 		ts,
 		password_type,
 		nt_errstr(status),

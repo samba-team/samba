@@ -56,7 +56,7 @@ struct auth_usersupplied_info
 	struct {
 		const char *account_name;
 		const char *domain_name;
-	} client, mapped;
+	} client, mapped, orig_client;
 
 	enum auth_password_state password_state;
 
