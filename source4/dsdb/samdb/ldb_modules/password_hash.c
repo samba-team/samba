@@ -3011,7 +3011,6 @@ static int check_password_restrictions_and_log(struct setup_password_fields_io *
 		 * logs are consistent, even if some elements are always NULL.
 		 */
 		struct auth_usersupplied_info ui = {
-			.mapped_state = true,
 			.was_mapped = true,
 			.client = {
 				.account_name = io->u.sAMAccountName,
