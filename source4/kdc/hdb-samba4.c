@@ -527,7 +527,6 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	 * logs are consistent, even if some elements are always NULL.
 	 */
 	ui = (struct auth_usersupplied_info) {
-		.mapped_state = true,
 		.was_mapped = true,
 		.client = {
 			.account_name = r->cname,
