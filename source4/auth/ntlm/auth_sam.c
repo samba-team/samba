@@ -658,7 +658,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	 * really, really want to get back to exactly the same account
 	 * we got the DN for.
 	 */
-	if (user_info->mapped_state == false) {
+	if (!user_info->cracknames_called) {
 		p = strchr_m(account_name, '@');
 	} else {
 		/*
@@ -867,7 +867,7 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (user_info->mapped_state) {
+	if (user_info->cracknames_called) {
 		/*
 		 * The caller already did a cracknames call.
 		 */
