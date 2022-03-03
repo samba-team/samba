@@ -48,11 +48,11 @@ REGPATH="HKLM\Software\Samba"
 conf_roundtrip_step()
 {
 	echo "CMD: $*" >>$LOG
-	$@ 2>>$LOG
+	"$@" 2>>$LOG
 	RC=$?
 	echo "RC: $RC" >>$LOG
 	test "x$RC" = "x0" || {
-		echo "ERROR: $@ failed (RC=$RC)" | tee -a $LOG
+		echo "ERROR: $* failed (RC=$RC)" | tee -a $LOG
 	}
 	return $RC
 	#    echo -n .
