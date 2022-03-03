@@ -270,6 +270,16 @@ tasks = {
         ],
     },
 
+    "samba-without-smb1-build": {
+        "git-clone-required": True,
+        "sequence": [
+            ("configure", "./configure.developer --without-smb1-server --without-ad-dc" + samba_configure_params),
+            ("make", "make -j"),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+            ("chmod-R-a-w", "chmod -R a-w ."),
+        ],
+    },
+
     "samba-no-opath-build": {
         "git-clone-required": True,
         "sequence": [
@@ -446,6 +456,16 @@ tasks = {
                      # and samba-mitkrb5 but is tested here against
                      # a system Heimdal
             ])),
+            ("lcov", LCOV_CMD),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+        ],
+    },
+
+    "samba-fileserver-without-smb1": {
+        "dependency": "samba-without-smb1-build",
+        "sequence": [
+            ("random-sleep", random_sleep(300, 900)),
+            ("test", make_test(include_envs=["fileserver"])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
         ],

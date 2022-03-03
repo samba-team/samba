@@ -288,6 +288,15 @@ samba-h5l-build:
     - job: samba-h5l-build
       artifacts: true
 
+samba-without-smb1-build:
+  extends: .shared_template_build_only
+
+.needs_samba-without-smb1-build:
+  extends: .shared_template_test_only
+  needs:
+    - job: samba-without-smb1-build
+      artifacts: true
+
 samba-nt4-build:
   extends: .shared_template_build_only
 
@@ -417,6 +426,11 @@ samba-fips:
     - .needs_samba-h5l-build
     - .private_test_only
 
+.needs_samba-without-smb1-build-private:
+  extends:
+    - .needs_samba-without-smb1-build
+    - .private_test_only
+
 .needs_samba-nt4-build-private:
   extends:
     - .needs_samba-nt4-build
@@ -429,6 +443,9 @@ samba-fips:
 
 samba-fileserver:
   extends: .needs_samba-h5l-build-private
+
+samba-fileserver-without-smb1:
+  extends: .needs_samba-without-smb1-build-private
 
 # This is a full build without the AD DC so we test the build with MIT
 # Kerberos from the default system (Ubuntu 18.04 at this stage).
@@ -485,6 +502,7 @@ pages:
     - samba-ad-back1
     - samba-ad-back2
     - samba-fileserver
+    - samba-fileserver-without-smb1
     - samba-ad-dc-1
     - samba-nt4
     - samba-schemaupgrade
