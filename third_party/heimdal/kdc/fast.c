@@ -464,7 +464,6 @@ fast_unwrap_request(astgs_request_t r,
     krb5_flags ap_req_options;
     krb5_keyblock armorkey;
     krb5_keyblock explicit_armorkey;
-    krb5_boolean explicit_armor;
     krb5_error_code ret;
     krb5_ap_req ap_req;
     KrbFastReq fastreq;
@@ -518,7 +517,7 @@ fast_unwrap_request(astgs_request_t r,
 	goto out;
     }
 
-    explicit_armor = fxreq.u.armored_data.armor != NULL && tgs_ac != NULL;
+    r->explicit_armor_present = fxreq.u.armored_data.armor != NULL && tgs_ac != NULL;
 
     /*
      *
@@ -625,11 +624,11 @@ fast_unwrap_request(astgs_request_t r,
 			       ac->remote_subkey,
 			       &ticket->ticket.key,
 			       &armorkey,
-			       explicit_armor ? NULL : &r->armor_crypto);
+			       r->explicit_armor_present ? NULL : &r->armor_crypto);
     if (ret)
 	goto out;
 
-    if (explicit_armor) {
+    if (r->explicit_armor_present) {
 	ret = _krb5_fast_explicit_armor_key(r->context,
 					    &armorkey,
 					    tgs_ac->remote_subkey,
@@ -869,7 +868,7 @@ _kdc_fast_check_armor_pac(astgs_request_t r)
     if (ret)
 	goto out;
 
-    ret = _kdc_check_pac(r->context, r->config, armor_client_principal, NULL,
+    ret = _kdc_check_pac(r, armor_client_principal, NULL,
 			 armor_client, r->armor_server,
 			 r->armor_server, r->armor_server,
 			 &r->armor_key->key, &r->armor_key->key,
@@ -885,6 +884,17 @@ _kdc_fast_check_armor_pac(astgs_request_t r)
 	krb5_free_error_message(r->context, msg);
 
 	goto out;
+    }
+
+    if (r->explicit_armor_present) {
+	r->explicit_armor_clientdb = armor_db;
+	armor_db = NULL;
+
+	r->explicit_armor_client = armor_client;
+	armor_client = NULL;
+
+	r->explicit_armor_pac = mspac;
+	mspac = NULL;
     }
 
 out:

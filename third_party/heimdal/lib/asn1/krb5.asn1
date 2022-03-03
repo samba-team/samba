@@ -55,8 +55,12 @@ EXPORTS
 	PA-ClientCanonicalizedNames,
 	PA-DATA,
 	PA-ENC-TS-ENC,
+	PA-KERB-KEY-LIST-REP,
+	PA-KERB-KEY-LIST-REQ,
+	PA-PAC-OPTIONS,
 	PA-PAC-REQUEST,
 	PA-S4U2Self,
+	PA-S4U-X509-USER,
 	PA-SERVER-REFERRAL-DATA,
 	PA-ServerReferralData,
 	PA-SvrReferralData,
@@ -80,6 +84,7 @@ EXPORTS
 	KDCFastState,
 	KDCFastCookie,
 	KDC-PROXY-MESSAGE,
+	KERB-AD-RESTRICTION-ENTRY,
 	KERB-TIMES,
 	KERB-CRED,
 	KERB-TGS-REQ-IN,
@@ -190,7 +195,10 @@ PADATA-TYPE ::= INTEGER {
 	KRB5-PADATA-PKINIT-KX(147),		-- krb-wg-anon
 	KRB5-PADATA-PKU2U-NAME(148),		-- zhu-pku2u
 	KRB5-PADATA-REQ-ENC-PA-REP(149),	--
+	KER5-PADATA-KERB-KEY-LIST-REQ(161),	-- MS-KILE
+	KER5-PADATA-KERB-PAKEY-LIST-REP(162),	-- MS-KILE
 	KRB5-PADATA-SUPPORTED-ETYPES(165),	-- MS-KILE
+	KRB5-PADATA-PAC-OPTIONS(167),		-- MS-KILE
 	KRB5-PADATA-GSS(655)			-- krb-wg-gss-preauth
 
 }
@@ -217,7 +225,10 @@ AUTHDATA-TYPE ::= INTEGER {
 	KRB5-AUTHDATA-SIGNTICKET-OLD(142),
 	KRB5-AUTHDATA-SIGNTICKET(512),
 	KRB5-AUTHDATA-SYNTHETIC-PRINC-USED(513), -- principal was synthetised
-	KRB5-AUTHDATA-AP-OPTIONS(143),
+	KRB5-AUTHDATA-KERB-LOCAL(141),		-- MS-KILE
+	KRB5-AUTHDATA-TOKEN-RESTRICTIONS(142),	-- MS-KILE
+	KRB5-AUTHDATA-AP-OPTIONS(143),		-- MS-KILE
+	KRB5-AUTHDATA-TARGET-PRINCIPAL(144),	-- MS-KILE
         -- N.B. these assignments have not been confirmed yet.
         --
         -- DO NOT USE in production yet!
@@ -592,6 +603,33 @@ PA-PAC-REQUEST ::= SEQUENCE {
 					-- should be included or not
 }
 
+-- MS-KILE/MS-SFU
+PAC-OPTIONS-FLAGS ::= BIT STRING {
+	claims(0),
+	branch-aware(1),
+	forward-to-full-dc(2),
+	resource-based-constrained-delegation(3)
+}
+
+-- MS-KILE
+PA-PAC-OPTIONS ::= SEQUENCE {
+	flags [0] PAC-OPTIONS-FLAGS
+}
+
+-- MS-KILE
+-- captures show that [UNIVERSAL 16] is required to parse it
+KERB-AD-RESTRICTION-ENTRY ::= [UNIVERSAL 16] SEQUENCE {
+	restriction-type	[0] Krb5Int32,
+	restriction		[1] OCTET STRING -- LSAP_TOKEN_INFO_INTEGRITY structure
+}
+
+-- MS-KILE Section 2.2.11
+PA-KERB-KEY-LIST-REQ ::= SEQUENCE OF ENCTYPE
+
+-- MS-KILE Section 2.2.12
+
+PA-KERB-KEY-LIST-REP ::= SEQUENCE OF ENCTYPE -- EncryptionType,
+
 -- PacketCable provisioning server location, PKT-SP-SEC-I09-030728.pdf
 PROV-SRV-LOCATION ::= GeneralString
 
@@ -817,6 +855,20 @@ PA-S4U2Self ::= SEQUENCE {
         realm[1]	Realm,
         cksum[2]	Checksum,
         auth[3]		GeneralString
+}
+
+PA-S4U-X509-USER::= SEQUENCE {
+	user-id[0] S4UUserID,
+	checksum[1] Checksum
+}
+
+S4UUserID ::= SEQUENCE {
+	nonce [0] Krb5UInt32, -- the nonce in KDC-REQ-BODY
+	cname [1] PrincipalName OPTIONAL, -- Certificate mapping hints
+	crealm [2] Realm,
+	subject-certificate [3] OCTET STRING OPTIONAL,
+	options [4] BIT STRING OPTIONAL,
+	...
 }
 
 AD-LoginAlias ::= SEQUENCE { -- ad-type number TBD --

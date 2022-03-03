@@ -789,6 +789,9 @@ krb5_make_principal(krb5_context context,
     krb5_error_code ret;
     krb5_realm r = NULL;
     va_list ap;
+
+    *principal = NULL;
+
     if(realm == NULL) {
 	ret = krb5_get_default_realm(context, &r);
 	if(ret)
@@ -943,7 +946,11 @@ krb5_copy_principal(krb5_context context,
 		    krb5_const_principal inprinc,
 		    krb5_principal *outprinc)
 {
-    krb5_principal p = malloc(sizeof(*p));
+    krb5_principal p;
+
+    *outprinc = NULL;
+
+    p = malloc(sizeof(*p));
     if (p == NULL)
 	return krb5_enomem(context);
     if(copy_Principal(inprinc, p)) {

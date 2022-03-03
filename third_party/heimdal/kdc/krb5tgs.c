@@ -76,8 +76,7 @@ _kdc_synthetic_princ_used_p(krb5_context context, krb5_ticket *ticket)
  */
 
 krb5_error_code
-_kdc_check_pac(krb5_context context,
-	       krb5_kdc_configuration *config,
+_kdc_check_pac(astgs_request_t r,
 	       const krb5_principal client_principal,
 	       const krb5_principal delegated_proxy_principal,
 	       hdb_entry *client,
@@ -92,6 +91,8 @@ _kdc_check_pac(krb5_context context,
 	       krb5_principal *pac_canon_name,
 	       uint64_t *pac_attributes)
 {
+    krb5_context context = r->context;
+    krb5_kdc_configuration *config = r->config;
     krb5_pac pac = NULL;
     krb5_error_code ret;
     krb5_boolean signedticket;
@@ -139,7 +140,7 @@ _kdc_check_pac(krb5_context context,
     }
 
     /* Verify the KDC signatures. */
-    ret = _kdc_pac_verify(context, config,
+    ret = _kdc_pac_verify(r,
 			  client_principal, delegated_proxy_principal,
 			  client, server, krbtgt, &pac);
     if (ret == 0) {
@@ -1770,7 +1771,7 @@ server_lookup:
 	    }
 
 	    /* Verify the PAC of the TGT. */
-	    ret = _kdc_check_pac(context, config, user2user_princ, NULL,
+	    ret = _kdc_check_pac(priv, user2user_princ, NULL,
 				 user2user_client, user2user_krbtgt, user2user_krbtgt, user2user_krbtgt,
 				 &uukey->key, &priv->ticket_key->key, &adtkt,
 				 &user2user_kdc_issued, &user2user_pac, NULL, NULL);
@@ -1897,7 +1898,7 @@ server_lookup:
     flags &= ~HDB_F_SYNTHETIC_OK;
     priv->clientdb = clientdb;
 
-    ret = _kdc_check_pac(context, config, priv->client_princ, NULL,
+    ret = _kdc_check_pac(priv, priv->client_princ, NULL,
 			 priv->client, priv->server,
 			 priv->krbtgt, priv->krbtgt,
 			 &priv->ticket_key->key, &priv->ticket_key->key, tgt,
@@ -2156,7 +2157,13 @@ _kdc_tgs_rep(astgs_request_t r)
 
 out:
     r->error_code = ret;
-    _kdc_audit_request(r);
+    {
+	krb5_error_code ret2 = _kdc_audit_request(r);
+	if (ret2) {
+	    krb5_data_free(data);
+	    ret = ret2;
+	}
+    }
 
     if(ret && ret != HDB_ERR_NOT_FOUND_HERE && data->data == NULL){
 	METHOD_DATA error_method = { 0, NULL };
@@ -2203,6 +2210,12 @@ out:
 	krb5_free_ticket(r->context, r->armor_ticket);
     if (r->armor_server)
 	_kdc_free_ent(r->context, r->armor_serverdb, r->armor_server);
+    if (r->explicit_armor_client)
+	_kdc_free_ent(r->context,
+		      r->explicit_armor_clientdb,
+		      r->explicit_armor_client);
+    if (r->explicit_armor_pac)
+	krb5_pac_free(r->context, r->explicit_armor_pac);
     krb5_free_keyblock_contents(r->context, &r->reply_key);
     krb5_free_keyblock_contents(r->context, &r->strengthen_key);
 

@@ -36,6 +36,9 @@ HEIMDAL_KDC_1.0 {
 		kdc_request_get_config;
 		kdc_request_get_cname;
 		kdc_request_get_error_code;
+		kdc_request_get_explicit_armor_pac;
+		kdc_request_get_explicit_armor_clientdb;
+		kdc_request_get_explicit_armor_client;
 		kdc_request_get_from;
 		kdc_request_get_krbtgt;
 		kdc_request_get_krbtgtdb;

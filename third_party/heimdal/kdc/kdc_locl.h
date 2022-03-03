@@ -167,12 +167,17 @@ struct astgs_request_desc {
     /* only valid for tgs-req */
     unsigned int rk_is_subkey : 1;
     unsigned int fast_asserted : 1;
+    unsigned int explicit_armor_present : 1;
 
     krb5_crypto armor_crypto;
     hdb_entry *armor_server;
     HDB *armor_serverdb;
     krb5_ticket *armor_ticket;
     Key *armor_key;
+
+    hdb_entry *explicit_armor_client;
+    HDB *explicit_armor_clientdb;
+    krb5_pac explicit_armor_pac;
 
     KDCFastState fast;
 };

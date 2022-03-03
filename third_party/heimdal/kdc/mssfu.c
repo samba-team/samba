@@ -252,8 +252,7 @@ validate_protocol_transition(astgs_request_t r)
     if (ret)
 	goto out; /* kdc_check_flags() calls kdc_audit_addreason() */
 
-    ret = _kdc_pac_generate(r->context,
-			    r->config,
+    ret = _kdc_pac_generate(r,
 			    s4u_client,
 			    r->server,
 			    NULL,
@@ -473,7 +472,7 @@ validate_constrained_delegation(astgs_request_t r)
      * TODO: pass in t->sname and t->realm and build
      * a S4U_DELEGATION_INFO blob to the PAC.
      */
-    ret = _kdc_check_pac(r->context, r->config, s4u_client_name, s4u_server_name,
+    ret = _kdc_check_pac(r, s4u_client_name, s4u_server_name,
 			 s4u_client, r->server, r->krbtgt, r->client,
 			 &clientkey->key, &r->ticket_key->key, &evidence_tkt,
 			 &ad_kdc_issued, &s4u_pac,
