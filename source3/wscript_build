@@ -597,6 +597,16 @@ if bld.CONFIG_SET('SAMBA_FAM_LIBS'):
     NOTIFY_SOURCES += ' smbd/notify_fam.c'
     NOTIFY_DEPS += ' ' + bld.CONFIG_GET('SAMBA_FAM_LIBS')
 
+if bld.CONFIG_SET('WITH_SMB1SERVER'):
+    SMB1_SOURCES = '''
+                   smbd/smb1_message.c
+                   smbd/smb1_sesssetup.c
+                   smbd/smb1_lanman.c
+                   smbd/smb1_utils.c
+    '''
+else:
+    SMB1_SOURCES = ''
+
 bld.SAMBA3_LIBRARY('smbd_base',
                    source='''
                           smbd/server_reload.c
@@ -612,13 +622,10 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/share_access.c
                           smbd/fileio.c
                           smbd/ipc.c
-                          smbd/smb1_lanman.c
                           smbd/negprot.c
-                          smbd/smb1_message.c
                           smbd/nttrans.c
                           smbd/pipes.c
                           smbd/reply.c
-                          smbd/smb1_sesssetup.c
                           smbd/trans2.c
                           smbd/uid.c
                           smbd/dosmode.c
@@ -692,11 +699,10 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/notify.c
                           smbd/notify_msg.c
                           smbd/build_options.c
-                          smbd/smb1_utils.c
                           smbd/conn.c
                           rpc_server/srv_pipe_hnd.c
                           rpc_server/rpc_ncacn_np.c
-                          ''' + NOTIFY_SOURCES,
+                          ''' + NOTIFY_SOURCES + SMB1_SOURCES,
                    deps='''
                         talloc
                         tevent
