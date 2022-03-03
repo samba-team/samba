@@ -38,7 +38,6 @@ static int (*vxfs_getxattr_fd_func) (int fd, const char *name, void *value,
 static int (*vxfs_removexattr_fd_func) (int fd, const char *name);
 static int (*vxfs_listxattr_fd_func) (int fd, void *value, size_t *len);
 static int (*vxfs_setwxattr_fd_func) (int fd);
-static int (*vxfs_clearwxattr_fd_func) (int fd);
 static int (*vxfs_checkwxattr_fd_func) (int fd);
 
 int vxfs_setxattr_fd(int fd, const char *name, const void *value,
@@ -46,13 +45,16 @@ int vxfs_setxattr_fd(int fd, const char *name, const void *value,
 {
 	int ret = -1;
 
+	DBG_DEBUG("In vxfs_setxattr_fd fd %d name %s len %zu flags %d\n",
+		fd, name, len, flags);
 	if (vxfs_setxattr_fd_func == NULL) {
 		errno = ENOSYS;
 		return ret;
 	}
 
-	DEBUG(10, ("Calling vxfs_setxattr_fd\n"));
+	DBG_DEBUG("Calling vxfs_setxattr_fd\n");
 	ret = vxfs_setxattr_fd_func(fd, name, value, len, flags);
+	DBG_DEBUG("vxfs_setxattr_fd ret = %d \n", ret);
 	if (ret) {
 		errno = ret;
 		ret = -1;
@@ -65,14 +67,17 @@ int vxfs_getxattr_fd(int fd, const char *name, void *value, size_t len)
 {
 	int ret;
 	size_t size = len;
+	DBG_DEBUG("In vxfs_getxattr_fd fd %d name %s len %zu\n",
+		fd, name, len);
 
 	if (vxfs_getxattr_fd_func == NULL) {
 		errno = ENOSYS;
 		return -1;
 	}
 
-	DEBUG(10, ("Calling vxfs_getxattr_fd with %s\n", name));
+	DBG_DEBUG("Calling vxfs_getxattr_fd with %s\n", name);
 	ret = vxfs_getxattr_fd_func(fd, name, value, &size);
+	DBG_DEBUG("vxfs_getxattr_fd ret = %d\n", ret);
 	if (ret) {
 		errno = ret;
 		if (ret == EFBIG) {
@@ -80,6 +85,7 @@ int vxfs_getxattr_fd(int fd, const char *name, void *value, size_t len)
 		}
 		return -1;
 	}
+	DBG_DEBUG("vxfs_getxattr_fd done with size %zu\n", size);
 
 	return size;
 }
@@ -88,11 +94,13 @@ int vxfs_getxattr_path(const char *path, const char *name, void *value,
 		       size_t len)
 {
 	int ret, fd = -1;
+	DBG_DEBUG("In vxfs_getxattr_path path %s name %s len %zu\n",
+		path, name, len);
 
 	fd = open(path, O_RDONLY);
 	if (fd == -1) {
-		DEBUG(10, ("file not opened: vxfs_getxattr_path for %s\n",
-			   path));
+		DBG_DEBUG("file not opened: vxfs_getxattr_path for %s\n",
+			   path);
 		return -1;
 	}
 
@@ -105,13 +113,14 @@ int vxfs_getxattr_path(const char *path, const char *name, void *value,
 int vxfs_removexattr_fd(int fd, const char *name)
 {
 	int ret = 0;
+	DBG_DEBUG("In vxfs_removexattr_fd fd %d name %s\n", fd, name);
 
 	if (vxfs_removexattr_fd_func == NULL) {
 		errno = ENOSYS;
 		return -1;
 	}
 
-	DEBUG(10, ("Calling vxfs_removexattr_fd with %s\n", name));
+	DBG_DEBUG("Calling vxfs_removexattr_fd with %s\n", name);
 	ret = vxfs_removexattr_fd_func(fd, name);
 	if (ret) {
 		errno = ret;
@@ -125,6 +134,7 @@ int vxfs_listxattr_fd(int fd, char *list, size_t size)
 {
 	int ret;
 	size_t len = size;
+	DBG_DEBUG("In vxfs_listxattr_fd fd %d list %s size %zu\n", fd, list, size);
 
 	if (vxfs_listxattr_fd_func == NULL) {
 		errno = ENOSYS;
@@ -132,7 +142,8 @@ int vxfs_listxattr_fd(int fd, char *list, size_t size)
 	}
 
 	ret = vxfs_listxattr_fd_func(fd, list, &len);
-	DEBUG(10, ("vxfs_listxattr_fd: returned ret = %d\n", ret));
+	DBG_DEBUG("vxfs_listxattr_fd: returned ret = %d\n", ret);
+	DBG_DEBUG("In vxfs_listxattr_fd done with len %zu\n", len);
 	if (ret) {
 		errno = ret;
 		if (ret == EFBIG) {
@@ -147,6 +158,7 @@ int vxfs_listxattr_fd(int fd, char *list, size_t size)
 int vxfs_setwxattr_fd(int fd)
 {
 	int ret = 0;
+	DBG_DEBUG("In vxfs_setwxattr_fd fd %d\n", fd);
 
 	if (vxfs_setwxattr_fd_func == NULL) {
 		errno = ENOSYS;
@@ -165,6 +177,7 @@ int vxfs_setwxattr_fd(int fd)
 int vxfs_setwxattr_path(const char *path, bool is_dir)
 {
 	int ret, fd = -1;
+	DBG_DEBUG("In vxfs_setwxattr_path path %s is_dir %d\n", path, is_dir);
 
 	if (is_dir) {
 		fd = open(path, O_RDONLY|O_DIRECTORY);
@@ -184,48 +197,10 @@ int vxfs_setwxattr_path(const char *path, bool is_dir)
 	return ret;
 }
 
-int vxfs_clearwxattr_fd(int fd)
-{
-	int ret;
-	if (vxfs_clearwxattr_fd_func == NULL) {
-		errno = ENOSYS;
-		return -1;
-	}
-	ret = vxfs_clearwxattr_fd_func(fd);
-	DBG_DEBUG("ret = %d\n", ret);
-	if (ret != 0) {
-		errno = ret;
-		ret = -1;
-	}
-
-	return ret;
-}
-
-int vxfs_clearwxattr_path(const char *path, bool is_dir)
-{
-	int ret, fd = -1;
-
-	if (is_dir) {
-		fd = open(path, O_RDONLY|O_DIRECTORY);
-	} else {
-		fd = open(path, O_WRONLY);
-	}
-
-	if (fd == -1) {
-		DBG_DEBUG("file %s not opened, errno:%s\n",
-			   path, strerror(errno));
-		return -1;
-	}
-	ret = vxfs_clearwxattr_fd(fd);
-	DBG_DEBUG("ret = %d\n", ret);
-	close(fd);
-
-	return ret;
-}
-
 int vxfs_checkwxattr_fd(int fd)
 {
 	int ret;
+	DBG_DEBUG("In vxfs_checkwxattr_fd fd %d\n", fd);
 
 	if (vxfs_checkwxattr_fd_func == NULL) {
 		errno = ENOSYS;
@@ -243,6 +218,7 @@ int vxfs_checkwxattr_fd(int fd)
 int vxfs_checkwxattr_path(const char *path)
 {
 	int ret, fd = -1;
+	DBG_DEBUG("In vxfs_checkwxattr_path path %s\n", path);
 
 	fd = open(path, O_RDONLY);
 
@@ -297,8 +273,6 @@ void vxfs_init()
 			       "vxfs_nxattr_list");
 	load_lib_vxfs_function(&lib_handle, &vxfs_setwxattr_fd_func,
 			       "vxfs_wattr_set");
-	load_lib_vxfs_function(&lib_handle, &vxfs_clearwxattr_fd_func,
-			       "vxfs_wattr_clear");
 	load_lib_vxfs_function(&lib_handle, &vxfs_checkwxattr_fd_func,
 			       "vxfs_wattr_check");
 

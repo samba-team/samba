@@ -62,8 +62,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
+/*
+ * Note:
+ * XATTR_USER_NTACL: This extended attribute is used
+ * to store Access Control List system objects by VxFS from DLV11 onwards.
+ * XATTR_USER_NTACL_V0: This extended attribute was used
+ * to store Access Control List system objects by VxFS till DLV10.
+ */
 #ifndef XATTR_USER_NTACL
-#define XATTR_USER_NTACL "system.NTACL"
+#define XATTR_USER_NTACL    "system.NTACL"
+#define XATTR_USER_NTACL_V0 "user.NTACL"
 #endif
 
 /* type values */
@@ -75,6 +83,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define VXFS_ACL_OTHER           5
 #define VXFS_ACL_MASK            6
 
+/*
+ * Helper function for comparing two strings
+ */
+static int vxfs_strcasecmp(const char *str1, const char *str2)
+{
+	bool match = strequal_m(str1, str2);
+	if (match) {
+		return 0;
+	}
+	return 1;
+}
 
 /*
  * Compare aces
@@ -501,24 +520,36 @@ static int vxfs_fset_xattr(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const char *name,
 			   const void *value, size_t size,  int flags){
 	int ret = 0;
+	int tmp_ret = 0;
 
-	DEBUG(10, ("In vxfs_fset_xattr\n"));
+	DBG_DEBUG("In vxfs_fset_xattr\n");
 
 	ret = vxfs_setxattr_fd(fsp_get_io_fd(fsp), name, value, size, flags);
 	if ((ret == 0) ||
 	    ((ret == -1) && (errno != ENOTSUP) && (errno != ENOSYS))) {
-		SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
+		/*
+		 * version 1: user.NTACL xattr without inheritance supported
+		 * version 2: user.NTACL xattr with inheritance supported
+		 * version 3: new styled xattr security.NTACL with inheritance supported
+		 * Hence, the old styled xattr user.NTACL should be removed
+		 */
+		tmp_ret = vxfs_strcasecmp(name, XATTR_NTACL_NAME);
+		if (tmp_ret == 0) {
+			SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, XATTR_USER_NTACL_V0);
+			DBG_DEBUG("Old style xattr %s removed...\n", XATTR_USER_NTACL_V0);
+		}
+
 		return ret;
 	}
 
-	DEBUG(10, ("Fallback to xattr"));
+	DBG_DEBUG("Fallback to xattr");
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
 		return SMB_VFS_NEXT_FSETXATTR(handle, fsp, XATTR_USER_NTACL,
 					      value, size, flags);
 	}
 
 	/* Clients can't set XATTR_USER_NTACL directly. */
-	if (strcasecmp(name, XATTR_USER_NTACL) == 0) {
+	if (vxfs_strcasecmp(name, XATTR_USER_NTACL) == 0) {
 		errno = EACCES;
 		return -1;
 	}
@@ -546,7 +577,7 @@ static ssize_t vxfs_fget_xattr(struct vfs_handle_struct *handle,
 	}
 
 	/* Clients can't see XATTR_USER_NTACL directly. */
-	if (strcasecmp(name, XATTR_USER_NTACL) == 0) {
+	if (vxfs_strcasecmp(name, XATTR_USER_NTACL) == 0) {
 		errno = ENOATTR;
 		return -1;
 	}
@@ -566,7 +597,7 @@ static int vxfs_fremove_xattr(struct vfs_handle_struct *handle,
 						XATTR_USER_NTACL);
 	} else {
 		/* Clients can't remove XATTR_USER_NTACL directly. */
-		if (strcasecmp(name, XATTR_USER_NTACL) != 0) {
+		if (vxfs_strcasecmp(name, XATTR_USER_NTACL) != 0) {
 			ret = SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp,
 							name);
 		}
@@ -595,7 +626,7 @@ static size_t vxfs_filter_list(char *list, size_t size)
 
 	while (str - list < size) {
 		size_t element_len = strlen(str) + 1;
-		if (strcasecmp(str, XATTR_USER_NTACL) == 0) {
+		if (vxfs_strcasecmp(str, XATTR_USER_NTACL) == 0) {
 			memmove(str,
 				str + element_len,
 				size - (str - list) - element_len);
@@ -636,10 +667,14 @@ static NTSTATUS vxfs_fset_ea_dos_attributes(struct vfs_handle_struct *handle,
 {
 	NTSTATUS	err;
 	int		ret = 0;
-	bool		attrset = false;
 
 	DBG_DEBUG("Entered function\n");
 
+	err = SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle, fsp, dosmode);
+	if (!NT_STATUS_IS_OK(err)) {
+		DBG_DEBUG("err:%d\n", err);
+		return err;
+	}
 	if (!(dosmode & FILE_ATTRIBUTE_READONLY)) {
 		ret = vxfs_checkwxattr_fd(fsp_get_io_fd(fsp));
 		if (ret == -1) {
@@ -656,21 +691,9 @@ static NTSTATUS vxfs_fset_ea_dos_attributes(struct vfs_handle_struct *handle,
 			if ((errno != EOPNOTSUPP) && (errno != EINVAL)) {
 				return map_nt_error_from_unix(errno);
 			}
-		} else {
-			attrset = true;
 		}
 	}
-	err = SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle, fsp, dosmode);
-	if (!NT_STATUS_IS_OK(err)) {
-		if (attrset) {
-			ret = vxfs_clearwxattr_fd(fsp_get_io_fd(fsp));
-			DBG_DEBUG("ret:%d\n", ret);
-			if ((ret == -1) && (errno != ENOENT)) {
-				return map_nt_error_from_unix(errno);
-			}
-		}
-	}
-	return err;
+	return NT_STATUS_OK;
 }
 
 static int vfs_vxfs_connect(struct vfs_handle_struct *handle,
