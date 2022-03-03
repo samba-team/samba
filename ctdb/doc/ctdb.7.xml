@@ -895,7 +895,7 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
       </para>
 
       <screen>
-  192.168.1.99	192.168.1.1/24
+  192.168.1.99	192.168.1.0/24
       </screen>
 
       <para>
@@ -918,7 +918,7 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
       </screen>
 
       <para>  
-	This causes traffic from 192.168.1.1 to 192.168.1.0/24 go via
+	This causes traffic from 192.168.1.99 to 192.168.1.0/24 go via
 	eth2.
       </para>
 
