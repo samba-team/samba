@@ -106,7 +106,7 @@ static uint32_t filter_mode_by_protocol(uint32_t mode)
 
 mode_t unix_mode(connection_struct *conn, int dosmode,
 		 const struct smb_filename *smb_fname,
-		 struct smb_filename *smb_fname_parent)
+		 struct files_struct *parent_dirfsp)
 {
 	mode_t result = (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
 	mode_t dir_mode = 0; /* Mode of the inherit_from directory if
@@ -116,20 +116,24 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 		result &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 	}
 
-	if ((smb_fname_parent != NULL) && lp_inherit_permissions(SNUM(conn))) {
+	if ((parent_dirfsp != NULL) && lp_inherit_permissions(SNUM(conn))) {
+		struct stat_ex sbuf = { .st_ex_nlink = 0, };
+		int ret;
+
 		DBG_DEBUG("[%s] inheriting from [%s]\n",
 			  smb_fname_str_dbg(smb_fname),
-			  smb_fname_str_dbg(smb_fname_parent));
+			  smb_fname_str_dbg(parent_dirfsp->fsp_name));
 
-		if (SMB_VFS_STAT(conn, smb_fname_parent) != 0) {
-			DBG_ERR("stat failed [%s]: %s\n",
-				smb_fname_str_dbg(smb_fname_parent),
+		ret = SMB_VFS_FSTAT(parent_dirfsp, &sbuf);
+		if (ret != 0) {
+			DBG_ERR("fstat failed [%s]: %s\n",
+				smb_fname_str_dbg(parent_dirfsp->fsp_name),
 				strerror(errno));
 			return(0);      /* *** shouldn't happen! *** */
 		}
 
 		/* Save for later - but explicitly remove setuid bit for safety. */
-		dir_mode = smb_fname_parent->st.st_ex_mode & ~S_ISUID;
+		dir_mode = sbuf.st_ex_mode & ~S_ISUID;
 		DEBUG(2,("unix_mode(%s) inherit mode %o\n",
 			 smb_fname_str_dbg(smb_fname), (int)dir_mode));
 		/* Clear "result" */
@@ -973,7 +977,11 @@ int file_set_dosmode(connection_struct *conn,
 	}
 
 	/* Fall back to UNIX modes. */
-	unixmode = unix_mode(conn, dosmode, smb_fname, parent_dir);
+	unixmode = unix_mode(
+		conn,
+		dosmode,
+		smb_fname,
+		parent_dir != NULL ? parent_dir->fsp : NULL);
 
 	/* preserve the file type bits */
 	mask |= S_IFMT;
