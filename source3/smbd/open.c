@@ -1260,7 +1260,7 @@ static NTSTATUS reopen_from_fsp(struct files_struct *fsp,
 
 static NTSTATUS open_file(files_struct *fsp,
 			  struct smb_request *req,
-			  struct smb_filename *parent_dir,
+			  struct files_struct *dirfsp,
 			  int flags,
 			  mode_t unx_mode,
 			  uint32_t access_mask, /* client requested access mask. */
@@ -1383,7 +1383,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			/* Only do this check on non-stream open. */
 			if (file_existed) {
 				status = smbd_check_access_rights_fsp(
-						parent_dir->fsp,
+						dirfsp,
 						fsp,
 						false,
 						access_mask);
@@ -1421,13 +1421,14 @@ static NTSTATUS open_file(files_struct *fsp,
 				}
 
 				status = check_parent_access_fsp(
-							parent_dir->fsp,
+							dirfsp,
 							SEC_DIR_ADD_FILE);
 				if (!NT_STATUS_IS_OK(status)) {
 					DBG_DEBUG("check_parent_access_fsp on "
 						  "directory %s for file %s "
 						  "returned %s\n",
-						  smb_fname_str_dbg(parent_dir),
+						  smb_fname_str_dbg(
+							  dirfsp->fsp_name),
 						  smb_fname_str_dbg(smb_fname),
 						  nt_errstr(status));
 					return status;
@@ -1490,7 +1491,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			/* Inherit the ACL if required */
 			if (lp_inherit_permissions(SNUM(conn))) {
 				inherit_access_posix_acl(conn,
-							 parent_dir->fsp,
+							 dirfsp,
 							 smb_fname,
 							 unx_mode);
 				need_re_stat = true;
@@ -1498,8 +1499,7 @@ static NTSTATUS open_file(files_struct *fsp,
 
 			/* Change the owner if required. */
 			if (lp_inherit_owner(SNUM(conn)) != INHERIT_OWNER_NO) {
-				change_file_owner_to_parent_fsp(parent_dir->fsp,
-							    fsp);
+				change_file_owner_to_parent_fsp(dirfsp, fsp);
 				need_re_stat = true;
 			}
 
@@ -1567,7 +1567,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			}
 		}
 
-		status = smbd_check_access_rights_fsp(parent_dir->fsp,
+		status = smbd_check_access_rights_fsp(dirfsp,
 						      fsp,
 						      false,
 						      access_mask);
@@ -3808,7 +3808,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	fsp_open = open_file(fsp,
 			     req,
-			     parent_dir_fname,
+			     parent_dir_fname->fsp,
 			     flags|flags2,
 			     unx_mode,
 			     access_mask,
