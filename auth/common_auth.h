@@ -49,7 +49,7 @@ struct auth_usersupplied_info
 
 	uint32_t logon_parameters;
 
-	bool mapped_state;
+	bool cracknames_called;
 	bool was_mapped;
 	uint64_t logon_id;
 	/* the values the client gives us */
