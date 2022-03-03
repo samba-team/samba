@@ -121,8 +121,9 @@ _PUBLIC_ struct tevent_req *authenticate_ldap_simple_bind_send(TALLOC_CTX *mem_c
 		return tevent_req_post(req, ev);
 	}
 
-	user_info->mapped.account_name = nt4_username;
-	user_info->mapped.domain_name = nt4_domain;
+	user_info->orig_client = user_info->client;
+	user_info->client.account_name = nt4_username;
+	user_info->client.domain_name = nt4_domain;
 	user_info->cracknames_called = true;
 
 	subreq = auth_check_password_send(state, ev,
