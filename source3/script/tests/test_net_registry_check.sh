@@ -30,7 +30,7 @@ failed=0
 regcheck()
 {
 	ALLOWEDERR="Check database:|INFO: version ="
-	ERRSTR=$(${NETREG} check $REG $@ 2>&1 | egrep -v "$ALLOWEDERR")
+	ERRSTR=$(${NETREG} check $REG "$@" 2>&1 | egrep -v "$ALLOWEDERR")
 }
 
 # try to repair registry
