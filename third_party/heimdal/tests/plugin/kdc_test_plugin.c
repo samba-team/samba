@@ -20,14 +20,14 @@ fini(void *ctx)
 
 static krb5_error_code KRB5_CALLCONV
 pac_generate(void *ctx,
-	     krb5_context context,
-	     krb5_kdc_configuration *config,
+	     astgs_request_t r,
 	     hdb_entry *client,
 	     hdb_entry *server,
 	     const krb5_keyblock *pk_replykey,
 	     uint64_t pac_attributes,
 	     krb5_pac *pac)
 {
+    krb5_context context = kdc_request_get_context((kdc_request_t)r);
     krb5_error_code ret;
     krb5_data data;
 
@@ -55,8 +55,7 @@ pac_generate(void *ctx,
 
 static krb5_error_code KRB5_CALLCONV
 pac_verify(void *ctx,
-	   krb5_context context,
-	   krb5_kdc_configuration *config,
+	   astgs_request_t r,
 	   const krb5_principal new_ticket_client,
 	   const krb5_principal delegation_proxy,
 	   hdb_entry * client,
@@ -64,6 +63,7 @@ pac_verify(void *ctx,
 	   hdb_entry * krbtgt,
 	   krb5_pac *pac)
 {
+    krb5_context context = kdc_request_get_context((kdc_request_t)r);
     krb5_error_code ret;
     krb5_data data;
     krb5_cksumtype cstype;

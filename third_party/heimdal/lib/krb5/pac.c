@@ -383,7 +383,7 @@ krb5_pac_add_buffer(krb5_context context, krb5_pac p,
     size_t len, offset, header_end, old_end;
     uint32_t i;
 
-    assert(data->length > 0 && data->data != NULL);
+    assert(data->data != NULL);
 
     len = p->pac->numbuffers;
 

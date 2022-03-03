@@ -346,4 +346,24 @@ ASTGS_REQUEST_GET_ACCESSOR(uint64_t, pac_attributes)
 
 ASTGS_REQUEST_SET_ACCESSOR(uint64_t, pac_attributes)
 
+/*
+ * const HDB *
+ * kdc_request_get_explicit_armor_clientdb(astgs_request_t);
+ */
+
+ASTGS_REQUEST_GET_ACCESSOR_PTR(HDB *, explicit_armor_clientdb)
+
+/*
+ * const hdb_entry *
+ * kdc_request_get_explicit_armor_client(astgs_request_t);
+ */
+ASTGS_REQUEST_GET_ACCESSOR_PTR(hdb_entry *, explicit_armor_client);
+
+/*
+ * krb5_const_pac
+ * kdc_request_get_explicit_armor_pac(astgs_request_t);
+ */
+
+ASTGS_REQUEST_GET_ACCESSOR_PTR(struct krb5_pac_data *, explicit_armor_pac);
+
 #endif /* HEIMDAL_KDC_KDC_ACCESSORS_H */

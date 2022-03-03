@@ -445,6 +445,7 @@ EXPORTS
 	copy_KDC_REQ
 	copy_KDC_REQ_BODY
 	copy_KDFAlgorithmId
+	copy_KERB_AD_RESTRICTION_ENTRY
 	copy_KERB_ARMOR_SERVICE_REPLY
 	copy_KERB_CRED
 	copy_KerberosString
@@ -517,12 +518,16 @@ EXPORTS
 	copy_PA_ENC_TS_ENC
 	copy_PA_FX_FAST_REPLY
 	copy_PA_FX_FAST_REQUEST
+	copy_PA_KERB_KEY_LIST_REP
+	copy_PA_KERB_KEY_LIST_REQ
+	copy_PA_PAC_OPTIONS
 	copy_PA_PAC_REQUEST
 	copy_PA_PK_AS_REP
 	copy_PA_PK_AS_REP_BTMM
 	copy_PA_PK_AS_REP_Win2k
 	copy_PA_PK_AS_REQ
 	copy_PA_PK_AS_REQ_Win2k
+	copy_PA_S4U_X509_USER
 	copy_PA_S4U2Self
 	copy_PA_SAM_CHALLENGE_2
 	copy_PA_SAM_CHALLENGE_2_BODY
@@ -805,6 +810,7 @@ EXPORTS
 	decode_KDC_REQ
 	decode_KDC_REQ_BODY
 	decode_KDFAlgorithmId
+	decode_KERB_AD_RESTRICTION_ENTRY
 	decode_KERB_ARMOR_SERVICE_REPLY
 	decode_KERB_CRED
 	decode_KerberosString
@@ -877,12 +883,16 @@ EXPORTS
 	decode_PA_ENC_TS_ENC
 	decode_PA_FX_FAST_REPLY
 	decode_PA_FX_FAST_REQUEST
+	decode_PA_KERB_KEY_LIST_REP
+	decode_PA_KERB_KEY_LIST_REQ
+	decode_PA_PAC_OPTIONS
 	decode_PA_PAC_REQUEST
 	decode_PA_PK_AS_REP
 	decode_PA_PK_AS_REP_BTMM
 	decode_PA_PK_AS_REP_Win2k
 	decode_PA_PK_AS_REQ
 	decode_PA_PK_AS_REQ_Win2k
+	decode_PA_S4U_X509_USER
 	decode_PA_S4U2Self
 	decode_PA_SAM_CHALLENGE_2
 	decode_PA_SAM_CHALLENGE_2_BODY
@@ -1311,6 +1321,7 @@ EXPORTS
 	encode_KDC_REQ
 	encode_KDC_REQ_BODY
 	encode_KDFAlgorithmId
+	encode_KERB_AD_RESTRICTION_ENTRY
 	encode_KERB_ARMOR_SERVICE_REPLY
 	encode_KERB_CRED
 	encode_KerberosString
@@ -1383,12 +1394,16 @@ EXPORTS
 	encode_PA_ENC_TS_ENC
 	encode_PA_FX_FAST_REPLY
 	encode_PA_FX_FAST_REQUEST
+	encode_PA_KERB_KEY_LIST_REP
+	encode_PA_KERB_KEY_LIST_REQ
+	encode_PA_PAC_OPTIONS
 	encode_PA_PAC_REQUEST
 	encode_PA_PK_AS_REP
 	encode_PA_PK_AS_REP_BTMM
 	encode_PA_PK_AS_REP_Win2k
 	encode_PA_PK_AS_REQ
 	encode_PA_PK_AS_REQ_Win2k
+	encode_PA_S4U_X509_USER
 	encode_PA_S4U2Self
 	encode_PA_SAM_CHALLENGE_2
 	encode_PA_SAM_CHALLENGE_2_BODY
@@ -1672,6 +1687,7 @@ EXPORTS
 	free_KDC_REQ
 	free_KDC_REQ_BODY
 	free_KDFAlgorithmId
+	free_KERB_AD_RESTRICTION_ENTRY
 	free_KERB_ARMOR_SERVICE_REPLY
 	free_KERB_CRED
 	free_KerberosString
@@ -1744,12 +1760,16 @@ EXPORTS
 	free_PA_ENC_TS_ENC
 	free_PA_FX_FAST_REPLY
 	free_PA_FX_FAST_REQUEST
+	free_PA_KERB_KEY_LIST_REP
+	free_PA_KERB_KEY_LIST_REQ
+	free_PA_PAC_OPTIONS
 	free_PA_PAC_REQUEST
 	free_PA_PK_AS_REP
 	free_PA_PK_AS_REP_BTMM
 	free_PA_PK_AS_REP_Win2k
 	free_PA_PK_AS_REQ
 	free_PA_PK_AS_REQ_Win2k
+	free_PA_S4U_X509_USER
 	free_PA_S4U2Self
 	free_PA_SAM_CHALLENGE_2
 	free_PA_SAM_CHALLENGE_2_BODY
@@ -2052,6 +2072,7 @@ EXPORTS
 	length_KDC_REQ
 	length_KDC_REQ_BODY
 	length_KDFAlgorithmId
+	length_KERB_AD_RESTRICTION_ENTRY
 	length_KERB_ARMOR_SERVICE_REPLY
 	length_KERB_CRED
 	length_KerberosString
@@ -2124,12 +2145,16 @@ EXPORTS
 	length_PA_ENC_TS_ENC
 	length_PA_FX_FAST_REPLY
 	length_PA_FX_FAST_REQUEST
+	length_PA_KERB_KEY_LIST_REP
+	length_PA_KERB_KEY_LIST_REQ
+	length_PA_PAC_OPTIONS
 	length_PA_PAC_REQUEST
 	length_PA_PK_AS_REP
 	length_PA_PK_AS_REP_BTMM
 	length_PA_PK_AS_REP_Win2k
 	length_PA_PK_AS_REQ
 	length_PA_PK_AS_REQ_Win2k
+	length_PA_S4U_X509_USER
 	length_PA_S4U2Self
 	length_PA_SAM_CHALLENGE_2
 	length_PA_SAM_CHALLENGE_2_BODY

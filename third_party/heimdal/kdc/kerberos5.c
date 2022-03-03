@@ -280,6 +280,7 @@ _kdc_find_etype(astgs_request_t r, uint32_t flags,
                      * enctype in its KDC-REQ-BODY's etype list, which is what
                      * `etypes' is here.
                      */
+                    enctype = p[i];
                     ret = 0;
                     break;
                 }
@@ -295,6 +296,7 @@ _kdc_find_etype(astgs_request_t r, uint32_t flags,
                      */
                     for (m = 0; m < princ->etypes->len; m++) {
                         if (p[i] == princ->etypes->val[m]) {
+                            enctype = p[i];
                             ret = 0;
                             break;
                         }
@@ -1856,8 +1858,7 @@ generate_pac(astgs_request_t r, const Key *skey, const Key *tkey,
      * Validate a PA mech was actually used before doing this.
      */
 
-    ret = _kdc_pac_generate(r->context,
-			    r->config,
+    ret = _kdc_pac_generate(r,
 			    r->client,
 			    r->server,
 			    r->pa_used && !pa_used_flag_isset(r, PA_USES_LONG_TERM_KEY)
@@ -2744,12 +2745,19 @@ _kdc_as_rep(astgs_request_t r)
 
 out:
     r->error_code = ret;
-    _kdc_audit_request(r);
+    {
+	krb5_error_code ret2 = _kdc_audit_request(r);
+	if (ret2) {
+	    krb5_data_free(r->reply);
+	    ret = ret2;
+	}
+    }
 
     /*
      * In case of a non proxy error, build an error message.
      */
-    if (ret != 0 && ret != HDB_ERR_NOT_FOUND_HERE && r->reply->length == 0)
+    if (ret != 0 && ret != HDB_ERR_NOT_FOUND_HERE && r->reply->length == 0) {
+	kdc_log(r->context, config, 5, "as-req: sending error: %d to client", ret);
 	ret = _kdc_fast_mk_error(r,
 				 r->rep.padata,
 			         r->armor_crypto,
@@ -2759,6 +2767,7 @@ out:
 			         r->server_princ,
 			         NULL, NULL,
 			         r->reply);
+    }
 
     if (r->pa_used && r->pa_used->cleanup)
 	r->pa_used->cleanup(r);

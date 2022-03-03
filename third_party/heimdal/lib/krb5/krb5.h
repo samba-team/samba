@@ -275,6 +275,10 @@ typedef enum krb5_key_usage {
     KRB5_KU_PA_SERVER_REFERRAL = 26,
     /* Keyusage for the server referral in a TGS req */
     KRB5_KU_SAM_ENC_NONCE_SAD = 27,
+    /* Defined in [MS-SFU] */
+    KRB5_KU_PA_S4U_X509_USER_REQUEST = 26,
+    /* Defined in [MS-SFU] */
+    KRB5_KU_PA_S4U_X509_USER_REPLY = 27,
     /* Encryption of the SAM-NONCE-OR-SAD field */
     KRB5_KU_PA_PKINIT_KX = 44,
     /* Encryption type of the kdc session contribution in pk-init */
