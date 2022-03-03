@@ -73,7 +73,7 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth4_context *auth_conte
 				return NT_STATUS_NO_MEMORY;
 			}
 			*user_info_temp = *user_info_in;
-			user_info_temp->mapped_state = to_state;
+			user_info_temp->password_state = to_state;
 			
 			nt_status = auth_get_challenge(auth_context, chal);
 			if (!NT_STATUS_IS_OK(nt_status)) {
@@ -147,7 +147,7 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth4_context *auth_conte
 				return NT_STATUS_NO_MEMORY;
 			}
 			*user_info_temp = *user_info_in;
-			user_info_temp->mapped_state = to_state;
+			user_info_temp->password_state = to_state;
 			
 			if (E_deshash(user_info_in->password.plaintext, lanman.hash)) {
 				user_info_temp->password.hash.lanman = talloc(user_info_temp,
