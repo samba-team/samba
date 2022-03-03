@@ -1042,7 +1042,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	 */
 
 	if (!lp_delete_veto_files(SNUM(conn))) {
-		errno = ENOTEMPTY;
+		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		goto err;
 	}
 
@@ -1063,7 +1063,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		 * to avoid leaking information about what we
 		 * can't delete.
 		 */
-		errno = ENOTEMPTY;
+		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		goto err;
 	}
 
@@ -1091,7 +1091,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 
 		if (fullname == NULL) {
 			TALLOC_FREE(talloced);
-			errno = ENOMEM;
+			status = NT_STATUS_NO_MEMORY;
 			goto err;
 		}
 
@@ -1104,17 +1104,16 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		if (smb_dname_full == NULL) {
 			TALLOC_FREE(talloced);
 			TALLOC_FREE(fullname);
-			errno = ENOMEM;
+			status = NT_STATUS_NO_MEMORY;
 			goto err;
 		}
 
 		retval = SMB_VFS_LSTAT(conn, smb_dname_full);
 		if (retval != 0) {
-			int saved_errno = errno;
+			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(talloced);
 			TALLOC_FREE(fullname);
 			TALLOC_FREE(smb_dname_full);
-			errno = saved_errno;
 			goto err;
 		}
 
@@ -1133,7 +1132,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 					TALLOC_FREE(talloced);
 					TALLOC_FREE(fullname);
 					TALLOC_FREE(smb_dname_full);
-					errno = ENOMEM;
+					status = NT_STATUS_NO_MEMORY;
 					goto err;
 				}
 				if (is_msdfs_link(fsp, smb_atname)) {
@@ -1145,7 +1144,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 						"- can't delete directory %s\n",
 						dname,
 						fsp_str_dbg(fsp));
-					errno = ENOTEMPTY;
+					status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 					goto err;
 				}
 				TALLOC_FREE(smb_atname);
@@ -1171,7 +1170,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			TALLOC_FREE(talloced);
 			TALLOC_FREE(fullname);
 			TALLOC_FREE(smb_dname_full);
-			errno = ENOTEMPTY;
+			status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 			goto err;
 		}
 
@@ -1188,7 +1187,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			TALLOC_FREE(talloced);
 			TALLOC_FREE(fullname);
 			TALLOC_FREE(smb_dname_full);
-			errno = map_errno_from_nt_status(status);
 			goto err;
 		}
 
@@ -1212,7 +1210,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		TALLOC_FREE(fullname);
 		TALLOC_FREE(smb_dname_full);
 		TALLOC_FREE(direntry_fname);
-		errno = ENOTEMPTY;
+		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		goto err;
 	}
 
@@ -1237,7 +1235,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 					   dname);
 
 		if (fullname == NULL) {
-			errno = ENOMEM;
+			status = NT_STATUS_NO_MEMORY;
 			goto err_break;
 		}
 
@@ -1248,7 +1246,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 						     smb_dname->twrp,
 						     smb_dname->flags);
 		if (smb_dname_full == NULL) {
-			errno = ENOMEM;
+			status = NT_STATUS_NO_MEMORY;
 			goto err_break;
 		}
 
@@ -1258,6 +1256,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 
 		retval = SMB_VFS_LSTAT(conn, smb_dname_full);
 		if (retval != 0) {
+			status = map_nt_error_from_unix(errno);
 			goto err_break;
 		}
 
@@ -1275,7 +1274,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 							smb_dname->twrp,
 							smb_dname->flags);
 			if (direntry_fname == NULL) {
-				errno = ENOMEM;
+				status = NT_STATUS_NO_MEMORY;
 				goto err_break;
 			}
 		} else {
@@ -1288,7 +1287,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 						   smb_dname->flags,
 						   &direntry_fname);
 			if (!NT_STATUS_IS_OK(status)) {
-				errno = map_errno_from_nt_status(status);
 				goto err_break;
 			}
 
@@ -1305,9 +1303,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 
 		if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
 			status = recursive_rmdir(ctx, conn, smb_dname_full);
-			if (!NT_STATUS_IS_OK(status))
-			{
-				errno = map_errno_from_nt_status(status);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto err_break;
 			}
 			unlink_flags = AT_REMOVEDIR;
@@ -1318,6 +1314,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 					  direntry_fname,
 					  unlink_flags);
 		if (retval != 0) {
+			status = map_nt_error_from_unix(errno);
 			goto err_break;
 		}
 
@@ -1334,30 +1331,35 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		}
 	}
 
+	/* If we get here, we know NT_STATUS_IS_OK(status) */
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
+
 	/* Retry the rmdir */
 	ret = SMB_VFS_UNLINKAT(conn,
 			       parent_fname->fsp,
 			       at_fname,
 			       AT_REMOVEDIR);
-
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+	}
 
   err:
 
 	TALLOC_FREE(dir_hnd);
 	TALLOC_FREE(parent_fname);
 
-	if (ret != 0) {
-		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_NOTICE("couldn't remove directory %s : "
 			 "%s\n", smb_fname_str_dbg(smb_dname),
-			 strerror(errno)));
-		return map_nt_error_from_unix(errno);
+			 nt_errstr(status));
+		return status;
 	}
 
 	notify_fname(conn, NOTIFY_ACTION_REMOVED,
 		     FILE_NOTIFY_CHANGE_DIR_NAME,
 		     smb_dname->base_name);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /****************************************************************************
