@@ -839,19 +839,18 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
  tree recursively. Return True on ok, False on fail.
 ****************************************************************************/
 
-bool recursive_rmdir(TALLOC_CTX *ctx,
+NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
 		     connection_struct *conn,
 		     struct smb_filename *smb_dname)
 {
 	const char *dname = NULL;
 	char *talloced = NULL;
-	bool ret = True;
 	long offset = 0;
 	SMB_STRUCT_STAT st;
 	struct smb_Dir *dir_hnd = NULL;
 	struct files_struct *dirfsp = NULL;
 	int retval;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
@@ -862,8 +861,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			 0,
 			 &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return False;
+		return status;
 	}
 
 	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
@@ -886,7 +884,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 				smb_dname->base_name,
 				dname);
 		if (!fullname) {
-			errno = ENOMEM;
+			status = NT_STATUS_NO_MEMORY;
 			goto err_break;
 		}
 
@@ -897,16 +895,18 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 						smb_dname->twrp,
 						smb_dname->flags);
 		if (smb_dname_full == NULL) {
-			errno = ENOMEM;
+			status = NT_STATUS_NO_MEMORY;
 			goto err_break;
 		}
 
 		if (SMB_VFS_LSTAT(conn, smb_dname_full) != 0) {
+			status = map_nt_error_from_unix(errno);
 			goto err_break;
 		}
 
 		if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
-			if (!recursive_rmdir(ctx, conn, smb_dname_full)) {
+			status = recursive_rmdir(ctx, conn, smb_dname_full);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto err_break;
 			}
 			unlink_flags = AT_REMOVEDIR;
@@ -921,7 +921,6 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 					   smb_dname_full->flags,
 					   &atname);
 		if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
 			goto err_break;
 		}
 
@@ -938,6 +937,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 					  atname,
 					  unlink_flags);
 		if (retval != 0) {
+			status = map_nt_error_from_unix(errno);
 			goto err_break;
 		}
 
@@ -950,12 +950,11 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 		TALLOC_FREE(talloced);
 		TALLOC_FREE(atname);
 		if (do_break) {
-			ret = false;
 			break;
 		}
 	}
 	TALLOC_FREE(dir_hnd);
-	return ret;
+	return status;
 }
 
 /****************************************************************************
@@ -1305,9 +1304,10 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		unlink_flags = 0;
 
 		if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
-			if (!recursive_rmdir(ctx, conn,
-					     smb_dname_full))
+			status = recursive_rmdir(ctx, conn, smb_dname_full);
+			if (!NT_STATUS_IS_OK(status))
 			{
+				errno = map_errno_from_nt_status(status);
 				goto err_break;
 			}
 			unlink_flags = AT_REMOVEDIR;

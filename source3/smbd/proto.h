@@ -143,7 +143,7 @@ void msg_close_file(struct messaging_context *msg_ctx,
 		    DATA_BLOB *data);
 NTSTATUS delete_all_streams(connection_struct *conn,
 			const struct smb_filename *smb_fname);
-bool recursive_rmdir(TALLOC_CTX *ctx,
+NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
 		     connection_struct *conn,
 		     struct smb_filename *smb_dname);
 bool has_other_nonposix_opens(struct share_mode_lock *lck,
