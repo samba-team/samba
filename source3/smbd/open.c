@@ -1066,7 +1066,7 @@ static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS retry_status;
-	bool file_existed = VALID_STAT(fsp->fsp_name->st);
+	bool file_existed = VALID_STAT(smb_fname->st);
 	int curr_flags;
 
 	if (!(flags & O_CREAT)) {
