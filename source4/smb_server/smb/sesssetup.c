@@ -188,7 +188,6 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 
 	user_info->service_description = "SMB";
 	
-	user_info->mapped_state = false;
 	user_info->logon_parameters = 0;
 	user_info->flags = 0;
 	user_info->client.account_name = sess->old.in.user;
@@ -375,7 +374,6 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info->service_description = "SMB";
 	user_info->auth_description = "bare-NTLM";
 
-	user_info->mapped_state = false;
 	user_info->logon_parameters = 0;
 	user_info->flags = 0;
 	user_info->client.account_name = sess->nt1.in.user;
