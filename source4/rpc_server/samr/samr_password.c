@@ -26,6 +26,7 @@
 #include "rpc_server/samr/dcesrv_samr.h"
 #include "system/time.h"
 #include "lib/crypto/md4.h"
+#include "dsdb/common/util.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/auth/libcli_auth.h"
@@ -123,7 +124,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct ldb_context *sam_ctx = NULL;
 	struct ldb_dn *user_dn = NULL;
 	int ret;
-	struct ldb_message **res;
+	struct ldb_result *res = NULL;
 	const char * const attrs[] = { "unicodePwd", "dBCSPwd",
 				       "userAccountControl",
 				       "msDS-ResultantPSO",
@@ -170,21 +171,23 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	/* we need the users dn and the domain dn (derived from the
 	   user SID). We also need the current lm and nt password hashes
 	   in order to decrypt the incoming passwords */
-	ret = gendb_search(sam_ctx,
-			   mem_ctx, NULL, &res, attrs,
-			   "(&(sAMAccountName=%s)(objectclass=user))",
-			   ldb_binary_encode_string(mem_ctx, r->in.account->string));
-	if (ret != 1) {
+	ret = dsdb_search(sam_ctx, mem_ctx, &res,
+			  ldb_get_default_basedn(sam_ctx),
+			  LDB_SCOPE_SUBTREE, attrs,
+			  DSDB_SEARCH_SHOW_EXTENDED_DN,
+			  "(&(sAMAccountName=%s)(objectclass=user))",
+			  ldb_binary_encode_string(mem_ctx, r->in.account->string));
+	if (ret != LDB_SUCCESS || res->count != 1) {
 		status = NT_STATUS_NO_SUCH_USER; /* Converted to WRONG_PASSWORD below */
 		goto failed;
 	}
 
-	user_dn = res[0]->dn;
-	user_samAccountName = ldb_msg_find_attr_as_string(res[0], "samAccountName", NULL);
-	user_objectSid = samdb_result_dom_sid(res, res[0], "objectSid");
+	user_dn = res->msgs[0]->dn;
+	user_samAccountName = ldb_msg_find_attr_as_string(res->msgs[0], "samAccountName", NULL);
+	user_objectSid = samdb_result_dom_sid(res, res->msgs[0], "objectSid");
 
 	status = samdb_result_passwords(mem_ctx, lp_ctx,
-					res[0], &nt_pwd);
+					res->msgs[0], &nt_pwd);
 	if (!NT_STATUS_IS_OK(status) ) {
 		goto failed;
 	}
@@ -300,7 +303,7 @@ failed:
 
 	/* Only update the badPwdCount if we found the user */
 	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
-		authsam_update_bad_pwd_count(sam_ctx, res[0], ldb_get_default_basedn(sam_ctx));
+		authsam_update_bad_pwd_count(sam_ctx, res->msgs[0], ldb_get_default_basedn(sam_ctx));
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 		/* Don't give the game away:  (don't allow anonymous users to prove the existence of usernames) */
 		status = NT_STATUS_WRONG_PASSWORD;
