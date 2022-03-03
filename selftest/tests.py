@@ -211,6 +211,10 @@ plantestsuite(
     "samba4.blackbox.functionalprep", "none",
     cmdline('functionalprep.sh', '$PREFIX_ABS/provision'))
 
+plantestsuite(
+    "samba4.blackbox.test_special_group", "none",
+    cmdline('test_special_group.sh', '$PREFIX_ABS/provision'))
+
 planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr")
 planpythontestsuite("none", "samba.tests.ntacls")
