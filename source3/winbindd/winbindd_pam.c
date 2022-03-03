@@ -1430,9 +1430,6 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* We don't want any more mapping of the username */
-	user_info->mapped_state = True;
-
 	/* We don't want to come back to winbindd or to do PAM account checks */
 	user_info->flags |= USER_INFO_INFO3_AND_NO_AUTHZ;
 
