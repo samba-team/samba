@@ -6,6 +6,7 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_INVALID_CREDENTIALS
+from ldb import SUCCESS as LDB_SUCCESS
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE
 from samba import gensec, dsdb
@@ -213,10 +214,16 @@ class BasePasswordTestCase(PasswordTestCase):
                                                        FLAG_MOD_REPLACE, "lockOutObservationWindow")
         self.ldb.modify(m)
 
-    def _readd_user(self, creds, lockOutObservationWindow=0):
+    def _readd_user(self, creds, lockOutObservationWindow=0, simple=False):
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+
+        if simple:
+            creds.set_bind_dn(userdn)
+            ldap_url = self.host_url_ldaps
+        else:
+            ldap_url = self.host_url
 
         delete_force(self.ldb, userdn)
         self.ldb.add({
@@ -248,10 +255,10 @@ userPassword: """ + userpass + """
         self._check_account_initial(userdn)
 
         # Fail once to get a badPasswordTime
-        self.assertLoginFailure(self.host_url, fail_creds, self.lp)
+        self.assertLoginFailure(ldap_url, fail_creds, self.lp)
 
         # Succeed to reset everything to 0
-        ldb = self.assertLoginSuccess(self.host_url, creds, self.lp)
+        ldb = self.assertLoginSuccess(ldap_url, creds, self.lp)
 
         return ldb
 
@@ -362,10 +369,17 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=DONT_USE_KERBEROS)
         self.lockout1ntlm_ldb = self._readd_user(self.lockout1ntlm_creds)
+        self.lockout1simple_creds = self.insta_creds(self.template_creds,
+                                                   username="lockout1simple",
+                                                   userpass="thatsAcomplPASS0",
+                                                   kerberos_state=DONT_USE_KERBEROS)
+        self.lockout1simple_ldb = self._readd_user(self.lockout1simple_creds,
+                                                   simple=True)
 
     def delete_ldb_connections(self):
         del self.lockout1krb5_ldb
         del self.lockout1ntlm_ldb
+        del self.lockout1simple_ldb
         del self.ldb
 
     def tearDown(self):
