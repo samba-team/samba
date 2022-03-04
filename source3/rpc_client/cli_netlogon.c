@@ -656,6 +656,10 @@ NTSTATUS rpccli_netlogon_network_logon(
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (workstation == NULL) {
+		workstation = lp_netbios_name();
+	}
+
 	if (workstation[0] != '\\' && workstation[1] != '\\') {
 		workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
 	} else {
