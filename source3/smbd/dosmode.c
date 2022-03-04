@@ -1022,9 +1022,11 @@ int file_set_dosmode(connection_struct *conn,
 	 * Simply refuse to do the chmod in this case.
 	 */
 
-	if (S_ISDIR(smb_fname->st.st_ex_mode) && (unixmode & S_ISGID) &&
-			geteuid() != sec_initial_uid() &&
-			!current_user_in_group(conn, smb_fname->st.st_ex_gid)) {
+	if (S_ISDIR(smb_fname->st.st_ex_mode) &&
+	    (unixmode & S_ISGID) &&
+	    geteuid() != sec_initial_uid() &&
+	    !current_user_in_group(conn, smb_fname->st.st_ex_gid))
+	{
 		DEBUG(3,("file_set_dosmode: setgid bit cannot be "
 			"set for directory %s\n",
 			smb_fname_str_dbg(smb_fname)));
