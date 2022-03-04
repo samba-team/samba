@@ -7,3 +7,7 @@
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_as_req_self\(
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_as_req_self_pac_request_none\(
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_as_req_self_pac_request_true\(
+#
+# Claims tests
+#
+^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_claims_no_claims_to_self.ad_dc
