@@ -48,7 +48,8 @@ class BasicUserAuthTests(BasePasswordTestCase):
 
     def setUp(self):
         self.host = host
-        self.host_url = host_url
+        self.host_url = "ldap://%s" % host
+        self.host_url_ldaps = "ldaps://%s" % host
         self.lp = lp
         self.global_creds = global_creds
         self.ldb = SamDB(url=self.host_url, credentials=self.global_creds,
@@ -179,7 +180,5 @@ userPassword: %s
     def test_login_basics_ntlm(self):
         self._test_login_basics(self.lockout1ntlm_creds)
 
-
-host_url = "ldap://%s" % host
 
 TestProgram(module=__name__, opts=subunitopts)
