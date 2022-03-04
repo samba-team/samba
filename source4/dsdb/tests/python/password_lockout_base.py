@@ -247,12 +247,7 @@ userPassword: """ + userpass + """
         self._check_account_initial(userdn)
 
         # Fail once to get a badPasswordTime
-        try:
-            ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
-            self.fail()
-        except LdbError as e:
-            (num, msg) = e.args
-            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
+        self.assertLoginFailure(self.host_url, fail_creds, self.lp)
 
         # Succeed to reset everything to 0
         ldb = SamDB(url=self.host_url, credentials=creds, lp=self.lp)
