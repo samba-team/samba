@@ -172,6 +172,8 @@ class TestCase(unittest.TestCase):
             username = template.get_username()
             userpass = template.get_password()
 
+        simple_bind_dn = template.get_bind_dn()
+
         if kerberos_state is None:
             kerberos_state = template.get_kerberos_state()
 
@@ -185,6 +187,8 @@ class TestCase(unittest.TestCase):
         c.set_gensec_features(c.get_gensec_features()
                               | gensec.FEATURE_SEAL)
         c.set_kerberos_state(kerberos_state)
+        if simple_bind_dn:
+            c.set_bind_dn(simple_bind_dn)
         return c
 
     def assertStringsEqual(self, a, b, msg=None, strip=False):
