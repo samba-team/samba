@@ -667,39 +667,32 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	struct smb_filename *oldwd_fname = NULL;
 	struct smb_filename *parent_dir_fname = NULL;
 	bool have_opath = false;
+	bool is_share_root = false;
 	int ret;
 
 #ifdef O_PATH
 	have_opath = true;
 #endif
 
-	if (dirfsp == conn->cwd_fsp) {
-		if (fsp->fsp_flags.is_directory) {
-			parent_dir_fname = cp_smb_filename(talloc_tos(), smb_fname);
-			if (parent_dir_fname == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto out;
-			}
+	if (smb_fname->base_name[0] == '/') {
+		const char *connpath = SMB_VFS_CONNECTPATH(conn, smb_fname);
+		int cmp = strcmp(connpath, smb_fname->base_name);
 
-			smb_fname_rel = synthetic_smb_fname(parent_dir_fname,
-							    ".",
-							    smb_fname->stream_name,
-							    &smb_fname->st,
-							    smb_fname->twrp,
-							    smb_fname->flags);
-			if (smb_fname_rel == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto out;
-			}
-		} else {
-			status = SMB_VFS_PARENT_PATHNAME(fsp->conn,
-							 talloc_tos(),
-							 smb_fname,
-							 &parent_dir_fname,
-							 &smb_fname_rel);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto out;
-			}
+		if (cmp == 0) {
+			is_share_root = true;
+		}
+	}
+
+	if (!is_share_root && (dirfsp == conn->cwd_fsp)) {
+		struct smb_filename *smb_fname_dot = NULL;
+
+		status = SMB_VFS_PARENT_PATHNAME(fsp->conn,
+						 talloc_tos(),
+						 smb_fname,
+						 &parent_dir_fname,
+						 &smb_fname_rel);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
 		}
 
 		if (!ISDOT(parent_dir_fname->base_name)) {
@@ -716,8 +709,21 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			}
 		}
 
+		smb_fname_dot = synthetic_smb_fname(
+			parent_dir_fname,
+			".",
+			NULL,
+			NULL,
+			0,
+			smb_fname->flags);
+		if (smb_fname_dot == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
 		/* Ensure the relative path is below the share. */
-		status = check_reduced_name(conn, parent_dir_fname, smb_fname_rel);
+		status = check_reduced_name(conn, parent_dir_fname, smb_fname_dot);
+		TALLOC_FREE(smb_fname_dot);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
@@ -765,6 +771,11 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 		smb_fname_rel = smb_fname;
 	}
 
+	if (!is_share_root) {
+		char *slash = strchr_m(smb_fname_rel->base_name, '/');
+		SMB_ASSERT(slash == NULL);
+	}
+
 	flags |= O_NOFOLLOW;
 
 	fd = SMB_VFS_OPENAT(conn,
@@ -777,6 +788,25 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 		status = link_errno_convert(errno);
 	}
 	fsp_set_fd(fsp, fd);
+
+	if ((fd == -1) &&
+	    NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK) &&
+	    fsp->fsp_flags.is_pathref &&
+	    !have_opath) {
+		ret = SMB_VFS_FSTATAT(
+			fsp->conn,
+			dirfsp,
+			smb_fname_rel,
+			&fsp->fsp_name->st,
+			AT_SYMLINK_NOFOLLOW);
+		if (ret == -1) {
+			status = map_nt_error_from_unix(errno);
+			DBG_DEBUG("fstatat(%s) failed: %s\n",
+				  smb_fname_str_dbg(smb_fname),
+				  strerror(errno));
+			goto out;
+		}
+	}
 
 	if (fd != -1) {
 		ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
