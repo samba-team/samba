@@ -120,6 +120,8 @@ static int traverse_tcon_fn(struct smbXsrv_tcon_global0 *global,
 
 	ZERO_STRUCT(data);
 
+	data.pid = global->server_id;
+	data.cnum = global->tcon_global_id;
 	fstrcpy(data.servicename, global->share_name);
 	data.uid = sess.uid;
 	data.gid = sess.gid;
