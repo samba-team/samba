@@ -2664,7 +2664,7 @@ class KdcTgsTests(KDCBaseTest):
         return self._tgs_req(tgt, expected_error, tgt_creds,
                              expected_cname=user_cname,
                              generate_padata_fn=generate_s4u2self_padata,
-                             expect_claims=False, expect_edata=expect_edata,
+                             expect_edata=expect_edata,
                              expected_status=expected_status,
                              expect_pac=expect_pac)
 
@@ -2704,7 +2704,6 @@ class KdcTgsTests(KDCBaseTest):
                  sname=None,
                  srealm=None,
                  use_fast=False,
-                 expect_claims=True,
                  expect_pac=True,
                  expect_pac_attrs=None,
                  expect_pac_attrs_pac_request=None,
@@ -2808,8 +2807,7 @@ class KdcTgsTests(KDCBaseTest):
             expect_pac_attrs=expect_pac_attrs,
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             expect_requester_sid=expect_requester_sid,
-            expected_sid=expected_sid,
-            expect_claims=expect_claims)
+            expected_sid=expected_sid)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
                                          cname=None,

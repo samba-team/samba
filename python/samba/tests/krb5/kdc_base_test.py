@@ -1588,6 +1588,12 @@ class KDCBaseTest(RawKerberosTest):
                            target_name=None, till=None, rc4_support=True,
                            to_rodc=False, kdc_options=None,
                            expected_flags=None, unexpected_flags=None,
+                           expect_client_claims=None,
+                           expect_device_claims=None,
+                           expected_client_claims=None,
+                           unexpected_client_claims=None,
+                           expected_device_claims=None,
+                           unexpected_device_claims=None,
                            pac_request=True, expect_pac=True, fresh=False):
         user_name = tgt.cname['name-string'][0]
         ticket_sname = tgt.sname
@@ -1597,6 +1603,11 @@ class KDCBaseTest(RawKerberosTest):
                      pac_request, str(expected_flags), str(unexpected_flags),
                      till, rc4_support,
                      str(ticket_sname),
+                     expect_client_claims, expect_device_claims,
+                     str(expected_client_claims),
+                     str(unexpected_client_claims),
+                     str(expected_device_claims),
+                     str(unexpected_device_claims),
                      expect_pac)
 
         if not fresh:
@@ -1627,6 +1638,12 @@ class KDCBaseTest(RawKerberosTest):
             expected_supported_etypes=target_creds.tgs_supported_enctypes,
             expected_flags=expected_flags,
             unexpected_flags=unexpected_flags,
+            expect_client_claims=expect_client_claims,
+            expect_device_claims=expect_device_claims,
+            expected_client_claims=expected_client_claims,
+            unexpected_client_claims=unexpected_client_claims,
+            expected_device_claims=expected_device_claims,
+            unexpected_device_claims=unexpected_device_claims,
             ticket_decryption_key=decryption_key,
             check_rep_fn=self.generic_check_kdc_rep,
             check_kdc_private_fn=self.generic_check_kdc_private,
@@ -1666,6 +1683,7 @@ class KDCBaseTest(RawKerberosTest):
 
     def get_tgt(self, creds, to_rodc=False, kdc_options=None,
                 client_account=None, client_name_type=NT_PRINCIPAL,
+                target_creds=None, ticket_etype=None,
                 expected_flags=None, unexpected_flags=None,
                 expected_account_name=None, expected_upn_name=None,
                 expected_cname=None,
@@ -1675,6 +1693,10 @@ class KDCBaseTest(RawKerberosTest):
                 expect_pac_attrs=None, expect_pac_attrs_pac_request=None,
                 expect_requester_sid=None,
                 rc4_support=True,
+                expect_edata=None,
+                expect_client_claims=None, expect_device_claims=None,
+                expected_client_claims=None, unexpected_client_claims=None,
+                expected_device_claims=None, unexpected_device_claims=None,
                 fresh=False):
         if client_account is not None:
             user_name = client_account
@@ -1683,13 +1705,19 @@ class KDCBaseTest(RawKerberosTest):
 
         cache_key = (user_name, to_rodc, kdc_options, pac_request,
                      client_name_type,
+                     ticket_etype,
                      str(expected_flags), str(unexpected_flags),
                      expected_account_name, expected_upn_name, expected_sid,
                      str(sname), str(realm),
                      str(expected_cname),
                      rc4_support,
                      expect_pac, expect_pac_attrs,
-                     expect_pac_attrs_pac_request, expect_requester_sid)
+                     expect_pac_attrs_pac_request, expect_requester_sid,
+                     expect_client_claims, expect_device_claims,
+                     str(expected_client_claims),
+                     str(unexpected_client_claims),
+                     str(expected_device_claims),
+                     str(unexpected_device_claims))
 
         if not fresh:
             tgt = self.tkt_cache.get(cache_key)
@@ -1718,12 +1746,15 @@ class KDCBaseTest(RawKerberosTest):
 
         till = self.get_KerberosTime(offset=36000)
 
-        if to_rodc:
+        if target_creds is not None:
+            krbtgt_creds = target_creds
+        elif to_rodc:
             krbtgt_creds = self.get_rodc_krbtgt_creds()
         else:
             krbtgt_creds = self.get_krbtgt_creds()
         ticket_decryption_key = (
-            self.TicketDecryptionKey_from_creds(krbtgt_creds))
+            self.TicketDecryptionKey_from_creds(krbtgt_creds,
+                                                etype=ticket_etype))
 
         expected_etypes = krbtgt_creds.tgs_supported_enctypes
 
@@ -1766,6 +1797,12 @@ class KDCBaseTest(RawKerberosTest):
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             expect_requester_sid=expect_requester_sid,
             rc4_support=rc4_support,
+            expect_client_claims=expect_client_claims,
+            expect_device_claims=expect_device_claims,
+            expected_client_claims=expected_client_claims,
+            unexpected_client_claims=unexpected_client_claims,
+            expected_device_claims=expected_device_claims,
+            unexpected_device_claims=unexpected_device_claims,
             to_rodc=to_rodc)
         self.check_pre_authentication(rep)
 
@@ -1811,6 +1848,12 @@ class KDCBaseTest(RawKerberosTest):
             expect_pac_attrs_pac_request=expect_pac_attrs_pac_request,
             expect_requester_sid=expect_requester_sid,
             rc4_support=rc4_support,
+            expect_client_claims=expect_client_claims,
+            expect_device_claims=expect_device_claims,
+            expected_client_claims=expected_client_claims,
+            unexpected_client_claims=unexpected_client_claims,
+            expected_device_claims=expected_device_claims,
+            unexpected_device_claims=unexpected_device_claims,
             to_rodc=to_rodc)
         self.check_as_reply(rep)
 
