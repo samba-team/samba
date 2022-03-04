@@ -55,17 +55,24 @@ class BasicUserAuthTests(BasePasswordTestCase):
                          session_info=system_session(self.lp), lp=self.lp)
         super(BasicUserAuthTests, self).setUp()
 
-    def _test_login_basics(self, creds):
+    def _test_login_basics(self, creds, simple=False):
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
         if creds.get_kerberos_state() == MUST_USE_KERBEROS:
             logoncount_relation = 'greater'
             lastlogon_relation = 'greater'
+            ldap_url = self.host_url
             print("Performs a lockout attempt against LDAP using Kerberos")
+        elif simple:
+            logoncount_relation = 'equal'
+            lastlogon_relation = 'equal'
+            ldap_url = self.host_url_ldaps
+            print("Performs a lockout attempt against LDAP using Simple")
         else:
             logoncount_relation = 'equal'
             lastlogon_relation = 'equal'
+            ldap_url = self.host_url
             print("Performs a lockout attempt against LDAP using NTLM")
 
         # get the intial logon values for this user
@@ -87,7 +94,7 @@ class BasicUserAuthTests(BasePasswordTestCase):
 
         # check logging in with the wrong password fails
         test_creds.set_password("thatsAcomplPASS1xBAD")
-        self.assertLoginFailure(self.host_url, test_creds, self.lp)
+        self.assertLoginFailure(ldap_url, test_creds, self.lp)
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
@@ -101,7 +108,7 @@ class BasicUserAuthTests(BasePasswordTestCase):
 
         # check logging in with the correct password succeeds
         test_creds.set_password(userpass)
-        user_ldb = self.assertLoginSuccess(self.host_url, test_creds, self.lp)
+        user_ldb = self.assertLoginSuccess(ldap_url, test_creds, self.lp)
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
@@ -132,7 +139,7 @@ userPassword: %s
 
         # for Kerberos, logging in with the old password fails
         if creds.get_kerberos_state() == MUST_USE_KERBEROS:
-            self.assertLoginFailure(self.host_url, test_creds, self.lp)
+            self.assertLoginFailure(ldap_url, test_creds, self.lp)
             info_msg = 'Test Kerberos login with old password fails'
             expectBadPwdTime = ("greater", badPasswordTime)
             res = self._check_account(userdn,
@@ -147,8 +154,11 @@ userPassword: %s
             badPasswordTime = int(res[0]["badPasswordTime"][0])
         else:
             # for NTLM, logging in with the old password succeeds
-            user_ldb = self.assertLoginSuccess(self.host_url, test_creds, self.lp)
-            info_msg = 'Test NTLM login with old password succeeds'
+            user_ldb = self.assertLoginSuccess(ldap_url, test_creds, self.lp)
+            if simple:
+                info_msg = 'Test simple-bind login with old password succeeds'
+            else:
+                info_msg = 'Test NTLM login with old password succeeds'
             res = self._check_account(userdn,
                                       badPwdCount=0,
                                       badPasswordTime=badPasswordTime,
@@ -161,7 +171,7 @@ userPassword: %s
 
         # check logging in with the new password succeeds
         test_creds.set_password(new_password)
-        user_ldb = self.assertLoginSuccess(self.host_url, test_creds, self.lp)
+        user_ldb = self.assertLoginSuccess(ldap_url, test_creds, self.lp)
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
@@ -178,5 +188,7 @@ userPassword: %s
     def test_login_basics_ntlm(self):
         self._test_login_basics(self.lockout1ntlm_creds)
 
+    def test_login_basics_simple(self):
+        self._test_login_basics(self.lockout1simple_creds, simple=True)
 
 TestProgram(module=__name__, opts=subunitopts)
