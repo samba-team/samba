@@ -7493,7 +7493,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		if (!fsp->fsp_flags.is_directory &&
 		    !(fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) &&
 		    (lp_map_archive(SNUM(conn)) ||
-		    lp_store_dos_attributes(SNUM(conn))))
+		     lp_store_dos_attributes(SNUM(conn))))
 		{
 			/*
 			 * We must set the archive bit on the newly renamed
