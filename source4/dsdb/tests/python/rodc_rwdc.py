@@ -204,11 +204,13 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         self.global_creds = CREDS
         self.host = RWDC
         self.host_url = 'ldap://%s' % RWDC
+        self.host_url_ldaps = 'ldaps://%s' % RWDC
         self.ldb = SamDB(url='ldap://%s' % RWDC, session_info=system_session(self.lp),
                          credentials=self.global_creds, lp=self.lp)
 
         super(RodcRwdcCachedTests, self).setUp()
         self.host_url = 'ldap://%s' % RODC
+        self.host_url_ldaps = 'ldaps://%s' % RODC
 
         self.samr = samr.samr("ncacn_ip_tcp:%s[seal]" % self.host, self.lp, self.global_creds)
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
@@ -743,12 +745,14 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         self.global_creds = CREDS
         self.host = RWDC
         self.host_url = 'ldap://%s' % RWDC
+        self.host_url_ldaps = 'ldaps://%s' % RWDC
         self.ldb = SamDB(url='ldap://%s' % RWDC, session_info=system_session(self.lp),
                          credentials=self.global_creds, lp=self.lp)
 
         super(RodcRwdcTests, self).setUp()
         self.host = RODC
         self.host_url = 'ldap://%s' % RODC
+        self.host_url_ldaps = 'ldaps://%s' % RODC
         self.ldb = SamDB(url='ldap://%s' % RODC, session_info=system_session(self.lp),
                          credentials=self.global_creds, lp=self.lp)
 
