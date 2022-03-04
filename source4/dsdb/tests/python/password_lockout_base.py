@@ -250,7 +250,7 @@ userPassword: """ + userpass + """
         self.assertLoginFailure(self.host_url, fail_creds, self.lp)
 
         # Succeed to reset everything to 0
-        ldb = SamDB(url=self.host_url, credentials=creds, lp=self.lp)
+        ldb = self.assertLoginSuccess(self.host_url, creds, self.lp)
 
         return ldb
 
@@ -264,6 +264,17 @@ userPassword: """ + userpass + """
                 self.assertEqual(num, errno, ("Login failed in the wrong way"
                                                "(got err %d, expected %d)" %
                                                (num, errno)))
+
+    def assertLoginSuccess(self, url, creds, lp):
+        try:
+            ldb = SamDB(url=url, credentials=creds, lp=lp)
+            return ldb
+        except LdbError as e1:
+            (num, msg) = e1.args
+            self.assertEqual(num, LDB_SUCCESS,
+                             ("Login failed - %d - %s" % (
+                              num, msg)))
+
 
     def setUp(self):
         super(BasePasswordTestCase, self).setUp()

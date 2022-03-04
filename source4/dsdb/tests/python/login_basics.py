@@ -101,7 +101,7 @@ class BasicUserAuthTests(BasePasswordTestCase):
 
         # check logging in with the correct password succeeds
         test_creds.set_password(userpass)
-        user_ldb = SamDB(url=self.host_url, credentials=test_creds, lp=self.lp)
+        user_ldb = self.assertLoginSuccess(self.host_url, test_creds, self.lp)
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
@@ -147,8 +147,7 @@ userPassword: %s
             badPasswordTime = int(res[0]["badPasswordTime"][0])
         else:
             # for NTLM, logging in with the old password succeeds
-            user_ldb = SamDB(url=self.host_url, credentials=test_creds,
-                             lp=self.lp)
+            user_ldb = self.assertLoginSuccess(self.host_url, test_creds, self.lp)
             info_msg = 'Test NTLM login with old password succeeds'
             res = self._check_account(userdn,
                                       badPwdCount=0,
@@ -162,7 +161,7 @@ userPassword: %s
 
         # check logging in with the new password succeeds
         test_creds.set_password(new_password)
-        user_ldb = SamDB(url=self.host_url, credentials=test_creds, lp=self.lp)
+        user_ldb = self.assertLoginSuccess(self.host_url, test_creds, self.lp)
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
