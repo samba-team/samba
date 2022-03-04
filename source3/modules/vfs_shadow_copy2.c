@@ -1469,12 +1469,14 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 					       handle,
 					       stripped,
 					       timestamp);
-	TALLOC_FREE(stripped);
 	if (smb_fname->base_name == NULL) {
+		int err = errno;
+		TALLOC_FREE(stripped);
 		TALLOC_FREE(smb_fname);
-		errno = ENOMEM;
+		errno = err;
 		return -1;
 	}
+	TALLOC_FREE(stripped);
 
 	/*
 	 * Just pave over the user requested mode and use O_RDONLY. Later
