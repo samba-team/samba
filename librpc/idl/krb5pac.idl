@@ -1,5 +1,10 @@
 /*
   krb5 PAC
+
+  Portions obtained from MS-KILE which is Copyright © 2021 Microsoft
+  Corporation as permitted by the Open Specifications terms
+  reproduced in IDL_LICENCE.txt
+
 */
 
 #include "idl_types.h"
@@ -133,6 +138,21 @@ interface krb5pac
 		PAC_CONSTRAINED_DELEGATION *info;
 	} PAC_CONSTRAINED_DELEGATION_CTR;
 
+	typedef struct {
+		uint32 rid;
+		uint32 primary_gid;
+		dom_sid2 *domain_sid;
+		samr_RidWithAttributeArray groups;
+		uint32 sid_count;
+		[size_is(sid_count)] netr_SidAttr *sids;
+		uint32 domain_group_count;
+		[size_is(domain_group_count)] PAC_DOMAIN_GROUP_MEMBERSHIP *domain_groups;
+	} PAC_DEVICE_INFO;
+
+	typedef struct {
+		PAC_DEVICE_INFO *info;
+	} PAC_DEVICE_INFO_CTR;
+
 	typedef [public,v1_enum] enum {
 		PAC_TYPE_LOGON_INFO = 1,
 		PAC_TYPE_CREDENTIAL_INFO = 2,
@@ -165,6 +185,9 @@ interface krb5pac
 		[case(PAC_TYPE_TICKET_CHECKSUM)]	PAC_SIGNATURE_DATA ticket_checksum;
 		[case(PAC_TYPE_ATTRIBUTES_INFO)]	PAC_ATTRIBUTES_INFO attributes_info;
 		[case(PAC_TYPE_REQUESTER_SID)]	PAC_REQUESTER_SID requester_sid;
+		[case(PAC_TYPE_CLIENT_CLAIMS_INFO)][subcontext(0)] DATA_BLOB_REM client_claims_info;
+		[case(PAC_TYPE_DEVICE_INFO)][subcontext(0xFFFFFC01)] PAC_DEVICE_INFO_CTR device_info;
+		[case(PAC_TYPE_DEVICE_CLAIMS_INFO)][subcontext(0)] DATA_BLOB_REM device_claims_info;
 		/* when new PAC info types are added they are supposed to be done
 		   in such a way that they are backwards compatible with existing
 		   servers. This makes it safe to just use a [default] for
