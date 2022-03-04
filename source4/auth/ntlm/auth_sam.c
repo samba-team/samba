@@ -410,10 +410,11 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 			return NT_STATUS_WRONG_PASSWORD;
 		}
 
-		if (user_info->password_state != AUTH_PASSWORD_RESPONSE) {
+		if (user_info->flags & USER_INFO_INTERACTIVE_LOGON) {
 			/*
 			 * The authentication was OK against the previous password,
-			 * but it's not a NTLM network authentication.
+			 * but it's not a NTLM network authentication,
+			 * LDAP simple bind or something similar.
 			 *
 			 * We just return the original wrong password.
 			 * This skips the update of the bad pwd count,
