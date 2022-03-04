@@ -68,7 +68,8 @@ import password_lockout_base
 class PasswordTests(password_lockout_base.BasePasswordTestCase):
     def setUp(self):
         self.host = host
-        self.host_url = host_url
+        self.host_url = "ldap://%s" % host
+        self.host_url_ldaps = "ldaps://%s" % host
         self.lp = lp
         self.global_creds = global_creds
         self.ldb = SamDB(url=self.host_url, session_info=system_session(self.lp),
@@ -139,7 +140,7 @@ lockoutTime: 0
         cmd = cmd_sambatool.subcommands['user'].subcommands['unlock']
         result = cmd._run("samba-tool user unlock",
                           username,
-                          "-H%s" % host_url,
+                          "-H%s" % self.host_url,
                           "-U%s%%%s" % (global_creds.get_username(),
                                         global_creds.get_password()))
         self.assertEqual(result, None)
@@ -1420,7 +1421,5 @@ class PasswordTestsWithDefaults(PasswordTests):
         self.use_pso_lockout_settings(self.lockout1ntlm_creds)
         self._test_login_lockout(self.lockout1ntlm_creds,
                                  wait_lockout_duration=False)
-
-host_url = "ldap://%s" % host
 
 TestProgram(module=__name__, opts=subunitopts)
