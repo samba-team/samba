@@ -39,7 +39,7 @@ test_smbclient()
 	shift
 	shift
 	subunit_start_test "$name"
-	output=$($VALGRIND $smbclient //$SERVER/$share -c "$cmd" $@ 2>&1)
+	output=$($VALGRIND $smbclient //$SERVER/$share -c "$cmd" "$@" 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		subunit_pass_test "$name"
