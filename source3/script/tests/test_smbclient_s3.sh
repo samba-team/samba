@@ -267,7 +267,7 @@ EOF
 		return 1
 	fi
 
-	if [ cmp $PREFIX/message_out.$$ $tmpfile != 0 ]; then
+	if cmp $PREFIX/message_out.$$ $tmpfile; then
 		echo "failed comparison of message from $SERVER"
 		return 1
 	fi
