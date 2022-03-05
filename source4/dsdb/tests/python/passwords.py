@@ -36,7 +36,6 @@ from samba import gensec
 from samba.samdb import SamDB
 import samba.tests
 from samba.tests import delete_force
-from password_lockout_base import BasePasswordTestCase
 
 parser = optparse.OptionParser("passwords.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
