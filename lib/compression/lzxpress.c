@@ -220,7 +220,6 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 	uint32_t output_index, input_index;
 	uint32_t indicator, indicator_bit;
 	uint32_t nibble_index;
-	uint32_t i;
 
 	output_index = 0;
 	input_index = 0;
@@ -304,7 +303,7 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 				return -1;
 			}
 
-			for (i = 0; i < length; i++) {
+			for (; length > 0; --length) {
 				if (offset > output_index) {
 					return -1;
 				}
