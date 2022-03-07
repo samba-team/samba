@@ -92,12 +92,12 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 
 		int32_t offset;
 
-		max_offset = MIN(0x1FFF, max_offset);
+		max_offset = MIN(0x2000, max_offset);
 
 		/* search for the longest match in the window for the lookahead buffer */
 		for (offset = 1; (uint32_t)offset <= max_offset; offset++) {
 			/* maximum len we can encode into metadata */
-			uint32_t max_len = MIN(0x1FFF, uncompressed_size - uncompressed_pos);
+			const uint32_t max_len = MIN(0xFFFF + 3, uncompressed_size - uncompressed_pos);
 
 			uint32_t len;
 
