@@ -871,13 +871,13 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 		/*
 		 * The caller already did a cracknames call.
 		 */
-		DBG_DEBUG("%s is not one domain name (DC)\n",
+		DBG_DEBUG("%s is not own domain name (DC)\n",
 			  effective_domain);
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	if (!strequal(effective_domain, "")) {
-		DBG_DEBUG("%s is not one domain name (DC)\n",
+		DBG_DEBUG("%s is not own domain name (DC)\n",
 			  effective_domain);
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
