@@ -257,20 +257,21 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 		} else {
 			uint32_t length;
 			uint32_t offset;
+
 			CHECK_INPUT_BYTES(sizeof(uint16_t));
 			length = PULL_LE_U16(input, input_index);
 			input_index += sizeof(uint16_t);
-			offset = (length / 8) + 1;
-			length = length % 8;
+			offset = (length >> 3) + 1;
+			length &= 7;
 
 			if (length == 7) {
 				if (nibble_index == 0) {
 					CHECK_INPUT_BYTES(sizeof(uint8_t));
 					nibble_index = input_index;
-					length = input[input_index] % 16;
+					length = input[input_index] & 0xf;
 					input_index += sizeof(uint8_t);
 				} else {
-					length = input[nibble_index] / 16;
+					length = input[nibble_index] >> 4;
 					nibble_index = 0;
 				}
 
