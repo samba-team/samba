@@ -198,17 +198,19 @@ class KDCBaseTest(RawKerberosTest):
             admin_creds = self.get_admin_creds()
             lp = self.get_lp()
 
-            rodc_name = 'KRB5RODC'
+            rodc_name = self.get_new_username()
             site_name = 'Default-First-Site-Name'
 
-            type(self)._rodc_ctx = DCJoinContext(server=self.dc_host,
-                                                 creds=admin_creds,
-                                                 lp=lp,
-                                                 site=site_name,
-                                                 netbios_name=rodc_name,
-                                                 targetdir=None,
-                                                 domain=None)
-            self.create_rodc(self._rodc_ctx)
+            rodc_ctx = DCJoinContext(server=self.dc_host,
+                                     creds=admin_creds,
+                                     lp=lp,
+                                     site=site_name,
+                                     netbios_name=rodc_name,
+                                     targetdir=None,
+                                     domain=None)
+            self.create_rodc(rodc_ctx)
+
+            type(self)._rodc_ctx = rodc_ctx
 
         return self._rodc_ctx
 
