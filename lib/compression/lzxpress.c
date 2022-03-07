@@ -76,7 +76,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 	compressed_pos = 0;
 	indic = 0;
 	CHECK_OUTPUT_BYTES(sizeof(uint32_t));
-	*(uint32_t *)compressed = 0;
+	PUSH_LE_U32(compressed, compressed_pos, 0);
 	compressed_pos += sizeof(uint32_t);
 	indic_pos = 0;
 
