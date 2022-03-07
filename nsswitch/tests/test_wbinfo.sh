@@ -296,6 +296,8 @@ testit "wbinfo --user-sids against $TARGET" $wbinfo --user-sids $admin_sid || fa
 
 testit "wbinfo -a against $TARGET with domain creds" $wbinfo -a "$DOMAIN/$USERNAME"%"$PASSWORD" || failed=$(expr $failed + 1)
 
+testit "wbinfo -a against $TARGET with domain upn creds" $wbinfo -a "$USERNAME@$DOMAIN"%"$PASSWORD" || failed=$(expr $failed + 1)
+
 testit "wbinfo --getdcname against $TARGET" $wbinfo --getdcname=$DOMAIN
 
 testit "wbinfo -p against $TARGET" $wbinfo -p || failed=$(expr $failed + 1)
