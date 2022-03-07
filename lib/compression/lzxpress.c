@@ -158,7 +158,6 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 					compressed[nibble_index] = MIN(match_len, 15);
 					compressed_pos += sizeof(uint8_t);
 				} else {
-					__CHECK_BYTES(max_compressed_size, nibble_index, sizeof(uint8_t));
 					compressed[nibble_index] |= MIN(match_len, 15) << 4;
 					nibble_index = 0;
 				}
