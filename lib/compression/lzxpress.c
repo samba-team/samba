@@ -137,7 +137,6 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			}
 		} else {
 			match_len = best_len;
-			CHECK_OUTPUT_BYTES(sizeof(uint16_t));
 
 			match_len -= 3;
 			best_offset -= 1;
