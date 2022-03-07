@@ -64,7 +64,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 	uint32_t max_len, len, best_len, match_len;
 	const uint8_t *str1, *str2;
 	uint32_t indic;
-	uint8_t *indic_pos;
+	uint32_t indic_pos;
 	uint32_t indic_bit, nibble_index;
 
 	uint16_t metadata;
@@ -77,7 +77,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 	indic = 0;
 	*(uint32_t *)compressed = 0;
 	compressed_pos = sizeof(uint32_t);
-	indic_pos = &compressed[0];
+	indic_pos = 0;
 
 	byte_left = uncompressed_size;
 	indic_bit = 0;
@@ -129,10 +129,10 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			indic_bit += 1;
 
 			if (indic_bit == 32) {
-				PUSH_LE_U32(indic_pos, 0, indic);
+				PUSH_LE_U32(compressed, indic_pos, indic);
 				indic_bit = 0;
 				CHECK_OUTPUT_BYTES(sizeof(uint32_t));
-				indic_pos = &compressed[compressed_pos];
+				indic_pos = compressed_pos;
 				compressed_pos += sizeof(uint32_t);
 			}
 		} else {
@@ -200,9 +200,9 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			indic_bit += 1;
 
 			if (indic_bit == 32) {
-				PUSH_LE_U32(indic_pos, 0, indic);
+				PUSH_LE_U32(compressed, indic_pos, indic);
 				indic_bit = 0;
-				indic_pos = &compressed[compressed_pos];
+				indic_pos = compressed_pos;
 				compressed_pos += sizeof(uint32_t);
 			}
 
@@ -213,7 +213,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 
 	indic <<= 32 - indic_bit;
 	indic |= (1 << (32 - indic_bit)) - 1;
-	PUSH_LE_U32(indic_pos, 0, indic);
+	PUSH_LE_U32(compressed, indic_pos, indic);
 
 	return compressed_pos;
 }
