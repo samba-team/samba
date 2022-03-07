@@ -1585,6 +1585,7 @@ class KDCBaseTest(RawKerberosTest):
         return rep, enc_part
 
     def get_service_ticket(self, tgt, target_creds, service='host',
+                           sname=None,
                            target_name=None, till=None, rc4_support=True,
                            to_rodc=False, kdc_options=None,
                            expected_flags=None, unexpected_flags=None,
@@ -1599,10 +1600,13 @@ class KDCBaseTest(RawKerberosTest):
         ticket_sname = tgt.sname
         if target_name is None:
             target_name = target_creds.get_username()[:-1]
+        else:
+            self.assertIsNone(sname, 'supplied both target name and sname')
         cache_key = (user_name, target_name, service, to_rodc, kdc_options,
                      pac_request, str(expected_flags), str(unexpected_flags),
                      till, rc4_support,
                      str(ticket_sname),
+                     str(sname),
                      expect_client_claims, expect_device_claims,
                      str(expected_client_claims),
                      str(unexpected_client_claims),
@@ -1622,8 +1626,10 @@ class KDCBaseTest(RawKerberosTest):
             kdc_options = '0'
         kdc_options = str(krb5_asn1.KDCOptions(kdc_options))
 
-        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                          names=[service, target_name])
+        if sname is None:
+            sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                              names=[service, target_name])
+
         srealm = target_creds.get_realm()
 
         authenticator_subkey = self.RandomKey(kcrypto.Enctype.AES256)
