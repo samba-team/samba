@@ -21,21 +21,26 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "../libds/common/flags.h"
-#include <ldb.h>
-#include "auth/auth.h"
+#include "lib/replace/replace.h"
+#include "lib/replace/system/kerberos.h"
+#include "lib/util/debug.h"
+#include "lib/util/samba_util.h"
+#include "lib/util/talloc_stack.h"
+
 #include "auth/auth_sam_reply.h"
-#include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include "kdc/samba_kdc.h"
-#include "kdc/pac-glue.h"
-#include "param/param.h"
-#include "librpc/gen_ndr/ndr_krb5pac.h"
-#include "libcli/security/security.h"
-#include "dsdb/samdb/samdb.h"
 #include "auth/kerberos/pac_utils.h"
+#include "libcli/security/security.h"
+#include "libds/common/flags.h"
+#include "librpc/gen_ndr/ndr_krb5pac.h"
+#include "param/param.h"
+#include "source4/auth/auth.h"
 #include "source4/dsdb/common/util.h"
+#include "source4/dsdb/samdb/samdb.h"
+#include "source4/kdc/samba_kdc.h"
+#include "source4/kdc/pac-glue.h"
+
+#include <ldb.h>
 
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
