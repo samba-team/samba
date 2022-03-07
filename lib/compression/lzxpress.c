@@ -59,14 +59,9 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			  uint32_t max_compressed_size)
 {
 	uint32_t uncompressed_pos, compressed_pos;
-	uint32_t max_offset, best_offset;
-	int32_t offset;
-	uint32_t max_len, len, best_len, match_len;
 	uint32_t indic;
 	uint32_t indic_pos;
 	uint32_t indic_bit, nibble_index;
-
-	uint16_t metadata;
 
 	if (!uncompressed_size) {
 		return 0;
@@ -90,17 +85,21 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 	       (compressed_pos < max_compressed_size)) {
 		bool found = false;
 
-		max_offset = uncompressed_pos;
+		uint32_t max_offset = uncompressed_pos;
 
-		best_len = 2;
-		best_offset = 0;
+		uint32_t best_len = 2;
+		uint32_t best_offset = 0;
+
+		int32_t offset;
 
 		max_offset = MIN(0x1FFF, max_offset);
 
 		/* search for the longest match in the window for the lookahead buffer */
 		for (offset = 1; (uint32_t)offset <= max_offset; offset++) {
 			/* maximum len we can encode into metadata */
-			max_len = MIN(0x1FFF, uncompressed_size - uncompressed_pos);
+			uint32_t max_len = MIN(0x1FFF, uncompressed_size - uncompressed_pos);
+
+			uint32_t len;
 
 			for (len = 0;
 			     (len < max_len) && (uncompressed[uncompressed_pos + len] ==
@@ -134,7 +133,9 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 				compressed_pos += sizeof(uint32_t);
 			}
 		} else {
-			match_len = best_len;
+			uint32_t match_len = best_len;
+
+			uint16_t metadata;
 
 			match_len -= 3;
 			best_offset -= 1;
@@ -218,8 +219,6 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 {
 	uint32_t output_index, input_index;
 	uint32_t indicator, indicator_bit;
-	uint32_t length;
-	uint32_t offset;
 	uint32_t nibble_index;
 	uint32_t i;
 
@@ -227,8 +226,6 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 	input_index = 0;
 	indicator = 0;
 	indicator_bit = 0;
-	length = 0;
-	offset = 0;
 	nibble_index = 0;
 
 #undef CHECK_INPUT_BYTES
@@ -259,6 +256,8 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 			input_index += sizeof(uint8_t);
 			output_index += sizeof(uint8_t);
 		} else {
+			uint32_t length;
+			uint32_t offset;
 			CHECK_INPUT_BYTES(sizeof(uint16_t));
 			length = PULL_LE_U16(input, input_index);
 			input_index += sizeof(uint16_t);
