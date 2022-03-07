@@ -201,8 +201,8 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			if (indic_bit == 32) {
 				PUSH_LE_U32(indic_pos, 0, indic);
 				indic_bit = 0;
-				indic_pos = &compressed[compressed_pos];
-				compressed_pos += sizeof(uint32_t);
+				indic_pos = &compressed[compressed_pos + metadata_size];
+				metadata_size += sizeof(uint32_t);
 			}
 
 			compressed_pos += metadata_size;
