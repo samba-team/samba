@@ -172,6 +172,9 @@ class KDCBaseTest(RawKerberosTest):
         cls.ldb_cleanups = []
 
         cls._claim_types_dn = None
+        cls._authn_policy_config_dn = None
+        cls._authn_policies_dn = None
+        cls._authn_silos_dn = None
 
     def get_claim_types_dn(self):
         samdb = self.get_samdb()
@@ -212,6 +215,84 @@ class KDCBaseTest(RawKerberosTest):
 
         # Return a copy of the DN.
         return ldb.Dn(samdb, str(self._claim_types_dn))
+
+    def get_authn_policy_config_dn(self):
+        samdb = self.get_samdb()
+
+        if self._authn_policy_config_dn is None:
+            authn_policy_config_dn = samdb.get_config_basedn()
+
+            self.assertTrue(authn_policy_config_dn.add_child(
+                'CN=AuthN Policy Configuration,CN=Services'))
+            details = {
+                'dn': authn_policy_config_dn,
+                'objectClass': 'container',
+                'description': ('Contains configuration for authentication '
+                                'policy'),
+            }
+            try:
+                samdb.add(details)
+            except ldb.LdbError as err:
+                num, _ = err.args
+                if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
+                    raise
+            else:
+                self.accounts.append(str(authn_policy_config_dn))
+
+            type(self)._authn_policy_config_dn = authn_policy_config_dn
+
+        # Return a copy of the DN.
+        return ldb.Dn(samdb, str(self._authn_policy_config_dn))
+
+    def get_authn_policies_dn(self):
+        samdb = self.get_samdb()
+
+        if self._authn_policies_dn is None:
+            authn_policies_dn = self.get_authn_policy_config_dn()
+            self.assertTrue(authn_policies_dn.add_child('CN=AuthN Policies'))
+            details = {
+                'dn': authn_policies_dn,
+                'objectClass': 'msDS-AuthNPolicies',
+                'description': 'Contains authentication policy objects',
+            }
+            try:
+                samdb.add(details)
+            except ldb.LdbError as err:
+                num, _ = err.args
+                if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
+                    raise
+            else:
+                self.accounts.append(str(authn_policies_dn))
+
+            type(self)._authn_policies_dn = authn_policies_dn
+
+        # Return a copy of the DN.
+        return ldb.Dn(samdb, str(self._authn_policies_dn))
+
+    def get_authn_silos_dn(self):
+        samdb = self.get_samdb()
+
+        if self._authn_silos_dn is None:
+            authn_silos_dn = self.get_authn_policy_config_dn()
+            self.assertTrue(authn_silos_dn.add_child('CN=AuthN Silos'))
+            details = {
+                'dn': authn_silos_dn,
+                'objectClass': 'msDS-AuthNPolicySilos',
+                'description': 'Contains authentication policy silo objects',
+            }
+            try:
+                samdb.add(details)
+            except ldb.LdbError as err:
+                num, _ = err.args
+                if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
+                    raise
+            else:
+                self.accounts.append(str(authn_silos_dn))
+
+            type(self)._authn_silos_dn = authn_silos_dn
+
+        # Return a copy of the DN.
+        return ldb.Dn(samdb, str(self._authn_silos_dn))
 
     def tearDown(self):
         # Clean up any accounts created for single tests.
