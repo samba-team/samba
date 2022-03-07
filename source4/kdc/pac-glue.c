@@ -715,7 +715,7 @@ bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry)
 }
 
 int samba_client_requested_pac(krb5_context context,
-			       krb5_pac *pac,
+			       const krb5_pac *pac,
 			       TALLOC_CTX *mem_ctx,
 			       bool *requested_pac)
 {
