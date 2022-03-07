@@ -2746,6 +2746,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 		ret = ENOENT;
 		goto bad_option;
 	}
+	SMB_ASSERT(el->num_values != 0);
 
 	/*
 	 * This is the Microsoft forwardable flag behavior.
@@ -2753,7 +2754,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 	 * If the proxy (target) principal is NULL, and we have any authorized
 	 * delegation target, allow to forward.
 	 */
-	if (el->num_values >= 0 && target_principal == NULL) {
+	if (target_principal == NULL) {
 		return 0;
 	}
 
