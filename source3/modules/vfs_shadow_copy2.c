@@ -2500,31 +2500,32 @@ static NTSTATUS shadow_copy2_read_dfs_pathat(struct vfs_handle_struct *handle,
 	return status;
 }
 
-static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
-					  const struct smb_filename *fname,
-					  const char *name,
-					  TALLOC_CTX *mem_ctx,
-					  char **found_name)
+static NTSTATUS shadow_copy2_get_real_filename(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *fname,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
 {
 	struct shadow_copy2_private *priv = NULL;
 	struct shadow_copy2_config *config = NULL;
 	time_t timestamp = 0;
 	char *stripped = NULL;
-	ssize_t ret;
-	int saved_errno = 0;
 	char *conv;
 	struct smb_filename conv_fname;
+	NTSTATUS status;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
-				return -1);
+				return NT_STATUS_INTERNAL_ERROR);
 	config = priv->config;
 
 	DBG_DEBUG("Path=[%s] name=[%s]\n", smb_fname_str_dbg(fname), name);
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
 					 &timestamp, &stripped)) {
+		status = map_nt_error_from_unix(errno);
 		DEBUG(10, ("shadow_copy2_strip_snapshot failed\n"));
-		return -1;
+		return status;
 	}
 	if (timestamp == 0) {
 		DEBUG(10, ("timestamp == 0\n"));
@@ -2542,9 +2543,11 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
 	if (conv == NULL) {
+		status = map_nt_error_from_unix(errno);
+
 		if (!config->snapdirseverywhere) {
 			DBG_DEBUG("shadow_copy2_convert [%s] failed\n", stripped);
-			return -1;
+			return status;
 		}
 
 		/*
@@ -2559,8 +2562,7 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 		DBG_DEBUG("Use stripped [%s] as conv\n", stripped);
 		conv = talloc_strdup(talloc_tos(), stripped);
 		if (conv == NULL) {
-			TALLOC_FREE(stripped);
-			return -1;
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -2570,37 +2572,34 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 
 	DEBUG(10, ("Calling NEXT_GET_REAL_FILE_NAME for conv=[%s], "
 		   "name=[%s]\n", conv, name));
-	ret = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, &conv_fname, name,
-					     mem_ctx, found_name);
-	DEBUG(10, ("NEXT_REAL_FILE_NAME returned %d\n", (int)ret));
-	if (ret == 0) {
-		return 0;
+	status = SMB_VFS_NEXT_GET_REAL_FILENAME(
+		handle, &conv_fname, name, mem_ctx, found_name);
+	DEBUG(10, ("NEXT_REAL_FILE_NAME returned %s\n", nt_errstr(status)));
+	if (NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OK;
 	}
-	if (errno != EOPNOTSUPP) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
 		TALLOC_FREE(conv);
-		errno = EOPNOTSUPP;
-		return -1;
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	ret = get_real_filename_full_scan(handle->conn,
-					  conv,
-					  name,
-					  false,
-					  mem_ctx,
-					  found_name);
-	if (ret != 0) {
-		saved_errno = errno;
+	status = get_real_filename_full_scan(handle->conn,
+					     conv,
+					     name,
+					     false,
+					     mem_ctx,
+					     found_name);
+	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("Scan [%s] for [%s] failed\n",
 			  conv, name);
-		errno = saved_errno;
-		return -1;
+		return status;
 	}
 
 	DBG_DEBUG("Scan [%s] for [%s] returned [%s]\n",
 		  conv, name, *found_name);
 
 	TALLOC_FREE(conv);
-	return 0;
+	return NT_STATUS_OK;
 }
 
 static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,

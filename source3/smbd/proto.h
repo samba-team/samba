@@ -364,12 +364,12 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 				    uint32_t ucf_flags,
 				    NTTIME twrp);
-int get_real_filename_full_scan(connection_struct *conn,
-				const char *path,
-				const char *name,
-				bool mangled,
-				TALLOC_CTX *mem_ctx,
-				char **found_name);
+NTSTATUS get_real_filename_full_scan(connection_struct *conn,
+				     const char *path,
+				     const char *name,
+				     bool mangled,
+				     TALLOC_CTX *mem_ctx,
+				     char **found_name);
 char *get_original_lcomp(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *filename_in,

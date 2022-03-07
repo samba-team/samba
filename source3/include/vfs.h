@@ -363,6 +363,7 @@
  * Version 46 - Rename SMB_VFS_KERNEL_FLOCK to SMB_VFS_FILESYSTEM_SHAREMODE
  * Version 46 - Add flags and xferlen args to SMB_VFS_OFFLOAD_READ_RECV
  * Version 46 - Add SMB_VFS_FSTATAT
+ * Version 46 - Change SMB_VFS_GET_REAL_FILENAME to return NTSTATUS
  */
 
 #define SMB_VFS_INTERFACE_VERSION 46
@@ -1142,11 +1143,11 @@ struct vfs_fn_pointers {
 				   unsigned int *num_streams,
 				   struct stream_struct **streams);
 
-	int (*get_real_filename_fn)(struct vfs_handle_struct *handle,
-				    const struct smb_filename *path,
-				    const char *name,
-				    TALLOC_CTX *mem_ctx,
-				    char **found_name);
+	NTSTATUS (*get_real_filename_fn)(struct vfs_handle_struct *handle,
+					 const struct smb_filename *path,
+					 const char *name,
+					 TALLOC_CTX *mem_ctx,
+					 char **found_name);
 
 	const char *(*connectpath_fn)(struct vfs_handle_struct *handle,
 				      const struct smb_filename *smb_fname);
@@ -1611,11 +1612,11 @@ NTSTATUS smb_vfs_call_fstreaminfo(struct vfs_handle_struct *handle,
 				  TALLOC_CTX *mem_ctx,
 				  unsigned int *num_streams,
 				  struct stream_struct **streams);
-int smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
-				   const struct smb_filename *path,
-				   const char *name,
-				   TALLOC_CTX *mem_ctx,
-				   char **found_name);
+NTSTATUS smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
+					const struct smb_filename *path,
+					const char *name,
+					TALLOC_CTX *mem_ctx,
+					char **found_name);
 const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
 				     const struct smb_filename *smb_fname);
 NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
@@ -2077,11 +2078,12 @@ NTSTATUS vfs_not_implemented_fstreaminfo(struct vfs_handle_struct *handle,
 					 TALLOC_CTX *mem_ctx,
 					 unsigned int *num_streams,
 					 struct stream_struct **streams);
-int vfs_not_implemented_get_real_filename(struct vfs_handle_struct *handle,
-					  const struct smb_filename *path,
-					  const char *name,
-					  TALLOC_CTX *mem_ctx,
-					  char **found_name);
+NTSTATUS vfs_not_implemented_get_real_filename(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *path,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name);
 const char *vfs_not_implemented_connectpath(struct vfs_handle_struct *handle,
 					    const struct smb_filename *smb_fname);
 NTSTATUS vfs_not_implemented_brl_lock_windows(struct vfs_handle_struct *handle,

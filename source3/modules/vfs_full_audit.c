@@ -2080,20 +2080,25 @@ static NTSTATUS smb_full_audit_fstreaminfo(vfs_handle_struct *handle,
         return result;
 }
 
-static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
-					    const struct smb_filename *path,
-					    const char *name,
-					    TALLOC_CTX *mem_ctx,
-					    char **found_name)
+static NTSTATUS smb_full_audit_get_real_filename(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *path,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
 {
-	int result;
+	NTSTATUS result;
 
 	result = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name, mem_ctx,
 						found_name);
 
-	do_log(SMB_VFS_OP_GET_REAL_FILENAME, (result == 0), handle,
+	do_log(SMB_VFS_OP_GET_REAL_FILENAME,
+	       NT_STATUS_IS_OK(result),
+	       handle,
 	       "%s/%s->%s",
-	       path->base_name, name, (result == 0) ? *found_name : "");
+	       path->base_name,
+	       name,
+	       NT_STATUS_IS_OK(result) ? *found_name : "");
 
 	return result;
 }

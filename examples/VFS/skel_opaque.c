@@ -651,13 +651,13 @@ static NTSTATUS skel_fstreaminfo(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static int skel_get_real_filename(struct vfs_handle_struct *handle,
-				  const struct smb_filename *path,
-				  const char *name,
-				  TALLOC_CTX *mem_ctx, char **found_name)
+static NTSTATUS skel_get_real_filename(struct vfs_handle_struct *handle,
+				       const struct smb_filename *path,
+				       const char *name,
+				       TALLOC_CTX *mem_ctx,
+				       char **found_name)
 {
-	errno = ENOSYS;
-	return -1;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static const char *skel_connectpath(struct vfs_handle_struct *handle,

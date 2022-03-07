@@ -2003,19 +2003,19 @@ static int vfs_gluster_fchflags(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static int vfs_gluster_get_real_filename(struct vfs_handle_struct *handle,
-					 const struct smb_filename *path,
-					 const char *name,
-					 TALLOC_CTX *mem_ctx,
-					 char **found_name)
+static NTSTATUS vfs_gluster_get_real_filename(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *path,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
 {
 	int ret;
 	char key_buf[GLUSTER_NAME_MAX + 64];
 	char val_buf[GLUSTER_NAME_MAX + 1];
 
 	if (strlen(name) >= GLUSTER_NAME_MAX) {
-		errno = ENAMETOOLONG;
-		return -1;
+		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
 	snprintf(key_buf, GLUSTER_NAME_MAX + 64,
@@ -2027,15 +2027,14 @@ static int vfs_gluster_get_real_filename(struct vfs_handle_struct *handle,
 		if (errno == ENOATTR) {
 			errno = ENOENT;
 		}
-		return -1;
+		return map_nt_error_from_unix(errno);
 	}
 
 	*found_name = talloc_strdup(mem_ctx, val_buf);
 	if (found_name[0] == NULL) {
-		errno = ENOMEM;
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
-	return 0;
+	return NT_STATUS_OK;
 }
 
 static const char *vfs_gluster_connectpath(struct vfs_handle_struct *handle,

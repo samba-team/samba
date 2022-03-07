@@ -30,11 +30,11 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 
-static int get_real_filename(connection_struct *conn,
-			     struct smb_filename *path,
-			     const char *name,
-			     TALLOC_CTX *mem_ctx,
-			     char **found_name);
+static NTSTATUS get_real_filename(connection_struct *conn,
+				  struct smb_filename *path,
+				  const char *name,
+				  TALLOC_CTX *mem_ctx,
+				  char **found_name);
 
 static NTSTATUS check_name(connection_struct *conn,
 			   const struct smb_filename *smb_fname);
@@ -508,7 +508,8 @@ struct uc_state {
 	bool short_case_preserve;
 };
 
-static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
+static NTSTATUS unix_convert_step_search_fail(
+	struct uc_state *state, NTSTATUS status)
 {
 	char *unmangled;
 
@@ -536,14 +537,12 @@ static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
 		 * to NT_STATUS_OBJECT_PATH_NOT_FOUND
 		 * in the filename walk.
 		 */
-
-		if (errno == ENOENT ||
-		    errno == ENOTDIR ||
-		    errno == ELOOP)
-		{
-			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY)) {
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		}
-		return map_nt_error_from_unix(errno);
+		return status;
 	}
 
 	/*
@@ -551,7 +550,7 @@ static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
 	 * here.
 	 */
 
-	if (errno == EACCES) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		if ((state->ucf_flags & UCF_PREP_CREATEFILE) == 0) {
 			/*
 			 * Could be a symlink pointing to
@@ -563,7 +562,6 @@ static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
 			 * error out of filename_convert().
 			 */
 			int ret;
-			NTSTATUS status;
 			struct smb_filename dname = (struct smb_filename) {
 					.base_name = state->dirpath,
 					.twrp = state->smb_fname->twrp,
@@ -599,20 +597,22 @@ static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
 			 * nevertheless want to allow
 			 * users creating a file.
 			 */
-			errno = 0;
+			status = NT_STATUS_OK;
 		}
 	}
 
-	if ((errno != 0) && (errno != ENOENT)) {
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/*
 		 * ENOTDIR and ELOOP both map to
 		 * NT_STATUS_OBJECT_PATH_NOT_FOUND
 		 * in the filename walk.
 		 */
-		if (errno == ENOTDIR || errno == ELOOP) {
-			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		}
-		return map_nt_error_from_unix(errno);
+		return status;
 	}
 
 	/*
@@ -688,6 +688,7 @@ static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 	char dot[2] = ".";
 	char *found_name = NULL;
 	int ret;
+	NTSTATUS status;
 
 	/*
 	 * Check if the name exists up to this point.
@@ -787,13 +788,13 @@ static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 		dname.base_name = dot;
 	}
 
-	ret = get_real_filename(state->conn,
-				&dname,
-				state->name,
-				talloc_tos(),
-				&found_name);
-	if (ret != 0) {
-		return unix_convert_step_search_fail(state);
+	status = get_real_filename(state->conn,
+				   &dname,
+				   state->name,
+				   talloc_tos(),
+				   &found_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return unix_convert_step_search_fail(state, status);
 	}
 
 	/*
@@ -1540,12 +1541,12 @@ static bool sname_equal(const char *name1, const char *name2,
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-int get_real_filename_full_scan(connection_struct *conn,
-				const char *path,
-				const char *name,
-				bool mangled,
-				TALLOC_CTX *mem_ctx,
-				char **found_name)
+NTSTATUS get_real_filename_full_scan(connection_struct *conn,
+				     const char *path,
+				     const char *name,
+				     bool mangled,
+				     TALLOC_CTX *mem_ctx,
+				     char **found_name)
 {
 	struct smb_Dir *cur_dir = NULL;
 	const char *dname = NULL;
@@ -1565,8 +1566,7 @@ int get_real_filename_full_scan(connection_struct *conn,
 	 * there, then the original stat(2) would have found it.
 	 */
 	if (!mangled && !(conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) {
-		errno = ENOENT;
-		return -1;
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	/*
@@ -1602,7 +1602,7 @@ int get_real_filename_full_scan(connection_struct *conn,
 					0);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(unmangled_name);
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* open the directory */
@@ -1614,8 +1614,7 @@ int get_real_filename_full_scan(connection_struct *conn,
 			   nt_errstr(status));
 		TALLOC_FREE(unmangled_name);
 		TALLOC_FREE(smb_fname);
-		errno = map_errno_from_nt_status(status);
-		return -1;
+		return status;
 	}
 
 	TALLOC_FREE(smb_fname);
@@ -1648,20 +1647,18 @@ int get_real_filename_full_scan(connection_struct *conn,
 			TALLOC_FREE(unmangled_name);
 			TALLOC_FREE(cur_dir);
 			if (!*found_name) {
-				errno = ENOMEM;
 				TALLOC_FREE(talloced);
-				return -1;
+				return NT_STATUS_NO_MEMORY;
 			}
 			TALLOC_FREE(talloced);
-			return 0;
+			return NT_STATUS_OK;
 		}
 		TALLOC_FREE(talloced);
 	}
 
 	TALLOC_FREE(unmangled_name);
 	TALLOC_FREE(cur_dir);
-	errno = ENOENT;
-	return -1;
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
 /****************************************************************************
@@ -1669,13 +1666,13 @@ int get_real_filename_full_scan(connection_struct *conn,
  fallback.
 ****************************************************************************/
 
-static int get_real_filename(connection_struct *conn,
-			     struct smb_filename *path,
-			     const char *name,
-			     TALLOC_CTX *mem_ctx,
-			     char **found_name)
+static NTSTATUS get_real_filename(connection_struct *conn,
+				  struct smb_filename *path,
+				  const char *name,
+				  TALLOC_CTX *mem_ctx,
+				  char **found_name)
 {
-	int ret;
+	NTSTATUS status;
 	bool mangled;
 
 	mangled = mangle_is_mangled(name, conn->params);
@@ -1690,19 +1687,20 @@ static int get_real_filename(connection_struct *conn,
 	}
 
 	/* Try the vfs first to take advantage of case-insensitive stat. */
-	ret = SMB_VFS_GET_REAL_FILENAME(conn,
-					path,
-					name,
-					mem_ctx,
-					found_name);
+	status = SMB_VFS_GET_REAL_FILENAME(conn,
+					   path,
+					   name,
+					   mem_ctx,
+					   found_name);
 
 	/*
 	 * If the case-insensitive stat was successful, or returned an error
 	 * other than EOPNOTSUPP then there is no need to fall back on the
 	 * full directory scan.
 	 */
-	if (ret == 0 || (ret == -1 && errno != EOPNOTSUPP)) {
-		return ret;
+	if (NT_STATUS_IS_OK(status) ||
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+		return status;
 	}
 
 	return get_real_filename_full_scan(conn,

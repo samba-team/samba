@@ -1717,13 +1717,14 @@ static NTSTATUS smb_time_audit_fstreaminfo(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_time_audit_get_real_filename(struct vfs_handle_struct *handle,
-					    const struct smb_filename *path,
-					    const char *name,
-					    TALLOC_CTX *mem_ctx,
-					    char **found_name)
+static NTSTATUS smb_time_audit_get_real_filename(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *path,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
 {
-	int result;
+	NTSTATUS result;
 	struct timespec ts1,ts2;
 	double timediff;
 

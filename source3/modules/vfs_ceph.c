@@ -1276,18 +1276,18 @@ static int cephwrap_fchflags(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static int cephwrap_get_real_filename(struct vfs_handle_struct *handle,
-				     const struct smb_filename *path,
-				     const char *name,
-				     TALLOC_CTX *mem_ctx,
-				     char **found_name)
+static NTSTATUS cephwrap_get_real_filename(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *path,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
 {
 	/*
 	 * Don't fall back to get_real_filename so callers can differentiate
 	 * between a full directory scan and an actual case-insensitive stat.
 	 */
-	errno = EOPNOTSUPP;
-	return -1;
+	return NT_STATUS_NOT_SUPPORTED;
 }
 
 static const char *cephwrap_connectpath(struct vfs_handle_struct *handle,

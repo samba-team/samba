@@ -23,11 +23,12 @@
 
 #define GLUSTER_NAME_MAX 255
 
-static int vfs_gluster_fuse_get_real_filename(struct vfs_handle_struct *handle,
-					      const struct smb_filename *path,
-					      const char *name,
-					      TALLOC_CTX *mem_ctx,
-					      char **_found_name)
+static NTSTATUS vfs_gluster_fuse_get_real_filename(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *path,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **_found_name)
 {
 	int ret;
 	char key_buf[GLUSTER_NAME_MAX + 64];
@@ -35,8 +36,7 @@ static int vfs_gluster_fuse_get_real_filename(struct vfs_handle_struct *handle,
 	char *found_name = NULL;
 
 	if (strlen(name) >= GLUSTER_NAME_MAX) {
-		errno = ENAMETOOLONG;
-		return -1;
+		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
 	snprintf(key_buf, GLUSTER_NAME_MAX + 64,
@@ -47,16 +47,15 @@ static int vfs_gluster_fuse_get_real_filename(struct vfs_handle_struct *handle,
 		if (errno == ENOATTR) {
 			errno = ENOENT;
 		}
-		return -1;
+		return map_nt_error_from_unix(errno);
 	}
 
 	found_name = talloc_strdup(mem_ctx, val_buf);
 	if (found_name == NULL) {
-		errno = ENOMEM;
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 	*_found_name = found_name;
-	return 0;
+	return NT_STATUS_OK;
 }
 
 struct device_mapping_entry {

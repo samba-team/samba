@@ -724,14 +724,14 @@ NTSTATUS vfs_not_implemented_fstreaminfo(struct vfs_handle_struct *handle,
 }
 
 _PUBLIC_
-int vfs_not_implemented_get_real_filename(struct vfs_handle_struct *handle,
-					  const struct smb_filename *path,
-					  const char *name,
-					  TALLOC_CTX *mem_ctx,
-					  char **found_name)
+NTSTATUS vfs_not_implemented_get_real_filename(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *path,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
 {
-	errno = ENOSYS;
-	return -1;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 _PUBLIC_

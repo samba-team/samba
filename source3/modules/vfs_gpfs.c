@@ -288,11 +288,11 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle,
 }
 #endif /* HAVE_KERNEL_OPLOCKS_LINUX */
 
-static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
-				      const struct smb_filename *path,
-				      const char *name,
-				      TALLOC_CTX *mem_ctx,
-				      char **found_name)
+static NTSTATUS vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
+					   const struct smb_filename *path,
+					   const char *name,
+					   TALLOC_CTX *mem_ctx,
+					   char **found_name)
 {
 	int result;
 	char *full_path = NULL;
@@ -305,7 +305,7 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
-				return -1);
+				return NT_STATUS_INTERNAL_ERROR);
 
 	if (!config->getrealfilename) {
 		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name,
@@ -322,8 +322,7 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 				      tmpbuf, sizeof(tmpbuf),
 				      &full_path, &to_free);
 	if (full_path_len == -1) {
-		errno = ENOMEM;
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	buflen = sizeof(real_pathname) - 1;
@@ -341,7 +340,7 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 	if (result == -1) {
 		DEBUG(10, ("smbd_gpfs_get_realfilename_path returned %s\n",
 			   strerror(errno)));
-		return -1;
+		return map_nt_error_from_unix(errno);
 	}
 
 	/*
@@ -360,17 +359,15 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 
 	name = strrchr_m(real_pathname, '/');
 	if (name == NULL) {
-		errno = ENOENT;
-		return -1;
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	*found_name = talloc_strdup(mem_ctx, name+1);
 	if (*found_name == NULL) {
-		errno = ENOMEM;
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	return 0;
+	return NT_STATUS_OK;
 }
 
 static void sd2gpfs_control(uint16_t control, struct gpfs_acl *gacl)

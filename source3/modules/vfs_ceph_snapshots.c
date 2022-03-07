@@ -1313,23 +1313,24 @@ static int ceph_snap_gmt_fsetxattr(struct vfs_handle_struct *handle,
 				aname, value, size, flags);
 }
 
-static int ceph_snap_gmt_get_real_filename(struct vfs_handle_struct *handle,
-					 const struct smb_filename *path,
-					 const char *name,
-					 TALLOC_CTX *mem_ctx,
-					 char **found_name)
+static NTSTATUS ceph_snap_gmt_get_real_filename(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *path,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
 {
 	time_t timestamp = 0;
 	char stripped[PATH_MAX + 1];
 	char conv[PATH_MAX + 1];
 	struct smb_filename conv_fname;
 	int ret;
+	NTSTATUS status;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle, path,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
-		errno = -ret;
-		return -1;
+		return map_nt_error_from_unix(-ret);
 	}
 	if (timestamp == 0) {
 		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name,
@@ -1338,17 +1339,16 @@ static int ceph_snap_gmt_get_real_filename(struct vfs_handle_struct *handle,
 	ret = ceph_snap_gmt_convert_dir(handle, stripped,
 					timestamp, conv, sizeof(conv));
 	if (ret < 0) {
-		errno = -ret;
-		return -1;
+		return map_nt_error_from_unix(-ret);
 	}
 
 	conv_fname = (struct smb_filename) {
 		.base_name = conv,
 	};
 
-	ret = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, &conv_fname, name,
-					     mem_ctx, found_name);
-	return ret;
+	status = SMB_VFS_NEXT_GET_REAL_FILENAME(
+		handle, &conv_fname, name, mem_ctx, found_name);
+	return status;
 }
 
 static uint64_t ceph_snap_gmt_disk_free(vfs_handle_struct *handle,
