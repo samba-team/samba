@@ -2995,10 +2995,14 @@ class RawKerberosTest(TestCaseInTempDir):
                                 kcrypto.Enctype.AES128}:
                 expected_patypes += (PADATA_ETYPE_INFO2,)
 
+        if not self.strict_checking and rep_padata is None:
+            rep_padata = ()
+
+        self.assertIsNotNone(rep_padata)
         got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
         self.assertSequenceElementsEqual(expected_patypes, got_patypes)
 
-        if not expected_patypes:
+        if len(expected_patypes) == 0:
             return None
 
         pa_dict = self.get_pa_dict(rep_padata)
