@@ -875,7 +875,7 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 			if (ret != 0) {
 				/*
 				 * So we do not leak the allocated
-				 * memory on kd in the error case 
+				 * memory on kd in the error case
 				 */
 				krb5_data_free(&kd);
 			}
