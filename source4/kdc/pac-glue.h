@@ -21,6 +21,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+enum {
+	SAMBA_KDC_FLAG_PROTOCOL_TRANSITION    = 0x00000001,
+	SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION = 0x00000002,
+	SAMBA_KDC_FLAG_KRBTGT_IN_DB           = 0x00000004,
+	SAMBA_KDC_FLAG_KRBTGT_IS_UNTRUSTED    = 0x00000008,
+	SAMBA_KDC_FLAG_SKIP_PAC_BUFFER        = 0x00000010,
+};
+
 krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 						  const krb5_keyblock *pkreplykey,
 						  const DATA_BLOB *cred_ndr_blob,
@@ -90,3 +98,15 @@ WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_sids,
 					  struct dom_sid *sids,
 					  struct samba_kdc_entry *rodc,
 					  struct samba_kdc_entry *object);
+
+krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
+				     krb5_context context,
+				     struct ldb_context *samdb,
+				     uint32_t flags,
+				     struct samba_kdc_entry *client,
+				     const krb5_principal server_principal,
+				     struct samba_kdc_entry *server,
+				     struct samba_kdc_entry *krbtgt,
+				     const krb5_principal delegated_proxy_principal,
+				     const krb5_pac old_pac,
+				     krb5_pac new_pac);
