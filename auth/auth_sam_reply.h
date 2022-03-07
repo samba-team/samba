@@ -23,6 +23,10 @@
 #ifndef __AUTH_AUTH_SAM_REPLY_H__
 #define __AUTH_AUTH_SAM_REPLY_H__
 
+#include "libcli/util/ntstatus.h"
+#include "libcli/util/werror.h"
+#include "librpc/gen_ndr/auth.h"
+
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 /* this file contains prototypes for functions that are private
