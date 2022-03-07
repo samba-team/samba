@@ -62,7 +62,6 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 	uint32_t max_offset, best_offset;
 	int32_t offset;
 	uint32_t max_len, len, best_len, match_len;
-	const uint8_t *str1, *str2;
 	uint32_t indic;
 	uint32_t indic_pos;
 	uint32_t indic_bit, nibble_index;
@@ -91,8 +90,6 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 
 		max_offset = uncompressed_pos;
 
-		str1 = &uncompressed[uncompressed_pos];
-
 		best_len = 2;
 		best_offset = 0;
 
@@ -100,12 +97,13 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 
 		/* search for the longest match in the window for the lookahead buffer */
 		for (offset = 1; (uint32_t)offset <= max_offset; offset++) {
-			str2 = &str1[-offset];
-
 			/* maximum len we can encode into metadata */
 			max_len = MIN(0x1FFF, uncompressed_size - uncompressed_pos);
 
-			for (len = 0; (len < max_len) && (str1[len] == str2[len]); len++);
+			for (len = 0;
+			     (len < max_len) && (uncompressed[uncompressed_pos + len] ==
+						 uncompressed[uncompressed_pos + len - offset]);
+			     len++);
 
 			/*
 			 * We check if len is better than the value found before, including the
