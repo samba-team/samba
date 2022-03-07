@@ -37,26 +37,6 @@
 #include "../lib/util/byteorder.h"
 
 
-#define __BUF_POS_CONST(buf,ofs)(((const uint8_t *)buf)+(ofs))
-#define __PULL_BYTE(buf,ofs) \
-	((uint8_t)((*__BUF_POS_CONST(buf,ofs)) & 0xFF))
-
-#ifndef PULL_LE_UINT16
-#define PULL_LE_UINT16(buf,ofs) ((uint16_t)( \
-	((uint16_t)(((uint16_t)(__PULL_BYTE(buf,(ofs)+0))) << 0)) | \
-	((uint16_t)(((uint16_t)(__PULL_BYTE(buf,(ofs)+1))) << 8)) \
-))
-#endif
-
-#ifndef PULL_LE_UINT32
-#define PULL_LE_UINT32(buf,ofs) ((uint32_t)( \
-	((uint32_t)(((uint32_t)(__PULL_BYTE(buf,(ofs)+0))) <<  0)) | \
-	((uint32_t)(((uint32_t)(__PULL_BYTE(buf,(ofs)+1))) <<  8)) | \
-	((uint32_t)(((uint32_t)(__PULL_BYTE(buf,(ofs)+2))) << 16)) | \
-	((uint32_t)(((uint32_t)(__PULL_BYTE(buf,(ofs)+3))) << 24)) \
-))
-#endif
-
 #define __CHECK_BYTES(__size, __index, __needed) do { \
 	if (unlikely(__index >= __size)) { \
 		return -1; \
@@ -146,7 +126,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			indic_bit += 1;
 
 			if (indic_bit == 32) {
-				SIVAL(indic_pos, 0, indic);
+				PUSH_LE_U32(indic_pos, 0, indic);
 				indic_bit = 0;
 				__CHECK_BYTES(max_compressed_size, compressed_pos, sizeof(uint32_t));
 				indic_pos = &compressed[compressed_pos];
@@ -165,13 +145,13 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 				/* Classical meta-data */
 				__CHECK_BYTES(max_compressed_size, compressed_pos, sizeof(uint16_t));
 				metadata = (uint16_t)((best_offset  << 3) + match_len);
-				SSVAL(dest, metadata_size / sizeof(uint16_t), metadata);
+				PUSH_LE_U16(dest, metadata_size / sizeof(uint16_t), metadata);
 				metadata_size += sizeof(uint16_t);
 			} else {
 				bool has_extra = false;
 				__CHECK_BYTES(max_compressed_size, compressed_pos, sizeof(uint16_t));
 				metadata = (uint16_t)(best_offset << 3) | 7;
-				SSVAL(dest, metadata_size / sizeof(uint16_t), metadata);
+				PUSH_LE_U16(dest, metadata_size / sizeof(uint16_t), metadata);
 				metadata_size += sizeof(uint16_t);
 
 				match_len -= 7;
@@ -242,7 +222,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			indic_bit += 1;
 
 			if (indic_bit == 32) {
-				SIVAL(indic_pos, 0, indic);
+				PUSH_LE_U32(indic_pos, 0, indic);
 				indic_bit = 0;
 				indic_pos = &compressed[compressed_pos];
 				compressed_pos += sizeof(uint32_t);
@@ -256,7 +236,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 
 	indic <<= 32 - indic_bit;
 	indic |= (1 << (32 - indic_bit)) - 1;
-	SIVAL(indic_pos, 0, indic);
+	PUSH_LE_U32(indic_pos, 0, indic);
 
 	return compressed_pos;
 }
@@ -289,7 +269,7 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 	do {
 		if (indicator_bit == 0) {
 			CHECK_INPUT_BYTES(sizeof(uint32_t));
-			indicator = PULL_LE_UINT32(input, input_index);
+			indicator = PULL_LE_U32(input, input_index);
 			input_index += sizeof(uint32_t);
 			indicator_bit = 32;
 		}
@@ -308,7 +288,7 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 			output_index += sizeof(uint8_t);
 		} else {
 			CHECK_INPUT_BYTES(sizeof(uint16_t));
-			length = PULL_LE_UINT16(input, input_index);
+			length = PULL_LE_U16(input, input_index);
 			input_index += sizeof(uint16_t);
 			offset = (length / 8) + 1;
 			length = length % 8;
@@ -330,11 +310,11 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 					input_index += sizeof(uint8_t);
 					if (length == 255) {
 						CHECK_INPUT_BYTES(sizeof(uint16_t));
-						length = PULL_LE_UINT16(input, input_index);
+						length = PULL_LE_U16(input, input_index);
 						input_index += sizeof(uint16_t);
 						if (length == 0) {
 							CHECK_INPUT_BYTES(sizeof(uint32_t));
-							length = PULL_LE_UINT32(input, input_index);
+							length = PULL_LE_U32(input, input_index);
 							input_index += sizeof(uint32_t);
 						}
 
