@@ -2756,11 +2756,11 @@ class RawKerberosTest(TestCaseInTempDir):
             expect_pac_attrs_pac_request = kdc_exchange_dict[
                 'pac_request']
 
-        if expect_pac_attrs is None:
-            if self.expect_extra_pac_buffers:
-                expect_pac_attrs = expect_extra_pac_buffers
-            else:
-                require_strict.add(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
+            if expect_pac_attrs is None:
+                if self.expect_extra_pac_buffers:
+                    expect_pac_attrs = expect_extra_pac_buffers
+                else:
+                    require_strict.add(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
         if expect_pac_attrs:
             expected_types.append(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
 
