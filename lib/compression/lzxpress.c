@@ -141,59 +141,36 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			match_len -= 3;
 			best_offset -= 1;
 
-			if (match_len < 7) {
-				/* Classical meta-data */
-				__CHECK_BYTES(max_compressed_size, compressed_pos, sizeof(uint16_t));
-				metadata = (uint16_t)((best_offset  << 3) + match_len);
-				PUSH_LE_U16(dest, metadata_size / sizeof(uint16_t), metadata);
-				metadata_size += sizeof(uint16_t);
-			} else {
-				bool has_extra = false;
-				__CHECK_BYTES(max_compressed_size, compressed_pos, sizeof(uint16_t));
-				metadata = (uint16_t)(best_offset << 3) | 7;
-				PUSH_LE_U16(dest, metadata_size / sizeof(uint16_t), metadata);
-				metadata_size += sizeof(uint16_t);
+			/* Classical meta-data */
+			__CHECK_BYTES(max_compressed_size, compressed_pos, sizeof(uint16_t));
+			metadata = (uint16_t)((best_offset << 3) | MIN(match_len, 7));
+			PUSH_LE_U16(dest, metadata_size / sizeof(uint16_t), metadata);
+			metadata_size += sizeof(uint16_t);
 
+			if (match_len >= 7) {
 				match_len -= 7;
 
 				if (!nibble_index) {
 					nibble_index = compressed_pos;
-					if (match_len < 15) {
-						__CHECK_BYTES(max_compressed_size, compressed_pos + metadata_size, sizeof(uint8_t));
-						compressed[compressed_pos + metadata_size] = match_len & 0xFF;;
-						metadata_size += sizeof(uint8_t);
-					} else {
-						__CHECK_BYTES(max_compressed_size, compressed_pos + metadata_size, sizeof(uint8_t));
-						compressed[compressed_pos + metadata_size] = 15;
-						metadata_size += sizeof(uint8_t);
-						has_extra = true;
-					}
+
+					__CHECK_BYTES(max_compressed_size, compressed_pos + metadata_size, sizeof(uint8_t));
+					compressed[compressed_pos + metadata_size] = MIN(match_len, 15);
+					metadata_size += sizeof(uint8_t);
 				} else {
-					if (match_len < 15) {
-						// compressed[nibble_index] &= 0xF;
-						__CHECK_BYTES(max_compressed_size, nibble_index, sizeof(uint8_t));
-						compressed[nibble_index] |= (match_len << 4) & 0xFF;
-						nibble_index = 0;
-					} else {
-						__CHECK_BYTES(max_compressed_size, nibble_index, sizeof(uint8_t));
-						compressed[nibble_index] |= (15 << 4);
-						nibble_index = 0;
-						has_extra = true;
-					}
+					__CHECK_BYTES(max_compressed_size, nibble_index, sizeof(uint8_t));
+					compressed[nibble_index] |= MIN(match_len, 15) << 4;
+					nibble_index = 0;
 				}
 
-				if (has_extra) {
+				if (match_len >= 15) {
 					match_len -= 15;
 
-					if (match_len < 255) {
-						__CHECK_BYTES(max_compressed_size, compressed_pos + metadata_size, sizeof(uint8_t));
-						compressed[compressed_pos + metadata_size] = match_len & 0xFF;
-						metadata_size += sizeof(uint8_t);
-					} else {
+					__CHECK_BYTES(max_compressed_size, compressed_pos + metadata_size, sizeof(uint8_t));
+					compressed[compressed_pos + metadata_size] = MIN(match_len, 255);
+					metadata_size += sizeof(uint8_t);
+
+					if (match_len >= 255) {
 						/* Additional match_len */
-						__CHECK_BYTES(max_compressed_size, compressed_pos + metadata_size, sizeof(uint8_t));
-						compressed[compressed_pos + metadata_size] = 255;
-						metadata_size += sizeof(uint8_t);
 
 						match_len += 7 + 15;
 
