@@ -177,19 +177,14 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 
 						if (match_len < (1 << 16)) {
 							CHECK_OUTPUT_BYTES(sizeof(uint16_t));
-							compressed[compressed_pos] = match_len & 0xFF;
-							compressed[compressed_pos + 1] = (match_len >> 8);
+							PUSH_LE_U16(compressed, compressed_pos, match_len);
 							compressed_pos += sizeof(uint16_t);
 						} else {
 							CHECK_OUTPUT_BYTES(sizeof(uint16_t) + sizeof(uint32_t));
-							compressed[compressed_pos] = 0;
-							compressed[compressed_pos + 1] = 0;
+							PUSH_LE_U16(compressed, compressed_pos, 0);
 							compressed_pos += sizeof(uint16_t);
 
-							compressed[compressed_pos] = match_len & 0xFF;
-							compressed[compressed_pos + 1] = (match_len >> 8) & 0xFF;
-							compressed[compressed_pos + 2] = (match_len >> 16) & 0xFF;
-							compressed[compressed_pos + 3] = (match_len >> 24) & 0xFF;
+							PUSH_LE_U32(compressed, compressed_pos, match_len);
 							compressed_pos += sizeof(uint32_t);
 						}
 					}
