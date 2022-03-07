@@ -58,7 +58,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			  uint8_t *compressed,
 			  uint32_t max_compressed_size)
 {
-	uint32_t uncompressed_pos, compressed_pos, byte_left;
+	uint32_t uncompressed_pos, compressed_pos;
 	uint32_t max_offset, best_offset;
 	int32_t offset;
 	uint32_t max_len, len, best_len, match_len;
@@ -79,7 +79,6 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 	compressed_pos = sizeof(uint32_t);
 	indic_pos = 0;
 
-	byte_left = uncompressed_size;
 	indic_bit = 0;
 	nibble_index = 0;
 
@@ -104,7 +103,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			str2 = &str1[-offset];
 
 			/* maximum len we can encode into metadata */
-			max_len = MIN(0x1FFF, byte_left);
+			max_len = MIN(0x1FFF, uncompressed_size - uncompressed_pos);
 
 			for (len = 0; (len < max_len) && (str1[len] == str2[len]); len++);
 
@@ -123,7 +122,6 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			CHECK_INPUT_BYTES(sizeof(uint8_t));
 			CHECK_OUTPUT_BYTES(sizeof(uint8_t));
 			compressed[compressed_pos++] = uncompressed[uncompressed_pos++];
-			byte_left--;
 
 			indic <<= 1;
 			indic_bit += 1;
@@ -201,7 +199,6 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			}
 
 			uncompressed_pos += best_len;
-			byte_left -= best_len;
 		}
 	}
 
