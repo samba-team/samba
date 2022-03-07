@@ -288,7 +288,7 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 
 	do {
 		if (indicator_bit == 0) {
-			CHECK_INPUT_BYTES(4);
+			CHECK_INPUT_BYTES(sizeof(uint32_t));
 			indicator = PULL_LE_UINT32(input, input_index);
 			input_index += sizeof(uint32_t);
 			indicator_bit = 32;
@@ -301,13 +301,13 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 		 * check whether the 4th bit of the value in indicator is set
 		 */
 		if (((indicator >> indicator_bit) & 1) == 0) {
-			CHECK_INPUT_BYTES(1);
-			CHECK_OUTPUT_BYTES(1);
+			CHECK_INPUT_BYTES(sizeof(uint8_t));
+			CHECK_OUTPUT_BYTES(sizeof(uint8_t));
 			output[output_index] = input[input_index];
 			input_index += sizeof(uint8_t);
 			output_index += sizeof(uint8_t);
 		} else {
-			CHECK_INPUT_BYTES(2);
+			CHECK_INPUT_BYTES(sizeof(uint16_t));
 			length = PULL_LE_UINT16(input, input_index);
 			input_index += sizeof(uint16_t);
 			offset = (length / 8) + 1;
@@ -315,7 +315,7 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 
 			if (length == 7) {
 				if (nibble_index == 0) {
-					CHECK_INPUT_BYTES(1);
+					CHECK_INPUT_BYTES(sizeof(uint8_t));
 					nibble_index = input_index;
 					length = input[input_index] % 16;
 					input_index += sizeof(uint8_t);
@@ -325,15 +325,15 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 				}
 
 				if (length == 15) {
-					CHECK_INPUT_BYTES(1);
+					CHECK_INPUT_BYTES(sizeof(uint8_t));
 					length = input[input_index];
 					input_index += sizeof(uint8_t);
 					if (length == 255) {
-						CHECK_INPUT_BYTES(2);
+						CHECK_INPUT_BYTES(sizeof(uint16_t));
 						length = PULL_LE_UINT16(input, input_index);
 						input_index += sizeof(uint16_t);
 						if (length == 0) {
-							CHECK_INPUT_BYTES(4);
+							CHECK_INPUT_BYTES(sizeof(uint32_t));
 							length = PULL_LE_UINT32(input, input_index);
 							input_index += sizeof(uint32_t);
 						}
@@ -357,7 +357,7 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 				if (offset > output_index) {
 					return -1;
 				}
-				CHECK_OUTPUT_BYTES(1);
+				CHECK_OUTPUT_BYTES(sizeof(uint8_t));
 				output[output_index] = output[output_index - offset];
 				output_index += sizeof(uint8_t);
 			}
