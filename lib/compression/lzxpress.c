@@ -202,8 +202,10 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 		}
 	}
 
-	indic <<= 32 - indic_bit;
-	indic |= (1 << (32 - indic_bit)) - 1;
+	if (indic_bit != 0) {
+		indic <<= 32 - indic_bit;
+	}
+	indic |= UINT32_MAX >> indic_bit;
 	PUSH_LE_U32(compressed, indic_pos, indic);
 
 	return compressed_pos;
