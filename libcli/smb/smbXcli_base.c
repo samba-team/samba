@@ -806,7 +806,7 @@ bool smb1cli_conn_check_signing(struct smbXcli_conn *conn,
 
 bool smb1cli_conn_signing_is_active(struct smbXcli_conn *conn)
 {
-	return smb_signing_is_active(conn->smb1.signing);
+	return smb1_signing_is_active(conn->smb1.signing);
 }
 
 void smb1cli_conn_set_encryption(struct smbXcli_conn *conn,

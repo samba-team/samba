@@ -3452,7 +3452,7 @@ static bool lp_use_sendfile(int snum, struct smb1_signing_state *signing_state)
 		return false;
 	}
 	if (signing_state) {
-		sign_active = smb_signing_is_active(signing_state);
+		sign_active = smb1_signing_is_active(signing_state);
 	}
 	return (lp__use_sendfile(snum) &&
 			(get_remote_arch() != RA_WIN95) &&

@@ -434,7 +434,7 @@ bool smb1_signing_activate(struct smb1_signing_state *si,
 	return true;
 }
 
-bool smb_signing_is_active(struct smb1_signing_state *si)
+bool smb1_signing_is_active(struct smb1_signing_state *si)
 {
 	return si->active;
 }

@@ -45,7 +45,7 @@ bool smb1_signing_check_pdu(struct smb1_signing_state *si,
 bool smb1_signing_activate(struct smb1_signing_state *si,
 			  const DATA_BLOB user_session_key,
 			  const DATA_BLOB response);
-bool smb_signing_is_active(struct smb1_signing_state *si);
+bool smb1_signing_is_active(struct smb1_signing_state *si);
 bool smb_signing_is_allowed(struct smb1_signing_state *si);
 bool smb_signing_is_desired(struct smb1_signing_state *si);
 bool smb_signing_is_mandatory(struct smb1_signing_state *si);
