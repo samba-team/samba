@@ -24,7 +24,7 @@
 
 struct smb1_signing_state;
 
-struct smb1_signing_state *smb_signing_init(TALLOC_CTX *mem_ctx,
+struct smb1_signing_state *smb1_signing_init(TALLOC_CTX *mem_ctx,
 					   bool allowed,
 					   bool desired,
 					   bool mandatory);

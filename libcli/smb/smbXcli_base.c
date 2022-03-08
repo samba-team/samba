@@ -425,7 +425,7 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 	conn->smb1.mid = 1;
 
 	/* initialise signing */
-	conn->smb1.signing = smb_signing_init(conn,
+	conn->smb1.signing = smb1_signing_init(conn,
 					      conn->allow_signing,
 					      conn->desire_signing,
 					      conn->mandatory_signing);

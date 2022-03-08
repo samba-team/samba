@@ -223,7 +223,7 @@ static bool smb1_srv_init_signing(struct smbXsrv_connection *conn)
 		return true;
 	}
 
-	conn->smb1.signing_state = smb_signing_init(conn,
+	conn->smb1.signing_state = smb1_signing_init(conn,
 						    allowed, desired, mandatory);
 	if (!conn->smb1.signing_state) {
 		return false;
