@@ -4659,7 +4659,7 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 			server_mandatory = true;
 		}
 
-		ok = smb_signing_set_negotiated(conn->smb1.signing,
+		ok = smb1_signing_set_negotiated(conn->smb1.signing,
 						server_allowed,
 						server_mandatory);
 		if (!ok) {

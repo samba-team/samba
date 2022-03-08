@@ -48,7 +48,7 @@ bool smb1_signing_activate(struct smb1_signing_state *si,
 bool smb1_signing_is_active(struct smb1_signing_state *si);
 bool smb1_signing_is_desired(struct smb1_signing_state *si);
 bool smb1_signing_is_mandatory(struct smb1_signing_state *si);
-bool smb_signing_set_negotiated(struct smb1_signing_state *si,
+bool smb1_signing_set_negotiated(struct smb1_signing_state *si,
 				bool allowed, bool mandatory);
 bool smb_signing_is_negotiated(struct smb1_signing_state *si);
 NTSTATUS smb_key_derivation(const uint8_t *KI,

@@ -261,7 +261,7 @@ bool srv_init_signing(struct smbXsrv_connection *conn)
 void srv_set_signing_negotiated(struct smbXsrv_connection *conn,
 				bool allowed, bool mandatory)
 {
-	smb_signing_set_negotiated(conn->smb1.signing_state,
+	smb1_signing_set_negotiated(conn->smb1.signing_state,
 				   allowed, mandatory);
 }
 

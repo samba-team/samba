@@ -449,7 +449,7 @@ bool smb1_signing_is_mandatory(struct smb1_signing_state *si)
 	return si->mandatory;
 }
 
-bool smb_signing_set_negotiated(struct smb1_signing_state *si,
+bool smb1_signing_set_negotiated(struct smb1_signing_state *si,
 				bool allowed, bool mandatory)
 {
 	if (si->active) {
