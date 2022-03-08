@@ -2554,6 +2554,123 @@ static void smbd_server_connection_write_handler(
 	/* TODO: make write nonblocking */
 }
 
+#if 0
+static void smbd_smb2_server_connection_read_handler(
+			struct smbXsrv_connection *xconn, int fd)
+{
+	char lenbuf[NBT_HDR_SIZE];
+	size_t len = 0;
+	uint8_t *buffer = NULL;
+	size_t bufferlen = 0;
+	NTSTATUS status;
+	uint8_t msg_type = 0;
+
+	/* Read the first 4 bytes - contains length of remainder. */
+	status = read_smb_length_return_keepalive(fd, lenbuf, 0, &len);
+	if (!NT_STATUS_IS_OK(status)) {
+		exit_server_cleanly("failed to receive request length");
+		return;
+	}
+
+	/* Integer wrap check. */
+	if (len + NBT_HDR_SIZE < len) {
+		exit_server_cleanly("Invalid length on initial request");
+		return;
+	}
+
+	/*
+	 * The +4 here can't wrap, we've checked the length above already.
+	 */
+	bufferlen = len+NBT_HDR_SIZE;
+
+	buffer = talloc_array(talloc_tos(), uint8_t, bufferlen);
+	if (buffer == NULL) {
+		DBG_ERR("Could not allocate request inbuf of length %zu\n",
+			bufferlen);
+                exit_server_cleanly("talloc fail");
+		return;
+	}
+
+	/* Copy the NBT_HDR_SIZE length. */
+	memcpy(buffer, lenbuf, sizeof(lenbuf));
+
+	status = read_packet_remainder(fd, (char *)buffer+NBT_HDR_SIZE, 0, len);
+	if (!NT_STATUS_IS_OK(status)) {
+		exit_server_cleanly("Failed to read remainder of initial request");
+		return;
+	}
+
+	/* Check the message type. */
+	msg_type = PULL_LE_U8(buffer,0);
+	if (msg_type == NBSSrequest) {
+		/*
+		 * clients can send this request before
+		 * bootstrapping into SMB2. Cope with this
+		 * message only, don't allow any other strange
+		 * NBSS types.
+		 */
+		reply_special(xconn, (char *)buffer, bufferlen);
+		xconn->client->sconn->num_requests++;
+		return;
+	}
+
+	/* Only a 'normal' message type allowed now. */
+	if (msg_type != NBSSmessage) {
+		DBG_ERR("Invalid message type %d\n", msg_type);
+		exit_server_cleanly("Invalid message type for initial request");
+		return;
+	}
+
+	/* Could this be an SMB1 negprot bootstrap into SMB2 ? */
+	if (bufferlen < smb_size) {
+		exit_server_cleanly("Invalid initial SMB1 or SMB2 packet");
+		return;
+	}
+	if (valid_smb_header(buffer)) {
+		/* Can *only* allow an SMB1 negprot here. */
+		uint8_t cmd = PULL_LE_U8(buffer, smb_com);
+		if (cmd != SMBnegprot) {
+			DBG_ERR("Incorrect SMB1 command 0x%hhx, "
+				"should be SMBnegprot (0x72)\n",
+				cmd);
+			exit_server_cleanly("Invalid initial SMB1 packet");
+		}
+		/* Minimal process_smb(). */
+		show_msg((char *)buffer);
+		construct_reply(xconn,
+				(char *)buffer,
+				bufferlen,
+				0,
+				0,
+				false,
+				NULL);
+		xconn->client->sconn->trans_num++;
+		xconn->client->sconn->num_requests++;
+		return;
+
+	} else if (!smbd_is_smb2_header(buffer, bufferlen)) {
+		exit_server_cleanly("Invalid initial SMB2 packet");
+		return;
+	}
+
+	/* Here we know we're a valid SMB2 packet. */
+
+	/*
+	 * Point at the start of the SMB2 PDU.
+	 * len is the length of the SMB2 PDU.
+	 */
+
+	status = smbd_smb2_process_negprot(xconn,
+					   0,
+					   (const uint8_t *)buffer+NBT_HDR_SIZE,
+					   len);
+	if (!NT_STATUS_IS_OK(status)) {
+		exit_server_cleanly("SMB2 negprot fail");
+	}
+	return;
+}
+#endif
+
 static void smbd_smb1_server_connection_read_handler(
 	struct smbXsrv_connection *xconn, int fd)
 {
