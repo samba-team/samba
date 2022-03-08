@@ -597,7 +597,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	struct smbd_server_connection *sconn = req->sconn;
 	bool doencrypt = xconn->smb1.negprot.encrypted_passwords;
 	bool signing_allowed = false;
-	bool signing_mandatory = smb_signing_is_mandatory(
+	bool signing_mandatory = smb1_signing_is_mandatory(
 		xconn->smb1.signing_state);
 
 	START_PROFILE(SMBsesssetupX);

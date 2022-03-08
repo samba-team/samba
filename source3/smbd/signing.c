@@ -301,7 +301,7 @@ void srv_set_signing(struct smbXsrv_connection *conn,
 		return;
 
 	negotiated = smb_signing_is_negotiated(conn->smb1.signing_state);
-	mandatory = smb_signing_is_mandatory(conn->smb1.signing_state);
+	mandatory = smb1_signing_is_mandatory(conn->smb1.signing_state);
 
 	if (!negotiated && !mandatory) {
 		DEBUG(5,("srv_set_signing: signing negotiated = %u, "

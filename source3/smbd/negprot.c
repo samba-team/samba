@@ -344,7 +344,7 @@ static NTSTATUS reply_nt1(struct smb_request *req, uint16_t choice)
 	}
 
 	signing_desired = smb1_signing_is_desired(xconn->smb1.signing_state);
-	signing_required = smb_signing_is_mandatory(xconn->smb1.signing_state);
+	signing_required = smb1_signing_is_mandatory(xconn->smb1.signing_state);
 
 	if (signing_desired) {
 		secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
@@ -781,7 +781,7 @@ void reply_negprot(struct smb_request *req)
 	xconn->smb1.negprot.done = true;
 
 	/* We always have xconn->smb1.signing_state also for >= SMB2_02 */
-	signing_required = smb_signing_is_mandatory(xconn->smb1.signing_state);
+	signing_required = smb1_signing_is_mandatory(xconn->smb1.signing_state);
 	if (signing_required && (chosen_level < PROTOCOL_NT1)) {
 		exit_server_cleanly("SMB signing is required and "
 			"client negotiated a downlevel protocol");

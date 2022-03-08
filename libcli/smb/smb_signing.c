@@ -444,7 +444,7 @@ bool smb1_signing_is_desired(struct smb1_signing_state *si)
 	return si->desired;
 }
 
-bool smb_signing_is_mandatory(struct smb1_signing_state *si)
+bool smb1_signing_is_mandatory(struct smb1_signing_state *si)
 {
 	return si->mandatory;
 }
