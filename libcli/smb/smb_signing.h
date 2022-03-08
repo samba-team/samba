@@ -36,7 +36,7 @@ struct smb1_signing_state *smb1_signing_init_ex(TALLOC_CTX *mem_ctx,
 					      void (*free_fn)(TALLOC_CTX *, void *));
 uint32_t smb1_signing_next_seqnum(struct smb1_signing_state *si, bool oneway);
 void smb1_signing_cancel_reply(struct smb1_signing_state *si, bool oneway);
-NTSTATUS smb_signing_sign_pdu(struct smb1_signing_state *si,
+NTSTATUS smb1_signing_sign_pdu(struct smb1_signing_state *si,
 			      uint8_t *outhdr, size_t len,
 			      uint32_t seqnum);
 bool smb_signing_check_pdu(struct smb1_signing_state *si,

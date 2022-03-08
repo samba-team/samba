@@ -1675,7 +1675,7 @@ static NTSTATUS smb1cli_conn_signv(struct smbXcli_conn *conn,
 
 	*seqnum = smb1_signing_next_seqnum(conn->smb1.signing,
 					  one_way_seqnum);
-	status = smb_signing_sign_pdu(conn->smb1.signing,
+	status = smb1_signing_sign_pdu(conn->smb1.signing,
 				      buf,
 				      talloc_get_size(buf),
 				      *seqnum);

@@ -89,7 +89,7 @@ NTSTATUS srv_calculate_sign_mac(struct smbXsrv_connection *conn,
 	len = smb_len(outbuf);
 	outhdr = (uint8_t *)outbuf + NBT_HDR_SIZE;
 
-	return smb_signing_sign_pdu(conn->smb1.signing_state,
+	return smb1_signing_sign_pdu(conn->smb1.signing_state,
 				    outhdr,
 				    len,
 				    seqnum);

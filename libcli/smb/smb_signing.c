@@ -235,7 +235,7 @@ void smb1_signing_cancel_reply(struct smb1_signing_state *si, bool oneway)
 	}
 }
 
-NTSTATUS smb_signing_sign_pdu(struct smb1_signing_state *si,
+NTSTATUS smb1_signing_sign_pdu(struct smb1_signing_state *si,
 			      uint8_t *outhdr, size_t len,
 			      uint32_t seqnum)
 {
@@ -251,9 +251,9 @@ NTSTATUS smb_signing_sign_pdu(struct smb1_signing_state *si,
 
 	/* JRA Paranioa test - we should be able to get rid of this... */
 	if (len < (HDR_SS_FIELD + 8)) {
-		DEBUG(1,("smb_signing_sign_pdu: Logic error. "
+		DBG_WARNING("Logic error. "
 			 "Can't check signature on short packet! smb_len = %u\n",
-			 (unsigned)len));
+			 (unsigned)len);
 		abort();
 	}
 
@@ -296,7 +296,7 @@ NTSTATUS smb_signing_sign_pdu(struct smb1_signing_state *si,
 		}
 	}
 
-	DEBUG(10, ("smb_signing_sign_pdu: sent SMB signature of\n"));
+	DBG_DEBUG("sent SMB signature of\n");
 	dump_data(10, calc_md5_mac, 8);
 
 	memcpy(&outhdr[HDR_SS_FIELD], calc_md5_mac, 8);
