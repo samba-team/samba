@@ -2554,7 +2554,6 @@ static void smbd_server_connection_write_handler(
 	/* TODO: make write nonblocking */
 }
 
-#if 0
 static void smbd_smb2_server_connection_read_handler(
 			struct smbXsrv_connection *xconn, int fd)
 {
@@ -2669,7 +2668,6 @@ static void smbd_smb2_server_connection_read_handler(
 	}
 	return;
 }
-#endif
 
 static void smbd_smb1_server_connection_read_handler(
 	struct smbXsrv_connection *xconn, int fd)
@@ -2759,8 +2757,13 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 		return;
 	}
 	if (flags & TEVENT_FD_READ) {
-		smbd_smb1_server_connection_read_handler(xconn,
+		if (lp_server_min_protocol() > PROTOCOL_NT1) {
+			smbd_smb2_server_connection_read_handler(xconn,
 						xconn->transport.sock);
+		} else {
+			smbd_smb1_server_connection_read_handler(xconn,
+						xconn->transport.sock);
+		}
 		return;
 	}
 }
