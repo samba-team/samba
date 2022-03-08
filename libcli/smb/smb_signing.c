@@ -55,7 +55,7 @@ struct smb1_signing_state {
 	void (*free_fn)(TALLOC_CTX *mem_ctx, void *ptr);
 };
 
-static void smb_signing_reset_info(struct smb1_signing_state *si)
+static void smb1_signing_reset_info(struct smb1_signing_state *si)
 {
 	si->active = false;
 	si->seqnum = 0;
@@ -133,7 +133,7 @@ static bool smb_signing_good(struct smb1_signing_state *si,
 		/* Non-mandatory signing - just turn off if this is the first bad packet.. */
 		DEBUG(5, ("smb_signing_good: signing negotiated but not required and peer\n"
 			  "isn't sending correct signatures. Turning off.\n"));
-		smb_signing_reset_info(si);
+		smb1_signing_reset_info(si);
 		return true;
 	}
 
@@ -396,7 +396,7 @@ bool smb_signing_activate(struct smb1_signing_state *si,
 		return false;
 	}
 
-	smb_signing_reset_info(si);
+	smb1_signing_reset_info(si);
 
 	len = response.length + user_session_key.length;
 	if (si->alloc_fn) {
