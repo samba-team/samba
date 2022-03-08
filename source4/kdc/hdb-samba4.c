@@ -229,6 +229,7 @@ static krb5_error_code hdb_samba4_fetch_fast_cookie(krb5_context context,
 	ret = sdb_entry_ex_to_hdb_entry_ex(context,
 					   &sdb_entry_ex,
 					   entry_ex);
+	sdb_free_entry(&sdb_entry_ex);
 	TALLOC_FREE(mem_ctx);
 
 	return ret;
