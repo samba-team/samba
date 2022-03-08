@@ -542,6 +542,8 @@ struct smbXsrv_connection {
 		struct {
 			uint8_t read_body_padding;
 		} smbtorture;
+
+		bool signing_mandatory;
 	} smb2;
 };
 
