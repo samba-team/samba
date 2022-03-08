@@ -232,6 +232,25 @@ bool srv_init_signing(struct smbXsrv_connection *conn)
 	return true;
 }
 
+#if 0
+static bool smb2_srv_init_signing(struct smbXsrv_connection *conn)
+{
+	struct loadparm_context *lp_ctx = loadparm_init_s3(conn, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DBG_DEBUG("loadparm_init_s3 failed\n");
+		return false;
+	}
+
+	/*
+	 * For SMB2 all we need to know is if signing is mandatory.
+	 * It is always allowed and desired, whatever the smb.conf says.
+	 */
+	(void)lpcfg_server_signing_allowed(lp_ctx, &conn->smb2.signing_mandatory);
+	talloc_unlink(conn, lp_ctx);
+	return true;
+}
+#endif
+
 void srv_set_signing_negotiated(struct smbXsrv_connection *conn,
 				bool allowed, bool mandatory)
 {
