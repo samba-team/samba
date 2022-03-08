@@ -511,9 +511,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		}
 	}
 
-	if (S_ISFIFO(smb_fname->st.st_ex_mode)) {
-		open_flags |= O_NONBLOCK;
-	}
+	open_flags |= O_NONBLOCK;
 
 	status = fd_openat(dirfsp, smb_fname, fsp, open_flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
