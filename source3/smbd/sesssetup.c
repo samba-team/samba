@@ -621,11 +621,11 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	}
 
 	/*
-	 * We can call srv_set_signing_negotiated() each time.
+	 * We can call smb1_srv_set_signing_negotiated() each time.
 	 * It finds out when it needs to turn into a noop
 	 * itself.
 	 */
-	srv_set_signing_negotiated(xconn,
+	smb1_srv_set_signing_negotiated(xconn,
 				   signing_allowed,
 				   signing_mandatory);
 
