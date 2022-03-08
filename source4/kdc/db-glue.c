@@ -2743,6 +2743,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 
 	el = ldb_msg_find_element(skdc_entry->msg, "msDS-AllowedToDelegateTo");
 	if (el == NULL) {
+		ret = ENOENT;
 		goto bad_option;
 	}
 
@@ -2810,6 +2811,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 	}
 
 	if (!found) {
+		ret = ENOENT;
 		goto bad_option;
 	}
 
