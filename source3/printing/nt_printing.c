@@ -1098,8 +1098,9 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 
 	nt_status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_NOTICE("Can't open file [%s], errno =%d\n",
-			   smb_fname_str_dbg(smb_fname), errno);
+		DBG_NOTICE("Can't open file [%s]: %s\n",
+			   smb_fname_str_dbg(smb_fname),
+			   nt_errstr(nt_status));
 		*perr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
