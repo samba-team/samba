@@ -343,7 +343,7 @@ static NTSTATUS reply_nt1(struct smb_request *req, uint16_t choice)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	signing_desired = smb_signing_is_desired(xconn->smb1.signing_state);
+	signing_desired = smb1_signing_is_desired(xconn->smb1.signing_state);
 	signing_required = smb_signing_is_mandatory(xconn->smb1.signing_state);
 
 	if (signing_desired) {
