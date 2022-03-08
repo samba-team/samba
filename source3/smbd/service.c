@@ -861,7 +861,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 			signing_active = smb2_signing_key_valid(
 						session->global->encryption_key);
 		} else {
-			signing_active = srv_is_signing_active(xconn);
+			signing_active = smb1_srv_is_signing_active(xconn);
 		}
 		dbgtext( "%s", signing_active ? "signed " : "");
 		dbgtext( "connect to service %s ",

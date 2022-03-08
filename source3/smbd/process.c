@@ -502,7 +502,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	if (CVAL(lenbuf,0) == 0 && min_recv_size &&
 	    (smb_len_large(lenbuf) > /* Could be a UNIX large writeX. */
 		(min_recv_size + STANDARD_WRITE_AND_X_HEADER_SIZE)) &&
-	    !srv_is_signing_active(xconn) &&
+	    !smb1_srv_is_signing_active(xconn) &&
 	    xconn->smb1.echo_handler.trusted_fde == NULL) {
 
 		return receive_smb_raw_talloc_partial_read(
@@ -1458,7 +1458,7 @@ static void smb1srv_update_crypto_flags(struct smbXsrv_session *session,
 		encrypt_flag = SMBXSRV_PROCESSED_ENCRYPTED_PACKET;
 	}
 
-	if (srv_is_signing_active(req->xconn)) {
+	if (smb1_srv_is_signing_active(req->xconn)) {
 		sign_flag = SMBXSRV_PROCESSED_SIGNED_PACKET;
 	} else if ((type == SMBecho) || (type == SMBsesssetupX)) {
 		/*

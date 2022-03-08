@@ -3608,7 +3608,7 @@ void reply_readbraw(struct smb_request *req)
 
 	START_PROFILE(SMBreadbraw);
 
-	if (srv_is_signing_active(xconn) || req->encrypted) {
+	if (smb1_srv_is_signing_active(xconn) || req->encrypted) {
 		exit_server_cleanly("reply_readbraw: SMB signing/sealing is active - "
 			"raw reads/writes are disallowed.");
 	}
@@ -4286,7 +4286,7 @@ static size_t calc_max_read_pdu(const struct smb_request *req)
 		return xconn->smb1.sessions.max_send;
 	}
 
-	if (srv_is_signing_active(xconn)) {
+	if (smb1_srv_is_signing_active(xconn)) {
 		return 0x1FFFF;
 	}
 
@@ -4510,7 +4510,7 @@ void reply_writebraw(struct smb_request *req)
 	 */
 	SCVAL(discard_const_p(uint8_t, req->inbuf),smb_com,SMBwritec);
 
-	if (srv_is_signing_active(xconn)) {
+	if (smb1_srv_is_signing_active(xconn)) {
 		END_PROFILE(SMBwritebraw);
 		exit_server_cleanly("reply_writebraw: SMB signing is active - "
 				"raw reads/writes are disallowed.");

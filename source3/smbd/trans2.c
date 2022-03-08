@@ -3912,8 +3912,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		case SMB_QUERY_CIFS_UNIX_INFO:
 		{
 			bool large_write = lp_min_receive_file_size() &&
-					!srv_is_signing_active(xconn);
-			bool large_read = !srv_is_signing_active(xconn);
+					!smb1_srv_is_signing_active(xconn);
+			bool large_read = !smb1_srv_is_signing_active(xconn);
 			int encrypt_caps = 0;
 
 			if (!lp_smb1_unix_extensions()) {

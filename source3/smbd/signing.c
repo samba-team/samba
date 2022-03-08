@@ -270,7 +270,7 @@ void smb1_srv_set_signing_negotiated(struct smbXsrv_connection *conn,
  reads/writes if it is.
 ************************************************************/
 
-bool srv_is_signing_active(struct smbXsrv_connection *conn)
+bool smb1_srv_is_signing_active(struct smbXsrv_connection *conn)
 {
 	return smb1_signing_is_active(conn->smb1.signing_state);
 }
