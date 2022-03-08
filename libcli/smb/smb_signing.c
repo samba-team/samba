@@ -119,7 +119,7 @@ struct smb1_signing_state *smb1_signing_init(TALLOC_CTX *mem_ctx,
 				   NULL, NULL);
 }
 
-static bool smb_signing_good(struct smb1_signing_state *si,
+static bool smb1_signing_good(struct smb1_signing_state *si,
 			     bool good, uint32_t seq)
 {
 	if (good) {
@@ -131,14 +131,14 @@ static bool smb_signing_good(struct smb1_signing_state *si,
 
 	if (!si->mandatory && !si->active) {
 		/* Non-mandatory signing - just turn off if this is the first bad packet.. */
-		DEBUG(5, ("smb_signing_good: signing negotiated but not required and peer\n"
-			  "isn't sending correct signatures. Turning off.\n"));
+		DBG_INFO("signing negotiated but not required and peer\n"
+			  "isn't sending correct signatures. Turning off.\n");
 		smb1_signing_reset_info(si);
 		return true;
 	}
 
 	/* Mandatory signing or bad packet after signing started - fail and disconnect. */
-	DEBUG(0, ("smb_signing_good: BAD SIG: seq %u\n", (unsigned int)seq));
+	DBG_ERR("BAD SIG: seq %u\n", (unsigned int)seq);
 	return false;
 }
 
@@ -370,7 +370,7 @@ bool smb_signing_check_pdu(struct smb1_signing_state *si,
 		dump_data(10, reply_sent_mac, 8);
 	}
 
-	return smb_signing_good(si, good, seqnum);
+	return smb1_signing_good(si, good, seqnum);
 }
 
 bool smb_signing_activate(struct smb1_signing_state *si,
