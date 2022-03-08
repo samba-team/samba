@@ -29,7 +29,7 @@
  Called to validate an incoming packet from the client.
 ************************************************************/
 
-bool srv_check_sign_mac(struct smbXsrv_connection *conn,
+bool smb1_srv_check_sign_mac(struct smbXsrv_connection *conn,
 			const char *inbuf, uint32_t *seqnum,
 			bool trusted_channel)
 {

@@ -52,7 +52,7 @@ struct smbXsrv_client;
 struct smbXsrv_connection;
 struct dcesrv_context;
 
-bool srv_check_sign_mac(struct smbXsrv_connection *conn,
+bool smb1_srv_check_sign_mac(struct smbXsrv_connection *conn,
 			const char *inbuf, uint32_t *seqnum, bool trusted_channel);
 NTSTATUS srv_calculate_sign_mac(struct smbXsrv_connection *conn,
 				char *outbuf, uint32_t seqnum);

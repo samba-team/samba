@@ -574,7 +574,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(xconn, *buffer, seqnum, trusted_channel)) {
+	if (!smb1_srv_check_sign_mac(xconn, *buffer, seqnum, trusted_channel)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
 			  "incoming packet!\n"));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
