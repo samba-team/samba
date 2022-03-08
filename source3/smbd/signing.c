@@ -99,7 +99,7 @@ NTSTATUS smb1_srv_calculate_sign_mac(struct smbXsrv_connection *conn,
 /***********************************************************
  Called to indicate a oneway request
 ************************************************************/
-void srv_cancel_sign_response(struct smbXsrv_connection *conn)
+void smb1_srv_cancel_sign_response(struct smbXsrv_connection *conn)
 {
 	smb1_signing_cancel_reply(conn->smb1.signing_state, true);
 }

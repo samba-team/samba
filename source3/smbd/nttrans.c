@@ -1530,7 +1530,7 @@ void reply_ntcancel(struct smb_request *req)
 	 */
 
 	START_PROFILE(SMBntcancel);
-	srv_cancel_sign_response(xconn);
+	smb1_srv_cancel_sign_response(xconn);
 	found = remove_pending_change_notify_requests_by_mid(sconn, req->mid);
 	if (!found) {
 		smbd_smb1_brl_finish_by_mid(sconn, req->mid);
