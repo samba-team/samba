@@ -315,7 +315,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			 * Try and turn on server signing on the first non-guest
 			 * sessionsetup.
 			 */
-			srv_set_signing(xconn,
+			smb1_srv_set_signing(xconn,
 				session->global->signing_key->blob,
 				data_blob_null);
 		}
@@ -1055,7 +1055,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		 * Try and turn on server signing on the first non-guest
 		 * sessionsetup.
 		 */
-		srv_set_signing(xconn,
+		smb1_srv_set_signing(xconn,
 			session->global->signing_key->blob,
 			state->nt_resp.data ? state->nt_resp : state->lm_resp);
 	}

@@ -62,7 +62,7 @@ void smb1_srv_set_signing_negotiated(struct smbXsrv_connection *conn,
 			        bool allowed, bool mandatory);
 bool smb1_srv_is_signing_active(struct smbXsrv_connection *conn);
 bool smb1_srv_is_signing_negotiated(struct smbXsrv_connection *conn);
-void srv_set_signing(struct smbXsrv_connection *conn,
+void smb1_srv_set_signing(struct smbXsrv_connection *conn,
 		     const DATA_BLOB user_session_key,
 		     const DATA_BLOB response);
 

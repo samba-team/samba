@@ -290,7 +290,7 @@ bool smb1_srv_is_signing_negotiated(struct smbXsrv_connection *conn)
  Turn on signing from this packet onwards.
 ************************************************************/
 
-void srv_set_signing(struct smbXsrv_connection *conn,
+void smb1_srv_set_signing(struct smbXsrv_connection *conn,
 		     const DATA_BLOB user_session_key,
 		     const DATA_BLOB response)
 {
@@ -304,9 +304,9 @@ void srv_set_signing(struct smbXsrv_connection *conn,
 	mandatory = smb1_signing_is_mandatory(conn->smb1.signing_state);
 
 	if (!negotiated && !mandatory) {
-		DEBUG(5,("srv_set_signing: signing negotiated = %u, "
+		DBG_INFO("signing negotiated = %u, "
 			 "mandatory_signing = %u. Not allowing smb signing.\n",
-			 negotiated, mandatory));
+			 negotiated, mandatory);
 		return;
 	}
 
@@ -315,8 +315,8 @@ void srv_set_signing(struct smbXsrv_connection *conn,
 		return;
 	}
 
-	DEBUG(3,("srv_set_signing: turning on SMB signing: "
+	DBG_NOTICE("turning on SMB signing: "
 		 "signing negotiated = %u, mandatory_signing = %u.\n",
-		 negotiated, mandatory));
+		 negotiated, mandatory);
 }
 
