@@ -265,6 +265,7 @@ bool make_user_info_netlogon_interactive(TALLOC_CTX *mem_ctx,
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			(*user_info)->logon_parameters = logon_parameters;
+			(*user_info)->flags |= USER_INFO_INTERACTIVE_LOGON;
 		}
 
 		ret = NT_STATUS_IS_OK(nt_status) ? true : false;
