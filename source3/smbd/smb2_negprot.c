@@ -176,7 +176,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	uint32_t max_read = lp_smb2_max_read();
 	uint32_t max_write = lp_smb2_max_write();
 	NTTIME now = timeval_to_nttime(&req->request_time);
-	bool signing_required = true;
 	bool ok;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x24);
@@ -360,12 +359,12 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 
 	security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
 	/*
-	 * We use xconn->smb1.signing_state as that's already present
-	 * and used lpcfg_server_signing_allowed() to get the correct
+	 * We use xconn->smb2.signing_mandatory set up via
+	 * srv_init_signing() -> smb2_srv_init_signing().
+	 * This calls lpcfg_server_signing_allowed() to get the correct
 	 * defaults, e.g. signing_required for an ad_dc.
 	 */
-	signing_required = smb_signing_is_mandatory(xconn->smb1.signing_state);
-	if (signing_required) {
+	if (xconn->smb2.signing_mandatory) {
 		security_mode |= SMB2_NEGOTIATE_SIGNING_REQUIRED;
 	}
 
