@@ -22,36 +22,36 @@
 #ifndef _SMB_SIGNING_H_
 #define _SMB_SIGNING_H_
 
-struct smb_signing_state;
+struct smb1_signing_state;
 
-struct smb_signing_state *smb_signing_init(TALLOC_CTX *mem_ctx,
+struct smb1_signing_state *smb_signing_init(TALLOC_CTX *mem_ctx,
 					   bool allowed,
 					   bool desired,
 					   bool mandatory);
-struct smb_signing_state *smb_signing_init_ex(TALLOC_CTX *mem_ctx,
+struct smb1_signing_state *smb_signing_init_ex(TALLOC_CTX *mem_ctx,
 					      bool allowed,
 					      bool desired,
 					      bool mandatory,
 					      void *(*alloc_fn)(TALLOC_CTX *, size_t),
 					      void (*free_fn)(TALLOC_CTX *, void *));
-uint32_t smb_signing_next_seqnum(struct smb_signing_state *si, bool oneway);
-void smb_signing_cancel_reply(struct smb_signing_state *si, bool oneway);
-NTSTATUS smb_signing_sign_pdu(struct smb_signing_state *si,
+uint32_t smb_signing_next_seqnum(struct smb1_signing_state *si, bool oneway);
+void smb_signing_cancel_reply(struct smb1_signing_state *si, bool oneway);
+NTSTATUS smb_signing_sign_pdu(struct smb1_signing_state *si,
 			      uint8_t *outhdr, size_t len,
 			      uint32_t seqnum);
-bool smb_signing_check_pdu(struct smb_signing_state *si,
+bool smb_signing_check_pdu(struct smb1_signing_state *si,
 			   const uint8_t *inhdr, size_t len,
 			   uint32_t seqnum);
-bool smb_signing_activate(struct smb_signing_state *si,
+bool smb_signing_activate(struct smb1_signing_state *si,
 			  const DATA_BLOB user_session_key,
 			  const DATA_BLOB response);
-bool smb_signing_is_active(struct smb_signing_state *si);
-bool smb_signing_is_allowed(struct smb_signing_state *si);
-bool smb_signing_is_desired(struct smb_signing_state *si);
-bool smb_signing_is_mandatory(struct smb_signing_state *si);
-bool smb_signing_set_negotiated(struct smb_signing_state *si,
+bool smb_signing_is_active(struct smb1_signing_state *si);
+bool smb_signing_is_allowed(struct smb1_signing_state *si);
+bool smb_signing_is_desired(struct smb1_signing_state *si);
+bool smb_signing_is_mandatory(struct smb1_signing_state *si);
+bool smb_signing_set_negotiated(struct smb1_signing_state *si,
 				bool allowed, bool mandatory);
-bool smb_signing_is_negotiated(struct smb_signing_state *si);
+bool smb_signing_is_negotiated(struct smb1_signing_state *si);
 NTSTATUS smb_key_derivation(const uint8_t *KI,
 			    size_t KI_len,
 			    uint8_t KO[16]);

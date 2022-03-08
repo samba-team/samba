@@ -3443,7 +3443,7 @@ static void reply_readbraw_error(struct smbXsrv_connection *xconn)
  Ensure we don't use sendfile if server smb signing is active.
 ********************************************************************/
 
-static bool lp_use_sendfile(int snum, struct smb_signing_state *signing_state)
+static bool lp_use_sendfile(int snum, struct smb1_signing_state *signing_state)
 {
 	bool sign_active = false;
 

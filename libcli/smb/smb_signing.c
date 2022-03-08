@@ -27,9 +27,9 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-/* Used by the SMB signing functions. */
+/* Used by the SMB1 signing functions. */
 
-struct smb_signing_state {
+struct smb1_signing_state {
 	/* is signing localy allowed */
 	bool allowed;
 
@@ -55,7 +55,7 @@ struct smb_signing_state {
 	void (*free_fn)(TALLOC_CTX *mem_ctx, void *ptr);
 };
 
-static void smb_signing_reset_info(struct smb_signing_state *si)
+static void smb_signing_reset_info(struct smb1_signing_state *si)
 {
 	si->active = false;
 	si->seqnum = 0;
@@ -69,27 +69,27 @@ static void smb_signing_reset_info(struct smb_signing_state *si)
 	si->mac_key.length = 0;
 }
 
-struct smb_signing_state *smb_signing_init_ex(TALLOC_CTX *mem_ctx,
+struct smb1_signing_state *smb_signing_init_ex(TALLOC_CTX *mem_ctx,
 					      bool allowed,
 					      bool desired,
 					      bool mandatory,
 					      void *(*alloc_fn)(TALLOC_CTX *, size_t),
 					      void (*free_fn)(TALLOC_CTX *, void *))
 {
-	struct smb_signing_state *si;
+	struct smb1_signing_state *si;
 
 	if (alloc_fn) {
-		void *p = alloc_fn(mem_ctx, sizeof(struct smb_signing_state));
+		void *p = alloc_fn(mem_ctx, sizeof(struct smb1_signing_state));
 		if (p == NULL) {
 			return NULL;
 		}
-		memset(p, 0, sizeof(struct smb_signing_state));
-		si = (struct smb_signing_state *)p;
+		memset(p, 0, sizeof(struct smb1_signing_state));
+		si = (struct smb1_signing_state *)p;
 		si->mem_ctx = mem_ctx;
 		si->alloc_fn = alloc_fn;
 		si->free_fn = free_fn;
 	} else {
-		si = talloc_zero(mem_ctx, struct smb_signing_state);
+		si = talloc_zero(mem_ctx, struct smb1_signing_state);
 		if (si == NULL) {
 			return NULL;
 		}
@@ -110,7 +110,7 @@ struct smb_signing_state *smb_signing_init_ex(TALLOC_CTX *mem_ctx,
 	return si;
 }
 
-struct smb_signing_state *smb_signing_init(TALLOC_CTX *mem_ctx,
+struct smb1_signing_state *smb_signing_init(TALLOC_CTX *mem_ctx,
 					   bool allowed,
 					   bool desired,
 					   bool mandatory)
@@ -119,7 +119,7 @@ struct smb_signing_state *smb_signing_init(TALLOC_CTX *mem_ctx,
 				   NULL, NULL);
 }
 
-static bool smb_signing_good(struct smb_signing_state *si,
+static bool smb_signing_good(struct smb1_signing_state *si,
 			     bool good, uint32_t seq)
 {
 	if (good) {
@@ -204,7 +204,7 @@ static NTSTATUS smb_signing_md5(const DATA_BLOB *mac_key,
 	return NT_STATUS_OK;
 }
 
-uint32_t smb_signing_next_seqnum(struct smb_signing_state *si, bool oneway)
+uint32_t smb_signing_next_seqnum(struct smb1_signing_state *si, bool oneway)
 {
 	uint32_t seqnum;
 
@@ -222,7 +222,7 @@ uint32_t smb_signing_next_seqnum(struct smb_signing_state *si, bool oneway)
 	return seqnum;
 }
 
-void smb_signing_cancel_reply(struct smb_signing_state *si, bool oneway)
+void smb_signing_cancel_reply(struct smb1_signing_state *si, bool oneway)
 {
 	if (si->mac_key.length == 0) {
 		return;
@@ -235,7 +235,7 @@ void smb_signing_cancel_reply(struct smb_signing_state *si, bool oneway)
 	}
 }
 
-NTSTATUS smb_signing_sign_pdu(struct smb_signing_state *si,
+NTSTATUS smb_signing_sign_pdu(struct smb1_signing_state *si,
 			      uint8_t *outhdr, size_t len,
 			      uint32_t seqnum)
 {
@@ -307,7 +307,7 @@ NTSTATUS smb_signing_sign_pdu(struct smb_signing_state *si,
 	return NT_STATUS_OK;
 }
 
-bool smb_signing_check_pdu(struct smb_signing_state *si,
+bool smb_signing_check_pdu(struct smb1_signing_state *si,
 			   const uint8_t *inhdr, size_t len,
 			   uint32_t seqnum)
 {
@@ -373,7 +373,7 @@ bool smb_signing_check_pdu(struct smb_signing_state *si,
 	return smb_signing_good(si, good, seqnum);
 }
 
-bool smb_signing_activate(struct smb_signing_state *si,
+bool smb_signing_activate(struct smb1_signing_state *si,
 			  const DATA_BLOB user_session_key,
 			  const DATA_BLOB response)
 {
@@ -436,27 +436,27 @@ bool smb_signing_activate(struct smb_signing_state *si,
 	return true;
 }
 
-bool smb_signing_is_active(struct smb_signing_state *si)
+bool smb_signing_is_active(struct smb1_signing_state *si)
 {
 	return si->active;
 }
 
-bool smb_signing_is_allowed(struct smb_signing_state *si)
+bool smb_signing_is_allowed(struct smb1_signing_state *si)
 {
 	return si->allowed;
 }
 
-bool smb_signing_is_desired(struct smb_signing_state *si)
+bool smb_signing_is_desired(struct smb1_signing_state *si)
 {
 	return si->desired;
 }
 
-bool smb_signing_is_mandatory(struct smb_signing_state *si)
+bool smb_signing_is_mandatory(struct smb1_signing_state *si)
 {
 	return si->mandatory;
 }
 
-bool smb_signing_set_negotiated(struct smb_signing_state *si,
+bool smb_signing_set_negotiated(struct smb1_signing_state *si,
 				bool allowed, bool mandatory)
 {
 	if (si->active) {
@@ -499,7 +499,7 @@ bool smb_signing_set_negotiated(struct smb_signing_state *si,
 	return true;
 }
 
-bool smb_signing_is_negotiated(struct smb_signing_state *si)
+bool smb_signing_is_negotiated(struct smb1_signing_state *si)
 {
 	return si->negotiated;
 }

@@ -104,7 +104,7 @@ struct smbXcli_conn {
 
 		uint16_t mid;
 
-		struct smb_signing_state *signing;
+		struct smb1_signing_state *signing;
 		struct smb_trans_enc_state *trans_enc;
 
 		struct tevent_req *read_braw_req;

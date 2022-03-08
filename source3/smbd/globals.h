@@ -439,7 +439,7 @@ struct smbXsrv_connection {
 			 */
 			int max_send;
 		} sessions;
-		struct smb_signing_state *signing_state;
+		struct smb1_signing_state *signing_state;
 
 		struct {
 			uint16_t client_major;
