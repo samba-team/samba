@@ -852,10 +852,18 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	 */
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 2 ) ) {
+		bool signing_active;
+
 		dbgtext( "%s (%s) ", get_remote_machine_name(),
 			 tsocket_address_string(conn->sconn->remote_address,
 						talloc_tos()) );
-		dbgtext( "%s", srv_is_signing_active(xconn) ? "signed " : "");
+		if (sconn->using_smb2) {
+			signing_active = smb2_signing_key_valid(
+						session->global->encryption_key);
+		} else {
+			signing_active = srv_is_signing_active(xconn);
+		}
+		dbgtext( "%s", signing_active ? "signed " : "");
 		dbgtext( "connect to service %s ",
 			 lp_const_servicename(snum) );
 		dbgtext( "initially as user %s ",
