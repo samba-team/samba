@@ -65,7 +65,7 @@ bool srv_check_sign_mac(struct smbXsrv_connection *conn,
 		return true;
 	}
 
-	*seqnum = smb_signing_next_seqnum(conn->smb1.signing_state, false);
+	*seqnum = smb1_signing_next_seqnum(conn->smb1.signing_state, false);
 	return smb_signing_check_pdu(conn->smb1.signing_state,
 				     inhdr, len,
 				     *seqnum);

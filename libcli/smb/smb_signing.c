@@ -204,7 +204,7 @@ static NTSTATUS smb1_signing_md5(const DATA_BLOB *mac_key,
 	return NT_STATUS_OK;
 }
 
-uint32_t smb_signing_next_seqnum(struct smb1_signing_state *si, bool oneway)
+uint32_t smb1_signing_next_seqnum(struct smb1_signing_state *si, bool oneway)
 {
 	uint32_t seqnum;
 
