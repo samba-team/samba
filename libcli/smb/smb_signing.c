@@ -371,7 +371,7 @@ bool smb1_signing_check_pdu(struct smb1_signing_state *si,
 	return smb1_signing_good(si, good, seqnum);
 }
 
-bool smb_signing_activate(struct smb1_signing_state *si,
+bool smb1_signing_activate(struct smb1_signing_state *si,
 			  const DATA_BLOB user_session_key,
 			  const DATA_BLOB response)
 {
@@ -413,19 +413,19 @@ bool smb_signing_activate(struct smb1_signing_state *si,
 	ofs = 0;
 	memcpy(&si->mac_key.data[ofs], user_session_key.data, user_session_key.length);
 
-	DEBUG(10, ("smb_signing_activate: user_session_key\n"));
+	DBG_DEBUG("user_session_key\n");
 	dump_data(10, user_session_key.data, user_session_key.length);
 
 	if (response.length) {
 		ofs = user_session_key.length;
 		memcpy(&si->mac_key.data[ofs], response.data, response.length);
-		DEBUG(10, ("smb_signing_activate: response_data\n"));
+		DBG_DEBUG("response_data\n");
 		dump_data(10, response.data, response.length);
 	} else {
-		DEBUG(10, ("smb_signing_activate: NULL response_data\n"));
+		DBG_DEBUG("NULL response_data\n");
 	}
 
-	dump_data_pw("smb_signing_activate: mac key is:\n",
+	dump_data_pw("smb1_signing_activate: mac key is:\n",
 		     si->mac_key.data, si->mac_key.length);
 
 	/* Initialise the sequence number */

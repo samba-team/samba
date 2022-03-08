@@ -310,7 +310,7 @@ void srv_set_signing(struct smbXsrv_connection *conn,
 		return;
 	}
 
-	if (!smb_signing_activate(conn->smb1.signing_state,
+	if (!smb1_signing_activate(conn->smb1.signing_state,
 				  user_session_key, response)) {
 		return;
 	}

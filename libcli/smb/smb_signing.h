@@ -42,7 +42,7 @@ NTSTATUS smb1_signing_sign_pdu(struct smb1_signing_state *si,
 bool smb1_signing_check_pdu(struct smb1_signing_state *si,
 			   const uint8_t *inhdr, size_t len,
 			   uint32_t seqnum);
-bool smb_signing_activate(struct smb1_signing_state *si,
+bool smb1_signing_activate(struct smb1_signing_state *si,
 			  const DATA_BLOB user_session_key,
 			  const DATA_BLOB response);
 bool smb_signing_is_active(struct smb1_signing_state *si);
