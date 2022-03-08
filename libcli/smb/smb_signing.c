@@ -142,7 +142,7 @@ static bool smb1_signing_good(struct smb1_signing_state *si,
 	return false;
 }
 
-static NTSTATUS smb_signing_md5(const DATA_BLOB *mac_key,
+static NTSTATUS smb1_signing_md5(const DATA_BLOB *mac_key,
 				const uint8_t *hdr, size_t len,
 				uint32_t seq_number,
 				uint8_t calc_md5_mac[16])
@@ -159,7 +159,7 @@ static NTSTATUS smb_signing_md5(const DATA_BLOB *mac_key,
 	 * We do this here, to avoid modifying the packet.
 	 */
 
-	DEBUG(10,("smb_signing_md5: sequence number %u\n", seq_number ));
+	DBG_DEBUG("sequence number %u\n", seq_number );
 
 	SIVAL(sequence_buf, 0, seq_number);
 	SIVAL(sequence_buf, 4, 0);
@@ -286,7 +286,7 @@ NTSTATUS smb_signing_sign_pdu(struct smb1_signing_state *si,
 	} else {
 		NTSTATUS status;
 
-		status = smb_signing_md5(&si->mac_key,
+		status = smb1_signing_md5(&si->mac_key,
 				         outhdr,
 					 len,
 					 seqnum,
@@ -327,7 +327,7 @@ bool smb_signing_check_pdu(struct smb1_signing_state *si,
 		return false;
 	}
 
-	status = smb_signing_md5(&si->mac_key,
+	status = smb1_signing_md5(&si->mac_key,
 				 inhdr,
 				 len,
 				 seqnum,
@@ -352,7 +352,7 @@ bool smb_signing_check_pdu(struct smb1_signing_state *si,
 		dump_data(5, reply_sent_mac, 8);
 
 		for (i = -sign_range; i < sign_range; i++) {
-			smb_signing_md5(&si->mac_key, inhdr, len,
+			smb1_signing_md5(&si->mac_key, inhdr, len,
 					seqnum+i, calc_md5_mac);
 			if (memcmp(reply_sent_mac, calc_md5_mac, 8) == 0) {
 				DEBUG(0,("smb_signing_check_pdu: "
