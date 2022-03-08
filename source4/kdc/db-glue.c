@@ -576,7 +576,7 @@ fail:
 static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    struct samba_kdc_db_context *kdc_db_ctx,
 						    TALLOC_CTX *mem_ctx,
-						    struct ldb_message *msg,
+						    const struct ldb_message *msg,
 						    uint32_t rid,
 						    bool is_rodc,
 						    uint32_t userAccountControl,
