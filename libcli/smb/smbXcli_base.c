@@ -6138,7 +6138,7 @@ NTSTATUS smb1cli_session_protect_session_key(struct smbXcli_session *session)
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	status = smb_key_derivation(session->smb1.application_key.data,
+	status = smb1_key_derivation(session->smb1.application_key.data,
 				    session->smb1.application_key.length,
 				    session->smb1.application_key.data);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -997,11 +997,11 @@ void reply_tcon_and_X(struct smb_request *req)
 		if (tcon_flags & TCONX_FLAG_EXTENDED_SIGNATURES) {
 			NTSTATUS status;
 
-			status = smb_key_derivation(x->global->application_key_blob.data,
+			status = smb1_key_derivation(x->global->application_key_blob.data,
 						    x->global->application_key_blob.length,
 						    x->global->application_key_blob.data);
 			if (!NT_STATUS_IS_OK(status)) {
-				DBG_ERR("smb_key_derivation failed: %s\n",
+				DBG_ERR("smb1_key_derivation failed: %s\n",
 					nt_errstr(status));
 				END_PROFILE(SMBtconX);
 				return;
