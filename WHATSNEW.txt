@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fourth release candidate of Samba 4.16.  This is *not*
+This is the fifth release candidate of Samba 4.16.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -172,6 +172,37 @@ smb.conf changes
   rpc_daemon                              Removed
   rpc_server                              Removed
   rpc start on demand helpers             Added           true
+
+
+CHANGES SINCE 4.16.0rc4
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14737: Samba does not response STATUS_INVALID_PARAMETER when opening 2
+     objects with same lease key.
+
+o  Jule Anger <janger@samba.org>
+   * BUG 14999: Listing shares with smbstatus no longer works.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14996: Fix ldap simple bind with TLS auditing.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14995: Use Heimdal 8.0 (pre) rather than an earlier snapshot.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14989: Fix a use-after-free in SMB1 server.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14865: Uncached logon on RODC always fails once.
+   * BUG 14984: Changing the machine password against an RODC likely destroys
+     the domain join.
+   * BUG 14993: authsam_make_user_info_dc() steals memory from its struct
+     ldb_message *msg argument.
+   * BUG 14995: Use Heimdal 8.0 (pre) rather than an earlier snapshot.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 14995: Use Heimdal 8.0 (pre) rather than an earlier snapshot.
 
 
 CHANGES SINCE 4.16.0rc3
