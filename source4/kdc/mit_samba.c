@@ -1044,7 +1044,7 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 						    &requester_sid_blob,
 						    &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			code = EINVAL;
+			code = KRB5KDC_ERR_TGT_REVOKED;
 			goto done;
 		}
 
