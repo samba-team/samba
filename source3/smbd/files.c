@@ -475,7 +475,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 
 	fsp->fsp_flags.is_pathref = true;
 	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-		fsp->fsp_flags.is_directory = true;
 		open_flags |= O_DIRECTORY;
 	}
 
@@ -558,6 +557,8 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	 * from the handle.
 	 */
 	smb_fname->st = fsp->fsp_name->st;
+
+	fsp->fsp_flags.is_directory = S_ISDIR(fsp->fsp_name->st.st_ex_mode);
 
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 
