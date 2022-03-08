@@ -213,7 +213,7 @@ static bool smb1_srv_init_signing(struct smbXsrv_connection *conn)
 			return false;
 		}
 		talloc_set_destructor(s, smbd_shm_signing_destructor);
-		conn->smb1.signing_state = smb_signing_init_ex(s,
+		conn->smb1.signing_state = smb1_signing_init_ex(s,
 							allowed, desired, mandatory,
 							smbd_shm_signing_alloc,
 							smbd_shm_signing_free);

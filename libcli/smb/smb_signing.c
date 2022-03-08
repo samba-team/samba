@@ -69,7 +69,7 @@ static void smb1_signing_reset_info(struct smb1_signing_state *si)
 	si->mac_key.length = 0;
 }
 
-struct smb1_signing_state *smb_signing_init_ex(TALLOC_CTX *mem_ctx,
+struct smb1_signing_state *smb1_signing_init_ex(TALLOC_CTX *mem_ctx,
 					      bool allowed,
 					      bool desired,
 					      bool mandatory,
@@ -115,7 +115,7 @@ struct smb1_signing_state *smb_signing_init(TALLOC_CTX *mem_ctx,
 					   bool desired,
 					   bool mandatory)
 {
-	return smb_signing_init_ex(mem_ctx, allowed, desired, mandatory,
+	return smb1_signing_init_ex(mem_ctx, allowed, desired, mandatory,
 				   NULL, NULL);
 }
 
