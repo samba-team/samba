@@ -474,9 +474,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	ZERO_STRUCT(conn->sconn->fsp_fi_cache);
 
 	fsp->fsp_flags.is_pathref = true;
-	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-		open_flags |= O_DIRECTORY;
-	}
 
 	full_fname = full_path_from_dirfsp_atname(fsp,
 						  dirfsp,
