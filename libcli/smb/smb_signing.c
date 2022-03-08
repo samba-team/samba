@@ -492,7 +492,7 @@ bool smb1_signing_set_negotiated(struct smb1_signing_state *si,
 	return true;
 }
 
-bool smb_signing_is_negotiated(struct smb1_signing_state *si)
+bool smb1_signing_is_negotiated(struct smb1_signing_state *si)
 {
 	return si->negotiated;
 }

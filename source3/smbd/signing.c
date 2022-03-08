@@ -283,7 +283,7 @@ bool srv_is_signing_active(struct smbXsrv_connection *conn)
 
 bool srv_is_signing_negotiated(struct smbXsrv_connection *conn)
 {
-	return smb_signing_is_negotiated(conn->smb1.signing_state);
+	return smb1_signing_is_negotiated(conn->smb1.signing_state);
 }
 
 /***********************************************************
@@ -300,7 +300,7 @@ void srv_set_signing(struct smbXsrv_connection *conn,
 	if (!user_session_key.length)
 		return;
 
-	negotiated = smb_signing_is_negotiated(conn->smb1.signing_state);
+	negotiated = smb1_signing_is_negotiated(conn->smb1.signing_state);
 	mandatory = smb1_signing_is_mandatory(conn->smb1.signing_state);
 
 	if (!negotiated && !mandatory) {
