@@ -54,10 +54,6 @@
 	((krb5_kvno)((((uint32_t)kvno) & 0xFFFF) | \
 	 ((((uint32_t)krbtgt) << 16) & 0xFFFF0000)))
 
-enum samba_kdc_ent_type
-{ SAMBA_KDC_ENT_TYPE_CLIENT, SAMBA_KDC_ENT_TYPE_SERVER,
-  SAMBA_KDC_ENT_TYPE_KRBTGT, SAMBA_KDC_ENT_TYPE_TRUST, SAMBA_KDC_ENT_TYPE_ANY };
-
 enum trust_direction {
 	UNKNOWN = 0,
 	INBOUND = LSA_TRUST_DIRECTION_INBOUND,
@@ -573,18 +569,18 @@ fail:
 	return ret;
 }
 
-static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
-						    TALLOC_CTX *mem_ctx,
-						    const struct ldb_message *msg,
-						    bool is_krbtgt,
-						    bool is_rodc,
-						    uint32_t userAccountControl,
-						    enum samba_kdc_ent_type ent_type,
-						    unsigned flags,
-						    krb5_kvno requested_kvno,
-						    struct sdb_entry *entry,
-						    const uint32_t supported_enctypes_in,
-						    uint32_t *supported_enctypes_out)
+krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
+					     TALLOC_CTX *mem_ctx,
+					     const struct ldb_message *msg,
+					     bool is_krbtgt,
+					     bool is_rodc,
+					     uint32_t userAccountControl,
+					     enum samba_kdc_ent_type ent_type,
+					     unsigned flags,
+					     krb5_kvno requested_kvno,
+					     struct sdb_entry *entry,
+					     const uint32_t supported_enctypes_in,
+					     uint32_t *supported_enctypes_out)
 {
 	krb5_error_code ret = 0;
 	enum ndr_err_code ndr_err;

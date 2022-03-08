@@ -24,6 +24,34 @@
 struct sdb_keys;
 struct sdb_entry;
 
+struct samba_kdc_base_context;
+struct samba_kdc_db_context;
+struct samba_kdc_entry;
+
+enum samba_kdc_ent_type {
+	SAMBA_KDC_ENT_TYPE_CLIENT,
+	SAMBA_KDC_ENT_TYPE_SERVER,
+	SAMBA_KDC_ENT_TYPE_KRBTGT,
+	SAMBA_KDC_ENT_TYPE_TRUST,
+	SAMBA_KDC_ENT_TYPE_ANY
+};
+
+/*
+ * This allows DSDB to parse Kerberos keys without duplicating this
+ * difficulty
+ */
+krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
+					     TALLOC_CTX *mem_ctx,
+					     const struct ldb_message *msg,
+					     bool is_krbtgt,
+					     bool is_rodc,
+					     uint32_t userAccountControl,
+					     enum samba_kdc_ent_type ent_type,
+					     unsigned flags,
+					     krb5_kvno requested_kvno,
+					     struct sdb_entry *entry,
+					     const uint32_t supported_enctypes_in,
+					     uint32_t *supported_enctypes_out);
 
 int samba_kdc_set_fixed_keys(krb5_context context,
 			     const struct ldb_val *secretbuffer,
