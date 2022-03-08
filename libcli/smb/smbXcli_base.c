@@ -949,7 +949,7 @@ static NTSTATUS smbXcli_req_cancel_write_req(struct tevent_req *req)
 		 * pending, we're able to recover the signing
 		 * state.
 		 */
-		smb_signing_cancel_reply(conn->smb1.signing,
+		smb1_signing_cancel_reply(conn->smb1.signing,
 					 state->smb1.one_way_seqnum);
 		return NT_STATUS_OK;
 	}

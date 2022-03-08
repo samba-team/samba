@@ -222,7 +222,7 @@ uint32_t smb1_signing_next_seqnum(struct smb1_signing_state *si, bool oneway)
 	return seqnum;
 }
 
-void smb_signing_cancel_reply(struct smb1_signing_state *si, bool oneway)
+void smb1_signing_cancel_reply(struct smb1_signing_state *si, bool oneway)
 {
 	if (si->mac_key.length == 0) {
 		return;

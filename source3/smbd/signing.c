@@ -101,7 +101,7 @@ NTSTATUS srv_calculate_sign_mac(struct smbXsrv_connection *conn,
 ************************************************************/
 void srv_cancel_sign_response(struct smbXsrv_connection *conn)
 {
-	smb_signing_cancel_reply(conn->smb1.signing_state, true);
+	smb1_signing_cancel_reply(conn->smb1.signing_state, true);
 }
 
 struct smbd_shm_signing {
