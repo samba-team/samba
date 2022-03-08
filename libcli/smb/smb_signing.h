@@ -39,7 +39,7 @@ void smb1_signing_cancel_reply(struct smb1_signing_state *si, bool oneway);
 NTSTATUS smb1_signing_sign_pdu(struct smb1_signing_state *si,
 			      uint8_t *outhdr, size_t len,
 			      uint32_t seqnum);
-bool smb_signing_check_pdu(struct smb1_signing_state *si,
+bool smb1_signing_check_pdu(struct smb1_signing_state *si,
 			   const uint8_t *inhdr, size_t len,
 			   uint32_t seqnum);
 bool smb_signing_activate(struct smb1_signing_state *si,

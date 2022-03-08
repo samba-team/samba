@@ -307,7 +307,7 @@ NTSTATUS smb1_signing_sign_pdu(struct smb1_signing_state *si,
 	return NT_STATUS_OK;
 }
 
-bool smb_signing_check_pdu(struct smb1_signing_state *si,
+bool smb1_signing_check_pdu(struct smb1_signing_state *si,
 			   const uint8_t *inhdr, size_t len,
 			   uint32_t seqnum)
 {
@@ -321,9 +321,9 @@ bool smb_signing_check_pdu(struct smb1_signing_state *si,
 	}
 
 	if (len < (HDR_SS_FIELD + 8)) {
-		DEBUG(1,("smb_signing_check_pdu: Can't check signature "
+		DBG_WARNING("Can't check signature "
 			 "on short packet! smb_len = %u\n",
-			 (unsigned)len));
+			 (unsigned)len);
 		return false;
 	}
 
@@ -345,28 +345,26 @@ bool smb_signing_check_pdu(struct smb1_signing_state *si,
 		int i;
 		const int sign_range = 5;
 
-		DEBUG(5, ("smb_signing_check_pdu: BAD SIG: wanted SMB signature of\n"));
+		DBG_INFO("BAD SIG: wanted SMB signature of\n");
 		dump_data(5, calc_md5_mac, 8);
 
-		DEBUG(5, ("smb_signing_check_pdu: BAD SIG: got SMB signature of\n"));
+		DBG_INFO("BAD SIG: got SMB signature of\n");
 		dump_data(5, reply_sent_mac, 8);
 
 		for (i = -sign_range; i < sign_range; i++) {
 			smb1_signing_md5(&si->mac_key, inhdr, len,
 					seqnum+i, calc_md5_mac);
 			if (memcmp(reply_sent_mac, calc_md5_mac, 8) == 0) {
-				DEBUG(0,("smb_signing_check_pdu: "
-					 "out of seq. seq num %u matches. "
+				DBG_ERR("out of seq. seq num %u matches. "
 					 "We were expecting seq %u\n",
 					 (unsigned int)seqnum+i,
-					 (unsigned int)seqnum));
+					 (unsigned int)seqnum);
 				break;
 			}
 		}
 	} else {
-		DEBUG(10, ("smb_signing_check_pdu: seq %u: "
-			   "got good SMB signature of\n",
-			   (unsigned int)seqnum));
+		DBG_DEBUG("seq %u: got good SMB signature of\n",
+			   (unsigned int)seqnum);
 		dump_data(10, reply_sent_mac, 8);
 	}
 

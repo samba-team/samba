@@ -48,16 +48,16 @@ bool srv_check_sign_mac(struct smbXsrv_connection *conn,
 		NTSTATUS status;
 
 		if (len < (HDR_SS_FIELD + 8)) {
-			DEBUG(1,("smb_signing_check_pdu: Can't check signature "
+			DBG_WARNING("Can't check signature "
 				 "on short packet! smb_len = %u\n",
-				 (unsigned)len));
+				 (unsigned)len);
 			return false;
 		}
 
 		status = NT_STATUS(IVAL(inhdr, HDR_SS_FIELD + 4));
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1,("smb_signing_check_pdu: trusted channel passed %s\n",
-				 nt_errstr(status)));
+			DBG_WARNING("trusted channel passed %s\n",
+				 nt_errstr(status));
 			return false;
 		}
 
@@ -66,7 +66,7 @@ bool srv_check_sign_mac(struct smbXsrv_connection *conn,
 	}
 
 	*seqnum = smb1_signing_next_seqnum(conn->smb1.signing_state, false);
-	return smb_signing_check_pdu(conn->smb1.signing_state,
+	return smb1_signing_check_pdu(conn->smb1.signing_state,
 				     inhdr, len,
 				     *seqnum);
 }

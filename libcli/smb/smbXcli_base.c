@@ -801,7 +801,7 @@ bool smb1cli_conn_check_signing(struct smbXcli_conn *conn,
 	const uint8_t *hdr = buf + NBT_HDR_SIZE;
 	size_t len = smb_len_nbt(buf);
 
-	return smb_signing_check_pdu(conn->smb1.signing, hdr, len, seqnum);
+	return smb1_signing_check_pdu(conn->smb1.signing, hdr, len, seqnum);
 }
 
 bool smb1cli_conn_signing_is_active(struct smbXcli_conn *conn)
@@ -2295,7 +2295,7 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	state = tevent_req_data(req, struct smbXcli_req_state);
 
 	if (!oplock_break /* oplock breaks are not signed */
-	    && !smb_signing_check_pdu(conn->smb1.signing,
+	    && !smb1_signing_check_pdu(conn->smb1.signing,
 				      inhdr, len, state->smb1.seqnum+1)) {
 		DEBUG(10, ("cli_check_sign_mac failed\n"));
 		return NT_STATUS_ACCESS_DENIED;
