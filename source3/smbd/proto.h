@@ -54,7 +54,7 @@ struct dcesrv_context;
 
 bool smb1_srv_check_sign_mac(struct smbXsrv_connection *conn,
 			const char *inbuf, uint32_t *seqnum, bool trusted_channel);
-NTSTATUS srv_calculate_sign_mac(struct smbXsrv_connection *conn,
+NTSTATUS smb1_srv_calculate_sign_mac(struct smbXsrv_connection *conn,
 				char *outbuf, uint32_t seqnum);
 void srv_cancel_sign_response(struct smbXsrv_connection *conn);
 bool srv_init_signing(struct smbXsrv_connection *conn);

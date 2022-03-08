@@ -234,7 +234,7 @@ bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
 		NTSTATUS status;
 
 		/* Sign the outgoing packet if required. */
-		status = srv_calculate_sign_mac(xconn, buf_out, seqnum);
+		status = smb1_srv_calculate_sign_mac(xconn, buf_out, seqnum);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Failed to calculate signing mac: %s\n",
 				nt_errstr(status));

@@ -75,7 +75,7 @@ bool smb1_srv_check_sign_mac(struct smbXsrv_connection *conn,
  Called to sign an outgoing packet to the client.
 ************************************************************/
 
-NTSTATUS srv_calculate_sign_mac(struct smbXsrv_connection *conn,
+NTSTATUS smb1_srv_calculate_sign_mac(struct smbXsrv_connection *conn,
 				char *outbuf, uint32_t seqnum)
 {
 	uint8_t *outhdr;
