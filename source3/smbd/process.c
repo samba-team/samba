@@ -2554,7 +2554,7 @@ static void smbd_server_connection_write_handler(
 	/* TODO: make write nonblocking */
 }
 
-static void smbd_server_connection_read_handler(
+static void smbd_smb1_server_connection_read_handler(
 	struct smbXsrv_connection *xconn, int fd)
 {
 	uint8_t *inbuf = NULL;
@@ -2642,7 +2642,8 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 		return;
 	}
 	if (flags & TEVENT_FD_READ) {
-		smbd_server_connection_read_handler(xconn, xconn->transport.sock);
+		smbd_smb1_server_connection_read_handler(xconn,
+						xconn->transport.sock);
 		return;
 	}
 }
@@ -2670,7 +2671,7 @@ static void smbd_server_echo_handler(struct tevent_context *ev,
 		return;
 	}
 	if (flags & TEVENT_FD_READ) {
-		smbd_server_connection_read_handler(
+		smbd_smb1_server_connection_read_handler(
 			xconn, xconn->smb1.echo_handler.trusted_fd);
 		return;
 	}
