@@ -281,7 +281,7 @@ bool smb1_srv_is_signing_active(struct smbXsrv_connection *conn)
  in the negprot.
 ************************************************************/
 
-bool srv_is_signing_negotiated(struct smbXsrv_connection *conn)
+bool smb1_srv_is_signing_negotiated(struct smbXsrv_connection *conn)
 {
 	return smb1_signing_is_negotiated(conn->smb1.signing_state);
 }

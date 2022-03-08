@@ -307,7 +307,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				register_homes_share(session_info->unix_info->unix_name);
 		}
 
-		if (srv_is_signing_negotiated(xconn) &&
+		if (smb1_srv_is_signing_negotiated(xconn) &&
 		    is_authenticated &&
 		    smb2_signing_key_valid(session->global->signing_key))
 		{
@@ -1047,7 +1047,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			register_homes_share(session_info->unix_info->unix_name);
 	}
 
-	if (srv_is_signing_negotiated(xconn) &&
+	if (smb1_srv_is_signing_negotiated(xconn) &&
 	    is_authenticated &&
 	    smb2_signing_key_valid(session->global->signing_key))
 	{
