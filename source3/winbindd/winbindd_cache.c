@@ -4644,16 +4644,22 @@ static bool wcache_ndr_key(TALLOC_CTX *mem_ctx, const char *domain_name,
 static bool wcache_opnum_cacheable(uint32_t opnum)
 {
 	switch (opnum) {
-	case NDR_WBINT_PING:
-	case NDR_WBINT_QUERYSEQUENCENUMBER:
-	case NDR_WBINT_ALLOCATEUID:
-	case NDR_WBINT_ALLOCATEGID:
-	case NDR_WBINT_CHECKMACHINEACCOUNT:
-	case NDR_WBINT_CHANGEMACHINEACCOUNT:
-	case NDR_WBINT_PINGDC:
-		return false;
+	case NDR_WBINT_LOOKUPSID:
+	case NDR_WBINT_LOOKUPSIDS:
+	case NDR_WBINT_LOOKUPNAME:
+	case NDR_WBINT_SIDS2UNIXIDS:
+	case NDR_WBINT_UNIXIDS2SIDS:
+	case NDR_WBINT_GETNSSINFO:
+	case NDR_WBINT_LOOKUPUSERALIASES:
+	case NDR_WBINT_LOOKUPUSERGROUPS:
+	case NDR_WBINT_LOOKUPGROUPMEMBERS:
+	case NDR_WBINT_QUERYGROUPLIST:
+	case NDR_WBINT_QUERYUSERRIDLIST:
+	case NDR_WBINT_DSGETDCNAME:
+	case NDR_WBINT_LOOKUPRIDS:
+		return true;
 	}
-	return true;
+	return false;
 }
 
 bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
