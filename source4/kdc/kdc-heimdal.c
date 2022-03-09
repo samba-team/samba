@@ -423,6 +423,13 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 	kdc_config->require_pac = true;
 
 	/*
+	 * By default we enable RFC6113/FAST support,
+	 * but we have an option to disable in order to
+	 * test against a KDC with FAST support.
+	 */
+	kdc_config->enable_fast = lpcfg_kdc_enable_fast(task->lp_ctx);
+
+	/*
 	 * Match Windows and RFC6113 and Windows but break older
 	 * Heimdal clients.
 	 */

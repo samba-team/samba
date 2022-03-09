@@ -449,11 +449,15 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	*supported_enctypes_out = 0;
 
 	if (rid == DOMAIN_RID_KRBTGT || is_rodc) {
+		bool enable_fast;
+
 		/* KDCs (and KDCs on RODCs) use AES */
 		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
 
-		/* KDCs support FAST */
-		supported_enctypes |= ENC_FAST_SUPPORTED;
+		enable_fast = lpcfg_kdc_enable_fast(kdc_db_ctx->lp_ctx);
+		if (enable_fast) {
+			supported_enctypes |= ENC_FAST_SUPPORTED;
+		}
 	} else if (userAccountControl & (UF_PARTIAL_SECRETS_ACCOUNT|UF_SERVER_TRUST_ACCOUNT)) {
 		/* DCs and RODCs comptuer accounts use AES */
 		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
