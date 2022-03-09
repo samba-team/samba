@@ -1,0 +1,15 @@
+<samba:parameter name="kdc enable fast"
+                 type="boolean"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>With the Samba 4.16 the embedded Heimdal KDC brings
+	support for RFC6113 FAST, which wasn't available in
+	older Samba versions.</para>
+
+	<para>This option is mostly for testing and currently only applies
+	if the embedded Heimdal KDC is used.</para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>
