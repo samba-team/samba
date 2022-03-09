@@ -2,13 +2,13 @@
 
 outfile="$(dirname $0)/winbindd.stp"
 
-child_funcs="winbindd_dual_ping
-winbindd_dual_init_connection
+child_funcs="winbindd_dual_init_connection
 winbindd_dual_pam_auth
 winbindd_dual_pam_auth_crap
 winbindd_dual_pam_logoff
 winbindd_dual_pam_chng_pswd_auth_crap
 winbindd_dual_pam_chauthtok
+_wbint_Ping
 _wbint_ListTrustedDomains
 _wbint_LookupSid
 _wbint_LookupSids
