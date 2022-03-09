@@ -572,13 +572,13 @@ static int check_for_converted_path(TALLOC_CTX *mem_ctx,
  * This function does two things.
  *
  * 1). Checks if an incoming filename is already a
- * snapshot converted pathname.
+ *     snapshot converted pathname.
  *     If so, it returns the pathname truncated
  *     at the snapshot point which will be used
  *     as the connectpath, and then does an early return.
  *
  * 2). Checks if an incoming filename contains an
- * SMB-layer @GMT- style timestamp.
+ *     SMB-layer @GMT- style timestamp.
  *     If so, it strips the timestamp, and returns
  *     both the timestamp and the stripped path
  *     (making it cwd-relative).
