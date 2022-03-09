@@ -891,7 +891,8 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 
   out:
 	fsp->fsp_name = orig_fsp_name;
-	if (fsp->base_fsp != NULL) {
+
+	if (orig_base_fsp_name != NULL) {
 		/* Save off the temporary name. */
 		struct smb_filename *base_smb_fname_rel =
 			fsp->base_fsp->fsp_name;
