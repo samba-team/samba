@@ -13,7 +13,7 @@ interface winbind
 {
   /* Private methods */
 
-    void wbint_Ping(
+    NTSTATUS wbint_Ping(
 	[in] uint32 in_data,
 	[out] uint32 *out_data
 	);

@@ -40,9 +40,10 @@
 #include "libsmb/dsgetdcname.h"
 #include "lib/global_contexts.h"
 
-void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
+NTSTATUS _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {
 	*r->out.out_data = r->in.in_data;
+	return NT_STATUS_OK;
 }
 
 bool reset_cm_connection_on_error(struct winbindd_domain *domain,
