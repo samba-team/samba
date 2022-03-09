@@ -1666,12 +1666,15 @@ plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '
                                            '--option=torture:krb5-service=http'],
                          "samba4.krb5.kdc with account having identical UPN and SPN")
 for env in ["fl2008r2dc", "fl2003dc"]:
+    fast_support = have_fast_support
+    if env in ["fl2003dc"]:
+        fast_support = 0
     planoldpythontestsuite(env, "samba.tests.krb5.as_req_tests",
                            environ={
                                'ADMIN_USERNAME': '$USERNAME',
                                'ADMIN_PASSWORD': '$PASSWORD',
                                'STRICT_CHECKING': '0',
-                               'FAST_SUPPORT': have_fast_support,
+                               'FAST_SUPPORT': fast_support,
                                'TKT_SIG_SUPPORT': tkt_sig_support,
                                'EXPECT_PAC': expect_pac,
                                'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,

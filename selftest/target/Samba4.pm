@@ -1655,6 +1655,7 @@ sub provision_fl2000dc($$)
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2000...\n";
 	my $extra_conf_options = "
+	kdc enable fast = no
 	spnego:simulate_w2k=yes
 	ntlmssp_server:force_old_spnego=yes
 ";
@@ -1698,6 +1699,7 @@ sub provision_fl2003dc($$$)
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2003...\n";
 	my $extra_conf_options = "allow dns updates = nonsecure and secure
+	kdc enable fast = no
 	dcesrv:header signing = no
 	dcesrv:max auth states = 0
 	dns forwarder = $ip_addr1 [$ip_addr2]:54";
