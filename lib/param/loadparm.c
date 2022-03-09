@@ -2695,6 +2695,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "krb5 port", "88");
 	lpcfg_do_global_parameter(lp_ctx, "kpasswd port", "464");
 
+	lpcfg_do_global_parameter(lp_ctx, "kdc enable fast", "True");
+
 	lpcfg_do_global_parameter(lp_ctx, "nt status support", "True");
 
 	lpcfg_do_global_parameter(lp_ctx, "max wins ttl", "518400"); /* 6 days */
