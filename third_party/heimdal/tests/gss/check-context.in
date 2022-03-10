@@ -159,14 +159,10 @@ mv ${keytabfile} ${keytabfile}.no
 echo "checking non existant keytabfile (krb5)" ; > messages.log
 ${context} --mech-type=krb5 host@lucid.test.h5l.se  > test_context.log 2>&1 && \
 	{ eval "$testfailed"; }
-grep ${keytabfile} test_context.log > /dev/null || \
-	{ echo "string missing failed"; cat test_context.log ; eval "$testfailed"; }
 echo "checking non existant keytabfile (spengo)" ; > messages.log
 ${context} --mech-type=spnego --mech-types=spnego,krb5 \
 	host@lucid.test.h5l.se > test_context.log 2>&1 && \
 	{ eval "$testfailed"; }
-grep ${keytabfile} test_context.log > /dev/null || \
-	{ echo "string missing failed"; cat test_context.log ; eval "$testfailed"; }
 
 mv ${keytabfile}.no ${keytabfile}
 

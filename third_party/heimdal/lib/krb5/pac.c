@@ -458,7 +458,7 @@ krb5_pac_add_buffer(krb5_context context, krb5_pac p,
  */
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_pac_get_buffer(krb5_context context, krb5_pac p,
+krb5_pac_get_buffer(krb5_context context, krb5_const_pac p,
 		    uint32_t type, krb5_data *data)
 {
     krb5_error_code ret;
@@ -508,7 +508,7 @@ static struct {
  */
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-_krb5_pac_get_buffer_by_name(krb5_context context, krb5_pac p,
+_krb5_pac_get_buffer_by_name(krb5_context context, krb5_const_pac p,
 			     const krb5_data *name, krb5_data *data)
 {
     size_t i;
@@ -531,7 +531,7 @@ _krb5_pac_get_buffer_by_name(krb5_context context, krb5_pac p,
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_pac_get_types(krb5_context context,
-		   krb5_pac p,
+		   krb5_const_pac p,
 		   size_t *len,
 		   uint32_t **types)
 {
@@ -1573,7 +1573,7 @@ out:
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_pac_get_kdc_checksum_info(krb5_context context,
-			       krb5_pac pac,
+			       krb5_const_pac pac,
 			       krb5_cksumtype *cstype,
 			       uint16_t *rodc_id)
 {
@@ -1628,7 +1628,7 @@ out:
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_pac_get_canon_principal(krb5_context context,
-			      krb5_pac pac,
+			      krb5_const_pac pac,
 			      krb5_principal *canon_princ)
 {
     *canon_princ = NULL;
@@ -1644,7 +1644,7 @@ _krb5_pac_get_canon_principal(krb5_context context,
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_pac_get_attributes_info(krb5_context context,
-			      krb5_pac pac,
+			      krb5_const_pac pac,
 			      uint64_t *pac_attributes)
 {
     *pac_attributes = 0;

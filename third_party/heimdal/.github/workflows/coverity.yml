@@ -1,0 +1,68 @@
+name: Linux Coverity Build
+
+on:
+    push:
+      # Pushes to this branch get the scan-build treatment
+      branches:
+         - 'coverity*'
+
+jobs:
+    linux:
+        if: secrets.COVERITY_SCAN_TOKEN != ''
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                name: [linux-clang]
+                include:
+                    - name: linux-clang
+                      os: ubuntu-18.04
+                      compiler: clang
+        steps:
+            - name: Clone repository
+              uses: actions/checkout@v1
+            - name: Install packages
+              if: startsWith(matrix.os, 'ubuntu')
+              run: |
+                sudo apt-get update -qq
+                sudo apt-get install -y bison comerr-dev flex libcap-ng-dev libdb-dev libedit-dev libjson-perl libldap2-dev libncurses5-dev libperl4-corelibs-perl libsqlite3-dev libkeyutils-dev pkg-config python ss-dev texinfo unzip netbase keyutils ldap-utils gdb apport curl libmicrohttpd-dev clang-tools clang-format jq valgrind
+                # Temporary workaround for:
+                # https://github.com/actions/virtual-environments/issues/3185
+                sudo hostname localhost
+            - name: Download Coverity Build Tool
+              env:
+                  TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+              run: |
+                  wget -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=$TOKEN&project=ruby" -O cov-analysis-linux64.tar.gz
+                  mkdir cov-analysis-linux64
+                  tar xzf cov-analysis-linux64.tar.gz --strip 1 -C cov-analysis-linux64
+            - name: Build
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+                CONFIGURE_OPTS:  ${{ matrix.configureopts }}
+              run: |
+                /bin/sh ./autogen.sh
+                mkdir build
+                cd build
+                ../configure --srcdir=`dirname "$PWD"` --enable-maintainer-mode --enable-developer --with-ldap $CONFIGURE_OPTS --prefix=$HOME/inst CFLAGS="-Wno-error=shadow -Wno-error=bad-function-cast -Wno-error=unused-function -Wno-error=unused-result -Wno-error=deprecated-declarations"
+                ulimit -c unlimited
+                # We don't want to scan-build libedit nor SQLite3 because ETOOSLOW
+                (cd lib/libedit && make -j4)
+                (cd lib/sqlite && make -j4)
+                export PATH=`pwd`/cov-analysis-linux64/bin:$PATH
+                cov-build --dir cov-int make -j4
+            - name: Submit the result to Coverity Scan
+              env:
+                  TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+                  EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
+                  PROJECT: ${{ secrets.COVERITY_SCAN_PROJECT }}
+              run: |
+                  tar czvf heimdal.tgz cov-int
+                  curl \
+                  --form project=ruby \
+                  --form token=$TOKEN \
+                  --form email=$EMAIL \
+                  --form file=@heimdal.tgz \
+                  --form version=trunk \
+                  --form description="`./ruby -v`" "https://scan.coverity.com/builds?project=$PROJECT"

@@ -106,6 +106,7 @@ struct krb5_kdc_service {
     unsigned int use_strongest_server_key : 1;			\
 								\
     unsigned int require_pac : 1;				\
+    unsigned int enable_fast : 1;				\
     unsigned int enable_armored_pa_enc_timestamp : 1
 
 #ifndef __KDC_LOCL_H__
