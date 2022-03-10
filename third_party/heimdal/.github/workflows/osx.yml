@@ -1,0 +1,122 @@
+name: OS X Build
+
+on:
+    push:
+      branches:
+         - 'master'
+         - 'osx-build'
+         - 'heimdal-7-1-branch'
+      paths:
+         - '!docs/**'
+         - '!**.md'
+         - '!**.[1-9]'
+         - '**.[chly]'
+         - '**.hin'
+         - '**.in'
+         - '**.am'
+         - '**.m4'
+         - '**.ac'
+         - '**.pl'
+         - '**.py'
+         - '**.asn1'
+         - '**.opt'
+         - '**/COPYING'
+         - '**/INSTALL'
+         - '**/README*'
+         - '.github/workflows/osx.yml'
+         - '!appveyor.yml'
+         - '!.travis.yml'
+
+    pull_request:
+      paths:
+         - '!docs/**'
+         - '!**.md'
+         - '!**.[1-9]'
+         - '**.[chly]'
+         - '**.hin'
+         - '**.in'
+         - '**.am'
+         - '**.m4'
+         - '**.ac'
+         - '**.pl'
+         - '**.py'
+         - '**.asn1'
+         - '**.opt'
+         - '**/COPYING'
+         - '**/INSTALL'
+         - '**/README*'
+         - '.github/workflows/osx.yml'
+         - '!appveyor.yml'
+         - '!.travis.yml'
+
+jobs:
+    osx:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                name: [osx-clang]
+                include:
+                    - name: osx-clang
+                      os: macos-latest
+                      compiler: clang
+        steps:
+            - name: Install packages
+              run: |
+                echo "bison, flex, ncurses, texinfo, and unzip are in the base OS."
+                echo "berkeley-db, perl, python, curl, and jq are installed in the"
+                echo "base image already."
+                brew install autoconf automake libtool cpanm
+                sudo cpanm install JSON
+            - name: Clone repository
+              uses: actions/checkout@v1
+            - name: Build
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+                CONFIGURE_OPTS:  ${{ matrix.configureopts }}
+              run: |
+                /bin/sh ./autogen.sh
+                mkdir build
+                cd build
+                ../configure --srcdir=`dirname "$PWD"` --disable-afs-support --enable-maintainer-mode --enable-developer $CONFIGURE_OPTS --prefix=$HOME/inst CFLAGS="-Wno-error=shadow -Wno-error=bad-function-cast -Wno-error=unused-function -Wno-error=unused-result -Wno-error=deprecated-declarations" CFLAGS="-O0 -g -ggdb3"
+                ulimit -c unlimited
+                make -j4
+            #- name: Setup upterm session
+            #  uses: lhotari/action-upterm@v1
+            #  with:
+            #      limit-access-to-actor: true
+            - name: Test
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+                CONFIGURE_OPTS:  ${{ matrix.configureopts }}
+              run: |
+                set -vx
+                sudo lsof -nP -i:49188 || true
+                cd build
+                make check
+            - name: Install
+              run: |
+                cd build || true
+                make DESTDIR=/tmp/h5l install
+                cd /tmp/h5l
+                tar czf $HOME/heimdal-install-osx.tgz .
+            - name: Test logs
+              run: |
+                find build -depth -name \*.trs|xargs grep -lw FAIL|sed -e 's/trs$/log/' | cpio -o > $HOME/logs-osx.cpio
+                find build -name \*.trs|xargs grep -lw FAIL|sed -e 's/trs$/log/'|xargs cat
+            - name: Failed Test logs
+              if: ${{ failure() }}
+              run: |
+                find build -name \*.trs|xargs grep -lw FAIL|sed -e 's/trs$/log/'|xargs cat
+            - name: Upload Install Tarball
+              uses: actions/upload-artifact@v2
+              with:
+                name: Install Tarball
+                path: '~/heimdal-install-osx.tgz'
+            - name: Upload Artifacts
+              uses: actions/upload-artifact@v2
+              with:
+                name: Upload Test Logs
+                path: '~/logs-osx.cpio'

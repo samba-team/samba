@@ -1,0 +1,92 @@
+name: Windows Build
+
+on:
+    push:
+      branches:
+         - 'master'
+         - 'heimdal-7-1-branch'
+      paths:
+         - '!docs/**'
+         - '!**.md'
+         - '!**.[1-9]'
+         - '**.[chly]'
+         - '**.hin'
+         - '**.in'
+         - '**.pl'
+         - '**.py'
+         - '**.asn1'
+         - '**.opt'
+         - '**.w32'
+         - '**/NTMakefile*'
+         - '**/COPYING'
+         - '**/INSTALL'
+         - '**/README*'
+         - '.github/workflows/windows.yml'
+         - '!appveyor.yml'
+         - '!.travis.yml'
+
+    pull_request:
+      paths:
+         - '!docs/**'
+         - '!**.md'
+         - '!**.[1-9]'
+         - '**.[chly]'
+         - '**.hin'
+         - '**.in'
+         - '**.pl'
+         - '**.py'
+         - '**.asn1'
+         - '**.opt'
+         - '**.w32'
+         - '**/NTMakefile'
+         - '**/COPYING'
+         - '**/INSTALL'
+         - '**/README*'
+         - '.github/workflows/windows.yml'
+         - '!appveyor.yml'
+         - '!.travis.yml'
+
+jobs:
+    windows:
+        runs-on: windows-latest
+        env:
+            APPVER: '10.0'
+            CODESIGN_PKT: 0000000000000000
+            INSTALL_DIR: C:\heimdal
+            WINSDKVER: '10.0.22000.0'
+            WIXDIR: 'c:\Program Files (x86)\Windows Installer XML v3.5'
+        steps:
+            - name: Clone repository
+              uses: actions/checkout@v1
+            - name: Find MSVC and run vcvarsall.bat
+              uses: ilammy/msvc-dev-cmd@v1
+              with:
+                arch: amd64
+            - name: Build and Test
+              shell: cmd
+              run: |
+                set PATH=%PATH%;C:\msys64\usr\bin;C:\Program Files (x86)\HTML Help Workshop;C:\program files (x86)\windows installer xml v3.5\bin;C:\cygwin\bin
+                set CODESIGN_PKT=0000000000000000
+                set dbg__type=Debug
+                mkdir %INSTALL_DIR%
+                pacman --noconfirm -S zstd
+                pacman --noconfirm -S autoconf
+                pacman --noconfirm -S automake
+                pacman --noconfirm -S flex
+                pacman --noconfirm -S bison
+                pacman --noconfirm -S perl
+                pacman --noconfirm -S perl-JSON
+                set PATH=%PATH%;%wix%bin
+                title Heimdal Build %CPU% %dbg__type%
+                set "PATH=%PATH%;C:\Perl64\bin;C:\tools\cygwin\bin;C:\Program Files (x86)\HTML Help Workshop"
+                set "PATH=%PATH%;C:/msys64/usr/bin"
+                set "PATH=%PATH%;C:\program files (x86)\windows installer xml v3.5\bin;C:\cygwin\bin"
+                set "PATH=%PATH%;C:\Python310-x64"
+                echo PATH=%PATH%
+                nmake /f NTMakefile APPVEYOR=1 MAKEINFO=makeinfo NO_INSTALLERS=1
+                nmake /f NTMakefile APPVEYOR=1 MAKEINFO=makeinfo NO_INSTALLERS=1 test
+            - name: Upload Artifacts
+              uses: actions/upload-artifact@v2
+              with:
+                name: Objects
+                path: 'D:/a/heimdal/heimdal/out/'

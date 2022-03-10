@@ -1,0 +1,71 @@
+name: Linux Valgrind Tests Build
+
+on:
+    push:
+      # Pushes to the valgrind branch get the valgrind treatment
+      branches:
+         - 'valgrind*'
+
+    pull_request:
+      # Changing this build also gets it to run
+      paths:
+         - '.github/workflows/valgrind.yml'
+
+jobs:
+    unix:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                name: [linux-clang]
+                include:
+                    - name: linux-clang
+                      os: ubuntu-18.04
+                      compiler: clang
+        steps:
+            - name: Clone repository
+              uses: actions/checkout@v1
+            - name: Install packages
+              if: startsWith(matrix.os, 'ubuntu')
+              run: |
+                sudo apt-get update -qq
+                sudo apt-get install -y bison comerr-dev flex libcap-ng-dev lmdb-utils liblmdb-dev libdb-dev libedit-dev libjson-perl libldap2-dev libncurses5-dev libperl4-corelibs-perl libsqlite3-dev libkeyutils-dev pkg-config python ss-dev texinfo unzip netbase keyutils ldap-utils gdb apport curl libmicrohttpd-dev jq valgrind
+                # Temporary workaround for:
+                # https://github.com/actions/virtual-environments/issues/3185
+                sudo hostname localhost
+            - name: Build
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+                CONFIGURE_OPTS:  ${{ matrix.configureopts }}
+                CHECK_TESTER_NO_VALGRIND:  'no-valgrind'
+              run: |
+                /bin/sh ./autogen.sh
+                mkdir build
+                cd build
+                ../configure --srcdir=`dirname "$PWD"` --enable-maintainer-mode --enable-developer --with-ldap $CONFIGURE_OPTS --prefix=$HOME/inst CFLAGS="-g -ggdb3 -O0 -Wno-error=shadow -Wno-error=bad-function-cast -Wno-error=unused-function -Wno-error=unused-result -Wno-error=deprecated-declarations"
+                make -j4
+            - name: Test
+              env:
+                CC: ${{ matrix.compiler }}
+                MAKEVARS: ${{ matrix.makevars }}
+              run: |
+                cd build
+                ulimit -c unlimited
+                make check-valgrind
+            - name: Valgrind output
+              run: |
+                find . -name \*.log -print0|xargs -0 grep '^==[0-9]*== ' || true
+            - name: Test logs
+              run: |
+                find build -depth -name \*.log | sed -e 's/trs$/log/' | tar -czf $HOME/logs-linux-valgrind.tgz --verbatim-files-from --files-from -
+                find build -name \*.trs|xargs grep -lw FAIL | sed -e 's/trs$/log/' | xargs cat
+            - name: Failed Test logs
+              if: ${{ failure() }}
+              run: |
+                find build -name \*.trs|xargs grep -lw FAIL | sed -e 's/trs$/log/' | xargs cat
+            - name: Upload Artifacts
+              uses: actions/upload-artifact@v2
+              with:
+                name: Test Logs
+                path: '~/logs-linux-valgrind.tgz'

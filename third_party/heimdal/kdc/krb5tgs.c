@@ -902,6 +902,9 @@ validate_fast_ad(astgs_request_t r, krb5_authdata *auth_data)
 
     krb5_data_zero(&data);
 
+    if (!r->config->enable_fast)
+	return 0;
+
     ret = _krb5_get_ad(r->context, auth_data, NULL,
 		       KRB5_AUTHDATA_FX_FAST_USED, &data);
     if (ret == 0) {

@@ -755,6 +755,9 @@ _kdc_fast_unwrap_request(astgs_request_t r,
     const PA_DATA *pa;
     int i = 0;
 
+    if (!r->config->enable_fast)
+	return 0;
+
     ret = fast_unwrap_request(r, tgs_ticket, tgs_ac);
     if (ret)
 	return ret;
