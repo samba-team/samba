@@ -631,9 +631,7 @@ static uint32_t dos_mode_from_name(connection_struct *conn,
 		}
 
 		/* Only . and .. are not hidden. */
-		if ((p[0] == '.') &&
-		    !((p[1] == '\0') || (p[1] == '.' && p[2] == '\0')))
-		{
+		if ((p[0] == '.') && !(ISDOT(p) || ISDOTDOT(p))) {
 			result |= FILE_ATTRIBUTE_HIDDEN;
 		}
 	}
