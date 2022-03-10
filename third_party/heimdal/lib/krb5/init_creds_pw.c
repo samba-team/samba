@@ -3394,7 +3394,6 @@ init_creds_step(krb5_context context,
 
     ret = _krb5_fast_wrap_req(context,
 			      &ctx->fast_state,
-			      NULL,
 			      &req2);
 
     krb5_data_free(&checksum_data);

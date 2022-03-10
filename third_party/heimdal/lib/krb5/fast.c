@@ -413,8 +413,14 @@ _krb5_fast_create_armor(krb5_context context,
     }
 
     if (state->type == choice_PA_FX_FAST_REQUEST_armored_data) {
-	if (state->armor_crypto)
+	if (state->armor_crypto) {
 	    krb5_crypto_destroy(context, state->armor_crypto);
+	    state->armor_crypto = NULL;
+	}
+	if (state->strengthen_key) {
+	    krb5_free_keyblock(context, state->strengthen_key);
+	    state->strengthen_key = NULL;
+	}
 	krb5_free_keyblock_contents(context, &state->armor_key);
 
 	/*
@@ -455,14 +461,15 @@ _krb5_fast_create_armor(krb5_context context,
 krb5_error_code
 _krb5_fast_wrap_req(krb5_context context,
 		    struct krb5_fast_state *state,
-		    krb5_data *checksum_data,
 		    KDC_REQ *req)
 {
     PA_FX_FAST_REQUEST fxreq;
     krb5_error_code ret;
     KrbFastReq fastreq;
-    krb5_data data, aschecksum_data;
+    krb5_data data, aschecksum_data, tgschecksum_data;
+    const krb5_data *checksum_data = NULL;
     size_t size = 0;
+    krb5_boolean readd_padata_to_outer = FALSE;
 
     if (state->flags & KRB5_FAST_DISABLED) {
 	_krb5_debug(context, 10, "fast disabled, not doing any fast wrapping");
@@ -473,6 +480,7 @@ _krb5_fast_wrap_req(krb5_context context,
     memset(&fastreq, 0, sizeof(fastreq));
     krb5_data_zero(&data);
     krb5_data_zero(&aschecksum_data);
+    krb5_data_zero(&tgschecksum_data);
 
     if (state->armor_crypto == NULL)
 	return check_fast(context, state);
@@ -511,8 +519,6 @@ _krb5_fast_wrap_req(krb5_context context,
 	ALLOC(req->req_body.till, 1);
 	*req->req_body.till = 0;
 
-	heim_assert(checksum_data == NULL, "checksum data not NULL");
-
 	ASN1_MALLOC_ENCODE(KDC_REQ_BODY,
 			   aschecksum_data.data,
 			   aschecksum_data.length,
@@ -523,14 +529,63 @@ _krb5_fast_wrap_req(krb5_context context,
 	heim_assert(aschecksum_data.length == size, "ASN.1 internal error");
 
 	checksum_data = &aschecksum_data;
+
+	if (req->padata) {
+	    ret = copy_METHOD_DATA(req->padata, &fastreq.padata);
+	    free_METHOD_DATA(req->padata);
+	    if (ret)
+		goto out;
+	}
+    } else {
+	const PA_DATA *tgs_req_ptr = NULL;
+	int tgs_req_idx = 0;
+	size_t i;
+
+	heim_assert(req->padata != NULL, "req->padata is NULL");
+
+	tgs_req_ptr = krb5_find_padata(req->padata->val,
+				       req->padata->len,
+				       KRB5_PADATA_TGS_REQ,
+				       &tgs_req_idx);
+	heim_assert(tgs_req_ptr != NULL, "KRB5_PADATA_TGS_REQ not found");
+	heim_assert(tgs_req_idx == 0, "KRB5_PADATA_TGS_REQ not first");
+
+	tgschecksum_data.data = tgs_req_ptr->padata_value.data;
+	tgschecksum_data.length = tgs_req_ptr->padata_value.length;
+	checksum_data = &tgschecksum_data;
+
+	/*
+	 * Now copy all remaining once to
+	 * the fastreq.padata and clear
+	 * them in the outer req first,
+	 * and remember to readd them later.
+	 */
+	readd_padata_to_outer = TRUE;
+
+	for (i = 1; i < req->padata->len; i++) {
+	    PA_DATA *val = &req->padata->val[i];
+
+	    ret = krb5_padata_add(context,
+				  &fastreq.padata,
+				  val->padata_type,
+				  val->padata_value.data,
+				  val->padata_value.length);
+	    if (ret) {
+		krb5_set_error_message(context, ret,
+				       N_("malloc: out of memory", ""));
+		goto out;
+	    }
+	    val->padata_value.data = NULL;
+	    val->padata_value.length = 0;
+	}
+
+	/*
+	 * Only TGS-REQ remaining
+	 */
+	req->padata->len = 1;
     }
 
-    if (req->padata) {
-	ret = copy_METHOD_DATA(req->padata, &fastreq.padata);
-	free_METHOD_DATA(req->padata);
-	if (ret)
-	    goto out;
-    } else {
+    if (req->padata == NULL) {
 	ALLOC(req->padata, 1);
 	if (req->padata == NULL) {
 	    ret = krb5_enomem(context);
@@ -585,6 +640,27 @@ _krb5_fast_wrap_req(krb5_context context,
     if (ret)
 	goto out;
     krb5_data_zero(&data);
+
+    if (readd_padata_to_outer) {
+	size_t i;
+
+	for (i = 0; i < fastreq.padata.len; i++) {
+	    PA_DATA *val = &fastreq.padata.val[i];
+
+	    ret = krb5_padata_add(context,
+				  req->padata,
+				  val->padata_type,
+				  val->padata_value.data,
+				  val->padata_value.length);
+	    if (ret) {
+		krb5_set_error_message(context, ret,
+				       N_("malloc: out of memory", ""));
+		goto out;
+	    }
+	    val->padata_value.data = NULL;
+	    val->padata_value.length = 0;
+	}
+    }
 
  out:
     free_KrbFastReq(&fastreq);
