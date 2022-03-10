@@ -537,7 +537,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 #if KRB5_KDB_DAL_MAJOR_VERSION < 9
 krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 				    krb5_context context,
-				    int flags,
+				    int kdc_flags,
 				    krb5_const_principal client_principal,
 				    krb5_db_entry *client,
 				    krb5_db_entry *server,
@@ -547,27 +547,14 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 {
 	TALLOC_CTX *tmp_ctx;
 	krb5_error_code code;
-	NTSTATUS nt_status;
-	DATA_BLOB *pac_blob = NULL;
-	DATA_BLOB *upn_blob = NULL;
-	DATA_BLOB *deleg_blob = NULL;
 	struct samba_kdc_entry *client_skdc_entry = NULL;
 	struct samba_kdc_entry *krbtgt_skdc_entry = NULL;
 	struct samba_kdc_entry *server_skdc_entry = NULL;
+	krb5_principal delegated_proxy_principal = NULL;
+	krb5_pac new_pac = NULL;
 	bool is_in_db = false;
 	bool is_untrusted = false;
-	size_t num_types = 0;
-	uint32_t *types = NULL;
-	uint32_t forced_next_type = 0;
-	size_t i = 0;
-	ssize_t logon_info_idx = -1;
-	ssize_t delegation_idx = -1;
-	ssize_t logon_name_idx = -1;
-	ssize_t upn_dns_info_idx = -1;
-	ssize_t srv_checksum_idx = -1;
-	ssize_t kdc_checksum_idx = -1;
-	krb5_pac new_pac = NULL;
-	bool ok;
+	uint32_t flags = SAMBA_KDC_FLAG_SKIP_PAC_BUFFER;
 
 	/* Create a memory context early so code can use talloc_stackframe() */
 	tmp_ctx = talloc_named(ctx, 0, "mit_samba_reget_pac context");
@@ -579,15 +566,6 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 		client_skdc_entry =
 			talloc_get_type_abort(client->e_data,
 					      struct samba_kdc_entry);
-
-		/*
-		 * Check the objectSID of the client and pac data are the same.
-		 * Does a parse and SID check, but no crypto.
-		 */
-		code = samba_kdc_validate_pac_blob(context, client_skdc_entry, *pac);
-		if (code != 0) {
-			goto done;
-		}
 	}
 
 	if (server == NULL) {
@@ -598,13 +576,6 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 	server_skdc_entry =
 		talloc_get_type_abort(server->e_data,
 				      struct samba_kdc_entry);
-
-	/* The account may be set not to want the PAC */
-	ok = samba_princ_needs_pac(server_skdc_entry);
-	if (!ok) {
-		code = EINVAL;
-		goto done;
-	}
 
 	if (krbtgt == NULL) {
 		code = EINVAL;
@@ -622,323 +593,50 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 	}
 
 	if (is_untrusted) {
-		if (client == NULL) {
-			code = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-			goto done;
-		}
-
-		nt_status = samba_kdc_get_pac_blobs(tmp_ctx,
-						    client_skdc_entry,
-						    &pac_blob,
-						    NULL,
-						    &upn_blob,
-						    NULL,
-						    0,
-						    NULL,
-						    NULL);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			code = EINVAL;
-			goto done;
-		}
-	} else {
-		struct PAC_SIGNATURE_DATA *pac_srv_sig;
-		struct PAC_SIGNATURE_DATA *pac_kdc_sig;
-
-		pac_blob = talloc_zero(tmp_ctx, DATA_BLOB);
-		if (pac_blob == NULL) {
-			code = ENOMEM;
-			goto done;
-		}
-
-		pac_srv_sig = talloc_zero(tmp_ctx, struct PAC_SIGNATURE_DATA);
-		if (pac_srv_sig == NULL) {
-			code = ENOMEM;
-			goto done;
-		}
-
-		pac_kdc_sig = talloc_zero(tmp_ctx, struct PAC_SIGNATURE_DATA);
-		if (pac_kdc_sig == NULL) {
-			code = ENOMEM;
-			goto done;
-		}
-
-		nt_status = samba_kdc_update_pac_blob(tmp_ctx,
-						      context,
-						      krbtgt_skdc_entry->kdc_db_ctx->samdb,
-						      *pac,
-						      pac_blob,
-						      pac_srv_sig,
-						      pac_kdc_sig);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("Update PAC blob failed: %s\n",
-				  nt_errstr(nt_status)));
-			code = EINVAL;
-			goto done;
-		}
-
-		if (is_in_db) {
-			/*
-			 * Now check the KDC signature, fetching the correct
-			 * key based on the enc type.
-			 */
-			code = check_pac_checksum(pac_srv_sig->signature,
-						  pac_kdc_sig,
-						  context,
-						  krbtgt_keyblock);
-			if (code != 0) {
-				DBG_INFO("PAC KDC signature failed to verify\n");
-				goto done;
-			}
-		}
+		flags |=  SAMBA_KDC_FLAG_KRBTGT_IS_UNTRUSTED;
 	}
 
-	if (flags & KRB5_KDB_FLAG_CONSTRAINED_DELEGATION) {
-		deleg_blob = talloc_zero(tmp_ctx, DATA_BLOB);
-		if (deleg_blob == NULL) {
-			code = ENOMEM;
-			goto done;
-		}
+	if (is_in_db) {
+		flags |= SAMBA_KDC_FLAG_KRBTGT_IN_DB;
 
-		nt_status = samba_kdc_update_delegation_info_blob(tmp_ctx,
-								  context,
-								  *pac,
-								  server->princ,
-								  discard_const(client_principal),
-								  deleg_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("Update delegation info failed: %s\n",
-				  nt_errstr(nt_status)));
-			code = EINVAL;
-			goto done;
-		}
 	}
 
-	/* Check the types of the given PAC */
-	code = krb5_pac_get_types(context, *pac, &num_types, &types);
-	if (code != 0) {
-		goto done;
-	}
-
-	for (i = 0; i < num_types; i++) {
-		switch (types[i]) {
-		case PAC_TYPE_LOGON_INFO:
-			if (logon_info_idx != -1) {
-				DBG_WARNING("logon type[%u] twice [%zd] and [%zu]: \n",
-					    types[i],
-					    logon_info_idx,
-					    i);
-				SAFE_FREE(types);
-				code = EINVAL;
-				goto done;
-			}
-			logon_info_idx = i;
-			break;
-		case PAC_TYPE_CONSTRAINED_DELEGATION:
-			if (delegation_idx != -1) {
-				DBG_WARNING("logon type[%u] twice [%zd] and [%zu]: \n",
-					    types[i],
-					    delegation_idx,
-					    i);
-				SAFE_FREE(types);
-				code = EINVAL;
-				goto done;
-			}
-			delegation_idx = i;
-			break;
-		case PAC_TYPE_LOGON_NAME:
-			if (logon_name_idx != -1) {
-				DBG_WARNING("logon type[%u] twice [%zd] and [%zu]: \n",
-					    types[i],
-					    logon_name_idx,
-					    i);
-				SAFE_FREE(types);
-				code = EINVAL;
-				goto done;
-			}
-			logon_name_idx = i;
-			break;
-		case PAC_TYPE_UPN_DNS_INFO:
-			if (upn_dns_info_idx != -1) {
-				DBG_WARNING("logon type[%u] twice [%zd] and [%zu]: \n",
-					    types[i],
-					    upn_dns_info_idx,
-					    i);
-				SAFE_FREE(types);
-				code = EINVAL;
-				goto done;
-			}
-			upn_dns_info_idx = i;
-			break;
-		case PAC_TYPE_SRV_CHECKSUM:
-			if (srv_checksum_idx != -1) {
-				DBG_WARNING("logon type[%u] twice [%zd] and [%zu]: \n",
-					    types[i],
-					    srv_checksum_idx,
-					    i);
-				SAFE_FREE(types);
-				code = EINVAL;
-				goto done;
-			}
-			srv_checksum_idx = i;
-			break;
-		case PAC_TYPE_KDC_CHECKSUM:
-			if (kdc_checksum_idx != -1) {
-				DBG_WARNING("logon type[%u] twice [%zd] and [%zu]: \n",
-					    types[i],
-					    kdc_checksum_idx,
-					    i);
-				SAFE_FREE(types);
-				code = EINVAL;
-				goto done;
-			}
-			kdc_checksum_idx = i;
-			break;
-		default:
-			continue;
-		}
-	}
-
-	if (logon_info_idx == -1) {
-		DEBUG(1, ("PAC_TYPE_LOGON_INFO missing\n"));
-		SAFE_FREE(types);
-		code = EINVAL;
-		goto done;
-	}
-	if (logon_name_idx == -1) {
-		DEBUG(1, ("PAC_TYPE_LOGON_NAME missing\n"));
-		SAFE_FREE(types);
-		code = EINVAL;
-		goto done;
-	}
-	if (srv_checksum_idx == -1) {
-		DEBUG(1, ("PAC_TYPE_SRV_CHECKSUM missing\n"));
-		SAFE_FREE(types);
-		code = EINVAL;
-		goto done;
-	}
-	if (kdc_checksum_idx == -1) {
-		DEBUG(1, ("PAC_TYPE_KDC_CHECKSUM missing\n"));
-		SAFE_FREE(types);
-		code = EINVAL;
-		goto done;
+	if (kdc_flags & KRB5_KDB_FLAG_CONSTRAINED_DELEGATION) {
+		flags |= SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION;
+		delegated_proxy_principal = discard_const(client_principal);
 	}
 
 	/* Build an updated PAC */
 	code = krb5_pac_init(context, &new_pac);
 	if (code != 0) {
-		SAFE_FREE(types);
 		goto done;
 	}
 
-	for (i = 0;;) {
-		krb5_data type_data;
-		DATA_BLOB type_blob = data_blob_null;
-		uint32_t type;
-
-		if (forced_next_type != 0) {
-			/*
-			 * We need to inject possible missing types
-			 */
-			type = forced_next_type;
-			forced_next_type = 0;
-		} else if (i < num_types) {
-			type = types[i];
-			i++;
-		} else {
-			break;
+	code = samba_kdc_update_pac(tmp_ctx,
+				    context,
+				    krbtgt_skdc_entry->kdc_db_ctx->samdb,
+				    flags,
+				    client_skdc_entry,
+				    server->princ,
+				    server_skdc_entry,
+				    krbtgt_skdc_entry,
+				    delegated_proxy_principal,
+				    *pac,
+				    new_pac);
+	if (code != 0) {
+		krb5_pac_free(context, new_pac);
+		if (code == ENODATA) {
+			krb5_pac_free(context, *pac);
+			*pac = NULL;
+			code = 0;
 		}
-
-		switch (type) {
-		case PAC_TYPE_LOGON_INFO:
-			type_blob = *pac_blob;
-
-			if (delegation_idx == -1 && deleg_blob != NULL) {
-				/* inject CONSTRAINED_DELEGATION behind */
-				forced_next_type = PAC_TYPE_CONSTRAINED_DELEGATION;
-			}
-			break;
-		case PAC_TYPE_CONSTRAINED_DELEGATION:
-			if (deleg_blob != NULL) {
-				type_blob = *deleg_blob;
-			}
-			break;
-		case PAC_TYPE_CREDENTIAL_INFO:
-			/*
-			 * Note that we copy the credential blob,
-			 * as it's only usable with the PKINIT based
-			 * AS-REP reply key, it's only available on the
-			 * host which did the AS-REQ/AS-REP exchange.
-			 *
-			 * This matches Windows 2008R2...
-			 */
-			break;
-		case PAC_TYPE_LOGON_NAME:
-			/*
-			 * This is generated in the main KDC code
-			 */
-			continue;
-		case PAC_TYPE_UPN_DNS_INFO:
-			/*
-			 * Replace in the RODC case, otherwise
-			 * upn_blob is NULL and we just copy.
-			 */
-			if (upn_blob != NULL) {
-				type_blob = *upn_blob;
-			}
-			break;
-		case PAC_TYPE_SRV_CHECKSUM:
-			/*
-			 * This is generated in the main KDC code
-			 */
-			continue;
-		case PAC_TYPE_KDC_CHECKSUM:
-			/*
-			 * This is generated in the main KDC code
-			 */
-			continue;
-		default:
-			/* just copy... */
-			break;
-		}
-
-		if (type_blob.length != 0) {
-			code = smb_krb5_copy_data_contents(&type_data,
-							   type_blob.data,
-							   type_blob.length);
-			if (code != 0) {
-				SAFE_FREE(types);
-				krb5_pac_free(context, new_pac);
-				goto done;
-			}
-		} else {
-			code = krb5_pac_get_buffer(context,
-						   *pac,
-						   type,
-						   &type_data);
-			if (code != 0) {
-				SAFE_FREE(types);
-				krb5_pac_free(context, new_pac);
-				goto done;
-			}
-		}
-
-		code = krb5_pac_add_buffer(context,
-					   new_pac,
-					   type,
-					   &type_data);
-		smb_krb5_free_data_contents(context, &type_data);
-		if (code != 0) {
-			SAFE_FREE(types);
-			krb5_pac_free(context, new_pac);
-			goto done;
-		}
+		goto done;
 	}
-
-	SAFE_FREE(types);
 
 	/* We now replace the pac */
 	krb5_pac_free(context, *pac);
 	*pac = new_pac;
+
 done:
 	talloc_free(tmp_ctx);
 	return code;
