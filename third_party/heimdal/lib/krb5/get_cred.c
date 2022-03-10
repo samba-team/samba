@@ -239,20 +239,6 @@ init_tgs_req (krb5_context context,
 	if (ret)
 	    goto fail;
     }
-    
-    if (padata) {
-	if (t->padata == NULL) {
-	    ALLOC(t->padata, 1);
-	    if (t->padata == NULL) {
-		ret = krb5_enomem(context);
-		goto fail;
-	    }
-	}
-	
-	ret = copy_METHOD_DATA(padata, t->padata);
-	if (ret)
-	    goto fail;
-    }
 
     ret = krb5_auth_con_init(context, &ac);
     if(ret)
@@ -278,14 +264,6 @@ init_tgs_req (krb5_context context,
     if (ret)
 	goto fail;
 
-    if (t->padata == NULL) {
-	ALLOC(t->padata, 1);
-	if (t->padata == NULL) {
-	    ret = krb5_enomem(context);
-	    goto fail;
-	}
-    }
-
     ret = make_pa_tgs_req(context,
 			  &ac,
 			  &t->req_body,
@@ -295,19 +273,17 @@ init_tgs_req (krb5_context context,
     if(ret)
 	goto fail;
 
-    if (state) {
-	state->armor_ac = ac;
-	ret = _krb5_fast_create_armor(context, state, NULL);
-	state->armor_ac = NULL;
-	if (ret)
-	    goto fail;
+    /*
+     * Add KRB5_PADATA_TGS_REQ first
+     * followed by all others.
+     */
 
-	ret = _krb5_fast_wrap_req(context, state, &tgs_req, t);
-	if (ret)
+    if (t->padata == NULL) {
+	ALLOC(t->padata, 1);
+	if (t->padata == NULL) {
+	    ret = krb5_enomem(context);
 	    goto fail;
-
-	/* Its ok if there is no fast in the TGS-REP, older heimdal only support it in the AS code path */
-	state->flags &= ~KRB5_FAST_EXPECTED;
+	}
     }
 
     ret = krb5_padata_add(context, t->padata, KRB5_PADATA_TGS_REQ,
@@ -316,6 +292,48 @@ init_tgs_req (krb5_context context,
 	goto fail;
 
     krb5_data_zero(&tgs_req);
+
+    {
+	size_t i;
+	for (i = 0; i < padata->len; i++) {
+	    const PA_DATA *val1 = &padata->val[i];
+	    PA_DATA val2;
+
+	    ret = copy_PA_DATA(val1, &val2);
+	    if (ret) {
+		krb5_set_error_message(context, ret,
+				       N_("malloc: out of memory", ""));
+		goto fail;
+	    }
+
+	    ret = krb5_padata_add(context, t->padata,
+				  val2.padata_type,
+				  val2.padata_value.data,
+				  val2.padata_value.length);
+	    if (ret) {
+		free_PA_DATA(&val2);
+
+		krb5_set_error_message(context, ret,
+				       N_("malloc: out of memory", ""));
+		goto fail;
+	    }
+	}
+    }
+
+    if (state) {
+	state->armor_ac = ac;
+	ret = _krb5_fast_create_armor(context, state, NULL);
+	state->armor_ac = NULL;
+	if (ret)
+	    goto fail;
+
+	ret = _krb5_fast_wrap_req(context, state, t);
+	if (ret)
+	    goto fail;
+
+	/* Its ok if there is no fast in the TGS-REP, older heimdal only support it in the AS code path */
+	state->flags &= ~KRB5_FAST_EXPECTED;
+    }
 
     ret = krb5_auth_con_getlocalsubkey(context, ac, subkey);
     if (ret)
