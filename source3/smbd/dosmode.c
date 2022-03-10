@@ -598,16 +598,11 @@ static NTSTATUS dos_mode_check_compressed(struct files_struct *fsp,
 {
 	NTSTATUS status;
 	uint16_t compression_fmt;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	if (tmp_ctx == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
-	}
 
-	status = SMB_VFS_FGET_COMPRESSION(fsp->conn, tmp_ctx, fsp,
-					 &compression_fmt);
+	status = SMB_VFS_FGET_COMPRESSION(
+		fsp->conn, talloc_tos(), fsp, &compression_fmt);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto err_ctx_free;
+		return status;
 	}
 
 	if (compression_fmt == COMPRESSION_FORMAT_LZNT1) {
@@ -615,12 +610,7 @@ static NTSTATUS dos_mode_check_compressed(struct files_struct *fsp,
 	} else {
 		*is_compressed = false;
 	}
-	status = NT_STATUS_OK;
-
-err_ctx_free:
-	talloc_free(tmp_ctx);
-err_out:
-	return status;
+	return NT_STATUS_OK;
 }
 
 static uint32_t dos_mode_from_name(connection_struct *conn,
