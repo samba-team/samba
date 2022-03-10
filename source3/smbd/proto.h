@@ -856,9 +856,9 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 			   struct security_descriptor **ppdesc);
 NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid);
 NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd);
-int get_acl_group_bits( connection_struct *conn,
-			const struct smb_filename *smb_fname,
-			mode_t *mode);
+int get_acl_group_bits(connection_struct *conn,
+		       struct files_struct *fsp,
+		       mode_t *mode);
 int inherit_access_posix_acl(connection_struct *conn,
 			     struct files_struct *inherit_from_dirfsp,
 			     const struct smb_filename *smb_fname,

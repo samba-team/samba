@@ -3835,16 +3835,16 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
  the mask bits, not the real group bits, for a file with an ACL.
 ****************************************************************************/
 
-int get_acl_group_bits( connection_struct *conn,
-			const struct smb_filename *smb_fname,
-			mode_t *mode )
+int get_acl_group_bits(connection_struct *conn,
+		       struct files_struct *fsp,
+		       mode_t *mode )
 {
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
 	SMB_ACL_T posix_acl;
 	int result = -1;
 
-	posix_acl = SMB_VFS_SYS_ACL_GET_FD(smb_fname->fsp,
+	posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp,
 					   SMB_ACL_TYPE_ACCESS,
 					   talloc_tos());
 	if (posix_acl == (SMB_ACL_T)NULL)

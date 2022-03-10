@@ -939,8 +939,8 @@ int file_set_dosmode(connection_struct *conn,
 	unixmode = smb_fname->st.st_ex_mode;
 
 	if (smb_fname->fsp != NULL) {
-		get_acl_group_bits(conn, smb_fname,
-			&smb_fname->st.st_ex_mode);
+		get_acl_group_bits(
+			conn, smb_fname->fsp, &smb_fname->st.st_ex_mode);
 	}
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
