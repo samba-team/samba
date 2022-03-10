@@ -267,7 +267,7 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *dirfsp,
 	if (fsp_get_pathref_fd(fsp) == -1) {
 		/*
 		 * This is a POSIX open on a symlink. For the pathname
-		 * verison of this function we used to return the st_mode
+		 * version of this function we used to return the st_mode
 		 * bits turned into an NT ACL. For a symlink the mode bits
 		 * are always rwxrwxrwx which means the pathname version always
 		 * returned NT_STATUS_OK for a symlink. For the handle reference
