@@ -112,12 +112,16 @@ bld.SAMBA3_BINARY('pdbtest',
                       ''',
                  for_selftest=True)
 
+if bld.CONFIG_SET('WITH_SMB1SERVER'):
+    SMB1_SOURCES = 'vfstest_chain.c'
+else:
+    SMB1_SOURCES = ''
+
 bld.SAMBA3_BINARY('vfstest',
                  source='''
                         cmd_vfs.c
                         vfstest.c
-                        vfstest_chain.c
-                        ''',
+                        ''' + SMB1_SOURCES,
                  deps='''
                       vfs
                       CMDLINE_S3

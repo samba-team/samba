@@ -2336,8 +2336,10 @@ struct cmd_set vfs_commands[] = {
 	{ "sys_acl_delete_def_file", cmd_sys_acl_delete_def_file, "VFS sys_acl_delete_def_file()", "sys_acl_delete_def_file <path>" },
 
 
+#if defined(WITH_SMB1SERVER)
 	{ "test_chain", cmd_test_chain, "test chain code",
 	  "test_chain" },
+#endif
 	{ "translate_name", cmd_translate_name, "VFS translate_name()", "translate_name unix_filename" },
 	{ "create_file",
 	  cmd_create_file,
