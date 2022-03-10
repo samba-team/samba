@@ -387,6 +387,7 @@ struct smbXsrv_connection {
 		struct smbd_smb2_send_queue *queue;
 	} ack;
 
+#if defined(WITH_SMB1SERVER)
 	struct {
 		struct {
 			/*
@@ -452,6 +453,7 @@ struct smbXsrv_connection {
 
 		struct msg_state *msg_state;
 	} smb1;
+#endif
 	struct {
 		struct smbd_smb2_request_read_state {
 			struct smbd_smb2_request *req;
