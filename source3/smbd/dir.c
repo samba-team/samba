@@ -927,7 +927,9 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			TALLOC_FREE(fname);
 			TALLOC_FREE(smb_fname);
 			continue;
-		} else if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			if (!(atname->flags & SMB_FILENAME_POSIX_PATH)) {
 				check_dfs_symlink = true;
 			}
