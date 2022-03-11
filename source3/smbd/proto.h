@@ -672,15 +672,6 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid
 int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list);
 void *init_quota_handle(TALLOC_CTX *mem_ctx);
 
-/* The following definitions come from smbd/nttrans.c  */
-
-void reply_ntcreate_and_X(struct smb_request *req);
-struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size);
-void reply_ntcancel(struct smb_request *req);
-void reply_ntrename(struct smb_request *req);
-void reply_nttrans(struct smb_request *req);
-void reply_nttranss(struct smb_request *req);
-
 /* The following definitions come from smbd/smb2_nttrans.c  */
 
 NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
