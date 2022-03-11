@@ -31,6 +31,7 @@ struct dptr_struct;
 #include "smbd/smb1_sesssetup.h"
 #include "smbd/smb1_lanman.h"
 #include "smbd/smb1_aio.h"
+#include "smbd/smb1_ipc.h"
 #endif
 
 struct trans_state {

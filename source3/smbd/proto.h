@@ -476,16 +476,6 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 			struct smb_filename **_parent,
 			struct smb_filename **_atname);
 
-/* The following definitions come from smbd/ipc.c  */
-
-void send_trans_reply(connection_struct *conn,
-		      struct smb_request *req,
-		      char *rparam, int rparam_len,
-		      char *rdata, int rdata_len,
-		      bool buffer_too_large);
-void reply_trans(struct smb_request *req);
-void reply_transs(struct smb_request *req);
-
 /* The following definitions come from smbd/smb2_ipc.c  */
 
 NTSTATUS nt_status_np_pipe(NTSTATUS status);
