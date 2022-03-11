@@ -678,13 +678,6 @@ void reply_ntcreate_and_X(struct smb_request *req);
 struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size);
 void reply_ntcancel(struct smb_request *req);
 void reply_ntrename(struct smb_request *req);
-NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
-					TALLOC_CTX *mem_ctx,
-					files_struct *fsp,
-					uint32_t security_info_wanted,
-					uint32_t max_data_count,
-					uint8_t **ppmarshalled_sd,
-					size_t *psd_size);
 #ifdef HAVE_SYS_QUOTAS
 
 struct smb2_query_quota_info;
@@ -714,6 +707,13 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 			struct smb_filename *smb_fname_src,
 			struct smb_filename *smb_fname_dst,
 			uint32_t attrs);
+NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
+					TALLOC_CTX *mem_ctx,
+					files_struct *fsp,
+					uint32_t security_info_wanted,
+					uint32_t max_data_count,
+					uint8_t **ppmarshalled_sd,
+					size_t *psd_size);
 
 /* The following definitions come from smbd/open.c  */
 
