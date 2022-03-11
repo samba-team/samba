@@ -26,6 +26,9 @@
 #include "../lib/tsocket/tsocket.h"
 #include "../librpc/ndr/libndr.h"
 #include "../libcli/smb/smb_signing.h"
+#include "auth.h"
+#include "auth/gensec/gensec.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -919,4 +922,95 @@ static void smbd_smb2_request_process_negprot_mc_done(struct tevent_req *subreq)
 	 */
 	smb_panic(__location__);
 	return;
+}
+
+/****************************************************************************
+ Generate the spnego negprot reply blob. Return the number of bytes used.
+****************************************************************************/
+
+DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
+{
+	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB blob_out = data_blob_null;
+	nstring dos_name;
+	fstring unix_name;
+	NTSTATUS status;
+#ifdef DEVELOPER
+	size_t slen;
+#endif
+	struct gensec_security *gensec_security;
+
+	/* See if we can get an SPNEGO blob */
+	status = auth_generic_prepare(talloc_tos(),
+				      xconn->remote_address,
+				      xconn->local_address,
+				      "SMB",
+				      &gensec_security);
+
+	/*
+	 * Despite including it above, there is no need to set a
+	 * remote address or similar as we are just interested in the
+	 * SPNEGO blob, we never keep this context.
+	 */
+
+	if (NT_STATUS_IS_OK(status)) {
+		status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_SPNEGO);
+		if (NT_STATUS_IS_OK(status)) {
+			status = gensec_update(gensec_security, ctx,
+					       data_blob_null, &blob);
+			/* If we get the list of OIDs, the 'OK' answer
+			 * is NT_STATUS_MORE_PROCESSING_REQUIRED */
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+				DEBUG(0, ("Failed to start SPNEGO handler for negprot OID list!\n"));
+				blob = data_blob_null;
+			}
+		}
+		TALLOC_FREE(gensec_security);
+	}
+
+	xconn->smb1.negprot.spnego = true;
+
+	/* strangely enough, NT does not sent the single OID NTLMSSP when
+	   not a ADS member, it sends no OIDs at all
+
+	   OLD COMMENT : "we can't do this until we teach our sesssion setup parser to know
+		   about raw NTLMSSP (clients send no ASN.1 wrapping if we do this)"
+
+	   Our sessionsetup code now handles raw NTLMSSP connects, so we can go
+	   back to doing what W2K3 does here. This is needed to make PocketPC 2003
+	   CIFS connections work with SPNEGO. See bugzilla bugs #1828 and #3133
+	   for details. JRA.
+
+	*/
+
+	if (blob.length == 0 || blob.data == NULL) {
+		return data_blob_null;
+	}
+
+	blob_out = data_blob_talloc(ctx, NULL, 16 + blob.length);
+	if (blob_out.data == NULL) {
+		data_blob_free(&blob);
+		return data_blob_null;
+	}
+
+	memset(blob_out.data, '\0', 16);
+
+	checked_strlcpy(unix_name, lp_netbios_name(), sizeof(unix_name));
+	(void)strlower_m(unix_name);
+	push_ascii_nstring(dos_name, unix_name);
+	strlcpy((char *)blob_out.data, dos_name, 17);
+
+#ifdef DEVELOPER
+	/* Fix valgrind 'uninitialized bytes' issue. */
+	slen = strlen(dos_name);
+	if (slen < 16) {
+		memset(blob_out.data+slen, '\0', 16 - slen);
+	}
+#endif
+
+	memcpy(&blob_out.data[16], blob.data, blob.length);
+
+	data_blob_free(&blob);
+
+	return blob_out;
 }
