@@ -112,10 +112,11 @@ static NTSTATUS smbd_check_access_rights_sd(
 	rejected_share_access = access_mask & ~(conn->share_access);
 
 	if (rejected_share_access) {
-		DBG_DEBUG("rejected share access 0x%x on %s (0x%x)\n",
-			  (unsigned int)access_mask,
+		DBG_DEBUG("rejected share access 0x%"PRIx32" on "
+			  "%s (0x%"PRIx32")\n",
+			  access_mask,
 			  smb_fname_str_dbg(smb_fname),
-			  (unsigned int)rejected_share_access);
+			  rejected_share_access);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -131,9 +132,9 @@ static NTSTATUS smbd_check_access_rights_sd(
 	    !lp_acl_check_permissions(SNUM(conn)))
 	{
 		DBG_DEBUG("Not checking ACL on DELETE_ACCESS on file %s. "
-			  "Granting 0x%x\n",
+			  "Granting 0x%"PRIx32"\n",
 			  smb_fname_str_dbg(smb_fname),
-			  (unsigned int)access_mask);
+			  access_mask);
 		return NT_STATUS_OK;
 	}
 
@@ -180,10 +181,11 @@ static NTSTATUS smbd_check_access_rights_sd(
 				(access_mask & ~do_not_check_mask),
 				&rejected_mask);
 
-	DBG_DEBUG("File [%s] requesting [0x%x] returning [0x%x] (%s)\n",
+	DBG_DEBUG("File [%s] requesting [0x%"PRIx32"] "
+		  "returning [0x%"PRIx32"] (%s)\n",
 		  smb_fname_str_dbg(smb_fname),
-		  (unsigned int)access_mask,
-		  (unsigned int)rejected_mask,
+		  access_mask,
+		  rejected_mask,
 		  nt_errstr(status));
 
 	if (!NT_STATUS_IS_OK(status)) {
