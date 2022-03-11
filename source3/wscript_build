@@ -614,7 +614,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/ipc.c
                           smbd/lanman.c
                           smbd/negprot.c
-                          smbd/message.c
+                          smbd/smb1_message.c
                           smbd/nttrans.c
                           smbd/pipes.c
                           smbd/reply.c

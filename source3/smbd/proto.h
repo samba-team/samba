@@ -523,13 +523,6 @@ const struct mangle_fns *mangle_hash_init(void);
 const struct mangle_fns *mangle_hash2_init(void);
 const struct mangle_fns *posix_mangle_init(void);
 
-/* The following definitions come from smbd/message.c  */
-
-void reply_sends(struct smb_request *req);
-void reply_sendstrt(struct smb_request *req);
-void reply_sendtxt(struct smb_request *req);
-void reply_sendend(struct smb_request *req);
-
 /* The following definitions come from smbd/msdfs.c  */
 
 bool parse_msdfs_symlink(TALLOC_CTX *ctx,

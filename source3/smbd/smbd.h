@@ -26,6 +26,9 @@ struct dptr_struct;
 #include "smbd/proto.h"
 #include "locking/proto.h"
 #include "smbd/fd_handle.h"
+#if defined(WITH_SMB1SERVER)
+#include "smbd/smb1_message.h"
+#endif
 
 struct trans_state {
 	struct trans_state *next, *prev;
