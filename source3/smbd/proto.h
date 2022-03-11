@@ -685,12 +685,6 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 					uint32_t max_data_count,
 					uint8_t **ppmarshalled_sd,
 					size_t *psd_size);
-NTSTATUS copy_internals(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			struct smb_request *req,
-			struct smb_filename *smb_fname_src,
-			struct smb_filename *smb_fname_dst,
-			uint32_t attrs);
 #ifdef HAVE_SYS_QUOTAS
 
 struct smb2_query_quota_info;
@@ -714,6 +708,12 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
                        uint32_t security_info_sent);
 NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
                        uint32_t security_info_sent);
+NTSTATUS copy_internals(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			struct smb_request *req,
+			struct smb_filename *smb_fname_src,
+			struct smb_filename *smb_fname_dst,
+			uint32_t attrs);
 
 /* The following definitions come from smbd/open.c  */
 
