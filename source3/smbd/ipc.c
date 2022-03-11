@@ -80,17 +80,6 @@ static void copy_trans_params_and_data(char *outbuf, int align,
 		memcpy(copy_into, &rdata[data_offset], data_len);
 }
 
-NTSTATUS nt_status_np_pipe(NTSTATUS status)
-{
-	if (NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED)) {
-		status = NT_STATUS_PIPE_DISCONNECTED;
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_RESET)) {
-		status = NT_STATUS_PIPE_BROKEN;
-	}
-
-	return status;
-}
-
 /****************************************************************************
  Send a trans reply.
  ****************************************************************************/

@@ -478,7 +478,6 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from smbd/ipc.c  */
 
-NTSTATUS nt_status_np_pipe(NTSTATUS status);
 void send_trans_reply(connection_struct *conn,
 		      struct smb_request *req,
 		      char *rparam, int rparam_len,
@@ -486,6 +485,10 @@ void send_trans_reply(connection_struct *conn,
 		      bool buffer_too_large);
 void reply_trans(struct smb_request *req);
 void reply_transs(struct smb_request *req);
+
+/* The following definitions come from smbd/smb2_ipc.c  */
+
+NTSTATUS nt_status_np_pipe(NTSTATUS status);
 
 /* The following definitions come from smbd/mangle.c  */
 
