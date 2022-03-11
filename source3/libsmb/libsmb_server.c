@@ -572,7 +572,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		    !NT_STATUS_IS_OK(cli_session_setup_anon(c))) {
 
                         cli_shutdown(c);
-                        errno = EPERM;
+			errno = map_errno_from_nt_status(status);
                         return NULL;
                 }
 	}
