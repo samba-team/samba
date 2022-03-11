@@ -618,7 +618,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/nttrans.c
                           smbd/pipes.c
                           smbd/reply.c
-                          smbd/sesssetup.c
+                          smbd/smb1_sesssetup.c
                           smbd/trans2.c
                           smbd/uid.c
                           smbd/dosmode.c

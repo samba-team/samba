@@ -1132,10 +1132,6 @@ int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list);
 int find_sessions(TALLOC_CTX *mem_ctx, const char *username,
 		  const char *machine, struct sessionid **session_list);
 
-/* The following definitions come from smbd/sesssetup.c  */
-
-void reply_sesssetup_and_X(struct smb_request *req);
-
 /* The following definitions come from smbd/share_access.c  */
 
 bool token_contains_name_in_list(const char *username,
