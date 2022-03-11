@@ -70,11 +70,6 @@ void smb1_srv_set_signing(struct smbXsrv_connection *conn,
 
 struct aio_extra;
 bool aio_write_through_requested(struct aio_extra *aio_ex);
-NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
-			      struct smb_request *req,
-			      files_struct *fsp, const char *data,
-			      off_t startpos,
-			      size_t numtowrite);
 NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 				struct smb_request *smbreq,
 				files_struct *fsp,
@@ -93,6 +88,13 @@ bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req);
 struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
 				   files_struct *fsp,
 				   size_t buflen);
+struct tevent_req *pwrite_fsync_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct files_struct *fsp,
+				     const void *data,
+				     size_t n, off_t offset,
+				     bool write_through);
+ssize_t pwrite_fsync_recv(struct tevent_req *req, int *perr);
 
 /* The following definitions come from smbd/blocking.c  */
 
