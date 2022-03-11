@@ -1,0 +1,168 @@
+/*
+   Unix SMB/CIFS implementation.
+   SMB NT transaction handling
+   Copyright (C) Jeremy Allison			1994-2007
+   Copyright (C) Stefan (metze) Metzmacher	2003
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+#include "system/filesys.h"
+#include "smbd/smbd.h"
+#include "smbd/globals.h"
+#include "fake_file.h"
+#include "../libcli/security/security.h"
+#include "../librpc/gen_ndr/ndr_security.h"
+#include "passdb/lookup_sid.h"
+#include "auth.h"
+#include "smbprofile.h"
+#include "libsmb/libsmb.h"
+#include "lib/util_ea.h"
+#include "librpc/gen_ndr/ndr_quota.h"
+#include "librpc/gen_ndr/ndr_security.h"
+
+extern const struct generic_mapping file_generic_mapping;
+
+/*********************************************************************
+ Windows seems to do canonicalization of inheritance bits. Do the
+ same.
+*********************************************************************/
+
+static void canonicalize_inheritance_bits(struct files_struct *fsp,
+					  struct security_descriptor *psd)
+{
+	bool set_auto_inherited = false;
+
+	/*
+	 * We need to filter out the
+	 * SEC_DESC_DACL_AUTO_INHERITED|SEC_DESC_DACL_AUTO_INHERIT_REQ
+	 * bits. If both are set we store SEC_DESC_DACL_AUTO_INHERITED
+	 * as this alters whether SEC_ACE_FLAG_INHERITED_ACE is set
+	 * when an ACE is inherited. Otherwise we zero these bits out.
+	 * See:
+	 *
+	 * http://social.msdn.microsoft.com/Forums/eu/os_fileservices/thread/11f77b68-731e-407d-b1b3-064750716531
+	 *
+	 * for details.
+	 */
+
+	if (!lp_acl_flag_inherited_canonicalization(SNUM(fsp->conn))) {
+		psd->type &= ~SEC_DESC_DACL_AUTO_INHERIT_REQ;
+		return;
+	}
+
+	if ((psd->type & (SEC_DESC_DACL_AUTO_INHERITED|SEC_DESC_DACL_AUTO_INHERIT_REQ))
+			== (SEC_DESC_DACL_AUTO_INHERITED|SEC_DESC_DACL_AUTO_INHERIT_REQ)) {
+		set_auto_inherited = true;
+	}
+
+	psd->type &= ~(SEC_DESC_DACL_AUTO_INHERITED|SEC_DESC_DACL_AUTO_INHERIT_REQ);
+	if (set_auto_inherited) {
+		psd->type |= SEC_DESC_DACL_AUTO_INHERITED;
+	}
+}
+
+/****************************************************************************
+ Internal fn to set security descriptors.
+****************************************************************************/
+
+NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
+		       uint32_t security_info_sent)
+{
+	files_struct *sd_fsp = NULL;
+	NTSTATUS status;
+
+	if (!CAN_WRITE(fsp->conn)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!lp_nt_acl_support(SNUM(fsp->conn))) {
+		return NT_STATUS_OK;
+	}
+
+	status = refuse_symlink_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("ACL set on symlink %s denied.\n",
+			fsp_str_dbg(fsp));
+		return status;
+	}
+
+	if (psd->owner_sid == NULL) {
+		security_info_sent &= ~SECINFO_OWNER;
+	}
+	if (psd->group_sid == NULL) {
+		security_info_sent &= ~SECINFO_GROUP;
+	}
+
+	/* Ensure we have at least one thing set. */
+	if ((security_info_sent & (SECINFO_OWNER|SECINFO_GROUP|SECINFO_DACL|SECINFO_SACL)) == 0) {
+		/* Just like W2K3 */
+		return NT_STATUS_OK;
+	}
+
+	/* Ensure we have the rights to do this. */
+	if (security_info_sent & SECINFO_OWNER) {
+		if (!(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (security_info_sent & SECINFO_GROUP) {
+		if (!(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (security_info_sent & SECINFO_DACL) {
+		if (!(fsp->access_mask & SEC_STD_WRITE_DAC)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		/* Convert all the generic bits. */
+		if (psd->dacl) {
+			security_acl_map_generic(psd->dacl, &file_generic_mapping);
+		}
+	}
+
+	if (security_info_sent & SECINFO_SACL) {
+		if (!(fsp->access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		/*
+		 * Setting a SACL also requires WRITE_DAC.
+		 * See the smbtorture3 SMB2-SACL test.
+		 */
+		if (!(fsp->access_mask & SEC_STD_WRITE_DAC)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		/* Convert all the generic bits. */
+		if (psd->sacl) {
+			security_acl_map_generic(psd->sacl, &file_generic_mapping);
+		}
+	}
+
+	canonicalize_inheritance_bits(fsp, psd);
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("set_sd for file %s\n", fsp_str_dbg(fsp)));
+		NDR_PRINT_DEBUG(security_descriptor, psd);
+	}
+
+	sd_fsp = metadata_fsp(fsp);
+	status = SMB_VFS_FSET_NT_ACL(sd_fsp, security_info_sent, psd);
+
+	TALLOC_FREE(psd);
+
+	return status;
+}
