@@ -968,7 +968,9 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
 		TALLOC_FREE(gensec_security);
 	}
 
+#if defined(WITH_SMB1SERVER)
 	xconn->smb1.negprot.spnego = true;
+#endif
 
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
 	   not a ADS member, it sends no OIDs at all
