@@ -29,6 +29,7 @@ struct dptr_struct;
 #if defined(WITH_SMB1SERVER)
 #include "smbd/smb1_message.h"
 #include "smbd/smb1_sesssetup.h"
+#include "smbd/smb1_lanman.h"
 #endif
 
 struct trans_state {

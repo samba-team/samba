@@ -612,7 +612,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/share_access.c
                           smbd/fileio.c
                           smbd/ipc.c
-                          smbd/lanman.c
+                          smbd/smb1_lanman.c
                           smbd/negprot.c
                           smbd/smb1_message.c
                           smbd/nttrans.c
