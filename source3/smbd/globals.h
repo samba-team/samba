@@ -914,4 +914,18 @@ extern struct smbXsrv_client *global_smbXsrv_client;
 
 void smbd_init_globals(void);
 
+/****************************************************************************
+ The buffer we keep around whilst an aio request is in process.
+*****************************************************************************/
+
+struct aio_extra {
+	files_struct *fsp;
+	struct smb_request *smbreq;
+	DATA_BLOB outbuf;
+	struct lock_struct lock;
+	size_t nbyte;
+	off_t offset;
+	bool write_through;
+};
+
 #endif /* _SOURCE3_SMBD_GLOBALS_H_ */
