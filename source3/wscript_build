@@ -605,6 +605,7 @@ if bld.CONFIG_SET('WITH_SMB1SERVER'):
                    smbd/smb1_utils.c
                    smbd/smb1_aio.c
                    smbd/smb1_ipc.c
+                   smbd/smb1_negprot.c
     '''
 else:
     SMB1_SOURCES = ''
@@ -624,7 +625,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/share_access.c
                           smbd/fileio.c
                           smbd/smb2_ipc.c
-                          smbd/negprot.c
                           smbd/nttrans.c
                           smbd/pipes.c
                           smbd/reply.c

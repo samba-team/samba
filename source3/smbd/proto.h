@@ -580,10 +580,6 @@ NTSTATUS create_conn_struct_tos_cwd(struct messaging_context *msg,
 				    const struct auth_session_info *session_info,
 				    struct conn_struct_tos **_c);
 
-/* The following definitions come from smbd/negprot.c  */
-
-void reply_negprot(struct smb_request *req);
-
 /* The following definitions come from smbd/notify.c  */
 
 bool change_notify_fsp_has_changes(struct files_struct *fsp);
