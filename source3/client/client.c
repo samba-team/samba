@@ -565,9 +565,9 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 		uint16_t fnum;
 		struct cli_credentials *creds = samba_cmdline_get_creds();
 
-		/* skip if this is . or .. */
-		if ( strequal(finfo->name,"..") || strequal(finfo->name,".") )
+		if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
 			return NT_STATUS_OK;
+		}
 		/* create absolute filename for cli_ntcreate() FIXME */
 		afname = talloc_asprintf(ctx,
 					"%s%s%s",
@@ -1214,8 +1214,9 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_OK;
 	}
 
-	if (strequal(finfo->name,".") || strequal(finfo->name,".."))
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
 		return NT_STATUS_OK;
+	}
 
 	if ((finfo->attr & FILE_ATTRIBUTE_DIRECTORY) && !recurse) {
 		return NT_STATUS_OK;
@@ -2077,10 +2078,9 @@ static int file_find(TALLOC_CTX *ctx,
 		return -1;
 
         while ((dname = readdirname(dir))) {
-		if (!strcmp("..", dname))
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			continue;
-		if (!strcmp(".", dname))
-			continue;
+		}
 
 		path = talloc_asprintf(ctx, "%s/%s", directory, dname);
 		if (path == NULL) {
