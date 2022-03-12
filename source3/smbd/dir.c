@@ -1627,11 +1627,9 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
 
 	while ((n = vfs_readdirname(conn, dir_hnd->fsp, dir_hnd->dir, sbuf, &talloced))) {
 		/* Ignore . and .. - we've already returned them. */
-		if (*n == '.') {
-			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
-				TALLOC_FREE(talloced);
-				continue;
-			}
+		if (ISDOT(n) || ISDOTDOT(n)) {
+			TALLOC_FREE(talloced);
+			continue;
 		}
 		*poffset = dir_hnd->offset = SMB_VFS_TELLDIR(conn, dir_hnd->dir);
 		*ptalloced = talloced;
