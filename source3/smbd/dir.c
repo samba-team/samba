@@ -1603,7 +1603,8 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
 
 	/* Cheat to allow . and .. to be the first entries returned. */
 	if (((*poffset == START_OF_DIRECTORY_OFFSET) ||
-	     (*poffset == DOT_DOT_DIRECTORY_OFFSET)) && (dir_hnd->file_number < 2))
+	     (*poffset == DOT_DOT_DIRECTORY_OFFSET)) &&
+	    (dir_hnd->file_number < 2))
 	{
 		if (dir_hnd->file_number == 0) {
 			n = ".";
