@@ -1541,25 +1541,19 @@ static bool sname_equal(const char *name1, const char *name2,
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-NTSTATUS get_real_filename_full_scan(connection_struct *conn,
-				     const char *path,
-				     const char *name,
-				     bool mangled,
-				     TALLOC_CTX *mem_ctx,
-				     char **found_name)
+NTSTATUS get_real_filename_full_scan_at(struct files_struct *dirfsp,
+					const char *name,
+					bool mangled,
+					TALLOC_CTX *mem_ctx,
+					char **found_name)
 {
+	struct connection_struct *conn = dirfsp->conn;
 	struct smb_Dir *cur_dir = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
 	char *unmangled_name = NULL;
 	long curpos;
-	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
-
-	/* handle null paths */
-	if ((path == NULL) || (*path == 0)) {
-		path = ".";
-	}
 
 	/* If we have a case-sensitive filesystem, it doesn't do us any
 	 * good to search for a name. If a case variation of the name was
@@ -1594,30 +1588,15 @@ NTSTATUS get_real_filename_full_scan(connection_struct *conn,
 		}
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					path,
-					NULL,
-					NULL,
-					0,
-					0);
-	if (smb_fname == NULL) {
-		TALLOC_FREE(unmangled_name);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* open the directory */
-	status = OpenDir(
-		talloc_tos(), conn, smb_fname, NULL, 0, &cur_dir);
+	status = OpenDir_from_pathref(talloc_tos(), dirfsp, NULL, 0, &cur_dir);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_NOTICE("scan dir didn't open dir [%s]: %s\n",
-			   path,
+			   fsp_str_dbg(dirfsp),
 			   nt_errstr(status));
 		TALLOC_FREE(unmangled_name);
-		TALLOC_FREE(smb_fname);
 		return status;
 	}
-
-	TALLOC_FREE(smb_fname);
 
 	/* now scan for matching names */
 	curpos = 0;
@@ -1659,6 +1638,41 @@ NTSTATUS get_real_filename_full_scan(connection_struct *conn,
 	TALLOC_FREE(unmangled_name);
 	TALLOC_FREE(cur_dir);
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+NTSTATUS get_real_filename_full_scan(connection_struct *conn,
+				     const char *path,
+				     const char *name,
+				     bool mangled,
+				     TALLOC_CTX *mem_ctx,
+				     char **found_name)
+{
+	struct smb_filename *smb_dname = NULL;
+	NTSTATUS status;
+
+	/* handle null paths */
+	if ((path == NULL) || (*path == 0)) {
+		path = ".";
+	}
+
+	status = synthetic_pathref(
+		talloc_tos(),
+		conn->cwd_fsp,
+		path,
+		NULL,
+		NULL,
+		0,
+		0,
+		&smb_dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = get_real_filename_full_scan_at(
+		smb_dname->fsp, name, mangled, mem_ctx, found_name);
+
+	TALLOC_FREE(smb_dname);
+	return status;
 }
 
 /****************************************************************************
