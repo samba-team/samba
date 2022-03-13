@@ -372,6 +372,22 @@
 #define SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name, mem_ctx, found_name) \
 	smb_vfs_call_get_real_filename((handle)->next, (path), (name), (mem_ctx), (found_name))
 
+#define SMB_VFS_GET_REAL_FILENAME_AT(conn, dirfsp, name, mem_ctx, found_name) \
+	smb_vfs_call_get_real_filename_at( \
+		(conn)->vfs_handles, \
+		(dirfsp), \
+		(name), \
+		(mem_ctx), \
+		(found_name))
+#define SMB_VFS_NEXT_GET_REAL_FILENAME_AT( \
+	handle, dirfsp, name, mem_ctx, found_name) \
+	smb_vfs_call_get_real_filename_at( \
+		(handle)->next, \
+		(dirfsp), \
+		(name), \
+		(mem_ctx), \
+		(found_name))
+
 #define SMB_VFS_CONNECTPATH(conn, smb_fname) \
 	smb_vfs_call_connectpath((conn)->vfs_handles, (smb_fname))
 #define SMB_VFS_NEXT_CONNECTPATH(conn, smb_fname) \

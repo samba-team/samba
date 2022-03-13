@@ -2033,6 +2033,18 @@ static NTSTATUS vfs_gluster_get_real_filename(
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS vfs_gluster_get_real_filename_at(
+	struct vfs_handle_struct *handle,
+	struct files_struct *dirfsp,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
+{
+	NTSTATUS status = vfs_gluster_get_real_filename(
+		handle, dirfsp->fsp_name, name, mem_ctx, found_name);
+	return status;
+}
+
 static const char *vfs_gluster_connectpath(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
@@ -2371,6 +2383,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.file_id_create_fn = NULL,
 	.fstreaminfo_fn = NULL,
 	.get_real_filename_fn = vfs_gluster_get_real_filename,
+	.get_real_filename_at_fn = vfs_gluster_get_real_filename_at,
 	.connectpath_fn = vfs_gluster_connectpath,
 	.create_dfs_pathat_fn = vfs_gluster_create_dfs_pathat,
 	.read_dfs_pathat_fn = vfs_gluster_read_dfs_pathat,

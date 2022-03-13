@@ -58,6 +58,18 @@ static NTSTATUS vfs_gluster_fuse_get_real_filename(
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS vfs_gluster_fuse_get_real_filename_at(
+	struct vfs_handle_struct *handle,
+	struct files_struct *dirfsp,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **_found_name)
+{
+	NTSTATUS status = vfs_gluster_fuse_get_real_filename(
+		handle, dirfsp->fsp_name, name, mem_ctx, _found_name);
+	return status;
+}
+
 struct device_mapping_entry {
 	SMB_DEV_T device;       /* the local device, for reference */
 	uint64_t mapped_device; /* the mapped device */
@@ -252,6 +264,7 @@ struct vfs_fn_pointers glusterfs_fuse_fns = {
 
 	.connect_fn = vfs_glusterfs_fuse_connect,
 	.get_real_filename_fn = vfs_gluster_fuse_get_real_filename,
+	.get_real_filename_at_fn = vfs_gluster_fuse_get_real_filename_at,
 	.file_id_create_fn = vfs_glusterfs_fuse_file_id_create,
 };
 

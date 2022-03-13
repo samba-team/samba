@@ -3371,6 +3371,20 @@ static NTSTATUS vfswrap_get_real_filename(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
+static NTSTATUS vfswrap_get_real_filename_at(
+	struct vfs_handle_struct *handle,
+	struct files_struct *dirfsp,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
+{
+	/*
+	 * Don't fall back to get_real_filename so callers can differentiate
+	 * between a full directory scan and an actual case-insensitive stat.
+	 */
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
 static const char *vfswrap_connectpath(struct vfs_handle_struct *handle,
 				   const struct smb_filename *smb_fname)
 {
@@ -4016,6 +4030,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.fs_file_id_fn = vfswrap_fs_file_id,
 	.fstreaminfo_fn = vfswrap_fstreaminfo,
 	.get_real_filename_fn = vfswrap_get_real_filename,
+	.get_real_filename_at_fn = vfswrap_get_real_filename_at,
 	.connectpath_fn = vfswrap_connectpath,
 	.brl_lock_windows_fn = vfswrap_brl_lock_windows,
 	.brl_unlock_windows_fn = vfswrap_brl_unlock_windows,

@@ -2477,6 +2477,18 @@ static NTSTATUS snapper_gmt_get_real_filename(
 	return status;
 }
 
+static NTSTATUS snapper_gmt_get_real_filename_at(
+	struct vfs_handle_struct *handle,
+	struct files_struct *dirfsp,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
+{
+	NTSTATUS status = snapper_gmt_get_real_filename(
+		handle, dirfsp->fsp_name, name, mem_ctx, found_name);
+	return status;
+}
+
 static uint64_t snapper_gmt_disk_free(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				uint64_t *bsize,
@@ -2631,6 +2643,7 @@ static struct vfs_fn_pointers snapper_fns = {
 	.fsetxattr_fn = snapper_gmt_fsetxattr,
 	.fchflags_fn = snapper_gmt_fchflags,
 	.get_real_filename_fn = snapper_gmt_get_real_filename,
+	.get_real_filename_at_fn = snapper_gmt_get_real_filename_at,
 };
 
 static_decl_vfs;

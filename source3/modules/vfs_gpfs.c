@@ -370,6 +370,17 @@ static NTSTATUS vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS vfs_gpfs_get_real_filename_at(struct vfs_handle_struct *handle,
+					      struct files_struct *dirfsp,
+					      const char *name,
+					      TALLOC_CTX *mem_ctx,
+					      char **found_name)
+{
+	NTSTATUS status = vfs_gpfs_get_real_filename(
+		handle, dirfsp->fsp_name, name, mem_ctx, found_name);
+	return status;
+}
+
 static void sd2gpfs_control(uint16_t control, struct gpfs_acl *gacl)
 {
 	unsigned int gpfs_aclflags = 0;
@@ -2551,6 +2562,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.filesystem_sharemode_fn = vfs_gpfs_filesystem_sharemode,
 	.linux_setlease_fn = vfs_gpfs_setlease,
 	.get_real_filename_fn = vfs_gpfs_get_real_filename,
+	.get_real_filename_at_fn = vfs_gpfs_get_real_filename_at,
 	.get_dos_attributes_send_fn = vfs_not_implemented_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = vfs_not_implemented_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = vfs_gpfs_fget_dos_attributes,

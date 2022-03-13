@@ -369,6 +369,7 @@
  * Version 47 - remove st_ex_itime from struct stat_ex
  * Version 47 - remove (unused) struct lock_struct last_lock_failure
 		from files_struct.
+ * Version 47 - Add SMB_VFS_GET_REAL_FILENAME_AT
  */
 
 #define SMB_VFS_INTERFACE_VERSION 47
@@ -1153,6 +1154,12 @@ struct vfs_fn_pointers {
 					 TALLOC_CTX *mem_ctx,
 					 char **found_name);
 
+	NTSTATUS (*get_real_filename_at_fn)(struct vfs_handle_struct *handle,
+					    struct files_struct *dirfsp,
+					    const char *name,
+					    TALLOC_CTX *mem_ctx,
+					    char **found_name);
+
 	const char *(*connectpath_fn)(struct vfs_handle_struct *handle,
 				      const struct smb_filename *smb_fname);
 
@@ -1621,6 +1628,11 @@ NTSTATUS smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
 					const char *name,
 					TALLOC_CTX *mem_ctx,
 					char **found_name);
+NTSTATUS smb_vfs_call_get_real_filename_at(struct vfs_handle_struct *handle,
+					   struct files_struct *dirfsp,
+					   const char *name,
+					   TALLOC_CTX *mem_ctx,
+					   char **found_name);
 const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
 				     const struct smb_filename *smb_fname);
 NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
@@ -2085,6 +2097,12 @@ NTSTATUS vfs_not_implemented_fstreaminfo(struct vfs_handle_struct *handle,
 NTSTATUS vfs_not_implemented_get_real_filename(
 	struct vfs_handle_struct *handle,
 	const struct smb_filename *path,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name);
+NTSTATUS vfs_not_implemented_get_real_filename_at(
+	struct vfs_handle_struct *handle,
+	struct files_struct *dirfsp,
 	const char *name,
 	TALLOC_CTX *mem_ctx,
 	char **found_name);

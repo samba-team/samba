@@ -2602,6 +2602,18 @@ static NTSTATUS shadow_copy2_get_real_filename(
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS shadow_copy2_get_real_filename_at(
+	struct vfs_handle_struct *handle,
+	struct files_struct *dirfsp,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
+{
+	NTSTATUS status = shadow_copy2_get_real_filename(
+		handle, dirfsp->fsp_name, name, mem_ctx, found_name);
+	return status;
+}
+
 static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname_in)
 {
@@ -3447,6 +3459,7 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.fsetxattr_fn = shadow_copy2_fsetxattr,
 	.fchflags_fn = shadow_copy2_fchflags,
 	.get_real_filename_fn = shadow_copy2_get_real_filename,
+	.get_real_filename_at_fn = shadow_copy2_get_real_filename_at,
 	.pwrite_fn = shadow_copy2_pwrite,
 	.pwrite_send_fn = shadow_copy2_pwrite_send,
 	.pwrite_recv_fn = shadow_copy2_pwrite_recv,

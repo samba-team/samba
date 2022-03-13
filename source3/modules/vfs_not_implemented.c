@@ -735,6 +735,17 @@ NTSTATUS vfs_not_implemented_get_real_filename(
 }
 
 _PUBLIC_
+NTSTATUS vfs_not_implemented_get_real_filename_at(
+	struct vfs_handle_struct *handle,
+	struct files_struct *dirfsp,
+	const char *name,
+	TALLOC_CTX *mem_ctx,
+	char **found_name)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+_PUBLIC_
 const char *vfs_not_implemented_connectpath(struct vfs_handle_struct *handle,
 					    const struct smb_filename *smb_fname)
 {
@@ -1149,6 +1160,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 
 	.fstreaminfo_fn = vfs_not_implemented_fstreaminfo,
 	.get_real_filename_fn = vfs_not_implemented_get_real_filename,
+	.get_real_filename_at_fn = vfs_not_implemented_get_real_filename_at,
 	.connectpath_fn = vfs_not_implemented_connectpath,
 	.brl_lock_windows_fn = vfs_not_implemented_brl_lock_windows,
 	.brl_unlock_windows_fn = vfs_not_implemented_brl_unlock_windows,
