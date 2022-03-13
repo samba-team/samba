@@ -1507,8 +1507,9 @@ NTSTATUS OpenDir(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * This overwrites the destructor set by smb_Dir_OpenDir_destructor(),
-	 * but smb_Dir_OpenDir_destructor() calls the OpenDir_fsp() destructor.
+	 * This overwrites the destructor set by OpenDir_fsp() but
+	 * smb_Dir_OpenDir_destructor() calls the OpenDir_fsp()
+	 * destructor.
 	 */
 	talloc_set_destructor(dir_hnd, smb_Dir_OpenDir_destructor);
 
