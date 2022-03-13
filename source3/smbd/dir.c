@@ -1518,6 +1518,37 @@ NTSTATUS OpenDir(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS OpenDir_from_pathref(TALLOC_CTX *mem_ctx,
+			      struct files_struct *dirfsp,
+			      const char *mask,
+			      uint32_t attr,
+			      struct smb_Dir **_dir_hnd)
+{
+	struct files_struct *fsp = NULL;
+	struct smb_Dir *dir_hnd = NULL;
+	NTSTATUS status;
+
+	status = openat_internal_dir_from_pathref(dirfsp, O_RDONLY, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = OpenDir_fsp(mem_ctx, fsp->conn, fsp, mask, attr, &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * This overwrites the destructor set by OpenDir_fsp() but
+	 * smb_Dir_OpenDir_destructor() calls the OpenDir_fsp()
+	 * destructor.
+	 */
+	talloc_set_destructor(dir_hnd, smb_Dir_OpenDir_destructor);
+
+	*_dir_hnd = dir_hnd;
+	return NT_STATUS_OK;
+}
+
 /*******************************************************************
  Open a directory from an fsp.
 ********************************************************************/
