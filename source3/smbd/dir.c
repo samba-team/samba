@@ -507,7 +507,8 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	if (NT_STATUS_IS_OK(status)) {
 		name = found_name;
 		goto clean;
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/* The case-insensitive lookup was authoritative. */
 		goto clean;
 	}
