@@ -1680,32 +1680,26 @@ NTSTATUS get_real_filename_full_scan(connection_struct *conn,
  fallback.
 ****************************************************************************/
 
-static NTSTATUS get_real_filename(connection_struct *conn,
-				  struct smb_filename *path,
-				  const char *name,
-				  TALLOC_CTX *mem_ctx,
-				  char **found_name)
+static NTSTATUS get_real_filename_at(struct files_struct *dirfsp,
+				     const char *name,
+				     TALLOC_CTX *mem_ctx,
+				     char **found_name)
 {
+	struct connection_struct *conn = dirfsp->conn;
 	NTSTATUS status;
 	bool mangled;
 
 	mangled = mangle_is_mangled(name, conn->params);
 
 	if (mangled) {
-		return get_real_filename_full_scan(conn,
-						   path->base_name,
-						   name,
-						   mangled,
-						   mem_ctx,
-						   found_name);
+		status = get_real_filename_full_scan_at(
+			dirfsp, name, mangled, mem_ctx, found_name);
+		return status;
 	}
 
 	/* Try the vfs first to take advantage of case-insensitive stat. */
-	status = SMB_VFS_GET_REAL_FILENAME(conn,
-					   path,
-					   name,
-					   mem_ctx,
-					   found_name);
+	status = SMB_VFS_GET_REAL_FILENAME_AT(
+		dirfsp->conn, dirfsp, name, mem_ctx, found_name);
 
 	/*
 	 * If the case-insensitive stat was successful, or returned an error
@@ -1717,12 +1711,70 @@ static NTSTATUS get_real_filename(connection_struct *conn,
 		return status;
 	}
 
-	return get_real_filename_full_scan(conn,
-					   path->base_name,
-					   name,
-					   mangled,
-					   mem_ctx,
-					   found_name);
+	status = get_real_filename_full_scan_at(
+		dirfsp, name, mangled, mem_ctx, found_name);
+	return status;
+}
+
+static NTSTATUS get_real_filename(connection_struct *conn,
+				  struct smb_filename *path,
+				  const char *name,
+				  TALLOC_CTX *mem_ctx,
+				  char **found_name)
+{
+	struct smb_filename *smb_dname = NULL;
+	NTSTATUS status;
+
+	smb_dname = cp_smb_filename_nostream(talloc_tos(), path);
+	if (smb_dname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+again:
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_dname);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+	    S_ISLNK(smb_dname->st.st_ex_mode)) {
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+	    (smb_dname->twrp != 0)) {
+		/*
+		 * Retry looking at the non-snapshot path, copying the
+		 * fallback mechanism from vfs_shadow_copy2.c when
+		 * shadow_copy2_convert() fails. This path-based
+		 * routine get_real_filename() should go away and be
+		 * replaced with a fd-based one, so spoiling it with a
+		 * shadow_copy2 specific mechanism should not be too
+		 * bad.
+		 */
+		smb_dname->twrp = 0;
+		goto again;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("openat_pathref_fsp(%s) failed: %s\n",
+			  smb_fname_str_dbg(smb_dname),
+			  nt_errstr(status));
+
+		/*
+		 * ENOTDIR and ELOOP both map to
+		 * NT_STATUS_OBJECT_PATH_NOT_FOUND in the filename
+		 * walk.
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
+		return status;
+	}
+
+	status = get_real_filename_at(
+		smb_dname->fsp, name, mem_ctx, found_name);
+	TALLOC_FREE(smb_dname);
+	return status;
 }
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
