@@ -1,10 +1,10 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    generalised event loop handling
 
    INTERNAL STRUCTS. THERE ARE NO API GUARANTEES.
-   External users should only ever have to include this header when 
+   External users should only ever have to include this header when
    implementing new tevent backends.
 
    Copyright (C) Stefan Metzmacher 2005-2009
