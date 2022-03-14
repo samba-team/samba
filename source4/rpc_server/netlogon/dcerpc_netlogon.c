@@ -744,11 +744,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 {
 	struct netlogon_creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
-	const char * const attrs[] = { "unicodePwd", NULL };
-	struct ldb_message **res;
-	struct samr_Password *oldNtHash;
 	NTSTATUS nt_status;
-	int ret;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
 							mem_ctx,
@@ -764,22 +760,6 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 
 	nt_status = netlogon_creds_des_decrypt(creds, r->in.new_password);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
-
-	/* fetch the old password hashes (the NT hash has to exist) */
-
-	ret = gendb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
-			   "(&(objectClass=user)(objectSid=%s))",
-			   ldap_encode_ndr_dom_sid(mem_ctx, creds->sid));
-	if (ret != 1) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-
-	nt_status = samdb_result_passwords_no_lockout(mem_ctx,
-						      dce_call->conn->dce_ctx->lp_ctx,
-						      res[0], NULL, &oldNtHash);
-	if (!NT_STATUS_IS_OK(nt_status) || !oldNtHash) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
 
 	/* Using the sid for the account as the key, set the password */
 	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
@@ -801,9 +781,6 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 {
 	struct netlogon_creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
-	const char * const attrs[] = { "dBCSPwd", "unicodePwd", NULL };
-	struct ldb_message **res;
-	struct samr_Password *oldLmHash, *oldNtHash;
 	struct NL_PASSWORD_VERSION version = {};
 	const uint32_t *new_version = NULL;
 	NTSTATUS nt_status;
@@ -811,7 +788,6 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	size_t confounder_len;
 	DATA_BLOB dec_blob = data_blob_null;
 	DATA_BLOB enc_blob = data_blob_null;
-	int ret;
 	struct samr_CryptPassword password_buf;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
@@ -923,22 +899,6 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	if (all_zero(new_password.data, new_password.length)) {
 		DBG_WARNING("Password zero buffer Length[%zu]\n",
 			    new_password.length);
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-
-	/* fetch the old password hashes (at least one of both has to exist) */
-
-	ret = gendb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
-			   "(&(objectClass=user)(objectSid=%s))",
-			   ldap_encode_ndr_dom_sid(mem_ctx, creds->sid));
-	if (ret != 1) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-
-	nt_status = samdb_result_passwords_no_lockout(mem_ctx,
-						      dce_call->conn->dce_ctx->lp_ctx,
-						      res[0], &oldLmHash, &oldNtHash);
-	if (!NT_STATUS_IS_OK(nt_status) || (!oldLmHash && !oldNtHash)) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
