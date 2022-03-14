@@ -38,6 +38,7 @@ struct tevent_queue_entry {
 
 	tevent_queue_trigger_fn_t trigger;
 	void *private_data;
+	uint64_t tag;
 };
 
 struct tevent_queue {
@@ -63,6 +64,7 @@ static int tevent_queue_entry_destructor(struct tevent_queue_entry *e)
 		return 0;
 	}
 
+	tevent_trace_queue_callback(q->list->ev, e, TEVENT_EVENT_TRACE_DETACH);
 	DLIST_REMOVE(q->list, e);
 	q->length--;
 
@@ -145,6 +147,8 @@ static void tevent_queue_immediate_trigger(struct tevent_context *ev,
 		return;
 	}
 
+	tevent_trace_queue_callback(ev, q->list,
+				    TEVENT_EVENT_TRACE_BEFORE_HANDLER);
 	q->list->triggered = true;
 	q->list->trigger(q->list->req, q->list->private_data);
 }
@@ -204,6 +208,7 @@ static struct tevent_queue_entry *tevent_queue_add_internal(
 	DLIST_ADD_END(queue->list, e);
 	queue->length++;
 	talloc_set_destructor(e, tevent_queue_entry_destructor);
+	tevent_trace_queue_callback(ev, e, TEVENT_EVENT_TRACE_ATTACH);
 
 	if (!queue->running) {
 		return e;
@@ -219,6 +224,9 @@ static struct tevent_queue_entry *tevent_queue_add_internal(
 	 * an immediate event.
 	 */
 	if (allow_direct) {
+		tevent_trace_queue_callback(ev,
+					    queue->list,
+					    TEVENT_EVENT_TRACE_BEFORE_HANDLER);
 		queue->list->triggered = true;
 		queue->list->trigger(queue->list->req,
 				     queue->list->private_data);
@@ -373,4 +381,22 @@ bool tevent_queue_wait_recv(struct tevent_req *req)
 
 	tevent_req_received(req);
 	return true;
+}
+
+void tevent_queue_entry_set_tag(struct tevent_queue_entry *qe, uint64_t tag)
+{
+	if (qe == NULL) {
+		return;
+	}
+
+	qe->tag = tag;
+}
+
+uint64_t tevent_queue_entry_get_tag(const struct tevent_queue_entry *qe)
+{
+	if (qe == NULL) {
+		return 0;
+	}
+
+	return qe->tag;
 }

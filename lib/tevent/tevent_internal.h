@@ -366,6 +366,11 @@ struct tevent_context {
 			tevent_trace_immediate_callback_t callback;
 			void *private_data;
 		} im;
+
+		struct {
+			tevent_trace_queue_callback_t callback;
+			void *private_data;
+		} qe;
 	} tracing;
 
 	struct {
@@ -516,3 +521,7 @@ void tevent_trace_timer_callback(struct tevent_context *ev,
 void tevent_trace_immediate_callback(struct tevent_context *ev,
 				     struct tevent_immediate *im,
 				     enum tevent_event_trace_point);
+
+void tevent_trace_queue_callback(struct tevent_context *ev,
+				 struct tevent_queue_entry *qe,
+				 enum tevent_event_trace_point);
