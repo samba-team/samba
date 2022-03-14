@@ -493,6 +493,9 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 
 	status = fd_openat(dirfsp, smb_fname, fsp, open_flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
+
+		smb_fname->st = fsp->fsp_name->st;
+
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) ||
 		    NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND) ||
 		    NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK))

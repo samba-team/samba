@@ -807,6 +807,7 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 				  strerror(errno));
 			goto out;
 		}
+		orig_fsp_name->st = fsp->fsp_name->st;
 	}
 
 	if (fd != -1) {
@@ -856,11 +857,7 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 		saved_status = status;
 
 		if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
-			/* Never follow symlinks on posix open, .. but
-			 * pass the fact it's a symlink in
-			 * smb_fname->st
-			 */
-			smb_fname->st = fsp->fsp_name->st;
+			/* Never follow symlinks on posix open. */
 			goto out;
 		}
 		if (!lp_follow_symlinks(SNUM(conn))) {
