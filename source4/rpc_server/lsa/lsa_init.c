@@ -35,7 +35,7 @@
 	"(A;;0x00000801;;;AN)" \
 	"(A;;0x00001000;;;LS)" \
 	"(A;;0x00001000;;;NS)" \
-	"(A;;0x00001000;;;IS)" \
+	"(A;;0x00001000;;;S-1-5-17)" \
 	"(A;;0x00000801;;;S-1-15-2-1)"
 
 static const struct generic_mapping dcesrv_lsa_policy_mapping = {
