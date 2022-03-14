@@ -278,6 +278,14 @@ interface security
 	const string SID_BUILTIN_CRYPTO_OPERATORS	= "S-1-5-32-569";
 	const string SID_BUILTIN_EVENT_LOG_READERS	= "S-1-5-32-573";
 	const string SID_BUILTIN_CERT_SERV_DCOM_ACCESS	= "S-1-5-32-574";
+	const string SID_BUILTIN_RDS_REMOTE_ACCESS_SERVERS	= "S-1-5-32-575";
+	const string SID_BUILTIN_RDS_ENDPOINT_SERVERS	= "S-1-5-32-576";
+	const string SID_BUILTIN_RDS_MANAGEMENT_SERVERS	= "S-1-5-32-577";
+	const string SID_BUILTIN_HYPER_V_ADMINS	= "S-1-5-32-578";
+	const string SID_BUILTIN_ACCESS_CONTROL_ASSISTANCE_OPS	= "S-1-5-32-579";
+	const string SID_BUILTIN_REMOTE_MANAGEMENT_USERS	= "S-1-5-32-580";
+
+	const string SID_SECURITY_RESTRICTED_CODE = "S-1-5-33";
 
 	/* UID/GID mapping Samba style */
 	const string SID_SAMBA_UNIX_USER_OWNER		= "S-1-22-1";
@@ -295,6 +303,16 @@ interface security
 
 	const string SID_COMPOUNDED_AUTHENTICATION = "S-1-5-21-0-0-0-496";
 	const string SID_CLAIMS_VALID = "S-1-5-21-0-0-0-497";
+
+	const string SID_USER_MODE_DRIVERS = "S-1-5-84-0-0-0-0-0";
+
+	const string SID_SECURITY_BUILTIN_PACKAGE_ANY_PACKAGE = "S-1-15-2-1";
+
+	const string SID_SECURITY_MANDATORY_LOW = "S-1-16-4096";
+	const string SID_SECURITY_MANDATORY_MEDIUM = "S-1-16-8192";
+	const string SID_SECURITY_MANDATORY_MEDIUM_PLUS = "S-1-16-8448";
+	const string SID_SECURITY_MANDATORY_HIGH = "S-1-16-12288";
+	const string SID_SECURITY_MANDATORY_SYSTEM = "S-1-16-16384";
 
 	/*
 	 * http://technet.microsoft.com/en-us/library/hh509017(v=ws.10).aspx
@@ -321,6 +339,10 @@ interface security
 	const int DOMAIN_RID_ENTERPRISE_ADMINS       = 519;
 	const int DOMAIN_RID_POLICY_ADMINS           = 520;
 	const int DOMAIN_RID_READONLY_DCS            = 521;
+	const int DOMAIN_RID_CLONEABLE_CONTROLLERS   = 522;
+	const int DOMAIN_RID_PROTECTED_USERS         = 525;
+	const int DOMAIN_RID_KEY_ADMINS              = 526;
+	const int DOMAIN_RID_ENTERPRISE_KEY_ADMINS   = 527;
 	const int DOMAIN_RID_RAS_SERVERS             = 553;
 	const int DOMAIN_RID_RODC_ALLOW              = 571;
 	const int DOMAIN_RID_RODC_DENY               = 572;
@@ -349,6 +371,12 @@ interface security
 	const int BUILTIN_RID_CRYPTO_OPERATORS		= 569;
 	const int BUILTIN_RID_EVENT_LOG_READERS		= 573;
 	const int BUILTIN_RID_CERT_SERV_DCOM_ACCESS	= 574;
+	const int BUILTIN_RID_RDS_REMOTE_ACCESS_SERVERS	= 575;
+	const int BUILTIN_RID_RDS_ENDPOINT_SERVERS	= 576;
+	const int BUILTIN_RID_RDS_MANAGEMENT_SERVERS	= 577;
+	const int BUILTIN_RID_HYPER_V_ADMINS	= 578;
+	const int BUILTIN_RID_ACCESS_CONTROL_ASSISTANCE_OPS	= 579;
+	const int BUILTIN_RID_REMOTE_MANAGEMENT_USERS	= 580;
 
 /********************************************************************
  This is a list of privileges reported by a WIndows 2008 R2 DC
