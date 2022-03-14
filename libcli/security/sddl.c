@@ -116,11 +116,9 @@ static const struct {
 	{ .code = "PO", .sid = SID_BUILTIN_PRINT_OPERATORS },
 	{ .code = "BO", .sid = SID_BUILTIN_BACKUP_OPERATORS },
 	{ .code = "RE", .sid = SID_BUILTIN_REPLICATOR },
-	{ .code = "BR", .sid = SID_BUILTIN_RAS_SERVERS },
 	{ .code = "RU", .sid = SID_BUILTIN_PREW2K },
 	{ .code = "RD", .sid = SID_BUILTIN_REMOTE_DESKTOP_USERS },
 	{ .code = "NO", .sid = SID_BUILTIN_NETWORK_CONF_OPERATORS },
-	{ .code = "IF", .sid = SID_BUILTIN_INCOMING_FOREST_TRUST },
 
 	{ .code = "MU", .sid = SID_BUILTIN_PERFMON_USERS },
 	{ .code = "LU", .sid = SID_BUILTIN_PERFLOG_USERS },
@@ -152,7 +150,6 @@ static const struct {
 
 	{ .code = "LA", .sid = NULL, .rid = DOMAIN_RID_ADMINISTRATOR },
 	{ .code = "LG", .sid = NULL, .rid = DOMAIN_RID_GUEST },
-	{ .code = "LK", .sid = NULL, .rid = DOMAIN_RID_KRBTGT },
 
 	{ .code = "DA", .sid = NULL, .rid = DOMAIN_RID_ADMINS },
 	{ .code = "DU", .sid = NULL, .rid = DOMAIN_RID_USERS },
