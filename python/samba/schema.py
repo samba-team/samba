@@ -48,9 +48,9 @@ def get_schema_descriptor(domain_sid, name_map={}):
            "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)" \
            "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
            "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)" \
-           "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;S-1-5-32-498)" \
-           "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;S-1-5-32-498)" \
-           "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;S-1-5-32-498)" \
+           "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;RO)" \
+           "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;RO)" \
+           "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;RO)" \
            "S:(AU;SA;WPCCDCWOWDSDDTSW;;;WD)" \
            "(AU;CISA;WP;;;WD)" \
            "(AU;SA;CR;;;BA)" \
