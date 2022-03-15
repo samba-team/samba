@@ -1,4 +1,87 @@
                    ==============================
+                   Release Notes for Samba 4.15.6
+                           March 15, 2022
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.15 release series.
+
+
+Changes since 4.15.5
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14169: Renaming file on DFS root fails with
+     NT_STATUS_OBJECT_PATH_NOT_FOUND.
+   * BUG 14737: Samba does not response STATUS_INVALID_PARAMETER when opening 2
+     objects with same lease key.
+   * BUG 14938: NT error code is not set when overwriting a file during rename
+     in libsmbclient.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14996: Fix ldap simple bind with TLS auditing.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14674: net ads info shows LDAP Server: 0.0.0.0 depending on contacted
+     server.
+
+o  Samuel Cabrero <scabrero@suse.de>
+   * BUG 14979: Problem when winbind renews Kerberos.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 8691: pam_winbind will not allow gdm login if password about to expire.
+
+o  Pavel Filipenský <pfilipen@redhat.com>
+   * BUG 14971: virusfilter_vfs_openat: Not scanned: Directory or special file.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 13631: DFS fix for AIX broken.
+   * BUG 14974: Solaris and AIX acl modules: wrong function arguments.
+   * BUG 7239: Function aixacl_sys_acl_get_file not declared / coredump.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14900: Regression: Samba 4.15.2 on macOS segfaults intermittently
+     during strcpy in tdbsam_getsampwnam.
+   * BUG 14989: Fix a use-after-free in SMB1 server.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14968: smb2_signing_decrypt_pdu() may not decrypt with
+     gnutls_aead_cipher_decrypt() from gnutls before 3.5.2.
+   * BUG 14984: changing the machine password against an RODC likely destroys
+     the domain join.
+   * BUG 14993: authsam_make_user_info_dc() steals memory from its struct
+     ldb_message *msg argument.
+   * BUG 14995: Use Heimdal 8.0 (pre) rather than an earlier snapshot.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14967: Samba autorid fails to map AD users if id rangesize fits in the
+     id range only once.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.libera.chat or the
+#samba-technical:matrix.org matrix channel.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.15.5
                           January 31, 2022
                    ==============================
@@ -51,8 +134,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.15.4
                           January 19, 2022
