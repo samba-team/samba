@@ -578,10 +578,11 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		}
 
 		/* Append to the string - inefficient but not done often. */
-		new_kdc_str = talloc_asprintf(mem_ctx, "%s\t\tkdc = %s\n",
-					      kdc_str,
-					      print_canonical_sockaddr_with_port(mem_ctx, &dc_addrs[i]));
-		TALLOC_FREE(kdc_str);
+		new_kdc_str = talloc_asprintf_append(
+				kdc_str,
+				"\t\tkdc = %s\n",
+				print_canonical_sockaddr_with_port(
+					mem_ctx, &dc_addrs[i]));
 		if (new_kdc_str == NULL) {
 			goto out;
 		}
