@@ -438,7 +438,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	SMB_ASSERT(pss != NULL);
 
-	kdc_str = talloc_asprintf(mem_ctx,
+	kdc_str = talloc_asprintf(frame,
 				  "\t\tkdc = %s\n",
 				  print_canonical_sockaddr_with_port(mem_ctx,
 								     pss));
@@ -459,7 +459,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	 */
 
 	if (sitename) {
-		status = get_kdc_list(talloc_tos(),
+		status = get_kdc_list(frame,
 					realm,
 					sitename,
 					&ip_sa_site,
@@ -477,7 +477,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	/* Get all KDC's. */
 
-	status = get_kdc_list(talloc_tos(),
+	status = get_kdc_list(frame,
 					realm,
 					NULL,
 					&ip_sa_nonsite,
@@ -589,7 +589,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		kdc_str = new_kdc_str;
 	}
 
-	result = kdc_str;
+	result = talloc_move(mem_ctx, &kdc_str);
 out:
 	if (result != NULL) {
 		DBG_DEBUG("Returning\n%s\n", kdc_str);
@@ -597,8 +597,6 @@ out:
 		DBG_NOTICE("Failed to get KDC ip address\n");
 	}
 
-	TALLOC_FREE(ip_sa_site);
-	TALLOC_FREE(ip_sa_nonsite);
 	TALLOC_FREE(frame);
 	return result;
 }
