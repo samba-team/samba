@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    kerberos utility library
    Copyright (C) Andrew Tridgell 2001
@@ -37,11 +37,11 @@
 #define LIBADS_CCACHE_NAME "MEMORY:libads"
 
 /*
-  we use a prompter to avoid a crash bug in the kerberos libs when 
+  we use a prompter to avoid a crash bug in the kerberos libs when
   dealing with empty passwords
   this prompter is just a string copy ...
 */
-static krb5_error_code 
+static krb5_error_code
 kerb_prompter(krb5_context ctx, void *data,
 	       const char *name,
 	       const char *banner,
@@ -192,7 +192,7 @@ int kerberos_kinit_password_ext(const char *given_principal,
 		krb5_get_init_creds_opt_set_address_list(opt, addr->addrs);
 	}
 
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, discard_const_p(char,password), 
+	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, discard_const_p(char,password),
 						 kerb_prompter, discard_const_p(char, password),
 						 0, NULL, opt))) {
 		goto out;
@@ -299,7 +299,7 @@ int ads_kdestroy(const char *cc_name)
 	}
 
 	if ((code = krb5_cc_destroy (ctx, cc))) {
-		DEBUG(3, ("ads_kdestroy: krb5_cc_destroy failed: %s\n", 
+		DEBUG(3, ("ads_kdestroy: krb5_cc_destroy failed: %s\n",
 			error_message(code)));
 	}
 
@@ -348,10 +348,10 @@ int kerberos_kinit_password(const char *principal,
 			    int time_offset,
 			    const char *cache_name)
 {
-	return kerberos_kinit_password_ext(principal, 
-					   password, 
-					   time_offset, 
-					   0, 
+	return kerberos_kinit_password_ext(principal,
+					   password,
+					   time_offset,
+					   0,
 					   0,
 					   cache_name,
 					   False,
