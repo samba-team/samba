@@ -702,27 +702,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_client *client,
 	return status;
 }
 
-/****************************************************************************
- Set up an oplock break message.
-****************************************************************************/
-
 #define SMB1_BREAK_MESSAGE_LENGTH (smb_size + 8*2)
-
-static void new_break_message_smb1(files_struct *fsp, int cmd,
-				   char result[SMB1_BREAK_MESSAGE_LENGTH])
-{
-	memset(result,'\0',smb_size);
-	srv_set_message(result,8,0,true);
-	SCVAL(result,smb_com,SMBlockingX);
-	SSVAL(result,smb_tid,fsp->conn->cnum);
-	SSVAL(result,smb_pid,0xFFFF);
-	SSVAL(result,smb_uid,0);
-	SSVAL(result,smb_mid,0xFFFF);
-	SCVAL(result,smb_vwv0,0xFF);
-	SSVAL(result,smb_vwv2,fsp->fnum);
-	SCVAL(result,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
-	SCVAL(result,smb_vwv3+1,cmd);
-}
 
 /****************************************************************************
  Function to do the waiting before sending a local break.

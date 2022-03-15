@@ -607,6 +607,7 @@ if bld.CONFIG_SET('WITH_SMB1SERVER'):
                    smbd/smb1_ipc.c
                    smbd/smb1_negprot.c
                    smbd/smb1_nttrans.c
+                   smbd/smb1_oplock.c
     '''
 else:
     SMB1_SOURCES = ''
