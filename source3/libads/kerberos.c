@@ -522,6 +522,11 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	DBG_DEBUG("%zu additional KDCs to test\n", num_dcs);
 	if (num_dcs == 0) {
+		/*
+		 * We do not have additional KDCs, but we have the one passed
+		 * in via `pss`. So just use that one and leave.
+		 */
+		result = talloc_move(mem_ctx, &kdc_str);
 		goto out;
 	}
 
