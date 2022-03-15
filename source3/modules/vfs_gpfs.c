@@ -376,9 +376,82 @@ static NTSTATUS vfs_gpfs_get_real_filename_at(struct vfs_handle_struct *handle,
 					      TALLOC_CTX *mem_ctx,
 					      char **found_name)
 {
-	NTSTATUS status = vfs_gpfs_get_real_filename(
-		handle, dirfsp->fsp_name, name, mem_ctx, found_name);
-	return status;
+	int result;
+	char *full_path = NULL;
+	char *to_free = NULL;
+	char real_pathname[PATH_MAX+1], tmpbuf[PATH_MAX];
+	size_t full_path_len;
+	int buflen;
+	bool mangled;
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	if (!config->getrealfilename) {
+		return SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
+			handle, dirfsp, name, mem_ctx, found_name);
+	}
+
+	mangled = mangle_is_mangled(name, handle->conn->params);
+	if (mangled) {
+		return SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
+			handle, dirfsp, name, mem_ctx, found_name);
+	}
+
+	full_path_len = full_path_tos(dirfsp->fsp_name->base_name, name,
+				      tmpbuf, sizeof(tmpbuf),
+				      &full_path, &to_free);
+	if (full_path_len == -1) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	buflen = sizeof(real_pathname) - 1;
+
+	result = gpfswrap_get_realfilename_path(full_path, real_pathname,
+						&buflen);
+
+	TALLOC_FREE(to_free);
+
+	if ((result == -1) && (errno == ENOSYS)) {
+		return SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
+			handle, dirfsp, name, mem_ctx, found_name);
+	}
+
+	if (result == -1) {
+		DEBUG(10, ("smbd_gpfs_get_realfilename_path returned %s\n",
+			   strerror(errno)));
+		return map_nt_error_from_unix(errno);
+	}
+
+	/*
+	 * GPFS does not necessarily null-terminate the returned path
+	 * but instead returns the buffer length in buflen.
+	 */
+
+	if (buflen < sizeof(real_pathname)) {
+		real_pathname[buflen] = '\0';
+	} else {
+		real_pathname[sizeof(real_pathname)-1] = '\0';
+	}
+
+	DBG_DEBUG("%s/%s -> %s\n",
+		  fsp_str_dbg(dirfsp),
+		  name,
+		  real_pathname);
+
+	name = strrchr_m(real_pathname, '/');
+	if (name == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	*found_name = talloc_strdup(mem_ctx, name+1);
+	if (*found_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static void sd2gpfs_control(uint16_t control, struct gpfs_acl *gacl)
