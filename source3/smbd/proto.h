@@ -912,25 +912,6 @@ bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
 
 /* The following definitions come from smbd/reply.c  */
 
-size_t srvstr_get_path(TALLOC_CTX *ctx,
-			const char *inbuf,
-			uint16_t smb_flags2,
-			char **pp_dest,
-			const char *src,
-			size_t src_len,
-			int flags,
-			NTSTATUS *err);
-size_t srvstr_get_path_posix(TALLOC_CTX *ctx,
-			const char *inbuf,
-			uint16_t smb_flags2,
-			char **pp_dest,
-			const char *src,
-			size_t src_len,
-			int flags,
-			NTSTATUS *err);
-size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
-			   char **pp_dest, const char *src, int flags,
-			   NTSTATUS *err);
 size_t srvstr_pull_req_talloc(TALLOC_CTX *ctx, struct smb_request *req,
 			      char **dest, const uint8_t *src, int flags);
 bool check_fsp_open(connection_struct *conn, struct smb_request *req,
@@ -1036,6 +1017,25 @@ void reply_getattrE(struct smb_request *req);
 
 NTSTATUS check_path_syntax(char *path);
 NTSTATUS check_path_syntax_posix(char *path);
+size_t srvstr_get_path(TALLOC_CTX *ctx,
+			const char *inbuf,
+			uint16_t smb_flags2,
+			char **pp_dest,
+			const char *src,
+			size_t src_len,
+			int flags,
+			NTSTATUS *err);
+size_t srvstr_get_path_posix(TALLOC_CTX *ctx,
+			const char *inbuf,
+			uint16_t smb_flags2,
+			char **pp_dest,
+			const char *src,
+			size_t src_len,
+			int flags,
+			NTSTATUS *err);
+size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
+			   char **pp_dest, const char *src, int flags,
+			   NTSTATUS *err);
 
 /* The following definitions come from smbd/seal.c  */
 

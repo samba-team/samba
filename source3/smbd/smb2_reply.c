@@ -243,3 +243,132 @@ NTSTATUS check_path_syntax_posix(char *path)
 {
 	return check_path_syntax_internal(path, true);
 }
+
+/****************************************************************************
+ Pull a string and check the path allowing a wildcard - provide for error return.
+ Passes in posix flag.
+****************************************************************************/
+
+static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
+			const char *base_ptr,
+			uint16_t smb_flags2,
+			char **pp_dest,
+			const char *src,
+			size_t src_len,
+			int flags,
+			bool posix_pathnames,
+			NTSTATUS *err)
+{
+	size_t ret;
+
+	*pp_dest = NULL;
+
+	ret = srvstr_pull_talloc(ctx, base_ptr, smb_flags2, pp_dest, src,
+				 src_len, flags);
+
+	if (!*pp_dest) {
+		*err = NT_STATUS_INVALID_PARAMETER;
+		return ret;
+	}
+
+	if (smb_flags2 & FLAGS2_DFS_PATHNAMES) {
+		/*
+		 * For a DFS path the function parse_dfs_path()
+		 * will do the path processing, just make a copy.
+		 */
+		*err = NT_STATUS_OK;
+		return ret;
+	}
+
+	if (posix_pathnames) {
+		*err = check_path_syntax_posix(*pp_dest);
+	} else {
+		*err = check_path_syntax(*pp_dest);
+	}
+
+	return ret;
+}
+
+/****************************************************************************
+ Pull a string and check the path - provide for error return.
+****************************************************************************/
+
+size_t srvstr_get_path(TALLOC_CTX *ctx,
+			const char *base_ptr,
+			uint16_t smb_flags2,
+			char **pp_dest,
+			const char *src,
+			size_t src_len,
+			int flags,
+			NTSTATUS *err)
+{
+	return srvstr_get_path_internal(ctx,
+			base_ptr,
+			smb_flags2,
+			pp_dest,
+			src,
+			src_len,
+			flags,
+			false,
+			err);
+}
+
+/****************************************************************************
+ Pull a string and check the path - provide for error return.
+ posix_pathnames version.
+****************************************************************************/
+
+size_t srvstr_get_path_posix(TALLOC_CTX *ctx,
+			const char *base_ptr,
+			uint16_t smb_flags2,
+			char **pp_dest,
+			const char *src,
+			size_t src_len,
+			int flags,
+			NTSTATUS *err)
+{
+	return srvstr_get_path_internal(ctx,
+			base_ptr,
+			smb_flags2,
+			pp_dest,
+			src,
+			src_len,
+			flags,
+			true,
+			err);
+}
+
+
+size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
+				 char **pp_dest, const char *src, int flags,
+				 NTSTATUS *err)
+{
+	ssize_t bufrem = smbreq_bufrem(req, src);
+
+	if (bufrem < 0) {
+		*err = NT_STATUS_INVALID_PARAMETER;
+		return 0;
+	}
+
+	if (req->posix_pathnames) {
+		return srvstr_get_path_internal(mem_ctx,
+				(const char *)req->inbuf,
+				req->flags2,
+				pp_dest,
+				src,
+				bufrem,
+				flags,
+				true,
+				err);
+	} else {
+		return srvstr_get_path_internal(mem_ctx,
+				(const char *)req->inbuf,
+				req->flags2,
+				pp_dest,
+				src,
+				bufrem,
+				flags,
+				false,
+				err);
+	}
+}
