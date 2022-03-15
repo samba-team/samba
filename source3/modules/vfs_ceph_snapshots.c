@@ -1358,8 +1358,48 @@ static NTSTATUS ceph_snap_gmt_get_real_filename_at(
 	TALLOC_CTX *mem_ctx,
 	char **found_name)
 {
-	NTSTATUS status = ceph_snap_gmt_get_real_filename(
-		handle, dirfsp->fsp_name, name, mem_ctx, found_name);
+	time_t timestamp = 0;
+	char stripped[PATH_MAX + 1];
+	char conv[PATH_MAX + 1];
+	struct smb_filename *conv_fname = NULL;
+	int ret;
+	NTSTATUS status;
+
+	ret = ceph_snap_gmt_strip_snapshot(
+		handle,
+		dirfsp->fsp_name,
+		&timestamp,
+		stripped,
+		sizeof(stripped));
+	if (ret < 0) {
+		return map_nt_error_from_unix(-ret);
+	}
+	if (timestamp == 0) {
+		return SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
+			handle, dirfsp, name, mem_ctx, found_name);
+	}
+	ret = ceph_snap_gmt_convert_dir(handle, stripped,
+					timestamp, conv, sizeof(conv));
+	if (ret < 0) {
+		return map_nt_error_from_unix(-ret);
+	}
+
+	status = synthetic_pathref(
+		talloc_tos(),
+		dirfsp->conn->cwd_fsp,
+		conv,
+		NULL,
+		NULL,
+		0,
+		0,
+		&conv_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
+		handle, conv_fname->fsp, name, mem_ctx, found_name);
+	TALLOC_FREE(conv_fname);
 	return status;
 }
 
