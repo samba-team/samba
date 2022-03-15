@@ -258,23 +258,23 @@ static const struct flag_map ace_flags[] = {
 };
 
 static const struct flag_map ace_access_mask[] = {
-	{ "RP", SEC_ADS_READ_PROP },
-	{ "WP", SEC_ADS_WRITE_PROP },
-	{ "CR", SEC_ADS_CONTROL_ACCESS },
 	{ "CC", SEC_ADS_CREATE_CHILD },
 	{ "DC", SEC_ADS_DELETE_CHILD },
 	{ "LC", SEC_ADS_LIST },
-	{ "LO", SEC_ADS_LIST_OBJECT },
-	{ "RC", SEC_STD_READ_CONTROL },
-	{ "WO", SEC_STD_WRITE_OWNER },
-	{ "WD", SEC_STD_WRITE_DAC },
-	{ "SD", SEC_STD_DELETE },
-	{ "DT", SEC_ADS_DELETE_TREE },
 	{ "SW", SEC_ADS_SELF_WRITE },
+	{ "RP", SEC_ADS_READ_PROP },
+	{ "WP", SEC_ADS_WRITE_PROP },
+	{ "DT", SEC_ADS_DELETE_TREE },
+	{ "LO", SEC_ADS_LIST_OBJECT },
+	{ "CR", SEC_ADS_CONTROL_ACCESS },
+	{ "SD", SEC_STD_DELETE },
+	{ "RC", SEC_STD_READ_CONTROL },
+	{ "WD", SEC_STD_WRITE_DAC },
+	{ "WO", SEC_STD_WRITE_OWNER },
 	{ "GA", SEC_GENERIC_ALL },
-	{ "GR", SEC_GENERIC_READ },
-	{ "GW", SEC_GENERIC_WRITE },
 	{ "GX", SEC_GENERIC_EXECUTE },
+	{ "GW", SEC_GENERIC_WRITE },
+	{ "GR", SEC_GENERIC_READ },
 	{ NULL, 0 }
 };
 
