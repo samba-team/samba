@@ -47,3 +47,25 @@ void new_break_message_smb1(files_struct *fsp, int cmd,
 	SCVAL(result,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
 	SCVAL(result,smb_vwv3+1,cmd);
 }
+
+void send_break_message_smb1(files_struct *fsp, int level)
+{
+	struct smbXsrv_connection *xconn = NULL;
+	char break_msg[SMB1_BREAK_MESSAGE_LENGTH];
+
+	/*
+	 * For SMB1 we only have one connection
+	 */
+	xconn = fsp->conn->sconn->client->connections;
+
+	new_break_message_smb1(fsp, level, break_msg);
+
+	show_msg(break_msg);
+	if (!srv_send_smb(xconn,
+			break_msg, false, 0,
+			IS_CONN_ENCRYPTED(fsp->conn),
+			NULL)) {
+		exit_server_cleanly("send_break_message_smb1: "
+			"srv_send_smb failed.");
+	}
+}

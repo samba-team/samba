@@ -23,3 +23,4 @@
 
 void new_break_message_smb1(files_struct *fsp, int cmd,
 			    char result[SMB1_BREAK_MESSAGE_LENGTH]);
+void send_break_message_smb1(files_struct *fsp, int level);
