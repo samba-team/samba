@@ -2040,9 +2040,31 @@ static NTSTATUS vfs_gluster_get_real_filename_at(
 	TALLOC_CTX *mem_ctx,
 	char **found_name)
 {
-	NTSTATUS status = vfs_gluster_get_real_filename(
-		handle, dirfsp->fsp_name, name, mem_ctx, found_name);
-	return status;
+	glfs_fd_t *glfd = vfs_gluster_fetch_glfd(handle, dirfsp);
+	int ret;
+	char key_buf[GLUSTER_NAME_MAX + 64];
+	char val_buf[GLUSTER_NAME_MAX + 1];
+
+	if (strlen(name) >= GLUSTER_NAME_MAX) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
+	snprintf(key_buf, GLUSTER_NAME_MAX + 64,
+		 "glusterfs.get_real_filename:%s", name);
+
+	ret = glfs_fgetxattr(glfd, key_buf, val_buf, GLUSTER_NAME_MAX + 1);
+	if (ret == -1) {
+		if (errno == ENOATTR) {
+			errno = ENOENT;
+		}
+		return map_nt_error_from_unix(errno);
+	}
+
+	*found_name = talloc_strdup(mem_ctx, val_buf);
+	if (found_name[0] == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
 }
 
 static const char *vfs_gluster_connectpath(struct vfs_handle_struct *handle,
