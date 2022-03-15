@@ -612,7 +612,40 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		ui.auth_description = auth_description;
 
 		if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_AUTHORIZED) {
+			/* This is the final sucess */
 			status = NT_STATUS_OK;
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_VALIDATED_LONG_TERM_KEY) {
+			/*
+			 * This was only a pre-authentication success,
+			 * but we didn't reach the final
+			 * KDC_AUTH_EVENT_CLIENT_AUTHORIZED,
+			 * so consult the error code.
+			 */
+			if (r->error_code == 0) {
+				DBG_ERR("ERROR: VALIDATED_LONG_TERM_KEY "
+					"with error=0 => INTERNAL_ERROR\n");
+				status = NT_STATUS_INTERNAL_ERROR;
+				final_ret = KRB5KRB_ERR_GENERIC;
+				r->error_code = final_ret;
+			} else {
+				status = krb5_to_nt_status(r->error_code);
+			}
+		} else if (hdb_auth_status == KDC_AUTH_EVENT_PREAUTH_SUCCEEDED) {
+			/*
+			 * This was only a pre-authentication success,
+			 * but we didn't reach the final
+			 * KDC_AUTH_EVENT_CLIENT_AUTHORIZED,
+			 * so consult the error code.
+			 */
+			if (r->error_code == 0) {
+				DBG_ERR("ERROR: PREAUTH_SUCCEEDED "
+					"with error=0 => INTERNAL_ERROR\n");
+				status = NT_STATUS_INTERNAL_ERROR;
+				final_ret = KRB5KRB_ERR_GENERIC;
+				r->error_code = final_ret;
+			} else {
+				status = krb5_to_nt_status(r->error_code);
+			}
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_TIME_SKEW) {
 			status = NT_STATUS_TIME_DIFFERENCE_AT_DC;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY) {
@@ -640,6 +673,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			DBG_ERR("Unhandled hdb_auth_status=%d => INTERNAL_ERROR\n",
 				hdb_auth_status);
 			status = NT_STATUS_INTERNAL_ERROR;
+			final_ret = KRB5KRB_ERR_GENERIC;
+			r->error_code = final_ret;
 		}
 
 		if (rwdc_fallback) {
@@ -664,6 +699,14 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 					 domain_name,
 					 account_name,
 					 sid);
+		if (final_ret == KRB5KRB_ERR_GENERIC && socket_wrapper_enabled()) {
+			/*
+			 * If we're running under make test
+			 * just panic
+			 */
+			DBG_ERR("Unexpected situation => PANIC\n");
+			smb_panic("hdb_samba4_audit: Unexpected situation");
+		}
 		TALLOC_FREE(frame);
 		break;
 	}
