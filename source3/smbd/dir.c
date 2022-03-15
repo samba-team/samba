@@ -499,11 +499,11 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	 * Try case-insensitive stat if the fs has the ability. This avoids
 	 * scanning the whole directory.
 	 */
-	status = SMB_VFS_GET_REAL_FILENAME(dptr->conn,
-					   dptr->smb_dname,
-					   dptr->wcard,
-					   ctx,
-					   &found_name);
+	status = SMB_VFS_GET_REAL_FILENAME_AT(dptr->conn,
+					      dptr->dir_hnd->fsp,
+					      dptr->wcard,
+					      ctx,
+					      &found_name);
 	if (NT_STATUS_IS_OK(status)) {
 		name = found_name;
 		goto clean;
