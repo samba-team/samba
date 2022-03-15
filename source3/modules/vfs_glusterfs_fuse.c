@@ -65,9 +65,42 @@ static NTSTATUS vfs_gluster_fuse_get_real_filename_at(
 	TALLOC_CTX *mem_ctx,
 	char **_found_name)
 {
-	NTSTATUS status = vfs_gluster_fuse_get_real_filename(
-		handle, dirfsp->fsp_name, name, mem_ctx, _found_name);
-	return status;
+	int ret, dirfd;
+	char key_buf[GLUSTER_NAME_MAX + 64];
+	char val_buf[GLUSTER_NAME_MAX + 1];
+	char *found_name = NULL;
+
+	if (strlen(name) >= GLUSTER_NAME_MAX) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
+	snprintf(key_buf, GLUSTER_NAME_MAX + 64,
+		 "glusterfs.get_real_filename:%s", name);
+
+	dirfd = openat(fsp_get_pathref_fd(dirfsp), ".", O_RDONLY);
+	if (dirfd == -1) {
+		NTSTATUS status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("Could not open '.' in %s: %s\n",
+			  fsp_str_dbg(dirfsp),
+			  strerror(errno));
+		return status;
+	}
+
+	ret = fgetxattr(dirfd, key_buf, val_buf, GLUSTER_NAME_MAX + 1);
+	close(dirfd);
+	if (ret == -1) {
+		if (errno == ENOATTR) {
+			errno = ENOENT;
+		}
+		return map_nt_error_from_unix(errno);
+	}
+
+	found_name = talloc_strdup(mem_ctx, val_buf);
+	if (found_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	*_found_name = found_name;
+	return NT_STATUS_OK;
 }
 
 struct device_mapping_entry {
