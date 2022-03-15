@@ -52,6 +52,46 @@ samba-dcerpcd can also be useful for use outside of the Samba
 framework, for example, use with the Linux kernel SMB2 server ksmbd or
 possibly other SMB2 server implementations.
 
+Heimdal-8.0pre used for Samba Internal Kerberos, adds FAST support
+------------------------------------------------------------------
+
+Samba has since Samba 4.0 included a snapshot of the Heimdal Kerberos
+implementation.  This snapshot has now been updated and will closely
+match what will be released as Heimdal 8.0 shortly.
+
+This is a major update, previously we used a snapshot of Heimdal from
+2011, and brings important new Kerberos security features such as
+Kerberos request armoring, known as FAST.  This tunnels ticket
+requests and replies that might be encrypted with a weak password
+inside a wrapper built with a stronger password, say from a machine
+account.
+
+In Heimdal and MIT modes Samba's KDC now supports FAST, for the
+support of non-Windows clients.
+
+Windows clients will not use this feature however, as they do not
+attempt to do so against a server not advertising domain Functional
+Level 2012.  Samba users are of course free to modify how Samba
+advertises itself, but use with Windows clients is not supported "out
+of the box".
+
+Finally, Samba also uses a per-KDC, not per-realm 'cookie' to secure part of
+the FAST protocol.  A future version will align this more closely with
+Microsoft AD behaviour.
+
+If FAST needs to be disabled on your Samba KDC, set
+
+ kdc enable fast = no
+
+in the smb.conf.
+
+The Samba project wishes to thank the numerous developers who have put
+in a massive effort to make this possible over many years.  In
+particular we thank Stefan Metzmacher, Joseph Sutton, Gary Lockyer,
+Isaac Boukris and Andrew Bartlett.  Samba's developers in turn thank
+their employers and in turn their customers who have supported this
+effort over many years.
+
 Certificate Auto Enrollment
 ---------------------------
 
