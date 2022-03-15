@@ -22,3 +22,4 @@
 
 void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req);
 void reply_pipe_write_and_X(struct smb_request *req);
+void reply_pipe_read_and_X(struct smb_request *req);
