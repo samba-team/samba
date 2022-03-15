@@ -306,6 +306,9 @@ void smb_krb5_principal_set_type(krb5_context context,
 				 krb5_principal principal,
 				 int type);
 
+int smb_krb5_principal_is_tgs(krb5_context context,
+			      krb5_const_principal principal);
+
 krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
 					     krb5_principal principal,
 					     const char *realm);

@@ -3348,6 +3348,34 @@ void smb_krb5_principal_set_type(krb5_context context,
 #endif
 }
 
+/**
+ * @brief Check if a principal is a TGS
+ *
+ * @param[in]  context  The library context
+ *
+ * @param[inout] principal The principal to check.
+ *
+ * @returns 1 if equal, 0 if not and -1 on error.
+ */
+int smb_krb5_principal_is_tgs(krb5_context context,
+			      krb5_const_principal principal)
+{
+	char *p = NULL;
+	int eq = 1;
+
+	p = smb_krb5_principal_get_comp_string(NULL, context, principal, 0);
+	if (p == NULL) {
+		return -1;
+	}
+
+	eq = krb5_princ_size(context, principal) == 2 &&
+	     (strequal(p, KRB5_TGS_NAME));
+
+	talloc_free(p);
+
+	return eq;
+}
+
 #if !defined(HAVE_KRB5_WARNX)
 /**
  * @brief Log a Kerberos message
