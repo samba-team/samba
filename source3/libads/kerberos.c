@@ -590,7 +590,11 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	result = kdc_str;
 out:
-	DBG_DEBUG("Returning\n%s\n", kdc_str);
+	if (result != NULL) {
+		DBG_DEBUG("Returning\n%s\n", kdc_str);
+	} else {
+		DBG_NOTICE("Failed to get KDC ip address\n");
+	}
 
 	TALLOC_FREE(ip_sa_site);
 	TALLOC_FREE(ip_sa_nonsite);
