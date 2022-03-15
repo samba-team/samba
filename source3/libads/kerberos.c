@@ -434,9 +434,14 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	struct netlogon_samlogon_response **responses = NULL;
 	NTSTATUS status;
 	bool ok;
-	char *kdc_str = talloc_asprintf(mem_ctx, "%s\t\tkdc = %s\n", "",
-					print_canonical_sockaddr_with_port(mem_ctx, pss));
+	char *kdc_str = NULL;
 
+	SMB_ASSERT(pss != NULL);
+
+	kdc_str = talloc_asprintf(mem_ctx,
+				  "\t\tkdc = %s\n",
+				  print_canonical_sockaddr_with_port(mem_ctx,
+								     pss));
 	if (kdc_str == NULL) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -516,15 +521,15 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		}
 	}
 
-	dc_addrs2 = talloc_zero_array(talloc_tos(),
-				      struct tsocket_address *,
-				      num_dcs);
-
 	DBG_DEBUG("%zu additional KDCs to test\n", num_dcs);
 	if (num_dcs == 0) {
 		TALLOC_FREE(kdc_str);
 		goto out;
 	}
+
+	dc_addrs2 = talloc_zero_array(talloc_tos(),
+				      struct tsocket_address *,
+				      num_dcs);
 	if (dc_addrs2 == NULL) {
 		TALLOC_FREE(kdc_str);
 		goto out;
