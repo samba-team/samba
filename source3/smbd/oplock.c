@@ -1024,12 +1024,16 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		wait_before_sending_break();
 	}
 
+#if defined(WITH_SMB1SERVER)
 	if (sconn->using_smb2) {
+#endif
 		send_break_message_smb2(fsp, break_from, break_to);
+#if defined(WITH_SMB1SERVER)
 	} else {
 		send_break_message_smb1(fsp, (break_to & SMB2_LEASE_READ) ?
 					OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
 	}
+#endif
 
 	if ((break_from == SMB2_LEASE_READ) &&
 	    (break_to == SMB2_LEASE_NONE)) {
@@ -1106,11 +1110,15 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 		return;
 	}
 
+#if defined(WITH_SMB1SERVER)
 	if (sconn->using_smb2) {
+#endif
 		send_break_message_smb2(fsp, 0, OPLOCKLEVEL_NONE);
+#if defined(WITH_SMB1SERVER)
 	} else {
 		send_break_message_smb1(fsp, OPLOCKLEVEL_NONE);
 	}
+#endif
 
 	fsp->sent_oplock_break = BREAK_TO_NONE_SENT;
 
