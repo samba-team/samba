@@ -435,13 +435,18 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	NTSTATUS status;
 	bool ok;
 	char *kdc_str = NULL;
+	char *canon_sockaddr = NULL;
 
 	SMB_ASSERT(pss != NULL);
 
+	canon_sockaddr = print_canonical_sockaddr_with_port(frame, pss);
+	if (canon_sockaddr == NULL) {
+		goto out;
+	}
+
 	kdc_str = talloc_asprintf(frame,
 				  "\t\tkdc = %s\n",
-				  print_canonical_sockaddr_with_port(mem_ctx,
-								     pss));
+				  canon_sockaddr);
 	if (kdc_str == NULL) {
 		goto out;
 	}
