@@ -912,8 +912,6 @@ bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
 
 /* The following definitions come from smbd/reply.c  */
 
-NTSTATUS check_path_syntax(char *path);
-NTSTATUS check_path_syntax_posix(char *path);
 size_t srvstr_get_path(TALLOC_CTX *ctx,
 			const char *inbuf,
 			uint16_t smb_flags2,
@@ -1033,6 +1031,11 @@ void reply_setattrE(struct smb_request *req);
 void reply_writebmpx(struct smb_request *req);
 void reply_writebs(struct smb_request *req);
 void reply_getattrE(struct smb_request *req);
+
+/* The following definitions come from smbd/smb2_reply.c  */
+
+NTSTATUS check_path_syntax(char *path);
+NTSTATUS check_path_syntax_posix(char *path);
 
 /* The following definitions come from smbd/seal.c  */
 
