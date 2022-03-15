@@ -804,7 +804,6 @@ int register_homes_share(const char *username);
 
 NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 		      struct files_struct **pfsp);
-void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req);
 void reply_pipe_write(struct smb_request *req);
 void reply_pipe_write_and_X(struct smb_request *req);
 void reply_pipe_read_and_X(struct smb_request *req);
