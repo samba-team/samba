@@ -51,6 +51,12 @@ fi
 
 testit "join" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
+workgroup=$(awk '/workgroup =/ { print $NR }' "${BASEDIR}/${WORKDIR}/client.conf")
+testit "local krb5.conf created" \
+	test -r \
+	"${BASEDIR}/${WORKDIR}/lockdir/smb_krb5/krb5.conf.${workgroup}" ||
+	failed=$((failed + 1))
+
 testit "testjoin" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required || failed=`expr $failed + 1`
 
 netbios=$(grep "netbios name" $BASEDIR/$WORKDIR/client.conf | cut -f2 -d= | awk '{$1=$1};1')
