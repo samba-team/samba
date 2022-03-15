@@ -629,7 +629,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/fileio.c
                           smbd/smb2_ipc.c
                           smbd/smb2_nttrans.c
-                          smbd/pipes.c
+                          smbd/smb2_pipes.c
                           smbd/reply.c
                           smbd/trans2.c
                           smbd/uid.c
