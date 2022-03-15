@@ -443,13 +443,11 @@ static char *get_kdc_ip_string(char *mem_ctx,
 				  print_canonical_sockaddr_with_port(mem_ctx,
 								     pss));
 	if (kdc_str == NULL) {
-		TALLOC_FREE(frame);
-		return NULL;
+		goto out;
 	}
 
 	ok = sockaddr_storage_to_samba_sockaddr(&sa, pss);
 	if (!ok) {
-		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
@@ -467,7 +465,6 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("get_kdc_list fail %s\n",
 				nt_errstr(status));
-			TALLOC_FREE(kdc_str);
 			goto out;
 		}
 		DBG_DEBUG("got %zu addresses from site %s search\n",
@@ -485,7 +482,6 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("get_kdc_list (site-less) fail %s\n",
 			nt_errstr(status));
-		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 	DBG_DEBUG("got %zu addresses from site-less search\n", count_nonsite);
@@ -493,7 +489,6 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	if (count_site + count_nonsite < count_site) {
 		/* Wrap check. */
 		DBG_ERR("get_kdc_list_talloc (site-less) fail wrap error\n");
-		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
@@ -501,7 +496,6 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	dc_addrs = talloc_array(talloc_tos(), struct sockaddr_storage,
 				count_site + count_nonsite);
 	if (dc_addrs == NULL) {
-		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
@@ -523,7 +517,6 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	DBG_DEBUG("%zu additional KDCs to test\n", num_dcs);
 	if (num_dcs == 0) {
-		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
@@ -531,7 +524,6 @@ static char *get_kdc_ip_string(char *mem_ctx,
 				      struct tsocket_address *,
 				      num_dcs);
 	if (dc_addrs2 == NULL) {
-		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
@@ -548,7 +540,6 @@ static char *get_kdc_ip_string(char *mem_ctx,
 			status = map_nt_error_from_unix(errno);
 			DEBUG(2,("Failed to create tsocket_address for %s - %s\n",
 				 addr, nt_errstr(status)));
-			TALLOC_FREE(kdc_str);
 			goto out;
 		}
 	}
@@ -566,7 +557,6 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("get_kdc_ip_string: cldap_multi_netlogon failed: "
 			  "%s\n", nt_errstr(status)));
-		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
