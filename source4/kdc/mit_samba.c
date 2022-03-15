@@ -240,13 +240,20 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 		if (!(kflags & KRB5_KDB_FLAG_REFERRAL_OK)) {
 			sflags |= SDB_F_FOR_AS_REQ;
 		}
-	} else if (ks_is_tgs_principal(ctx, principal)) {
-		sflags |= SDB_F_GET_KRBTGT;
 	} else {
-		sflags |= SDB_F_GET_SERVER;
+		int equal = smb_krb5_principal_is_tgs(ctx->context, principal);
+		if (equal == -1) {
+			return ENOMEM;
+		}
 
-		if (!(kflags & KRB5_KDB_FLAG_REFERRAL_OK)) {
-			sflags |= SDB_F_FOR_TGS_REQ;
+		if (equal) {
+			sflags |= SDB_F_GET_KRBTGT;
+		} else {
+			sflags |= SDB_F_GET_SERVER;
+
+			if (!(kflags & KRB5_KDB_FLAG_REFERRAL_OK)) {
+				sflags |= SDB_F_FOR_TGS_REQ;
+			}
 		}
 	}
 #else /* KRB5_KDB_DAL_MAJOR_VERSION < 9 */
@@ -263,10 +270,17 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 		 * This is supported by Windows.
 		 */
 		sflags |= SDB_F_GET_ANY|SDB_F_FOR_AS_REQ;
-	} else if (ks_is_tgs_principal(ctx, principal)) {
-		sflags |= SDB_F_GET_KRBTGT;
 	} else {
-		sflags |= SDB_F_GET_SERVER|SDB_F_FOR_TGS_REQ;
+		int equal = smb_krb5_principal_is_tgs(ctx->context, principal);
+		if (equal == -1) {
+			return ENOMEM;
+		}
+
+		if (equal) {
+			sflags |= SDB_F_GET_KRBTGT;
+		} else {
+			sflags |= SDB_F_GET_SERVER|SDB_F_FOR_TGS_REQ;
+		}
 	}
 #endif /* KRB5_KDB_DAL_MAJOR_VERSION */
 
