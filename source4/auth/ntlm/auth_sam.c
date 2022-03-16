@@ -52,7 +52,6 @@ extern const char *domain_ref_attrs[];
 ****************************************************************************/
 static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 				    TALLOC_CTX *mem_ctx,
-				    uint16_t acct_flags,
 				    const struct samr_Password *nt_pwd,
 				    const struct auth_usersupplied_info *user_info, 
 				    DATA_BLOB *user_sess_key, 
@@ -207,7 +206,6 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 						  TALLOC_CTX *mem_ctx,
 						  struct ldb_dn *domain_dn,
 						  struct ldb_message *msg,
-						  uint16_t acct_flags,
 						  const struct auth_usersupplied_info *user_info,
 						  DATA_BLOB *user_sess_key,
 						  DATA_BLOB *lm_sess_key,
@@ -273,7 +271,6 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 	}
 
 	auth_status = authsam_password_ok(auth_context, tmp_ctx,
-					  acct_flags,
 					  nt_pwd,
 					  user_info,
 					  user_sess_key, lm_sess_key);
@@ -369,7 +366,6 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		}
 
 		auth_status = authsam_password_ok(auth_context, tmp_ctx,
-						  acct_flags,
 						  nt_history_pwd,
 						  user_info,
 						  user_sess_key,
@@ -551,7 +547,7 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 	}
 
 	nt_status = authsam_password_check_and_record(auth_context, tmp_ctx,
-						      domain_dn, msg, acct_flags,
+						      domain_dn, msg,
 						      user_info,
 						      user_sess_key, lm_sess_key,
 						      authoritative);
