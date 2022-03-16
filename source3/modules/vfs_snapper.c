@@ -2484,8 +2484,48 @@ static NTSTATUS snapper_gmt_get_real_filename_at(
 	TALLOC_CTX *mem_ctx,
 	char **found_name)
 {
-	NTSTATUS status = snapper_gmt_get_real_filename(
-		handle, dirfsp->fsp_name, name, mem_ctx, found_name);
+	time_t timestamp;
+	char *stripped;
+	char *conv;
+	struct smb_filename *conv_fname = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	ok = snapper_gmt_strip_snapshot(
+		talloc_tos(), handle, dirfsp->fsp_name,&timestamp, &stripped);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (timestamp == 0) {
+		return SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
+			handle, dirfsp, name, mem_ctx, found_name);
+	}
+	if (stripped[0] == '\0') {
+		*found_name = talloc_strdup(mem_ctx, name);
+		if (*found_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		return NT_STATUS_OK;
+	}
+	conv = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
+	TALLOC_FREE(stripped);
+	if (conv == NULL) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	status = synthetic_pathref(
+		talloc_tos(),
+		dirfsp->conn->cwd_fsp,
+		conv,
+		NULL,
+		NULL,
+		0,
+		0,
+		&conv_fname);
+
+	status = SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
+		handle, conv_fname->fsp, name, mem_ctx, found_name);
+	TALLOC_FREE(conv);
 	return status;
 }
 
