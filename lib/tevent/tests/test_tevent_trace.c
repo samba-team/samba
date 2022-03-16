@@ -280,6 +280,28 @@ static void trace_event_cb(void *event,
 	}
 }
 
+static void trace_event_cb1(void *event,
+			   enum tevent_event_trace_point point,
+			   void *private_data)
+{
+	struct test_ctx *tctx = (struct test_ctx *)private_data;
+	uint64_t tag;
+
+	switch (point) {
+	case TEVENT_EVENT_TRACE_ATTACH:
+		tctx->attach = true;
+		tag = ++tctx->current_tag;
+		tctx->set_tag(event, tag);
+		break;
+	case TEVENT_EVENT_TRACE_BEFORE_HANDLER:
+		tctx->before_handler = true;
+		break;
+	case TEVENT_EVENT_TRACE_DETACH:
+		tctx->detach = true;
+		break;
+	}
+}
+
 static int test_setup(void **state)
 {
 	struct test_ctx *tctx;
@@ -369,6 +391,22 @@ static void immediate_set_tag(void *_event, uint64_t tag)
 		(struct tevent_immediate *)_event;
 
 	tevent_immediate_set_tag(event, tag);
+}
+
+static uint64_t queue_entry_get_tag(const void *_event)
+{
+	const struct tevent_queue_entry *event =
+		(const struct tevent_queue_entry *)_event;
+
+	return tevent_queue_entry_get_tag(event);
+}
+
+static void queue_entry_set_tag(void *_event, uint64_t tag)
+{
+	struct tevent_queue_entry *event =
+		(struct tevent_queue_entry *)_event;
+
+	tevent_queue_entry_set_tag(event, tag);
 }
 
 static void test_trace_event_fd__loop(void **state)
@@ -949,6 +987,203 @@ static void test_trace_event_immediate__reschedule(void **state)
 	assert_true(tctx->detach);
 }
 
+struct dummy_request_state
+{
+	int i;
+	struct tevent_queue_entry *e;
+};
+
+static void queue_trigger(struct tevent_req *req, void *private_data)
+{
+	struct test_ctx *tctx = (struct test_ctx *)private_data;
+	struct dummy_request_state *state = tevent_req_data(
+		req, struct dummy_request_state);
+
+	tctx->handler_called = true;
+	assert_int_equal(tevent_queue_entry_get_tag(state->e), state->i);
+	TALLOC_FREE(req);
+
+	return;
+}
+
+static void test_trace_queue__loop(void **state)
+{
+	struct test_ctx *tctx = (struct test_ctx *)(*state);
+	struct tevent_queue *qa, *qb;
+	struct tevent_req *r1, *r2, *r3, *r4, *r5;
+	struct dummy_request_state *ds1, *ds2, *ds3, *ds4, *ds5;
+
+	tevent_set_trace_queue_callback(
+			tctx->ev,
+			(tevent_trace_queue_callback_t)trace_event_cb1,
+			tctx);
+	tctx->get_tag = queue_entry_get_tag;
+	tctx->set_tag = queue_entry_set_tag;
+
+	qa = tevent_queue_create(tctx->ev, "test_queue A");
+	assert_non_null(qa);
+	qb = tevent_queue_create(tctx->ev, "test_queue B");
+	assert_non_null(qb);
+
+	r1 = tevent_req_create(tctx->ev, &ds1, struct dummy_request_state);
+	ds1->e = tevent_queue_add_entry(qa,
+					tctx->ev,
+					r1,
+					queue_trigger,
+					*state);
+	ds1->i = tctx->current_tag;
+	assert_int_equal(ds1->i, 1);
+
+	r2 = tevent_req_create(tctx->ev, &ds2, struct dummy_request_state);
+	ds2->e = tevent_queue_add_entry(qa,
+					tctx->ev,
+					r2,
+					queue_trigger,
+					*state);
+	ds2->i = tctx->current_tag;
+	assert_int_equal(ds2->i, 2);
+
+	r3 = tevent_req_create(tctx->ev, &ds3, struct dummy_request_state);
+	ds3->e = tevent_queue_add_entry(qb,
+					tctx->ev,
+					r3,
+					queue_trigger,
+					*state);
+	ds3->i = tctx->current_tag;
+	assert_int_equal(ds3->i, 3);
+
+	r4 = tevent_req_create(tctx->ev, &ds4, struct dummy_request_state);
+	ds4->e = tevent_queue_add_entry(qb,
+					tctx->ev,
+					r4,
+					queue_trigger,
+					*state);
+	ds4->i = tctx->current_tag;
+	assert_int_equal(ds4->i, 4);
+
+	r5 = tevent_req_create(tctx->ev, &ds5, struct dummy_request_state);
+	ds5->e = tevent_queue_add_entry(qa,
+					tctx->ev,
+					r5,
+					queue_trigger,
+					*state);
+	ds5->i = tctx->current_tag;
+	assert_int_equal(ds5->i, 5);
+
+	tevent_loop_once(tctx->ev);
+	tevent_loop_once(tctx->ev);
+	tevent_loop_once(tctx->ev);
+	tevent_loop_once(tctx->ev);
+	tevent_loop_once(tctx->ev);
+}
+
+static void reset_tctx(struct test_ctx *tctx)
+{
+	tctx->attach = false;
+	tctx->before_handler = false;
+	tctx->handler_called = false;
+	tctx->detach = false;
+}
+
+static void test_trace_queue__extra(void **state)
+{
+	struct test_ctx *tctx = (struct test_ctx *)(*state);
+	struct tevent_queue *qa;
+	struct tevent_req *r1, *r2, *r3;
+	struct dummy_request_state *ds1, *ds2, *ds3;
+
+	tevent_set_trace_queue_callback(
+				tctx->ev,
+				(tevent_trace_queue_callback_t)trace_event_cb1,
+				tctx);
+	tctx->get_tag = queue_entry_get_tag;
+	tctx->set_tag = queue_entry_set_tag;
+
+	qa = tevent_queue_create(tctx->ev, "test_queue A");
+	assert_non_null(qa);
+
+	/*
+	 * r1 - this tests optimize_empty - request is triggered immediately,
+	 * (and not even scheduled to tevent_context). The TALLOC_FREE() called
+	 * from queue_trigger removes the request/queue_entry from the queue qa.
+	 * So qa is empty
+	 */
+	r1 = tevent_req_create(tctx->ev, &ds1, struct dummy_request_state);
+	ds1->e = tevent_queue_add_optimize_empty(qa,
+						 tctx->ev,
+						 r1,
+						 queue_trigger,
+						 *state);
+	assert_true(tctx->attach);
+	assert_true(tctx->before_handler);
+	assert_true(tctx->handler_called);
+	assert_true(tctx->detach);
+	assert_int_equal(tevent_queue_length(qa), 0);
+
+	reset_tctx(tctx);
+
+	/*
+	 * Test a blocker request r2 - the trigger function is NULL.
+	 */
+	r2 = tevent_req_create(tctx->ev, &ds2, struct dummy_request_state);
+	ds2->e = tevent_queue_add_entry(qa, tctx->ev, r2, NULL, *state);
+	ds2->i = tctx->current_tag;
+	assert_true(tctx->attach);
+	assert_false(tctx->before_handler);
+	assert_false(tctx->handler_called);
+	assert_false(tctx->detach);
+	assert_int_equal(tevent_queue_length(qa), 1);
+
+	/*
+	 * This runs the tevent_queue_noop_trigger().
+	 * A blocker r2 is still on the queue head, with triggered==true
+	 */
+	tevent_loop_once(tctx->ev);
+
+	assert_true(tctx->attach);
+	assert_true(tctx->before_handler);
+	assert_false(tctx->handler_called);
+	/* tevent_queue_noop_trigger() is a noop. Does not set handler_called */
+	assert_false(tctx->detach);
+	assert_int_equal(tevent_queue_length(qa), 1);
+
+	/*
+	 * Add a normal request r3. It will be blocked by r2.
+	 */
+	r3 = tevent_req_create(tctx->ev, &ds3, struct dummy_request_state);
+	ds3->e = tevent_queue_add_entry(qa,
+					tctx->ev,
+					r3,
+					queue_trigger,
+					*state);
+	ds3->i = tctx->current_tag;
+	assert_true(tctx->attach);
+	assert_true(tctx->before_handler);
+	assert_false(tctx->handler_called);
+	assert_false(tctx->detach);
+	assert_int_equal(tevent_queue_length(qa), 2);
+
+	/*
+	 * Remove the blocker r2.
+	 */
+	TALLOC_FREE(r2);
+	assert_true(tctx->attach);
+	assert_true(tctx->before_handler);
+	assert_false(tctx->handler_called);
+	assert_true(tctx->detach);
+	assert_int_equal(tevent_queue_length(qa), 1);
+
+	reset_tctx(tctx);
+
+	/* Process r3 */
+	tevent_loop_once(tctx->ev);
+
+	assert_false(tctx->attach);
+	assert_true(tctx->before_handler);
+	assert_true(tctx->handler_called);
+	assert_true(tctx->detach);
+}
+
 static void test_get_set_trace_fd_callback(void **state)
 {
 	struct test_ctx *tctx = (struct test_ctx *)(*state);
@@ -1033,6 +1268,27 @@ static void test_get_set_trace_immediate_callback(void **state)
 	assert_null(pvt);
 }
 
+static void test_get_set_trace_queue_callback(void **state)
+{
+	struct test_ctx *tctx = (struct test_ctx *)(*state);
+	tevent_trace_queue_callback_t cb;
+	void *pvt;
+
+	tevent_get_trace_queue_callback(tctx->ev, &cb, &pvt);
+	assert_null(cb);
+	assert_null(pvt);
+
+	tevent_set_trace_queue_callback(tctx->ev, (tevent_trace_queue_callback_t)trace_event_cb, tctx);
+	tevent_get_trace_queue_callback(tctx->ev, &cb, &pvt);
+	assert_ptr_equal(cb, trace_event_cb);
+	assert_ptr_equal(pvt, tctx);
+
+	tevent_set_trace_queue_callback(tctx->ev, NULL, NULL);
+	tevent_get_trace_queue_callback(tctx->ev, &cb, &pvt);
+	assert_null(cb);
+	assert_null(pvt);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -1053,10 +1309,13 @@ int main(int argc, char **argv)
 		cmocka_unit_test_setup_teardown(test_trace_event_immediate__free, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_trace_event_immediate__free_in_handler, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_trace_event_immediate__reschedule, test_setup, test_teardown),
+		cmocka_unit_test_setup_teardown(test_trace_queue__loop, test_setup, test_teardown),
+		cmocka_unit_test_setup_teardown(test_trace_queue__extra, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_get_set_trace_fd_callback, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_get_set_trace_timer_callback, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_get_set_trace_signal_callback, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_get_set_trace_immediate_callback, test_setup, test_teardown),
+		cmocka_unit_test_setup_teardown(test_get_set_trace_queue_callback, test_setup, test_teardown),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);

@@ -33,6 +33,12 @@
 #include <tevent.h>
 #include <cmocka.h>
 
+static void queue_trigger(struct tevent_req *req, void *private_data)
+{
+	/* Dummy handler. Just return. */
+	return;
+}
+
 static void fd_handler(struct tevent_context *ev,
 		       struct tevent_fd *fde,
 		       uint16_t flags,
@@ -197,6 +203,40 @@ static void test_immediate_tag(void **state)
 	TALLOC_FREE(im);
 }
 
+static void test_queue_entry_tag(void **state)
+{
+	struct tevent_context *ev = (struct tevent_context *)(*state);
+	struct tevent_queue *q;
+	struct tevent_queue_entry *e1, *e2;
+	struct tevent_req *r1, *r2;
+	int *s1, *s2;
+	uint64_t tag;
+
+	q = tevent_queue_create(ev, "test_queue");
+	assert_non_null(q);
+
+	r1 = tevent_req_create(ev, &s1, int);
+	r2 = tevent_req_create(ev, &s2, int);
+	e1 = tevent_queue_add_entry(q, ev, r1, queue_trigger, NULL);
+	e2 = tevent_queue_add_entry(q, ev, r2, queue_trigger, NULL);
+
+	tag = tevent_queue_entry_get_tag(e1);
+	assert_int_equal(0, tag);
+	tag = tevent_queue_entry_get_tag(e2);
+	assert_int_equal(0, tag);
+
+	tevent_queue_entry_set_tag(e1, 1);
+	tevent_queue_entry_set_tag(e2, 2);
+
+	tag = tevent_queue_entry_get_tag(e1);
+	assert_int_equal(1, tag);
+
+	tag = tevent_queue_entry_get_tag(e2);
+	assert_int_equal(2, tag);
+
+	TALLOC_FREE(q);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -204,6 +244,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test_setup_teardown(test_timer_tag, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_signal_tag, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_immediate_tag, test_setup, test_teardown),
+		cmocka_unit_test_setup_teardown(test_queue_entry_tag, test_setup, test_teardown),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
