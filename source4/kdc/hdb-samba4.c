@@ -627,6 +627,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 				status = NT_STATUS_INTERNAL_ERROR;
 				final_ret = KRB5KRB_ERR_GENERIC;
 				r->error_code = final_ret;
+			} else if (!NT_STATUS_IS_OK(p->reject_status)) {
+				status = p->reject_status;
 			} else {
 				status = krb5_to_nt_status(r->error_code);
 			}
@@ -643,6 +645,8 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 				status = NT_STATUS_INTERNAL_ERROR;
 				final_ret = KRB5KRB_ERR_GENERIC;
 				r->error_code = final_ret;
+			} else if (!NT_STATUS_IS_OK(p->reject_status)) {
+				status = p->reject_status;
 			} else {
 				status = krb5_to_nt_status(r->error_code);
 			}

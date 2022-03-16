@@ -1143,6 +1143,7 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 				       workstation, client_name,
 				       true, password_change);
 
+	kdc_entry->reject_status = nt_status;
 	talloc_free(tmp_ctx);
 	return nt_status;
 }

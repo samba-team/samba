@@ -61,6 +61,7 @@ struct samba_kdc_entry {
 	bool is_trust;
 	void *entry_ex;
 	uint32_t supported_enctypes;
+	NTSTATUS reject_status;
 };
 
 extern struct hdb_method hdb_samba4_interface;
