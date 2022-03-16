@@ -2609,9 +2609,91 @@ static NTSTATUS shadow_copy2_get_real_filename_at(
 	TALLOC_CTX *mem_ctx,
 	char **found_name)
 {
-	NTSTATUS status = shadow_copy2_get_real_filename(
-		handle, dirfsp->fsp_name, name, mem_ctx, found_name);
-	return status;
+	struct shadow_copy2_private *priv = NULL;
+	time_t timestamp = 0;
+	char *stripped = NULL;
+	char *conv;
+	struct smb_filename *conv_fname = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	DBG_DEBUG("Path=[%s] name=[%s]\n", fsp_str_dbg(dirfsp), name);
+
+	ok = shadow_copy2_strip_snapshot(
+		talloc_tos(), handle, dirfsp->fsp_name, &timestamp, &stripped);
+	if (!ok) {
+		status = map_nt_error_from_unix(errno);
+		DEBUG(10, ("shadow_copy2_strip_snapshot failed\n"));
+		return status;
+	}
+	if (timestamp == 0) {
+		DEBUG(10, ("timestamp == 0\n"));
+		return SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
+			handle, dirfsp, name, mem_ctx, found_name);
+	}
+
+	/*
+	 * Note that stripped may be an empty string "" if path was ".". As
+	 * shadow_copy2_convert() combines "" with the shadow-copy tree connect
+	 * root fullpath and get_real_filename_full_scan() has an explicit check
+	 * for "" this works.
+	 */
+	DBG_DEBUG("stripped [%s]\n", stripped);
+
+	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
+	if (conv == NULL) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("shadow_copy2_convert [%s] failed: %s\n",
+			  stripped,
+			  strerror(errno));
+		return status;
+	}
+
+	status = synthetic_pathref(
+		talloc_tos(),
+		dirfsp->conn->cwd_fsp,
+		conv,
+		NULL,
+		NULL,
+		0,
+		0,
+		&conv_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	DEBUG(10, ("Calling NEXT_GET_REAL_FILE_NAME for conv=[%s], "
+		   "name=[%s]\n", conv, name));
+	status = SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
+		handle, conv_fname->fsp, name, mem_ctx, found_name);
+	DEBUG(10, ("NEXT_REAL_FILE_NAME returned %s\n", nt_errstr(status)));
+	if (NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(conv_fname);
+		return NT_STATUS_OK;
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+		TALLOC_FREE(conv_fname);
+		TALLOC_FREE(conv);
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	status = get_real_filename_full_scan_at(
+		conv_fname->fsp, name, false, mem_ctx, found_name);
+	TALLOC_FREE(conv_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Scan [%s] for [%s] failed\n",
+			  conv, name);
+		return status;
+	}
+
+	DBG_DEBUG("Scan [%s] for [%s] returned [%s]\n",
+		  conv, name, *found_name);
+
+	TALLOC_FREE(conv);
+	return NT_STATUS_OK;
 }
 
 static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
