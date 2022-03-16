@@ -1717,31 +1717,6 @@ static NTSTATUS smb_time_audit_fstreaminfo(vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS smb_time_audit_get_real_filename(
-	struct vfs_handle_struct *handle,
-	const struct smb_filename *path,
-	const char *name,
-	TALLOC_CTX *mem_ctx,
-	char **found_name)
-{
-	NTSTATUS result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name, mem_ctx,
-						found_name);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("get_real_filename",
-					 timediff, path->base_name);
-	}
-
-	return result;
-}
-
 static NTSTATUS smb_time_audit_get_real_filename_at(
 	struct vfs_handle_struct *handle,
 	struct files_struct *dirfsp,
@@ -2829,7 +2804,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.snap_create_fn = smb_time_audit_snap_create,
 	.snap_delete_fn = smb_time_audit_snap_delete,
 	.fstreaminfo_fn = smb_time_audit_fstreaminfo,
-	.get_real_filename_fn = smb_time_audit_get_real_filename,
 	.get_real_filename_at_fn = smb_time_audit_get_real_filename_at,
 	.connectpath_fn = smb_time_audit_connectpath,
 	.brl_lock_windows_fn = smb_time_audit_brl_lock_windows,

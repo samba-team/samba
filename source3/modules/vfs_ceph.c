@@ -1272,20 +1272,6 @@ static int cephwrap_fchflags(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static NTSTATUS cephwrap_get_real_filename(
-	struct vfs_handle_struct *handle,
-	const struct smb_filename *path,
-	const char *name,
-	TALLOC_CTX *mem_ctx,
-	char **found_name)
-{
-	/*
-	 * Don't fall back to get_real_filename so callers can differentiate
-	 * between a full directory scan and an actual case-insensitive stat.
-	 */
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
 static NTSTATUS cephwrap_get_real_filename_at(
 	struct vfs_handle_struct *handle,
 	struct files_struct *dirfsp,
@@ -1648,7 +1634,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.mknodat_fn = cephwrap_mknodat,
 	.realpath_fn = cephwrap_realpath,
 	.fchflags_fn = cephwrap_fchflags,
-	.get_real_filename_fn = cephwrap_get_real_filename,
 	.get_real_filename_at_fn = cephwrap_get_real_filename_at,
 	.connectpath_fn = cephwrap_connectpath,
 

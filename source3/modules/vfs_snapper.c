@@ -2433,50 +2433,6 @@ static int snapper_gmt_fsetxattr(struct vfs_handle_struct *handle,
 				aname, value, size, flags);
 }
 
-static NTSTATUS snapper_gmt_get_real_filename(
-	struct vfs_handle_struct *handle,
-	const struct smb_filename *fpath,
-	const char *name,
-	TALLOC_CTX *mem_ctx,
-	char **found_name)
-{
-	time_t timestamp;
-	char *stripped;
-	char *conv;
-	struct smb_filename conv_fname;
-	NTSTATUS status;
-
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, fpath,
-					&timestamp, &stripped)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, fpath, name,
-						      mem_ctx, found_name);
-	}
-	if (stripped[0] == '\0') {
-		*found_name = talloc_strdup(mem_ctx, name);
-		if (*found_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		return NT_STATUS_OK;
-	}
-	conv = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
-		return map_nt_error_from_unix(errno);
-	}
-
-	conv_fname = (struct smb_filename) {
-		.base_name = conv,
-	};
-
-	status = SMB_VFS_NEXT_GET_REAL_FILENAME(
-		handle, &conv_fname, name, mem_ctx, found_name);
-	TALLOC_FREE(conv);
-	return status;
-}
-
 static NTSTATUS snapper_gmt_get_real_filename_at(
 	struct vfs_handle_struct *handle,
 	struct files_struct *dirfsp,
@@ -2682,7 +2638,6 @@ static struct vfs_fn_pointers snapper_fns = {
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fsetxattr_fn = snapper_gmt_fsetxattr,
 	.fchflags_fn = snapper_gmt_fchflags,
-	.get_real_filename_fn = snapper_gmt_get_real_filename,
 	.get_real_filename_at_fn = snapper_gmt_get_real_filename_at,
 };
 

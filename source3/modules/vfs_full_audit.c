@@ -2082,29 +2082,6 @@ static NTSTATUS smb_full_audit_fstreaminfo(vfs_handle_struct *handle,
         return result;
 }
 
-static NTSTATUS smb_full_audit_get_real_filename(
-	struct vfs_handle_struct *handle,
-	const struct smb_filename *path,
-	const char *name,
-	TALLOC_CTX *mem_ctx,
-	char **found_name)
-{
-	NTSTATUS result;
-
-	result = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name, mem_ctx,
-						found_name);
-
-	do_log(SMB_VFS_OP_GET_REAL_FILENAME,
-	       NT_STATUS_IS_OK(result),
-	       handle,
-	       "%s/%s->%s",
-	       path->base_name,
-	       name,
-	       NT_STATUS_IS_OK(result) ? *found_name : "");
-
-	return result;
-}
-
 static NTSTATUS smb_full_audit_get_real_filename_at(
 	struct vfs_handle_struct *handle,
 	struct files_struct *dirfsp,
@@ -3016,7 +2993,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.snap_create_fn = smb_full_audit_snap_create,
 	.snap_delete_fn = smb_full_audit_snap_delete,
 	.fstreaminfo_fn = smb_full_audit_fstreaminfo,
-	.get_real_filename_fn = smb_full_audit_get_real_filename,
 	.get_real_filename_at_fn = smb_full_audit_get_real_filename_at,
 	.connectpath_fn = smb_full_audit_connectpath,
 	.brl_lock_windows_fn = smb_full_audit_brl_lock_windows,

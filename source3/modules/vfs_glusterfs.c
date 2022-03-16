@@ -1999,40 +1999,6 @@ static int vfs_gluster_fchflags(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static NTSTATUS vfs_gluster_get_real_filename(
-	struct vfs_handle_struct *handle,
-	const struct smb_filename *path,
-	const char *name,
-	TALLOC_CTX *mem_ctx,
-	char **found_name)
-{
-	int ret;
-	char key_buf[GLUSTER_NAME_MAX + 64];
-	char val_buf[GLUSTER_NAME_MAX + 1];
-
-	if (strlen(name) >= GLUSTER_NAME_MAX) {
-		return NT_STATUS_OBJECT_NAME_INVALID;
-	}
-
-	snprintf(key_buf, GLUSTER_NAME_MAX + 64,
-		 "glusterfs.get_real_filename:%s", name);
-
-	ret = glfs_getxattr(handle->data, path->base_name, key_buf, val_buf,
-			    GLUSTER_NAME_MAX + 1);
-	if (ret == -1) {
-		if (errno == ENOATTR) {
-			errno = ENOENT;
-		}
-		return map_nt_error_from_unix(errno);
-	}
-
-	*found_name = talloc_strdup(mem_ctx, val_buf);
-	if (found_name[0] == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS vfs_gluster_get_real_filename_at(
 	struct vfs_handle_struct *handle,
 	struct files_struct *dirfsp,
@@ -2404,7 +2370,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.fchflags_fn = vfs_gluster_fchflags,
 	.file_id_create_fn = NULL,
 	.fstreaminfo_fn = NULL,
-	.get_real_filename_fn = vfs_gluster_get_real_filename,
 	.get_real_filename_at_fn = vfs_gluster_get_real_filename_at,
 	.connectpath_fn = vfs_gluster_connectpath,
 	.create_dfs_pathat_fn = vfs_gluster_create_dfs_pathat,

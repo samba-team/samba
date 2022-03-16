@@ -288,88 +288,6 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle,
 }
 #endif /* HAVE_KERNEL_OPLOCKS_LINUX */
 
-static NTSTATUS vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
-					   const struct smb_filename *path,
-					   const char *name,
-					   TALLOC_CTX *mem_ctx,
-					   char **found_name)
-{
-	int result;
-	char *full_path = NULL;
-	char *to_free = NULL;
-	char real_pathname[PATH_MAX+1], tmpbuf[PATH_MAX];
-	size_t full_path_len;
-	int buflen;
-	bool mangled;
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return NT_STATUS_INTERNAL_ERROR);
-
-	if (!config->getrealfilename) {
-		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name,
-						      mem_ctx, found_name);
-	}
-
-	mangled = mangle_is_mangled(name, handle->conn->params);
-	if (mangled) {
-		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name,
-						      mem_ctx, found_name);
-	}
-
-	full_path_len = full_path_tos(path->base_name, name,
-				      tmpbuf, sizeof(tmpbuf),
-				      &full_path, &to_free);
-	if (full_path_len == -1) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	buflen = sizeof(real_pathname) - 1;
-
-	result = gpfswrap_get_realfilename_path(full_path, real_pathname,
-						&buflen);
-
-	TALLOC_FREE(to_free);
-
-	if ((result == -1) && (errno == ENOSYS)) {
-		return SMB_VFS_NEXT_GET_REAL_FILENAME(
-			handle, path, name, mem_ctx, found_name);
-	}
-
-	if (result == -1) {
-		DEBUG(10, ("smbd_gpfs_get_realfilename_path returned %s\n",
-			   strerror(errno)));
-		return map_nt_error_from_unix(errno);
-	}
-
-	/*
-	 * GPFS does not necessarily null-terminate the returned path
-	 * but instead returns the buffer length in buflen.
-	 */
-
-	if (buflen < sizeof(real_pathname)) {
-		real_pathname[buflen] = '\0';
-	} else {
-		real_pathname[sizeof(real_pathname)-1] = '\0';
-	}
-
-	DEBUG(10, ("smbd_gpfs_get_realfilename_path: %s/%s -> %s\n",
-		   path->base_name, name, real_pathname));
-
-	name = strrchr_m(real_pathname, '/');
-	if (name == NULL) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	*found_name = talloc_strdup(mem_ctx, name+1);
-	if (*found_name == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS vfs_gpfs_get_real_filename_at(struct vfs_handle_struct *handle,
 					      struct files_struct *dirfsp,
 					      const char *name,
@@ -2634,7 +2552,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.fs_capabilities_fn = vfs_gpfs_capabilities,
 	.filesystem_sharemode_fn = vfs_gpfs_filesystem_sharemode,
 	.linux_setlease_fn = vfs_gpfs_setlease,
-	.get_real_filename_fn = vfs_gpfs_get_real_filename,
 	.get_real_filename_at_fn = vfs_gpfs_get_real_filename_at,
 	.get_dos_attributes_send_fn = vfs_not_implemented_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = vfs_not_implemented_get_dos_attributes_recv,

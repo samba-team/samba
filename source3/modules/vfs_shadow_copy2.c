@@ -2500,108 +2500,6 @@ static NTSTATUS shadow_copy2_read_dfs_pathat(struct vfs_handle_struct *handle,
 	return status;
 }
 
-static NTSTATUS shadow_copy2_get_real_filename(
-	struct vfs_handle_struct *handle,
-	const struct smb_filename *fname,
-	const char *name,
-	TALLOC_CTX *mem_ctx,
-	char **found_name)
-{
-	struct shadow_copy2_private *priv = NULL;
-	struct shadow_copy2_config *config = NULL;
-	time_t timestamp = 0;
-	char *stripped = NULL;
-	char *conv;
-	struct smb_filename conv_fname;
-	NTSTATUS status;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
-				return NT_STATUS_INTERNAL_ERROR);
-	config = priv->config;
-
-	DBG_DEBUG("Path=[%s] name=[%s]\n", smb_fname_str_dbg(fname), name);
-
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
-					 &timestamp, &stripped)) {
-		status = map_nt_error_from_unix(errno);
-		DEBUG(10, ("shadow_copy2_strip_snapshot failed\n"));
-		return status;
-	}
-	if (timestamp == 0) {
-		DEBUG(10, ("timestamp == 0\n"));
-		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, fname, name,
-						      mem_ctx, found_name);
-	}
-
-	/*
-	 * Note that stripped may be an empty string "" if path was ".". As
-	 * shadow_copy2_convert() combines "" with the shadow-copy tree connect
-	 * root fullpath and get_real_filename_full_scan() has an explicit check
-	 * for "" this works.
-	 */
-	DBG_DEBUG("stripped [%s]\n", stripped);
-
-	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
-	if (conv == NULL) {
-		status = map_nt_error_from_unix(errno);
-
-		if (!config->snapdirseverywhere) {
-			DBG_DEBUG("shadow_copy2_convert [%s] failed\n", stripped);
-			return status;
-		}
-
-		/*
-		 * We're called in the path traversal loop in unix_convert()
-		 * walking down the directory hierarchy. shadow_copy2_convert()
-		 * will fail if the snapshot directory is futher down in the
-		 * hierachy. Set conv to the original stripped path and try to
-		 * look it up in the filesystem with
-		 * SMB_VFS_NEXT_GET_REAL_FILENAME() or
-		 * get_real_filename_full_scan().
-		 */
-		DBG_DEBUG("Use stripped [%s] as conv\n", stripped);
-		conv = talloc_strdup(talloc_tos(), stripped);
-		if (conv == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	conv_fname = (struct smb_filename) {
-		.base_name = conv,
-	};
-
-	DEBUG(10, ("Calling NEXT_GET_REAL_FILE_NAME for conv=[%s], "
-		   "name=[%s]\n", conv, name));
-	status = SMB_VFS_NEXT_GET_REAL_FILENAME(
-		handle, &conv_fname, name, mem_ctx, found_name);
-	DEBUG(10, ("NEXT_REAL_FILE_NAME returned %s\n", nt_errstr(status)));
-	if (NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_OK;
-	}
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-		TALLOC_FREE(conv);
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
-	status = get_real_filename_full_scan(handle->conn,
-					     conv,
-					     name,
-					     false,
-					     mem_ctx,
-					     found_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("Scan [%s] for [%s] failed\n",
-			  conv, name);
-		return status;
-	}
-
-	DBG_DEBUG("Scan [%s] for [%s] returned [%s]\n",
-		  conv, name, *found_name);
-
-	TALLOC_FREE(conv);
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS shadow_copy2_get_real_filename_at(
 	struct vfs_handle_struct *handle,
 	struct files_struct *dirfsp,
@@ -3540,7 +3438,6 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.mkdirat_fn = shadow_copy2_mkdirat,
 	.fsetxattr_fn = shadow_copy2_fsetxattr,
 	.fchflags_fn = shadow_copy2_fchflags,
-	.get_real_filename_fn = shadow_copy2_get_real_filename,
 	.get_real_filename_at_fn = shadow_copy2_get_real_filename_at,
 	.pwrite_fn = shadow_copy2_pwrite,
 	.pwrite_send_fn = shadow_copy2_pwrite_send,
