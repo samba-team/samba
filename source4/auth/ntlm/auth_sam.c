@@ -220,6 +220,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 	const char * const attrs[] = { "pwdHistoryLength", NULL };
 	struct ldb_message *dom_msg;
 	struct samr_Password *nt_pwd;
+	const struct ldb_val *sc_val;
 	bool am_rodc;
 
 	tmp_ctx = talloc_new(mem_ctx);
@@ -242,7 +243,9 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		return nt_status;
 	}
 
-	if (nt_pwd == NULL) {
+	sc_val = ldb_msg_find_ldb_val(msg, "supplementalCredentials");
+
+	if (nt_pwd == NULL && sc_val == NULL) {
 		if (samdb_rodc(auth_context->sam_ctx, &am_rodc) == LDB_SUCCESS && am_rodc) {
 			/*
 			 * we don't have passwords for this
