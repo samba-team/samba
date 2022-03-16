@@ -74,8 +74,7 @@ static void check_timestamp(time_t before, const char* timestamp)
 	/*
 	 * The timestamp should be before <= actual <= after
 	 */
-	assert_true(difftime(actual, before) >= 0);
-	assert_true(difftime(after, actual) >= 0);
+	assert_in_range(actual, before, after);
 }
 
 static void test_has_password_changed(void **state)
