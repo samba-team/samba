@@ -135,21 +135,69 @@ CTDB changes
 REMOVED FEATURES
 ================
 
-SMB1 CORE and LANMAN1 protocol wildcard copy, unlink and rename removed
-=======================================================================
+Older SMB1 protocol SMBCopy command removed
+-------------------------------------------
 
-In preparation for the removal of the SMB1 server, the unused
-SMB1 command SMB_COM_COPY (SMB1 command number 0x29) has been
-removed from the Samba smbd server. In addition, the ability
-to process file name wildcards in requests using the SMB1 commands
-SMB_COM_COPY (SMB1 command number 0x2A), SMB_COM_RENAME (SMB1 command
-number 0x7), SMB_COM_NT_RENAME (SMB1 command number 0xA5) and
-SMB_COM_DELETE (SMB1 command number 0x6) have been removed.
+SMB is a nearly 30-year old protocol, and some protocol commands that
+while supported in all versions, have not seen widespread use.
 
-This only affects clients using MS-DOS based versions of
-SMB1, the last release of which was Windows 98. Users requiring
-support for these features will need to use older versions
-of Samba.
+One of those is SMBCopy, a feature for a server-side copy of a file.
+This feature has been so unmaintained that Samba has no testsuite for
+it.
+
+The SMB1 command SMB_COM_COPY (SMB1 command number 0x29) was
+introduced in the LAN Manager 1.0 dialect and it was rendered obsolete
+in the NT LAN Manager dialect.
+
+Therefore it has been removed from the Samba smbd server.
+
+We do note that a fully supported and tested server-side copy is
+present in SMB2, and can be accessed with "scopy" subcommand in
+smbclient)
+
+SMB1 server-side wildcard expansion removed
+-------------------------------------------
+
+Server-side wildcard expansion is another feature that sounds useful,
+but is also rarely used and has become problematic - imposing extra
+work on the server (both in terms of code and CPU time).
+
+In actual OS design, wildcard expansion is handled in the local shell,
+not at the remote server using SMB wildcard syntax (which is not shell
+syntax).
+
+In Samba 4.16 the ability to process file name wildcards in requests
+using the SMB1 commands SMB_COM_RENAME (SMB1 command number 0x7),
+SMB_COM_NT_RENAME (SMB1 command number 0xA5) and SMB_COM_DELETE (SMB1
+command number 0x6) has been removed.
+
+SMB1 protocol has been deprecated, particularly older dialects
+--------------------------------------------------------------
+
+We take this opportunity to remind that we have deprecated and
+disabled by default, but not removed, the whole SMB1 protocol since
+Samba 4.11.  If needed for security purposes or code maintenance we
+will continue to remove older protocol commands and dialects that are
+unused or have been replaced in more modern SMB1 versions.
+
+We specifically deprecate the older dialects older than "NT LM 0.12"
+(also known as "NT LANMAN 1.0" and "NT1").
+
+Please note that "NT LM 0.12" is the dialect used by software as old
+as Windows 95, Windows NT and Samba 2.0, so this deprecation applies
+to DOS and similar era clients.
+
+We do reassure that that 'simple' operation of older clients than
+these (eg DOS) will, while untested, continue for the near future, our
+purpose is not to cripple use of Samba in unique situations, but to
+reduce the maintaince burden.
+
+Eventually SMB1 as a whole will be removed, but no broader change is
+announced for 4.16.
+
+In the rare case where the above changes cause incompatibilities,
+users requiring support for these features will need to use older
+versions of Samba.
 
 No longer using Linux mandatory locks for sharemodes
 ====================================================
