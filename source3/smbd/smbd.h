@@ -37,6 +37,7 @@ struct dptr_struct;
 #include "smbd/smb1_oplock.h"
 #include "smbd/smb1_pipes.h"
 #include "smbd/smb1_reply.h"
+#include "smbd/smb1_service.h"
 #endif
 
 struct trans_state {

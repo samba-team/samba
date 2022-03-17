@@ -1032,11 +1032,11 @@ connection_struct *make_connection_smb2(struct smbd_smb2_request *req,
 					int snum,
 					const char *pdev,
 					NTSTATUS *pstatus);
-connection_struct *make_connection(struct smb_request *req,
-				   NTTIME now,
-				   const char *service_in,
-				   const char *pdev, uint64_t vuid,
-				   NTSTATUS *status);
+NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
+			      connection_struct *conn,
+			      int snum,
+			      struct smbXsrv_session *session,
+			      const char *pdev);
 void close_cnum(connection_struct *conn, uint64_t vuid);
 
 /* The following definitions come from smbd/session.c  */
