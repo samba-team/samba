@@ -55,7 +55,9 @@ static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *sy
 
 	if (PyUnicode_Check(object)) {
 		return PyString_AsGUID(object, &syntax_id->uuid);
-	} else if (PyTuple_Check(object)) {
+	}
+
+	if (PyTuple_Check(object)) {
 		PyObject *item = NULL;
 		if (PyTuple_Size(object) < 1 || PyTuple_Size(object) > 2) {
 			PyErr_SetString(PyExc_ValueError, "Syntax ID tuple has invalid size");
