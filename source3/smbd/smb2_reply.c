@@ -2010,3 +2010,25 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	TALLOC_FREE(smb_fname_dst_tmp);
 	return status;
 }
+
+/****************************************************************************
+ Get a lock offset, dealing with large offset requests.
+****************************************************************************/
+
+uint64_t get_lock_offset(const uint8_t *data, int data_offset,
+			 bool large_file_format)
+{
+	uint64_t offset = 0;
+
+	if(!large_file_format) {
+		offset = (uint64_t)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
+	} else {
+		/*
+		 * No BVAL, this is reversed!
+		 */
+		offset = (((uint64_t) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) << 32) |
+				((uint64_t) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
+	}
+
+	return offset;
+}

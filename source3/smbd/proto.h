@@ -961,8 +961,6 @@ uint64_t get_lock_pid(const uint8_t *data, int data_offset,
 		    bool large_file_format);
 uint64_t get_lock_count(const uint8_t *data, int data_offset,
 			bool large_file_format);
-uint64_t get_lock_offset(const uint8_t *data, int data_offset,
-			 bool large_file_format);
 void reply_lockingX(struct smb_request *req);
 void reply_readbmpx(struct smb_request *req);
 void reply_readbs(struct smb_request *req);
@@ -1036,6 +1034,8 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			int ofun,
 			int count,
 			bool target_is_directory);
+uint64_t get_lock_offset(const uint8_t *data, int data_offset,
+			 bool large_file_format);
 
 /* The following definitions come from smbd/seal.c  */
 
