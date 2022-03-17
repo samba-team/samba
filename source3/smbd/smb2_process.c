@@ -125,3 +125,23 @@ size_t srv_set_message(char *buf,
 	smb_setlen(buf,(smb_size + num_words*2 + num_bytes - 4));
 	return (smb_size + num_words*2 + num_bytes);
 }
+
+NTSTATUS read_packet_remainder(int fd, char *buffer,
+			       unsigned int timeout, ssize_t len)
+{
+	NTSTATUS status;
+
+	if (len <= 0) {
+		return NT_STATUS_OK;
+	}
+
+	status = read_fd_with_timeout(fd, buffer, len, len, timeout, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		char addr[INET6_ADDRSTRLEN];
+		DEBUG(0, ("read_fd_with_timeout failed for client %s read "
+			  "error = %s.\n",
+			  get_peer_addr(fd, addr, sizeof(addr)),
+			  nt_errstr(status)));
+	}
+	return status;
+}

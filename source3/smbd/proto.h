@@ -900,6 +900,8 @@ size_t srv_set_message(char *buf,
 		       size_t num_words,
 		       size_t num_bytes,
 		       bool zero);
+NTSTATUS read_packet_remainder(int fd, char *buffer,
+			       unsigned int timeout, ssize_t len);
 
 /* The following definitions come from smbd/quotas.c  */
 
