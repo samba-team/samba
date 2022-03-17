@@ -56,6 +56,7 @@ struct samba_kdc_entry {
 	struct samba_kdc_db_context *kdc_db_ctx;
 	struct ldb_message *msg;
 	struct ldb_dn *realm_dn;
+	struct auth_user_info_dc *user_info_dc;
 	bool is_krbtgt;
 	bool is_rodc;
 	bool is_trust;

@@ -828,10 +828,37 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 }
 
 /*
- * We return not just the blobs, but also the user_info_dc because we
- * will need, in the RODC case, to confirm that the returned user is
- * permitted to be replicated to the KDC
+ * Look up the user's info in the database and create a auth_user_info_dc
+ * structure. If the resulting structure is not talloc_free()d, it will be
+ * reused on future calls to this function.
  */
+NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
+                                         struct ldb_message *msg,
+                                         struct auth_user_info_dc **user_info_dc)
+{
+	if (skdc_entry->user_info_dc == NULL) {
+		NTSTATUS nt_status;
+		struct loadparm_context *lp_ctx = skdc_entry->kdc_db_ctx->lp_ctx;
+
+		nt_status = authsam_make_user_info_dc(skdc_entry,
+						      skdc_entry->kdc_db_ctx->samdb,
+						      lpcfg_netbios_name(lp_ctx),
+						      lpcfg_sam_name(lp_ctx),
+						      lpcfg_sam_dnsname(lp_ctx),
+						      skdc_entry->realm_dn,
+						      msg,
+						      data_blob_null,
+						      data_blob_null,
+						      &skdc_entry->user_info_dc);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+	}
+
+	*user_info_dc = skdc_entry->user_info_dc;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *p,
 				 DATA_BLOB **_logon_info_blob,
@@ -839,10 +866,9 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB **_upn_info_blob,
 				 DATA_BLOB **_pac_attrs_blob,
 				 uint64_t pac_attributes,
-				 DATA_BLOB **_requester_sid_blob,
-				 struct auth_user_info_dc **_user_info_dc)
+				 DATA_BLOB **_requester_sid_blob)
 {
-	struct auth_user_info_dc *user_info_dc;
+	struct auth_user_info_dc *user_info_dc = NULL;
 	DATA_BLOB *logon_blob = NULL;
 	DATA_BLOB *cred_blob = NULL;
 	DATA_BLOB *upn_blob = NULL;
@@ -893,15 +919,9 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	nt_status = authsam_make_user_info_dc(mem_ctx, p->kdc_db_ctx->samdb,
-					     lpcfg_netbios_name(p->kdc_db_ctx->lp_ctx),
-					     lpcfg_sam_name(p->kdc_db_ctx->lp_ctx),
-					     lpcfg_sam_dnsname(p->kdc_db_ctx->lp_ctx),
-					     p->realm_dn,
-					     p->msg,
-					     data_blob(NULL, 0),
-					     data_blob(NULL, 0),
-					     &user_info_dc);
+	nt_status = samba_kdc_get_user_info_from_db(p,
+						    p->msg,
+						    &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Getting user info for PAC failed: %s\n",
 			  nt_errstr(nt_status)));
@@ -950,15 +970,6 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/*
-	 * Return to the caller to allow a check on the allowed/denied
-	 * RODC replication groups
-	 */
-	if (_user_info_dc == NULL) {
-		TALLOC_FREE(user_info_dc);
-	} else {
-		*_user_info_dc = user_info_dc;
-	}
 	*_logon_info_blob = logon_blob;
 	if (_cred_ndr_blob != NULL) {
 		*_cred_ndr_blob = cred_blob;
@@ -1473,10 +1484,19 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						    &upn_blob,
 						    NULL,
 						    PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY,
-						    &requester_sid_blob,
-						    &user_info_dc);
+						    &requester_sid_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_pac_blobs failed: %s\n",
+				nt_errstr(nt_status));
+			code = KRB5KDC_ERR_TGT_REVOKED;
+			goto done;
+		}
+
+		nt_status = samba_kdc_get_user_info_from_db(client,
+							    client->msg,
+							    &user_info_dc);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("samba_kdc_get_user_info_from_db failed: %s\n",
 				nt_errstr(nt_status));
 			code = KRB5KDC_ERR_TGT_REVOKED;
 			goto done;

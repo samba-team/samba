@@ -511,8 +511,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 					    &upn_dns_info_blob,
 					    is_krbtgt ? &pac_attrs_blob : NULL,
 					    PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY,
-					    is_krbtgt ? &requester_sid_blob : NULL,
-					    NULL);
+					    is_krbtgt ? &requester_sid_blob : NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		if (NT_STATUS_EQUAL(nt_status,
@@ -968,18 +967,11 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	status = authsam_make_user_info_dc(tmp_ctx,
-					   ctx->db_ctx->samdb,
-					   lpcfg_netbios_name(ctx->db_ctx->lp_ctx),
-					   lpcfg_sam_name(ctx->db_ctx->lp_ctx),
-					   lpcfg_sam_dnsname(ctx->db_ctx->lp_ctx),
-					   p->realm_dn,
-					   p->msg,
-					   data_blob(NULL, 0),
-					   data_blob(NULL, 0),
-					   &user_info_dc);
+	status = samba_kdc_get_user_info_from_db(p,
+						 p->msg,
+						 &user_info_dc);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("authsam_make_user_info_dc failed: %s\n",
+		DEBUG(1,("samba_kdc_get_user_info_from_db failed: %s\n",
 			nt_errstr(status)));
 		talloc_free(tmp_ctx);
 		return EINVAL;

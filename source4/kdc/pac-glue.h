@@ -55,6 +55,10 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
 			  bool *is_in_db,
 			  bool *is_untrusted);
 
+NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
+					 struct ldb_message *msg,
+					 struct auth_user_info_dc **user_info_dc);
+
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *skdc_entry,
 				 DATA_BLOB **_logon_info_blob,
@@ -62,8 +66,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB **_upn_info_blob,
 				 DATA_BLOB **_pac_attrs_blob,
 				 uint64_t pac_attributes,
-				 DATA_BLOB **_requester_sid_blob,
-				 struct auth_user_info_dc **_user_info_dc);
+				 DATA_BLOB **_requester_sid_blob);
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
