@@ -742,3 +742,151 @@ void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_s
 	}
 	return;
 }
+
+/*******************************************************************
+ * unlink a file with all relevant access checks
+ *******************************************************************/
+
+NTSTATUS unlink_internals(connection_struct *conn,
+			struct smb_request *req,
+			uint32_t dirtype,
+			struct smb_filename *smb_fname)
+{
+	uint32_t fattr;
+	files_struct *fsp;
+	uint32_t dirtype_orig = dirtype;
+	NTSTATUS status;
+	int ret;
+	struct smb2_create_blobs *posx = NULL;
+
+	if (dirtype == 0) {
+		dirtype = FILE_ATTRIBUTE_NORMAL;
+	}
+
+	DBG_DEBUG("%s, dirtype = %d\n",
+		  smb_fname_str_dbg(smb_fname),
+		  dirtype);
+
+	if (!CAN_WRITE(conn)) {
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
+
+	ret = vfs_stat(conn, smb_fname);
+	if (ret != 0) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	fattr = fdos_mode(smb_fname->fsp);
+
+	if (dirtype & FILE_ATTRIBUTE_NORMAL) {
+		dirtype = FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY;
+	}
+
+	dirtype &= (FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM);
+	if (!dirtype) {
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	if (!dir_check_ftype(fattr, dirtype)) {
+		if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
+			return NT_STATUS_FILE_IS_A_DIRECTORY;
+		}
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	if (dirtype_orig & 0x8000) {
+		/* These will never be set for POSIX. */
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+#if 0
+	if ((fattr & dirtype) & FILE_ATTRIBUTE_DIRECTORY) {
+                return NT_STATUS_FILE_IS_A_DIRECTORY;
+        }
+
+        if ((fattr & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM)) {
+                return NT_STATUS_NO_SUCH_FILE;
+        }
+
+	if (dirtype & 0xFF00) {
+		/* These will never be set for POSIX. */
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	dirtype &= 0xFF;
+	if (!dirtype) {
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	/* Can't delete a directory. */
+	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+#endif
+
+#if 0 /* JRATEST */
+	else if (dirtype & FILE_ATTRIBUTE_DIRECTORY) /* Asked for a directory and it isn't. */
+		return NT_STATUS_OBJECT_NAME_INVALID;
+#endif /* JRATEST */
+
+	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
+		status = make_smb2_posix_create_ctx(
+			talloc_tos(), &posx, 0777);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
+				    nt_errstr(status));
+			return status;
+		}
+	}
+
+	/* On open checks the open itself will check the share mode, so
+	   don't do it here as we'll get it wrong. */
+
+	status = SMB_VFS_CREATE_FILE
+		(conn,			/* conn */
+		 req,			/* req */
+		 smb_fname,		/* fname */
+		 DELETE_ACCESS,		/* access_mask */
+		 FILE_SHARE_NONE,	/* share_access */
+		 FILE_OPEN,		/* create_disposition*/
+		 FILE_NON_DIRECTORY_FILE, /* create_options */
+		 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
+		 0,			/* oplock_request */
+		 NULL,			/* lease */
+		 0,			/* allocation_size */
+		 0,			/* private_flags */
+		 NULL,			/* sd */
+		 NULL,			/* ea_list */
+		 &fsp,			/* result */
+		 NULL,			/* pinfo */
+		 posx,			/* in_context_blobs */
+		 NULL);			/* out_context_blobs */
+
+	TALLOC_FREE(posx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("SMB_VFS_CREATEFILE failed: %s\n",
+			   nt_errstr(status));
+		return status;
+	}
+
+	status = can_set_delete_on_close(fsp, fattr);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("can_set_delete_on_close for file %s - "
+			"(%s)\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status));
+		close_file_free(req, &fsp, NORMAL_CLOSE);
+		return status;
+	}
+
+	/* The set is across all open files on this dev/inode pair. */
+	if (!set_delete_on_close(fsp, True,
+				conn->session_info->security_token,
+				conn->session_info->unix_token)) {
+		close_file_free(req, &fsp, NORMAL_CLOSE);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return close_file_free(req, &fsp, NORMAL_CLOSE);
+}

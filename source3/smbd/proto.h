@@ -927,10 +927,6 @@ void reply_open_and_X(struct smb_request *req);
 void reply_ulogoffX(struct smb_request *req);
 void reply_mknew(struct smb_request *req);
 void reply_ctemp(struct smb_request *req);
-NTSTATUS unlink_internals(connection_struct *conn,
-			struct smb_request *req,
-			uint32_t dirtype,
-			struct smb_filename *smb_fname);
 void reply_unlink(struct smb_request *req);
 ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
 		      off_t startpos, size_t nread);
@@ -1036,6 +1032,10 @@ bool check_fsp(connection_struct *conn, struct smb_request *req,
 bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 			      files_struct *fsp);
 void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_size);
+NTSTATUS unlink_internals(connection_struct *conn,
+			struct smb_request *req,
+			uint32_t dirtype,
+			struct smb_filename *smb_fname);
 
 /* The following definitions come from smbd/seal.c  */
 
