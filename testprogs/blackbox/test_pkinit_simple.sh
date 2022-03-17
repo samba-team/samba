@@ -5,7 +5,7 @@
 
 if [ $# -lt 5 ]; then
 cat <<EOF
-Usage: test_kinit.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX ENCTYPE SMBCLINET
+Usage: test_pkinit_simple.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX ENCTYPE SMBCLINET
 EOF
 exit 1;
 fi

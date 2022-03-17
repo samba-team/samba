@@ -557,7 +557,7 @@ plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.jo
 if have_heimdal_support:
     plantestsuite("samba4.blackbox.pkinit",
                   "ad_dc:local",
-                  [os.path.join(bbdir, "test_pkinit_heimdal.sh"),
+                  [os.path.join(bbdir, "test_pkinit_simple.sh"),
                    '$SERVER',
                    'pkinit',
                    '$PASSWORD',
