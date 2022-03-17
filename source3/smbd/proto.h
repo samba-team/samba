@@ -956,13 +956,6 @@ void reply_printwrite(struct smb_request *req);
 void reply_mkdir(struct smb_request *req);
 void reply_rmdir(struct smb_request *req);
 void reply_mv(struct smb_request *req);
-NTSTATUS copy_file(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			struct smb_filename *smb_fname_src,
-			struct smb_filename *smb_fname_dst,
-			int ofun,
-			int count,
-			bool target_is_directory);
 void reply_copy(struct smb_request *req);
 uint64_t get_lock_pid(const uint8_t *data, int data_offset,
 		    bool large_file_format);
@@ -1036,6 +1029,13 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			uint32_t attrs,
 			bool replace_if_exists,
 			uint32_t access_mask);
+NTSTATUS copy_file(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			struct smb_filename *smb_fname_src,
+			struct smb_filename *smb_fname_dst,
+			int ofun,
+			int count,
+			bool target_is_directory);
 
 /* The following definitions come from smbd/seal.c  */
 

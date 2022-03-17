@@ -1822,3 +1822,191 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	TALLOC_FREE(posx);
 	return status;
 }
+
+/*******************************************************************
+ Copy a file as part of a reply_copy.
+******************************************************************/
+
+/*
+ * TODO: check error codes on all callers
+ */
+
+NTSTATUS copy_file(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			struct smb_filename *smb_fname_src,
+			struct smb_filename *smb_fname_dst,
+			int ofun,
+			int count,
+			bool target_is_directory)
+{
+	struct smb_filename *smb_fname_dst_tmp = NULL;
+	off_t ret=-1;
+	files_struct *fsp1,*fsp2;
+	uint32_t dosattrs;
+	uint32_t new_create_disposition;
+	NTSTATUS status;
+
+
+	smb_fname_dst_tmp = cp_smb_filename(ctx, smb_fname_dst);
+	if (smb_fname_dst_tmp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * If the target is a directory, extract the last component from the
+	 * src filename and append it to the dst filename
+	 */
+	if (target_is_directory) {
+		const char *p;
+
+		/* dest/target can't be a stream if it's a directory. */
+		SMB_ASSERT(smb_fname_dst->stream_name == NULL);
+
+		p = strrchr_m(smb_fname_src->base_name,'/');
+		if (p) {
+			p++;
+		} else {
+			p = smb_fname_src->base_name;
+		}
+		smb_fname_dst_tmp->base_name =
+		    talloc_asprintf_append(smb_fname_dst_tmp->base_name, "/%s",
+					   p);
+		if (!smb_fname_dst_tmp->base_name) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	}
+
+	status = vfs_file_exist(conn, smb_fname_src);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_src);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	if (!target_is_directory && count) {
+		new_create_disposition = FILE_OPEN;
+	} else {
+		if (!map_open_params_to_ntcreate(smb_fname_dst_tmp->base_name,
+						 0, ofun,
+						 NULL, NULL,
+						 &new_create_disposition,
+						 NULL,
+						 NULL)) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto out;
+		}
+	}
+
+	/* Open the src file for reading. */
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		NULL,					/* req */
+		smb_fname_src,	       			/* fname */
+		FILE_GENERIC_READ,			/* access_mask */
+		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		NULL,					/* lease */
+		0,					/* allocation_size */
+		0,					/* private_flags */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp1,					/* result */
+		NULL,					/* psbuf */
+		NULL, NULL);				/* create context */
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	dosattrs = fdos_mode(fsp1);
+
+	if (SMB_VFS_STAT(conn, smb_fname_dst_tmp) == -1) {
+		ZERO_STRUCTP(&smb_fname_dst_tmp->st);
+	}
+
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_dst);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
+	{
+		goto out;
+	}
+
+	/* Open the dst file for writing. */
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		NULL,					/* req */
+		smb_fname_dst,				/* fname */
+		FILE_GENERIC_WRITE,			/* access_mask */
+		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
+		new_create_disposition,			/* create_disposition*/
+		0,					/* create_options */
+		dosattrs,				/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		NULL,					/* lease */
+		0,					/* allocation_size */
+		0,					/* private_flags */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp2,					/* result */
+		NULL,					/* psbuf */
+		NULL, NULL);				/* create context */
+
+	if (!NT_STATUS_IS_OK(status)) {
+		close_file_free(NULL, &fsp1, ERROR_CLOSE);
+		goto out;
+	}
+
+	if (ofun & OPENX_FILE_EXISTS_OPEN) {
+		ret = SMB_VFS_LSEEK(fsp2, 0, SEEK_END);
+		if (ret == -1) {
+			DEBUG(0, ("error - vfs lseek returned error %s\n",
+				strerror(errno)));
+			status = map_nt_error_from_unix(errno);
+			close_file_free(NULL, &fsp1, ERROR_CLOSE);
+			close_file_free(NULL, &fsp2, ERROR_CLOSE);
+			goto out;
+		}
+	}
+
+	/* Do the actual copy. */
+	if (smb_fname_src->st.st_ex_size) {
+		ret = vfs_transfer_file(fsp1, fsp2, smb_fname_src->st.st_ex_size);
+	} else {
+		ret = 0;
+	}
+
+	close_file_free(NULL, &fsp1, NORMAL_CLOSE);
+
+	/* Ensure the modtime is set correctly on the destination file. */
+	set_close_write_time(fsp2, smb_fname_src->st.st_ex_mtime);
+
+	/*
+	 * As we are opening fsp1 read-only we only expect
+	 * an error on close on fsp2 if we are out of space.
+	 * Thus we don't look at the error return from the
+	 * close of fsp1.
+	 */
+	status = close_file_free(NULL, &fsp2, NORMAL_CLOSE);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	if (ret != (off_t)smb_fname_src->st.st_ex_size) {
+		status = NT_STATUS_DISK_FULL;
+		goto out;
+	}
+
+	status = NT_STATUS_OK;
+
+ out:
+	TALLOC_FREE(smb_fname_dst_tmp);
+	return status;
+}
