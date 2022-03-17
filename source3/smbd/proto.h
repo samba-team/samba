@@ -852,10 +852,6 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 		   bool do_signing, uint32_t seqnum,
 		   bool do_encrypt,
 		   struct smb_perfcount_data *pcd);
-size_t srv_set_message(char *buf,
-		       size_t num_words,
-		       size_t num_bytes,
-		       bool zero);
 void remove_deferred_open_message_smb(struct smbXsrv_connection *xconn,
 				      uint64_t mid);
 bool schedule_deferred_open_message_smb(struct smbXsrv_connection *xconn,
@@ -900,6 +896,10 @@ bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
 		  bool no_signing, uint32_t seqnum,
 		  bool do_encrypt,
 		  struct smb_perfcount_data *pcd);
+size_t srv_set_message(char *buf,
+		       size_t num_words,
+		       size_t num_bytes,
+		       bool zero);
 
 /* The following definitions come from smbd/quotas.c  */
 

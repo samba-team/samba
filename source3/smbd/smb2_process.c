@@ -107,3 +107,21 @@ bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
 			     do_encrypt, pcd);
 #endif
 }
+
+/*******************************************************************
+ Setup the word count and byte count for a smb message.
+********************************************************************/
+
+size_t srv_set_message(char *buf,
+		       size_t num_words,
+		       size_t num_bytes,
+		       bool zero)
+{
+	if (zero && (num_words || num_bytes)) {
+		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
+	}
+	SCVAL(buf,smb_wct,num_words);
+	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);
+	smb_setlen(buf,(smb_size + num_words*2 + num_bytes - 4));
+	return (smb_size + num_words*2 + num_bytes);
+}
