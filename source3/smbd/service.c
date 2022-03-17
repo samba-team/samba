@@ -857,12 +857,16 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		dbgtext( "%s (%s) ", get_remote_machine_name(),
 			 tsocket_address_string(conn->sconn->remote_address,
 						talloc_tos()) );
+#if defined(WITH_SMB1SERVER)
 		if (sconn->using_smb2) {
+#endif
 			signing_active = smb2_signing_key_valid(
 						session->global->encryption_key);
+#if defined(WITH_SMB1SERVER)
 		} else {
 			signing_active = smb1_srv_is_signing_active(xconn);
 		}
+#endif
 		dbgtext( "%s", signing_active ? "signed " : "");
 		dbgtext( "connect to service %s ",
 			 lp_const_servicename(snum) );
