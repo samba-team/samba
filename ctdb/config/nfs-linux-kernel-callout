@@ -123,13 +123,6 @@ basic_stop()
 			service "$nfs_lock_service" stop
 		fi
 		;;
-	nfslock)
-		if [ -n "$nfs_lock_service" ]; then
-			service "$nfs_lock_service" stop
-		else
-			service "$nfs_service" stop
-		fi
-		;;
 	*)
 		usage
 		;;
@@ -150,13 +143,6 @@ basic_start()
 			service "$nfs_rquotad_service" start
 		fi
 		;;
-	nfslock)
-		if [ -n "$nfs_lock_service" ]; then
-			service "$nfs_lock_service" start
-		else
-			service "$nfs_service" start
-		fi
-		;;
 	*)
 		usage
 		;;
@@ -175,7 +161,11 @@ service_stop()
 		pkill -9 nfsd
 		;;
 	nlockmgr)
-		basic_stop "nfslock" >/dev/null 2>&1 || true
+		if [ -n "$nfs_lock_service" ]; then
+			service "$nfs_lock_service" stop >/dev/null 2>&1 || true
+		else
+			service "$nfs_service" stop >/dev/null 2>&1 || true
+		fi
 		;;
 	mountd)
 		if [ -n "$nfs_mountd_service" ]; then
@@ -217,7 +207,11 @@ service_start()
 		basic_start "nfs"
 		;;
 	nlockmgr)
-		basic_start "nfslock"
+		if [ -n "$nfs_lock_service" ]; then
+			service "$nfs_lock_service" start
+		else
+			service "$nfs_service" start
+		fi
 		;;
 	mountd)
 		if [ -n "$nfs_mountd_service" ]; then
