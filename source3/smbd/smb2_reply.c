@@ -2032,3 +2032,81 @@ uint64_t get_lock_offset(const uint8_t *data, int data_offset,
 
 	return offset;
 }
+
+struct smbd_do_unlocking_state {
+	struct files_struct *fsp;
+	uint16_t num_ulocks;
+	struct smbd_lock_element *ulocks;
+	NTSTATUS status;
+};
+
+static void smbd_do_unlocking_fn(
+	const uint8_t *buf,
+	size_t buflen,
+	bool *pmodified_dependent,
+	void *private_data)
+{
+	struct smbd_do_unlocking_state *state = private_data;
+	struct files_struct *fsp = state->fsp;
+	uint16_t i;
+
+	for (i = 0; i < state->num_ulocks; i++) {
+		struct smbd_lock_element *e = &state->ulocks[i];
+
+		DBG_DEBUG("unlock start=%"PRIu64", len=%"PRIu64" for "
+			  "pid %"PRIu64", file %s\n",
+			  e->offset,
+			  e->count,
+			  e->smblctx,
+			  fsp_str_dbg(fsp));
+
+		if (e->brltype != UNLOCK_LOCK) {
+			/* this can only happen with SMB2 */
+			state->status = NT_STATUS_INVALID_PARAMETER;
+			return;
+		}
+
+		state->status = do_unlock(
+			fsp, e->smblctx, e->count, e->offset, e->lock_flav);
+
+		DBG_DEBUG("do_unlock returned %s\n",
+			  nt_errstr(state->status));
+
+		if (!NT_STATUS_IS_OK(state->status)) {
+			return;
+		}
+	}
+
+	*pmodified_dependent = true;
+}
+
+NTSTATUS smbd_do_unlocking(struct smb_request *req,
+			   files_struct *fsp,
+			   uint16_t num_ulocks,
+			   struct smbd_lock_element *ulocks)
+{
+	struct smbd_do_unlocking_state state = {
+		.fsp = fsp,
+		.num_ulocks = num_ulocks,
+		.ulocks = ulocks,
+	};
+	NTSTATUS status;
+
+	DBG_NOTICE("%s num_ulocks=%"PRIu16"\n", fsp_fnum_dbg(fsp), num_ulocks);
+
+	status = share_mode_do_locked(
+		fsp->file_id, smbd_do_unlocking_fn, &state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("share_mode_do_locked failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_DEBUG("smbd_do_unlocking_fn failed: %s\n",
+			  nt_errstr(status));
+		return state.status;
+	}
+
+	return NT_STATUS_OK;
+}
