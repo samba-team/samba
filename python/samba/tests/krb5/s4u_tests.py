@@ -37,6 +37,7 @@ from samba.tests.krb5.raw_testcase import (
 )
 from samba.tests.krb5.rfc4120_constants import (
     AES256_CTS_HMAC_SHA1_96,
+    AD_IF_RELEVANT,
     ARCFOUR_HMAC_MD5,
     KDC_ERR_BADMATCH,
     KDC_ERR_BADOPTION,
@@ -49,7 +50,9 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_PA_ENC_TIMESTAMP,
     KU_AS_REP_ENC_PART,
     KU_TGS_REP_ENC_PART_SUB_KEY,
-    NT_PRINCIPAL
+    KU_TGS_REQ_AUTH_DAT_SESSION,
+    KU_TGS_REQ_AUTH_DAT_SUBKEY,
+    NT_PRINCIPAL,
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 
@@ -722,7 +725,11 @@ class S4UKerberosTests(KDCBaseTest):
 
         pac_options = kdc_dict.pop('pac_options', None)
 
-        authenticator_subkey = self.RandomKey(Enctype.AES256)
+        use_authenticator_subkey = kdc_dict.pop('use_authenticator_subkey', True)
+        if use_authenticator_subkey:
+            authenticator_subkey = self.RandomKey(Enctype.AES256)
+        else:
+            authenticator_subkey = None
 
         expected_proxy_target = service2_creds.get_spn()
 
@@ -759,21 +766,63 @@ class S4UKerberosTests(KDCBaseTest):
             expected_transited_services=expected_transited_services,
             expect_pac=expect_pac)
 
+        EncAuthorizationData = kdc_dict.pop('enc-authorization-data', None)
+
+        if EncAuthorizationData is not None:
+            if authenticator_subkey is not None:
+                EncAuthorizationData_key = authenticator_subkey
+                EncAuthorizationData_usage = KU_TGS_REQ_AUTH_DAT_SUBKEY
+            else:
+                EncAuthorizationData_key = client_service_tkt.session_key
+                EncAuthorizationData_usage = KU_TGS_REQ_AUTH_DAT_SESSION
+        else:
+            EncAuthorizationData_key = None
+            EncAuthorizationData_usage = None
+
         self._generic_kdc_exchange(kdc_exchange_dict,
                                    cname=None,
                                    realm=service2_realm,
                                    sname=service2_sname,
                                    etypes=etypes,
-                                   additional_tickets=additional_tickets)
+                                   additional_tickets=additional_tickets,
+                                   EncAuthorizationData=EncAuthorizationData,
+                                   EncAuthorizationData_key=EncAuthorizationData_key,
+                                   EncAuthorizationData_usage=EncAuthorizationData_usage)
 
         if not expected_error_mode:
             # Check whether the ticket contains a PAC.
             ticket = kdc_exchange_dict['rep_ticket_creds']
             pac = self.get_ticket_pac(ticket, expect_pac=expect_pac)
+            ticket_auth_data = ticket.ticket_private.get('authorization-data')
+            expected_num_ticket_auth_data = 0
             if expect_pac:
                 self.assertIsNotNone(pac)
+                expected_num_ticket_auth_data += 1
             else:
                 self.assertIsNone(pac)
+
+            if EncAuthorizationData is not None:
+                expected_num_ticket_auth_data += len(EncAuthorizationData)
+
+            if expected_num_ticket_auth_data == 0:
+                self.assertIsNone(ticket_auth_data)
+            else:
+                self.assertIsNotNone(ticket_auth_data)
+                self.assertEqual(len(ticket_auth_data),
+                        expected_num_ticket_auth_data)
+
+                if EncAuthorizationData is not None:
+                    enc_ad_plain = self.der_encode(
+                        EncAuthorizationData,
+                        asn1Spec=krb5_asn1.AuthorizationData())
+                    req_EncAuthorizationData = self.der_decode(
+                        enc_ad_plain,
+                        asn1Spec=krb5_asn1.AuthorizationData())
+
+                    rep_EncAuthorizationData = ticket_auth_data.copy()
+                    if expect_pac:
+                        rep_EncAuthorizationData.pop(0)
+                    self.assertEqual(rep_EncAuthorizationData, req_EncAuthorizationData)
 
         # Ensure we used all the parameters given to us.
         self.assertEqual({}, kdc_dict)
@@ -791,6 +840,43 @@ class S4UKerberosTests(KDCBaseTest):
             {
                 'expected_error_mode': 0,
                 'allow_delegation': True
+            })
+
+    def test_constrained_delegation_with_enc_auth_data_subkey(self):
+        # Test constrained delegation.
+        EncAuthorizationData = []
+        relevant_elems = []
+        auth_data777 = self.AuthorizationData_create(777, b'AuthorizationData777')
+        relevant_elems.append(auth_data777)
+        auth_data999 = self.AuthorizationData_create(999, b'AuthorizationData999')
+        relevant_elems.append(auth_data999)
+        ad_relevant = self.der_encode(relevant_elems, asn1Spec=krb5_asn1.AD_IF_RELEVANT())
+        ad_data = self.AuthorizationData_create(AD_IF_RELEVANT, ad_relevant)
+        EncAuthorizationData.append(ad_data)
+        self._run_delegation_test(
+            {
+                'expected_error_mode': 0,
+                'allow_delegation': True,
+                'enc-authorization-data': EncAuthorizationData,
+            })
+
+    def test_constrained_delegation_with_enc_auth_data_no_subkey(self):
+        # Test constrained delegation.
+        EncAuthorizationData = []
+        relevant_elems = []
+        auth_data777 = self.AuthorizationData_create(777, b'AuthorizationData777')
+        relevant_elems.append(auth_data777)
+        auth_data999 = self.AuthorizationData_create(999, b'AuthorizationData999')
+        relevant_elems.append(auth_data999)
+        ad_relevant = self.der_encode(relevant_elems, asn1Spec=krb5_asn1.AD_IF_RELEVANT())
+        ad_data = self.AuthorizationData_create(AD_IF_RELEVANT, ad_relevant)
+        EncAuthorizationData.append(ad_data)
+        self._run_delegation_test(
+            {
+                'expected_error_mode': 0,
+                'allow_delegation': True,
+                'enc-authorization-data': EncAuthorizationData,
+                'use_authenticator_subkey': False,
             })
 
     def test_constrained_delegation_authentication_asserted_identity(self):
