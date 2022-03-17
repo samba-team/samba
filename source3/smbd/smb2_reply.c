@@ -950,3 +950,70 @@ ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
 	SAFE_FREE(buf);
 	return (ssize_t)nread;
 }
+
+/****************************************************************************
+ Deal with the case of sendfile reading less bytes from the file than
+ requested. Fill with zeros (all we can do). Returns 0 on success
+****************************************************************************/
+
+ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
+			    files_struct *fsp,
+			    ssize_t nread,
+			    size_t headersize,
+			    size_t smb_maxcnt)
+{
+#define SHORT_SEND_BUFSIZE 1024
+	if (nread < headersize) {
+		DEBUG(0,("sendfile_short_send: sendfile failed to send "
+			"header for file %s (%s). Terminating\n",
+			fsp_str_dbg(fsp), strerror(errno)));
+		return -1;
+	}
+
+	nread -= headersize;
+
+	if (nread < smb_maxcnt) {
+		char buf[SHORT_SEND_BUFSIZE] = { 0 };
+
+		DEBUG(0,("sendfile_short_send: filling truncated file %s "
+			"with zeros !\n", fsp_str_dbg(fsp)));
+
+		while (nread < smb_maxcnt) {
+			/*
+			 * We asked for the real file size and told sendfile
+			 * to not go beyond the end of the file. But it can
+			 * happen that in between our fstat call and the
+			 * sendfile call the file was truncated. This is very
+			 * bad because we have already announced the larger
+			 * number of bytes to the client.
+			 *
+			 * The best we can do now is to send 0-bytes, just as
+			 * a read from a hole in a sparse file would do.
+			 *
+			 * This should happen rarely enough that I don't care
+			 * about efficiency here :-)
+			 */
+			size_t to_write;
+			ssize_t ret;
+
+			to_write = MIN(SHORT_SEND_BUFSIZE, smb_maxcnt - nread);
+			ret = write_data(xconn->transport.sock, buf, to_write);
+			if (ret != to_write) {
+				int saved_errno = errno;
+				/*
+				 * Try and give an error message saying what
+				 * client failed.
+				 */
+				DEBUG(0, ("write_data failed for client %s. "
+					  "Error %s\n",
+					  smbXsrv_connection_dbg(xconn),
+					  strerror(saved_errno)));
+				errno = saved_errno;
+				return -1;
+			}
+			nread += to_write;
+		}
+	}
+
+	return 0;
+}
