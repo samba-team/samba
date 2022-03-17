@@ -4,7 +4,7 @@
 
 if [ $# -lt 5 ]; then
 cat <<EOF
-Usage: test_pkinit_pac_heimdal.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX ENCTYPE
+Usage: test_pkinit_pac.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX ENCTYPE
 EOF
 exit 1;
 fi
