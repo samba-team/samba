@@ -54,24 +54,6 @@
 #include "source3/lib/substitute.h"
 
 /****************************************************************************
- Check if we have a correct fsp pointing to a file. Basic check for open fsp.
-****************************************************************************/
-
-bool check_fsp_open(connection_struct *conn, struct smb_request *req,
-		    files_struct *fsp)
-{
-	if ((fsp == NULL) || (conn == NULL)) {
-		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
-		return False;
-	}
-	if ((conn != fsp->conn) || (req->vuid != fsp->vuid)) {
-		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
-		return False;
-	}
-	return True;
-}
-
-/****************************************************************************
  Check if we have a correct fsp pointing to a file.
 ****************************************************************************/
 
