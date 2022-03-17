@@ -17,7 +17,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "cleanupdb.h"
+#include "replace.h"
+#include "system/filesys.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
+#include "lib/util/talloc_stack.h"
+#include "lib/util/debug.h"
+#include "source3/lib/cleanupdb.h"
+#include "source3/lib/util_path.h"
 
 struct cleanup_key {
 	pid_t pid;

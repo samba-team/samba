@@ -17,10 +17,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "system/filesys.h"
-#include "util_tdb.h"
-#include "lib/tdb_wrap/tdb_wrap.h"
+#ifndef __LIB_CLEANUPDB_H__
+#define __LIB_CLEANUPDB_H__
+
+#include "replace.h"
 
 bool cleanupdb_store_child(const pid_t pid, const bool unclean);
 bool cleanupdb_delete_child(const pid_t pid);
@@ -28,3 +28,5 @@ int cleanupdb_traverse_read(int (*fn)(const pid_t pid,
 				      const bool cleanup,
 				      void *private_data),
 			    void *private_data);
+
+#endif
