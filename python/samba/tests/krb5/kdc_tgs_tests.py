@@ -20,15 +20,15 @@
 import sys
 import os
 
-import ldb
+sys.path.insert(0, "bin/python")
+os.environ["PYTHONUNBUFFERED"] = "1"
 
+import ldb
 
 from samba import dsdb
 
 from samba.dcerpc import krb5pac, security
 
-sys.path.insert(0, "bin/python")
-os.environ["PYTHONUNBUFFERED"] = "1"
 
 import samba.tests.krb5.kcrypto as kcrypto
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
