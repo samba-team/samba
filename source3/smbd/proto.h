@@ -66,6 +66,10 @@ void smb1_srv_set_signing(struct smbXsrv_connection *conn,
 		     const DATA_BLOB user_session_key,
 		     const DATA_BLOB response);
 
+/* The following definitions come from smbd/smb2_signing.c */
+
+bool smb2_srv_init_signing(struct smbXsrv_connection *conn);
+
 /* The following definitions come from smbd/aio.c  */
 
 struct aio_extra;

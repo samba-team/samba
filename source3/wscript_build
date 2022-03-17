@@ -664,6 +664,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/smb2_aio.c smbd/statvfs.c
                           smbd/dmapi.c
                           smbd/signing.c
+                          smbd/smb2_signing.c
                           smbd/file_access.c
                           smbd/dnsregister.c smbd/globals.c
                           smbd/smb2_server.c
