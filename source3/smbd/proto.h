@@ -1017,7 +1017,7 @@ bool reload_services(struct smbd_server_connection *sconn,
 void smbd_exit_server(const char *reason) _NORETURN_;
 void smbd_exit_server_cleanly(const char *const reason) _NORETURN_;
 
-/* The following definitions come from smbd/service.c  */
+/* The following definitions come from smbd/smb2_service.c  */
 
 bool set_conn_connectpath(connection_struct *conn, const char *connectpath);
 bool canonicalize_connect_path(connection_struct *conn);

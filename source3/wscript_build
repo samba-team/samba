@@ -649,7 +649,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/posix_acls.c
                           lib/sysacls.c
                           smbd/process.c
-                          smbd/service.c
+                          smbd/smb2_service.c
                           smbd/error.c
                           printing/printspoolss.c
                           printing/rap_jobid.c
