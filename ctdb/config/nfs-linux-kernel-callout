@@ -107,46 +107,32 @@ nfs_load_config()
 }
 
 ##################################################
-# Basic service stop and start
+# Overall NFS service stop and start
 
-basic_stop()
+nfs_service_stop()
 {
-	case "$1" in
-	nfs)
-		if [ -n "$nfs_rquotad_service" ]; then
-			service "$nfs_rquotad_service" stop
-		fi
+	if [ -n "$nfs_rquotad_service" ]; then
+		service "$nfs_rquotad_service" stop
+	fi
 
-		service "$nfs_service" stop
+	service "$nfs_service" stop
 
-		if [ -n "$nfs_lock_service" ]; then
-			service "$nfs_lock_service" stop
-		fi
-		;;
-	*)
-		usage
-		;;
-	esac
+	if [ -n "$nfs_lock_service" ]; then
+		service "$nfs_lock_service" stop
+	fi
 }
 
-basic_start()
+nfs_service_start()
 {
-	case "$1" in
-	nfs)
-		if [ -n "$nfs_lock_service" ]; then
-			service "$nfs_lock_service" start
-		fi
+	if [ -n "$nfs_lock_service" ]; then
+		service "$nfs_lock_service" start
+	fi
 
-		service "$nfs_service" start
+	service "$nfs_service" start
 
-		if [ -n "$nfs_rquotad_service" ]; then
-			service "$nfs_rquotad_service" start
-		fi
-		;;
-	*)
-		usage
-		;;
-	esac
+	if [ -n "$nfs_rquotad_service" ]; then
+		service "$nfs_rquotad_service" start
+	fi
 }
 
 ##################################################
@@ -157,7 +143,7 @@ service_stop()
 	case "$1" in
 	nfs)
 		echo 0 >"${PROCFS_PATH}/fs/nfsd/threads"
-		basic_stop "nfs" >/dev/null 2>&1 || true
+		nfs_service_stop >/dev/null 2>&1 || true
 		pkill -9 nfsd
 		;;
 	nlockmgr)
@@ -204,7 +190,7 @@ service_start()
 {
 	case "$1" in
 	nfs)
-		basic_start "nfs"
+		nfs_service_start
 		;;
 	nlockmgr)
 		if [ -n "$nfs_lock_service" ]; then
@@ -274,13 +260,13 @@ service_start()
 
 nfs_shutdown()
 {
-	basic_stop "nfs"
+	nfs_service_stop
 }
 
 nfs_startup()
 {
-	basic_stop "nfs" || true
-	basic_start "nfs"
+	nfs_service_stop || true
+	nfs_service_start
 	_f="${PROCFS_PATH}/sys/net/ipv4/tcp_tw_recycle"
 	if [ -f "$_f" ]; then
 		echo 1 >"$_f"
