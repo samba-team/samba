@@ -101,15 +101,12 @@ static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 static PyObject *py_ndr_syntax_id(struct ndr_syntax_id *syntax_id)
 {
 	PyObject *ret;
-	char *uuid_str;
+	struct GUID_txt_buf buf;
 
-	uuid_str = GUID_string(NULL, &syntax_id->uuid);
-	if (uuid_str == NULL)
-		return NULL;
-
-	ret = Py_BuildValue("(s,i)", uuid_str, syntax_id->if_version);
-
-	talloc_free(uuid_str);
+	ret = Py_BuildValue(
+		"(s,i)",
+		GUID_buf_string(&syntax_id->uuid, &buf),
+		syntax_id->if_version);
 
 	return ret;
 }
