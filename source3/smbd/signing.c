@@ -170,7 +170,7 @@ static void smbd_shm_signing_free(TALLOC_CTX *mem_ctx, void *ptr)
  Called by server negprot when signing has been negotiated.
 ************************************************************/
 
-static bool smb1_srv_init_signing(struct smbXsrv_connection *conn)
+bool smb1_srv_init_signing(struct smbXsrv_connection *conn)
 {
 	bool allowed = true;
 	bool desired;
@@ -230,15 +230,6 @@ static bool smb1_srv_init_signing(struct smbXsrv_connection *conn)
 	}
 
 	return true;
-}
-
-bool srv_init_signing(struct smbXsrv_connection *conn)
-{
-	if (conn->protocol >= PROTOCOL_SMB2_02) {
-		return smb2_srv_init_signing(conn);
-	} else {
-		return smb1_srv_init_signing(conn);
-	}
 }
 
 void smb1_srv_set_signing_negotiated(struct smbXsrv_connection *conn,

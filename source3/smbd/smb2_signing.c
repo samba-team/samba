@@ -42,3 +42,12 @@ bool smb2_srv_init_signing(struct smbXsrv_connection *conn)
 	talloc_unlink(conn, lp_ctx);
 	return true;
 }
+
+bool srv_init_signing(struct smbXsrv_connection *conn)
+{
+	if (conn->protocol >= PROTOCOL_SMB2_02) {
+		return smb2_srv_init_signing(conn);
+	} else {
+		return smb1_srv_init_signing(conn);
+	}
+}
