@@ -27,7 +27,6 @@
 #include "rpc_server/common/common.h"
 #include "rpc_server/common/share.h"
 #include "param/param.h"
-#include "ntvfs/ipc/ipc.h"
 #include "ntvfs/ipc/proto.h"
 
 /* At this moment these are just dummy functions, but you might get the
