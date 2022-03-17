@@ -408,3 +408,25 @@ bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 	}
 	return True;
 }
+
+/****************************************************************************
+ Check if we have a correct fsp pointing to a file.
+****************************************************************************/
+
+bool check_fsp(connection_struct *conn, struct smb_request *req,
+	       files_struct *fsp)
+{
+	if (!check_fsp_open(conn, req, fsp)) {
+		return False;
+	}
+	if (fsp->fsp_flags.is_directory) {
+		reply_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
+		return False;
+	}
+	if (fsp_get_pathref_fd(fsp) == -1) {
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return False;
+	}
+	fsp->num_smb_operations++;
+	return True;
+}

@@ -912,8 +912,6 @@ bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
 
 /* The following definitions come from smbd/reply.c  */
 
-bool check_fsp(connection_struct *conn, struct smb_request *req,
-	       files_struct *fsp);
 bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 			      files_struct *fsp);
 void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_size);
@@ -1036,6 +1034,8 @@ size_t srvstr_pull_req_talloc(TALLOC_CTX *ctx, struct smb_request *req,
 			      char **dest, const uint8_t *src, int flags);
 bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 		    files_struct *fsp);
+bool check_fsp(connection_struct *conn, struct smb_request *req,
+	       files_struct *fsp);
 
 /* The following definitions come from smbd/seal.c  */
 
