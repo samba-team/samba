@@ -45,9 +45,13 @@ bool smb2_srv_init_signing(struct smbXsrv_connection *conn)
 
 bool srv_init_signing(struct smbXsrv_connection *conn)
 {
+#if defined(WITH_SMB1SERVER)
 	if (conn->protocol >= PROTOCOL_SMB2_02) {
+#endif
 		return smb2_srv_init_signing(conn);
+#if defined(WITH_SMB1SERVER)
 	} else {
 		return smb1_srv_init_signing(conn);
 	}
+#endif
 }
