@@ -2447,66 +2447,6 @@ static void fail_readraw(void)
 }
 
 /****************************************************************************
- Fake (read/write) sendfile. Returns -1 on read or write fail.
-****************************************************************************/
-
-ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
-		      off_t startpos, size_t nread)
-{
-	size_t bufsize;
-	size_t tosend = nread;
-	char *buf;
-
-	if (nread == 0) {
-		return 0;
-	}
-
-	bufsize = MIN(nread, 65536);
-
-	if (!(buf = SMB_MALLOC_ARRAY(char, bufsize))) {
-		return -1;
-	}
-
-	while (tosend > 0) {
-		ssize_t ret;
-		size_t cur_read;
-
-		cur_read = MIN(tosend, bufsize);
-		ret = read_file(fsp,buf,startpos,cur_read);
-		if (ret == -1) {
-			SAFE_FREE(buf);
-			return -1;
-		}
-
-		/* If we had a short read, fill with zeros. */
-		if (ret < cur_read) {
-			memset(buf + ret, '\0', cur_read - ret);
-		}
-
-		ret = write_data(xconn->transport.sock, buf, cur_read);
-		if (ret != cur_read) {
-			int saved_errno = errno;
-			/*
-			 * Try and give an error message saying what
-			 * client failed.
-			 */
-			DEBUG(0, ("write_data failed for client %s. "
-				  "Error %s\n",
-				  smbXsrv_connection_dbg(xconn),
-				  strerror(saved_errno)));
-			SAFE_FREE(buf);
-			errno = saved_errno;
-			return -1;
-		}
-		tosend -= cur_read;
-		startpos += cur_read;
-	}
-
-	SAFE_FREE(buf);
-	return (ssize_t)nread;
-}
-
-/****************************************************************************
  Deal with the case of sendfile reading less bytes from the file than
  requested. Fill with zeros (all we can do). Returns 0 on success
 ****************************************************************************/

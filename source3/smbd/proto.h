@@ -928,8 +928,6 @@ void reply_ulogoffX(struct smb_request *req);
 void reply_mknew(struct smb_request *req);
 void reply_ctemp(struct smb_request *req);
 void reply_unlink(struct smb_request *req);
-ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
-		      off_t startpos, size_t nread);
 ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
 			    files_struct *fsp,
 			    ssize_t nread,
@@ -1036,6 +1034,8 @@ NTSTATUS unlink_internals(connection_struct *conn,
 			struct smb_request *req,
 			uint32_t dirtype,
 			struct smb_filename *smb_fname);
+ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
+		      off_t startpos, size_t nread);
 
 /* The following definitions come from smbd/seal.c  */
 
