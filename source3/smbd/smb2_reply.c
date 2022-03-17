@@ -430,3 +430,34 @@ bool check_fsp(connection_struct *conn, struct smb_request *req,
 	fsp->num_smb_operations++;
 	return True;
 }
+
+/****************************************************************************
+ Check if we have a correct fsp pointing to a quota fake file. Replacement for
+ the CHECK_NTQUOTA_HANDLE_OK macro.
+****************************************************************************/
+
+bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
+			      files_struct *fsp)
+{
+	if (!check_fsp_open(conn, req, fsp)) {
+		return false;
+	}
+
+	if (fsp->fsp_flags.is_directory) {
+		return false;
+	}
+
+	if (fsp->fake_file_handle == NULL) {
+		return false;
+	}
+
+	if (fsp->fake_file_handle->type != FAKE_FILE_TYPE_QUOTA) {
+		return false;
+	}
+
+	if (fsp->fake_file_handle->private_data == NULL) {
+		return false;
+	}
+
+	return true;
+}
