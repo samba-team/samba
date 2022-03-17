@@ -1017,3 +1017,695 @@ ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
 
 	return 0;
 }
+
+/*******************************************************************
+ Check if a user is allowed to rename a file.
+********************************************************************/
+
+static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
+			uint16_t dirtype)
+{
+	if (!CAN_WRITE(conn)) {
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
+
+	if ((dirtype & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) !=
+			(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
+		/* Only bother to read the DOS attribute if we might deny the
+		   rename on the grounds of attribute mismatch. */
+		uint32_t fmode = fdos_mode(fsp);
+		if ((fmode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
+			return NT_STATUS_NO_SUCH_FILE;
+		}
+	}
+
+	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		if (fsp->posix_flags & FSP_POSIX_FLAGS_RENAME) {
+			return NT_STATUS_OK;
+		}
+
+		/* If no pathnames are open below this
+		   directory, allow the rename. */
+
+		if (lp_strict_rename(SNUM(conn))) {
+			/*
+			 * Strict rename, check open file db.
+			 */
+			if (have_file_open_below(fsp->conn, fsp->fsp_name)) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
+		} else if (file_find_subpath(fsp)) {
+			/*
+			 * No strict rename, just look in local process.
+			 */
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		return NT_STATUS_OK;
+	}
+
+	if (fsp->access_mask & (DELETE_ACCESS|FILE_WRITE_ATTRIBUTES)) {
+		return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_ACCESS_DENIED;
+}
+
+/****************************************************************************
+ Ensure open files have their names updated. Updated to notify other smbd's
+ asynchronously.
+****************************************************************************/
+
+static void rename_open_files(connection_struct *conn,
+			      struct share_mode_lock *lck,
+			      struct file_id id,
+			      uint32_t orig_name_hash,
+			      const struct smb_filename *smb_fname_dst)
+{
+	files_struct *fsp;
+	bool did_rename = False;
+	NTSTATUS status;
+	uint32_t new_name_hash = 0;
+
+	for(fsp = file_find_di_first(conn->sconn, id, false); fsp;
+	    fsp = file_find_di_next(fsp, false)) {
+		SMB_STRUCT_STAT fsp_orig_sbuf;
+		struct file_id_buf idbuf;
+		/* fsp_name is a relative path under the fsp. To change this for other
+		   sharepaths we need to manipulate relative paths. */
+		/* TODO - create the absolute path and manipulate the newname
+		   relative to the sharepath. */
+		if (!strequal(fsp->conn->connectpath, conn->connectpath)) {
+			continue;
+		}
+		if (fsp->name_hash != orig_name_hash) {
+			continue;
+		}
+		DBG_DEBUG("renaming file %s "
+			  "(file_id %s) from %s -> %s\n",
+			  fsp_fnum_dbg(fsp),
+			  file_id_str_buf(fsp->file_id, &idbuf),
+			  fsp_str_dbg(fsp),
+			  smb_fname_str_dbg(smb_fname_dst));
+
+		/*
+		 * The incoming smb_fname_dst here has an
+		 * invalid stat struct (it must not have
+		 * existed for the rename to succeed).
+		 * Preserve the existing stat from the
+		 * open fsp after fsp_set_smb_fname()
+		 * overwrites with the invalid stat.
+		 *
+		 * We will do an fstat before returning
+		 * any of this metadata to the client anyway.
+		 */
+		fsp_orig_sbuf = fsp->fsp_name->st;
+		status = fsp_set_smb_fname(fsp, smb_fname_dst);
+		if (NT_STATUS_IS_OK(status)) {
+			did_rename = True;
+			new_name_hash = fsp->name_hash;
+			/* Restore existing stat. */
+			fsp->fsp_name->st = fsp_orig_sbuf;
+		}
+	}
+
+	if (!did_rename) {
+		struct file_id_buf idbuf;
+		DBG_DEBUG("no open files on file_id %s "
+			  "for %s\n",
+			  file_id_str_buf(id, &idbuf),
+			  smb_fname_str_dbg(smb_fname_dst));
+	}
+
+	/* Send messages to all smbd's (not ourself) that the name has changed. */
+	rename_share_filename(conn->sconn->msg_ctx, lck, id, conn->connectpath,
+			      orig_name_hash, new_name_hash,
+			      smb_fname_dst);
+
+}
+
+/****************************************************************************
+ We need to check if the source path is a parent directory of the destination
+ (ie. a rename of /foo/bar/baz -> /foo/bar/baz/bibble/bobble. If so we must
+ refuse the rename with a sharing violation. Under UNIX the above call can
+ *succeed* if /foo/bar/baz is a symlink to another area in the share. We
+ probably need to check that the client is a Windows one before disallowing
+ this as a UNIX client (one with UNIX extensions) can know the source is a
+ symlink and make this decision intelligently. Found by an excellent bug
+ report from <AndyLiebman@aol.com>.
+****************************************************************************/
+
+static bool rename_path_prefix_equal(const struct smb_filename *smb_fname_src,
+				     const struct smb_filename *smb_fname_dst)
+{
+	const char *psrc = smb_fname_src->base_name;
+	const char *pdst = smb_fname_dst->base_name;
+	size_t slen;
+
+	if (psrc[0] == '.' && psrc[1] == '/') {
+		psrc += 2;
+	}
+	if (pdst[0] == '.' && pdst[1] == '/') {
+		pdst += 2;
+	}
+	if ((slen = strlen(psrc)) > strlen(pdst)) {
+		return False;
+	}
+	return ((memcmp(psrc, pdst, slen) == 0) && pdst[slen] == '/');
+}
+
+/*
+ * Do the notify calls from a rename
+ */
+
+static void notify_rename(connection_struct *conn, bool is_dir,
+			  const struct smb_filename *smb_fname_src,
+			  const struct smb_filename *smb_fname_dst)
+{
+	char *parent_dir_src = NULL;
+	char *parent_dir_dst = NULL;
+	uint32_t mask;
+
+	mask = is_dir ? FILE_NOTIFY_CHANGE_DIR_NAME
+		: FILE_NOTIFY_CHANGE_FILE_NAME;
+
+	if (!parent_dirname(talloc_tos(), smb_fname_src->base_name,
+			    &parent_dir_src, NULL) ||
+	    !parent_dirname(talloc_tos(), smb_fname_dst->base_name,
+			    &parent_dir_dst, NULL)) {
+		goto out;
+	}
+
+	if (strcmp(parent_dir_src, parent_dir_dst) == 0) {
+		notify_fname(conn, NOTIFY_ACTION_OLD_NAME, mask,
+			     smb_fname_src->base_name);
+		notify_fname(conn, NOTIFY_ACTION_NEW_NAME, mask,
+			     smb_fname_dst->base_name);
+	}
+	else {
+		notify_fname(conn, NOTIFY_ACTION_REMOVED, mask,
+			     smb_fname_src->base_name);
+		notify_fname(conn, NOTIFY_ACTION_ADDED, mask,
+			     smb_fname_dst->base_name);
+	}
+
+	/* this is a strange one. w2k3 gives an additional event for
+	   CHANGE_ATTRIBUTES and CHANGE_CREATION on the new file when renaming
+	   files, but not directories */
+	if (!is_dir) {
+		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES
+			     |FILE_NOTIFY_CHANGE_CREATION,
+			     smb_fname_dst->base_name);
+	}
+ out:
+	TALLOC_FREE(parent_dir_src);
+	TALLOC_FREE(parent_dir_dst);
+}
+
+/****************************************************************************
+ Returns an error if the parent directory for a filename is open in an
+ incompatible way.
+****************************************************************************/
+
+static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
+					const struct smb_filename *smb_fname_dst_in)
+{
+	struct smb_filename *smb_fname_parent = NULL;
+	struct file_id id;
+	files_struct *fsp = NULL;
+	int ret;
+	NTSTATUS status;
+
+	status = SMB_VFS_PARENT_PATHNAME(conn,
+					 talloc_tos(),
+					 smb_fname_dst_in,
+					 &smb_fname_parent,
+					 NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ret = vfs_stat(conn, smb_fname_parent);
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	/*
+	 * We're only checking on this smbd here, mostly good
+	 * enough.. and will pass tests.
+	 */
+
+	id = vfs_file_id_from_sbuf(conn, &smb_fname_parent->st);
+	for (fsp = file_find_di_first(conn->sconn, id, true); fsp;
+			fsp = file_find_di_next(fsp, true)) {
+		if (fsp->access_mask & DELETE_ACCESS) {
+			return NT_STATUS_SHARING_VIOLATION;
+                }
+        }
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Rename an open file - given an fsp.
+****************************************************************************/
+
+NTSTATUS rename_internals_fsp(connection_struct *conn,
+			files_struct *fsp,
+			struct smb_filename *smb_fname_dst_in,
+			const char *dst_original_lcomp,
+			uint32_t attrs,
+			bool replace_if_exists)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	struct smb_filename *parent_dir_fname_dst = NULL;
+	struct smb_filename *parent_dir_fname_dst_atname = NULL;
+	struct smb_filename *parent_dir_fname_src = NULL;
+	struct smb_filename *parent_dir_fname_src_atname = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	struct share_mode_lock *lck = NULL;
+	uint32_t access_mask = SEC_DIR_ADD_FILE;
+	bool dst_exists, old_is_stream, new_is_stream;
+	int ret;
+	bool case_sensitive = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
+				true : conn->case_sensitive;
+	bool case_preserve = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
+				true : conn->case_preserve;
+
+	status = parent_dirname_compatible_open(conn, smb_fname_dst_in);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (file_has_open_streams(fsp)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* Make a copy of the dst smb_fname structs */
+
+	smb_fname_dst = cp_smb_filename(ctx, smb_fname_dst_in);
+	if (smb_fname_dst == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	/*
+	 * Check for special case with case preserving and not
+	 * case sensitive. If the new last component differs from the original
+	 * last component only by case, then we should allow
+	 * the rename (user is trying to change the case of the
+	 * filename).
+	 */
+	if (!case_sensitive && case_preserve &&
+	    strequal(fsp->fsp_name->base_name, smb_fname_dst->base_name) &&
+	    strequal(fsp->fsp_name->stream_name, smb_fname_dst->stream_name)) {
+		char *fname_dst_parent = NULL;
+		const char *fname_dst_lcomp = NULL;
+		char *orig_lcomp_path = NULL;
+		char *orig_lcomp_stream = NULL;
+		bool ok = true;
+
+		/*
+		 * Split off the last component of the processed
+		 * destination name. We will compare this to
+		 * the split components of dst_original_lcomp.
+		 */
+		if (!parent_dirname(ctx,
+				smb_fname_dst->base_name,
+				&fname_dst_parent,
+				&fname_dst_lcomp)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		/*
+		 * The dst_original_lcomp component contains
+		 * the last_component of the path + stream
+		 * name (if a stream exists).
+		 *
+		 * Split off the stream name so we
+		 * can check them separately.
+		 */
+
+		if (fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) {
+			/* POSIX - no stream component. */
+			orig_lcomp_path = talloc_strdup(ctx,
+						dst_original_lcomp);
+			if (orig_lcomp_path == NULL) {
+				ok = false;
+			}
+		} else {
+			ok = split_stream_filename(ctx,
+					dst_original_lcomp,
+					&orig_lcomp_path,
+					&orig_lcomp_stream);
+		}
+
+		if (!ok) {
+			TALLOC_FREE(fname_dst_parent);
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		/* If the base names only differ by case, use original. */
+		if(!strcsequal(fname_dst_lcomp, orig_lcomp_path)) {
+			char *tmp;
+			/*
+			 * Replace the modified last component with the
+			 * original.
+			 */
+			if (!ISDOT(fname_dst_parent)) {
+				tmp = talloc_asprintf(smb_fname_dst,
+					"%s/%s",
+					fname_dst_parent,
+					orig_lcomp_path);
+			} else {
+				tmp = talloc_strdup(smb_fname_dst,
+					orig_lcomp_path);
+			}
+			if (tmp == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				TALLOC_FREE(fname_dst_parent);
+				TALLOC_FREE(orig_lcomp_path);
+				TALLOC_FREE(orig_lcomp_stream);
+				goto out;
+			}
+			TALLOC_FREE(smb_fname_dst->base_name);
+			smb_fname_dst->base_name = tmp;
+		}
+
+		/* If the stream_names only differ by case, use original. */
+		if(!strcsequal(smb_fname_dst->stream_name,
+			       orig_lcomp_stream)) {
+			/* Use the original stream. */
+			char *tmp = talloc_strdup(smb_fname_dst,
+					    orig_lcomp_stream);
+			if (tmp == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				TALLOC_FREE(fname_dst_parent);
+				TALLOC_FREE(orig_lcomp_path);
+				TALLOC_FREE(orig_lcomp_stream);
+				goto out;
+			}
+			TALLOC_FREE(smb_fname_dst->stream_name);
+			smb_fname_dst->stream_name = tmp;
+		}
+		TALLOC_FREE(fname_dst_parent);
+		TALLOC_FREE(orig_lcomp_path);
+		TALLOC_FREE(orig_lcomp_stream);
+	}
+
+	/*
+	 * If the src and dest names are identical - including case,
+	 * don't do the rename, just return success.
+	 */
+
+	if (strcsequal(fsp->fsp_name->base_name, smb_fname_dst->base_name) &&
+	    strcsequal(fsp->fsp_name->stream_name,
+		       smb_fname_dst->stream_name)) {
+		DEBUG(3, ("rename_internals_fsp: identical names in rename %s "
+			  "- returning success\n",
+			  smb_fname_str_dbg(smb_fname_dst)));
+		status = NT_STATUS_OK;
+		goto out;
+	}
+
+	old_is_stream = is_ntfs_stream_smb_fname(fsp->fsp_name);
+	new_is_stream = is_ntfs_stream_smb_fname(smb_fname_dst);
+
+	/* Return the correct error code if both names aren't streams. */
+	if (!old_is_stream && new_is_stream) {
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto out;
+	}
+
+	if (old_is_stream && !new_is_stream) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	dst_exists = vfs_stat(conn, smb_fname_dst) == 0;
+
+	if(!replace_if_exists && dst_exists) {
+		DEBUG(3, ("rename_internals_fsp: dest exists doing rename "
+			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),
+			  smb_fname_str_dbg(smb_fname_dst)));
+		status = NT_STATUS_OBJECT_NAME_COLLISION;
+		goto out;
+	}
+
+	/*
+	 * Drop the pathref fsp on the destination otherwise we trip upon in in
+	 * the below check for open files check.
+	 */
+	if (smb_fname_dst_in->fsp != NULL) {
+		fd_close(smb_fname_dst_in->fsp);
+		file_free(NULL, smb_fname_dst_in->fsp);
+		SMB_ASSERT(smb_fname_dst_in->fsp == NULL);
+	}
+
+	if (dst_exists) {
+		struct file_id fileid = vfs_file_id_from_sbuf(conn,
+		    &smb_fname_dst->st);
+		files_struct *dst_fsp = file_find_di_first(conn->sconn,
+							   fileid, true);
+		/* The file can be open when renaming a stream */
+		if (dst_fsp && !new_is_stream) {
+			DEBUG(3, ("rename_internals_fsp: Target file open\n"));
+			status = NT_STATUS_ACCESS_DENIED;
+			goto out;
+		}
+	}
+
+	/* Ensure we have a valid stat struct for the source. */
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = can_rename(conn, fsp, attrs);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("rename_internals_fsp: Error %s rename %s -> %s\n",
+			  nt_errstr(status), smb_fname_str_dbg(fsp->fsp_name),
+			  smb_fname_str_dbg(smb_fname_dst)));
+		if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION))
+			status = NT_STATUS_ACCESS_DENIED;
+		goto out;
+	}
+
+	if (rename_path_prefix_equal(fsp->fsp_name, smb_fname_dst)) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto out;
+	}
+
+	/* Do we have rights to move into the destination ? */
+	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		/* We're moving a directory. */
+		access_mask = SEC_DIR_ADD_SUBDIR;
+	}
+
+	/*
+	 * Get a pathref on the destination parent directory, so
+	 * we can call check_parent_access_fsp().
+	 */
+	status = parent_pathref(ctx,
+				conn->cwd_fsp,
+				smb_fname_dst,
+				&parent_dir_fname_dst,
+				&parent_dir_fname_dst_atname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = check_parent_access_fsp(parent_dir_fname_dst->fsp,
+				access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("check_parent_access_fsp on "
+			"dst %s returned %s\n",
+			smb_fname_str_dbg(smb_fname_dst),
+			nt_errstr(status));
+		goto out;
+	}
+
+	/*
+	 * If the target existed, make sure the destination
+	 * atname has the same stat struct.
+	 */
+	parent_dir_fname_dst_atname->st = smb_fname_dst->st;
+
+	/*
+	 * It's very common that source and
+	 * destination directories are the same.
+	 * Optimize by not opening the
+	 * second parent_pathref if we know
+	 * this is the case.
+	 */
+
+	status = SMB_VFS_PARENT_PATHNAME(conn,
+					 ctx,
+					 fsp->fsp_name,
+					 &parent_dir_fname_src,
+					 &parent_dir_fname_src_atname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	/*
+	 * We do a case-sensitive string comparison. We want to be *sure*
+	 * this is the same path. The worst that can happen if
+	 * the case doesn't match is we lose out on the optimization,
+	 * the code still works.
+	 *
+	 * We can ignore twrp fields here. Rename is not allowed on
+	 * shadow copy handles.
+	 */
+
+	if (strcmp(parent_dir_fname_src->base_name,
+		   parent_dir_fname_dst->base_name) == 0) {
+		/*
+		 * parent directory is the same for source
+		 * and destination.
+		 */
+		/* Reparent the src_atname to the parent_dir_dest fname. */
+		parent_dir_fname_src_atname = talloc_move(
+						parent_dir_fname_dst,
+						&parent_dir_fname_src_atname);
+		/* Free the unneeded duplicate parent name. */
+		TALLOC_FREE(parent_dir_fname_src);
+		/*
+		 * And make the source parent name a copy of the
+		 * destination parent name.
+		 */
+		parent_dir_fname_src = parent_dir_fname_dst;
+	} else {
+		/*
+		 * source and destination parent directories are
+		 * different.
+		 *
+		 * Get a pathref on the source parent directory, so
+		 * we can do a relative rename.
+		 */
+		TALLOC_FREE(parent_dir_fname_src);
+		status = parent_pathref(ctx,
+				conn->cwd_fsp,
+				fsp->fsp_name,
+				&parent_dir_fname_src,
+				&parent_dir_fname_src_atname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+	}
+
+	/*
+	 * Some modules depend on the source smb_fname having a valid stat.
+	 * The parent_dir_fname_src_atname is the relative name of the
+	 * currently open file, so just copy the stat from the open fsp.
+	 */
+	parent_dir_fname_src_atname->st = fsp->fsp_name->st;
+
+	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
+
+	/*
+	 * We have the file open ourselves, so not being able to get the
+	 * corresponding share mode lock is a fatal error.
+	 */
+
+	SMB_ASSERT(lck != NULL);
+
+	ret = SMB_VFS_RENAMEAT(conn,
+			parent_dir_fname_src->fsp,
+			parent_dir_fname_src_atname,
+			parent_dir_fname_dst->fsp,
+			parent_dir_fname_dst_atname);
+	if (ret == 0) {
+		uint32_t create_options = fh_get_private_options(fsp->fh);
+
+		DEBUG(3, ("rename_internals_fsp: succeeded doing rename on "
+			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),
+			  smb_fname_str_dbg(smb_fname_dst)));
+
+		notify_rename(conn,
+			      fsp->fsp_flags.is_directory,
+			      fsp->fsp_name,
+			      smb_fname_dst);
+
+		rename_open_files(conn, lck, fsp->file_id, fsp->name_hash,
+				  smb_fname_dst);
+
+		if (!fsp->fsp_flags.is_directory &&
+		    !(fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) &&
+		    (lp_map_archive(SNUM(conn)) ||
+		     lp_store_dos_attributes(SNUM(conn))))
+		{
+			/*
+			 * We must set the archive bit on the newly renamed
+			 * file.
+			 */
+			status = vfs_stat_fsp(fsp);
+			if (NT_STATUS_IS_OK(status)) {
+				uint32_t old_dosmode;
+				old_dosmode = fdos_mode(fsp);
+				/*
+				 * We can use fsp->fsp_name here as it has
+				 * already been changed to the new name.
+				 */
+				SMB_ASSERT(fsp->fsp_name->fsp == fsp);
+				file_set_dosmode(conn,
+						fsp->fsp_name,
+						old_dosmode | FILE_ATTRIBUTE_ARCHIVE,
+						NULL,
+						true);
+			}
+		}
+
+		/*
+		 * A rename acts as a new file create w.r.t. allowing an initial delete
+		 * on close, probably because in Windows there is a new handle to the
+		 * new file. If initial delete on close was requested but not
+		 * originally set, we need to set it here. This is probably not 100% correct,
+		 * but will work for the CIFSFS client which in non-posix mode
+		 * depends on these semantics. JRA.
+		 */
+
+		if (create_options & FILE_DELETE_ON_CLOSE) {
+			status = can_set_delete_on_close(fsp, 0);
+
+			if (NT_STATUS_IS_OK(status)) {
+				/* Note that here we set the *initial* delete on close flag,
+				 * not the regular one. The magic gets handled in close. */
+				fsp->fsp_flags.initial_delete_on_close = true;
+			}
+		}
+		TALLOC_FREE(lck);
+		status = NT_STATUS_OK;
+		goto out;
+	}
+
+	TALLOC_FREE(lck);
+
+	if (errno == ENOTDIR || errno == EISDIR) {
+		status = NT_STATUS_OBJECT_NAME_COLLISION;
+	} else {
+		status = map_nt_error_from_unix(errno);
+	}
+
+	DEBUG(3, ("rename_internals_fsp: Error %s rename %s -> %s\n",
+		  nt_errstr(status), smb_fname_str_dbg(fsp->fsp_name),
+		  smb_fname_str_dbg(smb_fname_dst)));
+
+ out:
+
+	/*
+	 * parent_dir_fname_src may be a copy of parent_dir_fname_dst.
+	 * See the optimization for same source and destination directory
+	 * above. Only free one in that case.
+	 */
+	if (parent_dir_fname_src != parent_dir_fname_dst) {
+		TALLOC_FREE(parent_dir_fname_src);
+	}
+	TALLOC_FREE(parent_dir_fname_dst);
+	TALLOC_FREE(smb_fname_dst);
+
+	return status;
+}
