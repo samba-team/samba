@@ -18,10 +18,12 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
+#include "replace.h"
 #include "ctdbd_conn.h"
 #include "util_cluster.h"
 #include "lib/cluster_support.h"
+#include "lib/util/debug.h"
+#include "source3/param/param_proto.h"
 
 bool cluster_probe_ok(void)
 {
