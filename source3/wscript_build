@@ -611,6 +611,7 @@ if bld.CONFIG_SET('WITH_SMB1SERVER'):
                    smbd/smb1_pipes.c
                    smbd/smb1_reply.c
                    smbd/smb1_service.c
+                   smbd/smb1_signing.c
     '''
 else:
     SMB1_SOURCES = ''
@@ -663,7 +664,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/msdfs.c
                           smbd/smb2_aio.c smbd/statvfs.c
                           smbd/dmapi.c
-                          smbd/signing.c
                           smbd/smb2_signing.c
                           smbd/file_access.c
                           smbd/dnsregister.c smbd/globals.c
