@@ -463,3 +463,24 @@ bool get_deferred_open_message_state(struct smb_request *smbreq,
 	}
 	return true;
 }
+
+bool push_deferred_open_message_smb(struct smb_request *req,
+				    struct timeval timeout,
+				    struct file_id id,
+				    struct deferred_open_record *open_rec)
+{
+#if defined(WITH_SMB1SERVER)
+	if (req->smb2req) {
+#endif
+		return push_deferred_open_message_smb2(req->smb2req,
+						req->request_time,
+						timeout,
+						id,
+						open_rec);
+#if defined(WITH_SMB1SERVER)
+	} else {
+		return push_deferred_open_message_smb1(req, timeout,
+						       id, open_rec);
+	}
+#endif
+}

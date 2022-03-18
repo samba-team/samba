@@ -852,10 +852,6 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 		   bool do_signing, uint32_t seqnum,
 		   bool do_encrypt,
 		   struct smb_perfcount_data *pcd);
-bool push_deferred_open_message_smb(struct smb_request *req,
-				    struct timeval timeout,
-				    struct file_id id,
-				    struct deferred_open_record *open_rec);
 NTSTATUS allow_new_trans(struct trans_state *list, uint64_t mid);
 void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes);
 void smb_request_done(struct smb_request *req);
@@ -893,6 +889,10 @@ void process_smb(struct smbXsrv_connection *xconn,
 		 uint8_t *inbuf, size_t nread, size_t unread_bytes,
 		 uint32_t seqnum, bool encrypted,
 		 struct smb_perfcount_data *deferred_pcd);
+bool push_deferred_open_message_smb1(struct smb_request *req,
+				     struct timeval timeout,
+				     struct file_id id,
+				     struct deferred_open_record *open_rec);
 
 /* The following definitions come from smbd/smb2_process.c  */
 
@@ -922,6 +922,10 @@ bool open_was_deferred(struct smbXsrv_connection *xconn, uint64_t mid);
 bool get_deferred_open_message_state(struct smb_request *smbreq,
 				struct timeval *p_request_time,
 				struct deferred_open_record **open_rec);
+bool push_deferred_open_message_smb(struct smb_request *req,
+				    struct timeval timeout,
+				    struct file_id id,
+				    struct deferred_open_record *open_rec);
 
 /* The following definitions come from smbd/quotas.c  */
 
