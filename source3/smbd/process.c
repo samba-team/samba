@@ -2353,13 +2353,17 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 		return;
 	}
 	if (flags & TEVENT_FD_READ) {
+#if defined(WITH_SMB1SERVER)
 		if (lp_server_min_protocol() > PROTOCOL_NT1) {
+#endif
 			smbd_smb2_server_connection_read_handler(xconn,
 						xconn->transport.sock);
+#if defined(WITH_SMB1SERVER)
 		} else {
 			smbd_smb1_server_connection_read_handler(xconn,
 						xconn->transport.sock);
 		}
+#endif
 		return;
 	}
 }
