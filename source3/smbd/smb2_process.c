@@ -570,3 +570,82 @@ void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes
 	}
 	req->outbuf = (uint8_t *)outbuf;
 }
+
+/****************************************************************************
+ Process an smb from the client
+****************************************************************************/
+
+static void process_smb2(struct smbXsrv_connection *xconn,
+			 uint8_t *inbuf, size_t nread, size_t unread_bytes,
+			 uint32_t seqnum, bool encrypted,
+			 struct smb_perfcount_data *deferred_pcd)
+{
+	const uint8_t *inpdu = inbuf + NBT_HDR_SIZE;
+	size_t pdulen = nread - NBT_HDR_SIZE;
+	NTSTATUS status = smbd_smb2_process_negprot(xconn, 0, inpdu, pdulen);
+	if (!NT_STATUS_IS_OK(status)) {
+		exit_server_cleanly("SMB2 negprot fail");
+	}
+}
+
+void process_smb(struct smbXsrv_connection *xconn,
+		 uint8_t *inbuf, size_t nread, size_t unread_bytes,
+		 uint32_t seqnum, bool encrypted,
+		 struct smb_perfcount_data *deferred_pcd)
+{
+	struct smbd_server_connection *sconn = xconn->client->sconn;
+	int msg_type = CVAL(inbuf,0);
+
+	DO_PROFILE_INC(request);
+
+	DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type,
+		    smb_len(inbuf) ) );
+	DEBUG(3, ("Transaction %d of length %d (%u toread)\n",
+		  sconn->trans_num, (int)nread, (unsigned int)unread_bytes));
+
+	if (msg_type != NBSSmessage) {
+		/*
+		 * NetBIOS session request, keepalive, etc.
+		 */
+		reply_special(xconn, (char *)inbuf, nread);
+		goto done;
+	}
+
+#if defined(WITH_SMB1SERVER)
+	if (sconn->using_smb2) {
+		/* At this point we're not really using smb2,
+		 * we make the decision here.. */
+		if (smbd_is_smb2_header(inbuf, nread)) {
+#endif
+			process_smb2(xconn, inbuf, nread, unread_bytes, seqnum,
+				     encrypted, deferred_pcd);
+			return;
+#if defined(WITH_SMB1SERVER)
+		}
+		if (nread >= smb_size && valid_smb_header(inbuf)
+				&& CVAL(inbuf, smb_com) != 0x72) {
+			/* This is a non-negprot SMB1 packet.
+			   Disable SMB2 from now on. */
+			sconn->using_smb2 = false;
+		}
+	}
+	process_smb1(xconn, inbuf, nread, unread_bytes, seqnum, encrypted,
+		     deferred_pcd);
+#endif
+
+done:
+	sconn->num_requests++;
+
+	/* The timeout_processing function isn't run nearly
+	   often enough to implement 'max log size' without
+	   overrunning the size of the file by many megabytes.
+	   This is especially true if we are running at debug
+	   level 10.  Checking every 50 SMBs is a nice
+	   tradeoff of performance vs log file size overrun. */
+
+	if ((sconn->num_requests % 50) == 0 &&
+	    need_to_check_log_size()) {
+		change_to_root_user();
+		check_log_size();
+	}
+}

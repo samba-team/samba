@@ -883,14 +883,15 @@ NTSTATUS smb1_receive_talloc(TALLOC_CTX *mem_ctx,
 			     size_t *p_len,
 			     uint32_t *seqnum,
 			     bool trusted_channel);
-void process_smb(struct smbXsrv_connection *xconn,
-		 uint8_t *inbuf, size_t nread, size_t unread_bytes,
-		 uint32_t seqnum, bool encrypted,
-		 struct smb_perfcount_data *deferred_pcd);
 bool push_deferred_open_message_smb1(struct smb_request *req,
 				     struct timeval timeout,
 				     struct file_id id,
 				     struct deferred_open_record *open_rec);
+void process_smb1(struct smbXsrv_connection *xconn,
+		  uint8_t *inbuf, size_t nread, size_t unread_bytes,
+		  uint32_t seqnum, bool encrypted,
+		  struct smb_perfcount_data *deferred_pcd);
+bool valid_smb_header(const uint8_t *inbuf);
 
 /* The following definitions come from smbd/smb2_process.c  */
 
@@ -929,6 +930,10 @@ bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
                    uint8_t num_words, uint32_t num_bytes);
 void construct_reply_common_req(struct smb_request *req, char *outbuf);
 void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes);
+void process_smb(struct smbXsrv_connection *xconn,
+		 uint8_t *inbuf, size_t nread, size_t unread_bytes,
+		 uint32_t seqnum, bool encrypted,
+		 struct smb_perfcount_data *deferred_pcd);
 
 /* The following definitions come from smbd/quotas.c  */
 
