@@ -499,14 +499,57 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
-				   struct smbXsrv_connection *xconn,
-				   int sock,
-				   char **buffer, unsigned int timeout,
-				   size_t *p_unread, bool *p_encrypted,
-				   size_t *p_len,
-				   uint32_t *seqnum,
-				   bool trusted_channel)
+#if !defined(WITH_SMB1SERVER)
+static NTSTATUS smb2_receive_raw_talloc(TALLOC_CTX *mem_ctx,
+					struct smbXsrv_connection *xconn,
+					int sock,
+					char **buffer, unsigned int timeout,
+					size_t *p_unread, size_t *plen)
+{
+	char lenbuf[4];
+	size_t len;
+	NTSTATUS status;
+
+	*p_unread = 0;
+
+	status = read_smb_length_return_keepalive(sock, lenbuf, timeout,
+						  &len);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * The +4 here can't wrap, we've checked the length above already.
+	 */
+
+	*buffer = talloc_array(mem_ctx, char, len+4);
+
+	if (*buffer == NULL) {
+		DEBUG(0, ("Could not allocate inbuf of length %d\n",
+			  (int)len+4));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	memcpy(*buffer, lenbuf, sizeof(lenbuf));
+
+	status = read_packet_remainder(sock, (*buffer)+4, timeout, len);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*plen = len + 4;
+	return NT_STATUS_OK;
+}
+#endif
+
+static NTSTATUS smb1_receive_talloc(TALLOC_CTX *mem_ctx,
+				    struct smbXsrv_connection *xconn,
+				    int sock,
+				    char **buffer, unsigned int timeout,
+				    size_t *p_unread, bool *p_encrypted,
+				    size_t *p_len,
+				    uint32_t *seqnum,
+				    bool trusted_channel)
 {
 	size_t len = 0;
 	NTSTATUS status;
@@ -544,6 +587,57 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 
 	*p_len = len;
 	return NT_STATUS_OK;
+}
+
+#if !defined(WITH_SMB1SERVER)
+static NTSTATUS smb2_receive_talloc(TALLOC_CTX *mem_ctx,
+				    struct smbXsrv_connection *xconn,
+				    int sock,
+				    char **buffer, unsigned int timeout,
+				    size_t *p_unread, bool *p_encrypted,
+				    size_t *p_len,
+				    uint32_t *seqnum,
+				    bool trusted_channel)
+{
+	size_t len = 0;
+	NTSTATUS status;
+
+	*p_encrypted = false;
+
+	status = smb2_receive_raw_talloc(mem_ctx, xconn, sock, buffer, timeout,
+					 p_unread, &len);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)?5:1,
+		      ("smb2_receive_raw_talloc failed for client %s "
+		       "read error = %s.\n",
+		       smbXsrv_connection_dbg(xconn),
+		       nt_errstr(status)) );
+		return status;
+	}
+
+	*p_len = len;
+	return NT_STATUS_OK;
+}
+#endif
+
+static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
+				   struct smbXsrv_connection *xconn,
+				   int sock,
+				   char **buffer, unsigned int timeout,
+				   size_t *p_unread, bool *p_encrypted,
+				   size_t *p_len,
+				   uint32_t *seqnum,
+				   bool trusted_channel)
+{
+#if defined(WITH_SMB1SERVER)
+	return smb1_receive_talloc(mem_ctx, xconn, sock, buffer, timeout,
+				   p_unread, p_encrypted, p_len, seqnum,
+				   trusted_channel);
+#else
+	return smb2_receive_talloc(mem_ctx, xconn, sock, buffer, timeout,
+				   p_unread, p_encrypted, p_len, seqnum,
+				   trusted_channel);
+#endif
 }
 
 /*
