@@ -266,6 +266,7 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
 
 	ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
 	if (ret != 0) {
+		file_free(NULL, fsp);
 		return map_nt_error_from_unix(errno);
 	}
 
