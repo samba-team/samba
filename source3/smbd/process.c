@@ -2221,6 +2221,7 @@ static void smbd_smb2_server_connection_read_handler(
 		exit_server_cleanly("Invalid initial SMB1 or SMB2 packet");
 		return;
 	}
+#if defined(WITH_SMB1SERVER)
 	if (valid_smb_header(buffer)) {
 		/* Can *only* allow an SMB1 negprot here. */
 		uint8_t cmd = PULL_LE_U8(buffer, smb_com);
@@ -2243,7 +2244,9 @@ static void smbd_smb2_server_connection_read_handler(
 		xconn->client->sconn->num_requests++;
 		return;
 
-	} else if (!smbd_is_smb2_header(buffer, bufferlen)) {
+	} else
+#endif
+	if (!smbd_is_smb2_header(buffer, bufferlen)) {
 		exit_server_cleanly("Invalid initial SMB2 packet");
 		return;
 	}
