@@ -53,7 +53,6 @@ variables:
   # Please see the samba-o3 sections at the end of this file!
   # We should run that for each available image
   #
-  SAMBA_CI_CONTAINER_IMAGE_ubuntu1604: ubuntu1604
   SAMBA_CI_CONTAINER_IMAGE_ubuntu1804: ubuntu1804
   SAMBA_CI_CONTAINER_IMAGE_ubuntu2004: ubuntu2004
   SAMBA_CI_CONTAINER_IMAGE_debian9: debian9
