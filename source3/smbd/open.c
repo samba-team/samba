@@ -1502,12 +1502,11 @@ static NTSTATUS open_file(files_struct *fsp,
 			}
 
 			if (need_re_stat) {
-				ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
+				status = vfs_stat_fsp(fsp);
 				/*
 				 * If we have an fd, this stat should succeed.
 				 */
-				if (ret == -1) {
-					status = map_nt_error_from_unix(errno);
+				if (!NT_STATUS_IS_OK(status)) {
 					DBG_ERR("Error doing fstat on open "
 						"file %s (%s)\n",
 						 smb_fname_str_dbg(smb_fname),
