@@ -16,6 +16,12 @@ nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/var/lib/nfs/etab}"
 # test variable only.
 nfs_distro_style="${CTDB_NFS_DISTRO_STYLE:-systemd-redhat}"
 
+# A value of "AUTO" for any service means that service is usually
+# automatically started and stopped by one of the other services.
+# Such services will still be restarted by hand on failure, if
+# configured to do so.  This allows services that should not be
+# running to be set to "".
+
 case "$nfs_distro_style" in
 systemd-*)
 	# Defaults
@@ -44,10 +50,10 @@ systemd-*)
 sysvinit-*)
 	# Defaults
 	nfs_service="nfs"
-	nfs_lock_service=""
-	nfs_mountd_service=""
-	nfs_status_service=""
-	nfs_rquotad_service=""
+	nfs_lock_service="AUTO"
+	nfs_mountd_service="AUTO"
+	nfs_status_service="AUTO"
+	nfs_rquotad_service="AUTO"
 	nfs_config="/etc/sysconfig/nfs"
 	nfs_rquotad_config="$nfs_config"
 
@@ -107,32 +113,48 @@ nfs_load_config()
 }
 
 ##################################################
+
+service_is_auto_started()
+{
+	[ "$1" = "AUTO" ]
+}
+
+service_is_defined()
+{
+	_service="$1"
+
+	[ -n "$_service" ] && ! service_is_auto_started "$_service"
+}
+
+service_if_defined()
+{
+	_service="$1"
+	_action="$2"
+
+	if service_is_defined "$_service"; then
+		service "$_service" "$_action"
+	fi
+}
+
+##################################################
 # Overall NFS service stop and start
 
 nfs_service_stop()
 {
-	if [ -n "$nfs_rquotad_service" ]; then
-		service "$nfs_rquotad_service" stop
-	fi
+	service_if_defined "$nfs_rquotad_service" stop
 
 	service "$nfs_service" stop
 
-	if [ -n "$nfs_lock_service" ]; then
-		service "$nfs_lock_service" stop
-	fi
+	service_if_defined "$nfs_lock_service" stop
 }
 
 nfs_service_start()
 {
-	if [ -n "$nfs_lock_service" ]; then
-		service "$nfs_lock_service" start
-	fi
+	service_if_defined "$nfs_lock_service" start
 
 	service "$nfs_service" start
 
-	if [ -n "$nfs_rquotad_service" ]; then
-		service "$nfs_rquotad_service" start
-	fi
+	service_if_defined "$nfs_rquotad_service" start
 }
 
 ##################################################
@@ -162,9 +184,9 @@ service_or_manual_stop()
 	_rpc_service="$1"
 	_system_service="$2"
 
-	if [ -n "$_system_service" ]; then
+	if service_is_defined "$_system_service"; then
 		service "$_system_service" stop
-	else
+	elif service_is_auto_started "$_system_service"; then
 		manual_stop "$_rpc_service"
 	fi
 }
@@ -180,7 +202,7 @@ service_stop()
 		pkill -9 nfsd
 		;;
 	nlockmgr)
-		if [ -n "$nfs_lock_service" ]; then
+		if service_is_defined "$nfs_lock_service" ; then
 			service "$nfs_lock_service" stop >/dev/null 2>&1 || true
 		else
 			service "$nfs_service" stop >/dev/null 2>&1 || true
@@ -248,9 +270,9 @@ service_or_manual_start()
 	_rpc_service="$1"
 	_system_service="$2"
 
-	if [ -n "$_system_service" ]; then
+	if service_is_defined "$_system_service"; then
 		service "$_system_service" start
-	else
+	elif service_is_auto_started "$_system_service"; then
 		manual_start "$_rpc_service"
 	fi
 }
@@ -264,7 +286,7 @@ service_start()
 		nfs_service_start
 		;;
 	nlockmgr)
-		if [ -n "$nfs_lock_service" ]; then
+		if service_is_defined "$nfs_lock_service" ; then
 			service "$nfs_lock_service" start
 		else
 			service "$nfs_service" start
