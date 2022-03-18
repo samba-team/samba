@@ -684,21 +684,13 @@ static bool push_queued_message(struct smb_request *req,
  messages ready for processing.
 ****************************************************************************/
 
-bool push_deferred_open_message_smb(struct smb_request *req,
-				    struct timeval timeout,
-				    struct file_id id,
-				    struct deferred_open_record *open_rec)
+static bool push_deferred_open_message_smb1(struct smb_request *req,
+					    struct timeval timeout,
+					    struct file_id id,
+					    struct deferred_open_record *open_rec)
 {
 	struct timeval_buf tvbuf;
 	struct timeval end_time;
-
-	if (req->smb2req) {
-		return push_deferred_open_message_smb2(req->smb2req,
-						req->request_time,
-						timeout,
-						id,
-						open_rec);
-	}
 
 	if (req->unread_bytes) {
 		DEBUG(0,("push_deferred_open_message_smb: logic error ! "
@@ -716,6 +708,27 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 		  timeval_str_buf(&end_time, false, true, &tvbuf));
 
 	return push_queued_message(req, req->request_time, end_time, open_rec);
+}
+
+bool push_deferred_open_message_smb(struct smb_request *req,
+				    struct timeval timeout,
+				    struct file_id id,
+				    struct deferred_open_record *open_rec)
+{
+#if defined(WITH_SMB1SERVER)
+	if (req->smb2req) {
+#endif
+		return push_deferred_open_message_smb2(req->smb2req,
+						req->request_time,
+						timeout,
+						id,
+						open_rec);
+#if defined(WITH_SMB1SERVER)
+	} else {
+		return push_deferred_open_message_smb1(req, timeout,
+						       id, open_rec);
+	}
+#endif
 }
 
 static void smbd_sig_term_handler(struct tevent_context *ev,
