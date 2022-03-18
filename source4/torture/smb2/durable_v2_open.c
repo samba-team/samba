@@ -2010,6 +2010,145 @@ bool test_persistent_open_lease(struct torture_context *tctx,
 	return ret;
 }
 
+/**
+ * setfileinfo test for doing a durable open
+ * create the file with lease and durable handle,
+ * write to it (via set end-of-file), tcp disconnect,
+ * reconnect, do a durable reopen - should succeed.
+ *
+ * BUG: https://bugzilla.samba.org/show_bug.cgi?id=15022
+ */
+bool test_durable_v2_setinfo(struct torture_context *tctx,
+					   struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	union smb_setfileinfo si;
+	struct GUID create_guid = GUID_random();
+	struct smb2_lease ls;
+	uint64_t lease_key;
+	bool ret = true;
+	struct smbcli_options options;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	options = tree->session->transport->options;
+
+	smb2_deltree(tree, __func__);
+	status = torture_smb2_testdir(tree, __func__, &_h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree, _h);
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "%s\\durable_v2_setinfo%s.dat",
+		 __func__, generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	lease_key = random();
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease_key, 0, /* parent lease key */
+			     smb2_util_lease_state("RWH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, 300*1000);
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+	CHECK_VAL(io.out.lease_response_v2.lease_key.data[0], lease_key);
+	CHECK_VAL(io.out.lease_response_v2.lease_key.data[1], ~lease_key);
+
+	/*
+	 * Set EOF to 0x100000.
+	 * Mimics an Apple client test, but most importantly
+	 * causes the mtime timestamp on disk to be updated.
+	 */
+	ZERO_STRUCT(si);
+	si.generic.level = SMB_SFILEINFO_END_OF_FILE_INFORMATION;
+	si.generic.in.file.handle = io.out.file.handle;
+	si.end_of_file_info.in.size = 0x100000;
+	status = smb2_setinfo_file(tree, &si);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* disconnect, reconnect and then do durable reopen */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * Now for a succeeding reconnect:
+	 */
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h;
+	io.in.create_guid = create_guid;
+	io.in.lease_request_v2 = &ls;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	/* the requested lease state is irrelevant */
+	ls.lease_state = smb2_util_lease_state("");
+
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_VAL(io.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_VAL(io.out.size, 0x100000);				\
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+	CHECK_VAL(io.out.lease_response_v2.lease_key.data[0], lease_key);
+	CHECK_VAL(io.out.lease_response_v2.lease_key.data[1], ~lease_key);
+	CHECK_VAL(io.out.lease_response_v2.lease_state,
+		  smb2_util_lease_state("RWH"));
+	CHECK_VAL(io.out.lease_response_v2.lease_flags, 0);
+	CHECK_VAL(io.out.lease_response_v2.lease_duration, 0);
+	_h = io.out.file.handle;
+	h = &_h;
+
+done:
+
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, __func__);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -2026,6 +2165,7 @@ struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reopen2c", test_durable_v2_open_reopen2c);
 	torture_suite_add_1smb2_test(suite, "reopen2-lease", test_durable_v2_open_reopen2_lease);
 	torture_suite_add_1smb2_test(suite, "reopen2-lease-v2", test_durable_v2_open_reopen2_lease_v2);
+	torture_suite_add_1smb2_test(suite, "durable-v2-setinfo", test_durable_v2_setinfo);
 	torture_suite_add_2smb2_test(suite, "app-instance", test_durable_v2_open_app_instance);
 	torture_suite_add_1smb2_test(suite, "persistent-open-oplock", test_persistent_open_oplock);
 	torture_suite_add_1smb2_test(suite, "persistent-open-lease", test_persistent_open_lease);
