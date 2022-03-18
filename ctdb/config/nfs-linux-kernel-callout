@@ -352,7 +352,7 @@ nfs_check_thread_count()
 	# nfsd should be running the configured number of threads.  If
 	# there are a different number of threads then tell nfsd the
 	# correct number.
-	read _running_threads <"$_threads_file" || {
+	read -r _running_threads <"$_threads_file" || {
 		echo "WARNING: Reading \"${_threads_file}\" unexpectedly failed"
 		exit 0
 	}
