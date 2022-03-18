@@ -117,8 +117,5 @@ centos7:
     # We install a compat-gnutls34 package for GnuTLS >= 3.4.7
     PKG_CONFIG_PATH: /usr/lib64/compat-gnutls34/pkgconfig:/usr/lib64/compat-nettle32/pkgconfig
 
-opensuse151:
-  extends: .build_image_template
-
-opensuse152:
+opensuse153:
   extends: .build_image_template
