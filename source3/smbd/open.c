@@ -4305,10 +4305,11 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	/* Ensure we're checking for a symlink here.... */
 	/* We don't want to get caught by a symlink racer. */
 
-	if (SMB_VFS_FSTAT(fsp, &smb_dname->st) == -1) {
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
-			  smb_fname_str_dbg(smb_dname), strerror(errno)));
-		return map_nt_error_from_unix(errno);
+			  smb_fname_str_dbg(smb_dname), nt_errstr(status)));
+		return status;
 	}
 
 	if (!S_ISDIR(smb_dname->st.st_ex_mode)) {
