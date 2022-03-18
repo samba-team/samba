@@ -176,7 +176,6 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 {
 	struct smb_filename *smb_fname = NULL;
 	int fd;
-	int ret;
 	mode_t saved_umask;
 	struct files_struct *fsp;
 	struct files_struct *fspcwd = NULL;
@@ -230,13 +229,13 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	}
 	fsp_set_fd(fsp, fd);
 
-	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
-	if (ret == -1) {
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
 		/* If we have an fd, this stat should succeed. */
 		DEBUG(0,("Error doing fstat on open file %s (%s)\n",
 			 smb_fname_str_dbg(smb_fname),
-			 strerror(errno) ));
-		return map_nt_error_from_unix(errno);
+			 nt_errstr(status) ));
+		return status;
 	}
 
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
