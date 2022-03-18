@@ -853,12 +853,10 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 		   bool do_encrypt,
 		   struct smb_perfcount_data *pcd);
 NTSTATUS allow_new_trans(struct trans_state *list, uint64_t mid);
-void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes);
 void smb_request_done(struct smb_request *req);
 const char *smb_fn_name(int type);
 void add_to_common_flags2(uint32_t v);
 void remove_from_common_flags2(uint32_t v);
-void construct_reply_common_req(struct smb_request *req, char *outbuf);
 bool smb1_is_chain(const uint8_t *buf);
 bool smb1_walk_chain(const uint8_t *buf,
 		     bool (*fn)(uint8_t cmd,
@@ -926,6 +924,11 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 				    struct timeval timeout,
 				    struct file_id id,
 				    struct deferred_open_record *open_rec);
+bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
+                   const uint8_t *inbuf, char **outbuf,
+                   uint8_t num_words, uint32_t num_bytes);
+void construct_reply_common_req(struct smb_request *req, char *outbuf);
+void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes);
 
 /* The following definitions come from smbd/quotas.c  */
 

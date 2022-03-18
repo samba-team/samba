@@ -64,8 +64,6 @@ struct pending_message_list {
 	struct deferred_open_record *open_rec;
 };
 
-static void construct_reply_common(uint8_t cmd, const uint8_t *inbuf,
-				   char *outbuf);
 static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf);
 
 static void smbd_echo_init(struct smbXsrv_connection *xconn)
@@ -1087,61 +1085,6 @@ static const struct smb_message_struct {
 
 };
 
-/*******************************************************************
- allocate and initialize a reply packet
-********************************************************************/
-
-static bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
-			  const uint8_t *inbuf, char **outbuf,
-			  uint8_t num_words, uint32_t num_bytes)
-{
-	size_t smb_len = MIN_SMB_SIZE + VWV(num_words) + num_bytes;
-
-	/*
-	 * Protect against integer wrap.
-	 * The SMB layer reply can be up to 0xFFFFFF bytes.
-	 */
-	if ((num_bytes > 0xffffff) || (smb_len > 0xffffff)) {
-		char *msg;
-		if (asprintf(&msg, "num_bytes too large: %u",
-			     (unsigned)num_bytes) == -1) {
-			msg = discard_const_p(char, "num_bytes too large");
-		}
-		smb_panic(msg);
-	}
-
-	/*
-	 * Here we include the NBT header for now.
-	 */
-	*outbuf = talloc_array(mem_ctx, char,
-			       NBT_HDR_SIZE + smb_len);
-	if (*outbuf == NULL) {
-		return false;
-	}
-
-	construct_reply_common(req->cmd, inbuf, *outbuf);
-	srv_set_message(*outbuf, num_words, num_bytes, false);
-	/*
-	 * Zero out the word area, the caller has to take care of the bcc area
-	 * himself
-	 */
-	if (num_words != 0) {
-		memset(*outbuf + (NBT_HDR_SIZE + HDR_VWV), 0, VWV(num_words));
-	}
-
-	return true;
-}
-
-void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes)
-{
-	char *outbuf;
-	if (!create_outbuf(req, req, req->inbuf, &outbuf, num_words,
-			   num_bytes)) {
-		smb_panic("could not allocate output buffer\n");
-	}
-	req->outbuf = (uint8_t *)outbuf;
-}
-
 
 /*******************************************************************
  Dump a packet to a file.
@@ -1823,37 +1766,6 @@ void add_to_common_flags2(uint32_t v)
 void remove_from_common_flags2(uint32_t v)
 {
 	common_flags2 &= ~v;
-}
-
-static void construct_reply_common(uint8_t cmd, const uint8_t *inbuf,
-				   char *outbuf)
-{
-	uint16_t in_flags2 = SVAL(inbuf,smb_flg2);
-	uint16_t out_flags2 = common_flags2;
-
-	out_flags2 |= in_flags2 & FLAGS2_UNICODE_STRINGS;
-	out_flags2 |= in_flags2 & FLAGS2_SMB_SECURITY_SIGNATURES;
-	out_flags2 |= in_flags2 & FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED;
-
-	srv_set_message(outbuf,0,0,false);
-
-	SCVAL(outbuf, smb_com, cmd);
-	SIVAL(outbuf,smb_rcls,0);
-	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 
-	SSVAL(outbuf,smb_flg2, out_flags2);
-	memset(outbuf+smb_pidhigh,'\0',(smb_tid-smb_pidhigh));
-	memcpy(outbuf+smb_ss_field, inbuf+smb_ss_field, 8);
-
-	SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
-	SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
-	SSVAL(outbuf,smb_pidhigh,SVAL(inbuf,smb_pidhigh));
-	SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
-	SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
-}
-
-void construct_reply_common_req(struct smb_request *req, char *outbuf)
-{
-	construct_reply_common(req->cmd, req->inbuf, outbuf);
 }
 
 /**
