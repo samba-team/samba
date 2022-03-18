@@ -49,6 +49,21 @@
 #include "smb1_utils.h"
 #include "source3/lib/substitute.h"
 
+/* Internal message queue for deferred opens. */
+struct pending_message_list {
+	struct pending_message_list *next, *prev;
+	struct timeval request_time; /* When was this first issued? */
+	struct smbd_server_connection *sconn;
+	struct smbXsrv_connection *xconn;
+	struct tevent_timer *te;
+	struct smb_perfcount_data pcd;
+	uint32_t seqnum;
+	bool encrypted;
+	bool processed;
+	DATA_BLOB buf;
+	struct deferred_open_record *open_rec;
+};
+
 #if !defined(WITH_SMB1SERVER)
 static bool smb2_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 			  bool do_signing, uint32_t seqnum,
@@ -236,4 +251,32 @@ NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 				   p_unread, p_encrypted, p_len, seqnum,
 				   trusted_channel);
 #endif
+}
+
+/****************************************************************************
+ Function to delete a sharing violation open message by mid.
+****************************************************************************/
+
+void remove_deferred_open_message_smb(struct smbXsrv_connection *xconn,
+				      uint64_t mid)
+{
+	struct smbd_server_connection *sconn = xconn->client->sconn;
+	struct pending_message_list *pml;
+
+	if (sconn->using_smb2) {
+		remove_deferred_open_message_smb2(xconn, mid);
+		return;
+	}
+
+	for (pml = sconn->deferred_open_queue; pml; pml = pml->next) {
+		if (mid == (uint64_t)SVAL(pml->buf.data,smb_mid)) {
+			DEBUG(10,("remove_deferred_open_message_smb: "
+				  "deleting mid %llu len %u\n",
+				  (unsigned long long)mid,
+				  (unsigned int)pml->buf.length ));
+			DLIST_REMOVE(sconn->deferred_open_queue, pml);
+			TALLOC_FREE(pml);
+			return;
+		}
+	}
 }

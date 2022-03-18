@@ -852,8 +852,6 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 		   bool do_signing, uint32_t seqnum,
 		   bool do_encrypt,
 		   struct smb_perfcount_data *pcd);
-void remove_deferred_open_message_smb(struct smbXsrv_connection *xconn,
-				      uint64_t mid);
 bool schedule_deferred_open_message_smb(struct smbXsrv_connection *xconn,
 					uint64_t mid);
 bool open_was_deferred(struct smbXsrv_connection *xconn, uint64_t mid);
@@ -918,6 +916,8 @@ NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 			    size_t *p_len,
 			    uint32_t *seqnum,
 			    bool trusted_channel);
+void remove_deferred_open_message_smb(struct smbXsrv_connection *xconn,
+				      uint64_t mid);
 
 /* The following definitions come from smbd/quotas.c  */
 
