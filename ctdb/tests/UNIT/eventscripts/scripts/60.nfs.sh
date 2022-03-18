@@ -337,7 +337,12 @@ program_stack_traces ()
 	_max="${2:-1}"
 
 	_count=1
-	for _pid in ${FAKE_NFSD_THREAD_PIDS:-$FAKE_RPC_THREAD_PIDS} ; do
+	if [ "$_prog" = "nfsd" ] ; then
+		_pids="$FAKE_NFSD_THREAD_PIDS"
+	else
+		_pids="$FAKE_RPC_THREAD_PIDS"
+	fi
+	for _pid in $_pids ; do
 		[ $_count -le $_max ] || break
 
 		program_stack_trace "$_prog" "$_pid"
