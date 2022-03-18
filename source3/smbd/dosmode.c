@@ -525,6 +525,17 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 			return status;
 		}
 	}
+
+	/*
+	 * We correctly stored the create time.
+	 * We *always* set XATTR_DOSINFO_CREATE_TIME,
+	 * so now it can no longer be considered
+	 * calculated.
+	 */
+	update_stat_ex_create_time(
+		&smb_fname->fsp->fsp_name->st,
+		smb_fname->st.st_ex_btime);
+
 	DEBUG(10,("set_ea_dos_attribute: set EA 0x%x on file %s\n",
 		(unsigned int)dosmode,
 		smb_fname_str_dbg(smb_fname)));
