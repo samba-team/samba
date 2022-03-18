@@ -410,14 +410,6 @@ end
 
 
 DEB_DISTS = {
-    'debian10': {
-        'docker_image': 'debian:10',
-        'vagrant_box': 'debian/buster64',
-        'replace': {
-            'language-pack-en': '',   # included in locales
-            'liburing-dev': '',   # not available
-        }
-    },
     'debian11': {
         'docker_image': 'debian:11',
         'vagrant_box': 'debian/bullseye64',

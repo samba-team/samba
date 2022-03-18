@@ -94,9 +94,6 @@ ubuntu1804:
 ubuntu2004:
   extends: .build_image_template
 
-debian10:
-  extends: .build_image_template
-
 debian11:
   extends: .build_image_template
 
