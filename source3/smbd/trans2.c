@@ -9333,11 +9333,12 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			/*
 			 * Original code - this is an open file.
 			 */
-			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
+			status = vfs_stat_fsp(fsp);
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat "
 					 "of %s failed (%s)\n", fsp_fnum_dbg(fsp),
-					 strerror(errno)));
-				reply_nterror(req, map_nt_error_from_unix(errno));
+					 nt_errstr(status)));
+				reply_nterror(req, status);
 				return;
 			}
 		}
