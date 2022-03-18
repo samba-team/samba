@@ -1354,13 +1354,13 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 			return true;
 		}
 
-		result = SMB_VFS_FSTAT(smb_fname->fsp, &smb_fname->st);
-		if (result != 0) {
+		status = vfs_stat_fsp(smb_fname->fsp);
+		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(smb_fname);
 			return true;
 		}
 
-		sp = &smb_fname->st;
+		sp = &smb_fname->fsp->fsp_name->st;
 	}
 
 	ok = add_filemeta(mds_ctx, reqinfo, fm_array, path, sp);
