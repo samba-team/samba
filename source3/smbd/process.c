@@ -66,8 +66,6 @@ struct pending_message_list {
 
 static void construct_reply_common(uint8_t cmd, const uint8_t *inbuf,
 				   char *outbuf);
-static struct pending_message_list *get_deferred_open_message_smb(
-	struct smbd_server_connection *sconn, uint64_t mid);
 static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf);
 
 static void smbd_echo_init(struct smbXsrv_connection *xconn)
@@ -621,51 +619,6 @@ static bool init_smb_request(struct smb_request *req,
 	return true;
 }
 
-static void process_smb(struct smbXsrv_connection *xconn,
-			uint8_t *inbuf, size_t nread, size_t unread_bytes,
-			uint32_t seqnum, bool encrypted,
-			struct smb_perfcount_data *deferred_pcd);
-
-static void smbd_deferred_open_timer(struct tevent_context *ev,
-				     struct tevent_timer *te,
-				     struct timeval _tval,
-				     void *private_data)
-{
-	struct pending_message_list *msg = talloc_get_type(private_data,
-					   struct pending_message_list);
-	struct smbd_server_connection *sconn = msg->sconn;
-	struct smbXsrv_connection *xconn = msg->xconn;
-	TALLOC_CTX *mem_ctx = talloc_tos();
-	uint64_t mid = (uint64_t)SVAL(msg->buf.data,smb_mid);
-	uint8_t *inbuf;
-
-	inbuf = (uint8_t *)talloc_memdup(mem_ctx, msg->buf.data,
-					 msg->buf.length);
-	if (inbuf == NULL) {
-		exit_server("smbd_deferred_open_timer: talloc failed\n");
-		return;
-	}
-
-	/* We leave this message on the queue so the open code can
-	   know this is a retry. */
-	DEBUG(5,("smbd_deferred_open_timer: trigger mid %llu.\n",
-		(unsigned long long)mid ));
-
-	/* Mark the message as processed so this is not
-	 * re-processed in error. */
-	msg->processed = true;
-
-	process_smb(xconn, inbuf,
-		    msg->buf.length, 0,
-		    msg->seqnum, msg->encrypted, &msg->pcd);
-
-	/* If it's still there and was processed, remove it. */
-	msg = get_deferred_open_message_smb(sconn, mid);
-	if (msg && msg->processed) {
-		remove_deferred_open_message_smb(xconn, mid);
-	}
-}
-
 /****************************************************************************
  Function to push a message onto the tail of a linked list of smb messages ready
  for processing.
@@ -727,79 +680,6 @@ static bool push_queued_message(struct smb_request *req,
 }
 
 /****************************************************************************
- Move a sharing violation open retry message to the front of the list and
- schedule it for immediate processing.
-****************************************************************************/
-
-bool schedule_deferred_open_message_smb(struct smbXsrv_connection *xconn,
-					uint64_t mid)
-{
-	struct smbd_server_connection *sconn = xconn->client->sconn;
-	struct pending_message_list *pml;
-	int i = 0;
-
-	if (sconn->using_smb2) {
-		return schedule_deferred_open_message_smb2(xconn, mid);
-	}
-
-	for (pml = sconn->deferred_open_queue; pml; pml = pml->next) {
-		uint64_t msg_mid = (uint64_t)SVAL(pml->buf.data,smb_mid);
-
-		DEBUG(10,("schedule_deferred_open_message_smb: [%d] "
-			"msg_mid = %llu\n",
-			i++,
-			(unsigned long long)msg_mid ));
-
-		if (mid == msg_mid) {
-			struct tevent_timer *te;
-
-			if (pml->processed) {
-				/* A processed message should not be
-				 * rescheduled. */
-				DEBUG(0,("schedule_deferred_open_message_smb: LOGIC ERROR "
-					"message mid %llu was already processed\n",
-					(unsigned long long)msg_mid ));
-				continue;
-			}
-
-			DEBUG(10,("schedule_deferred_open_message_smb: "
-				"scheduling mid %llu\n",
-				(unsigned long long)mid ));
-
-			/*
-			 * smbd_deferred_open_timer() calls
-			 * process_smb() to redispatch the request
-			 * including the required impersonation.
-			 *
-			 * So we can just use the raw tevent_context.
-			 */
-			te = tevent_add_timer(xconn->client->raw_ev_ctx,
-					      pml,
-					      timeval_zero(),
-					      smbd_deferred_open_timer,
-					      pml);
-			if (!te) {
-				DEBUG(10,("schedule_deferred_open_message_smb: "
-					"event_add_timed() failed, "
-					"skipping mid %llu\n",
-					(unsigned long long)msg_mid ));
-			}
-
-			TALLOC_FREE(pml->te);
-			pml->te = te;
-			DLIST_PROMOTE(sconn->deferred_open_queue, pml);
-			return true;
-		}
-	}
-
-	DEBUG(10,("schedule_deferred_open_message_smb: failed to "
-		"find message mid %llu\n",
-		(unsigned long long)mid ));
-
-	return false;
-}
-
-/****************************************************************************
  Return true if this mid is on the deferred queue and was not yet processed.
 ****************************************************************************/
 
@@ -824,7 +704,7 @@ bool open_was_deferred(struct smbXsrv_connection *xconn, uint64_t mid)
  Return the message queued by this mid.
 ****************************************************************************/
 
-static struct pending_message_list *get_deferred_open_message_smb(
+struct pending_message_list *get_deferred_open_message_smb(
 	struct smbd_server_connection *sconn, uint64_t mid)
 {
 	struct pending_message_list *pml;
@@ -1930,10 +1810,10 @@ static void process_smb1(struct smbXsrv_connection *xconn,
 	sconn->trans_num++;
 }
 
-static void process_smb(struct smbXsrv_connection *xconn,
-			uint8_t *inbuf, size_t nread, size_t unread_bytes,
-			uint32_t seqnum, bool encrypted,
-			struct smb_perfcount_data *deferred_pcd)
+void process_smb(struct smbXsrv_connection *xconn,
+		 uint8_t *inbuf, size_t nread, size_t unread_bytes,
+		 uint32_t seqnum, bool encrypted,
+		 struct smb_perfcount_data *deferred_pcd)
 {
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	int msg_type = CVAL(inbuf,0);
