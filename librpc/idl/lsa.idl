@@ -686,7 +686,9 @@ import "misc.idl", "security.idl";
 		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL    = 10,
 		LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL     = 11,
 		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL  = 12,
-		LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES = 13
+		LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES = 13,
+		LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL_AES= 14,
+		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL_AES= 15
 	} lsa_TrustDomInfoEnum;
 
 	typedef [public,bitmap32bit] bitmap {
@@ -787,6 +789,18 @@ import "misc.idl", "security.idl";
 	} lsa_TrustDomainInfoFullInfoInternal;
 
 	typedef struct {
+		uint8 auth_data[64];
+		uint8 salt[16];
+		lsa_DATA_BUF2 cipher;
+	} lsa_TrustDomainInfoAuthInfoInternalAES;
+
+	typedef struct {
+		lsa_TrustDomainInfoInfoEx              info_ex;
+		lsa_TrustDomainInfoPosixOffset         posix_offset;
+		lsa_TrustDomainInfoAuthInfoInternalAES auth_info;
+	} lsa_TrustDomainInfoFullInfoInternalAES;
+
+	typedef struct {
 		lsa_TrustDomainInfoInfoEx      info_ex;
 		uint32 forest_trust_length;
 		[size_is(forest_trust_length)] uint8 *forest_trust_data;
@@ -829,6 +843,10 @@ import "misc.idl", "security.idl";
 		        lsa_TrustDomainInfoFullInfo2Internal     full_info2_internal;
 		[case(LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES)]
 		        lsa_TrustDomainInfoSupportedEncTypes enc_types;
+		[case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL_AES)]
+		        lsa_TrustDomainInfoAuthInfoInternalAES auth_info_internal_aes;
+		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL_AES)]
+		        lsa_TrustDomainInfoFullInfoInternalAES full_info_internal_aes;
 	} lsa_TrustedDomainInfo;
 
 	/* Function:       0x1a */
@@ -1289,8 +1307,13 @@ import "misc.idl", "security.idl";
 		LSA_FOREST_TRUST_TOP_LEVEL_NAME = 0,
 		LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX = 1,
 		LSA_FOREST_TRUST_DOMAIN_INFO = 2,
-		LSA_FOREST_TRUST_RECORD_TYPE_LAST = 3
+		LSA_FOREST_TRUST_BINARY_DATA = 3,
+		LSA_FOREST_TRUST_SCANNER_INFO = 4
 	} lsa_ForestTrustRecordType;
+	const uint32 LSA_FOREST_TRUST_RECORD_TYPE_LAST =
+		LSA_FOREST_TRUST_BINARY_DATA;
+	const uint32 LSA_FOREST_TRUST_RECORD2_TYPE_LAST =
+		LSA_FOREST_TRUST_SCANNER_INFO;
 
 	typedef struct {
 		[range(0,131072)] uint3264 length;
@@ -1404,4 +1427,229 @@ import "misc.idl", "security.idl";
 	/* Function 0x51 */
 	[todo] NTSTATUS lsa_LSARADTREPORTSECURITYEVENT();
 
+	/* Function 0x52 (82) */
+	[todo] void lsa_Opnum82NotUsedOnWire(void);
+
+	/* Function 0x53 (83) */
+	[todo] void lsa_Opnum83NotUsedOnWire(void);
+
+	/* Function 0x54 (84) */
+	[todo] void lsa_Opnum84NotUsedOnWire(void);
+
+	/* Function 0x55 (85) */
+	[todo] void lsa_Opnum85NotUsedOnWire(void);
+
+	/* Function 0x56 (86) */
+	[todo] void lsa_Opnum86NotUsedOnWire(void);
+
+	/* Function 0x57 (87) */
+	[todo] void lsa_Opnum87NotUsedOnWire(void);
+
+	/* Function 0x58 (88) */
+	[todo] void lsa_Opnum88NotUsedOnWire(void);
+
+	/* Function 0x59 (89) */
+	[todo] void lsa_Opnum89NotUsedOnWire(void);
+
+	/* Function 0x5A (90) */
+	[todo] void lsa_Opnum90NotUsedOnWire(void);
+
+	/* Function 0x5B (91) */
+	[todo] void lsa_Opnum91NotUsedOnWire(void);
+
+	/* Function 0x5C (92) */
+	[todo] void lsa_Opnum92NotUsedOnWire(void);
+
+	/* Function 0x5D (93) */
+	[todo] void lsa_Opnum93NotUsedOnWire(void);
+
+	/* Function 0x5E (94) */
+	[todo] void lsa_Opnum94NotUsedOnWire(void);
+
+	/* Function 0x5F (95) */
+	[todo] void lsa_Opnum95NotUsedOnWire(void);
+
+	/* Function 0x60 (96) */
+	[todo] void lsa_Opnum96NotUsedOnWire(void);
+
+	/* Function 0x61 (97) */
+	[todo] void lsa_Opnum97NotUsedOnWire(void);
+
+	/* Function 0x62 (98) */
+	[todo] void lsa_Opnum98NotUsedOnWire(void);
+
+	/* Function 0x63 (99) */
+	[todo] void lsa_Opnum99NotUsedOnWire(void);
+
+	/* Function 0x64 (100) */
+	[todo] void lsa_Opnum100NotUsedOnWire(void);
+
+	/* Function 0x65 (101) */
+	[todo] void lsa_Opnum101NotUsedOnWire(void);
+
+	/* Function 0x66 (102) */
+	[todo] void lsa_Opnum102NotUsedOnWire(void);
+
+	/* Function 0x67 (103) */
+	[todo] void lsa_Opnum103NotUsedOnWire(void);
+
+	/* Function 0x68 (104) */
+	[todo] void lsa_Opnum104NotUsedOnWire(void);
+
+	/* Function 0x69 (105) */
+	[todo] void lsa_Opnum105NotUsedOnWire(void);
+
+	/* Function 0x6A (106) */
+	[todo] void lsa_Opnum106NotUsedOnWire(void);
+
+	/* Function 0x6B (107) */
+	[todo] void lsa_Opnum107NotUsedOnWire(void);
+
+	/* Function 0x6C (108) */
+	[todo] void lsa_Opnum108NotUsedOnWire(void);
+
+	/* Function 0x6D (109) */
+	[todo] void lsa_Opnum109NotUsedOnWire(void);
+
+	/* Function 0x6E (110) */
+	[todo] void lsa_Opnum110NotUsedOnWire(void);
+
+	/* Function 0x6F (111) */
+	[todo] void lsa_Opnum111NotUsedOnWire(void);
+
+	/* Function 0x70 (112) */
+	[todo] void lsa_Opnum112NotUsedOnWire(void);
+
+	/* Function 0x71 (113) */
+	[todo] void lsa_Opnum113NotUsedOnWire(void);
+
+	/* Function 0x72 (114) */
+	[todo] void lsa_Opnum114NotUsedOnWire(void);
+
+	/* Function 0x73 (115) */
+	[todo] void lsa_Opnum115NotUsedOnWire(void);
+
+	/* Function 0x74 (116) */
+	[todo] void lsa_Opnum116NotUsedOnWire(void);
+
+	/* Function 0x75 (117) */
+	[todo] void lsa_Opnum117NotUsedOnWire(void);
+
+	/* Function 0x76 (118) */
+	[todo] void lsa_Opnum118NotUsedOnWire(void);
+
+	/* Function 0x77 (119) */
+	[todo] void lsa_Opnum119NotUsedOnWire(void);
+
+	/* Function 0x78 (120) */
+	[todo] void lsa_Opnum120NotUsedOnWire(void);
+
+	/* Function 0x79 (121) */
+	[todo] void lsa_Opnum121NotUsedOnWire(void);
+
+	/* Function 0x7A (122) */
+	[todo] void lsa_Opnum122NotUsedOnWire(void);
+
+	/* Function 0x7B (123) */
+	[todo] void lsa_Opnum123NotUsedOnWire(void);
+
+	/* Function 0x7C (124) */
+	[todo] void lsa_Opnum124NotUsedOnWire(void);
+
+	/* Function 0x7D (125) */
+	[todo] void lsa_Opnum125NotUsedOnWire(void);
+
+	/* Function 0x7E (126) */
+	[todo] void lsa_Opnum126NotUsedOnWire(void);
+
+	/* Function 0x7F (127) */
+	[todo] void lsa_Opnum127NotUsedOnWire(void);
+
+	/* Function 0x80 (128) */
+	[todo] void lsa_Opnum128NotUsedOnWire(void);
+
+	/***********************/
+	/* Function 0x81 (129) */
+
+	NTSTATUS lsa_CreateTrustedDomainEx3(
+		[in]  policy_handle               *policy_handle,
+		[in]  lsa_TrustDomainInfoInfoEx   *info,
+		[in]  lsa_TrustDomainInfoAuthInfoInternalAES *auth_info_internal,
+		[in]  lsa_TrustedAccessMask       access_mask,
+		[out] policy_handle               *trustdom_handle
+		);
+
+	/***********************/
+	/* Function 0x82 (130) */
+
+	typedef [bitmap32bit] bitmap {
+		LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER	= 0x00000001
+	} lsa_RevisionSupportedFeature;
+
+	typedef struct {
+		uint32 revision;
+		lsa_RevisionSupportedFeature supported_features;
+	} lsa_revision_info1;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] lsa_revision_info1 info1;
+	} lsa_revision_info;
+
+	[public] NTSTATUS lsa_OpenPolicy3 (
+		[in,unique]      [string,charset(UTF16)] uint16 *system_name,
+		[in]  lsa_ObjectAttribute *attr,
+		[in]  lsa_PolicyAccessMask access_mask,
+		[in]  uint32 in_version,
+		[in,ref][switch_is(in_version)] lsa_revision_info *in_revision_info,
+		[out,ref]  uint32 *out_version,
+		[out,ref][switch_is(*out_version)] lsa_revision_info *out_revision_info,
+		[out,ref] policy_handle *handle
+		);
+
+	/* Function 0x83 (131) */
+	[todo] void lsa_Opnum131NotUsedOnWire(void);
+
+	/***********************/
+	/* Function 0x84 (132) */
+	typedef [switch_type(lsa_ForestTrustRecordType)] union {
+		[case(LSA_FOREST_TRUST_TOP_LEVEL_NAME)] lsa_StringLarge top_level_name;
+		[case(LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX)] lsa_StringLarge top_level_name_ex;
+		[case(LSA_FOREST_TRUST_DOMAIN_INFO)] lsa_ForestTrustDomainInfo domain_info;
+		[case(LSA_FOREST_TRUST_BINARY_DATA)] lsa_ForestTrustBinaryData data;
+		/*
+		 * lsa_ForestTrustScannerInfo would have the same
+		 * definition as lsa_ForestTrustDomainInfo
+		 */
+		[case(LSA_FOREST_TRUST_SCANNER_INFO)] lsa_ForestTrustDomainInfo scanner_info;
+	} lsa_ForestTrustData2;
+
+	typedef struct {
+		lsa_ForestTrustRecordFlags flags;
+		lsa_ForestTrustRecordType type;
+		NTTIME_hyper time;
+		[switch_is(type)] lsa_ForestTrustData2 forest_trust_data;
+	} lsa_ForestTrustRecord2;
+
+	typedef [public] struct {
+		[range(0,4000)] uint32 count;
+		[size_is(count)] lsa_ForestTrustRecord2 **entries;
+	} lsa_ForestTrustInformation2;
+
+	[public] NTSTATUS lsa_lsaRQueryForestTrustInformation2(
+		[in] policy_handle *handle,
+		[in,ref] lsa_String *trusted_domain_name,
+		[in] lsa_ForestTrustRecordType highest_record_type,
+		[out,ref] lsa_ForestTrustInformation2 **forest_trust_info
+		);
+
+	/***********************/
+	/* Function 0x85 (133) */
+	[public] NTSTATUS lsa_lsaRSetForestTrustInformation2(
+		[in]      policy_handle *handle,
+		[in,ref]  lsa_StringLarge *trusted_domain_name,
+		[in]      lsa_ForestTrustRecordType highest_record_type,
+		[in,ref]  lsa_ForestTrustInformation2 *forest_trust_info,
+		[in]      boolean8 check_only,
+		[out,ref] lsa_ForestTrustCollisionInfo **collision_info
+		);
 }

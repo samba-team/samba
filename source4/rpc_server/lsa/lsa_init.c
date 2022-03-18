@@ -220,6 +220,17 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call,
 }
 
 /*
+  lsa_OpenPolicy3
+*/
+NTSTATUS dcesrv_lsa_OpenPolicy3(struct dcesrv_call_state *dce_call,
+				TALLOC_CTX *mem_ctx,
+				struct lsa_OpenPolicy3 *r)
+{
+	/* TODO */
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
   lsa_OpenPolicy2
 */
 NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
