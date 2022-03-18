@@ -680,52 +680,6 @@ static bool push_queued_message(struct smb_request *req,
 }
 
 /****************************************************************************
- Return the message queued by this mid.
-****************************************************************************/
-
-struct pending_message_list *get_deferred_open_message_smb(
-	struct smbd_server_connection *sconn, uint64_t mid)
-{
-	struct pending_message_list *pml;
-
-	for (pml = sconn->deferred_open_queue; pml; pml = pml->next) {
-		if (((uint64_t)SVAL(pml->buf.data,smb_mid)) == mid) {
-			return pml;
-		}
-	}
-	return NULL;
-}
-
-/****************************************************************************
- Get the state data queued by this mid.
-****************************************************************************/
-
-bool get_deferred_open_message_state(struct smb_request *smbreq,
-				struct timeval *p_request_time,
-				struct deferred_open_record **open_rec)
-{
-	struct pending_message_list *pml;
-
-	if (smbreq->sconn->using_smb2) {
-		return get_deferred_open_message_state_smb2(smbreq->smb2req,
-					p_request_time,
-					open_rec);
-	}
-
-	pml = get_deferred_open_message_smb(smbreq->sconn, smbreq->mid);
-	if (!pml) {
-		return false;
-	}
-	if (p_request_time) {
-		*p_request_time = pml->request_time;
-	}
-	if (open_rec != NULL) {
-		*open_rec = pml->open_rec;
-	}
-	return true;
-}
-
-/****************************************************************************
  Function to push a deferred open smb message onto a linked list of local smb
  messages ready for processing.
 ****************************************************************************/
