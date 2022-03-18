@@ -1702,7 +1702,6 @@ static NTSTATUS cmd_fset_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int flags;
-	int ret;
 	mode_t mode;
 	files_struct *fsp;
 	struct files_struct *fspcwd = NULL;
@@ -1773,18 +1772,13 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	}
 	fsp_set_fd(fsp, fd);
 
-	status = NT_STATUS_OK;
-	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
-	if (ret == -1) {
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
 		/* If we have an fd, this stat should succeed. */
 		DEBUG(0,("Error doing fstat on open file %s "
 			 "(%s)\n",
 			 smb_fname_str_dbg(smb_fname),
-			 strerror(errno) ));
-		status = map_nt_error_from_unix(errno);
-	}
-	
-	if (!NT_STATUS_IS_OK(status)) {
+			 nt_errstr(status) ));
 		goto out;
 	}
 
