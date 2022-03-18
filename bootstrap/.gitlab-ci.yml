@@ -100,9 +100,6 @@ debian10:
 debian11:
   extends: .build_image_template
 
-fedora34:
-  extends: .build_image_template
-
 fedora35:
   extends: .build_image_template
 

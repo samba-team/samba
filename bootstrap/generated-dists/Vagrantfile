@@ -45,13 +45,6 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "f35mit120/locale.sh"
     end
 
-    config.vm.define "fedora34" do |v|
-        v.vm.box = "fedora/34-cloud-base"
-        v.vm.hostname = "fedora34"
-        v.vm.provision :shell, path: "fedora34/bootstrap.sh"
-        v.vm.provision :shell, path: "fedora34/locale.sh"
-    end
-
     config.vm.define "fedora35" do |v|
         v.vm.box = "fedora/35-cloud-base"
         v.vm.hostname = "fedora35"

@@ -495,18 +495,6 @@ RPM_DISTS = {
             'mold': '',
         }
     },
-    'fedora34': {
-        'docker_image': 'fedora:34',
-        'vagrant_box': 'fedora/34-cloud-base',
-        'bootstrap': DNF_BOOTSTRAP,
-        'replace': {
-            'lsb-release': 'redhat-lsb',
-            'perl-FindBin': '',
-            'python3-iso8601': 'python3-dateutil',
-            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
-            'mold': '',
-        }
-    },
     'fedora35': {
         'docker_image': 'fedora:35',
         'vagrant_box': 'fedora/35-cloud-base',
