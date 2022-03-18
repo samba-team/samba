@@ -701,3 +701,33 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 	set_Protocol(protocol);
 	return NT_STATUS_OK;
 }
+
+/**
+ * Create a debug string for the connection
+ *
+ * This is allocated to talloc_tos() or a string constant
+ * in certain corner cases. The returned string should
+ * hence not be free'd directly but only via the talloc stack.
+ */
+const char *smbXsrv_connection_dbg(const struct smbXsrv_connection *xconn)
+{
+	const char *ret;
+	char *addr;
+	/*
+	 * TODO: this can be improved later
+	 * maybe including the client guid or more
+	 */
+	addr = tsocket_address_string(xconn->remote_address, talloc_tos());
+	if (addr == NULL) {
+		return "<tsocket_address_string() failed>";
+	}
+
+	ret = talloc_asprintf(talloc_tos(), "ptr=%p,id=%llu,addr=%s",
+			      xconn, (unsigned long long)xconn->channel_id, addr);
+	TALLOC_FREE(addr);
+	if (ret == NULL) {
+		return "<talloc_asprintf() failed>";
+	}
+
+	return ret;
+}
