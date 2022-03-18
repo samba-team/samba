@@ -245,7 +245,6 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
 {
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;
-	int ret;
 
 	status = create_internal_dirfsp(conn, smb_dname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -264,10 +263,10 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
 		return status;
 	}
 
-	ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
-	if (ret != 0) {
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
 		file_free(NULL, fsp);
-		return map_nt_error_from_unix(errno);
+		return status;
 	}
 
 	if (!S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
