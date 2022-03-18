@@ -3352,58 +3352,6 @@ static void smbd_id_cache_kill(struct messaging_context *msg_ctx,
 	id_cache_delete_from_cache(&id);
 }
 
-NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
-					enum protocol_types protocol)
-{
-	NTSTATUS status;
-
-	conn->protocol = protocol;
-
-	if (conn->client->session_table != NULL) {
-		return NT_STATUS_OK;
-	}
-
-	if (protocol >= PROTOCOL_SMB2_02) {
-		status = smb2srv_session_table_init(conn);
-		if (!NT_STATUS_IS_OK(status)) {
-			conn->protocol = PROTOCOL_NONE;
-			return status;
-		}
-
-		status = smb2srv_open_table_init(conn);
-		if (!NT_STATUS_IS_OK(status)) {
-			conn->protocol = PROTOCOL_NONE;
-			return status;
-		}
-	} else {
-#if defined(WITH_SMB1SERVER)
-		status = smb1srv_session_table_init(conn);
-		if (!NT_STATUS_IS_OK(status)) {
-			conn->protocol = PROTOCOL_NONE;
-			return status;
-		}
-
-		status = smb1srv_tcon_table_init(conn);
-		if (!NT_STATUS_IS_OK(status)) {
-			conn->protocol = PROTOCOL_NONE;
-			return status;
-		}
-
-		status = smb1srv_open_table_init(conn);
-		if (!NT_STATUS_IS_OK(status)) {
-			conn->protocol = PROTOCOL_NONE;
-			return status;
-		}
-#else
-		conn->protocol = PROTOCOL_NONE;
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-#endif
-	}
-
-	set_Protocol(protocol);
-	return NT_STATUS_OK;
-}
-
 struct smbd_tevent_trace_state {
 	struct tevent_context *ev;
 	TALLOC_CTX *frame;
