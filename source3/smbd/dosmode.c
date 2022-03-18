@@ -525,7 +525,9 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 			status = NT_STATUS_OK;
 		}
 		unbecome_root();
-		return status;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 	DEBUG(10,("set_ea_dos_attribute: set EA 0x%x on file %s\n",
 		(unsigned int)dosmode,
