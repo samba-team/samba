@@ -889,6 +889,14 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  int sock_fd,
 		  bool interactive);
 bool fork_echo_handler(struct smbXsrv_connection *xconn);
+NTSTATUS smb1_receive_talloc(TALLOC_CTX *mem_ctx,
+			     struct smbXsrv_connection *xconn,
+			     int sock,
+			     char **buffer, unsigned int timeout,
+			     size_t *p_unread, bool *p_encrypted,
+			     size_t *p_len,
+			     uint32_t *seqnum,
+			     bool trusted_channel);
 
 /* The following definitions come from smbd/smb2_process.c  */
 
@@ -902,6 +910,14 @@ size_t srv_set_message(char *buf,
 		       bool zero);
 NTSTATUS read_packet_remainder(int fd, char *buffer,
 			       unsigned int timeout, ssize_t len);
+NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
+			    struct smbXsrv_connection *xconn,
+			    int sock,
+			    char **buffer, unsigned int timeout,
+			    size_t *p_unread, bool *p_encrypted,
+			    size_t *p_len,
+			    uint32_t *seqnum,
+			    bool trusted_channel);
 
 /* The following definitions come from smbd/quotas.c  */
 
