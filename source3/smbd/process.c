@@ -3136,7 +3136,9 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server("pthreadpool_tevent_init() failed.");
 	}
 
+#if defined(WITH_SMB1SERVER)
 	if (lp_server_max_protocol() >= PROTOCOL_SMB2_02) {
+#endif
 		/*
 		 * We're not making the decision here,
 		 * we're just allowing the client
@@ -3145,7 +3147,9 @@ void smbd_process(struct tevent_context *ev_ctx,
 		 * packet.
 		 */
 		sconn->using_smb2 = true;
+#if defined(WITH_SMB1SERVER)
 	}
+#endif
 
 	if (!interactive) {
 		smbd_setup_sig_term_handler(sconn);
@@ -3310,6 +3314,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	messaging_register(sconn->msg_ctx, NULL,
 			   MSG_DEBUG, debug_message);
 
+#if defined(WITH_SMB1SERVER)
 	if ((lp_keepalive() != 0)
 	    && !(event_add_idle(ev_ctx, NULL,
 				timeval_set(lp_keepalive(), 0),
@@ -3318,6 +3323,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		DEBUG(0, ("Could not add keepalive event\n"));
 		exit(1);
 	}
+#endif
 
 	if (!(event_add_idle(ev_ctx, NULL,
 			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
