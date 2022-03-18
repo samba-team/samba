@@ -53,6 +53,7 @@ EOF
 		sysvinit-*)
 			service "nfs" force-stopped
 			service "nfslock" force-stopped
+			service "nfs-kernel-server" force-stopped
 			;;
 		systemd-*)
 			service "nfs-server" force-stopped
@@ -132,7 +133,12 @@ guess_output ()
 		sysvinit-redhat)
 			echo "&Starting nfslock: OK"
 			;;
-		systemd-redhat)
+		sysvinit-debian)
+			cat <<EOF
+&Starting nfs-kernel-server: OK
+EOF
+			;;
+		systemd-*)
 			echo "&Starting rpc-statd: OK"
 			;;
 		esac
@@ -145,11 +151,23 @@ guess_output ()
 &Starting nfs: OK
 EOF
 			;;
+		sysvinit-debian)
+			cat <<EOF
+&Starting nfs-kernel-server: OK
+EOF
+			;;
 		systemd-redhat)
 			cat <<EOF
 &Starting rpc-statd: OK
 &Starting nfs-server: OK
 &Starting rpc-rquotad: OK
+EOF
+			;;
+		systemd-debian)
+			cat <<EOF
+&Starting rpc-statd: OK
+&Starting nfs-server: OK
+&Starting quotarpc: OK
 EOF
 			;;
 		esac
@@ -165,6 +183,13 @@ EOF
 		case "$CTDB_NFS_DISTRO_STYLE" in
 		systemd-redhat)
 			echo "Stopping rpc-rquotad: OK"
+			;;
+		systemd-debian)
+			if service "quotarpc" status >/dev/null; then
+				echo "Stopping quotarpc: OK"
+			else
+				echo "service: can't stop quotarpc - not running"
+			fi
 			;;
 		esac
 		;;
@@ -186,6 +211,9 @@ EOF
 		case "$CTDB_NFS_DISTRO_STYLE" in
 		systemd-redhat)
 			echo "&Starting rpc-rquotad: OK"
+			;;
+		systemd-debian)
+			echo "&Starting quotarpc: OK"
 			;;
 		esac
 		;;
