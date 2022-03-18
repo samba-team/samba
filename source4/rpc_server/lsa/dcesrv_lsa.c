@@ -664,8 +664,9 @@ static NTSTATUS dcesrv_lsa_QueryInfoPolicy2(struct dcesrv_call_state *dce_call, 
 		return NT_STATUS_OK;
 
 	case LSA_POLICY_INFO_DNS:
-	case LSA_POLICY_INFO_DNS_INT:
 		return dcesrv_lsa_info_DNS(state, mem_ctx, &info->dns);
+	case LSA_POLICY_INFO_DNS_INT:
+		return dcesrv_lsa_info_DNS(state, mem_ctx, &info->dns_int);
 
 	case LSA_POLICY_INFO_REPLICA:
 		ZERO_STRUCT(info->replica);

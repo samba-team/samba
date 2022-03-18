@@ -113,9 +113,17 @@ import "misc.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x06 */
+
+	typedef enum {
+		LSA_SECURITY_ANONYMOUS                  = 0,
+		LSA_SECURITY_IDENTIFICATION             = 1,
+		LSA_SECURITY_IMPERSONATION              = 2,
+		LSA_SECURITY_DELEGATION                 = 3
+	} lsa_SecurityImpersonationLevel;
+
 	typedef struct {
 		uint3264  len; /* ignored */
-		uint16  impersonation_level;
+		lsa_SecurityImpersonationLevel  impersonation_level;
 		uint8   context_mode;
 		uint8   effective_only;
 	} lsa_QosInfo;
@@ -412,7 +420,7 @@ import "misc.idl", "security.idl";
 		[case(LSA_POLICY_INFO_AUDIT_FULL_SET)]   lsa_AuditFullSetInfo   auditfullset;
 		[case(LSA_POLICY_INFO_AUDIT_FULL_QUERY)] lsa_AuditFullQueryInfo auditfullquery;
 		[case(LSA_POLICY_INFO_DNS)]              lsa_DnsDomainInfo      dns;
-		[case(LSA_POLICY_INFO_DNS_INT)]          lsa_DnsDomainInfo      dns;
+		[case(LSA_POLICY_INFO_DNS_INT)]          lsa_DnsDomainInfo      dns_int;
 		[case(LSA_POLICY_INFO_L_ACCOUNT_DOMAIN)] lsa_DomainInfo         l_account_domain;
 	} lsa_PolicyInformation;
 
@@ -1089,6 +1097,10 @@ import "misc.idl", "security.idl";
 	);
 
 	/* Function 0x35 */
+	typedef struct {
+		uint32 quality_of_service;
+	} lsa_DomainInfoQoS;
+
 	typedef [bitmap32bit] bitmap {
 		LSA_POLICY_KERBEROS_VALIDATE_CLIENT = 0x00000080
 	} lsa_krbAuthenticationOptions;
@@ -1110,25 +1122,27 @@ import "misc.idl", "security.idl";
 	} lsa_DomainInfoEfs;
 
 	typedef enum {
+		LSA_DOMAIN_INFO_POLICY_QOS=1,
 		LSA_DOMAIN_INFO_POLICY_EFS=2,
 		LSA_DOMAIN_INFO_POLICY_KERBEROS=3
 	} lsa_DomainInfoEnum;
 
-	typedef [switch_type(uint16)] union {
+	typedef [switch_type(lsa_DomainInfoEnum)] union {
+		[case(LSA_DOMAIN_INFO_POLICY_QOS)]	lsa_DomainInfoQoS	qos_info;
 		[case(LSA_DOMAIN_INFO_POLICY_EFS)]	lsa_DomainInfoEfs	efs_info;
 		[case(LSA_DOMAIN_INFO_POLICY_KERBEROS)]	lsa_DomainInfoKerberos	kerberos_info;
 	} lsa_DomainInformationPolicy;
 
 	NTSTATUS lsa_QueryDomainInformationPolicy(
 		[in]		policy_handle *handle,
-		[in] 		uint16 level,
+		[in] 		lsa_DomainInfoEnum level,
 		[out,ref,switch_is(level)]	lsa_DomainInformationPolicy **info
 		);
 
 	/* Function 0x36 */
 	NTSTATUS lsa_SetDomainInformationPolicy(
 		[in]		policy_handle *handle,
-		[in] 			uint16 level,
+		[in] 		lsa_DomainInfoEnum level,
 		[in,unique,switch_is(level)]	lsa_DomainInformationPolicy *info
 		);
 
