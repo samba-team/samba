@@ -3,10 +3,10 @@
 # Copyright (C) 2006-2008 Stefan Metzmacher
 
 if [ $# -lt 5 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_pkinit_pac.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX ENCTYPE
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
@@ -28,8 +28,8 @@ fi
 
 smbtorture4="$samba4bindir/smbtorture --basedir=$SELFTEST_TMPDIR"
 
-. `dirname $0`/subunit.sh
-. `dirname $0`/common_test_fns.inc
+. $(dirname $0)/subunit.sh
+. $(dirname $0)/common_test_fns.inc
 
 enctype="-e $ENCTYPE"
 unc="//$SERVER/tmp"
@@ -40,11 +40,11 @@ samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 rm -f $KRB5CCNAME_PATH
 
-USER_PRINCIPAL_NAME=`echo "${USERNAME}@${REALM}" | tr A-Z a-z`
+USER_PRINCIPAL_NAME=$(echo "${USERNAME}@${REALM}" | tr A-Z a-z)
 PKUSER="--pk-user=FILE:$PREFIX/pkinit/USER-${USER_PRINCIPAL_NAME}-cert.pem,$PREFIX/pkinit/USER-${USER_PRINCIPAL_NAME}-private-key.pem"
 
-testit "STEP1 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable --cache=$KRB5CCNAME $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
-testit "STEP1 remote.pac verification" $smbtorture4 ncacn_np:$SERVER rpc.pac --workgroup=$DOMAIN -U$USERNAME%$PASSWORD --option=torture:pkinit_ccache=$KRB5CCNAME || failed=`expr $failed + 1`
+testit "STEP1 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable --cache=$KRB5CCNAME $PKUSER $USERNAME@$REALM || failed=$((failed + 1))
+testit "STEP1 remote.pac verification" $smbtorture4 ncacn_np:$SERVER rpc.pac --workgroup=$DOMAIN -U$USERNAME%$PASSWORD --option=torture:pkinit_ccache=$KRB5CCNAME || failed=$((failed + 1))
 
 rm -f $KRB5CCNAME_PATH
 exit $failed
