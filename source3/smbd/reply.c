@@ -7499,8 +7499,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			 * We must set the archive bit on the newly renamed
 			 * file.
 			 */
-			ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
-			if (ret == 0) {
+			status = vfs_stat_fsp(fsp);
+			if (NT_STATUS_IS_OK(status)) {
 				uint32_t old_dosmode;
 				old_dosmode = fdos_mode(fsp);
 				/*
