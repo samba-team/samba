@@ -458,12 +458,12 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			 * Original code - this is an open file.
 			 */
 
-			if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
+			status = vfs_stat_fsp(fsp);
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(3,("smbd_smb2_setinfo_send: fstat "
 					 "of %s failed (%s)\n",
 					 fsp_fnum_dbg(fsp),
-					 strerror(errno)));
-				status = map_nt_error_from_unix(errno);
+					 nt_errstr(status)));
 				tevent_req_nterror(req, status);
 				return tevent_req_post(req, ev);
 			}
