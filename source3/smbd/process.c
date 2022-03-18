@@ -281,65 +281,6 @@ out:
 	return (ret > 0);
 }
 
-#if !defined(WITH_SMB1SERVER)
-static bool smb2_srv_send(struct smbXsrv_connection *xconn, char *buffer,
-			  bool do_signing, uint32_t seqnum,
-			  bool do_encrypt,
-			  struct smb_perfcount_data *pcd)
-{
-	size_t len = 0;
-	ssize_t ret;
-	char *buf_out = buffer;
-
-	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
-		/*
-		 * we're not supposed to do any io
-		 */
-		return true;
-	}
-
-	len = smb_len_large(buf_out) + 4;
-
-	ret = write_data(xconn->transport.sock, buf_out, len);
-	if (ret <= 0) {
-		int saved_errno = errno;
-		/*
-		 * Try and give an error message saying what
-		 * client failed.
-		 */
-		DEBUG(1,("pid[%d] Error writing %d bytes to client %s. %d. (%s)\n",
-			 (int)getpid(), (int)len,
-			 smbXsrv_connection_dbg(xconn),
-			 (int)ret, strerror(saved_errno)));
-		errno = saved_errno;
-
-		srv_free_enc_buffer(xconn, buf_out);
-		goto out;
-	}
-
-	SMB_PERFCOUNT_SET_MSGLEN_OUT(pcd, len);
-	srv_free_enc_buffer(xconn, buf_out);
-out:
-	SMB_PERFCOUNT_END(pcd);
-
-	return (ret > 0);
-}
-#endif
-
-bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
-		  bool do_signing, uint32_t seqnum,
-		  bool do_encrypt,
-		  struct smb_perfcount_data *pcd)
-{
-#if !defined(WITH_SMB1SERVER)
-	return smb2_srv_send(xconn, buffer, do_signing, seqnum,
-			     do_encrypt, pcd);
-#else
-	return smb1_srv_send(xconn, buffer, do_signing, seqnum,
-			     do_encrypt, pcd);
-#endif
-}
-
 /*******************************************************************
  Setup the word count and byte count for a smb message.
 ********************************************************************/

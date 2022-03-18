@@ -848,10 +848,6 @@ NTSTATUS make_default_filesystem_acl(
 
 /* The following definitions come from smbd/process.c  */
 
-bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
-		  bool no_signing, uint32_t seqnum,
-		  bool do_encrypt,
-		  struct smb_perfcount_data *pcd);
 bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 		   bool do_signing, uint32_t seqnum,
 		   bool do_encrypt,
@@ -897,6 +893,13 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  int sock_fd,
 		  bool interactive);
 bool fork_echo_handler(struct smbXsrv_connection *xconn);
+
+/* The following definitions come from smbd/smb2_process.c  */
+
+bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
+		  bool no_signing, uint32_t seqnum,
+		  bool do_encrypt,
+		  struct smb_perfcount_data *pcd);
 
 /* The following definitions come from smbd/quotas.c  */
 
