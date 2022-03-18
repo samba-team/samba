@@ -3449,7 +3449,9 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 	}
 
 	xconn->transport.sock = sock_fd;
+#if defined(WITH_SMB1SERVER)
 	smbd_echo_init(xconn);
+#endif
 	xconn->protocol = PROTOCOL_NONE;
 
 	/* Ensure child is set to blocking mode */
@@ -3591,10 +3593,12 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 	tmp = MAX(tmp, SMB_BUFFER_SIZE_MIN);
 	tmp = MIN(tmp, SMB_BUFFER_SIZE_MAX);
 
+#if defined(WITH_SMB1SERVER)
 	xconn->smb1.negprot.max_recv = tmp;
 
 	xconn->smb1.sessions.done_sesssetup = false;
 	xconn->smb1.sessions.max_send = SMB_BUFFER_SIZE_MAX;
+#endif
 
 	xconn->transport.fde = tevent_add_fd(client->raw_ev_ctx,
 					     xconn,
