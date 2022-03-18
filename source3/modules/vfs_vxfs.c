@@ -407,6 +407,7 @@ static bool vxfs_compare(struct files_struct *fsp,
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	char *existing_buf = NULL, *new_buf = NULL, *compact_buf = NULL;
 	int status;
+	NTSTATUS ntstatus;
 
 	DEBUG(10, ("vfs_vxfs: Getting existing ACL for %s\n", fsp_str_dbg(fsp)));
 
@@ -424,9 +425,10 @@ static bool vxfs_compare(struct files_struct *fsp,
 		goto out;
 	}
 
-	status = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
-	if (status == -1) {
+	ntstatus = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
 		DEBUG(10, ("vfs_vxfs: stat failed!\n"));
+		errno = map_errno_from_nt_status(ntstatus);
 		goto out;
 	}
 
