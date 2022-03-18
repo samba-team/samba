@@ -16,6 +16,10 @@ nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/var/lib/nfs/etab}"
 # test variable only.
 nfs_distro_style="${CTDB_NFS_DISTRO_STYLE:-systemd-redhat}"
 
+# As above, edit the default value below.  CTDB_SYS_ETCDIR is a
+# test variable only.
+etc_dir="${CTDB_SYS_ETCDIR:-/etc}"
+
 # A value of "AUTO" for any service means that service is usually
 # automatically started and stopped by one of the other services.
 # Such services will still be restarted by hand on failure, if
@@ -30,7 +34,7 @@ systemd-*)
 	nfs_mountd_service="nfs-mountd"
 	nfs_status_service="rpc-statd"
 	nfs_rquotad_service="rpc-rquotad"
-	nfs_config="/etc/sysconfig/nfs"
+	nfs_config="${etc_dir}/sysconfig/nfs"
 	nfs_rquotad_config="" # Not use with systemd, restart via service
 
 	case "$nfs_distro_style" in
@@ -54,7 +58,7 @@ sysvinit-*)
 	nfs_mountd_service="AUTO"
 	nfs_status_service="AUTO"
 	nfs_rquotad_service="AUTO"
-	nfs_config="/etc/sysconfig/nfs"
+	nfs_config="${etc_dir}/sysconfig/nfs"
 	nfs_rquotad_config="$nfs_config"
 
 	case "$nfs_distro_style" in
@@ -66,8 +70,8 @@ sysvinit-*)
 		;;
 	*-debian)
 		nfs_service="nfs-kernel-server"
-		nfs_config="/etc/default/nfs-kernel-server"
-		nfs_rquotad_config="/etc/default/quota"
+		nfs_config="${etc_dir}/default/nfs-kernel-server"
+		nfs_rquotad_config="${etc_dir}/default/quota"
 		;;
 	*)
 		echo "Internal error"
