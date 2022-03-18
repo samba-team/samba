@@ -779,9 +779,8 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	fsp_set_fd(fsp, fd);
 
 	if (fd != -1) {
-		ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
-		if (ret != 0) {
-			status = map_nt_error_from_unix(errno);
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
 		orig_fsp_name->st = fsp->fsp_name->st;
