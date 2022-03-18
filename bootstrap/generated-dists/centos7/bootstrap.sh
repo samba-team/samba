@@ -42,6 +42,7 @@ yum install -y \
     hostname \
     htop \
     jansson-devel \
+    jq \
     keyutils-libs-devel \
     krb5-devel \
     krb5-server \

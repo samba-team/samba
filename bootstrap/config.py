@@ -49,6 +49,7 @@ COMMON = [
     'gzip',
     'hostname',
     'htop',
+    'jq',
     'lcov',
     'make',
     'patch',

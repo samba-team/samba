@@ -39,6 +39,7 @@ zypper --non-interactive install \
     gzip \
     hostname \
     htop \
+    jq \
     keyutils-devel \
     krb5-client \
     krb5-devel \

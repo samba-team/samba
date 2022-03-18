@@ -35,6 +35,7 @@ apt-get -y install \
     heimdal-multidev \
     hostname \
     htop \
+    jq \
     krb5-config \
     krb5-kdc \
     krb5-user \
