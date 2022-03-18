@@ -3376,6 +3376,7 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 			return status;
 		}
 	} else {
+#if defined(WITH_SMB1SERVER)
 		status = smb1srv_session_table_init(conn);
 		if (!NT_STATUS_IS_OK(status)) {
 			conn->protocol = PROTOCOL_NONE;
@@ -3393,6 +3394,10 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 			conn->protocol = PROTOCOL_NONE;
 			return status;
 		}
+#else
+		conn->protocol = PROTOCOL_NONE;
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+#endif
 	}
 
 	set_Protocol(protocol);
