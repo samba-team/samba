@@ -305,7 +305,6 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	struct files_struct *fspcwd = NULL;
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
-	int ret;
 	int fd;
 
 	mode = 00400;
@@ -422,15 +421,13 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	}
 	fsp_set_fd(fsp, fd);
 
-	status = NT_STATUS_OK;
-	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
-	if (ret == -1) {
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
 		/* If we have an fd, this stat should succeed. */
 		DEBUG(0,("Error doing fstat on open file %s "
 			 "(%s)\n",
 			 smb_fname_str_dbg(smb_fname),
-			 strerror(errno) ));
-		status = map_nt_error_from_unix(errno);
+			 nt_errstr(status) ));
 	} else if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 		errno = EISDIR;
 		status = NT_STATUS_FILE_IS_A_DIRECTORY;
