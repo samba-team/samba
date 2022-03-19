@@ -40,7 +40,7 @@
 const struct ndr_interface_call *dcerpc_iface_find_call(const struct ndr_interface_table *iface,
 							const char *name)
 {
-	int i;
+	uint32_t i;
 	for (i=0;i<iface->num_calls;i++) {
 		if (strcmp(iface->calls[i].name, name) == 0) {
 			return &iface->calls[i];
@@ -168,7 +168,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *pipe_connect_req;
 	NTSTATUS status;
 	struct dcerpc_binding *epmapper_binding;
-	int i;
+	uint32_t i;
 
 	if (ev == NULL) {
 		return NULL;
