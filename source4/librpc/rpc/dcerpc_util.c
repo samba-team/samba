@@ -665,7 +665,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
   Receive result of authenticated bind request on dcerpc pipe
 
   This returns *p, which may be different to the one originally
-  supllied, as it rebinds to a new pipe due to authentication fallback
+  supplied, as it rebinds to a new pipe due to authentication fallback
 
 */
 NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c, TALLOC_CTX *mem_ctx, 
