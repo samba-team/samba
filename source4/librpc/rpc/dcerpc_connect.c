@@ -1036,8 +1036,9 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	s->pipe = dcerpc_pipe_init(c, ev);
 	if (composite_nomem(s->pipe, c)) return c;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		s->pipe->conn->packet_log_dir = lpcfg_lock_directory(lp_ctx);
+	}
 
 	/* store parameters in state structure */
 	s->binding      = dcerpc_binding_dup(s, binding);
