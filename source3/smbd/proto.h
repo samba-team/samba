@@ -1096,14 +1096,6 @@ NTSTATUS get_ea_names_from_fsp(TALLOC_CTX *mem_ctx,
 			size_t *pnum_names);
 NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		struct ea_list *ea_list);
-void send_trans2_replies(connection_struct *conn,
-			struct smb_request *req,
-			NTSTATUS status,
-			 const char *params,
-			 int paramsize,
-			 const char *pdata,
-			 int datasize,
-			 int max_data_bytes);
 unsigned char *create_volume_objectid(connection_struct *conn, unsigned char objid[16]);
 NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		connection_struct *conn,

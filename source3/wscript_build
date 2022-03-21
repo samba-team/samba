@@ -613,6 +613,7 @@ if bld.CONFIG_SET('WITH_SMB1SERVER'):
                    smbd/smb1_service.c
                    smbd/smb1_signing.c
                    smbd/smb1_process.c
+                   smbd/smb1_trans2.c
     '''
 else:
     SMB1_SOURCES = ''
