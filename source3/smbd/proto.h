@@ -870,10 +870,6 @@ bool smb1_parse_chain(TALLOC_CTX *mem_ctx, const uint8_t *buf,
 		      bool encrypted, uint32_t seqnum,
 		      struct smb_request ***reqs, unsigned *num_reqs);
 bool req_is_in_chain(const struct smb_request *req);
-void smbd_process(struct tevent_context *ev_ctx,
-		  struct messaging_context *msg_ctx,
-		  int sock_fd,
-		  bool interactive);
 bool fork_echo_handler(struct smbXsrv_connection *xconn);
 NTSTATUS smb1_receive_talloc(TALLOC_CTX *mem_ctx,
 			     struct smbXsrv_connection *xconn,
@@ -899,6 +895,7 @@ void construct_reply(struct smbXsrv_connection *xconn,
 		     struct smb_perfcount_data *deferred_pcd);
 void smbd_smb1_server_connection_read_handler(struct smbXsrv_connection *xconn,
 					      int fd);
+bool keepalive_fn(const struct timeval *now, void *private_data);
 
 /* The following definitions come from smbd/smb2_process.c  */
 
@@ -941,6 +938,10 @@ void process_smb(struct smbXsrv_connection *xconn,
 		 uint8_t *inbuf, size_t nread, size_t unread_bytes,
 		 uint32_t seqnum, bool encrypted,
 		 struct smb_perfcount_data *deferred_pcd);
+void smbd_process(struct tevent_context *ev_ctx,
+		  struct messaging_context *msg_ctx,
+		  int sock_fd,
+		  bool interactive);
 
 /* The following definitions come from smbd/quotas.c  */
 
