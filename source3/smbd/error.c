@@ -78,7 +78,11 @@ void error_packet_set(char *outbuf, uint8_t eclass, uint32_t ecode, NTSTATUS nts
 		DEBUG(3,("NT error packet at %s(%d) cmd=%d (%s) %s\n",
 			 file, line,
 			 (int)CVAL(outbuf,smb_com),
+#if defined(WITH_SMB1SERVER)
 			 smb_fn_name(CVAL(outbuf,smb_com)),
+#else
+			 "",
+#endif
 			 nt_errstr(ntstatus)));
 	} else {
 		/* We're returning a DOS error only,
@@ -99,7 +103,11 @@ void error_packet_set(char *outbuf, uint8_t eclass, uint32_t ecode, NTSTATUS nts
 		DEBUG(3,("DOS error packet at %s(%d) cmd=%d (%s) eclass=%d ecode=%d\n",
 			  file, line,
 			  (int)CVAL(outbuf,smb_com),
+#if defined(WITH_SMB1SERVER)
 			  smb_fn_name(CVAL(outbuf,smb_com)),
+#else
+			  "",
+#endif
 			  eclass,
 			  ecode));
 	}
