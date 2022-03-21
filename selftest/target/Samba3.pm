@@ -1697,6 +1697,11 @@ sub setup_fileserver
 	my $virusfilter_sharedir="$share_dir/virusfilter";
 	push(@dirs,$virusfilter_sharedir);
 
+	my $delete_unwrite_sharedir="$share_dir/delete_unwrite";
+	push(@dirs,$delete_unwrite_sharedir);
+	push(@dirs, "$delete_unwrite_sharedir/delete_veto_yes");
+	push(@dirs, "$delete_unwrite_sharedir/delete_veto_no");
+
 	my $ip4 = Samba::get_ipv4_addr("FILESERVER");
 	my $fileserver_options = "
 	kernel change notify = yes
@@ -1821,6 +1826,18 @@ sub setup_fileserver
 	path = $veto_sharedir
 	delete veto files = yes
 
+[delete_yes_unwrite]
+	read only = no
+	path = $delete_unwrite_sharedir
+	hide unwriteable files = yes
+	delete veto files = yes
+
+[delete_no_unwrite]
+	read only = no
+	path = $delete_unwrite_sharedir
+	hide unwriteable files = yes
+	delete veto files = no
+
 [virusfilter]
 	path = $virusfilter_sharedir
 	vfs objects = acl_xattr virusfilter
@@ -1906,6 +1923,14 @@ sub setup_fileserver
 	## create a valid utf8 filename which is invalid as a CP850 conversion
 	##
 	create_file_chmod("$bad_iconv_sharedir/\xED\x9F\xBF", 0644) or return undef;
+
+	##
+	## create unwritable files inside inside the delete unwrite veto share dirs.
+	##
+	unlink("$delete_unwrite_sharedir/delete_veto_yes/file_444");
+	create_file_chmod("$delete_unwrite_sharedir/delete_veto_yes/file_444", 0444) or return undef;
+	unlink("$delete_unwrite_sharedir/delete_veto_no/file_444");
+	create_file_chmod("$delete_unwrite_sharedir/delete_veto_no/file_444", 0444) or return undef;
 
 	return $vars;
 }
