@@ -2529,6 +2529,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		}
 
 
+#if defined(WITH_SMB1SERVER)
 		/*
 		 * Query the version and capabilities of the CIFS UNIX extensions
 		 * in use.
@@ -2581,6 +2582,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					CIFS_UNIX_LARGE_WRITE_CAP : 0))));
 			break;
 		}
+#endif
 
 		case SMB_QUERY_POSIX_FS_INFO:
 		{
