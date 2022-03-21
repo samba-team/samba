@@ -636,7 +636,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/smb2_nttrans.c
                           smbd/smb2_pipes.c
                           smbd/smb2_reply.c
-                          smbd/trans2.c
+                          smbd/smb2_trans2.c
                           smbd/uid.c
                           smbd/dosmode.c
                           smbd/filename.c
