@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/ndr_smb2_lease_struct.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "messages.h"
+#include "lib/util_ea.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2

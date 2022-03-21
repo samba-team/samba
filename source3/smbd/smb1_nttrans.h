@@ -19,7 +19,6 @@
 */
 
 void reply_ntcreate_and_X(struct smb_request *req);
-struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size);
 void reply_ntcancel(struct smb_request *req);
 void reply_ntrename(struct smb_request *req);
 void reply_nttrans(struct smb_request *req);
