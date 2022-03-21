@@ -15343,6 +15343,14 @@ static struct {
 		.fn    = run_delete_on_close_non_empty,
 	},
 	{
+		.name  = "SMB2-DEL-ON-CLOSE-NONWRITE-DELETE-YES",
+		.fn    = run_delete_on_close_nonwrite_delete_yes_test,
+	},
+	{
+		.name  = "SMB2-DEL-ON-CLOSE-NONWRITE-DELETE-NO",
+		.fn    = run_delete_on_close_nonwrite_delete_no_test,
+	},
+	{
 		.name  = "CLEANUP1",
 		.fn    = run_cleanup1,
 	},

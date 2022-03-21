@@ -122,6 +122,8 @@ bool run_smb2_quota1(int dummy);
 bool run_smb2_stream_acl(int dummy);
 bool run_list_dir_async_test(int dummy);
 bool run_delete_on_close_non_empty(int dummy);
+bool run_delete_on_close_nonwrite_delete_yes_test(int dummy);
+bool run_delete_on_close_nonwrite_delete_no_test(int dummy);
 bool run_chain3(int dummy);
 bool run_local_conv_auth_info(int dummy);
 bool run_local_sprintf_append(int dummy);

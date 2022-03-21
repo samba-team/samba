@@ -3364,3 +3364,247 @@ bool run_delete_on_close_non_empty(int dummy)
 	(void)cli_rmdir(cli, dname);
 	return ret;
 }
+
+static NTSTATUS check_empty_fn(struct file_info *finfo,
+				const char *mask,
+				void *private_data)
+{
+	unsigned int *pcount = (unsigned int *)private_data;
+
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
+		(*pcount)++;
+		return NT_STATUS_OK;
+	}
+	return NT_STATUS_DIRECTORY_NOT_EMPTY;
+}
+
+/*
+ * Test setting the delete on close bit on a directory
+ * containing an unwritable file fails or succeeds
+ * an a share set with "hide unwritable = yes"
+ * depending on the setting of "delete veto files".
+ * BUG: https://bugzilla.samba.org/show_bug.cgi?id=15023
+ *
+ * First version. With "delete veto files = yes"
+ * setting the delete on close should succeed.
+ */
+
+bool run_delete_on_close_nonwrite_delete_yes_test(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	const char *dname = "delete_veto_yes";
+	const char *list_dname = "delete_veto_yes\\*";
+	uint16_t fnum = (uint16_t)-1;
+	bool ret = false;
+	unsigned int list_count = 0;
+
+	printf("SMB2 delete on close nonwrite - delete veto yes\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	/* Ensure target directory is seen as empty. */
+	status = cli_list(cli,
+			list_dname,
+			FILE_ATTRIBUTE_DIRECTORY |
+				FILE_ATTRIBUTE_HIDDEN |
+				FILE_ATTRIBUTE_SYSTEM,
+			check_empty_fn,
+			&list_count);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_list of %s returned %s\n",
+			dname,
+			nt_errstr(status));
+		return false;
+	}
+	if (list_count != 2) {
+		printf("cli_list of %s returned a count of %u\n",
+			dname,
+			list_count);
+		return false;
+	}
+
+	/* Open target directory. */
+	status = cli_ntcreate(cli,
+				dname,
+				0,
+				DELETE_ACCESS|FILE_READ_DATA,
+				FILE_ATTRIBUTE_DIRECTORY,
+				FILE_SHARE_READ|
+					FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_OPEN,
+				FILE_DIRECTORY_FILE,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_ntcreate for directory %s returned %s\n",
+				dname,
+				nt_errstr(status));
+		goto out;
+	}
+
+	/* Now set the delete on close bit. */
+	status = cli_nt_delete_on_close(cli, fnum, 1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_cli_nt_delete_on_close set for directory "
+			"%s returned %s (should have succeeded)\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	ret = true;
+
+  out:
+
+	if (fnum != (uint16_t)-1) {
+		(void)cli_nt_delete_on_close(cli, fnum, 0);
+		(void)cli_close(cli, fnum);
+	}
+	return ret;
+}
+
+/*
+ * Test setting the delete on close bit on a directory
+ * containing an unwritable file fails or succeeds
+ * an a share set with "hide unwritable = yes"
+ * depending on the setting of "delete veto files".
+ * BUG: https://bugzilla.samba.org/show_bug.cgi?id=15023
+ *
+ * Second version. With "delete veto files = no"
+ * setting the delete on close should fail.
+ */
+
+bool run_delete_on_close_nonwrite_delete_no_test(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	const char *dname = "delete_veto_no";
+	const char *list_dname = "delete_veto_no\\*";
+	uint16_t fnum = (uint16_t)-1;
+	bool ret = false;
+	unsigned int list_count = 0;
+
+	printf("SMB2 delete on close nonwrite - delete veto yes\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	/* Ensure target directory is seen as empty. */
+	status = cli_list(cli,
+			list_dname,
+			FILE_ATTRIBUTE_DIRECTORY |
+				FILE_ATTRIBUTE_HIDDEN |
+				FILE_ATTRIBUTE_SYSTEM,
+			check_empty_fn,
+			&list_count);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_list of %s returned %s\n",
+			dname,
+			nt_errstr(status));
+		return false;
+	}
+	if (list_count != 2) {
+		printf("cli_list of %s returned a count of %u\n",
+			dname,
+			list_count);
+		return false;
+	}
+
+	/* Open target directory. */
+	status = cli_ntcreate(cli,
+				dname,
+				0,
+				DELETE_ACCESS|FILE_READ_DATA,
+				FILE_ATTRIBUTE_DIRECTORY,
+				FILE_SHARE_READ|
+					FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_OPEN,
+				FILE_DIRECTORY_FILE,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_ntcreate for directory %s returned %s\n",
+				dname,
+				nt_errstr(status));
+		goto out;
+	}
+
+	/* Now set the delete on close bit. */
+	status = cli_nt_delete_on_close(cli, fnum, 1);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("cli_cli_nt_delete_on_close set for directory "
+			"%s returned NT_STATUS_OK "
+			"(should have failed)\n",
+			dname);
+		goto out;
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
+		printf("cli_cli_nt_delete_on_close set for directory "
+			"%s returned %s "
+			"(should have returned "
+			"NT_STATUS_DIRECTORY_NOT_EMPTY)\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	ret = true;
+
+  out:
+
+	if (fnum != (uint16_t)-1) {
+		(void)cli_nt_delete_on_close(cli, fnum, 0);
+		(void)cli_close(cli, fnum);
+	}
+	return ret;
+}

@@ -271,7 +271,35 @@ plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-DEL-ON-CLOSE-NONEMPTY",
                 "",
                 "-l $LOCAL_PATH"])
 
+#
+# SMB2-DEL-ON-CLOSE-NONWRITE-DELETE-YES needs to run against a special fileserver share delete_yes_unwrite
+#
+plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-DEL-ON-CLOSE-NONWRITE-DELETE-YES",
+                "fileserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'SMB2-DEL-ON-CLOSE-NONWRITE-DELETE-YES',
+                '//$SERVER_IP/delete_yes_unwrite',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "",
+                "-l $LOCAL_PATH"])
 
+#
+# SMB2-DEL-ON-CLOSE-NONWRITE-DELETE-NO needs to run against a special fileserver share delete_no_unwrite
+#
+plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-DEL-ON-CLOSE-NONWRITE-DELETE-NO",
+                "fileserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'SMB2-DEL-ON-CLOSE-NONWRITE-DELETE-NO',
+                '//$SERVER_IP/delete_no_unwrite',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "",
+                "-l $LOCAL_PATH"])
 
 shares = [
     "vfs_aio_pthread_async_dosmode_default1",
