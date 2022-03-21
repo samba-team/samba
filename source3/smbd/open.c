@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "smb1_utils.h"
 #include "system/filesys.h"
 #include "lib/util/server_id.h"
 #include "printing.h"

@@ -47,7 +47,6 @@
 #include "libcli/smb/smb_signing.h"
 #include "lib/util/sys_rw_data.h"
 #include "librpc/gen_ndr/open_files.h"
-#include "smb1_utils.h"
 #include "libcli/smb/smb2_posix.h"
 #include "lib/util/string_wrappers.h"
 #include "source3/printing/rap_jobid.h"

@@ -40,6 +40,7 @@ struct dptr_struct;
 #include "smbd/smb1_service.h"
 #include "smbd/smb1_signing.h"
 #include "smbd/smb1_process.h"
+#include "smbd/smb1_utils.h"
 #endif
 
 struct trans_state {

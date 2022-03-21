@@ -46,7 +46,6 @@
 #include "util_event.h"
 #include "libcli/smb/smbXcli_base.h"
 #include "lib/util/time_basic.h"
-#include "smb1_utils.h"
 #include "source3/lib/substitute.h"
 
 /* Internal message queue for deferred opens. */
