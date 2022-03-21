@@ -6695,6 +6695,7 @@ static NTSTATUS smbd_do_posix_setfilepathinfo(struct connection_struct *conn,
 		}
 #endif
 
+#if defined(WITH_SMB1SERVER)
 		case SMB_SET_POSIX_LOCK:
 		{
 			if (fsp == NULL) {
@@ -6704,6 +6705,7 @@ static NTSTATUS smbd_do_posix_setfilepathinfo(struct connection_struct *conn,
 						    pdata, total_data, fsp);
 			break;
 		}
+#endif
 
 		case SMB_POSIX_PATH_OPEN:
 		{
