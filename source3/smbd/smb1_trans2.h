@@ -37,5 +37,4 @@ NTSTATUS smb_set_posix_lock(connection_struct *conn,
 			    int total_data,
 			    files_struct *fsp);
 void reply_trans2(struct smb_request *req);
-void handle_trans2(connection_struct *conn, struct smb_request *req,
-		   struct trans_state *state);
+void reply_transs2(struct smb_request *req);

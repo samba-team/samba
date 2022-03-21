@@ -1110,7 +1110,6 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   bool setting_write_time);
 void reply_findclose(struct smb_request *req);
 void reply_findnclose(struct smb_request *req);
-void reply_transs2(struct smb_request *req);
 
 enum perm_type {
 	PERM_NEW_FILE,
