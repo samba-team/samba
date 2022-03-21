@@ -37,7 +37,6 @@
 #include "librpc/rpc/dcerpc_proto.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "libcli/raw/smb.h"
-#include "../libcli/named_pipe_auth/npa_tstream.h"
 #include "samba/process_model.h"
 
 static void skip_become_root(void)
