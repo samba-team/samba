@@ -1,16 +1,10 @@
-Release Announcements
-=====================
+                   ==============================
+                   Release Notes for Samba 4.16.0
+                           March 21, 2022
+                   ==============================
 
-This is the fifth release candidate of Samba 4.16.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.16 will be the next version of the Samba suite.
-
-
-UPGRADING
-=========
+This is the first stable release of the Samba 4.16 release series.
+Please read the release notes carefully before upgrading.
 
 
 NEW FEATURES/CHANGES
@@ -260,6 +254,42 @@ smb.conf changes
   rpc_daemon                              Removed
   rpc_server                              Removed
   rpc start on demand helpers             Added           true
+
+
+CHANGES SINCE 4.16.0rc5
+=======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15000: Memory leak in FAST cookie handling.
+
+o  Elia Geretto <elia.f.geretto@gmail.com>
+   * BUG 14983: NT_STATUS_ACCESS_DENIED translates into EPERM instead of EACCES
+     in SMBC_server_internal.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13879: Simple bind doesn't work against an RODC (with non-preloaded
+     users).
+   * BUG 14641: Crash of winbind on RODC.
+   * BUG 15001: LDAP simple binds should honour "old password allowed period".
+   * BUG 15002: S4U2Self requests don't work against servers without FAST
+     support.
+   * BUG 15003: wbinfo -a doesn't work reliable with upn names.
+   * BUG 15005: A cross-realm kerberos client exchanges fail using KDCs with and
+     without FAST.
+   * BUG 15015: PKINIT: hdb_samba4_audit: Unhandled hdb_auth_status=9 =>
+     INTERNAL_ERROR.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 13879: Simple bind doesn't work against an RODC (with non-preloaded
+     users).
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15016: Regression: create krb5 conf = yes doesn't work with a single
+     KDC.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15015: PKINIT: hdb_samba4_audit: Unhandled hdb_auth_status=9 =>
+     INTERNAL_ERROR.
 
 
 CHANGES SINCE 4.16.0rc4
