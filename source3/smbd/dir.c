@@ -2029,11 +2029,17 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 		}
 
 		if (!is_visible_fsp(direntry_fname->fsp)) {
-			TALLOC_FREE(talloced);
-			TALLOC_FREE(fullname);
-			TALLOC_FREE(smb_dname_full);
-			TALLOC_FREE(direntry_fname);
-			continue;
+			/*
+			 * Hidden file.
+			 * Allow if "delete veto files = yes"
+			 */
+			if (lp_delete_veto_files(SNUM(conn))) {
+				TALLOC_FREE(talloced);
+				TALLOC_FREE(fullname);
+				TALLOC_FREE(smb_dname_full);
+				TALLOC_FREE(direntry_fname);
+				continue;
+			}
 		}
 
 		TALLOC_FREE(talloced);
