@@ -151,7 +151,9 @@ static const char *smb_subop_name(int op, int subop)
 static void perfcount_test_dump_counter(struct perfcount_test_counter *ptc,
 					int lvl)
 {
+#if defined(WITH_SMB1SERVER)
 	DEBUG(lvl, ("OP: %s\n", smb_fn_name(ptc->op)));
+#endif
 	if (ptc->sub_op > 0) {
 		DEBUG(lvl, ("SUBOP: %s\n",
 			smb_subop_name(ptc->op, ptc->sub_op)));
