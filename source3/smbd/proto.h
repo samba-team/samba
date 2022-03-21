@@ -1110,7 +1110,6 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   bool setting_write_time);
 void reply_findclose(struct smb_request *req);
 void reply_findnclose(struct smb_request *req);
-void reply_trans2(struct smb_request *req);
 void reply_transs2(struct smb_request *req);
 
 enum perm_type {
@@ -1125,6 +1124,13 @@ NTSTATUS unix_perms_from_wire(connection_struct *conn,
 			      uint32_t perms,
 			      enum perm_type ptype,
 			      mode_t *ret_perms);
+struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata,
+			     size_t data_size);
+unsigned int estimate_ea_size(files_struct *fsp);
+NTSTATUS smb_set_fsquota(connection_struct *conn,
+			 struct smb_request *req,
+			 files_struct *fsp,
+			 const DATA_BLOB *qdata);
 
 /* The following definitions come from smbd/uid.c  */
 
