@@ -31,3 +31,8 @@ void send_trans2_replies(connection_struct *conn,
 			 const char *pdata,
 			 int datasize,
 			 int max_data_bytes);
+NTSTATUS smb_set_posix_lock(connection_struct *conn,
+			    struct smb_request *req,
+			    const char *pdata,
+			    int total_data,
+			    files_struct *fsp);
