@@ -1478,7 +1478,7 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 	char buf[PATH_MAX];
 	const char *p = NULL;
 	struct gpfs_iattr64 iattr = { };
-	unsigned int litemask;
+	unsigned int litemask = 0;
 	struct timespec ts;
 	uint64_t file_id;
 	NTSTATUS status;
@@ -1984,7 +1984,7 @@ static int vfs_gpfs_check_pathref_fstat_x(struct gpfs_config_data *config,
 					  struct connection_struct *conn)
 {
 	struct gpfs_iattr64 iattr = {0};
-	unsigned int litemask;
+	unsigned int litemask = 0;
 	int saved_errno;
 	int fd;
 	int ret;
