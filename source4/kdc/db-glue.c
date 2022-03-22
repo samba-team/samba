@@ -416,7 +416,7 @@ out:
 
 static int samba_kdc_set_random_keys(krb5_context context,
 				     struct samba_kdc_db_context *kdc_db_ctx,
-				     struct sdb_entry_ex *entry_ex,
+				     struct sdb_keys *keys,
 				     bool is_protected)
 {
 	struct ldb_val secret_val;
@@ -436,7 +436,7 @@ static int samba_kdc_set_random_keys(krb5_context context,
 	return samba_kdc_set_fixed_keys(context, kdc_db_ctx,
 					&secret_val,
 					is_protected,
-					&entry_ex->entry.keys);
+					keys);
 }
 
 
@@ -528,7 +528,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	    && (userAccountControl & UF_SMARTCARD_REQUIRED)) {
 		ret = samba_kdc_set_random_keys(context,
 						kdc_db_ctx,
-						entry_ex,
+						&entry->keys,
 						is_protected);
 
 		*supported_enctypes_out = supported_enctypes;
