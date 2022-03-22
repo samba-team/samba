@@ -336,12 +336,10 @@ static void samba_kdc_sort_keys(struct sdb_keys *keys)
 }
 
 int samba_kdc_set_fixed_keys(krb5_context context,
-			     struct samba_kdc_db_context *kdc_db_ctx,
 			     const struct ldb_val *secretbuffer,
-			     bool is_protected,
+			     uint32_t supported_enctypes,
 			     struct sdb_keys *keys)
 {
-	uint32_t supported_enctypes = ENC_ALL_TYPES;
 	uint16_t allocated_keys = 0;
 	int ret;
 
@@ -352,10 +350,6 @@ int samba_kdc_set_fixed_keys(krb5_context context,
 		memset(secretbuffer->data, 0, secretbuffer->length);
 		ret = ENOMEM;
 		goto out;
-	}
-
-	if (is_protected) {
-		supported_enctypes &= ~ENC_RC4_HMAC_MD5;
 	}
 
 	if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
@@ -419,8 +413,13 @@ static int samba_kdc_set_random_keys(krb5_context context,
 				     struct sdb_keys *keys,
 				     bool is_protected)
 {
+	uint32_t supported_enctypes = ENC_ALL_TYPES;
 	struct ldb_val secret_val;
 	uint8_t secretbuffer[32];
+
+	if (is_protected) {
+		supported_enctypes &= ~ENC_RC4_HMAC_MD5;
+	}
 
 	/*
 	 * Fake keys until we have a better way to reject
@@ -433,9 +432,9 @@ static int samba_kdc_set_random_keys(krb5_context context,
 
 	secret_val = data_blob_const(secretbuffer,
 				     sizeof(secretbuffer));
-	return samba_kdc_set_fixed_keys(context, kdc_db_ctx,
+	return samba_kdc_set_fixed_keys(context,
 					&secret_val,
-					is_protected,
+					supported_enctypes,
 					keys);
 }
 

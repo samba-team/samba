@@ -26,9 +26,8 @@ struct sdb_entry;
 
 
 int samba_kdc_set_fixed_keys(krb5_context context,
-			     struct samba_kdc_db_context *kdc_db_ctx,
 			     const struct ldb_val *secretbuffer,
-			     bool is_protected,
+			     uint32_t supported_enctypes,
 			     struct sdb_keys *keys);
 
 krb5_error_code samba_kdc_fetch(krb5_context context,
