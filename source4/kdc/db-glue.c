@@ -904,21 +904,6 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	}
 	entry->kvno = returned_kvno;
 
-	if (entry->keys.len == 0) {
-		if (kdc_db_ctx->rodc) {
-			/* We are on an RODC, but don't have keys for this account.  Signal this to the caller */
-			auth_sam_trigger_repl_secret(kdc_db_ctx, kdc_db_ctx->msg_ctx,
-						     kdc_db_ctx->ev_ctx, msg->dn);
-			return SDB_ERR_NOT_FOUND_HERE;
-		}
-
-		/*
-		 * oh, no password.  Apparently (comment in
-		 * hdb-ldap.c) this violates the ASN.1, but this
-		 * allows an entry with no keys (yet).
-		 */
-	}
-
 out:
 	return ret;
 }
@@ -1419,6 +1404,26 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	if (ret) {
 		/* Could be bogus data in the entry, or out of memory */
 		goto out;
+	}
+
+	if (entry->keys.len == 0) {
+		if (kdc_db_ctx->rodc) {
+			/*
+			 * We are on an RODC, but don't have keys for this
+			 * account.  Signal this to the caller
+			 */
+			auth_sam_trigger_repl_secret(kdc_db_ctx,
+						     kdc_db_ctx->msg_ctx,
+						     kdc_db_ctx->ev_ctx,
+						     msg->dn);
+			return SDB_ERR_NOT_FOUND_HERE;
+		}
+
+		/*
+		 * oh, no password.  Apparently (comment in
+		 * hdb-ldap.c) this violates the ASN.1, but this
+		 * allows an entry with no keys (yet).
+		 */
 	}
 
 	p->msg = talloc_steal(p, msg);
