@@ -298,14 +298,6 @@ error:
 	return rc;
 }
 
-static int samba_kdc_hdb_entry_destructor(struct samba_kdc_entry *p)
-{
-	hdb_entry *entry_ex = p->entry_ex;
-	free_hdb_entry(entry_ex);
-
-	return 0;
-}
-
 int sdb_entry_ex_to_hdb_entry_ex(krb5_context context,
 				 const struct sdb_entry_ex *s,
 				 hdb_entry *h)
@@ -323,9 +315,6 @@ int sdb_entry_ex_to_hdb_entry_ex(krb5_context context,
 		skdc_entry = talloc_get_type(s->ctx, struct samba_kdc_entry);
 
 		h->context = skdc_entry;
-
-		talloc_set_destructor(skdc_entry,
-				      samba_kdc_hdb_entry_destructor);
 	}
 
 	return 0;

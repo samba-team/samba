@@ -252,11 +252,6 @@ static struct SDBFlags uf2SDBFlags(krb5_context context, uint32_t userAccountCon
 
 static int samba_kdc_entry_destructor(struct samba_kdc_entry *p)
 {
-	if (p->entry_ex != NULL) {
-		struct sdb_entry_ex *entry_ex = p->entry_ex;
-		sdb_free_entry(entry_ex);
-	}
-
 	return 0;
 }
 

@@ -312,34 +312,6 @@ static int sdb_entry_ex_to_krb5_db_entry(krb5_context context,
 	return 0;
 }
 
-static int samba_kdc_kdb_entry_destructor(struct samba_kdc_entry *p)
-{
-	krb5_db_entry *entry_ex = p->entry_ex;
-	krb5_error_code ret;
-	krb5_context context;
-
-	if (entry_ex->e_data != NULL) {
-		struct samba_kdc_entry *skdc_entry;
-
-		skdc_entry = talloc_get_type(entry_ex->e_data,
-					     struct samba_kdc_entry);
-		talloc_set_destructor(skdc_entry, NULL);
-		entry_ex->e_data = NULL;
-	}
-
-	ret = smb_krb5_init_context_common(&context);
-	if (ret) {
-		DBG_ERR("kerberos init context failed (%s)\n",
-			error_message(ret));
-		return ret;
-	}
-
-	krb5_db_free_principal(context, entry_ex);
-	krb5_free_context(context);
-
-	return 0;
-}
-
 int sdb_entry_ex_to_kdb_entry_ex(krb5_context context,
 				 const struct sdb_entry_ex *s,
 				 krb5_db_entry *k)
@@ -357,9 +329,6 @@ int sdb_entry_ex_to_kdb_entry_ex(krb5_context context,
 		skdc_entry = talloc_get_type(s->ctx, struct samba_kdc_entry);
 
 		k->e_data	= (void *)skdc_entry;
-
-		talloc_set_destructor(skdc_entry,
-				      samba_kdc_kdb_entry_destructor);
 	}
 
 	return 0;
