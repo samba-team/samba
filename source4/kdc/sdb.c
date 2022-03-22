@@ -47,6 +47,7 @@ void sdb_free_entry(struct sdb_entry_ex *ent)
 	}
 
 	free_sdb_entry(&ent->entry);
+	ZERO_STRUCTP(ent);
 }
 
 static void free_sdb_key(struct sdb_key *k)
