@@ -703,7 +703,7 @@ int rep_strerror_r(int errnum, char *buf, size_t buflen);
 #ifdef HAVE__Bool
 #define bool _Bool
 #else
-typedef int bool;
+#error Need a real boolean type
 #endif
 #endif
 

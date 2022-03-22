@@ -31,7 +31,7 @@
 #ifdef HAVE__Bool
 #define bool _Bool
 #else
-typedef int bool;
+#error Need a real boolean type
 #endif
 #endif
 
