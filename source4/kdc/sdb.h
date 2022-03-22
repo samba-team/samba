@@ -131,6 +131,7 @@ struct sdb_entry_ex {
 void sdb_free_entry(struct sdb_entry_ex *e);
 void sdb_key_free(struct sdb_key *key);
 void sdb_keys_free(struct sdb_keys *keys);
+void sdb_entry_free(struct sdb_entry *e);
 struct SDBFlags int2SDBFlags(unsigned n);
 
 #endif /* _KDC_SDB_H_ */
