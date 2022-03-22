@@ -339,16 +339,16 @@ int samba_kdc_set_fixed_keys(krb5_context context,
 			     struct samba_kdc_db_context *kdc_db_ctx,
 			     const struct ldb_val *secretbuffer,
 			     bool is_protected,
-			     struct sdb_entry_ex *entry_ex)
+			     struct sdb_keys *keys)
 {
 	uint32_t supported_enctypes = ENC_ALL_TYPES;
 	uint16_t allocated_keys = 0;
 	int ret;
 
 	allocated_keys = 3;
-	entry_ex->entry.keys.len = 0;
-	entry_ex->entry.keys.val = calloc(allocated_keys, sizeof(struct sdb_key));
-	if (entry_ex->entry.keys.val == NULL) {
+	keys->len = 0;
+	keys->val = calloc(allocated_keys, sizeof(struct sdb_key));
+	if (keys->val == NULL) {
 		memset(secretbuffer->data, 0, secretbuffer->length);
 		ret = ENOMEM;
 		goto out;
@@ -371,8 +371,8 @@ int samba_kdc_set_fixed_keys(krb5_context context,
 			goto out;
 		}
 
-		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-		entry_ex->entry.keys.len++;
+		keys->val[keys->len] = key;
+		keys->len++;
 	}
 
 	if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
@@ -388,8 +388,8 @@ int samba_kdc_set_fixed_keys(krb5_context context,
 			goto out;
 		}
 
-		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-		entry_ex->entry.keys.len++;
+		keys->val[keys->len] = key;
+		keys->len++;
 	}
 
 	if (supported_enctypes & ENC_RC4_HMAC_MD5) {
@@ -405,8 +405,8 @@ int samba_kdc_set_fixed_keys(krb5_context context,
 			goto out;
 		}
 
-		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-		entry_ex->entry.keys.len++;
+		keys->val[keys->len] = key;
+		keys->len++;
 	}
 	ret = 0;
 out:
@@ -436,7 +436,7 @@ static int samba_kdc_set_random_keys(krb5_context context,
 	return samba_kdc_set_fixed_keys(context, kdc_db_ctx,
 					&secret_val,
 					is_protected,
-					entry_ex);
+					&entry_ex->entry.keys);
 }
 
 

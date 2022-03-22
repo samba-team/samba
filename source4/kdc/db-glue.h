@@ -21,6 +21,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+struct sdb_keys;
 struct sdb_entry_ex;
 
 
@@ -28,7 +29,7 @@ int samba_kdc_set_fixed_keys(krb5_context context,
 			     struct samba_kdc_db_context *kdc_db_ctx,
 			     const struct ldb_val *secretbuffer,
 			     bool is_protected,
-			     struct sdb_entry_ex *entry_ex);
+			     struct sdb_keys *keys);
 
 krb5_error_code samba_kdc_fetch(krb5_context context,
 				struct samba_kdc_db_context *kdc_db_ctx,
