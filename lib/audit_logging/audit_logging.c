@@ -906,6 +906,52 @@ int json_add_guid(struct json_object *object,
 }
 
 /*
+ * @brief Replaces the object for a given key with a given json object.
+ *
+ * If key already exists, the value will be replaced. Otherwise the given
+ * value will be added under the given key.
+ *
+ * @param object the JSON object to be updated.
+ * @param key the key which will be updated.
+ * @param new_obj the new value object to be inserted.
+ *
+ * @return 0 the operation was successful
+ *        -1 the operation failed (e.j. if one of the paramters is invalid)
+ */
+int json_update_object(struct json_object *object,
+		       const char *key,
+		       struct json_object *new_obj)
+{
+	int ret = 0;
+
+	if (json_is_invalid(object)) {
+		DBG_ERR("Unable to update key [%s], "
+			"target object is invalid\n",
+			key);
+		return JSON_ERROR;
+	}
+	if (json_is_invalid(new_obj)) {
+		DBG_ERR("Unable to update key [%s], "
+			"new object is invalid\n",
+			key);
+		return JSON_ERROR;
+	}
+
+	if (key == NULL) {
+		DBG_ERR("Unable to add null String as key\n");
+		return JSON_ERROR;
+	}
+
+	ret = json_object_set(object->root, key, new_obj->root);
+	if (ret != 0) {
+		DBG_ERR("Unable to update object\n");
+		return ret;
+	}
+
+	return ret;
+}
+
+/*
  * @brief Convert a JSON object into a string
  *
  * Convert the json object into a string suitable for printing on a log line,

@@ -87,6 +87,10 @@ _WARN_UNUSED_RESULT_ int json_add_guid(struct json_object *object,
 				       const char *name,
 				       const struct GUID *guid);
 
+_WARN_UNUSED_RESULT_ int json_update_object(struct json_object *object,
+					    const char *key,
+					    struct json_object *new_obj);
+
 _WARN_UNUSED_RESULT_ struct json_object json_get_array(
     struct json_object *object, const char *name);
 _WARN_UNUSED_RESULT_ struct json_object json_get_object(
