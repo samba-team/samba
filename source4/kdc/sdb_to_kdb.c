@@ -311,6 +311,9 @@ static int sdb_entry_ex_to_krb5_db_entry(krb5_context context,
 	}
 
 	k->e_data = (void *)ske;
+	if (ske != NULL) {
+		ske->kdc_entry = k;
+	}
 	return 0;
 }
 

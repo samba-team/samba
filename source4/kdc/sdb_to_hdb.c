@@ -294,6 +294,9 @@ static int sdb_entry_to_hdb_entry(krb5_context context,
 	}
 
 	h->context = ske;
+	if (ske != NULL) {
+		ske->kdc_entry = h;
+	}
 	return 0;
 error:
 	free_hdb_entry(h);

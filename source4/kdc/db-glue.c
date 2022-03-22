@@ -252,6 +252,21 @@ static struct SDBFlags uf2SDBFlags(krb5_context context, uint32_t userAccountCon
 
 static int samba_kdc_entry_destructor(struct samba_kdc_entry *p)
 {
+	if (p->db_entry != NULL) {
+		/*
+		 * A sdb_entry still has a reference
+		 */
+		return -1;
+	}
+
+	if (p->kdc_entry != NULL) {
+		/*
+		 * hdb_entry or krb5_db_entry still
+		 * have a reference...
+		 */
+		return -1;
+	}
+
 	return 0;
 }
 

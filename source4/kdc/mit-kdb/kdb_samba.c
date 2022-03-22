@@ -27,6 +27,7 @@
 #include <profile.h>
 #include <kdb.h>
 
+#include "kdc/samba_kdc.h"
 #include "kdc/mit_samba.h"
 #include "kdb_samba.h"
 
@@ -133,7 +134,7 @@ static void kdb_samba_db_free_principal_e_data(krb5_context context,
 
 	skdc_entry = talloc_get_type_abort(e_data,
 					   struct samba_kdc_entry);
-	talloc_set_destructor(skdc_entry, NULL);
+	skdc_entry->kdc_entry = NULL;
 	TALLOC_FREE(skdc_entry);
 }
 

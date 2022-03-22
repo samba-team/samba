@@ -54,6 +54,8 @@ struct samba_kdc_db_context {
 
 struct samba_kdc_entry {
 	struct samba_kdc_db_context *kdc_db_ctx;
+	const struct sdb_entry *db_entry; /* this is only temporary valid */
+	const void *kdc_entry; /* this is a reference to hdb_entry/krb5_db_entry */
 	struct ldb_message *msg;
 	struct ldb_dn *realm_dn;
 	struct auth_user_info_dc *user_info_dc;

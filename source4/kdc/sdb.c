@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "sdb.h"
+#include "samba_kdc.h"
 #include "lib/krb5_wrap/krb5_samba.h"
 
 static void free_sdb_entry(struct sdb_entry *s);
@@ -73,6 +74,11 @@ void sdb_keys_free(struct sdb_keys *keys)
 
 static void free_sdb_entry(struct sdb_entry *s)
 {
+	if (s->skdc_entry != NULL) {
+		s->skdc_entry->db_entry = NULL;
+		TALLOC_FREE(s->skdc_entry);
+	}
+
 	/*
 	 * Passing NULL as the Kerberos context is intentional here, as both
 	 * Heimdal and MIT libraries don't use the context when clearing the
