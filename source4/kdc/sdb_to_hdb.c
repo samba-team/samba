@@ -164,10 +164,9 @@ static int sdb_event_to_Event(krb5_context context,
 	return 0;
 }
 
-
-static int sdb_entry_to_hdb_entry(krb5_context context,
-				  const struct sdb_entry *s,
-				  hdb_entry *h)
+int sdb_entry_to_hdb_entry(krb5_context context,
+			   const struct sdb_entry *s,
+			   hdb_entry *h)
 {
 	struct samba_kdc_entry *ske = s->skdc_entry;
 	unsigned int i;
