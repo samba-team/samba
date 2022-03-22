@@ -31,10 +31,6 @@ void sdb_free_entry(struct sdb_entry_ex *ent)
 	struct sdb_key *k;
 	size_t i;
 
-	if (ent->free_entry) {
-		(*ent->free_entry)(ent);
-	}
-
 	for (i = 0; i < ent->entry.keys.len; i++) {
 		k = &ent->entry.keys.val[i];
 

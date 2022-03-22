@@ -96,7 +96,6 @@ struct sdb_entry {
 struct sdb_entry_ex {
 	void *ctx;
 	struct sdb_entry entry;
-	void (*free_entry)(struct sdb_entry_ex *);
 };
 
 #define SDB_ERR_NOENTRY 36150275
