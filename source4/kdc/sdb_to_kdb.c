@@ -231,6 +231,7 @@ static int sdb_entry_ex_to_krb5_db_entry(krb5_context context,
 					 const struct sdb_entry *s,
 					 krb5_db_entry *k)
 {
+	struct samba_kdc_entry *ske = s->skdc_entry;
 	krb5_error_code ret;
 	int i;
 
@@ -309,6 +310,7 @@ static int sdb_entry_ex_to_krb5_db_entry(krb5_context context,
 		}
 	}
 
+	k->e_data = (void *)ske;
 	return 0;
 }
 
@@ -316,20 +318,5 @@ int sdb_entry_ex_to_kdb_entry_ex(krb5_context context,
 				 const struct sdb_entry_ex *s,
 				 krb5_db_entry *k)
 {
-	int ret;
-
-	ret = sdb_entry_ex_to_krb5_db_entry(context, &s->entry, k);
-	if (ret != 0) {
-		return ret;
-	}
-
-	if (s->ctx != NULL) {
-		struct samba_kdc_entry *skdc_entry;
-
-		skdc_entry = talloc_get_type(s->ctx, struct samba_kdc_entry);
-
-		k->e_data	= (void *)skdc_entry;
-	}
-
-	return 0;
+	return sdb_entry_ex_to_krb5_db_entry(context, &s->entry, k);
 }

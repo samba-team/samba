@@ -169,6 +169,7 @@ static int sdb_entry_to_hdb_entry(krb5_context context,
 				  const struct sdb_entry *s,
 				  hdb_entry *h)
 {
+	struct samba_kdc_entry *ske = s->skdc_entry;
 	unsigned int i;
 	int rc;
 
@@ -292,6 +293,7 @@ static int sdb_entry_to_hdb_entry(krb5_context context,
 		}
 	}
 
+	h->context = ske;
 	return 0;
 error:
 	free_hdb_entry(h);
@@ -302,20 +304,5 @@ int sdb_entry_ex_to_hdb_entry_ex(krb5_context context,
 				 const struct sdb_entry_ex *s,
 				 hdb_entry *h)
 {
-	int ret;
-
-	ret = sdb_entry_to_hdb_entry(context, &s->entry, h);
-	if (ret != 0) {
-		return ret;
-	}
-
-	if (s->ctx != NULL) {
-		struct samba_kdc_entry *skdc_entry;
-
-		skdc_entry = talloc_get_type(s->ctx, struct samba_kdc_entry);
-
-		h->context = skdc_entry;
-	}
-
-	return 0;
+	return sdb_entry_to_hdb_entry(context, &s->entry, h);
 }

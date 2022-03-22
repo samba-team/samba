@@ -953,7 +953,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
-	entry_ex->ctx = p;
+	entry_ex->entry.skdc_entry = p;
 
 	userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
 
@@ -1341,7 +1341,7 @@ out:
 		sdb_free_entry(entry_ex);
 		ZERO_STRUCTP(entry_ex);
 	} else {
-		talloc_steal(kdc_db_ctx, entry_ex->ctx);
+		talloc_steal(kdc_db_ctx, p);
 	}
 
 	return ret;
@@ -1481,7 +1481,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	/* make sure we do not have bogus data in there */
 	memset(&entry_ex->entry, 0, sizeof(struct sdb_entry));
 
-	entry_ex->ctx = p;
+	entry_ex->entry.skdc_entry = p;
 
 	/* use 'whenCreated' */
 	entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
@@ -1765,7 +1765,7 @@ out:
 		/* This doesn't free ent itself, that is for the eventual caller to do */
 		sdb_free_entry(entry_ex);
 	} else {
-		talloc_steal(kdc_db_ctx, entry_ex->ctx);
+		talloc_steal(kdc_db_ctx, p);
 	}
 
 	return ret;

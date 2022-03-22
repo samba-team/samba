@@ -80,6 +80,7 @@ struct SDBFlags {
 };
 
 struct sdb_entry {
+	struct samba_kdc_entry *skdc_entry;
 	krb5_principal principal;
 	unsigned int kvno;
 	struct sdb_keys keys;
@@ -94,7 +95,6 @@ struct sdb_entry {
 };
 
 struct sdb_entry_ex {
-	void *ctx;
 	struct sdb_entry entry;
 };
 
