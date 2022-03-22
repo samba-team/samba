@@ -237,6 +237,162 @@ EOF
 	return 0
 }
 
+test_smbstatus_json()
+{
+	local cmdfile=$PREFIX/smbclient_commands
+	local tmpfile=$PREFIX/smbclient_lock_file
+	local file=smbclient_lock_file
+	local status_json=smbstatus_output_json
+	local status_json_long=smbstatus_output_json_long
+
+	cat > $tmpfile <<EOF
+Hello World!
+EOF
+	cat > $cmdfile <<EOF
+lcd $PREFIX_ABS
+put $file
+open $file
+posix
+!UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_INITIAL_EUID=0 $SMBSTATUS --json > $status_json
+!UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_INITIAL_EUID=0 $SMBSTATUS --json -vBN > $status_json_long
+close 1
+rm $file
+quit
+EOF
+
+	cmd="CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS --quiet < $cmdfile 2>&1"
+	out=$(eval $cmd)
+	echo $out
+	ret=$?
+
+	rm -f $cmdfile
+	rm -f $tmpfile
+
+	if [ $ret -ne 0 ]; then
+		echo "Failed to run smbclient with error $ret"
+		echo "$out"
+		return 1
+	fi
+
+	echo $out | grep -c 'JSON support not available, please install lib Jansson'
+	ret=$?
+	if [ $ret -eq 0 ]; then
+		subunit_start_test "test_smbstatus_json"
+		subunit_skip_test "test_smbstatus_json" <<EOF
+Test needs Jansson
+EOF
+		return 0
+	fi
+
+	out=$(cat $PREFIX/$status_json)
+	ret=$?
+	if [ $ret -ne 0 ]; then
+		echo "Failed: Could not print json output with error $ret"
+		echo "$out"
+		return 1
+	fi
+
+	out=$(cat $PREFIX/$status_json | jq ".")
+	echo $out | grep -c 'jq: not found'
+	ret=$?
+	if [ $ret -eq 0 ]; then
+		subunit_start_test "test_smbstatus_json"
+		subunit_skip_test "test_smbstatus_json" <<EOF
+Test needs jq
+EOF
+		return 0
+	fi
+
+	out=$(cat $PREFIX/$status_json | jq ".")
+	ret=$?
+	if [ $ret -ne 0 ]; then
+		echo "Failed: Could not parse json output from smbstatus with error $ret"
+		echo "$out"
+		return 1
+	fi
+
+	# keys in --json
+	expected='["open_files","sessions","smb_conf","tcons","timestamp","version"]'
+	out=$(cat $PREFIX/$status_json | jq keys -c)
+	if [ "$expected" != "$out" ]; then
+		echo "Failed: Unexpected keys in smbstatus --json"
+		echo "Expected: $expected"
+		echo "Output: $out"
+		return 1
+	fi
+
+	# keys in --json -vBN
+	expected='["byte_range_locks","notifies","open_files","sessions","smb_conf","tcons","timestamp","version"]'
+	out=$(cat $PREFIX/$status_json_long | jq keys -c)
+	if [ "$expected" != "$out" ]; then
+		echo "Failed: Unexpected keys in smbstatus --json"
+		echo "Expected: $expected"
+		echo "Output: $out"
+		return 1
+	fi
+
+	# shares information in --json
+	out=$(cat $PREFIX/$status_json | jq ".tcons|.[].machine")
+	if [ "\"$SERVER_IP\"" != "$out" ]; then
+		echo "Failed: Unexpected value for tcons.machine in smbstatus --json"
+		echo "Expected: $SERVER_IP"
+		echo "Output: $out"
+		return 1
+	fi
+	out=$(cat $PREFIX/$status_json | jq ".tcons|.[].service")
+	if [ '"tmp"' != "$out" ]; then
+		echo "Failed: Unexpected value for tcons.service in smbstatus --json"
+		echo "Expected: tmp"
+		echo "Output: $out"
+		return 1
+	fi
+
+	# session information in --json
+	out=$(cat $PREFIX/$status_json | jq ".sessions|.[].username")
+	if [ "\"$USER\"" != "$out" ]; then
+		echo "Failed: Unexpected value for sessions.username in smbstatus --json"
+		echo "Expected: $USER"
+		echo "Output: $out"
+		return 1
+	fi
+	out=$(cat $PREFIX/$status_json | jq -c ".sessions|.[].signing")
+	expected='{"cipher":"AES-128-GMAC","degree":"partial"}'
+	if [ "$expected" != "$out" ]; then
+		echo "Failed: Unexpected value for sessions.signing in smbstatus --json"
+		echo "Expected: partial(AES-128-GMAC)"
+		echo "Output: $out"
+		return 1
+	fi
+	out=$(cat $PREFIX/$status_json | jq ".sessions|.[].remote_machine")
+	if [ "\"$SERVER_IP\"" != "$out" ]; then
+		echo "Failed: Unexpected value for sessions.remote_machine in smbstatus --json"
+		echo "Expected: $SERVER_IP"
+		echo "Output: $out"
+		return 1
+	fi
+
+	# open_files information in --json
+	out=$(cat $PREFIX/$status_json | jq ".open_files|.[].filename")
+	if [ "\"$file\"" != "$out" ]; then
+		echo "Failed: Unexpected value for open_files.denymode in smbstatus --json"
+		echo "Expected: \"$file\""
+		echo "Output: $out"
+		return 1
+	fi
+	out=$(cat $PREFIX/$status_json | jq ".open_files|.[].opens|.[].access_mask.hex")
+	if [ '"0x00000003"' != "$out" ]; then
+		echo "Failed: Unexpected value for open_files.access_mask.hex in smbstatus --json"
+		echo "Expected: 0x00000003"
+		echo "Output: $out"
+		return 1
+	fi
+
+	rm $PREFIX/$status_json
+	rm $PREFIX/$status_json_long
+
+	return 0
+}
+
 testit "plain" \
 	test_smbstatus ||
 	failed=$(expr $failed + 1)
@@ -248,5 +404,9 @@ testit "resolve_uids" \
 testit "test_output" \
 	test_smbstatus_output ||
 	failed=$(expr $failed + 1)
+
+testit "test_json" \
+	test_smbstatus_json || \
+	failed=`expr $failed + 1`
 
 testok $0 $failed
