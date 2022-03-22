@@ -79,6 +79,8 @@ void sdb_entry_free(struct sdb_entry *s)
 	krb5_free_principal(NULL, s->principal);
 
 	sdb_keys_free(&s->keys);
+	sdb_keys_free(&s->old_keys);
+	sdb_keys_free(&s->older_keys);
 	krb5_free_principal(NULL, s->created_by.principal);
 	if (s->modified_by) {
 		krb5_free_principal(NULL, s->modified_by->principal);

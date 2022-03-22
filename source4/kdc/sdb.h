@@ -84,6 +84,8 @@ struct sdb_entry {
 	krb5_principal principal;
 	unsigned int kvno;
 	struct sdb_keys keys;
+	struct sdb_keys old_keys;
+	struct sdb_keys older_keys;
 	struct sdb_event created_by;
 	struct sdb_event *modified_by;
 	time_t *valid_start;
