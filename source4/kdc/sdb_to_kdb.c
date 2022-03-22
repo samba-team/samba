@@ -227,9 +227,9 @@ static void free_krb5_db_entry(krb5_context context,
 	ZERO_STRUCTP(k);
 }
 
-static int sdb_entry_ex_to_krb5_db_entry(krb5_context context,
-					 const struct sdb_entry *s,
-					 krb5_db_entry *k)
+int sdb_entry_to_krb5_db_entry(krb5_context context,
+			       const struct sdb_entry *s,
+			       krb5_db_entry *k)
 {
 	struct samba_kdc_entry *ske = s->skdc_entry;
 	krb5_error_code ret;
@@ -321,5 +321,5 @@ int sdb_entry_ex_to_kdb_entry_ex(krb5_context context,
 				 const struct sdb_entry_ex *s,
 				 krb5_db_entry *k)
 {
-	return sdb_entry_ex_to_krb5_db_entry(context, &s->entry, k);
+	return sdb_entry_to_krb5_db_entry(context, &s->entry, k);
 }
