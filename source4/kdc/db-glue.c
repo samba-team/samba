@@ -409,17 +409,11 @@ out:
 
 
 static int samba_kdc_set_random_keys(krb5_context context,
-				     struct samba_kdc_db_context *kdc_db_ctx,
-				     struct sdb_keys *keys,
-				     bool is_protected)
+				     uint32_t supported_enctypes,
+				     struct sdb_keys *keys)
 {
-	uint32_t supported_enctypes = ENC_ALL_TYPES;
 	struct ldb_val secret_val;
 	uint8_t secretbuffer[32];
-
-	if (is_protected) {
-		supported_enctypes &= ~ENC_RC4_HMAC_MD5;
-	}
 
 	/*
 	 * Fake keys until we have a better way to reject
@@ -674,9 +668,8 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	if ((ent_type == SAMBA_KDC_ENT_TYPE_CLIENT)
 	    && (userAccountControl & UF_SMARTCARD_REQUIRED)) {
 		ret = samba_kdc_set_random_keys(context,
-						kdc_db_ctx,
-						&entry->keys,
-						is_protected);
+						supported_enctypes,
+						&entry->keys);
 
 		*supported_enctypes_out = supported_enctypes;
 
