@@ -243,7 +243,7 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 					     hdb_entry *entry)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
-	struct sdb_entry_ex sdb_entry_ex = {};
+	struct sdb_entry sentry = {};
 	krb5_error_code code, ret;
 	uint32_t sflags;
 
@@ -263,7 +263,7 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 			      principal,
 			      sflags,
 			      kvno,
-			      &sdb_entry_ex.entry);
+			      &sentry);
 	switch (ret) {
 	case 0:
 		code = 0;
@@ -283,8 +283,8 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 		return ret;
 	}
 
-	ret = sdb_entry_to_hdb_entry(context, &sdb_entry_ex.entry, entry);
-	sdb_free_entry(&sdb_entry_ex);
+	ret = sdb_entry_to_hdb_entry(context, &sentry, entry);
+	sdb_entry_free(&sentry);
 
 	if (code != 0 && ret != 0) {
 		code = ret;
