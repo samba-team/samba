@@ -208,7 +208,7 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 			    unsigned int kflags,
 			    krb5_db_entry **_kentry)
 {
-	struct sdb_entry_ex sentry = {};
+	struct sdb_entry sentry = {};
 	krb5_db_entry *kentry;
 	int ret;
 	uint32_t sflags = 0;
@@ -289,7 +289,7 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 
 fetch_referral_principal:
 	ret = samba_kdc_fetch(ctx->context, ctx->db_ctx,
-			      principal, sflags, 0, &sentry.entry);
+			      principal, sflags, 0, &sentry);
 	switch (ret) {
 	case 0:
 		break;
@@ -310,7 +310,7 @@ fetch_referral_principal:
 		}
 
 		if (referral_principal != NULL) {
-			sdb_free_entry(&sentry);
+			sdb_entry_free(&sentry);
 			ret = KRB5_KDB_NOENTRY;
 			goto done;
 		}
@@ -341,8 +341,8 @@ fetch_referral_principal:
 		 * principal and return success.
 		 */
 		dest_realm = smb_krb5_principal_get_realm(
-			ctx, ctx->context, sentry.entry.principal);
-		sdb_free_entry(&sentry);
+			ctx, ctx->context, sentry.principal);
+		sdb_entry_free(&sentry);
 		if (dest_realm == NULL) {
 			ret = KRB5_KDB_NOENTRY;
 			goto done;
@@ -368,9 +368,9 @@ fetch_referral_principal:
 		goto done;
 	}
 
-	ret = sdb_entry_to_krb5_db_entry(ctx->context, &sentry.entry, kentry);
+	ret = sdb_entry_to_krb5_db_entry(ctx->context, &sentry, kentry);
 
-	sdb_free_entry(&sentry);
+	sdb_entry_free(&sentry);
 
 done:
 	krb5_free_principal(ctx->context, referral_principal);
