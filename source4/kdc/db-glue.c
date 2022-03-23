@@ -1941,9 +1941,8 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					      krb5_const_principal principal,
 					      unsigned flags,
 					      uint32_t kvno,
-					      struct sdb_entry_ex *entry_ex)
+					      struct sdb_entry *entry)
 {
-	struct sdb_entry *entry = &entry_ex->entry;
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	krb5_error_code ret;
 	struct ldb_message *msg = NULL;
@@ -2506,7 +2505,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 	}
 	if (flags & SDB_F_GET_SERVER) {
 		/* krbtgt fits into this situation for trusted realms, and for resolving different versions of our own realm name */
-		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, kvno, entry_ex);
+		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, kvno, entry);
 		if (ret != SDB_ERR_NOENTRY) goto done;
 
 		/* We return 'no entry' if it does not start with krbtgt/, so move to the common case quickly */
@@ -2514,7 +2513,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 		if (ret != SDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & SDB_F_GET_KRBTGT) {
-		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, kvno, entry_ex);
+		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, kvno, entry);
 		if (ret != SDB_ERR_NOENTRY) goto done;
 	}
 
