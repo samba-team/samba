@@ -1346,6 +1346,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					       struct ldb_message *msg,
 					       struct sdb_entry_ex *entry_ex)
 {
+	struct sdb_entry *entry = &entry_ex->entry;
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	const char *our_realm = lpcfg_realm(lp_ctx);
 	char *partner_realm = NULL;
@@ -1465,13 +1466,13 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
-	entry_ex->entry.skdc_entry = p;
+	entry->skdc_entry = p;
 
 	/* use 'whenCreated' */
-	entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
+	entry->created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
 	/* use 'kadmin' for now (needed by mit_samba) */
 	ret = smb_krb5_make_principal(context,
-				      &entry_ex->entry.created_by.principal,
+				      &entry->created_by.principal,
 				      realm, "kadmin", NULL);
 	if (ret) {
 		krb5_clear_error_message(context);
@@ -1482,16 +1483,16 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	 * We always need to generate the canonicalized principal
 	 * with the values of our database.
 	 */
-	ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, realm,
+	ret = smb_krb5_make_principal(context, &entry->principal, realm,
 				      "krbtgt", krbtgt_realm, NULL);
 	if (ret) {
 		krb5_clear_error_message(context);
 		goto out;
 	}
-	smb_krb5_principal_set_type(context, entry_ex->entry.principal,
+	smb_krb5_principal_set_type(context, entry->principal,
 				    KRB5_NT_SRV_INST);
 
-	entry_ex->entry.valid_start = NULL;
+	entry->valid_start = NULL;
 
 	/* we need to work out if we are going to use the current or
 	 * the previous password hash.
@@ -1582,9 +1583,9 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	/* use the kvno the client specified, if available */
 	if (flags & SDB_F_KVNO_SPECIFIED) {
-		entry_ex->entry.kvno = kvno;
+		entry->kvno = kvno;
 	} else {
-		entry_ex->entry.kvno = *auth_kvno;
+		entry->kvno = *auth_kvno;
 	}
 
 	for (i=0; i < auth_array->count; i++) {
@@ -1644,8 +1645,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
-	entry_ex->entry.keys.val = calloc(num_keys, sizeof(struct sdb_key));
-	if (entry_ex->entry.keys.val == NULL) {
+	entry->keys.val = calloc(num_keys, sizeof(struct sdb_key));
+	if (entry->keys.val == NULL) {
 		krb5_clear_error_message(context);
 		ret = ENOMEM;
 		goto out;
@@ -1653,7 +1654,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	if (password_utf8.length != 0) {
 		struct sdb_key key = {};
-		krb5_const_principal salt_principal = entry_ex->entry.principal;
+		krb5_const_principal salt_principal = entry->principal;
 		krb5_data salt;
 		krb5_data cleartext_data;
 
@@ -1679,8 +1680,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 				goto out;
 			}
 
-			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-			entry_ex->entry.keys.len++;
+			entry->keys.val[entry->keys.len] = key;
+			entry->keys.len++;
 		}
 
 		if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
@@ -1695,8 +1696,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 				goto out;
 			}
 
-			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-			entry_ex->entry.keys.len++;
+			entry->keys.val[entry->keys.len] = key;
+			entry->keys.len++;
 		}
 
 		smb_krb5_free_data_contents(context, &salt);
@@ -1714,26 +1715,26 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			goto out;
 		}
 
-		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
-		entry_ex->entry.keys.len++;
+		entry->keys.val[entry->keys.len] = key;
+		entry->keys.len++;
 	}
 
-	entry_ex->entry.flags = int2SDBFlags(0);
-	entry_ex->entry.flags.immutable = 1;
-	entry_ex->entry.flags.invalid = 0;
-	entry_ex->entry.flags.server = 1;
-	entry_ex->entry.flags.require_preauth = 1;
+	entry->flags = int2SDBFlags(0);
+	entry->flags.immutable = 1;
+	entry->flags.invalid = 0;
+	entry->flags.server = 1;
+	entry->flags.require_preauth = 1;
 
-	entry_ex->entry.pw_end = NULL;
+	entry->pw_end = NULL;
 
-	entry_ex->entry.max_life = NULL;
+	entry->max_life = NULL;
 
-	entry_ex->entry.max_renew = NULL;
+	entry->max_renew = NULL;
 
 	/* Match Windows behavior and allow forwardable flag in cross-realm. */
-	entry_ex->entry.flags.forwardable = 1;
+	entry->flags.forwardable = 1;
 
-	samba_kdc_sort_keys(&entry_ex->entry.keys);
+	samba_kdc_sort_keys(&entry->keys);
 
 	p->msg = talloc_steal(p, msg);
 
