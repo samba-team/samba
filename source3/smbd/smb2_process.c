@@ -818,6 +818,40 @@ bool init_smb_request(struct smb_request *req,
 	return true;
 }
 
+/****************************************************************************
+ Construct a reply to the incoming packet.
+****************************************************************************/
+
+static void construct_reply_smb1negprot(struct smbXsrv_connection *xconn,
+					char *inbuf, int size,
+					size_t unread_bytes)
+{
+	struct smbd_server_connection *sconn = xconn->client->sconn;
+	struct smb_request *req;
+
+	if (!(req = talloc(talloc_tos(), struct smb_request))) {
+		smb_panic("could not allocate smb_request");
+	}
+
+	if (!init_smb_request(req, sconn, xconn, (uint8_t *)inbuf, unread_bytes,
+			      false, 0)) {
+		exit_server_cleanly("Invalid SMB request");
+	}
+
+	req->inbuf  = (uint8_t *)talloc_move(req, &inbuf);
+
+	smb2_multi_protocol_reply_negprot(req);
+	if (req->outbuf == NULL) {
+		/*
+		* req->outbuf == NULL means we bootstrapped into SMB2.
+		*/
+		return;
+	}
+	/* This code path should only *ever* bootstrap into SMB2. */
+	exit_server_cleanly("Internal error SMB1negprot didn't reply "
+			    "with an SMB2 packet");
+}
+
 static void smbd_server_connection_write_handler(
 	struct smbXsrv_connection *xconn)
 {
@@ -895,7 +929,6 @@ static void smbd_smb2_server_connection_read_handler(
 		exit_server_cleanly("Invalid initial SMB1 or SMB2 packet");
 		return;
 	}
-#if defined(WITH_SMB1SERVER)
 	if (valid_smb_header(buffer)) {
 		/* Can *only* allow an SMB1 negprot here. */
 		uint8_t cmd = PULL_LE_U8(buffer, smb_com);
@@ -907,20 +940,13 @@ static void smbd_smb2_server_connection_read_handler(
 		}
 		/* Minimal process_smb(). */
 		show_msg((char *)buffer);
-		construct_reply(xconn,
-				(char *)buffer,
-				bufferlen,
-				0,
-				0,
-				false,
-				NULL);
+		construct_reply_smb1negprot(xconn, (char *)buffer,
+					    bufferlen, 0);
 		xconn->client->sconn->trans_num++;
 		xconn->client->sconn->num_requests++;
 		return;
 
-	} else
-#endif
-	if (!smbd_is_smb2_header(buffer, bufferlen)) {
+	} else if (!smbd_is_smb2_header(buffer, bufferlen)) {
 		exit_server_cleanly("Invalid initial SMB2 packet");
 		return;
 	}

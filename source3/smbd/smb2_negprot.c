@@ -1016,3 +1016,180 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
 
 	return blob_out;
 }
+
+/*
+ * MS-CIFS, 2.2.4.52.2 SMB_COM_NEGOTIATE Response:
+ * If the server does not support any of the listed dialects, it MUST return a
+ * DialectIndex of 0XFFFF
+ */
+#define NO_PROTOCOL_CHOSEN	0xffff
+
+#define PROT_SMB_2_002				0x1000
+#define PROT_SMB_2_FF				0x2000
+
+/* List of supported SMB1 protocols, most desired first.
+ * This is for enabling multi-protocol negotiation in SMB2 when SMB1
+ * is disabled.
+ */
+static const struct {
+	const char *proto_name;
+	const char *short_name;
+	NTSTATUS (*proto_reply_fn)(struct smb_request *req, uint16_t choice);
+	int protocol_level;
+} supported_protocols[] = {
+	{"SMB 2.???",               "SMB2_FF",  reply_smb20ff,  PROTOCOL_SMB2_10},
+	{"SMB 2.002",               "SMB2_02",  reply_smb2002,  PROTOCOL_SMB2_02},
+	{NULL,NULL,NULL,0},
+};
+
+/****************************************************************************
+ Reply to a negprot.
+ conn POINTER CAN BE NULL HERE !
+****************************************************************************/
+
+void smb2_multi_protocol_reply_negprot(struct smb_request *req)
+{
+	size_t choice = 0;
+	bool choice_set = false;
+	int protocol;
+	const char *p;
+	int protocols = 0;
+	int num_cliprotos;
+	char **cliprotos;
+	size_t i;
+	size_t converted_size;
+	struct smbXsrv_connection *xconn = req->xconn;
+	struct smbd_server_connection *sconn = req->sconn;
+	int max_proto;
+	int min_proto;
+	NTSTATUS status;
+
+	START_PROFILE(SMBnegprot);
+
+	if (req->buflen == 0) {
+		DEBUG(0, ("negprot got no protocols\n"));
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBnegprot);
+		return;
+	}
+
+	if (req->buf[req->buflen-1] != '\0') {
+		DEBUG(0, ("negprot protocols not 0-terminated\n"));
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBnegprot);
+		return;
+	}
+
+	p = (const char *)req->buf + 1;
+
+	num_cliprotos = 0;
+	cliprotos = NULL;
+
+	while (smbreq_bufrem(req, p) > 0) {
+
+		char **tmp;
+
+		tmp = talloc_realloc(talloc_tos(), cliprotos, char *,
+					   num_cliprotos+1);
+		if (tmp == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			TALLOC_FREE(cliprotos);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBnegprot);
+			return;
+		}
+
+		cliprotos = tmp;
+
+		if (!pull_ascii_talloc(cliprotos, &cliprotos[num_cliprotos], p,
+				       &converted_size)) {
+			DEBUG(0, ("pull_ascii_talloc failed\n"));
+			TALLOC_FREE(cliprotos);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBnegprot);
+			return;
+		}
+
+		DEBUG(3, ("Requested protocol [%s]\n",
+			  cliprotos[num_cliprotos]));
+
+		num_cliprotos += 1;
+		p += strlen(p) + 2;
+	}
+
+	for (i=0; i<num_cliprotos; i++) {
+		if (strcsequal(cliprotos[i], "SMB 2.002")) {
+			protocols |= PROT_SMB_2_002;
+		} else if (strcsequal(cliprotos[i], "SMB 2.???")) {
+			protocols |= PROT_SMB_2_FF;
+		}
+	}
+
+	/* possibly reload - change of architecture */
+	reload_services(sconn, conn_snum_used, true);
+
+	/*
+	 * Anything higher than PROTOCOL_SMB2_10 still
+	 * needs to go via "SMB 2.???", which is marked
+	 * as PROTOCOL_SMB2_10.
+	 *
+	 * The real negotiation happens via reply_smb20ff()
+	 * using SMB2 Negotiation.
+	 */
+	max_proto = lp_server_max_protocol();
+	if (max_proto > PROTOCOL_SMB2_10) {
+		max_proto = PROTOCOL_SMB2_10;
+	}
+	min_proto = lp_server_min_protocol();
+	if (min_proto > PROTOCOL_SMB2_10) {
+		min_proto = PROTOCOL_SMB2_10;
+	}
+
+	/* Check for protocols, most desirable first */
+	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {
+		i = 0;
+		if ((supported_protocols[protocol].protocol_level <= max_proto) &&
+		    (supported_protocols[protocol].protocol_level >= min_proto))
+			while (i < num_cliprotos) {
+				if (strequal(cliprotos[i],supported_protocols[protocol].proto_name)) {
+					choice = i;
+					choice_set = true;
+				}
+				i++;
+			}
+		if (choice_set) {
+			break;
+		}
+	}
+
+	if (!choice_set) {
+		bool ok;
+
+		DBG_NOTICE("No protocol supported !\n");
+		reply_outbuf(req, 1, 0);
+		SSVAL(req->outbuf, smb_vwv0, NO_PROTOCOL_CHOSEN);
+
+		ok = srv_send_smb(xconn, (char *)req->outbuf,
+				  false, 0, false, NULL);
+		if (!ok) {
+			DBG_NOTICE("srv_send_smb failed\n");
+		}
+		exit_server_cleanly("no protocol supported\n");
+	}
+
+	fstrcpy(remote_proto,supported_protocols[protocol].short_name);
+	reload_services(sconn, conn_snum_used, true);
+	status = supported_protocols[protocol].proto_reply_fn(req, choice);
+	if (!NT_STATUS_IS_OK(status)) {
+		exit_server_cleanly("negprot function failed\n");
+	}
+
+	DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
+
+	DBG_INFO("negprot index=%zu\n", choice);
+
+	TALLOC_FREE(cliprotos);
+
+	END_PROFILE(SMBnegprot);
+	return;
+}
