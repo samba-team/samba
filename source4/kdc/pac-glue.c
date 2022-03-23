@@ -42,6 +42,9 @@
 
 #include <ldb.h>
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 				       const struct auth_user_info_dc *info,
