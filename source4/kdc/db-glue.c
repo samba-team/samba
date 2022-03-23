@@ -588,11 +588,10 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    bool is_rodc,
 						    uint32_t userAccountControl,
 						    enum samba_kdc_ent_type ent_type,
-						    struct sdb_entry_ex *entry_ex,
+						    struct sdb_entry *entry,
 						    bool is_protected,
 						    uint32_t *supported_enctypes_out)
 {
-	struct sdb_entry *entry = &entry_ex->entry;
 	krb5_error_code ret = 0;
 	enum ndr_err_code ndr_err;
 	struct samr_Password *hash;
@@ -888,6 +887,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					       struct ldb_message *msg,
 					       struct sdb_entry_ex *entry_ex)
 {
+	struct sdb_entry *entry = &entry_ex->entry;
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	uint32_t userAccountControl;
 	uint32_t msDS_User_Account_Control_Computed;
@@ -1311,7 +1311,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, kdc_db_ctx, p, msg,
 					   rid, is_rodc, userAccountControl,
-					   ent_type, entry_ex, protected_user, &supported_enctypes);
+					   ent_type, entry,
+					   protected_user, &supported_enctypes);
 	if (ret) {
 		/* Could be bogus data in the entry, or out of memory */
 		goto out;
