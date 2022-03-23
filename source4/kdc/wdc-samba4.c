@@ -336,7 +336,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 						      krbtgt->principal,
 						      SDB_F_GET_KRBTGT | SDB_F_CANON,
 						      0,
-						      &signing_krbtgt_sdb);
+						      &signing_krbtgt_sdb.entry);
 				if (ret != 0) {
 					return ret;
 				}

@@ -289,7 +289,7 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 
 fetch_referral_principal:
 	ret = samba_kdc_fetch(ctx->context, ctx->db_ctx,
-			      principal, sflags, 0, &sentry);
+			      principal, sflags, 0, &sentry.entry);
 	switch (ret) {
 	case 0:
 		break;

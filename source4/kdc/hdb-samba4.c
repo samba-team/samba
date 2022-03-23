@@ -263,7 +263,7 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 			      principal,
 			      sflags,
 			      kvno,
-			      &sdb_entry_ex);
+			      &sdb_entry_ex.entry);
 	switch (ret) {
 	case 0:
 		code = 0;

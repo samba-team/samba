@@ -2477,9 +2477,8 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 				krb5_const_principal principal,
 				unsigned flags,
 				krb5_kvno kvno,
-				struct sdb_entry_ex *entry_ex)
+				struct sdb_entry *entry)
 {
-	struct sdb_entry *entry = &entry_ex->entry;
 	krb5_error_code ret = SDB_ERR_NOENTRY;
 	TALLOC_CTX *mem_ctx;
 

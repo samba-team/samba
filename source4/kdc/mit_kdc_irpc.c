@@ -112,7 +112,7 @@ static NTSTATUS netr_samlogon_generic_logon(struct irpc_message *msg,
 			       principal,
 			       SDB_F_GET_KRBTGT | SDB_F_DECRYPT,
 			       0,
-			       &sentry);
+			       &sentry.entry);
 	krb5_free_principal(mki_ctx->krb5_context, principal);
 	if (code != 0) {
 		DEBUG(0, ("Failed to fetch krbtgt@%s principal entry!\n",
