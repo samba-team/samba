@@ -23,6 +23,7 @@ sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
 import functools
+import time
 
 from samba import dsdb, ntstatus
 from samba.dcerpc import krb5pac, lsa, security
@@ -562,6 +563,8 @@ class S4UKerberosTests(KDCBaseTest):
     def _run_delegation_test(self, kdc_dict):
         s4u2self = kdc_dict.pop('s4u2self', False)
 
+        authtime_delay = kdc_dict.pop('authtime_delay', 0)
+
         client_opts = kdc_dict.pop('client_opts', None)
         client_creds = self.get_cached_creds(
             account_type=self.AccountType.USER,
@@ -601,6 +604,8 @@ class S4UKerberosTests(KDCBaseTest):
                 opts=service1_opts)
 
         service1_tgt = self.get_tgt(service1_creds)
+        self.assertElementPresent(service1_tgt.ticket_private, 'authtime')
+        service1_tgt_authtime = self.getElementValue(service1_tgt.ticket_private, 'authtime')
 
         client_username = client_creds.get_username()
         client_realm = client_creds.get_realm()
@@ -628,6 +633,8 @@ class S4UKerberosTests(KDCBaseTest):
                                          ARCFOUR_HMAC_MD5))
 
         if s4u2self:
+            self.assertEqual(authtime_delay, 0)
+
             def generate_s4u2self_padata(_kdc_exchange_dict,
                                          _callback_dict,
                                          req_body):
@@ -673,18 +680,31 @@ class S4UKerberosTests(KDCBaseTest):
 
             client_service_tkt = s4u2self_kdc_exchange_dict['rep_ticket_creds']
         else:
+            if authtime_delay != 0:
+                time.sleep(authtime_delay)
+                fresh = True
+            else:
+                fresh = False
+
             client_tgt = self.get_tgt(client_creds,
                                       kdc_options=client_tkt_options,
-                                      expected_flags=expected_flags)
+                                      expected_flags=expected_flags,
+                                      fresh=fresh)
             client_service_tkt = self.get_service_ticket(
                 client_tgt,
                 service1_creds,
                 kdc_options=client_tkt_options,
-                expected_flags=expected_flags)
+                expected_flags=expected_flags,
+                fresh=fresh)
 
         modify_client_tkt_fn = kdc_dict.pop('modify_client_tkt_fn', None)
         if modify_client_tkt_fn is not None:
             client_service_tkt = modify_client_tkt_fn(client_service_tkt)
+
+        self.assertElementPresent(client_service_tkt.ticket_private, 'authtime')
+        expected_authtime = self.getElementValue(client_service_tkt.ticket_private, 'authtime')
+        if authtime_delay > 1:
+            self.assertNotEqual(expected_authtime, service1_tgt_authtime)
 
         additional_tickets = [client_service_tkt.ticket]
 
@@ -792,6 +812,7 @@ class S4UKerberosTests(KDCBaseTest):
         if not expected_error_mode:
             # Check whether the ticket contains a PAC.
             ticket = kdc_exchange_dict['rep_ticket_creds']
+            self.assertElementEqual(ticket.ticket_private, 'authtime', expected_authtime)
             pac = self.get_ticket_pac(ticket, expect_pac=expect_pac)
             ticket_auth_data = ticket.ticket_private.get('authorization-data')
             expected_num_ticket_auth_data = 0
@@ -840,6 +861,15 @@ class S4UKerberosTests(KDCBaseTest):
             {
                 'expected_error_mode': 0,
                 'allow_delegation': True
+            })
+
+    def test_constrained_delegation_authtime(self):
+        # Test constrained delegation.
+        self._run_delegation_test(
+            {
+                'expected_error_mode': 0,
+                'allow_delegation': True,
+                'authtime_delay': 2,
             })
 
     def test_constrained_delegation_with_enc_auth_data_subkey(self):
