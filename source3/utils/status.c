@@ -109,7 +109,7 @@ static bool Ucrit_addPid( struct server_id pid )
 		return True;
 
 	if ( Ucrit_MaxPid >= SMB_MAXPIDS ) {
-		d_printf("ERROR: More than %d pids for user %s!\n",
+		fprintf(stderr, "ERROR: More than %d pids for user %s!\n",
 			 SMB_MAXPIDS, uidtoname(Ucrit_uid));
 
 		return False;
@@ -161,11 +161,12 @@ static int print_share_mode(struct file_id fid,
 			case DENY_WRITE:d_printf("DENY_WRITE "); break;
 			case DENY_FCB:  d_printf("DENY_FCB   "); break;
 			default: {
-				d_printf("unknown-please report ! "
-					 "e->share_access = 0x%x, "
-					 "e->private_options = 0x%x\n",
-					 (unsigned int)e->share_access,
-					 (unsigned int)e->private_options );
+				fprintf(stderr,
+					"unknown-please report ! "
+					"e->share_access = 0x%x, "
+					"e->private_options = 0x%x\n",
+					(unsigned int)e->share_access,
+					(unsigned int)e->private_options);
 				break;
 			}
 		}
@@ -761,13 +762,13 @@ int main(int argc, const char *argv[])
 	sec_init();
 
 	if (getuid() != geteuid()) {
-		d_printf("smbstatus should not be run setuid\n");
+		fprintf(stderr, "smbstatus should not be run setuid\n");
 		ret = 1;
 		goto done;
 	}
 
 	if (getuid() != 0) {
-		d_printf("smbstatus only works as root!\n");
+		fprintf(stderr, "smbstatus only works as root!\n");
 		ret = 1;
 		goto done;
 	}
@@ -842,7 +843,7 @@ int main(int argc, const char *argv[])
 
 		db_path = lock_path(talloc_tos(), "locking.tdb");
 		if (db_path == NULL) {
-			d_printf("Out of memory - exiting\n");
+			fprintf(stderr, "Out of memory - exiting\n");
 			ret = -1;
 			goto done;
 		}
@@ -852,8 +853,8 @@ int main(int argc, const char *argv[])
 			     DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 
 		if (!db) {
-			d_printf("%s not initialised\n", db_path);
-			d_printf("This is normal if an SMB client has never "
+			fprintf(stderr, "%s not initialised\n", db_path);
+			fprintf(stderr, "This is normal if an SMB client has never "
 				 "connected to your server.\n");
 			TALLOC_FREE(db_path);
 			exit(0);
@@ -863,7 +864,7 @@ int main(int argc, const char *argv[])
 		}
 
 		if (!locking_init_readonly()) {
-			d_printf("Can't initialise locking module - exiting\n");
+			fprintf(stderr, "Can't initialise locking module - exiting\n");
 			ret = 1;
 			goto done;
 		}
@@ -871,9 +872,9 @@ int main(int argc, const char *argv[])
 		result = share_entry_forall(print_share_mode, &resolve_uids);
 
 		if (result == 0) {
-			d_printf("No locked files\n");
+			fprintf(stderr, "No locked files\n");
 		} else if (result < 0) {
-			d_printf("locked file list truncated\n");
+			fprintf(stderr, "locked file list truncated\n");
 		}
 
 		d_printf("\n");
