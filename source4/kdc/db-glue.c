@@ -2530,9 +2530,8 @@ struct samba_kdc_seq {
 
 static krb5_error_code samba_kdc_seq(krb5_context context,
 				     struct samba_kdc_db_context *kdc_db_ctx,
-				     struct sdb_entry_ex *entry_ex)
+				     struct sdb_entry *entry)
 {
-	struct sdb_entry *entry = &entry_ex->entry;
 	krb5_error_code ret;
 	struct samba_kdc_seq *priv = kdc_db_ctx->seq_ctx;
 	const char *realm = lpcfg_realm(kdc_db_ctx->lp_ctx);
@@ -2595,8 +2594,9 @@ out:
 
 krb5_error_code samba_kdc_firstkey(krb5_context context,
 				   struct samba_kdc_db_context *kdc_db_ctx,
-				   struct sdb_entry_ex *entry)
+				   struct sdb_entry_ex *entry_ex)
 {
+	struct sdb_entry *entry = &entry_ex->entry;
 	struct ldb_context *ldb_ctx = kdc_db_ctx->samdb;
 	struct samba_kdc_seq *priv = kdc_db_ctx->seq_ctx;
 	char *realm;
@@ -2666,8 +2666,9 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 
 krb5_error_code samba_kdc_nextkey(krb5_context context,
 				  struct samba_kdc_db_context *kdc_db_ctx,
-				  struct sdb_entry_ex *entry)
+				  struct sdb_entry_ex *entry_ex)
 {
+	struct sdb_entry *entry = &entry_ex->entry;
 	return samba_kdc_seq(context, kdc_db_ctx, entry);
 }
 
