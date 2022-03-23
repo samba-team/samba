@@ -315,7 +315,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 			 * ticket.
 			 */
 			if (rodc_id != krbtgt->kvno >> 16) {
-				struct sdb_entry_ex signing_krbtgt_sdb;
+				struct sdb_entry signing_krbtgt_sdb;
 
 				/*
 				 * If we didn't sign the ticket, then return an
@@ -336,15 +336,15 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 						      krbtgt->principal,
 						      SDB_F_GET_KRBTGT | SDB_F_CANON,
 						      0,
-						      &signing_krbtgt_sdb.entry);
+						      &signing_krbtgt_sdb);
 				if (ret != 0) {
 					return ret;
 				}
 
 				ret = sdb_entry_to_hdb_entry(context,
-							     &signing_krbtgt_sdb.entry,
+							     &signing_krbtgt_sdb,
 							     &signing_krbtgt_hdb);
-				sdb_free_entry(&signing_krbtgt_sdb);
+				sdb_entry_free(&signing_krbtgt_sdb);
 				if (ret != 0) {
 					return ret;
 				}
