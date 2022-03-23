@@ -2254,9 +2254,8 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 					      TALLOC_CTX *mem_ctx,
 					      krb5_const_principal principal,
 					      unsigned flags,
-					      struct sdb_entry_ex *entry_ex)
+					      struct sdb_entry *entry)
 {
-	struct sdb_entry *entry = &entry_ex->entry;
 	krb5_error_code ret;
 	struct ldb_dn *realm_dn;
 	struct ldb_message *msg;
@@ -2509,7 +2508,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 		if (ret != SDB_ERR_NOENTRY) goto done;
 
 		/* We return 'no entry' if it does not start with krbtgt/, so move to the common case quickly */
-		ret = samba_kdc_fetch_server(context, kdc_db_ctx, mem_ctx, principal, flags, entry_ex);
+		ret = samba_kdc_fetch_server(context, kdc_db_ctx, mem_ctx, principal, flags, entry);
 		if (ret != SDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & SDB_F_GET_KRBTGT) {
