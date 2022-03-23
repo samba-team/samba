@@ -301,10 +301,3 @@ error:
 	free_hdb_entry(h);
 	return rc;
 }
-
-int sdb_entry_ex_to_hdb_entry_ex(krb5_context context,
-				 const struct sdb_entry_ex *s,
-				 hdb_entry *h)
-{
-	return sdb_entry_to_hdb_entry(context, &s->entry, h);
-}
