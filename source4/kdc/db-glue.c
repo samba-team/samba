@@ -885,9 +885,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					       unsigned flags,
 					       struct ldb_dn *realm_dn,
 					       struct ldb_message *msg,
-					       struct sdb_entry_ex *entry_ex)
+					       struct sdb_entry *entry)
 {
-	struct sdb_entry *entry = &entry_ex->entry;
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	uint32_t userAccountControl;
 	uint32_t msDS_User_Account_Control_Computed;
@@ -1916,7 +1915,9 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 					       TALLOC_CTX *mem_ctx,
 					       krb5_const_principal principal,
 					       unsigned flags,
-					       struct sdb_entry_ex *entry_ex) {
+					       struct sdb_entry_ex *entry_ex)
+{
+	struct sdb_entry *entry = &entry_ex->entry;
 	struct ldb_dn *realm_dn;
 	krb5_error_code ret;
 	struct ldb_message *msg = NULL;
@@ -1931,7 +1932,7 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 	ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 				      principal, SAMBA_KDC_ENT_TYPE_CLIENT,
 				      flags,
-				      realm_dn, msg, entry_ex);
+				      realm_dn, msg, entry);
 	return ret;
 }
 
@@ -2023,7 +2024,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 					      principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
-					      flags, realm_dn, msg, entry_ex);
+					      flags, realm_dn, msg, entry);
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch: self krbtgt message2entry failed");
 		}
@@ -2257,6 +2258,7 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 					      unsigned flags,
 					      struct sdb_entry_ex *entry_ex)
 {
+	struct sdb_entry *entry = &entry_ex->entry;
 	krb5_error_code ret;
 	struct ldb_dn *realm_dn;
 	struct ldb_message *msg;
@@ -2270,7 +2272,7 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 	ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 				      principal, SAMBA_KDC_ENT_TYPE_SERVER,
 				      flags,
-				      realm_dn, msg, entry_ex);
+				      realm_dn, msg, entry);
 	if (ret != 0) {
 		krb5_warnx(context, "samba_kdc_fetch: message2entry failed");
 	}
@@ -2530,8 +2532,9 @@ struct samba_kdc_seq {
 
 static krb5_error_code samba_kdc_seq(krb5_context context,
 				     struct samba_kdc_db_context *kdc_db_ctx,
-				     struct sdb_entry_ex *entry)
+				     struct sdb_entry_ex *entry_ex)
 {
+	struct sdb_entry *entry = &entry_ex->entry;
 	krb5_error_code ret;
 	struct samba_kdc_seq *priv = kdc_db_ctx->seq_ctx;
 	const char *realm = lpcfg_realm(kdc_db_ctx->lp_ctx);
