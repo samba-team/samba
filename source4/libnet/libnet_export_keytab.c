@@ -67,7 +67,8 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 		}
 
 		code = samba_kdc_fetch(context, db_ctx, k5_princ,
-				       SDB_F_GET_ANY, 0, &sentry);
+				       SDB_F_GET_ANY | SDB_F_ADMIN_DATA,
+				       0, &sentry);
 
 		krb5_free_principal(context, k5_princ);
 	} else {
