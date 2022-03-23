@@ -48,6 +48,7 @@
 #include "conn_tdb.h"
 #include "serverid.h"
 #include "status_profile.h"
+#include "status.h"
 #include "smbd/notifyd/notifyd_db.h"
 #include "cmdline_contexts.h"
 #include "locking/leases_db.h"
@@ -618,8 +619,8 @@ int main(int argc, const char *argv[])
 	int profile_only = 0;
 	bool show_processes, show_locks, show_shares;
 	bool show_notify = false;
-	bool resolve_uids = false;
 	poptContext pc = NULL;
+	struct traverse_state state = {0};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{
@@ -736,6 +737,8 @@ int main(int argc, const char *argv[])
 	char *db_path;
 	bool ok;
 
+	state.resolve_uids = false;
+
 	smb_init_locale();
 
 	ok = samba_cmdline_init(frame,
@@ -796,7 +799,7 @@ int main(int argc, const char *argv[])
 			do_checks = false;
 			break;
 		case OPT_RESOLVE_UIDS:
-			resolve_uids = true;
+			state.resolve_uids = true;
 			break;
 		case POPT_ERROR_BADOPT:
 			fprintf(stderr, "\nInvalid option %s: %s\n\n",
@@ -916,7 +919,7 @@ int main(int argc, const char *argv[])
 			goto done;
 		}
 
-		result = share_entry_forall(print_share_mode, &resolve_uids);
+		result = share_entry_forall(print_share_mode, &state.resolve_uids);
 
 		if (result == 0) {
 			fprintf(stderr, "No locked files\n");
