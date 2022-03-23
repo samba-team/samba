@@ -317,4 +317,17 @@ int ldb_match_message(struct ldb_context *ldb,
 		      const struct ldb_parse_tree *tree,
 		      enum ldb_scope scope, bool *matched);
 
+/**
+ * @brief Convert a character to uppercase with ASCII precedence.
+ *
+ * This will convert a character to uppercase. If the character is an ASCII
+ * character it will convert it to uppercase ASCII first and then fallback to
+ * localized toupper() from libc.
+ *
+ * @param c The character to convert.
+ *
+ * @return The converted character or c if the conversion was not possible.
+ */
+char ldb_ascii_toupper(char c);
+
 #endif

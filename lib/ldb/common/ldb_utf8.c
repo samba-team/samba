@@ -134,3 +134,7 @@ int ldb_attr_dn(const char *attr)
 	}
 	return -1;
 }
+
+_PRIVATE_ char ldb_ascii_toupper(char c) {
+	return ('a' <= c && c <= 'z') ? c ^ 0x20 : toupper(c);
+}
