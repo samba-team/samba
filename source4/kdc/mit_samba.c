@@ -387,7 +387,7 @@ done:
 int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 			   krb5_db_entry **_kentry)
 {
-	struct sdb_entry_ex sentry = {};
+	struct sdb_entry sentry = {};
 	krb5_db_entry *kentry;
 	int ret;
 
@@ -396,7 +396,7 @@ int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	ret = samba_kdc_firstkey(ctx->context, ctx->db_ctx, &sentry.entry);
+	ret = samba_kdc_firstkey(ctx->context, ctx->db_ctx, &sentry);
 	switch (ret) {
 	case 0:
 		break;
@@ -410,9 +410,9 @@ int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 		return ret;
 	}
 
-	ret = sdb_entry_to_krb5_db_entry(ctx->context, &sentry.entry, kentry);
+	ret = sdb_entry_to_krb5_db_entry(ctx->context, &sentry, kentry);
 
-	sdb_free_entry(&sentry);
+	sdb_entry_free(&sentry);
 
 	if (ret) {
 		free(kentry);
@@ -425,7 +425,7 @@ int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 			  krb5_db_entry **_kentry)
 {
-	struct sdb_entry_ex sentry = {};
+	struct sdb_entry sentry = {};
 	krb5_db_entry *kentry;
 	int ret;
 
@@ -434,7 +434,7 @@ int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	ret = samba_kdc_nextkey(ctx->context, ctx->db_ctx, &sentry.entry);
+	ret = samba_kdc_nextkey(ctx->context, ctx->db_ctx, &sentry);
 	switch (ret) {
 	case 0:
 		break;
@@ -448,9 +448,9 @@ int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 		return ret;
 	}
 
-	ret = sdb_entry_to_krb5_db_entry(ctx->context, &sentry.entry, kentry);
+	ret = sdb_entry_to_krb5_db_entry(ctx->context, &sentry, kentry);
 
-	sdb_free_entry(&sentry);
+	sdb_entry_free(&sentry);
 
 	if (ret) {
 		free(kentry);
