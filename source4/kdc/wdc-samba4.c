@@ -341,9 +341,9 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 					return ret;
 				}
 
-				ret = sdb_entry_ex_to_hdb_entry_ex(context,
-								   &signing_krbtgt_sdb,
-								   &signing_krbtgt_hdb);
+				ret = sdb_entry_to_hdb_entry(context,
+							     &signing_krbtgt_sdb.entry,
+							     &signing_krbtgt_hdb);
 				sdb_free_entry(&signing_krbtgt_sdb);
 				if (ret != 0) {
 					return ret;

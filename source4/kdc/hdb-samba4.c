@@ -240,7 +240,7 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 					     krb5_const_principal principal,
 					     unsigned flags,
 					     krb5_kvno kvno,
-					     hdb_entry *entry_ex)
+					     hdb_entry *entry)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
 	struct sdb_entry_ex sdb_entry_ex = {};
@@ -253,7 +253,7 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 	if (flags & HDB_F_GET_FAST_COOKIE) {
 		return hdb_samba4_fetch_fast_cookie(context,
 						    kdc_db_ctx,
-						    entry_ex);
+						    entry);
 	}
 
 	sflags = (flags & SDB_F_HDB_MASK);
@@ -283,7 +283,7 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 		return ret;
 	}
 
-	ret = sdb_entry_ex_to_hdb_entry_ex(context, &sdb_entry_ex, entry_ex);
+	ret = sdb_entry_to_hdb_entry(context, &sdb_entry_ex.entry, entry);
 	sdb_free_entry(&sdb_entry_ex);
 
 	if (code != 0 && ret != 0) {
@@ -317,7 +317,7 @@ static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsign
 		return ret;
 	}
 
-	ret = sdb_entry_ex_to_hdb_entry_ex(context, &sdb_entry_ex, entry);
+	ret = sdb_entry_to_hdb_entry(context, &sdb_entry_ex.entry, entry);
 	sdb_free_entry(&sdb_entry_ex);
 	return ret;
 }
@@ -346,7 +346,7 @@ static krb5_error_code hdb_samba4_nextkey(krb5_context context, HDB *db, unsigne
 		return ret;
 	}
 
-	ret = sdb_entry_ex_to_hdb_entry_ex(context, &sdb_entry_ex, entry);
+	ret = sdb_entry_to_hdb_entry(context, &sdb_entry_ex.entry, entry);
 	sdb_free_entry(&sdb_entry_ex);
 	return ret;
 }
