@@ -27,12 +27,6 @@
 #include "samba_kdc.h"
 #include "lib/krb5_wrap/krb5_samba.h"
 
-void sdb_free_entry(struct sdb_entry_ex *ent)
-{
-	sdb_entry_free(&ent->entry);
-	ZERO_STRUCTP(ent);
-}
-
 void sdb_key_free(struct sdb_key *k)
 {
 	if (k == NULL) {

@@ -94,10 +94,6 @@ struct sdb_entry {
 	struct SDBFlags flags;
 };
 
-struct sdb_entry_ex {
-	struct sdb_entry entry;
-};
-
 #define SDB_ERR_NOENTRY 36150275
 #define SDB_ERR_NOT_FOUND_HERE 36150287
 #define SDB_ERR_WRONG_REALM 36150289
@@ -128,7 +124,6 @@ struct sdb_entry_ex {
 /* This is not supported by HDB */
 #define SDB_F_FORCE_CANON	16384	/* force canonicalition */
 
-void sdb_free_entry(struct sdb_entry_ex *e);
 void sdb_key_free(struct sdb_key *key);
 void sdb_keys_free(struct sdb_keys *keys);
 void sdb_entry_free(struct sdb_entry *e);
