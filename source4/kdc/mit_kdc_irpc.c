@@ -55,7 +55,7 @@ static NTSTATUS netr_samlogon_generic_logon(struct irpc_message *msg,
 	enum ndr_err_code ndr_err;
 	int code;
 	krb5_principal principal;
-	struct sdb_entry_ex sentry = {};
+	struct sdb_entry sentry = {};
 	struct sdb_keys skeys;
 	unsigned int i;
 	const uint8_t *d = NULL;
@@ -112,7 +112,7 @@ static NTSTATUS netr_samlogon_generic_logon(struct irpc_message *msg,
 			       principal,
 			       SDB_F_GET_KRBTGT | SDB_F_DECRYPT,
 			       0,
-			       &sentry.entry);
+			       &sentry);
 	krb5_free_principal(mki_ctx->krb5_context, principal);
 	if (code != 0) {
 		DEBUG(0, ("Failed to fetch krbtgt@%s principal entry!\n",
@@ -131,7 +131,7 @@ static NTSTATUS netr_samlogon_generic_logon(struct irpc_message *msg,
 	 * Brute force variant because MIT KRB5 doesn't provide a function like
 	 * krb5_checksum_to_enctype().
 	 */
-	skeys = sentry.entry.keys;
+	skeys = sentry.keys;
 
 	for (i = 0; i < skeys.len; i++) {
 		krb5_keyblock krbtgt_keyblock = skeys.val[i].key;
@@ -145,7 +145,7 @@ static NTSTATUS netr_samlogon_generic_logon(struct irpc_message *msg,
 		}
 	}
 
-	sdb_free_entry(&sentry);
+	sdb_entry_free(&sentry);
 
 	if (code != 0) {
 		return NT_STATUS_LOGON_FAILURE;
