@@ -34,7 +34,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			    const char *principal,
 			    const char **error_string)
 {
-	struct sdb_entry_ex sentry = {};
+	struct sdb_entry sentry = {};
 	krb5_keytab keytab;
 	krb5_error_code code = 0;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -68,18 +68,18 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 
 		code = samba_kdc_fetch(context, db_ctx, k5_princ,
 				       SDB_F_GET_ANY | SDB_F_ADMIN_DATA,
-				       0, &sentry.entry);
+				       0, &sentry);
 
 		krb5_free_principal(context, k5_princ);
 	} else {
-		code = samba_kdc_firstkey(context, db_ctx, &sentry.entry);
+		code = samba_kdc_firstkey(context, db_ctx, &sentry);
 	}
 
-	for (; code == 0; code = samba_kdc_nextkey(context, db_ctx, &sentry.entry)) {
+	for (; code == 0; code = samba_kdc_nextkey(context, db_ctx, &sentry)) {
 		int i;
 
 		code = krb5_unparse_name(context,
-					 sentry.entry.principal,
+					 sentry.principal,
 					 &entry_principal);
 		if (code != 0) {
 			*error_string = smb_get_krb5_error_message(context,
@@ -89,15 +89,15 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		if (sentry.entry.keys.len == 0) {
+		if (sentry.keys.len == 0) {
 			SAFE_FREE(entry_principal);
-			sdb_free_entry(&sentry);
+			sdb_entry_free(&sentry);
 
 			continue;
 		}
 
-		for (i = 0; i < sentry.entry.keys.len; i++) {
-			struct sdb_key *s = &(sentry.entry.keys.val[i]);
+		for (i = 0; i < sentry.keys.len; i++) {
+			struct sdb_key *s = &(sentry.keys.val[i]);
 			krb5_enctype enctype;
 
 			enctype = KRB5_KEY_TYPE(&(s->key));
@@ -108,7 +108,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 				  (int)enctype);
 			code = smb_krb5_kt_add_entry(context,
 						     keytab,
-						     sentry.entry.kvno,
+						     sentry.kvno,
 						     entry_principal,
 						     NULL,
 						     enctype,
@@ -131,7 +131,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 		}
 
 		SAFE_FREE(entry_principal);
-		sdb_free_entry(&sentry);
+		sdb_entry_free(&sentry);
 	}
 
 	if (code != 0 && code != SDB_ERR_NOENTRY) {
@@ -145,7 +145,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 	status = NT_STATUS_OK;
 done:
 	SAFE_FREE(entry_principal);
-	sdb_free_entry(&sentry);
+	sdb_entry_free(&sentry);
 
 	return status;
 }
