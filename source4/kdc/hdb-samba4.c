@@ -153,13 +153,13 @@ static int hdb_samba4_fill_fast_cookie(krb5_context context,
 
 static krb5_error_code hdb_samba4_fetch_fast_cookie(krb5_context context,
 						    struct samba_kdc_db_context *kdc_db_ctx,
-						    hdb_entry *entry_ex)
+						    hdb_entry *entry)
 {
 	krb5_error_code ret = SDB_ERR_NOENTRY;
 	TALLOC_CTX *mem_ctx;
 	struct ldb_result *res;
 	int ldb_ret;
-	struct sdb_entry_ex sdb_entry_ex = {};
+	struct sdb_entry sentry = {};
 	const char *attrs[] = {
 		"secret",
 		NULL
@@ -214,7 +214,7 @@ static krb5_error_code hdb_samba4_fetch_fast_cookie(krb5_context context,
 
 
 	ret = krb5_make_principal(context,
-				  &sdb_entry_ex.entry.principal,
+				  &sentry.principal,
 				  KRB5_WELLKNOWN_ORG_H5L_REALM,
 				  KRB5_WELLKNOWN_NAME, "org.h5l.fast-cookie",
 				  NULL);
@@ -224,15 +224,13 @@ static krb5_error_code hdb_samba4_fetch_fast_cookie(krb5_context context,
 	}
 
 	ret = samba_kdc_set_fixed_keys(context, kdc_db_ctx, val, false,
-				       &sdb_entry_ex.entry.keys);
+				       &sentry.keys);
 	if (ret != 0) {
 		return ret;
 	}
 
-	ret = sdb_entry_ex_to_hdb_entry_ex(context,
-					   &sdb_entry_ex,
-					   entry_ex);
-	sdb_free_entry(&sdb_entry_ex);
+	ret = sdb_entry_to_hdb_entry(context, &sentry, entry);
+	sdb_entry_free(&sentry);
 	TALLOC_FREE(mem_ctx);
 
 	return ret;
