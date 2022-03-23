@@ -10,14 +10,14 @@ EOF
 	exit 1
 fi
 
-SERVER=$1
-USERNAME=$2
-PASSWORD=$3
-REALM=$4
-DOMAIN=$5
-PREFIX=$6
-ENCTYPE=$7
-smbclient=$8
+SERVER="${1}"
+USERNAME="${2}"
+PASSWORD="${3}"
+REALM="${4}"
+DOMAIN="${5}"
+PREFIX="${6}"
+ENCTYPE="${7}"
+smbclient="${8}"
 shift 8
 failed=0
 
@@ -74,10 +74,10 @@ testit_expect_failure "STEP1 kinit with password" \
 	$samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP1 Test login with NTLM" \
-	$smbclient "$unc" -c 'ls' -U$USERNAME%$PASSWORD ||
+	"${smbclient}" "${unc}" -c 'ls' "-U${USERNAME}%${PASSWORD}" ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP1 Test wbinfo with password" \
-	$wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD ||
+	"${wbinfo}" "--authenticate=$DOMAIN/$USERNAME%$PASSWORD" ||
 	failed=$((failed + 1))
 
 testit "STEP1 kinit with pkinit (name specified) " \
@@ -87,7 +87,7 @@ testit "STEP1 kinit renew ticket (name specified)" \
 	$samba4kinit --request-pac -R ||
 	failed=$((failed + 1))
 test_smbclient "STEP1 Test login with kerberos ccache (name specified)" \
-	'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME ||
+	'ls' "$unc" --use-krb5-ccache="${KRB5CCNAME}" ||
 	failed=$((failed + 1))
 
 testit_expect_failure "STEP1 kinit with pkinit (wrong name specified) " \
@@ -105,7 +105,7 @@ testit "STEP1 kinit renew ticket (enterprise name specified)" \
 	$samba4kinit --request-pac -R ||
 	failed=$((failed + 1))
 test_smbclient "STEP1 Test login with kerberos ccache (enterprise name specified)" \
-	'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME ||
+	'ls' "${unc}" --use-krb5-ccache="${KRB5CCNAME}" ||
 	failed=$((failed + 1))
 
 testit_expect_failure "STEP1 kinit with pkinit (wrong enterprise name specified) " \
@@ -136,10 +136,10 @@ testit_expect_failure "STEP2 kinit with password" \
 	$samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM ||
 	failed=$((failed + 1))
 test_smbclient "STEP2 Test login with NTLM" \
-	'ls' "$unc" -U$USERNAME%$PASSWORD ||
+	'ls' "$unc" -U"${USERNAME}%${PASSWORD}" ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP2 Test wbinfo with password" \
-	$wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD ||
+	"${wbinfo}" --authenticate="${DOMAIN}/${USERNAME}%${PASSWORD}" ||
 	failed=$((failed + 1))
 
 testit "STEP2 kinit with pkinit (name specified) " \
@@ -149,7 +149,7 @@ testit "STEP2 kinit renew ticket (name specified)" \
 	$samba4kinit --request-pac -R ||
 	failed=$((failed + 1))
 test_smbclient "STEP2 Test login with kerberos ccache (name specified)" \
-	'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME ||
+	'ls' "$unc" --use-krb5-ccache="${KRB5CCNAME}" ||
 	failed=$((failed + 1))
 
 testit "STEP2 kinit with pkinit (enterprise name specified)" \
@@ -159,7 +159,7 @@ testit "STEP2 kinit renew ticket (enterprise name specified)" \
 	$samba4kinit --request-pac -R ||
 	failed=$((failed + 1))
 test_smbclient "STEP2 Test login with kerberos ccache (enterprise name specified)" \
-	'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME ||
+	'ls' "$unc" --use-krb5-ccache="${KRB5CCNAME}" ||
 	failed=$((failed + 1))
 
 testit "STEP2 kinit with pkinit (enterprise name in cert)" \
@@ -182,13 +182,13 @@ testit "STEP3 kinit with password" \
 	$samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM ||
 	failed=$((failed + 1))
 test_smbclient "STEP3 Test login with user kerberos ccache" \
-	'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME ||
+	'ls' "$unc" --use-krb5-ccache="${KRB5CCNAME}" ||
 	failed=$((failed + 1))
 test_smbclient "STEP3 Test login with NTLM" \
-	'ls' "$unc" -U$USERNAME%$PASSWORD ||
+	'ls' "$unc" -U"${USERNAME}%${PASSWORD}" ||
 	failed=$((failed + 1))
 testit "STEP3 Test wbinfo with password" \
-	$wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD ||
+	"${wbinfo}" --authenticate="${DOMAIN}/${USERNAME}%${PASSWORD}" ||
 	failed=$((failed + 1))
 
 testit "STEP3 kinit with pkinit (name specified) " \
@@ -198,7 +198,7 @@ testit "STEP3 kinit renew ticket (name specified)" \
 	$samba4kinit --request-pac -R ||
 	failed=$((failed + 1))
 test_smbclient "STEP3 Test login with kerberos ccache (name specified)" \
-	'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME ||
+	'ls' "$unc" --use-krb5-ccache="${KRB5CCNAME}" ||
 	failed=$((failed + 1))
 
 testit "STEP3 kinit with pkinit (enterprise name specified)" \
@@ -232,10 +232,10 @@ testit_expect_failure "STEP4 kinit with password" \
 	$samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP4 Test login with NTLM" \
-	$smbclient "$unc" -c 'ls' -U$USERNAME%$PASSWORD ||
+	"${smbclient}" "${unc}" -c 'ls' -U"${USERNAME}%${PASSWORD}" ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP4 Test wbinfo with password" \
-	$wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD ||
+	"${wbinfo}" --authenticate="${DOMAIN}/${USERNAME}%${PASSWORD}" ||
 	failed=$((failed + 1))
 
 testit "STEP4 kinit with pkinit (name specified) " \
@@ -245,7 +245,7 @@ testit "STEP4 kinit renew ticket (name specified)" \
 	$samba4kinit --request-pac -R ||
 	failed=$((failed + 1))
 test_smbclient "STEP4 Test login with kerberos ccache (name specified)" \
-	'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME ||
+	'ls' "$unc" --use-krb5-ccache="${KRB5CCNAME}" ||
 	failed=$((failed + 1))
 
 testit "STEP4 kinit with pkinit (enterprise name specified)" \
@@ -255,7 +255,7 @@ testit "STEP4 kinit renew ticket (enterprise name specified)" \
 	$samba4kinit --request-pac -R ||
 	failed=$((failed + 1))
 test_smbclient "STEP4 Test login with kerberos ccache (enterprise name specified)" \
-	'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME ||
+	'ls' "$unc" --use-krb5-ccache="${KRB5CCNAME}" ||
 	failed=$((failed + 1))
 
 testit "STEP4 kinit with pkinit (enterprise name in cert)" \
@@ -278,10 +278,10 @@ testit_expect_failure "STEP5 kinit with password" \
 	$samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP5 Test login with NTLM" \
-	$smbclient "$unc" -c 'ls' -U$USERNAME%$PASSWORD ||
+	"${smbclient}" "${unc}" -c 'ls' -U"${USERNAME}%${PASSWORD}" ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP5 Test wbinfo with password" \
-	$wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD ||
+	"${wbinfo}" --authenticate="${DOMAIN}/${USERNAME}%${PASSWORD}" ||
 	failed=$((failed + 1))
 
 testit_expect_failure "STEP5 kinit with pkinit (name specified) " \
