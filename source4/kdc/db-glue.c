@@ -1344,9 +1344,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					       unsigned flags,
 					       uint32_t kvno,
 					       struct ldb_message *msg,
-					       struct sdb_entry_ex *entry_ex)
+					       struct sdb_entry *entry)
 {
-	struct sdb_entry *entry = &entry_ex->entry;
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	const char *our_realm = lpcfg_realm(lp_ctx);
 	char *partner_realm = NULL;
@@ -1944,6 +1943,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					      uint32_t kvno,
 					      struct sdb_entry_ex *entry_ex)
 {
+	struct sdb_entry *entry = &entry_ex->entry;
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	krb5_error_code ret;
 	struct ldb_message *msg = NULL;
@@ -2067,7 +2067,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 		ret = samba_kdc_trust_message2entry(context, kdc_db_ctx, mem_ctx,
 						    direction,
-						    realm_dn, flags, kvno, msg, entry_ex);
+						    realm_dn, flags, kvno, msg, entry);
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch: trust_message2entry failed for %s",
 				   ldb_dn_get_linearized(msg->dn));
