@@ -1522,6 +1522,22 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			}
 			goto done;
 		}
+
+		/*
+		 * The RODC PAC data isn't trusted for authorization as it may
+		 * be stale. The only thing meaningful we can do with an RODC
+		 * account on a full DC is exchange the RODC TGT for a 'real'
+		 * TGT.
+		 *
+		 * So we match Windows (at least server 2022) and
+		 * don't allow S4U2Self.
+		 *
+		 * https://lists.samba.org/archive/cifs-protocol/2022-April/003673.html
+		 */
+		if (flags & SAMBA_KDC_FLAG_PROTOCOL_TRANSITION) {
+			code = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+			goto done;
+		}
 	} else {
 		pac_blob = talloc_zero(mem_ctx, DATA_BLOB);
 		if (pac_blob == NULL) {
