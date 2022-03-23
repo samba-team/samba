@@ -904,7 +904,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	struct ldb_val computer_val = data_blob_string_const("computer");
 	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 
-	ZERO_STRUCTP(entry_ex);
+	ZERO_STRUCTP(entry);
 
 	if (ldb_msg_find_element(msg, "msDS-SecondaryKrbTgtNumber")) {
 		is_rodc = true;
@@ -1324,7 +1324,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 out:
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
-		sdb_free_entry(entry_ex);
+		sdb_entry_free(entry);
 	} else {
 		talloc_steal(kdc_db_ctx, p);
 	}
