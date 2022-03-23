@@ -2285,7 +2285,7 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 					      TALLOC_CTX *mem_ctx,
 					      krb5_const_principal principal,
 					      unsigned flags,
-					      struct sdb_entry_ex *entry_ex)
+					      struct sdb_entry *entry)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2448,10 +2448,10 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 		return 0;
 	}
 
-	ZERO_STRUCT(entry_ex->entry);
+	ZERO_STRUCTP(entry);
 
 	ret = krb5_copy_principal(context, principal,
-				  &entry_ex->entry.principal);
+				  &entry->principal);
 	if (ret) {
 		TALLOC_FREE(frame);
 		return ret;
@@ -2464,7 +2464,7 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 	}
 
 	ret = smb_krb5_principal_set_realm(context,
-					   entry_ex->entry.principal,
+					   entry->principal,
 					   upper);
 	if (ret) {
 		TALLOC_FREE(frame);
@@ -2482,6 +2482,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 				krb5_kvno kvno,
 				struct sdb_entry_ex *entry_ex)
 {
+	struct sdb_entry *entry = &entry_ex->entry;
 	krb5_error_code ret = SDB_ERR_NOENTRY;
 	TALLOC_CTX *mem_ctx;
 
@@ -2493,7 +2494,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 	}
 
 	ret = samba_kdc_lookup_realm(context, kdc_db_ctx, mem_ctx,
-				     principal, flags, entry_ex);
+				     principal, flags, entry);
 	if (ret != 0) {
 		goto done;
 	}
