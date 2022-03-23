@@ -127,8 +127,22 @@ static int print_share_mode(struct file_id fid,
 {
 	bool resolve_uids = *((bool *)private_data);
 	static int count;
+	const char *denymode = NULL;
+	uint denymode_int;
+	const char *oplock = NULL;
+	const char *pid = NULL;
+	const char *rw = NULL;
+	const char *filename = NULL;
+	const char *timestr = NULL;
+	const char *user_str = NULL;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
 
 	if (do_checks && !is_valid_share_mode_entry(e)) {
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
@@ -141,26 +155,52 @@ static int print_share_mode(struct file_id fid,
 
 	if (do_checks && !serverid_exists(&e->pid)) {
 		/* the process for this entry does not exist any more */
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
 	if (Ucrit_checkPid(e->pid)) {
 		struct server_id_buf tmp;
-		d_printf("%-11s  ", server_id_str_buf(e->pid, &tmp));
+		pid = server_id_str_buf(e->pid, &tmp);
 		if (resolve_uids) {
-			d_printf("%-14s  ", uidtoname(e->uid));
+			user_str = talloc_asprintf(tmp_ctx, "%s", uidtoname(e->uid));
 		} else {
-			d_printf("%-9u  ", (unsigned int)e->uid);
+			user_str = talloc_asprintf(tmp_ctx, "%u", (unsigned int)e->uid);
 		}
-		switch (map_share_mode_to_deny_mode(e->share_access,
-						    e->private_options)) {
-			case DENY_NONE: d_printf("DENY_NONE  "); break;
-			case DENY_ALL:  d_printf("DENY_ALL   "); break;
-			case DENY_DOS:  d_printf("DENY_DOS   "); break;
-			case DENY_READ: d_printf("DENY_READ  "); break;
-			case DENY_WRITE:d_printf("DENY_WRITE "); break;
-			case DENY_FCB:  d_printf("DENY_FCB   "); break;
+		if (user_str == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return -1;
+		}
+
+		denymode_int = map_share_mode_to_deny_mode(e->share_access,
+							   e->private_options);
+		switch (denymode_int) {
+			case DENY_NONE:
+				denymode = "DENY_NONE";
+				break;
+			case DENY_ALL:
+				denymode = "DENY_ALL";
+				break;
+			case DENY_DOS:
+				denymode = "DENY_DOS";
+				break;
+			case DENY_READ:
+				denymode = "DENY_READ";
+				break;
+			case DENY_WRITE:
+				denymode = "DENY_WRITE";
+				break;
+			case DENY_FCB:
+				denymode = "DENY_FCB";
+				break;
 			default: {
+				denymode = talloc_asprintf(tmp_ctx,
+							   "UNKNOWN(0x%08x)",
+							   denymode_int);
+				if (denymode == NULL) {
+					TALLOC_FREE(tmp_ctx);
+					return -1;
+				}
 				fprintf(stderr,
 					"unknown-please report ! "
 					"e->share_access = 0x%x, "
@@ -170,22 +210,29 @@ static int print_share_mode(struct file_id fid,
 				break;
 			}
 		}
-		d_printf("0x%-8x  ",(unsigned int)e->access_mask);
+		filename = talloc_asprintf(tmp_ctx,
+					   "%s%s",
+					   d->base_name,
+					   (d->stream_name != NULL) ? d->stream_name : "");
+		if (filename == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return -1;
+		}
 		if ((e->access_mask & (FILE_READ_DATA|FILE_WRITE_DATA))==
 				(FILE_READ_DATA|FILE_WRITE_DATA)) {
-			d_printf("RDWR       ");
+			rw = "RDWR";
 		} else if (e->access_mask & FILE_WRITE_DATA) {
-			d_printf("WRONLY     ");
+			rw = "WRONLY";
 		} else {
-			d_printf("RDONLY     ");
+			rw = "RDONLY";
 		}
 
 		if (e->op_type & BATCH_OPLOCK) {
-			d_printf("BATCH           ");
+			oplock = "BATCH";
 		} else if (e->op_type & EXCLUSIVE_OPLOCK) {
-			d_printf("EXCLUSIVE       ");
+			oplock = "EXCLUSIVE";
 		} else if (e->op_type & LEVEL_II_OPLOCK) {
-			d_printf("LEVEL_II        ");
+			oplock = "LEVEL_II";
 		} else if (e->op_type == LEASE_OPLOCK) {
 			NTSTATUS status;
 			uint32_t lstate;
@@ -202,26 +249,26 @@ static int print_share_mode(struct file_id fid,
 				NULL); /* epoch */
 
 			if (NT_STATUS_IS_OK(status)) {
-				d_printf("LEASE(%s%s%s)%s%s%s      ",
-					 (lstate & SMB2_LEASE_READ)?"R":"",
-					 (lstate & SMB2_LEASE_WRITE)?"W":"",
-					 (lstate & SMB2_LEASE_HANDLE)?"H":"",
-					 (lstate & SMB2_LEASE_READ)?"":" ",
-					 (lstate & SMB2_LEASE_WRITE)?"":" ",
-					 (lstate & SMB2_LEASE_HANDLE)?"":" ");
+				oplock = talloc_asprintf(tmp_ctx, "LEASE(%s%s%s)%s%s%s",
+						 (lstate & SMB2_LEASE_READ)?"R":"",
+						 (lstate & SMB2_LEASE_WRITE)?"W":"",
+						 (lstate & SMB2_LEASE_HANDLE)?"H":"",
+						 (lstate & SMB2_LEASE_READ)?"":" ",
+						 (lstate & SMB2_LEASE_WRITE)?"":" ",
+						 (lstate & SMB2_LEASE_HANDLE)?"":" ");
 			} else {
-				d_printf("LEASE STATE UNKNOWN");
+				oplock = "LEASE STATE UNKNOWN";
 			}
 		} else {
-			d_printf("NONE            ");
+			oplock = "NONE";
 		}
 
-		d_printf(" %s   %s%s   %s",
-			 d->servicepath, d->base_name,
-			 (d->stream_name != NULL) ? d->stream_name : "",
-			 time_to_asc((time_t)e->time.tv_sec));
+		timestr = time_to_asc((time_t)e->time.tv_sec);
+		d_printf("%-11s  %-9s  %-10s 0x%-8x  %-10s %-14s   %s   %s   %s",
+			 pid, user_str, denymode, (unsigned int)e->access_mask,
+			 rw, oplock, d->servicepath, filename, timestr);
 	}
-
+	TALLOC_FREE(tmp_ctx);
 	return 0;
 }
 
