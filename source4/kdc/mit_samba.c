@@ -368,7 +368,7 @@ fetch_referral_principal:
 		goto done;
 	}
 
-	ret = sdb_entry_ex_to_kdb_entry_ex(ctx->context, &sentry, kentry);
+	ret = sdb_entry_to_krb5_db_entry(ctx->context, &sentry.entry, kentry);
 
 	sdb_free_entry(&sentry);
 
@@ -410,7 +410,7 @@ int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 		return ret;
 	}
 
-	ret = sdb_entry_ex_to_kdb_entry_ex(ctx->context, &sentry, kentry);
+	ret = sdb_entry_to_krb5_db_entry(ctx->context, &sentry.entry, kentry);
 
 	sdb_free_entry(&sentry);
 
@@ -448,7 +448,7 @@ int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 		return ret;
 	}
 
-	ret = sdb_entry_ex_to_kdb_entry_ex(ctx->context, &sentry, kentry);
+	ret = sdb_entry_to_krb5_db_entry(ctx->context, &sentry.entry, kentry);
 
 	sdb_free_entry(&sentry);
 
