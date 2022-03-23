@@ -72,10 +72,10 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 
 		krb5_free_principal(context, k5_princ);
 	} else {
-		code = samba_kdc_firstkey(context, db_ctx, &sentry);
+		code = samba_kdc_firstkey(context, db_ctx, &sentry.entry);
 	}
 
-	for (; code == 0; code = samba_kdc_nextkey(context, db_ctx, &sentry)) {
+	for (; code == 0; code = samba_kdc_nextkey(context, db_ctx, &sentry.entry)) {
 		int i;
 
 		code = krb5_unparse_name(context,

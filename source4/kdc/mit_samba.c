@@ -396,7 +396,7 @@ int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	ret = samba_kdc_firstkey(ctx->context, ctx->db_ctx, &sentry);
+	ret = samba_kdc_firstkey(ctx->context, ctx->db_ctx, &sentry.entry);
 	switch (ret) {
 	case 0:
 		break;
@@ -434,7 +434,7 @@ int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	ret = samba_kdc_nextkey(ctx->context, ctx->db_ctx, &sentry);
+	ret = samba_kdc_nextkey(ctx->context, ctx->db_ctx, &sentry.entry);
 	switch (ret) {
 	case 0:
 		break;

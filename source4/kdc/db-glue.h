@@ -23,7 +23,6 @@
 
 struct sdb_keys;
 struct sdb_entry;
-struct sdb_entry_ex;
 
 
 int samba_kdc_set_fixed_keys(krb5_context context,
@@ -41,11 +40,11 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 
 krb5_error_code samba_kdc_firstkey(krb5_context context,
 				   struct samba_kdc_db_context *kdc_db_ctx,
-				   struct sdb_entry_ex *entry);
+				   struct sdb_entry *entry);
 
 krb5_error_code samba_kdc_nextkey(krb5_context context,
 				  struct samba_kdc_db_context *kdc_db_ctx,
-				  struct sdb_entry_ex *entry);
+				  struct sdb_entry *entry);
 
 krb5_error_code
 samba_kdc_check_client_matches_target_service(krb5_context context,

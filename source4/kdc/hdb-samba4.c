@@ -303,7 +303,7 @@ static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsign
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
 
-	ret = samba_kdc_firstkey(context, kdc_db_ctx, &sdb_entry_ex);
+	ret = samba_kdc_firstkey(context, kdc_db_ctx, &sdb_entry_ex.entry);
 	switch (ret) {
 	case 0:
 		break;
@@ -332,7 +332,7 @@ static krb5_error_code hdb_samba4_nextkey(krb5_context context, HDB *db, unsigne
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
 
-	ret = samba_kdc_nextkey(context, kdc_db_ctx, &sdb_entry_ex);
+	ret = samba_kdc_nextkey(context, kdc_db_ctx, &sdb_entry_ex.entry);
 	switch (ret) {
 	case 0:
 		break;
