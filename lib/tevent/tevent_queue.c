@@ -149,6 +149,12 @@ static void tevent_queue_immediate_trigger(struct tevent_context *ev,
 	q->list->trigger(q->list->req, q->list->private_data);
 }
 
+static void tevent_queue_noop_trigger(struct tevent_req *req,
+				      void *_private_data)
+{
+	/* this is doing nothing but blocking the queue */
+}
+
 static struct tevent_queue_entry *tevent_queue_add_internal(
 					struct tevent_queue *queue,
 					struct tevent_context *ev,
@@ -168,7 +174,7 @@ static struct tevent_queue_entry *tevent_queue_add_internal(
 	 * if there is no trigger, it is just a blocker
 	 */
 	if (trigger == NULL) {
-		e->triggered = true;
+		trigger = tevent_queue_noop_trigger;
 	}
 
 	e->queue = queue;
