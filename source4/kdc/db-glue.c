@@ -1375,7 +1375,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
 	NTSTATUS status;
 
-	ZERO_STRUCTP(entry_ex);
+	ZERO_STRUCTP(entry);
 
 	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
 		supported_enctypes = ldb_msg_find_attr_as_uint(msg,
@@ -1743,7 +1743,7 @@ out:
 
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
-		sdb_free_entry(entry_ex);
+		sdb_entry_free(entry);
 	} else {
 		talloc_steal(kdc_db_ctx, p);
 	}
