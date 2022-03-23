@@ -938,7 +938,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
-	entry_ex->entry.skdc_entry = p;
+	entry->skdc_entry = p;
 
 	userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
 
@@ -983,16 +983,16 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			 * both realm values in the principal are set
 			 * to the upper case, canonical realm
 			 */
-			ret = smb_krb5_make_principal(context, &entry_ex->entry.principal,
+			ret = smb_krb5_make_principal(context, &entry->principal,
 						      lpcfg_realm(lp_ctx), "krbtgt",
 						      lpcfg_realm(lp_ctx), NULL);
 			if (ret) {
 				krb5_clear_error_message(context);
 				goto out;
 			}
-			smb_krb5_principal_set_type(context, entry_ex->entry.principal, KRB5_NT_SRV_INST);
+			smb_krb5_principal_set_type(context, entry->principal, KRB5_NT_SRV_INST);
 		} else {
-			ret = krb5_copy_principal(context, principal, &entry_ex->entry.principal);
+			ret = krb5_copy_principal(context, principal, &entry->principal);
 			if (ret) {
 				krb5_clear_error_message(context);
 				goto out;
@@ -1001,7 +1001,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			 * this appears to be required regardless of
 			 * the canonicalize flag from the client
 			 */
-			ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+			ret = smb_krb5_principal_set_realm(context, entry->principal, lpcfg_realm(lp_ctx));
 			if (ret) {
 				krb5_clear_error_message(context);
 				goto out;
@@ -1009,7 +1009,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		}
 
 	} else if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
-		ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
+		ret = smb_krb5_make_principal(context, &entry->principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
 		if (ret) {
 			krb5_clear_error_message(context);
 			goto out;
@@ -1025,13 +1025,13 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * the canonical name in all lookups, and takes care to
 		 * canonicalize only when appropriate.
 		 */
-		ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
+		ret = smb_krb5_make_principal(context, &entry->principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
 		if (ret) {
 			krb5_clear_error_message(context);
 			goto out;
 		}
 	} else {
-		ret = krb5_copy_principal(context, principal, &entry_ex->entry.principal);
+		ret = krb5_copy_principal(context, principal, &entry->principal);
 		if (ret) {
 			krb5_clear_error_message(context);
 			goto out;
@@ -1044,7 +1044,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * we determine from our records */
 
 		/* this has to be with malloc() */
-		ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+		ret = smb_krb5_principal_set_realm(context, entry->principal, lpcfg_realm(lp_ctx));
 		if (ret) {
 			krb5_clear_error_message(context);
 			goto out;
@@ -1052,24 +1052,24 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	}
 
 	/* First try and figure out the flags based on the userAccountControl */
-	entry_ex->entry.flags = uf2SDBFlags(context, userAccountControl, ent_type);
+	entry->flags = uf2SDBFlags(context, userAccountControl, ent_type);
 
 	/*
 	 * Take control of the returned principal here, rather than
 	 * allowing the Heimdal code to do it as we have specific
 	 * behaviour around the forced realm to honour
 	 */
-	entry_ex->entry.flags.force_canonicalize = true;
+	entry->flags.force_canonicalize = true;
 
 	/* Windows 2008 seems to enforce this (very sensible) rule by
 	 * default - don't allow offline attacks on a user's password
 	 * by asking for a ticket to them as a service (encrypted with
 	 * their probably patheticly insecure password) */
 
-	if (entry_ex->entry.flags.server
+	if (entry->flags.server
 	    && lpcfg_parm_bool(lp_ctx, NULL, "kdc", "require spn for service", true)) {
 		if (!is_computer && !ldb_msg_find_attr_as_string(msg, "servicePrincipalName", NULL)) {
-			entry_ex->entry.flags.server = 0;
+			entry->flags.server = 0;
 		}
 	}
 
@@ -1092,7 +1092,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		bool is_dc = userAccountControl &
 			(UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT);
 		if (is_our_realm && !is_dc) {
-			entry_ex->entry.flags.server = 0;
+			entry->flags.server = 0;
 		}
 	}
 	/*
@@ -1102,7 +1102,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 * return ERR_POLICY instead of
 	 * KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN
 	 */
-	if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER && entry_ex->entry.flags.server == 0) {
+	if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER && entry->flags.server == 0) {
 		ret = SDB_ERR_NOENTRY;
 		krb5_set_error_message(context, ret, "samba_kdc_message2entry: no servicePrincipalName present for this server, refusing with no-such-entry");
 		goto out;
@@ -1114,29 +1114,29 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * we must return */
 
 		/* use 'whenCreated' */
-		entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
+		entry->created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
 		/* use 'kadmin' for now (needed by mit_samba) */
 
 		ret = smb_krb5_make_principal(context,
-					      &entry_ex->entry.created_by.principal,
+					      &entry->created_by.principal,
 					      lpcfg_realm(lp_ctx), "kadmin", NULL);
 		if (ret) {
 			krb5_clear_error_message(context);
 			goto out;
 		}
 
-		entry_ex->entry.modified_by = (struct sdb_event *) malloc(sizeof(struct sdb_event));
-		if (entry_ex->entry.modified_by == NULL) {
+		entry->modified_by = (struct sdb_event *) malloc(sizeof(struct sdb_event));
+		if (entry->modified_by == NULL) {
 			ret = ENOMEM;
 			krb5_set_error_message(context, ret, "malloc: out of memory");
 			goto out;
 		}
 
 		/* use 'whenChanged' */
-		entry_ex->entry.modified_by->time = ldb_msg_find_krb5time_ldap_time(msg, "whenChanged", 0);
+		entry->modified_by->time = ldb_msg_find_krb5time_ldap_time(msg, "whenChanged", 0);
 		/* use 'kadmin' for now (needed by mit_samba) */
 		ret = smb_krb5_make_principal(context,
-					      &entry_ex->entry.modified_by->principal,
+					      &entry->modified_by->principal,
 					      lpcfg_realm(lp_ctx), "kadmin", NULL);
 		if (ret) {
 			krb5_clear_error_message(context);
@@ -1157,11 +1157,11 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	if (rid == DOMAIN_RID_KRBTGT) {
 		char *realm = NULL;
 
-		entry_ex->entry.valid_end = NULL;
-		entry_ex->entry.pw_end = NULL;
+		entry->valid_end = NULL;
+		entry->pw_end = NULL;
 
-		entry_ex->entry.flags.invalid = 0;
-		entry_ex->entry.flags.server = 1;
+		entry->flags.invalid = 0;
+		entry->flags.server = 1;
 
 		realm = smb_krb5_principal_get_realm(
 			mem_ctx, context, principal);
@@ -1179,40 +1179,40 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		    && (principal_comp_strcmp(context, principal, 0, "kadmin") == 0)
 		    && (principal_comp_strcmp(context, principal, 1, "changepw") == 0)
 		    && lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
-			entry_ex->entry.flags.change_pw = 1;
+			entry->flags.change_pw = 1;
 		}
 
 		TALLOC_FREE(realm);
 
-		entry_ex->entry.flags.client = 0;
-		entry_ex->entry.flags.forwardable = 1;
-		entry_ex->entry.flags.ok_as_delegate = 1;
+		entry->flags.client = 0;
+		entry->flags.forwardable = 1;
+		entry->flags.ok_as_delegate = 1;
 	} else if (is_rodc) {
 		/* The RODC krbtgt account is like the main krbtgt,
 		 * but it does not have a changepw or kadmin
 		 * service */
 
-		entry_ex->entry.valid_end = NULL;
-		entry_ex->entry.pw_end = NULL;
+		entry->valid_end = NULL;
+		entry->pw_end = NULL;
 
 		/* Also don't allow the RODC krbtgt to be a client (it should not be needed) */
-		entry_ex->entry.flags.client = 0;
-		entry_ex->entry.flags.invalid = 0;
-		entry_ex->entry.flags.server = 1;
+		entry->flags.client = 0;
+		entry->flags.invalid = 0;
+		entry->flags.server = 1;
 
-		entry_ex->entry.flags.client = 0;
-		entry_ex->entry.flags.forwardable = 1;
-		entry_ex->entry.flags.ok_as_delegate = 0;
-	} else if (entry_ex->entry.flags.server && ent_type == SAMBA_KDC_ENT_TYPE_SERVER) {
+		entry->flags.client = 0;
+		entry->flags.forwardable = 1;
+		entry->flags.ok_as_delegate = 0;
+	} else if (entry->flags.server && ent_type == SAMBA_KDC_ENT_TYPE_SERVER) {
 		/* The account/password expiry only applies when the account is used as a
 		 * client (ie password login), not when used as a server */
 
 		/* Make very well sure we don't use this for a client,
 		 * it could bypass the password restrictions */
-		entry_ex->entry.flags.client = 0;
+		entry->flags.client = 0;
 
-		entry_ex->entry.valid_end = NULL;
-		entry_ex->entry.pw_end = NULL;
+		entry->valid_end = NULL;
+		entry->pw_end = NULL;
 
 	} else {
 		NTTIME must_change_time
@@ -1220,53 +1220,53 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					"msDS-UserPasswordExpiryTimeComputed",
 					0);
 		if (must_change_time == 0x7FFFFFFFFFFFFFFFULL) {
-			entry_ex->entry.pw_end = NULL;
+			entry->pw_end = NULL;
 		} else {
-			entry_ex->entry.pw_end = malloc(sizeof(*entry_ex->entry.pw_end));
-			if (entry_ex->entry.pw_end == NULL) {
+			entry->pw_end = malloc(sizeof(*entry->pw_end));
+			if (entry->pw_end == NULL) {
 				ret = ENOMEM;
 				goto out;
 			}
-			*entry_ex->entry.pw_end = nt_time_to_unix(must_change_time);
+			*entry->pw_end = nt_time_to_unix(must_change_time);
 		}
 
 		acct_expiry = samdb_result_account_expires(msg);
 		if (acct_expiry == 0x7FFFFFFFFFFFFFFFULL) {
-			entry_ex->entry.valid_end = NULL;
+			entry->valid_end = NULL;
 		} else {
-			entry_ex->entry.valid_end = malloc(sizeof(*entry_ex->entry.valid_end));
-			if (entry_ex->entry.valid_end == NULL) {
+			entry->valid_end = malloc(sizeof(*entry->valid_end));
+			if (entry->valid_end == NULL) {
 				ret = ENOMEM;
 				goto out;
 			}
-			*entry_ex->entry.valid_end = nt_time_to_unix(acct_expiry);
+			*entry->valid_end = nt_time_to_unix(acct_expiry);
 		}
 	}
 
-	entry_ex->entry.valid_start = NULL;
+	entry->valid_start = NULL;
 
-	entry_ex->entry.max_life = malloc(sizeof(*entry_ex->entry.max_life));
-	if (entry_ex->entry.max_life == NULL) {
+	entry->max_life = malloc(sizeof(*entry->max_life));
+	if (entry->max_life == NULL) {
 		ret = ENOMEM;
 		goto out;
 	}
 
 	if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER) {
-		*entry_ex->entry.max_life = kdc_db_ctx->policy.svc_tkt_lifetime;
+		*entry->max_life = kdc_db_ctx->policy.svc_tkt_lifetime;
 	} else if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT || ent_type == SAMBA_KDC_ENT_TYPE_CLIENT) {
-		*entry_ex->entry.max_life = kdc_db_ctx->policy.usr_tkt_lifetime;
+		*entry->max_life = kdc_db_ctx->policy.usr_tkt_lifetime;
 	} else {
-		*entry_ex->entry.max_life = MIN(kdc_db_ctx->policy.svc_tkt_lifetime,
+		*entry->max_life = MIN(kdc_db_ctx->policy.svc_tkt_lifetime,
 					        kdc_db_ctx->policy.usr_tkt_lifetime);
 	}
 
-	entry_ex->entry.max_renew = malloc(sizeof(*entry_ex->entry.max_renew));
-	if (entry_ex->entry.max_renew == NULL) {
+	entry->max_renew = malloc(sizeof(*entry->max_renew));
+	if (entry->max_renew == NULL) {
 		ret = ENOMEM;
 		goto out;
 	}
 
-	*entry_ex->entry.max_renew = kdc_db_ctx->policy.renewal_lifetime;
+	*entry->max_renew = kdc_db_ctx->policy.renewal_lifetime;
 
 	if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT && (flags & SDB_F_FOR_AS_REQ)) {
 		int result;
@@ -1300,11 +1300,11 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		protected_user = result;
 
 		if (protected_user) {
-			*entry_ex->entry.max_life = MIN(*entry_ex->entry.max_life, 4 * 60 * 60);
-			*entry_ex->entry.max_renew = MIN(*entry_ex->entry.max_renew, 4 * 60 * 60);
+			*entry->max_life = MIN(*entry->max_life, 4 * 60 * 60);
+			*entry->max_renew = MIN(*entry->max_renew, 4 * 60 * 60);
 
-			entry_ex->entry.flags.forwardable = 0;
-			entry_ex->entry.flags.proxiable = 0;
+			entry->flags.forwardable = 0;
+			entry->flags.proxiable = 0;
 		}
 	}
 
