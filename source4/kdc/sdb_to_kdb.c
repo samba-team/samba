@@ -316,10 +316,3 @@ int sdb_entry_to_krb5_db_entry(krb5_context context,
 	}
 	return 0;
 }
-
-int sdb_entry_ex_to_kdb_entry_ex(krb5_context context,
-				 const struct sdb_entry_ex *s,
-				 krb5_db_entry *k)
-{
-	return sdb_entry_to_krb5_db_entry(context, &s->entry, k);
-}
