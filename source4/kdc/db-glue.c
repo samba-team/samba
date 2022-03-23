@@ -423,11 +423,12 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    struct samba_kdc_db_context *kdc_db_ctx,
 						    TALLOC_CTX *mem_ctx,
 						    struct ldb_message *msg,
-						    uint32_t rid,
+						    bool is_krbtgt,
 						    bool is_rodc,
 						    uint32_t userAccountControl,
 						    enum samba_kdc_ent_type ent_type,
 						    struct sdb_entry_ex *entry_ex,
+						    const uint32_t supported_enctypes_in,
 						    uint32_t *supported_enctypes_out)
 {
 	struct sdb_entry *entry = &entry_ex->entry;
@@ -441,50 +442,14 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	struct package_PrimaryKerberosBlob _pkb;
 	struct package_PrimaryKerberosCtr3 *pkb3 = NULL;
 	struct package_PrimaryKerberosCtr4 *pkb4 = NULL;
-	bool is_krbtgt = false;
 	int krbtgt_number = 0;
 	uint32_t current_kvno;
 	uint32_t returned_kvno = 0;
 	uint16_t i;
 	uint16_t allocated_keys = 0;
-	uint32_t supported_enctypes
-		= ldb_msg_find_attr_as_uint(msg,
-					    "msDS-SupportedEncryptionTypes",
-					    0);
+	uint32_t supported_enctypes = supported_enctypes_in;
+
 	*supported_enctypes_out = 0;
-
-	if (rid == DOMAIN_RID_KRBTGT || is_rodc) {
-		bool enable_fast;
-
-		/* KDCs (and KDCs on RODCs) use AES */
-		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
-		is_krbtgt = true;
-
-		enable_fast = lpcfg_kdc_enable_fast(kdc_db_ctx->lp_ctx);
-		if (enable_fast) {
-			supported_enctypes |= ENC_FAST_SUPPORTED;
-		}
-	} else if (userAccountControl & (UF_PARTIAL_SECRETS_ACCOUNT|UF_SERVER_TRUST_ACCOUNT)) {
-		/* DCs and RODCs comptuer accounts use AES */
-		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
-	} else if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT ||
-		   (ent_type == SAMBA_KDC_ENT_TYPE_ANY)) {
-		/* for AS-REQ the client chooses the enc types it
-		 * supports, and this will vary between computers a
-		 * user logs in from.
-		 *
-		 * likewise for 'any' return as much as is supported,
-		 * to export into a keytab */
-		supported_enctypes = ENC_ALL_TYPES;
-	}
-
-	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
-	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
-		supported_enctypes = 0;
-	} else {
-		/* Otherwise, add in the default enc types */
-		supported_enctypes |= ENC_RC4_HMAC_MD5;
-	}
 
 	/* Is this the krbtgt or a RODC krbtgt */
 	if (is_rodc) {
@@ -1021,14 +986,18 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	krb5_boolean is_computer = FALSE;
 
 	struct samba_kdc_entry *p;
-	uint32_t supported_enctypes = 0;
 	NTTIME acct_expiry;
 	NTSTATUS status;
 
 	uint32_t rid;
+	bool is_krbtgt = false;
 	bool is_rodc = false;
 	struct ldb_message_element *objectclasses;
 	struct ldb_val computer_val;
+	uint32_t supported_enctypes
+		= ldb_msg_find_attr_as_uint(msg,
+					    "msDS-SupportedEncryptionTypes",
+					    0);
 	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 	computer_val.data = discard_const_p(uint8_t,"computer");
 	computer_val.length = strlen((const char *)computer_val.data);
@@ -1328,10 +1297,47 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	*entry_ex->entry.max_renew = kdc_db_ctx->policy.renewal_lifetime;
 
+	if (rid == DOMAIN_RID_KRBTGT || is_rodc) {
+		bool enable_fast;
+
+		is_krbtgt = true;
+
+		/* KDCs (and KDCs on RODCs) use AES */
+		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
+
+		enable_fast = lpcfg_kdc_enable_fast(kdc_db_ctx->lp_ctx);
+		if (enable_fast) {
+			supported_enctypes |= ENC_FAST_SUPPORTED;
+		}
+	} else if (userAccountControl & (UF_PARTIAL_SECRETS_ACCOUNT|UF_SERVER_TRUST_ACCOUNT)) {
+		/* DCs and RODCs comptuer accounts use AES */
+		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
+	} else if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT ||
+		   (ent_type == SAMBA_KDC_ENT_TYPE_ANY)) {
+		/* for AS-REQ the client chooses the enc types it
+		 * supports, and this will vary between computers a
+		 * user logs in from.
+		 *
+		 * likewise for 'any' return as much as is supported,
+		 * to export into a keytab */
+		supported_enctypes = ENC_ALL_TYPES;
+	}
+
+	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
+	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
+		supported_enctypes = 0;
+	} else {
+		/* Otherwise, add in the default enc types */
+		supported_enctypes |= ENC_RC4_HMAC_MD5;
+	}
+
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, kdc_db_ctx, p, msg,
-					   rid, is_rodc, userAccountControl,
-					   ent_type, entry_ex, &supported_enctypes);
+					   is_krbtgt, is_rodc,
+					   userAccountControl,
+					   ent_type, entry_ex,
+					   supported_enctypes,
+					   &supported_enctypes);
 	if (ret) {
 		/* Could be bogus data in the entry, or out of memory */
 		goto out;
