@@ -126,7 +126,6 @@ static int print_share_mode(struct file_id fid,
 			    const struct share_mode_entry *e,
 			    void *private_data)
 {
-	bool resolve_uids = *((bool *)private_data);
 	static int count;
 	const char *denymode = NULL;
 	uint denymode_int;
@@ -136,6 +135,7 @@ static int print_share_mode(struct file_id fid,
 	const char *filename = NULL;
 	const char *timestr = NULL;
 	const char *user_str = NULL;
+	struct traverse_state *state = (struct traverse_state *)private_data;
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -163,7 +163,7 @@ static int print_share_mode(struct file_id fid,
 	if (Ucrit_checkPid(e->pid)) {
 		struct server_id_buf tmp;
 		pid = server_id_str_buf(e->pid, &tmp);
-		if (resolve_uids) {
+		if (state->resolve_uids) {
 			user_str = talloc_asprintf(tmp_ctx, "%s", uidtoname(e->uid));
 		} else {
 			user_str = talloc_asprintf(tmp_ctx, "%u", (unsigned int)e->uid);
@@ -364,23 +364,31 @@ static const char *session_dialect_str(uint16_t dialect)
 static int traverse_connections(const struct connections_data *crec,
 				void *private_data)
 {
-	TALLOC_CTX *mem_ctx = (TALLOC_CTX *)private_data;
 	struct server_id_buf tmp;
 	char *timestr = NULL;
 	int result = 0;
 	const char *encryption = "-";
 	const char *signing = "-";
 
-	if (crec->cnum == TID_FIELD_INVALID)
-		return 0;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
 
-	if (do_checks &&
-	    (!process_exists(crec->pid) || !Ucrit_checkUid(crec->uid))) {
+	if (crec->cnum == TID_FIELD_INVALID) {
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
-	timestr = timestring(mem_ctx, crec->start);
+	if (do_checks &&
+	    (!process_exists(crec->pid) || !Ucrit_checkUid(crec->uid))) {
+		TALLOC_FREE(tmp_ctx);
+		return 0;
+	}
+
+	timestr = timestring(tmp_ctx, crec->start);
 	if (timestr == NULL) {
+		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
 
@@ -431,6 +439,7 @@ static int traverse_connections(const struct connections_data *crec,
 		 signing);
 
 	TALLOC_FREE(timestr);
+	TALLOC_FREE(tmp_ctx);
 
 	return result;
 }
@@ -438,7 +447,6 @@ static int traverse_connections(const struct connections_data *crec,
 static int traverse_sessionid(const char *key, struct sessionid *session,
 			      void *private_data)
 {
-	TALLOC_CTX *mem_ctx = (TALLOC_CTX *)private_data;
 	fstring uid_gid_str;
 	struct server_id_buf tmp;
 	char *machine_hostname = NULL;
@@ -446,9 +454,15 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	const char *encryption = "-";
 	const char *signing = "-";
 
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
 	if (do_checks &&
 	    (!process_exists(session->pid) ||
 	     !Ucrit_checkUid(session->uid))) {
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
@@ -477,12 +491,14 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 			if (session->uid != -1) {
 				uid_name = uidtoname(session->uid);
 				if (uid_name == NULL) {
+					TALLOC_FREE(tmp_ctx);
 					return -1;
 				}
 			}
 			if (session->gid != -1) {
 				gid_name = gidtoname(session->gid);
 				if (gid_name == NULL) {
+					TALLOC_FREE(tmp_ctx);
 					return -1;
 				}
 			}
@@ -491,10 +507,11 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		}
 	}
 
-	machine_hostname = talloc_asprintf(mem_ctx, "%s (%s)",
+	machine_hostname = talloc_asprintf(tmp_ctx, "%s (%s)",
 					   session->remote_machine,
 					   session->hostname);
 	if (machine_hostname == NULL) {
+		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
 
@@ -591,6 +608,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		 signing);
 
 	TALLOC_FREE(machine_hostname);
+	TALLOC_FREE(tmp_ctx);
 
 	return result;
 }
@@ -863,7 +881,7 @@ int main(int argc, const char *argv[])
 		d_printf("%-7s %-12s %-12s %-41s %-17s %-20s %-21s\n", "PID", "Username", "Group", "Machine", "Protocol Version", "Encryption", "Signing");
 		d_printf("----------------------------------------------------------------------------------------------------------------------------------------\n");
 
-		sessionid_traverse_read(traverse_sessionid, frame);
+		sessionid_traverse_read(traverse_sessionid, &state);
 
 		if (processes_only) {
 			goto done;
@@ -878,7 +896,7 @@ int main(int argc, const char *argv[])
 		d_printf("\n%-12s %-7s %-13s %-32s %-12s %-12s\n", "Service", "pid", "Machine", "Connected at", "Encryption", "Signing");
 		d_printf("---------------------------------------------------------------------------------------------\n");
 
-		connections_forall_read(traverse_connections, frame);
+		connections_forall_read(traverse_connections, &state);
 
 		d_printf("\n");
 
@@ -919,7 +937,7 @@ int main(int argc, const char *argv[])
 			goto done;
 		}
 
-		result = share_entry_forall(print_share_mode, &state.resolve_uids);
+		result = share_entry_forall(print_share_mode, &state);
 
 		if (result == 0) {
 			fprintf(stderr, "No locked files\n");
@@ -930,14 +948,14 @@ int main(int argc, const char *argv[])
 		d_printf("\n");
 
 		if (show_brl) {
-			brl_forall(print_brl, NULL);
+			brl_forall(print_brl, &state);
 		}
 
 		locking_end();
 	}
 
 	if (show_notify) {
-		notify_walk(msg_ctx, print_notify_rec, NULL);
+		notify_walk(msg_ctx, print_notify_rec, &state);
 	}
 
 done:
