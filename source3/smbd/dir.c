@@ -805,8 +805,9 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		prev_offset = cur_offset;
 		dname = dptr_ReadDirName(ctx, dirptr, &cur_offset, &sbuf);
 
-		DEBUG(6,("smbd_dirptr_get_entry: dirptr 0x%lx now at offset %ld\n",
-			(long)dirptr, cur_offset));
+		DBG_DEBUG("dir [%s] dirptr [0x%lx] offset [%ld] => dname [%s]\n",
+			  smb_fname_str_dbg(dirptr->smb_dname), (long)dirptr,
+			  cur_offset, dname ? dname : "(finished)");
 
 		if (dname == NULL) {
 			return false;
