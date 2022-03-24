@@ -121,12 +121,19 @@ static bool Ucrit_addPid( struct server_id pid )
 	return True;
 }
 
+static int prepare_share_mode(struct traverse_state *state)
+{
+	/* only print header line if there are open files */
+	state->first = true;
+
+	return 0;
+}
+
 static int print_share_mode(struct file_id fid,
 			    const struct share_mode_data *d,
 			    const struct share_mode_entry *e,
 			    void *private_data)
 {
-	static int count;
 	const char *denymode = NULL;
 	uint denymode_int;
 	const char *oplock = NULL;
@@ -147,12 +154,13 @@ static int print_share_mode(struct file_id fid,
 		return 0;
 	}
 
-	if (count==0) {
+	if (state->first) {
 		d_printf("Locked files:\n");
 		d_printf("Pid          User(ID)   DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
 		d_printf("--------------------------------------------------------------------------------------------------\n");
+
+		 state->first = false;
 	}
-	count++;
 
 	if (do_checks && !serverid_exists(&e->pid)) {
 		/* the process for this entry does not exist any more */
@@ -273,6 +281,14 @@ static int print_share_mode(struct file_id fid,
 	return 0;
 }
 
+static int prepare_brl(struct traverse_state *state)
+{
+	/* only print header line if there are locked files */
+	state->first = true;
+
+	return 0;
+}
+
 static void print_brl(struct file_id id,
 			struct server_id pid, 
 			enum brl_type lock_type,
@@ -281,7 +297,6 @@ static void print_brl(struct file_id id,
 			br_off size,
 			void *private_data)
 {
-	static int count;
 	unsigned int i;
 	static const struct {
 		enum brl_type lock_type;
@@ -297,13 +312,15 @@ static void print_brl(struct file_id id,
 	struct share_mode_lock *share_mode;
 	struct server_id_buf tmp;
 	struct file_id_buf ftmp;
+	struct traverse_state *state = (struct traverse_state *)private_data;
 
-	if (count==0) {
+	if (state->first) {
 		d_printf("Byte range locks:\n");
 		d_printf("Pid        dev:inode       R/W  start     size      SharePath               Name\n");
 		d_printf("--------------------------------------------------------------------------------\n");
+
+		state->first = false;
 	}
-	count++;
 
 	share_mode = fetch_share_mode_unlocked(NULL, id);
 	if (share_mode) {
@@ -359,6 +376,15 @@ static const char *session_dialect_str(uint16_t dialect)
 
 	fstr_sprintf(unknown_dialect, "Unknown (0x%04x)", dialect);
 	return unknown_dialect;
+}
+
+static int prepare_connections(struct traverse_state *state)
+{
+	/* always print header line */
+	d_printf("\n%-12s %-7s %-13s %-32s %-12s %-12s\n", "Service", "pid", "Machine", "Connected at", "Encryption", "Signing");
+	d_printf("---------------------------------------------------------------------------------------------\n");
+
+	return 0;
 }
 
 static int traverse_connections(const struct connections_data *crec,
@@ -442,6 +468,17 @@ static int traverse_connections(const struct connections_data *crec,
 	TALLOC_FREE(tmp_ctx);
 
 	return result;
+}
+
+static int prepare_sessionid(struct traverse_state *state)
+{
+	/* always print header line */
+	d_printf("\nSamba version %s\n",samba_version_string());
+	d_printf("%-7s %-12s %-12s %-41s %-17s %-20s %-21s\n", "PID", "Username", "Group", "Machine", "Protocol Version", "Encryption", "Signing");
+	d_printf("----------------------------------------------------------------------------------------------------------------------------------------\n");
+
+	return 0;
+
 }
 
 static int traverse_sessionid(const char *key, struct sessionid *session,
@@ -614,6 +651,13 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 }
 
 
+static int prepare_notify(struct traverse_state *state)
+{
+	/* don't print header line */
+
+	return 0;
+}
+
 static bool print_notify_rec(const char *path, struct server_id server,
 			     const struct notify_instance *instance,
 			     void *private_data)
@@ -755,6 +799,7 @@ int main(int argc, const char *argv[])
 	char *db_path;
 	bool ok;
 
+	state.first = true;
 	state.resolve_uids = false;
 
 	smb_init_locale();
@@ -877,10 +922,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if ( show_processes ) {
-		d_printf("\nSamba version %s\n",samba_version_string());
-		d_printf("%-7s %-12s %-12s %-41s %-17s %-20s %-21s\n", "PID", "Username", "Group", "Machine", "Protocol Version", "Encryption", "Signing");
-		d_printf("----------------------------------------------------------------------------------------------------------------------------------------\n");
-
+		prepare_sessionid(&state);
 		sessionid_traverse_read(traverse_sessionid, &state);
 
 		if (processes_only) {
@@ -892,10 +934,7 @@ int main(int argc, const char *argv[])
 		if (brief) {
 			goto done;
 		}
-
-		d_printf("\n%-12s %-7s %-13s %-32s %-12s %-12s\n", "Service", "pid", "Machine", "Connected at", "Encryption", "Signing");
-		d_printf("---------------------------------------------------------------------------------------------\n");
-
+		prepare_connections(&state);
 		connections_forall_read(traverse_connections, &state);
 
 		d_printf("\n");
@@ -937,6 +976,7 @@ int main(int argc, const char *argv[])
 			goto done;
 		}
 
+		prepare_share_mode(&state);
 		result = share_entry_forall(print_share_mode, &state);
 
 		if (result == 0) {
@@ -948,6 +988,7 @@ int main(int argc, const char *argv[])
 		d_printf("\n");
 
 		if (show_brl) {
+			prepare_brl(&state);
 			brl_forall(print_brl, &state);
 		}
 
@@ -955,6 +996,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (show_notify) {
+		prepare_notify(&state);
 		notify_walk(msg_ctx, print_notify_rec, &state);
 	}
 

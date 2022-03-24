@@ -21,6 +21,7 @@
 #define STATUS_H
 
 struct traverse_state {
+	bool first;
 	bool resolve_uids;
 };
 
