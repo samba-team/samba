@@ -76,6 +76,7 @@ enum libnet_SetPassword_level {
 	LIBNET_SET_PASSWORD_SAMR_HANDLE_25,
 	LIBNET_SET_PASSWORD_SAMR_HANDLE_24,
 	LIBNET_SET_PASSWORD_SAMR_HANDLE_23,
+	LIBNET_SET_PASSWORD_SAMR_HANDLE_18,
 	LIBNET_SET_PASSWORD_KRB5,
 	LIBNET_SET_PASSWORD_LDAP,
 	LIBNET_SET_PASSWORD_RAP
@@ -84,6 +85,7 @@ enum libnet_SetPassword_level {
 union libnet_SetPassword {
 	struct {
 		enum libnet_SetPassword_level level;
+		enum libnet_SetPassword_level samr_level;
 
 		struct _libnet_SetPassword_in {
 			const char *account_name;
@@ -98,6 +100,7 @@ union libnet_SetPassword {
 
 	struct {
 		enum libnet_SetPassword_level level;
+		enum libnet_SetPassword_level samr_level;
 		struct _libnet_SetPassword_samr_handle_in {
 			const char           *account_name; /* for debug only */
 			struct policy_handle *user_handle;
@@ -113,24 +116,28 @@ union libnet_SetPassword {
 
 	struct {
 		enum libnet_SetPassword_level level;
+		enum libnet_SetPassword_level samr_level;
 		struct _libnet_SetPassword_in in;
 		struct _libnet_SetPassword_out out;
 	} samr;
 
 	struct {
 		enum libnet_SetPassword_level level;
+		enum libnet_SetPassword_level samr_level;
 		struct _libnet_SetPassword_in in;
 		struct _libnet_SetPassword_out out;
 	} krb5;
 
 	struct {
 		enum libnet_SetPassword_level level;
+		enum libnet_SetPassword_level samr_level;
 		struct _libnet_SetPassword_in in;
 		struct _libnet_SetPassword_out out;
 	} ldap;
 
 	struct {
 		enum libnet_ChangePassword_level level;
+		enum libnet_SetPassword_level samr_level;
 		struct _libnet_SetPassword_in in;
 		struct _libnet_SetPassword_out out;
 	} rap;
