@@ -45,6 +45,10 @@
     then only NTLMv2 logins will be permitted and no LM hash will be
     stored.  All modern clients support NTLMv2, and but some older
     clients require special configuration to use it.</para>
+
+    <para><emphasis>This parameter has no impact on the Samba AD DC,
+    LM authentication is always disabled and no LM password is ever
+    stored.</emphasis></para>
 </description>
 
 <value type="default">no</value>

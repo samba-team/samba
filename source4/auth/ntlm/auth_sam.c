@@ -78,8 +78,8 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 		*lm_sess_key = data_blob(NULL, 0);
 		*user_sess_key = data_blob(NULL, 0);
 		status = hash_password_check(mem_ctx, 
-					     lpcfg_lanman_auth(auth_context->lp_ctx),
-					     user_info->password.hash.lanman,
+					     false,
+					     NULL,
 					     user_info->password.hash.nt,
 					     user_info->mapped.account_name,
 					     NULL, nt_pwd);
