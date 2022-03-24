@@ -156,67 +156,56 @@ krb5_error_code sdb_entry_set_etypes(struct sdb_entry *s)
  * strong etypes as desired.
  */
 krb5_error_code sdb_entry_set_session_etypes(struct sdb_entry *s,
-					     bool add_strong_aes_etypes,
-					     bool force_rc4)
+					     bool add_aes256,
+					     bool add_aes128,
+					     bool add_rc4)
 {
-	if (s->etypes != NULL) {
-		unsigned i;
+	unsigned len = 0;
+
+	if (add_aes256) {
+		/* Reserve space for AES256 */
+		len += 1;
+	}
+
+	if (add_aes128) {
+		/* Reserve space for AES128 */
+		len += 1;
+	}
+
+	if (add_rc4) {
+		/* Reserve space for RC4. */
+		len += 1;
+	}
+
+	if (len != 0) {
 		unsigned j = 0;
-		unsigned len = s->etypes->len;
 
 		s->session_etypes = malloc(sizeof(*s->session_etypes));
 		if (s->session_etypes == NULL) {
 			return ENOMEM;
 		}
 
-		if (add_strong_aes_etypes) {
-			/* Reserve space for AES256 and AES128. */
-			len += 2;
-		}
-
-		if (force_rc4) {
-			/* Reserve space for RC4. */
-			len += 1;
-		}
-
 		/* session_etypes must be sorted in order of strength, with preferred etype first. */
 
 		s->session_etypes->val = calloc(len, sizeof(*s->session_etypes->val));
 		if (s->session_etypes->val == NULL) {
+			SAFE_FREE(s->session_etypes);
 			return ENOMEM;
 		}
 
-		if (add_strong_aes_etypes) {
-			/* Add AES256 and AES128. */
+		if (add_aes256) {
+			/* Add AES256 */
 			s->session_etypes->val[j++] = ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+		}
+
+		if (add_aes128) {
+			/* Add AES128. */
 			s->session_etypes->val[j++] = ENCTYPE_AES128_CTS_HMAC_SHA1_96;
 		}
 
-		if (force_rc4) {
+		if (add_rc4) {
 			/* Add RC4. */
 			s->session_etypes->val[j++] = ENCTYPE_ARCFOUR_HMAC;
-		}
-
-		for (i = 0; i < s->etypes->len; ++i) {
-			const krb5_enctype etype = s->etypes->val[i];
-
-			if (add_strong_aes_etypes &&
-			    (etype == ENCTYPE_AES256_CTS_HMAC_SHA1_96 ||
-			     etype == ENCTYPE_AES128_CTS_HMAC_SHA1_96))
-			{
-				/*
-				 * Skip AES256 and AES128, for we've
-				 * already added them.
-				 */
-				continue;
-			}
-
-			if (force_rc4 && etype == ENCTYPE_ARCFOUR_HMAC) {
-				/* Skip RC4, for we've already added it. */
-				continue;
-			}
-
-			s->session_etypes->val[j++] = etype;
 		}
 
 		s->session_etypes->len = j;
