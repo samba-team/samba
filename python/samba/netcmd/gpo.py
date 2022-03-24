@@ -1296,6 +1296,10 @@ class cmd_create(GPOCommand):
         else:
             self.samdb.transaction_commit()
 
+        if tmpdir is None:
+            # Without --tmpdir, we created one in /tmp/. It must go.
+            shutil.rmtree(self.tmpdir)
+
         self.outf.write("GPO '%s' created as %s\n" % (displayname, gpo))
 
 
