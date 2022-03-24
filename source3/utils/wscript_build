@@ -312,6 +312,11 @@ if bld.CONFIG_GET("WITH_PROFILE"):
 else:
     smbstatus_source += ' status_profile_dummy.c'
 
+if bld.CONFIG_GET("HAVE_JANSSON"):
+    smbstatus_source += ' status_json.c'
+else:
+    smbstatus_source += ' status_json_dummy.c'
+
 bld.SAMBA3_BINARY('smbstatus',
                  source=smbstatus_source,
                  deps='''

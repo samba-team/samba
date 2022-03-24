@@ -49,6 +49,7 @@
 #include "serverid.h"
 #include "status_profile.h"
 #include "status.h"
+#include "status_json.h"
 #include "smbd/notifyd/notifyd_db.h"
 #include "cmdline_contexts.h"
 #include "locking/leases_db.h"
