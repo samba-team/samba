@@ -65,6 +65,17 @@ b"""
         "class": "USER",
         "type": "REG_DWORD",
         "data": 1
+    },
+    {
+        "keyname": "Software\\\\Policies\\\\Mozilla\\\\Firefox",
+        "valuename": "ExtensionSettings",
+        "class": "MACHINE",
+        "type": "REG_MULTI_SZ",
+        "data": [
+            "{",
+            "   \\"key\\": \\"value\\"",
+            "}"
+        ]
     }
 ]
 """
@@ -91,6 +102,11 @@ b"""
         "keyname": "Software\\\\Policies\\\\Microsoft\\\\InputPersonalization",
         "valuename": "RestrictImplicitTextCollection",
         "class": "USER"
+    },
+    {
+        "keyname": "Software\\\\Policies\\\\Mozilla\\\\Firefox",
+        "valuename": "ExtensionSettings",
+        "class": "MACHINE"
     }
 ]
 """
@@ -1615,6 +1631,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                         '\n        "class": "USER",' + \
                         '\n        "type": "REG_DWORD",\n        "data": 1\n'
         self.assertIn(restrict_data, out, 'Restrict policy not loaded')
+        ext_data = '"   \\"key\\": \\"value\\"",'
+        self.assertIn(ext_data, out, 'Extension policy not loaded')
 
         with NamedTemporaryFile() as f:
             f.write(gpo_remove_json)
