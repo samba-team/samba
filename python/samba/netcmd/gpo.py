@@ -82,6 +82,7 @@ from samba.netcmd.gpcommon import (
     get_gpo_dn
 )
 from samba.policies import RegistryGroupPolicies
+from samba.dcerpc.misc import REG_MULTI_SZ
 
 
 def gpo_flags_string(value):
@@ -669,7 +670,11 @@ class cmd_show(GPOCommand):
                 defs['data'] = entry.data
                 # Bytes aren't JSON serializable
                 if type(defs['data']) == bytes:
-                    defs['data'] = list(defs['data'])
+                    if entry.type == REG_MULTI_SZ:
+                        data = defs['data'].decode('utf-16-le')
+                        defs['data'] = data.rstrip('\x00').split('\x00')
+                    else:
+                        defs['data'] = list(defs['data'])
                 policy_defs.append(defs)
         self.outf.write("Policies     :\n")
         json.dump(policy_defs, self.outf, indent=4)

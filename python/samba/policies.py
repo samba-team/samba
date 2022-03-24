@@ -39,7 +39,7 @@ from samba.gp_parse.gp_ini import GPTIniParser
 from samba.common import get_string
 from samba.dcerpc import security
 from samba.ntacls import dsacl2fsacl
-from samba.dcerpc.misc import GUID
+from samba.dcerpc.misc import REG_BINARY, REG_MULTI_SZ, REG_SZ, GUID
 
 GPT_EMPTY = \
 """
@@ -125,8 +125,13 @@ class RegistryGroupPolicies(object):
 
     def __set_data(self, rtype, data):
         # JSON can't store bytes, and have to be set via an int array
-        if rtype == 3 and type(data) == list: # REG_BINARY
+        if rtype == REG_BINARY and type(data) == list:
             return bytes(data)
+        elif rtype == REG_MULTI_SZ and type(data) == list:
+            data = ('\x00').join(data) + '\x00\x00'
+            return data.encode('utf-16-le')
+        elif rtype == REG_SZ and type(data) == str:
+            return data.encode('utf-8')
         return data
 
     def __pol_replace(self, pol_data, entry):
