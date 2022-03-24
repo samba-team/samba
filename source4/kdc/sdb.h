@@ -142,7 +142,8 @@ void free_sdb_entry(struct sdb_entry *s);
 struct SDBFlags int2SDBFlags(unsigned n);
 krb5_error_code sdb_entry_set_etypes(struct sdb_entry *s);
 krb5_error_code sdb_entry_set_session_etypes(struct sdb_entry *s,
-					     bool add_strong_aes_etypes,
-					     bool force_rc4);
+					     bool add_aes256,
+					     bool add_aes128,
+					     bool add_rc4);
 
 #endif /* _KDC_SDB_H_ */
