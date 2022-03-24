@@ -626,7 +626,7 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						supported_enctypes,
 						&entry->keys);
 
-		*supported_enctypes_out = supported_enctypes;
+		*supported_enctypes_out = supported_enctypes & ENC_ALL_TYPES;
 
 		goto out;
 	}
@@ -838,12 +838,6 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	}
 
 	*supported_enctypes_out |= available_enctypes;
-
-	/* Set FAST support bits */
-	*supported_enctypes_out |= supported_enctypes & (ENC_HMAC_SHA1_96_AES256_SK |
-							 ENC_FAST_SUPPORTED |
-							 ENC_COMPOUND_IDENTITY_SUPPORTED |
-							 ENC_CLAIMS_SUPPORTED);
 
 	if (is_krbtgt) {
 		/*
@@ -1065,6 +1059,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	uint32_t rid;
 	bool is_krbtgt = false;
 	bool is_rodc = false;
+	bool force_rc4 = lpcfg_kdc_force_enable_rc4_weak_session_keys(lp_ctx);
 	struct ldb_message_element *objectclasses;
 	struct ldb_val computer_val = data_blob_string_const("computer");
 	uint32_t default_supported_enctypes = lpcfg_kdc_default_domain_supported_enctypes(lp_ctx);
@@ -1072,12 +1067,25 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		= ldb_msg_find_attr_as_uint(msg,
 					    "msDS-SupportedEncryptionTypes",
 					    default_supported_enctypes);
+	uint32_t pa_supported_enctypes;
+	uint32_t supported_session_etypes;
+	uint32_t available_enctypes = 0;
+	/*
+	 * also lagacy enctypes are announced,
+	 * but effectively restricted by kdc_enctypes
+	 */
+	uint32_t domain_enctypes = ENC_RC4_HMAC_MD5 | ENC_RSA_MD5 | ENC_CRC32;
+	uint32_t kdc_enctypes = ENC_ALL_TYPES;
 	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 
 	ZERO_STRUCTP(entry);
 
 	if (supported_enctypes == 0) {
 		supported_enctypes = default_supported_enctypes;
+	}
+
+	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
+		domain_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
 	}
 
 	if (ldb_msg_find_element(msg, "msDS-SecondaryKrbTgtNumber")) {
@@ -1418,20 +1426,25 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 		is_krbtgt = true;
 
-		/* KDCs (and KDCs on RODCs) use AES */
-		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
-
-		supported_enctypes &= ~ENC_HMAC_SHA1_96_AES256_SK;
+		/*
+		 * KDCs (and KDCs on RODCs)
+		 * ignore msDS-SupportedEncryptionTypes completely
+		 * but support all supported enctypes by the domain.
+		 */
+		supported_enctypes = domain_enctypes;
 
 		enable_fast = lpcfg_kdc_enable_fast(kdc_db_ctx->lp_ctx);
 		if (enable_fast) {
 			supported_enctypes |= ENC_FAST_SUPPORTED;
 		}
 	} else if (userAccountControl & (UF_PARTIAL_SECRETS_ACCOUNT|UF_SERVER_TRUST_ACCOUNT)) {
-		/* DCs and RODCs comptuer accounts use AES */
-		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
+		/*
+		 * DCs and RODCs computer accounts take
+		 * msDS-SupportedEncryptionTypes unmodified, but
+		 * force all enctypes supported by the domain.
+		 */
+		supported_enctypes |= domain_enctypes;
 
-		supported_enctypes &= ~ENC_HMAC_SHA1_96_AES256_SK;
 	} else if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT ||
 		   (ent_type == SAMBA_KDC_ENT_TYPE_ANY)) {
 		/*
@@ -1447,8 +1460,6 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		supported_enctypes |= ENC_ALL_TYPES;
 	}
 
-
-
 	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
 	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
 		supported_enctypes &= ~ENC_ALL_TYPES;
@@ -1458,17 +1469,67 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		supported_enctypes &= ~ENC_RC4_HMAC_MD5;
 	}
 
+	pa_supported_enctypes = supported_enctypes;
+	supported_session_etypes = supported_enctypes;
+	if (supported_session_etypes & ENC_HMAC_SHA1_96_AES256_SK) {
+		supported_session_etypes |= ENC_HMAC_SHA1_96_AES256;
+		supported_session_etypes |= ENC_HMAC_SHA1_96_AES128;
+	}
+	if (force_rc4) {
+		supported_session_etypes |= ENC_RC4_HMAC_MD5;
+	}
+	/*
+	 * now that we remembered what to announce in pa_supported_enctypes
+	 * and normalized ENC_HMAC_SHA1_96_AES256_SK, we restrict the
+	 * rest to the enc types the local kdc supports.
+	 */
+	supported_enctypes &= kdc_enctypes;
+	supported_session_etypes &= kdc_enctypes;
+
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, p, msg,
 					   is_krbtgt, is_rodc,
 					   userAccountControl,
 					   ent_type, flags, kvno, entry,
 					   supported_enctypes,
-					   &supported_enctypes);
+					   &available_enctypes);
 	if (ret) {
 		/* Could be bogus data in the entry, or out of memory */
 		goto out;
 	}
+
+	/*
+	 * If we only have a nthash stored,
+	 * but a better session key would be
+	 * available, we fallback to fetching the
+	 * RC4_HMAC_MD5, which implicitly also
+	 * would allow an RC4_HMAC_MD5 session key.
+	 * But only if the kdc actually supports
+	 * RC4_HMAC_MD5.
+	 */
+	if (available_enctypes == 0 &&
+	    (supported_enctypes & ENC_RC4_HMAC_MD5) == 0 &&
+	    (supported_enctypes & ~ENC_RC4_HMAC_MD5) != 0 &&
+	    (kdc_enctypes & ENC_RC4_HMAC_MD5) != 0)
+	{
+		supported_enctypes = ENC_RC4_HMAC_MD5;
+		ret = samba_kdc_message2entry_keys(context, p, msg,
+						   is_krbtgt, is_rodc,
+						   userAccountControl,
+						   ent_type, flags, kvno, entry,
+						   supported_enctypes,
+						   &available_enctypes);
+		if (ret) {
+			/* Could be bogus data in the entry, or out of memory */
+			goto out;
+		}
+	}
+
+	/*
+	 * We need to support all session keys enctypes for
+	 * all keys we provide
+	 */
+	supported_session_etypes |= available_enctypes;
 
 	ret = sdb_entry_set_etypes(entry);
 	if (ret) {
@@ -1476,12 +1537,16 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	}
 
 	if (entry->flags.server) {
-		bool add_strong_aes_etypes =
-			supported_enctypes & KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK;
-		bool force_rc4 = lpcfg_kdc_force_enable_rc4_weak_session_keys(lp_ctx);
+		bool add_aes256 =
+			supported_session_etypes & KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+		bool add_aes128 =
+			supported_session_etypes & KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96;
+		bool add_rc4 =
+			supported_session_etypes & ENC_RC4_HMAC_MD5;
 		ret = sdb_entry_set_session_etypes(entry,
-						   add_strong_aes_etypes,
-						   force_rc4);
+						   add_aes256,
+						   add_aes128,
+						   add_rc4);
 		if (ret) {
 			goto out;
 		}
@@ -1541,7 +1606,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	}
 
 	p->msg = talloc_steal(p, msg);
-	p->supported_enctypes = supported_enctypes;
+	p->supported_enctypes = pa_supported_enctypes;
 
 out:
 	if (ret != 0) {
@@ -1592,7 +1657,11 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	NTTIME an_hour_ago;
 	uint32_t *auth_kvno;
 	bool preferr_current = false;
+	bool force_rc4 = lpcfg_kdc_force_enable_rc4_weak_session_keys(lp_ctx);
 	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
+	uint32_t pa_supported_enctypes;
+	uint32_t supported_session_etypes;
+	uint32_t kdc_enctypes = ENC_ALL_TYPES;
 	struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
 	NTSTATUS status;
 
@@ -1604,6 +1673,23 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					"msDS-SupportedEncryptionTypes",
 					ENC_HMAC_SHA1_96_AES256);
 	}
+
+	pa_supported_enctypes = supported_enctypes;
+	supported_session_etypes = supported_enctypes;
+	if (supported_session_etypes & ENC_HMAC_SHA1_96_AES256_SK) {
+		supported_session_etypes |= ENC_HMAC_SHA1_96_AES256;
+		supported_session_etypes |= ENC_HMAC_SHA1_96_AES128;
+	}
+	if (force_rc4) {
+		supported_session_etypes |= ENC_RC4_HMAC_MD5;
+	}
+	/*
+	 * now that we remembered what to announce in pa_supported_enctypes
+	 * and normalized ENC_HMAC_SHA1_96_AES256_SK, we restrict the
+	 * rest to the enc types the local kdc supports.
+	 */
+	supported_enctypes &= kdc_enctypes;
+	supported_session_etypes &= kdc_enctypes;
 
 	status = dsdb_trust_parse_tdo_info(mem_ctx, msg, &tdo);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1684,7 +1770,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	p->is_trust = true;
 	p->kdc_db_ctx = kdc_db_ctx;
 	p->realm_dn = realm_dn;
-	p->supported_enctypes = supported_enctypes;
+	p->supported_enctypes = pa_supported_enctypes;
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
@@ -1964,12 +2050,16 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	}
 
 	{
-		bool add_strong_aes_etypes =
-			supported_enctypes & KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK;
-		bool force_rc4 = lpcfg_kdc_force_enable_rc4_weak_session_keys(lp_ctx);
+		bool add_aes256 =
+			supported_session_etypes & KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+		bool add_aes128 =
+			supported_session_etypes & KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96;
+		bool add_rc4 =
+			supported_session_etypes & ENC_RC4_HMAC_MD5;
 		ret = sdb_entry_set_session_etypes(entry,
-						   add_strong_aes_etypes,
-						   force_rc4);
+						   add_aes256,
+						   add_aes128,
+						   add_rc4);
 		if (ret) {
 			goto out;
 		}
