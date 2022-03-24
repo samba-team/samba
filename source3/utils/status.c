@@ -121,6 +121,31 @@ static bool Ucrit_addPid( struct server_id pid )
 	return True;
 }
 
+static int print_share_mode_stdout(struct traverse_state *state,
+				   const char *pid,
+				   const char *user_name,
+				   const char *denymode,
+				   int access_mask,
+				   const char *rw,
+				   const char *oplock,
+				   const char *servicepath,
+				   const char *filename,
+				   const char *timestr)
+{
+	if (state->first) {
+		d_printf("\nLocked files:\n");
+		d_printf("Pid          User(ID)   DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
+		d_printf("--------------------------------------------------------------------------------------------------\n");
+
+		state->first = false;
+	}
+
+	d_printf("%-11s  %-9s  %-10s 0x%-8x  %-10s %-14s   %s   %s   %s",
+		 pid, user_name, denymode, access_mask, rw, oplock,
+		 servicepath, filename, timestr);
+	return 0;
+}
+
 static int prepare_share_mode(struct traverse_state *state)
 {
 	/* only print header line if there are open files */
@@ -152,14 +177,6 @@ static int print_share_mode(struct file_id fid,
 	if (do_checks && !is_valid_share_mode_entry(e)) {
 		TALLOC_FREE(tmp_ctx);
 		return 0;
-	}
-
-	if (state->first) {
-		d_printf("Locked files:\n");
-		d_printf("Pid          User(ID)   DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
-		d_printf("--------------------------------------------------------------------------------------------------\n");
-
-		 state->first = false;
 	}
 
 	if (do_checks && !serverid_exists(&e->pid)) {
@@ -273,12 +290,39 @@ static int print_share_mode(struct file_id fid,
 		}
 
 		timestr = time_to_asc((time_t)e->time.tv_sec);
-		d_printf("%-11s  %-9s  %-10s 0x%-8x  %-10s %-14s   %s   %s   %s",
-			 pid, user_str, denymode, (unsigned int)e->access_mask,
-			 rw, oplock, d->servicepath, filename, timestr);
+		print_share_mode_stdout(state,
+					pid,
+					user_str,
+					denymode,
+					(unsigned int)e->access_mask,
+					rw,
+					oplock,
+					d->servicepath,
+					filename,
+					timestr);
 	}
 	TALLOC_FREE(tmp_ctx);
 	return 0;
+}
+
+static void print_brl_stdout(struct traverse_state *state,
+			     char *pid,
+			     char *id,
+			     const char *desc,
+			     intmax_t start,
+			     intmax_t size,
+			     const char *sharepath,
+			     char *fname)
+{
+	if (state->first) {
+		d_printf("Byte range locks:\n");
+		d_printf("Pid        dev:inode       R/W  start     size      SharePath               Name\n");
+		d_printf("--------------------------------------------------------------------------------\n");
+
+		state->first = false;
+	}
+	d_printf("%-10s %-15s %-4s %-9jd %-9jd %-24s %-24s\n",
+		 pid, id, desc, start, size, sharepath, fname);
 }
 
 static int prepare_brl(struct traverse_state *state)
@@ -314,14 +358,6 @@ static void print_brl(struct file_id id,
 	struct file_id_buf ftmp;
 	struct traverse_state *state = (struct traverse_state *)private_data;
 
-	if (state->first) {
-		d_printf("Byte range locks:\n");
-		d_printf("Pid        dev:inode       R/W  start     size      SharePath               Name\n");
-		d_printf("--------------------------------------------------------------------------------\n");
-
-		state->first = false;
-	}
-
 	share_mode = fetch_share_mode_unlocked(NULL, id);
 	if (share_mode) {
 		fname = share_mode_filename(NULL, share_mode);
@@ -338,12 +374,14 @@ static void print_brl(struct file_id id,
 		}
 	}
 
-	d_printf("%-10s %-15s %-4s %-9jd %-9jd %-24s %-24s\n",
-		 server_id_str_buf(pid, &tmp),
-		 file_id_str_buf(id, &ftmp),
-		 desc,
-		 (intmax_t)start, (intmax_t)size,
-		 sharepath, fname);
+	print_brl_stdout(state,
+			 server_id_str_buf(pid, &tmp),
+			 file_id_str_buf(id, &ftmp),
+			 desc,
+			 (intmax_t)start,
+			 (intmax_t)size,
+			 sharepath,
+			 fname);
 
 	TALLOC_FREE(fname);
 	TALLOC_FREE(share_mode);
@@ -378,6 +416,20 @@ static const char *session_dialect_str(uint16_t dialect)
 	return unknown_dialect;
 }
 
+static int traverse_connections_stdout(struct traverse_state *state,
+				       const char *servicename,
+				       char *server_id,
+				       const char *machine,
+				       const char *timestr,
+				       const char *encryption,
+				       const char *signing)
+{
+	d_printf("%-12s %-7s %-13s %-32s %-12s %-12s\n",
+		 servicename, server_id, machine, timestr, encryption, signing);
+
+	return 0;
+}
+
 static int prepare_connections(struct traverse_state *state)
 {
 	/* always print header line */
@@ -395,6 +447,7 @@ static int traverse_connections(const struct connections_data *crec,
 	int result = 0;
 	const char *encryption = "-";
 	const char *signing = "-";
+	struct traverse_state *state = (struct traverse_state *)private_data;
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -457,17 +510,33 @@ static int traverse_connections(const struct connections_data *crec,
 		}
 	}
 
-	d_printf("%-12s %-7s %-13s %-32s %-12s %-12s\n",
-		 crec->servicename, server_id_str_buf(crec->pid, &tmp),
-		 crec->machine,
-		 timestr,
-		 encryption,
-		 signing);
+	result = traverse_connections_stdout(state,
+					     crec->servicename,
+					     server_id_str_buf(crec->pid, &tmp),
+					     crec->machine,
+					     timestr,
+					     encryption,
+					     signing);
 
 	TALLOC_FREE(timestr);
 	TALLOC_FREE(tmp_ctx);
 
 	return result;
+}
+
+static int traverse_sessionid_stdout(struct traverse_state *state,
+				     char *server_id,
+				     char *uid_gid_str,
+				     char *machine_hostname,
+				     const char *dialect,
+				     const char *encryption,
+				     const char *signing)
+{
+	d_printf("%-7s %-25s %-41s %-17s %-20s %-21s\n",
+		 server_id, uid_gid_str, machine_hostname, dialect, encryption,
+		 signing);
+
+	return 0;
 }
 
 static int prepare_sessionid(struct traverse_state *state)
@@ -490,6 +559,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	int result = 0;
 	const char *encryption = "-";
 	const char *signing = "-";
+	struct traverse_state *state = (struct traverse_state *)private_data;
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -636,13 +706,13 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	}
 
 
-	d_printf("%-7s %-25s %-41s %-17s %-20s %-21s\n",
-		 server_id_str_buf(session->pid, &tmp),
-		 uid_gid_str,
-		 machine_hostname,
-		 session_dialect_str(session->connection_dialect),
-		 encryption,
-		 signing);
+	traverse_sessionid_stdout(state,
+				  server_id_str_buf(session->pid, &tmp),
+				  uid_gid_str,
+				  machine_hostname,
+				  session_dialect_str(session->connection_dialect),
+				  encryption,
+				  signing);
 
 	TALLOC_FREE(machine_hostname);
 	TALLOC_FREE(tmp_ctx);
@@ -650,6 +720,18 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	return result;
 }
 
+
+static bool print_notify_rec_stdout(struct traverse_state *state,
+				    const char *path,
+				    char *server_id_str,
+				    unsigned filter,
+				    unsigned subdir_filter)
+{
+	d_printf("%s\\%s\\%x\\%x\n", path, server_id_str,
+		 filter, subdir_filter);
+
+	return true;
+}
 
 static int prepare_notify(struct traverse_state *state)
 {
@@ -663,12 +745,16 @@ static bool print_notify_rec(const char *path, struct server_id server,
 			     void *private_data)
 {
 	struct server_id_buf idbuf;
+	struct traverse_state *state = (struct traverse_state *)private_data;
+	bool result;
 
-	d_printf("%s\\%s\\%x\\%x\n", path, server_id_str_buf(server, &idbuf),
-		 (unsigned)instance->filter,
-		 (unsigned)instance->subdir_filter);
+	result = print_notify_rec_stdout(state,
+					 path,
+					 server_id_str_buf(server, &idbuf),
+					 (unsigned)instance->filter,
+					 (unsigned)instance->subdir_filter);
 
-	return true;
+	return result;
 }
 
 enum {
