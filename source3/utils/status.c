@@ -584,11 +584,14 @@ static int traverse_sessionid_stdout(struct traverse_state *state,
 
 static int prepare_sessionid(struct traverse_state *state)
 {
-	/* always print header line */
-	d_printf("\nSamba version %s\n",samba_version_string());
-	d_printf("%-7s %-12s %-12s %-41s %-17s %-20s %-21s\n", "PID", "Username", "Group", "Machine", "Protocol Version", "Encryption", "Signing");
-	d_printf("----------------------------------------------------------------------------------------------------------------------------------------\n");
-
+	if (!state->json_output) {
+		/* always print header line */
+		d_printf("\nSamba version %s\n",samba_version_string());
+		d_printf("%-7s %-12s %-12s %-41s %-17s %-20s %-21s\n", "PID", "Username", "Group", "Machine", "Protocol Version", "Encryption", "Signing");
+		d_printf("----------------------------------------------------------------------------------------------------------------------------------------\n");
+	} else {
+		add_section_to_json(state, "sessions");
+	}
 	return 0;
 
 }
@@ -597,6 +600,8 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 			      void *private_data)
 {
 	fstring uid_gid_str;
+	fstring uid_str;
+	fstring gid_str;
 	struct server_id_buf tmp;
 	char *machine_hostname = NULL;
 	int result = 0;
@@ -621,6 +626,8 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	Ucrit_addPid(session->pid);
 
 	if (numeric_only) {
+		fstr_sprintf(gid_str, "%u", (unsigned int)session->gid);
+		fstr_sprintf(uid_str, "%u", (unsigned int)session->uid);
 		fstr_sprintf(uid_gid_str, "%-12u %-12u",
 			     (unsigned int)session->uid,
 			     (unsigned int)session->gid);
@@ -630,6 +637,8 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 			 * The session is not fully authenticated yet.
 			 */
 			fstrcpy(uid_gid_str, "(auth in progress)");
+			fstrcpy(gid_str, "(auth in progress)");
+			fstrcpy(uid_str, "(auth in progress)");
 		} else {
 			/*
 			 * In theory it should not happen that one of
@@ -654,6 +663,8 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 					return -1;
 				}
 			}
+			fstr_sprintf(gid_str, "%s", gid_name);
+			fstr_sprintf(uid_str, "%s", uid_name);
 			fstr_sprintf(uid_gid_str, "%-12s %-12s",
 				     uid_name, gid_name);
 		}
@@ -722,15 +733,23 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	}
 
 
-	traverse_sessionid_stdout(state,
-				  server_id_str_buf(session->pid, &tmp),
-				  uid_gid_str,
-				  machine_hostname,
-				  session_dialect_str(session->connection_dialect),
-				  encryption,
-				  encryption_degree,
-				  signing,
-				  signing_degree);
+	if (!state->json_output) {
+		traverse_sessionid_stdout(state,
+			 server_id_str_buf(session->pid, &tmp),
+			 uid_gid_str,
+			 machine_hostname,
+			 session_dialect_str(session->connection_dialect),
+			 encryption,
+			 encryption_degree,
+			 signing,
+			 signing_degree);
+	} else {
+		result = traverse_sessionid_json(state,
+						 session,
+						 uid_str,
+						 gid_str,
+						 session_dialect_str(session->connection_dialect));
+	}
 
 	TALLOC_FREE(machine_hostname);
 	TALLOC_FREE(tmp_ctx);

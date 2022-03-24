@@ -21,6 +21,7 @@
 #include "smbprofile.h"
 #include "lib/util/time_basic.h"
 #include "conn_tdb.h"
+#include "session.h"
 #include "status_json.h"
 #include "../libcli/security/security.h"
 #include "status.h"
@@ -251,6 +252,84 @@ int traverse_connections_json(struct traverse_state *state,
 	}
 
 	result = json_update_object(&state->root_json, "tcons", &connections_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&sub_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}
+
+int traverse_sessionid_json(struct traverse_state *state,
+			    struct sessionid *session,
+			    char *uid_str,
+			    char *gid_str,
+			    const char *connection_dialect)
+{
+	struct json_object sub_json;
+	struct json_object session_json;
+	int result = 0;
+	char *id_str = NULL;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	sub_json = json_new_object();
+	if (json_is_invalid(&sub_json)) {
+		goto failure;
+	}
+
+	session_json = json_get_object(&state->root_json, "sessions");
+	if (json_is_invalid(&session_json)) {
+		goto failure;
+	}
+
+	id_str = talloc_asprintf(tmp_ctx, "%u", session->id_num);
+	result = json_add_string(&sub_json, "session_id", id_str);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_int(&sub_json, "uid", session->uid);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_int(&sub_json, "gid", session->gid);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "username", uid_str);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "groupname", gid_str);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "remote_machine", session->remote_machine);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "hostname", session->hostname);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "session_dialect", connection_dialect);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(&session_json, id_str, &sub_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_update_object(&state->root_json, "sessions", &session_json);
 	if (result < 0) {
 		goto failure;
 	}

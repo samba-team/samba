@@ -44,3 +44,12 @@ int traverse_connections_json(struct traverse_state *state,
 {
 	return 0;
 }
+
+int traverse_sessionid_json(struct traverse_state *state,
+			    struct sessionid *session,
+			    char *uid_str,
+			    char *gid_str,
+			    const char *connection_dialect)
+{
+	return 0;
+}
