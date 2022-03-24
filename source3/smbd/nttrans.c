@@ -1309,7 +1309,7 @@ static void call_nt_transact_create(connection_struct *conn,
 				ea_list_has_invalid_name(ea_list)) {
 			/* Realloc the size of parameters and data we will return */
 			if (flags & EXTENDED_RESPONSE_REQUIRED) {
-				/* Extended response is 32 more byyes. */
+				/* Extended response is 32 more bytes. */
 				param_len = 101;
 			} else {
 				param_len = 69;
