@@ -55,6 +55,12 @@
 #include "locking/leases_db.h"
 #include "lib/util/string_wrappers.h"
 
+#ifdef HAVE_JANSSON
+#include <jansson.h>
+#include "audit_logging.h" /* various JSON helpers */
+#include "auth/common_auth.h"
+#endif /* HAVE_JANSSON */
+
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */
 static struct server_id	Ucrit_pid[SMB_MAXPIDS];  /* Ugly !!! */   /* added by OH */
@@ -882,6 +888,7 @@ int main(int argc, const char *argv[])
 	bool ok;
 
 	state.first = true;
+	state.json_output = false;
 	state.resolve_uids = false;
 
 	smb_init_locale();
@@ -955,6 +962,10 @@ int main(int argc, const char *argv[])
 	}
 
 	sec_init();
+
+#ifdef HAVE_JANSSON
+	state.root_json = json_new_object();
+#endif /* HAVE_JANSSON */
 
 	if (getuid() != geteuid()) {
 		fprintf(stderr, "smbstatus should not be run setuid\n");

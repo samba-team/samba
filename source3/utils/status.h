@@ -17,12 +17,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_JANSSON
+#include <jansson.h>
+#include "audit_logging.h" /* various JSON helpers */
+#include "auth/common_auth.h"
+#endif /* HAVE_JANSSON */
+
 #ifndef STATUS_H
 #define STATUS_H
 
 struct traverse_state {
+	bool json_output;
 	bool first;
 	bool resolve_uids;
+#ifdef HAVE_JANSSON
+	struct json_object root_json;
+#endif /* HAVE_JANSSON */
 };
 
 enum crypto_degree {
