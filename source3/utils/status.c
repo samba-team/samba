@@ -944,6 +944,14 @@ int main(int argc, const char *argv[])
 			.descrip    = "Numeric uid/gid"
 		},
 		{
+			.longName   = "json",
+			.shortName  = 'j',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'j',
+			.descrip    = "JSON output"
+		},
+		{
 			.longName   = "fast",
 			.shortName  = 'f',
 			.argInfo    = POPT_ARG_NONE,
@@ -1029,6 +1037,9 @@ int main(int argc, const char *argv[])
 		case 'n':
 			numeric_only = true;
 			break;
+		case 'j':
+			state.json_output = true;
+			break;
 		case 'f':
 			do_checks = false;
 			break;
@@ -1048,6 +1059,11 @@ int main(int argc, const char *argv[])
 #ifdef HAVE_JANSSON
 	state.root_json = json_new_object();
 	add_general_information_to_json(&state);
+#else /* HAVE_JANSSON */
+	if (state.json_output) {
+		fprintf(stderr, "JSON support not available, please install lib Jansson\n");
+		goto done;
+	}
 #endif /* HAVE_JANSSON */
 
 	if (getuid() != geteuid()) {
@@ -1071,7 +1087,7 @@ int main(int argc, const char *argv[])
 	if ( username )
 		Ucrit_addUid( nametouid(username) );
 
-	if (verbose) {
+	if (verbose && !state.json_output) {
 		d_printf("using configfile = %s\n", get_dyn_CONFIGFILE());
 	}
 
@@ -1113,7 +1129,9 @@ int main(int argc, const char *argv[])
 		prepare_connections(&state);
 		connections_forall_read(traverse_connections, &state);
 
-		d_printf("\n");
+		if (!state.json_output) {
+			d_printf("\n");
+		}
 
 		if ( shares_only ) {
 			goto done;
@@ -1155,13 +1173,15 @@ int main(int argc, const char *argv[])
 		prepare_share_mode(&state);
 		result = share_entry_forall(print_share_mode, &state);
 
-		if (result == 0) {
+		if (result == 0 && !state.json_output) {
 			fprintf(stderr, "No locked files\n");
-		} else if (result < 0) {
+		} else if (result < 0 && !state.json_output) {
 			fprintf(stderr, "locked file list truncated\n");
 		}
 
-		d_printf("\n");
+		if (!state.json_output) {
+			d_printf("\n");
+		}
 
 		if (show_brl) {
 			prepare_brl(&state);
@@ -1179,6 +1199,12 @@ int main(int argc, const char *argv[])
 done:
 	cmdline_messaging_context_free();
 	poptFreeContext(pc);
+#ifdef HAVE_JANSSON
+	if (state.json_output && !profile_only) {
+		d_printf("%s\n", json_to_string(frame, &state.root_json));
+	}
+	json_free(&state.root_json);
+#endif /* HAVE_JANSSON */
 	TALLOC_FREE(frame);
 	return ret;
 }
