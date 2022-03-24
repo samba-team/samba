@@ -108,6 +108,45 @@ CTDB changes
   comments, is no longer permitted.  Please see ctdb-tunables(7) for
   more details.
 
+Operation without the (unsalted) NT password hash
+-------------------------------------------------
+
+When Samba is configured with 'nt hash store = never' then Samba will
+no longer store the (unsalted) NT password hash for users in Active
+Directory.  (Trust accounts, like computers, domain controllers and
+inter-domain trusts are not impacted).
+
+In the next version of Samba the default for 'nt hash store' will
+change from 'always' to 'auto', where it will follow (behave as 'nt
+hash store = never' when 'ntlm auth = disabled' is set.
+
+Security-focused deployments of Samba that have eliminated NTLM from
+their networks will find setting 'ntlm auth = disabled' with 'nt hash
+store = always' as a useful way to improve compliance with
+best-practice guidance on password storage (which is to always use an
+interated hash).
+
+Note that when 'nt hash store = never' is set, then arcfour-hmac-md5
+Kerberos keys will not be available for users who subsequently change
+their password, as these keys derive their values from NT hashes.  AES
+keys are stored by default for all deployments of Samba with Domain
+Functional Level 2008 or later, are supported by all modern clients,
+and are much more secure.
+
+Finally, also note that password history in Active Directory is stored
+in nTPwdHistory using a series of NT hash values.  Therefore the full
+password history feature is not available in this mode.
+
+To provide some protection against password re-use previous Kerberos
+hash values (the current, old and older values are already stored) are
+used, providing a history length of 3.
+
+There is one small limitation of this workaround: Changing the
+sAMAccountName, userAccountControl or userPrincipalName of an account
+can cause the Kerberos password salt to change.  This means that after
+*both* an account rename and a password change, only the current
+password will be recognised for password history purposes.
+
 
 REMOVED FEATURES
 ================
@@ -124,6 +163,7 @@ smb.conf changes
   Parameter Name                          Description     Default
   --------------                          -----------     -------
   dns port                                New default     53
+  nt hash store				  New parameter   always
 
 
 KNOWN ISSUES
