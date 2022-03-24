@@ -1965,6 +1965,173 @@ done:
 	return ret;
 }
 
+static bool test_twrp_listdir(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	struct smb2_create create;
+	struct smb2_handle h = {{0}};
+	struct smb2_find find;
+	unsigned int count;
+	union smb_search_data *d;
+	char *p = NULL;
+	struct tm tm;
+	time_t t;
+	uint64_t nttime;
+	const char *snapshot = NULL;
+	uint64_t normal_fileid;
+	uint64_t snapshot_fileid;
+	NTSTATUS status;
+	bool ret = true;
+
+	snapshot = torture_setting_string(tctx, "twrp_snapshot", NULL);
+	if (snapshot == NULL) {
+		torture_fail(tctx, "missing 'twrp_snapshot' option\n");
+	}
+
+	torture_comment(tctx, "Testing File-Ids of directory listing "
+			"with timewarp (%s)\n",
+			snapshot);
+
+	setenv("TZ", "GMT", 1);
+
+	/* strptime does not set tm.tm_isdst but mktime assumes DST is in
+	 * effect if it is greather than 1. */
+	ZERO_STRUCT(tm);
+
+	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
+	torture_assert_goto(tctx, p != NULL, ret, done, "strptime\n");
+	torture_assert_goto(tctx, *p == '\0', ret, done, "strptime\n");
+
+	t = mktime(&tm);
+	unix_to_nt_time(&nttime, t);
+
+	/*
+	 * 1: Query the file's File-Id
+	 */
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.fname = "subdir/hardlink",
+		.in.query_on_disk_id = true,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"test file could not be created\n");
+	smb2_util_close(tree, create.out.file.handle);
+	normal_fileid = BVAL(&create.out.on_disk_id, 0);
+
+	/*
+	 * 2: check directory listing of the file returns same File-Id
+	 */
+
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_DIR_LIST,
+		.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.fname = "subdir",
+		.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create\n");
+	h = create.out.file.handle;
+
+	find = (struct smb2_find) {
+		.in.file.handle = h,
+		.in.pattern = "*",
+		.in.max_response_size = 0x1000,
+		.in.level = SMB2_FIND_ID_BOTH_DIRECTORY_INFO,
+	};
+
+	status = smb2_find_level(tree, tree, &find, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_find_level failed\n");
+
+	smb2_util_close(tree, h);
+
+	torture_assert_int_equal_goto(tctx, count, 3, ret, done, "Bad count\n");
+	torture_assert_str_equal_goto(tctx,
+				      d[2].id_both_directory_info.name.s,
+				      "hardlink",
+				      ret, done, "bad name");
+	torture_assert_u64_equal_goto(tctx,
+				      d[2].id_both_directory_info.file_id,
+				      normal_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * 3: Query File-Id of snapshot of the file and check the File-Id is
+	 * different compared to the basefile
+	 */
+
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.fname = "subdir/hardlink",
+		.in.query_on_disk_id = true,
+		.in.timewarp = nttime,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"test file could not be created\n");
+	smb2_util_close(tree, create.out.file.handle);
+
+	snapshot_fileid = BVAL(&create.out.on_disk_id, 0);
+
+	/*
+	 * 4: List directory of the snapshot and check the File-Id returned here
+	 * is the same as in 3.
+	 */
+
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_DIR_LIST,
+		.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.fname = "subdir",
+		.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+		.in.timewarp = nttime,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create\n");
+	h = create.out.file.handle;
+
+	find = (struct smb2_find) {
+		.in.file.handle = h,
+		.in.pattern = "*",
+		.in.max_response_size = 0x1000,
+		.in.level = SMB2_FIND_ID_BOTH_DIRECTORY_INFO,
+	};
+
+	status = smb2_find_level(tree, tree, &find, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_find_level failed\n");
+	smb2_util_close(tree, h);
+
+	torture_assert_int_equal_goto(tctx, count, 3, ret, done, "Bad count\n");
+	torture_assert_str_equal_goto(tctx,
+				      d[2].id_both_directory_info.name.s,
+				      "hardlink",
+				      ret, done, "bad name");
+	torture_assert_u64_equal_goto(tctx,
+				      snapshot_fileid,
+				      d[2].id_both_directory_info.file_id,
+				      ret, done, "bad fileid\n");
+
+done:
+	return ret;
+}
+
 static bool test_fileid(struct torture_context *tctx,
 			struct smb2_tree *tree)
 {
@@ -2988,6 +3155,7 @@ struct torture_suite *torture_smb2_twrp_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "write", test_twrp_write);
 	torture_suite_add_1smb2_test(suite, "stream", test_twrp_stream);
 	torture_suite_add_1smb2_test(suite, "openroot", test_twrp_openroot);
+	torture_suite_add_1smb2_test(suite, "listdir", test_twrp_listdir);
 
 	suite->description = talloc_strdup(suite, "SMB2-TWRP tests");
 

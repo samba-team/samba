@@ -191,6 +191,25 @@ test_hiddenfile()
     return 0
 }
 
+test_shadow_copy_listdir_fix_inodes()
+{
+    local msg
+
+    msg=$1
+
+    #delete snapshots from previous tests
+    find $WORKDIR -name ".snapshots" -exec rm -rf {} \; 1>/dev/null 2>&1
+    build_snapshots
+
+    testit "$msg" \
+	   $SMBTORTURE \
+	   -U$USERNAME%$PASSWORD \
+	   "//$SERVER/shadow_write" \
+	   --option="torture:twrp_snapshot=$SNAPSHOT" \
+	   smb2.twrp.listdir || \
+        failed=`expr $failed + 1`
+}
+
 build_files $WORKDIR
 
 # test open for writing and write behaviour of snapshoted files
@@ -203,5 +222,7 @@ test_shadow_copy_openroot "opening root of shadow copy share"
 testit "fix inodes with hardlink" test_shadow_copy_fix_inodes || failed=`expr $failed + 1`
 
 testit "Test reading DOS attribute" test_hiddenfile || failed=`expr $failed + 1`
+
+test_shadow_copy_listdir_fix_inodes "fix inodes when listing directory"
 
 exit $failed
