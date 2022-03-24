@@ -555,17 +555,6 @@ plantestsuite("samba4.blackbox.test_primary_group", "ad_dc:local", [os.path.join
 plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.join(bbdir, "test_old_enctypes.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$NETBIOSNAME', '$PREFIX_ABS'])
 
 if have_heimdal_support:
-    plantestsuite("samba4.blackbox.pkinit",
-                  "ad_dc:local",
-                  [os.path.join(bbdir, "test_pkinit_simple.sh"),
-                   '$SERVER',
-                   'pkinit',
-                   '$PASSWORD',
-                   '$REALM',
-                   '$DOMAIN',
-                   '$PREFIX/ad_dc',
-                   "aes256-cts-hmac-sha1-96",
-                   smbclient3, configuration])
     plantestsuite("samba4.blackbox.pkinit_pac",
                   "ad_dc:local",
                   [os.path.join(bbdir, "test_pkinit_pac_heimdal.sh"),
@@ -595,6 +584,18 @@ else:
     plantestsuite("samba4.blackbox.kinit_trust", "fl2000dc:local", [os.path.join(bbdir, "test_kinit_trusts_mit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$TRUST_SERVER', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', '$PREFIX', "external"])
     plantestsuite("samba4.blackbox.export.keytab", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_export_keytab_mit.sh"), '$SERVER', '$USERNAME', '$REALM', '$DOMAIN', "$PREFIX", smbclient4])
     plantestsuite("samba4.blackbox.kpasswd", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_kpasswd_mit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', "$PREFIX/ad_dc_ntvfs"])
+
+plantestsuite("samba4.blackbox.pkinit_simple",
+              "ad_dc:local",
+              [os.path.join(bbdir, "test_pkinit_simple.sh"),
+               '$SERVER',
+               'pkinit',
+               '$PASSWORD',
+               '$REALM',
+               '$DOMAIN',
+               '$PREFIX/ad_dc',
+               smbclient3,
+               configuration])
 
 plantestsuite("samba.blackbox.client_kerberos", "ad_dc", [os.path.join(bbdir, "test_client_kerberos.sh"), '$DOMAIN', '$REALM', '$USERNAME', '$PASSWORD', '$SERVER', '$PREFIX_ABS', '$SMB_CONF_PATH'])
 
