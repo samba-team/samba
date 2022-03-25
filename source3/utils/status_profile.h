@@ -21,8 +21,10 @@
 #define __STATUS_PROFILE_H__
 
 #include "replace.h"
+#include "status.h"
 
-bool status_profile_dump(bool be_verbose);
+bool status_profile_dump(bool be_verbose,
+			 struct traverse_state *state);
 bool status_profile_rates(bool be_verbose);
 
 #endif

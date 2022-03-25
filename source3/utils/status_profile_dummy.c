@@ -21,7 +21,8 @@
 #include "smbprofile.h"
 #include "status_profile.h"
 
-bool status_profile_dump(bool be_verbose)
+bool status_profile_dump(bool be_verbose,
+			 struct traverse_state *state)
 {
 	fprintf(stderr, "Profile data unavailable\n");
 	return true;

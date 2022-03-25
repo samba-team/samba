@@ -21,11 +21,19 @@
 #include "includes.h"
 #include "smbprofile.h"
 #include "status_profile.h"
+#include "conn_tdb.h"
+#include "librpc/gen_ndr/open_files.h"
+#include "status_json.h"
 
-static void profile_separator(const char * title)
+static void profile_separator(const char * title,
+			      struct traverse_state *state)
 {
 	char line[79 + 1];
 	char * end;
+
+	if (state->json_output) {
+		return;
+	}
 
 	snprintf(line, sizeof(line), "**** %s ", title);
 
@@ -40,9 +48,11 @@ static void profile_separator(const char * title)
 /*******************************************************************
  dump the elements of the profile structure
   ******************************************************************/
-bool status_profile_dump(bool verbose)
+bool status_profile_dump(bool verbose,
+			 struct traverse_state *state)
 {
 	struct profile_stats stats = {};
+	const char* latest_section = NULL;
 
 	if (!profile_setup(NULL, True)) {
 		fprintf(stderr,"Failed to initialise profile memory\n");
@@ -52,12 +62,20 @@ bool status_profile_dump(bool verbose)
 	smbprofile_collect(&stats);
 
 #define __PRINT_FIELD_LINE(name, _stats, field) do { \
-	d_printf("%-59s%20ju\n", \
-		 name "_" #field ":", \
-		 (uintmax_t)stats.values._stats.field); \
+	uintmax_t val = (uintmax_t)stats.values._stats.field; \
+	if (!state->json_output) { \
+		d_printf("%-59s%20ju\n", \
+			 name "_" #field ":", \
+			 val); \
+	} else { \
+	       add_profile_item_to_json(state, latest_section, name, #field, val); \
+	} \
 } while(0);
 #define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name, display) profile_separator(#display);
+#define SMBPROFILE_STATS_SECTION_START(name, display) do { \
+	latest_section = display; \
+	profile_separator(display, state);\
+} while(0);
 #define SMBPROFILE_STATS_COUNT(name) do { \
 	__PRINT_FIELD_LINE(#name, name##_stats,  count); \
 } while(0);

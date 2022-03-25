@@ -1101,13 +1101,18 @@ int main(int argc, const char *argv[])
 	switch (profile_only) {
 		case 'P':
 			/* Dump profile data */
-			ok = status_profile_dump(verbose);
+			ok = status_profile_dump(verbose, &state);
 			ret = ok ? 0 : 1;
 			goto done;
 		case 'R':
 			/* Continuously display rate-converted data */
-			ok = status_profile_rates(verbose);
-			ret = ok ? 0 : 1;
+			if (!state.json_output) {
+				ok = status_profile_rates(verbose);
+				ret = ok ? 0 : 1;
+			} else {
+				fprintf(stderr, "Call rates not available in a json output.\n");
+				ret = 1;
+			}
 			goto done;
 		default:
 			break;
@@ -1200,7 +1205,7 @@ done:
 	cmdline_messaging_context_free();
 	poptFreeContext(pc);
 #ifdef HAVE_JANSSON
-	if (state.json_output && !profile_only) {
+	if (state.json_output) {
 		d_printf("%s\n", json_to_string(frame, &state.root_json));
 	}
 	json_free(&state.root_json);
