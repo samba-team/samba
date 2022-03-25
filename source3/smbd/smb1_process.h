@@ -57,7 +57,6 @@ void process_smb1(struct smbXsrv_connection *xconn,
 		  uint8_t *inbuf, size_t nread, size_t unread_bytes,
 		  uint32_t seqnum, bool encrypted,
 		  struct smb_perfcount_data *deferred_pcd);
-bool valid_smb_header(const uint8_t *inbuf);
 void smbd_echo_init(struct smbXsrv_connection *xconn);
 void construct_reply(struct smbXsrv_connection *xconn,
 		     char *inbuf, int size, size_t unread_bytes,

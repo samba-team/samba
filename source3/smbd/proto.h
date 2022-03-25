@@ -891,6 +891,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  struct messaging_context *msg_ctx,
 		  int sock_fd,
 		  bool interactive);
+bool valid_smb_header(const uint8_t *inbuf);
 
 /* The following definitions come from smbd/quotas.c  */
 
