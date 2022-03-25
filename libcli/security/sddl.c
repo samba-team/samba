@@ -556,35 +556,39 @@ failed:
 static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			     struct sddl_transition_state *state)
 {
+	bool in_domain = dom_sid_in_domain(state->domain_sid, sid);
+	struct dom_sid_buf buf;
+	const char *sidstr = dom_sid_str_buf(sid, &buf);
+	uint32_t rid = 0;
 	size_t i;
-	char *sidstr;
 
-	sidstr = dom_sid_string(mem_ctx, sid);
-	if (sidstr == NULL) return NULL;
+	if (sid->num_auths > 1) {
+		rid = sid->sub_auths[sid->num_auths-1];
+	}
 
-	/* seen if its a well known sid */
-	for (i=0;sid_codes[i].sid;i++) {
-		if (strcmp(sidstr, sid_codes[i].sid) == 0) {
-			talloc_free(sidstr);
+	for (i=0;i<ARRAY_SIZE(sid_codes);i++) {
+		/* seen if its a well known sid */
+		if (sid_codes[i].sid != NULL) {
+			int cmp;
+
+			cmp = strcmp(sidstr, sid_codes[i].sid);
+			if (cmp != 0) {
+				continue;
+			}
+
+			return talloc_strdup(mem_ctx, sid_codes[i].code);
+		}
+
+		if (rid == 0) {
+			continue;
+		}
+
+		if (in_domain && sid_codes[i].rid == rid) {
 			return talloc_strdup(mem_ctx, sid_codes[i].code);
 		}
 	}
 
-	/* or a well known rid in our domain */
-	if (dom_sid_in_domain(state->domain_sid, sid)) {
-		uint32_t rid = sid->sub_auths[sid->num_auths-1];
-		for (;i<ARRAY_SIZE(sid_codes);i++) {
-			if (rid == sid_codes[i].rid) {
-				talloc_free(sidstr);
-				return talloc_strdup(mem_ctx, sid_codes[i].code);
-			}
-		}
-	}
-
-	talloc_free(sidstr);
-
-	/* TODO: encode well known sids as two letter codes */
-	return dom_sid_string(mem_ctx, sid);
+	return talloc_strdup(mem_ctx, sidstr);
 }
 
 
