@@ -1292,6 +1292,10 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 			return state.status;
 		}
 
+		if (timeval_is_zero(&timeout)) {
+			return NT_STATUS_LOCK_NOT_GRANTED;
+		}
+
 		/*
 		 * Fall back to the full g_lock_trylock logic,
 		 * g_lock_lock_simple_fn() called above only covers
