@@ -151,28 +151,28 @@ static const struct {
 	{ .code = "AS", .sid = SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY },
 	{ .code = "SS", .sid = SID_SERVICE_ASSERTED_IDENTITY },
 
-	{ .code = "RO", .sid = NULL, .rid = DOMAIN_RID_ENTERPRISE_READONLY_DCS },
+	{ .code = "RO", .rid = DOMAIN_RID_ENTERPRISE_READONLY_DCS },
 
-	{ .code = "LA", .sid = NULL, .rid = DOMAIN_RID_ADMINISTRATOR },
-	{ .code = "LG", .sid = NULL, .rid = DOMAIN_RID_GUEST },
+	{ .code = "LA", .rid = DOMAIN_RID_ADMINISTRATOR },
+	{ .code = "LG", .rid = DOMAIN_RID_GUEST },
 
-	{ .code = "DA", .sid = NULL, .rid = DOMAIN_RID_ADMINS },
-	{ .code = "DU", .sid = NULL, .rid = DOMAIN_RID_USERS },
-	{ .code = "DG", .sid = NULL, .rid = DOMAIN_RID_GUESTS },
-	{ .code = "DC", .sid = NULL, .rid = DOMAIN_RID_DOMAIN_MEMBERS },
-	{ .code = "DD", .sid = NULL, .rid = DOMAIN_RID_DCS },
-	{ .code = "CA", .sid = NULL, .rid = DOMAIN_RID_CERT_ADMINS },
-	{ .code = "SA", .sid = NULL, .rid = DOMAIN_RID_SCHEMA_ADMINS },
-	{ .code = "EA", .sid = NULL, .rid = DOMAIN_RID_ENTERPRISE_ADMINS },
-	{ .code = "PA", .sid = NULL, .rid = DOMAIN_RID_POLICY_ADMINS },
+	{ .code = "DA", .rid = DOMAIN_RID_ADMINS },
+	{ .code = "DU", .rid = DOMAIN_RID_USERS },
+	{ .code = "DG", .rid = DOMAIN_RID_GUESTS },
+	{ .code = "DC", .rid = DOMAIN_RID_DOMAIN_MEMBERS },
+	{ .code = "DD", .rid = DOMAIN_RID_DCS },
+	{ .code = "CA", .rid = DOMAIN_RID_CERT_ADMINS },
+	{ .code = "SA", .rid = DOMAIN_RID_SCHEMA_ADMINS },
+	{ .code = "EA", .rid = DOMAIN_RID_ENTERPRISE_ADMINS },
+	{ .code = "PA", .rid = DOMAIN_RID_POLICY_ADMINS },
 
-	{ .code = "CN", .sid = NULL, .rid = DOMAIN_RID_CLONEABLE_CONTROLLERS },
+	{ .code = "CN", .rid = DOMAIN_RID_CLONEABLE_CONTROLLERS },
 
-	{ .code = "AP", .sid = NULL, .rid = DOMAIN_RID_PROTECTED_USERS },
-	{ .code = "KA", .sid = NULL, .rid = DOMAIN_RID_KEY_ADMINS },
-	{ .code = "EK", .sid = NULL, .rid = DOMAIN_RID_ENTERPRISE_KEY_ADMINS },
+	{ .code = "AP", .rid = DOMAIN_RID_PROTECTED_USERS },
+	{ .code = "KA", .rid = DOMAIN_RID_KEY_ADMINS },
+	{ .code = "EK", .rid = DOMAIN_RID_ENTERPRISE_KEY_ADMINS },
 
-	{ .code = "RS", .sid = NULL, .rid = DOMAIN_RID_RAS_SERVERS }
+	{ .code = "RS", .rid = DOMAIN_RID_RAS_SERVERS }
 };
 
 /*
