@@ -1586,7 +1586,7 @@ for env in ['ad_dc_ntvfs']:
 planoldpythontestsuite("chgdcpass:local", "samba.tests.blackbox.samba_dnsupdate",
                        environ={'DNS_SERVER_IP': '$SERVER_IP'})
 
-for env in ["ad_dc_ntvfs", "s4member", "rodc", "promoted_dc", "ad_dc", "ad_member"]:
+for env in ["s4member", "rodc", "promoted_dc", "ad_dc", "ad_member"]:
     plantestsuite("samba.blackbox.wbinfo(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', env])
 
 # Offline logon (ad_member)
@@ -1704,7 +1704,7 @@ for env in [
 
 planpythontestsuite("ad_dc_default:local", "samba.tests.kcc.kcc_utils")
 
-for env in ["simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs",
+for env in ["simpleserver", "fileserver", "nt4_dc", "ad_dc",
             "ad_member", "offlinebackupdc", "restoredc", "renamedc", "labdc", 'schema_pair_dc']:
     planoldpythontestsuite(env, "netlogonsvc",
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
@@ -1728,7 +1728,7 @@ for env in ['vampire_dc', 'promoted_dc', 'rodc']:
 # TODO: Verifying the databases really should be a part of the
 # environment teardown.
 # check the databases are all OK. PLEASE LEAVE THIS AS THE LAST TEST
-for env in ["ad_dc_ntvfs", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc",
+for env in ["ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc",
             'vampire_dc', 'promoted_dc', 'backupfromdc', 'restoredc',
             'renamedc', 'offlinebackupdc', 'labdc']:
     plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local", ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
