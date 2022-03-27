@@ -30,11 +30,37 @@ def options(opt):
     gr = opt.option_group('library handling options')
 
     gr.add_option('--bundled-libraries',
-                   help=("comma separated list of bundled libraries. May include !LIBNAME to disable bundling a library. Can be 'NONE' or 'ALL' [auto]"),
+                   help=(f'''comma separated list of bundled libraries.
+
+{Context.g_module.APPNAME} includes copies of externally maintained
+system libraries (such as popt, cmokca) as well as Samba-maintained
+libraries that can be found on the system already (such as talloc,
+tdb).
+
+This option, most useful for packagers, controls if each library
+should be forced to be obtained from inside Samba (bundled), forced to
+be obtained from the system (bundling disabled, ensuing that
+dependency errors are not silently missed) or if that choice should be
+automatic (best for end users).
+
+May include !LIBNAME to disable bundling a library.
+
+Can be 'NONE' or 'ALL' [auto]'''),
                    action="store", dest='BUNDLED_LIBS', default='')
 
     gr.add_option('--private-libraries',
-                   help=("comma separated list of normally public libraries to build instead as private libraries. May include !LIBNAME to disable making a library private in order to limit the effect of 'ALL'"),
+                   help=(f'''comma separated list of normally public libraries to build instead as private libraries.
+
+By default {Context.g_module.APPNAME} will publish a number of public
+libraries for use by other software.  For Samba this would include
+libwbclient, libsmbclient and others.
+
+This allows that to be disabled, to ensure that other software does
+not use these libraries and they are placed in a private filesystem
+prefix.
+
+May include !LIBNAME to disable making a library private in order to
+limit the effect of 'ALL' '''),
                    action="store", dest='PRIVATE_LIBS', default='')
 
     extension_default = default_value('PRIVATE_EXTENSION_DEFAULT')
@@ -48,12 +74,33 @@ def options(opt):
                    action="store", dest='PRIVATE_EXTENSION_EXCEPTION', default=extension_exception)
 
     builtin_default = default_value('BUILTIN_LIBRARIES_DEFAULT')
-    gr.add_option('--builtin-libraries',
-                   help=("command separated list of libraries to build directly into binaries [%s]" % builtin_default),
-                   action="store", dest='BUILTIN_LIBRARIES', default=builtin_default)
+    gr.add_option('--builtin-libraries', help=(
+f'''comma separated list of libraries to build directly into binaries.
+
+By default {Context.g_module.APPNAME} will build a large number of
+shared libraries, to reduce binary size.  This overrides this
+behaviour and essentially statically links the specified libraries into
+each binary [{builtin_default}]'''),
+                  action="store",
+                  dest='BUILTIN_LIBRARIES', default=builtin_default)
 
     gr.add_option('--minimum-library-version',
-                   help=("list of minimum system library versions (LIBNAME1:version,LIBNAME2:version)"),
+                   help=(
+f'''list of minimum system library versions for otherwise bundled
+libraries.
+
+{Context.g_module.APPNAME} by default requires that, in order to match
+what is tested in our continuous integration (CI) test-suite, that the
+versions of libraries that we include match that found on the system,
+before we will select not to 'bundle'.
+
+This option, possibly useful for packagers, allows that specified
+version to be overridden (say, if it is absolutely known that a the
+newer version included in this tarball has no relevant changes).
+
+Use this with extreme care
+
+(LIBNAME1:version,LIBNAME2:version)'''),
                    action="store", dest='MINIMUM_LIBRARY_VERSION', default='')
 
     gr.add_option('--disable-rpath',
@@ -66,7 +113,13 @@ def options(opt):
                    help=("Disable use of rpath for private library path in installed files"),
                    action="store_true", dest='disable_rpath_private_install', default=False)
     gr.add_option('--nonshared-binary',
-                   help=("Disable use of shared libs for the listed binaries"),
+                   help=(
+f'''Disable use of shared libaries internal to {Context.g_module.APPNAME} for the listed binaries.
+
+The resulting binaries are 'statically linked' with regard to components provided by
+{Context.g_module.APPNAME}, but remain dynamically linked to (eg) libc.so and libgnutls.so
+
+Currently the only tested value is 'smbtorture,smbd/smbd' for Samba'''),
                    action="store", dest='NONSHARED_BINARIES', default='')
     gr.add_option('--disable-symbol-versions',
                    help=("Disable use of the --version-script linker option"),
