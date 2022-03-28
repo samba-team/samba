@@ -6873,11 +6873,6 @@ void reply_rmdir(struct smb_request *req)
 		goto out;
 	}
 
-	if (is_ntfs_stream_smb_fname(smb_dname)) {
-		reply_nterror(req, NT_STATUS_NOT_A_DIRECTORY);
-		goto out;
-	}
-
 	status = SMB_VFS_CREATE_FILE(
 		conn,                                   /* conn */
 		req,                                    /* req */
