@@ -377,7 +377,6 @@ smb2_s3only = [
     "smb2.durable-v2-delay",
     "smb2.aio_delay",
     "smb2.fileid",
-    "smb2.fileid_unique",
     "smb2.timestamps",
     "smb2.async_dosmode",
     "smb2.twrp",

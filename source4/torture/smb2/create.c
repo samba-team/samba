@@ -3171,28 +3171,10 @@ struct torture_suite *torture_smb2_fileid_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "fileid", test_fileid);
 	torture_suite_add_1smb2_test(suite, "fileid-dir", test_fileid_dir);
+	torture_suite_add_1smb2_test(suite, "unique", test_fileid_unique);
+	torture_suite_add_1smb2_test(suite, "unique-dir", test_fileid_unique_dir);
 
-	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
-
-	return suite;
-}
-
-/*
-   Testing for uniqueness of SMB2 File-IDs
-*/
-struct torture_suite *torture_smb2_fileid_unique_init(TALLOC_CTX *ctx)
-{
-	struct torture_suite *suite = torture_suite_create(ctx,
-					"fileid_unique");
-
-	torture_suite_add_1smb2_test(suite,
-					"fileid_unique",
-					test_fileid_unique);
-	torture_suite_add_1smb2_test(suite,
-					"fileid_unique-dir",
-					test_fileid_unique_dir);
-
-	suite->description = talloc_strdup(suite, "SMB2-FILEID-UNIQUE tests");
+	suite->description = talloc_strdup(suite, "SMB2-FILEID tests");
 
 	return suite;
 }
