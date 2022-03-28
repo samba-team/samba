@@ -88,7 +88,7 @@ fi
 export CC
 
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" \
-$PYTHON ./buildtools/bin/waf configure \
+./configure \
 	--builtin-libraries=replace,popt \
 	--bundled-libraries=!talloc,!tevent,!tdb \
 	--minimum-library-version=talloc:%libtalloc_version,tdb:%libtdb_version,tevent:%libtevent_version \
@@ -103,7 +103,7 @@ $PYTHON ./buildtools/bin/waf configure \
 	--mandir=%{_mandir} \
 	--localstatedir=%{_localstatedir}
 
-$PYTHON ./buildtools/bin/waf build
+make -j
 
 %install
 # Clean up in case there is trash left from a previous build
@@ -112,7 +112,7 @@ rm -rf $RPM_BUILD_ROOT
 # Create the target build directory hierarchy
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sudoers.d
 
-DESTDIR=$RPM_BUILD_ROOT $PYTHON ./buildtools/bin/waf install
+DESTDIR=$RPM_BUILD_ROOT make -j install
 
 install -m644 config/ctdb.conf $RPM_BUILD_ROOT%{_sysconfdir}/ctdb
 install -m644 config/ctdb.tunables $RPM_BUILD_ROOT%{_sysconfdir}/ctdb
