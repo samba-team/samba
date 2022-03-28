@@ -5750,6 +5750,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		uint32_t base_privflags;
 
 		if (create_options & FILE_DIRECTORY_FILE) {
+			DBG_DEBUG("Can't open a stream as directory\n");
 			status = NT_STATUS_NOT_A_DIRECTORY;
 			goto fail;
 		}
