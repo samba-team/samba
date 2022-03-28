@@ -30,13 +30,14 @@
 	"O:BAG:SY" \
 	"D:" \
 	"(D;;0x00000800;;;AN)" \
-	"(A;;GA;;;BA)" \
-	"(A;;GX;;;WD)" \
+	"(A;;0x000f1fff;;;BA)" \
+	"(A;;0x00020801;;;WD)" \
 	"(A;;0x00000801;;;AN)" \
 	"(A;;0x00001000;;;LS)" \
 	"(A;;0x00001000;;;NS)" \
 	"(A;;0x00001000;;;S-1-5-17)" \
-	"(A;;0x00000801;;;S-1-15-2-1)"
+	"(A;;0x00000801;;;AC)" \
+	"(A;;0x00000801;;;S-1-15-2-2)"
 
 static const struct generic_mapping dcesrv_lsa_policy_mapping = {
 	LSA_POLICY_READ,
