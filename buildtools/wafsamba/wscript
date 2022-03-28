@@ -8,6 +8,10 @@ import wafsamba
 from samba_utils import symlink
 from optparse import SUPPRESS_HELP
 
+phs = os.environ.get("PYTHONHASHSEED", None)
+if phs != "1":
+    raise Errors.WafError('''PYTHONHASHSEED=1 missing! Don't use waf directly, use ./configure and make!''')
+
 # this forces configure to be re-run if any of the configure
 # sections of the build scripts change. We have to check
 # for this in sys.argv as options have not yet been parsed when
