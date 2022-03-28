@@ -1434,40 +1434,6 @@ static unsigned int vfs_gpfs_dosmode_to_winattrs(uint32_t dosmode)
 	return winattrs;
 }
 
-static NTSTATUS vfs_gpfs_get_file_id(struct gpfs_iattr64 *iattr,
-				     uint64_t *fileid)
-{
-	uint8_t input[sizeof(gpfs_ino64_t) +
-		      sizeof(gpfs_gen64_t) +
-		      sizeof(gpfs_snapid64_t)];
-	uint8_t digest[gnutls_hash_get_len(GNUTLS_DIG_SHA1)];
-	int rc;
-
-	DBG_DEBUG("ia_inode 0x%llx, ia_gen 0x%llx, ia_modsnapid 0x%llx\n",
-		  iattr->ia_inode, iattr->ia_gen, iattr->ia_modsnapid);
-
-	SBVAL(input,
-	      0, iattr->ia_inode);
-	SBVAL(input,
-	      sizeof(gpfs_ino64_t), iattr->ia_gen);
-	SBVAL(input,
-	      sizeof(gpfs_ino64_t) + sizeof(gpfs_gen64_t), iattr->ia_modsnapid);
-
-	GNUTLS_FIPS140_SET_LAX_MODE();
-	rc = gnutls_hash_fast(GNUTLS_DIG_SHA1, input, sizeof(input), &digest);
-	GNUTLS_FIPS140_SET_STRICT_MODE();
-
-	if (rc != 0) {
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HASH_NOT_SUPPORTED);
-	}
-
-	memcpy(fileid, &digest, sizeof(*fileid));
-	DBG_DEBUG("file_id 0x%" PRIx64 "\n", *fileid);
-
-	return NT_STATUS_OK;
-}
-
 static struct timespec gpfs_timestruc64_to_timespec(struct gpfs_timestruc64 g)
 {
 	return (struct timespec) { .tv_sec = g.tv_sec, .tv_nsec = g.tv_nsec };
@@ -1484,8 +1450,6 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 	struct gpfs_iattr64 iattr = { };
 	unsigned int litemask = 0;
 	struct timespec ts;
-	uint64_t file_id;
-	NTSTATUS status;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -1556,17 +1520,10 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 		return map_nt_error_from_unix(errno);
 	}
 
-	ZERO_STRUCT(file_id);
-	status = vfs_gpfs_get_file_id(&iattr, &file_id);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	ts = gpfs_timestruc64_to_timespec(iattr.ia_createtime);
 
 	*dosmode |= vfs_gpfs_winattrs_to_dosmode(iattr.ia_winflags);
 	update_stat_ex_create_time(&fsp->fsp_name->st, ts);
-	update_stat_ex_file_id(&fsp->fsp_name->st, file_id);
 
 	return NT_STATUS_OK;
 }

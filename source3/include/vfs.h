@@ -366,6 +366,7 @@
  * Change to Version 47 - will ship with 4.17
  * Version 47 - Add SMB_VFS_FSTATAT
  * Version 47 - Change SMB_VFS_GET_REAL_FILENAME to return NTSTATUS
+ * Version 47 - remove st_ex_itime from struct stat_ex
  */
 
 #define SMB_VFS_INTERFACE_VERSION 47

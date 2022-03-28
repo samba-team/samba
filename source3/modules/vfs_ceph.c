@@ -749,12 +749,8 @@ static void init_stat_ex_from_ceph_statx(struct stat_ex *dst, const struct ceph_
 	dst->st_ex_btime = stx->stx_btime;
 	dst->st_ex_ctime = stx->stx_ctime;
 	dst->st_ex_mtime = stx->stx_mtime;
-	dst->st_ex_itime = dst->st_ex_btime;
-	dst->st_ex_iflags = ST_EX_IFLAG_CALCULATED_ITIME;
 	dst->st_ex_blksize = stx->stx_blksize;
 	dst->st_ex_blocks = stx->stx_blocks;
-	dst->st_ex_file_id = dst->st_ex_ino;
-	dst->st_ex_iflags |= ST_EX_IFLAG_CALCULATED_FILE_ID;
 }
 
 static int cephwrap_stat(struct vfs_handle_struct *handle,

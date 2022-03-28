@@ -210,9 +210,6 @@ static void make_create_timespec(const struct stat *pst, struct stat_ex *dst,
 		dst->st_ex_btime = calc_create_time_stat(pst);
 		dst->st_ex_iflags |= ST_EX_IFLAG_CALCULATED_BTIME;
 	}
-
-	dst->st_ex_itime = dst->st_ex_btime;
-	dst->st_ex_iflags |= ST_EX_IFLAG_CALCULATED_ITIME;
 }
 
 /****************************************************************************
@@ -239,19 +236,6 @@ void update_stat_ex_create_time(struct stat_ex *dst,
 	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
 }
 
-void update_stat_ex_itime(struct stat_ex *dst,
-			  struct timespec itime)
-{
-	dst->st_ex_itime = itime;
-	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_ITIME;
-}
-
-void update_stat_ex_file_id(struct stat_ex *dst, uint64_t file_id)
-{
-	dst->st_ex_file_id = file_id;
-	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_FILE_ID;
-}
-
 void update_stat_ex_from_saved_stat(struct stat_ex *dst,
 				    const struct stat_ex *src)
 {
@@ -261,14 +245,6 @@ void update_stat_ex_from_saved_stat(struct stat_ex *dst,
 
 	if (!(src->st_ex_iflags & ST_EX_IFLAG_CALCULATED_BTIME)) {
 		update_stat_ex_create_time(dst, src->st_ex_btime);
-	}
-
-	if (!(src->st_ex_iflags & ST_EX_IFLAG_CALCULATED_ITIME)) {
-		update_stat_ex_itime(dst, src->st_ex_itime);
-	}
-
-	if (!(src->st_ex_iflags & ST_EX_IFLAG_CALCULATED_FILE_ID)) {
-		update_stat_ex_file_id(dst, src->st_ex_file_id);
 	}
 }
 
@@ -306,60 +282,6 @@ void init_stat_ex_from_stat (struct stat_ex *dst,
 #else
 	dst->st_ex_flags = 0;
 #endif
-	dst->st_ex_file_id = dst->st_ex_ino;
-	dst->st_ex_iflags |= ST_EX_IFLAG_CALCULATED_FILE_ID;
-}
-
-/*******************************************************************
- Create a clock-derived itime (invented) time. Used to generate
- the fileid.
-********************************************************************/
-
-void create_clock_itime(struct stat_ex *dst)
-{
-	NTTIME tval;
-	struct timespec itime;
-	uint64_t mixin;
-	uint8_t rval;
-
-	/* Start with the system clock. */
-	itime = timespec_current();
-
-	/* Convert to NTTIME. */
-	tval = unix_timespec_to_nt_time(itime);
-
-	/*
-	 * In case the system clock is poor granularity
-	 * (happens on VM or docker images) then mix in
-	 * 8 bits of randomness.
-	 */
-	generate_random_buffer((unsigned char *)&rval, 1);
-	mixin = rval;
-
-	/*
-	 * Shift up by 55 bits. This gives us approx 114 years
-	 * of headroom.
-	 */
-	mixin <<= 55;
-
-	/* And OR into the nttime. */
-	tval |= mixin;
-
-	/*
-	 * Convert to a unix timespec, ignoring any
-	 * constraints on seconds being higher than
-	 * TIME_T_MAX or lower than TIME_T_MIN. These
-	 * are only needed to allow unix display time functions
-	 * to work correctly, and this is being used to
-	 * generate a fileid. All we care about is the
-	 * NTTIME being valid across all NTTIME ranges
-	 * (which we carefully ensured above).
-	 */
-
-	itime = nt_time_to_unix_timespec_raw(tval);
-
-	/* And set as a generated itime. */
-	update_stat_ex_itime(dst, itime);
 }
 
 /*******************************************************************

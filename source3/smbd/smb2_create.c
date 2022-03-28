@@ -1511,9 +1511,11 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 
 	if (state->qfid != NULL) {
 		uint8_t p[32];
+		SMB_STRUCT_STAT *base_sp = state->result->base_fsp ?
+			&state->result->base_fsp->fsp_name->st :
+			&state->result->fsp_name->st;
 		uint64_t file_id = SMB_VFS_FS_FILE_ID(
-			state->result->conn,
-			&state->result->fsp_name->st);
+			state->result->conn, base_sp);
 		DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
 		ZERO_STRUCT(p);
@@ -1523,7 +1525,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 		   == inode, the second 8 bytes are the "volume id",
 		   == dev. This will be updated in the SMB2 doc. */
 		SBVAL(p, 0, file_id);
-		SIVAL(p, 8, state->result->fsp_name->st.st_ex_dev);/* FileIndexHigh */
+		SIVAL(p, 8, base_sp->st_ex_dev);/* FileIndexHigh */
 
 		status = smb2_create_blob_add(state->out_context_blobs,
 					      state->out_context_blobs,

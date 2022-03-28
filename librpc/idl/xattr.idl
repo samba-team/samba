@@ -94,12 +94,19 @@ interface xattr
 		NTTIME create_time;
 	} xattr_DosInfo4;
 
+	typedef struct {
+		xattr_DosInfoValidFlags valid_flags;
+		uint32 attrib;
+		NTTIME create_time;
+	} xattr_DosInfo5;
+
 	typedef [public,switch_type(uint16)] union {
 		[case(0xFFFF)] xattr_DosInfoFFFFCompat compatinfoFFFF;
                 [case(1)] xattr_DosInfo1 info1;
                 [case(2)] xattr_DosInfo2Old oldinfo2;
 		[case(3)] xattr_DosInfo3 info3;
 		[case(4)] xattr_DosInfo4 info4;
+		[case(5)] xattr_DosInfo5 info5;
         } xattr_DosInfo;
 
 	typedef [public] struct {

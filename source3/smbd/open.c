@@ -4172,28 +4172,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->fsp_flags.initial_delete_on_close = true;
 	}
 
-	/*
-	 * If we created a file and it's not a stream, this is the point where
-	 * we set the itime (aka invented time) that get's stored in the DOS
-	 * attribute xattr. The value is going to be either what the filesystem
-	 * provided or a generated itime value.
-	 *
-	 * Either way, we turn the itime into a File-ID, unless the filesystem
-	 * provided one (unlikely).
-	 */
-	if (info == FILE_WAS_CREATED && !is_named_stream(smb_fname)) {
-		create_clock_itime(&smb_fname->st);
-
-		if (lp_store_dos_attributes(SNUM(conn)) &&
-		    smb_fname->st.st_ex_iflags & ST_EX_IFLAG_CALCULATED_FILE_ID)
-		{
-			uint64_t file_id;
-
-			file_id = make_file_id_from_itime(&smb_fname->st);
-			update_stat_ex_file_id(&smb_fname->st, file_id);
-		}
-	}
-
 	if (info != FILE_WAS_OPENED) {
 		/* Overwritten files should be initially set as archive */
 		if ((info == FILE_WAS_OVERWRITTEN && lp_map_archive(SNUM(conn))) ||
@@ -4365,17 +4343,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	create_clock_itime(&smb_dname->st);
-
 	if (lp_store_dos_attributes(SNUM(conn))) {
-		if (smb_dname->st.st_ex_iflags & ST_EX_IFLAG_CALCULATED_FILE_ID)
-		{
-			uint64_t file_id;
-
-			file_id = make_file_id_from_itime(&smb_dname->st);
-			update_stat_ex_file_id(&smb_dname->st, file_id);
-		}
-
 		if (!posix_open) {
 			file_set_dosmode(conn, smb_dname,
 					 file_attributes | FILE_ATTRIBUTE_DIRECTORY,

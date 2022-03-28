@@ -41,10 +41,4 @@ void push_file_id_16(char *buf, const struct file_id *id);
 void push_file_id_24(char *buf, const struct file_id *id);
 void pull_file_id_24(const char *buf, struct file_id *id);
 
-/*
- * Make a SMB File-ID from itime
- */
-struct stat_ex;
-uint64_t make_file_id_from_itime(const struct stat_ex *st);
-
 #endif

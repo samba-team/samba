@@ -80,39 +80,3 @@ void pull_file_id_24(const char *buf, struct file_id *id)
 	id->extid  = IVAL(buf,  16);
 	id->extid |= ((uint64_t)IVAL(buf,20))<<32;
 }
-
-uint64_t make_file_id_from_itime(const struct stat_ex *st)
-{
-	struct timespec itime = st->st_ex_itime;
-	ino_t ino = st->st_ex_ino;
-	uint64_t file_id_low;
-	uint64_t file_id;
-
-	if (st->st_ex_iflags & ST_EX_IFLAG_CALCULATED_ITIME) {
-		return ino;
-	}
-
-	round_timespec_to_nttime(&itime);
-
-	file_id_low = itime.tv_nsec;
-	if (file_id_low == 0) {
-		/*
-		 * This could be by coincidence, but more likely the filesystem
-		 * is only giving us seconds granularity. We need more fine
-		 * grained granularity for the File-ID, so combine with the
-		 * inode number.
-		 */
-		file_id_low = ino & ((1 << 30) - 1);
-	}
-
-	/*
-	 * Set the high bit so ideally File-IDs based on inode numbers and
-	 * File-IDs based on Birth Time use disjoint ranges, given inodes never
-	 * have the high bit set.
-	 */
-	file_id = ((uint64_t)1) << 63;
-	file_id |= (uint64_t)itime.tv_sec << 30;
-	file_id |= file_id_low;
-
-	return file_id;
-}

@@ -302,47 +302,34 @@ NTSTATUS parse_dos_attribute_blob(struct smb_filename *smb_fname,
 		}
 		break;
 	case 4:
+	case 5:
 	{
-		struct xattr_DosInfo4 *info = &dosattrib.info.info4;
+		uint32_t info_valid_flags;
+		NTTIME info_create_time;
 
-		dosattr = info->attrib;
+		if (dosattrib.version == 4) {
+			info_valid_flags = dosattrib.info.info4.valid_flags;
+			info_create_time = dosattrib.info.info4.create_time;
+			dosattr = dosattrib.info.info4.attrib;
+		} else {
+			info_valid_flags = dosattrib.info.info5.valid_flags;
+			info_create_time = dosattrib.info.info5.create_time;
+			dosattr = dosattrib.info.info5.attrib;
+		}
 
-		if ((info->valid_flags & XATTR_DOSINFO_CREATE_TIME) &&
-		    !null_nttime(info->create_time))
+		if ((info_valid_flags & XATTR_DOSINFO_CREATE_TIME) &&
+		    !null_nttime(info_create_time))
 		{
 			struct timespec creat_time;
 
-			creat_time = nt_time_to_full_timespec(info->create_time);
+			creat_time = nt_time_to_full_timespec(info_create_time);
 			update_stat_ex_create_time(&smb_fname->st, creat_time);
 
 			DBG_DEBUG("file [%s] creation time [%s]\n",
 				smb_fname_str_dbg(smb_fname),
-				nt_time_string(talloc_tos(), info->create_time));
+				nt_time_string(talloc_tos(), info_create_time));
 		}
 
-		if (info->valid_flags & XATTR_DOSINFO_ITIME) {
-			struct timespec itime;
-			uint64_t file_id;
-
-			itime = nt_time_to_unix_timespec(info->itime);
-			if (smb_fname->st.st_ex_iflags &
-			    ST_EX_IFLAG_CALCULATED_ITIME)
-			{
-				update_stat_ex_itime(&smb_fname->st, itime);
-			}
-
-			file_id = make_file_id_from_itime(&smb_fname->st);
-			if (smb_fname->st.st_ex_iflags &
-			    ST_EX_IFLAG_CALCULATED_FILE_ID)
-			{
-				update_stat_ex_file_id(&smb_fname->st, file_id);
-			}
-
-			DBG_DEBUG("file [%s] itime [%s] fileid [%"PRIx64"]\n",
-				smb_fname_str_dbg(smb_fname),
-				nt_time_string(talloc_tos(), info->itime),
-				file_id);
-		}
 		break;
 	}
 	default:
@@ -445,18 +432,12 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 	ZERO_STRUCT(dosattrib);
 	ZERO_STRUCT(blob);
 
-	dosattrib.version = 4;
-	dosattrib.info.info4.valid_flags = XATTR_DOSINFO_ATTRIB |
+	dosattrib.version = 5;
+	dosattrib.info.info5.valid_flags = XATTR_DOSINFO_ATTRIB |
 					XATTR_DOSINFO_CREATE_TIME;
-	dosattrib.info.info4.attrib = dosmode;
-	dosattrib.info.info4.create_time = full_timespec_to_nt_time(
+	dosattrib.info.info5.attrib = dosmode;
+	dosattrib.info.info5.create_time = full_timespec_to_nt_time(
 		&smb_fname->st.st_ex_btime);
-
-	if (!(smb_fname->st.st_ex_iflags & ST_EX_IFLAG_CALCULATED_ITIME)) {
-		dosattrib.info.info4.valid_flags |= XATTR_DOSINFO_ITIME;
-		dosattrib.info.info4.itime = full_timespec_to_nt_time(
-			&smb_fname->st.st_ex_itime);
-	}
 
 	DEBUG(10,("set_ea_dos_attributes: set attribute 0x%x, btime = %s on file %s\n",
 		(unsigned int)dosmode,

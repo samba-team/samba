@@ -3000,23 +3000,8 @@ static bool test_fileid_unique_object(
 			goto done;
 		}
 		smb2_util_close(tree, h1);
-		/*
-		 * Samba created files on a "normal" share
-		 * using itime should have the top bit of the fileid set.
-		 */
-		fileid_array[i] = finfo.all_info2.out.file_id;
 
-		if ((fileid_array[i] & 0x8000000000000000) == 0) {
-			torture_fail(tctx,
-				talloc_asprintf(tctx,
-					"test file %s fileid 0x%lx top "
-					"bit not set\n",
-					fname,
-					fileid_array[i]));
-			TALLOC_FREE(fname);
-			ret = false;
-			goto done;
-		}
+		fileid_array[i] = finfo.all_info2.out.file_id;
 		TALLOC_FREE(fname);
 	}
 
