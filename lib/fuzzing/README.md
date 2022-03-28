@@ -17,9 +17,9 @@ Example command line to build binaries for use with
 [honggfuzz](https://github.com/google/honggfuzz/):
 
 ```sh
-buildtools/bin/waf -C --without-gettext --enable-debug --enable-developer \
+./configure -C --without-gettext --enable-debug --enable-developer \
 	--address-sanitizer --enable-libfuzzer --abi-check-disable \
-	CC=.../honggfuzz/hfuzz_cc/hfuzz-clang configure \
+	CC=.../honggfuzz/hfuzz_cc/hfuzz-clang \
 	LINK_CC=.../honggfuzz/hfuzz_cc/hfuzz-clang
 ```
 
@@ -30,7 +30,7 @@ Example for fuzzing `tiniparser` using `honggfuzz` (see `--help` for more
 options):
 
 ```sh
-buildtools/bin/waf --targets=fuzz_tiniparser build && \
+make bin/fuzz_tiniparser && \
 .../honggfuzz/honggfuzz --sanitizers --timeout 3 --max_file_size 256 \
   --rlimit_rss 100 -f .../tiniparser-corpus -- bin/fuzz_tiniparser
 ```
@@ -43,9 +43,9 @@ Example command line to build binaries for use with
 [afl](http://lcamtuf.coredump.cx/afl/)
 
 ```sh
-buildtools/bin/waf -C --without-gettext --enable-debug --enable-developer \
+./configure -C --without-gettext --enable-debug --enable-developer \
 	--enable-afl-fuzzer --abi-check-disable \
-	CC=afl-gcc configure
+	CC=afl-gcc
 ```
 
 ## Fuzzing tiniparser
@@ -54,7 +54,7 @@ Example for fuzzing `tiniparser` using `afl-fuzz` (see `--help` for more
 options):
 
 ```sh
-buildtools/bin/waf --targets=fuzz_tiniparser build && \
+make bin/fuzz_tiniparser build && \
 afl-fuzz -m 200 -i inputdir -o outputdir -- bin/fuzz_tiniparser
 ```
 
