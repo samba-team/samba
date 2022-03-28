@@ -1009,6 +1009,9 @@ for t in tests:
                                  "//$SERVER_IP/async_dosmode_shadow_copy2 -U$USERNAME%$PASSWORD")
     elif t == "smb2.rename":
         plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+    elif t == "smb2.twrp":
+        # This is being driven by samba3.blackbox.shadow_copy_torture
+        pass
     elif t == "rpc.wkssvc":
         plansmbtorture4testsuite(t, "ad_member", '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
     elif t == "rpc.srvsvc":
