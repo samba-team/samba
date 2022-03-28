@@ -6,7 +6,7 @@ patch -p1 < rename-domains.patch
 
 # MASTER_SRC needs to point at where the schema files can be found, not the 4.1.0rc1 checkout
 
-SELFTEST_TESTENV=promoted_dc:local ./buildtools/bin/waf test --testenv
+SELFTEST_TESTENV=promoted_dc:local make testenv
 
 # then in the testenv, run:
 
