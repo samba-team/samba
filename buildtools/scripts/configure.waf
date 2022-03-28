@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PREVPATH=`dirname $0`
+PREVPATH=$(dirname $0)
 
 WAF=BUILDTOOLS/bin/waf
 
@@ -9,6 +9,13 @@ WAF=BUILDTOOLS/bin/waf
 JOBS=1
 export JOBS
 
+# Make sure we don't have any library preloaded.
+unset LD_PRELOAD
+
+# Make sure we get stable hashes
+PYTHONHASHSEED=1
+export PYTHONHASHSEED
+
 cd BUILDPATH || exit 1
-$WAF configure "$@" || exit 1
+$PYTHON $WAF configure "$@" || exit 1
 cd $PREVPATH
