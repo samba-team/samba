@@ -1437,6 +1437,127 @@ static bool torture_smb2_rename_dir_bench(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_smb2_close_full_information(struct torture_context *torture,
+					struct smb2_tree *tree1,
+					struct smb2_tree *tree2)
+{
+	union smb_close cl;
+	struct smb2_create io = {0};
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
+	struct smb2_handle h3 = {{0}};
+	union smb_setfileinfo sinfo;
+	NTSTATUS status;
+	const char *fname_src = "request.dat";
+	const char *fname_dst = "renamed.dat";
+	bool ret = true;
+
+	/* Start with a tidy share. */
+	smb2_util_unlink(tree1, fname_src);
+	smb2_util_unlink(tree1, fname_dst);
+
+	/* Create the test file, and leave it open. */
+	io.in.fname = fname_src;
+	io.in.desired_access = SEC_FILE_READ_DATA | SEC_FILE_READ_ATTRIBUTE;
+	io.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE |
+				NTCREATEX_SHARE_ACCESS_DELETE;
+	status = smb2_create(tree1, tree1, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+
+	/* Open the test file on the second connection. */
+	ZERO_STRUCT(io);
+	io.in.fname = fname_src;
+	io.in.desired_access = SEC_FILE_READ_DATA | SEC_FILE_READ_ATTRIBUTE;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE |
+				NTCREATEX_SHARE_ACCESS_DELETE;
+	status = smb2_create(tree2, tree2, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io.out.file.handle;
+
+	/* Now open for rename on the first connection. */
+	ZERO_STRUCT(io);
+	io.in.fname = fname_src;
+	io.in.desired_access = SEC_STD_DELETE | SEC_FILE_READ_ATTRIBUTE;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE |
+				NTCREATEX_SHARE_ACCESS_DELETE;
+	status = smb2_create(tree1, tree1, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h3 = io.out.file.handle;
+
+	/* Do the rename. */
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h3;
+	sinfo.rename_information.in.new_name = fname_dst;
+	status = smb2_setinfo_file(tree1, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* And close h3. */
+	ZERO_STRUCT(cl.smb2);
+	cl.smb2.level = RAW_CLOSE_SMB2;
+	cl.smb2.in.file.handle = h3;
+	status = smb2_close(tree1, &cl.smb2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	ZERO_STRUCT(h3);
+
+	/*
+	 * Close h1 with SMB2_CLOSE_FLAGS_FULL_INFORMATION.
+	 * Ensure we get data.
+	 */
+	ZERO_STRUCT(cl.smb2);
+	cl.smb2.level = RAW_CLOSE_SMB2;
+	cl.smb2.in.file.handle = h1;
+	cl.smb2.in.flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
+	status = smb2_close(tree1, &cl.smb2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	ZERO_STRUCT(h1);
+	CHECK_VAL(cl.smb2.out.file_attr, 0x20);
+
+	/*
+	 * Wait 3 seconds for name change to propagate
+	 * to the other connection.
+	 */
+	sleep(3);
+
+	/*
+	 * Close h2 with SMB2_CLOSE_FLAGS_FULL_INFORMATION.
+	 * This is on connection2.
+	 * Ensure we get data.
+	 */
+	ZERO_STRUCT(cl.smb2);
+	cl.smb2.level = RAW_CLOSE_SMB2;
+	cl.smb2.in.file.handle = h2;
+	cl.smb2.in.flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
+	status = smb2_close(tree2, &cl.smb2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	ZERO_STRUCT(h2);
+	CHECK_VAL(cl.smb2.out.file_attr, 0x20);
+
+  done:
+
+	if (h1.data[0] != 0 || h1.data[1] != 0) {
+		smb2_util_close(tree1, h1);
+	}
+	if (h2.data[0] != 0 || h2.data[1] != 0) {
+		smb2_util_close(tree2, h2);
+	}
+	if (h3.data[0] != 0 || h3.data[1] != 0) {
+		smb2_util_close(tree1, h3);
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+	smb2_util_unlink(tree1, fname_dst);
+
+	return ret;
+}
 
 /*
    basic testing of SMB2 rename
@@ -1482,6 +1603,10 @@ struct torture_suite *torture_smb2_rename_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite,
 		"rename_dir_bench",
 		torture_smb2_rename_dir_bench);
+
+	torture_suite_add_2smb2_test(suite,
+		"close-full-information",
+		test_smb2_close_full_information);
 
 	suite->description = talloc_strdup(suite, "smb2.rename tests");
 
