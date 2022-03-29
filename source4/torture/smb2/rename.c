@@ -30,6 +30,20 @@
 
 #include "librpc/gen_ndr/security.h"
 
+#define CHECK_VAL(v, correct) \
+	do { \
+		if ((v) != (correct)) { \
+			torture_result(torture, \
+				TORTURE_FAIL, \
+				"(%s): wrong value for %s got " \
+				"0x%llx - should be 0x%llx\n", \
+				__location__, #v, \
+				(unsigned long long)v, \
+				(unsigned long long)correct); \
+			ret = false; \
+			goto done; \
+	}} while (0)
+
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		torture_result(torture, TORTURE_FAIL, \
