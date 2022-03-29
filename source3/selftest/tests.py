@@ -1015,6 +1015,8 @@ for t in tests:
         plansmbtorture4testsuite("smb2.async_dosmode",
                                  "simpleserver",
                                  "//$SERVER_IP/async_dosmode_shadow_copy2 -U$USERNAME%$PASSWORD")
+    elif t == "smb2.rename":
+        plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
     elif t == "rpc.wkssvc":
         plansmbtorture4testsuite(t, "ad_member", '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
     elif t == "rpc.srvsvc":
