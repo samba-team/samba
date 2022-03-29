@@ -360,7 +360,7 @@ static int init_fruit_config(vfs_handle_struct *handle)
 
 	config->aapl_zero_file_id =
 	    lp_parm_bool(SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
-			 "zero_file_id", false);
+			 "zero_file_id", true);
 
 	config->readdir_attr_rsize = lp_parm_bool(
 		SNUM(handle->conn), "readdir_attr", "aapl_rsize", true);
