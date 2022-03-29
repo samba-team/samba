@@ -6955,6 +6955,7 @@ static void rename_open_files(connection_struct *conn,
 
 	for(fsp = file_find_di_first(conn->sconn, id, false); fsp;
 	    fsp = file_find_di_next(fsp, false)) {
+		SMB_STRUCT_STAT fsp_orig_sbuf;
 		struct file_id_buf idbuf;
 		/* fsp_name is a relative path under the fsp. To change this for other
 		   sharepaths we need to manipulate relative paths. */
@@ -6973,10 +6974,24 @@ static void rename_open_files(connection_struct *conn,
 			  fsp_str_dbg(fsp),
 			  smb_fname_str_dbg(smb_fname_dst));
 
+		/*
+		 * The incoming smb_fname_dst here has an
+		 * invalid stat struct (it must not have
+		 * existed for the rename to succeed).
+		 * Preserve the existing stat from the
+		 * open fsp after fsp_set_smb_fname()
+		 * overwrites with the invalid stat.
+		 *
+		 * We will do an fstat before returning
+		 * any of this metadata to the client anyway.
+		 */
+		fsp_orig_sbuf = fsp->fsp_name->st;
 		status = fsp_set_smb_fname(fsp, smb_fname_dst);
 		if (NT_STATUS_IS_OK(status)) {
 			did_rename = True;
 			new_name_hash = fsp->name_hash;
+			/* Restore existing stat. */
+			fsp->fsp_name->st = fsp_orig_sbuf;
 		}
 	}
 
