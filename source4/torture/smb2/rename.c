@@ -44,6 +44,14 @@
 			goto done; \
 	}} while (0)
 
+#define CHECK_CREATED(__io, __created, __attribute)                     \
+	do {                                                            \
+		CHECK_VAL((__io)->out.create_action, NTCREATEX_ACTION_ ## __created); \
+		CHECK_VAL((__io)->out.size, 0);                         \
+		CHECK_VAL((__io)->out.file_attr, (__attribute));        \
+		CHECK_VAL((__io)->out.reserved2, 0);                    \
+	} while(0)
+
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		torture_result(torture, TORTURE_FAIL, \
