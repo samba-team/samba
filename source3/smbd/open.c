@@ -4887,16 +4887,36 @@ void msg_file_was_renamed(struct messaging_context *msg_ctx,
 	}
 
 	if (strcmp(fsp->conn->connectpath, msg->servicepath) == 0) {
+		SMB_STRUCT_STAT fsp_orig_sbuf;
 		NTSTATUS status;
 		DBG_DEBUG("renaming file %s from %s -> %s\n",
 			  fsp_fnum_dbg(fsp),
 			  fsp_str_dbg(fsp),
 			  smb_fname_str_dbg(smb_fname));
+
+		/*
+		 * The incoming smb_fname here has an
+		 * invalid stat struct from synthetic_smb_fname()
+		 * above.
+		 * Preserve the existing stat from the
+		 * open fsp after fsp_set_smb_fname()
+		 * overwrites with the invalid stat.
+		 *
+		 * (We could just copy this into
+		 * smb_fname->st, but keep this code
+		 * identical to the fix in rename_open_files()
+		 * for clarity.
+		 *
+		 * We will do an fstat before returning
+		 * any of this metadata to the client anyway.
+		 */
+		fsp_orig_sbuf = fsp->fsp_name->st;
 		status = fsp_set_smb_fname(fsp, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("fsp_set_smb_fname failed: %s\n",
 				  nt_errstr(status));
 		}
+		fsp->fsp_name->st = fsp_orig_sbuf;
 	} else {
 		/* TODO. JRA. */
 		/*
