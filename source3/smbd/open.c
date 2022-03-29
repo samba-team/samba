@@ -4343,12 +4343,12 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	if (lp_store_dos_attributes(SNUM(conn))) {
-		if (!posix_open) {
-			file_set_dosmode(conn, smb_dname,
-					 file_attributes | FILE_ATTRIBUTE_DIRECTORY,
-					 parent_dir_fname, true);
-		}
+	if (lp_store_dos_attributes(SNUM(conn)) && !posix_open) {
+		file_set_dosmode(conn,
+				 smb_dname,
+				 file_attributes | FILE_ATTRIBUTE_DIRECTORY,
+				 parent_dir_fname,
+				 true);
 	}
 
 	if (lp_inherit_permissions(SNUM(conn))) {
