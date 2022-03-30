@@ -164,18 +164,18 @@ static struct tevent_queue_entry *tevent_queue_add_internal(
 		return NULL;
 	}
 
-	e->queue = queue;
-	e->req = req;
-	e->ev = ev;
-	e->trigger = trigger;
-	e->private_data = private_data;
-
 	/*
 	 * if there is no trigger, it is just a blocker
 	 */
 	if (trigger == NULL) {
 		e->triggered = true;
 	}
+
+	e->queue = queue;
+	e->req = req;
+	e->ev = ev;
+	e->trigger = trigger;
+	e->private_data = private_data;
 
 	if (queue->length > 0) {
 		/*
