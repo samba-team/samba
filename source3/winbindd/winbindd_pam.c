@@ -1210,8 +1210,6 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		goto out;
 	}
 
-	*info3 = talloc_steal(mem_ctx, my_info3);
-
 	E_md4hash(state->request->data.auth.pass, new_nt_pass);
 
 	dump_data_pw("new_nt_pass", new_nt_pass, NT_HASH_LEN);
@@ -1412,6 +1410,8 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 				nt_errstr(result)));
 			goto out;
 		}
+
+		*info3 = talloc_move(mem_ctx, &my_info3);
 
 		result = NT_STATUS_OK;
 		goto out;
