@@ -158,6 +158,14 @@ static const struct mask2txt access_mask[] = {
 	{0, NULL}
 };
 
+static const struct mask2txt oplock_mask[] = {
+	{EXCLUSIVE_OPLOCK, "EXCLUSIVE"},
+	{BATCH_OPLOCK, "BATCH"},
+	{LEVEL_II_OPLOCK, "LEVEL_II"},
+	{LEASE_OPLOCK, "LEASE"},
+	{0, NULL}
+};
+
 int add_section_to_json(struct traverse_state *state,
 			const char *key)
 {
@@ -459,10 +467,46 @@ failure:
 	return -1;
 }
 
+static int add_oplock_to_json(struct json_object *parent_json,
+			      uint16_t op_type,
+			      const char *op_str)
+{
+	struct json_object oplock_json;
+	int result;
+
+	oplock_json = json_new_object();
+	if (json_is_invalid(&oplock_json)) {
+		goto failure;
+	}
+
+	if (op_type != 0) {
+		result = map_mask_to_json(&oplock_json, op_type, oplock_mask);
+		if (result < 0) {
+			goto failure;
+		}
+		result = json_add_string(&oplock_json, "text", op_str);
+		if (result < 0) {
+			goto failure;
+		}
+	}
+
+	result = json_add_object(parent_json, "oplock", &oplock_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	return 0;
+failure:
+	json_free(&oplock_json);
+	return -1;
+}
+
+
 static int add_open_to_json(struct json_object *parent_json,
 			    const struct share_mode_entry *e,
 			    bool resolve_uids,
 			    const char *pid,
+			    const char *op_str,
 			    const char *uid_str)
 {
 	struct json_object sub_json;
@@ -485,6 +529,7 @@ static int add_open_to_json(struct json_object *parent_json,
 		goto failure;
 	}
 
+
 	result = json_add_string(&sub_json, "pid", pid);
 	if (result < 0) {
 		goto failure;
@@ -505,6 +550,10 @@ static int add_open_to_json(struct json_object *parent_json,
 		goto failure;
 	}
 	result = add_access_mode_to_json(&sub_json, e->access_mask);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_oplock_to_json(&sub_json, e->op_type, op_str);
 	if (result < 0) {
 		goto failure;
 	}
@@ -569,6 +618,7 @@ int print_share_mode_json(struct traverse_state *state,
 			  struct file_id fid,
 			  const char *pid,
 			  const char *uid_str,
+			  const char *op_str,
 			  const char *filename)
 {
 	struct json_object locks_json;
@@ -617,6 +667,7 @@ int print_share_mode_json(struct traverse_state *state,
 				  e,
 				  state->resolve_uids,
 				  pid,
+				  op_str,
 				  uid_str);
 	if (result < 0) {
 		goto failure;

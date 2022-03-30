@@ -319,6 +319,7 @@ static int print_share_mode(struct file_id fid,
 					      fid,
 					      pid,
 					      user_str,
+					      oplock,
 					      filename);
 		}
 	}
