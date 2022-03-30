@@ -62,6 +62,21 @@ Dynamic DNS updates may not be proxied by the front DNS server when forwarding
 to Samba. Dynamic DNS update proxying depends on the features of the other DNS
 server used as a front.
 
+CTDB changes
+------------
+
+* When Samba is configured with both --with-cluster-support and
+  --systemd-install-services then a systemd service file for CTDB will
+  be installed.
+
+* ctdbd_wrapper has been removed.  ctdbd is now started directly from
+  a systemd service file or init script.
+
+* The syntax for the ctdb.tunables configuration file has been
+  relaxed.  However, trailing garbage after the value, including
+  comments, is no longer permitted.  Please see ctdb-tunables(7) for
+  more details.
+
 
 REMOVED FEATURES
 ================
