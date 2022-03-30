@@ -360,13 +360,15 @@
  * Version 45 - Remove SYS_ACL_BLOB_GET_FILE
  * Version 45 - Add SMB_VFS_FCHFLAGS
  * Version 45 - Remove SMB_VFS_GETXATTR
+ * Change to Version 46 - will ship with 4.16
  * Version 46 - Rename SMB_VFS_KERNEL_FLOCK to SMB_VFS_FILESYSTEM_SHAREMODE
  * Version 46 - Add flags and xferlen args to SMB_VFS_OFFLOAD_READ_RECV
- * Version 46 - Add SMB_VFS_FSTATAT
- * Version 46 - Change SMB_VFS_GET_REAL_FILENAME to return NTSTATUS
+ * Change to Version 47 - will ship with 4.17
+ * Version 47 - Add SMB_VFS_FSTATAT
+ * Version 47 - Change SMB_VFS_GET_REAL_FILENAME to return NTSTATUS
  */
 
-#define SMB_VFS_INTERFACE_VERSION 46
+#define SMB_VFS_INTERFACE_VERSION 47
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
