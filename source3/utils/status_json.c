@@ -360,6 +360,70 @@ failure:
 	return -1;
 }
 
+static int add_open_to_json(struct json_object *parent_json,
+			    const struct share_mode_entry *e,
+			    bool resolve_uids,
+			    const char *pid,
+			    const char *uid_str)
+{
+	struct json_object sub_json;
+	struct json_object opens_json;
+	int result = 0;
+	char *key = NULL;
+	char *share_file_id = NULL;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	opens_json = json_get_object(parent_json, "opens");
+	if (json_is_invalid(&opens_json)) {
+		goto failure;
+	}
+	sub_json = json_new_object();
+	if (json_is_invalid(&sub_json)) {
+		goto failure;
+	}
+
+	result = json_add_string(&sub_json, "pid", pid);
+	if (result < 0) {
+		goto failure;
+	}
+	if (resolve_uids) {
+		result = json_add_string(&sub_json, "username", uid_str);
+		if (result < 0) {
+			goto failure;
+		}
+	}
+	result = json_add_int(&sub_json, "uid", e->uid);
+	if (result < 0) {
+		goto failure;
+	}
+	share_file_id = talloc_asprintf(tmp_ctx, "%lu", e->share_file_id);
+	result = json_add_string(&sub_json, "share_file_id", share_file_id);
+	if (result < 0) {
+		goto failure;
+	}
+
+	key = talloc_asprintf(tmp_ctx, "%s/%lu", pid, e->share_file_id);
+	result = json_add_object(&opens_json, key, &sub_json);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_update_object(parent_json, "opens", &opens_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&opens_json);
+	json_free(&sub_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}
 
 static int add_fileid_to_json(struct json_object *parent_json,
 			      struct file_id fid)
@@ -398,7 +462,10 @@ failure:
 
 int print_share_mode_json(struct traverse_state *state,
 			  const struct share_mode_data *d,
+			  const struct share_mode_entry *e,
 			  struct file_id fid,
+			  const char *pid,
+			  const char *uid_str,
 			  const char *filename)
 {
 	struct json_object locks_json;
@@ -439,6 +506,15 @@ int print_share_mode_json(struct traverse_state *state,
 		goto failure;
 	}
 	result = json_add_int(&file_json, "num_pending_deletes", d->num_delete_tokens);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = add_open_to_json(&file_json,
+				  e,
+				  state->resolve_uids,
+				  pid,
+				  uid_str);
 	if (result < 0) {
 		goto failure;
 	}

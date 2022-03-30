@@ -46,7 +46,10 @@ int traverse_sessionid_json(struct traverse_state *state,
 
 int print_share_mode_json(struct traverse_state *state,
 			  const struct share_mode_data *d,
+			  const struct share_mode_entry *e,
 			  struct file_id fid,
+			  const char *pid,
+			  const char *uid_str,
 			  const char *filename);
 
 #endif

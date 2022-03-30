@@ -315,7 +315,10 @@ static int print_share_mode(struct file_id fid,
 		} else {
 			print_share_mode_json(state,
 					      d,
+					      e,
 					      fid,
+					      pid,
+					      user_str,
 					      filename);
 		}
 	}
