@@ -51,6 +51,7 @@ int print_share_mode_json(struct traverse_state *state,
 			  const char *pid,
 			  const char *uid_str,
 			  const char *op_str,
+			  uint32_t lease_type,
 			  const char *filename);
 
 #endif

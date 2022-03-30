@@ -27,6 +27,7 @@
 #include "../libcli/security/security.h"
 #include "status.h"
 #include "lib/util/server_id.h"
+#include "lib/util/string_wrappers.h"
 
 #include <jansson.h>
 #include "audit_logging.h" /* various JSON helpers */
@@ -163,6 +164,13 @@ static const struct mask2txt oplock_mask[] = {
 	{BATCH_OPLOCK, "BATCH"},
 	{LEVEL_II_OPLOCK, "LEVEL_II"},
 	{LEASE_OPLOCK, "LEASE"},
+	{0, NULL}
+};
+
+static const struct mask2txt lease_mask[] = {
+	{SMB2_LEASE_READ, "READ"},
+	{SMB2_LEASE_WRITE, "WRITE"},
+	{SMB2_LEASE_HANDLE, "HANDLE"},
 	{0, NULL}
 };
 
@@ -501,17 +509,123 @@ failure:
 	return -1;
 }
 
+static int lease_key_to_str(struct smb2_lease_key lease_key,
+			    char *lease_str)
+{
+	uint8_t _buf[16] = {0};
+	DATA_BLOB blob = data_blob_const(_buf, sizeof(_buf));
+	struct GUID guid;
+	NTSTATUS status;
+	char *tmp = NULL;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	PUSH_LE_U64(_buf, 0, lease_key.data[0]);
+	PUSH_LE_U64(_buf, 8, lease_key.data[1]);
+
+	status = GUID_from_ndr_blob(&blob, &guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failure;
+	}
+	tmp = GUID_string(tmp_ctx, &guid);
+	if (tmp == NULL) {
+		goto failure;
+	}
+	fstrcpy(lease_str, tmp);
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}
+
+static int add_lease_to_json(struct json_object *parent_json,
+			     int lease_type,
+			     struct smb2_lease_key lease_key,
+			     bool add_lease)
+{
+	struct json_object lease_json;
+	char *lease_hex = NULL;
+	char *lease_text = NULL;
+	fstring lease_key_str;
+	int result;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	lease_json = json_new_object();
+	if (json_is_invalid(&lease_json)) {
+		goto failure;
+	}
+
+
+	if (add_lease) {
+		result = lease_key_to_str(lease_key, lease_key_str);
+		if (result < 0) {
+			goto failure;
+		}
+		result = json_add_string(&lease_json, "lease_key", lease_key_str);
+		if (result < 0) {
+			goto failure;
+		}
+		lease_hex = talloc_asprintf(tmp_ctx, "0x%08x", lease_type);
+		result = json_add_string(&lease_json, "hex", lease_hex);
+		if (result < 0) {
+			goto failure;
+		}
+		if (lease_type > (SMB2_LEASE_WRITE + SMB2_LEASE_HANDLE + SMB2_LEASE_READ)) {
+			result = json_add_bool(&lease_json, "UNKNOWN", true);
+			if (result < 0) {
+				goto failure;
+			}
+		} else {
+			result = map_mask_to_json(&lease_json, lease_type, lease_mask);
+			if (result < 0) {
+				goto failure;
+			}
+		}
+		lease_text = talloc_asprintf(tmp_ctx, "%s%s%s",
+					     (lease_type & SMB2_LEASE_READ)?"R":"",
+					     (lease_type & SMB2_LEASE_WRITE)?"W":"",
+					     (lease_type & SMB2_LEASE_HANDLE)?"H":"");
+
+		result = json_add_string(&lease_json, "text", lease_text);
+		if (result < 0) {
+			goto failure;
+		}
+	}
+
+	result = json_add_object(parent_json, "lease", &lease_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&lease_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}
 
 static int add_open_to_json(struct json_object *parent_json,
 			    const struct share_mode_entry *e,
 			    bool resolve_uids,
 			    const char *pid,
 			    const char *op_str,
+			    uint32_t lease_type,
 			    const char *uid_str)
 {
 	struct json_object sub_json;
 	struct json_object opens_json;
 	int result = 0;
+	bool add_lease = false;
 	char *key = NULL;
 	char *share_file_id = NULL;
 
@@ -554,6 +668,11 @@ static int add_open_to_json(struct json_object *parent_json,
 		goto failure;
 	}
 	result = add_oplock_to_json(&sub_json, e->op_type, op_str);
+	if (result < 0) {
+		goto failure;
+	}
+	add_lease = e->op_type & LEASE_OPLOCK;
+	result = add_lease_to_json(&sub_json, lease_type, e->lease_key, add_lease);
 	if (result < 0) {
 		goto failure;
 	}
@@ -619,6 +738,7 @@ int print_share_mode_json(struct traverse_state *state,
 			  const char *pid,
 			  const char *uid_str,
 			  const char *op_str,
+			  uint32_t lease_type,
 			  const char *filename)
 {
 	struct json_object locks_json;
@@ -668,6 +788,7 @@ int print_share_mode_json(struct traverse_state *state,
 				  state->resolve_uids,
 				  pid,
 				  op_str,
+				  lease_type,
 				  uid_str);
 	if (result < 0) {
 		goto failure;

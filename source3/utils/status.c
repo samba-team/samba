@@ -177,6 +177,7 @@ static int print_share_mode(struct file_id fid,
 	const char *filename = NULL;
 	const char *timestr = NULL;
 	const char *user_str = NULL;
+	uint32_t lstate;
 	struct traverse_state *state = (struct traverse_state *)private_data;
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -271,7 +272,6 @@ static int print_share_mode(struct file_id fid,
 			oplock = "LEVEL_II";
 		} else if (e->op_type == LEASE_OPLOCK) {
 			NTSTATUS status;
-			uint32_t lstate;
 
 			status = leases_db_get(
 				&e->client_guid,
@@ -320,6 +320,7 @@ static int print_share_mode(struct file_id fid,
 					      pid,
 					      user_str,
 					      oplock,
+					      lstate,
 					      filename);
 		}
 	}
