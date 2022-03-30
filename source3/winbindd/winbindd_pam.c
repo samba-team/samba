@@ -2213,7 +2213,10 @@ static struct tsocket_address *get_local_address(TALLOC_CTX *mem_ctx, int sock)
 static void log_authentication(
 	TALLOC_CTX *mem_ctx,
 	const struct winbindd_domain *domain,
-	const struct winbindd_cli_state *state,
+	const char *client_name,
+	pid_t client_pid,
+	uint16_t validation_level,
+	union netr_Validation *validation,
 	const struct timeval start_time,
 	const uint64_t logon_id,
 	const char *command,
@@ -2226,11 +2229,26 @@ static void log_authentication(
 	const struct tsocket_address *local,
 	NTSTATUS result)
 {
-
 	struct auth_usersupplied_info *ui = NULL;
 	struct dom_sid *sid = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 	struct imessaging_context *msg_ctx = NULL;
+	struct netr_SamBaseInfo *base_info = NULL;
+
+	if (validation != NULL) {
+		switch (validation_level) {
+		case 3:
+			base_info = &validation->sam3->base;
+			break;
+		case 6:
+			base_info = &validation->sam6->base;
+			break;
+		default:
+			DBG_WARNING("Unexpected validation level '%d'\n",
+				    validation_level);
+			break;
+		}
+	}
 
 	ui = talloc_zero(mem_ctx, struct auth_usersupplied_info);
 	ui->logon_id = logon_id;
@@ -2252,8 +2270,8 @@ static void log_authentication(
 		ui,
 		"%s, %s, %d",
 		command,
-		state->request->client_name,
-		state->pid);
+		client_name,
+		client_pid);
 	if (ui->auth_description == NULL) {
 		DBG_ERR("OOM Unable to create auth_description");
 	}
@@ -2263,10 +2281,11 @@ static void log_authentication(
 	ui->remote_host = remote;
 	ui->local_host = local;
 
-	sid = dom_sid_parse_talloc(
-	    ui, state->response->data.auth.info3.dom_sid);
-	if (sid != NULL) {
-		sid_append_rid(sid, state->response->data.auth.info3.user_rid);
+	if (base_info != NULL) {
+		sid = dom_sid_dup(ui, base_info->domain_sid);
+		if (sid != NULL) {
+			sid_append_rid(sid, base_info->rid);
+		}
 	}
 
 	if (lp_auth_event_notification()) {
@@ -2280,8 +2299,8 @@ static void log_authentication(
 	    &start_time,
 	    ui,
 	    result,
-	    state->response->data.auth.info3.logon_dom,
-	    state->response->data.auth.info3.user_name,
+	    base_info != NULL ? base_info->logon_domain.string : "",
+	    base_info != NULL ? base_info->account_name.string : "",
 	    sid);
 	TALLOC_FREE(ui);
 }
@@ -2684,7 +2703,10 @@ done:
 	log_authentication(
 	    state->mem_ctx,
 	    domain,
-	    state,
+	    state->request->client_name,
+	    state->pid,
+	    validation_level,
+	    validation,
 	    start_time,
 	    logon_id,
 	    "PAM_AUTH",
@@ -3034,7 +3056,10 @@ done:
 	log_authentication(
 	    state->mem_ctx,
 	    domain,
-	    state,
+	    state->request->client_name,
+	    state->pid,
+	    validation_level,
+	    validation,
 	    start_time,
 	    logon_id,
 	    "NTLM_AUTH",
