@@ -17,6 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "source3/include/includes.h"
 #include "lib/replace/replace.h"
 #include "libcli/util/ntstatus.h"
 #include "libcli/util/werror.h"
@@ -24,6 +25,7 @@
 #include "lib/util/time.h"
 #include "libcli/resolve/resolve.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "nsswitch/winbind_client.h"
 #include "torture/smbtorture.h"
 #include "torture/winbind/proto.h"
 #include "lib/util/util_net.h"
@@ -33,6 +35,7 @@
 #include "lib/util/samba_util.h"
 #include "auth/credentials/credentials.h"
 #include "lib/cmdline/cmdline.h"
+#include "winbindd.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -930,6 +933,9 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 	char *sidstr;
 	wbcErr ret;
 	struct cli_credentials *creds = samba_cmdline_get_creds();
+	uint32_t i, flags = 0;
+	const char *expected_unix_username = NULL;
+	const char *unix_username = NULL;
 
 	ZERO_STRUCT(params);
 
@@ -1011,6 +1017,46 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 	ret = wbcLogonUser(&params, &info, &error, &policy);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "wbcLogonUser for %s failed", params.username);
+	wbcFreeMemory(info); info = NULL;
+	wbcFreeMemory(error); error = NULL;
+	wbcFreeMemory(policy); policy = NULL;
+	wbcFreeMemory(params.blobs);
+	params.blobs = NULL; params.num_blobs = 0;
+
+	/* Test WBFLAG_PAM_UNIX_NAME */
+	params.username = cli_credentials_get_username(creds);
+	params.password = cli_credentials_get_password(creds);
+	flags = WBFLAG_PAM_UNIX_NAME;
+
+	torture_assert(tctx,
+		       lp_load_global(lpcfg_configfile(tctx->lp_ctx)),
+		       "lp_load_global() failed\n");
+	expected_unix_username = fill_domain_username_talloc(tctx,
+			cli_credentials_get_domain(creds),
+			cli_credentials_get_username(creds),
+			true);
+
+	ret = wbcAddNamedBlob(&params.num_blobs, &params.blobs, "flags", 0,
+			      (uint8_t *)&flags, sizeof(flags));
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "%s", "wbcAddNamedBlob failed");
+
+	ret = wbcLogonUser(&params, &info, &error, &policy);
+	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
+				 "wbcLogonUser for %s failed",
+				 params.username);
+
+	for (unix_username=NULL, i=0; i<info->num_blobs; i++) {
+		torture_comment(tctx, "Found named blob '%s'\n", info->blobs[i].name);
+		if (strequal(info->blobs[i].name, "unix_username")) {
+			unix_username = (const char *)info->blobs[i].blob.data;
+		}
+	}
+	torture_assert_not_null(tctx, unix_username,
+			"wbcLogonUserInfo does not have unix_username blob\n");
+	torture_assert_str_equal(tctx, unix_username,
+			expected_unix_username,
+			"Unexpected unix_username");
 	wbcFreeMemory(info); info = NULL;
 	wbcFreeMemory(error); error = NULL;
 	wbcFreeMemory(policy); policy = NULL;
