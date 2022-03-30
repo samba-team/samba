@@ -44,4 +44,8 @@ int traverse_sessionid_json(struct traverse_state *state,
 			    enum crypto_degree signing_degree,
 			    const char *connection_dialect);
 
+int print_share_mode_json(struct traverse_state *state,
+			  const struct share_mode_data *d,
+			  const char *filename);
+
 #endif

@@ -22,6 +22,7 @@
 #include "lib/util/time_basic.h"
 #include "conn_tdb.h"
 #include "session.h"
+#include "librpc/gen_ndr/open_files.h"
 #include "status_json.h"
 #include "../libcli/security/security.h"
 #include "status.h"
@@ -355,6 +356,66 @@ int traverse_sessionid_json(struct traverse_state *state,
 	return 0;
 failure:
 	json_free(&sub_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}
+
+int print_share_mode_json(struct traverse_state *state,
+			  const struct share_mode_data *d,
+			  const char *filename)
+{
+	struct json_object locks_json;
+	struct json_object file_json;
+	char *key = NULL;
+	int result = 0;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	if (d->servicepath[strlen(d->servicepath)-1] == '/') {
+		key = talloc_asprintf(tmp_ctx, "%s%s", d->servicepath, filename);
+	} else {
+		key = talloc_asprintf(tmp_ctx, "%s/%s", d->servicepath, filename);
+	}
+
+	locks_json = json_get_object(&state->root_json, "open_files");
+	if (json_is_invalid(&locks_json)) {
+		goto failure;
+	}
+	file_json = json_get_object(&locks_json, key);
+	if (json_is_invalid(&file_json)) {
+		goto failure;
+	}
+
+	result = json_add_string(&file_json, "service_path", d->servicepath);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&file_json, "filename", filename);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_int(&file_json, "num_pending_deletes", d->num_delete_tokens);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_update_object(&locks_json, key, &file_json);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_update_object(&state->root_json, "open_files", &locks_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&file_json);
+	json_free(&locks_json);
 	TALLOC_FREE(tmp_ctx);
 	return -1;
 }

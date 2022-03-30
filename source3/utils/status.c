@@ -155,9 +155,12 @@ static int print_share_mode_stdout(struct traverse_state *state,
 
 static int prepare_share_mode(struct traverse_state *state)
 {
-	/* only print header line if there are open files */
-	state->first = true;
-
+	if (!state->json_output) {
+		/* only print header line if there are open files */
+		state->first = true;
+	} else {
+		add_section_to_json(state, "open_files");
+	}
 	return 0;
 }
 
@@ -297,16 +300,23 @@ static int print_share_mode(struct file_id fid,
 		}
 
 		timestr = time_to_asc((time_t)e->time.tv_sec);
-		print_share_mode_stdout(state,
-					pid,
-					user_str,
-					denymode,
-					(unsigned int)e->access_mask,
-					rw,
-					oplock,
-					d->servicepath,
-					filename,
-					timestr);
+
+		if (!state->json_output) {
+			print_share_mode_stdout(state,
+						pid,
+						user_str,
+						denymode,
+						(unsigned int)e->access_mask,
+						rw,
+						oplock,
+						d->servicepath,
+						filename,
+						timestr);
+		} else {
+			print_share_mode_json(state,
+					      d,
+					      filename);
+		}
 	}
 	TALLOC_FREE(tmp_ctx);
 	return 0;

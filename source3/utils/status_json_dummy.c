@@ -57,3 +57,10 @@ int traverse_sessionid_json(struct traverse_state *state,
 {
 	return 0;
 }
+
+int print_share_mode_json(struct traverse_state *state,
+			  const struct share_mode_data *d,
+			  const char *filename)
+{
+	return 0;
+}
