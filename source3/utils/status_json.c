@@ -360,8 +360,45 @@ failure:
 	return -1;
 }
 
+
+static int add_fileid_to_json(struct json_object *parent_json,
+			      struct file_id fid)
+{
+	struct json_object fid_json;
+	int result;
+
+	fid_json = json_new_object();
+	if (json_is_invalid(&fid_json)) {
+		goto failure;
+	}
+
+	result = json_add_int(&fid_json, "devid", fid.devid);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_int(&fid_json, "inode", fid.inode);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_int(&fid_json, "extid", fid.extid);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(parent_json, "fileid", &fid_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	return 0;
+failure:
+	json_free(&fid_json);
+	return -1;
+}
+
 int print_share_mode_json(struct traverse_state *state,
 			  const struct share_mode_data *d,
+			  struct file_id fid,
 			  const char *filename)
 {
 	struct json_object locks_json;
@@ -394,6 +431,10 @@ int print_share_mode_json(struct traverse_state *state,
 		goto failure;
 	}
 	result = json_add_string(&file_json, "filename", filename);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_fileid_to_json(&file_json, fid);
 	if (result < 0) {
 		goto failure;
 	}
