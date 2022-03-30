@@ -108,6 +108,56 @@ failure:
 	return -1;
 }
 
+struct mask2txt {
+	uint32_t mask;
+	const char *string_desc;
+};
+
+/*
+ * Convert a mask of some sort (access, oplock, leases),
+ * to key/value pairs in a JSON object.
+ */
+static int map_mask_to_json(struct json_object *root_json,
+			    uint32_t tomap,
+			    const struct mask2txt *table)
+{
+	const struct mask2txt *a = NULL;
+	int result = 0;
+
+	for (a = table; a->string_desc != 0; a++) {
+		result = json_add_bool(root_json, a->string_desc,
+				      (tomap & a->mask) ? true : false);
+
+		if (result < 0) {
+			return result;
+		}
+		tomap &= ~a->mask;
+	}
+
+	/* Assert we know about all requested "tomap" values */
+	SMB_ASSERT(tomap == 0);
+
+	return 0;
+}
+
+static const struct mask2txt access_mask[] = {
+	{FILE_READ_DATA, "READ_DATA"},
+	{FILE_WRITE_DATA, "WRITE_DATA"},
+	{FILE_APPEND_DATA, "APPEND_DATA"},
+	{FILE_READ_EA, "READ_EA"},
+	{FILE_WRITE_EA, "WRITE_EA"},
+	{FILE_EXECUTE, "EXECUTE"},
+	{FILE_READ_ATTRIBUTES, "READ_ATTRIBUTES"},
+	{FILE_WRITE_ATTRIBUTES, "WRITE_ATTRIBUTES"},
+	{FILE_DELETE_CHILD, "DELETE_CHILD"},
+	{SEC_STD_DELETE, "DELETE"},
+	{SEC_STD_READ_CONTROL, "READ_CONTROL"},
+	{SEC_STD_WRITE_DAC, "WRITE_DAC"},
+	{SEC_STD_SYNCHRONIZE, "SYNCHRONIZE"},
+	{SEC_FLAG_SYSTEM_SECURITY, "ACCESS_SYSTEM_SECURITY"},
+	{0, NULL}
+};
+
 int add_section_to_json(struct traverse_state *state,
 			const char *key)
 {
@@ -360,6 +410,55 @@ failure:
 	return -1;
 }
 
+static int add_access_mode_to_json(struct json_object *parent_json,
+				   int access_int)
+{
+	struct json_object access_json;
+	char *access_hex = NULL;
+	const char *access_str = NULL;
+	int result;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	access_json = json_new_object();
+	if (json_is_invalid(&access_json)) {
+		goto failure;
+	}
+
+	access_hex = talloc_asprintf(tmp_ctx, "0x%08x", access_int);
+	result = json_add_string(&access_json, "hex", access_hex);
+	if (result < 0) {
+		  goto failure;
+	}
+	result = map_mask_to_json(&access_json, access_int, access_mask);
+	if (result < 0) {
+		goto failure;
+	}
+
+	access_str = talloc_asprintf(tmp_ctx, "%s%s",
+				     (access_int & FILE_READ_DATA)?"R":"",
+				     (access_int & (FILE_WRITE_DATA|FILE_APPEND_DATA))?"W":"");
+	result = json_add_string(&access_json, "text", access_str);
+	if (result < 0) {
+		  goto failure;
+	}
+
+	result = json_add_object(parent_json, "access_mask", &access_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&access_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}
+
 static int add_open_to_json(struct json_object *parent_json,
 			    const struct share_mode_entry *e,
 			    bool resolve_uids,
@@ -402,6 +501,10 @@ static int add_open_to_json(struct json_object *parent_json,
 	}
 	share_file_id = talloc_asprintf(tmp_ctx, "%lu", e->share_file_id);
 	result = json_add_string(&sub_json, "share_file_id", share_file_id);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_access_mode_to_json(&sub_json, e->access_mask);
 	if (result < 0) {
 		goto failure;
 	}
