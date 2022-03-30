@@ -249,7 +249,7 @@ NTSTATUS reply_smb20ff(struct smb_request *req, uint16_t choice);
 NTSTATUS smbd_smb2_process_negprot(struct smbXsrv_connection *xconn,
 			       uint64_t expected_seq_low,
 			       const uint8_t *inpdu, size_t size);
-void smb2_multi_protocol_reply_negprot(struct smb_request *req);
+NTSTATUS smb2_multi_protocol_reply_negprot(struct smb_request *req);
 
 DATA_BLOB smbd_smb2_generate_outbody(struct smbd_smb2_request *req, size_t size);
 

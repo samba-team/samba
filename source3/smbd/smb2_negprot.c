@@ -1047,7 +1047,7 @@ static const struct {
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void smb2_multi_protocol_reply_negprot(struct smb_request *req)
+NTSTATUS smb2_multi_protocol_reply_negprot(struct smb_request *req)
 {
 	size_t choice = 0;
 	bool choice_set = false;
@@ -1070,14 +1070,14 @@ void smb2_multi_protocol_reply_negprot(struct smb_request *req)
 		DEBUG(0, ("negprot got no protocols\n"));
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBnegprot);
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (req->buf[req->buflen-1] != '\0') {
 		DEBUG(0, ("negprot protocols not 0-terminated\n"));
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBnegprot);
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	p = (const char *)req->buf + 1;
@@ -1096,7 +1096,7 @@ void smb2_multi_protocol_reply_negprot(struct smb_request *req)
 			TALLOC_FREE(cliprotos);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBnegprot);
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		cliprotos = tmp;
@@ -1107,7 +1107,7 @@ void smb2_multi_protocol_reply_negprot(struct smb_request *req)
 			TALLOC_FREE(cliprotos);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBnegprot);
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		DEBUG(3, ("Requested protocol [%s]\n",
@@ -1191,5 +1191,5 @@ void smb2_multi_protocol_reply_negprot(struct smb_request *req)
 	TALLOC_FREE(cliprotos);
 
 	END_PROFILE(SMBnegprot);
-	return;
+	return NT_STATUS_OK;
 }

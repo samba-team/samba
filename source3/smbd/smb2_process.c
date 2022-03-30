@@ -828,6 +828,7 @@ static void construct_reply_smb1negprot(struct smbXsrv_connection *xconn,
 {
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smb_request *req;
+	NTSTATUS status;
 
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
@@ -840,16 +841,28 @@ static void construct_reply_smb1negprot(struct smbXsrv_connection *xconn,
 
 	req->inbuf  = (uint8_t *)talloc_move(req, &inbuf);
 
-	smb2_multi_protocol_reply_negprot(req);
+	status = smb2_multi_protocol_reply_negprot(req);
 	if (req->outbuf == NULL) {
 		/*
 		* req->outbuf == NULL means we bootstrapped into SMB2.
 		*/
 		return;
 	}
-	/* This code path should only *ever* bootstrap into SMB2. */
-	exit_server_cleanly("Internal error SMB1negprot didn't reply "
-			    "with an SMB2 packet");
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!srv_send_smb(req->xconn,
+				  (char *)req->outbuf,
+				  true, req->seqnum+1,
+				  IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
+				  &req->pcd)) {
+			exit_server_cleanly("construct_reply_smb1negprot: "
+					    "srv_send_smb failed.");
+		}
+		TALLOC_FREE(req);
+	} else {
+		/* This code path should only *ever* bootstrap into SMB2. */
+		exit_server_cleanly("Internal error SMB1negprot didn't reply "
+				    "with an SMB2 packet");
+	}
 }
 
 static void smbd_server_connection_write_handler(
