@@ -211,6 +211,8 @@ class UserCmdTestCase(SambaToolCmdTest):
         self.assertEqual(nidx, sc.sub.num_packages, "Unknown packages found")
 
     def test_setpassword(self):
+        expect_nt_hash = bool(int(os.environ.get("EXPECT_NT_HASH", "1")))
+
         for user in self.users:
             newpasswd = self.random_password(16)
             (result, out, err) = self.runsubcmd("user", "setpassword",
@@ -278,8 +280,11 @@ class UserCmdTestCase(SambaToolCmdTest):
                              "syncpasswords --no-wait: 'sAMAccountName': %s out[%s]" % (user["name"], out))
             self.assertMatch(out, "# unicodePwd::: REDACTED SECRET ATTRIBUTE",
                              "getpassword '# unicodePwd::: REDACTED SECRET ATTRIBUTE': out[%s]" % out)
-            self.assertMatch(out, "unicodePwd:: %s" % unicodePwd,
-                             "getpassword unicodePwd: out[%s]" % out)
+            if expect_nt_hash:
+                self.assertMatch(out, "unicodePwd:: %s" % unicodePwd,
+                                 "getpassword unicodePwd: out[%s]" % out)
+            else:
+                self.assertNotIn("unicodePwd:: %s" % unicodePwd, out)
             self.assertMatch(out, "# supplementalCredentials::: REDACTED SECRET ATTRIBUTE",
                              "getpassword '# supplementalCredentials::: REDACTED SECRET ATTRIBUTE': out[%s]" % out)
             self.assertMatch(out, "supplementalCredentials:: ",
@@ -301,8 +306,11 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertMatch(out, "Got password OK", "getpassword without url")
             self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
                              "getpassword: 'sAMAccountName': %s out[%s]" % (user["name"], out))
-            self.assertMatch(out, "unicodePwd:: %s" % unicodePwd,
-                             "getpassword unicodePwd: out[%s]" % out)
+            if expect_nt_hash:
+                self.assertMatch(out, "unicodePwd:: %s" % unicodePwd,
+                                 "getpassword unicodePwd: out[%s]" % out)
+            else:
+                self.assertNotIn("unicodePwd:: %s" % unicodePwd, out)
             self.assertMatch(out, "supplementalCredentials:: ",
                              "getpassword supplementalCredentials: out[%s]" % out)
             self._verify_supplementalCredentials(out.replace("\nGot password OK\n", ""))

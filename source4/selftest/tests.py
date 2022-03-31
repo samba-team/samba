@@ -928,12 +928,18 @@ for env in ["ad_dc_ntvfs", "ad_dc"]:
     planpythontestsuite(env + ":local", "samba.tests.samba_tool.gpo_exts")
 
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.processes")
+
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.user")
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.user_wdigest")
-planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user")
-planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user_virtualCryptSHA_userPassword")
-planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user_virtualCryptSHA_gpg")
+for env in ["ad_dc_default:local", "ad_dc_no_ntlm:local"]:
+    planpythontestsuite(env, "samba.tests.samba_tool.user_wdigest")
+for env, nt_hash in [("ad_dc:local", True),
+                     ("ad_dc_no_ntlm:local", False)]:
+    planpythontestsuite(env, "samba.tests.samba_tool.user",
+                        environ={"EXPECT_NT_HASH": int(nt_hash)})
+    planpythontestsuite(env, "samba.tests.samba_tool.user_virtualCryptSHA_userPassword")
+    planpythontestsuite(env, "samba.tests.samba_tool.user_virtualCryptSHA_gpg")
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.user_check_password_script")
+
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.group")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.ou")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.computer")
@@ -1377,6 +1383,8 @@ for env in all_fl_envs + ["schema_dc"]:
     plantestsuite("samba4.ldap.possibleInferiors.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/samdb/ldb_modules/tests/possibleinferiors.py"), "ldap://$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN"])
     plantestsuite_loadlist("samba4.ldap.secdesc.python(%s)" % env, env, [python, os.path.join(DSDB_PYTEST_DIR, "sec_descriptor.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
     plantestsuite_loadlist("samba4.ldap.acl.python(%s)" % env, env, ["STRICT_CHECKING=0", python, os.path.join(DSDB_PYTEST_DIR, "acl.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+
+for env in all_fl_envs + ["schema_dc", "ad_dc_no_ntlm"]:
     if env != "fl2000dc":
         # This test makes excessive use of the "userPassword" attribute which
         # isn't available on DCs with Windows 2000 domain function level -
@@ -1400,7 +1408,7 @@ for env in ["ad_dc_slowtests"]:
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 # this is a basic sanity-check of Kerberos/NTLM user login
-for env in ["offlinebackupdc", "restoredc", "renamedc", "labdc"]:
+for env in ["offlinebackupdc", "restoredc", "renamedc", "labdc", "ad_dc_no_ntlm"]:
     plantestsuite_loadlist("samba4.ldap.login_basics.python(%s)" % env, env,
                            [python, os.path.join(DSDB_PYTEST_DIR, "login_basics.py"),
                             "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", "--realm=$REALM",
