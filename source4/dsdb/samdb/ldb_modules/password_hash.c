@@ -2842,8 +2842,8 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 
 		/* checks the NT hash password history */
 		for (i = 0; i < io->o.nt_history_len; i++) {
-			ret = memcmp(io->n.nt_hash, io->o.nt_history[i].hash, 16);
-			if (ret == 0) {
+			int pw_cmp = memcmp(io->n.nt_hash, io->o.nt_history[i].hash, 16);
+			if (pw_cmp == 0) {
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				*werror = WERR_PASSWORD_RESTRICTION;
 				ldb_asprintf_errstring(ldb,
