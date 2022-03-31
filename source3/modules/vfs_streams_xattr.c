@@ -345,11 +345,6 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
 
-	/*
-	 * For now assert this, so the below SMB_VFS_SETXATTR() works.
-	 */
-	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) == AT_FDCWD);
-
 	status = streams_xattr_get_name(handle, talloc_tos(),
 					smb_fname->stream_name, &xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
