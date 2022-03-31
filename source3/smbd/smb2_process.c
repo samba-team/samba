@@ -123,22 +123,6 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 }
 #endif
 
-#if 0
-bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
-		  bool do_signing, uint32_t seqnum,
-		  bool do_encrypt,
-		  struct smb_perfcount_data *pcd)
-{
-#if !defined(WITH_SMB1SERVER)
-	return smb2_srv_send(xconn, buffer, do_signing, seqnum,
-			     do_encrypt, pcd);
-#else
-	return smb1_srv_send(xconn, buffer, do_signing, seqnum,
-			     do_encrypt, pcd);
-#endif
-}
-#endif
-
 /*******************************************************************
  Setup the word count and byte count for a smb message.
 ********************************************************************/
