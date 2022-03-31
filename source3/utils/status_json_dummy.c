@@ -21,6 +21,7 @@
 #include "smbprofile.h"
 #include "../libcli/security/security.h"
 #include "librpc/gen_ndr/open_files.h"
+#include "conn_tdb.h"
 #include "status_json.h"
 
 int add_section_to_json(struct traverse_state *state,
@@ -30,6 +31,12 @@ int add_section_to_json(struct traverse_state *state,
 }
 
 int add_general_information_to_json(struct traverse_state *state)
+{
+	return 0;
+}
+
+int traverse_connections_json(struct traverse_state *state,
+			      const struct connections_data *crec)
 {
 	return 0;
 }

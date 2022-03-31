@@ -439,10 +439,13 @@ static int traverse_connections_stdout(struct traverse_state *state,
 
 static int prepare_connections(struct traverse_state *state)
 {
-	/* always print header line */
-	d_printf("\n%-12s %-7s %-13s %-32s %-12s %-12s\n", "Service", "pid", "Machine", "Connected at", "Encryption", "Signing");
-	d_printf("---------------------------------------------------------------------------------------------\n");
-
+	if (!state->json_output) {
+		/* always print header line */
+		d_printf("\n%-12s %-7s %-13s %-32s %-12s %-12s\n", "Service", "pid", "Machine", "Connected at", "Encryption", "Signing");
+		d_printf("---------------------------------------------------------------------------------------------\n");
+	} else {
+		add_section_to_json(state, "tcons");
+	}
 	return 0;
 }
 
@@ -517,13 +520,18 @@ static int traverse_connections(const struct connections_data *crec,
 		}
 	}
 
-	result = traverse_connections_stdout(state,
-					     crec->servicename,
-					     server_id_str_buf(crec->pid, &tmp),
-					     crec->machine,
-					     timestr,
-					     encryption,
-					     signing);
+	if (!state->json_output) {
+		result = traverse_connections_stdout(state,
+						     crec->servicename,
+						     server_id_str_buf(crec->pid, &tmp),
+						     crec->machine,
+						     timestr,
+						     encryption,
+						     signing);
+	} else {
+		result = traverse_connections_json(state,
+						   crec);
+	}
 
 	TALLOC_FREE(timestr);
 	TALLOC_FREE(tmp_ctx);

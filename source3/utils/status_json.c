@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbprofile.h"
+#include "conn_tdb.h"
 #include "status_json.h"
 #include "../libcli/security/security.h"
 #include "status.h"
@@ -66,4 +67,61 @@ int add_section_to_json(struct traverse_state *state,
 	}
 
 	return result;
+}
+
+int traverse_connections_json(struct traverse_state *state,
+			      const struct connections_data *crec)
+{
+	struct json_object sub_json;
+	struct json_object connections_json;
+	int result = 0;
+	char *tcon_id_str = NULL;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	sub_json = json_new_object();
+	if (json_is_invalid(&sub_json)) {
+		goto failure;
+	}
+	connections_json = json_get_object(&state->root_json, "tcons");
+	if (json_is_invalid(&connections_json)) {
+		goto failure;
+	}
+
+	result = json_add_string(&sub_json, "service", crec->servicename);
+	if (result < 0) {
+		goto failure;
+	}
+	tcon_id_str = talloc_asprintf(tmp_ctx, "%u", crec->cnum);
+	if (tcon_id_str == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "tcon_id", tcon_id_str);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "machine", crec->machine);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(&connections_json, tcon_id_str, &sub_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_update_object(&state->root_json, "tcons", &connections_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&sub_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
 }

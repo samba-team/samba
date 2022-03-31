@@ -27,4 +27,7 @@ int add_section_to_json(struct traverse_state *state,
 
 int add_general_information_to_json(struct traverse_state *state);
 
+int traverse_connections_json(struct traverse_state *state,
+			      const struct connections_data *crec);
+
 #endif
