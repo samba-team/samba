@@ -3,3 +3,8 @@ bld.SAMBA_SUBSYSTEM('LIBSMBCONF',
                     deps='talloc sendfile'
                     )
 
+bld.SAMBA3_PYTHON('pysmbconf',
+                  source='pysmbconf.c',
+                  public_deps=' '.join(['samba-util', 'tdb', 'talloc', 'smbconf']),
+                  realname='samba/smbconf.so'
+                  )
