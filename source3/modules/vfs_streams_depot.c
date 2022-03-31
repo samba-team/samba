@@ -710,7 +710,6 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 				mode_t mode)
 {
 	struct smb_filename *smb_fname_stream = NULL;
-	struct smb_filename *smb_fname_base = NULL;
 	struct files_struct *fspcwd = NULL;
 	NTSTATUS status;
 	int ret = -1;
@@ -725,29 +724,7 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 	}
 
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
-
-	/*
-	 * For now assert this so the below SMB_VFS_STAT() is ok.
-	 */
-	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) == AT_FDCWD);
-
-	/* Ensure the base file still exists. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					smb_fname->base_name,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (smb_fname_base == NULL) {
-		ret = -1;
-		errno = ENOMEM;
-		goto done;
-	}
-
-	ret = SMB_VFS_NEXT_STAT(handle, smb_fname_base);
-	if (ret == -1) {
-		goto done;
-	}
+	SMB_ASSERT(VALID_STAT(fsp->base_fsp->fsp_name->st));
 
 	/* Determine the stream name, and then open it. */
 	status = stream_smb_fname(handle, smb_fname, &smb_fname_stream, true);
@@ -773,7 +750,6 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 
  done:
 	TALLOC_FREE(smb_fname_stream);
-	TALLOC_FREE(smb_fname_base);
 	TALLOC_FREE(fspcwd);
 	return ret;
 }
