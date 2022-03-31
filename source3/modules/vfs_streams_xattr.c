@@ -343,6 +343,8 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 					   mode);
 	}
 
+	SMB_ASSERT(fsp_is_alternate_stream(fsp));
+
 	/*
 	 * For now assert this, so the below SMB_VFS_SETXATTR() works.
 	 */

@@ -1754,6 +1754,8 @@ static int fruit_openat(vfs_handle_struct *handle,
 					   mode);
 	}
 
+	SMB_ASSERT(fsp_is_alternate_stream(fsp));
+
 	if (is_afpinfo_stream(smb_fname->stream_name)) {
 		fd = fruit_open_meta(handle,
 				     dirfsp,
