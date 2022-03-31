@@ -392,6 +392,91 @@ EOF
 
 	return 0
 }
+test_smbstatus_json_profile()
+{
+	local status_json=smbstatus_output_json_profile
+
+	cmd="UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_INITIAL_EUID=0 $SMBSTATUS --json --profile > $PREFIX/$status_json"
+	out=$(eval $cmd)
+	ret=$?
+
+	if [ $ret -ne 0 ]; then
+		echo "Failed to run smbstatus -jP with error $ret"
+		echo "$out"
+		return 1
+	fi
+
+	echo $out | grep -c 'JSON support not available, please install lib Jansson'
+	ret=$?
+	if [ $ret -eq 0 ]; then
+		subunit_start_test "test_smbstatus_json_profile"
+		subunit_skip_test "test_smbstatus_json_profile" <<EOF
+Test needs Jansson
+EOF
+		return 0
+	fi
+
+	out=$(cat $PREFIX/$status_json)
+	ret=$?
+	if [ $ret -ne 0 ]; then
+		echo "Failed: Could not print json profile output with error $ret"
+		echo "$out"
+		return 1
+	fi
+
+	out=$(cat $PREFIX/$status_json | jq ".")
+	echo $out | grep -c 'jq: not found'
+	ret=$?
+	if [ $ret -eq 0 ]; then
+		subunit_start_test "test_smbstatus_json_profile"
+		subunit_skip_test "test_smbstatus_json_profile" <<EOF
+Test needs jq
+EOF
+		return 0
+	fi
+
+	out=$(cat $PREFIX/$status_json | jq ".")
+	ret=$?
+	if [ $ret -ne 0 ]; then
+		echo "Failed: Could not parse json output from smbstatus -jP with error $ret"
+		echo "$out"
+		return 1
+	fi
+
+	# keys in --json --profile
+	expected='["ACL Calls","NT Transact Calls","SMB Calls","SMB2 Calls","SMBD loop","Stat Cache","System Calls","Trans2 Calls","smb_conf","timestamp","version"]'
+	out=$(cat $PREFIX/$status_json | jq keys -c)
+	if [ "$expected" != "$out" ]; then
+		echo "Failed: Unexpected keys in smbstatus -jP"
+		echo "Expected: $expected"
+		echo "Output: $out"
+		return 1
+	fi
+
+	# keys in ACL Calls
+	expected='["fget_nt_acl","fset_nt_acl","get_nt_acl","get_nt_acl_at"]'
+	out=$(cat $PREFIX/$status_json | jq -c '."ACL Calls"|keys')
+	if [ "$expected" != "$out" ]; then
+		echo "Failed: Unexpected keys in smbstatus -jP"
+		echo "Expected: $expected"
+		echo "Output: $out"
+		return 1
+	fi
+
+	# keys in ACL Calls, fget_nt_acl
+	expected='["count","time"]'
+	out=$(cat $PREFIX/$status_json | jq -c '."ACL Calls"."fget_nt_acl"|keys')
+	if [ "$expected" != "$out" ]; then
+		echo "Failed: Unexpected keys in smbstatus -jP"
+		echo "Expected: $expected"
+		echo "Output: $out"
+		return 1
+	fi
+
+	rm $PREFIX/$status_json
+
+	return 0
+}
 
 testit "plain" \
 	test_smbstatus ||
@@ -407,6 +492,10 @@ testit "test_output" \
 
 testit "test_json" \
 	test_smbstatus_json || \
+	failed=`expr $failed + 1`
+
+testit "test_json_profile" \
+	test_smbstatus_json_profile || \
 	failed=`expr $failed + 1`
 
 testok $0 $failed
