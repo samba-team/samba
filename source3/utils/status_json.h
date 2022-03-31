@@ -25,4 +25,6 @@
 int add_section_to_json(struct traverse_state *state,
 			const char *key);
 
+int add_general_information_to_json(struct traverse_state *state);
+
 #endif

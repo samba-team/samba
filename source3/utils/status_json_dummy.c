@@ -28,3 +28,8 @@ int add_section_to_json(struct traverse_state *state,
 {
 	return 0;
 }
+
+int add_general_information_to_json(struct traverse_state *state)
+{
+	return 0;
+}

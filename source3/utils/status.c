@@ -965,6 +965,7 @@ int main(int argc, const char *argv[])
 
 #ifdef HAVE_JANSSON
 	state.root_json = json_new_object();
+	add_general_information_to_json(&state);
 #endif /* HAVE_JANSSON */
 
 	if (getuid() != geteuid()) {

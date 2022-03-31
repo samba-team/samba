@@ -27,6 +27,28 @@
 #include "audit_logging.h" /* various JSON helpers */
 #include "auth/common_auth.h"
 
+int add_general_information_to_json(struct traverse_state *state)
+{
+	int result;
+
+	result = json_add_timestamp(&state->root_json);
+	if (result < 0) {
+		return -1;
+	}
+
+	result = json_add_string(&state->root_json, "version", samba_version_string());
+	if (result < 0) {
+		return -1;
+	}
+
+	result = json_add_string(&state->root_json, "smb_conf", get_dyn_CONFIGFILE());
+	if (result < 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
 int add_section_to_json(struct traverse_state *state,
 			const char *key)
 {
