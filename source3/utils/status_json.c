@@ -964,3 +964,62 @@ failure:
 	TALLOC_FREE(tmp_ctx);
 	return -1;
 }
+
+int print_brl_json(struct traverse_state *state,
+		   const char *sharepath,
+		   const char *filename)
+{
+	struct json_object file_json;
+	struct json_object brl_json;
+	int result = 0;
+	char *key;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	if (sharepath[strlen(sharepath)-1] == '/') {
+		key = talloc_asprintf(tmp_ctx, "%s%s", sharepath, filename);
+	} else {
+		key = talloc_asprintf(tmp_ctx, "%s/%s", sharepath, filename);
+	}
+	if (key == NULL) {
+		goto failure;
+	}
+
+	brl_json = json_get_object(&state->root_json, "byte_range_locks");
+	if (json_is_invalid(&brl_json)) {
+		goto failure;
+	}
+	file_json = json_get_object(&brl_json, key);
+	if (json_is_invalid(&file_json)) {
+		goto failure;
+	}
+
+	result = json_add_string(&file_json, "file_name", filename);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&file_json, "share_path", sharepath);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(&brl_json, key, &file_json);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_update_object(&state->root_json, "byte_range_locks", &brl_json);
+	if (result < 0) {
+		goto failure;
+	 }
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&file_json);
+	json_free(&brl_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}

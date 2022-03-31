@@ -349,9 +349,12 @@ static void print_brl_stdout(struct traverse_state *state,
 
 static int prepare_brl(struct traverse_state *state)
 {
-	/* only print header line if there are locked files */
-	state->first = true;
-
+	if (!state->json_output) {
+		/* only print header line if there are locked files */
+		state->first = true;
+	} else {
+		add_section_to_json(state, "byte_range_locks");
+	}
 	return 0;
 }
 
@@ -397,14 +400,21 @@ static void print_brl(struct file_id id,
 		}
 	}
 
-	print_brl_stdout(state,
-			 server_id_str_buf(pid, &tmp),
-			 file_id_str_buf(id, &ftmp),
-			 desc,
-			 (intmax_t)start,
-			 (intmax_t)size,
-			 sharepath,
-			 fname);
+	if (!state->json_output) {
+		print_brl_stdout(state,
+				 server_id_str_buf(pid, &tmp),
+				 file_id_str_buf(id, &ftmp),
+				 desc,
+				 (intmax_t)start,
+				 (intmax_t)size,
+				 sharepath,
+				 fname);
+	} else {
+		print_brl_json(state,
+			       sharepath,
+			       fname);
+
+	}
 
 	TALLOC_FREE(fname);
 	TALLOC_FREE(share_mode);

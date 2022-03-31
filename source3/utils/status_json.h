@@ -53,4 +53,8 @@ int print_share_mode_json(struct traverse_state *state,
 			  uint32_t lease_type,
 			  const char *filename);
 
+int print_brl_json(struct traverse_state *state,
+		   const char *sharepath,
+		   const char *filename);
+
 #endif

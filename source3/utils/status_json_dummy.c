@@ -69,3 +69,10 @@ int print_share_mode_json(struct traverse_state *state,
 {
 	return 0;
 }
+
+int print_brl_json(struct traverse_state *state,
+		   const char *sharepath,
+		   const char *filename)
+{
+	return 0;
+}
