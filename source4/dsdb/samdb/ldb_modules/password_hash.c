@@ -2609,7 +2609,8 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 	struct ldb_message *mod_msg = NULL;
 	struct ldb_message *pso_msg = NULL;
 	NTSTATUS status;
-	int ret;
+	int ret; /* The errors we will actually return */
+	int dbg_ret; /* The errors we can only complain about in logs */
 
 	/* PSO search result is optional (NULL if no PSO applies) */
 	if (io->ac->pso_res != NULL) {
@@ -2646,8 +2647,8 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 	 * Checking errors here is a bit pointless.
 	 * What can we do if we can't end the transaction?
 	 */
-	ret = ldb_next_del_trans(io->ac->module);
-	if (ret != LDB_SUCCESS) {
+	dbg_ret = ldb_next_del_trans(io->ac->module);
+	if (dbg_ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
 			  "Failed to abort transaction prior to update of badPwdCount of %s: %s",
 			  ldb_dn_get_linearized(io->ac->search_res->message->dn),
@@ -2659,8 +2660,8 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 	}
 
 	/* Likewise, what should we do if we can't open a new transaction? */
-	ret = ldb_next_start_trans(io->ac->module);
-	if (ret != LDB_SUCCESS) {
+	dbg_ret = ldb_next_start_trans(io->ac->module);
+	if (dbg_ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Failed to open transaction to update badPwdCount of %s: %s",
 			  ldb_dn_get_linearized(io->ac->search_res->message->dn),
@@ -2671,10 +2672,10 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 		goto done;
 	}
 
-	ret = dsdb_module_modify(io->ac->module, mod_msg,
+	dbg_ret = dsdb_module_modify(io->ac->module, mod_msg,
 				 DSDB_FLAG_NEXT_MODULE,
 				 io->ac->req);
-	if (ret != LDB_SUCCESS) {
+	if (dbg_ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Failed to update badPwdCount of %s: %s",
 			  ldb_dn_get_linearized(io->ac->search_res->message->dn),
@@ -2684,8 +2685,8 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 		 */
 	}
 
-	ret = ldb_next_end_trans(io->ac->module);
-	if (ret != LDB_SUCCESS) {
+	dbg_ret = ldb_next_end_trans(io->ac->module);
+	if (dbg_ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Failed to close transaction to update badPwdCount of %s: %s",
 			  ldb_dn_get_linearized(io->ac->search_res->message->dn),
@@ -2695,8 +2696,8 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 		 */
 	}
 
-	ret = ldb_next_start_trans(io->ac->module);
-	if (ret != LDB_SUCCESS) {
+	dbg_ret = ldb_next_start_trans(io->ac->module);
+	if (dbg_ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Failed to open transaction after update of badPwdCount of %s: %s",
 			  ldb_dn_get_linearized(io->ac->search_res->message->dn),
