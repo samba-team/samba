@@ -238,7 +238,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 
 	dcesrv_conn->transport.private_data		= srv_conn;
 	dcesrv_conn->transport.report_output_data	= dcesrv_sock_report_output_data;
-	dcesrv_conn->transport.terminate_connection	= dcesrv_transport_terminate_connection;
+	dcesrv_conn->transport.terminate_connection	= dcesrv_transport_terminate_connection_s4;
 
 	TALLOC_FREE(srv_conn->event.fde);
 
@@ -705,8 +705,8 @@ NTSTATUS dcesrv_gensec_prepare(
 					 out);
 }
 
-void dcesrv_transport_terminate_connection(struct dcesrv_connection *dce_conn,
-					   const char *reason)
+void dcesrv_transport_terminate_connection_s4(struct dcesrv_connection *dce_conn,
+					      const char *reason)
 {
 	struct stream_connection *srv_conn =
 		talloc_get_type_abort(dce_conn->transport.private_data,
