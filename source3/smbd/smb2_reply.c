@@ -573,9 +573,9 @@ static bool netbios_session_retarget(struct smbXsrv_connection *xconn,
 	*(uint32_t *)(outbuf+4) = in_addr->sin_addr.s_addr;
 	*(uint16_t *)(outbuf+8) = htons(retarget_port);
 
-	if (!srv_send_smb(xconn, (char *)outbuf, false, 0, false,
+	if (!smb1_srv_send(xconn, (char *)outbuf, false, 0, false,
 			  NULL)) {
-		exit_server_cleanly("netbios_session_retarget: srv_send_smb "
+		exit_server_cleanly("netbios_session_retarget: smb1_srv_send "
 				    "failed.");
 	}
 
@@ -603,7 +603,7 @@ void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_s
 	int msg_flags = CVAL(inbuf,1);
 	/*
 	 * We only really use 4 bytes of the outbuf, but for the smb_setlen
-	 * calculation & friends (srv_send_smb uses that) we need the full smb
+	 * calculation & friends (smb1_srv_send uses that) we need the full smb
 	 * header.
 	 */
 	char outbuf[smb_size];
@@ -732,8 +732,8 @@ void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_s
 	DEBUG(5,("init msg_type=0x%x msg_flags=0x%x\n",
 		    msg_type, msg_flags));
 
-	if (!srv_send_smb(xconn, outbuf, false, 0, false, NULL)) {
-		exit_server_cleanly("reply_special: srv_send_smb failed.");
+	if (!smb1_srv_send(xconn, outbuf, false, 0, false, NULL)) {
+		exit_server_cleanly("reply_special: smb1_srv_send failed.");
 	}
 
 	if (CVAL(outbuf, 0) != 0x82) {

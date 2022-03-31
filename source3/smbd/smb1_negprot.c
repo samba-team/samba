@@ -668,10 +668,10 @@ void reply_negprot(struct smb_request *req)
 		reply_outbuf(req, 1, 0);
 		SSVAL(req->outbuf, smb_vwv0, NO_PROTOCOL_CHOSEN);
 
-		ok = srv_send_smb(xconn, (char *)req->outbuf,
+		ok = smb1_srv_send(xconn, (char *)req->outbuf,
 				  false, 0, false, NULL);
 		if (!ok) {
-			DBG_NOTICE("srv_send_smb failed\n");
+			DBG_NOTICE("smb1_srv_send failed\n");
 		}
 		exit_server_cleanly("no protocol supported\n");
 	}

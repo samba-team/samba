@@ -179,10 +179,10 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 	_smb_setlen_large(outbuf, outsize);
 
 	show_msg(outbuf);
-	if (!srv_send_smb(aio_ex->smbreq->xconn, outbuf,
+	if (!smb1_srv_send(aio_ex->smbreq->xconn, outbuf,
 			  true, aio_ex->smbreq->seqnum+1,
 			  IS_CONN_ENCRYPTED(fsp->conn), NULL)) {
-		exit_server_cleanly("handle_aio_read_complete: srv_send_smb "
+		exit_server_cleanly("handle_aio_read_complete: smb1_srv_send "
 				    "failed.");
 	}
 
@@ -291,13 +291,13 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	        SSVAL(aio_ex->outbuf.data,smb_vwv2,numtowrite);
                 SSVAL(aio_ex->outbuf.data,smb_vwv4,(numtowrite>>16)&1);
 		show_msg((char *)aio_ex->outbuf.data);
-		if (!srv_send_smb(aio_ex->smbreq->xconn,
+		if (!smb1_srv_send(aio_ex->smbreq->xconn,
 				(char *)aio_ex->outbuf.data,
 				true, aio_ex->smbreq->seqnum+1,
 				IS_CONN_ENCRYPTED(fsp->conn),
 				&aio_ex->smbreq->pcd)) {
 			exit_server_cleanly("schedule_aio_write_and_X: "
-					    "srv_send_smb failed.");
+					    "smb1_srv_send failed.");
 		}
 		DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write "
 			  "behind for file %s\n", fsp_str_dbg(fsp)));
@@ -389,12 +389,12 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 	}
 
 	show_msg(outbuf);
-	if (!srv_send_smb(aio_ex->smbreq->xconn, outbuf,
+	if (!smb1_srv_send(aio_ex->smbreq->xconn, outbuf,
 			  true, aio_ex->smbreq->seqnum+1,
 			  IS_CONN_ENCRYPTED(fsp->conn),
 			  NULL)) {
 		exit_server_cleanly("handle_aio_write_complete: "
-				    "srv_send_smb failed.");
+				    "smb1_srv_send failed.");
 	}
 
 	DEBUG(10, ("handle_aio_write_complete: scheduled aio_write completed "

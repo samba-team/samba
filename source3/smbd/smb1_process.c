@@ -1315,10 +1315,10 @@ static void construct_reply_chain(struct smbXsrv_connection *xconn,
 		char errbuf[smb_size];
 		error_packet(errbuf, 0, 0, NT_STATUS_INVALID_PARAMETER,
 			     __LINE__, __FILE__);
-		if (!srv_send_smb(xconn, errbuf, true, seqnum, encrypted,
+		if (!smb1_srv_send(xconn, errbuf, true, seqnum, encrypted,
 				  NULL)) {
 			exit_server_cleanly("construct_reply_chain: "
-					    "srv_send_smb failed.");
+					    "smb1_srv_send failed.");
 		}
 		return;
 	}
@@ -1437,12 +1437,12 @@ void smb_request_done(struct smb_request *req)
 		first_req->outbuf, talloc_get_size(first_req->outbuf) - 4);
 
 shipit:
-	if (!srv_send_smb(first_req->xconn,
+	if (!smb1_srv_send(first_req->xconn,
 			  (char *)first_req->outbuf,
 			  true, first_req->seqnum+1,
 			  IS_CONN_ENCRYPTED(req->conn)||first_req->encrypted,
 			  &first_req->pcd)) {
-		exit_server_cleanly("construct_reply_chain: srv_send_smb "
+		exit_server_cleanly("construct_reply_chain: smb1_srv_send "
 				    "failed.");
 	}
 	TALLOC_FREE(req);	/* non-chained case */
@@ -1453,11 +1453,11 @@ error:
 	{
 		char errbuf[smb_size];
 		error_packet(errbuf, 0, 0, status, __LINE__, __FILE__);
-		if (!srv_send_smb(req->xconn, errbuf, true,
+		if (!smb1_srv_send(req->xconn, errbuf, true,
 				  req->seqnum+1, req->encrypted,
 				  NULL)) {
 			exit_server_cleanly("construct_reply_chain: "
-					    "srv_send_smb failed.");
+					    "smb1_srv_send failed.");
 		}
 	}
 	TALLOC_FREE(req);	/* non-chained case */
@@ -2387,7 +2387,7 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 		memcpy(smb_buf(req.outbuf), req.buf, req.buflen);
 	}
 
-	ok = srv_send_smb(req.xconn,
+	ok = smb1_srv_send(req.xconn,
 			  (char *)outbuf,
 			  true, seqnum+1,
 			  false, &req.pcd);

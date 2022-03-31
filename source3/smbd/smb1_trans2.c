@@ -108,12 +108,12 @@ void send_trans2_replies(connection_struct *conn,
 					__LINE__,__FILE__);
 		}
 		show_msg((char *)req->outbuf);
-		if (!srv_send_smb(xconn,
+		if (!smb1_srv_send(xconn,
 				(char *)req->outbuf,
 				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn),
 				&req->pcd)) {
-			exit_server_cleanly("send_trans2_replies: srv_send_smb failed.");
+			exit_server_cleanly("send_trans2_replies: smb1_srv_send failed.");
 		}
 		TALLOC_FREE(req->outbuf);
 		return;
@@ -248,12 +248,12 @@ void send_trans2_replies(connection_struct *conn,
 
 		/* Send the packet */
 		show_msg((char *)req->outbuf);
-		if (!srv_send_smb(xconn,
+		if (!smb1_srv_send(xconn,
 				(char *)req->outbuf,
 				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn),
 				&req->pcd))
-			exit_server_cleanly("send_trans2_replies: srv_send_smb failed.");
+			exit_server_cleanly("send_trans2_replies: smb1_srv_send failed.");
 
 		TALLOC_FREE(req->outbuf);
 
@@ -424,7 +424,7 @@ static void smb_set_posix_lock_done(struct tevent_req *subreq)
 			0xffff);
 	} else {
 		reply_nterror(req, status);
-		ok = srv_send_smb(
+		ok = smb1_srv_send(
 			req->xconn,
 			(char *)req->outbuf,
 			true,
@@ -433,7 +433,7 @@ static void smb_set_posix_lock_done(struct tevent_req *subreq)
 			NULL);
 		if (!ok) {
 			exit_server_cleanly("smb_set_posix_lock_done: "
-					    "srv_send_smb failed.");
+					    "smb1_srv_send failed.");
 		}
 	}
 

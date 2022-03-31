@@ -141,10 +141,10 @@ void send_trans_reply(connection_struct *conn,
 	}
 
 	show_msg((char *)req->outbuf);
-	if (!srv_send_smb(xconn, (char *)req->outbuf,
+	if (!smb1_srv_send(xconn, (char *)req->outbuf,
 			  true, req->seqnum+1,
 			  IS_CONN_ENCRYPTED(conn), &req->pcd)) {
-		exit_server_cleanly("send_trans_reply: srv_send_smb failed.");
+		exit_server_cleanly("send_trans_reply: smb1_srv_send failed.");
 	}
 
 	TALLOC_FREE(req->outbuf);
@@ -201,10 +201,10 @@ void send_trans_reply(connection_struct *conn,
 		}
 
 		show_msg((char *)req->outbuf);
-		if (!srv_send_smb(xconn, (char *)req->outbuf,
+		if (!smb1_srv_send(xconn, (char *)req->outbuf,
 				  true, req->seqnum+1,
 				  IS_CONN_ENCRYPTED(conn), &req->pcd))
-			exit_server_cleanly("send_trans_reply: srv_send_smb "
+			exit_server_cleanly("send_trans_reply: smb1_srv_send "
 					    "failed.");
 
 		tot_data_sent  += this_ldata;
@@ -330,13 +330,13 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 	return;
 
  send:
-	if (!srv_send_smb(
+	if (!smb1_srv_send(
 		    req->xconn, (char *)req->outbuf,
 		    true, req->seqnum+1,
 		    IS_CONN_ENCRYPTED(req->conn) || req->encrypted,
 		    &req->pcd)) {
 		exit_server_cleanly("api_dcerpc_cmd_write_done: "
-				    "srv_send_smb failed.");
+				    "smb1_srv_send failed.");
 	}
 	TALLOC_FREE(req);
 }
@@ -364,12 +364,12 @@ static void api_dcerpc_cmd_read_done(struct tevent_req *subreq)
 			   NT_STATUS_EQUAL(old, status)?"":nt_errstr(status)));
 		reply_nterror(req, status);
 
-		if (!srv_send_smb(req->xconn, (char *)req->outbuf,
+		if (!smb1_srv_send(req->xconn, (char *)req->outbuf,
 				  true, req->seqnum+1,
 				  IS_CONN_ENCRYPTED(req->conn)
 				  ||req->encrypted, &req->pcd)) {
 			exit_server_cleanly("api_dcerpc_cmd_read_done: "
-					    "srv_send_smb failed.");
+					    "smb1_srv_send failed.");
 		}
 		TALLOC_FREE(req);
 		return;

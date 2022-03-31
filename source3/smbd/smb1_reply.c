@@ -2873,14 +2873,14 @@ static void reply_lockread_locked(struct tevent_req *subreq)
 		 fsp_fnum_dbg(fsp), (int)numtoread, (int)nread));
 
 send:
-	ok = srv_send_smb(req->xconn,
+	ok = smb1_srv_send(req->xconn,
 			  (char *)req->outbuf,
 			  true,
 			  req->seqnum+1,
 			  IS_CONN_ENCRYPTED(req->conn),
 			  NULL);
 	if (!ok) {
-		exit_server_cleanly("reply_lock_done: srv_send_smb failed.");
+		exit_server_cleanly("reply_lock_done: smb1_srv_send failed.");
 	}
 	TALLOC_FREE(req);
 	END_PROFILE(SMBlockread);
@@ -3604,12 +3604,12 @@ void reply_writebraw(struct smb_request *req)
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);
-	if (!srv_send_smb(req->xconn,
+	if (!smb1_srv_send(req->xconn,
 			  buf,
 			  false, 0, /* no signing */
 			  IS_CONN_ENCRYPTED(conn),
 			  &req->pcd)) {
-		exit_server_cleanly("reply_writebraw: srv_send_smb "
+		exit_server_cleanly("reply_writebraw: smb1_srv_send "
 			"failed.");
 	}
 
@@ -5060,14 +5060,14 @@ static void reply_lock_done(struct tevent_req *subreq)
 		reply_nterror(req, status);
 	}
 
-	ok = srv_send_smb(req->xconn,
+	ok = smb1_srv_send(req->xconn,
 			  (char *)req->outbuf,
 			  true,
 			  req->seqnum+1,
 			  IS_CONN_ENCRYPTED(req->conn),
 			  NULL);
 	if (!ok) {
-		exit_server_cleanly("reply_lock_done: srv_send_smb failed.");
+		exit_server_cleanly("reply_lock_done: smb1_srv_send failed.");
 	}
 	TALLOC_FREE(req);
 	END_PROFILE(SMBlock);
@@ -5393,12 +5393,12 @@ void reply_echo(struct smb_request *req)
 		SSVAL(req->outbuf,smb_vwv0,seq_num);
 
 		show_msg((char *)req->outbuf);
-		if (!srv_send_smb(req->xconn,
+		if (!smb1_srv_send(req->xconn,
 				(char *)req->outbuf,
 				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn)||req->encrypted,
 				cur_pcd))
-			exit_server_cleanly("reply_echo: srv_send_smb failed.");
+			exit_server_cleanly("reply_echo: smb1_srv_send failed.");
 	}
 
 	DEBUG(3,("echo %d times\n", smb_reverb));
@@ -6419,14 +6419,14 @@ static void reply_lockingx_done(struct tevent_req *subreq)
 		reply_nterror(req, status);
 	}
 
-	ok = srv_send_smb(req->xconn,
+	ok = smb1_srv_send(req->xconn,
 			  (char *)req->outbuf,
 			  true,
 			  req->seqnum+1,
 			  IS_CONN_ENCRYPTED(req->conn),
 			  NULL);
 	if (!ok) {
-		exit_server_cleanly("reply_lock_done: srv_send_smb failed.");
+		exit_server_cleanly("reply_lock_done: smb1_srv_send failed.");
 	}
 	TALLOC_FREE(req);
 	END_PROFILE(SMBlockingX);
