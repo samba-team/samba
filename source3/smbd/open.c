@@ -745,7 +745,7 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 						talloc_tos(),
 						smb_fname_rel->base_name,
 						NULL,
-						&smb_fname_rel->st,
+						&fsp->base_fsp->fsp_name->st,
 						smb_fname_rel->twrp,
 						smb_fname_rel->flags);
 			if (base_smb_fname_rel == NULL) {
