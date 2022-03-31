@@ -115,7 +115,7 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_new(struct dcesrv_connectio
 	return assoc_group;
 }
 
-NTSTATUS dcesrv_assoc_group_find(
+NTSTATUS dcesrv_assoc_group_find_s4(
 	struct dcesrv_call_state *call,
 	void *private_data)
 {

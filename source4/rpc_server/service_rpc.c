@@ -53,7 +53,7 @@ static struct dcesrv_context_callbacks srv_callbacks = {
 	.auth.gensec_prepare = dcesrv_gensec_prepare,
 	.auth.become_root = skip_become_root,
 	.auth.unbecome_root = skip_unbecome_root,
-	.assoc_group.find = dcesrv_assoc_group_find,
+	.assoc_group.find = dcesrv_assoc_group_find_s4,
 };
 
 /*
