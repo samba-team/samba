@@ -22,3 +22,9 @@
 #include "../libcli/security/security.h"
 #include "librpc/gen_ndr/open_files.h"
 #include "status_json.h"
+
+int add_section_to_json(struct traverse_state *state,
+			const char *key)
+{
+	return 0;
+}

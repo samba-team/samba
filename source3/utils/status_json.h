@@ -22,4 +22,7 @@
 #ifndef STATUS_JSON_H
 #define STATUS_JSON_H
 
+int add_section_to_json(struct traverse_state *state,
+			const char *key);
+
 #endif

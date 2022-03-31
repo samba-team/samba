@@ -26,3 +26,22 @@
 #include <jansson.h>
 #include "audit_logging.h" /* various JSON helpers */
 #include "auth/common_auth.h"
+
+int add_section_to_json(struct traverse_state *state,
+			const char *key)
+{
+	struct json_object empty_json;
+	int result;
+
+	empty_json = json_new_object();
+	if (json_is_invalid(&empty_json)) {
+		return -1;
+	}
+
+	result = json_add_object(&state->root_json, key, &empty_json);
+	if (result < 0) {
+		return -1;
+	}
+
+	return result;
+}
