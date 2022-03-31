@@ -965,8 +965,80 @@ failure:
 	return -1;
 }
 
+static int add_lock_to_json(struct json_object *parent_json,
+			    struct server_id server_id,
+			    const char *type,
+			    enum brl_flavour flavour,
+			    intmax_t start,
+			    intmax_t size)
+{
+	struct json_object sub_json;
+	struct json_object locks_json;
+	const char *flavour_str;
+	int result = 0;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	locks_json = json_get_array(parent_json, "locks");
+	if (json_is_invalid(&locks_json)) {
+		goto failure;
+	}
+	sub_json = json_new_object();
+	if (json_is_invalid(&sub_json)) {
+		goto failure;
+	}
+
+	result = add_server_id_to_json(&sub_json, server_id);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "type", type);
+	if (result < 0) {
+		goto failure;
+	}
+	flavour_str = talloc_asprintf(tmp_ctx, "%s%s",
+				      (flavour == WINDOWS_LOCK)?"Windows":"",
+				      (flavour == POSIX_LOCK)?"Posix":"");
+	result = json_add_string(&sub_json, "flavour", flavour_str);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_int(&sub_json, "start", start);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_int(&sub_json, "size", size);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(&locks_json, NULL, &sub_json);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_update_object(parent_json, "locks", &locks_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&locks_json);
+	json_free(&sub_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}
+
 int print_brl_json(struct traverse_state *state,
 		   const struct server_id server_id,
+		   const char *type,
+		   enum brl_flavour flavour,
+		   intmax_t start,
+		   intmax_t size,
 		   const char *sharepath,
 		   const char *filename)
 {
@@ -1007,6 +1079,10 @@ int print_brl_json(struct traverse_state *state,
 		goto failure;
 	}
 	result = add_server_id_to_json(&file_json, server_id);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_lock_to_json(&file_json, server_id, type, flavour, start, size);
 	if (result < 0) {
 		goto failure;
 	}
