@@ -80,15 +80,21 @@ class PasswordTests(password_lockout_base.BasePasswordTestCase):
                                                    username="lockout2krb5",
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=MUST_USE_KERBEROS)
-        self.lockout2krb5_ldb = self._readd_user(self.lockout2krb5_creds,
-                                                 lockOutObservationWindow=self.lockout_observation_window)
+        self._readd_user(self.lockout2krb5_creds,
+                         lockOutObservationWindow=self.lockout_observation_window)
+        self.lockout2krb5_ldb = SamDB(url=self.host_url,
+                                      credentials=self.lockout2krb5_creds,
+                                      lp=lp)
 
         self.lockout2ntlm_creds = self.insta_creds(self.template_creds,
                                                    username="lockout2ntlm",
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=DONT_USE_KERBEROS)
-        self.lockout2ntlm_ldb = self._readd_user(self.lockout2ntlm_creds,
-                                                 lockOutObservationWindow=self.lockout_observation_window)
+        self._readd_user(self.lockout2ntlm_creds,
+                         lockOutObservationWindow=self.lockout_observation_window)
+        self.lockout2ntlm_ldb = SamDB(url=self.host_url,
+                                      credentials=self.lockout2ntlm_creds,
+                                      lp=lp)
 
 
     def use_pso_lockout_settings(self, creds):

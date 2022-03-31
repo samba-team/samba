@@ -251,15 +251,26 @@ userPassword: """ + userpass + """
                                       username=username,
                                       userpass=userpass + "X",
                                       kerberos_state=use_kerberos)
+        if simple:
+            fail_creds.set_bind_dn(userdn)
+
         self._check_account_initial(userdn)
 
         # Fail once to get a badPasswordTime
         self.assertLoginFailure(ldap_url, fail_creds, self.lp)
 
-        # Succeed to reset everything to 0
-        ldb = self.assertLoginSuccess(ldap_url, creds, self.lp)
+        # Always reset with Simple bind or Kerberos, allows testing without NTLM
+        if simple or use_kerberos == MUST_USE_KERBEROS:
+            success_creds = creds
+        else:
+            success_creds = self.insta_creds(self.template_creds,
+                                             username=username,
+                                             userpass=userpass)
+            success_creds.set_bind_dn(userdn)
+            ldap_url = self.host_url_ldaps
 
-        return ldb
+        # Succeed to reset everything to 0
+        self.assertLoginSuccess(ldap_url, success_creds, self.lp)
 
     def assertLoginFailure(self, url, creds, lp, errno=ERR_INVALID_CREDENTIALS):
         try:
@@ -362,23 +373,20 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                                    username="lockout1krb5",
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=MUST_USE_KERBEROS)
-        self.lockout1krb5_ldb = self._readd_user(self.lockout1krb5_creds)
+        self._readd_user(self.lockout1krb5_creds)
         self.lockout1ntlm_creds = self.insta_creds(self.template_creds,
                                                    username="lockout1ntlm",
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=DONT_USE_KERBEROS)
-        self.lockout1ntlm_ldb = self._readd_user(self.lockout1ntlm_creds)
+        self._readd_user(self.lockout1ntlm_creds)
         self.lockout1simple_creds = self.insta_creds(self.template_creds,
-                                                   username="lockout1simple",
-                                                   userpass="thatsAcomplPASS0",
-                                                   kerberos_state=DONT_USE_KERBEROS)
-        self.lockout1simple_ldb = self._readd_user(self.lockout1simple_creds,
-                                                   simple=True)
+                                                     username="lockout1simple",
+                                                     userpass="thatsAcomplPASS0",
+                                                     kerberos_state=DONT_USE_KERBEROS)
+        self._readd_user(self.lockout1simple_creds,
+                         simple=True)
 
     def delete_ldb_connections(self):
-        del self.lockout1krb5_ldb
-        del self.lockout1ntlm_ldb
-        del self.lockout1simple_ldb
         del self.ldb
 
     def tearDown(self):
