@@ -196,7 +196,7 @@ static void setup_close_full_information(connection_struct *conn,
 }
 
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
-				struct files_struct *fsp,
+				struct files_struct **_fsp,
 				uint16_t in_flags,
 				uint16_t *out_flags,
 				struct timespec *out_creation_ts,
@@ -210,6 +210,7 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	NTSTATUS status;
 	struct smb_request *smbreq;
 	connection_struct *conn = req->tcon->compat;
+	struct files_struct *fsp = *_fsp;
 	struct smb_filename *smb_fname = NULL;
 	uint64_t allocation_size = 0;
 	uint64_t file_size = 0;
@@ -376,7 +377,7 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 	}
 
 	status = smbd_smb2_close(smb2req,
-				 state->in_fsp,
+				 &state->in_fsp,
 				 state->in_flags,
 				 &state->out_flags,
 				 &state->out_creation_ts,
@@ -406,7 +407,7 @@ static void smbd_smb2_close_wait_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	status = smbd_smb2_close(state->smb2req,
-				 state->in_fsp,
+				 &state->in_fsp,
 				 state->in_flags,
 				 &state->out_flags,
 				 &state->out_creation_ts,
