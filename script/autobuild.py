@@ -123,7 +123,7 @@ CLEAN_SOURCE_TREE_CMD = "cd ${TEST_SOURCE_DIR} && script/clean-source-tree.sh"
 
 def check_symbols(sofile, expected_symbols=""):
     return "objdump --dynamic-syms " + sofile + " | " + \
-           "awk \'$0 !~ /" + expected_symbols + "/ {if ($2 == \"g\" && $3 ~ /D(F|O)/ && $4 ~ /(.bss|.text)/) exit 1}\'"
+           "awk \'$0 !~ /" + expected_symbols + "/ {if ($2 == \"g\" && $3 ~ /D(F|O)/ && $4 ~ /(.bss|.text)/ && $7 !~ /(__gcov_|mangle_path)/) exit 1}\'"
 
 if args:
     # If we are only running specific test,
