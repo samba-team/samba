@@ -1472,8 +1472,10 @@ sub setup_ad_member_idmap_nss
 	my $extra_member_options = "
 	# bob:x:65521:65531:localbob gecos:/:/bin/false
 	# jane:x:65520:65531:localjane gecos:/:/bin/false
+	# jackthemapper:x:65519:65531:localjackthemaper gecos:/:/bin/false
+	# jacknomapper:x:65518:65531:localjacknomaper gecos:/:/bin/false
 	idmap config $dcvars->{DOMAIN} : backend = nss
-	idmap config $dcvars->{DOMAIN} : range = 65520-65521
+	idmap config $dcvars->{DOMAIN} : range = 65518-65521
 
 	# Support SMB1 so that we can use posix_whoami().
 	client min protocol = CORE
@@ -2573,6 +2575,8 @@ sub provision($$)
 	my ($uid_slashuser);
 	my ($uid_localbob);
 	my ($uid_localjane);
+	my ($uid_localjackthemapper);
+	my ($uid_localjacknomapper);
 
 	if ($unix_uid < 0xffff - 13) {
 		$max_uid = 0xffff;
@@ -2595,6 +2599,8 @@ sub provision($$)
 	$uid_slashuser = $max_uid - 13;
 	$uid_localbob = $max_uid - 14;
 	$uid_localjane = $max_uid - 15;
+	$uid_localjackthemapper = $max_uid - 16;
+	$uid_localjacknomapper = $max_uid - 17;
 
 	if ($unix_gids[0] < 0xffff - 8) {
 		$max_gid = 0xffff;
@@ -3339,6 +3345,8 @@ eviluser:x:$uid_eviluser:$gid_domusers:eviluser gecos::/bin/false
 slashuser:x:$uid_slashuser:$gid_domusers:slashuser gecos:/:/bin/false
 bob:x:$uid_localbob:$gid_domusers:localbob gecos:/:/bin/false
 jane:x:$uid_localjane:$gid_domusers:localjane gecos:/:/bin/false
+jackthemapper:x:$uid_localjackthemapper:$gid_domusers:localjackthemaper gecos:/:/bin/false
+jacknomapper:x:$uid_localjacknomapper:$gid_domusers:localjacknomaper gecos:/:/bin/false
 ";
 	if ($unix_uid != 0) {
 		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix_abs:/bin/false
@@ -3403,6 +3411,8 @@ force_user:x:$gid_force_user:
 	createuser($self, "gooduser", $password, $conffile, \%createuser_env) || die("Unable to create gooduser");
 	createuser($self, "eviluser", $password, $conffile, \%createuser_env) || die("Unable to create eviluser");
 	createuser($self, "slashuser", $password, $conffile, \%createuser_env) || die("Unable to create slashuser");
+	createuser($self, "jackthemapper", "mApsEcrEt", $conffile, \%createuser_env) || die("Unable to create jackthemapper");
+	createuser($self, "jacknomapper", "nOmApsEcrEt", $conffile, \%createuser_env) || die("Unable to create jacknomapper");
 
 	open(DNS_UPDATE_LIST, ">$prefix/dns_update_list") or die("Unable to open $$prefix/dns_update_list");
 	print DNS_UPDATE_LIST "A $server. $server_ip\n";
