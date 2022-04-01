@@ -464,7 +464,7 @@ static bool inode_map_add(struct sl_query *slq, uint64_t ino, const char *path)
 		 */
 
 		if (value.dsize != sizeof(void *)) {
-			DEBUG(1, ("invalide dsize\n"));
+			DEBUG(1, ("invalid dsize\n"));
 			return false;
 		}
 		memcpy(&p, value.dptr, sizeof(p));

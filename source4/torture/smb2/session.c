@@ -2724,7 +2724,7 @@ static bool test_session_bind_negative_smb202(struct torture_context *tctx, stru
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.02 if encrytion is required");
+			     "Can't test SMB 2.02 if encryption is required");
 	}
 
 	options1 = transport0->options;

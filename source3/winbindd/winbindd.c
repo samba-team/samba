@@ -1511,7 +1511,7 @@ int main(int argc, const char **argv)
 		size_t sun_path_len = sizeof(un.sun_path);
 
 		if (winbindd_priv_socket_len >= sun_path_len) {
-			DBG_ERR("The winbind priviliged socket path [%s/%s] is too long "
+			DBG_ERR("The winbind privileged socket path [%s/%s] is too long "
 				"(%zu >= %zu)\n",
 				winbindd_priv_socket_dir,
 				WINBINDD_SOCKET_NAME,

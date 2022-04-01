@@ -158,7 +158,7 @@ NTSTATUS gensec_update_recv(struct tevent_req *req, TALLOC_CTX *out_mem_ctx, DAT
  * The features must be requested before starting the
  * gensec_update*() loop.
  *
- * The current expection is GENSEC_FEATURE_SIGN_PKT_HEADER,
+ * The current exception is GENSEC_FEATURE_SIGN_PKT_HEADER,
  * it can also be requested once the gensec_update*() loop
  * returned NT_STATUS_OK.
  *
@@ -181,7 +181,7 @@ void gensec_want_feature(struct gensec_security *gensec_security,
  * The features must be requested after the finished
  * gensec_update*() loop.
  *
- * The current expection is GENSEC_FEATURE_SIGN_PKT_HEADER,
+ * The current exception is GENSEC_FEATURE_SIGN_PKT_HEADER,
  * it can also be requested before the gensec_update*() loop,
  * as the return value only indicates if the backend supports
  * dcerpc header signing, not if header signing will be used

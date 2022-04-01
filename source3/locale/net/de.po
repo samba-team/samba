@@ -6335,7 +6335,7 @@ msgstr ""
 
 #: ../../utils/net_rpc_printer.c:1305
 #, c-format
-msgid "unkown action: %d\n"
+msgid "unknown action: %d\n"
 msgstr ""
 
 #: ../../utils/net_rpc_printer.c:1331
@@ -6365,7 +6365,7 @@ msgstr ""
 
 #: ../../utils/net_rpc_printer.c:1458
 #, c-format
-msgid "unkown state: %d\n"
+msgid "unknown state: %d\n"
 msgstr "unbekannter Status: %d\n"
 
 #: ../../utils/net_rpc_printer.c:1528 ../../utils/net_rpc_printer.c:1675 ../../utils/net_rpc_printer.c:1858 ../../utils/net_rpc_printer.c:2047 ../../utils/net_rpc_printer.c:2214

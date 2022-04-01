@@ -1174,7 +1174,7 @@ static NTSTATUS prepare_inheritance_propagation(TALLOC_CTX *ctx, char *filename,
 	for (j = 0; sd->dacl && j < sd->dacl->num_aces; j++) {
 		struct security_ace *ace = &sd->dacl->aces[j];
 		if (ace->flags & SEC_ACE_FLAG_INHERITED_ACE) {
-			d_printf("Illegal paramater %s\n", the_acl);
+			d_printf("Illegal parameter %s\n", the_acl);
 			result = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}

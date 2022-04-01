@@ -552,7 +552,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		{
 			/*
 			 * streams_xattr return NT_STATUS_NOT_FOUND for
-			 * opens of not yet exisiting streams.
+			 * opens of not yet existing streams.
 			 *
 			 * ELOOP maps to NT_STATUS_OBJECT_PATH_NOT_FOUND
 			 * and this will result from a open request from

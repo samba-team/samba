@@ -1050,7 +1050,7 @@ static ssize_t sl_unpack_cpx(DALLOC_CTX *query,
 		break;
 
 	default:
-		DEBUG(1, ("unkown complex query type: %u", cpx_query_type));
+		DEBUG(1, ("unknown complex query type: %u", cpx_query_type));
 		return -1;
 	}
 

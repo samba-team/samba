@@ -3045,7 +3045,7 @@ Provisions a machine account in AD. This command needs network connectivity to t
 
 <listitem><para><replaceable>DEFPWD</replaceable> is an optional parameter that can be set to enforce using the default machine account password. The use of this parameter is not recommended as the default machine account password can be easily guessed. </para></listitem>
 
-<listitem><para><replaceable>REUSE</replaceable> is an optional parameter that can be set to enforce reusing an exisiting machine account in AD.</para></listitem>
+<listitem><para><replaceable>REUSE</replaceable> is an optional parameter that can be set to enforce reusing an existing machine account in AD.</para></listitem>
 
 <listitem><para><replaceable>SAVEFILE</replaceable> is an optional parameter to store the generated provisioning data on disk.</para></listitem>
 

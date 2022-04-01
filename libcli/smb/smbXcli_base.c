@@ -1761,7 +1761,7 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 	}
 
 	/*
-	 * If we supported multiple encrytion contexts
+	 * If we supported multiple encryption contexts
 	 * here we'd look up based on tid.
 	 */
 	if (common_encryption_on(state->conn->smb1.trans_enc)) {
@@ -2228,7 +2228,7 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	}
 
 	/*
-	 * If we supported multiple encrytion contexts
+	 * If we supported multiple encryption contexts
 	 * here we'd look up based on tid.
 	 */
 	if (common_encryption_on(conn->smb1.trans_enc)

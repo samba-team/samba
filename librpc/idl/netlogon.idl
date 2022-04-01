@@ -1132,7 +1132,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x14 */
 
-	/* one unkown bit still: DS_IP_VERSION_AGNOSTIC - gd*/
+	/* one unknown bit still: DS_IP_VERSION_AGNOSTIC - gd*/
 
 	const int DSGETDC_VALID_FLAGS = (DS_FORCE_REDISCOVERY |
 					 DS_DIRECTORY_SERVICE_REQUIRED |

@@ -1224,7 +1224,7 @@ int partition_del_trans(struct ldb_module *module)
 	bool trace = module && ldb_module_flags(ldb) & LDB_FLG_ENABLE_TRACING;
 
 	if (data == NULL) {
-		DEBUG(0,("partion delete transaction with no private data\n"));
+		DEBUG(0,("partition delete transaction with no private data\n"));
 		return ldb_operr(ldb);
 	}
 

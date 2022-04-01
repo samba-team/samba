@@ -31,7 +31,7 @@
 
 	<para>The <command>vfs_widelinks</command> VFS module
 	hides the existence of symbolic links in the filesystem
-	inside a share. It is used in Samba verson 4.13 and above
+	inside a share. It is used in Samba version 4.13 and above
 	to implement the <filename>smb.conf</filename>"wide links = yes"
 	functionality that used to be inside the core smbd code.
 	The module should not be loaded explicitly by smb.conf

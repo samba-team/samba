@@ -37,7 +37,7 @@
 <description>
 
     <para>If you still have legacy domain members, which required "server schannel = auto" before,
-	it is possible to specify explicit expection per computer account
+	it is possible to specify explicit exception per computer account
 	by using 'server require schannel:COMPUTERACCOUNT = no' as option.
 	Note that COMPUTERACCOUNT has to be the sAMAccountName value of
 	the computer account (including the trailing '$' sign).

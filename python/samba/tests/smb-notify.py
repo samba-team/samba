@@ -295,14 +295,14 @@ class SMBNotifyTests(TestCase):
         set_secinfo = security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_PROTECTED_DACL
         smb_helper.set_acl(private_path, private_path_sd_new, sinfo=set_secinfo)
 
-        # setup notification request as priviliged user
+        # setup notification request as privileged user
         monitor_priv_fnum = self.smb_conn.create(Name=monitor_path, ShareAccess=1)
         notify_priv = self.smb_conn.notify(fnum=monitor_priv_fnum,
                                            buffer_size=0xffff,
                                            completion_filter=libsmb.FILE_NOTIFY_CHANGE_ALL,
                                            recursive=True)
 
-        # setup notification request as unpriviliged user
+        # setup notification request as unprivileged user
         monitor_unpriv_fnum = self.smb_conn_unpriv.create(Name=monitor_path, ShareAccess=1)
         notify_unpriv = self.smb_conn_unpriv.notify(fnum=monitor_unpriv_fnum,
                                                     buffer_size=0xffff,

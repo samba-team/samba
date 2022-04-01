@@ -347,7 +347,7 @@ static void mdscli_search_cmd_done(struct tevent_req *subreq)
 			     "DALLOC_CTX", 0,
 			     "uint64_t", 0);
 	if (uint64p == NULL) {
-		DBG_DEBUG("Unexpected mds reponse: %s", dalloc_dump(d, 0));
+		DBG_DEBUG("Unexpected mds response: %s", dalloc_dump(d, 0));
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
@@ -531,7 +531,7 @@ static void mdscli_get_results_cmd_done(struct tevent_req *subreq)
 			     "DALLOC_CTX", 0,
 			     "uint64_t", 0);
 	if (uint64p == NULL) {
-		DBG_DEBUG("Unexpected mds reponse: %s", dalloc_dump(d, 0));
+		DBG_DEBUG("Unexpected mds response: %s", dalloc_dump(d, 0));
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
@@ -755,7 +755,7 @@ static void mdscli_get_path_done(struct tevent_req *subreq)
 			  "DALLOC_CTX", 1,
 			  "char *", 0);
 	if (path == NULL) {
-		DBG_DEBUG("No path in mds reponse: %s", dalloc_dump(d, 0));
+		DBG_DEBUG("No path in mds response: %s", dalloc_dump(d, 0));
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}

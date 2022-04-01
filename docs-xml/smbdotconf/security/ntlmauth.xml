@@ -9,7 +9,7 @@
     authenticate users using the NTLM encrypted password response for
     this local passdb (SAM or account database). </para>
 
-    <para>If disabled, both NTLM and LanMan authencication against the
+    <para>If disabled, both NTLM and LanMan authentication against the
     local passdb is disabled.</para>
 
     <para>Note that these settings apply only to local users,

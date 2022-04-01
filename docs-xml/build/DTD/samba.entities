@@ -599,7 +599,7 @@
 			prompted. The client will first check the
 			<envar>USER</envar> environment variable
 			(which is also permitted to also contain the
-			password seperated by a &pct;), then the
+			password separated by a &pct;), then the
 			<envar>LOGNAME</envar> variable (which is not
 			permitted to contain a password) and if either exists,
 			the value is used. If these environmental
@@ -765,7 +765,7 @@
 			 This parameter determines whether Samba client tools
 			 will try to authenticate using Kerberos. For Kerberos
 			 authentication you need to use dns names instead of IP
-			 addresses when connnecting to a service.
+			 addresses when connecting to a service.
 		</para>
 
 		<para>

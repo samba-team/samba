@@ -4626,7 +4626,7 @@ static bool torture_rpc_pipes_supported_interfaces(
 	struct dcerpc_pipe *pipe2;
 	struct dcerpc_pipe *pipe3;
 
-	torture_comment(torture, "Testing only appropiate interfaces are "
+	torture_comment(torture, "Testing only appropriate interfaces are "
 			"available in smb pipes\n");
 
 	mem_ctx = talloc_init("torture_samba3_rpc_pipes_supported_interfaces");

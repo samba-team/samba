@@ -288,7 +288,7 @@ static void print_brl(struct file_id id,
 
 static const char *session_dialect_str(uint16_t dialect)
 {
-	static fstring unkown_dialect;
+	static fstring unknown_dialect;
 
 	switch(dialect){
 	case SMB2_DIALECT_REVISION_000:
@@ -311,8 +311,8 @@ static const char *session_dialect_str(uint16_t dialect)
 		return "SMB3_11";
 	}
 
-	fstr_sprintf(unkown_dialect, "Unknown (0x%04x)", dialect);
-	return unkown_dialect;
+	fstr_sprintf(unknown_dialect, "Unknown (0x%04x)", dialect);
+	return unknown_dialect;
 }
 
 static int traverse_connections(const struct connections_data *crec,

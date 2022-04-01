@@ -8,7 +8,7 @@
 	<para>
 		This parameter determines whether Samba client tools will try
 		to authenticate using Kerberos. For Kerberos authentication you
-		need to use dns names instead of IP addresses when connnecting
+		need to use dns names instead of IP addresses when connecting
 		to a service.
 	</para>
 

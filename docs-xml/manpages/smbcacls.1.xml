@@ -356,7 +356,7 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 		flag is set. </para>
 		</listitem>
 		<listitem><para>When an ACE with the (OI) flag alone set is
-		progagated to a child folder the inheritance only flag (IO) is
+		propagated to a child folder the inheritance only flag (IO) is
 		also applied. This indicates the permissions associated with
 		the ACE don't apply to the folder itself (only to it's
 		child files). When applying the ACE to a child file the ACE is

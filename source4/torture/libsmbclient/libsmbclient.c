@@ -668,7 +668,7 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 		success,
 		done,
 		talloc_asprintf(tctx,
-				"after seek (20) readdir name missmatch "
+				"after seek (20) readdir name mismatch "
 				"file %s - got %s\n",
 				dirent_20->name,
 				getdentries[0].name));
@@ -700,7 +700,7 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 		success,
 		done,
 		talloc_asprintf(tctx,
-				"after seek (20) readdirplus name missmatch "
+				"after seek (20) readdirplus name mismatch "
 				"file %s - got %s\n",
 				dirent_20->name,
 				direntries_20->name));
@@ -733,7 +733,7 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 		success,
 		done,
 		talloc_asprintf(tctx,
-				"after seek (20) readdirplus2 name missmatch "
+				"after seek (20) readdirplus2 name mismatch "
 				"file %s - got %s\n",
 				dirent_20->name,
 				direntries_20->name));
@@ -937,7 +937,7 @@ static bool torture_libsmbclient_readdirplus2(struct torture_context *tctx)
 		success,
 		done,
 		talloc_asprintf(tctx,
-			"filename '%s' ino missmatch. "
+			"filename '%s' ino mismatch. "
 			"From smbc_readdirplus2 = %"PRIx64" "
 			"From smbc_stat = %"PRIx64"",
 			filename,
