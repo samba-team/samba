@@ -5,7 +5,8 @@ from waflib import Options
 def configure(conf):
     conf.RECURSE('cmocka')
     conf.RECURSE('popt')
-    conf.RECURSE('aesni-intel')
+    if not conf.CONFIG_SET('HAVE_GNUTLS_AES_CMAC'):
+        conf.RECURSE('aesni-intel')
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         conf.RECURSE('socket_wrapper')
         conf.RECURSE('nss_wrapper')
@@ -18,7 +19,8 @@ def configure(conf):
 def build(bld):
     bld.RECURSE('cmocka')
     bld.RECURSE('popt')
-    bld.RECURSE('aesni-intel')
+    if not bld.CONFIG_SET('HAVE_GNUTLS_AES_CMAC'):
+        bld.RECURSE('aesni-intel')
     if bld.CONFIG_GET('SOCKET_WRAPPER'):
         bld.RECURSE('socket_wrapper')
     if bld.CONFIG_GET('NSS_WRAPPER'):
