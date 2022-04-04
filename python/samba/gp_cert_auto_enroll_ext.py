@@ -86,8 +86,8 @@ def get_supported_templates(server):
                        env=env, stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
         if p.returncode != 0:
-            log.warn('Failed to fetch the list of supported templates.')
-            log.debug(err.decode())
+            data = { 'Error': err.decode() }
+            log.error('Failed to fetch the list of supported templates.', data)
         return out.strip().split()
     return []
 
@@ -142,7 +142,8 @@ def cert_enroll(ca, trust_dir, private_dir):
         out, err = p.communicate()
         log.debug(out.decode())
         if p.returncode != 0:
-            log.debug(err.decode())
+            data = { 'Error': err.decode(), 'CA': ca['cn'][0] }
+            log.error('Failed to add Certificate Authority', data)
         supported_templates = get_supported_templates(ca['dNSHostName'][0])
         for template, attrs in ca['certificateTemplates'].items():
             if template not in supported_templates:
@@ -158,7 +159,8 @@ def cert_enroll(ca, trust_dir, private_dir):
             out, err = p.communicate()
             log.debug(out.decode())
             if p.returncode != 0:
-                log.debug(err.decode())
+                data = { 'Error': err.decode(), 'Certificate': nickname }
+                log.error('Failed to request certificate', data)
             data['files'].extend([keyfile, certfile])
             data['templates'].append(nickname)
         if update is not None:
