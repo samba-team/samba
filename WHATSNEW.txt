@@ -1,4 +1,96 @@
                    ===============================
+                   Release Notes for Samba 4.14.13
+                           April 04, 2022
+                   ===============================
+
+
+This is the last bugfix release of the Samba 4.14 release series. There will be
+security releases only beyond this point.
+
+
+Changes since 4.14.12
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14169: Renaming file on DFS root fails with
+     NT_STATUS_OBJECT_PATH_NOT_FOUND.
+   * BUG 14737: Samba does not response STATUS_INVALID_PARAMETER when opening 2
+     objects with same lease key.
+   * BUG 14938: NT error code is not set when overwriting a file during rename
+     in libsmbclient.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14996: Fix ldap simple bind with TLS auditing.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14674: net ads info shows LDAP Server: 0.0.0.0 depending on contacted
+     server.
+
+o  Samuel Cabrero <scabrero@suse.de>
+   * BUG 14979: Problem when winbind renews Kerberos.
+
+o  Pavel Filipenský <pfilipen@redhat.com>
+   * BUG 14971: virusfilter_vfs_openat: Not scanned: Directory or special file.
+
+o  Elia Geretto <elia.f.geretto@gmail.com>
+   * BUG 14983: NT_STATUS_ACCESS_DENIED translates into EPERM instead of EACCES
+     in SMBC_server_internal.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 13631: DFS fix for AIX broken.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13879: Simple bind doesn't work against an RODC (with non-preloaded
+     users).
+   * BUG 14641: Crash of winbind on RODC.
+   * BUG 14865: Uncached logon on RODC always fails once.
+   * BUG 14951: KVNO off by 100000.
+   * BUG 14968: smb2_signing_decrypt_pdu() may not decrypt with
+     gnutls_aead_cipher_decrypt() from gnutls before 3.5.2.
+   * BUG 14984: Changing the machine password against an RODC likely destroys
+     the domain join.
+   * BUG 14993: authsam_make_user_info_dc() steals memory from its struct
+     ldb_message *msg argument.
+   * BUG 14995: Use Heimdal 8.0 (pre) rather than an earlier snapshot.
+   * BUG 15001: LDAP simple binds should honour "old password allowed period".
+   * BUG 15003: wbinfo -a doesn't work reliable with upn names.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 13879: Simple bind doesn't work against an RODC (with non-preloaded
+     users).
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 14621: "password hash userPassword schemes = CryptSHA256" does not seem
+     to work with samba-tool.
+   * BUG 14984: Changing the machine password against an RODC likely destroys
+     the domain join.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ===============================
                    Release Notes for Samba 4.14.12
                           January 31, 2022
                    ===============================
@@ -43,8 +135,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ===============================
                    Release Notes for Samba 4.14.11
                           December 15, 2021
