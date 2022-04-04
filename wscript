@@ -189,6 +189,8 @@ def configure(conf):
     conf.RECURSE('dynconfig')
     conf.RECURSE('selftest')
 
+    conf.PROCESS_SEPARATE_RULE('system_gnutls')
+
     conf.CHECK_CFG(package='zlib', minversion='1.2.3',
                    args='--cflags --libs',
                    mandatory=True)
@@ -296,8 +298,6 @@ def configure(conf):
 
     if not conf.CONFIG_GET('KRB5_VENDOR'):
         conf.PROCESS_SEPARATE_RULE('embedded_heimdal')
-
-    conf.PROCESS_SEPARATE_RULE('system_gnutls')
 
     conf.RECURSE('source4/dsdb/samdb/ldb_modules')
     conf.RECURSE('source4/ntvfs/sysdep')
