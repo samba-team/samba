@@ -82,8 +82,8 @@ def get_supported_templates(server):
     if os.path.exists(cepces_submit):
         env = os.environ
         env['CERTMONGER_OPERATION'] = 'GET-SUPPORTED-TEMPLATES'
-        p = Popen([cepces_submit, '--server=%s' % server], env=env,
-                       stdout=PIPE, stderr=PIPE)
+        p = Popen([cepces_submit, '--server=%s' % server, '--auth=Kerberos'],
+                       env=env, stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
         if p.returncode != 0:
             log.warn('Failed to fetch the list of supported templates.')
@@ -136,7 +136,8 @@ def cert_enroll(ca, trust_dir, private_dir):
     cepces_submit = find_cepces_submit()
     if getcert is not None and os.path.exists(cepces_submit):
         p = Popen([getcert, 'add-ca', '-c', ca['cn'][0], '-e',
-                  '%s --server=%s' % (cepces_submit, ca['dNSHostName'][0])],
+                  '%s --server=%s --auth=Kerberos' % (cepces_submit,
+                  ca['dNSHostName'][0])],
                   stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
         log.debug(out.decode())

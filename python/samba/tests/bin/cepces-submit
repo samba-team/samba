@@ -7,9 +7,11 @@ sys.path.insert(0, "bin/python")
 if __name__ == "__main__":
     parser = optparse.OptionParser('cepces-submit [options]')
     parser.add_option('--server')
+    parser.add_option('--auth')
 
     (opts, args) = parser.parse_args()
     assert opts.server is not None
+    assert opts.auth == 'Kerberos'
     if 'CERTMONGER_OPERATION' in os.environ and \
        os.environ['CERTMONGER_OPERATION'] == 'GET-SUPPORTED-TEMPLATES':
         print('Machine') # Report a Machine template
