@@ -465,6 +465,7 @@ static char *stream_dir(vfs_handle_struct *handle,
  * stream.
  */
 static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
+				 const struct stat_ex *base_sbuf,
 				 const struct smb_filename *smb_fname,
 				 struct smb_filename **smb_fname_out,
 				 bool create_dir)
@@ -483,7 +484,7 @@ static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
 		}
 	}
 
-	dirname = stream_dir(handle, smb_fname, NULL, create_dir);
+	dirname = stream_dir(handle, smb_fname, base_sbuf, create_dir);
 
 	if (dirname == NULL) {
 		status = map_nt_error_from_unix(errno);
@@ -653,8 +654,8 @@ static int streams_depot_stat(vfs_handle_struct *handle,
 	}
 
 	/* Stat the actual stream now. */
-	status = stream_smb_fname(handle, smb_fname, &smb_fname_stream,
-				  false);
+	status = stream_smb_fname(
+		handle, NULL, smb_fname, &smb_fname_stream, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = -1;
 		errno = map_errno_from_nt_status(status);
@@ -687,8 +688,8 @@ static int streams_depot_lstat(vfs_handle_struct *handle,
 	}
 
 	/* Stat the actual stream now. */
-	status = stream_smb_fname(handle, smb_fname, &smb_fname_stream,
-				  false);
+	status = stream_smb_fname(
+		handle, NULL, smb_fname, &smb_fname_stream, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = -1;
 		errno = map_errno_from_nt_status(status);
@@ -727,7 +728,12 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 	SMB_ASSERT(VALID_STAT(fsp->base_fsp->fsp_name->st));
 
 	/* Determine the stream name, and then open it. */
-	status = stream_smb_fname(handle, smb_fname, &smb_fname_stream, true);
+	status = stream_smb_fname(
+		handle,
+		&fsp->base_fsp->fsp_name->st,
+		fsp->fsp_name,
+		&smb_fname_stream,
+		true);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = -1;
 		errno = map_errno_from_nt_status(status);
@@ -778,8 +784,8 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 		struct smb_filename *smb_fname_stream = NULL;
 		NTSTATUS status;
 
-		status = stream_smb_fname(handle, full_fname, &smb_fname_stream,
-					  false);
+		status = stream_smb_fname(
+			handle, NULL, full_fname, &smb_fname_stream, false);
 		TALLOC_FREE(full_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			errno = map_errno_from_nt_status(status);
@@ -1014,15 +1020,15 @@ static int streams_depot_renameat(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	status = stream_smb_fname(handle, full_src, &smb_fname_src_stream,
-				  false);
+	status = stream_smb_fname(
+		handle, NULL, full_src, &smb_fname_src_stream, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto done;
 	}
 
-	status = stream_smb_fname(handle, full_dst,
-				  &smb_fname_dst_stream, false);
+	status = stream_smb_fname(
+		handle, NULL, full_dst, &smb_fname_dst_stream, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto done;
