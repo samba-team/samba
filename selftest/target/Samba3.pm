@@ -1490,6 +1490,8 @@ sub setup_ad_member_idmap_nss
 
 	open(USERMAP, ">$prefix/lib/username.map") or die("Unable to open $prefix/lib/username.map");
 	print USERMAP "
+!jacknomapper = \@jackthemappergroup
+!root = jacknomappergroup
 root = $dcvars->{DOMAIN}/root
 bob = $dcvars->{DOMAIN}/bob
 ";
