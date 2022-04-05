@@ -110,25 +110,6 @@ static bool file_is_valid(vfs_handle_struct *handle,
 	return true;
 }
 
-static bool mark_file_valid(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	char buf = '1';
-	int ret;
-
-	DEBUG(10, ("marking file %s as valid\n", smb_fname->base_name));
-
-	ret = SMB_VFS_FSETXATTR(smb_fname->fsp, SAMBA_XATTR_MARKER,
-				    &buf, sizeof(buf), 0);
-
-	if (ret == -1) {
-		DEBUG(10, ("SETXATTR failed: %s\n", strerror(errno)));
-		return false;
-	}
-
-	return true;
-}
-
 /*
  * Return the root of the stream directory. Can be
  * external to the share definition but by default
@@ -183,8 +164,6 @@ static char *stream_dir(vfs_handle_struct *handle,
 	char *rootdir = NULL;
 	struct smb_filename *rootdir_fname = NULL;
 	struct smb_filename *tmp_fname = NULL;
-	struct smb_filename *tmpref = NULL;
-	const struct smb_filename *pathref = NULL;
 	int ret;
 
 	check_valid = lp_parm_bool(SNUM(handle->conn),
@@ -424,27 +403,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 	if ((ret != 0) && (errno != EEXIST)) {
 		goto fail;
 	}
-	pathref = smb_fname;
-	if (smb_fname->fsp == NULL) {
-		NTSTATUS status;
-		status = synthetic_pathref(talloc_tos(),
-					handle->conn->cwd_fsp,
-					smb_fname->base_name,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags,
-					&tmpref);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-		pathref = tmpref;
-	}
-	if (check_valid && !mark_file_valid(handle, pathref)) {
-		goto fail;
-	}
 
-	TALLOC_FREE(tmpref);
 	TALLOC_FREE(rootdir_fname);
 	TALLOC_FREE(rootdir);
 	TALLOC_FREE(tmp_fname);
@@ -452,7 +411,6 @@ static char *stream_dir(vfs_handle_struct *handle,
 	return result;
 
  fail:
-	TALLOC_FREE(tmpref);
 	TALLOC_FREE(rootdir_fname);
 	TALLOC_FREE(rootdir);
 	TALLOC_FREE(tmp_fname);
@@ -741,6 +699,34 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 		ret = -1;
 		errno = map_errno_from_nt_status(status);
 		goto done;
+	}
+
+	if (create_it) {
+		bool check_valid = lp_parm_bool(
+			SNUM(handle->conn),
+			"streams_depot",
+			"check_valid",
+			true);
+
+		if (check_valid) {
+			char buf = '1';
+
+			DBG_DEBUG("marking file %s as valid\n",
+				  fsp->base_fsp->fsp_name->base_name);
+
+			ret = SMB_VFS_FSETXATTR(
+				fsp->base_fsp,
+				SAMBA_XATTR_MARKER,
+				&buf,
+				sizeof(buf),
+				0);
+
+			if (ret == -1) {
+				DBG_DEBUG("FSETXATTR failed: %s\n",
+					  strerror(errno));
+				return -1;
+			}
+		}
 	}
 
 	status = vfs_at_fspcwd(talloc_tos(), handle->conn, &fspcwd);
