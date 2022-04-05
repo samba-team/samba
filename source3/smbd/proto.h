@@ -896,7 +896,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  struct messaging_context *msg_ctx,
 		  int sock_fd,
 		  bool interactive);
-bool valid_smb_header(const uint8_t *inbuf);
+bool valid_smb1_header(const uint8_t *inbuf);
 bool init_smb_request(struct smb_request *req,
 		      struct smbd_server_connection *sconn,
 		      struct smbXsrv_connection *xconn,

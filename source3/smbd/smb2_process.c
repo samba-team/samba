@@ -568,7 +568,7 @@ void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes
 	req->outbuf = (uint8_t *)outbuf;
 }
 
-bool valid_smb_header(const uint8_t *inbuf)
+bool valid_smb1_header(const uint8_t *inbuf)
 {
 	if (is_encrypted_packet(inbuf)) {
 		return true;
@@ -631,7 +631,7 @@ void process_smb(struct smbXsrv_connection *xconn,
 			return;
 #if defined(WITH_SMB1SERVER)
 		}
-		if (nread >= smb_size && valid_smb_header(inbuf)
+		if (nread >= smb_size && valid_smb1_header(inbuf)
 				&& CVAL(inbuf, smb_com) != 0x72) {
 			/* This is a non-negprot SMB1 packet.
 			   Disable SMB2 from now on. */
@@ -940,7 +940,7 @@ static void smbd_smb2_server_connection_read_handler(
 		exit_server_cleanly("Invalid initial SMB1 or SMB2 packet");
 		return;
 	}
-	if (valid_smb_header(buffer)) {
+	if (valid_smb1_header(buffer)) {
 		/* Can *only* allow an SMB1 negprot here. */
 		uint8_t cmd = PULL_LE_U8(buffer, smb_com);
 		if (cmd != SMBnegprot) {

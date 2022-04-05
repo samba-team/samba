@@ -1477,7 +1477,7 @@ void process_smb1(struct smbXsrv_connection *xconn,
 
 	/* Make sure this is an SMB packet. smb_size contains NetBIOS header
 	 * so subtract 4 from it. */
-	if ((nread < (smb_size - 4)) || !valid_smb_header(inbuf)) {
+	if ((nread < (smb_size - 4)) || !valid_smb1_header(inbuf)) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",
 			 smb_len(inbuf)));
 
@@ -2346,7 +2346,7 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 		DEBUG(10, ("Got short packet: %d bytes\n", (int)inbuf_len));
 		return false;
 	}
-	if (!valid_smb_header(inbuf)) {
+	if (!valid_smb1_header(inbuf)) {
 		DEBUG(10, ("Got invalid SMB header\n"));
 		return false;
 	}
