@@ -76,3 +76,4 @@ void reply_setattrE(struct smb_request *req);
 void reply_writebmpx(struct smb_request *req);
 void reply_writebs(struct smb_request *req);
 void reply_getattrE(struct smb_request *req);
+void reply_findclose(struct smb_request *req);
