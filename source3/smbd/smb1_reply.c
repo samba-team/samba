@@ -2861,7 +2861,7 @@ static void reply_lockread_locked(struct tevent_req *subreq)
 		goto send;
 	}
 
-	srv_set_message((char *)req->outbuf, 5, nread+3, False);
+	srv_smb1_set_message((char *)req->outbuf, 5, nread+3, False);
 
 	SSVAL(req->outbuf,smb_vwv0,nread);
 	SSVAL(req->outbuf,smb_vwv5,nread+3);
@@ -2969,7 +2969,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 		goto out;
 	}
 
-	srv_set_message((char *)req->outbuf, 5, nread+3, False);
+	srv_smb1_set_message((char *)req->outbuf, 5, nread+3, False);
 
 	SSVAL(req->outbuf,smb_vwv0,nread);
 	SSVAL(req->outbuf,smb_vwv5,nread+3);
@@ -2992,7 +2992,7 @@ size_t setup_readX_header(char *outbuf, size_t smb_maxcnt)
 {
 	size_t outsize;
 
-	outsize = srv_set_message(outbuf,12,smb_maxcnt + 1 /* padding byte */,
+	outsize = srv_smb1_set_message(outbuf,12,smb_maxcnt + 1 /* padding byte */,
 				  False);
 
 	memset(outbuf+smb_vwv0,'\0',24); /* valgrind init. */
@@ -3600,7 +3600,7 @@ void reply_writebraw(struct smb_request *req)
 	 * it to send more bytes */
 
 	memcpy(buf, req->inbuf, smb_size);
-	srv_set_message(buf,get_Protocol()>PROTOCOL_COREPLUS?1:0,0,True);
+	srv_smb1_set_message(buf,get_Protocol()>PROTOCOL_COREPLUS?1:0,0,True);
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);

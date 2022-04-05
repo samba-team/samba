@@ -857,7 +857,7 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 		   bool do_encrypt,
 		   struct smb_perfcount_data *pcd);
 #endif
-size_t srv_set_message(char *buf,
+size_t srv_smb1_set_message(char *buf,
 		       size_t num_words,
 		       size_t num_bytes,
 		       bool zero);

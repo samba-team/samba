@@ -77,7 +77,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	}
 
 	construct_reply_common_req(smbreq, (char *)aio_ex->outbuf.data);
-	srv_set_message((char *)aio_ex->outbuf.data, 12, 0, True);
+	srv_smb1_set_message((char *)aio_ex->outbuf.data, 12, 0, True);
 	SCVAL(aio_ex->outbuf.data,smb_vwv0,0xFF); /* Never a chained reply. */
 	SCVAL(smb_buf(aio_ex->outbuf.data), 0, 0); /* padding byte */
 
@@ -156,7 +156,7 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 			   strerror(vfs_aio_state.error)));
 
 		ERROR_NT(map_nt_error_from_unix(vfs_aio_state.error));
-		outsize = srv_set_message(outbuf,0,0,true);
+		outsize = srv_smb1_set_message(outbuf,0,0,true);
 	} else {
 		outsize = setup_readX_header(outbuf, nread);
 
@@ -240,7 +240,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	aio_ex->write_through = BITSETW(smbreq->vwv+7,0);
 
 	construct_reply_common_req(smbreq, (char *)aio_ex->outbuf.data);
-	srv_set_message((char *)aio_ex->outbuf.data, 6, 0, True);
+	srv_smb1_set_message((char *)aio_ex->outbuf.data, 6, 0, True);
 	SCVAL(aio_ex->outbuf.data,smb_vwv0,0xFF); /* Never a chained reply. */
 
 	init_strict_lock_struct(fsp,
@@ -373,7 +373,7 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 			  (int)nwritten, strerror(err)));
 
 		ERROR_NT(map_nt_error_from_unix(err));
-		srv_set_message(outbuf,0,0,true);
+		srv_smb1_set_message(outbuf,0,0,true);
         } else {
 		SSVAL(outbuf,smb_vwv2,nwritten);
 		SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);

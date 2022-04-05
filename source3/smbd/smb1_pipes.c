@@ -329,7 +329,7 @@ static void pipe_read_andx_done(struct tevent_req *subreq)
 	req->outbuf = state->outbuf;
 	state->outbuf = NULL;
 
-	srv_set_message((char *)req->outbuf, 12, nread + 1 /* padding byte */,
+	srv_smb1_set_message((char *)req->outbuf, 12, nread + 1 /* padding byte */,
 			false);
 
 #if 0

@@ -124,10 +124,10 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 #endif
 
 /*******************************************************************
- Setup the word count and byte count for a smb message.
+ Setup the word count and byte count for a smb1 message.
 ********************************************************************/
 
-size_t srv_set_message(char *buf,
+size_t srv_smb1_set_message(char *buf,
 		       size_t num_words,
 		       size_t num_bytes,
 		       bool zero)
@@ -492,7 +492,7 @@ static void construct_reply_common(uint8_t cmd, const uint8_t *inbuf,
 	out_flags2 |= in_flags2 & FLAGS2_SMB_SECURITY_SIGNATURES;
 	out_flags2 |= in_flags2 & FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED;
 
-	srv_set_message(outbuf,0,0,false);
+	srv_smb1_set_message(outbuf,0,0,false);
 
 	SCVAL(outbuf, smb_com, cmd);
 	SIVAL(outbuf,smb_rcls,0);
@@ -546,7 +546,7 @@ bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 	}
 
 	construct_reply_common(req->cmd, inbuf, *outbuf);
-	srv_set_message(*outbuf, num_words, num_bytes, false);
+	srv_smb1_set_message(*outbuf, num_words, num_bytes, false);
 	/*
 	 * Zero out the word area, the caller has to take care of the bcc area
 	 * himself

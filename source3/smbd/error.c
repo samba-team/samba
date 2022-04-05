@@ -115,7 +115,7 @@ void error_packet_set(char *outbuf, uint8_t eclass, uint32_t ecode, NTSTATUS nts
 
 size_t error_packet(char *outbuf, uint8_t eclass, uint32_t ecode, NTSTATUS ntstatus, int line, const char *file)
 {
-	size_t outsize = srv_set_message(outbuf,0,0,True);
+	size_t outsize = srv_smb1_set_message(outbuf,0,0,True);
 	error_packet_set(outbuf, eclass, ecode, ntstatus, line, file);
 	return outsize;
 }
