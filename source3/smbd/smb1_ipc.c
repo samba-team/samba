@@ -779,7 +779,7 @@ void reply_trans(struct smb_request *req)
 		 * CVAL(req->vwv+13, 0) above. The cast in the comparison
 		 * below is not necessary, it's here to clarify things. The
 		 * validity of req->vwv and req->wct has been checked in
-		 * init_smb_request already.
+		 * init_smb1_request already.
 		 */
 		if (state->setup_count + 14 > (unsigned int)req->wct) {
 			goto bad_param;

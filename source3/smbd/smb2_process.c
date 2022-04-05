@@ -745,7 +745,7 @@ const char *smbXsrv_connection_dbg(const struct smbXsrv_connection *xconn)
  * Initialize a struct smb_request from an inbuf
  */
 
-bool init_smb_request(struct smb_request *req,
+bool init_smb1_request(struct smb_request *req,
 		      struct smbd_server_connection *sconn,
 		      struct smbXsrv_connection *xconn,
 		      const uint8_t *inbuf,
@@ -759,7 +759,7 @@ bool init_smb_request(struct smb_request *req,
 
 	/* Ensure we have at least smb_size bytes. */
 	if (req_size < smb_size) {
-		DEBUG(0,("init_smb_request: invalid request size %u\n",
+		DEBUG(0,("init_smb1_request: invalid request size %u\n",
 			(unsigned int)req_size ));
 		return false;
 	}
@@ -797,14 +797,14 @@ bool init_smb_request(struct smb_request *req,
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
 	if (smb_size + req->wct*2 > req_size) {
-		DEBUG(0,("init_smb_request: invalid wct number %u (size %u)\n",
+		DEBUG(0,("init_smb1_request: invalid wct number %u (size %u)\n",
 			(unsigned int)req->wct,
 			(unsigned int)req_size));
 		return false;
 	}
 	/* Ensure bcc is correct. */
 	if (((const uint8_t *)smb_buf_const(inbuf)) + req->buflen > inbuf + req_size) {
-		DEBUG(0,("init_smb_request: invalid bcc number %u "
+		DEBUG(0,("init_smb1_request: invalid bcc number %u "
 			"(wct = %u, size %u)\n",
 			(unsigned int)req->buflen,
 			(unsigned int)req->wct,
@@ -832,7 +832,7 @@ static void construct_reply_smb1negprot(struct smbXsrv_connection *xconn,
 		smb_panic("could not allocate smb_request");
 	}
 
-	if (!init_smb_request(req, sconn, xconn, (uint8_t *)inbuf, unread_bytes,
+	if (!init_smb1_request(req, sconn, xconn, (uint8_t *)inbuf, unread_bytes,
 			      false, 0)) {
 		exit_server_cleanly("Invalid SMB request");
 	}

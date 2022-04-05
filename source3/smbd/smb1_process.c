@@ -1268,7 +1268,7 @@ void construct_reply(struct smbXsrv_connection *xconn,
 		smb_panic("could not allocate smb_request");
 	}
 
-	if (!init_smb_request(req, sconn, xconn, (uint8_t *)inbuf, unread_bytes,
+	if (!init_smb1_request(req, sconn, xconn, (uint8_t *)inbuf, unread_bytes,
 			      encrypted, seqnum)) {
 		exit_server_cleanly("Invalid SMB request");
 	}
@@ -1909,7 +1909,7 @@ static bool smb1_parse_chain_cb(uint8_t cmd,
 		return false;
 	}
 
-	ok = init_smb_request(req, state->sconn, state->xconn, state->buf, 0,
+	ok = init_smb1_request(req, state->sconn, state->xconn, state->buf, 0,
 			      state->encrypted, state->seqnum);
 	if (!ok) {
 		return false;
@@ -2351,7 +2351,7 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 		return false;
 	}
 
-	if (!init_smb_request(&req, state->sconn, state->xconn, inbuf, 0, false,
+	if (!init_smb1_request(&req, state->sconn, state->xconn, inbuf, 0, false,
 			      seqnum)) {
 		return false;
 	}
