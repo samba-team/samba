@@ -713,6 +713,7 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 	struct smb_filename *smb_fname_stream = NULL;
 	struct files_struct *fspcwd = NULL;
 	NTSTATUS status;
+	bool create_it;
 	int ret = -1;
 
 	if (!is_named_stream(smb_fname)) {
@@ -727,13 +728,15 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
 	SMB_ASSERT(VALID_STAT(fsp->base_fsp->fsp_name->st));
 
+	create_it = (mode & O_CREAT);
+
 	/* Determine the stream name, and then open it. */
 	status = stream_smb_fname(
 		handle,
 		&fsp->base_fsp->fsp_name->st,
 		fsp->fsp_name,
 		&smb_fname_stream,
-		true);
+		create_it);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = -1;
 		errno = map_errno_from_nt_status(status);
