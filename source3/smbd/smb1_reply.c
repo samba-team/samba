@@ -3078,7 +3078,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 		header = data_blob_const(headerbuf, sizeof(headerbuf));
 
-		construct_reply_common_req(req, (char *)headerbuf);
+		construct_smb1_reply_common_req(req, (char *)headerbuf);
 		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
 		nread = SMB_VFS_SENDFILE(xconn->transport.sock, fsp, &header,
@@ -3179,7 +3179,7 @@ normal_read:
 			goto nosendfile_read;
 		}
 
-		construct_reply_common_req(req, (char *)headerbuf);
+		construct_smb1_reply_common_req(req, (char *)headerbuf);
 		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
 		/* Send out the header. */

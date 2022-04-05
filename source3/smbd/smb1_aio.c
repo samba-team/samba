@@ -76,7 +76,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	construct_reply_common_req(smbreq, (char *)aio_ex->outbuf.data);
+	construct_smb1_reply_common_req(smbreq, (char *)aio_ex->outbuf.data);
 	srv_smb1_set_message((char *)aio_ex->outbuf.data, 12, 0, True);
 	SCVAL(aio_ex->outbuf.data,smb_vwv0,0xFF); /* Never a chained reply. */
 	SCVAL(smb_buf(aio_ex->outbuf.data), 0, 0); /* padding byte */
@@ -239,7 +239,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	}
 	aio_ex->write_through = BITSETW(smbreq->vwv+7,0);
 
-	construct_reply_common_req(smbreq, (char *)aio_ex->outbuf.data);
+	construct_smb1_reply_common_req(smbreq, (char *)aio_ex->outbuf.data);
 	srv_smb1_set_message((char *)aio_ex->outbuf.data, 6, 0, True);
 	SCVAL(aio_ex->outbuf.data,smb_vwv0,0xFF); /* Never a chained reply. */
 

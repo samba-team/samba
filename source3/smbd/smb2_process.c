@@ -508,7 +508,7 @@ static void construct_smb1_reply_common(uint8_t cmd, const uint8_t *inbuf,
 	SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
 }
 
-void construct_reply_common_req(struct smb_request *req, char *outbuf)
+void construct_smb1_reply_common_req(struct smb_request *req, char *outbuf)
 {
 	construct_smb1_reply_common(req->cmd, req->inbuf, outbuf);
 }
