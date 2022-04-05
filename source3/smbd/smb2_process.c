@@ -482,7 +482,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 #endif
 }
 
-static void construct_reply_common(uint8_t cmd, const uint8_t *inbuf,
+static void construct_smb1_reply_common(uint8_t cmd, const uint8_t *inbuf,
 				   char *outbuf)
 {
 	uint16_t in_flags2 = SVAL(inbuf,smb_flg2);
@@ -510,7 +510,7 @@ static void construct_reply_common(uint8_t cmd, const uint8_t *inbuf,
 
 void construct_reply_common_req(struct smb_request *req, char *outbuf)
 {
-	construct_reply_common(req->cmd, req->inbuf, outbuf);
+	construct_smb1_reply_common(req->cmd, req->inbuf, outbuf);
 }
 
 /*******************************************************************
@@ -545,7 +545,7 @@ bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 		return false;
 	}
 
-	construct_reply_common(req->cmd, inbuf, *outbuf);
+	construct_smb1_reply_common(req->cmd, inbuf, *outbuf);
 	srv_smb1_set_message(*outbuf, num_words, num_bytes, false);
 	/*
 	 * Zero out the word area, the caller has to take care of the bcc area
