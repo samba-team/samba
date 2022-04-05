@@ -76,7 +76,7 @@ static void send_nt_replies(connection_struct *conn,
 	 */
 
 	if(params_to_send == 0 && data_to_send == 0) {
-		reply_outbuf(req, 18, 0);
+		reply_smb1_outbuf(req, 18, 0);
 		if (NT_STATUS_V(nt_error)) {
 			error_packet_set((char *)req->outbuf,
 					 0, 0, nt_error,
@@ -139,7 +139,7 @@ static void send_nt_replies(connection_struct *conn,
 
 		total_sent_thistime = MIN(total_sent_thistime, useable_space);
 
-		reply_outbuf(req, 18,
+		reply_smb1_outbuf(req, 18,
 			     total_sent_thistime + alignment_offset
 			     + data_alignment_offset);
 
@@ -344,10 +344,10 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 		 * the wcnt to 42 ? It's definitely
  		 * what happens on the wire....
  		 */
-		reply_outbuf(req, 50, 0);
+		reply_smb1_outbuf(req, 50, 0);
 		SCVAL(req->outbuf,smb_wct,42);
 	} else {
-		reply_outbuf(req, 34, 0);
+		reply_smb1_outbuf(req, 34, 0);
 	}
 
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
@@ -721,10 +721,10 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		 * the wcnt to 42 ? It's definitely
  		 * what happens on the wire....
  		 */
-		reply_outbuf(req, 50, 0);
+		reply_smb1_outbuf(req, 50, 0);
 		SCVAL(req->outbuf,smb_wct,42);
 	} else {
-		reply_outbuf(req, 34, 0);
+		reply_smb1_outbuf(req, 34, 0);
 	}
 
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
@@ -1567,7 +1567,7 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
  out:
 	END_PROFILE(SMBntrename);
 	return;
@@ -2539,7 +2539,7 @@ void reply_nttrans(struct smb_request *req)
 
 	/* We need to send an interim response then receive the rest
 	   of the parameter/data bytes */
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 	show_msg((char *)req->outbuf);
 	END_PROFILE(SMBnttrans);
 	return;

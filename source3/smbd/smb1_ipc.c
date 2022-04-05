@@ -110,7 +110,7 @@ void send_trans_reply(connection_struct *conn,
 
 	align = ((this_lparam)%4);
 
-	reply_outbuf(req, 10, 1+align+this_ldata+this_lparam);
+	reply_smb1_outbuf(req, 10, 1+align+this_ldata+this_lparam);
 
 	/*
 	 * We might have SMBtranss in req which was transferred to the outbuf,
@@ -167,7 +167,7 @@ void send_trans_reply(connection_struct *conn,
 
 		align = (this_lparam%4);
 
-		reply_outbuf(req, 10, 1+align+this_ldata+this_lparam);
+		reply_smb1_outbuf(req, 10, 1+align+this_ldata+this_lparam);
 
 		/*
 		 * We might have SMBtranss in req which was transferred to the
@@ -811,7 +811,7 @@ void reply_trans(struct smb_request *req)
 
 		/* We need to send an interim response then receive the rest
 		   of the parameter/data bytes */
-		reply_outbuf(req, 0, 0);
+		reply_smb1_outbuf(req, 0, 0);
 		show_msg((char *)req->outbuf);
 		END_PROFILE(SMBtrans);
 		return;

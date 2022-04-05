@@ -1166,7 +1166,7 @@ NTSTATUS smb2_multi_protocol_reply_negprot(struct smb_request *req)
 		bool ok;
 
 		DBG_NOTICE("No protocol supported !\n");
-		reply_outbuf(req, 1, 0);
+		reply_smb1_outbuf(req, 1, 0);
 		SSVAL(req->outbuf, smb_vwv0, NO_PROTOCOL_CHOSEN);
 
 		ok = smb1_srv_send(xconn, (char *)req->outbuf,

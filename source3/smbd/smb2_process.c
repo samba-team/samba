@@ -558,7 +558,7 @@ bool create_smb1_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 	return true;
 }
 
-void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes)
+void reply_smb1_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes)
 {
 	char *outbuf;
 	if (!create_smb1_outbuf(req, req, req->inbuf, &outbuf, num_words,

@@ -186,7 +186,7 @@ void reply_sends(struct smb_request *req)
 
 	msg_deliver(state);
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	END_PROFILE(SMBsends);
 	return;
@@ -236,7 +236,7 @@ void reply_sendstrt(struct smb_request *req)
 		  xconn->smb1.msg_state->from,
 		  xconn->smb1.msg_state->to));
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	END_PROFILE(SMBsendstrt);
 	return;
@@ -293,7 +293,7 @@ void reply_sendtxt(struct smb_request *req)
 
 	DEBUG( 3, ( "SMBsendtxt\n" ) );
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	END_PROFILE(SMBsendtxt);
 	return;
@@ -329,7 +329,7 @@ void reply_sendend(struct smb_request *req)
 
 	TALLOC_FREE(xconn->smb1.msg_state);
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	END_PROFILE(SMBsendend);
 	return;

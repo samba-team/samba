@@ -88,7 +88,7 @@ static NTSTATUS reply_lanman1(struct smb_request *req, uint16_t choice)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	reply_outbuf(req, 13, xconn->smb1.negprot.encrypted_passwords?8:0);
+	reply_smb1_outbuf(req, 13, xconn->smb1.negprot.encrypted_passwords?8:0);
 
 	SSVAL(req->outbuf,smb_vwv0,choice);
 	SSVAL(req->outbuf,smb_vwv1,secword);
@@ -144,7 +144,7 @@ static NTSTATUS reply_lanman2(struct smb_request *req, uint16_t choice)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	reply_outbuf(req, 13, xconn->smb1.negprot.encrypted_passwords?8:0);
+	reply_smb1_outbuf(req, 13, xconn->smb1.negprot.encrypted_passwords?8:0);
 
 	SSVAL(req->outbuf,smb_vwv0, choice);
 	SSVAL(req->outbuf,smb_vwv1, secword);
@@ -207,7 +207,7 @@ static NTSTATUS reply_nt1(struct smb_request *req, uint16_t choice)
 		}
 	}
 
-	reply_outbuf(req,17,0);
+	reply_smb1_outbuf(req,17,0);
 
 	/* do spnego in user level security if the client
 	   supports it and we can do encrypted passwords */
@@ -665,7 +665,7 @@ void reply_negprot(struct smb_request *req)
 		bool ok;
 
 		DBG_NOTICE("No protocol supported !\n");
-		reply_outbuf(req, 1, 0);
+		reply_smb1_outbuf(req, 1, 0);
 		SSVAL(req->outbuf, smb_vwv0, NO_PROTOCOL_CHOSEN);
 
 		ok = smb1_srv_send(xconn, (char *)req->outbuf,

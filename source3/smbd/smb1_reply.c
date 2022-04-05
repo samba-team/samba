@@ -110,7 +110,7 @@ void reply_tcon(struct smb_request *req)
 		return;
 	}
 
-	reply_outbuf(req, 2, 0);
+	reply_smb1_outbuf(req, 2, 0);
 	SSVAL(req->outbuf,smb_vwv0,xconn->smb1.negprot.max_recv);
 	SSVAL(req->outbuf,smb_vwv1,conn->cnum);
 	SSVAL(req->outbuf,smb_tid,conn->cnum);
@@ -359,7 +359,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		server_devicetype = "A:";
 
 	if (get_Protocol() < PROTOCOL_NT1) {
-		reply_outbuf(req, 2, 0);
+		reply_smb1_outbuf(req, 2, 0);
 		if (message_push_string(&req->outbuf, server_devicetype,
 					STR_TERMINATE|STR_ASCII) == -1) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
@@ -375,7 +375,7 @@ void reply_tcon_and_X(struct smb_request *req)
 			uint32_t perm1 = 0;
 			uint32_t perm2 = 0;
 
-			reply_outbuf(req, 7, 0);
+			reply_smb1_outbuf(req, 7, 0);
 
 			if (IS_IPC(conn)) {
 				perm1 = FILE_ALL_ACCESS;
@@ -387,7 +387,7 @@ void reply_tcon_and_X(struct smb_request *req)
 			SIVAL(req->outbuf, smb_vwv3, perm1);
 			SIVAL(req->outbuf, smb_vwv5, perm2);
 		} else {
-			reply_outbuf(req, 3, 0);
+			reply_smb1_outbuf(req, 3, 0);
 		}
 
 		if ((message_push_string(&req->outbuf, server_devicetype,
@@ -481,7 +481,7 @@ void reply_ioctl(struct smb_request *req)
 		    return;
 	}
 
-	reply_outbuf(req, 8, replysize+1);
+	reply_smb1_outbuf(req, 8, replysize+1);
 	SSVAL(req->outbuf,smb_vwv1,replysize); /* Total data bytes returned */
 	SSVAL(req->outbuf,smb_vwv5,replysize); /* Data bytes this buffer */
 	SSVAL(req->outbuf,smb_vwv6,52);        /* Offset to data */
@@ -609,7 +609,7 @@ void reply_checkpath(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
  path_err:
 	/* We special case this - as when a Windows machine
@@ -721,7 +721,7 @@ void reply_getatr(struct smb_request *req)
 		}
 	}
 
-	reply_outbuf(req, 10, 0);
+	reply_smb1_outbuf(req, 10, 0);
 
 	SSVAL(req->outbuf,smb_vwv0,mode);
 	if(lp_dos_filetime_resolution(SNUM(conn)) ) {
@@ -842,7 +842,7 @@ void reply_setatr(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	DEBUG(3, ("setatr name=%s mode=%d\n", smb_fname_str_dbg(smb_fname),
 		 mode));
@@ -898,7 +898,7 @@ void reply_dskattr(struct smb_request *req)
 		}
 	}
 
-	reply_outbuf(req, 5, 0);
+	reply_smb1_outbuf(req, 5, 0);
 
 	if (get_Protocol() <= PROTOCOL_LANMAN2) {
 		double total_space, free_space;
@@ -1034,7 +1034,7 @@ void reply_search(struct smb_request *req)
 		expect_close = True;
 	}
 
-	reply_outbuf(req, 1, 3);
+	reply_smb1_outbuf(req, 1, 3);
 	maxentries = SVAL(req->vwv+0, 0);
 	dirtype = SVAL(req->vwv+1, 0);
 	p = (const char *)req->buf + 1;
@@ -1382,7 +1382,7 @@ void reply_fclose(struct smb_request *req)
 		dptr_num = -1;
 	}
 
-	reply_outbuf(req, 1, 0);
+	reply_smb1_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,0);
 
 	DEBUG(3,("search close\n"));
@@ -1526,7 +1526,7 @@ void reply_open(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 7, 0);
+	reply_smb1_outbuf(req, 7, 0);
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 	SSVAL(req->outbuf,smb_vwv1,fattr);
 	if(lp_dos_filetime_resolution(SNUM(conn)) ) {
@@ -1750,9 +1750,9 @@ void reply_open_and_X(struct smb_request *req)
 	*/
 
 	if (open_flags & EXTENDED_RESPONSE_REQUIRED) {
-		reply_outbuf(req, 19, 0);
+		reply_smb1_outbuf(req, 19, 0);
 	} else {
-		reply_outbuf(req, 15, 0);
+		reply_smb1_outbuf(req, 15, 0);
 	}
 
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
@@ -1990,7 +1990,7 @@ static void reply_ulogoffX_done(struct tevent_req *req)
 
 	TALLOC_FREE(session);
 
-	reply_outbuf(smb1req, 2, 0);
+	reply_smb1_outbuf(smb1req, 2, 0);
 	SSVAL(smb1req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(smb1req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
@@ -2122,7 +2122,7 @@ void reply_mknew(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 1, 0);
+	reply_smb1_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
@@ -2266,7 +2266,7 @@ void reply_ctemp(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 1, 0);
+	reply_smb1_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
 	/* the returned filename is relative to the directory */
@@ -2371,7 +2371,7 @@ void reply_unlink(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
  out:
 	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBunlink);
@@ -2850,7 +2850,7 @@ static void reply_lockread_locked(struct tevent_req *subreq)
 		numtoread = maxtoread;
 	}
 
-	reply_outbuf(req, 5, numtoread + 3);
+	reply_smb1_outbuf(req, 5, numtoread + 3);
 
 	data = smb_buf(req->outbuf) + 3;
 
@@ -2943,7 +2943,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 		numtoread = maxtoread;
 	}
 
-	reply_outbuf(req, 5, numtoread+3);
+	reply_smb1_outbuf(req, 5, numtoread+3);
 
 	data = smb_buf(req->outbuf) + 3;
 
@@ -3215,7 +3215,7 @@ normal_read:
 
 nosendfile_read:
 
-	reply_outbuf(req, 12, smb_maxcnt + 1 /* padding byte */);
+	reply_smb1_outbuf(req, 12, smb_maxcnt + 1 /* padding byte */);
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
@@ -3420,7 +3420,7 @@ void error_to_writebrawerr(struct smb_request *req)
 {
 	uint8_t *old_outbuf = req->outbuf;
 
-	reply_outbuf(req, 1, 0);
+	reply_smb1_outbuf(req, 1, 0);
 
 	memcpy(req->outbuf, old_outbuf, smb_size);
 	TALLOC_FREE(old_outbuf);
@@ -3621,7 +3621,7 @@ void reply_writebraw(struct smb_request *req)
 	}
 
 	/* Set up outbuf to return the correct size */
-	reply_outbuf(req, 1, 0);
+	reply_smb1_outbuf(req, 1, 0);
 
 	if (numtowrite != 0) {
 
@@ -3833,7 +3833,7 @@ void reply_writeunlock(struct smb_request *req)
 		}
 	}
 
-	reply_outbuf(req, 1, 0);
+	reply_smb1_outbuf(req, 1, 0);
 
 	SSVAL(req->outbuf,smb_vwv0,nwritten);
 
@@ -3967,7 +3967,7 @@ void reply_write(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 1, 0);
+	reply_smb1_outbuf(req, 1, 0);
 
 	SSVAL(req->outbuf,smb_vwv0,nwritten);
 
@@ -4236,7 +4236,7 @@ void reply_write_and_X(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 6, 0);
+	reply_smb1_outbuf(req, 6, 0);
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 	SSVAL(req->outbuf,smb_vwv2,nwritten);
@@ -4346,7 +4346,7 @@ void reply_lseek(struct smb_request *req)
 
 	fh_set_pos(fsp->fh, res);
 
-	reply_outbuf(req, 2, 0);
+	reply_smb1_outbuf(req, 2, 0);
 	SIVAL(req->outbuf,smb_vwv0,res);
 
 	DEBUG(3,("lseek %s ofs=%.0f newpos = %.0f mode=%d\n",
@@ -4417,7 +4417,7 @@ void reply_flush(struct smb_request *req)
 		}
 	}
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	DEBUG(3,("flush\n"));
 	END_PROFILE(SMBflush);
@@ -4643,7 +4643,7 @@ static void reply_exit_done(struct tevent_req *req)
 		close_file_free(NULL, &fsp, SHUTDOWN_CLOSE);
 	}
 
-	reply_outbuf(smb1req, 0, 0);
+	reply_smb1_outbuf(smb1req, 0, 0);
 	/*
 	 * The following call is needed to push the
 	 * reply data back out the socket after async
@@ -4729,7 +4729,7 @@ done:
 		return;
 	}
 
-	reply_outbuf(smb1req, 0, 0);
+	reply_smb1_outbuf(smb1req, 0, 0);
 	END_PROFILE(SMBclose);
 	return;
 }
@@ -4849,7 +4849,7 @@ static void reply_close_done(struct tevent_req *req)
 
 	status = close_file_free(smb1req, &state->fsp, NORMAL_CLOSE);
 	if (NT_STATUS_IS_OK(status)) {
-		reply_outbuf(smb1req, 0, 0);
+		reply_smb1_outbuf(smb1req, 0, 0);
 	} else {
 		reply_nterror(smb1req, status);
 	}
@@ -4959,7 +4959,7 @@ void reply_writeclose(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 1, 0);
+	reply_smb1_outbuf(req, 1, 0);
 
 	SSVAL(req->outbuf,smb_vwv0,nwritten);
 
@@ -5055,7 +5055,7 @@ static void reply_lock_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_IS_OK(status)) {
-		reply_outbuf(req, 0, 0);
+		reply_smb1_outbuf(req, 0, 0);
 	} else {
 		reply_nterror(req, status);
 	}
@@ -5122,7 +5122,7 @@ void reply_unlock(struct smb_request *req)
 		   lck.offset,
 		   lck.count);
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	END_PROFILE(SMBunlock);
 	return;
@@ -5333,7 +5333,7 @@ static void reply_tdis_done(struct tevent_req *req)
 
 	TALLOC_FREE(tcon);
 
-	reply_outbuf(smb1req, 0, 0);
+	reply_smb1_outbuf(smb1req, 0, 0);
 	/*
 	 * The following call is needed to push the
 	 * reply data back out the socket after async
@@ -5368,7 +5368,7 @@ void reply_echo(struct smb_request *req)
 
 	smb_reverb = SVAL(req->vwv+0, 0);
 
-	reply_outbuf(req, 1, req->buflen);
+	reply_smb1_outbuf(req, 1, req->buflen);
 
 	/* copy any incoming data back out */
 	if (req->buflen > 0) {
@@ -5450,7 +5450,7 @@ void reply_printopen(struct smb_request *req)
 		return;
 	}
 
-	reply_outbuf(req, 1, 0);
+	reply_smb1_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
 	DEBUG(3,("openprint fd=%d %s\n",
@@ -5502,7 +5502,7 @@ void reply_printclose(struct smb_request *req)
 		return;
 	}
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	END_PROFILE(SMBsplclose);
 	return;
@@ -5541,7 +5541,7 @@ void reply_printqueue(struct smb_request *req)
 		return;
 	}
 
-	reply_outbuf(req, 2, 3);
+	reply_smb1_outbuf(req, 2, 3);
 	SSVAL(req->outbuf,smb_vwv0,0);
 	SSVAL(req->outbuf,smb_vwv1,0);
 	SCVAL(smb_buf(req->outbuf),0,1);
@@ -5742,7 +5742,7 @@ void reply_printwrite(struct smb_request *req)
 
 	DEBUG(3, ("printwrite %s num=%d\n", fsp_fnum_dbg(fsp), numtowrite));
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	END_PROFILE(SMBsplwr);
 	return;
@@ -5807,7 +5807,7 @@ void reply_mkdir(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	DEBUG(3, ("mkdir %s\n", smb_dname->base_name));
  out:
@@ -5909,7 +5909,7 @@ void reply_rmdir(struct smb_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 	} else {
-		reply_outbuf(req, 0, 0);
+		reply_smb1_outbuf(req, 0, 0);
 	}
 
 	DEBUG(3, ("rmdir %s\n", smb_fname_str_dbg(smb_dname)));
@@ -6058,7 +6058,7 @@ void reply_mv(struct smb_request *req)
 		goto out;
 	}
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
  out:
 	TALLOC_FREE(smb_fname_src);
 	TALLOC_FREE(smb_fname_dst);
@@ -6299,7 +6299,7 @@ void reply_lockingX(struct smb_request *req)
 			ulocks[0],
 			NT_STATUS_OK);
 		if (ok) {
-			reply_outbuf(req, 2, 0);
+			reply_smb1_outbuf(req, 2, 0);
 			SSVAL(req->outbuf, smb_vwv0, 0xff);
 			SSVAL(req->outbuf, smb_vwv1, 0);
 			END_PROFILE(SMBlockingX);
@@ -6350,7 +6350,7 @@ void reply_lockingX(struct smb_request *req)
 
 		if (num_locks == 0) {
 			/* See smbtorture3 lock11 test */
-			reply_outbuf(req, 2, 0);
+			reply_smb1_outbuf(req, 2, 0);
 			/* andx chain ends */
 			SSVAL(req->outbuf, smb_vwv0, 0xff);
 			SSVAL(req->outbuf, smb_vwv1, 0);
@@ -6370,7 +6370,7 @@ void reply_lockingX(struct smb_request *req)
 			return;
 		}
 
-		reply_outbuf(req, 2, 0);
+		reply_smb1_outbuf(req, 2, 0);
 		SSVAL(req->outbuf, smb_vwv0, 0xff);
 		SSVAL(req->outbuf, smb_vwv1, 0);
 		END_PROFILE(SMBlockingX);
@@ -6412,7 +6412,7 @@ static void reply_lockingx_done(struct tevent_req *subreq)
 	DBG_DEBUG("smbd_smb1_do_locks_recv returned %s\n", nt_errstr(status));
 
 	if (NT_STATUS_IS_OK(status)) {
-		reply_outbuf(req, 2, 0);
+		reply_smb1_outbuf(req, 2, 0);
 		SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 		SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 	} else {
@@ -6500,7 +6500,7 @@ void reply_setattrE(struct smb_request *req)
 	ft.create_time = time_t_to_full_timespec(
 	    srv_make_unix_date2(req->vwv+1));
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	/* 
 	 * Patch from Ray Frush <frush@engr.colostate.edu>
@@ -6616,7 +6616,7 @@ void reply_getattrE(struct smb_request *req)
 	 * this.
 	 */
 
-	reply_outbuf(req, 11, 0);
+	reply_smb1_outbuf(req, 11, 0);
 
 	create_ts = get_create_timespec(conn, fsp, fsp->fsp_name);
 	srv_put_dos_date2((char *)req->outbuf, smb_vwv0, create_ts.tv_sec);
@@ -6678,7 +6678,7 @@ void reply_findclose(struct smb_request *req)
 		}
 	}
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	DEBUG(3,("SMBfindclose dptr_num = %d\n", dptr_num));
 
@@ -6710,7 +6710,7 @@ void reply_findnclose(struct smb_request *req)
 	   findnotifyfirst - so any dptr_num is ok here.
 	   Just ignore it. */
 
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 
 	DEBUG(3,("SMB_findnclose dptr_num = %d\n", dptr_num));
 

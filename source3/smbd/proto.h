@@ -887,7 +887,7 @@ bool create_smb1_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
                    const uint8_t *inbuf, char **outbuf,
                    uint8_t num_words, uint32_t num_bytes);
 void construct_smb1_reply_common_req(struct smb_request *req, char *outbuf);
-void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes);
+void reply_smb1_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes);
 void process_smb(struct smbXsrv_connection *xconn,
 		 uint8_t *inbuf, size_t nread, size_t unread_bytes,
 		 uint32_t seqnum, bool encrypted,

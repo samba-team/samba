@@ -98,7 +98,7 @@ void send_trans2_replies(connection_struct *conn,
 	/* If there genuinely are no parameters or data to send just send the empty packet */
 
 	if(params_to_send == 0 && data_to_send == 0) {
-		reply_outbuf(req, 10, 0);
+		reply_smb1_outbuf(req, 10, 0);
 		if (NT_STATUS_V(status)) {
 			uint8_t eclass;
 			uint32_t ecode;
@@ -156,7 +156,7 @@ void send_trans2_replies(connection_struct *conn,
 
 		total_sent_thistime = MIN(total_sent_thistime, useable_space);
 
-		reply_outbuf(req, 10, total_sent_thistime + alignment_offset
+		reply_smb1_outbuf(req, 10, total_sent_thistime + alignment_offset
 			     + data_alignment_offset);
 
 		/* Set total params and data to be sent */
@@ -1853,7 +1853,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 	 * like windows do...
 	 * --metze
 	 */
-	reply_outbuf(req, 10, 0);
+	reply_smb1_outbuf(req, 10, 0);
 }
 
 /****************************************************************************
@@ -3313,7 +3313,7 @@ void reply_trans2(struct smb_request *req)
 
 	/* We need to send an interim response then receive the rest
 	   of the parameter/data bytes */
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 	show_msg((char *)req->outbuf);
 	END_PROFILE(SMBtrans2);
 	return;

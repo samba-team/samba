@@ -99,7 +99,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	}
 
 	/* Prepare the reply */
-	reply_outbuf(req, 15, 0);
+	reply_smb1_outbuf(req, 15, 0);
 
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
@@ -217,7 +217,7 @@ static void pipe_write_andx_done(struct tevent_req *subreq)
 		goto done;
 	}
 
-	reply_outbuf(req, 6, 0);
+	reply_smb1_outbuf(req, 6, 0);
 
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
@@ -283,7 +283,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	state->smb_maxcnt = SVAL(req->vwv+5, 0);
 	state->smb_mincnt = SVAL(req->vwv+6, 0);
 
-	reply_outbuf(req, 12, state->smb_maxcnt + 1 /* padding byte */);
+	reply_smb1_outbuf(req, 12, state->smb_maxcnt + 1 /* padding byte */);
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 	SCVAL(smb_buf(req->outbuf), 0, 0); /* padding byte */
@@ -439,7 +439,7 @@ static void pipe_write_done(struct tevent_req *subreq)
 		goto send;
 	}
 
-	reply_outbuf(req, 1, 0);
+	reply_smb1_outbuf(req, 1, 0);
 
 	SSVAL(req->outbuf,smb_vwv0,nwritten);
 

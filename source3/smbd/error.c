@@ -124,7 +124,7 @@ void reply_nt_error(struct smb_request *req, NTSTATUS ntstatus,
 		    int line, const char *file)
 {
 	TALLOC_FREE(req->outbuf);
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 	error_packet_set((char *)req->outbuf, 0, 0, ntstatus, line, file);
 }
 
@@ -136,7 +136,7 @@ void reply_force_dos_error(struct smb_request *req, uint8_t eclass, uint32_t eco
 		    int line, const char *file)
 {
 	TALLOC_FREE(req->outbuf);
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 	error_packet_set((char *)req->outbuf,
 			eclass, ecode,
 			NT_STATUS_DOS(eclass, ecode),
@@ -148,7 +148,7 @@ void reply_both_error(struct smb_request *req, uint8_t eclass, uint32_t ecode,
 		      NTSTATUS status, int line, const char *file)
 {
 	TALLOC_FREE(req->outbuf);
-	reply_outbuf(req, 0, 0);
+	reply_smb1_outbuf(req, 0, 0);
 	error_packet_set((char *)req->outbuf, eclass, ecode, status,
 			 line, file);
 }
