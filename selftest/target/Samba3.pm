@@ -2527,6 +2527,8 @@ sub provision($$)
 	my ($gid_nobody, $gid_nogroup, $gid_root, $gid_domusers, $gid_domadmins);
 	my ($gid_userdup, $gid_everyone);
 	my ($gid_force_user);
+	my ($gid_jackthemapper);
+	my ($gid_jacknomapper);
 	my ($uid_user1);
 	my ($uid_user2);
 	my ($uid_gooduser);
@@ -2575,6 +2577,8 @@ sub provision($$)
 	$gid_userdup = $max_gid - 6;
 	$gid_everyone = $max_gid - 7;
 	$gid_force_user = $max_gid - 8;
+	$gid_jackthemapper = $max_gid - 9;
+	$gid_jacknomapper = $max_gid - 10;
 
 	##
 	## create conffile
@@ -3325,6 +3329,8 @@ domadmins:X:$gid_domadmins:
 userdup:x:$gid_userdup:$unix_name
 everyone:x:$gid_everyone:
 force_user:x:$gid_force_user:
+jackthemappergroup:x:$gid_jackthemapper:jackthemapper
+jacknomappergroup:x:$gid_jacknomapper:jacknomapper
 ";
 	if ($unix_gids[0] != 0) {
 		print GROUP "root:x:$gid_root:
