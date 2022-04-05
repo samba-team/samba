@@ -129,7 +129,7 @@ static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen,
 
 		rc = asprintf(&prompt,
 			      "Password for [%s] connecting to //%s/%s: ",
-			      un, shr, srv);
+			      un, srv, shr);
 		if (rc == -1) {
 			return;
 		}
