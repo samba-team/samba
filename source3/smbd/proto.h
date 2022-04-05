@@ -883,7 +883,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 				    struct timeval timeout,
 				    struct file_id id,
 				    struct deferred_open_record *open_rec);
-bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
+bool create_smb1_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
                    const uint8_t *inbuf, char **outbuf,
                    uint8_t num_words, uint32_t num_bytes);
 void construct_smb1_reply_common_req(struct smb_request *req, char *outbuf);

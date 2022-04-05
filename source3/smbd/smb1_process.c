@@ -2374,9 +2374,9 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 		return false;
 	}
 
-	if (!create_outbuf(talloc_tos(), &req, req.inbuf, &outbuf,
+	if (!create_smb1_outbuf(talloc_tos(), &req, req.inbuf, &outbuf,
 			   1, req.buflen)) {
-		DEBUG(10, ("create_outbuf failed\n"));
+		DEBUG(10, ("create_smb1_outbuf failed\n"));
 		return false;
 	}
 	req.outbuf = (uint8_t *)outbuf;

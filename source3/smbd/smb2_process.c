@@ -517,7 +517,7 @@ void construct_smb1_reply_common_req(struct smb_request *req, char *outbuf)
  allocate and initialize a reply packet
 ********************************************************************/
 
-bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
+bool create_smb1_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 		   const uint8_t *inbuf, char **outbuf,
 		   uint8_t num_words, uint32_t num_bytes)
 {
@@ -561,7 +561,7 @@ bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes)
 {
 	char *outbuf;
-	if (!create_outbuf(req, req, req->inbuf, &outbuf, num_words,
+	if (!create_smb1_outbuf(req, req, req->inbuf, &outbuf, num_words,
 			   num_bytes)) {
 		smb_panic("could not allocate output buffer\n");
 	}
