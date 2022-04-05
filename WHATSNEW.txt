@@ -16,6 +16,37 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Configure without the SMB1 Server
+---------------------------------
+
+It is now possible to configure Samba without support for
+the SMB1 protocol in smbd. This can be selected at configure
+time with either of the options:
+
+--with-smb1-server
+--without-smb1-server
+
+By default (without either of these options set) Samba
+is configured to include SMB1 support (i.e. --with-smb1-server
+is the default). When Samba is configured without SMB1 support,
+none of the SMB1 code is included inside smbd except the minimal
+stub code needed to allow a client to connect as SMB1 and immediately
+negotiate the selected protocol into SMB2 (as a Windows server also
+allows).
+
+None of the SMB1-only smb.conf parameters are removed when
+configured without SMB1, but these parameters are ignored by
+the smbd server. This allows deployment without having to change
+an existing smb.conf file.
+
+This option allows sites, OEMs and integrators to configure Samba
+to remove the old and insecure SMB1 protocol from their products.
+
+Note that the Samba client libraries still support SMB1 connections
+even when Samba is configured as --without-smb1-server. This is
+to ensure maximum compatibility with environments containing old
+SMB1 servers.
+
 Bronze bit and S4U support with MIT Kerberos 1.20
 -------------------------------------------------
 
