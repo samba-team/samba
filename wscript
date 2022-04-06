@@ -394,6 +394,13 @@ def configure(conf):
                          msg="Checking compiler for full RELRO support"):
             conf.env['ENABLE_RELRO'] = True
 
+    if conf.CONFIG_GET('ENABLE_SELFTEST') and \
+       Options.options.with_smb1server == False and \
+       Options.options.without_ad_dc != True:
+        conf.fatal('--without-smb1-server cannot be specified with '
+                   '--enable-selftest/--enable-developer if '
+                   '--without-ad-dc is NOT set!')
+
     if Options.options.with_smb1server != False:
         conf.DEFINE('WITH_SMB1SERVER', '1')
 
