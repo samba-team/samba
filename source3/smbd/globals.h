@@ -25,6 +25,8 @@
 #include "librpc/gen_ndr/smbXsrv.h"
 #include "smbprofile.h"
 
+#define WITH_SMB1SERVER 1
+
 #ifdef USE_DMAPI
 struct smbd_dmapi_context;
 extern struct smbd_dmapi_context *dmapi_ctx;
