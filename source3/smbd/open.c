@@ -5585,6 +5585,7 @@ static NTSTATUS lease_match(connection_struct *conn,
 
 static NTSTATUS create_file_unixpath(connection_struct *conn,
 				     struct smb_request *req,
+				     struct files_struct *dirfsp,
 				     struct smb_filename *smb_fname,
 				     uint32_t access_mask,
 				     uint32_t share_access,
@@ -5809,6 +5810,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		/* Open the base file. */
 		status = create_file_unixpath(conn,
 					      NULL,
+					      dirfsp,
 					      smb_fname_base,
 					      0,
 					      FILE_SHARE_READ
@@ -6289,6 +6291,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 
 	status = create_file_unixpath(conn,
 				      req,
+				      dirfsp,
 				      smb_fname,
 				      access_mask,
 				      share_access,
