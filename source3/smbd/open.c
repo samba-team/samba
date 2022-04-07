@@ -1296,9 +1296,10 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
  Open a file.
 ****************************************************************************/
 
-static NTSTATUS open_file(files_struct *fsp,
-			  struct smb_request *req,
+static NTSTATUS open_file(struct smb_request *req,
 			  struct files_struct *dirfsp,
+			  struct smb_filename *smb_fname_atname,
+			  files_struct *fsp,
 			  int flags,
 			  mode_t unx_mode,
 			  uint32_t access_mask, /* client requested access mask. */
@@ -3848,9 +3849,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 (unsigned int)unx_mode, (unsigned int)access_mask,
 		 (unsigned int)open_access_mask));
 
-	fsp_open = open_file(fsp,
-			     req,
+	fsp_open = open_file(req,
 			     parent_dir_fname->fsp,
+			     smb_fname_atname,
+			     fsp,
 			     flags|flags2,
 			     unx_mode,
 			     access_mask,
