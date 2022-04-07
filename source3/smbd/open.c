@@ -1479,8 +1479,8 @@ static NTSTATUS open_file(struct smb_request *req,
 		 * Actually do the open - if O_TRUNC is needed handle it
 		 * below under the share mode lock.
 		 */
-		status = reopen_from_fsp(fsp->conn->cwd_fsp,
-					 fsp->fsp_name,
+		status = reopen_from_fsp(dirfsp,
+					 smb_fname_atname,
 					 fsp,
 					 local_flags & ~O_TRUNC,
 					 unx_mode,
