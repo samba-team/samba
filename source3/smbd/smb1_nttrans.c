@@ -508,6 +508,7 @@ static NTSTATUS get_relative_fid_filename(connection_struct *conn,
 void reply_ntcreate_and_X(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct files_struct *dirfsp = NULL;
 	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
 	uint32_t flags;
@@ -623,12 +624,8 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	}
 
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
-	status = filename_convert(ctx,
-				conn,
-				fname,
-				ucf_flags,
-				0,
-				&smb_fname);
+	status = filename_convert_dirfsp(
+		ctx, conn, fname, ucf_flags, 0, &dirfsp, &smb_fname);
 
 	TALLOC_FREE(case_state);
 
@@ -653,7 +650,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		NULL,					/* dirfsp */
+		dirfsp,					/* dirfsp */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
@@ -686,7 +683,6 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	}
 
 	/* Ensure we're pointing at the correct stat struct. */
-	TALLOC_FREE(smb_fname);
 	smb_fname = fsp->fsp_name;
 
 	/*
