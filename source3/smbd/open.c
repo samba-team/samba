@@ -5908,18 +5908,36 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		fsp_set_base_fsp(fsp, base_fsp);
 	}
 
-	/*
-	 * Get a pathref on the parent. We can re-use this
-	 * for multiple calls to check parent ACLs etc. to
-	 * avoid pathname calls.
-	 */
-	status = parent_pathref(talloc_tos(),
-				conn->cwd_fsp,
-				smb_fname,
-				&parent_dir_fname,
-				&smb_fname_atname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	if (dirfsp != NULL) {
+		status = SMB_VFS_PARENT_PATHNAME(
+			conn,
+			talloc_tos(),
+			smb_fname,
+			&parent_dir_fname,
+			&smb_fname_atname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	} else {
+		/*
+		 * Get a pathref on the parent. We can re-use this for
+		 * multiple calls to check parent ACLs etc. to avoid
+		 * pathname calls.
+		 */
+		status = parent_pathref(talloc_tos(),
+					conn->cwd_fsp,
+					smb_fname,
+					&parent_dir_fname,
+					&smb_fname_atname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+
+		dirfsp = parent_dir_fname->fsp;
+		status = fsp_set_smb_fname(dirfsp, parent_dir_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
 	}
 
 	/*
@@ -5954,7 +5972,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					create_disposition,
 					create_options,
 					file_attributes,
-					parent_dir_fname,
+					dirfsp->fsp_name,
 					smb_fname_atname,
 					&info,
 					fsp);
@@ -5979,7 +5997,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					    oplock_request,
 					    lease,
 					    private_flags,
-					    parent_dir_fname,
+					    dirfsp->fsp_name,
 					    smb_fname_atname,
 					    &info,
 					    fsp);
@@ -6010,7 +6028,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 						create_disposition,
 						create_options,
 						file_attributes,
-						parent_dir_fname,
+						dirfsp->fsp_name,
 						smb_fname_atname,
 						&info,
 						fsp);
@@ -6094,8 +6112,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			}
 		} else if (lp_inherit_acls(SNUM(conn))) {
 			/* Inherit from parent. Errors here are not fatal. */
-			status = inherit_new_acl(
-				parent_dir_fname->fsp, fsp);
+			status = inherit_new_acl(dirfsp, fsp);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(10,("inherit_new_acl: failed for %s with %s\n",
 					fsp_str_dbg(fsp),
