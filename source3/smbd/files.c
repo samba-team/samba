@@ -1172,6 +1172,39 @@ NTSTATUS move_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
 	return NT_STATUS_OK;
 }
 
+static int fsp_ref_no_close_destructor(struct smb_filename *smb_fname)
+{
+	destroy_fsp_smb_fname_link(&smb_fname->fsp_link);
+	return 0;
+}
+
+NTSTATUS reference_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
+				      const struct smb_filename *smb_fname_src)
+{
+	NTSTATUS status;
+
+	/*
+	 * The target should always not be linked yet!
+	 */
+	SMB_ASSERT(smb_fname_dst->fsp == NULL);
+	SMB_ASSERT(smb_fname_dst->fsp_link == NULL);
+
+	if (smb_fname_src->fsp == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	status = fsp_smb_fname_link(smb_fname_src->fsp,
+				    &smb_fname_dst->fsp_link,
+				    &smb_fname_dst->fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	talloc_set_destructor(smb_fname_dst, fsp_ref_no_close_destructor);
+
+	return NT_STATUS_OK;
+}
+
 /**
  * Create an smb_fname and open smb_fname->fsp pathref
  **/
@@ -1207,12 +1240,6 @@ NTSTATUS synthetic_pathref(TALLOC_CTX *mem_ctx,
 
 	*_smb_fname = smb_fname;
 	return NT_STATUS_OK;
-}
-
-static int atname_destructor(struct smb_filename *smb_fname)
-{
-	destroy_fsp_smb_fname_link(&smb_fname->fsp_link);
-	return 0;
 }
 
 /**
@@ -1258,16 +1285,12 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	if (smb_fname->fsp != NULL) {
-		status = fsp_smb_fname_link(smb_fname->fsp,
-					    &atname->fsp_link,
-					    &atname->fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(parent);
-			return status;
-		}
-		talloc_set_destructor(atname, atname_destructor);
+	status = reference_smb_fname_fsp_link(atname, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(parent);
+		return status;
 	}
+
 	*_parent = parent;
 	*_atname = atname;
 	return NT_STATUS_OK;
