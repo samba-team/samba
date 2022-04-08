@@ -35,27 +35,29 @@ cert_wrap = b"""
 -----END CERTIFICATE-----"""
 global_trust_dir = '/etc/pki/trust/anchors'
 
+'''
+Initializing CAs
+[MS-CAESO] 4.4.5.3.1.2
+'''
 def fetch_certification_authorities(ldb):
     result = []
     basedn = ldb.get_default_basedn()
-    dn = 'CN=Certification Authorities,CN=Public Key Services,CN=Services,CN=Configuration,%s' % basedn
-    expr = '(objectClass=certificationAuthority)'
-    res = ldb.search(dn, SCOPE_SUBTREE, expr, ['cn'])
+    # Autoenrollment MUST do an LDAP search for the CA information
+    # (pKIEnrollmentService) objects under the following container:
+    dn = 'CN=Enrollment Services,CN=Public Key Services,CN=Services,CN=Configuration,%s' % basedn
+    attrs = ['cACertificate', 'cn', 'certificateTemplates', 'dNSHostName',
+             'msPKI-Enrollment-Servers']
+    expr = '(objectClass=pKIEnrollmentService)'
+    res = ldb.search(dn, SCOPE_SUBTREE, expr, attrs)
     if len(res) == 0:
         return result
-    dn = 'CN=Enrollment Services,CN=Public Key Services,CN=Services,CN=Configuration,%s' % basedn
-    attrs = ['cACertificate', 'cn', 'certificateTemplates', 'dNSHostName']
-    for ca in res:
-        expr = '(cn=%s)' % ca['cn']
-        res2 = ldb.search(dn, SCOPE_SUBTREE, expr, attrs)
-        if len(res) != 1:
-            continue
+    for es in res:
         templates = {}
-        for template in res2[0]['certificateTemplates']:
+        for template in es['certificateTemplates']:
             templates[template] = fetch_template_attrs(ldb, template)
-        res = dict(res2[0])
-        res['certificateTemplates'] = templates
-        result.append(res)
+        data = dict(es)
+        data['certificateTemplates'] = templates
+        result.append(data)
     return result
 
 def fetch_template_attrs(ldb, name, attrs=['msPKI-Minimal-Key-Size']):
