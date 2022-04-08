@@ -1714,6 +1714,18 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		 * destination parent name.
 		 */
 		parent_dir_fname_src = parent_dir_fname_dst;
+
+		/*
+		 * Ensure we have a pathref fsp on the
+		 * parent_dir_fname_src_atname to match the code in the else
+		 * branch where we use parent_pathref().
+		 */
+		status = reference_smb_fname_fsp_link(
+			parent_dir_fname_src_atname,
+			fsp->fsp_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
 	} else {
 		/*
 		 * source and destination parent directories are
