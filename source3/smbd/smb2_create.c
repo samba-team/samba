@@ -705,6 +705,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_create_state *state = NULL;
 	NTSTATUS status;
 	struct smb_request *smb1req = NULL;
+	struct files_struct *dirfsp = NULL;
 	struct smb_filename *smb_fname = NULL;
 	uint32_t ucf_flags;
 
@@ -968,12 +969,15 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	ucf_flags = filename_create_ucf_flags(
 		smb1req, state->in_create_disposition);
-	status = filename_convert(req,
-				  smb1req->conn,
-				  state->fname,
-				  ucf_flags,
-				  state->twrp_time,
-				  &smb_fname);
+
+	status = filename_convert_dirfsp(
+		req,
+		smb1req->conn,
+		state->fname,
+		ucf_flags,
+		state->twrp_time,
+		&dirfsp,
+		&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, state->ev);
@@ -1015,7 +1019,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	status = SMB_VFS_CREATE_FILE(smb1req->conn,
 				     smb1req,
-				     NULL,
+				     dirfsp,
 				     smb_fname,
 				     in_desired_access,
 				     in_share_access,
