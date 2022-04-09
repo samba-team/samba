@@ -197,9 +197,11 @@ int ldb_module_connect_backend(struct ldb_context *ldb,
 	int ret;
 	char *backend;
 	struct backends_list_entry *be;
+	char *colon = NULL;
 
-	if (strchr(url, ':') != NULL) {
-		backend = talloc_strndup(ldb, url, strchr(url, ':')-url);
+	colon = strchr(url, ':');
+	if (colon != NULL) {
+		backend = talloc_strndup(ldb, url, colon-url);
 	} else {
 		/* Default to tdb */
 		backend = talloc_strdup(ldb, "tdb");
