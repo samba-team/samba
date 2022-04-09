@@ -177,7 +177,8 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 
 	DEBUG(5,("Found pdb backend %s\n", module_name));
 
-	if ( !NT_STATUS_IS_OK( nt_status = entry->init(methods, module_location) ) ) {
+	nt_status = entry->init(methods, module_location);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", 
 			selected, nt_errstr(nt_status)));
 		SAFE_FREE(module_name);
