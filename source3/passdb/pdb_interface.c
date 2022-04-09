@@ -199,20 +199,22 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 static struct pdb_methods *pdb_get_methods_reload( bool reload ) 
 {
 	static struct pdb_methods *pdb = NULL;
+	const char *backend = lp_passdb_backend();
+	NTSTATUS status = NT_STATUS_OK;
 
 	if ( pdb && reload ) {
 		if (pdb->free_private_data != NULL) {
 			pdb->free_private_data( &(pdb->private_data) );
 		}
-		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
-			return NULL;
-		}
+		status = make_pdb_method_name(&pdb, backend);
 	}
 
 	if ( !pdb ) {
-		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
-			return NULL;
-		}
+		status = make_pdb_method_name(&pdb, backend);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
 	}
 
 	return pdb;
