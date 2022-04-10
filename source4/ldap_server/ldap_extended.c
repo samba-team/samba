@@ -186,7 +186,7 @@ NTSTATUS ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
 		/* 
 		 * if the backend function returns an error we
 		 * need to send the reply otherwise the reply is already
-		 * send and we need to return directly
+		 * sent and we need to return directly
 		 */
 		status = extended_ops[i].fn(call, reply, &error_str);
 		if (NT_STATUS_IS_OK(status)) {

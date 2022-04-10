@@ -922,7 +922,7 @@ reply:
 	/*
 	 * This looks like duplicated code - because it is - but
 	 * otherwise the work in the parameters will be done
-	 * regardless, this way the functions only execuate when the
+	 * regardless, this way the functions only execute when the
 	 * log level is set.
 	 *
 	 * The basedn is re-obtained as a string to escape it
