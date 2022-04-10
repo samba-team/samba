@@ -462,7 +462,7 @@ bool secrets_delete_domain_sid(const char *domain)
 /************************************************************************
  Set the machine trust account password, the old pw and last change
  time, domain SID and salting principals based on values passed in
- (added to supprt the secrets_tdb_sync module on secrets.ldb)
+ (added to support the secrets_tdb_sync module on secrets.ldb)
 ************************************************************************/
 
 bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const char *domain,
