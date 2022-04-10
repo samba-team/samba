@@ -1321,22 +1321,34 @@ class GetPasswordCommand(Command):
             #
             # In order to get more protection we verify
             # the nthash of the decrypted utf16 password
-            # against the stored nthash in unicodePwd.
+            # against the stored nthash in unicodePwd if
+            # available, otherwise against the first 16
+            # bytes of the AES256 key.
             #
             sgv = get_package("Primary:SambaGPG", min_idx=-1)
-            if sgv is not None and unicodePwd is not None:
+            if sgv is not None:
                 try:
                     cv = gpg_decrypt(sgv)
                     #
                     # We only use the password if it matches
                     # the current nthash stored in the unicodePwd
-                    # attribute
+                    # attribute, or the current AES256 key.
                     #
                     tmp = credentials.Credentials()
                     tmp.set_anonymous()
                     tmp.set_utf16_password(cv)
-                    nthash = tmp.get_nt_hash()
-                    if nthash == unicodePwd:
+
+                    decrypted = None
+                    current_hash = None
+
+                    if unicodePwd is not None:
+                        decrypted = tmp.get_nt_hash()
+                        current_hash = unicodePwd
+                    elif aes256_key is not None and kerberos_salt is not None:
+                        decrypted = tmp.get_aes256_key(kerberos_salt)
+                        current_hash = aes256_key.value
+
+                    if current_hash is not None and current_hash == decrypted:
                         calculated["Primary:CLEARTEXT"] = cv
 
                 except Exception as e:
@@ -1496,10 +1508,18 @@ class GetPasswordCommand(Command):
             up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob, blob)
             SCHEME = "{CRYPT}"
 
-            # Check that the NT hash has not been changed without updating
-            # the user password hashes. This indicates that password has been
-            # changed without updating the supplemental credentials.
-            if unicodePwd != bytearray(up.current_nt_hash.hash):
+            # Check that the NT hash or AES256 key have not been changed
+            # without updating the user password hashes. This indicates that
+            # password has been changed without updating the supplemental
+            # credentials.
+            if unicodePwd is not None:
+                current_hash = unicodePwd
+            elif aes256_key is not None:
+                current_hash = aes256_key.value[:16]
+            else:
+                return None, None
+
+            if current_hash != bytearray(up.current_nt_hash.hash):
                 return None, None
 
             scheme_prefix = "$%d$" % algorithm
