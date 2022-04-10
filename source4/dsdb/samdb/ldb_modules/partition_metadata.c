@@ -355,7 +355,7 @@ int partition_metadata_sequence_number(struct ldb_module *module, uint64_t *valu
 
 	/*
 	 * This means we will give a 0 until the first write
-	 * tranaction, which is actually pretty reasonable.
+	 * transaction, which is actually pretty reasonable.
 	 *
 	 * All modern databases will have the metadata.tdb from
 	 * the time of the first transaction in provision anyway.
