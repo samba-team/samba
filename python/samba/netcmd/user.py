@@ -1478,7 +1478,7 @@ class GetPasswordCommand(Command):
             # the user password hashes. This indicates that password has been
             # changed without updating the supplemental credentials.
             if unicodePwd != bytearray(up.current_nt_hash.hash):
-                return None
+                return None, None
 
             scheme_prefix = "$%d$" % algorithm
             prefix = scheme_prefix
