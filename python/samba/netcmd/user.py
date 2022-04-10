@@ -22,8 +22,6 @@ import ldb
 import pwd
 import os
 import io
-import re
-import difflib
 import fcntl
 import signal
 import errno
@@ -33,11 +31,11 @@ import binascii
 from subprocess import Popen, PIPE, STDOUT, check_call, CalledProcessError
 from getpass import getpass
 from samba.auth import system_session
-from samba.samdb import SamDB, SamDBError, SamDBNotFoundError
+from samba.samdb import SamDB, SamDBError
 from samba.dcerpc import misc
 from samba.dcerpc import security
 from samba.dcerpc import drsblobs
-from samba.ndr import ndr_unpack, ndr_pack, ndr_print
+from samba.ndr import ndr_unpack
 from samba import (
     credentials,
     dsdb,
