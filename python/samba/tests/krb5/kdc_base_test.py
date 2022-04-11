@@ -537,7 +537,8 @@ class KDCBaseTest(RawKerberosTest):
         req.extended_op = drsuapi.DRSUAPI_EXOP_REPL_SECRET
 
         attids = [drsuapi.DRSUAPI_ATTID_supplementalCredentials,
-                  drsuapi.DRSUAPI_ATTID_unicodePwd]
+                  drsuapi.DRSUAPI_ATTID_unicodePwd,
+                  drsuapi.DRSUAPI_ATTID_ntPwdHistory]
 
         partial_attribute_set = drsuapi.DsPartialAttributeSet()
         partial_attribute_set.version = 1
@@ -596,8 +597,9 @@ class KDCBaseTest(RawKerberosTest):
                                 keys[keytype] = key.value.hex()
             elif attr.attid == drsuapi.DRSUAPI_ATTID_unicodePwd:
                 net_ctx.replicate_decrypt(bind, attr, rid)
-                pwd = attr.value_ctr.values[0].blob
-                keys[kcrypto.Enctype.RC4] = pwd.hex()
+                if attr.value_ctr.num_values > 0:
+                    pwd = attr.value_ctr.values[0].blob
+                    keys[kcrypto.Enctype.RC4] = pwd.hex()
 
         if expected_etypes is None:
             expected_etypes = self.get_default_enctypes()

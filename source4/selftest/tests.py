@@ -1693,6 +1693,15 @@ planoldpythontestsuite(
     'ad_dc:local',
     'samba.tests.krb5.protected_users_tests',
     environ=krb5_environ)
+for env, nt_hash in [("ad_dc:local", True),
+                     ("ad_dc_no_ntlm:local", False)]:
+    planoldpythontestsuite(
+        env,
+        'samba.tests.krb5.nt_hash_tests',
+        environ={
+            **krb5_environ,
+            'EXPECT_NT_HASH': int(nt_hash),
+    })
 
 for env in [
         'vampire_dc',

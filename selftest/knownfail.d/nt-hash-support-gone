@@ -1,3 +1,4 @@
+^samba.tests.krb5.nt_hash_tests.samba.tests.krb5.nt_hash_tests.NtHashTests.test_nt_hash.ad_dc_no_ntlm:local
 ^samba.tests.samba_tool.user.samba.tests.samba_tool.user.UserCmdTestCase.test_setpassword.ad_dc_no_ntlm:local
 ^samba4.ldap.login_basics.python.ad_dc_no_ntlm..__main__.BasicUserAuthTests.test_login_basics_ntlm.ad_dc_no_ntlm
 ^samba4.ldap.passwords.python.fl2003dc..__main__.PasswordTests.test_old_password_attempt_reuse.fl2003dc
