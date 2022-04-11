@@ -15,7 +15,6 @@ import time
 import os
 
 sys.path.insert(0, "bin/python")
-import samba
 
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba.tests.password_test import PasswordTestCase
@@ -34,7 +33,6 @@ from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import gensec
 from samba.samdb import SamDB
-import samba.tests
 from samba.tests import delete_force
 
 parser = optparse.OptionParser("passwords.py [options] <host>")
