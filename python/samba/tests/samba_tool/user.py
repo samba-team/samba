@@ -258,7 +258,6 @@ class UserCmdTestCase(SambaToolCmdTest):
             creds = credentials.Credentials()
             creds.set_anonymous()
             creds.set_password(newpasswd)
-            nthash = creds.get_nt_hash()
             unicodePwd = base64.b64encode(creds.get_nt_hash()).decode('utf8')
             virtualClearTextUTF8 = base64.b64encode(get_bytes(newpasswd)).decode('utf8')
             virtualClearTextUTF16 = base64.b64encode(get_string(newpasswd).encode('utf-16-le')).decode('utf8')
