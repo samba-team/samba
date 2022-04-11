@@ -536,7 +536,7 @@ class KDCBaseTest(RawKerberosTest):
 
         return bind, identifier, attributes
 
-    def get_keys(self, samdb, dn):
+    def get_keys(self, samdb, dn, expected_etypes=None):
         admin_creds = self.get_admin_creds()
 
         bind, identifier, attributes = self.get_secrets(
@@ -574,9 +574,10 @@ class KDCBaseTest(RawKerberosTest):
                 pwd = attr.value_ctr.values[0].blob
                 keys[kcrypto.Enctype.RC4] = pwd.hex()
 
-        default_enctypes = self.get_default_enctypes()
+        if expected_etypes is None:
+            expected_etypes = self.get_default_enctypes()
 
-        self.assertCountEqual(default_enctypes, keys)
+        self.assertCountEqual(expected_etypes, keys)
 
         return keys
 
