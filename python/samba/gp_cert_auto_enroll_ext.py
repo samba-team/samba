@@ -52,11 +52,7 @@ def fetch_certification_authorities(ldb):
     if len(res) == 0:
         return result
     for es in res:
-        templates = {}
-        for template in es['certificateTemplates']:
-            templates[template] = fetch_template_attrs(ldb, template)
         data = dict(es)
-        data['certificateTemplates'] = templates
         result.append(data)
     return result
 
@@ -93,7 +89,7 @@ def get_supported_templates(server):
         return out.strip().split()
     return []
 
-def cert_enroll(ca, trust_dir, private_dir):
+def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
     # Install the root certificate chain
     data = {'files': [], 'templates': []}
     sscep = which('sscep')
@@ -147,9 +143,8 @@ def cert_enroll(ca, trust_dir, private_dir):
             data = { 'Error': err.decode(), 'CA': ca['cn'][0] }
             log.error('Failed to add Certificate Authority', data)
         supported_templates = get_supported_templates(ca['dNSHostName'][0])
-        for template, attrs in ca['certificateTemplates'].items():
-            if template not in supported_templates:
-                continue
+        for template in supported_templates:
+            attrs = fetch_template_attrs(ldb, template)
             nickname = '%s.%s' % (ca['cn'][0], template.decode())
             keyfile = os.path.join(private_dir, '%s.key' % nickname)
             certfile = os.path.join(trust_dir, '%s.crt' % nickname)
@@ -229,7 +224,7 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                                       lp=self.lp, credentials=self.creds)
                             cas = fetch_certification_authorities(ldb)
                             for ca in cas:
-                                data = cert_enroll(ca, trust_dir, private_dir)
+                                data = cert_enroll(ca, ldb, trust_dir, private_dir)
                                 self.gp_db.store(str(self),
                                      base64.b64encode(ca['cn'][0]).decode(),
                                      data)
