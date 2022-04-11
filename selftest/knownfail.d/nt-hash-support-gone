@@ -1,2 +1,8 @@
 ^samba.tests.samba_tool.user.samba.tests.samba_tool.user.UserCmdTestCase.test_setpassword.ad_dc_no_ntlm:local
 ^samba4.ldap.login_basics.python.ad_dc_no_ntlm..__main__.BasicUserAuthTests.test_login_basics_ntlm.ad_dc_no_ntlm
+^samba4.ldap.passwords.python.fl2003dc..__main__.PasswordTests.test_old_password_attempt_reuse.fl2003dc
+^samba4.ldap.passwords.python.fl2003dc..__main__.PasswordTests.test_old_password_rename_attempt_reuse.fl2003dc
+^samba4.ldap.passwords.python.fl2003dc..__main__.PasswordTests.test_old_password_rename_attempt_reuse_2.fl2003dc
+^samba4.ldap.passwords.python.fl2003dc..__main__.PasswordTests.test_old_password_rename_simple_bind.fl2003dc
+^samba4.ldap.passwords.python.fl2003dc..__main__.PasswordTests.test_old_password_rename_simple_bind_2.fl2003dc
+^samba4.ldap.passwords.python.fl2003dc..__main__.PasswordTests.test_old_password_simple_bind.fl2003dc

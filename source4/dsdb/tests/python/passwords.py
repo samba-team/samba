@@ -23,15 +23,18 @@ import samba.getopt as options
 
 from samba.auth import system_session
 from samba.credentials import Credentials
-from samba.dcerpc import security
+from samba.dcerpc import drsblobs, misc, security
+from samba.drs_utils import drsuapi_connect
+from samba.ndr import ndr_unpack
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_ATTRIBUTE_OR_VALUE_EXISTS
 from ldb import ERR_UNWILLING_TO_PERFORM, ERR_INSUFFICIENT_ACCESS_RIGHTS
 from ldb import ERR_NO_SUCH_ATTRIBUTE
 from ldb import ERR_CONSTRAINT_VIOLATION
+from ldb import ERR_INVALID_CREDENTIALS
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
-from samba import gensec
+from samba import gensec, net, werror
 from samba.samdb import SamDB
 from samba.tests import delete_force
 
@@ -69,12 +72,6 @@ class PasswordTests(PasswordTestCase):
     def setUp(self):
         super(PasswordTests, self).setUp()
         self.ldb = SamDB(url=host, session_info=system_session(lp), credentials=creds, lp=lp)
-
-        # Gets back the basedn
-        base_dn = self.ldb.domain_dn()
-
-        # Gets back the configuration basedn
-        configuration_dn = self.ldb.get_config_basedn().get_linearized()
 
         # permit password changes during this test
         self.allow_password_changes()
@@ -148,6 +145,7 @@ add: userPassword
         creds2.set_gensec_features(creds2.get_gensec_features()
                                    | gensec.FEATURE_SEAL)
         self.ldb2 = SamDB(url=host, credentials=creds2, lp=lp)
+        self.creds = creds2
 
     def test_unicodePwd_hash_set(self):
         """Performs a password hash set operation on 'unicodePwd' which should be prevented"""
@@ -235,6 +233,241 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
             (num, msg) = e5.args
             self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('0000052D' in msg)
+
+    def test_old_password_simple_bind(self):
+        '''Shows that we can log in with the immediate previous password, but not any earlier passwords.'''
+
+        user_dn_str = f'CN=testuser,CN=Users,{self.base_dn}'
+        user_dn = Dn(self.ldb, user_dn_str)
+
+        # Change the account password.
+        m = Message(user_dn)
+        m['0'] = MessageElement(self.creds.get_password(),
+                                FLAG_MOD_DELETE, 'userPassword')
+        m['1'] = MessageElement('Password#2',
+                                FLAG_MOD_ADD, 'userPassword')
+        self.ldb.modify(m)
+
+        # Show we can still log in using the previous password.
+        self.creds.set_bind_dn(user_dn_str)
+        try:
+            SamDB(url=host_ldaps,
+                  credentials=self.creds, lp=lp)
+        except LdbError:
+            self.fail('failed to login with previous password!')
+
+        # Change the account password a second time.
+        m = Message(user_dn)
+        m['0'] = MessageElement('Password#2',
+                                FLAG_MOD_DELETE, 'userPassword')
+        m['1'] = MessageElement('Password#3',
+                                FLAG_MOD_ADD, 'userPassword')
+        self.ldb.modify(m)
+
+        # Show we can no longer log in using the original password.
+        try:
+            SamDB(url=host_ldaps,
+                  credentials=self.creds, lp=lp)
+        except LdbError as err:
+            HRES_SEC_E_INVALID_TOKEN = '80090308'
+
+            num, estr = err.args
+            self.assertEqual(ERR_INVALID_CREDENTIALS, num)
+            self.assertIn(HRES_SEC_E_INVALID_TOKEN, estr)
+        else:
+            self.fail('should have failed to login with previous password!')
+
+    def test_old_password_attempt_reuse(self):
+        '''Shows that we cannot reuse the original password after changing the password twice.'''
+        res = self.ldb.search(self.ldb.domain_dn(), scope=SCOPE_BASE,
+                              attrs=['pwdHistoryLength'])
+
+        history_len = int(res[0].get('pwdHistoryLength', idx=0))
+        self.assertGreaterEqual(history_len, 3)
+
+        user_dn_str = f'CN=testuser,CN=Users,{self.base_dn}'
+        user_dn = Dn(self.ldb, user_dn_str)
+
+        first_pwd = self.creds.get_password()
+        previous_pwd = first_pwd
+
+        for new_pwd in ['Password#0', 'Password#1']:
+            # Change the account password.
+            m = Message(user_dn)
+            m['0'] = MessageElement(previous_pwd,
+                                    FLAG_MOD_DELETE, 'userPassword')
+            m['1'] = MessageElement(new_pwd,
+                                    FLAG_MOD_ADD, 'userPassword')
+            self.ldb.modify(m)
+
+            # Show that the original password is in the history by trying to
+            # set it as our new password.
+            m = Message(user_dn)
+            m['0'] = MessageElement(new_pwd,
+                                    FLAG_MOD_DELETE, 'userPassword')
+            m['1'] = MessageElement(first_pwd,
+                                    FLAG_MOD_ADD, 'userPassword')
+            try:
+                self.ldb.modify(m)
+            except LdbError as err:
+                num, estr = err.args
+                self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+                self.assertIn(f'{werror.WERR_PASSWORD_RESTRICTION:08X}', estr)
+            else:
+                self.fail('should not have been able to reuse password!')
+
+            previous_pwd = new_pwd
+
+    def test_old_password_rename_simple_bind(self):
+        '''Shows that we can log in with the previous password after renaming the account.'''
+        user_dn_str = f'CN=testuser,CN=Users,{self.base_dn}'
+        user_dn = Dn(self.ldb, user_dn_str)
+
+        # Change the account password.
+        m = Message(user_dn)
+        m['0'] = MessageElement(self.creds.get_password(),
+                                FLAG_MOD_DELETE, 'userPassword')
+        m['1'] = MessageElement('Password#2',
+                                FLAG_MOD_ADD, 'userPassword')
+        self.ldb.modify(m)
+
+        # Show we can still log in using the previous password.
+        self.creds.set_bind_dn(user_dn_str)
+        try:
+            SamDB(url=host_ldaps,
+                  credentials=self.creds, lp=lp)
+        except LdbError:
+            self.fail('failed to login with previous password!')
+
+        # Rename the account, causing the salt to change.
+        m = Message(user_dn)
+        m['1'] = MessageElement('testuser_2',
+                                FLAG_MOD_REPLACE, 'sAMAccountName')
+        self.ldb.modify(m)
+
+        # Show that a simple bind can still be performed using the previous
+        # password.
+        self.creds.set_username('testuser_2')
+        try:
+            SamDB(url=host_ldaps,
+                  credentials=self.creds, lp=lp)
+        except LdbError:
+            self.fail('failed to login with previous password!')
+
+    def test_old_password_rename_simple_bind_2(self):
+        '''Shows that we can rename the account, change the password and log in with the previous password.'''
+        user_dn_str = f'CN=testuser,CN=Users,{self.base_dn}'
+        user_dn = Dn(self.ldb, user_dn_str)
+
+        # Rename the account, causing the salt to change.
+        m = Message(user_dn)
+        m['1'] = MessageElement('testuser_2',
+                                FLAG_MOD_REPLACE, 'sAMAccountName')
+        self.ldb.modify(m)
+
+        # Change the account password, causing the new salt to be stored.
+        m = Message(user_dn)
+        m['0'] = MessageElement(self.creds.get_password(),
+                                FLAG_MOD_DELETE, 'userPassword')
+        m['1'] = MessageElement('Password#2',
+                                FLAG_MOD_ADD, 'userPassword')
+        self.ldb.modify(m)
+
+        # Show that a simple bind can still be performed using the previous
+        # password.
+        self.creds.set_bind_dn(user_dn_str)
+        self.creds.set_username('testuser_2')
+        try:
+            SamDB(url=host_ldaps,
+                  credentials=self.creds, lp=lp)
+        except LdbError:
+            self.fail('failed to login with previous password!')
+
+    def test_old_password_rename_attempt_reuse(self):
+        '''Shows that we cannot reuse the original password after renaming the account.'''
+        user_dn_str = f'CN=testuser,CN=Users,{self.base_dn}'
+        user_dn = Dn(self.ldb, user_dn_str)
+
+        # Change the account password.
+        m = Message(user_dn)
+        m['0'] = MessageElement(self.creds.get_password(),
+                                FLAG_MOD_DELETE, 'userPassword')
+        m['1'] = MessageElement('Password#2',
+                                FLAG_MOD_ADD, 'userPassword')
+        self.ldb.modify(m)
+
+        # Show that the previous password is in the history by trying to set it
+        # as our new password.
+        m = Message(user_dn)
+        m['0'] = MessageElement('Password#2',
+                                FLAG_MOD_DELETE, 'userPassword')
+        m['1'] = MessageElement(self.creds.get_password(),
+                                FLAG_MOD_ADD, 'userPassword')
+        try:
+            self.ldb.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+            self.assertIn(f'{werror.WERR_PASSWORD_RESTRICTION:08X}', estr)
+        else:
+            self.fail('should not have been able to reuse password!')
+
+        # Rename the account, causing the salt to change.
+        m = Message(user_dn)
+        m['1'] = MessageElement('testuser_2',
+                                FLAG_MOD_REPLACE, 'sAMAccountName')
+        self.ldb.modify(m)
+
+        # Show that the previous password is still in the history by trying to
+        # set it as our new password.
+        m = Message(user_dn)
+        m['0'] = MessageElement('Password#2',
+                                FLAG_MOD_DELETE, 'userPassword')
+        m['1'] = MessageElement(self.creds.get_password(),
+                                FLAG_MOD_ADD, 'userPassword')
+        try:
+            self.ldb.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+            self.assertIn(f'{werror.WERR_PASSWORD_RESTRICTION:08X}', estr)
+        else:
+            self.fail('should not have been able to reuse password!')
+
+    def test_old_password_rename_attempt_reuse_2(self):
+        '''Shows that we cannot reuse the original password after renaming the account and changing the password.'''
+        user_dn_str = f'CN=testuser,CN=Users,{self.base_dn}'
+        user_dn = Dn(self.ldb, user_dn_str)
+
+        # Rename the account, causing the salt to change.
+        m = Message(user_dn)
+        m['1'] = MessageElement('testuser_2',
+                                FLAG_MOD_REPLACE, 'sAMAccountName')
+        self.ldb.modify(m)
+
+        # Change the account password, causing the new salt to be stored.
+        m = Message(user_dn)
+        m['0'] = MessageElement(self.creds.get_password(),
+                                FLAG_MOD_DELETE, 'userPassword')
+        m['1'] = MessageElement('Password#2',
+                                FLAG_MOD_ADD, 'userPassword')
+        self.ldb.modify(m)
+
+        # Show that the previous password is in the history by trying to set it
+        # as our new password.
+        m = Message(user_dn)
+        m['0'] = MessageElement('Password#2',
+                                FLAG_MOD_DELETE, 'userPassword')
+        m['1'] = MessageElement(self.creds.get_password(),
+                                FLAG_MOD_ADD, 'userPassword')
+        try:
+            self.ldb.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+            self.assertIn(f'{werror.WERR_PASSWORD_RESTRICTION:08X}', estr)
+        else:
+            self.fail('should not have been able to reuse password!')
 
     def test_protected_unicodePwd_clear_set(self):
         """Performs a password cleartext set operation on 'unicodePwd' with the user in
@@ -1212,8 +1445,10 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')).
 
 if "://" not in host:
     if os.path.isfile(host):
+        host_ldaps = None
         host = "tdb://%s" % host
     else:
+        host_ldaps = "ldaps://%s" % host
         host = "ldap://%s" % host
 
 TestProgram(module=__name__, opts=subunitopts)
