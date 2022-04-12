@@ -2850,7 +2850,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	uint64_t logon_id = 0;
 	uint8_t authoritative = 1;
 	uint32_t flags = 0;
-	uint16_t validation_level;
+	uint16_t validation_level = UINT16_MAX;
 	union netr_Validation *validation = NULL;
 	DATA_BLOB lm_resp = { 0 }, nt_resp = { 0 };
 	const struct timeval start_time = timeval_current();
