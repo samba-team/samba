@@ -31,6 +31,11 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 # This speeds up testing remarkably.
 os.environ['TDB_NO_FSYNC'] = '1'
 
+# allow autobuild to run within git rebase -i
+if "GIT_DIR" in os.environ:
+    del os.environ["GIT_DIR"]
+if "GIT_WORK_TREE" in os.environ:
+    del os.environ["GIT_WORK_TREE"]
 
 def find_git_root():
     '''get to the top of the git repo'''
