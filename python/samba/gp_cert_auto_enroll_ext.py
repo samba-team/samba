@@ -28,12 +28,20 @@ import re
 from glob import glob
 import json
 from samba.gp.util.logging import log
+import struct
 
 cert_wrap = b"""
 -----BEGIN CERTIFICATE-----
 %s
 -----END CERTIFICATE-----"""
 global_trust_dir = '/etc/pki/trust/anchors'
+
+def octet_string_to_objectGUID(data):
+    return '%s-%s-%s-%s-%s' % ('%02x' % struct.unpack('<L', data[0:4])[0],
+                               '%02x' % struct.unpack('<H', data[4:6])[0],
+                               '%02x' % struct.unpack('<H', data[6:8])[0],
+                               '%02x' % struct.unpack('>H', data[8:10])[0],
+                               '%02x%02x' % struct.unpack('>HL', data[10:]))
 
 '''
 Initializing CAs

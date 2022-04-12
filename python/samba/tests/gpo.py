@@ -41,7 +41,8 @@ from samba.vgp_motd_ext import vgp_motd_ext
 from samba.vgp_issue_ext import vgp_issue_ext
 from samba.vgp_access_ext import vgp_access_ext
 from samba.gp_gnome_settings_ext import gp_gnome_settings_ext
-from samba.gp_cert_auto_enroll_ext import gp_cert_auto_enroll_ext
+from samba.gp_cert_auto_enroll_ext import gp_cert_auto_enroll_ext, \
+                                          octet_string_to_objectGUID
 from samba.gp_firefox_ext import gp_firefox_ext
 from samba.gp_chromium_ext import gp_chromium_ext
 from samba.gp_firewalld_ext import gp_firewalld_ext
@@ -59,6 +60,7 @@ from glob import glob
 from configparser import ConfigParser
 from samba.gpclass import get_dc_hostname
 from samba import Ldb
+import ldb as _ldb
 from samba.auth import system_session
 import json
 from shutil import which
@@ -228,6 +230,163 @@ b"""
                 <ValueName>OfflineExpirationStoreNames</ValueName>
                 <Value>MY</Value>
         </Entry>
+</PolFile>
+"""
+
+advanced_enroll_reg_pol = \
+b"""
+<?xml version="1.0" encoding="utf-8"?>
+<PolFile num_entries="30" signature="PReg" version="1">
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography</Key>
+        <ValueName>**DeleteKeys</ValueName>
+        <Value>Software\Policies\Microsoft\Cryptography\PolicyServers</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\AutoEnrollment</Key>
+        <ValueName>AEPolicy</ValueName>
+        <Value>7</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\AutoEnrollment</Key>
+        <ValueName>OfflineExpirationPercent</ValueName>
+        <Value>25</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\AutoEnrollment</Key>
+        <ValueName>OfflineExpirationStoreNames</ValueName>
+        <Value>MY</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers</Key>
+        <ValueName/>
+        <Value>{5AD0BE6D-3393-4940-BFC3-6E19555A8919}</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers</Key>
+        <ValueName>Flags</ValueName>
+        <Value>0</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <ValueName>URL</ValueName>
+        <Value>LDAP:</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <ValueName>PolicyID</ValueName>
+        <Value>%s</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <ValueName>FriendlyName</ValueName>
+        <Value>Example</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <ValueName>Flags</ValueName>
+        <Value>16</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <ValueName>AuthFlags</ValueName>
+        <Value>2</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\37c9dc30f207f27f61a2f7c3aed598a6e2920b54</Key>
+        <ValueName>Cost</ValueName>
+        <Value>2147483645</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <ValueName>URL</ValueName>
+        <Value>https://example2.com/ADPolicyProvider_CEP_Certificate/service.svc/CEP</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <ValueName>PolicyID</ValueName>
+        <Value>%s</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <ValueName>FriendlyName</ValueName>
+        <Value>Example2</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <ValueName>Flags</ValueName>
+        <Value>16</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <ValueName>AuthFlags</ValueName>
+        <Value>8</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\144bdbb8e4717c26e408f3c9a0cb8d6cfacbcbbe</Key>
+        <ValueName>Cost</ValueName>
+        <Value>10</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <ValueName>URL</ValueName>
+        <Value>https://example0.com/ADPolicyProvider_CEP_Kerberos/service.svc/CEP</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <ValueName>PolicyID</ValueName>
+        <Value>%s</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <ValueName>FriendlyName</ValueName>
+        <Value>Example0</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <ValueName>Flags</ValueName>
+        <Value>16</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <ValueName>AuthFlags</ValueName>
+        <Value>2</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\20d46e856e9b9746c0b1265c328f126a7b3283a9</Key>
+        <ValueName>Cost</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <ValueName>URL</ValueName>
+        <Value>https://example1.com/ADPolicyProvider_CEP_Kerberos/service.svc/CEP</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <ValueName>PolicyID</ValueName>
+        <Value>%s</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <ValueName>FriendlyName</ValueName>
+        <Value>Example1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <ValueName>Flags</ValueName>
+        <Value>16</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <ValueName>AuthFlags</ValueName>
+        <Value>2</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\Policies\Microsoft\Cryptography\PolicyServers\\855b5246433a48402ac4f5c3427566df26ccc9ac</Key>
+        <ValueName>Cost</ValueName>
+        <Value>1</Value>
+    </Entry>
 </PolFile>
 """
 
@@ -8890,6 +9049,117 @@ class GPOTests(tests.TestCase):
         out, err = p.communicate()
         self.assertNotIn(b'work', out, 'Failed to unapply zones')
         self.assertNotIn(b'home', out, 'Failed to unapply zones')
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
+
+    def test_advanced_gp_cert_auto_enroll_ext(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        reg_pol = os.path.join(local_path, policies, guid,
+                               'MACHINE/REGISTRY.POL')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = gp_cert_auto_enroll_ext(self.lp, machine_creds,
+                                      machine_creds.get_username(), store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        admin_creds = Credentials()
+        admin_creds.set_username(os.environ.get('DC_USERNAME'))
+        admin_creds.set_password(os.environ.get('DC_PASSWORD'))
+        admin_creds.set_realm(os.environ.get('REALM'))
+        hostname = get_dc_hostname(machine_creds, self.lp)
+        url = 'ldap://%s' % hostname
+        ldb = Ldb(url=url, session_info=system_session(),
+                  lp=self.lp, credentials=admin_creds)
+
+        # Stage the Registry.pol file with test data
+        res = ldb.search('', _ldb.SCOPE_BASE, '(objectClass=*)',
+                         ['rootDomainNamingContext'])
+        self.assertTrue(len(res) == 1, 'rootDomainNamingContext not found')
+        res2 = ldb.search(res[0]['rootDomainNamingContext'][0],
+                          _ldb.SCOPE_BASE, '(objectClass=*)', ['objectGUID'])
+        self.assertTrue(len(res2) == 1, 'objectGUID not found')
+        objectGUID = b'{%s}' % \
+            octet_string_to_objectGUID(res2[0]['objectGUID'][0]).upper().encode()
+        parser = GPPolParser()
+        parser.load_xml(etree.fromstring(advanced_enroll_reg_pol.strip() % \
+            (objectGUID, objectGUID, objectGUID, objectGUID)))
+        ret = stage_file(reg_pol, ndr_pack(parser.pol_file))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        # Write the dummy CA entry
+        confdn = 'CN=Public Key Services,CN=Services,CN=Configuration,%s' % base_dn
+        ca_cn = '%s-CA' % hostname.replace('.', '-')
+        certa_dn = 'CN=%s,CN=Certification Authorities,%s' % (ca_cn, confdn)
+        ldb.add({'dn': certa_dn,
+                 'objectClass': 'certificationAuthority',
+                 'authorityRevocationList': ['XXX'],
+                 'cACertificate': 'XXX',
+                 'certificateRevocationList': ['XXX'],
+                })
+        # Write the dummy pKIEnrollmentService
+        enroll_dn = 'CN=%s,CN=Enrollment Services,%s' % (ca_cn, confdn)
+        ldb.add({'dn': enroll_dn,
+                 'objectClass': 'pKIEnrollmentService',
+                 'cACertificate': 'XXXX',
+                 'certificateTemplates': ['Machine'],
+                 'dNSHostName': hostname,
+                })
+        # Write the dummy pKICertificateTemplate
+        template_dn = 'CN=Machine,CN=Certificate Templates,%s' % confdn
+        ldb.add({'dn': template_dn,
+                 'objectClass': 'pKICertificateTemplate',
+                })
+
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname, dname)
+            ca_list = [ca_cn, 'example0-com-CA', 'example1-com-CA',
+                       'example2-com-CA']
+            for ca in ca_list:
+                ca_crt = os.path.join(dname, '%s.crt' % ca)
+                self.assertTrue(os.path.exists(ca_crt),
+                                'Root CA certificate was not requested')
+                machine_crt = os.path.join(dname, '%s.Machine.crt' % ca)
+                self.assertTrue(os.path.exists(machine_crt),
+                                'Machine certificate was not requested')
+                machine_key = os.path.join(dname, '%s.Machine.key' % ca)
+                self.assertTrue(os.path.exists(machine_crt),
+                                'Machine key was not generated')
+
+            # Verify RSOP does not fail
+            ext.rsop([g for g in gpos if g.name == guid][0])
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [], dname)
+            self.assertFalse(os.path.exists(ca_crt),
+                            'Root CA certificate was not removed')
+            self.assertFalse(os.path.exists(machine_crt),
+                            'Machine certificate was not removed')
+            self.assertFalse(os.path.exists(machine_crt),
+                            'Machine key was not removed')
+            out, _ = Popen(['getcert', 'list-cas'], stdout=PIPE).communicate()
+            for ca in ca_list:
+                self.assertNotIn(get_bytes(ca), out, 'CA was not removed')
+            out, _ = Popen(['getcert', 'list'], stdout=PIPE).communicate()
+            self.assertNotIn(b'Machine', out,
+                             'Machine certificate not removed')
+
+        # Remove the dummy CA, pKIEnrollmentService, and pKICertificateTemplate
+        ldb.delete(certa_dn)
+        ldb.delete(enroll_dn)
+        ldb.delete(template_dn)
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
