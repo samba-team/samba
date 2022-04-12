@@ -45,14 +45,16 @@ def fetch_certification_authorities(ldb):
     # Autoenrollment MUST do an LDAP search for the CA information
     # (pKIEnrollmentService) objects under the following container:
     dn = 'CN=Enrollment Services,CN=Public Key Services,CN=Services,CN=Configuration,%s' % basedn
-    attrs = ['cACertificate', 'cn', 'certificateTemplates', 'dNSHostName',
-             'msPKI-Enrollment-Servers']
+    attrs = ['cACertificate', 'cn', 'dNSHostName']
     expr = '(objectClass=pKIEnrollmentService)'
     res = ldb.search(dn, SCOPE_SUBTREE, expr, attrs)
     if len(res) == 0:
         return result
     for es in res:
-        data = dict(es)
+        data = { 'name': es['cn'][0],
+                 'hostname': es['dNSHostName'][0],
+                 'cACertificate': es['cACertificate'][0]
+               }
         result.append(data)
     return result
 
@@ -95,8 +97,8 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
     sscep = which('sscep')
     if sscep is not None:
         url = 'http://%s/CertSrv/mscep/mscep.dll/pkiclient.exe?' % \
-            ca['dNSHostName'][0]
-        root_cert = os.path.join(trust_dir, '%s.crt' % ca['cn'])
+            ca['hostname']
+        root_cert = os.path.join(trust_dir, '%s.crt' % ca['name'])
         ret = Popen([sscep, 'getca', '-F', 'sha1', '-c',
                      root_cert, '-u', url]).wait()
         if ret != 0:
@@ -133,22 +135,22 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
     getcert = which('getcert')
     cepces_submit = find_cepces_submit()
     if getcert is not None and os.path.exists(cepces_submit):
-        p = Popen([getcert, 'add-ca', '-c', ca['cn'][0], '-e',
-                  '%s --server=%s --auth=Kerberos' % (cepces_submit,
-                  ca['dNSHostName'][0])],
+        p = Popen([getcert, 'add-ca', '-c', ca['name'], '-e',
+                  '%s --server=%s --auth=%s' % (cepces_submit,
+                  ca['hostname'], auth)],
                   stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
         log.debug(out.decode())
         if p.returncode != 0:
-            data = { 'Error': err.decode(), 'CA': ca['cn'][0] }
+            data = { 'Error': err.decode(), 'CA': ca['name'] }
             log.error('Failed to add Certificate Authority', data)
-        supported_templates = get_supported_templates(ca['dNSHostName'][0])
+        supported_templates = get_supported_templates(ca['hostname'])
         for template in supported_templates:
             attrs = fetch_template_attrs(ldb, template)
-            nickname = '%s.%s' % (ca['cn'][0], template.decode())
+            nickname = '%s.%s' % (ca['name'], template.decode())
             keyfile = os.path.join(private_dir, '%s.key' % nickname)
             certfile = os.path.join(trust_dir, '%s.crt' % nickname)
-            p = Popen([getcert, 'request', '-c', ca['cn'][0],
+            p = Popen([getcert, 'request', '-c', ca['name'],
                        '-T', template.decode(),
                        '-I', nickname, '-k', keyfile, '-f', certfile,
                        '-g', attrs['msPKI-Minimal-Key-Size'][0]],
@@ -226,7 +228,7 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                             for ca in cas:
                                 data = cert_enroll(ca, ldb, trust_dir, private_dir)
                                 self.gp_db.store(str(self),
-                                     base64.b64encode(ca['cn'][0]).decode(),
+                                     base64.b64encode(ca['name']).decode(),
                                      data)
                         self.gp_db.commit()
 
@@ -251,16 +253,16 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                     cas = fetch_certification_authorities(ldb)
                     for ca in cas:
                         policy = 'Auto Enrollment Policy'
-                        cn = ca['cn'][0]
+                        cn = ca['name']
                         if policy not in output:
                             output[policy] = {}
                         output[policy][cn] = {}
                         output[policy][cn]['CA Certificate'] = \
-                            format_root_cert(ca['cACertificate'][0]).decode()
+                            format_root_cert(ca['cACertificate']).decode()
                         output[policy][cn]['Auto Enrollment Server'] = \
-                            ca['dNSHostName'][0]
+                            ca['hostname']
                         supported_templates = \
-                            get_supported_templates(ca['dNSHostName'][0])
+                            get_supported_templates(ca['hostname'])
                         output[policy][cn]['Templates'] = \
                             [t.decode() for t in supported_templates]
         return output
