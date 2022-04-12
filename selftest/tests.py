@@ -18,7 +18,7 @@
 # three separated by newlines. All other lines in the output are considered
 # comments.
 
-import os
+import os, tempfile
 from selftesthelpers import bindir, srcdir, python
 from selftesthelpers import planpythontestsuite, samba4srcdir
 from selftesthelpers import plantestsuite, bbdir
@@ -383,7 +383,7 @@ if with_pam:
                        pam_options])
 
     description = "krb5"
-    pam_options = "'krb5_auth krb5_ccache_type=FILE:/tmp/krb5cc_pam_test_%u'"
+    pam_options = "'krb5_auth krb5_ccache_type=FILE:%s/krb5cc_pam_test_setcred_%%u'" % (tempfile.gettempdir())
     plantestsuite("samba.tests.pam_winbind_setcred(domain+%s)" % description, "ad_dc:local",
                   [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind_setcred.sh"),
                    valgrindify(python), pam_wrapper_so_path,
