@@ -252,6 +252,8 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                     for ca in cas:
                         policy = 'Auto Enrollment Policy'
                         cn = ca['cn'][0]
+                        if policy not in output:
+                            output[policy] = {}
                         output[policy][cn] = {}
                         output[policy][cn]['CA Certificate'] = \
                             format_root_cert(ca['cACertificate'][0]).decode()
