@@ -55,6 +55,13 @@
           <para><constant>disabled</constant> - Do not accept NTLM (or
           LanMan) authentication of any level, nor permit
           NTLM password changes.</para>
+
+	  <para><emphasis>WARNING:</emphasis> Both Microsoft Windows
+	  and Samba <emphasis>Read Only Domain Controllers</emphasis>
+	  (RODCs) convert a plain-text LDAP Simple Bind into an NTLMv2
+	  authentication to forward to a full DC.  Setting this option
+	  to <constant>disabled</constant> will cause these forwarded
+	  authentications to fail.</para>
         </listitem>
 
     </itemizedlist>
