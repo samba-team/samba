@@ -235,7 +235,7 @@ if with_pam:
     options = [
         {
             "description": "krb5",
-            "pam_options": "krb5_auth krb5_ccache_type=FILE",
+            "pam_options": "krb5_auth krb5_ccache_type=FILE:%s/krb5cc_pam_test_%%u" % (tempfile.gettempdir()),
         },
         {
             "description": "default",
