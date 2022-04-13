@@ -1961,7 +1961,6 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		} else {
 			rec->dwTimeStamp = unix_to_dns_timestamp(time(NULL));
 		}
-
 		/* adding space for a new value */
 		recs = talloc_realloc(rec, recs,
 				      struct dnsp_DnssrvRpcRecord,
@@ -1972,6 +1971,17 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 			goto exit;
 		}
 		num_recs++;
+	} else {
+		/*
+		 * We are updating a record. Depending on whether aging is
+		 * enabled, and how old the old timestamp is,
+		 * dns_common_replace() will work out whether to bump the
+		 * timestamp or not. But to do that, we need to tell it the
+		 * old timestamp.
+		 */		
+		if (! dns_name_is_static(recs, num_recs)) {
+			rec->dwTimeStamp = recs[i].dwTimeStamp;
+		}
 	}
 
 	recs[i] = *rec;
