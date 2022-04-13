@@ -273,6 +273,20 @@ void torture_result(struct torture_context *test,
 	} \
 } while(0)
 
+#define torture_assertf(torture_ctx, expr, format, ...) do {		\
+	if (!(expr)) {							\
+		char *_msg = talloc_asprintf(torture_ctx,		\
+					     format,			\
+					     __VA_ARGS__);		\
+		torture_result(torture_ctx,				\
+			       TORTURE_FAIL,				\
+			       __location__": Expression `%s' failed: %s", \
+			       __STRING(expr), _msg);			\
+		talloc_free(_msg);					\
+		return false;						\
+	}								\
+} while(0)
+
 #define torture_assert_goto(torture_ctx,expr,ret,label,cmt) do { \
 	if (!(expr)) { \
 		torture_result(torture_ctx, TORTURE_FAIL, __location__": Expression `%s' failed: %s", __STRING(expr), cmt); \
