@@ -73,7 +73,7 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx)
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "failed to connect to //%s/%s: %s\n",
 			       host, share, nt_errstr(status));
-		torture_fail(tctx, "Failed to connect to server");
+		torture_result(tctx, TORTURE_FAIL, "Failed to connect to server");
 		return NULL;
 	}
 
