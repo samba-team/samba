@@ -113,7 +113,7 @@ static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
 		NULL
 	};
 	if (ret != LDB_SUCCESS) {
-		torture_fail(tctx, "Failed to connect to samdb");
+		torture_comment(tctx, "Failed to connect to samdb");
 		return ISC_R_FAILURE;
 	}
 
@@ -121,7 +121,10 @@ static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
 			      LDB_SCOPE_SUBTREE, attrs, DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
 			      "(&(objectClass=dnsZone)(name=%s))", zone_name);
 	if (ret != LDB_SUCCESS) {
-		torture_fail(tctx, talloc_asprintf(tctx, "Failed to search for %s: %s", zone_name, ldb_errstring(samdb)));
+		torture_comment(tctx,
+				"Failed to search for %s: %s",
+				zone_name,
+				ldb_errstring(samdb));
 		return ISC_R_FAILURE;
 	}
 	talloc_free(msg);
