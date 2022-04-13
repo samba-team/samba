@@ -147,6 +147,9 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 	ndr_print_ptr(ndr,
 		      "backend_data.samr_pipes",
 		      r->backend_data.samr_pipes);
+	ndr_print_ptr(ndr,
+		      "backend_data.ads_conn",
+		      r->backend_data.ads_conn);
 	ndr_print_string(ndr, "dcname", r->dcname);
 	ndr_print_sockaddr_storage(ndr, "dcaddr", &r->dcaddr);
 	ndr_print_time_t(ndr, "last_seq_check", r->last_seq_check);
