@@ -269,10 +269,10 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	}
 
 	DEBUG(10,("ads_cached_connection\n"));
-	ads_cached_connection_reuse((ADS_STRUCT **)&domain->private_data);
+	ads_cached_connection_reuse(&domain->backend_data.ads_conn);
 
-	if (domain->private_data) {
-		return (ADS_STRUCT *)domain->private_data;
+	if (domain->backend_data.ads_conn != NULL) {
+		return domain->backend_data.ads_conn;
 	}
 
 	/* the machine acct password might have change - fetch it every time */
@@ -303,7 +303,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	}
 
 	status = ads_cached_connection_connect(
-					(ADS_STRUCT **)&domain->private_data,
+					&domain->backend_data.ads_conn,
 					domain->alt_name,
 					domain->name, NULL,
 					password, realm,
@@ -322,7 +322,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		return NULL;
 	}
 
-	return (ADS_STRUCT *)domain->private_data;
+	return domain->backend_data.ads_conn;
 }
 
 /* Query display info for a realm. This is the basic user list fn */
