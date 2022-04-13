@@ -156,10 +156,6 @@ struct winbindd_domain {
 	 */
 	struct winbindd_methods *backend;
 
-        /* Private data for the backends (used for connection cache) */
-
-	void *private_data;
-
 	struct {
 		struct winbind_internal_pipes *samr_pipes;
 		struct ads_struct *ads_conn;
