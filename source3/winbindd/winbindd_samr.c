@@ -130,7 +130,7 @@ static NTSTATUS open_cached_internal_pipe_conn(
 {
 	struct winbind_internal_pipes *internal_pipes = NULL;
 
-	if (domain->private_data == NULL) {
+	if (domain->backend_data.samr_pipes == NULL) {
 		TALLOC_CTX *frame = talloc_stackframe();
 		NTSTATUS status;
 
@@ -156,14 +156,14 @@ static NTSTATUS open_cached_internal_pipe_conn(
 			return status;
 		}
 
-		domain->private_data = talloc_move(domain, &internal_pipes);
+		domain->backend_data.samr_pipes =
+			talloc_move(domain, &internal_pipes);
 
 		TALLOC_FREE(frame);
 
 	}
 
-	internal_pipes = talloc_get_type_abort(
-		domain->private_data, struct winbind_internal_pipes);
+	internal_pipes = domain->backend_data.samr_pipes;
 
 	if (samr_domain_hnd) {
 		*samr_domain_hnd = internal_pipes->samr_domain_hnd;
@@ -188,23 +188,17 @@ static bool reset_connection_on_error(struct winbindd_domain *domain,
 				      struct rpc_pipe_client *p,
 				      NTSTATUS status)
 {
-	struct winbind_internal_pipes *internal_pipes = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-
-	internal_pipes = talloc_get_type_abort(
-		domain->private_data, struct winbind_internal_pipes);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_IO_DEVICE_ERROR))
 	{
-		TALLOC_FREE(internal_pipes);
-		domain->private_data = NULL;
+		TALLOC_FREE(domain->backend_data.samr_pipes);
 		return true;
 	}
 
 	if (!dcerpc_binding_handle_is_connected(b)) {
-		TALLOC_FREE(internal_pipes);
-		domain->private_data = NULL;
+		TALLOC_FREE(domain->backend_data.samr_pipes);
 		return true;
 	}
 
