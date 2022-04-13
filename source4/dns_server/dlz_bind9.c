@@ -167,7 +167,10 @@ static const char *b9_format_fqdn(TALLOC_CTX *mem_ctx, const char *str)
 }
 
 /*
-  format a record for bind9
+ * Format a record for bind9.
+ *
+ * On failure/error returns false, OR sets *data to NULL.
+ * Callers should check for both!
  */
 static bool b9_format(struct dlz_bind9_data *state,
 		      TALLOC_CTX *mem_ctx,
