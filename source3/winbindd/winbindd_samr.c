@@ -150,9 +150,10 @@ static NTSTATUS open_cached_internal_pipe_conn(
 	struct rpc_pipe_client **lsa_pipe,
 	struct policy_handle *lsa_hnd)
 {
-	struct winbind_internal_pipes *internal_pipes = NULL;
+	struct winbind_internal_pipes *internal_pipes =
+		domain->backend_data.samr_pipes;
 
-	if (domain->backend_data.samr_pipes == NULL) {
+	if (internal_pipes == NULL) {
 		TALLOC_CTX *frame = talloc_stackframe();
 		NTSTATUS status;
 
@@ -190,13 +191,10 @@ static NTSTATUS open_cached_internal_pipe_conn(
 		}
 
 		domain->backend_data.samr_pipes =
-			talloc_move(domain, &internal_pipes);
+			talloc_steal(domain, internal_pipes);
 
 		TALLOC_FREE(frame);
-
 	}
-
-	internal_pipes = domain->backend_data.samr_pipes;
 
 	if (samr_domain_hnd) {
 		*samr_domain_hnd = internal_pipes->samr_domain_hnd;
