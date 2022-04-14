@@ -6627,7 +6627,7 @@ int main(int argc,char *argv[])
 
 		/* if the service has already been retrieved then check if we have also a password */
 		if (service_opt &&
-		    cli_credentials_get_password(creds) == NULL &&
+		    cli_credentials_get_password_obtained(creds) != CRED_SPECIFIED &&
 		    poptPeekArg(pc)) {
 			cli_credentials_set_password(creds,
 						     poptGetArg(pc),
@@ -6731,7 +6731,7 @@ int main(int argc,char *argv[])
 
 	/* if the service has already been retrieved then check if we have also a password */
 	if (service_opt &&
-	    cli_credentials_get_password(creds) == NULL &&
+	    cli_credentials_get_password_obtained(creds) != CRED_SPECIFIED &&
 	    poptPeekArg(pc)) {
 		cli_credentials_set_password(creds,
 					     poptGetArg(pc),
