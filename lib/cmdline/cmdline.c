@@ -837,8 +837,10 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 						     CRED_SPECIFIED);
 		}
 
-		(void)cli_credentials_get_password_and_obtained(creds,
-								&password_obtained);
+		if (!skip_password_callback) {
+			(void)cli_credentials_get_password_and_obtained(creds,
+									&password_obtained);
+		}
 		if (!skip_password_callback &&
 		    password_obtained < CRED_CALLBACK) {
 			ok = cli_credentials_set_cmdline_callbacks(creds);
