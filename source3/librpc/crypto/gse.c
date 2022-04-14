@@ -281,9 +281,6 @@ err_out:
 static NTSTATUS gse_init_client(struct gensec_security *gensec_security,
 				bool do_sign, bool do_seal,
 				const char *ccache_name,
-				const char *realm,
-				const char *username,
-				const char *password,
 				uint32_t add_gss_c_flags,
 				struct gse_context **_gse_ctx)
 {
@@ -865,9 +862,6 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 	NTSTATUS nt_status;
 	OM_uint32 want_flags = 0;
 	bool do_sign = false, do_seal = false;
-	const char *username = cli_credentials_get_username(creds);
-	const char *password = cli_credentials_get_password(creds);
-	const char *realm = cli_credentials_get_realm(creds);
 
 	nt_status = gensec_kerberos_possible(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -915,7 +909,6 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 #endif
 
 	nt_status = gse_init_client(gensec_security, do_sign, do_seal, NULL,
-				    realm, username, password,
 				    want_flags, &gse_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
