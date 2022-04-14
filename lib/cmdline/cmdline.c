@@ -803,19 +803,6 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 				"Unable to read defaults from smb.conf\n");
 		}
 
-		(void)cli_credentials_get_password_and_obtained(creds,
-								&password_obtained);
-		if (!skip_password_callback &&
-		    password_obtained < CRED_CALLBACK) {
-			ok = cli_credentials_set_cmdline_callbacks(creds);
-			if (!ok) {
-				fprintf(stderr,
-					"Failed to set cmdline password "
-					"callback\n");
-				exit(1);
-			}
-		}
-
 		if (machine_account_pending) {
 			NTSTATUS status;
 
@@ -848,6 +835,19 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 			cli_credentials_parse_string(creds,
 						     username,
 						     CRED_SPECIFIED);
+		}
+
+		(void)cli_credentials_get_password_and_obtained(creds,
+								&password_obtained);
+		if (!skip_password_callback &&
+		    password_obtained < CRED_CALLBACK) {
+			ok = cli_credentials_set_cmdline_callbacks(creds);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set cmdline password "
+					"callback\n");
+				exit(1);
+			}
 		}
 
 		return;
