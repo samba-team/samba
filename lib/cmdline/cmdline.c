@@ -837,6 +837,25 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 						     CRED_SPECIFIED);
 		}
 
+		if (cli_credentials_get_kerberos_state(creds) ==
+		    CRED_USE_KERBEROS_REQUIRED)
+		{
+			enum credentials_obtained ccache_obtained =
+				CRED_UNINITIALISED;
+			enum credentials_obtained principal_obtained =
+				CRED_UNINITIALISED;
+			bool ccache_valid;
+
+			principal_obtained =
+				cli_credentials_get_principal_obtained(creds);
+			ccache_valid = cli_credentials_get_ccache_name_obtained(
+				creds, NULL, NULL, &ccache_obtained);
+			if (ccache_valid &&
+			    ccache_obtained == principal_obtained)
+			{
+				skip_password_callback = true;
+			}
+		}
 		if (!skip_password_callback) {
 			(void)cli_credentials_get_password_and_obtained(creds,
 									&password_obtained);
