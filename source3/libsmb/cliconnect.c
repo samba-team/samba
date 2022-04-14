@@ -2424,9 +2424,25 @@ NTSTATUS cli_tree_connect_creds(struct cli_state *cli,
 				const char *share, const char *dev,
 				struct cli_credentials *creds)
 {
+	bool need_pass = false;
 	const char *pw = NULL;
 
-	if (creds != NULL) {
+	/*
+	 * We should work out if the protocol
+	 * will make use of a password for share level
+	 * authentication before we may cause
+	 * the password prompt to be called.
+	 */
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
+
+		/* in user level security don't send a password now */
+		if (!(sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
+			need_pass = true;
+		}
+	}
+
+	if (need_pass && creds != NULL) {
 		pw = cli_credentials_get_password(creds);
 	}
 
