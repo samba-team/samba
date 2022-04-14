@@ -512,6 +512,19 @@ _PUBLIC_ const char *cli_credentials_get_password(struct cli_credentials *cred)
 }
 
 /**
+ * @brief Find out how the password was obtained.
+ *
+ * @param cred A credentials context.
+ *
+ * @return The obtained information for the password.
+ */
+_PUBLIC_ enum credentials_obtained
+cli_credentials_get_password_obtained(struct cli_credentials *cred)
+{
+	return cred->password_obtained;
+}
+
+/**
  * @brief Obtain the password for this credentials context.
  *
  * @param[in]  cred  The credential context.
