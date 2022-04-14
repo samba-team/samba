@@ -293,7 +293,8 @@ static NTSTATUS gse_init_client(struct gensec_security *gensec_security,
 	}
 
 	if (ccache_name == NULL) {
-		ccache_name = krb5_cc_default_name(gse_ctx->k5ctx);
+		DBG_ERR("No explicit ccache_name given\n");
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	k5ret = krb5_cc_resolve(gse_ctx->k5ctx,
@@ -867,6 +868,240 @@ done:
 	return errstr;
 }
 
+struct gensec_gse_client_prepare_krb5_ccache {
+	krb5_context kctx;
+	krb5_ccache id;
+	char *name;
+};
+
+static int gensec_gse_client_prepare_krb5_ccache_destructor(
+	struct gensec_gse_client_prepare_krb5_ccache *ccache)
+{
+	if (ccache->id != NULL) {
+		krb5_cc_destroy(ccache->kctx, ccache->id);
+		ccache->id = NULL;
+	}
+
+	if (ccache->kctx != NULL) {
+		krb5_free_context(ccache->kctx);
+		ccache->kctx = NULL;
+	}
+
+	return 0;
+}
+
+static NTSTATUS gensec_gse_client_prepare_krb5_ccache_create(TALLOC_CTX *mem_ctx,
+			struct gensec_gse_client_prepare_krb5_ccache **_ccache)
+{
+	struct gensec_gse_client_prepare_krb5_ccache *ccache = NULL;
+	int ret;
+
+	*_ccache = NULL;
+
+	ccache = talloc_zero(mem_ctx, struct gensec_gse_client_prepare_krb5_ccache);
+	if (ccache == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	talloc_set_destructor(ccache,
+		gensec_gse_client_prepare_krb5_ccache_destructor);
+
+	ret = smb_krb5_init_context_common(&ccache->kctx);
+	if (ret != 0) {
+		TALLOC_FREE(ccache);
+		return krb5_to_nt_status(ret);
+	}
+
+	ret = smb_krb5_cc_new_unique_memory(ccache->kctx,
+					    ccache,
+					    &ccache->name,
+					    &ccache->id);
+	if (ret != 0) {
+		TALLOC_FREE(ccache);
+		return krb5_to_nt_status(ret);
+	}
+
+	*_ccache = ccache;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_gse_client_prepare_ccache(struct gensec_security *gensec,
+						 const char **_ccache_name)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cli_credentials *creds = gensec_get_credentials(gensec);
+	enum credentials_use_kerberos krb5_state = CRED_USE_KERBEROS_REQUIRED;
+	enum credentials_obtained user_obtained = CRED_UNINITIALISED;
+	const char *user_principal = NULL;
+	const char *debug_username = NULL;
+	const char *debug_target = NULL;
+	enum credentials_obtained pass_obtained = CRED_UNINITIALISED;
+	const char *pass = NULL;
+	bool ccache_valid = false;
+	enum credentials_obtained ccache_obtained = CRED_UNINITIALISED;
+	char *e_ccache_name = NULL;
+	struct gensec_gse_client_prepare_krb5_ccache *ccache = NULL;
+	const char *error_string = NULL;
+	char *canon_principal = NULL;
+	char *canon_realm = NULL;
+	NTSTATUS status;
+	int ret;
+	int dbg_fail_lvl = DBGLVL_NOTICE;
+	bool may_ignore_krb5 = true;
+
+	debug_username = cli_credentials_get_unparsed_name(creds, frame);
+	debug_target = gensec_get_unparsed_target_principal(gensec, frame);
+
+	krb5_state = cli_credentials_get_kerberos_state(creds);
+	if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
+		DBG_DEBUG("Kerberos required username[%s]\n",
+			  debug_username);
+		dbg_fail_lvl = DBGLVL_ERR;
+		may_ignore_krb5 = false;
+	}
+
+	pass_obtained = cli_credentials_get_password_obtained(creds);
+	ccache_valid = cli_credentials_get_ccache_name_obtained(creds,
+								gensec,
+								&e_ccache_name,
+								&ccache_obtained);
+	if (ccache_valid && ccache_obtained >= pass_obtained) {
+		DBG_INFO("No kinit required for %s to access %s, %s\n",
+			 debug_username, debug_target, e_ccache_name);
+		*_ccache_name = e_ccache_name;
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+	TALLOC_FREE(e_ccache_name);
+
+	/*
+	 * gensec_kerberos_possible() already checked
+	 * cli_credentials_get_principal() worked
+	 */
+	user_principal = cli_credentials_get_principal_and_obtained(creds,
+								frame,
+								&user_obtained);
+	if (user_principal == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pass = cli_credentials_get_password(creds);
+	if (pass == NULL) {
+		DBG_PREFIX(dbg_fail_lvl, (
+			   "No password for user principal[%s]\n",
+			   user_principal));
+		TALLOC_FREE(frame);
+		if (may_ignore_krb5) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		return NT_STATUS_WRONG_CREDENTIAL_HANDLE;
+	}
+
+	status = gensec_gse_client_prepare_krb5_ccache_create(creds,
+							      &ccache);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("gensec_gse_client_prepare_krb5_ccache_create(): %s\n",
+			nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+	/* cleanup via frame on error */
+	talloc_reparent(creds, frame, ccache);
+
+	DBG_INFO("Doing kinit for %s to access %s into %s\n",
+		 user_principal, debug_target, ccache->name);
+
+	ret = kerberos_kinit_password_ext(user_principal,
+					  pass,
+					  0,
+					  0,
+					  0,
+					  ccache->name,
+					  false,
+					  false,
+					  0,
+					  frame,
+					  &canon_principal,
+					  &canon_realm,
+					  NULL);
+	if (ret != 0) {
+		switch (ret) {
+		case KRB5KDC_ERR_PREAUTH_FAILED:
+		case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
+		case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+			/*
+			 * If the fail to authenticate a
+			 * valid user
+			 */
+			dbg_fail_lvl = DBGLVL_ERR;
+			may_ignore_krb5 = false;
+			status = NT_STATUS_LOGON_FAILURE;
+			break;
+		case KRB5KDC_ERR_CLIENT_REVOKED:
+			/*
+			 * If the fail to authenticate a
+			 * valid user
+			 */
+			dbg_fail_lvl = DBGLVL_ERR;
+			may_ignore_krb5 = false;
+			status = NT_STATUS_ACCOUNT_LOCKED_OUT;
+			break;
+		case KRB5_REALM_UNKNOWN:
+		case KRB5_KDC_UNREACH:
+			status = NT_STATUS_NO_LOGON_SERVERS;
+			break;
+		default:
+			status = krb5_to_nt_status(ret);
+			break;
+		}
+
+		DBG_PREFIX(dbg_fail_lvl, (
+			   "Kinit for %s to access %s failed: %s: %s\n",
+			   user_principal,
+			   debug_target,
+			   error_message(ret), nt_errstr(status)));
+		TALLOC_FREE(frame);
+		if (may_ignore_krb5) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		return status;
+	}
+
+	ret = cli_credentials_set_ccache(creds,
+					 gensec->settings->lp_ctx,
+					 ccache->name,
+					 CRED_SPECIFIED,
+					 &error_string);
+	if (ret != 0) {
+		DBG_ERR("cli_credentials_set_ccache(%s) "
+			"for %s to access %s failed: %s\n",
+			ccache->name,
+			user_principal,
+			debug_target,
+			error_string);
+		TALLOC_FREE(frame);
+		return krb5_to_nt_status(ret);
+	}
+
+	DBG_DEBUG("Successfully kinit as %s (%s) to access %s into %s\n",
+		  user_principal,
+		  canon_principal,
+		  debug_target,
+		  ccache->name);
+
+	/*
+	 * keep the ccache for the lifetime
+	 * of creds
+	 */
+	*_ccache_name = ccache->name;
+
+	talloc_move(creds, &ccache);
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 {
 	struct gse_context *gse_ctx;
@@ -891,6 +1126,12 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 
 		TALLOC_FREE(target_name);
 		TALLOC_FREE(cred_name);
+		return nt_status;
+	}
+
+	nt_status = gensec_gse_client_prepare_ccache(gensec_security,
+						     &ccache_name);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
