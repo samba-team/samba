@@ -758,6 +758,95 @@ _PUBLIC_ int cli_credentials_get_ccache(struct cli_credentials *cred,
 	return cli_credentials_get_named_ccache(cred, event_ctx, lp_ctx, NULL, ccc, error_string);
 }
 
+/**
+ * @brief Check if a valid Kerberos credential cache is attached.
+ *
+ * This will not ask for a password nor do a kinit.
+ *
+ * @param cred The credentials context.
+ *
+ * @param mem_ctx A memory context to allocate the ccache_name.
+ *
+ * @param ccache_name A pointer to a string to store the ccache name.
+ *
+ * @param obtained A pointer to store the information how the ccache was
+ *                 obtained.
+ *
+ * @return True if a credential cache is attached, false if not or an error
+ *         occurred.
+ */
+_PUBLIC_ bool cli_credentials_get_ccache_name_obtained(
+	struct cli_credentials *cred,
+	TALLOC_CTX *mem_ctx,
+	char **ccache_name,
+	enum credentials_obtained *obtained)
+{
+	if (ccache_name != NULL) {
+		*ccache_name = NULL;
+	}
+
+	if (obtained != NULL) {
+		*obtained = CRED_UNINITIALISED;
+	}
+
+	if (cred->machine_account_pending) {
+		return false;
+	}
+
+	if (cred->ccache_obtained == CRED_UNINITIALISED) {
+		return false;
+	}
+
+	if (cred->ccache_obtained >= cred->ccache_threshold) {
+		krb5_context k5ctx = cred->ccache->smb_krb5_context->krb5_context;
+		krb5_ccache k5ccache = cred->ccache->ccache;
+		krb5_error_code ret;
+		time_t lifetime = 0;
+
+		ret = smb_krb5_cc_get_lifetime(k5ctx, k5ccache, &lifetime);
+		if (ret == KRB5_CC_END || ret == ENOENT) {
+			return false;
+		}
+		if (ret != 0) {
+			return false;
+		}
+		if (lifetime == 0) {
+			return false;
+		} else if (lifetime < 300) {
+			if (cred->password_obtained >= cred->ccache_obtained) {
+				/*
+				 * we have a password to re-kinit
+				 * so let the caller try that.
+				 */
+				return false;
+			}
+		}
+
+		if (ccache_name != NULL) {
+			char *name = NULL;
+
+			ret = krb5_cc_get_full_name(k5ctx, k5ccache, &name);
+			if (ret != 0) {
+				return false;
+			}
+
+			*ccache_name = talloc_strdup(mem_ctx, name);
+			SAFE_FREE(name);
+			if (*ccache_name == NULL) {
+				return false;
+			}
+		}
+
+		if (obtained != NULL) {
+			*obtained = cred->ccache_obtained;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
 /* We have good reason to think the ccache in these credentials is invalid - blow it away */
 static void cli_credentials_unconditionally_invalidate_client_gss_creds(struct cli_credentials *cred)
 {

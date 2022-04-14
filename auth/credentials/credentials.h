@@ -120,6 +120,10 @@ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 				     struct loadparm_context *lp_ctx,
 				     char *ccache_name,
 				     struct ccache_container **ccc, const char **error_string);
+bool cli_credentials_get_ccache_name_obtained(struct cli_credentials *cred,
+					      TALLOC_CTX *mem_ctx,
+					      char **ccache_name,
+					      enum credentials_obtained *obtained);
 bool cli_credentials_failed_kerberos_login(struct cli_credentials *cred,
 					   const char *principal,
 					   unsigned int *count);
