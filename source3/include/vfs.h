@@ -367,6 +367,8 @@
  * Version 47 - Add SMB_VFS_FSTATAT
  * Version 47 - Change SMB_VFS_GET_REAL_FILENAME to return NTSTATUS
  * Version 47 - remove st_ex_itime from struct stat_ex
+ * Version 47 - remove (unused) struct lock_struct last_lock_failure
+		from files_struct.
  */
 
 #define SMB_VFS_INTERFACE_VERSION 47
@@ -457,7 +459,6 @@ typedef struct files_struct {
 	struct fsp_lease *lease;
 	int sent_oplock_break;
 	struct tevent_timer *oplock_timeout;
-	struct lock_struct last_lock_failure;
 	int current_lock_count; /* Count the number of outstanding locks and pending locks. */
 
 	uint64_t posix_flags;
