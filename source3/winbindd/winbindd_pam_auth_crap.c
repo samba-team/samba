@@ -26,7 +26,7 @@
 
 struct winbindd_pam_auth_crap_state {
 	struct winbindd_response *response;
-	bool authoritative;
+	uint8_t authoritative;
 	uint32_t flags;
 };
 
@@ -48,7 +48,7 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 	if (req == NULL) {
 		return NULL;
 	}
-	state->authoritative = true;
+	state->authoritative = 1;
 	state->flags = request->flags;
 
 	if (state->flags & WBFLAG_PAM_AUTH_PAC) {
@@ -131,7 +131,7 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 		 * We don't know the domain so
 		 * we're not authoritative
 		 */
-		state->authoritative = false;
+		state->authoritative = 0;
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return tevent_req_post(req, ev);
 	}
