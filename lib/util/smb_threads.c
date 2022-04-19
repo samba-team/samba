@@ -23,8 +23,12 @@
  * thread local storage.
  */
 
-#include "includes.h"
+#include "replace.h"
 #include "smb_threads.h"
+#include "smb_threads_internal.h"
+#include "lib/util/debug.h"
+#include "lib/util/fault.h"
+#include "lib/util/memory.h"
 
 /*********************************************************
  Functions to vector the locking primitives used internally
