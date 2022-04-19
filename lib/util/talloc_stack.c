@@ -37,7 +37,13 @@
  * called after the parent would set the talloc_tos() to the wrong value.
  */
 
-#include "includes.h"
+#include "replace.h"
+#include <talloc.h>
+#include "lib/util/talloc_stack.h"
+#include "lib/util/smb_threads.h"
+#include "lib/util/smb_threads_internal.h"
+#include "lib/util/fault.h"
+#include "lib/util/debug.h"
 
 struct talloc_stackframe {
 	int talloc_stacksize;
