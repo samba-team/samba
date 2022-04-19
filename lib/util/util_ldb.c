@@ -20,9 +20,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include <ldb.h>
-#include "../lib/util/util_ldb.h"
+#include "lib/util/util_ldb.h"
+#include "lib/util/debug.h"
 
 /*
  * search the LDB for the specified attributes - va_list variant
