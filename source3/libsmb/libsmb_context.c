@@ -31,6 +31,8 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "lib/param/param.h"
+#include "../lib/util/smb_threads.h"
+#include "../lib/util/smb_threads_internal.h"
 
 /*
  * Is the logging working / configfile read ?

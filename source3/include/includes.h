@@ -269,8 +269,6 @@ typedef char fstring[FSTRING_LEN];
 
 #include "../lib/util/samba_modules.h"
 #include "../lib/util/talloc_stack.h"
-#include "../lib/util/smb_threads.h"
-#include "../lib/util/smb_threads_internal.h"
 
 /* samba_setXXid functions. */
 #include "../lib/util/setid.h"
