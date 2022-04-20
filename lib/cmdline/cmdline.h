@@ -301,7 +301,7 @@ poptContext samba_popt_get_context(const char * name,
 	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
 	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_LEGACY_S3), \
 	.val        = 0, \
-	.descrip    = "Deprecated legcacy options:", \
+	.descrip    = "Deprecated legacy options:", \
 	.argDescrip = NULL },
 
 /* TODO Get rid of me! */
@@ -311,7 +311,7 @@ poptContext samba_popt_get_context(const char * name,
 	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
 	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_LEGACY_S4), \
 	.val        = 0, \
-	.descrip    = "Deprecated legcacy options:", \
+	.descrip    = "Deprecated legacy options:", \
 	.argDescrip = NULL },
 
 #endif /* _CMDLINE_H */
