@@ -872,7 +872,8 @@ failed:
 	talloc_free(module);
 	if (NT_STATUS_IS_LDAP(status)) {
 		return NT_STATUS_LDAP_CODE(status);
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)
 		   || NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)
 		   || NT_STATUS_EQUAL(status, NT_STATUS_LOGON_FAILURE)
 		   || NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
