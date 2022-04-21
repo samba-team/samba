@@ -1862,6 +1862,8 @@ static void call_trans2setfsinfo(connection_struct *conn,
 
 static void call_trans2qpipeinfo(connection_struct *conn,
 				 struct smb_request *req,
+				 files_struct *fsp,
+				 uint16_t info_level,
 				 unsigned int tran_call,
 				 char **pparams, int total_params,
 				 char **ppdata, int total_data,
@@ -1871,26 +1873,11 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 	char *pdata = *ppdata;
 	unsigned int data_size = 0;
 	unsigned int param_size = 2;
-	uint16_t info_level;
-	files_struct *fsp;
 
-	if (!params) {
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
-	}
-
-	if (total_params < 4) {
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
-	}
-
-	fsp = file_fsp(req, SVAL(params,0));
 	if (!fsp_is_np(fsp)) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
-
-	info_level = SVAL(params,2);
 
 	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if (*pparams == NULL) {
@@ -1973,16 +1960,23 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		if (IS_IPC(conn)) {
-			call_trans2qpipeinfo(conn, req,	tran_call,
-					     pparams, total_params,
-					     ppdata, total_data,
-					     max_data_bytes);
-			return;
-		}
-
 		fsp = file_fsp(req, SVAL(params,0));
 		info_level = SVAL(params,2);
+
+		if (IS_IPC(conn)) {
+			call_trans2qpipeinfo(
+				conn,
+				req,
+				fsp,
+				info_level,
+				tran_call,
+				pparams,
+				total_params,
+				ppdata,
+				total_data,
+				max_data_bytes);
+			return;
+		}
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
 
