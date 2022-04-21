@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 #include "system/syslog.h"
 #include "system/filesys.h"
 #include "printing.h"

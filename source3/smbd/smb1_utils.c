@@ -20,6 +20,8 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "libcli/security/security.h"
 #include "lib/util/sys_rw_data.h"
 #include "smbd/fd_handle.h"

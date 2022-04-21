@@ -20,9 +20,10 @@
 #ifndef FD_HANDLE_H
 #define FD_HANDLE_H
 
-#include "includes.h"
-#include "smbd/smbd.h"
-#include "smbd/globals.h"
+#include "replace.h"
+#include <talloc.h>
+
+struct fd_handle;
 
 struct fd_handle *fd_handle_create(TALLOC_CTX *mem_ctx);
 
