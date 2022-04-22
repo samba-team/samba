@@ -3,10 +3,10 @@
 # this tests share enumeration with "access based share enum"
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: $0 SERVER USERNAME PASSWORD RPCCLIENT
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER="$1"
@@ -15,13 +15,14 @@ PASSWORD="$3"
 RPCCLIENT="$4"
 RPCCLIENT="$VALGRIND ${RPCCLIENT}"
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
-user_see_share() {
-    local user=$1
-    local share=$2
-    $RPCCLIENT //$SERVER -U$user%$PASSWORD -c "netshareenumall" | grep $share > /dev/null 2>&1
+user_see_share()
+{
+	local user=$1
+	local share=$2
+	$RPCCLIENT //$SERVER -U$user%$PASSWORD -c "netshareenumall" | grep $share >/dev/null 2>&1
 }
 
 testit "$USERNAME sees tmp" user_see_share $USERNAME tmp
