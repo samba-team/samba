@@ -11,12 +11,12 @@ cd $SELFTEST_TMPDIR || exit 1
 
 delay_inject_conf=$(dirname $SMB_CONF_PATH)/delay_inject.conf
 
-echo 'delay_inject:fntimes = 5000' > $delay_inject_conf
+echo 'delay_inject:fntimes = 5000' >$delay_inject_conf
 
 testit "durable_v2_delay.durable_v2_reconnect_delay" $VALGRIND \
-       $BINDIR/smbtorture //$SERVER_IP/delay_inject \
-       -U$USERNAME%$PASSWORD \
-       smb2.durable-v2-delay.durable_v2_reconnect_delay ||
+	$BINDIR/smbtorture //$SERVER_IP/delay_inject \
+	-U$USERNAME%$PASSWORD \
+	smb2.durable-v2-delay.durable_v2_reconnect_delay ||
 	failed=$(expr $failed + 1)
 
 SMBD_LOG_FILES="$SMBD_TEST_LOG"
@@ -26,9 +26,9 @@ if [ $SMBD_DONT_LOG_STDOUT -eq 1 ]; then
 fi
 
 testit "durable_v2_delay.durable_v2_reconnect_delay_msec" $VALGRIND \
-       $BINDIR/smbtorture //$SERVER_IP/durable \
-       -U$USERNAME%$PASSWORD \
-       smb2.durable-v2-delay.durable_v2_reconnect_delay_msec ||
+	$BINDIR/smbtorture //$SERVER_IP/durable \
+	-U$USERNAME%$PASSWORD \
+	smb2.durable-v2-delay.durable_v2_reconnect_delay_msec ||
 	failed=$(expr $failed + 1)
 
 rm $delay_inject_conf
