@@ -1,10 +1,10 @@
 #!/bin/sh
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_net_registry_import.sh SERVER LOCAL_PATH USERNAME PASSWORD
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER="$1"
@@ -18,23 +18,23 @@ failed=0
 
 samba_net="$BINDIR/net"
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
+test_net_registry_import()
+{
 
-test_net_registry_import() {
-
-#
-# Expect:
-# Found Byte Order Mark for : UTF-16LE
-#
+	#
+	# Expect:
+	# Found Byte Order Mark for : UTF-16LE
+	#
 	cmd='$VALGRIND $samba_net rpc registry import $LOCAL_PATH/case3b45ccc3b.dat -S$SERVER -U$USERNAME%$PASSWORD $ADDARGS'
 
 	eval echo "$cmd"
-	out=`eval $cmd 2>&1`
+	out=$(eval $cmd 2>&1)
 	ret=$?
 
-	if [ $ret != 0 ] ; then
+	if [ $ret != 0 ]; then
 		echo "$out"
 		echo "command failed with output $ret"
 		false
@@ -44,24 +44,24 @@ test_net_registry_import() {
 	echo "$out" | grep 'Found Byte Order Mark for : UTF-16LE'
 	ret=$?
 
-	if [ $ret -ne 0 ] ; then
+	if [ $ret -ne 0 ]; then
 		echo "$out"
 		echo "$samba_net rpc registry import $LOCAL_PATH/case3b45ccc3b.dat failed - should get 'Found Byte Order Mark for : UTF-16LE'"
 		false
 		return
 	fi
 
-#
-# Expect:
-# reg_parse_fd: smb_iconv error in file at line 0: <bf><77><d4><41>
-#
+	#
+	# Expect:
+	# reg_parse_fd: smb_iconv error in file at line 0: <bf><77><d4><41>
+	#
 	cmd='$VALGRIND $samba_net rpc registry import $LOCAL_PATH/casecbe8c2427.dat -S$SERVER -U$USERNAME%$PASSWORD $ADDARGS'
 
 	eval echo "$cmd"
-	out=`eval $cmd 2>&1`
+	out=$(eval $cmd 2>&1)
 	ret=$?
 
-	if [ $? != 0 ] ; then
+	if [ $? != 0 ]; then
 		echo "$out"
 		echo "command failed with output $ret"
 		false
@@ -71,29 +71,29 @@ test_net_registry_import() {
 	echo "$out" | grep 'reg_parse_fd: smb_iconv error in file at line 0: <bf><77><d4><41>'
 	ret=$?
 
-	if [ $ret -ne 0 ] ; then
+	if [ $ret -ne 0 ]; then
 		echo "$out"
 		echo "$samba_net rpc registry import $LOCAL_PATH/case3b45ccc3b.dat failed - should get 'reg_parse_fd: smb_iconv error in file at line 0: <bf><77><d4><41>'"
 		false
 		return
 	fi
 
-#
-# For test3.dat, the parse of the first part of the file is successful,
-# but fails on upload as we're writing to an unwriteable registry.
-# Expect:
-# setval ProductType failed: WERR_REGISTRY_IO_FAILED
-# reg_parse_fd: reg_parse_line line 21 fail -2
-# This counts as a success test as the file is parsed, but
-# the upload failed.
-#
+	#
+	# For test3.dat, the parse of the first part of the file is successful,
+	# but fails on upload as we're writing to an unwriteable registry.
+	# Expect:
+	# setval ProductType failed: WERR_REGISTRY_IO_FAILED
+	# reg_parse_fd: reg_parse_line line 21 fail -2
+	# This counts as a success test as the file is parsed, but
+	# the upload failed.
+	#
 	cmd='$VALGRIND $samba_net rpc registry import $LOCAL_PATH/regtest3.dat -S$SERVER -U$USERNAME%$PASSWORD $ADDARGS'
 
 	eval echo "$cmd"
-	out=`eval $cmd 2>&1`
+	out=$(eval $cmd 2>&1)
 	ret=$?
 
-	if [ $? != 0 ] ; then
+	if [ $? != 0 ]; then
 		echo "$out"
 		echo "command failed with output $ret"
 		false
@@ -103,7 +103,7 @@ test_net_registry_import() {
 	echo "$out" | grep 'setval ProductType failed: WERR_REGISTRY_IO_FAILED'
 	ret=$?
 
-	if [ $ret -ne 0 ] ; then
+	if [ $ret -ne 0 ]; then
 		echo "$out"
 		echo "$samba_net rpc registry import $LOCAL_PATH/regtest3.dat failed - should get 'setval ProductType failed: WERR_REGISTRY_IO_FAILED'"
 		false
@@ -113,7 +113,7 @@ test_net_registry_import() {
 	echo "$out" | grep 'reg_parse_fd: reg_parse_line 20 fail -2'
 	ret=$?
 
-	if [ $ret -ne 0 ] ; then
+	if [ $ret -ne 0 ]; then
 		echo "$out"
 		echo "$samba_net rpc registry import $LOCAL_PATH/regtest3.dat failed - should get 'reg_parse_fd: reg_parse_line 20 fail -2'"
 		false
@@ -128,20 +128,20 @@ test_net_registry_import() {
 # Check net rpc registry import doesn't crash
 ###########################################################
 
-	rm -f $LOCAL_PATH/case3b45ccc3b.dat
-	rm -f $LOCAL_PATH/casecbe8c2427.dat
-	rm -f $LOCAL_PATH/regtest3.dat
+rm -f $LOCAL_PATH/case3b45ccc3b.dat
+rm -f $LOCAL_PATH/casecbe8c2427.dat
+rm -f $LOCAL_PATH/regtest3.dat
 
 # Create test cases
 
-	base64 -d <<'EOF' | gunzip -c > $LOCAL_PATH/case3b45ccc3b.dat
+base64 -d <<'EOF' | gunzip -c >$LOCAL_PATH/case3b45ccc3b.dat
 H4sIAODLjlwCA/v/L5whkyGPIYUhn6GcoZhBgSGIIZUhHShWzFDCUMRQCRRxBcpmAnn5QL4CQxhQ
 vggomwnk5wH5pgx6DAZAyMvABcbRDB4M3kA9kQzxDD4M/gzODI5AOp7BF0g7A+U8GfyAsjEMwUAV
 wQwhQLYvkOfMUPqRUvDw4yAHnz6OgsELgGlYh8EYCHXA6RnENmLIgbJNGZLh4jEMvEWRee8eXl8u
 //f8N9vK5cVVXP9v2rB+/qYw+3xko5Su8jSiLZ0zwJ4GAO4s/cYABAAA
 EOF
 
-	base64 -d <<'EOF' | gunzip -c > $LOCAL_PATH/casecbe8c2427.dat
+base64 -d <<'EOF' | gunzip -c >$LOCAL_PATH/casecbe8c2427.dat
 H4sIALjPjlwCA2NwZfBliGFwZihlKALCVIY8hhIgLx9MFwHpHIZgoGgJUA2ILmIoY8hkSAayioEi
 OQyJQHW5YLIcqLaIIRsoXgLklwBVgcyIYSgA8oqAOBdsCsiEYoZYBl4GLgYlsG2JDElAc1KB6kCm
 ZYLtTWWoAJIgncVACDE5BajeFkjCeFYMBijQEIuZxUCcDPZZJkNJ3f7yK45/V3S8epR2I14uf+4W
@@ -159,7 +159,7 @@ DJXA9JPJkA5MT8YMOuA0psNgBExRMLYZgwkSOxnM1kdiG6CQkNTpD0zXGeBc4AJMx7nQFF8MTttA
 8f8VDBoM5gya4NRNtgN0zczNjM1MDCwMLcwMTCwtLYxNjLE4wK5pwpebAAJ05DUABAAA
 EOF
 
-	base64 -d <<'EOF' > $LOCAL_PATH/regtest3.dat
+base64 -d <<'EOF' >$LOCAL_PATH/regtest3.dat
 UkVHRURJVDQKCltIS0VZX0xPQ0FMX01BQ0hJTkVdCgpbSEtFWV9MT0NBTF9NQUNISU5FXFNPRlRX
 QVJFXQoKW0hLRVlfTE9DQUxfTUFDSElORVxTT0ZUV0FSRVxNaWNyb3NvZnRdCgpbSEtFWV9MT0NB
 TF9NQUNISU5FXFNPRlRXQVJFXE1pY3Jvc29mdFxXaW5kb3dzIE5UXQoKW0hLRVlfTE9DQUxfTUFD
@@ -181,12 +181,12 @@ QWxlcnRlcl0KCltIS0VZX0xPQ0FMX01BQ0hJTkVcU1lTVEVNXEN1cnJlbnRDb250cm9sU2V0XA==
 EOF
 
 testit "Test net rpc registry import" \
-	test_net_registry_import || \
-	failed=`expr $failed + 1`
+	test_net_registry_import ||
+	failed=$(expr $failed + 1)
 
 # Clean up test cases.
-	rm -f $LOCAL_PATH/case3b45ccc3b.dat
-	rm -f $LOCAL_PATH/casecbe8c2427.dat
-	rm -f $LOCAL_PATH/regtest3.dat
+rm -f $LOCAL_PATH/case3b45ccc3b.dat
+rm -f $LOCAL_PATH/casecbe8c2427.dat
+rm -f $LOCAL_PATH/regtest3.dat
 
 testok $0 $failed
