@@ -1,10 +1,10 @@
 #!/bin/sh
 
 if [ $# -lt 1 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_trust_user_account.sh PREFIX OUR_REALM OUR_FLAT REMOTE_REALM REMOTE_FLAT
 EOF
-exit 1;
+	exit 1
 fi
 
 PREFIX="$1"
@@ -14,8 +14,7 @@ REMOTE_REALM="$4"
 REMOTE_FLAT="$5"
 shift 5
 
-. `dirname $0`/subunit.sh
-
+. $(dirname $0)/subunit.sh
 
 samba_tool="$BINDIR/samba-tool"
 samba4bindir="$BINDIR"
@@ -30,7 +29,7 @@ KEYTAB="$PREFIX/tmptda.keytab"
 KRB5_TRACE=/dev/stderr
 export KRB5_TRACE
 
-testit "retrieve keytab for TDA of $REMOTE_REALM" $PYTHON $samba_tool domain exportkeytab $KEYTAB $CONFIGURATION --principal "$REMOTE_FLAT\$@$OUR_REALM" || failed=`expr $failed + 1`
+testit "retrieve keytab for TDA of $REMOTE_REALM" $PYTHON $samba_tool domain exportkeytab $KEYTAB $CONFIGURATION --principal "$REMOTE_FLAT\$@$OUR_REALM" || failed=$(expr $failed + 1)
 
 KRB5CCNAME="$PREFIX/tmptda.ccache"
 samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
@@ -50,9 +49,9 @@ EXPECTED_SALT="${OUR_REALM}krbtgt${REMOTE_FLAT}"
 # "^virtualKerberosSalt: ${EXPECTED_SALT}\\\$\$"
 #
 EXPECTED_GREP="^virtualKerberosSalt: ${EXPECTED_SALT}\$"
-testit_grep "get virtualKerberosSalt for TDA of $REMOTE_FLAT\$" "$EXPECTED_GREP" $PYTHON $samba_tool user getpassword "$REMOTE_FLAT\$" $CONFIGURATION --attributes=virtualKerberosSalt || failed=`expr $failed + 1`
+testit_grep "get virtualKerberosSalt for TDA of $REMOTE_FLAT\$" "$EXPECTED_GREP" $PYTHON $samba_tool user getpassword "$REMOTE_FLAT\$" $CONFIGURATION --attributes=virtualKerberosSalt || failed=$(expr $failed + 1)
 
-testit "kinit with keytab for TDA of $REMOTE_REALM" $samba4kinit -t $KEYTAB "$REMOTE_FLAT\$@$OUR_REALM" || failed=`expr $failed + 1`
+testit "kinit with keytab for TDA of $REMOTE_REALM" $samba4kinit -t $KEYTAB "$REMOTE_FLAT\$@$OUR_REALM" || failed=$(expr $failed + 1)
 
 rm -f $KRB5CCNAME $KEYTAB
 
