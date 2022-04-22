@@ -4,10 +4,10 @@
 #
 
 if [ $# -lt 6 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_forceuser.sh SERVER DOMAIN USERNAME PASSWORD LOCAL_PATH SMBCLIENT <smbclient arguments>
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER="$1"
@@ -21,17 +21,17 @@ shift 6
 ADDARGS="$*"
 failed=0
 
-
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 cd $SELFTEST_TMPDIR || exit 1
 
-run_cmd_nooutput() {
+run_cmd_nooutput()
+{
 	CMD="$1"
 
-	out=`eval ${CMD} > TESTOUT 2>&1`
-	if [ $? != 0 ] ; then
+	out=$(eval ${CMD} >TESTOUT 2>&1)
+	if [ $? != 0 ]; then
 		cat TESTOUT
 		rm -f TESTOUT
 		echo "command failed"
@@ -52,7 +52,7 @@ test_force_user_valid_users()
 
 # Test
 testit "force user not works when combined with valid users" \
-	test_force_user_valid_users || failed=`expr $failed + 1`
+	test_force_user_valid_users || failed=$(expr $failed + 1)
 
 # Cleanup
 
