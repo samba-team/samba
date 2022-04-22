@@ -3,10 +3,10 @@
 # this runs a simple tarmode test
 
 if [ $# -lt 7 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_smbclient_tarmode.sh SERVER SERVER_IP USERNAME PASSWORD LOCAL_PATH PREFIX SMBCLIENT [create|extract] <smbclient arguments>
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER="$1"
@@ -20,19 +20,21 @@ SMBCLIENT="$VALGRIND ${SMBCLIENT}"
 shift 7
 ADDARGS="$*"
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 FAILCOUNT=0
 
 # Check command is available
-have_command() {
-	type "$1" > /dev/null 2>&1
+have_command()
+{
+	type "$1" >/dev/null 2>&1
 	return $?
 }
 
 # Create a test corpus
-create_test_data() {
+create_test_data()
+{
 
 	local DIR="$1"
 	local BS=1024
@@ -46,7 +48,7 @@ create_test_data() {
 		return
 	fi
 
-	if ! mkdir -p "$DIR" > /dev/null 2>&1; then
+	if ! mkdir -p "$DIR" >/dev/null 2>&1; then
 		echo "Couldn't create test data directory '$DIR'"
 		false
 		return
@@ -55,22 +57,22 @@ create_test_data() {
 	local I=1
 	if have_command "od"; then # Use random file sizes
 		local RND_COUNT
-		for RND_COUNT in `od -An -N$NUM_FILES -tu1 < /dev/urandom`; do
-			if ! dd if=/dev/urandom of="$DIR/file.$I" bs=$BS count=$RND_COUNT > /dev/null 2>&1; then
+		for RND_COUNT in $(od -An -N$NUM_FILES -tu1 </dev/urandom); do
+			if ! dd if=/dev/urandom of="$DIR/file.$I" bs=$BS count=$RND_COUNT >/dev/null 2>&1; then
 				echo "Couldn't create test file '$DIR/file.$I' (random size)"
 				false
 				return
 			fi
-			I=`expr $I + 1`
+			I=$(expr $I + 1)
 		done
 	else # Fallback to same file sizes
 		while [ $I -le $NUM_FILES ]; do
-			if ! dd if=/dev/urandom of="$DIR/file.$I" bs=$BS count=$NORND_COUNT > /dev/null 2>&1; then
+			if ! dd if=/dev/urandom of="$DIR/file.$I" bs=$BS count=$NORND_COUNT >/dev/null 2>&1; then
 				echo "Couldn't create test file '$DIR/file.$I' (static size)"
 				false
 				return
 			fi
-			I=`expr $I + 1`
+			I=$(expr $I + 1)
 		done
 	fi
 
@@ -80,7 +82,8 @@ create_test_data() {
 }
 
 # Check that two directories are equivalent (In Data content)
-validate_data() {
+validate_data()
+{
 	local DIR1="$1"
 	local DIR2="$2"
 
@@ -89,11 +92,12 @@ validate_data() {
 }
 
 # Test tarmode -Tc
-test_tarmode_creation() {
+test_tarmode_creation()
+{
 
 	# Clear temp data
-	rm -rf -- "$PREFIX"/tarmode > /dev/null 2>&1
-	rm -f "$PREFIX"/tarmode.tar > /dev/null 2>&1
+	rm -rf -- "$PREFIX"/tarmode >/dev/null 2>&1
+	rm -f "$PREFIX"/tarmode.tar >/dev/null 2>&1
 	$SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -c "deltree smbclient_tar"
 
 	# Build the test data
@@ -105,7 +109,7 @@ test_tarmode_creation() {
 
 	# Create tarfile with smbclient
 	if ! $SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 \
-			$ADDARGS -c "tarmode full" -Tc "$PREFIX/tarmode.tar" "/smbclient_tar"; then
+		$ADDARGS -c "tarmode full" -Tc "$PREFIX/tarmode.tar" "/smbclient_tar"; then
 		echo "Couldn't create tar file with tarmode -Tc"
 		false
 		return
@@ -127,8 +131,8 @@ test_tarmode_creation() {
 	fi
 
 	# Clear temp data
-	rm -rf -- "$PREFIX"/tarmode > /dev/null 2>&1
-	rm -f "$PREFIX"/tarmode.tar > /dev/null 2>&1
+	rm -rf -- "$PREFIX"/tarmode >/dev/null 2>&1
+	rm -f "$PREFIX"/tarmode.tar >/dev/null 2>&1
 	$SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -c "deltree smbclient_tar"
 	true
 	return
@@ -136,11 +140,12 @@ test_tarmode_creation() {
 }
 
 # Test tarmode -Tx
-test_tarmode_extraction() {
+test_tarmode_extraction()
+{
 
 	# Clear temp data
-	rm -rf -- "$PREFIX"/tarmode > /dev/null 2>&1
-	rm -f "$PREFIX"/tarmode.tar > /dev/null 2>&1
+	rm -rf -- "$PREFIX"/tarmode >/dev/null 2>&1
+	rm -f "$PREFIX"/tarmode.tar >/dev/null 2>&1
 	$SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -c "deltree smbclient_tar"
 
 	# Build the test data
@@ -159,7 +164,7 @@ test_tarmode_extraction() {
 
 	# Extract tarfile with smbclient
 	if ! $SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 \
-			$ADDARGS -c "tarmode full" -Tx "$PREFIX/tarmode.tar"; then
+		$ADDARGS -c "tarmode full" -Tx "$PREFIX/tarmode.tar"; then
 		echo "Couldn't extact tar file with tarmode -Tx"
 		false
 		return
@@ -173,20 +178,20 @@ test_tarmode_extraction() {
 	fi
 
 	# Clear temp data
-	rm -rf -- "$PREFIX"/tarmode > /dev/null 2>&1
-	rm -f "$PREFIX"/tarmode.tar > /dev/null 2>&1
+	rm -rf -- "$PREFIX"/tarmode >/dev/null 2>&1
+	rm -f "$PREFIX"/tarmode.tar >/dev/null 2>&1
 	$SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -c "deltree smbclient_tar"
 	# Cleanup the verification data created by test_tarmode_creation().
-	rm -rf "$PREFIX"/smbclient_tar > /dev/null 2>&1
+	rm -rf "$PREFIX"/smbclient_tar >/dev/null 2>&1
 	true
 	return
 
 }
 
 testit "test_tarmode_creation" \
-	test_tarmode_creation || FAILCOUNT=`expr $FAILCOUNT + 1`
+	test_tarmode_creation || FAILCOUNT=$(expr $FAILCOUNT + 1)
 
 testit "test_tarmode_extraction" \
-	test_tarmode_extraction || FAILCOUNT=`expr $FAILCOUNT + 1`
+	test_tarmode_extraction || FAILCOUNT=$(expr $FAILCOUNT + 1)
 
 testok $0 $FAILCOUNT
