@@ -6,10 +6,10 @@
 #
 
 if [ $# -lt 6 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: $0 SERVER USERNAME PASSWORD REALM DOMAIN PREFIX
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
@@ -21,7 +21,7 @@ PREFIX=$6
 shift 6
 
 failed=0
-. `dirname $0`/subunit.sh
+. $(dirname $0)/subunit.sh
 
 samba_bindir="$BINDIR"
 samba_testparm="$BINDIR/testparm"
@@ -32,19 +32,19 @@ opt="--option=gensec:gse_krb5=no -U${USERNAME}%${PASSWORD}"
 unset GNUTLS_FORCE_FIPS_MODE
 
 # Checks that testparm reports: Weak crypto is allowed
-testit_grep "testparm" "Weak crypto is allowed" $samba_testparm --suppress-prompt $SMB_CONF_PATH 2>&1 || failed=`expr $failed + 1`
+testit_grep "testparm" "Weak crypto is allowed" $samba_testparm --suppress-prompt $SMB_CONF_PATH 2>&1 || failed=$(expr $failed + 1)
 
 # We should be allowed to use NTLM for connecting
-testit "rpclient.ntlm" $samba_rpcclient ncacn_np:$SERVER $opt -c "getusername" || failed=`expr $failed + 1`
+testit "rpclient.ntlm" $samba_rpcclient ncacn_np:$SERVER $opt -c "getusername" || failed=$(expr $failed + 1)
 
 GNUTLS_FORCE_FIPS_MODE=1
 export GNUTLS_FORCE_FIPS_MODE
 
 # Checks that testparm reports: Weak crypto is disallowed
-testit_grep "testparm" "Weak crypto is disallowed" $samba_testparm --suppress-prompt $SMB_CONF_PATH 2>&1 || failed=`expr $failed + 1`
+testit_grep "testparm" "Weak crypto is disallowed" $samba_testparm --suppress-prompt $SMB_CONF_PATH 2>&1 || failed=$(expr $failed + 1)
 
 # We should not be allowed to use NTLM for connecting
-testit_expect_failure "rpclient.ntlm" $samba_rpcclient ncacn_np:$SERVER $opt -c "getusername" || failed=`expr $failed + 1`
+testit_expect_failure "rpclient.ntlm" $samba_rpcclient ncacn_np:$SERVER $opt -c "getusername" || failed=$(expr $failed + 1)
 
 unset GNUTLS_FORCE_FIPS_MODE
 
