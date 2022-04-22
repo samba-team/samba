@@ -5,10 +5,10 @@
 # Copyright (C) 2018 Christof Schmitt
 
 if [ $# -lt 6 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: $0 DOMAIN ADMIN_USER ADMIN_PASSWORD SERVER RPCCLIENT SMBTORTURE3 SHARE
 EOF
-exit 1;
+	exit 1
 fi
 
 DOMAIN="$1"
@@ -37,7 +37,7 @@ testit "netsessenum" test $RC = 0 || failed=$(expr $failed + 1)
 OUT=$($RPCCLIENTCMD -c NetSessEnum | grep Received)
 test "$OUT" = "Received 1 entries."
 RC=$?
-testit "count1" test $RC -eq 0  || failed=$(expr $failed + 1)
+testit "count1" test $RC -eq 0 || failed=$(expr $failed + 1)
 
 #
 # Inject smbd crash
@@ -50,6 +50,6 @@ $SMBTORTURE3 //"$SERVER"/"$SHARE" "$USERPASS" CLEANUP1
 OUT=$($RPCCLIENTCMD -c NetSessEnum | grep Received)
 test "$OUT" = "Received 1 entries."
 RC=$?
-testit "count2" test $RC -eq 0  || failed=$(expr $failed + 1)
+testit "count2" test $RC -eq 0 || failed=$(expr $failed + 1)
 
 testok $0 $failed
