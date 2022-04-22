@@ -4,10 +4,10 @@
 #
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: $0 SERVER SHARE USER PASS
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
@@ -18,7 +18,7 @@ smbclient=$BINDIR/smbclient
 
 failed=0
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 . $incdir/common_test_fns.inc
 
