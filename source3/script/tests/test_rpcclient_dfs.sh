@@ -5,10 +5,10 @@
 # Blackbox tests for the rpcclient DFS commands
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_rpcclient_dfs.sh USERNAME PASSWORD SERVER RPCCLIENT
 EOF
-exit 1;
+	exit 1
 fi
 
 USERNAME="$1"
