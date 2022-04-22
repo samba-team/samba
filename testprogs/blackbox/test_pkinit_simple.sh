@@ -68,7 +68,7 @@ testit "STEP0 samba-tool user create ${USERNAME} --smartcard-required" \
 
 testit_expect_failure "STEP1 kinit with password" \
 	kerberos_kinit "${samba_kinit}" "${USERNAME}@${REALM}" "${PASSWORD}" \
-		"${OPTION_REQUEST_PAC}" ||
+	"${OPTION_REQUEST_PAC}" ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP1 Test login with NTLM" \
 	"${smbclient}" "${unc}" -c 'ls' "-U${USERNAME}%${PASSWORD}" ||
@@ -79,7 +79,7 @@ testit_expect_failure "STEP1 Test wbinfo with password" \
 
 testit "STEP1 kinit with pkinit (name specified: ${USERNAME})" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 
 testit "STEP1 kinit renew ticket (name specified)" \
@@ -92,18 +92,18 @@ test_smbclient "STEP1 Test login with kerberos ccache (name specified)" \
 # OK
 testit_expect_failure "STEP1 kinit with pkinit (wrong name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "not${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "not${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 
 testit_expect_failure "STEP1 kinit with pkinit (wrong name specified 2)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${SERVER}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${SERVER}@${REALM}" ||
 	failed=$((failed + 1))
 
 testit "STEP1 kinit with pkinit (enterprise name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
-		"${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
+	"${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit "STEP1 kinit renew ticket (enterprise name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -113,18 +113,18 @@ test_smbclient "STEP1 Test login with kerberos ccache (enterprise name specified
 	failed=$((failed + 1))
 testit_expect_failure "STEP1 kinit with pkinit (wrong enterprise name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
-		"not${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
+	"not${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP1 kinit with pkinit (wrong enterprise name specified 2)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
-		"${SERVER}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
+	"${SERVER}@${REALM}" ||
 	failed=$((failed + 1))
 
 testit "STEP1 kinit with pkinit (enterprise name in cert)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" ||
 	failed=$((failed + 1))
 testit "STEP1 kinit renew ticket (enterprise name in cert)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -137,12 +137,12 @@ test_smbclient "STEP1 Test login with kerberos ccache (enterprise name in cert)"
 # We still have UF_SMARTCARD_REQUIRED, but with a known password
 testit "STEP2 samba-tool user setpassword ${USERNAME} --newpassword" \
 	"${samba_tool}" user setpassword "${USERNAME}" \
-		--newpassword="${PASSWORD}" ||
+	--newpassword="${PASSWORD}" ||
 	failed=$((failed + 1))
 
 testit_expect_failure "STEP2 kinit with password" \
 	kerberos_kinit "${samba_kinit}" "${USERNAME}@${REALM}" "${PASSWORD}" \
-		"${OPTION_REQUEST_PAC}" ||
+	"${OPTION_REQUEST_PAC}" ||
 	failed=$((failed + 1))
 test_smbclient "STEP2 Test login with NTLM" \
 	'ls' "$unc" -U"${USERNAME}%${PASSWORD}" ||
@@ -153,7 +153,7 @@ testit_expect_failure "STEP2 Test wbinfo with password" \
 
 testit "STEP2 kinit with pkinit (name specified) " \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit "STEP2 kinit renew ticket (name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -164,8 +164,8 @@ test_smbclient "STEP2 Test login with kerberos ccache (name specified)" \
 
 testit "STEP2 kinit with pkinit (enterprise name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
-		"${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
+	"${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit "STEP2 kinit renew ticket (enterprise name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -176,7 +176,7 @@ test_smbclient "STEP2 Test login with kerberos ccache (enterprise name specified
 
 testit "STEP2 kinit with pkinit (enterprise name in cert)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" ||
 	failed=$((failed + 1))
 testit "STEP2 kinit renew ticket (enterprise name in cert)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -189,12 +189,12 @@ test_smbclient "STEP2 Test login with kerberos ccache (enterprise name in cert)"
 # The account is a normal account without the UF_SMARTCARD_REQUIRED bit set
 testit "STEP3 samba-tool user setpassword ${USERNAME} --clear-smartcard-required" \
 	"${samba_tool}" user setpassword "${USERNAME}" \
-		--newpassword="${PASSWORD}" --clear-smartcard-required ||
+	--newpassword="${PASSWORD}" --clear-smartcard-required ||
 	failed=$((failed + 1))
 
 testit "STEP3 kinit with password" \
 	kerberos_kinit "${samba_kinit}" "${USERNAME}@${REALM}" "${PASSWORD}" \
-		"${OPTION_REQUEST_PAC}" ||
+	"${OPTION_REQUEST_PAC}" ||
 	failed=$((failed + 1))
 test_smbclient "STEP3 Test login with user kerberos ccache" \
 	'ls' "$unc" --use-krb5-ccache="${KRB5CCNAME}" ||
@@ -208,7 +208,7 @@ testit "STEP3 Test wbinfo with password" \
 
 testit "STEP3 kinit with pkinit (name specified) " \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit "STEP3 kinit renew ticket (name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -219,8 +219,8 @@ test_smbclient "STEP3 Test login with kerberos ccache (name specified)" \
 
 testit "STEP3 kinit with pkinit (enterprise name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
-		"${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
+	"${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit "STEP3 kinit renew ticket (enterprise name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -231,7 +231,7 @@ test_smbclient "STEP3 Test login with kerberos ccache (enterprise name specified
 
 testit "STEP3 kinit with pkinit (enterprise name in cert)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" ||
 	failed=$((failed + 1))
 testit "STEP3 kinit renew ticket (enterprise name in cert)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -249,7 +249,7 @@ testit "STEP4 samba-tool user setpassword $USERNAME --smartcard-required" \
 
 testit_expect_failure "STEP4 kinit with password" \
 	kerberos_kinit "${samba_kinit}" "${USERNAME}@${REALM}" "${PASSWORD}" \
-		"${OPTION_REQUEST_PAC}" ||
+	"${OPTION_REQUEST_PAC}" ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP4 Test login with NTLM" \
 	"${smbclient}" "${unc}" -c 'ls' -U"${USERNAME}%${PASSWORD}" ||
@@ -260,7 +260,7 @@ testit_expect_failure "STEP4 Test wbinfo with password" \
 
 testit "STEP4 kinit with pkinit (name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit "STEP4 kinit renew ticket (name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -271,8 +271,8 @@ test_smbclient "STEP4 Test login with kerberos ccache (name specified)" \
 
 testit "STEP4 kinit with pkinit (enterprise name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
-		"${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
+	"${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit "STEP4 kinit renew ticket (enterprise name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -283,7 +283,7 @@ test_smbclient "STEP4 Test login with kerberos ccache (enterprise name specified
 
 testit "STEP4 kinit with pkinit (enterprise name in cert)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" ||
 	failed=$((failed + 1))
 testit "STEP4 kinit renew ticket (enterprise name in cert)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEW_TICKET}" ||
@@ -300,7 +300,7 @@ testit "STEP5 samba-tool user disable $USERNAME" \
 
 testit_expect_failure "STEP5 kinit with password" \
 	kerberos_kinit "${samba_kinit}" "${USERNAME}@${REALM}" "${PASSWORD}" \
-		"${OPTION_REQUEST_PAC}" ||
+	"${OPTION_REQUEST_PAC}" ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP5 Test login with NTLM" \
 	"${smbclient}" "${unc}" -c 'ls' -U"${USERNAME}%${PASSWORD}" ||
@@ -311,16 +311,16 @@ testit_expect_failure "STEP5 Test wbinfo with password" \
 
 testit_expect_failure "STEP5 kinit with pkinit (name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP5 kinit with pkinit (enterprise name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
-		"${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" \
+	"${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit_expect_failure "STEP5 kinit with pkinit (enterprise name in cert)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" ||
+	"${X509_USER_IDENTITY}" "${OPTION_ENTERPRISE_NAME}" ||
 	failed=$((failed + 1))
 
 # STEP6:
