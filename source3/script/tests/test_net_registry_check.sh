@@ -21,7 +21,7 @@ NETREG="${NET} registry"
 REGORIG="$(grep 'state directory = ' $SERVERCONFFILE | sed 's/[^=]*=//')/registry.tdb"
 REG=$REGORIG.wip
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 failed=0
@@ -118,24 +118,24 @@ test_strangeletters()
 )
 
 testit "simple" \
-	test_simple || \
-	failed=`expr $failed + 1`
+	test_simple ||
+	failed=$(expr $failed + 1)
 
 testit "damages_registry" \
-	test_damage || \
-	failed=`expr $failed + 1`
+	test_damage ||
+	failed=$(expr $failed + 1)
 
 testit "duplicate" \
-	test_duplicate || \
-	failed=`expr $failed + 1`
+	test_duplicate ||
+	failed=$(expr $failed + 1)
 
 testit "slashes" \
-	test_slashes || \
-	failed=`expr $failed + 1`
+	test_slashes ||
+	failed=$(expr $failed + 1)
 
 testit "uppercase" \
-	test_uppercase || \
-	failed=`expr $failed + 1`
+	test_uppercase ||
+	failed=$(expr $failed + 1)
 
 #Can't repair this atm
 #testit "strangeletters" \
@@ -143,4 +143,3 @@ testit "uppercase" \
 #	failed=`expr $failed + 1`
 
 testok $0 $failed
-
