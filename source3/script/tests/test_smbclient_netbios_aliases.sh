@@ -1,10 +1,10 @@
 #!/bin/sh
 
 if [ $# -lt 6 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_smbclient.sh smbclient3 SERVER USERNAME PASSWORD PREFIX CONFIGURATION
 EOF
-exit 1;
+	exit 1
 fi
 
 smbclient=$1
@@ -29,13 +29,13 @@ rm -rf $KRB5CCNAME_PATH
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 . $incdir/common_test_fns.inc
 
 testit "kinit" kerberos_kinit ${samba_kinit} ${USERNAME} ${PASSWORD}
 
-test_smbclient "smbclient (krb5)" "ls" "//$SERVER/tmp" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
+test_smbclient "smbclient (krb5)" "ls" "//$SERVER/tmp" --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 
 rm -rf $KRB5CCNAME_PATH
 
