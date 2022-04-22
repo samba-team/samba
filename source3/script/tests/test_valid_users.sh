@@ -4,10 +4,10 @@
 #
 
 if [ $# -lt 7 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: valid_users SERVER SERVER_IP DOMAIN USERNAME PASSWORD PREFIX SMBCLIENT
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=${1}
@@ -21,7 +21,7 @@ shift 7
 SMBCLIENT="$VALGRIND ${SMBCLIENT}"
 ADDARGS="$*"
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 failed=0
@@ -29,42 +29,42 @@ failed=0
 # Test listing a share with valid users succeeds
 test_valid_users_access()
 {
-    tmpfile=$PREFIX/smbclient.in.$$
-    prompt="foo"
-    cat > $tmpfile <<EOF
+	tmpfile=$PREFIX/smbclient.in.$$
+	prompt="foo"
+	cat >$tmpfile <<EOF
 ls
 quit
 EOF
 
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$1" -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
-    eval echo "$cmd"
-    out=`eval $cmd`
-    ret=$?
-    rm -f $tmpfile
+	cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$1" -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+	eval echo "$cmd"
+	out=$(eval $cmd)
+	ret=$?
+	rm -f $tmpfile
 
-    if [ $ret != 0 ] ; then
-        echo "$out"
-        echo "failed accessing share with valid users with error $ret"
+	if [ $ret != 0 ]; then
+		echo "$out"
+		echo "failed accessing share with valid users with error $ret"
 
-        false
-        return
-    fi
+		false
+		return
+	fi
 
-    echo "$out" | grep "$prompt" >/dev/null 2>&1
+	echo "$out" | grep "$prompt" >/dev/null 2>&1
 
-    ret=$?
-    if [ $ret = 0 ] ; then
-        # got the correct prompt .. succeed
-        true
-    else
-        echo "$out"
-        echo "failed listing share with valid users"
-        false
-    fi
+	ret=$?
+	if [ $ret = 0 ]; then
+		# got the correct prompt .. succeed
+		true
+	else
+		echo "$out"
+		echo "failed listing share with valid users"
+		false
+	fi
 }
 
 testit "accessing a valid users share succeeds" \
-   test_valid_users_access valid-users-access || \
-   failed=`expr $failed + 1`
+	test_valid_users_access valid-users-access ||
+	failed=$(expr $failed + 1)
 
 exit $failed
