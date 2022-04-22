@@ -4,10 +4,10 @@
 # Copyright (c) 2016      Andreas Schneider <asn@samba.org>
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_substitutions.sh SERVER USERNAME PASSWORD PREFIX
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
