@@ -2,10 +2,10 @@
 # Copyright (C) 2017 Stefan Metzmacher <metze@samba.org>
 
 if [ $# -lt 12 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: $# test_trust_token.sh SERVER USERNAME PASSWORD REALM DOMAIN DOMSID TRUST_USERNAME TRUST_PASSWORD TRUST_REALM TRUST_DOMAIN TRUST_DOMSID TYPE
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
@@ -30,8 +30,8 @@ samba4bindir="$BINDIR"
 
 ldbsearch="$samba4bindir/ldbsearch"
 
-. `dirname $0`/subunit.sh
-. `dirname $0`/common_test_fns.inc
+. $(dirname $0)/subunit.sh
+. $(dirname $0)/common_test_fns.inc
 
 test_token()
 {
@@ -86,8 +86,8 @@ test_token()
 	return 0
 }
 
-testit "Test token with kerberos" test_token "yes" "" || failed=`expr $failed + 1`
+testit "Test token with kerberos" test_token "yes" "" || failed=$(expr $failed + 1)
 # Check that SID_NT_NTLM_AUTHENTICATION(S-1-5-64-10) is added for NTLMSSP
-testit "Test token with NTLMSSP" test_token "no" "S-1-5-64-10" || failed=`expr $failed + 1`
+testit "Test token with NTLMSSP" test_token "no" "S-1-5-64-10" || failed=$(expr $failed + 1)
 
 exit $failed
