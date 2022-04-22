@@ -5,10 +5,10 @@
 # Copyright (C) 2020 Christof Schmitt
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_net_srvsvc.sh USERNAME PASSWORD SERVER RPCCLIENT
 EOF
-exit 1;
+	exit 1
 fi
 
 USERNAME="$1"
