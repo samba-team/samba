@@ -29,13 +29,13 @@ panic_count_0=$(grep -c PANIC $SMBD_TEST_LOG)
 
 # As a panic is expected here, also overwrite the default "panic
 # action" in selftest to not start a debugger
-echo 'error_inject:chdir = panic' > $error_inject_conf
-echo '[global]' >> $error_inject_conf
-echo 'panic action = ""' >> $error_inject_conf
+echo 'error_inject:chdir = panic' >$error_inject_conf
+echo '[global]' >>$error_inject_conf
+echo 'panic action = ""' >>$error_inject_conf
 
 testit_expect_failure "smbclient" $VALGRIND \
-		      $BINDIR/smbclient //$SERVER_IP/error_inject \
-		      -U$USERNAME%$PASSWORD  -c dir ||
+	$BINDIR/smbclient //$SERVER_IP/error_inject \
+	-U$USERNAME%$PASSWORD -c dir ||
 	failed=$(expr $failed + 1)
 
 rm $error_inject_conf
@@ -49,11 +49,11 @@ testit "check_panic_1" test $(expr $panic_count_0 + 1) -eq $panic_count_1 ||
 # Verify that a failing chdir vfs call does not result in a smbd panic
 #
 
-echo 'error_inject:chdir = ESTALE' > $error_inject_conf
+echo 'error_inject:chdir = ESTALE' >$error_inject_conf
 
 testit_expect_failure "smbclient" $VALGRIND \
-		      $BINDIR/smbclient //$SERVER_IP/error_inject \
-		      -U$USERNAME%$PASSWORD  -c dir ||
+	$BINDIR/smbclient //$SERVER_IP/error_inject \
+	-U$USERNAME%$PASSWORD -c dir ||
 	failed=$(expr $failed + 1)
 
 panic_count_2=$(grep -c PANIC $SMBD_TEST_LOG)
