@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-tempdir=`mktemp -d /tmp/wb_padXXXXXX`
+tempdir=$(mktemp -d /tmp/wb_padXXXXXX)
 test -n "$tempdir" || exit 1
-cat >> $tempdir/wb_pad.c << _EOF
+cat >>$tempdir/wb_pad.c <<_EOF
 #include "nsswitch/winbind_client.h"
 
 int main(int argc, const char **argv)
@@ -41,7 +41,8 @@ int main(int argc, const char **argv)
 }
 _EOF
 
-cleanup() {
+cleanup()
+{
 	rm -f $tempdir/wb_pad_32 $tempdir/wb_pad_64 $tempdir/wb_pad.c
 	rmdir $tempdir
 }
@@ -58,10 +59,10 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-out_64_req=`$tempdir/wb_pad_64 req`
-out_64_resp=`$tempdir/wb_pad_64 resp`
-out_32_req=`$tempdir/wb_pad_32 req`
-out_32_resp=`$tempdir/wb_pad_32 resp`
+out_64_req=$($tempdir/wb_pad_64 req)
+out_64_resp=$($tempdir/wb_pad_64 resp)
+out_32_req=$($tempdir/wb_pad_32 req)
+out_32_resp=$($tempdir/wb_pad_32 resp)
 
 cleanup
 
