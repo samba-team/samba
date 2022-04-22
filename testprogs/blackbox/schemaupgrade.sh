@@ -1,93 +1,102 @@
 #!/bin/sh
 
 if [ $# -lt 1 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: $0 PREFIX
 EOF
-exit 1;
+	exit 1
 fi
 
 PREFIX_ABS="$1"
 shift 1
 
-. `dirname $0`/subunit.sh
+. $(dirname $0)/subunit.sh
 
 cleanup_output_directories()
 {
-    if [ -d $PREFIX_ABS/2012R2_schema ]; then
-        rm -fr $PREFIX_ABS/2012R2_schema
-    fi
+	if [ -d $PREFIX_ABS/2012R2_schema ]; then
+		rm -fr $PREFIX_ABS/2012R2_schema
+	fi
 
-    if [ -d $PREFIX_ABS/2008R2_schema ]; then
-        rm -fr $PREFIX_ABS/2008R2_schema
-    fi
+	if [ -d $PREFIX_ABS/2008R2_schema ]; then
+		rm -fr $PREFIX_ABS/2008R2_schema
+	fi
 }
 
 PROVISION_OPTS="--use-ntvfs --host-ip6=::1 --host-ip=127.0.0.1"
 
-provision_2012r2() {
-    $PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2012r2.samba.corp --targetdir=$PREFIX_ABS/2012R2_schema --base-schema=2012_R2
+provision_2012r2()
+{
+	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2012r2.samba.corp --targetdir=$PREFIX_ABS/2012R2_schema --base-schema=2012_R2
 }
 
-provision_2008r2() {
-    $PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2008r2.samba.corp --targetdir=$PREFIX_ABS/2008R2_schema --base-schema=2008_R2
+provision_2008r2()
+{
+	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2008r2.samba.corp --targetdir=$PREFIX_ABS/2008R2_schema --base-schema=2008_R2
 }
 
-provision_2008r2_old() {
-    $PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2008r2.samba.corp --targetdir=$PREFIX_ABS/2008R2_old_schema --base-schema=2008_R2_old
+provision_2008r2_old()
+{
+	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2008r2.samba.corp --targetdir=$PREFIX_ABS/2008R2_old_schema --base-schema=2008_R2_old
 }
 
-ldapcmp_ignore() {
+ldapcmp_ignore()
+{
 
-    IGNORE_ATTRS=$1
+	IGNORE_ATTRS=$1
 
-    # there's discrepancies between the SDDL strings in the adprep LDIF files
-    # vs the 2012 schema, where one source will have ACE rights repeated, e.g.
-    # "LOLO" in adprep vs "LO" in the schema
-    IGNORE_ATTRS="$IGNORE_ATTRS,defaultSecurityDescriptor"
+	# there's discrepancies between the SDDL strings in the adprep LDIF files
+	# vs the 2012 schema, where one source will have ACE rights repeated, e.g.
+	# "LOLO" in adprep vs "LO" in the schema
+	IGNORE_ATTRS="$IGNORE_ATTRS,defaultSecurityDescriptor"
 
-    # the adprep LDIF files updates these attributes for the DisplaySpecifiers
-    # objects, but we don't have the 2012 DisplaySpecifiers documentation...
-    IGNORE_ATTRS="$IGNORE_ATTRS,adminContextMenu,adminPropertyPages"
+	# the adprep LDIF files updates these attributes for the DisplaySpecifiers
+	# objects, but we don't have the 2012 DisplaySpecifiers documentation...
+	IGNORE_ATTRS="$IGNORE_ATTRS,adminContextMenu,adminPropertyPages"
 
-    $PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/$2_schema/private/sam.ldb tdb://$PREFIX_ABS/$3_schema/private/sam.ldb --two --filter=$IGNORE_ATTRS --skip-missing-dn
+	$PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/$2_schema/private/sam.ldb tdb://$PREFIX_ABS/$3_schema/private/sam.ldb --two --filter=$IGNORE_ATTRS --skip-missing-dn
 }
 
-ldapcmp_old() {
-    # the original 2008 schema we received from Microsoft was missing
-    # descriptions and display names. This has been fixed up in the current
-    # Microsoft schemas
-    IGNORE_ATTRS="adminDescription,description,adminDisplayName,displayName"
+ldapcmp_old()
+{
+	# the original 2008 schema we received from Microsoft was missing
+	# descriptions and display names. This has been fixed up in the current
+	# Microsoft schemas
+	IGNORE_ATTRS="adminDescription,description,adminDisplayName,displayName"
 
-    # we didn't get showInAdvancedViewOnly right on Samba
-    IGNORE_ATTRS="$IGNORE_ATTRS,showInAdvancedViewOnly"
+	# we didn't get showInAdvancedViewOnly right on Samba
+	IGNORE_ATTRS="$IGNORE_ATTRS,showInAdvancedViewOnly"
 
-    ldapcmp_ignore "$IGNORE_ATTRS" "2008R2_old" "2012R2"
+	ldapcmp_ignore "$IGNORE_ATTRS" "2008R2_old" "2012R2"
 }
 
-ldapcmp() {
-    # The adminDescription and adminDisplayName have been editorially
-    # corrected in the 2012R2 schema but not in the adprep files.
-    ldapcmp_ignore "adminDescription,adminDisplayName"  "2008R2"  "2012R2"
+ldapcmp()
+{
+	# The adminDescription and adminDisplayName have been editorially
+	# corrected in the 2012R2 schema but not in the adprep files.
+	ldapcmp_ignore "adminDescription,adminDisplayName" "2008R2" "2012R2"
 }
 
-ldapcmp_2008R2_2008R2_old() {
-    # the original 2008 schema we received from Microsoft was missing
-    # descriptions and display names. This has been fixed up in the current
-    # Microsoft schemas
-    IGNORE_ATTRS="adminDescription,description,adminDisplayName,displayName"
+ldapcmp_2008R2_2008R2_old()
+{
+	# the original 2008 schema we received from Microsoft was missing
+	# descriptions and display names. This has been fixed up in the current
+	# Microsoft schemas
+	IGNORE_ATTRS="adminDescription,description,adminDisplayName,displayName"
 
-    # we didn't get showInAdvancedViewOnly right on Samba
-    IGNORE_ATTRS="$IGNORE_ATTRS,showInAdvancedViewOnly"
+	# we didn't get showInAdvancedViewOnly right on Samba
+	IGNORE_ATTRS="$IGNORE_ATTRS,showInAdvancedViewOnly"
 
-    ldapcmp_ignore $IGNORE_ATTRS  "2008R2"  "2008R2_old"
+	ldapcmp_ignore $IGNORE_ATTRS "2008R2" "2008R2_old"
 }
 
-schema_upgrade() {
+schema_upgrade()
+{
 	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/2008R2_schema/private/sam.ldb --schema=2012_R2
 }
 
-schema_upgrade_old() {
+schema_upgrade_old()
+{
 	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/2008R2_old_schema/private/sam.ldb --schema=2012_R2
 }
 
