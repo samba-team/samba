@@ -4,10 +4,10 @@
 #
 
 if [ $# -lt 6 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_smb2_not_casesensitive SERVER SERVER_IP USERNAME PASSWORD LOCAL_PATH SMBCLIENT
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=${1}
@@ -17,7 +17,7 @@ PASSWORD=${4}
 LOCAL_PATH=${5}
 SMBCLIENT=${6}
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 failed=0
@@ -26,10 +26,10 @@ failed=0
 test_access_with_different_case()
 {
 	tmpfile=$LOCAL_PATH/testfile.txt
-	echo "foobar" > $tmpfile
+	echo "foobar" >$tmpfile
 
 	cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -mSMB3 -U$USERNAME%$PASSWORD "$SERVER" -I $SERVER_IP -c "ls TeStFiLe.TxT" 2>&1'
-	out=`eval $cmd`
+	out=$(eval $cmd)
 	ret=$?
 
 	rm -f $tmpfile
@@ -47,14 +47,14 @@ test_access_with_different_case()
 # different case
 test_rename()
 {
-set -x
+	set -x
 	tmpfile=$LOCAL_PATH/torename.txt
-	echo "foobar" > $tmpfile
+	echo "foobar" >$tmpfile
 	targetfile=$LOCAL_PATH/target.txt
 	touch $targetfile
 
 	cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -mSMB3 -U$USERNAME%$PASSWORD "$SERVER" -I $SERVER_IP -c "rename ToReNaMe.TxT TaRgEt.txt" 2>&1'
-	out=`eval $cmd`
+	out=$(eval $cmd)
 	ret=$?
 
 	rm -f $tmpfile
@@ -70,13 +70,12 @@ set -x
 	fi
 }
 
-
 testit "accessing a file with different case succeeds" \
-	test_access_with_different_case || \
-	failed=`expr $failed + 1`
+	test_access_with_different_case ||
+	failed=$(expr $failed + 1)
 
 testit "renaming a file with different case succeeds" \
-	test_rename || \
-	failed=`expr $failed + 1`
+	test_rename ||
+	failed=$(expr $failed + 1)
 
 exit $failed
