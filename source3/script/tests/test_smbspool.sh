@@ -1,10 +1,10 @@
 #!/bin/sh
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_smbclient_basic.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER="$1"
@@ -15,7 +15,7 @@ TARGET_ENV="$5"
 shift 5
 ADDARGS="$@"
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 . $incdir/common_test_fns.inc
 
@@ -40,7 +40,7 @@ test_smbspool_noargs()
 
 	echo "$out" | grep 'network smb "Unknown" "Windows Printer via SAMBA"'
 	ret=$?
-	if [ $ret != 0 ] ; then
+	if [ $ret != 0 ]; then
 		echo "$out"
 		return 1
 	fi
@@ -81,12 +81,12 @@ test_smbspool_authinforequired_unknown()
 	unset AUTH_INFO_REQUIRED
 
 	case "$ret" in
-		2 ) return 0 ;;
-		* )
-			echo "ret=$ret"
-			echo "$out"
-			echo "failed to test $smbspool_krb5 against unknown value of AUTH_INFO_REQUIRED"
-			return 1
+	2) return 0 ;;
+	*)
+		echo "ret=$ret"
+		echo "$out"
+		echo "failed to test $smbspool_krb5 against unknown value of AUTH_INFO_REQUIRED"
+		return 1
 		;;
 	esac
 }
@@ -136,7 +136,7 @@ test_vlp_verify()
 
 	$samba_vlp "tdbfile=$tdbfile" lprm print1 $jobid
 	ret=$?
-	if [ $ret != 0 ] ; then
+	if [ $ret != 0 ]; then
 		echo "Failed to remove jobid $jobid from $tdbfile"
 		return 1
 	fi
@@ -201,94 +201,94 @@ test_delete_on_close()
 }
 
 testit "smbspool no args" \
-	test_smbspool_noargs $samba_smbspool || \
+	test_smbspool_noargs $samba_smbspool ||
 	failed=$(expr $failed + 1)
 
 testit "smbspool_krb5_wrapper no args" \
-	test_smbspool_noargs $samba_smbspool_krb5 || \
+	test_smbspool_noargs $samba_smbspool_krb5 ||
 	failed=$(expr $failed + 1)
 
 testit "smbspool_krb5_wrapper AuthInfoRequired=none" \
-	test_smbspool_authinforequired_none || \
+	test_smbspool_authinforequired_none ||
 	failed=$(expr $failed + 1)
 
 testit "smbspool_krb5_wrapper AuthInfoRequired=(sth unknown)" \
-	test_smbspool_authinforequired_unknown || \
+	test_smbspool_authinforequired_unknown ||
 	failed=$(expr $failed + 1)
 
 testit "smbspool print example.ps" \
-	$samba_smbspool smb://$USERNAME:$PASSWORD@$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps || \
+	$samba_smbspool smb://$USERNAME:$PASSWORD@$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps ||
 	failed=$(expr $failed + 1)
 
 testit "vlp verify example.ps" \
-	test_vlp_verify \
-	|| failed=$(expr $failed + 1)
+	test_vlp_verify ||
+	failed=$(expr $failed + 1)
 
 testit "smbspool print example.ps via stdin" \
-	$samba_smbspool smb://$USERNAME:$PASSWORD@$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" < $SRCDIR/testdata/printing/example.ps || \
+	$samba_smbspool smb://$USERNAME:$PASSWORD@$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" <$SRCDIR/testdata/printing/example.ps ||
 	failed=$(expr $failed + 1)
 
 testit "vlp verify example.ps" \
-	test_vlp_verify \
-	|| failed=$(expr $failed + 1)
+	test_vlp_verify ||
+	failed=$(expr $failed + 1)
 
 DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
 export DEVICE_URI
 testit "smbspool print DEVICE_URI example.ps" \
-	$samba_smbspool 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps || \
+	$samba_smbspool 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps ||
 	failed=$(expr $failed + 1)
 unset DEVICE_URI
 
 testit "vlp verify example.ps" \
-	test_vlp_verify \
-	|| failed=$(expr $failed + 1)
+	test_vlp_verify ||
+	failed=$(expr $failed + 1)
 
 DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
 export DEVICE_URI
 testit "smbspool print DEVICE_URI example.ps via stdin" \
-	$samba_smbspool 200 $USERNAME "Testprint" 1 "options" < $SRCDIR/testdata/printing/example.ps || \
+	$samba_smbspool 200 $USERNAME "Testprint" 1 "options" <$SRCDIR/testdata/printing/example.ps ||
 	failed=$(expr $failed + 1)
 unset DEVICE_URI
 
 testit "vlp verify example.ps" \
-	test_vlp_verify \
-	|| failed=$(expr $failed + 1)
+	test_vlp_verify ||
+	failed=$(expr $failed + 1)
 
 DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
 export DEVICE_URI
 testit "smbspool print sanitized Device URI in argv0 example.ps" \
-	$smbspool_argv_wrapper $samba_smbspool smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps || \
+	$smbspool_argv_wrapper $samba_smbspool smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps ||
 	failed=$(expr $failed + 1)
 unset DEVICE_URI
 
 testit "vlp verify example.ps" \
-	test_vlp_verify \
-	|| failed=$(expr $failed + 1)
+	test_vlp_verify ||
+	failed=$(expr $failed + 1)
 
 DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
 export DEVICE_URI
 testit "smbspool print sanitized Device URI in argv0 example.ps via stdin" \
-	$smbspool_argv_wrapper $samba_smbspool smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" < $SRCDIR/testdata/printing/example.ps || \
+	$smbspool_argv_wrapper $samba_smbspool smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" <$SRCDIR/testdata/printing/example.ps ||
 	failed=$(expr $failed + 1)
 unset DEVICE_URI
 
 testit "vlp verify example.ps" \
-	test_vlp_verify \
-	|| failed=$(expr $failed + 1)
+	test_vlp_verify ||
+	failed=$(expr $failed + 1)
 
 AUTH_INFO_REQUIRED="username,password"
 export AUTH_INFO_REQUIRED
 testit "smbspool_krb5(username,password) print example.ps" \
-	$samba_smbspool_krb5 smb://$USERNAME:$PASSWORD@$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps || \
+	$samba_smbspool_krb5 smb://$USERNAME:$PASSWORD@$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps ||
 	failed=$(expr $failed + 1)
 
 testit "vlp verify example.ps" \
-	test_vlp_verify || \
+	test_vlp_verify ||
 	failed=$(expr $failed + 1)
 unset AUTH_INFO_REQUIRED
 
 testit "delete on close" \
-	test_delete_on_close \
-	|| failed=$(expr $failed + 1)
+	test_delete_on_close ||
+	failed=$(expr $failed + 1)
 
 exit $failed
