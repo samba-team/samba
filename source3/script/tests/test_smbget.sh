@@ -4,10 +4,10 @@
 #
 
 if [ $# -lt 7 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_smbget SERVER SERVER_IP DOMAIN USERNAME PASSWORD WORKDIR SMBGET
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=${1}
@@ -20,7 +20,7 @@ SMBGET="$VALGRIND ${7}"
 
 TMPDIR="$SELFTEST_TMPDIR"
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 create_test_data()
@@ -42,7 +42,8 @@ remove_test_data()
 	popd
 }
 
-clear_download_area() {
+clear_download_area()
+{
 	rm -rf dir1 dir2 testfile dir001 dir004
 }
 
@@ -98,7 +99,7 @@ test_singlefile_smburl()
 test_singlefile_rcfile()
 {
 	clear_download_area
-	echo "user $USERNAME%$PASSWORD" > $TMPDIR/rcfile
+	echo "user $USERNAME%$PASSWORD" >$TMPDIR/rcfile
 	$SMBGET -vn -f $TMPDIR/rcfile smb://$SERVER_IP/smbget/testfile
 	rc=$?
 	rm -f $TMPDIR/rcfile
@@ -123,9 +124,9 @@ test_recursive_U()
 		return 1
 	fi
 
-	cmp --silent $WORKDIR/testfile ./testfile && \
-	cmp --silent $WORKDIR/dir1/testfile1 ./dir1/testfile1 && \
-	cmp --silent $WORKDIR/dir2/testfile2 ./dir2/testfile2
+	cmp --silent $WORKDIR/testfile ./testfile &&
+		cmp --silent $WORKDIR/dir1/testfile1 ./dir1/testfile1 &&
+		cmp --silent $WORKDIR/dir2/testfile2 ./dir2/testfile2
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: file content does not match'
 		return 1
@@ -144,9 +145,9 @@ test_recursive_existing_dir()
 		return 1
 	fi
 
-	cmp --silent $WORKDIR/testfile ./testfile && \
-	cmp --silent $WORKDIR/dir1/testfile1 ./dir1/testfile1 && \
-	cmp --silent $WORKDIR/dir2/testfile2 ./dir2/testfile2
+	cmp --silent $WORKDIR/testfile ./testfile &&
+		cmp --silent $WORKDIR/dir1/testfile1 ./dir1/testfile1 &&
+		cmp --silent $WORKDIR/dir2/testfile2 ./dir2/testfile2
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: file content does not match'
 		return 1
@@ -155,9 +156,8 @@ test_recursive_existing_dir()
 	return 0
 }
 
-
-test_recursive_with_empty() # see Bug 13199
-{
+test_recursive_with_empty()
+{ # see Bug 13199
 	clear_download_area
 	# create some additional empty directories
 	mkdir -p $WORKDIR/dir001/dir002/dir003
@@ -171,9 +171,9 @@ test_recursive_with_empty() # see Bug 13199
 		return 1
 	fi
 
-	cmp --silent $WORKDIR/testfile ./testfile && \
-	cmp --silent $WORKDIR/dir1/testfile1 ./dir1/testfile1 && \
-	cmp --silent $WORKDIR/dir2/testfile2 ./dir2/testfile2
+	cmp --silent $WORKDIR/testfile ./testfile &&
+		cmp --silent $WORKDIR/dir1/testfile1 ./dir1/testfile1 &&
+		cmp --silent $WORKDIR/dir2/testfile2 ./dir2/testfile2
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: file content does not match'
 		return 1
@@ -186,7 +186,6 @@ test_recursive_with_empty() # see Bug 13199
 
 	return 0
 }
-
 
 test_resume()
 {
@@ -237,7 +236,7 @@ test_update()
 		return 1
 	fi
 
-	echo "modified" >> testfile
+	echo "modified" >>testfile
 	# touch source to trigger new download
 	sleep 2
 	touch -m $WORKDIR/testfile
@@ -261,35 +260,35 @@ create_test_data
 pushd $TMPDIR
 
 failed=0
-testit "download single file as guest" test_singlefile_guest \
-	|| failed=`expr $failed + 1`
+testit "download single file as guest" test_singlefile_guest ||
+	failed=$(expr $failed + 1)
 
-testit "download single file with -U" test_singlefile_U \
-	|| failed=`expr $failed + 1`
+testit "download single file with -U" test_singlefile_U ||
+	failed=$(expr $failed + 1)
 
-testit "download single file with smb URL" test_singlefile_smburl \
-	|| failed=`expr $failed + 1`
+testit "download single file with smb URL" test_singlefile_smburl ||
+	failed=$(expr $failed + 1)
 
-testit "download single file with rcfile" test_singlefile_rcfile \
-	|| failed=`expr $failed + 1`
+testit "download single file with rcfile" test_singlefile_rcfile ||
+	failed=$(expr $failed + 1)
 
-testit "recursive download" test_recursive_U \
-	|| failed=`expr $failed + 1`
+testit "recursive download" test_recursive_U ||
+	failed=$(expr $failed + 1)
 
-testit "recursive download (existing target dir)" test_recursive_existing_dir \
-	|| failed=`expr $failed + 1`
+testit "recursive download (existing target dir)" test_recursive_existing_dir ||
+	failed=$(expr $failed + 1)
 
-testit "recursive download with empty directories" test_recursive_with_empty \
-	|| failed=`expr $failed + 1`
+testit "recursive download with empty directories" test_recursive_with_empty ||
+	failed=$(expr $failed + 1)
 
-testit "resume download" test_resume \
-	|| failed=`expr $failed + 1`
+testit "resume download" test_resume ||
+	failed=$(expr $failed + 1)
 
-testit "resume download (modified file)" test_resume_modified \
-	|| failed=`expr $failed + 1`
+testit "resume download (modified file)" test_resume_modified ||
+	failed=$(expr $failed + 1)
 
-testit "update" test_update \
-	|| failed=`expr $failed + 1`
+testit "update" test_update ||
+	failed=$(expr $failed + 1)
 
 clear_download_area
 
