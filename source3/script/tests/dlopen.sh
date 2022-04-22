@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-tempdir=`mktemp -d /tmp/dlopenXXXXXX`
+tempdir=$(mktemp -d /tmp/dlopenXXXXXX)
 test -n "$tempdir" || exit 1
-cat >> $tempdir/dlopen.c << _EOF
+cat >>$tempdir/dlopen.c <<_EOF
 #include <dlfcn.h>
 #include <stdio.h>
 #include <limits.h>
@@ -48,14 +48,14 @@ int main(int argc, char **argv)
 }
 _EOF
 
-for arg in $@ ; do
+for arg in $@; do
 	case "$arg" in
-	"")
-		;;
-	-I*|-D*|-f*|-m*|-g*|-O*|-W*)
+	"") ;;
+
+	-I* | -D* | -f* | -m* | -g* | -O* | -W*)
 		cflags="$cflags $arg"
 		;;
-	-l*|-L*)
+	-l* | -L*)
 		ldflags="$ldflags $arg"
 		;;
 	/*)
@@ -70,10 +70,10 @@ done
 ${CC:-gcc} $RPM_OPT_FLAGS $CFLAGS -o $tempdir/dlopen $cflags $tempdir/dlopen.c $ldflags
 
 retval=0
-for module in $modules ; do
+for module in $modules; do
 	case "$module" in
-	"")
-		;;
+	"") ;;
+
 	/*)
 		$tempdir/dlopen "$module"
 		retval=$?
