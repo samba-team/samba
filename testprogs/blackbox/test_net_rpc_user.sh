@@ -4,10 +4,10 @@
 # Copyright (c) 2017      Andreas Schneider <asn@samba.org>
 
 if [ $# -lt 4 ]; then
-cat << EOF
+	cat <<EOF
 Usage: net_rpc.sh SERVER ADMIN_ACCOUNT ADMIN_PASSWORD ADMIN_DOMAIN
 EOF
-exit 1
+	exit 1
 fi
 
 SERVER=$1
@@ -27,8 +27,8 @@ TEST_PASSWORD="Passw0rd~01"
 
 newuser="$samba_tool user create"
 
-. `dirname $0`/subunit.sh
-. `dirname $0`/common_test_fns.inc
+. $(dirname $0)/subunit.sh
+. $(dirname $0)/common_test_fns.inc
 
 ###########################################################
 ### Setup
