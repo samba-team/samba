@@ -3,10 +3,10 @@
 # various tests for the "net" command
 
 if [ $# -lt 3 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_net_misc.sh SCRIPTDIR SERVERCONFFILE NET CONFIGURATION
 EOF
-exit 1;
+	exit 1
 fi
 
 SCRIPTDIR="$1"
@@ -26,7 +26,7 @@ NETTIME="${NET}   --option=clientmaxprotocol=${PROTOCOL} time"
 NETLOOKUP="${NET} --option=clientmaxprotocol=${PROTOCOL} lookup"
 NETSHARE="${NET} -U${USERNAME}%${PASSWORD} --option=clientmaxprotocol=${PROTOCOL} -S ${SERVER} share"
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 failed=0
@@ -53,29 +53,28 @@ test_share()
 }
 
 testit "get the time" \
-	test_time || \
-	failed=`expr $failed + 1`
+	test_time ||
+	failed=$(expr $failed + 1)
 
 testit "get the system time" \
-	test_time system || \
-	failed=`expr $failed + 1`
+	test_time system ||
+	failed=$(expr $failed + 1)
 
 testit "get the time zone" \
-	test_time zone || \
-	failed=`expr $failed + 1`
+	test_time zone ||
+	failed=$(expr $failed + 1)
 
 testit "lookup the PDC" \
-	test_lookup pdc || \
-	failed=`expr $failed + 1`
+	test_lookup pdc ||
+	failed=$(expr $failed + 1)
 
 testit "lookup the master browser" \
-	test_lookup master || \
-	failed=`expr $failed + 1`
+	test_lookup master ||
+	failed=$(expr $failed + 1)
 
 # This test attempts to lookup shares
 testit "lookup share list" \
-	test_share list || \
-	failed=`expr $failed + 1`
+	test_share list ||
+	failed=$(expr $failed + 1)
 
 testok $0 $failed
-
