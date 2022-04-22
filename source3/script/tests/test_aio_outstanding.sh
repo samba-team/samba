@@ -8,9 +8,9 @@
 # with 2 second delays on pread/pwrite.
 
 if [ $# -lt 4 ]; then
-    echo Usage: test_aio_outstanding.sh \
-	 SERVERCONFFILE SMBCLIENT IP aio_delay_inject_sharename
-exit 1
+	echo Usage: test_aio_outstanding.sh \
+		SERVERCONFFILE SMBCLIENT IP aio_delay_inject_sharename
+	exit 1
 fi
 
 CONF=$1
@@ -42,15 +42,16 @@ mkfifo smbclient-stdin smbclient-stdout smbclient-stderr
 rm aio_outstanding_testfile
 head -c 20MB /dev/zero >aio_outstanding_testfile
 
-CLI_FORCE_INTERACTIVE=1; export CLI_FORCE_INTERACTIVE
+CLI_FORCE_INTERACTIVE=1
+export CLI_FORCE_INTERACTIVE
 
 ${SMBCLIENT} //${SERVER}/${SHARE} ${CONF} -U${USER}%${PASSWORD} \
-	     < smbclient-stdin > smbclient-stdout 2>smbclient-stderr &
+	<smbclient-stdin >smbclient-stdout 2>smbclient-stderr &
 CLIENT_PID=$!
 
 sleep 1
 
-exec 100>smbclient-stdin  101<smbclient-stdout 102<smbclient-stderr
+exec 100>smbclient-stdin 101<smbclient-stdout 102<smbclient-stderr
 
 # consume the smbclient startup messages
 head -n 1 <&101
@@ -79,11 +80,11 @@ rm -f smbclient-stdin smbclient-stdout smbclient-stderr aio_outstanding_testfile
 mkfifo smbclient-stdin smbclient-stdout
 
 ${SMBCLIENT} //${SERVER}/${SHARE} ${CONF} -U${USER}%${PASSWORD} \
-	     < smbclient-stdin > smbclient-stdout &
+	<smbclient-stdin >smbclient-stdout &
 
 sleep 1
 
-exec 100>smbclient-stdin  101<smbclient-stdout
+exec 100>smbclient-stdin 101<smbclient-stdout
 
 echo "del aio_outstanding_testfile" >&100
 echo "exit" >&100
@@ -93,6 +94,6 @@ sleep 2
 rm -f smbclient-stdin smbclient-stdout aio_outstanding_testfile
 
 testit "check_panic" test $panic_count_0 -eq $panic_count_1 ||
-        failed=$(expr $failed + 1)
+	failed=$(expr $failed + 1)
 
 testok $0 $failed
