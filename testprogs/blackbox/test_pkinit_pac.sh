@@ -51,7 +51,7 @@ OPTION_REQUEST_PAC="--request-pac"
 
 testit "STEP1 kinit with pkinit (name specified)" \
 	"${samba_kinit}" "${OPTION_REQUEST_PAC}" "${OPTION_RENEWABLE}" \
-		"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
+	"${X509_USER_IDENTITY}" "${USERNAME}@${REALM}" ||
 	failed=$((failed + 1))
 testit "STEP1 remote.pac verification" \
 	"${samba_smbtorture}" ncacn_np:"${SERVER}" rpc.pac \
