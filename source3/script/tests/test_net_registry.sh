@@ -8,10 +8,10 @@
 # rpc tests are chose by specifying "rpc" as commandline parameter.
 
 if [ $# -lt 3 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_net_registry.sh SCRIPTDIR SERVERCONFFILE NET CONFIGURATION RPC
 EOF
-exit 1;
+	exit 1
 fi
 
 SCRIPTDIR="$1"
@@ -22,13 +22,13 @@ RPC="$5"
 
 NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
 
-if test "x${RPC}" = "xrpc" ; then
+if test "x${RPC}" = "xrpc"; then
 	NETREG="${NET} -U${USERNAME}%${PASSWORD} -I ${SERVER_IP} rpc registry"
 else
 	NETREG="${NET} registry"
 fi
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 failed=0
@@ -52,7 +52,7 @@ test_enumerate_nonexisting()
 	KEY="$1"
 	${NETREG} enumerate ${KEY}
 
-	if test "x$?" = "x0" ; then
+	if test "x$?" = "x0"; then
 		echo "ERROR: enumerate succeeded with key '${KEY}'"
 		false
 	else
@@ -63,7 +63,7 @@ test_enumerate_nonexisting()
 test_enumerate_no_key()
 {
 	${NETREG} enumerate
-	if test "x$?" = "x0" ; then
+	if test "x$?" = "x0"; then
 		echo "ERROR: enumerate succeeded without any key spcified"
 		false
 	else
@@ -76,9 +76,9 @@ test_create_existing()
 	KEY="HKLM"
 	EXPECTED="createkey opened existing ${KEY}"
 
-	OUTPUT=`${NETREG} createkey ${KEY}`
-	if test "x$?" = "x0" ; then
-		if test "$OUTPUT" = "$EXPECTED" ; then
+	OUTPUT=$(${NETREG} createkey ${KEY})
+	if test "x$?" = "x0"; then
+		if test "$OUTPUT" = "$EXPECTED"; then
 			true
 		else
 			echo "got '$OUTPUT', expected '$EXPECTED'"
@@ -93,11 +93,11 @@ test_create_existing()
 test_createkey()
 {
 	KEY="$1"
-	BASEKEY=`dirname $KEY`
-	SUBKEY=`basename $KEY`
+	BASEKEY=$(dirname $KEY)
+	SUBKEY=$(basename $KEY)
 
-	OUTPUT=`${NETREG} createkey ${KEY}`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(${NETREG} createkey ${KEY})
+	if test "x$?" != "x0"; then
 		echo "ERROR: createkey ${KEY} failed"
 		echo "output:"
 		printf "%s\n" "$OUTPUT"
@@ -106,8 +106,8 @@ test_createkey()
 	fi
 
 	# check enumerate of basekey lists new key:
-	OUTPUT=`${NETREG} enumerate ${BASEKEY}`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(${NETREG} enumerate ${BASEKEY})
+	if test "x$?" != "x0"; then
 		echo "ERROR: failed to enumerate key '${BASEKEY}'"
 		echo "output:"
 		printf "%s\n" "$OUTPUT"
@@ -117,7 +117,7 @@ test_createkey()
 
 	EXPECTED="Keyname = ${SUBKEY}"
 	printf "%s\n" "$OUTPUT" | grep '^Keyname' | grep ${SUBKEY}
-	if test "x$?" != "x0" ; then
+	if test "x$?" != "x0"; then
 		echo "ERROR: did not find expexted '$EXPECTED' in output"
 		echo "output:"
 		printf "%s\n" "$OUTPUT"
@@ -131,26 +131,26 @@ test_createkey()
 test_deletekey()
 {
 	KEY="$1"
-	BASEKEY=`dirname ${KEY}`
-	SUBKEY=`basename ${KEY}`
+	BASEKEY=$(dirname ${KEY})
+	SUBKEY=$(basename ${KEY})
 
-	OUTPUT=`test_createkey "${KEY}"`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(test_createkey "${KEY}")
+	if test "x$?" != "x0"; then
 		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
 
-	OUTPUT=`${NETREG} deletekey ${KEY}`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(${NETREG} deletekey ${KEY})
+	if test "x$?" != "x0"; then
 		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
 
 	# check enumerate of basekey does not show key anymore:
-	OUTPUT=`${NETREG} enumerate ${BASEKEY}`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(${NETREG} enumerate ${BASEKEY})
+	if test "x$?" != "x0"; then
 		printf "%s\n" "$OUTPUT"
 		false
 		return
@@ -158,7 +158,7 @@ test_deletekey()
 
 	UNEXPECTED="Keyname = ${SUBKEY}"
 	printf "%s\n" "$OUTPUT" | grep '^Keyname' | grep ${SUBKEY}
-	if test "x$?" = "x0" ; then
+	if test "x$?" = "x0"; then
 		echo "ERROR: found '$UNEXPECTED' after delete in output"
 		echo "output:"
 		printf "%s\n" "$OUTPUT"
@@ -167,7 +167,7 @@ test_deletekey()
 
 	# check enumerate of key itself does not work anymore:
 	${NETREG} enumerate ${KEY}
-	if test "x$?" = "x0" ; then
+	if test "x$?" = "x0"; then
 		echo "ERROR: 'enumerate ${KEY}' works after 'deletekey ${KEY}'"
 		false
 	else
@@ -179,15 +179,15 @@ test_deletekey_nonexisting()
 {
 	KEY="$1"
 
-	OUTPUT=`test_deletekey "${KEY}"`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(test_deletekey "${KEY}")
+	if test "x$?" != "x0"; then
 		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
 
 	${NETREG} deletekey "${KEY}"
-	if test "x$?" = "x0" ; then
+	if test "x$?" = "x0"; then
 		echo "ERROR: delete after delete succeeded for key '${KEY}'"
 		false
 	fi
@@ -196,13 +196,13 @@ test_deletekey_nonexisting()
 test_createkey_with_subkey()
 {
 	KEY="$1"
-	KEY2=`dirname ${KEY}`
-	SUBKEYNAME2=`basename ${KEY}`
-	BASENAME=`dirname ${KEY2}`
-	SUBKEYNAME1=`basename ${KEY2}`
+	KEY2=$(dirname ${KEY})
+	SUBKEYNAME2=$(basename ${KEY})
+	BASENAME=$(dirname ${KEY2})
+	SUBKEYNAME1=$(basename ${KEY2})
 
-	OUTPUT=`${NETREG} createkey ${KEY}`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(${NETREG} createkey ${KEY})
+	if test "x$?" != "x0"; then
 		echo "ERROR: createkey ${KEY} failed"
 		printf "%s\n" "${OUTPUT}"
 		false
@@ -210,8 +210,8 @@ test_createkey_with_subkey()
 	fi
 
 	# check we can enumerate to level key
-	OUTPUT=`${NETREG} enumerate ${KEY}`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(${NETREG} enumerate ${KEY})
+	if test "x$?" != "x0"; then
 		echo "ERROR: failed to enumerate '${KEY}' after creation"
 		printf "%s\n" "${OUTPUT}"
 		false
@@ -225,18 +225,18 @@ test_createkey_with_subkey()
 test_deletekey_with_subkey()
 {
 	KEY="$1"
-	KEY2=`dirname ${KEY}`
+	KEY2=$(dirname ${KEY})
 
-	OUTPUT=`${NETREG} createkey ${KEY}`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(${NETREG} createkey ${KEY})
+	if test "x$?" != "x0"; then
 		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
 
-	OUTPUT=`${NETREG} deletekey ${KEY2}`
+	OUTPUT=$(${NETREG} deletekey ${KEY2})
 
-	if test "x$?" = "x0" ; then
+	if test "x$?" = "x0"; then
 		echo "ERROR: delete of key with subkey succeeded"
 		echo "output:"
 		printf "%s\n" "$OUTPUT"
@@ -254,23 +254,23 @@ test_setvalue()
 	VALTYPE="$3"
 	VALVALUE="$4"
 
-	OUTPUT=`test_createkey ${KEY}`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(test_createkey ${KEY})
+	if test "x$?" != "x0"; then
 		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
 
-	OUTPUT=`${NETREG} setvalue ${KEY} "${VALNAME}" ${VALTYPE} ${VALVALUE}`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(${NETREG} setvalue ${KEY} "${VALNAME}" ${VALTYPE} ${VALVALUE})
+	if test "x$?" != "x0"; then
 		echo "ERROR: failed to set value testval in key ${KEY}"
 		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
 
-	OUTPUT=`${NETREG} getvalueraw ${KEY} "${VALNAME}"`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(${NETREG} getvalueraw ${KEY} "${VALNAME}")
+	if test "x$?" != "x0"; then
 		echo "ERROR: failure calling getvalueraw for key ${KEY}"
 		echo output:
 		printf "%s\n" "${OUTPUT}"
@@ -278,7 +278,7 @@ test_setvalue()
 		return
 	fi
 
-	if test "x${OUTPUT}" != "x${VALVALUE}" ; then
+	if test "x${OUTPUT}" != "x${VALVALUE}"; then
 		echo "ERROR: failure retrieving value ${VALNAME} for key ${KEY}"
 		printf "expected: %s\ngot: %s\n" "${VALVALUE}" "${OUTPUT}"
 		false
@@ -301,7 +301,7 @@ test_deletevalue_nonexisting()
 	VALNAME="${2#_}"
 
 	${NETREG} deletevalue ${KEY} "${VALNAME}"
-	if test "x$?" = "x0" ; then
+	if test "x$?" = "x0"; then
 		echo "ERROR: succeeded deleting value ${VALNAME}"
 		false
 	else
@@ -318,8 +318,8 @@ test_setvalue_twice()
 	VALTYPE2="$5"
 	VALVALUE2="$6"
 
-	OUTPUT=`test_setvalue ${KEY} _"${VALNAME}" ${VALTYPE1} ${VALVALUE1}`
-	if test "x$?" != "x0" ; then
+	OUTPUT=$(test_setvalue ${KEY} _"${VALNAME}" ${VALTYPE1} ${VALVALUE1})
+	if test "x$?" != "x0"; then
 		echo "ERROR: first setvalue call failed"
 		printf "%s\n" "$OUTPUT"
 		false
@@ -329,86 +329,83 @@ test_setvalue_twice()
 	${NETREG} setvalue ${KEY} "${VALNAME}" ${VALTYPE2} ${VALVALUE2}
 }
 
-
 testit "enumerate HKLM" \
-	test_enumerate HKLM || \
-	failed=`expr $failed + 1`
+	test_enumerate HKLM ||
+	failed=$(expr $failed + 1)
 
 testit "enumerate nonexisting hive" \
-	test_enumerate_nonexisting XYZ || \
-	failed=`expr $failed + 1`
+	test_enumerate_nonexisting XYZ ||
+	failed=$(expr $failed + 1)
 
 testit "enumerate without key" \
-	test_enumerate_no_key || \
-	failed=`expr $failed + 1`
+	test_enumerate_no_key ||
+	failed=$(expr $failed + 1)
 
 # skip getsd test for registry currently: it fails
-if test "x${RPC}" != "xrpc" ; then
-testit "getsd HKLM" \
-	test_getsd HKLM || \
-	failed=`expr $failed + 1`
+if test "x${RPC}" != "xrpc"; then
+	testit "getsd HKLM" \
+		test_getsd HKLM ||
+		failed=$(expr $failed + 1)
 fi
 
 testit "create existing HKLM" \
-	test_create_existing || \
-	failed=`expr $failed + 1`
+	test_create_existing ||
+	failed=$(expr $failed + 1)
 
 testit "create key" \
-	test_createkey HKLM/testkey || \
-	failed=`expr $failed + 1`
+	test_createkey HKLM/testkey ||
+	failed=$(expr $failed + 1)
 
 testit "delete key" \
-	test_deletekey HKLM/testkey || \
-	failed=`expr $failed + 1`
+	test_deletekey HKLM/testkey ||
+	failed=$(expr $failed + 1)
 
 testit "delete^2 key" \
-	test_deletekey_nonexisting HKLM/testkey || \
-	failed=`expr $failed + 1`
+	test_deletekey_nonexisting HKLM/testkey ||
+	failed=$(expr $failed + 1)
 
 testit "enumerate nonexisting key" \
-	test_enumerate_nonexisting HKLM/testkey || \
-	failed=`expr $failed + 1`
+	test_enumerate_nonexisting HKLM/testkey ||
+	failed=$(expr $failed + 1)
 
 testit "create key with subkey" \
-	test_createkey_with_subkey HKLM/testkey/subkey || \
-	failed=`expr $failed + 1`
+	test_createkey_with_subkey HKLM/testkey/subkey ||
+	failed=$(expr $failed + 1)
 
 testit "delete key with subkey" \
-	test_deletekey_with_subkey HKLM/testkey/subkey || \
-	failed=`expr $failed + 1`
+	test_deletekey_with_subkey HKLM/testkey/subkey ||
+	failed=$(expr $failed + 1)
 
 testit "set value" \
-	test_setvalue HKLM/testkey _testval sz moin || \
-	failed=`expr $failed + 1`
+	test_setvalue HKLM/testkey _testval sz moin ||
+	failed=$(expr $failed + 1)
 
 testit "delete value" \
-	test_deletevalue HKLM/testkey _testval || \
-	failed=`expr $failed + 1`
+	test_deletevalue HKLM/testkey _testval ||
+	failed=$(expr $failed + 1)
 
 testit "delete nonexisting value" \
-	test_deletevalue_nonexisting HKLM/testkey _testval || \
-	failed=`expr $failed + 1`
+	test_deletevalue_nonexisting HKLM/testkey _testval ||
+	failed=$(expr $failed + 1)
 
 testit "set value to different type" \
-	test_setvalue_twice HKLM/testkey testval sz moin dword 42 || \
-	failed=`expr $failed + 1`
+	test_setvalue_twice HKLM/testkey testval sz moin dword 42 ||
+	failed=$(expr $failed + 1)
 
 testit "set default value" \
-	test_setvalue HKLM/testkey _"" sz 42 || \
-	failed=`expr $failed + 1`
+	test_setvalue HKLM/testkey _"" sz 42 ||
+	failed=$(expr $failed + 1)
 
 testit "delete default value" \
-	test_deletevalue HKLM/testkey _"" || \
-	failed=`expr $failed + 1`
+	test_deletevalue HKLM/testkey _"" ||
+	failed=$(expr $failed + 1)
 
 testit "delete nonexisting default value" \
-	test_deletevalue_nonexisting HKLM/testkey _"" || \
-	failed=`expr $failed + 1`
+	test_deletevalue_nonexisting HKLM/testkey _"" ||
+	failed=$(expr $failed + 1)
 
 testit "delete key with value" \
-	test_deletekey HKLM/testkey || \
-	failed=`expr $failed + 1`
-
+	test_deletekey HKLM/testkey ||
+	failed=$(expr $failed + 1)
 
 testok $0 $failed
-
