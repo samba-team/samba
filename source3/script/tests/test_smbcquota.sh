@@ -21,26 +21,25 @@
 # Blackbox test wrapper for smbcquota
 #
 if [ $# -lt 6 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_smbcquota.sh SERVER DOMAIN USERNAME PASSWORD LOCAL_PATH SMBCQUOTAS
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
 DOMAIN=$2
 USERNAME=$3
 PASSWORD=$4
-ENVDIR=`dirname $5`
+ENVDIR=$(dirname $5)
 SMBCQUOTAS="$VALGRIND $6"
 shift 6
 
-TEST_SMBCQUOTAS=`dirname $0`/test_smbcquota.py
+TEST_SMBCQUOTAS=$(dirname $0)/test_smbcquota.py
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
-
-testit "smbcquotas" ${TEST_SMBCQUOTAS} ${SERVER} ${DOMAIN} ${USERNAME} ${PASSWORD} ${ENVDIR} ${SMBCQUOTAS} || failed=`expr $failed + 1`
+testit "smbcquotas" ${TEST_SMBCQUOTAS} ${SERVER} ${DOMAIN} ${USERNAME} ${PASSWORD} ${ENVDIR} ${SMBCQUOTAS} || failed=$(expr $failed + 1)
 
 testok $0 $failed
