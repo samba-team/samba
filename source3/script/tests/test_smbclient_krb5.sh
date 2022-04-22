@@ -1,10 +1,10 @@
 #!/bin/sh
 
 if [ $# -lt 1 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_smbclient.sh ccache smbclient3 server <smbclient args>
 EOF
-exit 1;
+	exit 1
 fi
 
 KRB5CCNAME=$1
@@ -14,8 +14,8 @@ SERVER=$3
 shift 3
 ADDARGS="$*"
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
-testit "smbclient" $VALGRIND $SMBCLIENT3 //$SERVER/tmp -c 'ls' --use-krb5-ccache=$KRB5CCNAME $ADDARGS || failed=`expr $failed + 1`
+testit "smbclient" $VALGRIND $SMBCLIENT3 //$SERVER/tmp -c 'ls' --use-krb5-ccache=$KRB5CCNAME $ADDARGS || failed=$(expr $failed + 1)
 
 testok $0 $failed
