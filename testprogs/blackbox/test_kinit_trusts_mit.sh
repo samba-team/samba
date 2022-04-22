@@ -4,10 +4,10 @@
 # Copyright (c) 2016 Andreas Schneider <asn@samba.org>
 
 if [ $# -lt 5 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_kinit_trusts.sh SERVER USERNAME PASSWORD REALM DOMAIN TRUST_USERNAME TRUST_PASSWORD TRUST_REALM TRUST_DOMAIN PREFIX TYPE
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
@@ -43,9 +43,10 @@ rpcclient="$samba_bindir/rpcclient"
 
 SMBCLIENT_UNC="//$SERVER.$REALM/tmp"
 
-. `dirname $0`/subunit.sh
+. $(dirname $0)/subunit.sh
 
-test_smbclient() {
+test_smbclient()
+{
 	name="$1"
 	cmd="$2"
 	shift
@@ -66,7 +67,7 @@ KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
 rm -rf $KRB5CCNAME_PATH
 
-cat > $PREFIX/tmpkinitscript <<EOF
+cat >$PREFIX/tmpkinitscript <<EOF
 expect Password for
 send ${TRUST_PASSWORD}\n
 EOF
@@ -75,58 +76,58 @@ EOF
 ### Test incoming trust direction
 ###########################################################
 
-testit "kinit with password" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit $TRUST_USERNAME@$TRUST_REALM || failed=`expr $failed + 1`
-test_smbclient "Test login with kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
+testit "kinit with password" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit $TRUST_USERNAME@$TRUST_REALM || failed=$(expr $failed + 1)
+test_smbclient "Test login with kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 $samba_kdestroy
 
 smbclient="$samba_bindir/smbclient4"
 
-testit "kinit with password" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit $TRUST_USERNAME@$TRUST_REALM || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos ccache (smbclient4)" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
+testit "kinit with password" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit $TRUST_USERNAME@$TRUST_REALM || failed=$(expr $failed + 1)
+test_smbclient "Test login with user kerberos ccache (smbclient4)" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 $samba_kdestroy
 
 smbclient="$samba_bindir/smbclient"
 
-testit "kinit with password (enterprise)" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit -E $TRUST_USERNAME@$TRUST_REALM || failed=`expr $failed + 1`
-test_smbclient "Test login with kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
+testit "kinit with password (enterprise)" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit -E $TRUST_USERNAME@$TRUST_REALM || failed=$(expr $failed + 1)
+test_smbclient "Test login with kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 
 $samba_kdestroy
 
-if test x"${TYPE}" = x"forest" ;then
-    testit "kinit with password (enterprise UPN)" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit -E testdenied_upn@${TRUST_REALM}.upn || failed=`expr $failed + 1`
-    test_smbclient "Test login with user kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
+if test x"${TYPE}" = x"forest"; then
+	testit "kinit with password (enterprise UPN)" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit -E testdenied_upn@${TRUST_REALM}.upn || failed=$(expr $failed + 1)
+	test_smbclient "Test login with user kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 fi
 
 $samba_kdestroy
 
-testit "kinit with password (enterprise)" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit -E $TRUST_USERNAME@$TRUST_REALM || failed=`expr $failed + 1`
-test_smbclient "Test login with kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
+testit "kinit with password (enterprise)" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit -E $TRUST_USERNAME@$TRUST_REALM || failed=$(expr $failed + 1)
+test_smbclient "Test login with kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 
 testit "kinit renew ticket" $samba_kinit -R
-test_smbclient "Test login with kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
+test_smbclient "Test login with kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 
-testit "check time with kerberos ccache" $VALGRIND $samba_tool time $SERVER.$REALM $CONFIGURATION -k yes $@ || failed=`expr $failed + 1`
+testit "check time with kerberos ccache" $VALGRIND $samba_tool time $SERVER.$REALM $CONFIGURATION -k yes $@ || failed=$(expr $failed + 1)
 
 $samba_kdestroy
 
 lowerrealm=$(echo $TRUST_REALM | tr '[A-Z]' '[a-z]')
-test_smbclient "Test login with user kerberos lowercase realm" 'ls' --use-kerberos=required -U$TRUST_USERNAME@$lowerrealm%$TRUST_PASSWORD || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos lowercase realm 2" 'ls' --use-kerberos=required -U$TRUST_USERNAME@$TRUST_REALM%$TRUST_PASSWORD --realm=$lowerrealm || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos lowercase realm" 'ls' --use-kerberos=required -U$TRUST_USERNAME@$lowerrealm%$TRUST_PASSWORD || failed=$(expr $failed + 1)
+test_smbclient "Test login with user kerberos lowercase realm 2" 'ls' --use-kerberos=required -U$TRUST_USERNAME@$TRUST_REALM%$TRUST_PASSWORD --realm=$lowerrealm || failed=$(expr $failed + 1)
 
 ###########################################################
 ### Test outgoing trust direction
 ###########################################################
 
 SMBCLIENT_UNC="//$TRUST_SERVER.$TRUST_REALM/tmp"
-test_smbclient "Test user login with the first outgoing secret" 'ls' --use-kerberos=required -U$USERNAME@$REALM%$PASSWORD || failed=`expr $failed + 1`
+test_smbclient "Test user login with the first outgoing secret" 'ls' --use-kerberos=required -U$USERNAME@$REALM%$PASSWORD || failed=$(expr $failed + 1)
 
-testit_expect_failure "setpassword should not work" $VALGRIND $samba_tool user setpassword "${TRUST_DOMAIN}\$" --random-password || failed=`expr $failed + 1`
+testit_expect_failure "setpassword should not work" $VALGRIND $samba_tool user setpassword "${TRUST_DOMAIN}\$" --random-password || failed=$(expr $failed + 1)
 
-testit "wbinfo ping dc" $VALGRIND $wbinfo --ping-dc --domain=$TRUST_DOMAIN || failed=`expr $failed + 1`
-testit "wbinfo change outgoing trust pw" $VALGRIND $wbinfo --change-secret --domain=$TRUST_DOMAIN || failed=`expr $failed + 1`
-testit "wbinfo check outgoing trust pw" $VALGRIND $wbinfo --check-secret --domain=$TRUST_DOMAIN || failed=`expr $failed + 1`
+testit "wbinfo ping dc" $VALGRIND $wbinfo --ping-dc --domain=$TRUST_DOMAIN || failed=$(expr $failed + 1)
+testit "wbinfo change outgoing trust pw" $VALGRIND $wbinfo --change-secret --domain=$TRUST_DOMAIN || failed=$(expr $failed + 1)
+testit "wbinfo check outgoing trust pw" $VALGRIND $wbinfo --check-secret --domain=$TRUST_DOMAIN || failed=$(expr $failed + 1)
 
-test_smbclient "Test user login with the changed outgoing secret" 'ls' --use-kerberos=required -U$USERNAME@$REALM%$PASSWORD || failed=`expr $failed + 1`
+test_smbclient "Test user login with the changed outgoing secret" 'ls' --use-kerberos=required -U$USERNAME@$REALM%$PASSWORD || failed=$(expr $failed + 1)
 
 ### Cleanup
 
