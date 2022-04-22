@@ -22,7 +22,7 @@ acl="O:DAG:DUD:P(A;OICI;0x001f01ff;;;DA)(A;OICI;0x001f01ff;;;EA)(A;OICIIO;0x001f
 new_acl="O:S-1-5-21-2212615479-2695158682-2101375468-512G:S-1-5-21-2212615479-2695158682-2101375468-513D:P(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-519)(A;OICIIO;0x001f01ff;;;CO)(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001200a9;;;ED)S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
 new_domain_sid="S-1-5-21-2212615479-2695158682-2101375468"
 
-. `dirname $0`/subunit.sh
+. $(dirname $0)/subunit.sh
 
 UID_WRAPPER_ROOT=1
 export UID_WRAPPER_ROOT
@@ -73,10 +73,10 @@ test_changedomsid()
 		--configfile=$PREFIX/ad_member/lib/server.conf
 
 	retacl=$($PYTHON $samba_tool ntacl get \
-			"$testfile" \
-			--as-sddl \
-			--service=tmp \
-			--configfile=$PREFIX/ad_member/lib/server.conf) || return $?
+		"$testfile" \
+		--as-sddl \
+		--service=tmp \
+		--configfile=$PREFIX/ad_member/lib/server.conf) || return $?
 
 	test "$retacl" = "$new_acl"
 }
@@ -92,11 +92,11 @@ test_changedomsid_ntvfs()
 		--configfile=$PREFIX/ad_member/lib/server.conf
 
 	retacl=$($PYTHON $samba_tool ntacl get \
-			"$testfile" \
-			--as-sddl \
-			--xattr-backend=tdb \
-			--use-ntvfs \
-			--configfile=$PREFIX/ad_member/lib/server.conf) || return $?
+		"$testfile" \
+		--as-sddl \
+		--xattr-backend=tdb \
+		--use-ntvfs \
+		--configfile=$PREFIX/ad_member/lib/server.conf) || return $?
 
 	test "$retacl" = "$new_acl"
 }
@@ -116,16 +116,16 @@ touch "$(dirname $SMB_CONF_PATH)/delay_inject.conf"
 
 touch "$testfile"
 
-testit "set_ntacl" test_set_acl "$testfile" "$acl" || failed=`expr $failed + 1`
+testit "set_ntacl" test_set_acl "$testfile" "$acl" || failed=$(expr $failed + 1)
 
-testit "get_ntacl" test_get_acl "$testfile" "$acl" || failed=`expr $failed + 1`
+testit "get_ntacl" test_get_acl "$testfile" "$acl" || failed=$(expr $failed + 1)
 
-testit "changedomsid" test_changedomsid "$testfile" || failed=`expr $failed + 1`
+testit "changedomsid" test_changedomsid "$testfile" || failed=$(expr $failed + 1)
 
-testit "set_ntacl_ntvfs" test_set_acl_ntvfs "$testfile" "$acl" || failed=`expr $failed + 1`
-testit "get_ntacl_ntvfs" test_get_acl_ntvfs "$testfile" "$acl" || failed=`expr $failed + 1`
+testit "set_ntacl_ntvfs" test_set_acl_ntvfs "$testfile" "$acl" || failed=$(expr $failed + 1)
+testit "get_ntacl_ntvfs" test_get_acl_ntvfs "$testfile" "$acl" || failed=$(expr $failed + 1)
 
-testit "changedomsid_ntvfs" test_changedomsid_ntvfs "$testfile" || failed=`expr $failed + 1`
+testit "changedomsid_ntvfs" test_changedomsid_ntvfs "$testfile" || failed=$(expr $failed + 1)
 
 rm -f "$testfile"
 
