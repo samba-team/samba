@@ -5,10 +5,10 @@
 # BUG: https://bugzilla.samba.org/show_bug.cgi?id=14939
 
 if [ $# -lt 5 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_smbclient_list_servers.sh SERVER SERVER_IP USERNAME PASSWORD SMBCLIENT
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER="$1"
@@ -26,20 +26,20 @@ failed=0
 
 test_smbclient_list_servers()
 {
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -L //$SERVER -U$USERNAME%$PASSWORD -I $SERVER_IP -p139 "$ADDARGS" </dev/null 2>&1'
-    eval echo "$cmd"
-    out=$(eval "$cmd")
+	cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -L //$SERVER -U$USERNAME%$PASSWORD -I $SERVER_IP -p139 "$ADDARGS" </dev/null 2>&1'
+	eval echo "$cmd"
+	out=$(eval "$cmd")
 
-    echo "$out" | grep 'smb1cli_req_writev_submit:'
-    ret=$?
-    if [ $ret -eq 0 ] ; then
-       echo "$out"
-       echo 'failed - should not get: smb1cli_req_writev_submit: error.'
-       return 1
-    fi
+	echo "$out" | grep 'smb1cli_req_writev_submit:'
+	ret=$?
+	if [ $ret -eq 0 ]; then
+		echo "$out"
+		echo 'failed - should not get: smb1cli_req_writev_submit: error.'
+		return 1
+	fi
 
-    return 0
+	return 0
 }
 
-testit "smb1_list_servers" test_smbclient_list_servers || failed=$((failed+1))
+testit "smb1_list_servers" test_smbclient_list_servers || failed=$((failed + 1))
 testok "$0" "$failed"
