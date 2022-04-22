@@ -5,8 +5,8 @@
 # Copyright (C) 2011 Björn Baumbach <bb@sernet.de>
 
 if [ $# -lt 2 ]; then
-    echo "Usage: test_registry_upgrade.sh NET DBWRAP_TOOL"
-    exit 1
+	echo "Usage: test_registry_upgrade.sh NET DBWRAP_TOOL"
+	exit 1
 fi
 
 SCRIPT_DIR=$(dirname $0)
@@ -34,145 +34,145 @@ LOGDIR_PREFIX="registry_upgrade"
 
 registry_check()
 (
-    CHECKNO="$1"
-    CHECKDIFF="$2"
-    REGVER=""
-    ALLOWEDERR="INFO: version =|Check database:|overwrite registry format version 0 with 1|no INFO/version found"
+	CHECKNO="$1"
+	CHECKDIFF="$2"
+	REGVER=""
+	ALLOWEDERR="INFO: version =|Check database:|overwrite registry format version 0 with 1|no INFO/version found"
 
-    test "x$CHECKNO" = "x0" && {
-        REGVER="--reg-version=1"
-    }
+	test "x$CHECKNO" = "x0" && {
+		REGVER="--reg-version=1"
+	}
 
-    echo "Registry check $CHECKNO" | tee -a $LOG
-    CHECK="$($NETCMD registry check $REGVER 2>&1)"
-    RC=$?
+	echo "Registry check $CHECKNO" | tee -a $LOG
+	CHECK="$($NETCMD registry check $REGVER 2>&1)"
+	RC=$?
 
-    ERRORSTR="$(echo "$CHECK" | grep -vE $ALLOWEDERR )"
-    test "x$RC" = "x0" || {
-        echo "upgrade check $CHECKNO failed:" | tee -a $LOG
-        return 1
-    }
+	ERRORSTR="$(echo "$CHECK" | grep -vE $ALLOWEDERR)"
+	test "x$RC" = "x0" || {
+		echo "upgrade check $CHECKNO failed:" | tee -a $LOG
+		return 1
+	}
 
-    test "x$ERRORSTR" = "x" || {
-        echo "upgrade check $CHECKNO failed:" | tee -a $LOG
-        echo "reason: $CHECK" | tee -a $LOG
-        return 1
-    }
+	test "x$ERRORSTR" = "x" || {
+		echo "upgrade check $CHECKNO failed:" | tee -a $LOG
+		echo "reason: $CHECK" | tee -a $LOG
+		return 1
+	}
 
-    test "x$CHECKDIFF" = "xcheckdiff" && {
-        $NETCMD registry export 'HKLM' $WORKSPACE/export_${CHECKNO}.reg >> $LOG
-        test "x$?" = "x0" || {
-            echo "Error: 'net registry export HKLM' failed" | tee -a $LOG
-        }
+	test "x$CHECKDIFF" = "xcheckdiff" && {
+		$NETCMD registry export 'HKLM' $WORKSPACE/export_${CHECKNO}.reg >>$LOG
+		test "x$?" = "x0" || {
+			echo "Error: 'net registry export HKLM' failed" | tee -a $LOG
+		}
 
-        diff -q $WORKSPACE/export_0.reg $WORKSPACE/export_${CHECKNO}.reg >> $LOG
-        test "x$?" = "x0" || {
-            echo "Error: $WORKSPACE/export_0.reg differs from $WORKSPACE/export_${CHECKNO}.reg" | tee -a  $LOG
-            return 1
-        }
-    }
+		diff -q $WORKSPACE/export_0.reg $WORKSPACE/export_${CHECKNO}.reg >>$LOG
+		test "x$?" = "x0" || {
+			echo "Error: $WORKSPACE/export_0.reg differs from $WORKSPACE/export_${CHECKNO}.reg" | tee -a $LOG
+			return 1
+		}
+	}
 
-    return 0
+	return 0
 )
 
 registry_upgrade()
 {
-    echo registry_upgrade $1 | tee -a $LOG
+	echo registry_upgrade $1 | tee -a $LOG
 
-    (cat $DATADIR/registry.tdb > $WORKSPACE/registry.tdb) >> $LOG 2>&1
+	(cat $DATADIR/registry.tdb >$WORKSPACE/registry.tdb) >>$LOG 2>&1
 
-    REGISTRY="${WORKSPACE}/registry.tdb"
+	REGISTRY="${WORKSPACE}/registry.tdb"
 
-    test -e $REGISTRY || {
-        echo "Error: Database file not available" | tee -a $LOG
-        return 1
-    }
+	test -e $REGISTRY || {
+		echo "Error: Database file not available" | tee -a $LOG
+		return 1
+	}
 
-    # create config file
-    echo '[global]' > ${CONFIG_FILE}
-    echo "	state directory = ${WORKSPACE}" >> ${CONFIG_FILE}
-    echo "	private directory = ${WORKSPACE}" >> ${CONFIG_FILE}
-    echo "	lock directory = ${WORKSPACE}" >> ${CONFIG_FILE}
+	# create config file
+	echo '[global]' >${CONFIG_FILE}
+	echo "	state directory = ${WORKSPACE}" >>${CONFIG_FILE}
+	echo "	private directory = ${WORKSPACE}" >>${CONFIG_FILE}
+	echo "	lock directory = ${WORKSPACE}" >>${CONFIG_FILE}
 
-    # set database INFO/version to 1
-    #$DBWRAP_TOOL $REGISTRY store 'INFO/version' uint32 1
-    #test "x$?" = "x0" || {
-    #    echo "Error: Can not set INFO/version" >> $LOG
-    #    return 1
-    #}
+	# set database INFO/version to 1
+	#$DBWRAP_TOOL $REGISTRY store 'INFO/version' uint32 1
+	#test "x$?" = "x0" || {
+	#    echo "Error: Can not set INFO/version" >> $LOG
+	#    return 1
+	#}
 
-    # check original registry.tdb
-    echo "$REGISTRY" | tee -a $LOG
-    registry_check 0
-    test "x$?" = "x0" || {
-        echo "Error: initial 'registry_check 0' failed" | tee -a $LOG
-        return 1
-    }
+	# check original registry.tdb
+	echo "$REGISTRY" | tee -a $LOG
+	registry_check 0
+	test "x$?" = "x0" || {
+		echo "Error: initial 'registry_check 0' failed" | tee -a $LOG
+		return 1
+	}
 
-    # trigger upgrade
-    echo "$NETCMD registry enumerate $REGPATH" >> $LOG
-    $NETCMD registry enumerate $REGPATH >> $LOG
-    test "x$?" = "x0" || {
-        echo "Error: 'net registry enumerate $REGPATH' failed" | tee -a $LOG
-        return 1
-    }
+	# trigger upgrade
+	echo "$NETCMD registry enumerate $REGPATH" >>$LOG
+	$NETCMD registry enumerate $REGPATH >>$LOG
+	test "x$?" = "x0" || {
+		echo "Error: 'net registry enumerate $REGPATH' failed" | tee -a $LOG
+		return 1
+	}
 
-    # check upgraded database
-    registry_check 1
-    test "x$?" = "x0" || {
-        echo "Error: 'registry_check 1' after upgrade failed" | tee -a $LOG
-        return 1
-    }
+	# check upgraded database
+	registry_check 1
+	test "x$?" = "x0" || {
+		echo "Error: 'registry_check 1' after upgrade failed" | tee -a $LOG
+		return 1
+	}
 
-    # export database for diffs
-    $NETCMD registry export 'HKLM' $WORKSPACE/export_0.reg | tee -a $LOG
-    test "x$?" = "x0" || {
-        echo "Error 'net registry export' failed" | tee -a $LOG
-        return 1
-    }
+	# export database for diffs
+	$NETCMD registry export 'HKLM' $WORKSPACE/export_0.reg | tee -a $LOG
+	test "x$?" = "x0" || {
+		echo "Error 'net registry export' failed" | tee -a $LOG
+		return 1
+	}
 
-    # remove version string
-    $DBWRAP_TOOL $REGISTRY delete INFO/version | tee -a $LOG
-    test "x$?" = "x0" || {
-        echo "Error: Can not remove INFO/version key from registry" | tee -a $LOG
-        return 1
-    }
+	# remove version string
+	$DBWRAP_TOOL $REGISTRY delete INFO/version | tee -a $LOG
+	test "x$?" = "x0" || {
+		echo "Error: Can not remove INFO/version key from registry" | tee -a $LOG
+		return 1
+	}
 
-    # trigger upgrade on upgraded database
-    echo "$NETCMD registry enumerate $REGPATH" >> $LOG
-    $NETCMD registry enumerate $REGPATH >> $LOG 2>&1
-    test "x$?" = "x0" || {
-        echo "Error: 'net registry enumerate $REGPATH' failed" | tee -a $LOG
-        return 1
-    }
+	# trigger upgrade on upgraded database
+	echo "$NETCMD registry enumerate $REGPATH" >>$LOG
+	$NETCMD registry enumerate $REGPATH >>$LOG 2>&1
+	test "x$?" = "x0" || {
+		echo "Error: 'net registry enumerate $REGPATH' failed" | tee -a $LOG
+		return 1
+	}
 
-    # check upgraded database again
-    registry_check 2 checkdiff
-    test "x$?" = "x0" || {
-        echo "Error: 'registry_check 2' after upgrade failed" | tee -a $LOG
-        return 1
-    }
+	# check upgraded database again
+	registry_check 2 checkdiff
+	test "x$?" = "x0" || {
+		echo "Error: 'registry_check 2' after upgrade failed" | tee -a $LOG
+		return 1
+	}
 
-    # set database INFO/version to version 2
-    $DBWRAP_TOOL $REGISTRY store 'INFO/version' uint32 2
-    test "x$?" = "x0" || {
-        echo "Error: Can not set INFO/version" | tee -a $LOG
-        return 1
-    }
+	# set database INFO/version to version 2
+	$DBWRAP_TOOL $REGISTRY store 'INFO/version' uint32 2
+	test "x$?" = "x0" || {
+		echo "Error: Can not set INFO/version" | tee -a $LOG
+		return 1
+	}
 
-    # trigger upgrade
-    $NETCMD registry enumerate $REGPATH >> $LOG
-    test "x$?" = "x0" || {
-        echo "Error: 'net registry enumerate $REGPATH' failed" | tee -a $LOG
-        return 1
-    }
+	# trigger upgrade
+	$NETCMD registry enumerate $REGPATH >>$LOG
+	test "x$?" = "x0" || {
+		echo "Error: 'net registry enumerate $REGPATH' failed" | tee -a $LOG
+		return 1
+	}
 
-    # check upgraded database again
-    registry_check 3 checkdiff
-    test "x$?" = "x0" || {
-        echo "Error: 'registry_check 3' after upgrade failed" | tee -a $LOG
-        return 1
-    }
+	# check upgraded database again
+	registry_check 3 checkdiff
+	test "x$?" = "x0" || {
+		echo "Error: 'registry_check 3' after upgrade failed" | tee -a $LOG
+		return 1
+	}
 }
 
 # remove old workspace
@@ -183,11 +183,10 @@ mkdir $WORKSPACE
 DIR=$(mktemp -d ${WORKSPACE}/${LOGDIR_PREFIX}_XXXXXX)
 LOG=$DIR/log
 
-testit "registry_upgrade" registry_upgrade || failed=`expr $failed + 1`
+testit "registry_upgrade" registry_upgrade || failed=$(expr $failed + 1)
 
 if [ $failed -eq 0 ]; then
-    rm -rf $WORKSPACE
+	rm -rf $WORKSPACE
 fi
 
 testok $0 $failed
-
