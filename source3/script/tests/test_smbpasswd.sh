@@ -6,10 +6,10 @@
 #
 
 if [ $# -lt 4 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_smbpasswd.sh SERVER USERNAME PASSWORD
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER=$1
@@ -39,7 +39,7 @@ create_local_smb_user()
 	password=$2
 
 	tmpfile=$PREFIX/smbpasswd_create_user_script
-	cat > $tmpfile <<EOF
+	cat >$tmpfile <<EOF
 expect New SMB password:
 send $password\n
 expect Retype new SMB password:
@@ -88,7 +88,7 @@ test_smbpasswd()
 	user_id=$(id -u $user)
 
 	tmpfile=$PREFIX/smbpasswd_change_password_script
-	cat > $tmpfile <<EOF
+	cat >$tmpfile <<EOF
 expect Old SMB password:
 send $oldpwd\n
 expect New SMB password:
@@ -118,15 +118,15 @@ EOF
 }
 
 testit "Create user $samba_test_user" \
-	create_local_smb_user $samba_test_user $samba_test_user_pwd \
-	|| failed=$(expr $failed + 1)
+	create_local_smb_user $samba_test_user $samba_test_user_pwd ||
+	failed=$(expr $failed + 1)
 
 testit "Change user password" \
-	test_smbpasswd $samba_test_user $samba_test_user_pwd $samba_test_user_new_pwd \
-	|| failed=$(expr $failed + 1)
+	test_smbpasswd $samba_test_user $samba_test_user_pwd $samba_test_user_new_pwd ||
+	failed=$(expr $failed + 1)
 
 testit "Delete user $samba_test_user" \
-	delete_local_smb_user $samba_test_user \
-	|| failed=$(expr $failed + 1)
+	delete_local_smb_user $samba_test_user ||
+	failed=$(expr $failed + 1)
 
 exit $failed
