@@ -3,10 +3,10 @@
 # this runs a smbclient based authentication tests
 
 if [ $# -lt 6 ]; then
-cat <<EOF
+	cat <<EOF
 Usage: test_smbclient_ntlm.sh SERVER USERNAME PASSWORD MAPTOGUEST SMBCLIENT PROTOCOL <smbclient arguments>
 EOF
-exit 1;
+	exit 1
 fi
 
 SERVER="$1"
@@ -19,14 +19,14 @@ SMBCLIENT="$VALGRIND ${SMBCLIENT}"
 shift 6
 ADDARGS="$*"
 
-incdir=`dirname $0`/../../../testprogs/blackbox
+incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 if [ $PROTOCOL != "SMB3" -a $PROTOCOL != "NT1" ]; then
-cat <<EOF
+	cat <<EOF
 Uexpected protocol specified $PROTOCOL
 EOF
-	exit 1;
+	exit 1
 fi
 
 if [ $PROTOCOL = "NT1" ]; then
@@ -44,7 +44,7 @@ fi
 if [ $PROTOCOL = "SMB3" ]; then
 	testit "smbclient anonymous.nopassword.SMB3" $SMBCLIENT //$SERVER/IPC\$ $CONFIGURATION -U% -mSMB3 -c quit $ADDARGS
 fi
-if test x"${MAPTOGUEST}" = x"never" ; then
+if test x"${MAPTOGUEST}" = x"never"; then
 	if [ $PROTOCOL = "NT1" ]; then
 		testit_expect_failure "smbclient anonymous.badpassword.NT1NEW.fail" $SMBCLIENT //$SERVER/IPC\$ $CONFIGURATION -U%badpassword -mNT1 -c quit $ADDARGS
 	fi
