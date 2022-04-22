@@ -18,69 +18,74 @@
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-timestamp() {
-  # mark the start time. With Gnu date, you get nanoseconds from %N
-  # (here truncated to microseconds with %6N), but not on BSDs,
-  # Solaris, etc, which will apparently leave either %N or N at the end.
-  date -u +'time: %Y-%m-%d %H:%M:%S.%6NZ' | sed 's/\..*NZ$/.000000Z/'
+timestamp()
+{
+	# mark the start time. With Gnu date, you get nanoseconds from %N
+	# (here truncated to microseconds with %6N), but not on BSDs,
+	# Solaris, etc, which will apparently leave either %N or N at the end.
+	date -u +'time: %Y-%m-%d %H:%M:%S.%6NZ' | sed 's/\..*NZ$/.000000Z/'
 }
 
-subunit_start_test () {
-  # emit the current protocol start-marker for test $1
-  timestamp
-  printf 'test: %s\n' "$1"
+subunit_start_test()
+{
+	# emit the current protocol start-marker for test $1
+	timestamp
+	printf 'test: %s\n' "$1"
 }
 
-
-subunit_pass_test () {
-  # emit the current protocol test passed marker for test $1
-  timestamp
-  printf 'success: %s\n' "$1"
+subunit_pass_test()
+{
+	# emit the current protocol test passed marker for test $1
+	timestamp
+	printf 'success: %s\n' "$1"
 }
 
 # This is just a hack as we have some broken scripts
 # which use "exit $failed", without initializing failed.
 failed=0
 
-subunit_fail_test () {
-  # emit the current protocol fail-marker for test $1, and emit stdin as
-  # the error text.
-  # we use stdin because the failure message can be arbitrarily long, and this
-  # makes it convenient to write in scripts (using <<END syntax.
-  timestamp
-  printf 'failure: %s [\n' "$1"
-  cat -
-  printf '\n]\n'
+subunit_fail_test()
+{
+	# emit the current protocol fail-marker for test $1, and emit stdin as
+	# the error text.
+	# we use stdin because the failure message can be arbitrarily long, and this
+	# makes it convenient to write in scripts (using <<END syntax.
+	timestamp
+	printf 'failure: %s [\n' "$1"
+	cat -
+	printf '\n]\n'
 }
 
-
-subunit_error_test () {
-  # emit the current protocol error-marker for test $1, and emit stdin as
-  # the error text.
-  # we use stdin because the failure message can be arbitrarily long, and this
-  # makes it convenient to write in scripts (using <<END syntax.
-  timestamp
-  printf 'error: %s [\n' "$1"
-  cat -
-  printf '\n]\n'
+subunit_error_test()
+{
+	# emit the current protocol error-marker for test $1, and emit stdin as
+	# the error text.
+	# we use stdin because the failure message can be arbitrarily long, and this
+	# makes it convenient to write in scripts (using <<END syntax.
+	timestamp
+	printf 'error: %s [\n' "$1"
+	cat -
+	printf '\n]\n'
 }
 
-subunit_skip_test () {
-  # emit the current protocol skip-marker for test $1, and emit stdin as
-  # the error text.
-  # we use stdin because the failure message can be arbitrarily long, and this
-  # makes it convenient to write in scripts (using <<END syntax.
-  printf 'skip: %s [\n' "$1"
-  cat -
-  printf '\n]\n'
+subunit_skip_test()
+{
+	# emit the current protocol skip-marker for test $1, and emit stdin as
+	# the error text.
+	# we use stdin because the failure message can be arbitrarily long, and this
+	# makes it convenient to write in scripts (using <<END syntax.
+	printf 'skip: %s [\n' "$1"
+	cat -
+	printf '\n]\n'
 }
 
-testit () {
+testit()
+{
 	name="$1"
 	shift
 	cmdline="$@"
 	subunit_start_test "$name"
-	output=`$cmdline 2>&1`
+	output=$($cmdline 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		subunit_pass_test "$name"
@@ -92,14 +97,15 @@ testit () {
 
 # This returns 0 if the command gave success and the grep value was found
 # all other cases return != 0
-testit_grep () {
+testit_grep()
+{
 	name="$1"
 	shift
 	grep="$1"
 	shift
 	cmdline="$@"
 	subunit_start_test "$name"
-	output=`$cmdline 2>&1`
+	output=$($cmdline 2>&1)
 	status=$?
 	if [ x$status != x0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
@@ -115,12 +121,13 @@ testit_grep () {
 	return $status
 }
 
-testit_expect_failure () {
+testit_expect_failure()
+{
 	name="$1"
 	shift
 	cmdline="$@"
 	subunit_start_test "$name"
-	output=`$cmdline 2>&1`
+	output=$($cmdline 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		echo "$output" | subunit_fail_test "$name"
@@ -132,14 +139,15 @@ testit_expect_failure () {
 
 # This returns 0 if the command gave a failure and the grep value was found
 # all other cases return != 0
-testit_expect_failure_grep () {
+testit_expect_failure_grep()
+{
 	name="$1"
 	shift
 	grep="$1"
 	shift
 	cmdline="$@"
 	subunit_start_test "$name"
-	output=`$cmdline 2>&1`
+	output=$($cmdline 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
@@ -155,8 +163,9 @@ testit_expect_failure_grep () {
 	return $status
 }
 
-testok () {
-	name=`basename $1`
+testok()
+{
+	name=$(basename $1)
 	failed=$2
 
 	exit $failed
@@ -164,8 +173,8 @@ testok () {
 
 # work out the top level source directory
 if [ -d source4 ]; then
-    SRCDIR="."
+	SRCDIR="."
 else
-    SRCDIR=".."
+	SRCDIR=".."
 fi
 export SRCDIR
