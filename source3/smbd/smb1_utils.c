@@ -97,12 +97,7 @@ struct files_struct *fcb_or_dos_open(
 		return NULL;
 	}
 
-	status = dup_file_fsp(
-		req,
-		fsp,
-		access_mask,
-		create_options,
-		new_fsp);
+	status = dup_file_fsp(fsp, access_mask, new_fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("dup_file_fsp failed: %s\n", nt_errstr(status));
