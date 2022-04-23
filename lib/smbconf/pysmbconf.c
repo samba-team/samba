@@ -365,9 +365,24 @@ static PyObject *py_init_txt(PyObject * module, PyObject * args)
 	return (PyObject *) obj;
 }
 
+static PyObject *py_smbconf_error(PyObject * module, PyObject * args)
+{
+	sbcErr errcode;
+
+	if (!PyArg_ParseTuple(args, "i", &errcode)) {
+		return NULL;
+	}
+
+	/* this always raises an exception. it doesn't return the exception. */
+	py_raise_SMBConfError(errcode);
+	return NULL;
+}
+
 static PyMethodDef pysmbconf_methods[] = {
 	{ "init_txt", (PyCFunction) py_init_txt, METH_VARARGS,
 	 "Return an SMBConf object for the given text config file." },
+	{ "_smbconf_error", (PyCFunction) py_smbconf_error, METH_VARARGS,
+	 "Raise an SMBConfError based on the given error code." },
 	{ 0 },
 };
 
