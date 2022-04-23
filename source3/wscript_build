@@ -1239,6 +1239,11 @@ bld.SAMBA3_PYTHON('pymdscli',
                   deps=' '.join(['RPCCLI_MDSSVC', pytalloc_util, pyrpc_util]),
                   realname='samba/samba3/mdscli.so')
 
+bld.SAMBA3_PYTHON('pys3smbconf',
+                  source='lib/smbconf/pys3smbconf.c',
+                  deps='smbconf',
+                  realname='samba/samba3/smbconf.so')
+
 bld.SAMBA3_BINARY('spotlight2sparql',
                  source='''
                  rpc_server/mdssvc/sparql_parser_test.c
