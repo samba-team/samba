@@ -20,11 +20,13 @@
 Tests for samba.smbconf module
 """
 
+from samba.samba3 import param as s3param
 import samba.tests
 
 
 class SMBConfTests(samba.tests.TestCase):
     _smbconf = None
+    _s3smbconf = None
 
     @property
     def smbconf(self):
@@ -40,8 +42,28 @@ class SMBConfTests(samba.tests.TestCase):
         return self._smbconf
 
     @property
+    def s3smbconf(self):
+        if self._s3smbconf is not None:
+            return self._s3smbconf
+
+        import samba.samba3.smbconf
+
+        self._s3smbconf = samba.samba3.smbconf
+        return self._s3smbconf
+
+    @property
     def example_conf_default(self):
         return "./testdata/samba3/smb.conf"
+
+    def setUp(self):
+        super().setUp()
+        # fetch the configuration in the same style as other test suites
+        self.lp_ctx = samba.tests.env_loadparm()
+        # apply the configuration to the samba3 configuration
+        # (because there are two... and they're independent!)
+        # this is needed to make use of the registry
+        s3_lp = s3param.get_context()
+        s3_lp.load(self.lp_ctx.configfile)
 
     def test_uninitalized_smbconf(self):
         sconf = self.smbconf.SMBConf()
@@ -94,6 +116,18 @@ class SMBConfTests(samba.tests.TestCase):
         self.assertEqual(
             services[1], ("cd1", [("path", "/mnt/cd1"), ("public", "yes")])
         )
+
+    def test_init_reg(self):
+        sconf = self.s3smbconf.init_reg(None)
+        self.assertTrue(sconf.is_writeable())
+
+    def test_init_str_reg(self):
+        sconf = self.s3smbconf.init("registry:")
+        self.assertTrue(sconf.is_writeable())
+
+    def test_init_str_file(self):
+        sconf = self.s3smbconf.init(f"file:{self.example_conf_default}")
+        self.assertFalse(sconf.is_writeable())
 
 
 if __name__ == "__main__":
