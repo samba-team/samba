@@ -24,16 +24,9 @@
 
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_txt.h"
+#include "lib/smbconf/pysmbconf.h"
 
 static PyObject *PyExc_SMBConfError;
-
-typedef struct {
-	PyObject_HEAD
-
-	/* C values embedded in our python type */
-	TALLOC_CTX * mem_ctx;
-	struct smbconf_ctx *conf_ctx;
-} py_SMBConf_Object;
 
 static void py_raise_SMBConfError(sbcErr err)
 {
