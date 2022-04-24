@@ -160,6 +160,17 @@ class SMBConfTests(samba.tests.TestCase):
             s1, ("foobar", [("path", "/mnt/foobar"), ("browseable", "no")])
         )
 
+    def test_set_global_parameter(self):
+        sconf = self.s3smbconf.init_reg(None)
+        sconf.drop()
+        sconf.set_global_parameter("workgroup", "EXAMPLE")
+        sconf.set_global_parameter("x:custom", "fake")
+
+        s1 = sconf.get_share("global")
+        self.assertEqual(
+            s1, ("global", [("workgroup", "EXAMPLE"), ("x:custom", "fake")])
+        )
+
 
 if __name__ == "__main__":
     import unittest
