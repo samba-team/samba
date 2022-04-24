@@ -279,6 +279,23 @@ static PyObject *obj_get_config(py_SMBConf_Object * self,
 	return svclist;
 }
 
+static PyObject *obj_create_share(py_SMBConf_Object * self, PyObject * args)
+{
+	sbcErr err;
+	char *servicename = NULL;
+
+	if (!PyArg_ParseTuple(args, "s", &servicename)) {
+		return NULL;
+	}
+
+	err = smbconf_create_share(self->conf_ctx, servicename);
+	if (err != SBC_ERR_OK) {
+		py_raise_SMBConfError(err);
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
 PyDoc_STRVAR(obj_requires_messaging_doc,
 "requires_messaging() -> bool\n"
 "\n"
@@ -309,6 +326,11 @@ PyDoc_STRVAR(obj_get_config_doc,
 "configuration. Each tuple in the list is the same as described\n"
 "for get_share().\n");
 
+PyDoc_STRVAR(obj_create_share_doc,
+"create_share(name: str) -> None\n"
+"Create a new empty share in the configuration. The share\n"
+"name must not exist or an error will be raised.\n");
+
 static PyMethodDef py_smbconf_obj_methods[] = {
 	{ "requires_messaging", (PyCFunction) obj_requires_messaging,
 	 METH_NOARGS, obj_requires_messaging_doc },
@@ -320,6 +342,8 @@ static PyMethodDef py_smbconf_obj_methods[] = {
 	 obj_get_share_doc },
 	{ "get_config", (PyCFunction) obj_get_config, METH_NOARGS,
 	 obj_get_config_doc },
+	{ "create_share", (PyCFunction) obj_create_share, METH_VARARGS,
+	 obj_create_share_doc },
 	{ 0 },
 };
 

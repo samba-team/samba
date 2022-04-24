@@ -129,6 +129,16 @@ class SMBConfTests(samba.tests.TestCase):
         sconf = self.s3smbconf.init(f"file:{self.example_conf_default}")
         self.assertFalse(sconf.is_writeable())
 
+    def test_create_share(self):
+        sconf = self.s3smbconf.init_reg(None)
+        sconf.create_share("alice")
+        sconf.create_share("bob")
+        names = sconf.share_names()
+        self.assertEqual(names, ["alice", "bob"])
+        self.assertRaises(
+            self.smbconf.SMBConfError, sconf.create_share, "alice"
+        )
+
 
 if __name__ == "__main__":
     import unittest
