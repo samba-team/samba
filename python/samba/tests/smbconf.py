@@ -184,6 +184,32 @@ class SMBConfTests(samba.tests.TestCase):
         names = sconf.share_names()
         self.assertEqual(names, ["bob"])
 
+    def test_create_set_share(self):
+        sconf = self.s3smbconf.init_reg(None)
+        sconf.drop()
+
+        params = [
+            ("path", "/mnt/baz"),
+            ("browseable", "yes"),
+            ("read only", "no"),
+        ]
+        sconf.create_set_share("baz", params)
+        self.assertEqual(sconf.get_share("baz"), ("baz", params))
+
+        self.assertRaises(
+            self.smbconf.SMBConfError, sconf.create_set_share, "baz", params
+        )
+        self.assertRaises(TypeError, sconf.create_set_share, "baz", None)
+        self.assertRaises(
+            ValueError, sconf.create_set_share, "baz", [None, None]
+        )
+        self.assertRaises(
+            TypeError, sconf.create_set_share, "baz", [("hi", None)]
+        )
+        self.assertRaises(
+            ValueError, sconf.create_set_share, "baz", [("a", "b", "c")]
+        )
+
 
 if __name__ == "__main__":
     import unittest

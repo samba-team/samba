@@ -364,6 +364,124 @@ static PyObject *obj_delete_share(py_SMBConf_Object * self, PyObject * args)
 	Py_RETURN_NONE;
 }
 
+static char *py_get_kv_str(TALLOC_CTX * mem_ctx, PyObject * obj, Py_ssize_t idx)
+{
+	char *ss = NULL;
+	PyObject *pystr = PySequence_GetItem(obj, idx);
+	if (pystr == NULL) {
+		return NULL;
+	}
+	if (!PyUnicode_Check(pystr)) {
+		PyErr_SetString(PyExc_TypeError, "keys/values expect a str");
+		Py_CLEAR(pystr);
+		return NULL;
+	}
+	ss = talloc_strdup(mem_ctx, PyUnicode_AsUTF8(pystr));
+	Py_CLEAR(pystr);
+	return ss;
+}
+
+static PyObject *obj_create_set_share(py_SMBConf_Object * self, PyObject * args)
+{
+	sbcErr err;
+	char *servicename = NULL;
+	PyObject *kvs = NULL;
+	Py_ssize_t size, idx;
+	struct smbconf_service *tmp_service = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(self->mem_ctx);
+
+	if (!PyArg_ParseTuple(args, "sO", &servicename, &kvs)) {
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	if (PySequence_Check(kvs) == 0) {
+		PyErr_SetString(PyExc_TypeError,
+				"a sequence object is required");
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	size = PySequence_Size(kvs);
+	if (size == -1) {
+		PyErr_SetString(PyExc_ValueError, "failed to get size");
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	tmp_service = talloc_zero(tmp_ctx, struct smbconf_service);
+	if (tmp_service == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	tmp_service->name = talloc_strdup(tmp_service, servicename);
+	if (tmp_service->name == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+	tmp_service->num_params = (uint32_t) size;
+	tmp_service->param_names = talloc_array(tmp_ctx, char *, size);
+	if (tmp_service->param_names == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+	tmp_service->param_values = talloc_array(tmp_ctx, char *, size);
+	if (tmp_service->param_values == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	for (idx = 0; idx < size; idx++) {
+		char *tmp_str = NULL;
+		PyObject *tmp_pair = PySequence_GetItem(kvs, idx);
+		if (tmp_pair == NULL) {
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+		if (PySequence_Size(tmp_pair) != 2) {
+			PyErr_SetString(PyExc_ValueError,
+					"expecting two-item tuples");
+			Py_CLEAR(tmp_pair);
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+
+		/* fetch key */
+		tmp_str = py_get_kv_str(tmp_ctx, tmp_pair, 0);
+		if (tmp_str == NULL) {
+			Py_CLEAR(tmp_pair);
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+		tmp_service->param_names[idx] = tmp_str;
+
+		/* fetch value */
+		tmp_str = py_get_kv_str(tmp_ctx, tmp_pair, 1);
+		if (tmp_str == NULL) {
+			Py_CLEAR(tmp_pair);
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+		tmp_service->param_values[idx] = tmp_str;
+
+		Py_CLEAR(tmp_pair);
+	}
+
+	err = smbconf_create_set_share(self->conf_ctx, tmp_service);
+	if (err != SBC_ERR_OK) {
+		py_raise_SMBConfError(err);
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+	talloc_free(tmp_ctx);
+	Py_RETURN_NONE;
+}
+
 PyDoc_STRVAR(obj_requires_messaging_doc,
 "requires_messaging() -> bool\n"
 "\n"
@@ -417,6 +535,10 @@ PyDoc_STRVAR(obj_delete_share_doc,
 "delete_share(str) -> None\n"
 "Delete a service from the configuration.\n");
 
+PyDoc_STRVAR(obj_create_set_share_doc,
+"create_set_share(str, [(str, str)...]) -> None\n"
+"Create and set the definition of a service.\n");
+
 static PyMethodDef py_smbconf_obj_methods[] = {
 	{ "requires_messaging", (PyCFunction) obj_requires_messaging,
 	 METH_NOARGS, obj_requires_messaging_doc },
@@ -430,6 +552,8 @@ static PyMethodDef py_smbconf_obj_methods[] = {
 	 obj_get_config_doc },
 	{ "create_share", (PyCFunction) obj_create_share, METH_VARARGS,
 	 obj_create_share_doc },
+	{ "create_set_share", (PyCFunction) obj_create_set_share, METH_VARARGS,
+	 obj_create_set_share_doc },
 	{ "drop", (PyCFunction) obj_drop, METH_NOARGS,
 	 obj_drop_doc },
 	{ "set_parameter", (PyCFunction) obj_set_parameter, METH_VARARGS,
