@@ -171,6 +171,19 @@ class SMBConfTests(samba.tests.TestCase):
             s1, ("global", [("workgroup", "EXAMPLE"), ("x:custom", "fake")])
         )
 
+    def test_delete_share(self):
+        sconf = self.s3smbconf.init_reg(None)
+        sconf.drop()
+
+        sconf.create_share("alice")
+        sconf.create_share("bob")
+        names = sconf.share_names()
+        self.assertEqual(names, ["alice", "bob"])
+
+        sconf.delete_share("alice")
+        names = sconf.share_names()
+        self.assertEqual(names, ["bob"])
+
 
 if __name__ == "__main__":
     import unittest
