@@ -131,6 +131,7 @@ class SMBConfTests(samba.tests.TestCase):
 
     def test_create_share(self):
         sconf = self.s3smbconf.init_reg(None)
+        sconf.drop()
         sconf.create_share("alice")
         sconf.create_share("bob")
         names = sconf.share_names()
@@ -138,6 +139,14 @@ class SMBConfTests(samba.tests.TestCase):
         self.assertRaises(
             self.smbconf.SMBConfError, sconf.create_share, "alice"
         )
+
+    def test_create_share(self):
+        sconf = self.s3smbconf.init_reg(None)
+        sconf.drop()
+        sconf.create_share("alice")
+        sconf.drop()
+        names = sconf.share_names()
+        self.assertEqual(names, [])
 
 
 if __name__ == "__main__":

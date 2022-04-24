@@ -296,6 +296,19 @@ static PyObject *obj_create_share(py_SMBConf_Object * self, PyObject * args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *obj_drop(py_SMBConf_Object * self,
+			  PyObject * Py_UNUSED(ignored))
+{
+	sbcErr err;
+
+	err = smbconf_drop(self->conf_ctx);
+	if (err != SBC_ERR_OK) {
+		py_raise_SMBConfError(err);
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
 PyDoc_STRVAR(obj_requires_messaging_doc,
 "requires_messaging() -> bool\n"
 "\n"
@@ -331,6 +344,10 @@ PyDoc_STRVAR(obj_create_share_doc,
 "Create a new empty share in the configuration. The share\n"
 "name must not exist or an error will be raised.\n");
 
+PyDoc_STRVAR(obj_drop_doc,
+"drop() -> None\n"
+"Drop the entire configuration, resetting it to an empty state.\n");
+
 static PyMethodDef py_smbconf_obj_methods[] = {
 	{ "requires_messaging", (PyCFunction) obj_requires_messaging,
 	 METH_NOARGS, obj_requires_messaging_doc },
@@ -344,6 +361,8 @@ static PyMethodDef py_smbconf_obj_methods[] = {
 	 obj_get_config_doc },
 	{ "create_share", (PyCFunction) obj_create_share, METH_VARARGS,
 	 obj_create_share_doc },
+	{ "drop", (PyCFunction) obj_drop, METH_NOARGS,
+	 obj_drop_doc },
 	{ 0 },
 };
 
