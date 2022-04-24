@@ -148,6 +148,18 @@ class SMBConfTests(samba.tests.TestCase):
         names = sconf.share_names()
         self.assertEqual(names, [])
 
+    def test_set_parameter(self):
+        sconf = self.s3smbconf.init_reg(None)
+        sconf.drop()
+        sconf.create_share("foobar")
+        sconf.set_parameter("foobar", "path", "/mnt/foobar")
+        sconf.set_parameter("foobar", "browseable", "no")
+
+        s1 = sconf.get_share("foobar")
+        self.assertEqual(
+            s1, ("foobar", [("path", "/mnt/foobar"), ("browseable", "no")])
+        )
+
 
 if __name__ == "__main__":
     import unittest
