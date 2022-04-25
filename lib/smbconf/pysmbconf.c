@@ -64,20 +64,21 @@ static void py_raise_SMBConfError(sbcErr err)
  */
 static PyObject *py_from_smbconf_service(struct smbconf_service *svc)
 {
+	uint32_t count;
 	PyObject *plist = PyList_New(svc->num_params);
 	if (plist == NULL) {
 		return NULL;
 	}
 
-	for (uint32_t i = 0; i < svc->num_params; i++) {
+	for (count = 0; count < svc->num_params; count++) {
 		PyObject *pt = Py_BuildValue("(ss)",
-					     svc->param_names[i],
-					     svc->param_values[i]);
+					     svc->param_names[count],
+					     svc->param_values[count]);
 		if (pt == NULL) {
 			Py_CLEAR(plist);
 			return NULL;
 		}
-		if (PyList_SetItem(plist, i, pt) < 0) {
+		if (PyList_SetItem(plist, count, pt) < 0) {
 			Py_CLEAR(pt);
 			Py_CLEAR(plist);
 			return NULL;
@@ -149,6 +150,7 @@ static PyObject *obj_share_names(py_SMBConf_Object * self,
 				 PyObject * Py_UNUSED(ignored))
 {
 	sbcErr err;
+	uint32_t count;
 	uint32_t num_shares;
 	char **share_names = NULL;
 	PyObject *slist = NULL;
@@ -178,14 +180,14 @@ static PyObject *obj_share_names(py_SMBConf_Object * self,
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	for (uint32_t i = 0; i < num_shares; i++) {
-		PyObject *ustr = PyUnicode_FromString(share_names[i]);
+	for (count = 0; count < num_shares; count++) {
+		PyObject *ustr = PyUnicode_FromString(share_names[count]);
 		if (ustr == NULL) {
 			Py_CLEAR(slist);
 			talloc_free(mem_ctx);
 			return NULL;
 		}
-		if (PyList_SetItem(slist, i, ustr) < 0) {
+		if (PyList_SetItem(slist, count, ustr) < 0) {
 			Py_CLEAR(ustr);
 			Py_CLEAR(slist);
 			talloc_free(mem_ctx);
@@ -239,6 +241,7 @@ static PyObject *obj_get_config(py_SMBConf_Object * self,
 	sbcErr err;
 	PyObject *svclist = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
+	uint32_t count;
 	uint32_t num_shares;
 	struct smbconf_service **svcs = NULL;
 
@@ -264,14 +267,14 @@ static PyObject *obj_get_config(py_SMBConf_Object * self,
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	for (uint32_t i = 0; i < num_shares; i++) {
-		PyObject *svcobj = py_from_smbconf_service(svcs[i]);
+	for (count = 0; count < num_shares; count++) {
+		PyObject *svcobj = py_from_smbconf_service(svcs[count]);
 		if (svcobj == NULL) {
 			Py_CLEAR(svclist);
 			talloc_free(mem_ctx);
 			return NULL;
 		}
-		if (PyList_SetItem(svclist, i, svcobj) < 0) {
+		if (PyList_SetItem(svclist, count, svcobj) < 0) {
 			Py_CLEAR(svcobj);
 			Py_CLEAR(svclist);
 			talloc_free(mem_ctx);
