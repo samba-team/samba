@@ -234,6 +234,31 @@ class SMBConfTests(samba.tests.TestCase):
             ),
         )
 
+    def test_delete_global_parameter(self):
+        sconf = self.s3smbconf.init_reg(None)
+        sconf.drop()
+        sconf.set_global_parameter("workgroup", "EXAMPLE")
+        sconf.set_global_parameter("client min protocol", "NT1")
+        sconf.set_global_parameter("server min protocol", "SMB2")
+
+        s1 = sconf.get_share("global")
+        self.assertEqual(
+            s1,
+            (
+                "global",
+                [
+                    ("workgroup", "EXAMPLE"),
+                    ("client min protocol", "NT1"),
+                    ("server min protocol", "SMB2"),
+                ],
+            ),
+        )
+
+        sconf.delete_global_parameter("server min protocol")
+        sconf.delete_global_parameter("client min protocol")
+        s1 = sconf.get_share("global")
+        self.assertEqual(s1, ("global", [("workgroup", "EXAMPLE")]))
+
 
 if __name__ == "__main__":
     import unittest
