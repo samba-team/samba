@@ -383,6 +383,7 @@ static void print_brl(struct file_id id,
 	share_mode = fetch_share_mode_unlocked(NULL, id);
 	if (share_mode) {
 		fname = share_mode_filename(NULL, share_mode);
+		sharepath = share_mode_servicepath(share_mode);
 	} else {
 		fname = talloc_strdup(NULL, "");
 		if (fname == NULL) {
