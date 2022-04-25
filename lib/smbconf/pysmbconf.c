@@ -482,6 +482,24 @@ static PyObject *obj_create_set_share(py_SMBConf_Object * self, PyObject * args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *obj_delete_parameter(py_SMBConf_Object * self, PyObject * args)
+{
+	sbcErr err;
+	char *servicename = NULL;
+	char *param_name = NULL;
+
+	if (!PyArg_ParseTuple(args, "ss", &servicename, &param_name)) {
+		return NULL;
+	}
+
+	err = smbconf_delete_parameter(self->conf_ctx, servicename, param_name);
+	if (err != SBC_ERR_OK) {
+		py_raise_SMBConfError(err);
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
 PyDoc_STRVAR(obj_requires_messaging_doc,
 "requires_messaging() -> bool\n"
 "\n"
@@ -539,6 +557,10 @@ PyDoc_STRVAR(obj_create_set_share_doc,
 "create_set_share(str, [(str, str)...]) -> None\n"
 "Create and set the definition of a service.\n");
 
+PyDoc_STRVAR(obj_delete_parameter_doc,
+"delete_parameter(str, str) -> None\n"
+"Delete a single configuration parameter.\n");
+
 static PyMethodDef py_smbconf_obj_methods[] = {
 	{ "requires_messaging", (PyCFunction) obj_requires_messaging,
 	 METH_NOARGS, obj_requires_messaging_doc },
@@ -562,6 +584,8 @@ static PyMethodDef py_smbconf_obj_methods[] = {
 	 METH_VARARGS, obj_set_global_parameter_doc },
 	{ "delete_share", (PyCFunction) obj_delete_share, METH_VARARGS,
 	 obj_delete_share_doc },
+	{ "delete_parameter", (PyCFunction) obj_delete_parameter, METH_VARARGS,
+	 obj_delete_parameter_doc },
 	{ 0 },
 };
 

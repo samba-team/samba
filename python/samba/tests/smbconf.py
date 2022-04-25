@@ -210,6 +210,30 @@ class SMBConfTests(samba.tests.TestCase):
             ValueError, sconf.create_set_share, "baz", [("a", "b", "c")]
         )
 
+    def test_delete_parameter(self):
+        sconf = self.s3smbconf.init_reg(None)
+        sconf.drop()
+
+        params = [
+            ("path", "/mnt/baz"),
+            ("browseable", "yes"),
+            ("read only", "no"),
+        ]
+        sconf.create_set_share("baz", params)
+        self.assertEqual(sconf.get_share("baz"), ("baz", params))
+
+        sconf.delete_parameter("baz", "browseable")
+        self.assertEqual(
+            sconf.get_share("baz"),
+            (
+                "baz",
+                [
+                    ("path", "/mnt/baz"),
+                    ("read only", "no"),
+                ],
+            ),
+        )
+
 
 if __name__ == "__main__":
     import unittest
