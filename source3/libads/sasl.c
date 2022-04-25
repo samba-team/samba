@@ -24,7 +24,7 @@
 #include "ads.h"
 #include "smb_krb5.h"
 #include "system/gssapi.h"
-#include "lib/param/loadparm.h"
+#include "lib/param/param.h"
 #include "krb5_env.h"
 #include "lib/util/asn1.h"
 
@@ -117,12 +117,157 @@ static const struct ads_saslwrap_ops ads_sasl_gensec_ops = {
 	.disconnect	= ads_sasl_gensec_disconnect
 };
 
+NTSTATUS ads_legacy_creds(ADS_STRUCT *ads,
+			  TALLOC_CTX *mem_ctx,
+			  struct cli_credentials **_creds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cli_credentials *creds = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	const char *account_name = NULL;
+	fstring acct_name;
+	enum credentials_use_kerberos krb5_state;
+	uint32_t gensec_features;
+	bool ok;
+
+	if (ads->auth.flags & (ADS_AUTH_NO_BIND|ADS_AUTH_ANON_BIND)) {
+		SMB_ASSERT(!(ads->auth.flags & ADS_AUTH_USER_CREDS));
+
+		creds = cli_credentials_init_anon(mem_ctx);
+		if (creds == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		talloc_steal(frame, creds);
+		goto done;
+	}
+
+	if (ads->auth.user_name == NULL) {
+		/*
+		 * Must use the userPrincipalName value here or sAMAccountName
+		 * and not servicePrincipalName; found by Guenther Deschner
+		 */
+		ads->auth.user_name = talloc_asprintf(ads,
+						      "%s$",
+						      lp_netbios_name());
+		if (ads->auth.user_name == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (ads->auth.realm == NULL) {
+		if (ads->server.realm != NULL) {
+			ads->auth.realm = talloc_strdup(ads, ads->server.realm);
+			if (ads->auth.realm == NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			ads->auth.realm = talloc_strdup(ads, lp_realm());
+			if (ads->auth.realm == NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+	}
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DBG_ERR("loadparm_init_s3 failed\n");
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_SERVER_STATE;
+	}
+
+	creds = cli_credentials_init(mem_ctx);
+	if (creds == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_steal(frame, creds);
+
+	ok = cli_credentials_guess(creds, lp_ctx);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/*
+	 * This logic was taken from ads_kinit_password()
+	 */
+	if (ads->auth.flags & ADS_AUTH_USER_CREDS) {
+		account_name = ads->auth.user_name;
+	} else if (IS_DC) {
+		/* this will end up getting a ticket for DOMAIN@RUSTED.REA.LM */
+		account_name = lp_workgroup();
+	} else if (lp_security() == SEC_DOMAIN ) {
+		fstr_sprintf( acct_name, "%s$", lp_netbios_name() );
+		account_name = acct_name;
+	} else {
+		/* This looks like host/lp_netbios_name()@REA.LM */
+		account_name = ads->auth.user_name;
+	}
+
+	ok = cli_credentials_set_username(creds,
+					  account_name,
+					  CRED_SPECIFIED);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ok = cli_credentials_set_domain(creds,
+					ads->auth.realm,
+					CRED_SPECIFIED);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ok = cli_credentials_set_password(creds,
+					  ads->auth.password,
+					  CRED_SPECIFIED);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+#define __ADS_AUTH_BOTH (ADS_AUTH_ALLOW_NTLMSSP|ADS_AUTH_DISABLE_KERBEROS)
+	if ((ads->auth.flags & __ADS_AUTH_BOTH) == __ADS_AUTH_BOTH) {
+		krb5_state = CRED_USE_KERBEROS_DISABLED;
+	} else if (ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP) {
+		krb5_state = CRED_USE_KERBEROS_DESIRED;
+	} else if (ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INCOMPATIBLE_DRIVER_BLOCKED;
+	} else {
+		krb5_state = CRED_USE_KERBEROS_REQUIRED;
+	}
+	cli_credentials_set_kerberos_state(creds, krb5_state, CRED_SPECIFIED);
+
+	gensec_features = cli_credentials_get_gensec_features(creds);
+	if (ads->auth.flags & ADS_AUTH_SASL_LDAPS) {
+		gensec_features &= ~(GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL);
+	} else if (ads->auth.flags & ADS_AUTH_SASL_STARTTLS) {
+		gensec_features &= ~(GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL);
+	} else if (ads->auth.flags & ADS_AUTH_SASL_SEAL) {
+		gensec_features |= GENSEC_FEATURE_SIGN;
+		gensec_features |= GENSEC_FEATURE_SEAL;
+	} else if (ads->auth.flags & ADS_AUTH_SASL_SIGN) {
+		gensec_features |= GENSEC_FEATURE_SIGN;
+	}
+	cli_credentials_set_gensec_features(creds, gensec_features, CRED_SPECIFIED);
+
+done:
+	*_creds = talloc_move(mem_ctx, &creds);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 /*
    perform a LDAP/SASL/SPNEGO/{NTLMSSP,KRB5} bind (just how many layers can
    we fit on one socket??)
 */
 static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
-				enum credentials_use_kerberos krb5_state,
+				struct cli_credentials *creds,
 				const char *target_service,
 				const char *target_hostname)
 {
@@ -143,19 +288,9 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 		return ADS_ERROR_NT(nt_status);
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = auth_generic_set_username(auth_generic_state, ads->auth.user_name))) {
+	if (!NT_STATUS_IS_OK(nt_status = auth_generic_set_creds(auth_generic_state, creds))) {
 		return ADS_ERROR_NT(nt_status);
 	}
-	if (!NT_STATUS_IS_OK(nt_status = auth_generic_set_domain(auth_generic_state, ads->auth.realm))) {
-		return ADS_ERROR_NT(nt_status);
-	}
-	if (!NT_STATUS_IS_OK(nt_status = auth_generic_set_password(auth_generic_state, ads->auth.password))) {
-		return ADS_ERROR_NT(nt_status);
-	}
-
-	cli_credentials_set_kerberos_state(auth_generic_state->credentials,
-					   krb5_state,
-					   CRED_SPECIFIED);
 
 	if (target_service != NULL) {
 		nt_status = gensec_set_target_service(
@@ -503,11 +638,19 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct ads_service_principal p = {0};
+	struct cli_credentials *creds = NULL;
+	NTSTATUS nt_status;
 	ADS_STATUS status;
 	const char *mech = NULL;
 
 	status = ads_generate_service_principal(ads, &p);
 	if (!ADS_ERR_OK(status)) {
+		goto done;
+	}
+
+	nt_status = ads_legacy_creds(ads, frame, &creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		status = ADS_ERROR_NT(nt_status);
 		goto done;
 	}
 
@@ -517,12 +660,16 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	{
 		mech = "KRB5";
 
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_USE_KERBEROS_REQUIRED,
+						   CRED_SPECIFIED);
+
 		if (ads->auth.password == NULL ||
 		    ads->auth.password[0] == '\0')
 		{
 
 			status = ads_sasl_spnego_gensec_bind(ads,
-							     CRED_USE_KERBEROS_REQUIRED,
+							     creds,
 							     p.service, p.hostname);
 			if (ADS_ERR_OK(status)) {
 				ads_free_service_principal(&p);
@@ -537,7 +684,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 		if (ADS_ERR_OK(status)) {
 			status = ads_sasl_spnego_gensec_bind(ads,
-							CRED_USE_KERBEROS_REQUIRED,
+							creds,
 							p.service, p.hostname);
 			if (!ADS_ERR_OK(status)) {
 				DBG_ERR("kinit succeeded but "
@@ -584,8 +731,12 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		goto done;
 	}
 
+	cli_credentials_set_kerberos_state(creds,
+					   CRED_USE_KERBEROS_DISABLED,
+					   CRED_SPECIFIED);
+
 	status = ads_sasl_spnego_gensec_bind(ads,
-					     CRED_USE_KERBEROS_DISABLED,
+					     creds,
 					     p.service, p.hostname);
 done:
 	if (!ADS_ERR_OK(status)) {

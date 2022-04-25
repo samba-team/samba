@@ -32,6 +32,8 @@
 #ifndef _LIBADS_ADS_PROTO_H_
 #define _LIBADS_ADS_PROTO_H_
 
+struct cli_credentials;
+
 enum ads_sasl_state_e {
 	ADS_SASL_PLAIN = 0,
 	ADS_SASL_SIGN,
@@ -201,6 +203,9 @@ ADS_STATUS ads_ranged_search(ADS_STRUCT *ads,
 
 /* The following definitions come from libads/sasl.c  */
 
+NTSTATUS ads_legacy_creds(ADS_STRUCT *ads,
+			  TALLOC_CTX *mem_ctx,
+			  struct cli_credentials **_creds);
 ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads);
 
 /* The following definitions come from libads/sasl_wrapping.c  */

@@ -933,27 +933,6 @@ got_connection:
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
 	DEBUG(3,("Successfully contacted LDAP server %s\n", addr));
 
-	if (!ads->auth.user_name) {
-		/* Must use the userPrincipalName value here or sAMAccountName
-		   and not servicePrincipalName; found by Guenther Deschner */
-		ads->auth.user_name = talloc_asprintf(ads,
-						      "%s$",
-						      lp_netbios_name());
-		if (ads->auth.user_name == NULL) {
-			DBG_ERR("talloc_asprintf failed\n");
-			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-	}
-
-	if (ads->auth.realm == NULL) {
-		ads->auth.realm = talloc_strdup(ads, ads->config.realm);
-		if (ads->auth.realm == NULL) {
-			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-	}
-
 	if (!ads->auth.kdc_server) {
 		print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
 		ads->auth.kdc_server = talloc_strdup(ads, addr);
