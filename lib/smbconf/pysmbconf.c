@@ -518,6 +518,39 @@ static PyObject *obj_delete_global_parameter(py_SMBConf_Object * self,
 	Py_RETURN_NONE;
 }
 
+static PyObject *obj_transaction_start(py_SMBConf_Object * self,
+				       PyObject * Py_UNUSED(ignored))
+{
+	sbcErr err = smbconf_transaction_start(self->conf_ctx);
+	if (err != SBC_ERR_OK) {
+		py_raise_SMBConfError(err);
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
+static PyObject *obj_transaction_commit(py_SMBConf_Object * self,
+					PyObject * Py_UNUSED(ignored))
+{
+	sbcErr err = smbconf_transaction_commit(self->conf_ctx);
+	if (err != SBC_ERR_OK) {
+		py_raise_SMBConfError(err);
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
+static PyObject *obj_transaction_cancel(py_SMBConf_Object * self,
+					PyObject * Py_UNUSED(ignored))
+{
+	sbcErr err = smbconf_transaction_cancel(self->conf_ctx);
+	if (err != SBC_ERR_OK) {
+		py_raise_SMBConfError(err);
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
 PyDoc_STRVAR(obj_requires_messaging_doc,
 "requires_messaging() -> bool\n"
 "\n"
@@ -583,6 +616,19 @@ PyDoc_STRVAR(obj_delete_global_parameter_doc,
 "delete_parameter(str, str) -> None\n"
 "Delete a single global configuration parameter.\n");
 
+PyDoc_STRVAR(obj_transaction_start_doc,
+"transaction_start() -> None\n"
+"Start a transaction.\n"
+"Transactions allow making compound sets of changes atomically.\n");
+
+PyDoc_STRVAR(obj_transaction_commit_doc,
+"transaction_commit() -> None\n"
+"Commit the transaction.\n");
+
+PyDoc_STRVAR(obj_transaction_cancel_doc,
+"transaction_cancel() -> None\n"
+"Cancel the transaction.\n");
+
 static PyMethodDef py_smbconf_obj_methods[] = {
 	{ "requires_messaging", (PyCFunction) obj_requires_messaging,
 	 METH_NOARGS, obj_requires_messaging_doc },
@@ -610,6 +656,12 @@ static PyMethodDef py_smbconf_obj_methods[] = {
 	 obj_delete_parameter_doc },
 	{ "delete_global_parameter", (PyCFunction) obj_delete_global_parameter,
 	 METH_VARARGS, obj_delete_global_parameter_doc },
+	{ "transaction_start", (PyCFunction) obj_transaction_start, METH_NOARGS,
+	 obj_transaction_start_doc },
+	{ "transaction_commit", (PyCFunction) obj_transaction_commit,
+	 METH_NOARGS, obj_transaction_commit_doc },
+	{ "transaction_cancel", (PyCFunction) obj_transaction_cancel,
+	 METH_NOARGS, obj_transaction_cancel_doc },
 	{ 0 },
 };
 

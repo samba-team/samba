@@ -259,6 +259,71 @@ class SMBConfTests(samba.tests.TestCase):
         s1 = sconf.get_share("global")
         self.assertEqual(s1, ("global", [("workgroup", "EXAMPLE")]))
 
+    def test_transaction_direct(self):
+        sconf = self.s3smbconf.init_reg(None)
+        sconf.drop()
+        sconf.set_global_parameter("workgroup", "EXAMPLE")
+
+        sconf.transaction_start()
+        sconf.set_global_parameter("client min protocol", "NT1")
+        sconf.set_global_parameter("server min protocol", "SMB2")
+        sconf.transaction_cancel()
+
+        s1 = sconf.get_share("global")
+        self.assertEqual(s1, ("global", [("workgroup", "EXAMPLE")]))
+
+        sconf.transaction_start()
+        sconf.set_global_parameter("client min protocol", "NT1")
+        sconf.set_global_parameter("server min protocol", "SMB2")
+        sconf.transaction_commit()
+
+        s1 = sconf.get_share("global")
+        self.assertEqual(
+            s1,
+            (
+                "global",
+                [
+                    ("workgroup", "EXAMPLE"),
+                    ("client min protocol", "NT1"),
+                    ("server min protocol", "SMB2"),
+                ],
+            ),
+        )
+
+    def test_transaction_tryexc(self):
+        sconf = self.s3smbconf.init_reg(None)
+        sconf.drop()
+
+        def _mkshares(shares):
+            sconf.transaction_start()
+            try:
+                for name, params in shares:
+                    sconf.create_set_share(name, params)
+                sconf.transaction_commit()
+            except Exception:
+                sconf.transaction_cancel()
+                raise
+
+        _mkshares(
+            [
+                ("hello", [("path", "/srv/world")]),
+                ("goodnight", [("path", "/srv/moon")]),
+            ]
+        )
+        # this call to _mkshares will fail the whole transaction because
+        # share name "goodnight" already exists
+        self.assertRaises(
+            self.smbconf.SMBConfError,
+            _mkshares,
+            [
+                ("mars", [("path", "/srv/mars")]),
+                ("goodnight", [("path", "/srv/phobos")]),
+            ],
+        )
+
+        names = sconf.share_names()
+        self.assertEqual(names, ["hello", "goodnight"])
+
 
 if __name__ == "__main__":
     import unittest
