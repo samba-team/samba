@@ -1006,11 +1006,6 @@ got_connection:
 		goto out;
 	}
 
-	if (ads->auth.flags & ADS_AUTH_SIMPLE_BIND) {
-		status = ADS_ERROR(ldap_simple_bind_s(ads->ldap.ld, ads->auth.user_name, ads->auth.password));
-		goto out;
-	}
-
 	status = ads_sasl_bind(ads);
 
  out:
