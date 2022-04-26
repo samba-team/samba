@@ -465,13 +465,14 @@ bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 		 struct dom_sid *ret_sid, enum lsa_SidType *ret_type)
 {
 	char *qualified_name = NULL;
-	const char *p;
+	const char *p = strchr_m(full_name, *lp_winbind_separator());
+	bool is_qualified = p != NULL;
 
-	if ((p = strchr_m(full_name, *lp_winbind_separator())) != NULL) {
+	if (is_qualified) {
 
 		/* The name is already qualified with a domain. */
 
-		if (*lp_winbind_separator() != '\\') {
+		if (p != NULL && *lp_winbind_separator() != '\\') {
 			/* lookup_name() needs '\\' as a separator */
 
 			qualified_name = talloc_strdup(mem_ctx, full_name);
