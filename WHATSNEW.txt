@@ -1,4 +1,86 @@
                    ==============================
+                   Release Notes for Samba 4.15.7
+                           April 26, 2022
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.15 release series.
+
+
+Changes since 4.15.6
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14831: Share and server swapped in smbget password prompt.
+   * BUG 15022: Durable handles won't reconnect if the leased file is written
+     to.
+   * BUG 15023: rmdir silently fails if directory contains unreadable files and
+     hide unreadable is yes.
+   * BUG 15038: SMB2_CLOSE_FLAGS_FULL_INFORMATION fails to return information on
+     renamed file handle.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14957: vfs_shadow_copy2 breaks "smbd async dosmode" sync fallback.
+   * BUG 15035: shadow_copy2 fails listing snapshotted dirs with
+     shadow:fixinodes.
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 15046: PAM Kerberos authentication incorrectly fails with a clock skew
+     error.
+
+o  Pavel Filipenský <pfilipen@redhat.com>
+   * BUG 15041: username map - samba erroneously applies unix group memberships
+     to user account entries.
+
+o  Elia Geretto <elia.f.geretto@gmail.com>
+   * BUG 14983: NT_STATUS_ACCESS_DENIED translates into EPERM instead of EACCES
+     in SMBC_server_internal.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13879: Simple bind doesn't work against an RODC (with non-preloaded
+     users).
+   * BUG 14641: Crash of winbind on RODC.
+   * BUG 14865: uncached logon on RODC always fails once.
+   * BUG 14951: KVNO off by 100000.
+   * BUG 15001: LDAP simple binds should honour "old password allowed period".
+   * BUG 15003: wbinfo -a doesn't work reliable with upn names.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 13879: Simple bind doesn't work against an RODC (with non-preloaded
+     users).
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 15027: Uninitialized litemask in variable in vfs_gpfs module.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15016: Regression: create krb5 conf = yes doesn't work with a single
+     KDC.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.15.6
                            March 15, 2022
                    ==============================
@@ -79,8 +161,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.15.5
                           January 31, 2022
