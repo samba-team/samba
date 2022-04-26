@@ -22,7 +22,7 @@ EOF
 simple_test
 
 required_result 0 <<EOF
-|Node|IP|Disconnected|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode|
-|2|192.168.20.43|0|0|0|0|0|0|0|Y|
+|Node|IP|Disconnected|Unknown|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode|
+|2|192.168.20.43|0|0|0|0|0|0|0|0|Y|
 EOF
 simple_test -X

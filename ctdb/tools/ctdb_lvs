@@ -32,7 +32,7 @@ EOF
 
 nodestatus_X=""
 # Fields are:
-# Node|IP|Disconnected|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode
+# Node|IP|Disconnected|Unknown|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode
 get_nodestatus_X ()
 {
 	# Result is cached in global variable nodestatus_X
@@ -100,11 +100,11 @@ filter_nodes ()
 	# them, so the first to succeed will print the nodes.
 
 	# First try for a fully active and healthy node, so must not
-	# be DISABLED, UNHEALTHY or INACTIVE (last covers
+	# be UNKNOWN, DISABLED, UNHEALTHY or INACTIVE (last covers
 	# DISCONNECTED, BANNED or STOPPED)
 	awk -F '|' -v ns="$_ns" '
 		BEGIN { ret = 255 }
-		ns ~ "@" $2 "@" && $5 == 0 && $6 == 0 && $8 == 0 {
+		ns ~ "@" $2 "@" && $4 == 0 && $6 == 0 && $7 == 0 && $9 == 0 {
 			print $1, $2 ; ret=0
 		}
 		END { exit ret }
@@ -115,7 +115,7 @@ EOF
 	# DISABLED
 	awk -F '|' -v ns="$_ns" '
 		BEGIN { ret = 255 }
-		ns ~ "@" $2 "@" && $5 == 0 && $8 == 0 {
+		ns ~ "@" $2 "@" && $6 == 0 && $9 == 0 {
 			print $1, $2 ; ret=0
 		}
 		END { exit ret }

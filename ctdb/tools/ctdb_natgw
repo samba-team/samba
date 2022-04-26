@@ -32,7 +32,7 @@ EOF
 
 nodestatus_X=""
 # Fields are:
-# Node|IP|Disconnected|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode
+# Node|IP|Disconnected|Unknown|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode
 get_nodestatus_X ()
 {
     # Result is cached in global variable nodestatus_X
@@ -102,12 +102,12 @@ EOF
     # the first to succeed will select the leader node.
 
     # First try for a fully active and healthy node, so must not be
-    # DISABLED, UNHEALTHY or INACTIVE (last covers DISCONNECTED,
+    # UNKNOWN, DISABLED, UNHEALTHY or INACTIVE (last covers DISCONNECTED,
     # BANNED or STOPPED)
     awk -F '|' -v ms="$_ms" \
 	'BEGIN { ret = 2 }
 	 ms ~ "@" $2 "@" &&
-	     $5 == 0 && $6 == 0 && $8 == 0 { print $1, $2 ; ret=0 ; exit }
+	    $4 == 0 && $6 == 0 && $7 == 0 && $9 == 0 { print $1, $2 ; ret=0 ; exit }
 	 END { exit ret }' <<EOF ||
 $nodestatus_X
 EOF
@@ -116,7 +116,7 @@ EOF
     awk -F '|' -v ms="$_ms" \
 	'BEGIN { ret = 2 }
 	 ms ~ "@" $2 "@" &&
-	     $3 == 0 && $5 == 0 && $7 == 0 { print $1, $2 ; ret=0 ; exit }
+	     $3 == 0 && $6 == 0 && $8 == 0 { print $1, $2 ; ret=0 ; exit }
 	 END { exit ret }' <<EOF ||
 $nodestatus_X
 EOF
@@ -125,7 +125,7 @@ EOF
     awk -F '|' -v ms="$_ms" \
 	'BEGIN { ret = 2 }
 	 ms ~ "@" $2 "@" &&
-	     $3 == 0 && $5 == 0 { print $1, $2 ; ret=0 ; exit }
+	     $3 == 0 && $6 == 0 { print $1, $2 ; ret=0 ; exit }
 	 END { exit ret }' <<EOF
 $nodestatus_X
 EOF

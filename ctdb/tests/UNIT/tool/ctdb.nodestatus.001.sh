@@ -25,9 +25,9 @@ EOF
 simple_test all
 
 required_result 0 <<EOF
-|Node|IP|Disconnected|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode|
-|0|192.168.20.41|0|0|0|0|0|0|0|N|
-|1|192.168.20.42|0|0|0|0|0|0|0|N|
-|2|192.168.20.43|0|0|0|0|0|0|0|Y|
+|Node|IP|Disconnected|Unknown|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode|
+|0|192.168.20.41|0|0|0|0|0|0|0|0|N|
+|1|192.168.20.42|0|0|0|0|0|0|0|0|N|
+|2|192.168.20.43|0|0|0|0|0|0|0|0|Y|
 EOF
 simple_test -X all

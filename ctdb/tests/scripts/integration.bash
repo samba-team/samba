@@ -446,16 +446,16 @@ node_has_status ()
 
 	local bits
 	case "$status" in
-	unhealthy)    bits="?|?|?|1|*" ;;
-	healthy)      bits="?|?|?|0|*" ;;
+	unhealthy)    bits="?|?|?|?|1|*" ;;
+	healthy)      bits="?|?|?|?|0|*" ;;
 	disconnected) bits="1|*" ;;
 	connected)    bits="0|*" ;;
-	banned)       bits="?|1|*" ;;
-	unbanned)     bits="?|0|*" ;;
-	disabled)     bits="?|?|1|*" ;;
-	enabled)      bits="?|?|0|*" ;;
-	stopped)      bits="?|?|?|?|1|*" ;;
-	notstopped)   bits="?|?|?|?|0|*" ;;
+	banned)       bits="?|?|1|*" ;;
+	unbanned)     bits="?|?|0|*" ;;
+	disabled)     bits="?|?|?|1|*" ;;
+	enabled)      bits="?|?|?|0|*" ;;
+	stopped)      bits="?|?|?|?|?|1|*" ;;
+	notstopped)   bits="?|?|?|?|?|0|*" ;;
 	*)
 		echo "node_has_status: unknown status \"$status\""
 		return 1

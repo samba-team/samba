@@ -52,6 +52,8 @@
 #define SRVID_CTDB_TOOL    (CTDB_SRVID_TOOL_RANGE | 0x0001000000000000LL)
 #define SRVID_CTDB_PUSHDB  (CTDB_SRVID_TOOL_RANGE | 0x0002000000000000LL)
 
+#define NODE_FLAGS_UNKNOWN 0x00000040
+
 static struct {
 	const char *debuglevelstr;
 	int timelimit;
@@ -111,6 +113,7 @@ static const char *pretty_print_flags(TALLOC_CTX *mem_ctx, uint32_t flags)
 		const char *name;
 	} flag_names[] = {
 		{ NODE_FLAGS_DISCONNECTED,	    "DISCONNECTED" },
+		{ NODE_FLAGS_UNKNOWN,		    "UNKNOWN" },
 		{ NODE_FLAGS_PERMANENTLY_DISABLED,  "DISABLED" },
 		{ NODE_FLAGS_BANNED,		    "BANNED" },
 		{ NODE_FLAGS_UNHEALTHY,		    "UNHEALTHY" },
@@ -365,6 +368,64 @@ static bool parse_nodestring(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 done:
 	*out = nodemap2;
 	return true;
+}
+
+/*
+ *  Remote nodes are initialised as UNHEALTHY in the daemon and their
+ *  true status is udpated after they are connected.  However, there
+ *  is a small window when a healthy node may be shown as unhealthy
+ *  between connecting and the status update.  Hide this for nodes
+ *  that are not DISCONNECTED nodes by reporting them as UNKNOWN until
+ *  the runstate passes FIRST_RECOVERY.  Code paths where this is used
+ *  do not make any control decisions depending upon unknown/unhealthy
+ *  state.
+ */
+static struct ctdb_node_map *get_nodemap_unknown(
+	TALLOC_CTX *mem_ctx,
+	struct ctdb_context *ctdb,
+	struct ctdb_node_map *nodemap_in)
+{
+	unsigned int i;
+	int ret;
+	enum ctdb_runstate runstate;
+	struct ctdb_node_map *nodemap;
+
+	ret = ctdb_ctrl_get_runstate(mem_ctx,
+				     ctdb->ev,
+				     ctdb->client,
+				     ctdb->cmd_pnn,
+				     TIMEOUT(),
+				     &runstate);
+	if (ret != 0 ) {
+		printf("Unable to get runstate");
+		return NULL;
+	}
+
+	nodemap = talloc_nodemap(mem_ctx, nodemap_in);
+	if (nodemap == NULL) {
+		printf("Unable to get nodemap");
+		return NULL;
+	}
+
+	nodemap->num = nodemap_in->num;
+	for (i=0; i<nodemap->num; i++) {
+		struct ctdb_node_and_flags *node_in = &nodemap_in->node[i];
+		struct ctdb_node_and_flags *node = &nodemap->node[i];
+
+		*node = *node_in;
+
+		if (node->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+
+		if ((runstate <= CTDB_RUNSTATE_FIRST_RECOVERY) &&
+		    !(node->flags & NODE_FLAGS_DISCONNECTED) &&
+		    (node->pnn != ctdb->cmd_pnn)) {
+			node->flags = NODE_FLAGS_UNKNOWN;
+		}
+	}
+
+	return nodemap;
 }
 
 /* Compare IP address */
@@ -826,11 +887,12 @@ static void print_nodemap_machine(TALLOC_CTX *mem_ctx,
 	struct ctdb_node_and_flags *node;
 	unsigned int i;
 
-	printf("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
+	printf("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
 	       options.sep,
 	       "Node", options.sep,
 	       "IP", options.sep,
 	       "Disconnected", options.sep,
+	       "Unknown", options.sep,
 	       "Banned", options.sep,
 	       "Disabled", options.sep,
 	       "Unhealthy", options.sep,
@@ -845,12 +907,13 @@ static void print_nodemap_machine(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		printf("%s%u%s%s%s%d%s%d%s%d%s%d%s%d%s%d%s%d%s%c%s\n",
+		printf("%s%u%s%s%s%d%s%d%s%d%s%d%s%d%s%d%s%d%s%d%s%c%s\n",
 		       options.sep,
 		       node->pnn, options.sep,
 		       ctdb_sock_addr_to_string(mem_ctx, &node->addr, false),
 		       options.sep,
 		       !! (node->flags & NODE_FLAGS_DISCONNECTED), options.sep,
+		       !! (node->flags & NODE_FLAGS_UNKNOWN), options.sep,
 		       !! (node->flags & NODE_FLAGS_BANNED), options.sep,
 		       !! (node->flags & NODE_FLAGS_PERMANENTLY_DISABLED),
 		       options.sep,
@@ -935,6 +998,7 @@ static void print_status(TALLOC_CTX *mem_ctx,
 static int control_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			  int argc, const char **argv)
 {
+	struct ctdb_node_map *nodemap_in;
 	struct ctdb_node_map *nodemap;
 	struct ctdb_vnn_map *vnnmap;
 	int recmode;
@@ -945,7 +1009,12 @@ static int control_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("status");
 	}
 
-	nodemap = get_nodemap(ctdb, false);
+	nodemap_in = get_nodemap(ctdb, false);
+	if (nodemap_in == NULL) {
+		return 1;
+	}
+
+	nodemap = get_nodemap_unknown(mem_ctx, ctdb, nodemap_in);
 	if (nodemap == NULL) {
 		return 1;
 	}
@@ -5603,6 +5672,7 @@ static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			      int argc, const char **argv)
 {
 	const char *nodestring = NULL;
+	struct ctdb_node_map *nodemap_in;
 	struct ctdb_node_map *nodemap;
 	unsigned int i;
 	int ret;
@@ -5619,7 +5689,12 @@ static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		}
 	}
 
-	if (! parse_nodestring(mem_ctx, ctdb, nodestring, &nodemap)) {
+	if (! parse_nodestring(mem_ctx, ctdb, nodestring, &nodemap_in)) {
+		return 1;
+	}
+
+	nodemap = get_nodemap_unknown(mem_ctx, ctdb, nodemap_in);
+	if (nodemap == NULL) {
 		return 1;
 	}
 
