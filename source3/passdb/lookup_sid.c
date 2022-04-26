@@ -100,8 +100,18 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 					PTR_DIFF(p, full_name));
 		name = talloc_strdup(tmp_ctx, p+1);
 	} else {
-		domain = talloc_strdup(tmp_ctx, "");
-		name = talloc_strdup(tmp_ctx, full_name);
+		char *q = strchr_m(full_name, '@');
+
+		/* Set the domain for UPNs */
+		if (q != NULL) {
+			name = talloc_strndup(tmp_ctx,
+					      full_name,
+					      PTR_DIFF(q, full_name));
+			domain = talloc_strdup(tmp_ctx, q + 1);
+		} else {
+			domain = talloc_strdup(tmp_ctx, "");
+			name = talloc_strdup(tmp_ctx, full_name);
+		}
 	}
 
 	if ((domain == NULL) || (name == NULL)) {
