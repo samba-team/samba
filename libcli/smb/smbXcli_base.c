@@ -5083,6 +5083,21 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	security_offset = SVAL(body, 56);
 	security_length = SVAL(body, 58);
 
+	if (security_offset == 0) {
+		/*
+		 * Azure sends security_offset = 0 and security_length = 0
+		 *
+		 * We just set security_offset to the expected value
+		 * in order to allow the further logic to work
+		 * as before.
+		 */
+		if (security_length != 0) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+		security_offset = SMB2_HDR_BODY + iov[1].iov_len;
+	}
+
 	if (security_offset != SMB2_HDR_BODY + iov[1].iov_len) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
