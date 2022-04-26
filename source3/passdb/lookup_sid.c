@@ -466,8 +466,9 @@ bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 {
 	char *qualified_name = NULL;
 	const char *p = strchr_m(full_name, *lp_winbind_separator());
-	bool is_qualified = p != NULL;
+	bool is_qualified = p != NULL || strchr_m(full_name, '@') != NULL;
 
+	/* For DOMAIN\user or user@REALM directly call lookup_name(). */
 	if (is_qualified) {
 
 		/* The name is already qualified with a domain. */
