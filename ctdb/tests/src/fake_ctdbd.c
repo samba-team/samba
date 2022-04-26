@@ -1166,6 +1166,44 @@ fail:
 	return false;
 }
 
+static bool runstate_parse(struct ctdbd_context *ctdb)
+{
+	char line[1024];
+	char *t;
+
+	if (fgets(line, sizeof(line), stdin) == NULL) {
+		goto fail;
+	}
+
+	if (line[0] == '\n') {
+		goto fail;
+	}
+
+	/* Get rid of pesky newline */
+	if ((t = strchr(line, '\n')) != NULL) {
+		*t = '\0';
+	}
+
+	ctdb->runstate = ctdb_runstate_from_string(line);
+	if (ctdb->runstate == CTDB_RUNSTATE_UNKNOWN) {
+		goto fail;
+	}
+
+	/* Swallow possible blank line following section.  Picky
+	 * compiler settings don't allow the return value to be
+	 * ignored, so make the compiler happy.
+	 */
+	if (fgets(line, sizeof(line), stdin) == NULL) {
+		;
+	}
+	D_INFO("Parsing runstate done\n");
+	return true;
+
+fail:
+	D_ERR("Parsing runstate failed\n");
+	return false;
+}
+
 /*
  * Manage clients
  */
@@ -1265,6 +1303,8 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	ctdb->runstate = CTDB_RUNSTATE_RUNNING;
+
 	while (fgets(line, sizeof(line), stdin) != NULL) {
 		char *t;
 
@@ -1287,6 +1327,8 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx,
 			status = reclock_parse(ctdb);
 		} else if (strcmp(line, "CONTROLFAILS") == 0) {
 			status = control_failures_parse(ctdb);
+		} else if (strcmp(line, "RUNSTATE") == 0) {
+			status = runstate_parse(ctdb);
 		} else {
 			fprintf(stderr, "Unknown line %s\n", line);
 			status = false;
@@ -1307,7 +1349,6 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx,
 	ctdb->recovery_end_time = tevent_timeval_current();
 
 	ctdb->log_level = DEBUG_ERR;
-	ctdb->runstate = CTDB_RUNSTATE_RUNNING;
 
 	ctdb_tunable_set_defaults(&ctdb->tun_list);
 
