@@ -145,14 +145,12 @@ class cmd_testparm(Command):
         lockdir = lp.get("lockdir")
 
         if not os.path.isdir(lockdir):
-            logger.error("lock directory %s does not exist", lockdir)
-            valid = False
+            logger.warning("lock directory %s does not exist", lockdir)
 
         piddir = lp.get("pid directory")
 
         if not os.path.isdir(piddir):
-            logger.error("pid directory %s does not exist", piddir)
-            valid = False
+            logger.warning("pid directory %s does not exist", piddir)
 
         winbind_separator = lp.get("winbind separator")
 

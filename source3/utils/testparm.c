@@ -420,9 +420,8 @@ static int do_global_checks(void)
 	}
 
 	if (!directory_exist_stat(lp_lock_directory(), &st)) {
-		fprintf(stderr, "ERROR: lock directory %s does not exist\n\n",
+		fprintf(stderr, "WARNING: lock directory %s does not exist\n\n",
 		       lp_lock_directory());
-		ret = 1;
 	} else if ((st.st_ex_mode & 0777) != 0755) {
 		fprintf(stderr, "WARNING: lock directory %s should have "
 				"permissions 0755 for browsing to work\n\n",
@@ -450,9 +449,8 @@ static int do_global_checks(void)
 	}
 
 	if (!directory_exist_stat(lp_pid_directory(), &st)) {
-		fprintf(stderr, "ERROR: pid directory %s does not exist\n\n",
+		fprintf(stderr, "WARNING: pid directory %s does not exist\n\n",
 		       lp_pid_directory());
-		ret = 1;
 	}
 
 	if (lp_passdb_expand_explicit()) {
