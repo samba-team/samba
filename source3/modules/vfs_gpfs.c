@@ -2374,6 +2374,7 @@ static int vfs_gpfs_openat(struct vfs_handle_struct *handle,
 				return -1);
 
 	if (config->hsm && !config->recalls &&
+	    !fsp->fsp_flags.is_pathref &&
 	    vfs_gpfs_fsp_is_offline(handle, fsp))
 	{
 		DBG_DEBUG("Refusing access to offline file %s\n",
