@@ -634,25 +634,20 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 /*
    this performs a SASL/SPNEGO bind
 */
-static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
+static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads,
+				       struct cli_credentials *creds)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct ads_service_principal p = {0};
-	struct cli_credentials *creds = NULL;
-	NTSTATUS nt_status;
 	ADS_STATUS status;
 	const char *mech = NULL;
 	const char *debug_username = NULL;
 	enum credentials_use_kerberos krb5_state;
 
+	krb5_state = cli_credentials_get_kerberos_state(creds);
+
 	status = ads_generate_service_principal(ads, &p);
 	if (!ADS_ERR_OK(status)) {
-		goto done;
-	}
-
-	nt_status = ads_legacy_creds(ads, frame, &creds);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		status = ADS_ERROR_NT(nt_status);
 		goto done;
 	}
 
@@ -661,8 +656,6 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		status = ADS_ERROR_SYSTEM(errno);
 		goto done;
 	}
-
-	krb5_state = cli_credentials_get_kerberos_state(creds);
 
 #ifdef HAVE_KRB5
 	if (krb5_state != CRED_USE_KERBEROS_DISABLED &&
@@ -760,7 +753,7 @@ done:
 	return status;
 }
 
-ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
+ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads, struct cli_credentials *creds)
 {
 	ADS_STATUS status;
 	struct ads_saslwrap *wrap = &ads->ldap_wrap_data;
@@ -791,7 +784,7 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 	}
 
 retry:
-	status = ads_sasl_spnego_bind(ads);
+	status = ads_sasl_spnego_bind(ads, creds);
 	if (status.error_type == ENUM_ADS_ERROR_LDAP &&
 	    status.err.rc == LDAP_STRONG_AUTH_REQUIRED &&
 	    !tls &&

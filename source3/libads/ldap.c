@@ -34,6 +34,7 @@
 #include "lib/param/loadparm.h"
 #include "libsmb/namequery.h"
 #include "../librpc/gen_ndr/ndr_ads.h"
+#include "auth/credentials/credentials.h"
 
 #ifdef HAVE_LDAP
 
@@ -810,12 +811,14 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		  c_realm, c_domain, nt_errstr(status)));
 	return status;
 }
+
 /**
  * Connect to the LDAP server
  * @param ads Pointer to an existing ADS_STRUCT
  * @return status of connection
  **/
-ADS_STATUS ads_connect(ADS_STRUCT *ads)
+static ADS_STATUS ads_connect_internal(ADS_STRUCT *ads,
+				       struct cli_credentials *creds)
 {
 	int version = LDAP_VERSION3;
 	ADS_STATUS status;
@@ -826,6 +829,18 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	bool start_tls = false;
 
 	zero_sockaddr(&existing_ss);
+
+	if (!(ads->auth.flags & ADS_AUTH_NO_BIND)) {
+		SMB_ASSERT(creds != NULL);
+	}
+
+	if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
+		/*
+		 * Simple anonyous binds are only
+		 * allowed for anonymous credentials
+		 */
+		SMB_ASSERT(cli_credentials_is_anonymous(creds));
+	}
 
 	/*
 	 * ads_connect can be passed in a reused ADS_STRUCT
@@ -1076,7 +1091,7 @@ got_connection:
 		goto out;
 	}
 
-	status = ads_sasl_bind(ads);
+	status = ads_sasl_bind(ads, creds);
 
  out:
 	if (DEBUGLEVEL >= 11) {
@@ -1087,6 +1102,29 @@ got_connection:
 		TALLOC_FREE(s);
 	}
 
+	return status;
+}
+
+/*
+ * Connect to the LDAP server
+ * @param ads Pointer to an existing ADS_STRUCT
+ * @return status of connection
+ **/
+ADS_STATUS ads_connect(ADS_STRUCT *ads)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cli_credentials *creds = NULL;
+	ADS_STATUS status;
+	NTSTATUS ntstatus;
+
+	ntstatus = ads_legacy_creds(ads, frame, &creds);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		TALLOC_FREE(frame);
+		return ADS_ERROR_NT(ntstatus);
+	}
+
+	status = ads_connect_internal(ads, creds);
+	TALLOC_FREE(frame);
 	return status;
 }
 

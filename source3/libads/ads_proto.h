@@ -206,7 +206,7 @@ ADS_STATUS ads_ranged_search(ADS_STRUCT *ads,
 NTSTATUS ads_legacy_creds(ADS_STRUCT *ads,
 			  TALLOC_CTX *mem_ctx,
 			  struct cli_credentials **_creds);
-ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads);
+ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads, struct cli_credentials *creds);
 
 /* The following definitions come from libads/sasl_wrapping.c  */
 
