@@ -642,6 +642,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	NTSTATUS nt_status;
 	ADS_STATUS status;
 	const char *mech = NULL;
+	const char *debug_username = NULL;
 	enum credentials_use_kerberos krb5_state;
 
 	status = ads_generate_service_principal(ads, &p);
@@ -652,6 +653,12 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	nt_status = ads_legacy_creds(ads, frame, &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		status = ADS_ERROR_NT(nt_status);
+		goto done;
+	}
+
+	debug_username = cli_credentials_get_unparsed_name(creds, frame);
+	if (debug_username == NULL) {
+		status = ADS_ERROR_SYSTEM(errno);
 		goto done;
 	}
 
@@ -692,10 +699,9 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 			if (!ADS_ERR_OK(status)) {
 				DBG_ERR("kinit succeeded but "
 					"SPNEGO bind with Kerberos failed "
-					"for %s/%s - user[%s], realm[%s]: %s\n",
+					"for %s/%s - user[%s]: %s\n",
 					p.service, p.hostname,
-					ads->auth.user_name,
-					ads->auth.realm,
+					debug_username,
 					ads_errstr(status));
 			}
 		}
@@ -707,11 +713,10 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		}
 
 		DBG_WARNING("SASL bind with Kerberos failed "
-			    "for %s/%s - user[%s], realm[%s]: %s, "
+			    "for %s/%s - user[%s]: %s, "
 			    "try to fallback to NTLMSSP\n",
 			    p.service, p.hostname,
-			    ads->auth.user_name,
-			    ads->auth.realm,
+			    debug_username,
 			    ads_errstr(status));
 	}
 #endif
@@ -744,10 +749,9 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 done:
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("ads_sasl_spnego_gensec_bind(%s) failed "
-			 "for %s/%s with user[%s] realm=[%s]: %s\n", mech,
+			 "for %s/%s with user[%s]: %s\n", mech,
 			  p.service, p.hostname,
-			  ads->auth.user_name,
-			  ads->auth.realm,
+			  debug_username,
 			  ads_errstr(status)));
 	}
 	ads_free_service_principal(&p);
