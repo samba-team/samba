@@ -75,10 +75,6 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (fsp_get_io_fd(fsp) == -1) {
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
 	if (is_ntfs_stream_smb_fname(fsp->fsp_name)) {
 		/*
 		 * We do not support durable handles
