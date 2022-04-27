@@ -2751,6 +2751,67 @@ done:
 	return ret;
 }
 
+/**
+ * durable stat open with lease.
+ */
+static bool test_durable_open_stat_open(struct torture_context *tctx,
+					struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_lease ls;
+	NTSTATUS status;
+	char fname[256];
+	bool ret = true;
+	uint64_t lease;
+
+	snprintf(fname, 256, "durable_open_stat_open_%s.dat",
+		 generate_random_str(mem_ctx, 8));
+
+	/* Ensure file doesn't exist. */
+	smb2_util_unlink(tree, fname);
+
+	/* Create a normal file. */
+	smb2_oplock_create(&io, fname, SMB2_OPLOCK_LEVEL_NONE);
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	/* Close. */
+	smb2_util_close(tree, *h);
+	h = NULL;
+
+	/* Now try a leased, durable handle stat open. */
+	lease = random();
+	/* Create with lease */
+	smb2_lease_create(&io,
+			  &ls,
+			  false /* dir */,
+			  fname,
+			  lease,
+			  smb2_util_lease_state("RH"));
+	io.in.durable_open = true;
+	io.in.desired_access = SEC_FILE_READ_ATTRIBUTE;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, true);
+	_h = io.out.file.handle;
+	h = &_h;
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
 
 struct torture_suite *torture_smb2_durable_open_init(TALLOC_CTX *ctx)
 {
@@ -2786,6 +2847,8 @@ struct torture_suite *torture_smb2_durable_open_init(TALLOC_CTX *ctx)
 				     test_durable_open_alloc_size);
 	torture_suite_add_1smb2_test(suite, "read-only",
 				     test_durable_open_read_only);
+	torture_suite_add_1smb2_test(suite, "stat-open",
+				     test_durable_open_stat_open);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-OPEN tests");
 

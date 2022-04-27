@@ -194,6 +194,7 @@
 ^samba3.smb2.durable-open.delete_on_close2
 ^samba3.smb2.durable-v2-open.app-instance
 ^samba3.smb2.durable-open.reopen1a-lease\(ad_dc\)$
+^samba3.smb2.durable-open.stat-open\(ad_dc\)$
 ^samba3.smb2.durable-v2-open.reopen1a-lease\(ad_dc\)$
 ^samba4.smb2.ioctl.req_resume_key\(ad_dc_ntvfs\) # not supported by s4 ntvfs server
 ^samba4.smb2.ioctl.req_two_resume_keys\(ad_dc_ntvfs\) # not supported by s4 ntvfs server
