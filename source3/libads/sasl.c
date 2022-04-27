@@ -751,6 +751,7 @@ done:
 			  ads_errstr(status)));
 	}
 	ads_free_service_principal(&p);
+	cli_credentials_set_kerberos_state(creds, krb5_state, CRED_SPECIFIED);
 	TALLOC_FREE(frame);
 	return status;
 }
