@@ -1122,6 +1122,34 @@ ADS_STATUS ads_connect_cldap_only(ADS_STRUCT *ads)
 	return ads_connect_internal(ads, NULL);
 }
 
+/**
+ * Connect to the LDAP server
+ * @param ads Pointer to an existing ADS_STRUCT
+ * @return status of connection
+ **/
+ADS_STATUS ads_connect_creds(ADS_STRUCT *ads, struct cli_credentials *creds)
+{
+	SMB_ASSERT(creds != NULL);
+
+	/*
+	 * We allow upgrades from
+	 * ADS_AUTH_NO_BIND if credentials
+	 * are specified
+	 */
+	ads->auth.flags &= ~ADS_AUTH_NO_BIND;
+
+	/*
+	 * We allow upgrades from ADS_AUTH_ANON_BIND,
+	 * as we don't want to use simple binds with
+	 * non-anon credentials
+	 */
+	if (!cli_credentials_is_anonymous(creds)) {
+		ads->auth.flags &= ~ADS_AUTH_ANON_BIND;
+	}
+
+	return ads_connect_internal(ads, creds);
+}
+
 /*
  * Connect to the LDAP server
  * @param ads Pointer to an existing ADS_STRUCT
