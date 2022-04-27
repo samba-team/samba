@@ -642,6 +642,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	NTSTATUS nt_status;
 	ADS_STATUS status;
 	const char *mech = NULL;
+	enum credentials_use_kerberos krb5_state;
 
 	status = ads_generate_service_principal(ads, &p);
 	if (!ADS_ERR_OK(status)) {
@@ -654,8 +655,10 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		goto done;
 	}
 
+	krb5_state = cli_credentials_get_kerberos_state(creds);
+
 #ifdef HAVE_KRB5
-	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
+	if (krb5_state != CRED_USE_KERBEROS_DISABLED &&
 	    !is_ipaddress(p.hostname))
 	{
 		mech = "KRB5";
@@ -718,7 +721,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	   library for HMAC_MD4 encryption */
 	mech = "NTLMSSP";
 
-	if (!(ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP)) {
+	if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
 		DBG_WARNING("We can't use NTLMSSP, it is not allowed.\n");
 		status = ADS_ERROR_NT(NT_STATUS_NETWORK_CREDENTIAL_CONFLICT);
 		goto done;
