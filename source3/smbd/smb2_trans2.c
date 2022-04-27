@@ -59,6 +59,10 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
 				files_struct *fsp,
 				const SMB_STRUCT_STAT *psbuf);
 
+static uint32_t generate_volume_serial_number(
+				const struct loadparm_substitution *lp_sub,
+				int snum);
+
 /****************************************************************************
  Check if an open file handle is a symlink.
 ****************************************************************************/
@@ -2121,6 +2125,7 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 	SMB_STRUCT_STAT st;
 	NTSTATUS status = NT_STATUS_OK;
 	uint64_t df_ret;
+	uint32_t serial;
 
 	if (fname == NULL || fname->base_name == NULL) {
 		filename = ".";
@@ -2219,7 +2224,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
-			SIVAL(pdata,0,str_checksum(lp_servicename(talloc_tos(), lp_sub, snum)) ^ (str_checksum(get_local_machine_name())<<16) );
+			serial = generate_volume_serial_number(lp_sub, snum);
+			SIVAL(pdata,0,serial);
 			/*
 			 * Win2k3 and previous mess this up by sending a name length
 			 * one byte short. I believe only older clients (OS/2 Win9x) use
@@ -2236,9 +2242,10 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			}
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
-			DEBUG(5,("smbd_do_qfsinfo : time = %x, namelen = %u, name = %s\n",
+			DEBUG(5,("smbd_do_qfsinfo : time = %x, namelen = %u, "
+				 "name = %s serial = 0x%04"PRIx32"\n",
 				 (unsigned)convert_timespec_to_time_t(st.st_ex_ctime),
-				 (unsigned)len, vname));
+				 (unsigned)len, vname, serial));
 			break;
 
 		case SMB_QUERY_FS_ATTRIBUTE_INFO:
@@ -2302,8 +2309,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
-			SIVAL(pdata,8,str_checksum(lp_servicename(talloc_tos(), lp_sub, snum)) ^
-				(str_checksum(get_local_machine_name())<<16));
+			serial = generate_volume_serial_number(lp_sub, snum);
+			SIVAL(pdata,8,serial);
 
 			/* Max label len is 32 characters. */
 			status = srvstr_push(pdata, flags2, pdata+18, vname,
@@ -2315,9 +2322,12 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			SIVAL(pdata,12,len);
 			data_len = 18+len;
 
-			DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol=%s serv=%s\n",
-				(int)strlen(vname),vname,
-				lp_servicename(talloc_tos(), lp_sub, snum)));
+			DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_FS_VOLUME_INFO "
+				 "namelen = %d, vol=%s serv=%s "
+				 "serial=0x%04"PRIx32"\n",
+				 (int)strlen(vname),vname,
+				 lp_servicename(talloc_tos(), lp_sub, snum),
+				 serial));
 			if (max_data_bytes >= 24 && data_len > max_data_bytes) {
 				/* the client only requested a portion of the
 				   volume label */
@@ -6956,4 +6966,12 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 
 	*ret_data_size = data_return_size;
 	return NT_STATUS_OK;
+}
+
+static uint32_t generate_volume_serial_number(
+			const struct loadparm_substitution *lp_sub,
+			int snum)
+{
+	return str_checksum(lp_servicename(talloc_tos(), lp_sub, snum)) ^
+		(str_checksum(get_local_machine_name())<<16);
 }
