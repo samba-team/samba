@@ -258,6 +258,8 @@
 #define DS_HR_KVNOEMUW2K                          0x00000011
 
 #define DS_HR_TWENTIETH_CHAR                      0x00000014
+#define DS_HR_ATTR_AUTHZ_ON_LDAP_ADD              0x0000001C
+#define DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS         0x0000001D
 #define DS_HR_THIRTIETH_CHAR                      0x0000001E
 #define DS_HR_FOURTIETH_CHAR                      0x00000028
 #define DS_HR_FIFTIETH_CHAR                       0x00000032

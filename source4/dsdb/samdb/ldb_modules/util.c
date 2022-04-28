@@ -1433,6 +1433,46 @@ bool dsdb_do_list_object(struct ldb_module *module,
 	return result;
 }
 
+bool dsdb_attribute_authz_on_ldap_add(struct ldb_module *module,
+				      TALLOC_CTX *mem_ctx,
+				      struct ldb_request *parent)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	bool result = false;
+	const struct ldb_val *hr_val = dsdb_module_find_dsheuristics(module,
+								     tmp_ctx,
+								     parent);
+	if (hr_val != NULL && hr_val->length >= DS_HR_ATTR_AUTHZ_ON_LDAP_ADD) {
+		uint8_t val = hr_val->data[DS_HR_ATTR_AUTHZ_ON_LDAP_ADD - 1];
+		if (val != '0' && val != '2') {
+			result = true;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return result;
+}
+
+bool dsdb_block_owner_implicit_rights(struct ldb_module *module,
+				      TALLOC_CTX *mem_ctx,
+				      struct ldb_request *parent)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	bool result = false;
+	const struct ldb_val *hr_val = dsdb_module_find_dsheuristics(module,
+								     tmp_ctx,
+								     parent);
+	if (hr_val != NULL && hr_val->length >= DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS) {
+		uint8_t val = hr_val->data[DS_HR_BLOCK_OWNER_IMPLICIT_RIGHTS - 1];
+		if (val != '0' && val != '2') {
+			result = true;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return result;
+}
+
 /*
   show the chain of requests, useful for debugging async requests
  */
