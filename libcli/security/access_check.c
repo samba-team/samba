@@ -497,7 +497,7 @@ static NTSTATUS check_object_specific_access(struct security_ace *ace,
  * of the entry in the tree grants all the requested rights for the given GUID
  * FIXME
  * tree can be null if not null it's the
- * Lots of code duplication, it will ve united in just one
+ * Lots of code duplication, it will be united in just one
  * function eventually */
 
 NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,

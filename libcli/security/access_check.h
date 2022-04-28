@@ -66,7 +66,7 @@ NTSTATUS se_file_access_check(const struct security_descriptor *sd,
 			 uint32_t *access_granted);
 
 /* modified access check for the purposes of DS security
- * Lots of code duplication, it will ve united in just one
+ * Lots of code duplication, it will be united in just one
  * function eventually */
 
 NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
