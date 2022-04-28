@@ -1150,6 +1150,31 @@ ADS_STATUS ads_connect_creds(ADS_STRUCT *ads, struct cli_credentials *creds)
 	return ads_connect_internal(ads, creds);
 }
 
+/**
+ * Connect to the LDAP server using anonymous credentials
+ * using a simple bind without username/password
+ *
+ * @param ads Pointer to an existing ADS_STRUCT
+ * @return status of connection
+ **/
+ADS_STATUS ads_connect_simple_anon(ADS_STRUCT *ads)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cli_credentials *creds = NULL;
+	ADS_STATUS status;
+
+	creds = cli_credentials_init_anon(frame);
+	if (creds == NULL) {
+		TALLOC_FREE(frame);
+		return ADS_ERROR_SYSTEM(errno);
+	}
+
+	ads->auth.flags |= ADS_AUTH_ANON_BIND;
+	status = ads_connect_creds(ads, creds);
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /*
  * Connect to the LDAP server
  * @param ads Pointer to an existing ADS_STRUCT
