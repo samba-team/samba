@@ -3731,8 +3731,7 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 		 */
 		ads_s->config.flags = 0;
 
-		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
-		status = ads_connect( ads_s );
+		status = ads_connect_simple_anon(ads_s);
 		if ( !ADS_ERR_OK(status))
 			goto done;
 	}
@@ -3821,8 +3820,7 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 		 */
 		ads_s->config.flags = 0;
 
-		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
-		status = ads_connect( ads_s );
+		status = ads_connect_simple_anon(ads_s);
 		if ( !ADS_ERR_OK(status))
 			goto done;
 	}
