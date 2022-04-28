@@ -84,6 +84,30 @@ static bool test_hex_string(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_append_NULL_0(struct torture_context *tctx)
+{
+	DATA_BLOB z = data_blob_talloc_zero(tctx, 0);
+	torture_assert_int_equal(tctx, z.length, 0, "length");
+	torture_assert(tctx, z.data == NULL, "data");
+	torture_assert(tctx, data_blob_append(NULL, &z, NULL, 0), "append NULL,0");
+	torture_assert(tctx, data_blob_append(NULL, &z, "", 0), "append '',0");
+	torture_assert_int_equal(tctx, z.length, 0, "length");
+	torture_assert(tctx, z.data == NULL, "data");
+	return true;
+}
+
+static bool test_append_empty_0(struct torture_context *tctx)
+{
+	DATA_BLOB e = data_blob_talloc(tctx, "", 0);
+	torture_assert_int_equal(tctx, e.length, 0, "length");
+	torture_assert(tctx, e.data != NULL, "data");
+	torture_assert(tctx, data_blob_append(NULL, &e, NULL, 0), "append NULL,0");
+	torture_assert(tctx, data_blob_append(NULL, &e, "", 0), "append '',0");
+	torture_assert_int_equal(tctx, e.length, 0, "length");
+	torture_assert(tctx, e.data != NULL, "data");
+	return true;
+}
+
 struct torture_suite *torture_local_util_data_blob(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "datablob");
@@ -94,6 +118,8 @@ struct torture_suite *torture_local_util_data_blob(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "clear", test_clear);
 	torture_suite_add_simple_test(suite, "cmp", test_cmp);
 	torture_suite_add_simple_test(suite, "hex string", test_hex_string);
+	torture_suite_add_simple_test(suite, "append_NULL_0", test_append_NULL_0);
+	torture_suite_add_simple_test(suite, "append_empty_0", test_append_empty_0);
 
 	return suite;
 }
