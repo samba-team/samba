@@ -118,18 +118,18 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 	r->in.domain_name_type	= JoinDomNameTypeDNS;
 	r->in.create_upn	= r->in.upn != NULL ? true : false;
 	r->in.dc_name		= self->server_address;
-	r->in.admin_account	= cli_credentials_get_username(self->creds);
-	r->in.admin_password	= cli_credentials_get_password(self->creds);
-	r->in.use_kerberos	= cli_credentials_get_kerberos_state(self->creds);
+	r->in.admin_credentials	= self->creds;
 	r->in.modify_config	= modify_config;
 	r->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
 				  WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
 	r->in.msg_ctx		= cmdline_messaging_context(get_dyn_CONFIGFILE());
 	r->in.debug		= debug;
-	c->opt_user_name = r->in.admin_account;
-	c->opt_password = r->in.admin_password;
-	c->opt_kerberos = r->in.use_kerberos;
+
+	c->creds = self->creds;
+	c->opt_user_name = cli_credentials_get_username(self->creds);
+	c->opt_password = cli_credentials_get_password(self->creds);
+	c->opt_kerberos = cli_credentials_get_kerberos_state(self->creds);
 
 	werr = libnet_Join(mem_ctx, r);
 	if (W_ERROR_EQUAL(werr, WERR_NERR_DCNOTFOUND)) {
@@ -214,11 +214,9 @@ static PyObject *py_net_leave(py_net_Object *self, PyObject *args, PyObject *kwa
 		return NULL;
 	}
 
-	r->in.use_kerberos	= cli_credentials_get_kerberos_state(self->creds);
 	r->in.dc_name		= self->server_address;
 	r->in.domain_name	= lpcfg_realm(self->lp_ctx);
-	r->in.admin_account	= cli_credentials_get_username(self->creds);
-	r->in.admin_password	= cli_credentials_get_password(self->creds);
+	r->in.admin_credentials	= self->creds;
 	r->in.modify_config	= lp_config_backend_is_registry();
 	r->in.debug		= debug;
 

@@ -1546,11 +1546,9 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	}
 
 	r->in.debug		= true;
-	r->in.use_kerberos	= c->opt_kerberos;
 	r->in.dc_name		= c->opt_host;
 	r->in.domain_name	= lp_realm();
-	r->in.admin_account	= c->opt_user_name;
-	r->in.admin_password	= net_prompt_pass(c, c->opt_user_name);
+	r->in.admin_credentials	= c->creds;
 	r->in.modify_config	= lp_config_backend_is_registry();
 
 	/* Try to delete it, but if that fails, disable it.  The
@@ -1845,11 +1843,9 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	r->in.os_version	= os_version;
 	r->in.os_servicepack	= os_servicepack;
 	r->in.dc_name		= c->opt_host;
-	r->in.admin_account	= c->opt_user_name;
-	r->in.admin_password	= net_prompt_pass(c, c->opt_user_name);
+	r->in.admin_credentials	= c->creds;
 	r->in.machine_password  = machine_password;
 	r->in.debug		= true;
-	r->in.use_kerberos	= c->opt_kerberos;
 	r->in.modify_config	= modify_config;
 	r->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |

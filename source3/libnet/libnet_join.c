@@ -131,17 +131,13 @@ static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
 static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 				     const char *netbios_domain_name,
 				     const char *dc_name,
-				     const char *user_name,
-				     const char *password,
-				     const char *ccname,
+				     struct cli_credentials *creds,
 				     TALLOC_CTX *mem_ctx,
 				     ADS_STRUCT **ads)
 {
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STATUS status;
 	ADS_STRUCT *my_ads = NULL;
-	char *cp;
-	enum credentials_use_kerberos krb5_state;
 
 	my_ads = ads_init(tmp_ctx,
 			  dns_domain_name,
@@ -153,61 +149,7 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 		goto out;
 	}
 
-	/* In FIPS mode, client use kerberos is forced to required. */
-	krb5_state = lp_client_use_kerberos();
-	switch (krb5_state) {
-	case CRED_USE_KERBEROS_REQUIRED:
-		my_ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
-		my_ads->auth.flags &= ~ADS_AUTH_ALLOW_NTLMSSP;
-		break;
-	case CRED_USE_KERBEROS_DESIRED:
-		my_ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
-		my_ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
-		break;
-	case CRED_USE_KERBEROS_DISABLED:
-		my_ads->auth.flags |= ADS_AUTH_DISABLE_KERBEROS;
-		my_ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
-		break;
-	}
-
-	if (user_name) {
-		ADS_TALLOC_CONST_FREE(my_ads->auth.user_name);
-		my_ads->auth.user_name = talloc_strdup(my_ads, user_name);
-		if (my_ads->auth.user_name == NULL) {
-			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-		if ((cp = strchr_m(my_ads->auth.user_name, '@'))!=0) {
-			*cp++ = '\0';
-			ADS_TALLOC_CONST_FREE(my_ads->auth.realm);
-			my_ads->auth.realm = talloc_asprintf_strupper_m(my_ads, "%s", cp);
-			if (my_ads->auth.realm == NULL) {
-				status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
-				goto out;
-			}
-		}
-	}
-
-	if (password) {
-		ADS_TALLOC_CONST_FREE(my_ads->auth.password);
-		my_ads->auth.password = talloc_strdup(my_ads, password);
-		if (my_ads->auth.password == NULL) {
-			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-	}
-
-	if (ccname != NULL) {
-		ADS_TALLOC_CONST_FREE(my_ads->auth.ccache_name);
-		my_ads->auth.ccache_name = talloc_strdup(my_ads, ccname);
-		if (my_ads->auth.ccache_name == NULL) {
-			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-		setenv(KRB5_ENV_CCNAME, my_ads->auth.ccache_name, 1);
-	}
-
-	status = ads_connect_user_creds(my_ads);
+	status = ads_connect_creds(my_ads, creds);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -228,54 +170,47 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 					  bool use_machine_creds)
 {
 	ADS_STATUS status;
-	const char *username;
-	const char *password;
-	const char *ccname = NULL;
+	struct cli_credentials *creds = NULL;
 
 	if (use_machine_creds) {
+		const char *username = NULL;
+		NTSTATUS ntstatus;
+
 		if (r->in.machine_name == NULL ||
 		    r->in.machine_password == NULL) {
 			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
-		username = talloc_asprintf(mem_ctx, "%s$",
-					   r->in.machine_name);
-		if (username == NULL) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
+		if (r->out.dns_domain_name != NULL) {
+			username = talloc_asprintf(mem_ctx, "%s$@%s",
+						   r->in.machine_name,
+						   r->out.dns_domain_name);
+			if (username == NULL) {
+				return ADS_ERROR(LDAP_NO_MEMORY);
+			}
+		} else {
+			username = talloc_asprintf(mem_ctx, "%s$",
+						   r->in.machine_name);
+			if (username == NULL) {
+				return ADS_ERROR(LDAP_NO_MEMORY);
+			}
 		}
-		password = r->in.machine_password;
-		ccname = "MEMORY:libnet_join_machine_creds";
+
+		ntstatus = ads_simple_creds(mem_ctx,
+					    r->out.netbios_domain_name,
+					    username,
+					    r->in.machine_password,
+					    &creds);
+		if (!NT_STATUS_IS_OK(ntstatus)) {
+			return ADS_ERROR_NT(ntstatus);
+		}
 	} else {
-		char *p = NULL;
-
-		username = r->in.admin_account;
-
-		p = strchr(r->in.admin_account, '@');
-		if (p == NULL) {
-			username = talloc_asprintf(mem_ctx, "%s@%s",
-						   r->in.admin_account,
-						   r->in.admin_domain);
-		}
-		if (username == NULL) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
-		password = r->in.admin_password;
-
-		/*
-		 * when r->in.use_kerberos is set to allow "net ads join -k" we
-		 * may not override the provided credential cache - gd
-		 */
-
-		if (!r->in.use_kerberos) {
-			ccname = "MEMORY:libnet_join_user_creds";
-		}
+		creds = r->in.admin_credentials;
 	}
 
 	status = libnet_connect_ads(r->out.dns_domain_name,
 				    r->out.netbios_domain_name,
 				    r->in.dc_name,
-				    username,
-				    password,
-				    ccname,
+				    creds,
 				    r,
 				    &r->in.ads);
 	if (!ADS_ERR_OK(status)) {
@@ -331,9 +266,7 @@ static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
 	status = libnet_connect_ads(r->in.domain_name,
 				    r->in.domain_name,
 				    r->in.dc_name,
-				    r->in.admin_account,
-				    r->in.admin_password,
-				    NULL,
+				    r->in.admin_credentials,
 				    r,
 				    &r->in.ads);
 	if (!ADS_ERR_OK(status)) {
@@ -1043,11 +976,6 @@ static ADS_STATUS libnet_join_post_processing_ads_modify(TALLOC_CTX *mem_ctx,
 		 * to update msDS-SupportedEncryptionTypes reliable
 		 */
 
-		if (r->in.ads->auth.ccache_name != NULL) {
-			ads_kdestroy(r->in.ads->auth.ccache_name);
-			ADS_TALLOC_CONST_FREE(r->in.ads->auth.ccache_name);
-		}
-
 		TALLOC_FREE(r->in.ads);
 
 		status = libnet_join_connect_ads_machine(mem_ctx, r);
@@ -1112,37 +1040,11 @@ static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS libnet_join_connect_dc_ipc(TALLOC_CTX *mem_ctx,
 					   const char *dc,
-					   const char *user,
-					   const char *domain,
-					   const char *pass,
-					   bool use_kerberos,
+					   struct cli_credentials *creds,
 					   struct cli_state **cli)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
-	bool fallback_after_kerberos = false;
-	bool use_ccache = false;
-	bool pw_nt_hash = false;
-	struct cli_credentials *creds = NULL;
 	int flags = CLI_FULL_CONNECTION_IPC;
 	NTSTATUS status;
-
-	if (use_kerberos && pass) {
-		fallback_after_kerberos = true;
-	}
-
-	creds = cli_session_creds_init(frame,
-				       user,
-				       domain,
-				       NULL, /* realm (use default) */
-				       pass,
-				       use_kerberos,
-				       fallback_after_kerberos,
-				       use_ccache,
-				       pw_nt_hash);
-	if (creds == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	status = cli_full_connection_creds(mem_ctx,
 					   cli,
@@ -1153,11 +1055,9 @@ static NTSTATUS libnet_join_connect_dc_ipc(TALLOC_CTX *mem_ctx,
 					   creds,
 					   flags);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
 		return status;
 	}
 
-	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
@@ -1169,29 +1069,27 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 					  struct libnet_JoinCtx *r,
 					  struct cli_state **cli)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct policy_handle lsa_pol;
 	NTSTATUS status, result;
 	union lsa_PolicyInformation *info = NULL;
+	struct cli_credentials *creds = NULL;
 	struct dcerpc_binding_handle *b;
-	const char *account = r->in.admin_account;
-	const char *domain = r->in.admin_domain;
-	const char *password = r->in.admin_password;
-	bool use_kerberos = r->in.use_kerberos;
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE) {
-		account = "";
-		domain = "";
-		password = NULL;
-		use_kerberos = false;
+		creds = cli_credentials_init_anon(frame);
+		if (creds == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	} else {
+		creds = r->in.admin_credentials;
 	}
 
 	status = libnet_join_connect_dc_ipc(mem_ctx,
 					    r->in.dc_name,
-					    account,
-					    domain,
-					    password,
-					    use_kerberos,
+					    creds,
 					    cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -1251,6 +1149,7 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(pipe_hnd);
 
  done:
+	TALLOC_FREE(frame);
 	return status;
 }
 
@@ -1308,7 +1207,8 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 						r->in.secure_channel_type);
 
 	/* according to WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED */
-	cli_credentials_set_password(cli_creds, r->in.admin_password,
+	cli_credentials_set_password(cli_creds,
+				     r->in.passed_machine_password,
 				     CRED_SPECIFIED);
 
 	status = rpccli_create_netlogon_creds_ctx(
@@ -1736,7 +1636,7 @@ error:
 NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 			const char *netbios_domain_name,
 			const char *dc_name,
-			const bool use_kerberos)
+			enum credentials_use_kerberos kerberos_state)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct cli_state *cli = NULL;
@@ -1770,11 +1670,9 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	/* we don't want any old password */
 	cli_credentials_set_old_password(cli_creds, NULL, CRED_SPECIFIED);
 
-	if (use_kerberos) {
-		cli_credentials_set_kerberos_state(cli_creds,
-						   CRED_USE_KERBEROS_REQUIRED,
-						   CRED_SPECIFIED);
-	}
+	cli_credentials_set_kerberos_state(cli_creds,
+					   kerberos_state,
+					   CRED_SPECIFIED);
 
 	status = cli_full_connection_creds(frame,
 					   &cli,
@@ -1887,11 +1785,17 @@ static WERROR libnet_join_post_verify(TALLOC_CTX *mem_ctx,
 				      struct libnet_JoinCtx *r)
 {
 	NTSTATUS status;
+	enum credentials_use_kerberos kerberos_state = CRED_USE_KERBEROS_DESIRED;
+
+	if (r->in.admin_credentials != NULL) {
+		kerberos_state = cli_credentials_get_kerberos_state(
+					r->in.admin_credentials);
+	}
 
 	status = libnet_join_ok(r->in.msg_ctx,
 				r->out.netbios_domain_name,
 				r->in.dc_name,
-				r->in.use_kerberos);
+				kerberos_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"failed to verify domain membership after joining: %s",
@@ -1938,10 +1842,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	status = libnet_join_connect_dc_ipc(mem_ctx,
 					    r->in.dc_name,
-					    r->in.admin_account,
-					    r->in.admin_domain,
-					    r->in.admin_password,
-					    r->in.use_kerberos,
+					    r->in.admin_credentials,
 					    &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -2355,27 +2256,6 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	if (!r->in.admin_domain) {
-		char *admin_domain = NULL;
-		char *admin_account = NULL;
-		bool ok;
-
-		ok = split_domain_user(mem_ctx,
-				       r->in.admin_account,
-				       &admin_domain,
-				       &admin_account);
-		if (!ok) {
-			return WERR_NOT_ENOUGH_MEMORY;
-		}
-
-		if (admin_domain != NULL) {
-			r->in.admin_domain = admin_domain;
-		} else {
-			r->in.admin_domain = r->in.domain_name;
-		}
-		r->in.admin_account = admin_account;
-	}
-
 	if (r->in.provision_computer_account_only) {
 		/*
 		 * When in the "provision_computer_account_only" path we do not
@@ -2720,8 +2600,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	/* Before contacting a DC, we can securely know
 	 * the realm only if the user specifies it.
 	 */
-	if (r->in.use_kerberos &&
-	    r->in.domain_name_type == JoinDomNameTypeDNS) {
+	if (r->in.domain_name_type == JoinDomNameTypeDNS) {
 		pre_connect_realm = r->in.domain_name;
 	}
 
@@ -3004,10 +2883,8 @@ static WERROR libnet_join_rollback(TALLOC_CTX *mem_ctx,
 	u->in.debug		= r->in.debug;
 	u->in.dc_name		= r->in.dc_name;
 	u->in.domain_name	= r->in.domain_name;
-	u->in.admin_account	= r->in.admin_account;
-	u->in.admin_password	= r->in.admin_password;
+	u->in.admin_credentials	= r->in.admin_credentials;
 	u->in.modify_config	= r->in.modify_config;
-	u->in.use_kerberos	= r->in.use_kerberos;
 	u->in.unjoin_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
 
@@ -3211,27 +3088,6 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 
 	if (IS_DC) {
 		return WERR_NERR_SETUPDOMAINCONTROLLER;
-	}
-
-	if (!r->in.admin_domain) {
-		char *admin_domain = NULL;
-		char *admin_account = NULL;
-		bool ok;
-
-		ok = split_domain_user(mem_ctx,
-				       r->in.admin_account,
-				       &admin_domain,
-				       &admin_account);
-		if (!ok) {
-			return WERR_NOT_ENOUGH_MEMORY;
-		}
-
-		if (admin_domain != NULL) {
-			r->in.admin_domain = admin_domain;
-		} else {
-			r->in.admin_domain = r->in.domain_name;
-		}
-		r->in.admin_account = admin_account;
 	}
 
 	if (!secrets_init()) {

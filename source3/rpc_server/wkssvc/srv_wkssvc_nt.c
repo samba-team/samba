@@ -35,6 +35,7 @@
 #include "smbd/smbd.h"
 #include "auth.h"
 #include "krb5_env.h"
+#include "ads.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -772,19 +773,24 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 		return werr;
 	}
 
+	status = ads_simple_creds(j,
+				  admin_domain,
+				  admin_account,
+				  cleartext_pwd,
+				  &j->in.admin_credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		return WERR_NERR_BADUSERNAME;
+	}
+
 	j->in.domain_name	= r->in.domain_name;
 	j->in.account_ou	= r->in.account_ou;
 	j->in.join_flags	= r->in.join_flags;
-	j->in.admin_account	= admin_account;
-	j->in.admin_password	= cleartext_pwd;
 	j->in.debug		= true;
 	j->in.modify_config     = lp_config_backend_is_registry();
 	j->in.msg_ctx		= p->msg_ctx;
 
 	become_root();
-	setenv(KRB5_ENV_CCNAME, "MEMORY:_wkssvc_NetrJoinDomain2", 1);
 	werr = libnet_Join(p->mem_ctx, j);
-	unsetenv(KRB5_ENV_CCNAME);
 	unbecome_root();
 
 	if (!W_ERROR_IS_OK(werr)) {
@@ -858,19 +864,24 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 		return werr;
 	}
 
+	status = ads_simple_creds(u,
+				  admin_domain,
+				  admin_account,
+				  cleartext_pwd,
+				  &u->in.admin_credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		return WERR_NERR_BADUSERNAME;
+	}
+
 	u->in.domain_name	= lp_realm();
 	u->in.unjoin_flags	= r->in.unjoin_flags |
 				  WKSSVC_JOIN_FLAGS_JOIN_TYPE;
-	u->in.admin_account	= admin_account;
-	u->in.admin_password	= cleartext_pwd;
 	u->in.debug		= true;
 	u->in.modify_config     = lp_config_backend_is_registry();
 	u->in.msg_ctx		= p->msg_ctx;
 
 	become_root();
-	setenv(KRB5_ENV_CCNAME, "MEMORY:_wkssvc_NetrUnjoinDomain2", 1);
 	werr = libnet_Unjoin(p->mem_ctx, u);
-	unsetenv(KRB5_ENV_CCNAME);
 	unbecome_root();
 
 	if (!W_ERROR_IS_OK(werr)) {

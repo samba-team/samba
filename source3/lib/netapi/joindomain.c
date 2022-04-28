@@ -83,14 +83,24 @@ WERROR NetJoinDomain_l(struct libnetapi_ctx *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(j->in.account_ou);
 	}
 
-	if (r->in.account) {
-		j->in.admin_account = talloc_strdup(mem_ctx, r->in.account);
-		W_ERROR_HAVE_NO_MEMORY(j->in.admin_account);
-	}
+	if (r->in.account != NULL) {
+		NTSTATUS status;
 
-	if (r->in.password) {
-		j->in.admin_password = talloc_strdup(mem_ctx, r->in.password);
-		W_ERROR_HAVE_NO_MEMORY(j->in.admin_password);
+		status = ads_simple_creds(j,
+					  r->in.domain,
+					  r->in.account,
+					  r->in.password,
+					  &j->in.admin_credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(j);
+			return WERR_NERR_BADUSERNAME;
+		}
+	} else {
+		libnetapi_get_creds(mem_ctx, &j->in.admin_credentials);
+		if (j->in.admin_credentials == NULL) {
+			TALLOC_FREE(j);
+			return WERR_NERR_BADUSERNAME;
+		}
 	}
 
 	j->in.join_flags = r->in.join_flags;
@@ -228,14 +238,24 @@ WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
 		u->in.domain_name = domain;
 	}
 
-	if (r->in.account) {
-		u->in.admin_account = talloc_strdup(mem_ctx, r->in.account);
-		W_ERROR_HAVE_NO_MEMORY(u->in.admin_account);
-	}
+	if (r->in.account != NULL) {
+		NTSTATUS status;
 
-	if (r->in.password) {
-		u->in.admin_password = talloc_strdup(mem_ctx, r->in.password);
-		W_ERROR_HAVE_NO_MEMORY(u->in.admin_password);
+		status = ads_simple_creds(u,
+					  domain,
+					  r->in.account,
+					  r->in.password,
+					  &u->in.admin_credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(u);
+			return WERR_NERR_BADUSERNAME;
+		}
+	} else {
+		libnetapi_get_creds(mem_ctx, &u->in.admin_credentials);
+		if (u->in.admin_credentials == NULL) {
+			TALLOC_FREE(u);
+			return WERR_NERR_BADUSERNAME;
+		}
 	}
 
 	u->in.domain_name = domain;
@@ -613,8 +633,6 @@ static WERROR NetProvisionComputerAccount_backend(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	struct libnet_JoinCtx *j = NULL;
-	int use_kerberos = 0;
-	const char *username = NULL;
 
 	werr = libnet_init_JoinCtx(mem_ctx, &j);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -650,35 +668,12 @@ static WERROR NetProvisionComputerAccount_backend(struct libnetapi_ctx *ctx,
 		}
 	}
 
-	libnetapi_get_username(ctx, &username);
-	if (username == NULL) {
+	libnetapi_get_creds(ctx, &j->in.admin_credentials);
+	if (j->in.admin_credentials == NULL) {
 		talloc_free(j);
 		return WERR_NERR_BADUSERNAME;
 	}
 
-	j->in.admin_account = talloc_strdup(j, username);
-	if (j->in.admin_account == NULL) {
-		talloc_free(j);
-		return WERR_NOT_ENOUGH_MEMORY;
-	}
-
-	libnetapi_get_use_kerberos(ctx, &use_kerberos);
-	if (!use_kerberos) {
-		const char *password = NULL;
-
-		libnetapi_get_password(ctx, &password);
-		if (password == NULL) {
-			talloc_free(j);
-			return WERR_NERR_BADPASSWORD;
-		}
-		j->in.admin_password = talloc_strdup(j, password);
-		if (j->in.admin_password == NULL) {
-			talloc_free(j);
-			return WERR_NOT_ENOUGH_MEMORY;
-		}
-	}
-
-	j->in.use_kerberos = use_kerberos;
 	j->in.debug = true;
 	j->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;

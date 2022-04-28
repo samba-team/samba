@@ -410,9 +410,8 @@ static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 	r->in.domain_name		= domain;
 	r->in.secure_channel_type	= sec_chan_type;
 	r->in.dc_name			= c->opt_host;
-	r->in.admin_account		= "";
-	r->in.admin_password		= strlower_talloc(r, pw);
-	if (r->in.admin_password == NULL) {
+	r->in.passed_machine_password	= strlower_talloc(r, pw);
+	if (r->in.passed_machine_password == NULL) {
 		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto fail;
 	}
@@ -484,6 +483,8 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	const char *domain = c->opt_target_workgroup;
 	const char *dc = c->opt_host;
+	enum credentials_use_kerberos kerberos_state =
+		cli_credentials_get_kerberos_state(c->creds);
 
 	if (c->display_usage) {
 		d_printf("Usage\n"
@@ -528,7 +529,7 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 	status = libnet_join_ok(c->msg_ctx,
 				c->opt_workgroup,
 				dc,
-				c->opt_kerberos);
+				kerberos_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr,"Join to domain '%s' is not valid: %s\n",
 			domain, nt_errstr(status));
@@ -601,10 +602,8 @@ static int net_rpc_join_newstyle(struct net_context *c, int argc, const char **a
 	r->in.domain_name		= domain;
 	r->in.secure_channel_type	= sec_chan_type;
 	r->in.dc_name			= c->opt_host;
-	r->in.admin_account		= c->opt_user_name;
-	r->in.admin_password		= net_prompt_pass(c, c->opt_user_name);
+	r->in.admin_credentials		= c->creds;
 	r->in.debug			= true;
-	r->in.use_kerberos		= c->opt_kerberos;
 	r->in.modify_config		= modify_config;
 	r->in.join_flags		= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 					  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
