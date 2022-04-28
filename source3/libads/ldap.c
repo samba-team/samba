@@ -35,6 +35,7 @@
 #include "libsmb/namequery.h"
 #include "../librpc/gen_ndr/ndr_ads.h"
 #include "auth/credentials/credentials.h"
+#include "passdb.h"
 
 #ifdef HAVE_LDAP
 
@@ -1170,6 +1171,32 @@ ADS_STATUS ads_connect_simple_anon(ADS_STRUCT *ads)
 	}
 
 	ads->auth.flags |= ADS_AUTH_ANON_BIND;
+	status = ads_connect_creds(ads, creds);
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/**
+ * Connect to the LDAP server using the machine account
+ * @param ads Pointer to an existing ADS_STRUCT
+ * @return status of connection
+ **/
+ADS_STATUS ads_connect_machine(ADS_STRUCT *ads)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cli_credentials *creds = NULL;
+	ADS_STATUS status;
+	NTSTATUS ntstatus;
+
+	ntstatus = pdb_get_trust_credentials(ads->server.workgroup,
+					     ads->server.realm,
+					     frame,
+					     &creds);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		TALLOC_FREE(frame);
+		return ADS_ERROR_NT(ntstatus);
+	}
+
 	status = ads_connect_creds(ads, creds);
 	TALLOC_FREE(frame);
 	return status;
