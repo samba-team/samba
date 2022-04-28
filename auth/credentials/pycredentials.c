@@ -389,7 +389,7 @@ static PyObject *py_creds_set_bind_dn(PyObject *self, PyObject *args)
 		PyErr_Format(PyExc_TypeError, "Credentials expected");
 		return NULL;
 	}
-	if (!PyArg_ParseTuple(args, "s", &newval))
+	if (!PyArg_ParseTuple(args, "z", &newval))
 		return NULL;
 
 	return PyBool_FromLong(cli_credentials_set_bind_dn(creds, newval));
