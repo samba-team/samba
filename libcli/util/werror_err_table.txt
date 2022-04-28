@@ -1762,7 +1762,7 @@ The Netlogon service cannot start because another Netlogon service running in th
 ERROR_SYNCHRONIZATION_REQUIRED
 	
 
-The Security Accounts Manager (SAM) database on a Windows Server operating system is significantly out of synchronization with the copy on the domain controller. A complete synchronization is required.
+On applicable Windows Server releases, the Security Accounts Manager (SAM) database is significantly out of synchronization with the copy on the domain controller. A complete synchronization is required.
 
 0x0000023A
 
@@ -1846,7 +1846,7 @@ An event pair synchronization operation was performed using the thread-specific 
 ERROR_DOMAIN_CTRLR_CONFIG_ERROR
 	
 
-A Windows Server has an incorrect configuration.
+A domain server has an incorrect configuration.
 
 0x00000246
 
@@ -8111,7 +8111,7 @@ The logon processor did not add the message alias.
 NERR_UnableToDelName_W
 	
 
-@W The logoff processor did not delete the message alias.
+The logoff processor did not delete the message alias.
 
 0x0000089F
 
@@ -9924,6 +9924,13 @@ ERROR_PRINTER_DRIVER_DOWNLOAD_NEEDED
 
 
 The specified printer driver was not found on the system and needs to be downloaded.
+
+0x00000BCE
+
+ERROR_PRINTER_NOT_SHAREABLE
+
+
+The specified printer cannot be shared.
 
 0x00000F6E
 
@@ -15622,6 +15629,13 @@ ERROR_DS_INVALID_SEARCH_FLAG_TUPLE
 	
 
 The search flags for the attribute are invalid. The tuple index bit is valid only on attributes of Unicode strings.
+
+0x000021BF
+
+ERROR_DS_DRA_RECYCLED_TARGET
+
+
+The replication operation failed because the target object referenced by a link value is recycled.
 
 0x000021C2
 

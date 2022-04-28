@@ -200,10 +200,7 @@ class drs_Replicate(object):
         # (if we support it and haven't already tried that)
         supports_ext = self.supports_ext
 
-        # TODO fix up the below line when we next update werror_err_table.txt
-        # and pull in the new error-code
-        # return (error_code == werror.WERR_DS_DRA_RECYCLED_TARGET and
-        return (error_code == 0x21bf and
+        return (error_code == werror.WERR_DS_DRA_RECYCLED_TARGET and
                 supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10 and
                 (req.more_flags & drsuapi.DRSUAPI_DRS_GET_TGT) == 0)
 
