@@ -206,6 +206,11 @@ ADS_STATUS ads_ranged_search(ADS_STRUCT *ads,
 
 /* The following definitions come from libads/sasl.c  */
 
+NTSTATUS ads_simple_creds(TALLOC_CTX *mem_ctx,
+			  const char *account_domain,
+			  const char *account_name,
+			  const char *password,
+			  struct cli_credentials **_creds);
 NTSTATUS ads_legacy_creds(ADS_STRUCT *ads,
 			  TALLOC_CTX *mem_ctx,
 			  struct cli_credentials **_creds);

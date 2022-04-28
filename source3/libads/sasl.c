@@ -28,6 +28,65 @@
 #include "krb5_env.h"
 #include "lib/util/asn1.h"
 
+NTSTATUS ads_simple_creds(TALLOC_CTX *mem_ctx,
+			  const char *account_domain,
+			  const char *account_name,
+			  const char *password,
+			  struct cli_credentials **_creds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cli_credentials *creds = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	bool ok;
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DBG_ERR("loadparm_init_s3 failed\n");
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_SERVER_STATE;
+	}
+
+	creds = cli_credentials_init(mem_ctx);
+	if (creds == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_steal(frame, creds);
+
+	ok = cli_credentials_guess(creds, lp_ctx);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (account_domain != NULL && account_domain[0] != '\0') {
+		ok = cli_credentials_set_domain(creds,
+						account_domain,
+						CRED_SPECIFIED);
+		if (!ok) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	if (password != NULL) {
+		ok = cli_credentials_set_password(creds,
+						  password,
+						  CRED_SPECIFIED);
+		if (!ok) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	cli_credentials_parse_string(creds,
+				     account_name,
+				     CRED_SPECIFIED);
+
+	*_creds = talloc_move(mem_ctx, &creds);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 #ifdef HAVE_LDAP
 
 static ADS_STATUS ads_sasl_gensec_wrap(struct ads_saslwrap *wrap,
