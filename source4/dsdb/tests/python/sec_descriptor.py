@@ -1248,7 +1248,7 @@ class DaclDescriptorTests(DescriptorTests):
         # Make sure there are inheritable ACEs initially
         self.assertTrue("CI" in desc_sddl or "OI" in desc_sddl)
         # Find and remove all inherit ACEs
-        res = re.findall("\(.*?\)", desc_sddl)
+        res = re.findall(r"\(.*?\)", desc_sddl)
         res = [x for x in res if ("CI" in x) or ("OI" in x)]
         for x in res:
             desc_sddl = desc_sddl.replace(x, "")
@@ -1315,12 +1315,12 @@ class DaclDescriptorTests(DescriptorTests):
         # also make sure the added above non-inheritable ACEs are absent too
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertFalse("ID" in desc_sddl)
-        for x in re.findall("\(.*?\)", mod):
+        for x in re.findall(r"\(.*?\)", mod):
             self.assertFalse(x in desc_sddl)
         self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertFalse("ID" in desc_sddl)
-        for x in re.findall("\(.*?\)", mod):
+        for x in re.findall(r"\(.*?\)", mod):
             self.assertFalse(x in desc_sddl)
 
     def test_203(self):

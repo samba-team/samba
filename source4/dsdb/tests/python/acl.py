@@ -695,7 +695,7 @@ class AclSearchTests(AclTests):
         # Make sure there are inheritable ACEs initially
         self.assertTrue("CI" in desc_sddl or "OI" in desc_sddl)
         # Find and remove all inherit ACEs
-        res = re.findall("\(.*?\)", desc_sddl)
+        res = re.findall(r"\(.*?\)", desc_sddl)
         res = [x for x in res if ("CI" in x) or ("OI" in x)]
         for x in res:
             desc_sddl = desc_sddl.replace(x, "")

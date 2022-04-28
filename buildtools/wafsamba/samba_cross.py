@@ -77,7 +77,7 @@ def cross_answer(ca_file, msg):
                 f.close()
                 return (0, ans.strip("'"))
             else:
-                m = re.match('\(\s*(-?\d+)\s*,\s*\"(.*)\"\s*\)', ans)
+                m = re.match(r'\(\s*(-?\d+)\s*,\s*\"(.*)\"\s*\)', ans)
                 if m:
                     f.close()
                     return (int(m.group(1)), m.group(2))

@@ -279,7 +279,7 @@ class Descriptor(object):
                 res = re.search(r"D:(.*?)(\(.*\))", self.sddl).group(2)
         except AttributeError:
             return []
-        return re.findall("(\(.*?\))", res)
+        return re.findall(r"(\(.*?\))", res)
 
     def fix_sid(self, ace):
         res = "%s" % ace
