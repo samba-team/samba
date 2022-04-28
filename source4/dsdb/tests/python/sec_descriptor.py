@@ -2111,6 +2111,8 @@ class SdAutoInheritTests(DescriptorTests):
 
         self.sd_utils.modify_sd_on_dn(self.ou_dn, ou_sddl1, controls=controls)
 
+        self.sd_utils.modify_sd_on_dn(self.sub_dn, sub_sddl1, controls=controls)
+
         sub_res2 = self.sd_utils.ldb.search(self.sub_dn, SCOPE_BASE,
                                             None, attrs, controls=controls)
         ou_res2 = self.sd_utils.ldb.search(self.ou_dn, SCOPE_BASE,
@@ -2142,7 +2144,7 @@ class SdAutoInheritTests(DescriptorTests):
 
         sub_usn0 = int(sub_res0[0]["uSNChanged"][0])
         sub_usn2 = int(sub_res2[0]["uSNChanged"][0])
-        self.assertTrue(sub_usn2 == sub_usn0)
+        self.assertGreater(sub_usn2, sub_usn0)
 
 
 if "://" not in host:
