@@ -229,6 +229,11 @@ _PUBLIC_ bool data_blob_append(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 {
 	size_t old_len = blob->length;
 	size_t new_len = old_len + length;
+
+	if (length == 0) {
+		return true;
+	}
+
 	if (new_len < length || new_len < old_len) {
 		return false;
 	}
