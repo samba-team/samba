@@ -974,10 +974,18 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 
 NTSTATUS fd_close(files_struct *fsp)
 {
+	NTSTATUS status;
 	int ret;
 
 	if (fsp == fsp->conn->cwd_fsp) {
 		return NT_STATUS_OK;
+	}
+
+	if (fsp->fsp_flags.fstat_before_close) {
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	if (fsp->dptr) {

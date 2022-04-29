@@ -372,6 +372,7 @@
  * Version 47 - Add SMB_VFS_GET_REAL_FILENAME_AT
  * Version 47 - Replace SMB_VFS_GET_REAL_FILENAME with SMB_VFS_GET_REAL_FILENAME_AT
  * Version 47 - Re-add dirfsp to CREATE_FILE
+ * Version 47 - Add fsp flag fstat_before_close
  */
 
 #define SMB_VFS_INTERFACE_VERSION 47
@@ -445,6 +446,7 @@ typedef struct files_struct {
 		bool closing : 1;
 		bool lock_failure_seen : 1;
 		bool encryption_required : 1;
+		bool fstat_before_close : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
