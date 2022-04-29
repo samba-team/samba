@@ -220,7 +220,7 @@ static int port_check_reopen(struct port_event_context *port_ev)
 
 	port_ev->pid = pid;
 	for (fde=port_ev->ev->fd_events;fde;fde=fde->next) {
-		fde->additional_flags &= PORT_ADDITIONAL_FD_FLAG_HAS_ASSOCIATION;
+		fde->additional_flags &= ~PORT_ADDITIONAL_FD_FLAG_HAS_ASSOCIATION;
 		if (port_update_event(port_ev, fde) != 0) {
 			return -1;
 		}
@@ -670,7 +670,7 @@ static int port_event_fd_destructor(struct tevent_fd *fde)
 		fde->additional_data = NULL;
 		mpx_fde->additional_data = NULL;
 
-		fde->additional_flags &= PORT_ADDITIONAL_FD_FLAG_HAS_ASSOCIATION;
+		fde->additional_flags &= ~PORT_ADDITIONAL_FD_FLAG_HAS_ASSOCIATION;
 	}
 
 	(void)port_check_reopen(port_ev);
