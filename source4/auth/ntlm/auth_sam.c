@@ -90,7 +90,7 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 								   ENCTYPE_AES256_CTS_HMAC_SHA1_96,
 								   &key);
 			if (krb5_ret) {
-				DBG_ERR("generation of a aes256-cts-hmac-sha1-96 key for password comparison failed: %s",
+				DBG_ERR("generation of a aes256-cts-hmac-sha1-96 key for password comparison failed: %s\n",
 					smb_get_krb5_error_message(smb_krb5_context->krb5_context,
 								   krb5_ret, mem_ctx));
 				return NT_STATUS_INTERNAL_ERROR;
@@ -386,7 +386,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 						 auth_context->lp_ctx,
 						 &smb_krb5_context);
 		if (krb5_ret != 0) {
-			DBG_ERR("Failed to setup krb5_context: %s!",
+			DBG_ERR("Failed to setup krb5_context: %s!\n",
 				error_message(krb5_ret));
 			return NT_STATUS_INTERNAL_ERROR;
 		}
