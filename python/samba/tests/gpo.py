@@ -48,6 +48,7 @@ from samba.gp_chromium_ext import gp_chromium_ext
 from samba.gp_firewalld_ext import gp_firewalld_ext
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
+from samba.gp_centrify_sudoers_ext import gp_centrify_sudoers_ext
 from samba.common import get_bytes
 from samba.dcerpc import preg
 from samba.ndr import ndr_pack
@@ -9160,6 +9161,62 @@ class GPOTests(tests.TestCase):
         ldb.delete(certa_dn)
         ldb.delete(enroll_dn)
         ldb.delete(template_dn)
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
+
+    def test_gp_centrify_sudoers_ext(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        reg_pol = os.path.join(local_path, policies, guid,
+                               'MACHINE/REGISTRY.POL')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = gp_centrify_sudoers_ext(self.lp, machine_creds,
+                                      machine_creds.get_username(), store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the Registry.pol file with test data
+        stage = preg.file()
+        e1 = preg.entry()
+        e1.keyname = b'Software\\Policies\\Centrify\\UnixSettings'
+        e1.valuename = b'sudo.enabled'
+        e1.type = 4
+        e1.data = 1
+        e2 = preg.entry()
+        e2.keyname = b'Software\\Policies\\Centrify\\UnixSettings\\SuDo'
+        e2.valuename = b'1'
+        e2.type = 1
+        e2.data = b'fakeu ALL=(ALL) NOPASSWD: ALL'
+        stage.num_entries = 2
+        stage.entries = [e1, e2]
+        ret = stage_file(reg_pol, ndr_pack(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        # Process all gpos, with temp output directory
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname)
+            sudoers = os.listdir(dname)
+            self.assertEquals(len(sudoers), 1, 'The sudoer file was not created')
+            self.assertIn(e2.data,
+                    open(os.path.join(dname, sudoers[0]), 'r').read(),
+                    'The sudoers entry was not applied')
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+            self.assertEquals(len(os.listdir(dname)), 0,
+                              'Unapply failed to cleanup scripts')
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
