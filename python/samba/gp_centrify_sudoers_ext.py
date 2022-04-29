@@ -14,13 +14,87 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 from samba.gpclass import gp_pol_ext
+from base64 import b64encode
+from tempfile import NamedTemporaryFile
+from subprocess import Popen, PIPE
+from samba.gp_sudoers_ext import visudo, intro
+from samba.gp.util.logging import log
+
+def ext_enabled(entries):
+    section = 'Software\\Policies\\Centrify\\UnixSettings'
+    for e in entries:
+        if e.keyname == section and e.valuename == 'sudo.enabled':
+            return e.data == 1
+    return False
 
 class gp_centrify_sudoers_ext(gp_pol_ext):
+    def __str__(self):
+        return 'Centrify/Sudo Rights'
+
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list,
             sdir='/etc/sudoers.d'):
-        pass
+        for guid, settings in deleted_gpo_list:
+            self.gp_db.set_guid(guid)
+            if str(self) in settings:
+                for attribute, sudoers in settings[str(self)].items():
+                    if os.path.exists(sudoers):
+                        os.unlink(sudoers)
+                    self.gp_db.delete(str(self), attribute)
+            self.gp_db.commit()
+
+        for gpo in changed_gpo_list:
+            if gpo.file_sys_path:
+                section = 'Software\\Policies\\Centrify\\UnixSettings\\SuDo'
+                self.gp_db.set_guid(gpo.name)
+                pol_file = 'MACHINE/Registry.pol'
+                path = os.path.join(gpo.file_sys_path, pol_file)
+                pol_conf = self.parse(path)
+                if not pol_conf or not ext_enabled(pol_conf.entries):
+                    continue
+                for e in pol_conf.entries:
+                    if e.keyname == section and e.data.strip():
+                        if '**delvals.' in e.valuename:
+                            continue
+                        attribute = b64encode(e.data.encode()).decode()
+                        old_val = self.gp_db.retrieve(str(self), attribute)
+                        if not old_val:
+                            contents = intro
+                            contents += '%s\n' % e.data
+                            with NamedTemporaryFile() as f:
+                                with open(f.name, 'w') as w:
+                                    w.write(contents)
+                                sudo_validation = \
+                                        Popen([visudo, '-c', '-f', f.name],
+                                            stdout=PIPE, stderr=PIPE).wait()
+                            if sudo_validation == 0:
+                                with NamedTemporaryFile(prefix='gp_',
+                                                        delete=False,
+                                                        dir=sdir) as f:
+                                    with open(f.name, 'w') as w:
+                                        w.write(contents)
+                                    self.gp_db.store(str(self),
+                                                     attribute,
+                                                     f.name)
+                            else:
+                                log.error('Sudoers apply failed', e.data)
+                        self.gp_db.commit()
 
     def rsop(self, gpo):
         output = {}
+        section = 'Software\\Policies\\Centrify\\UnixSettings\\SuDo'
+        pol_file = 'MACHINE/Registry.pol'
+        if gpo.file_sys_path:
+            path = os.path.join(gpo.file_sys_path, pol_file)
+            pol_conf = self.parse(path)
+            if not pol_conf:
+                return output
+            for e in pol_conf.entries:
+                if e.keyname == section and e.data.strip():
+                    if '**delvals.' in e.valuename:
+                        continue
+                    if str(self) not in output.keys():
+                        output[str(self)] = []
+                    output[str(self)].append(e.data)
         return output
