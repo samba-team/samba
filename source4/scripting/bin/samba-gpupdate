@@ -50,6 +50,8 @@ from samba.gp_firefox_ext import gp_firefox_ext
 from samba.gp_chromium_ext import gp_chromium_ext, gp_chrome_ext
 from samba.gp_firewalld_ext import gp_firewalld_ext
 from samba.gp_centrify_sudoers_ext import gp_centrify_sudoers_ext
+from samba.gp_centrify_crontab_ext import gp_centrify_crontab_ext, \
+                                          gp_user_centrify_crontab_ext
 from samba.credentials import Credentials
 from samba.gp.util.logging import logger_init
 
@@ -103,6 +105,7 @@ if __name__ == "__main__":
         gp_extensions.append(gp_sudoers_ext)
         gp_extensions.append(vgp_sudoers_ext)
         gp_extensions.append(gp_centrify_sudoers_ext)
+        gp_extensions.append(gp_centrify_crontab_ext)
         gp_extensions.append(gp_smb_conf_ext)
         gp_extensions.append(gp_msgs_ext)
         gp_extensions.append(vgp_symlink_ext)
@@ -121,6 +124,7 @@ if __name__ == "__main__":
         gp_extensions.extend(machine_exts)
     elif opts.target == 'User':
         gp_extensions.append(gp_user_scripts_ext)
+        gp_extensions.append(gp_user_centrify_crontab_ext)
         gp_extensions.extend(user_exts)
 
     if opts.rsop:
