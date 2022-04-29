@@ -49,6 +49,8 @@ from samba.gp_firewalld_ext import gp_firewalld_ext
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
 from samba.gp_centrify_sudoers_ext import gp_centrify_sudoers_ext
+from samba.gp_centrify_crontab_ext import gp_centrify_crontab_ext, \
+                                          gp_user_centrify_crontab_ext
 from samba.common import get_bytes
 from samba.dcerpc import preg
 from samba.ndr import ndr_pack
@@ -9217,6 +9219,113 @@ class GPOTests(tests.TestCase):
             ext.process_group_policy(del_gpos, [])
             self.assertEquals(len(os.listdir(dname)), 0,
                               'Unapply failed to cleanup scripts')
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
+
+    def test_gp_centrify_crontab_ext(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        reg_pol = os.path.join(local_path, policies, guid,
+                               'MACHINE/REGISTRY.POL')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = gp_centrify_crontab_ext(self.lp, machine_creds,
+                                      machine_creds.get_username(), store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the Registry.pol file with test data
+        stage = preg.file()
+        e = preg.entry()
+        e.keyname = \
+            b'Software\\Policies\\Centrify\\UnixSettings\\CrontabEntries'
+        e.valuename = b'Command1'
+        e.type = 1
+        e.data = b'17 * * * * root echo hello world'
+        stage.num_entries = 1
+        stage.entries = [e]
+        ret = stage_file(reg_pol, ndr_pack(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        # Process all gpos, with temp output directory
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname)
+            cron_entries = os.listdir(dname)
+            self.assertEquals(len(cron_entries), 1, 'Cron entry not created')
+            fname = os.path.join(dname, cron_entries[0])
+            data = open(fname, 'rb').read()
+            self.assertIn(get_bytes(e.data), data, 'Cron entry is missing')
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+            self.assertEquals(len(os.listdir(dname)), 0,
+                              'Unapply failed to cleanup script')
+
+            # Unstage the Registry.pol file
+            unstage_file(reg_pol)
+
+    def test_gp_user_centrify_crontab_ext(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        reg_pol = os.path.join(local_path, policies, guid,
+                               'USER/REGISTRY.POL')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = gp_user_centrify_crontab_ext(self.lp, machine_creds,
+                                           os.environ.get('DC_USERNAME'),
+                                           store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the Registry.pol file with test data
+        stage = preg.file()
+        e = preg.entry()
+        e.keyname = \
+            b'Software\\Policies\\Centrify\\UnixSettings\\CrontabEntries'
+        e.valuename = b'Command1'
+        e.type = 1
+        e.data = b'17 * * * * echo hello world'
+        stage.num_entries = 1
+        stage.entries = [e]
+        ret = stage_file(reg_pol, ndr_pack(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        # Process all gpos, intentionally skipping the privilege drop
+        ext.process_group_policy([], gpos)
+        # Dump the fake crontab setup for testing
+        p = Popen(['crontab', '-l'], stdout=PIPE)
+        crontab, _ = p.communicate()
+        self.assertIn(get_bytes(e.data), crontab,
+            'The crontab entry was not installed')
+
+        # Remove policy
+        gp_db = store.get_gplog(os.environ.get('DC_USERNAME'))
+        del_gpos = get_deleted_gpos_list(gp_db, [])
+        ext.process_group_policy(del_gpos, [])
+        # Dump the fake crontab setup for testing
+        p = Popen(['crontab', '-l'], stdout=PIPE)
+        crontab, _ = p.communicate()
+        self.assertNotIn(get_bytes(e.data), crontab,
+            'Unapply failed to cleanup crontab entry')
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
