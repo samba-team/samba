@@ -193,12 +193,12 @@ static struct SDBFlags uf2SDBFlags(krb5_context context, uint32_t userAccountCon
 		flags.locked_out = 1;
 	}
 /*
-	if (userAccountControl & UF_PASSWORD_NOTREQD) {
+	if (userAccountControl & UF_PASSWD_NOTREQD) {
 		flags.invalid = 1;
 	}
 */
 /*
-	UF_PASSWORD_CANT_CHANGE and UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED are irrelevent
+	UF_PASSWD_CANT_CHANGE and UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED are irrelevant
 */
 	if (userAccountControl & UF_TEMP_DUPLICATE_ACCOUNT) {
 		flags.invalid = 1;
