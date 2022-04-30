@@ -166,3 +166,5 @@ class CheckAccessTests(samba.tests.TestCase):
                 self.assertTrue(isinstance(e, NTSTATUSError))
                 e_num, e_msg = e.args
                 self.assertEqual(num, e_num)
+            else:
+                self.fail()
