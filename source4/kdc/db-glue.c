@@ -3039,7 +3039,12 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct auth_session_info *session_info = NULL;
 	uint32_t session_info_flags = AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
-	uint32_t access_desired = SEC_ADS_GENERIC_ALL; /* => 0x000f01ff */
+	/*
+	 * Testing shows that although Windows grants SEC_ADS_GENERIC_ALL access
+	 * in security descriptors it creates for RBCD, its KDC only requires
+	 * SEC_ADS_CONTROL_ACCESS for the access check to succeed.
+	 */
+	uint32_t access_desired = SEC_ADS_CONTROL_ACCESS;
 	uint32_t access_granted = 0;
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx = NULL;

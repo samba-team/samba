@@ -363,7 +363,7 @@ class KDCBaseTest(RawKerberosTest):
         owner_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
 
         ace = security.ace()
-        ace.access_mask = security.SEC_ADS_GENERIC_ALL
+        ace.access_mask = security.SEC_ADS_CONTROL_ACCESS
 
         ace.trustee = security.dom_sid(sid)
 
