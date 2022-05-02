@@ -1,4 +1,76 @@
                    ==============================
+                   Release Notes for Samba 4.16.1
+                            May 02, 2022
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.16 release series.
+
+
+Changes since 4.16.0
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14831: Share and server swapped in smbget password prompt.
+   * BUG 15022: Durable handles won't reconnect if the leased file is written
+     to.
+   * BUG 15023: rmdir silently fails if directory contains unreadable files and
+     hide unreadable is yes.
+   * BUG 15038: SMB2_CLOSE_FLAGS_FULL_INFORMATION fails to return information on
+     renamed file handle.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 8731: Need to describe --builtin-libraries= better (compare with
+    --bundled-libraries).
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14957: vfs_shadow_copy2 breaks "smbd async dosmode" sync fallback.
+   * BUG 15035: shadow_copy2 fails listing snapshotted dirs with
+     shadow:fixinodes.
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 15046: PAM Kerberos authentication incorrectly fails with a clock skew
+     error.
+
+o  Pavel Filipenský <pfilipen@redhat.com>
+   * BUG 15041: Username map - samba erroneously applies unix group memberships
+     to user account entries.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14951: KVNO off by 100000.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 15027: Uninitialized litemask in variable in vfs_gpfs module.
+   * BUG 15055: vfs_gpfs recalls=no option prevents listing files.
+
+o  Andreas Schneider <asn@cryptomilk.org>
+   * BUG 15054: smbd doesn't handle UPNs for looking up names.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.16.0
                            March 21, 2022
                    ==============================
