@@ -966,6 +966,7 @@ failure:
 }
 
 int print_brl_json(struct traverse_state *state,
+		   const struct server_id server_id,
 		   const char *sharepath,
 		   const char *filename)
 {
@@ -1002,6 +1003,10 @@ int print_brl_json(struct traverse_state *state,
 		goto failure;
 	}
 	result = json_add_string(&file_json, "share_path", sharepath);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_server_id_to_json(&file_json, server_id);
 	if (result < 0) {
 		goto failure;
 	}

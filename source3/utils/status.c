@@ -411,6 +411,7 @@ static void print_brl(struct file_id id,
 				 fname);
 	} else {
 		print_brl_json(state,
+			       pid,
 			       sharepath,
 			       fname);
 
