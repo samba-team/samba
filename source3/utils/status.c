@@ -834,7 +834,7 @@ static bool print_notify_rec(const char *path, struct server_id server,
 	} else {
 		result = print_notify_rec_json(state,
 					       instance,
-					       server_id_str_buf(server, &idbuf),
+					       server,
 					       path);
 	}
 

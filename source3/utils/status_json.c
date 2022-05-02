@@ -1112,13 +1112,15 @@ failure:
 
 bool print_notify_rec_json(struct traverse_state *state,
 			   const struct notify_instance *instance,
-			   char *pid,
+			   const struct server_id server_id,
 			   const char *path)
 {
 	struct json_object sub_json;
 	struct json_object notify_json;
 	char *filter = NULL;
 	char *subdir_filter = NULL;
+	char *pid = NULL;
+	struct server_id_buf tmp;
 	int result = 0;
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -1135,7 +1137,7 @@ bool print_notify_rec_json(struct traverse_state *state,
 		goto failure;
 	}
 
-	result = json_add_string(&sub_json, "pid", pid);
+	result = add_server_id_to_json(&sub_json, server_id);
 	if (result < 0) {
 		goto failure;
 	}
@@ -1160,6 +1162,7 @@ bool print_notify_rec_json(struct traverse_state *state,
 		goto failure;
 	}
 
+	pid = server_id_str_buf(server_id, &tmp);
 	result = json_add_object(&notify_json, pid, &sub_json);
 	if (result < 0) {
 		goto failure;
