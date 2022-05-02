@@ -2006,31 +2006,60 @@ static NTSTATUS vfs_gluster_get_real_filename_at(
 	TALLOC_CTX *mem_ctx,
 	char **found_name)
 {
-	glfs_fd_t *glfd = vfs_gluster_fetch_glfd(handle, dirfsp);
 	int ret;
 	char key_buf[GLUSTER_NAME_MAX + 64];
 	char val_buf[GLUSTER_NAME_MAX + 1];
+	NTSTATUS status = NT_STATUS_OK;
+	struct smb_filename *smb_fname_dot = NULL;
+	struct smb_filename *full_fname = NULL;
+
+	smb_fname_dot = synthetic_smb_fname(mem_ctx,
+					    ".",
+					    NULL,
+					    NULL,
+					    0,
+					    0);
+	if (smb_fname_dot == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname_dot);
+	if (full_fname == NULL) {
+		TALLOC_FREE(smb_fname_dot);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (strlen(name) >= GLUSTER_NAME_MAX) {
-		return NT_STATUS_OBJECT_NAME_INVALID;
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto out;
 	}
 
 	snprintf(key_buf, GLUSTER_NAME_MAX + 64,
 		 "glusterfs.get_real_filename:%s", name);
 
-	ret = glfs_fgetxattr(glfd, key_buf, val_buf, GLUSTER_NAME_MAX + 1);
+	ret = glfs_getxattr(handle->data, full_fname->base_name,
+			    key_buf, val_buf, GLUSTER_NAME_MAX + 1);
 	if (ret == -1) {
 		if (errno == ENOATTR) {
 			errno = ENOENT;
 		}
-		return map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
+		goto out;
 	}
 
 	*found_name = talloc_strdup(mem_ctx, val_buf);
 	if (found_name[0] == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
-	return NT_STATUS_OK;
+
+out:
+	TALLOC_FREE(smb_fname_dot);
+	TALLOC_FREE(full_fname);
+
+	return status;
 }
 
 static const char *vfs_gluster_connectpath(struct vfs_handle_struct *handle,
