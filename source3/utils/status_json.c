@@ -617,7 +617,6 @@ failure:
 static int add_open_to_json(struct json_object *parent_json,
 			    const struct share_mode_entry *e,
 			    bool resolve_uids,
-			    const char *pid,
 			    const char *op_str,
 			    uint32_t lease_type,
 			    const char *uid_str)
@@ -628,6 +627,8 @@ static int add_open_to_json(struct json_object *parent_json,
 	bool add_lease = false;
 	char *key = NULL;
 	char *share_file_id = NULL;
+	char *pid = NULL;
+	struct server_id_buf tmp;
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -644,7 +645,7 @@ static int add_open_to_json(struct json_object *parent_json,
 	}
 
 
-	result = json_add_string(&sub_json, "pid", pid);
+	result = add_server_id_to_json(&sub_json, e->pid);
 	if (result < 0) {
 		goto failure;
 	}
@@ -677,6 +678,7 @@ static int add_open_to_json(struct json_object *parent_json,
 		goto failure;
 	}
 
+	pid = server_id_str_buf(e->pid, &tmp);
 	key = talloc_asprintf(tmp_ctx, "%s/%lu", pid, e->share_file_id);
 	result = json_add_object(&opens_json, key, &sub_json);
 	if (result < 0) {
@@ -735,7 +737,6 @@ int print_share_mode_json(struct traverse_state *state,
 			  const struct share_mode_data *d,
 			  const struct share_mode_entry *e,
 			  struct file_id fid,
-			  const char *pid,
 			  const char *uid_str,
 			  const char *op_str,
 			  uint32_t lease_type,
@@ -786,7 +787,6 @@ int print_share_mode_json(struct traverse_state *state,
 	result = add_open_to_json(&file_json,
 				  e,
 				  state->resolve_uids,
-				  pid,
 				  op_str,
 				  lease_type,
 				  uid_str);
