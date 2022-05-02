@@ -23,6 +23,7 @@
 #include "status_json.h"
 #include "../libcli/security/security.h"
 #include "status.h"
+#include "lib/util/server_id.h"
 
 #include <jansson.h>
 #include "audit_logging.h" /* various JSON helpers */
@@ -48,6 +49,61 @@ int add_general_information_to_json(struct traverse_state *state)
 	}
 
 	return 0;
+}
+
+static int add_server_id_to_json(struct json_object *parent_json,
+				 const struct server_id server_id)
+{
+	struct json_object sub_json;
+	char *pid_str = NULL;
+	char *task_id_str = NULL;
+	char *vnn_str = NULL;
+	char *unique_id_str = NULL;
+	int result;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	sub_json = json_new_object();
+	if (json_is_invalid(&sub_json)) {
+		goto failure;
+	}
+
+	pid_str = talloc_asprintf(tmp_ctx, "%lu", server_id.pid);
+	result = json_add_string(&sub_json, "pid", pid_str);
+	if (result < 0) {
+		goto failure;
+	}
+	task_id_str = talloc_asprintf(tmp_ctx, "%u", server_id.task_id);
+	result = json_add_string(&sub_json, "task_id", task_id_str);
+	if (result < 0) {
+		goto failure;
+	}
+	vnn_str = talloc_asprintf(tmp_ctx, "%u", server_id.vnn);
+	result = json_add_string(&sub_json, "vnn", vnn_str);
+	if (result < 0) {
+		goto failure;
+	}
+	unique_id_str = talloc_asprintf(tmp_ctx, "%lu", server_id.unique_id);
+	result = json_add_string(&sub_json, "unique_id", unique_id_str);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(parent_json, "server_id", &sub_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	json_free(&sub_json);
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&sub_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
 }
 
 int add_section_to_json(struct traverse_state *state,
@@ -92,6 +148,10 @@ int traverse_connections_json(struct traverse_state *state,
 	}
 
 	result = json_add_string(&sub_json, "service", crec->servicename);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_server_id_to_json(&sub_json, crec->pid);
 	if (result < 0) {
 		goto failure;
 	}
