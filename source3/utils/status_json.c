@@ -99,7 +99,6 @@ static int add_server_id_to_json(struct json_object *parent_json,
 		goto failure;
 	}
 
-	json_free(&sub_json);
 	TALLOC_FREE(tmp_ctx);
 	return 0;
 failure:
@@ -292,6 +291,10 @@ int traverse_sessionid_json(struct traverse_state *state,
 
 	id_str = talloc_asprintf(tmp_ctx, "%u", session->id_num);
 	result = json_add_string(&sub_json, "session_id", id_str);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_server_id_to_json(&sub_json, session->pid);
 	if (result < 0) {
 		goto failure;
 	}
