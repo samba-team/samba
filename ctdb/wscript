@@ -470,7 +470,15 @@ def build(bld):
                                              client_db.c client_util.c
                                              client_tunnel.c
                                           '''),
-                        deps='replace talloc tevent tdb tdb-wrap')
+                        deps='''ctdb-protocol
+                                ctdb-util
+                                samba-util
+                                replace
+                                talloc
+                                tevent
+                                tdb
+                                tdb-wrap
+                             ''')
 
     bld.SAMBA_SUBSYSTEM('ctdb-server-util',
                         source=bld.SUBDIR('common',
@@ -1006,7 +1014,13 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-tests-common',
                         source=bld.SUBDIR('tests/src',
                                           'cluster_wait.c test_options.c'),
-                        deps='samba-util replace popt talloc tevent tdb')
+                        deps='''ctdb-client
+                                samba-util
+                                replace
+                                popt
+                                talloc
+                                tevent
+                                tdb''')
 
     # Test binaries
     ctdb_tests = [
