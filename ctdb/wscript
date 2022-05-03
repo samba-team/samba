@@ -956,7 +956,7 @@ def build(bld):
 
     bld.SAMBA_BINARY('system_socket_test',
                      source='tests/src/system_socket_test.c',
-                     deps='''ctdb-tests-common
+                     deps='''ctdb-tests-backtrace
                              talloc
                              ctdb-protocol-util
                              pcap
@@ -1030,7 +1030,6 @@ def build(bld):
                         source=bld.SUBDIR('tests/src',
                                           '''cluster_wait.c
                                              test_options.c
-                                             test_backtrace.c
                                           '''),
                         deps='''ctdb-client
                                 samba-util
@@ -1039,6 +1038,12 @@ def build(bld):
                                 talloc
                                 tevent
                                 tdb''')
+
+    bld.SAMBA_SUBSYSTEM('ctdb-tests-backtrace',
+                        source=bld.SUBDIR('tests/src',
+                                          'test_backtrace.c'),
+                        deps='''samba-util
+                                replace''')
 
     # Test binaries
     ctdb_tests = [
@@ -1087,7 +1092,7 @@ def build(bld):
 
     bld.SAMBA_BINARY('cluster_mutex_test',
                      source='tests/src/cluster_mutex_test.c',
-                     deps='''ctdb-tests-common
+                     deps='''ctdb-tests-backtrace
                              samba-util
                              talloc
                              tevent
