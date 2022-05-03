@@ -935,8 +935,16 @@ def build(bld):
 
         bld.SAMBA_BINARY(target,
                          source=src,
-                         deps='''talloc tevent tdb tevent-util popt
-                                 LIBASYNC_REQ samba-util sys_rw''',
+                         deps='''ctdb-tests-backtrace
+                                 LIBASYNC_REQ
+                                 samba-util
+                                 sys_rw
+                                 tevent-util
+                                 talloc
+                                 tevent
+                                 tdb
+                                 popt
+                              ''',
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_BINARY('reqid_test',
