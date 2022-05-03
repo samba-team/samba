@@ -423,14 +423,25 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('ctdb-util',
                         source=bld.SUBDIR('common',
-                                          '''db_hash.c srvid.c reqid.c
-                                             pkt_read.c pkt_write.c comm.c
-                                             logging.c rb_tree.c tunable.c
-                                             pidfile.c run_proc.c
+                                          '''cmdline.c
+                                             comm.c
+                                             conf.c
+                                             db_hash.c
+                                             event_script.c
                                              hash_count.c
-                                             run_event.c event_script.c
+                                             line.c
+                                             logging.c
+                                             path.c
+                                             pidfile.c
+                                             pkt_read.c
+                                             pkt_write.c
+                                             rb_tree.c
+                                             reqid.c
+                                             run_event.c
+                                             run_proc.c
                                              sock_client.c
-                                             cmdline.c path.c conf.c line.c
+                                             srvid.c
+                                             tunable.c
                                           '''),
                         deps='''samba-util sys_rw tevent-util
                                 replace talloc tevent tdb popt''')
@@ -899,27 +910,27 @@ def build(bld):
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
     # Unit tests
-    ctdb_unit_tests = [
+    ctdb_util_tests = [
+        'cmdline_test',
+        'comm_client_test',
+        'comm_server_test',
+        'comm_test',
+        'conf_test',
         'db_hash_test',
-        'srvid_test',
+        'event_script_test',
+        'hash_count_test',
+        'line_test',
+        'pidfile_test',
         'pkt_read_test',
         'pkt_write_test',
-        'comm_test',
-        'comm_server_test',
-        'comm_client_test',
-        'pidfile_test',
+        'run_event_test',
         'run_proc_test',
         'sock_io_test',
-        'hash_count_test',
-        'run_event_test',
-        'cmdline_test',
-        'conf_test',
-        'line_test',
-        'event_script_test',
+        'srvid_test',
         'tunable_test',
     ]
 
-    for target in ctdb_unit_tests:
+    for target in ctdb_util_tests:
         src = 'tests/src/' + target + '.c'
 
         bld.SAMBA_BINARY(target,
