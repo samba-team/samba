@@ -41,8 +41,7 @@ from samba.vgp_motd_ext import vgp_motd_ext
 from samba.vgp_issue_ext import vgp_issue_ext
 from samba.vgp_access_ext import vgp_access_ext
 from samba.gp_gnome_settings_ext import gp_gnome_settings_ext
-from samba.gp_cert_auto_enroll_ext import gp_cert_auto_enroll_ext, \
-                                          octet_string_to_objectGUID
+from samba import gp_cert_auto_enroll_ext as cae
 from samba.gp_firefox_ext import gp_firefox_ext
 from samba.gp_chromium_ext import gp_chromium_ext
 from samba.gp_firewalld_ext import gp_firewalld_ext
@@ -67,6 +66,51 @@ import ldb as _ldb
 from samba.auth import system_session
 import json
 from shutil import which
+import requests
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import Encoding
+from datetime import datetime, timedelta
+
+def dummy_certificate():
+    name = x509.Name([
+        x509.NameAttribute(x509.NameOID.COMMON_NAME,
+                           os.environ.get('SERVER'))
+    ])
+    cons = x509.BasicConstraints(ca=True, path_length=0)
+    now = datetime.utcnow()
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048,
+                                   backend=default_backend())
+
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(key.public_key())
+        .serial_number(1000)
+        .not_valid_before(now)
+        .not_valid_after(now + timedelta(seconds=300))
+        .add_extension(cons, False)
+        .sign(key, hashes.SHA256(), default_backend())
+    )
+
+    return cert.public_bytes(encoding=Encoding.DER)
+
+# Dummy requests structure for Certificate Auto Enrollment
+class dummy_requests(object):
+    @staticmethod
+    def get(url=None, params=None):
+        dummy = requests.Response()
+        dummy._content = dummy_certificate()
+        dummy.headers = {'Content-Type': 'application/x-x509-ca-cert'}
+        return dummy
+
+    class exceptions(object):
+        ConnectionError = Exception
+cae.requests = dummy_requests
 
 realm = os.environ.get('REALM')
 policies = realm + '/POLICIES'
@@ -8708,8 +8752,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_cert_auto_enroll_ext(self.lp, machine_creds,
-                                      machine_creds.get_username(), store)
+        ext = cae.gp_cert_auto_enroll_ext(self.lp, machine_creds,
+                                          machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -9069,8 +9113,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_cert_auto_enroll_ext(self.lp, machine_creds,
-                                      machine_creds.get_username(), store)
+        ext = cae.gp_cert_auto_enroll_ext(self.lp, machine_creds,
+                                          machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -9093,7 +9137,7 @@ class GPOTests(tests.TestCase):
                           _ldb.SCOPE_BASE, '(objectClass=*)', ['objectGUID'])
         self.assertTrue(len(res2) == 1, 'objectGUID not found')
         objectGUID = b'{%s}' % \
-            octet_string_to_objectGUID(res2[0]['objectGUID'][0]).upper().encode()
+            cae.octet_string_to_objectGUID(res2[0]['objectGUID'][0]).upper().encode()
         parser = GPPolParser()
         parser.load_xml(etree.fromstring(advanced_enroll_reg_pol.strip() % \
             (objectGUID, objectGUID, objectGUID, objectGUID)))
