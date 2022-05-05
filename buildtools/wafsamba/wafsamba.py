@@ -856,7 +856,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
 
     if provide_builtin_linking:
 
-        if use_hostcc or pyext or pyembed:
+        if use_hostcc:
             raise Errors.WafError("subsystem[%s] provide_builtin_linking=True " +
                                   "not allowed with use_hostcc=True" %
                                   modname)
