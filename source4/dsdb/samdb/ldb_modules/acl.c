@@ -525,6 +525,17 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 			flags |= SECINFO_SACL;
 		}
 	}
+
+	if (flags != (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL | SECINFO_SACL)) {
+		const struct ldb_message_element *el = samdb_find_attribute(ldb,
+									    sd_msg,
+									    "objectclass",
+									    "computer");
+		if (el != NULL) {
+			return LDB_SUCCESS;
+		}
+	}
+
 	return samdb_msg_add_uint(ldb_module_get_ctx(module), msg, msg,
 				  "sDRightsEffective", flags);
 }
