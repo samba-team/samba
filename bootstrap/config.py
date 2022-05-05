@@ -455,7 +455,6 @@ RPM_DISTS = {
             # after epel-release installed
             # however, all other python3 pkgs are still python36-ish
             'python2-gpg': 'pygpgme',
-            'python3-gpg': '',  # no python3-gpg yet
             '@development-tools': '"@Development Tools"',  # add quotes
             'glibc-langpack-en': '',  # included in glibc-common
             'glibc-locale-source': '',  # included in glibc-common
