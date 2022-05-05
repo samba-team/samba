@@ -68,21 +68,20 @@ class cmd_processes(Command):
         masters = {}
         workers = {}
         for service in services:
-            for id in service.ids:
-                if service.name.startswith("prefork-master"):
-                    ns = service.name.split("-")
-                    name = ns[2] + "_server"
-                    masters[name] = service.ids[0].pid
-                elif service.name.startswith("prefork-worker"):
-                    ns = service.name.split("-")
-                    name = ns[2] + "_server"
-                    instance = int(ns[3])
-                    pid = service.ids[0].pid
-                    if name not in workers:
-                        workers[name] = {}
-                    workers[name][instance] = (instance, pid)
-                else:
-                    filtered.append(service)
+            if service.name.startswith("prefork-master"):
+                ns = service.name.split("-")
+                name = ns[2] + "_server"
+                masters[name] = service.ids[0].pid
+            elif service.name.startswith("prefork-worker"):
+                ns = service.name.split("-")
+                name = ns[2] + "_server"
+                instance = int(ns[3])
+                pid = service.ids[0].pid
+                if name not in workers:
+                    workers[name] = {}
+                workers[name][instance] = (instance, pid)
+            else:
+                filtered.append(service)
         return (filtered, masters, workers)
 
     def run(self, sambaopts, versionopts, section_name=None,
