@@ -115,7 +115,7 @@ struct descriptor_context {
 
 static struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 			       struct ldb_dn *dn,
-			       struct security_token *token,
+			       const struct security_token *token,
 			       struct ldb_context *ldb)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -620,6 +620,39 @@ fail:
 	return ldb_module_done(ac->req, NULL, NULL, ret);
 }
 
+static bool can_write_owner(TALLOC_CTX *mem_ctx,
+			    struct ldb_context *ldb,
+			    struct ldb_dn *dn,
+			    const struct security_token *security_token,
+			    const struct dom_sid *owner_sid)
+{
+	const struct dom_sid *default_owner = NULL;
+
+	/* If the user possesses SE_RESTORE_PRIVILEGE, the write is allowed. */
+	bool ok = security_token_has_privilege(security_token, SEC_PRIV_RESTORE);
+	if (ok) {
+		return true;
+	}
+
+	/* The user can write their own SID to a security descriptor. */
+	ok = security_token_is_sid(security_token, owner_sid);
+	if (ok) {
+		return true;
+	}
+
+        /*
+	 * The user can write the SID of the "default administrators group" that
+	 * they are a member of.
+	 */
+	default_owner = get_default_ag(mem_ctx, dn,
+				       security_token, ldb);
+	if (default_owner != NULL) {
+		ok = security_token_is_sid(security_token, owner_sid);
+	}
+
+	return ok;
+}
+
 static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -752,6 +785,26 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 		 */
 		control_sd->specified_sd = true;
 		control_sd->specified_sacl = user_descriptor->sacl != NULL;
+
+		if (user_descriptor->owner_sid != NULL) {
+			/* Verify the owner of the security descriptor. */
+
+			const struct auth_session_info *session_info
+				= ldb_get_opaque(ldb, DSDB_SESSION_INFO);
+
+			bool ok = can_write_owner(req,
+						  ldb,
+						  dn,
+						  session_info->security_token,
+						  user_descriptor->owner_sid);
+			talloc_free(user_descriptor);
+			if (!ok) {
+				return dsdb_module_werror(module,
+							  LDB_ERR_CONSTRAINT_VIOLATION,
+							  WERR_INVALID_OWNER,
+							  "invalid addition of owner SID");
+			}
+		}
 	}
 
 	sd = get_new_descriptor(module, dn, req,
@@ -886,6 +939,44 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	/* nTSecurityDescriptor without a value is an error, letting through so it is handled */
 	if (sd_propagation_control == NULL && user_sd == NULL) {
 		return ldb_next_request(module, req);
+	}
+
+	if (sd_flags & SECINFO_OWNER && user_sd != NULL) {
+		/* Verify the new owner of the security descriptor. */
+
+		struct security_descriptor *user_descriptor = NULL;
+		enum ndr_err_code ndr_err;
+		const struct auth_session_info *session_info;
+		bool ok;
+
+		user_descriptor = talloc(req, struct security_descriptor);
+
+		if (user_descriptor == NULL) {
+			return ldb_operr(ldb);
+		}
+		ndr_err = ndr_pull_struct_blob(user_sd, user_descriptor,
+					       user_descriptor,
+					       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			talloc_free(user_descriptor);
+			return ldb_operr(ldb);
+		}
+
+		session_info = ldb_get_opaque(ldb, DSDB_SESSION_INFO);
+
+		ok = can_write_owner(req,
+				     ldb,
+				     dn,
+				     session_info->security_token,
+				     user_descriptor->owner_sid);
+		talloc_free(user_descriptor);
+		if (!ok) {
+			return dsdb_module_werror(module,
+						  LDB_ERR_CONSTRAINT_VIOLATION,
+						  WERR_INVALID_OWNER,
+						  "invalid modification of owner SID");
+		}
 	}
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_modify: %s\n", ldb_dn_get_linearized(dn));
