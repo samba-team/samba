@@ -42,7 +42,7 @@ def FillUserInfo(samr, dom_handle, users, level):
         samr.Close(user_handle)
 
 
-def toArray((handle, array, num_entries)):
+def toArray(handle, array, num_entries):
     ret = []
     for x in range(num_entries):
         ret.append((array.entries[x].idx, array.entries[x].name))
@@ -51,38 +51,38 @@ def toArray((handle, array, num_entries)):
 
 def test_Connect(samr):
     """test the samr_Connect interface"""
-    print "Testing samr_Connect"
+    print("Testing samr_Connect")
     return samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
 
 
 def test_LookupDomain(samr, handle, domain):
     """test the samr_LookupDomain interface"""
-    print "Testing samr_LookupDomain"
+    print("Testing samr_LookupDomain")
     return samr.LookupDomain(handle, domain)
 
 
 def test_OpenDomain(samr, handle, sid):
     """test the samr_OpenDomain interface"""
-    print "Testing samr_OpenDomain"
+    print("Testing samr_OpenDomain")
     return samr.OpenDomain(handle, security.SEC_FLAG_MAXIMUM_ALLOWED, sid)
 
 
 def test_EnumDomainUsers(samr, dom_handle):
     """test the samr_EnumDomainUsers interface"""
-    print "Testing samr_EnumDomainUsers"
-    users = toArray(samr.EnumDomainUsers(dom_handle, 0, 0, -1))
-    print "Found %d users" % len(users)
+    print("Testing samr_EnumDomainUsers")
+    users = toArray(*samr.EnumDomainUsers(dom_handle, 0, 0, 0xffffffff))
+    print("Found %d users" % len(users))
     for idx, user in users:
-        print "\t%s\t(%d)" % (user.string, idx)
+        print("\t%s\t(%d)" % (user.string, idx))
 
 
 def test_EnumDomainGroups(samr, dom_handle):
     """test the samr_EnumDomainGroups interface"""
-    print "Testing samr_EnumDomainGroups"
-    groups = toArray(samr.EnumDomainGroups(dom_handle, 0, 0))
-    print "Found %d groups" % len(groups)
+    print("Testing samr_EnumDomainGroups")
+    groups = toArray(*samr.EnumDomainGroups(dom_handle, 0, 0))
+    print("Found %d groups" % len(groups))
     for idx, group in groups:
-        print "\t%s\t(%d)" % (group.string, idx)
+        print("\t%s\t(%d)" % (group.string, idx))
 
 
 def test_domain_ops(samr, dom_handle):
@@ -93,14 +93,14 @@ def test_domain_ops(samr, dom_handle):
 
 def test_EnumDomains(samr, handle):
     """test the samr_EnumDomains interface"""
-    print "Testing samr_EnumDomains"
+    print("Testing samr_EnumDomains")
 
-    domains = toArray(samr.EnumDomains(handle, 0, -1))
-    print "Found %d domains" % len(domains)
+    domains = toArray(*samr.EnumDomains(handle, 0, 0xffffffff))
+    print("Found %d domains" % len(domains))
     for idx, domain in domains:
-        print "\t%s (%d)" % (display_lsa_string(domain), idx)
+        print("\t%s (%d)" % (display_lsa_string(domain), idx))
     for idx, domain in domains:
-        print "Testing domain %s" % display_lsa_string(domain)
+        print("Testing domain %s" % display_lsa_string(domain))
         sid = samr.LookupDomain(handle, domain)
         dom_handle = test_OpenDomain(samr, handle, sid)
         test_domain_ops(samr, dom_handle)
@@ -108,20 +108,20 @@ def test_EnumDomains(samr, handle):
 
 
 if len(sys.argv) != 2:
-    print "Usage: samr.js <BINDING>"
+    print("Usage: samr.js <BINDING>")
     sys.exit(1)
 
 binding = sys.argv[1]
 
-print "Connecting to %s" % binding
+print("Connecting to %s" % binding)
 try:
     samr = samr.samr(binding)
-except Exception, e:
-    print "Failed to connect to %s: %s" % (binding, e.message)
+except Exception as e:
+    print("Failed to connect to %s: %s" % (binding, e.message))
     sys.exit(1)
 
 handle = test_Connect(samr)
 test_EnumDomains(samr, handle)
 samr.Close(handle)
 
-print "All OK"
+print("All OK")
