@@ -140,7 +140,6 @@ PKGS = [
     ('python3-iso8601', 'python3-iso8601'),
     ('python3-gpg', 'python3-gpg'),  # defaults to ubuntu/fedora latest
     ('python3-markdown', 'python3-markdown'),
-    ('python3-matplotlib', ''),
     ('python3-dnspython', 'python3-dns'),
     ('python3-pexpect', ''),  # for wintest only
     ('python3-pyasn1', 'python3-pyasn1'), # for krb5 tests
