@@ -49,7 +49,7 @@ def parseErrorDescriptions( file_contents, isWinError, transformErrorFunction ):
     errors = []
     count = 0
     for line in file_contents:
-        if line == None or line == '\t' or line == "" or line == '\n':
+        if line is None or line == '\t' or line == "" or line == '\n':
             continue
         content = line.strip().split(None,1)
         # start new error definition ?
@@ -66,7 +66,7 @@ def parseErrorDescriptions( file_contents, isWinError, transformErrorFunction ):
             if len(errors) == 0:
                 continue
             err = errors[-1]
-            if err.err_define == None:
+            if err.err_define is None:
                 err.err_define = transformErrorFunction(content[0])
             else:
                 if len(content) > 0:

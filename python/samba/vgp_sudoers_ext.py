@@ -59,7 +59,7 @@ class vgp_sudoers_ext(gp_xml_ext):
                             else '%s%%' % u.text for u in principals])
                     else:
                         uname = 'ALL'
-                    nopassword = entry.find('password') == None
+                    nopassword = entry.find('password') is None
                     np_entry = ' NOPASSWD:' if nopassword else ''
                     p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
                     attribute = b64encode(p.encode()).decode()
@@ -108,7 +108,7 @@ class vgp_sudoers_ext(gp_xml_ext):
                         else '%s%%' % u.text for u in principals])
                 else:
                     uname = 'ALL'
-                nopassword = entry.find('password') == None
+                nopassword = entry.find('password') is None
                 np_entry = ' NOPASSWD:' if nopassword else ''
                 p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
                 if str(self) not in output.keys():

@@ -464,7 +464,7 @@ member: %s
 
         # if the attribute is not specified, try to use the old one
         for attr_name, attr_value in attrs.items():
-            if attr_value == None and attr_name in old_attrs:
+            if attr_value is None and attr_name in old_attrs:
                 attrs[attr_name] = str(old_attrs[attr_name])
 
         # add '.' to initials if initals are not None and not "" and if the initials

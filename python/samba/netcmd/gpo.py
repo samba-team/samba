@@ -1867,7 +1867,7 @@ samba-tool gpo manage sudoers list {31B2F340-016D-11D2-945F-00C04FB984F9}
                     else '%s%%' % u.text for u in principals])
             else:
                 uname = 'ALL'
-            nopassword = entry.find('password') == None
+            nopassword = entry.find('password') is None
             np_entry = ' NOPASSWD:' if nopassword else ''
             p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
             self.outf.write('%s\n' % p)
@@ -1946,7 +1946,7 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
                     else '%s%%' % u.text for u in principals])
             else:
                 uname = 'ALL'
-            nopassword = e.find('password') == None
+            nopassword = e.find('password') is None
             np_entry = ' NOPASSWD:' if nopassword else ''
             p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
             entries[p] = e

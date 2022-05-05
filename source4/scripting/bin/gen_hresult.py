@@ -66,7 +66,7 @@ def parseErrorDescriptions( input_file, isWinError ):
                 print("Error parsing file as line %d"%count)
                 sys.exit()
             err = Errors[-1]
-            if err.err_define == None:
+            if err.err_define is None:
                 err.err_define = "HRES_" + content[0]
             else:
                 if len(content) > 0:
