@@ -1571,7 +1571,6 @@ def sync_calculated_attributes(samdb, names):
 
 
 if __name__ == '__main__':
-    global defSDmodified
     defSDmodified = False
 
     # From here start the big steps of the program

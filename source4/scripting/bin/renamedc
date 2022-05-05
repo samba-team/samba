@@ -59,7 +59,6 @@ creds.set_kerberos_state(DONT_USE_KERBEROS)
 
 
 if __name__ == '__main__':
-    global defSDmodified
     defSDmodified = False
    # 1) First get files paths
     paths = get_paths(param, smbconf=smbconf)
