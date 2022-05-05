@@ -226,10 +226,10 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
             # Spin thru all the DSAs looking for NC replicas
             # and build a list of all possible Naming Contexts
             # for subsequent retrieval below
-            for msg in res:
-                for k in msg.keys():
+            for res_msg in res:
+                for k in res_msg.keys():
                     if k in ncattrs:
-                        for value in msg[k]:
+                        for value in res_msg[k]:
                             # Some of these have binary DNs so
                             # use dsdb_Dn to split out relevent parts
                             dsdn = dsdb_Dn(samdb, value.decode('utf8'))
