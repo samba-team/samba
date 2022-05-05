@@ -366,10 +366,10 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                 if ca['URL'] == 'LDAP:':
                     # This is a basic configuration.
                     cas = fetch_certification_authorities(ldb)
-                    for ca in cas:
-                        data = cert_enroll(ca, ldb, trust_dir, private_dir)
+                    for _ca in cas:
+                        data = cert_enroll(_ca, ldb, trust_dir, private_dir)
                         self.gp_db.store(str(self),
-                                         base64.b64encode(ca['name']).decode(),
+                                         base64.b64encode(_ca['name']).decode(),
                                          data)
                 # If EndPoint.URI starts with "HTTPS//":
                 elif ca['URL'].lower().startswith('https://'):
