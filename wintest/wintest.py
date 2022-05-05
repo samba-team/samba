@@ -136,7 +136,6 @@ class wintest():
             if var_name not in self.vars:
                 raise RuntimeError("Unknown substitution variable ${%s}" % var_name)
             text = text.replace("${%s}" % var_name, self.vars[var_name])
-        return text
 
     def have_var(self, varname):
         '''see if a variable has been set'''
