@@ -389,9 +389,8 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
 
         end_point_information = obtain_end_point_information(entries)
         if len(end_point_information) > 0:
-            for end_point_group in end_point_information:
-                self.__read_cep_data(ldb, end_point_information,
-                                     trust_dir, private_dir)
+            self.__read_cep_data(ldb, end_point_information,
+                                 trust_dir, private_dir)
         else:
             cas = fetch_certification_authorities(ldb)
             for ca in cas:
