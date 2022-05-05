@@ -604,11 +604,8 @@ class LDAPObject(object):
                         continue
                 # Attribute values that are list that contain DN based values that may differ
                 elif x.upper() in self.dn_attributes:
-                    m = p
-                    n = q
-                    if not p and not q:
-                        m = self.attributes[x]
-                        n = other.attributes[x]
+                    m = self.attributes[x]
+                    n = other.attributes[x]
                     p = [self.fix_dn(j) for j in m]
                     q = [other.fix_dn(j) for j in n]
                     if p == q:

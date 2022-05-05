@@ -39,16 +39,16 @@ if __name__ == "__main__":
     dns_conn = dnsserver.dnsserver(binding_str, lp, creds)
 
     print("querying a NS record")
-    res = dns_conn.DnssrvEnumRecords2(0x00070000,
-                                      0,
-                                      server,
-                                      dnszone,
-                                      newname,
-                                      None,
-                                      dnsp.DNS_TYPE_NS,
-                                      0x0f,
-                                      None,
-                                      None)
+    dns_conn.DnssrvEnumRecords2(0x00070000,
+                                0,
+                                server,
+                                dnszone,
+                                newname,
+                                None,
+                                dnsp.DNS_TYPE_NS,
+                                0x0f,
+                                None,
+                                None)
 
     print("adding a NS glue record")
     name = dnsserver.DNS_RPC_NAME()
@@ -66,22 +66,22 @@ if __name__ == "__main__":
     addrecbuf     = dnsserver.DNS_RPC_RECORD_BUF()
     addrecbuf.rec = addrec
 
-    res = dns_conn.DnssrvUpdateRecord2(0x00070000,
-                                       0,
-                                       server,
-                                       dnszone,
-                                       newname,
-                                       addrecbuf,
-                                       None)
+    dns_conn.DnssrvUpdateRecord2(0x00070000,
+                                 0,
+                                 server,
+                                 dnszone,
+                                 newname,
+                                 addrecbuf,
+                                 None)
 
     print("querying the NS record")
-    res = dns_conn.DnssrvEnumRecords2(0x00070000,
-                                      0,
-                                      server,
-                                      dnszone,
-                                      newname,
-                                      None,
-                                      dnsp.DNS_TYPE_NS,
-                                      0x0f,
-                                      None,
-                                      None)
+    dns_conn.DnssrvEnumRecords2(0x00070000,
+                                0,
+                                server,
+                                dnszone,
+                                newname,
+                                None,
+                                dnsp.DNS_TYPE_NS,
+                                0x0f,
+                                None,
+                                None)

@@ -900,7 +900,6 @@ unicodePwd:: %s
             user_dn = res[0].dn
 
             userAccountControl = int(res[0]["userAccountControl"][0])
-            accountExpires     = int(res[0]["accountExpires"][0])
             if no_expiry_req:
                 userAccountControl = userAccountControl | 0x10000
                 accountExpires = 0

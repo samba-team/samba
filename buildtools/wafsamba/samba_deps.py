@@ -1181,7 +1181,7 @@ def generate_clangdb(bld):
                 lst = tg.tasks
             for task in lst:
                 try:
-                    cmd = task.last_cmd
+                    task.last_cmd
                 except AttributeError:
                     continue
                 if isinstance(task, task_classes):

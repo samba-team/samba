@@ -878,9 +878,9 @@ class cmd_zonecreate(Command):
             zone_create_info.fLoadExisting = 1
             zone_create_info.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
 
-        res = dns_conn.DnssrvOperation2(client_version, 0, server, None,
-                                        0, 'ZoneCreate', typeid,
-                                        zone_create_info)
+        dns_conn.DnssrvOperation2(client_version, 0, server, None,
+                                  0, 'ZoneCreate', typeid,
+                                  zone_create_info)
 
         typeid = dnsserver.DNSSRV_TYPEID_NAME_AND_PARAM
         name_and_param = dnsserver.DNS_RPC_NAME_AND_PARAM()
@@ -888,9 +888,9 @@ class cmd_zonecreate(Command):
         name_and_param.dwParam = dnsp.DNS_ZONE_UPDATE_SECURE
 
         try:
-            res = dns_conn.DnssrvOperation2(client_version, 0, server, zone,
-                                            0, 'ResetDwordProperty', typeid,
-                                            name_and_param)
+            dns_conn.DnssrvOperation2(client_version, 0, server, zone,
+                                      0, 'ResetDwordProperty', typeid,
+                                      name_and_param)
         except WERRORError as e:
             if e.args[0] == werror.WERR_DNS_ERROR_ZONE_ALREADY_EXISTS:
                 self.outf.write('Zone already exists.')

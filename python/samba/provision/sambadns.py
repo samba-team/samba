@@ -267,7 +267,6 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
             "SECDESC": b64encode(descriptor).decode('utf8')
         })
 
-    domainzone_guid = get_domainguid(samdb, domainzone_dn)
     domainzone_guid = str(uuid.uuid4())
     domainzone_dns = ldb.Dn(samdb, domainzone_dn).canonical_ex_str().strip()
 
@@ -289,7 +288,6 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
     })
 
     if fill_level != FILL_SUBDOMAIN:
-        forestzone_guid = get_domainguid(samdb, forestzone_dn)
         forestzone_guid = str(uuid.uuid4())
         forestzone_dns = ldb.Dn(samdb, forestzone_dn).canonical_ex_str().strip()
 

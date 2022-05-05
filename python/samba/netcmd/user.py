@@ -153,8 +153,7 @@ def get_crypt_value(alg, utf8pw, rounds=0):
 
 try:
     import hashlib
-    h = hashlib.sha1()
-    h = None
+    hashlib.sha1()
     virtual_attributes["virtualSSHA"] = {
     }
 except ImportError as e:
@@ -167,8 +166,7 @@ except ImportError as e:
 for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
     try:
         import crypt
-        v = get_crypt_value(alg, "")
-        v = None
+        get_crypt_value(alg, "")
         virtual_attributes[attr] = {
         }
     except ImportError as e:
@@ -3262,7 +3260,6 @@ class cmd_user_rename(Command):
                 for s in msg['uPNSuffixes']:
                     upn_suffixes.append(str(s).lower())
 
-        upn_suffix = upn.split('@')[-1].lower()
         upn_split = upn.split('@')
         if (len(upn_split) < 2):
             return False

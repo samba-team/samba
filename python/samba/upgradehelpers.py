@@ -358,8 +358,6 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
     for entry in listMissing:
         reference = newsecrets_ldb.search(expression="distinguishedName=%s" % entry,
                                           base="", scope=SCOPE_SUBTREE)
-        current = secrets_ldb.search(expression="distinguishedName=%s" % entry,
-                                     base="", scope=SCOPE_SUBTREE)
         delta = secrets_ldb.msg_diff(empty, reference[0])
         for att in hashAttrNotCopied:
             delta.remove(att)

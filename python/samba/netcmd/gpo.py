@@ -733,7 +733,7 @@ class cmd_setlink(GPOCommand):
 
         # Check if valid GPO DN
         try:
-            msg = get_gpo_info(self.samdb, gpo=gpo)[0]
+            get_gpo_info(self.samdb, gpo=gpo)[0]
         except Exception:
             raise CommandError("GPO '%s' does not exist" % gpo)
         gpo_dn = str(get_gpo_dn(self.samdb, gpo))
