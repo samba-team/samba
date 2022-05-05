@@ -22,8 +22,7 @@ from ldb import SCOPE_SUBTREE, SCOPE_BASE
 from samba.auth import system_session
 from samba.gpclass import get_dc_hostname
 import base64
-from tempfile import NamedTemporaryFile
-from shutil import move, which
+from shutil import which
 from subprocess import Popen, PIPE
 import re
 from glob import glob
