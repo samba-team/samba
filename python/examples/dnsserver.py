@@ -7,9 +7,8 @@ from optparse import OptionParser
 
 sys.path.insert(0, "bin/python")
 
-import samba
 import samba.getopt as options
-from samba.dcerpc import dnsserver, security, dnsp
+from samba.dcerpc import dnsserver, dnsp
 
 
 ########### main code ###########
