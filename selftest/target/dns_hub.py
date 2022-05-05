@@ -80,7 +80,6 @@ class DnsHandler(sserver.BaseRequestHandler):
         finally:
             if s is not None:
                 s.close()
-        return None
 
     def get_pdc_ipv4_addr(self, lookup_name):
         """Maps a DNS realm to the IPv4 address of the PDC for that testenv"""
