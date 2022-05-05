@@ -48,21 +48,24 @@ global_trust_dir = '/etc/pki/trust/anchors'
 endpoint_re = '(https|HTTPS)://(?P<server>[a-zA-Z0-9.-]+)/ADPolicyProvider' + \
               '_CEP_(?P<auth>[a-zA-Z]+)/service.svc/CEP'
 
+
 def octet_string_to_objectGUID(data):
+    """Convert an octet string to an objectGUID."""
     return '%s-%s-%s-%s-%s' % ('%02x' % struct.unpack('<L', data[0:4])[0],
                                '%02x' % struct.unpack('<H', data[4:6])[0],
                                '%02x' % struct.unpack('<H', data[6:8])[0],
                                '%02x' % struct.unpack('>H', data[8:10])[0],
                                '%02x%02x' % struct.unpack('>HL', data[10:]))
 
-'''
-Group and Sort End Point Information
-[MS-CAESO] 4.4.5.3.2.3
-In this step autoenrollment processes the end point information by grouping it
-by CEP ID and sorting in the order with which it will use the end point to
-access the CEP information.
-'''
+
 def group_and_sort_end_point_information(end_point_information):
+    """Group and Sort End Point Information.
+
+    [MS-CAESO] 4.4.5.3.2.3
+    In this step autoenrollment processes the end point information by grouping
+    it by CEP ID and sorting in the order with which it will use the end point
+    to access the CEP information.
+    """
     # Create groups of the CertificateEnrollmentPolicyEndPoint instances that
     # have the same value of the EndPoint.PolicyID datum.
     end_point_groups = {}
@@ -103,13 +106,13 @@ def group_and_sort_end_point_information(end_point_information):
                                             key=sort_auth)
     return list(end_point_groups.values())
 
-'''
-Obtaining End Point Information
-[MS-CAESO] 4.4.5.3.2.2
-In this step autoenrollment initializes the
-CertificateEnrollmentPolicyEndPoints table.
-'''
 def obtain_end_point_information(entries):
+    """Obtain End Point Information.
+
+    [MS-CAESO] 4.4.5.3.2.2
+    In this step autoenrollment initializes the
+    CertificateEnrollmentPolicyEndPoints table.
+    """
     end_point_information = {}
     section = 'Software\\Policies\\Microsoft\\Cryptography\\PolicyServers\\'
     for e in entries:
@@ -134,11 +137,11 @@ def obtain_end_point_information(entries):
         group_and_sort_end_point_information(end_point_information.values())
     return end_point_information
 
-'''
-Initializing CAs
-[MS-CAESO] 4.4.5.3.1.2
-'''
 def fetch_certification_authorities(ldb):
+    """Initialize CAs.
+
+    [MS-CAESO] 4.4.5.3.1.2
+    """
     result = []
     basedn = ldb.get_default_basedn()
     # Autoenrollment MUST do an LDAP search for the CA information
@@ -233,7 +236,7 @@ def getca(ca_name, url, trust_dir):
 
 
 def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
-    # Install the root certificate chain
+    """Install the root certificate chain."""
     data = {'files': [], 'templates': []}
     url = 'http://%s/CertSrv/mscep/mscep.dll/pkiclient.exe?' % ca['hostname']
     root_certs = getca(ca['name'], url, trust_dir)
@@ -352,15 +355,15 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                                           private_dir)
                         self.gp_db.commit()
 
-    '''
-    Read CEP Data
-    [MS-CAESO] 4.4.5.3.2.4
-    In this step autoenrollment initializes instances of the
-    CertificateEnrollmentPolicy by accessing end points associated with CEP
-    groups created in the previous step.
-    '''
     def __read_cep_data(self, ldb, end_point_information,
                         trust_dir, private_dir):
+        """Read CEP Data.
+
+        [MS-CAESO] 4.4.5.3.2.4
+        In this step autoenrollment initializes instances of the
+        CertificateEnrollmentPolicy by accessing end points associated with CEP
+        groups created in the previous step.
+        """
         # For each group created in the previous step:
         for end_point_group in end_point_information:
             # Pick an arbitrary instance of the
