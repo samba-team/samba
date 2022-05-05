@@ -35,7 +35,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         lp.load(os.environ['SERVERCONFFILE'])
         local_path = lp.get('path', 'sysvol')
         vgp_xml = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
-                               self.gpo_guid, 'Machine/VGP/VTLA/VAS'
+                               self.gpo_guid, 'Machine/VGP/VTLA/VAS',
                                'HostAccessControl/Allow/manifest.xml')
 
         stage = etree.Element('vgppolicy')
