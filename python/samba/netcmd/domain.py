@@ -2920,14 +2920,6 @@ class cmd_domain_trust_delete(DomainTrustCommand):
             except RuntimeError as error:
                 self.outf.write("%s\n" % self.RemoteRuntimeError(self, error, "DeleteObject() failed"))
 
-        if local_tdo_handle is not None:
-            try:
-                local_lsa.DeleteObject(local_tdo_handle)
-                local_tdo_handle = None
-                self.outf.write("LocalTDO deleted.\n")
-            except RuntimeError as error:
-                self.outf.write("%s\n" % self.LocalRuntimeError(self, error, "DeleteObject() failed"))
-
         return
 
 
