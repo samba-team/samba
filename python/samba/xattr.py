@@ -27,9 +27,9 @@ def copyattrs(frompath, topath):
         # Get the xattr attributes if any
         try:
             attribute = samba.xattr_native.wrap_getxattr(frompath,
-                                                         xattr.XATTR_NTACL_NAME)
+                                                         attr_name)
             samba.xattr_native.wrap_setxattr(topath,
-                                             xattr.XATTR_NTACL_NAME,
+                                             attr_name,
                                              attribute)
         except Exception:
             pass
