@@ -165,7 +165,6 @@ if __name__ == "__main__":
 
     if creds.is_anonymous():
         parser.error("You must supply credentials")
-        pass
 
     server = args[0]
 

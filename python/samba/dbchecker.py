@@ -135,7 +135,6 @@ class dbcheck(object):
             (enum, estr) = e5.args
             if enum != ldb.ERR_NO_SUCH_OBJECT:
                 raise
-            pass
 
         self.system_session_info = system_session()
         self.admin_session_info = admin_session(None, samdb.get_domain_sid())
@@ -237,7 +236,6 @@ class dbcheck(object):
             (enum, estr) = e6.args
             if enum != ldb.ERR_NO_SUCH_OBJECT:
                 raise
-            pass
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=None,
                        attrs=None):

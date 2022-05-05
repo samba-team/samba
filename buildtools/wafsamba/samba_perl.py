@@ -28,7 +28,6 @@ def SAMBA_CHECK_PERL(conf, mandatory=True, version=(5,0,0)):
             return v
         except IndexError:
             conf.end_msg(False, 'YELLOW')
-            pass
         return None
 
     vendor_prefix = check_perl_config_var('vendorprefix')

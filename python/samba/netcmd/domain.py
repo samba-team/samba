@@ -2877,7 +2877,6 @@ class cmd_domain_trust_delete(DomainTrustCommand):
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                     raise self.RemoteRuntimeError(self, error, "QueryTrustedDomainInfoByName(%s)" % (
                                                   lsaString.string))
-                pass
 
             if remote_tdo_info is not None:
                 if local_lsa_info.sid != remote_tdo_info.sid or \

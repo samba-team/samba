@@ -105,7 +105,6 @@ def add_dns_records(
     except WERRORError as e:
         if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
             name_found = False
-            pass
 
     if name_found:
         for rec in res.rec:

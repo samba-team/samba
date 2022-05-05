@@ -59,7 +59,6 @@ if (len(ctrls)):
         if arr[0] == 'dirsync':
             cookie = ndr_unpack(drsblobs.ldapControlDirSyncCookie, base64.b64decode(arr[3]))
             guid = cookie.blob.guid1
-            pass
 if not guid:
     print("No dirsync control ... strange")
     sys.exit(1)

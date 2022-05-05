@@ -405,7 +405,6 @@ def remove_dc(samdb, logger, dc_name):
 
         ntds_dn = ldb.Dn(samdb, "CN=NTDS Settings")
         ntds_dn.add_base(server_dn)
-        pass
 
     # Confirm this is really an ntdsDSA object
     try:
@@ -415,7 +414,6 @@ def remove_dc(samdb, logger, dc_name):
         (enum, estr) = e7.args
         if enum == ldb.ERR_NO_SUCH_OBJECT:
             ntds_msgs = []
-            pass
         else:
             samdb.transaction_cancel()
             raise DemoteException(

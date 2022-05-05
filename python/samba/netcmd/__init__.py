@@ -29,7 +29,6 @@ import textwrap
 
 class Option(SambaOption):
     SUPPRESS_HELP = optparse.SUPPRESS_HELP
-    pass
 
 # This help formatter does text wrapping and preserves newlines
 

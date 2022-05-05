@@ -155,7 +155,6 @@ def print_counts(count_data):
 
     for attr, row in rows.items():
         print(t % tuple(row))
-        pass
 
 
 def main():

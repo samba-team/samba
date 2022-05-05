@@ -1588,7 +1588,6 @@ def replay_seq_in_fork(cs, start, context, account, client_id, server_id=1):
             os.close(1)
         except IOError as e:
             LOGGER.info("stdout closing failed with %s" % e)
-            pass
 
         sys.stdout = f
         now = time.time() - start
@@ -1630,7 +1629,6 @@ def dnshammer_in_fork(dns_rate, duration, context, query_file=None):
         os.close(1)
     except IOError as e:
         LOGGER.warn("stdout closing failed with %s" % e)
-        pass
     filename = os.path.join(context.statsdir, 'stats-dns')
     sys.stdout = open(filename, 'w')
 
