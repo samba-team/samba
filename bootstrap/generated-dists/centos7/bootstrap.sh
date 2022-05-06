@@ -91,6 +91,7 @@ yum install -y \
     python36-iso8601 \
     python36-markdown \
     python36-pyasn1 \
+    python36-requests \
     python36-setproctitle \
     quota-devel \
     readline-devel \

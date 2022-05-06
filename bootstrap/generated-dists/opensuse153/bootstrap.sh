@@ -90,6 +90,7 @@ zypper --non-interactive install \
     python3-policycoreutils \
     python3-pyasn1 \
     python3-python-dateutil \
+    python3-requests \
     python3-setproctitle \
     readline-devel \
     rng-tools \

@@ -144,6 +144,7 @@ PKGS = [
     ('python3-pexpect', ''),  # for wintest only
     ('python3-pyasn1', 'python3-pyasn1'), # for krb5 tests
     ('python3-setproctitle', 'python3-setproctitle'),
+    ('python3-requests', 'python3-requests'), # for cert auto enroll
 
     ('', 'python3-libsemanage'),
     ('', 'python3-policycoreutils'),
@@ -448,6 +449,7 @@ RPM_DISTS = {
             'python3-gpg': 'python36-gpg',
             'python3-iso8601' : 'python36-iso8601',
             'python3-markdown': 'python36-markdown',
+            'python3-requests': 'python36-requests',
             # although python36-devel is available
             # after epel-release installed
             # however, all other python3 pkgs are still python36-ish
