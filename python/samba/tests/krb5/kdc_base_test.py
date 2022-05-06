@@ -2169,23 +2169,14 @@ class KDCBaseTest(RawKerberosTest):
 
         return cachefile
 
-    def create_ccache_with_user(self, user_credentials, mach_credentials,
-                                service="host", target_name=None, pac=True):
-        # Obtain a service ticket authorising the user and place it into a
-        # newly created credentials cache file.
+    def create_ccache_with_ticket(self, user_credentials, ticket, pac=True):
+        # Place the ticket into a newly created credentials cache file.
 
         user_name = user_credentials.get_username()
         realm = user_credentials.get_realm()
 
         cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=[user_name])
-
-        tgt = self.get_tgt(user_credentials)
-
-        # Request a ticket to the host service on the machine account
-        ticket = self.get_service_ticket(tgt, mach_credentials,
-                                         service=service,
-                                         target_name=target_name)
 
         if not pac:
             ticket = self.modified_ticket(ticket, exclude_pac=True)
@@ -2204,3 +2195,17 @@ class KDCBaseTest(RawKerberosTest):
 
         # Return the credentials along with the cache file.
         return (creds, cachefile)
+
+    def create_ccache_with_user(self, user_credentials, mach_credentials,
+                                service="host", target_name=None, pac=True):
+        # Obtain a service ticket authorising the user and place it into a
+        # newly created credentials cache file.
+
+        tgt = self.get_tgt(user_credentials)
+
+        ticket = self.get_service_ticket(tgt, mach_credentials,
+                                         service=service,
+                                         target_name=target_name)
+
+        return self.create_ccache_with_ticket(user_credentials, ticket,
+                                              pac=pac)
