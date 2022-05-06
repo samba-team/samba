@@ -119,6 +119,7 @@ def obtain_end_point_information(entries):
         elif ca['URL'].lower() != 'ldap:':
             edata = { 'endpoint': ca['URL'] }
             log.error('Failed to parse the endpoint', edata)
+            return {}
     end_point_information = \
         group_and_sort_end_point_information(end_point_information.values())
     return end_point_information
