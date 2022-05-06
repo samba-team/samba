@@ -26,10 +26,8 @@ from functools import partial
 
 import ldb
 
-from samba import NTSTATUSError, generate_random_password, ntstatus
-from samba.dcerpc import lsa, netlogon, samr, security
-from samba.ndr import ndr_unpack
-from samba.samdb import SamDB
+from samba import generate_random_password
+from samba.dcerpc import netlogon, security
 
 import samba.tests.krb5.kcrypto as kcrypto
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
@@ -87,35 +85,6 @@ class ProtectedUsersTests(KDCBaseTest):
                                      opts=opts,
                                      use_cache=cached)
 
-    # Test credentials by connecting to the DC through LDAP.
-    def _connect(self, creds, expect_error=False):
-        samdb = self.get_samdb()
-        try:
-            ldap = SamDB(url=f'ldap://{samdb.host_dns_name()}',
-                         credentials=creds,
-                         lp=self.get_lp())
-        except ldb.LdbError as err:
-            self.assertTrue(expect_error, 'got unexpected error')
-            num, _ = err.args
-            if num != ldb.ERR_INVALID_CREDENTIALS:
-                raise
-
-            return
-        else:
-            self.assertFalse(expect_error, 'expected to get an error')
-
-        res = ldap.search('',
-                          scope=ldb.SCOPE_BASE,
-                          attrs=['tokenGroups'])
-        self.assertEqual(1, len(res))
-
-        sid = self.get_objectSid(samdb, creds.get_dn())
-
-        token_groups = res[0].get('tokenGroups', idx=0)
-        token_sid = ndr_unpack(security.dom_sid, token_groups)
-
-        self.assertEqual(sid, str(token_sid))
-
     # Test NTLM authentication with a normal account. Authentication should
     # succeed.
     def test_ntlm_not_protected(self):
@@ -151,76 +120,6 @@ class ProtectedUsersTests(KDCBaseTest):
                                        member_of=group_dn)
 
         self._connect(client_creds, expect_error=True)
-
-    # Test the three SAMR password change methods implemented in Samba. If the
-    # user is protected, we should get an ACCOUNT_RESTRICTION error indicating
-    # that the password change is not allowed; otherwise we should get a
-    # WRONG_PASSWORD error.
-    def _test_samr_change_password(self, creds, protected):
-        samdb = self.get_samdb()
-        server_name = samdb.host_dns_name()
-        conn = samr.samr(f'ncacn_np:{server_name}[krb5,seal,smb2]')
-
-        username = creds.get_username()
-
-        server = lsa.String()
-        server.string = server_name
-
-        account = lsa.String()
-        account.string = username
-
-        nt_password = samr.CryptPassword()
-        nt_verifier = samr.Password()
-
-        with self.assertRaises(NTSTATUSError) as err:
-            conn.ChangePasswordUser2(server=server,
-                                     account=account,
-                                     nt_password=nt_password,
-                                     nt_verifier=nt_verifier,
-                                     lm_change=True,
-                                     lm_password=None,
-                                     lm_verifier=None)
-
-        num, _ = err.exception.args
-        if protected:
-            self.assertEqual(ntstatus.NT_STATUS_ACCOUNT_RESTRICTION, num)
-        else:
-            self.assertEqual(ntstatus.NT_STATUS_WRONG_PASSWORD, num)
-
-        with self.assertRaises(NTSTATUSError) as err:
-            conn.ChangePasswordUser3(server=server,
-                                     account=account,
-                                     nt_password=nt_password,
-                                     nt_verifier=nt_verifier,
-                                     lm_change=True,
-                                     lm_password=None,
-                                     lm_verifier=None,
-                                     password3=None)
-
-        num, _ = err.exception.args
-        if protected:
-            self.assertEqual(ntstatus.NT_STATUS_ACCOUNT_RESTRICTION, num)
-        else:
-            self.assertEqual(ntstatus.NT_STATUS_WRONG_PASSWORD, num)
-
-        server = lsa.AsciiString()
-        server.string = server_name
-
-        account = lsa.AsciiString()
-        account.string = username
-
-        with self.assertRaises(NTSTATUSError) as err:
-            conn.OemChangePasswordUser2(server=server,
-                                        account=account,
-                                        password=nt_password,
-                                        hash=nt_verifier)
-
-        num, _ = err.exception.args
-        if num != ntstatus.NT_STATUS_NOT_IMPLEMENTED:
-            if protected:
-                self.assertEqual(ntstatus.NT_STATUS_ACCOUNT_RESTRICTION, num)
-            else:
-                self.assertEqual(ntstatus.NT_STATUS_WRONG_PASSWORD, num)
 
     # Test SAMR password changes for unprotected and protected accounts.
     def test_samr_change_password_not_protected(self):
