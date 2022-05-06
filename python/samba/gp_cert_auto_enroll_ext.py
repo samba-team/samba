@@ -116,7 +116,7 @@ def obtain_end_point_information(entries):
             ca['name'] = name
             ca['hostname'] = m.group('server')
             ca['auth'] = m.group('auth')
-        else:
+        elif ca['URL'].lower() != 'ldap:':
             edata = { 'endpoint': ca['URL'] }
             log.error('Failed to parse the endpoint', edata)
     end_point_information = \
