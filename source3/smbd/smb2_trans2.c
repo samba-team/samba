@@ -2296,7 +2296,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 
 		case SMB_QUERY_FS_VOLUME_INFO:      
 		case SMB_FS_VOLUME_INFORMATION:
-
+			put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER,
+						    pdata, &st.st_ex_btime);
 			/* 
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
