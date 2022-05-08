@@ -23,6 +23,7 @@
 #ifndef _SAMBA_DEBUG_H
 #define _SAMBA_DEBUG_H
 
+#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdarg.h>
@@ -337,5 +338,11 @@ void debug_set_callback(void *private_ptr, debug_callback_fn fn);
 
 char *debug_get_ringbuf(void);
 size_t debug_get_ringbuf_size(void);
+
+/* Explicitly set new traceid. The old id is returned. */
+uint64_t debug_traceid_set(uint64_t id);
+
+/* Get the current traceid. */
+uint64_t debug_traceid_get(void);
 
 #endif /* _SAMBA_DEBUG_H */

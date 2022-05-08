@@ -1796,11 +1796,21 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 					 sizeof(state.header_str) - state.hs_len,
 					 ", class=%s",
 					 classname_table[cls]);
+		if (state.hs_len >= sizeof(state.header_str) - 1) {
+			goto full;
+		}
 	}
 
-	if (state.hs_len >= sizeof(state.header_str) - 1) {
-		goto full;
+	if (debug_traceid_get() != 0) {
+		state.hs_len += snprintf(state.header_str + state.hs_len,
+					 sizeof(state.header_str) - state.hs_len,
+					 ", traceid=%" PRIu64,
+					 debug_traceid_get());
+		if (state.hs_len >= sizeof(state.header_str) - 1) {
+			goto full;
+		}
 	}
+
 	state.header_str[state.hs_len] = ']';
 	state.hs_len++;
 	if (state.hs_len < sizeof(state.header_str) - 1) {
@@ -1883,4 +1893,18 @@ bool dbgtext(const char *format_str, ... )
 	va_end(ap);
 
 	return ret;
+}
+
+static uint64_t debug_traceid = 0;
+
+uint64_t debug_traceid_set(uint64_t id)
+{
+    uint64_t old_id = debug_traceid;
+    debug_traceid = id;
+    return old_id;
+}
+
+uint64_t debug_traceid_get(void)
+{
+    return debug_traceid;
 }
