@@ -179,13 +179,10 @@ static int print_share_mode(struct file_id fid,
 			d_printf("RDONLY     ");
 		}
 
-		if((e->op_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == 
-					(EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) {
-			d_printf("EXCLUSIVE+BATCH ");
+		if (e->op_type & BATCH_OPLOCK) {
+			d_printf("BATCH           ");
 		} else if (e->op_type & EXCLUSIVE_OPLOCK) {
 			d_printf("EXCLUSIVE       ");
-		} else if (e->op_type & BATCH_OPLOCK) {
-			d_printf("BATCH           ");
 		} else if (e->op_type & LEVEL_II_OPLOCK) {
 			d_printf("LEVEL_II        ");
 		} else if (e->op_type == LEASE_OPLOCK) {
