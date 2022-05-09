@@ -787,50 +787,6 @@ static void wbd_ping_dc_done(struct tevent_req *subreq)
 	return;
 }
 
-enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
-						   struct winbindd_cli_state *state)
-{
-	/* Ensure null termination */
-	state->request->domain_name
-		[sizeof(state->request->domain_name)-1]='\0';
-	state->request->data.init_conn.dcname
-		[sizeof(state->request->data.init_conn.dcname)-1]='\0';
-
-	if (strlen(state->request->data.init_conn.dcname) > 0) {
-		TALLOC_FREE(domain->dcname);
-		domain->dcname = talloc_strdup(domain,
-				state->request->data.init_conn.dcname);
-		if (domain->dcname == NULL) {
-			return WINBINDD_ERROR;
-		}
-	}
-
-	init_dc_connection(domain, false);
-
-	if (!domain->initialized) {
-		/* If we return error here we can't do any cached authentication,
-		   but we may be in disconnected mode and can't initialize correctly.
-		   Do what the previous code did and just return without initialization,
-		   once we go online we'll re-initialize.
-		*/
-		DEBUG(5, ("winbindd_dual_init_connection: %s returning without initialization "
-			"online = %d\n", domain->name, (int)domain->online ));
-	}
-
-	fstrcpy(state->response->data.domain_info.name, domain->name);
-	fstrcpy(state->response->data.domain_info.alt_name, domain->alt_name);
-	sid_to_fstring(state->response->data.domain_info.sid, &domain->sid);
-
-	state->response->data.domain_info.native_mode
-		= domain->native_mode;
-	state->response->data.domain_info.active_directory
-		= domain->active_directory;
-	state->response->data.domain_info.primary
-		= domain->primary;
-
-	return WINBINDD_OK;
-}
-
 static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 				       void *private_data,
 				       uint32_t msg_type,
