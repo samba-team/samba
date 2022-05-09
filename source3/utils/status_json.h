@@ -38,6 +38,10 @@ int traverse_sessionid_json(struct traverse_state *state,
 			    struct sessionid *session,
 			    char *uid_str,
 			    char *gid_str,
+			    const char *encryption_cipher,
+			    enum crypto_degree encryption_degree,
+			    const char *signing_cipher,
+			    enum crypto_degree signing_degree,
 			    const char *connection_dialect);
 
 #endif

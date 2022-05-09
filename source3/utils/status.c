@@ -748,6 +748,10 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 						 session,
 						 uid_str,
 						 gid_str,
+						 encryption,
+						 encryption_degree,
+						 signing,
+						 signing_degree,
 						 session_dialect_str(session->connection_dialect));
 	}
 

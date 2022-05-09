@@ -267,6 +267,10 @@ int traverse_sessionid_json(struct traverse_state *state,
 			    struct sessionid *session,
 			    char *uid_str,
 			    char *gid_str,
+			    const char *encryption_cipher,
+			    enum crypto_degree encryption_degree,
+			    const char *signing_cipher,
+			    enum crypto_degree signing_degree,
 			    const char *connection_dialect)
 {
 	struct json_object sub_json;
@@ -323,6 +327,16 @@ int traverse_sessionid_json(struct traverse_state *state,
 		goto failure;
 	}
 	result = json_add_string(&sub_json, "session_dialect", connection_dialect);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_crypto_to_json(&sub_json, "encryption",
+				    encryption_cipher, encryption_degree);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_crypto_to_json(&sub_json, "signing",
+				    signing_cipher, signing_degree);
 	if (result < 0) {
 		goto failure;
 	}
