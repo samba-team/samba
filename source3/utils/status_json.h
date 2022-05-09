@@ -28,6 +28,10 @@ int add_section_to_json(struct traverse_state *state,
 int add_general_information_to_json(struct traverse_state *state);
 
 int traverse_connections_json(struct traverse_state *state,
-			      const struct connections_data *crec);
+			      const struct connections_data *crec,
+			      const char *encryption_cipher,
+			      enum crypto_degree encryption_degree,
+			      const char *signing_cipher,
+			      enum crypto_degree signing_degree);
 
 #endif

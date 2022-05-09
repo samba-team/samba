@@ -456,7 +456,9 @@ static int traverse_connections(const struct connections_data *crec,
 	char *timestr = NULL;
 	int result = 0;
 	const char *encryption = "-";
+	enum crypto_degree encryption_degree = CRYPTO_DEGREE_NONE;
 	const char *signing = "-";
+	enum crypto_degree signing_degree = CRYPTO_DEGREE_NONE;
 	struct traverse_state *state = (struct traverse_state *)private_data;
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -497,6 +499,7 @@ static int traverse_connections(const struct connections_data *crec,
 			result = -1;
 			break;
 		}
+		encryption_degree = CRYPTO_DEGREE_FULL;
 	}
 
 	if (smbXsrv_is_signed(crec->signing_flags)) {
@@ -518,6 +521,7 @@ static int traverse_connections(const struct connections_data *crec,
 			result = -1;
 			break;
 		}
+		signing_degree = CRYPTO_DEGREE_FULL;
 	}
 
 	if (!state->json_output) {
@@ -530,7 +534,11 @@ static int traverse_connections(const struct connections_data *crec,
 						     signing);
 	} else {
 		result = traverse_connections_json(state,
-						   crec);
+						   crec,
+						   encryption,
+						   encryption_degree,
+						   signing,
+						   signing_degree);
 	}
 
 	TALLOC_FREE(timestr);

@@ -126,8 +126,53 @@ int add_section_to_json(struct traverse_state *state,
 	return result;
 }
 
+static int add_crypto_to_json(struct json_object *parent_json,
+			      const char *key,
+			      const char *cipher,
+			      enum crypto_degree degree)
+{
+	struct json_object sub_json;
+	const char *degree_str;
+	int result;
+
+	if (degree == CRYPTO_DEGREE_NONE) {
+		degree_str = "none";
+	} else if (degree == CRYPTO_DEGREE_PARTIAL) {
+		degree_str = "partial";
+	} else {
+		degree_str = "full";
+	}
+
+	sub_json = json_new_object();
+	if (json_is_invalid(&sub_json)) {
+		goto failure;
+	}
+
+	result = json_add_string(&sub_json, "cipher", cipher);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "degree", degree_str);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_object(parent_json, key, &sub_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	return 0;
+failure:
+	json_free(&sub_json);
+	return -1;
+}
+
 int traverse_connections_json(struct traverse_state *state,
-			      const struct connections_data *crec)
+			      const struct connections_data *crec,
+			      const char *encryption_cipher,
+			      enum crypto_degree encryption_degree,
+			      const char *signing_cipher,
+			      enum crypto_degree signing_degree)
 {
 	struct json_object sub_json;
 	struct json_object connections_json;
@@ -186,6 +231,16 @@ int traverse_connections_json(struct traverse_state *state,
 		goto failure;
 	}
 	result = json_add_string(&sub_json, "connected_at", time);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_crypto_to_json(&sub_json, "encryption",
+				   encryption_cipher, encryption_degree);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_crypto_to_json(&sub_json, "signing",
+				   signing_cipher, signing_degree);
 	if (result < 0) {
 		goto failure;
 	}
