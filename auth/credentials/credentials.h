@@ -344,4 +344,10 @@ NTSTATUS netlogon_creds_session_encrypt(
 	struct netlogon_creds_CredentialState *state,
 	DATA_BLOB data);
 
+int cli_credentials_get_aes256_key(struct cli_credentials *cred,
+				   TALLOC_CTX *mem_ctx,
+				   struct loadparm_context *lp_ctx,
+				   const char *salt,
+				   DATA_BLOB *aes_256);
+
 #endif /* __CREDENTIALS_H__ */
