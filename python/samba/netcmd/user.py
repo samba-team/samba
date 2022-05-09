@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import builtins
 import samba.getopt as options
 import ldb
 import pwd
@@ -1287,6 +1288,29 @@ class GetPasswordCommand(Command):
                 return binascii.a2b_hex(p.data)
             return None
 
+        def get_kerberos_ctr():
+            primary_krb5 = get_package("Primary:Kerberos-Newer-Keys")
+            if primary_krb5 is None:
+                primary_krb5 = get_package("Primary:Kerberos")
+            if primary_krb5 is None:
+                return (0, None)
+            krb5_blob = ndr_unpack(drsblobs.package_PrimaryKerberosBlob,
+                                   primary_krb5)
+            return (krb5_blob.version, krb5_blob.ctr)
+
+        aes256_key = None
+        kerberos_salt = None
+
+        (krb5_v, krb5_ctr) = get_kerberos_ctr()
+        if krb5_v in [3, 4]:
+            kerberos_salt = krb5_ctr.salt.string
+
+            if krb5_ctr.keys:
+                def is_aes256(k):
+                    return k.keytype == 18
+                aes256_key = next(builtins.filter(is_aes256, krb5_ctr.keys),
+                                  None)
+
         if decrypt:
             #
             # Samba adds 'Primary:SambaGPG' at the end.
@@ -1499,16 +1523,6 @@ class GetPasswordCommand(Command):
             # first matching scheme
             return (None, scheme_match)
 
-        def get_kerberos_ctr():
-            primary_krb5 = get_package("Primary:Kerberos-Newer-Keys")
-            if primary_krb5 is None:
-                primary_krb5 = get_package("Primary:Kerberos")
-            if primary_krb5 is None:
-                return (0, None)
-            krb5_blob = ndr_unpack(drsblobs.package_PrimaryKerberosBlob,
-                                   primary_krb5)
-            return (krb5_blob.version, krb5_blob.ctr)
-
         # Extract the rounds value from the options of a virtualCrypt attribute
         # i.e. options = "rounds=20;other=ignored;" will return 20
         # if the rounds option is not found or the value is not a number, 0 is returned
@@ -1583,10 +1597,9 @@ class GetPasswordCommand(Command):
                 if v is None:
                     continue
             elif a == "virtualKerberosSalt":
-                (krb5_v, krb5_ctr) = get_kerberos_ctr()
-                if krb5_v not in [3, 4]:
+                v = kerberos_salt
+                if v is None:
                     continue
-                v = krb5_ctr.salt.string
             elif a.startswith("virtualWDigest"):
                 primary_wdigest = get_package("Primary:WDigest")
                 if primary_wdigest is None:
