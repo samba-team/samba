@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbprofile.h"
+#include "lib/util/time_basic.h"
 #include "conn_tdb.h"
 #include "status_json.h"
 #include "../libcli/security/security.h"
@@ -130,6 +131,9 @@ int traverse_connections_json(struct traverse_state *state,
 {
 	struct json_object sub_json;
 	struct json_object connections_json;
+	struct timeval tv;
+	struct timeval_buf tv_buf;
+	char *time = NULL;
 	int result = 0;
 	char *sess_id_str = NULL;
 	char *tcon_id_str = NULL;
@@ -173,6 +177,15 @@ int traverse_connections_json(struct traverse_state *state,
 		goto failure;
 	}
 	result = json_add_string(&sub_json, "machine", crec->machine);
+	if (result < 0) {
+		goto failure;
+	}
+	nttime_to_timeval(&tv, crec->start);
+	time = timeval_str_buf(&tv, true, true, &tv_buf);
+	if (time == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "connected_at", time);
 	if (result < 0) {
 		goto failure;
 	}
