@@ -3,6 +3,7 @@
 outfile="$(dirname $0)/winbindd.stp"
 
 child_funcs="winbindd_dual_init_connection
+_wbint_InitConnection
 _wbint_Ping
 _wbint_PamAuth
 _wbint_PamAuthCrap
