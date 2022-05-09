@@ -757,7 +757,9 @@ static int add_open_to_json(struct json_object *parent_json,
 {
 	struct json_object sub_json;
 	struct json_object opens_json;
+	struct timeval_buf tv_buf;
 	int result = 0;
+	char *timestr;
 	bool add_lease = false;
 	char *key = NULL;
 	char *share_file_id = NULL;
@@ -816,6 +818,15 @@ static int add_open_to_json(struct json_object *parent_json,
 	}
 	add_lease = e->op_type & LEASE_OPLOCK;
 	result = add_lease_to_json(&sub_json, lease_type, e->lease_key, add_lease);
+	if (result < 0) {
+		goto failure;
+	}
+
+	timestr = timeval_str_buf(&e->time, true, true, &tv_buf);
+	if (timestr == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "opened_at", timestr);
 	if (result < 0) {
 		goto failure;
 	}
