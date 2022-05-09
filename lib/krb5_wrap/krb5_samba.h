@@ -361,8 +361,8 @@ int smb_krb5_salt_principal2data(krb5_context context,
 
 int smb_krb5_create_key_from_string(krb5_context context,
 				    krb5_const_principal host_princ,
-				    krb5_data *salt,
-				    krb5_data *password,
+				    const krb5_data *salt,
+				    const krb5_data *password,
 				    krb5_enctype enctype,
 				    krb5_keyblock *key);
 

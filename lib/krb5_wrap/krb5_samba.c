@@ -291,8 +291,8 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 */
 int smb_krb5_create_key_from_string(krb5_context context,
 				    krb5_const_principal host_princ,
-				    krb5_data *salt,
-				    krb5_data *password,
+				    const krb5_data *salt,
+				    const krb5_data *password,
 				    krb5_enctype enctype,
 				    krb5_keyblock *key)
 {
