@@ -937,6 +937,54 @@ static PyObject *py_creds_get_secure_channel_type(PyObject *self, PyObject *args
 	return PyLong_FromLong(channel_type);
 }
 
+static PyObject *py_creds_get_aes256_key(PyObject *self, PyObject *args)
+{
+	struct loadparm_context *lp_ctx = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	PyObject *py_lp_ctx = Py_None;
+	const char *salt = NULL;
+	DATA_BLOB aes_256;
+	int code;
+	PyObject *ret = NULL;
+	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "s|O", &salt, &py_lp_ctx))
+		return NULL;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
+	if (lp_ctx == NULL) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	code = cli_credentials_get_aes256_key(creds,
+					      mem_ctx,
+					      lp_ctx,
+					      salt,
+					      &aes_256);
+	if (code != 0) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Failed to generate AES256 key");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	ret = PyBytes_FromStringAndSize((const char *)aes_256.data,
+					aes_256.length);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
 						      PyObject *args)
 {
@@ -1416,6 +1464,14 @@ static PyMethodDef py_creds_methods[] = {
 		.ml_name  = "get_secure_channel_type",
 		.ml_meth  = py_creds_get_secure_channel_type,
 		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "get_aes256_key",
+		.ml_meth  = py_creds_get_aes256_key,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.get_aes256_key(salt[, lp]) -> bytes\n"
+			    "Generate an AES256 key using the current password and\n"
+			    "the specified salt",
 	},
 	{
 		.ml_name  = "encrypt_netr_crypt_password",
