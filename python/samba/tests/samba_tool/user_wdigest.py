@@ -18,18 +18,8 @@
 #
 
 import os
-import time
-import base64
-import ldb
 import samba
 from samba.tests.samba_tool.base import SambaToolCmdTest
-from samba import (
-        credentials,
-        nttime2unix,
-        dsdb
-        )
-from samba.ndr import ndr_unpack
-from samba.dcerpc import drsblobs
 from hashlib import md5
 import random
 import string
