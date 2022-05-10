@@ -1,2 +1,0 @@
-^samba.tests.samba_tool.user_check_password_script.samba.tests.samba_tool.user_check_password_script.UserCheckPwdTestCase.test_checkpassword_unacceptable.chgdcpass:local
-^samba.tests.samba_tool.user_check_password_script.samba.tests.samba_tool.user_check_password_script.UserCheckPwdTestCase.test_checkpassword_username.chgdcpass:local
