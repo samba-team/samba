@@ -61,14 +61,22 @@ class UserCmdWdigestTestCase(SambaToolCmdTest):
             attrs=["nETBIOSName"])
         self.netbios_domain = str(res[0]["nETBIOSName"][0])
         self.password = self.random_password()
-        self.runsubcmd("user",
-                       "create",
-                       USER_NAME,
-                       self.password)
+        result, out, err = self.runsubcmd("user",
+                                          "create",
+                                          USER_NAME,
+                                          self.password)
+        self.assertCmdSuccess(result,
+                              out,
+                              err,
+                              "Ensure user is created")
 
     def tearDown(self):
         super(UserCmdWdigestTestCase, self).tearDown()
-        self.runsubcmd("user", "delete", USER_NAME)
+        result, out, err = self.runsubcmd("user", "delete", USER_NAME)
+        self.assertCmdSuccess(result,
+                              out,
+                              err,
+                              "Ensure user is deleted")
 
     def _testWDigest(self, attribute, expected, missing=False):
 
