@@ -455,7 +455,16 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 	}
 
 	if (ev_ctx != NULL) {
+		/*
+		 * The parent can have different private data for the callbacks,
+		 * which are gone in the child. Reset the callbacks to be safe.
+		 */
 		tevent_set_trace_callback(ev_ctx, NULL, NULL);
+		tevent_set_trace_fd_callback(ev_ctx, NULL, NULL);
+		tevent_set_trace_signal_callback(ev_ctx, NULL, NULL);
+		tevent_set_trace_timer_callback(ev_ctx, NULL, NULL);
+		tevent_set_trace_immediate_callback(ev_ctx, NULL, NULL);
+		tevent_set_trace_queue_callback(ev_ctx, NULL, NULL);
 		if (tevent_re_initialise(ev_ctx) != 0) {
 			smb_panic(__location__ ": Failed to re-initialise event context");
 		}
