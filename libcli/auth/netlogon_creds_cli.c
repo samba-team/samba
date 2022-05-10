@@ -630,7 +630,7 @@ bool netlogon_creds_cli_validate(struct netlogon_creds_cli_context *context,
 	DATA_BLOB blob2;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
-	int cmp;
+	bool equal;
 
 	status = netlogon_creds_cli_get(context, frame, &creds2);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -652,11 +652,11 @@ bool netlogon_creds_cli_validate(struct netlogon_creds_cli_context *context,
 		return false;
 	}
 
-	cmp = data_blob_cmp_const_time(&blob1, &blob2);
+	equal = data_blob_equal_const_time(&blob1, &blob2);
 
 	TALLOC_FREE(frame);
 
-	return (cmp == 0);
+	return equal;
 }
 
 static NTSTATUS netlogon_creds_cli_store_internal(

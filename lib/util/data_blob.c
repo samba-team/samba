@@ -134,23 +134,23 @@ _PUBLIC_ int data_blob_cmp(const DATA_BLOB *d1, const DATA_BLOB *d2)
 check if two data blobs are equal, where the time taken should not depend on the
 contents of either blob.
 **/
-_PUBLIC_ int data_blob_cmp_const_time(const DATA_BLOB *d1, const DATA_BLOB *d2)
+_PUBLIC_ bool data_blob_equal_const_time(const DATA_BLOB *d1, const DATA_BLOB *d2)
 {
 	int ret;
 	if (d1->data == NULL && d2->data != NULL) {
-		return -1;
+		return false;
 	}
 	if (d1->data != NULL && d2->data == NULL) {
-		return 1;
+		return false;
+	}
+	if (d1->length != d2->length) {
+		return false;
 	}
 	if (d1->data == d2->data) {
-		return d1->length - d2->length;
+		return true;
 	}
-	ret = memcmp_const_time(d1->data, d2->data, MIN(d1->length, d2->length));
-	if (ret == 0) {
-		return d1->length - d2->length;
-	}
-	return ret;
+	ret = memcmp_const_time(d1->data, d2->data, d1->length);
+	return ret == 0;
 }
 
 /**

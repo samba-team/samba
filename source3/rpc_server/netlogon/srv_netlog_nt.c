@@ -1577,7 +1577,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	confounder_len = 512 - new_password.length;
 	enc_blob = data_blob_const(r->in.new_password->data, confounder_len);
 	dec_blob = data_blob_const(password_buf.data, confounder_len);
-	if (confounder_len > 0 && data_blob_cmp_const_time(&dec_blob, &enc_blob) == 0) {
+	if (confounder_len > 0 && data_blob_equal_const_time(&dec_blob, &enc_blob)) {
 		DBG_WARNING("Confounder buffer not encrypted Length[%zu]\n",
 			    confounder_len);
 		TALLOC_FREE(creds);
@@ -1592,7 +1592,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 				   new_password.length);
 	dec_blob = data_blob_const(password_buf.data + confounder_len,
 				   new_password.length);
-	if (data_blob_cmp_const_time(&dec_blob, &enc_blob) == 0) {
+	if (data_blob_equal_const_time(&dec_blob, &enc_blob)) {
 		DBG_WARNING("Password buffer not encrypted Length[%zu]\n",
 			    new_password.length);
 		TALLOC_FREE(creds);

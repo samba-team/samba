@@ -90,7 +90,7 @@ _PUBLIC_ int data_blob_cmp(const DATA_BLOB *d1, const DATA_BLOB *d2);
 check if two data blobs are equal, where the time taken should not depend on the
 contents of either blob.
 **/
-_PUBLIC_ int data_blob_cmp_const_time(const DATA_BLOB *d1, const DATA_BLOB *d2);
+_PUBLIC_ bool data_blob_equal_const_time(const DATA_BLOB *d1, const DATA_BLOB *d2);
 
 /**
 print the data_blob as hex string
