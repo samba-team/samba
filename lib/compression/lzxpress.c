@@ -78,9 +78,6 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 	indic_bit = 0;
 	nibble_index = 0;
 
-	if (uncompressed_pos > XPRESS_BLOCK_SIZE)
-		return 0;
-
 	while ((uncompressed_pos < uncompressed_size) &&
 	       (compressed_pos < max_compressed_size)) {
 		bool found = false;
