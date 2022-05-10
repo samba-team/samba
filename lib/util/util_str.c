@@ -305,18 +305,6 @@ _PUBLIC_ bool set_boolean(const char *boolean_string, bool *boolean)
 	return false;
 }
 
-_PUBLIC_ int memcmp_const_time(const void *s1, const void *s2, size_t n)
-{
-	const uint8_t *p1 = s1, *p2 = s2;
-	size_t i, sum = 0;
-
-	for (i = 0; i < n; i++) {
-		sum |= (p1[i] ^ p2[i]);
-	}
-
-	return sum != 0;
-}
-
 _PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...)
 {
 	va_list ap;
