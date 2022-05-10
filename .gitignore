@@ -87,3 +87,4 @@ python/samba/provision/kerberos_implementation.py
 compile_commands.json
 .clangd/
 .cache/
+.ropeproject/
