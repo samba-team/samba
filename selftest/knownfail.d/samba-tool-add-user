@@ -1,3 +1,2 @@
-^samba.tests.samba_tool.user.samba.tests.samba_tool.user.UserCmdTestCase.test_newuser_weak_password.ad_dc_ntvfs:local
-^samba.tests.samba_tool.user.samba.tests.samba_tool.user.UserCmdTestCase.test_newuser_weak_password.ad_dc:local
-^samba.tests.samba_tool.user.samba.tests.samba_tool.user.UserCmdTestCase.test_newuser_weak_password.ad_dc_no_ntlm:local
+^samba.tests.samba_tool.user_check_password_script.samba.tests.samba_tool.user_check_password_script.UserCheckPwdTestCase.test_checkpassword_unacceptable.chgdcpass:local
+^samba.tests.samba_tool.user_check_password_script.samba.tests.samba_tool.user_check_password_script.UserCheckPwdTestCase.test_checkpassword_username.chgdcpass:local

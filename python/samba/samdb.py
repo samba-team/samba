@@ -55,6 +55,26 @@ class SamDB(samba.Ldb):
     hash_oid_name = {}
     hash_well_known = {}
 
+    class _CleanUpOnError:
+        def __init__(self, samdb, dn):
+            self.samdb = samdb
+            self.dn = dn
+
+        def __enter__(self):
+            pass
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            if exc_type is not None:
+                # We failed to modify the account. If we connected to the
+                # database over LDAP, we don't have transactions, and so when
+                # we call transaction_cancel(), the account will still exist in
+                # a half-created state. We'll delete the account to ensure that
+                # doesn't happen.
+                self.samdb.delete(self.dn)
+
+            # Don't suppress any exceptions
+            return False
+
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
                  credentials=None, flags=ldb.FLG_DONT_CREATE_DB,
                  options=None, global_schema=True,
@@ -638,15 +658,17 @@ member: %s
         self.transaction_start()
         try:
             self.add(ldbmessage)
-            if ldbmessage2:
-                self.modify(ldbmessage2)
 
-            # Sets the password for it
-            if setpassword:
-                self.setpassword(("(distinguishedName=%s)" %
-                                  ldb.binary_encode(user_dn)),
-                                 password,
-                                 force_password_change_at_next_login_req)
+            with self._CleanUpOnError(self, user_dn):
+                if ldbmessage2:
+                    self.modify(ldbmessage2)
+
+                # Sets the password for it
+                if setpassword:
+                    self.setpassword(("(distinguishedName=%s)" %
+                                      ldb.binary_encode(user_dn)),
+                                     password,
+                                     force_password_change_at_next_login_req)
         except:
             self.transaction_cancel()
             raise
@@ -807,9 +829,10 @@ member: %s
 
             if prepare_oldjoin:
                 password = cn.lower()
-                self.setpassword(("(distinguishedName=%s)" %
-                                  ldb.binary_encode(computer_dn)),
-                                 password, False)
+                with self._CleanUpOnError(self, computer_dn):
+                    self.setpassword(("(distinguishedName=%s)" %
+                                      ldb.binary_encode(computer_dn)),
+                                     password, False)
         except:
             self.transaction_cancel()
             raise
