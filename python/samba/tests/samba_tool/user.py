@@ -23,7 +23,8 @@ from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba import (
         credentials,
         nttime2unix,
-        dsdb
+        dsdb,
+        werror,
         )
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
@@ -126,6 +127,44 @@ class UserCmdTestCase(SambaToolCmdTest):
 
             self.assertEqual("%s" % found.get("cn"), "%(name)s" % user)
             self.assertEqual("%s" % found.get("name"), "%(name)s" % user)
+
+    def test_newuser_weak_password(self):
+        # Ensure that when we try to create a user over LDAP (thus no
+        # transactions) and the password is too weak, we do not get a
+        # half-created account.
+
+        def cleanup_user(username):
+            try:
+                self.samdb.deleteuser(username)
+            except Exception as err:
+                estr = err.args[0]
+                if 'Unable to find user' not in estr:
+                    raise
+
+        server = os.environ['DC_SERVER']
+        dc_username = os.environ['DC_USERNAME']
+        dc_password = os.environ['DC_PASSWORD']
+
+        username = self.randomName()
+        password = 'a'
+
+        self.addCleanup(cleanup_user, username)
+
+        # Try to add the user and ensure it fails.
+        result, out, err = self.runsubcmd('user', 'add',
+                                          username, password,
+                                          '-H', f'ldap://{server}',
+                                          f'-U{dc_username}%{dc_password}')
+        self.assertCmdFail(result)
+        self.assertIn('Failed to add user', err)
+        self.assertIn('LDAP_CONSTRAINT_VIOLATION', err)
+        self.assertIn(f'{werror.WERR_PASSWORD_RESTRICTION:08X}', err)
+
+        # Now search for the user, and make sure we don't find anything.
+        res = self.samdb.search(self.samdb.domain_dn(),
+                                expression=f'(sAMAccountName={username})',
+                                scope=ldb.SCOPE_SUBTREE)
+        self.assertEqual(0, len(res), 'expected not to find the user')
 
     def _verify_supplementalCredentials(self, ldif,
                                         min_packages=3,
