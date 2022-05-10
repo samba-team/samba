@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
@@ -651,7 +651,7 @@ uid_t nametouid(const char *name)
 }
 
 /*******************************************************************
- Convert a name to a gid_t if possible. Return -1 if not a group. 
+ Convert a name to a gid_t if possible. Return -1 if not a group.
 ********************************************************************/
 
 gid_t nametogid(const char *name)
@@ -726,7 +726,7 @@ const char *readdirname(DIR *p)
 }
 
 /*******************************************************************
- Utility function used to decide if the last component 
+ Utility function used to decide if the last component
  of a path matches a (possibly wildcarded) entry in a namelist.
 ********************************************************************/
 
@@ -768,10 +768,10 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
 }
 
 /*******************************************************************
- Strip a '/' separated list into an array of 
- name_compare_enties structures suitable for 
+ Strip a '/' separated list into an array of
+ name_compare_enties structures suitable for
  passing to is_in_path(). We do this for
- speed so we can pre-parse all the names in the list 
+ speed so we can pre-parse all the names in the list
  and don't do it for each call to is_in_path().
  We also check if the entry contains a wildcard to
  remove a potentially expensive call to mask_match
@@ -789,7 +789,7 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 
 	(*ppname_array) = NULL;
 
-	if((namelist_in == NULL ) || ((namelist_in != NULL) && (*namelist_in == '\0'))) 
+	if((namelist_in == NULL ) || ((namelist_in != NULL) && (*namelist_in == '\0')))
 		return;
 
 	namelist = talloc_strdup(talloc_tos(), namelist_in);
@@ -1262,7 +1262,7 @@ int str_checksum(const char *s)
 
 /*****************************************************************
  Zero a memory area then free it. Used to catch bugs faster.
-*****************************************************************/  
+*****************************************************************/
 
 void zero_free(void *p, size_t size)
 {
@@ -1272,7 +1272,7 @@ void zero_free(void *p, size_t size)
 
 /*****************************************************************
  Set our open file limit to a requested max and return the limit.
-*****************************************************************/  
+*****************************************************************/
 
 int set_maxfiles(int requested_max)
 {
@@ -1287,9 +1287,9 @@ int set_maxfiles(int requested_max)
 		return requested_max;
 	}
 
-	/* 
+	/*
 	 * Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
-	 * account for the extra fd we need 
+	 * account for the extra fd we need
 	 * as well as the log files and standard
 	 * handles etc. Save the limit we want to set in case
 	 * we are running on an OS that doesn't support this limit (AIX)
@@ -1309,7 +1309,7 @@ int set_maxfiles(int requested_max)
 			support our default request of 10,000 open files. JRA. */
 
 		if(setrlimit(RLIMIT_NOFILE, &rlp)) {
-			DEBUG(3,("set_maxfiles: setrlimit for RLIMIT_NOFILE for %d max files failed with error %s\n", 
+			DEBUG(3,("set_maxfiles: setrlimit for RLIMIT_NOFILE for %d max files failed with error %s\n",
 				(int)rlp.rlim_max, strerror(errno) ));
 
 			/* Set failed - restore original value from get. */
@@ -1323,7 +1323,7 @@ int set_maxfiles(int requested_max)
 	saved_current_limit = rlp.rlim_cur = MIN(requested_max,rlp.rlim_max);
 
 	if(setrlimit(RLIMIT_NOFILE, &rlp)) {
-		DEBUG(0,("set_maxfiles: setrlimit for RLIMIT_NOFILE for %d files failed with error %s\n", 
+		DEBUG(0,("set_maxfiles: setrlimit for RLIMIT_NOFILE for %d files failed with error %s\n",
 			(int)rlp.rlim_cur, strerror(errno) ));
 		/* just guess... */
 		return saved_current_limit;
@@ -1355,7 +1355,7 @@ int set_maxfiles(int requested_max)
 
 /*****************************************************************
  malloc that aborts with smb_panic on fail or zero size.
- *****************************************************************/  
+ *****************************************************************/
 
 void *smb_xmalloc_array(size_t size, unsigned int count)
 {
@@ -1682,7 +1682,7 @@ int get_safe_SVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, i
 int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval)
 {
 	/*
-	 * Note we use off+3 here, not off+4 as IVAL accesses 
+	 * Note we use off+3 here, not off+4 as IVAL accesses
 	 * ptr[0] ptr[1] ptr[2] ptr[3] NOT ptr[4].
  	 */
 	if (!is_offset_safe(buf_base, buf_len, ptr, off+3)) {
