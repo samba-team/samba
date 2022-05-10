@@ -64,12 +64,7 @@ class UserCmdWdigestTestCase(SambaToolCmdTest):
         self.runsubcmd("user",
                        "create",
                        USER_NAME,
-                       self.password,
-                       "-H",
-                       "ldap://%s" % os.environ["DC_SERVER"],
-                       "-U%s%%%s" % (
-                            os.environ["DC_USERNAME"],
-                            os.environ["DC_PASSWORD"]))
+                       self.password)
 
     def tearDown(self):
         super(UserCmdWdigestTestCase, self).tearDown()
