@@ -23,6 +23,7 @@
 #include "torture/local/proto.h"
 #include "talloc.h"
 #include "lzxpress.h"
+#include "lib/util/base64.h"
 
 /* Tests based on [MS-XCA] 3.1 Examples */
 static bool test_msft_data1(
@@ -339,6 +340,64 @@ static bool test_lzxpress4(struct torture_context *test)
 	return true;
 }
 
+static bool test_lzxpress_round_trip(struct torture_context *test)
+{
+	/*
+	 * Examples found using via fuzzing.
+	 */
+	TALLOC_CTX *tmp_ctx = talloc_new(test);
+	size_t i;
+	struct b64_pair {
+		const char *uncompressed;
+		const char *compressed;
+	} pairs[] = {
+		{   /* this results in a trailing flags block */
+			"AAICAmq/EKdP785YU2Ddh7d4vUtdlQyLeHV09LHpUBw=",
+			"AAAAAAACAgJqvxCnT+/OWFNg3Ye3eL1LXZUMi3h1dPSx6VAc/////w==",
+		},
+		{    /* empty string compresses to empty string */
+			"",  ""
+		},
+	};
+	const size_t alloc_size = 1000;
+	uint8_t *data = talloc_array(tmp_ctx, uint8_t, alloc_size);
+
+	for (i = 0; i < ARRAY_SIZE(pairs); i++) {
+		ssize_t len;
+		DATA_BLOB uncomp = base64_decode_data_blob_talloc(
+			tmp_ctx,
+			pairs[i].uncompressed);
+		DATA_BLOB comp = base64_decode_data_blob_talloc(
+			tmp_ctx,
+			pairs[i].compressed);
+
+		len = lzxpress_compress(uncomp.data,
+					uncomp.length,
+					data,
+					alloc_size);
+
+		torture_assert_int_equal(test, len, comp.length,
+					 "lzexpress compression size");
+
+		torture_assert_mem_equal(test, comp.data, data, len,
+					 "lzxpress compression data");
+
+		len = lzxpress_decompress(comp.data,
+					  comp.length,
+					  data,
+					  alloc_size);
+
+		torture_assert_int_equal(test, len, uncomp.length,
+					 "lzexpress decompression size");
+
+		torture_assert_mem_equal(test, uncomp.data, data, len,
+					 "lzxpress decompression data");
+	}
+	talloc_free(tmp_ctx);
+	return true;
+}
+
+
 struct torture_suite *torture_local_compression(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "compression");
@@ -349,6 +408,7 @@ struct torture_suite *torture_local_compression(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "lzxpress4", test_lzxpress2);
 	torture_suite_add_simple_test(suite, "lzxpress5", test_lzxpress3);
 	torture_suite_add_simple_test(suite, "lzxpress6", test_lzxpress4);
-
+	torture_suite_add_simple_test(suite, "lzxpress_round_trip",
+				      test_lzxpress_round_trip);
 	return suite;
 }
