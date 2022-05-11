@@ -236,6 +236,13 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 			CHECK_INPUT_BYTES(sizeof(uint32_t));
 			indicator = PULL_LE_U32(input, input_index);
 			input_index += sizeof(uint32_t);
+			if (input_index == input_size) {
+				/*
+				 * The compressor left room for indicator
+				 * flags for data that doesn't exist.
+				 */
+				break;
+			}
 			indicator_bit = 32;
 		}
 		indicator_bit--;
