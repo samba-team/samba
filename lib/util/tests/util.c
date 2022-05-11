@@ -426,6 +426,25 @@ done:
 	return ret;
 }
 
+static bool test_mem_equal_const_time(struct torture_context *tctx)
+{
+	const char *test_string = "abcdabcd";
+
+	torture_assert(tctx, mem_equal_const_time("", "", 0),
+		       "zero-length comparison failed");
+
+	torture_assert(tctx, mem_equal_const_time(test_string, test_string, 8),
+		       "comparison with equal pointers failed");
+
+	torture_assert(tctx, mem_equal_const_time(test_string, test_string + 4, 4),
+		       "comparison with non-equal pointers failed");
+
+	torture_assert(tctx, !mem_equal_const_time("abcd", "efgh", 4),
+		       "comparison with different values failed");
+
+	return true;
+}
+
 static bool test_smb_strtoul_errno_check(struct torture_context *tctx)
 {
 	const char *number = "123";
@@ -608,6 +627,9 @@ struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "directory_create_or_exist",
 				      test_directory_create_or_exist);
+	torture_suite_add_simple_test(suite,
+				      "mem_equal_const_time",
+				      test_mem_equal_const_time);
 	torture_suite_add_simple_test(suite,
 				      "smb_strtoul(l) errno",
 				      test_smb_strtoul_errno_check);
