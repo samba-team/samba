@@ -192,7 +192,7 @@ NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 			DEBUG(0,("Failed to parse netlogon packet of length %d: %s\n",
 				 (int)data->length, nt_errstr(status)));
 			if (DEBUGLVL(10)) {
-				file_save("netlogon.dat", data->data, data->length);
+				(void)file_save("netlogon.dat", data->data, data->length);
 			}
 			return status;
 		}
@@ -243,7 +243,7 @@ NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 			DEBUG(0,("Failed to parse netlogon packet of length %d: %s\n",
 				 (int)data->length, nt_errstr(status)));
 			if (DEBUGLVL(10)) {
-				file_save("netlogon.dat", data->data, data->length);
+				(void)file_save("netlogon.dat", data->data, data->length);
 			}
 			return status;
 		}
