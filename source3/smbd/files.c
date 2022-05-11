@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Files[] structure handling
    Copyright (C) Andrew Tridgell 1998
