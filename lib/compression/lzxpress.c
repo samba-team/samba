@@ -218,6 +218,10 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 	uint32_t indicator, indicator_bit;
 	uint32_t nibble_index;
 
+	if (input_size == 0) {
+		return 0;
+	}
+
 	output_index = 0;
 	input_index = 0;
 	indicator = 0;
