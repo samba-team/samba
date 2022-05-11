@@ -235,7 +235,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	/* check NT verifier */
 	mdfour(new_nt_hash, new_password.data, new_password.length);
 
-	E_old_pw_hash(new_nt_hash, nt_pwd->hash, nt_verifier.hash);
+	rc = E_old_pw_hash(new_nt_hash, nt_pwd->hash, nt_verifier.hash);
 	if (rc != 0) {
 		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
 		goto failed;
