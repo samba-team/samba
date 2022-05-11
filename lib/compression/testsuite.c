@@ -403,11 +403,11 @@ struct torture_suite *torture_local_compression(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "compression");
 
 	torture_suite_add_simple_test(suite, "lzxpress", test_lzxpress);
-	torture_suite_add_simple_test(suite, "lzxpress2", test_msft_data1);
-	torture_suite_add_simple_test(suite, "lzxpress3", test_msft_data2);
-	torture_suite_add_simple_test(suite, "lzxpress4", test_lzxpress2);
-	torture_suite_add_simple_test(suite, "lzxpress5", test_lzxpress3);
-	torture_suite_add_simple_test(suite, "lzxpress6", test_lzxpress4);
+	torture_suite_add_simple_test(suite, "lzxpress_msft_data1", test_msft_data1);
+	torture_suite_add_simple_test(suite, "lzxpress_msft_data2", test_msft_data2);
+	torture_suite_add_simple_test(suite, "lzxpress2", test_lzxpress2);
+	torture_suite_add_simple_test(suite, "lzxpress3", test_lzxpress3);
+	torture_suite_add_simple_test(suite, "lzxpress4", test_lzxpress4);
 	torture_suite_add_simple_test(suite, "lzxpress_round_trip",
 				      test_lzxpress_round_trip);
 	return suite;
