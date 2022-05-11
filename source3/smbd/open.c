@@ -4505,7 +4505,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	/*
 	 * Deal with other opens having a modified write time.
 	 */
-	if (!is_omit_timespec(&lck_state.write_time)) {
+	if (fsp_getinfo_ask_sharemode(fsp) &&
+	    !is_omit_timespec(&lck_state.write_time))
+	{
 		update_stat_ex_mtime(&fsp->fsp_name->st, lck_state.write_time);
 	}
 
