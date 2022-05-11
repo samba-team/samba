@@ -1136,7 +1136,7 @@ static PyObject *py_creds_set_smb_encryption(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	cli_credentials_set_smb_encryption(creds, encryption_state, obt);
+	(void)cli_credentials_set_smb_encryption(creds, encryption_state, obt);
 	Py_RETURN_NONE;
 }
 
