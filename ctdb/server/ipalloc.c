@@ -96,6 +96,7 @@ create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 	struct public_ip_list *ip_list;
 	struct ctdb_public_ip_list *public_ips;
 	struct trbt_tree *ip_tree;
+	int ret;
 
 	ip_tree = trbt_create(ipalloc_state, 0);
 
@@ -138,7 +139,11 @@ create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 	}
 
 	ip_list = NULL;
-	trbt_traversearray32(ip_tree, IP_KEYLEN, getips_count_callback, &ip_list);
+	ret = trbt_traversearray32(ip_tree, IP_KEYLEN, getips_count_callback, &ip_list);
+	if (ret != 0) {
+		DBG_ERR("Error traversing the IP tree.\n");
+	}
+
 	talloc_free(ip_tree);
 
 	return ip_list;
