@@ -1,4 +1,4 @@
-/* 
+/*
    a talloc based red-black tree
 
    Copyright (C) Ronnie Sahlberg  2007
@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
@@ -32,7 +32,7 @@
 	  }} while (0)
 
 
-static void 
+static void
 tree_destructor_traverse_node(TALLOC_CTX *mem_ctx, trbt_node_t *node)
 {
 	talloc_set_destructor(node, NULL);
@@ -89,7 +89,7 @@ trbt_create(TALLOC_CTX *memctx, uint32_t flags)
 
 	/* If the tree is freed, we must walk over all entries and steal the
 	   node from the stored data pointer and release the node.
-	   Note, when we free the tree  we only free the tree and not any of 
+	   Note, when we free the tree  we only free the tree and not any of
 	   the data stored in the tree.
 	*/
 	talloc_set_destructor(tree, tree_destructor);
@@ -373,7 +373,7 @@ trbt_delete_case5(trbt_node_t *node)
 		trbt_rotate_right(sibling);
 		trbt_delete_case6(node);
 		return;
-	} 
+	}
 	if ( (node == parent->right)
 	   &&(trbt_get_color(sibling)        == TRBT_BLACK)
 	   &&(trbt_get_color_right(sibling)  == TRBT_RED)
@@ -423,7 +423,7 @@ trbt_delete_case3(trbt_node_t *node)
 		trbt_delete_case4(node);
 	}
 }
-	
+
 static inline void
 trbt_delete_case2(trbt_node_t *node)
 {
@@ -440,7 +440,7 @@ trbt_delete_case2(trbt_node_t *node)
 		}
 	}
 	trbt_delete_case3(node);
-}	
+}
 
 static void
 trbt_delete_case1(trbt_node_t *node)
@@ -459,7 +459,7 @@ delete_node(trbt_node_t *node, bool from_destructor)
 	trbt_node_t *temp = NULL;
 
 	/* This node has two child nodes, then just copy the content
-	   from the next smaller node with this node and delete the 
+	   from the next smaller node with this node and delete the
 	   predecessor instead.
 	   The predecessor is guaranteed to have at most one child
 	   node since its right arm must be NULL
@@ -482,11 +482,11 @@ delete_node(trbt_node_t *node, bool from_destructor)
 		node->data  = temp->data;
 		/* now we let node hang off the new data */
 		talloc_steal(node->data, node);
-	
+
 		temp->data  = NULL;
 		temp->key32 = -1;
 		/* then delete the temp node.
-		   this node is guaranteed to have at least one leaf 
+		   this node is guaranteed to have at least one leaf
 		   child */
 		delete_node(temp, from_destructor);
 		goto finished;
@@ -538,11 +538,11 @@ delete_node(trbt_node_t *node, bool from_destructor)
 		}
 	}
 
-	/* If we had to create a temporary dummy node to represent a black 
+	/* If we had to create a temporary dummy node to represent a black
 	   leaf child we now has to delete it.
 	   This is simple since this dummy node originally had no children
-	   and we are guaranteed that it will also not have any children 
-	   after the node has been deleted and any possible rotations 
+	   and we are guaranteed that it will also not have any children
+	   after the node has been deleted and any possible rotations
 	   have occurred.
 
 	   The only special case is if this was the last node of the tree
@@ -642,8 +642,8 @@ trbt_create_node(trbt_tree_t *tree, trbt_node_t *parent, uint32_t key, void *dat
 	return node;
 }
 
-/* insert a new node in the tree. 
-   if there is already a node with a matching key in the tree 
+/* insert a new node in the tree.
+   if there is already a node with a matching key in the tree
    we replace it with the new data and return a pointer to the old data
    in case the caller wants to take any special action
  */
@@ -666,7 +666,7 @@ trbt_insert32(trbt_tree_t *tree, uint32_t key, void *data)
 	 * insert this new leaf.
 	 */
 	while(1){
-		/* this node already exists, replace data and return the 
+		/* this node already exists, replace data and return the
 		   old data
 		 */
 		if(key==node->key32){
@@ -743,7 +743,7 @@ trbt_lookup32(trbt_tree_t *tree, uint32_t key)
 /* This deletes a node from the tree.
    Note that this does not release the data that the node points to
 */
-void 
+void
 trbt_delete32(trbt_tree_t *tree, uint32_t key)
 {
 	trbt_node_t *node;
@@ -767,7 +767,7 @@ trbt_delete32(trbt_tree_t *tree, uint32_t key)
 }
 
 
-void 
+void
 trbt_insert32_callback(trbt_tree_t *tree, uint32_t key, void *(*callback)(void *param, void *data), void *param)
 {
 	trbt_node_t *node;
@@ -776,7 +776,7 @@ trbt_insert32_callback(trbt_tree_t *tree, uint32_t key, void *(*callback)(void *
 
 	/* is this the first node ?*/
 	if(!node){
-		node = trbt_create_node(tree, NULL, key, 
+		node = trbt_create_node(tree, NULL, key,
 				callback(param, NULL));
 
 		tree->root=node;
@@ -787,11 +787,11 @@ trbt_insert32_callback(trbt_tree_t *tree, uint32_t key, void *(*callback)(void *
 	 * insert this new leaf.
 	 */
 	while(1){
-		/* this node already exists, replace it 
+		/* this node already exists, replace it
 		 */
 		if(key==node->key32){
 			node->data  = callback(param, node->data);
-			talloc_steal(node->data, node); 
+			talloc_steal(node->data, node);
 
 			return;
 		}
@@ -846,7 +846,7 @@ static void *array_insert_callback(void *p, void *data)
 	trbt_tree_t *tree = NULL;
 
 
-	/* if keylen has reached 0 we are done and can call the users 
+	/* if keylen has reached 0 we are done and can call the users
 	   callback function with the users parameters
 	*/
 	if (param->keylen == 0) {
@@ -868,7 +868,7 @@ static void *array_insert_callback(void *p, void *data)
 		/* we already have a subtree for this path */
 		tree = (trbt_tree_t *)data;
 	}
-		
+
 	trbt_insertarray32_callback(tree, param->keylen, param->key, param->callback, param->param);
 
 	/* now return either the old tree we got in *data or the new tree
@@ -881,7 +881,7 @@ static void *array_insert_callback(void *p, void *data)
 
 
 /* insert into the tree using an array of uint32 as a key */
-void 
+void
 trbt_insertarray32_callback(trbt_tree_t *tree, uint32_t keylen, uint32_t *key, void *(*cb)(void *param, void *data), void *pm)
 {
 	struct trbt_array_param tap;
@@ -903,7 +903,7 @@ void *
 trbt_lookuparray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key)
 {
 	/* if keylen is 1 we can do a regular lookup and return this to the
-	   user 
+	   user
 	*/
 	if (keylen == 1) {
 		return trbt_lookup32(tree, key[0]);
@@ -923,8 +923,8 @@ trbt_lookuparray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key)
 
 /* traverse a tree starting at node */
 static int
-trbt_traversearray32_node(trbt_node_t *node, uint32_t keylen, 
-	int (*callback)(void *param, void *data), 
+trbt_traversearray32_node(trbt_node_t *node, uint32_t keylen,
+	int (*callback)(void *param, void *data),
 	void *param)
 {
 	trbt_node_t *left = node->left;
@@ -969,12 +969,12 @@ trbt_traversearray32_node(trbt_node_t *node, uint32_t keylen,
 
 	return 0;
 }
-	
+
 
 /* traverse the tree using an array of uint32 as a key */
-int 
-trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen, 
-	int (*callback)(void *param, void *data), 
+int
+trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen,
+	int (*callback)(void *param, void *data),
 	void *param)
 {
 	trbt_node_t *node;
@@ -1003,7 +1003,7 @@ trbt_findfirstarray32(trbt_tree_t *tree, uint32_t keylen)
 	if (keylen < 1) {
 		return NULL;
 	}
-	
+
 	if (tree == NULL) {
 		return NULL;
 	}
@@ -1056,7 +1056,7 @@ void print_tree(trbt_tree_t *tree)
 	printf("===\n");
 }
 
-void 
+void
 test_tree(void)
 {
 	trbt_tree_t *tree;
