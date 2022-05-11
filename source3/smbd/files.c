@@ -2158,3 +2158,35 @@ struct files_struct *metadata_fsp(struct files_struct *fsp)
 	}
 	return fsp;
 }
+
+static bool fsp_generic_ask_sharemode(struct files_struct *fsp)
+{
+	if (fsp == NULL) {
+		return false;
+	}
+
+	if (fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) {
+		/* Always use filesystem for UNIX mtime query. */
+		return false;
+	}
+
+	return true;
+}
+
+bool fsp_search_ask_sharemode(struct files_struct *fsp)
+{
+	if (!fsp_generic_ask_sharemode(fsp)) {
+		return false;
+	}
+
+	return lp_smbd_search_ask_sharemode(SNUM(fsp->conn));
+}
+
+bool fsp_getinfo_ask_sharemode(struct files_struct *fsp)
+{
+	if (!fsp_generic_ask_sharemode(fsp)) {
+		return false;
+	}
+
+	return lp_smbd_getinfo_ask_sharemode(SNUM(fsp->conn));
+}
