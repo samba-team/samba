@@ -308,20 +308,23 @@ static struct cli_credentials *SMBC_auth_credentials(TALLOC_CTX *mem_ctx,
 		/* Use the config option */
 		break;
 	case SMBC_ENCRYPTLEVEL_NONE:
-		cli_credentials_set_smb_encryption(creds,
-						   SMB_ENCRYPTION_OFF,
-						   CRED_SPECIFIED);
+		(void)cli_credentials_set_smb_encryption(
+				creds,
+				SMB_ENCRYPTION_OFF,
+				CRED_SPECIFIED);
 		break;
 	case SMBC_ENCRYPTLEVEL_REQUEST:
-		cli_credentials_set_smb_encryption(creds,
-						   SMB_ENCRYPTION_DESIRED,
-						   CRED_SPECIFIED);
+		(void)cli_credentials_set_smb_encryption(
+				creds,
+				SMB_ENCRYPTION_DESIRED,
+				CRED_SPECIFIED);
 		break;
 	case SMBC_ENCRYPTLEVEL_REQUIRE:
 	default:
-		cli_credentials_set_smb_encryption(creds,
-						   SMB_ENCRYPTION_REQUIRED,
-						   CRED_SPECIFIED);
+		(void)cli_credentials_set_smb_encryption(
+				creds,
+				SMB_ENCRYPTION_REQUIRED,
+				CRED_SPECIFIED);
 		break;
 	}
 
