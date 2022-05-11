@@ -58,6 +58,16 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 			  uint8_t *compressed,
 			  uint32_t max_compressed_size)
 {
+	/*
+	 * This is the algorithm in [MS-XCA] 2.3 "Plain LZ77 Compression".
+	 *
+	 * It avoids Huffman encoding by including literal bytes inline when a
+	 * match is not found. Every so often it includes a uint32 bit map
+	 * flagging which positions contain matches and which contain
+	 * literals. The encoding of matches is of variable size, depending on
+	 * the match length; they are always at least 16 bits long, and can
+	 * implicitly use unused half-bytes from earlier in the stream.
+	 */
 	uint32_t uncompressed_pos, compressed_pos;
 	uint32_t indic;
 	uint32_t indic_pos;
@@ -112,6 +122,11 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 		}
 
 		if (!found) {
+			/*
+			 * This is going to literal byte, which we flag by
+			 * setting a bit in an indicator field somewhere
+			 * earlier in the stream.
+			 */
 			CHECK_INPUT_BYTES(sizeof(uint8_t));
 			CHECK_OUTPUT_BYTES(sizeof(uint8_t));
 			compressed[compressed_pos++] = uncompressed[uncompressed_pos++];
@@ -211,6 +226,10 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 			    uint8_t *output,
 			    uint32_t max_output_size)
 {
+	/*
+	 * This is the algorithm in [MS-XCA] 2.4 "Plain LZ77 Decompression
+	 * Algorithm Details".
+	 */
 	uint32_t output_index, input_index;
 	uint32_t indicator, indicator_bit;
 	uint32_t nibble_index;
