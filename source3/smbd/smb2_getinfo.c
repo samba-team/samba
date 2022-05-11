@@ -387,7 +387,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 				return tevent_req_post(req, ev);
 			}
 
-			if (lp_smbd_getinfo_ask_sharemode(SNUM(conn))) {
+			if (fsp_getinfo_ask_sharemode(fsp)) {
 				fileid = vfs_file_id_from_sbuf(
 					conn, &fsp->fsp_name->st);
 				get_file_infos(fileid, fsp->name_hash,
@@ -407,7 +407,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 				tevent_req_nterror(req, status);
 				return tevent_req_post(req, ev);
 			}
-			if (lp_smbd_getinfo_ask_sharemode(SNUM(conn))) {
+			if (fsp_getinfo_ask_sharemode(fsp)) {
 				fileid = vfs_file_id_from_sbuf(
 					conn, &fsp->fsp_name->st);
 				get_file_infos(fileid, fsp->name_hash,

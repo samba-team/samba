@@ -838,7 +838,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	int space_remaining;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
-	bool ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
+	bool ask_sharemode;
 	struct smbd_server_connection *sconn = req->sconn;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	bool backup_priv = false;
@@ -908,11 +908,6 @@ static void call_trans2findfirst(connection_struct *conn,
 		default:
 			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 			goto out;
-	}
-
-	if (req->posix_pathnames) {
-		/* Always use filesystem for UNIX mtime query. */
-		ask_sharemode = false;
 	}
 
 	if (req->posix_pathnames) {
@@ -1101,6 +1096,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	space_remaining = max_data_bytes;
 	out_of_space = False;
 
+	ask_sharemode = fsp_search_ask_sharemode(fsp);
+
 	for (i=0;(i<maxentries) && !finished && !out_of_space;i++) {
 		bool got_exact_match = False;
 
@@ -1276,7 +1273,7 @@ static void call_trans2findnext(connection_struct *conn,
 	int space_remaining;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
-	bool ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
+	bool ask_sharemode;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smbd_server_connection *sconn = req->sconn;
 	bool backup_priv = false;
@@ -1363,8 +1360,6 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			break;
 		case SMB_FIND_FILE_UNIX:
 		case SMB_FIND_FILE_UNIX_INFO2:
-			/* Always use filesystem for UNIX mtime query. */
-			ask_sharemode = false;
 			if (!lp_smb1_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
@@ -1522,6 +1517,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		finished = !dptr_SearchDir(fsp->dptr, resume_name, &current_pos, &st);
 	} /* end if resume_name && !continue_bit */
+
+	ask_sharemode = fsp_search_ask_sharemode(fsp);
 
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
 		bool got_exact_match = False;
@@ -2032,7 +2029,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-			if (lp_smbd_getinfo_ask_sharemode(SNUM(conn))) {
+			if (fsp_getinfo_ask_sharemode(fsp)) {
 				fileid = vfs_file_id_from_sbuf(
 					conn, &smb_fname->st);
 				get_file_infos(fileid, fsp->name_hash,
@@ -2050,7 +2047,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				reply_nterror(req, status);
 				return;
 			}
-			if (lp_smbd_getinfo_ask_sharemode(SNUM(conn))) {
+			if (fsp_getinfo_ask_sharemode(fsp)) {
 				fileid = vfs_file_id_from_sbuf(
 					conn, &smb_fname->st);
 				get_file_infos(fileid, fsp->name_hash,
@@ -2206,7 +2203,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		if (lp_smbd_getinfo_ask_sharemode(SNUM(conn))) {
+		if (fsp_getinfo_ask_sharemode(fsp)) {
 			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 			get_file_infos(fileid, name_hash, &delete_pending,
 				       &write_time_ts);
