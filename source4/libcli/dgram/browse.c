@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    handling for browsing dgram requests
 
    Copyright (C) Jelmer Vernooij 2005
         Heavily based on ntlogon.c
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -45,9 +45,9 @@ NTSTATUS dgram_mailslot_browse_send(struct nbt_dgram_socket *dgmsock,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
+	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE,
 				     NBT_MAILSLOT_BROWSE,
-				     dest_name, dest, 
+				     dest_name, dest,
 				     src_name, &blob);
 	talloc_free(tmp_ctx);
 	return status;
@@ -75,14 +75,14 @@ NTSTATUS dgram_mailslot_browse_reply(struct nbt_dgram_socket *dgmsock,
 
 	make_nbt_name_client(&myname, my_netbios_name);
 
-	dest = socket_address_from_strings(tmp_ctx, dgmsock->sock->backend_name, 
+	dest = socket_address_from_strings(tmp_ctx, dgmsock->sock->backend_name,
 					   request->src_addr, request->src_port);
 	if (!dest) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
+	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE,
 				     mailslot_name,
 				     &request->data.msg.source_name,
 				     dest,
