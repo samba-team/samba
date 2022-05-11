@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    handling for netlogon dgram requests
 
    Copyright (C) Andrew Tridgell 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -25,8 +25,8 @@
 #include "libcli/resolve/resolve.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
-/* 
-   send a netlogon mailslot request 
+/*
+   send a netlogon mailslot request
 */
 NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 				      struct nbt_name *dest_name,
@@ -48,16 +48,16 @@ NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 	}
 
 
-	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
+	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE,
 				     mailslot,
-				     dest_name, dest, 
+				     dest_name, dest,
 				     src_name, &blob);
 	talloc_free(tmp_ctx);
 	return status;
 }
 
 
-/* 
+/*
    send a netlogon mailslot reply
 */
 NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
@@ -79,14 +79,14 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 
 	make_nbt_name_client(&myname, my_netbios_name);
 
-	dest = socket_address_from_strings(tmp_ctx, dgmsock->sock->backend_name, 
+	dest = socket_address_from_strings(tmp_ctx, dgmsock->sock->backend_name,
 					   request->src_addr, request->src_port);
 	if (!dest) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
+	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE,
 				     mailslot_name,
 				     &request->data.msg.source_name,
 				     dest,
@@ -129,12 +129,12 @@ NTSTATUS dgram_mailslot_netlogon_parse_response(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	DATA_BLOB data = dgram_mailslot_data(dgram);
-	
+
 	status = pull_nbt_netlogon_response(&data, mem_ctx, netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	return NT_STATUS_OK;
 }
 
