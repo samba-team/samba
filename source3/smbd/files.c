@@ -598,9 +598,6 @@ fail:
 		  smb_fname_str_dbg(smb_fname),
 		  nt_errstr(status));
 
-	if (fsp == NULL) {
-		return status;
-	}
 	if (fsp_is_alternate_stream(fsp)) {
 		struct files_struct *tmp_base_fsp = fsp->base_fsp;
 
