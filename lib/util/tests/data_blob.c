@@ -76,6 +76,52 @@ static bool test_cmp(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_equal_const_time(struct torture_context *tctx)
+{
+	const char *test_string = "foobarfoo";
+
+	DATA_BLOB null = data_blob_const(NULL, 0);
+	DATA_BLOB foobar = data_blob_const(test_string, 6);
+	DATA_BLOB bar = data_blob_const(test_string + 3, 3);
+
+	/* These data blobs both contain 'foo', but at different addresses. */
+	DATA_BLOB foo_same = data_blob_const(test_string, 3);
+	DATA_BLOB foo_other = data_blob_const(test_string + 6, 3);
+
+	/* Test all equality combinations behave as expected. */
+	torture_assert(tctx, data_blob_equal_const_time(&null, &null), "null == null");
+	torture_assert(tctx, !data_blob_equal_const_time(&null, &foobar), "null != 'foobar'");
+	torture_assert(tctx, !data_blob_equal_const_time(&null, &bar), "null != 'bar'");
+	torture_assert(tctx, !data_blob_equal_const_time(&null, &foo_same), "null != 'foo'");
+	torture_assert(tctx, !data_blob_equal_const_time(&null, &foo_other), "null != 'foo'");
+
+	torture_assert(tctx, !data_blob_equal_const_time(&foobar, &null), "'foobar' != null");
+	torture_assert(tctx, data_blob_equal_const_time(&foobar, &foobar), "'foobar' == 'foobar'");
+	torture_assert(tctx, !data_blob_equal_const_time(&foobar, &bar), "'foobar' != 'bar'");
+	torture_assert(tctx, !data_blob_equal_const_time(&foobar, &foo_same), "'foobar' != 'foo'");
+	torture_assert(tctx, !data_blob_equal_const_time(&foobar, &foo_other), "'foobar' != 'foo'");
+
+	torture_assert(tctx, !data_blob_equal_const_time(&foo_same, &null), "'foo' != null");
+	torture_assert(tctx, !data_blob_equal_const_time(&foo_same, &foobar), "'foo' != 'foobar'");
+	torture_assert(tctx, !data_blob_equal_const_time(&foo_same, &bar), "'foo' != 'bar'");
+	torture_assert(tctx, data_blob_equal_const_time(&foo_same, &foo_same), "'foo' == 'foo'");
+	torture_assert(tctx, data_blob_equal_const_time(&foo_same, &foo_other), "'foo' == 'foo'");
+
+	torture_assert(tctx, !data_blob_equal_const_time(&foo_other, &null), "'foo' != null");
+	torture_assert(tctx, !data_blob_equal_const_time(&foo_other, &foobar), "'foo' != 'foobar'");
+	torture_assert(tctx, !data_blob_equal_const_time(&foo_other, &bar), "'foo' != 'bar'");
+	torture_assert(tctx, data_blob_equal_const_time(&foo_other, &foo_same), "'foo' == 'foo'");
+	torture_assert(tctx, data_blob_equal_const_time(&foo_other, &foo_other), "'foo' == 'foo'");
+
+	torture_assert(tctx, !data_blob_equal_const_time(&bar, &null), "'bar' != null");
+	torture_assert(tctx, !data_blob_equal_const_time(&bar, &foobar), "'bar' != 'foobar'");
+	torture_assert(tctx, data_blob_equal_const_time(&bar, &bar), "'bar' == 'bar'");
+	torture_assert(tctx, !data_blob_equal_const_time(&bar, &foo_same), "'bar' != 'foo'");
+	torture_assert(tctx, !data_blob_equal_const_time(&bar, &foo_other), "'bar' != 'foo'");
+
+	return true;
+}
+
 static bool test_hex_string(struct torture_context *tctx)
 {
 	DATA_BLOB a = data_blob_string_const("\xC\xA\xF\xE");
@@ -117,6 +163,7 @@ struct torture_suite *torture_local_util_data_blob(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "zero", test_zero);;
 	torture_suite_add_simple_test(suite, "clear", test_clear);
 	torture_suite_add_simple_test(suite, "cmp", test_cmp);
+	torture_suite_add_simple_test(suite, "equal_const_time", test_equal_const_time);
 	torture_suite_add_simple_test(suite, "hex string", test_hex_string);
 	torture_suite_add_simple_test(suite, "append_NULL_0", test_append_NULL_0);
 	torture_suite_add_simple_test(suite, "append_empty_0", test_append_empty_0);
