@@ -200,7 +200,7 @@ NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 		break;
 	case NETLOGON_SAMLOGON:
 		status = push_netlogon_samlogon_response(
-			data, mem_ctx, 
+			data, mem_ctx,
 			&response->data.samlogon);
 		break;
 	case NETLOGON_RESPONSE2:
@@ -266,7 +266,7 @@ NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 	case LOGON_SAM_LOGON_PAUSE_RESPONSE_EX:
 	case LOGON_SAM_LOGON_USER_UNKNOWN_EX:
 		status = pull_netlogon_samlogon_response(
-			data, mem_ctx, 
+			data, mem_ctx,
 			&response->data.samlogon);
 		response->response_type = NETLOGON_SAMLOGON;
 		break;
