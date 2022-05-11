@@ -106,7 +106,7 @@ NTSTATUS dgram_mailslot_browse_parse(struct dgram_mailslot_handler *dgmslot,
 		DEBUG(0,("Failed to parse browse packet of length %d: %s\n",
 			 (int)data.length, nt_errstr(status)));
 		if (DEBUGLVL(10)) {
-			file_save("browse.dat", data.data, data.length);
+			(void)file_save("browse.dat", data.data, data.length);
 		}
 		return status;
 	}
