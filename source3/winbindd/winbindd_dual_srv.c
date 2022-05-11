@@ -1295,9 +1295,9 @@ static WERROR _winbind_LogonControl_TC_VERIFY(struct pipes_struct *p,
 	struct samr_Password *cur_nt_hash = NULL;
 	uint32_t trust_attributes = 0;
 	struct samr_Password new_owf_password = {};
-	int cmp_new = -1;
+	bool cmp_new = false;
 	struct samr_Password old_owf_password = {};
-	int cmp_old = -1;
+	bool cmp_old = false;
 	const struct lsa_TrustDomainInfoInfoEx *local_tdo = NULL;
 	bool fetch_fti = false;
 	struct lsa_ForestTrustInformation *new_fti = NULL;
@@ -1536,13 +1536,13 @@ reconnect:
 		}
 	}
 
-	cmp_new = memcmp_const_time(new_owf_password.hash,
-				    cur_nt_hash->hash,
-				    sizeof(cur_nt_hash->hash));
-	cmp_old = memcmp_const_time(old_owf_password.hash,
-				    cur_nt_hash->hash,
-				    sizeof(cur_nt_hash->hash));
-	if (cmp_new != 0 && cmp_old != 0) {
+	cmp_new = mem_equal_const_time(new_owf_password.hash,
+				       cur_nt_hash->hash,
+				       sizeof(cur_nt_hash->hash));
+	cmp_old = mem_equal_const_time(old_owf_password.hash,
+				       cur_nt_hash->hash,
+				       sizeof(cur_nt_hash->hash));
+	if (!cmp_new && !cmp_old) {
 		DEBUG(1,("%s:Error: credentials for domain[%s/%s] doesn't match "
 			 "any password known to dcname[%s]\n",
 			 __func__, domain->name, domain->alt_name,
@@ -1551,7 +1551,7 @@ reconnect:
 		goto verify_return;
 	}
 
-	if (cmp_new != 0) {
+	if (!cmp_new) {
 		DEBUG(2,("%s:Warning: credentials for domain[%s/%s] only match "
 			 "against the old password known to dcname[%s]\n",
 			 __func__, domain->name, domain->alt_name,

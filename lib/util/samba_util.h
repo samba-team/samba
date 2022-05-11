@@ -321,9 +321,9 @@ _PUBLIC_ bool conv_str_u64(const char * str, uint64_t * val);
  *
  * @param[in]  n   The length of the memory to comapre.
  *
- * @return 0 when the memory regions are equal, 0 if not.
+ * @return true when the memory regions are equal, false if not.
  */
-_PUBLIC_ int memcmp_const_time(const void *s1, const void *s2, size_t n);
+_PUBLIC_ bool mem_equal_const_time(const void *s1, const void *s2, size_t n);
 
 /**
  * @brief Build up a string buffer, handle allocation failure

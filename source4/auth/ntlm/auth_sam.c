@@ -364,7 +364,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		 */
 
 		E_md4hash("", zero_string_hash.hash);
-		if (memcmp_const_time(nt_history_pwd->hash, zero_string_hash.hash, 16) == 0) {
+		if (mem_equal_const_time(nt_history_pwd->hash, zero_string_hash.hash, 16)) {
 			continue;
 		}
 

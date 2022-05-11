@@ -592,7 +592,7 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 	uint8_t *confounder = NULL;
 	uint32_t confounder_ofs = 0;
 	uint8_t seq_num[8];
-	int ret;
+	bool ret;
 	const uint8_t *sign_data = NULL;
 	size_t sign_length = 0;
 	NTSTATUS status;
@@ -649,8 +649,8 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	ret = memcmp_const_time(checksum, sig->data+16, checksum_length);
-	if (ret != 0) {
+	ret = mem_equal_const_time(checksum, sig->data+16, checksum_length);
+	if (!ret) {
 		dump_data_pw("calc digest:", checksum, checksum_length);
 		dump_data_pw("wire digest:", sig->data+16, checksum_length);
 		return NT_STATUS_ACCESS_DENIED;
@@ -665,8 +665,8 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 
 	ZERO_ARRAY(checksum);
 
-	ret = memcmp_const_time(seq_num, sig->data+8, 8);
-	if (ret != 0) {
+	ret = mem_equal_const_time(seq_num, sig->data+8, 8);
+	if (!ret) {
 		dump_data_pw("calc seq num:", seq_num, 8);
 		dump_data_pw("wire seq num:", sig->data+8, 8);
 		return NT_STATUS_ACCESS_DENIED;

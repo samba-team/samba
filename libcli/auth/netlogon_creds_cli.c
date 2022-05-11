@@ -3201,7 +3201,7 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 	NTSTATUS status;
 	NTSTATUS result;
 	const struct samr_Password zero = {};
-	int cmp;
+	bool cmp;
 	bool ok;
 
 	/*
@@ -3227,9 +3227,9 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 		return;
 	}
 
-	cmp = memcmp_const_time(state->new_owf_password.hash,
-				zero.hash, sizeof(zero.hash));
-	if (cmp != 0) {
+	cmp = mem_equal_const_time(state->new_owf_password.hash,
+				   zero.hash, sizeof(zero.hash));
+	if (!cmp) {
 		status = netlogon_creds_des_decrypt(&state->tmp_creds,
 						    &state->new_owf_password);
 		if (tevent_req_nterror(req, status)) {
@@ -3237,9 +3237,9 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 			return;
 		}
 	}
-	cmp = memcmp_const_time(state->old_owf_password.hash,
-				zero.hash, sizeof(zero.hash));
-	if (cmp != 0) {
+	cmp = mem_equal_const_time(state->old_owf_password.hash,
+				   zero.hash, sizeof(zero.hash));
+	if (!cmp) {
 		status = netlogon_creds_des_decrypt(&state->tmp_creds,
 						    &state->old_owf_password);
 		if (tevent_req_nterror(req, status)) {

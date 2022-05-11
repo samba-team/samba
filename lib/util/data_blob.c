@@ -136,7 +136,7 @@ contents of either blob.
 **/
 _PUBLIC_ bool data_blob_equal_const_time(const DATA_BLOB *d1, const DATA_BLOB *d2)
 {
-	int ret;
+	bool ret;
 	if (d1->data == NULL && d2->data != NULL) {
 		return false;
 	}
@@ -149,8 +149,8 @@ _PUBLIC_ bool data_blob_equal_const_time(const DATA_BLOB *d1, const DATA_BLOB *d
 	if (d1->data == d2->data) {
 		return true;
 	}
-	ret = memcmp_const_time(d1->data, d2->data, d1->length);
-	return ret == 0;
+	ret = mem_equal_const_time(d1->data, d2->data, d1->length);
+	return ret;
 }
 
 /**

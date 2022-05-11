@@ -71,7 +71,7 @@ static bool smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 	DEBUGADD(100,("Value from encryption was |\n"));
 	dump_data(100, p24, 24);
 #endif
-	ok = (memcmp_const_time(p24, nt_response->data, 24) == 0);
+	ok = mem_equal_const_time(p24, nt_response->data, 24);
 	if (!ok) {
 		return false;
 	}
@@ -157,7 +157,7 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 #endif
 	data_blob_clear_free(&client_key_data);
 
-	ok = (memcmp_const_time(value_from_encryption, ntv2_response->data, 16) == 0);
+	ok = mem_equal_const_time(value_from_encryption, ntv2_response->data, 16);
 	if (!ok) {
 		return false;
 	}
@@ -271,7 +271,7 @@ NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
 	}
 
 	if (client_nt && stored_nt) {
-		if (memcmp_const_time(client_nt->hash, stored_nt->hash, sizeof(stored_nt->hash)) == 0) {
+		if (mem_equal_const_time(client_nt->hash, stored_nt->hash, sizeof(stored_nt->hash))) {
 			return NT_STATUS_OK;
 		} else {
 			DEBUG(3,("hash_password_check: Interactive logon: NT password check failed for user %s\n",
@@ -289,7 +289,7 @@ NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NOT_FOUND;
 		}
 
-		if (memcmp_const_time(client_lanman->hash, stored_lanman->hash, sizeof(stored_lanman->hash)) == 0) {
+		if (mem_equal_const_time(client_lanman->hash, stored_lanman->hash, sizeof(stored_lanman->hash))) {
 			return NT_STATUS_OK;
 		} else {
 			DEBUG(3,("hash_password_check: Interactive logon: LANMAN password check failed for user %s\n",

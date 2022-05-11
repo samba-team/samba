@@ -31,7 +31,7 @@ do { \
 	if (!NDR_ERR_CODE_IS_SUCCESS(__ndr_err)) { \
 		return ndr_map_error2ntstatus(__ndr_err); \
 	} \
-	if (memcmp_const_time(r->Signature, "NTLMSSP\0", 8)) { \
+	if (!mem_equal_const_time(r->Signature, "NTLMSSP\0", 8)) { \
 		return NT_STATUS_INVALID_PARAMETER; \
 	} \
 	return NT_STATUS_OK; \

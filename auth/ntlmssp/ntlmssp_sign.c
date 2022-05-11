@@ -291,7 +291,7 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		if (local_sig.length != sig->length ||
-		    memcmp_const_time(local_sig.data, sig->data, sig->length) != 0) {
+		    !mem_equal_const_time(local_sig.data, sig->data, sig->length)) {
 			DEBUG(5, ("BAD SIG NTLM2: wanted signature of\n"));
 			dump_data(5, local_sig.data, local_sig.length);
 
@@ -304,7 +304,7 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 		}
 	} else {
 		if (local_sig.length != sig->length ||
-		    memcmp_const_time(local_sig.data + 8, sig->data + 8, sig->length - 8) != 0) {
+		    !mem_equal_const_time(local_sig.data + 8, sig->data + 8, sig->length - 8)) {
 			DEBUG(5, ("BAD SIG NTLM1: wanted signature of\n"));
 			dump_data(5, local_sig.data, local_sig.length);
 

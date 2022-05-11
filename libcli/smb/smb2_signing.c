@@ -718,7 +718,7 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 		return status;
 	}
 
-	if (memcmp_const_time(res, sig, 16) != 0) {
+	if (!mem_equal_const_time(res, sig, 16)) {
 		DEBUG(0,("Bad SMB2 (sign_algo_id=%u) signature for message\n",
 			 (unsigned)sign_algo_id));
 		dump_data(0, sig, 16);

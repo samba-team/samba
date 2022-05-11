@@ -1047,7 +1047,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	if (ntlmssp_state->new_spnego) {
 		gnutls_hmac_hd_t hmac_hnd = NULL;
 		uint8_t mic_buffer[NTLMSSP_MIC_SIZE] = { 0, };
-		int cmp;
+		bool cmp;
 		int rc;
 
 		rc = gnutls_hmac_init(&hmac_hnd,
@@ -1095,9 +1095,9 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 		}
 		gnutls_hmac_deinit(hmac_hnd, mic_buffer);
 
-		cmp = memcmp_const_time(request.data + NTLMSSP_MIC_OFFSET,
-					mic_buffer, NTLMSSP_MIC_SIZE);
-		if (cmp != 0) {
+		cmp = mem_equal_const_time(request.data + NTLMSSP_MIC_OFFSET,
+					   mic_buffer, NTLMSSP_MIC_SIZE);
+		if (!cmp) {
 			DEBUG(1,("%s: invalid NTLMSSP_MIC for "
 				 "user=[%s] domain=[%s] workstation=[%s]\n",
 				 __func__,
@@ -1112,7 +1112,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 
 		ZERO_ARRAY(mic_buffer);
 
-		if (cmp != 0) {
+		if (!cmp) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}

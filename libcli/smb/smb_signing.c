@@ -339,7 +339,7 @@ bool smb1_signing_check_pdu(struct smb1_signing_state *si,
 	}
 
 	reply_sent_mac = &inhdr[HDR_SS_FIELD];
-	good = (memcmp_const_time(reply_sent_mac, calc_md5_mac, 8) == 0);
+	good = mem_equal_const_time(reply_sent_mac, calc_md5_mac, 8);
 
 	if (!good) {
 		int i;
@@ -354,7 +354,7 @@ bool smb1_signing_check_pdu(struct smb1_signing_state *si,
 		for (i = -sign_range; i < sign_range; i++) {
 			smb1_signing_md5(&si->mac_key, inhdr, len,
 					seqnum+i, calc_md5_mac);
-			if (memcmp_const_time(reply_sent_mac, calc_md5_mac, 8) == 0) {
+			if (mem_equal_const_time(reply_sent_mac, calc_md5_mac, 8)) {
 				DBG_ERR("out of seq. seq num %u matches. "
 					 "We were expecting seq %u\n",
 					 (unsigned int)seqnum+i,

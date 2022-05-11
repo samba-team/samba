@@ -1215,12 +1215,12 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		}
 		gnutls_hash_deinit(hash_hnd, salted_hash);
 
-		password_good = (memcmp_const_time(cached_nt_pass, salted_hash,
-						   NT_HASH_LEN) == 0);
+		password_good = mem_equal_const_time(cached_nt_pass, salted_hash,
+						     NT_HASH_LEN);
 	} else {
 		/* Old cached cred - direct store of nt_hash (bad bad bad !). */
-		password_good = (memcmp_const_time(cached_nt_pass, new_nt_pass,
-						   NT_HASH_LEN) == 0);
+		password_good = mem_equal_const_time(cached_nt_pass, new_nt_pass,
+						     NT_HASH_LEN);
 	}
 
 	if (password_good) {

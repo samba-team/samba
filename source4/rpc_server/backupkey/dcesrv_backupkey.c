@@ -451,7 +451,7 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 		 * point to the same area
 		 */
 
-		if (memcmp_const_time(hash, uncrypted_accesscheckv2.hash, hash_size) != 0) {
+		if (!mem_equal_const_time(hash, uncrypted_accesscheckv2.hash, hash_size)) {
 			DEBUG(2, ("Wrong hash value in the access check in backup key remote protocol\n"));
 			return WERR_INVALID_DATA;
 		}
@@ -486,7 +486,7 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 		 * point to the same area
 		 */
 
-		if (memcmp_const_time(hash, uncrypted_accesscheckv3.hash, hash_size) != 0) {
+		if (!mem_equal_const_time(hash, uncrypted_accesscheckv3.hash, hash_size)) {
 			DEBUG(2, ("Wrong hash value in the access check in backup key remote protocol\n"));
 			return WERR_INVALID_DATA;
 		}
@@ -1547,7 +1547,7 @@ static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, 
 	dump_data_pw("mac: \n", mac, sizeof(mac));
 	dump_data_pw("rc4payload.mac: \n", rc4payload.mac, sizeof(rc4payload.mac));
 
-	if (memcmp_const_time(mac, rc4payload.mac, sizeof(mac)) != 0) {
+	if (!mem_equal_const_time(mac, rc4payload.mac, sizeof(mac))) {
 		return WERR_INVALID_ACCESS;
 	}
 

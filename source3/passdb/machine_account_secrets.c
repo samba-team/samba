@@ -1778,7 +1778,7 @@ static NTSTATUS secrets_check_password_change(const struct secrets_domain_info1 
 	struct secrets_domain_info1_change *sn = NULL;
 	struct secrets_domain_info1_change *cn = NULL;
 	NTSTATUS status;
-	int cmp;
+	bool cmp;
 
 	if (cookie->next_change == NULL) {
 		DBG_ERR("cookie->next_change == NULL for %s.\n", domain);
@@ -1873,20 +1873,20 @@ static NTSTATUS secrets_check_password_change(const struct secrets_domain_info1 
 		return NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
 	}
 
-	cmp = memcmp_const_time(sn->password->nt_hash.hash,
-				cn->password->nt_hash.hash,
-				16);
-	if (cmp != 0) {
+	cmp = mem_equal_const_time(sn->password->nt_hash.hash,
+				   cn->password->nt_hash.hash,
+				   16);
+	if (!cmp) {
 		DBG_ERR("next password.nt_hash differs for %s.\n",
 			domain);
 		TALLOC_FREE(stored);
 		return NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
 	}
 
-	cmp = memcmp_const_time(stored->password->nt_hash.hash,
-				cookie->password->nt_hash.hash,
-				16);
-	if (cmp != 0) {
+	cmp = mem_equal_const_time(stored->password->nt_hash.hash,
+				   cookie->password->nt_hash.hash,
+				   16);
+	if (!cmp) {
 		DBG_ERR("password.nt_hash differs for %s.\n",
 			domain);
 		TALLOC_FREE(stored);
