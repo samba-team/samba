@@ -194,9 +194,9 @@ def get_supported_templates(server):
     return []
 
 
-def getca(ca_name, url, trust_dir):
+def getca(ca, url, trust_dir):
     """Fetch Certificate Chain from the CA."""
-    root_cert = os.path.join(trust_dir, '%s.crt' % ca_name)
+    root_cert = os.path.join(trust_dir, '%s.crt' % ca['name'])
     root_certs = []
 
     try:
@@ -205,10 +205,21 @@ def getca(ca_name, url, trust_dir):
     except requests.exceptions.ConnectionError:
         log.warn('Failed to establish a new connection')
         r = None
-    if r is None or r.content == b'':
+    if r is None or r.content == b'' or r.headers['Content-Type'] == 'text/html':
         log.warn('Failed to fetch the root certificate chain.')
-        log.warn('Ensure you have installed and configured the'
-                 ' Network Device Enrollment Service.')
+        log.warn('The Network Device Enrollment Service is either not' +
+                 ' installed or not configured.')
+        if 'cACertificate' in ca:
+            log.warn('Installing the server certificate only.')
+            try:
+                cert = load_der_x509_certificate(ca['cACertificate'])
+            except TypeError:
+                cert = load_der_x509_certificate(ca['cACertificate'],
+                                                 default_backend())
+            cert_data = cert.public_bytes(Encoding.PEM)
+            with open(root_cert, 'wb') as w:
+                w.write(cert_data)
+            root_certs.append(root_cert)
         return root_certs
 
     if r.headers['Content-Type'] == 'application/x-x509-ca-cert':
@@ -239,7 +250,7 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
     """Install the root certificate chain."""
     data = {'files': [], 'templates': []}
     url = 'http://%s/CertSrv/mscep/mscep.dll/pkiclient.exe?' % ca['hostname']
-    root_certs = getca(ca['name'], url, trust_dir)
+    root_certs = getca(ca, url, trust_dir)
     data['files'].extend(root_certs)
     for src in root_certs:
         # Symlink the certs to global trust dir
