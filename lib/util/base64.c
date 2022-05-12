@@ -115,8 +115,16 @@ _PUBLIC_ char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 	size_t out_cnt, len, output_len;
 	char *result;
 
-        if (!data.length || !data.data)
+	/*
+	 * Note: we return NULL for a zero-length blob, even though it can be
+	 * encoded as a zero length string in base64.
+	 *
+	 * FIXME, perhaps, but we need to check carefully before changing
+	 * this.
+	 */
+        if (data.length == 0 || data.data == NULL) {
 		return NULL;
+	}
 
 	out_cnt = 0;
 	len = data.length;
