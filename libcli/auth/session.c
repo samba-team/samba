@@ -38,6 +38,10 @@ int sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *sessio
 		return GNUTLS_E_INVALID_REQUEST;
 	}
 
+	if (session_key->length < 7) {
+		return GNUTLS_E_INVALID_REQUEST;
+	}
+
 	for (i=0,k=0;
 	     i<in->length;
 	     i += 8, k += 7) {
