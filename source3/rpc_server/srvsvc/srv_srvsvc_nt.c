@@ -1970,12 +1970,12 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 				     SHARE_1005_CSC_POLICY_MASK) >>
 				    SHARE_1005_CSC_POLICY_SHIFT;
 
-		if (client_csc_policy == lp_csc_policy(snum))
+		if (client_csc_policy == lp_csc_policy(snum)) {
 			return WERR_OK;
-		else {
-			csc_policy = csc_policies[client_csc_policy];
-			csc_policy_changed = true;
 		}
+
+		csc_policy = csc_policies[client_csc_policy];
+		csc_policy_changed = true;
 
 		pathname = lp_path(ctx, lp_sub, snum);
 		comment = lp_comment(ctx, lp_sub, snum);
