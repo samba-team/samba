@@ -1970,7 +1970,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 				     SHARE_1005_CSC_POLICY_MASK) >>
 				    SHARE_1005_CSC_POLICY_SHIFT;
 
-		if (client_csc_policy == lp_csc_policy(snum)) {
+		if (client_csc_policy == (uint32_t)lp_csc_policy(snum)) {
 			return WERR_OK;
 		}
 
