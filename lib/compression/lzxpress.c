@@ -118,6 +118,10 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 				found = true;
 				best_len = len;
 				best_offset = offset;
+				if (best_len == max_len) {
+					/* We're not going to do better than this */
+					break;
+				}
 			}
 		}
 
