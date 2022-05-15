@@ -340,6 +340,73 @@ static bool test_lzxpress4(struct torture_context *test)
 	return true;
 }
 
+
+static bool test_lzxpress_many_zeros(struct torture_context *test)
+{
+	/*
+	 * Repeated values (zero is convenient but not special) will lead to
+	 * very long substring searches in compression, which can be very slow
+	 * if we're not careful.
+	 *
+	 * This test makes a very loose assertion about how long it should
+	 * take to compress a million zeros.
+	 *
+	 * Wall clock time *should* be < 0.1 seconds with the fix and around a
+	 * minute without it. We try for CLOCK_THREAD_CPUTIME_ID which should
+	 * filter out some noise on the machine, and set the threshold at 5
+	 * seconds.
+	 */
+
+	TALLOC_CTX *tmp_ctx = talloc_new(test);
+	const size_t N_ZEROS = 1000000;
+	const uint8_t *zeros = talloc_zero_size(tmp_ctx, N_ZEROS);
+	const ssize_t expected_c_size = 93;
+	ssize_t c_size;
+	uint8_t *comp, *decomp;
+	static struct timespec t_start, t_end;
+	uint64_t elapsed_ns;
+
+	if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_start) != 0) {
+		if (clock_gettime(CUSTOM_CLOCK_MONOTONIC, &t_start) != 0) {
+			clock_gettime(CLOCK_REALTIME, &t_start);
+		}
+	}
+
+	comp = talloc_zero_size(tmp_ctx, 2048);
+
+	c_size = lzxpress_compress(zeros,
+				   N_ZEROS,
+				   comp,
+				   talloc_get_size(comp));
+
+	torture_assert_int_equal(test, c_size, expected_c_size,
+				 "fixed lzxpress_compress size");
+
+	decomp = talloc_size(tmp_ctx, N_ZEROS * 2);
+	c_size = lzxpress_decompress(comp,
+				     c_size,
+				     decomp,
+				     N_ZEROS * 2);
+
+	if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t_end) != 0) {
+		if (clock_gettime(CUSTOM_CLOCK_MONOTONIC, &t_end) != 0) {
+			clock_gettime(CLOCK_REALTIME, &t_end);
+		}
+	}
+	elapsed_ns = (
+		(t_end.tv_sec - t_start.tv_sec) * 1000U * 1000U * 1000U) +
+		(t_end.tv_nsec - t_start.tv_nsec);
+	torture_comment(test, "round-trip time: %lu ns\n", elapsed_ns);
+	torture_assert(test, elapsed_ns < 3 * 1000U * 1000U * 1000U,
+		       "million zeros round trip tool > 3 seconds");
+	torture_assert_mem_equal(test, decomp, zeros, N_ZEROS,
+				 "fixed lzxpress_decompress data");
+
+	talloc_free(tmp_ctx);
+	return true;
+}
+
+
 static bool test_lzxpress_round_trip(struct torture_context *test)
 {
 	/*
@@ -408,6 +475,8 @@ struct torture_suite *torture_local_compression(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "lzxpress2", test_lzxpress2);
 	torture_suite_add_simple_test(suite, "lzxpress3", test_lzxpress3);
 	torture_suite_add_simple_test(suite, "lzxpress4", test_lzxpress4);
+	torture_suite_add_simple_test(suite, "lzxpress_many_zeros",
+				      test_lzxpress_many_zeros);
 	torture_suite_add_simple_test(suite, "lzxpress_round_trip",
 				      test_lzxpress_round_trip);
 	return suite;
