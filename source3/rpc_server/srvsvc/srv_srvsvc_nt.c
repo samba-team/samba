@@ -282,7 +282,7 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 	char *remark = NULL;
 	char *path = NULL;
 	int max_connections = lp_max_connections(snum);
-	uint32_t max_uses = max_connections!=0 ? max_connections : (uint32_t)-1;
+	uint32_t max_uses = max_connections!=0 ? max_connections : UINT32_MAX;
 	char *net_name = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	remark = lp_comment(p->mem_ctx, lp_sub, snum);
