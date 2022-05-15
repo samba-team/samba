@@ -326,7 +326,7 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 
 static void map_generic_share_sd_bits(struct security_descriptor *psd)
 {
-	int i;
+	uint32_t i;
 	struct security_acl *ps_dacl = NULL;
 
 	if (!psd)
@@ -978,7 +978,7 @@ static int count_sess_files_fn(struct file_id fid,
 {
 	struct sess_file_info *info = data;
 	uint32_t rh = info->resume_handle;
-	int i;
+	uint32_t i;
 
 	for (i=0; i < info->num_entries; i++) {
 		/* rh+info->num_entries is safe, as we've
