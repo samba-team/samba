@@ -567,16 +567,14 @@ static bool is_enumeration_allowed(struct pipes_struct *p,
 
 static int count_for_all_fn(struct smbXsrv_tcon_global0 *tcon, void *udp)
 {
-	union srvsvc_NetShareCtr *ctr = NULL;
-	struct srvsvc_NetShareInfo2 *info2 = NULL;
-	int share_entries = 0;
-	int i = 0;
+	union srvsvc_NetShareCtr *ctr = udp;
 
-	ctr = (union srvsvc_NetShareCtr *) udp;
+	/* Only called for level2 */
+	struct srvsvc_NetShareCtr2 *ctr2 = ctr->ctr2;
 
-	/* for level 2 */
-	share_entries  = ctr->ctr2->count;
-	info2 = &ctr->ctr2->array[0];
+	uint32_t share_entries = ctr2->count;
+	struct srvsvc_NetShareInfo2 *info2 = ctr2->array;
+	uint32_t i = 0;
 
 	for (i = 0; i < share_entries; i++, info2++) {
 		if (strequal(tcon->share_name, info2->name)) {
