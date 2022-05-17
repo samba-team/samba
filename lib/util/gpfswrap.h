@@ -29,7 +29,6 @@
 int gpfswrap_init(void);
 int gpfswrap_set_share(int fd, unsigned int allow, unsigned int deny);
 int gpfswrap_set_lease(int fd, unsigned int type);
-int gpfswrap_getacl(const char *pathname, int flags, void *acl);
 int gpfswrap_fgetacl(int fd, int flags, void *acl);
 int gpfswrap_putacl(const char *pathname, int flags, void *acl);
 int gpfswrap_get_realfilename_path(const char *pathname,
