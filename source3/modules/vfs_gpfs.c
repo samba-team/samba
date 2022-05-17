@@ -423,7 +423,9 @@ static void gpfs_dumpacl(int level, struct gpfs_acl *gacl)
 	}
 }
 
-static int gpfs_getacl_with_capability(const char *fname, int flags, void *buf)
+static int gpfs_getacl_with_capability(struct files_struct *fsp,
+				       int flags,
+				       void *buf)
 {
 	int ret, saved_errno;
 
@@ -488,13 +490,13 @@ again:
 	*len = size;
 
 	if (use_capability) {
-		ret = gpfs_getacl_with_capability(fname, flags, aclbuf);
+		ret = gpfs_getacl_with_capability(fsp, flags, aclbuf);
 	} else {
 		ret = gpfswrap_getacl(fname, flags, aclbuf);
 		if ((ret != 0) && (errno == EACCES)) {
 			DBG_DEBUG("Retry with DAC capability for %s\n", fname);
 			use_capability = true;
-			ret = gpfs_getacl_with_capability(fname, flags, aclbuf);
+			ret = gpfs_getacl_with_capability(fsp, flags, aclbuf);
 		}
 	}
 
