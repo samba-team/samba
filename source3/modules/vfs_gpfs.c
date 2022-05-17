@@ -1911,7 +1911,7 @@ static int vfs_gpfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
-				const struct smb_filename *fname,
+				struct files_struct *fsp,
 				SMB_STRUCT_STAT *sbuf)
 {
 	struct gpfs_winattr attrs;
@@ -1926,17 +1926,17 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 		return false;
 	}
 
-	ret = gpfswrap_get_winattrs_path(fname->base_name, &attrs);
+	ret = gpfswrap_get_winattrs(fsp_get_pathref_fd(fsp), &attrs);
 	if (ret == -1) {
 		return false;
 	}
 
 	if ((attrs.winAttrs & GPFS_WINATTR_OFFLINE) != 0) {
-		DBG_DEBUG("%s is offline\n", fname->base_name);
+		DBG_DEBUG("%s is offline\n", fsp_str_dbg(fsp));
 		return true;
 	}
 
-	DBG_DEBUG("%s is online\n", fname->base_name);
+	DBG_DEBUG("%s is online\n", fsp_str_dbg(fsp));
 	return false;
 }
 
@@ -1950,7 +1950,7 @@ static bool vfs_gpfs_fsp_is_offline(struct vfs_handle_struct *handle,
 		/*
 		 * Something bad happened, always ask.
 		 */
-		return vfs_gpfs_is_offline(handle, fsp->fsp_name,
+		return vfs_gpfs_is_offline(handle, fsp,
 					   &fsp->fsp_name->st);
 	}
 
@@ -1958,7 +1958,7 @@ static bool vfs_gpfs_fsp_is_offline(struct vfs_handle_struct *handle,
 		/*
 		 * As long as it's offline, ask.
 		 */
-		ext->offline = vfs_gpfs_is_offline(handle, fsp->fsp_name,
+		ext->offline = vfs_gpfs_is_offline(handle, fsp,
 						   &fsp->fsp_name->st);
 	}
 
