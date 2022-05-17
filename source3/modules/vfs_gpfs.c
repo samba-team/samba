@@ -1263,9 +1263,11 @@ static uint32_t gpfsacl_mask_filter(uint32_t aceType, uint32_t aceMask, uint32_t
 }
 
 static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
-			     const struct smb_filename *fname, mode_t mode)
+			     struct files_struct *fsp,
+			     mode_t mode)
 {
-	char *path = fname->base_name;
+	struct smb_filename *fname = fsp->fsp_name;
+	char *path = fsp->fsp_name->base_name;
 	struct SMB4ACL_T *pacl = NULL;
 	int     result;
 	bool    haveAllowEntry[SMB_ACE4_WHO_EVERYONE + 1] = {False, False, False, False};
@@ -1378,8 +1380,7 @@ static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 		return 0;
 	}
 
-	rc = gpfsacl_emu_chmod(handle, fsp->fsp_name,
-			       mode);
+	rc = gpfsacl_emu_chmod(handle, fsp, mode);
 	if (rc == 1) {
 		return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
 	}
