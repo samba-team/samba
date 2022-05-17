@@ -529,9 +529,11 @@ again:
  * On failure returns -1 if there is system (GPFS) error, check errno.
  * Returns 0 on success
  */
-static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname,
+static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx,
+			     struct files_struct *fsp,
 			     struct SMB4ACL_T **ppacl)
 {
+	const char *fname = fsp->fsp_name->base_name;
 	gpfs_aclCount_t i;
 	struct gpfs_acl *gacl = NULL;
 	DEBUG(10, ("gpfs_get_nfs4_acl invoked for %s\n", fname));
@@ -650,7 +652,7 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 		return status;
 	}
 
-	result = gpfs_get_nfs4_acl(frame, fsp->fsp_name->base_name, &pacl);
+	result = gpfs_get_nfs4_acl(frame, fsp, &pacl);
 
 	if (result == 0) {
 		status = smb_fget_nt_acl_nfs4(fsp, &config->nfs4_params,
@@ -1278,7 +1280,7 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 
 	DEBUG(10, ("gpfsacl_emu_chmod invoked for %s mode %o\n", path, mode));
 
-	result = gpfs_get_nfs4_acl(frame, path, &pacl);
+	result = gpfs_get_nfs4_acl(frame, fsp, &pacl);
 	if (result) {
 		TALLOC_FREE(frame);
 		return result;
