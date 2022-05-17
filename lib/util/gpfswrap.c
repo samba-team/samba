@@ -33,8 +33,6 @@ static int (*gpfs_set_winattrs_path_fn)(const char *pathname,
 					struct gpfs_winattr *attrs);
 static int (*gpfs_set_winattrs_fn)(int fd, int flags,
 				   struct gpfs_winattr *attrs);
-static int (*gpfs_get_winattrs_path_fn)(const char *pathname,
-					struct gpfs_winattr *attrs);
 static int (*gpfs_get_winattrs_fn)(int fd, struct gpfs_winattr *attrs);
 static int (*gpfs_ftruncate_fn)(int fd, gpfs_off64_t length);
 static int (*gpfs_lib_init_fn)(int flags);
@@ -75,7 +73,6 @@ int gpfswrap_init(void)
 	gpfs_get_realfilename_path_fn = dlsym(l, "gpfs_get_realfilename_path");
 	gpfs_set_winattrs_path_fn     = dlsym(l, "gpfs_set_winattrs_path");
 	gpfs_set_winattrs_fn	      = dlsym(l, "gpfs_set_winattrs");
-	gpfs_get_winattrs_path_fn     = dlsym(l, "gpfs_get_winattrs_path");
 	gpfs_get_winattrs_fn	      = dlsym(l, "gpfs_get_winattrs");
 	gpfs_ftruncate_fn	      = dlsym(l, "gpfs_ftruncate");
 	gpfs_lib_init_fn	      = dlsym(l, "gpfs_lib_init");
@@ -164,17 +161,6 @@ int gpfswrap_set_winattrs(int fd, int flags, struct gpfs_winattr *attrs)
 	}
 
 	return gpfs_set_winattrs_fn(fd, flags, attrs);
-}
-
-int gpfswrap_get_winattrs_path(const char *pathname,
-			       struct gpfs_winattr *attrs)
-{
-	if (gpfs_get_winattrs_path_fn == NULL) {
-		errno = ENOSYS;
-		return -1;
-	}
-
-	return gpfs_get_winattrs_path_fn(pathname, attrs);
 }
 
 int gpfswrap_get_winattrs(int fd, struct gpfs_winattr *attrs)
