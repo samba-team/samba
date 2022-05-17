@@ -97,10 +97,10 @@ ubuntu2004:
 debian11:
   extends: .build_image_template
 
-fedora35:
+fedora36:
   extends: .build_image_template
 
-f35mit120:
+f36mit120:
   extends: .build_image_template
 
 centos8s:
