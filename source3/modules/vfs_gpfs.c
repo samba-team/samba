@@ -442,11 +442,11 @@ static int gpfs_getacl_with_capability(const char *fname, int flags, void *buf)
  *
  */
 static void *vfs_gpfs_getacl(TALLOC_CTX *mem_ctx,
-			 const char *fname,
+			 struct files_struct *fsp,
 			 const bool raw,
 			 const gpfs_aclType_t type)
 {
-
+	const char *fname = fsp->fsp_name->base_name;
 	void *aclbuf;
 	size_t size = 512;
 	int ret, flags;
@@ -533,7 +533,7 @@ static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx,
 	DEBUG(10, ("gpfs_get_nfs4_acl invoked for %s\n", fname));
 
 	/* Get the ACL */
-	gacl = (struct gpfs_acl*) vfs_gpfs_getacl(talloc_tos(), fname,
+	gacl = (struct gpfs_acl*) vfs_gpfs_getacl(talloc_tos(), fsp,
 						  false, 0);
 	if (gacl == NULL) {
 		DEBUG(9, ("gpfs_getacl failed for %s with %s\n",
@@ -825,7 +825,7 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(vfs_handle_struct *handle, files_str
 	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
 
 	acl = (struct gpfs_acl*) vfs_gpfs_getacl(talloc_tos(),
-						 fsp->fsp_name->base_name,
+						 fsp,
 						 false, 0);
 	if (acl == NULL) {
 		return map_nt_error_from_unix(errno);
@@ -948,11 +948,10 @@ static SMB_ACL_T gpfsacl_get_posix_acl(struct files_struct *fsp,
 				       gpfs_aclType_t type,
 				       TALLOC_CTX *mem_ctx)
 {
-	const char *path = fsp->fsp_name->base_name;
 	struct gpfs_acl *pacl;
 	SMB_ACL_T result = NULL;
 
-	pacl = vfs_gpfs_getacl(talloc_tos(), path, false, type);
+	pacl = vfs_gpfs_getacl(talloc_tos(), fsp, false, type);
 
 	if (pacl == NULL) {
 		DBG_DEBUG("vfs_gpfs_getacl failed for %s with %s\n",
@@ -1042,7 +1041,7 @@ static int gpfsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 
 	errno = 0;
 	acl = (struct gpfs_opaque_acl *) vfs_gpfs_getacl(mem_ctx,
-						fsp->fsp_name->base_name,
+						fsp,
 						true,
 						GPFS_ACL_TYPE_NFS4);
 
