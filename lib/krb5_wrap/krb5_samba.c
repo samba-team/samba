@@ -3370,7 +3370,7 @@ int smb_krb5_principal_is_tgs(krb5_context context,
 	}
 
 	eq = krb5_princ_size(context, principal) == 2 &&
-	     (strequal(p, KRB5_TGS_NAME));
+	     (strcmp(p, KRB5_TGS_NAME) == 0);
 
 	talloc_free(p);
 
