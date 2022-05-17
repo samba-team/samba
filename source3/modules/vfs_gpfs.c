@@ -940,9 +940,11 @@ static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl, TALLOC_CTX *mem_ctx)
 	return result;
 }
 
-static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type,
+static SMB_ACL_T gpfsacl_get_posix_acl(struct files_struct *fsp,
+				       gpfs_aclType_t type,
 				       TALLOC_CTX *mem_ctx)
 {
+	const char *path = fsp->fsp_name->base_name;
 	struct gpfs_acl *pacl;
 	SMB_ACL_T result = NULL;
 
@@ -1011,8 +1013,7 @@ static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
 		DEBUG(0, ("Got invalid type: %d\n", type));
 		smb_panic("exiting");
 	}
-	return gpfsacl_get_posix_acl(fsp->fsp_name->base_name,
-				     gpfs_type, mem_ctx);
+	return gpfsacl_get_posix_acl(fsp, gpfs_type, mem_ctx);
 }
 
 static int gpfsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle,
