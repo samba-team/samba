@@ -24,6 +24,7 @@
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int type);
 static int (*gpfs_getacl_fn)(const char *pathname, int flags, void *acl);
+static int (*gpfs_fgetacl_fn)(int fd, int flags, void *acl);
 static int (*gpfs_putacl_fn)(const char *pathname, int flags, void *acl);
 static int (*gpfs_get_realfilename_path_fn)(const char *pathname,
 					    char *filenamep,
@@ -71,6 +72,7 @@ int gpfswrap_init(void)
 	gpfs_set_share_fn	      = dlsym(l, "gpfs_set_share");
 	gpfs_set_lease_fn	      = dlsym(l, "gpfs_set_lease");
 	gpfs_getacl_fn		      = dlsym(l, "gpfs_getacl");
+	gpfs_fgetacl_fn		      = dlsym(l, "gpfs_getacl_fd");
 	gpfs_putacl_fn		      = dlsym(l, "gpfs_putacl");
 	gpfs_get_realfilename_path_fn = dlsym(l, "gpfs_get_realfilename_path");
 	gpfs_set_winattrs_path_fn     = dlsym(l, "gpfs_set_winattrs_path");
@@ -120,6 +122,16 @@ int gpfswrap_getacl(const char *pathname, int flags, void *acl)
 	}
 
 	return gpfs_getacl_fn(pathname, flags, acl);
+}
+
+int gpfswrap_fgetacl(int fd, int flags, void *acl)
+{
+	if (gpfs_fgetacl_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_fgetacl_fn(fd, flags, acl);
 }
 
 int gpfswrap_putacl(const char *pathname, int flags, void *acl)
