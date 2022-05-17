@@ -1355,23 +1355,25 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 
 static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
-		 SMB_STRUCT_STAT st;
-		 int rc;
+	SMB_STRUCT_STAT st;
+	int rc;
 
-		 if (SMB_VFS_NEXT_FSTAT(handle, fsp, &st) != 0) {
-			 return -1;
-		 }
+	rc = SMB_VFS_NEXT_FSTAT(handle, fsp, &st);
+	if (rc != 0) {
+		return -1;
+	}
 
-		 /* avoid chmod() if possible, to preserve acls */
-		 if ((st.st_ex_mode & ~S_IFMT) == mode) {
-			 return 0;
-		 }
+	/* avoid chmod() if possible, to preserve acls */
+	if ((st.st_ex_mode & ~S_IFMT) == mode) {
+		return 0;
+	}
 
-		 rc = gpfsacl_emu_chmod(handle, fsp->fsp_name,
-					mode);
-		 if (rc == 1)
-			 return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
-		 return rc;
+	rc = gpfsacl_emu_chmod(handle, fsp->fsp_name,
+			       mode);
+	if (rc == 1) {
+		return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
+	}
+	return rc;
 }
 
 static uint32_t vfs_gpfs_winattrs_to_dosmode(unsigned int winattrs)
