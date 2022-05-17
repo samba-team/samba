@@ -951,8 +951,8 @@ static SMB_ACL_T gpfsacl_get_posix_acl(struct files_struct *fsp,
 	pacl = vfs_gpfs_getacl(talloc_tos(), path, false, type);
 
 	if (pacl == NULL) {
-		DEBUG(10, ("vfs_gpfs_getacl failed for %s with %s\n",
-			   path, strerror(errno)));
+		DBG_DEBUG("vfs_gpfs_getacl failed for %s with %s\n",
+			   fsp_str_dbg(fsp), strerror(errno));
 		if (errno == 0) {
 			errno = EINVAL;
 		}
