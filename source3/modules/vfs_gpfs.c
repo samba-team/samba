@@ -421,7 +421,7 @@ static int gpfs_getacl_with_capability(struct files_struct *fsp,
 
 	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
-	ret = gpfswrap_getacl(fname, flags, buf);
+	ret = gpfswrap_fgetacl(fsp_get_pathref_fd(fsp), flags, buf);
 	saved_errno = errno;
 
 	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
@@ -482,7 +482,7 @@ again:
 	if (use_capability) {
 		ret = gpfs_getacl_with_capability(fsp, flags, aclbuf);
 	} else {
-		ret = gpfswrap_getacl(fname, flags, aclbuf);
+		ret = gpfswrap_fgetacl(fsp_get_pathref_fd(fsp), flags, aclbuf);
 		if ((ret != 0) && (errno == EACCES)) {
 			DBG_DEBUG("Retry with DAC capability for %s\n", fname);
 			use_capability = true;
