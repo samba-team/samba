@@ -23,7 +23,7 @@ import tempfile
 import binascii
 import collections
 import secrets
-from enum import Enum, auto
+from enum import Enum
 
 from collections import namedtuple
 import ldb
@@ -98,10 +98,10 @@ class KDCBaseTest(RawKerberosTest):
     """
 
     class AccountType(Enum):
-        USER = auto()
-        COMPUTER = auto()
-        SERVER = auto()
-        RODC = auto()
+        USER = object()
+        COMPUTER = object()
+        SERVER = object()
+        RODC = object()
 
     @classmethod
     def setUpClass(cls):
