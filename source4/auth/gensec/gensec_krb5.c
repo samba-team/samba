@@ -44,26 +44,10 @@
 #include "../lib/util/asn1.h"
 #include "auth/kerberos/pac_utils.h"
 #include "gensec_krb5.h"
+#include "gensec_krb5_internal.h"
+#include "gensec_krb5_helpers.h"
 
 _PUBLIC_ NTSTATUS gensec_krb5_init(TALLOC_CTX *);
-
-enum GENSEC_KRB5_STATE {
-	GENSEC_KRB5_SERVER_START,
-	GENSEC_KRB5_CLIENT_START,
-	GENSEC_KRB5_CLIENT_MUTUAL_AUTH,
-	GENSEC_KRB5_DONE
-};
-
-struct gensec_krb5_state {
-	enum GENSEC_KRB5_STATE state_position;
-	struct smb_krb5_context *smb_krb5_context;
-	krb5_auth_context auth_context;
-	krb5_data enc_ticket;
-	krb5_keyblock *keyblock;
-	krb5_ticket *ticket;
-	bool gssapi;
-	krb5_flags ap_req_options;
-};
 
 static int gensec_krb5_destroy(struct gensec_krb5_state *gensec_krb5_state)
 {
