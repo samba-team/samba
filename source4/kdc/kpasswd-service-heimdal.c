@@ -160,30 +160,7 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 		return 0;
 	}
 
-	if (chpw.targname != NULL && chpw.targrealm != NULL) {
-		code = krb5_build_principal_ext(context,
-					       &target_principal,
-					       strlen(*chpw.targrealm),
-					       *chpw.targrealm,
-					       0);
-		if (code != 0) {
-			free_ChangePasswdDataMS(&chpw);
-			return kpasswd_make_error_reply(mem_ctx,
-							KRB5_KPASSWD_MALFORMED,
-							"Failed to parse principal",
-							kpasswd_reply);
-		}
-		code = copy_PrincipalName(chpw.targname,
-					  &target_principal->name);
-		if (code != 0) {
-			free_ChangePasswdDataMS(&chpw);
-			krb5_free_principal(context, target_principal);
-			return kpasswd_make_error_reply(mem_ctx,
-							KRB5_KPASSWD_MALFORMED,
-							"Failed to parse principal",
-							kpasswd_reply);
-		}
-	} else {
+	if (chpw.targname == NULL || chpw.targrealm == NULL) {
 		free_ChangePasswdDataMS(&chpw);
 		return kpasswd_change_password(kdc,
 					       mem_ctx,
@@ -193,7 +170,28 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 					       kpasswd_reply,
 					       error_string);
 	}
+	code = krb5_build_principal_ext(context,
+					&target_principal,
+					strlen(*chpw.targrealm),
+					*chpw.targrealm,
+					0);
+	if (code != 0) {
+		free_ChangePasswdDataMS(&chpw);
+		return kpasswd_make_error_reply(mem_ctx,
+						KRB5_KPASSWD_MALFORMED,
+						"Failed to parse principal",
+						kpasswd_reply);
+	}
+	code = copy_PrincipalName(chpw.targname,
+				  &target_principal->name);
 	free_ChangePasswdDataMS(&chpw);
+	if (code != 0) {
+		krb5_free_principal(context, target_principal);
+		return kpasswd_make_error_reply(mem_ctx,
+						KRB5_KPASSWD_MALFORMED,
+						"Failed to parse principal",
+						kpasswd_reply);
+	}
 
 	if (target_principal->name.name_string.len >= 2) {
 		is_service_principal = true;
