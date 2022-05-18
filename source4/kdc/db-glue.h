@@ -100,3 +100,12 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 
 NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_context *base_ctx,
 				struct samba_kdc_db_context **kdc_db_ctx_out);
+
+krb5_error_code dsdb_extract_aes_256_key(krb5_context context,
+					 TALLOC_CTX *mem_ctx,
+					 const struct ldb_message *msg,
+					 uint32_t user_account_control,
+					 const uint32_t *kvno,
+					 uint32_t *kvno_out,
+					 DATA_BLOB *aes_256_key,
+					 DATA_BLOB *salt);

@@ -3337,3 +3337,97 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	*kdc_db_ctx_out = kdc_db_ctx;
 	return NT_STATUS_OK;
 }
+
+krb5_error_code dsdb_extract_aes_256_key(krb5_context context,
+					 TALLOC_CTX *mem_ctx,
+					 const struct ldb_message *msg,
+					 uint32_t user_account_control,
+					 const uint32_t *kvno,
+					 uint32_t *kvno_out,
+					 DATA_BLOB *aes_256_key,
+					 DATA_BLOB *salt)
+{
+	krb5_error_code krb5_ret;
+	uint32_t supported_enctypes;
+	unsigned flags = SDB_F_GET_CLIENT;
+	struct sdb_entry sentry = {};
+
+	if (kvno != NULL) {
+		flags |= SDB_F_KVNO_SPECIFIED;
+	}
+
+	krb5_ret = samba_kdc_message2entry_keys(context,
+						mem_ctx,
+						msg,
+						false, /* is_krbtgt */
+						false, /* is_rodc */
+						user_account_control,
+						SAMBA_KDC_ENT_TYPE_CLIENT,
+						flags,
+						(kvno != NULL) ? *kvno : 0,
+						&sentry,
+						ENC_HMAC_SHA1_96_AES256,
+						&supported_enctypes);
+	if (krb5_ret != 0) {
+		DBG_ERR("Failed to parse supplementalCredentials "
+			"of %s with %s kvno using "
+			"ENCTYPE_HMAC_SHA1_96_AES256 "
+			"Kerberos Key: %s\n",
+			ldb_dn_get_linearized(msg->dn),
+			(kvno != NULL) ? "previous" : "current",
+			krb5_get_error_message(context,
+					       krb5_ret));
+		return krb5_ret;
+	}
+
+	if ((supported_enctypes & ENC_HMAC_SHA1_96_AES256) == 0 ||
+	    sentry.keys.len != 1) {
+		DBG_INFO("Failed to find a ENCTYPE_HMAC_SHA1_96_AES256 "
+			 "key in supplementalCredentials "
+			 "of %s at KVNO %u (got %u keys, expected 1)\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 sentry.kvno,
+			 sentry.keys.len);
+		sdb_entry_free(&sentry);
+		return ENOENT;
+	}
+
+	if (sentry.keys.val[0].salt == NULL) {
+		DBG_INFO("Failed to find a salt in "
+			 "supplementalCredentials "
+			 "of %s at KVNO %u\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 sentry.kvno);
+		sdb_entry_free(&sentry);
+		return ENOENT;
+	}
+
+	if (aes_256_key != NULL) {
+		*aes_256_key = data_blob_talloc(mem_ctx,
+						KRB5_KEY_DATA(&sentry.keys.val[0].key),
+						KRB5_KEY_LENGTH(&sentry.keys.val[0].key));
+		if (aes_256_key->data == NULL) {
+			sdb_entry_free(&sentry);
+			return ENOMEM;
+		}
+		talloc_keep_secret(aes_256_key->data);
+	}
+
+	if (salt != NULL) {
+		*salt = data_blob_talloc(mem_ctx,
+					 sentry.keys.val[0].salt->salt.data,
+					 sentry.keys.val[0].salt->salt.length);
+		if (salt->data == NULL) {
+			sdb_entry_free(&sentry);
+			return ENOMEM;
+		}
+	}
+
+	if (kvno_out != NULL) {
+		*kvno_out = sentry.kvno;
+	}
+
+	sdb_entry_free(&sentry);
+
+	return 0;
+}
