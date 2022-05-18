@@ -24,6 +24,7 @@
 #include "param/param.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
+#include "gensec_krb5_helpers.h"
 #include "kdc/kdc-server.h"
 #include "kdc/kpasswd_glue.h"
 #include "kdc/kpasswd-service.h"
@@ -84,6 +85,7 @@ out:
 
 static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 					       TALLOC_CTX *mem_ctx,
+					       const struct gensec_security *gensec_security,
 					       struct auth_session_info *session_info,
 					       DATA_BLOB *password,
 					       DATA_BLOB *kpasswd_reply,
@@ -95,6 +97,17 @@ static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 	const char *reject_string = NULL;
 	struct samr_DomInfo1 *dominfo;
 	bool ok;
+	int ret;
+
+	/*
+	 * We're doing a password change (rather than a password set), so check
+	 * that we were given an initial ticket.
+	 */
+	ret = gensec_krb5_initial_ticket(gensec_security);
+	if (ret != 1) {
+		*error_string = "Expected an initial ticket";
+		return KRB5_KPASSWD_INITIAL_FLAG_NEEDED;
+	}
 
 	status = samdb_kpasswd_change_password(mem_ctx,
 					       kdc->task->lp_ctx,
@@ -133,6 +146,7 @@ static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 
 static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 					    TALLOC_CTX *mem_ctx,
+					    const struct gensec_security *gensec_security,
 					    struct auth_session_info *session_info,
 					    DATA_BLOB *decoded_data,
 					    DATA_BLOB *kpasswd_reply,
@@ -249,6 +263,7 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 
 		return kpasswd_change_password(kdc,
 					       mem_ctx,
+					       gensec_security,
 					       session_info,
 					       &password,
 					       kpasswd_reply,
@@ -349,6 +364,7 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 
 		return kpasswd_change_password(kdc,
 					       mem_ctx,
+					       gensec_security,
 					       session_info,
 					       &password,
 					       kpasswd_reply,
@@ -357,6 +373,7 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 	case RFC3244_VERSION: {
 		return kpasswd_set_password(kdc,
 					    mem_ctx,
+					    gensec_security,
 					    session_info,
 					    decoded_data,
 					    kpasswd_reply,

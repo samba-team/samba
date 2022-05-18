@@ -18,6 +18,7 @@
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_initial.ad_dc
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_no_canonicalize.ad_dc
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_no_seq_number.ad_dc
+^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_non_initial.ad_dc
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_set.ad_dc
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_set_expired_password.ad_dc
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_set_target_princ_and_realm_access.ad_dc

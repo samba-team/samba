@@ -85,6 +85,7 @@ bld.SAMBA_SUBSYSTEM('KPASSWD-SERVICE',
                          krb5samba
                          samba_server_gensec
                          KPASSWD_GLUE
+                         gensec_krb5_helpers
                          ''')
 
 bld.SAMBA_SUBSYSTEM('KDC-GLUE',
