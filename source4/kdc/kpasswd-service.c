@@ -256,6 +256,7 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 				      &kpasswd_dec_reply,
 				      &error_string);
 	if (code != 0) {
+		ap_rep_blob = data_blob_null;
 		error_code = code;
 		goto reply;
 	}
@@ -265,6 +266,7 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 			     &kpasswd_dec_reply,
 			     &enc_data_blob);
 	if (!NT_STATUS_IS_OK(status)) {
+		ap_rep_blob = data_blob_null;
 		error_code = KRB5_KPASSWD_HARDERROR;
 		error_string = talloc_asprintf(tmp_ctx,
 					       "gensec_wrap failed - %s\n",
