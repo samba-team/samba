@@ -312,7 +312,7 @@ reply:
 		}
 
 		code = smb_krb5_mk_error(kdc->smb_krb5_context->krb5_context,
-					 error_code,
+					 KRB5KDC_ERR_NONE + error_code,
 					 NULL, /* e_text */
 					 &k_dec_data,
 					 NULL, /* client */
