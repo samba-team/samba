@@ -894,6 +894,7 @@ static krb5_error_code samba_kdc_get_entry_principal(
 		const char *samAccountName,
 		enum samba_kdc_ent_type ent_type,
 		unsigned flags,
+		bool is_kadmin_changepw,
 		krb5_const_principal in_princ,
 		krb5_principal *out_princ)
 {
@@ -913,46 +914,52 @@ static krb5_error_code samba_kdc_get_entry_principal(
 	 * fixed UPPER case realm, but the as-sent username
 	 */
 
-	if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT && canon) {
-		/*
-		 * When requested to do so, ensure that the
-		 * both realm values in the principal are set
-		 * to the upper case, canonical realm
-		 */
-		code = smb_krb5_make_principal(context,
-					       out_princ,
-					       lpcfg_realm(lp_ctx),
-					       "krbtgt",
-					       lpcfg_realm(lp_ctx),
-					       NULL);
-		if (code != 0) {
+	/*
+	 * We need to ensure that the kadmin/changepw principal isn't able to
+	 * issue krbtgt tickets, even if canonicalization is turned on.
+	 */
+	if (!is_kadmin_changepw) {
+		if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT && canon) {
+			/*
+			 * When requested to do so, ensure that the
+			 * both realm values in the principal are set
+			 * to the upper case, canonical realm
+			 */
+			code = smb_krb5_make_principal(context,
+						       out_princ,
+						       lpcfg_realm(lp_ctx),
+						       "krbtgt",
+						       lpcfg_realm(lp_ctx),
+						       NULL);
+			if (code != 0) {
+				return code;
+			}
+			smb_krb5_principal_set_type(context,
+						    *out_princ,
+						    KRB5_NT_SRV_INST);
+
+			return 0;
+		}
+
+		if ((canon && flags & (SDB_F_FORCE_CANON|SDB_F_FOR_AS_REQ)) ||
+		    (ent_type == SAMBA_KDC_ENT_TYPE_ANY && in_princ == NULL)) {
+			/*
+			 * SDB_F_CANON maps from the canonicalize flag in the
+			 * packet, and has a different meaning between AS-REQ
+			 * and TGS-REQ.  We only change the principal in the
+			 * AS-REQ case.
+			 *
+			 * The SDB_F_FORCE_CANON if for new MIT KDC code that
+			 * wants the canonical name in all lookups, and takes
+			 * care to canonicalize only when appropriate.
+			 */
+			code = smb_krb5_make_principal(context,
+						      out_princ,
+						      lpcfg_realm(lp_ctx),
+						      samAccountName,
+						      NULL);
 			return code;
 		}
-		smb_krb5_principal_set_type(context,
-					    *out_princ,
-					    KRB5_NT_SRV_INST);
-
-		return 0;
-	}
-
-	if ((canon && flags & (SDB_F_FORCE_CANON|SDB_F_FOR_AS_REQ)) ||
-	    (ent_type == SAMBA_KDC_ENT_TYPE_ANY && in_princ == NULL)) {
-		/*
-		 * SDB_F_CANON maps from the canonicalize flag in the
-		 * packet, and has a different meaning between AS-REQ
-		 * and TGS-REQ.  We only change the principal in the
-		 * AS-REQ case.
-		 *
-		 * The SDB_F_FORCE_CANON if for new MIT KDC code that
-		 * wants the canonical name in all lookups, and takes
-		 * care to canonicalize only when appropriate.
-		 */
-		code = smb_krb5_make_principal(context,
-					      out_princ,
-					      lpcfg_realm(lp_ctx),
-					      samAccountName,
-					      NULL);
-		return code;
 	}
 
 	/*
@@ -1266,6 +1273,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					    samAccountName,
 					    ent_type,
 					    flags,
+					    entry_ex->entry.flags.change_pw,
 					    principal,
 					    &entry_ex->entry.principal);
 	if (ret != 0) {
