@@ -1218,6 +1218,12 @@ plantestsuite("samba3.blackbox.netfileenum", "simpleserver:local",
                '$SERVER_IP',
                'tmp'])
 
+plantestsuite("samba3.blackbox.netshareenum_username", "fileserver",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_user_in_sharelist.sh"),
+               os.path.join(bindir(), "rpcclient"),
+               '$SERVER_IP'])
+
 plantestsuite("samba3.blackbox.net_tdb", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_tdb.sh"),
                smbclient3, '$SERVER', 'tmp', '$USERNAME', '$PASSWORD',
