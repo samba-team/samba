@@ -610,6 +610,9 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 				      uint32_t *total_entries,
 				      bool all_shares)
 {
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	uint32_t num_entries = 0;
@@ -622,6 +625,9 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 	bool *allowed = 0;
 	union srvsvc_NetShareCtr ctr;
 	uint32_t resume_handle = resume_handle_p ? *resume_handle_p : 0;
+	const char *unix_name = session_info->unix_info->unix_name;
+	int existing_home = lp_servicenumber(unix_name);
+	int added_home = -1;
 	WERROR ret = WERR_OK;
 
 	DEBUG(5,("init_srv_share_info_ctr\n"));
@@ -631,8 +637,13 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 	delete_and_reload_printers();
 	load_usershare_shares(NULL, connections_snum_used);
 	load_registry_shares();
-	num_services = lp_numservices();
 	unbecome_root();
+
+	if (existing_home == -1) {
+		added_home = register_homes_share(unix_name);
+	}
+
+	num_services = lp_numservices();
 
         allowed = talloc_zero_array(ctx, bool, num_services);
 	if (allowed == NULL) {
@@ -896,6 +907,9 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 nomem:
 	ret = WERR_NOT_ENOUGH_MEMORY;
 done:
+	if (added_home != -1) {
+		lp_killservice(added_home);
+	}
 	return ret;
 }
 
