@@ -1,0 +1,14 @@
+<samba:parameter name="volume serial number"
+                 context="S"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This allows to override the volume serial number
+	(a 32bit value) reported for a share.</para>
+	<para>The special value <emphasis>-1</emphasis> (default) stands for
+	a unique number that is calculated for each share.</para>
+</description>
+
+<value type="default">-1</value>
+<value type="example">0xabcdefgh</value>
+</samba:parameter>

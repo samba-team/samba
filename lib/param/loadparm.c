@@ -2529,6 +2529,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->sDefault->aio_write_size = 1;
 	lp_ctx->sDefault->smbd_search_ask_sharemode = true;
 	lp_ctx->sDefault->smbd_getinfo_ask_sharemode = true;
+	lp_ctx->sDefault->volume_serial_number = -1;
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
