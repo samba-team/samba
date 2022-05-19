@@ -39,7 +39,7 @@ libpython = bld.pyembed_libname('LIBPYTHON')
 
 bld.SAMBA_PYTHON('pyparam',
 	         source='pyparam.c',
-	         deps='samba-hostconfig %s' % pytalloc_util,
+	         deps='samba-hostconfig server-role samba-util samba-debug %s' % pytalloc_util,
 	         realname='samba/param.so'
 	         )
 

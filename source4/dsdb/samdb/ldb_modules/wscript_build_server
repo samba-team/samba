@@ -345,7 +345,7 @@ bld.SAMBA_MODULE('ldb_anr',
 	init_function='ldb_anr_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc samba-util samdb'
+	deps='talloc samba-util samdb ldbsamba'
 	)
 
 
@@ -385,7 +385,7 @@ bld.SAMBA_MODULE('ldb_resolve_oids',
 	init_function='ldb_resolve_oids_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='samdb talloc ndr'
+	deps='samdb talloc ndr ldbsamba'
 	)
 
 

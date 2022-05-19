@@ -243,7 +243,7 @@ else:
 
     bld.SAMBA_LIBRARY('samba-modules',
                       source='modules.c',
-                      deps='samba-errors samba-util',
+                      deps='samba-errors samba-util samba-debug',
                       local_include=False,
                       private_library=True)
 
@@ -283,7 +283,7 @@ else:
                           tevent_req_profile.c
                       ''',
                       local_include=False,
-                      public_deps='tevent samba-errors',
+                      public_deps='tevent time-basic samba-errors',
                       public_headers='tevent_ntstatus.h tevent_unix.h tevent_werror.h',
                       header_path=[ ('*', 'util') ],
                       pc_files=[],

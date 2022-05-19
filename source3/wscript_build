@@ -192,7 +192,7 @@ bld.SAMBA3_LIBRARY('smbldaphelper',
                           passdb/pdb_ldap_schema.c
                           passdb/pdb_ldap_util.c
                           ''',
-                   deps='smbldap secrets3',
+                   deps='smbldap secrets3 samba-security samba3-util',
                    allow_undefined_symbols=True,
                    enabled=bld.CONFIG_SET('HAVE_LDAP'),
                    private_library=True)
@@ -500,7 +500,7 @@ bld.SAMBA3_LIBRARY('secrets3',
 
 bld.SAMBA3_LIBRARY('smbldap',
                     source='lib/smbldap.c',
-                    deps='ldap lber samba-util smbconf',
+                    deps='ldap lber samba-util smbconf samba-security genrand smbd_shim',
                     enabled=bld.CONFIG_SET("HAVE_LDAP"),
                     private_library=False,
                     abi_directory='lib/ABI',
