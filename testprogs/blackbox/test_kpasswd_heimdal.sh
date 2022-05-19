@@ -7,7 +7,7 @@
 
 if [ $# -lt 6 ]; then
 cat <<EOF
-Usage: test_passwords.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX SMBCLIENT
+Usage: test_kpasswd_heimdal.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX SMBCLIENT
 EOF
 exit 1;
 fi
@@ -26,6 +26,8 @@ samba_bindir="$BINDIR"
 smbclient="$samba_bindir/smbclient"
 samba_kinit=$samba_bindir/samba4kinit
 samba_kpasswd=$samba_bindir/samba4kpasswd
+
+mit_kpasswd="$(command -v kpasswd)"
 
 samba_tool="$samba_bindir/samba-tool"
 net_tool="$samba_bindir/net"
@@ -141,6 +143,37 @@ testit "kpasswd change user password" \
 
 TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@03%"
+
+###########################################################
+### CVE-2022-XXXXX
+###########################################################
+
+if [ -n "${mit_kpasswd}" ]; then
+	cat > "${PREFIX}/tmpkpasswdscript" <<EOF
+expect Password for ${TEST_PRINCIPAL}
+password ${TEST_PASSWORD}\n
+expect Enter new password
+send ${TEST_PASSWORD_NEW}\n
+expect Enter it again
+send ${TEST_PASSWORD_NEW}\n
+expect Password changed.
+EOF
+
+	SAVE_KRB5_CONFIG="${KRB5_CONFIG}"
+	KRB5_CONFIG="${PREFIX}/tmpkrb5.conf"
+	export KRB5_CONFIG
+	sed -e 's/\[libdefaults\]/[libdefaults]\n canonicalize = yes/' \
+		"${SAVE_KRB5_CONFIG}" > "${KRB5_CONFIG}"
+	testit "MIT kpasswd change user password" \
+		"${texpect}" "${PREFIX}/tmpkpasswdscript" "${mit_kpasswd}" \
+		"${TEST_PRINCIPAL}" ||
+		failed=$((failed + 1))
+	KRB5_CONFIG="${SAVE_KRB5_CONFIG}"
+	export KRB5_CONFIG
+fi
+
+TEST_PASSWORD="${TEST_PASSWORD_NEW}"
+TEST_PASSWORD_NEW="testPaSS@03force%"
 
 ###########################################################
 ### Force password change at login
