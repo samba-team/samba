@@ -407,9 +407,6 @@ Offset  Data			length.
 #define NTCREATEX_FLAG_DENY_DOS			0x0001
 #define NTCREATEX_FLAG_DENY_FCB			0x0002
 
-/* Private flag for printer support */
-#define NTCREATEX_FLAG_DELETE_ON_CLOSE		0x0008
-
 /* Private flag for streams support */
 #define NTCREATEX_FLAG_STREAM_BASEOPEN		0x0010
 

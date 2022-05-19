@@ -243,6 +243,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->fsp_flags.is_directory = false;
+	fsp->fsp_flags.delete_on_close = false;
 
 	fsp->print_file = pf;
 
@@ -319,8 +320,7 @@ void print_spool_end(files_struct *fsp, enum file_close_type close_type)
 	WERROR werr;
 	struct dcerpc_binding_handle *b = NULL;
 
-	if (fh_get_private_options(fsp->fh) &
-	    NTCREATEX_FLAG_DELETE_ON_CLOSE) {
+	if (fsp->fsp_flags.delete_on_close) {
 		int ret;
 
 		/*

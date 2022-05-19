@@ -28,11 +28,7 @@ struct fd_handle {
 	/*
 	 * NT Create options, but we only look at
 	 * NTCREATEX_FLAG_DENY_DOS and
-	 * NTCREATEX_FLAG_DENY_FCB and
-	 * NTCREATEX_FLAG_DELETE_ON_CLOSE
-	 * for print files *only*, where
-	 * DELETE_ON_CLOSE is not stored in the share
-	 * mode database.
+	 * NTCREATEX_FLAG_DENY_FCB.
 	 */
 	uint32_t private_options;
 	uint64_t gen_id;

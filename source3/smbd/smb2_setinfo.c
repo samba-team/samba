@@ -439,10 +439,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			if ((file_info_level == SMB_SET_FILE_DISPOSITION_INFO)
 			    && in_input_buffer.length >= 1
 			    && CVAL(in_input_buffer.data,0)) {
-				uint32_t new_private_options =
-					fh_get_private_options(fsp->fh);
-				new_private_options |= NTCREATEX_FLAG_DELETE_ON_CLOSE;
-				fh_set_private_options(fsp->fh, new_private_options);
+				fsp->fsp_flags.delete_on_close = true;
 
 				DEBUG(3,("smbd_smb2_setinfo_send: "
 					 "Cancelling print job (%s)\n",

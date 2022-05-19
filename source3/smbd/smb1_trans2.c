@@ -2415,12 +2415,8 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			 * Doing a DELETE_ON_CLOSE should cancel a print job.
 			 */
 			if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
-				uint32_t new_private_options =
-					fh_get_private_options(fsp->fh);
-				new_private_options |=
-					NTCREATEX_FLAG_DELETE_ON_CLOSE;
-				fh_set_private_options(fsp->fh,
-						       new_private_options);
+
+				fsp->fsp_flags.delete_on_close = true;
 
 				DEBUG(3,("call_trans2setfilepathinfo: "
 					 "Cancelling print job (%s)\n",
