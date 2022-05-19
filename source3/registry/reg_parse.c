@@ -641,7 +641,7 @@ static bool lookslike_utf16(const char* line, size_t len, bool* little_endian)
 
 	size_t l = MIN(len/2, 64);
 	const uint16_t* u = (const uint16_t*)line;
-	int i;
+	size_t i;
 
 	assert(len >= 2);
 
@@ -667,7 +667,7 @@ static bool lookslike_utf16(const char* line, size_t len, bool* little_endian)
 
 static bool lookslike_dos(const char* line, size_t len)
 {
-	int i;
+	size_t i;
 	for (i=0; i<len; i++) {
 		if ( (line[i] == '\0') || (line[i] & 0x80) ) {
 			return false;

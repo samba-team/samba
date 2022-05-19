@@ -1045,7 +1045,7 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 {
 	TDB_DATA dbuf;
 	uint8_t *buffer = NULL;
-	int i = 0;
+	uint32_t i = 0;
 	uint32_t len, buflen;
 	uint32_t num_subkeys = regsubkey_ctr_numkeys(ctr);
 	char *keyname = NULL;
@@ -1739,7 +1739,7 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 	uint32_t num_items;
 	uint8_t *buf;
 	uint32_t buflen, len;
-	int i;
+	uint32_t i;
 	fstring subkeyname;
 	TALLOC_CTX *frame = talloc_stackframe();
 	TDB_DATA value;
@@ -1854,7 +1854,7 @@ static int regdb_unpack_values(struct regval_ctr *values,
 	uint32_t	size;
 	uint8_t		*data_p;
 	uint32_t 	num_values = 0;
-	int 		i;
+	uint32_t	i;
 
 	/* loop and unpack the rest of the registry values */
 
