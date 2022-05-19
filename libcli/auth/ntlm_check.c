@@ -259,12 +259,19 @@ static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 
 NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
 			     bool lanman_auth,
+			     enum ntlm_auth_level ntlm_auth,
 			     const struct samr_Password *client_lanman,
 			     const struct samr_Password *client_nt,
 			     const char *username, 
 			     const struct samr_Password *stored_lanman, 
 			     const struct samr_Password *stored_nt)
 {
+	if (ntlm_auth == NTLM_AUTH_DISABLED) {
+		DBG_WARNING("hash_password_check: NTLM authentication not "
+			    "permitted by configuration.\n");
+		return NT_STATUS_NTLM_BLOCKED;
+	}
+
 	if (stored_nt == NULL) {
 		DEBUG(3,("hash_password_check: NO NT password stored for user %s.\n",
 			 username));
@@ -387,6 +394,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		}
 		return hash_password_check(mem_ctx, 
 					   lanman_auth,
+					   ntlm_auth,
 					   lm_ok ? &client_lm : NULL, 
 					   nt_response->length ? &client_nt : NULL, 
 					   username,  

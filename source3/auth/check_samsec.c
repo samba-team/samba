@@ -73,6 +73,7 @@ static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
 	switch (user_info->password_state) {
 	case AUTH_PASSWORD_HASH:
 		status = hash_password_check(mem_ctx, lp_lanman_auth(),
+					     lp_ntlm_auth(),
 					     user_info->password.hash.lanman,
 					     user_info->password.hash.nt,
 					     username,

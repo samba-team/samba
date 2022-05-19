@@ -125,6 +125,7 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 		*user_sess_key = data_blob(NULL, 0);
 		status = hash_password_check(mem_ctx, 
 					     false,
+					     lpcfg_ntlm_auth(auth_context->lp_ctx),
 					     NULL,
 					     user_info->password.hash.nt,
 					     user_info->mapped.account_name,

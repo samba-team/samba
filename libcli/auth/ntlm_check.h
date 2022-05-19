@@ -45,6 +45,7 @@ struct samr_Password;
 
 NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
 				 bool lanman_auth,
+			     enum ntlm_auth_level ntlm_auth,
 			     const struct samr_Password *client_lanman,
 			     const struct samr_Password *client_nt,
 			     const char *username, 
