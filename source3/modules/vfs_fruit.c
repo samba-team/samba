@@ -4781,8 +4781,7 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 				   state->handle->conn,
 				   src_fname_tmp,
 				   dst_fname_tmp,
-				   OPENX_FILE_CREATE_IF_NOT_EXIST,
-				   0, false);
+				   OPENX_FILE_CREATE_IF_NOT_EXIST);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("%s: copy %s to %s failed: %s\n", __func__,
 				  smb_fname_str_dbg(src_fname_tmp),

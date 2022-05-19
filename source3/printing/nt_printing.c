@@ -1461,8 +1461,7 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 
 		status = copy_file(mem_ctx, conn, smb_fname_old, smb_fname_new,
 				   OPENX_FILE_EXISTS_TRUNCATE |
-				   OPENX_FILE_CREATE_IF_NOT_EXIST,
-				   0, false);
+				   OPENX_FILE_CREATE_IF_NOT_EXIST);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("move_driver_file_to_download_area: Unable "

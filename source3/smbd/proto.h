@@ -988,9 +988,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			struct smb_filename *smb_fname_src,
 			struct smb_filename *smb_fname_dst,
-			int ofun,
-			int count,
-			bool target_is_directory);
+			int ofun);
 uint64_t get_lock_offset(const uint8_t *data, int data_offset,
 			 bool large_file_format);
 

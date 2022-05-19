@@ -1836,9 +1836,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			struct smb_filename *smb_fname_src,
 			struct smb_filename *smb_fname_dst,
-			int ofun,
-			int count,
-			bool target_is_directory)
+			int ofun)
 {
 	struct smb_filename *smb_fname_dst_tmp = NULL;
 	off_t ret=-1;
@@ -1853,31 +1851,6 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/*
-	 * If the target is a directory, extract the last component from the
-	 * src filename and append it to the dst filename
-	 */
-	if (target_is_directory) {
-		const char *p;
-
-		/* dest/target can't be a stream if it's a directory. */
-		SMB_ASSERT(smb_fname_dst->stream_name == NULL);
-
-		p = strrchr_m(smb_fname_src->base_name,'/');
-		if (p) {
-			p++;
-		} else {
-			p = smb_fname_src->base_name;
-		}
-		smb_fname_dst_tmp->base_name =
-		    talloc_asprintf_append(smb_fname_dst_tmp->base_name, "/%s",
-					   p);
-		if (!smb_fname_dst_tmp->base_name) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-	}
-
 	status = vfs_file_exist(conn, smb_fname_src);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -1888,18 +1861,14 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	if (!target_is_directory && count) {
-		new_create_disposition = FILE_OPEN;
-	} else {
-		if (!map_open_params_to_ntcreate(smb_fname_dst_tmp->base_name,
-						 0, ofun,
-						 NULL, NULL,
-						 &new_create_disposition,
-						 NULL,
-						 NULL)) {
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto out;
-		}
+	if (!map_open_params_to_ntcreate(smb_fname_dst_tmp->base_name,
+					 0, ofun,
+					 NULL, NULL,
+					 &new_create_disposition,
+					 NULL,
+					 NULL)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
 	/* Open the src file for reading. */
