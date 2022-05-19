@@ -839,13 +839,6 @@ static void take_cluster_lock_handler(char status,
 
 	default:
 		D_ERR("Unable to take cluster lock - unknown error\n");
-
-		{
-			struct ctdb_recoverd *rec = s->rec;
-
-			D_ERR("Banning this node\n");
-			ctdb_ban_node(rec, rec->pnn);
-		}
 	}
 
 	s->done = true;

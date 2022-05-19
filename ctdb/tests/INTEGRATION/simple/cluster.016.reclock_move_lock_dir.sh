@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-# Verify that if the directory containing the recovery lock is moved
-# then all nodes are banned (because they can't take the lock).
-# Confirm that if the directory is moved back and the bans time out
-# then the cluster returns to good health.
+# Verify that if the directory containing the cluster lock is moved
+# then the current cluster leader no longer claims to be leader, and
+# no other node claims to be leader.  Confirm that if the directory is
+# moved back then a node will become leader.
 
-# This simulates the cluster filesystem containing the recovery lock
+# This simulates the cluster filesystem containing the cluster lock
 # being unmounted and remounted.
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
@@ -19,21 +19,9 @@ ctdb_test_init -n
 echo "Starting CTDB with cluster lock recheck time set to 5s..."
 ctdb_nodes_start_custom -r 5
 
-all_nodes_are_banned ()
-{
-	node="$1"
-
-	ctdb_onnode "$node" nodestatus
-	[ $? -eq 1 ]
-
-	# shellcheck disable=SC2154
-	# $out set by ctdb_onnode() above
-	[ "$out" = "Warning: All nodes are banned." ]
-}
-
 select_test_node
 
-echo "Get recovery lock setting"
+echo "Get cluster lock setting"
 # shellcheck disable=SC2154
 # $test_node set by select_test_node() above
 ctdb_onnode "$test_node" getreclock
@@ -42,49 +30,63 @@ ctdb_onnode "$test_node" getreclock
 reclock_setting="$out"
 
 if [ -z "$reclock_setting" ] ; then
-	ctdb_test_skip "Recovery lock is not set"
+	ctdb_test_skip "Cluster lock is not set"
 fi
 
 t="${reclock_setting% 5}"
 reclock="${t##* }"
 
 if [ ! -f "$reclock" ] ; then
-	ctdb_test_error "Recovery lock file \"${reclock}\" is missing"
+	ctdb_test_error "Cluster lock file \"${reclock}\" is missing"
 fi
 
-echo "Recovery lock setting is \"${reclock_setting}\""
-echo "Recovery lock file is \"${reclock}\""
+echo "Cluster lock setting is \"${reclock_setting}\""
+echo "Cluster lock file is \"${reclock}\""
 echo
 
-echo "Set ban period to 30s"
-ctdb_onnode all setvar RecoveryBanPeriod 30
-echo
-
-# Avoid a race where the election handler can be called before the
-# tunables are updated in the recovery daemon.  Ideally, since
-# everything is idle, this should take one RecoverInterval
-# (i.e. iteration of the monitor loop in the recovery daemon).
-# However, this is the interval between loops and each loop can take
-# an arbitrary amount of time.  The only way to be sure that the
-# tunables have definitely been updated is to do 2 recoveries - this
-# guarantees the tunables were read at the top of the loop between the
-# 2 recoveries.
-echo "2 recoveries to ensure that tunables have been re-read"
-ctdb_onnode "$test_node" "recover"
-ctdb_onnode "$test_node" "recover"
+leader_get "$test_node"
 
 dir=$(dirname "$reclock")
 
-echo "Rename recovery lock directory"
+echo "Rename cluster lock directory"
 mv "$dir" "${dir}.$$"
+
+wait_until_leader_has_changed "$test_node"
 echo
 
-echo "Wait until all nodes are banned"
-wait_until 60 all_nodes_are_banned "$test_node"
+# shellcheck disable=SC2154
+# $leader set by leader_get() & wait_until_leader_has_changed(), above
+if [ "$leader" != "UNKNOWN" ]; then
+	test_fail "BAD: leader is ${leader}"
+fi
+
+echo "OK: leader is UNKNOWN"
 echo
 
-echo "Restore recovery lock directory"
+echo 'Get "leader timeout":'
+conf_tool="${CTDB_SCRIPTS_HELPER_BINDIR}/ctdb-config"
+# shellcheck disable=SC2154
+# $test_node set by select_test_node() above
+try_command_on_node "$test_node" "${conf_tool} get cluster 'leader timeout'"
+# shellcheck disable=SC2154
+# $out set by ctdb_onnode() above
+leader_timeout="$out"
+echo "Leader timeout is ${leader_timeout}s"
+echo
+
+sleep_time=$((2 * leader_timeout))
+echo "Waiting for ${sleep_time}s to confirm leader stays UNKNOWN"
+sleep_for $sleep_time
+
+leader_get "$test_node"
+if [ "$leader" = "UNKNOWN" ]; then
+	echo "OK: leader is UNKNOWN"
+	echo
+else
+	test_fail "BAD: leader is ${leader}"
+fi
+
+echo "Restore cluster lock directory"
 mv "${dir}.$$" "$dir"
-echo
 
-wait_until_ready 60
+wait_until_leader_has_changed "$test_node"
