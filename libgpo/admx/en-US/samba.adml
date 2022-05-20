@@ -1963,7 +1963,7 @@ Example: /opt/mit/sbin/krb5kdc</string>
  authenticate users using the NTLM encrypted password response for
  this local passdb (SAM or account database).
 
- If disabled, both NTLM and LanMan authencication against the
+ If disabled, both NTLM and LanMan authentication against the
  local passdb is disabled.
 
  Note that these settings apply only to local users,
@@ -2836,7 +2836,7 @@ Example: IPTOS_LOWDELAY</string>
       <string id="POL_3FD02174_8A27_5426_848C_B3123EA8C4C3_Help">This global parameter determines if the tdb internals of Samba can
  depend on mmap working correctly on the running system. Samba requires a coherent
  mmap/read-write system memory cache. Currently only OpenBSD and HPUX do not have such a
- coherent cache, and on those platforms this paramter is overridden internally
+ coherent cache, and on those platforms this parameter is overridden internally
  to be effeceively no. On all systems this parameter should be left alone. This
  parameter is provided to help the Samba developers track down problems with
  the tdb internal code.</string>
