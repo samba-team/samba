@@ -238,14 +238,17 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn, char *buffer,
 	}
 
 	if (do_encrypt) {
-		NTSTATUS status = srv_encrypt_buffer(xconn, buffer, &buf_out);
+		char *enc = NULL;
+		NTSTATUS status = srv_encrypt_buffer(xconn, buffer, &enc);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("send_smb: SMB encryption failed "
 				"on outgoing packet! Error %s\n",
 				nt_errstr(status) ));
+			SAFE_FREE(enc);
 			ret = -1;
 			goto out;
 		}
+		buf_out = enc;
 	}
 
 	len = smb_len_large(buf_out) + 4;
