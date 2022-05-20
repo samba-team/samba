@@ -1836,13 +1836,12 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			struct smb_filename *smb_fname_src,
 			struct smb_filename *smb_fname_dst,
-			int ofun)
+			uint32_t new_create_disposition)
 {
 	struct smb_filename *smb_fname_dst_tmp = NULL;
 	off_t ret=-1;
 	files_struct *fsp1,*fsp2;
 	uint32_t dosattrs;
-	uint32_t new_create_disposition;
 	NTSTATUS status;
 
 
@@ -1858,16 +1857,6 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 
 	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_src);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	if (!map_open_params_to_ntcreate(smb_fname_dst_tmp->base_name,
-					 0, ofun,
-					 NULL, NULL,
-					 &new_create_disposition,
-					 NULL,
-					 NULL)) {
-		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
 
@@ -1933,18 +1922,6 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file_free(NULL, &fsp1, ERROR_CLOSE);
 		goto out;
-	}
-
-	if (ofun & OPENX_FILE_EXISTS_OPEN) {
-		ret = SMB_VFS_LSEEK(fsp2, 0, SEEK_END);
-		if (ret == -1) {
-			DEBUG(0, ("error - vfs lseek returned error %s\n",
-				strerror(errno)));
-			status = map_nt_error_from_unix(errno);
-			close_file_free(NULL, &fsp1, ERROR_CLOSE);
-			close_file_free(NULL, &fsp2, ERROR_CLOSE);
-			goto out;
-		}
 	}
 
 	/* Do the actual copy. */
