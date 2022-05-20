@@ -42,6 +42,9 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 	struct winbindd_pam_auth_crap_state *state;
 	struct winbindd_domain *domain;
 	const char *auth_domain = NULL;
+	bool lmlength_ok = false;
+	bool ntlength_ok = false;
+	bool pwlength_ok = false;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_pam_auth_crap_state);
@@ -140,16 +143,24 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 		fstrcpy(request->data.auth_crap.workstation, lp_netbios_name());
 	}
 
-	if (request->data.auth_crap.lm_resp_len > sizeof(request->data.auth_crap.lm_resp)
-		|| request->data.auth_crap.nt_resp_len > sizeof(request->data.auth_crap.nt_resp)) {
-		if (!(request->flags & WBFLAG_BIG_NTLMV2_BLOB) ||
-		     request->extra_len != request->data.auth_crap.nt_resp_len) {
-			DBG_ERR("Invalid password length %u/%u\n",
-				request->data.auth_crap.lm_resp_len,
-				request->data.auth_crap.nt_resp_len);
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, ev);
-		}
+	lmlength_ok = (request->data.auth_crap.lm_resp_len <=
+		       sizeof(request->data.auth_crap.lm_resp));
+
+	ntlength_ok = (request->data.auth_crap.nt_resp_len <=
+		       sizeof(request->data.auth_crap.nt_resp));
+
+	ntlength_ok |=
+		((request->flags & WBFLAG_BIG_NTLMV2_BLOB) &&
+		 (request->extra_len == request->data.auth_crap.nt_resp_len));
+
+	pwlength_ok = lmlength_ok && ntlength_ok;
+
+	if (!pwlength_ok) {
+		DBG_ERR("Invalid password length %u/%u\n",
+			request->data.auth_crap.lm_resp_len,
+			request->data.auth_crap.nt_resp_len);
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
 	subreq = wb_domain_request_send(state, global_event_context(), domain,
