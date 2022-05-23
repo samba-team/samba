@@ -315,7 +315,7 @@ def check_python_headers(conf, features='pyembed pyext'):
 		conf.fatal('Could not find the python executable')
 
 	# so we actually do all this for compatibility reasons and for obtaining pyext_PATTERN below
-	v = 'prefix SO LDFLAGS LIBDIR LIBPL INCLUDEPY Py_ENABLE_SHARED MACOSX_DEPLOYMENT_TARGET LDSHARED CFLAGS LDVERSION'.split()
+	v = 'prefix SO EXT_SUFFIX LDFLAGS LIBDIR LIBPL INCLUDEPY Py_ENABLE_SHARED MACOSX_DEPLOYMENT_TARGET LDSHARED CFLAGS LDVERSION'.split()
 	try:
 		lst = conf.get_python_variables(["get_config_var('%s') or ''" % x for x in v])
 	except RuntimeError:
@@ -328,7 +328,7 @@ def check_python_headers(conf, features='pyembed pyext'):
 	x = 'MACOSX_DEPLOYMENT_TARGET'
 	if dct[x]:
 		env[x] = conf.environ[x] = str(dct[x])
-	env.pyext_PATTERN = '%s' + dct['SO'] # not a mistake
+	env.pyext_PATTERN = '%s' + (dct['EXT_SUFFIX'] or dct['SO']) # SO is deprecated in 3.5 and removed in 3.11
 
 
 	# Try to get pythonX.Y-config
