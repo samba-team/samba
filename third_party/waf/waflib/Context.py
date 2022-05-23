@@ -18,13 +18,13 @@ else:
 	import imp
 
 # the following 3 constants are updated on each new release (do not touch)
-HEXVERSION=0x2001700
+HEXVERSION=0x2001800
 """Constant updated on new releases"""
 
-WAFVERSION="2.0.23"
+WAFVERSION="2.0.24"
 """Constant updated on new releases"""
 
-WAFREVISION="cc6b34cf555d354c34f554c41206134072588de7"
+WAFREVISION="1af97c71f5a6756abf36d0f78ed8fd551596d7cb"
 """Git revision when the waf version is updated"""
 
 WAFNAME="waf"
@@ -144,7 +144,7 @@ class Context(ctx):
 	:type fun: string
 
 	.. inheritance-diagram:: waflib.Context.Context waflib.Build.BuildContext waflib.Build.InstallContext waflib.Build.UninstallContext waflib.Build.StepContext waflib.Build.ListContext waflib.Configure.ConfigurationContext waflib.Scripting.Dist waflib.Scripting.DistCheck waflib.Build.CleanContext
-
+	   :top-classes: waflib.Context.Context
 	"""
 
 	errors = Errors
