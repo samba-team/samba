@@ -51,6 +51,8 @@ void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct 
 	ndr_print_string(ndr, "realm", r->server.realm);
 	ndr_print_string(ndr, "workgroup", r->server.workgroup);
 	ndr_print_string(ndr, "ldap_server", r->server.ldap_server);
+	ndr_print_bool(ndr, "gc", r->server.gc);
+	ndr_print_bool(ndr, "no_fallback", r->server.no_fallback);
 	ndr->depth--;
 	ndr_print_struct(ndr, name, "auth");
 	ndr->depth++;
