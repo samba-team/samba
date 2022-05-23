@@ -6552,6 +6552,11 @@ int main(int argc,char *argv[])
 				print_sockaddr(dest_ss_str, sizeof(dest_ss_str), &dest_ss);
 			}
 			break;
+		case 'E':
+			setup_logging("smbclient", DEBUG_STDERR );
+			display_set_stderr();
+			break;
+
 		case 'L':
 			query_host = talloc_strdup(frame, poptGetOptArg(pc));
 			if (!query_host) {
