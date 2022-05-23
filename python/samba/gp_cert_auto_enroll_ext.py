@@ -358,9 +358,9 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                         # This policy applies as specified in [MS-CAESO] 4.4.5.1
                         if e.data == 0x8000:
                             continue # The policy is disabled
-                        enroll = e.data & 0x1 == 1
-                        manage = e.data & 0x2 == 1
-                        retrive_pending = e.data & 0x4 == 1
+                        enroll = e.data & 0x1 == 0x1
+                        manage = e.data & 0x2 == 0x2
+                        retrive_pending = e.data & 0x4 == 0x4
                         if enroll:
                             self.__enroll(pol_conf.entries, trust_dir,
                                           private_dir)
