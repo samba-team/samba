@@ -543,7 +543,7 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 
 	status = libnet_join_find_machine_acct(mem_ctx, r);
 	if (!ADS_ERR_OK(status)) {
-		return status;
+		goto done;
 	}
 
 	status = libnet_join_get_machine_spns(frame,
