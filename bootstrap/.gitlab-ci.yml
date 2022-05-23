@@ -13,8 +13,6 @@
     SAMBA_CI_IS_BROKEN_IMAGE: "no"
     SAMBA_CI_TEST_JOB: "samba-o3"
   before_script:
-    # hack to keep changes to minimum at this stage
-    - ln -s /bin/podman /usr/local/bin/docker
     # Ensure we are generating correct the container
     - uname -a
     - cat /etc/os-release
@@ -29,7 +27,7 @@
   script: |
     set -xueo pipefail
     ci_image_name=samba-ci-${CI_JOB_NAME}
-    docker build -t ${ci_image_name} --build-arg SHA1SUM=${SAMBA_CI_CONTAINER_TAG} bootstrap/generated-dists/${CI_JOB_NAME}
+    podman build -t ${ci_image_name} --build-arg SHA1SUM=${SAMBA_CI_CONTAINER_TAG} bootstrap/generated-dists/${CI_JOB_NAME}
     ci_image_path="${SAMBA_CI_CONTAINER_REGISTRY}/${ci_image_name}"
     timestamp=$(date +%Y%m%d%H%M%S)
     container_hash=$(podman image inspect --format='{{ .Id }}' ${ci_image_name} | cut -c 1-9)
@@ -38,23 +36,23 @@
     # Ensure we are generating the correct container that we expect to be in
     echo "${SAMBA_CI_CONTAINER_TAG}" > /tmp/sha1sum-tag.txt
     diff -u bootstrap/sha1sum.txt /tmp/sha1sum-tag.txt
-    docker run --volume $(pwd):${samba_repo_root} --workdir ${samba_repo_root} ${ci_image_name} \
+    podman run --volume $(pwd):${samba_repo_root} --workdir ${samba_repo_root} ${ci_image_name} \
         /bin/bash -c "echo \"${SAMBA_CI_CONTAINER_TAG}\" > /tmp/sha1sum-tag.txt; diff -u bootstrap/sha1sum.txt /tmp/sha1sum-tag.txt"
-    docker run --volume $(pwd):${samba_repo_root} --workdir ${samba_repo_root} ${ci_image_name} \
+    podman run --volume $(pwd):${samba_repo_root} --workdir ${samba_repo_root} ${ci_image_name} \
         diff -u bootstrap/sha1sum.txt /sha1sum.txt
-    docker run --volume $(pwd):${samba_repo_root} --workdir ${samba_repo_root} ${ci_image_name} \
+    podman run --volume $(pwd):${samba_repo_root} --workdir ${samba_repo_root} ${ci_image_name} \
         bootstrap/template.py --sha1sum > /tmp/sha1sum-template.txt
     diff -u bootstrap/sha1sum.txt /tmp/sha1sum-template.txt
     # run smoke test with samba-o3 or samba-fuzz
-    docker run --volume $(pwd):${samba_repo_root} --workdir ${samba_repo_root} ${ci_image_name} \
+    podman run --volume $(pwd):${samba_repo_root} --workdir ${samba_repo_root} ${ci_image_name} \
         /bin/bash -c "sudo chown -R samba:samba ${samba_repo_root} && export PKG_CONFIG_PATH=/usr/lib64/compat-gnutls34/pkgconfig:/usr/lib64/compat-nettle32/pkgconfig && script/autobuild.py ${SAMBA_CI_TEST_JOB} --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase"
-    docker tag ${ci_image_name} ${ci_image_path}:${SAMBA_CI_CONTAINER_TAG}
-    docker tag ${ci_image_name} ${ci_image_path}:${timestamp_tag}
+    podman tag ${ci_image_name} ${ci_image_path}:${SAMBA_CI_CONTAINER_TAG}
+    podman tag ${ci_image_name} ${ci_image_path}:${timestamp_tag}
     # We build all images, but only upload is it's not marked as broken
     test x"${SAMBA_CI_IS_BROKEN_IMAGE}" = x"yes" || { \
-        docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY; \
-        docker push ${ci_image_path}:${SAMBA_CI_CONTAINER_TAG}; \
-        docker push ${ci_image_path}:${timestamp_tag}; \
+        podman login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY; \
+        podman push ${ci_image_path}:${SAMBA_CI_CONTAINER_TAG}; \
+        podman push ${ci_image_path}:${timestamp_tag}; \
     }
     echo "Success for ${ci_image_path}:${timestamp_tag}"
     test x"${SAMBA_CI_IS_BROKEN_IMAGE}" = x"no" || { \
