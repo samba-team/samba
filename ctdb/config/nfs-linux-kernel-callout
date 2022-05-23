@@ -138,9 +138,42 @@ nfs_service_start()
 ##################################################
 # service "stop" and "start" options for restarting
 
-service_stop()
+manual_stop()
 {
 	case "$1" in
+	mountd)
+		killall -q -9 rpc.mountd
+		;;
+	rquotad)
+		killall -q -9 rpc.rquotad
+		;;
+	status)
+		killall -q -9 rpc.statd
+		;;
+	*)
+		echo "$0: Internal error - invalid call to manual_stop()"
+		exit 1
+		;;
+	esac
+}
+
+service_or_manual_stop()
+{
+	_rpc_service="$1"
+	_system_service="$2"
+
+	if [ -n "$_system_service" ]; then
+		service "$_system_service" stop
+	else
+		manual_stop "$_rpc_service"
+	fi
+}
+
+service_stop()
+{
+	_rpc_service="$1"
+
+	case "$_rpc_service" in
 	nfs)
 		echo 0 >"${PROCFS_PATH}/fs/nfsd/threads"
 		nfs_service_stop >/dev/null 2>&1 || true
@@ -154,31 +187,13 @@ service_stop()
 		fi
 		;;
 	mountd)
-		if [ -n "$nfs_mountd_service" ]; then
-			service "$nfs_mountd_service" stop
-			return
-		fi
-
-		# Default to stopping by hand
-		killall -q -9 rpc.mountd
+		service_or_manual_stop "$_rpc_service" "$nfs_mountd_service"
 		;;
 	rquotad)
-		if [ -n "$nfs_rquotad_service" ]; then
-			service "$nfs_rquotad_service" stop
-			return
-		fi
-
-		# Default to stopping by hand
-		killall -q -9 rpc.rquotad
+		service_or_manual_stop "$_rpc_service" "$nfs_rquotad_service"
 		;;
 	status)
-		if [ -n "$nfs_status_service" ]; then
-			service "$nfs_status_service" stop
-			return
-		fi
-
-		# Default to stopping by hand
-		killall -q -9 rpc.statd
+		service_or_manual_stop "$_rpc_service" "$nfs_status_service"
 		;;
 	*)
 		usage
@@ -186,26 +201,10 @@ service_stop()
 	esac
 }
 
-service_start()
+manual_start()
 {
 	case "$1" in
-	nfs)
-		nfs_service_start
-		;;
-	nlockmgr)
-		if [ -n "$nfs_lock_service" ]; then
-			service "$nfs_lock_service" start
-		else
-			service "$nfs_service" start
-		fi
-		;;
 	mountd)
-		if [ -n "$nfs_mountd_service" ]; then
-			service "$nfs_mountd_service" start
-			return
-		fi
-
-		# Default to starting by hand
 		nfs_load_config
 		if [ -z "$RPCMOUNTDOPTS" ]; then
 			RPCMOUNTDOPTS="${MOUNTD_PORT:+-p }$MOUNTD_PORT"
@@ -214,12 +213,6 @@ service_start()
 		rpc.mountd $RPCMOUNTDOPTS
 		;;
 	rquotad)
-		if [ -n "$nfs_rquotad_service" ]; then
-			service "$nfs_rquotad_service" start
-			return
-		fi
-
-		# Default to starting by hand
 		nfs_load_config "$nfs_rquotad_config"
 		if [ -z "$RPCRQUOTADOPTS" ]; then
 			RPCRQUOTADOPTS="${RQUOTAD_PORT:+-p }$RQUOTAD_PORT"
@@ -228,12 +221,6 @@ service_start()
 		rpc.rquotad $RPCRQUOTADOPTS
 		;;
 	status)
-		if [ -n "$nfs_status_service" ]; then
-			service "$nfs_status_service" start
-			return
-		fi
-
-		# Default to starting by hand
 		nfs_load_config
 		# Red Hat uses STATDARG, Debian uses STATDOPTS
 		opts="${STATDARG:-${STATDOPTS:-''}}"
@@ -248,6 +235,49 @@ service_start()
 		fi
 		# shellcheck disable=SC2086
 		rpc.statd $opts
+		;;
+	*)
+		echo "$0: Internal error - invalid call to manual_start()"
+		exit 1
+		;;
+	esac
+}
+
+service_or_manual_start()
+{
+	_rpc_service="$1"
+	_system_service="$2"
+
+	if [ -n "$_system_service" ]; then
+		service "$_system_service" start
+	else
+		manual_start "$_rpc_service"
+	fi
+}
+
+service_start()
+{
+	_rpc_service="$1"
+
+	case "$_rpc_service" in
+	nfs)
+		nfs_service_start
+		;;
+	nlockmgr)
+		if [ -n "$nfs_lock_service" ]; then
+			service "$nfs_lock_service" start
+		else
+			service "$nfs_service" start
+		fi
+		;;
+	mountd)
+		service_or_manual_start "$_rpc_service" "$nfs_mountd_service"
+		;;
+	rquotad)
+		service_or_manual_start "$_rpc_service" "$nfs_rquotad_service"
+		;;
+	status)
+		service_or_manual_start "$_rpc_service" "$nfs_status_service"
 		;;
 	*)
 		usage
