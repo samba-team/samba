@@ -2043,6 +2043,47 @@ EOF
     return 0
 }
 
+test_smbclient_minus_e_stderr()
+{
+    cmd='$SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -c ls'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    if [ $? != 0 ] ; then
+	echo "$out"
+	echo "command failed"
+	return 1
+    fi
+
+    # test smbclient 'ls' command output went to stdout
+    echo "$out" | grep "blocks available" >/dev/null 2>&1
+    if [ $? != 0 ] ; then
+	# didn't get output to stdout
+	echo "expected output was NOT output to stdout"
+	return 1
+    fi
+
+    # this time execute ls but redirect stdout alone to /dev/null
+    cmd='$SMBCLIENT -E "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -c "ls"  2>&1 > /dev/null'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    if [ $? != 0 ] ; then
+	echo "$out"
+	echo "command failed"
+	return 1
+    fi
+
+    # test smbclient 'ls' command output went to stderr
+    echo "$out" | grep "blocks available" >/dev/null 2>&1
+    if [ $? != 0 ] ; then
+	# didn't get output to stderr
+	echo "expected output was NOT output to stderr"
+	return 1
+    fi
+
+    return 0
+
+}
+
 #
 #
 LOGDIR_PREFIX=test_smbclient_s3
@@ -2066,6 +2107,10 @@ testit "noninteractive smbclient does not prompt" \
 
 testit "noninteractive smbclient -l does not prompt" \
    test_noninteractive_no_prompt -l $LOGDIR || \
+    failed=`expr $failed + 1`
+
+testit "smbclient output goes to stderr when -E is passed" \
+    test_smbclient_minus_e_stderr || \
     failed=`expr $failed + 1`
 
 testit "interactive smbclient prompts on stdout" \
