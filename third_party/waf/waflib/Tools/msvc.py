@@ -109,6 +109,21 @@ def options(opt):
 	opt.add_option('--msvc_targets', type='string', help = 'msvc targets, eg: "x64,arm"', default='')
 	opt.add_option('--no-msvc-lazy', action='store_false', help = 'lazily check msvc target environments', default=True, dest='msvc_lazy')
 
+class MSVCVersion(object):
+	def __init__(self, ver):
+		m = re.search('^(.*)\s+(\d+[.]\d+)', ver)
+		if m:
+			self.name = m.group(1)
+			self.number = float(m.group(2))
+		else:
+			self.name = ver
+			self.number = 0.
+
+	def __lt__(self, other):
+		if self.number == other.number:
+			return self.name < other.name
+		return self.number < other.number
+
 @conf
 def setup_msvc(conf, versiondict):
 	"""
@@ -125,7 +140,7 @@ def setup_msvc(conf, versiondict):
 		platforms=Utils.to_list(conf.env.MSVC_TARGETS) or [i for i,j in all_msvc_platforms+all_icl_platforms+all_wince_platforms]
 	desired_versions = getattr(Options.options, 'msvc_version', '').split(',')
 	if desired_versions == ['']:
-		desired_versions = conf.env.MSVC_VERSIONS or list(reversed(sorted(versiondict.keys())))
+		desired_versions = conf.env.MSVC_VERSIONS or list(sorted(versiondict.keys(), key=MSVCVersion, reverse=True))
 
 	# Override lazy detection by evaluating after the fact.
 	lazy_detect = getattr(Options.options, 'msvc_lazy', True)

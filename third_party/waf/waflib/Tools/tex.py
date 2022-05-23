@@ -90,6 +90,7 @@ class tex(Task.Task):
 	Compiles a tex/latex file.
 
 	.. inheritance-diagram:: waflib.Tools.tex.latex waflib.Tools.tex.xelatex waflib.Tools.tex.pdflatex
+	   :top-classes: waflib.Tools.tex.tex
 	"""
 
 	bibtex_fun, _ = Task.compile_fun('${BIBTEX} ${BIBTEXFLAGS} ${SRCFILE}', shell=False)
