@@ -140,6 +140,7 @@ char *netapi_read_file(const char *filename, uint32_t *psize)
 		tmp = realloc(p, sizeof(char) * newbufsize);
 		if (tmp == NULL) {
 			free(p);
+			p = NULL;
 			goto fail;
 		}
 		p = tmp;
