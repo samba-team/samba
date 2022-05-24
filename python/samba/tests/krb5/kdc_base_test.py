@@ -1622,7 +1622,9 @@ class KDCBaseTest(RawKerberosTest):
         authenticator_subkey = self.RandomKey(kcrypto.Enctype.AES256)
 
         if expect_error:
-            expected_error_mode = KDC_ERR_TGT_REVOKED
+            expected_error_mode = expect_error
+            if expected_error_mode is True:
+                expected_error_mode = KDC_ERR_TGT_REVOKED
             check_error_fn = self.generic_check_kdc_error
             check_rep_fn = None
         else:
