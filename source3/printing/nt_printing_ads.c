@@ -742,6 +742,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	ads = ads_init(lp_realm(), lp_workgroup(), NULL, ADS_SASL_PLAIN);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
+		TALLOC_FREE(tmp_ctx);
 		return WERR_RPC_S_SERVER_UNAVAILABLE;
 	}
 	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
