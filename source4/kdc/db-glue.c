@@ -816,6 +816,14 @@ static int principal_comp_strcmp(krb5_context context,
 					 component, string, false);
 }
 
+static bool is_kadmin_changepw(krb5_context context,
+			       krb5_const_principal principal)
+{
+	return krb5_princ_size(context, principal) == 2 &&
+		(principal_comp_strcmp(context, principal, 0, "kadmin") == 0) &&
+		(principal_comp_strcmp(context, principal, 1, "changepw") == 0);
+}
+
 /*
  * Construct an hdb_entry from a directory entry.
  */
@@ -1110,11 +1118,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * 'change password', as otherwise we could get into
 		 * trouble, and not enforce the password expirty.
 		 * Instead, only do it when request is for the kpasswd service */
-		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER
-		    && krb5_princ_size(context, principal) == 2
-		    && (principal_comp_strcmp(context, principal, 0, "kadmin") == 0)
-		    && (principal_comp_strcmp(context, principal, 1, "changepw") == 0)
-		    && lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
+		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER &&
+		    is_kadmin_changepw(context, principal) &&
+		    lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
 			entry_ex->entry.flags.change_pw = 1;
 		}
 
