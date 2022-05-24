@@ -67,6 +67,7 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 	WERROR werr;
 	PyObject *result;
 	TALLOC_CTX *mem_ctx;
+	int debug = false;
 	bool modify_config = lp_config_backend_is_registry();
 	const char *kwnames[] = { "dnshostname", "createupn", "createcomputer",
 				  "osName", "osVer", "osServicePack",
@@ -93,7 +94,7 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 					 &r->in.os_version,
 					 &r->in.os_servicepack,
 					 &r->in.machine_password,
-					 &r->in.debug)) {
+					 &debug)) {
 		talloc_free(mem_ctx);
 		PyErr_FromString(_("Invalid arguments\n"));
 		return NULL;
@@ -121,6 +122,7 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
 				  WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
 	r->in.msg_ctx		= cmdline_messaging_context(get_dyn_CONFIGFILE());
+	r->in.debug		= debug;
 
 	werr = libnet_Join(mem_ctx, r);
 	if (W_ERROR_EQUAL(werr, WERR_NERR_DCNOTFOUND)) {
@@ -166,7 +168,7 @@ static PyObject *py_net_leave(py_net_Object *self, PyObject *args, PyObject *kwa
 	struct libnet_UnjoinCtx *r = NULL;
 	WERROR werr;
 	TALLOC_CTX *mem_ctx;
-	bool keep_account = false;
+	int keep_account = false, debug = false;
 	const char *kwnames[] = { "keepAccount", "debug", NULL };
 
 	mem_ctx = talloc_new(self->mem_ctx);
@@ -189,7 +191,7 @@ static PyObject *py_net_leave(py_net_Object *self, PyObject *args, PyObject *kwa
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|pp:Leave",
 					 discard_const_p(char *, kwnames),
-					 &keep_account, &r->in.debug)) {
+					 &keep_account, &debug)) {
 		talloc_free(mem_ctx);
 		PyErr_FromString(_("Invalid arguments\n"));
 		return NULL;
@@ -201,6 +203,7 @@ static PyObject *py_net_leave(py_net_Object *self, PyObject *args, PyObject *kwa
 	r->in.admin_account	= cli_credentials_get_username(self->creds);
 	r->in.admin_password	= cli_credentials_get_password(self->creds);
 	r->in.modify_config	= lp_config_backend_is_registry();
+	r->in.debug		= debug;
 
 	/*
 	 * Try to delete it, but if that fails, disable it.  The
