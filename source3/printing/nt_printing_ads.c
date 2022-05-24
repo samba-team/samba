@@ -527,7 +527,7 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 				     struct spoolss_PrinterInfo2 *pinfo2)
 {
 	ADS_STATUS ads_rc;
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *ctx = talloc_stackframe();
 	ADS_MODLIST mods;
 	struct GUID guid;
 	WERROR win_rc = WERR_OK;
@@ -535,11 +535,6 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 	char *printer_dn = NULL;
 
 	/* build the ads mods */
-	ctx = talloc_init("nt_printer_publish_ads");
-	if (ctx == NULL) {
-		return WERR_NOT_ENOUGH_MEMORY;
-	}
-
 	DEBUG(5, ("publishing printer %s\n", printer));
 
 	win_rc = nt_printer_dn_lookup(ctx, ads, printer, &printer_dn);
@@ -642,6 +637,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 			  struct spoolss_PrinterInfo2 *pinfo2,
 			  int action)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	uint32_t info2_mask = SPOOLSS_PRINTER_INFO_ATTRIBUTES;
 	struct spoolss_SetPrinterInfo2 *sinfo2;
 	ADS_STATUS ads_rc;
@@ -649,9 +645,10 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 	WERROR win_rc;
 	char *old_krb5ccname = NULL;
 
-	sinfo2 = talloc_zero(mem_ctx, struct spoolss_SetPrinterInfo2);
+	sinfo2 = talloc_zero(tmp_ctx, struct spoolss_SetPrinterInfo2);
 	if (!sinfo2) {
-		return WERR_NOT_ENOUGH_MEMORY;
+		win_rc = WERR_NOT_ENOUGH_MEMORY;
+		goto done;
 	}
 
 	switch (action) {
@@ -669,7 +666,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 
 	sinfo2->attributes = pinfo2->attributes;
 
-	win_rc = winreg_update_printer_internal(mem_ctx, session_info, msg_ctx,
+	win_rc = winreg_update_printer_internal(tmp_ctx, session_info, msg_ctx,
 					pinfo2->sharename, info2_mask,
 					sinfo2, NULL, NULL);
 	if (!W_ERROR_IS_OK(win_rc)) {
@@ -718,6 +715,9 @@ done:
 	if (old_krb5ccname) {
 		setenv(KRB5_ENV_CCNAME, old_krb5ccname, 0);
 	}
+
+	TALLOC_FREE(tmp_ctx);
+
 	return win_rc;
 }
 
