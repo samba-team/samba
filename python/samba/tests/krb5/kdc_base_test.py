@@ -270,7 +270,8 @@ class KDCBaseTest(RawKerberosTest):
 
     def create_account(self, samdb, name, account_type=AccountType.USER,
                        spn=None, upn=None, additional_details=None,
-                       ou=None, account_control=0, add_dollar=True):
+                       ou=None, account_control=0, add_dollar=True,
+                       expired_password=False):
         '''Create an account for testing.
            The dn of the created account is added to self.accounts,
            which is used by tearDownClass to clean up the created accounts.
@@ -324,6 +325,8 @@ class KDCBaseTest(RawKerberosTest):
             details["servicePrincipalName"] = spn
         if upn is not None:
             details["userPrincipalName"] = upn
+        if expired_password:
+            details["pwdLastSet"] = "0"
         if additional_details is not None:
             details.update(additional_details)
         # Save the account name so it can be deleted in tearDownClass
@@ -732,6 +735,7 @@ class KDCBaseTest(RawKerberosTest):
             'revealed_to_rodc': False,
             'revealed_to_mock_rodc': False,
             'no_auth_data_required': False,
+            'expired_password': False,
             'supported_enctypes': None,
             'not_delegated': False,
             'delegation_to_spn': None,
@@ -778,6 +782,7 @@ class KDCBaseTest(RawKerberosTest):
                             revealed_to_rodc,
                             revealed_to_mock_rodc,
                             no_auth_data_required,
+                            expired_password,
                             supported_enctypes,
                             not_delegated,
                             delegation_to_spn,
@@ -843,7 +848,8 @@ class KDCBaseTest(RawKerberosTest):
                                         spn=spn,
                                         additional_details=details,
                                         account_control=user_account_control,
-                                        add_dollar=add_dollar)
+                                        add_dollar=add_dollar,
+                                        expired_password=expired_password)
 
         keys = self.get_keys(samdb, dn)
         self.creds_set_keys(creds, keys)
