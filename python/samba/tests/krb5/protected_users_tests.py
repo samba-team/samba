@@ -26,7 +26,7 @@ from functools import partial
 
 import ldb
 
-from samba import generate_random_password
+from samba import generate_random_password, ntstatus
 from samba.dcerpc import netlogon, security
 
 import samba.tests.krb5.kcrypto as kcrypto
@@ -50,6 +50,8 @@ import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 
 global_asn1_print = False
 global_hexdump = False
+
+HRES_SEC_E_LOGON_DENIED = 0x8009030C
 
 
 class ProtectedUsersTests(KDCBaseTest):
@@ -92,7 +94,7 @@ class ProtectedUsersTests(KDCBaseTest):
                                        ntlm=True,
                                        cached=False)
 
-        self._connect(client_creds)
+        self._connect(client_creds, simple_bind=False)
 
     # Test NTLM authentication with a protected account. Authentication should
     # fail, as Protected User accounts cannot use NTLM authentication.
@@ -101,7 +103,8 @@ class ProtectedUsersTests(KDCBaseTest):
                                        ntlm=True,
                                        cached=False)
 
-        self._connect(client_creds, expect_error=True)
+        self._connect(client_creds, simple_bind=False,
+                      expect_error=f'{HRES_SEC_E_LOGON_DENIED:08X}')
 
     # Test that the Protected Users restrictions still apply when the user is a
     # member of a group that is itself a member of Protected Users.
@@ -119,7 +122,8 @@ class ProtectedUsersTests(KDCBaseTest):
                                        ntlm=True,
                                        member_of=group_dn)
 
-        self._connect(client_creds, expect_error=True)
+        self._connect(client_creds, simple_bind=False,
+                      expect_error=f'{HRES_SEC_E_LOGON_DENIED:08X}')
 
     # Test SAMR password changes for unprotected and protected accounts.
     def test_samr_change_password_not_protected(self):
@@ -128,7 +132,9 @@ class ProtectedUsersTests(KDCBaseTest):
         client_creds = self._get_creds(protected=False,
                                        cached=False)
 
-        self._test_samr_change_password(client_creds, protected=False)
+        self._test_samr_change_password(
+            client_creds,
+            expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
 
     def test_samr_change_password_protected(self):
         # Use a non-cached account so that it is not locked out for other
@@ -136,39 +142,41 @@ class ProtectedUsersTests(KDCBaseTest):
         client_creds = self._get_creds(protected=True,
                                        cached=False)
 
-        self._test_samr_change_password(client_creds, protected=True)
+        self._test_samr_change_password(
+            client_creds,
+            expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
     # Test interactive SamLogon with an unprotected account.
     def test_samlogon_interactive_not_protected(self):
         client_creds = self._get_creds(protected=False,
                                        ntlm=True)
         self._test_samlogon(creds=client_creds,
-                            logon_type=netlogon.NetlogonInteractiveInformation,
-                            protected=False)
+                            logon_type=netlogon.NetlogonInteractiveInformation)
 
     # Test interactive SamLogon with a protected account.
     def test_samlogon_interactive_protected(self):
         client_creds = self._get_creds(protected=True,
                                        ntlm=True)
-        self._test_samlogon(creds=client_creds,
-                            logon_type=netlogon.NetlogonInteractiveInformation,
-                            protected=True)
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
     # Test network SamLogon with an unprotected account.
     def test_samlogon_network_not_protected(self):
         client_creds = self._get_creds(protected=False,
                                        ntlm=True)
         self._test_samlogon(creds=client_creds,
-                            logon_type=netlogon.NetlogonNetworkInformation,
-                            protected=False)
+                            logon_type=netlogon.NetlogonNetworkInformation)
 
     # Test network SamLogon with a protected account.
     def test_samlogon_network_protected(self):
         client_creds = self._get_creds(protected=True,
                                        ntlm=True)
-        self._test_samlogon(creds=client_creds,
-                            logon_type=netlogon.NetlogonNetworkInformation,
-                            protected=True)
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonNetworkInformation,
+            expect_error=ntstatus.NT_STATUS_ACCOUNT_RESTRICTION)
 
     # Test that changing the password of an account in the Protected Users
     # group still generates an NT hash.

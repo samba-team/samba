@@ -2985,28 +2985,38 @@ class KDCBaseTest(RawKerberosTest):
                                               pac=pac)
 
     # Test credentials by connecting to the DC through LDAP.
-    def _connect(self, creds, expect_error=False):
+    def _connect(self, creds, simple_bind, expect_error=None):
         samdb = self.get_samdb()
+        dn = creds.get_dn()
+
+        if simple_bind:
+            url = f'ldaps://{samdb.host_dns_name()}'
+            creds.set_bind_dn(str(dn))
+        else:
+            url = f'ldap://{samdb.host_dns_name()}'
+            creds.set_bind_dn(None)
         try:
-            ldap = SamDB(url=f'ldap://{samdb.host_dns_name()}',
+            ldap = SamDB(url=url,
                          credentials=creds,
                          lp=self.get_lp())
         except ldb.LdbError as err:
-            self.assertTrue(expect_error, 'got unexpected error')
-            num, _ = err.args
+            self.assertIsNotNone(expect_error, 'got unexpected error')
+            num, estr = err.args
             if num != ldb.ERR_INVALID_CREDENTIALS:
                 raise
 
+            self.assertIn(expect_error, estr)
+
             return
         else:
-            self.assertFalse(expect_error, 'expected to get an error')
+            self.assertIsNone(expect_error, 'expected to get an error')
 
         res = ldap.search('',
                           scope=ldb.SCOPE_BASE,
                           attrs=['tokenGroups'])
         self.assertEqual(1, len(res))
 
-        sid = self.get_objectSid(samdb, creds.get_dn())
+        sid = self.get_objectSid(samdb, dn)
 
         token_groups = res[0].get('tokenGroups', idx=0)
         token_sid = ndr_unpack(security.dom_sid, token_groups)
@@ -3017,7 +3027,7 @@ class KDCBaseTest(RawKerberosTest):
     # user is protected, we should get an ACCOUNT_RESTRICTION error indicating
     # that the password change is not allowed; otherwise we should get a
     # WRONG_PASSWORD error.
-    def _test_samr_change_password(self, creds, protected):
+    def _test_samr_change_password(self, creds, expect_error):
         samdb = self.get_samdb()
         server_name = samdb.host_dns_name()
         conn = samr.samr(f'ncacn_np:{server_name}[krb5,seal,smb2]')
@@ -3033,6 +3043,9 @@ class KDCBaseTest(RawKerberosTest):
         nt_password = samr.CryptPassword()
         nt_verifier = samr.Password()
 
+        if not self.expect_nt_hash:
+            expect_error = ntstatus.NT_STATUS_NTLM_BLOCKED
+
         with self.assertRaises(NTSTATUSError) as err:
             conn.ChangePasswordUser2(server=server,
                                      account=account,
@@ -3043,12 +3056,7 @@ class KDCBaseTest(RawKerberosTest):
                                      lm_verifier=None)
 
         num, _ = err.exception.args
-        if not self.expect_nt_hash:
-            self.assertEqual(ntstatus.NT_STATUS_NTLM_BLOCKED, num)
-        elif protected:
-            self.assertEqual(ntstatus.NT_STATUS_ACCOUNT_RESTRICTION, num)
-        else:
-            self.assertEqual(ntstatus.NT_STATUS_WRONG_PASSWORD, num)
+        self.assertEqual(num, expect_error)
 
         with self.assertRaises(NTSTATUSError) as err:
             conn.ChangePasswordUser3(server=server,
@@ -3061,16 +3069,11 @@ class KDCBaseTest(RawKerberosTest):
                                      password3=None)
 
         num, _ = err.exception.args
-        if not self.expect_nt_hash:
-            self.assertEqual(ntstatus.NT_STATUS_NTLM_BLOCKED, num)
-        elif protected:
-            self.assertEqual(ntstatus.NT_STATUS_ACCOUNT_RESTRICTION, num)
-        else:
-            self.assertEqual(ntstatus.NT_STATUS_WRONG_PASSWORD, num)
+        self.assertEqual(num, expect_error)
 
     # Test SamLogon. Authentication should succeed for non-protected accounts,
     # and fail for protected accounts.
-    def _test_samlogon(self, creds, logon_type, protected,
+    def _test_samlogon(self, creds, logon_type, expect_error=None,
                        validation_level=netlogon.NetlogonValidationSamInfo2):
         samdb = self.get_samdb()
 
@@ -3141,6 +3144,10 @@ class KDCBaseTest(RawKerberosTest):
         netr_flags = 0
 
         validation = None
+
+        if not expect_error and not self.expect_nt_hash:
+            expect_error = ntstatus.NT_STATUS_NTLM_BLOCKED
+
         try:
             (validation, authoritative, flags) = (
                 conn.netr_LogonSamLogonEx(server,
@@ -3150,17 +3157,12 @@ class KDCBaseTest(RawKerberosTest):
                                           validation_level,
                                           netr_flags))
         except NTSTATUSError as err:
-            num, _ = err.args
-            if protected:
-                if num != ntstatus.NT_STATUS_ACCOUNT_RESTRICTION:
-                    raise
-            else:
-                self.assertFalse(self.expect_nt_hash, 'got unexpected error')
-                if num != ntstatus.NT_STATUS_NTLM_BLOCKED:
-                    raise
+            status, _ = err.args
+            self.assertIsNotNone(expect_error,
+                                 f'unexpectedly failed with {status:08X}')
+            self.assertEqual(expect_error, status, 'got wrong status code')
         else:
-            self.assertFalse(protected, 'expected error')
-            self.assertTrue(self.expect_nt_hash, 'expected error')
+            self.assertIsNone(expect_error, 'expected error')
 
             self.assertEqual(1, authoritative)
             self.assertEqual(0, flags)

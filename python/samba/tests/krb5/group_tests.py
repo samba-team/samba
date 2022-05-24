@@ -236,7 +236,6 @@ class GroupTests(KDCBaseTest):
         level = netlogon.NetlogonValidationSamInfo
         validation = self._test_samlogon(creds=creds,
                                          logon_type=interactive,
-                                         protected=False,
                                          validation_level=level)
         self.assertIsInstance(validation, netlogon.netr_SamInfo2)
 
@@ -307,7 +306,6 @@ class GroupTests(KDCBaseTest):
         level = netlogon.NetlogonValidationSamInfo2
         validation = self._test_samlogon(creds=creds,
                                          logon_type=interactive,
-                                         protected=False,
                                          validation_level=level)
         self.assertIsInstance(validation, netlogon.netr_SamInfo3)
 
@@ -385,7 +383,6 @@ class GroupTests(KDCBaseTest):
         level = netlogon.NetlogonValidationSamInfo4
         validation = self._test_samlogon(creds=creds,
                                          logon_type=interactive,
-                                         protected=False,
                                          validation_level=level)
         self.assertIsInstance(validation, netlogon.netr_SamInfo6)
 
