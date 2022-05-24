@@ -248,9 +248,9 @@ class KDCBaseTest(RawKerberosTest):
            which is used by tearDownClass to clean up the created accounts.
         '''
         if ou is None:
-            if account_type is account_type.COMPUTER:
+            if account_type is self.AccountType.COMPUTER:
                 guid = DS_GUID_COMPUTERS_CONTAINER
-            elif account_type is account_type.SERVER:
+            elif account_type is self.AccountType.SERVER:
                 guid = DS_GUID_DOMAIN_CONTROLLERS_CONTAINER
             else:
                 guid = DS_GUID_USERS_CONTAINER
