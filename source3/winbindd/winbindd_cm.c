@@ -1079,6 +1079,76 @@ static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+#ifdef HAVE_ADS
+static bool dcip_check_name_ads(TALLOC_CTX *mem_ctx,
+				const struct winbindd_domain *domain,
+				struct samba_sockaddr *sa,
+				char **name,
+				uint32_t request_flags)
+{
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS ads_status;
+	char addr[INET6_ADDRSTRLEN];
+
+	print_sockaddr(addr, sizeof(addr), &sa->u.ss);
+
+	ads = ads_init(domain->alt_name,
+		       domain->name,
+		       addr,
+		       ADS_SASL_PLAIN);
+	ads->auth.flags |= ADS_AUTH_NO_BIND;
+	ads->config.flags |= request_flags;
+	ads->server.no_fallback = true;
+
+	ads_status = ads_connect(ads);
+	if (ADS_ERR_OK(ads_status)) {
+		/* We got a cldap packet. */
+		*name = talloc_strdup(mem_ctx,
+				     ads->config.ldap_server_name);
+		if (*name == NULL) {
+			return false;
+		}
+		namecache_store(*name, 0x20, 1, sa);
+
+		DEBUG(10,("dcip_check_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
+
+		if (domain->primary && (ads->config.flags & NBT_SERVER_KDC)) {
+			if (ads_closest_dc(ads)) {
+				char *sitename = sitename_fetch(mem_ctx, ads->config.realm);
+
+				/* We're going to use this KDC for this realm/domain.
+				   If we are using sites, then force the krb5 libs
+				   to use this KDC. */
+
+				create_local_private_krb5_conf_for_domain(domain->alt_name,
+								domain->name,
+								sitename,
+								&sa->u.ss);
+
+				TALLOC_FREE(sitename);
+			} else {
+				/* use an off site KDC */
+				create_local_private_krb5_conf_for_domain(domain->alt_name,
+								domain->name,
+								NULL,
+								&sa->u.ss);
+			}
+			winbindd_set_locator_kdc_envs(domain);
+
+			/* Ensure we contact this DC also. */
+			saf_store(domain->name, *name);
+			saf_store(domain->alt_name, *name);
+		}
+
+		ads_destroy( &ads );
+		return True;
+	}
+
+	ads_destroy( &ads );
+	return false;
+}
+#endif
+
 /*******************************************************************
  convert an ip to a name
  For an AD Domain, it checks the requirements of the request flags.
@@ -1113,66 +1183,11 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_ad_domain) {
-		ADS_STRUCT *ads;
-		ADS_STATUS ads_status;
-		char addr[INET6_ADDRSTRLEN];
-
-		print_sockaddr(addr, sizeof(addr), &sa.u.ss);
-
-		ads = ads_init(domain->alt_name,
-			       domain->name,
-			       addr,
-			       ADS_SASL_PLAIN);
-		ads->auth.flags |= ADS_AUTH_NO_BIND;
-		ads->config.flags |= request_flags;
-		ads->server.no_fallback = true;
-
-		ads_status = ads_connect(ads);
-		if (ADS_ERR_OK(ads_status)) {
-			/* We got a cldap packet. */
-			*name = talloc_strdup(mem_ctx,
-					     ads->config.ldap_server_name);
-			if (*name == NULL) {
-				return false;
-			}
-			namecache_store(*name, 0x20, 1, &sa);
-
-			DEBUG(10,("dcip_check_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
-
-			if (domain->primary && (ads->config.flags & NBT_SERVER_KDC)) {
-				if (ads_closest_dc(ads)) {
-					char *sitename = sitename_fetch(mem_ctx, ads->config.realm);
-
-					/* We're going to use this KDC for this realm/domain.
-					   If we are using sites, then force the krb5 libs
-					   to use this KDC. */
-
-					create_local_private_krb5_conf_for_domain(domain->alt_name,
-									domain->name,
-									sitename,
-									&sa.u.ss);
-
-					TALLOC_FREE(sitename);
-				} else {
-					/* use an off site KDC */
-					create_local_private_krb5_conf_for_domain(domain->alt_name,
-									domain->name,
-									NULL,
-									&sa.u.ss);
-				}
-				winbindd_set_locator_kdc_envs(domain);
-
-				/* Ensure we contact this DC also. */
-				saf_store(domain->name, *name);
-				saf_store(domain->alt_name, *name);
-			}
-
-			ads_destroy( &ads );
-			return True;
-		}
-
-		ads_destroy( &ads );
-		return false;
+		return dcip_check_name_ads(mem_ctx,
+					   domain,
+					   &sa,
+					   name,
+					   request_flags);
 	}
 #endif
 
