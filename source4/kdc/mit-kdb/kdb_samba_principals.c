@@ -35,7 +35,6 @@
 #define DBGC_CLASS DBGC_KERBEROS
 
 #define ADMIN_LIFETIME 60*60*3 /* 3 hours */
-#define CHANGEPW_LIFETIME 60*5 /* 5 minutes */
 
 krb5_error_code ks_get_principal(krb5_context context,
 				 krb5_const_principal principal,

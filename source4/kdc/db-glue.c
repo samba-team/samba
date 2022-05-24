@@ -1337,6 +1337,11 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					        kdc_db_ctx->policy.usr_tkt_lifetime);
 	}
 
+	if (entry->flags.change_pw) {
+		/* Limit lifetime of kpasswd tickets to two minutes or less. */
+		*entry->max_life = MIN(*entry->max_life, CHANGEPW_LIFETIME);
+	}
+
 	entry->max_renew = malloc(sizeof(*entry->max_renew));
 	if (entry->max_renew == NULL) {
 		ret = ENOMEM;
