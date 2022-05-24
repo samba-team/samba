@@ -27,11 +27,13 @@ ARCFOUR_HMAC_MD5 = int(
 
 # Message types
 KRB_ERROR = int(krb5_asn1.MessageTypeValues('krb-error'))
+KRB_AP_REP = int(krb5_asn1.MessageTypeValues('krb-ap-rep'))
 KRB_AP_REQ = int(krb5_asn1.MessageTypeValues('krb-ap-req'))
 KRB_AS_REP = int(krb5_asn1.MessageTypeValues('krb-as-rep'))
 KRB_AS_REQ = int(krb5_asn1.MessageTypeValues('krb-as-req'))
 KRB_TGS_REP = int(krb5_asn1.MessageTypeValues('krb-tgs-rep'))
 KRB_TGS_REQ = int(krb5_asn1.MessageTypeValues('krb-tgs-req'))
+KRB_PRIV = int(krb5_asn1.MessageTypeValues('krb-priv'))
 
 # PAData types
 PADATA_ENC_TIMESTAMP = int(
@@ -82,6 +84,7 @@ KDC_ERR_TGT_REVOKED = 20
 KDC_ERR_PREAUTH_FAILED = 24
 KDC_ERR_PREAUTH_REQUIRED = 25
 KDC_ERR_BAD_INTEGRITY = 31
+KDC_ERR_TKT_EXPIRED = 32
 KRB_ERR_TKT_NYV = 33
 KDC_ERR_NOT_US = 35
 KDC_ERR_BADMATCH = 36
@@ -92,6 +95,16 @@ KDC_ERR_GENERIC = 60
 KDC_ERR_WRONG_REALM = 68
 KDC_ERR_CLIENT_NAME_MISMATCH = 75
 KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS = 93
+
+# Kpasswd error codes
+KPASSWD_SUCCESS = 0
+KPASSWD_MALFORMED = 1
+KPASSWD_HARDERROR = 2
+KPASSWD_AUTHERROR = 3
+KPASSWD_SOFTERROR = 4
+KPASSWD_ACCESSDENIED = 5
+KPASSWD_BAD_VERSION = 6
+KPASSWD_INITIAL_FLAG_NEEDED = 7
 
 # Extended error types
 KERB_AP_ERR_TYPE_SKEW_RECOVERY = int(

@@ -568,6 +568,12 @@ PA-FX-FAST-REPLY ::= CHOICE {
         ...
 }
 
+ChangePasswdDataMS ::= SEQUENCE {
+        newpasswd       [0] OCTET STRING,
+        targname        [1] PrincipalName OPTIONAL,
+        targrealm       [2] Realm OPTIONAL
+}
+
 -- MS-KILE End
 --
 --
