@@ -1101,51 +1101,52 @@ static bool dcip_check_name_ads(TALLOC_CTX *mem_ctx,
 	ads->server.no_fallback = true;
 
 	ads_status = ads_connect(ads);
-	if (ADS_ERR_OK(ads_status)) {
-		/* We got a cldap packet. */
-		*name = talloc_strdup(mem_ctx,
-				     ads->config.ldap_server_name);
-		if (*name == NULL) {
-			return false;
-		}
-		namecache_store(*name, 0x20, 1, sa);
-
-		DEBUG(10,("dcip_check_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
-
-		if (domain->primary && (ads->config.flags & NBT_SERVER_KDC)) {
-			if (ads_closest_dc(ads)) {
-				char *sitename = sitename_fetch(mem_ctx, ads->config.realm);
-
-				/* We're going to use this KDC for this realm/domain.
-				   If we are using sites, then force the krb5 libs
-				   to use this KDC. */
-
-				create_local_private_krb5_conf_for_domain(domain->alt_name,
-								domain->name,
-								sitename,
-								&sa->u.ss);
-
-				TALLOC_FREE(sitename);
-			} else {
-				/* use an off site KDC */
-				create_local_private_krb5_conf_for_domain(domain->alt_name,
-								domain->name,
-								NULL,
-								&sa->u.ss);
-			}
-			winbindd_set_locator_kdc_envs(domain);
-
-			/* Ensure we contact this DC also. */
-			saf_store(domain->name, *name);
-			saf_store(domain->alt_name, *name);
-		}
-
-		ads_destroy( &ads );
-		return True;
+	if (!ADS_ERR_OK(ads_status)) {
+		goto out;
 	}
 
+	/* We got a cldap packet. */
+	*name = talloc_strdup(mem_ctx,
+			     ads->config.ldap_server_name);
+	if (*name == NULL) {
+		return false;
+	}
+	namecache_store(*name, 0x20, 1, sa);
+
+	DBG_DEBUG("CLDAP flags = 0x%"PRIx32"\n", ads->config.flags);
+
+	if (domain->primary && (ads->config.flags & NBT_SERVER_KDC)) {
+		if (ads_closest_dc(ads)) {
+			char *sitename = sitename_fetch(mem_ctx, ads->config.realm);
+
+			/* We're going to use this KDC for this realm/domain.
+			   If we are using sites, then force the krb5 libs
+			   to use this KDC. */
+
+			create_local_private_krb5_conf_for_domain(domain->alt_name,
+							domain->name,
+							sitename,
+							&sa->u.ss);
+
+			TALLOC_FREE(sitename);
+		} else {
+			/* use an off site KDC */
+			create_local_private_krb5_conf_for_domain(domain->alt_name,
+							domain->name,
+							NULL,
+							&sa->u.ss);
+		}
+		winbindd_set_locator_kdc_envs(domain);
+
+		/* Ensure we contact this DC also. */
+		saf_store(domain->name, *name);
+		saf_store(domain->alt_name, *name);
+	}
+
+out:
 	ads_destroy( &ads );
-	return false;
+
+	return ADS_ERR_OK(ads_status) ? true : false;
 }
 #endif
 
