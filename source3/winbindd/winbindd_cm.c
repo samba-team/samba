@@ -1080,12 +1080,14 @@ static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 }
 
 #ifdef HAVE_ADS
-static bool dcip_check_name_ads(TALLOC_CTX *mem_ctx,
-				const struct winbindd_domain *domain,
+static bool dcip_check_name_ads(const struct winbindd_domain *domain,
 				struct samba_sockaddr *sa,
-				char **name,
-				uint32_t request_flags)
+				uint32_t request_flags,
+				TALLOC_CTX *mem_ctx,
+				char **namep)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	char *name = NULL;
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS ads_status;
 	char addr[INET6_ADDRSTRLEN];
@@ -1106,18 +1108,19 @@ static bool dcip_check_name_ads(TALLOC_CTX *mem_ctx,
 	}
 
 	/* We got a cldap packet. */
-	*name = talloc_strdup(mem_ctx,
-			     ads->config.ldap_server_name);
-	if (*name == NULL) {
-		return false;
+	name = talloc_strdup(tmp_ctx, ads->config.ldap_server_name);
+	if (name == NULL) {
+		ads_status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto out;
 	}
-	namecache_store(*name, 0x20, 1, sa);
+	namecache_store(name, 0x20, 1, sa);
 
 	DBG_DEBUG("CLDAP flags = 0x%"PRIx32"\n", ads->config.flags);
 
 	if (domain->primary && (ads->config.flags & NBT_SERVER_KDC)) {
 		if (ads_closest_dc(ads)) {
-			char *sitename = sitename_fetch(mem_ctx, ads->config.realm);
+			char *sitename = sitename_fetch(tmp_ctx,
+							ads->config.realm);
 
 			/* We're going to use this KDC for this realm/domain.
 			   If we are using sites, then force the krb5 libs
@@ -1139,12 +1142,16 @@ static bool dcip_check_name_ads(TALLOC_CTX *mem_ctx,
 		winbindd_set_locator_kdc_envs(domain);
 
 		/* Ensure we contact this DC also. */
-		saf_store(domain->name, *name);
-		saf_store(domain->alt_name, *name);
+		saf_store(domain->name, name);
+		saf_store(domain->alt_name, name);
 	}
+
+	*namep = talloc_move(mem_ctx, &name);
 
 out:
 	ads_destroy( &ads );
+
+	TALLOC_FREE(tmp_ctx);
 
 	return ADS_ERR_OK(ads_status) ? true : false;
 }
@@ -1184,11 +1191,11 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_ad_domain) {
-		return dcip_check_name_ads(mem_ctx,
-					   domain,
+		return dcip_check_name_ads(domain,
 					   &sa,
-					   name,
-					   request_flags);
+					   request_flags,
+					   mem_ctx,
+					   name);
 	}
 #endif
 
