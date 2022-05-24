@@ -1344,10 +1344,12 @@ class KDCBaseTest(RawKerberosTest):
                            expected_flags=None, unexpected_flags=None,
                            pac_request=True, expect_pac=True, fresh=False):
         user_name = tgt.cname['name-string'][0]
+        ticket_sname = tgt.sname
         if target_name is None:
             target_name = target_creds.get_username()[:-1]
         cache_key = (user_name, target_name, service, to_rodc, kdc_options,
                      pac_request, str(expected_flags), str(unexpected_flags),
+                     str(ticket_sname),
                      expect_pac)
 
         if not fresh:
@@ -1414,6 +1416,7 @@ class KDCBaseTest(RawKerberosTest):
                 expected_flags=None, unexpected_flags=None,
                 expected_account_name=None, expected_upn_name=None,
                 expected_sid=None,
+                sname=None, realm=None,
                 pac_request=True, expect_pac=True,
                 expect_pac_attrs=None, expect_pac_attrs_pac_request=None,
                 expect_requester_sid=None,
@@ -1422,6 +1425,7 @@ class KDCBaseTest(RawKerberosTest):
         cache_key = (user_name, to_rodc, kdc_options, pac_request,
                      str(expected_flags), str(unexpected_flags),
                      expected_account_name, expected_upn_name, expected_sid,
+                     str(sname), str(realm),
                      expect_pac, expect_pac_attrs,
                      expect_pac_attrs_pac_request, expect_requester_sid)
 
@@ -1431,15 +1435,21 @@ class KDCBaseTest(RawKerberosTest):
             if tgt is not None:
                 return tgt
 
-        realm = creds.get_realm()
+        if realm is None:
+            realm = creds.get_realm()
 
         salt = creds.get_salt()
 
         etype = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
         cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=[user_name])
-        sname = self.PrincipalName_create(name_type=NT_SRV_INST,
-                                          names=['krbtgt', realm])
+        if sname is None:
+            sname = self.PrincipalName_create(name_type=NT_SRV_INST,
+                                              names=['krbtgt', realm])
+            expected_sname = self.PrincipalName_create(
+                name_type=NT_SRV_INST, names=['krbtgt', realm.upper()])
+        else:
+            expected_sname = sname
 
         till = self.get_KerberosTime(offset=36000)
 
@@ -1504,9 +1514,6 @@ class KDCBaseTest(RawKerberosTest):
         padata = [ts_enc_padata]
 
         expected_realm = realm.upper()
-
-        expected_sname = self.PrincipalName_create(
-            name_type=NT_SRV_INST, names=['krbtgt', realm.upper()])
 
         rep, kdc_exchange_dict = self._test_as_exchange(
             cname=cname,
