@@ -31,6 +31,8 @@
 #include "../libds/common/flags.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "libcli/security/dom_sid.h"
+#include "source3/libads/sitename_cache.h"
+#include "source3/libads/kerberos_proto.h"
 
 struct idmap_ad_schema_names;
 
@@ -323,6 +325,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 	struct loadparm_context *lp_ctx;
 	struct tldap_context *ld;
 	uint32_t gensec_features = gensec_features_from_ldap_sasl_wrapping();
+	char *sitename = NULL;
 	int fd;
 	NTSTATUS status;
 	bool ok;
@@ -349,6 +352,22 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 	ok = resolve_name(dcinfo->dc_unc, &dcaddr, 0x20, true);
 	if (!ok) {
 		DBG_DEBUG("Could not resolve name %s\n", dcinfo->dc_unc);
+		TALLOC_FREE(dcinfo);
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
+
+	sitename = sitename_fetch(talloc_tos(), lp_realm());
+
+	/*
+	 * create_local_private_krb5_conf_for_domain() can deal with
+	 * sitename==NULL
+	 */
+
+	ok = create_local_private_krb5_conf_for_domain(
+		lp_realm(), lp_workgroup(), sitename, &dcaddr);
+	TALLOC_FREE(sitename);
+	if (!ok) {
+		DBG_DEBUG("Could not create private krb5.conf\n");
 		TALLOC_FREE(dcinfo);
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
