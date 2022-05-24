@@ -71,7 +71,7 @@ testit "kinit with user password" \
 	do_kinit $TEST_PRINCIPAL $TEST_PASSWORD || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" \
-	"ls" "$SMB_UNC" --use-kerberos=required || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-krb5-ccache=${KRB5CCNAME} || failed=`expr $failed + 1`
 
 testit "change user password with 'samba-tool user password' (unforced)" \
 	$VALGRIND $PYTHON $samba_tool user password -W$DOMAIN -U$TEST_USERNAME%$TEST_PASSWORD --use-kerberos=off --newpassword=$TEST_PASSWORD_NEW || failed=`expr $failed + 1`
@@ -84,7 +84,7 @@ testit "kinit with user password" \
 	do_kinit $TEST_PRINCIPAL $TEST_PASSWORD || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" \
-	"ls" "$SMB_UNC" --use-kerberos=required || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-krb5-ccache=${KRB5CCNAME} || failed=`expr $failed + 1`
 
 ###########################################################
 ### check that a short password is rejected
