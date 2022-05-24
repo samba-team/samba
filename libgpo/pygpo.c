@@ -29,6 +29,7 @@
 #include "libcli/util/pyerrors.h"
 #include "python/py3compat.h"
 #include "python/modules.h"
+#include <pytalloc.h>
 
 /* A Python C API module to use LIBGPO */
 
@@ -498,6 +499,7 @@ static PyMethodDef ADS_methods[] = {
 static PyTypeObject ads_ADSType = {
 	.tp_name = "gpo.ADS_STRUCT",
 	.tp_basicsize = sizeof(ADS),
+	.tp_new = PyType_GenericNew,
 	.tp_dealloc = (destructor)py_ads_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_doc = "ADS struct",
@@ -540,8 +542,7 @@ MODULE_INIT_FUNC(gpo)
 		goto err;
 	}
 
-	ads_ADSType.tp_new = PyType_GenericNew;
-	if (PyType_Ready(&ads_ADSType) < 0) {
+	if (pytalloc_BaseObject_PyType_Ready(&ads_ADSType) < 0) {
 		goto err;
 	}
 
