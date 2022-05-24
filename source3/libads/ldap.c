@@ -3421,7 +3421,7 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 	DEBUG(3,("ads_domain_func_level: %d\n", *val));
 
 
-	ads_msgfree(ads, res);
+	ads_msgfree(ads_s, res);
 
 done:
 	/* free any temporary ads connections */
