@@ -1499,6 +1499,10 @@ planpythontestsuite(
     "ad_dc",
     "samba.tests.krb5.alias_tests",
     environ=krb5_environ)
+planoldpythontestsuite(
+    'ad_dc',
+    'samba.tests.krb5.kpasswd_tests',
+    environ=krb5_environ)
 
 for env in [
         'vampire_dc',
