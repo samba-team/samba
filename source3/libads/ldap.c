@@ -3272,12 +3272,8 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 	ADS_STATUS status;
 	LDAPMessage *res;
 	char *timestr;
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STRUCT *ads_s = ads;
-
-	if (!(ctx = talloc_init("ads_current_time"))) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
 
         /* establish a new ldap tcp session if necessary */
 
@@ -3323,7 +3319,7 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 		goto done;
 	}
 
-	timestr = ads_pull_string(ads_s, ctx, res, "currentTime");
+	timestr = ads_pull_string(ads_s, tmp_ctx, res, "currentTime");
 	if (!timestr) {
 		ads_msgfree(ads_s, res);
 		status = ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
@@ -3348,7 +3344,7 @@ done:
 	if ( ads_s != ads ) {
 		ads_destroy( &ads_s );
 	}
-	talloc_destroy(ctx);
+	TALLOC_FREE(tmp_ctx);
 
 	return status;
 }
