@@ -57,6 +57,8 @@ static bool ads_dc_name(const char *domain,
 			struct sockaddr_storage *dc_ss,
 			fstring srv_name)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	bool ok = false;
 	ADS_STRUCT *ads;
 	char *sitename;
 	int i;
@@ -66,14 +68,14 @@ static bool ads_dc_name(const char *domain,
 		realm = lp_realm();
 	}
 
-	sitename = sitename_fetch(talloc_tos(), realm);
+	sitename = sitename_fetch(tmp_ctx, realm);
 
 	/* Try this 3 times then give up. */
 	for( i =0 ; i < 3; i++) {
 		ads = ads_init(realm, domain, NULL, ADS_SASL_PLAIN);
 		if (!ads) {
-			TALLOC_FREE(sitename);
-			return False;
+			ok = false;
+			goto out;
 		}
 
 		DEBUG(4,("ads_dc_name: domain=%s\n", domain));
@@ -85,9 +87,9 @@ static bool ads_dc_name(const char *domain,
 #endif
 
 		if (!ads->config.realm) {
-			TALLOC_FREE(sitename);
 			ads_destroy(&ads);
-			return False;
+			ok = false;
+			goto out;
 		}
 
 		/* Now we've found a server, see if our sitename
@@ -95,8 +97,7 @@ static bool ads_dc_name(const char *domain,
 		   to ensure we only find servers in our site. */
 
 		if (stored_sitename_changed(realm, sitename)) {
-			TALLOC_FREE(sitename);
-			sitename = sitename_fetch(talloc_tos(), realm);
+			sitename = sitename_fetch(tmp_ctx, realm);
 			ads_destroy(&ads);
 			/* Ensure we don't cache the DC we just connected to. */
 			namecache_delete(realm, 0x1C);
@@ -129,17 +130,16 @@ static bool ads_dc_name(const char *domain,
 	if (i == 3) {
 		DEBUG(1,("ads_dc_name: sitename (now \"%s\") keeps changing ???\n",
 			sitename ? sitename : ""));
-		TALLOC_FREE(sitename);
 		ads_destroy(&ads);
-		return False;
+		ok = false;
+		goto out;
 	}
-
-	TALLOC_FREE(sitename);
 
 	fstrcpy(srv_name, ads->config.ldap_server_name);
 	if (!strupper_m(srv_name)) {
 		ads_destroy(&ads);
-		return false;
+		ok = false;
+		goto out;
 	}
 #ifdef HAVE_ADS
 	*dc_ss = ads->ldap.ss;
@@ -152,7 +152,11 @@ static bool ads_dc_name(const char *domain,
 	DEBUG(4,("ads_dc_name: using server='%s' IP=%s\n",
 		 srv_name, addr));
 
-	return True;
+	ok = true;
+out:
+	TALLOC_FREE(tmp_ctx);
+
+	return ok;
 }
 
 /****************************************************************************
