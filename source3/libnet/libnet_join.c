@@ -134,8 +134,10 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 				     const char *user_name,
 				     const char *password,
 				     const char *ccname,
+				     TALLOC_CTX *mem_ctx,
 				     ADS_STRUCT **ads)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STATUS status;
 	ADS_STRUCT *my_ads = NULL;
 	char *cp;
@@ -146,7 +148,8 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 			  dc_name,
 			  ADS_SASL_SEAL);
 	if (!my_ads) {
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto out;
 	}
 
 	/* In FIPS mode, client use kerberos is forced to required. */
@@ -175,7 +178,8 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 			my_ads->auth.realm = smb_xstrdup(cp);
 			if (!strupper_m(my_ads->auth.realm)) {
 				ads_destroy(&my_ads);
-				return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+				status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+				goto out;
 			}
 		}
 	}
@@ -194,11 +198,15 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 	status = ads_connect_user_creds(my_ads);
 	if (!ADS_ERR_OK(status)) {
 		ads_destroy(&my_ads);
-		return status;
+		goto out;
 	}
 
 	*ads = my_ads;
-	return ADS_SUCCESS;
+
+	status = ADS_SUCCESS;
+out:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /****************************************************************
@@ -257,6 +265,7 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 				    username,
 				    password,
 				    ccname,
+				    mem_ctx,
 				    &r->in.ads);
 	if (!ADS_ERR_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
@@ -314,6 +323,7 @@ static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
 				    r->in.admin_account,
 				    r->in.admin_password,
 				    NULL,
+				    mem_ctx,
 				    &r->in.ads);
 	if (!ADS_ERR_OK(status)) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
