@@ -865,6 +865,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                  allow_missing_password=allow_missing_password,
                                  allow_missing_keys=allow_missing_keys)
         c.set_gensec_features(c.get_gensec_features() | FEATURE_SEAL)
+        c.set_workstation('')
         return c
 
     def get_rodc_krbtgt_creds(self,
