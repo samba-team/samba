@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# Verify that 'ctdb ban' causes a node to yield the leader role
+# Verify that removing the the leader capability causes a node to
+# yield the leader role
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
