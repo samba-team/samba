@@ -500,6 +500,10 @@ class KerberosCredentials(Credentials):
     def get_upn(self):
         return self.upn
 
+    def update_password(self, password):
+        self.set_password(password)
+        self.set_kvno(self.get_kvno() + 1)
+
 
 class KerberosTicketCreds:
     def __init__(self, ticket, session_key,
@@ -517,6 +521,10 @@ class KerberosTicketCreds:
         self.decryption_key = decryption_key
         self.ticket_private = ticket_private
         self.encpart_private = encpart_private
+
+    def set_sname(self, sname):
+        self.ticket['sname'] = sname
+        self.sname = sname
 
 
 class RawKerberosTest(TestCaseInTempDir):
