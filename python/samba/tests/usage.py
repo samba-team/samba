@@ -112,6 +112,7 @@ EXCLUDE_USAGE = {
     'python/samba/tests/krb5/pac_align_tests.py',
     'python/samba/tests/krb5/protected_users_tests.py',
     'python/samba/tests/krb5/nt_hash_tests.py',
+    'python/samba/tests/krb5/kpasswd_tests.py',
 }
 
 EXCLUDE_HELP = {
