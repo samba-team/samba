@@ -1048,6 +1048,7 @@ class KDCBaseTest(RawKerberosTest):
 
             kvno = int(res[0]['msDS-KeyVersionNumber'][0])
             creds.set_kvno(kvno)
+            creds.set_workstation(username[:-1])
             creds.set_dn(dn)
 
             keys = self.get_keys(samdb, dn)
