@@ -190,10 +190,15 @@ class ProtectedUsersTests(KDCBaseTest):
 
         client_creds.set_password(new_password)
 
-        self.get_keys(client_dn,
-                      expected_etypes={kcrypto.Enctype.AES256,
-                                       kcrypto.Enctype.AES128,
-                                       kcrypto.Enctype.RC4})
+        expected_etypes = {
+            kcrypto.Enctype.AES256,
+            kcrypto.Enctype.AES128,
+        }
+        if self.expect_nt_hash:
+            expected_etypes.add(kcrypto.Enctype.RC4)
+
+        self.get_keys(client_creds,
+                      expected_etypes=expected_etypes)
 
     # Test that DES-CBC-CRC cannot be used whether or not the user is
     # protected.

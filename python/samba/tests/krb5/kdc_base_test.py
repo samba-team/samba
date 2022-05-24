@@ -426,7 +426,9 @@ class KDCBaseTest(RawKerberosTest):
 
         return self._functional_level
 
-    def get_default_enctypes(self):
+    def get_default_enctypes(self, creds):
+        self.assertIsNotNone(creds, 'expected client creds to be passed in')
+
         functional_level = self.get_domain_functional_level()
 
         default_enctypes = []
@@ -436,8 +438,8 @@ class KDCBaseTest(RawKerberosTest):
             default_enctypes.append(kcrypto.Enctype.AES256)
             default_enctypes.append(kcrypto.Enctype.AES128)
 
-        # RC4 should always be supported
-        default_enctypes.append(kcrypto.Enctype.RC4)
+        if self.expect_nt_hash or creds.get_workstation():
+            default_enctypes.append(kcrypto.Enctype.RC4)
 
         return default_enctypes
 
@@ -956,9 +958,11 @@ class KDCBaseTest(RawKerberosTest):
 
         return bind, identifier, attributes
 
-    def get_keys(self, dn, expected_etypes=None):
+    def get_keys(self, creds, expected_etypes=None):
         admin_creds = self.get_admin_creds()
         samdb = self.get_samdb()
+
+        dn = creds.get_dn()
 
         bind, identifier, attributes = self.get_secrets(
             str(dn),
@@ -998,7 +1002,7 @@ class KDCBaseTest(RawKerberosTest):
                     keys[kcrypto.Enctype.RC4] = pwd.hex()
 
         if expected_etypes is None:
-            expected_etypes = self.get_default_enctypes()
+            expected_etypes = self.get_default_enctypes(creds)
 
         self.assertCountEqual(expected_etypes, keys)
 
@@ -1044,7 +1048,7 @@ class KDCBaseTest(RawKerberosTest):
                                    fast_support=False,
                                    claims_support=False,
                                    compound_id_support=False):
-        default_enctypes = self.get_default_enctypes()
+        default_enctypes = self.get_default_enctypes(creds)
         supported_enctypes = KerberosCredentials.etypes_to_bits(
             default_enctypes)
 
@@ -1657,7 +1661,7 @@ class KDCBaseTest(RawKerberosTest):
         expected_etypes = None
         if force_nt4_hash:
             expected_etypes = {kcrypto.Enctype.RC4}
-        keys = self.get_keys(dn, expected_etypes=expected_etypes)
+        keys = self.get_keys(creds, expected_etypes=expected_etypes)
         self.creds_set_keys(creds, keys)
 
         # Handle secret replication to the RODC.
@@ -1841,7 +1845,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_kvno(rodc_kvno)
             creds.set_dn(krbtgt_dn)
 
-            keys = self.get_keys(krbtgt_dn)
+            keys = self.get_keys(creds)
             self.creds_set_keys(creds, keys)
 
             # The RODC krbtgt account should support the default enctypes,
@@ -1894,7 +1898,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_kvno(rodc_kvno)
             creds.set_dn(dn)
 
-            keys = self.get_keys(dn)
+            keys = self.get_keys(creds)
             self.creds_set_keys(creds, keys)
 
             if self.get_domain_functional_level() >= DS_DOMAIN_FUNCTION_2008:
@@ -1945,7 +1949,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_kvno(kvno)
             creds.set_dn(dn)
 
-            keys = self.get_keys(dn)
+            keys = self.get_keys(creds)
             self.creds_set_keys(creds, keys)
 
             # The krbtgt account should support the default enctypes, although
@@ -1996,7 +2000,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_workstation(username[:-1])
             creds.set_dn(dn)
 
-            keys = self.get_keys(dn)
+            keys = self.get_keys(creds)
             self.creds_set_keys(creds, keys)
 
             if self.get_domain_functional_level() >= DS_DOMAIN_FUNCTION_2008:
@@ -2046,7 +2050,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_kvno(kvno)
             creds.set_dn(dn)
 
-            keys = self.get_keys(dn)
+            keys = self.get_keys(creds)
             self.creds_set_keys(creds, keys)
 
             if self.get_domain_functional_level() >= DS_DOMAIN_FUNCTION_2008:
@@ -2504,7 +2508,7 @@ class KDCBaseTest(RawKerberosTest):
 
         salt = creds.get_salt()
 
-        etype = self.get_default_enctypes()
+        etype = self.get_default_enctypes(creds)
         cname = self.PrincipalName_create(name_type=client_name_type,
                                           names=user_name.split('/'))
         if sname is None:
@@ -3039,7 +3043,9 @@ class KDCBaseTest(RawKerberosTest):
                                      lm_verifier=None)
 
         num, _ = err.exception.args
-        if protected:
+        if not self.expect_nt_hash:
+            self.assertEqual(ntstatus.NT_STATUS_NTLM_BLOCKED, num)
+        elif protected:
             self.assertEqual(ntstatus.NT_STATUS_ACCOUNT_RESTRICTION, num)
         else:
             self.assertEqual(ntstatus.NT_STATUS_WRONG_PASSWORD, num)
@@ -3055,7 +3061,9 @@ class KDCBaseTest(RawKerberosTest):
                                      password3=None)
 
         num, _ = err.exception.args
-        if protected:
+        if not self.expect_nt_hash:
+            self.assertEqual(ntstatus.NT_STATUS_NTLM_BLOCKED, num)
+        elif protected:
             self.assertEqual(ntstatus.NT_STATUS_ACCOUNT_RESTRICTION, num)
         else:
             self.assertEqual(ntstatus.NT_STATUS_WRONG_PASSWORD, num)
@@ -3142,13 +3150,17 @@ class KDCBaseTest(RawKerberosTest):
                                           validation_level,
                                           netr_flags))
         except NTSTATUSError as err:
-            self.assertTrue(protected, 'got unexpected error')
-
             num, _ = err.args
-            if num != ntstatus.NT_STATUS_ACCOUNT_RESTRICTION:
-                raise
+            if protected:
+                if num != ntstatus.NT_STATUS_ACCOUNT_RESTRICTION:
+                    raise
+            else:
+                self.assertFalse(self.expect_nt_hash, 'got unexpected error')
+                if num != ntstatus.NT_STATUS_NTLM_BLOCKED:
+                    raise
         else:
             self.assertFalse(protected, 'expected error')
+            self.assertTrue(self.expect_nt_hash, 'expected error')
 
             self.assertEqual(1, authoritative)
             self.assertEqual(0, flags)

@@ -719,6 +719,12 @@ class RawKerberosTest(TestCaseInTempDir):
             forced_rc4 = '0'
         cls.forced_rc4 = bool(int(forced_rc4))
 
+        expect_nt_hash = samba.tests.env_get_var_value('EXPECT_NT_HASH',
+                                                       allow_missing=True)
+        if expect_nt_hash is None:
+            expect_nt_hash = '1'
+        cls.expect_nt_hash = bool(int(expect_nt_hash))
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
@@ -977,14 +983,21 @@ class RawKerberosTest(TestCaseInTempDir):
         return c
 
     # Overridden by KDCBaseTest. At this level we don't know what actual
-    # enctypes are supported, so assume they all are. This matches the
-    # behaviour that tests expect by default.
-    def get_default_enctypes(self):
-        return [
+    # enctypes are supported, so the best we can do is go by whether NT hashes
+    # are expected and whether the account is a workstation or not. This
+    # matches the behaviour that tests expect by default.
+    def get_default_enctypes(self, creds):
+        self.assertIsNotNone(creds)
+
+        default_enctypes = [
             kcrypto.Enctype.AES256,
             kcrypto.Enctype.AES128,
-            kcrypto.Enctype.RC4,
         ]
+
+        if self.expect_nt_hash or creds.get_workstation():
+            default_enctypes.append(kcrypto.Enctype.RC4)
+
+        return default_enctypes
 
     def asn1_dump(self, name, obj, asn1_print=None):
         if asn1_print is None:
@@ -3955,7 +3968,8 @@ class RawKerberosTest(TestCaseInTempDir):
             return max(filter(lambda e: e in etypes, proposed_etypes),
                        default=None)
 
-        supported_etypes = self.get_default_enctypes()
+        creds = kdc_exchange_dict['creds']
+        supported_etypes = self.get_default_enctypes(creds)
 
         aes_etypes = set()
         if kcrypto.Enctype.AES256 in supported_etypes:

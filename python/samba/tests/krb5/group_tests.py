@@ -1871,7 +1871,7 @@ class GroupTests(KDCBaseTest):
         till = self.get_KerberosTime(offset=36000)
         kdc_options = '0'
 
-        etypes = self.get_default_enctypes()
+        etypes = self.get_default_enctypes(user_creds)
 
         # Perform an AS-REQ with the user account.
         as_rep, kdc_exchange_dict = self._test_as_exchange(

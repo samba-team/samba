@@ -75,7 +75,7 @@ class AsReqBaseTest(KDCBaseTest):
             till = self.get_KerberosTime(offset=36000)
 
         if etypes is None:
-            etypes = self.get_default_enctypes()
+            etypes = self.get_default_enctypes(client_creds)
         if kdc_options is None:
             kdc_options = krb5_asn1.KDCOptions('forwardable')
         if expected_error is not None:
@@ -194,7 +194,7 @@ class AsReqKerberosTests(AsReqBaseTest):
         expected_salt = client_creds.get_salt()
 
         if any(etype in initial_etypes
-               for etype in self.get_default_enctypes()):
+               for etype in self.get_default_enctypes(client_creds)):
             expected_error_mode = KDC_ERR_PREAUTH_REQUIRED
         else:
             expected_error_mode = KDC_ERR_ETYPE_NOSUPP

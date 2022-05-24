@@ -129,7 +129,7 @@ def connect_kdc(pipe,
     krbtgt_decryption_key = (
         as_req_base.TicketDecryptionKey_from_creds(krbtgt_creds))
 
-    etypes = as_req_base.get_default_enctypes()
+    etypes = as_req_base.get_default_enctypes(user_creds)
 
     if expect_error:
         expected_error_modes = (KDC_ERR_CLIENT_REVOKED,
