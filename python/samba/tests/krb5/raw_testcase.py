@@ -669,10 +669,11 @@ class RawKerberosTest(TestCaseInTempDir):
         if self.do_hexdump:
             sys.stderr.write("disconnect[%s]\n" % reason)
 
-    def _connect_tcp(self, host):
-        tcp_port = 88
+    def _connect_tcp(self, host, port=None):
+        if port is None:
+            port = 88
         try:
-            self.a = socket.getaddrinfo(host, tcp_port, socket.AF_UNSPEC,
+            self.a = socket.getaddrinfo(host, port, socket.AF_UNSPEC,
                                         socket.SOCK_STREAM, socket.SOL_TCP,
                                         0)
             self.s = socket.socket(self.a[0][0], self.a[0][1], self.a[0][2])
@@ -685,9 +686,9 @@ class RawKerberosTest(TestCaseInTempDir):
             self.s.close()
             raise
 
-    def connect(self, host):
+    def connect(self, host, port=None):
         self.assertNotConnected()
-        self._connect_tcp(host)
+        self._connect_tcp(host, port)
         if self.do_hexdump:
             sys.stderr.write("connected[%s]\n" % host)
 
