@@ -3354,6 +3354,7 @@ done:
 
 ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	const char *attrs[] = {"domainFunctionality", NULL};
 	ADS_STATUS status;
 	LDAPMessage *res;
@@ -3424,6 +3425,7 @@ done:
 	if ( ads_s != ads ) {
 		ads_destroy( &ads_s );
 	}
+	TALLOC_FREE(tmp_ctx);
 
 	return status;
 }
