@@ -3391,6 +3391,13 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 				goto done;
 			}
 		}
+
+		/*
+		 * Reset ads->config.flags as it can contain the flags
+		 * returned by the previous CLDAP ping when reusing the struct.
+		 */
+		ads_s->config.flags = 0;
+
 		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
 		status = ads_connect( ads_s );
 		if ( !ADS_ERR_OK(status))
