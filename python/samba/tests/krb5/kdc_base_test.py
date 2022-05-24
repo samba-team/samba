@@ -3006,7 +3006,7 @@ class KDCBaseTest(RawKerberosTest):
 
         self.assertEqual(sid, str(token_sid))
 
-    # Test the three SAMR password change methods implemented in Samba. If the
+    # Test the two SAMR password change methods implemented in Samba. If the
     # user is protected, we should get an ACCOUNT_RESTRICTION error indicating
     # that the password change is not allowed; otherwise we should get a
     # WRONG_PASSWORD error.
@@ -3056,25 +3056,6 @@ class KDCBaseTest(RawKerberosTest):
             self.assertEqual(ntstatus.NT_STATUS_ACCOUNT_RESTRICTION, num)
         else:
             self.assertEqual(ntstatus.NT_STATUS_WRONG_PASSWORD, num)
-
-        server = lsa.AsciiString()
-        server.string = server_name
-
-        account = lsa.AsciiString()
-        account.string = username
-
-        with self.assertRaises(NTSTATUSError) as err:
-            conn.OemChangePasswordUser2(server=server,
-                                        account=account,
-                                        password=nt_password,
-                                        hash=nt_verifier)
-
-        num, _ = err.exception.args
-        if num != ntstatus.NT_STATUS_NOT_IMPLEMENTED:
-            if protected:
-                self.assertEqual(ntstatus.NT_STATUS_ACCOUNT_RESTRICTION, num)
-            else:
-                self.assertEqual(ntstatus.NT_STATUS_WRONG_PASSWORD, num)
 
     # Test SamLogon. Authentication should succeed for non-protected accounts,
     # and fail for protected accounts.
