@@ -1572,13 +1572,14 @@ static int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx)
  * This ends up being called for every tcon, because the client does a
  * RPC bind for every tcon, so this is acually a per tcon context.
  **/
-struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
-			     struct tevent_context *ev,
-			     struct messaging_context *msg_ctx,
-			     struct auth_session_info *session_info,
-			     int snum,
-			     const char *sharename,
-			     const char *path)
+NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
+		      struct tevent_context *ev,
+		      struct messaging_context *msg_ctx,
+		      struct auth_session_info *session_info,
+		      int snum,
+		      const char *sharename,
+		      const char *path,
+		      struct mds_ctx **_mds_ctx)
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
@@ -1592,13 +1593,13 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 
 	mds_ctx = talloc_zero(mem_ctx, struct mds_ctx);
 	if (mds_ctx == NULL) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 	talloc_set_destructor(mds_ctx, mds_ctx_destructor_cb);
 
 	mds_ctx->mdssvc_ctx = mdssvc_init(ev);
 	if (mds_ctx->mdssvc_ctx == NULL) {
-		goto error;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	backend = lp_spotlight_backend(snum);
@@ -1624,6 +1625,7 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	default:
 		DBG_ERR("Unknown backend %d\n", backend);
 		TALLOC_FREE(mdssvc_ctx);
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto error;
 	}
 
@@ -1632,6 +1634,7 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 				      "UTF8-NFC",
 				      false);
 	if (iconv_hnd == (smb_iconv_t)-1) {
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto error;
 	}
 	mds_ctx->ic_nfc_to_nfd = iconv_hnd;
@@ -1641,17 +1644,20 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 				      "UTF8-NFD",
 				      false);
 	if (iconv_hnd == (smb_iconv_t)-1) {
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto error;
 	}
 	mds_ctx->ic_nfd_to_nfc = iconv_hnd;
 
 	mds_ctx->sharename = talloc_strdup(mds_ctx, sharename);
 	if (mds_ctx->sharename == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto error;
 	}
 
 	mds_ctx->spath = talloc_strdup(mds_ctx, path);
 	if (mds_ctx->spath == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto error;
 	}
 
@@ -1659,6 +1665,7 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	mds_ctx->pipe_session_info = session_info;
 
 	if (session_info->security_token->num_sids < 1) {
+		status = NT_STATUS_BAD_LOGON_SESSION_STATE;
 		goto error;
 	}
 	sid_copy(&mds_ctx->sid, &session_info->security_token->sids[0]);
@@ -1667,6 +1674,7 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	mds_ctx->ino_path_map = db_open_rbt(mds_ctx);
 	if (mds_ctx->ino_path_map == NULL) {
 		DEBUG(1,("open inode map db failed\n"));
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto error;
 	}
 
@@ -1691,16 +1699,19 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	if (ret != 0) {
 		DBG_ERR("vfs_ChDir [%s] failed: %s\n",
 			conn_basedir.base_name, strerror(errno));
+		status = map_nt_error_from_unix(errno);
 		goto error;
 	}
 
 	ok = mds_ctx->backend->connect(mds_ctx);
 	if (!ok) {
 		DBG_ERR("backend connect failed\n");
+		status = NT_STATUS_CONNECTION_RESET;
 		goto error;
 	}
 
-	return mds_ctx;
+	*_mds_ctx = mds_ctx;
+	return NT_STATUS_OK;
 
 error:
 	if (mds_ctx->ic_nfc_to_nfd != NULL) {
@@ -1711,7 +1722,7 @@ error:
 	}
 
 	TALLOC_FREE(mds_ctx);
-	return NULL;
+	return status;
 }
 
 /**

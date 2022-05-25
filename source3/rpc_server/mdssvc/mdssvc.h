@@ -149,13 +149,14 @@ struct mdssvc_backend {
  */
 extern bool mds_init(struct messaging_context *msg_ctx);
 extern bool mds_shutdown(void);
-struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
-			     struct tevent_context *ev,
-			     struct messaging_context *msg_ctx,
-			     struct auth_session_info *session_info,
-			     int snum,
-			     const char *sharename,
-			     const char *path);
+NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
+		      struct tevent_context *ev,
+		      struct messaging_context *msg_ctx,
+		      struct auth_session_info *session_info,
+		      int snum,
+		      const char *sharename,
+		      const char *path,
+		      struct mds_ctx **_mds_ctx);
 extern bool mds_dispatch(struct mds_ctx *query_ctx,
 			 struct mdssvc_blob *request_blob,
 			 struct mdssvc_blob *response_blob);
