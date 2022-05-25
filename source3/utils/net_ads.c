@@ -1140,42 +1140,56 @@ int net_ads_user(struct net_context *c, int argc, const char **argv)
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
 	const char *shortattrs[] = {"sAMAccountName", NULL};
 	const char *longattrs[] = {"sAMAccountName", "description", NULL};
 	char *disp_fields[2] = {NULL, NULL};
+	int ret = -1;
 
-	if (argc == 0) {
-		if (c->display_usage) {
-			d_printf(  "%s\n"
-			           "net ads user\n"
-				   "    %s\n",
-				 _("Usage:"),
-				 _("List AD users"));
-			net_display_usage_from_functable(func);
-			return 0;
-		}
-
-		if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-			return -1;
-		}
-
-		if (c->opt_long_list_entries)
-			d_printf(_("\nUser name             Comment"
-				   "\n-----------------------------\n"));
-
-		rc = ads_do_search_all_fn(ads, ads->config.bind_path,
-					  LDAP_SCOPE_SUBTREE,
-					  "(objectCategory=user)",
-					  c->opt_long_list_entries ? longattrs :
-					  shortattrs, usergrp_display,
-					  disp_fields);
-		ads_destroy(&ads);
-		return ADS_ERR_OK(rc) ? 0 : -1;
+	if (argc > 0) {
+		TALLOC_FREE(tmp_ctx);
+		return net_run_function(c, argc, argv, "net ads user", func);
 	}
 
-	return net_run_function(c, argc, argv, "net ads user", func);
+	if (c->display_usage) {
+		d_printf(  "%s\n"
+		           "net ads user\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("List AD users"));
+		net_display_usage_from_functable(func);
+		TALLOC_FREE(tmp_ctx);
+		return 0;
+	}
+
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
+	}
+
+	if (c->opt_long_list_entries)
+		d_printf(_("\nUser name             Comment"
+			   "\n-----------------------------\n"));
+
+	status = ads_do_search_all_fn(ads,
+				      ads->config.bind_path,
+				      LDAP_SCOPE_SUBTREE,
+				      "(objectCategory=user)",
+				      c->opt_long_list_entries ?
+				              longattrs : shortattrs,
+				      usergrp_display,
+				      disp_fields);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
+	}
+
+	ret = 0;
+out:
+	ads_destroy(&ads);
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 static int net_ads_group_usage(struct net_context *c, int argc, const char **argv)
