@@ -876,22 +876,25 @@ static int net_ads_user_usage(struct net_context *c, int argc, const char **argv
 
 static int ads_user_add(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	char *upn, *userdn;
 	LDAPMessage *res=NULL;
 	int rc = -1;
 	char *ou_str = NULL;
 
-	if (argc < 1 || c->display_usage)
+	if (argc < 1 || c->display_usage) {
+		TALLOC_FREE(tmp_ctx);
 		return net_ads_user_usage(c, argc, argv);
+	}
 
-	if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-		return -1;
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto done;
 	}
 
 	status = ads_find_user_acct(ads, &res, argv[0]);
-
 	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("ads_user_add: %s\n"), ads_errstr(status));
 		goto done;
@@ -910,7 +913,6 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 	}
 
 	status = ads_add_user_acct(ads, argv[0], ou_str, c->opt_comment);
-
 	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Could not add user %s: %s\n"), argv[0],
 			 ads_errstr(status));
@@ -925,35 +927,43 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* try setting the password */
-	if (asprintf(&upn, "%s@%s", argv[0], ads->config.realm) == -1) {
+	upn = talloc_asprintf(tmp_ctx,
+			      "%s@%s",
+			      argv[0],
+			      ads->config.realm);
+	if (upn == NULL) {
 		goto done;
 	}
+
 	status = ads_krb5_set_password(ads->auth.kdc_server, upn, argv[1],
 				       ads->auth.time_offset);
-	SAFE_FREE(upn);
 	if (ADS_ERR_OK(status)) {
 		d_printf(_("User %s added\n"), argv[0]);
 		rc = 0;
 		goto done;
 	}
+	TALLOC_FREE(upn);
 
 	/* password didn't set, delete account */
 	d_fprintf(stderr, _("Could not add user %s. "
 			    "Error setting password %s\n"),
 		 argv[0], ads_errstr(status));
+
 	ads_msgfree(ads, res);
+	res = NULL;
+
 	status=ads_find_user_acct(ads, &res, argv[0]);
 	if (ADS_ERR_OK(status)) {
-		userdn = ads_get_dn(ads, talloc_tos(), res);
+		userdn = ads_get_dn(ads, tmp_ctx, res);
 		ads_del_dn(ads, userdn);
 		TALLOC_FREE(userdn);
 	}
 
  done:
-	if (res)
-		ads_msgfree(ads, res);
+	ads_msgfree(ads, res);
 	ads_destroy(&ads);
 	SAFE_FREE(ou_str);
+	TALLOC_FREE(tmp_ctx);
 	return rc;
 }
 
