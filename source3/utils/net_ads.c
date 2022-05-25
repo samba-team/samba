@@ -518,7 +518,6 @@ static int net_ads_info_json(ADS_STRUCT *ads)
 	ret = output_json(&jsobj);
 failure:
 	json_free(&jsobj);
-	ads_destroy(&ads);
 
 	return ret;
 }
@@ -538,9 +537,12 @@ static int net_ads_info_json(ADS_STRUCT *ads)
 
 static int net_ads_info(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
 	char addr[INET6_ADDRSTRLEN];
 	time_t pass_time;
+	int ret = -1;
 
 	if (c->display_usage) {
 		d_printf("%s\n"
@@ -549,18 +551,19 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 			 _("Usage:"),
 			 _("Display information about an Active Directory "
 			   "server.\n"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
-	if (!ADS_ERR_OK(ads_startup_nobind(c, false, &ads))) {
+	status = ads_startup_nobind(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Didn't find the ldap server!\n"));
-		return -1;
+		goto out;
 	}
 
 	if (!ads || !ads->config.realm) {
 		d_fprintf(stderr, _("Didn't find the ldap server!\n"));
-		ads_destroy(&ads);
-		return -1;
+		goto out;
 	}
 
 	/* Try to set the server's current time since we didn't do a full
@@ -571,7 +574,8 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (c->opt_json) {
-		return net_ads_info_json(ads);
+		ret = net_ads_info_json(ads);
+		goto out;
 	}
 
 	pass_time = secrets_fetch_pass_last_set_time(ads->server.workgroup);
@@ -584,16 +588,19 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 	d_printf(_("Bind Path: %s\n"), ads->config.bind_path);
 	d_printf(_("LDAP port: %d\n"), ads->ldap.port);
 	d_printf(_("Server time: %s\n"),
-			 http_timestring(talloc_tos(), ads->config.current_time));
+			 http_timestring(tmp_ctx, ads->config.current_time));
 
 	d_printf(_("KDC server: %s\n"), ads->auth.kdc_server );
 	d_printf(_("Server time offset: %d\n"), ads->auth.time_offset );
 
 	d_printf(_("Last machine account password change: %s\n"),
-		 http_timestring(talloc_tos(), pass_time));
+		 http_timestring(tmp_ctx, pass_time));
 
+	ret = 0;
+out:
 	ads_destroy(&ads);
-	return 0;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 static ADS_STATUS ads_startup_int(struct net_context *c, bool only_own_domain,
