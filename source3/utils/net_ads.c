@@ -1066,39 +1066,49 @@ out:
 
 static int ads_user_delete(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
 	LDAPMessage *res = NULL;
-	char *userdn;
+	char *userdn = NULL;
+	int ret = -1;
 
 	if (argc < 1) {
+		TALLOC_FREE(tmp_ctx);
 		return net_ads_user_usage(c, argc, argv);
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-		return -1;
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
-	rc = ads_find_user_acct(ads, &res, argv[0]);
-	if (!ADS_ERR_OK(rc) || ads_count_replies(ads, res) != 1) {
+	status = ads_find_user_acct(ads, &res, argv[0]);
+	if (!ADS_ERR_OK(status) || ads_count_replies(ads, res) != 1) {
 		d_printf(_("User %s does not exist.\n"), argv[0]);
-		ads_msgfree(ads, res);
-		ads_destroy(&ads);
-		return -1;
+		goto out;
 	}
-	userdn = ads_get_dn(ads, talloc_tos(), res);
+
+	userdn = ads_get_dn(ads, tmp_ctx, res);
+	if (userdn == NULL) {
+		goto out;
+	}
+
+	status = ads_del_dn(ads, userdn);
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("Error deleting user %s: %s\n"), argv[0],
+			  ads_errstr(status));
+		goto out;
+	}
+
+	d_printf(_("User %s deleted\n"), argv[0]);
+
+	ret = 0;
+out:
 	ads_msgfree(ads, res);
-	rc = ads_del_dn(ads, userdn);
-	TALLOC_FREE(userdn);
-	if (ADS_ERR_OK(rc)) {
-		d_printf(_("User %s deleted\n"), argv[0]);
-		ads_destroy(&ads);
-		return 0;
-	}
-	d_fprintf(stderr, _("Error deleting user %s: %s\n"), argv[0],
-		 ads_errstr(rc));
 	ads_destroy(&ads);
-	return -1;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 int net_ads_user(struct net_context *c, int argc, const char **argv)
