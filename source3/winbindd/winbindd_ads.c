@@ -181,7 +181,7 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 	char *ldap_server = NULL;
 	char *realm = NULL;
 	char *password = NULL;
-	struct winbindd_domain *wb_dom;
+	struct winbindd_domain *wb_dom = NULL;
 	ADS_STATUS status;
 
 	if (IS_AD_DC) {
@@ -203,18 +203,18 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 	 * and the domain list.
 	 */
 	ldap_server = saf_fetch(talloc_tos(), dom_name);
-	DEBUG(10, ("ldap_server from saf cache: '%s'\n",
-		   ldap_server ? ldap_server : ""));
+	DBG_DEBUG("ldap_server from saf cache: '%s'\n",
+		   ldap_server ? ldap_server : "");
 
 	wb_dom = find_domain_from_name(dom_name);
 	if (wb_dom == NULL) {
-		DEBUG(10, ("could not find domain '%s'\n", dom_name));
+		DBG_DEBUG("could not find domain '%s'\n", dom_name);
 		status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 		goto out;
 	}
 
-	DEBUG(10, ("find_domain_from_name found realm '%s' for "
-			  " domain '%s'\n", wb_dom->alt_name, dom_name));
+	DBG_DEBUG("find_domain_from_name found realm '%s' for "
+		  " domain '%s'\n", wb_dom->alt_name, dom_name);
 
 	if (!get_trust_pw_clear(dom_name, &password, NULL, NULL)) {
 		status = ADS_ERROR_NT(NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
@@ -277,7 +277,7 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 		return ADS_ERROR_NT(NT_STATUS_REQUEST_NOT_ACCEPTED);
 	}
 
-	DEBUG(10,("ads_cached_connection\n"));
+	DBG_DEBUG("ads_cached_connection\n");
 
 	ads_cached_connection_reuse(&domain->backend_data.ads_conn);
 	if (domain->backend_data.ads_conn != NULL) {
@@ -326,7 +326,8 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 		if (status.error_type == ENUM_ADS_ERROR_SYSTEM &&
 		    status.err.rc == ECONNREFUSED) {
 			/* 'reconnect_methods' is the MS-RPC backend. */
-			DEBUG(1,("Trying MSRPC methods\n"));
+			DBG_NOTICE("Trying MSRPC methods for domain '%s'\n",
+				   domain->name);
 			domain->backend = &reconnect_methods;
 		}
 		return status;
