@@ -1628,18 +1628,18 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	}
 
 	iconv_hnd = smb_iconv_open_ex(mds_ctx,
-						   "UTF8-NFD",
-						   "UTF8-NFC",
-						   false);
+				      "UTF8-NFD",
+				      "UTF8-NFC",
+				      false);
 	if (iconv_hnd == (smb_iconv_t)-1) {
 		goto error;
 	}
 	mds_ctx->ic_nfc_to_nfd = iconv_hnd;
 
 	iconv_hnd = smb_iconv_open_ex(mds_ctx,
-						   "UTF8-NFC",
-						   "UTF8-NFD",
-						   false);
+				      "UTF8-NFC",
+				      "UTF8-NFD",
+				      false);
 	if (iconv_hnd == (smb_iconv_t)-1) {
 		goto error;
 	}
