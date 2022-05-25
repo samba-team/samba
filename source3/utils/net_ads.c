@@ -791,8 +791,12 @@ int net_ads_check(struct net_context *c)
  */
 static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX reply;
+	bool ok = false;
+	int ret = -1;
 
 	if (c->display_usage) {
 		d_printf  ("%s\n"
@@ -800,12 +804,14 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Print the workgroup name"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
-	if (!ADS_ERR_OK(ads_startup_nobind(c, false, &ads))) {
+	status = ads_startup_nobind(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Didn't find the cldap server!\n"));
-		return -1;
+		goto out;
 	}
 
 	if (!ads->config.realm) {
@@ -813,17 +819,21 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 		ads->ldap.port = 389;
 	}
 
-	if ( !ads_cldap_netlogon_5(talloc_tos(), &ads->ldap.ss, ads->server.realm, &reply ) ) {
+	ok = ads_cldap_netlogon_5(tmp_ctx,
+				  &ads->ldap.ss, ads->server.realm, &reply);
+	if (!ok) {
 		d_fprintf(stderr, _("CLDAP query failed!\n"));
-		ads_destroy(&ads);
-		return -1;
+		goto out;
 	}
 
 	d_printf(_("Workgroup: %s\n"), reply.domain_name);
 
+	ret = 0;
+out:
 	ads_destroy(&ads);
+	TALLOC_FREE(tmp_ctx);
 
-	return 0;
+	return ret;
 }
 
 
