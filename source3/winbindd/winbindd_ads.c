@@ -178,6 +178,7 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 				       TALLOC_CTX *mem_ctx,
 				       ADS_STRUCT **adsp)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	char *ldap_server = NULL;
 	char *realm = NULL;
 	char *password = NULL;
@@ -189,11 +190,13 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 		 * Make sure we never try to use LDAP against
 		 * a trusted domain as AD DC.
 		 */
+		TALLOC_FREE(tmp_ctx);
 		return ADS_ERROR_NT(NT_STATUS_REQUEST_NOT_ACCEPTED);
 	}
 
 	ads_cached_connection_reuse(adsp);
 	if (*adsp != NULL) {
+		TALLOC_FREE(tmp_ctx);
 		return ADS_SUCCESS;
 	}
 
@@ -202,7 +205,8 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 	 * Check if we can get server nam and realm from SAF cache
 	 * and the domain list.
 	 */
-	ldap_server = saf_fetch(talloc_tos(), dom_name);
+	ldap_server = saf_fetch(tmp_ctx, dom_name);
+
 	DBG_DEBUG("ldap_server from saf cache: '%s'\n",
 		   ldap_server ? ldap_server : "");
 
@@ -223,7 +227,7 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 
 	if (IS_DC) {
 		SMB_ASSERT(wb_dom->alt_name != NULL);
-		realm = SMB_STRDUP(wb_dom->alt_name);
+		realm = talloc_strdup(tmp_ctx, wb_dom->alt_name);
 	} else {
 		struct winbindd_domain *our_domain = wb_dom;
 
@@ -235,10 +239,15 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 		}
 
 		if (our_domain->alt_name != NULL) {
-			realm = SMB_STRDUP(our_domain->alt_name);
+			realm = talloc_strdup(tmp_ctx, our_domain->alt_name);
 		} else {
-			realm = SMB_STRDUP(lp_realm());
+			realm = talloc_strdup(tmp_ctx, lp_realm());
 		}
+	}
+
+	if (realm == NULL) {
+		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto out;
 	}
 
 	status = ads_cached_connection_connect(
@@ -251,9 +260,8 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 		0);			/* renewable ticket time. */
 
 out:
-	SAFE_FREE(realm);
+	TALLOC_FREE(tmp_ctx);
 	SAFE_FREE(password);
-	TALLOC_FREE(ldap_server);
 
 	return status;
 }
