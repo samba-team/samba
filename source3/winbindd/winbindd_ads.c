@@ -100,6 +100,7 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 						TALLOC_CTX *mem_ctx,
 						ADS_STRUCT **adsp)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	struct sockaddr_storage dc_ss;
@@ -107,6 +108,7 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 	enum credentials_use_kerberos krb5_state;
 
 	if (auth_realm == NULL) {
+		TALLOC_FREE(tmp_ctx);
 		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 
@@ -119,7 +121,8 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 		       ADS_SASL_SEAL);
 	if (!ads) {
 		DEBUG(1,("ads_init for domain %s failed\n", target_dom_name));
-		return ADS_ERROR(LDAP_NO_MEMORY);
+		status = ADS_ERROR(LDAP_NO_MEMORY);
+		goto out;
 	}
 
 	SAFE_FREE(ads->auth.password);
@@ -148,7 +151,8 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 	ads->auth.realm = SMB_STRDUP(auth_realm);
 	if (!strupper_m(ads->auth.realm)) {
 		ads_destroy(&ads);
-		return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+		status = ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+		goto out;
 	}
 
 	/* Setup the server affinity cache.  We don't reaally care
@@ -161,7 +165,7 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 		DEBUG(1,("ads_connect for domain %s failed: %s\n",
 			 target_dom_name, ads_errstr(status)));
 		ads_destroy(&ads);
-		return status;
+		goto out;
 	}
 
 	/* set the flag that says we don't own the memory even
@@ -171,7 +175,8 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 	ads->is_mine = False;
 
 	*adsp = ads;
-
+out:
+	TALLOC_FREE(tmp_ctx);
 	return status;
 }
 
