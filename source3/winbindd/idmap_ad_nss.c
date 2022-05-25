@@ -70,8 +70,6 @@ static ADS_STATUS ad_idmap_cached_connection(struct idmap_domain *dom)
 		return status;
 	}
 
-	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
-
 	/* if we have a valid ADS_STRUCT and the schema model is
 	   defined, then we can return here. */
 
