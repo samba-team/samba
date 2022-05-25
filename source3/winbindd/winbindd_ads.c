@@ -91,13 +91,14 @@ static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
  *
  * @return ADS_STATUS
  */
-static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
-						const char *target_realm,
+static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 						const char *target_dom_name,
 						const char *ldap_server,
 						char *password,
 						char *auth_realm,
-						time_t renewable)
+						time_t renewable,
+						TALLOC_CTX *mem_ctx,
+						ADS_STRUCT **adsp)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -251,13 +252,14 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 	}
 
 	status = ads_cached_connection_connect(
-		adsp,			/* Returns ads struct. */
 		wb_dom->alt_name,	/* realm to connect to. */
 		dom_name,		/* 'workgroup' name for ads_init */
 		ldap_server,		/* DNS name to connect to. */
 		password,		/* password for auth realm. */
 		realm,			/* realm used for krb5 ticket. */
-		0);			/* renewable ticket time. */
+		0,			/* renewable ticket time. */
+		mem_ctx,		/* memory context for ads struct */
+		adsp);			/* Returns ads struct. */
 
 out:
 	TALLOC_FREE(tmp_ctx);
@@ -329,11 +331,13 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 	}
 
 	status = ads_cached_connection_connect(
-					&domain->backend_data.ads_conn,
 					domain->alt_name,
 					domain->name, NULL,
-					password, realm,
-					WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
+					password,
+					realm,
+					WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
+					domain,
+					&domain->backend_data.ads_conn);
 	if (!ADS_ERR_OK(status)) {
 		/* if we get ECONNREFUSED then it might be a NT4
                    server, fall back to MSRPC */
