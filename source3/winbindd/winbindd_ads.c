@@ -273,6 +273,7 @@ out:
 static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 					ADS_STRUCT **adsp)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STATUS status;
 	char *password = NULL;
 	char *realm = NULL;
@@ -282,6 +283,7 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 		 * Make sure we never try to use LDAP against
 		 * a trusted domain as AD DC.
 		 */
+		TALLOC_FREE(tmp_ctx);
 		return ADS_ERROR_NT(NT_STATUS_REQUEST_NOT_ACCEPTED);
 	}
 
@@ -290,18 +292,20 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 	ads_cached_connection_reuse(&domain->backend_data.ads_conn);
 	if (domain->backend_data.ads_conn != NULL) {
 		*adsp = domain->backend_data.ads_conn;
+		TALLOC_FREE(tmp_ctx);
 		return ADS_SUCCESS;
 	}
 
 	/* the machine acct password might have change - fetch it every time */
 
 	if (!get_trust_pw_clear(domain->name, &password, NULL, NULL)) {
-		return ADS_ERROR_NT(NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
+		status = ADS_ERROR_NT(NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
+		goto out;
 	}
 
 	if ( IS_DC ) {
 		SMB_ASSERT(domain->alt_name != NULL);
-		realm = SMB_STRDUP(domain->alt_name);
+		realm = talloc_strdup(tmp_ctx, domain->alt_name);
 	} else {
 		struct winbindd_domain *our_domain = domain;
 
@@ -313,10 +317,15 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 			our_domain = find_our_domain();
 
 		if (our_domain->alt_name != NULL) {
-			realm = SMB_STRDUP( our_domain->alt_name );
+			realm = talloc_strdup(tmp_ctx, our_domain->alt_name );
+		} else {
+			realm = talloc_strdup(tmp_ctx, lp_realm() );
 		}
-		else
-			realm = SMB_STRDUP( lp_realm() );
+	}
+
+	if (realm == NULL) {
+		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto out;
 	}
 
 	status = ads_cached_connection_connect(
@@ -325,9 +334,6 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 					domain->name, NULL,
 					password, realm,
 					WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
-	SAFE_FREE(realm);
-	SAFE_FREE(password);
-
 	if (!ADS_ERR_OK(status)) {
 		/* if we get ECONNREFUSED then it might be a NT4
                    server, fall back to MSRPC */
@@ -338,10 +344,13 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 				   domain->name);
 			domain->backend = &reconnect_methods;
 		}
-		return status;
+		goto out;
 	}
 
 	*adsp = domain->backend_data.ads_conn;
+out:
+	TALLOC_FREE(tmp_ctx);
+	SAFE_FREE(password);
 
 	return status;
 }
