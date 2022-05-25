@@ -935,7 +935,8 @@ static krb5_error_code samba_kdc_get_entry_principal(
 		krb5_principal *out_princ)
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
-	krb5_error_code ret = 0;
+	krb5_error_code code = 0;
+	bool canon = flags & (SDB_F_CANON|SDB_F_FORCE_CANON);
 
 	/*
 	 * If we are set to canonicalize, we get back the fixed UPPER
@@ -949,75 +950,68 @@ static krb5_error_code samba_kdc_get_entry_principal(
 	 * fixed UPPER case realm, but the as-sent username
 	 */
 
-	if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT) {
-		if (flags & (SDB_F_CANON|SDB_F_FORCE_CANON)) {
-			/*
-			 * When requested to do so, ensure that the
-			 * both realm values in the principal are set
-			 * to the upper case, canonical realm
-			 */
-			ret = smb_krb5_make_principal(context, out_princ,
-						      lpcfg_realm(lp_ctx), "krbtgt",
-						      lpcfg_realm(lp_ctx), NULL);
-			if (ret) {
-				return ret;
-			}
-			smb_krb5_principal_set_type(context, *out_princ, KRB5_NT_SRV_INST);
-		} else {
-			ret = krb5_copy_principal(context, in_princ, out_princ);
-			if (ret) {
-				return ret;
-			}
-			/*
-			 * this appears to be required regardless of
-			 * the canonicalize flag from the client
-			 */
-			ret = smb_krb5_principal_set_realm(context, *out_princ, lpcfg_realm(lp_ctx));
-			if (ret) {
-				return ret;
-			}
+	if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT && canon) {
+		/*
+		 * When requested to do so, ensure that the
+		 * both realm values in the principal are set
+		 * to the upper case, canonical realm
+		 */
+		code = smb_krb5_make_principal(context,
+					       out_princ,
+					       lpcfg_realm(lp_ctx),
+					       "krbtgt",
+					       lpcfg_realm(lp_ctx),
+					       NULL);
+		if (code != 0) {
+			return code;
 		}
+		smb_krb5_principal_set_type(context,
+					    *out_princ,
+					    KRB5_NT_SRV_INST);
 
-	} else if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && in_princ == NULL) {
-		ret = smb_krb5_make_principal(context, out_princ, lpcfg_realm(lp_ctx), samAccountName, NULL);
-		if (ret) {
-			return ret;
-		}
-	} else if ((flags & SDB_F_FORCE_CANON) ||
-		   ((flags & SDB_F_CANON) && (flags & SDB_F_FOR_AS_REQ))) {
+		return 0;
+	}
+
+	if ((canon && flags & (SDB_F_FORCE_CANON|SDB_F_FOR_AS_REQ)) ||
+	    (ent_type == SAMBA_KDC_ENT_TYPE_ANY && in_princ == NULL)) {
 		/*
 		 * SDB_F_CANON maps from the canonicalize flag in the
 		 * packet, and has a different meaning between AS-REQ
-		 * and TGS-REQ.  We only change the principal in the AS-REQ case
+		 * and TGS-REQ.  We only change the principal in the
+		 * AS-REQ case.
 		 *
-		 * The SDB_F_FORCE_CANON if for new MIT KDC code that wants
-		 * the canonical name in all lookups, and takes care to
-		 * canonicalize only when appropriate.
+		 * The SDB_F_FORCE_CANON if for new MIT KDC code that
+		 * wants the canonical name in all lookups, and takes
+		 * care to canonicalize only when appropriate.
 		 */
-		ret = smb_krb5_make_principal(context, out_princ, lpcfg_realm(lp_ctx), samAccountName, NULL);
-		if (ret) {
-			return ret;
-		}
-	} else {
-		ret = krb5_copy_principal(context, in_princ, out_princ);
-		if (ret) {
-			return ret;
-		}
-
-		/* While we have copied the client principal, tests
-		 * show that Win2k3 returns the 'corrected' realm, not
-		 * the client-specified realm.  This code attempts to
-		 * replace the client principal's realm with the one
-		 * we determine from our records */
-
-		/* this has to be with malloc() */
-		ret = smb_krb5_principal_set_realm(context, *out_princ, lpcfg_realm(lp_ctx));
-		if (ret) {
-			return ret;
-		}
+		code = smb_krb5_make_principal(context,
+					      out_princ,
+					      lpcfg_realm(lp_ctx),
+					      samAccountName,
+					      NULL);
+		return code;
 	}
 
-	return 0;
+	/*
+	 * For a krbtgt entry, this appears to be required regardless of the
+	 * canonicalize flag from the client.
+	 */
+	code = krb5_copy_principal(context, in_princ, out_princ);
+	if (code != 0) {
+		return code;
+	}
+
+	/*
+	 * While we have copied the client principal, tests show that Win2k3
+	 * returns the 'corrected' realm, not the client-specified realm.  This
+	 * code attempts to replace the client principal's realm with the one
+	 * we determine from our records
+	 */
+	code = smb_krb5_principal_set_realm(context,
+					    *out_princ,
+					    lpcfg_realm(lp_ctx));
+
+	return code;
 }
 
 /*
