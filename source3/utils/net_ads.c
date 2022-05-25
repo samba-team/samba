@@ -1253,39 +1253,48 @@ static int ads_group_add(struct net_context *c, int argc, const char **argv)
 
 static int ads_group_delete(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
 	LDAPMessage *res = NULL;
-	char *groupdn;
+	char *groupdn = NULL;
+	int ret = -1;
 
 	if (argc < 1 || c->display_usage) {
+		TALLOC_FREE(tmp_ctx);
 		return net_ads_group_usage(c, argc, argv);
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-		return -1;
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
-	rc = ads_find_user_acct(ads, &res, argv[0]);
-	if (!ADS_ERR_OK(rc) || ads_count_replies(ads, res) != 1) {
+	status = ads_find_user_acct(ads, &res, argv[0]);
+	if (!ADS_ERR_OK(status) || ads_count_replies(ads, res) != 1) {
 		d_printf(_("Group %s does not exist.\n"), argv[0]);
-		ads_msgfree(ads, res);
-		ads_destroy(&ads);
-		return -1;
+		goto out;
 	}
-	groupdn = ads_get_dn(ads, talloc_tos(), res);
+
+	groupdn = ads_get_dn(ads, tmp_ctx, res);
+	if (groupdn == NULL) {
+		goto out;
+	}
+
+	status = ads_del_dn(ads, groupdn);
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("Error deleting group %s: %s\n"), argv[0],
+			  ads_errstr(status));
+		goto out;
+	}
+	d_printf(_("Group %s deleted\n"), argv[0]);
+
+	ret = 0;
+out:
 	ads_msgfree(ads, res);
-	rc = ads_del_dn(ads, groupdn);
-	TALLOC_FREE(groupdn);
-	if (ADS_ERR_OK(rc)) {
-		d_printf(_("Group %s deleted\n"), argv[0]);
-		ads_destroy(&ads);
-		return 0;
-	}
-	d_fprintf(stderr, _("Error deleting group %s: %s\n"), argv[0],
-		 ads_errstr(rc));
 	ads_destroy(&ads);
-	return -1;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 int net_ads_group(struct net_context *c, int argc, const char **argv)
