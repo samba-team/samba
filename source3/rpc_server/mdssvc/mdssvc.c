@@ -1591,6 +1591,10 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 	smb_iconv_t iconv_hnd = (smb_iconv_t)-1;
 	NTSTATUS status;
 
+	if (!lp_spotlight(snum)) {
+		return NT_STATUS_WRONG_VOLUME;
+	}
+
 	mds_ctx = talloc_zero(mem_ctx, struct mds_ctx);
 	if (mds_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1603,9 +1607,6 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 	}
 
 	backend = lp_spotlight_backend(snum);
-	if (!lp_spotlight(snum)) {
-		backend = SPOTLIGHT_BACKEND_NOINDEX;
-	}
 	switch (backend) {
 	case SPOTLIGHT_BACKEND_NOINDEX:
 		mds_ctx->backend = &mdsscv_backend_noindex;

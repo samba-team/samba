@@ -61,8 +61,8 @@ static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 			      path,
 			      &mds_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("mds_init_ctx() path [%s] failed: %s\n",
-			    path, nt_errstr(status));
+		DBG_DEBUG("mds_init_ctx() path [%s] failed: %s\n",
+			  path, nt_errstr(status));
 		return status;
 	}
 
@@ -109,6 +109,11 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 					     r->in.share_name,
 					     path,
 					     r->out.handle);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_VOLUME)) {
+		ZERO_STRUCTP(r->out.handle);
+		talloc_free(path);
+		return;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Couldn't create policy handle for %s\n",
 			r->in.share_name);
