@@ -262,7 +262,8 @@ out:
   return our ads connections structure for a domain. We keep the connection
   open to make things faster
 */
-static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
+static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
+					ADS_STRUCT **adsp)
 {
 	ADS_STATUS status;
 	char *password = NULL;
@@ -273,27 +274,27 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		 * Make sure we never try to use LDAP against
 		 * a trusted domain as AD DC.
 		 */
-		return NULL;
+		return ADS_ERROR_NT(NT_STATUS_REQUEST_NOT_ACCEPTED);
 	}
 
 	DEBUG(10,("ads_cached_connection\n"));
-	ads_cached_connection_reuse(&domain->backend_data.ads_conn);
 
+	ads_cached_connection_reuse(&domain->backend_data.ads_conn);
 	if (domain->backend_data.ads_conn != NULL) {
-		return domain->backend_data.ads_conn;
+		*adsp = domain->backend_data.ads_conn;
+		return ADS_SUCCESS;
 	}
 
 	/* the machine acct password might have change - fetch it every time */
 
 	if (!get_trust_pw_clear(domain->name, &password, NULL, NULL)) {
-		return NULL;
+		return ADS_ERROR_NT(NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
 	}
 
 	if ( IS_DC ) {
 		SMB_ASSERT(domain->alt_name != NULL);
 		realm = SMB_STRDUP(domain->alt_name);
-	}
-	else {
+	} else {
 		struct winbindd_domain *our_domain = domain;
 
 
@@ -328,10 +329,12 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			DEBUG(1,("Trying MSRPC methods\n"));
 			domain->backend = &reconnect_methods;
 		}
-		return NULL;
+		return status;
 	}
 
-	return domain->backend_data.ads_conn;
+	*adsp = domain->backend_data.ads_conn;
+
+	return status;
 }
 
 /* Query display info for a realm. This is the basic user list fn */
@@ -356,9 +359,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	ads = ads_cached_connection(domain);
-
-	if (!ads) {
+	rc = ads_cached_connection(domain, &ads);
+	if (!ADS_ERR_OK(rc)) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
 	}
@@ -494,9 +496,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	ads = ads_cached_connection(domain);
-
-	if (!ads) {
+	rc = ads_cached_connection(domain, &ads);
+	if (!ADS_ERR_OK(rc)) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
 	}
@@ -637,7 +638,7 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 	LDAPMessage *res = NULL;
 	LDAPMessage *msg = NULL;
 	char *ldap_exp;
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	const char *group_attrs[] = {"objectSid", NULL};
 	char *escaped_dn;
 	uint32_t num_groups = 0;
@@ -650,9 +651,8 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	ads = ads_cached_connection(domain);
-
-	if (!ads) {
+	rc = ads_cached_connection(domain, &ads);
+	if (!ADS_ERR_OK(rc)) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
 	}
@@ -745,7 +745,7 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"memberOf", NULL};
 	uint32_t num_groups = 0;
 	struct dom_sid *group_sids = NULL;
@@ -762,9 +762,8 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	ads = ads_cached_connection(domain);
-
-	if (!ads) {
+	rc = ads_cached_connection(domain, &ads);
+	if (!ADS_ERR_OK(rc)) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -886,9 +885,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		return NT_STATUS_SYNCHRONIZATION_REQUIRED;
 	}
 
-	ads = ads_cached_connection(domain);
-
-	if (!ads) {
+	rc = ads_cached_connection(domain, &ads);
+	if (!ADS_ERR_OK(rc)) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		status = NT_STATUS_SERVER_DISABLED;
 		goto done;
@@ -1147,9 +1145,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	ads = ads_cached_connection(domain);
-
-	if (!ads) {
+	rc = ads_cached_connection(domain, &ads);
+	if (!ADS_ERR_OK(rc)) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
 	}
