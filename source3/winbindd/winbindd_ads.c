@@ -176,7 +176,9 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 
 ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 {
-	char *ldap_server, *realm, *password;
+	char *ldap_server = NULL;
+	char *realm = NULL;
+	char *password = NULL;
 	struct winbindd_domain *wb_dom;
 	ADS_STATUS status;
 
@@ -205,15 +207,16 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 	wb_dom = find_domain_from_name(dom_name);
 	if (wb_dom == NULL) {
 		DEBUG(10, ("could not find domain '%s'\n", dom_name));
-		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+		status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+		goto out;
 	}
 
 	DEBUG(10, ("find_domain_from_name found realm '%s' for "
 			  " domain '%s'\n", wb_dom->alt_name, dom_name));
 
 	if (!get_trust_pw_clear(dom_name, &password, NULL, NULL)) {
-		TALLOC_FREE(ldap_server);
-		return ADS_ERROR_NT(NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
+		status = ADS_ERROR_NT(NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
+		goto out;
 	}
 
 	if (IS_DC) {
@@ -245,7 +248,9 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 		realm,			/* realm used for krb5 ticket. */
 		0);			/* renewable ticket time. */
 
+out:
 	SAFE_FREE(realm);
+	SAFE_FREE(password);
 	TALLOC_FREE(ldap_server);
 
 	return status;
