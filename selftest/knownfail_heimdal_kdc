@@ -278,7 +278,3 @@
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_wrong_key.ad_dc
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_wrong_key_server.ad_dc
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_wrong_key_service.ad_dc
-#
-# AS-REQ tests
-#
-^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_krbtgt_wrong_principal\(
