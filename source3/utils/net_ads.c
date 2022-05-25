@@ -969,67 +969,61 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 
 static int ads_user_info(struct net_context *c, int argc, const char **argv)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STRUCT *ads = NULL;
-	ADS_STATUS rc;
+	ADS_STATUS status;
 	LDAPMessage *res = NULL;
-	TALLOC_CTX *frame;
-	int ret = 0;
+	int ret = -1;
 	wbcErr wbc_status;
 	const char *attrs[] = {"memberOf", "primaryGroupID", NULL};
-	char *searchstring=NULL;
-	char **grouplist;
-	char *primary_group;
-	char *escaped_user;
+	char *searchstring = NULL;
+	char **grouplist = NULL;
+	char *primary_group = NULL;
+	char *escaped_user = NULL;
 	struct dom_sid primary_group_sid;
 	uint32_t group_rid;
 	enum wbcSidType type;
 
 	if (argc < 1 || c->display_usage) {
+		TALLOC_FREE(tmp_ctx);
 		return net_ads_user_usage(c, argc, argv);
 	}
 
-	frame = talloc_new(talloc_tos());
-	if (frame == NULL) {
-		return -1;
-	}
-
-	escaped_user = escape_ldap_string(frame, argv[0]);
+	escaped_user = escape_ldap_string(tmp_ctx, argv[0]);
 	if (!escaped_user) {
 		d_fprintf(stderr,
 			  _("ads_user_info: failed to escape user %s\n"),
 			  argv[0]);
-		return -1;
+		goto out;
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-		ret = -1;
-		goto error;
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
-	if (asprintf(&searchstring, "(sAMAccountName=%s)", escaped_user) == -1) {
-		ret =-1;
-		goto error;
+	searchstring = talloc_asprintf(tmp_ctx,
+				       "(sAMAccountName=%s)",
+				       escaped_user);
+	if (searchstring == NULL) {
+		goto out;
 	}
-	rc = ads_search(ads, &res, searchstring, attrs);
-	SAFE_FREE(searchstring);
 
-	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, _("ads_search: %s\n"), ads_errstr(rc));
-		ret = -1;
-		goto error;
+	status = ads_search(ads, &res, searchstring, attrs);
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("ads_search: %s\n"), ads_errstr(status));
+		goto out;
 	}
 
 	if (!ads_pull_uint32(ads, res, "primaryGroupID", &group_rid)) {
 		d_fprintf(stderr, _("ads_pull_uint32 failed\n"));
-		ret = -1;
-		goto error;
+		goto out;
 	}
 
-	rc = ads_domain_sid(ads, &primary_group_sid);
-	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, _("ads_domain_sid: %s\n"), ads_errstr(rc));
-		ret = -1;
-		goto error;
+	status = ads_domain_sid(ads, &primary_group_sid);
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("ads_domain_sid: %s\n"), ads_errstr(status));
+		goto out;
 	}
 
 	sid_append_rid(&primary_group_sid, group_rid);
@@ -1041,8 +1035,7 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_fprintf(stderr, "wbcLookupSid: %s\n",
 			  wbcErrorString(wbc_status));
-		ret = -1;
-		goto error;
+		goto out;
 	}
 
 	d_printf("%s\n", primary_group);
@@ -1063,10 +1056,11 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 		ldap_value_free(grouplist);
 	}
 
-error:
-	if (res) ads_msgfree(ads, res);
-	if (ads) ads_destroy(&ads);
-	TALLOC_FREE(frame);
+	ret = 0;
+out:
+	ads_msgfree(ads, res);
+	ads_destroy(&ads);
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
