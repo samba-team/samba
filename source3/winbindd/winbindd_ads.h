@@ -27,7 +27,8 @@
 
 extern struct winbindd_methods ads_methods;
 
-ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp,
-				       const char *dom_name);
+ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
+				       TALLOC_CTX *mem_ctx,
+				       ADS_STRUCT **adsp);
 
 #endif

@@ -174,7 +174,9 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 	return status;
 }
 
-ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
+ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
+				       TALLOC_CTX *mem_ctx,
+				       ADS_STRUCT **adsp)
 {
 	char *ldap_server = NULL;
 	char *realm = NULL;

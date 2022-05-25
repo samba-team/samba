@@ -80,7 +80,7 @@ static NTSTATUS idmap_rfc2307_ads_check_connection(struct idmap_domain *dom)
 	ctx = talloc_get_type(dom->private_data, struct idmap_rfc2307_context);
 	dom_name = ctx->ldap_domain ? ctx->ldap_domain : dom->name;
 
-	status = ads_idmap_cached_connection(&ctx->ads, dom_name);
+	status = ads_idmap_cached_connection(dom_name, ctx, &ctx->ads);
 	if (ADS_ERR_OK(status)) {
 		ctx->ldap = ctx->ads->ldap.ld;
 	} else {

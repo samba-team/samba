@@ -65,7 +65,7 @@ static ADS_STATUS ad_idmap_cached_connection(struct idmap_domain *dom)
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
 
-	status = ads_idmap_cached_connection(&ctx->ads, dom->name);
+	status = ads_idmap_cached_connection(dom->name, ctx, &ctx->ads);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
