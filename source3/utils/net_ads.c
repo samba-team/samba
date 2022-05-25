@@ -429,7 +429,7 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	status = ads_startup_nobind(c, false, &ads);
+	status = ads_startup_nobind(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Didn't find the cldap server!\n"));
 		goto out;
@@ -555,7 +555,7 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	status = ads_startup_nobind(c, false, &ads);
+	status = ads_startup_nobind(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Didn't find the ldap server!\n"));
 		goto out;
@@ -745,7 +745,10 @@ ADS_STATUS ads_startup(struct net_context *c, bool only_own_domain, ADS_STRUCT *
 	return ads_startup_int(c, only_own_domain, 0, ads);
 }
 
-ADS_STATUS ads_startup_nobind(struct net_context *c, bool only_own_domain, ADS_STRUCT **ads)
+ADS_STATUS ads_startup_nobind(struct net_context *c,
+			      bool only_own_domain,
+			      TALLOC_CTX *mem_ctx,
+			      ADS_STRUCT **ads)
 {
 	return ads_startup_int(c, only_own_domain, ADS_AUTH_NO_BIND, ads);
 }
@@ -808,7 +811,7 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	status = ads_startup_nobind(c, false, &ads);
+	status = ads_startup_nobind(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Didn't find the cldap server!\n"));
 		goto out;
