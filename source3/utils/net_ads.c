@@ -414,8 +414,10 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 */
 static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
-	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
+	int ret = -1;
 
 	if (c->display_usage) {
 		d_printf("%s\n"
@@ -423,13 +425,14 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 			 "    %s",
 			 _("Usage:"),
 			 _("Find the ADS DC using CLDAP lookup.\n"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
-	if (!ADS_ERR_OK(ads_startup_nobind(c, false, &ads))) {
+	status = ads_startup_nobind(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Didn't find the cldap server!\n"));
-		ads_destroy(&ads);
-		return -1;
+		goto out;
 	}
 
 	if (!ads->config.realm) {
@@ -438,7 +441,9 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 	}
 
 	ret = net_ads_cldap_netlogon(c, ads);
+out:
 	ads_destroy(&ads);
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
