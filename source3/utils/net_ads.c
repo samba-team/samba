@@ -1199,30 +1199,32 @@ static int net_ads_group_usage(struct net_context *c, int argc, const char **arg
 
 static int ads_group_add(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
-	LDAPMessage *res=NULL;
-	int rc = -1;
+	LDAPMessage *res = NULL;
+	int ret = -1;
 	char *ou_str = NULL;
 
 	if (argc < 1 || c->display_usage) {
+		TALLOC_FREE(tmp_ctx);
 		return net_ads_group_usage(c, argc, argv);
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-		return -1;
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
 	status = ads_find_user_acct(ads, &res, argv[0]);
-
 	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("ads_group_add: %s\n"), ads_errstr(status));
-		goto done;
+		goto out;
 	}
 
 	if (ads_count_replies(ads, res)) {
 		d_fprintf(stderr, _("ads_group_add: Group %s already exists\n"), argv[0]);
-		goto done;
+		goto out;
 	}
 
 	if (c->opt_container) {
@@ -1232,21 +1234,21 @@ static int ads_group_add(struct net_context *c, int argc, const char **argv)
 	}
 
 	status = ads_add_group_acct(ads, argv[0], ou_str, c->opt_comment);
-
-	if (ADS_ERR_OK(status)) {
-		d_printf(_("Group %s added\n"), argv[0]);
-		rc = 0;
-	} else {
+	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Could not add group %s: %s\n"), argv[0],
-			 ads_errstr(status));
+			  ads_errstr(status));
+		goto out;
 	}
 
- done:
-	if (res)
-		ads_msgfree(ads, res);
+	d_printf(_("Group %s added\n"), argv[0]);
+
+	ret = 0;
+ out:
+	ads_msgfree(ads, res);
 	ads_destroy(&ads);
 	SAFE_FREE(ou_str);
-	return rc;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 static int ads_group_delete(struct net_context *c, int argc, const char **argv)
