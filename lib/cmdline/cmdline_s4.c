@@ -31,6 +31,8 @@ static bool _samba_cmdline_load_config_s4(void)
 {
 	struct loadparm_context *lp_ctx = samba_cmdline_get_lp_ctx();
 	const char *config_file = NULL;
+	const struct samba_cmdline_daemon_cfg *cmdline_daemon_cfg = \
+		samba_cmdline_get_daemon_cfg();
 	bool ok;
 
 	/* Load smb conf */
@@ -45,15 +47,11 @@ static bool _samba_cmdline_load_config_s4(void)
 	}
 
 	switch (_config_type) {
-	case SAMBA_CMDLINE_CONFIG_SERVER: {
-		const struct samba_cmdline_daemon_cfg *cmdline_daemon_cfg =
-			samba_cmdline_get_daemon_cfg();
-
+	case SAMBA_CMDLINE_CONFIG_SERVER:
 		if (!cmdline_daemon_cfg->interactive) {
 			setup_logging(getprogname(), DEBUG_FILE);
 		}
 		break;
-	}
 	default:
 		break;
 	}
@@ -68,6 +66,20 @@ static bool _samba_cmdline_load_config_s4(void)
 		if (_require_smbconf) {
 			return false;
 		}
+	}
+
+	switch (_config_type) {
+	case SAMBA_CMDLINE_CONFIG_SERVER:
+		/*
+		 * We need to setup_logging *again* to ensure multi-file
+		 * logging is set up as specified in smb.conf.
+		 */
+		if (!cmdline_daemon_cfg->interactive) {
+			setup_logging(getprogname(), DEBUG_FILE);
+		}
+		break;
+	default:
+		break;
 	}
 
 	return true;
