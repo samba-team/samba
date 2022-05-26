@@ -3450,32 +3450,35 @@ out:
 
 static int net_ads_setspn_delete(struct net_context *c, int argc, const char **argv)
 {
-	int ret = 0;
-	bool ok = false;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
+	bool ok = false;
+	int ret = -1;
+
 	if (c->display_usage || argc < 1) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
 			 _("net ads setspn delete <machinename> SPN\n"));
-		ret = 0;
-		goto done;
+		TALLOC_FREE(tmp_ctx);
+		return 0;
 	}
-	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
-		ret = -1;
-		goto done;
+
+	status = ads_startup(c, true, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
+
 	if (argc > 1) {
 		ok = ads_setspn_delete(ads, argv[0], argv[1]);
 	} else {
 		ok = ads_setspn_delete(ads, lp_netbios_name(), argv[0]);
 	}
-	if (!ok) {
-		ret = -1;
-	}
-done:
-	if (ads) {
-		ads_destroy(&ads);
-	}
+
+	ret = ok ? 0 : -1;
+out:
+	ads_destroy(&ads);
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
