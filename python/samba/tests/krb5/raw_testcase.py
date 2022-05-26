@@ -759,7 +759,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                 fallback_default=False,
                                 allow_missing=kvno_allow_missing)
         if kvno is not None:
-            c.set_kvno(kvno)
+            c.set_kvno(int(kvno))
         aes256_key = self.env_get_var('AES256_KEY_HEX', prefix,
                                       fallback_default=False,
                                       allow_missing=aes256_allow_missing)
