@@ -2842,19 +2842,23 @@ static int net_ads_sid_usage(struct net_context *c, int argc, const char **argv)
 */
 static int net_ads_sid(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
-	const char *sid_string;
-	const char **attrs;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
+	const char *sid_string = NULL;
+	const char **attrs = NULL;
 	LDAPMessage *res = NULL;
-	struct dom_sid sid;
+	struct dom_sid sid = { 0 };
+	int ret = -1;
 
 	if (argc < 1 || c->display_usage) {
+		TALLOC_FREE(tmp_ctx);
 		return net_ads_sid_usage(c, argc, argv);
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-		return -1;
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
 	sid_string = argv[0];
@@ -2862,15 +2866,13 @@ static int net_ads_sid(struct net_context *c, int argc, const char **argv)
 
 	if (!string_to_sid(&sid, sid_string)) {
 		d_fprintf(stderr, _("could not convert sid\n"));
-		ads_destroy(&ads);
-		return -1;
+		goto out;
 	}
 
-	rc = ads_search_retry_sid(ads, &res, &sid, attrs);
-	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, _("search failed: %s\n"), ads_errstr(rc));
-		ads_destroy(&ads);
-		return -1;
+	status = ads_search_retry_sid(ads, &res, &sid, attrs);
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("search failed: %s\n"), ads_errstr(status));
+		goto out;
 	}
 
 	d_printf(_("Got %d replies\n\n"), ads_count_replies(ads, res));
@@ -2878,10 +2880,12 @@ static int net_ads_sid(struct net_context *c, int argc, const char **argv)
 	/* dump the results */
 	ads_dump(ads, res);
 
+	ret = 0;
+out:
 	ads_msgfree(ads, res);
 	ads_destroy(&ads);
-
-	return 0;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 static int net_ads_keytab_flush(struct net_context *c, int argc, const char **argv)
