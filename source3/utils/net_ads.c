@@ -1517,8 +1517,9 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	return ret;
 }
 
-static NTSTATUS net_ads_join_ok(struct net_context *c)
+static ADS_STATUS net_ads_join_ok(struct net_context *c)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	fstring dc_name;
@@ -1526,7 +1527,8 @@ static NTSTATUS net_ads_join_ok(struct net_context *c)
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
-		return NT_STATUS_ACCESS_DENIED;
+		TALLOC_FREE(tmp_ctx);
+		return ADS_ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
 
 	net_use_krb_machine_account(c);
@@ -1535,11 +1537,14 @@ static NTSTATUS net_ads_join_ok(struct net_context *c)
 
 	status = ads_startup(c, true, &ads);
 	if (!ADS_ERR_OK(status)) {
-		return ads_ntstatus(status);
+		goto out;
 	}
 
+	status = ADS_ERROR_NT(NT_STATUS_OK);
+out:
 	ads_destroy(&ads);
-	return NT_STATUS_OK;
+	TALLOC_FREE(tmp_ctx);
+	return  status;
 }
 
 /*
@@ -1547,7 +1552,7 @@ static NTSTATUS net_ads_join_ok(struct net_context *c)
  */
 int net_ads_testjoin(struct net_context *c, int argc, const char **argv)
 {
-	NTSTATUS status;
+	ADS_STATUS status;
 	use_in_memory_ccache();
 
 	if (c->display_usage) {
@@ -1561,9 +1566,9 @@ int net_ads_testjoin(struct net_context *c, int argc, const char **argv)
 
 	/* Display success or failure */
 	status = net_ads_join_ok(c);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!ADS_ERR_OK(status)) {
 		fprintf(stderr, _("Join to domain is not valid: %s\n"),
-			get_friendly_nt_error_msg(status));
+			get_friendly_nt_error_msg(ads_ntstatus(status)));
 		return -1;
 	}
 
