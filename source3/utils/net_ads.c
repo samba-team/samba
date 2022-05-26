@@ -3634,15 +3634,16 @@ static int net_ads_enctypes_list(struct net_context *c, int argc, const char **a
 
 static int net_ads_enctypes_set(struct net_context *c, int argc, const char **argv)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	int ret = -1;
 	ADS_STATUS status;
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	LDAPMessage *res = NULL;
-	const char *etype_list_str;
-	const char *dn;
-	ADS_MODLIST mods;
+	const char *etype_list_str = NULL;
+	const char *dn = NULL;
+	ADS_MODLIST mods = NULL;
 	uint32_t etype_list;
-	const char *str;
+	const char *str = NULL;
 
 	if (c->display_usage || argc < 1) {
 		d_printf(  "%s\n"
@@ -3650,13 +3651,13 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Set supported enctypes"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
 	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
-		printf("startup failed\n");
-		return ret;
+		goto done;
 	}
 
 	ret = net_ads_enctype_lookup_account(c, ads, argv[0], &res, NULL);
@@ -3664,7 +3665,7 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
 		goto done;
 	}
 
-	dn = ads_get_dn(ads, c, res);
+	dn = ads_get_dn(ads, tmp_ctx, res);
 	if (dn == NULL) {
 		goto done;
 	}
@@ -3681,17 +3682,17 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
 		sscanf(argv[1], "%i", &etype_list);
 	}
 
-	etype_list_str = talloc_asprintf(c, "%d", etype_list);
+	etype_list_str = talloc_asprintf(tmp_ctx, "%d", etype_list);
 	if (!etype_list_str) {
 		goto done;
 	}
 
-	mods = ads_init_mods(c);
+	mods = ads_init_mods(tmp_ctx);
 	if (!mods) {
 		goto done;
 	}
 
-	status = ads_mod_str(c, &mods, "msDS-SupportedEncryptionTypes",
+	status = ads_mod_str(tmp_ctx, &mods, "msDS-SupportedEncryptionTypes",
 			     etype_list_str);
 	if (!ADS_ERR_OK(status)) {
 		goto done;
@@ -3705,6 +3706,7 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
 	}
 
 	ads_msgfree(ads, res);
+	res = NULL;
 
 	ret = net_ads_enctype_lookup_account(c, ads, argv[0], &res, &str);
 	if (ret) {
@@ -3717,7 +3719,7 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
  done:
 	ads_msgfree(ads, res);
 	ads_destroy(&ads);
-
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
