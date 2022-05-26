@@ -2981,8 +2981,10 @@ static int net_ads_keytab_add_update_ads(struct net_context *c,
 
 static int net_ads_keytab_create(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
-	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
+	int ret = -1;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -2990,6 +2992,7 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Create new default keytab"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
@@ -2997,11 +3000,15 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 		net_use_krb_machine_account(c);
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
-		return -1;
+	status = ads_startup(c, true, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
+
 	ret = ads_keytab_create_default(ads);
+out:
 	ads_destroy(&ads);
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
