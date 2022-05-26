@@ -2177,12 +2177,17 @@ out:
 	return ret;
 }
 
-static int net_ads_printer_info(struct net_context *c, int argc, const char **argv)
+static int net_ads_printer_info(struct net_context *c,
+				int argc,
+				const char **argv)
 {
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
-	const char *servername, *printername;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
+	const char *servername = NULL;
+	const char *printername = NULL;
 	LDAPMessage *res = NULL;
+	int ret = -1;
 
 	if (c->display_usage) {
 		d_printf("%s\n%s",
@@ -2191,11 +2196,13 @@ static int net_ads_printer_info(struct net_context *c, int argc, const char **ar
 			   "  Display printer info from AD\n"
 			   "    printername\tPrinter name or wildcard\n"
 			   "    servername\tName of the print server\n"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-		return -1;
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
 	if (argc > 0) {
@@ -2210,28 +2217,26 @@ static int net_ads_printer_info(struct net_context *c, int argc, const char **ar
 		servername = lp_netbios_name();
 	}
 
-	rc = ads_find_printer_on_server(ads, &res, printername, servername);
-
-	if (!ADS_ERR_OK(rc)) {
+	status = ads_find_printer_on_server(ads, &res, printername, servername);
+	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Server '%s' not found: %s\n"),
-			servername, ads_errstr(rc));
-		ads_msgfree(ads, res);
-		ads_destroy(&ads);
-		return -1;
+			  servername, ads_errstr(status));
+		goto out;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
 		d_fprintf(stderr, _("Printer '%s' not found\n"), printername);
-		ads_msgfree(ads, res);
-		ads_destroy(&ads);
-		return -1;
+		goto out;
 	}
 
 	ads_dump(ads, res);
+
+	ret = 0;
+out:
 	ads_msgfree(ads, res);
 	ads_destroy(&ads);
-
-	return 0;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 static int net_ads_printer_publish(struct net_context *c, int argc, const char **argv)
