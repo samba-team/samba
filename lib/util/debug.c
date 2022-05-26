@@ -179,6 +179,72 @@ static struct debug_class *dbgc_config = debug_class_list_initial;
 static int current_msg_level = 0;
 static int current_msg_class = 0;
 
+/*
+ * DBG_DEV(): when and how to user it.
+ *
+ * As a developer, you sometimes want verbose logging between point A and
+ * point B, where the relationship between these points is not easily defined
+ * in terms of the call stack.
+ *
+ * For example, you might be interested in what is going on in functions in
+ * lib/util/util_str.c in an ldap worker process after a particular query. If
+ * you use gdb, something will time out and you won't get the full
+ * conversation. If you add fprintf() or DBG_ERR()s to util_str.c, you'll get
+ * a massive flood, and there's a chance one will accidentally slip into a
+ * release and the whole world will flood. DBG_DEV is a solution.
+ *
+ * On start-up, DBG_DEV() is switched OFF. Nothing is printed.
+ *
+ * 1. Add `DBG_DEV("formatted msg %d, etc\n", i);` where needed.
+ *
+ * 2. At each point you want to start debugging, add `debug_developer_enable()`.
+ *
+ * 3. At each point you want debugging to stop, add `debug_developer_disable()`.
+ *
+ * In DEVELOPER builds, the message will be printed at level 0, as with
+ * DBG_ERR(). In production builds, the macro resolves to nothing.
+ *
+ * The messages are printed with a "<function_name>:DEV:<pid>:" prefix.
+ */
+
+static bool debug_developer_is_enabled = false;
+
+bool debug_developer_enabled(void)
+{
+	return debug_developer_is_enabled;
+}
+
+/*
+ * debug_developer_disable() will turn DBG_DEV() on in the current
+ * process and children.
+ */
+void debug_developer_enable(void)
+{
+	debug_developer_is_enabled = true;
+}
+
+/*
+ * debug_developer_disable() will make DBG_DEV() do nothing in the current
+ * process (and children).
+ */
+void debug_developer_disable(void)
+{
+	debug_developer_is_enabled = false;
+}
+
+/*
+ * Within debug.c, DBG_DEV() always writes to stderr, because some functions
+ * here will attempt infinite recursion with normal DEBUG macros.
+ */
+#ifdef DEVELOPER
+#undef DBG_DEV
+#define DBG_DEV(fmt, ...)						\
+	(void)((debug_developer_enabled())				\
+	       && (fprintf(stderr, "%s:DEV:%d: " fmt "%s",		\
+			   __func__, getpid(), ##__VA_ARGS__, "")) )
+#endif
+
+
 #if defined(WITH_SYSLOG) || defined(HAVE_LIBSYSTEMD_JOURNAL) || defined(HAVE_LIBSYSTEMD)
 static int debug_level_to_priority(int level)
 {

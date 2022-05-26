@@ -237,6 +237,16 @@ void debuglevel_set_class(size_t idx, int level);
 		&& (dbgtext("%s: ", __func__))				\
 		&& (dbgtext body) )
 
+
+#ifdef DEVELOPER
+#define DBG_DEV(...) \
+  (void)( (debug_developer_enabled())				\
+	  && (dbgtext("%s:DEV:%d: ", __func__, getpid()))	\
+	  && (dbgtext(__VA_ARGS__)) )
+#else
+#define DBG_DEV(...) /* DBG_DEV was here */
+#endif
+
 /*
  * Debug levels matching RFC 3164
  */
@@ -329,6 +339,9 @@ bool debug_get_output_is_stderr(void);
 bool debug_get_output_is_stdout(void);
 void debug_schedule_reopen_logs(void);
 char *debug_list_class_names_and_levels(void);
+bool debug_developer_enabled(void);
+void debug_developer_enable(void);
+void debug_developer_disable(void);
 
 typedef void (*debug_callback_fn)(void *private_ptr, int level, const char *msg);
 
