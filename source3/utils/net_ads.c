@@ -740,7 +740,10 @@ retry:
 	return status;
 }
 
-ADS_STATUS ads_startup(struct net_context *c, bool only_own_domain, ADS_STRUCT **ads)
+ADS_STATUS ads_startup(struct net_context *c,
+		       bool only_own_domain,
+		       TALLOC_CTX *mem_ctx,
+		       ADS_STRUCT **ads)
 {
 	return ads_startup_int(c, only_own_domain, 0, ads);
 }
@@ -889,7 +892,7 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 		return net_ads_user_usage(c, argc, argv);
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto done;
 	}
@@ -997,7 +1000,7 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 		goto out;
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -1078,7 +1081,7 @@ static int ads_user_delete(struct net_context *c, int argc, const char **argv)
 		return net_ads_user_usage(c, argc, argv);
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -1164,7 +1167,7 @@ int net_ads_user(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -1211,7 +1214,7 @@ static int ads_group_add(struct net_context *c, int argc, const char **argv)
 		return net_ads_group_usage(c, argc, argv);
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -1265,7 +1268,7 @@ static int ads_group_delete(struct net_context *c, int argc, const char **argv)
 		return net_ads_group_usage(c, argc, argv);
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -1342,7 +1345,7 @@ int net_ads_group(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -1388,7 +1391,7 @@ static int net_ads_status(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -1535,7 +1538,7 @@ static ADS_STATUS net_ads_join_ok(struct net_context *c)
 
 	get_dc_name(lp_workgroup(), lp_realm(), dc_name, &dcip);
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -1899,7 +1902,7 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 		}
 	}
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if ( !ADS_ERR_OK(status) ) {
 		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
 		goto out;
@@ -1966,7 +1969,7 @@ static int net_ads_dns_unregister(struct net_context *c,
 	/* Get the hostname for un-registering */
 	hostname = argv[0];
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if ( !ADS_ERR_OK(status) ) {
 		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
 		goto out;
@@ -2150,7 +2153,7 @@ static int net_ads_printer_search(struct net_context *c,
 		return -1;
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -2200,7 +2203,7 @@ static int net_ads_printer_info(struct net_context *c,
 		return -1;
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -2279,7 +2282,7 @@ static int net_ads_printer_publish(struct net_context *c,
 		goto out;
 	}
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -2410,7 +2413,7 @@ static int net_ads_printer_remove(struct net_context *c,
 		return -1;
 	}
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -2642,7 +2645,7 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 
 	use_in_memory_ccache();
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -2719,7 +2722,7 @@ static int net_ads_search(struct net_context *c, int argc, const char **argv)
 		return net_ads_search_usage(c, argc, argv);
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -2788,7 +2791,7 @@ static int net_ads_dn(struct net_context *c, int argc, const char **argv)
 		return net_ads_dn_usage(c, argc, argv);
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -2856,7 +2859,7 @@ static int net_ads_sid(struct net_context *c, int argc, const char **argv)
 		return net_ads_sid_usage(c, argc, argv);
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -2911,7 +2914,7 @@ static int net_ads_keytab_flush(struct net_context *c,
 		net_use_krb_machine_account(c);
 	}
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -2951,7 +2954,7 @@ static int net_ads_keytab_add(struct net_context *c,
 		net_use_krb_machine_account(c);
 	}
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -3000,7 +3003,7 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 		net_use_krb_machine_account(c);
 	}
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -3396,7 +3399,7 @@ static int net_ads_setspn_list(struct net_context *c,
 		return -1;
 	}
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -3430,7 +3433,7 @@ static int net_ads_setspn_add(struct net_context *c, int argc, const char **argv
 		return -1;
 	}
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -3464,7 +3467,7 @@ static int net_ads_setspn_delete(struct net_context *c, int argc, const char **a
 		return -1;
 	}
 
-	status = ads_startup(c, true, &ads);
+	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -3612,7 +3615,7 @@ static int net_ads_enctypes_list(struct net_context *c, int argc, const char **a
 		return -1;
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -3655,7 +3658,7 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
 		return -1;
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto done;
 	}
@@ -3743,7 +3746,7 @@ static int net_ads_enctypes_delete(struct net_context *c, int argc, const char *
 		return -1;
 	}
 
-	status = ads_startup(c, false, &ads);
+	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto done;
 	}

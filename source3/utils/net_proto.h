@@ -33,7 +33,10 @@ enum netr_SchannelType get_sec_channel_type(const char *param);
 
 /* The following definitions come from utils/net_ads.c  */
 struct ads_struct;
-ADS_STATUS ads_startup(struct net_context *c, bool only_own_domain, struct ads_struct **ads);
+ADS_STATUS ads_startup(struct net_context *c,
+		       bool only_own_domain,
+		       TALLOC_CTX *mem_ctx,
+		       struct ads_struct **ads);
 ADS_STATUS ads_startup_nobind(struct net_context *c,
 			      bool only_own_domain,
 			      TALLOC_CTX *mem_ctx,
