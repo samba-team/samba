@@ -46,6 +46,9 @@ kdc_code kpasswdd_process(struct kdc_server *kdc,
 NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 			       krb5_context context, struct HDB **db);
 
+NTSTATUS hdb_samba4_kpasswd_create_kdc(struct samba_kdc_base_context *base_ctx,
+				       krb5_context context, struct HDB **db);
+
 /* from kdc-glue.c */
 int kdc_check_pac(krb5_context krb5_context,
 		  DATA_BLOB server_sig,

@@ -54,9 +54,3 @@
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_proxiable_as_protected.ad_dc
 #
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_samr_change_password_protected.ad_dc
-#
-# Kpasswd tests
-#
-^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_wrong_key.ad_dc
-^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_wrong_key_server.ad_dc
-^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_wrong_key_service.ad_dc
