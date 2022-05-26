@@ -603,8 +603,11 @@ out:
 	return ret;
 }
 
-static ADS_STATUS ads_startup_int(struct net_context *c, bool only_own_domain,
-				  uint32_t auth_flags, ADS_STRUCT **ads_ret)
+static ADS_STATUS ads_startup_int(struct net_context *c,
+				  bool only_own_domain,
+				  uint32_t auth_flags,
+				  TALLOC_CTX *mem_ctx,
+				  ADS_STRUCT **ads_ret)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
@@ -745,7 +748,7 @@ ADS_STATUS ads_startup(struct net_context *c,
 		       TALLOC_CTX *mem_ctx,
 		       ADS_STRUCT **ads)
 {
-	return ads_startup_int(c, only_own_domain, 0, ads);
+	return ads_startup_int(c, only_own_domain, 0, mem_ctx, ads);
 }
 
 ADS_STATUS ads_startup_nobind(struct net_context *c,
@@ -753,7 +756,11 @@ ADS_STATUS ads_startup_nobind(struct net_context *c,
 			      TALLOC_CTX *mem_ctx,
 			      ADS_STRUCT **ads)
 {
-	return ads_startup_int(c, only_own_domain, ADS_AUTH_NO_BIND, ads);
+	return ads_startup_int(c,
+			       only_own_domain,
+			       ADS_AUTH_NO_BIND,
+			       mem_ctx,
+			       ads);
 }
 
 /*
