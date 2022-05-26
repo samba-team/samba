@@ -170,7 +170,7 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 
 	rv = cli_credentials_set_keytab_name(server_credentials,
 					     kdc->task->lp_ctx,
-					     kdc->keytab_name,
+					     kdc->kpasswd_keytab_name,
 					     CRED_SPECIFIED);
 	if (rv != 0) {
 		DBG_ERR("Failed to set credentials keytab name\n");
