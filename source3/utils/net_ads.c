@@ -3725,12 +3725,13 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
 
 static int net_ads_enctypes_delete(struct net_context *c, int argc, const char **argv)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	int ret = -1;
 	ADS_STATUS status;
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	LDAPMessage *res = NULL;
-	const char *dn;
-	ADS_MODLIST mods;
+	const char *dn = NULL;
+	ADS_MODLIST mods = NULL;
 
 	if (c->display_usage || argc < 1) {
 		d_printf(  "%s\n"
@@ -3738,13 +3739,13 @@ static int net_ads_enctypes_delete(struct net_context *c, int argc, const char *
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Delete supported enctypes"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
 	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
-		printf("startup failed\n");
-		return ret;
+		goto done;
 	}
 
 	ret = net_ads_enctype_lookup_account(c, ads, argv[0], &res, NULL);
@@ -3752,17 +3753,17 @@ static int net_ads_enctypes_delete(struct net_context *c, int argc, const char *
 		goto done;
 	}
 
-	dn = ads_get_dn(ads, c, res);
+	dn = ads_get_dn(ads, tmp_ctx, res);
 	if (dn == NULL) {
 		goto done;
 	}
 
-	mods = ads_init_mods(c);
+	mods = ads_init_mods(tmp_ctx);
 	if (!mods) {
 		goto done;
 	}
 
-	status = ads_mod_str(c, &mods, "msDS-SupportedEncryptionTypes", NULL);
+	status = ads_mod_str(tmp_ctx, &mods, "msDS-SupportedEncryptionTypes", NULL);
 	if (!ADS_ERR_OK(status)) {
 		goto done;
 	}
@@ -3779,6 +3780,7 @@ static int net_ads_enctypes_delete(struct net_context *c, int argc, const char *
  done:
 	ads_msgfree(ads, res);
 	ads_destroy(&ads);
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
