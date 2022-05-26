@@ -843,8 +843,9 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	 * the same characteristics, which is likely but not guaranteed.
 	 */
 
-	conn->fs_capabilities = SMB_VFS_FS_CAPABILITIES(conn, &conn->ts_res);
-
+	if(!IS_IPC(conn) ){
+		conn->fs_capabilities = SMB_VFS_FS_CAPABILITIES(conn, &conn->ts_res);
+	}
 	/*
 	 * Print out the 'connected as' stuff here as we need
 	 * to know the effective uid and gid we will be using
