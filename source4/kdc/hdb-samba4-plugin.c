@@ -36,7 +36,7 @@ static krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, 
 	base_ctx = talloc_get_type_abort(ptr, struct samba_kdc_base_context);
 
 	/* The global kdc_mem_ctx and kdc_lp_ctx, Disgusting, ugly hack, but it means one less private hook */
-	nt_status = hdb_samba4_create_kdc(base_ctx, context, db);
+	nt_status = hdb_samba4_kpasswd_create_kdc(base_ctx, context, db);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return 0;
