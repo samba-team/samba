@@ -1836,15 +1836,16 @@ fail:
 static int net_ads_dns_register(struct net_context *c, int argc, const char **argv)
 {
 #if defined(HAVE_KRB5)
-	ADS_STRUCT *ads;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
-	TALLOC_CTX *ctx;
 	const char *hostname = NULL;
 	const char **addrs_list = NULL;
 	struct sockaddr_storage *addrs = NULL;
 	int num_addrs = 0;
 	int count;
+	int ret = -1;
 
 #ifdef DEVELOPER
 	talloc_enable_leak_report();
@@ -1863,11 +1864,7 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Register hostname with DNS\n"));
-		return -1;
-	}
-
-	if (!(ctx = talloc_init("net_ads_dns"))) {
-		d_fprintf(stderr, _("Could not initialise talloc context\n"));
+		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
 
@@ -1884,11 +1881,12 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 	}
 
 	if (num_addrs > 0) {
-		addrs = talloc_zero_array(ctx, struct sockaddr_storage, num_addrs);
+		addrs = talloc_zero_array(tmp_ctx,
+					  struct sockaddr_storage,
+					  num_addrs);
 		if (addrs == NULL) {
 			d_fprintf(stderr, _("Error allocating memory!\n"));
-			talloc_free(ctx);
-			return -1;
+			goto out;
 		}
 	}
 
@@ -1897,32 +1895,36 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 			d_fprintf(stderr, "%s '%s'.\n",
 					  _("Cannot interpret address"),
 					  addrs_list[count]);
-			talloc_free(ctx);
-			return -1;
+			goto out;
 		}
 	}
 
 	status = ads_startup(c, true, &ads);
 	if ( !ADS_ERR_OK(status) ) {
 		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
-		TALLOC_FREE(ctx);
-		return -1;
+		goto out;
 	}
 
-	ntstatus = net_update_dns_ext(c, ctx, ads, hostname, addrs, num_addrs, false);
+	ntstatus = net_update_dns_ext(c,
+				      tmp_ctx,
+				      ads,
+				      hostname,
+				      addrs,
+				      num_addrs,
+				      false);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		d_fprintf( stderr, _("DNS update failed!\n") );
-		ads_destroy( &ads );
-		TALLOC_FREE( ctx );
-		return -1;
+		goto out;
 	}
 
 	d_fprintf( stderr, _("Successfully registered hostname with DNS\n") );
 
+	ret = 0;
+out:
 	ads_destroy(&ads);
-	TALLOC_FREE( ctx );
+	TALLOC_FREE(tmp_ctx);
 
-	return 0;
+	return ret;
 #else
 	d_fprintf(stderr,
 		  _("DNS update support not enabled at compile time!\n"));
