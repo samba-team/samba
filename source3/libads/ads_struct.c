@@ -122,6 +122,46 @@ char *ads_build_domain(const char *dn)
 }
 
 /*
+  free the memory used by the ADS structure initialized with 'ads_init(...)'
+*/
+void ads_destroy(ADS_STRUCT **ads)
+{
+	if (ads && *ads) {
+		bool is_mine;
+
+		is_mine = (*ads)->is_mine;
+#ifdef HAVE_LDAP
+		ads_disconnect(*ads);
+#endif
+		SAFE_FREE((*ads)->server.realm);
+		SAFE_FREE((*ads)->server.workgroup);
+		SAFE_FREE((*ads)->server.ldap_server);
+
+		SAFE_FREE((*ads)->auth.realm);
+		SAFE_FREE((*ads)->auth.password);
+		SAFE_FREE((*ads)->auth.user_name);
+		SAFE_FREE((*ads)->auth.kdc_server);
+		SAFE_FREE((*ads)->auth.ccache_name);
+
+		SAFE_FREE((*ads)->config.realm);
+		SAFE_FREE((*ads)->config.bind_path);
+		SAFE_FREE((*ads)->config.ldap_server_name);
+		SAFE_FREE((*ads)->config.server_site_name);
+		SAFE_FREE((*ads)->config.client_site_name);
+		SAFE_FREE((*ads)->config.schema_path);
+		SAFE_FREE((*ads)->config.config_path);
+
+		ZERO_STRUCTP(*ads);
+#ifdef HAVE_LDAP
+		ads_zero_ldap(*ads);
+#endif
+
+		if ( is_mine )
+			SAFE_FREE(*ads);
+	}
+}
+
+/*
   initialise a ADS_STRUCT, ready for some ads_ ops
 */
 ADS_STRUCT *ads_init(const char *realm, 
@@ -186,44 +226,4 @@ bool ads_set_sasl_wrap_flags(ADS_STRUCT *ads, unsigned flags)
 	ads->auth.flags = flags | other_flags;
 
 	return true;
-}
-
-/*
-  free the memory used by the ADS structure initialized with 'ads_init(...)'
-*/
-void ads_destroy(ADS_STRUCT **ads)
-{
-	if (ads && *ads) {
-		bool is_mine;
-
-		is_mine = (*ads)->is_mine;
-#ifdef HAVE_LDAP
-		ads_disconnect(*ads);
-#endif
-		SAFE_FREE((*ads)->server.realm);
-		SAFE_FREE((*ads)->server.workgroup);
-		SAFE_FREE((*ads)->server.ldap_server);
-
-		SAFE_FREE((*ads)->auth.realm);
-		SAFE_FREE((*ads)->auth.password);
-		SAFE_FREE((*ads)->auth.user_name);
-		SAFE_FREE((*ads)->auth.kdc_server);
-		SAFE_FREE((*ads)->auth.ccache_name);
-
-		SAFE_FREE((*ads)->config.realm);
-		SAFE_FREE((*ads)->config.bind_path);
-		SAFE_FREE((*ads)->config.ldap_server_name);
-		SAFE_FREE((*ads)->config.server_site_name);
-		SAFE_FREE((*ads)->config.client_site_name);
-		SAFE_FREE((*ads)->config.schema_path);
-		SAFE_FREE((*ads)->config.config_path);
-
-		ZERO_STRUCTP(*ads);
-#ifdef HAVE_LDAP
-		ads_zero_ldap(*ads);
-#endif
-
-		if ( is_mine )
-			SAFE_FREE(*ads);
-	}
 }
