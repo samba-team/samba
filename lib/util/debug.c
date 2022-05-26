@@ -1469,21 +1469,13 @@ void check_log_size( void )
 {
 	off_t maxlog;
 
-	/*
-	 *  We need to be root to check/change log-file, skip this and let the main
-	 *  loop check do a new check as root.
-	 */
-
-#if _SAMBA_BUILD_ == 3
-	if (geteuid() != sec_initial_uid())
-#else
-	if( geteuid() != 0)
-#endif
-	{
-		/* We don't check sec_initial_uid() here as it isn't
-		 * available in common code and we don't generally
-		 * want to rotate and the possibly lose logs in
-		 * make test or the build farm */
+	if (geteuid() != 0) {
+		/*
+		 * We need to be root to change the log file (tests use a fake
+		 * geteuid() from third_party/uid_wrapper). Otherwise we skip
+		 * this and let the main smbd loop or some other process do
+		 * the work.
+		 */
 		return;
 	}
 
