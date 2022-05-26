@@ -912,6 +912,7 @@ krb5_environ = {
     'SERVICE_USERNAME': '$SERVER',
     'ADMIN_USERNAME': '$DC_USERNAME',
     'ADMIN_PASSWORD': '$DC_PASSWORD',
+    'ADMIN_KVNO': '1',
     'FOR_USER': '$DC_USERNAME',
     'STRICT_CHECKING':'0',
     'FAST_SUPPORT': have_fast_support,
