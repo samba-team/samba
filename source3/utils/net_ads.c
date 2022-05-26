@@ -1372,9 +1372,11 @@ out:
 
 static int net_ads_status(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
-	LDAPMessage *res;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	int ret = -1;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -1382,29 +1384,36 @@ static int net_ads_status(struct net_context *c, int argc, const char **argv)
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Display machine account details"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
-		return -1;
+	status = ads_startup(c, true, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
-	rc = ads_find_machine_acct(ads, &res, lp_netbios_name());
-	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, _("ads_find_machine_acct: %s\n"), ads_errstr(rc));
-		ads_destroy(&ads);
-		return -1;
+	status = ads_find_machine_acct(ads, &res, lp_netbios_name());
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("ads_find_machine_acct: %s\n"),
+			  ads_errstr(status));
+		goto out;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
-		d_fprintf(stderr, _("No machine account for '%s' found\n"), lp_netbios_name());
-		ads_destroy(&ads);
-		return -1;
+		d_fprintf(stderr, _("No machine account for '%s' found\n"),
+			  lp_netbios_name());
+		goto out;
 	}
 
 	ads_dump(ads, res);
+
+	ret = 0;
+out:
+	ads_msgfree(ads, res);
 	ads_destroy(&ads);
-	return 0;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 /*******************************************************************
