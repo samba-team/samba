@@ -768,35 +768,43 @@ ADS_STATUS ads_startup_nobind(struct net_context *c,
   ads_startup() stores the password in opt_password if it needs to so
   that rpc or rap can use it without re-prompting.
 */
-static int net_ads_check_int(const char *realm, const char *workgroup, const char *host)
+static int net_ads_check_int(struct net_context *c,
+			     const char *realm,
+			     const char *workgroup,
+			     const char *host)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
+	int ret = -1;
 
 	ads = ads_init(realm, workgroup, host, ADS_SASL_PLAIN);
-	if (ads == NULL ) {
-		return -1;
+	if (ads == NULL) {
+		goto out;
 	}
 
 	ads->auth.flags |= ADS_AUTH_NO_BIND;
 
         status = ads_connect(ads);
         if ( !ADS_ERR_OK(status) ) {
-                return -1;
+                goto out;
         }
 
+	ret = 0;
+out:
 	ads_destroy(&ads);
-	return 0;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 int net_ads_check_our_domain(struct net_context *c)
 {
-	return net_ads_check_int(lp_realm(), lp_workgroup(), NULL);
+	return net_ads_check_int(c, lp_realm(), lp_workgroup(), NULL);
 }
 
 int net_ads_check(struct net_context *c)
 {
-	return net_ads_check_int(NULL, c->opt_workgroup, c->opt_host);
+	return net_ads_check_int(c, NULL, c->opt_workgroup, c->opt_host);
 }
 
 /*
