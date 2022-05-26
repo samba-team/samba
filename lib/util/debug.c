@@ -1104,15 +1104,24 @@ void debug_set_hostname(const char *name)
 }
 
 /**
-  control the name of the logfile and whether logging will be to stdout, stderr
-  or a file, and set up syslog
-
-  new_log indicates the destination for the debug log (an enum in
-  order of precedence - once set to DEBUG_FILE, it is not possible to
-  reset to DEBUG_STDOUT for example.  This makes it easy to override
-  for debug to stderr on the command line, as the smb.conf cannot
-  reset it back to file-based logging
-*/
+ * Ensure debug logs are initialised.
+ *
+ * setup_logging() is called to direct logging to the correct outputs, whether
+ * those be stderr, stdout, files, or syslog, and set the program name used in
+ * the logs. It can be called multiple times.
+ *
+ * There is an order of precedence to the log type. Once set to DEBUG_FILE, it
+ * cannot be reset DEFAULT_DEBUG_STDERR, but can be set to DEBUG_STDERR, after
+ * which DEBUG_FILE is unavailable). This makes it possible to override for
+ * debug to stderr on the command line, as the smb.conf cannot reset it back
+ * to file-based logging. See enum debug_logtype.
+ *
+ * @param prog_name the program name. Directory path component will be
+ *                  ignored.
+ *
+ * @param new_logtype the requested destination for the debug log,
+ *                    as an enum debug_logtype.
+ */
 void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 {
 	debug_init();

@@ -282,11 +282,11 @@ void debuglevel_set_class(size_t idx, int level);
 
 /* The following definitions come from lib/debug.c  */
 
-/** Possible destinations for the debug log (in order of precedence -
- * once set to DEBUG_FILE, it is not possible to reset to DEBUG_STDOUT
- * for example.  This makes it easy to override for debug to stderr on
- * the command line, as the smb.conf cannot reset it back to
- * file-based logging */
+/**
+ * Possible destinations for the debug log.
+ *
+ * Set via setup_logging(); higher values have precedence.
+ */
 enum debug_logtype {
 	DEBUG_DEFAULT_STDERR = 0,
 	DEBUG_DEFAULT_STDOUT = 1,
