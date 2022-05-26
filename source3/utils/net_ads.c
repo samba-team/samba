@@ -2775,30 +2775,36 @@ static int net_ads_dn_usage(struct net_context *c, int argc, const char **argv)
 */
 static int net_ads_dn(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
-	const char *dn;
-	const char **attrs;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
+	const char *dn = NULL;
+	const char **attrs = NULL;
 	LDAPMessage *res = NULL;
+	int ret = -1;
 
 	if (argc < 1 || c->display_usage) {
+		TALLOC_FREE(tmp_ctx);
 		return net_ads_dn_usage(c, argc, argv);
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-		return -1;
+	status = ads_startup(c, false, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
 	dn = argv[0];
 	attrs = (argv + 1);
 
-	rc = ads_do_search_all(ads, dn,
-			       LDAP_SCOPE_BASE,
-			       "(objectclass=*)", attrs, &res);
-	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, _("search failed: %s\n"), ads_errstr(rc));
-		ads_destroy(&ads);
-		return -1;
+	status = ads_do_search_all(ads,
+				   dn,
+				   LDAP_SCOPE_BASE,
+				   "(objectclass=*)",
+				   attrs,
+				   &res);
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("search failed: %s\n"), ads_errstr(status));
+		goto out;
 	}
 
 	d_printf("Got %d replies\n\n", ads_count_replies(ads, res));
@@ -2806,10 +2812,12 @@ static int net_ads_dn(struct net_context *c, int argc, const char **argv)
 	/* dump the results */
 	ads_dump(ads, res);
 
+	ret = 0;
+out:
 	ads_msgfree(ads, res);
 	ads_destroy(&ads);
-
-	return 0;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 /*
