@@ -2888,10 +2888,14 @@ out:
 	return ret;
 }
 
-static int net_ads_keytab_flush(struct net_context *c, int argc, const char **argv)
+static int net_ads_keytab_flush(struct net_context *c,
+				int argc,
+				const char **argv)
 {
-	int ret;
-	ADS_STRUCT *ads;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
+	int ret = -1;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -2899,6 +2903,7 @@ static int net_ads_keytab_flush(struct net_context *c, int argc, const char **ar
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Delete the whole keytab"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
@@ -2906,11 +2911,15 @@ static int net_ads_keytab_flush(struct net_context *c, int argc, const char **ar
 		net_use_krb_machine_account(c);
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
-		return -1;
+	status = ads_startup(c, true, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
+
 	ret = ads_keytab_flush(ads);
+out:
 	ads_destroy(&ads);
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
