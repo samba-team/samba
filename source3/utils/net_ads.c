@@ -2239,21 +2239,28 @@ out:
 	return ret;
 }
 
-static int net_ads_printer_publish(struct net_context *c, int argc, const char **argv)
+static int net_ads_printer_publish(struct net_context *c,
+				   int argc,
+				   const char **argv)
 {
-        ADS_STRUCT *ads;
-        ADS_STATUS rc;
-	const char *servername, *printername;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
+	const char *servername = NULL;
+	const char *printername = NULL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct sockaddr_storage server_ss;
+	struct sockaddr_storage server_ss = { 0 };
 	NTSTATUS nt_status;
-	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
-	ADS_MODLIST mods = ads_init_mods(mem_ctx);
-	char *prt_dn, *srv_dn, **srv_cn;
-	char *srv_cn_escaped = NULL, *printername_escaped = NULL;
+	ADS_MODLIST mods = NULL;
+	char *prt_dn = NULL;
+	char *srv_dn = NULL;
+	char **srv_cn = NULL;
+	char *srv_cn_escaped = NULL;
+	char *printername_escaped = NULL;
 	LDAPMessage *res = NULL;
 	bool ok;
+	int ret = -1;
 
 	if (argc < 1 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -2262,13 +2269,19 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 			   "  Publish printer in AD\n"
 			   "    printername\tName of the printer\n"
 			   "    servername\tName of the print server\n"));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
-		talloc_destroy(mem_ctx);
-		return -1;
+	mods = ads_init_mods(tmp_ctx);
+	if (mods == NULL) {
+		d_fprintf(stderr, _("Out of memory\n"));
+		goto out;
+	}
+
+	status = ads_startup(c, true, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
 	printername = argv[0];
@@ -2285,9 +2298,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 	if (!ok) {
 		d_fprintf(stderr, _("Could not find server %s\n"),
 			  servername);
-		ads_destroy(&ads);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
 	cli_credentials_set_kerberos_state(c->creds,
@@ -2304,9 +2315,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 		d_fprintf(stderr, _("Unable to open a connection to %s to "
 			            "obtain data for %s\n"),
 			  servername, printername);
-		ads_destroy(&ads);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
 	/* Publish on AD server */
@@ -2317,9 +2326,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 		d_fprintf(stderr, _("Could not find machine account for server "
 				    "%s\n"),
 			 servername);
-		ads_destroy(&ads);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
 	srv_dn = ldap_get_dn((LDAP *)ads->ldap.ld, (LDAPMessage *)res);
@@ -2331,18 +2338,19 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 		SAFE_FREE(srv_cn_escaped);
 		SAFE_FREE(printername_escaped);
 		d_fprintf(stderr, _("Internal error, out of memory!"));
-		ads_destroy(&ads);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
-	if (asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, printername_escaped, srv_dn) == -1) {
+	prt_dn = talloc_asprintf(tmp_ctx,
+				 "cn=%s-%s,%s",
+				 srv_cn_escaped,
+				 printername_escaped,
+				 srv_dn);
+	if (prt_dn == NULL) {
 		SAFE_FREE(srv_cn_escaped);
 		SAFE_FREE(printername_escaped);
 		d_fprintf(stderr, _("Internal error, out of memory!"));
-		ads_destroy(&ads);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
 	SAFE_FREE(srv_cn_escaped);
@@ -2352,35 +2360,31 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, _("Unable to open a connection to the spoolss pipe on %s\n"),
 			 servername);
-		SAFE_FREE(prt_dn);
-		ads_destroy(&ads);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
-	if (!W_ERROR_IS_OK(get_remote_printer_publishing_data(pipe_hnd, mem_ctx, &mods,
+	if (!W_ERROR_IS_OK(get_remote_printer_publishing_data(pipe_hnd,
+							      tmp_ctx,
+							      &mods,
 							      printername))) {
-		SAFE_FREE(prt_dn);
-		ads_destroy(&ads);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
-        rc = ads_add_printer_entry(ads, prt_dn, mem_ctx, &mods);
-        if (!ADS_ERR_OK(rc)) {
-                d_fprintf(stderr, "ads_publish_printer: %s\n", ads_errstr(rc));
-		SAFE_FREE(prt_dn);
-		ads_destroy(&ads);
-		talloc_destroy(mem_ctx);
-                return -1;
+        status = ads_add_printer_entry(ads, prt_dn, tmp_ctx, &mods);
+        if (!ADS_ERR_OK(status)) {
+                d_fprintf(stderr, "ads_publish_printer: %s\n",
+			  ads_errstr(status));
+		goto out;
         }
 
         d_printf("published printer\n");
-	SAFE_FREE(prt_dn);
-	ads_destroy(&ads);
-	talloc_destroy(mem_ctx);
 
-	return 0;
+	ret = 0;
+out:
+	ads_destroy(&ads);
+	talloc_destroy(tmp_ctx);
+
+	return ret;
 }
 
 static int net_ads_printer_remove(struct net_context *c, int argc, const char **argv)
