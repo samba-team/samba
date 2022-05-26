@@ -1425,9 +1425,10 @@ out:
 
 static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 {
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	struct libnet_UnjoinCtx *r = NULL;
 	WERROR werr;
+	int ret = -1;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -1435,16 +1436,13 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Leave an AD domain"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
 	if (!*lp_realm()) {
 		d_fprintf(stderr, _("No realm set, are we joined ?\n"));
-		return -1;
-	}
-
-	if (!(ctx = talloc_init("net_ads_leave"))) {
-		d_fprintf(stderr, _("Could not initialise talloc context.\n"));
+		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
 
@@ -1455,13 +1453,13 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	if (!c->msg_ctx) {
 		d_fprintf(stderr, _("Could not initialise message context. "
 			"Try running as root\n"));
-		return -1;
+		goto done;
 	}
 
-	werr = libnet_init_UnjoinCtx(ctx, &r);
+	werr = libnet_init_UnjoinCtx(tmp_ctx, &r);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, _("Could not initialise unjoin context.\n"));
-		return -1;
+		goto done;
 	}
 
 	r->in.debug		= true;
@@ -1484,7 +1482,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 
 	r->in.msg_ctx		= c->msg_ctx;
 
-	werr = libnet_Unjoin(ctx, r);
+	werr = libnet_Unjoin(tmp_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf(_("Failed to leave domain: %s\n"),
 			 r->out.error_string ? r->out.error_string :
@@ -1495,6 +1493,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	if (r->out.deleted_machine_account) {
 		d_printf(_("Deleted account for '%s' in realm '%s'\n"),
 			r->in.machine_name, r->out.dns_domain_name);
+		ret = 0;
 		goto done;
 	}
 
@@ -1502,7 +1501,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	if (r->out.disabled_machine_account) {
 		d_printf(_("Disabled account for '%s' in realm '%s'\n"),
 			r->in.machine_name, r->out.dns_domain_name);
-		werr = WERR_OK;
+		ret = 0;
 		goto done;
 	}
 
@@ -1512,15 +1511,10 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	d_fprintf(stderr, _("Machine '%s' Left domain '%s'\n"),
 		  r->in.machine_name, r->out.dns_domain_name);
 
+	ret = 0;
  done:
-	TALLOC_FREE(r);
-	TALLOC_FREE(ctx);
-
-	if (W_ERROR_IS_OK(werr)) {
-		return 0;
-	}
-
-	return -1;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 static NTSTATUS net_ads_join_ok(struct net_context *c)
