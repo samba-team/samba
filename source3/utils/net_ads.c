@@ -3595,11 +3595,12 @@ static void net_ads_enctype_dump_enctypes(const char *username,
 
 static int net_ads_enctypes_list(struct net_context *c, int argc, const char **argv)
 {
-	int ret = -1;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STATUS status;
 	ADS_STRUCT *ads = NULL;
 	LDAPMessage *res = NULL;
 	const char *str = NULL;
+	int ret = -1;
 
 	if (c->display_usage || (argc < 1)) {
 		d_printf(  "%s\n"
@@ -3607,27 +3608,27 @@ static int net_ads_enctypes_list(struct net_context *c, int argc, const char **a
 			   "    %s\n",
 			 _("Usage:"),
 			 _("List supported enctypes"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
 	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
-		printf("startup failed\n");
-		return ret;
+		goto out;
 	}
 
 	ret = net_ads_enctype_lookup_account(c, ads, argv[0], &res, &str);
 	if (ret) {
-		goto done;
+		goto out;
 	}
 
 	net_ads_enctype_dump_enctypes(argv[0], str);
 
 	ret = 0;
- done:
+ out:
 	ads_msgfree(ads, res);
 	ads_destroy(&ads);
-
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
