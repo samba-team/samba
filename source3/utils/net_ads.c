@@ -1937,11 +1937,12 @@ static int net_ads_dns_unregister(struct net_context *c,
 				  const char **argv)
 {
 #if defined(HAVE_KRB5)
-	ADS_STRUCT *ads;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
-	TALLOC_CTX *ctx;
 	const char *hostname = NULL;
+	int ret = -1;
 
 #ifdef DEVELOPER
 	talloc_enable_leak_report();
@@ -1958,11 +1959,7 @@ static int net_ads_dns_unregister(struct net_context *c,
 			 _("Usage:"),
 			 _("Remove all IP Address entires for a given\n"
                            "    hostname from the Active Directory server.\n"));
-		return -1;
-	}
-
-	if (!(ctx = talloc_init("net_ads_dns"))) {
-		d_fprintf(stderr, _("Could not initialise talloc context\n"));
+		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
 
@@ -1972,24 +1969,29 @@ static int net_ads_dns_unregister(struct net_context *c,
 	status = ads_startup(c, true, &ads);
 	if ( !ADS_ERR_OK(status) ) {
 		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
-		TALLOC_FREE(ctx);
-		return -1;
+		goto out;
 	}
 
-	ntstatus = net_update_dns_ext(c, ctx, ads, hostname, NULL, 0, true);
+	ntstatus = net_update_dns_ext(c,
+				      tmp_ctx,
+				      ads,
+				      hostname,
+				      NULL,
+				      0,
+				      true);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		d_fprintf( stderr, _("DNS update failed!\n") );
-		ads_destroy( &ads );
-		TALLOC_FREE( ctx );
-		return -1;
+		goto out;
 	}
 
 	d_fprintf( stderr, _("Successfully un-registered hostname from DNS\n"));
 
+	ret = 0;
+out:
 	ads_destroy(&ads);
-	TALLOC_FREE( ctx );
+	TALLOC_FREE(tmp_ctx);
 
-	return 0;
+	return ret;
 #else
 	d_fprintf(stderr,
 		  _("DNS update support not enabled at compile time!\n"));
