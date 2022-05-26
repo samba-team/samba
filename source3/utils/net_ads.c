@@ -1639,7 +1639,7 @@ static int net_ads_join_usage(struct net_context *c, int argc, const char **argv
 
 int net_ads_join(struct net_context *c, int argc, const char **argv)
 {
-	TALLOC_CTX *ctx = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	struct libnet_JoinCtx *r = NULL;
 	const char *domain = lp_realm();
 	WERROR werr = WERR_NERR_SETUPNOTJOINED;
@@ -1654,12 +1654,14 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	const char *os_servicepack = NULL;
 	bool modify_config = lp_config_backend_is_registry();
 	enum libnetjoin_JoinDomNameType domain_name_type = JoinDomNameTypeDNS;
+	int ret = -1;
 
-	if (c->display_usage)
+	if (c->display_usage) {
+		TALLOC_FREE(tmp_ctx);
 		return net_ads_join_usage(c, argc, argv);
+	}
 
 	if (!modify_config) {
-
 		werr = check_ads_config();
 		if (!W_ERROR_IS_OK(werr)) {
 			d_fprintf(stderr, _("Invalid configuration.  Exiting....\n"));
@@ -1667,17 +1669,11 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		}
 	}
 
-	if (!(ctx = talloc_init("net_ads_join"))) {
-		d_fprintf(stderr, _("Could not initialise talloc context.\n"));
-		werr = WERR_NOT_ENOUGH_MEMORY;
-		goto fail;
-	}
-
 	if (!c->opt_kerberos) {
 		use_in_memory_ccache();
 	}
 
-	werr = libnet_init_JoinCtx(ctx, &r);
+	werr = libnet_init_JoinCtx(tmp_ctx, &r);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}
@@ -1726,8 +1722,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 				werr = WERR_INVALID_PARAMETER;
 				goto fail;
 			}
-		}
-		else {
+		} else {
 			domain = argv[i];
 			if (strchr(domain, '.') == NULL) {
 				domain_name_type = JoinDomNameTypeUnknown;
@@ -1773,12 +1768,12 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 				  WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
 	r->in.msg_ctx		= c->msg_ctx;
 
-	werr = libnet_Join(ctx, r);
+	werr = libnet_Join(tmp_ctx, r);
 	if (W_ERROR_EQUAL(werr, WERR_NERR_DCNOTFOUND) &&
 	    strequal(domain, lp_realm())) {
 		r->in.domain_name = lp_workgroup();
 		r->in.domain_name_type = JoinDomNameTypeNBT;
-		werr = libnet_Join(ctx, r);
+		werr = libnet_Join(tmp_ctx, r);
 	}
 	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
@@ -1817,22 +1812,22 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	 * operation as succeeded if we came this far.
 	 */
 	if (!c->opt_no_dns_updates) {
-		net_ads_join_dns_updates(c, ctx, r);
+		net_ads_join_dns_updates(c, tmp_ctx, r);
 	}
 
-	TALLOC_FREE(r);
-	TALLOC_FREE( ctx );
-
-	return 0;
+	ret = 0;
 
 fail:
-	/* issue an overall failure message at the end. */
-	d_printf(_("Failed to join domain: %s\n"),
-		r && r->out.error_string ? r->out.error_string :
-		get_friendly_werror_msg(werr));
-	TALLOC_FREE( ctx );
+	if (ret != 0) {
+		/* issue an overall failure message at the end. */
+		d_printf(_("Failed to join domain: %s\n"),
+			r && r->out.error_string ? r->out.error_string :
+			get_friendly_werror_msg(werr));
+	}
 
-        return -1;
+	TALLOC_FREE(tmp_ctx);
+
+	return ret;
 }
 
 /*******************************************************************
