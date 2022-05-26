@@ -44,9 +44,7 @@ static int keytab_close(struct libnet_keytab_context *ctx)
 		krb5_free_context(ctx->context);
 	}
 
-	if (ctx->ads) {
-		ads_destroy(&ctx->ads);
-	}
+	TALLOC_FREE(ctx->ads);
 
 	TALLOC_FREE(ctx);
 

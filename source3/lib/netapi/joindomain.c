@@ -424,7 +424,8 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 
 	dc = strip_hostname(info->dc_unc);
 
-	ads = ads_init(info->domain_name,
+	ads = ads_init(tmp_ctx,
+		       info->domain_name,
 		       info->domain_name,
 		       dc,
 		       ADS_SASL_PLAIN);
@@ -459,21 +460,17 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 
 	ads_status = ads_connect_user_creds(ads);
 	if (!ADS_ERR_OK(ads_status)) {
-		ads_destroy(&ads);
 		ret = WERR_NERR_DEFAULTJOINREQUIRED;
 		goto out;
 	}
 
 	ads_status = ads_get_joinable_ous(ads, ctx, &p, &s);
 	if (!ADS_ERR_OK(ads_status)) {
-		ads_destroy(&ads);
 		ret = WERR_NERR_DEFAULTJOINREQUIRED;
 		goto out;
 	}
 	*r->out.ous = discard_const_p(const char *, p);
 	*r->out.ou_count = s;
-
-	ads_destroy(&ads);
 
 	ret = WERR_OK;
 out:

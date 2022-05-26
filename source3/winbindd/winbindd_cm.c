@@ -1094,7 +1094,8 @@ static bool dcip_check_name_ads(const struct winbindd_domain *domain,
 
 	print_sockaddr(addr, sizeof(addr), &sa->u.ss);
 
-	ads = ads_init(domain->alt_name,
+	ads = ads_init(tmp_ctx,
+		       domain->alt_name,
 		       domain->name,
 		       addr,
 		       ADS_SASL_PLAIN);
@@ -1149,8 +1150,6 @@ static bool dcip_check_name_ads(const struct winbindd_domain *domain,
 	*namep = talloc_move(mem_ctx, &name);
 
 out:
-	ads_destroy( &ads );
-
 	TALLOC_FREE(tmp_ctx);
 
 	return ADS_ERR_OK(ads_status) ? true : false;

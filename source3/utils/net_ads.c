@@ -442,7 +442,6 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 
 	ret = net_ads_cldap_netlogon(c, ads);
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -598,7 +597,6 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 
 	ret = 0;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -633,10 +631,14 @@ retry_connect:
 		realm = assume_own_realm(c);
 	}
 
-	ads = ads_init(realm,
-			c->opt_target_workgroup,
-			c->opt_host,
-			ADS_SASL_PLAIN);
+	ads = ads_init(mem_ctx,
+		       realm,
+		       c->opt_target_workgroup,
+		       c->opt_host,
+		       ADS_SASL_PLAIN);
+	if (ads == NULL) {
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	if (!c->opt_user_name) {
 		c->opt_user_name = "administrator";
@@ -650,7 +652,7 @@ retry:
 	if (!c->opt_password && need_password && !c->opt_machine_pass) {
 		c->opt_password = net_prompt_pass(c, c->opt_user_name);
 		if (!c->opt_password) {
-			ads_destroy(&ads);
+			TALLOC_FREE(ads);
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
 	}
@@ -693,7 +695,7 @@ retry:
 		SAFE_FREE(ads->auth.realm);
 		ads->auth.realm = smb_xstrdup(cp);
 		if (!strupper_m(ads->auth.realm)) {
-			ads_destroy(&ads);
+			TALLOC_FREE(ads);
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
        }
@@ -705,7 +707,7 @@ retry:
 		if (NT_STATUS_EQUAL(ads_ntstatus(status),
 				    NT_STATUS_NO_LOGON_SERVERS)) {
 			DEBUG(0,("ads_connect: %s\n", ads_errstr(status)));
-			ads_destroy(&ads);
+			TALLOC_FREE(ads);
 			return status;
 		}
 
@@ -714,7 +716,7 @@ retry:
 			second_time = true;
 			goto retry;
 		} else {
-			ads_destroy(&ads);
+			TALLOC_FREE(ads);
 			return status;
 		}
 	}
@@ -732,14 +734,13 @@ retry:
 			namecache_delete(ads->server.realm, 0x1C);
 			namecache_delete(ads->server.workgroup, 0x1C);
 
-			ads_destroy(&ads);
-			ads = NULL;
+			TALLOC_FREE(ads);
 
 			goto retry_connect;
 		}
 	}
 
-	*ads_ret = ads;
+	*ads_ret = talloc_move(mem_ctx, &ads);
 	return status;
 }
 
@@ -778,7 +779,7 @@ static int net_ads_check_int(struct net_context *c,
 	ADS_STATUS status;
 	int ret = -1;
 
-	ads = ads_init(realm, workgroup, host, ADS_SASL_PLAIN);
+	ads = ads_init(tmp_ctx, realm, workgroup, host, ADS_SASL_PLAIN);
 	if (ads == NULL) {
 		goto out;
 	}
@@ -792,7 +793,6 @@ static int net_ads_check_int(struct net_context *c,
 
 	ret = 0;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -851,7 +851,6 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 
 	ret = 0;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 
 	return ret;
@@ -979,7 +978,6 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 
  done:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	SAFE_FREE(ou_str);
 	TALLOC_FREE(tmp_ctx);
 	return rc;
@@ -1077,7 +1075,6 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 	ret = 0;
 out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -1124,7 +1121,6 @@ static int ads_user_delete(struct net_context *c, int argc, const char **argv)
 	ret = 0;
 out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -1205,7 +1201,6 @@ int net_ads_user(struct net_context *c, int argc, const char **argv)
 
 	ret = 0;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -1263,7 +1258,6 @@ static int ads_group_add(struct net_context *c, int argc, const char **argv)
 	ret = 0;
  out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	SAFE_FREE(ou_str);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
@@ -1310,7 +1304,6 @@ static int ads_group_delete(struct net_context *c, int argc, const char **argv)
 	ret = 0;
 out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -1383,7 +1376,6 @@ int net_ads_group(struct net_context *c, int argc, const char **argv)
 
 	ret = 0;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -1429,7 +1421,6 @@ static int net_ads_status(struct net_context *c, int argc, const char **argv)
 	ret = 0;
 out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -1560,7 +1551,6 @@ static ADS_STATUS net_ads_join_ok(struct net_context *c)
 
 	status = ADS_ERROR_NT(NT_STATUS_OK);
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return  status;
 }
@@ -1939,7 +1929,6 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 
 	ret = 0;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 
 	return ret;
@@ -2006,7 +1995,6 @@ static int net_ads_dns_unregister(struct net_context *c,
 
 	ret = 0;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 
 	return ret;
@@ -2190,7 +2178,6 @@ static int net_ads_printer_search(struct net_context *c,
 	ret = 0;
 out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -2252,7 +2239,6 @@ static int net_ads_printer_info(struct net_context *c,
 	ret = 0;
 out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -2399,7 +2385,6 @@ static int net_ads_printer_publish(struct net_context *c,
 
 	ret = 0;
 out:
-	ads_destroy(&ads);
 	talloc_destroy(tmp_ctx);
 
 	return ret;
@@ -2466,7 +2451,6 @@ static int net_ads_printer_remove(struct net_context *c,
 	ret = 0;
 out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -2572,7 +2556,11 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 
 	/* use the realm so we can eventually change passwords for users
 	in realms other than default */
-	ads = ads_init(realm, c->opt_workgroup, c->opt_host, ADS_SASL_PLAIN);
+	ads = ads_init(tmp_ctx,
+		       realm,
+		       c->opt_workgroup,
+		       c->opt_host,
+		       ADS_SASL_PLAIN);
 	if (ads == NULL) {
 		goto out;
 	}
@@ -2627,7 +2615,6 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 
 	ret = 0;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -2696,7 +2683,6 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 
 	ret = 0;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 
 	return ret;
@@ -2764,7 +2750,6 @@ static int net_ads_search(struct net_context *c, int argc, const char **argv)
 	ret = 0;
 out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -2833,7 +2818,6 @@ static int net_ads_dn(struct net_context *c, int argc, const char **argv)
 	ret = 0;
 out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -2901,7 +2885,6 @@ static int net_ads_sid(struct net_context *c, int argc, const char **argv)
 	ret = 0;
 out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -2936,7 +2919,6 @@ static int net_ads_keytab_flush(struct net_context *c,
 
 	ret = ads_keytab_flush(ads);
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -2978,7 +2960,6 @@ static int net_ads_keytab_add(struct net_context *c,
 		ret |= ads_keytab_add_entry(ads, argv[i], update_ads);
 	}
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -3025,7 +3006,6 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 
 	ret = ads_keytab_create_default(ads);
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -3427,7 +3407,6 @@ static int net_ads_setspn_list(struct net_context *c,
 
 	ret = ok ? 0 : -1;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -3461,7 +3440,6 @@ static int net_ads_setspn_add(struct net_context *c, int argc, const char **argv
 
 	ret = ok ? 0 : -1;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -3495,7 +3473,6 @@ static int net_ads_setspn_delete(struct net_context *c, int argc, const char **a
 
 	ret = ok ? 0 : -1;
 out:
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -3645,7 +3622,6 @@ static int net_ads_enctypes_list(struct net_context *c, int argc, const char **a
 	ret = 0;
  out:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -3736,7 +3712,6 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
 	ret = 0;
  done:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
@@ -3797,7 +3772,6 @@ static int net_ads_enctypes_delete(struct net_context *c, int argc, const char *
 
  done:
 	ads_msgfree(ads, res);
-	ads_destroy(&ads);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }

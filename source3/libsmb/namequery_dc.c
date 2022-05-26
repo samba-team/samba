@@ -72,7 +72,7 @@ static bool ads_dc_name(const char *domain,
 
 	/* Try this 3 times then give up. */
 	for( i =0 ; i < 3; i++) {
-		ads = ads_init(realm, domain, NULL, ADS_SASL_PLAIN);
+		ads = ads_init(tmp_ctx, realm, domain, NULL, ADS_SASL_PLAIN);
 		if (!ads) {
 			ok = false;
 			goto out;
@@ -87,7 +87,6 @@ static bool ads_dc_name(const char *domain,
 #endif
 
 		if (!ads->config.realm) {
-			ads_destroy(&ads);
 			ok = false;
 			goto out;
 		}
@@ -98,7 +97,7 @@ static bool ads_dc_name(const char *domain,
 
 		if (stored_sitename_changed(realm, sitename)) {
 			sitename = sitename_fetch(tmp_ctx, realm);
-			ads_destroy(&ads);
+			TALLOC_FREE(ads);
 			/* Ensure we don't cache the DC we just connected to. */
 			namecache_delete(realm, 0x1C);
 			namecache_delete(domain, 0x1C);
@@ -130,14 +129,12 @@ static bool ads_dc_name(const char *domain,
 	if (i == 3) {
 		DEBUG(1,("ads_dc_name: sitename (now \"%s\") keeps changing ???\n",
 			sitename ? sitename : ""));
-		ads_destroy(&ads);
 		ok = false;
 		goto out;
 	}
 
 	fstrcpy(srv_name, ads->config.ldap_server_name);
 	if (!strupper_m(srv_name)) {
-		ads_destroy(&ads);
 		ok = false;
 		goto out;
 	}
@@ -146,8 +143,6 @@ static bool ads_dc_name(const char *domain,
 #else
 	zero_sockaddr(dc_ss);
 #endif
-	ads_destroy(&ads);
-
 	print_sockaddr(addr, sizeof(addr), dc_ss);
 	DEBUG(4,("ads_dc_name: using server='%s' IP=%s\n",
 		 srv_name, addr));

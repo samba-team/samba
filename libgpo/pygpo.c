@@ -142,7 +142,7 @@ typedef struct {
 
 static void py_ads_dealloc(ADS* self)
 {
-	ads_destroy(&(self->ads_ptr));
+	TALLOC_FREE(self->ads_ptr);
 	Py_CLEAR(self->py_creds);
 	Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -207,11 +207,14 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 
 	/* in case __init__ is called more than once */
 	if (self->ads_ptr) {
-		ads_destroy(&self->ads_ptr);
-		self->ads_ptr = NULL;
+		TALLOC_FREE(self->ads_ptr);
 	}
 	/* always succeeds or crashes */
-	self->ads_ptr = ads_init(realm, workgroup, ldap_server, ADS_SASL_PLAIN);
+	self->ads_ptr = ads_init(pytalloc_get_mem_ctx(args),
+				 realm,
+				 workgroup,
+				 ldap_server,
+				 ADS_SASL_PLAIN);
 	
 	return 0;
 }

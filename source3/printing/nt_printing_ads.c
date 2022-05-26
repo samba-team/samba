@@ -227,7 +227,11 @@ WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	ads = ads_init(lp_realm(), lp_workgroup(), NULL, ADS_SASL_PLAIN);
+	ads = ads_init(tmp_ctx,
+		       lp_realm(),
+		       lp_workgroup(),
+		       NULL,
+		       ADS_SASL_PLAIN);
 	if (ads == NULL) {
 		result = WERR_RPC_S_SERVER_UNAVAILABLE;
 		goto out;
@@ -254,7 +258,6 @@ WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
 	result = nt_printer_guid_retrieve_internal(ads, printer_dn, pguid);
 out:
 	TALLOC_FREE(tmp_ctx);
-	ads_destroy(&ads);
 	ads_kdestroy("MEMORY:prtpub_cache");
 	unsetenv(KRB5_ENV_CCNAME);
 	if (old_krb5ccname != NULL) {
@@ -678,7 +681,11 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(sinfo2);
 
-	ads = ads_init(lp_realm(), lp_workgroup(), NULL, ADS_SASL_PLAIN);
+	ads = ads_init(tmp_ctx,
+		       lp_realm(),
+		       lp_workgroup(),
+		       NULL,
+		       ADS_SASL_PLAIN);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		win_rc = WERR_RPC_S_SERVER_UNAVAILABLE;
@@ -709,7 +716,6 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	ads_destroy(&ads);
 	ads_kdestroy("MEMORY:prtpub_cache");
 	unsetenv(KRB5_ENV_CCNAME);
 	if (old_krb5ccname) {
@@ -729,17 +735,18 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	ADS_STRUCT *ads = NULL;
 	int snum;
 	int n_services = lp_numservices();
-	TALLOC_CTX *tmp_ctx = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	struct auth_session_info *session_info = NULL;
 	struct spoolss_PrinterInfo2 *pinfo2;
 	NTSTATUS status;
 	WERROR result;
 	char *old_krb5ccname = NULL;
 
-	tmp_ctx = talloc_new(NULL);
-	if (!tmp_ctx) return WERR_NOT_ENOUGH_MEMORY;
-
-	ads = ads_init(lp_realm(), lp_workgroup(), NULL, ADS_SASL_PLAIN);
+	ads = ads_init(tmp_ctx,
+		       lp_realm(),
+		       lp_workgroup(),
+		       NULL,
+		       ADS_SASL_PLAIN);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		TALLOC_FREE(tmp_ctx);
@@ -788,7 +795,6 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 
 	result = WERR_OK;
 done:
-	ads_destroy(&ads);
 	ads_kdestroy("MEMORY:prtpub_cache");
 	unsetenv(KRB5_ENV_CCNAME);
 	if (old_krb5ccname) {

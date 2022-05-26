@@ -143,7 +143,8 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 	char *cp;
 	enum credentials_use_kerberos krb5_state;
 
-	my_ads = ads_init(dns_domain_name,
+	my_ads = ads_init(tmp_ctx,
+			  dns_domain_name,
 			  netbios_domain_name,
 			  dc_name,
 			  ADS_SASL_SEAL);
@@ -177,7 +178,6 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 			SAFE_FREE(my_ads->auth.realm);
 			my_ads->auth.realm = smb_xstrdup(cp);
 			if (!strupper_m(my_ads->auth.realm)) {
-				ads_destroy(&my_ads);
 				status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 				goto out;
 			}
@@ -197,11 +197,10 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 
 	status = ads_connect_user_creds(my_ads);
 	if (!ADS_ERR_OK(status)) {
-		ads_destroy(&my_ads);
 		goto out;
 	}
 
-	*ads = my_ads;
+	*ads = talloc_move(mem_ctx, &my_ads);
 
 	status = ADS_SUCCESS;
 out:
@@ -265,7 +264,7 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 				    username,
 				    password,
 				    ccname,
-				    mem_ctx,
+				    r,
 				    &r->in.ads);
 	if (!ADS_ERR_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
@@ -323,7 +322,7 @@ static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
 				    r->in.admin_account,
 				    r->in.admin_password,
 				    NULL,
-				    mem_ctx,
+				    r,
 				    &r->in.ads);
 	if (!ADS_ERR_OK(status)) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
@@ -1037,7 +1036,7 @@ static ADS_STATUS libnet_join_post_processing_ads_modify(TALLOC_CTX *mem_ctx,
 			r->in.ads->auth.ccache_name = NULL;
 		}
 
-		ads_destroy(&r->in.ads);
+		TALLOC_FREE(r->in.ads);
 
 		status = libnet_join_connect_ads_machine(mem_ctx, r);
 		if (!ADS_ERR_OK(status)) {
@@ -2486,9 +2485,7 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 
 static int libnet_destroy_JoinCtx(struct libnet_JoinCtx *r)
 {
-	if (r->in.ads) {
-		ads_destroy(&r->in.ads);
-	}
+	TALLOC_FREE(r->in.ads);
 
 	return 0;
 }
@@ -2498,9 +2495,7 @@ static int libnet_destroy_JoinCtx(struct libnet_JoinCtx *r)
 
 static int libnet_destroy_UnjoinCtx(struct libnet_UnjoinCtx *r)
 {
-	if (r->in.ads) {
-		ads_destroy(&r->in.ads);
-	}
+	TALLOC_FREE(r->in.ads);
 
 	return 0;
 }

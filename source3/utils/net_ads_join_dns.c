@@ -271,8 +271,11 @@ void net_ads_join_dns_updates(struct net_context *c, TALLOC_CTX *ctx, struct lib
 	 * kinit with the machine password to do dns update.
 	 */
 
-	ads_dns = ads_init(lp_realm(), NULL, r->in.dc_name, ADS_SASL_PLAIN);
-
+	ads_dns = ads_init(ctx,
+			   lp_realm(),
+			   NULL,
+			   r->in.dc_name,
+			   ADS_SASL_PLAIN);
 	if (ads_dns == NULL) {
 		d_fprintf(stderr, _("DNS update failed: out of memory!\n"));
 		goto done;
@@ -319,7 +322,7 @@ void net_ads_join_dns_updates(struct net_context *c, TALLOC_CTX *ctx, struct lib
 	}
 
 done:
-	ads_destroy(&ads_dns);
+	TALLOC_FREE(ads_dns);
 #endif
 
 	return;

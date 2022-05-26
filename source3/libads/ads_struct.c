@@ -124,12 +124,9 @@ char *ads_build_domain(const char *dn)
 /*
   free the memory used by the ADS structure initialized with 'ads_init(...)'
 */
-void ads_destroy(ADS_STRUCT **ads)
+static void ads_destroy(ADS_STRUCT **ads)
 {
 	if (ads && *ads) {
-		bool is_mine;
-
-		is_mine = (*ads)->is_mine;
 #ifdef HAVE_LDAP
 		ads_disconnect(*ads);
 #endif
@@ -150,30 +147,33 @@ void ads_destroy(ADS_STRUCT **ads)
 		SAFE_FREE((*ads)->config.client_site_name);
 		SAFE_FREE((*ads)->config.schema_path);
 		SAFE_FREE((*ads)->config.config_path);
-
-		ZERO_STRUCTP(*ads);
-#ifdef HAVE_LDAP
-		ads_zero_ldap(*ads);
-#endif
-
-		if ( is_mine )
-			SAFE_FREE(*ads);
 	}
+}
+
+static int ads_destructor(ADS_STRUCT *ads)
+{
+	ads_destroy(&ads);
+	return 0;
 }
 
 /*
   initialise a ADS_STRUCT, ready for some ads_ ops
 */
-ADS_STRUCT *ads_init(const char *realm, 
+ADS_STRUCT *ads_init(TALLOC_CTX *mem_ctx,
+		     const char *realm,
 		     const char *workgroup,
 		     const char *ldap_server,
 		     enum ads_sasl_state_e sasl_state)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	int wrap_flags;
 
-	ads = SMB_XMALLOC_P(ADS_STRUCT);
-	ZERO_STRUCTP(ads);
+	ads = talloc_zero(mem_ctx, ADS_STRUCT);
+	if (ads == NULL) {
+		return NULL;
+	}
+	talloc_set_destructor(ads, ads_destructor);
+
 #ifdef HAVE_LDAP
 	ads_zero_ldap(ads);
 #endif

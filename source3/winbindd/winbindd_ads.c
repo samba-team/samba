@@ -70,8 +70,7 @@ static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
 		} else {
 			/* we own this ADS_STRUCT so make sure it goes away */
 			DEBUG(7,("Deleting expired krb5 credential cache\n"));
-			ads->is_mine = True;
-			ads_destroy( &ads );
+			TALLOC_FREE(ads);
 			ads_kdestroy(WINBIND_CCACHE_NAME);
 			*adsp = NULL;
 		}
@@ -115,7 +114,8 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 	/* we don't want this to affect the users ccache */
 	setenv("KRB5CCNAME", WINBIND_CCACHE_NAME, 1);
 
-	ads = ads_init(target_realm,
+	ads = ads_init(tmp_ctx,
+		       target_realm,
 		       target_dom_name,
 		       ldap_server,
 		       ADS_SASL_SEAL);
@@ -150,7 +150,6 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 
 	ads->auth.realm = SMB_STRDUP(auth_realm);
 	if (!strupper_m(ads->auth.realm)) {
-		ads_destroy(&ads);
 		status = ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
 		goto out;
 	}
@@ -164,17 +163,10 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("ads_connect for domain %s failed: %s\n",
 			 target_dom_name, ads_errstr(status)));
-		ads_destroy(&ads);
 		goto out;
 	}
 
-	/* set the flag that says we don't own the memory even
-	   though we do so that ads_destroy() won't destroy the
-	   structure we pass back by reference */
-
-	ads->is_mine = False;
-
-	*adsp = ads;
+	*adsp = talloc_move(mem_ctx, &ads);
 out:
 	TALLOC_FREE(tmp_ctx);
 	return status;

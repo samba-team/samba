@@ -43,12 +43,12 @@ enum ads_sasl_state_e {
 char *ads_build_path(const char *realm, const char *sep, const char *field, int reverse);
 char *ads_build_dn(const char *realm);
 char *ads_build_domain(const char *dn);
-ADS_STRUCT *ads_init(const char *realm,
+ADS_STRUCT *ads_init(TALLOC_CTX *mem_ctx,
+		     const char *realm,
 		     const char *workgroup,
 		     const char *ldap_server,
 		     enum ads_sasl_state_e sasl_state);
 bool ads_set_sasl_wrap_flags(ADS_STRUCT *ads, unsigned flags);
-void ads_destroy(ADS_STRUCT **ads);
 
 /* The following definitions come from libads/disp_sec.c  */
 

@@ -749,12 +749,7 @@ out:
 
 static int idmap_rfc2307_context_destructor(struct idmap_rfc2307_context *ctx)
 {
-	if (ctx->ads != NULL) {
-		/* we own this ADS_STRUCT so make sure it goes away */
-		ctx->ads->is_mine = True;
-		ads_destroy( &ctx->ads );
-		ctx->ads = NULL;
-	}
+	TALLOC_FREE(ctx->ads);
 
 	if (ctx->smbldap_state != NULL) {
 		smbldap_free_struct(&ctx->smbldap_state);

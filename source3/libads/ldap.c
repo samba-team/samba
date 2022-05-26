@@ -622,8 +622,8 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	 * to ads_find_dc() in the reuse case.
 	 *
 	 * If a caller wants a clean ADS_STRUCT they
-	 * will re-initialize by calling ads_init(), or
-	 * call ads_destroy() both of which ensures
+	 * will TALLOC_FREE it and allocate a new one
+	 * by calling ads_init(), which ensures
 	 * ads->ldap.ss is a properly zero'ed out valid IP
 	 * address.
 	 */
@@ -3292,7 +3292,8 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 		 * through ads_find_dc() again we want to avoid repeating.
 		 */
 		if (is_zero_addr(&ads->ldap.ss)) {
-			ads_s = ads_init(ads->server.realm,
+			ads_s = ads_init(tmp_ctx,
+					 ads->server.realm,
 					 ads->server.workgroup,
 					 ads->server.ldap_server,
 					 ADS_SASL_PLAIN );
@@ -3340,10 +3341,6 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 	status = ADS_SUCCESS;
 
 done:
-	/* free any temporary ads connections */
-	if ( ads_s != ads ) {
-		ads_destroy( &ads_s );
-	}
 	TALLOC_FREE(tmp_ctx);
 
 	return status;
@@ -3379,7 +3376,8 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 		 * through ads_find_dc() again we want to avoid repeating.
 		 */
 		if (is_zero_addr(&ads->ldap.ss)) {
-			ads_s = ads_init(ads->server.realm,
+			ads_s = ads_init(tmp_ctx,
+					 ads->server.realm,
 					 ads->server.workgroup,
 					 ads->server.ldap_server,
 					 ADS_SASL_PLAIN );
@@ -3421,10 +3419,6 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 	ads_msgfree(ads_s, res);
 
 done:
-	/* free any temporary ads connections */
-	if ( ads_s != ads ) {
-		ads_destroy( &ads_s );
-	}
 	TALLOC_FREE(tmp_ctx);
 
 	return status;
