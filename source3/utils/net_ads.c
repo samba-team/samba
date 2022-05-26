@@ -2387,13 +2387,17 @@ out:
 	return ret;
 }
 
-static int net_ads_printer_remove(struct net_context *c, int argc, const char **argv)
+static int net_ads_printer_remove(struct net_context *c,
+				  int argc,
+				  const char **argv)
 {
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
-	const char *servername;
-	char *prt_dn;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
+	const char *servername = NULL;
+	char *prt_dn = NULL;
 	LDAPMessage *res = NULL;
+	int ret = -1;
 
 	if (argc < 1 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -2402,11 +2406,13 @@ static int net_ads_printer_remove(struct net_context *c, int argc, const char **
 			   "  Remove a printer from the AD\n"
 			   "    printername\tName of the printer\n"
 			   "    servername\tName of the print server\n"));
+		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
-		return -1;
+	status = ads_startup(c, true, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
 	if (argc > 1) {
@@ -2415,35 +2421,36 @@ static int net_ads_printer_remove(struct net_context *c, int argc, const char **
 		servername = lp_netbios_name();
 	}
 
-	rc = ads_find_printer_on_server(ads, &res, argv[0], servername);
-
-	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, _("ads_find_printer_on_server: %s\n"), ads_errstr(rc));
-		ads_msgfree(ads, res);
-		ads_destroy(&ads);
-		return -1;
+	status = ads_find_printer_on_server(ads, &res, argv[0], servername);
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("ads_find_printer_on_server: %s\n"),
+			  ads_errstr(status));
+		goto out;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
 		d_fprintf(stderr, _("Printer '%s' not found\n"), argv[1]);
-		ads_msgfree(ads, res);
-		ads_destroy(&ads);
-		return -1;
+		goto out;
 	}
 
-	prt_dn = ads_get_dn(ads, talloc_tos(), res);
+	prt_dn = ads_get_dn(ads, tmp_ctx, res);
+	if (prt_dn == NULL) {
+		d_fprintf(stderr, _("Out of memory\n"));
+		goto out;
+	}
+
+	status = ads_del_dn(ads, prt_dn);
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("ads_del_dn: %s\n"), ads_errstr(status));
+		goto out;
+	}
+
+	ret = 0;
+out:
 	ads_msgfree(ads, res);
-	rc = ads_del_dn(ads, prt_dn);
-	TALLOC_FREE(prt_dn);
-
-	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, _("ads_del_dn: %s\n"), ads_errstr(rc));
-		ads_destroy(&ads);
-		return -1;
-	}
-
 	ads_destroy(&ads);
-	return 0;
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 static int net_ads_printer(struct net_context *c, int argc, const char **argv)
