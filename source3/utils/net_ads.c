@@ -2928,9 +2928,11 @@ static int net_ads_keytab_add(struct net_context *c,
 			      const char **argv,
 			      bool update_ads)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
 	int i;
-	int ret = 0;
-	ADS_STRUCT *ads;
+	int ret = -1;
 
 	if (c->display_usage) {
 		d_printf("%s\n%s",
@@ -2939,6 +2941,7 @@ static int net_ads_keytab_add(struct net_context *c,
 			   "  Add principals to local keytab\n"
 			   "    principal\tKerberos principal to add to "
 			   "keytab\n"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
@@ -2948,13 +2951,17 @@ static int net_ads_keytab_add(struct net_context *c,
 		net_use_krb_machine_account(c);
 	}
 
-	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
-		return -1;
+	status = ads_startup(c, true, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
-	for (i = 0; i < argc; i++) {
+
+	for (ret = 0, i = 0; i < argc; i++) {
 		ret |= ads_keytab_add_entry(ads, argv[i], update_ads);
 	}
+out:
 	ads_destroy(&ads);
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
