@@ -367,3 +367,11 @@ else:
                      deps='cmocka replace samba-util',
                      local_include=False,
                      for_selftest=True)
+
+    bld.SAMBA_BINARY('test_s4_logging',
+                     source='tests/test_s4_logging.c',
+                     deps=' '.join(['CMDLINE_S4',
+                                    'samba-util',
+                                    'popt']),
+                     local_include=False,
+                     for_selftest=True)

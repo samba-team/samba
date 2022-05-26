@@ -92,6 +92,7 @@ planpythontestsuite("none", "samba.tests.s3idmapdb")
 planpythontestsuite("none", "samba.tests.samba3sam")
 planpythontestsuite("none", "samba.tests.dsdb_api")
 planpythontestsuite("none", "samba.tests.smbconf")
+planpythontestsuite("none", "samba.tests.logfiles")
 planpythontestsuite(
     "none", "wafsamba.tests.test_suite",
     extra_path=[os.path.join(samba4srcdir, "..", "buildtools"),
