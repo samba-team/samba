@@ -72,6 +72,7 @@ from samba.tests.krb5.rfc4120_constants import (
     AES256_CTS_HMAC_SHA1_96,
     ARCFOUR_HMAC_MD5,
     KDC_ERR_PREAUTH_REQUIRED,
+    KDC_ERR_TGT_REVOKED,
     KRB_AS_REP,
     KRB_TGS_REP,
     KRB_ERROR,
@@ -1664,6 +1665,90 @@ class KDCBaseTest(RawKerberosTest):
         self.tkt_cache[cache_key] = ticket_creds
 
         return ticket_creds
+
+    def _make_tgs_request(self, client_creds, service_creds, tgt,
+                          client_account=None,
+                          client_name_type=NT_PRINCIPAL,
+                          kdc_options=None,
+                          pac_request=None, expect_pac=True,
+                          expect_error=False,
+                          expected_cname=None,
+                          expected_account_name=None,
+                          expected_upn_name=None,
+                          expected_sid=None):
+        if client_account is None:
+            client_account = client_creds.get_username()
+        cname = self.PrincipalName_create(name_type=client_name_type,
+                                          names=client_account.split('/'))
+
+        service_account = service_creds.get_username()
+        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=[service_account])
+
+        realm = service_creds.get_realm()
+
+        expected_crealm = realm
+        if expected_cname is None:
+            expected_cname = cname
+        expected_srealm = realm
+        expected_sname = sname
+
+        expected_supported_etypes = service_creds.tgs_supported_enctypes
+
+        etypes = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
+
+        if kdc_options is None:
+            kdc_options = 'canonicalize'
+        kdc_options = str(krb5_asn1.KDCOptions(kdc_options))
+
+        target_decryption_key = self.TicketDecryptionKey_from_creds(
+            service_creds)
+
+        authenticator_subkey = self.RandomKey(kcrypto.Enctype.AES256)
+
+        if expect_error:
+            expected_error_mode = KDC_ERR_TGT_REVOKED
+            check_error_fn = self.generic_check_kdc_error
+            check_rep_fn = None
+        else:
+            expected_error_mode = 0
+            check_error_fn = None
+            check_rep_fn = self.generic_check_kdc_rep
+
+        kdc_exchange_dict = self.tgs_exchange_dict(
+            expected_crealm=expected_crealm,
+            expected_cname=expected_cname,
+            expected_srealm=expected_srealm,
+            expected_sname=expected_sname,
+            expected_account_name=expected_account_name,
+            expected_upn_name=expected_upn_name,
+            expected_sid=expected_sid,
+            expected_supported_etypes=expected_supported_etypes,
+            ticket_decryption_key=target_decryption_key,
+            check_error_fn=check_error_fn,
+            check_rep_fn=check_rep_fn,
+            check_kdc_private_fn=self.generic_check_kdc_private,
+            expected_error_mode=expected_error_mode,
+            tgt=tgt,
+            authenticator_subkey=authenticator_subkey,
+            kdc_options=kdc_options,
+            pac_request=pac_request,
+            expect_pac=expect_pac,
+            expect_edata=False)
+
+        rep = self._generic_kdc_exchange(kdc_exchange_dict,
+                                         cname=cname,
+                                         realm=realm,
+                                         sname=sname,
+                                         etypes=etypes)
+        if expect_error:
+            self.check_error_rep(rep, expected_error_mode)
+
+            return None
+        else:
+            self.check_reply(rep, KRB_TGS_REP)
+
+            return kdc_exchange_dict['rep_ticket_creds']
 
     # Named tuple to contain values of interest when the PAC is decoded.
     PacData = namedtuple(
