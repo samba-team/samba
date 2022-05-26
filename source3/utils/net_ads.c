@@ -2497,15 +2497,18 @@ static int net_ads_printer(struct net_context *c, int argc, const char **argv)
 
 static int net_ads_password(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
 	const char *auth_principal = cli_credentials_get_username(c->creds);
 	const char *auth_password = cli_credentials_get_password(c->creds);
 	const char *realm = NULL;
-	const char *new_password = NULL;
-	char *chr, *prompt;
-	const char *user;
+	char *new_password = NULL;
+	char *chr = NULL;
+	char *prompt = NULL;
+	const char *user = NULL;
 	char pwd[256] = {0};
-	ADS_STATUS ret;
+	ADS_STATUS status;
+	int ret = 0;
 
 	if (c->display_usage) {
 		d_printf("%s\n%s",
@@ -2513,27 +2516,32 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 			 _("net ads password <username>\n"
 			   "  Change password for user\n"
 			   "    username\tName of user to change password for\n"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
 	if (auth_principal == NULL || auth_password == NULL) {
 		d_fprintf(stderr, _("You must supply an administrator "
 				    "username/password\n"));
+		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
 
 	if (argc < 1) {
 		d_fprintf(stderr, _("ERROR: You must say which username to "
 				    "change password for\n"));
+		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
 
-	user = argv[0];
-	if (!strchr_m(user, '@')) {
-		if (asprintf(&chr, "%s@%s", argv[0], lp_realm()) == -1) {
-			return -1;
-		}
-		user = chr;
+	if (strchr_m(argv[0], '@')) {
+		user = talloc_strdup(tmp_ctx, argv[0]);
+	} else {
+		user = talloc_asprintf(tmp_ctx, "%s@%s", argv[0], lp_realm());
+	}
+	if (user == NULL) {
+		d_fprintf(stderr, _("Out of memory\n"));
+		goto out;
 	}
 
 	use_in_memory_ccache();
@@ -2548,7 +2556,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	in realms other than default */
 	ads = ads_init(realm, c->opt_workgroup, c->opt_host, ADS_SASL_PLAIN);
 	if (ads == NULL) {
-		return -1;
+		goto out;
 	}
 
 	/* we don't actually need a full connect, but it's the easy way to
@@ -2557,39 +2565,53 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 
 	if (!ads->config.realm) {
 		d_fprintf(stderr, _("Didn't find the kerberos server!\n"));
-		ads_destroy(&ads);
-		return -1;
+		goto out;
 	}
 
-	if (argv[1]) {
-		new_password = (const char *)argv[1];
+	if (argv[1] != NULL) {
+		new_password = talloc_strdup(tmp_ctx, argv[1]);
 	} else {
 		int rc;
 
-		if (asprintf(&prompt, _("Enter new password for %s:"), user) == -1) {
-			return -1;
+		prompt = talloc_asprintf(tmp_ctx, _("Enter new password for %s:"), user);
+		if (prompt == NULL) {
+			d_fprintf(stderr, _("Out of memory\n"));
+			goto out;
 		}
+
 		rc = samba_getpass(prompt, pwd, sizeof(pwd), false, true);
 		if (rc < 0) {
-			return -1;
+			goto out;
 		}
-		new_password = pwd;
-		free(prompt);
+		new_password = talloc_strdup(tmp_ctx, pwd);
+		memset(pwd, '\0', sizeof(pwd));
 	}
 
-	ret = kerberos_set_password(ads->auth.kdc_server, auth_principal,
-				auth_password, user, new_password, ads->auth.time_offset);
-	memset(pwd, '\0', sizeof(pwd));
-	if (!ADS_ERR_OK(ret)) {
-		d_fprintf(stderr, _("Password change failed: %s\n"), ads_errstr(ret));
-		ads_destroy(&ads);
-		return -1;
+	if (new_password == NULL) {
+		d_fprintf(stderr, _("Out of memory\n"));
+		goto out;
+	}
+
+	status = kerberos_set_password(ads->auth.kdc_server,
+				       auth_principal,
+				       auth_password,
+				       user,
+				       new_password,
+				       ads->auth.time_offset);
+	memset(new_password, '\0', strlen(new_password));
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("Password change failed: %s\n"),
+			  ads_errstr(status));
+		goto out;
 	}
 
 	d_printf(_("Password change for %s completed.\n"), user);
-	ads_destroy(&ads);
 
-	return 0;
+	ret = 0;
+out:
+	ads_destroy(&ads);
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
