@@ -2616,10 +2616,12 @@ out:
 
 int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
-	char *host_principal;
-	fstring my_name;
-	ADS_STATUS ret;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	ADS_STRUCT *ads = NULL;
+	char *host_principal = NULL;
+	char *my_name = NULL;
+	ADS_STATUS status;
+	int ret = -1;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -2627,41 +2629,42 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Change the machine account's trust password"));
+		TALLOC_FREE(tmp_ctx);
 		return 0;
 	}
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
-		return -1;
+		goto out;
 	}
 
 	net_use_krb_machine_account(c);
 
 	use_in_memory_ccache();
 
-	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
-		return -1;
+	status = ads_startup(c, true, &ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
 	}
 
-	fstrcpy(my_name, lp_netbios_name());
-	if (!strlower_m(my_name)) {
-		ads_destroy(&ads);
-		return -1;
+	my_name = talloc_asprintf_strlower_m(tmp_ctx, "%s", lp_netbios_name());
+	if (my_name == NULL) {
+		d_fprintf(stderr, _("Out of memory\n"));
+		goto out;
 	}
 
-	if (asprintf(&host_principal, "%s$@%s", my_name, ads->config.realm) == -1) {
-		ads_destroy(&ads);
-		return -1;
+	host_principal = talloc_asprintf(tmp_ctx, "%s$@%s", my_name, ads->config.realm);
+	if (host_principal == NULL) {
+		d_fprintf(stderr, _("Out of memory\n"));
+		goto out;
 	}
+
 	d_printf(_("Changing password for principal: %s\n"), host_principal);
 
-	ret = ads_change_trust_account_password(ads, host_principal);
-
-	if (!ADS_ERR_OK(ret)) {
-		d_fprintf(stderr, _("Password change failed: %s\n"), ads_errstr(ret));
-		ads_destroy(&ads);
-		SAFE_FREE(host_principal);
-		return -1;
+	status = ads_change_trust_account_password(ads, host_principal);
+	if (!ADS_ERR_OK(status)) {
+		d_fprintf(stderr, _("Password change failed: %s\n"), ads_errstr(status));
+		goto out;
 	}
 
 	d_printf(_("Password change for principal %s succeeded.\n"), host_principal);
@@ -2673,10 +2676,12 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 		}
 	}
 
+	ret = 0;
+out:
 	ads_destroy(&ads);
-	SAFE_FREE(host_principal);
+	TALLOC_FREE(tmp_ctx);
 
-	return 0;
+	return ret;
 }
 
 /*
