@@ -2510,7 +2510,7 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(ctx, libnet_destroy_JoinCtx);
 
-	ctx->in.machine_name = talloc_strdup(mem_ctx, lp_netbios_name());
+	ctx->in.machine_name = talloc_strdup(ctx, lp_netbios_name());
 	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
 
 	ctx->in.secure_channel_type = SEC_CHAN_WKSTA;
