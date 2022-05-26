@@ -40,7 +40,7 @@ struct kdc_server {
 	struct ldb_context *samdb;
 	bool am_rodc;
 	uint32_t proxy_timeout;
-	const char *keytab_name;
+	const char *kpasswd_keytab_name;
 	void *private_data;
 };
 
