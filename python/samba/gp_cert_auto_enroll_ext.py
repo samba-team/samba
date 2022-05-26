@@ -356,7 +356,7 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                 for e in pol_conf.entries:
                     if e.keyname == section and e.valuename == 'AEPolicy':
                         # This policy applies as specified in [MS-CAESO] 4.4.5.1
-                        if e.data == 0x8000:
+                        if e.data & 0x8000:
                             continue # The policy is disabled
                         enroll = e.data & 0x1 == 0x1
                         manage = e.data & 0x2 == 0x2
@@ -462,8 +462,8 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                 return output
             for e in pol_conf.entries:
                 if e.keyname == section and e.valuename == 'AEPolicy':
-                    enroll = e.data & 0x1 == 1
-                    if e.data == 0x8000 or not enroll:
+                    enroll = e.data & 0x1 == 0x1
+                    if e.data & 0x8000 or not enroll:
                         continue
                     output['Auto Enrollment Policy'] = {}
                     url = 'ldap://%s' % get_dc_hostname(self.creds, self.lp)
