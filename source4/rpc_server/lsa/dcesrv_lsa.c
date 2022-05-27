@@ -1673,7 +1673,6 @@ static NTSTATUS get_tdo(struct ldb_context *sam, TALLOC_CTX *mem_ctx,
 	};
 	char *dns = NULL;
 	char *nbn = NULL;
-	char *sidstr = NULL;
 	char *filter;
 	int ret;
 
@@ -1712,10 +1711,8 @@ static NTSTATUS get_tdo(struct ldb_context *sam, TALLOC_CTX *mem_ctx,
 		}
 	}
 	if (sid) {
-		sidstr = dom_sid_string(mem_ctx, sid);
-		if (!sidstr) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+		struct dom_sid_buf buf;
+		char *sidstr = dom_sid_str_buf(sid, &buf);
 		filter = talloc_asprintf_append(filter,
 						"(securityIdentifier=%s)",
 						sidstr);
