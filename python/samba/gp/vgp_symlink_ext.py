@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from samba.gpclass import gp_xml_ext
+from samba.gp.gpclass import gp_xml_ext
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
 from samba.gp.util.logging import log

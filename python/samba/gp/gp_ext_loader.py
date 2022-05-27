@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from samba.gpclass import list_gp_extensions
-from samba.gpclass import gp_ext
+from samba.gp.gpclass import list_gp_extensions
+from samba.gp.gpclass import gp_ext
 from samba.gp.util.logging import log
 
 try:

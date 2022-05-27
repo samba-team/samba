@@ -67,7 +67,7 @@ from samba.netcmd.common import attr_default
 from samba.common import get_bytes, get_string
 from configparser import ConfigParser
 from io import StringIO, BytesIO
-from samba.vgp_files_ext import calc_mode, stat_from_mode
+from samba.gp.vgp_files_ext import calc_mode, stat_from_mode
 import hashlib
 
 

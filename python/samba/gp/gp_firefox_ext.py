@@ -16,7 +16,7 @@
 
 import os
 import json
-from samba.gpclass import gp_pol_ext
+from samba.gp.gpclass import gp_pol_ext
 from samba.dcerpc import misc
 from samba.common import get_string
 from samba.gp.util.logging import log

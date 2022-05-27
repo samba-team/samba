@@ -29,29 +29,29 @@ sys.path.insert(0, "bin/python")
 
 import optparse
 from samba import getopt as options
-from samba.gpclass import apply_gp, unapply_gp, GPOStorage, rsop
-from samba.gp_sec_ext import gp_krb_ext, gp_access_ext
-from samba.gp_ext_loader import get_gp_client_side_extensions
-from samba.gp_scripts_ext import gp_scripts_ext, gp_user_scripts_ext
-from samba.gp_sudoers_ext import gp_sudoers_ext
-from samba.vgp_sudoers_ext import vgp_sudoers_ext
-from samba.gp_smb_conf_ext import gp_smb_conf_ext
-from samba.gp_msgs_ext import gp_msgs_ext
-from samba.vgp_symlink_ext import vgp_symlink_ext
-from samba.vgp_files_ext import vgp_files_ext
-from samba.vgp_openssh_ext import vgp_openssh_ext
-from samba.vgp_motd_ext import vgp_motd_ext
-from samba.vgp_issue_ext import vgp_issue_ext
-from samba.vgp_startup_scripts_ext import vgp_startup_scripts_ext
-from samba.vgp_access_ext import vgp_access_ext
-from samba.gp_gnome_settings_ext import gp_gnome_settings_ext
-from samba.gp_cert_auto_enroll_ext import gp_cert_auto_enroll_ext
-from samba.gp_firefox_ext import gp_firefox_ext
-from samba.gp_chromium_ext import gp_chromium_ext, gp_chrome_ext
-from samba.gp_firewalld_ext import gp_firewalld_ext
-from samba.gp_centrify_sudoers_ext import gp_centrify_sudoers_ext
-from samba.gp_centrify_crontab_ext import gp_centrify_crontab_ext, \
-                                          gp_user_centrify_crontab_ext
+from samba.gp.gpclass import apply_gp, unapply_gp, GPOStorage, rsop
+from samba.gp.gp_sec_ext import gp_krb_ext, gp_access_ext
+from samba.gp.gp_ext_loader import get_gp_client_side_extensions
+from samba.gp.gp_scripts_ext import gp_scripts_ext, gp_user_scripts_ext
+from samba.gp.gp_sudoers_ext import gp_sudoers_ext
+from samba.gp.vgp_sudoers_ext import vgp_sudoers_ext
+from samba.gp.gp_smb_conf_ext import gp_smb_conf_ext
+from samba.gp.gp_msgs_ext import gp_msgs_ext
+from samba.gp.vgp_symlink_ext import vgp_symlink_ext
+from samba.gp.vgp_files_ext import vgp_files_ext
+from samba.gp.vgp_openssh_ext import vgp_openssh_ext
+from samba.gp.vgp_motd_ext import vgp_motd_ext
+from samba.gp.vgp_issue_ext import vgp_issue_ext
+from samba.gp.vgp_startup_scripts_ext import vgp_startup_scripts_ext
+from samba.gp.vgp_access_ext import vgp_access_ext
+from samba.gp.gp_gnome_settings_ext import gp_gnome_settings_ext
+from samba.gp.gp_cert_auto_enroll_ext import gp_cert_auto_enroll_ext
+from samba.gp.gp_firefox_ext import gp_firefox_ext
+from samba.gp.gp_chromium_ext import gp_chromium_ext, gp_chrome_ext
+from samba.gp.gp_firewalld_ext import gp_firewalld_ext
+from samba.gp.gp_centrify_sudoers_ext import gp_centrify_sudoers_ext
+from samba.gp.gp_centrify_crontab_ext import gp_centrify_crontab_ext, \
+                                             gp_user_centrify_crontab_ext
 from samba.credentials import Credentials
 from samba.gp.util.logging import logger_init
 

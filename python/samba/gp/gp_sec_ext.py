@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os.path
-from samba.gpclass import gp_inf_ext
+from samba.gp.gpclass import gp_inf_ext
 from samba.auth import system_session
 from samba.common import get_string
 try:

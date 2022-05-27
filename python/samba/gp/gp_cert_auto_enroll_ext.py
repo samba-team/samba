@@ -17,11 +17,11 @@
 import os
 import operator
 import requests
-from samba.gpclass import gp_pol_ext
+from samba.gp.gpclass import gp_pol_ext
 from samba import Ldb
 from ldb import SCOPE_SUBTREE, SCOPE_BASE
 from samba.auth import system_session
-from samba.gpclass import get_dc_hostname
+from samba.gp.gpclass import get_dc_hostname
 import base64
 from shutil import which
 from subprocess import Popen, PIPE

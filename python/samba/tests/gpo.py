@@ -17,39 +17,39 @@
 import os, grp, pwd
 import errno
 from samba import gpo, tests
-from samba.gpclass import register_gp_extension, list_gp_extensions, \
+from samba.gp.gpclass import register_gp_extension, list_gp_extensions, \
     unregister_gp_extension, GPOStorage
 from samba.param import LoadParm
-from samba.gpclass import check_refresh_gpo_list, check_safe_path, \
+from samba.gp.gpclass import check_refresh_gpo_list, check_safe_path, \
     check_guid, parse_gpext_conf, atomic_write_conf, get_deleted_gpos_list
 from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from samba import gpclass
+from samba.gp import gpclass
 # Disable privilege dropping for testing
 gpclass.drop_privileges = lambda _, func, *args : func(*args)
-from samba.gp_sec_ext import gp_krb_ext, gp_access_ext
-from samba.gp_scripts_ext import gp_scripts_ext, gp_user_scripts_ext
-from samba.gp_sudoers_ext import gp_sudoers_ext
-from samba.vgp_sudoers_ext import vgp_sudoers_ext
-from samba.vgp_symlink_ext import vgp_symlink_ext
-from samba.gpclass import gp_inf_ext
-from samba.gp_smb_conf_ext import gp_smb_conf_ext
-from samba.vgp_files_ext import vgp_files_ext
-from samba.vgp_openssh_ext import vgp_openssh_ext
-from samba.vgp_startup_scripts_ext import vgp_startup_scripts_ext
-from samba.vgp_motd_ext import vgp_motd_ext
-from samba.vgp_issue_ext import vgp_issue_ext
-from samba.vgp_access_ext import vgp_access_ext
-from samba.gp_gnome_settings_ext import gp_gnome_settings_ext
-from samba import gp_cert_auto_enroll_ext as cae
-from samba.gp_firefox_ext import gp_firefox_ext
-from samba.gp_chromium_ext import gp_chromium_ext
-from samba.gp_firewalld_ext import gp_firewalld_ext
+from samba.gp.gp_sec_ext import gp_krb_ext, gp_access_ext
+from samba.gp.gp_scripts_ext import gp_scripts_ext, gp_user_scripts_ext
+from samba.gp.gp_sudoers_ext import gp_sudoers_ext
+from samba.gp.vgp_sudoers_ext import vgp_sudoers_ext
+from samba.gp.vgp_symlink_ext import vgp_symlink_ext
+from samba.gp.gpclass import gp_inf_ext
+from samba.gp.gp_smb_conf_ext import gp_smb_conf_ext
+from samba.gp.vgp_files_ext import vgp_files_ext
+from samba.gp.vgp_openssh_ext import vgp_openssh_ext
+from samba.gp.vgp_startup_scripts_ext import vgp_startup_scripts_ext
+from samba.gp.vgp_motd_ext import vgp_motd_ext
+from samba.gp.vgp_issue_ext import vgp_issue_ext
+from samba.gp.vgp_access_ext import vgp_access_ext
+from samba.gp.gp_gnome_settings_ext import gp_gnome_settings_ext
+from samba.gp import gp_cert_auto_enroll_ext as cae
+from samba.gp.gp_firefox_ext import gp_firefox_ext
+from samba.gp.gp_chromium_ext import gp_chromium_ext
+from samba.gp.gp_firewalld_ext import gp_firewalld_ext
 from samba.credentials import Credentials
-from samba.gp_msgs_ext import gp_msgs_ext
-from samba.gp_centrify_sudoers_ext import gp_centrify_sudoers_ext
-from samba.gp_centrify_crontab_ext import gp_centrify_crontab_ext, \
-                                          gp_user_centrify_crontab_ext
+from samba.gp.gp_msgs_ext import gp_msgs_ext
+from samba.gp.gp_centrify_sudoers_ext import gp_centrify_sudoers_ext
+from samba.gp.gp_centrify_crontab_ext import gp_centrify_crontab_ext, \
+                                             gp_user_centrify_crontab_ext
 from samba.common import get_bytes
 from samba.dcerpc import preg
 from samba.ndr import ndr_pack
@@ -60,7 +60,7 @@ import hashlib
 from samba.gp_parse.gp_pol import GPPolParser
 from glob import glob
 from configparser import ConfigParser
-from samba.gpclass import get_dc_hostname
+from samba.gp.gpclass import get_dc_hostname
 from samba import Ldb
 import ldb as _ldb
 from samba.auth import system_session
@@ -7221,7 +7221,7 @@ class GPOTests(tests.TestCase):
     def test_gpt_ext_register(self):
         this_path = os.path.dirname(os.path.realpath(__file__))
         samba_path = os.path.realpath(os.path.join(this_path, '../../../'))
-        ext_path = os.path.join(samba_path, 'python/samba/gp_sec_ext.py')
+        ext_path = os.path.join(samba_path, 'python/samba/gp/gp_sec_ext.py')
         ext_guid = '{827D319E-6EAC-11D2-A4EA-00C04F79F83A}'
         ret = register_gp_extension(ext_guid, 'gp_access_ext', ext_path,
                                     smb_conf=self.lp.configfile,

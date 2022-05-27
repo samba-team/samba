@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, re
-from samba.gpclass import gp_xml_ext
+from samba.gp.gpclass import gp_xml_ext
 from hashlib import blake2b
 from tempfile import NamedTemporaryFile
 from samba.common import get_bytes

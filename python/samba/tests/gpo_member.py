@@ -16,10 +16,10 @@
 
 import os
 from samba import gpo, tests
-from samba.gpclass import GPOStorage
+from samba.gp.gpclass import GPOStorage
 from samba.param import LoadParm
 from samba.credentials import Credentials
-from samba.gp_sec_ext import gp_access_ext
+from samba.gp.gp_sec_ext import gp_access_ext
 import logging
 
 class GPOTests(tests.TestCase):

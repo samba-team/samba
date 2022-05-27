@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, pwd, grp
-from samba.gpclass import gp_xml_ext, check_safe_path
+from samba.gp.gpclass import gp_xml_ext, check_safe_path
 from tempfile import NamedTemporaryFile
 from shutil import copyfile, move
 from hashlib import blake2b

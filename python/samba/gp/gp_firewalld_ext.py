@@ -19,7 +19,7 @@ from subprocess import Popen, PIPE
 from hashlib import blake2b
 from shutil import which
 import json
-from samba.gpclass import gp_pol_ext
+from samba.gp.gpclass import gp_pol_ext
 from samba.gp.util.logging import log
 
 def firewall_cmd(*args):

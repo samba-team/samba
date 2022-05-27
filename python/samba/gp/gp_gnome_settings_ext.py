@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, re
-from samba.gpclass import gp_pol_ext
+from samba.gp.gpclass import gp_pol_ext
 from tempfile import NamedTemporaryFile
 import shutil
 from configparser import ConfigParser
