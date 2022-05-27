@@ -237,7 +237,7 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 		return code;
 	}
 
-	errpkt.error = error_code;
+	errpkt.error = error_code - ERROR_TABLE_BASE_krb5;
 
 	errpkt.text.length = 0;
 	if (e_text != NULL) {
