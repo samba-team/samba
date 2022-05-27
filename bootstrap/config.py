@@ -372,9 +372,9 @@ ADD *.sh /tmp/
 RUN /tmp/bootstrap.sh && /tmp/locale.sh
 
 # if ld.gold exists, force link it to ld
-RUN set -x; LD=$(which ld); LD_GOLD=$(which ld.gold); test -x $LD_GOLD && ln -sf $LD_GOLD $LD && test -x $LD && echo "$LD is now $LD_GOLD"
+RUN set -x; ! LD_GOLD=$(which ld.gold) || {{ LD=$(which ld) && ln -sf $LD_GOLD $LD && test -x $LD && echo "$LD is now $LD_GOLD"; }}
 # if ld.mold exists, force link it to ld (prefer mold over gold! ;-)
-RUN set -x; LD=$(which ld); LD_MOLD=$(which ld.mold); test -x $LD_MOLD && ln -sf $LD_MOLD $LD && test -x $LD && echo "$LD is now $LD_MOLD"
+RUN set -x; ! LD_MOLD=$(which ld.mold) || {{ LD=$(which ld) && ln -sf $LD_MOLD $LD && test -x $LD && echo "$LD is now $LD_MOLD"; }}
 
 # make test can not work with root, so we have to create a new user
 RUN useradd -m -U -s /bin/bash samba && \
