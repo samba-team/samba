@@ -2,13 +2,11 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "callout is 'false', causes startup to fail"
+define_test "callout causes startup to fail"
 
 setup
 
-setup_script_options <<EOF
-CTDB_NFS_CALLOUT="echo startup ; false"
-EOF
+setup_nfs_callout "startup"
 
 required_result 1 "startup"
 simple_test

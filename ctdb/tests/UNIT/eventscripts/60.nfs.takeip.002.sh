@@ -2,13 +2,11 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "callout is 'false', causes takeip to fail"
+define_test "callout causes takeip to fail"
 
 setup
 
-setup_script_options <<EOF
-CTDB_NFS_CALLOUT="echo takeip ; false"
-EOF
+setup_nfs_callout "takeip"
 
 required_result 1 "takeip"
 simple_test

@@ -2,13 +2,11 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "callout is 'true'"
+define_test "callout succeeds"
 
 setup
 
-setup_script_options "service" "60.nfs" <<EOF
-CTDB_NFS_CALLOUT="true"
-EOF
+setup_nfs_callout
 
 ok_null
 simple_test

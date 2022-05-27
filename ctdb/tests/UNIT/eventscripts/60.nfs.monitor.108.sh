@@ -2,13 +2,11 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "callout is 'false', causes monitor-pre to fail"
+define_test "callout causes monitor-pre to fail"
 
 setup
 
-setup_script_options <<EOF
-CTDB_NFS_CALLOUT="echo monitor-pre ; false"
-EOF
+setup_nfs_callout "monitor-pre"
 
 required_result 1 "monitor-pre"
 simple_test

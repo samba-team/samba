@@ -1,0 +1,15 @@
+#!/bin/sh
+
+case "$1" in
+register)
+	echo "ALL"
+	exit
+	;;
+esac
+
+if [ "$NFS_FAKE_CALLOUT_MAGIC" = "$1" ]; then
+	echo "$1"
+	exit 1
+fi
+
+exit 0

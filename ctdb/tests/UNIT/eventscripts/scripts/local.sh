@@ -407,6 +407,12 @@ nfs_load_config ()
     done
 }
 
+setup_nfs_callout()
+{
+	export CTDB_NFS_CALLOUT="${CTDB_HELPER_BINDIR}/nfs-fake-callout"
+	export NFS_FAKE_CALLOUT_MAGIC="$1"
+}
+
 program_stack_trace ()
 {
 	_prog="$1"
