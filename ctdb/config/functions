@@ -920,7 +920,7 @@ nfs_callout_register ()
 
     echo "$CTDB_NFS_CALLOUT" >"$nfs_callout_cache_callout"
 
-    _t=$(eval "$CTDB_NFS_CALLOUT" "register")
+    _t=$("$CTDB_NFS_CALLOUT" "register")
     if [ -n "$_t" ] ; then
 	echo "$_t" |
 	    while IFS="" read _op ; do
@@ -945,7 +945,7 @@ nfs_callout ()
     # Run the operation if it is registered...
     if [ -e "${nfs_callout_cache_ops}/${1}" ] || \
 	   [ -e "${nfs_callout_cache_ops}/ALL" ]; then
-	eval "$CTDB_NFS_CALLOUT" "$@"
+	"$CTDB_NFS_CALLOUT" "$@"
     fi
 }
 
