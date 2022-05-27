@@ -48,17 +48,16 @@ bool kpasswd_make_error_reply(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * The string 's' has two terminating nul-bytes which are also
-	 * reflected by 'slen'. Normally Kerberos doesn't expect that strings
-	 * are nul-terminated, but Heimdal does!
+	 * The string 's' has one terminating nul-byte which is also
+	 * reflected by 'slen'. We subtract it from the length.
 	 */
-#ifndef SAMBA4_USES_HEIMDAL
-	if (slen < 2) {
+	if (slen < 1) {
 		talloc_free(s);
 		return false;
 	}
-	slen -= 2;
-#endif
+	slen--;
+
+	/* Two bytes are added to the length to account for the error code. */
 	if (2 + slen < slen) {
 		talloc_free(s);
 		return false;
