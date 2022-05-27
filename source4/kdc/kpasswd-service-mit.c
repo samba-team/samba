@@ -142,16 +142,18 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 		return KRB5_KPASSWD_HARDERROR;
 	}
 
-	target_realm = smb_krb5_principal_get_realm(
-		mem_ctx, context, target_principal);
-	code = krb5_unparse_name_flags(context,
-				       target_principal,
-				       KRB5_PRINCIPAL_UNPARSE_NO_REALM,
-				       &target_name);
-	if (code != 0) {
-		DBG_WARNING("Failed to parse principal\n");
-		*error_string = "String conversion failed";
-		return KRB5_KPASSWD_HARDERROR;
+	if (target_principal != NULL) {
+		target_realm = smb_krb5_principal_get_realm(
+			mem_ctx, context, target_principal);
+		code = krb5_unparse_name_flags(context,
+					       target_principal,
+					       KRB5_PRINCIPAL_UNPARSE_NO_REALM,
+					       &target_name);
+		if (code != 0) {
+			DBG_WARNING("Failed to parse principal\n");
+			*error_string = "String conversion failed";
+			return KRB5_KPASSWD_HARDERROR;
+		}
 	}
 
 	if ((target_name != NULL && target_realm == NULL) ||
