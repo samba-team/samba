@@ -148,7 +148,7 @@ get_nodes_with_status ()
 	fi
 	local nl="
 "
-	ctdb_status_output="${ctdb_status_output#*${nl}}"
+	ctdb_status_output="${ctdb_status_output#*"${nl}"}"
     fi
 
     (
@@ -301,7 +301,7 @@ else
     # If $nodes contains a space or a newline then assume multiple nodes.
     nl="
 "
-    [ "$nodes" != "${nodes%[ ${nl}]*}" ] && verbose=true
+    [ "$nodes" != "${nodes%[ "${nl}"]*}" ] && verbose=true
 fi
 
 pids=""

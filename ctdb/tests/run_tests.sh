@@ -235,7 +235,7 @@ run_one_test ()
     local test_dir test_suite_dir reldir
     test_dir=$(cd "$CTDB_TEST_DIR" && pwd)
     test_suite_dir=$(cd "$CTDB_TEST_SUITE_DIR" && pwd)
-    reldir="${test_suite_dir#${test_dir}/}"
+    reldir="${test_suite_dir#"${test_dir}"/}"
 
     export CTDB_TEST_TMP_DIR="${test_state_dir}/${reldir}"
     rm -rf "$CTDB_TEST_TMP_DIR"
@@ -260,7 +260,7 @@ run_tests ()
 			# Can't find it?  Check relative to CTDB_TEST_DIR.
 			# Strip off current directory from beginning,
 			# if there, just to make paths more friendly.
-			f="${CTDB_TEST_DIR#${PWD}/}/${f}"
+			f="${CTDB_TEST_DIR#"${PWD}"/}/${f}"
 		fi
 
 		if [ -d "$f" ] ; then
@@ -268,7 +268,7 @@ run_tests ()
 
 			test_dir=$(cd "$CTDB_TEST_DIR" && pwd)
 			dir=$(cd "$f" && pwd)
-			reldir="${dir#${test_dir}/}"
+			reldir="${dir#"${test_dir}"/}"
 
 			case "$reldir" in
 			*/*/*)

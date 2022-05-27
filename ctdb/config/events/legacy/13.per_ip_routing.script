@@ -346,7 +346,7 @@ remove_bogus_routes ()
 	# be done with grep, but let's do it with shell prefix removal
 	# to avoid unnecessary processes.  This falls through if
 	# "@${_i}@" isn't present in $_ips.
-	[ "$_ips" = "${_ips#*@${_i}@}" ] || continue
+	[ "$_ips" = "${_ips#*@"${_i}"@}" ] || continue
 
 	echo "Removing ip rule/routes for unhosted public address $_i"
 	del_routing_for_ip "$_i"

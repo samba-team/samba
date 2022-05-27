@@ -469,8 +469,10 @@ node_has_status ()
 		while read -r line ; do
 			# This needs to be done in 2 steps to
 			# avoid false matches.
-			local line_bits="${line#|${pnn}|*|}"
+			local line_bits="${line#|"${pnn}"|*|}"
 			[ "$line_bits" = "$line" ] && continue
+			# shellcheck disable=SC2295
+			# This depends on $bits being a pattern
 			[ "${line_bits#${bits}}" != "$line_bits" ] && \
 				return 0
 		done
