@@ -415,6 +415,32 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 				krbtgt = &signing_krbtgt_hdb;
 			}
 		}
+	} else if (!krbtgt_skdc_entry->is_trust) {
+		/*
+		 * We expect to have received a TGT, so check that we haven't
+		 * been given a kpasswd ticket instead. We don't need to do this
+		 * check for an incoming trust, as they use a different secret
+		 * and can't be confused with a normal TGT.
+		 */
+		krb5_ticket *tgt = kdc_request_get_ticket(r);
+
+		struct timeval now = krb5_kdc_get_time();
+
+		/*
+		 * Check if the ticket is in the last two minutes of its
+		 * life.
+		 */
+		KerberosTime lifetime = rk_time_sub(tgt->ticket.endtime, now.tv_sec);
+		if (lifetime <= CHANGEPW_LIFETIME) {
+			/*
+			 * This ticket has at most two minutes left to live. It
+			 * may be a kpasswd ticket rather than a TGT, so don't
+			 * accept it.
+			 */
+			kdc_audit_addreason((kdc_request_t)r,
+					    "Ticket is not a ticket-granting ticket");
+			return KRB5KRB_AP_ERR_TKT_EXPIRED;
+		}
 	}
 
 	ret = samba_wdc_reget_pac2(r,
