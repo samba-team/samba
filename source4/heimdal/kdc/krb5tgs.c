@@ -33,6 +33,9 @@
 
 #include "kdc_locl.h"
 
+/* Awful hack to get access to 'struct samba_kdc_entry'. */
+#include "../../kdc/samba_kdc.h"
+
 /*
  * return the realm of a krbtgt-ticket or NULL
  */
@@ -130,6 +133,7 @@ check_PAC(krb5_context context,
 static krb5_error_code
 check_tgs_flags(krb5_context context,
 		krb5_kdc_configuration *config,
+		const hdb_entry_ex *krbtgt_in,
 		KDC_REQ_BODY *b, const EncTicketPart *tgt, EncTicketPart *et)
 {
     KDCOptions f = b->kdc_options;
@@ -242,6 +246,17 @@ check_tgs_flags(krb5_context context,
 	et->endtime = *et->starttime + old_life;
 	if (et->renew_till != NULL)
 	    et->endtime = min(*et->renew_till, et->endtime);
+    }
+
+    if (tgt->endtime - kdc_time <= CHANGEPW_LIFETIME) {
+	/* Check that the ticket has not arrived across a trust. */
+	const struct samba_kdc_entry *skdc_entry = krbtgt_in->ctx;
+	if (!skdc_entry->is_trust) {
+	    /* This may be a kpasswd ticket rather than a TGT, so don't accept it. */
+	    kdc_log(context, config, 0,
+		    "Ticket is not a ticket-granting ticket");
+	    return KRB5KRB_AP_ERR_TKT_EXPIRED;
+	}
     }
 
 #if 0
@@ -510,6 +525,7 @@ tgs_make_reply(krb5_context context,
 	       hdb_entry_ex *client,
 	       krb5_principal client_principal,
                const char *tgt_realm,
+	       const hdb_entry_ex *krbtgt_in,
 	       hdb_entry_ex *krbtgt,
 	       krb5_pac mspac,
 	       uint16_t rodc_id,
@@ -538,7 +554,7 @@ tgs_make_reply(krb5_context context,
     ALLOC(et.starttime);
     *et.starttime = kdc_time;
 
-    ret = check_tgs_flags(context, config, b, tgt, &et);
+    ret = check_tgs_flags(context, config, krbtgt_in, b, tgt, &et);
     if(ret)
 	goto out;
 
@@ -2129,6 +2145,7 @@ server_lookup:
 			 client,
 			 cp,
 			 tgt_realm,
+			 krbtgt,
 			 krbtgt_out,
 			 mspac,
 			 rodc_id,
