@@ -319,6 +319,9 @@ struct bq_state *register_printing_bq_handlers(
 		goto fail_free_handlers;
 	}
 
+	/* Initialize the printcap cache as soon as the daemon starts. */
+	pcap_cache_reload(state->ev, state->msg, reload_pcap_change_notify);
+
 	ok = printing_subsystem_queue_tasks(state);
 	if (!ok) {
 		goto fail_free_handlers;
