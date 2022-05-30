@@ -28,12 +28,59 @@
 #include "kdc/kpasswd_glue.h"
 #include "kdc/kpasswd-service.h"
 #include "kdc/kpasswd-helper.h"
+#include "../lib/util/asn1.h"
 
 #define RFC3244_VERSION 0xff80
 
 krb5_error_code decode_krb5_setpw_req(const krb5_data *code,
 				      krb5_data **password_out,
 				      krb5_principal *target_out);
+
+/*
+ * A fallback for when MIT refuses to parse a setpw structure without the
+ * (optional) target principal and realm
+ */
+static bool decode_krb5_setpw_req_simple(TALLOC_CTX *mem_ctx,
+					 const DATA_BLOB *decoded_data,
+					 DATA_BLOB *clear_data)
+{
+	struct asn1_data *asn1 = NULL;
+	bool ret;
+
+	asn1 = asn1_init(mem_ctx, 3);
+	if (asn1 == NULL) {
+		return false;
+	}
+
+	ret = asn1_load(asn1, *decoded_data);
+	if (!ret) {
+		goto out;
+	}
+
+	ret = asn1_start_tag(asn1, ASN1_SEQUENCE(0));
+	if (!ret) {
+		goto out;
+	}
+	ret = asn1_start_tag(asn1, ASN1_CONTEXT(0));
+	if (!ret) {
+		goto out;
+	}
+	ret = asn1_read_OctetString(asn1, mem_ctx, clear_data);
+	if (!ret) {
+		goto out;
+	}
+
+	ret = asn1_end_tag(asn1);
+	if (!ret) {
+		goto out;
+	}
+	ret = asn1_end_tag(asn1);
+
+out:
+	asn1_free(asn1);
+
+	return ret;
+}
 
 static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 					       TALLOC_CTX *mem_ctx,
@@ -93,9 +140,10 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 					    const char **error_string)
 {
 	krb5_context context = kdc->smb_krb5_context->krb5_context;
+	DATA_BLOB clear_data;
 	krb5_data k_dec_data;
-	krb5_data *k_clear_data;
-	krb5_principal target_principal;
+	krb5_data *k_clear_data = NULL;
+	krb5_principal target_principal = NULL;
 	krb5_error_code code;
 	DATA_BLOB password;
 	char *target_realm = NULL;
@@ -114,29 +162,45 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 	code = decode_krb5_setpw_req(&k_dec_data,
 				     &k_clear_data,
 				     &target_principal);
-	if (code != 0) {
-		DBG_WARNING("decode_krb5_setpw_req failed: %s\n",
-			    error_message(code));
-		ok = kpasswd_make_error_reply(mem_ctx,
-					      KRB5_KPASSWD_MALFORMED,
-					      "Failed to decode packet",
-					      kpasswd_reply);
+	if (code == 0) {
+		clear_data.data = (uint8_t *)k_clear_data->data;
+		clear_data.length = k_clear_data->length;
+	} else {
+		target_principal = NULL;
+
+		/*
+		 * The MIT decode failed, so fall back to trying the simple
+		 * case, without target_principal.
+		 */
+		ok = decode_krb5_setpw_req_simple(mem_ctx,
+						  decoded_data,
+						  &clear_data);
 		if (!ok) {
-			*error_string = "Failed to create reply";
-			return KRB5_KPASSWD_HARDERROR;
+			DBG_WARNING("decode_krb5_setpw_req failed: %s\n",
+				    error_message(code));
+			ok = kpasswd_make_error_reply(mem_ctx,
+						      KRB5_KPASSWD_MALFORMED,
+						      "Failed to decode packet",
+						      kpasswd_reply);
+			if (!ok) {
+				*error_string = "Failed to create reply";
+				return KRB5_KPASSWD_HARDERROR;
+			}
+			return 0;
 		}
-		return 0;
 	}
 
 	ok = convert_string_talloc_handle(mem_ctx,
 					  lpcfg_iconv_handle(kdc->task->lp_ctx),
 					  CH_UTF8,
 					  CH_UTF16,
-					  (const char *)k_clear_data->data,
-					  k_clear_data->length,
+					  clear_data.data,
+					  clear_data.length,
 					  (void **)&password.data,
 					  &password.length);
-	krb5_free_data(context, k_clear_data);
+	if (k_clear_data != NULL) {
+		krb5_free_data(context, k_clear_data);
+	}
 	if (!ok) {
 		DBG_WARNING("String conversion failed\n");
 		*error_string = "String conversion failed";
