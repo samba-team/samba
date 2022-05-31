@@ -574,6 +574,9 @@ for env in ["fileserver"]:
     plantestsuite("samba3.blackbox.timestamps", env,
                   [os.path.join(samba3srcdir, "script/tests/test_timestamps.sh"),
                    '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', smbclient3])
+    plantestsuite("samba3.blackbox.volumeserialnumber", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_volume_serial_number.sh"),
+                   '$SERVER_IP', '$USERNAME', '$PASSWORD', 'volumeserialnumber', smbclient3])
     plantestsuite("samba3.blackbox.smb1_system_security", env + "_smb1_done",
                   [os.path.join(samba3srcdir, "script/tests/test_smb1_system_security.sh"),
                    '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbtorture3, net, 'tmp'])

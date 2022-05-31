@@ -6972,6 +6972,8 @@ static uint32_t generate_volume_serial_number(
 			const struct loadparm_substitution *lp_sub,
 			int snum)
 {
-	return str_checksum(lp_servicename(talloc_tos(), lp_sub, snum)) ^
+	int serial = lp_volume_serial_number(snum);
+	return serial != -1 ? serial:
+		str_checksum(lp_servicename(talloc_tos(), lp_sub, snum)) ^
 		(str_checksum(get_local_machine_name())<<16);
 }
