@@ -423,15 +423,15 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 {
 	pid_t pid = -1;
 
-	if (!print_backend_init(msg_ctx)) {
-		return false;
-	}
-
 	pid = start_background_queue(NULL, NULL, NULL);
 	if (pid == -1) {
 		return false;
 	}
 	background_lpq_updater_pid = pid;
+
+	if (!print_backend_init(msg_ctx)) {
+		return false;
+	}
 
 	return true;
 }
