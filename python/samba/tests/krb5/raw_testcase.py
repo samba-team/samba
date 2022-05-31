@@ -657,6 +657,12 @@ class RawKerberosTest(TestCaseInTempDir):
             padata_checking = '1'
         cls.padata_checking = bool(int(padata_checking))
 
+        kadmin_is_tgs = samba.tests.env_get_var_value('KADMIN_IS_TGS',
+                                                      allow_missing=True)
+        if kadmin_is_tgs is None:
+            kadmin_is_tgs = '0'
+        cls.kadmin_is_tgs = bool(int(kadmin_is_tgs))
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
@@ -3057,8 +3063,8 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNotNone(ticket_decryption_key)
 
         if ticket_decryption_key is not None:
-            service_ticket = (not self.is_tgs(expected_sname)
-                              and rep_msg_type == KRB_TGS_REP)
+            service_ticket = (rep_msg_type == KRB_TGS_REP
+                              and not self.is_tgs_principal(expected_sname))
             self.verify_ticket(ticket_creds, krbtgt_keys,
                                service_ticket=service_ticket,
                                expect_pac=expect_pac,
@@ -3098,8 +3104,9 @@ class RawKerberosTest(TestCaseInTempDir):
                 expected_types.append(krb5pac.PAC_TYPE_DEVICE_INFO)
                 expected_types.append(krb5pac.PAC_TYPE_DEVICE_CLAIMS_INFO)
 
-        if not self.is_tgs(expected_sname) and rep_msg_type == KRB_TGS_REP:
-            expected_types.append(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
+        if rep_msg_type == KRB_TGS_REP:
+            if not self.is_tgs_principal(expected_sname):
+                expected_types.append(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
 
         require_strict = {krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO,
                           krb5pac.PAC_TYPE_DEVICE_INFO,
@@ -4243,6 +4250,19 @@ class RawKerberosTest(TestCaseInTempDir):
         return {
             krb5pac.PAC_TYPE_KDC_CHECKSUM: krbtgt_key
         }
+
+    def is_tgs_principal(self, principal):
+        if self.is_tgs(principal):
+            return True
+
+        if self.kadmin_is_tgs and self.is_kadmin(principal):
+            return True
+
+        return False
+
+    def is_kadmin(self, principal):
+        name = principal['name-string'][0]
+        return name in ('kadmin', b'kadmin')
 
     def is_tgs(self, principal):
         name = principal['name-string'][0]

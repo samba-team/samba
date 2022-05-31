@@ -1001,6 +1001,11 @@ if ('SAMBA4_USES_HEIMDAL' in config_hash or
 else:
     tkt_sig_support = 0
 
+if 'HAVE_MIT_KRB5_1_20' in config_hash:
+    kadmin_is_tgs = 1
+else:
+    kadmin_is_tgs = 0
+
 expect_pac = int('SAMBA4_USES_HEIMDAL' in config_hash)
 extra_pac_buffers = int('SAMBA4_USES_HEIMDAL' in config_hash)
 check_cname = int('SAMBA4_USES_HEIMDAL' in config_hash)
@@ -1020,6 +1025,7 @@ krb5_environ = {
     'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
     'CHECK_CNAME': check_cname,
     'CHECK_PADATA': check_padata,
+    'KADMIN_IS_TGS': kadmin_is_tgs,
 }
 planoldpythontestsuite("none", "samba.tests.krb5.kcrypto")
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.simple_tests",
