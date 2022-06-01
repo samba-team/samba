@@ -1,15 +1,3 @@
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_account_no_dollar\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_allowed_suffixes\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_case\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_dollar\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_empty_string\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_invalid\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_no_suffix\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_no_value\(
 ^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_spn\(
 ^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_spn_matching_account_name_new\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_spn_matching_account_name_original\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_wrong_prefix\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_wrong_suffix\(
 ^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_spn_matching_dns_host_name_invalid\(
