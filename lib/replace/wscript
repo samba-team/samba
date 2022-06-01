@@ -128,6 +128,9 @@ def configure(conf):
     if conf.CHECK_CFLAGS('-Wno-strict-overflow'):
         conf.define('HAVE_WNO_STRICT_OVERFLOW', '1')
 
+    if conf.CHECK_CFLAGS('-Wuse-after-free=1'):
+        conf.define('HAVE_WUSE_AFTER_FREE_1', '1')
+
     # Check for process set name support
     conf.CHECK_CODE('''
                     #include <sys/prctl.h>
