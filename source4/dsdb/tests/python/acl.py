@@ -300,6 +300,7 @@ class AclModifyTests(AclTests):
         delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
         delete_force(self.ldb_admin, "CN=test_modify_group2,CN=Users," + self.base_dn)
         delete_force(self.ldb_admin, "CN=test_modify_group3,CN=Users," + self.base_dn)
+        delete_force(self.ldb_admin, "CN=test_mod_hostname,OU=test_modify_ou1," + self.base_dn)
         delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_sm))
@@ -649,6 +650,762 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
             (num, _) = e14.args
             self.assertEqual(num, ERR_OPERATIONS_ERROR)
         else:
+            self.fail()
+
+    def test_modify_dns_host_name(self):
+        '''Test modifying dNSHostName with validated write'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = f'{account_name}.{self.ldb_user.domain_dns_name()}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError:
+            self.fail()
+
+    def test_modify_dns_host_name_no_validated_write(self):
+        '''Test modifying dNSHostName without validated write'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = f'{account_name}.{self.ldb_user.domain_dns_name()}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+        else:
+            self.fail()
+
+    def test_modify_dns_host_name_invalid(self):
+        '''Test modifying dNSHostName to an invalid value'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = 'invalid'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+        else:
+            self.fail()
+
+    def test_modify_dns_host_name_invalid_wp(self):
+        '''Test modifying dNSHostName to an invalid value when we have WP'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Write Property.
+        mod = (f'(OA;CI;WP;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = 'invalid'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError:
+            self.fail()
+
+    def test_modify_dns_host_name_invalid_non_computer(self):
+        '''Test modifying dNSHostName to an invalid value on a non-computer'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'user',
+            'sAMAccountName': f'{account_name}',
+        })
+
+        host_name = 'invalid'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, num)
+        else:
+            self.fail()
+
+    def test_modify_dns_host_name_no_value(self):
+        '''Test modifying dNSHostName with validated write with no value'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement([],
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_OPERATIONS_ERROR, num)
+        else:
+            # Windows accepts this.
+            pass
+
+    def test_modify_dns_host_name_empty_string(self):
+        '''Test modifying dNSHostName with validated write of an empty string'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement('\0',
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+        else:
+            self.fail()
+
+    def test_modify_dns_host_name_dollar(self):
+        '''Test modifying dNSHostName with validated write of a value including a dollar'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = f'{account_name}$.{self.ldb_user.domain_dns_name()}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+        else:
+            self.fail()
+
+    def test_modify_dns_host_name_account_no_dollar(self):
+        '''Test modifying dNSHostName with validated write with no dollar in sAMAccountName'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}',
+        })
+
+        host_name = f'{account_name}.{self.ldb_user.domain_dns_name()}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError:
+            self.fail()
+
+    def test_modify_dns_host_name_no_suffix(self):
+        '''Test modifying dNSHostName with validated write of a value missing the suffix'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = f'{account_name}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+        else:
+            self.fail()
+
+    def test_modify_dns_host_name_wrong_prefix(self):
+        '''Test modifying dNSHostName with validated write of a value with the wrong prefix'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = f'invalid.{self.ldb_user.domain_dns_name()}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+        else:
+            self.fail()
+
+    def test_modify_dns_host_name_wrong_suffix(self):
+        '''Test modifying dNSHostName with validated write of a value with the wrong suffix'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = f'{account_name}.invalid.example.com'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+        else:
+            self.fail()
+
+    def test_modify_dns_host_name_case(self):
+        '''Test modifying dNSHostName with validated write of a value with irregular case'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = f'{account_name}.{self.ldb_user.domain_dns_name()}'
+        host_name = host_name.capitalize()
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError:
+            self.fail()
+
+    def test_modify_dns_host_name_allowed_suffixes(self):
+        '''Test modifying dNSHostName with validated write and an allowed suffix'''
+
+        allowed_suffix = 'suffix.that.is.allowed'
+
+        # Add the allowed suffix.
+
+        res = self.ldb_admin.search(self.base_dn,
+                                    scope=SCOPE_BASE,
+                                    attrs=['msDS-AllowedDNSSuffixes'])
+        self.assertEqual(1, len(res))
+        old_allowed_suffixes = res[0].get('msDS-AllowedDNSSuffixes')
+
+        def modify_allowed_suffixes(suffixes):
+            if suffixes is None:
+                suffixes = []
+                flag = FLAG_MOD_DELETE
+            else:
+                flag = FLAG_MOD_REPLACE
+
+            m = Message(Dn(self.ldb_admin, self.base_dn))
+            m['msDS-AllowedDNSSuffixes'] = MessageElement(
+                suffixes,
+                flag,
+                'msDS-AllowedDNSSuffixes')
+            self.ldb_admin.modify(m)
+
+        self.addCleanup(modify_allowed_suffixes, old_allowed_suffixes)
+
+        if old_allowed_suffixes is None:
+            allowed_suffixes = []
+        else:
+            allowed_suffixes = list(old_allowed_suffixes)
+
+        if (allowed_suffix not in allowed_suffixes and
+            allowed_suffix.encode('utf-8') not in allowed_suffixes):
+                allowed_suffixes.append(allowed_suffix)
+
+        modify_allowed_suffixes(allowed_suffixes)
+
+        # Create the account and run the test.
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = f'{account_name}.{allowed_suffix}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['dNSHostName'] = MessageElement(host_name,
+                                          FLAG_MOD_REPLACE,
+                                          'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError:
+            self.fail()
+
+    def test_modify_dns_host_name_spn(self):
+        '''Test modifying dNSHostName and SPN with validated write'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_VALIDATE_SPN};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        host_name = f'{account_name}.{self.ldb_user.domain_dns_name()}'
+        spn = f'host/{host_name}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['0'] = MessageElement(host_name,
+                                FLAG_MOD_REPLACE,
+                                'dNSHostName')
+        m['1'] = MessageElement(spn,
+                                FLAG_MOD_ADD,
+                                'servicePrincipalName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError:
+            self.fail()
+
+    def test_modify_spn_matching_dns_host_name_invalid(self):
+        '''Test modifying SPN with validated write, matching a valid dNSHostName '''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Write Property.
+        mod = (f'(OA;CI;WP;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_VALIDATE_SPN};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        invalid_host_name = 'invalid'
+
+        host_name = f'{account_name}.{self.ldb_user.domain_dns_name()}'
+        spn = f'host/{host_name}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['0'] = MessageElement(invalid_host_name,
+                                FLAG_MOD_REPLACE,
+                                'dNSHostName')
+        m['1'] = MessageElement(spn,
+                                FLAG_MOD_ADD,
+                                'servicePrincipalName')
+        m['2'] = MessageElement(host_name,
+                                FLAG_MOD_REPLACE,
+                                'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError:
+            self.fail()
+
+    def test_modify_spn_matching_dns_host_name_original(self):
+        '''Test modifying SPN with validated write, matching the original dNSHostName '''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_VALIDATE_SPN};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        original_host_name = 'invalid_host_name'
+        original_spn = 'host/{original_host_name}'
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+            'dNSHostName': original_host_name,
+        })
+
+        host_name = f'{account_name}.{self.ldb_user.domain_dns_name()}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['0'] = MessageElement(original_spn,
+                                FLAG_MOD_ADD,
+                                'servicePrincipalName')
+        m['1'] = MessageElement(host_name,
+                                FLAG_MOD_REPLACE,
+                                'dNSHostName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+        else:
+            self.fail()
+
+    def test_modify_dns_host_name_spn_matching_account_name_original(self):
+        '''Test modifying dNSHostName and SPN with validated write, matching the original sAMAccountName'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        sam_account_name = '3e0abfd0-126a-11d0-a060-00aa006c33ed'
+
+        # Grant Write Property.
+        mod = (f'(OA;CI;WP;{sam_account_name};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_VALIDATE_SPN};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        new_account_name = 'test_mod_hostname2'
+        host_name = f'{account_name}.{self.ldb_user.domain_dns_name()}'
+        spn = f'host/{host_name}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['0'] = MessageElement(host_name,
+                                FLAG_MOD_REPLACE,
+                                'dNSHostName')
+        m['1'] = MessageElement(spn,
+                                FLAG_MOD_ADD,
+                                'servicePrincipalName')
+        m['2'] = MessageElement(f'{new_account_name}$',
+                                FLAG_MOD_REPLACE,
+                                'sAMAccountName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError as err:
+            num, estr = err.args
+            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
+        else:
+            self.fail()
+
+    def test_modify_dns_host_name_spn_matching_account_name_new(self):
+        '''Test modifying dNSHostName and SPN with validated write, matching the new sAMAccountName'''
+
+        ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
+
+        account_name = 'test_mod_hostname'
+        dn = f'CN={account_name},{ou_dn}'
+
+        self.ldb_admin.create_ou(ou_dn)
+
+        sam_account_name = '3e0abfd0-126a-11d0-a060-00aa006c33ed'
+
+        # Grant Write Property.
+        mod = (f'(OA;CI;WP;{sam_account_name};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        # Grant Validated Write.
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_DNS_HOST_NAME};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        mod = (f'(OA;CI;SW;{security.GUID_DRS_VALIDATE_SPN};;'
+               f'{self.user_sid})')
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+
+        # Create the account.
+        self.ldb_admin.add({
+            'dn': dn,
+            'objectClass': 'computer',
+            'sAMAccountName': f'{account_name}$',
+        })
+
+        new_account_name = 'test_mod_hostname2'
+        new_host_name = f'{new_account_name}.{self.ldb_user.domain_dns_name()}'
+        new_spn = f'host/{new_host_name}'
+
+        m = Message(Dn(self.ldb_user, dn))
+        m['0'] = MessageElement(new_spn,
+                                FLAG_MOD_ADD,
+                                'servicePrincipalName')
+        m['1'] = MessageElement(new_host_name,
+                                FLAG_MOD_REPLACE,
+                                'dNSHostName')
+        m['2'] = MessageElement(f'{new_account_name}$',
+                                FLAG_MOD_REPLACE,
+                                'sAMAccountName')
+        try:
+            self.ldb_user.modify(m)
+        except LdbError:
             self.fail()
 
 # enable these when we have search implemented
