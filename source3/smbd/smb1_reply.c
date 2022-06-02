@@ -665,8 +665,10 @@ void reply_getatr(struct smb_request *req)
 		goto out;
 	}
 
-	/* dos smetimes asks for a stat of "" - it returns a "hidden directory"
-		under WfWg - weird! */
+	/*
+	 * dos sometimes asks for a stat of "" - it returns a "hidden
+	 * directory" under WfWg - weird!
+	 */
 	if (*fname == '\0') {
 		mode = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
 		if (!CAN_WRITE(conn)) {
