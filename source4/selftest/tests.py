@@ -654,12 +654,6 @@ plantestsuite("samba4.blackbox.client_etypes_all(ad_dc:client)", "ad_dc:client",
 plantestsuite("samba4.blackbox.client_etypes_legacy(ad_dc:client)", "ad_dc:client", [os.path.join(bbdir, "test_client_etypes.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS', 'legacy', '23'])
 plantestsuite("samba4.blackbox.client_etypes_strong(ad_dc:client)", "ad_dc:client", [os.path.join(bbdir, "test_client_etypes.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS', 'strong', '17_18'])
 plantestsuite("samba4.blackbox.net_ads_dns(ad_member:local)", "ad_member:local", [os.path.join(bbdir, "test_net_ads_dns.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$REALM', '$USERNAME', '$PASSWORD'])
-plantestsuite("samba4.blackbox.net_ads_dns_async(ad_member:local)",
-        "ad_member:local",
-        [os.path.join(bbdir,
-            "test_net_ads_dns_async.sh"),
-            '$DC_SERVER',
-            '$REALM'])
 plantestsuite("samba4.blackbox.samba-tool_ntacl(ad_member:local)", "ad_member:local", [os.path.join(bbdir, "test_samba-tool_ntacl.sh"), '$PREFIX', '$DOMSID'])
 
 if have_gnutls_fips_mode_support:
@@ -1218,6 +1212,8 @@ for env in ["ad_dc_ntvfs:local", "ad_dc:local",
     planoldpythontestsuite(env, "samba.tests.blackbox.smbcontrol")
 
 planoldpythontestsuite("none", "samba.tests.blackbox.downgradedatabase")
+
+planpythontestsuite("ad_member:local", "samba.tests.blackbox.netads_dns")
 
 plantestsuite_loadlist("samba4.ldap.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(DSDB_PYTEST_DIR, "ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
