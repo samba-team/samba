@@ -2413,7 +2413,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	};
 	const char * const attrs2[] = { "sAMAccountName", "dNSHostName",
 		"msDS-SupportedEncryptionTypes", NULL };
-	const char *sam_account_name, *old_dns_hostname, *prefix1, *prefix2;
+	const char *sam_account_name, *old_dns_hostname;
 	struct ldb_context *sam_ctx;
 	const struct GUID *our_domain_guid = NULL;
 	struct lsa_TrustDomainInfoInfoEx *our_tdo = NULL;
@@ -2483,24 +2483,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		/*
-		 * Checks that the sam account name without a possible "$"
-		 * matches as prefix with the DNS hostname in the workstation
-		 * info structure.
-		 */
-		prefix1 = talloc_strndup(mem_ctx, sam_account_name,
-					 strcspn(sam_account_name, "$"));
-		NT_STATUS_HAVE_NO_MEMORY(prefix1);
-		if (r->in.query->workstation_info->dns_hostname != NULL) {
-			prefix2 = talloc_strndup(mem_ctx,
-						 r->in.query->workstation_info->dns_hostname,
-						 strcspn(r->in.query->workstation_info->dns_hostname, "."));
-			NT_STATUS_HAVE_NO_MEMORY(prefix2);
-
-			if (strcasecmp(prefix1, prefix2) != 0) {
-				update_dns_hostname = false;
-			}
-		} else {
+		if (r->in.query->workstation_info->dns_hostname == NULL) {
 			update_dns_hostname = false;
 		}
 
