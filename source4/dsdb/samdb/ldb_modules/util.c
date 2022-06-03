@@ -1559,7 +1559,7 @@ int dsdb_get_expected_new_values(TALLOC_CTX *mem_ctx,
 			}
 			memcpy(v,
 			       tmp_el->values,
-			       tmp_el->num_values);
+			       tmp_el->num_values * sizeof(*v));
 			v += tmp_el->num_values;
 		}
 	}
