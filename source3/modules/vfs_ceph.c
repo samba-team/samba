@@ -263,8 +263,8 @@ static int cephwrap_set_quota(struct vfs_handle_struct *handle,  enum SMB_QUOTA_
 }
 
 static int cephwrap_statvfs(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				vfs_statvfs_struct *statbuf)
+			    const struct smb_filename *smb_fname,
+			    struct vfs_statvfs_struct *statbuf)
 {
 	struct statvfs statvfs_buf;
 	int ret;

@@ -1103,7 +1103,7 @@ bool reset_stat_cache( void );
 
 /* The following definitions come from smbd/statvfs.c  */
 
-int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf);
+int sys_statvfs(const char *path, struct vfs_statvfs_struct *statbuf);
 
 /* The following definitions come from smbd/trans2.c  */
 

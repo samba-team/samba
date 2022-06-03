@@ -1313,7 +1313,7 @@ typedef struct vfs_handle_struct {
 } vfs_handle_struct;
 
 
-typedef struct vfs_statvfs_struct {
+struct vfs_statvfs_struct {
 	/* For undefined recommended transfer size return -1 in that field */
 	uint32_t OptimalTransferSize;  /* bsize on some os, iosize on other os */
 	uint32_t BlockSize;
@@ -1340,7 +1340,7 @@ typedef struct vfs_statvfs_struct {
 	/* NB flags can come from FILE_SYSTEM_DEVICE_INFO call   */
 
 	int FsCapabilities;
-} vfs_statvfs_struct;
+};
 
 /* Add a new FSP extension of the given type. Returns a pointer to the
  * extenstion data.

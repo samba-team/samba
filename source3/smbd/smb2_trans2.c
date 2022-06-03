@@ -2599,7 +2599,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		case SMB_QUERY_POSIX_FS_INFO:
 		{
 			int rc;
-			vfs_statvfs_struct svfs;
+			struct vfs_statvfs_struct svfs;
 
 			if (!lp_smb1_unix_extensions()) {
 				return NT_STATUS_INVALID_LEVEL;

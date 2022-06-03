@@ -117,8 +117,8 @@ static int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle,
 }
 
 static int vfswrap_statvfs(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				vfs_statvfs_struct *statbuf)
+			   const struct smb_filename *smb_fname,
+			   struct vfs_statvfs_struct *statbuf)
 {
 	return sys_statvfs(smb_fname->base_name, statbuf);
 }
