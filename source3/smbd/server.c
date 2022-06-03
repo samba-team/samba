@@ -2110,7 +2110,7 @@ extern void build_options(bool screen);
 		*/
 		struct stat st;
 		if (fstat(0, &st) != 0) {
-			return false;
+			return 1;
 		}
 		if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode)) {
 			tevent_add_fd(ev_ctx,
