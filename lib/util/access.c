@@ -114,6 +114,62 @@ static bool string_match(const char *tok,const char *s)
 		    && strequal_m(tok, s + str_len - tok_len)) {
 			return true;
 		}
+	} else if (tok[0] == '@') { /* netgroup: look it up */
+#ifdef HAVE_NETGROUP
+		DATA_BLOB tmp;
+		char *mydomain = NULL;
+		char *hostname = NULL;
+		bool netgroup_ok = false;
+		char nis_domain_buf[256];
+
+		if (memcache_lookup(
+			    NULL, SINGLETON_CACHE,
+			    data_blob_string_const_null("yp_default_domain"),
+			    &tmp)) {
+
+			SMB_ASSERT(tmp.length > 0);
+			mydomain = (tmp.data[0] == '\0')
+				? NULL : (char *)tmp.data;
+		} else {
+			if (getdomainname(nis_domain_buf,
+					  sizeof(nis_domain_buf)) == 0) {
+				mydomain = &nis_domain_buf[0];
+				memcache_add(NULL,
+					     SINGLETON_CACHE,
+					     data_blob_string_const_null(
+						     "yp_default_domain"),
+					     data_blob_string_const_null(
+						     mydomain));
+			} else {
+				mydomain = NULL;
+			}
+		}
+
+		if (!mydomain) {
+			DEBUG(0,("Unable to get default yp domain. "
+				"Try without it.\n"));
+		}
+		if (!(hostname = smb_xstrdup(s))) {
+			DEBUG(1,("out of memory for strdup!\n"));
+			return false;
+		}
+
+		netgroup_ok = innetgr(tok + 1, hostname, (char *) 0, mydomain);
+
+		DBG_INFO("%s %s of domain %s in netgroup %s\n",
+			 netgroup_ok ? "Found" : "Could not find",
+			 hostname,
+			 mydomain?mydomain:"(ANY)",
+			 tok+1);
+
+		SAFE_FREE(hostname);
+
+		if (netgroup_ok)
+			return true;
+#else
+		DEBUG(0,("access: netgroup support is not configured\n"));
+		return false;
+#endif
 	} else if (strequal_m(tok, "ALL")) {	/* all: match any */
 		return true;
 	} else if (strequal_m(tok, "FAIL")) {	/* fail: match any */
