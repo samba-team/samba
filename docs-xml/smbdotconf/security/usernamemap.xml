@@ -59,6 +59,11 @@
 
 
     <para>
+	If your system supports the NIS NETGROUP option then the netgroup database is checked before the <filename
+	moreinfo="none">/etc/group </filename> database for matching groups.
+	</para>
+
+    <para>
 	You can map Windows usernames that have spaces in them by using double quotes around the name. For example:
 <programlisting>
 <command moreinfo="none">tridge = &quot;Andrew Tridgell&quot;</command>
