@@ -16,6 +16,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
         dosmode.c
         durable_open.c
         durable_v2_open.c
+        ea.c
         getinfo.c
         ioctl.c
         lease.c

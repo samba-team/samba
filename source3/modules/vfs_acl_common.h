@@ -27,6 +27,7 @@
 struct acl_common_config {
 	bool ignore_system_acls;
 	enum default_acl_style default_acl_style;
+	char *security_acl_xattr_name;
 };
 
 struct acl_common_fsp_ext {

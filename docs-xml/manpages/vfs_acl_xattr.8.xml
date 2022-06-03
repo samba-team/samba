@@ -62,6 +62,25 @@
 	<variablelist>
 		<!-- please keep in sync with the other acl vfs modules that provide the same options -->
 		<varlistentry>
+		<term>acl_xattr:security_acl_name = NAME</term>
+		<listitem>
+		<para>
+                This option allows to redefine the default location for the
+                NTACL extended attribute (xattr). If not set, NTACL xattrs are
+                written to security.NTACL which is a protected location, which
+                means the content of the security.NTACL attribute is not
+                accessible from normal users outside of Samba. When this option
+                is set to use a user-defined value, e.g. user.NTACL then any
+                user can potentially access and overwrite this information. The
+                module prevents access to this xattr over SMB, but the xattr may
+                still be accessed by other means (eg local access, SSH, NFS). This option must only be used
+                when this consequence is clearly understood and when specific precautions
+                are taken to avoid compromising the ACL content.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>acl_xattr:ignore system acls = [yes|no]</term>
 		<listitem>
 		<para>

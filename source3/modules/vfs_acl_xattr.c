@@ -24,6 +24,8 @@
 #include "librpc/gen_ndr/xattr.h"
 #include "auth.h"
 #include "vfs_acl_common.h"
+#include "lib/util/tevent_ntstatus.h"
+#include "lib/util/tevent_unix.h"
 
 /* Pull in the common functions. */
 #define ACL_MODULE_NAME "acl_xattr"
@@ -184,6 +186,7 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 				const char *service,
 				const char *user)
 {
+	const char *security_acl_xattr_name = NULL;
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 	bool ok;
 	struct acl_common_config *config = NULL;
@@ -247,6 +250,17 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 				"yes");
 	}
 
+	security_acl_xattr_name = lp_parm_const_string(SNUM(handle->conn),
+					  "acl_xattr",
+					  "security_acl_name",
+					  NULL);
+	if (security_acl_xattr_name != NULL) {
+		config->security_acl_xattr_name = talloc_strdup(config, security_acl_xattr_name);
+		if (config->security_acl_xattr_name == NULL) {
+			return -1;
+		}
+	}
+
 	return 0;
 }
 
@@ -294,13 +308,240 @@ static NTSTATUS acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 	return status;
 }
 
+struct acl_xattr_getxattrat_state {
+	struct vfs_aio_state aio_state;
+	ssize_t xattr_size;
+	uint8_t *xattr_value;
+};
+
+static void acl_xattr_getxattrat_done(struct tevent_req *subreq);
+
+static struct tevent_req *acl_xattr_getxattrat_send(
+				TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct vfs_handle_struct *handle,
+				files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				const char *xattr_name,
+				size_t alloc_hint)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct acl_xattr_getxattrat_state *state = NULL;
+	struct acl_common_config *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct acl_common_config,
+				return NULL);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct acl_xattr_getxattrat_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (strequal(xattr_name, config->security_acl_xattr_name)) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return tevent_req_post(req, ev);
+	}
+	if (config->security_acl_xattr_name != NULL &&
+	    strequal(xattr_name, XATTR_NTACL_NAME))
+	{
+		xattr_name = config->security_acl_xattr_name;
+	}
+
+	subreq = SMB_VFS_NEXT_GETXATTRAT_SEND(state,
+					      ev,
+					      handle,
+					      dirfsp,
+					      smb_fname,
+					      xattr_name,
+					      alloc_hint);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, acl_xattr_getxattrat_done, req);
+
+	return req;
+}
+
+static void acl_xattr_getxattrat_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct acl_xattr_getxattrat_state *state = tevent_req_data(
+		req, struct acl_xattr_getxattrat_state);
+
+	state->xattr_size = SMB_VFS_NEXT_GETXATTRAT_RECV(subreq,
+							 &state->aio_state,
+							 state,
+							 &state->xattr_value);
+	TALLOC_FREE(subreq);
+	if (state->xattr_size == -1) {
+		tevent_req_error(req, state->aio_state.error);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static ssize_t acl_xattr_getxattrat_recv(struct tevent_req *req,
+					 struct vfs_aio_state *aio_state,
+					 TALLOC_CTX *mem_ctx,
+					 uint8_t **xattr_value)
+{
+	struct acl_xattr_getxattrat_state *state = tevent_req_data(
+		req, struct acl_xattr_getxattrat_state);
+	ssize_t xattr_size;
+
+	if (tevent_req_is_unix_error(req, &aio_state->error)) {
+		tevent_req_received(req);
+		return -1;
+	}
+
+	*aio_state = state->aio_state;
+	xattr_size = state->xattr_size;
+	if (xattr_value != NULL) {
+		*xattr_value = talloc_move(mem_ctx, &state->xattr_value);
+	}
+
+	tevent_req_received(req);
+	return xattr_size;
+}
+
+static ssize_t acl_xattr_fgetxattr(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   const char *name,
+				   void *value,
+				   size_t size)
+{
+	struct acl_common_config *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct acl_common_config,
+				return -1);
+
+	if (strequal(name, config->security_acl_xattr_name)) {
+		errno = EACCES;
+		return -1;
+	}
+	if (config->security_acl_xattr_name != NULL &&
+	    strequal(name, XATTR_NTACL_NAME))
+	{
+		name = config->security_acl_xattr_name;
+	}
+
+	return SMB_VFS_NEXT_FGETXATTR(handle, fsp, name, value, size);
+}
+
+static ssize_t acl_xattr_flistxattr(struct vfs_handle_struct *handle,
+				    struct files_struct *fsp,
+				    char *listbuf,
+				    size_t bufsize)
+{
+	struct acl_common_config *config = NULL;
+	ssize_t size;
+	char *p = NULL;
+	size_t nlen, consumed;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct acl_common_config,
+				return -1);
+
+	size = SMB_VFS_NEXT_FLISTXATTR(handle, fsp, listbuf, bufsize);
+	if (size < 0) {
+		return -1;
+	}
+
+	p = listbuf;
+	while (p - listbuf < size) {
+		nlen = strlen(p) + 1;
+		if (strequal(p, config->security_acl_xattr_name)) {
+			break;
+		}
+		p += nlen;
+	}
+	if (p - listbuf >= size) {
+		/* No match */
+		return size;
+	}
+
+	/*
+	 * The consumed helper variable just makes the math
+	 * a bit more digestible.
+	 */
+	consumed = p - listbuf;
+	if (consumed + nlen < size) {
+		/* If not the last name move, else just skip */
+		memmove(p, p + nlen, size - consumed - nlen);
+	}
+	size -= nlen;
+
+	return size;
+}
+
+static int acl_xattr_fremovexattr(struct vfs_handle_struct *handle,
+				  struct files_struct *fsp,
+				  const char *name)
+{
+	struct acl_common_config *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct acl_common_config,
+				return -1);
+
+	if (strequal(name, config->security_acl_xattr_name)) {
+		errno = EACCES;
+		return -1;
+	}
+	if (config->security_acl_xattr_name != NULL &&
+	    strequal(name, XATTR_NTACL_NAME))
+	{
+		name = config->security_acl_xattr_name;
+	}
+
+	return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
+}
+
+static int acl_xattr_fsetxattr(struct vfs_handle_struct *handle,
+			       struct files_struct *fsp,
+			       const char *name,
+			       const void *value,
+			       size_t size,
+			       int flags)
+{
+	struct acl_common_config *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct acl_common_config,
+				return -1);
+
+	if (strequal(name, config->security_acl_xattr_name)) {
+		errno = EACCES;
+		return -1;
+	}
+	if (config->security_acl_xattr_name != NULL &&
+	    strequal(name, XATTR_NTACL_NAME))
+	{
+		name = config->security_acl_xattr_name;
+	}
+
+	return SMB_VFS_NEXT_FSETXATTR(handle, fsp, name, value, size, flags);
+}
+
 static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.connect_fn = connect_acl_xattr,
 	.unlinkat_fn = acl_xattr_unlinkat,
 	.fchmod_fn = fchmod_acl_module_common,
 	.fget_nt_acl_fn = acl_xattr_fget_nt_acl,
 	.fset_nt_acl_fn = acl_xattr_fset_nt_acl,
-	.sys_acl_set_fd_fn = sys_acl_set_fd_xattr
+	.sys_acl_set_fd_fn = sys_acl_set_fd_xattr,
+	.getxattrat_send_fn = acl_xattr_getxattrat_send,
+	.getxattrat_recv_fn = acl_xattr_getxattrat_recv,
+	.fgetxattr_fn = acl_xattr_fgetxattr,
+	.flistxattr_fn = acl_xattr_flistxattr,
+	.fremovexattr_fn = acl_xattr_fremovexattr,
+	.fsetxattr_fn = acl_xattr_fsetxattr,
 };
 
 static_decl_vfs;

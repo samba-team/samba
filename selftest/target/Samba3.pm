@@ -1939,6 +1939,12 @@ sub setup_fileserver
 	path = $volume_serial_number_sharedir
 	volume serial number = 0xdeadbeef
 
+[ea_acl_xattr]
+	path = $share_dir
+	vfs objects = acl_xattr
+	acl_xattr:security_acl_name = user.hackme
+	read only = no
+
 [homes]
 	comment = Home directories
 	browseable = No
