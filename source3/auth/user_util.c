@@ -143,11 +143,11 @@ bool user_in_list(TALLOC_CTX *ctx, const char *user, const char * const *list)
 		return false;
 	}
 
+	DBG_DEBUG("Checking user %s in list\n", user);
+
 	while (*list) {
 		const char *p = *list;
-		bool check_unix_group = false;
-
-		DBG_DEBUG("Checking user '%s' in list '%s'.\n", user, *list);
+		bool ok;
 
 		/* Check raw username */
 		if (strequal(user, p)) {
@@ -155,13 +155,11 @@ bool user_in_list(TALLOC_CTX *ctx, const char *user, const char * const *list)
 		}
 
 		while (*p == '@' || *p == '&' || *p == '+') {
-			if (*p == '@' || *p == '+') {
-				check_unix_group = true;
-			}
 			p++;
 		}
 
-		if (check_unix_group && user_in_group(user, p)) {
+		ok = user_in_group(user, p);
+		if (ok) {
 			return true;
 		}
 
