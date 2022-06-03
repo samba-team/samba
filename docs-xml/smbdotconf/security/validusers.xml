@@ -4,10 +4,9 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
-        This is a list of users that should be allowed to login to this service.
-        Names starting with an '@' are interpreted using the same rules as
-        described in the
-        <parameter moreinfo="none">invalid users</parameter> parameter.
+    This is a list of users that should be allowed to login to this service. Names starting with 
+    '@', '+' and  '&amp;' are interpreted using the same rules as described in the 
+    <parameter moreinfo="none">invalid users</parameter> parameter.
     </para>
 
     <para>
