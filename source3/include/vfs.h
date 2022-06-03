@@ -716,6 +716,7 @@ typedef struct connection_struct {
 	bool ipc;
 	bool read_only; /* Attributes for the current user of the share. */
 	bool have_proc_fds;
+	uint64_t open_how_resolve; /* supported vfs_open_how.resolve features */
 	uint32_t share_access;
 	/* Does this filesystem honor
 	   sub second timestamps on files
@@ -904,6 +905,8 @@ struct vfs_aio_state {
 	int error;
 	uint64_t duration;
 };
+
+#define VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS 1
 
 struct vfs_open_how {
 	int flags;
