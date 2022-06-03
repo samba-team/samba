@@ -518,10 +518,10 @@ unsigned int samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *
 
 NTSTATUS samdb_result_passwords_from_history(TALLOC_CTX *mem_ctx,
 					     struct loadparm_context *lp_ctx,
-					     struct ldb_message *msg,
+					     const struct ldb_message *msg,
 					     unsigned int idx,
-					     struct samr_Password **lm_pwd,
-					     struct samr_Password **nt_pwd)
+					     const struct samr_Password **lm_pwd,
+					     const struct samr_Password **nt_pwd)
 {
 	struct samr_Password *lmPwdHash, *ntPwdHash;
 

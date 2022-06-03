@@ -318,7 +318,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 
 	for (i = 1; i < MIN(history_len, 3); i++) {
 		struct samr_Password zero_string_hash;
-		struct samr_Password *nt_history_pwd = NULL;
+		const struct samr_Password *nt_history_pwd = NULL;
 		NTTIME pwdLastSet;
 		struct timeval tv_now;
 		NTTIME now;
