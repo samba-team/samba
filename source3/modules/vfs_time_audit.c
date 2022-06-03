@@ -621,8 +621,7 @@ static int smb_time_audit_openat(vfs_handle_struct *handle,
 				 const struct files_struct *dirfsp,
 				 const struct smb_filename *smb_fname,
 				 struct files_struct *fsp,
-				 int flags,
-				 mode_t mode)
+				 const struct vfs_open_how *how)
 {
 	int result;
 	struct timespec ts1,ts2;
@@ -633,8 +632,7 @@ static int smb_time_audit_openat(vfs_handle_struct *handle,
 				     dirfsp,
 				     smb_fname,
 				     fsp,
-				     flags,
-				     mode);
+				     how);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

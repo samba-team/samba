@@ -365,8 +365,7 @@ static int xattr_tdb_openat(struct vfs_handle_struct *handle,
 			    const struct files_struct *dirfsp,
 			    const struct smb_filename *smb_fname,
 			    struct files_struct *fsp,
-			    int flags,
-			    mode_t mode)
+			    const struct vfs_open_how *how)
 {
 	struct db_context *db = NULL;
 	TALLOC_CTX *frame = NULL;
@@ -378,14 +377,12 @@ static int xattr_tdb_openat(struct vfs_handle_struct *handle,
 				 dirfsp,
 				 smb_fname,
 				 fsp,
-				 flags,
-				 mode);
-
+				 how);
 	if (fd == -1) {
 		return -1;
 	}
 
-	if ((flags & (O_CREAT|O_EXCL)) != (O_CREAT|O_EXCL)) {
+	if ((how->flags & (O_CREAT|O_EXCL)) != (O_CREAT|O_EXCL)) {
 		return fd;
 	}
 

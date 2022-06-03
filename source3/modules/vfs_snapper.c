@@ -2078,8 +2078,7 @@ static int snapper_gmt_openat(struct vfs_handle_struct *handle,
 			      const struct files_struct *dirfsp,
 			      const struct smb_filename *smb_fname_in,
 			      struct files_struct *fsp,
-			      int flags,
-			      mode_t mode)
+			      const struct vfs_open_how *how)
 {
 	struct smb_filename *smb_fname = NULL;
 	time_t timestamp;
@@ -2097,8 +2096,7 @@ static int snapper_gmt_openat(struct vfs_handle_struct *handle,
 					   dirfsp,
 					   smb_fname_in,
 					   fsp,
-					   flags,
-					   mode);
+					   how);
 	}
 
 	smb_fname = cp_smb_filename(talloc_tos(), smb_fname_in);
@@ -2117,7 +2115,7 @@ static int snapper_gmt_openat(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode);
+	ret = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, how);
 	if (ret == -1) {
 		saved_errno = errno;
 	}

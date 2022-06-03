@@ -373,6 +373,7 @@
  * Version 47 - Replace SMB_VFS_GET_REAL_FILENAME with SMB_VFS_GET_REAL_FILENAME_AT
  * Version 47 - Re-add dirfsp to CREATE_FILE
  * Version 47 - Add fsp flag fstat_before_close
+ * Version 47 - Change SMB_VFS_OPENAT() to match the Linux openat2 prototype, add vfs_open_how
  */
 
 #define SMB_VFS_INTERFACE_VERSION 47
@@ -904,6 +905,11 @@ struct vfs_aio_state {
 	uint64_t duration;
 };
 
+struct vfs_open_how {
+	int flags;
+	mode_t mode;
+};
+
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
     (struct vfs_fn_pointers and struct vfs_handle_pointers inside of struct vfs_ops).
@@ -974,8 +980,7 @@ struct vfs_fn_pointers {
 			 const struct files_struct *dirfsp,
 			 const struct smb_filename *smb_fname,
 			 struct files_struct *fsp,
-			 int flags,
-			 mode_t mode);
+			 const struct vfs_open_how *how);
 	NTSTATUS (*create_file_fn)(struct vfs_handle_struct *handle,
 				   struct smb_request *req,
 				   struct files_struct *dirfsp,
@@ -1460,8 +1465,7 @@ int smb_vfs_call_openat(struct vfs_handle_struct *handle,
 			const struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			struct files_struct *fsp,
-			int flags,
-			mode_t mode);
+			const struct vfs_open_how *how);
 NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 				  struct smb_request *req,
 				  struct files_struct *dirfsp,
@@ -1905,8 +1909,7 @@ int vfs_not_implemented_openat(vfs_handle_struct *handle,
 			       const struct files_struct *dirfsp,
 			       const struct smb_filename *smb_fname,
 			       struct files_struct *fsp,
-			       int flags,
-			       mode_t mode);
+			       const struct vfs_open_how *how);
 NTSTATUS vfs_not_implemented_create_file(struct vfs_handle_struct *handle,
 				struct smb_request *req,
 				struct files_struct *dirfsp,

@@ -292,11 +292,10 @@ static int syncops_openat(struct vfs_handle_struct *handle,
 			  const struct files_struct *dirfsp,
 			  const struct smb_filename *smb_fname,
 			  struct files_struct *fsp,
-			  int flags,
-			  mode_t mode)
+			  const struct vfs_open_how *how)
 {
-	SYNCOPS_NEXT_SMB_FNAME(OPENAT, (flags & O_CREAT ? smb_fname : NULL),
-			       (handle, dirfsp, smb_fname, fsp, flags, mode));
+	SYNCOPS_NEXT_SMB_FNAME(OPENAT, (how->flags & O_CREAT ? smb_fname : NULL),
+			       (handle, dirfsp, smb_fname, fsp, how));
 }
 
 static int syncops_unlinkat(vfs_handle_struct *handle,

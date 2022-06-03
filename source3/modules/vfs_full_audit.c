@@ -1112,15 +1112,14 @@ static int smb_full_audit_openat(vfs_handle_struct *handle,
 				 const struct files_struct *dirfsp,
 				 const struct smb_filename *smb_fname,
 				 struct files_struct *fsp,
-				 int flags,
-				 mode_t mode)
+				 const struct vfs_open_how *how)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode);
+	result = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, how);
 
 	do_log(SMB_VFS_OP_OPENAT, (result >= 0), handle, "%s|%s",
-	       ((flags & O_WRONLY) || (flags & O_RDWR))?"w":"r",
+	       ((how->flags & O_WRONLY) || (how->flags & O_RDWR))?"w":"r",
 	       fsp_str_do_log(fsp));
 
 	return result;

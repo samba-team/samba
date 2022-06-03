@@ -2331,9 +2331,9 @@ static int vfs_gpfs_openat(struct vfs_handle_struct *handle,
 			   const struct files_struct *dirfsp,
 			   const struct smb_filename *smb_fname,
 			   files_struct *fsp,
-			   int flags,
-			   mode_t mode)
+			   const struct vfs_open_how *_how)
 {
+	struct vfs_open_how how = *_how;
 	struct gpfs_config_data *config = NULL;
 	struct gpfs_fsp_extension *ext = NULL;
 	int ret;
@@ -2353,7 +2353,7 @@ static int vfs_gpfs_openat(struct vfs_handle_struct *handle,
 	}
 
 	if (config->syncio) {
-		flags |= O_SYNC;
+		how.flags |= O_SYNC;
 	}
 
 	ext = VFS_ADD_FSP_EXTENSION(handle, fsp, struct gpfs_fsp_extension,
@@ -2368,7 +2368,7 @@ static int vfs_gpfs_openat(struct vfs_handle_struct *handle,
 	 */
 	*ext = (struct gpfs_fsp_extension) { .offline = true };
 
-	ret = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode);
+	ret = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, &how);
 	if (ret == -1) {
 		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
 	}

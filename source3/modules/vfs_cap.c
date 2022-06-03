@@ -152,8 +152,7 @@ static int cap_openat(vfs_handle_struct *handle,
 		      const struct files_struct *dirfsp,
 		      const struct smb_filename *smb_fname_in,
 		      files_struct *fsp,
-		      int flags,
-		      mode_t mode)
+		      const struct vfs_open_how *how)
 {
 	char *cappath = NULL;
 	struct smb_filename *smb_fname = NULL;
@@ -179,9 +178,7 @@ static int cap_openat(vfs_handle_struct *handle,
 				  dirfsp,
 				  smb_fname,
 				  fsp,
-				  flags,
-				  mode);
-
+				  how);
 	if (ret == -1) {
 		saved_errno = errno;
 	}

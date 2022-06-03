@@ -315,8 +315,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 				const struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
 				files_struct *fsp,
-				int flags,
-				mode_t mode)
+				const struct vfs_open_how *how)
 {
 	NTSTATUS status;
 	struct streams_xattr_config *config = NULL;
@@ -332,15 +331,14 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("called for %s with flags 0x%x\n",
 		  smb_fname_str_dbg(smb_fname),
-		  flags);
+		  how->flags);
 
 	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_OPENAT(handle,
 					   dirfsp,
 					   smb_fname,
 					   fsp,
-					   flags,
-					   mode);
+					   how);
 	}
 
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
@@ -373,7 +371,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 			goto fail;
 		}
 
-		if (!(flags & O_CREAT)) {
+		if (!(how->flags & O_CREAT)) {
 			errno = ENOATTR;
 			goto fail;
 		}
@@ -381,7 +379,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		set_empty_xattr = true;
 	}
 
-	if (flags & O_TRUNC) {
+	if (how->flags & O_TRUNC) {
 		set_empty_xattr = true;
 	}
 
@@ -401,7 +399,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		ret = SMB_VFS_FSETXATTR(fsp->base_fsp,
 				       xattr_name,
 				       &null, sizeof(null),
-				       flags & O_EXCL ? XATTR_CREATE : 0);
+				       how->flags & O_EXCL ? XATTR_CREATE : 0);
 		if (ret != 0) {
 			goto fail;
 		}

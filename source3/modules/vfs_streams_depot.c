@@ -665,8 +665,7 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 				const struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
 				struct files_struct *fsp,
-				int flags,
-				mode_t mode)
+				const struct vfs_open_how *how)
 {
 	struct smb_filename *smb_fname_stream = NULL;
 	struct files_struct *fspcwd = NULL;
@@ -679,15 +678,14 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 					   dirfsp,
 					   smb_fname,
 					   fsp,
-					   flags,
-					   mode);
+					   how);
 	}
 
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
 	SMB_ASSERT(dirfsp == NULL);
 	SMB_ASSERT(VALID_STAT(fsp->base_fsp->fsp_name->st));
 
-	create_it = (mode & O_CREAT);
+	create_it = (how->mode & O_CREAT);
 
 	/* Determine the stream name, and then open it. */
 	status = stream_smb_fname(
@@ -741,8 +739,7 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 				  fspcwd,
 				  smb_fname_stream,
 				  fsp,
-				  flags,
-				  mode);
+				  how);
 
  done:
 	TALLOC_FREE(smb_fname_stream);

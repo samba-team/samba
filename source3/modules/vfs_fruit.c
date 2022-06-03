@@ -1413,7 +1413,10 @@ static int fruit_open_meta_stream(vfs_handle_struct *handle,
 {
 	struct fruit_config_data *config = NULL;
 	struct fio *fio = NULL;
-	int open_flags = flags & ~O_CREAT;
+	struct vfs_open_how how = {
+		.flags = flags & ~O_CREAT,
+		.mode = mode,
+	};
 	int fd;
 
 	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
@@ -1431,8 +1434,7 @@ static int fruit_open_meta_stream(vfs_handle_struct *handle,
 				 dirfsp,
 				 smb_fname,
 				 fsp,
-				 open_flags,
-				 mode);
+				 &how);
 	if (fd != -1) {
 		return fd;
 	}
@@ -1701,14 +1703,17 @@ static int fruit_open_rsrc(vfs_handle_struct *handle,
 	fio->config = config;
 
 	switch (config->rsrc) {
-	case FRUIT_RSRC_STREAM:
+	case FRUIT_RSRC_STREAM: {
+		struct vfs_open_how how = {
+			.flags = flags, .mode = mode,
+		};
 		fd = SMB_VFS_NEXT_OPENAT(handle,
 					 dirfsp,
 					 smb_fname,
 					 fsp,
-					 flags,
-					 mode);
+					 &how);
 		break;
+	}
 
 	case FRUIT_RSRC_ADFILE:
 		fd = fruit_open_rsrc_adouble(handle, dirfsp, smb_fname,
@@ -1739,8 +1744,7 @@ static int fruit_openat(vfs_handle_struct *handle,
 			const struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			files_struct *fsp,
-			int flags,
-			mode_t mode)
+			const struct vfs_open_how *how)
 {
 	int fd;
 
@@ -1751,8 +1755,7 @@ static int fruit_openat(vfs_handle_struct *handle,
 					   dirfsp,
 					   smb_fname,
 					   fsp,
-					   flags,
-					   mode);
+					   how);
 	}
 
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
@@ -1762,22 +1765,21 @@ static int fruit_openat(vfs_handle_struct *handle,
 				     dirfsp,
 				     smb_fname,
 				     fsp,
-				     flags,
-				     mode);
+				     how->flags,
+				     how->mode);
 	} else if (is_afpresource_stream(smb_fname->stream_name)) {
 		fd = fruit_open_rsrc(handle,
 				     dirfsp,
 				     smb_fname,
 				     fsp,
-				     flags,
-				     mode);
+				     how->flags,
+				     how->mode);
 	} else {
 		fd = SMB_VFS_NEXT_OPENAT(handle,
 					 dirfsp,
 					 smb_fname,
 					 fsp,
-					 flags,
-					 mode);
+					 how);
 	}
 
 	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
@@ -2655,6 +2657,9 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 	}
 
 	if (fio->fake_fd) {
+		struct vfs_open_how how = {
+			.flags = fio->flags, .mode = fio->mode,
+		};
 		int fd = fsp_get_pathref_fd(fsp);
 
 		ret = vfs_fake_fd_close(fd);
@@ -2669,8 +2674,7 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 					 NULL, /* opening a stream */
 					 fsp->fsp_name,
 					 fsp,
-					 fio->flags,
-					 fio->mode);
+					 &how);
 		if (fd == -1) {
 			DBG_ERR("On-demand create [%s] in write failed: %s\n",
 				fsp_str_dbg(fsp), strerror(errno));

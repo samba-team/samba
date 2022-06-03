@@ -1061,8 +1061,7 @@ static int mh_openat(struct vfs_handle_struct *handle,
 		     const struct files_struct *dirfsp,
 		     const struct smb_filename *smb_fname,
 		     files_struct *fsp,
-		     int flags,
-		     mode_t mode)
+		     const struct vfs_open_how *how)
 {
 	int ret;
 	struct smb_filename *clientFname;
@@ -1076,8 +1075,7 @@ static int mh_openat(struct vfs_handle_struct *handle,
 					  dirfsp,
 					  smb_fname,
 					  fsp,
-					  flags,
-					  mode);
+					  how);
 		goto out;
 	}
 
@@ -1101,7 +1099,7 @@ static int mh_openat(struct vfs_handle_struct *handle,
 			      ctime(&(smb_fname->st.st_ex_mtime.tv_sec)),
 			      ctime(&(fsp->fsp_name->st.st_ex_mtime.tv_sec))));
 
-	ret = SMB_VFS_NEXT_OPENAT(handle, dirfsp, clientFname, fsp, flags, mode);
+	ret = SMB_VFS_NEXT_OPENAT(handle, dirfsp, clientFname, fsp, how);
 err:
 	TALLOC_FREE(clientFname);
 out:

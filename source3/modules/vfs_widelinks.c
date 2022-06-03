@@ -342,9 +342,9 @@ static int widelinks_openat(vfs_handle_struct *handle,
 			    const struct files_struct *dirfsp,
 			    const struct smb_filename *smb_fname,
 			    files_struct *fsp,
-			    int flags,
-			    mode_t mode)
+			    const struct vfs_open_how *_how)
 {
+	struct vfs_open_how how = *_how;
 	struct widelinks_config *config = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(handle,
@@ -360,15 +360,14 @@ static int widelinks_openat(vfs_handle_struct *handle,
 		 * Module active, openat after chdir (see note 1b above) and not
 		 * a POSIX open (POSIX sees symlinks), so remove O_NOFOLLOW.
 		 */
-		flags = (flags & ~O_NOFOLLOW);
+		how.flags = (how.flags & ~O_NOFOLLOW);
 	}
 
 	return SMB_VFS_NEXT_OPENAT(handle,
 				   dirfsp,
 				   smb_fname,
 				   fsp,
-				   flags,
-				   mode);
+				   &how);
 }
 
 static struct dirent *widelinks_readdir(vfs_handle_struct *handle,

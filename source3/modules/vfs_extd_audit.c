@@ -227,12 +227,11 @@ static int audit_openat(vfs_handle_struct *handle,
 			const struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			files_struct *fsp,
-			int flags,
-			mode_t mode)
+			const struct vfs_open_how *how)
 {
 	int ret;
 
-	ret = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode);
+	ret = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, how);
 
 	if (lp_syslog() > 0) {
 		syslog(audit_syslog_priority(handle),
@@ -240,7 +239,7 @@ static int audit_openat(vfs_handle_struct *handle,
 		       smb_fname_str_dbg(fsp->fsp_name),
 		       smb_fname->base_name,
 		       ret,
-		       ((flags & O_WRONLY) || (flags & O_RDWR)) ?
+		       ((how->flags & O_WRONLY) || (how->flags & O_RDWR)) ?
 		       "for writing " : "",
 		       (ret < 0) ? "failed: " : "",
 		       (ret < 0) ? strerror(errno) : "");

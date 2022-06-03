@@ -686,6 +686,7 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	struct smb_filename *parent_dir_fname = NULL;
 	bool have_opath = false;
 	bool is_share_root = false;
+	struct vfs_open_how how = { .flags = flags, .mode = mode };
 	int ret;
 
 #ifdef O_PATH
@@ -763,14 +764,13 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 		SMB_ASSERT(slash == NULL);
 	}
 
-	flags |= O_NOFOLLOW;
+	how.flags |= O_NOFOLLOW;
 
 	fd = SMB_VFS_OPENAT(conn,
 			    dirfsp,
 			    smb_fname_rel,
 			    fsp,
-			    flags,
-			    mode);
+			    &how);
 	if (fd == -1) {
 		status = link_errno_convert(errno);
 	}
@@ -912,6 +912,7 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 	}
 
 	if (fsp_is_stream) {
+		struct vfs_open_how how = { .flags = flags, .mode = mode, };
 		int fd;
 
 		fd = SMB_VFS_OPENAT(
@@ -919,8 +920,7 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 			NULL,	/* stream open is relative to fsp->base_fsp */
 			smb_fname,
 			fsp,
-			flags,
-			mode);
+			&how);
 		if (fd == -1) {
 			status = map_nt_error_from_unix(errno);
 		}
@@ -1193,6 +1193,7 @@ static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
 				   int flags,
 				   mode_t mode)
 {
+	struct vfs_open_how how = { .flags = flags, .mode = mode };
 	struct smb_filename proc_fname;
 	const char *p = NULL;
 	char buf[PATH_MAX];
@@ -1233,8 +1234,7 @@ static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
 				fsp->conn->cwd_fsp,
 				&proc_fname,
 				fsp,
-				flags,
-				mode);
+				&how);
 	if (new_fd == -1) {
 		status = map_nt_error_from_unix(errno);
 		fd_close(fsp);

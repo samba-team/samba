@@ -211,17 +211,17 @@ static int audit_openat(vfs_handle_struct *handle,
 			const struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			struct files_struct *fsp,
-			int flags,
-			mode_t mode)
+			const struct vfs_open_how *how)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode);
+	result = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, how);
 
 	syslog(audit_syslog_priority(handle),
 	       "openat %s (fd %d) %s%s%s\n",
 	       fsp_str_dbg(fsp), result,
-	       ((flags & O_WRONLY) || (flags & O_RDWR)) ? "for writing " : "",
+	       ((how->flags & O_WRONLY) || (how->flags & O_RDWR)) ?
+	       "for writing " : "",
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
 

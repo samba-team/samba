@@ -531,8 +531,7 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 			  const struct files_struct *dirfsp,
 			  const struct smb_filename *smb_fname,
 			  struct files_struct *fsp,
-			  int flags,
-			  mode_t mode)
+			  const struct vfs_open_how *how)
 {
 	const char *dirname = dirfsp->fsp_name->base_name;
 	struct preopen_state *state;
@@ -557,16 +556,15 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 					   dirfsp,
 					   smb_fname,
 					   fsp,
-					   flags,
-					   mode);
+					   how);
 	}
 
-	res = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode);
+	res = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, how);
 	if (res == -1) {
 		return -1;
 	}
 
-	if ((flags & O_ACCMODE) != O_RDONLY) {
+	if ((how->flags & O_ACCMODE) != O_RDONLY) {
 		return res;
 	}
 

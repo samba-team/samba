@@ -746,9 +746,12 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 	struct smb_filename *result = NULL;
 	struct files_struct *fsp = NULL;
 	char *path = NULL, *next = NULL;
-	int flags = O_NOFOLLOW|O_DIRECTORY;
 	int fd;
 	NTSTATUS status;
+	struct vfs_open_how how = {
+		.flags = O_NOFOLLOW|O_DIRECTORY,
+		.mode = 0,
+	};
 
 	DBG_DEBUG("path_in=%s\n", path_in);
 
@@ -765,7 +768,7 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 	 * fsp->fsp_flags.is_pathref will make us become_root() in the
 	 * non-O_PATH case, which would cause a security problem.
 	 */
-	flags |= O_PATH;
+	how.flags |= O_PATH;
 #else
 #ifdef O_SEARCH
 	/*
@@ -776,7 +779,7 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 	 * function, without either we will incorrectly require also
 	 * the "r" bit when traversing the directory hierarchy.
 	 */
-	flags |= O_SEARCH;
+	how.flags |= O_SEARCH;
 #endif
 #endif
 
@@ -807,8 +810,7 @@ next:
 		dirfsp,
 		&rel_fname,
 		fsp,
-		flags,
-		0);
+		&how);
 
 	if ((fd == -1) && (errno == ENOENT)) {
 		status = get_real_filename_at(
@@ -828,8 +830,7 @@ next:
 			dirfsp,
 			&rel_fname,
 			fsp,
-			flags,
-			0);
+			&how);
 	}
 
 	if ((fd == -1) && (errno == ENOTDIR)) {

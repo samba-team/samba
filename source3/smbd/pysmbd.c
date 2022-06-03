@@ -168,6 +168,7 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 				  int flags,
 				  struct files_struct **_fsp)
 {
+	struct vfs_open_how how = { .flags = flags, .mode = 0644 };
 	struct smb_filename *smb_fname = NULL;
 	int fd;
 	mode_t saved_umask;
@@ -209,8 +210,7 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 			    fspcwd,
 			    smb_fname,
 			    fsp,
-			    flags,
-			    00644);
+			    &how);
 
 	umask(saved_umask);
 

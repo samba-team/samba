@@ -1237,8 +1237,7 @@ static int virusfilter_vfs_openat(struct vfs_handle_struct *handle,
 				  const struct files_struct *dirfsp,
 				  const struct smb_filename *smb_fname_in,
 				  struct files_struct *fsp,
-				  int flags,
-				  mode_t mode)
+				  const struct vfs_open_how *how)
 {
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	struct virusfilter_config *config = NULL;
@@ -1291,7 +1290,7 @@ static int virusfilter_vfs_openat(struct vfs_handle_struct *handle,
 		goto virusfilter_vfs_open_next;
 	}
 
-	if (flags & O_TRUNC) {
+	if (how->flags & O_TRUNC) {
 		DBG_INFO("Not scanned: Open flags have O_TRUNC: %s/%s\n",
 			 cwd_fname, fname);
 		goto virusfilter_vfs_open_next;
@@ -1402,7 +1401,7 @@ static int virusfilter_vfs_openat(struct vfs_handle_struct *handle,
 	TALLOC_FREE(smb_fname);
 
 virusfilter_vfs_open_next:
-	return SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname_in, fsp, flags, mode);
+	return SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname_in, fsp, how);
 
 virusfilter_vfs_open_fail:
 	TALLOC_FREE(smb_fname);

@@ -763,8 +763,7 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 			      const struct files_struct *dirfsp,
 			      const struct smb_filename *smb_fname,
 			      files_struct *fsp,
-			      int flags,
-			      mode_t mode)
+			      const struct vfs_open_how *how)
 {
 	struct smb_filename *name = NULL;
 	bool became_root = false;
@@ -804,13 +803,17 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 		became_root = true;
 	}
 
-	if (flags & O_DIRECTORY) {
+	if (how->flags & O_DIRECTORY) {
 		glfd = glfs_opendir(handle->data, smb_fname->base_name);
-	} else if (flags & O_CREAT) {
-		glfd = glfs_creat(handle->data, smb_fname->base_name, flags,
-				  mode);
+	} else if (how->flags & O_CREAT) {
+		glfd = glfs_creat(handle->data,
+				  smb_fname->base_name,
+				  how->flags,
+				  how->mode);
 	} else {
-		glfd = glfs_open(handle->data, smb_fname->base_name, flags);
+		glfd = glfs_open(handle->data,
+				 smb_fname->base_name,
+				 how->flags);
 	}
 
 	if (became_root) {

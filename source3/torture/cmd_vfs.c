@@ -298,16 +298,13 @@ static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 
 static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	int flags;
-	mode_t mode;
+	struct vfs_open_how how = { .mode = 0400, };
 	const char *flagstr;
 	files_struct *fsp;
 	struct files_struct *fspcwd = NULL;
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 	int fd;
-
-	mode = 00400;
 
 	if (argc < 3 || argc > 5) {
 		printf("Usage: open <filename> <flags> <mode>\n");
@@ -330,42 +327,41 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		printf("        mode defaults to 00400\n");
 		return NT_STATUS_OK;
 	}
-	flags = 0;
 	flagstr = argv[2];
 	while (*flagstr) {
 		switch (*flagstr) {
 		case 'O':
-			flags |= O_RDONLY;
+			how.flags |= O_RDONLY;
 			break;
 		case 'R':
-			flags |= O_RDWR;
+			how.flags |= O_RDWR;
 			break;
 		case 'W':
-			flags |= O_WRONLY;
+			how.flags |= O_WRONLY;
 			break;
 		case 'C':
-			flags |= O_CREAT;
+			how.flags |= O_CREAT;
 			break;
 		case 'E':
-			flags |= O_EXCL;
+			how.flags |= O_EXCL;
 			break;
 		case 'T':
-			flags |= O_TRUNC;
+			how.flags |= O_TRUNC;
 			break;
 		case 'A':
-			flags |= O_APPEND;
+			how.flags |= O_APPEND;
 			break;
 		case 'N':
-			flags |= O_NONBLOCK;
+			how.flags |= O_NONBLOCK;
 			break;
 #ifdef O_SYNC
 		case 'S':
-			flags |= O_SYNC;
+			how.flags |= O_SYNC;
 			break;
 #endif
 #ifdef O_NOFOLLOW
 		case 'F':
-			flags |= O_NOFOLLOW;
+			how.flags |= O_NOFOLLOW;
 			break;
 #endif
 		default:
@@ -374,8 +370,8 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		}
 		flagstr++;
 	}
-	if ((flags & O_CREAT) && argc == 4) {
-		if (sscanf(argv[3], "%ho", (unsigned short *)&mode) == 0) {
+	if ((how.flags & O_CREAT) && argc == 4) {
+		if (sscanf(argv[3], "%ho", (unsigned short *)&how.mode) == 0) {
 			printf("open: error=-1 (invalid mode!)\n");
 			return NT_STATUS_UNSUCCESSFUL;
 		}
@@ -427,8 +423,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 			    fspcwd,
 			    smb_fname,
 			    fsp,
-			    flags,
-			    mode);
+			    &how);
 	if (fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
 		status = map_nt_error_from_unix(errno);
@@ -1733,8 +1728,7 @@ static NTSTATUS cmd_fset_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 
 static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	int flags;
-	mode_t mode;
+	struct vfs_open_how how = { .mode = 0400, };
 	files_struct *fsp;
 	struct files_struct *fspcwd = NULL;
 	struct smb_filename *smb_fname = NULL;
@@ -1747,7 +1741,6 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 		return NT_STATUS_OK;
 	}
 
-	mode = 00400;
 
 	fsp = talloc_zero(vfs, struct files_struct);
 	if (fsp == NULL) {
@@ -1770,31 +1763,29 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 
 	fsp->fsp_name = smb_fname;
 
-#ifdef O_DIRECTORY
-	flags = O_RDONLY|O_DIRECTORY;
-#else
-	/* POSIX allows us to open a directory with O_RDONLY. */
-	flags = O_RDONLY;
-#endif
-
 	status = vfs_at_fspcwd(fsp, vfs->conn, &fspcwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+	how.flags = O_RDWR;
 	fd = SMB_VFS_OPENAT(vfs->conn,
 			    fspcwd,
 			    smb_fname,
 			    fsp,
-			    O_RDWR,
-			    mode);
+			    &how);
 	if (fd == -1 && errno == EISDIR) {
+#ifdef O_DIRECTORY
+		how.flags = O_RDONLY|O_DIRECTORY;
+#else
+	/* POSIX allows us to open a directory with O_RDONLY. */
+		how.flags = O_RDONLY;
+#endif
 		fd = SMB_VFS_OPENAT(vfs->conn,
 				    fspcwd,
 				    smb_fname,
 				    fsp,
-				    flags,
-				    mode);
+				    &how);
 	}
 	if (fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));

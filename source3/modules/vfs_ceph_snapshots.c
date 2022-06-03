@@ -939,8 +939,7 @@ static int ceph_snap_gmt_openat(vfs_handle_struct *handle,
 				const struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname_in,
 				files_struct *fsp,
-				int flags,
-				mode_t mode)
+				const struct vfs_open_how *how)
 {
 	time_t timestamp = 0;
 	struct smb_filename *smb_fname = NULL;
@@ -963,8 +962,7 @@ static int ceph_snap_gmt_openat(vfs_handle_struct *handle,
 					   dirfsp,
 					   smb_fname_in,
 					   fsp,
-					   flags,
-					   mode);
+					   how);
 	}
 
 	ret = ceph_snap_gmt_convert(handle,
@@ -986,8 +984,7 @@ static int ceph_snap_gmt_openat(vfs_handle_struct *handle,
 				  dirfsp,
 				  smb_fname,
 				  fsp,
-				  flags,
-				  mode);
+				  how);
 	if (ret == -1) {
 		saved_errno = errno;
 	}

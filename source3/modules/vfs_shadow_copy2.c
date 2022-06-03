@@ -1542,9 +1542,9 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 			       const struct files_struct *dirfsp,
 			       const struct smb_filename *smb_fname_in,
 			       struct files_struct *fsp,
-			       int flags,
-			       mode_t mode)
+			       const struct vfs_open_how *_how)
 {
+	struct vfs_open_how how = *_how;
 	struct smb_filename *smb_fname = NULL;
 	time_t timestamp = 0;
 	char *stripped = NULL;
@@ -1578,14 +1578,13 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 			 * EINVAL which we carefully map to EROFS. In sum, this
 			 * matches Windows behaviour.
 			 */
-			flags &= ~(O_WRONLY | O_RDWR | O_CREAT);
+			how.flags &= ~(O_WRONLY | O_RDWR | O_CREAT);
 		}
 		return SMB_VFS_NEXT_OPENAT(handle,
 					   dirfsp,
 					   smb_fname_in,
 					   fsp,
-					   flags,
-					   mode);
+					   &how);
 	}
 
 	smb_fname->base_name = shadow_copy2_convert(smb_fname,
@@ -1607,14 +1606,13 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 	 * pwrite() syscall with EINVAL which we carefully map to EROFS. In sum,
 	 * this matches Windows behaviour.
 	 */
-	flags &= ~(O_WRONLY | O_RDWR | O_CREAT);
+	how.flags &= ~(O_WRONLY | O_RDWR | O_CREAT);
 
 	ret = SMB_VFS_NEXT_OPENAT(handle,
 				  dirfsp,
 				  smb_fname,
 				  fsp,
-				  flags,
-				  mode);
+				  &how);
 	if (ret == -1) {
 		saved_errno = errno;
 	}
@@ -2156,7 +2154,9 @@ static int shadow_copy2_get_shadow_copy_data(
 	struct shadow_copy2_private *priv = NULL;
 	struct shadow_copy2_snapentry *tmpentry = NULL;
 	bool get_snaplist = false;
-	int open_flags = O_RDONLY;
+	struct vfs_open_how how = {
+		.flags = O_RDONLY, .mode = 0,
+	};
 	int fd;
 	int ret = -1;
 	NTSTATUS status;
@@ -2198,15 +2198,14 @@ static int shadow_copy2_get_shadow_copy_data(
 	}
 
 #ifdef O_DIRECTORY
-	open_flags |= O_DIRECTORY;
+	how.flags |= O_DIRECTORY;
 #endif
 
 	fd = SMB_VFS_NEXT_OPENAT(handle,
 				 fspcwd,
 				 snapdir_smb_fname,
 				 dirfsp,
-				 open_flags,
-				 0);
+				 &how);
 	if (fd == -1) {
 		DBG_WARNING("SMB_VFS_NEXT_OPEN failed for '%s'"
 			    " - %s\n", snapdir, strerror(errno));
