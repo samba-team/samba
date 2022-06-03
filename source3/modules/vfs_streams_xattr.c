@@ -341,6 +341,11 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 					   how);
 	}
 
+	if (how->resolve != 0) {
+		errno = ENOSYS;
+		return -1;
+	}
+
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
 	SMB_ASSERT(dirfsp == NULL);
 

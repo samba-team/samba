@@ -681,6 +681,11 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 					   how);
 	}
 
+	if (how->resolve != 0) {
+		errno = ENOSYS;
+		return -1;
+	}
+
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
 	SMB_ASSERT(dirfsp == NULL);
 	SMB_ASSERT(VALID_STAT(fsp->base_fsp->fsp_name->st));

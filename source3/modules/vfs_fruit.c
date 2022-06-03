@@ -1758,6 +1758,11 @@ static int fruit_openat(vfs_handle_struct *handle,
 					   how);
 	}
 
+	if (how->resolve != 0) {
+		errno = ENOSYS;
+		return -1;
+	}
+
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
 
 	if (is_afpinfo_stream(smb_fname->stream_name)) {

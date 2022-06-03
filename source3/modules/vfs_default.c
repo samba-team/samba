@@ -701,6 +701,12 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_openat);
 
+	if (how->resolve != 0) {
+		errno = ENOSYS;
+		result = -1;
+		goto out;
+	}
+
 	if (is_named_stream(smb_fname)) {
 		errno = ENOENT;
 		result = -1;

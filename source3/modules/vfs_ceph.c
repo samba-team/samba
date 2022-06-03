@@ -409,6 +409,11 @@ static int cephwrap_openat(struct vfs_handle_struct *handle,
 	bool became_root = false;
 	int result = -ENOENT;
 
+	if (how->resolve != 0) {
+		errno = ENOSYS;
+		return -1;
+	}
+
 	/*
 	 * ceph doesn't have openat().
 	 */

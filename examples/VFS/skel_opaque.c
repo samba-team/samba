@@ -199,6 +199,11 @@ static int skel_openat(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp,
 		       const struct vfs_open_how *how)
 {
+	if (how->resolve != 0) {
+		errno = ENOSYS;
+		return -1;
+	}
+
 	errno = ENOSYS;
 	return -1;
 }

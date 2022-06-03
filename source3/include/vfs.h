@@ -908,6 +908,7 @@ struct vfs_aio_state {
 struct vfs_open_how {
 	int flags;
 	mode_t mode;
+	uint64_t resolve;
 };
 
 /*

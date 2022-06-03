@@ -1553,6 +1553,11 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 	int ret;
 	bool ok;
 
+	if (how.resolve != 0) {
+		errno = ENOSYS;
+		return -1;
+	}
+
 	smb_fname = shadow_copy2_openat_name(
 		talloc_tos(), dirfsp, fsp, smb_fname_in);
 	if (smb_fname == NULL) {

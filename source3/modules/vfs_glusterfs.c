@@ -772,6 +772,12 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_openat);
 
+	if (how->resolve != 0) {
+		END_PROFILE(syscall_openat);
+		errno = ENOSYS;
+		return -1;
+	}
+
 	/*
 	 * Looks like glfs API doesn't have openat().
 	 */
