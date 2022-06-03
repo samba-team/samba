@@ -10,9 +10,9 @@
 	and <filename moreinfo="none">nss_winbind.so</filename> modules for UNIX services.
 	</para>
 
-	<para>Please note that setting this parameter to + can cause problems
+	<para>Please note that setting this parameter to + causes problems
 	with group membership at least on glibc systems, as the character +
-	was used as a special character for NIS in /etc/group.</para>
+	is used as a special character for NIS in /etc/group.</para>
 </description>
 
 <value type="default">\</value>

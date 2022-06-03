@@ -41,6 +41,13 @@
 
     <para><command moreinfo="none">hosts allow = lapland, arvidsjaur</command></para>
 
+    <para>Example 4: allow only hosts in NIS netgroup &quot;foonet&quot;, but 
+    deny access from one particular host</para>
+
+    <para><command moreinfo="none">hosts allow = @foonet</command></para>
+
+    <para><command moreinfo="none">hosts deny = pirate</command></para>
+
     <note><para>Note that access still requires suitable user-level passwords.</para></note>
 
     <para>See <citerefentry><refentrytitle>testparm</refentrytitle>
