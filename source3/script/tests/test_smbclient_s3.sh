@@ -1965,6 +1965,19 @@ EOF
        return 1
     fi
 
+    # User not in NIS group in "valid users" can't login to service
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$DC_USERNAME%$DC_PASSWORD //$SERVER/valid_users_nis_group $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    echo "$out" | grep 'NT_STATUS_ACCESS_DENIED'
+    ret=$?
+
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "test_valid_users:valid_users_nis_group 'User not in NIS group in 'valid users' can't login to service' failed - $ret"
+       return 1
+    fi
+
     # Check user in UNIX, then in NIS group in "valid users" can login to service
     cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$DC_USERNAME%$DC_PASSWORD //$SERVER/valid_users_unix_nis_group $ADDARGS < $tmpfile 2>&1'
     eval echo "$cmd"

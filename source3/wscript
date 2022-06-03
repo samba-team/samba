@@ -139,6 +139,7 @@ def configure(conf):
     conf.CHECK_FUNCS('lutimes utimensat futimens')
     conf.CHECK_FUNCS('mlock munlock mlockall munlockall')
     conf.CHECK_FUNCS('memalign posix_memalign hstrerror')
+    conf.CHECK_FUNCS('getdomainname')
     conf.CHECK_FUNCS_IN('dn_expand _dn_expand __dn_expand', 'resolv')
     conf.CHECK_FUNCS_IN('dn_expand', 'inet')
     conf.CHECK_DECLS('readahead', reverse=True, headers='fcntl.h')
@@ -612,6 +613,9 @@ msg.msg_accrightslen = sizeof(fd);
     conf.CHECK_STRUCTURE_MEMBER('struct dirent', 'd_off',
                                 headers='unistd.h sys/types.h dirent.h',
                                 define='HAVE_DIRENT_D_OFF')
+
+    if (conf.CONFIG_SET('HAVE_GETDOMAINNAME')):
+        conf.DEFINE('HAVE_NETGROUP', '1')
 
     # Look for CUPS
     if Options.options.with_cups:
