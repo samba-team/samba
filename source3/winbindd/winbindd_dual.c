@@ -773,10 +773,6 @@ static void child_process_request(struct winbindd_child *child,
 
 	/* Process command */
 	state->response->result = winbindd_dual_ndrcmd(domain, state);
-
-	DEBUG(1, ("child_process_request: unknown request fn number %d\n",
-		  (int)state->request->cmd));
-	state->response->result = WINBINDD_ERROR;
 }
 
 void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
