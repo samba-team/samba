@@ -151,7 +151,6 @@
 #define smb_buflen(buf) (SVAL(buf,smb_vwv0 + (int)CVAL(buf, smb_wct)*2))
 
 /* the remaining number of bytes in smb buffer 'buf' from pointer 'p'. */
-#define smb_bufrem(buf, p) (smb_buflen(buf)-PTR_DIFF(p, smb_buf(buf)))
 #define smbreq_bufrem(req, p) (req->buflen - PTR_DIFF(p, req->buf))
 
 
