@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "vfs.h"
 #include "proto.h"
+#include "lib/util/string_wrappers.h"
 
 struct files_struct *fcb_or_dos_open(
 	struct smb_request *req,
@@ -33,5 +34,6 @@ struct files_struct *fcb_or_dos_open(
 	uint32_t create_options,
 	uint32_t private_flags);
 bool send_keepalive(int client);
+ssize_t message_push_string(uint8_t **outbuf, const char *str, int flags);
 
 #endif

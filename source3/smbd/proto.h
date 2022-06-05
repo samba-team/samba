@@ -1081,7 +1081,6 @@ bool is_share_read_only_for_token(const char *username,
 
 NTSTATUS srvstr_push_fn(const char *base_ptr, uint16_t smb_flags2, void *dest,
 		      const char *src, int dest_len, int flags, size_t *ret_len);
-ssize_t message_push_string(uint8_t **outbuf, const char *str, int flags);
 
 /* The following definitions come from smbd/statcache.c  */
 
