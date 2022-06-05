@@ -290,11 +290,7 @@ bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
 {
 	assert_valid_stream_smb_fname(smb_fname);
 
-	if (smb_fname->stream_name == NULL) {
-		return false;
-	}
-
-	return true;
+	return (smb_fname->stream_name != NULL);
 }
 
 /****************************************************************************
