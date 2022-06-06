@@ -67,9 +67,7 @@ bool ctdb_logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 
 static void write_to_log(const char *buf, unsigned int len)
 {
-	if (script_log_level <= DEBUGLEVEL) {
-		dbgtext("%*.*s\n", len, len, buf);
-	}
+	DEBUG(script_log_level, ("%*.*s\n", len, len, buf));
 }
 
 /*
