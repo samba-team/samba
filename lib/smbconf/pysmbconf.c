@@ -35,7 +35,6 @@ static void py_raise_SMBConfError(sbcErr err)
 
 	/*
 	 * TODO: have the exception type accept arguments in new/init
-	 * and make the error value accessible as a property
 	 */
 	args = Py_BuildValue("(is)", err, sbcErrorString(err));
 	if (args == NULL) {
@@ -44,11 +43,22 @@ static void py_raise_SMBConfError(sbcErr err)
 		return;
 	}
 	v = PyObject_Call(PyExc_SMBConfError, args, NULL);
-	Py_DECREF(args);
-	if (v != NULL) {
-		PyErr_SetObject((PyObject *) Py_TYPE(v), v);
-		Py_DECREF(v);
+	if (v == NULL) {
+		Py_CLEAR(args);
+		return;
 	}
+	/*
+	 * It's clearer to set an explicit error_code attribute for use in calling
+	 * code to check what kind of SMBConfError was raised.
+	 */
+	if (PyObject_SetAttrString(v, "error_code", PyTuple_GetItem(args, 0)) == -1) {
+		Py_CLEAR(v);
+		Py_CLEAR(args);
+		return;
+	}
+	Py_CLEAR(args);
+	PyErr_SetObject((PyObject *) Py_TYPE(v), v);
+	Py_DECREF(v);
 }
 
 /*
@@ -779,6 +789,25 @@ MODULE_INIT_FUNC(smbconf)
 		Py_DECREF(m);
 		return NULL;
 	}
+
+/*
+ * ADD_FLAGS macro borrowed from source3/libsmb/pylibsmb.c
+ */
+#define ADD_FLAGS(val)	PyModule_AddObject(m, #val, PyLong_FromLong(val))
+
+	ADD_FLAGS(SBC_ERR_OK);
+	ADD_FLAGS(SBC_ERR_NOT_IMPLEMENTED);
+	ADD_FLAGS(SBC_ERR_NOT_SUPPORTED);
+	ADD_FLAGS(SBC_ERR_UNKNOWN_FAILURE);
+	ADD_FLAGS(SBC_ERR_NOMEM);
+	ADD_FLAGS(SBC_ERR_INVALID_PARAM);
+	ADD_FLAGS(SBC_ERR_BADFILE);
+	ADD_FLAGS(SBC_ERR_NO_SUCH_SERVICE);
+	ADD_FLAGS(SBC_ERR_IO_FAILURE);
+	ADD_FLAGS(SBC_ERR_CAN_NOT_COMPLETE);
+	ADD_FLAGS(SBC_ERR_NO_MORE_ITEMS);
+	ADD_FLAGS(SBC_ERR_FILE_EXISTS);
+	ADD_FLAGS(SBC_ERR_ACCESS_DENIED);
 
 	return m;
 }

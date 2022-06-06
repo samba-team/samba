@@ -324,6 +324,27 @@ class SMBConfTests(samba.tests.TestCase):
         names = sconf.share_names()
         self.assertEqual(names, ["hello", "goodnight"])
 
+    def test_error_badfile(self):
+        with self.assertRaises(self.smbconf.SMBConfError) as raised:
+            self.smbconf.init_txt("/foo/bar/baz/_I-dont/.exist/-ok-")
+        self.assertEqual(
+            self.smbconf.SBC_ERR_BADFILE, raised.exception.error_code)
+
+    def test_error_not_supported(self):
+        sconf = self.smbconf.init_txt(self.example_conf_default)
+        with self.assertRaises(self.smbconf.SMBConfError) as raised:
+            sconf.set_global_parameter("client min protocol", "NT1")
+        self.assertEqual(
+            self.smbconf.SBC_ERR_NOT_SUPPORTED, raised.exception.error_code)
+
+    def test_error_no_such_service(self):
+        sconf = self.smbconf.init_txt(self.example_conf_default)
+        with self.assertRaises(self.smbconf.SMBConfError) as raised:
+            sconf.get_share("zilch"),
+        self.assertEqual(
+            self.smbconf.SBC_ERR_NO_SUCH_SERVICE, raised.exception.error_code)
+
+
 
 if __name__ == "__main__":
     import unittest
