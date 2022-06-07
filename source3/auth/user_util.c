@@ -165,11 +165,13 @@ bool user_in_netgroup(TALLOC_CTX *ctx, const char *user, const char *ngname)
 		return false;
 	}
 	if (!strlower_m(lowercase_user)) {
+		TALLOC_FREE(lowercase_user);
 		return false;
 	}
 
 	if (strcmp(user,lowercase_user) == 0) {
 		/* user name was already lower case! */
+		TALLOC_FREE(lowercase_user);
 		return false;
 	}
 
@@ -178,6 +180,7 @@ bool user_in_netgroup(TALLOC_CTX *ctx, const char *user, const char *ngname)
 
 	if (innetgr(ngname, NULL, lowercase_user, nis_domain)) {
 		DEBUG(5,("user_in_netgroup: Found\n"));
+		TALLOC_FREE(lowercase_user);
 		return true;
 	}
 #endif /* HAVE_NETGROUP */
