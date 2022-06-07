@@ -304,6 +304,7 @@ struct debug_settings {
 	bool debug_pid;
 	bool debug_uid;
 	bool debug_class;
+	bool debug_no_stderr_redirect;
 };
 
 void setup_logging(const char *prog_name, enum debug_logtype new_logtype);
