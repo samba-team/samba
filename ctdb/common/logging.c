@@ -148,6 +148,7 @@ static int file_log_setup(TALLOC_CTX *mem_ctx,
 	struct debug_settings settings = {
 		.debug_syslog_format = true,
 		.debug_hires_timestamp = true,
+		.debug_no_stderr_redirect = true,
 	};
 	const char *t = NULL;
 
