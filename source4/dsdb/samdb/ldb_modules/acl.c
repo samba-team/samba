@@ -543,6 +543,7 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	char *instanceName;
 	char *serviceType;
 	char *serviceName;
+	size_t account_name_len;
 	const char *forest_name = samdb_forest_name(ldb, mem_ctx);
 	const char *base_domain = samdb_default_domain_name(ldb, mem_ctx);
 	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
@@ -616,11 +617,18 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 			}
 		}
 	}
+
+	account_name_len = strlen(samAccountName);
+	if (account_name_len && samAccountName[account_name_len - 1] == '$') {
+		/* Account for the '$' character. */
+		--account_name_len;
+	}
+
 	/* instanceName can be samAccountName without $ or dnsHostName
 	 * or "ntds_guid._msdcs.forest_domain for DC objects */
-	if (strlen(instanceName) == (strlen(samAccountName) - 1)
+	if (strlen(instanceName) == account_name_len
 	    && strncasecmp(instanceName, samAccountName,
-			   strlen(samAccountName) - 1) == 0) {
+			   account_name_len) == 0) {
 		goto success;
 	}
 	if ((dnsHostName != NULL) &&
