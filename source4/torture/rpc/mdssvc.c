@@ -264,7 +264,7 @@ static bool test_mdssvc_open_spotlight_disabled(struct torture_context *tctx,
 		data, struct torture_mdsscv_state);
 	struct dcerpc_binding_handle *b = state->p->binding_handle;
 	struct policy_handle ph;
-	const char *localdir = NULL;
+	struct policy_handle nullh;
 	uint32_t device_id;
 	uint32_t unkn2;
 	uint32_t unkn3;
@@ -282,17 +282,12 @@ static bool test_mdssvc_open_spotlight_disabled(struct torture_context *tctx,
 	share_mount_path = torture_setting_string(
 		tctx, "share_mount_path", "/foo/bar");
 
-	localdir = torture_setting_string(
-		tctx, "no_spotlight_localdir", NULL);
-	torture_assert_not_null_goto(
-		tctx, localdir, ok, done,
-		"need 'no_spotlight_localdir' torture option \n");
-
 	device_id_out = device_id = generate_random();
 	unkn2_out = unkn2 = 23;
 	unkn3_out = unkn3 = 0;
 
 	ZERO_STRUCT(ph);
+	ZERO_STRUCT(nullh);
 
 	status = dcerpc_mdssvc_open(b,
 				    tctx,
@@ -315,8 +310,12 @@ static bool test_mdssvc_open_spotlight_disabled(struct torture_context *tctx,
 	torture_assert_u32_equal_goto(tctx, unkn3, unkn3_out,
 				      ok, done, "Bad unkn3\n");
 
-	torture_assert_str_equal_goto(tctx, share_path, localdir, ok, done,
-				      "Wrong share path\n");
+	torture_assert_goto(tctx, share_path[0] == '\0', ok, done,
+			    "Expected empty string as share path\n");
+
+	torture_assert_mem_equal_goto(tctx, &ph, &nullh,
+				      sizeof(ph), ok, done,
+				      "Expected all-zero policy handle\n");
 
 done:
 	return ok;
