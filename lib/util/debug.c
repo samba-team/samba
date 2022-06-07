@@ -1324,7 +1324,8 @@ bool reopen_logs_internal(void)
 	 * If log file was opened or created successfully, take over stderr to
 	 * catch output into logs.
 	 */
-	if (dbgc_config[DBGC_ALL].fd > 0) {
+	if (!state.settings.debug_no_stderr_redirect &&
+	    dbgc_config[DBGC_ALL].fd > 0) {
 		if (dup2(dbgc_config[DBGC_ALL].fd, 2) == -1) {
 			/* Close stderr too, if dup2 can't point it -
 			   at the logfile.  There really isn't much
