@@ -2495,13 +2495,10 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		/*
 		 * Updates the DNS hostname when the client wishes that the
 		 * server should handle this for him
-		 * ("NETR_WS_FLAG_HANDLES_SPN_UPDATE" not set). And this is
-		 * obviously only checked when we do already have a
-		 * "dNSHostName".
+		 * ("NETR_WS_FLAG_HANDLES_SPN_UPDATE" not set).
 		 * See MS-NRPC section 3.5.4.3.9
 		 */
-		if ((old_dns_hostname != NULL) &&
-		    (r->in.query->workstation_info->workstation_flags
+		if ((r->in.query->workstation_info->workstation_flags
 		    & NETR_WS_FLAG_HANDLES_SPN_UPDATE) != 0) {
 			update_dns_hostname = false;
 		}
