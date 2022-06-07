@@ -81,6 +81,9 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 	uint32_t i;
 	uint32_t num_valid = 0;
 
+	D_INFO("WB command sids2xids start.\n"
+	       "Resolving %u SID(s).\n", num_sids);
+
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_sids2xids_state);
 	if (req == NULL) {
@@ -150,8 +153,8 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 			},
 		};
 
-		DEBUG(10, ("SID %d: %s\n", (int)i,
-			   dom_sid_str_buf(&state->sids[i], &buf)));
+		D_DEBUG("SID %u: %s\n",
+			(int)i, dom_sid_str_buf(&state->sids[i], &buf));
 
 		in_cache = wb_sids2xids_in_cache(&state->sids[i], &map);
 		if (in_cache) {
@@ -169,6 +172,7 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	D_DEBUG("Found %u (out of %u) SID(s) in cache.\n", num_valid, num_sids);
 	if (num_valid == num_sids) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
@@ -194,9 +198,13 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 	status = wb_parent_idmap_setup_recv(subreq, &state->cfg);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return;
 	}
 	SMB_ASSERT(state->cfg->num_doms > 0);
+	D_DEBUG("We will loop over %u SID(s) (skipping those already resolved via cache) and over %u domain(s).\n",
+		state->num_sids,
+		state->cfg->num_doms);
 
 	/*
 	 * Now we build a list with all domain
@@ -209,14 +217,26 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 		int domain_index;
 		uint32_t rid = 0;
 		uint32_t di;
+		struct dom_sid_buf buf0, buf1;
 
+		D_DEBUG("%u: Processing SID %s\n",
+			i,
+			dom_sid_str_buf(&state->sids[i], &buf0));
 		if (t->domain_index == UINT32_MAX) {
 			/* ignore already filled entries */
+			D_DEBUG("Ignoring already resolved SID %u: %s\n",
+				i,
+				dom_sid_str_buf(&state->sids[i], &buf0));
 			continue;
 		}
 
 		sid_copy(&domain_sid, &state->sids[i]);
 		sid_split_rid(&domain_sid, &rid);
+		D_DEBUG("%u: Splitted SID %s into domain SID %s and RID %u\n",
+			i,
+			dom_sid_str_buf(&state->sids[i], &buf0),
+			dom_sid_str_buf(&domain_sid, &buf1),
+			rid);
 
 		if (t->type_hint == ID_TYPE_NOT_SPECIFIED) {
 			const char *tmp_name = NULL;
@@ -234,36 +254,45 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 							       &tmp_authority_name);
 			if (NT_STATUS_IS_OK(status)) {
 				t->type_hint = lsa_SidType_to_id_type(sid_type);
+				D_DEBUG("Got a type hint: %d from predefined SID.\n",
+					t->type_hint);
 			}
 		}
 
+		D_DEBUG("Looping over %u domain(s) to find domain SID %s.\n",
+			state->cfg->num_doms,
+			dom_sid_str_buf(&domain_sid, &buf0));
 		for (di = 0; di < state->cfg->num_doms; di++) {
 			struct wb_parent_idmap_config_dom *dom =
 				&state->cfg->doms[di];
 			bool match;
 
-			match = dom_sid_equal(&domain_sid,
-					      &dom->sid);
+			match = dom_sid_equal(&domain_sid, &dom->sid);
 			if (!match) {
 				continue;
 			}
 
 			domain_name = dom->name;
+			D_DEBUG("Found domain '%s'.\n", domain_name);
 			break;
 		}
 		if (domain_name == NULL) {
 			struct winbindd_domain *wb_domain = NULL;
 
+			D_DEBUG("Could not find a domain for domain SID %s. Trying to fill the domain name from list of known domains.\n",
+				dom_sid_str_buf(&domain_sid, &buf0));
 			/*
 			 * Try to fill the name if we already know it
 			 */
 			wb_domain = find_domain_from_sid_noinit(&state->sids[i]);
 			if (wb_domain != NULL) {
 				domain_name = wb_domain->name;
+				D_DEBUG("Found domain '%s' in list of known domains.\n", domain_name);
 			}
 		}
 		if (domain_name == NULL) {
 			domain_name = "";
+			D_DEBUG("Not found domain in list of known domains, setting empty domain name.\n");
 		}
 
 		if (t->type_hint == ID_TYPE_NOT_SPECIFIED) {
@@ -275,6 +304,7 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 				 * Maybe that's already enough for the backend
 				 */
 				t->type_hint = ID_TYPE_BOTH;
+				D_DEBUG("Setting type hint ID_TYPE_BOTH for domain '%s'.\n", domain_name);
 			}
 		}
 
@@ -334,16 +364,19 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	status = wb_lookupsids_recv(subreq, state, &domains, &names);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return;
 	}
 
 	if (domains == NULL) {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		D_WARNING("Failed with NT_STATUS_INTERNAL_ERROR.\n");
 		return;
 	}
 
 	if (names == NULL) {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		D_WARNING("Failed with NT_STATUS_INTERNAL_ERROR.\n");
 		return;
 	}
 
@@ -376,15 +409,18 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 
 		if (n->sid_index >= domains->count) {
 			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			D_WARNING("Failed with NT_STATUS_INTERNAL_ERROR.\n");
 			return;
 		}
 
 		if (domains->domains[n->sid_index].name.string == NULL) {
 			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			D_WARNING("Failed with NT_STATUS_INTERNAL_ERROR.\n");
 			return;
 		}
 		if (domains->domains[n->sid_index].sid == NULL) {
 			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			D_WARNING("Failed with NT_STATUS_INTERNAL_ERROR.\n");
 			return;
 		}
 
@@ -430,12 +466,17 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
  next_domain:
 	state->tried_dclookup = false;
 
+	D_DEBUG("Processing next domain (dom_index=%u, idmap_doms.count=%u, lookup_count=%u).\n",
+		state->dom_index,
+		state->idmap_doms.count,
+		state->lookup_count);
 	if (state->dom_index == state->idmap_doms.count) {
 		if (state->lookup_count != 0) {
 			/*
 			 * We already called wb_lookupsids_send()
 			 * before, so we're done.
 			 */
+			D_DEBUG("We already called wb_lookupsids_send() before, so we're done.\n");
 			tevent_req_done(req);
 			return;
 		}
@@ -454,6 +495,8 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
 			state->lookup_count += 1;
 		}
 
+		D_DEBUG("Prepared %u SID(s) for lookup wb_lookupsids_send().\n",
+			state->lookup_count);
 		if (state->lookup_count == 0) {
 			/*
 			 * no wb_lookupsids_send() needed...
@@ -490,6 +533,7 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
 
 	if (dst->num_ids == 0) {
 		state->dom_index += 1;
+		D_DEBUG("Go to next domain.\n");
 		goto next_domain;
 	}
 
@@ -559,6 +603,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return;
 	}
 
@@ -567,6 +612,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 
 		struct lsa_DomainInfo *d;
 
+		D_DEBUG("Domain controller not found. Calling wb_dsgetdcname_send() to get it.\n");
 		d = &state->idmap_doms.domains[state->dom_index];
 
 		subreq = wb_dsgetdcname_send(
@@ -583,9 +629,9 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	dst = &state->all_ids;
 
 	if (any_nt_status_not_ok(status, result, &status)) {
-		DBG_DEBUG("status=%s, result=%s\n", nt_errstr(status),
-			  nt_errstr(result));
-
+		D_DEBUG("Either status %s or result %s is not ok. Report SIDs as not mapped.\n",
+			nt_errstr(status),
+			nt_errstr(result));
 		/*
 		 * All we can do here is to report "not mapped"
 		 */
@@ -597,6 +643,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 
 	if (src->num_ids != state->map_ids_in.num_ids) {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		D_WARNING("Number of mapped SIDs does not match. Failing with NT_STATUS_INTERNAL_ERROR.\n");
 		return;
 	}
 
@@ -605,6 +652,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 
 		if (src->ids[si].xid.type == ID_TYPE_WB_REQUIRE_TYPE) {
 			if (state->lookup_count == 0) {
+				D_DEBUG("The backend asks for more information (a type_hint), we'll do a lookupsids later.\n");
 				/*
 				 * The backend asks for more information
 				 * (a type_hint), we'll do a lookupsids
@@ -620,11 +668,13 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 			 * Make sure we don't expose ID_TYPE_WB_REQUIRE_TYPE
 			 * outside of winbindd!
 			 */
+			D_DEBUG("lookupsids was not able to provide a type_hint that satisfied the backend. Make sure we don't expose ID_TYPE_WB_REQUIRE_TYPE outside of winbindd!\n");
 			src->ids[si].xid.type = ID_TYPE_NOT_SPECIFIED;
 		}
 
 		if (src->ids[si].xid.type != ID_TYPE_NOT_SPECIFIED) {
-			dst->ids[di].xid  = src->ids[si].xid;
+			dst->ids[di].xid = src->ids[si].xid;
+			D_DEBUG("%u: Setting XID %u\n", si, src->ids[si].xid.id);
 		}
 		dst->ids[di].domain_index = UINT32_MAX; /* mark as valid */
 		idmap_cache_set_sid2unixid(&state->sids[di], &dst->ids[di].xid);
@@ -660,6 +710,7 @@ static void wb_sids2xids_gotdc(struct tevent_req *subreq)
 	status = wb_dsgetdcname_recv(subreq, state, &dcinfo);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return;
 	}
 
@@ -672,6 +723,7 @@ static void wb_sids2xids_gotdc(struct tevent_req *subreq)
 
 		status = wb_dsgetdcname_gencache_set(dom_name, dcinfo);
 		if (tevent_req_nterror(req, status)) {
+			D_WARNING("Failed with %s.\n", nt_errstr(status));
 			return;
 		}
 	}
@@ -708,18 +760,24 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 	uint32_t i;
 
 	if (tevent_req_is_nterror(req, &status)) {
-		DEBUG(5, ("wb_sids_to_xids failed: %s\n", nt_errstr(status)));
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 
 	if (num_xids != state->num_sids) {
-		DEBUG(1, ("%s: Have %u xids, caller wants %u\n", __func__,
-			  (unsigned)state->num_sids, num_xids));
+		D_WARNING("Error. We have resolved only %u XID(s), but caller asked for %u.\n",
+			  (unsigned)state->num_sids, num_xids);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	D_INFO("WB command sids2xids end.\n");
 	for (i=0; i<state->num_sids; i++) {
+		struct dom_sid_buf buf;
 		xids[i] = state->all_ids.ids[i].xid;
+		D_INFO("%u: Found XID %u for SID %s\n",
+		       i,
+		       xids[i].id,
+		       dom_sid_str_buf(&state->sids[i], &buf));
 	}
 
 	return NT_STATUS_OK;
