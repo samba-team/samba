@@ -529,10 +529,10 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 
 static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 				  struct ldb_context *ldb,
-				  const char *spn_value,
+				  const struct ldb_val *spn_value,
 				  uint32_t userAccountControl,
-				  const char *samAccountName,
-				  const char *dnsHostName,
+				  const struct ldb_val *samAccountName,
+				  const struct ldb_val *dnsHostName,
 				  const char *netbios_name,
 				  const char *ntds_guid)
 {
@@ -543,6 +543,7 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	char *instanceName;
 	char *serviceType;
 	char *serviceName;
+	const char *spn_value_str = NULL;
 	size_t account_name_len;
 	const char *forest_name = samdb_forest_name(ldb, mem_ctx);
 	const char *base_domain = samdb_default_domain_name(ldb, mem_ctx);
@@ -551,7 +552,18 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	bool is_dc = (userAccountControl & UF_SERVER_TRUST_ACCOUNT) ||
 		(userAccountControl & UF_PARTIAL_SECRETS_ACCOUNT);
 
-	if (strcasecmp_m(spn_value, samAccountName) == 0) {
+	spn_value_str = talloc_strndup(mem_ctx,
+				       (const char *)spn_value->data,
+				       spn_value->length);
+	if (spn_value_str == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	if (spn_value->length == samAccountName->length &&
+	    strncasecmp((const char *)spn_value->data,
+			(const char *)samAccountName->data,
+			spn_value->length) == 0)
+	{
 		/* MacOS X sets this value, and setting an SPN of your
 		 * own samAccountName is both pointless and safe */
 		return LDB_SUCCESS;
@@ -565,7 +577,7 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 				 "Could not initialize kerberos context.");
 	}
 
-	ret = krb5_parse_name(krb_ctx, spn_value, &principal);
+	ret = krb5_parse_name(krb_ctx, spn_value_str, &principal);
 	if (ret) {
 		krb5_free_context(krb_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
@@ -618,8 +630,10 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	account_name_len = strlen(samAccountName);
-	if (account_name_len && samAccountName[account_name_len - 1] == '$') {
+	account_name_len = samAccountName->length;
+	if (account_name_len &&
+	    samAccountName->data[account_name_len - 1] == '$')
+	{
 		/* Account for the '$' character. */
 		--account_name_len;
 	}
@@ -627,12 +641,18 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	/* instanceName can be samAccountName without $ or dnsHostName
 	 * or "ntds_guid._msdcs.forest_domain for DC objects */
 	if (strlen(instanceName) == account_name_len
-	    && strncasecmp(instanceName, samAccountName,
-			   account_name_len) == 0) {
+	    && strncasecmp(instanceName,
+			   (const char *)samAccountName->data,
+			   account_name_len) == 0)
+	{
 		goto success;
 	}
 	if ((dnsHostName != NULL) &&
-	    (strcasecmp(instanceName, dnsHostName) == 0)) {
+	    strlen(instanceName) == dnsHostName->length &&
+	    (strncasecmp(instanceName,
+			 (const char *)dnsHostName->data,
+			 dnsHostName->length) == 0))
+	{
 		goto success;
 	}
 	if (is_dc) {
@@ -650,10 +670,13 @@ fail:
 	krb5_free_context(krb_ctx);
 	ldb_debug_set(ldb, LDB_DEBUG_WARNING,
 		      "acl: spn validation failed for "
-		      "spn[%s] uac[0x%x] account[%s] hostname[%s] "
+		      "spn[%.*s] uac[0x%x] account[%.*s] hostname[%.*s] "
 		      "nbname[%s] ntds[%s] forest[%s] domain[%s]\n",
-		      spn_value, (unsigned)userAccountControl,
-		      samAccountName, dnsHostName,
+		      (int)spn_value->length, spn_value->data,
+		      (unsigned)userAccountControl,
+		      (int)samAccountName->length, samAccountName->data,
+		      dnsHostName != NULL ? (int)dnsHostName->length : 0,
+		      dnsHostName != NULL ? (const char *)dnsHostName->data : "",
 		      netbios_name, ntds_guid,
 		      forest_name, base_domain);
 	return LDB_ERR_CONSTRAINT_VIOLATION;
@@ -686,9 +709,9 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 	struct ldb_result *netbios_res;
 	struct ldb_dn *partitions_dn = samdb_partitions_dn(ldb, tmp_ctx);
 	uint32_t userAccountControl;
-	const char *samAccountName;
-	const char *dnsHostName;
 	const char *netbios_name;
+	const struct ldb_val *dns_host_name_val = NULL;
+	const struct ldb_val *sam_account_name_val = NULL;
 	struct GUID ntds;
 	char *ntds_guid = NULL;
 
@@ -773,9 +796,31 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	dns_host_name_val = ldb_msg_find_ldb_val(acl_res->msgs[0], "dNSHostName");
+
+	ret = dsdb_msg_get_single_value(req->op.mod.message,
+					"dNSHostName",
+					dns_host_name_val,
+					&dns_host_name_val,
+					req->operation);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	userAccountControl = ldb_msg_find_attr_as_uint(acl_res->msgs[0], "userAccountControl", 0);
-	dnsHostName = ldb_msg_find_attr_as_string(acl_res->msgs[0], "dnsHostName", NULL);
-	samAccountName = ldb_msg_find_attr_as_string(acl_res->msgs[0], "samAccountName", NULL);
+
+	sam_account_name_val = ldb_msg_find_ldb_val(acl_res->msgs[0], "sAMAccountName");
+
+	ret = dsdb_msg_get_single_value(req->op.mod.message,
+					"sAMAccountName",
+					sam_account_name_val,
+					&sam_account_name_val,
+					req->operation);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
 
 	ret = dsdb_module_search(module, tmp_ctx,
 				 &netbios_res, partitions_dn,
@@ -806,10 +851,10 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 	for (i=0; i < el->num_values; i++) {
 		ret = acl_validate_spn_value(tmp_ctx,
 					     ldb,
-					     (char *)el->values[i].data,
+					     &el->values[i],
 					     userAccountControl,
-					     samAccountName,
-					     dnsHostName,
+					     sam_account_name_val,
+					     dns_host_name_val,
 					     netbios_name,
 					     ntds_guid);
 		if (ret != LDB_SUCCESS) {

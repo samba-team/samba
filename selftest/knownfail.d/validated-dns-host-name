@@ -1,3 +1,0 @@
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_spn\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_dns_host_name_spn_matching_account_name_new\(
-^samba4.ldap.acl.python.*__main__.AclModifyTests.test_modify_spn_matching_dns_host_name_invalid\(
