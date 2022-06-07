@@ -1,15 +1,2 @@
-^samba.tests.py_credentials.samba.tests.py_credentials.PyCredentialsTests.test_set_dns_hostname_invalid_suffix\(
-^samba.tests.py_credentials.samba.tests.py_credentials.PyCredentialsTests.test_set_dns_hostname_invalid_validated_write\(
-^samba.tests.py_credentials.samba.tests.py_credentials.PyCredentialsTests.test_set_dns_hostname_invalid_write_property\(
-^samba4.rpc.netlogon on ncacn_ip_tcp with bigendian.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon on ncacn_ip_tcp with seal,padcheck.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon on ncacn_ip_tcp with validate.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon on ncacn_np with bigendian.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon on ncacn_np with seal,padcheck.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon on ncacn_np with validate.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon on ncalrpc with bigendian.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon on ncalrpc with seal,padcheck.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon on ncalrpc with validate.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon with bigendian.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon with seal,padcheck.netlogon.GetDomainInfo\(
-^samba4.rpc.netlogon with validate.netlogon.GetDomainInfo\(
+^samba.tests.py_credentials.samba.tests.py_credentials.PyCredentialsTests.test_set_dns_hostname_valid\(
+^samba.tests.py_credentials.samba.tests.py_credentials.PyCredentialsTests.test_set_dns_hostname_valid_denied\(

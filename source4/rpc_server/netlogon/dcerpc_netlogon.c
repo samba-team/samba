@@ -2450,7 +2450,8 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	sam_ctx = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
+	/* We want to avoid connecting as system. */
+	sam_ctx = dcesrv_samdb_connect_as_user(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -2607,7 +2608,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			}
 		}
 
-		if (dsdb_replace(sam_ctx, new_msg, 0) != LDB_SUCCESS) {
+		if (dsdb_replace(sam_ctx, new_msg, DSDB_FLAG_FORCE_ALLOW_VALIDATED_DNS_HOSTNAME_SPN_WRITE) != LDB_SUCCESS) {
 			DEBUG(3,("Impossible to update samdb: %s\n",
 				ldb_errstring(sam_ctx)));
 		}
