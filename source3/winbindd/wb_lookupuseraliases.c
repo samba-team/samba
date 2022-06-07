@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "libcli/security/dom_sid.h"
 
 struct wb_lookupuseraliases_state {
 	struct tevent_context *ev;
@@ -37,11 +38,21 @@ struct tevent_req *wb_lookupuseraliases_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_lookupuseraliases_state *state;
+	int i;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_lookupuseraliases_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	D_INFO("WB command lookupuseraliases start.\n"
+	       "Query domain %s for max %d SID(s).\n",
+	       domain->name, num_sids);
+
+	for (i = 0; i < num_sids; i++) {
+		struct dom_sid_buf buf;
+		D_INFO("%d: SID %s\n", i, dom_sid_str_buf(&sids[i], &buf));
 	}
 	state->sids.num_sids = num_sids;
 	state->sids.sids = discard_const_p(struct dom_sid, sids);
@@ -66,6 +77,8 @@ static void wb_lookupuseraliases_done(struct tevent_req *subreq)
 	status = dcerpc_wbint_LookupUserAliases_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (any_nt_status_not_ok(status, result, &status)) {
+		D_WARNING("LookupUserAliases failed with %s.\n",
+			  nt_errstr(status));
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -78,11 +91,18 @@ NTSTATUS wb_lookupuseraliases_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	struct wb_lookupuseraliases_state *state = tevent_req_data(
 		req, struct wb_lookupuseraliases_state);
 	NTSTATUS status;
+	int i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*num_aliases = state->rids.num_rids;
+	D_INFO("WB command lookupuseraliases end.\nGot %d alias(es):\n",
+	       *num_aliases);
+	for (i = 0; i < *num_aliases; i++) {
+		D_INFO("%d: RID %d\n", i, state->rids.rids[i]);
+	}
+
 	*aliases = talloc_move(mem_ctx, &state->rids.rids);
 	return NT_STATUS_OK;
 }
