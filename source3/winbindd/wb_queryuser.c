@@ -18,10 +18,12 @@
 */
 
 #include "includes.h"
+#include "util/debug.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "../libcli/security/security.h"
 #include "libsmb/samlogon_cache.h"
+#include "librpc/gen_ndr/ndr_winbind.h"
 
 struct wb_queryuser_state {
 	struct tevent_context *ev;
@@ -45,11 +47,14 @@ struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct wb_queryuser_state *state;
 	struct wbint_userinfo *info;
+	struct dom_sid_buf buf;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_queryuser_state);
 	if (req == NULL) {
 		return NULL;
 	}
+	D_INFO("WB command queryuser start.\nQuery user sid %s\n",
+	       dom_sid_str_buf(user_sid, &buf));
 	state->ev = ev;
 
 	state->info = talloc_zero(state, struct wbint_userinfo);
@@ -77,13 +82,18 @@ static void wb_queryuser_idmap_setup_done(struct tevent_req *subreq)
 	struct wb_queryuser_state *state = tevent_req_data(
 		req, struct wb_queryuser_state);
 	NTSTATUS status;
+	struct dom_sid_buf buf;
 
 	status = wb_parent_idmap_setup_recv(subreq, &state->idmap_cfg);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("wb_parent_idmap_setup_recv() failed with %s.\n",
+			  nt_errstr(status));
 		return;
 	}
 
+	D_DEBUG("Convert the user SID %s to XID.\n",
+		dom_sid_str_buf(&state->info->user_sid, &buf));
 	subreq = wb_sids2xids_send(
 		state, state->ev, &state->info->user_sid, 1);
 	if (tevent_req_nomem(subreq, req)) {
@@ -104,18 +114,26 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	struct unixid xid;
 	NTSTATUS status;
+	struct dom_sid_buf buf, buf1;
 
 	status = wb_sids2xids_recv(subreq, &xid, 1);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("wb_sids2xids_recv() failed with %s.\n",
+			  nt_errstr(status));
 		return;
 	}
 
 	if ((xid.type != ID_TYPE_UID) && (xid.type != ID_TYPE_BOTH)) {
+		D_WARNING("XID type is %d, should be ID_TYPE_UID or ID_TYPE_BOTH.\n",
+			  xid.type);
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return;
 	}
 
+	D_DEBUG("Received XID %u for SID %s.\n",
+		xid.id,
+		dom_sid_str_buf(&info->user_sid, &buf1));
 	info->uid = xid.id;
 
 	/*
@@ -127,19 +145,26 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 	sid_split_rid(&info->group_sid, NULL);
 	sid_append_rid(&info->group_sid, DOMAIN_RID_USERS);
 
+	D_DEBUG("Preconfigured 'Domain Users' RID %u was used to create group SID %s from user SID %s.\n",
+		DOMAIN_RID_USERS,
+		dom_sid_str_buf(&info->group_sid, &buf),
+		dom_sid_str_buf(&info->user_sid, &buf1));
+
 	info->homedir = talloc_strdup(info, lp_template_homedir());
+	D_DEBUG("Setting 'homedir' to the template '%s'.\n", info->homedir);
 	if (tevent_req_nomem(info->homedir, req)) {
 		return;
 	}
 
 	info->shell = talloc_strdup(info, lp_template_shell());
+	D_DEBUG("Setting 'shell' to the template '%s'.\n", info->shell);
 	if (tevent_req_nomem(info->shell, req)) {
 		return;
 	}
 
 	info3 = netsamlogon_cache_get(state, &info->user_sid);
 	if (info3 != NULL) {
-
+		D_DEBUG("Filling data received from netsamlogon_cache\n");
 		sid_compose(&info->group_sid, info3->base.domain_sid,
 			    info3->base.primary_gid);
 		info->acct_name = talloc_move(
@@ -153,7 +178,9 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 		TALLOC_FREE(info3);
 	}
 
+	NDR_PRINT_DEBUG_LEVEL(DBGLVL_DEBUG, wbint_userinfo, state->info);
 	if (info->domain_name == NULL) {
+		D_DEBUG("Domain name is empty, calling wb_lookupsid_send() to get it.\n");
 		subreq = wb_lookupsid_send(state, state->ev, &info->user_sid);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
@@ -168,6 +195,7 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 	 * was already called.
 	 */
 	child_binding_handle = idmap_child_handle();
+	D_DEBUG("Domain name is set, calling dcerpc_wbint_GetNssInfo_send()\n");
 	subreq = dcerpc_wbint_GetNssInfo_send(
 		state, state->ev, child_binding_handle, info);
 	if (tevent_req_nomem(subreq, req)) {
@@ -191,9 +219,12 @@ static void wb_queryuser_got_domain(struct tevent_req *subreq)
 				   &info->domain_name, &info->acct_name);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("wb_lookupsid_recv failed with %s.\n",
+			  nt_errstr(status));
 		return;
 	}
 
+	NDR_PRINT_DEBUG_LEVEL(DBGLVL_DEBUG, wbint_userinfo, state->info);
 	switch (type) {
 	case SID_NAME_USER:
 	case SID_NAME_COMPUTER:
@@ -210,6 +241,8 @@ static void wb_queryuser_got_domain(struct tevent_req *subreq)
 		sid_copy(&info->group_sid, &info->user_sid);
 		break;
 	default:
+		D_WARNING("Unknown type:%d, return NT_STATUS_NO_SUCH_USER.\n",
+			  type);
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return;
 	}
@@ -220,6 +253,7 @@ static void wb_queryuser_got_domain(struct tevent_req *subreq)
 	 * was already called.
 	 */
 	child_binding_handle = idmap_child_handle();
+	D_DEBUG("About to call dcerpc_wbint_GetNssInfo_send()\n");
 	subreq = dcerpc_wbint_GetNssInfo_send(
 		state, state->ev, child_binding_handle, info);
 	if (tevent_req_nomem(subreq, req)) {
@@ -242,11 +276,13 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 	status = dcerpc_wbint_GetNssInfo_recv(subreq, info, &result);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("GetNssInfo failed with %s.\n", nt_errstr(status));
 		return;
 	}
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) &&
 	    !state->tried_dclookup) {
+		D_DEBUG("GetNssInfo got DOMAIN_CONTROLLER_NOT_FOUND, calling wb_dsgetdcname_send()\n");
 		subreq = wb_dsgetdcname_send(
 			state, state->ev, state->info->domain_name, NULL, NULL,
 			DS_RETURN_DNS_NAME);
@@ -263,6 +299,7 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 	 */
 
 	if (state->info->primary_gid == (gid_t)-1) {
+		D_DEBUG("Calling wb_sids2xids_send() to resolve primary gid.\n");
 		subreq = wb_sids2xids_send(
 			state, state->ev, &info->group_sid, 1);
 		if (tevent_req_nomem(subreq, req)) {
@@ -282,6 +319,7 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 	}
 
 	if (need_group_name && state->info->primary_group_name == NULL) {
+		D_DEBUG("Calling wb_lookupsid_send() to resolve primary group name.\n");
 		subreq = wb_lookupsid_send(state, state->ev, &info->group_sid);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
@@ -291,6 +329,7 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 		return;
 	}
 
+	NDR_PRINT_DEBUG_LEVEL(DBGLVL_DEBUG, wbint_userinfo, state->info);
 	tevent_req_done(req);
 }
 
@@ -308,15 +347,21 @@ static void wb_queryuser_got_dc(struct tevent_req *subreq)
 	status = wb_dsgetdcname_recv(subreq, state, &dcinfo);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("wb_dsgetdcname_recv() failed with %s.\n",
+			  nt_errstr(status));
 		return;
 	}
 
 	state->tried_dclookup = true;
 
+	D_DEBUG("Got DC name, calling wb_dsgetdcname_gencache_set().\n");
 	status = wb_dsgetdcname_gencache_set(info->domain_name, dcinfo);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("wb_dsgetdcname_gencache_set() failed with %s.\n",
+			  nt_errstr(status));
 		return;
 	}
+	NDR_PRINT_DEBUG_LEVEL(DBGLVL_DEBUG, wbint_userinfo, state->info);
 
 	/*
 	 * Note wb_sids2xids_send/recv was called before,
@@ -342,14 +387,20 @@ static void wb_queryuser_got_gid(struct tevent_req *subreq)
 	NTSTATUS status;
 	bool need_group_name = false;
 	const char *tmpl = NULL;
+	struct dom_sid_buf buf;
 
 	status = wb_sids2xids_recv(subreq, &xid, 1);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("wb_sids2xids_recv() failed with %s.\n",
+			  nt_errstr(status));
 		return;
 	}
 
+	D_DEBUG("Got XID %u with type %d.\n", xid.id, xid.type);
 	if ((xid.type != ID_TYPE_GID) && (xid.type != ID_TYPE_BOTH)) {
+		D_WARNING("Returning NT_STATUS_NO_SUCH_USER\n"
+			  "xid.type must be ID_TYPE_UID or ID_TYPE_BOTH.\n");
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return;
 	}
@@ -365,7 +416,11 @@ static void wb_queryuser_got_gid(struct tevent_req *subreq)
 		need_group_name = true;
 	}
 
+	NDR_PRINT_DEBUG_LEVEL(DBGLVL_DEBUG, wbint_userinfo, state->info);
+
 	if (need_group_name && state->info->primary_group_name == NULL) {
+		D_DEBUG("Calling wb_lookupsid_send for group SID %s.\n",
+			  dom_sid_str_buf(&state->info->group_sid, &buf));
 		subreq = wb_lookupsid_send(state, state->ev,
 					   &state->info->group_sid);
 		if (tevent_req_nomem(subreq, req)) {
@@ -376,6 +431,7 @@ static void wb_queryuser_got_gid(struct tevent_req *subreq)
 		return;
 	}
 
+	D_DEBUG("No need to lookup primary group name. Request is done!\n");
 	tevent_req_done(req);
 }
 
@@ -393,6 +449,8 @@ static void wb_queryuser_got_group_name(struct tevent_req *subreq)
 				   &state->info->primary_group_name);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("wb_lookupsid_recv() failed with %s.\n",
+			  nt_errstr(status));
 		return;
 	}
 	tevent_req_done(req);
@@ -405,6 +463,8 @@ NTSTATUS wb_queryuser_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		req, struct wb_queryuser_state);
 	NTSTATUS status;
 
+	D_INFO("WB command queryuser end.\n");
+	NDR_PRINT_DEBUG_LEVEL(DBGLVL_INFO, wbint_userinfo, state->info);
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
