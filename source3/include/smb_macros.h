@@ -151,7 +151,7 @@
 #define smb_buflen(buf) (SVAL(buf,smb_vwv0 + (int)CVAL(buf, smb_wct)*2))
 
 /* the remaining number of bytes in smb buffer 'buf' from pointer 'p'. */
-#define smbreq_bufrem(req, p) (req->buflen - PTR_DIFF(p, req->buf))
+#define smbreq_bufrem(req, p) ((req)->buflen < PTR_DIFF((p), (req)->buf) ? 0 : (req)->buflen - PTR_DIFF((p), (req)->buf))
 
 
 /* Note that chain_size must be available as an extern int to this macro. */

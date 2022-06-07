@@ -344,7 +344,7 @@ size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
 {
 	ssize_t bufrem = smbreq_bufrem(req, src);
 
-	if (bufrem < 0) {
+	if (bufrem == 0) {
 		*err = NT_STATUS_INVALID_PARAMETER;
 		return 0;
 	}
@@ -382,7 +382,7 @@ size_t srvstr_pull_req_talloc(TALLOC_CTX *ctx, struct smb_request *req,
 {
 	ssize_t bufrem = smbreq_bufrem(req, src);
 
-	if (bufrem < 0) {
+	if (bufrem == 0) {
 		return 0;
 	}
 
