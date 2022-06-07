@@ -667,7 +667,8 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 			 struct security_descriptor *sd,
 			 struct dom_sid *sid,
 			 const struct dsdb_attribute *attr,
-			 const struct dsdb_class *objectclass)
+			 const struct dsdb_class *objectclass,
+			 const struct ldb_control *implicit_validated_write_control)
 {
 	int ret;
 	unsigned int i;
@@ -694,34 +695,44 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 		NULL
 	};
 
-	/* if we have wp, we can do whatever we like */
-	if (acl_check_access_on_attribute(module,
-					  tmp_ctx,
-					  sd,
-					  sid,
-					  SEC_ADS_WRITE_PROP,
-					  attr, objectclass) == LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return LDB_SUCCESS;
-	}
+	if (implicit_validated_write_control != NULL) {
+		/*
+		 * The validated write control dispenses with ACL
+		 * checks. We act as if we have an implicit Self Write
+		 * privilege, but, assuming we don't have Write
+		 * Property, still proceed with further validation
+		 * checks.
+		 */
+	} else {
+		/* if we have wp, we can do whatever we like */
+		if (acl_check_access_on_attribute(module,
+						  tmp_ctx,
+						  sd,
+						  sid,
+						  SEC_ADS_WRITE_PROP,
+						  attr, objectclass) == LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return LDB_SUCCESS;
+		}
 
-	ret = acl_check_extended_right(tmp_ctx,
-				       module,
-				       req,
-				       objectclass,
-				       sd,
-				       acl_user_token(module),
-				       GUID_DRS_VALIDATE_SPN,
-				       SEC_ADS_SELF_WRITE,
-				       sid);
+		ret = acl_check_extended_right(tmp_ctx,
+					       module,
+					       req,
+					       objectclass,
+					       sd,
+					       acl_user_token(module),
+					       GUID_DRS_VALIDATE_SPN,
+					       SEC_ADS_SELF_WRITE,
+					       sid);
 
-	if (ret != LDB_SUCCESS) {
-		dsdb_acl_debug(sd, acl_user_token(module),
-			       req->op.mod.message->dn,
-			       true,
-			       10);
-		talloc_free(tmp_ctx);
-		return ret;
+		if (ret != LDB_SUCCESS) {
+			dsdb_acl_debug(sd, acl_user_token(module),
+				       req->op.mod.message->dn,
+				       true,
+				       10);
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 	}
 
 	/*
@@ -809,7 +820,8 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 				   struct security_descriptor *sd,
 				   struct dom_sid *sid,
 				   const struct dsdb_attribute *attr,
-				   const struct dsdb_class *objectclass)
+				   const struct dsdb_class *objectclass,
+				   const struct ldb_control *implicit_validated_write_control)
 {
 	int ret;
 	unsigned i;
@@ -845,35 +857,45 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 		return ldb_oom(ldb);
 	}
 
-	/* if we have wp, we can do whatever we like */
-	ret = acl_check_access_on_attribute(module,
-					    tmp_ctx,
-					    sd,
-					    sid,
-					    SEC_ADS_WRITE_PROP,
-					    attr, objectclass);
-	if (ret == LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return LDB_SUCCESS;
-	}
+	if (implicit_validated_write_control != NULL) {
+		/*
+		 * The validated write control dispenses with ACL
+		 * checks. We act as if we have an implicit Self Write
+		 * privilege, but, assuming we don't have Write
+		 * Property, still proceed with further validation
+		 * checks.
+		 */
+	} else {
+		/* if we have wp, we can do whatever we like */
+		ret = acl_check_access_on_attribute(module,
+						    tmp_ctx,
+						    sd,
+						    sid,
+						    SEC_ADS_WRITE_PROP,
+						    attr, objectclass);
+		if (ret == LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return LDB_SUCCESS;
+		}
 
-	ret = acl_check_extended_right(tmp_ctx,
-				       module,
-				       req,
-				       objectclass,
-				       sd,
-				       acl_user_token(module),
-				       GUID_DRS_DNS_HOST_NAME,
-				       SEC_ADS_SELF_WRITE,
-				       sid);
+		ret = acl_check_extended_right(tmp_ctx,
+					       module,
+					       req,
+					       objectclass,
+					       sd,
+					       acl_user_token(module),
+					       GUID_DRS_DNS_HOST_NAME,
+					       SEC_ADS_SELF_WRITE,
+					       sid);
 
-	if (ret != LDB_SUCCESS) {
-		dsdb_acl_debug(sd, acl_user_token(module),
-			       req->op.mod.message->dn,
-			       true,
-			       10);
-		talloc_free(tmp_ctx);
-		return ret;
+		if (ret != LDB_SUCCESS) {
+			dsdb_acl_debug(sd, acl_user_token(module),
+				       req->op.mod.message->dn,
+				       true,
+				       10);
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 	}
 
 	/*
@@ -1621,6 +1643,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct dom_sid *sid = NULL;
 	struct ldb_control *as_system;
 	struct ldb_control *is_undelete;
+	struct ldb_control *implicit_validated_write_control = NULL;
 	bool userPassword;
 	bool password_rights_checked = false;
 	TALLOC_CTX *tmp_ctx;
@@ -1646,6 +1669,12 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	is_undelete = ldb_request_get_control(req, DSDB_CONTROL_RESTORE_TOMBSTONE_OID);
+
+	implicit_validated_write_control = ldb_request_get_control(
+		req, DSDB_CONTROL_FORCE_ALLOW_VALIDATED_DNS_HOSTNAME_SPN_WRITE_OID);
+	if (implicit_validated_write_control != NULL) {
+		implicit_validated_write_control->critical = 0;
+	}
 
 	/* Don't print this debug statement if elements[0].name is going to be NULL */
 	if (msg->num_elements > 0) {
@@ -1803,7 +1832,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 					    sd,
 					    sid,
 					    attr,
-					    objectclass);
+					    objectclass,
+					    implicit_validated_write_control);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
@@ -1815,7 +1845,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 						      sd,
 						      sid,
 						      attr,
-						      objectclass);
+						      objectclass,
+						      implicit_validated_write_control);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
@@ -1826,6 +1857,9 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			 * distinguishedName is removed by the
 			 * tombstone_reanimate module
 			 */
+			continue;
+		} else if (implicit_validated_write_control != NULL) {
+			/* Allow the update. */
 			continue;
 		} else {
 			ret = acl_check_access_on_attribute(module,
