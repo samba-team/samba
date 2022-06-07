@@ -4546,6 +4546,13 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 		}
 	}
 
+	if (dsdb_flags & DSDB_FLAG_FORCE_ALLOW_VALIDATED_DNS_HOSTNAME_SPN_WRITE) {
+		ret = ldb_request_add_control(req, DSDB_CONTROL_FORCE_ALLOW_VALIDATED_DNS_HOSTNAME_SPN_WRITE_OID, true, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	return LDB_SUCCESS;
 }
 
