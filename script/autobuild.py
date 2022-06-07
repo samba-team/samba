@@ -480,10 +480,11 @@ tasks = {
     # MIT Kerberos from the current system.  Runtime behaviour is
     # confirmed via the ktest (static ccache and keytab) environment
 
+    # This environment also used to confirm we can still build with --with-libunwind
     "samba-ktest-mit": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer --without-ad-dc --with-system-mitkrb5 " + samba_configure_params),
+            ("configure", "./configure.developer --without-ad-dc --with-libunwind --with-system-mitkrb5 " + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ktest", # ktest is also tested in fileserver, samba and

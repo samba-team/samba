@@ -222,9 +222,13 @@ _PUBLIC_ void smb_panic(const char *why)
 void log_stack_trace(void)
 {
 #ifdef HAVE_LIBUNWIND
-	/* Try to use libunwind before any other technique since on ia64
-	 * libunwind correctly walks the stack in more circumstances than
-	 * backtrace.
+	/*
+	 * --with-libunwind is required to use libunwind, the
+	 * backtrace_symbols() code below is the default.
+	 *
+	 * This code is available because a previous version of this
+	 * comment asserted that on ia64 libunwind correctly walks the
+	 * stack in more circumstances than backtrace.
 	 */
 	unw_cursor_t cursor;
 	unw_context_t uc;

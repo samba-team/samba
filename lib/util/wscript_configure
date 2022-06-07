@@ -1,23 +1,35 @@
 #!/usr/bin/env python
-from waflib import Logs, Options
+from waflib import Logs, Options, Errors
 
 import os, sys
 
 if Options.options.disable_fault_handling:
     conf.DEFINE('HAVE_DISABLE_FAULT_HANDLING',1)
 
-# backtrace could be in libexecinfo or in libc
+# backtrace could be in libexecinfo or in libc.
+# This is our preferred backtrace handler (more useful output than libunwind as at Ubuntu 20.04 x86_64)
 conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, headers='execinfo.h')
 conf.CHECK_HEADERS('execinfo.h')
 
 conf.SET_TARGET_TYPE('LIBUNWIND', 'EMPTY')
-if conf.check_cfg(package='libunwind-generic',
-                  args='--cflags --libs',
-                  msg='Checking for libunwind',
-                  uselib_store='LIBUNWIND',
-                  mandatory=False):
-    if conf.CHECK_HEADERS('libunwind.h'):
-        conf.SET_TARGET_TYPE('LIBUNWIND', 'SYSLIB')
+if Options.options.with_libunwind:
+    if conf.check_cfg(package='libunwind-generic',
+                      args='--cflags --libs',
+                      msg='Checking for libunwind',
+                      uselib_store='LIBUNWIND',
+                      mandatory=False):
+        if conf.CHECK_HEADERS('libunwind.h'):
+            conf.SET_TARGET_TYPE('LIBUNWIND', 'SYSLIB')
+    else:
+        raise Errors.WafError('--with-libunwind specified but libunwind not found')
+elif Options.options.with_libunwind == None:
+    if not conf.CONFIG_SET('HAVE_BACKTRACE_SYMBOLS') \
+       and not Options.options.disable_fault_handling:
+        raise Errors.WafError(
+'''backtrace_symbols() not found but
+--with-libunwind not specified.
+Use --without-libunwind to build without internal backtrace support or
+--disable-fault-handling to totally defer fault handling to the OS.''')
 
 conf.CHECK_STRUCTURE_MEMBER('struct statvfs', 'f_frsize', define='HAVE_FRSIZE', headers='sys/statvfs.h')
 

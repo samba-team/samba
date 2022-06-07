@@ -2,6 +2,15 @@ def options(opt):
     ''' This is a bit strange, but disable is the flag, not enable. '''
     opt.add_option('--disable-fault-handling', action='store_true', dest='disable_fault_handling', help=('disable the fault handlers'), default=False)
 
+    # We do not want libunwind by default (backtrace_symbols() in
+    # glibc is better) but allow (eg) IA-64 to build with it where it
+    # might be better (per old comment in fault.c)
+    opt.samba_add_onoff_option('libunwind',
+                               default=None,
+                               help='''Use libunwind instead of the default backtrace_symbols()
+                               from libc, for example on IA-64 where it might give a better
+                               backtrace.''')
+
     opt.add_option('--with-systemd',
                    help=("Enable systemd integration"),
                    action='store_true', dest='enable_systemd')
