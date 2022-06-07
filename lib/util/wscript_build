@@ -84,6 +84,7 @@ bld.SAMBA_SUBSYSTEM('smb-panic',
                     replace
                     samba-debug
                     LIBUNWIND
+                    execinfo
                     ''',
                     local_include=False)
 
