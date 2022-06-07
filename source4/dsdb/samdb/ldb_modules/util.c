@@ -1568,6 +1568,113 @@ int dsdb_get_expected_new_values(TALLOC_CTX *mem_ctx,
 	return LDB_SUCCESS;
 }
 
+
+/*
+ * Get the value of a single-valued attribute from an ADDed message. 'val' will only live as
+ * long as 'msg' and 'original_val' do, and must not be freed.
+ */
+int dsdb_msg_add_get_single_value(const struct ldb_message *msg,
+                                  const char *attr_name,
+                                  const struct ldb_val **val)
+{
+	const struct ldb_message_element *el = NULL;
+
+	/*
+	 * The ldb_msg_normalize() call in ldb_request() ensures that
+	 * there is at most one message element for each
+	 * attribute. Thus, we don't need a loop to deal with an
+	 * LDB_ADD.
+	 */
+	el = ldb_msg_find_element(msg, attr_name);
+	if (el == NULL) {
+		*val = NULL;
+		return LDB_SUCCESS;
+	}
+	if (el->num_values != 1) {
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	*val = &el->values[0];
+	return LDB_SUCCESS;
+}
+
+/*
+ * Get the value of a single-valued attribute after processing a
+ * message. 'operation' is either LDB_ADD or LDB_MODIFY. 'val' will only live as
+ * long as 'msg' and 'original_val' do, and must not be freed.
+ */
+int dsdb_msg_get_single_value(const struct ldb_message *msg,
+			      const char *attr_name,
+			      const struct ldb_val *original_val,
+			      const struct ldb_val **val,
+			      enum ldb_request_type operation)
+{
+	unsigned idx;
+
+	*val = NULL;
+
+	if (operation == LDB_ADD) {
+		if (original_val != NULL) {
+			/* This is an error on the caller's part. */
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		return dsdb_msg_add_get_single_value(msg, attr_name, val);
+	}
+
+	SMB_ASSERT(operation == LDB_MODIFY);
+
+	*val = original_val;
+
+	for (idx = 0; idx < msg->num_elements; ++idx) {
+		const struct ldb_message_element *el = &msg->elements[idx];
+
+		if (ldb_attr_cmp(el->name, attr_name) != 0) {
+			continue;
+		}
+
+		switch (el->flags & LDB_FLAG_MOD_MASK) {
+		case LDB_FLAG_MOD_ADD:
+			if (el->num_values != 1) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+			if (*val != NULL) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+
+			*val = &el->values[0];
+
+			break;
+
+		case LDB_FLAG_MOD_REPLACE:
+			if (el->num_values > 1) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+
+			*val = el->num_values ? &el->values[0] : NULL;
+
+			break;
+
+		case LDB_FLAG_MOD_DELETE:
+			if (el->num_values > 1) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+
+			/*
+			 * If a value was specified for the delete, we don't
+			 * bother checking it matches the value we currently
+			 * have. Any mismatch will be caught later (e.g. in
+			 * ldb_kv_modify_internal).
+			 */
+
+			*val = NULL;
+
+			break;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
 /*
  * This function determines the (last) structural or 88 object class of a passed
  * "objectClass" attribute - per MS-ADTS 3.1.1.1.4 this is the last value.
