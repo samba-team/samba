@@ -39,23 +39,28 @@ struct tevent_req *wb_lookupsid_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_lookupsid_state *state;
+	struct dom_sid_buf buf;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_lookupsid_state);
 	if (req == NULL) {
 		return NULL;
 	}
+
+	D_INFO("WB command lookupsid start.\n");
 	sid_copy(&state->sid, sid);
 	state->ev = ev;
 
 	state->lookup_domain = find_lookup_domain_from_sid(sid);
 	if (state->lookup_domain == NULL) {
-		struct dom_sid_buf buf;
-		DEBUG(5, ("Could not find domain for sid %s\n",
-			  dom_sid_str_buf(sid, &buf)));
+		D_WARNING("Could not find domain for sid %s\n",
+			  dom_sid_str_buf(sid, &buf));
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
 		return tevent_req_post(req, ev);
 	}
 
+	D_DEBUG("Looking up SID %s in domain %s.\n",
+		dom_sid_str_buf(&state->sid, &buf),
+		state->lookup_domain->name);
 	subreq = dcerpc_wbint_LookupSid_send(
 		state, ev, dom_child_handle(state->lookup_domain),
 		&state->sid, &state->type, &state->domname, &state->name);
@@ -90,12 +95,20 @@ NTSTATUS wb_lookupsid_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	struct wb_lookupsid_state *state = tevent_req_data(
 		req, struct wb_lookupsid_state);
 	NTSTATUS status;
+	struct dom_sid_buf buf;
 
+	D_INFO("WB command lookupsid end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 	*type = state->type;
 	*domain = talloc_move(mem_ctx, &state->domname);
 	*name = talloc_move(mem_ctx, &state->name);
+	D_INFO("SID %s has name '%s' with type '%d' in domain '%s'.\n",
+	       dom_sid_str_buf(&state->sid, &buf),
+	       *name,
+	       *type,
+	       *domain);
 	return NT_STATUS_OK;
 }
