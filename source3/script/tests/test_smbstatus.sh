@@ -75,7 +75,7 @@ EOF
 		return
 	fi
 
-	echo "$out" | grep "$userid[ ]*DENY_NONE"
+	echo "$out" | grep "${userid}[ ]*DENY_NONE"
 	ret=$?
 	if [ $ret != 0 ]; then
 		echo "Failed to find userid in smbstatus locked file output"
@@ -132,7 +132,7 @@ EOF
 		return
 	fi
 
-	echo "$out" | grep "$USERNAME[ ]*DENY_NONE"
+	echo "$out" | grep "${USERNAME}[ ]*DENY_NONE"
 	ret=$?
 	if [ $ret != 0 ]; then
 		echo "Failed to find userid in smbstatus locked file output"
