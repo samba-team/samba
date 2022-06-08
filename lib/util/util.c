@@ -36,6 +36,7 @@
 #include "samba_util.h"
 #include "lib/util/select.h"
 #include <libgen.h>
+#include <gnutls/gnutls.h>
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -1099,15 +1100,10 @@ _PUBLIC_ size_t ascii_len_n(const char *src, size_t n)
 
 _PUBLIC_ bool mem_equal_const_time(const void *s1, const void *s2, size_t n)
 {
-	const uint8_t *p1 = s1, *p2 = s2;
-	size_t i = 0;
-	uint8_t sum = 0;
+	/* Ensure we won't overflow the unsigned index used by gnutls. */
+	SMB_ASSERT(n <= UINT_MAX);
 
-	for (i = 0; i < n; i++) {
-		sum |= (p1[i] ^ p2[i]);
-	}
-
-	return sum == 0;
+	return gnutls_memcmp(s1, s2, n) == 0;
 }
 
 struct anonymous_shared_header {

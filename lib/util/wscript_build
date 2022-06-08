@@ -118,6 +118,7 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                     tini
                     smb_strtox
                     smb-panic
+                    gnutls
                     ''',
                     public_deps='systemd systemd-daemon sys_rw',
                     local_include=False)
