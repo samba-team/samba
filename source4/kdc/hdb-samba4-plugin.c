@@ -21,39 +21,19 @@
 
 #include "includes.h"
 #include "kdc/kdc-glue.h"
-#include "kdc/db-glue.h"
-#include "lib/util/samba_util.h"
 #include "lib/param/param.h"
-#include "source4/lib/events/events.h"
 
 static krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, const char *arg)
 {
 	NTSTATUS nt_status;
-	void *ptr;
-	struct samba_kdc_base_context *base_ctx;
-	
-	if (sscanf(arg, "&%p", &ptr) == 1) {
-		base_ctx = talloc_get_type_abort(ptr, struct samba_kdc_base_context);
-	} else if (arg[0] == '\0' || file_exist(arg)) {
-		/* This mode for use in kadmin, rather than in Samba */
-		
-		setup_logging("hdb_samba4", DEBUG_DEFAULT_STDERR);
+	void *ptr = NULL;
+	struct samba_kdc_base_context *base_ctx = NULL;
 
-		base_ctx = talloc_zero(NULL, struct samba_kdc_base_context);
-		if (!base_ctx) {
-			return ENOMEM;
-		}
-
-		base_ctx->ev_ctx = s4_event_context_init(base_ctx);
-		base_ctx->lp_ctx = loadparm_init_global(false);
-		if (arg[0]) {
-			lpcfg_load(base_ctx->lp_ctx, arg);
-		} else {
-			lpcfg_load_default(base_ctx->lp_ctx);
-		}
-	} else {
+	if (sscanf(arg, "&%p", &ptr) != 1) {
 		return EINVAL;
 	}
+
+	base_ctx = talloc_get_type_abort(ptr, struct samba_kdc_base_context);
 
 	/* The global kdc_mem_ctx and kdc_lp_ctx, Disgusting, ugly hack, but it means one less private hook */
 	nt_status = hdb_samba4_create_kdc(base_ctx, context, db);
@@ -90,8 +70,7 @@ static void hdb_samba4_fini(void *ctx)
 
 /* Only used in the hdb-backed keytab code
  * for a keytab of 'samba4&<address>' or samba4, to find
- * kpasswd's key in the main DB, and to
- * copy all the keys into a file (libnet_keytab_export)
+ * kpasswd's key in the main DB
  *
  * The <address> is the string form of a pointer to a talloced struct hdb_samba_context
  */
