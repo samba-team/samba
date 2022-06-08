@@ -1,7 +1,8 @@
 # Common tests
 # Pulled out of existing tests to prevent duplication.
 #
-test_smbclient() {
+test_smbclient()
+{
 	name="$1"
 	cmd="$2"
 	unc="$3"
@@ -9,7 +10,7 @@ test_smbclient() {
 	shift
 	shift
 	subunit_start_test "$name"
-	output=`$VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" $@ 2>&1`
+	output=$($VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" $@ 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		subunit_pass_test "$name"
@@ -19,7 +20,8 @@ test_smbclient() {
 	return $status
 }
 
-test_smbclient_expect_failure() {
+test_smbclient_expect_failure()
+{
 	name="$1"
 	cmd="$2"
 	unc="$3"
@@ -27,7 +29,7 @@ test_smbclient_expect_failure() {
 	shift
 	shift
 	subunit_start_test "$name"
-	output=`$VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" $@ 2>&1`
+	output=$($VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" $@ 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
@@ -37,7 +39,8 @@ test_smbclient_expect_failure() {
 	return $status
 }
 
-test_rpcclient_grep() {
+test_rpcclient_grep()
+{
 	name="$1"
 	cmd="$2"
 	srv="$3"
@@ -47,7 +50,7 @@ test_rpcclient_grep() {
 	shift
 	shift
 	subunit_start_test "$name"
-	output=`$VALGRIND $rpcclient $CONFIGURATION "$srv" -c "$cmd" $@ 2>&1`
+	output=$($VALGRIND $rpcclient $CONFIGURATION "$srv" -c "$cmd" $@ 2>&1)
 	status=$?
 	if [ x$status != x0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
@@ -63,7 +66,8 @@ test_rpcclient_grep() {
 	return $status
 }
 
-test_rpcclient_expect_failure_grep() {
+test_rpcclient_expect_failure_grep()
+{
 	name="$1"
 	cmd="$2"
 	srv="$3"
@@ -73,7 +77,7 @@ test_rpcclient_expect_failure_grep() {
 	shift
 	shift
 	subunit_start_test "$name"
-	output=`$VALGRIND $rpcclient $CONFIGURATION "$srv" -c "$cmd" $@ 2>&1`
+	output=$($VALGRIND $rpcclient $CONFIGURATION "$srv" -c "$cmd" $@ 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
@@ -89,7 +93,8 @@ test_rpcclient_expect_failure_grep() {
 	return $status
 }
 
-kerberos_kinit() {
+kerberos_kinit()
+{
 	kinit_tool="${1}"
 	principal="${2}"
 	password="${3}"
@@ -97,7 +102,7 @@ kerberos_kinit() {
 	kbase=$(basename ${kinit_tool})
 	if [ "${kbase}" = "samba4kinit" ]; then
 		kpassfile=$(mktemp)
-		echo $password > ${kpassfile}
+		echo $password >${kpassfile}
 		$kinit_tool -c ${KRB5CCNAME} --password-file=${kpassfile} $@ $principal
 		status=$?
 		rm -f ${kpassfile}
@@ -108,7 +113,8 @@ kerberos_kinit() {
 	return $status
 }
 
-remove_directory() {
+remove_directory()
+{
 	local xdir=${1}
 	shift
 
