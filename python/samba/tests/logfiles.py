@@ -22,7 +22,8 @@ from samba.tests import TestCaseInTempDir
 from pprint import pprint
 
 HERE = os.path.dirname(__file__)
-SERVER = os.path.join(HERE, '../../../../bin/test_s4_logging')
+S4_SERVER = os.path.join(HERE, '../../../../bin/test_s4_logging')
+S3_SERVER = os.path.join(HERE, '../../../../bin/test_s3_logging')
 
 CLASS_LIST = ["all", "tdb", "printdrivers", "lanman", "smb",
               "rpc_parse", "rpc_srv", "rpc_cli", "passdb", "sam", "auth",
@@ -39,7 +40,7 @@ CLASS_CODES = {k: i for i, k in enumerate(CLASS_LIST)}
 
 
 class S4LoggingTests(TestCaseInTempDir):
-
+    server = S4_SERVER
     def _write_smb_conf(self,
                         default_level=2,
                         default_file="default",
@@ -112,7 +113,7 @@ class S4LoggingTests(TestCaseInTempDir):
         return expected
 
     def _run_s4_logger(self, log_level, *extra_args):
-        cmd = [SERVER,
+        cmd = [self.server,
                '-s', self.smbconf,
                '-L', str(log_level),
                *extra_args]
@@ -371,3 +372,10 @@ class S4LoggingTests(TestCaseInTempDir):
             expected_lines.extend([x.strip() for x in v])
 
         self.assert_string_contains(stderr, expected_lines)
+
+
+class S3LoggingTests(S4LoggingTests):
+    server = S3_SERVER
+    # These tests were developed for testing the test_logger when
+    # linked against CMDLINE_S4 (see lib/util/wscript_build), but can
+    # also run when linked against CMDLINE_S3.

@@ -26,6 +26,10 @@
 #include "includes.h"
 #include "lib/cmdline/cmdline.h"
 
+#ifdef USING_CMDLINE_S3
+#include "lib/util/debug_s3.h"
+#endif
+
 #define BINARY_NAME "test_s4_logging"
 
 static int log_level = 1;
@@ -163,17 +167,18 @@ static int init_daemon(TALLOC_CTX *mem_ctx,
 
 	poptFreeContext(pc);
 
+#ifdef USING_CMDLINE_S3
+	reopen_logs();
+#endif
 	return 0;
 }
 
 
 int main(int argc, const char *argv[])
 {
-	TALLOC_CTX *mem_ctx = NULL;
 	int rc;
 	const char *error = NULL;
-
-	mem_ctx = talloc_init("crazy-logging-test-server.c#main");
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	if (mem_ctx == NULL) {
 		exit(ENOMEM);
 	}

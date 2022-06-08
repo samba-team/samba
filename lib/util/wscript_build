@@ -375,3 +375,12 @@ else:
                                     'popt']),
                      local_include=False,
                      for_selftest=True)
+
+    bld.SAMBA_BINARY('test_s3_logging',
+                     source='tests/test_s4_logging.c',
+                     deps=' '.join(['CMDLINE_S3',
+                                    'samba-util',
+                                    'popt']),
+                     cflags="-D USING_CMDLINE_S3",
+                     local_include=False,
+                     for_selftest=True)
