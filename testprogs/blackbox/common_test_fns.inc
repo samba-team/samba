@@ -10,7 +10,7 @@ test_smbclient()
 	shift
 	shift
 	subunit_start_test "$name"
-	output=$($VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" $@ 2>&1)
+	output=$($VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" "$@" 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		subunit_pass_test "$name"
@@ -29,7 +29,7 @@ test_smbclient_expect_failure()
 	shift
 	shift
 	subunit_start_test "$name"
-	output=$($VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" $@ 2>&1)
+	output=$($VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" "$@" 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
@@ -50,7 +50,7 @@ test_rpcclient_grep()
 	shift
 	shift
 	subunit_start_test "$name"
-	output=$($VALGRIND $rpcclient $CONFIGURATION "$srv" -c "$cmd" $@ 2>&1)
+	output=$($VALGRIND $rpcclient $CONFIGURATION "$srv" -c "$cmd" "$@" 2>&1)
 	status=$?
 	if [ x$status != x0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
@@ -77,7 +77,7 @@ test_rpcclient_expect_failure_grep()
 	shift
 	shift
 	subunit_start_test "$name"
-	output=$($VALGRIND $rpcclient $CONFIGURATION "$srv" -c "$cmd" $@ 2>&1)
+	output=$($VALGRIND $rpcclient $CONFIGURATION "$srv" -c "$cmd" "$@" 2>&1)
 	status=$?
 	if [ x$status = x0 ]; then
 		printf '%s' "$output" | subunit_fail_test "$name"
@@ -103,11 +103,11 @@ kerberos_kinit()
 	if [ "${kbase}" = "samba4kinit" ]; then
 		kpassfile=$(mktemp)
 		echo $password >${kpassfile}
-		$kinit_tool -c ${KRB5CCNAME} --password-file=${kpassfile} $@ $principal
+		$kinit_tool -c ${KRB5CCNAME} --password-file=${kpassfile} "$@" $principal
 		status=$?
 		rm -f ${kpassfile}
 	else
-		echo $password | $kinit_tool $@ $principal
+		echo $password | $kinit_tool "$@" $principal
 		status=$?
 	fi
 	return $status
