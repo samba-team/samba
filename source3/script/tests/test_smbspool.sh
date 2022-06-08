@@ -121,7 +121,7 @@ test_vlp_verify()
 	fi
 
 	jobid=$(echo "$out" | awk '/[0-9]+/ { print $1 };')
-	if [ -z "$jobid" ] || [ $jobid -lt 100 || [ $jobid -gt 2000 ]; then
+	if [ -z "$jobid" ] || [ $jobid -lt 100 ] || [ $jobid -gt 2000 ]; then
 		echo "Invalid jobid: $jobid"
 		echo "$out"
 		return 1
