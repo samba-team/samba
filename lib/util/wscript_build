@@ -369,7 +369,7 @@ else:
                      for_selftest=True)
 
     bld.SAMBA_BINARY('test_s4_logging',
-                     source='tests/test_s4_logging.c',
+                     source='tests/test_logging.c',
                      deps=' '.join(['CMDLINE_S4',
                                     'samba-util',
                                     'popt']),
@@ -377,7 +377,7 @@ else:
                      for_selftest=True)
 
     bld.SAMBA_BINARY('test_s3_logging',
-                     source='tests/test_s4_logging.c',
+                     source='tests/test_logging.c',
                      deps=' '.join(['CMDLINE_S3',
                                     'samba-util',
                                     'popt']),
