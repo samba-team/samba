@@ -13,6 +13,8 @@
     SAMBA_CI_IS_BROKEN_IMAGE: "no"
     SAMBA_CI_TEST_JOB: "samba-o3"
   before_script:
+    # install prerequisites
+    - dnf install -qy diffutils
     # Ensure we are generating correct the container
     - uname -a
     - cat /etc/os-release
