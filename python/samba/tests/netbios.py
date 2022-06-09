@@ -54,3 +54,15 @@ class NetBiosTests(samba.tests.TestCase):
         # can't get the below test to work, disabling
         address = '127.0.0.3'
         res = self.n.refresh_name((self.dc, 0x20), address, self.ifc, timeout=10)
+
+
+class ValidNetbiosNameTests(samba.tests.TestCase):
+
+    def test_valid(self):
+        self.assertTrue(samba.valid_netbios_name("FOO"))
+
+    def test_too_long(self):
+        self.assertFalse(samba.valid_netbios_name("FOO" * 10))
+
+    def test_invalid_characters(self):
+        self.assertFalse(samba.valid_netbios_name("*BLA"))

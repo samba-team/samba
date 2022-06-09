@@ -361,18 +361,6 @@ class RpcInterfaceTestCase(TestCase):
     """DCE/RPC Test case."""
 
 
-class ValidNetbiosNameTests(TestCase):
-
-    def test_valid(self):
-        self.assertTrue(samba.valid_netbios_name("FOO"))
-
-    def test_too_long(self):
-        self.assertFalse(samba.valid_netbios_name("FOO" * 10))
-
-    def test_invalid_characters(self):
-        self.assertFalse(samba.valid_netbios_name("*BLA"))
-
-
 class BlackboxProcessError(Exception):
     """This is raised when check_output() process returns a non-zero exit status
 
