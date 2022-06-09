@@ -190,46 +190,42 @@ bool dcesrv_common_validate_share_name(TALLOC_CTX *mem_ctx, const char *share_na
 	return true;
 }
 
-static struct ldb_context *dcesrv_samdb_connect_common(
+/*
+ * call_session_info is session info for samdb. call_audit_session_info is for
+ * auditing and may be NULL.
+ */
+struct ldb_context *dcesrv_samdb_connect_session_info(
 	TALLOC_CTX *mem_ctx,
 	struct dcesrv_call_state *dce_call,
-	bool as_system)
+	const struct auth_session_info *call_session_info,
+	const struct auth_session_info *call_audit_session_info)
 {
 	struct ldb_context *samdb = NULL;
-	struct auth_session_info *system_session_info = NULL;
-	const struct auth_session_info *call_session_info =
-		dcesrv_call_session_info(dce_call);
 	struct auth_session_info *user_session_info = NULL;
-	struct auth_session_info *ldb_session_info = NULL;
 	struct auth_session_info *audit_session_info = NULL;
 	struct tsocket_address *remote_address = NULL;
-
-	if (as_system) {
-		system_session_info = system_session(dce_call->conn->dce_ctx->lp_ctx);
-		if (system_session_info == NULL) {
-			return NULL;
-		}
-	}
 
 	user_session_info = copy_session_info(mem_ctx, call_session_info);
 	if (user_session_info == NULL) {
 		return NULL;
 	}
 
-	if (dce_call->conn->remote_address != NULL) {
-		remote_address = tsocket_address_copy(dce_call->conn->remote_address,
-						      user_session_info);
-		if (remote_address == NULL) {
+	if (call_audit_session_info != NULL) {
+		audit_session_info = copy_session_info(mem_ctx, call_audit_session_info);
+		if (audit_session_info == NULL) {
+			talloc_free(user_session_info);
 			return NULL;
 		}
 	}
 
-	if (system_session_info != NULL) {
-		ldb_session_info = system_session_info;
-		audit_session_info = user_session_info;
-	} else {
-		ldb_session_info = user_session_info;
-		audit_session_info = NULL;
+	if (dce_call->conn->remote_address != NULL) {
+		remote_address = tsocket_address_copy(dce_call->conn->remote_address,
+						      user_session_info);
+		if (remote_address == NULL) {
+			TALLOC_FREE(audit_session_info);
+			talloc_free(user_session_info);
+			return NULL;
+		}
 	}
 
 	/*
@@ -253,10 +249,11 @@ static struct ldb_context *dcesrv_samdb_connect_common(
 		mem_ctx,
 		dce_call->event_ctx,
 		dce_call->conn->dce_ctx->lp_ctx,
-		ldb_session_info,
+		user_session_info,
 		remote_address,
 		0);
 	if (samdb == NULL) {
+		TALLOC_FREE(audit_session_info);
 		talloc_free(user_session_info);
 		return NULL;
 	}
@@ -264,6 +261,8 @@ static struct ldb_context *dcesrv_samdb_connect_common(
 
 	if (audit_session_info != NULL) {
 		int ret;
+
+		talloc_steal(samdb, audit_session_info);
 
 		ret = ldb_set_opaque(samdb,
 				     DSDB_NETWORK_SESSION_INFO,
@@ -288,8 +287,18 @@ struct ldb_context *dcesrv_samdb_connect_as_system(
 	TALLOC_CTX *mem_ctx,
 	struct dcesrv_call_state *dce_call)
 {
-	return dcesrv_samdb_connect_common(mem_ctx, dce_call,
-					   true /* as_system */);
+	const struct auth_session_info *system_session_info = NULL;
+	const struct auth_session_info *call_session_info = NULL;
+
+	system_session_info = system_session(dce_call->conn->dce_ctx->lp_ctx);
+	if (system_session_info == NULL) {
+		return NULL;
+	}
+
+	call_session_info = dcesrv_call_session_info(dce_call);
+
+	return dcesrv_samdb_connect_session_info(mem_ctx, dce_call,
+						 system_session_info, call_session_info);
 }
 
 /*
@@ -301,6 +310,10 @@ struct ldb_context *dcesrv_samdb_connect_as_user(
 	TALLOC_CTX *mem_ctx,
 	struct dcesrv_call_state *dce_call)
 {
-	return dcesrv_samdb_connect_common(mem_ctx, dce_call,
-					   false /* not as_system */);
+	const struct auth_session_info *call_session_info = NULL;
+
+	call_session_info = dcesrv_call_session_info(dce_call);
+
+	return dcesrv_samdb_connect_session_info(mem_ctx, dce_call,
+						 call_session_info, NULL);
 }

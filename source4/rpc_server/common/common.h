@@ -30,6 +30,7 @@ struct dcesrv_context;
 struct dcesrv_call_state;
 struct ndr_interface_table;
 struct ncacn_packet;
+struct auth_session_info;
 
 struct dcerpc_server_info { 
 	const char *domain_name;
