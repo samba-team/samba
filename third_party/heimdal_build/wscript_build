@@ -670,6 +670,17 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
 
     HEIMDAL_ERRTABLE('HEIMDAL_HEIM_ERR_ET', 'lib/base/heim_err.et')
 
+    krb5_crypto_cflags = []
+    if bld.CONFIG_SET('HAVE_WUSE_AFTER_FREE_1'):
+        krb5_crypto_cflags.append('-Werror=use-after-free=1')
+
+
+    HEIMDAL_SUBSYSTEM('KRB5_CRYPTO',
+        'lib/krb5/crypto.c',
+        includes='../heimdal/lib/krb5 ../heimdal/include',
+        deps='wind hcrypto',
+        cflags=krb5_crypto_cflags)
+
     KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in TO_LIST(
                                    '''acache.c add_et_list.c
                                    addr_families.c appdefault.c
@@ -678,7 +689,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
                                    changepw.c codec.c config_file.c
                                    constants.c convert_creds.c
                                    copy_host_realm.c crc.c creds.c
-                                   crypto.c crypto-aes-sha1.c crypto-aes-sha2.c crypto-algs.c
+                                   crypto-aes-sha1.c crypto-aes-sha2.c crypto-algs.c
                                    crypto-arcfour.c crypto-des3.c crypto-des.c
                                    crypto-des-common.c crypto-evp.c
                                    crypto-null.c crypto-pk.c crypto-rand.c
@@ -712,10 +723,10 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
     HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
         version_script='lib/krb5/version-script.map',
                         includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
-                deps='roken wind asn1 hx509 HEIMDAL_KX509_ASN1 hcrypto com_err HEIMDAL_CONFIG heimbase execinfo samba_intl HEIMDAL_IPC_CLIENT',
+                deps='roken wind asn1 hx509 HEIMDAL_KX509_ASN1 hcrypto com_err HEIMDAL_CONFIG heimbase execinfo samba_intl HEIMDAL_IPC_CLIENT KRB5_CRYPTO',
                 cflags=['-DLOCALSTATEDIR="/2"'] + bld.dynconfig_cflags(),
                         )
-    KRB5_PROTO_SOURCE = KRB5_SOURCE + ['lib/krb5/expand_path.c', 'lib/krb5/plugin.c', 'lib/krb5/context.c']
+    KRB5_PROTO_SOURCE = KRB5_SOURCE + ['lib/krb5/expand_path.c', 'lib/krb5/plugin.c', 'lib/krb5/context.c', 'lib/krb5/crypto.c']
 
     HEIMDAL_AUTOPROTO_PRIVATE('lib/krb5/krb5-private.h', KRB5_PROTO_SOURCE)
     HEIMDAL_AUTOPROTO('lib/krb5/krb5-protos.h', KRB5_PROTO_SOURCE,
