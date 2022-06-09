@@ -2422,6 +2422,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	struct ldb_dn *workstation_dn;
 	struct netr_DomainInformation *domain_info;
 	struct netr_LsaPolicyInformation *lsa_policy_info;
+	struct auth_session_info *workstation_session_info = NULL;
 	uint32_t default_supported_enc_types = 0xFFFFFFFF;
 	bool update_dns_hostname = true;
 	int ret, i;
@@ -2467,6 +2468,33 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		workstation_dn = ldb_dn_new_fmt(mem_ctx, sam_ctx, "<SID=%s>",
 						dom_sid_string(mem_ctx, creds->sid));
 		NT_STATUS_HAVE_NO_MEMORY(workstation_dn);
+
+		/* Get the workstation's session info from the database. */
+		status = authsam_get_session_info_principal(mem_ctx,
+							    dce_call->conn->dce_ctx->lp_ctx,
+							    sam_ctx,
+							    NULL, /* principal */
+							    workstation_dn,
+							    0, /* session_info_flags */
+							    &workstation_session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/*
+		 * Reconnect to samdb as the workstation, now that we have its
+		 * session info. We do this so the database update can be
+		 * attributed to the workstation account in the audit logs --
+		 * otherwise it might be incorrectly attributed to
+		 * SID_NT_ANONYMOUS.
+		 */
+		sam_ctx = dcesrv_samdb_connect_session_info(mem_ctx,
+							    dce_call,
+							    workstation_session_info,
+							    workstation_session_info);
+		if (sam_ctx == NULL) {
+			return NT_STATUS_INVALID_SYSTEM_SERVICE;
+		}
 
 		/* Lookup for attributes in workstation object */
 		ret = gendb_search_dn(sam_ctx, mem_ctx, workstation_dn, &res1,
