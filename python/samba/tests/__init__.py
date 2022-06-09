@@ -37,6 +37,7 @@ import samba.dcerpc.base
 from random import randint
 from random import SystemRandom
 from contextlib import contextmanager
+import shutil
 import string
 try:
     from samba.samdb import SamDB
@@ -294,6 +295,40 @@ class TestCaseInTempDir(TestCase):
             except (OSError, IOError) as e:
                 print("could not remove temporary file: %s" % e,
                       file=sys.stderr)
+
+    def rm_files(self, *files, allow_missing=False, _rm=os.remove):
+        """Remove listed files from the temp directory.
+
+        The files must be true files in the directory itself, not in
+        sub-directories.
+
+        By default a non-existent file will cause a test failure (or
+        error if used outside a test in e.g. tearDown), but if
+        allow_missing is true, the absence will be ignored.
+        """
+        for f in files:
+            path = os.path.join(self.tempdir, f)
+
+            # os.path.join will happily step out of the tempdir,
+            # so let's just check.
+            if os.path.dirname(path) != self.tempdir:
+                raise ValueError("{path} might be outside {self.tempdir}")
+
+            try:
+                _rm(path)
+            except FileNotFoundError as e:
+                if not allow_missing:
+                    raise AssertionError(f"{f} not in {self.tempdir}: {e}")
+
+                print(f"{f} not in {self.tempdir}")
+
+    def rm_dirs(self, *dirs, allow_missing=False):
+        """Remove listed directories from temp directory.
+
+        This works like rm_files, but only removes directories,
+        including their contents.
+        """
+        self.rm_files(*dirs, allow_missing=allow_missing, _rm=shutil.rmtree)
 
 
 def env_loadparm():
