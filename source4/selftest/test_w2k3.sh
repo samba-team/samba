@@ -37,12 +37,12 @@ for bindoptions in padcheck connect sign seal ntlm,sign ntlm,seal $VALIDATE bige
 		esac
 		for t in $tests; do
 			name="$t on $transport with $bindoptions"
-			testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" $OPTIONS $t "$*"
+			testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS $transport:"${server}[${bindoptions}]" $OPTIONS $t "$*"
 		done
 	done
 done
 
 name="RPC-DRSUAPI on ncacn_ip_tcp with seal"
-testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS ncacn_ip_tcp:"$server[seal]" $OPTIONS RPC-DRSUAPI "$*"
+testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS ncacn_ip_tcp:"${server}[seal]" $OPTIONS RPC-DRSUAPI "$*"
 name="RPC-DRSUAPI on ncacn_ip_tcp with seal,bigendian"
-testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS ncacn_ip_tcp:"$server[seal,bigendian]" $OPTIONS RPC-DRSUAPI "$*"
+testit "$name" rpc bin/smbtorture $TORTURE_OPTIONS ncacn_ip_tcp:"${server}[seal,bigendian]" $OPTIONS RPC-DRSUAPI "$*"
