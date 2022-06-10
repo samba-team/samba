@@ -222,6 +222,8 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 	session_info->credentials = NULL;
 
+	session_info->ticket_type = user_info_dc->ticket_type;
+
 	talloc_steal(mem_ctx, session_info);
 	*_session_info = session_info;
 	talloc_free(tmp_ctx);

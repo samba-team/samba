@@ -44,7 +44,7 @@ struct auth_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	dst = talloc(mem_ctx, struct auth_session_info);
+	dst = talloc_zero(mem_ctx, struct auth_session_info);
 	if (dst == NULL) {
 		DBG_ERR("talloc failed\n");
 		TALLOC_FREE(frame);
