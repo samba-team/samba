@@ -54,12 +54,12 @@ drsuapi_tests()
 
 	name="RPC-DRSUAPI on ncacn_ip_tcp with seal"
 	bin/smbtorture \
-		ncacn_ip_tcp:$server[seal] $OPTIONS \
+		ncacn_ip_tcp:${server}[seal] $OPTIONS \
 		RPC-DRSUAPI || on_error "$name"
 
 	name="RPC-DRSUAPI on ncacn_ip_tcp with seal,bigendian"
 	bin/smbtorture \
-		ncacn_ip_tcp:$server[seal,bigendian] $OPTIONS \
+		ncacn_ip_tcp:${server}[seal,bigendian] $OPTIONS \
 		RPC-DRSUAPI || on_error "$name"
 }
 
@@ -82,7 +82,7 @@ ncacn_ip_tcp_tests()
 		for t in $tests; do
 			name="$t on $transport with $bindoptions"
 			bin/smbtorture $TORTURE_OPTIONS \
-				$transport:$server[$bindoptions] \
+				$transport:${server}[$bindoptions] \
 				$OPTIONS $t || on_error "$name"
 		done
 	done
@@ -98,7 +98,7 @@ ncacn_np_tests()
 		for t in $tests; do
 			name="$t on $transport with $bindoptions"
 			bin/smbtorture $TORTURE_OPTIONS \
-				$transport:$server[$bindoptions] \
+				$transport:${server}[$bindoptions] \
 				$OPTIONS $t || on_error "$name"
 		done
 	done
