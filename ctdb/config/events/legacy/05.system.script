@@ -59,7 +59,7 @@ check_thresholds()
 	if validate_percentage "$_warn_threshold" "$_thing"; then
 		if [ "$_usage" -ge "$_warn_threshold" ]; then
 			if [ -r "$_cache" ]; then
-				read _prev <"$_cache"
+				read -r _prev <"$_cache"
 			else
 				_prev=""
 			fi
@@ -99,7 +99,7 @@ set_monitor_filsystem_usage_defaults()
 		done | sort -u | xargs >"$_fs_defaults_cache"
 	fi
 
-	read CTDB_MONITOR_FILESYSTEM_USAGE <"$_fs_defaults_cache"
+	read -r CTDB_MONITOR_FILESYSTEM_USAGE <"$_fs_defaults_cache"
 }
 
 monitor_filesystem_usage()
