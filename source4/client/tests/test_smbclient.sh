@@ -28,7 +28,7 @@ runcmd()
 	shift
 	shift
 	echo "test: $name"
-	$VALGRIND $smbclient $CONFIGURATION //$SERVER/tmp -c "$cmd" -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@
+	$VALGRIND $smbclient $CONFIGURATION //$SERVER/tmp -c "$cmd" -W "$DOMAIN" -U"$USERNAME%$PASSWORD" "$@"
 	status=$?
 	if [ x$status = x0 ]; then
 		echo "success: $name"
@@ -38,9 +38,9 @@ runcmd()
 	return $status
 }
 
-testit "share and server list" $VALGRIND $smbclient -L $SERVER $CONFIGURATION -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=$(expr $failed + 1)
+testit "share and server list" $VALGRIND $smbclient -L $SERVER $CONFIGURATION -W "$DOMAIN" -U"$USERNAME%$PASSWORD" "$@" || failed=$(expr $failed + 1)
 
-testit "share and server list anonymously" $VALGRIND $smbclient -N -L $SERVER $CONFIGURATION $@ || failed=$(expr $failed + 1)
+testit "share and server list anonymously" $VALGRIND $smbclient -N -L $SERVER $CONFIGURATION "$@" || failed=$(expr $failed + 1)
 
 # Use the smbclient binary as our test file
 cat $smbclient >$PREFIX/tmpfile
