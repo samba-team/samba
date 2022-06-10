@@ -43,4 +43,6 @@ NTSTATUS kpasswd_samdb_set_password(TALLOC_CTX *mem_ctx,
 				    enum samPwdChangeReason *reject_reason,
 				    struct samr_DomInfo1 **dominfo);
 
+krb5_error_code kpasswd_check_non_tgt(struct auth_session_info *session_info,
+				      const char **error_string);
 #endif /* _KPASSWD_HELPER_H */
