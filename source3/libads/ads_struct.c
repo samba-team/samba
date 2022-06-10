@@ -130,7 +130,6 @@ static void ads_destroy(ADS_STRUCT **ads)
 #ifdef HAVE_LDAP
 		ads_disconnect(*ads);
 #endif
-		SAFE_FREE((*ads)->server.realm);
 		SAFE_FREE((*ads)->server.workgroup);
 		SAFE_FREE((*ads)->server.ldap_server);
 
@@ -178,7 +177,13 @@ ADS_STRUCT *ads_init(TALLOC_CTX *mem_ctx,
 	ads_zero_ldap(ads);
 #endif
 
-	ads->server.realm = realm? SMB_STRDUP(realm) : NULL;
+	ads->server.realm = talloc_strdup(ads, realm);
+	if (realm != NULL && ads->server.realm == NULL) {
+		DBG_WARNING("Out of memory\n");
+		TALLOC_FREE(ads);
+		return NULL;
+	}
+
 	ads->server.workgroup = workgroup ? SMB_STRDUP(workgroup) : NULL;
 	ads->server.ldap_server = ldap_server? SMB_STRDUP(ldap_server) : NULL;
 
