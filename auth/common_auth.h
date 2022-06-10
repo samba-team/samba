@@ -129,6 +129,9 @@ struct auth4_context {
 	/* Private data for the callbacks on this auth context */
 	void *private_data;
 
+	/* Kerberos context, set up on demand */
+	struct smb_krb5_context *smb_krb5_context;
+
 	struct tevent_req *(*check_ntlm_password_send)(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct auth4_context *auth_ctx,
