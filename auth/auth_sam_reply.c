@@ -416,7 +416,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	user_info_dc = talloc(mem_ctx, struct auth_user_info_dc);
+	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
 
 	/*

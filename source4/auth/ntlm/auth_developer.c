@@ -76,7 +76,7 @@ static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 	}
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	user_info_dc = talloc(mem_ctx, struct auth_user_info_dc);
+	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
 
 	/* This returns a pointer to a struct dom_sid, which is the

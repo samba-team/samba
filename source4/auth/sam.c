@@ -363,7 +363,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_message_element *el;
 
-	user_info_dc = talloc(mem_ctx, struct auth_user_info_dc);
+	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
 
 	tmp_ctx = talloc_new(user_info_dc);

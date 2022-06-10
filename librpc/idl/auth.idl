@@ -75,6 +75,26 @@ interface auth
 		[unique,charset(UTF8),string] char *sanitized_username;
 	} auth_user_info_unix;
 
+	/*
+	 * If the user was authenticated with a Kerberos ticket, this indicates
+	 * the type of the ticket; TGT, or non-TGT (i.e. service ticket). If
+	 * unset, the type is unknown. This indicator is useful for the KDC and
+	 * the kpasswd service, which share the same account and keys. By
+	 * ensuring it is provided with the appopriate ticket type, each service
+	 * avoids accepting a ticket meant for the other.
+	 *
+	 * The heuristic used to determine the type is the presence or absence
+	 * of a REQUESTER_SID buffer in the PAC; we use its presence to assume
+	 * we have a TGT. This heuristic will fail for older Samba versions and
+	 * Windows prior to Nov. 2021 updates, which lack support for this
+	 * buffer.
+	 */
+	typedef enum {
+		TICKET_TYPE_UNKNOWN = 0,
+		TICKET_TYPE_TGT = 1,
+		TICKET_TYPE_NON_TGT = 2
+	} ticket_type;
+
 	/* This is the interim product of the auth subsystem, before
 	 * privileges and local groups are handled */
 	typedef [public] struct {
@@ -83,6 +103,7 @@ interface auth
 		auth_user_info *info;
 		[noprint] DATA_BLOB user_session_key;
 		[noprint] DATA_BLOB lm_session_key;
+		ticket_type ticket_type;
 	} auth_user_info_dc;
 
 	typedef [public] struct {
@@ -112,6 +133,8 @@ interface auth
 		 * We generate this in auth_generate_session_info()
 		 */
 	        GUID unique_session_token;
+
+		ticket_type ticket_type;
 	} auth_session_info;
 
 	typedef [public] struct {
