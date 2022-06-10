@@ -31,6 +31,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_TGT_REVOKED,
     KDC_ERR_TKT_EXPIRED,
     KPASSWD_ACCESSDENIED,
+    KPASSWD_AUTHERROR,
     KPASSWD_HARDERROR,
     KPASSWD_INITIAL_FLAG_NEEDED,
     KPASSWD_MALFORMED,
@@ -778,6 +779,33 @@ class KpasswdTests(KDCBaseTest):
         # This succeeds.
         self._make_tgs_request(creds, service_creds, ticket,
                                expect_error=False)
+
+    # Show that we cannot provide a TGT to kpasswd to change the password.
+    def test_kpasswd_tgt(self):
+        # Create an account for testing, and get a TGT.
+        creds = self._get_creds()
+        tgt = self.get_tgt(creds)
+
+        # Change the sname of the ticket to match that of kadmin/changepw.
+        tgt.set_sname(self.get_kpasswd_sname())
+
+        expected_code = KPASSWD_AUTHERROR
+        expected_msg = b'A TGT may not be used as a ticket to kpasswd'
+
+        # Set the password.
+        new_password = generate_random_password(32, 32)
+        self.kpasswd_exchange(tgt,
+                              new_password,
+                              expected_code,
+                              expected_msg,
+                              mode=self.KpasswdMode.SET)
+
+        # Change the password.
+        self.kpasswd_exchange(tgt,
+                              new_password,
+                              expected_code,
+                              expected_msg,
+                              mode=self.KpasswdMode.CHANGE)
 
     # Test that kpasswd rejects requests with a service ticket.
     def test_kpasswd_non_initial(self):
