@@ -44,13 +44,23 @@ check_thresholds()
 	# script_state_dir set by ctdb_setup_state_dir()
 	# shellcheck disable=SC2154
 	_cache="${script_state_dir}/cache_${_t}"
+	if [ -r "$_cache" ]; then
+		read -r _prev <"$_cache"
+	else
+		_prev=0
+	fi
 	if validate_percentage "$_unhealthy_threshold" "$_thing"; then
 		if [ "$_usage" -ge "$_unhealthy_threshold" ]; then
 			printf 'ERROR: %s utilization %d%% >= threshold %d%%\n' \
 			       "$_thing" \
 			       "$_usage" \
 			       "$_unhealthy_threshold"
-			eval "$_unhealthy_callout"
+			# Only run unhealthy callout if passing the
+			# unhealthy threshold.  That is, if the
+			# previous usage was below the threshold.
+			if [ "$_prev" -lt "$_unhealthy_threshold" ]; then
+				eval "$_unhealthy_callout"
+			fi
 			echo "$_usage" >"$_cache"
 			exit 1
 		fi
@@ -58,11 +68,6 @@ check_thresholds()
 
 	if validate_percentage "$_warn_threshold" "$_thing"; then
 		if [ "$_usage" -ge "$_warn_threshold" ]; then
-			if [ -r "$_cache" ]; then
-				read -r _prev <"$_cache"
-			else
-				_prev=""
-			fi
 			if [ "$_usage" = "$_prev" ]; then
 				return
 			fi
