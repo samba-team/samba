@@ -252,6 +252,7 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 {
 	struct auth_session_info *session_info;
 	NTSTATUS status;
+	krb5_error_code code;
 
 	status = gensec_session_info(gensec_security,
 				     mem_ctx,
@@ -261,6 +262,18 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 						"gensec_session_info failed - %s",
 						nt_errstr(status));
 		return KRB5_KPASSWD_HARDERROR;
+	}
+
+	/*
+	 * Since the kpasswd service shares its keys with the krbtgt, we might
+	 * have received a TGT rather than a kpasswd ticket. We need to check
+	 * the ticket type to ensure that TGTs cannot be misused in this manner.
+	 */
+	code = kpasswd_check_non_tgt(session_info,
+				     error_string);
+	if (code != 0) {
+		DBG_WARNING("%s\n", *error_string);
+		return code;
 	}
 
 	switch(verno) {
