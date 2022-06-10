@@ -1929,12 +1929,12 @@ static uint64_t debug_traceid = 0;
 
 uint64_t debug_traceid_set(uint64_t id)
 {
-    uint64_t old_id = debug_traceid;
-    debug_traceid = id;
-    return old_id;
+	uint64_t old_id = debug_traceid;
+	debug_traceid = id;
+	return old_id;
 }
 
 uint64_t debug_traceid_get(void)
 {
-    return debug_traceid;
+	return debug_traceid;
 }
