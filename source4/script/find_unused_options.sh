@@ -17,7 +17,7 @@ for i in $LIST_GLOBAL; do
 	key=$(echo $i | cut -d ':' -f1)
 	val=$(echo $i | cut -d ':' -f2)
 
-	found=$(grep "$key[ ]*()" $CFILES)
+	found=$(grep "${key}[ ]*()" $CFILES)
 	if test -z "$found"; then
 		echo "Not Used Global: $key() -> $val"
 	fi
@@ -27,7 +27,7 @@ for i in $LIST_LOCAL; do
 	key=$(echo $i | cut -d ':' -f1)
 	val=$(echo $i | cut -d ':' -f2)
 
-	found=$(grep "$key[ ]*(" $CFILES)
+	found=$(grep "${key}[ ]*(" $CFILES)
 
 	if test -z "$found"; then
 		echo "Not Used LOCAL: $key() -> $val"
