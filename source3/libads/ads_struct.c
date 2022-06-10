@@ -130,8 +130,6 @@ static void ads_destroy(ADS_STRUCT **ads)
 #ifdef HAVE_LDAP
 		ads_disconnect(*ads);
 #endif
-		SAFE_FREE((*ads)->server.ldap_server);
-
 		SAFE_FREE((*ads)->auth.realm);
 		SAFE_FREE((*ads)->auth.password);
 		SAFE_FREE((*ads)->auth.user_name);
@@ -190,7 +188,12 @@ ADS_STRUCT *ads_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ads->server.ldap_server = ldap_server? SMB_STRDUP(ldap_server) : NULL;
+	ads->server.ldap_server = talloc_strdup(ads, ldap_server);
+	if (ldap_server != NULL && ads->server.ldap_server == NULL) {
+		DBG_WARNING("Out of memory\n");
+		TALLOC_FREE(ads);
+		return NULL;
+	}
 
 	wrap_flags = lp_client_ldap_sasl_wrapping();
 	if (wrap_flags == -1) {
