@@ -25,10 +25,7 @@ shellcheck_test ()
 		# SC2162: read without -r will mangle backslashes.
 		#         - We never read things with backslashes,
 		#           unnecessary churn.
-		# SC2164: Use cd ... || exit in case cd fails.
-		#         - Most hits are on known directories.  Too
-		#           much churn, maybe later.
-		_excludes="SC1090,SC1091,SC2162,SC2164"
+		_excludes="SC1090,SC1091,SC2162"
 		unit_test shellcheck --exclude="$_excludes" "$@"
 	else
 		ctdb_test_skip "shellcheck not installed"
