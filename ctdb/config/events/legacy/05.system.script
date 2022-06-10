@@ -181,8 +181,10 @@ monitor)
 	# Load/cache database options from configuration file
 	ctdb_get_db_options
 
-	monitor_filesystem_usage
-	monitor_memory_usage
+	rc=0
+	monitor_filesystem_usage || rc=$?
+	monitor_memory_usage || rc=$?
+	exit $rc
 	;;
 esac
 
