@@ -24,16 +24,14 @@ check_private_file_perms()
 	target_dir="$1/private"
 	result=0
 
-	for file in $(ls $target_dir/); do
-		filepath="$target_dir/$file"
-
+	for file in "${target_dir}"/*; do
 		# skip directories/sockets for now
-		if [ ! -f $filepath ]; then
+		if [ ! -f $file ]; then
 			continue
 		fi
 
 		# use stat to get the file permissions, i.e. -rw-------
-		file_perm=$(stat -c "%A" $filepath)
+		file_perm=$(stat -c "%A" $file)
 
 		# then use cut to drop the first 4 chars containing the file type
 		# and owner permissions. What's left is the group and other users
