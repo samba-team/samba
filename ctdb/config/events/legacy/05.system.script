@@ -16,7 +16,7 @@ validate_percentage()
 	"") return 1 ;; # A failure that doesn't need a warning
 	[0-9] | [0-9][0-9] | 100) return 0 ;;
 	*)
-		echo "WARNING: ${1} is an invalid percentage${2:+ in \"}${2}${2:+\"} check"
+		echo "WARNING: ${1} is an invalid percentage in \"${2}\" check"
 		return 1
 		;;
 	esac
