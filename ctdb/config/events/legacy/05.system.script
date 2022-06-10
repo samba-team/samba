@@ -1,7 +1,7 @@
 #!/bin/sh
 # ctdb event script for checking local file system utilization
 
-[ -n "$CTDB_BASE" ] || \
+[ -n "$CTDB_BASE" ] ||
 	CTDB_BASE=$(d=$(dirname "$0") && cd -P "$d" && dirname "$PWD")
 
 . "${CTDB_BASE}/functions"
@@ -10,133 +10,136 @@ load_script_options
 
 ctdb_setup_state_dir "service" "system-monitoring"
 
-validate_percentage ()
+validate_percentage()
 {
-    case "$1" in
-	"") return 1 ;;  # A failure that doesn't need a warning
-	[0-9]|[0-9][0-9]|100) return 0 ;;
-	*) echo "WARNING: ${1} is an invalid percentage${2:+ in \"}${2}${2:+\"} check"
-	   return 1
-    esac
-}
-
-check_thresholds ()
-{
-    _thing="$1"
-    _thresholds="$2"
-    _usage="$3"
-    _unhealthy_callout="$4"
-
-    case "$_thresholds" in
-	*:*)
-	    _warn_threshold="${_thresholds%:*}"
-	    _unhealthy_threshold="${_thresholds#*:}"
-	    ;;
+	case "$1" in
+	"") return 1 ;; # A failure that doesn't need a warning
+	[0-9] | [0-9][0-9] | 100) return 0 ;;
 	*)
-	    _warn_threshold="$_thresholds"
-	    _unhealthy_threshold=""
-    esac
-
-    _t=$(echo "$_thing" | sed -e 's@/@SLASH_@g' -e 's@ @_@g')
-    # script_state_dir set by ctdb_setup_state_dir()
-    # shellcheck disable=SC2154
-    _cache="${script_state_dir}/cache_${_t}"
-    if validate_percentage "$_unhealthy_threshold" "$_thing" ; then
-        if [ "$_usage" -ge "$_unhealthy_threshold" ] ; then
-	    echo "ERROR: ${_thing} utilization ${_usage}% >= threshold ${_unhealthy_threshold}%"
-	    eval "$_unhealthy_callout"
-	    echo "$_usage" >"$_cache"
-	    exit 1
-        fi
-    fi
-
-    if validate_percentage "$_warn_threshold" "$_thing" ; then
-        if [ "$_usage" -ge "$_warn_threshold" ] ; then
-	    if [ -r "$_cache" ] ; then
-		read _prev <"$_cache"
-	    else
-		_prev=""
-	    fi
-	    if [ "$_usage" != "$_prev" ] ; then
-		echo "WARNING: ${_thing} utilization ${_usage}% >= threshold ${_warn_threshold}%"
-		echo "$_usage" >"$_cache"
-	    fi
-	else
-	    if [ -r "$_cache" ] ; then
-		echo "NOTICE: ${_thing} utilization ${_usage}% < threshold ${_warn_threshold}%"
-	    fi
-	    rm -f "$_cache"
-        fi
-    fi
+		echo "WARNING: ${1} is an invalid percentage${2:+ in \"}${2}${2:+\"} check"
+		return 1
+		;;
+	esac
 }
 
-set_monitor_filsystem_usage_defaults ()
+check_thresholds()
 {
-    _fs_defaults_cache="${script_state_dir}/cache_filsystem_usage_defaults"
+	_thing="$1"
+	_thresholds="$2"
+	_usage="$3"
+	_unhealthy_callout="$4"
 
-    if [ ! -r "$_fs_defaults_cache" ] ; then
-	# Determine filesystem for each database directory, generate
-	# an entry to warn at 90%, de-duplicate entries, put all items
-	# on 1 line (so the read below gets everything)
-	for _t in "${CTDB_DBDIR:-${CTDB_VARDIR}}" \
-		      "${CTDB_DBDIR_PERSISTENT:-${CTDB_VARDIR}/persistent}" \
-		      "${CTDB_DBDIR_STATE:-${CTDB_VARDIR}/state}" ; do
-	    df -kP "$_t" | awk 'NR == 2 { printf "%s:90\n", $6 }'
-	done | sort -u | xargs >"$_fs_defaults_cache"
-    fi
+	case "$_thresholds" in
+	*:*)
+		_warn_threshold="${_thresholds%:*}"
+		_unhealthy_threshold="${_thresholds#*:}"
+		;;
+	*)
+		_warn_threshold="$_thresholds"
+		_unhealthy_threshold=""
+		;;
+	esac
 
-    read CTDB_MONITOR_FILESYSTEM_USAGE <"$_fs_defaults_cache"
+	_t=$(echo "$_thing" | sed -e 's@/@SLASH_@g' -e 's@ @_@g')
+	# script_state_dir set by ctdb_setup_state_dir()
+	# shellcheck disable=SC2154
+	_cache="${script_state_dir}/cache_${_t}"
+	if validate_percentage "$_unhealthy_threshold" "$_thing"; then
+		if [ "$_usage" -ge "$_unhealthy_threshold" ]; then
+			echo "ERROR: ${_thing} utilization ${_usage}% >= threshold ${_unhealthy_threshold}%"
+			eval "$_unhealthy_callout"
+			echo "$_usage" >"$_cache"
+			exit 1
+		fi
+	fi
+
+	if validate_percentage "$_warn_threshold" "$_thing"; then
+		if [ "$_usage" -ge "$_warn_threshold" ]; then
+			if [ -r "$_cache" ]; then
+				read _prev <"$_cache"
+			else
+				_prev=""
+			fi
+			if [ "$_usage" != "$_prev" ]; then
+				echo "WARNING: ${_thing} utilization ${_usage}% >= threshold ${_warn_threshold}%"
+				echo "$_usage" >"$_cache"
+			fi
+		else
+			if [ -r "$_cache" ]; then
+				echo "NOTICE: ${_thing} utilization ${_usage}% < threshold ${_warn_threshold}%"
+			fi
+			rm -f "$_cache"
+		fi
+	fi
 }
 
-monitor_filesystem_usage ()
+set_monitor_filsystem_usage_defaults()
 {
-    if [ -z "$CTDB_MONITOR_FILESYSTEM_USAGE" ] ; then
-	set_monitor_filsystem_usage_defaults
-    fi
+	_fs_defaults_cache="${script_state_dir}/cache_filsystem_usage_defaults"
 
-    # Check each specified filesystem, specified in format
-    # <fs_mount>:<fs_warn_threshold>[:fs_unhealthy_threshold]
-    for _fs in $CTDB_MONITOR_FILESYSTEM_USAGE ; do
-	_fs_mount="${_fs%%:*}"
-	_fs_thresholds="${_fs#*:}"
+	if [ ! -r "$_fs_defaults_cache" ]; then
+		# Determine filesystem for each database directory, generate
+		# an entry to warn at 90%, de-duplicate entries, put all items
+		# on 1 line (so the read below gets everything)
+		for _t in "${CTDB_DBDIR:-${CTDB_VARDIR}}" \
+			"${CTDB_DBDIR_PERSISTENT:-${CTDB_VARDIR}/persistent}" \
+			"${CTDB_DBDIR_STATE:-${CTDB_VARDIR}/state}"; do
+			df -kP "$_t" | awk 'NR == 2 { printf "%s:90\n", $6 }'
+		done | sort -u | xargs >"$_fs_defaults_cache"
+	fi
 
-        if [ ! -d "$_fs_mount" ]; then
-            echo "WARNING: Directory ${_fs_mount} does not exist"
-	    continue
-        fi
-
-        # Get current utilization
-        _fs_usage=$(df -kP "$_fs_mount" | \
-			   sed -n -e 's@.*[[:space:]]\([[:digit:]]*\)%.*@\1@p')
-        if [ -z "$_fs_usage" ] ; then
-            echo "WARNING: Unable to get FS utilization for ${_fs_mount}"
-	    continue
-        fi
-
-	check_thresholds "Filesystem ${_fs_mount}" \
-			 "$_fs_thresholds" \
-			 "$_fs_usage"
-    done
+	read CTDB_MONITOR_FILESYSTEM_USAGE <"$_fs_defaults_cache"
 }
 
-dump_memory_info ()
+monitor_filesystem_usage()
 {
-    get_proc "meminfo"
-    ps auxfww
-    set_proc "sysrq-trigger" "m"
+	if [ -z "$CTDB_MONITOR_FILESYSTEM_USAGE" ]; then
+		set_monitor_filsystem_usage_defaults
+	fi
+
+	# Check each specified filesystem, specified in format
+	# <fs_mount>:<fs_warn_threshold>[:fs_unhealthy_threshold]
+	for _fs in $CTDB_MONITOR_FILESYSTEM_USAGE; do
+		_fs_mount="${_fs%%:*}"
+		_fs_thresholds="${_fs#*:}"
+
+		if [ ! -d "$_fs_mount" ]; then
+			echo "WARNING: Directory ${_fs_mount} does not exist"
+			continue
+		fi
+
+		# Get current utilization
+		_fs_usage=$(df -kP "$_fs_mount" |
+			sed -n -e 's@.*[[:space:]]\([[:digit:]]*\)%.*@\1@p')
+		if [ -z "$_fs_usage" ]; then
+			echo "WARNING: Unable to get FS utilization for ${_fs_mount}"
+			continue
+		fi
+
+		check_thresholds "Filesystem ${_fs_mount}" \
+			"$_fs_thresholds" \
+			"$_fs_usage"
+	done
 }
 
-monitor_memory_usage ()
+dump_memory_info()
 {
-    # Defaults
-    if [ -z "$CTDB_MONITOR_MEMORY_USAGE" ] ; then
-	CTDB_MONITOR_MEMORY_USAGE=80
-    fi
+	get_proc "meminfo"
+	ps auxfww
+	set_proc "sysrq-trigger" "m"
+}
 
-    _meminfo=$(get_proc "meminfo")
-    # Intentional word splitting here
-    # shellcheck disable=SC2046
-    set -- $(echo "$_meminfo" | awk '
+monitor_memory_usage()
+{
+	# Defaults
+	if [ -z "$CTDB_MONITOR_MEMORY_USAGE" ]; then
+		CTDB_MONITOR_MEMORY_USAGE=80
+	fi
+
+	_meminfo=$(get_proc "meminfo")
+	# Intentional word splitting here
+	# shellcheck disable=SC2046
+	set -- $(echo "$_meminfo" | awk '
 $1 == "MemAvailable:" { memavail += $2 }
 $1 == "MemFree:"      { memfree  += $2 }
 $1 == "Cached:"       { memfree  += $2 }
@@ -153,14 +156,13 @@ END {
 	print 0
     }
 }')
-    _mem_usage="$1"
+	_mem_usage="$1"
 
-    check_thresholds "System memory" \
-		     "$CTDB_MONITOR_MEMORY_USAGE" \
-		     "$_mem_usage" \
-		     dump_memory_info
+	check_thresholds "System memory" \
+		"$CTDB_MONITOR_MEMORY_USAGE" \
+		"$_mem_usage" \
+		dump_memory_info
 }
-
 
 case "$1" in
 monitor)
