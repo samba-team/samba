@@ -139,8 +139,8 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	}
 
 	if (!netsamlogon_cache_init()) {
-		DEBUG(0,("netsamlogon_cache_store: cannot open %s for write!\n",
-			NETSAMLOGON_TDB));
+		D_WARNING("netsamlogon_cache_store: cannot open %s for write!\n",
+			NETSAMLOGON_TDB);
 		goto fail;
 	}
 
@@ -155,7 +155,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	ret = tdb_store_bystring(netsamlogon_tdb, keystr.buf, data, TDB_INSERT);
 
 	if ((ret == -1) && (tdb_error(netsamlogon_tdb) != TDB_ERR_EXISTS)) {
-		DBG_WARNING("Could not store domain marker for %s: %s\n",
+		D_WARNING("Could not store domain marker for %s: %s\n",
 			    keystr.buf, tdb_errorstr(netsamlogon_tdb));
 		goto fail;
 	}
@@ -253,6 +253,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 	data = tdb_fetch_bystring( netsamlogon_tdb, keystr.buf );
 
 	if (!data.dptr) {
+		D_DEBUG("tdb fetch for %s is empty\n", keystr.buf);
 		return NULL;
 	}
 
@@ -268,15 +269,13 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 		(ndr_pull_flags_fn_t)ndr_pull_netsamlogoncache_entry);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,("netsamlogon_cache_get: failed to pull entry from cache\n"));
+		D_WARNING("netsamlogon_cache_get: failed to pull entry from cache\n");
 		tdb_delete_bystring(netsamlogon_tdb, keystr.buf);
 		TALLOC_FREE(info3);
 		goto done;
 	}
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(netsamlogoncache_entry, &r);
-	}
+	NDR_PRINT_DEBUG_LEVEL(DBGLVL_DEBUG, netsamlogoncache_entry, &r);
 
 	info3 = (struct netr_SamInfo3 *)talloc_memdup(mem_ctx, &r.info3,
 						      sizeof(r.info3));
