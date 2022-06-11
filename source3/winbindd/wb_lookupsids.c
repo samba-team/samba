@@ -116,6 +116,11 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 	struct wb_lookupsids_state *state;
 	uint32_t i;
 
+	D_INFO("WB command lookupsids start.\nLooking up %u SID(s)\n", num_sids);
+	for (i = 0; i < num_sids; i++) {
+		struct dom_sid_buf buf;
+		D_INFO("%u: %s\n", i, dom_sid_str_buf(&sids[i], &buf));
+	}
 	req = tevent_req_create(mem_ctx, &state, struct wb_lookupsids_state);
 	if (req == NULL) {
 		return NULL;
@@ -320,8 +325,10 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 	uint32_t i, num_domains;
 
 	if (!wb_lookupsids_bulk(sid)) {
+		D_DEBUG("wb_lookupsids_bulk() is FALSE\n");
 		return NULL;
 	}
+	D_DEBUG("wb_lookupsids_bulk() is TRUE\n");
 
 	domains = *pdomains;
 	num_domains = talloc_array_length(domains);
@@ -331,6 +338,8 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 		return NULL;
 	}
 
+	D_DEBUG("Searching %u domain(s) for domain '%s'\n",
+		num_domains, wb_domain->name);
 	for (i=0; i<num_domains; i++) {
 		if (domains[i].domain != wb_domain) {
 			continue;
@@ -649,18 +658,19 @@ NTSTATUS wb_lookupsids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		req, struct wb_lookupsids_state);
 	NTSTATUS status;
 
+	D_INFO("WB command lookupsids end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 
 	/*
 	 * The returned names need to match the given sids,
 	 * if not we have a bug in the code!
-	 *
 	 */
 	if (state->res_names->count != state->num_sids) {
-		DEBUG(0, ("res_names->count = %d, expected %d\n",
-			  state->res_names->count, state->num_sids));
+		D_WARNING("Got %u returned name(s), but expected %u!\n",
+			  state->res_names->count, state->num_sids);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -676,5 +686,8 @@ NTSTATUS wb_lookupsids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	*domains = talloc_move(mem_ctx, &state->res_domains);
 	*names = talloc_move(mem_ctx, &state->res_names);
+	D_INFO("Returning %u domain(s) and %u name(s).\n",
+	       (*domains)->count,
+	       (*names)->count);
 	return NT_STATUS_OK;
 }
