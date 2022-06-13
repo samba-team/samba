@@ -692,9 +692,9 @@ retry:
         */
        if ((cp = strchr_m(ads->auth.user_name, '@'))!=0) {
 		*cp++ = '\0';
-		SAFE_FREE(ads->auth.realm);
-		ads->auth.realm = smb_xstrdup(cp);
-		if (!strupper_m(ads->auth.realm)) {
+		TALLOC_FREE(ads->auth.realm);
+		ads->auth.realm = talloc_asprintf_strupper_m(ads, "%s", cp);
+		if (ads->auth.realm == NULL) {
 			TALLOC_FREE(ads);
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}

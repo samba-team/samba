@@ -296,14 +296,10 @@ void net_ads_join_dns_updates(struct net_context *c, TALLOC_CTX *ctx, struct lib
 		goto done;
 	}
 
-	ads_dns->auth.realm = SMB_STRDUP(r->out.dns_domain_name);
+	ads_dns->auth.realm = talloc_asprintf_strupper_m(ads_dns, "%s", r->out.dns_domain_name);
 	if (ads_dns->auth.realm == NULL) {
-		d_fprintf(stderr, _("DNS update failed: out of memory\n"));
-		goto done;
-	}
-
-	if (!strupper_m(ads_dns->auth.realm)) {
-		d_fprintf(stderr, _("strupper_m %s failed\n"), ads_dns->auth.realm);
+		d_fprintf(stderr, _("talloc_asprintf_strupper_m %s failed\n"),
+				  ads_dns->auth.realm);
 		goto done;
 	}
 

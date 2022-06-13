@@ -231,14 +231,18 @@ static PyObject* py_ads_connect(ADS *self,
 	}
 	SAFE_FREE(self->ads_ptr->auth.user_name);
 	SAFE_FREE(self->ads_ptr->auth.password);
-	SAFE_FREE(self->ads_ptr->auth.realm);
+	TALLOC_FREE(self->ads_ptr->auth.realm);
 	if (self->cli_creds) {
 		self->ads_ptr->auth.user_name =
 			SMB_STRDUP(cli_credentials_get_username(self->cli_creds));
 		self->ads_ptr->auth.password =
 			SMB_STRDUP(cli_credentials_get_password(self->cli_creds));
-		self->ads_ptr->auth.realm =
-			SMB_STRDUP(cli_credentials_get_realm(self->cli_creds));
+		self->ads_ptr->auth.realm = talloc_strdup(self->ads_ptr,
+			cli_credentials_get_realm(self->cli_creds));
+		if (self->ads_ptr->auth.realm == NULL) {
+			PyErr_NoMemory();
+			goto err;
+		}
 		self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 		status = ads_connect_user_creds(self->ads_ptr);
 	} else {
@@ -266,10 +270,10 @@ static PyObject* py_ads_connect(ADS *self,
 			goto err;
 		}
 		self->ads_ptr->auth.password = passwd; /* take ownership of this data */
-		self->ads_ptr->auth.realm =
-			SMB_STRDUP(self->ads_ptr->server.realm);
-		if (!strupper_m(self->ads_ptr->auth.realm)) {
-			PyErr_SetString(PyExc_RuntimeError, "Failed to strupper");
+		self->ads_ptr->auth.realm = talloc_asprintf_strupper_m(
+			self->ads_ptr, "%s", self->ads_ptr->server.realm);
+		if (self->ads_ptr->auth.realm == NULL) {
+			PyErr_NoMemory();
 			goto err;
 		}
 		self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;

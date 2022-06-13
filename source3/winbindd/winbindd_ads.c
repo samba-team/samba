@@ -126,7 +126,7 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 	}
 
 	SAFE_FREE(ads->auth.password);
-	SAFE_FREE(ads->auth.realm);
+	TALLOC_FREE(ads->auth.realm);
 
 	ads->auth.renewable = renewable;
 	ads->auth.password = password;
@@ -148,8 +148,8 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 		break;
 	}
 
-	ads->auth.realm = SMB_STRDUP(auth_realm);
-	if (!strupper_m(ads->auth.realm)) {
+	ads->auth.realm = talloc_asprintf_strupper_m(ads, "%s", auth_realm);
+	if (ads->auth.realm == NULL) {
 		status = ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
 		goto out;
 	}

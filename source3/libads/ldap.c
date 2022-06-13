@@ -720,8 +720,12 @@ got_connection:
 		}
 	}
 
-	if (!ads->auth.realm) {
-		ads->auth.realm = SMB_STRDUP(ads->config.realm);
+	if (ads->auth.realm == NULL) {
+		ads->auth.realm = talloc_strdup(ads, ads->config.realm);
+		if (ads->auth.realm == NULL) {
+			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			goto out;
+		}
 	}
 
 	if (!ads->auth.kdc_server) {

@@ -175,9 +175,9 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 		my_ads->auth.user_name = SMB_STRDUP(user_name);
 		if ((cp = strchr_m(my_ads->auth.user_name, '@'))!=0) {
 			*cp++ = '\0';
-			SAFE_FREE(my_ads->auth.realm);
-			my_ads->auth.realm = smb_xstrdup(cp);
-			if (!strupper_m(my_ads->auth.realm)) {
+			TALLOC_FREE(my_ads->auth.realm);
+			my_ads->auth.realm = talloc_asprintf_strupper_m(my_ads, "%s", cp);
+			if (my_ads->auth.realm == NULL) {
 				status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 				goto out;
 			}
