@@ -99,10 +99,16 @@ static int ctdb_async_ctx_init_internal(TALLOC_CTX *mem_ctx,
 		&ctdb_async_ctx.async_conn);
 	unbecome_root();
 
-	if (ret != 0 || ctdb_async_ctx.async_conn == NULL) {
-		DBG_ERR("ctdbd_init_connection failed\n");
-		return EIO;
+	if (ret != 0) {
+		DBG_ERR("ctdbd_init_async_connection(%s, timeout=%d) "
+			"failed: ret=%d %s\n",
+			lp_ctdbd_socket(),
+			lp_ctdb_timeout(),
+			ret, strerror(ret));
+		return ret;
 	}
+
+	SMB_ASSERT(ctdb_async_ctx.async_conn != NULL);
 
 	ctdb_async_ctx.initialized = true;
 	return 0;
