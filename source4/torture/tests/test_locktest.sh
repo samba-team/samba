@@ -23,6 +23,6 @@ locktest="$samba4bindir/locktest"
 
 . $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 
-testit "locktest" $VALGRIND $locktest //$SERVER/test1 //$SERVER/test2 --num-ops=100 -W "$DOMAIN" --user1="$DOMAIN\\$USERNAME%$PASSWORD" $@ || failed=$(expr $failed + 1)
+testit "locktest" $VALGRIND $locktest //$SERVER/test1 //$SERVER/test2 --num-ops=100 -W "$DOMAIN" --user1="$DOMAIN\\$USERNAME%$PASSWORD" "$@" || failed=$(expr $failed + 1)
 
 exit $failed
