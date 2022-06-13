@@ -198,8 +198,12 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 	}
 
 	if (ccname != NULL) {
-		SAFE_FREE(my_ads->auth.ccache_name);
-		my_ads->auth.ccache_name = SMB_STRDUP(ccname);
+		TALLOC_FREE(my_ads->auth.ccache_name);
+		my_ads->auth.ccache_name = talloc_strdup(my_ads, ccname);
+		if (my_ads->auth.ccache_name == NULL) {
+			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			goto out;
+		}
 		setenv(KRB5_ENV_CCNAME, my_ads->auth.ccache_name, 1);
 	}
 
@@ -1041,7 +1045,7 @@ static ADS_STATUS libnet_join_post_processing_ads_modify(TALLOC_CTX *mem_ctx,
 
 		if (r->in.ads->auth.ccache_name != NULL) {
 			ads_kdestroy(r->in.ads->auth.ccache_name);
-			r->in.ads->auth.ccache_name = NULL;
+			TALLOC_FREE(r->in.ads->auth.ccache_name);
 		}
 
 		TALLOC_FREE(r->in.ads);
