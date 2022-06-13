@@ -23,6 +23,6 @@ masktest="$samba4bindir/masktest"
 
 . $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 
-testit "masktest" $VALGRIND $masktest //$SERVER/tmp --num-ops=200 --dieonerror -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=$(expr $failed + 1)
+testit "masktest" $VALGRIND $masktest //$SERVER/tmp --num-ops=200 --dieonerror -W "$DOMAIN" -U"$USERNAME%$PASSWORD" "$@" || failed=$(expr $failed + 1)
 
 exit $failed
