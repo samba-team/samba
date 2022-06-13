@@ -80,11 +80,11 @@ testit "kinit renew ticket" $samba4kinit $enctype --request-pac -R
 
 test_smbclient "Test login with kerberos ccache" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 
-testit "check time with kerberos ccache" $VALGRIND $PYTHON $samba_tool time $SERVER $CONFIGURATION -k yes $@ || failed=$(expr $failed + 1)
+testit "check time with kerberos ccache" $VALGRIND $PYTHON $samba_tool time $SERVER $CONFIGURATION -k yes "$@" || failed=$(expr $failed + 1)
 
 USERPASS=testPass@12%
 echo $USERPASS >$PREFIX/tmpuserpassfile
-testit "add user with kerberos ccache" $VALGRIND $PYTHON $samba_tool user create nettestuser $USERPASS $CONFIGURATION -k yes $@ || failed=$(expr $failed + 1)
+testit "add user with kerberos ccache" $VALGRIND $PYTHON $samba_tool user create nettestuser $USERPASS $CONFIGURATION -k yes "$@" || failed=$(expr $failed + 1)
 
 echo "Getting defaultNamingContext"
 BASEDN=$($ldbsearch $options --basedn='' -H ldap://$SERVER --scope=base DUMMY=x defaultNamingContext | grep defaultNamingContext | awk '{print $2}')
@@ -98,11 +98,11 @@ replace: userPrincipalName
 userPrincipalName: nettest@$REALM
 EOF
 
-testit "modify servicePrincipalName and userPrincpalName" $VALGRIND $ldbmodify -H ldap://$SERVER $PREFIX/tmpldbmodify -k yes $@ || failed=$(expr $failed + 1)
+testit "modify servicePrincipalName and userPrincpalName" $VALGRIND $ldbmodify -H ldap://$SERVER $PREFIX/tmpldbmodify -k yes "$@" || failed=$(expr $failed + 1)
 
-testit "set user password with kerberos ccache" $VALGRIND $PYTHON $samba_tool user setpassword nettestuser --newpassword=$USERPASS $CONFIGURATION -k yes $@ || failed=$(expr $failed + 1)
+testit "set user password with kerberos ccache" $VALGRIND $PYTHON $samba_tool user setpassword nettestuser --newpassword=$USERPASS $CONFIGURATION -k yes "$@" || failed=$(expr $failed + 1)
 
-testit "enable user with kerberos cache" $VALGRIND $PYTHON $enableaccount nettestuser -H ldap://$SERVER -k yes $@ || failed=$(expr $failed + 1)
+testit "enable user with kerberos cache" $VALGRIND $PYTHON $enableaccount nettestuser -H ldap://$SERVER -k yes "$@" || failed=$(expr $failed + 1)
 
 KRB5CCNAME_PATH="$PREFIX/tmpuserccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
@@ -115,7 +115,7 @@ testit "kinit with user password (after enable of user and password change)" $sa
 test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 
 NEWUSERPASS=testPaSS@34%
-testit "change user password with 'samba-tool user password' (rpc)" $VALGRIND $PYTHON $samba_tool user password -W$DOMAIN -Unettestuser%$USERPASS $CONFIGURATION -k no --newpassword=$NEWUSERPASS $@ || failed=$(expr $failed + 1)
+testit "change user password with 'samba-tool user password' (rpc)" $VALGRIND $PYTHON $samba_tool user password -W$DOMAIN -Unettestuser%$USERPASS $CONFIGURATION -k no --newpassword=$NEWUSERPASS "$@" || failed=$(expr $failed + 1)
 
 echo $NEWUSERPASS >$PREFIX/tmpuserpassfile
 rm -f $KRB5CCNAME_PATH
@@ -142,7 +142,7 @@ replace: userPrincipalName
 userPrincipalName: nettest@$REALM.org
 EOF
 
-testit "modify userPrincipalName to be a different domain" $VALGRIND $ldbmodify $ADMIN_LDBMODIFY_CONFIG $PREFIX/tmpldbmodify $PREFIX/tmpldbmodify -k yes $@ || failed=$(expr $failed + 1)
+testit "modify userPrincipalName to be a different domain" $VALGRIND $ldbmodify $ADMIN_LDBMODIFY_CONFIG $PREFIX/tmpldbmodify $PREFIX/tmpldbmodify -k yes "$@" || failed=$(expr $failed + 1)
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with password (enterprise style) using UPN" $samba4kinit $enctype --enterprise --password-file=$PREFIX/tmpuserpassfile --request-pac nettest@$REALM.org || failed=$(expr $failed + 1)
@@ -214,7 +214,7 @@ EOF
 USERPASS=$NEWUSERPASS
 NEWUSERPASS=testPaSS@911%
 
-testit "modify pwdLastSet" $VALGRIND $ldbmodify $ADMIN_LDBMODIFY_CONFIG $PREFIX/tmpldbmodify $PREFIX/tmpldbmodify -k yes $@ || failed=$(expr $failed + 1)
+testit "modify pwdLastSet" $VALGRIND $ldbmodify $ADMIN_LDBMODIFY_CONFIG $PREFIX/tmpldbmodify $PREFIX/tmpldbmodify -k yes "$@" || failed=$(expr $failed + 1)
 
 cat >$PREFIX/tmppasswordchange <<EOF
 expect nettestuser@${REALM}'s Password:
@@ -248,7 +248,7 @@ lowerrealm=$(echo $REALM | tr '[A-Z]' '[a-z]')
 test_smbclient "Test login with user kerberos lowercase realm" 'ls' "$unc" --use-kerberos=required -Unettestuser@$lowerrealm%$NEWUSERPASS || failed=$(expr $failed + 1)
 test_smbclient "Test login with user kerberos lowercase realm 2" 'ls' "$unc" --use-kerberos=required -Unettestuser@$REALM%$NEWUSERPASS --realm=$lowerrealm || failed=$(expr $failed + 1)
 
-testit "del user with kerberos ccache" $VALGRIND $PYTHON $samba_tool user delete nettestuser $CONFIGURATION -k yes $@ || failed=$(expr $failed + 1)
+testit "del user with kerberos ccache" $VALGRIND $PYTHON $samba_tool user delete nettestuser $CONFIGURATION -k yes "$@" || failed=$(expr $failed + 1)
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with machineaccountccache script" $PYTHON $machineaccountccache $CONFIGURATION $KRB5CCNAME || failed=$(expr $failed + 1)
