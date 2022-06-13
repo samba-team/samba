@@ -2834,8 +2834,7 @@ NTSTATUS filename_convert_dirfsp(
 
 	smb_fname_rel->stream_name = saved_streamname;
 
-	status = open_stream_pathref_fsp(
-		smb_dirname->fsp, &base_fsp, smb_fname_rel);
+	status = open_stream_pathref_fsp(&base_fsp, smb_fname_rel);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
 	    !conn->case_sensitive) {
@@ -2851,7 +2850,7 @@ NTSTATUS filename_convert_dirfsp(
 			smb_fname_rel->stream_name = found;
 			found = NULL;
 			status = open_stream_pathref_fsp(
-				smb_dirname->fsp, &base_fsp, smb_fname_rel);
+				&base_fsp, smb_fname_rel);
 		}
 	}
 

@@ -458,7 +458,6 @@ NTSTATUS openat_internal_dir_from_pathref(
 NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 			    struct smb_filename *smb_fname);
 NTSTATUS open_stream_pathref_fsp(
-	const struct files_struct *dirfsp,
 	struct files_struct **_base_fsp,
 	struct smb_filename *smb_fname);
 
