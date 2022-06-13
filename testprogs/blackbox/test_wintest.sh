@@ -12,7 +12,7 @@ testwithconf()
 		. $WINTEST_STARTUP
 	fi
 
-	testit "smbtorture" $smbtorture //$SERVER/$SHARE RAW-OPEN -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=$(expr $failed + 1)
+	testit "smbtorture" $smbtorture //$SERVER/$SHARE RAW-OPEN -W "$DOMAIN" -U"$USERNAME%$PASSWORD" "$@" || failed=$(expr $failed + 1)
 
 	if [ -n "$WINTEST_SHUTDOWN" ]; then
 		. $WINTEST_SHUTDOWN
@@ -37,7 +37,7 @@ smbtorture=$samba4bindir/smbtorture
 . $(dirname $0)/subunit.sh
 
 for wintest_conf in $WINTEST_CONF_DIR/*.conf; do
-	testwithconf "$wintest_conf" $@
+	testwithconf "$wintest_conf" "$@"
 done
 
 exit $failed
