@@ -131,35 +131,35 @@ remove_dns_user()
 
 reindex()
 {
-	$PYTHON $BINDIR/samba-tool dbcheck --reindex -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb $@
+	$PYTHON $BINDIR/samba-tool dbcheck --reindex -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb "$@"
 }
 
 # This should 'fail', because it returns the number of modified records
 dbcheck()
 {
-	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb $@
+	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb "$@"
 }
 
 dbcheck_clean()
 {
-	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb $@
+	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb "$@"
 }
 
 # This should 'fail', because it returns the number of modified records
 dbcheck_full()
 {
-	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
+	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb "$@"
 }
 
 dbcheck_full_clean()
 {
-	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
+	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb "$@"
 }
 
 # This checks that after the upgrade, the well known ACLs are correct, so this reset should not want to do anything
 dbcheck_full_clean_well_known_acls()
 {
-	$PYTHON $BINDIR/samba-tool dbcheck --reset-well-known-acls --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
+	$PYTHON $BINDIR/samba-tool dbcheck --reset-well-known-acls --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb "$@"
 }
 
 upgradeprovision()
