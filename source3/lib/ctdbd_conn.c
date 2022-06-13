@@ -538,6 +538,8 @@ int ctdbd_init_async_connection(
 	struct ctdbd_connection *conn = NULL;
 	int ret;
 
+	*pconn = NULL;
+
 	ret = ctdbd_init_connection(mem_ctx, sockname, timeout, &conn);
 	if (ret != 0) {
 		return ret;
@@ -546,6 +548,7 @@ int ctdbd_init_async_connection(
 	ret = set_blocking(conn->fd, false);
 	if (ret == -1) {
 		int err = errno;
+		SMB_ASSERT(err != 0);
 		TALLOC_FREE(conn);
 		return err;
 	}
