@@ -440,55 +440,11 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 	return 0;
 }
 
-/*
- * For proper streams support, we have to open the base_fsp for pathref
- * fsp's as well.
- */
-static NTSTATUS open_pathref_base_fsp(const struct files_struct *dirfsp,
-				      struct smb_filename *smb_fname,
-				      struct files_struct *fsp)
+static NTSTATUS openat_pathref_nostream(
+	const struct files_struct *dirfsp,
+	struct smb_filename *smb_fname)
 {
-	struct smb_filename *smb_fname_base = NULL;
-	NTSTATUS status;
-
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					     smb_fname->base_name,
-					     NULL,
-					     NULL,
-					     smb_fname->twrp,
-					     smb_fname->flags);
-	if (smb_fname_base == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = openat_pathref_fsp(dirfsp, smb_fname_base);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(smb_fname_base);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			DBG_DEBUG("Opening base file failed: %s\n",
-				  nt_errstr(status));
-			return status;
-		}
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	fsp_set_base_fsp(fsp, smb_fname_base->fsp);
-	smb_fname_fsp_unlink(smb_fname_base);
-	TALLOC_FREE(smb_fname_base);
-
-	return NT_STATUS_OK;
-}
-
-/*
- * Open an internal O_PATH based fsp for smb_fname. If O_PATH is not
- * available, open O_RDONLY as root. Both is done in fd_open() ->
- * non_widelink_open(), triggered by setting fsp->fsp_flags.is_pathref to
- * true.
- */
-NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
-			    struct smb_filename *smb_fname)
-{
-	connection_struct *conn = dirfsp->conn;
+	struct connection_struct *conn = dirfsp->conn;
 	struct smb_filename *full_fname = NULL;
 	struct files_struct *fsp = NULL;
 	int open_flags = O_RDONLY;
@@ -496,12 +452,8 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 
 	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(smb_fname));
 
-	if (smb_fname->fsp != NULL) {
-		/* We already have one for this name. */
-		DBG_DEBUG("smb_fname [%s] already has a pathref fsp.\n",
-			smb_fname_str_dbg(smb_fname));
-		return NT_STATUS_OK;
-	}
+	SMB_ASSERT(!is_named_stream(smb_fname));
+	SMB_ASSERT(smb_fname->fsp == NULL);
 
 	status = fsp_new(conn, conn, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -514,9 +466,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 
 	fsp->fsp_flags.is_pathref = true;
 
-	full_fname = full_path_from_dirfsp_atname(fsp,
-						  dirfsp,
-						  smb_fname);
+	full_fname = full_path_from_dirfsp_atname(fsp, dirfsp, smb_fname);
 	if (full_fname == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -525,21 +475,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	status = fsp_attach_smb_fname(fsp, &full_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
-	}
-
-	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
-	    && is_named_stream(smb_fname))
-	{
-		/*
-		 * We must use smb_fname here, not fsp->fsp_name
-		 * as smb_fname is relative to dirfsp, whereas
-		 * fsp->fsp_name has been changed above to be
-		 * full_fname, relative to the base of the share.
-		 */
-		status = open_pathref_base_fsp(dirfsp, smb_fname, fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
 	}
 
 	open_flags |= O_NONBLOCK;
@@ -601,16 +536,64 @@ fail:
 		  smb_fname_str_dbg(smb_fname),
 		  nt_errstr(status));
 
-	if (fsp_is_alternate_stream(fsp)) {
-		struct files_struct *tmp_base_fsp = fsp->base_fsp;
-
-		fsp_set_base_fsp(fsp, NULL);
-
-		fd_close(tmp_base_fsp);
-		file_free(NULL, tmp_base_fsp);
-	}
 	fd_close(fsp);
 	file_free(NULL, fsp);
+	return status;
+}
+
+/*
+ * Open an internal O_PATH based fsp for smb_fname. If O_PATH is not
+ * available, open O_RDONLY as root. Both is done in fd_open() ->
+ * non_widelink_open(), triggered by setting fsp->fsp_flags.is_pathref to
+ * true.
+ */
+NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
+			    struct smb_filename *smb_fname)
+{
+	connection_struct *conn = dirfsp->conn;
+	struct smb_filename *base_fname = NULL;
+	NTSTATUS status;
+
+	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(smb_fname));
+
+	if (smb_fname->fsp != NULL) {
+		/* We already have one for this name. */
+		DBG_DEBUG("smb_fname [%s] already has a pathref fsp.\n",
+			smb_fname_str_dbg(smb_fname));
+		return NT_STATUS_OK;
+	}
+
+	if (!(conn->fs_capabilities & FILE_NAMED_STREAMS) ||
+	    !is_named_stream(smb_fname)) {
+		status = openat_pathref_nostream(dirfsp, smb_fname);
+		return status;
+	}
+
+	/*
+	 * stream open
+	 */
+	base_fname = cp_smb_filename_nostream(conn, smb_fname);
+	if (base_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = openat_pathref_nostream(dirfsp, base_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("openat_pathref_nostream failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	status = open_stream_pathref_fsp(dirfsp, &base_fname->fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("open_stream_pathref_fsp failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	smb_fname_fsp_unlink(base_fname);
+fail:
+	TALLOC_FREE(base_fname);
 	return status;
 }
 
