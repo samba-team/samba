@@ -42,7 +42,7 @@ test_smbclient()
 	shift
 	shift
 	echo "test: $name"
-	$VALGRIND $smbclient //$SERVER/tmp -c "$cmd" $@
+	$VALGRIND $smbclient //$SERVER/tmp -c "$cmd" "$@"
 	status=$?
 	if [ x$status = x0 ]; then
 		echo "success: $name"
@@ -89,22 +89,22 @@ if [ $krb5_major_version -eq 1 ] && [ $krb5_minor_version -lt 18 ]; then
 	EXPECTED_NKEYS=5
 fi
 
-testit "create local user $TEST_USER" $VALGRIND $PYTHON $samba_newuser $TEST_USER $TEST_PASSWORD $@ || failed=$(expr $failed + 1)
+testit "create local user $TEST_USER" $VALGRIND $PYTHON $samba_newuser $TEST_USER $TEST_PASSWORD "$@" || failed=$(expr $failed + 1)
 
-testit "dump keytab from domain" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-all $@ || failed=$(expr $failed + 1)
+testit "dump keytab from domain" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-all "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain" "$PREFIX/tmpkeytab-all" "$SERVER\\\$" $EXPECTED_NKEYS
 
-testit "dump keytab from domain (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-all $@ || failed=$(expr $failed + 1)
+testit "dump keytab from domain (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-all "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain (2nd time)" "$PREFIX/tmpkeytab-all" "$SERVER\\\$" $EXPECTED_NKEYS
 
-testit "dump keytab from domain for cifs service principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN $@ || failed=$(expr $failed + 1)
+testit "dump keytab from domain for cifs service principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain for cifs service principal" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" $EXPECTED_NKEYS
-testit "dump keytab from domain for cifs service principal (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN $@ || failed=$(expr $failed + 1)
+testit "dump keytab from domain for cifs service principal (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN "$@" || failed=$(expr $failed + 1)
 test_keytab "read keytab from domain for cifs service principal (2nd time)" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" $EXPECTED_NKEYS
 
-testit "dump keytab from domain for user principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-user-princ --principal=$TEST_USER $@ || failed=$(expr $failed + 1)
+testit "dump keytab from domain for user principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-user-princ --principal=$TEST_USER "$@" || failed=$(expr $failed + 1)
 test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-user-princ" "$TEST_USER@$REALM" $EXPECTED_NKEYS
-testit "dump keytab from domain for user principal (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-user-princ --principal=$TEST_USER@$REALM $@ || failed=$(expr $failed + 1)
+testit "dump keytab from domain for user principal (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-user-princ --principal=$TEST_USER@$REALM "$@" || failed=$(expr $failed + 1)
 test_keytab "dump keytab from domain for user principal (2nd time)" "$PREFIX/tmpkeytab-user-princ" "$TEST_USER@$REALM" $EXPECTED_NKEYS
 
 KRB5CCNAME="$PREFIX/tmpuserccache"
@@ -129,7 +129,7 @@ echo "$samba_kinit -k -t $PREFIX/tmpkeytab-server cifs/$SERVER_FQDN"
 testit "kinit with SPN from keytab" $VALGRIND $samba_kinit -k -t $PREFIX/tmpkeytab-server cifs/$SERVER_FQDN || failed=$(expr $failed + 1)
 
 # cleanup
-testit "delete user $TEST_USER" $VALGRIND $PYTHON $samba_tool user delete nettestuser -k yes $@ || failed=$(expr $failed + 1)
+testit "delete user $TEST_USER" $VALGRIND $PYTHON $samba_tool user delete nettestuser -k yes "$@" || failed=$(expr $failed + 1)
 
 $samba_kdestroy
 rm -f $PREFIX/tmpadminccache $PREFIX/tmpuserccache $PREFIX/tmpkeytab $PREFIX/tmpkeytab-2 $PREFIX/tmpkeytab-server
