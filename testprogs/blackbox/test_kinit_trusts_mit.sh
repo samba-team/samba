@@ -52,7 +52,7 @@ test_smbclient()
 	shift
 	shift
 	echo "test: $name"
-	$VALGRIND $smbclient $CONFIGURATION $SMBCLIENT_UNC -c "$cmd" $@
+	$VALGRIND $smbclient $CONFIGURATION $SMBCLIENT_UNC -c "$cmd" "$@"
 	status=$?
 	if [ x$status = x0 ]; then
 		echo "success: $name"
@@ -106,7 +106,7 @@ test_smbclient "Test login with kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCN
 testit "kinit renew ticket" $samba_kinit -R
 test_smbclient "Test login with kerberos ccache" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 
-testit "check time with kerberos ccache" $VALGRIND $samba_tool time $SERVER.$REALM $CONFIGURATION -k yes $@ || failed=$(expr $failed + 1)
+testit "check time with kerberos ccache" $VALGRIND $samba_tool time $SERVER.$REALM $CONFIGURATION -k yes "$@" || failed=$(expr $failed + 1)
 
 $samba_kdestroy
 
