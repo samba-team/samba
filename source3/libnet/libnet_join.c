@@ -171,8 +171,12 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 	}
 
 	if (user_name) {
-		SAFE_FREE(my_ads->auth.user_name);
-		my_ads->auth.user_name = SMB_STRDUP(user_name);
+		TALLOC_FREE(my_ads->auth.user_name);
+		my_ads->auth.user_name = talloc_strdup(my_ads, user_name);
+		if (my_ads->auth.user_name == NULL) {
+			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			goto out;
+		}
 		if ((cp = strchr_m(my_ads->auth.user_name, '@'))!=0) {
 			*cp++ = '\0';
 			TALLOC_FREE(my_ads->auth.realm);

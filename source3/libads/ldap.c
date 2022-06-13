@@ -713,10 +713,13 @@ got_connection:
 	if (!ads->auth.user_name) {
 		/* Must use the userPrincipalName value here or sAMAccountName
 		   and not servicePrincipalName; found by Guenther Deschner */
-
-		if (asprintf(&ads->auth.user_name, "%s$", lp_netbios_name() ) == -1) {
-			DEBUG(0,("ads_connect: asprintf fail.\n"));
-			ads->auth.user_name = NULL;
+		ads->auth.user_name = talloc_asprintf(ads,
+						      "%s$",
+						      lp_netbios_name());
+		if (ads->auth.user_name == NULL) {
+			DBG_ERR("talloc_asprintf failed\n");
+			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			goto out;
 		}
 	}
 

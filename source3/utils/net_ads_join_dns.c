@@ -284,8 +284,10 @@ void net_ads_join_dns_updates(struct net_context *c, TALLOC_CTX *ctx, struct lib
 
 	use_in_memory_ccache();
 
-	ret = asprintf(&ads_dns->auth.user_name, "%s$", lp_netbios_name());
-	if (ret == -1) {
+	ads_dns->auth.user_name = talloc_asprintf(ads_dns,
+						  "%s$",
+						  lp_netbios_name());
+	if (ads_dns->auth.user_name == NULL) {
 		d_fprintf(stderr, _("DNS update failed: out of memory\n"));
 		goto done;
 	}

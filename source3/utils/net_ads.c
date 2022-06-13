@@ -667,8 +667,12 @@ retry:
 		}
 	}
 
-	SAFE_FREE(ads->auth.user_name);
-	ads->auth.user_name = smb_xstrdup(c->opt_user_name);
+	TALLOC_FREE(ads->auth.user_name);
+	ads->auth.user_name = talloc_strdup(ads, c->opt_user_name);
+	if (ads->auth.user_name == NULL) {
+		TALLOC_FREE(ads);
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	ads->auth.flags |= auth_flags;
 

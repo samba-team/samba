@@ -434,15 +434,23 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 		goto out;
 	}
 
-	SAFE_FREE(ads->auth.user_name);
+	TALLOC_FREE(ads->auth.user_name);
 	if (r->in.account) {
-		ads->auth.user_name = SMB_STRDUP(r->in.account);
+		ads->auth.user_name = talloc_strdup(ads, r->in.account);
+		if (ads->auth.user_name == NULL) {
+			ret = WERR_NOT_ENOUGH_MEMORY;
+			goto out;
+		}
 	} else {
 		const char *username = NULL;
 
 		libnetapi_get_username(ctx, &username);
 		if (username != NULL) {
-			ads->auth.user_name = SMB_STRDUP(username);
+			ads->auth.user_name = talloc_strdup(ads, username);
+			if (ads->auth.user_name == NULL) {
+				ret = WERR_NOT_ENOUGH_MEMORY;
+				goto out;
+			}
 		}
 	}
 

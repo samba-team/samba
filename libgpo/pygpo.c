@@ -229,12 +229,16 @@ static PyObject* py_ads_connect(ADS *self,
 		PyErr_SetString(PyExc_RuntimeError, "Uninitialized");
 		return NULL;
 	}
-	SAFE_FREE(self->ads_ptr->auth.user_name);
+	TALLOC_FREE(self->ads_ptr->auth.user_name);
 	TALLOC_FREE(self->ads_ptr->auth.password);
 	TALLOC_FREE(self->ads_ptr->auth.realm);
 	if (self->cli_creds) {
-		self->ads_ptr->auth.user_name =
-			SMB_STRDUP(cli_credentials_get_username(self->cli_creds));
+		self->ads_ptr->auth.user_name = talloc_strdup(self->ads_ptr,
+			cli_credentials_get_username(self->cli_creds));
+		if (self->ads_ptr->auth.user_name == NULL) {
+			PyErr_NoMemory();
+			goto err;
+		}
 		self->ads_ptr->auth.password = talloc_strdup(self->ads_ptr,
 			cli_credentials_get_password(self->cli_creds));
 		if (self->ads_ptr->auth.password == NULL) {
@@ -251,16 +255,17 @@ static PyObject* py_ads_connect(ADS *self,
 		status = ads_connect_user_creds(self->ads_ptr);
 	} else {
 		char *passwd = NULL;
-		int ret;
+
 		if (!secrets_init()) {
 			PyErr_SetString(PyExc_RuntimeError,
 					"secrets_init() failed");
 			goto err;
 		}
 
-		ret = asprintf(&(self->ads_ptr->auth.user_name), "%s$",
-				   lp_netbios_name());
-		if (ret == -1) {
+		self->ads_ptr->auth.user_name = talloc_asprintf(self->ads_ptr,
+							"%s$",
+							lp_netbios_name());
+		if (self->ads_ptr->auth.user_name == NULL) {
 			PyErr_NoMemory();
 			goto err;
 		}
