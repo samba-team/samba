@@ -436,7 +436,11 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (!ads->config.realm) {
-		ads->config.realm = discard_const_p(char, c->opt_target_workgroup);
+		ads->config.realm = talloc_strdup(ads, c->opt_target_workgroup);
+		if (ads->config.realm == NULL) {
+			d_fprintf(stderr, _("Out of memory\n"));
+			goto out;
+		}
 		ads->ldap.port = 389;
 	}
 
@@ -844,7 +848,11 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (!ads->config.realm) {
-		ads->config.realm = discard_const_p(char, c->opt_target_workgroup);
+		ads->config.realm = talloc_strdup(ads, c->opt_target_workgroup);
+		if (ads->config.realm == NULL) {
+			d_fprintf(stderr, _("Out of memory\n"));
+			goto out;
+		}
 		ads->ldap.port = 389;
 	}
 

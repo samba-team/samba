@@ -291,7 +291,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 
 	/* Fill in the ads->config values */
 
-	SAFE_FREE(ads->config.realm);
+	TALLOC_FREE(ads->config.realm);
 	SAFE_FREE(ads->config.bind_path);
 	SAFE_FREE(ads->config.ldap_server_name);
 	SAFE_FREE(ads->config.server_site_name);
@@ -305,8 +305,11 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	}
 
 	ads->config.ldap_server_name   = SMB_STRDUP(cldap_reply.pdc_dns_name);
-	ads->config.realm              = SMB_STRDUP(cldap_reply.dns_domain);
-	if (!strupper_m(ads->config.realm)) {
+	ads->config.realm = talloc_asprintf_strupper_m(ads,
+						       "%s",
+						       cldap_reply.dns_domain);
+	if (ads->config.realm == NULL) {
+		DBG_WARNING("Out of memory\n");
 		ret = false;
 		goto out;
 	}
