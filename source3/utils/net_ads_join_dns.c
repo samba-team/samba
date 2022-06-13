@@ -244,6 +244,7 @@ void net_ads_join_dns_updates(struct net_context *c, TALLOC_CTX *ctx, struct lib
 	ADS_STRUCT *ads_dns = NULL;
 	int ret;
 	NTSTATUS status;
+	char *machine_password = NULL;
 
 	/*
 	 * In a clustered environment, don't do dynamic dns updates:
@@ -289,11 +290,17 @@ void net_ads_join_dns_updates(struct net_context *c, TALLOC_CTX *ctx, struct lib
 		goto done;
 	}
 
-	ads_dns->auth.password = secrets_fetch_machine_password(
+	machine_password = secrets_fetch_machine_password(
 		r->out.netbios_domain_name, NULL, NULL);
-	if (ads_dns->auth.password == NULL) {
-		d_fprintf(stderr, _("DNS update failed: out of memory\n"));
-		goto done;
+	if (machine_password != NULL) {
+		ads_dns->auth.password = talloc_strdup(ads_dns,
+						       machine_password);
+		SAFE_FREE(machine_password);
+		if (ads_dns->auth.password == NULL) {
+			d_fprintf(stderr,
+				  _("DNS update failed: out of memory\n"));
+			goto done;
+		}
 	}
 
 	ads_dns->auth.realm = talloc_asprintf_strupper_m(ads_dns, "%s", r->out.dns_domain_name);

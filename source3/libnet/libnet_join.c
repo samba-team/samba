@@ -185,8 +185,12 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 	}
 
 	if (password) {
-		SAFE_FREE(my_ads->auth.password);
-		my_ads->auth.password = SMB_STRDUP(password);
+		TALLOC_FREE(my_ads->auth.password);
+		my_ads->auth.password = talloc_strdup(my_ads, password);
+		if (my_ads->auth.password == NULL) {
+			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			goto out;
+		}
 	}
 
 	if (ccname != NULL) {

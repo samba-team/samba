@@ -659,8 +659,12 @@ retry:
 
 	if (c->opt_password) {
 		use_in_memory_ccache();
-		SAFE_FREE(ads->auth.password);
-		ads->auth.password = smb_xstrdup(c->opt_password);
+		TALLOC_FREE(ads->auth.password);
+		ads->auth.password = talloc_strdup(ads, c->opt_password);
+		if (ads->auth.password == NULL) {
+			TALLOC_FREE(ads);
+			return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
 	}
 
 	SAFE_FREE(ads->auth.user_name);

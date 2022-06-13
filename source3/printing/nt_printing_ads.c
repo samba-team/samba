@@ -220,12 +220,8 @@ WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
 	char *printer_dn;
 	WERROR result;
 	ADS_STATUS ads_status;
-	TALLOC_CTX *tmp_ctx;
-
-	tmp_ctx = talloc_new(mem_ctx);
-	if (tmp_ctx == NULL) {
-		return WERR_NOT_ENOUGH_MEMORY;
-	}
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	char *machine_password = NULL;
 
 	ads = ads_init(tmp_ctx,
 		       lp_realm(),
@@ -239,9 +235,17 @@ WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
 
 	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
-	SAFE_FREE(ads->auth.password);
-	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
+	TALLOC_FREE(ads->auth.password);
+	machine_password = secrets_fetch_machine_password(lp_workgroup(),
 							    NULL, NULL);
+	if (machine_password != NULL) {
+		ads->auth.password = talloc_strdup(ads, machine_password);
+		SAFE_FREE(machine_password);
+		if (ads->auth.password == NULL) {
+			result = WERR_NOT_ENOUGH_MEMORY;
+			goto out;
+		}
+	}
 
 	ads_status = ads_connect(ads);
 	if (!ADS_ERR_OK(ads_status)) {
@@ -647,6 +651,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 	ADS_STRUCT *ads = NULL;
 	WERROR win_rc;
 	char *old_krb5ccname = NULL;
+	char *machine_password = NULL;
 
 	sinfo2 = talloc_zero(tmp_ctx, struct spoolss_SetPrinterInfo2);
 	if (!sinfo2) {
@@ -693,9 +698,17 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 	}
 	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
-	SAFE_FREE(ads->auth.password);
-	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
+	TALLOC_FREE(ads->auth.password);
+	machine_password = secrets_fetch_machine_password(lp_workgroup(),
 		NULL, NULL);
+	if (machine_password != NULL) {
+		ads->auth.password = talloc_strdup(ads, machine_password);
+		SAFE_FREE(machine_password);
+		if (ads->auth.password == NULL) {
+			win_rc = WERR_NOT_ENOUGH_MEMORY;
+			goto done;
+		}
+	}
 
 	/* ads_connect() will find the DC for us */
 	ads_rc = ads_connect(ads);
@@ -741,6 +754,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	NTSTATUS status;
 	WERROR result;
 	char *old_krb5ccname = NULL;
+	char *machine_password = NULL;
 
 	ads = ads_init(tmp_ctx,
 		       lp_realm(),
@@ -754,10 +768,17 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	}
 	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
-	SAFE_FREE(ads->auth.password);
-	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
+	TALLOC_FREE(ads->auth.password);
+	machine_password = secrets_fetch_machine_password(lp_workgroup(),
 		NULL, NULL);
-
+	if (machine_password != NULL) {
+		ads->auth.password = talloc_strdup(ads, machine_password);
+		SAFE_FREE(machine_password);
+		if (ads->auth.password == NULL) {
+			result = WERR_NOT_ENOUGH_MEMORY;
+			goto done;
+		}
+	}
 	/* ads_connect() will find the DC for us */
 	ads_rc = ads_connect(ads);
 	if (!ADS_ERR_OK(ads_rc)) {

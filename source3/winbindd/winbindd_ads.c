@@ -125,11 +125,15 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 		goto out;
 	}
 
-	SAFE_FREE(ads->auth.password);
+	TALLOC_FREE(ads->auth.password);
 	TALLOC_FREE(ads->auth.realm);
 
 	ads->auth.renewable = renewable;
-	ads->auth.password = password;
+	ads->auth.password = talloc_strdup(ads, password);
+	if (ads->auth.password == NULL) {
+		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto out;
+	}
 
 	/* In FIPS mode, client use kerberos is forced to required. */
 	krb5_state = lp_client_use_kerberos();

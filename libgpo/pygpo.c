@@ -230,13 +230,17 @@ static PyObject* py_ads_connect(ADS *self,
 		return NULL;
 	}
 	SAFE_FREE(self->ads_ptr->auth.user_name);
-	SAFE_FREE(self->ads_ptr->auth.password);
+	TALLOC_FREE(self->ads_ptr->auth.password);
 	TALLOC_FREE(self->ads_ptr->auth.realm);
 	if (self->cli_creds) {
 		self->ads_ptr->auth.user_name =
 			SMB_STRDUP(cli_credentials_get_username(self->cli_creds));
-		self->ads_ptr->auth.password =
-			SMB_STRDUP(cli_credentials_get_password(self->cli_creds));
+		self->ads_ptr->auth.password = talloc_strdup(self->ads_ptr,
+			cli_credentials_get_password(self->cli_creds));
+		if (self->ads_ptr->auth.password == NULL) {
+			PyErr_NoMemory();
+			goto err;
+		}
 		self->ads_ptr->auth.realm = talloc_strdup(self->ads_ptr,
 			cli_credentials_get_realm(self->cli_creds));
 		if (self->ads_ptr->auth.realm == NULL) {
@@ -254,22 +258,29 @@ static PyObject* py_ads_connect(ADS *self,
 			goto err;
 		}
 
-		passwd = secrets_fetch_machine_password(self->ads_ptr->server.workgroup,
-							NULL, NULL);
+		ret = asprintf(&(self->ads_ptr->auth.user_name), "%s$",
+				   lp_netbios_name());
+		if (ret == -1) {
+			PyErr_NoMemory();
+			goto err;
+		}
+
+		passwd = secrets_fetch_machine_password(
+			self->ads_ptr->server.workgroup, NULL, NULL);
 		if (passwd == NULL) {
 			PyErr_SetString(PyExc_RuntimeError,
 					"Failed to fetch the machine account "
 					"password");
 			goto err;
 		}
-		ret = asprintf(&(self->ads_ptr->auth.user_name), "%s$",
-				   lp_netbios_name());
-		if (ret == -1) {
-			SAFE_FREE(passwd);
+
+		self->ads_ptr->auth.password = talloc_strdup(self->ads_ptr,
+							     passwd);
+		SAFE_FREE(passwd);
+		if (self->ads_ptr->auth.password == NULL) {
 			PyErr_NoMemory();
 			goto err;
 		}
-		self->ads_ptr->auth.password = passwd; /* take ownership of this data */
 		self->ads_ptr->auth.realm = talloc_asprintf_strupper_m(
 			self->ads_ptr, "%s", self->ads_ptr->server.realm);
 		if (self->ads_ptr->auth.realm == NULL) {

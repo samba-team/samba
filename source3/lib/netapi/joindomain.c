@@ -446,15 +446,23 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 		}
 	}
 
-	SAFE_FREE(ads->auth.password);
+	TALLOC_FREE(ads->auth.password);
 	if (r->in.password) {
-		ads->auth.password = SMB_STRDUP(r->in.password);
+		ads->auth.password = talloc_strdup(ads, r->in.password);
+		if (ads->auth.password == NULL) {
+			ret = WERR_NOT_ENOUGH_MEMORY;
+			goto out;
+		}
 	} else {
 		const char *password = NULL;
 
 		libnetapi_get_password(ctx, &password);
 		if (password != NULL) {
-			ads->auth.password = SMB_STRDUP(password);
+			ads->auth.password = talloc_strdup(ads, password);
+			if (ads->auth.password == NULL) {
+				ret = WERR_NOT_ENOUGH_MEMORY;
+				goto out;
+			}
 		}
 	}
 
