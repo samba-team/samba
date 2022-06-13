@@ -130,7 +130,6 @@ static void ads_destroy(ADS_STRUCT **ads)
 #ifdef HAVE_LDAP
 		ads_disconnect(*ads);
 #endif
-		SAFE_FREE((*ads)->auth.kdc_server);
 		SAFE_FREE((*ads)->auth.ccache_name);
 
 		SAFE_FREE((*ads)->config.realm);

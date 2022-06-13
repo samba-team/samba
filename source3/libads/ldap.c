@@ -733,7 +733,11 @@ got_connection:
 
 	if (!ads->auth.kdc_server) {
 		print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-		ads->auth.kdc_server = SMB_STRDUP(addr);
+		ads->auth.kdc_server = talloc_strdup(ads, addr);
+		if (ads->auth.kdc_server == NULL) {
+			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			goto out;
+		}
 	}
 
 	/* If the caller() requested no LDAP bind, then we are done */
