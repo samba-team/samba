@@ -1,4 +1,74 @@
                    ==============================
+                   Release Notes for Samba 4.16.2
+                           June 13, 2022
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.16 release series.
+
+
+Changes since 4.16.1
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15042: Use pathref fd instead of io fd in vfs_default_durable_cookie.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15069: vfs_gpfs with vfs_shadowcopy2 fail to restore file if original
+     file had been deleted.
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 15087: netgroups support removed.
+
+o  Samuel Cabrero <scabrero@suse.de>
+   * BUG 14674: net ads info shows LDAP Server: 0.0.0.0 depending on contacted
+     server.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15062: Update from 4.15  to 4.16 breaks discovery of [homes] on
+     standalone server from Win and IOS.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15071: waf produces incorrect names for python extensions with Python
+     3.11.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15075: smbclient -E doesn't work as advertised.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15071: waf produces incorrect names for python extensions with Python
+     3.11.
+   * BUG 15081: The samba background daemon doesn't refresh the printcap cache
+     on startup.
+
+o  Robert Sprowson <webpages@sprow.co.uk>
+   * BUG 14443: Out-by-4 error in smbd read reply max_send clamp..
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.16.1
                             May 02, 2022
                    ==============================
@@ -68,8 +138,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.16.0
                            March 21, 2022
