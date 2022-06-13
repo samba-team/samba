@@ -35,7 +35,7 @@ testit "Test login with --machine-pass without kerberos" $VALGRIND $smbclient -c
 
 testit "Test login with --machine-pass and kerberos" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --machine-pass -k
 
-testit "time" $VALGRIND $PYTHON $samba_tool time $SERVER $CONFIGURATION -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@
+testit "time" $VALGRIND $PYTHON $samba_tool time $SERVER $CONFIGURATION -W "$DOMAIN" -U"$USERNAME%$PASSWORD" "$@"
 
 testit "domain level.show" $VALGRIND $PYTHON $samba_tool domain level show
 
