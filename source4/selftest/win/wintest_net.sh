@@ -54,7 +54,7 @@ for o in $bind_options; do
 		for t in $net_test; do
 			test_name="$t on $transport with $o"
 			$SMBTORTURE_BIN_PATH -U $username%$password \
-				-W $domain $transport:$server[$o] \
+				-W $domain ${transport}:${server}[$o] \
 				$t || on_error "\n$test_name failed."
 		done
 	done
