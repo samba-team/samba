@@ -45,8 +45,8 @@ test_drs()
 	shift
 	shift
 	echo "test: $name"
-	echo $VALGRIND $PYTHON $samba4bindir/samba-tool drs $function $SERVER -k yes $@
-	$VALGRIND $PYTHON $samba4bindir/samba-tool drs $function $SERVER -k yes $@
+	echo $VALGRIND $PYTHON $samba4bindir/samba-tool drs $function $SERVER -k yes "$@"
+	$VALGRIND $PYTHON $samba4bindir/samba-tool drs $function $SERVER -k yes "$@"
 	status=$?
 	if [ x$status = x0 ]; then
 		echo "success: $name"
