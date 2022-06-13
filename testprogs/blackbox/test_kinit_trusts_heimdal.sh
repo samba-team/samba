@@ -81,7 +81,7 @@ testit "kinit renew ticket" $samba4kinit $enctype --request-pac -R
 
 test_smbclient "Test login with kerberos ccache" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=$(expr $failed + 1)
 
-testit "check time with kerberos ccache" $VALGRIND $PYTHON $samba_tool time $SERVER.$REALM $CONFIGURATION -k yes $@ || failed=$(expr $failed + 1)
+testit "check time with kerberos ccache" $VALGRIND $PYTHON $samba_tool time $SERVER.$REALM $CONFIGURATION -k yes "$@" || failed=$(expr $failed + 1)
 
 lowerrealm=$(echo $TRUST_REALM | tr '[A-Z]' '[a-z]')
 test_smbclient "Test login with user kerberos lowercase realm" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME -U$TRUST_USERNAME@$lowerrealm%$TRUST_PASSWORD || failed=$(expr $failed + 1)
