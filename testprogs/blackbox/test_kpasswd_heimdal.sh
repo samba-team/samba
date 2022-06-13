@@ -45,7 +45,7 @@ do_kinit()
 	password="$2"
 	shift
 	shift
-	kerberos_kinit "$samba_kinit" "$principal" "$password" $@
+	kerberos_kinit "$samba_kinit" "$principal" "$password" "$@"
 }
 
 UID_WRAPPER_ROOT=1
