@@ -528,7 +528,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	}
 
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
-	    && is_ntfs_stream_smb_fname(smb_fname))
+	    && is_named_stream(smb_fname))
 	{
 		/*
 		 * We must use smb_fname here, not fsp->fsp_name
