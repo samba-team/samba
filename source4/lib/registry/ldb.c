@@ -859,7 +859,7 @@ static WERROR ldb_set_value(struct hive_key *parent,
 
 	/* Try first a "modify" and if this doesn't work do try an "add" */
 	for (i = 0; i < msg->num_elements; i++) {
-		if (msg->elements[i].flags != LDB_FLAG_MOD_DELETE) {
+		if (LDB_FLAG_MOD_TYPE(msg->elements[i].flags) != LDB_FLAG_MOD_DELETE) {
 			msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
 		}
 	}
