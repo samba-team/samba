@@ -263,7 +263,7 @@ static int attr_handler(struct oc_context *ac)
 												LDB_CONTROL_AS_SYSTEM_OID);
 					if (!dsdb_module_am_system(ac->module) && !as_system) {
 						ldb_asprintf_errstring(ldb,
-								       "objectclass_attrs: attribute '%s' on entry '%s' must can only be modified as system",
+								       "objectclass_attrs: attribute '%s' on entry '%s' can only be modified as system",
 								       msg->elements[i].name,
 								       ldb_dn_get_linearized(msg->dn));
 						return LDB_ERR_CONSTRAINT_VIOLATION;
