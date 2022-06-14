@@ -500,7 +500,7 @@ static NTSTATUS btrfs_fget_compression(struct vfs_handle_struct *handle,
 
 	fd = open(p, O_RDONLY);
 	if (fd == -1) {
-		DBG_ERR("/proc open of %s failed: %s\n", p, strerror(errno));
+		DBG_DEBUG("/proc open of %s failed: %s\n", p, strerror(errno));
 		return map_nt_error_from_unix(errno);
 	}
 
