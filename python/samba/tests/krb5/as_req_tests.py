@@ -28,6 +28,7 @@ import samba.tests.krb5.kcrypto as kcrypto
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_C_PRINCIPAL_UNKNOWN,
+    KDC_ERR_S_PRINCIPAL_UNKNOWN,
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_PREAUTH_REQUIRED,
     KU_PA_ENC_TIMESTAMP,
@@ -43,7 +44,7 @@ global_hexdump = False
 
 class AsReqBaseTest(KDCBaseTest):
     def _run_as_req_enc_timestamp(self, client_creds, client_account=None,
-                                  expected_cname=None,
+                                  expected_cname=None, sname=None,
                                   name_type=NT_PRINCIPAL, etypes=None,
                                   expected_error=None, expect_edata=None,
                                   kdc_options=None):
@@ -59,8 +60,9 @@ class AsReqBaseTest(KDCBaseTest):
 
         cname = self.PrincipalName_create(name_type=name_type,
                                           names=client_account.split('/'))
-        sname = self.PrincipalName_create(name_type=NT_SRV_INST,
-                                          names=[krbtgt_account, realm])
+        if sname is None:
+            sname = self.PrincipalName_create(name_type=NT_SRV_INST,
+                                              names=[krbtgt_account, realm])
 
         expected_crealm = realm
         if expected_cname is None:
@@ -491,6 +493,28 @@ class AsReqKerberosTests(AsReqBaseTest):
             client_account=client_account,
             name_type=NT_ENTERPRISE_PRINCIPAL,
             kdc_options=0)
+
+    # Ensure we can't use truncated well-known principals such as krb@REALM
+    # instead of krbtgt@REALM.
+    def test_krbtgt_wrong_principal(self):
+        client_creds = self.get_client_creds()
+
+        krbtgt_creds = self.get_krbtgt_creds()
+
+        krbtgt_account = krbtgt_creds.get_username()
+        realm = krbtgt_creds.get_realm()
+
+        # Truncate the name of the krbtgt principal.
+        krbtgt_account = krbtgt_account[:3]
+
+        wrong_krbtgt_princ = self.PrincipalName_create(
+            name_type=NT_SRV_INST,
+            names=[krbtgt_account, realm])
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            sname=wrong_krbtgt_princ,
+            expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
 
 
 if __name__ == "__main__":
