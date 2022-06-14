@@ -440,12 +440,12 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 	return 0;
 }
 
-static NTSTATUS openat_pathref_nostream(
+static NTSTATUS openat_pathref_fullname(
 	const struct files_struct *dirfsp,
+	struct smb_filename **full_fname,
 	struct smb_filename *smb_fname)
 {
 	struct connection_struct *conn = dirfsp->conn;
-	struct smb_filename *full_fname = NULL;
 	struct files_struct *fsp = NULL;
 	int open_flags = O_RDONLY;
 	NTSTATUS status;
@@ -466,13 +466,7 @@ static NTSTATUS openat_pathref_nostream(
 
 	fsp->fsp_flags.is_pathref = true;
 
-	full_fname = full_path_from_dirfsp_atname(fsp, dirfsp, smb_fname);
-	if (full_fname == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	status = fsp_attach_smb_fname(fsp, &full_fname);
+	status = fsp_attach_smb_fname(fsp, full_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
@@ -551,6 +545,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 			    struct smb_filename *smb_fname)
 {
 	connection_struct *conn = dirfsp->conn;
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *base_fname = NULL;
 	NTSTATUS status;
 
@@ -565,7 +560,23 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 
 	if (!(conn->fs_capabilities & FILE_NAMED_STREAMS) ||
 	    !is_named_stream(smb_fname)) {
-		status = openat_pathref_nostream(dirfsp, smb_fname);
+		/*
+		 * openat_pathref_fullname() will make "full_fname" a
+		 * talloc child of the smb_fname->fsp. Don't use
+		 * talloc_tos() to allocate it to avoid making the
+		 * talloc stackframe pool long-lived.
+		 */
+		full_fname = full_path_from_dirfsp_atname(
+			conn,
+			dirfsp,
+			smb_fname);
+		if (full_fname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		status = openat_pathref_fullname(
+			dirfsp, &full_fname, smb_fname);
+		TALLOC_FREE(full_fname);
 		return status;
 	}
 
@@ -577,7 +588,18 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = openat_pathref_nostream(dirfsp, base_fname);
+	full_fname = full_path_from_dirfsp_atname(
+		conn,	/* no talloc_tos(), see comment above */
+		dirfsp,
+		base_fname);
+	if (full_fname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	status = openat_pathref_fullname(
+		dirfsp, &full_fname, base_fname);
+	TALLOC_FREE(full_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("openat_pathref_nostream failed: %s\n",
 			  nt_errstr(status));
