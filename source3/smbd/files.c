@@ -1596,7 +1596,7 @@ NTSTATUS file_name_hash(connection_struct *conn,
 static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
 				     struct smb_filename **_smb_fname)
 {
-	struct smb_filename *smb_fname_new = *_smb_fname;
+	struct smb_filename *smb_fname_new = talloc_move(fsp, _smb_fname);
 	const char *name_str = NULL;
 	uint32_t name_hash = 0;
 	NTSTATUS status;
