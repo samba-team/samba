@@ -27,6 +27,7 @@ from samba.tests.krb5.kdc_base_test import KDCBaseTest
 import samba.tests.krb5.kcrypto as kcrypto
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
+    KDC_ERR_S_PRINCIPAL_UNKNOWN,
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_PREAUTH_REQUIRED,
     KU_PA_ENC_TIMESTAMP,
@@ -40,7 +41,8 @@ global_hexdump = False
 
 
 class AsReqBaseTest(KDCBaseTest):
-    def _run_as_req_enc_timestamp(self, client_creds):
+    def _run_as_req_enc_timestamp(self, client_creds, sname=None,
+                                  expected_error=None):
         client_account = client_creds.get_username()
         client_as_etypes = self.get_default_enctypes()
         client_kvno = client_creds.get_kvno()
@@ -50,8 +52,9 @@ class AsReqBaseTest(KDCBaseTest):
 
         cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
                                           names=[client_account])
-        sname = self.PrincipalName_create(name_type=NT_SRV_INST,
-                                          names=[krbtgt_account, realm])
+        if sname is None:
+            sname = self.PrincipalName_create(name_type=NT_SRV_INST,
+                                              names=[krbtgt_account, realm])
 
         expected_crealm = realm
         expected_cname = cname
@@ -63,7 +66,10 @@ class AsReqBaseTest(KDCBaseTest):
 
         initial_etypes = client_as_etypes
         initial_kdc_options = krb5_asn1.KDCOptions('forwardable')
-        initial_error_mode = KDC_ERR_PREAUTH_REQUIRED
+        if expected_error is not None:
+            initial_error_mode = expected_error
+        else:
+            initial_error_mode = KDC_ERR_PREAUTH_REQUIRED
 
         rep, kdc_exchange_dict = self._test_as_exchange(cname,
                                                         realm,
@@ -80,6 +86,10 @@ class AsReqBaseTest(KDCBaseTest):
                                                         None,
                                                         initial_kdc_options,
                                                         pac_request=True)
+
+        if expected_error is not None:
+            return None
+
         etype_info2 = kdc_exchange_dict['preauth_etype_info2']
         self.assertIsNotNone(etype_info2)
 
@@ -208,6 +218,28 @@ class AsReqKerberosTests(AsReqBaseTest):
     def test_as_req_enc_timestamp_mac(self):
         client_creds = self.get_mach_creds()
         self._run_as_req_enc_timestamp(client_creds)
+
+    # Ensure we can't use truncated well-known principals such as krb@REALM
+    # instead of krbtgt@REALM.
+    def test_krbtgt_wrong_principal(self):
+        client_creds = self.get_client_creds()
+
+        krbtgt_creds = self.get_krbtgt_creds()
+
+        krbtgt_account = krbtgt_creds.get_username()
+        realm = krbtgt_creds.get_realm()
+
+        # Truncate the name of the krbtgt principal.
+        krbtgt_account = krbtgt_account[:3]
+
+        wrong_krbtgt_princ = self.PrincipalName_create(
+            name_type=NT_SRV_INST,
+            names=[krbtgt_account, realm])
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            sname=wrong_krbtgt_princ,
+            expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
 
 
 if __name__ == "__main__":
