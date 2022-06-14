@@ -104,7 +104,7 @@ static bool is_tombstone_reanimate_request(struct ldb_request *req,
 	if (el_dn == NULL) {
 		return false;
 	}
-	if (el_dn->flags != LDB_FLAG_MOD_REPLACE) {
+	if (LDB_FLAG_MOD_TYPE(el_dn->flags) != LDB_FLAG_MOD_REPLACE) {
 		return false;
 	}
 	if (el_dn->num_values != 1) {
@@ -117,7 +117,7 @@ static bool is_tombstone_reanimate_request(struct ldb_request *req,
 		return false;
 	}
 
-	if (el_deleted->flags != LDB_FLAG_MOD_DELETE) {
+	if (LDB_FLAG_MOD_TYPE(el_deleted->flags) != LDB_FLAG_MOD_DELETE) {
 		return false;
 	}
 
