@@ -452,7 +452,6 @@ static NTSTATUS openat_pathref_fullname(
 
 	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(smb_fname));
 
-	SMB_ASSERT(!is_named_stream(smb_fname));
 	SMB_ASSERT(smb_fname->fsp == NULL);
 
 	status = fsp_new(conn, conn, &fsp);
