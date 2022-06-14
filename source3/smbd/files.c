@@ -447,7 +447,6 @@ static NTSTATUS openat_pathref_fullname(
 {
 	struct connection_struct *conn = dirfsp->conn;
 	struct files_struct *fsp = NULL;
-	int open_flags = O_RDONLY;
 	NTSTATUS status;
 
 	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(smb_fname));
@@ -470,9 +469,8 @@ static NTSTATUS openat_pathref_fullname(
 		goto fail;
 	}
 
-	open_flags |= O_NONBLOCK;
-
-	status = fd_openat(dirfsp, smb_fname, fsp, open_flags, 0);
+	status = fd_openat(
+		dirfsp, smb_fname, fsp, O_RDONLY|O_NONBLOCK, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 
 		smb_fname->st = fsp->fsp_name->st;
