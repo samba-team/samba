@@ -879,6 +879,10 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 {
 	struct connection_struct *conn = fsp->conn;
 	NTSTATUS status = NT_STATUS_OK;
+	bool fsp_is_stream = fsp_is_alternate_stream(fsp);
+	bool smb_fname_is_stream = is_named_stream(smb_fname);
+
+	SMB_ASSERT(fsp_is_stream == smb_fname_is_stream);
 
 	/*
 	 * Never follow symlinks on a POSIX client. The
@@ -889,10 +893,8 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		flags |= O_NOFOLLOW;
 	}
 
-	if (fsp_is_alternate_stream(fsp)) {
+	if (fsp_is_stream) {
 		int fd;
-
-		SMB_ASSERT(is_named_stream(smb_fname));
 
 		fd = SMB_VFS_OPENAT(
 			conn,
