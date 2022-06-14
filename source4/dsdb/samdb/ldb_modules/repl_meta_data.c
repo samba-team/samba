@@ -3525,7 +3525,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 			return ldb_module_operr(module);
 		}
 
-		if (req->op.mod.message->elements[0].flags != LDB_FLAG_MOD_REPLACE) {
+		if (LDB_FLAG_MOD_TYPE(req->op.mod.message->elements[0].flags) != LDB_FLAG_MOD_REPLACE) {
 			return ldb_module_operr(module);
 		}
 
@@ -3558,11 +3558,11 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 			return ldb_module_operr(module);
 		}
 
-		if (req->op.mod.message->elements[0].flags != LDB_FLAG_MOD_DELETE) {
+		if (LDB_FLAG_MOD_TYPE(req->op.mod.message->elements[0].flags) != LDB_FLAG_MOD_DELETE) {
 			return ldb_module_operr(module);
 		}
 
-		if (req->op.mod.message->elements[1].flags != LDB_FLAG_MOD_ADD) {
+		if (LDB_FLAG_MOD_TYPE(req->op.mod.message->elements[1].flags) != LDB_FLAG_MOD_ADD) {
 			return ldb_module_operr(module);
 		}
 
@@ -3645,7 +3645,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 			return ldb_module_operr(module);
 		}
 
-		if (msg->elements[0].flags != LDB_FLAG_MOD_ADD) {
+		if (LDB_FLAG_MOD_TYPE(msg->elements[0].flags) != LDB_FLAG_MOD_ADD) {
 			talloc_free(ac);
 			return ldb_module_operr(module);
 		}
