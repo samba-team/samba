@@ -5251,9 +5251,9 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		torture_assert(tctx,
 			       ldb_msg_find_attr_as_string(res[0], "operatingSystemServicePack", NULL) == NULL,
 			       "'operatingSystemServicePack' shouldn't stick!");
-		torture_assert(tctx,
-			       ldb_msg_find_attr_as_string(res[0], "operatingSystemVersion", NULL) == NULL,
-			       "'operatingSystemVersion' shouldn't stick!");
+		torture_assert_str_equal(tctx,
+					 ldb_msg_find_attr_as_string(res[0], "operatingSystemVersion", NULL),
+					 version_str, "'operatingSystemVersion' wrong!");
 
 		/* The DNS host name shouldn't have been updated by the server */
 
@@ -5387,9 +5387,11 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 
 		torture_assert(tctx, odiT->domainname.string != NULL,
 			       "trust_list domainname should be valid");
-		if (texT->trust_type == LSA_TRUST_TYPE_DOWNLEVEL) {
+		if (texT->trust_type == LSA_TRUST_TYPE_DOWNLEVEL ||
+		    texT->trust_type == LSA_TRUST_TYPE_MIT)
+		{
 			torture_assert(tctx, odiT->dns_domainname.string == NULL,
-			       "trust_list dns_domainname should be NULL for downlevel");
+			       "trust_list dns_domainname should be NULL for downlevel or MIT");
 		} else {
 			torture_assert(tctx, odiT->dns_domainname.string != NULL,
 			       "trust_list dns_domainname should be valid for uplevel");
