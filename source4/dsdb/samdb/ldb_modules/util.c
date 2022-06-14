@@ -1718,6 +1718,44 @@ const struct dsdb_class *dsdb_get_structural_oc_from_msg(const struct dsdb_schem
 	return dsdb_get_last_structural_class(schema, oc_el);
 }
 
+/*
+  Get the parent class of an objectclass, or NULL if none exists.
+ */
+const struct dsdb_class *dsdb_get_parent_class(const struct dsdb_schema *schema,
+					       const struct dsdb_class *objectclass)
+{
+	if (ldb_attr_cmp(objectclass->lDAPDisplayName, "top") == 0) {
+		return NULL;
+	}
+
+	if (objectclass->subClassOf == NULL) {
+		return NULL;
+	}
+
+	return dsdb_class_by_lDAPDisplayName(schema, objectclass->subClassOf);
+}
+
+/*
+  Return true if 'struct_objectclass' is a subclass of 'other_objectclass'. The
+  two objectclasses must originate from the same schema, to allow for
+  pointer-based identity comparison.
+ */
+bool dsdb_is_subclass_of(const struct dsdb_schema *schema,
+			 const struct dsdb_class *struct_objectclass,
+			 const struct dsdb_class *other_objectclass)
+{
+	while (struct_objectclass != NULL) {
+		/* Pointer comparison can be used due to the same schema str. */
+		if (struct_objectclass == other_objectclass) {
+			return true;
+		}
+
+		struct_objectclass = dsdb_get_parent_class(schema, struct_objectclass);
+	}
+
+	return false;
+}
+
 /* Fix the DN so that the relative attribute names are in upper case so that the DN:
    cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com becomes
    CN=Adminstrator,CN=users,DC=samba,DC=example,DC=com
