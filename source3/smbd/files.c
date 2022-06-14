@@ -653,7 +653,7 @@ NTSTATUS open_stream_pathref_fsp(
 		NULL,	/* stream open is relative to fsp->base_fsp */
 		smb_fname,
 		fsp,
-		O_RDONLY|O_NONBLOCK|O_NOFOLLOW,
+		O_RDONLY|O_NONBLOCK,
 		0);
 	fsp_set_fd(fsp, fd);
 
