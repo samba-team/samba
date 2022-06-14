@@ -667,7 +667,7 @@ NTSTATUS open_stream_pathref_fsp(
 
 	fd = SMB_VFS_OPENAT(
 		conn,
-		dirfsp,
+		NULL,	/* stream open is relative to fsp->base_fsp */
 		smb_fname,
 		fsp,
 		O_RDONLY|O_NONBLOCK|O_NOFOLLOW,

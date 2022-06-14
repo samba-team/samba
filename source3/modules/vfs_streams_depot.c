@@ -684,6 +684,7 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 	}
 
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
+	SMB_ASSERT(dirfsp == NULL);
 	SMB_ASSERT(VALID_STAT(fsp->base_fsp->fsp_name->st));
 
 	create_it = (mode & O_CREAT);

@@ -344,6 +344,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 	}
 
 	SMB_ASSERT(fsp_is_alternate_stream(fsp));
+	SMB_ASSERT(dirfsp == NULL);
 
 	status = streams_xattr_get_name(handle, talloc_tos(),
 					smb_fname->stream_name, &xattr_name);

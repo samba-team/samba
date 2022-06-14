@@ -418,6 +418,8 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 			goto fail;
 		}
 
+		TALLOC_FREE(fspcwd);
+
 		fsp->base_fsp = base_name->fsp;
 	}
 

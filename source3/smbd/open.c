@@ -937,6 +937,35 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		flags |= O_NOFOLLOW;
 	}
 
+	if (fsp_is_alternate_stream(fsp)) {
+		int fd;
+
+		SMB_ASSERT(is_named_stream(smb_fname));
+
+		fd = SMB_VFS_OPENAT(
+			conn,
+			NULL,	/* stream open is relative to fsp->base_fsp */
+			smb_fname,
+			fsp,
+			flags,
+			mode);
+		if (fd == -1) {
+			status = map_nt_error_from_unix(errno);
+		}
+		fsp_set_fd(fsp, fd);
+
+		if (fd != -1) {
+			status = vfs_stat_fsp(fsp);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_DEBUG("vfs_stat_fsp failed: %s\n",
+					  nt_errstr(status));
+				fd_close(fsp);
+			}
+		}
+
+		return status;
+	}
+
 	/*
 	 * Only follow symlinks within a share
 	 * definition.

@@ -2666,7 +2666,7 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 		}
 
 		fd = SMB_VFS_NEXT_OPENAT(handle,
-					 fsp->conn->cwd_fsp,
+					 NULL, /* opening a stream */
 					 fsp->fsp_name,
 					 fsp,
 					 fio->flags,
