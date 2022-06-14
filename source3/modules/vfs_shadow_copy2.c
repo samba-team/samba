@@ -1510,6 +1510,34 @@ static int shadow_copy2_fstatat(
 	return 0;
 }
 
+static struct smb_filename *shadow_copy2_openat_name(
+	TALLOC_CTX *mem_ctx,
+	const struct files_struct *dirfsp,
+	const struct files_struct *fsp,
+	const struct smb_filename *smb_fname_in)
+{
+	struct smb_filename *result = NULL;
+
+	if (fsp->base_fsp != NULL) {
+		struct smb_filename *base_fname = fsp->base_fsp->fsp_name;
+
+		SMB_ASSERT(is_named_stream(smb_fname_in));
+
+		result = synthetic_smb_fname(
+			mem_ctx,
+			base_fname->base_name,
+			smb_fname_in->stream_name,
+			&smb_fname_in->st,
+			smb_fname_in->twrp,
+			smb_fname_in->flags);
+	} else {
+		result = full_path_from_dirfsp_atname(
+			mem_ctx, dirfsp, smb_fname_in);
+	}
+
+	return result;
+}
+
 static int shadow_copy2_openat(vfs_handle_struct *handle,
 			       const struct files_struct *dirfsp,
 			       const struct smb_filename *smb_fname_in,
@@ -1525,9 +1553,8 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 	int ret;
 	bool ok;
 
-	smb_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						 dirfsp,
-						 smb_fname_in);
+	smb_fname = shadow_copy2_openat_name(
+		talloc_tos(), dirfsp, fsp, smb_fname_in);
 	if (smb_fname == NULL) {
 		errno = ENOMEM;
 		return -1;
