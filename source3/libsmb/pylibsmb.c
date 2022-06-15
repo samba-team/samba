@@ -1959,12 +1959,12 @@ static void do_listing_cb(struct tevent_req *subreq)
 static NTSTATUS do_listing(struct py_cli_state *self,
 			   const char *base_dir, const char *user_mask,
 			   uint16_t attribute,
+			   unsigned int info_level,
 			   NTSTATUS (*callback_fn)(struct file_info *,
 						   const char *, void *),
 			   void *priv)
 {
 	char *mask = NULL;
-	unsigned int info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
 	struct do_listing_state state = {
 		.mask = mask,
 		.callback_fn = callback_fn,
@@ -2014,12 +2014,16 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	char *base_dir;
 	char *user_mask = NULL;
 	unsigned int attribute = LIST_ATTRIBUTE_MASK;
+	unsigned int info_level = 0;
 	NTSTATUS status;
+	enum protocol_types proto = smbXcli_conn_protocol(self->cli->conn);
 	PyObject *result = NULL;
-	const char *kwlist[] = { "directory", "mask", "attribs", NULL };
+	const char *kwlist[] = { "directory", "mask", "attribs", "info_level",
+				 NULL };
 
-	if (!ParseTupleAndKeywords(args, kwds, "z|sI:list", kwlist,
-				   &base_dir, &user_mask, &attribute)) {
+	if (!ParseTupleAndKeywords(args, kwds, "z|sII:list", kwlist,
+				   &base_dir, &user_mask, &attribute,
+				   &info_level)) {
 		return NULL;
 	}
 
@@ -2028,8 +2032,16 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 		return NULL;
 	}
 
+	if (!info_level) {
+		if (proto >= PROTOCOL_SMB2_02) {
+			info_level = SMB2_FIND_ID_BOTH_DIRECTORY_INFO;
+		} else {
+			info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
+		}
+	}
+
 	status = do_listing(self, base_dir, user_mask, attribute,
-			    list_helper, result);
+			    info_level, list_helper, result);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		Py_XDECREF(result);

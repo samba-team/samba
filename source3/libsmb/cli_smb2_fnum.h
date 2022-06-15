@@ -99,7 +99,8 @@ struct tevent_req *cli_smb2_list_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
 	struct cli_state *cli,
-	const char *pathname);
+	const char *pathname,
+	unsigned int info_level);
 NTSTATUS cli_smb2_list_recv(
 	struct tevent_req *req,
 	TALLOC_CTX *mem_ctx,

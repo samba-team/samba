@@ -1319,6 +1319,7 @@ struct cli_smb2_list_state {
 	NTSTATUS status;
 	struct cli_smb2_list_dir_data *response;
 	uint32_t offset;
+	unsigned int info_level;
 };
 
 static void cli_smb2_list_opened(struct tevent_req *subreq);
@@ -1329,7 +1330,8 @@ struct tevent_req *cli_smb2_list_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
 	struct cli_state *cli,
-	const char *pathname)
+	const char *pathname,
+	unsigned int info_level)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_smb2_list_state *state = NULL;
@@ -1343,6 +1345,7 @@ struct tevent_req *cli_smb2_list_send(
 	state->ev = ev;
 	state->cli = cli;
 	state->status = NT_STATUS_OK;
+	state->info_level = info_level;
 
 	ok = windows_parent_dirname(state, pathname, &parent, &state->mask);
 	if (!ok) {
@@ -1499,7 +1502,7 @@ NTSTATUS cli_smb2_list_recv(
 			cli->timeout,			/* timeout_msec */
 			cli->smb2.session,		/* session */
 			cli->smb2.tcon,			/* tcon */
-			SMB2_FIND_ID_BOTH_DIRECTORY_INFO, /* level */
+			state->info_level,		/* level */
 			0,				/* flags */
 			0,		    		/* file_index */
 			ph->fid_persistent, 		/* fid_persistent */
