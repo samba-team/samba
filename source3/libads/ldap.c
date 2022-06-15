@@ -261,6 +261,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ret = false;
 	char addr[INET6_ADDRSTRLEN];
+	ADS_STATUS status;
 
 	if (ss == NULL) {
 		TALLOC_FREE(frame);
@@ -314,7 +315,14 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 		goto out;
 	}
 
-	ads->config.bind_path          = ads_build_dn(ads->config.realm);
+	status = ads_build_dn(ads->config.realm, &ads->config.bind_path);
+	if (!ADS_ERR_OK(status)) {
+		DBG_DEBUG("Failed to build bind path: %s\n",
+			  ads_errstr(status));
+		ret = false;
+		goto out;
+	}
+
 	if (*cldap_reply.server_site) {
 		ads->config.server_site_name =
 			SMB_STRDUP(cldap_reply.server_site);

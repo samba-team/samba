@@ -100,17 +100,19 @@ ADS_STATUS ads_build_path(const char *realm,
    realm of the form AA.BB.CC 
    caller must free
 */
-char *ads_build_dn(const char *realm)
+ADS_STATUS ads_build_dn(const char *realm, char **_dn)
 {
 	ADS_STATUS status;
 	char *dn = NULL;
 
 	status = ads_build_path(realm, ".", "dc=", 0, &dn);
 	if (!ADS_ERR_OK(status)) {
-		return NULL;
+		return status;
 	}
 
-	return dn;
+	*_dn = dn;
+
+	return ADS_ERROR_NT(NT_STATUS_OK);
 }
 
 /* return a DNS name in the for aa.bb.cc from the DN  
