@@ -29,15 +29,7 @@ class SamDBApiTestCase(TestCaseInTempDir):
         super(SamDBApiTestCase, self).setUp()
 
     def tearDown(self):
-        try:
-            os.remove(self.tempdir + "/test.db")
-        except OSError as e:
-            self.assertEqual(e.errno, errno.ENOENT)
-
-        try:
-            os.remove(self.tempdir + "/existing.db")
-        except OSError as e:
-            self.assertEqual(e.errno, errno.ENOENT)
+        self.rm_files("test.db", "existing.db", allow_missing=True)
 
         super(SamDBApiTestCase, self).tearDown()
 
