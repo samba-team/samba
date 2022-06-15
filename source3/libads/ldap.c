@@ -296,7 +296,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	TALLOC_FREE(ads->config.bind_path);
 	TALLOC_FREE(ads->config.ldap_server_name);
 	TALLOC_FREE(ads->config.server_site_name);
-	SAFE_FREE(ads->config.client_site_name);
+	TALLOC_FREE(ads->config.client_site_name);
 	TALLOC_FREE(ads->server.workgroup);
 
 	if (!check_cldap_reply_required_flags(cldap_reply.server_type,
@@ -342,7 +342,12 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 
 	if (*cldap_reply.client_site) {
 		ads->config.client_site_name =
-			SMB_STRDUP(cldap_reply.client_site);
+			talloc_strdup(ads, cldap_reply.client_site);
+		if (ads->config.client_site_name == NULL) {
+			DBG_WARNING("Out of memory\n");
+			ret = false;
+			goto out;
+		}
 	}
 
 	ads->server.workgroup = talloc_strdup(ads, cldap_reply.domain_name);
