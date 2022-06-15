@@ -293,7 +293,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	/* Fill in the ads->config values */
 
 	TALLOC_FREE(ads->config.realm);
-	SAFE_FREE(ads->config.bind_path);
+	TALLOC_FREE(ads->config.bind_path);
 	SAFE_FREE(ads->config.ldap_server_name);
 	SAFE_FREE(ads->config.server_site_name);
 	SAFE_FREE(ads->config.client_site_name);
@@ -315,7 +315,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 		goto out;
 	}
 
-	status = ads_build_dn(ads->config.realm, &ads->config.bind_path);
+	status = ads_build_dn(ads->config.realm, ads, &ads->config.bind_path);
 	if (!ADS_ERR_OK(status)) {
 		DBG_DEBUG("Failed to build bind path: %s\n",
 			  ads_errstr(status));

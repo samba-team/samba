@@ -100,7 +100,7 @@ ADS_STATUS ads_build_path(const char *realm,
    realm of the form AA.BB.CC 
    caller must free
 */
-ADS_STATUS ads_build_dn(const char *realm, char **_dn)
+ADS_STATUS ads_build_dn(const char *realm, TALLOC_CTX *mem_ctx, char **_dn)
 {
 	ADS_STATUS status;
 	char *dn = NULL;
@@ -110,7 +110,11 @@ ADS_STATUS ads_build_dn(const char *realm, char **_dn)
 		return status;
 	}
 
-	*_dn = dn;
+	*_dn = talloc_strdup(mem_ctx, dn);
+	SAFE_FREE(dn);
+	if (*_dn == NULL) {
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	return ADS_ERROR_NT(NT_STATUS_OK);
 }
@@ -149,7 +153,6 @@ static void ads_destroy(ADS_STRUCT **ads)
 #ifdef HAVE_LDAP
 		ads_disconnect(*ads);
 #endif
-		SAFE_FREE((*ads)->config.bind_path);
 		SAFE_FREE((*ads)->config.ldap_server_name);
 		SAFE_FREE((*ads)->config.server_site_name);
 		SAFE_FREE((*ads)->config.client_site_name);

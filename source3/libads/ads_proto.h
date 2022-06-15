@@ -45,7 +45,7 @@ ADS_STATUS ads_build_path(const char *realm,
 			  const char *field,
 			  int reverse,
 			  char **_path);
-ADS_STATUS ads_build_dn(const char *realm, char **_dn);
+ADS_STATUS ads_build_dn(const char *realm, TALLOC_CTX *mem_ctx, char **_dn);
 char *ads_build_domain(const char *dn);
 ADS_STRUCT *ads_init(TALLOC_CTX *mem_ctx,
 		     const char *realm,
