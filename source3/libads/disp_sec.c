@@ -218,7 +218,10 @@ void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_descripto
 
 	if (ads && !ads->config.config_path) {
 		if (ADS_ERR_OK(ads_config_path(ads, mem_ctx, &tmp_path))) {
-			ads->config.config_path = SMB_STRDUP(tmp_path);
+			ads->config.config_path = talloc_strdup(ads, tmp_path);
+			if (ads->config.config_path == NULL) {
+				DBG_WARNING("Out of memory\n");
+			}
 		}
 	}
 
