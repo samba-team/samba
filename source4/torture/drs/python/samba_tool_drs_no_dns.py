@@ -24,7 +24,6 @@ Adapted from samba_tool_drs.py
 """
 
 import samba.tests
-import shutil
 import os
 import ldb
 import drs_base
@@ -47,16 +46,9 @@ class SambaToolDrsNoDnsTests(drs_base.DrsBaseTestCase):
 
     def tearDown(self):
         self._enable_inbound_repl(self.dnsname_dc1)
-
-        try:
-            shutil.rmtree(os.path.join(self.tempdir, "private"))
-            shutil.rmtree(os.path.join(self.tempdir, "etc"))
-            shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
-            os.remove(os.path.join(self.tempdir, "names.tdb"))
-            shutil.rmtree(os.path.join(self.tempdir, "state"))
-            shutil.rmtree(os.path.join(self.tempdir, "bind-dns"))
-        except Exception:
-            pass
+        self.rm_files('names.tdb', allow_missing=True)
+        self.rm_dirs('etc', 'msg.lock', 'private', 'state', 'bind-dns',
+                     allow_missing=True)
 
         super(SambaToolDrsNoDnsTests, self).tearDown()
 
