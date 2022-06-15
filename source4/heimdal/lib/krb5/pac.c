@@ -394,10 +394,12 @@ krb5_pac_get_buffer(krb5_context context, krb5_pac p,
 	if (p->pac->buffers[i].type != type)
 	    continue;
 
-	ret = krb5_data_copy(data, (unsigned char *)p->data.data + offset, len);
-	if (ret) {
-	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	    return ret;
+	if (data) {
+	    ret = krb5_data_copy(data, (unsigned char *)p->data.data + offset, len);
+	    if (ret) {
+		krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+		return ret;
+	    }
 	}
 	return 0;
     }
