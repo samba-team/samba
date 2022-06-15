@@ -19,7 +19,6 @@
 
 import logging
 import os
-import shutil
 
 from samba.auth import system_session
 from samba.provision import provision
@@ -54,11 +53,8 @@ class SamDBTestCase(TestCaseInTempDir):
         self.lp = self.result.lp
 
     def tearDown(self):
-        for f in ['names.tdb']:
-            os.remove(os.path.join(self.tempdir, f))
-
-        for d in ['etc', 'msg.lock', 'private', 'state', 'bind-dns']:
-            shutil.rmtree(os.path.join(self.tempdir, d))
+        self.rm_files('names.tdb')
+        self.rm_dirs('etc', 'msg.lock', 'private', 'state', 'bind-dns')
 
         super(SamDBTestCase, self).tearDown()
 
