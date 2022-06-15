@@ -18,7 +18,6 @@
 from samba.tests import BlackboxTestCase
 import os
 import ldb
-import shutil
 from subprocess import check_output
 from samba.samdb import SamDB
 
@@ -57,13 +56,12 @@ class DowngradeTestBase(BlackboxTestCase):
         self.dbs.append(self.sam_path)
 
     def tearDown(self):
-        shutil.rmtree(os.path.join(self.tempdir, "private"))
-        shutil.rmtree(os.path.join(self.tempdir, "etc"))
-        shutil.rmtree(os.path.join(self.tempdir, "state"))
-        shutil.rmtree(os.path.join(self.tempdir, "bind-dns"))
-        shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
-        os.unlink(os.path.join(self.tempdir, "names.tdb"))
-        os.unlink(os.path.join(self.tempdir, "gencache.tdb"))
+        self.rm_dirs("private",
+                     "etc",
+                     "state",
+                     "bind-dns",
+                     "msg.lock")
+        self.rm_files("names.tdb", "gencache.tdb")
         super(DowngradeTestBase, self).tearDown()
 
     # Parse out the comments above each record that ldbdump produces
