@@ -74,10 +74,8 @@ class JoinTestCase(DNSTKeyTest):
         if paths is not None:
             shutil.rmtree(paths.private_dir)
             shutil.rmtree(paths.state_dir)
-            shutil.rmtree(os.path.join(self.tempdir, "etc"))
-            shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
-            os.unlink(os.path.join(self.tempdir, "names.tdb"))
-            shutil.rmtree(os.path.join(self.tempdir, "bind-dns"))
+            self.rm_dirs("etc", "msg.lock", "bind-dns")
+            self.rm_files("names.tdb")
 
         self.join_ctx.cleanup_old_join(force=True)
 
