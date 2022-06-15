@@ -40,7 +40,11 @@ enum ads_sasl_state_e {
 
 /* The following definitions come from libads/ads_struct.c  */
 
-char *ads_build_path(const char *realm, const char *sep, const char *field, int reverse);
+ADS_STATUS ads_build_path(const char *realm,
+			  const char *sep,
+			  const char *field,
+			  int reverse,
+			  char **_path);
 char *ads_build_dn(const char *realm);
 char *ads_build_domain(const char *dn);
 ADS_STRUCT *ads_init(TALLOC_CTX *mem_ctx,

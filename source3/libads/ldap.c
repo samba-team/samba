@@ -1762,7 +1762,9 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
  **/
 char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit)
 {
+	ADS_STATUS status;
 	char *ret = NULL;
+	char *dn = NULL;
 
 	if (!org_unit || !*org_unit) {
 
@@ -1779,7 +1781,12 @@ char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit)
 	/* jmcd: removed "\\" from the separation chars, because it is
 	   needed as an escape for chars like '#' which are valid in an
 	   OU name */
-	return ads_build_path(org_unit, "/", "ou=", 1);
+	status = ads_build_path(org_unit, "/", "ou=", 1, &dn);
+	if (!ADS_ERR_OK(status)) {
+		return NULL;
+	}
+
+	return dn;
 }
 
 /**

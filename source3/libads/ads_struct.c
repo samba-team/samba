@@ -24,7 +24,11 @@
 /* return a ldap dn path from a string, given separators and field name
    caller must free
 */
-char *ads_build_path(const char *realm, const char *sep, const char *field, int reverse)
+ADS_STATUS ads_build_path(const char *realm,
+			  const char *sep,
+			  const char *field,
+			  int reverse,
+			  char **_path)
 {
 	char *p, *r;
 	int numbits = 0;
@@ -32,10 +36,12 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 	int len;
 	char *saveptr;
 
+	*_path = NULL;
+
 	r = SMB_STRDUP(realm);
 
 	if (!r || !*r) {
-		return r;
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
 	for (p=r; *p; p++) {
@@ -49,21 +55,21 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 	ret = (char *)SMB_MALLOC(len);
 	if (!ret) {
 		free(r);
-		return NULL;
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
 	if (strlcpy(ret,field, len) >= len) {
 		/* Truncate ! */
 		free(r);
 		free(ret);
-		return NULL;
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	p=strtok_r(r, sep, &saveptr);
 	if (p) {
 		if (strlcat(ret, p, len) >= len) {
 			free(r);
 			free(ret);
-			return NULL;
+			return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		}
 
 		while ((p=strtok_r(NULL, sep, &saveptr)) != NULL) {
@@ -76,7 +82,7 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 			free(ret);
 			if (retval == -1) {
 				free(r);
-				return NULL;
+				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 			}
 			ret = SMB_STRDUP(s);
 			free(s);
@@ -84,7 +90,10 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 	}
 
 	free(r);
-	return ret;
+
+	*_path = ret;
+
+	return ADS_ERROR_NT(NT_STATUS_OK);
 }
 
 /* return a dn of the form "dc=AA,dc=BB,dc=CC" from a 
@@ -93,7 +102,15 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 */
 char *ads_build_dn(const char *realm)
 {
-	return ads_build_path(realm, ".", "dc=", 0);
+	ADS_STATUS status;
+	char *dn = NULL;
+
+	status = ads_build_path(realm, ".", "dc=", 0, &dn);
+	if (!ADS_ERR_OK(status)) {
+		return NULL;
+	}
+
+	return dn;
 }
 
 /* return a DNS name in the for aa.bb.cc from the DN  
