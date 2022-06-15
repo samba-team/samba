@@ -144,21 +144,11 @@ char *ads_build_domain(const char *dn)
 	return dnsdomain;	
 }
 
-/*
-  free the memory used by the ADS structure initialized with 'ads_init(...)'
-*/
-static void ads_destroy(ADS_STRUCT **ads)
-{
-	if (ads && *ads) {
-#ifdef HAVE_LDAP
-		ads_disconnect(*ads);
-#endif
-	}
-}
-
 static int ads_destructor(ADS_STRUCT *ads)
 {
-	ads_destroy(&ads);
+#ifdef HAVE_LDAP
+	ads_disconnect(ads);
+#endif
 	return 0;
 }
 
