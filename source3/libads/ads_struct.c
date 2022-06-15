@@ -153,7 +153,6 @@ static void ads_destroy(ADS_STRUCT **ads)
 #ifdef HAVE_LDAP
 		ads_disconnect(*ads);
 #endif
-		SAFE_FREE((*ads)->config.ldap_server_name);
 		SAFE_FREE((*ads)->config.server_site_name);
 		SAFE_FREE((*ads)->config.client_site_name);
 		SAFE_FREE((*ads)->config.schema_path);
