@@ -18,6 +18,10 @@
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba import NTSTATUSError,ntstatus
 import samba.tests.libsmb
+from samba.dcerpc import security
+
+def posix_context(mode):
+    return (libsmb.SMB2_CREATE_TAG_POSIX, mode.to_bytes(4, 'little'))
 
 class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
@@ -143,4 +147,48 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_PARAMETER)
 
         finally:
+            self.disable_smb3unix()
+
+    def delete_test_file(self, c, fname, mode=0):
+        f,_,cc_out = c.create_ex(fname,
+                        DesiredAccess=security.SEC_STD_ALL,
+                        CreateDisposition=libsmb.FILE_OPEN,
+                        CreateContexts=[posix_context(mode)])
+        c.delete_on_close(f, True)
+        c.close(f)
+
+    def test_posix_query_dir(self):
+        test_files = []
+        try:
+            self.enable_smb3unix()
+
+            c = libsmb.Conn(
+                self.server_ip,
+                "smb3_posix_share",
+                self.lp,
+                self.creds,
+                posix=True)
+            self.assertTrue(c.have_posix())
+
+            for i in range(10):
+                fname = '\\test%d' % i
+                f,_,cc_out = c.create_ex(fname,
+                                CreateDisposition=libsmb.FILE_OPEN_IF,
+                                CreateContexts=[posix_context(0o744)])
+                c.close(f)
+                test_files.append(fname)
+
+            expected_count = len(c.list(''))
+            self.assertNotEqual(expected_count, 0, 'No files were found')
+
+            actual_count = len(c.list('',
+                                info_level=libsmb.SMB2_FIND_POSIX_INFORMATION,
+                                posix=True))
+            self.assertEqual(actual_count, expected_count,
+                             'SMB2_FIND_POSIX_INFORMATION failed to list contents')
+
+        finally:
+            for fname in test_files:
+                self.delete_test_file(c, fname)
+
             self.disable_smb3unix()

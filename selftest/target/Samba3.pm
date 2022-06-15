@@ -3078,6 +3078,14 @@ sub provision($$)
 	directory mask = 0777
 	force directory mode = 0
 	vfs objects = xattr_tdb streams_depot
+[smb3_posix_share]
+	vfs objects = fake_acls xattr_tdb streams_depot time_audit full_audit
+	create mask = 07777
+	directory mask = 07777
+	mangled names = no
+	path = $shrdir
+	read only = no
+	guest ok = yes
 [aio]
 	copy = durable
 	aio read size = 1
