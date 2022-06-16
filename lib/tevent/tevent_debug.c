@@ -292,3 +292,41 @@ void tevent_trace_queue_callback(struct tevent_context *ev,
 		ev->tracing.qe.callback(qe, tp, ev->tracing.qe.private_data);
 	}
 }
+
+static __thread size_t *tevent_thread_call_depth_ptr = NULL;
+
+void tevent_thread_call_depth_activate(size_t *ptr)
+{
+	tevent_thread_call_depth_ptr = ptr;
+	*tevent_thread_call_depth_ptr = 0;
+}
+
+void tevent_thread_call_depth_deactivate(void)
+{
+	/* Reset the previous storage */
+	if (tevent_thread_call_depth_ptr != NULL) {
+		*tevent_thread_call_depth_ptr = 0;
+	}
+	tevent_thread_call_depth_ptr = NULL;
+}
+
+void tevent_thread_call_depth_start(struct tevent_req *req)
+{
+	if (tevent_thread_call_depth_ptr != NULL) {
+		*tevent_thread_call_depth_ptr = req->internal.call_depth = 1;
+	}
+}
+
+void tevent_thread_call_depth_reset_from_req(struct tevent_req *req)
+{
+	if (tevent_thread_call_depth_ptr != NULL) {
+		*tevent_thread_call_depth_ptr = req->internal.call_depth;
+	}
+}
+
+_PRIVATE_ void tevent_thread_call_depth_set(size_t depth)
+{
+	if (tevent_thread_call_depth_ptr != NULL) {
+		*tevent_thread_call_depth_ptr = depth;
+	}
+}

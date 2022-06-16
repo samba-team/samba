@@ -149,6 +149,8 @@ static void tevent_queue_immediate_trigger(struct tevent_context *ev,
 
 	tevent_trace_queue_callback(ev, q->list,
 				    TEVENT_EVENT_TRACE_BEFORE_HANDLER);
+	/* Set the call depth of the request coming from the queue. */
+	tevent_thread_call_depth_set(q->list->req->internal.call_depth);
 	q->list->triggered = true;
 	q->list->trigger(q->list->req, q->list->private_data);
 }

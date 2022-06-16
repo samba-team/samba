@@ -1929,6 +1929,169 @@ pid_t tevent_cached_getpid(void);
 
 
 /**
+ * @defgroup tevent_thread_call_depth The tevent call depth tracking functions
+ * @ingroup tevent
+ *
+ *
+ * The call depth tracking consists of two parts.
+ *
+ * Part 1 - storing the depth inside each tevent request.
+ *
+ * Each instance of 'struct tevent_req' internally stores the value of the
+ * current depth. If a new subrequest is created via tevent_req_create(), the
+ * newly created subrequest gets the value from the parent incremented by 1.
+ *
+ * Part 2 - updating external variable with the call depth of the currently
+ * processed tevent request.
+ *
+ * The intended use of call depth is for the trace indentation.  This is done
+ * by registering the address of an external size_t variable via
+ * tevent_thread_call_depth_activate(). And the tracing code just reads it's
+ * value.
+ *
+ * The updates happen during:
+ *
+ * tevent_req_create()
+ * - external variable is set to the value of the newly created request (i.e.
+ *   value of the parent incremented by 1)
+ *
+ * tevent_req_notify_callback()
+ * - external variable is set to the value of the parent tevent request, which
+ *   is just about to be processed
+ *
+ * tevent_queue_immediate_trigger()
+ * - external variable is set to the value of the request coming from the queue
+ *
+ *
+ * While 'Part 1' maintains the call depth value inside each teven request
+ * precisely, the value of the external variable depends on the call flow and
+ * can be changed after return from a function call, so it no longer matches
+ * the value of the request being processed in the current function.
+ *
+ * @code
+ * struct tevent_req *foo_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev)
+ * {
+ *     struct tevent_req *req, *subreq;
+ *     struct foo_state *state;
+ *
+ *     // External variable has value 'X', which is the value in parent code
+ *     // It is ok, since tracing starts often only after tevent_req_create()
+ *     req = tevent_req_create(mem_ctx, &state, struct foo_state);
+ *
+ *     // External variable has now value 'X + 1'
+ *     D_DEBUG("foo_send(): the external variable has the expected value\n");
+ *
+ *     subreq = bar_send(state, ev, ...);
+ *     tevent_req_set_callback(subreq, foo_done, req);
+ *
+ *     // External variable has value 'X + 1 + n', where n > 0 and n is the
+ *     // depth reached in bar_send().
+ *     // We want to reset it via tevent_thread_call_depth_reset_from_req(),
+ *     // since we want the following D_DEBUG() to have the right trace
+ *     //indentation.
+ *
+ *     tevent_thread_call_depth_reset_from_req(req);
+ *     // External variable has again value 'X + 1' taken from req.
+ *     D_DEBUG("foo_send(): the external variable has the expected value\n");
+ *     return req;
+ * }
+ *
+ * static void foo_done(struct tevent_req *subreq)
+ * {
+ *     struct tevent_req *req =
+ *         tevent_req_callback_data(subreq,
+ *         struct tevent_req);
+ *     struct foo_state *state =
+ *         tevent_req_data(req,
+ *         struct foo_state);
+ *
+ *     // external variable has value 'X + 1'
+ *
+ *     D_DEBUG("foo_done(): the external variable has the expected value\n");
+ *     status = bar_recv(subreq, state, ...)
+ *     tevent_req_done(req);
+ * }
+ *
+ * NTSTATUS foo_recv(struct tevent_req *req)
+ * {
+ *     struct foo_state *state = tevent_req_data( req, struct foo_state);
+ *
+ *     // external variable has value 'X' (not 'X + 1')
+ *     // which is ok, if we consider _recv() to be an access function
+ *     // called from the parent context
+ *
+ *     D_DEBUG("foo_recv(): external variable has the value from parent\n");
+ *     return NT_STATUS_OK;
+ * }
+ * @endcode
+ *
+ * Interface has 3 parts:
+ *
+ * Part 1: activation/deactivation
+ *
+ * tevent_thread_call_depth_activate(), tevent_thread_call_depth_deactivate()
+ *
+ * Activating registers external size_t variable that will be maintained with
+ * the current call depth.
+ *
+ * Part 2: Mark the request (and its subrequests) to be tracked
+ *
+ * tevent_thread_call_depth_start(struct tevent_req *req)
+ *
+ * By default, all newly created requests have call depth set to 0.
+ * tevent_thread_call_depth_start() should be called shortly after
+ * tevent_req_create(). It sets the call depth to 1.
+ * Subrequest will have call depth 2 and so on.
+ *
+ * Part 3: reset the external variable using value from tevent request
+ *
+ * tevent_thread_call_depth_reset_from_req(struct tevent_req *req)
+ *
+ * If the call depth is used for trace indentation, it might be usefull to
+ * reset the external variable to the call depth of currently processed tevent
+ * request, since the ext. variable can be changed after return from a function
+ * call that has created subrequests.
+ *
+ * THREADING
+ *
+ * The state is thread specific, i.e. each thread can activate it and register
+ * its own external variable.
+ *
+ * @{
+ */
+
+/**
+ * Activate call depth tracking and register external variable that will
+ * be updated to the call epth of currenty processed tevent request.
+ *
+ * @param[in]  ptr   Address of external variable
+ */
+void tevent_thread_call_depth_activate(size_t *ptr);
+
+/**
+ * Deactivate call depth tracking. Can be used in the child process,
+ * after fork.
+ */
+void tevent_thread_call_depth_deactivate(void);
+
+/**
+ * This request will have call depth set to 1, its subrequest will get 2 and so
+ * on. All other requests will have call depth 0.
+ */
+void tevent_thread_call_depth_start(struct tevent_req *req);
+
+/**
+ * Set the external variable to the call depth of the request req.
+ *
+ * @param[in]  req   Request from which the call depth is assigned to ext.
+ * variable.
+ */
+void tevent_thread_call_depth_reset_from_req(struct tevent_req *req);
+
+/* @} */
+
+
+/**
  * @defgroup tevent_queue The tevent queue functions
  * @ingroup tevent
  *

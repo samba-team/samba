@@ -120,6 +120,13 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 	}
 
 	*ppdata = data;
+
+	/* Initially, talloc_zero_size() sets internal.call_depth to 0 */
+	if (parent != NULL && parent->internal.call_depth > 0) {
+		req->internal.call_depth = parent->internal.call_depth + 1;
+		tevent_thread_call_depth_set(req->internal.call_depth);
+	}
+
 	return req;
 }
 
@@ -138,6 +145,9 @@ void _tevent_req_notify_callback(struct tevent_req *req, const char *location)
 		return;
 	}
 	if (req->async.fn != NULL) {
+		/* Calling back the parent code, decrement the call depth. */
+		tevent_thread_call_depth_set(req->internal.call_depth > 0 ?
+					     req->internal.call_depth - 1 : 0);
 		req->async.fn(req);
 	}
 }

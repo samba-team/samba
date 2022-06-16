@@ -169,6 +169,8 @@ struct tevent_req {
 		 * @brief The place where profiling data is kept
 		 */
 		struct tevent_req_profile *profile;
+
+		size_t call_depth;
 	} internal;
 };
 
@@ -497,6 +499,7 @@ void tevent_epoll_set_panic_fallback(struct tevent_context *ev,
 					       bool replay));
 #endif
 
+void tevent_thread_call_depth_set(size_t depth);
 
 void tevent_trace_point_callback(struct tevent_context *ev,
 				 enum tevent_trace_point);
