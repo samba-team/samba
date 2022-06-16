@@ -85,11 +85,3 @@ class DfsInheritanceSmbCaclsTests(InheritanceSmbCaclsTests):
 
     def tearDown(self):
         super(DfsInheritanceSmbCaclsTests, self).tearDown()
-        # for dfs tests inevitably we fallback to remove the local files in
-        # the base class, the base class however doesn't know about the
-        # target dfs share (or its contents) so we have to assume we need to
-        # remove the file on the dfs share
-        smbclient_args = self.build_test_cmd("smbclient", ["//%s/%s" % (self.server, self.dfs_target_share), "-c", "rm file-3"])
-        self.check_output(smbclient_args)
-
-
