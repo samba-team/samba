@@ -2463,20 +2463,37 @@ static NTSTATUS delete_remote_files_list(struct cli_state *cli_state,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct file_list *deltree_list_iter = NULL;
+	char *targetname = NULL;
+	struct cli_state *targetcli = NULL;
+	struct cli_credentials *creds = samba_cmdline_get_creds();
+	TALLOC_CTX *ctx = talloc_tos();
 
 	for (deltree_list_iter = flist;
 			deltree_list_iter != NULL;
 			deltree_list_iter = deltree_list_iter->next) {
+		status = cli_resolve_path(ctx,
+				"",
+				creds,
+				cli_state,
+				deltree_list_iter->file_path,
+				&targetcli,
+				&targetname);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("delete_remote_files %s: %s\n",
+				deltree_list_iter->file_path,
+				nt_errstr(status));
+			return status;
+		}
 		if (CLI_DIRSEP_CHAR == '/') {
 			/* POSIX. */
-			status = cli_posix_unlink(cli_state,
-					deltree_list_iter->file_path);
+			status = cli_posix_unlink(targetcli,
+					targetname);
 		} else if (deltree_list_iter->isdir) {
-			status = cli_rmdir(cli_state,
-					deltree_list_iter->file_path);
+			status = cli_rmdir(targetcli,
+					targetname);
 		} else {
-			status = cli_unlink(cli_state,
-					deltree_list_iter->file_path,
+			status = cli_unlink(targetcli,
+					targetname,
 					FILE_ATTRIBUTE_SYSTEM |
 					FILE_ATTRIBUTE_HIDDEN);
 		}
@@ -2585,14 +2602,27 @@ static int cmd_deltree(void)
 	     deltree_list_iter = deltree_list_iter->next) {
 
 		if (deltree_list_iter->isdir == false) {
+			char *targetname = NULL;
+			struct cli_state *targetcli = NULL;
+			struct cli_credentials *creds = samba_cmdline_get_creds();
+			status = cli_resolve_path(ctx,
+						"",
+						creds,
+						cli,
+						deltree_list_iter->file_path,
+						&targetcli,
+						&targetname);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto err;
+			}
 			/* Just a regular file. */
 			if (CLI_DIRSEP_CHAR == '/') {
 				/* POSIX. */
-				status = cli_posix_unlink(cli,
-					deltree_list_iter->file_path);
+				status = cli_posix_unlink(targetcli,
+					targetname);
 			} else {
-				status = cli_unlink(cli,
-					deltree_list_iter->file_path,
+				status = cli_unlink(targetcli,
+					targetname,
 					FILE_ATTRIBUTE_SYSTEM |
 					FILE_ATTRIBUTE_HIDDEN);
 			}
