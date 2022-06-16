@@ -515,13 +515,13 @@ static struct bitmap *init_bitmap(TALLOC_CTX *mem_ctx, const char **ops)
 	struct bitmap *bm;
 
 	if (ops == NULL) {
+		DBG_ERR("init_bitmap, ops list is empty (logic error)\n");
 		return NULL;
 	}
 
 	bm = bitmap_talloc(mem_ctx, SMB_VFS_OP_LAST);
 	if (bm == NULL) {
-		DEBUG(0, ("Could not alloc bitmap -- "
-			  "defaulting to logging everything\n"));
+		DBG_ERR("Could not alloc bitmap\n");
 		return NULL;
 	}
 
@@ -563,8 +563,7 @@ static struct bitmap *init_bitmap(TALLOC_CTX *mem_ctx, const char **ops)
 			}
 		}
 		if (i == SMB_VFS_OP_LAST) {
-			DEBUG(0, ("Could not find opname %s, logging all\n",
-				  *ops));
+			DBG_ERR("Could not find opname %s\n", *ops);
 			TALLOC_FREE(bm);
 			return NULL;
 		}
