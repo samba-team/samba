@@ -2378,6 +2378,9 @@ static NTSTATUS do_del(struct cli_state *cli_state, struct file_info *finfo,
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *mask = NULL;
+	struct cli_state *targetcli = NULL;
+	char *targetname = NULL;
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 	NTSTATUS status;
 
 	mask = talloc_asprintf(ctx,
@@ -2394,7 +2397,15 @@ static NTSTATUS do_del(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_OK;
 	}
 
-	status = cli_unlink(cli_state, mask, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	status = cli_resolve_path(ctx, "",
+				  creds,
+				cli, mask, &targetcli, &targetname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = cli_unlink(targetcli, targetname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+out:
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s deleting remote file %s\n",
 			 nt_errstr(status), mask);
