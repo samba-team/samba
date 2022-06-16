@@ -751,9 +751,19 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 	pd->success_ops = init_bitmap(
 		pd, lp_parm_string_list(SNUM(handle->conn), "full_audit",
 					"success", none));
+	if (pd->success_ops == NULL) {
+		DBG_ERR("Invalid success operations list. Failing connect\n");
+		SMB_VFS_NEXT_DISCONNECT(handle);
+		return -1;
+	}
 	pd->failure_ops = init_bitmap(
 		pd, lp_parm_string_list(SNUM(handle->conn), "full_audit",
 					"failure", none));
+	if (pd->failure_ops == NULL) {
+		DBG_ERR("Invalid failure operations list. Failing connect\n");
+		SMB_VFS_NEXT_DISCONNECT(handle);
+		return -1;
+	}
 
 	/* Store the private data. */
 	SMB_VFS_HANDLE_SET_DATA(handle, pd, NULL,

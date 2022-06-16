@@ -156,6 +156,11 @@
 	the VFS operations and none of the VFS operations respectively.
 	</para>
 
+	<para>If an unknown operation name is used (for example an operation name
+	is miss-spelled), the module will fail to load and clients will
+	be refused connections to a share using this module.
+	</para>
+
 	<para><command>vfs_full_audit</command> records operations in fixed
 	format consisting of fields separated by '|' characters. The
 	format is: </para>

@@ -1,2 +1,0 @@
-^samba3.blackbox.test_full_audit_success_badname.Cannot\ connect\ to\ share\ full_audit_success_bad_name\(fileserver\)
-^samba3.blackbox.test_full_audit_fail_badname.Cannot\ connect\ to\ share\ full_audit_fail_bad_name\(fileserver\)
