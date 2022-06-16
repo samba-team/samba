@@ -35,73 +35,17 @@
 static int log_level = 1;
 
 
-struct debug_class {
-	int dclass;
-	const char *name;
-};
-
-struct debug_class classes_table[] = {
-	{DBGC_ALL, "all"},
-	{DBGC_TDB, "tdb"},
-	{DBGC_PRINTDRIVERS, "printdrivers"},
-	{DBGC_LANMAN, "lanman"},
-	{DBGC_SMB, "smb"},
-	{DBGC_RPC_PARSE, "rpc_parse"},
-	{DBGC_RPC_SRV, "rpc_srv"},
-	{DBGC_RPC_CLI, "rpc_cli"},
-	{DBGC_PASSDB, "passdb"},
-	{DBGC_SAM, "sam"},
-	{DBGC_AUTH, "auth"},
-	{DBGC_WINBIND, "winbind"},
-	{DBGC_VFS, "vfs"},
-	{DBGC_IDMAP, "idmap"},
-	{DBGC_QUOTA, "quota"},
-	{DBGC_ACLS, "acls"},
-	{DBGC_LOCKING, "locking"},
-	{DBGC_MSDFS, "msdfs"},
-	{DBGC_DMAPI, "dmapi"},
-	{DBGC_REGISTRY, "registry"},
-	{DBGC_SCAVENGER, "scavenger"},
-	{DBGC_DNS, "dns"},
-	{DBGC_LDB, "ldb"},
-	{DBGC_TEVENT, "tevent"},
-	{DBGC_AUTH_AUDIT, "auth_audit"},
-	{DBGC_AUTH_AUDIT_JSON, "auth_json_audit"},
-	{DBGC_KERBEROS, "kerberos"},
-	{DBGC_DRS_REPL, "drs_repl"},
-	{DBGC_SMB2, "smb2"},
-	{DBGC_SMB2_CREDITS, "smb2_credits"},
-	{DBGC_DSDB_AUDIT, "dsdb_audit"},
-	{DBGC_DSDB_AUDIT_JSON, "dsdb_json_audit"},
-	{DBGC_DSDB_PWD_AUDIT, "dsdb_password_audit"},
-	{DBGC_DSDB_PWD_AUDIT_JSON, "dsdb_password_json_audit"},
-	{DBGC_DSDB_TXN_AUDIT, "dsdb_transaction_audit"},
-	{DBGC_DSDB_TXN_AUDIT_JSON, "dsdb_transaction_json_audit"},
-	{DBGC_DSDB_GROUP_AUDIT, "dsdb_group_audit"},
-	{DBGC_DSDB_GROUP_AUDIT_JSON, "dsdb_group_json_audit"},
-};
-
+#include "lib/util/debug-classes/debug-classname-table.c"
 
 static int log_all_classes(int level)
 {
 	size_t i;
-	struct debug_class c;
-	for (i = 0; i < ARRAY_SIZE(classes_table); i++) {
-		c = classes_table[i];
-		if (i != c.dclass) {
-			/*
-			 * we implicitly rely on these values staying in the
-			 * right order.
-			 */
-			fprintf(stderr,
-				"expected '%s' class to have value %zu\n",
-				c.name, i);
-			return 1;
-		}
-
-		DEBUGC(c.dclass, level,
-		       ("logging for '%s' [%d], at level %d\n",
-			c.name, c.dclass, level));
+	const char *name = NULL;
+	for (i = 0; i < ARRAY_SIZE(default_classname_table); i++) {
+		name = default_classname_table[i];
+		DEBUGC(i, level,
+		       ("logging for '%s' [%zu], at level %d\n",
+			name, i, level));
 
 		/*
 		 * That's it for the tests *here*. The invoker of this

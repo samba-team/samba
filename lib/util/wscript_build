@@ -53,7 +53,7 @@ bld.SAMBA_LIBRARY('samba-debug',
                   deps='replace time-basic close-low-fd talloc socket-blocking' + samba_debug_add_deps,
                   public_deps='systemd systemd-journal lttng-ust',
                   local_include=False,
-                  includes=samba_debug_add_inc,
+                  includes='lib/util/debug-classes ' + samba_debug_add_inc,
                   private_library=True)
 
 bld.SAMBA_LIBRARY('socket-blocking',
