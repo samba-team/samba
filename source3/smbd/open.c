@@ -493,8 +493,7 @@ static NTSTATUS link_errno_convert(int err)
 static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
-			int flags,
-			mode_t mode,
+			const struct vfs_open_how *how,
 			unsigned int link_depth);
 
 /****************************************************************************
@@ -504,8 +503,7 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 static NTSTATUS process_symlink_open(const struct files_struct *dirfsp,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
-			int flags,
-			mode_t mode,
+			const struct vfs_open_how *how,
 			unsigned int link_depth)
 {
 	struct connection_struct *conn = dirfsp->conn;
@@ -645,8 +643,7 @@ static NTSTATUS process_symlink_open(const struct files_struct *dirfsp,
 	status = non_widelink_open(conn->cwd_fsp,
 				fsp,
 				smb_fname,
-				flags,
-				mode,
+				how,
 				link_depth);
 
   out:
@@ -672,8 +669,7 @@ static NTSTATUS process_symlink_open(const struct files_struct *dirfsp,
 static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			     files_struct *fsp,
 			     struct smb_filename *smb_fname,
-			     int flags,
-			     mode_t mode,
+			     const struct vfs_open_how *_how,
 			     unsigned int link_depth)
 {
 	struct connection_struct *conn = fsp->conn;
@@ -686,7 +682,7 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	struct smb_filename *parent_dir_fname = NULL;
 	bool have_opath = false;
 	bool is_share_root = false;
-	struct vfs_open_how how = { .flags = flags, .mode = mode };
+	struct vfs_open_how how = *_how;
 	int ret;
 
 #ifdef O_PATH
@@ -860,8 +856,7 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 		status = process_symlink_open(dirfsp,
 					      fsp,
 					      smb_fname_rel,
-					      flags,
-					      mode,
+					      &how,
 					      link_depth);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
 		    NT_STATUS_EQUAL(saved_status, NT_STATUS_NOT_A_DIRECTORY))
@@ -892,9 +887,10 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		   struct smb_filename *smb_fname,
 		   files_struct *fsp,
-		   int flags,
-		   mode_t mode)
+		   int _flags,
+		   mode_t _mode)
 {
+	struct vfs_open_how how = { .flags = _flags, .mode = _mode, };
 	struct connection_struct *conn = fsp->conn;
 	NTSTATUS status = NT_STATUS_OK;
 	bool fsp_is_stream = fsp_is_alternate_stream(fsp);
@@ -908,11 +904,10 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 	 */
 
 	if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) || !lp_follow_symlinks(SNUM(conn))) {
-		flags |= O_NOFOLLOW;
+		how.flags |= O_NOFOLLOW;
 	}
 
 	if (fsp_is_stream) {
-		struct vfs_open_how how = { .flags = flags, .mode = mode, };
 		int fd;
 
 		fd = SMB_VFS_OPENAT(
@@ -942,7 +937,7 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 	 * Only follow symlinks within a share
 	 * definition.
 	 */
-	status = non_widelink_open(dirfsp, fsp, smb_fname, flags, mode, 0);
+	status = non_widelink_open(dirfsp, fsp, smb_fname, &how, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_TOO_MANY_OPENED_FILES)) {
 			static time_t last_warned = 0L;
@@ -957,13 +952,18 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		}
 
 		DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",
-			  smb_fname_str_dbg(smb_fname), flags, (int)mode,
-			  fsp_get_pathref_fd(fsp), nt_errstr(status));
+			  smb_fname_str_dbg(smb_fname),
+			  how.flags,
+			  (int)how.mode,
+			  fsp_get_pathref_fd(fsp),
+			  nt_errstr(status));
 		return status;
 	}
 
 	DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d\n",
-		  smb_fname_str_dbg(smb_fname), flags, (int)mode,
+		  smb_fname_str_dbg(smb_fname),
+		  how.flags,
+		  (int)how.mode,
 		  fsp_get_pathref_fd(fsp));
 
 	return status;
