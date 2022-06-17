@@ -2944,11 +2944,11 @@ static bool set_canon_ace_list(files_struct *fsp,
 				  "file [%s] primary group.\n",
 				  fsp_str_dbg(fsp));
 
-			become_root();
+			set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 			sret = SMB_VFS_SYS_ACL_SET_FD(fsp,
 						      the_acl_type,
 						      the_acl);
-			unbecome_root();
+			drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 			if (sret == 0) {
 				ret = true;
 			}
@@ -3441,12 +3441,12 @@ static NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid)
 
 		if (has_take_ownership_priv || has_restore_priv) {
 			status = NT_STATUS_OK;
-			become_root();
+			set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 			ret = SMB_VFS_FCHOWN(fsp, uid, gid);
 			if (ret != 0) {
 				status = map_nt_error_from_unix(errno);
 			}
-			unbecome_root();
+			drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 			return status;
 		}
 	}
@@ -3480,13 +3480,13 @@ static NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid)
 	}
 
 	status = NT_STATUS_OK;
-	become_root();
+	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	/* Keep the current file gid the same. */
 	ret = SMB_VFS_FCHOWN(fsp, uid, (gid_t)-1);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
 	}
-	unbecome_root();
+	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
 	return status;
 }
@@ -3707,12 +3707,12 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 
 	if (acl_perms && file_ace_list) {
 		if (set_acl_as_root) {
-			become_root();
+			set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 		}
 		ret = set_canon_ace_list(fsp, file_ace_list, false,
 					 &fsp->fsp_name->st, &acl_set_support);
 		if (set_acl_as_root) {
-			unbecome_root();
+			drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 		}
 		if (acl_set_support && ret == false) {
 			DEBUG(3,("set_nt_acl: failed to set file acl on file "
@@ -3727,13 +3727,13 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 	if (acl_perms && acl_set_support && fsp->fsp_flags.is_directory) {
 		if (dir_ace_list) {
 			if (set_acl_as_root) {
-				become_root();
+				set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 			}
 			ret = set_canon_ace_list(fsp, dir_ace_list, true,
 						 &fsp->fsp_name->st,
 						 &acl_set_support);
 			if (set_acl_as_root) {
-				unbecome_root();
+				drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 			}
 			if (ret == false) {
 				DEBUG(3,("set_nt_acl: failed to set default "
@@ -3751,11 +3751,11 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 			 */
 
 			if (set_acl_as_root) {
-				become_root();
+				set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 			}
 			sret = SMB_VFS_SYS_ACL_DELETE_DEF_FD(fsp);
 			if (set_acl_as_root) {
-				unbecome_root();
+				drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 			}
 			if (sret == -1) {
 				if (acl_group_override_fsp(fsp)) {
@@ -3765,10 +3765,10 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 						 "Override delete_def_acl\n",
 						 fsp_str_dbg(fsp)));
 
-					become_root();
+					set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 					sret =
 					    SMB_VFS_SYS_ACL_DELETE_DEF_FD(fsp);
-					unbecome_root();
+					drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 				}
 
 				if (sret == -1) {
@@ -3786,14 +3786,14 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 
 	if (acl_set_support) {
 		if (set_acl_as_root) {
-			become_root();
+			set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 		}
 		store_inheritance_attributes(fsp,
 				file_ace_list,
 				dir_ace_list,
 				psd->type);
 		if (set_acl_as_root) {
-			unbecome_root();
+			drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 		}
 	}
 
@@ -3820,11 +3820,11 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 				 fsp_str_dbg(fsp), (unsigned int)posix_perms));
 
 			if (set_acl_as_root) {
-				become_root();
+				set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 			}
 			sret = SMB_VFS_FCHMOD(fsp, posix_perms);
 			if (set_acl_as_root) {
-				unbecome_root();
+				drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 			}
 			if(sret == -1) {
 				if (acl_group_override_fsp(fsp)) {
@@ -3834,9 +3834,9 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 						 "Override chmod\n",
 						 fsp_str_dbg(fsp)));
 
-					become_root();
+					set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 					sret = SMB_VFS_FCHMOD(fsp, posix_perms);
-					unbecome_root();
+					drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 				}
 
 				if (sret == -1) {
