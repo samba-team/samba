@@ -46,12 +46,12 @@ static ssize_t getxattr_do(vfs_handle_struct *handle,
 	ssize_t sizeret;
 	int saved_errno = 0;
 
-	become_root();
+	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	sizeret = SMB_VFS_FGETXATTR(fsp, xattr_name, val, size);
 	if (sizeret == -1) {
 		saved_errno = errno;
 	}
-	unbecome_root();
+	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
 	if (saved_errno != 0) {
 		errno = saved_errno;
@@ -132,13 +132,13 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	DEBUG(10,("store_acl_blob_fsp: storing blob length %u on file %s\n",
 		  (unsigned int)pblob->length, fsp_str_dbg(fsp)));
 
-	become_root();
+	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	ret = SMB_VFS_FSETXATTR(fsp, XATTR_NTACL_NAME,
 			pblob->data, pblob->length, 0);
 	if (ret) {
 		saved_errno = errno;
 	}
-	unbecome_root();
+	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	if (ret) {
 		DEBUG(5, ("store_acl_blob_fsp: setting attr failed for file %s"
 			"with error %s\n",
@@ -175,9 +175,9 @@ static int sys_acl_set_fd_xattr(vfs_handle_struct *handle,
 		return 0;
 	}
 
-	become_root();
+	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	SMB_VFS_FREMOVEXATTR(fsp, XATTR_NTACL_NAME);
-	unbecome_root();
+	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
 	return 0;
 }
