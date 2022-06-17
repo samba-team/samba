@@ -1904,6 +1904,72 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 		break;
 
+	/* SMB2 UNIX Extension. */
+
+	case SMB2_FILE_POSIX_INFORMATION:
+		{
+			uint8_t *buf = NULL;
+			ssize_t plen = 0;
+			p+= 4;
+			SIVAL(p,0,reskey); p+= 4;
+
+			DEBUG(10,("smbd_marshall_dir_entry: "
+				  "SMB2_FILE_POSIX_INFORMATION\n"));
+			if (!(conn->sconn->using_smb2)) {
+				return NT_STATUS_INVALID_LEVEL;
+			}
+			if (!lp_smb3_unix_extensions()) {
+				return NT_STATUS_INVALID_LEVEL;
+			}
+
+			/* Determine the size of the posix info context */
+			plen = store_smb2_posix_info(conn,
+						     &smb_fname->st,
+						     0,
+						     mode,
+						     NULL,
+						     0);
+			if (plen == -1) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			buf = talloc_zero_size(ctx, plen);
+			if (buf == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			/* Store the context in buf */
+			store_smb2_posix_info(conn,
+					      &smb_fname->st,
+					      0,
+					      mode,
+					      buf,
+					      plen);
+			memcpy(p, buf, plen);
+			p += plen;
+			TALLOC_FREE(buf);
+
+			nameptr = p;
+			p += 4;
+			status = srvstr_push(base_data, flags2, p, fname,
+					PTR_DIFF(end_data, p), 0, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			SIVAL(nameptr, 0, len);
+
+			p += len;
+
+			len = PTR_DIFF(p, pdata);
+			pad = (len + (align-1)) & ~(align-1);
+			/*
+			 * offset to the next entry, the caller
+			 * will overwrite it for the last entry
+			 * that's why we always include the padding
+			 */
+			SIVAL(pdata,0,pad);
+			break;
+		}
+
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
