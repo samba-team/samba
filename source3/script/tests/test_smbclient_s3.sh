@@ -527,6 +527,47 @@ EOF
 	return 0
 }
 
+test_msdfs_del()
+{
+    tmpfile="$PREFIX/smbclient.in.$$"
+    filename_src="src.$$"
+    filename_src_path="$PREFIX/$filename_src"
+    rm -f "$filename_src_path"
+    touch "$filename_src_path"
+
+    cat > $tmpfile <<EOF
+lcd $PREFIX
+cd dfshop1
+cd dfshop2
+put $filename_src
+del $filename_src
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/msdfs-share -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f "$tmpfile"
+    rm -f "$filename_src_path"
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed deleteing $filename_src with error $ret"
+	return 1
+    fi
+
+    echo "$out" | grep "NT_STATUS" >/dev/null 2>&1
+
+    ret="$?"
+    if [ "$ret" -eq 0 ] ; then
+	echo "$out"
+	echo "del $filename_src NT_STATUS_ error"
+	return 1
+    fi
+    return 0
+}
+
 # Archive bits are correctly set on file/dir creation and rename.
 test_rename_archive_bit()
 {
@@ -2166,6 +2207,10 @@ testit "Rename on MS-DFS share" \
 testit "Hardlink on MS-DFS share" \
 	test_msdfs_hardlink ||
 	failed=$(expr $failed + 1)
+
+testit "del on MS-DFS share" \
+    test_msdfs_del || \
+    failed=`expr $failed + 1`
 
 testit "Ensure archive bit is set correctly on file/dir rename" \
 	test_rename_archive_bit ||

@@ -1,4 +1,5 @@
 ^samba3.blackbox.smbclient_s3.SMB3.*.creating.a.bad.symlink.and.deleting.it
+^samba3.blackbox.smbclient_s3.SMB3.*.del on MS-DFS share
 ^samba3.blackbox.acl_xattr.SMB3.nt_affects_posix
 ^samba3.blackbox.acl_xattr.SMB3.nt_affects_chown
 ^samba3.blackbox.acl_xattr.SMB3.nt_affects_chgrp
