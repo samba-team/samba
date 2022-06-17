@@ -10,6 +10,7 @@
 ^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.interactive smbclient -l prompts on stdout\((ad_member|nt4_member)\)
 ^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.creating a bad symlink and deleting it\((ad_member|nt4_member)\)
 ^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.Accessing an MS-DFS link\((ad_member|nt4_member)\)
+^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.del on MS-DFS share\((ad_member|nt4_member)\)
 ^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.Ensure archive bit is set correctly on file/dir rename\((ad_member|nt4_member)\)
 ^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.ccache access works for smbclient\((ad_member|nt4_member)\)
 ^samba3.blackbox.smbclient_s3.NT1.(plain|sign).member_creds.using an authentication file\((ad_member|nt4_member)\)
