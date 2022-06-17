@@ -5153,7 +5153,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	overwrite = (CVAL(pdata,0) ? True : False);
+	overwrite = (CVAL(pdata,0) != 0);
 	root_fid = IVAL(pdata,4);
 	len = IVAL(pdata,8);
 
