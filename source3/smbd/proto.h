@@ -731,7 +731,7 @@ NTSTATUS check_parent_access_fsp(struct files_struct *fsp,
 NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		   struct smb_filename *smb_fname,
 		   files_struct *fsp,
-		   int flags, mode_t mode);
+		   const struct vfs_open_how *how);
 NTSTATUS fd_close(files_struct *fsp);
 bool is_oplock_stat_open(uint32_t access_mask);
 bool is_lease_stat_open(uint32_t access_mask);

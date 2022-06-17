@@ -2199,7 +2199,7 @@ static NTSTATUS adouble_open_rsrc_fsp(const struct files_struct *dirfsp,
 	struct smb_filename *adp_smb_fname = NULL;
 	struct files_struct *ad_fsp = NULL;
 	NTSTATUS status;
-	int flags = in_flags;
+	struct vfs_open_how how = { .flags = in_flags, .mode = mode, };
 
 	rc = adouble_path(talloc_tos(),
 			  smb_base_fname,
@@ -2216,25 +2216,24 @@ static NTSTATUS adouble_open_rsrc_fsp(const struct files_struct *dirfsp,
 	}
 
 #ifdef O_PATH
-	flags &= ~(O_PATH);
+	how.flags &= ~(O_PATH);
 #endif
-	if (flags & (O_CREAT | O_TRUNC | O_WRONLY)) {
+	if (how.flags & (O_CREAT | O_TRUNC | O_WRONLY)) {
 		/* We always need read/write access for the metadata header too */
-		flags &= ~(O_WRONLY);
-		flags |= O_RDWR;
+		how.flags &= ~(O_WRONLY);
+		how.flags |= O_RDWR;
 	}
 
 	status = fd_openat(dirfsp,
 			   adp_smb_fname,
 			   ad_fsp,
-			   flags,
-			   mode);
+			   &how);
 	if (!NT_STATUS_IS_OK(status)) {
 		file_free(NULL, ad_fsp);
 		return status;
 	}
 
-	if (flags & (O_CREAT | O_TRUNC)) {
+	if (how.flags & (O_CREAT | O_TRUNC)) {
 		ad = ad_init(talloc_tos(), ADOUBLE_RSRC);
 		if (ad == NULL) {
 			file_free(NULL, ad_fsp);

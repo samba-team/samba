@@ -887,10 +887,9 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		   struct smb_filename *smb_fname,
 		   files_struct *fsp,
-		   int _flags,
-		   mode_t _mode)
+		   const struct vfs_open_how *_how)
 {
-	struct vfs_open_how how = { .flags = _flags, .mode = _mode, };
+	struct vfs_open_how how = *_how;
 	struct connection_struct *conn = fsp->conn;
 	NTSTATUS status = NT_STATUS_OK;
 	bool fsp_is_stream = fsp_is_alternate_stream(fsp);
@@ -1105,25 +1104,25 @@ static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 			       mode_t mode,
 			       bool *file_created)
 {
+	struct vfs_open_how how = { .flags = flags, .mode = mode, };
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS retry_status;
 	bool file_existed = VALID_STAT(smb_fname->st);
-	int curr_flags;
 
-	if (!(flags & O_CREAT)) {
+	if (!(how.flags & O_CREAT)) {
 		/*
 		 * We're not creating the file, just pass through.
 		 */
-		status = fd_openat(dirfsp, smb_fname, fsp, flags, mode);
+		status = fd_openat(dirfsp, smb_fname, fsp, &how);
 		*file_created = false;
 		return status;
 	}
 
-	if (flags & O_EXCL) {
+	if (how.flags & O_EXCL) {
 		/*
 		 * Fail if already exists, just pass through.
 		 */
-		status = fd_openat(dirfsp, smb_fname, fsp, flags, mode);
+		status = fd_openat(dirfsp, smb_fname, fsp, &how);
 
 		/*
 		 * Here we've opened with O_CREAT|O_EXCL. If that went
@@ -1156,14 +1155,14 @@ static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 	 */
 
 	if (file_existed) {
-		curr_flags = flags & ~(O_CREAT);
+		how.flags = flags & ~(O_CREAT);
 		retry_status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	} else {
-		curr_flags = flags | O_EXCL;
+		how.flags = flags | O_EXCL;
 		retry_status = NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	status = fd_openat(dirfsp, smb_fname, fsp, curr_flags, mode);
+	status = fd_openat(dirfsp, smb_fname, fsp, &how);
 	if (NT_STATUS_IS_OK(status)) {
 		*file_created = !file_existed;
 		return NT_STATUS_OK;
@@ -1177,12 +1176,12 @@ static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 			  file_existed ? "existed" : "did not exist");
 
 		if (file_existed) {
-			curr_flags = flags & ~(O_CREAT);
+			how.flags = flags & ~(O_CREAT);
 		} else {
-			curr_flags = flags | O_EXCL;
+			how.flags = flags | O_EXCL;
 		}
 
-		status = fd_openat(dirfsp, smb_fname, fsp, curr_flags, mode);
+		status = fd_openat(dirfsp, smb_fname, fsp, &how);
 	}
 
 	*file_created = (NT_STATUS_IS_OK(status) && !file_existed);
@@ -4281,6 +4280,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	bool posix_open = false;
 	bool need_re_stat = false;
 	uint32_t access_mask = SEC_DIR_ADD_SUBDIR;
+	struct vfs_open_how how = { .flags = O_RDONLY|O_DIRECTORY, };
 	int ret;
 
 	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
@@ -4329,7 +4329,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	 */
 	fsp->fsp_flags.is_pathref = true;
 
-	status = fd_openat(conn->cwd_fsp, smb_dname, fsp, O_RDONLY | O_DIRECTORY, 0);
+	status = fd_openat(conn->cwd_fsp, smb_dname, fsp, &how);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

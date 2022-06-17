@@ -532,7 +532,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	NTSTATUS status;
 	bool ok;
 	int ret;
-	int flags = 0;
+	struct vfs_open_how how = { .flags = 0, };
 	struct file_id file_id;
 	struct smb_filename *smb_fname = NULL;
 	enum ndr_err_code ndr_err;
@@ -804,14 +804,14 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	 * TODO: properly calculate open flags
 	 */
 	if (fsp->fsp_flags.can_write && fsp->fsp_flags.can_read) {
-		flags = O_RDWR;
+		how.flags = O_RDWR;
 	} else if (fsp->fsp_flags.can_write) {
-		flags = O_WRONLY;
+		how.flags = O_WRONLY;
 	} else if (fsp->fsp_flags.can_read) {
-		flags = O_RDONLY;
+		how.flags = O_RDONLY;
 	}
 
-	status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, flags, 0);
+	status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, &how);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
 		DEBUG(1, ("vfs_default_durable_reconnect: failed to open "

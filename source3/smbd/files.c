@@ -241,9 +241,10 @@ NTSTATUS create_internal_dirfsp(connection_struct *conn,
  */
 NTSTATUS open_internal_dirfsp(connection_struct *conn,
 			      const struct smb_filename *smb_dname,
-			      int open_flags,
+			      int _open_flags,
 			      struct files_struct **_fsp)
 {
+	struct vfs_open_how how = { .flags = _open_flags, };
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;
 
@@ -253,9 +254,9 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
 	}
 
 #ifdef O_DIRECTORY
-	open_flags |= O_DIRECTORY;
+	how.flags |= O_DIRECTORY;
 #endif
-	status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, open_flags, 0);
+	status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, &how);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("Could not open fd for %s (%s)\n",
 			 smb_fname_str_dbg(smb_dname),
@@ -289,7 +290,7 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
  */
 NTSTATUS openat_internal_dir_from_pathref(
 	struct files_struct *dirfsp,
-	int open_flags,
+	int _open_flags,
 	struct files_struct **_fsp)
 {
 	struct connection_struct *conn = dirfsp->conn;
@@ -301,6 +302,7 @@ NTSTATUS openat_internal_dir_from_pathref(
 		.flags = smb_dname->flags,
 		.twrp = smb_dname->twrp,
 	};
+	struct vfs_open_how how = { .flags = _open_flags, };
 	NTSTATUS status;
 
 	status = create_internal_dirfsp(conn, smb_dname, &fsp);
@@ -311,9 +313,9 @@ NTSTATUS openat_internal_dir_from_pathref(
 	/*
 	 * Pointless for opening ".", but you never know...
 	 */
-	open_flags |= O_NOFOLLOW;
+	how.flags |= O_NOFOLLOW;
 
-	status = fd_openat(dirfsp, &smb_dot, fsp, open_flags, 0);
+	status = fd_openat(dirfsp, &smb_dot, fsp, &how);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("fd_openat(\"%s\", \".\") failed: %s\n",
 			 fsp_str_dbg(dirfsp),
@@ -451,6 +453,7 @@ static NTSTATUS openat_pathref_fullname(
 	struct files_struct *fsp = NULL;
 	bool have_dirfsp = (dirfsp != NULL);
 	bool have_basefsp = (basefsp != NULL);
+	struct vfs_open_how how = { .flags = O_RDONLY|O_NONBLOCK, };
 	NTSTATUS status;
 
 	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(smb_fname));
@@ -475,8 +478,7 @@ static NTSTATUS openat_pathref_fullname(
 	}
 	fsp_set_base_fsp(fsp, basefsp);
 
-	status = fd_openat(
-		dirfsp, smb_fname, fsp, O_RDONLY|O_NONBLOCK, 0);
+	status = fd_openat(dirfsp, smb_fname, fsp, &how);
 	if (!NT_STATUS_IS_OK(status)) {
 
 		smb_fname->st = fsp->fsp_name->st;
