@@ -49,7 +49,28 @@
 
 static int vfswrap_connect(vfs_handle_struct *handle, const char *service, const char *user)
 {
+	bool bval;
+
 	handle->conn->have_proc_fds = sys_have_proc_fds();
+
+	/*
+	 * assume the kernel will support openat2(),
+	 * it will be reset on the first ENOSYS.
+	 *
+	 * Note that libreplace will always provide openat2(),
+	 * but return -1/errno = ENOSYS...
+	 *
+	 * The option is only there to test the fallback code.
+	 */
+	bval = lp_parm_bool(SNUM(handle->conn),
+			    "vfs_default",
+			    "VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS",
+			    true);
+	if (bval) {
+		handle->conn->open_how_resolve |=
+			VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS;
+	}
+
 	return 0;    /* Return >= 0 for success */
 }
 
@@ -701,7 +722,7 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_openat);
 
-	if (how->resolve != 0) {
+	if (how->resolve & ~VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS) {
 		errno = ENOSYS;
 		result = -1;
 		goto out;
@@ -738,6 +759,35 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 	}
 #endif
 
+	if (how->resolve & VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS) {
+		struct open_how linux_how = {
+			.flags = flags,
+			.mode = mode,
+			.resolve = RESOLVE_NO_SYMLINKS,
+		};
+
+		result = openat2(fsp_get_pathref_fd(dirfsp),
+				 smb_fname->base_name,
+				 &linux_how,
+				 sizeof(linux_how));
+		if (result == -1) {
+			if (errno == ENOSYS) {
+				/*
+				 * The kernel doesn't support
+				 * openat2(), so indicate to
+				 * the callers that
+				 * VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS
+				 * would just be a waste of time.
+				 */
+				fsp->conn->open_how_resolve &=
+					~VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS;
+			}
+			goto out;
+		}
+
+		goto done;
+	}
+
 	if (fsp->fsp_flags.is_pathref && !have_opath) {
 		become_root();
 		became_root = true;
@@ -752,6 +802,7 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 		unbecome_root();
 	}
 
+done:
 	fsp->fsp_flags.have_proc_fds = fsp->conn->have_proc_fds;
 
 out:
