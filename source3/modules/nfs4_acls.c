@@ -1201,12 +1201,12 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	smbacl4_dump_nfs4acl(10, theacl);
 
 	if (set_acl_as_root) {
-		become_root();
+		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	}
 	result = set_nfs4_native(handle, fsp, theacl);
 	saved_errno = errno;
 	if (set_acl_as_root) {
-		unbecome_root();
+		drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	}
 
 	TALLOC_FREE(frame);
