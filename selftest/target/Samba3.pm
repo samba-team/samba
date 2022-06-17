@@ -2415,6 +2415,9 @@ sub provision($$)
 	my $msdfs_shrdir="$shrdir/msdfsshare";
 	push(@dirs,$msdfs_shrdir);
 
+	my $msdfs_shrdir2="$shrdir/msdfsshare2";
+	push(@dirs,$msdfs_shrdir2);
+
 	my $msdfs_deeppath="$msdfs_shrdir/deeppath";
 	push(@dirs,$msdfs_deeppath);
 
@@ -2508,6 +2511,8 @@ sub provision($$)
 	symlink "msdfs:$server_ip\\smbcacls_sharedir_dfs,$server_ipv6\\smbcacls_sharedir_dfs",
 		"$msdfs_shrdir/smbcacls_sharedir_dfs";
 
+	symlink "msdfs:$server_ip\\msdfs-share2,$server_ipv6\\msdfs-share2", "$msdfs_shrdir/dfshop1";
+	symlink "msdfs:$server_ip\\tmp,$server_ipv6\\tmp", "$msdfs_shrdir2/dfshop2";
 	##
 	## create bad names in $badnames_shrdir
 	##
@@ -2830,6 +2835,10 @@ sub provision($$)
 	path = $msdfs_shrdir
 	msdfs root = yes
 	msdfs shuffle referrals = yes
+	guest ok = yes
+[msdfs-share2]
+	path = $msdfs_shrdir2
+	msdfs root = yes
 	guest ok = yes
 [hideunread]
 	copy = tmp
