@@ -1742,6 +1742,12 @@ static bool fork_domain_child(struct winbindd_child *child)
 	state.cli.sock = fdpair[0];
 	close(fdpair[1]);
 
+	/* Reset traceid and deactivate call_depth tracking */
+	if (lp_winbind_debug_traceid()) {
+		debug_traceid_set(1);
+		tevent_thread_call_depth_deactivate();
+	}
+
 	status = winbindd_reinit_after_fork(child, child->logfilename);
 
 	/* setup callbacks again, one of them is removed in reinit_after_fork */
