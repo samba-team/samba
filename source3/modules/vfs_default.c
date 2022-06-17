@@ -1891,14 +1891,14 @@ static void vfswrap_get_dos_attributes_getxattr_done(struct tevent_req *subreq)
 
 		state->as_root = true;
 
-		become_root();
+		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 		subreq = SMB_VFS_GETXATTRAT_SEND(state,
 						 state->ev,
 						 state->dir_fsp,
 						 state->smb_fname,
 						 SAMBA_XATTR_DOS_ATTRIB,
 						 sizeof(fstring));
-		unbecome_root();
+		drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
