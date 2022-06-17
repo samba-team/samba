@@ -441,10 +441,10 @@ static void recycle_do_touch(vfs_handle_struct *handle,
 	/* mtime */
 	ft.mtime = touch_mtime ? ft.atime : smb_fname_tmp->st.st_ex_mtime;
 
-	become_root();
+	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	ret = SMB_VFS_NEXT_FNTIMES(handle, smb_fname_tmp->fsp, &ft);
 	err = errno;
-	unbecome_root();
+	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	if (ret == -1 ) {
 		DEBUG(0, ("recycle: touching %s failed, reason = %s\n",
 			  smb_fname_str_dbg(smb_fname_tmp), strerror(err)));
