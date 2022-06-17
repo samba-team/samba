@@ -448,12 +448,12 @@ static NTSTATUS openat_pathref_fullname(
 	const struct files_struct *dirfsp,
 	struct files_struct *basefsp,
 	struct smb_filename **full_fname,
-	struct smb_filename *smb_fname)
+	struct smb_filename *smb_fname,
+	const struct vfs_open_how *how)
 {
 	struct files_struct *fsp = NULL;
 	bool have_dirfsp = (dirfsp != NULL);
 	bool have_basefsp = (basefsp != NULL);
-	struct vfs_open_how how = { .flags = O_RDONLY|O_NONBLOCK, };
 	NTSTATUS status;
 
 	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(smb_fname));
@@ -478,7 +478,7 @@ static NTSTATUS openat_pathref_fullname(
 	}
 	fsp_set_base_fsp(fsp, basefsp);
 
-	status = fd_openat(dirfsp, smb_fname, fsp, &how);
+	status = fd_openat(dirfsp, smb_fname, fsp, how);
 	if (!NT_STATUS_IS_OK(status)) {
 
 		smb_fname->st = fsp->fsp_name->st;
@@ -553,6 +553,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	connection_struct *conn = dirfsp->conn;
 	struct smb_filename *full_fname = NULL;
 	struct smb_filename *base_fname = NULL;
+	struct vfs_open_how how = { .flags = O_RDONLY|O_NONBLOCK, };
 	NTSTATUS status;
 
 	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(smb_fname));
@@ -581,7 +582,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 			goto fail;
 		}
 		status = openat_pathref_fullname(
-			conn, dirfsp, NULL, &full_fname, smb_fname);
+			conn, dirfsp, NULL, &full_fname, smb_fname, &how);
 		TALLOC_FREE(full_fname);
 		return status;
 	}
@@ -604,7 +605,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	}
 
 	status = openat_pathref_fullname(
-		conn, dirfsp, NULL, &full_fname, base_fname);
+		conn, dirfsp, NULL, &full_fname, base_fname, &how);
 	TALLOC_FREE(full_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("openat_pathref_nostream failed: %s\n",
@@ -638,6 +639,7 @@ NTSTATUS open_stream_pathref_fsp(
 	connection_struct *conn = base_fsp->conn;
 	struct smb_filename *base_fname = base_fsp->fsp_name;
 	struct smb_filename *full_fname = NULL;
+	struct vfs_open_how how = { .flags = O_RDONLY|O_NONBLOCK, };
 	NTSTATUS status;
 
 	SMB_ASSERT(smb_fname->fsp == NULL);
@@ -655,7 +657,7 @@ NTSTATUS open_stream_pathref_fsp(
 	}
 
 	status = openat_pathref_fullname(
-		conn, NULL, base_fsp, &full_fname, smb_fname);
+		conn, NULL, base_fsp, &full_fname, smb_fname, &how);
 	TALLOC_FREE(full_fname);
 	return status;
 }
