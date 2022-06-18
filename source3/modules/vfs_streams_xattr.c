@@ -482,6 +482,8 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 	NTSTATUS status;
 	int ret = -1;
 	char *xattr_name = NULL;
+	struct smb_filename *pathref = NULL;
+	struct files_struct *fsp = smb_fname->fsp;
 
 	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_UNLINKAT(handle,
@@ -497,10 +499,25 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	SMB_ASSERT(smb_fname->fsp != NULL);
-	SMB_ASSERT(smb_fname->fsp->base_fsp != NULL);
+	if (fsp == NULL) {
+		status = synthetic_pathref(talloc_tos(),
+					handle->conn->cwd_fsp,
+					smb_fname->base_name,
+					NULL,
+					NULL,
+					smb_fname->twrp,
+					smb_fname->flags,
+					&pathref);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = ENOENT;
+			goto fail;
+		}
+		fsp = pathref->fsp;
+	} else {
+		fsp = fsp->base_fsp;
+	}
 
-	ret = SMB_VFS_FREMOVEXATTR(smb_fname->fsp->base_fsp, xattr_name);
+	ret = SMB_VFS_FREMOVEXATTR(fsp, xattr_name);
 
 	if ((ret == -1) && (errno == ENOATTR)) {
 		errno = ENOENT;
@@ -511,6 +528,7 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 
  fail:
 	TALLOC_FREE(xattr_name);
+	TALLOC_FREE(pathref);
 	return ret;
 }
 
