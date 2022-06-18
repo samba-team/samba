@@ -2422,6 +2422,9 @@ sub provision($$)
 	my $local_symlinks_shrdir="$shrdir/local_symlinks";
 	push(@dirs,$local_symlinks_shrdir);
 
+	my $fruit_resource_stream_shrdir="$shrdir/fruit_resource_stream";
+	push(@dirs,$fruit_resource_stream_shrdir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/wbsock";
 
@@ -2981,6 +2984,12 @@ sub provision($$)
 	fruit:resource = file
 	fruit:metadata = stream
 	fruit:zero_file_id=yes
+
+[fruit_resource_stream]
+	path = $fruit_resource_stream_shrdir
+	vfs objects = fruit streams_xattr acl_xattr xattr_tdb
+	fruit:resource = stream
+	fruit:metadata = stream
 
 [badname-tmp]
 	path = $badnames_shrdir
