@@ -1,3 +1,4 @@
+__tevent_req_create: struct tevent_req *(TALLOC_CTX *, void *, size_t, const char *, const char *, const char *)
 _tevent_add_fd: struct tevent_fd *(struct tevent_context *, TALLOC_CTX *, int, uint16_t, tevent_fd_handler_t, void *, const char *, const char *)
 _tevent_add_signal: struct tevent_signal *(struct tevent_context *, TALLOC_CTX *, int, int, tevent_signal_handler_t, void *, const char *, const char *)
 _tevent_add_timer: struct tevent_timer *(struct tevent_context *, TALLOC_CTX *, struct timeval, tevent_timer_handler_t, void *, const char *, const char *)

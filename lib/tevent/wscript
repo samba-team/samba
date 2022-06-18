@@ -110,7 +110,7 @@ def build(bld):
                           enabled= not bld.CONFIG_SET('USING_SYSTEM_TEVENT'),
                           includes='.',
                           abi_directory='ABI',
-                          abi_match='tevent_* _tevent_*',
+                          abi_match='tevent_* _tevent_* __tevent_*',
                           vnum=VERSION,
                           public_headers=('' if private_library else 'tevent.h'),
                           public_headers_install=not private_library,

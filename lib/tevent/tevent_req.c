@@ -64,6 +64,21 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 				    const char *type,
 				    const char *location)
 {
+	return __tevent_req_create(mem_ctx,
+				   pdata,
+				   data_size,
+				   type,
+				   NULL,
+				   location);
+}
+
+struct tevent_req *__tevent_req_create(TALLOC_CTX *mem_ctx,
+				       void *pdata,
+				       size_t data_size,
+				       const char *type,
+				       const char *func,
+				       const char *location)
+{
 	struct tevent_req *req;
 	struct tevent_req *parent;
 	void **ppdata = (void **)pdata;

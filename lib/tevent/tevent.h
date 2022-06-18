@@ -1271,9 +1271,20 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 				      const char *type,
 				      const char *location);
 
+struct tevent_req *__tevent_req_create(TALLOC_CTX *mem_ctx,
+				       void *pstate,
+				       size_t state_size,
+				       const char *type,
+				       const char *func,
+				       const char *location);
+
 #define tevent_req_create(_mem_ctx, _pstate, _type) \
-	_tevent_req_create((_mem_ctx), (_pstate), sizeof(_type), \
-			   #_type, __location__)
+	__tevent_req_create((_mem_ctx),             \
+			    (_pstate),              \
+			    sizeof(_type),          \
+			    #_type,                 \
+			    __func__,               \
+			    __location__)
 #endif
 
 /**
