@@ -665,6 +665,10 @@ for env in ["fileserver"]:
     plantestsuite("samba3.blackbox.fifo", env,
                   [os.path.join(samba3srcdir, "script/tests/test_fifo.sh"),
                   '$SERVER', '$DOMAIN', 'gooduser', '$PASSWORD', '$PREFIX', env, smbclient3])
+    plantestsuite("samba3.blackbox.fruit.resource_stream", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_fruit_resource_stream.sh"),
+                  '$SERVER', 'fruit_resource_stream', '$USERNAME', '$PASSWORD',
+                  '$LOCAL_PATH/fruit_resource_stream', smbclient3])
 
 for env in ["fileserver:local"]:
     plantestsuite("samba3.blackbox.net_usershare", env, [os.path.join(samba3srcdir, "script/tests/test_net_usershare.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbclient3])
