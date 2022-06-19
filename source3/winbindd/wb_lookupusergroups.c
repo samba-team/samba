@@ -38,12 +38,15 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 	struct wb_lookupusergroups_state *state;
 	struct winbindd_domain *domain;
 	NTSTATUS status;
+	struct dom_sid_buf buf;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_lookupusergroups_state);
 	if (req == NULL) {
 		return NULL;
 	}
+	D_INFO("WB command lookupusergroups start.\nLooking up SID %s.\n",
+	       dom_sid_str_buf(sid, &buf));
 	sid_copy(&state->sid, sid);
 
 	status = lookup_usergroups_cached(state,
@@ -57,7 +60,6 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 
 	domain = find_domain_from_sid_noinit(&state->sid);
 	if (domain == NULL) {
-		struct dom_sid_buf buf;
 		DBG_WARNING("could not find domain entry for sid %s\n",
 			    dom_sid_str_buf(&state->sid, &buf));
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
@@ -84,6 +86,7 @@ static void wb_lookupusergroups_done(struct tevent_req *subreq)
 	status = dcerpc_wbint_LookupUserGroups_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (any_nt_status_not_ok(status, result, &status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -96,11 +99,19 @@ NTSTATUS wb_lookupusergroups_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	struct wb_lookupusergroups_state *state = tevent_req_data(
 		req, struct wb_lookupusergroups_state);
 	NTSTATUS status;
+	int i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*num_sids = state->sids.num_sids;
 	*sids = talloc_move(mem_ctx, &state->sids.sids);
+
+	D_INFO("WB command lookupusergroups end.\nReceived %d SID(s).\n",
+	       *num_sids);
+	for (i = 0; i < *num_sids; i++) {
+		struct dom_sid_buf buf;
+		D_INFO("%d: %s\n", i, dom_sid_str_buf(&*sids[i], &buf));
+	}
 	return NT_STATUS_OK;
 }
