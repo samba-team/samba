@@ -199,6 +199,25 @@ void debuglevel_set_class(size_t idx, int level);
        && (dbghdrclass( level, DBGC_CLASS, __location__, __FUNCTION__ )) \
        && (dbgtext body) )
 
+/**
+ * @brief DEBUGLF is same as DEBUG with explicit location and function arguments
+ *
+ * To be used when passing location and function of a caller appearig earlier in
+ * the call stack instead of some helper function.
+ *
+ * @code
+ *     DEBUGLF( 2, ("Some text.\n"), "foo.c:1", "foo" );
+ *     DEBUGLF( 5, ("Some text.\n"), location, function );
+ * @endcode
+ *
+ * @return void.
+ */
+#define DEBUGLF( level, body, location, function ) \
+  (void)( ((level) <= MAX_DEBUG_LEVEL) && \
+       unlikely(debuglevel_get_class(DBGC_CLASS) >= (level))     \
+       && (dbghdrclass( level, DBGC_CLASS, location, function )) \
+       && (dbgtext body) )
+
 #define DEBUGC( dbgc_class, level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
        unlikely(debuglevel_get_class(dbgc_class) >= (level))             \
