@@ -17,7 +17,7 @@ DBLATEX_OPTIONS = -p xslt/latex.xsl -i xslt/latex
 
 DATETIME := $(shell date +%Y%m%d%H%M%S)
 
-XSLTPROC_DEPS = build/catalog.xml build/DTD/samba.build.version
+XSLTPROC_DEPS = build/catalog.xml build/DTD/samba.build.version build/DTD/samba.build.pathconfig
 
 ifeq ($(PROFILE), Y)
 XSLTPROC += --profile --load-trace --timing
@@ -57,6 +57,7 @@ clean::
 	rm -f xslt/figures/*pdf
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
 	rm -f build/catalog.xml
+	rm -f DTD/samba.build.pathconfig
 
 # Output format targets
 pdf:: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
@@ -177,12 +178,17 @@ $(MANPAGEDIR)/smb.conf.5.xml: parameters
 # the parameters xml files. Otherwise, when parameters.*.xml does not exist
 # yet, the parameters are not generated when smb.conf.5.xml is newer than
 # any smbdotconf/*/*.xml file ...
-.PHONY: parameters
+.PHONY: parameters pathconf
 
 parameters: $(SMBDOTCONFDOC)/parameters.all.xml
 
+pathconf: build/DTD/samba.build.pathconfig
+
 $(SMBDOTCONFDOC)/parameters.all.xml: $(wildcard $(SMBDOTCONFDOC)/*/*.xml) $(SMBDOTCONFDOC)/generate-file-list.sh
 	$(SMBDOTCONFDOC)/generate-file-list.sh $(SMBDOTCONFDOC) > $@
+
+build/DTD/samba.build.pathconfig: generate-pathconf-entities.sh
+	./generate-pathconf-entities.sh > $@
 
 $(OUTPUTDIR):
 	test -d $@ || mkdir $@

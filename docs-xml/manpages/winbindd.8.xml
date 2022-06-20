@@ -432,28 +432,36 @@ auth  required    /lib/security/pam_unix.so \
 		</varlistentry>
 
 		<varlistentry>
-		<term>/tmp/.winbindd/pipe</term>
+		<term>&pathconfig.WINBINDD_SOCKET_DIR;/pipe</term>
 		<listitem><para>The UNIX pipe over which clients communicate with
 		the <command>winbindd</command> program.  For security reasons, the
 		winbind client will only attempt to connect to the winbindd daemon
-		if both the <filename>/tmp/.winbindd</filename> directory
-		and <filename>/tmp/.winbindd/pipe</filename> file are owned by
-		root. </para></listitem>
+		if both the <filename>&pathconfig.WINBINDD_SOCKET_DIR;</filename> directory
+		and <filename>&pathconfig.WINBINDD_SOCKET_DIR;/pipe</filename> file are owned by
+		root. </para>
+
+		<para><smbconfoption name="winbindd socket directory"/>
+		overrides this default.</para>
+
+		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>$LOCKDIR/winbindd_privileged/pipe</term>
+		<term>$STATEDIR/winbindd_privileged/pipe</term>
 	        <listitem><para>The UNIX pipe over which 'privileged' clients
                 communicate with the <command>winbindd</command> program.  For security
                 reasons, access to some winbindd functions - like those needed by
                 the <command>ntlm_auth</command> utility - is restricted.  By default,
                 only users in the 'root' group will get this access, however the administrator
-                may change the group permissions on $LOCKDIR/winbindd_privileged to allow
+                may change the group permissions on $STATEDIR/winbindd_privileged to allow
                 programs like 'squid' to use ntlm_auth.
 		Note that the winbind client will only attempt to connect to the winbindd daemon
-		if both the <filename>$LOCKDIR/winbindd_privileged</filename> directory
-		and <filename>$LOCKDIR/winbindd_privileged/pipe</filename> file are owned by
-		root. </para></listitem>
+		if both the <filename>$STATEDIR/winbindd_privileged</filename> directory
+		and <filename>$STATEDIR/winbindd_privileged/pipe</filename> file are owned by
+		root. </para>
+		<para><smbconfoption name="state dir"/> controls what
+		$STATEDIR refers to.</para>
+		</listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -463,11 +471,12 @@ auth  required    /lib/security/pam_unix.so \
 		</varlistentry>
 
 		<varlistentry>
-		<term>$LOCKDIR/winbindd_idmap.tdb</term>
+		<term>$STATEDIR/winbindd_idmap.tdb</term>
 		<listitem><para>Storage for the Windows NT rid to UNIX user/group
-		id mapping.  The lock directory is specified when Samba is initially
-		compiled using the <parameter>--with-lockdir</parameter> option.
-		This directory is by default <filename>/usr/local/samba/var/locks
+		id mapping.  The directory is specified when Samba is initially
+		compiled using the
+		<parameter>--with-statedir</parameter> option or <smbconfoption name="state dir"/>.
+		The default directory in this installation is <filename>&pathconfig.STATEDIR;
 		</filename>. </para></listitem>
 		</varlistentry>
 
