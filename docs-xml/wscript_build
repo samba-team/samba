@@ -116,10 +116,7 @@ vfs_module_manpages = ['vfs_acl_tdb',
                        'vfs_xattr_tdb',
                        'vfs_zfsacl' ]
 
-def smbdotconf_generate_parameter_list(task):
-    parameter_all = task.outputs[0].bldpath(task.env)
-    articles = task.inputs
-
+def generate_path_entity_list():
     entities = bld.pathconfig_entities()
 
     # We need this if we build with Heimdal as we can't easily make
@@ -129,14 +126,23 @@ def smbdotconf_generate_parameter_list(task):
     if bld.CONFIG_SET('MIT_KDC_PATH'):
         mit_kdc_path = bld.CONFIG_GET('MIT_KDC_PATH')
 
-    t = "<!DOCTYPE section [\n" +\
-        "\n".join(entities) +\
+    t = "\n".join(entities) +\
         "\n" +\
         "<!ENTITY pathconfig.MITKDCPATH   " + mit_kdc_path + ">\n" +\
+        "\n"
+    return t
+
+def smbdotconf_generate_parameter_list_file(task):
+    parameter_all = task.outputs[0].bldpath(task.env)
+    articles = task.inputs
+
+    t = "<!DOCTYPE section [\n" +\
+        generate_path_entity_list() + \
         "]>\n" +\
         "<section>\n" +\
         "".join(art.read() for art in articles) +\
 	"</section>\n"
+
 
     save_file(parameter_all, t , create_dir=True)
     return 0
@@ -152,8 +158,24 @@ articles = " ".join(sorted([x.path_from(bld.path) for x in sources],
 bld.SAMBA_GENERATOR(parameter_all,
                     source=articles,
                     target=parameter_all,
-                    rule=smbdotconf_generate_parameter_list,
+                    rule=smbdotconf_generate_parameter_list_file)
+
+def generate_path_entity_file(task):
+    path_entities_file = task.outputs[0].bldpath(task.env)
+
+    save_file(path_entities_file,
+              generate_path_entity_list(),
+              create_dir=True)
+    return 0
+
+path_entities = 'build/DTD/samba.build.pathconfig'
+
+bld.SAMBA_GENERATOR(path_entities,
+                    source=articles,
+                    target=path_entities,
+                    rule=generate_path_entity_file,
                     dep_vars=bld.dynconfig_varnames())
+
 
 def SMBDOTCONF_MANPAGE(bld, target):
     ''' assemble and build smb.conf.5 manual page'''

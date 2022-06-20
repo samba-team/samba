@@ -28,6 +28,11 @@
 	"http://www.samba.org/samba/LOCAL.BUILDDIR.DTD/samba.build.version">
 %samba.build.version;
 
+<!ENTITY % samba.build.pathconfig PUBLIC
+	"-//Samba-Team//VERSION Samba Build Version//EN"
+	"http://www.samba.org/samba/LOCAL.BUILDDIR.DTD/samba.build.pathconfig">
+%samba.build.pathconfig;
+
 <!-- smb.conf options -->
 
 <!ELEMENT smbconfblock ((smbconfoption|smbconfsection|smbconfcomment)*)>

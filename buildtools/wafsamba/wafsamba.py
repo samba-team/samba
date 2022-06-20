@@ -1180,10 +1180,10 @@ def SAMBAMANPAGES(bld, manpages, extra_source=None):
         source = [m + '.xml']
         if extra_source is not None:
             source = [source, extra_source]
-        # ${SRC[1]} and ${SRC[2]} are not referenced in the
+        # ${SRC[1]}, ${SRC[2]} and ${SRC[3]} are not referenced in the
         # SAMBA_GENERATOR but trigger the dependency calculation so
         # ensures that manpages are rebuilt when these change.
-        source += ['build/DTD/samba.entities', 'build/DTD/samba.build.version']
+        source += ['build/DTD/samba.build.pathconfig', 'build/DTD/samba.entities', 'build/DTD/samba.build.version']
         bld.SAMBA_GENERATOR(m,
                             source=source,
                             target=m,
