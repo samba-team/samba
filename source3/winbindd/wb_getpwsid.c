@@ -40,11 +40,13 @@ struct tevent_req *wb_getpwsid_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_getpwsid_state *state;
+	struct dom_sid_buf buf;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_getpwsid_state);
 	if (req == NULL) {
 		return NULL;
 	}
+	D_INFO("WB command getpwsid start.\nQuery user SID %s.\n", dom_sid_str_buf(user_sid, &buf));
 	sid_copy(&state->sid, user_sid);
 	state->ev = ev;
 	state->pw = pw;
@@ -148,5 +150,7 @@ static void wb_getpwsid_queryuser_done(struct tevent_req *subreq)
 
 NTSTATUS wb_getpwsid_recv(struct tevent_req *req)
 {
-	return tevent_req_simple_recv_ntstatus(req);
+	NTSTATUS status = tevent_req_simple_recv_ntstatus(req);
+	D_INFO("WB command getpwsid end.\nReturn status %s.\n", nt_errstr(status));
+	return status;
 }
