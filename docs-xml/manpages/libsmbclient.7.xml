@@ -93,7 +93,7 @@
 	When libsmbclient is invoked by an application it searches for a directory called
 	<filename>.smb</filename> in the $HOME directory that is specified in the users shell
 	environment. It then searches for a file called <filename>smb.conf</filename> which,
-	if present, will fully over-ride the system <filename>/etc/samba/smb.conf</filename> file. If
+	if present, will fully over-ride the system &smb.conf; file. If
 	instead libsmbclient finds a file called <filename>~/.smb/smb.conf.append</filename>,
 	it will read the system <filename>/etc/samba/smb.conf</filename> and then append the
 	contents of the <filename>~/.smb/smb.conf.append</filename> to it.

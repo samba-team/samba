@@ -60,7 +60,7 @@
 
 	<para>
 	The tdb2 idmap backend supports an external program for performing id mappings
-	through the smb.conf option <parameter>idmap config * : script</parameter> or
+	through the &smb.conf; option <parameter>idmap config * : script</parameter> or
 	its deprecated legacy form <parameter>idmap : script</parameter>.
 	</para>
 

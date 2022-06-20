@@ -17,4 +17,5 @@ echo "
 <!ENTITY pathconfig.NTP_SIGND_SOCKET_DIR '\${prefix}/var/lib/ntp_signd'>
 <!ENTITY pathconfig.MITKDCPATH           '\${prefix}/sbin/krb5kdc'>
 <!ENTITY pathconfig.SAMBA_DATADIR        '\${prefix}/var/samba'>
+<!ENTITY pathconfig.CONFIGFILE           '\${prefix}/etc/smb.conf'>
 "

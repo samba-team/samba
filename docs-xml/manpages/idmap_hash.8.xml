@@ -25,7 +25,7 @@
 	  This plugin also implements the nss_info API and can be used
 	  to support a local name mapping files if enabled via the
 	  &quot;winbind normalize names&quot; and &quot;winbind nss info&quot;
-	  parameters in smb.conf.
+	  parameters in &smb.conf;.
 	  The module divides the range into subranges for each domain that is being
 	  handled by the idmap config.
 

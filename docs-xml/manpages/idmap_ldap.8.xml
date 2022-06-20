@@ -41,7 +41,7 @@
 		<listitem><para>
 			Defines the directory base suffix to use for
 			SID/uid/gid mapping entries.  If not defined, idmap_ldap will default
-			to using the &quot;ldap idmap suffix&quot; option from smb.conf.
+			to using the &quot;ldap idmap suffix&quot; option from &smb.conf;.
 		</para></listitem>
 		</varlistentry>
 

@@ -896,7 +896,7 @@
 <!ENTITY smbd '<application>smbd</application>'>
 <!ENTITY nmbd '<application>nmbd</application>'>
 <!ENTITY testparm '<application>testparm</application>'>
-<!ENTITY smb.conf '<filename>smb.conf</filename>'>
+<!ENTITY smb.conf '<filename>&pathconfig.CONFIGFILE;</filename>'>
 <!ENTITY smbclient '<application>smbclient</application>'>
 <!ENTITY winbindd '<application>winbindd</application>'>
 <!ENTITY net '<application>net</application>'>

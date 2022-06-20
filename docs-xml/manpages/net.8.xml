@@ -2111,7 +2111,7 @@ commands.
 </para>
 
 <para>
-To set this up, first set up your smb.conf by adding to the [global] section:
+To set this up, first set up your &smb.conf; by adding to the [global] section:
 
 usershare path = /usr/local/samba/lib/usershares
 
@@ -2126,7 +2126,7 @@ which means that a file in that directory can be renamed or deleted only
 by the owner of the file).
 
 Finally, tell smbd how many usershares you will allow by adding to the [global]
-section of smb.conf a line such as :
+section of &smb.conf; a line such as :
 
 usershare max shares = 100.
 
@@ -2154,7 +2154,7 @@ Add or replace a new user defined share, with name "sharename".
 
 <para>
 "path" specifies the absolute pathname on the system to be exported.
-Restrictions may be put on this, see the global smb.conf parameters:
+Restrictions may be put on this, see the global &smb.conf; parameters:
 "usershare owner only", "usershare prefix allow list", and
 "usershare prefix deny list".
 </para>
@@ -2166,7 +2166,7 @@ on the share when browsed to by a client.
 
 <para>The optional "acl" field
 specifies which users have read and write access to the entire share.
-Note that guest connections are not allowed unless the smb.conf parameter
+Note that guest connections are not allowed unless the &smb.conf; parameter
 "usershare allow guests" has been set. The definition of a user
 defined share acl is: "user:permission", where user is a valid
 username on the system and permission can be "F", "R", or "D".
@@ -2184,9 +2184,9 @@ authenticated user has read-only access.
 
 <para>
 The optional "guest_ok" has the same effect as the parameter of the
-same name in smb.conf, in that it allows guest access to this user
+same name in &smb.conf;, in that it allows guest access to this user
 defined share. This parameter is only allowed if the global parameter
-"usershare allow guests" has been set to true in the smb.conf.
+"usershare allow guests" has been set to true in the &smb.conf;.
 </para>
 
 There is no separate command to modify an existing user defined share,
@@ -2268,7 +2268,7 @@ by enabling the RPC conf mode and specifying the address of the remote server.
 
 <para>
 The deployment of this configuration data can be activated in two levels from the
-<emphasis>smb.conf</emphasis> file: Share definitions from registry are
+<emphasis>&smb.conf;</emphasis> file: Share definitions from registry are
 activated by setting <parameter>registry shares</parameter> to
 <quote>yes</quote> in the [global] section and global configuration options are
 activated by setting <smbconfoption name="include">registry</smbconfoption> in
@@ -2721,7 +2721,7 @@ win32 eventlog files (usually *.evt). evt files are used by the native Windows e
 
 <para>
 The import and export of evt files can only succeed when <parameter>eventlog list</parameter> is used in
-<emphasis>smb.conf</emphasis> file.
+<emphasis>&smb.conf;</emphasis> file.
 See the <citerefentry><refentrytitle>smb.conf</refentrytitle> <manvolnum>5</manvolnum></citerefentry> manpage for details.
 </para>
 
@@ -2750,7 +2750,7 @@ Prints a eventlog *.evt file to standard output.
 Imports a eventlog *.evt file defined by <replaceable>filename</replaceable> into the
 samba internal tdb representation of eventlog defined by <replaceable>eventlog</replaceable>.
 <replaceable>eventlog</replaceable> needs to part of the <parameter>eventlog list</parameter>
-defined in smb.conf.
+defined in &smb.conf;.
 See the <citerefentry><refentrytitle>smb.conf</refentrytitle> <manvolnum>5</manvolnum></citerefentry> manpage for details.
 </para>
 
@@ -2763,7 +2763,7 @@ See the <citerefentry><refentrytitle>smb.conf</refentrytitle> <manvolnum>5</manv
 Exports the samba internal tdb representation of eventlog defined by <replaceable>eventlog</replaceable>
 to a eventlog *.evt file defined by <replaceable>filename</replaceable>.
 <replaceable>eventlog</replaceable> needs to part of the <parameter>eventlog list</parameter>
-defined in smb.conf.
+defined in &smb.conf;.
 See the <citerefentry><refentrytitle>smb.conf</refentrytitle> <manvolnum>5</manvolnum></citerefentry> manpage for details.
 </para>
 
