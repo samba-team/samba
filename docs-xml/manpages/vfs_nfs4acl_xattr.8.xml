@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<ns:Root xmlns:xi="http://www.w3.org/2003/XInclude"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:ns="urn:TestNamespace">
 <refentry id="vfs_nfs4acl_xattr.8">
 
   <refmeta>
@@ -41,6 +44,8 @@
 
   <refsect1>
     <title>OPTIONS</title>
+
+    <xi:include href="nfs4.xml.include" xpointer="xpointer(*/*)" />
 
     <variablelist>
 
@@ -164,3 +169,4 @@
   </refsect1>
 
 </refentry>
+</ns:Root>
