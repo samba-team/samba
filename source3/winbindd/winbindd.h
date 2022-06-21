@@ -191,6 +191,7 @@ struct wb_parent_idmap_config_dom {
 struct wb_parent_idmap_config {
 	struct tevent_queue *queue;
 	uint32_t num_doms;
+	bool initialized;
 	struct wb_parent_idmap_config_dom *doms;
 };
 
