@@ -426,7 +426,7 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 			 _("Usage:"),
 			 _("Find the ADS DC using CLDAP lookup.\n"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup_nobind(c, false, tmp_ctx, &ads);
@@ -552,7 +552,7 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 			 _("Display information about an Active Directory "
 			   "server.\n"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup_nobind(c, false, tmp_ctx, &ads);
@@ -808,7 +808,7 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 			 _("Usage:"),
 			 _("Print the workgroup name"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup_nobind(c, false, tmp_ctx, &ads);
@@ -1161,7 +1161,7 @@ int net_ads_user(struct net_context *c, int argc, const char **argv)
 			 _("List AD users"));
 		net_display_usage_from_functable(func);
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, false, &ads);
@@ -1339,7 +1339,7 @@ int net_ads_group(struct net_context *c, int argc, const char **argv)
 			 _("List AD groups"));
 		net_display_usage_from_functable(func);
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, false, &ads);
@@ -1385,7 +1385,7 @@ static int net_ads_status(struct net_context *c, int argc, const char **argv)
 			 _("Usage:"),
 			 _("Display machine account details"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, true, &ads);
@@ -1437,7 +1437,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 			 _("Usage:"),
 			 _("Leave an AD domain"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	if (!*lp_realm()) {
@@ -1561,7 +1561,7 @@ int net_ads_testjoin(struct net_context *c, int argc, const char **argv)
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Test if the existing join is ok"));
-		return 0;
+		return -1;
 	}
 
 	/* Display success or failure */
@@ -2147,7 +2147,7 @@ static int net_ads_printer_search(struct net_context *c,
 			 _("Usage:"),
 			 _("List printers in the AD"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, false, &ads);
@@ -2197,7 +2197,7 @@ static int net_ads_printer_info(struct net_context *c,
 			   "    printername\tPrinter name or wildcard\n"
 			   "    servername\tName of the print server\n"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, false, &ads);
@@ -2517,7 +2517,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 			   "  Change password for user\n"
 			   "    username\tName of user to change password for\n"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	if (auth_principal == NULL || auth_password == NULL) {
@@ -2630,7 +2630,7 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 			 _("Usage:"),
 			 _("Change the machine account's trust password"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	if (!secrets_init()) {
@@ -2904,7 +2904,7 @@ static int net_ads_keytab_flush(struct net_context *c,
 			 _("Usage:"),
 			 _("Delete the whole keytab"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	if (!c->opt_user_specified && c->opt_password == NULL) {
@@ -2942,7 +2942,7 @@ static int net_ads_keytab_add(struct net_context *c,
 			   "    principal\tKerberos principal to add to "
 			   "keytab\n"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	d_printf(_("Processing principals to add...\n"));
@@ -2993,7 +2993,7 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 			 _("Usage:"),
 			 _("Create new default keytab"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	if (!c->opt_user_specified && c->opt_password == NULL) {
@@ -3022,7 +3022,7 @@ static int net_ads_keytab_list(struct net_context *c, int argc, const char **arg
 			 _("net ads keytab list [keytab]\n"
 			   "  List a local keytab\n"
 			   "    keytab\tKeytab to list\n"));
-		return 0;
+		return -1;
 	}
 
 	if (argc >= 1) {
@@ -3097,7 +3097,7 @@ static int net_ads_kerberos_renew(struct net_context *c, int argc, const char **
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Renew TGT from existing credential cache"));
-		return 0;
+		return -1;
 	}
 
 	ret = smb_krb5_renew_ticket(NULL, NULL, NULL, NULL);
@@ -3313,7 +3313,7 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Get Ticket Granting Ticket (TGT) for the user"));
-		return 0;
+		return -1;
 	}
 
 	mem_ctx = talloc_init("net_ads_kerberos_kinit");
@@ -3393,7 +3393,7 @@ static int net_ads_setspn_list(struct net_context *c,
 			 _("Usage:"),
 			 _("net ads setspn list <machinename>\n"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, true, &ads);
@@ -3427,7 +3427,7 @@ static int net_ads_setspn_add(struct net_context *c, int argc, const char **argv
 			 _("Usage:"),
 			 _("net ads setspn add <machinename> SPN\n"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, true, &ads);
@@ -3461,7 +3461,7 @@ static int net_ads_setspn_delete(struct net_context *c, int argc, const char **a
 			 _("Usage:"),
 			 _("net ads setspn delete <machinename> SPN\n"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, true, &ads);
@@ -3609,7 +3609,7 @@ static int net_ads_enctypes_list(struct net_context *c, int argc, const char **a
 			 _("Usage:"),
 			 _("List supported enctypes"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, false, &ads);
@@ -3652,7 +3652,7 @@ static int net_ads_enctypes_set(struct net_context *c, int argc, const char **ar
 			 _("Usage:"),
 			 _("Set supported enctypes"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, false, &ads);
@@ -3740,7 +3740,7 @@ static int net_ads_enctypes_delete(struct net_context *c, int argc, const char *
 			 _("Usage:"),
 			 _("Delete supported enctypes"));
 		TALLOC_FREE(tmp_ctx);
-		return 0;
+		return -1;
 	}
 
 	status = ads_startup(c, false, &ads);
