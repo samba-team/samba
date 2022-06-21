@@ -57,8 +57,20 @@ static PyObject *py_generate_random_password(PyObject *self, PyObject *args)
 	int min, max;
 	PyObject *ret;
 	char *retstr;
-	if (!PyArg_ParseTuple(args, "ii", &min, &max))
+	if (!PyArg_ParseTuple(args, "ii", &min, &max)) {
 		return NULL;
+	}
+	if (max < 0 || min < 0) {
+		/*
+		 * The real range checks happen in generate_random_password().
+		 * Here we are just checking the values won't overflow into
+		 * numbers when cast to size_t.
+		 */
+		PyErr_Format(PyExc_ValueError,
+			     "invalid range: %d - %d",
+			     min, max);
+		return NULL;
+	}
 
 	retstr = generate_random_password(NULL, min, max);
 	if (retstr == NULL) {
@@ -74,8 +86,21 @@ static PyObject *py_generate_random_machine_password(PyObject *self, PyObject *a
 	int min, max;
 	PyObject *ret;
 	char *retstr;
-	if (!PyArg_ParseTuple(args, "ii", &min, &max))
+	if (!PyArg_ParseTuple(args, "ii", &min, &max)) {
 		return NULL;
+	}
+	if (max < 0 || min < 0) {
+		/*
+		 * The real range checks happen in
+		 * generate_random_machine_password().
+		 * Here we are just checking the values won't overflow into
+		 * numbers when cast to size_t.
+		 */
+		PyErr_Format(PyExc_ValueError,
+			     "invalid range: %d - %d",
+			     min, max);
+		return NULL;
+	}
 
 	retstr = generate_random_machine_password(NULL, min, max);
 	if (retstr == NULL) {
