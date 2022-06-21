@@ -913,12 +913,19 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
     dep_vars.append('ruledeps')
     dep_vars.append('SAMBA_GENERATOR_VARS')
 
+    shell=isinstance(rule, str)
+
+    # This ensures that if the command (executed in the shell) fails
+    # (returns non-zero), the build fails
+    if shell:
+        rule = "set -e; " + rule
+
     bld.SET_BUILD_GROUP(group)
     t = bld(
         rule=rule,
         source=bld.EXPAND_VARIABLES(source, vars=vars),
+        shell=shell,
         target=target,
-        shell=isinstance(rule, str),
         update_outputs=True,
         before='c',
         ext_out='.c',
