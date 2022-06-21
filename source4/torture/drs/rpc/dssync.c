@@ -527,7 +527,9 @@ static bool test_analyse_objects(struct torture_context *tctx,
 				el = &new_msg->elements[idx];
 				a = dsdb_attribute_by_lDAPDisplayName(ldap_schema,
 				                                      el->name);
-				if (!(el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE))) {
+				if (LDB_FLAG_MOD_TYPE(el->flags) != LDB_FLAG_MOD_ADD &&
+				    LDB_FLAG_MOD_TYPE(el->flags) != LDB_FLAG_MOD_REPLACE)
+				{
 					/* DRS only value */
 					is_warning = false;
 				} else if (a->linkID & 1) {
