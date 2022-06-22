@@ -934,37 +934,43 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 		}
 		break;
 	}
-	case OPT_USE_KERBEROS_CCACHE:
-		if (arg != NULL) {
-			const char *error_string = NULL;
-			int rc;
+	case OPT_USE_KERBEROS_CCACHE: {
+		const char *error_string = NULL;
+		int rc;
 
-			ok = cli_credentials_set_kerberos_state(creds,
-								CRED_USE_KERBEROS_REQUIRED,
-								CRED_SPECIFIED);
-			if (!ok) {
-				fprintf(stderr,
-					"Failed to set Kerberos state to %s!\n", arg);
-				exit(1);
-			}
-
-			rc = cli_credentials_set_ccache(creds,
-							lp_ctx,
-							arg,
-							CRED_SPECIFIED,
-							&error_string);
-			if (rc != 0) {
-				fprintf(stderr,
-					"Error reading krb5 credentials cache: '%s'"
-					" - %s\n",
-					arg,
-					error_string);
-				exit(1);
-			}
-
-			skip_password_callback = true;
+		if (arg == NULL) {
+			fprintf(stderr,
+				"Failed to parse --use-krb5-ccache=CCACHE: "
+				"Missing argument\n");
+			exit(1);
 		}
+
+		ok = cli_credentials_set_kerberos_state(creds,
+							CRED_USE_KERBEROS_REQUIRED,
+							CRED_SPECIFIED);
+		if (!ok) {
+			fprintf(stderr,
+				"Failed to set Kerberos state to %s!\n", arg);
+			exit(1);
+		}
+
+		rc = cli_credentials_set_ccache(creds,
+						lp_ctx,
+						arg,
+						CRED_SPECIFIED,
+						&error_string);
+		if (rc != 0) {
+			fprintf(stderr,
+				"Error reading krb5 credentials cache: '%s'"
+				" - %s\n",
+				arg,
+				error_string);
+			exit(1);
+		}
+
+		skip_password_callback = true;
 		break;
+	}
 	case OPT_USE_WINBIND_CCACHE:
 	{
 		uint32_t gensec_features;
