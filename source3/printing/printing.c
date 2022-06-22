@@ -62,10 +62,6 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 	bool ok;
 	char *print_cache_path;
 
-	if (!printer_list_parent_init()) {
-		return false;
-	}
-
 	print_cache_path = cache_path(talloc_tos(), "printing");
 	if (print_cache_path == NULL) {
 		return false;

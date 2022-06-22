@@ -30,13 +30,14 @@
 #define PL_DATA_FORMAT "ddPPP"
 #define PL_TSTAMP_FORMAT "dd"
 
+static struct db_context *printerlist_db;
+
 static struct db_context *get_printer_list_db(void)
 {
-	static struct db_context *db;
 	char *db_path;
 
-	if (db != NULL) {
-		return db;
+	if (printerlist_db != NULL) {
+		return printerlist_db;
 	}
 
 	db_path = lock_path(talloc_tos(), "printer_list.tdb");
@@ -44,31 +45,19 @@ static struct db_context *get_printer_list_db(void)
 		return NULL;
 	}
 
-	db = db_open(NULL, db_path, 0,
-		     TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-		     O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_1,
-		     DBWRAP_FLAG_NONE);
+	printerlist_db = db_open(NULL,
+				 db_path,
+				 0,
+				 TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
+				 O_RDWR|O_CREAT,
+				 0644,
+				 DBWRAP_LOCK_ORDER_1,
+				 DBWRAP_FLAG_NONE);
 	TALLOC_FREE(db_path);
-	return db;
-}
-
-bool printer_list_parent_init(void)
-{
-	struct db_context *db;
-
-	/*
-	 * Open the tdb in the parent process (smbd) so that our
-	 * CLEAR_IF_FIRST optimization in tdb_reopen_all can properly
-	 * work.
-	 */
-
-	db = get_printer_list_db();
-	if (db == NULL) {
-		DEBUG(1, ("could not open Printer List Database: %s\n",
-			  strerror(errno)));
-		return false;
+	if (printerlist_db == NULL) {
+		DBG_ERR("Failed to open printer_list.tdb\n");
 	}
-	return true;
+	return printerlist_db;
 }
 
 NTSTATUS printer_list_get_printer(TALLOC_CTX *mem_ctx,

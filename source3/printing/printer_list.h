@@ -20,8 +20,6 @@
 #ifndef _PRINTER_LIST_H_
 #define _PRINTER_LIST_H_
 
-bool printer_list_parent_init(void);
-
 /**
  * @brief Get the comment and the last refresh time from the printer list
  *        database.
