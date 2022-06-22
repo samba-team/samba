@@ -36,10 +36,8 @@ struct fileid_mount_entry {
 };
 
 struct fileid_handle_data {
-	uint64_t (*device_mapping_fn)(struct fileid_handle_data *data,
-				      const SMB_STRUCT_STAT *sbuf);
-	uint64_t (*extid_mapping_fn)(struct fileid_handle_data *data,
-				      const SMB_STRUCT_STAT *sbuf);
+	struct file_id (*mapping_fn)(struct fileid_handle_data *data,
+				     const SMB_STRUCT_STAT *sbuf);
 	char **fstype_deny_list;
 	char **fstype_allow_list;
 	char **mntdir_deny_list;
@@ -212,6 +210,16 @@ static uint64_t fileid_device_mapping_fsname(struct fileid_handle_data *data,
 	return m->devid;
 }
 
+static struct file_id fileid_mapping_fsname(struct fileid_handle_data *data,
+					    const SMB_STRUCT_STAT *sbuf)
+{
+	struct file_id id = { .inode = sbuf->st_ex_ino, };
+
+	id.devid = fileid_device_mapping_fsname(data, sbuf);
+
+	return id;
+}
+
 /* a device mapping using a hostname */
 static uint64_t fileid_device_mapping_hostname(struct fileid_handle_data *data,
 					       const SMB_STRUCT_STAT *sbuf)
@@ -243,16 +251,64 @@ static uint64_t fileid_device_mapping_hostname(struct fileid_handle_data *data,
 	return id;
 }
 
+static struct file_id fileid_mapping_hostname(struct fileid_handle_data *data,
+					      const SMB_STRUCT_STAT *sbuf)
+{
+	struct file_id id = { .inode = sbuf->st_ex_ino, };
+
+	id.devid = fileid_device_mapping_hostname(data, sbuf);
+
+	return id;
+}
+
+static bool fileid_is_nolock_inode(struct fileid_handle_data *data,
+				   const SMB_STRUCT_STAT *sbuf)
+{
+	if (data->nolockinode == 0) {
+		return false;
+	}
+
+	if (sbuf->st_ex_ino != data->nolockinode) {
+		return false;
+	}
+
+	return true;
+}
+
 /* a device mapping using a fsname for files and hostname for dirs */
-static uint64_t fileid_device_mapping_fsname_nodirs(
+static struct file_id fileid_mapping_fsname_nodirs(
 	struct fileid_handle_data *data,
 	const SMB_STRUCT_STAT *sbuf)
 {
 	if (S_ISDIR(sbuf->st_ex_mode)) {
-		return fileid_device_mapping_hostname(data, sbuf);
+		return fileid_mapping_hostname(data, sbuf);
 	}
 
-	return fileid_device_mapping_fsname(data, sbuf);
+	return fileid_mapping_fsname(data, sbuf);
+}
+
+static struct file_id fileid_mapping_fsname_norootdir(
+	struct fileid_handle_data *data,
+	const SMB_STRUCT_STAT *sbuf)
+{
+	if (fileid_is_nolock_inode(data, sbuf)) {
+		return fileid_mapping_hostname(data, sbuf);
+	}
+
+	return fileid_mapping_fsname(data, sbuf);
+}
+
+static struct file_id fileid_mapping_fsname_norootdir_ext(
+	struct fileid_handle_data *data,
+	const SMB_STRUCT_STAT *sbuf)
+{
+	if (fileid_is_nolock_inode(data, sbuf)) {
+		struct file_id id = fileid_mapping_hostname(data, sbuf);
+		id.extid = getpid();
+		return id;
+	}
+
+	return fileid_mapping_fsname(data, sbuf);
 }
 
 /* device mapping functions using a fsid */
@@ -282,16 +338,14 @@ static uint64_t fileid_device_mapping_fsid(struct fileid_handle_data *data,
 	return m->devid;
 }
 
-static uint64_t fileid_extid_mapping_zero(struct fileid_handle_data *data,
+static struct file_id fileid_mapping_fsid(struct fileid_handle_data *data,
 					  const SMB_STRUCT_STAT *sbuf)
 {
-	return 0;
-}
+	struct file_id id = { .inode = sbuf->st_ex_ino, };
 
-static uint64_t fileid_extid_mapping_pid(struct fileid_handle_data *data,
-					 const SMB_STRUCT_STAT *sbuf)
-{
-	return getpid();
+	id.devid = fileid_device_mapping_fsid(data, sbuf);
+
+	return id;
 }
 
 static int get_connectpath_ino(struct vfs_handle_struct *handle,
@@ -362,20 +416,15 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 					 "fileid", "algorithm",
 					 algorithm);
 	if (strcmp("fsname", algorithm) == 0) {
-		data->device_mapping_fn	= fileid_device_mapping_fsname;
-		data->extid_mapping_fn = fileid_extid_mapping_zero;
+		data->mapping_fn = fileid_mapping_fsname;
 	} else if (strcmp("fsname_nodirs", algorithm) == 0) {
-		data->device_mapping_fn = fileid_device_mapping_fsname_nodirs;
-		data->extid_mapping_fn = fileid_extid_mapping_zero;
+		data->mapping_fn = fileid_mapping_fsname_nodirs;
 	} else if (strcmp("fsid", algorithm) == 0) {
-		data->device_mapping_fn	= fileid_device_mapping_fsid;
-		data->extid_mapping_fn = fileid_extid_mapping_zero;
+		data->mapping_fn = fileid_mapping_fsid;
 	} else if (strcmp("hostname", algorithm) == 0) {
-		data->device_mapping_fn = fileid_device_mapping_hostname;
-		data->extid_mapping_fn = fileid_extid_mapping_zero;
+		data->mapping_fn = fileid_mapping_hostname;
 	} else if (strcmp("fsname_norootdir", algorithm) == 0) {
-		data->device_mapping_fn	= fileid_device_mapping_fsname;
-		data->extid_mapping_fn = fileid_extid_mapping_zero;
+		data->mapping_fn = fileid_mapping_fsname_norootdir;
 
 		ret = get_connectpath_ino(handle, &data->nolockinode);
 		if (ret != 0) {
@@ -385,8 +434,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 			return -1;
 		}
 	} else if (strcmp("fsname_norootdir_ext", algorithm) == 0) {
-		data->device_mapping_fn	= fileid_device_mapping_fsname;
-		data->extid_mapping_fn = fileid_extid_mapping_pid;
+		data->mapping_fn = fileid_mapping_fsname_norootdir_ext;
 
 		ret = get_connectpath_ino(handle, &data->nolockinode);
 		if (ret != 0) {
@@ -481,25 +529,13 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 					    const SMB_STRUCT_STAT *sbuf)
 {
 	struct fileid_handle_data *data;
-	struct file_id id;
-	uint64_t devid;
-
-	ZERO_STRUCT(id);
+	struct file_id id = { .inode = 0, };
 
 	SMB_VFS_HANDLE_GET_DATA(handle, data,
 				struct fileid_handle_data,
 				return id);
 
-	if ((data->nolockinode != 0) &&
-	    (sbuf->st_ex_ino == data->nolockinode)) {
-		devid = fileid_device_mapping_hostname(data, sbuf);
-		id.extid = data->extid_mapping_fn(data, sbuf);
-	} else {
-		devid = data->device_mapping_fn(data, sbuf);
-	}
-
-	id.inode	= sbuf->st_ex_ino;
-	id.devid        = devid;
+	id = data->mapping_fn(data, sbuf);
 
 	DBG_DEBUG("Returning dev [%jx] inode [%jx] extid [%jx]\n",
 		  (uintmax_t)id.devid, (uintmax_t)id.inode, (uintmax_t)id.extid);
