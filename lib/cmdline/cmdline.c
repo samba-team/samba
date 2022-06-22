@@ -990,68 +990,75 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 		skip_password_callback = true;
 		break;
 	}
-	case OPT_CLIENT_PROTECTION:
-		if (arg != NULL) {
-			uint32_t gensec_features;
-			enum smb_signing_setting signing_state =
-				SMB_SIGNING_OFF;
-			enum smb_encryption_setting encryption_state =
-				SMB_ENCRYPTION_OFF;
+	case OPT_CLIENT_PROTECTION: {
+		uint32_t gensec_features;
+		enum smb_signing_setting signing_state =
+			SMB_SIGNING_OFF;
+		enum smb_encryption_setting encryption_state =
+			SMB_ENCRYPTION_OFF;
 
-			gensec_features =
-				cli_credentials_get_gensec_features(
-						creds);
+		if (arg == NULL) {
+			fprintf(stderr,
+				"Failed to parse "
+				"--client-protection=sign|encrypt|off: "
+				"Missing argument\n");
+			exit(1);
+		}
 
-			if (strequal(arg, "off")) {
-				gensec_features &=
-					~(GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL);
+		gensec_features =
+			cli_credentials_get_gensec_features(
+					creds);
 
-				signing_state = SMB_SIGNING_OFF;
-				encryption_state = SMB_ENCRYPTION_OFF;
-			} else if (strequal(arg, "sign")) {
-				gensec_features |= GENSEC_FEATURE_SIGN;
+		if (strequal(arg, "off")) {
+			gensec_features &=
+				~(GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL);
 
-				signing_state = SMB_SIGNING_REQUIRED;
-				encryption_state = SMB_ENCRYPTION_OFF;
-			} else if (strequal(arg, "encrypt")) {
-				gensec_features |= GENSEC_FEATURE_SEAL;
+			signing_state = SMB_SIGNING_OFF;
+			encryption_state = SMB_ENCRYPTION_OFF;
+		} else if (strequal(arg, "sign")) {
+			gensec_features |= GENSEC_FEATURE_SIGN;
 
-				signing_state = SMB_SIGNING_REQUIRED;
-				encryption_state = SMB_ENCRYPTION_REQUIRED;
-			} else {
-				fprintf(stderr,
-					"Failed to parse --client-protection\n");
-				exit(1);
-			}
+			signing_state = SMB_SIGNING_REQUIRED;
+			encryption_state = SMB_ENCRYPTION_OFF;
+		} else if (strequal(arg, "encrypt")) {
+			gensec_features |= GENSEC_FEATURE_SEAL;
 
-			ok = cli_credentials_set_gensec_features(creds,
-								 gensec_features,
-								 CRED_SPECIFIED);
-			if (!ok) {
-				fprintf(stderr,
-					"Failed to set gensec feature!\n");
-				exit(1);
-			}
+			signing_state = SMB_SIGNING_REQUIRED;
+			encryption_state = SMB_ENCRYPTION_REQUIRED;
+		} else {
+			fprintf(stderr,
+				"Failed to parse --client-protection\n");
+			exit(1);
+		}
 
-			ok = cli_credentials_set_smb_signing(creds,
-							     signing_state,
-							     CRED_SPECIFIED);
-			if (!ok) {
-				fprintf(stderr,
-					"Failed to set smb signing!\n");
-				exit(1);
-			}
-
-			ok = cli_credentials_set_smb_encryption(creds,
-								encryption_state,
+		ok = cli_credentials_set_gensec_features(creds,
+								gensec_features,
 								CRED_SPECIFIED);
-			if (!ok) {
-				fprintf(stderr,
-					"Failed to set smb encryption!\n");
-				exit(1);
-			}
+		if (!ok) {
+			fprintf(stderr,
+				"Failed to set gensec feature!\n");
+			exit(1);
+		}
+
+		ok = cli_credentials_set_smb_signing(creds,
+							signing_state,
+							CRED_SPECIFIED);
+		if (!ok) {
+			fprintf(stderr,
+				"Failed to set smb signing!\n");
+			exit(1);
+		}
+
+		ok = cli_credentials_set_smb_encryption(creds,
+							encryption_state,
+							CRED_SPECIFIED);
+		if (!ok) {
+			fprintf(stderr,
+				"Failed to set smb encryption!\n");
+			exit(1);
 		}
 		break;
+	}
 	} /* switch */
 }
 
