@@ -216,6 +216,12 @@ krb5_kdc_update_time(struct timeval *tv)
 	_kdc_now = *tv;
 }
 
+KDC_LIB_FUNCTION struct timeval KDC_LIB_CALL
+krb5_kdc_get_time(void)
+{
+    return _kdc_now;
+}
+
 
 #define EXTEND_REQUEST_T(LHS, RHS) do {			\
 	RHS = realloc(LHS, sizeof(*RHS));		\
