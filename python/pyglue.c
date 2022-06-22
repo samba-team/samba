@@ -74,6 +74,11 @@ static PyObject *py_generate_random_password(PyObject *self, PyObject *args)
 
 	retstr = generate_random_password(NULL, min, max);
 	if (retstr == NULL) {
+		if (errno == EINVAL) {
+			PyErr_Format(PyExc_ValueError,
+				     "invalid range: %d - %d",
+				     min, max);
+		}
 		return NULL;
 	}
 	ret = PyUnicode_FromString(retstr);
@@ -104,6 +109,11 @@ static PyObject *py_generate_random_machine_password(PyObject *self, PyObject *a
 
 	retstr = generate_random_machine_password(NULL, min, max);
 	if (retstr == NULL) {
+		if (errno == EINVAL) {
+			PyErr_Format(PyExc_ValueError,
+				     "invalid range: %d - %d",
+				     min, max);
+		}
 		return NULL;
 	}
 	ret = PyUnicode_FromString(retstr);
