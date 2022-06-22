@@ -428,14 +428,19 @@ _PUBLIC_ void ndr_print_debugc(int dbgc_class, ndr_print_fn_t fn, const char *na
 /*
   a useful helper function for printing idl structures via DEBUG()
 */
-_PUBLIC_ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
+_PUBLIC_ bool ndr_print_debug(int level,
+			      ndr_print_fn_t fn,
+			      const char *name,
+			      void *ptr,
+			      const char *location,
+			      const char *function)
 {
 	struct ndr_print *ndr;
 
-	DEBUG(1,(" "));
+	DEBUGLF(level, (" "), location, function);
 
 	ndr = talloc_zero(NULL, struct ndr_print);
-	if (!ndr) return;
+	if (!ndr) return false;
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
@@ -447,6 +452,7 @@ _PUBLIC_ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
 
 	fn(ndr, name, ptr);
 	talloc_free(ndr);
+	return true;
 }
 
 /*
