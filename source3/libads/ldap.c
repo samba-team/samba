@@ -357,6 +357,10 @@ static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,
 	for (i = 0; i < count; i++) {
 		char server[INET6_ADDRSTRLEN];
 
+		if (is_zero_addr(&sa_list[i].u.ss)) {
+			continue;
+		}
+
 		print_sockaddr(server, sizeof(server), &sa_list[i].u.ss);
 
 		if (!NT_STATUS_IS_OK(
@@ -528,6 +532,10 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 
 		ok = get_dc_name(c_domain, c_realm, srv_name, &ip_out);
 		if (ok) {
+			if (is_zero_addr(&ip_out)) {
+				return NT_STATUS_NO_LOGON_SERVERS;
+			}
+
 			/*
 			 * we call ads_try_connect() to fill in the
 			 * ads->config details
@@ -657,6 +665,12 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 			status = ADS_ERROR_NT(NT_STATUS_NOT_FOUND);
 			goto out;
 		}
+
+		if (is_zero_addr(&ss)) {
+			status = ADS_ERROR_NT(NT_STATUS_NOT_FOUND);
+			goto out;
+		}
+
 		ok = ads_try_connect(ads, ads->server.gc, &ss);
 		if (ok) {
 			goto got_connection;
