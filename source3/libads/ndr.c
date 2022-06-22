@@ -45,7 +45,6 @@ void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct 
 {
 	ndr_print_struct(ndr, name, "ads_struct");
 	ndr->depth++;
-	ndr_print_bool(ndr, "is_mine", r->is_mine);
 	ndr_print_struct(ndr, name, "server");
 	ndr->depth++;
 	ndr_print_string(ndr, "realm", r->server.realm);

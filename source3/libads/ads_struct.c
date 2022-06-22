@@ -182,9 +182,6 @@ ADS_STRUCT *ads_init(TALLOC_CTX *mem_ctx,
 	ads->server.workgroup = workgroup ? SMB_STRDUP(workgroup) : NULL;
 	ads->server.ldap_server = ldap_server? SMB_STRDUP(ldap_server) : NULL;
 
-	/* the caller will own the memory by default */
-	ads->is_mine = 1;
-
 	wrap_flags = lp_client_ldap_sasl_wrapping();
 	if (wrap_flags == -1) {
 		wrap_flags = 0;
