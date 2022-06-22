@@ -904,26 +904,36 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 			}
 		}
 		break;
-	case OPT_USE_KERBEROS:
-		if (arg != NULL) {
-			int32_t use_kerberos =
-				lpcfg_parse_enum_vals("client use kerberos", arg);
+	case OPT_USE_KERBEROS: {
+		int32_t use_kerberos = INT_MIN;
+		if (arg == NULL) {
+			fprintf(stderr,
+				"Failed to parse "
+				"--use-kerberos=desired|required|off: "
+				"Missing argument\n");
+			exit(1);
+		}
 
-			if (use_kerberos == INT_MIN) {
-				fprintf(stderr, "Failed to parse --use-kerberos\n");
-				exit(1);
-			}
+		use_kerberos = lpcfg_parse_enum_vals("client use kerberos",
+						     arg);
+		if (use_kerberos == INT_MIN) {
+			fprintf(stderr,
+				"Failed to parse "
+				"--use-kerberos=desired|required|off: "
+				"Invalid argument\n");
+			exit(1);
+		}
 
-			ok = cli_credentials_set_kerberos_state(creds,
-								use_kerberos,
-								CRED_SPECIFIED);
-			if (!ok) {
-				fprintf(stderr,
-					"Failed to set Kerberos state to %s!\n", arg);
-				exit(1);
-			}
+		ok = cli_credentials_set_kerberos_state(creds,
+							use_kerberos,
+							CRED_SPECIFIED);
+		if (!ok) {
+			fprintf(stderr,
+				"Failed to set Kerberos state to %s!\n", arg);
+			exit(1);
 		}
 		break;
+	}
 	case OPT_USE_KERBEROS_CCACHE:
 		if (arg != NULL) {
 			const char *error_string = NULL;
