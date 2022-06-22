@@ -48,6 +48,10 @@ struct tevent_req *wb_lookupname_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+
+	D_INFO("WB command lookupname start.\n"
+	       "Search namespace '%s' and domain '%s' for name '%s'.\n",
+		namespace, dom_name, name);
 	state->ev = ev;
 	state->flags = flags;
 
@@ -65,7 +69,7 @@ struct tevent_req *wb_lookupname_send(TALLOC_CTX *mem_ctx,
 
 	domain = find_lookup_domain_from_name(namespace);
 	if (domain == NULL) {
-		DEBUG(5, ("Could not find domain for %s\n", namespace));
+		D_WARNING("Could not find domain for %s\n", namespace);
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
 		return tevent_req_post(req, ev);
 	}
@@ -104,11 +108,16 @@ NTSTATUS wb_lookupname_recv(struct tevent_req *req, struct dom_sid *sid,
 	struct wb_lookupname_state *state = tevent_req_data(
 		req, struct wb_lookupname_state);
 	NTSTATUS status;
+	struct dom_sid_buf buf;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	sid_copy(sid, &state->sid);
 	*type = state->type;
+	D_INFO("WB command lookupname end.\n"
+	       "Found SID %s with SID type %d.\n",
+	       dom_sid_str_buf(sid, &buf),
+	       *type);
 	return NT_STATUS_OK;
 }
