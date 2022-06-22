@@ -37,6 +37,7 @@ static void wb_next_pwent_send_do(struct tevent_req *req,
 				  struct wb_next_pwent_state *state)
 {
 	struct tevent_req *subreq;
+	struct dom_sid_buf buf, buf1;
 
 	if (state->gstate->next_user >= state->gstate->rids.num_rids) {
 		TALLOC_FREE(state->gstate->rids.rids);
@@ -48,6 +49,8 @@ static void wb_next_pwent_send_do(struct tevent_req *req,
 			return;
 		}
 
+		D_DEBUG("Query user RID list for domain %s.\n",
+			state->gstate->domain->name);
 		subreq = dcerpc_wbint_QueryUserRidList_send(
 			state, state->ev,
 			dom_child_handle(state->gstate->domain),
@@ -63,6 +66,10 @@ static void wb_next_pwent_send_do(struct tevent_req *req,
 	sid_compose(&state->next_sid, &state->gstate->domain->sid,
 		    state->gstate->rids.rids[state->gstate->next_user]);
 
+	D_DEBUG("Get pw for SID %s composed from domain SID %s and RID %u.\n",
+		dom_sid_str_buf(&state->next_sid, &buf),
+		dom_sid_str_buf(&state->gstate->domain->sid, &buf1),
+		state->gstate->rids.rids[state->gstate->next_user]);
 	subreq = wb_getpwsid_send(state, state->ev, &state->next_sid,
 				  state->pw);
 	if (tevent_req_nomem(subreq, req)) {
@@ -84,6 +91,7 @@ struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	D_INFO("WB command next_pwent start.\n");
 	state->ev = ev;
 	state->gstate = gstate;
 	state->pw = pw;
@@ -109,9 +117,9 @@ static void wb_next_pwent_fetch_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (any_nt_status_not_ok(status, result, &status)) {
 		/* Ignore errors here, just log it */
-		DEBUG(10, ("query_user_list for domain %s returned %s\n",
+		D_DEBUG("query_user_list for domain %s returned %s\n",
 			   state->gstate->domain->name,
-			   nt_errstr(status)));
+			   nt_errstr(status));
 		state->gstate->rids.num_rids = 0;
 	}
 
@@ -149,5 +157,6 @@ static void wb_next_pwent_fill_done(struct tevent_req *subreq)
 
 NTSTATUS wb_next_pwent_recv(struct tevent_req *req)
 {
+	D_INFO("WB command next_pwent end.\n");
 	return tevent_req_simple_recv_ntstatus(req);
 }
