@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    ads (active directory) utility library
    Copyright (C) Andrew Tridgell 2001
@@ -41,7 +41,7 @@
  *
  * The routines contained here should do the necessary ldap calls for
  * ads setups.
- * 
+ *
  * Important note: attribute names passed into ads_ routines must
  * already be in UTF-8 format.  We do not convert them because in almost
  * all cases, they are just ascii (which is represented with the same
@@ -243,7 +243,7 @@ bool ads_closest_dc(ADS_STRUCT *ads)
 		return True;
 	}
 
-	DEBUG(10,("ads_closest_dc: %s is not the closest DC\n", 
+	DEBUG(10,("ads_closest_dc: %s is not the closest DC\n",
 		ads->config.ldap_server_name));
 
 	return False;
@@ -269,7 +269,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 
 	print_sockaddr(addr, sizeof(addr), ss);
 
-	DEBUG(5,("ads_try_connect: sending CLDAP request to %s (realm: %s)\n", 
+	DEBUG(5,("ads_try_connect: sending CLDAP request to %s (realm: %s)\n",
 		addr, ads->server.realm));
 
 	ZERO_STRUCT( cldap_reply );
@@ -863,7 +863,7 @@ static struct berval *dup_berval(TALLOC_CTX *ctx, const struct berval *in_val)
 /*
   Make a values list out of an array of (struct berval *)
  */
-static struct berval **ads_dup_values(TALLOC_CTX *ctx, 
+static struct berval **ads_dup_values(TALLOC_CTX *ctx,
 				      const struct berval **in_vals)
 {
 	struct berval **values;
@@ -933,8 +933,8 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
 /**
  * Do a search with paged results.  cookie must be null on the first
  *  call, and then returned on each subsequent call.  It will be null
- *  again when the entire search is complete 
- * @param ads connection to ads server 
+ *  again when the entire search is complete
+ * @param ads connection to ads server
  * @param bind_path Base dn for the search
  * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression - specified in local charset
@@ -948,7 +948,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 					   const char *bind_path,
 					   int scope, const char *expr,
 					   const char **attrs, void *args,
-					   LDAPMessage **res, 
+					   LDAPMessage **res,
 					   int *count, struct berval **cookie)
 {
 	int rc, i, version;
@@ -968,8 +968,8 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	if (!(ctx = talloc_init("ads_do_paged_search_args")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 
-	/* 0 means the conversion worked but the result was empty 
-	   so we only fail if it's -1.  In any case, it always 
+	/* 0 means the conversion worked but the result was empty
+	   so we only fail if it's -1.  In any case, it always
 	   at least nulls out the dest */
 	if (!push_utf8_talloc(ctx, &utf8_expr, expr, &converted_size) ||
 	    !push_utf8_talloc(ctx, &utf8_path, bind_path, &converted_size))
@@ -1015,8 +1015,8 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	NoReferrals.ldctl_value.bv_len = 0;
 	NoReferrals.ldctl_value.bv_val = discard_const_p(char, "");
 
-	if (external_control && 
-	    (strequal(external_control->control, ADS_EXTENDED_DN_OID) || 
+	if (external_control &&
+	    (strequal(external_control->control, ADS_EXTENDED_DN_OID) ||
 	     strequal(external_control->control, ADS_SD_FLAGS_OID))) {
 
 		ExternalCtrl.ldctl_oid = discard_const_p(char, external_control->control);
@@ -1061,15 +1061,15 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 
 	/* we need to disable referrals as the openldap libs don't
 	   handle them and paged results at the same time.  Using them
-	   together results in the result record containing the server 
-	   page control being removed from the result list (tridge/jmcd) 
+	   together results in the result record containing the server
+	   page control being removed from the result list (tridge/jmcd)
 
 	   leaving this in despite the control that says don't generate
 	   referrals, in case the server doesn't support it (jmcd)
 	*/
 	ldap_set_option(ads->ldap.ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
-	rc = ldap_search_with_timeout(ads->ldap.ld, utf8_path, scope, utf8_expr, 
+	rc = ldap_search_with_timeout(ads->ldap.ld, utf8_path, scope, utf8_expr,
 				      search_attrs, 0, controls,
 				      NULL, LDAP_NO_LIMIT,
 				      (LDAPMessage **)res);
@@ -1150,7 +1150,7 @@ done:
 
 static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 				      int scope, const char *expr,
-				      const char **attrs, LDAPMessage **res, 
+				      const char **attrs, LDAPMessage **res,
 				      int *count, struct berval **cookie)
 {
 	return ads_do_paged_search_args(ads, bind_path, scope, expr, attrs, NULL, res, count, cookie);
@@ -1158,9 +1158,9 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 
 
 /**
- * Get all results for a search.  This uses ads_do_paged_search() to return 
+ * Get all results for a search.  This uses ads_do_paged_search() to return
  * all entries in a large search.
- * @param ads connection to ads server 
+ * @param ads connection to ads server
  * @param bind_path Base dn for the search
  * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression
@@ -1181,7 +1181,7 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	status = ads_do_paged_search_args(ads, bind_path, scope, expr, attrs, args, res,
 				     &count, &cookie);
 
-	if (!ADS_ERR_OK(status)) 
+	if (!ADS_ERR_OK(status))
 		return status;
 
 #ifdef HAVE_LDAP_ADD_RESULT_ENTRY
@@ -1221,7 +1221,7 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 
  ADS_STATUS ads_do_search_all_sd_flags(ADS_STRUCT *ads, const char *bind_path,
 				       int scope, const char *expr,
-				       const char **attrs, uint32_t sd_flags, 
+				       const char **attrs, uint32_t sd_flags,
 				       LDAPMessage **res)
 {
 	ads_control args;
@@ -1248,7 +1248,7 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
  **/
 ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 				int scope, const char *expr, const char **attrs,
-				bool (*fn)(ADS_STRUCT *, char *, void **, void *), 
+				bool (*fn)(ADS_STRUCT *, char *, void **, void *),
 				void *data_area)
 {
 	struct berval *cookie = NULL;
@@ -1287,7 +1287,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  * @param res ** which will contain results - free res* with ads_msgfree()
  * @return status of search
  **/
- ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope, 
+ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 			  const char *expr,
 			  const char **attrs, LDAPMessage **res)
 {
@@ -1302,8 +1302,8 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	/* 0 means the conversion worked but the result was empty 
-	   so we only fail if it's negative.  In any case, it always 
+	/* 0 means the conversion worked but the result was empty
+	   so we only fail if it's negative.  In any case, it always
 	   at least nulls out the dest */
 	if (!push_utf8_talloc(ctx, &utf8_expr, expr, &converted_size) ||
 	    !push_utf8_talloc(ctx, &utf8_path, bind_path, &converted_size))
@@ -1330,7 +1330,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 	ldap_set_option(ads->ldap.ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
 	rc = ldap_search_with_timeout(ads->ldap.ld, utf8_path, scope, utf8_expr,
-				      search_attrs, 0, NULL, NULL, 
+				      search_attrs, 0, NULL, NULL,
 				      LDAP_NO_LIMIT,
 				      (LDAPMessage **)res);
 
@@ -1353,10 +1353,10 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  * @param attrs Attributes to retrieve
  * @return status of search
  **/
- ADS_STATUS ads_search(ADS_STRUCT *ads, LDAPMessage **res, 
+ ADS_STATUS ads_search(ADS_STRUCT *ads, LDAPMessage **res,
 		       const char *expr, const char **attrs)
 {
-	return ads_do_search(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE, 
+	return ads_do_search(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE,
 			     expr, attrs, res);
 }
 
@@ -1368,7 +1368,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  * @param attrs Attributes to retrieve
  * @return status of search
  **/
- ADS_STATUS ads_search_dn(ADS_STRUCT *ads, LDAPMessage **res, 
+ ADS_STATUS ads_search_dn(ADS_STRUCT *ads, LDAPMessage **res,
 			  const char *dn, const char **attrs)
 {
 	return ads_do_search(ads, dn, LDAP_SCOPE_BASE, "(objectclass=*)",
@@ -1511,8 +1511,8 @@ ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx)
 /*
   add an attribute to the list, with values list already constructed
 */
-static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-				  int mod_op, const char *name, 
+static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
+				  int mod_op, const char *name,
 				  const void *_invals)
 {
 	int curmod;
@@ -1541,7 +1541,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		if (!(modlist = talloc_realloc(ctx, modlist, LDAPMod *,
 				curmod+ADS_MODLIST_ALLOC_SIZE+1)))
 			return ADS_ERROR(LDAP_NO_MEMORY);
-		memset(&modlist[curmod], 0, 
+		memset(&modlist[curmod], 0,
 		       ADS_MODLIST_ALLOC_SIZE*sizeof(LDAPMod *));
 		modlist[curmod+ADS_MODLIST_ALLOC_SIZE] = (LDAPMod *) -1;
 		*mods = (ADS_MODLIST)modlist;
@@ -1570,7 +1570,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
  * @param val The value to add - NULL means DELETE
  * @return ADS STATUS indicating success of add
  **/
-ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
+ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		       const char *name, const char *val)
 {
 	const char *values[2];
@@ -1596,7 +1596,7 @@ ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 {
 	if (!vals)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
-	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, 
+	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE,
 			       name, (const void **) vals);
 }
 
@@ -1608,7 +1608,7 @@ ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
  * @param val The value to add - NULL means DELETE
  * @return ADS STATUS indicating success of add
  **/
-static ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
+static ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			      const char *name, const struct berval *val)
 {
 	const struct berval *values[2];
@@ -1646,8 +1646,8 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	int ret,i;
 	char *utf8_dn = NULL;
 	size_t converted_size;
-	/* 
-	   this control is needed to modify that contains a currently 
+	/*
+	   this control is needed to modify that contains a currently
 	   non-existent attribute (but allowable for the object) to run
 	*/
 	LDAPControl PermitModify = {
@@ -2496,7 +2496,7 @@ done:
  * @return 0 upon success, or non-zero otherwise
 **/
 
-ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name, 
+ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
                                  const char *org_unit, bool *moved)
 {
 	ADS_STATUS rc;
@@ -2537,7 +2537,7 @@ ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 		goto done;
 	}
 
-	ldap_status = ldap_rename_s(ads->ldap.ld, computer_dn, computer_rdn, 
+	ldap_status = ldap_rename_s(ads->ldap.ld, computer_dn, computer_rdn,
 				    org_unit, 1, NULL, NULL);
 	rc = ADS_ERROR(ldap_status);
 
@@ -2727,13 +2727,13 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 	if (!(ctx = talloc_init("ads_process_results")))
 		return;
 
-	for (msg = ads_first_entry(ads, res); msg; 
+	for (msg = ads_first_entry(ads, res); msg;
 	     msg = ads_next_entry(ads, msg)) {
 		char *utf8_field;
 		BerElement *b;
 
 		for (utf8_field=ldap_first_attribute(ads->ldap.ld,
-						     (LDAPMessage *)msg,&b); 
+						     (LDAPMessage *)msg,&b);
 		     utf8_field;
 		     utf8_field=ldap_next_attribute(ads->ldap.ld,
 						    (LDAPMessage *)msg,b)) {
@@ -2741,7 +2741,7 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 			char **str_vals;
 			char **utf8_vals;
 			char *field;
-			bool string; 
+			bool string;
 
 			if (!pull_utf8_talloc(ctx, &field, utf8_field,
 					      &converted_size))
@@ -2763,7 +2763,7 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 				fn(ads, field, (void **) str_vals, data_area);
 				ldap_value_free(utf8_vals);
 			} else {
-				ber_vals = ldap_get_values_len(ads->ldap.ld, 
+				ber_vals = ldap_get_values_len(ads->ldap.ld,
 						 (LDAPMessage *)msg, field);
 				fn(ads, field, (void **) ber_vals, data_area);
 
@@ -2906,7 +2906,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 }
 
 /**
- * pull an array of strings from a ADS result 
+ * pull an array of strings from a ADS result
  *  (handle large multivalue attributes with range retrieval)
  * @param ads connection to ads server
  * @param mem_ctx TALLOC_CTX to use for allocating result string
@@ -2918,7 +2918,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @param more_values Are there more values to get?
  * @return Result strings in talloc context
  **/
- char **ads_pull_strings_range(ADS_STRUCT *ads, 
+ char **ads_pull_strings_range(ADS_STRUCT *ads,
 			       TALLOC_CTX *mem_ctx,
 			       LDAPMessage *msg, const char *field,
 			       char **current_strings,
@@ -2944,8 +2944,8 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	expected_range_attrib = talloc_asprintf(mem_ctx, "%s;Range=", field);
 
 	/* look for Range result */
-	for (attr = ldap_first_attribute(ads->ldap.ld, (LDAPMessage *)msg, &ptr); 
-	     attr; 
+	for (attr = ldap_first_attribute(ads->ldap.ld, (LDAPMessage *)msg, &ptr);
+	     attr;
 	     attr = ldap_next_attribute(ads->ldap.ld, (LDAPMessage *)msg, ptr)) {
 		/* we ignore the fact that this is utf8, as all attributes are ascii... */
 		if (strnequal(attr, expected_range_attrib, strlen(expected_range_attrib))) {
@@ -2961,15 +2961,15 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 		return NULL;
 	}
 
-	if (sscanf(&range_attr[strlen(expected_range_attrib)], "%lu-%lu", 
+	if (sscanf(&range_attr[strlen(expected_range_attrib)], "%lu-%lu",
 		   &range_start, &range_end) == 2) {
 		*more_strings = True;
 	} else {
-		if (sscanf(&range_attr[strlen(expected_range_attrib)], "%lu-*", 
+		if (sscanf(&range_attr[strlen(expected_range_attrib)], "%lu-*",
 			   &range_start) == 1) {
 			*more_strings = False;
 		} else {
-			DEBUG(1, ("ads_pull_strings_range:  Cannot parse Range attriubte (%s)\n", 
+			DEBUG(1, ("ads_pull_strings_range:  Cannot parse Range attriubte (%s)\n",
 				  range_attr));
 			ldap_memfree(range_attr);
 			*more_strings = False;
@@ -2991,7 +2991,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	if (*more_strings && ((*num_strings + num_new_strings) != (range_end + 1))) {
 		DEBUG(1, ("ads_pull_strings_range: Range attribute (%s) tells us we have %lu "
 			  "strings in this bunch, but we only got %lu - aborting range retreival\n",
-			  range_attr, (unsigned long int)range_end - range_start + 1, 
+			  range_attr, (unsigned long int)range_end - range_start + 1,
 			  (unsigned long int)num_new_strings));
 		ldap_memfree(range_attr);
 		*more_strings = False;
@@ -3016,7 +3016,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 
 	if (*more_strings) {
 		*next_attribute = talloc_asprintf(mem_ctx,
-						  "%s;range=%d-*", 
+						  "%s;range=%d-*",
 						  field,
 						  (int)*num_strings);
 
@@ -3182,9 +3182,9 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	return ret;
 }
 
-/* 
- * in order to support usernames longer than 21 characters we need to 
- * use both the sAMAccountName and the userPrincipalName attributes 
+/*
+ * in order to support usernames longer than 21 characters we need to
+ * use both the sAMAccountName and the userPrincipalName attributes
  * It seems that not all users have the userPrincipalName attribute set
  *
  * @param ads connection to ads server
@@ -3198,7 +3198,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 #if 0	/* JERRY */
 	char *ret, *p;
 
-	/* lookup_name() only works on the sAMAccountName to 
+	/* lookup_name() only works on the sAMAccountName to
 	   returning the username portion of userPrincipalName
 	   breaks winbindd_getpwnam() */
 
@@ -3226,7 +3226,7 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32_t *usn)
 	LDAPMessage *res;
 
 	status = ads_do_search_retry(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
-	if (!ADS_ERR_OK(status)) 
+	if (!ADS_ERR_OK(status))
 		return status;
 
 	if (ads_count_replies(ads, res) != 1) {
@@ -3252,8 +3252,8 @@ static time_t ads_parse_time(const char *str)
 
 	ZERO_STRUCT(tm);
 
-	if (sscanf(str, "%4d%2d%2d%2d%2d%2d", 
-		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
+	if (sscanf(str, "%4d%2d%2d%2d%2d%2d",
+		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 		return 0;
 	}
@@ -3330,7 +3330,7 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 		goto done;
 	}
 
-	/* but save the time and offset in the original ADS_STRUCT */	
+	/* but save the time and offset in the original ADS_STRUCT */
 
 	ads->config.current_time = ads_parse_time(timestr);
 
@@ -3397,7 +3397,7 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 			goto done;
 	}
 
-	/* If the attribute does not exist assume it is a Windows 2000 
+	/* If the attribute does not exist assume it is a Windows 2000
 	   functional domain */
 
 	status = ads_do_search(ads_s, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
@@ -3437,7 +3437,7 @@ ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, struct dom_sid *sid)
 	LDAPMessage *res;
 	ADS_STATUS rc;
 
-	rc = ads_do_search_retry(ads, ads->config.bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
+	rc = ads_do_search_retry(ads, ads->config.bind_path, LDAP_SCOPE_BASE, "(objectclass=*)",
 			   attrs, &res);
 	if (!ADS_ERR_OK(rc)) return rc;
 	if (!ads_pull_sid(ads, res, "objectSid", sid)) {
@@ -3450,7 +3450,7 @@ ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, struct dom_sid *sid)
 }
 
 /**
- * find our site name 
+ * find our site name
  * @param ads connection to ads server
  * @param mem_ctx Pointer to talloc context
  * @param site_name Pointer to the sitename
@@ -3490,7 +3490,7 @@ ADS_STATUS ads_site_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **site_n
 	return status;
 	/*
 	dsServiceName: CN=NTDS Settings,CN=W2K3DC,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ber,DC=suse,DC=de
-	*/						 
+	*/
 }
 
 /**
@@ -3524,7 +3524,7 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	status = ads_do_search(ads, config_context, LDAP_SCOPE_SUBTREE, 
+	status = ads_do_search(ads, config_context, LDAP_SCOPE_SUBTREE,
 			       filter, NULL, &res);
 	if (!ADS_ERR_OK(status)) {
 		return status;
@@ -4302,14 +4302,14 @@ ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 }
 
 /**
- * find our configuration path 
+ * find our configuration path
  * @param ads connection to ads server
  * @param mem_ctx Pointer to talloc context
  * @param config_path Pointer to the config path
  * @return status of search
  **/
-ADS_STATUS ads_config_path(ADS_STRUCT *ads, 
-			   TALLOC_CTX *mem_ctx, 
+ADS_STATUS ads_config_path(ADS_STRUCT *ads,
+			   TALLOC_CTX *mem_ctx,
 			   char **config_path)
 {
 	ADS_STATUS status;
@@ -4317,13 +4317,13 @@ ADS_STATUS ads_config_path(ADS_STRUCT *ads,
 	const char *config_context = NULL;
 	const char *attrs[] = { "configurationNamingContext", NULL };
 
-	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, 
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE,
 			       "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
 
-	config_context = ads_pull_string(ads, mem_ctx, res, 
+	config_context = ads_pull_string(ads, mem_ctx, res,
 					 "configurationNamingContext");
 	ads_msgfree(ads, res);
 	if (!config_context) {
@@ -4341,16 +4341,16 @@ ADS_STATUS ads_config_path(ADS_STRUCT *ads,
 }
 
 /**
- * find the displayName of an extended right 
+ * find the displayName of an extended right
  * @param ads connection to ads server
  * @param config_path The config path
  * @param mem_ctx Pointer to talloc context
  * @param GUID struct of the rightsGUID
  * @return status of search
  **/
-const char *ads_get_extended_right_name_by_guid(ADS_STRUCT *ads, 
-						const char *config_path, 
-						TALLOC_CTX *mem_ctx, 
+const char *ads_get_extended_right_name_by_guid(ADS_STRUCT *ads,
+						const char *config_path,
+						TALLOC_CTX *mem_ctx,
 						const struct GUID *rights_guid)
 {
 	ADS_STATUS rc;
@@ -4364,7 +4364,7 @@ const char *ads_get_extended_right_name_by_guid(ADS_STRUCT *ads,
 		goto done;
 	}
 
-	expr = talloc_asprintf(mem_ctx, "(rightsGuid=%s)", 
+	expr = talloc_asprintf(mem_ctx, "(rightsGuid=%s)",
 			       GUID_string(mem_ctx, rights_guid));
 	if (!expr) {
 		goto done;
@@ -4375,7 +4375,7 @@ const char *ads_get_extended_right_name_by_guid(ADS_STRUCT *ads,
 		goto done;
 	}
 
-	rc = ads_do_search_retry(ads, path, LDAP_SCOPE_SUBTREE, 
+	rc = ads_do_search_retry(ads, path, LDAP_SCOPE_SUBTREE,
 				 expr, attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
 		goto done;
