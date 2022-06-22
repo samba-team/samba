@@ -10,6 +10,7 @@ EXPORTS
 	kdc_validate_token
 	krb5_kdc_plugin_init
 	krb5_kdc_get_config
+	krb5_kdc_get_time
 	krb5_kdc_pkinit_config
 	krb5_kdc_set_dbinfo
 	krb5_kdc_process_krb5_request
