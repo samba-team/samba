@@ -157,6 +157,7 @@ static struct tevent_req *wb_groups_members_send(TALLOC_CTX *mem_ctx,
 	state->next_group = 0;
 	state->all_members = NULL;
 
+	D_DEBUG("Looking up %d group(s).\n", num_groups);
 	status = wb_groups_members_next_subreq(state, state, &subreq);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
@@ -222,6 +223,10 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 	}
 
 	num_all_members = talloc_array_length(state->all_members);
+
+	D_DEBUG("Adding %d new member(s) to existing %d member(s)\n",
+		num_members,
+		num_all_members);
 
 	state->all_members = talloc_realloc(
 		state, state->all_members, struct wbint_Principal,
@@ -296,12 +301,19 @@ struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq = NULL;
 	struct wb_group_members_state *state;
 	NTSTATUS status;
+	struct dom_sid_buf buf;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_group_members_state);
 	if (req == NULL) {
 		return NULL;
 	}
+	D_INFO("WB command group_members start.\n"
+	       "Looking up domain SID %s with SID type %d and max_depth %d.\n",
+	       dom_sid_str_buf(sid, &buf),
+	       type,
+	       max_depth);
+
 	state->ev = ev;
 	state->depth = max_depth;
 	state->users = db_open_rbt(state);
@@ -338,10 +350,12 @@ static NTSTATUS wb_group_members_next_subreq(
 	if ((talloc_array_length(state->groups) == 0)
 	    || (state->depth <= 0)) {
 		*psubreq = NULL;
+		D_DEBUG("Finished. The depth is %d.\n", state->depth);
 		return NT_STATUS_OK;
 	}
 	state->depth -= 1;
 
+	D_DEBUG("The depth is decremented to %d.\n", state->depth);
 	subreq = wb_groups_members_send(
 		mem_ctx, state->ev, talloc_array_length(state->groups),
 		state->groups);
@@ -460,7 +474,9 @@ NTSTATUS wb_group_members_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		req, struct wb_group_members_state);
 	NTSTATUS status;
 
+	D_INFO("WB command group_members end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 	*members = talloc_move(mem_ctx, &state->users);
