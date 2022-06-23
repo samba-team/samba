@@ -373,8 +373,17 @@ static void ctdb_control_send_arp(struct tevent_context *ev,
 							struct ctdb_takeover_arp);
 	int ret;
 	struct ctdb_tcp_array *tcparray;
-	const char *iface = ctdb_vnn_iface_string(arp->vnn);
+	const char *iface;
 
+	/* IP address might have been released between sends */
+	if (arp->vnn->iface == NULL) {
+		DBG_INFO("Cancelling ARP send for released IP %s\n",
+			 ctdb_addr_to_str(&arp->vnn->public_address));
+		talloc_free(arp);
+		return;
+	}
+
+	iface = ctdb_vnn_iface_string(arp->vnn);
 	ret = ctdb_sys_send_arp(&arp->addr, iface);
 	if (ret != 0) {
 		DBG_ERR("Failed to send ARP on interface %s: %s\n",
