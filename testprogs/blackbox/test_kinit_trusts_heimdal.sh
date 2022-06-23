@@ -55,6 +55,10 @@ testit "kinit with password" $samba4kinit $enctype --password-file=$PREFIX/tmppa
 test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 rm -rf $KRB5CCNAME_PATH
 
+testit "kinit with password and two minute lifetime" $samba4kinit $enctype --password-file=$PREFIX/tmppassfile --request-pac --server=krbtgt/$REALM@$TRUST_REALM --lifetime=2m $TRUST_USERNAME@$TRUST_REALM || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache and two minute lifetime" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
+rm -rf $KRB5CCNAME_PATH
+
 # Test with smbclient4
 smbclient="$samba4bindir/smbclient4"
 testit "kinit with password" $samba4kinit $enctype --password-file=$PREFIX/tmppassfile --request-pac $TRUST_USERNAME@$TRUST_REALM   || failed=`expr $failed + 1`
@@ -95,5 +99,5 @@ testit "wbinfo check outgoing trust pw" $VALGRIND $wbinfo --check-secret --domai
 
 test_smbclient "Test user login with the changed outgoing secret" 'ls' "$unc" --use-kerberos=required -U$USERNAME@$REALM%$PASSWORD || failed=`expr $failed + 1`
 
-rm -f $PREFIX/tmpccache tmpccfile tmppassfile tmpuserpassfile tmpuserccache
+rm -f $PREFIX/tmpccache $PREFIX/tmppassfile
 exit $failed
