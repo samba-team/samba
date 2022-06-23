@@ -41,6 +41,7 @@ bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 	nt_status = normalize_name_map(mem_ctx, dom_name, gr_name,
 				       &mapped_name);
 
+	D_DEBUG("Filling domain '%s' and group '%s'.\n", dom_name, gr_name);
 	/* Basic whitespace replacement */
 	if (NT_STATUS_IS_OK(nt_status)) {
 		full_group_name = fill_domain_username_talloc(mem_ctx, dom_name,
@@ -57,6 +58,7 @@ bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 	}
 
 	if (full_group_name == NULL) {
+		D_DEBUG("Returning false, since there is no full group name.\n");
 		return false;
 	}
 
@@ -67,6 +69,7 @@ bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 	strlcpy(gr->gr_name, full_group_name, sizeof(gr->gr_name));
 	strlcpy(gr->gr_passwd, "x", sizeof(gr->gr_passwd));
 
+	D_DEBUG("Returning true. Full group name is '%s'.\n", gr_name);
 	return True;
 }
 
@@ -132,7 +135,7 @@ NTSTATUS winbindd_print_groupmembers(struct db_context *members,
 	m.ofs = 0;
 	m.buf = talloc_array(mem_ctx, char, c.len);
 	if (m.buf == NULL) {
-		DEBUG(5, ("talloc failed\n"));
+		D_WARNING("talloc failed\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -146,5 +149,6 @@ NTSTATUS winbindd_print_groupmembers(struct db_context *members,
 
 	*num_members = c.num;
 	*result = m.buf;
+	D_DEBUG("Returning %d member(s).\n", *num_members);
 	return NT_STATUS_OK;
 }
