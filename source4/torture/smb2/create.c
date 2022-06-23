@@ -3107,6 +3107,427 @@ done:
 }
 
 /*
+   stress testing path base operations
+   e.g. contention on lockting.tdb records
+ */
+
+struct test_smb2_bench_path_contention_shared_conn;
+
+struct test_smb2_bench_path_contention_shared_state {
+	struct torture_context *tctx;
+	size_t num_conns;
+	struct test_smb2_bench_path_contention_shared_conn *conns;
+	struct timeval starttime;
+	int timecount;
+	int timelimit;
+	struct {
+		uint64_t num_finished;
+		double total_latency;
+		double min_latency;
+		double max_latency;
+	} opens;
+	struct {
+		uint64_t num_finished;
+		double total_latency;
+		double min_latency;
+		double max_latency;
+	} closes;
+	bool ok;
+	bool stop;
+};
+
+struct test_smb2_bench_path_contention_shared_conn {
+	struct test_smb2_bench_path_contention_shared_state *state;
+	int idx;
+	struct smb2_tree *tree;
+	struct tevent_immediate *im;
+	struct {
+		struct smb2_create io;
+		struct smb2_request *req;
+		struct timeval starttime;
+		uint64_t num_started;
+		uint64_t num_finished;
+		double total_latency;
+		double min_latency;
+		double max_latency;
+	} opens;
+	struct {
+		struct smb2_close io;
+		struct smb2_request *req;
+		struct timeval starttime;
+		uint64_t num_started;
+		uint64_t num_finished;
+		double total_latency;
+		double min_latency;
+		double max_latency;
+	} closes;
+	NTSTATUS error;
+};
+
+static void test_smb2_bench_path_contention_conn_open(
+	struct test_smb2_bench_path_contention_shared_conn *conn);
+
+static void test_smb2_bench_path_contention_conn_start(struct tevent_context *ctx,
+						       struct tevent_immediate *im,
+						       void *private_data)
+{
+	struct test_smb2_bench_path_contention_shared_conn *conn =
+		(struct test_smb2_bench_path_contention_shared_conn *)
+		private_data;
+
+	test_smb2_bench_path_contention_conn_open(conn);
+}
+
+static void test_smb2_bench_path_contention_conn_opened(struct smb2_request *req);
+
+static void test_smb2_bench_path_contention_conn_open(
+	struct test_smb2_bench_path_contention_shared_conn *conn)
+{
+	struct test_smb2_bench_path_contention_shared_state *state = conn->state;
+
+	conn->opens.num_started += 1;
+	conn->opens.starttime = timeval_current();
+	conn->opens.req = smb2_create_send(conn->tree, &conn->opens.io);
+	torture_assert_goto(state->tctx, conn->opens.req != NULL,
+			    state->ok, asserted, "smb2_create_send");
+
+	conn->opens.req->async.fn = test_smb2_bench_path_contention_conn_opened;
+	conn->opens.req->async.private_data = conn;
+	return;
+asserted:
+	state->stop = true;
+}
+
+static void test_smb2_bench_path_contention_conn_close(
+	struct test_smb2_bench_path_contention_shared_conn *conn);
+
+static void test_smb2_bench_path_contention_conn_opened(struct smb2_request *req)
+{
+	struct test_smb2_bench_path_contention_shared_conn *conn =
+		(struct test_smb2_bench_path_contention_shared_conn *)
+		req->async.private_data;
+	struct test_smb2_bench_path_contention_shared_state *state = conn->state;
+	double latency = timeval_elapsed(&conn->opens.starttime);
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	torture_assert_goto(state->tctx, conn->opens.req == req,
+			    state->ok, asserted, __location__);
+	conn->error = smb2_create_recv(req, frame, &conn->opens.io);
+	torture_assert_ntstatus_ok_goto(state->tctx, conn->error,
+					state->ok, asserted, __location__);
+	ZERO_STRUCT(conn->opens.io.out.blobs);
+	SMB_ASSERT(latency >= 0.000001);
+
+	if (conn->opens.num_finished == 0) {
+		/* first round */
+		conn->opens.min_latency = latency;
+		conn->opens.max_latency = latency;
+	}
+
+	conn->opens.num_finished += 1;
+	conn->opens.total_latency += latency;
+
+	if (latency < conn->opens.min_latency) {
+		conn->opens.min_latency = latency;
+	}
+
+	if (latency > conn->opens.max_latency) {
+		conn->opens.max_latency = latency;
+	}
+
+	TALLOC_FREE(frame);
+	test_smb2_bench_path_contention_conn_close(conn);
+	return;
+asserted:
+	state->stop = true;
+	TALLOC_FREE(frame);
+}
+
+static void test_smb2_bench_path_contention_conn_closed(struct smb2_request *req);
+
+static void test_smb2_bench_path_contention_conn_close(
+	struct test_smb2_bench_path_contention_shared_conn *conn)
+{
+	struct test_smb2_bench_path_contention_shared_state *state = conn->state;
+
+	conn->closes.num_started += 1;
+	conn->closes.starttime = timeval_current();
+	conn->closes.io.in.file = conn->opens.io.out.file;
+	conn->closes.req = smb2_close_send(conn->tree, &conn->closes.io);
+	torture_assert_goto(state->tctx, conn->closes.req != NULL,
+			    state->ok, asserted, "smb2_close_send");
+
+	conn->closes.req->async.fn = test_smb2_bench_path_contention_conn_closed;
+	conn->closes.req->async.private_data = conn;
+	return;
+asserted:
+	state->stop = true;
+}
+
+static void test_smb2_bench_path_contention_conn_closed(struct smb2_request *req)
+{
+	struct test_smb2_bench_path_contention_shared_conn *conn =
+		(struct test_smb2_bench_path_contention_shared_conn *)
+		req->async.private_data;
+	struct test_smb2_bench_path_contention_shared_state *state = conn->state;
+	double latency = timeval_elapsed(&conn->closes.starttime);
+
+	torture_assert_goto(state->tctx, conn->closes.req == req,
+			    state->ok, asserted, __location__);
+	conn->error = smb2_close_recv(req, &conn->closes.io);
+	torture_assert_ntstatus_ok_goto(state->tctx, conn->error,
+					state->ok, asserted, __location__);
+	SMB_ASSERT(latency >= 0.000001);
+	if (conn->closes.num_finished == 0) {
+		/* first round */
+		conn->closes.min_latency = latency;
+		conn->closes.max_latency = latency;
+	}
+	conn->closes.num_finished += 1;
+
+	conn->closes.total_latency += latency;
+
+	if (latency < conn->closes.min_latency) {
+		conn->closes.min_latency = latency;
+	}
+
+	if (latency > conn->closes.max_latency) {
+		conn->closes.max_latency = latency;
+	}
+
+	test_smb2_bench_path_contention_conn_open(conn);
+	return;
+asserted:
+	state->stop = true;
+}
+
+static void test_smb2_bench_path_contention_progress(struct tevent_context *ev,
+						     struct tevent_timer *te,
+						     struct timeval current_time,
+						     void *private_data)
+{
+	struct test_smb2_bench_path_contention_shared_state *state =
+		(struct test_smb2_bench_path_contention_shared_state *)private_data;
+	uint64_t num_opens = 0;
+	double total_open_latency = 0;
+	double min_open_latency = 0;
+	double max_open_latency = 0;
+	double avs_open_latency = 0;
+	uint64_t num_closes = 0;
+	double total_close_latency = 0;
+	double min_close_latency = 0;
+	double max_close_latency = 0;
+	double avs_close_latency = 0;
+	size_t i;
+
+	state->timecount += 1;
+
+	for (i=0;i<state->num_conns;i++) {
+		struct test_smb2_bench_path_contention_shared_conn *conn =
+			&state->conns[i];
+
+		num_opens += conn->opens.num_finished;
+		total_open_latency += conn->opens.total_latency;
+		if (min_open_latency == 0.0 && conn->opens.min_latency != 0.0) {
+			min_open_latency = conn->opens.min_latency;
+		}
+		if (conn->opens.min_latency < min_open_latency) {
+			min_open_latency = conn->opens.min_latency;
+		}
+		if (max_open_latency == 0.0) {
+			max_open_latency = conn->opens.max_latency;
+		}
+		if (conn->opens.max_latency > max_open_latency) {
+			max_open_latency = conn->opens.max_latency;
+		}
+		conn->opens.num_finished = 0;
+		conn->opens.total_latency = 0.0;
+
+		num_closes += conn->closes.num_finished;
+		total_close_latency += conn->closes.total_latency;
+		if (min_close_latency == 0.0 && conn->closes.min_latency != 0.0) {
+			min_close_latency = conn->closes.min_latency;
+		}
+		if (conn->closes.min_latency < min_close_latency) {
+			min_close_latency = conn->closes.min_latency;
+		}
+		if (max_close_latency == 0.0) {
+			max_close_latency = conn->closes.max_latency;
+		}
+		if (conn->closes.max_latency > max_close_latency) {
+			max_close_latency = conn->closes.max_latency;
+		}
+		conn->closes.num_finished = 0;
+		conn->closes.total_latency = 0.0;
+	}
+
+	state->opens.num_finished += num_opens;
+	state->opens.total_latency += total_open_latency;
+	if (state->opens.min_latency == 0.0 && min_open_latency != 0.0) {
+		state->opens.min_latency = min_open_latency;
+	}
+	if (min_open_latency < state->opens.min_latency) {
+		state->opens.min_latency = min_open_latency;
+	}
+	if (state->opens.max_latency == 0.0) {
+		state->opens.max_latency = max_open_latency;
+	}
+	if (max_open_latency > state->opens.max_latency) {
+		state->opens.max_latency = max_open_latency;
+	}
+
+	state->closes.num_finished += num_closes;
+	state->closes.total_latency += total_close_latency;
+	if (state->closes.min_latency == 0.0 && min_close_latency != 0.0) {
+		state->closes.min_latency = min_close_latency;
+	}
+	if (min_close_latency < state->closes.min_latency) {
+		state->closes.min_latency = min_close_latency;
+	}
+	if (state->closes.max_latency == 0.0) {
+		state->closes.max_latency = max_close_latency;
+	}
+	if (max_close_latency > state->closes.max_latency) {
+		state->closes.max_latency = max_close_latency;
+	}
+
+	if (state->timecount < state->timelimit) {
+		te = tevent_add_timer(state->tctx->ev,
+				      state,
+				      timeval_current_ofs(1, 0),
+				      test_smb2_bench_path_contention_progress,
+				      state);
+		torture_assert_goto(state->tctx, te != NULL,
+				    state->ok, asserted, "tevent_add_timer");
+
+		if (!torture_setting_bool(state->tctx, "progress", true)) {
+			return;
+		}
+
+		avs_open_latency = total_open_latency / num_opens;
+		avs_close_latency = total_close_latency / num_closes;
+
+		torture_comment(state->tctx,
+				"%.2f second: "
+				"open[num/s=%llu,avslat=%.6f,minlat=%.6f,maxlat=%.6f] "
+				"close[num/s=%llu,avslat=%.6f,minlat=%.6f,maxlat=%.6f]     \r",
+				timeval_elapsed(&state->starttime),
+				(unsigned long long)num_opens,
+				avs_open_latency,
+				min_open_latency,
+				max_open_latency,
+				(unsigned long long)num_closes,
+				avs_close_latency,
+				min_close_latency,
+				max_close_latency);
+		return;
+	}
+
+	avs_open_latency = state->opens.total_latency / state->opens.num_finished;
+	avs_close_latency = state->closes.total_latency / state->closes.num_finished;
+	num_opens = state->opens.num_finished / state->timelimit;
+	num_closes = state->closes.num_finished / state->timelimit;
+
+	torture_comment(state->tctx,
+			"%.2f second: "
+			"open[num/s=%llu,avslat=%.6f,minlat=%.6f,maxlat=%.6f] "
+			"close[num/s=%llu,avslat=%.6f,minlat=%.6f,maxlat=%.6f]\n",
+			timeval_elapsed(&state->starttime),
+			(unsigned long long)num_opens,
+			avs_open_latency,
+			state->opens.min_latency,
+			state->opens.max_latency,
+			(unsigned long long)num_closes,
+			avs_close_latency,
+			state->closes.min_latency,
+			state->closes.max_latency);
+
+asserted:
+	state->stop = true;
+}
+
+static bool test_smb2_bench_path_contention_shared(struct torture_context *tctx,
+						   struct smb2_tree *tree)
+{
+	struct test_smb2_bench_path_contention_shared_state *state = NULL;
+	bool ret = true;
+	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
+	size_t i;
+	int timelimit = torture_setting_int(tctx, "timelimit", 10);
+	const char *path = torture_setting_string(tctx, "bench_path", "");
+	struct smb2_create open_io = { .level = RAW_OPEN_SMB2, };
+	struct smb2_close close_io = { .level = RAW_CLOSE_SMB2, };
+	struct tevent_timer *te = NULL;
+
+	state = talloc_zero(tctx, struct test_smb2_bench_path_contention_shared_state);
+	torture_assert(tctx, state != NULL, __location__);
+	state->tctx = tctx;
+	state->conns = talloc_zero_array(state,
+			struct test_smb2_bench_path_contention_shared_conn,
+			torture_nprocs);
+	torture_assert(tctx, state->conns != NULL, __location__);
+	state->num_conns = torture_nprocs;
+	state->ok = true;
+	state->timelimit = MAX(timelimit, 1);
+
+	open_io.in.desired_access = SEC_DIR_READ_ATTRIBUTE;
+	open_io.in.alloc_size = 0;
+	open_io.in.file_attributes = 0;
+	open_io.in.share_access = FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE;
+	open_io.in.create_disposition = FILE_OPEN;
+	open_io.in.create_options = FILE_OPEN_REPARSE_POINT;
+	open_io.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	open_io.in.security_flags = 0;
+	open_io.in.fname = path;
+	open_io.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
+	open_io.in.oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+
+	torture_comment(tctx, "Opening %zd connections\n", state->num_conns);
+
+	for (i=0;i<state->num_conns;i++) {
+		state->conns[i].state = state;
+		state->conns[i].idx = i;
+		state->conns[i].im = tevent_create_immediate(state->conns);
+		torture_assert(tctx, state->conns[i].im != NULL, __location__);
+
+		if (!torture_smb2_connection(tctx, &state->conns[i].tree)) {
+			torture_comment(tctx, "Failed opening %zd/%zd connections\n", i, state->num_conns);
+			return false;
+		}
+		talloc_steal(state->conns, state->conns[i].tree);
+		state->conns[i].opens.io = open_io;
+		state->conns[i].closes.io = close_io;
+
+		tevent_schedule_immediate(state->conns[i].im,
+					  tctx->ev,
+					  test_smb2_bench_path_contention_conn_start,
+					  &state->conns[i]);
+	}
+
+	torture_comment(tctx, "Opened %zd connections\n", state->num_conns);
+
+	torture_comment(tctx, "Running for %d seconds\n", state->timelimit);
+
+	state->starttime = timeval_current();
+
+	te = tevent_add_timer(tctx->ev,
+			      state,
+			      timeval_current_ofs(1, 0),
+			      test_smb2_bench_path_contention_progress,
+			      state);
+	torture_assert(tctx, te != NULL, __location__);
+
+	while (!state->stop) {
+		int rc = tevent_loop_once(tctx->ev);
+		torture_assert_int_equal(tctx, rc, 0, "tevent_loop_once");
+	}
+
+	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed(&state->starttime));
+	TALLOC_FREE(state);
+	return ret;
+}
+
+/*
    basic testing of SMB2 read
 */
 struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
@@ -3127,6 +3548,8 @@ struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "mkdir-dup", test_mkdir_dup);
 	torture_suite_add_1smb2_test(suite, "dir-alloc-size", test_dir_alloc_size);
 	torture_suite_add_1smb2_test(suite, "quota-fake-file", test_smb2_open_quota_fake_file);
+
+	torture_suite_add_1smb2_test(suite, "bench-path-contention-shared", test_smb2_bench_path_contention_shared);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
 
@@ -3168,7 +3591,8 @@ struct torture_suite *torture_smb2_bench_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "bench");
 
-	torture_suite_add_1smb2_test(suite, "oplock", test_smb2_bench_oplock);
+	torture_suite_add_1smb2_test(suite, "oplock1", test_smb2_bench_oplock);
+	torture_suite_add_1smb2_test(suite, "path-contention-shared", test_smb2_bench_path_contention_shared);
 
 	suite->description = talloc_strdup(suite, "SMB2-BENCH tests");
 
