@@ -49,27 +49,29 @@ struct tevent_req *winbindd_xids_to_sids_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 
-	DEBUG(3, ("xids_to_sids\n"));
+	D_NOTICE("[%s (%u)] Winbind external command XIDS_TO_SIDS start.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid);
 
 	if (request->extra_len == 0) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 	if (request->extra_data.data[request->extra_len-1] != '\0') {
-		DEBUG(10, ("Got invalid xids list\n"));
+		D_DEBUG("Got invalid XID list.\n");
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 	if (!parse_xidlist(state, request->extra_data.data,
 			   &state->xids, &state->num_xids)) {
-		DEBUG(10, ("parse_sidlist failed\n"));
+		D_DEBUG("parse_sidlist failed\n");
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 
-	DBG_DEBUG("num_xids: %"PRIu32"\n%s\n",
-		  state->num_xids,
-		  (char *)request->extra_data.data);
+	D_DEBUG("Resolving %"PRIu32" XID(s):\n%s\n",
+		state->num_xids,
+		(char *)request->extra_data.data);
 
 	subreq = wb_xids2sids_send(state, ev, state->xids, state->num_xids);
 	if (tevent_req_nomem(subreq, req)) {
@@ -104,8 +106,9 @@ NTSTATUS winbindd_xids_to_sids_recv(struct tevent_req *req,
 	char *result = NULL;
 	uint32_t i;
 
+	D_NOTICE("Winbind external command XIDS_TO_SIDS end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
-		DBG_INFO("Could not convert xids: %s\n", nt_errstr(status));
+		D_WARNING("Could not convert xids: %s\n", nt_errstr(status));
 		return status;
 	}
 
@@ -123,14 +126,14 @@ NTSTATUS winbindd_xids_to_sids_recv(struct tevent_req *req,
 			str = sid_buf.buf;
 		}
 
+		D_NOTICE("%u: XID %u mapped to SID %s.\n",
+			 i, state->xids[i].id, str);
 		result = talloc_asprintf_append_buffer(
 			result, "%s\n", str);
 		if (result == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
-
-	DBG_DEBUG("sids:\n%s\n", result);
 
 	response->extra_data.data = result;
 	response->length += talloc_get_size(result);
