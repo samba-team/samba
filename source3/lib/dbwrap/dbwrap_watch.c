@@ -143,16 +143,16 @@ struct db_watched_record {
 	struct dbwrap_watcher added;
 };
 
-static NTSTATUS dbwrap_watched_subrec_storev(
+static NTSTATUS dbwrap_watched_record_storev(
 	struct db_record *rec, struct db_watched_record *subrec,
 	const TDB_DATA *dbufs, int num_dbufs, int flags);
-static NTSTATUS dbwrap_watched_subrec_delete(
+static NTSTATUS dbwrap_watched_record_delete(
 	struct db_record *rec, struct db_watched_record *subrec);
 static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
 				      const TDB_DATA *dbufs, int num_dbufs,
 				      int flags);
 static NTSTATUS dbwrap_watched_delete(struct db_record *rec);
-static void dbwrap_watched_subrec_wakeup(
+static void dbwrap_watched_record_wakeup(
 	struct db_record *rec, struct db_watched_record *subrec);
 static int db_watched_record_destructor(struct db_watched_record *s);
 
@@ -287,10 +287,10 @@ static int db_watched_record_destructor(struct db_watched_record *s)
 	return 0;
 }
 
-struct dbwrap_watched_subrec_wakeup_state {
+struct dbwrap_watched_record_wakeup_state {
 	struct messaging_context *msg_ctx;
 };
-static void dbwrap_watched_subrec_wakeup_fn(
+static void dbwrap_watched_record_wakeup_fn(
 	struct db_record *rec,
 	TDB_DATA value,
 	void *private_data);
@@ -309,11 +309,11 @@ struct dbwrap_watched_do_locked_state {
 	 * passed to dbwrap_watched_do_locked_fn()
 	 *
 	 * It's only used in order to pass it
-	 * to dbwrap_watched_subrec_wakeup_fn()
+	 * to dbwrap_watched_record_wakeup_fn()
 	 * in dbwrap_watched_do_locked_{storev,delete}()
 	 *
 	 * It gets cleared after the first call to
-	 * dbwrap_watched_subrec_wakeup_fn() as we
+	 * dbwrap_watched_record_wakeup_fn() as we
 	 * only need to wakeup once per dbwrap_do_locked().
 	 */
 	TDB_DATA wakeup_value;
@@ -329,7 +329,7 @@ static NTSTATUS dbwrap_watched_do_locked_storev(
 	struct db_watched_record *subrec = &state->subrec;
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		state->db->private_data, struct db_watched_ctx);
-	struct dbwrap_watched_subrec_wakeup_state wakeup_state = {
+	struct dbwrap_watched_record_wakeup_state wakeup_state = {
 		.msg_ctx = ctx->msg,
 	};
 	NTSTATUS status;
@@ -338,10 +338,10 @@ static NTSTATUS dbwrap_watched_do_locked_storev(
 	 * Wakeup only needs to happen once.
 	 * so we clear state->wakeup_value after the first run
 	 */
-	dbwrap_watched_subrec_wakeup_fn(rec, state->wakeup_value, &wakeup_state);
+	dbwrap_watched_record_wakeup_fn(rec, state->wakeup_value, &wakeup_state);
 	state->wakeup_value = (TDB_DATA) { .dsize = 0, };
 
-	status = dbwrap_watched_subrec_storev(rec, subrec, dbufs, num_dbufs,
+	status = dbwrap_watched_record_storev(rec, subrec, dbufs, num_dbufs,
 					      flags);
 	return status;
 }
@@ -352,7 +352,7 @@ static NTSTATUS dbwrap_watched_do_locked_delete(struct db_record *rec)
 	struct db_watched_record *subrec = &state->subrec;
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		state->db->private_data, struct db_watched_ctx);
-	struct dbwrap_watched_subrec_wakeup_state wakeup_state = {
+	struct dbwrap_watched_record_wakeup_state wakeup_state = {
 		.msg_ctx = ctx->msg,
 	};
 	NTSTATUS status;
@@ -361,10 +361,10 @@ static NTSTATUS dbwrap_watched_do_locked_delete(struct db_record *rec)
 	 * Wakeup only needs to happen once.
 	 * so we clear state->wakeup_value after the first run
 	 */
-	dbwrap_watched_subrec_wakeup_fn(rec, state->wakeup_value, &wakeup_state);
+	dbwrap_watched_record_wakeup_fn(rec, state->wakeup_value, &wakeup_state);
 	state->wakeup_value = (TDB_DATA) { .dsize = 0, };
 
-	status = dbwrap_watched_subrec_delete(rec, subrec);
+	status = dbwrap_watched_record_delete(rec, subrec);
 	return status;
 }
 
@@ -430,12 +430,12 @@ static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
 	return state.status;
 }
 
-static void dbwrap_watched_subrec_wakeup_fn(
+static void dbwrap_watched_record_wakeup_fn(
 	struct db_record *rec,
 	TDB_DATA value,
 	void *private_data)
 {
-	struct dbwrap_watched_subrec_wakeup_state *state = private_data;
+	struct dbwrap_watched_record_wakeup_state *state = private_data;
 	uint8_t *watchers;
 	size_t num_watchers = 0;
 	size_t i;
@@ -483,14 +483,14 @@ static void dbwrap_watched_subrec_wakeup_fn(
 	}
 }
 
-static void dbwrap_watched_subrec_wakeup(
+static void dbwrap_watched_record_wakeup(
 	struct db_record *rec, struct db_watched_record *subrec)
 {
 	struct db_context *backend = dbwrap_record_get_db(subrec->subrec);
 	struct db_context *db = dbwrap_record_get_db(rec);
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
-	struct dbwrap_watched_subrec_wakeup_state state = {
+	struct dbwrap_watched_record_wakeup_state state = {
 		.msg_ctx = ctx->msg,
 	};
 	NTSTATUS status;
@@ -507,7 +507,7 @@ static void dbwrap_watched_subrec_wakeup(
 	status = dbwrap_do_locked(
 		backend,
 		subrec->subrec->key,
-		dbwrap_watched_subrec_wakeup_fn,
+		dbwrap_watched_record_wakeup_fn,
 		&state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("dbwrap_record_modify failed: %s\n",
@@ -515,7 +515,7 @@ static void dbwrap_watched_subrec_wakeup(
 	}
 }
 
-static NTSTATUS dbwrap_watched_subrec_storev(
+static NTSTATUS dbwrap_watched_record_storev(
 	struct db_record *rec, struct db_watched_record *subrec,
 	const TDB_DATA *dbufs, int num_dbufs, int flags)
 {
@@ -523,7 +523,7 @@ static NTSTATUS dbwrap_watched_subrec_storev(
 	TDB_DATA my_dbufs[num_dbufs+1];
 	NTSTATUS status;
 
-	dbwrap_watched_subrec_wakeup(rec, subrec);
+	dbwrap_watched_record_wakeup(rec, subrec);
 
 	/*
 	 * Watchers only informed once, set num_watchers to 0
@@ -548,17 +548,17 @@ static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
 		rec->private_data, struct db_watched_record);
 	NTSTATUS status;
 
-	status = dbwrap_watched_subrec_storev(rec, subrec, dbufs, num_dbufs,
+	status = dbwrap_watched_record_storev(rec, subrec, dbufs, num_dbufs,
 					      flags);
 	return status;
 }
 
-static NTSTATUS dbwrap_watched_subrec_delete(
+static NTSTATUS dbwrap_watched_record_delete(
 	struct db_record *rec, struct db_watched_record *subrec)
 {
 	NTSTATUS status;
 
-	dbwrap_watched_subrec_wakeup(rec, subrec);
+	dbwrap_watched_record_wakeup(rec, subrec);
 
 	/*
 	 * Watchers were informed, we can throw away the record now
@@ -573,7 +573,7 @@ static NTSTATUS dbwrap_watched_delete(struct db_record *rec)
 		rec->private_data, struct db_watched_record);
 	NTSTATUS status;
 
-	status = dbwrap_watched_subrec_delete(rec, subrec);
+	status = dbwrap_watched_record_delete(rec, subrec);
 	return status;
 }
 
@@ -1131,7 +1131,7 @@ static void dbwrap_watched_watch_done(struct tevent_req *subreq)
 	}
 	/*
 	 * No need to remove ourselves anymore, we've been removed by
-	 * dbwrap_watched_subrec_wakeup().
+	 * dbwrap_watched_record_wakeup().
 	 */
 	talloc_set_destructor(state, NULL);
 	tevent_req_done(req);
