@@ -493,11 +493,10 @@ static struct tevent_req *process_request_send(
 		cli_state->cmd_name = atable->cmd_name;
 		cli_state->recv_fn = atable->recv_req;
 
-		DBG_DEBUG("process_request: "
-			  "Handling async request %s(%d):%s\n",
-			  cli_state->client_name,
-			  (int)cli_state->pid,
-			  cli_state->cmd_name);
+		DBG_NOTICE("[%s (%d)] Handling async request: %s\n",
+			   cli_state->client_name,
+			   (int)cli_state->pid,
+			   cli_state->cmd_name);
 
 		subreq = atable->send_req(
 			state,
@@ -561,11 +560,11 @@ static void process_request_done(struct tevent_req *subreq)
 	status = cli_state->recv_fn(subreq, cli_state->response);
 	TALLOC_FREE(subreq);
 
-	DBG_DEBUG("[%s(%d):%s]: %s\n",
-		  cli_state->client_name,
-		  (int)cli_state->pid,
-		  cli_state->cmd_name,
-		  nt_errstr(status));
+	DBG_NOTICE("[%s(%d):%s]: %s\n",
+		   cli_state->client_name,
+		   (int)cli_state->pid,
+		   cli_state->cmd_name,
+		   nt_errstr(status));
 
 	ok = NT_STATUS_IS_OK(status);
 	cli_state->response->result = ok ? WINBINDD_OK : WINBINDD_ERROR;
@@ -668,14 +667,13 @@ static void new_connection(int listen_sock, bool privileged)
 
 	if (sock == -1) {
 		if (errno != EINTR) {
-			DEBUG(0, ("Failed to accept socket - %s\n",
-				  strerror(errno)));
+			D_ERR("Failed to accept socket: %s\n", strerror(errno));
 		}
 		return;
 	}
 	smb_set_close_on_exec(sock);
 
-	DEBUG(6,("accepted socket %d\n", sock));
+	D_INFO("Accepted client socket %d\n", sock);
 
 	/* Create new connection structure */
 
