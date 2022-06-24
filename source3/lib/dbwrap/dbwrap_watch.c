@@ -145,7 +145,7 @@ struct db_watched_record {
 		TDB_DATA initial_value;
 	} backend;
 	struct dbwrap_watcher added;
-
+	bool within_do_locked;
 	/*
 	 * This contains the initial value we got
 	 * passed to dbwrap_watched_do_locked_fn()
@@ -342,22 +342,6 @@ struct dbwrap_watched_do_locked_state {
 	NTSTATUS status;
 };
 
-static NTSTATUS dbwrap_watched_do_locked_storev(
-	struct db_record *rec, const TDB_DATA *dbufs, int num_dbufs,
-	int flags)
-{
-	struct db_watched_record *wrec = db_record_get_watched_record(rec);
-
-	return dbwrap_watched_record_storev(wrec, dbufs, num_dbufs, flags);
-}
-
-static NTSTATUS dbwrap_watched_do_locked_delete(struct db_record *rec)
-{
-	struct db_watched_record *wrec = db_record_get_watched_record(rec);
-
-	return dbwrap_watched_record_delete(wrec);
-}
-
 static void dbwrap_watched_do_locked_fn(
 	struct db_record *backend_rec,
 	TDB_DATA backend_value,
@@ -370,8 +354,8 @@ static void dbwrap_watched_do_locked_fn(
 		.db = state->db,
 		.key = dbwrap_record_get_key(backend_rec),
 		.value_valid = false,
-		.storev = dbwrap_watched_do_locked_storev,
-		.delete_rec = dbwrap_watched_do_locked_delete,
+		.storev = dbwrap_watched_storev,
+		.delete_rec = dbwrap_watched_delete,
 		.private_data = &wrec,
 	};
 	bool ok;
@@ -382,6 +366,7 @@ static void dbwrap_watched_do_locked_fn(
 			.rec = backend_rec,
 			.initial_value = backend_value,
 		},
+		.within_do_locked = true,
 		.wakeup_value = backend_value,
 	};
 
@@ -492,7 +477,7 @@ static void dbwrap_watched_record_wakeup(
 	};
 	NTSTATUS status;
 
-	if (rec->storev == dbwrap_watched_do_locked_storev) {
+	if (wrec->within_do_locked) {
 		/*
 		 * Wakeup only needs to happen once.
 		 * so we clear wrec->wakeup_value after the first run
