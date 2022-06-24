@@ -42,6 +42,7 @@ struct tevent_req *wb_query_group_list_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	D_INFO("WB command group_list start.\nQuery domain %s\n", domain->name);
 	subreq = dcerpc_wbint_QueryGroupList_send(state, ev,
 						  dom_child_handle(domain),
 						  &state->groups);
@@ -68,9 +69,6 @@ static void wb_query_group_list_done(struct tevent_req *subreq)
 		return;
 	}
 
-	DEBUG(10, ("dcerpc_wbint_QueryGroupList returned %d groups\n",
-		   state->groups.num_principals));
-
 	tevent_req_done(req);
 }
 
@@ -83,11 +81,13 @@ NTSTATUS wb_query_group_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		D_WARNING("Failed with: %s\n", nt_errstr(status));
 		return status;
 	}
 
 	*num_groups = state->groups.num_principals;
 	*groups = talloc_move(mem_ctx, &state->groups.principals);
 
+	D_INFO("WB command group_list end.\nReturning %d group(s).\n", *num_groups);
 	return NT_STATUS_OK;
 }
