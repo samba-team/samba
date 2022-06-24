@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "util/debug.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "lib/util/string_wrappers.h"
@@ -48,6 +49,10 @@ struct tevent_req *winbindd_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	D_NOTICE("[%s (%u)] Winbind external command DSGETDCNAME start.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid);
+
 	request->data.dsgetdcname.domain_name
 		[sizeof(request->data.dsgetdcname.domain_name)-1] = '\0';
 	request->data.dsgetdcname.site_name
@@ -55,8 +60,8 @@ struct tevent_req *winbindd_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 	request->data.dsgetdcname.domain_guid
 		[sizeof(request->data.dsgetdcname.domain_guid)-1] = '\0';
 
-	DEBUG(3, ("[%5lu]: dsgetdcname for %s\n", (unsigned long)cli->pid,
-		  request->data.dsgetdcname.domain_name));
+	D_NOTICE("Calling DsGetDcName for domain '%s'.\n",
+		 request->data.dsgetdcname.domain_name);
 
 	ds_flags = get_dsgetdc_flags(request->data.dsgetdcname.flags);
 
@@ -106,11 +111,11 @@ NTSTATUS winbindd_dsgetdcname_recv(struct tevent_req *req,
 	char *guid_str;
 	NTSTATUS status;
 
+	D_NOTICE("Winbind external command DSGETDCNAME end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
-		DEBUG(5, ("dsgetdcname failed: %s\n", nt_errstr(status)));
+		D_WARNING("Failed with: %s\n", nt_errstr(status));
 		return status;
 	}
-
 
 	fstrcpy(response->data.dsgetdcname.dc_unc,
 		state->dc_info->dc_unc);
