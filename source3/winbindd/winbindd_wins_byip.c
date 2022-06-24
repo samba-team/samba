@@ -45,14 +45,16 @@ struct tevent_req *winbindd_wins_byip_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-
 	/* Ensure null termination */
 	request->data.winsreq[sizeof(request->data.winsreq)-1]='\0';
 
 	fstr_sprintf(state->response, "%s\t", request->data.winsreq);
 
-	DEBUG(3, ("[%5lu]: wins_byip %s\n", (unsigned long)cli->pid,
-		  request->data.winsreq));
+	D_NOTICE("[%s (%u)] Winbind external command WINS_BYIP start.\n"
+		 "Resolving wins byip for %s.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->data.winsreq);
 
 	make_nmb_name(&state->star, "*", 0);
 
@@ -104,11 +106,11 @@ static void winbindd_wins_byip_done(struct tevent_req *subreq)
 			continue;
 		}
 
-		DEBUG(10, ("got name %s\n", names[i].name));
+		D_DEBUG("Got name '%s'.\n", names[i].name);
 
 		size = strlen(names[i].name + strlen(state->response));
 		if (size > sizeof(state->response) - 1) {
-			DEBUG(10, ("To much data\n"));
+			D_WARNING("Too much data!\n");
 			tevent_req_nterror(req, STATUS_BUFFER_OVERFLOW);
 			return;
 		}
@@ -117,7 +119,6 @@ static void winbindd_wins_byip_done(struct tevent_req *subreq)
 	}
 	state->response[strlen(state->response)-1] = '\n';
 
-	DEBUG(10, ("response: %s", state->response));
 
 	TALLOC_FREE(names);
 	tevent_req_done(req);
@@ -133,6 +134,9 @@ NTSTATUS winbindd_wins_byip_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
+	D_NOTICE("Winbind external command WINS_BYIP end.\n"
+		 "Response: %s",
+		 state->response);
 	fstrcpy(presp->data.winsresp, state->response);
 	return NT_STATUS_OK;
 }
