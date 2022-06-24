@@ -280,6 +280,7 @@ static int db_watched_record_destructor(struct db_watched_record *wrec)
 {
 	struct dbwrap_watched_add_watcher_state state = { .w = wrec->added };
 	struct db_context *backend = dbwrap_record_get_db(wrec->subrec);
+	TDB_DATA key = dbwrap_record_get_key(wrec->subrec);
 	NTSTATUS status;
 
 	if (wrec->added.pid.pid == 0) {
@@ -287,7 +288,7 @@ static int db_watched_record_destructor(struct db_watched_record *wrec)
 	}
 
 	status = dbwrap_do_locked(
-		backend, wrec->subrec->key, dbwrap_watched_add_watcher, &state);
+		backend, key, dbwrap_watched_add_watcher, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("dbwrap_do_locked failed: %s\n",
 			    nt_errstr(status));
@@ -489,6 +490,7 @@ static void dbwrap_watched_record_wakeup(
 	struct db_record *rec, struct db_watched_record *wrec)
 {
 	struct db_context *backend = dbwrap_record_get_db(wrec->subrec);
+	TDB_DATA key = dbwrap_record_get_key(wrec->subrec);
 	struct db_context *db = dbwrap_record_get_db(rec);
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
@@ -508,7 +510,7 @@ static void dbwrap_watched_record_wakeup(
 
 	status = dbwrap_do_locked(
 		backend,
-		wrec->subrec->key,
+		key,
 		dbwrap_watched_record_wakeup_fn,
 		&state);
 	if (!NT_STATUS_IS_OK(status)) {
