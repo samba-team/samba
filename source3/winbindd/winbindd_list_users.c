@@ -52,6 +52,12 @@ struct tevent_req *winbindd_list_users_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	D_NOTICE("[%s (%u)] Winbind external command LIST_USERS start.\n"
+		 "WBFLAG_FROM_NSS is %s, winbind enum users is %d.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->wb_flags & WBFLAG_FROM_NSS ? "Set" : "Unset",
+		 lp_winbind_enum_users());
 
 	if (request->wb_flags & WBFLAG_FROM_NSS && !lp_winbind_enum_users()) {
 		tevent_req_done(req);
@@ -61,8 +67,7 @@ struct tevent_req *winbindd_list_users_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->domain_name[sizeof(request->domain_name)-1]='\0';
 
-	DEBUG(3, ("list_users %s\n", request->domain_name));
-
+	D_NOTICE("Listing users for domain %s\n", request->domain_name);
 	if (request->domain_name[0] != '\0') {
 		state->num_domains = 1;
 	} else {
@@ -157,7 +162,9 @@ NTSTATUS winbindd_list_users_recv(struct tevent_req *req,
 	char *result;
 	size_t i, len;
 
+	D_NOTICE("Winbind external command LIST_USERS end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 
@@ -194,6 +201,10 @@ NTSTATUS winbindd_list_users_recv(struct tevent_req *req,
 			}
 		}
 	}
+
+	D_NOTICE("Got %u user(s):\n%s\n",
+		 response->data.num_entries,
+		 result);
 
 	return NT_STATUS_OK;
 }
