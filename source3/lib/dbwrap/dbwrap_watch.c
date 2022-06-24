@@ -141,24 +141,42 @@ struct db_watched_ctx {
 struct db_watched_record {
 	struct db_record *rec;
 	struct server_id self;
+	struct messaging_context *msg_ctx;
 	struct {
 		struct db_record *rec;
 		TDB_DATA initial_value;
 	} backend;
 	struct dbwrap_watcher added;
-	/*
-	 * This contains the initial value we got
-	 * passed to dbwrap_watched_do_locked_fn()
-	 *
-	 * It's only used in order to pass it
-	 * to dbwrap_watched_record_wakeup_fn()
-	 * in dbwrap_watched_{storev,delete}()
-	 *
-	 * It gets cleared after the first call to
-	 * dbwrap_watched_record_wakeup_fn() as we
-	 * only need to wakeup once per dbwrap_do_locked().
-	 */
-	TDB_DATA wakeup_value;
+	struct {
+		/*
+		 * The is the number of watcher records
+		 * parsed from backend.initial_value
+		 */
+		size_t count;
+		/*
+		 * This is the pointer to
+		 * the optentially first watcher record
+		 * parsed from backend.initial_value
+		 *
+		 * The pointer actually points to memory
+		 * in backend.initial_value.
+		 *
+		 * Note it might be NULL, if count is 0.
+		 */
+		uint8_t *first;
+		/*
+		 * This remembers if we already
+		 * notified the watchers.
+		 *
+		 * As we only need to do that once during:
+		 *   do_locked
+		 * or:
+		 *   between rec = fetch_locked
+		 *   and
+		 *   TALLOC_FREE(rec)
+		 */
+		bool alerted;
+	} watchers;
 };
 
 static struct db_watched_record *db_record_get_watched_record(struct db_record *rec)
@@ -187,8 +205,6 @@ static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
 				      const TDB_DATA *dbufs, int num_dbufs,
 				      int flags);
 static NTSTATUS dbwrap_watched_delete(struct db_record *rec);
-static void dbwrap_watched_record_wakeup(
-	struct db_watched_record *wrec);
 static int db_watched_record_destructor(struct db_watched_record *wrec);
 
 static void db_watched_record_init(struct db_context *db,
@@ -211,15 +227,16 @@ static void db_watched_record_init(struct db_context *db,
 	*wrec = (struct db_watched_record) {
 		.rec = rec,
 		.self = messaging_server_id(msg_ctx),
+		.msg_ctx = msg_ctx,
 		.backend = {
 			.rec = backend_rec,
 			.initial_value = backend_value,
 		},
-		.wakeup_value = backend_value,
 	};
 
 	ok = dbwrap_watch_rec_parse(backend_value,
-				    NULL, NULL,
+				    &wrec->watchers.first,
+				    &wrec->watchers.count,
 				    &rec->value);
 	if (!ok) {
 		dbwrap_watch_log_invalid_record(rec->db, rec->key, backend_value);
@@ -357,14 +374,6 @@ static int db_watched_record_destructor(struct db_watched_record *wrec)
 	return 0;
 }
 
-struct dbwrap_watched_record_wakeup_state {
-	struct messaging_context *msg_ctx;
-};
-static void dbwrap_watched_record_wakeup_fn(
-	struct db_record *rec,
-	TDB_DATA value,
-	void *private_data);
-
 struct dbwrap_watched_do_locked_state {
 	struct db_context *db;
 	struct messaging_context *msg_ctx;
@@ -421,38 +430,30 @@ static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
 	return state.status;
 }
 
-static void dbwrap_watched_record_wakeup_fn(
-	struct db_record *rec,
-	TDB_DATA value,
-	void *private_data)
+static void dbwrap_watched_record_wakeup(
+	struct db_watched_record *wrec)
 {
-	struct dbwrap_watched_record_wakeup_state *state = private_data;
-	uint8_t *watchers;
-	size_t num_watchers = 0;
-	size_t i;
-	bool ok;
-
-	ok = dbwrap_watch_rec_parse(value, &watchers, &num_watchers, NULL);
-	if (!ok) {
-		struct db_context *db = dbwrap_record_get_db(rec);
-		TDB_DATA key = dbwrap_record_get_key(rec);
-		dbwrap_watch_log_invalid_record(db, key, value);
+	/*
+	 * Wakeup only needs to happen once (if at all)
+	 */
+	if (wrec->watchers.alerted) {
+		/* already done */
 		return;
 	}
+	wrec->watchers.alerted = true;
 
-	if (num_watchers == 0) {
+	if (wrec->watchers.count == 0) {
 		DBG_DEBUG("No watchers\n");
 		return;
 	}
 
-	for (i=0; i<num_watchers; i++) {
+	while (wrec->watchers.count != 0) {
 		struct dbwrap_watcher watcher;
 		struct server_id_buf tmp;
 		uint8_t instance_buf[8];
 		NTSTATUS status;
 
-		dbwrap_watcher_get(
-			&watcher, watchers + i*DBWRAP_WATCHER_BUF_LENGTH);
+		dbwrap_watcher_get(&watcher, wrec->watchers.first);
 
 		DBG_DEBUG("Alerting %s:%"PRIu64"\n",
 			  server_id_str_buf(watcher.pid, &tmp),
@@ -461,7 +462,7 @@ static void dbwrap_watched_record_wakeup_fn(
 		SBVAL(instance_buf, 0, watcher.instance);
 
 		status = messaging_send_buf(
-			state->msg_ctx,
+			wrec->msg_ctx,
 			watcher.pid,
 			MSG_DBWRAP_MODIFIED,
 			instance_buf,
@@ -471,26 +472,13 @@ static void dbwrap_watched_record_wakeup_fn(
 				  server_id_str_buf(watcher.pid, &tmp),
 				  nt_errstr(status));
 		}
+
+		/*
+		 * Watchers are only informed once for now...
+		 */
+		wrec->watchers.first += DBWRAP_WATCHER_BUF_LENGTH;
+		wrec->watchers.count -= 1;
 	}
-}
-
-static void dbwrap_watched_record_wakeup(
-	struct db_watched_record *wrec)
-{
-	struct db_record *rec = wrec->rec;
-	struct db_context *db = dbwrap_record_get_db(rec);
-	struct db_watched_ctx *ctx = talloc_get_type_abort(
-		db->private_data, struct db_watched_ctx);
-	struct dbwrap_watched_record_wakeup_state state = {
-		.msg_ctx = ctx->msg,
-	};
-
-	/*
-	 * Wakeup only needs to happen once.
-	 * so we clear wrec->wakeup_value after the first run
-	 */
-	dbwrap_watched_record_wakeup_fn(rec, wrec->wakeup_value, &state);
-	wrec->wakeup_value = (TDB_DATA) { .dsize = 0, };
 }
 
 static NTSTATUS dbwrap_watched_record_storev(
