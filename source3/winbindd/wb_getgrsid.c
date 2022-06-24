@@ -45,11 +45,15 @@ struct tevent_req *wb_getgrsid_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_getgrsid_state *state;
+	struct dom_sid_buf buf;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_getgrsid_state);
 	if (req == NULL) {
 		return NULL;
 	}
+
+	D_INFO("WB command getgrsid start.\nLooking up group SID %s.\n", dom_sid_str_buf(group_sid, &buf));
+
 	sid_copy(&state->sid, group_sid);
 	state->ev = ev;
 	state->max_nesting = max_nesting;
@@ -205,7 +209,9 @@ NTSTATUS wb_getgrsid_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		req, struct wb_getgrsid_state);
 	NTSTATUS status;
 
+	D_INFO("WB command getgrsid end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 	*domname = talloc_move(mem_ctx, &state->domname);
