@@ -95,10 +95,11 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	DBG_NOTICE("[%s (%u)]: pam auth %s\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid,
-		   request->data.auth.user);
+	D_NOTICE("[%s (%u)] Winbind external command PAM_AUTH start.\n"
+		 "Authenticating user '%s'.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->data.auth.user);
 
 	if (!check_request_flags(request->flags)) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
@@ -218,6 +219,7 @@ NTSTATUS winbindd_pam_auth_recv(struct tevent_req *req,
 		req, struct winbindd_pam_auth_state);
 	NTSTATUS status;
 
+	D_NOTICE("Winbind external command PAM_AUTH end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
 		set_auth_errors(response, status);
 		return status;
@@ -257,8 +259,8 @@ NTSTATUS winbindd_pam_auth_recv(struct tevent_req *req,
 			state->r->in.info->username,
 			state->r->in.info->uid,
 			state->r->in.info->password);
-		DEBUG(10, ("winbindd_add_memory_creds returned: %s\n",
-			   nt_errstr(status)));
+		D_DEBUG("winbindd_add_memory_creds returned: %s\n",
+			   nt_errstr(status));
 	}
 
 	if (state->r->in.flags & WBFLAG_PAM_GET_PWD_POLICY) {
