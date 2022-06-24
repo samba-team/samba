@@ -315,9 +315,6 @@ struct dbwrap_watched_do_locked_state {
 		   TDB_DATA value,
 		   void *private_data);
 	void *private_data;
-
-	struct db_watched_record wrec;
-
 	NTSTATUS status;
 };
 
@@ -379,17 +376,18 @@ static void dbwrap_watched_do_locked_fn(
 {
 	struct dbwrap_watched_do_locked_state *state =
 		(struct dbwrap_watched_do_locked_state *)private_data;
+	struct db_watched_record wrec;
 	struct db_record rec = {
 		.db = state->db,
 		.key = dbwrap_record_get_key(subrec),
 		.value_valid = false,
 		.storev = dbwrap_watched_do_locked_storev,
 		.delete_rec = dbwrap_watched_do_locked_delete,
-		.private_data = &state->wrec,
+		.private_data = &wrec,
 	};
 	bool ok;
 
-	state->wrec = (struct db_watched_record) {
+	wrec = (struct db_watched_record) {
 		.subrec = subrec,
 		.wakeup_value = subrec_value,
 	};
@@ -405,7 +403,7 @@ static void dbwrap_watched_do_locked_fn(
 
 	state->fn(&rec, rec.value, state->private_data);
 
-	db_watched_record_destructor(&state->wrec);
+	db_watched_record_destructor(&wrec);
 }
 
 static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
