@@ -39,6 +39,12 @@ struct tevent_req *winbindd_setpwent_send(TALLOC_CTX *mem_ctx,
 	}
 	TALLOC_FREE(cli->pwent_state);
 
+	D_NOTICE("[%s (%u)] Winbind external command SETPWENT start.\n"
+		 "winbind enum users = %d\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 lp_winbind_enum_users());
+
 	if (!lp_winbind_enum_users()) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
@@ -56,5 +62,6 @@ struct tevent_req *winbindd_setpwent_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_setpwent_recv(struct tevent_req *req,
 				struct winbindd_response *presp)
 {
+	D_NOTICE("Winbind external command SETPWENT end.\n");
 	return NT_STATUS_OK;
 }
