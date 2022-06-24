@@ -39,6 +39,12 @@ struct tevent_req *winbindd_setgrent_send(TALLOC_CTX *mem_ctx,
 	}
 	TALLOC_FREE(cli->grent_state);
 
+	D_NOTICE("[%s (%u)] Winbind external command SETGRENT start.\n"
+		 "winbind enum groups = %d\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 lp_winbind_enum_groups());
+
 	if (!lp_winbind_enum_groups()) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
@@ -56,5 +62,6 @@ struct tevent_req *winbindd_setgrent_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_setgrent_recv(struct tevent_req *req,
 				struct winbindd_response *presp)
 {
+	D_NOTICE("Winbind external command SETGRENT end.\n");
 	return NT_STATUS_OK;
 }
