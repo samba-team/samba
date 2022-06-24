@@ -47,25 +47,27 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 
-	DEBUG(3, ("sids_to_xids\n"));
+	D_NOTICE("[%s (%u)] Winbind external command SIDS_TO_XIDS start.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid);
 
 	if (request->extra_len == 0) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 	if (request->extra_data.data[request->extra_len-1] != '\0') {
-		DEBUG(10, ("Got invalid sids list\n"));
+		D_DEBUG("Got invalid sids list\n");
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 	if (!parse_sidlist(state, request->extra_data.data,
 			   &state->sids, &state->num_sids)) {
-		DEBUG(10, ("parse_sidlist failed\n"));
+		D_DEBUG("parse_sidlist failed\n");
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 
-	DEBUG(10, ("num_sids: %d\n", (int)state->num_sids));
+	D_DEBUG("Resolving %u SID(s).\n", (int)state->num_sids);
 
 	subreq = wb_sids2xids_send(state, ev, state->sids, state->num_sids);
 	if (tevent_req_nomem(subreq, req)) {
@@ -106,8 +108,9 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 	char *result = NULL;
 	uint32_t i;
 
+	D_NOTICE("Winbind external command SIDS_TO_XIDS end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
-		DEBUG(5, ("Could not convert sids: %s\n", nt_errstr(status)));
+		D_WARNING("Could not convert sids: %s\n", nt_errstr(status));
 		return status;
 	}
 
