@@ -79,6 +79,9 @@ struct tevent_req *wb_next_grent_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+
+	D_INFO("WB command next_grent start.\n");
+
 	state->ev = ev;
 	state->gstate = gstate;
 	state->gr = gr;
@@ -106,8 +109,8 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Ignore errors here, just log it */
-		DEBUG(10, ("query_group_list for domain %s returned %s\n",
-			   state->gstate->domain->name, nt_errstr(status)));
+		D_DEBUG("query_group_list for domain %s returned %s\n",
+			state->gstate->domain->name, nt_errstr(status));
 		state->gstate->num_groups = 0;
 	}
 
@@ -141,7 +144,7 @@ static void wb_next_grent_getgrsid_done(struct tevent_req *subreq)
 
 	if (!fill_grent(talloc_tos(), state->gr, domname, name,
 			state->gr->gr_gid)) {
-		DEBUG(5, ("fill_grent failed\n"));
+		D_WARNING("fill_grent failed\n");
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -156,7 +159,9 @@ NTSTATUS wb_next_grent_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		req, struct wb_next_grent_state);
 	NTSTATUS status;
 
+	D_INFO("WB command next_grent end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 	*members = talloc_move(mem_ctx, &state->members);
