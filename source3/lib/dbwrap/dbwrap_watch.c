@@ -140,7 +140,10 @@ struct db_watched_ctx {
 
 struct db_watched_record {
 	struct db_record *rec;
-	struct db_record *subrec;
+	struct {
+		struct db_record *rec;
+		TDB_DATA initial_value;
+	} backend;
 	struct dbwrap_watcher added;
 
 	/*
@@ -178,7 +181,6 @@ static struct db_record *dbwrap_watched_fetch_locked(
 		db->private_data, struct db_watched_ctx);
 	struct db_record *rec;
 	struct db_watched_record *wrec;
-	TDB_DATA subrec_value;
 	bool ok;
 
 	rec = talloc_zero(mem_ctx, struct db_record);
@@ -194,22 +196,24 @@ static struct db_record *dbwrap_watched_fetch_locked(
 	rec->private_data = wrec;
 	wrec->rec = rec;
 
-	wrec->subrec = dbwrap_fetch_locked(ctx->backend, wrec, key);
-	if (wrec->subrec == NULL) {
+	wrec->backend.rec = dbwrap_fetch_locked(ctx->backend, wrec, key);
+	if (wrec->backend.rec == NULL) {
 		TALLOC_FREE(rec);
 		return NULL;
 	}
+	wrec->backend.initial_value = dbwrap_record_get_value(wrec->backend.rec);
 
 	rec->db = db;
-	rec->key = dbwrap_record_get_key(wrec->subrec);
+	rec->key = dbwrap_record_get_key(wrec->backend.rec);
 	rec->storev = dbwrap_watched_storev;
 	rec->delete_rec = dbwrap_watched_delete;
 
-	subrec_value = dbwrap_record_get_value(wrec->subrec);
-
-	ok = dbwrap_watch_rec_parse(subrec_value, NULL, NULL, &rec->value);
+	ok = dbwrap_watch_rec_parse(wrec->backend.initial_value,
+				    NULL, NULL,
+				    &rec->value);
 	if (!ok) {
-		dbwrap_watch_log_invalid_record(db, rec->key, subrec_value);
+		dbwrap_watch_log_invalid_record(db, rec->key,
+						wrec->backend.initial_value);
 		/* wipe invalid data */
 		rec->value = (TDB_DATA) { .dptr = NULL, .dsize = 0 };
 	}
@@ -281,8 +285,8 @@ static void dbwrap_watched_add_watcher(
 static int db_watched_record_destructor(struct db_watched_record *wrec)
 {
 	struct dbwrap_watched_add_watcher_state state = { .w = wrec->added };
-	struct db_context *backend = dbwrap_record_get_db(wrec->subrec);
-	TDB_DATA key = dbwrap_record_get_key(wrec->subrec);
+	struct db_context *backend = dbwrap_record_get_db(wrec->backend.rec);
+	TDB_DATA key = dbwrap_record_get_key(wrec->backend.rec);
 	NTSTATUS status;
 
 	if (wrec->added.pid.pid == 0) {
@@ -368,8 +372,8 @@ static NTSTATUS dbwrap_watched_do_locked_delete(struct db_record *rec)
 }
 
 static void dbwrap_watched_do_locked_fn(
-	struct db_record *subrec,
-	TDB_DATA subrec_value,
+	struct db_record *backend_rec,
+	TDB_DATA backend_value,
 	void *private_data)
 {
 	struct dbwrap_watched_do_locked_state *state =
@@ -377,7 +381,7 @@ static void dbwrap_watched_do_locked_fn(
 	struct db_watched_record wrec;
 	struct db_record rec = {
 		.db = state->db,
-		.key = dbwrap_record_get_key(subrec),
+		.key = dbwrap_record_get_key(backend_rec),
 		.value_valid = false,
 		.storev = dbwrap_watched_do_locked_storev,
 		.delete_rec = dbwrap_watched_do_locked_delete,
@@ -387,15 +391,18 @@ static void dbwrap_watched_do_locked_fn(
 
 	wrec = (struct db_watched_record) {
 		.rec = &rec,
-		.subrec = subrec,
-		.wakeup_value = subrec_value,
+		.backend = {
+			.rec = backend_rec,
+			.initial_value = backend_value,
+		},
+		.wakeup_value = backend_value,
 	};
 
-	ok = dbwrap_watch_rec_parse(subrec_value,
+	ok = dbwrap_watch_rec_parse(backend_value,
 				    NULL, NULL,
 				    &rec.value);
 	if (!ok) {
-		dbwrap_watch_log_invalid_record(rec.db, rec.key, subrec_value);
+		dbwrap_watch_log_invalid_record(rec.db, rec.key, backend_value);
 		/* wipe invalid data */
 		rec.value = (TDB_DATA) { .dptr = NULL, .dsize = 0 };
 	}
@@ -488,8 +495,8 @@ static void dbwrap_watched_record_wakeup(
 	struct db_watched_record *wrec)
 {
 	struct db_record *rec = wrec->rec;
-	struct db_context *backend = dbwrap_record_get_db(wrec->subrec);
-	TDB_DATA key = dbwrap_record_get_key(wrec->subrec);
+	struct db_context *backend = dbwrap_record_get_db(wrec->backend.rec);
+	TDB_DATA key = dbwrap_record_get_key(wrec->backend.rec);
 	struct db_context *db = dbwrap_record_get_db(rec);
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
@@ -539,7 +546,7 @@ static NTSTATUS dbwrap_watched_record_storev(
 	}
 
 	status = dbwrap_record_storev(
-		wrec->subrec, my_dbufs, ARRAY_SIZE(my_dbufs), flags);
+		wrec->backend.rec, my_dbufs, ARRAY_SIZE(my_dbufs), flags);
 	return status;
 }
 
@@ -561,7 +568,7 @@ static NTSTATUS dbwrap_watched_record_delete(
 	/*
 	 * Watchers were informed, we can throw away the record now
 	 */
-	return dbwrap_record_delete(wrec->subrec);
+	return dbwrap_record_delete(wrec->backend.rec);
 }
 
 static NTSTATUS dbwrap_watched_delete(struct db_record *rec)
