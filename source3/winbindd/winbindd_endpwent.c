@@ -37,6 +37,11 @@ struct tevent_req *winbindd_endpwent_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+
+	D_NOTICE("[%s (%u)] Winbind external command ENDPWENT start.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid);
+
 	TALLOC_FREE(cli->pwent_state);
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
@@ -45,5 +50,6 @@ struct tevent_req *winbindd_endpwent_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_endpwent_recv(struct tevent_req *req,
 				struct winbindd_response *presp)
 {
+	D_NOTICE("Winbind external command ENDPWENT end.\n");
 	return NT_STATUS_OK;
 }
