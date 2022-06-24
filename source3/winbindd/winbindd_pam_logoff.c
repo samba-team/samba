@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "util/debug.h"
 #include "winbindd.h"
 #include "lib/global_contexts.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
@@ -47,15 +48,16 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-
+	D_NOTICE("[%s (%u)] Winbind external command PAM_LOGOFF start.\n"
+		 "Username '%s' is used during logoff.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->data.auth.user);
 	/* Ensure null termination */
 	/* Ensure null termination */
 	request->data.logoff.user[sizeof(request->data.logoff.user)-1]='\0';
 	request->data.logoff.krb5ccname[
 		sizeof(request->data.logoff.krb5ccname)-1]='\0';
-
-	DEBUG(3, ("[%5lu]: pam auth %s\n", (unsigned long)cli->pid,
-		  request->data.auth.user));
 
 	if (request->data.logoff.uid == (uid_t)-1) {
 		goto failed;
@@ -78,8 +80,8 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 
 	res = getpeereid(cli->sock, &caller_uid, &caller_gid);
 	if (res != 0) {
-		DEBUG(1,("winbindd_pam_logoff: failed to check peerid: %s\n",
-			strerror(errno)));
+		D_WARNING("winbindd_pam_logoff: failed to check peerid: %s\n",
+			strerror(errno));
 		goto failed;
 	}
 
@@ -91,8 +93,7 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		if (caller_uid != request->data.logoff.uid) {
-			DEBUG(1,("winbindd_pam_logoff: caller requested "
-				 "invalid uid\n"));
+			D_WARNING("caller requested invalid uid\n");
 			goto failed;
 		}
 		break;
@@ -155,6 +156,7 @@ NTSTATUS winbindd_pam_logoff_recv(struct tevent_req *req,
 		req, struct winbindd_pam_logoff_state);
 	NTSTATUS status = NT_STATUS_OK;
 
+	D_NOTICE("Winbind external command PAM_LOGOFF end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
 		set_auth_errors(response, status);
 		return status;
