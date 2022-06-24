@@ -570,7 +570,7 @@ bld.SAMBA3_LIBRARY('smbconf',
                         ''',
                    public_headers='../lib/smbconf/smbconf.h',
                    pc_files=[],
-                   vnum='0')
+                   vnum='0.0.1')
 
 bld.SAMBA3_SUBSYSTEM('sysquotas',
                      source='''
