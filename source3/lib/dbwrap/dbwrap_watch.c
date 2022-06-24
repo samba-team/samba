@@ -140,6 +140,7 @@ struct db_watched_ctx {
 
 struct db_watched_record {
 	struct db_record *rec;
+	struct server_id self;
 	struct {
 		struct db_record *rec;
 		TDB_DATA initial_value;
@@ -191,14 +192,51 @@ static void dbwrap_watched_record_wakeup(
 	struct db_watched_record *wrec);
 static int db_watched_record_destructor(struct db_watched_record *wrec);
 
+static void db_watched_record_init(struct db_context *db,
+				   struct messaging_context *msg_ctx,
+				   struct db_record *rec,
+				   struct db_watched_record *wrec,
+				   struct db_record *backend_rec,
+				   TDB_DATA backend_value)
+{
+	bool ok;
+
+	*rec = (struct db_record) {
+		.db = db,
+		.key = dbwrap_record_get_key(backend_rec),
+		.storev = dbwrap_watched_storev,
+		.delete_rec = dbwrap_watched_delete,
+		.private_data = wrec,
+	};
+
+	*wrec = (struct db_watched_record) {
+		.rec = rec,
+		.self = messaging_server_id(msg_ctx),
+		.backend = {
+			.rec = backend_rec,
+			.initial_value = backend_value,
+		},
+	};
+
+	ok = dbwrap_watch_rec_parse(backend_value,
+				    NULL, NULL,
+				    &rec->value);
+	if (!ok) {
+		dbwrap_watch_log_invalid_record(rec->db, rec->key, backend_value);
+		/* wipe invalid data */
+		rec->value = (TDB_DATA) { .dptr = NULL, .dsize = 0 };
+	}
+}
+
 static struct db_record *dbwrap_watched_fetch_locked(
 	struct db_context *db, TALLOC_CTX *mem_ctx, TDB_DATA key)
 {
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
-	struct db_record *rec;
-	struct db_watched_record *wrec;
-	bool ok;
+	struct db_record *rec = NULL;
+	struct db_watched_record *wrec = NULL;
+	struct db_record *backend_rec = NULL;
+	TDB_DATA backend_value = { .dptr = NULL, };
 
 	rec = talloc_zero(mem_ctx, struct db_record);
 	if (rec == NULL) {
@@ -209,32 +247,19 @@ static struct db_record *dbwrap_watched_fetch_locked(
 		TALLOC_FREE(rec);
 		return NULL;
 	}
-	talloc_set_destructor(wrec, db_watched_record_destructor);
-	rec->private_data = wrec;
-	wrec->rec = rec;
 
-	wrec->backend.rec = dbwrap_fetch_locked(ctx->backend, wrec, key);
-	if (wrec->backend.rec == NULL) {
+	backend_rec = dbwrap_fetch_locked(ctx->backend, wrec, key);
+	if (backend_rec == NULL) {
 		TALLOC_FREE(rec);
 		return NULL;
 	}
-	wrec->backend.initial_value = dbwrap_record_get_value(wrec->backend.rec);
+	backend_value = dbwrap_record_get_value(backend_rec);
 
-	rec->db = db;
-	rec->key = dbwrap_record_get_key(wrec->backend.rec);
-	rec->storev = dbwrap_watched_storev;
-	rec->delete_rec = dbwrap_watched_delete;
-
-	ok = dbwrap_watch_rec_parse(wrec->backend.initial_value,
-				    NULL, NULL,
-				    &rec->value);
-	if (!ok) {
-		dbwrap_watch_log_invalid_record(db, rec->key,
-						wrec->backend.initial_value);
-		/* wipe invalid data */
-		rec->value = (TDB_DATA) { .dptr = NULL, .dsize = 0 };
-	}
+	db_watched_record_init(db, ctx->msg,
+			       rec, wrec,
+			       backend_rec, backend_value);
 	rec->value_valid = true;
+	talloc_set_destructor(wrec, db_watched_record_destructor);
 
 	return rec;
 }
@@ -335,6 +360,7 @@ static void dbwrap_watched_record_wakeup_fn(
 
 struct dbwrap_watched_do_locked_state {
 	struct db_context *db;
+	struct messaging_context *msg_ctx;
 	void (*fn)(struct db_record *rec,
 		   TDB_DATA value,
 		   void *private_data);
@@ -350,34 +376,13 @@ static void dbwrap_watched_do_locked_fn(
 	struct dbwrap_watched_do_locked_state *state =
 		(struct dbwrap_watched_do_locked_state *)private_data;
 	struct db_watched_record wrec;
-	struct db_record rec = {
-		.db = state->db,
-		.key = dbwrap_record_get_key(backend_rec),
-		.value_valid = false,
-		.storev = dbwrap_watched_storev,
-		.delete_rec = dbwrap_watched_delete,
-		.private_data = &wrec,
-	};
-	bool ok;
+	struct db_record rec;
 
-	wrec = (struct db_watched_record) {
-		.rec = &rec,
-		.backend = {
-			.rec = backend_rec,
-			.initial_value = backend_value,
-		},
-		.within_do_locked = true,
-		.wakeup_value = backend_value,
-	};
-
-	ok = dbwrap_watch_rec_parse(backend_value,
-				    NULL, NULL,
-				    &rec.value);
-	if (!ok) {
-		dbwrap_watch_log_invalid_record(rec.db, rec.key, backend_value);
-		/* wipe invalid data */
-		rec.value = (TDB_DATA) { .dptr = NULL, .dsize = 0 };
-	}
+	db_watched_record_init(state->db, state->msg_ctx,
+			       &rec, &wrec,
+			       backend_rec, backend_value);
+	wrec.within_do_locked = true;
+	wrec.wakeup_value = backend_value;
 
 	state->fn(&rec, rec.value, state->private_data);
 
@@ -393,7 +398,8 @@ static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
 	struct dbwrap_watched_do_locked_state state = {
-		.db = db, .fn = fn, .private_data = private_data
+		.db = db, .msg_ctx = ctx->msg,
+		.fn = fn, .private_data = private_data,
 	};
 	NTSTATUS status;
 
