@@ -327,8 +327,9 @@ static NTSTATUS dbwrap_watched_do_locked_storev(
 {
 	struct dbwrap_watched_do_locked_state *state = rec->private_data;
 	struct db_watched_record *wrec = &state->wrec;
+	struct db_context *db = dbwrap_record_get_db(rec);
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
-		state->db->private_data, struct db_watched_ctx);
+		db->private_data, struct db_watched_ctx);
 	struct dbwrap_watched_record_wakeup_state wakeup_state = {
 		.msg_ctx = ctx->msg,
 	};
@@ -350,8 +351,9 @@ static NTSTATUS dbwrap_watched_do_locked_delete(struct db_record *rec)
 {
 	struct dbwrap_watched_do_locked_state *state = rec->private_data;
 	struct db_watched_record *wrec = &state->wrec;
+	struct db_context *db = dbwrap_record_get_db(rec);
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
-		state->db->private_data, struct db_watched_ctx);
+		db->private_data, struct db_watched_ctx);
 	struct dbwrap_watched_record_wakeup_state wakeup_state = {
 		.msg_ctx = ctx->msg,
 	};
