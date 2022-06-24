@@ -325,8 +325,9 @@ static NTSTATUS dbwrap_watched_do_locked_storev(
 	struct db_record *rec, const TDB_DATA *dbufs, int num_dbufs,
 	int flags)
 {
-	struct dbwrap_watched_do_locked_state *state = rec->private_data;
-	struct db_watched_record *wrec = &state->wrec;
+	/* we can't use wrec = talloc_get_type_abort() here! */
+	struct db_watched_record *wrec =
+		(struct db_watched_record *)rec->private_data;
 	struct db_context *db = dbwrap_record_get_db(rec);
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
@@ -349,8 +350,9 @@ static NTSTATUS dbwrap_watched_do_locked_storev(
 
 static NTSTATUS dbwrap_watched_do_locked_delete(struct db_record *rec)
 {
-	struct dbwrap_watched_do_locked_state *state = rec->private_data;
-	struct db_watched_record *wrec = &state->wrec;
+	/* we can't use wrec = talloc_get_type_abort() here! */
+	struct db_watched_record *wrec =
+		(struct db_watched_record *)rec->private_data;
 	struct db_context *db = dbwrap_record_get_db(rec);
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
@@ -383,7 +385,7 @@ static void dbwrap_watched_do_locked_fn(
 		.value_valid = false,
 		.storev = dbwrap_watched_do_locked_storev,
 		.delete_rec = dbwrap_watched_do_locked_delete,
-		.private_data = state
+		.private_data = &state->wrec,
 	};
 	bool ok;
 
@@ -909,9 +911,7 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 					     struct db_watched_record);
 	}
 	if (rec->storev == dbwrap_watched_do_locked_storev) {
-		struct dbwrap_watched_do_locked_state *do_locked_state;
-		do_locked_state = rec->private_data;
-		wrec = &do_locked_state->wrec;
+		wrec = (struct db_watched_record *)rec->private_data;
 	}
 	if (wrec == NULL) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
