@@ -46,6 +46,11 @@ struct tevent_req *winbindd_lookupname_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+
+	D_NOTICE("[%s (%u)] Winbind external command LOOKUPNAME start.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid);
+
 	state->ev = ev;
 
 	/* Ensure null termination */
@@ -78,8 +83,7 @@ struct tevent_req *winbindd_lookupname_send(TALLOC_CTX *mem_ctx,
 		name = request->data.name.name;
 	}
 
-	DEBUG(3, ("lookupname %s%s%s\n", domname, lp_winbind_separator(),
-		  name));
+	D_NOTICE("lookupname %s%s%s\n", domname, lp_winbind_separator(), name);
 
 	subreq = wb_lookupname_send(state, ev, namespace, domname, name, 0);
 	if (tevent_req_nomem(subreq, req)) {
@@ -112,11 +116,12 @@ NTSTATUS winbindd_lookupname_recv(struct tevent_req *req,
 		req, struct winbindd_lookupname_state);
 	NTSTATUS status;
 
+	D_NOTICE("Winbind external command LOOKUPNAME end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
 		struct dom_sid_buf buf;
-		DEBUG(5, ("Could not convert sid %s: %s\n",
+		D_WARNING("Could not convert SID %s, error is %s\n",
 			  dom_sid_str_buf(&state->sid, &buf),
-			  nt_errstr(status)));
+			  nt_errstr(status));
 		return status;
 	}
 	sid_to_fstring(response->data.sid.sid, &state->sid);
