@@ -347,19 +347,6 @@ static NTSTATUS dbwrap_watched_do_locked_storev(
 	int flags)
 {
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
-	struct db_context *db = dbwrap_record_get_db(rec);
-	struct db_watched_ctx *ctx = talloc_get_type_abort(
-		db->private_data, struct db_watched_ctx);
-	struct dbwrap_watched_record_wakeup_state wakeup_state = {
-		.msg_ctx = ctx->msg,
-	};
-
-	/*
-	 * Wakeup only needs to happen once.
-	 * so we clear wrec->wakeup_value after the first run
-	 */
-	dbwrap_watched_record_wakeup_fn(rec, wrec->wakeup_value, &wakeup_state);
-	wrec->wakeup_value = (TDB_DATA) { .dsize = 0, };
 
 	return dbwrap_watched_record_storev(wrec, dbufs, num_dbufs, flags);
 }
@@ -367,19 +354,6 @@ static NTSTATUS dbwrap_watched_do_locked_storev(
 static NTSTATUS dbwrap_watched_do_locked_delete(struct db_record *rec)
 {
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
-	struct db_context *db = dbwrap_record_get_db(rec);
-	struct db_watched_ctx *ctx = talloc_get_type_abort(
-		db->private_data, struct db_watched_ctx);
-	struct dbwrap_watched_record_wakeup_state wakeup_state = {
-		.msg_ctx = ctx->msg,
-	};
-
-	/*
-	 * Wakeup only needs to happen once.
-	 * so we clear wrec->wakeup_value after the first run
-	 */
-	dbwrap_watched_record_wakeup_fn(rec, wrec->wakeup_value, &wakeup_state);
-	wrec->wakeup_value = (TDB_DATA) { .dsize = 0, };
 
 	return dbwrap_watched_record_delete(wrec);
 }
@@ -520,10 +494,11 @@ static void dbwrap_watched_record_wakeup(
 
 	if (rec->storev == dbwrap_watched_do_locked_storev) {
 		/*
-		 * This is handled in the caller,
-		 * as we need to avoid recursion
-		 * into dbwrap_do_locked().
+		 * Wakeup only needs to happen once.
+		 * so we clear wrec->wakeup_value after the first run
 		 */
+		dbwrap_watched_record_wakeup_fn(rec, wrec->wakeup_value, &state);
+		wrec->wakeup_value = (TDB_DATA) { .dsize = 0, };
 		return;
 	}
 
