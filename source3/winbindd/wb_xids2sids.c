@@ -60,6 +60,11 @@ static struct tevent_req *wb_xids2sids_dom_send(
 	if (req == NULL) {
 		return NULL;
 	}
+
+	D_DEBUG("Searching for %lu xid(s) in domain %s.\n",
+		num_xids,
+		dom_map->name);
+
 	state->ev = ev;
 	state->all_xids = xids;
 	state->cached = cached;
@@ -81,16 +86,20 @@ static struct tevent_req *wb_xids2sids_dom_send(
 
 		if ((id.id < dom_map->low_id) || (id.id > dom_map->high_id)) {
 			/* out of range */
+			D_DEBUG("%lu: XID %u is out of range.\n", i, id.id);
 			continue;
 		}
 		if (state->cached[i]) {
 			/* already found in cache */
+			D_DEBUG("%lu: XID %u is already found in cache.\n", i, id.id);
 			continue;
 		}
 		if (!is_null_sid(&state->all_sids[i])) {
 			/* already mapped in a previously asked domain */
+			D_DEBUG("%lu: XID %u is already mapped in a previously asked domain.\n", i, id.id);
 			continue;
 		}
+		D_DEBUG("%lu: XID %u will be looked up via dcerpc_wbint_UnixIDs2Sids_send().\n", i, id.id);
 		state->dom_xids[state->num_dom_xids++] = id;
 	}
 
@@ -147,8 +156,10 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 
 	dom_sid_idx = 0;
 
+	D_DEBUG("Processing response for %lu xid(s).\n", state->num_all_xids);
 	for (i=0; i<state->num_all_xids; i++) {
 		struct unixid *id = &state->all_xids[i];
+		struct dom_sid_buf buf;
 
 		if ((id->id < dom_map->low_id) || (id->id > dom_map->high_id)) {
 			/* out of range */
@@ -165,6 +176,10 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 
 		sid_copy(&state->all_sids[i], &state->dom_sids[dom_sid_idx]);
 		*id = state->dom_xids[dom_sid_idx];
+		D_DEBUG("%lu: XID %u mapped to SID %s.\n",
+			i,
+			id->id,
+			dom_sid_str_buf(&state->all_sids[i], &buf));
 
 		dom_sid_idx += 1;
 	}
@@ -238,6 +253,9 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+
+	D_INFO("WB command xids2sids start.\nLooking up %u XID(s).\n", num_xids);
+
 	state->ev = ev;
 	state->num_xids = num_xids;
 
@@ -328,7 +346,6 @@ static void wb_xids2sids_done(struct tevent_req *subreq)
 	}
 
 	state->dom_idx += 1;
-
 	if (state->dom_idx < state->cfg->num_doms) {
 		const struct wb_parent_idmap_config_dom *dom_map =
 			&state->cfg->doms[state->dom_idx];
@@ -378,12 +395,21 @@ NTSTATUS wb_xids2sids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	struct wb_xids2sids_state *state = tevent_req_data(
 		req, struct wb_xids2sids_state);
 	NTSTATUS status;
+	size_t i;
 
+	D_INFO("WB command xids2sids end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
-		DEBUG(5, ("wb_sids_to_xids failed: %s\n", nt_errstr(status)));
+		D_WARNING("wb_sids_to_xids failed: %s\n", nt_errstr(status));
 		return status;
 	}
 
 	*sids = talloc_move(mem_ctx, &state->sids);
+	for (i = 0; i <  state->num_xids; i++) {
+		struct dom_sid_buf buf;
+		D_INFO("%lu: XID %u mapped to SID %s\n",
+		       i,
+		       state->xids[i].id,
+		       dom_sid_str_buf(&*sids[i], &buf));
+	}
 	return NT_STATUS_OK;
 }
