@@ -375,11 +375,10 @@ static void dbwrap_watched_do_locked_fn(
 {
 	struct dbwrap_watched_do_locked_state *state =
 		(struct dbwrap_watched_do_locked_state *)private_data;
-	TDB_DATA value = {0};
 	struct db_record rec = {
 		.db = state->db,
 		.key = dbwrap_record_get_key(subrec),
-		.value_valid = true,
+		.value_valid = false,
 		.storev = dbwrap_watched_do_locked_storev,
 		.delete_rec = dbwrap_watched_do_locked_delete,
 		.private_data = state
@@ -391,14 +390,16 @@ static void dbwrap_watched_do_locked_fn(
 	};
 	state->wakeup_value = subrec_value;
 
-	ok = dbwrap_watch_rec_parse(subrec_value, NULL, NULL, &value);
+	ok = dbwrap_watch_rec_parse(subrec_value,
+				    NULL, NULL,
+				    &rec.value);
 	if (!ok) {
 		dbwrap_watch_log_invalid_record(rec.db, rec.key, subrec_value);
 		/* wipe invalid data */
-		value = (TDB_DATA) { .dptr = NULL, .dsize = 0 };
+		rec.value = (TDB_DATA) { .dptr = NULL, .dsize = 0 };
 	}
 
-	state->fn(&rec, value, state->private_data);
+	state->fn(&rec, rec.value, state->private_data);
 
 	db_watched_subrec_destructor(&state->subrec);
 }
