@@ -146,14 +146,13 @@ struct db_watched_record {
 		TDB_DATA initial_value;
 	} backend;
 	struct dbwrap_watcher added;
-	bool within_do_locked;
 	/*
 	 * This contains the initial value we got
 	 * passed to dbwrap_watched_do_locked_fn()
 	 *
 	 * It's only used in order to pass it
 	 * to dbwrap_watched_record_wakeup_fn()
-	 * in dbwrap_watched_do_locked_{storev,delete}()
+	 * in dbwrap_watched_{storev,delete}()
 	 *
 	 * It gets cleared after the first call to
 	 * dbwrap_watched_record_wakeup_fn() as we
@@ -216,6 +215,7 @@ static void db_watched_record_init(struct db_context *db,
 			.rec = backend_rec,
 			.initial_value = backend_value,
 		},
+		.wakeup_value = backend_value,
 	};
 
 	ok = dbwrap_watch_rec_parse(backend_value,
@@ -388,8 +388,6 @@ static void dbwrap_watched_do_locked_fn(
 	db_watched_record_init(state->db, state->msg_ctx,
 			       &rec, &wrec,
 			       backend_rec, backend_value);
-	wrec.within_do_locked = true;
-	wrec.wakeup_value = backend_value;
 
 	state->fn(&rec, rec.value, state->private_data);
 
@@ -480,35 +478,19 @@ static void dbwrap_watched_record_wakeup(
 	struct db_watched_record *wrec)
 {
 	struct db_record *rec = wrec->rec;
-	struct db_context *backend = dbwrap_record_get_db(wrec->backend.rec);
-	TDB_DATA key = dbwrap_record_get_key(wrec->backend.rec);
 	struct db_context *db = dbwrap_record_get_db(rec);
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
 	struct dbwrap_watched_record_wakeup_state state = {
 		.msg_ctx = ctx->msg,
 	};
-	NTSTATUS status;
 
-	if (wrec->within_do_locked) {
-		/*
-		 * Wakeup only needs to happen once.
-		 * so we clear wrec->wakeup_value after the first run
-		 */
-		dbwrap_watched_record_wakeup_fn(rec, wrec->wakeup_value, &state);
-		wrec->wakeup_value = (TDB_DATA) { .dsize = 0, };
-		return;
-	}
-
-	status = dbwrap_do_locked(
-		backend,
-		key,
-		dbwrap_watched_record_wakeup_fn,
-		&state);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("dbwrap_record_modify failed: %s\n",
-			  nt_errstr(status));
-	}
+	/*
+	 * Wakeup only needs to happen once.
+	 * so we clear wrec->wakeup_value after the first run
+	 */
+	dbwrap_watched_record_wakeup_fn(rec, wrec->wakeup_value, &state);
+	wrec->wakeup_value = (TDB_DATA) { .dsize = 0, };
 }
 
 static NTSTATUS dbwrap_watched_record_storev(
