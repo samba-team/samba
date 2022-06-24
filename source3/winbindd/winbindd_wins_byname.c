@@ -53,8 +53,11 @@ struct tevent_req *winbindd_wins_byname_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.winsreq[sizeof(request->data.winsreq)-1]='\0';
 
-	DEBUG(3, ("[%5lu]: wins_byname %s\n", (unsigned long)cli->pid,
-		  request->data.winsreq));
+	D_NOTICE("[%s (%u)] Winbind external command WINS_BYNAME start.\n"
+		 "Resolving wins byname for '%s'.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->data.winsreq);
 
 	subreq = resolve_wins_send(state, ev, state->request->data.winsreq,
 				   0x20);
@@ -123,10 +126,13 @@ NTSTATUS winbindd_wins_byname_recv(struct tevent_req *req,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	D_NOTICE("Winbind external command WINS_BYNAME end.\n"
+		 "Received %lu address(es).\n",
+		 state->num_addrs);
 	for (i=0; i<state->num_addrs; i++) {
 		char addr[INET6_ADDRSTRLEN];
 		print_sockaddr(addr, sizeof(addr), &state->addrs[i]);
-
+		D_NOTICE("%lu: %s\n", i, addr);
 		response = talloc_asprintf_append_buffer(
 			response, "%s%s", addr,
 			i < (state->num_addrs-1) ? " " : "");
