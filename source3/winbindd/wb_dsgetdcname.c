@@ -47,6 +47,10 @@ struct tevent_req *wb_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	D_INFO("WB command dsgetdcname start.\n"
+	       "Search domain name %s and site name %s.\n",
+	       domain_name,
+	       site_name);
 	if (strequal(domain_name, "BUILTIN")) {
 		/*
 		 * This makes no sense
@@ -119,7 +123,9 @@ NTSTATUS wb_dsgetdcname_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		req, struct wb_dsgetdcname_state);
 	NTSTATUS status;
 
+	D_INFO("WB command dsgetdcname end.\n");
 	if (tevent_req_is_nterror(req, &status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 	*pdcinfo = talloc_move(mem_ctx, &state->dcinfo);
