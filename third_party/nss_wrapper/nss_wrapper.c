@@ -1070,7 +1070,14 @@ static struct nwrap_he nwrap_he_global;
 
 static bool nwrap_gr_parse_line(struct nwrap_cache *nwrap, char *line);
 static void nwrap_gr_unload(struct nwrap_cache *nwrap);
+#if ! defined(HAVE_CONSTRUCTOR_ATTRIBUTE) && defined(HAVE_PRAGMA_INIT)
+/* xlC and other oldschool compilers support (only) this */
+#pragma init (nwrap_constructor)
+#endif
 void nwrap_constructor(void) CONSTRUCTOR_ATTRIBUTE;
+#if ! defined(HAVE_DESTRUCTOR_ATTRIBUTE) && defined(HAVE_PRAGMA_FINI)
+#pragma fini (nwrap_destructor)
+#endif
 void nwrap_destructor(void) DESTRUCTOR_ATTRIBUTE;
 
 /*********************************************************
@@ -2129,7 +2136,21 @@ reopen:
 	}
 
 	ret = fstat(nwrap->fd, &st);
-	if (ret != 0) {
+	if (ret != 0 && errno == EBADF && retried == false) {
+		/* maybe something closed the fd on our behalf */
+		NWRAP_LOG(NWRAP_LOG_TRACE,
+			  "fstat(%s) - %d:%s - reopen",
+			  nwrap->path,
+			  ret,
+			  strerror(errno));
+		retried = true;
+		memset(&nwrap->st, 0, sizeof(nwrap->st));
+		fclose(nwrap->fp);
+		nwrap->fp = NULL;
+		nwrap->fd = -1;
+		goto reopen;
+	}
+	else if (ret != 0) {
 		NWRAP_LOG(NWRAP_LOG_ERROR,
 			  "fstat(%s) - %d:%s",
 			  nwrap->path,
@@ -4070,6 +4091,10 @@ static int nwrap_files_getaddrinfo(const char *name,
 	}
 
 	name_len = strlen(name);
+	if (name_len == 0) {
+		return EAI_NONAME;
+	}
+
 	if (name_len < sizeof(canon_name) && name[name_len - 1] == '.') {
 		memcpy(canon_name, name, name_len - 1);
 		canon_name[name_len] = '\0';
@@ -4462,7 +4487,7 @@ static int nwrap_module_getpwent_r(struct nwrap_backend *b,
 
 static void nwrap_module_endpwent(struct nwrap_backend *b)
 {
-	if (b->symbols->_nss_endpwent.f) {
+	if (b->symbols->_nss_endpwent.f == NULL) {
 		return;
 	}
 
@@ -4634,7 +4659,7 @@ static int nwrap_module_getgrgid_r(struct nwrap_backend *b,
 
 static void nwrap_module_setgrent(struct nwrap_backend *b)
 {
-	if (b->symbols->_nss_setgrent.f) {
+	if (b->symbols->_nss_setgrent.f == NULL) {
 		return;
 	}
 

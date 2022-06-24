@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.1.11"
+VERSION="1.1.12"
 
 def configure(conf):
     if conf.CHECK_NSS_WRAPPER():
