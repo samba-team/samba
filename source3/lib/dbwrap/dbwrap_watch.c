@@ -141,6 +141,20 @@ struct db_watched_ctx {
 struct db_watched_record {
 	struct db_record *subrec;
 	struct dbwrap_watcher added;
+
+	/*
+	 * This contains the initial value we got
+	 * passed to dbwrap_watched_do_locked_fn()
+	 *
+	 * It's only used in order to pass it
+	 * to dbwrap_watched_record_wakeup_fn()
+	 * in dbwrap_watched_do_locked_{storev,delete}()
+	 *
+	 * It gets cleared after the first call to
+	 * dbwrap_watched_record_wakeup_fn() as we
+	 * only need to wakeup once per dbwrap_do_locked().
+	 */
+	TDB_DATA wakeup_value;
 };
 
 static NTSTATUS dbwrap_watched_record_storev(
@@ -304,20 +318,6 @@ struct dbwrap_watched_do_locked_state {
 
 	struct db_watched_record wrec;
 
-	/*
-	 * This contains the initial value we got
-	 * passed to dbwrap_watched_do_locked_fn()
-	 *
-	 * It's only used in order to pass it
-	 * to dbwrap_watched_record_wakeup_fn()
-	 * in dbwrap_watched_do_locked_{storev,delete}()
-	 *
-	 * It gets cleared after the first call to
-	 * dbwrap_watched_record_wakeup_fn() as we
-	 * only need to wakeup once per dbwrap_do_locked().
-	 */
-	TDB_DATA wakeup_value;
-
 	NTSTATUS status;
 };
 
@@ -336,10 +336,10 @@ static NTSTATUS dbwrap_watched_do_locked_storev(
 
 	/*
 	 * Wakeup only needs to happen once.
-	 * so we clear state->wakeup_value after the first run
+	 * so we clear wrec->wakeup_value after the first run
 	 */
-	dbwrap_watched_record_wakeup_fn(rec, state->wakeup_value, &wakeup_state);
-	state->wakeup_value = (TDB_DATA) { .dsize = 0, };
+	dbwrap_watched_record_wakeup_fn(rec, wrec->wakeup_value, &wakeup_state);
+	wrec->wakeup_value = (TDB_DATA) { .dsize = 0, };
 
 	status = dbwrap_watched_record_storev(rec, wrec, dbufs, num_dbufs,
 					      flags);
@@ -359,10 +359,10 @@ static NTSTATUS dbwrap_watched_do_locked_delete(struct db_record *rec)
 
 	/*
 	 * Wakeup only needs to happen once.
-	 * so we clear state->wakeup_value after the first run
+	 * so we clear wrec->wakeup_value after the first run
 	 */
-	dbwrap_watched_record_wakeup_fn(rec, state->wakeup_value, &wakeup_state);
-	state->wakeup_value = (TDB_DATA) { .dsize = 0, };
+	dbwrap_watched_record_wakeup_fn(rec, wrec->wakeup_value, &wakeup_state);
+	wrec->wakeup_value = (TDB_DATA) { .dsize = 0, };
 
 	status = dbwrap_watched_record_delete(rec, wrec);
 	return status;
@@ -386,9 +386,9 @@ static void dbwrap_watched_do_locked_fn(
 	bool ok;
 
 	state->wrec = (struct db_watched_record) {
-		.subrec = subrec
+		.subrec = subrec,
+		.wakeup_value = subrec_value,
 	};
-	state->wakeup_value = subrec_value;
 
 	ok = dbwrap_watch_rec_parse(subrec_value,
 				    NULL, NULL,
