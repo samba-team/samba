@@ -31,8 +31,9 @@
   conversion
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/locale.h"
+#include "lib/util/samba_util.h"
 
 static int d_vfprintf(FILE *f, const char *format, va_list ap)
 		      PRINTF_ATTRIBUTE(2,0);

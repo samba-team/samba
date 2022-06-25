@@ -21,7 +21,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/samba_util.h"
 #include "system/locale.h"
 #include "smb_strtox.h"
 #undef strncasecmp

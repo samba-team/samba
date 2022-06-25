@@ -28,7 +28,8 @@
  * @brief MS-style Filename matching
  */
 
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/samba_util.h"
 #include "libcli/smb/smb_constants.h"
 
 static int null_match(const char *p)

@@ -21,7 +21,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "system/locale.h"
+#include "lib/util/samba_util.h"
 
 /**
 Do a case-insensitive, whitespace-ignoring ASCII string compare.
