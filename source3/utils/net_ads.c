@@ -3317,7 +3317,6 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 
 static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **argv)
 {
-	TALLOC_CTX *mem_ctx = NULL;
 	int ret = -1;
 	NTSTATUS status;
 
@@ -3328,11 +3327,6 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 			 _("Usage:"),
 			 _("Get Ticket Granting Ticket (TGT) for the user"));
 		return -1;
-	}
-
-	mem_ctx = talloc_init("net_ads_kerberos_kinit");
-	if (!mem_ctx) {
-		goto out;
 	}
 
 	c->opt_password = net_prompt_pass(c, c->opt_user_name);
@@ -3354,7 +3348,6 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 		d_printf(_("failed to kinit password: %s\n"),
 			nt_errstr(status));
 	}
- out:
 	return ret;
 }
 
