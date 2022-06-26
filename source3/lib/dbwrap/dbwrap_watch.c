@@ -324,7 +324,7 @@ static void dbwrap_watched_add_watcher(
 	state->status = dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), 0);
 }
 
-static int db_watched_record_destructor(struct db_watched_record *wrec)
+static void db_watched_record_fini(struct db_watched_record *wrec)
 {
 	struct dbwrap_watched_add_watcher_state state = { .w = wrec->added };
 	struct db_context *backend = dbwrap_record_get_db(wrec->backend.rec);
@@ -332,7 +332,7 @@ static int db_watched_record_destructor(struct db_watched_record *wrec)
 	NTSTATUS status;
 
 	if (wrec->added.pid.pid == 0) {
-		return 0;
+		return;
 	}
 
 	status = dbwrap_do_locked(
@@ -340,13 +340,20 @@ static int db_watched_record_destructor(struct db_watched_record *wrec)
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("dbwrap_do_locked failed: %s\n",
 			    nt_errstr(status));
-		return 0;
+		return;
 	}
 	if (!NT_STATUS_IS_OK(state.status)) {
 		DBG_WARNING("dbwrap_watched_add_watcher failed: %s\n",
 			    nt_errstr(state.status));
-		return 0;
+		return;
 	}
+
+	return;
+}
+
+static int db_watched_record_destructor(struct db_watched_record *wrec)
+{
+	db_watched_record_fini(wrec);
 	return 0;
 }
 
@@ -386,7 +393,7 @@ static void dbwrap_watched_do_locked_fn(
 
 	state->fn(&rec, rec.value, state->private_data);
 
-	db_watched_record_destructor(&wrec);
+	db_watched_record_fini(&wrec);
 }
 
 static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
