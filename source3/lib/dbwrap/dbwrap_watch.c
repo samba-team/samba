@@ -1081,7 +1081,7 @@ static void dbwrap_watched_watch_done(struct tevent_req *subreq)
 	struct messaging_rec *rec;
 	int ret;
 
-	ret = messaging_filtered_read_recv(subreq, talloc_tos(), &rec);
+	ret = messaging_filtered_read_recv(subreq, state, &rec);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
 		tevent_req_nterror(req, map_nt_error_from_unix(ret));
