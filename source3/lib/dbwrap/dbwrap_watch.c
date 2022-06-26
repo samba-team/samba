@@ -905,6 +905,86 @@ static uint64_t dbwrap_watched_watch_add_instance(struct db_record *rec)
 	return wrec->added.instance;
 }
 
+static void dbwrap_watched_watch_remove_instance(struct db_record *rec, uint64_t instance)
+{
+	struct db_watched_record *wrec = db_record_get_watched_record(rec);
+	struct dbwrap_watcher clear_watcher = {
+		.pid = wrec->self,
+		.instance = instance,
+	};
+	size_t i;
+	struct server_id_buf buf;
+
+	if (instance == 0) {
+		return;
+	}
+
+	if (wrec->added.instance == instance) {
+		SMB_ASSERT(server_id_equal(&wrec->added.pid, &wrec->self));
+		DBG_DEBUG("Watcher %s:%"PRIu64" reverted from adding\n",
+			  server_id_str_buf(clear_watcher.pid, &buf),
+			  clear_watcher.instance);
+		ZERO_STRUCT(wrec->added);
+	}
+
+	for (i=0; i < wrec->watchers.count; i++) {
+		struct dbwrap_watcher watcher;
+		size_t off = i*DBWRAP_WATCHER_BUF_LENGTH;
+		size_t next_off;
+		size_t full_len;
+		size_t move_len;
+
+		dbwrap_watcher_get(&watcher, wrec->watchers.first + off);
+
+		if (clear_watcher.instance != watcher.instance) {
+			continue;
+		}
+		if (!server_id_equal(&clear_watcher.pid, &watcher.pid)) {
+			continue;
+		}
+
+		wrec->force_fini_store = true;
+
+		if (i == 0) {
+			DBG_DEBUG("Watcher %s:%"PRIu64" removed from first position of %zu\n",
+				  server_id_str_buf(clear_watcher.pid, &buf),
+				  clear_watcher.instance,
+				  wrec->watchers.count);
+			wrec->watchers.first += DBWRAP_WATCHER_BUF_LENGTH;
+			wrec->watchers.count -= 1;
+			return;
+		}
+		if (i == (wrec->watchers.count-1)) {
+			DBG_DEBUG("Watcher %s:%"PRIu64" removed from last position of %zu\n",
+				  server_id_str_buf(clear_watcher.pid, &buf),
+				  clear_watcher.instance,
+				  wrec->watchers.count);
+			wrec->watchers.count -= 1;
+			return;
+		}
+
+		DBG_DEBUG("Watcher %s:%"PRIu64" cleared at position %zu from %zu\n",
+			  server_id_str_buf(clear_watcher.pid, &buf),
+			  clear_watcher.instance, i+1,
+			  wrec->watchers.count);
+
+		next_off = off + DBWRAP_WATCHER_BUF_LENGTH;
+		full_len = wrec->watchers.count * DBWRAP_WATCHER_BUF_LENGTH;
+		move_len = full_len - next_off;
+		memmove(wrec->watchers.first + off,
+			wrec->watchers.first + next_off,
+			move_len);
+		wrec->watchers.count -= 1;
+		return;
+	}
+
+	DBG_DEBUG("Watcher %s:%"PRIu64" not found in %zu watchers\n",
+		  server_id_str_buf(clear_watcher.pid, &buf),
+		  clear_watcher.instance,
+		  wrec->watchers.count);
+	return;
+}
+
 static void dbwrap_watched_watch_skip_alerting(struct db_record *rec)
 {
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
@@ -1019,100 +1099,24 @@ static void dbwrap_watched_watch_state_destructor_fn(
 {
 	struct dbwrap_watched_watch_state *state = talloc_get_type_abort(
 		private_data, struct dbwrap_watched_watch_state);
-	uint8_t *watchers;
-	size_t num_watchers = 0;
-	size_t i;
-	bool ok;
-	NTSTATUS status;
 
-	uint8_t num_watchers_buf[4];
-
-	TDB_DATA dbufs[4] = {
-		{
-			.dptr = num_watchers_buf,
-			.dsize = sizeof(num_watchers_buf),
-		},
-		{ 0 },		/* watchers "before" state->w */
-		{ 0 },		/* watchers "behind" state->w */
-		{ 0 },		/* filled in with data */
-	};
-
-	ok = dbwrap_watch_rec_parse(
-		value, &watchers, &num_watchers, &dbufs[3]);
-	if (!ok) {
-		status = dbwrap_record_delete(rec);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("dbwrap_record_delete failed: %s\n",
-				  nt_errstr(status));
-		}
-		return;
-	}
-
-	for (i=0; i<num_watchers; i++) {
-		struct dbwrap_watcher watcher;
-
-		dbwrap_watcher_get(
-			&watcher, watchers + i*DBWRAP_WATCHER_BUF_LENGTH);
-
-		if ((state->watcher.instance == watcher.instance) &&
-		    server_id_equal(&state->watcher.pid, &watcher.pid)) {
-			break;
-		}
-	}
-
-	if (i == num_watchers) {
-		struct server_id_buf buf;
-		DBG_DEBUG("Watcher %s:%"PRIu64" not found\n",
-			  server_id_str_buf(state->watcher.pid, &buf),
-			  state->watcher.instance);
-		return;
-	}
-
-	if (i > 0) {
-		dbufs[1] = (TDB_DATA) {
-			.dptr = watchers,
-			.dsize = i * DBWRAP_WATCHER_BUF_LENGTH,
-		};
-	}
-
-	if (i < (num_watchers - 1)) {
-		size_t behind = (num_watchers - 1 - i);
-
-		dbufs[2] = (TDB_DATA) {
-			.dptr = watchers + (i+1) * DBWRAP_WATCHER_BUF_LENGTH,
-			.dsize = behind * DBWRAP_WATCHER_BUF_LENGTH,
-		};
-	}
-
-	num_watchers -= 1;
-
-	if ((num_watchers == 0) && (dbufs[3].dsize == 0)) {
-		status = dbwrap_record_delete(rec);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("dbwrap_record_delete() failed: %s\n",
-				  nt_errstr(status));
-		}
-		return;
-	}
-
-	SIVAL(num_watchers_buf, 0, num_watchers);
-
-	status = dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("dbwrap_record_storev() failed: %s\n",
-			  nt_errstr(status));
-	}
+	/*
+	 * Here we just remove ourself from the in memory
+	 * watchers array and let db_watched_record_fini()
+	 * call dbwrap_watched_record_storev() to do the magic
+	 * of writing back the modified in memory copy.
+	 */
+	dbwrap_watched_watch_remove_instance(rec, state->watcher.instance);
+	return;
 }
 
 static int dbwrap_watched_watch_state_destructor(
 	struct dbwrap_watched_watch_state *state)
 {
-	struct db_watched_ctx *ctx = talloc_get_type_abort(
-		state->db->private_data, struct db_watched_ctx);
 	NTSTATUS status;
 
 	status = dbwrap_do_locked(
-		ctx->backend,
+		state->db,
 		state->key,
 		dbwrap_watched_watch_state_destructor_fn,
 		state);
