@@ -488,23 +488,56 @@ static NTSTATUS dbwrap_watched_record_storev(
 	const TDB_DATA *dbufs, int num_dbufs, int flags)
 {
 	uint8_t num_watchers_buf[4] = { 0 };
-	TDB_DATA my_dbufs[num_dbufs+1];
+	uint8_t add_buf[DBWRAP_WATCHER_BUF_LENGTH];
+	size_t num_store_watchers;
+	TDB_DATA my_dbufs[num_dbufs+3];
+	int num_my_dbufs = 0;
 	NTSTATUS status;
+	size_t add_count = 0;
 
 	dbwrap_watched_record_wakeup(wrec);
 
-	/*
-	 * Watchers only informed once, set num_watchers to 0
-	 */
-	my_dbufs[0] = (TDB_DATA) {
-		.dptr = num_watchers_buf, .dsize = sizeof(num_watchers_buf),
-	};
-	if (num_dbufs != 0) {
-		memcpy(my_dbufs+1, dbufs, num_dbufs * sizeof(*dbufs));
+	if (wrec->added.pid.pid != 0) {
+		dbwrap_watcher_put(add_buf, &wrec->added);
+		add_count = 1;
 	}
 
+	num_store_watchers = wrec->watchers.count + add_count;
+	if (num_store_watchers == 0 && num_dbufs == 0) {
+		status = dbwrap_record_delete(wrec->backend.rec);
+		return status;
+	}
+	if (num_store_watchers >= DBWRAP_MAX_WATCHERS) {
+		DBG_WARNING("Can't handle %zu watchers\n",
+			    num_store_watchers);
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	SIVAL(num_watchers_buf, 0, num_store_watchers);
+
+	my_dbufs[num_my_dbufs++] = (TDB_DATA) {
+		.dptr = num_watchers_buf, .dsize = sizeof(num_watchers_buf),
+	};
+	if (wrec->watchers.count != 0) {
+		my_dbufs[num_my_dbufs++] = (TDB_DATA) {
+			.dptr = wrec->watchers.first, .dsize = wrec->watchers.count * DBWRAP_WATCHER_BUF_LENGTH,
+		};
+	}
+	if (add_count != 0) {
+		my_dbufs[num_my_dbufs++] = (TDB_DATA) {
+			.dptr = add_buf,
+			.dsize = sizeof(add_buf),
+		};
+	}
+	if (num_dbufs != 0) {
+		memcpy(my_dbufs+num_my_dbufs, dbufs, num_dbufs * sizeof(*dbufs));
+		num_my_dbufs += num_dbufs;
+	}
+
+	SMB_ASSERT(num_my_dbufs <= ARRAY_SIZE(my_dbufs));
+
 	status = dbwrap_record_storev(
-		wrec->backend.rec, my_dbufs, ARRAY_SIZE(my_dbufs), flags);
+		wrec->backend.rec, my_dbufs, num_my_dbufs, flags);
 	return status;
 }
 
