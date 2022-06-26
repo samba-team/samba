@@ -25,6 +25,7 @@
 #include "dbwrap_open.h"
 #include "lib/util/util_tdb.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "serverid.h"
 #include "server_id_watch.h"
 #include "lib/dbwrap/dbwrap_private.h"
 
@@ -150,6 +151,7 @@ struct db_watched_record {
 	} backend;
 	bool force_fini_store;
 	struct dbwrap_watcher added;
+	bool removed_first;
 	struct {
 		/*
 		 * The is the number of watcher records
@@ -180,6 +182,9 @@ struct db_watched_record {
 		 */
 		bool alerted;
 	} watchers;
+	struct {
+		struct dbwrap_watcher watcher;
+	} wakeup;
 };
 
 static struct db_watched_record *db_record_get_watched_record(struct db_record *rec)
@@ -396,9 +401,13 @@ static void db_watched_record_fini(struct db_watched_record *wrec)
 
 	/*
 	 * We don't want to wake up others just because
-	 * we added ourself as new watcher.
+	 * we added ourself as new watcher. But if we
+	 * removed outself from the first position
+	 * we need to alert the next one.
 	 */
-	dbwrap_watched_watch_skip_alerting(rec);
+	if (!wrec->removed_first) {
+		dbwrap_watched_watch_skip_alerting(rec);
+	}
 
 	status = dbwrap_watched_record_storev(wrec, state.dbufs, state.num_dbufs, 0);
 	TALLOC_FREE(state.frame);
@@ -474,7 +483,7 @@ static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
 	return NT_STATUS_OK;
 }
 
-static void dbwrap_watched_record_wakeup(
+static void dbwrap_watched_record_prepare_wakeup(
 	struct db_watched_record *wrec)
 {
 	/*
@@ -492,37 +501,72 @@ static void dbwrap_watched_record_wakeup(
 	}
 
 	while (wrec->watchers.count != 0) {
-		struct dbwrap_watcher watcher;
 		struct server_id_buf tmp;
-		uint8_t instance_buf[8];
-		NTSTATUS status;
+		bool exists;
 
-		dbwrap_watcher_get(&watcher, wrec->watchers.first);
-
-		DBG_DEBUG("Alerting %s:%"PRIu64"\n",
-			  server_id_str_buf(watcher.pid, &tmp),
-			  watcher.instance);
-
-		SBVAL(instance_buf, 0, watcher.instance);
-
-		status = messaging_send_buf(
-			wrec->msg_ctx,
-			watcher.pid,
-			MSG_DBWRAP_MODIFIED,
-			instance_buf,
-			sizeof(instance_buf));
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("messaging_send_buf to %s failed: %s\n",
-				  server_id_str_buf(watcher.pid, &tmp),
-				  nt_errstr(status));
+		dbwrap_watcher_get(&wrec->wakeup.watcher, wrec->watchers.first);
+		exists = serverid_exists(&wrec->wakeup.watcher.pid);
+		if (!exists) {
+			DBG_DEBUG("Discard non-existing waiter %s:%"PRIu64"\n",
+				  server_id_str_buf(wrec->wakeup.watcher.pid, &tmp),
+				  wrec->wakeup.watcher.instance);
+			wrec->watchers.first += DBWRAP_WATCHER_BUF_LENGTH;
+			wrec->watchers.count -= 1;
+			continue;
 		}
 
 		/*
-		 * Watchers are only informed once for now...
+		 * We will only wakeup the first waiter, via
+		 * dbwrap_watched_trigger_wakeup(), but keep
+		 * all (including the first one) in the list that
+		 * will be flushed back to the backend record
+		 * again. Waiters are removing their entries
+		 * via dbwrap_watched_watch_remove_instance()
+		 * when they no longer want to monitor the record.
 		 */
-		wrec->watchers.first += DBWRAP_WATCHER_BUF_LENGTH;
-		wrec->watchers.count -= 1;
+		DBG_DEBUG("Will alert first waiter %s:%"PRIu64"\n",
+			  server_id_str_buf(wrec->wakeup.watcher.pid, &tmp),
+			  wrec->wakeup.watcher.instance);
+		break;
 	}
+}
+
+static void dbwrap_watched_trigger_wakeup(struct messaging_context *msg_ctx,
+					  struct dbwrap_watcher *watcher)
+{
+	struct server_id_buf tmp;
+	uint8_t instance_buf[8];
+	NTSTATUS status;
+
+	if (watcher->instance == 0) {
+		DBG_DEBUG("No one to wakeup\n");
+		return;
+	}
+
+	DBG_DEBUG("Alerting %s:%"PRIu64"\n",
+		  server_id_str_buf(watcher->pid, &tmp),
+		  watcher->instance);
+
+	SBVAL(instance_buf, 0, watcher->instance);
+
+	status = messaging_send_buf(
+		msg_ctx,
+		watcher->pid,
+		MSG_DBWRAP_MODIFIED,
+		instance_buf,
+		sizeof(instance_buf));
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("messaging_send_buf to %s failed: %s - ignoring...\n",
+			    server_id_str_buf(watcher->pid, &tmp),
+			    nt_errstr(status));
+	}
+}
+
+static void dbwrap_watched_record_wakeup(
+	struct db_watched_record *wrec)
+{
+	dbwrap_watched_record_prepare_wakeup(wrec);
+	dbwrap_watched_trigger_wakeup(wrec->msg_ctx, &wrec->wakeup.watcher);
 }
 
 static NTSTATUS dbwrap_watched_record_storev(
@@ -951,6 +995,7 @@ void dbwrap_watched_watch_remove_instance(struct db_record *rec, uint64_t instan
 				  wrec->watchers.count);
 			wrec->watchers.first += DBWRAP_WATCHER_BUF_LENGTH;
 			wrec->watchers.count -= 1;
+			wrec->removed_first = true;
 			return;
 		}
 		if (i == (wrec->watchers.count-1)) {
@@ -1187,12 +1232,6 @@ static void dbwrap_watched_watch_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, map_nt_error_from_unix(ret));
 		return;
 	}
-	/*
-	 * No need to remove ourselves anymore, we've been removed by
-	 * dbwrap_watched_record_wakeup().
-	 */
-	talloc_set_destructor(state, NULL);
-	state->watcher.instance = 0;
 	tevent_req_done(req);
 }
 
