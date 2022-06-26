@@ -200,8 +200,6 @@ static struct db_watched_record *db_record_get_watched_record(struct db_record *
 static NTSTATUS dbwrap_watched_record_storev(
 	struct db_watched_record *wrec,
 	const TDB_DATA *dbufs, int num_dbufs, int flags);
-static NTSTATUS dbwrap_watched_record_delete(
-	struct db_watched_record *wrec);
 static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
 				      const TDB_DATA *dbufs, int num_dbufs,
 				      int flags);
@@ -550,22 +548,16 @@ static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
 	return dbwrap_watched_record_storev(wrec, dbufs, num_dbufs, flags);
 }
 
-static NTSTATUS dbwrap_watched_record_delete(
-	struct db_watched_record *wrec)
-{
-	dbwrap_watched_record_wakeup(wrec);
-
-	/*
-	 * Watchers were informed, we can throw away the record now
-	 */
-	return dbwrap_record_delete(wrec->backend.rec);
-}
-
 static NTSTATUS dbwrap_watched_delete(struct db_record *rec)
 {
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
 
-	return dbwrap_watched_record_delete(wrec);
+	/*
+	 * dbwrap_watched_record_storev() will figure out
+	 * if the record should be deleted or if there are still
+	 * watchers to be stored.
+	 */
+	return dbwrap_watched_record_storev(wrec, NULL, 0, 0);
 }
 
 struct dbwrap_watched_traverse_state {
