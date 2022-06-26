@@ -146,7 +146,9 @@ struct db_watched_record {
 	struct {
 		struct db_record *rec;
 		TDB_DATA initial_value;
+		bool initial_valid;
 	} backend;
+	bool force_fini_store;
 	struct dbwrap_watcher added;
 	struct {
 		/*
@@ -204,6 +206,7 @@ static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
 				      const TDB_DATA *dbufs, int num_dbufs,
 				      int flags);
 static NTSTATUS dbwrap_watched_delete(struct db_record *rec);
+static void dbwrap_watched_watch_skip_alerting(struct db_record *rec);
 static int db_watched_record_destructor(struct db_watched_record *wrec);
 
 static void db_watched_record_init(struct db_context *db,
@@ -230,6 +233,7 @@ static void db_watched_record_init(struct db_context *db,
 		.backend = {
 			.rec = backend_rec,
 			.initial_value = backend_value,
+			.initial_valid = true,
 		},
 	};
 
@@ -280,87 +284,128 @@ static struct db_record *dbwrap_watched_fetch_locked(
 	return rec;
 }
 
-struct dbwrap_watched_add_watcher_state {
-	struct dbwrap_watcher w;
-	NTSTATUS status;
+struct db_watched_record_fini_state {
+	struct db_watched_record *wrec;
+	TALLOC_CTX *frame;
+	TDB_DATA dbufs[2];
+	int num_dbufs;
+	bool ok;
 };
 
-static void dbwrap_watched_add_watcher(
-	struct db_record *rec,
-	TDB_DATA value,
-	void *private_data)
+static void db_watched_record_fini_fetcher(TDB_DATA key,
+					   TDB_DATA backend_value,
+					   void *private_data)
 {
-	struct dbwrap_watched_add_watcher_state *state = private_data;
-	size_t num_watchers = 0;
+	struct db_watched_record_fini_state *state =
+		(struct db_watched_record_fini_state *)private_data;
+	struct db_watched_record *wrec = state->wrec;
+	struct db_record *rec = wrec->rec;
+	TDB_DATA value = {};
 	bool ok;
+	size_t copy_size;
 
-	uint8_t num_watchers_buf[4];
-	uint8_t add_buf[DBWRAP_WATCHER_BUF_LENGTH];
+	/*
+	 * We're within dbwrap_parse_record()
+	 * and backend_value directly points into
+	 * the mmap'ed tdb, so we need to copy the
+	 * parts we require.
+	 */
 
-	TDB_DATA dbufs[4] = {
-		{
-			.dptr = num_watchers_buf,
-			.dsize = sizeof(num_watchers_buf),
-		},
-		{ 0 },		/* filled in with existing watchers */
-		{
-			.dptr = add_buf,
-			.dsize = sizeof(add_buf),
-		},
-		{ 0 },		/* filled in with existing data */
-	};
-
-	dbwrap_watcher_put(add_buf, &state->w);
-
-	ok = dbwrap_watch_rec_parse(
-		value, &dbufs[1].dptr, &num_watchers, &dbufs[3]);
+	ok = dbwrap_watch_rec_parse(backend_value, NULL, NULL, &value);
 	if (!ok) {
 		struct db_context *db = dbwrap_record_get_db(rec);
-		TDB_DATA key = dbwrap_record_get_key(rec);
 
-		dbwrap_watch_log_invalid_record(db, key, value);
+		dbwrap_watch_log_invalid_record(db, key, backend_value);
 
 		/* wipe invalid data */
-		num_watchers = 0;
-		dbufs[3] = (TDB_DATA) { .dptr = NULL, .dsize = 0 };
+		value = (TDB_DATA) { .dptr = NULL, .dsize = 0 };
 	}
 
-	dbufs[1].dsize = num_watchers * DBWRAP_WATCHER_BUF_LENGTH;
-
-	if (num_watchers >= DBWRAP_MAX_WATCHERS) {
-		DBG_DEBUG("Can't handle %zu watchers\n",
-			  num_watchers+1);
-		state->status = NT_STATUS_INSUFFICIENT_RESOURCES;
-		return;
+	copy_size = MIN(rec->value.dsize, value.dsize);
+	if (copy_size != 0) {
+		/*
+		 * First reuse the buffer we already had
+		 * as much as we can.
+		 */
+		memcpy(rec->value.dptr, value.dptr, copy_size);
+		state->dbufs[state->num_dbufs++] = rec->value;
+		value.dsize -= copy_size;
+		value.dptr += copy_size;
 	}
 
-	num_watchers += 1;
-	SIVAL(num_watchers_buf, 0, num_watchers);
+	if (value.dsize != 0) {
+		uint8_t *p = NULL;
 
-	state->status = dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), 0);
+		/*
+		 * There's still new data left
+		 * allocate it on callers stackframe
+		 */
+		p = talloc_memdup(state->frame, value.dptr, value.dsize);
+		if (p == NULL) {
+			DBG_WARNING("failed to allocate %zu bytes\n",
+				    value.dsize);
+			return;
+		}
+
+		state->dbufs[state->num_dbufs++] = (TDB_DATA) {
+			.dptr = p, .dsize = value.dsize,
+		};
+	}
+
+	state->ok = true;
 }
 
 static void db_watched_record_fini(struct db_watched_record *wrec)
 {
-	struct dbwrap_watched_add_watcher_state state = { .w = wrec->added };
+	struct db_watched_record_fini_state state = { .wrec = wrec, };
 	struct db_context *backend = dbwrap_record_get_db(wrec->backend.rec);
+	struct db_record *rec = wrec->rec;
 	TDB_DATA key = dbwrap_record_get_key(wrec->backend.rec);
 	NTSTATUS status;
 
-	if (wrec->added.pid.pid == 0) {
+	if (!wrec->force_fini_store) {
 		return;
 	}
 
-	status = dbwrap_do_locked(
-		backend, key, dbwrap_watched_add_watcher, &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("dbwrap_do_locked failed: %s\n",
-			    nt_errstr(status));
-		return;
+	if (wrec->backend.initial_valid) {
+		if (rec->value.dsize != 0) {
+			state.dbufs[state.num_dbufs++] = rec->value;
+		}
+	} else {
+		/*
+		 * We need to fetch the current
+		 * value from the backend again,
+		 * which may need to allocate memory
+		 * on the provided stackframe.
+		 */
+
+		state.frame = talloc_stackframe();
+
+		status = dbwrap_parse_record(backend, key,
+				db_watched_record_fini_fetcher, &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("dbwrap_parse_record failed: %s\n",
+				    nt_errstr(status));
+			TALLOC_FREE(state.frame);
+			return;
+		}
+		if (!state.ok) {
+			TALLOC_FREE(state.frame);
+			return;
+		}
 	}
-	if (!NT_STATUS_IS_OK(state.status)) {
-		DBG_WARNING("dbwrap_watched_add_watcher failed: %s\n",
-			    nt_errstr(state.status));
+
+	/*
+	 * We don't want to wake up others just because
+	 * we added ourself as new watcher.
+	 */
+	dbwrap_watched_watch_skip_alerting(rec);
+
+	status = dbwrap_watched_record_storev(wrec, state.dbufs, state.num_dbufs, 0);
+	TALLOC_FREE(state.frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("dbwrap_watched_record_storev failed: %s\n",
+			    nt_errstr(status));
 		return;
 	}
 
@@ -494,6 +539,9 @@ static NTSTATUS dbwrap_watched_record_storev(
 	size_t add_count = 0;
 
 	dbwrap_watched_record_wakeup(wrec);
+
+	wrec->backend.initial_valid = false;
+	wrec->force_fini_store = false;
 
 	if (wrec->added.pid.pid != 0) {
 		dbwrap_watcher_put(add_buf, &wrec->added);
@@ -852,7 +900,16 @@ static uint64_t dbwrap_watched_watch_add_instance(struct db_record *rec)
 		.instance = global_instance++,
 	};
 
+	wrec->force_fini_store = true;
+
 	return wrec->added.instance;
+}
+
+static void dbwrap_watched_watch_skip_alerting(struct db_record *rec)
+{
+	struct db_watched_record *wrec = db_record_get_watched_record(rec);
+
+	wrec->watchers.alerted = true;
 }
 
 struct dbwrap_watched_watch_state {
