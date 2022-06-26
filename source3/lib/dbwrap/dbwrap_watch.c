@@ -383,7 +383,6 @@ struct dbwrap_watched_do_locked_state {
 		   TDB_DATA value,
 		   void *private_data);
 	void *private_data;
-	NTSTATUS status;
 };
 
 static void dbwrap_watched_do_locked_fn(
@@ -427,10 +426,9 @@ static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
 		return status;
 	}
 
-	DBG_DEBUG("dbwrap_watched_do_locked_fn returned %s\n",
-		  nt_errstr(state.status));
+	DBG_DEBUG("dbwrap_watched_do_locked_fn returned\n");
 
-	return state.status;
+	return NT_STATUS_OK;
 }
 
 static void dbwrap_watched_record_wakeup(
