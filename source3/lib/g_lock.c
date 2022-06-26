@@ -43,6 +43,7 @@ struct g_lock {
 	struct server_id exclusive;
 	size_t num_shared;
 	uint8_t *shared;
+	uint64_t unique_lock_epoch;
 	uint64_t unique_data_epoch;
 	size_t datalen;
 	uint8_t *data;
@@ -52,6 +53,7 @@ static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
 {
 	struct server_id exclusive;
 	size_t num_shared, shared_len;
+	uint64_t unique_lock_epoch;
 	uint64_t unique_data_epoch;
 
 	if (buflen < (SERVER_ID_BUF_LENGTH + /* exclusive */
@@ -59,6 +61,7 @@ static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
 		      sizeof(uint32_t))) {   /* num_shared */
 		struct g_lock ret = {
 			.exclusive.pid = 0,
+			.unique_lock_epoch = generate_unique_u64(0),
 			.unique_data_epoch = generate_unique_u64(0),
 		};
 		*lck = ret;
@@ -68,6 +71,10 @@ static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
 	server_id_get(&exclusive, buf);
 	buf += SERVER_ID_BUF_LENGTH;
 	buflen -= SERVER_ID_BUF_LENGTH;
+
+	unique_lock_epoch = BVAL(buf, 0);
+	buf += sizeof(uint64_t);
+	buflen -= sizeof(uint64_t);
 
 	unique_data_epoch = BVAL(buf, 0);
 	buf += sizeof(uint64_t);
@@ -90,6 +97,7 @@ static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
 		.exclusive = exclusive,
 		.num_shared = num_shared,
 		.shared = buf,
+		.unique_lock_epoch = unique_lock_epoch,
 		.unique_data_epoch = unique_data_epoch,
 		.datalen = buflen-shared_len,
 		.data = buf+shared_len,
@@ -129,7 +137,7 @@ static NTSTATUS g_lock_store(
 	size_t num_new_dbufs)
 {
 	uint8_t exclusive[SERVER_ID_BUF_LENGTH];
-	uint8_t seqnum_buf[sizeof(uint64_t)];
+	uint8_t seqnum_buf[sizeof(uint64_t)*2];
 	uint8_t sizebuf[sizeof(uint32_t)];
 	uint8_t new_shared_buf[SERVER_ID_BUF_LENGTH];
 
@@ -160,7 +168,8 @@ static NTSTATUS g_lock_store(
 	}
 
 	server_id_put(exclusive, lck->exclusive);
-	SBVAL(seqnum_buf, 0, lck->unique_data_epoch);
+	SBVAL(seqnum_buf, 0, lck->unique_lock_epoch);
+	SBVAL(seqnum_buf, 8, lck->unique_data_epoch);
 
 	if (new_shared != NULL) {
 		if (lck->num_shared >= UINT32_MAX) {
@@ -369,6 +378,8 @@ static NTSTATUS g_lock_trylock(
 	orig_num_shared = lck.num_shared;
 
 	g_lock_cleanup_dead(&lck, state->dead_blocker);
+
+	lck.unique_lock_epoch = generate_unique_u64(lck.unique_lock_epoch);
 
 	if (lck.exclusive.pid != 0) {
 		bool self_exclusive = server_id_equal(&self, &lck.exclusive);
@@ -849,6 +860,8 @@ static void g_lock_lock_simple_fn(
 		goto not_granted;
 	}
 
+	lck.unique_lock_epoch = generate_unique_u64(lck.unique_lock_epoch);
+
 	if (state->type == G_LOCK_WRITE) {
 		if (lck.num_shared != 0) {
 			DBG_DEBUG("num_shared=%zu\n", lck.num_shared);
@@ -1022,6 +1035,8 @@ static void g_lock_unlock_fn(
 			dbwrap_watched_watch_skip_alerting(rec);
 		}
 	}
+
+	lck.unique_lock_epoch = generate_unique_u64(lck.unique_lock_epoch);
 
 	state->status = g_lock_store(rec, &lck, NULL, NULL, 0);
 }
