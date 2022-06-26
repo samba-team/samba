@@ -41,6 +41,7 @@ struct dbwrap_watcher {
 };
 
 #define DBWRAP_WATCHER_BUF_LENGTH (SERVER_ID_BUF_LENGTH + sizeof(uint64_t))
+#define DBWRAP_MAX_WATCHERS (INT32_MAX/DBWRAP_WATCHER_BUF_LENGTH)
 
 /*
  * Watched records contain a header of:
@@ -328,7 +329,7 @@ static void dbwrap_watched_add_watcher(
 
 	dbufs[1].dsize = num_watchers * DBWRAP_WATCHER_BUF_LENGTH;
 
-	if (num_watchers >= UINT32_MAX) {
+	if (num_watchers >= DBWRAP_MAX_WATCHERS) {
 		DBG_DEBUG("Can't handle %zu watchers\n",
 			  num_watchers+1);
 		state->status = NT_STATUS_INSUFFICIENT_RESOURCES;
