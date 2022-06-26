@@ -1074,8 +1074,8 @@ static int dbwrap_watched_watch_state_destructor(
 		dbwrap_watched_watch_state_destructor_fn,
 		state);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("dbwrap_do_locked failed: %s\n",
-			  nt_errstr(status));
+		DBG_WARNING("dbwrap_do_locked failed: %s\n",
+			    nt_errstr(status));
 	}
 	return 0;
 }
