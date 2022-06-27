@@ -242,18 +242,15 @@ struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 	return ctx;
 }
 
-static NTSTATUS g_lock_cleanup_dead(
-	struct db_record *rec,
+static void g_lock_cleanup_dead(
 	struct g_lock *lck,
 	struct server_id *dead_blocker)
 {
-	bool modified = false;
 	bool exclusive_died;
-	NTSTATUS status = NT_STATUS_OK;
 	struct server_id_buf tmp;
 
 	if (dead_blocker == NULL) {
-		return NT_STATUS_OK;
+		return;
 	}
 
 	exclusive_died = server_id_equal(dead_blocker, &lck->exclusive);
@@ -262,7 +259,6 @@ static NTSTATUS g_lock_cleanup_dead(
 		DBG_DEBUG("Exclusive holder %s died\n",
 			  server_id_str_buf(lck->exclusive, &tmp));
 		lck->exclusive.pid = 0;
-		modified = true;
 	}
 
 	if (lck->num_shared != 0) {
@@ -276,19 +272,8 @@ static NTSTATUS g_lock_cleanup_dead(
 			DBG_DEBUG("Shared holder %s died\n",
 				  server_id_str_buf(shared, &tmp));
 			g_lock_del_shared(lck, 0);
-			modified = true;
 		}
 	}
-
-	if (modified) {
-		status = g_lock_store(rec, lck, NULL, NULL, 0);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("g_lock_store() failed: %s\n",
-				  nt_errstr(status));
-		}
-	}
-
-	return status;
 }
 
 static ssize_t g_lock_find_shared(
@@ -369,6 +354,7 @@ static NTSTATUS g_lock_trylock(
 	enum g_lock_type type = req_state->type;
 	bool retry = req_state->retry;
 	struct g_lock lck = { .exclusive.pid = 0 };
+	size_t orig_num_shared;
 	struct server_id_buf tmp;
 	NTSTATUS status;
 	bool ok;
@@ -378,13 +364,9 @@ static NTSTATUS g_lock_trylock(
 		DBG_DEBUG("g_lock_parse failed\n");
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
+	orig_num_shared = lck.num_shared;
 
-	status = g_lock_cleanup_dead(rec, &lck, state->dead_blocker);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("g_lock_cleanup_dead() failed: %s\n",
-			  nt_errstr(status));
-		return status;
-	}
+	g_lock_cleanup_dead(&lck, state->dead_blocker);
 
 	if (lck.exclusive.pid != 0) {
 		bool self_exclusive = server_id_equal(&self, &lck.exclusive);
@@ -466,6 +448,15 @@ static NTSTATUS g_lock_trylock(
 				  server_id_str_buf(*blocker, &tmp));
 
 			return NT_STATUS_LOCK_NOT_GRANTED;
+		}
+
+		if (orig_num_shared != lck.num_shared) {
+			status = g_lock_store(rec, &lck, NULL, NULL, 0);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_DEBUG("g_lock_store() failed: %s\n",
+					  nt_errstr(status));
+				return status;
+			}
 		}
 
 		talloc_set_destructor(req_state, NULL);
