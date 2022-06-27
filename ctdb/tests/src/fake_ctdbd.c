@@ -272,6 +272,10 @@ static bool nodemap_parse(struct node_map *node_map)
 		node_map->num_nodes += 1;
 	}
 
+	if (node_map->num_nodes == 0) {
+		goto fail;
+	}
+
 	DEBUG(DEBUG_INFO, ("Parsing nodemap done\n"));
 	return true;
 
@@ -521,6 +525,10 @@ static bool interfaces_parse(struct interface_map *iface_map)
 		iface_map->num += 1;
 	}
 
+	if (iface_map->num == 0) {
+		goto fail;
+	}
+
 	DEBUG(DEBUG_INFO, ("Parsing interfaces done\n"));
 	return true;
 
@@ -588,6 +596,10 @@ static bool vnnmap_parse(struct vnn_map *vnn_map)
 		vnn_map->size += 1;
 	}
 
+	if (vnn_map->size == 0) {
+		goto fail;
+	}
+
 	DEBUG(DEBUG_INFO, ("Parsing vnnmap done\n"));
 	return true;
 
@@ -606,8 +618,7 @@ static bool reclock_parse(struct ctdbd_context *ctdb)
 	}
 
 	if (line[0] == '\n') {
-		/* Recovery lock remains unset */
-		goto ok;
+		goto fail;
 	}
 
 	/* Get rid of pesky newline */
@@ -619,7 +630,7 @@ static bool reclock_parse(struct ctdbd_context *ctdb)
 	if (ctdb->reclock == NULL) {
 		goto fail;
 	}
-ok:
+
 	/* Swallow possible blank line following section.  Picky
 	 * compiler settings don't allow the return value to be
 	 * ignored, so make the compiler happy.
@@ -743,6 +754,10 @@ static bool dbmap_parse(struct database_map *db_map)
 		db->seq_num = seq_num;
 
 		DLIST_ADD_END(db_map->db, db);
+	}
+
+	if (db_map->db == NULL) {
+		goto fail;
 	}
 
 	DEBUG(DEBUG_INFO, ("Parsing dbmap done\n"));
@@ -1046,7 +1061,7 @@ static bool public_ips_parse(struct ctdbd_context *ctdb,
 
 	ctdb->known_ips = ipalloc_read_known_ips(ctdb, numnodes, false);
 
-	status = (ctdb->known_ips != NULL);
+	status = (ctdb->known_ips != NULL && ctdb->known_ips->num != 0);
 
 	if (status) {
 		D_INFO("Parsing public IPs done\n");
@@ -1137,6 +1152,10 @@ static bool control_failures_parse(struct ctdbd_context *ctdb)
 		failure->comment = comment;
 
 		DLIST_ADD(ctdb->control_failures, failure);
+	}
+
+	if (ctdb->control_failures == NULL) {
+		goto fail;
 	}
 
 	D_INFO("Parsing fake control failures done\n");
