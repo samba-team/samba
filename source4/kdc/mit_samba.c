@@ -234,10 +234,7 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 
 	if (kflags & KRB5_KDB_FLAG_CLIENT) {
 		sflags |= SDB_F_GET_CLIENT;
-
-		if (!(kflags & KRB5_KDB_FLAG_REFERRAL_OK)) {
-			sflags |= SDB_F_FOR_AS_REQ;
-		}
+		sflags |= SDB_F_FOR_AS_REQ;
 	} else {
 		int equal = smb_krb5_principal_is_tgs(ctx->context, principal);
 		if (equal == -1) {
@@ -248,10 +245,7 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 			sflags |= SDB_F_GET_KRBTGT;
 		} else {
 			sflags |= SDB_F_GET_SERVER;
-
-			if (!(kflags & KRB5_KDB_FLAG_REFERRAL_OK)) {
-				sflags |= SDB_F_FOR_TGS_REQ;
-			}
+			sflags |= SDB_F_FOR_TGS_REQ;
 		}
 	}
 #else /* KRB5_KDB_DAL_MAJOR_VERSION < 9 */
