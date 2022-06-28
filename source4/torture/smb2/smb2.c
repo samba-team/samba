@@ -153,6 +153,7 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_smb2_lock_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_read_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_aio_delay_init(suite));
+	torture_suite_add_suite(suite, torture_smb2_bench_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_create_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_twrp_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_fileid_init(suite));
@@ -182,7 +183,6 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "zero-data-ioctl",
 				      test_ioctl_zero_data);
 	torture_suite_add_suite(suite, torture_smb2_rename_init(suite));
-	torture_suite_add_1smb2_test(suite, "bench-oplock", test_smb2_bench_oplock);
 	torture_suite_add_suite(suite, torture_smb2_sharemode_init(suite));
 	torture_suite_add_1smb2_test(suite, "hold-oplock", test_smb2_hold_oplock);
 	torture_suite_add_suite(suite, torture_smb2_session_init(suite));
