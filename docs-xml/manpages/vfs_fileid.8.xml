@@ -14,7 +14,7 @@
 <refnamediv>
 	<refname>vfs_fileid</refname>
 	<refpurpose>Generates file_id structs with unique device id values for
-	cluster setups</refpurpose>
+	cluster setups. It also adds ways to deliberately break lock coherency for specific inodes</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
@@ -61,40 +61,61 @@
 		<term>fileid:algorithm = ALGORITHM</term>
 		<listitem>
 		<para>Available algorithms are <command>fsname</command>,
-		<command>fsname_nodirs</command>, <command>fsid</command> and
-		<command>hostname</command>. The default value is
-		<command>fsname</command>.
+		<command>fsid</command>, <command>next_module</command>. The default value is
+		<command>fsname</command>. As well as the following legacy
+		algorithms: <command>fsname_nodirs</command>, <command>fsname_norootdir</command>,
+		<command>fsname_norootdir_ext</command> and <command>hostname</command>.
 		</para>
+
 		<para>The <command>fsname</command> algorithm generates
 		device id by hashing the kernel device name.
 		</para>
-		<para>The <command>fsname_nodirs</command> algorithm generates
-		device id by hashing the kernel device name for files and by hashing
-		the hostname for directories. This can be used to deliberately
-		break lock coherency for directories in a cluster.
-		</para>
+
 		<para>The <command>fsid</command> algorithm generates
 		the device id from the <command>f_fsid</command> returned
 		from the <command>statfs()</command> syscall.
 		</para>
-		<para>The <command>hostname</command> algorithm generates device
-		id by hashing the hostname. This can be used to deliberately
-		break lock coherency in a cluster.
+
+		<para>The <command>next_module</command> algorithm lets the next vfs module
+		in the module chain generate the id. This is mainly used in combination
+		with the various 'nolock' features the fileid module provides.
 		</para>
-		<para>The <command>fsname_norootdir</command> algorithm
-		generates device ids by hashing the kernel device name, except
-		for the root directory of shares where it will use the hostname
-		algorithm. This can be used to deliberately break lock coherency
+
+		<para>The legacy <command>hostname</command> algorithm generates unique
+		devid by hashing the hostname and low level device id.
+		It also implies <command>fileid:nolock_all_inodes=yes</command>.
+		This can be used to deliberately break lock coherency in a cluster
+		and with <command>fileid:nolock_max_slots</command> also between local processes
+		within a node. NOTE: Do not use this without knowing what you are doing!
+		It breaks SMB semantics and it can lead to data corruption!
+		This implies <command>fileid:nolock_all_inodes=yes</command>.
+		</para>
+
+		<para>The legacy <command>fsname_nodirs</command> algorithm is an alias
+		for using the <command>fsname</command> algorithm together with
+		<command>fileid:nolock_all_dirs=yes</command>.
+		NOTE: Do not use this without knowing what you are doing!
+		It breaks SMB semantics!
+		See <command>fileid:nolock_paths</command> for a more fine grained
+		approach.
+		</para>
+
+		<para>The legacy <command>fsname_norootdir</command> algorithm is an alias
+		for using the <command>fsname</command> algorithm together with
+		<command>fileid:nolock_paths= <quote>.</quote> </command>. It means
+		this can be used to deliberately break lock coherency
 		in a cluster for the root directory of a share.
 		</para>
-		<para>The <command>fsname_norootdir_ext</command> algorithm
-		generates device ids by hashing the kernel device name, except
-		for the root directory of shares where it will use the hostname
-		algorithm. Additionally it generates an extid based on the
-		process pid. This can be used to deliberately break lock
-		coherency between all smbd processes in the whole cluster for
-		the root directory of a share.
+
+		<para>The legacy <command>fsname_norootdir_ext</command> algorithm is an alias
+		for using the <command>fsname</command> algorithm together with
+		<command>fileid:nolock_paths= <quote>.</quote></command> and
+		<command>fileid:nolock_max_slots = 18446744073709551615</command>.
+		It means this can be used to deliberately break lock coherency
+		completely for the root directory of a share. Even local processes
+		are no longer lock coherent.
 		</para>
+
 		</listitem>
 		</varlistentry>
 
@@ -147,12 +168,69 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>fileid:nolockinode</term>
+		<term>fileid:nolock_max_slots = NUMBER(1-18446744073709551615)</term>
 		<listitem>
-		<para>This option triggers use of the fileid hostname algorithm
-		for the configured inode which can be used to deliberately break
+		<para>This option alters the behavior of the <command>nolock</command> algorithm
+		in a ways that it also breaks the lock coherency between individual processes
+		on the same host. The default is to have just 1 concurrent slot available per host.
+		By incressing the number of slots you can specify how many concurrent processes
+		can work on a given inode without contention, the number should typically be larger
+		than the a number of logical cpus, maybe 2 times of num_cpus.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>fileid:nolock_all_dirs = BOOL</term>
+		<listitem>
+		<para>This option triggers the use of the fileid nolock behavior
+		for all directory inodes, which can be used to deliberately break
+		the lock coherency for all directories.
+		NOTE: Do not use this without knowing what you are doing!
+		It breaks SMB semantics!
+		See <command>fileid:nolock_paths</command> for a more fine grained
+		approach.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>fileid:nolock_all_inodes = BOOL</term>
+		<listitem>
+		<para>This option triggers the use of the fileid nolock algorithm
+		for all directoriy inode, which can be used to deliberately break
+		the lock coherency for all directories.
+		NOTE: Do not use this without knowing what you are doing!
+		It breaks SMB semantics and it can lead to data corruption!
+		See <command>fileid:nolock_paths</command> for a more fine grained
+		approach.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>fileid:nolock_paths = LIST</term>
+		<listitem>
+		<para>This option specifies a path list referring to files and/or directories,
+		which should use fileid nolock algorithm in order to deliberately break
+		the lock coherency for them. The specified paths can be relative to
+		the share root directory or absolute. The names are case sensitive unix pathnames!
+		Note all paths are only evaluated at tree connect time, when the share is being connected, from there on
+		only the related device and inode numbers from the stat() syscall are compared.
+		Non existing paths will generate a log level 0 message.
+		NOTE: This option should be used with care as it breaks SMB semantics!
+		But it may help in situation where a specific (commonly read-only) inode is highly contended.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>fileid:nolockinode = NUMBER</term>
+		<listitem>
+		<para>This legacy option triggers use of the fileid nolock behavior
+		for the configured inode, while ignoring and device id. This can be used to deliberately break
 		lock coherency for the corresponding file or directory in a
-		cluster.
+		cluster. Using the <command>fileid:nolock_paths</command> option is much more flexible and simpler to use.
 		</para>
 		</listitem>
 		</varlistentry>
@@ -169,6 +247,17 @@
         <smbconfsection name="[global]"/>
 	<smbconfoption name="vfs objects">fileid</smbconfoption>
 	<smbconfoption name="fileid:algorithm">fsid</smbconfoption>
+</programlisting>
+
+	<para>Usage of the <command>fileid</command> module in order
+	avoid load on heavily contended (most likely read-only) inodes.</para>
+
+<programlisting>
+        <smbconfsection name="[global]"/>
+	<smbconfoption name="vfs objects">fileid</smbconfoption>
+	<smbconfoption name="fileid:algorithm">next_module</smbconfoption>
+	<smbconfoption name="fileid:nolock_paths">. ContendedFolder1 /path/to/contended.exe</smbconfoption>
+	<smbconfoption name="fileid:nolock_max_slots">256</smbconfoption>
 </programlisting>
 
 </refsect1>
