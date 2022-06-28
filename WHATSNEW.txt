@@ -1,4 +1,82 @@
                    ==============================
+                   Release Notes for Samba 4.15.8
+                           June 28, 2022
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.15 release series.
+
+
+Changes since 4.15.7
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15042: Use pathref fd instead of io fd in vfs_default_durable_cookie.
+   * BUG 15099: Setting fruit:resource = stream in vfs_fruit causes a panic.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14986: Add support for bind 9.18.
+   * BUG 15076: logging dsdb audit to specific files does not work.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15069: vfs_gpfs with vfs_shadowcopy2 fail to restore file if original
+     file had been deleted.
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 15087: netgroups support removed.
+
+o  Samuel Cabrero <scabrero@suse.de>
+   * BUG 14674: net ads info shows LDAP Server: 0.0.0.0 depending on contacted
+     server.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15071: waf produces incorrect names for python extensions with Python
+     3.11.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15100: smbclient commands del & deltree fail with
+     NT_STATUS_OBJECT_PATH_NOT_FOUND with DFS.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 15055: vfs_gpfs recalls=no option prevents listing files.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15071: waf produces incorrect names for python extensions with Python
+     3.11.
+   * BUG 15091: Compile error in source3/utils/regedit_hexedit.c.
+   * BUG 15108: ldconfig: /lib64/libsmbconf.so.0 is not a symbolic link.
+
+o  Andreas Schneider <asn@cryptomilk.org>
+   * BUG 15054: smbd doesn't handle UPNs for looking up names.
+
+o  Robert Sprowson <webpages@sprow.co.uk>
+   * BUG 14443: Out-by-4 error in smbd read reply max_send clamp.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.15.7
                            April 26, 2022
                    ==============================
@@ -78,8 +156,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.15.6
                            March 15, 2022
