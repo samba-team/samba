@@ -95,6 +95,7 @@ test_ndr_pull_string (struct torture_context *tctx, const char *string,
 
 	blob = data_blob_string_const(string);
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);
+	torture_assert(mem_ctx, ndr, "ndr init failed");
 	ndr_set_flags (&ndr->flags, flags);
 
 	err = ndr_pull_string (ndr, NDR_SCALARS, &result);
