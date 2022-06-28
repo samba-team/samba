@@ -513,7 +513,7 @@ static NTSTATUS torture_delete_fn(struct file_info *finfo,
 					  FILE_ATTRIBUTE_SYSTEM,
 				  torture_delete_fn,
 				  cli);
-		if (NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			printf("torture_delete_fn: cli_list "
 				"of %s failed (%s)\n",
 				subdirname,
