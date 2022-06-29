@@ -39,8 +39,7 @@ ADS_STATUS ads_build_path(const char *realm,
 	*_path = NULL;
 
 	r = SMB_STRDUP(realm);
-
-	if (!r || !*r) {
+	if (r == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
