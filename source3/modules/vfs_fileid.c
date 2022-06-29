@@ -41,6 +41,7 @@ struct fileid_nolock_inode {
 };
 
 struct fileid_handle_data {
+	struct vfs_handle_struct *handle;
 	struct file_id (*mapping_fn)(struct fileid_handle_data *data,
 				     const SMB_STRUCT_STAT *sbuf);
 	char **fstype_deny_list;
@@ -402,6 +403,12 @@ static struct file_id fileid_mapping_fsid(struct fileid_handle_data *data,
 	return id;
 }
 
+static struct file_id fileid_mapping_next_module(struct fileid_handle_data *data,
+						 const SMB_STRUCT_STAT *sbuf)
+{
+	return SMB_VFS_NEXT_FILE_ID_CREATE(data->handle, sbuf);
+}
+
 static int get_connectpath_ino(struct vfs_handle_struct *handle,
 			       const char *path,
 			       SMB_STRUCT_STAT *psbuf)
@@ -470,7 +477,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		return ret;
 	}
 
-	data = talloc_zero(handle->conn, struct fileid_handle_data);
+	data = talloc_zero(handle, struct fileid_handle_data);
 	if (!data) {
 		saved_errno = errno;
 		SMB_VFS_NEXT_DISCONNECT(handle);
@@ -478,6 +485,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		errno = saved_errno;
 		return -1;
 	}
+	data->handle = handle;
 
 	/*
 	 * "fileid:mapping" is only here as fallback for old setups
@@ -503,6 +511,8 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	} else if (strcmp("fsname_norootdir_ext", algorithm) == 0) {
 		data->mapping_fn = fileid_mapping_fsname_norootdir_ext;
 		rootdir_nolock = true;
+	} else if (strcmp("next_module", algorithm) == 0) {
+		data->mapping_fn	= fileid_mapping_next_module;
 	} else {
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("fileid_connect(): unknown algorithm[%s]\n", algorithm));
