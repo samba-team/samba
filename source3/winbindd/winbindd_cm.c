@@ -1099,6 +1099,10 @@ static bool dcip_check_name_ads(const struct winbindd_domain *domain,
 		       domain->name,
 		       addr,
 		       ADS_SASL_PLAIN);
+	if (ads == NULL) {
+		ads_status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto out;
+	}
 	ads->auth.flags |= ADS_AUTH_NO_BIND;
 	ads->config.flags |= request_flags;
 	ads->server.no_fallback = true;
