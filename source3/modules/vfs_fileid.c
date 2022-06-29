@@ -35,6 +35,11 @@ struct fileid_mount_entry {
 	uint64_t devid;
 };
 
+struct fileid_nolock_inode {
+	dev_t dev;
+	ino_t ino;
+};
+
 struct fileid_handle_data {
 	struct file_id (*mapping_fn)(struct fileid_handle_data *data,
 				     const SMB_STRUCT_STAT *sbuf);
@@ -44,7 +49,10 @@ struct fileid_handle_data {
 	char **mntdir_allow_list;
 	unsigned num_mount_entries;
 	struct fileid_mount_entry *mount_entries;
-	ino_t nolockinode;
+	struct {
+		size_t num_inodes;
+		struct fileid_nolock_inode *inodes;
+	} nolock;
 };
 
 /* check if a mount entry is allowed based on fstype and mount directory */
@@ -264,15 +272,61 @@ static struct file_id fileid_mapping_hostname(struct fileid_handle_data *data,
 static bool fileid_is_nolock_inode(struct fileid_handle_data *data,
 				   const SMB_STRUCT_STAT *sbuf)
 {
-	if (data->nolockinode == 0) {
-		return false;
+	size_t i;
+
+	/*
+	 * We could make this a binary search over an sorted array,
+	 * but for now we keep things simple.
+	 */
+
+	for (i=0; i < data->nolock.num_inodes; i++) {
+		if (data->nolock.inodes[i].ino != sbuf->st_ex_ino) {
+			continue;
+		}
+
+		if (data->nolock.inodes[i].dev == 0) {
+			/*
+			 * legacy "fileid:nolockinode"
+			 * handling ignoring dev
+			 */
+			return true;
+		}
+
+		if (data->nolock.inodes[i].dev != sbuf->st_ex_dev) {
+			continue;
+		}
+
+		return true;
 	}
 
-	if (sbuf->st_ex_ino != data->nolockinode) {
-		return false;
+	return false;
+}
+
+static int fileid_add_nolock_inode(struct fileid_handle_data *data,
+				   const SMB_STRUCT_STAT *sbuf)
+{
+	bool exists = fileid_is_nolock_inode(data, sbuf);
+	struct fileid_nolock_inode *inodes = NULL;
+
+	if (exists) {
+		return 0;
 	}
 
-	return true;
+	inodes = talloc_realloc(data, data->nolock.inodes,
+				struct fileid_nolock_inode,
+				data->nolock.num_inodes + 1);
+	if (inodes == NULL) {
+		return -1;
+	}
+
+	inodes[data->nolock.num_inodes] = (struct fileid_nolock_inode) {
+		.dev = sbuf->st_ex_dev,
+		.ino = sbuf->st_ex_ino,
+	};
+	data->nolock.inodes = inodes;
+	data->nolock.num_inodes += 1;
+
+	return 0;
 }
 
 /* a device mapping using a fsname for files and hostname for dirs */
@@ -349,31 +403,51 @@ static struct file_id fileid_mapping_fsid(struct fileid_handle_data *data,
 }
 
 static int get_connectpath_ino(struct vfs_handle_struct *handle,
-			       ino_t *ino)
+			       const char *path,
+			       SMB_STRUCT_STAT *psbuf)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct smb_filename *fname = NULL;
+	const char *fullpath = NULL;
 	int ret;
 
-	fname = synthetic_smb_fname(talloc_tos(),
-				    handle->conn->connectpath,
+	if (path[0] == '/') {
+		fullpath = path;
+	} else {
+		fullpath = talloc_asprintf(frame,
+					   "%s/%s",
+					   handle->conn->connectpath,
+					   path);
+		if (fullpath == NULL) {
+			DBG_ERR("talloc_asprintf() failed\n");
+			TALLOC_FREE(frame);
+			return -1;
+		}
+	}
+
+	fname = synthetic_smb_fname(frame,
+				    fullpath,
 				    NULL,
 				    NULL,
 				    0,
 				    0);
 	if (fname == NULL) {
-		DBG_ERR("synthetic_smb_fname failed\n");
+		DBG_ERR("synthetic_smb_fname(%s) failed - %s\n",
+			fullpath, strerror(errno));
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
 	ret = SMB_VFS_NEXT_STAT(handle, fname);
 	if (ret != 0) {
 		DBG_ERR("stat failed for %s with %s\n",
-			handle->conn->connectpath, strerror(errno));
-		TALLOC_FREE(fname);
+			fullpath, strerror(errno));
+		TALLOC_FREE(frame);
 		return -1;
 	}
-	*ino = fname->st.st_ex_ino;
-	TALLOC_FREE(fname);
+	*psbuf = fname->st;
+
+	TALLOC_FREE(frame);
 
 	return 0;
 }
@@ -387,6 +461,8 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	const char **fstype_allow_list = NULL;
 	const char **mntdir_deny_list = NULL;
 	const char **mntdir_allow_list = NULL;
+	ino_t nolockinode;
+	bool rootdir_nolock = false;
 	int saved_errno;
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 
@@ -402,8 +478,6 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		errno = saved_errno;
 		return -1;
 	}
-
-	data->nolockinode = 0;
 
 	/*
 	 * "fileid:mapping" is only here as fallback for old setups
@@ -425,24 +499,10 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		data->mapping_fn = fileid_mapping_hostname;
 	} else if (strcmp("fsname_norootdir", algorithm) == 0) {
 		data->mapping_fn = fileid_mapping_fsname_norootdir;
-
-		ret = get_connectpath_ino(handle, &data->nolockinode);
-		if (ret != 0) {
-			saved_errno = errno;
-			SMB_VFS_NEXT_DISCONNECT(handle);
-			errno = saved_errno;
-			return -1;
-		}
+		rootdir_nolock = true;
 	} else if (strcmp("fsname_norootdir_ext", algorithm) == 0) {
 		data->mapping_fn = fileid_mapping_fsname_norootdir_ext;
-
-		ret = get_connectpath_ino(handle, &data->nolockinode);
-		if (ret != 0) {
-			saved_errno = errno;
-			SMB_VFS_NEXT_DISCONNECT(handle);
-			errno = saved_errno;
-			return -1;
-		}
+		rootdir_nolock = true;
 	} else {
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("fileid_connect(): unknown algorithm[%s]\n", algorithm));
@@ -501,15 +561,45 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		}
 	}
 
-	data->nolockinode = lp_parm_ulong(SNUM(handle->conn), "fileid",
-					  "nolockinode", data->nolockinode);
+	nolockinode = lp_parm_ulong(SNUM(handle->conn), "fileid", "nolockinode", 0);
+	if (nolockinode != 0) {
+		SMB_STRUCT_STAT tmpsbuf = { .st_ex_ino = nolockinode, };
+
+		ret = fileid_add_nolock_inode(data, &tmpsbuf);
+		if (ret != 0) {
+			saved_errno = errno;
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
+	}
+
+	if (rootdir_nolock) {
+		SMB_STRUCT_STAT rootdirsbuf;
+
+		ret = get_connectpath_ino(handle, ".", &rootdirsbuf);
+		if (ret != 0) {
+			saved_errno = errno;
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
+
+		ret = fileid_add_nolock_inode(data, &rootdirsbuf);
+		if (ret != 0) {
+			saved_errno = errno;
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
+	}
 
 	SMB_VFS_HANDLE_SET_DATA(handle, data, NULL,
 				struct fileid_handle_data,
 				return -1);
 
-	DBG_DEBUG("connect to service[%s] with algorithm[%s] nolockinode %lli\n",
-		  service, algorithm, (long long) data->nolockinode);
+	DBG_DEBUG("connect to service[%s] with algorithm[%s] nolock.inodes %zu\n",
+		  service, algorithm, data->nolock.num_inodes);
 
 	return 0;
 }
