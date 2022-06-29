@@ -51,6 +51,7 @@ struct fileid_handle_data {
 	unsigned num_mount_entries;
 	struct fileid_mount_entry *mount_entries;
 	struct {
+		uint64_t extid;
 		size_t num_inodes;
 		struct fileid_nolock_inode *inodes;
 	} nolock;
@@ -330,6 +331,31 @@ static int fileid_add_nolock_inode(struct fileid_handle_data *data,
 	return 0;
 }
 
+static uint64_t fileid_mapping_nolock_extid(uint64_t max_slots)
+{
+	char buf[8+4+HOST_NAME_MAX+1] = { 0, };
+	uint64_t slot = 0;
+	uint64_t id;
+	int rc;
+
+	if (max_slots > 1) {
+		slot = getpid() % max_slots;
+	}
+
+	PUSH_LE_U64(buf, 0, slot);
+	PUSH_LE_U32(buf, 8, get_my_vnn());
+
+	rc = gethostname(&buf[12], HOST_NAME_MAX+1);
+	if (rc != 0) {
+		DBG_ERR("gethostname failed\n");
+		return UINT64_MAX;
+	}
+
+	id = fileid_uint64_hash((uint8_t *)buf, ARRAY_SIZE(buf));
+
+	return id;
+}
+
 /* a device mapping using a fsname for files and hostname for dirs */
 static struct file_id fileid_mapping_fsname_nodirs(
 	struct fileid_handle_data *data,
@@ -337,30 +363,6 @@ static struct file_id fileid_mapping_fsname_nodirs(
 {
 	if (S_ISDIR(sbuf->st_ex_mode)) {
 		return fileid_mapping_hostname(data, sbuf);
-	}
-
-	return fileid_mapping_fsname(data, sbuf);
-}
-
-static struct file_id fileid_mapping_fsname_norootdir(
-	struct fileid_handle_data *data,
-	const SMB_STRUCT_STAT *sbuf)
-{
-	if (fileid_is_nolock_inode(data, sbuf)) {
-		return fileid_mapping_hostname(data, sbuf);
-	}
-
-	return fileid_mapping_fsname(data, sbuf);
-}
-
-static struct file_id fileid_mapping_fsname_norootdir_ext(
-	struct fileid_handle_data *data,
-	const SMB_STRUCT_STAT *sbuf)
-{
-	if (fileid_is_nolock_inode(data, sbuf)) {
-		struct file_id id = fileid_mapping_hostname(data, sbuf);
-		id.extid = getpid();
-		return id;
 	}
 
 	return fileid_mapping_fsname(data, sbuf);
@@ -469,6 +471,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	const char **mntdir_deny_list = NULL;
 	const char **mntdir_allow_list = NULL;
 	ino_t nolockinode;
+	uint64_t max_slots = 0;
 	bool rootdir_nolock = false;
 	int saved_errno;
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
@@ -506,11 +509,12 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	} else if (strcmp("hostname", algorithm) == 0) {
 		data->mapping_fn = fileid_mapping_hostname;
 	} else if (strcmp("fsname_norootdir", algorithm) == 0) {
-		data->mapping_fn = fileid_mapping_fsname_norootdir;
+		data->mapping_fn = fileid_mapping_fsname;
 		rootdir_nolock = true;
 	} else if (strcmp("fsname_norootdir_ext", algorithm) == 0) {
-		data->mapping_fn = fileid_mapping_fsname_norootdir_ext;
+		data->mapping_fn = fileid_mapping_fsname;
 		rootdir_nolock = true;
+		max_slots = UINT64_MAX;
 	} else if (strcmp("next_module", algorithm) == 0) {
 		data->mapping_fn	= fileid_mapping_next_module;
 	} else {
@@ -570,6 +574,10 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 			return -1;
 		}
 	}
+
+	max_slots = MAX(max_slots, 1);
+
+	data->nolock.extid = fileid_mapping_nolock_extid(max_slots);
 
 	nolockinode = lp_parm_ulong(SNUM(handle->conn), "fileid", "nolockinode", 0);
 	if (nolockinode != 0) {
@@ -636,6 +644,9 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 				return id);
 
 	id = data->mapping_fn(data, sbuf);
+	if (id.extid == 0 && fileid_is_nolock_inode(data, sbuf)) {
+		id.extid = data->nolock.extid;
+	}
 
 	DBG_DEBUG("Returning dev [%jx] inode [%jx] extid [%jx]\n",
 		  (uintmax_t)id.devid, (uintmax_t)id.inode, (uintmax_t)id.extid);
