@@ -46,7 +46,10 @@ check_thresholds()
 	_cache="${script_state_dir}/cache_${_t}"
 	if validate_percentage "$_unhealthy_threshold" "$_thing"; then
 		if [ "$_usage" -ge "$_unhealthy_threshold" ]; then
-			echo "ERROR: ${_thing} utilization ${_usage}% >= threshold ${_unhealthy_threshold}%"
+			printf 'ERROR: %s utilization %d%% >= threshold %d%%\n' \
+			       "$_thing" \
+			       "$_usage" \
+			       "$_unhealthy_threshold"
 			eval "$_unhealthy_callout"
 			echo "$_usage" >"$_cache"
 			exit 1
@@ -60,14 +63,22 @@ check_thresholds()
 			else
 				_prev=""
 			fi
-			if [ "$_usage" != "$_prev" ]; then
-				echo "WARNING: ${_thing} utilization ${_usage}% >= threshold ${_warn_threshold}%"
-				echo "$_usage" >"$_cache"
+			if [ "$_usage" = "$_prev" ]; then
+				return
 			fi
+			printf 'WARNING: %s utilization %d%% >= threshold %d%%\n' \
+			       "$_thing" \
+			       "$_usage" \
+			       "$_warn_threshold"
+			echo "$_usage" >"$_cache"
 		else
-			if [ -r "$_cache" ]; then
-				echo "NOTICE: ${_thing} utilization ${_usage}% < threshold ${_warn_threshold}%"
+			if [ ! -r "$_cache" ]; then
+				return
 			fi
+			printf 'NOTICE: %s utilization %d%% < threshold %d%%\n' \
+			       "$_thing" \
+			       "$_usage" \
+			       "$_warn_threshold"
 			rm -f "$_cache"
 		fi
 	fi
@@ -112,7 +123,8 @@ monitor_filesystem_usage()
 		_fs_usage=$(df -kP "$_fs_mount" |
 			sed -n -e 's@.*[[:space:]]\([[:digit:]]*\)%.*@\1@p')
 		if [ -z "$_fs_usage" ]; then
-			echo "WARNING: Unable to get FS utilization for ${_fs_mount}"
+			printf 'WARNING: Unable to get FS utilization for %s\n' \
+			       "$_fs_mount"
 			continue
 		fi
 
