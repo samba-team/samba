@@ -51,6 +51,7 @@ struct fileid_handle_data {
 	unsigned num_mount_entries;
 	struct fileid_mount_entry *mount_entries;
 	struct {
+		bool force_all_inodes;
 		bool force_all_dirs;
 		uint64_t extid;
 		size_t num_inodes;
@@ -277,6 +278,10 @@ static bool fileid_is_nolock_inode(struct fileid_handle_data *data,
 {
 	size_t i;
 
+	if (data->nolock.force_all_inodes) {
+		return true;
+	}
+
 	if (S_ISDIR(sbuf->st_ex_mode) && data->nolock.force_all_dirs) {
 		return true;
 	}
@@ -502,6 +507,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		data->mapping_fn = fileid_mapping_fsid;
 	} else if (strcmp("hostname", algorithm) == 0) {
 		data->mapping_fn = fileid_mapping_hostname;
+		data->nolock.force_all_inodes = true;
 	} else if (strcmp("fsname_norootdir", algorithm) == 0) {
 		data->mapping_fn = fileid_mapping_fsname;
 		rootdir_nolock = true;
