@@ -569,8 +569,6 @@ int ldb_msg_add_steal_string(struct ldb_message *msg,
 
 /*
   add a DN element to a message
-  WARNING: this uses the linearized string from the dn, and does not
-  copy the string.
 */
 int ldb_msg_add_linearized_dn(struct ldb_message *msg, const char *attr_name,
 			      struct ldb_dn *dn)
@@ -703,8 +701,6 @@ int ldb_msg_append_string(struct ldb_message *msg,
 
 /*
   append a DN element to a message
-  WARNING: this uses the linearized string from the dn, and does not
-  copy the string.
 */
 int ldb_msg_append_linearized_dn(struct ldb_message *msg, const char *attr_name,
 				 struct ldb_dn *dn, int flags)
