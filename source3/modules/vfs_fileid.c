@@ -577,6 +577,9 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		}
 	}
 
+	data->nolock.force_all_inodes = lp_parm_bool(SNUM(handle->conn),
+						     "fileid", "nolock_all_inodes",
+						     data->nolock.force_all_inodes);
 	data->nolock.force_all_dirs = lp_parm_bool(SNUM(handle->conn),
 						   "fileid", "nolock_all_dirs",
 						   data->nolock.force_all_dirs);
