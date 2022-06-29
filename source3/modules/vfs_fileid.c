@@ -51,6 +51,7 @@ struct fileid_handle_data {
 	unsigned num_mount_entries;
 	struct fileid_mount_entry *mount_entries;
 	struct {
+		bool force_all_dirs;
 		uint64_t extid;
 		size_t num_inodes;
 		struct fileid_nolock_inode *inodes;
@@ -276,6 +277,10 @@ static bool fileid_is_nolock_inode(struct fileid_handle_data *data,
 {
 	size_t i;
 
+	if (S_ISDIR(sbuf->st_ex_mode) && data->nolock.force_all_dirs) {
+		return true;
+	}
+
 	/*
 	 * We could make this a binary search over an sorted array,
 	 * but for now we keep things simple.
@@ -354,18 +359,6 @@ static uint64_t fileid_mapping_nolock_extid(uint64_t max_slots)
 	id = fileid_uint64_hash((uint8_t *)buf, ARRAY_SIZE(buf));
 
 	return id;
-}
-
-/* a device mapping using a fsname for files and hostname for dirs */
-static struct file_id fileid_mapping_fsname_nodirs(
-	struct fileid_handle_data *data,
-	const SMB_STRUCT_STAT *sbuf)
-{
-	if (S_ISDIR(sbuf->st_ex_mode)) {
-		return fileid_mapping_hostname(data, sbuf);
-	}
-
-	return fileid_mapping_fsname(data, sbuf);
 }
 
 /* device mapping functions using a fsid */
@@ -503,7 +496,8 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	if (strcmp("fsname", algorithm) == 0) {
 		data->mapping_fn = fileid_mapping_fsname;
 	} else if (strcmp("fsname_nodirs", algorithm) == 0) {
-		data->mapping_fn = fileid_mapping_fsname_nodirs;
+		data->mapping_fn = fileid_mapping_fsname;
+		data->nolock.force_all_dirs = true;
 	} else if (strcmp("fsid", algorithm) == 0) {
 		data->mapping_fn = fileid_mapping_fsid;
 	} else if (strcmp("hostname", algorithm) == 0) {
