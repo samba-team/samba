@@ -575,6 +575,9 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		}
 	}
 
+	max_slots = lp_parm_ulonglong(SNUM(handle->conn),
+				      "fileid", "nolock_max_slots",
+				      max_slots);
 	max_slots = MAX(max_slots, 1);
 
 	data->nolock.extid = fileid_mapping_nolock_extid(max_slots);
