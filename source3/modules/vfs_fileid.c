@@ -471,6 +471,8 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	ino_t nolockinode;
 	uint64_t max_slots = 0;
 	bool rootdir_nolock = false;
+	const char **nolock_paths = NULL;
+	size_t i;
 	int saved_errno;
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 
@@ -613,6 +615,34 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 			errno = saved_errno;
 			return -1;
 		}
+	}
+
+	nolock_paths = lp_parm_string_list(SNUM(handle->conn), "fileid", "nolock_paths", NULL);
+	for (i = 0; nolock_paths != NULL && nolock_paths[i] != NULL; i++) {
+		SMB_STRUCT_STAT tmpsbuf;
+
+		ret = get_connectpath_ino(handle, nolock_paths[i], &tmpsbuf);
+		if (ret == -1 && errno == ENOENT) {
+			DBG_ERR("ignoring non existing nolock_paths[%zu]='%s'\n",
+				i, nolock_paths[i]);
+			continue;
+		}
+		if (ret != 0) {
+			saved_errno = errno;
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
+
+		ret = fileid_add_nolock_inode(data, &tmpsbuf);
+		if (ret != 0) {
+			saved_errno = errno;
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
+		DBG_DEBUG("Adding nolock_paths[%zu]='%s'\n",
+			  i, nolock_paths[i]);
 	}
 
 	SMB_VFS_HANDLE_SET_DATA(handle, data, NULL,
