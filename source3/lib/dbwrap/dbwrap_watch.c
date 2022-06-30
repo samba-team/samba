@@ -143,7 +143,6 @@ struct db_watched_ctx {
 struct db_watched_record {
 	struct db_record *rec;
 	struct server_id self;
-	struct messaging_context *msg_ctx;
 	struct {
 		struct db_record *rec;
 		TDB_DATA initial_value;
@@ -211,6 +210,8 @@ static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
 				      const TDB_DATA *dbufs, int num_dbufs,
 				      int flags);
 static NTSTATUS dbwrap_watched_delete(struct db_record *rec);
+static void dbwrap_watched_trigger_wakeup(struct messaging_context *msg_ctx,
+					  struct dbwrap_watcher *watcher);
 static int db_watched_record_destructor(struct db_watched_record *wrec);
 
 static void db_watched_record_init(struct db_context *db,
@@ -233,7 +234,6 @@ static void db_watched_record_init(struct db_context *db,
 	*wrec = (struct db_watched_record) {
 		.rec = rec,
 		.self = messaging_server_id(msg_ctx),
-		.msg_ctx = msg_ctx,
 		.backend = {
 			.rec = backend_rec,
 			.initial_value = backend_value,
@@ -422,7 +422,13 @@ static void db_watched_record_fini(struct db_watched_record *wrec)
 
 static int db_watched_record_destructor(struct db_watched_record *wrec)
 {
+	struct db_record *rec = wrec->rec;
+	struct db_watched_ctx *ctx = talloc_get_type_abort(
+		rec->db->private_data, struct db_watched_ctx);
+
 	db_watched_record_fini(wrec);
+	TALLOC_FREE(wrec->backend.rec);
+	dbwrap_watched_trigger_wakeup(ctx->msg, &wrec->wakeup.watcher);
 	return 0;
 }
 
@@ -479,6 +485,8 @@ static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
 	}
 
 	DBG_DEBUG("dbwrap_watched_do_locked_fn returned\n");
+
+	dbwrap_watched_trigger_wakeup(state.msg_ctx, &wrec.wakeup.watcher);
 
 	return NT_STATUS_OK;
 }
@@ -562,13 +570,6 @@ static void dbwrap_watched_trigger_wakeup(struct messaging_context *msg_ctx,
 	}
 }
 
-static void dbwrap_watched_record_wakeup(
-	struct db_watched_record *wrec)
-{
-	dbwrap_watched_record_prepare_wakeup(wrec);
-	dbwrap_watched_trigger_wakeup(wrec->msg_ctx, &wrec->wakeup.watcher);
-}
-
 static NTSTATUS dbwrap_watched_record_storev(
 	struct db_watched_record *wrec,
 	const TDB_DATA *dbufs, int num_dbufs, int flags)
@@ -581,7 +582,7 @@ static NTSTATUS dbwrap_watched_record_storev(
 	NTSTATUS status;
 	size_t add_count = 0;
 
-	dbwrap_watched_record_wakeup(wrec);
+	dbwrap_watched_record_prepare_wakeup(wrec);
 
 	wrec->backend.initial_valid = false;
 	wrec->force_fini_store = false;
