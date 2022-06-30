@@ -571,7 +571,7 @@ static void g_lock_lock_fn(
 	}
 
 	state->watch_req = dbwrap_watched_watch_send(
-		state->req_state, state->req_state->ev, rec, blocker);
+		state->req_state, state->req_state->ev, rec, 0, blocker);
 	if (state->watch_req == NULL) {
 		state->status = NT_STATUS_NO_MEMORY;
 	}
@@ -657,7 +657,7 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 	bool blockerdead = false;
 	NTSTATUS status;
 
-	status = dbwrap_watched_watch_recv(subreq, &blockerdead, &blocker);
+	status = dbwrap_watched_watch_recv(subreq, NULL, &blockerdead, &blocker);
 	DBG_DEBUG("watch_recv returned %s\n", nt_errstr(status));
 	TALLOC_FREE(subreq);
 
@@ -1259,7 +1259,7 @@ static void g_lock_watch_data_send_fn(
 	DBG_DEBUG("state->unique_data_epoch=%"PRIu64"\n", state->unique_data_epoch);
 
 	subreq = dbwrap_watched_watch_send(
-		state, state->ev, rec, state->blocker);
+		state, state->ev, rec, 0, state->blocker);
 	if (subreq == NULL) {
 		state->status = NT_STATUS_NO_MEMORY;
 		return;
@@ -1338,7 +1338,7 @@ static void g_lock_watch_data_done_fn(
 	}
 
 	subreq = dbwrap_watched_watch_send(
-		state, state->ev, rec, state->blocker);
+		state, state->ev, rec, 0, state->blocker);
 	if (subreq == NULL) {
 		state->status = NT_STATUS_NO_MEMORY;
 		return;
@@ -1357,7 +1357,7 @@ static void g_lock_watch_data_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = dbwrap_watched_watch_recv(
-		subreq, &state->blockerdead, &state->blocker);
+		subreq, NULL, &state->blockerdead, &state->blocker);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		DBG_DEBUG("dbwrap_watched_watch_recv returned %s\n",

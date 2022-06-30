@@ -545,6 +545,7 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 	subreq = dbwrap_watched_watch_send(state,
 					   state->ev,
 					   state->db_rec,
+					   0, /* resume_instance */
 					   global->server_id);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -675,7 +676,7 @@ static void smb2srv_client_mc_negprot_watched(struct tevent_req *subreq)
 		struct tevent_req);
 	NTSTATUS status;
 
-	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	status = dbwrap_watched_watch_recv(subreq, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

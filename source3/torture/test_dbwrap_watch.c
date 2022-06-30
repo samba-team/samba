@@ -120,6 +120,7 @@ bool run_dbwrap_watch1(int dummy)
 		goto fail;
 	}
 	req = dbwrap_watched_watch_send(talloc_tos(), ev, rec,
+					0, /* resume_instance */
 					(struct server_id){0});
 	if (req == NULL) {
 		fprintf(stderr, "dbwrap_record_watch_send failed\n");
@@ -146,7 +147,7 @@ bool run_dbwrap_watch1(int dummy)
 		goto fail;
 	}
 
-	status = dbwrap_watched_watch_recv(req, NULL, NULL);
+	status = dbwrap_watched_watch_recv(req, NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "dbwrap_record_watch_recv failed: %s\n",
 			nt_errstr(status));
@@ -256,7 +257,7 @@ bool run_dbwrap_watch3(int dummy)
 		}
 
 		req = dbwrap_watched_watch_send(
-			db, ev, rec, (struct server_id) { 0 });
+			db, ev, rec, 0, (struct server_id) { 0 });
 		if (req == NULL) {
 			fprintf(stderr, "dbwrap_watched_watch_send failed\n");
 			exit(2);
@@ -329,7 +330,7 @@ static void dbwrap_watch4_fn(struct db_record *rec,
 	bool ok;
 
 	state->req1 = dbwrap_watched_watch_send(
-		state->mem_ctx, state->ev, rec, (struct server_id) { .pid=0 });
+		state->mem_ctx, state->ev, rec, 0, (struct server_id) { .pid=0 });
 	if (state->req1 == NULL) {
 		goto nomem;
 	}
@@ -343,7 +344,7 @@ static void dbwrap_watch4_fn(struct db_record *rec,
 	}
 
 	state->req2 = dbwrap_watched_watch_send(
-		state->mem_ctx, state->ev, rec, (struct server_id) { .pid=0 });
+		state->mem_ctx, state->ev, rec, 0, (struct server_id) { .pid=0 });
 	if (state->req2 == NULL) {
 		goto nomem;
 	}
@@ -366,7 +367,7 @@ static void dbwrap_watch4_fn(struct db_record *rec,
 static void dbwrap_watch4_done1(struct tevent_req *subreq)
 {
 	struct dbwrap_watch4_state *state = tevent_req_callback_data_void(subreq);
-	state->status1 = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	state->status1 = dbwrap_watched_watch_recv(subreq, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	printf("req1 finished: %s\n", nt_errstr(state->status1));
 	state->req1 = NULL;
@@ -375,7 +376,7 @@ static void dbwrap_watch4_done1(struct tevent_req *subreq)
 static void dbwrap_watch4_done2(struct tevent_req *subreq)
 {
 	struct dbwrap_watch4_state *state = tevent_req_callback_data_void(subreq);
-	state->status2 = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	state->status2 = dbwrap_watched_watch_recv(subreq, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	printf("req2 finished: %s\n", nt_errstr(state->status2));
 	state->req2 = NULL;

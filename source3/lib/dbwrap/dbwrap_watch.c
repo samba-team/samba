@@ -206,7 +206,6 @@ static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
 				      const TDB_DATA *dbufs, int num_dbufs,
 				      int flags);
 static NTSTATUS dbwrap_watched_delete(struct db_record *rec);
-static void dbwrap_watched_watch_skip_alerting(struct db_record *rec);
 static int db_watched_record_destructor(struct db_watched_record *wrec);
 
 static void db_watched_record_init(struct db_context *db,
@@ -888,7 +887,7 @@ struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
 	return db;
 }
 
-static uint64_t dbwrap_watched_watch_add_instance(struct db_record *rec)
+uint64_t dbwrap_watched_watch_add_instance(struct db_record *rec)
 {
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
 	static uint64_t global_instance = 1;
@@ -905,7 +904,7 @@ static uint64_t dbwrap_watched_watch_add_instance(struct db_record *rec)
 	return wrec->added.instance;
 }
 
-static void dbwrap_watched_watch_remove_instance(struct db_record *rec, uint64_t instance)
+void dbwrap_watched_watch_remove_instance(struct db_record *rec, uint64_t instance)
 {
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
 	struct dbwrap_watcher clear_watcher = {
@@ -985,7 +984,7 @@ static void dbwrap_watched_watch_remove_instance(struct db_record *rec, uint64_t
 	return;
 }
 
-static void dbwrap_watched_watch_skip_alerting(struct db_record *rec)
+void dbwrap_watched_watch_skip_alerting(struct db_record *rec)
 {
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
 
@@ -1010,6 +1009,7 @@ static int dbwrap_watched_watch_state_destructor(
 struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
 					     struct db_record *rec,
+					     uint64_t resumed_instance,
 					     struct server_id blocker)
 {
 	struct db_context *db = dbwrap_record_get_db(rec);
@@ -1033,11 +1033,23 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (wrec->added.instance == 0) {
+	if (resumed_instance == 0 && wrec->added.instance == 0) {
 		/*
 		 * Adding a new instance
 		 */
 		instance = dbwrap_watched_watch_add_instance(rec);
+	} else if (resumed_instance != 0 && wrec->added.instance == 0) {
+		/*
+		 * Resuming an existing instance that was
+		 * already present before do_locked started
+		 */
+		instance = resumed_instance;
+	} else if (resumed_instance == wrec->added.instance) {
+		/*
+		 * The caller used dbwrap_watched_watch_add_instance()
+		 * already during this do_locked() invocation.
+		 */
+		instance = resumed_instance;
 	} else {
 		tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		return tevent_req_post(req, ev);
@@ -1180,10 +1192,12 @@ static void dbwrap_watched_watch_done(struct tevent_req *subreq)
 	 * dbwrap_watched_record_wakeup().
 	 */
 	talloc_set_destructor(state, NULL);
+	state->watcher.instance = 0;
 	tevent_req_done(req);
 }
 
 NTSTATUS dbwrap_watched_watch_recv(struct tevent_req *req,
+				   uint64_t *pkeep_instance,
 				   bool *blockerdead,
 				   struct server_id *blocker)
 {
@@ -1194,6 +1208,14 @@ NTSTATUS dbwrap_watched_watch_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		tevent_req_received(req);
 		return status;
+	}
+	if (pkeep_instance != NULL) {
+		*pkeep_instance = state->watcher.instance;
+		/*
+		 * No need to remove ourselves anymore,
+		 * the caller will take care of removing itself.
+		 */
+		talloc_set_destructor(state, NULL);
 	}
 	if (blockerdead != NULL) {
 		*blockerdead = state->blockerdead;
