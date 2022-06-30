@@ -1395,6 +1395,7 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 		return map_nt_error_from_unix(errno);
 	}
 	update_stat_ex_from_saved_stat(&fsp->fsp_name->st, &saved_stat);
+	fsp->fsp_flags.is_directory = S_ISDIR(fsp->fsp_name->st.st_ex_mode);
 	return NT_STATUS_OK;
 }
 
