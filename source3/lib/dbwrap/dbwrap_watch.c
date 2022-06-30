@@ -810,6 +810,21 @@ struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
 	return db;
 }
 
+static uint64_t dbwrap_watched_watch_add_instance(struct db_record *rec)
+{
+	struct db_watched_record *wrec = db_record_get_watched_record(rec);
+	static uint64_t global_instance = 1;
+
+	SMB_ASSERT(wrec->added.instance == 0);
+
+	wrec->added = (struct dbwrap_watcher) {
+		.pid = wrec->self,
+		.instance = global_instance++,
+	};
+
+	return wrec->added.instance;
+}
+
 struct dbwrap_watched_watch_state {
 	struct db_context *db;
 	TDB_DATA key;
@@ -836,8 +851,7 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
 	struct tevent_req *req, *subreq;
 	struct dbwrap_watched_watch_state *state;
-
-	static uint64_t instance = 1;
+	uint64_t instance;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct dbwrap_watched_watch_state);
@@ -852,16 +866,20 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (wrec->added.pid.pid != 0) {
+	if (wrec->added.instance == 0) {
+		/*
+		 * Adding a new instance
+		 */
+		instance = dbwrap_watched_watch_add_instance(rec);
+	} else {
 		tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		return tevent_req_post(req, ev);
 	}
 
 	state->watcher = (struct dbwrap_watcher) {
 		.pid = messaging_server_id(ctx->msg),
-		.instance = instance++,
+		.instance = instance,
 	};
-	wrec->added = state->watcher;
 
 	state->key = tdb_data_talloc_copy(state, rec->key);
 	if (tevent_req_nomem(state->key.dptr, req)) {
