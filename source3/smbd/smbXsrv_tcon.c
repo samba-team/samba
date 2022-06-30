@@ -64,6 +64,7 @@ NTSTATUS smbXsrv_tcon_global_init(void)
 			 0, /* hash_size */
 			 TDB_DEFAULT |
 			 TDB_CLEAR_IF_FIRST |
+			 TDB_VOLATILE |
 			 TDB_INCOMPATIBLE_HASH,
 			 O_RDWR | O_CREAT, 0600,
 			 DBWRAP_LOCK_ORDER_1,
