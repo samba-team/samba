@@ -377,6 +377,8 @@ static int db_watched_record_destructor(struct db_watched_record *wrec)
 struct dbwrap_watched_do_locked_state {
 	struct db_context *db;
 	struct messaging_context *msg_ctx;
+	struct db_watched_record *wrec;
+	struct db_record *rec;
 	void (*fn)(struct db_record *rec,
 		   TDB_DATA value,
 		   void *private_data);
@@ -391,16 +393,14 @@ static void dbwrap_watched_do_locked_fn(
 {
 	struct dbwrap_watched_do_locked_state *state =
 		(struct dbwrap_watched_do_locked_state *)private_data;
-	struct db_watched_record wrec;
-	struct db_record rec;
 
 	db_watched_record_init(state->db, state->msg_ctx,
-			       &rec, &wrec,
+			       state->rec, state->wrec,
 			       backend_rec, backend_value);
 
-	state->fn(&rec, rec.value, state->private_data);
+	state->fn(state->rec, state->rec->value, state->private_data);
 
-	db_watched_record_fini(&wrec);
+	db_watched_record_fini(state->wrec);
 }
 
 static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
@@ -411,8 +411,11 @@ static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
 {
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
+	struct db_watched_record wrec;
+	struct db_record rec;
 	struct dbwrap_watched_do_locked_state state = {
 		.db = db, .msg_ctx = ctx->msg,
+		.rec = &rec, .wrec = &wrec,
 		.fn = fn, .private_data = private_data,
 	};
 	NTSTATUS status;
