@@ -441,6 +441,8 @@ static NTSTATUS g_lock_trylock(
 			return NT_STATUS_WAS_LOCKED;
 		}
 
+		g_lock_cleanup_shared(&lck);
+
 		if (lck.num_shared != 0) {
 			g_lock_get_shared(&lck, 0, blocker);
 
@@ -493,6 +495,8 @@ noexclusive:
 		}
 
 		lck.exclusive = self;
+
+		g_lock_cleanup_shared(&lck);
 
 		status = g_lock_store(rec, &lck, NULL, NULL, 0);
 		if (!NT_STATUS_IS_OK(status)) {
