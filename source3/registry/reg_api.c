@@ -922,7 +922,7 @@ WERROR reg_getversion(uint32_t *version)
 WERROR reg_deleteallvalues(struct registry_key *key)
 {
 	WERROR err;
-	int i;
+	uint32_t i;
 
 	if (!(key->key->access_granted & KEY_SET_VALUE)) {
 		return WERR_ACCESS_DENIED;
