@@ -652,14 +652,21 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 			 * well.  However before we do that, we need to pass
 			 * in the PAC here or re-calculate it.
 			 */
-			authsam_logon_success_accounting(kdc_db_ctx->samdb, p->msg,
-							 domain_dn, true, &send_to_sam);
-			if (kdc_db_ctx->rodc && send_to_sam != NULL) {
+			status = authsam_logon_success_accounting(kdc_db_ctx->samdb, p->msg,
+								  domain_dn, true, &send_to_sam);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
+				final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
+				r->error_code = final_ret;
+				rwdc_fallback = kdc_db_ctx->rodc;
+			} else if (!NT_STATUS_IS_OK(status)) {
+				final_ret = KRB5KRB_ERR_GENERIC;
+				r->error_code = final_ret;
+				rwdc_fallback = kdc_db_ctx->rodc;
+			} else if (kdc_db_ctx->rodc && send_to_sam != NULL) {
 				reset_bad_password_netlogon(frame, kdc_db_ctx, send_to_sam);
 			}
 
 			/* This is the final sucess */
-			status = NT_STATUS_OK;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_VALIDATED_LONG_TERM_KEY) {
 			/*
 			 * This was only a pre-authentication success,
