@@ -299,7 +299,7 @@ bool regsubkey_ctr_key_exists( struct regsubkey_ctr *ctr, const char *keyname )
  How many keys does the container hold ?
  **********************************************************************/
 
-int regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr )
+uint32_t regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr )
 {
 	return ctr->num_subkeys;
 }
@@ -341,7 +341,7 @@ WERROR regval_ctr_init(TALLOC_CTX *mem_ctx, struct regval_ctr **ctr)
  How many keys does the container hold ?
  **********************************************************************/
 
-int regval_ctr_numvals(struct regval_ctr *ctr)
+uint32_t regval_ctr_numvals(struct regval_ctr *ctr)
 {
 	return ctr->num_values;
 }
