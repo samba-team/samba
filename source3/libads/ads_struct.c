@@ -106,6 +106,7 @@ ADS_STATUS ads_build_dn(const char *realm, TALLOC_CTX *mem_ctx, char **_dn)
 
 	status = ads_build_path(realm, ".", "dc=", 0, &dn);
 	if (!ADS_ERR_OK(status)) {
+		SAFE_FREE(dn);
 		return status;
 	}
 
