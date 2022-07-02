@@ -122,12 +122,13 @@ struct symlink_reparse_struct *symlink_reparse_buffer_parse(
 	bool ok;
 
 	if (srclen < 20) {
-		DEBUG(10, ("srclen = %d, expected >= 20\n", (int)srclen));
+		DBG_DEBUG("srclen = %zu, expected >= 20\n", srclen);
 		goto fail;
 	}
 	if (IVAL(src, 0) != IO_REPARSE_TAG_SYMLINK) {
-		DEBUG(10, ("Got ReparseTag %8.8x, expected %8.8x\n",
-			   IVAL(src, 0), IO_REPARSE_TAG_SYMLINK));
+		DBG_DEBUG("Got ReparseTag %8.8x, expected %8.8x\n",
+			  IVAL(src, 0),
+			  IO_REPARSE_TAG_SYMLINK);
 		goto fail;
 	}
 
@@ -138,32 +139,33 @@ struct symlink_reparse_struct *symlink_reparse_buffer_parse(
 	print_name_length	= SVAL(src, 14);
 
 	if (reparse_data_length < 12) {
-		DEBUG(10, ("reparse_data_length = %d, expected >= 12\n",
-			   (int)reparse_data_length));
+		DBG_DEBUG("reparse_data_length = %"PRIu16", expected >= 12\n",
+			  reparse_data_length);
 		goto fail;
 	}
 	if (smb_buffer_oob(srclen - 8, reparse_data_length, 0)) {
-		DEBUG(10, ("reparse_data_length (%d) too large for "
-			   "src_len (%d)\n", (int)reparse_data_length,
-			   (int)srclen));
+		DBG_DEBUG("reparse_data_length (%"PRIu16") too large for "
+			   "src_len (%zu)\n",
+			  reparse_data_length,
+			  srclen);
 		goto fail;
 	}
 	if (smb_buffer_oob(reparse_data_length - 12, substitute_name_offset,
 			   substitute_name_length)) {
-		DEBUG(10, ("substitute_name (%d/%d) does not fit in "
-			   "reparse_data_length (%d)\n",
-			   (int)substitute_name_offset,
-			   (int)substitute_name_length,
-			   (int)reparse_data_length - 12));
+		DBG_DEBUG("substitute_name (%"PRIu16"/%"PRIu16") does not fit "
+			  "in reparse_data_length (%"PRIu16")\n",
+			  substitute_name_offset,
+			  substitute_name_length,
+			  reparse_data_length - 12);
 		goto fail;
 	}
 	if (smb_buffer_oob(reparse_data_length - 12, print_name_offset,
 			   print_name_length)) {
-		DEBUG(10, ("print_name (%d/%d) does not fit in "
-			   "reparse_data_length (%d)\n",
-			   (int)print_name_offset,
-			   (int)print_name_length,
-			   (int)reparse_data_length - 12));
+		DBG_DEBUG("print_name (%"PRIu16"/%"PRIu16") does not fit in "
+			  "reparse_data_length (%"PRIu16")\n",
+			  print_name_offset,
+			  print_name_length,
+			  reparse_data_length - 12);
 		goto fail;
 	}
 
@@ -182,8 +184,8 @@ struct symlink_reparse_struct *symlink_reparse_buffer_parse(
 		&result->substitute_name,
 		NULL);
 	if (!ok) {
-		DEBUG(10, ("convert_string_talloc for substitute_name "
-			   "failed\n"));
+		DBG_DEBUG("convert_string_talloc for substitute_name "
+			  "failed\n");
 		goto fail;
 	}
 
@@ -196,8 +198,7 @@ struct symlink_reparse_struct *symlink_reparse_buffer_parse(
 		&result->print_name,
 		NULL);
 	if (!ok) {
-		DEBUG(10, ("convert_string_talloc for print_name "
-			   "failed\n"));
+		DBG_DEBUG("convert_string_talloc for print_name failed\n");
 		goto fail;
 	}
 
