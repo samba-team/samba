@@ -252,11 +252,14 @@ static void winbind_check_password_done(struct tevent_req *subreq)
 		status = authsam_search_account(state, ctx->auth_ctx->sam_ctx,
 						nt4_account, domain_dn, &msg);
 		if (NT_STATUS_IS_OK(status)) {
-			authsam_logon_success_accounting(
+			status = authsam_logon_success_accounting(
 				ctx->auth_ctx->sam_ctx, msg,
 				domain_dn,
 				user_info->flags & USER_INFO_INTERACTIVE_LOGON,
 				NULL);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
 		}
 	}
 
