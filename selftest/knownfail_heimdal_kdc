@@ -54,3 +54,13 @@
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_proxiable_as_protected.ad_dc
 #
 ^samba.tests.krb5.protected_users_tests.samba.tests.krb5.protected_users_tests.ProtectedUsersTests.test_samr_change_password_protected.ad_dc
+#
+# Lockout tests
+#
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_ntlm.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_rename_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_rename_ntlm.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_samr.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_ntlm.ad_dc:local

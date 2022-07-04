@@ -50,6 +50,7 @@ from samba.tests.krb5.rfc4120_constants import (
     AD_IF_RELEVANT,
     AD_WIN2K_PAC,
     FX_FAST_ARMOR_AP_REQUEST,
+    KDC_ERR_CLIENT_REVOKED,
     KDC_ERR_GENERIC,
     KDC_ERR_POLICY,
     KDC_ERR_PREAUTH_FAILED,
@@ -639,6 +640,13 @@ class RawKerberosTest(TestCaseInTempDir):
         if tkt_sig_support is None:
             tkt_sig_support = '0'
         cls.tkt_sig_support = bool(int(tkt_sig_support))
+
+        gnutls_pbkdf2_support = samba.tests.env_get_var_value(
+            'GNUTLS_PBKDF2_SUPPORT',
+            allow_missing=True)
+        if gnutls_pbkdf2_support is None:
+            gnutls_pbkdf2_support = '1'
+        cls.gnutls_pbkdf2_support = bool(int(gnutls_pbkdf2_support))
 
         expect_pac = samba.tests.env_get_var_value('EXPECT_PAC',
                                                    allow_missing=True)
@@ -3489,7 +3497,7 @@ class RawKerberosTest(TestCaseInTempDir):
                 expected_patypes += (PADATA_ETYPE_INFO2,)
 
             if error_code not in (KDC_ERR_PREAUTH_FAILED, KDC_ERR_SKEW,
-                                  KDC_ERR_POLICY):
+                                  KDC_ERR_POLICY, KDC_ERR_CLIENT_REVOKED):
                 if sent_fast:
                     expected_patypes += (PADATA_ENCRYPTED_CHALLENGE,)
                 else:
