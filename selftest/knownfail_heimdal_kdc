@@ -142,3 +142,13 @@
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_tgs_claims_remove_claims.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_tgs_claims_remove_claims_to_krbtgt.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_tgs_claims_to_krbtgt.ad_dc
+#
+# Lockout tests
+#
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_ntlm.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_rename_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_rename_ntlm.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_samr.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_ntlm.ad_dc:local
