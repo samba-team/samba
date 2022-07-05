@@ -1070,9 +1070,8 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	/* Verify that we don't have an entry for this IP yet */
 	for (vnn = ctdb->vnn; vnn != NULL; vnn = vnn->next) {
 		if (ctdb_same_sockaddr(addr, &vnn->public_address)) {
-			DEBUG(DEBUG_ERR,
-			      ("Duplicate public IP address '%s'\n",
-			       ctdb_addr_to_str(addr)));
+			D_ERR("Duplicate public IP address '%s'\n",
+			      ctdb_addr_to_str(addr));
 			return -1;
 		}
 	}
@@ -1080,39 +1079,40 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	/* Create a new VNN structure for this IP address */
 	vnn = talloc_zero(ctdb, struct ctdb_vnn);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		DBG_ERR("Memory allocation error\n");
 		return -1;
 	}
 	tmp = talloc_strdup(vnn, ifaces);
 	if (tmp == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		DBG_ERR("Memory allocation error\n");
 		talloc_free(vnn);
 		return -1;
 	}
 	for (iface = strtok(tmp, ","); iface; iface = strtok(NULL, ",")) {
 		struct vnn_interface *vnn_iface;
 		struct ctdb_interface *i;
+
 		if (!ctdb_sys_check_iface_exists(iface)) {
-			DEBUG(DEBUG_ERR,
-			      ("Unknown interface %s for public address %s\n",
-			       iface, ctdb_addr_to_str(addr)));
+			D_ERR("Unknown interface %s for public address %s\n",
+			      iface,
+			      ctdb_addr_to_str(addr));
 			talloc_free(vnn);
 			return -1;
 		}
 
 		i = ctdb_add_local_iface(ctdb, iface);
 		if (i == NULL) {
-			DEBUG(DEBUG_ERR,
-			      ("Failed to add interface '%s' "
-			       "for public address %s\n",
-			       iface, ctdb_addr_to_str(addr)));
+			D_ERR("Failed to add interface '%s' "
+			      "for public address %s\n",
+			      iface,
+			      ctdb_addr_to_str(addr));
 			talloc_free(vnn);
 			return -1;
 		}
 
 		vnn_iface = talloc_zero(vnn, struct vnn_interface);
 		if (vnn_iface == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+			DBG_ERR("Memory allocation error\n");
 			talloc_free(vnn);
 			return -1;
 		}
