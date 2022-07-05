@@ -402,7 +402,7 @@ static void ctdb_control_send_arp(struct tevent_context *ev,
 			ret = ctdb_connection_to_buf(buf,
 						     sizeof(buf),
 						     tcon,
-						     true,
+						     false,
 						     " -> ");
 			if (ret != 0) {
 				strlcpy(buf, "UNKNOWN", sizeof(buf));
