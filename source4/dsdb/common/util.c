@@ -2320,7 +2320,8 @@ int samdb_set_password_callback(struct ldb_request *req, struct ldb_reply *ares)
  * change failed.
  *
  * Results: NT_STATUS_OK, NT_STATUS_INVALID_PARAMETER, NT_STATUS_UNSUCCESSFUL,
- *   NT_STATUS_WRONG_PASSWORD, NT_STATUS_PASSWORD_RESTRICTION
+ *   NT_STATUS_WRONG_PASSWORD, NT_STATUS_PASSWORD_RESTRICTION,
+ *   NT_STATUS_ACCESS_DENIED, NT_STATUS_ACCOUNT_LOCKED_OUT, NT_STATUS_NO_MEMORY
  */
 static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
@@ -2502,6 +2503,9 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 			if (W_ERROR_EQUAL(werr, WERR_PASSWORD_RESTRICTION)) {
 				status = NT_STATUS_PASSWORD_RESTRICTION;
 			}
+			if (W_ERROR_EQUAL(werr, WERR_ACCOUNT_LOCKED_OUT)) {
+				status = NT_STATUS_ACCOUNT_LOCKED_OUT;
+			}
 		}
 	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* don't let the caller know if an account doesn't exist */
@@ -2553,6 +2557,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
  * Results: NT_STATUS_OK, NT_STATUS_INTERNAL_DB_CORRUPTION,
  *   NT_STATUS_INVALID_PARAMETER, NT_STATUS_UNSUCCESSFUL,
  *   NT_STATUS_WRONG_PASSWORD, NT_STATUS_PASSWORD_RESTRICTION,
+ *   NT_STATUS_ACCESS_DENIED, NT_STATUS_ACCOUNT_LOCKED_OUT, NT_STATUS_NO_MEMORY
  *   NT_STATUS_TRANSACTION_ABORTED, NT_STATUS_NO_SUCH_USER
  */
 NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
