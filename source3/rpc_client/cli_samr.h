@@ -175,6 +175,14 @@ NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
 				     struct samr_DomInfo1 **dominfo1,
 				     struct userPwdChangeFailureInformation **reject);
 
+NTSTATUS dcerpc_samr_chgpasswd_user4(struct dcerpc_binding_handle *h,
+				     TALLOC_CTX *mem_ctx,
+				     const char *srv_name_slash,
+				     const char *username,
+				     const char *oldpassword,
+				     const char *newpassword,
+				     NTSTATUS *presult);
+
 /**
  * @brief Create a set of max_entries, max_size for QueryDisplayInfo.
  *

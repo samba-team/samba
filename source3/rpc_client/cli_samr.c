@@ -28,6 +28,10 @@
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/init_lsa.h"
 #include "rpc_client/init_samr.h"
+#include "librpc/rpc/dcerpc_samr.h"
+#include "lib/crypto/gnutls_helpers.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 /* User change password */
 
@@ -462,6 +466,108 @@ NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
 	}
 
 	return result;
+}
+
+NTSTATUS dcerpc_samr_chgpasswd_user4(struct dcerpc_binding_handle *h,
+				     TALLOC_CTX *mem_ctx,
+				     const char *srv_name_slash,
+				     const char *username,
+				     const char *oldpassword,
+				     const char *newpassword,
+				     NTSTATUS *presult)
+{
+#ifdef HAVE_GNUTLS_PBKDF2
+	struct lsa_String server, user_account;
+	uint8_t old_nt_key_data[16] = {0};
+	gnutls_datum_t old_nt_key = {
+		.data = old_nt_key_data,
+		.size = sizeof(old_nt_key),
+	};
+	struct samr_EncryptedPasswordAES pwd_buf = {
+		.cipher_len = 0,
+	};
+	DATA_BLOB iv = {
+		.data = pwd_buf.salt,
+		.length = sizeof(pwd_buf.salt),
+	};
+	gnutls_datum_t iv_datum = {
+		.data = iv.data,
+		.size = iv.length,
+	};
+	uint8_t cek_data[16] = {0};
+	DATA_BLOB cek = {
+		.data = cek_data,
+		.length = sizeof(cek_data),
+	};
+	uint64_t pbkdf2_iterations = 0;
+	uint8_t pw_data[514] = {0};
+	DATA_BLOB plaintext = {
+		.data = pw_data,
+		.length = sizeof(pw_data),
+	};
+	DATA_BLOB ciphertext = data_blob_null;
+	NTSTATUS status;
+	bool ok;
+	int rc;
+
+	generate_nonce_buffer(iv.data, iv.length);
+
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	E_md4hash(oldpassword, old_nt_key_data);
+
+	init_lsa_String(&server, srv_name_slash);
+	init_lsa_String(&user_account, username);
+
+	pbkdf2_iterations = generate_random_u64_range(5000, 1000000);
+
+	rc = gnutls_pbkdf2(GNUTLS_MAC_SHA512,
+			   &old_nt_key,
+			   &iv_datum,
+			   pbkdf2_iterations,
+			   cek.data,
+			   cek.length);
+	BURN_DATA(old_nt_key_data);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_WRONG_PASSWORD);
+		return status;
+	}
+
+	ok = encode_pwd_buffer514_from_str(pw_data, newpassword, STR_UNICODE);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(
+		mem_ctx,
+		&plaintext,
+		&cek,
+		&samr_aes256_enc_key_salt,
+		&samr_aes256_mac_key_salt,
+		&iv,
+		&ciphertext,
+		pwd_buf.auth_data);
+	BURN_DATA(pw_data);
+	BURN_DATA(cek_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	pwd_buf.cipher_len = ciphertext.length;
+	pwd_buf.cipher = ciphertext.data;
+	pwd_buf.PBKDF2Iterations = pbkdf2_iterations;
+
+	status = dcerpc_samr_ChangePasswordUser4(h,
+						 mem_ctx,
+						 &server,
+						 &user_account,
+						 &pwd_buf,
+						 presult);
+	data_blob_free(&ciphertext);
+
+	return status;
+#else /* HAVE_GNUTLS_PBKDF2 */
+	return NT_STATUS_NOT_IMPLEMENTED;
+#endif /* HAVE_GNUTLS_PBKDF2 */
 }
 
 /* This function returns the bizzare set of (max_entries, max_size) required
