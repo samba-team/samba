@@ -709,7 +709,8 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 					bool *is_free,
 					bool *was_free,
 					TALLOC_CTX *mem_ctx,
-					struct smbXsrv_session_global0 **_g);
+					struct smbXsrv_session_global0 **_g,
+					uint32_t *pseqnum);
 
 static NTSTATUS smbXsrv_session_global_allocate(struct db_context *db,
 					TALLOC_CTX *mem_ctx,
@@ -761,7 +762,7 @@ static NTSTATUS smbXsrv_session_global_allocate(struct db_context *db,
 		smbXsrv_session_global_verify_record(global->db_rec,
 						     &is_free,
 						     &was_free,
-						     NULL, NULL);
+						     NULL, NULL, NULL);
 
 		if (!is_free) {
 			TALLOC_FREE(global->db_rec);
@@ -801,7 +802,8 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 					bool *is_free,
 					bool *was_free,
 					TALLOC_CTX *mem_ctx,
-					struct smbXsrv_session_global0 **_g)
+					struct smbXsrv_session_global0 **_g,
+					uint32_t *pseqnum)
 {
 	TDB_DATA key;
 	TDB_DATA val;
@@ -819,6 +821,9 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 	}
 	if (_g) {
 		*_g = NULL;
+	}
+	if (pseqnum) {
+		*pseqnum = 0;
 	}
 
 	key = dbwrap_record_get_key(db_rec);
@@ -909,6 +914,9 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 	if (_g) {
 		*_g = talloc_move(mem_ctx, &global);
 	}
+	if (pseqnum) {
+		*pseqnum = global_blob.seqnum;
+	}
 	TALLOC_FREE(frame);
 }
 
@@ -981,6 +989,8 @@ struct smb2srv_session_close_previous_state {
 	uint64_t previous_session_id;
 	uint64_t current_session_id;
 	struct db_record *db_rec;
+	uint64_t watch_instance;
+	uint32_t last_seqnum;
 };
 
 static void smb2srv_session_close_previous_cleanup(struct tevent_req *req,
@@ -990,7 +1000,12 @@ static void smb2srv_session_close_previous_cleanup(struct tevent_req *req,
 		tevent_req_data(req,
 		struct smb2srv_session_close_previous_state);
 
-	TALLOC_FREE(state->db_rec);
+	if (state->db_rec != NULL) {
+		dbwrap_watched_watch_remove_instance(state->db_rec,
+						     state->watch_instance);
+		state->watch_instance = 0;
+		TALLOC_FREE(state->db_rec);
+	}
 }
 
 static void smb2srv_session_close_previous_check(struct tevent_req *req);
@@ -1080,12 +1095,14 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 	bool is_free = false;
+	uint32_t seqnum = 0;
 
 	smbXsrv_session_global_verify_record(state->db_rec,
 					     &is_free,
 					     NULL,
 					     state,
-					     &global);
+					     &global,
+					     &seqnum);
 
 	if (is_free) {
 		tevent_req_done(req);
@@ -1104,8 +1121,29 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 		return;
 	}
 
+	/*
+	 * If the record changed, but we are not happy with the change yet,
+	 * we better remove ourself from the waiter list
+	 * (most likely the first position)
+	 * and re-add us at the end of the list.
+	 *
+	 * This gives other waiters a change
+	 * to make progress.
+	 *
+	 * Otherwise we'll keep our waiter instance alive,
+	 * keep waiting (most likely at first position).
+	 * It means the order of watchers stays fair.
+	 */
+	if (state->last_seqnum != seqnum) {
+		state->last_seqnum = seqnum;
+		dbwrap_watched_watch_remove_instance(state->db_rec,
+						     state->watch_instance);
+		state->watch_instance =
+			dbwrap_watched_watch_add_instance(state->db_rec);
+	}
+
 	subreq = dbwrap_watched_watch_send(state, state->ev, state->db_rec,
-					   0, /* resume_instance */
+					   state->watch_instance,
 					   (struct server_id){0});
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -1158,12 +1196,15 @@ static void smb2srv_session_close_previous_modified(struct tevent_req *subreq)
 		struct smb2srv_session_close_previous_state);
 	uint32_t global_id;
 	NTSTATUS status;
+	uint64_t instance = 0;
 
-	status = dbwrap_watched_watch_recv(subreq, NULL, NULL, NULL);
+	status = dbwrap_watched_watch_recv(subreq, &instance, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	state->watch_instance = instance;
 
 	global_id = state->previous_session_id & UINT32_MAX;
 
@@ -2323,7 +2364,8 @@ NTSTATUS smb2srv_session_lookup_global(struct smbXsrv_client *client,
 					     &is_free,
 					     NULL,
 					     session,
-					     &session->global);
+					     &session->global,
+					     NULL);
 	if (is_free) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_USER_SESSION_DELETED;
