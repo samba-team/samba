@@ -600,26 +600,6 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 	}
 
 	switch (hdb_auth_status) {
-	case KDC_AUTH_EVENT_CLIENT_AUTHORIZED:
-	{
-		TALLOC_CTX *frame = talloc_stackframe();
-		struct samba_kdc_entry *p = talloc_get_type(entry->context,
-							    struct samba_kdc_entry);
-		struct netr_SendToSamBase *send_to_sam = NULL;
-
-		/*
-		 * TODO: We could log the AS-REQ authorization success here as
-		 * well.  However before we do that, we need to pass
-		 * in the PAC here or re-calculate it.
-		 */
-		authsam_logon_success_accounting(kdc_db_ctx->samdb, p->msg,
-						 domain_dn, true, &send_to_sam);
-		if (kdc_db_ctx->rodc && send_to_sam != NULL) {
-			reset_bad_password_netlogon(frame, kdc_db_ctx, send_to_sam);
-		}
-		talloc_free(frame);
-	}
-	FALL_THROUGH;
 	default:
 	{
 		TALLOC_CTX *frame = talloc_stackframe();
@@ -661,6 +641,19 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		ui.auth_description = auth_description;
 
 		if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_AUTHORIZED) {
+			struct netr_SendToSamBase *send_to_sam = NULL;
+
+			/*
+			 * TODO: We could log the AS-REQ authorization success here as
+			 * well.  However before we do that, we need to pass
+			 * in the PAC here or re-calculate it.
+			 */
+			authsam_logon_success_accounting(kdc_db_ctx->samdb, p->msg,
+							 domain_dn, true, &send_to_sam);
+			if (kdc_db_ctx->rodc && send_to_sam != NULL) {
+				reset_bad_password_netlogon(frame, kdc_db_ctx, send_to_sam);
+			}
+
 			/* This is the final sucess */
 			status = NT_STATUS_OK;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_VALIDATED_LONG_TERM_KEY) {
