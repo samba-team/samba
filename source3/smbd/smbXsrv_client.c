@@ -189,7 +189,8 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 					bool *is_free,
 					bool *was_free,
 					TALLOC_CTX *mem_ctx,
-					struct smbXsrv_client_global0 **_g)
+					struct smbXsrv_client_global0 **_g,
+					uint32_t *pseqnum)
 {
 	TDB_DATA key;
 	TDB_DATA val;
@@ -207,6 +208,9 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 	}
 	if (_g) {
 		*_g = NULL;
+	}
+	if (pseqnum) {
+		*pseqnum = 0;
 	}
 
 	key = dbwrap_record_get_key(db_rec);
@@ -269,6 +273,9 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 
 	if (_g) {
 		*_g = talloc_move(mem_ctx, &global);
+	}
+	if (pseqnum) {
+		*pseqnum = global_blob.seqnum;
 	}
 	TALLOC_FREE(frame);
 }
@@ -414,6 +421,8 @@ struct smb2srv_client_mc_negprot_state {
 	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
 	struct db_record *db_rec;
+	uint64_t watch_instance;
+	uint32_t last_seqnum;
 };
 
 static void smb2srv_client_mc_negprot_cleanup(struct tevent_req *req,
@@ -423,7 +432,12 @@ static void smb2srv_client_mc_negprot_cleanup(struct tevent_req *req,
 		tevent_req_data(req,
 		struct smb2srv_client_mc_negprot_state);
 
-	TALLOC_FREE(state->db_rec);
+	if (state->db_rec != NULL) {
+		dbwrap_watched_watch_remove_instance(state->db_rec,
+						     state->watch_instance);
+		state->watch_instance = 0;
+		TALLOC_FREE(state->db_rec);
+	}
 }
 
 static void smb2srv_client_mc_negprot_next(struct tevent_req *req);
@@ -470,6 +484,7 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 	bool is_free = false;
 	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
+	uint32_t seqnum = 0;
 
 	SMB_ASSERT(state->db_rec == NULL);
 	state->db_rec = smbXsrv_client_global_fetch_locked(table->global.db_ctx,
@@ -484,8 +499,13 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 					    &is_free,
 					    NULL,
 					    state,
-					    &global);
+					    &global,
+					    &seqnum);
 	if (is_free) {
+		dbwrap_watched_watch_remove_instance(state->db_rec,
+						     state->watch_instance);
+		state->watch_instance = 0;
+
 		/*
 		 * This stores the new client information in
 		 * smbXsrv_client_global.tdb
@@ -542,10 +562,31 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 	}
 	tevent_req_set_callback(subreq, smb2srv_client_mc_negprot_done, req);
 
+	/*
+	 * If the record changed, but we are not happy with the change yet,
+	 * we better remove ourself from the waiter list
+	 * (most likely the first position)
+	 * and re-add us at the end of the list.
+	 *
+	 * This gives other waiters a change
+	 * to make progress.
+	 *
+	 * Otherwise we'll keep our waiter instance alive,
+	 * keep waiting (most likely at first position).
+	 * It means the order of watchers stays fair.
+	 */
+	if (state->last_seqnum != seqnum) {
+		state->last_seqnum = seqnum;
+		dbwrap_watched_watch_remove_instance(state->db_rec,
+						     state->watch_instance);
+		state->watch_instance =
+			dbwrap_watched_watch_add_instance(state->db_rec);
+	}
+
 	subreq = dbwrap_watched_watch_send(state,
 					   state->ev,
 					   state->db_rec,
-					   0, /* resume_instance */
+					   state->watch_instance,
 					   global->server_id);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -674,13 +715,19 @@ static void smb2srv_client_mc_negprot_watched(struct tevent_req *subreq)
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
+	struct smb2srv_client_mc_negprot_state *state =
+		tevent_req_data(req,
+		struct smb2srv_client_mc_negprot_state);
 	NTSTATUS status;
+	uint64_t instance = 0;
 
-	status = dbwrap_watched_watch_recv(subreq, NULL, NULL, NULL);
+	status = dbwrap_watched_watch_recv(subreq, &instance, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	state->watch_instance = instance;
 
 	smb2srv_client_mc_negprot_next(req);
 }
