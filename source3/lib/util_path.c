@@ -116,7 +116,6 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *pathname_in)
 	char *pathname = talloc_array(ctx, char, strlen(pathname_in)+2);
 	const char *s = pathname_in;
 	char *p = pathname;
-	bool wrote_slash = false;
 
 	if (pathname == NULL) {
 		return NULL;
@@ -124,7 +123,6 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *pathname_in)
 
 	/* Always start with a '/'. */
 	*p++ = '/';
-	wrote_slash = true;
 
 	while (*s) {
 		/* Deal with '/' or multiples of '/'. */
@@ -134,13 +132,12 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *pathname_in)
 				s++;
 			}
 			/* Update target with one '/' */
-			if (!wrote_slash) {
+			if (p[-1] != '/') {
 				*p++ = '/';
-				wrote_slash = true;
 			}
 			continue;
 		}
-		if (wrote_slash) {
+		if (p[-1] == '/') {
 			/* Deal with "./" or ".\0" */
 			if (s[0] == '.' &&
 					(s[1] == '/' || s[1] == '\0')) {
@@ -151,7 +148,6 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *pathname_in)
 					s++;
 				}
 				/* Don't write anything to target. */
-				/* wrote_slash is still true. */
 				continue;
 			}
 			/* Deal with "../" or "..\0" */
@@ -164,9 +160,9 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *pathname_in)
 					s++;
 				}
 				/*
-				 * As wrote_slash is true, we go back
-				 * one character to point p at the slash
-				 * we just saw.
+				 * As we're on the slash, we go back
+				 * one character to point p at the
+				 * slash we just saw.
 				 */
 				if (p > pathname) {
 					p--;
@@ -188,15 +184,13 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *pathname_in)
 				p++;
 
 				/* Don't write anything to target. */
-				/* wrote_slash is still true. */
 				continue;
 			}
 		}
 		/* Non-separator character, just copy. */
 		*p++ = *s++;
-		wrote_slash = false;
 	}
-	if (wrote_slash) {
+	if (p[-1] == '/') {
 		/*
 		 * We finished on a '/'.
 		 * Remove the trailing '/', but not if it's
