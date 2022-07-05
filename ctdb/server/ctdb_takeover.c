@@ -387,19 +387,25 @@ static void ctdb_control_send_arp(struct tevent_context *ev,
 
 		for (i=0;i<tcparray->num;i++) {
 			struct ctdb_connection *tcon;
+			char buf[128];
 
 			tcon = &tcparray->connections[i];
-			DEBUG(DEBUG_INFO,("sending tcp tickle ack for %u->%s:%u\n",
-				(unsigned)ntohs(tcon->dst.ip.sin_port),
-				ctdb_addr_to_str(&tcon->src),
-				(unsigned)ntohs(tcon->src.ip.sin_port)));
+			ret = ctdb_connection_to_buf(buf,
+						     sizeof(buf),
+						     tcon,
+						     true,
+						     " -> ");
+			if (ret != 0) {
+				strlcpy(buf, "UNKNOWN", sizeof(buf));
+			}
+			D_INFO("Send TCP tickle ACK: %s\n", buf);
 			ret = ctdb_sys_send_tcp(
 				&tcon->src,
 				&tcon->dst,
 				0, 0, 0);
 			if (ret != 0) {
-				DEBUG(DEBUG_CRIT,(__location__ " Failed to send tcp tickle ack for %s\n",
-					ctdb_addr_to_str(&tcon->src)));
+				DBG_ERR("Failed to send TCP tickle ACK: %s\n",
+					buf);
 			}
 		}
 	}
