@@ -148,32 +148,36 @@ void ctdb_wait_for_process_to_exit(pid_t pid)
 	}
 }
 
-#ifdef HAVE_AF_PACKET
+#ifdef HAVE_IF_NAMEINDEX
 
 bool ctdb_sys_check_iface_exists(const char *iface)
 {
-	int s;
-	struct ifreq ifr;
+	struct if_nameindex *ifnis, *ifni;
+	bool found = false;
 
-	s = socket(AF_PACKET, SOCK_RAW, 0);
-	if (s == -1){
-		/* We don't know if the interface exists, so assume yes */
-		DBG_ERR("Failed to open raw socket\n");
-		return true;
-	}
-
-	strlcpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
-	if (ioctl(s, SIOCGIFINDEX, &ifr) < 0 && errno == ENODEV) {
-		DBG_ERR("Interface '%s' not found\n", iface);
-		close(s);
+	ifnis = if_nameindex();
+	if (ifnis == NULL) {
+		DBG_ERR("Failed to retrieve inteface list\n");
 		return false;
 	}
-	close(s);
 
-	return true;
+	for (ifni = ifnis;
+	     ifni->if_index != 0 || ifni->if_name != NULL;
+	     ifni++) {
+		int cmp = strcmp(iface, ifni->if_name);
+		if (cmp == 0) {
+			found = true;
+			goto done;
+		}
+	}
+
+done:
+	if_freenameindex(ifnis);
+
+	return found;
 }
 
-#else /* HAVE_AF_PACKET */
+#else /* HAVE_IF_NAMEINDEX */
 
 bool ctdb_sys_check_iface_exists(const char *iface)
 {
@@ -181,7 +185,7 @@ bool ctdb_sys_check_iface_exists(const char *iface)
 	return true;
 }
 
-#endif /* HAVE_AF_PACKET */
+#endif /* HAVE_IF_NAMEINDEX */
 
 #ifdef HAVE_PEERCRED
 

@@ -171,15 +171,17 @@ static int fork_helper(void)
 */
 static int test_ctdb_sys_check_iface_exists(void)
 {
-	const char *fakename = "fake";
-	bool test;
+	bool test1, test2;
 
-	test = ctdb_sys_check_iface_exists(fakename);
-	if (geteuid() == 0) {
-		assert(test == false);
-	} else {
-		assert(test == true);
-	}
+	test1 = ctdb_sys_check_iface_exists("unlikely123xyz");
+	assert(!test1);
+
+	/* Linux and others */
+	test1 = ctdb_sys_check_iface_exists("lo");
+	/* FreeBSD */
+	test2 = ctdb_sys_check_iface_exists("lo0");
+	assert(test1 || test2);
+
 	return 0;
 }
 
