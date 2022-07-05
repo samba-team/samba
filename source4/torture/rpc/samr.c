@@ -41,6 +41,7 @@
 #include "../libcli/auth/schannel.h"
 #include "torture/util.h"
 #include "source4/librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_samr.h"
 #include "source3/rpc_client/init_samr.h"
 #include "lib/crypto/gnutls_helpers.h"
 
@@ -3013,6 +3014,123 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	}
 
 	return ret;
+}
+
+bool test_ChangePasswordUser4(struct dcerpc_pipe *p,
+			      struct torture_context *tctx,
+			      const char *account_string,
+			      int policy_min_pw_len,
+			      char **password,
+			      const char *newpassword)
+{
+#ifdef HAVE_GNUTLS_PBKDF2
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct samr_ChangePasswordUser4 r;
+	const char *oldpassword = *password;
+	char *srv_str = NULL;
+	struct lsa_String server;
+	struct lsa_String account;
+	uint8_t old_nt_key_data[16] = {0};
+	gnutls_datum_t old_nt_key = {
+		.data = old_nt_key_data,
+		.size = sizeof(old_nt_key),
+	};
+	uint8_t cek_data[16] = {0};
+	DATA_BLOB cek = {
+		.data = cek_data,
+		.length = sizeof(cek_data),
+	};
+	uint8_t pw_data[514] = {0};
+	DATA_BLOB plaintext = {
+		.data = pw_data,
+		.length = sizeof(pw_data),
+	};
+	DATA_BLOB ciphertext = data_blob_null;
+	struct samr_EncryptedPasswordAES pwd_buf = {.cipher_len = 0};
+	DATA_BLOB iv = {
+		.data = pwd_buf.salt,
+		.length = sizeof(pwd_buf.salt),
+	};
+	gnutls_datum_t iv_datum = {
+		.data = iv.data,
+		.size = iv.length,
+	};
+	uint64_t pbkdf2_iterations = generate_random_u64_range(5000, 1000000);
+	NTSTATUS status;
+	bool ok;
+	int rc;
+
+	torture_comment(tctx, "Testing ChangePasswordUser4\n");
+
+	if (newpassword == NULL) {
+		do {
+			if (policy_min_pw_len == 0) {
+				newpassword =
+					samr_rand_pass(tctx, policy_min_pw_len);
+			} else {
+				newpassword = samr_rand_pass_fixed_len(
+					tctx,
+					policy_min_pw_len);
+			}
+		} while (check_password_quality(newpassword) == false);
+	} else {
+		torture_comment(tctx, "Using password '%s'\n", newpassword);
+	}
+
+	torture_assert_not_null(tctx,
+				*password,
+				"Failing ChangePasswordUser4 as old password "
+				"was NULL.  Previous test failed?");
+
+	srv_str = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	torture_assert_not_null(tctx, srv_str, "srvstr is NULL");
+	init_lsa_String(&server, srv_str);
+
+	init_lsa_String(&account, account_string);
+
+	E_md4hash(oldpassword, old_nt_key_data);
+
+	generate_nonce_buffer(iv.data, iv.length);
+
+	rc = gnutls_pbkdf2(GNUTLS_MAC_SHA512,
+			   &old_nt_key,
+			   &iv_datum,
+			   pbkdf2_iterations,
+			   cek.data,
+			   cek.length);
+	torture_assert_int_equal(tctx, rc, 0, "gnutls_pbkdf2 failed");
+
+	ok = encode_pwd_buffer514_from_str(pw_data, newpassword, STR_UNICODE);
+	torture_assert(tctx, ok, "encode_aes_pw_buffer failed");
+
+	status = samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(
+		tctx,
+		&plaintext,
+		&cek,
+		&samr_aes256_enc_key_salt,
+		&samr_aes256_mac_key_salt,
+		&iv,
+		&ciphertext,
+		pwd_buf.auth_data);
+	torture_assert_ntstatus_ok(
+		tctx,
+		status,
+		"samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt failed");
+
+	pwd_buf.cipher_len = ciphertext.length;
+	pwd_buf.cipher = ciphertext.data;
+	pwd_buf.PBKDF2Iterations = pbkdf2_iterations;
+
+	r.in.server = &server;
+	r.in.account = &account;
+	r.in.password = &pwd_buf;
+
+	status = dcerpc_samr_ChangePasswordUser4_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ChangePasswordUser4 failed");
+
+	*password = talloc_strdup(tctx, newpassword);
+#endif /* HAVE_GNUTLS_PBKDF2 */
+	return true;
 }
 
 bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_context *tctx,
@@ -6207,6 +6325,10 @@ static bool test_ChangePassword(struct dcerpc_pipe *p,
 	}
 
 	if (!test_ChangePasswordUser3(p, tctx, acct_name, 0, password, NULL, 0, true)) {
+		ret = false;
+	}
+
+	if (!test_ChangePasswordUser4(p, tctx, acct_name, 0, password, NULL)) {
 		ret = false;
 	}
 
