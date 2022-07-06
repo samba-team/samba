@@ -81,7 +81,7 @@ def build(bld):
 
     bld.SAMBA_PYTHON('python_crypto',
                      source='py_crypto.c',
-                     deps='gnutls talloc',
+                     deps='gnutls talloc LIBCLI_AUTH',
                      realname='samba/crypto.so')
 
     bld.SAMBA_BINARY('test_gnutls_aead_aes_256_cbc_hmac_sha512',
