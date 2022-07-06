@@ -50,5 +50,5 @@ bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO',
 
 bld.SAMBA_PYTHON('python_crypto',
                  source='py_crypto.c',
-                 deps='gnutls talloc',
+                 deps='gnutls talloc LIBCLI_AUTH',
                  realname='samba/crypto.so')
