@@ -192,3 +192,32 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                 self.delete_test_file(c, fname)
 
             self.disable_smb3unix()
+
+    def test_posix_reserved_char(self):
+        try:
+            self.enable_smb3unix()
+
+            c = libsmb.Conn(
+                self.server_ip,
+                "smb3_posix_share",
+                self.lp,
+                self.creds,
+                posix=True)
+            self.assertTrue(c.have_posix())
+
+            test_files = ['a ', 'a  ', '. ', '.  ', 'a.',
+                          '.a', ' \\ ', '>', '<' '?']
+
+            for fname in test_files:
+                try:
+                    f,_,cc_out = c.create_ex('\\%s' % fname,
+                                    CreateDisposition=libsmb.FILE_CREATE,
+                                    DesiredAccess=security.SEC_STD_DELETE,
+                                    CreateContexts=[posix_context(0o744)])
+                except NTSTATUSError as e:
+                    self.fail(e)
+                c.delete_on_close(f, True)
+                c.close(f)
+
+        finally:
+            self.disable_smb3unix()
