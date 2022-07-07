@@ -730,7 +730,6 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	krb5_error_code krb5_ret;
 	const char *cc = NULL;
 	const char *principal_s = NULL;
-	const char *service = NULL;
 	char *realm = NULL;
 	fstring name_namespace, name_domain, name_user;
 	time_t ticket_lifetime = 0;
@@ -814,11 +813,6 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 					      realm);
 	}
 	if (principal_s == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	service = talloc_asprintf(mem_ctx, "%s/%s@%s", KRB5_TGS_NAME, realm, realm);
-	if (service == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -912,7 +906,6 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 
 		result = add_ccache_to_list(principal_s,
 					    cc,
-					    service,
 					    user,
 					    pass,
 					    realm,
@@ -1285,7 +1278,6 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			const char *cc = NULL;
 			char *realm = NULL;
 			const char *principal_s = NULL;
-			const char *service = NULL;
 			const char *user_ccache_file;
 
 			if (domain->alt_name == NULL) {
@@ -1325,12 +1317,6 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 				goto out;
 			}
 
-			service = talloc_asprintf(tmp_ctx, "%s/%s@%s", KRB5_TGS_NAME, realm, realm);
-			if (service == NULL) {
-				result = NT_STATUS_NO_MEMORY;
-				goto out;
-			}
-
 			if (user_ccache_file != NULL) {
 
 				if (_krb5ccname != NULL) {
@@ -1340,7 +1326,6 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 				result = add_ccache_to_list(principal_s,
 							    cc,
-							    service,
 							    user,
 							    pass,
 							    realm,

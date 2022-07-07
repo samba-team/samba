@@ -493,7 +493,6 @@ bool ccache_entry_identical(const char *username,
 
 NTSTATUS add_ccache_to_list(const char *princ_name,
 			    const char *ccname,
-			    const char *service,
 			    const char *username,
 			    const char *pass,
 			    const char *realm,
@@ -613,12 +612,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			goto no_mem;
 		}
 	}
-	if (service) {
-		entry->service = talloc_strdup(entry, service);
-		if (!entry->service) {
-			goto no_mem;
-		}
-	}
 	if (canon_principal != NULL) {
 		entry->canon_principal = talloc_strdup(entry, canon_principal);
 		if (entry->canon_principal == NULL) {
@@ -639,6 +632,15 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 
 	entry->realm = talloc_strdup(entry, realm);
 	if (!entry->realm) {
+		goto no_mem;
+	}
+
+	entry->service = talloc_asprintf(entry,
+					 "%s/%s@%s",
+					 KRB5_TGS_NAME,
+					 realm,
+					 realm);
+	if (entry->service == NULL) {
 		goto no_mem;
 	}
 
