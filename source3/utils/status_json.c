@@ -131,6 +131,7 @@ int traverse_connections_json(struct traverse_state *state,
 	struct json_object sub_json;
 	struct json_object connections_json;
 	int result = 0;
+	char *sess_id_str = NULL;
 	char *tcon_id_str = NULL;
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -160,6 +161,14 @@ int traverse_connections_json(struct traverse_state *state,
 		goto failure;
 	}
 	result = json_add_string(&sub_json, "tcon_id", tcon_id_str);
+	if (result < 0) {
+		goto failure;
+	}
+	sess_id_str = talloc_asprintf(tmp_ctx, "%u", crec->sess_id);
+	if (sess_id_str == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "session_id", sess_id_str);
 	if (result < 0) {
 		goto failure;
 	}
