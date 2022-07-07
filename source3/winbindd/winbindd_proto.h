@@ -119,15 +119,15 @@ NTSTATUS wb_cache_trusted_domains(struct winbindd_domain *domain,
 				  struct netr_DomainTrustList *trusts);
 
 NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct dom_sid *sid);
-NTSTATUS wcache_get_creds(struct winbindd_domain *domain, 
-			  TALLOC_CTX *mem_ctx, 
+NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
+			  TALLOC_CTX *mem_ctx,
 			  const struct dom_sid *sid,
 			  const uint8_t **cached_nt_pass,
 			  const uint8_t **cached_salt);
-NTSTATUS wcache_save_creds(struct winbindd_domain *domain, 
+NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 			   const struct dom_sid *sid,
 			   const uint8_t nt_pass[NT_HASH_LEN]);
-void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
+void wcache_invalidate_samlogon(struct winbindd_domain *domain,
 				const struct dom_sid *user_sid);
 bool wcache_invalidate_cache(void);
 bool wcache_invalidate_cache_noinit(void);
@@ -146,7 +146,7 @@ void cache_name2sid_trusted(struct winbindd_domain *domain,
 			const char *name,
 			enum lsa_SidType type,
 			const struct dom_sid *sid);
-void cache_name2sid(struct winbindd_domain *domain, 
+void cache_name2sid(struct winbindd_domain *domain,
 		    const char *domain_name, const char *name,
 		    enum lsa_SidType type, const struct dom_sid *sid);
 NTSTATUS wcache_query_user_fullname(struct winbindd_domain *domain,
@@ -259,8 +259,8 @@ NTSTATUS winbindd_get_creds(struct winbindd_domain *domain,
 			    const uint8_t **cached_nt_pass,
 			    const uint8_t **cred_salt);
 NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
-			      const char *user, 
-			      const char *pass, 
+			      const char *user,
+			      const char *pass,
 			      struct netr_SamInfo3 *info3);
 NTSTATUS winbindd_update_creds_by_info3(struct winbindd_domain *domain,
 				        const char *user,
