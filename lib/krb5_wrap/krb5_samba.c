@@ -3813,6 +3813,10 @@ int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,
 		ENCTYPE_NULL};
 	bool ok;
 
+	DBG_DEBUG("Getting ticket for service [%s] using creds from [%s] "
+		  "and impersonating [%s]\n",
+		  principal, ccname, impersonate_princ_s);
+
 	retval = smb_krb5_init_context_common(&context);
 	if (retval != 0) {
 		DBG_ERR("kerberos init context failed (%s)\n",
