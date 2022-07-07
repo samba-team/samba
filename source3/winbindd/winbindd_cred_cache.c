@@ -638,8 +638,8 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 	entry->service = talloc_asprintf(entry,
 					 "%s/%s@%s",
 					 KRB5_TGS_NAME,
-					 realm,
-					 realm);
+					 canon_realm,
+					 canon_realm);
 	if (entry->service == NULL) {
 		goto no_mem;
 	}
