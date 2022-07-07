@@ -22,6 +22,7 @@
 struct connections_data {
 	struct server_id pid;
 	int cnum;
+	uint32_t sess_id;
 	uid_t uid;
 	gid_t gid;
 	fstring servicename;
