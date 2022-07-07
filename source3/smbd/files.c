@@ -424,12 +424,20 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 		fsp_set_base_fsp(fsp, NULL);
 
 		status = fd_close(tmp_base_fsp);
-		SMB_ASSERT(NT_STATUS_IS_OK(status));
+		if (NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Closing fd for fsp [%s] failed: %s. "
+				"Please check your filesystem!!!\n",
+				fsp_str_dbg(fsp), nt_errstr(status));
+		}
 		file_free(NULL, tmp_base_fsp);
 	}
 
 	status = fd_close(fsp);
-	SMB_ASSERT(NT_STATUS_IS_OK(status));
+	if (NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Closing fd for fsp [%s] failed: %s. "
+			"Please check your filesystem!!!\n",
+			fsp_str_dbg(fsp), nt_errstr(status));
+	}
 	file_free(NULL, fsp);
 	smb_fname->fsp = NULL;
 
