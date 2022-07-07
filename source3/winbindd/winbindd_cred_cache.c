@@ -681,9 +681,8 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 
 	DLIST_ADD(ccache_list, entry);
 
-	DEBUG(10,("add_ccache_to_list: "
-		"added ccache [%s] for user [%s] to the list\n",
-		ccname, username));
+	DBG_DEBUG("Added ccache [%s] for user [%s] and service [%s]\n",
+		  entry->ccname, entry->username, entry->service);
 
 	if (entry->event) {
 		/*
