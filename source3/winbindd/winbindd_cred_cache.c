@@ -127,7 +127,7 @@ static void krb5_ticket_refresh_handler(struct tevent_context *event_ctx,
 #ifdef HAVE_KRB5
 
 	/* Kinit again if we have the user password and we can't renew the old
-	 * tgt anymore 
+	 * tgt anymore
 	 * NB
 	 * This happens when machine are put to sleep for a very long time. */
 
@@ -160,10 +160,10 @@ rekinit:
 				 * it, ignore error here */
 				ads_kdestroy(entry->ccname);
 
-				/* Don't break the ticket refresh chain: retry 
-				 * refreshing ticket sometime later when KDC is 
+				/* Don't break the ticket refresh chain: retry
+				 * refreshing ticket sometime later when KDC is
 				 * unreachable -- BoYang. More error code handling
-				 * here? 
+				 * here?
 				 * */
 
 				if ((ret == KRB5_KDC_UNREACH)
@@ -196,9 +196,9 @@ rekinit:
 #endif
 			goto done;
 		} else {
-				/* can this happen? 
+				/* can this happen?
 				 * No cached credentials
-				 * destroy ticket and refresh chain 
+				 * destroy ticket and refresh chain
 				 * */
 				ads_kdestroy(entry->ccname);
 				TALLOC_FREE(entry->event);
@@ -229,18 +229,18 @@ rekinit:
 
 		/* evil rises here, we refresh ticket failed,
 		 * but the ticket might be expired. Therefore,
-		 * When we refresh ticket failed, destory the 
+		 * When we refresh ticket failed, destory the
 		 * ticket */
 
 		ads_kdestroy(entry->ccname);
 
 		/* avoid breaking the renewal chain: retry in
 		 * lp_winbind_cache_time() seconds when the KDC was not
-		 * available right now. 
-		 * the return code can be KRB5_REALM_CANT_RESOLVE. 
+		 * available right now.
+		 * the return code can be KRB5_REALM_CANT_RESOLVE.
 		 * More error code handling here? */
 
-		if ((ret == KRB5_KDC_UNREACH) 
+		if ((ret == KRB5_KDC_UNREACH)
 		    || (ret == KRB5_REALM_CANT_RESOLVE)) {
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
 			new_start = time(NULL) + 30;
@@ -257,7 +257,7 @@ rekinit:
 
 		/* This is evil, if the ticket was already expired.
 		 * renew ticket function returns KRB5KRB_AP_ERR_TKT_EXPIRED.
-		 * But there is still a chance that we can rekinit it. 
+		 * But there is still a chance that we can rekinit it.
 		 *
 		 * This happens when user login in online mode, and then network
 		 * down or something cause winbind goes offline for a very long time,
@@ -274,7 +274,7 @@ rekinit:
 	}
 
 done:
-	/* in cases that ticket will be unrenewable soon, we don't try to renew ticket 
+	/* in cases that ticket will be unrenewable soon, we don't try to renew ticket
 	 * but try to regain ticket if it is possible */
 	if (entry->renew_until && expire_time
 	     && (entry->renew_until <= expire_time)) {
@@ -356,7 +356,7 @@ static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
 		DEBUG(3,("krb5_ticket_gain_handler: "
 			"could not kinit: %s\n",
 			error_message(ret)));
-		/* evil. If we cannot do it, destroy any the __maybe__ 
+		/* evil. If we cannot do it, destroy any the __maybe__
 		 * __existing__ ticket */
 		ads_kdestroy(entry->ccname);
 		goto retry_later;
@@ -369,9 +369,9 @@ static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
 	goto got_ticket;
 
   retry_later:
- 
+
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
- 	t = timeval_set(time(NULL) + 30, 0);
+	t = timeval_set(time(NULL) + 30, 0);
 #else
 	t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
 #endif
