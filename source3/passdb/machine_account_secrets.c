@@ -99,7 +99,7 @@ bool secrets_clear_domain_protection(const char *domain)
 {
 	bool ret;
 	void *protection = secrets_fetch(protect_ids_keystr(domain), NULL);
-	
+
 	if (protection) {
 		SAFE_FREE(protection);
 		ret = secrets_delete_entry(protect_ids_keystr(domain));
@@ -510,7 +510,7 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 		}
 	} else {
 		SIVAL(&sec_channel_bytes, 0, secure_channel_type);
-		ret = secrets_store(machine_sec_channel_type_keystr(domain), 
+		ret = secrets_store(machine_sec_channel_type_keystr(domain),
 				    &sec_channel_bytes, sizeof(sec_channel_bytes));
 		if (!ret) {
 			TALLOC_FREE(frame);
