@@ -778,8 +778,7 @@ void secrets_debug_domain_info(int lvl, const struct secrets_domain_info1 *info1
 
 	sdib.info.info1 = discard_const_p(struct secrets_domain_info1, info1);
 
-	ndr_print_debug((ndr_print_fn_t)ndr_print_secrets_domain_infoB,
-			name, &sdib);
+	NDR_PRINT_DEBUG_LEVEL(lvl, secrets_domain_infoB, &sdib);
 }
 
 char *secrets_domain_info_string(TALLOC_CTX *mem_ctx, const struct secrets_domain_info1 *info1,

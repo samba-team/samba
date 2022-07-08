@@ -112,7 +112,7 @@ static bool test_ioctl_req_resume_key(struct torture_context *torture,
 	torture_assert_ndr_success(torture, ndr_ret,
 				   "ndr_pull_req_resume_key_rsp");
 
-	ndr_print_debug((ndr_print_fn_t)ndr_print_req_resume_key_rsp, "yo", &res_key);
+	NDR_PRINT_DEBUG(req_resume_key_rsp, &res_key);
 
 	talloc_free(tmp_ctx);
 	return true;
@@ -156,7 +156,7 @@ static bool test_ioctl_req_two_resume_keys(struct torture_context *torture,
 	torture_assert_ndr_success(torture, ndr_ret,
 				   "ndr_pull_req_resume_key_rsp");
 
-	ndr_print_debug((ndr_print_fn_t)ndr_print_req_resume_key_rsp, "yo", &res_key);
+	NDR_PRINT_DEBUG(req_resume_key_rsp, &res_key);
 
 	ZERO_STRUCT(ioctl);
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
@@ -173,7 +173,7 @@ static bool test_ioctl_req_two_resume_keys(struct torture_context *torture,
 	torture_assert_ndr_success(torture, ndr_ret,
 				   "ndr_pull_req_resume_key_rsp");
 
-	ndr_print_debug((ndr_print_fn_t)ndr_print_req_resume_key_rsp, "yo", &res_key);
+	NDR_PRINT_DEBUG(req_resume_key_rsp, &res_key);
 
 	talloc_free(tmp_ctx);
 	return true;
@@ -3156,8 +3156,7 @@ static bool test_ioctl_network_interface_info(struct torture_context *torture,
 	torture_assert_ndr_success(torture, ndr_ret,
 				   "ndr_pull_fsctl_net_iface_info");
 
-	ndr_print_debug((ndr_print_fn_t)ndr_print_fsctl_net_iface_info,
-			"Network Interface Info", &net_iface);
+	NDR_PRINT_DEBUG(fsctl_net_iface_info, &net_iface);
 
 	talloc_free(tmp_ctx);
 	return true;

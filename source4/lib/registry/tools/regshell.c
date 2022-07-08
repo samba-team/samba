@@ -143,8 +143,7 @@ static WERROR cmd_info(struct regshell_context *ctx, int argc, const char **argv
 		printf("Error getting security descriptor: %s\n", win_errstr(error));
 		return WERR_OK;
 	}
-	ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor,
-			"Security", sec_desc);
+	NDR_PRINT_DEBUG(security_descriptor, sec_desc);
 	talloc_free(sec_desc);
 
 	return WERR_OK;

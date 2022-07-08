@@ -328,8 +328,8 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(struct torture_context *t
 		if (!security_descriptor_mask_equal(sd1.sd, sdbuf->sd, \
  			    ~SEC_DESC_SACL_PRESENT)) {\
 			torture_comment(tctx, "Security Descriptor Mismatch for %s:\n", #sd1);\
-		        ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor, "SamSync", sd1.sd);\
-		        ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor, "SamR", sdbuf->sd);\
+			NDR_PRINT_DEBUG(security_descriptor, sd1.sd);\
+			NDR_PRINT_DEBUG(security_descriptor, sdbuf->sd);\
 			ret = false;\
 		}\
 	}\

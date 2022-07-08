@@ -613,9 +613,7 @@ static bool ntprinting_printer_latin1_check(struct torture_context *tctx)
 				   ndr_err,
 				   "ndr_pull_ntprinting_printer");
 #if 0
-	ndr_print_debug((ndr_print_fn_t) ndr_print_ntprinting_printer,
-			"ntprinter",
-			&r);
+	NDR_PRINT_DEBUG(1, ntprinting_printer, &r);
 #endif
 	torture_assert_str_equal(tctx,
 				 r.info.printername,
