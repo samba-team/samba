@@ -1187,6 +1187,109 @@ NTSTATUS cli_smb2_unlink_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
+static ssize_t sid_parse_wire(TALLOC_CTX *mem_ctx, const uint8_t *data,
+			      struct dom_sid *sid, size_t num_rdata)
+{
+	size_t sid_size;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB in = data_blob_const(data, num_rdata);
+
+	ndr_err = ndr_pull_struct_blob(&in,
+				       mem_ctx,
+				       sid,
+				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return 0;
+	}
+
+	sid_size = ndr_size_dom_sid(sid, 0);
+	if (sid_size > num_rdata) {
+		return 0;
+	}
+
+	return sid_size;
+}
+
+/***************************************************************
+ Utility function to parse a SMB2_FIND_POSIX_INFORMATION reply.
+***************************************************************/
+
+static NTSTATUS parse_finfo_posix_info(const uint8_t *dir_data,
+				       uint32_t dir_data_length,
+				       struct file_info *finfo,
+				       uint32_t *next_offset)
+{
+	size_t namelen = 0;
+	size_t slen = 0, slen2 = 0;
+	size_t ret = 0;
+	uint32_t _next_offset = 0;
+
+	if (dir_data_length < 4) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
+	_next_offset = IVAL(dir_data, 0);
+
+	if (_next_offset > dir_data_length) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
+	if (_next_offset != 0) {
+		/* Ensure we only read what in this record. */
+		dir_data_length = _next_offset;
+	}
+
+	if (dir_data_length < 92) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
+	finfo->btime_ts = interpret_long_date((const char *)dir_data + 8);
+	finfo->atime_ts = interpret_long_date((const char *)dir_data + 16);
+	finfo->mtime_ts = interpret_long_date((const char *)dir_data + 24);
+	finfo->ctime_ts = interpret_long_date((const char *)dir_data + 32);
+	finfo->allocated_size = PULL_LE_U64(dir_data, 40);
+	finfo->size = PULL_LE_U64(dir_data, 48);
+	finfo->mode = PULL_LE_U32(dir_data, 56);
+	finfo->ino = PULL_LE_U64(dir_data, 60);
+	finfo->st_ex_dev = PULL_LE_U32(dir_data, 68);
+	finfo->st_ex_nlink = PULL_LE_U32(dir_data, 76);
+	finfo->reparse_tag = PULL_LE_U32(dir_data, 80);
+	finfo->st_ex_mode = wire_perms_to_unix(PULL_LE_U32(dir_data, 84));
+
+	slen = sid_parse_wire(finfo, dir_data+88, &finfo->owner_sid,
+			      dir_data_length-88);
+	if (slen == 0) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	slen2 = sid_parse_wire(finfo, dir_data+88+slen, &finfo->group_sid,
+			       dir_data_length-88-slen);
+	if (slen2 == 0) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	slen += slen2;
+
+	namelen = PULL_LE_U32(dir_data, 88+slen);
+	ret = pull_string_talloc(finfo,
+				dir_data,
+				FLAGS2_UNICODE_STRINGS,
+				&finfo->name,
+				dir_data+92+slen,
+				namelen,
+				STR_UNICODE);
+	if (ret == (size_t)-1) {
+		/* Bad conversion. */
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	if (finfo->name == NULL) {
+		/* Bad conversion. */
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	*next_offset = _next_offset;
+	return NT_STATUS_OK;
+}
+
 /***************************************************************
  Utility function to parse a SMB2_FIND_ID_BOTH_DIRECTORY_INFO reply.
 ***************************************************************/
@@ -1551,11 +1654,19 @@ NTSTATUS cli_smb2_list_recv(
 		goto fail;
 	}
 
-	status = parse_finfo_id_both_directory_info(
-		response->data + state->offset,
-		response->length - state->offset,
-		finfo,
-		&next_offset);
+	if (state->info_level == SMB2_FIND_POSIX_INFORMATION) {
+		status = parse_finfo_posix_info(
+			response->data + state->offset,
+			response->length - state->offset,
+			finfo,
+			&next_offset);
+	} else {
+		status = parse_finfo_id_both_directory_info(
+			response->data + state->offset,
+			response->length - state->offset,
+			finfo,
+			&next_offset);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
