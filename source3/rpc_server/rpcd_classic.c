@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/ndr_initshutdown_scompat.h"
 #include "source3/include/secrets.h"
 #include "locking/share_mode_lock.h"
+#include "source3/smbd/proto.h"
 
 static size_t classic_interfaces(
 	const struct ndr_interface_table ***pifaces,
@@ -80,6 +81,8 @@ static size_t classic_servers(
 	}
 
 	lp_load_with_shares(get_dyn_CONFIGFILE());
+
+	mangle_reset_cache();
 
 	*_ep_servers = ep_servers;
 	return ARRAY_SIZE(ep_servers);

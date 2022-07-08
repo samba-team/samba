@@ -24,6 +24,7 @@
 #include "source3/printing/queue_process.h"
 #include "source3/include/messages.h"
 #include "source3/include/secrets.h"
+#include "source3/smbd/proto.h"
 
 static size_t spoolss_interfaces(
 	const struct ndr_interface_table ***pifaces,
@@ -67,6 +68,8 @@ static size_t spoolss_servers(
 		DBG_WARNING("printing_subsystem_init() failed\n");
 		exit(1);
 	}
+
+	mangle_reset_cache();
 
 	*_ep_servers = ep_servers;
 	return ARRAY_SIZE(ep_servers);
