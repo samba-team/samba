@@ -1,5 +1,0 @@
-# This test currently depends on a race. The password_hash dsdb module
-# relinquishes and immediately reacquires a transaction lock, and another
-# process may be able to acquire it during the short period of time in which it
-# is not held.
-^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_ldap_pw_change.ad_dc:local
