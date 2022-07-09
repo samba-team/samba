@@ -518,7 +518,11 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 	}
 
 	TALLOC_FREE(tmp_ctx);
-	return NT_STATUS_WRONG_PASSWORD;
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		nt_status = NT_STATUS_WRONG_PASSWORD;
+	}
+	return nt_status;
 }
 
 static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,

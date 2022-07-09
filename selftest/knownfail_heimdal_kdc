@@ -51,4 +51,3 @@
 # Lockout tests
 #
 ^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_kdc.ad_dc:local
-^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_ntlm.ad_dc:local
