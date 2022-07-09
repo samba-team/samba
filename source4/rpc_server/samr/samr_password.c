@@ -534,7 +534,11 @@ failed:
 
 	/* Only update the badPwdCount if we found the user */
 	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
-		authsam_update_bad_pwd_count(sam_ctx, msg, ldb_get_default_basedn(sam_ctx));
+		NTSTATUS bad_pwd_status = authsam_update_bad_pwd_count(
+			sam_ctx, msg, ldb_get_default_basedn(sam_ctx));
+		if (NT_STATUS_EQUAL(bad_pwd_status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
+			status = bad_pwd_status;
+		}
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 		/* Don't give the game away:  (don't allow anonymous users to prove the existence of usernames) */
 		status = NT_STATUS_WRONG_PASSWORD;
