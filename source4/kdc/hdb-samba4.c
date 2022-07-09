@@ -703,8 +703,13 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_TIME_SKEW) {
 			status = NT_STATUS_TIME_DIFFERENCE_AT_DC;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_WRONG_LONG_TERM_KEY) {
-			authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
-			status = NT_STATUS_WRONG_PASSWORD;
+			status = authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
+				final_ret = KRB5KDC_ERR_CLIENT_REVOKED;
+				r->error_code = final_ret;
+			} else {
+				status = NT_STATUS_WRONG_PASSWORD;
+			}
 			rwdc_fallback = kdc_db_ctx->rodc;
 		} else if (hdb_auth_status == KDC_AUTH_EVENT_CLIENT_LOCKED_OUT) {
 			status = NT_STATUS_ACCOUNT_LOCKED_OUT;
