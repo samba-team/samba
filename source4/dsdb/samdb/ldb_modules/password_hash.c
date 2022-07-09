@@ -2733,24 +2733,6 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 	int ret; /* The errors we will actually return */
 	int dbg_ret; /* The errors we can only complain about in logs */
 
-	/* PSO search result is optional (NULL if no PSO applies) */
-	if (io->ac->pso_res != NULL) {
-		pso_msg = io->ac->pso_res->message;
-	}
-
-	status = dsdb_update_bad_pwd_count(io->ac, ldb,
-					   io->ac->search_res->message,
-					   io->ac->dom_res->message,
-					   pso_msg,
-					   &mod_msg);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	if (mod_msg == NULL) {
-		goto done;
-	}
-
 	/*
 	 * OK, horrible semantics ahead.
 	 *
@@ -2793,6 +2775,24 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 		goto done;
 	}
 
+	/* PSO search result is optional (NULL if no PSO applies) */
+	if (io->ac->pso_res != NULL) {
+		pso_msg = io->ac->pso_res->message;
+	}
+
+	status = dsdb_update_bad_pwd_count(io->ac, ldb,
+					   io->ac->search_res->message,
+					   io->ac->dom_res->message,
+					   pso_msg,
+					   &mod_msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto end_transaction;
+	}
+
+	if (mod_msg == NULL) {
+		goto end_transaction;
+	}
+
 	dbg_ret = dsdb_module_modify(io->ac->module, mod_msg,
 				 DSDB_FLAG_NEXT_MODULE,
 				 io->ac->req);
@@ -2806,6 +2806,7 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 		 */
 	}
 
+end_transaction:
 	dbg_ret = ldb_next_end_trans(io->ac->module);
 	if (dbg_ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
