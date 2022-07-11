@@ -37,7 +37,7 @@ struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct winbindd_getsidaliases_state *state;
 	struct winbindd_domain *domain;
-	uint32_t num_sids;
+	uint32_t num_sids, i;
 	struct dom_sid *sids;
 
 	req = tevent_req_create(mem_ctx, &state,
