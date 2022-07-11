@@ -3114,6 +3114,46 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_samr_chgpasswd4(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx,
+				    int argc,
+				    const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	const char *srv_name_slash = cli->srv_name_slash;
+	const char *user = NULL;
+	const char *oldpass = NULL;
+	const char *newpass = NULL;
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (argc < 4) {
+		printf("Usage: %s username oldpass newpass\n", argv[0]);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	user = argv[1];
+	oldpass = argv[2];
+	newpass = argv[3];
+
+	/* Change user password */
+	status = dcerpc_samr_chgpasswd_user4(b,
+					     mem_ctx,
+					     srv_name_slash,
+					     user,
+					     oldpass,
+					     newpass,
+					     &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+	}
+
+	return status;
+}
+
 static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 int argc, const char **argv,
@@ -3841,6 +3881,16 @@ struct cmd_set samr_commands[] = {
 		.name               = "chgpasswd3",
 		.returntype         = RPC_RTYPE_NTSTATUS,
 		.ntfn               = cmd_samr_chgpasswd3,
+		.wfn                = NULL,
+		.table              = &ndr_table_samr,
+		.rpc_pipe           = NULL,
+		.description        = "Change user password",
+		.usage              = "",
+	},
+	{
+		.name               = "chgpasswd4",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_samr_chgpasswd4,
 		.wfn                = NULL,
 		.table              = &ndr_table_samr,
 		.rpc_pipe           = NULL,
