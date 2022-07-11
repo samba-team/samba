@@ -529,9 +529,29 @@ static int traverse_sessionid_stdout(struct traverse_state *state,
 				     char *uid_gid_str,
 				     char *machine_hostname,
 				     const char *dialect,
-				     const char *encryption,
-				     const char *signing)
+				     const char *encryption_cipher,
+				     enum crypto_degree encryption_degree,
+				     const char *signing_cipher,
+				     enum crypto_degree signing_degree)
 {
+	fstring encryption;
+	fstring signing;
+
+	if (encryption_degree == CRYPTO_DEGREE_FULL) {
+		fstr_sprintf(encryption, "%s", encryption_cipher);
+	} else if (encryption_degree == CRYPTO_DEGREE_PARTIAL) {
+		fstr_sprintf(encryption, "partial(%s)", encryption_cipher);
+	} else {
+		fstr_sprintf(encryption, "-");
+	}
+	if (signing_degree == CRYPTO_DEGREE_FULL) {
+		fstr_sprintf(signing, "%s", signing_cipher);
+	} else if (signing_degree == CRYPTO_DEGREE_PARTIAL) {
+		fstr_sprintf(signing, "partial(%s)", signing_cipher);
+	} else {
+		fstr_sprintf(signing, "-");
+	}
+
 	d_printf("%-7s %-25s %-41s %-17s %-20s %-21s\n",
 		 server_id, uid_gid_str, machine_hostname, dialect, encryption,
 		 signing);
@@ -558,7 +578,9 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	char *machine_hostname = NULL;
 	int result = 0;
 	const char *encryption = "-";
+	enum crypto_degree encryption_degree = CRYPTO_DEGREE_NONE;
 	const char *signing = "-";
+	enum crypto_degree signing_degree = CRYPTO_DEGREE_NONE;
 	struct traverse_state *state = (struct traverse_state *)private_data;
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -622,7 +644,8 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		return -1;
 	}
 
-	if (smbXsrv_is_encrypted(session->encryption_flags)) {
+	if (smbXsrv_is_encrypted(session->encryption_flags) ||
+			smbXsrv_is_partially_encrypted(session->encryption_flags)) {
 		switch (session->cipher) {
 		case SMB2_ENCRYPTION_AES128_CCM:
 			encryption = "AES-128-CCM";
@@ -641,31 +664,15 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 			result = -1;
 			break;
 		}
-	} else if (smbXsrv_is_partially_encrypted(session->encryption_flags)) {
-		switch (session->cipher) {
-		case SMB_ENCRYPTION_GSSAPI:
-			encryption = "partial(GSSAPI)";
-			break;
-		case SMB2_ENCRYPTION_AES128_CCM:
-			encryption = "partial(AES-128-CCM)";
-			break;
-		case SMB2_ENCRYPTION_AES128_GCM:
-			encryption = "partial(AES-128-GCM)";
-			break;
-		case SMB2_ENCRYPTION_AES256_CCM:
-			encryption = "partial(AES-256-CCM)";
-			break;
-		case SMB2_ENCRYPTION_AES256_GCM:
-			encryption = "partial(AES-256-GCM)";
-			break;
-		default:
-			encryption = "???";
-			result = -1;
-			break;
+		if (smbXsrv_is_encrypted(session->encryption_flags)) {
+			encryption_degree = CRYPTO_DEGREE_FULL;
+		} else if (smbXsrv_is_partially_encrypted(session->encryption_flags)) {
+			encryption_degree = CRYPTO_DEGREE_PARTIAL;
 		}
 	}
 
-	if (smbXsrv_is_signed(session->signing_flags)) {
+	if (smbXsrv_is_signed(session->signing_flags) ||
+			smbXsrv_is_partially_signed(session->signing_flags)) {
 		switch (session->signing) {
 		case SMB2_SIGNING_MD5_SMB1:
 			signing = "HMAC-MD5";
@@ -684,24 +691,10 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 			result = -1;
 			break;
 		}
-	} else if (smbXsrv_is_partially_signed(session->signing_flags)) {
-		switch (session->signing) {
-		case SMB2_SIGNING_MD5_SMB1:
-			signing = "partial(HMAC-MD5)";
-			break;
-		case SMB2_SIGNING_HMAC_SHA256:
-			signing = "partial(HMAC-SHA256)";
-			break;
-		case SMB2_SIGNING_AES128_CMAC:
-			signing = "partial(AES-128-CMAC)";
-			break;
-		case SMB2_SIGNING_AES128_GMAC:
-			signing = "partial(AES-128-GMAC)";
-			break;
-		default:
-			signing = "???";
-			result = -1;
-			break;
+		if (smbXsrv_is_signed(session->signing_flags)) {
+			signing_degree = CRYPTO_DEGREE_FULL;
+		} else if (smbXsrv_is_partially_signed(session->signing_flags)) {
+			signing_degree = CRYPTO_DEGREE_PARTIAL;
 		}
 	}
 
@@ -712,7 +705,9 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 				  machine_hostname,
 				  session_dialect_str(session->connection_dialect),
 				  encryption,
-				  signing);
+				  encryption_degree,
+				  signing,
+				  signing_degree);
 
 	TALLOC_FREE(machine_hostname);
 	TALLOC_FREE(tmp_ctx);
