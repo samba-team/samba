@@ -147,7 +147,7 @@ def get_utdv_distances(utdv_edges, dsas):
                     dist = peak - utdv_edges[dn2][dn1]
                     d[dn2] = dist
                 else:
-                    print("Missing dn %s from UTD vector" % dn1,
+                    print(f"Missing dn {dn1} from UTD vector for dsa {dn2}",
                           file=sys.stderr)
             else:
                 print("missing dn %s from UTD vector list" % dn2,
