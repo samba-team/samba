@@ -36,7 +36,7 @@ static NTSTATUS wb_add_rids_to_sids(TALLOC_CTX *mem_ctx,
 				    uint32_t *pnum_sids,
 				    struct dom_sid **psids,
 				    const struct dom_sid *domain_sid,
-				    int num_rids, uint32_t *rids);
+				    uint32_t num_rids, uint32_t *rids);
 
 static void wb_gettoken_gotuser(struct tevent_req *subreq);
 static void wb_gettoken_gotgroups(struct tevent_req *subreq);
@@ -127,7 +127,7 @@ static void wb_gettoken_gotgroups(struct tevent_req *subreq)
 		return;
 	}
 
-	D_DEBUG("Received %d group(s).\n", num_groups);
+	D_DEBUG("Received %u group(s).\n", num_groups);
 	for (i = 0; i < num_groups; i++) {
 		D_DEBUG("Adding SID %s.\n", dom_sid_str_buf(&groups[i], &buf));
 		status = add_sid_to_array_unique(
@@ -153,7 +153,7 @@ static void wb_gettoken_gotgroups(struct tevent_req *subreq)
 		return;
 	}
 
-	D_DEBUG("Expand domain's aliases for %d  SIDs.\n", state->num_sids);
+	D_DEBUG("Expand domain's aliases for %u SID(s).\n", state->num_sids);
 	subreq = wb_lookupuseraliases_send(state, state->ev, domain,
 					   state->num_sids, state->sids);
 	if (tevent_req_nomem(subreq, req)) {
@@ -179,7 +179,7 @@ static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq)
 		return;
 	}
 
-	D_DEBUG("Got %d RID(s).\n", num_rids);
+	D_DEBUG("Got %u RID(s).\n", num_rids);
 	status = wb_add_rids_to_sids(state, &state->num_sids, &state->sids,
 				     get_global_sam_sid(), num_rids, rids);
 	if (tevent_req_nterror(req, status)) {
@@ -191,7 +191,7 @@ static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq)
 	 * Now expand the builtin groups
 	 */
 
-	D_DEBUG("Expand the builtin groups for %d SID(s).\n", state->num_sids);
+	D_DEBUG("Expand the builtin groups for %u SID(s).\n", state->num_sids);
 	domain = find_domain_from_sid(&global_sid_Builtin);
 	if (domain == NULL) {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
@@ -221,7 +221,7 @@ static void wb_gettoken_gotbuiltins(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	D_DEBUG("Got %d RID(s).\n", num_rids);
+	D_DEBUG("Got %u RID(s).\n", num_rids);
 	status = wb_add_rids_to_sids(state, &state->num_sids, &state->sids,
 				     &global_sid_Builtin, num_rids, rids);
 	if (tevent_req_nterror(req, status)) {
@@ -242,10 +242,10 @@ NTSTATUS wb_gettoken_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 	*num_sids = state->num_sids;
-	D_INFO("WB command gettoken end.\nReceived %d SID(s).\n", state->num_sids);
+	D_INFO("WB command gettoken end.\nReceived %u SID(s).\n", state->num_sids);
 	for (i = 0; i < state->num_sids; i++) {
 		struct dom_sid_buf sidbuf;
-		D_INFO("%d: %s\n", i, dom_sid_str_buf(&state->sids[i], &sidbuf));
+		D_INFO("%u: %s\n", i, dom_sid_str_buf(&state->sids[i], &sidbuf));
 	}
 
 	*sids = talloc_move(mem_ctx, &state->sids);
@@ -256,11 +256,11 @@ static NTSTATUS wb_add_rids_to_sids(TALLOC_CTX *mem_ctx,
 				    uint32_t *pnum_sids,
 				    struct dom_sid **psids,
 				    const struct dom_sid *domain_sid,
-				    int num_rids, uint32_t *rids)
+				    uint32_t num_rids, uint32_t *rids)
 {
-	int i;
+	uint32_t i;
 	D_DEBUG("%u SID(s) will be uniquely added to the SID array.\n"
-		"Before the addition the array has %d SID(s).\n",
+		"Before the addition the array has %u SID(s).\n",
 		num_rids, *pnum_sids);
 	for (i = 0; i < num_rids; i++) {
 		NTSTATUS status;
@@ -274,6 +274,6 @@ static NTSTATUS wb_add_rids_to_sids(TALLOC_CTX *mem_ctx,
 			return status;
 		}
 	}
-	D_DEBUG("After the addition the array has %d SID(s).\n", *pnum_sids);
+	D_DEBUG("After the addition the array has %u SID(s).\n", *pnum_sids);
 	return NT_STATUS_OK;
 }

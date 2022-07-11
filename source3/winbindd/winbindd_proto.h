@@ -663,7 +663,7 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    const struct dom_sid *sid);
 NTSTATUS wb_lookupusergroups_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-				  int *num_sids, struct dom_sid **sids);
+				  uint32_t *num_sids, struct dom_sid **sids);
 
 struct tevent_req *winbindd_getuserdomgroups_send(TALLOC_CTX *mem_ctx,
 						  struct tevent_context *ev,

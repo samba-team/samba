@@ -94,12 +94,12 @@ static void wb_lookupusergroups_done(struct tevent_req *subreq)
 }
 
 NTSTATUS wb_lookupusergroups_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-				  int *num_sids, struct dom_sid **sids)
+				  uint32_t *num_sids, struct dom_sid **sids)
 {
 	struct wb_lookupusergroups_state *state = tevent_req_data(
 		req, struct wb_lookupusergroups_state);
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
@@ -107,11 +107,11 @@ NTSTATUS wb_lookupusergroups_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	*num_sids = state->sids.num_sids;
 	*sids = talloc_move(mem_ctx, &state->sids.sids);
 
-	D_INFO("WB command lookupusergroups end.\nReceived %d SID(s).\n",
+	D_INFO("WB command lookupusergroups end.\nReceived %u SID(s).\n",
 	       *num_sids);
 	for (i = 0; i < *num_sids; i++) {
 		struct dom_sid_buf buf;
-		D_INFO("%d: %s\n", i, dom_sid_str_buf(&*sids[i], &buf));
+		D_INFO("%u: %s\n", i, dom_sid_str_buf(&*sids[i], &buf));
 	}
 	return NT_STATUS_OK;
 }
