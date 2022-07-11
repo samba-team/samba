@@ -25,4 +25,10 @@ struct traverse_state {
 	bool resolve_uids;
 };
 
+enum crypto_degree {
+        CRYPTO_DEGREE_NONE,
+        CRYPTO_DEGREE_PARTIAL,
+        CRYPTO_DEGREE_FULL
+};
+
 #endif
