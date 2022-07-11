@@ -29,7 +29,7 @@ struct winbindd_getgroups_state {
 	fstring username;
 	struct dom_sid sid;
 	enum lsa_SidType type;
-	int num_sids;
+	uint32_t num_sids;
 	struct dom_sid *sids;
 	int num_gids;
 	gid_t *gids;
@@ -158,7 +158,7 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 		req, struct winbindd_getgroups_state);
 	NTSTATUS status;
 	struct unixid *xids;
-	int i;
+	uint32_t i;
 
 	xids = talloc_array(state, struct unixid, state->num_sids);
 	if (tevent_req_nomem(xids, req)) {

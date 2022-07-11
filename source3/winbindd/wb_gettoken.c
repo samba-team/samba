@@ -114,7 +114,7 @@ static void wb_gettoken_gotgroups(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_gettoken_state *state = tevent_req_data(
 		req, struct wb_gettoken_state);
-	int i, num_groups;
+	uint32_t i, num_groups;
 	struct dom_sid *groups;
 	struct winbindd_domain *domain;
 	NTSTATUS status;
@@ -231,12 +231,12 @@ static void wb_gettoken_gotbuiltins(struct tevent_req *subreq)
 }
 
 NTSTATUS wb_gettoken_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			  int *num_sids, struct dom_sid **sids)
+			  uint32_t *num_sids, struct dom_sid **sids)
 {
 	struct wb_gettoken_state *state = tevent_req_data(
 		req, struct wb_gettoken_state);
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;

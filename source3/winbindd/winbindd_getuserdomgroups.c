@@ -23,7 +23,7 @@
 
 struct winbindd_getuserdomgroups_state {
 	struct dom_sid sid;
-	int num_sids;
+	uint32_t num_sids;
 	struct dom_sid *sids;
 };
 
