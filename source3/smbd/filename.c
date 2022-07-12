@@ -247,83 +247,57 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
-/*
- * Re-order a known good @GMT-token path.
- */
-
-static NTSTATUS rearrange_snapshot_path(struct smb_filename *smb_fname,
-				char *startp,
-				char *endp)
+static bool find_snapshot_token(
+	const char *filename,
+	const char **_start,
+	const char **_next_component,
+	NTTIME *twrp)
 {
-	size_t endlen = 0;
-	size_t gmt_len = endp - startp;
-	char gmt_store[gmt_len + 1];
-	char *parent = NULL;
-	const char *last_component = NULL;
-	char *newstr;
-	bool ret;
+	const char *start = NULL;
+	const char *end = NULL;
+	struct tm tm;
+	time_t t;
 
-	DBG_DEBUG("|%s| -> ", smb_fname->base_name);
+	start = strstr_m(filename, "@GMT-");
 
-	/* Save off the @GMT-token. */
-	memcpy(gmt_store, startp, gmt_len);
-	gmt_store[gmt_len] = '\0';
-
-	if (*endp == '/') {
-		/* Remove any trailing '/' */
-		endp++;
+	if (start == NULL) {
+		return false;
 	}
 
-	if (*endp == '\0') {
+	if ((start > filename) && (start[-1] != '/')) {
+		/* the GMT-token does not start a path-component */
+		return false;
+	}
+
+	end = strptime(start, GMT_FORMAT, &tm);
+	if (end == NULL) {
+		/* Not a valid timestring. */
+		return false;
+	}
+
+	if ((end[0] != '\0') && (end[0] != '/')) {
 		/*
-		 * @GMT-token was at end of path.
-		 * Remove any preceding '/'
+		 * It is not a complete path component, i.e. the path
+		 * component continues after the gmt-token.
 		 */
-		if (startp > smb_fname->base_name && startp[-1] == '/') {
-			startp--;
-		}
+		return false;
 	}
 
-	/* Remove @GMT-token from the path. */
-	endlen = strlen(endp);
-	memmove(startp, endp, endlen + 1);
+	tm.tm_isdst = -1;
+	t = timegm(&tm);
+	unix_to_nt_time(twrp, t);
 
-	/* Split the remaining path into components. */
-	ret = parent_dirname(smb_fname,
-				smb_fname->base_name,
-				&parent,
-				&last_component);
-	if (!ret) {
-		/* Must terminate debug with \n */
-		DBG_DEBUG("NT_STATUS_NO_MEMORY\n");
-		return NT_STATUS_NO_MEMORY;
+	DBG_DEBUG("Extracted @GMT-Timestamp %s\n",
+		  nt_time_string(talloc_tos(), *twrp));
+
+	*_start = start;
+
+	if (end[0] == '/') {
+		end += 1;
 	}
+	*_next_component = end;
 
-	if (ISDOT(parent)) {
-		if (last_component[0] == '\0') {
-			newstr = talloc_strdup(smb_fname,
-					gmt_store);
-		} else {
-			newstr = talloc_asprintf(smb_fname,
-					"%s/%s",
-					gmt_store,
-					last_component);
-		}
-	} else {
-		newstr = talloc_asprintf(smb_fname,
-					"%s/%s/%s",
-					gmt_store,
-					parent,
-					last_component);
-	}
-
-	TALLOC_FREE(parent);
-	TALLOC_FREE(smb_fname->base_name);
-	smb_fname->base_name = newstr;
-
-	DBG_DEBUG("|%s|\n", newstr);
-
-	return NT_STATUS_OK;
+	return true;
 }
 
 /*
@@ -344,13 +318,10 @@ NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 				    uint32_t ucf_flags,
 				    NTTIME twrp)
 {
-	char *startp = NULL;
-	char *endp = NULL;
-	char *tmp = NULL;
-	struct tm tm;
-	time_t t;
-	NTTIME nt;
-	NTSTATUS status;
+	const char *start = NULL;
+	const char *next = NULL;
+	size_t remaining;
+	bool found;
 
 	if (twrp != 0) {
 		smb_fname->twrp = twrp;
@@ -360,60 +331,18 @@ NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 		return NT_STATUS_OK;
 	}
 
-	startp = strchr_m(smb_fname->base_name, '@');
-	if (startp == NULL) {
-		/* No @ */
+	found = find_snapshot_token(
+		smb_fname->base_name, &start, &next, &twrp);
+	if (!found) {
 		return NT_STATUS_OK;
 	}
 
-	startp = strstr_m(startp, "@GMT-");
-	if (startp == NULL) {
-		/* No @ */
-		return NT_STATUS_OK;
-	}
+	remaining = strlen(next);
 
-	if ((startp > smb_fname->base_name) && (startp[-1] != '/')) {
-		/* the GMT-token does not start a path-component */
-		return NT_STATUS_OK;
-	}
-
-	endp = strptime(startp, GMT_FORMAT, &tm);
-	if (endp == NULL) {
-		/* Not a valid timestring. */
-		return NT_STATUS_OK;
-	}
-
-	if (endp[0] != '\0' && endp[0] != '/') {
-		/*
-		 * It is not a complete path component, i.e. the path
-		 * component continues after the gmt-token.
-		 */
-		return NT_STATUS_OK;
-	}
-
-	status = rearrange_snapshot_path(smb_fname, startp, endp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	startp = smb_fname->base_name + GMT_NAME_LEN;
-	if (startp[0] == '/') {
-		startp++;
-	}
-
-	tmp = talloc_strdup(smb_fname, startp);
-	if (tmp == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	TALLOC_FREE(smb_fname->base_name);
-	smb_fname->base_name = tmp;
+	memmove(discard_const_p(char, start), next, remaining+1);
 
 	if (smb_fname->twrp == 0) {
-		tm.tm_isdst = -1;
-		t = timegm(&tm);
-		unix_to_nt_time(&nt, t);
-		smb_fname->twrp = nt;
+		smb_fname->twrp = twrp;
 	}
 
 	return NT_STATUS_OK;
