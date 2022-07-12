@@ -978,8 +978,6 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	bool	result, is_directory;
 
 	bool set_acl_as_root = false;
-	uid_t newUID = (uid_t)-1;
-	gid_t newGID = (gid_t)-1;
 	int saved_errno;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1019,48 +1017,11 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	is_directory = S_ISDIR(fsp->fsp_name->st.st_ex_mode);
 
 	if (pparams->do_chown) {
-		/* chown logic is a copy/paste from posix_acl.c:set_nt_acl */
-
-		uid_t old_uid = fsp->fsp_name->st.st_ex_uid;
-		gid_t old_gid = fsp->fsp_name->st.st_ex_gid;
-		status = unpack_nt_owners(fsp->conn, &newUID, &newGID,
-					  security_info_sent, psd);
+		status = chown_if_needed(fsp, security_info_sent, psd,
+					 &set_acl_as_root);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(8, ("unpack_nt_owners failed"));
 			TALLOC_FREE(frame);
 			return status;
-		}
-		if (((newUID != (uid_t)-1) && (old_uid != newUID)) ||
-		    ((newGID != (gid_t)-1) && (old_gid != newGID)))
-		{
-			status = try_chown(fsp, newUID, newGID);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(3,("chown %s, %u, %u failed. Error = "
-					 "%s.\n", fsp_str_dbg(fsp),
-					 (unsigned int)newUID,
-					 (unsigned int)newGID,
-					 nt_errstr(status)));
-				TALLOC_FREE(frame);
-				return status;
-			}
-
-			DEBUG(10,("chown %s, %u, %u succeeded.\n",
-				  fsp_str_dbg(fsp), (unsigned int)newUID,
-				  (unsigned int)newGID));
-
-			/*
-			 * Owner change, need to update stat info.
-			 */
-			status = vfs_stat_fsp(fsp);
-			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(frame);
-				return status;
-			}
-
-			/* If we successfully chowned, we know we must
-			 * be able to set the acl, so do it as root.
-			 */
-			set_acl_as_root = true;
 		}
 	}
 

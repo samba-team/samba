@@ -3618,7 +3618,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 	 * If we successfully chowned, we know we must be able to set
 	 * the acl, so do it as root (set_acl_as_root).
 	 */
-	status = check_chown(fsp, security_info_sent, psd, &set_acl_as_root);
+	status = chown_if_needed(fsp, security_info_sent, psd, &set_acl_as_root);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
