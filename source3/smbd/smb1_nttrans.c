@@ -535,6 +535,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
 	struct case_semantics_state *case_state = NULL;
 	uint32_t ucf_flags;
+	NTTIME twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBntcreateX);
@@ -624,8 +625,11 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	}
 
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(fname, &twrp);
+	}
 	status = filename_convert_dirfsp(
-		ctx, conn, fname, ucf_flags, 0, &dirfsp, &smb_fname);
+		ctx, conn, fname, ucf_flags, twrp, &dirfsp, &smb_fname);
 
 	TALLOC_FREE(case_state);
 
