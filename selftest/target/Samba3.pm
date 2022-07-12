@@ -2615,6 +2615,7 @@ sub provision($$)
 
 	chmod 0755, $ro_shrdir;
 
+	create_file_chmod("$ro_shrdir/readable_file", 0644) or return undef;
 	create_file_chmod("$ro_shrdir/unreadable_file", 0600) or return undef;
 
 	create_file_chmod("$ro_shrdir/msdfs-target", 0600) or return undef;

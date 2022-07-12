@@ -255,6 +255,20 @@ test_update()
 	return 0
 }
 
+# Test accessing an msdfs path.
+test_msdfs_link()
+{
+	${SMBGET} -v "-U${USERNAME}%${PASSWORD}" \
+		"smb://${SERVER}/msdfs-share/deeppath/msdfs-src2/readable_file"
+	ret=$?
+	if [ ${ret} -ne 0 ]; then
+		echo "ERROR: smbget failed with ${ret}"
+		return 1
+	fi
+
+	return 0
+}
+
 create_test_data
 
 pushd $TMPDIR
@@ -290,6 +304,8 @@ testit "resume download (modified file)" test_resume_modified ||
 testit "update" test_update ||
 	failed=$(expr $failed + 1)
 
+testit "msdfs" test_msdfs_link ||
+	failed=$((failed + 1))
 clear_download_area
 
 popd # TMPDIR
