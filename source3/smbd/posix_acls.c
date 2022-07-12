@@ -3597,9 +3597,6 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 			return status;
 		}
 
-		/* Save the original element we check against. */
-		orig_mode = fsp->fsp_name->st.st_ex_mode;
-
 		/* If we successfully chowned, we know we must
 		 * be able to set the acl, so do it as root.
 		 */
