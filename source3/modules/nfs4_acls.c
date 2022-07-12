@@ -1022,7 +1022,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 		/* chown logic is a copy/paste from posix_acl.c:set_nt_acl */
 
 		uid_t old_uid = fsp->fsp_name->st.st_ex_uid;
-		uid_t old_gid = fsp->fsp_name->st.st_ex_uid;
+		gid_t old_gid = fsp->fsp_name->st.st_ex_gid;
 		status = unpack_nt_owners(fsp->conn, &newUID, &newGID,
 					  security_info_sent, psd);
 		if (!NT_STATUS_IS_OK(status)) {
