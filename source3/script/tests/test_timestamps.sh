@@ -46,7 +46,7 @@ test_time()
 
 	$SMBCLIENT //$SERVER/tmp -U $USERNAME%$PASSWORD -c "allinfo $file"
 	out=$($SMBCLIENT //$SERVER/tmp -U $USERNAME%$PASSWORD -c "allinfo $file" 2>&1) || return 1
-	echo "smbclient allinfo on $fname returned: \"$out\""
+	echo "smbclient allinfo on $file returned: \"$out\""
 
 	# Ignore create_time as that is synthesized
 	for time in access_time write_time change_time; do
