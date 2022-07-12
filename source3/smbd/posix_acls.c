@@ -1081,10 +1081,10 @@ static mode_t map_nt_perms( uint32_t *mask, int type)
  Unpack a struct security_descriptor into a UNIX owner and group.
 ****************************************************************************/
 
-NTSTATUS unpack_nt_owners(struct connection_struct *conn,
-			uid_t *puser, gid_t *pgrp,
-			uint32_t security_info_sent, const struct
-			security_descriptor *psd)
+static NTSTATUS unpack_nt_owners(struct connection_struct *conn,
+				 uid_t *puser, gid_t *pgrp,
+				 uint32_t security_info_sent,
+				 const struct security_descriptor *psd)
 {
 	*puser = (uid_t)-1;
 	*pgrp = (gid_t)-1;
@@ -3388,7 +3388,7 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
      then allow chown to the currently authenticated user.
 ****************************************************************************/
 
-NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid)
+static NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid)
 {
 	NTSTATUS status;
 	int ret;
