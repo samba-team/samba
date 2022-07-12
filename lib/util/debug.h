@@ -139,7 +139,7 @@ bool dbgsetclass(int level, int cls);
  *
  *   Example: DEBUGC( DBGC_TDB, 2, ("Some text and a value %d.\n", value) );
  *
- *  DEBUGADD(), DEBUGADDC()
+ * DEBUGADD(), DEBUGADDC()
  *    Same as DEBUG() and DEBUGC() except the text is appended to the previous
  *    DEBUG(), DEBUGC(), DEBUGADD(), DEBUGADDC() with out another interviening
  *    header.
@@ -147,7 +147,7 @@ bool dbgsetclass(int level, int cls);
  *    Example: DEBUGADD( 2, ("Some text and a value %d.\n", value) );
  *             DEBUGADDC( DBGC_TDB, 2, ("Some text and a value %d.\n", value) );
  *
- * Note: If the debug class has not be redeined (see above) then the optimizer
+ * Note: If the debug class has not be redefined (see above) then the optimizer
  * will remove the extra conditional test.
  */
 
