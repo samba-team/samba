@@ -95,18 +95,13 @@ static bool parent_override_delete(connection_struct *conn,
  Check if we have open rights.
 ****************************************************************************/
 
-static NTSTATUS smbd_check_access_rights_sd(
+static NTSTATUS smbd_check_access_rights_fname(
 				struct connection_struct *conn,
-				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
-				struct security_descriptor *sd,
 				bool use_privs,
 				uint32_t access_mask)
 {
 	uint32_t rejected_share_access;
-	uint32_t rejected_mask = access_mask;
-	uint32_t do_not_check_mask = 0;
-	NTSTATUS status;
 
 	rejected_share_access = access_mask & ~(conn->share_access);
 
@@ -146,6 +141,21 @@ static NTSTATUS smbd_check_access_rights_sd(
 			  smb_fname_str_dbg(smb_fname));
 		return NT_STATUS_OK;
 	}
+
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+}
+
+static NTSTATUS smbd_check_access_rights_sd(
+				struct connection_struct *conn,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				struct security_descriptor *sd,
+				bool use_privs,
+				uint32_t access_mask)
+{
+	uint32_t rejected_mask = access_mask;
+	uint32_t do_not_check_mask = 0;
+	NTSTATUS status;
 
 	if (sd == NULL) {
 		goto access_denied;
@@ -276,6 +286,14 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *dirfsp,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		return NT_STATUS_OK;
+	}
+
+	status = smbd_check_access_rights_fname(fsp->conn,
+						fsp->fsp_name,
+						use_privs,
+						access_mask);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return status;
 	}
 
 	status = SMB_VFS_FGET_NT_ACL(fsp,
