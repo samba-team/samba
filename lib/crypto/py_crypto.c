@@ -25,6 +25,7 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 #include "lib/crypto/gnutls_helpers.h"
+#include "lib/crypto/md4.h"
 #include "libcli/auth/libcli_auth.h"
 
 static PyObject *py_crypto_arcfour_crypt_blob(PyObject *module, PyObject *args)
@@ -160,6 +161,36 @@ static PyObject *py_crypto_des_crypt_blob_16(PyObject *self, PyObject *args)
 					 sizeof(result));
 }
 
+static PyObject *py_crypto_md4_hash_blob(PyObject *self, PyObject *args)
+{
+	PyObject *py_data = NULL;
+	uint8_t *data = NULL;
+	Py_ssize_t data_size;
+
+	uint8_t result[16];
+
+	bool ok;
+	int ret;
+
+	ok = PyArg_ParseTuple(args, "S",
+			      &py_data);
+	if (!ok) {
+		return NULL;
+	}
+
+	ret = PyBytes_AsStringAndSize(py_data,
+				      (char **)&data,
+				      &data_size);
+	if (ret != 0) {
+		return NULL;
+	}
+
+	mdfour(result, data, data_size);
+
+	return PyBytes_FromStringAndSize((const char *)result,
+					 sizeof(result));
+}
+
 static const char py_crypto_arcfour_crypt_blob_doc[] = "arcfour_crypt_blob(data, key)\n"
 					 "Encrypt the data with RC4 algorithm using the key";
 
@@ -167,11 +198,15 @@ static const char py_crypto_des_crypt_blob_16_doc[] = "des_crypt_blob_16(data, k
 						      "Encrypt the 16-byte data with DES using "
 						      "the 14-byte key";
 
+static const char py_crypto_md4_hash_blob_doc[] = "md4_hash_blob(data) -> bytes\n"
+						  "Hash the data with MD4 algorithm";
+
 static PyMethodDef py_crypto_methods[] = {
 	{ "arcfour_crypt_blob", (PyCFunction)py_crypto_arcfour_crypt_blob, METH_VARARGS, py_crypto_arcfour_crypt_blob_doc },
 	{ "set_relax_mode", (PyCFunction)py_crypto_set_relax_mode, METH_NOARGS, "Set fips to relax mode" },
 	{ "set_strict_mode", (PyCFunction)py_crypto_set_strict_mode, METH_NOARGS, "Set fips to strict mode" },
 	{ "des_crypt_blob_16", (PyCFunction)py_crypto_des_crypt_blob_16, METH_VARARGS, py_crypto_des_crypt_blob_16_doc },
+	{ "md4_hash_blob", (PyCFunction)py_crypto_md4_hash_blob, METH_VARARGS, py_crypto_md4_hash_blob_doc },
 	{0},
 };
 
