@@ -206,7 +206,7 @@ static int epoll_init_ctx(struct epoll_event_context *epoll_ev)
 			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
 	}
 
-	epoll_ev->pid = getpid();
+	epoll_ev->pid = tevent_cached_getpid();
 	talloc_set_destructor(epoll_ev, epoll_ctx_destructor);
 
 	return 0;
@@ -224,8 +224,9 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 	struct tevent_fd *fde;
 	bool *caller_panic_state = epoll_ev->panic_state;
 	bool panic_triggered = false;
+	pid_t pid = tevent_cached_getpid();
 
-	if (epoll_ev->pid == getpid()) {
+	if (epoll_ev->pid == pid) {
 		return;
 	}
 
@@ -241,7 +242,7 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
 	}
 
-	epoll_ev->pid = getpid();
+	epoll_ev->pid = pid;
 	epoll_ev->panic_state = &panic_triggered;
 	for (fde=epoll_ev->ev->fd_events;fde;fde=fde->next) {
 		fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;

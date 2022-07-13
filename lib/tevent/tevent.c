@@ -199,6 +199,7 @@ static void tevent_common_wakeup_fini(struct tevent_context *ev);
 static pthread_mutex_t tevent_contexts_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct tevent_context *tevent_contexts = NULL;
 static pthread_once_t tevent_atfork_initialized = PTHREAD_ONCE_INIT;
+static pid_t tevent_cached_global_pid = 0;
 
 static void tevent_atfork_prepare(void)
 {
@@ -263,6 +264,8 @@ static void tevent_atfork_child(void)
 	struct tevent_context *ev;
 	int ret;
 
+	tevent_cached_global_pid = getpid();
+
 	for (ev = DLIST_TAIL(tevent_contexts); ev != NULL;
 	     ev = DLIST_PREV(ev)) {
 		struct tevent_threaded_context *tctx;
@@ -302,9 +305,41 @@ static void tevent_prep_atfork(void)
 	if (ret != 0) {
 		abort();
 	}
+
+	tevent_cached_global_pid = getpid();
 }
 
 #endif
+
+static int tevent_init_globals(void)
+{
+#ifdef HAVE_PTHREAD
+	int ret;
+
+	ret = pthread_once(&tevent_atfork_initialized, tevent_prep_atfork);
+	if (ret != 0) {
+		return ret;
+	}
+#endif
+
+	return 0;
+}
+
+_PUBLIC_ pid_t tevent_cached_getpid(void)
+{
+#ifdef HAVE_PTHREAD
+	tevent_init_globals();
+#ifdef TEVENT_VERIFY_CACHED_GETPID
+	if (tevent_cached_global_pid != getpid()) {
+		tevent_abort(NULL, "tevent_cached_global_pid invalid");
+	}
+#endif
+	if (tevent_cached_global_pid != 0) {
+		return tevent_cached_global_pid;
+	}
+#endif
+	return getpid();
+}
 
 int tevent_common_context_destructor(struct tevent_context *ev)
 {
@@ -434,12 +469,12 @@ static int tevent_common_context_constructor(struct tevent_context *ev)
 {
 	int ret;
 
-#ifdef HAVE_PTHREAD
-
-	ret = pthread_once(&tevent_atfork_initialized, tevent_prep_atfork);
+	ret = tevent_init_globals();
 	if (ret != 0) {
 		return ret;
 	}
+
+#ifdef HAVE_PTHREAD
 
 	ret = pthread_mutex_init(&ev->scheduled_mutex, NULL);
 	if (ret != 0) {

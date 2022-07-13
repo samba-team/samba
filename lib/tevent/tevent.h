@@ -1909,6 +1909,22 @@ struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
  */
 struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
 
+/**
+ *
+ * @brief A cached version of getpid()
+ *
+ * We use getpid() in a lot a performance critical situations
+ * in order to check if caches are still valid in the current process.
+ *
+ * Calling getpid() always add the cost of an additional syscall!
+ *
+ * When tevent is build with pthread support, we already make use
+ * of pthread_atfork(), so it's trivial to use it maintain a cache for getpid().
+ *
+ * @return              The pid of the current process.
+ */
+pid_t tevent_cached_getpid(void);
+
 /* @} */
 
 

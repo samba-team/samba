@@ -95,7 +95,7 @@ static int port_init_ctx(struct port_event_context *port_ev)
 			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
 	}
 
-	port_ev->pid = getpid();
+	port_ev->pid = tevent_cached_getpid();
 	talloc_set_destructor(port_ev, port_ctx_destructor);
 
 	return 0;
@@ -199,8 +199,9 @@ static int port_update_event(struct port_event_context *port_ev, struct tevent_f
 static int port_check_reopen(struct port_event_context *port_ev)
 {
 	struct tevent_fd *fde;
+	pid_t pid = tevent_cached_getpid();
 
-	if (port_ev->pid == getpid()) {
+	if (port_ev->pid == pid) {
 		return 0;
 	}
 
@@ -217,7 +218,7 @@ static int port_check_reopen(struct port_event_context *port_ev)
 			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
 	}
 
-	port_ev->pid = getpid();
+	port_ev->pid = pid;
 	for (fde=port_ev->ev->fd_events;fde;fde=fde->next) {
 		fde->additional_flags &= PORT_ADDITIONAL_FD_FLAG_HAS_ASSOCIATION;
 		if (port_update_event(port_ev, fde) != 0) {
