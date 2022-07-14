@@ -13,7 +13,7 @@
 
 <refnamediv>
 	<refname>rpcclient</refname>
-	<refpurpose>tool for executing client side 
+	<refpurpose>tool for executing client side
 	MS-RPC functions</refpurpose>
 </refnamediv>
 
@@ -62,9 +62,9 @@
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>rpcclient</command> is a utility initially developed
-	to test MS-RPC functionality in Samba itself.  It has undergone 
+	to test MS-RPC functionality in Samba itself.  It has undergone
 	several stages of development and stability.  Many system administrators
-	have now written scripts around it to manage Windows NT clients from 
+	have now written scripts around it to manage Windows NT clients from
 	their UNIX workstation. </para>
 </refsect1>
 
@@ -148,22 +148,22 @@
 		below) </para></listitem>
 		</varlistentry>
 
-		
+
 		<varlistentry>
 		<term>-I|--dest-ip IP-address</term>
-		<listitem><para><replaceable>IP address</replaceable> is the address of the server to connect to. 
+		<listitem><para><replaceable>IP address</replaceable> is the address of the server to connect to.
 		It should be specified in standard "a.b.c.d" notation. </para>
 
-		<para>Normally the client would attempt to locate a named 
-		SMB/CIFS server by looking it up via the NetBIOS name resolution 
-		mechanism described above in the <parameter>name resolve order</parameter> 
+		<para>Normally the client would attempt to locate a named
+		SMB/CIFS server by looking it up via the NetBIOS name resolution
+		mechanism described above in the <parameter>name resolve order</parameter>
 		parameter above. Using this parameter will force the client
-		to assume that the server is on the machine with the specified IP 
-		address and the NetBIOS name component of the resource being 
+		to assume that the server is on the machine with the specified IP
+		address and the NetBIOS name component of the resource being
 		connected to will be ignored. </para>
 
-		<para>There is no default for this parameter. If not supplied, 
-		it will be determined automatically by the client as described 
+		<para>There is no default for this parameter. If not supplied,
+		it will be determined automatically by the client as described
 		above. </para></listitem>
 		</varlistentry>
 
@@ -323,17 +323,17 @@
 	<title>SPOOLSS</title>
 
 	<variablelist>
-		<varlistentry><term>adddriver &lt;arch&gt; &lt;config&gt; [&lt;version&gt;]</term> 
+		<varlistentry><term>adddriver &lt;arch&gt; &lt;config&gt; [&lt;version&gt;]</term>
 		<listitem><para>
-		Execute an AddPrinterDriver() RPC to install the printer driver 
-		information on the server.  Note that the driver files should 
-		already exist in the directory returned by  
-		<command>getdriverdir</command>.  Possible values for 
-		<parameter>arch</parameter> are the same as those for 
+		Execute an AddPrinterDriver() RPC to install the printer driver
+		information on the server.  Note that the driver files should
+		already exist in the directory returned by
+		<command>getdriverdir</command>.  Possible values for
+		<parameter>arch</parameter> are the same as those for
 		the <command>getdriverdir</command> command.
-		The <parameter>config</parameter> parameter is defined as 
+		The <parameter>config</parameter> parameter is defined as
 		follows: </para>
-		
+
 <para><programlisting>
 Long Driver Name:\
 Driver File Name:\
@@ -346,12 +346,12 @@ Comma Separated list of Files
 </programlisting></para>
 
 		<para>Any empty fields should be enter as the string "NULL". </para>
-		
+
 		<para>Samba does not need to support the concept of Print Monitors
 		since these only apply to local printers whose driver can make
-		use of a bi-directional link for communication.  This field should 
-		be "NULL".   On a remote NT print server, the Print Monitor for a 
-		driver must already be installed prior to adding the driver or 
+		use of a bi-directional link for communication.  This field should
+		be "NULL".   On a remote NT print server, the Print Monitor for a
+		driver must already be installed prior to adding the driver or
 		else the RPC will fail. </para>
 
 		<para>The <parameter>version</parameter> parameter lets you
@@ -360,12 +360,12 @@ Comma Separated list of Files
 		be used.  This option can be used to upload Windows 2000
 		(version 3) printer drivers.</para></listitem></varlistentry>
 
-		<varlistentry><term>addprinter &lt;printername&gt; 
+		<varlistentry><term>addprinter &lt;printername&gt;
 		&lt;sharename&gt; &lt;drivername&gt; &lt;port&gt;</term>
 		<listitem><para>
-		Add a printer on the remote server.  This printer 
- 		will be automatically shared.  Be aware that the printer driver 
-		must already be installed on the server (see <command>adddriver</command>) 
+		Add a printer on the remote server.  This printer
+		will be automatically shared.  Be aware that the printer driver
+		must already be installed on the server (see <command>adddriver</command>)
 		and the <parameter>port</parameter>must be a valid port name (see
 		<command>enumports</command>.</para>
 		</listitem></varlistentry>
@@ -385,9 +385,9 @@ Comma Separated list of Files
 		of 3 requests (DPD_DELETE_UNUSED_FILES | DPD_DELETE_SPECIFIC_VERSION).
 		</para></listitem></varlistentry>
 
-		<varlistentry><term>enumdata</term><listitem><para>Enumerate all 
-		printer setting data stored on the server. On Windows NT  clients, 
-		these values are stored  in the registry, while Samba servers 
+		<varlistentry><term>enumdata</term><listitem><para>Enumerate all
+		printer setting data stored on the server. On Windows NT  clients,
+		these values are stored  in the registry, while Samba servers
 		store them in the printers TDB.  This command corresponds
 		to the MS Platform SDK GetPrinterData() function (* This
 		command is currently unimplemented).</para></listitem></varlistentry>
@@ -397,8 +397,8 @@ Comma Separated list of Files
 		<varlistentry><term>enumkey</term><listitem><para>Enumerate printer keys</para></listitem></varlistentry>
 
 		<varlistentry><term>enumjobs &lt;printer&gt;</term>
-		<listitem><para>List the jobs and status of a given printer. 
-		This command corresponds to the MS Platform SDK EnumJobs() 
+		<listitem><para>List the jobs and status of a given printer.
+		This command corresponds to the MS Platform SDK EnumJobs()
 		function</para></listitem></varlistentry>
 
 		<varlistentry><term>getjob</term><listitem><para>Get print job</para></listitem></varlistentry>
@@ -407,38 +407,38 @@ Comma Separated list of Files
 
 		<varlistentry><term>enumports [level]</term>
 		<listitem><para>
-		Executes an EnumPorts() call using the specified 
-		info level. Currently only info levels 1 and 2 are supported. 
+		Executes an EnumPorts() call using the specified
+		info level. Currently only info levels 1 and 2 are supported.
 		</para></listitem></varlistentry>
 
-		<varlistentry><term>enumdrivers [level]</term> 
+		<varlistentry><term>enumdrivers [level]</term>
 		<listitem><para>
-		Execute an EnumPrinterDrivers() call.  This lists the various installed 
-		printer drivers for all architectures.  Refer to the MS Platform SDK 
-		documentation for more details of the various flags and calling 
+		Execute an EnumPrinterDrivers() call.  This lists the various installed
+		printer drivers for all architectures.  Refer to the MS Platform SDK
+		documentation for more details of the various flags and calling
 		options. Currently supported info levels are 1, 2, and 3.</para></listitem></varlistentry>
 
 		<varlistentry><term>enumprinters [level]</term>
-		<listitem><para>Execute an EnumPrinters() call.  This lists the various installed 
-		and share printers.  Refer to the MS Platform SDK documentation for 
+		<listitem><para>Execute an EnumPrinters() call.  This lists the various installed
+		and share printers.  Refer to the MS Platform SDK documentation for
 		more details of the various flags and calling options. Currently
 		supported info levels are 1, 2 and 5.</para></listitem></varlistentry>
 
-		<varlistentry><term>getdata &lt;printername&gt; &lt;valuename;&gt;</term> 
-		<listitem><para>Retrieve the data for a given printer setting.  See 
-		the  <command>enumdata</command> command for more information.  
-		This command corresponds to the GetPrinterData() MS Platform 
+		<varlistentry><term>getdata &lt;printername&gt; &lt;valuename;&gt;</term>
+		<listitem><para>Retrieve the data for a given printer setting.  See
+		the  <command>enumdata</command> command for more information.
+		This command corresponds to the GetPrinterData() MS Platform
 		SDK function. </para></listitem></varlistentry>
 
 		<varlistentry><term>getdataex</term><listitem><para>Get
 		printer driver data with
 		keyname</para></listitem></varlistentry>
 
-		
+
 		<varlistentry><term>getdriver &lt;printername&gt;</term>
 		<listitem><para>
-		Retrieve the printer driver information (such as driver file, 
-		config file, dependent files, etc...) for 
+		Retrieve the printer driver information (such as driver file,
+		config file, dependent files, etc...) for
 		the given printer. This command corresponds to the GetPrinterDriver()
 		MS Platform  SDK function. Currently info level 1, 2, and 3 are supported.
 		</para></listitem></varlistentry>
@@ -446,23 +446,23 @@ Comma Separated list of Files
 		<varlistentry><term>getdriverdir &lt;arch&gt;</term>
 		<listitem><para>
 		Execute a GetPrinterDriverDirectory()
-		RPC to retrieve the SMB share name and subdirectory for 
-		storing printer driver files for a given architecture.  Possible 
-		values for <parameter>arch</parameter> are "Windows 4.0" 
+		RPC to retrieve the SMB share name and subdirectory for
+		storing printer driver files for a given architecture.  Possible
+		values for <parameter>arch</parameter> are "Windows 4.0"
 		(for Windows 95/98), "Windows NT x86", "Windows NT PowerPC", "Windows
 		Alpha_AXP", and "Windows NT R4000". </para></listitem></varlistentry>
 
 		<varlistentry><term>getdriverpackagepath</term>
 		<listitem><para>Get print driver package download directory</para></listitem></varlistentry>
 
-		<varlistentry><term>getprinter &lt;printername&gt;</term> 
-		<listitem><para>Retrieve the current printer information.  This command 
-		corresponds to the GetPrinter() MS Platform SDK function. 
+		<varlistentry><term>getprinter &lt;printername&gt;</term>
+		<listitem><para>Retrieve the current printer information.  This command
+		corresponds to the GetPrinter() MS Platform SDK function.
 		</para></listitem></varlistentry>
 
 
-		<varlistentry><term>openprinter &lt;printername&gt;</term> 
-		<listitem><para>Execute an OpenPrinterEx() and ClosePrinter() RPC 
+		<varlistentry><term>openprinter &lt;printername&gt;</term>
+		<listitem><para>Execute an OpenPrinterEx() and ClosePrinter() RPC
 		against a given printer. </para></listitem></varlistentry>
 
 		<varlistentry><term>openprinter_ex &lt;printername&gt;</term>
@@ -474,7 +474,7 @@ Comma Separated list of Files
 		associated with an installed printer.  The printer driver must
 		already be correctly installed on the print server.  </para>
 
-		<para>See also the <command>enumprinters</command> and 
+		<para>See also the <command>enumprinters</command> and
 		<command>enumdrivers</command> commands for obtaining a list of
 		of installed printers and drivers.</para></listitem></varlistentry>
 
@@ -705,28 +705,28 @@ Comma Separated list of Files
 
 <refsect1>
 	<title>BUGS</title>
-	
-	<para><command>rpcclient</command> is designed as a developer testing tool 
-	and may not be robust in certain areas (such as command line parsing).  
-	It has been known to  generate a core dump upon failures when invalid 
+
+	<para><command>rpcclient</command> is designed as a developer testing tool
+	and may not be robust in certain areas (such as command line parsing).
+	It has been known to  generate a core dump upon failures when invalid
 	parameters where passed to the interpreter. </para>
 
 	<para>From Luke Leighton's original rpcclient man page:</para>
-	
-	<para><emphasis>WARNING!</emphasis> The MSRPC over SMB code has 
-	been developed from examining  Network traces. No documentation is 
-	available from the original creators  (Microsoft) on how MSRPC over 
-	SMB works, or how the individual MSRPC services  work. Microsoft's 
-	implementation of these services has been demonstrated  (and reported) 
+
+	<para><emphasis>WARNING!</emphasis> The MSRPC over SMB code has
+	been developed from examining  Network traces. No documentation is
+	available from the original creators  (Microsoft) on how MSRPC over
+	SMB works, or how the individual MSRPC services  work. Microsoft's
+	implementation of these services has been demonstrated  (and reported)
 	to be... a bit flaky in places. </para>
 
-	<para>The development of Samba's implementation is also a bit rough, 
-	and as more of the services are understood, it can even result in 
+	<para>The development of Samba's implementation is also a bit rough,
+	and as more of the services are understood, it can even result in
 	versions of <citerefentry><refentrytitle>smbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> and <citerefentry><refentrytitle>rpcclient</refentrytitle>
-	<manvolnum>1</manvolnum></citerefentry> that are incompatible for some commands or  services. Additionally, 
-	the developers are sending reports to Microsoft,  and problems found 
-	or reported to Microsoft are fixed in Service Packs,  which may 
+	<manvolnum>1</manvolnum></citerefentry> that are incompatible for some commands or  services. Additionally,
+	the developers are sending reports to Microsoft,  and problems found
+	or reported to Microsoft are fixed in Service Packs,  which may
 	result in incompatibilities.</para>
 </refsect1>
 
@@ -740,15 +740,15 @@ Comma Separated list of Files
 
 <refsect1>
 	<title>AUTHOR</title>
-	
-	<para>The original Samba software and related utilities 
+
+	<para>The original Samba software and related utilities
 	were created by Andrew Tridgell. Samba is now developed
-	by the Samba Team as an Open Source project similar 
+	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.</para>
-	
-	<para>The original rpcclient man page was written by Matthew 
-	Geddes, Luke Kenneth Casson Leighton, and rewritten by Gerald Carter.  
-	The conversion to DocBook for Samba 2.2 was done by Gerald 
+
+	<para>The original rpcclient man page was written by Matthew
+	Geddes, Luke Kenneth Casson Leighton, and rewritten by Gerald Carter.
+	The conversion to DocBook for Samba 2.2 was done by Gerald
 	Carter. The conversion to DocBook XML 4.2 for Samba 3.0 was
 	done by Alexander Bokovoy.</para>
 </refsect1>
