@@ -73,7 +73,7 @@ static void wb_query_group_list_done(struct tevent_req *subreq)
 }
 
 NTSTATUS wb_query_group_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-				  int *num_groups,
+				  uint32_t *num_groups,
 				  struct wbint_Principal **groups)
 {
 	struct wb_query_group_list_state *state = tevent_req_data(
@@ -88,6 +88,7 @@ NTSTATUS wb_query_group_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	*num_groups = state->groups.num_principals;
 	*groups = talloc_move(mem_ctx, &state->groups.principals);
 
-	D_INFO("WB command group_list end.\nReturning %d group(s).\n", *num_groups);
+	D_INFO("WB command group_list end.\n"
+	       "Returning %u group(s).\n", *num_groups);
 	return NT_STATUS_OK;
 }

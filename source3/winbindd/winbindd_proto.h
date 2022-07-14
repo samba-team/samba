@@ -758,7 +758,7 @@ struct tevent_req *wb_query_group_list_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct winbindd_domain *domain);
 NTSTATUS wb_query_group_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-				  int *num_users,
+				  uint32_t *num_users,
 				  struct wbint_Principal **groups);
 
 struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
