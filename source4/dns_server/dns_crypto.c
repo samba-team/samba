@@ -128,6 +128,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 
 	/* We got a TSIG, so we need to sign our reply */
 	state->sign = true;
+	DBG_DEBUG("Got TSIG\n");
 
 	state->tsig = talloc_zero(state->mem_ctx, struct dns_res_rec);
 	if (state->tsig == NULL) {
@@ -144,6 +145,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 
 	tkey = dns_find_tkey(dns->tkeys, state->tsig->name);
 	if (tkey == NULL) {
+		DBG_DEBUG("dns_find_tkey() => NOTAUTH / DNS_RCODE_BADKEY\n");
 		/*
 		 * We must save the name for use in the TSIG error
 		 * response and have no choice here but to save the
@@ -157,6 +159,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		state->tsig_error = DNS_RCODE_BADKEY;
 		return DNS_ERR(NOTAUTH);
 	}
+	DBG_DEBUG("dns_find_tkey() => found\n");
 
 	/*
 	 * Remember the keyname that found an existing tkey, used
@@ -232,17 +235,23 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	status = gensec_check_packet(tkey->gensec, buffer, buffer_len,
 				    buffer, buffer_len, &sig);
 	if (NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
+		dump_data_dbgc(DBGC_DNS, 8, sig.data, sig.length);
+		dump_data_dbgc(DBGC_DNS, 8, buffer, buffer_len);
+		DBG_NOTICE("Verifying tsig failed: %s\n", nt_errstr(status));
 		state->tsig_error = DNS_RCODE_BADSIG;
 		return DNS_ERR(NOTAUTH);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		dump_data_dbgc(DBGC_DNS, 8, sig.data, sig.length);
+		dump_data_dbgc(DBGC_DNS, 8, buffer, buffer_len);
 		DEBUG(1, ("Verifying tsig failed: %s\n", nt_errstr(status)));
 		return ntstatus_to_werror(status);
 	}
 
 	state->authenticated = true;
 
+	DBG_DEBUG("AUTHENTICATED\n");
 	return WERR_OK;
 }
 
@@ -373,11 +382,13 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 		struct dns_server_tkey *tkey = dns_find_tkey(
 			dns->tkeys, state->key_name);
 		if (tkey == NULL) {
+			DBG_WARNING("dns_find_tkey() => NULL)\n");
 			return DNS_ERR(SERVER_FAILURE);
 		}
 
 		werror = dns_tsig_compute_mac(mem_ctx, state, packet,
 					      tkey, current_time, &sig);
+		DBG_DEBUG("dns_tsig_compute_mac() => %s\n", win_errstr(werror));
 		if (!W_ERROR_IS_OK(werror)) {
 			return werror;
 		}
@@ -410,6 +421,8 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 		}
 	}
 
+	DBG_DEBUG("sig.length=%zu\n", sig.length);
+
 	if (packet->arcount == 0) {
 		packet->additional = talloc_zero(mem_ctx, struct dns_res_rec);
 		if (packet->additional == NULL) {
@@ -425,6 +438,7 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 
 	werror = dns_copy_tsig(mem_ctx, tsig,
 			       &packet->additional[packet->arcount]);
+	DBG_DEBUG("dns_copy_tsig() => %s\n", win_errstr(werror));
 	if (!W_ERROR_IS_OK(werror)) {
 		return werror;
 	}
