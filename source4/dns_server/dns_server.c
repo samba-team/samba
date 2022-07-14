@@ -107,7 +107,7 @@ struct dns_process_state {
 	struct dns_server *dns;
 	struct dns_name_packet in_packet;
 	struct dns_request_state state;
-	uint16_t dns_err;
+	WERROR dns_err;
 	struct dns_name_packet out_packet;
 	DATA_BLOB out;
 };
@@ -146,7 +146,7 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 		(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		state->dns_err = DNS_RCODE_FORMERR;
+		state->dns_err = DNS_ERR(FORMAT_ERROR);
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
@@ -175,7 +175,7 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	ret = dns_verify_tsig(dns, state, &state->state,
 			      &state->out_packet, in);
 	if (!W_ERROR_IS_OK(ret)) {
-		state->dns_err = werr_to_dns_err(ret);
+		state->dns_err = ret;
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
@@ -201,9 +201,7 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	default:
 		ret = WERR_DNS_ERROR_RCODE_NOT_IMPLEMENTED;
 	}
-	if (!W_ERROR_IS_OK(ret)) {
-		state->dns_err = werr_to_dns_err(ret);
-	}
+	state->dns_err = ret;
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
@@ -223,9 +221,7 @@ static void dns_process_done(struct tevent_req *subreq)
 		&state->out_packet.additional, &state->out_packet.arcount);
 	TALLOC_FREE(subreq);
 
-	if (!W_ERROR_IS_OK(ret)) {
-		state->dns_err = werr_to_dns_err(ret);
-	}
+	state->dns_err = ret;
 	tevent_req_done(req);
 }
 
@@ -235,19 +231,21 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	struct dns_process_state *state = tevent_req_data(
 		req, struct dns_process_state);
 	enum ndr_err_code ndr_err;
+	uint16_t dns_err;
 	WERROR ret;
 
 	if (tevent_req_is_werror(req, &ret)) {
 		return ret;
 	}
-	if ((state->dns_err != DNS_RCODE_OK) &&
-	    (state->dns_err != DNS_RCODE_NXDOMAIN) &&
-	    (state->dns_err != DNS_RCODE_NOTAUTH))
+	dns_err = werr_to_dns_err(state->dns_err);
+	if ((dns_err != DNS_RCODE_OK) &&
+	    (dns_err != DNS_RCODE_NXDOMAIN) &&
+	    (dns_err != DNS_RCODE_NOTAUTH))
 	{
 		goto drop;
 	}
-	if (state->dns_err != DNS_RCODE_OK) {
-		state->out_packet.operation |= state->dns_err;
+	if (dns_err != DNS_RCODE_OK) {
+		state->out_packet.operation |= dns_err;
 	}
 	state->out_packet.operation |= state->state.flags;
 
@@ -255,7 +253,7 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		ret = dns_sign_tsig(state->dns, mem_ctx, &state->state,
 				    &state->out_packet, 0);
 		if (!W_ERROR_IS_OK(ret)) {
-			state->dns_err = DNS_RCODE_SERVFAIL;
+			dns_err = DNS_RCODE_SERVFAIL;
 			goto drop;
 		}
 	}
@@ -270,7 +268,7 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1, ("Failed to push packet: %s!\n",
 			  ndr_errstr(ndr_err)));
-		state->dns_err = DNS_RCODE_SERVFAIL;
+		dns_err = DNS_RCODE_SERVFAIL;
 		goto drop;
 	}
 	return WERR_OK;
@@ -281,7 +279,7 @@ drop:
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	out->data[2] |= 0x80; /* Toggle DNS_FLAG_REPLY */
-	out->data[3] |= state->dns_err;
+	out->data[3] |= dns_err;
 	return WERR_OK;
 }
 
