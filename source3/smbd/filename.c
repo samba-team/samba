@@ -300,6 +300,24 @@ static bool find_snapshot_token(
 	return true;
 }
 
+bool extract_snapshot_token(char *fname, NTTIME *twrp)
+{
+	const char *start = NULL;
+	const char *next = NULL;
+	size_t remaining;
+	bool found;
+
+	found = find_snapshot_token(fname, &start, &next, twrp);
+	if (!found) {
+		return false;
+	}
+
+	remaining = strlen(next);
+	memmove(discard_const_p(char, start), next, remaining+1);
+
+	return true;
+}
+
 /*
  * Strip a valid @GMT-token from any incoming filename path,
  * adding any NTTIME encoded in the pathname into the
@@ -318,9 +336,6 @@ NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 				    uint32_t ucf_flags,
 				    NTTIME twrp)
 {
-	const char *start = NULL;
-	const char *next = NULL;
-	size_t remaining;
 	bool found;
 
 	if (twrp != 0) {
@@ -331,15 +346,10 @@ NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 		return NT_STATUS_OK;
 	}
 
-	found = find_snapshot_token(
-		smb_fname->base_name, &start, &next, &twrp);
+	found = extract_snapshot_token(smb_fname->base_name, &twrp);
 	if (!found) {
 		return NT_STATUS_OK;
 	}
-
-	remaining = strlen(next);
-
-	memmove(discard_const_p(char, start), next, remaining+1);
 
 	if (smb_fname->twrp == 0) {
 		smb_fname->twrp = twrp;
