@@ -29,9 +29,9 @@ struct winbindd_list_groups_domstate {
 };
 
 struct winbindd_list_groups_state {
-	int num_received;
+	uint32_t num_received;
 	/* All domains */
-	int num_domains;
+	uint32_t num_domains;
 	struct winbindd_list_groups_domstate *domains;
 };
 
@@ -45,7 +45,7 @@ struct tevent_req *winbindd_list_groups_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct winbindd_list_groups_state *state;
 	struct winbindd_domain *domain;
-	int i;
+	uint32_t i;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_list_groups_state);
@@ -76,7 +76,7 @@ struct tevent_req *winbindd_list_groups_send(TALLOC_CTX *mem_ctx,
 		for (domain = domain_list(); domain; domain = domain->next) {
 			state->num_domains += 1;
 		}
-		D_DEBUG("List groups for %d domain(s).\n", state->num_domains);
+		D_DEBUG("List groups for %u domain(s).\n", state->num_domains);
 	}
 
 	state->domains = talloc_array(state,
@@ -129,7 +129,7 @@ static void winbindd_list_groups_done(struct tevent_req *subreq)
 	struct winbindd_list_groups_state *state = tevent_req_data(
 		req, struct winbindd_list_groups_state);
 	NTSTATUS status, result;
-	int i;
+	uint32_t i;
 
 	status = dcerpc_wbint_QueryGroupList_recv(subreq, state->domains,
 						  &result);
@@ -142,7 +142,7 @@ static void winbindd_list_groups_done(struct tevent_req *subreq)
 	if (i < state->num_domains) {
 		struct winbindd_list_groups_domstate *d = &state->domains[i];
 
-		D_DEBUG("Domain %s returned %d groups\n", d->domain->name,
+		D_DEBUG("Domain %s returned %u groups\n", d->domain->name,
 			   d->groups.num_principals);
 
 		d->subreq = NULL;
@@ -170,8 +170,7 @@ NTSTATUS winbindd_list_groups_recv(struct tevent_req *req,
 		req, struct winbindd_list_groups_state);
 	NTSTATUS status;
 	char *result;
-	int i;
-	uint32_t j, num_entries = 0;
+	uint32_t i, j, num_entries = 0;
 	size_t len;
 
 	D_NOTICE("Winbind external command LIST_GROUPS end.\n");
