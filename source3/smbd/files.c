@@ -24,6 +24,7 @@
 #include "libcli/security/security.h"
 #include "util_tdb.h"
 #include "lib/util/bitmap.h"
+#include "lib/util/strv.h"
 
 #define FILE_HANDLE_OFFSET 0x1000
 
@@ -654,6 +655,324 @@ NTSTATUS open_stream_pathref_fsp(
 	status = openat_pathref_fullname(
 		conn, NULL, base_fsp, &full_fname, smb_fname);
 	TALLOC_FREE(full_fname);
+	return status;
+}
+
+static char *path_to_strv(TALLOC_CTX *mem_ctx, const char *path)
+{
+	char *result = talloc_strdup(mem_ctx, path);
+
+	if (result == NULL) {
+		return NULL;
+	}
+	string_replace(result, '/', '\0');
+	return result;
+}
+
+static NTSTATUS readlink_talloc(
+	TALLOC_CTX *mem_ctx,
+	struct files_struct *dirfsp,
+	struct smb_filename *smb_relname,
+	char **_substitute)
+{
+	char buf[4096];
+	ssize_t ret;
+	char *substitute;
+	NTSTATUS status;
+
+	if (_substitute == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (smb_relname == NULL) {
+		/*
+		 * We have a Linux O_PATH handle in dirfsp and want to
+		 * read its value, essentially a freadlink
+		 */
+		smb_relname = synthetic_smb_fname(
+			talloc_tos(), "", NULL, NULL, 0, 0);
+		if (smb_relname == NULL) {
+			DBG_DEBUG("synthetic_smb_fname() failed\n");
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	ret = SMB_VFS_READLINKAT(
+		dirfsp->conn, dirfsp, smb_relname, buf, sizeof(buf));
+	if (ret < 0) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("SMB_VFS_READLINKAT() failed: %s\n",
+			  strerror(errno));
+		return status;
+	}
+
+	if ((size_t)ret == sizeof(buf)) {
+		/*
+		 * Do we need symlink targets >4k?
+		 */
+		DBG_DEBUG("Got full %zu bytes from readlink, too long\n",
+			  sizeof(buf));
+		return NT_STATUS_BUFFER_OVERFLOW;
+	}
+
+	substitute = talloc_strndup(mem_ctx, buf, ret);
+	if (substitute == NULL) {
+		DBG_DEBUG("talloc_strndup() failed\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*_substitute = substitute;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS openat_pathref_dirfsp_nosymlink(
+	TALLOC_CTX *mem_ctx,
+	struct connection_struct *conn,
+	const char *path_in,
+	NTTIME twrp,
+	struct smb_filename **_smb_fname,
+	size_t *unparsed,
+	char **substitute)
+{
+	struct files_struct *dirfsp = conn->cwd_fsp;
+	struct smb_filename full_fname = {
+		.base_name = NULL,
+		.twrp = twrp,
+	};
+	struct smb_filename rel_fname = {
+		.base_name = NULL,
+		.twrp = twrp,
+	};
+	struct smb_filename *result = NULL;
+	struct files_struct *fsp = NULL;
+	char *path = NULL, *next = NULL;
+	int flags = O_NOFOLLOW|O_DIRECTORY;
+	int fd;
+	NTSTATUS status;
+
+	DBG_DEBUG("path_in=%s\n", path_in);
+
+	status = fsp_new(conn, conn, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("fsp_new() failed: %s\n", nt_errstr(status));
+		goto fail;
+	}
+	fsp->fsp_name = &full_fname;
+
+#ifdef O_PATH
+	/*
+	 * Add O_PATH manually, doing this by setting
+	 * fsp->fsp_flags.is_pathref will make us become_root(), which
+	 * would cause a security problem.
+	 */
+	flags |= O_PATH;
+#else
+#ifdef O_SEARCH
+	/*
+	 * O_SEARCH just checks for the "x" bit. We are traversing
+	 * directories, so we don't need the implicit O_RDONLY ("r"
+	 * permissions) but only the "x"-permissions requested by
+	 * O_SEARCH. We need either O_PATH or O_SEARCH to correctly
+	 * function, without either we will incorrectly require also
+	 * the "r" bit when traversing the directory hierarchy.
+	 */
+	flags |= O_SEARCH;
+#endif
+#endif
+
+	full_fname.base_name = talloc_strdup(talloc_tos(), "");
+	if (full_fname.base_name == NULL) {
+		DBG_DEBUG("talloc_strdup() failed\n");
+		goto nomem;
+	}
+
+	path = path_to_strv(talloc_tos(), path_in);
+	if (path == NULL) {
+		DBG_DEBUG("path_to_strv() failed\n");
+		goto nomem;
+	}
+	rel_fname.base_name = path;
+
+next:
+	next = strv_next(path, rel_fname.base_name);
+
+	if (ISDOT(rel_fname.base_name) || ISDOTDOT(rel_fname.base_name)) {
+		DBG_DEBUG("%s contains a dot\n", path_in);
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto fail;
+	}
+
+	fd = SMB_VFS_OPENAT(
+		conn,
+		dirfsp,
+		&rel_fname,
+		fsp,
+		flags,
+		0);
+
+	if ((fd == -1) && (errno == ENOENT)) {
+		status = get_real_filename_at(
+			dirfsp,
+			rel_fname.base_name,
+			talloc_tos(),
+			&rel_fname.base_name);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("get_real_filename_at failed: %s\n",
+				  nt_errstr(status));
+			goto fail;
+		}
+
+		fd = SMB_VFS_OPENAT(
+			conn,
+			dirfsp,
+			&rel_fname,
+			fsp,
+			flags,
+			0);
+	}
+
+	if ((fd == -1) && (errno == ENOTDIR)) {
+		status = readlink_talloc(
+			mem_ctx, dirfsp, &rel_fname, substitute);
+
+		if (NT_STATUS_IS_OK(status)) {
+			/*
+			 * readlink_talloc() found a symlink
+			 */
+			status = NT_STATUS_STOPPED_ON_SYMLINK;
+
+			if (unparsed != NULL) {
+				if (next == NULL) {
+					*unparsed = 0;
+				} else {
+					size_t parsed = next - path;
+					size_t len = talloc_get_size(path);
+					*unparsed = len - parsed;
+				}
+			}
+		} else {
+
+			DBG_DEBUG("readlink_talloc failed: %s\n",
+				  nt_errstr(status));
+			/*
+			 * Restore the error status from SMB_VFS_OPENAT()
+			 */
+			status = NT_STATUS_NOT_A_DIRECTORY;
+		}
+		goto fail;
+	}
+
+	if (fd == -1) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("SMB_VFS_OPENAT() failed: %s\n",
+			  strerror(errno));
+		goto fail;
+	}
+	fsp_set_fd(fsp, fd);
+
+	fsp->fsp_flags.is_directory = true; /* See O_DIRECTORY above */
+
+	full_fname.base_name = talloc_asprintf_append_buffer(
+			full_fname.base_name,
+			"%s%s",
+			full_fname.base_name[0] == '\0' ? "" : "/",
+			rel_fname.base_name);
+
+	if (full_fname.base_name == NULL) {
+		DBG_DEBUG("talloc_asprintf_append_buffer() failed\n");
+		goto nomem;
+	}
+
+	if (next != NULL) {
+		struct files_struct *tmp = NULL;
+
+		if (dirfsp != conn->cwd_fsp) {
+			fd_close(dirfsp);
+		}
+
+		tmp = dirfsp;
+		dirfsp = fsp;
+
+		if (tmp == conn->cwd_fsp) {
+			status = fsp_new(conn, conn, &fsp);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_DEBUG("fsp_new() failed: %s\n",
+					  nt_errstr(status));
+				goto fail;
+			}
+			fsp->fsp_flags.is_pathref = true;
+			fsp->fsp_name = &full_fname;
+		} else {
+			fsp = tmp;
+		}
+
+		rel_fname.base_name = next;
+
+		goto next;
+	}
+
+	if (dirfsp != conn->cwd_fsp) {
+		dirfsp->fsp_name = NULL;
+		SMB_ASSERT(fsp_get_pathref_fd(dirfsp) != -1);
+		fd_close(dirfsp);
+		file_free(NULL, dirfsp);
+		dirfsp = NULL;
+	}
+
+	fsp->fsp_flags.is_pathref = true;
+	fsp->fsp_name = NULL;
+
+	status = fsp_set_smb_fname(fsp, &full_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("fsp_set_smb_fname() failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("vfs_stat_fsp(%s) failed: %s\n",
+			  fsp_str_dbg(fsp),
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	result = cp_smb_filename(mem_ctx, fsp->fsp_name);
+	if (result == NULL) {
+		DBG_DEBUG("cp_smb_filename() failed\n");
+		goto nomem;
+	}
+
+	result->fsp = fsp;
+	talloc_set_destructor(result, smb_fname_fsp_destructor);
+
+	*_smb_fname = result;
+
+	DBG_DEBUG("returning %s\n", smb_fname_str_dbg(result));
+
+	return NT_STATUS_OK;
+
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+fail:
+	if (fsp != NULL) {
+		if (fsp_get_pathref_fd(fsp) != -1) {
+			fd_close(fsp);
+		}
+		file_free(NULL, fsp);
+		fsp = NULL;
+	}
+
+	if ((dirfsp != NULL) && (dirfsp != conn->cwd_fsp)) {
+		dirfsp->fsp_name = NULL;
+		SMB_ASSERT(fsp_get_pathref_fd(dirfsp) != -1);
+		fd_close(dirfsp);
+		file_free(NULL, dirfsp);
+		dirfsp = NULL;
+	}
+
+	TALLOC_FREE(path);
 	return status;
 }
 

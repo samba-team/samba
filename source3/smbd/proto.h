@@ -464,6 +464,14 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 NTSTATUS open_stream_pathref_fsp(
 	struct files_struct **_base_fsp,
 	struct smb_filename *smb_fname);
+NTSTATUS openat_pathref_dirfsp_nosymlink(
+	TALLOC_CTX *mem_ctx,
+	struct connection_struct *conn,
+	const char *path_in,
+	NTTIME twrp,
+	struct smb_filename **_smb_fname,
+	size_t *unparsed,
+	char **substitute);
 
 void smb_fname_fsp_unlink(struct smb_filename *smb_fname);
 
