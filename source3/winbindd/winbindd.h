@@ -75,8 +75,8 @@ struct getpwent_state {
 
 struct getgrent_state {
 	struct winbindd_domain *domain;
-	int next_group;
-	int num_groups;
+	uint32_t next_group;
+	uint32_t num_groups;
 	struct wbint_Principal *groups;
 };
 
