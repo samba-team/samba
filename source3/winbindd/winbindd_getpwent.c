@@ -23,8 +23,8 @@
 struct winbindd_getpwent_state {
 	struct tevent_context *ev;
 	struct winbindd_cli_state *cli;
-	int max_users;
-	int num_users;
+	uint32_t max_users;
+	uint32_t num_users;
 	struct winbindd_pw *users;
 };
 
@@ -91,8 +91,8 @@ static void winbindd_getpwent_done(struct tevent_req *subreq)
 	status = wb_next_pwent_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
-		D_DEBUG("winbindd_getpwent_done: done with %d users\n",
-			   (int)state->num_users);
+		D_DEBUG("winbindd_getpwent_done: done with %u users\n",
+			state->num_users);
 		TALLOC_FREE(state->cli->pwent_state);
 		tevent_req_done(req);
 		return;
@@ -102,8 +102,8 @@ static void winbindd_getpwent_done(struct tevent_req *subreq)
 	}
 	state->num_users += 1;
 	if (state->num_users >= state->max_users) {
-		D_DEBUG("winbindd_getpwent_done: Got enough users: %d\n",
-			   (int)state->num_users);
+		D_DEBUG("winbindd_getpwent_done: Got enough users: %u\n",
+			state->num_users);
 		tevent_req_done(req);
 		return;
 	}
@@ -126,7 +126,7 @@ NTSTATUS winbindd_getpwent_recv(struct tevent_req *req,
 	struct winbindd_getpwent_state *state = tevent_req_data(
 		req, struct winbindd_getpwent_state);
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		TALLOC_FREE(state->cli->pwent_state);
@@ -144,7 +144,7 @@ NTSTATUS winbindd_getpwent_recv(struct tevent_req *req,
 	}
 
 	for (i = 0; i < state->num_users; i++) {
-		D_NOTICE("%d: %s:%s:%u:%u:%s:%s:%s\n",
+		D_NOTICE("%u: %s:%s:%u:%u:%s:%s:%s\n",
 			i,
 			state->users[i].pw_name,
 			state->users[i].pw_passwd,
