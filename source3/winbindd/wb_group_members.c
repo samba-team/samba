@@ -103,9 +103,9 @@ static void wb_lookupgroupmem_done(struct tevent_req *subreq)
 }
 
 static NTSTATUS wb_lookupgroupmem_recv(struct tevent_req *req,
-					   TALLOC_CTX *mem_ctx,
-					   int *num_members,
-					   struct wbint_Principal **members)
+				       TALLOC_CTX *mem_ctx,
+				       uint32_t *num_members,
+				       struct wbint_Principal **members)
 {
 	struct wb_lookupgroupmem_state *state = tevent_req_data(
 		req, struct wb_lookupgroupmem_state);
@@ -127,8 +127,8 @@ static NTSTATUS wb_lookupgroupmem_recv(struct tevent_req *req,
 struct wb_groups_members_state {
 	struct tevent_context *ev;
 	struct wbint_Principal *groups;
-	int num_groups;
-	int next_group;
+	uint32_t num_groups;
+	uint32_t next_group;
 	struct wbint_Principal *all_members;
 };
 
@@ -139,7 +139,7 @@ static void wb_groups_members_done(struct tevent_req *subreq);
 
 static struct tevent_req *wb_groups_members_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
-						 int num_groups,
+						 uint32_t num_groups,
 						 struct wbint_Principal *groups)
 {
 	struct tevent_req *req, *subreq = NULL;
@@ -157,7 +157,7 @@ static struct tevent_req *wb_groups_members_send(TALLOC_CTX *mem_ctx,
 	state->next_group = 0;
 	state->all_members = NULL;
 
-	D_DEBUG("Looking up %d group(s).\n", num_groups);
+	D_DEBUG("Looking up %u group(s).\n", num_groups);
 	status = wb_groups_members_next_subreq(state, state, &subreq);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
@@ -199,13 +199,12 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_groups_members_state *state = tevent_req_data(
 		req, struct wb_groups_members_state);
-	int i, num_all_members;
-	int num_members = 0;
+	uint32_t i, num_all_members;
+	uint32_t num_members = 0;
 	struct wbint_Principal *members = NULL;
 	NTSTATUS status;
 
-	status = wb_lookupgroupmem_recv(subreq, state, &num_members,
-					    &members);
+	status = wb_lookupgroupmem_recv(subreq, state, &num_members, &members);
 	TALLOC_FREE(subreq);
 
 	/*
@@ -224,7 +223,7 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 
 	num_all_members = talloc_array_length(state->all_members);
 
-	D_DEBUG("Adding %d new member(s) to existing %d member(s)\n",
+	D_DEBUG("Adding %u new member(s) to existing %u member(s)\n",
 		num_members,
 		num_all_members);
 
@@ -258,7 +257,7 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 
 static NTSTATUS wb_groups_members_recv(struct tevent_req *req,
 				       TALLOC_CTX *mem_ctx,
-				       int *num_members,
+				       uint32_t *num_members,
 				       struct wbint_Principal **members)
 {
 	struct wb_groups_members_state *state = tevent_req_data(
@@ -386,8 +385,8 @@ static void wb_group_members_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_group_members_state *state = tevent_req_data(
 		req, struct wb_group_members_state);
-	int i, num_groups, new_groups;
-	int num_members = 0;
+	uint32_t i, num_groups, new_groups;
+	uint32_t num_members = 0;
 	struct wbint_Principal *members = NULL;
 	NTSTATUS status;
 
