@@ -407,7 +407,6 @@ EOF
 test_msdfs_recursive_dir()
 {
 	tmpfile=$PREFIX/smbclient.in.$$
-	error="NT_STATUS_OBJECT_PATH_NOT_FOUND"
 
 	cat >$tmpfile <<EOF
 recurse
@@ -425,13 +424,12 @@ EOF
 		return 1
 	fi
 
-	echo "$out" | grep "$error" >/dev/null 2>&1
+	echo "$out" | grep 'NT_STATUS_OBJECT_PATH_NOT_FOUND listing \widelinks\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\dot\*' > /dev/null 2>&1
 
 	ret="$?"
-	if [ "$ret" -eq 0 ]; then
-		echo "$out"
-		echo "Listing \\msdfs-share recursively found $error"
-		return 1
+	if [ "$ret" -ne 0 ]; then
+	    echo "$out"
+	    echo "Listing \\msdfs-share recursively did not properly end in symlink recursion"
 	fi
 
 	return 0

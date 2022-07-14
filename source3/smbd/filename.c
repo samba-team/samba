@@ -2612,14 +2612,85 @@ lookup:
  * Split up name_in as sent by the client into a directory pathref fsp
  * and a relative smb_filename.
  */
-NTSTATUS filename_convert_dirfsp(
+static const char *previous_slash(const char *name_in, const char *slash)
+{
+	const char *prev = name_in;
+
+	while (true) {
+		const char *next = strchr_m(prev, '/');
+
+		SMB_ASSERT(next != NULL); /* we have at least one slash */
+
+		if (next == slash) {
+			break;
+		}
+
+		prev = next+1;
+	};
+
+	if (prev == name_in) {
+		/* no previous slash */
+		return NULL;
+	}
+
+	return prev;
+}
+
+static char *symlink_target_path(
+	TALLOC_CTX *mem_ctx,
+	const char *name_in,
+	const char *substitute,
+	size_t unparsed)
+{
+	size_t name_in_len = strlen(name_in);
+	const char *p_unparsed = NULL;
+	const char *parent = NULL;
+	char *ret;
+
+	SMB_ASSERT(unparsed <= name_in_len);
+
+	p_unparsed = name_in + (name_in_len - unparsed);
+
+	if (substitute[0] == '/') {
+		ret = talloc_asprintf(mem_ctx, "%s%s", substitute, p_unparsed);
+		return ret;
+	}
+
+	if (unparsed == 0) {
+		parent = strrchr_m(name_in, '/');
+	} else {
+		parent = previous_slash(name_in, p_unparsed);
+	}
+
+	if (parent == NULL) {
+		/* no previous slash */
+		parent = name_in;
+	}
+
+	ret = talloc_asprintf(
+		mem_ctx,
+		"%.*s%s%s",
+		(int)(parent - name_in),
+		name_in,
+		substitute,
+		p_unparsed);
+	return ret;
+}
+
+/*
+ * Split up name_in as sent by the client into a directory pathref fsp
+ * and a relative smb_filename.
+ */
+static NTSTATUS filename_convert_dirfsp_nosymlink(
 	TALLOC_CTX *mem_ctx,
 	connection_struct *conn,
 	const char *name_in,
 	uint32_t ucf_flags,
 	NTTIME twrp,
 	struct files_struct **_dirfsp,
-	struct smb_filename **_smb_fname)
+	struct smb_filename **_smb_fname,
+	char **_substitute,
+	size_t *_unparsed)
 {
 	struct smb_filename *smb_dirname = NULL;
 	struct smb_filename *smb_fname_rel = NULL;
@@ -2704,16 +2775,45 @@ NTSTATUS filename_convert_dirfsp(
 		}
 	}
 
-	status = filename_convert(
-		mem_ctx,
-		conn,
-		dirname,
-		ucf_flags & ~UCF_PREP_CREATEFILE,
-		0,
-		&smb_dirname);
+	if (dirname[0] == '\0') {
+		status = synthetic_pathref(
+			mem_ctx,
+			conn->cwd_fsp,
+			".",
+			NULL,
+			NULL,
+			0,
+			posix ? SMB_FILENAME_POSIX_PATH : 0,
+			&smb_dirname);
+	} else {
+		char *substitute = NULL;
+		size_t unparsed = 0;
+
+		status = openat_pathref_dirfsp_nosymlink(
+			mem_ctx,
+			conn,
+			dirname,
+			0,
+			&smb_dirname,
+			&unparsed,
+			&substitute);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+
+			size_t name_in_len = strlen(name_in);
+			size_t dirname_len = strlen(dirname);
+
+			SMB_ASSERT(name_in_len >= dirname_len);
+
+			*_substitute = substitute;
+			*_unparsed = unparsed + (name_in_len - dirname_len);
+
+			goto fail;
+		}
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("filename_convert(%s) failed: %s\n",
+		DBG_DEBUG("opening directory %s failed: %s\n",
 			  dirname,
 			  nt_errstr(status));
 		TALLOC_FREE(dirname);
@@ -2733,14 +2833,6 @@ NTSTATUS filename_convert_dirfsp(
 	if (!VALID_STAT_OF_DIR(smb_dirname->st)) {
 		status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		goto fail;
-	}
-
-	if (twrp == 0) {
-		/*
-		 * Might be SMB1 @GMT-style path. filename_convert()
-		 * will have extracted the twrp.
-		 */
-		twrp = smb_dirname->twrp;
 	}
 
 	smb_fname_rel = synthetic_smb_fname(
@@ -2892,6 +2984,100 @@ fail:
 	TALLOC_FREE(smb_dirname);
 	TALLOC_FREE(smb_fname_rel);
 	return status;
+}
+
+NTSTATUS filename_convert_dirfsp(
+	TALLOC_CTX *mem_ctx,
+	connection_struct *conn,
+	const char *name_in,
+	uint32_t ucf_flags,
+	NTTIME twrp,
+	struct files_struct **_dirfsp,
+	struct smb_filename **_smb_fname)
+{
+	char *substitute = NULL;
+	size_t unparsed = 0;
+	NTSTATUS status;
+	char *target = NULL;
+	char *abs_target = NULL;
+	char *abs_target_canon = NULL;
+	size_t symlink_redirects = 0;
+	bool in_share;
+
+next:
+	if (symlink_redirects > 40) {
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+
+	status = filename_convert_dirfsp_nosymlink(
+		mem_ctx,
+		conn,
+		name_in,
+		ucf_flags,
+		twrp,
+		_dirfsp,
+		_smb_fname,
+		&substitute,
+		&unparsed);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		return status;
+	}
+
+	if (!lp_follow_symlinks(SNUM(conn))) {
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+
+	if (ucf_flags & UCF_POSIX_PATHNAMES) {
+		/*
+		 * SMB1 posix never traverses symlinks
+		 */
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+
+	target = symlink_target_path(mem_ctx, name_in, substitute, unparsed);
+	if (target == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DBG_DEBUG("name_in: %s, substitute: %s, unparsed: %zu, target=%s\n",
+		  name_in,
+		  substitute,
+		  unparsed,
+		  target);
+
+	if (target[0] == '/') {
+		abs_target = target;
+	} else {
+		abs_target = talloc_asprintf(
+			mem_ctx, "%s/%s", conn->connectpath, target);
+		if (abs_target == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	abs_target_canon = canonicalize_absolute_path(mem_ctx, abs_target);
+	if (abs_target_canon == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DBG_DEBUG("abs_target_canon=%s\n", abs_target_canon);
+
+	in_share = strncmp(
+		abs_target_canon,
+		conn->connectpath,
+		strlen(conn->connectpath)) == 0;
+	if (!in_share) {
+		DBG_DEBUG("wide link to %s\n", abs_target_canon);
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+
+	name_in = talloc_strdup(
+		mem_ctx, abs_target_canon + strlen(conn->connectpath) + 1);
+
+	symlink_redirects += 1;
+
+	goto next;
 }
 
 /*
