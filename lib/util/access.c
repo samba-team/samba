@@ -115,7 +115,7 @@ static bool string_match(const char *tok,const char *s)
 			return true;
 		}
 	} else if (tok[0] == '@') { /* netgroup: look it up */
-#ifdef HAVE_NETGROUP
+#if defined(HAVE_NETGROUP) && defined(HAVE_INNETGR)
 		DATA_BLOB tmp;
 		char *mydomain = NULL;
 		char *hostname = NULL;

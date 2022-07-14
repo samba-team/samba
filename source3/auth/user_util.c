@@ -135,7 +135,7 @@ static void store_map_in_gencache(TALLOC_CTX *ctx, const char *from, const char 
 
 bool user_in_netgroup(TALLOC_CTX *ctx, const char *user, const char *ngname)
 {
-#ifdef HAVE_NETGROUP
+#if defined(HAVE_NETGROUP) && defined(HAVE_INNETGR)
 	char nis_domain_buf[256];
 	const char *nis_domain = NULL;
 	char *lowercase_user = NULL;
@@ -183,7 +183,7 @@ bool user_in_netgroup(TALLOC_CTX *ctx, const char *user, const char *ngname)
 		TALLOC_FREE(lowercase_user);
 		return true;
 	}
-#endif /* HAVE_NETGROUP */
+#endif /* HAVE_NETGROUP and HAVE_INNETGR */
 	return false;
 }
 
