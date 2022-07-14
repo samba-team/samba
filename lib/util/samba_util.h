@@ -99,6 +99,8 @@ _PUBLIC_ uint32_t generate_random(void);
 **/
 _PUBLIC_ uint64_t generate_random_u64(void);
 
+_PUBLIC_ uint64_t generate_random_u64_range(uint64_t lower, uint64_t upper);
+
 /**
  * @brief Generate random nonces usable for re-use detection.
  *

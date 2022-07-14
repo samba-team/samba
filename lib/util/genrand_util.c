@@ -50,6 +50,20 @@ _PUBLIC_ uint64_t generate_random_u64(void)
 	return BVAL(v, 0);
 }
 
+/**
+ * @brief Generate a random number in the given range.
+ *
+ * @param lower    The lower value of the range
+
+ * @param upper    The upper value of the range
+ *
+ * @return A random number bigger than than lower and smaller than upper.
+ */
+_PUBLIC_ uint64_t generate_random_u64_range(uint64_t lower, uint64_t upper)
+{
+	return generate_random_u64() % (upper - lower) + lower;
+}
+
 _PUBLIC_ uint64_t generate_unique_u64(uint64_t veto_value)
 {
 	static struct generate_unique_u64_state {
