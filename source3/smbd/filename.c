@@ -1620,10 +1620,10 @@ NTSTATUS get_real_filename_full_scan(connection_struct *conn,
  fallback.
 ****************************************************************************/
 
-static NTSTATUS get_real_filename_at(struct files_struct *dirfsp,
-				     const char *name,
-				     TALLOC_CTX *mem_ctx,
-				     char **found_name)
+NTSTATUS get_real_filename_at(struct files_struct *dirfsp,
+			      const char *name,
+			      TALLOC_CTX *mem_ctx,
+			      char **found_name)
 {
 	struct connection_struct *conn = dirfsp->conn;
 	NTSTATUS status;
