@@ -820,6 +820,69 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 		rel_fname.base_name = next;
 	}
 
+	if (conn->open_how_resolve & VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS) {
+
+		/*
+		 * Try a direct openat2 with RESOLVE_NO_SYMLINKS to
+		 * avoid the openat/close loop further down.
+		 */
+
+		rel_fname.base_name = discard_const_p(char, path_in);
+		how.resolve = VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS;
+
+		fd = SMB_VFS_OPENAT(conn, dirfsp, &rel_fname, fsp, &how);
+		if (fd >= 0) {
+			fsp_set_fd(fsp, fd);
+			TALLOC_FREE(full_fname.base_name);
+			full_fname = rel_fname;
+			goto done;
+		}
+
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("SMB_VFS_OPENAT(%s, %s, RESOLVE_NO_SYMLINKS) returned %d %s => %s\n",
+			  smb_fname_str_dbg(dirfsp->fsp_name), path_in,
+			  errno, strerror(errno), nt_errstr(status));
+		SMB_ASSERT(fd == -1);
+		switch (errno) {
+		case ENOSYS:
+			/*
+			 * We got ENOSYS, so fallback to the old code
+			 * if the kernel doesn't support openat2() yet.
+			 */
+			break;
+
+		case ELOOP:
+		case ENOTDIR:
+			/*
+			 * For ELOOP we also fallback in order to
+			 * return the correct information with
+			 * NT_STATUS_STOPPED_ON_SYMLINK.
+			 *
+			 * O_NOFOLLOW|O_DIRECTORY results in
+			 * ENOTDIR instead of ELOOP for the final
+			 * component.
+			 */
+			break;
+
+		case ENOENT:
+			/*
+			 * If we got ENOENT, the filesystem could
+			 * be case sensitive. For now we only do
+			 * the get_real_filename_at() dance in
+			 * the fallback loop below.
+			 */
+			break;
+
+		default:
+			goto fail;
+		}
+
+		/*
+		 * Just fallback to the openat loop
+		 */
+		how.resolve = 0;
+	}
+
 	/*
 	 * Now we loop over all components
 	 * opening each one and using it
@@ -967,6 +1030,7 @@ next:
 		dirfsp = NULL;
 	}
 
+done:
 	fsp->fsp_flags.is_pathref = true;
 	fsp->fsp_name = NULL;
 
