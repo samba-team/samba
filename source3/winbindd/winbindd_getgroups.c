@@ -31,7 +31,7 @@ struct winbindd_getgroups_state {
 	enum lsa_SidType type;
 	uint32_t num_sids;
 	struct dom_sid *sids;
-	int num_gids;
+	uint32_t num_gids;
 	gid_t *gids;
 };
 
@@ -252,7 +252,7 @@ NTSTATUS winbindd_getgroups_recv(struct tevent_req *req,
 	struct winbindd_getgroups_state *state = tevent_req_data(
 		req, struct winbindd_getgroups_state);
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		struct dom_sid_buf buf;
@@ -268,7 +268,7 @@ NTSTATUS winbindd_getgroups_recv(struct tevent_req *req,
 		 "Received %u entries.\n",
 		 response->data.num_entries);
 	for (i = 0; i < state->num_gids; i++) {
-		D_NOTICE("%d: GID %d\n", i, state->gids[i]);
+		D_NOTICE("%u: GID %u\n", i, state->gids[i]);
 	}
 
 	if (state->num_gids > 0) {
