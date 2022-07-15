@@ -302,11 +302,6 @@ NTSTATUS openat_internal_dir_from_pathref(
 	};
 	NTSTATUS status;
 
-	SMB_ASSERT(dirfsp != conn->cwd_fsp);
-	SMB_ASSERT(VALID_STAT(smb_dname->st));
-	SMB_ASSERT(S_ISDIR(smb_dname->st.st_ex_mode));
-	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) != -1);
-
 	status = create_internal_dirfsp(conn, smb_dname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
