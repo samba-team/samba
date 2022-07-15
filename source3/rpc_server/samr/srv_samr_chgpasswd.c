@@ -59,6 +59,9 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 #ifndef ALLOW_CHANGE_PASSWORD
 #if (defined(HAVE_TERMIOS_H) && defined(HAVE_DUP2) && defined(HAVE_SETSID))
 #define ALLOW_CHANGE_PASSWORD 1
