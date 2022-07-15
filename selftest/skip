@@ -82,9 +82,6 @@
 ^samba4.smb2.zero-data-ioctl            # For manual testing, needs additional parameters.
 ^samba4.raw.ping.pong		# Needs second server to test
 ^samba4.rpc.samr.accessmask
-^samba4.rpc.samr.passwords.*ncacn_np\(ad_dc_ntvfs\) # currently fails, possibly config issue
-^samba4.rpc.samr.passwords.*ncacn_np\(ad_dc_slowtests\) # currently fails, possibly config issue
-^samba4.rpc.samr.passwords.*s4member       # currently fails, possibly config issue
 ^samba4.raw.scan.eamax
 ^samba4.smb2.samba3misc
 ^samba4.smb2.notify
