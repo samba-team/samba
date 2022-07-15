@@ -256,6 +256,50 @@ static void torture_encrypt_decrypt(void **state)
 	TALLOC_FREE(frame);
 }
 
+#ifdef HAVE_GNUTLS_PBKDF2
+/* The following hexdumps are from a Windows Server 2022 time trace */
+static uint8_t pbkdf2_nt_hash[] = {
+	0xf8, 0x48, 0x54, 0xde, 0xb8, 0x36, 0x10, 0x33,
+	0xca, 0xea, 0x5c, 0x95, 0x96, 0x66, 0x99, 0x38
+};
+
+static uint8_t pbkdf2_iv[] = {
+	0xd5, 0xbe, 0x4f, 0xd7, 0xb6, 0x85, 0xd1, 0xea,
+	0xfd, 0x3b, 0xf4, 0x29, 0x83, 0xce, 0x10, 0x44
+};
+
+static uint8_t expected_pbkdf2_derived_key[] = {
+	0xf1, 0xe6, 0xb2, 0x6a, 0x78, 0x28, 0x63, 0x05,
+	0x77, 0x38, 0xc9, 0x71, 0xd2, 0x05, 0x88, 0x58
+};
+
+static void torture_pbkdf2(void **state)
+{
+	gnutls_datum_t nt_key = {
+		.data = pbkdf2_nt_hash,
+		.size = sizeof(pbkdf2_nt_hash),
+	};
+	gnutls_datum_t iv_datum = {
+		.data = pbkdf2_iv,
+		.size = sizeof(pbkdf2_iv),
+	};
+	uint64_t pbkdf2_iterations = 23533;
+	uint8_t derived_key[16] = {0};
+	int rc;
+
+	rc = gnutls_pbkdf2(GNUTLS_MAC_SHA512,
+			   &nt_key,
+			   &iv_datum,
+			   pbkdf2_iterations,
+			   derived_key,
+			   sizeof(derived_key));
+	assert_int_equal(rc, 0);
+	assert_memory_equal(derived_key,
+			    expected_pbkdf2_derived_key,
+			    sizeof(derived_key));
+}
+#endif /* HAVE_GNUTLS_PBKDF2 */
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -264,6 +308,9 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_mac_key),
 		cmocka_unit_test(torture_encrypt),
 		cmocka_unit_test(torture_encrypt_decrypt),
+#ifdef HAVE_GNUTLS_PBKDF2
+		cmocka_unit_test(torture_pbkdf2),
+#endif /* HAVE_GNUTLS_PBKDF2 */
 	};
 
 	if (argc == 2) {
