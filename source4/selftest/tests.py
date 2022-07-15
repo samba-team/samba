@@ -197,7 +197,7 @@ slow_ncacn_np_tests = ["rpc.samlogon",
                        "rpc.samr.users",
                        "rpc.samr.large-dc",
                        "rpc.samr.users.privileges",
-                       "rpc.samr.passwords",
+                       "rpc.samr.passwords.default",
                        "rpc.samr.passwords.pwdlastset",
                        "rpc.samr.passwords.lockout",
                        "rpc.samr.passwords.badpwdcount"]
@@ -741,7 +741,7 @@ plansmbtorture4testsuite('rpc.echo', "s4member", ['ncacn_np:$NETBIOSNAME', '-U$N
 plansmbtorture4testsuite('rpc.echo', "s4member", ['ncacn_np:$NETBIOSNAME', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'], "samba4.rpc.echo against s4member server with domain creds")
 plansmbtorture4testsuite('rpc.samr', "s4member", ['ncacn_np:$NETBIOSNAME', '-U$NETBIOSNAME/$USERNAME%$PASSWORD'], "samba4.rpc.samr against s4member server with local creds")
 plansmbtorture4testsuite('rpc.samr.users', "s4member", ['ncacn_np:$NETBIOSNAME', '-U$NETBIOSNAME/$USERNAME%$PASSWORD'], "samba4.rpc.samr.users against s4member server with local creds",)
-plansmbtorture4testsuite('rpc.samr.passwords',
+plansmbtorture4testsuite('rpc.samr.passwords.default',
                          "s4member",
                          ['ncacn_np:$NETBIOSNAME',
                           '-U$NETBIOSNAME/$USERNAME%$PASSWORD'],

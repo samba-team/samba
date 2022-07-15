@@ -601,7 +601,7 @@ NTSTATUS torture_rpc_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_rpc_iremotewinspool_drv(suite));
 	torture_suite_add_simple_test(suite, "samr", torture_rpc_samr);
 	torture_suite_add_simple_test(suite, "samr.users", torture_rpc_samr_users);
-	torture_suite_add_simple_test(suite, "samr.passwords", torture_rpc_samr_passwords);
+	torture_suite_add_simple_test(suite, "samr.passwords.default", torture_rpc_samr_passwords);
 	torture_suite_add_suite(suite, torture_rpc_netlogon(suite));
 	torture_suite_add_suite(suite, torture_rpc_netlogon_s3(suite));
 	torture_suite_add_suite(suite, torture_rpc_netlogon_admin(suite));
