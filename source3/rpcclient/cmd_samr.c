@@ -3157,15 +3157,28 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	status = init_samr_CryptPassword(param, &session_key, &pwd_buf);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+	switch(level) {
+	case 18:
+	case 21:
+		nt_lm_owf_gen(param, nt_hash, lm_hash);
+		break;
+	case 23:
+	case 24:
+		status = init_samr_CryptPassword(param, &session_key, &pwd_buf);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+		break;
+	case 25:
+	case 26:
+		status = init_samr_CryptPasswordEx(param, &session_key, &pwd_buf_ex);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+		break;
+	default:
+		break;
 	}
-	status = init_samr_CryptPasswordEx(param, &session_key, &pwd_buf_ex);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-	nt_lm_owf_gen(param, nt_hash, lm_hash);
 
 	switch (level) {
 	case 18:
