@@ -202,7 +202,7 @@ NTSTATUS winbindd_list_users_recv(struct tevent_req *req,
 		}
 	}
 
-	D_NOTICE("Got %u user(s):\n%s\n",
+	D_NOTICE("Got %"PRIu32" user(s):\n%s\n",
 		 response->data.num_entries,
 		 result);
 
