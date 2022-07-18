@@ -47,7 +47,7 @@ static int samu_destroy(struct samu *user)
 	data_blob_clear_free( &user->nt_pw );
 
 	if ( user->plaintext_pw )
-		memset( user->plaintext_pw, 0x0, strlen(user->plaintext_pw) );
+		BURN_PTR_SIZE(user->plaintext_pw, strlen(user->plaintext_pw));
 
 	return 0;
 }
