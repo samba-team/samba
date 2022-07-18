@@ -111,7 +111,7 @@ NTSTATUS wb_lookupusergroups_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	       *num_sids);
 	for (i = 0; i < *num_sids; i++) {
 		struct dom_sid_buf buf;
-		D_INFO("%u: %s\n", i, dom_sid_str_buf(&*sids[i], &buf));
+		D_INFO("%u: %s\n", i, dom_sid_str_buf(&((*sids)[i]), &buf));
 	}
 	return NT_STATUS_OK;
 }
