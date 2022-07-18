@@ -67,7 +67,7 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	D_DEBUG("Resolving %u SID(s).\n", (int)state->num_sids);
+	D_DEBUG("Resolving %"PRIu32" SID(s).\n", state->num_sids);
 
 	subreq = wb_sids2xids_send(state, ev, state->sids, state->num_sids);
 	if (tevent_req_nomem(subreq, req)) {
