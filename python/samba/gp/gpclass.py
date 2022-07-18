@@ -32,7 +32,6 @@ import re
 from samba.net import Net
 from samba.dcerpc import nbt
 from samba.samba3 import libsmb_samba_internal as libsmb
-from samba.samba3 import param as s3param
 import samba.gpo as gpo
 from samba.param import LoadParm
 from uuid import UUID
@@ -406,14 +405,10 @@ def check_safe_path(path):
 
 
 def check_refresh_gpo_list(dc_hostname, lp, creds, gpos):
-    # the SMB bindings rely on having a s3 loadparm
-    s3_lp = s3param.get_context()
-    s3_lp.load(lp.configfile)
-
     # Force signing for the connection
     saved_signing_state = creds.get_smb_signing()
     creds.set_smb_signing(SMB_SIGNING_REQUIRED)
-    conn = libsmb.Conn(dc_hostname, 'sysvol', lp=s3_lp, creds=creds)
+    conn = libsmb.Conn(dc_hostname, 'sysvol', lp=lp, creds=creds)
     # Reset signing state
     creds.set_smb_signing(saved_signing_state)
     cache_path = lp.cache_path('gpo_cache')

@@ -93,6 +93,15 @@ class SambaOptions(optparse.OptionGroup):
         return self._lp
 
 
+class Samba3Options(SambaOptions):
+    """General Samba-related command line options with an s3 param."""
+
+    def __init__(self, parser):
+        SambaOptions.__init__(self, parser)
+        from samba.samba3 import param as s3param
+        self._lp = s3param.get_context()
+
+
 class VersionOptions(optparse.OptionGroup):
     """Command line option for printing Samba version."""
     def __init__(self, parser):

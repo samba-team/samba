@@ -57,7 +57,7 @@ from samba.gp.util.logging import logger_init
 
 if __name__ == "__main__":
     parser = optparse.OptionParser('samba-gpupdate [options]')
-    sambaopts = options.SambaOptions(parser)
+    sambaopts = options.Samba3Options(parser)
 
     # Get the command line options
     parser.add_option_group(sambaopts)
