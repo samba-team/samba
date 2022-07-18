@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Jeremy Allison 		1996-2001
@@ -41,7 +41,7 @@
 /**********************************************************************
 ***********************************************************************/
 
-static int samu_destroy(struct samu *user) 
+static int samu_destroy(struct samu *user)
 {
 	data_blob_clear_free( &user->lm_pw );
 	data_blob_clear_free( &user->nt_pw );
@@ -87,7 +87,7 @@ struct samu *samu_new( TALLOC_CTX *ctx )
 	user->logon_count = 0;
 	user->unknown_6 = 0x000004ec; /* don't know */
 
-	/* Some parts of samba strlen their pdb_get...() returns, 
+	/* Some parts of samba strlen their pdb_get...() returns,
 	   so this keeps the interface unchanged for now. */
 
 	user->username = "";
@@ -126,7 +126,7 @@ static int count_commas(const char *str)
 }
 
 /*********************************************************************
- Initialize a struct samu from a struct passwd including the user 
+ Initialize a struct samu from a struct passwd including the user
  and group SIDs.  The *user structure is filled out with the Unix
  attributes and a user SID.
 *********************************************************************/
@@ -183,9 +183,9 @@ static NTSTATUS samu_set_unix_internal(struct pdb_methods *methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 #if 0
-	/* This can lead to a primary group of S-1-22-2-XX which 
-	   will be rejected by other parts of the Samba code. 
-	   Rely on pdb_get_group_sid() to "Do The Right Thing" (TM)  
+	/* This can lead to a primary group of S-1-22-2-XX which
+	   will be rejected by other parts of the Samba code.
+	   Rely on pdb_get_group_sid() to "Do The Right Thing" (TM)
 	   --jerry */
 
 	gid_to_sid(&group_sid, pwd->pw_gid);
@@ -214,16 +214,16 @@ static NTSTATUS samu_set_unix_internal(struct pdb_methods *methods,
 		/* workstation */
 
 		if (!pdb_set_acct_ctrl(user, ACB_WSTRUST, PDB_DEFAULT)) {
-			DEBUG(1, ("Failed to set 'workstation account' flags for user %s.\n", 
+			DEBUG(1, ("Failed to set 'workstation account' flags for user %s.\n",
 				pwd->pw_name));
 			return NT_STATUS_INVALID_COMPUTER_NAME;
-		}	
-	} 
+		}
+	}
 	else {
 		/* user */
 
 		if (!pdb_set_acct_ctrl(user, ACB_NORMAL, PDB_DEFAULT)) {
-			DEBUG(1, ("Failed to set 'normal account' flags for user %s.\n", 
+			DEBUG(1, ("Failed to set 'normal account' flags for user %s.\n",
 				pwd->pw_name));
 			return NT_STATUS_INVALID_ACCOUNT_NAME;
 		}
@@ -279,9 +279,9 @@ static NTSTATUS samu_set_unix_internal(struct pdb_methods *methods,
 		}
 	}
 
-	/* Now deal with the user SID.  If we have a backend that can generate 
-	   RIDs, then do so.  But sometimes the caller just wanted a structure 
-	   initialized and will fill in these fields later (such as from a 
+	/* Now deal with the user SID.  If we have a backend that can generate
+	   RIDs, then do so.  But sometimes the caller just wanted a structure
+	   initialized and will fill in these fields later (such as from a
 	   netr_SamInfo3 structure) */
 
 	if ( create && (methods->capabilities(methods) & PDB_CAP_STORE_RIDS)) {
@@ -349,7 +349,7 @@ char *pdb_encode_acct_ctrl(uint32_t acct_ctrl, size_t length)
 	if (acct_ctrl & ACB_PWNOTREQ ) acct_str[i++] = 'N';
 	if (acct_ctrl & ACB_DISABLED ) acct_str[i++] = 'D';
 	if (acct_ctrl & ACB_HOMDIRREQ) acct_str[i++] = 'H';
-	if (acct_ctrl & ACB_TEMPDUP  ) acct_str[i++] = 'T'; 
+	if (acct_ctrl & ACB_TEMPDUP  ) acct_str[i++] = 'T';
 	if (acct_ctrl & ACB_NORMAL   ) acct_str[i++] = 'U';
 	if (acct_ctrl & ACB_MNS      ) acct_str[i++] = 'M';
 	if (acct_ctrl & ACB_WSTRUST  ) acct_str[i++] = 'W';
@@ -368,7 +368,7 @@ char *pdb_encode_acct_ctrl(uint32_t acct_ctrl, size_t length)
 	result = talloc_strdup(talloc_tos(), acct_str);
 	SMB_ASSERT(result != NULL);
 	return result;
-}     
+}
 
 /**********************************************************
  Decode the account control bits from a string.
@@ -392,18 +392,18 @@ uint32_t pdb_decode_acct_ctrl(const char *p)
 			case 'N': { acct_ctrl |= ACB_PWNOTREQ ; break; /* 'N'o password. */ }
 			case 'D': { acct_ctrl |= ACB_DISABLED ; break; /* 'D'isabled. */ }
 			case 'H': { acct_ctrl |= ACB_HOMDIRREQ; break; /* 'H'omedir required. */ }
-			case 'T': { acct_ctrl |= ACB_TEMPDUP  ; break; /* 'T'emp account. */ } 
-			case 'U': { acct_ctrl |= ACB_NORMAL   ; break; /* 'U'ser account (normal). */ } 
-			case 'M': { acct_ctrl |= ACB_MNS      ; break; /* 'M'NS logon user account. What is this ? */ } 
-			case 'W': { acct_ctrl |= ACB_WSTRUST  ; break; /* 'W'orkstation account. */ } 
-			case 'S': { acct_ctrl |= ACB_SVRTRUST ; break; /* 'S'erver account. */ } 
-			case 'L': { acct_ctrl |= ACB_AUTOLOCK ; break; /* 'L'ocked account. */ } 
-			case 'X': { acct_ctrl |= ACB_PWNOEXP  ; break; /* No 'X'piry on password */ } 
+			case 'T': { acct_ctrl |= ACB_TEMPDUP  ; break; /* 'T'emp account. */ }
+			case 'U': { acct_ctrl |= ACB_NORMAL   ; break; /* 'U'ser account (normal). */ }
+			case 'M': { acct_ctrl |= ACB_MNS      ; break; /* 'M'NS logon user account. What is this ? */ }
+			case 'W': { acct_ctrl |= ACB_WSTRUST  ; break; /* 'W'orkstation account. */ }
+			case 'S': { acct_ctrl |= ACB_SVRTRUST ; break; /* 'S'erver account. */ }
+			case 'L': { acct_ctrl |= ACB_AUTOLOCK ; break; /* 'L'ocked account. */ }
+			case 'X': { acct_ctrl |= ACB_PWNOEXP  ; break; /* No 'X'piry on password */ }
 			case 'I': { acct_ctrl |= ACB_DOMTRUST ; break; /* 'I'nterdomain trust account. */ }
             case ' ': { break; }
 			case ':':
 			case '\n':
-			case '\0': 
+			case '\0':
 			case ']':
 			default:  { finished = true; }
 		}
@@ -518,7 +518,7 @@ int algorithmic_rid_base(void)
 
 	rid_offset = lp_algorithmic_rid_base();
 
-	if (rid_offset < BASE_RID) {  
+	if (rid_offset < BASE_RID) {
 		/* Try to prevent admin foot-shooting, we can't put algorithmic
 		   rids below 1000, that's the 'well known RIDs' on NT */
 		DEBUG(0, ("'algorithmic rid base' must be equal to or above %ld\n", BASE_RID));
@@ -573,7 +573,7 @@ gid_t max_algorithmic_gid(void)
 
 /*******************************************************************
  converts NT Group RID to a UNIX uid.
- 
+
  warning: you must not call that function only
  you must do a call to the group mapping first.
  there is not anymore a direct link between the gid and the rid.
@@ -626,9 +626,9 @@ bool lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 	GROUP_MAP *map;
 	bool ret;
 
-	/* Windows treats "MACHINE\None" as a special name for 
+	/* Windows treats "MACHINE\None" as a special name for
 	   rid 513 on non-DCs.  You cannot create a user or group
-	   name "None" on Windows.  You will get an error that 
+	   name "None" on Windows.  You will get an error that
 	   the group already exists. */
 
 	if ( strequal( name, "None" ) ) {
@@ -725,7 +725,7 @@ bool lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 
 NTSTATUS local_password_change(const char *user_name,
 				int local_flags,
-				const char *new_passwd, 
+				const char *new_passwd,
 				char **pp_err_str,
 				char **pp_msg_str)
 {
@@ -1068,7 +1068,7 @@ static bool init_samu_from_buffer_v0(struct samu *sampass, uint8_t *buf, uint32_
 	pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
 	pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
 
-	pdb_set_username(sampass, username, PDB_SET); 
+	pdb_set_username(sampass, username, PDB_SET);
 	pdb_set_domain(sampass, domain, PDB_SET);
 	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 	pdb_set_fullname(sampass, fullname, PDB_SET);
@@ -1077,34 +1077,34 @@ static bool init_samu_from_buffer_v0(struct samu *sampass, uint8_t *buf, uint32_
 		pdb_set_homedir(sampass, homedir, PDB_SET);
 	}
 	else {
-		pdb_set_homedir(sampass, 
+		pdb_set_homedir(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
-	if (dir_drive) 	
+	if (dir_drive)
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	else {
-		pdb_set_dir_drive(sampass, 
+		pdb_set_dir_drive(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_drive()),
 			PDB_DEFAULT);
 	}
 
-	if (logon_script) 
+	if (logon_script)
 		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	else {
-		pdb_set_logon_script(sampass, 
+		pdb_set_logon_script(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_script()),
 			PDB_DEFAULT);
 	}
 
-	if (profile_path) {	
+	if (profile_path) {
 		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	} else {
-		pdb_set_profile_path(sampass, 
+		pdb_set_profile_path(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_path()),
 			PDB_DEFAULT);
@@ -1258,7 +1258,7 @@ static bool init_samu_from_buffer_v1(struct samu *sampass, uint8_t *buf, uint32_
 	pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
 	pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
 
-	pdb_set_username(sampass, username, PDB_SET); 
+	pdb_set_username(sampass, username, PDB_SET);
 	pdb_set_domain(sampass, domain, PDB_SET);
 	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 	pdb_set_fullname(sampass, fullname, PDB_SET);
@@ -1267,34 +1267,34 @@ static bool init_samu_from_buffer_v1(struct samu *sampass, uint8_t *buf, uint32_
 		pdb_set_homedir(sampass, homedir, PDB_SET);
 	}
 	else {
-		pdb_set_homedir(sampass, 
+		pdb_set_homedir(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
-	if (dir_drive) 	
+	if (dir_drive)
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	else {
-		pdb_set_dir_drive(sampass, 
+		pdb_set_dir_drive(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_drive()),
 			PDB_DEFAULT);
 	}
 
-	if (logon_script) 
+	if (logon_script)
 		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	else {
-		pdb_set_logon_script(sampass, 
+		pdb_set_logon_script(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_script()),
 			PDB_DEFAULT);
 	}
 
-	if (profile_path) {	
+	if (profile_path) {
 		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	} else {
-		pdb_set_profile_path(sampass, 
+		pdb_set_profile_path(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_path()),
 			PDB_DEFAULT);
@@ -1448,7 +1448,7 @@ static bool init_samu_from_buffer_v2(struct samu *sampass, uint8_t *buf, uint32_
 	pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
 	pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
 
-	pdb_set_username(sampass, username, PDB_SET); 
+	pdb_set_username(sampass, username, PDB_SET);
 	pdb_set_domain(sampass, domain, PDB_SET);
 	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 	pdb_set_fullname(sampass, fullname, PDB_SET);
@@ -1462,13 +1462,13 @@ static bool init_samu_from_buffer_v2(struct samu *sampass, uint8_t *buf, uint32_
 		pdb_set_homedir(sampass, tmp_string, PDB_SET);
 	}
 	else {
-		pdb_set_homedir(sampass, 
+		pdb_set_homedir(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
-	if (dir_drive) 	
+	if (dir_drive)
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	else
 		pdb_set_dir_drive(sampass, lp_logon_drive(), PDB_DEFAULT );
@@ -1482,22 +1482,22 @@ static bool init_samu_from_buffer_v2(struct samu *sampass, uint8_t *buf, uint32_
 		pdb_set_logon_script(sampass, tmp_string, PDB_SET);
 	}
 	else {
-		pdb_set_logon_script(sampass, 
+		pdb_set_logon_script(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_script()),
 			PDB_DEFAULT);
 	}
 
-	if (profile_path) {	
+	if (profile_path) {
 		fstrcpy( tmp_string, profile_path );
 		if (expand_explicit) {
 			standard_sub_basic( username, domain, tmp_string,
 					    sizeof(tmp_string) );
 		}
 		pdb_set_profile_path(sampass, tmp_string, PDB_SET);
-	} 
+	}
 	else {
-		pdb_set_profile_path(sampass, 
+		pdb_set_profile_path(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_path()),
 			PDB_DEFAULT);
@@ -1683,7 +1683,7 @@ static bool init_samu_from_buffer_v3(struct samu *sampass, uint8_t *buf, uint32_
 	pdb_set_pass_can_change_time(sampass, convert_uint32_t_to_time_t(pass_can_change_time), PDB_SET);
 	pdb_set_pass_last_set_time(sampass, convert_uint32_t_to_time_t(pass_last_set_time), PDB_SET);
 
-	pdb_set_username(sampass, username, PDB_SET); 
+	pdb_set_username(sampass, username, PDB_SET);
 	pdb_set_domain(sampass, domain, PDB_SET);
 	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 	pdb_set_fullname(sampass, fullname, PDB_SET);
@@ -1697,13 +1697,13 @@ static bool init_samu_from_buffer_v3(struct samu *sampass, uint8_t *buf, uint32_
 		pdb_set_homedir(sampass, tmp_string, PDB_SET);
 	}
 	else {
-		pdb_set_homedir(sampass, 
+		pdb_set_homedir(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
-	if (dir_drive) 	
+	if (dir_drive)
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	else
 		pdb_set_dir_drive(sampass, lp_logon_drive(), PDB_DEFAULT );
@@ -1717,22 +1717,22 @@ static bool init_samu_from_buffer_v3(struct samu *sampass, uint8_t *buf, uint32_
 		pdb_set_logon_script(sampass, tmp_string, PDB_SET);
 	}
 	else {
-		pdb_set_logon_script(sampass, 
+		pdb_set_logon_script(sampass,
 			talloc_sub_basic(sampass, username, domain,
 					 lp_logon_script()),
 			PDB_DEFAULT);
 	}
 
-	if (profile_path) {	
+	if (profile_path) {
 		fstrcpy( tmp_string, profile_path );
 		if (expand_explicit) {
 			standard_sub_basic( username, domain, tmp_string,
 					    sizeof(tmp_string) );
 		}
 		pdb_set_profile_path(sampass, tmp_string, PDB_SET);
-	} 
+	}
 	else {
-		pdb_set_profile_path(sampass, 
+		pdb_set_profile_path(sampass,
 			talloc_sub_basic(sampass, username, domain, lp_logon_path()),
 			PDB_DEFAULT);
 	}
@@ -1994,7 +1994,7 @@ static uint32_t init_buffer_from_samu_v3 (uint8_t **buf, struct samu *sampass, b
 	if (munged_dial) {
 		munged_dial_len = strlen(munged_dial) +1;
 	} else {
-		munged_dial_len = 0;	
+		munged_dial_len = 0;
 	}
 
 /* SAMU_BUFFER_FORMAT_V3       "dddddddBBBBBBBBBBBBddBBBdwdBwwd" */
@@ -2079,8 +2079,8 @@ static uint32_t init_buffer_from_samu_v3 (uint8_t **buf, struct samu *sampass, b
 
 	/* check to make sure we got it correct */
 	if (buflen != len) {
-		DEBUG(0, ("init_buffer_from_samu_v3: something odd is going on here: bufflen (%lu) != len (%lu) in tdb_pack operations!\n", 
-			  (unsigned long)buflen, (unsigned long)len));  
+		DEBUG(0, ("init_buffer_from_samu_v3: something odd is going on here: bufflen (%lu) != len (%lu) in tdb_pack operations!\n",
+			  (unsigned long)buflen, (unsigned long)len));
 		/* error */
 		SAFE_FREE (*buf);
 		return (-1);
@@ -2203,7 +2203,7 @@ bool pdb_update_bad_password_count(struct samu *sampass, bool *updated)
 	}
 
 	LastBadPassword = pdb_get_bad_password_time(sampass);
-	DEBUG(7, ("LastBadPassword=%d, resettime=%d, current time=%d.\n", 
+	DEBUG(7, ("LastBadPassword=%d, resettime=%d, current time=%d.\n",
 		   (uint32_t) LastBadPassword, resettime, (uint32_t)time(NULL)));
 	if (time(NULL) > (LastBadPassword + convert_uint32_t_to_time_t(resettime)*60)){
 		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
@@ -2274,7 +2274,7 @@ bool pdb_update_autolock_flag(struct samu *sampass, bool *updated)
 }
 
 /*********************************************************************
- Increment the bad_password_count 
+ Increment the bad_password_count
 *********************************************************************/
 
 bool pdb_increment_bad_password_count(struct samu *sampass)
@@ -2307,24 +2307,24 @@ bool pdb_increment_bad_password_count(struct samu *sampass)
 		return False;
 
 	/*
-	  Ok, now we can assume that any resetting that needs to be 
+	  Ok, now we can assume that any resetting that needs to be
 	  done has been done, and just get on with incrementing
 	  and autolocking if necessary
 	*/
 
-	pdb_set_bad_password_count(sampass, 
+	pdb_set_bad_password_count(sampass,
 				   pdb_get_bad_password_count(sampass)+1,
 				   PDB_CHANGED);
 	pdb_set_bad_password_time(sampass, time(NULL), PDB_CHANGED);
 
 
-	if (pdb_get_bad_password_count(sampass) < account_policy_lockout) 
+	if (pdb_get_bad_password_count(sampass) < account_policy_lockout)
 		return True;
 
 	if (!pdb_set_acct_ctrl(sampass,
 			       pdb_get_acct_ctrl(sampass) | ACB_AUTOLOCK,
 			       PDB_CHANGED)) {
-		DEBUG(1, ("pdb_increment_bad_password_count:failed to set 'autolock' flag. \n")); 
+		DEBUG(1, ("pdb_increment_bad_password_count:failed to set 'autolock' flag. \n"));
 		return False;
 	}
 
