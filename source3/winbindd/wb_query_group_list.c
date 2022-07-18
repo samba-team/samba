@@ -89,6 +89,6 @@ NTSTATUS wb_query_group_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	*groups = talloc_move(mem_ctx, &state->groups.principals);
 
 	D_INFO("WB command group_list end.\n"
-	       "Returning %u group(s).\n", *num_groups);
+	       "Returning %"PRIu32" group(s).\n", *num_groups);
 	return NT_STATUS_OK;
 }
