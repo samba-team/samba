@@ -76,7 +76,7 @@ static void wb_query_user_list_gotrids(struct tevent_req *subreq)
 		return;
 	}
 
-	D_DEBUG("dcerpc_wbint_QueryUserList returned %u users\n",
+	D_DEBUG("dcerpc_wbint_QueryUserList returned %"PRIu32" users\n",
 		state->rids.num_rids);
 
 	subreq = dcerpc_wbint_LookupRids_send(
@@ -104,7 +104,8 @@ static void wb_query_user_list_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	D_DEBUG("Processing %u principal(s).\n", state->names.num_principals);
+	D_DEBUG("Processing %"PRIu32" principal(s).\n",
+		state->names.num_principals);
 	for (i=0; i<state->names.num_principals; i++) {
 		struct wbint_Principal *p = &state->names.principals[i];
 		const char *name;
@@ -120,7 +121,7 @@ static void wb_query_user_list_done(struct tevent_req *subreq)
 			tevent_req_nterror(req, map_nt_error_from_unix(ret));
 			return;
 		}
-		D_DEBUG("%u: Adding user %s\n", i, name);
+		D_DEBUG("%"PRIu32": Adding user %s\n", i, name);
 	}
 
 	tevent_req_done(req);
