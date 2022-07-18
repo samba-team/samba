@@ -404,12 +404,14 @@ NTSTATUS wb_xids2sids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	}
 
 	*sids = talloc_move(mem_ctx, &state->sids);
-	for (i = 0; i <  state->num_xids; i++) {
-		struct dom_sid_buf buf;
-		D_INFO("%lu: XID %u mapped to SID %s\n",
-		       i,
-		       state->xids[i].id,
-		       dom_sid_str_buf(&((*sids)[i]), &buf));
+	if (CHECK_DEBUGLVL(DBGLVL_INFO)) {
+		for (i = 0; i <  state->num_xids; i++) {
+			struct dom_sid_buf buf;
+			D_INFO("%lu: XID %u mapped to SID %s\n",
+			       i,
+			       state->xids[i].id,
+			       dom_sid_str_buf(&((*sids)[i]), &buf));
+		}
 	}
 	return NT_STATUS_OK;
 }
