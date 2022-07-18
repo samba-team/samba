@@ -47,12 +47,12 @@ struct tevent_req *wb_lookupuseraliases_send(TALLOC_CTX *mem_ctx,
 	}
 
 	D_INFO("WB command lookupuseraliases start.\n"
-	       "Query domain %s for max %u SID(s).\n",
+	       "Query domain %s for max %"PRIu32" SID(s).\n",
 	       domain->name, num_sids);
 
 	for (i = 0; i < num_sids; i++) {
 		struct dom_sid_buf buf;
-		D_INFO("%u: SID %s\n", i, dom_sid_str_buf(&sids[i], &buf));
+		D_INFO("%"PRIu32": SID %s\n", i, dom_sid_str_buf(&sids[i], &buf));
 	}
 	state->sids.num_sids = num_sids;
 	state->sids.sids = discard_const_p(struct dom_sid, sids);
@@ -91,16 +91,16 @@ NTSTATUS wb_lookupuseraliases_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	struct wb_lookupuseraliases_state *state = tevent_req_data(
 		req, struct wb_lookupuseraliases_state);
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*num_aliases = state->rids.num_rids;
-	D_INFO("WB command lookupuseraliases end.\nGot %u alias(es):\n",
+	D_INFO("WB command lookupuseraliases end.\nGot %"PRIu32" alias(es):\n",
 	       *num_aliases);
 	for (i = 0; i < *num_aliases; i++) {
-		D_INFO("%u: RID %u\n", i, state->rids.rids[i]);
+		D_INFO("%"PRIu32": RID %"PRIu32"\n", i, state->rids.rids[i]);
 	}
 
 	*aliases = talloc_move(mem_ctx, &state->rids.rids);
