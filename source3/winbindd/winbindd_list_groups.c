@@ -76,7 +76,7 @@ struct tevent_req *winbindd_list_groups_send(TALLOC_CTX *mem_ctx,
 		for (domain = domain_list(); domain; domain = domain->next) {
 			state->num_domains += 1;
 		}
-		D_DEBUG("List groups for %u domain(s).\n", state->num_domains);
+		D_DEBUG("List groups for %"PRIu32" domain(s).\n", state->num_domains);
 	}
 
 	state->domains = talloc_array(state,
@@ -142,7 +142,7 @@ static void winbindd_list_groups_done(struct tevent_req *subreq)
 	if (i < state->num_domains) {
 		struct winbindd_list_groups_domstate *d = &state->domains[i];
 
-		D_DEBUG("Domain %s returned %u groups\n", d->domain->name,
+		D_DEBUG("Domain %s returned %"PRIu32" groups\n", d->domain->name,
 			   d->groups.num_principals);
 
 		d->subreq = NULL;
