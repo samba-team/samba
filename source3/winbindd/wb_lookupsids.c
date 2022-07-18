@@ -116,10 +116,11 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 	struct wb_lookupsids_state *state;
 	uint32_t i;
 
-	D_INFO("WB command lookupsids start.\nLooking up %u SID(s)\n", num_sids);
 	for (i = 0; i < num_sids; i++) {
 		struct dom_sid_buf buf;
-		D_INFO("%u: %s\n", i, dom_sid_str_buf(&sids[i], &buf));
+	D_INFO("WB command lookupsids start.\nLooking up %"PRIu32" SID(s)\n",
+	       num_sids);
+		D_INFO("%"PRIu32": %s\n", i, dom_sid_str_buf(&sids[i], &buf));
 	}
 	req = tevent_req_create(mem_ctx, &state, struct wb_lookupsids_state);
 	if (req == NULL) {
@@ -338,7 +339,7 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 		return NULL;
 	}
 
-	D_DEBUG("Searching %u domain(s) for domain '%s'\n",
+	D_DEBUG("Searching %"PRIu32" domain(s) for domain '%s'\n",
 		num_domains, wb_domain->name);
 	for (i=0; i<num_domains; i++) {
 		if (domains[i].domain != wb_domain) {
@@ -669,7 +670,7 @@ NTSTATUS wb_lookupsids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	 * if not we have a bug in the code!
 	 */
 	if (state->res_names->count != state->num_sids) {
-		D_WARNING("Got %u returned name(s), but expected %u!\n",
+		D_WARNING("Got %"PRIu32" returned name(s), but expected %"PRIu32"!\n",
 			  state->res_names->count, state->num_sids);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -686,7 +687,7 @@ NTSTATUS wb_lookupsids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	*domains = talloc_move(mem_ctx, &state->res_domains);
 	*names = talloc_move(mem_ctx, &state->res_names);
-	D_INFO("Returning %u domain(s) and %u name(s).\n",
+	D_INFO("Returning %"PRIu32" domain(s) and %"PRIu32" name(s).\n",
 	       (*domains)->count,
 	       (*names)->count);
 	return NT_STATUS_OK;
