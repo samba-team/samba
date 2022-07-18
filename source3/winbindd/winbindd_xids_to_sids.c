@@ -126,7 +126,7 @@ NTSTATUS winbindd_xids_to_sids_recv(struct tevent_req *req,
 			str = sid_buf.buf;
 		}
 
-		D_NOTICE("%u: XID %u mapped to SID %s.\n",
+		D_NOTICE("%"PRIu32": XID %"PRIu32" mapped to SID %s.\n",
 			 i, state->xids[i].id, str);
 		result = talloc_asprintf_append_buffer(
 			result, "%s\n", str);
