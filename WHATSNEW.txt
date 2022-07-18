@@ -1,4 +1,73 @@
                    ==============================
+                   Release Notes for Samba 4.16.3
+                           July 18, 2022
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.16 release series.
+
+
+Changes since 4.16.2
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15099: Using vfs_streams_xattr and deleting a file causes a panic.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14986: Add support for bind 9.18.
+   * BUG 15076: logging dsdb audit to specific files does not work.
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 14979: Problem when winbind renews Kerberos.
+   * BUG 15095: Samba with new lorikeet-heimdal fails to build on gcc 12.1 in
+     developer mode.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15105: Crash in streams_xattr because fsp->base_fsp->fsp_name is NULL.
+   * BUG 15118: Crash in rpcd_classic - NULL pointer deference in
+     mangle_is_mangled().
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15100: smbclient commands del & deltree fail with
+     NT_STATUS_OBJECT_PATH_NOT_FOUND with DFS.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 15120: Fix check for chown when processing NFSv4 ACL.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15082: The pcap background queue process should not be stopped.
+   * BUG 15097: testparm: Fix typo in idmap rangesize check.
+   * BUG 15106: net ads info returns LDAP server and LDAP server name as null.
+   * BUG 15108: ldconfig: /lib64/libsmbconf.so.0 is not a symbolic link.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 15090: CTDB child process logging does not work as expected.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.16.2
                            June 13, 2022
                    ==============================
@@ -66,8 +135,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.16.1
                             May 02, 2022
