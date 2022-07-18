@@ -149,7 +149,7 @@ NTSTATUS winbindd_getgrgid_recv(struct tevent_req *req,
 	response->length += talloc_get_size(response->extra_data.data);
 
 	D_NOTICE("Winbind external command GETGRGID end.\n"
-		 "Returning %u group member(s).\n",
+		 "Returning %"PRIu32" group member(s).\n",
 		 response->data.gr.num_gr_mem);
 
 	return NT_STATUS_OK;
