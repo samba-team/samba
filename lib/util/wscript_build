@@ -165,6 +165,16 @@ else:
                      local_include=False,
                      install=False)
 
+    # TODO: Rewrite ms_fnmatch_core() for a better API.
+    ms_fnmatch_cflags=''
+    if bld.CONFIG_SET('HAVE_WNO_ERROR_ARRAY_BOUNDS'):
+        ms_fnmatch_cflags='-Wno-error=array-bounds'
+    bld.SAMBA_SUBSYSTEM('SAMBA_UTIL_MS_FNMATCH',
+                        source='ms_fnmatch.c',
+                        deps='talloc',
+                        cflags=ms_fnmatch_cflags,
+                        local_include=False)
+
     bld.SAMBA_LIBRARY('samba-util',
                   source='''
                          base64.c
@@ -174,7 +184,6 @@ else:
                          getpass.c
                          idtree_random.c
                          memcache.c
-                         ms_fnmatch.c
                          params.c
                          rbtree.c
                          rfc1738.c
@@ -194,7 +203,15 @@ else:
                          util_str_common.c
                          util_strlist_v3.c
                          ''',
-                  deps='samba-util-core DYNCONFIG close-low-fd tiniparser genrand util_str_hex',
+                  deps='''
+                       samba-util-core
+                       DYNCONFIG
+                       close-low-fd
+                       tiniparser
+                       genrand
+                       util_str_hex
+                       SAMBA_UTIL_MS_FNMATCH
+                       ''',
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid',
                   public_headers='''
                                  attr.h
@@ -212,7 +229,6 @@ else:
                                  tfork.h
                                  ''',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
-                  cflags='-Wno-error=array-bounds',
                   local_include=False,
                   vnum='0.0.1',
                   pc_files='samba-util.pc'
