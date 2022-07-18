@@ -157,7 +157,7 @@ static struct tevent_req *wb_groups_members_send(TALLOC_CTX *mem_ctx,
 	state->next_group = 0;
 	state->all_members = NULL;
 
-	D_DEBUG("Looking up %u group(s).\n", num_groups);
+	D_DEBUG("Looking up %"PRIu32" group(s).\n", num_groups);
 	status = wb_groups_members_next_subreq(state, state, &subreq);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
@@ -223,7 +223,7 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 
 	num_all_members = talloc_array_length(state->all_members);
 
-	D_DEBUG("Adding %u new member(s) to existing %u member(s)\n",
+	D_DEBUG("Adding %"PRIu32" new member(s) to existing %"PRIu32" member(s)\n",
 		num_members,
 		num_all_members);
 
