@@ -82,7 +82,7 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 	uint32_t num_valid = 0;
 
 	D_INFO("WB command sids2xids start.\n"
-	       "Resolving %u SID(s).\n", num_sids);
+	       "Resolving %"PRIu32" SID(s).\n", num_sids);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_sids2xids_state);
@@ -153,8 +153,8 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 			},
 		};
 
-		D_DEBUG("SID %u: %s\n",
-			(int)i, dom_sid_str_buf(&state->sids[i], &buf));
+		D_DEBUG("%"PRIu32": SID %s\n",
+			i, dom_sid_str_buf(&state->sids[i], &buf));
 
 		in_cache = wb_sids2xids_in_cache(&state->sids[i], &map);
 		if (in_cache) {
@@ -172,7 +172,8 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	D_DEBUG("Found %u (out of %u) SID(s) in cache.\n", num_valid, num_sids);
+	D_DEBUG("Found %"PRIu32" (out of %"PRIu32") SID(s) in cache.\n",
+		num_valid, num_sids);
 	if (num_valid == num_sids) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
@@ -202,7 +203,7 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 		return;
 	}
 	SMB_ASSERT(state->cfg->num_doms > 0);
-	D_DEBUG("We will loop over %u SID(s) (skipping those already resolved via cache) and over %u domain(s).\n",
+	D_DEBUG("We will loop over %"PRIu32" SID(s) (skipping those already resolved via cache) and over %"PRIu32" domain(s).\n",
 		state->num_sids,
 		state->cfg->num_doms);
 
@@ -219,12 +220,12 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 		uint32_t di;
 		struct dom_sid_buf buf0, buf1;
 
-		D_DEBUG("%u: Processing SID %s\n",
+		D_DEBUG("%"PRIu32": Processing SID %s\n",
 			i,
 			dom_sid_str_buf(&state->sids[i], &buf0));
 		if (t->domain_index == UINT32_MAX) {
 			/* ignore already filled entries */
-			D_DEBUG("Ignoring already resolved SID %u: %s\n",
+			D_DEBUG("%"PRIu32": Ignoring already resolved SID %s\n",
 				i,
 				dom_sid_str_buf(&state->sids[i], &buf0));
 			continue;
@@ -232,7 +233,7 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 
 		sid_copy(&domain_sid, &state->sids[i]);
 		sid_split_rid(&domain_sid, &rid);
-		D_DEBUG("%u: Splitted SID %s into domain SID %s and RID %u\n",
+		D_DEBUG("%"PRIu32": Splitted SID %s into domain SID %s and RID %"PRIu32"\n",
 			i,
 			dom_sid_str_buf(&state->sids[i], &buf0),
 			dom_sid_str_buf(&domain_sid, &buf1),
@@ -259,7 +260,7 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 			}
 		}
 
-		D_DEBUG("Looping over %u domain(s) to find domain SID %s.\n",
+		D_DEBUG("Looping over %"PRIu32" domain(s) to find domain SID %s.\n",
 			state->cfg->num_doms,
 			dom_sid_str_buf(&domain_sid, &buf0));
 		for (di = 0; di < state->cfg->num_doms; di++) {
@@ -466,7 +467,7 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
  next_domain:
 	state->tried_dclookup = false;
 
-	D_DEBUG("Processing next domain (dom_index=%u, idmap_doms.count=%u, lookup_count=%u).\n",
+	D_DEBUG("Processing next domain (dom_index=%"PRIu32", idmap_doms.count=%"PRIu32", lookup_count=%"PRIu32").\n",
 		state->dom_index,
 		state->idmap_doms.count,
 		state->lookup_count);
@@ -495,7 +496,7 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
 			state->lookup_count += 1;
 		}
 
-		D_DEBUG("Prepared %u SID(s) for lookup wb_lookupsids_send().\n",
+		D_DEBUG("Prepared %"PRIu32" SID(s) for lookup wb_lookupsids_send().\n",
 			state->lookup_count);
 		if (state->lookup_count == 0) {
 			/*
@@ -674,7 +675,8 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 
 		if (src->ids[si].xid.type != ID_TYPE_NOT_SPECIFIED) {
 			dst->ids[di].xid = src->ids[si].xid;
-			D_DEBUG("%u: Setting XID %u\n", si, src->ids[si].xid.id);
+			D_DEBUG("%"PRIu32": Setting XID %"PRIu32"\n",
+				si, src->ids[si].xid.id);
 		}
 		dst->ids[di].domain_index = UINT32_MAX; /* mark as valid */
 		idmap_cache_set_sid2unixid(&state->sids[di], &dst->ids[di].xid);
@@ -765,8 +767,8 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 	}
 
 	if (num_xids != state->num_sids) {
-		D_WARNING("Error. We have resolved only %u XID(s), but caller asked for %u.\n",
-			  (unsigned)state->num_sids, num_xids);
+		D_WARNING("Error. We have resolved only %"PRIu32" XID(s), but caller asked for %"PRIu32".\n",
+			  state->num_sids, num_xids);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -774,7 +776,7 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 	for (i=0; i<state->num_sids; i++) {
 		struct dom_sid_buf buf;
 		xids[i] = state->all_ids.ids[i].xid;
-		D_INFO("%u: Found XID %u for SID %s\n",
+		D_INFO("%"PRIu32": Found XID %"PRIu32" for SID %s\n",
 		       i,
 		       xids[i].id,
 		       dom_sid_str_buf(&state->sids[i], &buf));
