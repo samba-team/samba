@@ -49,7 +49,7 @@ struct tevent_req *winbindd_getgrent_send(TALLOC_CTX *mem_ctx,
 	state->cli = cli;
 
 	D_NOTICE("[%s (%u)] Winbind external command GETGRENT start.\n"
-		 "The caller (%s) provided room for %u entries.\n",
+		 "The caller (%s) provided room for %"PRIu32" entries.\n",
 		 cli->client_name,
 		 (unsigned int)cli->pid,
 		 cli->client_name,
@@ -102,7 +102,7 @@ static void winbindd_getgrent_done(struct tevent_req *subreq)
 				    &state->members[state->num_groups]);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
-		D_WARNING("winbindd_getgrent_done: done with %u groups\n",
+		D_WARNING("winbindd_getgrent_done: done with %"PRIu32" groups\n",
 			  state->num_groups);
 		TALLOC_FREE(state->cli->grent_state);
 		tevent_req_done(req);
@@ -114,7 +114,7 @@ static void winbindd_getgrent_done(struct tevent_req *subreq)
 	}
 	state->num_groups += 1;
 	if (state->num_groups >= state->max_groups) {
-		D_DEBUG("winbindd_getgrent_done: Got enough groups: %u\n",
+		D_DEBUG("winbindd_getgrent_done: Got enough groups: %"PRIu32"\n",
 			state->num_groups);
 		tevent_req_done(req);
 		return;
@@ -206,7 +206,7 @@ NTSTATUS winbindd_getgrent_recv(struct tevent_req *req,
 	response->extra_data.data = talloc_move(response, &result);
 
 	D_NOTICE("Winbind external command GETGRENT end.\n"
-		 "Received %u entries.\n",
+		 "Received %"PRIu32" entries.\n",
 		 response->data.num_entries);
 
 	return NT_STATUS_OK;
