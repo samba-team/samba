@@ -89,7 +89,7 @@ struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
 		 request->data.sid);
 	for (i = 0; i < num_sids; i++) {
 		struct dom_sid_buf sidstr;
-		D_NOTICE("%u: %s\n", i, dom_sid_str_buf(&sids[i], &sidstr));
+		D_NOTICE("%"PRIu32": %s\n", i, dom_sid_str_buf(&sids[i], &sidstr));
 	}
 
 	subreq = wb_lookupuseraliases_send(state, ev, domain, num_sids, sids);
@@ -134,7 +134,7 @@ NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
 	sidlist = talloc_strdup(response, "");
 
 	D_NOTICE("Winbind external command GETSIDALIASES end.\n"
-		 "Received %u alias(es).\n",
+		 "Received %"PRIu32" alias(es).\n",
 		 state->num_aliases);
 	for (i=0; i<state->num_aliases; i++) {
 		struct dom_sid sid;
@@ -143,7 +143,7 @@ NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
 
 		talloc_asprintf_addbuf(
 			&sidlist, "%s\n", dom_sid_str_buf(&sid, &tmp));
-		D_NOTICE("%u: %s\n", i, dom_sid_str_buf(&sid, &tmp));
+		D_NOTICE("%"PRIu32": %s\n", i, dom_sid_str_buf(&sid, &tmp));
 	}
 
 	if (sidlist == NULL) {
