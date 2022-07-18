@@ -91,7 +91,7 @@ static void winbindd_getpwent_done(struct tevent_req *subreq)
 	status = wb_next_pwent_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
-		D_DEBUG("winbindd_getpwent_done: done with %u users\n",
+		D_DEBUG("winbindd_getpwent_done: done with %"PRIu32" users\n",
 			state->num_users);
 		TALLOC_FREE(state->cli->pwent_state);
 		tevent_req_done(req);
@@ -102,7 +102,7 @@ static void winbindd_getpwent_done(struct tevent_req *subreq)
 	}
 	state->num_users += 1;
 	if (state->num_users >= state->max_users) {
-		D_DEBUG("winbindd_getpwent_done: Got enough users: %u\n",
+		D_DEBUG("winbindd_getpwent_done: Got enough users: %"PRIu32"\n",
 			state->num_users);
 		tevent_req_done(req);
 		return;
@@ -135,7 +135,7 @@ NTSTATUS winbindd_getpwent_recv(struct tevent_req *req,
 	}
 
 	D_NOTICE("Winbind external command GETPWENT end.\n"
-		 "Received %u entries.\n"
+		 "Received %"PRIu32" entries.\n"
 		 "(name:passwd:uid:gid:gecos:dir:shell)\n",
 		 state->num_users);
 
@@ -144,7 +144,7 @@ NTSTATUS winbindd_getpwent_recv(struct tevent_req *req,
 	}
 
 	for (i = 0; i < state->num_users; i++) {
-		D_NOTICE("%u: %s:%s:%u:%u:%s:%s:%s\n",
+		D_NOTICE("%"PRIu32": %s:%s:%u:%u:%s:%s:%s\n",
 			i,
 			state->users[i].pw_name,
 			state->users[i].pw_passwd,
