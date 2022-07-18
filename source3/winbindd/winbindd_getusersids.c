@@ -110,9 +110,11 @@ NTSTATUS winbindd_getusersids_recv(struct tevent_req *req,
 	}
 
 	D_NOTICE("Winbind external command GETUSERSIDS end.\n"
-		 "Got %u SID(s).\n", state->num_sids);
+		 "Got %"PRIu32" SID(s).\n", state->num_sids);
 	for (i=0; i<state->num_sids; i++) {
-		D_NOTICE("%u: %s\n", i, dom_sid_str_buf(&state->sids[i], &sidbuf));
+		D_NOTICE("%"PRIu32": %s\n",
+			 i,
+			 dom_sid_str_buf(&state->sids[i], &sidbuf));
 		talloc_asprintf_addbuf(
 			&result,
 			"%s\n",
