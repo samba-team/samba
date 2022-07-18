@@ -103,7 +103,7 @@ NTSTATUS winbindd_getuserdomgroups_recv(struct tevent_req *req,
 		return NT_STATUS_NO_MEMORY;
 	}
 	D_NOTICE("Winbind external command GETUSERDOMGROUPS end.\n"
-		 "Received %u entries.\n",
+		 "Received %"PRIu32" entries.\n",
 		 state->num_sids);
 	for (i=0; i<state->num_sids; i++) {
 		struct dom_sid_buf tmp;
@@ -113,7 +113,8 @@ NTSTATUS winbindd_getuserdomgroups_recv(struct tevent_req *req,
 		if (sidlist == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		D_NOTICE("%u: %s\n", i, dom_sid_str_buf(&state->sids[i], &tmp));
+		D_NOTICE("%"PRIu32": %s\n",
+			 i, dom_sid_str_buf(&state->sids[i], &tmp));
 	}
 	response->extra_data.data = sidlist;
 	response->length += talloc_get_size(sidlist);
