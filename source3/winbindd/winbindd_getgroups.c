@@ -219,7 +219,7 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 				continue;
 			}
 
-			D_WARNING("WARNING: skipping unix id (%u) for sid %s "
+			D_WARNING("WARNING: skipping unix id (%"PRIu32") for sid %s "
 				  "from group list because the idmap type "
 				  "is %s. "
 				  "This might be a security problem when ACLs "
@@ -265,10 +265,10 @@ NTSTATUS winbindd_getgroups_recv(struct tevent_req *req,
 	response->data.num_entries = state->num_gids;
 
 	D_NOTICE("Winbind external command GETGROUPS end.\n"
-		 "Received %u entries.\n",
+		 "Received %"PRIu32" entries.\n",
 		 response->data.num_entries);
 	for (i = 0; i < state->num_gids; i++) {
-		D_NOTICE("%u: GID %u\n", i, state->gids[i]);
+		D_NOTICE("%"PRIu32": GID %u\n", i, state->gids[i]);
 	}
 
 	if (state->num_gids > 0) {
