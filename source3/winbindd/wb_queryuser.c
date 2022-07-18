@@ -131,7 +131,7 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 		return;
 	}
 
-	D_DEBUG("Received XID %u for SID %s.\n",
+	D_DEBUG("Received XID %"PRIu32" for SID %s.\n",
 		xid.id,
 		dom_sid_str_buf(&info->user_sid, &buf1));
 	info->uid = xid.id;
@@ -397,7 +397,7 @@ static void wb_queryuser_got_gid(struct tevent_req *subreq)
 		return;
 	}
 
-	D_DEBUG("Got XID %u with type %d.\n", xid.id, xid.type);
+	D_DEBUG("Got XID %"PRIu32" with type %d.\n", xid.id, xid.type);
 	if ((xid.type != ID_TYPE_GID) && (xid.type != ID_TYPE_BOTH)) {
 		D_WARNING("Returning NT_STATUS_NO_SUCH_USER\n"
 			  "xid.type must be ID_TYPE_UID or ID_TYPE_BOTH.\n");
