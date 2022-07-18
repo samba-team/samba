@@ -66,7 +66,7 @@ static void wb_next_pwent_send_do(struct tevent_req *req,
 	sid_compose(&state->next_sid, &state->gstate->domain->sid,
 		    state->gstate->rids.rids[state->gstate->next_user]);
 
-	D_DEBUG("Get pw for SID %s composed from domain SID %s and RID %u.\n",
+	D_DEBUG("Get pw for SID %s composed from domain SID %s and RID %"PRIu32".\n",
 		dom_sid_str_buf(&state->next_sid, &buf),
 		dom_sid_str_buf(&state->gstate->domain->sid, &buf1),
 		state->gstate->rids.rids[state->gstate->next_user]);
