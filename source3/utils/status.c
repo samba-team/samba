@@ -475,7 +475,7 @@ static int traverse_connections(const struct connections_data *crec,
 		return 0;
 	}
 
-	timestr = timestring(tmp_ctx, crec->start);
+	timestr = timestring(tmp_ctx, nt_time_to_unix(crec->start));
 	if (timestr == NULL) {
 		TALLOC_FREE(tmp_ctx);
 		return -1;

@@ -28,7 +28,7 @@ struct connections_data {
 	fstring servicename;
 	fstring addr;
 	fstring machine;
-	time_t start;
+	NTTIME start;
 	uint8_t encryption_flags;
 	uint16_t cipher;
 	uint16_t dialect;

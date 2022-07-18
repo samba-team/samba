@@ -128,7 +128,7 @@ static int traverse_tcon_fn(struct smbXsrv_tcon_global0 *global,
 	data.gid = sess.gid;
 	fstrcpy(data.addr, sess.addr);
 	fstrcpy(data.machine, sess.machine);
-	data.start = nt_time_to_unix(global->creation_time);
+	data.start = global->creation_time;
 	data.encryption_flags = global->encryption_flags;
 	data.cipher = sess.cipher;
 	data.dialect = sess.dialect;
