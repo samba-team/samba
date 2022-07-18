@@ -409,7 +409,7 @@ NTSTATUS wb_xids2sids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		D_INFO("%lu: XID %u mapped to SID %s\n",
 		       i,
 		       state->xids[i].id,
-		       dom_sid_str_buf(&*sids[i], &buf));
+		       dom_sid_str_buf(&((*sids)[i]), &buf));
 	}
 	return NT_STATUS_OK;
 }
