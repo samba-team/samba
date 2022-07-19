@@ -267,8 +267,10 @@ NTSTATUS winbindd_getgroups_recv(struct tevent_req *req,
 	D_NOTICE("Winbind external command GETGROUPS end.\n"
 		 "Received %"PRIu32" entries.\n",
 		 response->data.num_entries);
-	for (i = 0; i < state->num_gids; i++) {
-		D_NOTICE("%"PRIu32": GID %u\n", i, state->gids[i]);
+	if (CHECK_DEBUGLVL(DBGLVL_NOTICE)) {
+		for (i = 0; i < state->num_gids; i++) {
+			D_NOTICE("%"PRIu32": GID %u\n", i, state->gids[i]);
+		}
 	}
 
 	if (state->num_gids > 0) {
