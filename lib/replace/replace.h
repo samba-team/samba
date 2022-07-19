@@ -847,6 +847,24 @@ typedef unsigned long long ptrdiff_t ;
 #define ZERO_ARRAY_LEN(x, l) memset_s((char *)(x), (l), 0, (l))
 
 /**
+ * Explicitly zero data from memory. This is guaranteed to be not optimized
+ * away.
+ */
+#define BURN_DATA(x) memset_s((char *)&(x), sizeof(x), 0, sizeof(x))
+
+/**
+ * Explicitly zero data from memory. This is guaranteed to be not optimized
+ * away.
+ */
+#define BURN_DATA_SIZE(x, s) memset_s((char *)&(x), (s), 0, (s))
+
+/**
+ * Explicitly zero data from memory. This is guaranteed to be not optimized
+ * away.
+ */
+#define BURN_PTR_SIZE(x, s) memset_s((x), (s), 0, (s))
+
+/**
  * Work out how many elements there are in a static array.
  */
 #ifdef ARRAY_SIZE
