@@ -87,9 +87,12 @@ struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
 		 cli->client_name,
 		 (unsigned int)cli->pid,
 		 request->data.sid);
-	for (i = 0; i < num_sids; i++) {
-		struct dom_sid_buf sidstr;
-		D_NOTICE("%"PRIu32": %s\n", i, dom_sid_str_buf(&sids[i], &sidstr));
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		for (i = 0; i < num_sids; i++) {
+			struct dom_sid_buf sidstr;
+			D_NOTICE("%"PRIu32": %s\n",
+				 i, dom_sid_str_buf(&sids[i], &sidstr));
+		}
 	}
 
 	subreq = wb_lookupuseraliases_send(state, ev, domain, num_sids, sids);
