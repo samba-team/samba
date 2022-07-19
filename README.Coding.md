@@ -555,3 +555,26 @@ DBG_DEBUG("Received %d bytes\n", count);
 
 The messages from these macros are automatically prefixed with the
 function name.
+
+
+
+### PRINT format specifiers PRIuxx
+
+Use %PRIu32 instead of %u for uint32_t. Do not assume that this is valid:
+
+/usr/include/inttypes.h
+104:# define PRIu32             "u"
+
+It could be possible to have a platform where "unsigned" is 64-bit. In theory
+even 16-bit. The point is that "unsigned" being 32-bit is nowhere specified.
+The PRIuxx specifiers are standard.
+
+Example usage:
+
+```
+D_DEBUG("Resolving %"PRIu32" SID(s).\n", state->num_sids);
+```
+
+Note:
+
+Do not use PRIu32 for uid_t and gid_t, they do not have to be uint32_t.
