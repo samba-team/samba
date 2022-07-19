@@ -244,11 +244,17 @@ NTSTATUS wb_gettoken_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 	*num_sids = state->num_sids;
-	for (i = 0; i < state->num_sids; i++) {
-		struct dom_sid_buf sidbuf;
 	D_INFO("WB command gettoken end.\nReceived %"PRIu32" SID(s).\n",
 	       state->num_sids);
-		D_INFO("%"PRIu32": %s\n", i, dom_sid_str_buf(&state->sids[i], &sidbuf));
+
+	if (CHECK_DEBUGLVL(DBGLVL_INFO)) {
+		for (i = 0; i < state->num_sids; i++) {
+			struct dom_sid_buf sidbuf;
+			D_INFO("%"PRIu32": %s\n",
+			       i,
+			       dom_sid_str_buf(&state->sids[i],
+			       &sidbuf));
+		}
 	}
 
 	*sids = talloc_move(mem_ctx, &state->sids);
