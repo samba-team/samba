@@ -1,0 +1,26 @@
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+BasedOnStyle: LLVM
+IndentWidth: 8
+ContinuationIndentWidth: 8
+UseTab: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterEnum: false
+    AfterFunction: true
+    AfterStruct: false
+    AfterUnion: false
+    AfterExternBlock: true
+    BeforeElse: false
+    BeforeWhile: false
+AllowShortIfStatementsOnASingleLine: false
+ColumnLimit: 80
+IndentCaseLabels: false
+AlignAfterOpenBracket: Align
+BinPackParameters: false
+BinPackArguments: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AlwaysBreakAfterReturnType: None
+AlignEscapedNewlines: Left
+SortIncludes: false

@@ -88,20 +88,16 @@ displaying trailing whitespace:
   autocmd BufNewFile,BufRead *.c,*.h exec 'match Todo /\%>' . &textwidth . 'v.\+/'
 ```
 
-### clang-format
+### How to use clang-format
 
-```
-BasedOnStyle: LLVM
-IndentWidth: 8
-UseTab: true
-BreakBeforeBraces: Linux
-AllowShortIfStatementsOnASingleLine: false
-IndentCaseLabels: false
-BinPackParameters: false
-BinPackArguments: false
-SortIncludes: false
-```
+Install 'git-format-clang' which is part of the clang suite (Fedora:
+git-clang-format, openSUSE: clang-tools).
 
+Now do your changes and stage them with `git add`. Once they are staged
+format the code using `git clang-format` before you commit.
+
+Now the formatting changed can be viewed with `git diff` against the
+staged changes.
 
 ## FAQ & Statement Reference
 
