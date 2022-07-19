@@ -55,8 +55,11 @@ bool ctdb_sock_addr_same_ip(const ctdb_sock_addr *addr1,
 bool ctdb_sock_addr_same(const ctdb_sock_addr *addr1,
 			 const ctdb_sock_addr *addr2);
 
-int ctdb_connection_to_buf(char *buf, size_t buflen,
-			   struct ctdb_connection * conn, bool client_first);
+int ctdb_connection_to_buf(char *buf,
+			   size_t buflen,
+			   struct ctdb_connection * conn,
+			   bool client_first,
+			   const char *sep);
 char *ctdb_connection_to_string(TALLOC_CTX *mem_ctx,
 				struct ctdb_connection * conn,
 				bool client_first);

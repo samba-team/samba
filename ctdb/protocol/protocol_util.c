@@ -497,8 +497,11 @@ bool ctdb_sock_addr_same(const ctdb_sock_addr *addr1,
 	return (ctdb_sock_addr_cmp(addr1, addr2) == 0);
 }
 
-int ctdb_connection_to_buf(char *buf, size_t buflen,
-			   struct ctdb_connection *conn, bool client_first)
+int ctdb_connection_to_buf(char *buf,
+			   size_t buflen,
+			   struct ctdb_connection *conn,
+			   bool client_first,
+			   const char *sep)
 {
 	char server[64], client[64];
 	int ret;
@@ -516,9 +519,9 @@ int ctdb_connection_to_buf(char *buf, size_t buflen,
 	}
 
 	if (! client_first) {
-		ret = snprintf(buf, buflen, "%s %s", server, client);
+		ret = snprintf(buf, buflen, "%s%s%s", server, sep, client);
 	} else {
-		ret = snprintf(buf, buflen, "%s %s", client, server);
+		ret = snprintf(buf, buflen, "%s%s%s", client, sep, server);
 	}
 	if (ret < 0 || (size_t)ret >= buflen) {
 		return ENOSPC;
@@ -540,7 +543,7 @@ char *ctdb_connection_to_string(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret = ctdb_connection_to_buf(out, len, conn, client_first);
+	ret = ctdb_connection_to_buf(out, len, conn, client_first, " ");
 	if (ret != 0) {
 		talloc_free(out);
 		return NULL;
@@ -666,8 +669,11 @@ char *ctdb_connection_list_to_string(
 		char buf[128];
 		int ret;
 
-		ret = ctdb_connection_to_buf(buf, sizeof(buf),
-					     &conn_list->conn[i], client_first);
+		ret = ctdb_connection_to_buf(buf,
+					     sizeof(buf),
+					     &conn_list->conn[i],
+					     client_first,
+					     " ");
 		if (ret != 0) {
 			talloc_free(out);
 			return NULL;
