@@ -473,7 +473,7 @@ def configure(conf):
                         execute = True,
                         define = 'HAVE_BSD_STRTOLL',
                         )
-    conf.CHECK_FUNCS('if_nametoindex strerror_r')
+    conf.CHECK_FUNCS('if_nameindex if_nametoindex strerror_r')
     conf.CHECK_FUNCS('syslog')
     conf.CHECK_FUNCS('gai_strerror get_current_dir_name')
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups syscall setsid')
