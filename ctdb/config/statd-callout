@@ -32,8 +32,13 @@ die ()
 load_system_config "nfs" "nfs-common"
 
 # If NFS_HOSTNAME not set then try to pull it out of /etc/nfs.conf
-if [ -z "$NFS_HOSTNAME" ] && type nfsconf >/dev/null 2>&1 ; then
-	NFS_HOSTNAME=$(nfsconf --get statd name)
+if [ -z "$NFS_HOSTNAME" ]; then
+	if type nfsconf >/dev/null 2>&1; then
+		NFS_HOSTNAME=$(nfsconf --get statd name)
+	elif type git >/dev/null 2>&1; then
+		# git to the rescue!
+		NFS_HOSTNAME=$(git config --file=/etc/nfs.conf statd.name)
+	fi
 fi
 
 [ -n "$NFS_HOSTNAME" ] || \
