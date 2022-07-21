@@ -3815,7 +3815,6 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 	char type;
 	int ret;
 	int port;
-	struct stat st;
 	char *swrap_dir = NULL;
 
 	swrap_mutex_lock(&autobind_start_mutex);
@@ -3916,10 +3915,12 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 			      type,
 			      socket_wrapper_default_iface(),
 			      port);
-		if (stat(un_addr.sa.un.sun_path, &st) == 0) continue;
 
 		ret = libc_bind(fd, &un_addr.sa.s, un_addr.sa_socklen);
 		if (ret == -1) {
+			if (errno == EALREADY || errno == EADDRINUSE) {
+				continue;
+			}
 			goto done;
 		}
 
@@ -6285,9 +6286,11 @@ static void swrap_sendmsg_after(int fd,
 
 	for (i = 0; i < (size_t)msg->msg_iovlen; i++) {
 		size_t this_time = MIN(remain, (size_t)msg->msg_iov[i].iov_len);
-		memcpy(buf + ofs,
-		       msg->msg_iov[i].iov_base,
-		       this_time);
+		if (this_time > 0) {
+			memcpy(buf + ofs,
+			       msg->msg_iov[i].iov_base,
+			       this_time);
+		}
 		ofs += this_time;
 		remain -= this_time;
 	}
@@ -7849,8 +7852,8 @@ void swrap_destructor(void)
  * related syscalls also with the '_' prefix.
  *
  * This is tested in Samba's 'make test',
- * there we noticed that providing '_read'
- * and '_open' would cause errors, which
+ * there we noticed that providing '_read',
+ * '_open' and '_close' would cause errors, which
  * means we skip '_read', '_write' and
  * all non socket related calls without
  * further analyzing the problem.
@@ -7863,7 +7866,6 @@ SWRAP_SYMBOL_ALIAS(accept4, _accept4);
 #endif
 SWRAP_SYMBOL_ALIAS(accept, _accept);
 SWRAP_SYMBOL_ALIAS(bind, _bind);
-SWRAP_SYMBOL_ALIAS(close, _close);
 SWRAP_SYMBOL_ALIAS(connect, _connect);
 SWRAP_SYMBOL_ALIAS(dup, _dup);
 SWRAP_SYMBOL_ALIAS(dup2, _dup2);
