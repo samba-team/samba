@@ -396,7 +396,7 @@ static bool test_lzxpress_many_zeros(struct torture_context *test)
 	elapsed_ns = (
 		(t_end.tv_sec - t_start.tv_sec) * 1000U * 1000U * 1000U) +
 		(t_end.tv_nsec - t_start.tv_nsec);
-	torture_comment(test, "round-trip time: %lu ns\n", elapsed_ns);
+	torture_comment(test, "round-trip time: %"PRIu64" ns\n", elapsed_ns);
 	torture_assert(test, elapsed_ns < 3 * 1000U * 1000U * 1000U,
 		       "million zeros round trip tool > 3 seconds");
 	torture_assert_mem_equal(test, decomp, zeros, N_ZEROS,
