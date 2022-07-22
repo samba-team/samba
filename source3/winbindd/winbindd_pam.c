@@ -2256,7 +2256,8 @@ NTSTATUS _wbint_PamAuth(struct pipes_struct *p,
 	}
 
 	if (mapped_user != r->in.info->username) {
-		domain_user = talloc_asprintf("%s%c%s",
+		domain_user = talloc_asprintf(talloc_tos(),
+					      "%s%c%s",
 					      name_domain,
 					      *lp_winbind_separator(),
 					      name_user);
