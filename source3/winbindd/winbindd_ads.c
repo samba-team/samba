@@ -637,8 +637,10 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 	num_groups = 0;
 
 	/* always add the primary group to the sid array */
-	status = add_sid_to_array(mem_ctx, primary_group, user_sids,
-				  &num_groups);
+	status = add_sid_to_array_unique(mem_ctx,
+					 primary_group,
+					 user_sids,
+					 &num_groups);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -658,8 +660,10 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 				continue;
 			}
 
-			status = add_sid_to_array(mem_ctx, &group_sid,
-						  user_sids, &num_groups);
+			status = add_sid_to_array_unique(mem_ctx,
+							 &group_sid,
+							 user_sids,
+							 &num_groups);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
@@ -726,8 +730,10 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 	num_groups = 0;
 
 	/* always add the primary group to the sid array */
-	status = add_sid_to_array(mem_ctx, primary_group, user_sids,
-				  &num_groups);
+	status = add_sid_to_array_unique(mem_ctx,
+					 primary_group,
+					 user_sids,
+					 &num_groups);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -769,8 +775,10 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 			continue;
 		}
 
-		status = add_sid_to_array(mem_ctx, &group_sids[i], user_sids,
-					  &num_groups);
+		status = add_sid_to_array_unique(mem_ctx,
+						 &group_sids[i],
+						 user_sids,
+						 &num_groups);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -915,8 +923,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	*user_sids = NULL;
 	num_groups = 0;
 
-	status = add_sid_to_array(mem_ctx, &primary_group, user_sids,
-				  &num_groups);
+	status = add_sid_to_array_unique(mem_ctx,
+					 &primary_group,
+					 user_sids,
+					 &num_groups);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
