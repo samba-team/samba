@@ -98,9 +98,15 @@ ok_tunable ()
 test_case "Unreadable file"
 : >"$tfile"
 chmod a-r "$tfile"
-required_error EINVAL <<EOF
+uid=$(id -u)
+# root can read unreadable files
+if [ "$uid" = 0 ]; then
+	ok_tunable_defaults
+else
+	required_error EINVAL <<EOF
 ctdb_tunable_load_file: Failed to open ${tfile}
 EOF
+fi
 unit_test tunable_test "$tfile"
 rm -f "$tfile"
 
