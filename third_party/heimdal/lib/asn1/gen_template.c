@@ -830,7 +830,7 @@ template_object_set(IOSObjectSet *os, Field *typeidfield, Field *opentypefield)
     }
     free(objects);
 
-    tlist_header(tl, "{ 0, 0, ((void *)(uintptr_t)%lu) }", nobjs);
+    tlist_header(tl, "{ 0, 0, ((void *)(uintptr_t)%zu) }", nobjs);
     tlist_print(tl);
     tlist_add(tl);
     os->symbol->emitted_template = 1;
@@ -970,7 +970,7 @@ template_members(struct templatehead *temp,
                          "{ A1_OP_NAME, %d, \"%s\" }", (int)m->val, m->name);
                 nmemb++;
             }
-	    tlist_header(tl, "{ 0, 0, ((void *)(uintptr_t)%lu) }", nmemb);
+	    tlist_header(tl, "{ 0, 0, ((void *)(uintptr_t)%zu) }", nmemb);
             /* XXX Accidentally O(N^2)? */
             if (!tlist_find_dup(tl)) {
                 tlist_print(tl);
