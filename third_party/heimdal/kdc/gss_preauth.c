@@ -493,7 +493,7 @@ _kdc_gss_endtime(astgs_request_t r,
         endtime = kdc_time + gcp->lifetime;
 
     kdc_log(r->context, r->config, 10,
-            "GSS pre-authentication endtime is %ld", endtime);
+            "GSS pre-authentication endtime is %ld", (long)endtime);
 
     return endtime;
 }
