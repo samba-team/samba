@@ -568,6 +568,20 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 					   domain_name, names, types);
 }
 
+static NTSTATUS winbindd_domain_verify_sid(struct winbindd_domain *domain,
+					   const struct dom_sid *extra_sid)
+{
+	bool ret;
+
+	ret = sid_check_is_in_builtin(extra_sid);
+	if (ret) {
+		/* don't allow Builtin groups from ADS */
+		return NT_STATUS_INVALID_SUB_AUTHORITY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /* Lookup groups a user is a member of - alternate method, for when
    tokenGroups are not available. */
 static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
@@ -655,8 +669,9 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 				continue;
 			}
 
-			/* ignore Builtin groups from ADS - Guenther */
-			if (sid_check_is_in_builtin(&group_sid)) {
+			/* filter unexpected sids */
+			status = winbindd_domain_verify_sid(domain, &group_sid);
+			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
 
@@ -770,8 +785,9 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 
 	for (i=0; i<num_sids; i++) {
 
-		/* ignore Builtin groups from ADS - Guenther */
-		if (sid_check_is_in_builtin(&group_sids[i])) {
+		/* filter unexpected sids */
+		status = winbindd_domain_verify_sid(domain, &group_sids[i]);
+		if (!NT_STATUS_IS_OK(status)) {
 			continue;
 		}
 
@@ -933,8 +949,9 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	for (i=0;i<count;i++) {
 
-		/* ignore Builtin groups from ADS - Guenther */
-		if (sid_check_is_in_builtin(&sids[i])) {
+		/* filter unexpected sids */
+		status = winbindd_domain_verify_sid(domain, &sids[i]);
+		if (!NT_STATUS_IS_OK(status)) {
 			continue;
 		}
 
