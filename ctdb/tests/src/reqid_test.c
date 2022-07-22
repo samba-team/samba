@@ -19,6 +19,7 @@
 
 #include "replace.h"
 
+#include <talloc.h>
 #include <assert.h>
 
 #include "common/reqid.c"

@@ -930,7 +930,7 @@ def build(bld):
 
     bld.SAMBA_BINARY('reqid_test',
                      source='tests/src/reqid_test.c',
-                     deps='samba-util',
+                     deps='samba-util talloc',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_BINARY('rb_test',
