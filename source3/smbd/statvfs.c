@@ -76,7 +76,7 @@ static int darwin_fs_capabilities(const char * path)
 #endif /* DARWINOS */
 
 #if defined(BSD_STYLE_STATVFS)
-static int bsd_statvfs(const char *path, vfs_statvfs_struct *statbuf)
+static int bsd_statvfs(const char *path, struct vfs_statvfs_struct *statbuf)
 {
 	struct statfs sbuf;
 	int ret;
