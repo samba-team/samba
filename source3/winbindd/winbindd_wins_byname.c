@@ -127,12 +127,12 @@ NTSTATUS winbindd_wins_byname_recv(struct tevent_req *req,
 	}
 
 	D_NOTICE("Winbind external command WINS_BYNAME end.\n"
-		 "Received %lu address(es).\n",
+		 "Received %zu address(es).\n",
 		 state->num_addrs);
 	for (i=0; i<state->num_addrs; i++) {
 		char addr[INET6_ADDRSTRLEN];
 		print_sockaddr(addr, sizeof(addr), &state->addrs[i]);
-		D_NOTICE("%lu: %s\n", i, addr);
+		D_NOTICE("%zu: %s\n", i, addr);
 		response = talloc_asprintf_append_buffer(
 			response, "%s%s", addr,
 			i < (state->num_addrs-1) ? " " : "");

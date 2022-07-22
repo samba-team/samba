@@ -61,7 +61,7 @@ static struct tevent_req *wb_xids2sids_dom_send(
 		return NULL;
 	}
 
-	D_DEBUG("Searching for %lu xid(s) in domain %s.\n",
+	D_DEBUG("Searching for %zu xid(s) in domain %s.\n",
 		num_xids,
 		dom_map->name);
 
@@ -86,23 +86,23 @@ static struct tevent_req *wb_xids2sids_dom_send(
 
 		if ((id.id < dom_map->low_id) || (id.id > dom_map->high_id)) {
 			/* out of range */
-			D_DEBUG("%lu: XID %"PRIu32" is out of range.\n",
+			D_DEBUG("%zu: XID %"PRIu32" is out of range.\n",
 				i, id.id);
 			continue;
 		}
 		if (state->cached[i]) {
 			/* already found in cache */
-			D_DEBUG("%lu: XID %"PRIu32" is already found in cache.\n",
+			D_DEBUG("%zu: XID %"PRIu32" is already found in cache.\n",
 				i, id.id);
 			continue;
 		}
 		if (!is_null_sid(&state->all_sids[i])) {
 			/* already mapped in a previously asked domain */
-			D_DEBUG("%lu: XID %"PRIu32" is already mapped in a previously asked domain.\n",
+			D_DEBUG("%zu: XID %"PRIu32" is already mapped in a previously asked domain.\n",
 				i, id.id);
 			continue;
 		}
-		D_DEBUG("%lu: XID %"PRIu32" will be looked up via dcerpc_wbint_UnixIDs2Sids_send().\n",
+		D_DEBUG("%zu: XID %"PRIu32" will be looked up via dcerpc_wbint_UnixIDs2Sids_send().\n",
 			i, id.id);
 		state->dom_xids[state->num_dom_xids++] = id;
 	}
@@ -160,7 +160,7 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 
 	dom_sid_idx = 0;
 
-	D_DEBUG("Processing response for %lu xid(s).\n", state->num_all_xids);
+	D_DEBUG("Processing response for %zu xid(s).\n", state->num_all_xids);
 	for (i=0; i<state->num_all_xids; i++) {
 		struct unixid *id = &state->all_xids[i];
 		struct dom_sid_buf buf;
@@ -180,7 +180,7 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 
 		sid_copy(&state->all_sids[i], &state->dom_sids[dom_sid_idx]);
 		*id = state->dom_xids[dom_sid_idx];
-		D_DEBUG("%lu: XID %"PRIu32" mapped to SID %s.\n",
+		D_DEBUG("%zu: XID %"PRIu32" mapped to SID %s.\n",
 			i,
 			id->id,
 			dom_sid_str_buf(&state->all_sids[i], &buf));
@@ -412,7 +412,7 @@ NTSTATUS wb_xids2sids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (CHECK_DEBUGLVL(DBGLVL_INFO)) {
 		for (i = 0; i <  state->num_xids; i++) {
 			struct dom_sid_buf buf;
-			D_INFO("%lu: XID %"PRIu32" mapped to SID %s\n",
+			D_INFO("%zu: XID %"PRIu32" mapped to SID %s\n",
 			       i,
 			       state->xids[i].id,
 			       dom_sid_str_buf(&((*sids)[i]), &buf));
