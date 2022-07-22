@@ -552,7 +552,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
                      *                \
                      *                 +-- psave_<fieldName>
                      */
-                    "e = der_put_tag(psave_%s, %lu, %s, %s, %d, &l2_%s);\n"
+                    "e = der_put_tag(psave_%s, %zu, %s, %s, %d, &l2_%s);\n"
                     "if (e) { free(pfree_%s); return e; }\n"
                     /* Restore `len' and adjust it (see `p' below) */
                     "len = lensave_%s - (l + %zu - asn1_tag_length_%s);\n"
@@ -573,7 +573,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
                      *      \
                      *       +-- p
                      */
-                    "p = psave_%s - (1 + %lu - asn1_tag_length_%s); }\n",
+                    "p = psave_%s - (1 + %zu - asn1_tag_length_%s); }\n",
                     tmpstr, tmpstr, tmpstr, t->subtype->symbol->name,
                     tmpstr, t->subtype->symbol->name, t->subtype->symbol->name,
                     tmpstr, length_tag(t->tag.tagvalue),

@@ -849,7 +849,7 @@ heim_audit_addkv_timediff(heim_svc_req_desc r, const char *k,
 	sec  -= 1;
     }
 
-    heim_audit_addkv(r, 0, k, "%s%ld.%06d", sign, sec, usec);
+    heim_audit_addkv(r, 0, k, "%s%ld.%06d", sign, (long)sec, usec);
 }
 
 void
