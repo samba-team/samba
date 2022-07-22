@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <talloc.h>
+#include <time.h>
 
 #ifndef TIME_T_MIN
 /* we use 0 here, because (time_t)-1 means error */
