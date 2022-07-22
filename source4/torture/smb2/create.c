@@ -3012,7 +3012,7 @@ static bool test_fileid_unique_object(
 			if (fileid_array[i] == fileid_array[j]) {
 				torture_fail(tctx,
 					talloc_asprintf(tctx,
-						"fileid %u == fileid %u (0x%lu)\n",
+						"fileid %u == fileid %u (0x%"PRIu64")\n",
 						i,
 						j,
 						fileid_array[i]));
