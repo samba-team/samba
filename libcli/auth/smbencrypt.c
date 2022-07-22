@@ -856,35 +856,76 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 	return NT_STATUS_OK;
 }
 
+enum encode_order {
+	ENCODE_ORDER_PASSWORD_FIRST,
+	ENCODE_ORDER_PASSWORD_LAST,
+};
+
+#define PASSWORD_BUFFER_LEN 512
+
+static ssize_t _encode_pwd_buffer_from_str(uint8_t buf[PASSWORD_BUFFER_LEN],
+					   const char *password,
+					   int string_flags,
+					   enum encode_order order)
+{
+	ssize_t new_pw_len;
+	size_t pw_pos = 0;
+	size_t random_pos = 0;
+	size_t random_len = 0;
+
+	/* The incoming buffer can be any alignment. */
+	string_flags |= STR_NOALIGN;
+
+	new_pw_len = push_string(buf,
+				 password,
+				 PASSWORD_BUFFER_LEN,
+				 string_flags);
+	if (new_pw_len < 0) {
+		BURN_DATA_SIZE(buf, PASSWORD_BUFFER_LEN);
+		return -1;
+	}
+
+	if (new_pw_len == PASSWORD_BUFFER_LEN) {
+		return new_pw_len;
+	}
+
+	switch (order) {
+	case ENCODE_ORDER_PASSWORD_FIRST:
+		pw_pos = 0;
+		random_pos = new_pw_len;
+		random_len = PASSWORD_BUFFER_LEN - random_pos;
+		break;
+	case ENCODE_ORDER_PASSWORD_LAST:
+		pw_pos = PASSWORD_BUFFER_LEN - new_pw_len;
+		random_pos = 0;
+		random_len = pw_pos;
+		memmove(buf + pw_pos, buf, new_pw_len);
+		break;
+	}
+
+	generate_random_buffer(buf + random_pos, random_len);
+
+	return new_pw_len;
+}
+
 /***********************************************************
  encode a password buffer with a unicode password.  The buffer
  is filled with random data to make it harder to attack.
 ************************************************************/
 bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flags)
 {
-	uint8_t new_pw[512];
-	ssize_t new_pw_len;
+	ssize_t pw_len;
 
-	/* the incoming buffer can be any alignment. */
-	string_flags |= STR_NOALIGN;
-
-	new_pw_len = push_string(new_pw,
-				 password,
-				 sizeof(new_pw), string_flags);
-	if (new_pw_len == -1) {
+	pw_len = _encode_pwd_buffer_from_str(buffer,
+					     password,
+					     string_flags,
+					     ENCODE_ORDER_PASSWORD_LAST);
+	if (pw_len < 0 || pw_len > PASSWORD_BUFFER_LEN) {
 		return false;
 	}
 
-	memcpy(&buffer[512 - new_pw_len], new_pw, new_pw_len);
+	PUSH_LE_U32(buffer, PASSWORD_BUFFER_LEN, pw_len);
 
-	generate_random_buffer(buffer, 512 - new_pw_len);
-
-	/*
-	 * The length of the new password is in the last 4 bytes of
-	 * the data buffer.
-	 */
-	SIVAL(buffer, 512, new_pw_len);
-	ZERO_STRUCT(new_pw);
 	return true;
 }
 
