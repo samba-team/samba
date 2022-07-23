@@ -40,6 +40,7 @@ static NTSTATUS wb_add_rids_to_sids(TALLOC_CTX *mem_ctx,
 
 static void wb_gettoken_gotuser(struct tevent_req *subreq);
 static void wb_gettoken_gotgroups(struct tevent_req *subreq);
+static void wb_gettoken_trylocalgroups(struct tevent_req *req);
 static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq);
 static void wb_gettoken_gotbuiltins(struct tevent_req *subreq);
 
@@ -116,7 +117,6 @@ static void wb_gettoken_gotgroups(struct tevent_req *subreq)
 		req, struct wb_gettoken_state);
 	uint32_t i, num_groups;
 	struct dom_sid *groups;
-	struct winbindd_domain *domain;
 	NTSTATUS status;
 	struct dom_sid_buf buf;
 
@@ -137,6 +137,16 @@ static void wb_gettoken_gotgroups(struct tevent_req *subreq)
 			return;
 		}
 	}
+
+	wb_gettoken_trylocalgroups(req);
+}
+
+static void wb_gettoken_trylocalgroups(struct tevent_req *req)
+{
+	struct wb_gettoken_state *state = tevent_req_data(
+		req, struct wb_gettoken_state);
+	struct winbindd_domain *domain = NULL;
+	struct tevent_req *subreq = NULL;
 
 	if (!state->expand_local_aliases) {
 		D_DEBUG("Done. Not asked to expand local aliases.\n");
