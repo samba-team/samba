@@ -42,6 +42,7 @@ static void wb_gettoken_gotuser(struct tevent_req *subreq);
 static void wb_gettoken_gotgroups(struct tevent_req *subreq);
 static void wb_gettoken_trylocalgroups(struct tevent_req *req);
 static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq);
+static void wb_gettoken_trybuiltins(struct tevent_req *req);
 static void wb_gettoken_gotbuiltins(struct tevent_req *subreq);
 
 struct tevent_req *wb_gettoken_send(TALLOC_CTX *mem_ctx,
@@ -181,7 +182,6 @@ static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq)
 		req, struct wb_gettoken_state);
 	uint32_t num_rids;
 	uint32_t *rids;
-	struct winbindd_domain *domain;
 	NTSTATUS status;
 
 	status = wb_lookupuseraliases_recv(subreq, state, &num_rids, &rids);
@@ -197,6 +197,16 @@ static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq)
 		return;
 	}
 	TALLOC_FREE(rids);
+
+	wb_gettoken_trybuiltins(req);
+}
+
+static void wb_gettoken_trybuiltins(struct tevent_req *req)
+{
+	struct wb_gettoken_state *state = tevent_req_data(
+		req, struct wb_gettoken_state);
+	struct winbindd_domain *domain = NULL;
+	struct tevent_req *subreq = NULL;
 
 	/*
 	 * Now expand the builtin groups
