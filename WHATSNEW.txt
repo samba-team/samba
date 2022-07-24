@@ -1,4 +1,72 @@
                    ==============================
+                   Release Notes for Samba 4.16.4
+                           July 27, 2022
+                   ==============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2022-2031:  Samba AD users can bypass certain restrictions associated with
+                  changing passwords.
+                  https://www.samba.org/samba/security/CVE-2022-2031.html
+
+o CVE-2022-32744: Samba AD users can forge password change requests for any user.
+                  https://www.samba.org/samba/security/CVE-2022-32744.html
+
+o CVE-2022-32745: Samba AD users can crash the server process with an LDAP add
+                  or modify request.
+                  https://www.samba.org/samba/security/CVE-2022-32745.html
+
+o CVE-2022-32746: Samba AD users can induce a use-after-free in the server
+                  process with an LDAP add or modify request.
+                  https://www.samba.org/samba/security/CVE-2022-32746.html
+
+o CVE-2022-32742: Server memory information leak via SMB1.
+                  https://www.samba.org/samba/security/CVE-2022-32742.html
+
+Changes since 4.16.3
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15085: CVE-2022-32742.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15009: CVE-2022-32746.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15047: CVE-2022-2031.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15008: CVE-2022-32745.
+   * BUG 15009: CVE-2022-32746.
+   * BUG 15047: CVE-2022-2031.
+   * BUG 15074: CVE-2022-32744.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.16.3
                            July 18, 2022
                    ==============================
@@ -65,8 +133,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.16.2
                            June 13, 2022
