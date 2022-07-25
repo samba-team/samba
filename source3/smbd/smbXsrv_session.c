@@ -983,6 +983,16 @@ struct smb2srv_session_close_previous_state {
 	struct db_record *db_rec;
 };
 
+static void smb2srv_session_close_previous_cleanup(struct tevent_req *req,
+						   enum tevent_req_state req_state)
+{
+	struct smb2srv_session_close_previous_state *state =
+		tevent_req_data(req,
+		struct smb2srv_session_close_previous_state);
+
+	TALLOC_FREE(state->db_rec);
+}
+
 static void smb2srv_session_close_previous_check(struct tevent_req *req);
 static void smb2srv_session_close_previous_modified(struct tevent_req *subreq);
 
@@ -1009,6 +1019,8 @@ struct tevent_req *smb2srv_session_close_previous_send(TALLOC_CTX *mem_ctx,
 	state->connection = conn;
 	state->previous_session_id = previous_session_id;
 	state->current_session_id = current_session_id;
+
+	tevent_req_set_cleanup_fn(req, smb2srv_session_close_previous_cleanup);
 
 	if (global_zeros != 0) {
 		tevent_req_done(req);
@@ -1076,13 +1088,11 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 					     &global);
 
 	if (is_free) {
-		TALLOC_FREE(state->db_rec);
 		tevent_req_done(req);
 		return;
 	}
 
 	if (global->auth_session_info == NULL) {
-		TALLOC_FREE(state->db_rec);
 		tevent_req_done(req);
 		return;
 	}
@@ -1090,7 +1100,6 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 	previous_token = global->auth_session_info->security_token;
 
 	if (!security_token_is_sid(previous_token, state->current_sid)) {
-		TALLOC_FREE(state->db_rec);
 		tevent_req_done(req);
 		return;
 	}
@@ -1099,7 +1108,6 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 					   0, /* resume_instance */
 					   (struct server_id){0});
 	if (tevent_req_nomem(subreq, req)) {
-		TALLOC_FREE(state->db_rec);
 		return;
 	}
 	tevent_req_set_callback(subreq,
@@ -1118,7 +1126,6 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 	ndr_err = ndr_push_struct_blob(&blob, state, &close_blob,
 			(ndr_push_flags_fn_t)ndr_push_smbXsrv_session_closeB);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		TALLOC_FREE(state->db_rec);
 		status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(1,("smb2srv_session_close_previous_check: "
 			 "old_session[%llu] new_session[%llu] ndr_push - %s\n",
@@ -1132,12 +1139,12 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 	status = messaging_send(conn->client->msg_ctx,
 				global->channels[0].server_id,
 				MSG_SMBXSRV_SESSION_CLOSE, &blob);
-	TALLOC_FREE(state->db_rec);
+	TALLOC_FREE(global);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	TALLOC_FREE(global);
+	TALLOC_FREE(state->db_rec);
 	return;
 }
 
