@@ -280,7 +280,7 @@ static int profile_stats_parser(TDB_DATA key, TDB_DATA value,
 
 void smbprofile_dump(void)
 {
-	pid_t pid = getpid();
+	pid_t pid = 0;
 	TDB_DATA key = { .dptr = (uint8_t *)&pid, .dsize = sizeof(pid) };
 	struct profile_stats s = {};
 	int ret;
@@ -298,6 +298,8 @@ void smbprofile_dump(void)
 	if (smbprofile_state.internal.db == NULL) {
 		return;
 	}
+
+	pid = tevent_cached_getpid();
 
 #ifdef HAVE_GETRUSAGE
 	ret = getrusage(RUSAGE_SELF, &rself);
