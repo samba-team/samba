@@ -1080,21 +1080,54 @@ NTSTATUS decode_rc4_passwd_buffer(const DATA_BLOB *psession_key,
  encode a password buffer with an already unicode password.  The
  rest of the buffer is filled with random data to make it harder to attack.
 ************************************************************/
-bool set_pw_in_buffer(uint8_t buffer[516], const DATA_BLOB *password)
+
+static bool create_pw_buffer_from_blob(uint8_t buffer[512],
+				       const DATA_BLOB *in_password,
+				       enum encode_order order)
 {
-	if (password->length > 512) {
+	size_t pwd_pos = 0;
+	size_t random_pos = 0;
+	size_t random_len = 0;
+
+	if (in_password->length > 512) {
 		return false;
 	}
 
-	memcpy(&buffer[512 - password->length], password->data, password->length);
+	switch (order) {
+	case ENCODE_ORDER_PASSWORD_FIRST:
+		pwd_pos = 0;
+		random_pos = in_password->length;
+		break;
+	case ENCODE_ORDER_PASSWORD_LAST:
+		pwd_pos = PASSWORD_BUFFER_LEN - in_password->length;
+		random_pos = 0;
+		break;
+	}
+	random_len = PASSWORD_BUFFER_LEN - in_password->length;
 
-	generate_random_buffer(buffer, 512 - password->length);
+	memcpy(buffer + pwd_pos, in_password->data, in_password->length);
+	generate_random_buffer(buffer + random_pos, random_len);
+
+	return true;
+}
+
+bool set_pw_in_buffer(uint8_t buffer[516], const DATA_BLOB *password)
+{
+	bool ok;
+
+	ok = create_pw_buffer_from_blob(buffer,
+					password,
+					ENCODE_ORDER_PASSWORD_LAST);
+	if (!ok) {
+		return false;
+	}
 
 	/*
 	 * The length of the new password is in the last 4 bytes of
 	 * the data buffer.
 	 */
-	SIVAL(buffer, 512, password->length);
+	PUSH_LE_U32(buffer, PASSWORD_BUFFER_LEN, password->length);
+
 	return true;
 }
 
