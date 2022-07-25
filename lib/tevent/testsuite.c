@@ -1761,7 +1761,74 @@ static bool test_multi_tevent_threaded_2(struct torture_context *test,
 	talloc_free(ev);
 	return true;
 }
+
+struct test_cached_pid_thread_state {
+	pid_t thread_cached_pid;
+	pid_t thread_pid;
+};
+
+static void *test_cached_pid_thread(void *private_data)
+{
+	struct test_cached_pid_thread_state *state =
+		(struct test_cached_pid_thread_state *)private_data;
+
+	state->thread_cached_pid = tevent_cached_getpid();
+	state->thread_pid = getpid();
+
+	return NULL;
+}
 #endif
+
+static bool test_cached_pid(struct torture_context *test,
+			    const void *test_data)
+{
+	pid_t parent_pid = getpid();
+	pid_t child_pid;
+	pid_t finished_pid;
+	int child_status;
+
+	torture_assert(test, tevent_cached_getpid() == parent_pid, "tevent_cached_getpid()");
+
+#ifdef HAVE_PTHREAD
+	{
+		struct test_cached_pid_thread_state state = { .thread_cached_pid = -1, };
+		pthread_t thread;
+		void *retval = NULL;
+		int ret;
+
+		ret = pthread_create(&thread, NULL, test_cached_pid_thread, &state);
+		torture_assert(test, ret == 0, "pthread_create failed");
+
+		ret = pthread_join(thread, &retval);
+		torture_assert(test, ret == 0, "pthread_join failed");
+
+		torture_assert(test, state.thread_pid == parent_pid, "getpid() in thread");
+		torture_assert(test, state.thread_cached_pid == parent_pid, "tevent_cached_getpid() in thread");
+	}
+#endif /* HAVE_PTHREAD */
+
+	child_pid = fork();
+	if (child_pid == 0) {
+		/* child */
+		pid_t pid = getpid();
+		pid_t cached_pid = tevent_cached_getpid();
+
+		if (parent_pid == pid) {
+			exit(1);
+		}
+		if (pid != cached_pid) {
+			exit(2);
+		}
+		exit(0);
+	}
+	torture_assert(test, child_pid > 0, "fork failed");
+
+	finished_pid = waitpid(child_pid, &child_status, 0);
+	torture_assert(test, finished_pid == child_pid, "wrong child");
+	torture_assert(test, child_status == 0, "child_status");
+
+	return true;
+}
 
 struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 {
@@ -1816,6 +1883,10 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 					     NULL);
 
 #endif
+
+	torture_suite_add_simple_tcase_const(suite, "tevent_cached_getpid",
+					     test_cached_pid,
+					     NULL);
 
 	return suite;
 }
