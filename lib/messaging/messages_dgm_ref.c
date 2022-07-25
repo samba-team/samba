@@ -64,7 +64,7 @@ void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	tmp_refs = refs;
 
-	if ((refs != NULL) && (dgm_pid != getpid())) {
+	if ((refs != NULL) && (dgm_pid != tevent_cached_getpid())) {
 		/*
 		 * Have to reinit after fork
 		 */
@@ -85,10 +85,10 @@ void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			*err = ret;
 			return NULL;
 		}
-		dgm_pid = getpid();
+		dgm_pid = tevent_cached_getpid();
 	} else {
 		int ret;
-		ret = messaging_dgm_get_unique(getpid(), unique);
+		ret = messaging_dgm_get_unique(tevent_cached_getpid(), unique);
 		DBG_DEBUG("messaging_dgm_get_unique returned %s\n",
 			  strerror(ret));
 		if (ret != 0) {

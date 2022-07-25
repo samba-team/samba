@@ -283,7 +283,7 @@ static int messaging_dgm_out_destructor(struct messaging_dgm_out *out)
 	DLIST_REMOVE(out->ctx->outsocks, out);
 
 	if ((tevent_queue_length(out->queue) != 0) &&
-	    (getpid() == out->ctx->pid)) {
+	    (tevent_cached_getpid() == out->ctx->pid)) {
 		/*
 		 * We have pending jobs. We can't close the socket,
 		 * this has been handed over to messaging_dgm_out_queue_state.
@@ -784,7 +784,7 @@ static int messaging_dgm_out_send_fragmented(struct tevent_context *ev,
 
 	hdr = (struct messaging_dgm_fragment_hdr) {
 		.msglen = msglen,
-		.pid = getpid(),
+		.pid = tevent_cached_getpid(),
 		.sock = out->sock
 	};
 
@@ -1011,7 +1011,7 @@ int messaging_dgm_init(struct tevent_context *ev,
 		goto fail_nomem;
 	}
 	ctx->ev = ev;
-	ctx->pid = getpid();
+	ctx->pid = tevent_cached_getpid();
 	ctx->recv_cb = recv_cb;
 	ctx->recv_cb_private_data = recv_cb_private_data;
 
@@ -1116,7 +1116,7 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 
 	close(c->sock);
 
-	if (getpid() == c->pid) {
+	if (tevent_cached_getpid() == c->pid) {
 		struct sun_path_buf name;
 		int ret;
 
@@ -1154,7 +1154,7 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 static void messaging_dgm_validate(struct messaging_dgm_context *ctx)
 {
 #ifdef DEVELOPER
-	pid_t pid = getpid();
+	pid_t pid = tevent_cached_getpid();
 	struct sockaddr_storage addr;
 	socklen_t addrlen = sizeof(addr);
 	struct sockaddr_un *un_addr;
@@ -1519,7 +1519,7 @@ int messaging_dgm_get_unique(pid_t pid, uint64_t *unique)
 
 	messaging_dgm_validate(ctx);
 
-	if (pid == getpid()) {
+	if (pid == tevent_cached_getpid()) {
 		/*
 		 * Protect against losing our own lock
 		 */
@@ -1632,7 +1632,7 @@ static int messaging_dgm_wipe_fn(pid_t pid, void *private_data)
 
 int messaging_dgm_wipe(void)
 {
-	pid_t pid = getpid();
+	pid_t pid = tevent_cached_getpid();
 	messaging_dgm_forall(messaging_dgm_wipe_fn, &pid);
 	return 0;
 }
