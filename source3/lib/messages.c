@@ -525,7 +525,7 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	ctx->id = (struct server_id) {
-		.pid = getpid(), .vnn = NONCLUSTER_VNN
+		.pid = tevent_cached_getpid(), .vnn = NONCLUSTER_VNN
 	};
 
 	ctx->event_ctx = ev;
@@ -651,7 +651,7 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	}
 
 	msg_ctx->id = (struct server_id) {
-		.pid = getpid(), .vnn = msg_ctx->id.vnn
+		.pid = tevent_cached_getpid(), .vnn = msg_ctx->id.vnn
 	};
 
 	lck_path = lock_path(talloc_tos(), "msg.lock");
@@ -907,7 +907,7 @@ static int send_all_fn(pid_t pid, void *private_data)
 	struct send_all_state *state = private_data;
 	NTSTATUS status;
 
-	if (pid == getpid()) {
+	if (pid == tevent_cached_getpid()) {
 		DBG_DEBUG("Skip ourselves in messaging_send_all\n");
 		return 0;
 	}

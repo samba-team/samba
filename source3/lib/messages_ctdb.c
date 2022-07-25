@@ -104,7 +104,7 @@ int messaging_ctdb_init(const char *sockname, int timeout, uint64_t unique_id,
 		goto fail;
 	}
 
-	ret = register_with_ctdbd(ctx->conn, getpid(), messaging_ctdb_recv,
+	ret = register_with_ctdbd(ctx->conn, tevent_cached_getpid(), messaging_ctdb_recv,
 				  ctx);
 	if (ret != 0) {
 		DBG_DEBUG("register_with_ctdbd returned %s (%d)\n",

@@ -61,7 +61,7 @@ void *messaging_ctdb_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	tmp_refs = refs;
 
-	if ((refs != NULL) && (ctdb_pid != getpid())) {
+	if ((refs != NULL) && (ctdb_pid != tevent_cached_getpid())) {
 		/*
 		 * Have to reinit after fork
 		 */
@@ -82,7 +82,7 @@ void *messaging_ctdb_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			*err = ret;
 			return NULL;
 		}
-		ctdb_pid = getpid();
+		ctdb_pid = tevent_cached_getpid();
 	}
 
 	result->fde = messaging_ctdb_register_tevent_context(result, ev);
