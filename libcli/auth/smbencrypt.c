@@ -943,10 +943,17 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 		      size_t *new_pw_len,
 		      charset_t string_charset)
 {
+	DATA_BLOB new_password;
 	int byte_len=0;
+	bool ok;
 
 	*pp_new_pwrd = NULL;
 	*new_pw_len = 0;
+
+	ok = extract_pw_from_buffer(ctx, in_buffer, &new_password);
+	if (!ok) {
+		return false;
+	}
 
 	/*
 	  Warning !!! : This function is called from some rpc call.
@@ -955,28 +962,17 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 	  If you reuse that code somewhere else check first.
 	*/
 
-	/* The length of the new password is in the last 4 bytes of the data buffer. */
-
-	byte_len = IVAL(in_buffer, 512);
-
-#ifdef DEBUG_PASSWORD
-	dump_data(100, in_buffer, 516);
-#endif
-
-	/* Password cannot be longer than the size of the password buffer */
-	if ( (byte_len < 0) || (byte_len > 512)) {
-		DEBUG(0, ("decode_pw_buffer: incorrect password length (%d).\n", byte_len));
-		DEBUG(0, ("decode_pw_buffer: check that 'encrypt passwords = yes'\n"));
-		return false;
-	}
-
 	/* decode into the return buffer. */
-	if (!convert_string_talloc(ctx, string_charset, CH_UNIX,
-				   &in_buffer[512 - byte_len],
-				   byte_len,
+	ok = convert_string_talloc(ctx,
+				   string_charset,
+				   CH_UNIX,
+				   new_password.data,
+				   new_password.length,
 				   (void *)pp_new_pwrd,
-				   new_pw_len)) {
-		DEBUG(0, ("decode_pw_buffer: failed to convert incoming password\n"));
+				   new_pw_len);
+	data_blob_free(&new_password);
+	if (!ok) {
+		DBG_ERR("Failed to convert incoming password\n");
 		return false;
 	}
 
