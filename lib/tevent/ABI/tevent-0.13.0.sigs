@@ -22,6 +22,7 @@ _tevent_schedule_immediate: void (struct tevent_immediate *, struct tevent_conte
 _tevent_threaded_schedule_immediate: void (struct tevent_threaded_context *, struct tevent_immediate *, tevent_immediate_handler_t, void *, const char *, const char *)
 tevent_abort: void (struct tevent_context *, const char *)
 tevent_backend_list: const char **(TALLOC_CTX *)
+tevent_cached_getpid: pid_t (void)
 tevent_cleanup_pending_signal_handlers: void (struct tevent_signal *)
 tevent_common_add_fd: struct tevent_fd *(struct tevent_context *, TALLOC_CTX *, int, uint16_t, tevent_fd_handler_t, void *, const char *, const char *)
 tevent_common_add_signal: struct tevent_signal *(struct tevent_context *, TALLOC_CTX *, int, int, tevent_signal_handler_t, void *, const char *, const char *)
