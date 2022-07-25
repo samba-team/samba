@@ -89,3 +89,12 @@ bld.SAMBA_BINARY('test_gnutls',
                       samba-util
                       ''',
                  for_selftest=True)
+
+bld.SAMBA_BINARY('test_encode_decode',
+                 source='tests/test_encode_decode.c',
+                 deps='''
+                      LIBCLI_AUTH
+                      cmocka
+                      samba-util
+                      ''',
+                 for_selftest=True)
