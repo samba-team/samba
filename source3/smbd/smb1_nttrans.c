@@ -958,6 +958,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	uint32_t fattr=0;
 	off_t file_len = 0;
 	int info = 0;
+	struct files_struct *dirfsp = NULL;
 	files_struct *fsp = NULL;
 	char *p = NULL;
 	uint32_t flags;
@@ -982,6 +983,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	uint8_t oplock_granted;
 	struct case_semantics_state *case_state = NULL;
 	uint32_t ucf_flags;
+	NTTIME twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(5,("call_nt_transact_create\n"));
@@ -1078,12 +1080,16 @@ static void call_nt_transact_create(connection_struct *conn,
 	}
 
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
-	status = filename_convert(ctx,
-				conn,
-				fname,
-				ucf_flags,
-				0,
-				&smb_fname);
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(fname, &twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 fname,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_fname);
 
 	TALLOC_FREE(case_state);
 
@@ -1187,7 +1193,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		NULL,					/* dirfsp */
+		dirfsp,					/* dirfsp */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
