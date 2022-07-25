@@ -126,12 +126,29 @@ static void torture_extract_pwd_blob_from_buffer514(void **state)
 	data_blob_free(&new_password);
 }
 
+static void torture_decode_pwd_string_from_buffer514(void **state)
+{
+	DATA_BLOB decoded_password = {
+		.length = 0,
+	};
+	bool ok;
+
+	ok = decode_pwd_string_from_buffer514(NULL,
+					   plaintext_data,
+				           CH_UTF16,
+					   &decoded_password);
+	assert_true(ok);
+	assert_memory_equal(decoded_password.data, "Pa$$w0rd@2", decoded_password.length);
+	data_blob_free(&decoded_password);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(torture_encode_pwd_buffer514_from_str),
 		cmocka_unit_test(torture_extract_pwd_blob_from_buffer514),
+		cmocka_unit_test(torture_decode_pwd_string_from_buffer514),
 	};
 
 	if (argc == 2) {
