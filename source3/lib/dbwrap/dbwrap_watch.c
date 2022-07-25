@@ -584,6 +584,9 @@ static int dbwrap_watched_traverse_fn(struct db_record *rec,
 	if (!ok) {
 		return 0;
 	}
+	if (prec.value.dsize == 0) {
+		return 0;
+	}
 	prec.value_valid = true;
 
 	return state->fn(&prec, state->private_data);
