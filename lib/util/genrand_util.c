@@ -21,6 +21,7 @@
 
 #include "replace.h"
 #include "system/locale.h"
+#include <tevent.h>
 #include "lib/util/samba_util.h"
 #include "lib/util/debug.h"
 
@@ -56,7 +57,7 @@ _PUBLIC_ uint64_t generate_unique_u64(uint64_t veto_value)
 		int pid;
 	} generate_unique_u64_state;
 
-	int pid = getpid();
+	int pid = tevent_cached_getpid();
 
 	if (unlikely(pid != generate_unique_u64_state.pid)) {
 		generate_unique_u64_state = (struct generate_unique_u64_state) {

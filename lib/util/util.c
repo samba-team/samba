@@ -25,6 +25,7 @@
 
 #include "replace.h"
 #include <talloc.h>
+#include <tevent.h>
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/locale.h"
@@ -422,7 +423,7 @@ _PUBLIC_ bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 		if ((ret != -1) &&
 				(lock.l_type != F_UNLCK) && 
 				(lock.l_pid != 0) && 
-				(lock.l_pid != getpid())) {
+				(lock.l_pid != tevent_cached_getpid())) {
 			DEBUG(3,("fcntl_lock: fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
 			return true;
 		}
