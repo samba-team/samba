@@ -1129,6 +1129,7 @@ bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx,
 	if (!new_pass->data) {
 		return false;
 	}
+	talloc_keep_secret(new_pass->data);
 
 	return true;
 }
