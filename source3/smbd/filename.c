@@ -2916,7 +2916,16 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 	}
 
 	if (saved_streamname == NULL) {
-		smb_fname = smb_fname_rel->fsp->fsp_name;
+		/* smb_fname must be allocated off mem_ctx. */
+		smb_fname = cp_smb_filename(mem_ctx,
+					    smb_fname_rel->fsp->fsp_name);
+		if (smb_fname == NULL) {
+			goto fail;
+		}
+		status = move_smb_fname_fsp_link(smb_fname, smb_fname_rel);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
 		goto done;
 	}
 
@@ -2947,7 +2956,16 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
-		smb_fname = smb_fname_rel->fsp->fsp_name;
+		/* smb_fname must be allocated off mem_ctx. */
+		smb_fname = cp_smb_filename(mem_ctx,
+					    smb_fname_rel->fsp->fsp_name);
+		if (smb_fname == NULL) {
+			goto fail;
+		}
+		status = move_smb_fname_fsp_link(smb_fname, smb_fname_rel);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
 		goto done;
 	}
 
