@@ -30,6 +30,265 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+static NTSTATUS libnet_ChangePassword_samr_rc4(TALLOC_CTX *mem_ctx,
+					       struct dcerpc_binding_handle *h,
+					       struct lsa_String *server,
+					       struct lsa_String *account,
+					       const char *old_password,
+					       const char *new_password,
+					       const char **error_string)
+{
+	struct samr_OemChangePasswordUser2 oe2;
+	struct samr_ChangePasswordUser2 pw2;
+	struct samr_ChangePasswordUser3 pw3;
+	struct samr_CryptPassword nt_pass, lm_pass;
+	uint8_t old_nt_hash[16], new_nt_hash[16];
+	uint8_t old_lm_hash[16], new_lm_hash[16];
+	struct samr_Password nt_verifier, lm_verifier;
+	struct lsa_AsciiString a_server, a_account;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t nt_session_key = {
+		.data = old_nt_hash,
+		.size = sizeof(old_nt_hash),
+	};
+	gnutls_datum_t lm_session_key = {
+		.data = old_lm_hash,
+		.size = sizeof(old_lm_hash),
+	};
+	struct samr_DomInfo1 *dominfo = NULL;
+	struct userPwdChangeFailureInformation *reject = NULL;
+	NTSTATUS status;
+	int rc;
+
+	E_md4hash(old_password, old_nt_hash);
+	E_md4hash(new_password, new_nt_hash);
+
+	E_deshash(old_password, old_lm_hash);
+	E_deshash(new_password, new_lm_hash);
+
+	/* prepare samr_ChangePasswordUser3 */
+	encode_pw_buffer(lm_pass.data, new_password, STR_UNICODE);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&nt_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto done;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   lm_pass.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto done;
+	}
+
+	rc = E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
+
+	encode_pw_buffer(nt_pass.data, new_password, STR_UNICODE);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&nt_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto done;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   nt_pass.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto done;
+	}
+
+	rc = E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
+
+	pw3.in.server = server;
+	pw3.in.account = account;
+	pw3.in.nt_password = &nt_pass;
+	pw3.in.nt_verifier = &nt_verifier;
+	pw3.in.lm_change = 1;
+	pw3.in.lm_password = &lm_pass;
+	pw3.in.lm_verifier = &lm_verifier;
+	pw3.in.password3 = NULL;
+	pw3.out.dominfo = &dominfo;
+	pw3.out.reject = &reject;
+
+	/* 2. try samr_ChangePasswordUser3 */
+	status = dcerpc_samr_ChangePasswordUser3_r(h, mem_ctx, &pw3);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+		if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(pw3.out.result)) {
+			status = pw3.out.result;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			*error_string = talloc_asprintf(
+				mem_ctx,
+				"samr_ChangePasswordUser3 failed: %s",
+				nt_errstr(status));
+			*error_string =
+				talloc_asprintf(mem_ctx,
+						"samr_ChangePasswordUser3 for "
+						"'%s\\%s' failed: %s",
+						server->string,
+						account->string,
+						nt_errstr(status));
+		}
+		goto done;
+	}
+
+	/* prepare samr_ChangePasswordUser2 */
+	encode_pw_buffer(lm_pass.data, new_password, STR_ASCII | STR_TERMINATE);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&lm_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto done;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   lm_pass.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto done;
+	}
+
+	rc = E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
+
+	encode_pw_buffer(nt_pass.data, new_password, STR_UNICODE);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&nt_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto done;
+	}
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   nt_pass.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto done;
+	}
+
+	rc = E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
+
+	pw2.in.server = server;
+	pw2.in.account = account;
+	pw2.in.nt_password = &nt_pass;
+	pw2.in.nt_verifier = &nt_verifier;
+	pw2.in.lm_change = 1;
+	pw2.in.lm_password = &lm_pass;
+	pw2.in.lm_verifier = &lm_verifier;
+
+	/* 3. try samr_ChangePasswordUser2 */
+	status = dcerpc_samr_ChangePasswordUser2_r(h, mem_ctx, &pw2);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+		if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(pw2.out.result)) {
+			status = pw2.out.result;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			*error_string =
+				talloc_asprintf(mem_ctx,
+						"samr_ChangePasswordUser2 for "
+						"'%s\\%s' failed: %s",
+						server->string,
+						account->string,
+						nt_errstr(status));
+		}
+		goto done;
+	}
+
+
+	/* prepare samr_OemChangePasswordUser2 */
+	a_server.string = server->string;
+	a_account.string = account->string;
+
+	encode_pw_buffer(lm_pass.data, new_password, STR_ASCII);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&lm_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto done;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   lm_pass.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto done;
+	}
+
+	rc = E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
+
+	oe2.in.server = &a_server;
+	oe2.in.account = &a_account;
+	oe2.in.password = &lm_pass;
+	oe2.in.hash = &lm_verifier;
+
+	/* 4. try samr_OemChangePasswordUser2 */
+	status = dcerpc_samr_OemChangePasswordUser2_r(h, mem_ctx, &oe2);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+		if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(oe2.out.result)) {
+			status = oe2.out.result;
+		}
+		if (!NT_STATUS_IS_OK(oe2.out.result)) {
+			*error_string =
+				talloc_asprintf(mem_ctx,
+						"samr_OemChangePasswordUser2 "
+						"for '%s\\%s' failed: %s",
+						server->string,
+						account->string,
+						nt_errstr(status));
+		}
+		goto done;
+	}
+
+	status = NT_STATUS_OK;
+done:
+	return status;
+}
+
 /*
  * do a password change using DCERPC/SAMR calls
  * 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation)
@@ -41,27 +300,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 {
         NTSTATUS status;
 	struct libnet_RpcConnect c;
-	struct samr_OemChangePasswordUser2 oe2;
-	struct samr_ChangePasswordUser2 pw2;
-	struct samr_ChangePasswordUser3 pw3;
 	struct lsa_String server, account;
-	struct lsa_AsciiString a_server, a_account;
-	struct samr_CryptPassword nt_pass, lm_pass;
-	struct samr_Password nt_verifier, lm_verifier;
-	uint8_t old_nt_hash[16], new_nt_hash[16];
-	uint8_t old_lm_hash[16], new_lm_hash[16];
-	struct samr_DomInfo1 *dominfo = NULL;
-	struct userPwdChangeFailureInformation *reject = NULL;
-	gnutls_cipher_hd_t cipher_hnd = NULL;
-	gnutls_datum_t nt_session_key = {
-		.data = old_nt_hash,
-		.size = sizeof(old_nt_hash),
-	};
-	gnutls_datum_t lm_session_key = {
-		.data = old_lm_hash,
-		.size = sizeof(old_lm_hash),
-	};
-	int rc;
 
 	ZERO_STRUCT(c);
 
@@ -84,217 +323,15 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.out.dcerpc_pipe));
 	account.string = r->samr.in.account_name;
 
-	E_md4hash(r->samr.in.oldpassword, old_nt_hash);
-	E_md4hash(r->samr.in.newpassword, new_nt_hash);
-
-	E_deshash(r->samr.in.oldpassword, old_lm_hash);
-	E_deshash(r->samr.in.newpassword, new_lm_hash);
-
-	/* prepare samr_ChangePasswordUser3 */
-	encode_pw_buffer(lm_pass.data, r->samr.in.newpassword, STR_UNICODE);
-
-	rc = gnutls_cipher_init(&cipher_hnd,
-				GNUTLS_CIPHER_ARCFOUR_128,
-				&nt_session_key,
-				NULL);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
-		goto disconnect;
-	}
-
-	rc = gnutls_cipher_encrypt(cipher_hnd,
-				   lm_pass.data,
-				   516);
-	gnutls_cipher_deinit(cipher_hnd);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
-		goto disconnect;
-	}
-
-	rc = E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
-	if (rc != 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
-		goto disconnect;
-	}
-
-	encode_pw_buffer(nt_pass.data,  r->samr.in.newpassword, STR_UNICODE);
-
-	rc = gnutls_cipher_init(&cipher_hnd,
-				GNUTLS_CIPHER_ARCFOUR_128,
-				&nt_session_key,
-				NULL);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
-		goto disconnect;
-	}
-
-	rc = gnutls_cipher_encrypt(cipher_hnd,
-				   nt_pass.data,
-				   516);
-	gnutls_cipher_deinit(cipher_hnd);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
-		goto disconnect;
-	}
-
-	rc = E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
-	if (rc != 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
-		goto disconnect;
-	}
-
-	pw3.in.server = &server;
-	pw3.in.account = &account;
-	pw3.in.nt_password = &nt_pass;
-	pw3.in.nt_verifier = &nt_verifier;
-	pw3.in.lm_change = 1;
-	pw3.in.lm_password = &lm_pass;
-	pw3.in.lm_verifier = &lm_verifier;
-	pw3.in.password3 = NULL;
-	pw3.out.dominfo = &dominfo;
-	pw3.out.reject = &reject;
-
-	/* 2. try samr_ChangePasswordUser3 */
-	status = dcerpc_samr_ChangePasswordUser3_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &pw3);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
-		if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(pw3.out.result)) {
-			status = pw3.out.result;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			r->samr.out.error_string = talloc_asprintf(mem_ctx,
-								   "samr_ChangePasswordUser3 failed: %s",
-								   nt_errstr(status));
-			r->samr.out.error_string = talloc_asprintf(mem_ctx,
-								   "samr_ChangePasswordUser3 for '%s\\%s' failed: %s",
-								   r->samr.in.domain_name, r->samr.in.account_name,
-								   nt_errstr(status));
-		}
-		goto disconnect;
-	}
-
-	/* prepare samr_ChangePasswordUser2 */
-	encode_pw_buffer(lm_pass.data, r->samr.in.newpassword, STR_ASCII|STR_TERMINATE);
-
-	rc = gnutls_cipher_init(&cipher_hnd,
-				GNUTLS_CIPHER_ARCFOUR_128,
-				&lm_session_key,
-				NULL);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
-		goto disconnect;
-	}
-
-	rc = gnutls_cipher_encrypt(cipher_hnd,
-				   lm_pass.data,
-				   516);
-	gnutls_cipher_deinit(cipher_hnd);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
-		goto disconnect;
-	}
-
-	rc = E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
-	if (rc != 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
-		goto disconnect;
-	}
-
-	encode_pw_buffer(nt_pass.data, r->samr.in.newpassword, STR_UNICODE);
-
-	rc = gnutls_cipher_init(&cipher_hnd,
-				GNUTLS_CIPHER_ARCFOUR_128,
-				&nt_session_key,
-				NULL);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
-		goto disconnect;
-	}
-	rc = gnutls_cipher_encrypt(cipher_hnd,
-				   nt_pass.data,
-				   516);
-	gnutls_cipher_deinit(cipher_hnd);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
-		goto disconnect;
-	}
-
-	rc = E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
-	if (rc != 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
-		goto disconnect;
-	}
-
-	pw2.in.server = &server;
-	pw2.in.account = &account;
-	pw2.in.nt_password = &nt_pass;
-	pw2.in.nt_verifier = &nt_verifier;
-	pw2.in.lm_change = 1;
-	pw2.in.lm_password = &lm_pass;
-	pw2.in.lm_verifier = &lm_verifier;
-
-	/* 3. try samr_ChangePasswordUser2 */
-	status = dcerpc_samr_ChangePasswordUser2_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &pw2);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
-		if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(pw2.out.result)) {
-			status = pw2.out.result;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			r->samr.out.error_string = talloc_asprintf(mem_ctx,
-								   "samr_ChangePasswordUser2 for '%s\\%s' failed: %s",
-								   r->samr.in.domain_name, r->samr.in.account_name,
-								   nt_errstr(status));
-		}
-		goto disconnect;
-	}
-
-
-	/* prepare samr_OemChangePasswordUser2 */
-	a_server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.out.dcerpc_pipe));
-	a_account.string = r->samr.in.account_name;
-
-	encode_pw_buffer(lm_pass.data, r->samr.in.newpassword, STR_ASCII);
-
-	rc = gnutls_cipher_init(&cipher_hnd,
-				GNUTLS_CIPHER_ARCFOUR_128,
-				&lm_session_key,
-				NULL);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
-		goto disconnect;
-	}
-
-	rc = gnutls_cipher_encrypt(cipher_hnd,
-				   lm_pass.data,
-				   516);
-	gnutls_cipher_deinit(cipher_hnd);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
-		goto disconnect;
-	}
-
-	rc = E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
-	if (rc != 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
-		goto disconnect;
-	}
-
-	oe2.in.server = &a_server;
-	oe2.in.account = &a_account;
-	oe2.in.password = &lm_pass;
-	oe2.in.hash = &lm_verifier;
-
-	/* 4. try samr_OemChangePasswordUser2 */
-	status = dcerpc_samr_OemChangePasswordUser2_r(c.out.dcerpc_pipe->binding_handle, mem_ctx, &oe2);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
-		if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(oe2.out.result)) {
-			status = oe2.out.result;
-		}
-		if (!NT_STATUS_IS_OK(oe2.out.result)) {
-			r->samr.out.error_string = talloc_asprintf(mem_ctx,
-								   "samr_OemChangePasswordUser2 for '%s\\%s' failed: %s",
-								   r->samr.in.domain_name, r->samr.in.account_name,
-								   nt_errstr(status));
-		}
+	status = libnet_ChangePassword_samr_rc4(
+		mem_ctx,
+		c.out.dcerpc_pipe->binding_handle,
+		&server,
+		&account,
+		r->samr.in.oldpassword,
+		r->samr.in.newpassword,
+		&(r->samr.out.error_string));
+	if (!NT_STATUS_IS_OK(status)) {
 		goto disconnect;
 	}
 
