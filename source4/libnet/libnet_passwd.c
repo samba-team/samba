@@ -36,17 +36,11 @@
  * 2. try samr_ChangePasswordUser3
  * 3. try samr_ChangePasswordUser2
  * 4. try samr_OemChangePasswordUser2
- * (not yet: 5. try samr_ChangePasswordUser)
  */
 static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_ChangePassword *r)
 {
         NTSTATUS status;
 	struct libnet_RpcConnect c;
-#if 0
-	struct policy_handle user_handle;
-	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
-	struct samr_ChangePasswordUser pw;
-#endif
 	struct samr_OemChangePasswordUser2 oe2;
 	struct samr_ChangePasswordUser2 pw2;
 	struct samr_ChangePasswordUser3 pw3;
@@ -304,50 +298,6 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 		goto disconnect;
 	}
 
-#if 0
-	/* prepare samr_ChangePasswordUser */
-	E_old_pw_hash(new_lm_hash, old_lm_hash, hash1.hash);
-	E_old_pw_hash(old_lm_hash, new_lm_hash, hash2.hash);
-	E_old_pw_hash(new_nt_hash, old_nt_hash, hash3.hash);
-	E_old_pw_hash(old_nt_hash, new_nt_hash, hash4.hash);
-	E_old_pw_hash(old_lm_hash, new_nt_hash, hash5.hash);
-	E_old_pw_hash(old_nt_hash, new_lm_hash, hash6.hash);
-
-	/* TODO: ask for a user_handle */
-	pw.in.handle = &user_handle;
-	pw.in.lm_present = 1;
-	pw.in.old_lm_crypted = &hash1;
-	pw.in.new_lm_crypted = &hash2;
-	pw.in.nt_present = 1;
-	pw.in.old_nt_crypted = &hash3;
-	pw.in.new_nt_crypted = &hash4;
-	pw.in.cross1_present = 1;
-	pw.in.nt_cross = &hash5;
-	pw.in.cross2_present = 1;
-	pw.in.lm_cross = &hash6;
-
-	/* 5. try samr_ChangePasswordUser */
-	status = dcerpc_samr_ChangePasswordUser_r(c.pdc.out.dcerpc_pipe->binding_handle, mem_ctx, &pw);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"samr_ChangePasswordUser failed: %s",
-						nt_errstr(status));
-		goto disconnect;
-	}
-
-	/* check result of samr_ChangePasswordUser */
-	if (!NT_STATUS_IS_OK(pw.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"samr_ChangePasswordUser for '%s\\%s' failed: %s",
-						r->samr.in.domain_name, r->samr.in.account_name,
-						nt_errstr(pw.out.result));
-		if (NT_STATUS_EQUAL(pw.out.result, NT_STATUS_PASSWORD_RESTRICTION)) {
-			status = pw.out.result;
-			goto disconnect;
-		}
-		goto disconnect;
-	}
-#endif
 disconnect:
 	/* close connection */
 	talloc_unlink(ctx, c.out.dcerpc_pipe);
