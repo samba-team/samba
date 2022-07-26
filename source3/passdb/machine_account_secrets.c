@@ -345,7 +345,7 @@ bool secrets_fetch_trust_account_password_legacy(const char *domain,
 
 	if (size != sizeof(*pass)) {
 		DEBUG(0, ("secrets were of incorrect size!\n"));
-		SAFE_FREE(pass);
+		BURN_FREE(pass, size);
 		return False;
 	}
 
@@ -358,7 +358,7 @@ bool secrets_fetch_trust_account_password_legacy(const char *domain,
 		*channel = get_default_sec_channel();
 	}
 
-	SAFE_FREE(pass);
+	BURN_FREE(pass, size);
 	return True;
 }
 
@@ -719,7 +719,7 @@ static NTSTATUS secrets_fetch_domain_info1_by_key(const char *key,
 	/* unpack trusted domain password */
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &sdib,
 			(ndr_pull_flags_fn_t)ndr_pull_secrets_domain_infoB);
-	SAFE_FREE(blob.data);
+	BURN_FREE(blob.data, blob.length);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DBG_ERR("ndr_pull_struct_blob failed - %s!\n",
 			ndr_errstr(ndr_err));
