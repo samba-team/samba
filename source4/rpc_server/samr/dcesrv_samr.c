@@ -3706,7 +3706,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 
 	case 18:
 		status = samr_set_password_buffers(dce_call,
-						   a_state->sam_ctx,
+						   sam_ctx,
 						   a_state->account_dn,
 						   a_state->domain_state->domain_dn,
 						   mem_ctx,
@@ -3808,7 +3808,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 				nt_pwd_hash = (uint8_t *) r->in.info->info21.nt_owf_password.array;
 			}
 			status = samr_set_password_buffers(dce_call,
-							   a_state->sam_ctx,
+							   sam_ctx,
 							   a_state->account_dn,
 							   a_state->domain_state->domain_dn,
 							   mem_ctx,
@@ -3894,14 +3894,14 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 
 		IFSET(SAMR_FIELD_NT_PASSWORD_PRESENT) {
 			status = samr_set_password(dce_call,
-						   a_state->sam_ctx,
+						   sam_ctx,
 						   a_state->account_dn,
 						   a_state->domain_state->domain_dn,
 						   mem_ctx,
 						   &r->in.info->info23.password);
 		} else IFSET(SAMR_FIELD_LM_PASSWORD_PRESENT) {
 			status = samr_set_password(dce_call,
-						   a_state->sam_ctx,
+						   sam_ctx,
 						   a_state->account_dn,
 						   a_state->domain_state->domain_dn,
 						   mem_ctx,
@@ -3931,7 +3931,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		/* the set password levels are handled separately */
 	case 24:
 		status = samr_set_password(dce_call,
-					   a_state->sam_ctx,
+					   sam_ctx,
 					   a_state->account_dn,
 					   a_state->domain_state->domain_dn,
 					   mem_ctx,
@@ -4007,14 +4007,14 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 
 		IFSET(SAMR_FIELD_NT_PASSWORD_PRESENT) {
 			status = samr_set_password_ex(dce_call,
-						      a_state->sam_ctx,
+						      sam_ctx,
 						      a_state->account_dn,
 						      a_state->domain_state->domain_dn,
 						      mem_ctx,
 						      &r->in.info->info25.password);
 		} else IFSET(SAMR_FIELD_LM_PASSWORD_PRESENT) {
 			status = samr_set_password_ex(dce_call,
-						      a_state->sam_ctx,
+						      sam_ctx,
 						      a_state->account_dn,
 						      a_state->domain_state->domain_dn,
 						      mem_ctx,
@@ -4044,7 +4044,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		/* the set password levels are handled separately */
 	case 26:
 		status = samr_set_password_ex(dce_call,
-					      a_state->sam_ctx,
+					      sam_ctx,
 					      a_state->account_dn,
 					      a_state->domain_state->domain_dn,
 					      mem_ctx,
@@ -4081,11 +4081,11 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 
 	/* modify the samdb record */
 	if (msg->num_elements > 0) {
-		ret = ldb_modify(a_state->sam_ctx, msg);
+		ret = ldb_modify(sam_ctx, msg);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(1,("Failed to modify record %s: %s\n",
 				 ldb_dn_get_linearized(a_state->account_dn),
-				 ldb_errstring(a_state->sam_ctx)));
+				 ldb_errstring(sam_ctx)));
 
 			status = dsdb_ldb_err_to_ntstatus(ret);
 			goto done;
