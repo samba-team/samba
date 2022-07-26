@@ -2898,6 +2898,7 @@ NTSTATUS _wbint_PamAuthChangePassword(struct pipes_struct *p,
 	bool got_info = false;
 	struct samr_DomInfo1 *info = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring namespace, domain, user;
 	struct dcerpc_binding_handle *b = NULL;
@@ -2952,6 +2953,34 @@ NTSTATUS _wbint_PamAuthChangePassword(struct pipes_struct *p,
 	}
 
 	b = cli->binding_handle;
+
+	status = dcerpc_samr_chgpasswd_user4(cli->binding_handle,
+					     p->mem_ctx,
+					     cli->srv_name_slash,
+					     user,
+					     r->in.old_password,
+					     r->in.new_password,
+					     &result);
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
+		/* Password successfully changed. */
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			/* DO NOT FALLBACK TO RC4 */
+			if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+				result = NT_STATUS_STRONG_CRYPTO_NOT_SUPPORTED;
+				goto process_result;
+			}
+		}
+	} else {
+		/* Password change was unsuccessful. */
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+	}
 
 	result = rpccli_samr_chgpasswd_user3(cli,
 					     p->mem_ctx,
