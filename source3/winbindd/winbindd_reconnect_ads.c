@@ -343,20 +343,21 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods reconnect_ads_methods = {
-	true,
-	query_user_list,
-	enum_dom_groups,
-	enum_local_groups,
-	name_to_sid,
-	sid_to_name,
-	rids_to_names,
-	lookup_usergroups,
-	lookup_useraliases,
-	lookup_groupmem,
-	lookup_aliasmem,
-	lockout_policy,
-	password_policy,
-	trusted_domains,
+	.consistent		= true,
+
+	.query_user_list	= query_user_list,
+	.enum_dom_groups	= enum_dom_groups,
+	.enum_local_groups	= enum_local_groups,
+	.name_to_sid		= name_to_sid,
+	.sid_to_name		= sid_to_name,
+	.rids_to_names		= rids_to_names,
+	.lookup_usergroups	= lookup_usergroups,
+	.lookup_useraliases	= lookup_useraliases,
+	.lookup_groupmem	= lookup_groupmem,
+	.lookup_aliasmem	= lookup_aliasmem,
+	.lockout_policy		= lockout_policy,
+	.password_policy	= password_policy,
+	.trusted_domains	= trusted_domains,
 };
 
 #endif
