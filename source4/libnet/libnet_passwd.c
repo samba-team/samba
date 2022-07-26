@@ -25,10 +25,102 @@
 #include "source4/librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/smb/smb_constants.h"
+#include "librpc/rpc/dcerpc_samr.h"
+#include "source3/rpc_client/init_samr.h"
+#include "lib/param/loadparm.h"
+#include "lib/param/param.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
+
+static NTSTATUS libnet_ChangePassword_samr_aes(TALLOC_CTX *mem_ctx,
+					       struct dcerpc_binding_handle *h,
+					       struct lsa_String *server,
+					       struct lsa_String *account,
+					       const char *old_password,
+					       const char *new_password,
+					       const char **error_string)
+{
+#ifdef HAVE_GNUTLS_PBKDF2
+	struct samr_ChangePasswordUser4 r;
+	uint8_t old_nt_key_data[16] = {0};
+	gnutls_datum_t old_nt_key = {
+		.data = old_nt_key_data,
+		.size = sizeof(old_nt_key_data),
+	};
+	uint8_t cek_data[16] = {0};
+	DATA_BLOB cek = {
+		.data = cek_data,
+		.length = sizeof(cek_data),
+	};
+	struct samr_EncryptedPasswordAES pwd_buf = {
+		.cipher_len = 0
+	};
+	DATA_BLOB iv = {
+		.data = pwd_buf.salt,
+		.length = sizeof(pwd_buf.salt),
+	};
+	gnutls_datum_t iv_datum = {
+		.data = iv.data,
+		.size = iv.length,
+	};
+	uint64_t pbkdf2_iterations = generate_random_u64_range(5000, 1000000);
+	NTSTATUS status;
+	int rc;
+
+	E_md4hash(old_password, old_nt_key_data);
+
+	generate_nonce_buffer(iv.data, iv.length);
+
+	rc = gnutls_pbkdf2(GNUTLS_MAC_SHA512,
+			   &old_nt_key,
+			   &iv_datum,
+			   pbkdf2_iterations,
+			   cek.data,
+			   cek.length);
+	BURN_DATA(old_nt_key_data);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_WRONG_PASSWORD);
+	}
+
+	status = init_samr_CryptPasswordAES(mem_ctx,
+					    new_password,
+					    &cek,
+					    &pwd_buf);
+	data_blob_clear(&cek);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	pwd_buf.PBKDF2Iterations = pbkdf2_iterations;
+
+	r.in.server = server;
+	r.in.account = account;
+	r.in.password = &pwd_buf;
+
+	status = dcerpc_samr_ChangePasswordUser4_r(h, mem_ctx, &r);
+	if (NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"samr_ChangePasswordUser4 for "
+						"'%s\\%s' failed: %s",
+						server->string,
+						account->string,
+						nt_errstr(status));
+		status = r.out.result;
+	}
+
+done:
+	BURN_DATA(pwd_buf);
+
+	return status;
+#else /* HAVE_GNUTLS_PBKDF2 */
+	return NT_STATUS_NOT_IMPLEMENTED;
+#endif /* HAVE_GNUTLS_PBKDF2 */
+}
 
 static NTSTATUS libnet_ChangePassword_samr_rc4(TALLOC_CTX *mem_ctx,
 					       struct dcerpc_binding_handle *h,
@@ -322,6 +414,30 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	/* prepare password change for account */
 	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.out.dcerpc_pipe));
 	account.string = r->samr.in.account_name;
+
+	status = libnet_ChangePassword_samr_aes(
+		mem_ctx,
+		c.out.dcerpc_pipe->binding_handle,
+		&server,
+		&account,
+		r->samr.in.oldpassword,
+		r->samr.in.newpassword,
+		&(r->samr.out.error_string));
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,
+				     NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			/*
+			* Don't fallback to RC4 based SAMR if weak crypto is not
+			* allowed.
+			*/
+			if (lpcfg_weak_crypto(ctx->lp_ctx) ==
+			SAMBA_WEAK_CRYPTO_DISALLOWED) {
+				goto disconnect;
+			}
+		}
+	}
 
 	status = libnet_ChangePassword_samr_rc4(
 		mem_ctx,
