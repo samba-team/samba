@@ -312,6 +312,9 @@ again:
  *
  * If 'unix charset' is not utf8, the password consist of random ascii
  * values!
+ *
+ * The return value is a talloc string with destructor talloc_keep_secret() set.
+ * The content will be overwritten by zeros when the mem_ctx is destroyed.
  */
 
 _PUBLIC_ char *generate_random_machine_password(TALLOC_CTX *mem_ctx, size_t min, size_t max)
@@ -349,6 +352,7 @@ _PUBLIC_ char *generate_random_machine_password(TALLOC_CTX *mem_ctx, size_t min,
 
 	frame = talloc_stackframe_pool(2048);
 	state = talloc_zero(frame, struct generate_random_machine_password_state);
+	talloc_keep_secret(state);
 
 	diff = max - min;
 
@@ -417,6 +421,7 @@ _PUBLIC_ char *generate_random_machine_password(TALLOC_CTX *mem_ctx, size_t min,
 		TALLOC_FREE(frame);
 		return NULL;
 	}
+	talloc_keep_secret(utf8_pw);
 
 	ok = convert_string_talloc(frame,
 				   CH_UTF16MUNGED, CH_UNIX,
@@ -425,6 +430,7 @@ _PUBLIC_ char *generate_random_machine_password(TALLOC_CTX *mem_ctx, size_t min,
 	if (!ok) {
 		goto ascii_fallback;
 	}
+	talloc_keep_secret(unix_pw);
 
 	if (utf8_len != unix_len) {
 		goto ascii_fallback;
@@ -442,6 +448,7 @@ _PUBLIC_ char *generate_random_machine_password(TALLOC_CTX *mem_ctx, size_t min,
 		TALLOC_FREE(frame);
 		return NULL;
 	}
+	talloc_keep_secret(new_pw);
 	talloc_set_name_const(new_pw, __func__);
 	TALLOC_FREE(frame);
 	return new_pw;
@@ -467,6 +474,7 @@ ascii_fallback:
 		TALLOC_FREE(frame);
 		return NULL;
 	}
+	talloc_keep_secret(new_pw);
 	talloc_set_name_const(new_pw, __func__);
 	TALLOC_FREE(frame);
 	return new_pw;
