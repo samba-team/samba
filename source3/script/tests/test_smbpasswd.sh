@@ -104,6 +104,7 @@ EOF
 	rm -f $tmpfile
 	if [ $ret -ne 0 ]; then
 		echo "Failed to change user password $user"
+		echo "${out}"
 		return 1
 	fi
 
