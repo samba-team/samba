@@ -38,6 +38,7 @@ NTSTATUS remote_password_change(const char *remote_machine,
 	struct cli_state *cli = NULL;
 	struct cli_credentials *creds = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
+	NTSTATUS status;
 	NTSTATUS result;
 	bool pass_must_change = False;
 
@@ -186,6 +187,45 @@ NTSTATUS remote_password_change(const char *remote_machine,
 				 "failed. Error was %s, but LANMAN password "
 				 "changes are disabled\n",
 				 remote_machine, nt_errstr(result)) == -1) {
+				*err_str = NULL;
+			}
+			cli_shutdown(cli);
+			return result;
+		}
+	}
+
+	status = dcerpc_samr_chgpasswd_user4(pipe_hnd->binding_handle,
+					     talloc_tos(),
+					     pipe_hnd->srv_name_slash,
+					     user_name,
+					     old_passwd,
+					     new_passwd,
+					     &result);
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
+		/* All good, password successfully changed. */
+		cli_shutdown(cli);
+		return NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,
+				    NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			/* DO NOT FALLBACK TO RC4 */
+			if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+				cli_shutdown(cli);
+				return NT_STATUS_STRONG_CRYPTO_NOT_SUPPORTED;
+			}
+		}
+	} else {
+		if (!NT_STATUS_IS_OK(result)) {
+			int rc = asprintf(
+				err_str,
+				"machine %s rejected to change the password"
+				"with error: %s",
+				remote_machine,
+				get_friendly_nt_error_msg(result));
+			if (rc <= 0) {
 				*err_str = NULL;
 			}
 			cli_shutdown(cli);
