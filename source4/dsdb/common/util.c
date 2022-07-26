@@ -508,6 +508,7 @@ unsigned int samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *
 	if (! *hashes) {
 		return 0;
 	}
+	talloc_keep_secret(*hashes);
 
 	for (i=0;i<count;i++) {
 		memcpy((*hashes)[i].hash, (i*16)+(char *)val->data, 16);
