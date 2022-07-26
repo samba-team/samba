@@ -944,7 +944,12 @@ next:
 		goto nomem;
 	}
 
-	result->fsp = fsp;
+	status = fsp_smb_fname_link(fsp,
+					&result->fsp_link,
+					&result->fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
 	talloc_set_destructor(result, smb_fname_fsp_destructor);
 
 	*_smb_fname = result;
