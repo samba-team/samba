@@ -3647,6 +3647,13 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	ret = ldb_transaction_start(sam_ctx);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to start a transaction: %s\n",
+			ldb_errstring(sam_ctx));
+		return NT_STATUS_LOCK_NOT_GRANTED;
+	}
+
 	switch (r->in.level) {
 	case 2:
 		SET_STRING(msg, info2.comment,          "comment");
@@ -4092,8 +4099,21 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		}
 	}
 
+	ret = ldb_transaction_commit(sam_ctx);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to commit transaction modifying account record "
+			"%s: %s\n",
+			ldb_dn_get_linearized(msg->dn),
+			ldb_errstring(sam_ctx));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	status = NT_STATUS_OK;
 done:
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_transaction_cancel(sam_ctx);
+	}
+
 	return status;
 }
 
