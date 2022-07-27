@@ -1611,29 +1611,36 @@ static NTSTATUS open_file(struct smb_request *req,
 			}
 		}
 
-		status = smbd_check_access_rights_fsp(dirfsp,
-						      fsp,
-						      false,
-						      access_mask);
+		/*
+		 * Access to streams is checked by checking the basefile and
+		 * that has alreay been checked by check_base_file_access()
+		 * in create_file_unixpath().
+		 */
+		if (!fsp_is_alternate_stream(fsp)) {
+			status = smbd_check_access_rights_fsp(dirfsp,
+							      fsp,
+							      false,
+							      access_mask);
 
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
-				posix_open &&
-				S_ISLNK(smb_fname->st.st_ex_mode)) {
-			/* This is a POSIX stat open for delete
-			 * or rename on a symlink that points
-			 * nowhere. Allow. */
-			DEBUG(10,("open_file: allowing POSIX "
-				  "open on bad symlink %s\n",
-				  smb_fname_str_dbg(smb_fname)));
-			status = NT_STATUS_OK;
-		}
+			if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+			    posix_open &&
+			    S_ISLNK(smb_fname->st.st_ex_mode)) {
+				/* This is a POSIX stat open for delete
+				 * or rename on a symlink that points
+				 * nowhere. Allow. */
+				DEBUG(10,("open_file: allowing POSIX "
+					  "open on bad symlink %s\n",
+					  smb_fname_str_dbg(smb_fname)));
+				status = NT_STATUS_OK;
+			}
 
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("smbd_check_access_rights_fsp on file "
-				"%s returned %s\n",
-				fsp_str_dbg(fsp),
-				nt_errstr(status));
-			return status;
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_DEBUG("smbd_check_access_rights_fsp on file "
+					  "%s returned %s\n",
+					  fsp_str_dbg(fsp),
+					  nt_errstr(status));
+				return status;
+			}
 		}
 	}
 
