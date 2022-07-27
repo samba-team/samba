@@ -1358,7 +1358,7 @@ static NTSTATUS open_file(files_struct *fsp,
 #endif
 
 		/* Don't create files with Microsoft wildcard characters. */
-		if (fsp->base_fsp) {
+		if (fsp_is_alternate_stream(fsp)) {
 			/*
 			 * wildcard characters are allowed in stream names
 			 * only test the basefilename
@@ -1374,7 +1374,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		/* Can we access this file ? */
-		if (!fsp->base_fsp) {
+		if (!fsp_is_alternate_stream(fsp)) {
 			/* Only do this check on non-stream open. */
 			if (file_existed) {
 				status = smbd_check_access_rights_fsp(
