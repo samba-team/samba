@@ -1247,18 +1247,28 @@ class RawKerberosTest(TestCaseInTempDir):
 
     def PasswordKey_from_etype_info2(self, creds, etype_info2, kvno=None):
         e = etype_info2['etype']
-
         salt = etype_info2.get('salt')
-
-        if e == kcrypto.Enctype.RC4:
-            nthash = creds.get_nt_hash()
-            return self.SessionKey_create(etype=e, contents=nthash, kvno=kvno)
-
         params = etype_info2.get('s2kparams')
+        return self.PasswordKey_from_etype(creds, e,
+                                           kvno=kvno,
+                                           salt=salt,
+                                           params=params)
 
-        password = creds.get_password()
+    def PasswordKey_from_creds(self, creds, etype):
+        kvno = creds.get_kvno()
+        salt = creds.get_salt()
+        return self.PasswordKey_from_etype(creds, etype,
+                                           kvno=kvno,
+                                           salt=salt)
+
+    def PasswordKey_from_etype(self, creds, etype, kvno=None, salt=None, params=None):
+        if etype == kcrypto.Enctype.RC4:
+            nthash = creds.get_nt_hash()
+            return self.SessionKey_create(etype=etype, contents=nthash, kvno=kvno)
+
+        password = creds.get_password().encode('utf-8')
         return self.PasswordKey_create(
-            etype=e, pwd=password, salt=salt, kvno=kvno, params=params)
+            etype=etype, pwd=password, salt=salt, kvno=kvno)
 
     def TicketDecryptionKey_from_creds(self, creds, etype=None):
 
