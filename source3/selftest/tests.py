@@ -564,6 +564,7 @@ for env in ["fileserver"]:
     plantestsuite("samba3.blackbox.large_acl.NT1", env + "_smb1_done", [os.path.join(samba3srcdir, "script/tests/test_large_acl.sh"), '$SERVER', '$USERNAME', '$PASSWORD', smbclient3, smbcacls, '-m', 'NT1'])
     plantestsuite("samba3.blackbox.large_acl.SMB3", env, [os.path.join(samba3srcdir, "script/tests/test_large_acl.sh"), '$SERVER', '$USERNAME', '$PASSWORD', smbclient3, smbcacls, '-m', 'SMB3'])
     plantestsuite("samba3.blackbox.give_owner", env, [os.path.join(samba3srcdir, "script/tests/test_give_owner.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$PREFIX', smbclient3, smbcacls, net, 'tmp'])
+    plantestsuite("samba3.blackbox.delete_stream", env, [os.path.join(samba3srcdir, "script/tests/test_delete_stream.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$PREFIX', smbclient3, smbcacls, net, 'acl_streams_xattr'])
     plantestsuite("samba3.blackbox.homes", env, [os.path.join(samba3srcdir, "script/tests/test_homes.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', '$PREFIX', smbclient3, configuration])
     plantestsuite("samba3.blackbox.force_group_change", env,
 		[os.path.join(samba3srcdir, "script/tests/test_force_group_change.sh"),

@@ -3373,6 +3373,13 @@ sub provision($$)
 	copy = tmp
 	vfs objects = streams_xattr xattr_tdb
 
+[acl_streams_xattr]
+	copy = tmp
+	vfs objects = acl_xattr streams_xattr fake_acls xattr_tdb
+	acl_xattr:ignore system acls = yes
+	acl_xattr:security_acl_name = user.acl
+	xattr_tdb:ignore_user_xattr = yes
+
 [compound_find]
 	copy = tmp
 	smbd:find async delay usec = 10000
