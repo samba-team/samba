@@ -512,6 +512,7 @@ static void call_trans2open(connection_struct *conn,
 	int fattr=0,mtime=0;
 	SMB_INO_T inode = 0;
 	int smb_action = 0;
+	struct files_struct *dirfsp = NULL;
 	files_struct *fsp;
 	struct ea_list *ea_list = NULL;
 	uint16_t flags = 0;
@@ -521,6 +522,7 @@ static void call_trans2open(connection_struct *conn,
 	uint32_t create_disposition;
 	uint32_t create_options = 0;
 	uint32_t private_flags = 0;
+	NTTIME twrp = 0;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -583,12 +585,16 @@ static void call_trans2open(connection_struct *conn,
 		fname, (unsigned int)deny_mode, (unsigned int)open_attr,
 		(unsigned int)open_ofun, open_size));
 
-	status = filename_convert(ctx,
-				conn,
-				fname,
-				ucf_flags,
-				0,
-				&smb_fname);
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(fname, &twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 fname,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req,
@@ -660,7 +666,7 @@ static void call_trans2open(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		NULL,					/* dirfsp */
+		dirfsp,					/* dirfsp */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
