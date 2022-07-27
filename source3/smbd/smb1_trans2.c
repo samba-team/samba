@@ -2623,6 +2623,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 			     char **ppdata, int total_data,
 			     unsigned int max_data_bytes)
 {
+	struct files_struct *dirfsp = NULL;
 	struct files_struct *fsp = NULL;
 	struct smb_filename *smb_dname = NULL;
 	char *params = *pparams;
@@ -2631,6 +2632,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	NTSTATUS status = NT_STATUS_OK;
 	struct ea_list *ea_list = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+	NTTIME twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!CAN_WRITE(conn)) {
@@ -2669,13 +2671,16 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-	status = filename_convert(ctx,
-				conn,
-				directory,
-				ucf_flags,
-				0,
-				&smb_dname);
-
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(directory, &twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 directory,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req,
@@ -2727,7 +2732,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		NULL,					/* dirfsp */
+		dirfsp,					/* dirfsp */
 		smb_dname,				/* fname */
 		MAXIMUM_ALLOWED_ACCESS,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
