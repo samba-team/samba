@@ -769,15 +769,19 @@ static int principal_comp_strcmp_int(krb5_context context,
 				     bool do_strcasecmp)
 {
 	const char *p;
-	size_t len;
 
 #if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING)
 	p = krb5_principal_get_comp_string(context, principal, component);
 	if (p == NULL) {
 		return -1;
 	}
-	len = strlen(p);
+	if (do_strcasecmp) {
+		return strcasecmp(p, string);
+	} else {
+		return strcmp(p, string);
+	}
 #else
+	size_t len;
 	krb5_data *d;
 	if (component >= krb5_princ_size(context, principal)) {
 		return -1;
@@ -789,13 +793,26 @@ static int principal_comp_strcmp_int(krb5_context context,
 	}
 
 	p = d->data;
-	len = d->length;
-#endif
+
+	len = strlen(string);
+
+	/*
+	 * We explicitly return -1 or 1. Subtracting of the two lengths might
+	 * give the wrong result if the result overflows or loses data when
+	 * narrowed to int.
+	 */
+	if (d->length < len) {
+		return -1;
+	} else if (d->length > len) {
+		return 1;
+	}
+
 	if (do_strcasecmp) {
 		return strncasecmp(p, string, len);
 	} else {
-		return strncmp(p, string, len);
+		return memcmp(p, string, len);
 	}
+#endif
 }
 
 static int principal_comp_strcasecmp(krb5_context context,
@@ -814,6 +831,110 @@ static int principal_comp_strcmp(krb5_context context,
 {
 	return principal_comp_strcmp_int(context, principal,
 					 component, string, false);
+}
+
+static bool is_kadmin_changepw(krb5_context context,
+			       krb5_const_principal principal)
+{
+	return krb5_princ_size(context, principal) == 2 &&
+		(principal_comp_strcmp(context, principal, 0, "kadmin") == 0) &&
+		(principal_comp_strcmp(context, principal, 1, "changepw") == 0);
+}
+
+static krb5_error_code samba_kdc_get_entry_principal(
+		krb5_context context,
+		struct samba_kdc_db_context *kdc_db_ctx,
+		const char *samAccountName,
+		enum samba_kdc_ent_type ent_type,
+		unsigned flags,
+		bool is_kadmin_changepw,
+		krb5_const_principal in_princ,
+		krb5_principal *out_princ)
+{
+	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
+	krb5_error_code code = 0;
+	bool canon = flags & (SDB_F_CANON|SDB_F_FORCE_CANON);
+
+	/*
+	 * If we are set to canonicalize, we get back the fixed UPPER
+	 * case realm, and the real username (ie matching LDAP
+	 * samAccountName)
+	 *
+	 * Otherwise, if we are set to enterprise, we
+	 * get back the whole principal as-sent
+	 *
+	 * Finally, if we are not set to canonicalize, we get back the
+	 * fixed UPPER case realm, but the as-sent username
+	 */
+
+	/*
+	 * We need to ensure that the kadmin/changepw principal isn't able to
+	 * issue krbtgt tickets, even if canonicalization is turned on.
+	 */
+	if (!is_kadmin_changepw) {
+		if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT && canon) {
+			/*
+			 * When requested to do so, ensure that the
+			 * both realm values in the principal are set
+			 * to the upper case, canonical realm
+			 */
+			code = smb_krb5_make_principal(context,
+						       out_princ,
+						       lpcfg_realm(lp_ctx),
+						       "krbtgt",
+						       lpcfg_realm(lp_ctx),
+						       NULL);
+			if (code != 0) {
+				return code;
+			}
+			smb_krb5_principal_set_type(context,
+						    *out_princ,
+						    KRB5_NT_SRV_INST);
+
+			return 0;
+		}
+
+		if ((canon && flags & (SDB_F_FORCE_CANON|SDB_F_FOR_AS_REQ)) ||
+		    (ent_type == SAMBA_KDC_ENT_TYPE_ANY && in_princ == NULL)) {
+			/*
+			 * SDB_F_CANON maps from the canonicalize flag in the
+			 * packet, and has a different meaning between AS-REQ
+			 * and TGS-REQ.  We only change the principal in the
+			 * AS-REQ case.
+			 *
+			 * The SDB_F_FORCE_CANON if for new MIT KDC code that
+			 * wants the canonical name in all lookups, and takes
+			 * care to canonicalize only when appropriate.
+			 */
+			code = smb_krb5_make_principal(context,
+						      out_princ,
+						      lpcfg_realm(lp_ctx),
+						      samAccountName,
+						      NULL);
+			return code;
+		}
+	}
+
+	/*
+	 * For a krbtgt entry, this appears to be required regardless of the
+	 * canonicalize flag from the client.
+	 */
+	code = krb5_copy_principal(context, in_princ, out_princ);
+	if (code != 0) {
+		return code;
+	}
+
+	/*
+	 * While we have copied the client principal, tests show that Win2k3
+	 * returns the 'corrected' realm, not the client-specified realm.  This
+	 * code attempts to replace the client principal's realm with the one
+	 * we determine from our records
+	 */
+	code = smb_krb5_principal_set_realm(context,
+					    *out_princ,
+					    lpcfg_realm(lp_ctx));
+
+	return code;
 }
 
 /*
@@ -905,90 +1026,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		userAccountControl |= msDS_User_Account_Control_Computed;
 	}
 
-	/* 
-	 * If we are set to canonicalize, we get back the fixed UPPER
-	 * case realm, and the real username (ie matching LDAP
-	 * samAccountName) 
-	 *
-	 * Otherwise, if we are set to enterprise, we
-	 * get back the whole principal as-sent 
-	 *
-	 * Finally, if we are not set to canonicalize, we get back the
-	 * fixed UPPER case realm, but the as-sent username
-	 */
-
 	if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT) {
 		p->is_krbtgt = true;
-
-		if (flags & (SDB_F_CANON)) {
-			/*
-			 * When requested to do so, ensure that the
-			 * both realm values in the principal are set
-			 * to the upper case, canonical realm
-			 */
-			ret = smb_krb5_make_principal(context, &entry_ex->entry.principal,
-						      lpcfg_realm(lp_ctx), "krbtgt",
-						      lpcfg_realm(lp_ctx), NULL);
-			if (ret) {
-				krb5_clear_error_message(context);
-				goto out;
-			}
-			smb_krb5_principal_set_type(context, entry_ex->entry.principal, KRB5_NT_SRV_INST);
-		} else {
-			ret = krb5_copy_principal(context, principal, &entry_ex->entry.principal);
-			if (ret) {
-				krb5_clear_error_message(context);
-				goto out;
-			}
-			/*
-			 * this appears to be required regardless of
-			 * the canonicalize flag from the client
-			 */
-			ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
-			if (ret) {
-				krb5_clear_error_message(context);
-				goto out;
-			}
-		}
-
-	} else if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
-		ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
-		if (ret) {
-			krb5_clear_error_message(context);
-			goto out;
-		}
-	} else if ((flags & SDB_F_CANON) && (flags & SDB_F_FOR_AS_REQ)) {
-		/*
-		 * SDB_F_CANON maps from the canonicalize flag in the
-		 * packet, and has a different meaning between AS-REQ
-		 * and TGS-REQ.  We only change the principal in the AS-REQ case
-		 */
-		ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
-		if (ret) {
-			krb5_clear_error_message(context);
-			goto out;
-		}
-	} else {
-		ret = krb5_copy_principal(context, principal, &entry_ex->entry.principal);
-		if (ret) {
-			krb5_clear_error_message(context);
-			goto out;
-		}
-
-		if (smb_krb5_principal_get_type(context, principal) != KRB5_NT_ENTERPRISE_PRINCIPAL) {
-			/* While we have copied the client principal, tests
-			 * show that Win2k3 returns the 'corrected' realm, not
-			 * the client-specified realm.  This code attempts to
-			 * replace the client principal's realm with the one
-			 * we determine from our records */
-			
-			/* this has to be with malloc() */
-			ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
-			if (ret) {
-				krb5_clear_error_message(context);
-				goto out;
-			}
-		}
 	}
 
 	/* First try and figure out the flags based on the userAccountControl */
@@ -1107,11 +1146,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * 'change password', as otherwise we could get into
 		 * trouble, and not enforce the password expirty.
 		 * Instead, only do it when request is for the kpasswd service */
-		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER
-		    && krb5_princ_size(context, principal) == 2
-		    && (principal_comp_strcmp(context, principal, 0, "kadmin") == 0)
-		    && (principal_comp_strcmp(context, principal, 1, "changepw") == 0)
-		    && lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
+		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER &&
+		    is_kadmin_changepw(context, principal) &&
+		    lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
 			entry_ex->entry.flags.change_pw = 1;
 		}
 
@@ -1176,6 +1213,19 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		}
 	}
 
+	ret = samba_kdc_get_entry_principal(context,
+					    kdc_db_ctx,
+					    samAccountName,
+					    ent_type,
+					    flags,
+					    entry_ex->entry.flags.change_pw,
+					    principal,
+					    &entry_ex->entry.principal);
+	if (ret != 0) {
+		krb5_clear_error_message(context);
+		goto out;
+	}
+
 	entry_ex->entry.valid_start = NULL;
 
 	entry_ex->entry.max_life = malloc(sizeof(*entry_ex->entry.max_life));
@@ -1191,6 +1241,11 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	} else {
 		*entry_ex->entry.max_life = MIN(kdc_db_ctx->policy.svc_tkt_lifetime,
 					        kdc_db_ctx->policy.usr_tkt_lifetime);
+	}
+
+	if (entry_ex->entry.flags.change_pw) {
+		/* Limit lifetime of kpasswd tickets to two minutes or less. */
+		*entry_ex->entry.max_life = MIN(*entry_ex->entry.max_life, CHANGEPW_LIFETIME);
 	}
 
 	entry_ex->entry.max_renew = malloc(sizeof(*entry_ex->entry.max_life));
@@ -2594,7 +2649,7 @@ samba_kdc_check_s4u2self(krb5_context context,
 	 */
 	if (!(orig_sid && target_sid && dom_sid_equal(orig_sid, target_sid))) {
 		talloc_free(frame);
-		return KRB5KDC_ERR_BADOPTION;
+		return KRB5KRB_AP_ERR_BADMATCH;
 	}
 
 	talloc_free(frame);

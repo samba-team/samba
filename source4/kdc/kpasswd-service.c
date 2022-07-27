@@ -29,6 +29,7 @@
 #include "kdc/kdc-server.h"
 #include "kdc/kpasswd-service.h"
 #include "kdc/kpasswd-helper.h"
+#include "param/param.h"
 
 #define HEADER_LEN 6
 #ifndef RFC3244_VERSION
@@ -161,6 +162,20 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 		goto done;
 	}
 
+	/*
+	 * After calling cli_credentials_set_conf(), explicitly set the realm
+	 * with CRED_SPECIFIED. We need to do this so the result of
+	 * principal_from_credentials() called from the gensec layer is
+	 * CRED_SPECIFIED rather than CRED_SMB_CONF, avoiding a fallback to
+	 * match-by-key (very undesirable in this case).
+	 */
+	ok = cli_credentials_set_realm(server_credentials,
+				       lpcfg_realm(kdc->task->lp_ctx),
+				       CRED_SPECIFIED);
+	if (!ok) {
+		goto done;
+	}
+
 	ok = cli_credentials_set_username(server_credentials,
 					  "kadmin/changepw",
 					  CRED_SPECIFIED);
@@ -168,9 +183,24 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 		goto done;
 	}
 
+	/* Check that the server principal is indeed CRED_SPECIFIED. */
+	{
+		char *principal = NULL;
+		enum credentials_obtained obtained;
+
+		principal = cli_credentials_get_principal_and_obtained(server_credentials,
+								       tmp_ctx,
+								       &obtained);
+		if (obtained < CRED_SPECIFIED) {
+			goto done;
+		}
+
+		TALLOC_FREE(principal);
+	}
+
 	rv = cli_credentials_set_keytab_name(server_credentials,
 					     kdc->task->lp_ctx,
-					     kdc->keytab_name,
+					     kdc->kpasswd_keytab_name,
 					     CRED_SPECIFIED);
 	if (rv != 0) {
 		DBG_ERR("Failed to set credentials keytab name\n");
@@ -256,6 +286,7 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 				      &kpasswd_dec_reply,
 				      &error_string);
 	if (code != 0) {
+		ap_rep_blob = data_blob_null;
 		error_code = code;
 		goto reply;
 	}
@@ -265,6 +296,7 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 			     &kpasswd_dec_reply,
 			     &enc_data_blob);
 	if (!NT_STATUS_IS_OK(status)) {
+		ap_rep_blob = data_blob_null;
 		error_code = KRB5_KPASSWD_HARDERROR;
 		error_string = talloc_asprintf(tmp_ctx,
 					       "gensec_wrap failed - %s\n",
@@ -313,7 +345,7 @@ reply:
 		}
 
 		code = smb_krb5_mk_error(kdc->smb_krb5_context->krb5_context,
-					 error_code,
+					 KRB5KDC_ERR_NONE + error_code,
 					 NULL, /* e_text */
 					 &k_dec_data,
 					 NULL, /* client */

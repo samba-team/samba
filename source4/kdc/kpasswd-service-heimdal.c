@@ -24,6 +24,7 @@
 #include "param/param.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
+#include "gensec_krb5_helpers.h"
 #include "kdc/kdc-server.h"
 #include "kdc/kpasswd_glue.h"
 #include "kdc/kpasswd-service.h"
@@ -31,6 +32,7 @@
 
 static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 					       TALLOC_CTX *mem_ctx,
+					       const struct gensec_security *gensec_security,
 					       struct auth_session_info *session_info,
 					       DATA_BLOB *password,
 					       DATA_BLOB *kpasswd_reply,
@@ -42,6 +44,17 @@ static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 	const char *reject_string = NULL;
 	struct samr_DomInfo1 *dominfo;
 	bool ok;
+	int ret;
+
+	/*
+	 * We're doing a password change (rather than a password set), so check
+	 * that we were given an initial ticket.
+	 */
+	ret = gensec_krb5_initial_ticket(gensec_security);
+	if (ret != 1) {
+		*error_string = "Expected an initial ticket";
+		return KRB5_KPASSWD_INITIAL_FLAG_NEEDED;
+	}
 
 	status = samdb_kpasswd_change_password(mem_ctx,
 					       kdc->task->lp_ctx,
@@ -81,6 +94,7 @@ static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 
 static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 					    TALLOC_CTX *mem_ctx,
+					    const struct gensec_security *gensec_security,
 					    struct auth_session_info *session_info,
 					    DATA_BLOB *decoded_data,
 					    DATA_BLOB *kpasswd_reply,
@@ -146,39 +160,38 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 		return 0;
 	}
 
-	if (chpw.targname != NULL && chpw.targrealm != NULL) {
-		code = krb5_build_principal_ext(context,
-					       &target_principal,
-					       strlen(*chpw.targrealm),
-					       *chpw.targrealm,
-					       0);
-		if (code != 0) {
-			free_ChangePasswdDataMS(&chpw);
-			return kpasswd_make_error_reply(mem_ctx,
-							KRB5_KPASSWD_MALFORMED,
-							"Failed to parse principal",
-							kpasswd_reply);
-		}
-		code = copy_PrincipalName(chpw.targname,
-					  &target_principal->name);
-		if (code != 0) {
-			free_ChangePasswdDataMS(&chpw);
-			krb5_free_principal(context, target_principal);
-			return kpasswd_make_error_reply(mem_ctx,
-							KRB5_KPASSWD_MALFORMED,
-							"Failed to parse principal",
-							kpasswd_reply);
-		}
-	} else {
+	if (chpw.targname == NULL || chpw.targrealm == NULL) {
 		free_ChangePasswdDataMS(&chpw);
 		return kpasswd_change_password(kdc,
 					       mem_ctx,
+					       gensec_security,
 					       session_info,
 					       &password,
 					       kpasswd_reply,
 					       error_string);
 	}
+	code = krb5_build_principal_ext(context,
+					&target_principal,
+					strlen(*chpw.targrealm),
+					*chpw.targrealm,
+					0);
+	if (code != 0) {
+		free_ChangePasswdDataMS(&chpw);
+		return kpasswd_make_error_reply(mem_ctx,
+						KRB5_KPASSWD_MALFORMED,
+						"Failed to parse principal",
+						kpasswd_reply);
+	}
+	code = copy_PrincipalName(chpw.targname,
+				  &target_principal->name);
 	free_ChangePasswdDataMS(&chpw);
+	if (code != 0) {
+		krb5_free_principal(context, target_principal);
+		return kpasswd_make_error_reply(mem_ctx,
+						KRB5_KPASSWD_MALFORMED,
+						"Failed to parse principal",
+						kpasswd_reply);
+	}
 
 	if (target_principal->name.name_string.len >= 2) {
 		is_service_principal = true;
@@ -240,6 +253,7 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 {
 	struct auth_session_info *session_info;
 	NTSTATUS status;
+	krb5_error_code code;
 
 	status = gensec_session_info(gensec_security,
 				     mem_ctx,
@@ -249,6 +263,18 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 						"gensec_session_info failed - %s",
 						nt_errstr(status));
 		return KRB5_KPASSWD_HARDERROR;
+	}
+
+	/*
+	 * Since the kpasswd service shares its keys with the krbtgt, we might
+	 * have received a TGT rather than a kpasswd ticket. We need to check
+	 * the ticket type to ensure that TGTs cannot be misused in this manner.
+	 */
+	code = kpasswd_check_non_tgt(session_info,
+				     error_string);
+	if (code != 0) {
+		DBG_WARNING("%s\n", *error_string);
+		return code;
 	}
 
 	switch(verno) {
@@ -272,6 +298,7 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 
 		return kpasswd_change_password(kdc,
 					       mem_ctx,
+					       gensec_security,
 					       session_info,
 					       &password,
 					       kpasswd_reply,
@@ -280,6 +307,7 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 	case KRB5_KPASSWD_VERS_SETPW: {
 		return kpasswd_set_password(kdc,
 					    mem_ctx,
+					    gensec_security,
 					    session_info,
 					    decoded_data,
 					    kpasswd_reply,

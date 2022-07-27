@@ -58,14 +58,14 @@ class RodcKerberosTests(KDCBaseTest):
         tgt = self.get_tgt(user_creds, to_rodc=True)
 
         # Ensure the PAC contains the expected checksums.
-        self.verify_ticket(tgt, rodc_key)
+        self.verify_ticket(tgt, rodc_key, service_ticket=False)
 
         # Get a service ticket from the RODC.
         service_ticket = self.get_service_ticket(tgt, target_creds,
                                                  to_rodc=True)
 
         # Ensure the PAC contains the expected checksums.
-        self.verify_ticket(service_ticket, rodc_key)
+        self.verify_ticket(service_ticket, rodc_key, service_ticket=True)
 
 
 if __name__ == "__main__":

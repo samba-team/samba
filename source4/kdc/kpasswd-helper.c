@@ -48,17 +48,16 @@ bool kpasswd_make_error_reply(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * The string 's' has two terminating nul-bytes which are also
-	 * reflected by 'slen'. Normally Kerberos doesn't expect that strings
-	 * are nul-terminated, but Heimdal does!
+	 * The string 's' has one terminating nul-byte which is also
+	 * reflected by 'slen'. We subtract it from the length.
 	 */
-#ifndef SAMBA4_USES_HEIMDAL
-	if (slen < 2) {
+	if (slen < 1) {
 		talloc_free(s);
 		return false;
 	}
-	slen -= 2;
-#endif
+	slen--;
+
+	/* Two bytes are added to the length to account for the error code. */
 	if (2 + slen < slen) {
 		talloc_free(s);
 		return false;
@@ -241,4 +240,24 @@ NTSTATUS kpasswd_samdb_set_password(TALLOC_CTX *mem_ctx,
 	}
 
 	return status;
+}
+
+krb5_error_code kpasswd_check_non_tgt(struct auth_session_info *session_info,
+				      const char **error_string)
+{
+	switch(session_info->ticket_type) {
+	case TICKET_TYPE_TGT:
+		/* TGTs are disallowed here. */
+		*error_string = "A TGT may not be used as a ticket to kpasswd";
+		return KRB5_KPASSWD_AUTHERROR;
+	case TICKET_TYPE_NON_TGT:
+		/* Non-TGTs are permitted, and expected. */
+		break;
+	default:
+		/* In case we forgot to set the type. */
+		*error_string = "Failed to ascertain that ticket to kpasswd is not a TGT";
+		return KRB5_KPASSWD_HARDERROR;
+	}
+
+	return 0;
 }

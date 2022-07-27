@@ -27,6 +27,7 @@ from samba.tests.krb5.kdc_base_test import KDCBaseTest
 import samba.tests.krb5.kcrypto as kcrypto
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
+    KDC_ERR_S_PRINCIPAL_UNKNOWN,
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_PREAUTH_REQUIRED,
     KU_PA_ENC_TIMESTAMP,
@@ -38,8 +39,107 @@ from samba.tests.krb5.rfc4120_constants import (
 global_asn1_print = False
 global_hexdump = False
 
+
+class AsReqBaseTest(KDCBaseTest):
+    def _run_as_req_enc_timestamp(self, client_creds, sname=None,
+                                  expected_error=None):
+        client_account = client_creds.get_username()
+        client_as_etypes = self.get_default_enctypes()
+        client_kvno = client_creds.get_kvno()
+        krbtgt_creds = self.get_krbtgt_creds(require_strongest_key=True)
+        krbtgt_account = krbtgt_creds.get_username()
+        realm = krbtgt_creds.get_realm()
+
+        cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                          names=[client_account])
+        if sname is None:
+            sname = self.PrincipalName_create(name_type=NT_SRV_INST,
+                                              names=[krbtgt_account, realm])
+
+        expected_crealm = realm
+        expected_cname = cname
+        expected_srealm = realm
+        expected_sname = sname
+        expected_salt = client_creds.get_salt()
+
+        till = self.get_KerberosTime(offset=36000)
+
+        initial_etypes = client_as_etypes
+        initial_kdc_options = krb5_asn1.KDCOptions('forwardable')
+        if expected_error is not None:
+            initial_error_mode = expected_error
+        else:
+            initial_error_mode = KDC_ERR_PREAUTH_REQUIRED
+
+        rep, kdc_exchange_dict = self._test_as_exchange(cname,
+                                                        realm,
+                                                        sname,
+                                                        till,
+                                                        client_as_etypes,
+                                                        initial_error_mode,
+                                                        expected_crealm,
+                                                        expected_cname,
+                                                        expected_srealm,
+                                                        expected_sname,
+                                                        expected_salt,
+                                                        initial_etypes,
+                                                        None,
+                                                        initial_kdc_options,
+                                                        pac_request=True)
+
+        if expected_error is not None:
+            return None
+
+        etype_info2 = kdc_exchange_dict['preauth_etype_info2']
+        self.assertIsNotNone(etype_info2)
+
+        preauth_key = self.PasswordKey_from_etype_info2(client_creds,
+                                                        etype_info2[0],
+                                                        kvno=client_kvno)
+
+        (patime, pausec) = self.get_KerberosTimeWithUsec()
+        pa_ts = self.PA_ENC_TS_ENC_create(patime, pausec)
+        pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
+
+        enc_pa_ts_usage = KU_PA_ENC_TIMESTAMP
+        pa_ts = self.EncryptedData_create(preauth_key, enc_pa_ts_usage, pa_ts)
+        pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.EncryptedData())
+
+        pa_ts = self.PA_DATA_create(PADATA_ENC_TIMESTAMP, pa_ts)
+
+        preauth_padata = [pa_ts]
+        preauth_etypes = client_as_etypes
+        preauth_kdc_options = krb5_asn1.KDCOptions('forwardable')
+        preauth_error_mode = 0 # AS-REP
+
+        krbtgt_decryption_key = (
+            self.TicketDecryptionKey_from_creds(krbtgt_creds))
+
+        as_rep, kdc_exchange_dict = self._test_as_exchange(
+            cname,
+            realm,
+            sname,
+            till,
+            client_as_etypes,
+            preauth_error_mode,
+            expected_crealm,
+            expected_cname,
+            expected_srealm,
+            expected_sname,
+            expected_salt,
+            preauth_etypes,
+            preauth_padata,
+            preauth_kdc_options,
+            preauth_key=preauth_key,
+            ticket_decryption_key=krbtgt_decryption_key,
+            pac_request=True)
+        self.assertIsNotNone(as_rep)
+
+        return etype_info2
+
+
 @DynamicTestCase
-class AsReqKerberosTests(KDCBaseTest):
+class AsReqKerberosTests(AsReqBaseTest):
 
     @classmethod
     def setUpDynamicTestCases(cls):
@@ -119,92 +219,27 @@ class AsReqKerberosTests(KDCBaseTest):
         client_creds = self.get_mach_creds()
         self._run_as_req_enc_timestamp(client_creds)
 
-    def _run_as_req_enc_timestamp(self, client_creds):
-        client_account = client_creds.get_username()
-        client_as_etypes = self.get_default_enctypes()
-        client_kvno = client_creds.get_kvno()
-        krbtgt_creds = self.get_krbtgt_creds(require_strongest_key=True)
+    # Ensure we can't use truncated well-known principals such as krb@REALM
+    # instead of krbtgt@REALM.
+    def test_krbtgt_wrong_principal(self):
+        client_creds = self.get_client_creds()
+
+        krbtgt_creds = self.get_krbtgt_creds()
+
         krbtgt_account = krbtgt_creds.get_username()
         realm = krbtgt_creds.get_realm()
 
-        cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                          names=[client_account])
-        sname = self.PrincipalName_create(name_type=NT_SRV_INST,
-                                          names=[krbtgt_account, realm])
+        # Truncate the name of the krbtgt principal.
+        krbtgt_account = krbtgt_account[:3]
 
-        expected_crealm = realm
-        expected_cname = cname
-        expected_srealm = realm
-        expected_sname = sname
-        expected_salt = client_creds.get_salt()
+        wrong_krbtgt_princ = self.PrincipalName_create(
+            name_type=NT_SRV_INST,
+            names=[krbtgt_account, realm])
 
-        till = self.get_KerberosTime(offset=36000)
-
-        initial_etypes = client_as_etypes
-        initial_kdc_options = krb5_asn1.KDCOptions('forwardable')
-        initial_error_mode = KDC_ERR_PREAUTH_REQUIRED
-
-        rep, kdc_exchange_dict = self._test_as_exchange(cname,
-                                                        realm,
-                                                        sname,
-                                                        till,
-                                                        client_as_etypes,
-                                                        initial_error_mode,
-                                                        expected_crealm,
-                                                        expected_cname,
-                                                        expected_srealm,
-                                                        expected_sname,
-                                                        expected_salt,
-                                                        initial_etypes,
-                                                        None,
-                                                        initial_kdc_options,
-                                                        pac_request=True)
-        etype_info2 = kdc_exchange_dict['preauth_etype_info2']
-        self.assertIsNotNone(etype_info2)
-
-        preauth_key = self.PasswordKey_from_etype_info2(client_creds,
-                                                        etype_info2[0],
-                                                        kvno=client_kvno)
-
-        (patime, pausec) = self.get_KerberosTimeWithUsec()
-        pa_ts = self.PA_ENC_TS_ENC_create(patime, pausec)
-        pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
-
-        enc_pa_ts_usage = KU_PA_ENC_TIMESTAMP
-        pa_ts = self.EncryptedData_create(preauth_key, enc_pa_ts_usage, pa_ts)
-        pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.EncryptedData())
-
-        pa_ts = self.PA_DATA_create(PADATA_ENC_TIMESTAMP, pa_ts)
-
-        preauth_padata = [pa_ts]
-        preauth_etypes = client_as_etypes
-        preauth_kdc_options = krb5_asn1.KDCOptions('forwardable')
-        preauth_error_mode = 0 # AS-REP
-
-        krbtgt_decryption_key = (
-            self.TicketDecryptionKey_from_creds(krbtgt_creds))
-
-        as_rep, kdc_exchange_dict = self._test_as_exchange(
-            cname,
-            realm,
-            sname,
-            till,
-            client_as_etypes,
-            preauth_error_mode,
-            expected_crealm,
-            expected_cname,
-            expected_srealm,
-            expected_sname,
-            expected_salt,
-            preauth_etypes,
-            preauth_padata,
-            preauth_kdc_options,
-            preauth_key=preauth_key,
-            ticket_decryption_key=krbtgt_decryption_key,
-            pac_request=True)
-        self.assertIsNotNone(as_rep)
-
-        return etype_info2
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            sname=wrong_krbtgt_princ,
+            expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
 
 
 if __name__ == "__main__":

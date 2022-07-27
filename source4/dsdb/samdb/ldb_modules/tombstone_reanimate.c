@@ -104,7 +104,7 @@ static bool is_tombstone_reanimate_request(struct ldb_request *req,
 	if (el_dn == NULL) {
 		return false;
 	}
-	if (el_dn->flags != LDB_FLAG_MOD_REPLACE) {
+	if (LDB_FLAG_MOD_TYPE(el_dn->flags) != LDB_FLAG_MOD_REPLACE) {
 		return false;
 	}
 	if (el_dn->num_values != 1) {
@@ -117,7 +117,7 @@ static bool is_tombstone_reanimate_request(struct ldb_request *req,
 		return false;
 	}
 
-	if (el_deleted->flags != LDB_FLAG_MOD_DELETE) {
+	if (LDB_FLAG_MOD_TYPE(el_deleted->flags) != LDB_FLAG_MOD_DELETE) {
 		return false;
 	}
 
@@ -294,14 +294,13 @@ static int tr_prepare_attributes(struct tr_context *ac)
 			return ldb_error(ldb, LDB_ERR_UNWILLING_TO_PERFORM,
 					 "reanimate: Unrecognized account type!");
 		}
-		ret = samdb_msg_add_uint(ldb, ac->mod_msg, ac->mod_msg,
-					 "sAMAccountType", account_type);
+		ret = samdb_msg_append_uint(ldb, ac->mod_msg, ac->mod_msg,
+					    "sAMAccountType", account_type,
+					    LDB_FLAG_MOD_REPLACE);
 		if (ret != LDB_SUCCESS) {
 			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
 					 "reanimate: Failed to add sAMAccountType to restored object.");
 		}
-		el = ldb_msg_find_element(ac->mod_msg, "sAMAccountType");
-		el->flags = LDB_FLAG_MOD_REPLACE;
 
 		/* Default values set by Windows */
 		ret = samdb_find_or_add_attribute(ldb, ac->mod_msg,
@@ -324,12 +323,11 @@ static int tr_prepare_attributes(struct tr_context *ac)
 			return ret;
 		}
 
-		ret = ldb_msg_add_string(ac->mod_msg, "objectCategory", value);
+		ret = ldb_msg_append_string(ac->mod_msg, "objectCategory", value,
+					    LDB_FLAG_MOD_ADD);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		el = ldb_msg_find_element(ac->mod_msg, "objectCategory");
-		el->flags = LDB_FLAG_MOD_ADD;
 	}
 
 	return LDB_SUCCESS;

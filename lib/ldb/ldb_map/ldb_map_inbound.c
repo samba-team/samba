@@ -569,12 +569,9 @@ static int map_modify_do_local(struct map_context *ac)
 		/* No local record present, add it instead */
 		/* Add local 'IS_MAPPED' */
 		/* TODO: use GUIDs here instead */
-		if (ldb_msg_add_empty(ac->local_msg, IS_MAPPED,
-					LDB_FLAG_MOD_ADD, NULL) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		ret = ldb_msg_add_linearized_dn(ac->local_msg, IS_MAPPED,
-						ac->remote_req->op.mod.message->dn);
+		ret = ldb_msg_append_linearized_dn(ac->local_msg, IS_MAPPED,
+						   ac->remote_req->op.mod.message->dn,
+						   LDB_FLAG_MOD_ADD);
 		if (ret != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}

@@ -119,7 +119,7 @@ NTSTATUS auth_system_user_info_dc(TALLOC_CTX *mem_ctx, const char *netbios_name,
 	struct auth_user_info_dc *user_info_dc;
 	struct auth_user_info *info;
 
-	user_info_dc = talloc(mem_ctx, struct auth_user_info_dc);
+	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
 
 	/* This returns a pointer to a struct dom_sid, which is the
@@ -195,7 +195,7 @@ static NTSTATUS auth_domain_admin_user_info_dc(TALLOC_CTX *mem_ctx,
 	struct auth_user_info_dc *user_info_dc;
 	struct auth_user_info *info;
 
-	user_info_dc = talloc(mem_ctx, struct auth_user_info_dc);
+	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
 
 	user_info_dc->num_sids = 7;
@@ -364,7 +364,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_user_info_dc(TALLOC_CTX *mem_ctx,
 {
 	struct auth_user_info_dc *user_info_dc;
 	struct auth_user_info *info;
-	user_info_dc = talloc(mem_ctx, struct auth_user_info_dc);
+	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
 
 	/* This returns a pointer to a struct dom_sid, which is the

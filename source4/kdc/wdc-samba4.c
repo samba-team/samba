@@ -37,6 +37,7 @@
  */
 static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 					 struct hdb_entry_ex *client,
+					 struct hdb_entry_ex *server,
 					 const krb5_keyblock *pk_reply_key,
 					 const krb5_boolean *pac_request,
 					 krb5_pac *pac)
@@ -55,6 +56,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	struct samba_kdc_entry *skdc_entry =
 		talloc_get_type_abort(client->ctx,
 		struct samba_kdc_entry);
+	bool is_krbtgt;
 
 	mem_ctx = talloc_named(client->ctx, 0, "samba_get_pac context");
 	if (!mem_ctx) {
@@ -65,13 +67,15 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 		cred_ndr_ptr = &cred_ndr;
 	}
 
+	is_krbtgt = krb5_principal_is_krbtgt(context, server->entry.principal);
+
 	nt_status = samba_kdc_get_pac_blobs(mem_ctx, skdc_entry,
 					    &logon_blob,
 					    cred_ndr_ptr,
 					    &upn_blob,
-					    &pac_attrs_blob,
+					    is_krbtgt ? &pac_attrs_blob : NULL,
 					    pac_request,
-					    &requester_sid_blob,
+					    is_krbtgt ? &requester_sid_blob : NULL,
 					    NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -101,10 +105,11 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 
 static krb5_error_code samba_wdc_get_pac_compat(void *priv, krb5_context context,
 						struct hdb_entry_ex *client,
+						struct hdb_entry_ex *server,
 						const krb5_boolean *pac_request,
 						krb5_pac *pac)
 {
-	return samba_wdc_get_pac(priv, context, client, NULL, pac_request, pac);
+	return samba_wdc_get_pac(priv, context, client, server, NULL, pac_request, pac);
 }
 
 static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
@@ -132,6 +137,7 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	bool is_in_db, is_untrusted;
+	bool is_krbtgt;
 	size_t num_types = 0;
 	uint32_t *types = NULL;
 	uint32_t forced_next_type = 0;
@@ -453,6 +459,12 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 		talloc_free(mem_ctx);
 		return EINVAL;
 	}
+	if (delegated_proxy_principal == NULL && requester_sid_idx == -1) {
+		DEBUG(1, ("PAC_TYPE_REQUESTER_SID missing\n"));
+		SAFE_FREE(types);
+		talloc_free(mem_ctx);
+		return KRB5KDC_ERR_TGT_REVOKED;
+	}
 
 	/*
 	 * The server account may be set not to want the PAC.
@@ -471,7 +483,9 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 		goto out;
 	}
 
-	if (!server_skdc_entry->is_krbtgt) {
+	is_krbtgt = krb5_principal_is_krbtgt(context, server->entry.principal);
+
+	if (!is_untrusted && !is_krbtgt) {
 		/*
 		 * The client may have requested no PAC when obtaining the
 		 * TGT.
@@ -576,17 +590,25 @@ static krb5_error_code samba_wdc_reget_pac2(krb5_context context,
 			type_blob = data_blob_const(&zero_byte, 1);
 			break;
 		case PAC_TYPE_ATTRIBUTES_INFO:
-			/* just copy... */
-			break;
-		case PAC_TYPE_REQUESTER_SID:
-			/*
-			 * Replace in the RODC case, otherwise
-			 * requester_sid_blob is NULL and we just copy.
-			 */
-			if (requester_sid_blob != NULL) {
-				type_blob = *requester_sid_blob;
+			if (!is_untrusted && is_krbtgt) {
+				/* just copy... */
+				break;
+			} else {
+				continue;
 			}
-			break;
+		case PAC_TYPE_REQUESTER_SID:
+			if (is_krbtgt) {
+				/*
+				 * Replace in the RODC case, otherwise
+				 * requester_sid_blob is NULL and we just copy.
+				 */
+				if (requester_sid_blob != NULL) {
+					type_blob = *requester_sid_blob;
+				}
+				break;
+			} else {
+				continue;
+			}
 		default:
 			/* just copy... */
 			break;

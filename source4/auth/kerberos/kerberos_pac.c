@@ -282,6 +282,28 @@
 	return ret;
 }
 
+static krb5_error_code kerberos_pac_buffer_present(krb5_context context,
+						   const krb5_pac pac,
+						   uint32_t type)
+{
+#ifdef SAMBA4_USES_HEIMDAL
+	return krb5_pac_get_buffer(context, pac, type, NULL);
+#else /* MIT */
+	krb5_error_code ret;
+	krb5_data data;
+
+	/*
+	 * MIT won't let us pass NULL for the data parameter, so we are forced
+	 * to allocate a new buffer and then immediately free it.
+	 */
+	ret = krb5_pac_get_buffer(context, pac, type, &data);
+	if (ret == 0) {
+		krb5_free_data_contents(context, &data);
+	}
+	return ret;
+#endif /* SAMBA4_USES_HEIMDAL */
+}
+
 krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 					     krb5_pac pac,
 					     krb5_context context,
@@ -414,6 +436,28 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 			return EINVAL;
 		}
 	}
+
+	/*
+	 * Based on the presence of a REQUESTER_SID PAC buffer, ascertain
+	 * whether the ticket is a TGT. This helps the KDC and kpasswd service
+	 * ensure they do not accept tickets meant for the other.
+	 *
+	 * This heuristic will fail for older Samba versions and Windows prior
+	 * to Nov. 2021 updates, which lack support for the REQUESTER_SID PAC
+	 * buffer.
+	 */
+	ret = kerberos_pac_buffer_present(context, pac, PAC_TYPE_REQUESTER_SID);
+	if (ret == ENOENT) {
+		/* This probably isn't a TGT. */
+		user_info_dc_out->ticket_type = TICKET_TYPE_NON_TGT;
+	} else if (ret != 0) {
+		talloc_free(tmp_ctx);
+		return ret;
+	} else {
+		/* This probably is a TGT. */
+		user_info_dc_out->ticket_type = TICKET_TYPE_TGT;
+	}
+
 	*user_info_dc = user_info_dc_out;
 
 	return 0;

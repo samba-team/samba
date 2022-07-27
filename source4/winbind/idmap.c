@@ -672,14 +672,8 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		vals[1].data = (uint8_t *)hwm_string;
 		vals[1].length = strlen(hwm_string);
 	} else {
-		ret = ldb_msg_add_empty(hwm_msg, "xidNumber", LDB_FLAG_MOD_ADD,
-					NULL);
-		if (ret != LDB_SUCCESS) {
-			status = NT_STATUS_NONE_MAPPED;
-			goto failed;
-		}
-
-		ret = ldb_msg_add_string(hwm_msg, "xidNumber", hwm_string);
+		ret = ldb_msg_append_string(hwm_msg, "xidNumber", hwm_string,
+					    LDB_FLAG_MOD_ADD);
 		if (ret != LDB_SUCCESS)
 		{
 			status = NT_STATUS_NONE_MAPPED;

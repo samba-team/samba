@@ -751,7 +751,7 @@ static int samldb_schema_add_handle_linkid(struct samldb_ctx *ac)
 		return ret;
 	}
 
-	if (el == NULL) {
+	if (el == NULL || el->num_values == 0) {
 		return LDB_SUCCESS;
 	}
 
@@ -919,7 +919,7 @@ static int samldb_schema_add_handle_mapiid(struct samldb_ctx *ac)
 		return ret;
 	}
 
-	if (el == NULL) {
+	if (el == NULL || el->num_values == 0) {
 		return LDB_SUCCESS;
 	}
 
@@ -1103,14 +1103,11 @@ static int samldb_rodc_add(struct samldb_ctx *ac)
 	return LDB_ERR_OTHER;
 
 found:
-	ret = ldb_msg_add_empty(ac->msg, "msDS-SecondaryKrbTgtNumber",
-				LDB_FLAG_INTERNAL_DISABLE_VALIDATION, NULL);
-	if (ret != LDB_SUCCESS) {
-		return ldb_operr(ldb);
-	}
 
-	ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-				 "msDS-SecondaryKrbTgtNumber", krbtgt_number);
+	ldb_msg_remove_attr(ac->msg, "msDS-SecondaryKrbTgtNumber");
+	ret = samdb_msg_append_uint(ldb, ac->msg, ac->msg,
+				    "msDS-SecondaryKrbTgtNumber", krbtgt_number,
+				    LDB_FLAG_INTERNAL_DISABLE_VALIDATION);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
@@ -1792,7 +1789,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	void *skip_allocate_sids = ldb_get_opaque(ldb,
 						  "skip_allocate_sids");
-	struct ldb_message_element *el, *el2;
+	struct ldb_message_element *el;
 	struct dom_sid *sid;
 	int ret;
 
@@ -1926,23 +1923,17 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		/* "isCriticalSystemObject" might be set */
 		if (user_account_control &
 		    (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
-			ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
-						 "TRUE");
+			ret = ldb_msg_add_string_flags(ac->msg, "isCriticalSystemObject",
+						       "TRUE", LDB_FLAG_MOD_REPLACE);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
-			el2 = ldb_msg_find_element(ac->msg,
-						   "isCriticalSystemObject");
-			el2->flags = LDB_FLAG_MOD_REPLACE;
 		} else if (user_account_control & UF_WORKSTATION_TRUST_ACCOUNT) {
-			ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
-						 "FALSE");
+			ret = ldb_msg_add_string_flags(ac->msg, "isCriticalSystemObject",
+						       "FALSE", LDB_FLAG_MOD_REPLACE);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
-			el2 = ldb_msg_find_element(ac->msg,
-						   "isCriticalSystemObject");
-			el2->flags = LDB_FLAG_MOD_REPLACE;
 		}
 
 		/* Step 1.4: "userAccountControl" -> "primaryGroupID" mapping */
@@ -2018,14 +2009,13 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 				ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			}
-			ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-						 "sAMAccountType",
-						 account_type);
+			ret = samdb_msg_add_uint_flags(ldb, ac->msg, ac->msg,
+						       "sAMAccountType",
+						       account_type,
+						       LDB_FLAG_MOD_REPLACE);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
-			el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
-			el2->flags = LDB_FLAG_MOD_REPLACE;
 		}
 		break;
 	}
@@ -2945,26 +2935,23 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	}
 
 	if (old_atype != new_atype) {
-		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-					 "sAMAccountType", new_atype);
+		ret = samdb_msg_append_uint(ldb, ac->msg, ac->msg,
+					    "sAMAccountType", new_atype,
+					    LDB_FLAG_MOD_REPLACE);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		el = ldb_msg_find_element(ac->msg, "sAMAccountType");
-		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
 	/* As per MS-SAMR 3.1.1.8.10 these flags have not to be set */
 	if ((clear_uac & UF_LOCKOUT) && (old_lockoutTime != 0)) {
 		/* "lockoutTime" reset as per MS-SAMR 3.1.1.8.10 */
 		ldb_msg_remove_attr(ac->msg, "lockoutTime");
-		ret = samdb_msg_add_uint64(ldb, ac->msg, ac->msg, "lockoutTime",
-					   (NTTIME)0);
+		ret = samdb_msg_append_uint64(ldb, ac->msg, ac->msg, "lockoutTime",
+					      (NTTIME)0, LDB_FLAG_MOD_REPLACE);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		el = ldb_msg_find_element(ac->msg, "lockoutTime");
-		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
 	/*
@@ -2975,14 +2962,12 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	 * creating the attribute.
 	 */
 	if (old_is_critical != new_is_critical || old_atype != new_atype) {
-		ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
-					 new_is_critical ? "TRUE": "FALSE");
+		ret = ldb_msg_append_string(ac->msg, "isCriticalSystemObject",
+					    new_is_critical ? "TRUE": "FALSE",
+					    LDB_FLAG_MOD_REPLACE);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		el = ldb_msg_find_element(ac->msg,
-					   "isCriticalSystemObject");
-		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
 	if (!ldb_msg_find_element(ac->msg, "primaryGroupID") &&
@@ -2995,14 +2980,12 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 			}
 		}
 
-		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-					 "primaryGroupID", new_pgrid);
+		ret = samdb_msg_append_uint(ldb, ac->msg, ac->msg,
+					    "primaryGroupID", new_pgrid,
+					    LDB_FLAG_MOD_REPLACE);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		el = ldb_msg_find_element(ac->msg,
-					   "primaryGroupID");
-		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
 	/* Propagate eventual "userAccountControl" attribute changes */
@@ -3205,13 +3188,12 @@ static int samldb_lockout_time(struct samldb_ctx *ac)
 
 	/* lockoutTime == 0 resets badPwdCount */
 	ldb_msg_remove_attr(ac->msg, "badPwdCount");
-	ret = samdb_msg_add_int(ldb, ac->msg, ac->msg,
-				"badPwdCount", 0);
+	ret = samdb_msg_append_int(ldb, ac->msg, ac->msg,
+				   "badPwdCount", 0,
+				   LDB_FLAG_MOD_REPLACE);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	el = ldb_msg_find_element(ac->msg, "badPwdCount");
-	el->flags = LDB_FLAG_MOD_REPLACE;
 
 	return LDB_SUCCESS;
 }
@@ -3309,13 +3291,11 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 		ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
-	ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg, "sAMAccountType",
-				 account_type);
+	ret = samdb_msg_append_uint(ldb, ac->msg, ac->msg, "sAMAccountType",
+				    account_type, LDB_FLAG_MOD_REPLACE);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	el = ldb_msg_find_element(ac->msg, "sAMAccountType");
-	el->flags = LDB_FLAG_MOD_REPLACE;
 
 	return LDB_SUCCESS;
 }

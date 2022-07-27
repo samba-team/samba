@@ -1546,17 +1546,21 @@ int dsdb_get_expected_new_values(TALLOC_CTX *mem_ctx,
 
 	v = _el->values;
 
-	for (i = 0; i < val_count; i++) {
+	for (i = 0; i < msg->num_elements; i++) {
 		if (ldb_attr_cmp(msg->elements[i].name, attr_name) == 0) {
+			const struct ldb_message_element *tmp_el = &msg->elements[i];
 			if ((operation == LDB_MODIFY) &&
-			    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags)
+			    (LDB_FLAG_MOD_TYPE(tmp_el->flags)
 						== LDB_FLAG_MOD_DELETE)) {
 				continue;
 			}
+			if (tmp_el->values == NULL || tmp_el->num_values == 0) {
+				continue;
+			}
 			memcpy(v,
-			       msg->elements[i].values,
-			       msg->elements[i].num_values);
-			v += msg->elements[i].num_values;
+			       tmp_el->values,
+			       tmp_el->num_values * sizeof(*v));
+			v += tmp_el->num_values;
 		}
 	}
 

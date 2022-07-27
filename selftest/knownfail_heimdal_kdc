@@ -5,9 +5,6 @@
 #
 # Heimdal currently fails the following MS-KILE client principal lookup
 # tests
-^samba.tests.krb5.ms_kile_client_principal_lookup_tests.samba.tests.krb5.ms_kile_client_principal_lookup_tests.MS_Kile_Client_Principal_Lookup_Tests.test_enterprise_principal_step_1_3
-^samba.tests.krb5.ms_kile_client_principal_lookup_tests.samba.tests.krb5.ms_kile_client_principal_lookup_tests.MS_Kile_Client_Principal_Lookup_Tests.test_enterprise_principal_step_4
-^samba.tests.krb5.ms_kile_client_principal_lookup_tests.samba.tests.krb5.ms_kile_client_principal_lookup_tests.MS_Kile_Client_Principal_Lookup_Tests.test_enterprise_principal_step_5
 ^samba.tests.krb5.ms_kile_client_principal_lookup_tests.samba.tests.krb5.ms_kile_client_principal_lookup_tests.MS_Kile_Client_Principal_Lookup_Tests.test_enterprise_principal_step_6_a
 ^samba.tests.krb5.ms_kile_client_principal_lookup_tests.samba.tests.krb5.ms_kile_client_principal_lookup_tests.MS_Kile_Client_Principal_Lookup_Tests.test_nt_enterprise_principal_step_6_b
 ^samba.tests.krb5.ms_kile_client_principal_lookup_tests.samba.tests.krb5.ms_kile_client_principal_lookup_tests.MS_Kile_Client_Principal_Lookup_Tests.test_nt_principal_step_4_a
@@ -71,7 +68,6 @@
 # S4U tests
 #
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_bronze_bit_rbcd_old_checksum
-^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_no_service_pac\(.*\)$
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_existing_delegation_info
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_missing_client_checksum
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_rbcd_no_client_pac_a
@@ -97,3 +93,19 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_rodc_not_revealed
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_rodc_not_revealed
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_rodc_not_revealed
+#
+# KDC TGS tests
+#
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_authdata_no_pac
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_no_pac
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_req_invalid
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rodc_allowed_denied
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rodc_denied
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rodc_no_krbtgt_link
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rodc_no_partial_secrets
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rodc_not_allowed
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rodc_sid_mismatch_existing
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rodc_sid_mismatch_nonexisting
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_service_ticket
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_sid_mismatch_existing
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_sid_mismatch_nonexisting

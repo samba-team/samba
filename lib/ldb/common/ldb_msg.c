@@ -418,6 +418,47 @@ int ldb_msg_add(struct ldb_message *msg,
 }
 
 /*
+ * add a value to a message element
+ */
+int ldb_msg_element_add_value(TALLOC_CTX *mem_ctx,
+			      struct ldb_message_element *el,
+			      const struct ldb_val *val)
+{
+	struct ldb_val *vals;
+
+	if (el->flags & LDB_FLAG_INTERNAL_SHARED_VALUES) {
+		/*
+		 * Another message is using this message element's values array,
+		 * so we don't want to make any modifications to the original
+		 * message, or potentially invalidate its own values by calling
+		 * talloc_realloc(). Make a copy instead.
+		 */
+		el->flags &= ~LDB_FLAG_INTERNAL_SHARED_VALUES;
+
+		vals = talloc_array(mem_ctx, struct ldb_val,
+				    el->num_values + 1);
+		if (vals == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		if (el->values != NULL) {
+			memcpy(vals, el->values, el->num_values * sizeof(struct ldb_val));
+		}
+	} else {
+		vals = talloc_realloc(mem_ctx, el->values, struct ldb_val,
+				      el->num_values + 1);
+		if (vals == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+	el->values = vals;
+	el->values[el->num_values] = *val;
+	el->num_values++;
+
+	return LDB_SUCCESS;
+}
+
+/*
   add a value to a message
 */
 int ldb_msg_add_value(struct ldb_message *msg,
@@ -426,7 +467,6 @@ int ldb_msg_add_value(struct ldb_message *msg,
 		      struct ldb_message_element **return_el)
 {
 	struct ldb_message_element *el;
-	struct ldb_val *vals;
 	int ret;
 
 	el = ldb_msg_find_element(msg, attr_name);
@@ -437,14 +477,10 @@ int ldb_msg_add_value(struct ldb_message *msg,
 		}
 	}
 
-	vals = talloc_realloc(msg->elements, el->values, struct ldb_val,
-			      el->num_values+1);
-	if (!vals) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	ret = ldb_msg_element_add_value(msg->elements, el, val);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
-	el->values = vals;
-	el->values[el->num_values] = *val;
-	el->num_values++;
 
 	if (return_el) {
 		*return_el = el;
@@ -473,12 +509,15 @@ int ldb_msg_add_steal_value(struct ldb_message *msg,
 
 
 /*
-  add a string element to a message
+  add a string element to a message, specifying flags
 */
-int ldb_msg_add_string(struct ldb_message *msg,
-		       const char *attr_name, const char *str)
+int ldb_msg_add_string_flags(struct ldb_message *msg,
+			     const char *attr_name, const char *str,
+			     int flags)
 {
 	struct ldb_val val;
+	int ret;
+	struct ldb_message_element *el = NULL;
 
 	val.data = discard_const_p(uint8_t, str);
 	val.length = strlen(str);
@@ -488,7 +527,25 @@ int ldb_msg_add_string(struct ldb_message *msg,
 		return LDB_SUCCESS;
 	}
 
-	return ldb_msg_add_value(msg, attr_name, &val, NULL);
+	ret = ldb_msg_add_value(msg, attr_name, &val, &el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (flags != 0) {
+		el->flags = flags;
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
+  add a string element to a message
+*/
+int ldb_msg_add_string(struct ldb_message *msg,
+		       const char *attr_name, const char *str)
+{
+	return ldb_msg_add_string_flags(msg, attr_name, str, 0);
 }
 
 /*
@@ -548,6 +605,142 @@ int ldb_msg_add_fmt(struct ldb_message *msg,
 	val.length = strlen(str);
 
 	return ldb_msg_add_steal_value(msg, attr_name, &val);
+}
+
+static int ldb_msg_append_value_impl(struct ldb_message *msg,
+				     const char *attr_name,
+				     const struct ldb_val *val,
+				     int flags,
+				     struct ldb_message_element **return_el)
+{
+	struct ldb_message_element *el = NULL;
+	int ret;
+
+	ret = ldb_msg_add_empty(msg, attr_name, flags, &el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_msg_element_add_value(msg->elements, el, val);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (return_el != NULL) {
+		*return_el = el;
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
+  append a value to a message
+*/
+int ldb_msg_append_value(struct ldb_message *msg,
+			 const char *attr_name,
+			 const struct ldb_val *val,
+			 int flags)
+{
+	return ldb_msg_append_value_impl(msg, attr_name, val, flags, NULL);
+}
+
+/*
+  append a value to a message, stealing it into the 'right' place
+*/
+int ldb_msg_append_steal_value(struct ldb_message *msg,
+			       const char *attr_name,
+			       struct ldb_val *val,
+			       int flags)
+{
+	int ret;
+	struct ldb_message_element *el = NULL;
+
+	ret = ldb_msg_append_value_impl(msg, attr_name, val, flags, &el);
+	if (ret == LDB_SUCCESS) {
+		talloc_steal(el->values, val->data);
+	}
+	return ret;
+}
+
+/*
+  append a string element to a message, stealing it into the 'right' place
+*/
+int ldb_msg_append_steal_string(struct ldb_message *msg,
+				const char *attr_name, char *str,
+				int flags)
+{
+	struct ldb_val val;
+
+	val.data = (uint8_t *)str;
+	val.length = strlen(str);
+
+	if (val.length == 0) {
+		/* allow empty strings as non-existent attributes */
+		return LDB_SUCCESS;
+	}
+
+	return ldb_msg_append_steal_value(msg, attr_name, &val, flags);
+}
+
+/*
+  append a string element to a message
+*/
+int ldb_msg_append_string(struct ldb_message *msg,
+			  const char *attr_name, const char *str, int flags)
+{
+	struct ldb_val val;
+
+	val.data = discard_const_p(uint8_t, str);
+	val.length = strlen(str);
+
+	if (val.length == 0) {
+		/* allow empty strings as non-existent attributes */
+		return LDB_SUCCESS;
+	}
+
+	return ldb_msg_append_value(msg, attr_name, &val, flags);
+}
+
+/*
+  append a DN element to a message
+  WARNING: this uses the linearized string from the dn, and does not
+  copy the string.
+*/
+int ldb_msg_append_linearized_dn(struct ldb_message *msg, const char *attr_name,
+				 struct ldb_dn *dn, int flags)
+{
+	char *str = ldb_dn_alloc_linearized(msg, dn);
+
+	if (str == NULL) {
+		/* we don't want to have unknown DNs added */
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return ldb_msg_append_steal_string(msg, attr_name, str, flags);
+}
+
+/*
+  append a printf formatted element to a message
+*/
+int ldb_msg_append_fmt(struct ldb_message *msg, int flags,
+		       const char *attr_name, const char *fmt, ...)
+{
+	struct ldb_val val;
+	va_list ap;
+	char *str = NULL;
+
+	va_start(ap, fmt);
+	str = talloc_vasprintf(msg, fmt, ap);
+	va_end(ap);
+
+	if (str == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	val.data   = (uint8_t *)str;
+	val.length = strlen(str);
+
+	return ldb_msg_append_steal_value(msg, attr_name, &val, flags);
 }
 
 /*
@@ -833,11 +1026,7 @@ void ldb_msg_sort_elements(struct ldb_message *msg)
 		       ldb_msg_element_compare_name);
 }
 
-/*
-  shallow copy a message - copying only the elements array so that the caller
-  can safely add new elements without changing the message
-*/
-struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx,
+static struct ldb_message *ldb_msg_copy_shallow_impl(TALLOC_CTX *mem_ctx,
 					 const struct ldb_message *msg)
 {
 	struct ldb_message *msg2;
@@ -863,6 +1052,35 @@ failed:
 	return NULL;
 }
 
+/*
+  shallow copy a message - copying only the elements array so that the caller
+  can safely add new elements without changing the message
+*/
+struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx,
+					 const struct ldb_message *msg)
+{
+	struct ldb_message *msg2;
+	unsigned int i;
+
+	msg2 = ldb_msg_copy_shallow_impl(mem_ctx, msg);
+	if (msg2 == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; i < msg2->num_elements; ++i) {
+		/*
+		 * Mark this message's elements as sharing their values with the
+		 * original message, so that we don't inadvertently modify or
+		 * free them. We don't mark the original message element as
+		 * shared, so the original message element should not be
+		 * modified or freed while the shallow copy lives.
+		 */
+		struct ldb_message_element *el = &msg2->elements[i];
+		el->flags |= LDB_FLAG_INTERNAL_SHARED_VALUES;
+	}
+
+        return msg2;
+}
 
 /*
   copy a message, allocating new memory for all parts
@@ -873,7 +1091,7 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg2;
 	unsigned int i, j;
 
-	msg2 = ldb_msg_copy_shallow(mem_ctx, msg);
+	msg2 = ldb_msg_copy_shallow_impl(mem_ctx, msg);
 	if (msg2 == NULL) return NULL;
 
 	if (msg2->dn != NULL) {
@@ -894,6 +1112,12 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 				goto failed;
 			}
 		}
+
+                /*
+                 * Since we copied this element's values, we can mark them as
+                 * not shared.
+		 */
+		el->flags &= ~LDB_FLAG_INTERNAL_SHARED_VALUES;
 	}
 
 	return msg2;

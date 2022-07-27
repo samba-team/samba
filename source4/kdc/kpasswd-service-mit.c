@@ -24,10 +24,12 @@
 #include "param/param.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
+#include "gensec_krb5_helpers.h"
 #include "kdc/kdc-server.h"
 #include "kdc/kpasswd_glue.h"
 #include "kdc/kpasswd-service.h"
 #include "kdc/kpasswd-helper.h"
+#include "../lib/util/asn1.h"
 
 #define RFC3244_VERSION 0xff80
 
@@ -35,8 +37,55 @@ krb5_error_code decode_krb5_setpw_req(const krb5_data *code,
 				      krb5_data **password_out,
 				      krb5_principal *target_out);
 
+/*
+ * A fallback for when MIT refuses to parse a setpw structure without the
+ * (optional) target principal and realm
+ */
+static bool decode_krb5_setpw_req_simple(TALLOC_CTX *mem_ctx,
+					 const DATA_BLOB *decoded_data,
+					 DATA_BLOB *clear_data)
+{
+	struct asn1_data *asn1 = NULL;
+	bool ret;
+
+	asn1 = asn1_init(mem_ctx, 3);
+	if (asn1 == NULL) {
+		return false;
+	}
+
+	ret = asn1_load(asn1, *decoded_data);
+	if (!ret) {
+		goto out;
+	}
+
+	ret = asn1_start_tag(asn1, ASN1_SEQUENCE(0));
+	if (!ret) {
+		goto out;
+	}
+	ret = asn1_start_tag(asn1, ASN1_CONTEXT(0));
+	if (!ret) {
+		goto out;
+	}
+	ret = asn1_read_OctetString(asn1, mem_ctx, clear_data);
+	if (!ret) {
+		goto out;
+	}
+
+	ret = asn1_end_tag(asn1);
+	if (!ret) {
+		goto out;
+	}
+	ret = asn1_end_tag(asn1);
+
+out:
+	asn1_free(asn1);
+
+	return ret;
+}
+
 static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 					       TALLOC_CTX *mem_ctx,
+					       const struct gensec_security *gensec_security,
 					       struct auth_session_info *session_info,
 					       DATA_BLOB *password,
 					       DATA_BLOB *kpasswd_reply,
@@ -48,6 +97,17 @@ static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 	const char *reject_string = NULL;
 	struct samr_DomInfo1 *dominfo;
 	bool ok;
+	int ret;
+
+	/*
+	 * We're doing a password change (rather than a password set), so check
+	 * that we were given an initial ticket.
+	 */
+	ret = gensec_krb5_initial_ticket(gensec_security);
+	if (ret != 1) {
+		*error_string = "Expected an initial ticket";
+		return KRB5_KPASSWD_INITIAL_FLAG_NEEDED;
+	}
 
 	status = samdb_kpasswd_change_password(mem_ctx,
 					       kdc->task->lp_ctx,
@@ -87,15 +147,17 @@ static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 
 static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 					    TALLOC_CTX *mem_ctx,
+					    const struct gensec_security *gensec_security,
 					    struct auth_session_info *session_info,
 					    DATA_BLOB *decoded_data,
 					    DATA_BLOB *kpasswd_reply,
 					    const char **error_string)
 {
 	krb5_context context = kdc->smb_krb5_context->krb5_context;
+	DATA_BLOB clear_data;
 	krb5_data k_dec_data;
-	krb5_data *k_clear_data;
-	krb5_principal target_principal;
+	krb5_data *k_clear_data = NULL;
+	krb5_principal target_principal = NULL;
 	krb5_error_code code;
 	DATA_BLOB password;
 	char *target_realm = NULL;
@@ -114,45 +176,63 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 	code = decode_krb5_setpw_req(&k_dec_data,
 				     &k_clear_data,
 				     &target_principal);
-	if (code != 0) {
-		DBG_WARNING("decode_krb5_setpw_req failed: %s\n",
-			    error_message(code));
-		ok = kpasswd_make_error_reply(mem_ctx,
-					      KRB5_KPASSWD_MALFORMED,
-					      "Failed to decode packet",
-					      kpasswd_reply);
+	if (code == 0) {
+		clear_data.data = (uint8_t *)k_clear_data->data;
+		clear_data.length = k_clear_data->length;
+	} else {
+		target_principal = NULL;
+
+		/*
+		 * The MIT decode failed, so fall back to trying the simple
+		 * case, without target_principal.
+		 */
+		ok = decode_krb5_setpw_req_simple(mem_ctx,
+						  decoded_data,
+						  &clear_data);
 		if (!ok) {
-			*error_string = "Failed to create reply";
-			return KRB5_KPASSWD_HARDERROR;
+			DBG_WARNING("decode_krb5_setpw_req failed: %s\n",
+				    error_message(code));
+			ok = kpasswd_make_error_reply(mem_ctx,
+						      KRB5_KPASSWD_MALFORMED,
+						      "Failed to decode packet",
+						      kpasswd_reply);
+			if (!ok) {
+				*error_string = "Failed to create reply";
+				return KRB5_KPASSWD_HARDERROR;
+			}
+			return 0;
 		}
-		return 0;
 	}
 
 	ok = convert_string_talloc_handle(mem_ctx,
 					  lpcfg_iconv_handle(kdc->task->lp_ctx),
 					  CH_UTF8,
 					  CH_UTF16,
-					  (const char *)k_clear_data->data,
-					  k_clear_data->length,
+					  clear_data.data,
+					  clear_data.length,
 					  (void **)&password.data,
 					  &password.length);
-	krb5_free_data(context, k_clear_data);
+	if (k_clear_data != NULL) {
+		krb5_free_data(context, k_clear_data);
+	}
 	if (!ok) {
 		DBG_WARNING("String conversion failed\n");
 		*error_string = "String conversion failed";
 		return KRB5_KPASSWD_HARDERROR;
 	}
 
-	target_realm = smb_krb5_principal_get_realm(
-		mem_ctx, context, target_principal);
-	code = krb5_unparse_name_flags(context,
-				       target_principal,
-				       KRB5_PRINCIPAL_UNPARSE_NO_REALM,
-				       &target_name);
-	if (code != 0) {
-		DBG_WARNING("Failed to parse principal\n");
-		*error_string = "String conversion failed";
-		return KRB5_KPASSWD_HARDERROR;
+	if (target_principal != NULL) {
+		target_realm = smb_krb5_principal_get_realm(
+			mem_ctx, context, target_principal);
+		code = krb5_unparse_name_flags(context,
+					       target_principal,
+					       KRB5_PRINCIPAL_UNPARSE_NO_REALM,
+					       &target_name);
+		if (code != 0) {
+			DBG_WARNING("Failed to parse principal\n");
+			*error_string = "String conversion failed";
+			return KRB5_KPASSWD_HARDERROR;
+		}
 	}
 
 	if ((target_name != NULL && target_realm == NULL) ||
@@ -184,6 +264,7 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 
 		return kpasswd_change_password(kdc,
 					       mem_ctx,
+					       gensec_security,
 					       session_info,
 					       &password,
 					       kpasswd_reply,
@@ -251,6 +332,7 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 {
 	struct auth_session_info *session_info;
 	NTSTATUS status;
+	krb5_error_code code;
 
 	status = gensec_session_info(gensec_security,
 				     mem_ctx,
@@ -261,6 +343,18 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 						"%s",
 						nt_errstr(status));
 		return KRB5_KPASSWD_HARDERROR;
+	}
+
+	/*
+	 * Since the kpasswd service shares its keys with the krbtgt, we might
+	 * have received a TGT rather than a kpasswd ticket. We need to check
+	 * the ticket type to ensure that TGTs cannot be misused in this manner.
+	 */
+	code = kpasswd_check_non_tgt(session_info,
+				     error_string);
+	if (code != 0) {
+		DBG_WARNING("%s\n", *error_string);
+		return code;
 	}
 
 	switch(verno) {
@@ -284,6 +378,7 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 
 		return kpasswd_change_password(kdc,
 					       mem_ctx,
+					       gensec_security,
 					       session_info,
 					       &password,
 					       kpasswd_reply,
@@ -292,6 +387,7 @@ krb5_error_code kpasswd_handle_request(struct kdc_server *kdc,
 	case RFC3244_VERSION: {
 		return kpasswd_set_password(kdc,
 					    mem_ctx,
+					    gensec_security,
 					    session_info,
 					    decoded_data,
 					    kpasswd_reply,

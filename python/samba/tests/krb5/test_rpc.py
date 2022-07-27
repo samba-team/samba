@@ -24,7 +24,10 @@ import ldb
 
 from samba import NTSTATUSError, credentials
 from samba.dcerpc import lsa
-from samba.ntstatus import NT_STATUS_NO_IMPERSONATION_TOKEN
+from samba.ntstatus import (
+    NT_STATUS_ACCESS_DENIED,
+    NT_STATUS_NO_IMPERSONATION_TOKEN
+)
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 
@@ -58,7 +61,7 @@ class RpcTests(KDCBaseTest):
 
         samdb = self.get_samdb()
 
-        mach_name = samdb.host_dns_name()
+        mach_name = self.host
         service = "cifs"
 
         # Create the user account.
@@ -67,7 +70,7 @@ class RpcTests(KDCBaseTest):
             use_cache=False)
         user_name = user_credentials.get_username()
 
-        mach_credentials = self.get_dc_creds()
+        mach_credentials = self.get_server_creds()
 
         # Talk to the KDC to obtain the service ticket, which gets placed into
         # the cache. The machine account name has to match the name in the
@@ -103,7 +106,8 @@ class RpcTests(KDCBaseTest):
                 self.fail()
 
             enum, _ = e.args
-            self.assertEqual(NT_STATUS_NO_IMPERSONATION_TOKEN, enum)
+            self.assertIn(enum, {NT_STATUS_ACCESS_DENIED,
+                                 NT_STATUS_NO_IMPERSONATION_TOKEN})
             return
 
         (account_name, _) = conn.GetUserName(None, None, None)
@@ -114,8 +118,7 @@ class RpcTests(KDCBaseTest):
             self.assertEqual(user_name, account_name.string)
 
     def test_rpc_anonymous(self):
-        samdb = self.get_samdb()
-        mach_name = samdb.host_dns_name()
+        mach_name = self.host
 
         anon_creds = credentials.Credentials()
         anon_creds.set_anonymous()
@@ -125,7 +128,7 @@ class RpcTests(KDCBaseTest):
 
         (account_name, _) = conn.GetUserName(None, None, None)
 
-        self.assertEqual('ANONYMOUS LOGON', account_name.string)
+        self.assertEqual('ANONYMOUS LOGON', account_name.string.upper())
 
 
 if __name__ == "__main__":

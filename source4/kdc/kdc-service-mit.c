@@ -291,8 +291,8 @@ NTSTATUS mitkdc_task_init(struct task_server *task)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	kdc->keytab_name = talloc_asprintf(kdc, "KDB:");
-	if (kdc->keytab_name == NULL) {
+	kdc->kpasswd_keytab_name = talloc_asprintf(kdc, "KDB:");
+	if (kdc->kpasswd_keytab_name == NULL) {
 		task_server_terminate(task,
 				      "KDC: Out of memory",
 				      true);

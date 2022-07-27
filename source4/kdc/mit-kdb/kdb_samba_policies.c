@@ -162,6 +162,7 @@ done:
 
 static krb5_error_code ks_get_pac(krb5_context context,
 				  krb5_db_entry *client,
+				  krb5_db_entry *server,
 				  krb5_keyblock *client_key,
 				  krb5_pac *pac)
 {
@@ -176,6 +177,7 @@ static krb5_error_code ks_get_pac(krb5_context context,
 	code = mit_samba_get_pac(mit_ctx,
 				 context,
 				 client,
+				 server,
 				 client_key,
 				 pac);
 	if (code != 0) {
@@ -423,7 +425,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 	 */
 	if (with_pac && generate_pac) {
 		DBG_DEBUG("Generate PAC for AS-REQ [%s]\n", client_name);
-		code = ks_get_pac(context, client_entry, client_key, &pac);
+		code = ks_get_pac(context, client_entry, server, client_key, &pac);
 		if (code != 0) {
 			goto done;
 		}
@@ -474,6 +476,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 
 				code = ks_get_pac(context,
 						  client_entry,
+						  server,
 						  client_key,
 						  &pac);
 				if (code != 0 && code != ENOENT) {

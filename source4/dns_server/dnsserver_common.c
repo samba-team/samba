@@ -1122,15 +1122,9 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 	}
 
 	if (was_tombstoned || become_tombstoned) {
-		ret = ldb_msg_add_empty(msg, "dNSTombstoned",
-					LDB_FLAG_MOD_REPLACE, NULL);
-		if (ret != LDB_SUCCESS) {
-			werr = DNS_ERR(SERVER_FAILURE);
-			goto exit;
-		}
-
-		ret = ldb_msg_add_fmt(msg, "dNSTombstoned", "%s",
-				      become_tombstoned ? "TRUE" : "FALSE");
+		ret = ldb_msg_append_fmt(msg, LDB_FLAG_MOD_REPLACE,
+					 "dNSTombstoned", "%s",
+					 become_tombstoned ? "TRUE" : "FALSE");
 		if (ret != LDB_SUCCESS) {
 			werr = DNS_ERR(SERVER_FAILURE);
 			goto exit;

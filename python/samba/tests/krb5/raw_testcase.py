@@ -26,12 +26,16 @@ import binascii
 import itertools
 import collections
 
+from enum import Enum
+
 from pyasn1.codec.der.decoder import decode as pyasn1_der_decode
 from pyasn1.codec.der.encoder import encode as pyasn1_der_encode
 from pyasn1.codec.native.decoder import decode as pyasn1_native_decode
 from pyasn1.codec.native.encoder import encode as pyasn1_native_encode
 
 from pyasn1.codec.ber.encoder import BitStringEncoder
+
+from pyasn1.error import PyAsn1Error
 
 from samba.credentials import Credentials
 from samba.dcerpc import krb5pac, security
@@ -50,19 +54,23 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_PREAUTH_FAILED,
     KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS,
     KERB_ERR_TYPE_EXTENDED,
+    KRB_AP_REP,
     KRB_AP_REQ,
     KRB_AS_REP,
     KRB_AS_REQ,
     KRB_ERROR,
+    KRB_PRIV,
     KRB_TGS_REP,
     KRB_TGS_REQ,
     KU_AP_REQ_AUTH,
     KU_AS_REP_ENC_PART,
+    KU_AP_REQ_ENC_PART,
     KU_ENC_CHALLENGE_KDC,
     KU_FAST_ENC,
     KU_FAST_FINISHED,
     KU_FAST_REP,
     KU_FAST_REQ_CHKSUM,
+    KU_KRB_PRIV,
     KU_NON_KERB_CKSUM_SALT,
     KU_TGS_REP_ENC_PART_SESSION,
     KU_TGS_REP_ENC_PART_SUB_KEY,
@@ -71,6 +79,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_TGS_REQ_AUTH_DAT_SESSION,
     KU_TGS_REQ_AUTH_DAT_SUBKEY,
     KU_TICKET,
+    NT_PRINCIPAL,
     NT_SRV_INST,
     NT_WELLKNOWN,
     PADATA_ENCRYPTED_CHALLENGE,
@@ -491,6 +500,10 @@ class KerberosCredentials(Credentials):
     def get_upn(self):
         return self.upn
 
+    def update_password(self, password):
+        self.set_password(password)
+        self.set_kvno(self.get_kvno() + 1)
+
 
 class KerberosTicketCreds:
     def __init__(self, ticket, session_key,
@@ -509,9 +522,17 @@ class KerberosTicketCreds:
         self.ticket_private = ticket_private
         self.encpart_private = encpart_private
 
+    def set_sname(self, sname):
+        self.ticket['sname'] = sname
+        self.sname = sname
+
 
 class RawKerberosTest(TestCaseInTempDir):
     """A raw Kerberos Test case."""
+
+    class KpasswdMode(Enum):
+        SET = object()
+        CHANGE = object()
 
     pac_checksum_types = {krb5pac.PAC_TYPE_SRV_CHECKSUM,
                           krb5pac.PAC_TYPE_KDC_CHECKSUM,
@@ -602,6 +623,13 @@ class RawKerberosTest(TestCaseInTempDir):
             expect_pac = '1'
         cls.expect_pac = bool(int(expect_pac))
 
+        expect_extra_pac_buffers = samba.tests.env_get_var_value(
+            'EXPECT_EXTRA_PAC_BUFFERS',
+            allow_missing=True)
+        if expect_extra_pac_buffers is None:
+            expect_extra_pac_buffers = '1'
+        cls.expect_extra_pac_buffers = bool(int(expect_extra_pac_buffers))
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
@@ -629,10 +657,11 @@ class RawKerberosTest(TestCaseInTempDir):
         if self.do_hexdump:
             sys.stderr.write("disconnect[%s]\n" % reason)
 
-    def _connect_tcp(self, host):
-        tcp_port = 88
+    def _connect_tcp(self, host, port=None):
+        if port is None:
+            port = 88
         try:
-            self.a = socket.getaddrinfo(host, tcp_port, socket.AF_UNSPEC,
+            self.a = socket.getaddrinfo(host, port, socket.AF_UNSPEC,
                                         socket.SOCK_STREAM, socket.SOL_TCP,
                                         0)
             self.s = socket.socket(self.a[0][0], self.a[0][1], self.a[0][2])
@@ -645,9 +674,9 @@ class RawKerberosTest(TestCaseInTempDir):
             self.s.close()
             raise
 
-    def connect(self, host):
+    def connect(self, host, port=None):
         self.assertNotConnected()
-        self._connect_tcp(host)
+        self._connect_tcp(host, port)
         if self.do_hexdump:
             sys.stderr.write("connected[%s]\n" % host)
 
@@ -717,7 +746,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                 fallback_default=False,
                                 allow_missing=kvno_allow_missing)
         if kvno is not None:
-            c.set_kvno(kvno)
+            c.set_kvno(int(kvno))
         aes256_key = self.env_get_var('AES256_KEY_HEX', prefix,
                                       fallback_default=False,
                                       allow_missing=aes256_allow_missing)
@@ -827,6 +856,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                  allow_missing_password=allow_missing_password,
                                  allow_missing_keys=allow_missing_keys)
         c.set_gensec_features(c.get_gensec_features() | FEATURE_SEAL)
+        c.set_workstation('')
         return c
 
     def get_rodc_krbtgt_creds(self,
@@ -909,24 +939,28 @@ class RawKerberosTest(TestCaseInTempDir):
         return blob
 
     def send_pdu(self, req, asn1_print=None, hexdump=None):
+        k5_pdu = self.der_encode(
+            req, native_decode=False, asn1_print=asn1_print, hexdump=False)
+        self.send_msg(k5_pdu, hexdump=hexdump)
+
+    def send_msg(self, msg, hexdump=None):
+        header = struct.pack('>I', len(msg))
+        req_pdu = header
+        req_pdu += msg
+        self.hex_dump("send_msg", header, hexdump=hexdump)
+        self.hex_dump("send_msg", msg, hexdump=hexdump)
+
         try:
-            k5_pdu = self.der_encode(
-                req, native_decode=False, asn1_print=asn1_print, hexdump=False)
-            header = struct.pack('>I', len(k5_pdu))
-            req_pdu = header
-            req_pdu += k5_pdu
-            self.hex_dump("send_pdu", header, hexdump=hexdump)
-            self.hex_dump("send_pdu", k5_pdu, hexdump=hexdump)
             while True:
                 sent = self.s.send(req_pdu, 0)
                 if sent == len(req_pdu):
-                    break
+                    return
                 req_pdu = req_pdu[sent:]
         except socket.error as e:
-            self._disconnect("send_pdu: %s" % e)
+            self._disconnect("send_msg: %s" % e)
             raise
         except IOError as e:
-            self._disconnect("send_pdu: %s" % e)
+            self._disconnect("send_msg: %s" % e)
             raise
 
     def recv_raw(self, num_recv=0xffff, hexdump=None, timeout=None):
@@ -952,16 +986,14 @@ class RawKerberosTest(TestCaseInTempDir):
         return rep_pdu
 
     def recv_pdu_raw(self, asn1_print=None, hexdump=None, timeout=None):
-        rep_pdu = None
-        rep = None
         raw_pdu = self.recv_raw(
             num_recv=4, hexdump=hexdump, timeout=timeout)
         if raw_pdu is None:
-            return (None, None)
+            return None
         header = struct.unpack(">I", raw_pdu[0:4])
         k5_len = header[0]
         if k5_len == 0:
-            return (None, "")
+            return ""
         missing = k5_len
         rep_pdu = b''
         while missing > 0:
@@ -970,6 +1002,14 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertGreaterEqual(len(raw_pdu), 1)
             rep_pdu += raw_pdu
             missing = k5_len - len(rep_pdu)
+        return rep_pdu
+
+    def recv_reply(self, asn1_print=None, hexdump=None, timeout=None):
+        rep_pdu = self.recv_pdu_raw(asn1_print=asn1_print,
+                                    hexdump=hexdump,
+                                    timeout=timeout)
+        if not rep_pdu:
+            return None, rep_pdu
         k5_raw = self.der_decode(
             rep_pdu,
             asn1Spec=None,
@@ -991,9 +1031,9 @@ class RawKerberosTest(TestCaseInTempDir):
         return (rep, rep_pdu)
 
     def recv_pdu(self, asn1_print=None, hexdump=None, timeout=None):
-        (rep, rep_pdu) = self.recv_pdu_raw(asn1_print=asn1_print,
-                                           hexdump=hexdump,
-                                           timeout=timeout)
+        (rep, rep_pdu) = self.recv_reply(asn1_print=asn1_print,
+                                         hexdump=hexdump,
+                                         timeout=timeout)
         return rep
 
     def assertIsConnected(self):
@@ -1167,10 +1207,11 @@ class RawKerberosTest(TestCaseInTempDir):
         key = kcrypto.Key(etype, contents)
         return RodcPacEncryptionKey(key, kvno)
 
-    def PasswordKey_create(self, etype=None, pwd=None, salt=None, kvno=None):
+    def PasswordKey_create(self, etype=None, pwd=None, salt=None, kvno=None,
+                           params=None):
         self.assertIsNotNone(pwd)
         self.assertIsNotNone(salt)
-        key = kcrypto.string_to_key(etype, pwd, salt)
+        key = kcrypto.string_to_key(etype, pwd, salt, params=params)
         return RodcPacEncryptionKey(key, kvno)
 
     def PasswordKey_from_etype_info2(self, creds, etype_info2, kvno=None):
@@ -1182,9 +1223,11 @@ class RawKerberosTest(TestCaseInTempDir):
             nthash = creds.get_nt_hash()
             return self.SessionKey_create(etype=e, contents=nthash, kvno=kvno)
 
+        params = etype_info2.get('s2kparams')
+
         password = creds.get_password()
         return self.PasswordKey_create(
-            etype=e, pwd=password, salt=salt, kvno=kvno)
+            etype=e, pwd=password, salt=salt, kvno=kvno, params=params)
 
     def TicketDecryptionKey_from_creds(self, creds, etype=None):
 
@@ -1769,6 +1812,317 @@ class RawKerberosTest(TestCaseInTempDir):
             PA_S4U2Self_obj, asn1Spec=krb5_asn1.PA_S4U2Self())
         return self.PA_DATA_create(PADATA_FOR_USER, pa_s4u2self)
 
+    def ChangePasswdDataMS_create(self,
+                                  new_password,
+                                  target_princ=None,
+                                  target_realm=None):
+        ChangePasswdDataMS_obj = {
+            'newpasswd': new_password,
+        }
+        if target_princ is not None:
+            ChangePasswdDataMS_obj['targname'] = target_princ
+        if target_realm is not None:
+            ChangePasswdDataMS_obj['targrealm'] = target_realm
+
+        change_password_data = self.der_encode(
+            ChangePasswdDataMS_obj, asn1Spec=krb5_asn1.ChangePasswdDataMS())
+
+        return change_password_data
+
+    def KRB_PRIV_create(self,
+                        subkey,
+                        user_data,
+                        s_address,
+                        timestamp=None,
+                        usec=None,
+                        seq_number=None,
+                        r_address=None):
+        EncKrbPrivPart_obj = {
+            'user-data': user_data,
+            's-address': s_address,
+        }
+        if timestamp is not None:
+            EncKrbPrivPart_obj['timestamp'] = timestamp
+        if usec is not None:
+            EncKrbPrivPart_obj['usec'] = usec
+        if seq_number is not None:
+            EncKrbPrivPart_obj['seq-number'] = seq_number
+        if r_address is not None:
+            EncKrbPrivPart_obj['r-address'] = r_address
+
+        enc_krb_priv_part = self.der_encode(
+            EncKrbPrivPart_obj, asn1Spec=krb5_asn1.EncKrbPrivPart())
+
+        enc_data = self.EncryptedData_create(subkey,
+                                             KU_KRB_PRIV,
+                                             enc_krb_priv_part)
+
+        KRB_PRIV_obj = {
+            'pvno': 5,
+            'msg-type': KRB_PRIV,
+            'enc-part': enc_data,
+        }
+
+        krb_priv = self.der_encode(
+            KRB_PRIV_obj, asn1Spec=krb5_asn1.KRB_PRIV())
+
+        return krb_priv
+
+    def kpasswd_create(self,
+                       subkey,
+                       user_data,
+                       version,
+                       seq_number,
+                       ap_req,
+                       local_address,
+                       remote_address):
+        self.assertIsNotNone(self.s, 'call self.connect() first')
+
+        timestamp, usec = self.get_KerberosTimeWithUsec()
+
+        krb_priv = self.KRB_PRIV_create(subkey,
+                                        user_data,
+                                        s_address=local_address,
+                                        timestamp=timestamp,
+                                        usec=usec,
+                                        seq_number=seq_number,
+                                        r_address=remote_address)
+
+        size = 6 + len(ap_req) + len(krb_priv)
+        self.assertLess(size, 0x10000)
+
+        msg = bytearray()
+        msg.append(size >> 8)
+        msg.append(size & 0xff)
+        msg.append(version >> 8)
+        msg.append(version & 0xff)
+        msg.append(len(ap_req) >> 8)
+        msg.append(len(ap_req) & 0xff)
+        # Note: for sets, there could be a little-endian four-byte length here.
+
+        msg.extend(ap_req)
+        msg.extend(krb_priv)
+
+        return msg
+
+    def get_enc_part(self, obj, key, usage):
+        self.assertElementEqual(obj, 'pvno', 5)
+
+        enc_part = obj['enc-part']
+        self.assertElementEqual(enc_part, 'etype', key.etype)
+        self.assertElementKVNO(enc_part, 'kvno', key.kvno)
+
+        enc_part = key.decrypt(usage, enc_part['cipher'])
+
+        return enc_part
+
+    def kpasswd_exchange(self,
+                         ticket,
+                         new_password,
+                         expected_code,
+                         expected_msg,
+                         mode,
+                         target_princ=None,
+                         target_realm=None,
+                         ap_options=None,
+                         send_seq_number=True):
+        if mode is self.KpasswdMode.SET:
+            version = 0xff80
+            user_data = self.ChangePasswdDataMS_create(new_password,
+                                                       target_princ,
+                                                       target_realm)
+        elif mode is self.KpasswdMode.CHANGE:
+            self.assertIsNone(target_princ,
+                              'target_princ only valid for pw set')
+            self.assertIsNone(target_realm,
+                              'target_realm only valid for pw set')
+
+            version = 1
+            user_data = new_password.encode('utf-8')
+        else:
+            self.fail(f'invalid mode {mode}')
+
+        subkey = self.RandomKey(kcrypto.Enctype.AES256)
+
+        if ap_options is None:
+            ap_options = '0'
+        ap_options = str(krb5_asn1.APOptions(ap_options))
+
+        kdc_exchange_dict = {
+            'tgt': ticket,
+            'authenticator_subkey': subkey,
+            'auth_data': None,
+            'ap_options': ap_options,
+        }
+
+        if send_seq_number:
+            seq_number = random.randint(0, 0xfffffffe)
+        else:
+            seq_number = None
+
+        ap_req = self.generate_ap_req(kdc_exchange_dict,
+                                      None,
+                                      req_body=None,
+                                      armor=False,
+                                      usage=KU_AP_REQ_AUTH,
+                                      seq_number=seq_number)
+
+        self.connect(self.host, port=464)
+        self.assertIsNotNone(self.s)
+
+        family = self.s.family
+
+        if family == socket.AF_INET:
+            addr_type = 2  # IPv4
+        elif family == socket.AF_INET6:
+            addr_type = 24  # IPv6
+        else:
+            self.fail(f'unknown family {family}')
+
+        def create_address(ip):
+            return {
+                'addr-type': addr_type,
+                'address': socket.inet_pton(family, ip),
+            }
+
+        local_ip = self.s.getsockname()[0]
+        local_address = create_address(local_ip)
+
+        # remote_ip = self.s.getpeername()[0]
+        # remote_address = create_address(remote_ip)
+
+        # TODO: due to a bug (?), MIT Kerberos will not accept the request
+        # unless r-address is set to our _local_ address. Heimdal, on the other
+        # hand, requires the r-address is set to the remote address (as
+        # expected). To avoid problems, avoid sending r-address for now.
+        remote_address = None
+
+        msg = self.kpasswd_create(subkey,
+                                  user_data,
+                                  version,
+                                  seq_number,
+                                  ap_req,
+                                  local_address,
+                                  remote_address)
+
+        self.send_msg(msg)
+        rep_pdu = self.recv_pdu_raw()
+
+        self._disconnect('transaction done')
+
+        self.assertIsNotNone(rep_pdu)
+
+        header = rep_pdu[:6]
+        reply = rep_pdu[6:]
+
+        reply_len = (header[0] << 8) | header[1]
+        reply_version = (header[2] << 8) | header[3]
+        ap_rep_len = (header[4] << 8) | header[5]
+
+        self.assertEqual(reply_len, len(rep_pdu))
+        self.assertEqual(1, reply_version)  # KRB5_KPASSWD_VERS_CHANGEPW
+        self.assertLess(ap_rep_len, reply_len)
+
+        self.assertNotEqual(0x7e, rep_pdu[1])
+        self.assertNotEqual(0x5e, rep_pdu[1])
+
+        if ap_rep_len:
+            # We received an AP-REQ and KRB-PRIV as a response. This may or may
+            # not indicate an error, depending on the status code.
+            ap_rep = reply[:ap_rep_len]
+            krb_priv = reply[ap_rep_len:]
+
+            key = ticket.session_key
+
+            ap_rep = self.der_decode(ap_rep, asn1Spec=krb5_asn1.AP_REP())
+            self.assertElementEqual(ap_rep, 'msg-type', KRB_AP_REP)
+            enc_part = self.get_enc_part(ap_rep, key, KU_AP_REQ_ENC_PART)
+            enc_part = self.der_decode(
+                enc_part, asn1Spec=krb5_asn1.EncAPRepPart())
+
+            self.assertElementPresent(enc_part, 'ctime')
+            self.assertElementPresent(enc_part, 'cusec')
+            # self.assertElementMissing(enc_part, 'subkey') # TODO
+            # self.assertElementPresent(enc_part, 'seq-number') # TODO
+
+            try:
+                krb_priv = self.der_decode(krb_priv, asn1Spec=krb5_asn1.KRB_PRIV())
+            except PyAsn1Error:
+                self.fail()
+
+            self.assertElementEqual(krb_priv, 'msg-type', KRB_PRIV)
+            priv_enc_part = self.get_enc_part(krb_priv, subkey, KU_KRB_PRIV)
+            priv_enc_part = self.der_decode(
+                priv_enc_part, asn1Spec=krb5_asn1.EncKrbPrivPart())
+
+            self.assertElementMissing(priv_enc_part, 'timestamp')
+            self.assertElementMissing(priv_enc_part, 'usec')
+            # self.assertElementPresent(priv_enc_part, 'seq-number') # TODO
+            # self.assertElementEqual(priv_enc_part, 's-address', remote_address) # TODO
+            # self.assertElementMissing(priv_enc_part, 'r-address') # TODO
+
+            result_data = priv_enc_part['user-data']
+        else:
+            # We received a KRB-ERROR as a response, indicating an error.
+            krb_error = self.der_decode(reply, asn1Spec=krb5_asn1.KRB_ERROR())
+
+            sname = self.PrincipalName_create(
+                name_type=NT_PRINCIPAL,
+                names=['kadmin', 'changepw'])
+            realm = self.get_krbtgt_creds().get_realm().upper()
+
+            self.assertElementEqual(krb_error, 'pvno', 5)
+            self.assertElementEqual(krb_error, 'msg-type', KRB_ERROR)
+            self.assertElementMissing(krb_error, 'ctime')
+            self.assertElementMissing(krb_error, 'usec')
+            self.assertElementPresent(krb_error, 'stime')
+            self.assertElementPresent(krb_error, 'susec')
+
+            error_code = krb_error['error-code']
+            if isinstance(expected_code, int):
+                self.assertEqual(error_code, expected_code)
+            else:
+                self.assertIn(error_code, expected_code)
+
+            self.assertElementMissing(krb_error, 'crealm')
+            self.assertElementMissing(krb_error, 'cname')
+            self.assertElementEqual(krb_error, 'realm', realm.encode('utf-8'))
+            self.assertElementEqualPrincipal(krb_error, 'sname', sname)
+            self.assertElementMissing(krb_error, 'e-text')
+
+            result_data = krb_error['e-data']
+
+        status = result_data[:2]
+        message = result_data[2:]
+
+        status_code = (status[0] << 8) | status[1]
+        if isinstance(expected_code, int):
+            self.assertEqual(status_code, expected_code)
+        else:
+            self.assertIn(status_code, expected_code)
+
+        if not message:
+            self.assertEqual(0, status_code,
+                             'got an error result, but no message')
+            return
+
+        # Check the first character of the message.
+        if message[0]:
+            if isinstance(expected_msg, bytes):
+                self.assertEqual(message, expected_msg)
+            else:
+                self.assertIn(message, expected_msg)
+        else:
+            # We got AD password policy information.
+            self.assertEqual(30, len(message))
+
+            (empty_bytes,
+             min_length,
+             history_length,
+             properties,
+             expire_time,
+             min_age) = struct.unpack('>HIIIQQ', message)
+
     def _generic_kdc_exchange(self,
                               kdc_exchange_dict,  # required
                               cname=None,  # optional
@@ -1879,7 +2233,7 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNotNone(generate_fast_fn)
             fast_ap_req = generate_fast_armor_fn(kdc_exchange_dict,
                                                  callback_dict,
-                                                 req_body,
+                                                 None,
                                                  armor=True)
 
             fast_armor_type = kdc_exchange_dict['fast_armor_type']
@@ -2577,7 +2931,11 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNotNone(ticket_decryption_key)
 
         if ticket_decryption_key is not None:
-            self.verify_ticket(ticket_creds, krbtgt_keys, expect_pac=expect_pac,
+            service_ticket = (not self.is_tgs(expected_sname)
+                              and rep_msg_type == KRB_TGS_REP)
+            self.verify_ticket(ticket_creds, krbtgt_keys,
+                               service_ticket=service_ticket,
+                               expect_pac=expect_pac,
                                expect_ticket_checksum=expect_ticket_checksum
                                or self.tkt_sig_support)
 
@@ -2614,24 +2972,41 @@ class RawKerberosTest(TestCaseInTempDir):
                 expected_types.append(krb5pac.PAC_TYPE_DEVICE_INFO)
                 expected_types.append(krb5pac.PAC_TYPE_DEVICE_CLAIMS_INFO)
 
-        if not self.is_tgs(expected_sname):
+        if not self.is_tgs(expected_sname) and rep_msg_type == KRB_TGS_REP:
             expected_types.append(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
 
         require_strict = {krb5pac.PAC_TYPE_CLIENT_CLAIMS_INFO}
         if not self.tkt_sig_support:
             require_strict.add(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
 
+        expect_extra_pac_buffers = self.is_tgs(expected_sname)
+
         expect_pac_attrs = kdc_exchange_dict['expect_pac_attrs']
+
+        if expect_pac_attrs:
+            expect_pac_attrs_pac_request = kdc_exchange_dict[
+                'expect_pac_attrs_pac_request']
+        else:
+            expect_pac_attrs_pac_request = kdc_exchange_dict[
+                'pac_request']
+
+        if expect_pac_attrs is None:
+            if self.expect_extra_pac_buffers:
+                expect_pac_attrs = expect_extra_pac_buffers
+            else:
+                require_strict.add(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
         if expect_pac_attrs:
             expected_types.append(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
-        elif expect_pac_attrs is None:
-            require_strict.add(krb5pac.PAC_TYPE_ATTRIBUTES_INFO)
 
         expect_requester_sid = kdc_exchange_dict['expect_requester_sid']
+
+        if expect_requester_sid is None:
+            if self.expect_extra_pac_buffers:
+                expect_requester_sid = expect_extra_pac_buffers
+            else:
+                require_strict.add(krb5pac.PAC_TYPE_REQUESTER_SID)
         if expect_requester_sid:
             expected_types.append(krb5pac.PAC_TYPE_REQUESTER_SID)
-        elif expect_requester_sid is None:
-            require_strict.add(krb5pac.PAC_TYPE_REQUESTER_SID)
 
         buffer_types = [pac_buffer.type
                         for pac_buffer in pac.buffers]
@@ -2719,9 +3094,6 @@ class RawKerberosTest(TestCaseInTempDir):
                 requested_pac = bool(flags & 1)
                 given_pac = bool(flags & 2)
 
-                expect_pac_attrs_pac_request = kdc_exchange_dict[
-                    'expect_pac_attrs_pac_request']
-
                 self.assertEqual(expect_pac_attrs_pac_request is True,
                                  requested_pac)
                 self.assertEqual(expect_pac_attrs_pac_request is None,
@@ -2731,8 +3103,8 @@ class RawKerberosTest(TestCaseInTempDir):
                       and expect_requester_sid):
                 requester_sid = pac_buffer.info.sid
 
-                self.assertIsNotNone(expected_sid)
-                self.assertEqual(expected_sid, str(requester_sid))
+                if expected_sid is not None:
+                    self.assertEqual(expected_sid, str(requester_sid))
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
@@ -2855,7 +3227,6 @@ class RawKerberosTest(TestCaseInTempDir):
 
         expect_etype_info2 = ()
         expect_etype_info = False
-        unexpect_etype_info = True
         expected_aes_type = 0
         expected_rc4_type = 0
         if kcrypto.Enctype.RC4 in proposed_etypes:
@@ -2868,7 +3239,6 @@ class RawKerberosTest(TestCaseInTempDir):
                 if etype > expected_aes_type:
                     expected_aes_type = etype
             if etype in (kcrypto.Enctype.RC4,) and error_code != 0:
-                unexpect_etype_info = False
                 if etype > expected_rc4_type:
                     expected_rc4_type = etype
 
@@ -3078,31 +3448,39 @@ class RawKerberosTest(TestCaseInTempDir):
                         kdc_exchange_dict,
                         _callback_dict,
                         req_body,
-                        armor):
+                        armor,
+                        usage=None,
+                        seq_number=None):
+        req_body_checksum = None
+
         if armor:
+            self.assertIsNone(req_body)
+
             tgt = kdc_exchange_dict['armor_tgt']
             authenticator_subkey = kdc_exchange_dict['armor_subkey']
-
-            req_body_checksum = None
         else:
             tgt = kdc_exchange_dict['tgt']
             authenticator_subkey = kdc_exchange_dict['authenticator_subkey']
-            body_checksum_type = kdc_exchange_dict['body_checksum_type']
 
-            req_body_blob = self.der_encode(req_body,
-                                            asn1Spec=krb5_asn1.KDC_REQ_BODY())
+            if req_body is not None:
+                body_checksum_type = kdc_exchange_dict['body_checksum_type']
 
-            req_body_checksum = self.Checksum_create(tgt.session_key,
-                                                     KU_TGS_REQ_AUTH_CKSUM,
-                                                     req_body_blob,
-                                                     ctype=body_checksum_type)
+                req_body_blob = self.der_encode(
+                    req_body, asn1Spec=krb5_asn1.KDC_REQ_BODY())
+
+                req_body_checksum = self.Checksum_create(
+                    tgt.session_key,
+                    KU_TGS_REQ_AUTH_CKSUM,
+                    req_body_blob,
+                    ctype=body_checksum_type)
 
         auth_data = kdc_exchange_dict['auth_data']
 
         subkey_obj = None
         if authenticator_subkey is not None:
             subkey_obj = authenticator_subkey.export_obj()
-        seq_number = random.randint(0, 0xfffffffe)
+        if seq_number is None:
+            seq_number = random.randint(0, 0xfffffffe)
         (ctime, cusec) = self.get_KerberosTimeWithUsec()
         authenticator_obj = self.Authenticator_create(
             crealm=tgt.crealm,
@@ -3117,7 +3495,8 @@ class RawKerberosTest(TestCaseInTempDir):
             authenticator_obj,
             asn1Spec=krb5_asn1.Authenticator())
 
-        usage = KU_AP_REQ_AUTH if armor else KU_TGS_REQ_AUTH
+        if usage is None:
+            usage = KU_AP_REQ_AUTH if armor else KU_TGS_REQ_AUTH
         authenticator = self.EncryptedData_create(tgt.session_key,
                                                   usage,
                                                   authenticator_blob)
@@ -3211,11 +3590,9 @@ class RawKerberosTest(TestCaseInTempDir):
                                         ticket_blob)
         self.assertEqual(expected_checksum, checksum)
 
-    def verify_ticket(self, ticket, krbtgt_keys, expect_pac=True,
+    def verify_ticket(self, ticket, krbtgt_keys, service_ticket,
+                      expect_pac=True,
                       expect_ticket_checksum=True):
-        # Check if the ticket is a TGT.
-        is_tgt = self.is_tgt(ticket)
-
         # Decrypt the ticket.
 
         key = ticket.decryption_key
@@ -3314,7 +3691,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                         kdc_ctype,
                                         kdc_checksum)
 
-        if is_tgt:
+        if not service_ticket:
             self.assertNotIn(krb5pac.PAC_TYPE_TICKET_CHECKSUM, checksums)
         else:
             ticket_checksum, ticket_ctype = checksums.get(
