@@ -2410,7 +2410,7 @@ static bool filename_split_lcomp(
 		return false;
 	}
 
-	if (name_in[0] == ':') {
+	if (!posix && (name_in[0] == ':')) {
 		/*
 		 * Special case for stream on root directory
 		 */
