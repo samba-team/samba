@@ -3848,7 +3848,7 @@ int get_acl_group_bits( connection_struct *conn,
 	SMB_ACL_T posix_acl;
 	int result = -1;
 
-	posix_acl = SMB_VFS_SYS_ACL_GET_FD(smb_fname->fsp,
+	posix_acl = SMB_VFS_SYS_ACL_GET_FD(metadata_fsp(smb_fname->fsp),
 					   SMB_ACL_TYPE_ACCESS,
 					   talloc_tos());
 	if (posix_acl == (SMB_ACL_T)NULL)
