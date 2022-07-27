@@ -2749,6 +2749,19 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		return NT_STATUS_OK;
 	}
 
+	/*
+	 * Catch an invalid path of "." before we
+	 * call filename_split_lcomp(). We need to
+	 * do this as filename_split_lcomp() will
+	 * use "." for the missing relative component
+	 * when an empty name_in path is sent by
+	 * the client.
+	 */
+	if (ISDOT(name_in)) {
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto fail;
+	}
+
 	ok = filename_split_lcomp(
 		talloc_tos(),
 		name_in,
@@ -2758,11 +2771,6 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		&streamname);
 	if (!ok) {
 		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	if (fname_rel[0] == '\0') {
-		status = NT_STATUS_OBJECT_NAME_INVALID;
 		goto fail;
 	}
 
@@ -2828,12 +2836,38 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 
 		goto fail;
 	}
-	TALLOC_FREE(dirname);
 
 	if (!VALID_STAT_OF_DIR(smb_dirname->st)) {
 		status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		goto fail;
 	}
+
+	/*
+	 * Only look at bad last component values
+	 * once we know we have a valid directory. That
+	 * way we won't confuse error messages from
+	 * opening the directory path with error
+	 * messages from a bad last component.
+	 */
+
+	/* Relative filename can't be empty */
+	if (fname_rel[0] == '\0') {
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto fail;
+	}
+
+	/* Relative filename can't be ".." */
+	if (ISDOTDOT(fname_rel)) {
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto fail;
+	}
+	/* Relative name can only be dot if directory is empty. */
+	if (ISDOT(fname_rel) && dirname[0] != '\0') {
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto fail;
+	}
+
+	TALLOC_FREE(dirname);
 
 	smb_fname_rel = synthetic_smb_fname(
 		mem_ctx,
@@ -2999,6 +3033,7 @@ done:
 	return NT_STATUS_OK;
 
 fail:
+	TALLOC_FREE(dirname);
 	TALLOC_FREE(smb_dirname);
 	TALLOC_FREE(smb_fname_rel);
 	return status;
