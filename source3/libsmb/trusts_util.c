@@ -311,6 +311,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		TALLOC_FREE(frame);
 		return status;
 	}
+	talloc_keep_secret(new_trust_pw_blob.data);
 
 	switch (sec_channel_type) {
 
@@ -365,7 +366,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		 * We use the password that's already persistent in
 		 * our database in order to handle failures.
 		 */
-		data_blob_clear_free(&new_trust_pw_blob);
+		data_blob_free(&new_trust_pw_blob);
 		new_trust_pw_blob = info->next_change->password->cleartext_blob;
 		break;
 
