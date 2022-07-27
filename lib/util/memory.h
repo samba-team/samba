@@ -32,6 +32,33 @@
 #endif
 
 /**
+ * Zero string and free memory if the pointer and zero the pointer.
+ *
+ * @note You are explicitly allowed to pass NULL pointers -- they will
+ * always be ignored.
+ **/
+#define BURN_FREE_STR(x) do { \
+				if ((x) != NULL) { \
+					size_t s = strlen(x); \
+					memset_s((x), s, 0, s); \
+					free(x); (x) = NULL; \
+				} \
+			} while(0)
+
+/**
+ * Zero and free memory if the pointer and zero the pointer.
+ *
+ * @note You are explicitly allowed to pass NULL pointers -- they will
+ * always be ignored.
+ **/
+#define BURN_FREE(x, s) do { \
+				if ((x) != NULL) { \
+					memset_s((x), (s), 0, (s)); \
+					free(x); (x) = NULL; \
+				} \
+			} while(0)
+
+/**
  * Type-safe version of malloc. Allocated one copy of the
  * specified data type.
  */
