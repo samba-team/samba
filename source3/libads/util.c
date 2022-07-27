@@ -107,6 +107,7 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 					       info);
 		return ADS_ERROR_NT(status);
 	}
+	talloc_keep_secret(new_pw_blob.data);
 	new_password = (const char *)new_pw_blob.data;
 
 	ret = kerberos_set_password(ads->auth.kdc_server, host_principal, password, host_principal, new_password, ads->auth.time_offset);
