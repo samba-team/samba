@@ -561,7 +561,9 @@ void reply_checkpath(struct smb_request *req)
 	struct smb_filename *smb_fname = NULL;
 	char *name = NULL;
 	NTSTATUS status;
+	struct files_struct *dirfsp = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+	NTTIME twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcheckpath);
@@ -578,13 +580,16 @@ void reply_checkpath(struct smb_request *req)
 
 	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(req->vwv+0, 0)));
 
-	status = filename_convert(ctx,
-				conn,
-				name,
-				ucf_flags,
-				0,
-				&smb_fname);
-
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(name, &twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 name,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
