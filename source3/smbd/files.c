@@ -937,6 +937,12 @@ next:
 			  nt_errstr(status));
 		goto fail;
 	}
+	/*
+	 * We must correctly set fsp->file_id as code inside
+	 * open.c will use this to check if delete_on_close
+	 * has been set on the dirfsp.
+	 */
+	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 
 	result = cp_smb_filename(mem_ctx, fsp->fsp_name);
 	if (result == NULL) {
