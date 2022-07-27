@@ -1695,7 +1695,7 @@ static void winexe_ctrl_got_read(struct tevent_req *subreq)
 		return;
 	}
 
-	ret = sscanf(state->ctrl_inbuf, "version 0x%x\n", &return_code);
+	ret = sscanf(state->ctrl_inbuf, "return_code %x\n", &return_code);
 	if (ret == 1) {
 		state->return_code = return_code;
 		return;
