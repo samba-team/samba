@@ -1407,6 +1407,7 @@ void reply_open(struct smb_request *req)
 	off_t size = 0;
 	time_t mtime=0;
 	int info;
+	struct files_struct *dirfsp = NULL;
 	files_struct *fsp;
 	int oplock_request;
 	int deny_mode;
@@ -1418,6 +1419,7 @@ void reply_open(struct smb_request *req)
 	uint32_t private_flags = 0;
 	NTSTATUS status;
 	uint32_t ucf_flags;
+	NTTIME twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBopen);
@@ -1448,12 +1450,16 @@ void reply_open(struct smb_request *req)
 
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 
-	status = filename_convert(ctx,
-				conn,
-				fname,
-				ucf_flags,
-				0,
-				&smb_fname);
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(fname, &twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 fname,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req,
@@ -1468,7 +1474,7 @@ void reply_open(struct smb_request *req)
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		NULL,					/* dirfsp */
+		dirfsp,					/* dirfsp */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
