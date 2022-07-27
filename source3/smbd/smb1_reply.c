@@ -2183,12 +2183,14 @@ void reply_ctemp(struct smb_request *req)
 	char *wire_name = NULL;
 	char *fname = NULL;
 	uint32_t fattr;
+	struct files_struct *dirfsp = NULL;
 	files_struct *fsp;
 	int oplock_request;
 	char *s;
 	NTSTATUS status;
 	int i;
 	uint32_t ucf_flags;
+	NTTIME twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBctemp);
@@ -2226,11 +2228,16 @@ void reply_ctemp(struct smb_request *req)
 		}
 
 		ucf_flags = filename_create_ucf_flags(req, FILE_CREATE);
-		status = filename_convert(ctx, conn,
-				fname,
-				ucf_flags,
-				0,
-				&smb_fname);
+		if (ucf_flags & UCF_GMT_PATHNAME) {
+			extract_snapshot_token(fname, &twrp);
+		}
+		status = filename_convert_dirfsp(ctx,
+						 conn,
+						 fname,
+						 ucf_flags,
+						 twrp,
+						 &dirfsp,
+						 &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -2245,7 +2252,7 @@ void reply_ctemp(struct smb_request *req)
 		status = SMB_VFS_CREATE_FILE(
 			conn,					/* conn */
 			req,					/* req */
-			NULL,					/* dirfsp */
+			dirfsp,					/* dirfsp */
 			smb_fname,				/* fname */
 			FILE_GENERIC_READ | FILE_GENERIC_WRITE, /* access_mask */
 			FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
@@ -2264,6 +2271,7 @@ void reply_ctemp(struct smb_request *req)
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 			TALLOC_FREE(fname);
+			TALLOC_FREE(dirfsp);
 			TALLOC_FREE(smb_fname);
 			continue;
 		}
