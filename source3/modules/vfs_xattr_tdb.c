@@ -322,6 +322,16 @@ static int xattr_tdb_fremovexattr(struct vfs_handle_struct *handle,
 }
 
 /*
+ * Destructor for the VFS private data
+ */
+
+static void close_xattr_db(void **data)
+{
+	struct db_context **p_db = (struct db_context **)data;
+	TALLOC_FREE(*p_db);
+}
+
+/*
  * Open the tdb file upon VFS_CONNECT
  */
 
@@ -563,16 +573,6 @@ static int xattr_tdb_unlinkat(vfs_handle_struct *handle,
  out:
 	TALLOC_FREE(frame);
 	return ret;
-}
-
-/*
- * Destructor for the VFS private data
- */
-
-static void close_xattr_db(void **data)
-{
-	struct db_context **p_db = (struct db_context **)data;
-	TALLOC_FREE(*p_db);
 }
 
 static int xattr_tdb_connect(vfs_handle_struct *handle, const char *service,
