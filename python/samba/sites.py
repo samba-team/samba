@@ -94,9 +94,9 @@ def delete_site(samdb, configDn, siteName):
 
     dnsite = ldb.Dn(samdb, "CN=Sites")
     if dnsite.add_base(configDn) == False:
-        raise SiteException("dnsites.add_base() failed")
+        raise SiteException("dnsite.add_base() failed")
     if dnsite.add_child("CN=X") == False:
-        raise SiteException("dnsites.add_child() failed")
+        raise SiteException("dnsite.add_child() failed")
     dnsite.set_component(0, "CN", siteName)
 
     dnservers = ldb.Dn(samdb, "CN=Servers")

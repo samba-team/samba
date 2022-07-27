@@ -200,9 +200,9 @@ def set_subnet_site(samdb, configDn, subnet_name, site_name):
 
     dnsite = ldb.Dn(samdb, "CN=Sites")
     if dnsite.add_base(configDn) == False:
-        raise SubnetException("dnsites.add_base() failed")
+        raise SubnetException("dnsite.add_base() failed")
     if dnsite.add_child("CN=X") == False:
-        raise SubnetException("dnsites.add_child() failed")
+        raise SubnetException("dnsite.add_child() failed")
     dnsite.set_component(0, "CN", site_name)
 
     dnservers = ldb.Dn(samdb, "CN=Servers")
