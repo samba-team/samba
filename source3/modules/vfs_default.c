@@ -714,6 +714,24 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 	if (fsp->fsp_flags.is_pathref) {
 		flags |= O_PATH;
 	}
+	if (flags & O_PATH) {
+		/*
+		 * From "man 2 openat":
+		 *
+		 *   When O_PATH is specified in flags, flag bits other than
+		 *   O_CLOEXEC, O_DIRECTORY, and O_NOFOLLOW are ignored.
+		 *
+		 * From "man 2 openat2":
+		 *
+		 *   Whereas  openat(2)  ignores  unknown  bits  in  its  flags
+		 *   argument, openat2() returns an error if unknown or
+		 *   conflicting flags are specified in how.flags.
+		 *
+		 * So we better clear ignored/invalid flags
+		 * and only keep the exptected once.
+		 */
+		flags &= (O_PATH|O_CLOEXEC|O_DIRECTORY|O_NOFOLLOW);
+	}
 #endif
 
 	if (fsp->fsp_flags.is_pathref && !have_opath) {
