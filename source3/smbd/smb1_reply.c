@@ -5862,8 +5862,10 @@ void reply_rmdir(struct smb_request *req)
 	char *directory = NULL;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
+	struct files_struct *dirfsp = NULL;
 	files_struct *fsp = NULL;
 	int info = 0;
+	NTTIME twrp = 0;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 
 	START_PROFILE(SMBrmdir);
@@ -5875,11 +5877,16 @@ void reply_rmdir(struct smb_request *req)
 		goto out;
 	}
 
-	status = filename_convert(ctx, conn,
-				 directory,
-				 ucf_flags,
-				 0,
-				 &smb_dname);
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(directory, &twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 directory,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -5893,7 +5900,7 @@ void reply_rmdir(struct smb_request *req)
 	status = SMB_VFS_CREATE_FILE(
 		conn,                                   /* conn */
 		req,                                    /* req */
-		NULL,					/* dirfsp */
+		dirfsp,					/* dirfsp */
 		smb_dname,                              /* fname */
 		DELETE_ACCESS,                          /* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |   /* share_access */
