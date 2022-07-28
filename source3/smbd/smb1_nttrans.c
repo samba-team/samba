@@ -1537,7 +1537,9 @@ void reply_ntrename(struct smb_request *req)
 			status = rename_internals(ctx,
 						conn,
 						req,
+						NULL, /* src_dirfsp */
 						smb_fname_old,
+						NULL, /* dst_dirfsp */
 						smb_fname_new,
 						dst_original_lcomp,
 						attrs,

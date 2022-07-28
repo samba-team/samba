@@ -5296,7 +5296,9 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		status = rename_internals(ctx,
 					conn,
 					req,
+					NULL, /* src_dirfsp */
 					smb_fname_src,
+					NULL, /* dst_dirfsp */
 					smb_fname_dst,
 					dst_original_lcomp,
 					0,

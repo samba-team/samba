@@ -1718,7 +1718,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			struct smb_request *req,
+			struct files_struct *src_dirfsp,
 			struct smb_filename *smb_fname_src,
+			struct files_struct *dst_dirfsp,
 			struct smb_filename *smb_fname_dst,
 			const char *dst_original_lcomp,
 			uint32_t attrs,
@@ -1780,7 +1782,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	status = SMB_VFS_CREATE_FILE(
 			conn,				/* conn */
 			req,				/* req */
-			NULL,				/* dirfsp */
+			src_dirfsp,			/* dirfsp */
 			smb_fname_src,			/* fname */
 			access_mask,			/* access_mask */
 			(FILE_SHARE_READ |		/* share_access */
