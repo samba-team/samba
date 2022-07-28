@@ -2371,6 +2371,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	char *pdata = *ppdata;
 	uint16_t info_level;
 	struct smb_filename *smb_fname = NULL;
+	struct files_struct *dirfsp = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int data_return_size = 0;
@@ -2461,6 +2462,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		char *fname = NULL;
 		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 		bool require_existing_object = true;
+		NTTIME twrp = 0;
 
 		/* set path info */
 		if (total_params < 7) {
@@ -2505,11 +2507,16 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = filename_convert(req, conn,
-					 fname,
-					 ucf_flags,
-					 0,
-					 &smb_fname);
+		if (ucf_flags & UCF_GMT_PATHNAME) {
+			extract_snapshot_token(fname, &twrp);
+		}
+		status = filename_convert_dirfsp(req,
+						 conn,
+						 fname,
+						 ucf_flags,
+						 twrp,
+						 &dirfsp,
+						 &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req,
