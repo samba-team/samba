@@ -4241,7 +4241,9 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		connection_struct *conn,
 		struct smb_request *req,
 		bool overwrite_if_exists,
+		struct files_struct *old_dirfsp,
 		const struct smb_filename *smb_fname_old,
+		struct files_struct *new_dirfsp,
 		struct smb_filename *smb_fname_new)
 {
 	NTSTATUS status = NT_STATUS_OK;
@@ -4919,8 +4921,14 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return status;
 	}
 
-	return hardlink_internals(ctx, conn, req, false,
-			smb_fname_old, smb_fname_new);
+	return hardlink_internals(ctx,
+				  conn,
+				  req,
+				  false,
+				  NULL, /* old_dirfsp */
+				  smb_fname_old,
+				  NULL, /* new_dirfsp */
+				  smb_fname_new);
 }
 
 /****************************************************************************
@@ -5118,7 +5126,9 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 				conn,
 				req,
 				overwrite,
+				NULL, /* src_dirfsp */
 				fsp->fsp_name,
+				NULL, /* dst_dirfsp */
 				smb_fname_dst);
 
 	TALLOC_FREE(smb_fname_dst);
