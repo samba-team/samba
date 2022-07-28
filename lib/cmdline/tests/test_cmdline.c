@@ -22,6 +22,8 @@
 #include <stdint.h>
 #include <setjmp.h>
 #include <cmocka.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "lib/cmdline/cmdline.h"
 
