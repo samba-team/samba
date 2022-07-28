@@ -278,41 +278,6 @@ static NTSTATUS zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				zfs_process_smbacl);
 }
 
-static int get_zfsacl(TALLOC_CTX *mem_ctx,
-		      const struct smb_filename *smb_fname,
-		      ace_t **outbuf)
-{
-	int naces, rv;
-	ace_t *acebuf = NULL;
-
-	naces = acl(smb_fname->base_name, ACE_GETACLCNT, 0, NULL);
-	if (naces == -1) {
-		int dbg_level = 10;
-
-		if (errno == ENOSYS) {
-			dbg_level = 1;
-		}
-		DEBUG(dbg_level, ("acl(ACE_GETACLCNT, %s): %s ",
-				  smb_fname->base_name, strerror(errno)));
-		return naces;
-	}
-	acebuf = talloc_size(mem_ctx, sizeof(ace_t)*naces);
-	if (acebuf == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	rv = acl(smb_fname->base_name, ACE_GETACL, naces, acebuf);
-	if (rv == -1) {
-		DBG_DEBUG("acl(ACE_GETACL, %s) failed: %s ",
-			  smb_fname->base_name, strerror(errno));
-		return -1;
-	}
-
-	*outbuf = acebuf;
-	return naces;
-}
-
 static int fget_zfsacl(TALLOC_CTX *mem_ctx,
 		       struct files_struct *fsp,
 		       ace_t **outbuf)
