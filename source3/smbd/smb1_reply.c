@@ -5826,7 +5826,7 @@ void reply_mkdir(struct smb_request *req)
 		goto out;
 	}
 
-	status = create_directory(conn, req, smb_dname);
+	status = create_directory(conn, req, NULL, smb_dname);
 
 	DEBUG(5, ("create_directory returned %s\n", nt_errstr(status)));
 

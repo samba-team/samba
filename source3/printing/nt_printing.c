@@ -1577,7 +1577,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 
 	DEBUG(5,("Creating first directory: %s\n", smb_dname->base_name));
 
-	nt_status = create_directory(conn, NULL, smb_dname);
+	nt_status = create_directory(conn, NULL, NULL, smb_dname);
 	if (!NT_STATUS_IS_OK(nt_status)
 	 && !NT_STATUS_EQUAL(nt_status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 		DEBUG(0, ("failed to create driver destination directory: %s\n",

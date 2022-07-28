@@ -747,7 +747,9 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 struct deferred_open_record;
 bool is_deferred_open_async(const struct deferred_open_record *rec);
 bool defer_smb1_sharing_violation(struct smb_request *req);
-NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
+NTSTATUS create_directory(connection_struct *conn,
+			  struct smb_request *req,
+			  struct files_struct *dirfsp,
 			  struct smb_filename *smb_dname);
 void msg_file_was_renamed(struct messaging_context *msg,
 			  void *private_data,
