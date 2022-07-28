@@ -6006,11 +6006,15 @@ void reply_mv(struct smb_request *req)
 	uint32_t attrs;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
+	struct files_struct *src_dirfsp = NULL;
 	struct smb_filename *smb_fname_src = NULL;
+	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	const char *dst_original_lcomp = NULL;
 	uint32_t src_ucf_flags = ucf_flags_from_smb_request(req);
+	NTTIME src_twrp = 0;
 	uint32_t dst_ucf_flags = ucf_flags_from_smb_request(req);
+	NTTIME dst_twrp = 0;
 	bool stream_rename = false;
 
 	START_PROFILE(SMBmv);
@@ -6049,12 +6053,16 @@ void reply_mv(struct smb_request *req)
 		}
         }
 
-	status = filename_convert(ctx,
-				  conn,
-				  name,
-				  src_ucf_flags,
-				  0,
-				  &smb_fname_src);
+	if (src_ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(name, &src_twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 name,
+					 src_ucf_flags,
+					 src_twrp,
+					 &src_dirfsp,
+					 &smb_fname_src);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -6066,12 +6074,16 @@ void reply_mv(struct smb_request *req)
 		goto out;
 	}
 
-	status = filename_convert(ctx,
-				  conn,
-				  newname,
-				  dst_ucf_flags,
-				  0,
-				  &smb_fname_dst);
+	if (dst_ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(newname, &dst_twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 newname,
+					 dst_ucf_flags,
+					 dst_twrp,
+					 &dst_dirfsp,
+					 &smb_fname_dst);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -6111,9 +6123,9 @@ void reply_mv(struct smb_request *req)
 	status = rename_internals(ctx,
 				conn,
 				req,
-				NULL, /* src_dirfsp */
+				src_dirfsp, /* src_dirfsp */
 				smb_fname_src,
-				NULL, /* dst_dirfsp */
+				dst_dirfsp, /* dst_dirfsp */
 				smb_fname_dst,
 				dst_original_lcomp,
 				attrs,
