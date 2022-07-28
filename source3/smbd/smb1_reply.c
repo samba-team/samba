@@ -768,12 +768,14 @@ void reply_setatr(struct smb_request *req)
 	struct smb_file_time ft;
 	connection_struct *conn = req->conn;
 	struct smb_filename *smb_fname = NULL;
+	struct files_struct *dirfsp = NULL;
 	char *fname = NULL;
 	int mode;
 	time_t mtime;
 	const char *p;
 	NTSTATUS status;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+	NTTIME twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBsetatr);
@@ -791,12 +793,16 @@ void reply_setatr(struct smb_request *req)
 		goto out;
 	}
 
-	status = filename_convert(ctx,
-				conn,
-				fname,
-				ucf_flags,
-				0,
-				&smb_fname);
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(fname, &twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 fname,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
