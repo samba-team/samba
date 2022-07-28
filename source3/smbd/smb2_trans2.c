@@ -5027,6 +5027,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		  smb_fname_str_dbg(smb_fname_dst)));
 	status = rename_internals_fsp(conn,
 				fsp,
+				NULL, /* dst_dirfsp */
 				smb_fname_dst,
 				dst_original_lcomp,
 				(FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM),
@@ -5285,6 +5286,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 			  smb_fname_str_dbg(smb_fname_dst)));
 		status = rename_internals_fsp(conn,
 					fsp,
+					NULL, /* dst_dirfsp */
 					smb_fname_dst,
 					dst_original_lcomp,
 					0,
