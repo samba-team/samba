@@ -1946,6 +1946,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	struct smb_filename *smb_fname = NULL;
 	bool delete_pending = False;
 	struct timespec write_time_ts;
+	struct files_struct *dirfsp = NULL;
 	files_struct *fsp = NULL;
 	struct file_id fileid;
 	struct ea_list *ea_list = NULL;
@@ -2060,6 +2061,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		uint32_t name_hash;
 		char *fname = NULL;
 		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+		NTTIME twrp = 0;
 
 		/* qpathinfo */
 		if (total_params < 7) {
@@ -2106,12 +2108,16 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = filename_convert(req,
-					conn,
-					fname,
-					ucf_flags,
-					0,
-					&smb_fname);
+		if (ucf_flags & UCF_GMT_PATHNAME) {
+			extract_snapshot_token(fname, &twrp);
+		}
+		status = filename_convert_dirfsp(req,
+						 conn,
+						 fname,
+						 ucf_flags,
+						 twrp,
+						 &dirfsp,
+						 &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req,
@@ -2125,8 +2131,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 		/*
 		 * qpathinfo must operate on an existing file, so we
-		 * can exit early if filename_convert() returned the "new file"
-		 * NT_STATUS_OK, !VALID_STAT case.
+		 * can exit early if filename_convert_dirfsp() returned the
+		 * "new file" NT_STATUS_OK, !VALID_STAT case.
 		 */
 
 		if (!VALID_STAT(smb_fname->st)) {
