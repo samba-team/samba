@@ -4951,9 +4951,11 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	bool overwrite;
 	uint32_t len;
 	char *newname = NULL;
+	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	const char *dst_original_lcomp = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+	NTTIME dst_twrp = 0;
 	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -5011,12 +5013,16 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 			goto out;
 		}
 	} else {
-		status = filename_convert(ctx,
-					conn,
-					newname,
-					ucf_flags,
-					0,
-					&smb_fname_dst);
+		if (ucf_flags & UCF_GMT_PATHNAME) {
+			extract_snapshot_token(newname, &dst_twrp);
+		}
+		status = filename_convert_dirfsp(ctx,
+						 conn,
+						 newname,
+						 ucf_flags,
+						 dst_twrp,
+						 &dst_dirfsp,
+						 &smb_fname_dst);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
