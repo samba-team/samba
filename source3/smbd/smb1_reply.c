@@ -5814,10 +5814,12 @@ void reply_printwrite(struct smb_request *req)
 void reply_mkdir(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct files_struct *dirfsp = NULL;
 	struct smb_filename *smb_dname = NULL;
 	char *directory = NULL;
 	NTSTATUS status;
 	uint32_t ucf_flags;
+	NTTIME twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBmkdir);
@@ -5830,11 +5832,16 @@ void reply_mkdir(struct smb_request *req)
 	}
 
 	ucf_flags = filename_create_ucf_flags(req, FILE_CREATE);
-	status = filename_convert(ctx, conn,
-				 directory,
-				 ucf_flags,
-				 0,
-				 &smb_dname);
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(directory, &twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 directory,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -5845,7 +5852,7 @@ void reply_mkdir(struct smb_request *req)
 		goto out;
 	}
 
-	status = create_directory(conn, req, NULL, smb_dname);
+	status = create_directory(conn, req, dirfsp, smb_dname);
 
 	DEBUG(5, ("create_directory returned %s\n", nt_errstr(status)));
 
