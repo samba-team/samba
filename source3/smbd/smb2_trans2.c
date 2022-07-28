@@ -5168,6 +5168,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	uint32_t root_fid;
 	uint32_t len;
 	char *newname = NULL;
+	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	const char *dst_original_lcomp = NULL;
 	NTSTATUS status = NT_STATUS_OK;
@@ -5256,6 +5257,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		 */
 		char *base_name = NULL;
 		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+		NTTIME dst_twrp = 0;
 
 		/* newname must *not* be a stream name. */
 		if (newname[0] == ':') {
@@ -5287,12 +5289,16 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = filename_convert(ctx,
-					  conn,
-					  base_name,
-					  ucf_flags,
-					  0,
-					  &smb_fname_dst);
+		if (ucf_flags & UCF_GMT_PATHNAME) {
+			extract_snapshot_token(base_name, &dst_twrp);
+		}
+		status = filename_convert_dirfsp(ctx,
+					 conn,
+					 base_name,
+					 ucf_flags,
+					 dst_twrp,
+					 &dst_dirfsp,
+					 &smb_fname_dst);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
@@ -5314,7 +5320,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 			  smb_fname_str_dbg(smb_fname_dst)));
 		status = rename_internals_fsp(conn,
 					fsp,
-					NULL, /* dst_dirfsp */
+					dst_dirfsp,
 					smb_fname_dst,
 					dst_original_lcomp,
 					0,
@@ -5329,7 +5335,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					req,
 					NULL, /* src_dirfsp */
 					smb_fname_src,
-					NULL, /* dst_dirfsp */
+					dst_dirfsp,
 					smb_fname_dst,
 					dst_original_lcomp,
 					0,
