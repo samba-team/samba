@@ -682,13 +682,19 @@ void reply_getatr(struct smb_request *req)
 		size = 0;
 		mtime = 0;
 	} else {
+		struct files_struct *dirfsp = NULL;
 		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
-		status = filename_convert(ctx,
-				conn,
-				fname,
-				ucf_flags,
-				0,
-				&smb_fname);
+		NTTIME twrp = 0;
+		if (ucf_flags & UCF_GMT_PATHNAME) {
+			extract_snapshot_token(fname, &twrp);
+		}
+		status = filename_convert_dirfsp(ctx,
+						 conn,
+						 fname,
+						 ucf_flags,
+						 twrp,
+						 &dirfsp,
+						 &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
