@@ -4875,8 +4875,10 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 					struct smb_filename *smb_fname_new)
 {
 	char *oldname = NULL;
+	struct files_struct *src_dirfsp = NULL;
 	struct smb_filename *smb_fname_old = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+	NTTIME old_twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -4911,12 +4913,16 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 		smb_fname_str_dbg(smb_fname_new), oldname));
 
-	status = filename_convert(ctx,
-				conn,
-				oldname,
-				ucf_flags,
-				0,
-				&smb_fname_old);
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(oldname, &old_twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 oldname,
+					 ucf_flags,
+					 old_twrp,
+					 &src_dirfsp,
+					 &smb_fname_old);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4925,7 +4931,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 				  conn,
 				  req,
 				  false,
-				  NULL, /* old_dirfsp */
+				  src_dirfsp,
 				  smb_fname_old,
 				  NULL, /* new_dirfsp */
 				  smb_fname_new);
