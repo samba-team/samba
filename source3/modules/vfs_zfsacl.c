@@ -326,6 +326,7 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
 {
+	TALLOC_CTX *frame = NULL;
 	struct SMB4ACL_T *pacl;
 	NTSTATUS status;
 	struct zfsacl_config_data *config = NULL;
@@ -336,7 +337,7 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				struct zfsacl_config_data,
 				return NT_STATUS_INTERNAL_ERROR);
 
-	TALLOC_CTX *frame = talloc_stackframe();
+	frame = talloc_stackframe();
 
 	naces = fget_zfsacl(talloc_tos(), fsp, &acebuf);
 	if (naces == -1) {
