@@ -197,7 +197,9 @@ NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 NTSTATUS copy_internals(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			struct smb_request *req,
+			struct files_struct *src_dirfsp,
 			struct smb_filename *smb_fname_src,
+			struct files_struct *dst_dirfsp,
 			struct smb_filename *smb_fname_dst,
 			uint32_t attrs)
 {
@@ -246,7 +248,7 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		NULL,					/* dirfsp */
+		src_dirfsp,				/* dirfsp */
 		smb_fname_src,				/* fname */
 		FILE_READ_DATA|FILE_READ_ATTRIBUTES|
 			FILE_READ_EA,			/* access_mask */
@@ -272,7 +274,7 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		NULL,					/* dirfsp */
+		dst_dirfsp,				/* dirfsp */
 		smb_fname_dst,				/* fname */
 		FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|
 			FILE_WRITE_EA,			/* access_mask */

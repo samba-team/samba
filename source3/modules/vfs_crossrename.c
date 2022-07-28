@@ -115,7 +115,9 @@ static NTSTATUS copy_reg(vfs_handle_struct *handle,
 	status = copy_internals(talloc_tos(),
 				handle->conn,
 				NULL,
+				srcfsp, /* src_dirfsp */
 				full_fname_src,
+				dstfsp, /* dst_dirfsp */
 				full_fname_dst,
 				FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM);
 	if (!NT_STATUS_IS_OK(status)) {
