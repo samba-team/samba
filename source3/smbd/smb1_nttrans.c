@@ -1401,7 +1401,9 @@ void reply_ntcancel(struct smb_request *req)
 void reply_ntrename(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct files_struct *src_dirfsp = NULL;
 	struct smb_filename *smb_fname_old = NULL;
+	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_new = NULL;
 	char *oldname = NULL;
 	char *newname = NULL;
@@ -1410,7 +1412,9 @@ void reply_ntrename(struct smb_request *req)
 	NTSTATUS status;
 	uint32_t attrs;
 	uint32_t ucf_flags_src = ucf_flags_from_smb_request(req);
+	NTTIME src_twrp = 0;
 	uint32_t ucf_flags_dst = ucf_flags_from_smb_request(req);
+	NTTIME dst_twrp = 0;
 	uint16_t rename_type;
 	TALLOC_CTX *ctx = talloc_tos();
 	bool stream_rename = false;
@@ -1463,12 +1467,16 @@ void reply_ntrename(struct smb_request *req)
 		}
 	}
 
-	/* rename_internals() calls unix_convert(), so don't call it here. */
-	status = filename_convert(ctx, conn,
-				  oldname,
-				  ucf_flags_src,
-				  0,
-				  &smb_fname_old);
+	if (ucf_flags_src & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(oldname, &src_twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 oldname,
+					 ucf_flags_src,
+					 src_twrp,
+					 &src_dirfsp,
+					 &smb_fname_old);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,
 				    NT_STATUS_PATH_NOT_COVERED)) {
@@ -1510,11 +1518,16 @@ void reply_ntrename(struct smb_request *req)
 			goto out;
 		}
 	} else {
-		status = filename_convert(ctx, conn,
-					  newname,
-					  ucf_flags_dst,
-					  0,
-					  &smb_fname_new);
+		if (ucf_flags_dst & UCF_GMT_PATHNAME) {
+			extract_snapshot_token(newname, &dst_twrp);
+		}
+		status = filename_convert_dirfsp(ctx,
+						 conn,
+						 newname,
+						 ucf_flags_dst,
+						 dst_twrp,
+						 &dst_dirfsp,
+						 &smb_fname_new);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,
 					    NT_STATUS_PATH_NOT_COVERED)) {
@@ -1537,9 +1550,9 @@ void reply_ntrename(struct smb_request *req)
 			status = rename_internals(ctx,
 						conn,
 						req,
-						NULL, /* src_dirfsp */
+						src_dirfsp,
 						smb_fname_old,
-						NULL, /* dst_dirfsp */
+						dst_dirfsp,
 						smb_fname_new,
 						dst_original_lcomp,
 						attrs,
@@ -1551,18 +1564,18 @@ void reply_ntrename(struct smb_request *req)
 						    conn,
 						    req,
 						    false,
-						    NULL, /* old_dirfsp */
+						    src_dirfsp,
 						    smb_fname_old,
-						    NULL, /* new_dirfsp */
+						    dst_dirfsp,
 						    smb_fname_new);
 			break;
 		case RENAME_FLAG_COPY:
 			status = copy_internals(ctx,
 						conn,
 						req,
-						NULL, /* src_dirfsp */
+						src_dirfsp,
 						smb_fname_old,
-						NULL, /* dst_dirfsp */
+						dst_dirfsp,
 						smb_fname_new,
 						attrs);
 			break;
