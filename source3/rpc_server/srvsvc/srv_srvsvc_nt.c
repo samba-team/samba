@@ -2498,9 +2498,11 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	struct conn_struct_tos *c = NULL;
 	connection_struct *conn = NULL;
 	struct sec_desc_buf *sd_buf = NULL;
+	struct files_struct *dirfsp = NULL;
 	files_struct *fsp = NULL;
 	int snum;
 	uint32_t ucf_flags = 0;
+	NTTIME twrp = 0;
 
 	ZERO_STRUCT(st);
 
@@ -2532,12 +2534,13 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	}
 	conn = c->conn;
 
-	nt_status = filename_convert(frame,
-					conn,
-					r->in.file,
-					ucf_flags,
-					0,
-					&smb_fname);
+	nt_status = filename_convert_dirfsp(frame,
+					    conn,
+					    r->in.file,
+					    ucf_flags,
+					    twrp,
+					    &dirfsp,
+					    &smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
@@ -2546,7 +2549,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
-		NULL,					/* dirfsp */
+		dirfsp,					/* dirfsp */
 		smb_fname,				/* fname */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
