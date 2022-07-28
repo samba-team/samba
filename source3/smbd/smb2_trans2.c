@@ -5068,9 +5068,11 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 	bool overwrite;
 	uint32_t len;
 	char *newname = NULL;
+	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+	NTTIME dst_twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!fsp) {
@@ -5115,12 +5117,16 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 	DEBUG(10,("smb_file_link_information: got name |%s|\n",
 				newname));
 
-	status = filename_convert(ctx,
-				conn,
-				newname,
-				ucf_flags,
-				0,
-				&smb_fname_dst);
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(newname, &dst_twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 newname,
+					 ucf_flags,
+					 dst_twrp,
+					 &dst_dirfsp,
+					 &smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -5140,7 +5146,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 				overwrite,
 				NULL, /* src_dirfsp */
 				fsp->fsp_name,
-				NULL, /* dst_dirfsp */
+				dst_dirfsp, /* dst_dirfsp */
 				smb_fname_dst);
 
 	TALLOC_FREE(smb_fname_dst);
