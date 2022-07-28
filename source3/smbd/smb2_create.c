@@ -424,9 +424,11 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	const char *requested_filename, const struct files_struct *fsp,
 	const struct smb2_lease *lease_ptr)
 {
+	struct files_struct *dirfsp = NULL;
 	char *filename = NULL;
 	struct smb_filename *smb_fname = NULL;
 	uint32_t ucf_flags;
+	NTTIME twrp = fsp->fsp_name->twrp;
 	NTSTATUS status;
 
 	if (lease_ptr == NULL) {
@@ -464,9 +466,13 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	}
 
 	ucf_flags = filename_create_ucf_flags(smb1req, FILE_OPEN);
-	status = filename_convert(talloc_tos(), fsp->conn,
-				  filename, ucf_flags,
-				  0, &smb_fname);
+	status = filename_convert_dirfsp(talloc_tos(),
+					 fsp->conn,
+					 filename,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_fname);
 	TALLOC_FREE(filename);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("filename_convert returned %s\n",
