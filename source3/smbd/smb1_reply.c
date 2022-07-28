@@ -2368,10 +2368,12 @@ void reply_unlink(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	char *name = NULL;
+	struct files_struct *dirfsp = NULL;
 	struct smb_filename *smb_fname = NULL;
 	uint32_t dirtype;
 	NTSTATUS status;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
+	NTTIME twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBunlink);
@@ -2390,11 +2392,16 @@ void reply_unlink(struct smb_request *req)
 		goto out;
 	}
 
-	status = filename_convert(ctx, conn,
-				  name,
-				  ucf_flags,
-				  0,
-				  &smb_fname);
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(name, &twrp);
+	}
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 name,
+					 ucf_flags,
+					 twrp,
+					 &dirfsp,
+					 &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -2407,7 +2414,7 @@ void reply_unlink(struct smb_request *req)
 
 	DEBUG(3,("reply_unlink : %s\n", smb_fname_str_dbg(smb_fname)));
 
-	status = unlink_internals(conn, req, dirtype, NULL, smb_fname);
+	status = unlink_internals(conn, req, dirtype, dirfsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
