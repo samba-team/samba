@@ -749,6 +749,7 @@ void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_s
 NTSTATUS unlink_internals(connection_struct *conn,
 			struct smb_request *req,
 			uint32_t dirtype,
+			struct files_struct *dirfsp,
 			struct smb_filename *smb_fname)
 {
 	uint32_t fattr;
@@ -844,7 +845,7 @@ NTSTATUS unlink_internals(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE
 		(conn,			/* conn */
 		 req,			/* req */
-		 NULL,			/* dirfsp */
+		 dirfsp,			/* dirfsp */
 		 smb_fname,		/* fname */
 		 DELETE_ACCESS,		/* access_mask */
 		 FILE_SHARE_NONE,	/* share_access */

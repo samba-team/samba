@@ -973,6 +973,7 @@ void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_s
 NTSTATUS unlink_internals(connection_struct *conn,
 			struct smb_request *req,
 			uint32_t dirtype,
+			struct files_struct *dirfsp,
 			struct smb_filename *smb_fname);
 ssize_t fake_sendfile(struct smbXsrv_connection *xconn, files_struct *fsp,
 		      off_t startpos, size_t nread);

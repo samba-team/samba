@@ -2395,7 +2395,7 @@ void reply_unlink(struct smb_request *req)
 
 	DEBUG(3,("reply_unlink : %s\n", smb_fname_str_dbg(smb_fname)));
 
-	status = unlink_internals(conn, req, dirtype, smb_fname);
+	status = unlink_internals(conn, req, dirtype, NULL, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
