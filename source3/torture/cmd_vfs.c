@@ -1597,7 +1597,7 @@ static NTSTATUS cmd_fget_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = SMB_VFS_FGET_NT_ACL(vfs->files[fd],
+	status = SMB_VFS_FGET_NT_ACL(metadata_fsp(vfs->files[fd]),
 				     SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL,
 				     talloc_tos(), &sd);
 	if (!NT_STATUS_IS_OK(status)) {
