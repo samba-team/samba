@@ -1263,7 +1263,7 @@ static bool user_can_read_fsp(struct files_struct *fsp)
 		return false;
         }
 
-	status = SMB_VFS_FGET_NT_ACL(fsp,
+	status = SMB_VFS_FGET_NT_ACL(metadata_fsp(fsp),
 			(SECINFO_OWNER |
 			 SECINFO_GROUP |
 			 SECINFO_DACL),
