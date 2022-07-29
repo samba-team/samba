@@ -1539,6 +1539,38 @@ static bool streams_xattr_strict_lock_check(struct vfs_handle_struct *handle,
 	return true;
 }
 
+static int streams_xattr_fcntl(vfs_handle_struct *handle,
+			       files_struct *fsp,
+			       int cmd,
+			       va_list cmd_arg)
+{
+	va_list dup_cmd_arg;
+	void *arg;
+	int ret;
+
+	if (fsp_is_alternate_stream(fsp)) {
+		switch (cmd) {
+		case F_GETFL:
+		case F_SETFL:
+			break;
+		default:
+			DBG_ERR("Unsupported fcntl() cmd [%d] on [%s]\n",
+				cmd, fsp_str_dbg(fsp));
+			errno = EINVAL;
+			return -1;
+		}
+	}
+
+	va_copy(dup_cmd_arg, cmd_arg);
+	arg = va_arg(dup_cmd_arg, void *);
+
+	ret = SMB_VFS_NEXT_FCNTL(handle, fsp, cmd, arg);
+
+	va_end(dup_cmd_arg);
+
+	return ret;
+}
+
 static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.fs_capabilities_fn = streams_xattr_fs_capabilities,
 	.connect_fn = streams_xattr_connect,
@@ -1567,6 +1599,7 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.filesystem_sharemode_fn = streams_xattr_filesystem_sharemode,
 	.linux_setlease_fn = streams_xattr_linux_setlease,
 	.strict_lock_check_fn = streams_xattr_strict_lock_check,
+	.fcntl_fn = streams_xattr_fcntl,
 
 	.fchown_fn = streams_xattr_fchown,
 	.fchmod_fn = streams_xattr_fchmod,
