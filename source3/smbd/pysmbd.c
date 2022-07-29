@@ -280,7 +280,7 @@ static NTSTATUS set_nt_acl_conn(const char *fname,
 		return status;
 	}
 
-	status = SMB_VFS_FSET_NT_ACL(fsp, security_info_sent, sd);
+	status = SMB_VFS_FSET_NT_ACL(metadata_fsp(fsp), security_info_sent, sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("set_nt_acl_no_snum: fset_nt_acl returned %s.\n", nt_errstr(status)));
 	}
