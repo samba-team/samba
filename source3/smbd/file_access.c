@@ -158,7 +158,7 @@ bool directory_has_default_acl_fsp(struct files_struct *fsp)
 	unsigned int i;
 	NTSTATUS status;
 
-	status = SMB_VFS_FGET_NT_ACL(fsp,
+	status = SMB_VFS_FGET_NT_ACL(metadata_fsp(fsp),
 				SECINFO_DACL,
 				talloc_tos(),
 				&secdesc);

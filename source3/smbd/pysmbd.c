@@ -323,7 +323,7 @@ static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = SMB_VFS_FGET_NT_ACL(smb_fname->fsp,
+	status = SMB_VFS_FGET_NT_ACL(metadata_fsp(smb_fname->fsp),
 				security_info_wanted,
 				mem_ctx,
 				sd);

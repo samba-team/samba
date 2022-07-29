@@ -2463,7 +2463,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = SMB_VFS_FGET_NT_ACL(fsp,
+	nt_status = SMB_VFS_FGET_NT_ACL(metadata_fsp(fsp),
 				       (SECINFO_OWNER
 					|SECINFO_GROUP
 					|SECINFO_DACL), sd_buf, &sd_buf->sd);

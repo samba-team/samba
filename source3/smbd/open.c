@@ -277,7 +277,7 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *dirfsp,
 		return NT_STATUS_OK;
 	}
 
-	status = SMB_VFS_FGET_NT_ACL(fsp,
+	status = SMB_VFS_FGET_NT_ACL(metadata_fsp(fsp),
 				     (SECINFO_OWNER |
 				      SECINFO_GROUP |
 				      SECINFO_DACL),
@@ -3207,7 +3207,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 		return NT_STATUS_OK;
 	}
 
-	status = SMB_VFS_FGET_NT_ACL(fsp,
+	status = SMB_VFS_FGET_NT_ACL(metadata_fsp(fsp),
 				     (SECINFO_OWNER |
 					SECINFO_GROUP |
 					SECINFO_DACL),
