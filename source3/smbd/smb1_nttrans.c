@@ -1491,30 +1491,39 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	status = filename_convert(ctx, conn,
-				  newname,
-				  ucf_flags_dst,
-				  0,
-				  &smb_fname_new);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,
-				    NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req,
-				        NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
+	if (stream_rename) {
+		/*
+		 * No point in calling filename_convert()
+		 * on a raw stream name. It can never find
+		 * the file anyway. Use the same logic as
+		 * SMB2_FILE_RENAME_INFORMATION_INTERNAL
+		 * and generate smb_fname_new directly.
+		 */
+		smb_fname_new = synthetic_smb_fname(talloc_tos(),
+					smb_fname_old->base_name,
+					newname,
+					NULL,
+					smb_fname_old->twrp,
+					smb_fname_old->flags);
+		if (smb_fname_new == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	if (stream_rename) {
-		/* smb_fname_new must be the same as smb_fname_old. */
-		TALLOC_FREE(smb_fname_new->base_name);
-		smb_fname_new->base_name = talloc_strdup(smb_fname_new,
-						smb_fname_old->base_name);
-		if (!smb_fname_new->base_name) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
+	} else {
+		status = filename_convert(ctx, conn,
+					  newname,
+					  ucf_flags_dst,
+					  0,
+					  &smb_fname_new);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_PATH_NOT_COVERED)) {
+				reply_botherror(req,
+					        NT_STATUS_PATH_NOT_COVERED,
+						ERRSRV, ERRbadpath);
+				goto out;
+			}
+			reply_nterror(req, status);
 			goto out;
 		}
 	}
