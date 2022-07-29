@@ -3644,7 +3644,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 */
 			uint32_t attr = 0;
 
-			status = SMB_VFS_FGET_DOS_ATTRIBUTES(conn, smb_fname->fsp, &attr);
+			status = SMB_VFS_FGET_DOS_ATTRIBUTES(
+				conn, metadata_fsp(smb_fname->fsp), &attr);
 			if (NT_STATUS_IS_OK(status)) {
 				existing_dos_attributes = attr;
 			}
