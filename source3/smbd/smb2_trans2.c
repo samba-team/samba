@@ -4983,22 +4983,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	DEBUG(10,("smb2_file_rename_information: got name |%s|\n",
 				newname));
 
-	status = filename_convert(ctx,
-				conn,
-				newname,
-				ucf_flags,
-				0,
-				&smb_fname_dst);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (fsp->base_fsp) {
-		/* newname must be a stream name. */
-		if (newname[0] != ':') {
-			return NT_STATUS_NOT_SUPPORTED;
-		}
-
+	if (newname[0] == ':') {
 		/* Create an smb_fname to call rename_internals_fsp() with. */
 		smb_fname_dst = synthetic_smb_fname(talloc_tos(),
 					fsp->base_fsp->fsp_name->base_name,
@@ -5008,6 +4993,16 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 					fsp->base_fsp->fsp_name->flags);
 		if (smb_fname_dst == NULL) {
 			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	} else {
+		status = filename_convert(ctx,
+					conn,
+					newname,
+					ucf_flags,
+					0,
+					&smb_fname_dst);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
 	}
