@@ -5286,7 +5286,7 @@ static NTSTATUS inherit_new_acl(files_struct *dirfsp, files_struct *fsp)
 		/* We need to be root to force this. */
 		become_root();
 	}
-	status = SMB_VFS_FSET_NT_ACL(fsp,
+	status = SMB_VFS_FSET_NT_ACL(metadata_fsp(fsp),
 			security_info_sent,
 			psd);
 	if (inherit_owner) {

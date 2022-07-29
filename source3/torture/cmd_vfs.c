@@ -1717,7 +1717,10 @@ static NTSTATUS cmd_fset_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = SMB_VFS_FSET_NT_ACL(vfs->files[fd], SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL, sd);
+	status = SMB_VFS_FSET_NT_ACL(
+			metadata_fsp(vfs->files[fd]),
+			SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL,
+			sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("fset_nt_acl returned (%s)\n", nt_errstr(status));
 		return status;
@@ -1823,7 +1826,10 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 		goto out;
 	}
 
-	status = SMB_VFS_FSET_NT_ACL(fsp, SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL, sd);
+	status = SMB_VFS_FSET_NT_ACL(
+			metadata_fsp(fsp),
+			SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL,
+			sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("fset_nt_acl returned (%s)\n", nt_errstr(status));
 		goto out;
