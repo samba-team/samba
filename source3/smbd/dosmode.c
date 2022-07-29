@@ -1102,6 +1102,19 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (fsp_is_alternate_stream(fsp)) {
+		/*
+		 * MS-FSA 2.1.1.5 IsSparse
+		 *
+		 * This is a per stream attribute, but our backends don't
+		 * support it a consistent way, therefor just pretend
+		 * success and ignore the request.
+		 */
+		DBG_DEBUG("Ignoring request to set FILE_ATTRIBUTE_SPARSE on "
+			  "[%s]\n", fsp_str_dbg(fsp));
+		return NT_STATUS_OK;
+	}
+
 	DEBUG(10,("file_set_sparse: setting sparse bit %u on file %s\n",
 		  sparse, smb_fname_str_dbg(fsp->fsp_name)));
 
