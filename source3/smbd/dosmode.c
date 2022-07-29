@@ -960,9 +960,8 @@ int file_set_dosmode(connection_struct *conn,
 
 	if (smb_fname->fsp != NULL) {
 		/* Store the DOS attributes in an EA by preference. */
-		status = SMB_VFS_FSET_DOS_ATTRIBUTES(conn,
-						     smb_fname->fsp,
-						     dosmode);
+		status = SMB_VFS_FSET_DOS_ATTRIBUTES(
+			conn, metadata_fsp(smb_fname->fsp), dosmode);
 	} else {
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
