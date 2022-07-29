@@ -409,8 +409,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 						conn,
 						state->in_file_name,
 						0);
-		if (state->in_file_name == NULL) {
-			tevent_req_oom(req);
+		if (tevent_req_nomem(state->in_file_name, req)) {
 			return tevent_req_post(req, ev);
 		}
 	}
