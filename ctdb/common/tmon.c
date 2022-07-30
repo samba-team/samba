@@ -97,7 +97,7 @@ bool tmon_set_exit(struct tmon_pkt *pkt)
 
 bool tmon_set_errno(struct tmon_pkt *pkt, int err)
 {
-	if (err < 0 && err > UINT16_MAX) {
+	if (err <= 0 || err > UINT16_MAX) {
 		return false;
 	}
 

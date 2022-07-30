@@ -4,6 +4,7 @@
 
 epipe=$(errcode EPIPE)
 etimedout=$(errcode ETIMEDOUT)
+edom=$(errcode EDOM)
 
 test_cases()
 {
@@ -34,6 +35,34 @@ READER ERR=7
 WRITER OK
 EOF
 	unit_test tmon_test "7" false 0 false
+
+	test_case "errno 110 packet @ 1s, no timeout"
+	ok <<EOF
+READER ERR=110
+WRITER OK
+EOF
+	unit_test tmon_test "#110" false 0 false
+
+	test_case "errno 0 error causes EDOM @ 1s, no timeout"
+	ok <<EOF
+WRITER ERR=$edom
+READER ERR=$epipe
+EOF
+	unit_test tmon_test "#0;" false 0 false
+
+	test_case "errno -1 error causes EDOM @ 1s, no timeout"
+	ok <<EOF
+WRITER ERR=$edom
+READER ERR=$epipe
+EOF
+	unit_test tmon_test "#-1;" false 0 false
+
+	test_case "errno 70000 error causes EDOM @ 1s, no timeout"
+	ok <<EOF
+WRITER ERR=$edom
+READER ERR=$epipe
+EOF
+	unit_test tmon_test "#70000;!0" false 0 false
 
 	test_case "Exit packet @ 3s, no timeout"
 	ok <<EOF

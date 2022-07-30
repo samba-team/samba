@@ -45,6 +45,7 @@ static int test_write_callback(void *private_data, struct tmon_pkt *pkt)
 		private_data, struct test_write_state);
 	bool status;
 	size_t len;
+	char *end;
 	int err;
 	char c;
 	const char *t;
@@ -74,6 +75,16 @@ static int test_write_callback(void *private_data, struct tmon_pkt *pkt)
 			break;
 		case '!':
 			status = tmon_set_ping(pkt);
+			break;
+		case '#':
+			/* Additional errno syntax: #nnn[;] */
+			t = &state->write_data[state->offset];
+			err = (int)strtol(t, &end, 10);
+			state->offset += (end - t);
+			if (state->write_data[state->offset] == ';') {
+				state->offset++;
+			}
+			status = tmon_set_errno(pkt, err);
 			break;
 		default:
 			status = false;
