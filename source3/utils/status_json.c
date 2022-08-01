@@ -1119,6 +1119,9 @@ bool print_notify_rec_json(struct traverse_state *state,
 	struct json_object notify_json;
 	char *filter = NULL;
 	char *subdir_filter = NULL;
+	struct timeval_buf tv_buf;
+	struct timeval val;
+	char *time = NULL;
 	char *pid = NULL;
 	struct server_id_buf tmp;
 	int result = 0;
@@ -1158,6 +1161,12 @@ bool print_notify_rec_json(struct traverse_state *state,
 		goto failure;
 	}
 	result = json_add_string(&sub_json, "subdir_filter", subdir_filter);
+	if (result < 0) {
+		goto failure;
+	}
+	val = convert_timespec_to_timeval(instance->creation_time);
+	time = timeval_str_buf(&val, true, true, &tv_buf);
+	result = json_add_string(&sub_json, "creation_time", time);
 	if (result < 0) {
 		goto failure;
 	}
