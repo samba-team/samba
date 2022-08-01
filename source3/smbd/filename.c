@@ -3025,8 +3025,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		goto done;
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
-	    (ucf_flags & UCF_PREP_CREATEFILE)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/*
 		 * Creating a new stream
 		 *
