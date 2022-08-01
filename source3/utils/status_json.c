@@ -167,6 +167,13 @@ static const struct mask2txt oplock_mask[] = {
 	{0, NULL}
 };
 
+static const struct mask2txt sharemode_mask[] = {
+	{FILE_SHARE_READ, "READ"},
+	{FILE_SHARE_WRITE, "WRITE"},
+	{FILE_SHARE_DELETE, "DELETE"},
+	{0, NULL}
+};
+
 static const struct mask2txt lease_mask[] = {
 	{SMB2_LEASE_READ, "READ"},
 	{SMB2_LEASE_WRITE, "WRITE"},
@@ -614,6 +621,62 @@ failure:
 	return -1;
 }
 
+static int add_sharemode_to_json(struct json_object *parent_json,
+				 int sharemode)
+{
+	struct json_object sharemode_json;
+	char *hex = NULL;
+	char *text = NULL;
+	int result;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	sharemode_json = json_new_object();
+	if (json_is_invalid(&sharemode_json)) {
+		goto failure;
+	}
+
+	hex = talloc_asprintf(tmp_ctx, "0x%08x", sharemode);
+	if (hex == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sharemode_json, "hex", hex);
+	if (result < 0) {
+		goto failure;
+	}
+	result = map_mask_to_json(&sharemode_json, sharemode, sharemode_mask);
+	if (result < 0) {
+		goto failure;
+	}
+
+	text = talloc_asprintf(tmp_ctx, "%s%s%s",
+			       (sharemode & FILE_SHARE_READ)?"R":"",
+			       (sharemode & FILE_SHARE_WRITE)?"W":"",
+			       (sharemode & FILE_SHARE_DELETE)?"D":"");
+	if (text == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sharemode_json, "text", text);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(parent_json, "sharemode", &sharemode_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&sharemode_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}
+
 static int add_open_to_json(struct json_object *parent_json,
 			    const struct share_mode_entry *e,
 			    bool resolve_uids,
@@ -661,6 +724,10 @@ static int add_open_to_json(struct json_object *parent_json,
 	}
 	share_file_id = talloc_asprintf(tmp_ctx, "%lu", e->share_file_id);
 	result = json_add_string(&sub_json, "share_file_id", share_file_id);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_sharemode_to_json(&sub_json, e->share_access);
 	if (result < 0) {
 		goto failure;
 	}
