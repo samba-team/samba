@@ -36,7 +36,7 @@
 
 
 /**
- Case insensitive string compararison, handle specified for testing
+ Case insensitive string comparison, handle specified for testing
 **/
 _PUBLIC_ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 				 const char *s1, const char *s2)
@@ -86,7 +86,7 @@ _PUBLIC_ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 }
 
 /**
- Case insensitive string compararison
+ Case insensitive string comparison
 **/
 _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 {
@@ -95,7 +95,8 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 }
 
 /**
- Case insensitive string compararison, length limited, handle specified for testing
+ Case insensitive string comparison, length limited, handle specified for
+ testing
 **/
 _PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 				  const char *s1, const char *s2, size_t n)
@@ -166,7 +167,7 @@ _PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 }
 
 /**
- Case insensitive string compararison, length limited
+ Case insensitive string comparison, length limited
 **/
 _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 {
