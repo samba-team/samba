@@ -82,3 +82,11 @@ int print_brl_json(struct traverse_state *state,
 {
 	return 0;
 }
+
+bool print_notify_rec_json(struct traverse_state *state,
+			   const struct notify_instance *instance,
+			   char *pid,
+			   const char *path)
+{
+	return 0;
+}

@@ -18,6 +18,7 @@
  */
 
 #include "status.h"
+#include "smbd/notifyd/notifyd_db.h"
 
 #ifndef STATUS_JSON_H
 #define STATUS_JSON_H
@@ -63,4 +64,8 @@ int print_brl_json(struct traverse_state *state,
 		   const char *sharepath,
 		   const char *filename);
 
+bool print_notify_rec_json(struct traverse_state *state,
+			   const struct notify_instance *instance,
+			   char *pid,
+			   const char *path);
 #endif

@@ -808,8 +808,11 @@ static bool print_notify_rec_stdout(struct traverse_state *state,
 
 static int prepare_notify(struct traverse_state *state)
 {
-	/* don't print header line */
-
+	if (!state->json_output) {
+		/* don't print header line */
+	} else {
+		add_section_to_json(state, "notifies");
+	}
 	return 0;
 }
 
@@ -821,11 +824,19 @@ static bool print_notify_rec(const char *path, struct server_id server,
 	struct traverse_state *state = (struct traverse_state *)private_data;
 	bool result;
 
-	result = print_notify_rec_stdout(state,
-					 path,
-					 server_id_str_buf(server, &idbuf),
-					 (unsigned)instance->filter,
-					 (unsigned)instance->subdir_filter);
+	if (!state->json_output) {
+		result = print_notify_rec_stdout(state,
+						 path,
+						 server_id_str_buf(server, &idbuf),
+						 (unsigned)instance->filter,
+						 (unsigned)instance->subdir_filter);
+
+	} else {
+		result = print_notify_rec_json(state,
+					       instance,
+					       server_id_str_buf(server, &idbuf),
+					       path);
+	}
 
 	return result;
 }

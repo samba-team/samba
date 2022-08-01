@@ -1109,3 +1109,71 @@ failure:
 	TALLOC_FREE(tmp_ctx);
 	return -1;
 }
+
+bool print_notify_rec_json(struct traverse_state *state,
+			   const struct notify_instance *instance,
+			   char *pid,
+			   const char *path)
+{
+	struct json_object sub_json;
+	struct json_object notify_json;
+	char *filter = NULL;
+	char *subdir_filter = NULL;
+	int result = 0;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	sub_json = json_new_object();
+	if (json_is_invalid(&sub_json)) {
+		return false;
+	}
+	notify_json = json_get_object(&state->root_json, "notifies");
+	if (json_is_invalid(&notify_json)) {
+		goto failure;
+	}
+
+	result = json_add_string(&sub_json, "pid", pid);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "path", path);
+	if (result < 0) {
+		goto failure;
+	}
+	filter = talloc_asprintf(tmp_ctx, "%u", instance->filter);
+	if (filter == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "filter", filter);
+	if (result < 0) {
+		goto failure;
+	}
+	subdir_filter = talloc_asprintf(tmp_ctx, "%u", instance->subdir_filter);
+	if (filter == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "subdir_filter", subdir_filter);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(&notify_json, pid, &sub_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_update_object(&state->root_json, "notifies", &notify_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return true;
+failure:
+	json_free(&sub_json);
+	TALLOC_FREE(tmp_ctx);
+	return false;
+}
