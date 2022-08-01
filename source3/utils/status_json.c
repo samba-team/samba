@@ -1035,6 +1035,7 @@ failure:
 
 int print_brl_json(struct traverse_state *state,
 		   const struct server_id server_id,
+		   struct file_id fid,
 		   const char *type,
 		   enum brl_flavour flavour,
 		   intmax_t start,
@@ -1070,6 +1071,10 @@ int print_brl_json(struct traverse_state *state,
 		goto failure;
 	}
 
+	result = add_fileid_to_json(&file_json, fid);
+	if (result < 0) {
+		goto failure;
+	}
 	result = json_add_string(&file_json, "file_name", filename);
 	if (result < 0) {
 		goto failure;

@@ -412,6 +412,7 @@ static void print_brl(struct file_id id,
 	} else {
 		print_brl_json(state,
 			       pid,
+			       id,
 			       desc,
 			       lock_flav,
 			       (intmax_t)start,

@@ -72,6 +72,7 @@ int print_share_mode_json(struct traverse_state *state,
 
 int print_brl_json(struct traverse_state *state,
 		   const struct server_id server_id,
+		   struct file_id fid,
 		   const char *type,
 		   enum brl_flavour flavour,
 		   intmax_t start,
