@@ -2907,6 +2907,28 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		char *normalized = NULL;
 
 		if (VALID_STAT(smb_fname_rel->st)) {
+#if defined(WITH_SMB1SERVER)
+			/*
+			 * In SMB1 posix mode, if this is a symlink,
+			 * allow access to the name with a NULL smb_fname->fsp.
+			 */
+			if (!conn->sconn->using_smb2 &&
+					posix &&
+					S_ISLNK(smb_fname_rel->st.st_ex_mode)) {
+				SMB_ASSERT(smb_fname_rel->fsp == NULL);
+				SMB_ASSERT(streamname == NULL);
+
+				smb_fname = full_path_from_dirfsp_atname(
+						mem_ctx,
+						smb_dirname->fsp,
+						smb_fname_rel);
+				if (smb_fname == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					goto fail;
+				}
+				goto done;
+			}
+#endif
 			/*
 			 * NT_STATUS_OBJECT_NAME_NOT_FOUND is
 			 * misleading: The object exists but might be
