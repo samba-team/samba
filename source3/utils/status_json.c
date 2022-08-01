@@ -482,6 +482,77 @@ failure:
 	return -1;
 }
 
+static int add_caching_to_json(struct json_object *parent_json,
+			      int op_type,
+			      int lease_type)
+{
+	struct json_object caching_json;
+	char *hex = NULL;
+	char *caching_text = NULL;
+	int caching_type = 0;
+	int result;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	caching_json = json_new_object();
+	if (json_is_invalid(&caching_json)) {
+		goto failure;
+	}
+
+	if (op_type & LEASE_OPLOCK) {
+		caching_type = lease_type;
+	} else {
+		if (op_type & LEVEL_II_OPLOCK) {
+			caching_type = SMB2_LEASE_READ;
+		} else if (op_type & EXCLUSIVE_OPLOCK) {
+			caching_type = SMB2_LEASE_READ + SMB2_LEASE_WRITE;
+		} else if (op_type & BATCH_OPLOCK) {
+			caching_type = SMB2_LEASE_READ + SMB2_LEASE_WRITE + SMB2_LEASE_HANDLE;
+		}
+	}
+	result = map_mask_to_json(&caching_json, caching_type, lease_mask);
+	if (result < 0) {
+		goto failure;
+	}
+
+	hex = talloc_asprintf(tmp_ctx, "0x%08x", caching_type);
+	if (hex == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&caching_json, "hex", hex);
+	if (result < 0) {
+		goto failure;
+	}
+
+	caching_text = talloc_asprintf(tmp_ctx, "%s%s%s",
+				       (caching_type & SMB2_LEASE_READ)?"R":"",
+				       (caching_type & SMB2_LEASE_WRITE)?"W":"",
+				       (caching_type & SMB2_LEASE_HANDLE)?"H":"");
+	if (caching_text == NULL) {
+		return -1;
+	}
+
+	result = json_add_string(&caching_json, "text", caching_text);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(parent_json, "caching", &caching_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&caching_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}
+
 static int add_oplock_to_json(struct json_object *parent_json,
 			      uint16_t op_type,
 			      const char *op_str)
@@ -732,6 +803,10 @@ static int add_open_to_json(struct json_object *parent_json,
 		goto failure;
 	}
 	result = add_access_mode_to_json(&sub_json, e->access_mask);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_caching_to_json(&sub_json, e->op_type, lease_type);
 	if (result < 0) {
 		goto failure;
 	}
