@@ -3081,12 +3081,17 @@ next:
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
-	if (ucf_flags & UCF_POSIX_PATHNAMES) {
-		/*
-		 * SMB1 posix never traverses symlinks
-		 */
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-	}
+	/*
+	 * Right now, SMB2 and SMB1 always traverse symlinks
+	 * within the share. SMB1+POSIX traverses non-terminal
+	 * symlinks within the share.
+	 *
+	 * When we add SMB2+POSIX we need to return
+	 * a NT_STATUS_STOPPED_ON_SYMLINK error here, using the
+	 * symlink target data read below if SMB2+POSIX has
+	 * UCF_POSIX_PATHNAMES set to cause the client to
+	 * resolve all symlinks locally.
+	 */
 
 	target = symlink_target_path(mem_ctx, name_in, substitute, unparsed);
 	if (target == NULL) {
