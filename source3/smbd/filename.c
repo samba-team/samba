@@ -3095,6 +3095,22 @@ next:
 		&substitute,
 		&unparsed);
 
+#if defined(WITH_SMB1SERVER)
+	/*
+	 * This isn't 100% correct, but it gets us close enough
+	 * to the old behavior for SMB1+POSIX libsmbclient. If we went through a
+	 * symlink, and we got NT_STATUS_ACCESS_DENIED on the directory
+	 * containing the target, just don't allow the client to see the
+	 * intermediate path.
+	 */
+	if (!conn->sconn->using_smb2 &&
+			(ucf_flags & UCF_POSIX_PATHNAMES) &&
+			symlink_redirects > 0 &&
+			NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+#endif
+
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 		return status;
 	}
