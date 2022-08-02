@@ -124,6 +124,14 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(TALLOC_CTX *mem_ctx,
 	 * TODO: Use gnutls_cipher_encrypt3()
 	 */
 
+	if (hmac_size > 64) {
+		/*
+		 * We don't want to overflow 'pauth_tag', which is 64 bytes in
+		 * size.
+		 */
+		return NT_STATUS_INVALID_BUFFER_SIZE;
+	}
+
 	if (plaintext->length + aes_block_size < plaintext->length) {
 		return NT_STATUS_INVALID_BUFFER_SIZE;
 	}
