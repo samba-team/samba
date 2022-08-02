@@ -1919,38 +1919,6 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 		ucf_flags &= ~UCF_DFS_PATHNAME;
 	}
 
-	/*
-	 * NB. We don't need to care about
-	 * is_fake_file_path(filename_in) here as these
-	 * code paths don't ever return original_lcomp
-	 * or use it anyway.
-	 */
-
-	if (ucf_flags & UCF_GMT_PATHNAME) {
-		/*
-		 * Ensure we don't return a @GMT
-		 * value as the last component.
-		 */
-		smb_fname = synthetic_smb_fname(ctx,
-					filename_in,
-					NULL,
-					NULL,
-					twrp,
-					0);
-		if (smb_fname == NULL) {
-			TALLOC_FREE(fname);
-			return NULL;
-		}
-		status = canonicalize_snapshot_path(smb_fname,
-						    ucf_flags,
-						    twrp);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(fname);
-			TALLOC_FREE(smb_fname);
-			return NULL;
-		}
-		filename_in = smb_fname->base_name;
-	}
 	last_slash = strrchr(filename_in, '/');
 	if (last_slash != NULL) {
 		orig_lcomp = talloc_strdup(ctx, last_slash+1);
