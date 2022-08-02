@@ -2414,7 +2414,10 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = dsdb_autotransaction_request(ldb, req);
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
 
 	if (req->context != NULL) {
 		struct ldb_control *control = talloc_get_type_abort(req->context,
