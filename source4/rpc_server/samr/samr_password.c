@@ -119,16 +119,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser4(struct dcesrv_call_state *dce_call,
 {
 #ifdef HAVE_GNUTLS_PBKDF2
 	struct ldb_context *sam_ctx = NULL;
-	struct ldb_message **ldb_res = NULL;
-	const char *const attrs[] = {"unicodePwd",
-				     "dBCSPwd",
-				     "userAccountControl",
-				     "msDS-ResultantPSO",
-				     "msDS-User-Account-Control-Computed",
-				     "badPwdCount",
-				     "badPasswordTime",
-				     "objectSid",
-				     NULL};
+	struct ldb_message *msg = NULL;
 	struct ldb_dn *dn = NULL;
 	const char *samAccountName = NULL;
 	struct dom_sid *objectSid = NULL;
@@ -178,35 +169,27 @@ NTSTATUS dcesrv_samr_ChangePasswordUser4(struct dcesrv_call_state *dce_call,
 	}
 
 	/*
-	 * We need the users dn and the domain dn (derived from the user SID).
-	 * We also need the current lm and nt password hashes in order to
-	 * decrypt the incoming passwords.
+	 * We use authsam_search_account() to be consistent with the
+	 * other callers in the bad password and audit log handling
+	 * systems.  It ensures we get DSDB_SEARCH_SHOW_EXTENDED_DN.
 	 */
-	rc = gendb_search(
-		sam_ctx,
-		mem_ctx,
-		NULL,
-		&ldb_res,
-		attrs,
-		"(&(sAMAccountName=%s)(objectclass=user))",
-		ldb_binary_encode_string(mem_ctx, r->in.account->string));
-	if (rc != 1) {
-		/* Will be converted to WRONG_PASSWORD below */
+	status = authsam_search_account(mem_ctx,
+					sam_ctx,
+					r->in.account->string,
+					ldb_get_default_basedn(sam_ctx),
+					&msg);
+	if (!NT_STATUS_IS_OK(status)) {
 		ldb_transaction_cancel(sam_ctx);
-		DBG_WARNING("Unable to find account: %s",
-			    r->in.account->string);
-		status = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
 
-	dn = ldb_res[0]->dn;
-	samAccountName =
-		ldb_msg_find_attr_as_string(ldb_res[0], "samAccountName", NULL);
-	objectSid = samdb_result_dom_sid(ldb_res, ldb_res[0], "objectSid");
+	dn = msg->dn;
+	samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
+	objectSid = samdb_result_dom_sid(msg, msg, "objectSid");
 
 	status = samdb_result_passwords(mem_ctx,
 					dce_call->conn->dce_ctx->lp_ctx,
-					ldb_res[0],
+					msg,
 					&nt_pwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_transaction_cancel(sam_ctx);
@@ -282,7 +265,7 @@ done:
 	/* Only update the badPwdCount if we found the user */
 	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
 		authsam_update_bad_pwd_count(sam_ctx,
-					     ldb_res[0],
+					     msg,
 					     ldb_get_default_basedn(sam_ctx));
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 		/*
