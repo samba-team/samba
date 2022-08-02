@@ -5066,7 +5066,7 @@ set_user_info_pw_aes(DATA_BLOB *pw_data, const char *rhost, struct samu *pwd)
 
 			username = pdb_get_username(pwd);
 			if (username == NULL) {
-				DBG_WARNING("User unkown\n");
+				DBG_WARNING("User unknown\n");
 				return false;
 			}
 
