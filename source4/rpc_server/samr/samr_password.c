@@ -134,6 +134,8 @@ NTSTATUS dcesrv_samr_ChangePasswordUser4(struct dcesrv_call_state *dce_call,
 		.data = cdk_data,
 		.length = sizeof(cdk_data),
 	};
+	struct auth_session_info *call_session_info = NULL;
+	struct auth_session_info *old_session_info = NULL;
 	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
 	int rc;
 
@@ -219,14 +221,33 @@ NTSTATUS dcesrv_samr_ChangePasswordUser4(struct dcesrv_call_state *dce_call,
 		goto done;
 	}
 
+	/* Drop to user privileges for the password change */
+
+	old_session_info = ldb_get_opaque(sam_ctx, DSDB_SESSION_INFO);
+	call_session_info = dcesrv_call_session_info(dce_call);
+
+	rc = ldb_set_opaque(sam_ctx, DSDB_SESSION_INFO, call_session_info);
+	if (rc != LDB_SUCCESS) {
+		ldb_transaction_cancel(sam_ctx);
+		status = NT_STATUS_INVALID_SYSTEM_SERVICE;
+		goto done;
+	}
+
 	status = samr_set_password_aes(dce_call,
 				       mem_ctx,
 				       &cdk,
 				       sam_ctx,
 				       dn,
 				       NULL,
-				       r->in.password);
+				       r->in.password,
+				       DSDB_PASSWORD_CHECKED_AND_CORRECT);
 	BURN_DATA(cdk_data);
+
+	/* Restore our privileges to system level */
+	if (old_session_info != NULL) {
+		ldb_set_opaque(sam_ctx, DSDB_SESSION_INFO, old_session_info);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_transaction_cancel(sam_ctx);
 		status = NT_STATUS_WRONG_PASSWORD;
@@ -741,7 +762,8 @@ NTSTATUS samr_set_password_aes(struct dcesrv_call_state *dce_call,
 			       struct ldb_context *sam_ctx,
 			       struct ldb_dn *account_dn,
 			       struct ldb_dn *domain_dn,
-			       struct samr_EncryptedPasswordAES *pwbuf)
+			       struct samr_EncryptedPasswordAES *pwbuf,
+			       enum dsdb_password_checked old_password_checked)
 {
 	DATA_BLOB pw_data = data_blob_null;
 	DATA_BLOB new_password = data_blob_null;
@@ -779,7 +801,7 @@ NTSTATUS samr_set_password_aes(struct dcesrv_call_state *dce_call,
 				       domain_dn,
 				       &new_password,
 				       NULL,
-				       DSDB_PASSWORD_RESET,
+				       old_password_checked,
 				       NULL,
 				       NULL);
 	TALLOC_FREE(new_password.data);

@@ -4091,7 +4091,8 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 					       sam_ctx,
 					       a_state->account_dn,
 					       a_state->domain_state->domain_dn,
-					       &r->in.info->info31.password);
+					       &r->in.info->info31.password,
+					       DSDB_PASSWORD_RESET);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -4244,7 +4245,8 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 				a_state->sam_ctx,
 				a_state->account_dn,
 				a_state->domain_state->domain_dn,
-				&r->in.info->info32.password);
+				&r->in.info->info32.password,
+				DSDB_PASSWORD_RESET);
 		}
 		else IFSET(SAMR_FIELD_LM_PASSWORD_PRESENT)
 		{
@@ -4255,7 +4257,8 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 				a_state->sam_ctx,
 				a_state->account_dn,
 				a_state->domain_state->domain_dn,
-				&r->in.info->info32.password);
+				&r->in.info->info32.password,
+				DSDB_PASSWORD_RESET);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
