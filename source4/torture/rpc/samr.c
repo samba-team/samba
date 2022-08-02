@@ -920,6 +920,8 @@ static bool test_SetUserPass_31(struct dcerpc_pipe *p, struct torture_context *t
 	s.in.info = &u;
 	s.in.level = 31;
 
+	ZERO_STRUCT(u);
+
 	u.info31.password_expired = 0;
 
 	status = dcerpc_fetch_session_key(p, &session_key);
