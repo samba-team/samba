@@ -259,9 +259,15 @@ static NTSTATUS driver_unix_convert(connection_struct *conn,
 	}
 	trim_string(name,"/","/");
 
-	status = unix_convert(ctx, conn, name, 0, psmb_fname, 0);
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 name,
+					 0, /* ucf_flags */
+					 0, /* twrp */
+					 pdirfsp,
+					 psmb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	return NT_STATUS_OK;
