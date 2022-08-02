@@ -36,6 +36,10 @@
 #include <sys/param.h>
 #endif
 
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
+
 #ifdef HAVE_MNTENT_H
 #include <mntent.h>
 #endif
