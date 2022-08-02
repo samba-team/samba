@@ -1317,8 +1317,8 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 		DBG_ERR("secrets_fetch_domain_sid(%s) failed\n",
 			domain);
 		dbwrap_transaction_cancel(db);
-		SAFE_FREE(old_pw);
-		SAFE_FREE(pw);
+		BURN_FREE_STR(old_pw);
+		BURN_FREE_STR(pw);
 		TALLOC_FREE(frame);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -1333,8 +1333,8 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 	if (info->account_name == NULL) {
 		DBG_ERR("talloc_asprintf(%s$) failed\n", info->computer_name);
 		dbwrap_transaction_cancel(db);
-		SAFE_FREE(old_pw);
-		SAFE_FREE(pw);
+		BURN_FREE_STR(old_pw);
+		BURN_FREE_STR(pw);
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1372,8 +1372,8 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 			DBG_ERR("talloc_asprintf(%s#%02X) failed\n",
 				domain, NBT_NAME_PDC);
 			dbwrap_transaction_cancel(db);
-			SAFE_FREE(pw);
-			SAFE_FREE(old_pw);
+			BURN_FREE_STR(pw);
+			BURN_FREE_STR(old_pw);
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1394,8 +1394,8 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 		p = kerberos_secrets_fetch_salt_princ();
 		if (p == NULL) {
 			dbwrap_transaction_cancel(db);
-			SAFE_FREE(old_pw);
-			SAFE_FREE(pw);
+			BURN_FREE_STR(old_pw);
+			BURN_FREE_STR(pw);
 			TALLOC_FREE(frame);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
@@ -1403,8 +1403,8 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 		SAFE_FREE(p);
 		if (info->salt_principal == NULL) {
 			dbwrap_transaction_cancel(db);
-			SAFE_FREE(pw);
-			SAFE_FREE(old_pw);
+			BURN_FREE_STR(pw);
+			BURN_FREE_STR(old_pw);
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1419,12 +1419,12 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 						     info->salt_principal,
 						     last_set_nt, server,
 						     &info->password);
-	SAFE_FREE(pw);
+	BURN_FREE_STR(pw);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_domain_info_password_create(pw) failed "
 			"for %s - %s\n", domain, nt_errstr(status));
 		dbwrap_transaction_cancel(db);
-		SAFE_FREE(old_pw);
+		BURN_FREE_STR(old_pw);
 		TALLOC_FREE(frame);
 		return status;
 	}
@@ -1438,7 +1438,7 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 							     info->salt_principal,
 							     0, server,
 							     &info->old_password);
-		SAFE_FREE(old_pw);
+		BURN_FREE_STR(old_pw);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("secrets_domain_info_password_create(old) failed "
 				"for %s - %s\n", domain, nt_errstr(status));
