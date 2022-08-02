@@ -1053,7 +1053,6 @@ NTSTATUS smb2_multi_protocol_reply_negprot(struct smb_request *req)
 	bool choice_set = false;
 	int protocol;
 	const char *p;
-	int protocols = 0;
 	int num_cliprotos;
 	char **cliprotos;
 	size_t i;
@@ -1115,14 +1114,6 @@ NTSTATUS smb2_multi_protocol_reply_negprot(struct smb_request *req)
 
 		num_cliprotos += 1;
 		p += strlen(p) + 2;
-	}
-
-	for (i=0; i<num_cliprotos; i++) {
-		if (strcsequal(cliprotos[i], "SMB 2.002")) {
-			protocols |= PROT_SMB_2_002;
-		} else if (strcsequal(cliprotos[i], "SMB 2.???")) {
-			protocols |= PROT_SMB_2_FF;
-		}
 	}
 
 	/* possibly reload - change of architecture */
