@@ -31,6 +31,9 @@ def configure(conf):
 
     conf.env.standalone_replace = conf.IN_LAUNCH_DIR()
 
+    if sys.platform.rfind('linux') > -1:
+        conf.DEFINE('LINUX', '1')
+
     conf.DEFINE('BOOL_DEFINED', 1)
     conf.DEFINE('HAVE_LIBREPLACE', 1)
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
