@@ -937,6 +937,7 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 		DEBUG(0, ("decode_pw_buffer: failed to convert incoming password\n"));
 		return false;
 	}
+	talloc_keep_secret(*pp_new_pwrd);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decode_pw_buffer: new_pwrd: "));
