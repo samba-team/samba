@@ -2491,7 +2491,7 @@ static bool get_trust_pw_hash2(const char *domain,
 		struct samr_Password *previous_nt_hash = NULL;
 
 		E_md4hash(cur_pw, current_nt_hash->hash);
-		SAFE_FREE(cur_pw);
+		BURN_FREE_STR(cur_pw);
 
 		if (prev_pw == NULL) {
 			return true;
@@ -2503,7 +2503,7 @@ static bool get_trust_pw_hash2(const char *domain,
 		}
 
 		E_md4hash(prev_pw, previous_nt_hash->hash);
-		SAFE_FREE(prev_pw);
+		BURN_FREE_STR(prev_pw);
 
 		*_previous_nt_hash = previous_nt_hash;
 		return true;
