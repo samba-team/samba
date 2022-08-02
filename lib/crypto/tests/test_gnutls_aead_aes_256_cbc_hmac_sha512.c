@@ -187,7 +187,7 @@ static void torture_encrypt(void **state)
 		.length = sizeof(salt_data),
 	};
 	DATA_BLOB ctext;
-	uint8_t auth_tag[64];
+	uint8_t auth_tag[64] = {0};
 
 	assert_int_equal(iv.length, 16);
 
