@@ -7681,7 +7681,6 @@ NTSTATUS _samr_ChangePasswordUser4(struct pipes_struct *p,
 	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
 	const struct tsocket_address *remote_address =
 		dcesrv_connection_get_remote_address(dcesrv_conn);
-	enum samPwdChangeReason reject_reason;
 	char *rhost = NULL;
 	struct samu *sampass = NULL;
 	char *username = NULL;
@@ -7697,6 +7696,7 @@ NTSTATUS _samr_ChangePasswordUser4(struct pipes_struct *p,
 		.data = cdk_data,
 		.length = sizeof(cdk_data),
 	};
+	char *new_passwd = NULL;
 	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
 	bool ok;
 	int rc;
@@ -7766,18 +7766,30 @@ NTSTATUS _samr_ChangePasswordUser4(struct pipes_struct *p,
 	}
 
 	status = samr_set_password_aes(frame,
-				       sampass,
-				       rhost,
 				       &cdk,
 				       r->in.password,
-				       &reject_reason);
+				       &new_passwd);
 	BURN_DATA(cdk_data);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-		return NT_STATUS_WRONG_PASSWORD;
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
+
+	become_root();
+	status = change_oem_password(sampass,
+				     rhost,
+				     NULL,
+				     new_passwd,
+				     true,
+				     NULL);
+	unbecome_root();
+	TALLOC_FREE(new_passwd);
 
 done:
 	TALLOC_FREE(frame);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
 
 	return status;
 #else  /* HAVE_GNUTLS_PBKDF2 */

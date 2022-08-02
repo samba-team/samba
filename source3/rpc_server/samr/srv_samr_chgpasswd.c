@@ -1072,10 +1072,10 @@ NTSTATUS check_password_complexity(const char *username,
  is correct before calling. JRA.
 ************************************************************/
 
-static NTSTATUS change_oem_password(struct samu *hnd, const char *rhost,
-				    char *old_passwd, char *new_passwd,
-				    bool as_root,
-				    enum samPwdChangeReason *samr_reject_reason)
+NTSTATUS change_oem_password(struct samu *hnd, const char *rhost,
+			     char *old_passwd, char *new_passwd,
+			     bool as_root,
+			     enum samPwdChangeReason *samr_reject_reason)
 {
 	uint32_t min_len;
 	uint32_t refuse;
@@ -1369,20 +1369,19 @@ done:
 }
 
 NTSTATUS samr_set_password_aes(TALLOC_CTX *mem_ctx,
-			       struct samu *sampass,
-			       const char *rhost,
 			       const DATA_BLOB *cdk,
 			       struct samr_EncryptedPasswordAES *pwbuf,
-			       enum samPwdChangeReason *reject_reason)
+			       char **new_password_str)
 {
 	DATA_BLOB pw_data = data_blob_null;
 	DATA_BLOB new_password = data_blob_null;
 	const DATA_BLOB ciphertext =
 		data_blob_const(pwbuf->cipher, pwbuf->cipher_len);
 	DATA_BLOB iv = data_blob_const(pwbuf->salt, sizeof(pwbuf->salt));
-	char *new_password_str = NULL;
 	NTSTATUS status;
 	bool ok;
+
+	*new_password_str = NULL;
 
 	status = samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(
 		mem_ctx,
@@ -1407,23 +1406,14 @@ NTSTATUS samr_set_password_aes(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	new_password_str = talloc_strndup(mem_ctx,
-					  (char *)new_password.data,
-					  new_password.length);
+	*new_password_str = talloc_strndup(mem_ctx,
+					   (char *)new_password.data,
+					   new_password.length);
 	TALLOC_FREE(new_password.data);
-	if (new_password_str == NULL) {
+	if (*new_password_str == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	talloc_keep_secret(*new_password_str);
 
-	become_root();
-	status = change_oem_password(sampass,
-				     rhost,
-				     NULL,
-				     new_password_str,
-				     true,
-				     reject_reason);
-	unbecome_root();
-	TALLOC_FREE(new_password_str);
-
-	return status;
+	return NT_STATUS_OK;
 }
