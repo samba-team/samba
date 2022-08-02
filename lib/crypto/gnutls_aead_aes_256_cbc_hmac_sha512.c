@@ -282,7 +282,7 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(TALLOC_CTX *mem_ctx,
 	uint8_t padding;
 	size_t i;
 	NTSTATUS status;
-	int cmp;
+	bool equal;
 	int rc;
 
 	if (cdk->length == 0 || ciphertext->length == 0 ||
@@ -333,8 +333,8 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(TALLOC_CTX *mem_ctx,
 	}
 	gnutls_hmac_deinit(hmac_hnd, auth_data);
 
-	cmp = memcmp(auth_data, auth_tag, sizeof(auth_data));
-	if (cmp != 0) {
+	equal = mem_equal_const_time(auth_data, auth_tag, sizeof(auth_data));
+	if (!equal) {
 		return NT_STATUS_DECRYPTION_FAILED;
 	}
 
