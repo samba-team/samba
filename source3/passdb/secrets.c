@@ -263,12 +263,16 @@ bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &pass,
 			(ndr_pull_flags_fn_t)ndr_pull_TRUSTED_DOM_PASS);
 
-	SAFE_FREE(blob.data);
+	/* This blob is NOT talloc based! */
+	BURN_FREE(blob.data, blob.length);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
 
+	if (pass.pass != NULL) {
+		talloc_keep_secret(discard_const_p(char, pass.pass));
+	}
 
 	/* the trust's password */
 	if (pwd) {
@@ -329,7 +333,8 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 
 	ret = secrets_store(trustdom_keystr(domain), blob.data, blob.length);
 
-	data_blob_free(&blob);
+	/* This blob is talloc based. */
+	data_blob_clear_free(&blob);
 
 	return ret;
 }
