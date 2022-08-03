@@ -2105,6 +2105,7 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 	return status;
 }
 
+#if 0
 /*
  * Strip a @GMT component from an SMB1-DFS path. Could be anywhere
  * in the path.
@@ -2152,6 +2153,7 @@ static char *strip_gmt_from_raw_dfs(TALLOC_CTX *ctx,
 	TALLOC_FREE(smb_fname);
 	return name_out;
 }
+#endif
 
 /*
  * Deal with the SMB1 semantics of sending a pathname with a
@@ -2178,17 +2180,16 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 
 	DBG_DEBUG("name_in: %s\n", name_in);
 
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(name_in, ucf_flags, &twrp);
+		ucf_flags &= ~UCF_GMT_PATHNAME;
+	}
+
 	if (ucf_flags & UCF_DFS_PATHNAME) {
 		/*
 		 * We've been given a raw DFS pathname.
-		 * In Windows mode this is separated by '\\'
-		 * characters.
-		 *
-		 * We need to remove the last component
-		 * which must be a wildcard before passing
-		 * to dfs_redirect(). But the last component
-		 * may also be a @GMT- token so we have to
-		 * remove that first.
+		 * In Windows mode this is separated by '\'
+		 * characters, in POSIX by '/' characters.
 		 */
 		char path_sep = posix_pathnames ? '/' : '\\';
 		char *fname = NULL;
@@ -2196,15 +2197,7 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 		char *last_component = NULL;
 
 		/* Work on a copy of name_in. */
-		if (ucf_flags & UCF_GMT_PATHNAME) {
-			name_in_copy = strip_gmt_from_raw_dfs(ctx,
-							      name_in,
-							      posix_pathnames,
-							      &twrp);
-			ucf_flags &= ~UCF_GMT_PATHNAME;
-		} else {
-			name_in_copy = talloc_strdup(ctx, name_in);
-		}
+		name_in_copy = talloc_strdup(ctx, name_in);
 		if (name_in_copy == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -2225,7 +2218,7 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		DBG_DEBUG("name_in_copy: %s\n", name_in);
+		DBG_DEBUG("name_in_copy: %s\n", name_in_copy);
 
 		/*
 		 * Now we can call dfs_redirect()
@@ -2272,12 +2265,6 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 						SMB_FILENAME_POSIX_PATH : 0);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* Canonicalize any @GMT- paths. */
-	status = canonicalize_snapshot_path(smb_fname, ucf_flags, twrp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	/* Get the original lcomp. */
