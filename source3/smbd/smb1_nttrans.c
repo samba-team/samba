@@ -626,7 +626,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	if (ucf_flags & UCF_GMT_PATHNAME) {
-		extract_snapshot_token(fname, &twrp);
+		extract_snapshot_token(fname, ucf_flags, &twrp);
 	}
 	status = filename_convert_dirfsp(
 		ctx, conn, fname, ucf_flags, twrp, &dirfsp, &smb_fname);
@@ -1081,7 +1081,7 @@ static void call_nt_transact_create(connection_struct *conn,
 
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	if (ucf_flags & UCF_GMT_PATHNAME) {
-		extract_snapshot_token(fname, &twrp);
+		extract_snapshot_token(fname, ucf_flags, &twrp);
 	}
 	status = filename_convert_dirfsp(ctx,
 					 conn,
@@ -1468,7 +1468,7 @@ void reply_ntrename(struct smb_request *req)
 	}
 
 	if (ucf_flags_src & UCF_GMT_PATHNAME) {
-		extract_snapshot_token(oldname, &src_twrp);
+		extract_snapshot_token(oldname, ucf_flags_src, &src_twrp);
 	}
 	status = filename_convert_dirfsp(ctx,
 					 conn,
@@ -1519,7 +1519,9 @@ void reply_ntrename(struct smb_request *req)
 		}
 	} else {
 		if (ucf_flags_dst & UCF_GMT_PATHNAME) {
-			extract_snapshot_token(newname, &dst_twrp);
+			extract_snapshot_token(newname,
+					       ucf_flags_dst,
+					       &dst_twrp);
 		}
 		status = filename_convert_dirfsp(ctx,
 						 conn,

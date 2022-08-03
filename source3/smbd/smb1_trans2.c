@@ -586,7 +586,7 @@ static void call_trans2open(connection_struct *conn,
 		(unsigned int)open_ofun, open_size));
 
 	if (ucf_flags & UCF_GMT_PATHNAME) {
-		extract_snapshot_token(fname, &twrp);
+		extract_snapshot_token(fname, ucf_flags, &twrp);
 	}
 	status = filename_convert_dirfsp(ctx,
 					 conn,
@@ -2109,7 +2109,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		}
 
 		if (ucf_flags & UCF_GMT_PATHNAME) {
-			extract_snapshot_token(fname, &twrp);
+			extract_snapshot_token(fname, ucf_flags, &twrp);
 		}
 		status = filename_convert_dirfsp(req,
 						 conn,
@@ -2508,7 +2508,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		if (ucf_flags & UCF_GMT_PATHNAME) {
-			extract_snapshot_token(fname, &twrp);
+			extract_snapshot_token(fname, ucf_flags, &twrp);
 		}
 		status = filename_convert_dirfsp(req,
 						 conn,
@@ -2685,7 +2685,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
 	if (ucf_flags & UCF_GMT_PATHNAME) {
-		extract_snapshot_token(directory, &twrp);
+		extract_snapshot_token(directory, ucf_flags, &twrp);
 	}
 	status = filename_convert_dirfsp(ctx,
 					 conn,

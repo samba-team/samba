@@ -300,7 +300,7 @@ static bool find_snapshot_token(
 	return true;
 }
 
-bool extract_snapshot_token(char *fname, NTTIME *twrp)
+bool extract_snapshot_token(char *fname, uint32_t ucf_flags, NTTIME *twrp)
 {
 	const char *start = NULL;
 	const char *next = NULL;
@@ -346,7 +346,7 @@ NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 		return NT_STATUS_OK;
 	}
 
-	found = extract_snapshot_token(smb_fname->base_name, &twrp);
+	found = extract_snapshot_token(smb_fname->base_name, ucf_flags, &twrp);
 	if (!found) {
 		return NT_STATUS_OK;
 	}
