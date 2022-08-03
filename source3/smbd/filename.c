@@ -2150,17 +2150,6 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 		DBG_DEBUG("After DFS redirect name_in: %s\n", name_in);
 	}
 
-	smb_fname = synthetic_smb_fname(ctx,
-					name_in,
-					NULL,
-					NULL,
-					twrp,
-					posix_pathnames ?
-						SMB_FILENAME_POSIX_PATH : 0);
-	if (smb_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Get the original lcomp. */
 	mask = get_original_lcomp(ctx,
 				  conn,
@@ -2183,30 +2172,31 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 
 	/*
 	 * Remove the terminal component so
-	 * filename_convert never sees the mask.
+	 * filename_convert_dirfsp never sees the mask.
 	 */
-	p = strrchr_m(smb_fname->base_name,'/');
+	p = strrchr_m(name_in,'/');
 	if (p == NULL) {
-		/* filename_convert handles a '\0' base_name. */
-		smb_fname->base_name[0] = '\0';
+		/* filename_convert_dirfsp handles a '\0' name. */
+		name_in[0] = '\0';
 	} else {
 		*p = '\0';
 	}
 
-	DBG_DEBUG("For filename_convert: smb_fname = %s\n",
-		smb_fname_str_dbg(smb_fname));
+	DBG_DEBUG("For filename_convert_dirfsp: name_in = %s\n",
+		name_in);
 
 	/* Convert the parent directory path. */
-	status = filename_convert(ctx,
-				  conn,
-				  smb_fname->base_name,
-				  ucf_flags,
-				  smb_fname->twrp,
-				  &smb_fname);
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 name_in,
+					 ucf_flags,
+					 twrp,
+					 _dirfsp,
+					 &smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("filename_convert error for %s: %s\n",
-			smb_fname_str_dbg(smb_fname),
+			name_in,
 			nt_errstr(status));
 	}
 
