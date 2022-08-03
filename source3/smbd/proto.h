@@ -375,12 +375,6 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *filename_in,
 			uint32_t ucf_flags);
-NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
-			connection_struct *conn,
-			const char *name_in,
-			uint32_t ucf_flags,
-			NTTIME twrp,
-			struct smb_filename **pp_smb_fname);
 NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 					   connection_struct *conn,
 					   char *name_in,
