@@ -2105,56 +2105,6 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 	return status;
 }
 
-#if 0
-/*
- * Strip a @GMT component from an SMB1-DFS path. Could be anywhere
- * in the path.
- */
-
-static char *strip_gmt_from_raw_dfs(TALLOC_CTX *ctx,
-				    const char *name_in,
-				    bool posix_pathnames,
-				    NTTIME *_twrp)
-{
-	NTSTATUS status;
-	struct smb_filename *smb_fname = NULL;
-	char *name_out = NULL;
-
-	smb_fname = synthetic_smb_fname(ctx,
-					name_in,
-					NULL,
-					NULL,
-					0,
-					0);
-	if (smb_fname == NULL) {
-		return NULL;
-	}
-	if (!posix_pathnames) {
-		/*
-		 * Raw DFS names are still '\\' separated.
-		 * canonicalize_snapshot_path() only works
-		 * on '/' separated paths. Convert.
-		 */
-		string_replace(smb_fname->base_name, '\\', '/');
-	}
-	status = canonicalize_snapshot_path(smb_fname,
-					    UCF_GMT_PATHNAME,
-					    0);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(smb_fname);
-		return NULL;
-	}
-	if (!posix_pathnames) {
-		/* Replace as raw DFS names. */
-		string_replace(smb_fname->base_name, '/', '\\');
-	}
-	name_out = talloc_strdup(ctx, smb_fname->base_name);
-	*_twrp = smb_fname->twrp;
-	TALLOC_FREE(smb_fname);
-	return name_out;
-}
-#endif
-
 /*
  * Deal with the SMB1 semantics of sending a pathname with a
  * wildcard as the terminal component for a SMB1search or
