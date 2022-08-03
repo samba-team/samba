@@ -844,6 +844,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	bool backup_priv = false;
 	bool as_root = false;
 	files_struct *fsp = NULL;
+	struct files_struct *dirfsp = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 
@@ -946,6 +947,7 @@ static void call_trans2findfirst(connection_struct *conn,
 						     conn,
 						     directory,
 						     ucf_flags,
+						     &dirfsp,
 						     &smb_dname,
 						     &mask);
 
@@ -1025,7 +1027,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	ntstatus = SMB_VFS_CREATE_FILE(
 			conn, /* conn */
 			req, /* req */
-			NULL, /* dirfsp */
+			dirfsp, /* dirfsp */
 			smb_dname, /* dname */
 			FILE_LIST_DIRECTORY, /* access_mask */
 			FILE_SHARE_READ|

@@ -2058,6 +2058,7 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 					   connection_struct *conn,
 					   char *name_in,
 					   uint32_t ucf_flags,
+					   struct files_struct **_dirfsp,
 					   struct smb_filename **_smb_fname_out,
 					   char **_mask_out)
 {
@@ -2069,6 +2070,7 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 	NTTIME twrp = 0;
 
 	*_smb_fname_out = NULL;
+	*_dirfsp = NULL;
 	*_mask_out = NULL;
 
 	DBG_DEBUG("name_in: %s\n", name_in);

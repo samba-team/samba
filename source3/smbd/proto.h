@@ -385,6 +385,7 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 					   connection_struct *conn,
 					   char *name_in,
 					   uint32_t ucf_flags,
+					   struct files_struct **_dirfsp,
 					   struct smb_filename **_smb_fname_out,
 					   char **_mask_out);
 NTSTATUS get_real_filename_at(struct files_struct *dirfsp,

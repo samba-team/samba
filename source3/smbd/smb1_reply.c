@@ -1077,6 +1077,7 @@ void reply_search(struct smb_request *req)
 
 	if (status_len == 0) {
 		const char *dirpath;
+		struct files_struct *dirfsp = NULL;
 		struct smb_filename *smb_dname = NULL;
 		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 
@@ -1084,6 +1085,7 @@ void reply_search(struct smb_request *req)
 					conn,
 					path,
 					ucf_flags,
+					&dirfsp,
 					&smb_dname,
 					&mask);
 
@@ -1106,7 +1108,7 @@ void reply_search(struct smb_request *req)
 		nt_status = SMB_VFS_CREATE_FILE(
 				conn, /* conn */
 				req, /* req */
-				NULL, /* dirfsp */
+				dirfsp, /* dirfsp */
 				smb_dname, /* dname */
 				FILE_LIST_DIRECTORY, /* access_mask */
 				FILE_SHARE_READ|
