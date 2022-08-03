@@ -210,7 +210,8 @@ typedef union {
 static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size)
 {
 	ssize_t list_size, total_size = 0;
-	int i, t, len;
+	int i, len;
+	size_t t;
 	char *buf;
 	/* Iterate through extattr(2) namespaces */
 	for(t = 0; t < ARRAY_SIZE(extattr); t++) {
