@@ -2161,9 +2161,8 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 			name_in = talloc_strdup(ctx, last_component);
 		} else {
 			name_in = talloc_asprintf(ctx,
-						  "%s%c%s",
+						  "%s/%s",
 						  fname,
-						  path_sep,
 						  last_component);
 		}
 		if (name_in == NULL) {
