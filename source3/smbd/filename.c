@@ -1893,31 +1893,9 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 			const char *filename_in,
 			uint32_t ucf_flags)
 {
-	struct smb_filename *smb_fname = NULL;
 	char *last_slash = NULL;
 	char *orig_lcomp;
-	char *fname = NULL;
-	NTTIME twrp = 0;
 	NTSTATUS status;
-
-	if (ucf_flags & UCF_DFS_PATHNAME) {
-		status = dfs_redirect(ctx,
-				conn,
-				filename_in,
-				ucf_flags,
-				!conn->sconn->using_smb2,
-				&twrp,
-				&fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("dfs_redirect "
-				"failed for name %s with %s\n",
-				filename_in,
-				nt_errstr(status));
-			return NULL;
-		}
-		filename_in = fname;
-		ucf_flags &= ~UCF_DFS_PATHNAME;
-	}
 
 	last_slash = strrchr(filename_in, '/');
 	if (last_slash != NULL) {
@@ -1925,9 +1903,6 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 	} else {
 		orig_lcomp = talloc_strdup(ctx, filename_in);
 	}
-	/* We're done with any temp names here. */
-	TALLOC_FREE(smb_fname);
-	TALLOC_FREE(fname);
 	if (orig_lcomp == NULL) {
 		return NULL;
 	}
