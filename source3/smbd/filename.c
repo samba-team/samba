@@ -2161,7 +2161,7 @@ static char *strip_gmt_from_raw_dfs(TALLOC_CTX *ctx,
 
 NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 					   connection_struct *conn,
-					   const char *name_in,
+					   char *name_in,
 					   uint32_t ucf_flags,
 					   struct smb_filename **_smb_fname_out,
 					   char **_mask_out)
