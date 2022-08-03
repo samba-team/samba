@@ -306,8 +306,22 @@ bool extract_snapshot_token(char *fname, uint32_t ucf_flags, NTTIME *twrp)
 	const char *next = NULL;
 	size_t remaining;
 	bool found;
+	bool posix_path = (ucf_flags & UCF_POSIX_PATHNAMES);
+	bool msdfs_path = (ucf_flags & UCF_DFS_PATHNAME);
 
+	if (msdfs_path && !posix_path) {
+		/*
+		 * A raw (non-POSIX) MSDFS path looks like \server\share\path.
+		 * find_snapshot_token only looks for '/' separators.
+		 * Convert the separator characters in place.
+		 */
+		string_replace(fname, '\\', '/');
+	}
 	found = find_snapshot_token(fname, &start, &next, twrp);
+	if (msdfs_path && !posix_path) {
+		/* Put the original separators back. */
+		string_replace(fname, '/', '\\');
+	}
 	if (!found) {
 		return false;
 	}
