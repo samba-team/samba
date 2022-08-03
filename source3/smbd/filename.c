@@ -2470,7 +2470,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		}
 	}
 
-	if (is_fake_file_path(name_in) || conn->printer) {
+	if (is_fake_file_path(name_in)) {
 		smb_fname = synthetic_smb_fname_split(mem_ctx, name_in, posix);
 		if (smb_fname == NULL) {
 			return NT_STATUS_NO_MEMORY;
