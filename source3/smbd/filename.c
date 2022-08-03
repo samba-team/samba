@@ -2172,7 +2172,6 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 	struct smb_filename *smb_fname = NULL;
 	bool posix_pathnames = (ucf_flags & UCF_POSIX_PATHNAMES);
 	NTTIME twrp = 0;
-	TALLOC_CTX *frame = talloc_stackframe();
 
 	*_smb_fname_out = NULL;
 	*_mask_out = NULL;
@@ -2198,16 +2197,15 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 
 		/* Work on a copy of name_in. */
 		if (ucf_flags & UCF_GMT_PATHNAME) {
-			name_in_copy = strip_gmt_from_raw_dfs(frame,
+			name_in_copy = strip_gmt_from_raw_dfs(ctx,
 							      name_in,
 							      posix_pathnames,
 							      &twrp);
 			ucf_flags &= ~UCF_GMT_PATHNAME;
 		} else {
-			name_in_copy = talloc_strdup(frame, name_in);
+			name_in_copy = talloc_strdup(ctx, name_in);
 		}
 		if (name_in_copy == NULL) {
-			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -2217,14 +2215,13 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 		 */
 		p = strrchr_m(name_in_copy, path_sep);
 		if (p == NULL) {
-			last_component = talloc_strdup(frame, name_in_copy);
+			last_component = talloc_strdup(ctx, name_in_copy);
 			name_in_copy[0] = '\0';
 		} else {
-			last_component = talloc_strdup(frame, p+1);
+			last_component = talloc_strdup(ctx, p+1);
 			*p = '\0';
 		}
 		if (last_component == NULL) {
-			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -2234,7 +2231,7 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 		 * Now we can call dfs_redirect()
 		 * on the name without wildcard.
 		 */
-		status = dfs_redirect(frame,
+		status = dfs_redirect(ctx,
 				      conn,
 				      name_in_copy,
 				      ucf_flags,
@@ -2246,21 +2243,19 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 				"failed for name %s with %s\n",
 				name_in_copy,
 				nt_errstr(status));
-			TALLOC_FREE(frame);
 			return status;
 		}
 		/* Add the last component back. */
 		if (fname[0] == '\0') {
-			name_in = talloc_strdup(frame, last_component);
+			name_in = talloc_strdup(ctx, last_component);
 		} else {
-			name_in = talloc_asprintf(frame,
+			name_in = talloc_asprintf(ctx,
 						  "%s%c%s",
 						  fname,
 						  path_sep,
 						  last_component);
 		}
 		if (name_in == NULL) {
-			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 		ucf_flags &= ~UCF_DFS_PATHNAME;
@@ -2268,7 +2263,7 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 		DBG_DEBUG("After DFS redirect name_in: %s\n", name_in);
 	}
 
-	smb_fname = synthetic_smb_fname(frame,
+	smb_fname = synthetic_smb_fname(ctx,
 					name_in,
 					NULL,
 					NULL,
@@ -2276,33 +2271,29 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 					posix_pathnames ?
 						SMB_FILENAME_POSIX_PATH : 0);
 	if (smb_fname == NULL) {
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Canonicalize any @GMT- paths. */
 	status = canonicalize_snapshot_path(smb_fname, ucf_flags, twrp);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
 		return status;
 	}
 
 	/* Get the original lcomp. */
-	mask = get_original_lcomp(frame,
+	mask = get_original_lcomp(ctx,
 				  conn,
 				  name_in,
 				  ucf_flags);
 	if (mask == NULL) {
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (mask[0] == '\0') {
 		/* Windows and OS/2 systems treat search on the root as * */
 		TALLOC_FREE(mask);
-		mask = talloc_strdup(frame, "*");
+		mask = talloc_strdup(ctx, "*");
 		if (mask == NULL) {
-			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -2325,23 +2316,22 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 		smb_fname_str_dbg(smb_fname));
 
 	/* Convert the parent directory path. */
-	status = filename_convert(frame,
+	status = filename_convert(ctx,
 				  conn,
 				  smb_fname->base_name,
 				  ucf_flags,
 				  smb_fname->twrp,
 				  &smb_fname);
 
-	if (NT_STATUS_IS_OK(status)) {
-		*_smb_fname_out = talloc_move(ctx, &smb_fname);
-		*_mask_out = talloc_move(ctx, &mask);
-	} else {
+	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("filename_convert error for %s: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status));
 	}
 
-	TALLOC_FREE(frame);
+	*_smb_fname_out = talloc_move(ctx, &smb_fname);
+	*_mask_out = talloc_move(ctx, &mask);
+
 	return status;
 }
 
