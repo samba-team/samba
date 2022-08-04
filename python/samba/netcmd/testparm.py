@@ -106,7 +106,10 @@ class cmd_testparm(Command):
                     try:
                         section = lp[section_name]
                     except KeyError:
-                        raise CommandError("Unknown section %s" % section_name)
+                        if section_name in ['global', 'globals']:
+                            lp.dump_globals()
+                        else:
+                            raise CommandError(f"Unknown section {section_name}")
                     else:
                         section.dump(lp.default_service, verbose)
                 else:
