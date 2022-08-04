@@ -60,7 +60,6 @@
 
 static NTSTATUS parse_dfs_path(connection_struct *conn,
 				const char *pathname,
-				bool allow_wcards,
 				bool allow_broken_path,
 				struct dfs_path *pdp) /* MUST BE TALLOCED */
 {
@@ -871,7 +870,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = parse_dfs_path(conn, path_in, false,
+	status = parse_dfs_path(conn, path_in,
 				allow_broken_path, pdp);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
@@ -1021,7 +1020,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	*self_referralp = False;
 
-	status = parse_dfs_path(NULL, dfs_path, False, allow_broken_path, pdp);
+	status = parse_dfs_path(NULL, dfs_path, allow_broken_path, pdp);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
@@ -1270,7 +1269,7 @@ bool create_junction(TALLOC_CTX *ctx,
 	if (!pdp) {
 		return False;
 	}
-	status = parse_dfs_path(NULL, dfs_path, False, allow_broken_path, pdp);
+	status = parse_dfs_path(NULL, dfs_path, allow_broken_path, pdp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
