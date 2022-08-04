@@ -252,7 +252,7 @@ test_symlink_traversal_SMB1_posix()
 	# Can't 'get' file inside a directory with no perms.
 	smbclient_expect_error "get" "dir_inside_share_noperms/noperm_file_exists" "" "NT_STATUS_ACCESS_DENIED" || return 1
 	# In SMB1+POSIX you can't traverse through a symlink that points to a noperm directory.
-	smbclient_expect_error "get" "symlink_dir_inside_share_noperms/noperm_file_exists" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_dir_inside_share_noperms/noperm_file_exists" "" "NT_STATUS_ACCESS_DENIED" || return 1
 	# But can list the directory with no perms and the symlink to it.
 	smbclient_expect_error "ls" "dir_inside_share_noperms" "" "NT_STATUS_OK" || return 1
 	smbclient_expect_error "ls" "symlink_dir_inside_share_noperms" "" "NT_STATUS_OK" || return 1
