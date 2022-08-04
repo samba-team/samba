@@ -24,17 +24,17 @@
 
 static void profile_separator(const char * title)
 {
-    char line[79 + 1];
-    char * end;
+	char line[79 + 1];
+	char * end;
 
-    snprintf(line, sizeof(line), "**** %s ", title);
+	snprintf(line, sizeof(line), "**** %s ", title);
 
-    for (end = line + strlen(line); end < &line[sizeof(line) -1]; ++end) {
-	    *end = '*';
-    }
+	for (end = line + strlen(line); end < &line[sizeof(line) -1]; ++end) {
+		*end = '*';
+	}
 
-    line[sizeof(line) - 1] = '\0';
-    d_printf("%s\n", line);
+	line[sizeof(line) - 1] = '\0';
+	d_printf("%s\n", line);
 }
 
 /*******************************************************************
