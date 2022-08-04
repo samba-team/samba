@@ -94,6 +94,14 @@ class TestParmTests(NetCmdTestCase):
                          "--section-name=tmp"],
                         retcode=None)
 
+    def test_section_globals(self):
+        # We can have '[global]' and '[globals]'
+        for name in ['global', 'globals']:
+            self.run_netcmd(cmd_testparm,
+                            [f"--configfile={self.smbconf.name}",
+                             f"--section-name={name}"],
+                            retcode=None)
+
     def test_no_such_section(self):
         out, err = self.run_netcmd(cmd_testparm,
                                    ["--configfile=%s" % self.smbconf.name,
