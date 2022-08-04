@@ -762,8 +762,8 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 #ifdef O_PATH
 	/*
 	 * Add O_PATH manually, doing this by setting
-	 * fsp->fsp_flags.is_pathref will make us become_root(), which
-	 * would cause a security problem.
+	 * fsp->fsp_flags.is_pathref will make us become_root() in the
+	 * non-O_PATH case, which would cause a security problem.
 	 */
 	flags |= O_PATH;
 #else
@@ -901,7 +901,6 @@ next:
 					  nt_errstr(status));
 				goto fail;
 			}
-			fsp->fsp_flags.is_pathref = true;
 			fsp->fsp_name = &full_fname;
 		} else {
 			fsp = tmp;
