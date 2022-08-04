@@ -1932,7 +1932,6 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 	char *p = NULL;
 	char *mask = NULL;
 	struct smb_filename *smb_fname = NULL;
-	bool posix_pathnames = (ucf_flags & UCF_POSIX_PATHNAMES);
 	NTTIME twrp = 0;
 
 	*_smb_fname_out = NULL;
@@ -1949,10 +1948,7 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 	if (ucf_flags & UCF_DFS_PATHNAME) {
 		/*
 		 * We've been given a raw DFS pathname.
-		 * In Windows mode this is separated by '\'
-		 * characters, in POSIX by '/' characters.
 		 */
-		char path_sep = posix_pathnames ? '/' : '\\';
 		char *fname = NULL;
 		char *name_in_copy = NULL;
 		char *last_component = NULL;
@@ -1967,7 +1963,7 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 		 * Now we know that the last component is the
 		 * wildcard. Copy it and truncate to remove it.
 		 */
-		p = strrchr_m(name_in_copy, path_sep);
+		p = strrchr(name_in_copy, '/');
 		if (p == NULL) {
 			last_component = talloc_strdup(ctx, name_in_copy);
 			name_in_copy[0] = '\0';

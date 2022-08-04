@@ -37,11 +37,13 @@
 #include "source3/lib/substitute.h"
 
 /**********************************************************************
- Parse a DFS pathname of the form \hostname\service\reqpath
+ Parse a DFS pathname of the form /hostname/service/reqpath
  into the dfs_path structure.
- If POSIX pathnames is true, the pathname may also be of the
- form /hostname/service/reqpath.
- We cope with either here.
+
+ NB. srvstr_get_path_internal() now *always* calls
+ check_path_syntax_XXX() on an incoming name, so
+ the path separator is now always '/', even from
+ Windows clients.
 
  Unfortunately, due to broken clients who might set the
  SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES bit and then
@@ -65,11 +67,9 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	char *pathname_local;
-	char *p,*temp;
+	char *p;
 	char *servicename;
 	char *eos_ptr;
-	NTSTATUS status = NT_STATUS_OK;
-	char sepchar;
 
 	ZERO_STRUCTP(pdp);
 
@@ -80,30 +80,28 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	 */
 
 	pathname_local = talloc_strdup(pdp, pathname);
-	if (!pathname_local) {
+	if (pathname_local == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	/*
+	 * parse_dfs_path() can be called from
+	 * get_referred_path() and create_junction()
+	 * which use Windows DFS paths of \server\share.
+	 * Ensure we only have to cope with '/' separators.
+	 */
+	string_replace(pathname_local, '\\', '/');
+
 	/* Get a pointer to the terminating '\0' */
 	eos_ptr = &pathname_local[strlen(pathname_local)];
-	p = temp = pathname_local;
+	p = pathname_local;
 
 	/*
 	 * Non-broken DFS paths *must* start with the
-	 * path separator. For Windows this is always '\\',
-	 * for posix paths this is always '/'.
+	 * path separator '/'.
 	 */
 
-	if (*pathname == '/') {
-		pdp->posix_path = true;
-		sepchar = '/';
-	} else {
-		pdp->posix_path = false;
-		sepchar = '\\';
-	}
-
-	if (allow_broken_path && (*pathname != sepchar)) {
-		DEBUG(10,("parse_dfs_path: path %s doesn't start with %c\n",
-			pathname, sepchar ));
+	if (allow_broken_path && (*p != '/')) {
+		DBG_ERR("path %s doesn't start with /\n", p);
 		/*
 		 * Possibly client sent a local path by mistake.
 		 * Try and convert to a local path.
@@ -114,12 +112,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 		pdp->hostname = eos_ptr; /* "" */
 		pdp->servicename = eos_ptr; /* "" */
 
-		/* We've got no info about separators. */
-		pdp->posix_path = lp_posix_pathnames();
-		p = temp;
-		DEBUG(10,("parse_dfs_path: trying to convert %s to a "
-			"local path\n",
-			temp));
+		DBG_ERR("trying to convert %s to a local path\n", p);
 		goto local_path;
 	}
 
@@ -127,17 +120,15 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	 * Safe to use on talloc'ed string as it only shrinks.
 	 * It also doesn't affect the eos_ptr.
 	 */
-	trim_char(temp,sepchar,sepchar);
+	trim_char(p, '/', '/');
 
-	DEBUG(10,("parse_dfs_path: temp = |%s| after trimming %c's\n",
-		temp, sepchar));
+	DBG_ERR("p = |%s| after trimming /'s\n", p);
 
 	/* Now tokenize. */
 	/* Parse out hostname. */
-	p = strchr_m(temp,sepchar);
+	p = strchr(p,'/');
 	if(p == NULL) {
-		DEBUG(10,("parse_dfs_path: can't parse hostname from path %s\n",
-			temp));
+		DBG_ERR("can't parse hostname from path %s\n", pathname_local);
 		/*
 		 * Possibly client sent a local path by mistake.
 		 * Try and convert to a local path.
@@ -146,20 +137,18 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 		pdp->hostname = eos_ptr; /* "" */
 		pdp->servicename = eos_ptr; /* "" */
 
-		p = temp;
-		DEBUG(10,("parse_dfs_path: trying to convert %s "
-			"to a local path\n",
-			temp));
+		p = pathname_local;
+		DBG_ERR("trying to convert %s to a local path\n", p);
 		goto local_path;
 	}
 	*p = '\0';
-	pdp->hostname = temp;
+	pdp->hostname = pathname_local;
 
-	DEBUG(10,("parse_dfs_path: hostname: %s\n",pdp->hostname));
+	DBG_ERR("hostname: %s\n",pdp->hostname);
 
 	/* Parse out servicename. */
 	servicename = p+1;
-	p = strchr_m(servicename,sepchar);
+	p = strchr(servicename, '/');
 	if (p) {
 		*p = '\0';
 	}
@@ -169,8 +158,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 			|| (strequal(servicename, HOMES_NAME)
 			&& strequal(lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 				get_current_username()) )) ) {
-		DEBUG(10,("parse_dfs_path: %s is not our servicename\n",
-			servicename));
+		DBG_ERR("%s is not our servicename\n", servicename);
 
 		/*
 		 * Possibly client sent a local path by mistake.
@@ -183,21 +171,20 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 		/* Repair the path - replace the sepchar's
 		   we nulled out */
 		servicename--;
-		*servicename = sepchar;
+		*servicename = '/';
 		if (p) {
-			*p = sepchar;
+			*p = '/';
 		}
 
-		p = temp;
-		DEBUG(10,("parse_dfs_path: trying to convert %s "
-			"to a local path\n",
-			temp));
+		p = pathname_local;
+		DBG_ERR("trying to convert %s to a local path\n",
+			pathname_local);
 		goto local_path;
 	}
 
 	pdp->servicename = servicename;
 
-	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
+	DBG_ERR("servicename: %s\n", pdp->servicename);
 
 	if(p == NULL) {
 		/* Client sent self referral \server\share. */
@@ -209,22 +196,14 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 
   local_path:
 
+	/*
+	 * As check_path_syntax_XXX() has already been
+	 * called we know this is a normal path containing
+	 * '/' separators.
+	 */
+
 	pdp->reqpath = p;
-
-	/* Rest is reqpath. */
-	if (pdp->posix_path) {
-		status = check_path_syntax_posix(pdp->reqpath);
-	} else {
-		status = check_path_syntax(pdp->reqpath);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("parse_dfs_path: '%s' failed with %s\n",
-			p, nt_errstr(status) ));
-		return status;
-	}
-
-	DEBUG(10,("parse_dfs_path: rest of the path: %s\n",pdp->reqpath));
+	DBG_ERR("rest of the path: %s\n", pdp->reqpath);
 	return NT_STATUS_OK;
 }
 
@@ -765,9 +744,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	if (!pdp->posix_path) {
-		string_replace(canon_dfspath, '\\', '/');
-	}
+	string_replace(canon_dfspath, '\\', '/');
 
 	/*
 	 * localpath comes out of unix_convert, so it has

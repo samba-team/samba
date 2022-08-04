@@ -259,6 +259,7 @@ static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
 			NTSTATUS *err)
 {
 	size_t ret;
+	char *dst = NULL;
 
 	*pp_dest = NULL;
 
@@ -270,19 +271,84 @@ static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
 		return ret;
 	}
 
+	dst = *pp_dest;
+
 	if (smb_flags2 & FLAGS2_DFS_PATHNAMES) {
 		/*
-		 * For a DFS path the function parse_dfs_path()
-		 * will do the path processing, just make a copy.
+		 * A valid DFS path looks either like
+		 * /server/share
+		 * \server\share
+		 * (there may be more components after).
+		 * Either way it must have at least two separators.
+		 *
+		 * Ensure we end up as /server/share
+		 * so we don't need to special case
+		 * separator characters elsewhere in
+		 * the code.
 		 */
-		*err = NT_STATUS_OK;
-		return ret;
+		char *server = NULL;
+		char *share = NULL;
+		char *remaining_path = NULL;
+		char path_sep = 0;
+
+		if (posix_pathnames && (dst[0] == '/')) {
+			path_sep = dst[0];
+		} else if (dst[0] == '\\') {
+			path_sep = dst[0];
+		}
+
+		if (path_sep == 0) {
+			goto local_path;
+		}
+		/*
+		 * May be a DFS path.
+		 * We need some heuristics here,
+		 * as clients differ on what constitutes
+		 * a well-formed DFS path. If the path
+		 * appears malformed, just fall back to
+		 * processing as a local path.
+		 */
+		server = dst;
+
+		/*
+		 * Look to see if we also have /share following.
+		 */
+		share = strchr(server+1, path_sep);
+		if (share == NULL) {
+			goto local_path;
+		}
+		/*
+		 * It's a well formed DFS path with
+		 * at least server and share components.
+		 * Replace the slashes with '/' and
+		 * pass the remainder to local_path.
+		 */
+		*server = '/';
+		*share = '/';
+		/*
+		 * Skip past share so we don't pass the
+		 * sharename into check_path_syntax().
+		 */
+		remaining_path = strchr(share+1, path_sep);
+		if (remaining_path == NULL) {
+			/*
+			 * If no remaining path this was
+			 * a bare /server/share path. Just return.
+			 */
+			*err = NT_STATUS_OK;
+			return ret;
+		}
+		*remaining_path = '/';
+		dst = remaining_path + 1;
+		/* dst now points at any following components. */
 	}
 
+  local_path:
+
 	if (posix_pathnames) {
-		*err = check_path_syntax_posix(*pp_dest);
+		*err = check_path_syntax_posix(dst);
 	} else {
-		*err = check_path_syntax(*pp_dest);
+		*err = check_path_syntax(dst);
 	}
 
 	return ret;
