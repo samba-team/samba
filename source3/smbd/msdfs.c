@@ -666,7 +666,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 					       server+share+extrapath. */
 		uint32_t ucf_flags,
 		NTTIME *_twrp,
-		int *consumedcntp,
+		size_t *consumedcntp,
 		struct referral **ppreflist,
 		size_t *preferral_count)
 {
@@ -806,7 +806,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 				if (consumedcntp) {
 					*consumedcntp = strlen(canon_dfspath);
 					DBG_DEBUG("Path consumed: %s "
-						  "(%d)\n",
+						  "(%zu)\n",
 						  canon_dfspath,
 						  *consumedcntp);
 				}
@@ -928,7 +928,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 				pdp,
 				ucf_flags,
 				_twrp, /* twrp. */
-				NULL, /* int *consumedcntp */
+				NULL, /* size_t *consumedcntp */
 				NULL, /* struct referral **ppreflist */
 				NULL); /* size_t *preferral_count */
 	if (!NT_STATUS_IS_OK(status)) {
@@ -965,7 +965,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 static NTSTATUS self_ref(TALLOC_CTX *ctx,
 			const char *dfs_path,
 			struct junction_map *jucn,
-			int *consumedcntp,
+			size_t *consumedcntp,
 			bool *self_referralp)
 {
 	struct referral *ref;
@@ -1001,7 +1001,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			   const struct tsocket_address *local_address,
 			   bool allow_broken_path,
 			   struct junction_map *jucn,
-			   int *consumedcntp,
+			   size_t *consumedcntp,
 			   bool *self_referralp)
 {
 	TALLOC_CTX *frame = talloc_stackframe();

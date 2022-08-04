@@ -59,7 +59,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	struct junction_map *jn = NULL;
 	struct referral *old_referral_list = NULL;
 	bool self_ref = False;
-	int consumedcnt = 0;
+	size_t consumedcnt = 0;
 	char *altpath = NULL;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -137,7 +137,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 		dcesrv_call_session_info(dce_call);
 	struct junction_map *jn = NULL;
 	bool self_ref = False;
-	int consumedcnt = 0;
+	size_t consumedcnt = 0;
 	bool found = False;
 	TALLOC_CTX *ctx = talloc_tos();
 	char *altpath = NULL;
@@ -392,7 +392,7 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 		dcesrv_connection_get_remote_address(dcesrv_conn);
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
-	int consumedcnt = strlen(r->in.dfs_entry_path);
+	size_t consumedcnt = strlen(r->in.dfs_entry_path);
 	struct junction_map *jn = NULL;
 	bool self_ref = False;
 	TALLOC_CTX *ctx = talloc_tos();

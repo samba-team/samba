@@ -194,7 +194,7 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 					  struct dfs_GetDFSReferral *r)
 {
 	struct junction_map *junction = NULL;
-	int consumedcnt = 0;
+	size_t consumedcnt = 0;
 	bool self_referral = false;
 	char *pathnamep = NULL;
 	char *local_dfs_path = NULL;

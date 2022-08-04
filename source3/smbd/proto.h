@@ -538,7 +538,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			   const struct tsocket_address *local_address,
 			   bool allow_broken_path,
 			   struct junction_map *jucn,
-			   int *consumedcntp,
+			   size_t *consumedcntp,
 			   bool *self_referralp);
 int setup_dfs_referral(connection_struct *orig_conn,
 			const char *dfs_path,
