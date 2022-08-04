@@ -289,6 +289,37 @@ static PyObject *py_lp_dump(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_lp_dump_globals(PyObject *self, PyObject *args)
+{
+	bool show_defaults = false;
+	const char *file_name = "";
+	const char *mode = "w";
+	FILE *f;
+	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
+
+	if (!PyArg_ParseTuple(args, "|bss", &show_defaults, &file_name, &mode))
+		return NULL;
+
+	if (file_name[0] == '\0') {
+		f = stdout;
+	} else {
+		f = fopen(file_name, mode);
+	}
+
+	if (f == NULL) {
+		PyErr_SetFromErrno(PyExc_IOError);
+		return NULL;
+	}
+
+	lpcfg_dump_globals(lp_ctx, f, show_defaults);
+
+	if (f != stdout) {
+		fclose(f);
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_lp_dump_a_parameter(PyObject *self, PyObject *args)
 {
 	char *param_name;
@@ -433,6 +464,8 @@ static PyMethodDef py_lp_ctx_methods[] = {
 		"Get the server role." },
 	{ "dump", py_lp_dump, METH_VARARGS,
 		"S.dump(show_defaults=False, file_name='', mode='w')" },
+	{ "dump_globals", py_lp_dump_globals, METH_VARARGS,
+	        "S.dump_globals(show_defaults=False, file_name='', mode='w')" },
 	{ "dump_a_parameter", py_lp_dump_a_parameter, METH_VARARGS,
 		"S.dump_a_parameter(name, service_name, file_name='', mode='w')" },
 	{ "log_level", py_lp_log_level, METH_NOARGS,
