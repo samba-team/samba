@@ -4914,7 +4914,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		smb_fname_str_dbg(smb_fname_new), oldname));
 
 	if (ucf_flags & UCF_GMT_PATHNAME) {
-		extract_snapshot_token(oldname, ucf_flags, &old_twrp);
+		extract_snapshot_token(oldname, &old_twrp);
 	}
 	status = filename_convert_dirfsp(ctx,
 					 conn,
@@ -5014,7 +5014,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		}
 	} else {
 		if (ucf_flags & UCF_GMT_PATHNAME) {
-			extract_snapshot_token(newname, ucf_flags, &dst_twrp);
+			extract_snapshot_token(newname, &dst_twrp);
 		}
 		status = filename_convert_dirfsp(ctx,
 						 conn,
@@ -5118,7 +5118,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 				newname));
 
 	if (ucf_flags & UCF_GMT_PATHNAME) {
-		extract_snapshot_token(newname, ucf_flags, &dst_twrp);
+		extract_snapshot_token(newname, &dst_twrp);
 	}
 	status = filename_convert_dirfsp(ctx,
 					 conn,
@@ -5290,7 +5290,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 
 		if (ucf_flags & UCF_GMT_PATHNAME) {
-			extract_snapshot_token(base_name, ucf_flags, &dst_twrp);
+			extract_snapshot_token(base_name, &dst_twrp);
 		}
 		status = filename_convert_dirfsp(ctx,
 					 conn,

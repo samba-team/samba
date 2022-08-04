@@ -356,7 +356,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      NTTIME twrp,
 		      struct smb_filename **smb_fname,
 		      uint32_t ucf_flags);
-bool extract_snapshot_token(char *fname, uint32_t ucf_flags, NTTIME *twrp);
+bool extract_snapshot_token(char *fname, NTTIME *twrp);
 NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 				    uint32_t ucf_flags,
 				    NTTIME twrp);
