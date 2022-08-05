@@ -221,3 +221,25 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
         finally:
             self.disable_smb3unix()
+
+    def test_posix_delete_on_close(self):
+        try:
+            self.enable_smb3unix()
+
+            c = libsmb.Conn(
+                self.server_ip,
+                "smb3_posix_share",
+                self.lp,
+                self.creds,
+                posix=True)
+            self.assertTrue(c.have_posix())
+
+            f,_,cc_out = c.create_ex('\\TESTING999',
+                            DesiredAccess=security.SEC_STD_ALL,
+                            CreateDisposition=libsmb.FILE_CREATE,
+                            CreateContexts=[posix_context(0o744)])
+            c.delete_on_close(f, True)
+            c.close(f)
+
+        finally:
+            self.disable_smb3unix()
