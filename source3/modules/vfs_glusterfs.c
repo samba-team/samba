@@ -781,6 +781,7 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 						    dirfsp,
 						    smb_fname);
 		if (name == NULL) {
+			END_PROFILE(syscall_openat);
 			return -1;
 		}
 		smb_fname = name;
