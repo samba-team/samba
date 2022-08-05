@@ -61,7 +61,6 @@ struct dfs_path {
 	char *hostname;
 	char *servicename;
 	char *reqpath;
-	bool posix_path;
 };
 
 #endif /* _MSDFS_H */
