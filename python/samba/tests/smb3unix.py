@@ -243,3 +243,40 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
         finally:
             self.disable_smb3unix()
+
+    def test_posix_case_sensitive(self):
+        try:
+            self.enable_smb3unix()
+
+            c = libsmb.Conn(
+                self.server_ip,
+                "smb3_posix_share",
+                self.lp,
+                self.creds,
+                posix=True)
+            self.assertTrue(c.have_posix())
+
+            f,_,cc_out = c.create_ex('\\xx',
+                            DesiredAccess=security.SEC_STD_ALL,
+                            CreateDisposition=libsmb.FILE_CREATE,
+                            CreateContexts=[posix_context(0o644)])
+            c.close(f)
+
+            fail = False
+            try:
+                f,_,cc_out = c.create_ex('\\XX',
+                                DesiredAccess=security.SEC_STD_ALL,
+                                CreateDisposition=libsmb.FILE_OPEN,
+                                CreateContexts=[posix_context(0)])
+            except NTSTATUSError:
+                pass
+            else:
+                fail = True
+                c.close(f)
+
+            self.assertFalse(fail, "Opening uppercase file didn't fail")
+
+        finally:
+            self.delete_test_file(c, '\\xx')
+
+            self.disable_smb3unix()
