@@ -121,7 +121,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	 */
 	trim_char(p, '/', '/');
 
-	DBG_ERR("p = |%s| after trimming /'s\n", p);
+	DBG_DEBUG("p = |%s| after trimming /'s\n", p);
 
 	/* Now tokenize. */
 	/* Parse out hostname. */
@@ -143,7 +143,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	*p = '\0';
 	pdp->hostname = pathname_local;
 
-	DBG_ERR("hostname: %s\n",pdp->hostname);
+	DBG_DEBUG("hostname: %s\n",pdp->hostname);
 
 	/* Parse out servicename. */
 	servicename = p+1;
@@ -183,7 +183,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 
 	pdp->servicename = servicename;
 
-	DBG_ERR("servicename: %s\n", pdp->servicename);
+	DBG_DEBUG("servicename: %s\n", pdp->servicename);
 
 	if(p == NULL) {
 		/* Client sent self referral \server\share. */
@@ -202,7 +202,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	 */
 
 	pdp->reqpath = p;
-	DBG_ERR("rest of the path: %s\n", pdp->reqpath);
+	DBG_DEBUG("rest of the path: %s\n", pdp->reqpath);
 	return NT_STATUS_OK;
 }
 
