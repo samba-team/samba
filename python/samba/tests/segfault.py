@@ -236,3 +236,9 @@ class SegfaultTests(samba.tests.TestCase):
 
         c = ldb.Control(samdb, 'relax:1')
         del c.critical
+
+    @segfault_detector
+    def test_random_bytes(self):
+        # memory error from SIZE_MAX -1 allocation.
+        from samba import generate_random_bytes
+        generate_random_bytes(-1)
