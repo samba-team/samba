@@ -198,7 +198,7 @@ static NTSTATUS idmap_rfc2307_init_ldap(struct idmap_rfc2307_context *ctx,
 	ret = smbldap_init(mem_ctx, global_event_context(), url,
 			   (user_dn == NULL), user_dn, secret,
 			   &ctx->smbldap_state);
-	SAFE_FREE(secret);
+	BURN_FREE_STR(secret);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("ERROR: smbldap_init (%s) failed!\n", url));
 		goto done;

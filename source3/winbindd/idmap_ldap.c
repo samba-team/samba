@@ -107,7 +107,7 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 	ret = NT_STATUS_OK;
 
 done:
-	SAFE_FREE(secret);
+	BURN_FREE_STR(secret);
 
 	return ret;
 }

@@ -1744,7 +1744,7 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 	}
 
 	SAFE_FREE((*ldap_state)->bind_dn);
-	SAFE_FREE((*ldap_state)->bind_secret);
+	BURN_FREE_STR((*ldap_state)->bind_secret);
 	smbldap_set_bind_callback(*ldap_state, NULL, NULL);
 
 	TALLOC_FREE(*ldap_state);
