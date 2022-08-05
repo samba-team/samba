@@ -1891,6 +1891,56 @@ static PyTypeObject py_cli_notify_state_type = {
 };
 
 /*
+ * Helper to add posix directory listing entries to an overall Python list
+ */
+static NTSTATUS list_posix_helper(struct file_info *finfo,
+				  const char *mask, void *state)
+{
+	PyObject *result = (PyObject *)state;
+	PyObject *file = NULL;
+	PyObject *size = NULL;
+	int ret;
+
+	/* suppress '.' and '..' in the results we return */
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
+		return NT_STATUS_OK;
+	}
+	size = PyLong_FromUnsignedLongLong(finfo->size);
+	/*
+	 * Build a dictionary representing the file info.
+	 * Note: Windows does not always return short_name (so it may be None)
+	 */
+	file = Py_BuildValue("{s:s,s:i,s:s,s:O,s:l,s:i,s:i,s:i,s:s,s:s}",
+			     "name", finfo->name,
+			     "attrib", (int)finfo->attr,
+			     "short_name", finfo->short_name,
+			     "size", size,
+			     "mtime",
+			     convert_timespec_to_time_t(finfo->mtime_ts),
+			     "perms", finfo->st_ex_mode,
+			     "ino", finfo->ino,
+			     "dev", finfo->st_ex_dev,
+			     "owner_sid",
+			     dom_sid_string(finfo, &finfo->owner_sid),
+			     "group_sid",
+			     dom_sid_string(finfo, &finfo->group_sid));
+
+	Py_CLEAR(size);
+
+	if (file == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = PyList_Append(result, file);
+	Py_CLEAR(file);
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
  * Helper to add directory listing entries to an overall Python list
  */
 static NTSTATUS list_helper(struct file_info *finfo,
@@ -2022,6 +2072,8 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	PyObject *result = NULL;
 	const char *kwlist[] = { "directory", "mask", "attribs", "posix",
 				 "info_level", NULL };
+	NTSTATUS (*callback_fn)(struct file_info *, const char *, void *) =
+		&list_helper;
 
 	if (!ParseTupleAndKeywords(args, kwds, "z|sIpI:list", kwlist,
 				   &base_dir, &user_mask, &attribute,
@@ -2042,8 +2094,11 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 		}
 	}
 
+	if (posix) {
+		callback_fn = &list_posix_helper;
+	}
 	status = do_listing(self, base_dir, user_mask, attribute,
-			    info_level, posix, list_helper, result);
+			    info_level, posix, callback_fn, result);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		Py_XDECREF(result);
@@ -2828,6 +2883,7 @@ MODULE_INIT_FUNC(libsmb_samba_cwrapper)
 	ADD_FLAGS(FILE_OPEN_IF);
 	ADD_FLAGS(FILE_OVERWRITE);
 	ADD_FLAGS(FILE_OVERWRITE_IF);
+	ADD_FLAGS(FILE_DIRECTORY_FILE);
 
 	return m;
 }

@@ -19,6 +19,7 @@ from samba.samba3 import libsmb_samba_internal as libsmb
 from samba import NTSTATUSError,ntstatus
 import samba.tests.libsmb
 from samba.dcerpc import security
+from samba.common import get_string
 
 def posix_context(mode):
     return (libsmb.SMB2_CREATE_TAG_POSIX, mode.to_bytes(4, 'little'))
@@ -278,5 +279,60 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
         finally:
             self.delete_test_file(c, '\\xx')
+
+            self.disable_smb3unix()
+
+    def test_posix_perm_files(self):
+        try:
+            self.enable_smb3unix()
+
+            c = libsmb.Conn(
+                self.server_ip,
+                "smb3_posix_share",
+                self.lp,
+                self.creds,
+                posix=True)
+            self.assertTrue(c.have_posix())
+
+            test_files = {}
+            for perm in range(0o600, 0o7777+1):
+                # Owner write permission is required or cleanup will fail, and
+                # owner read is required to list the file if O_PATH is disabled
+                if perm & 0o600 != 0o600:
+                    continue
+
+                # Don't create with setuid or setgid.
+                if perm & 0o6000 != 0:
+                    continue
+
+                fname = 'testfile%04o' % perm
+                test_files[fname] = perm
+                f,_,cc_out = c.create_ex('\\%s' % fname,
+                                DesiredAccess=security.SEC_STD_ALL,
+                                CreateDisposition=libsmb.FILE_CREATE,
+                                CreateContexts=[posix_context(perm)])
+                c.close(f)
+
+                dname = 'testdir%04o' % perm
+                test_files[dname] = perm
+                f,_,cc_out = c.create_ex('\\%s' % dname,
+                                DesiredAccess=security.SEC_STD_ALL,
+                                CreateDisposition=libsmb.FILE_CREATE,
+                                CreateOptions=libsmb.FILE_DIRECTORY_FILE,
+                                CreateContexts=[posix_context(perm)])
+                c.close(f)
+
+            res = c.list("", info_level=100, posix=True)
+            found_files = {get_string(i['name']): i['perms'] for i in res}
+            for fname, perm in test_files.items():
+                self.assertIn(get_string(fname), found_files.keys(),
+                              'Test file not found')
+                self.assertEqual(test_files[fname], found_files[fname],
+                                 'Requested %04o, Received %04o' % \
+                                         (test_files[fname], found_files[fname]))
+
+        finally:
+            for fname in test_files.keys():
+                self.delete_test_file(c, '\\%s' % fname)
 
             self.disable_smb3unix()
