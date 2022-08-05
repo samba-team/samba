@@ -379,15 +379,8 @@ bool fetch_ldap_pw(char **dn, char** pw)
 	*pw=(char *)secrets_fetch(key, &size);
 	SAFE_FREE(key);
 
-	if ((size != 0) && ((*pw)[size-1] != '\0')) {
-		DBG_ERR("Non 0-terminated password for dn %s\n", *dn);
-		SAFE_FREE(*pw);
-		SAFE_FREE(*dn);
-		return false;
-	}
-
-	if (!size) {
-		DBG_ERR("No password for %s\n", *dn);
+	if (*pw == NULL || size == 0 || (*pw)[size-1] != '\0') {
+		DBG_ERR("No valid password for %s\n", *dn);
 		SAFE_FREE(*pw);
 		SAFE_FREE(*dn);
 		return false;
