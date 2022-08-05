@@ -181,6 +181,45 @@ static const struct mask2txt lease_mask[] = {
 	{0, NULL}
 };
 
+int add_profile_item_to_json(struct traverse_state *state,
+			     const char *section,
+			     const char *subsection,
+			     const char *key,
+			     uintmax_t value)
+{
+	struct json_object section_json, subsection_json;
+	int result = 0;
+
+	section_json = json_get_object(&state->root_json, section);
+	if (json_is_invalid(&section_json)) {
+		goto failure;
+	}
+	subsection_json = json_get_object(&section_json, subsection);
+	if (json_is_invalid(&subsection_json)) {
+		goto failure;
+	}
+
+	result = json_add_int(&subsection_json, key, value);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_update_object(&section_json, subsection,  &subsection_json);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_update_object(&state->root_json, section, &section_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	return 0;
+failure:
+	json_free(&section_json);
+	json_free(&subsection_json);
+	return -1;
+}
+
 int add_section_to_json(struct traverse_state *state,
 			const char *key)
 {
