@@ -363,32 +363,6 @@ bool secrets_fetch_trust_account_password_legacy(const char *domain,
 }
 
 /************************************************************************
- Routine to get the trust account password for a domain.
- The user of this function must have locked the trust password file using
- the above secrets_lock_trust_account_password().
-************************************************************************/
-
-bool secrets_fetch_trust_account_password(const char *domain, uint8_t ret_pwd[16],
-					  time_t *pass_last_set_time,
-					  enum netr_SchannelType *channel)
-{
-	char *plaintext;
-
-	plaintext = secrets_fetch_machine_password(domain, pass_last_set_time,
-						   channel);
-	if (plaintext) {
-		DEBUG(4,("Using cleartext machine password\n"));
-		E_md4hash(plaintext, ret_pwd);
-		SAFE_FREE(plaintext);
-		return True;
-	}
-
-	return secrets_fetch_trust_account_password_legacy(domain, ret_pwd,
-							   pass_last_set_time,
-							   channel);
-}
-
-/************************************************************************
  Routine to delete all information related to the domain joined machine.
 ************************************************************************/
 

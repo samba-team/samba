@@ -110,9 +110,6 @@ bool secrets_fetch_trust_account_password_legacy(const char *domain,
 						 uint8_t ret_pwd[16],
 						 time_t *pass_last_set_time,
 						 enum netr_SchannelType *channel);
-bool secrets_fetch_trust_account_password(const char *domain, uint8_t ret_pwd[16],
-					  time_t *pass_last_set_time,
-					  enum netr_SchannelType *channel);
 bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
                                            struct dom_sid  *sid, time_t *pass_last_set_time);
 bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
