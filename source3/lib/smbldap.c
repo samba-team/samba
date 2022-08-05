@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
    Copyright (C) Jean François Micouleau	1998
@@ -106,7 +106,7 @@ void smbldap_set_bind_callback(struct smbldap_state *state,
 	}
 
 	if (!convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, max_len, &size)) {
-		DEBUG(1, ("smbldap_get_single_attribute: string conversion of [%s] = [%s] failed!\n", 
+		DEBUG(1, ("smbldap_get_single_attribute: string conversion of [%s] = [%s] failed!\n",
 			  attribute, values[0]));
 		ldap_value_free(values);
 		return False;
@@ -115,7 +115,7 @@ void smbldap_set_bind_callback(struct smbldap_state *state,
 	ldap_value_free(values);
 #ifdef DEBUG_PASSWORDS
 	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n", attribute, value));
-#endif	
+#endif
 	return True;
 }
 
@@ -156,7 +156,7 @@ void smbldap_set_bind_callback(struct smbldap_state *state,
 #ifdef DEBUG_PASSWORDS
 	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n",
 		     attribute, result));
-#endif	
+#endif
 	return result;
 }
 
@@ -345,7 +345,7 @@ static void smbldap_set_mod_internal(LDAPMod *** modlist, int modop, const char 
 	/* sanity checks on the mod values */
 
 	if (attribute == NULL || *attribute == '\0') {
-		return;	
+		return;
 	}
 
 #if 0	/* commented out after discussion with abartlet.  Do not re-enable.
@@ -494,7 +494,7 @@ static void smbldap_make_mod_internal(LDAP *ldap_struct, LDAPMessage *existing,
 		 * should be race-free in the sense that the LDAP-Server will
 		 * deny the complete operation if somebody changed the
 		 * attribute behind our back. */
-		/* This will also allow modifying single valued attributes 
+		/* This will also allow modifying single valued attributes
 		 * in Novell NDS. In NDS you have to first remove attribute and then
 		 * you could add new value */
 
@@ -541,8 +541,8 @@ static void smbldap_make_mod_internal(LDAP *ldap_struct, LDAPMessage *existing,
 }
 
 /**********************************************************************
- Some varients of the LDAP rebind code do not pass in the third 'arg' 
- pointer to a void*, so we try and work around it by assuming that the 
+ Some varients of the LDAP rebind code do not pass in the third 'arg'
+ pointer to a void*, so we try and work around it by assuming that the
  value of the 'LDAP *' pointer is the same as the one we had passed in
  **********************************************************************/
 
@@ -554,7 +554,7 @@ struct smbldap_state_lookup {
 
 static struct smbldap_state_lookup *smbldap_state_lookup_list;
 
-static struct smbldap_state *smbldap_find_state(LDAP *ld) 
+static struct smbldap_state *smbldap_find_state(LDAP *ld)
 {
 	struct smbldap_state_lookup *t;
 
@@ -566,7 +566,7 @@ static struct smbldap_state *smbldap_find_state(LDAP *ld)
 	return NULL;
 }
 
-static void smbldap_delete_state(struct smbldap_state *smbldap_state) 
+static void smbldap_delete_state(struct smbldap_state *smbldap_state)
 {
 	struct smbldap_state_lookup *t;
 
@@ -579,7 +579,7 @@ static void smbldap_delete_state(struct smbldap_state *smbldap_state)
 	}
 }
 
-static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state) 
+static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 {
 	struct smbldap_state *tmp_ldap_state;
 	struct smbldap_state_lookup *t;
@@ -671,7 +671,7 @@ static int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 	}
 
 	return LDAP_SUCCESS;
-#else 
+#else
 
 	/* Parse the string manually */
 
@@ -749,7 +749,7 @@ static int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 
 /********************************************************************
  try to upgrade to Version 3 LDAP if not already, in either case return current
- version 
+ version
  *******************************************************************/
 
 static int smb_ldap_upgrade_conn(LDAP *ldap_struct, int *new_version)
@@ -861,7 +861,7 @@ static int smbldap_open_connection (struct smbldap_state *ldap_state)
 ******************************************************************/
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 #else
-static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp, 
+static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
 				   int *methodp, int freeit, void *arg)
 {
 	struct smbldap_state *ldap_state = arg;
@@ -878,7 +878,7 @@ static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
 		}
 		SAFE_FREE(*credp);
 	} else {
-		DEBUG(5,("rebind_proc_with_state: Rebinding as \"%s\"\n", 
+		DEBUG(5,("rebind_proc_with_state: Rebinding as \"%s\"\n",
 			  ldap_state->bind_dn?ldap_state->bind_dn:"[Anonymous bind]"));
 
 		if (ldap_state->anonymous) {
@@ -911,8 +911,8 @@ static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
  and actually does the connection.
 ******************************************************************/
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
-static int rebindproc_connect_with_state (LDAP *ldap_struct, 
-					  LDAP_CONST char *url, 
+static int rebindproc_connect_with_state (LDAP *ldap_struct,
+					  LDAP_CONST char *url,
 					  ber_tag_t request,
 					  ber_int_t msgid, void *arg)
 {
@@ -922,7 +922,7 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 	struct timespec ts;
 	int version;
 
-	DEBUG(5,("rebindproc_connect_with_state: Rebinding to %s as \"%s\"\n", 
+	DEBUG(5,("rebindproc_connect_with_state: Rebinding to %s as \"%s\"\n",
 		 url, ldap_state->bind_dn?ldap_state->bind_dn:"[Anonymous bind]"));
 
 	/* call START_TLS again (ldaps:// is handled by the OpenLDAP library
@@ -992,7 +992,7 @@ static int rebindproc_connect (LDAP * ld, LDAP_CONST char *url, int request,
 {
 	struct smbldap_state *ldap_state = smbldap_find_state(ld);
 
-	return rebindproc_connect_with_state(ld, url, (ber_tag_t)request, msgid, 
+	return rebindproc_connect_with_state(ld, url, (ber_tag_t)request, msgid,
 					     ldap_state);
 }
 # endif /*LDAP_SET_REBIND_PROC_ARGS == 2*/
@@ -1007,7 +1007,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state)
 	int rc;
 	int version;
 
-	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
+	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite
 	   (OpenLDAP) doesn't seem to support it */
 
 	DEBUG(10,("ldap_connect_system: Binding to ldap server %s as \"%s\"\n",
@@ -1015,18 +1015,18 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state)
 
 #ifdef HAVE_LDAP_SET_REBIND_PROC
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
-# if LDAP_SET_REBIND_PROC_ARGS == 2	
-	ldap_set_rebind_proc(ldap_struct, &rebindproc_connect);	
+# if LDAP_SET_REBIND_PROC_ARGS == 2
+	ldap_set_rebind_proc(ldap_struct, &rebindproc_connect);
 # endif
-# if LDAP_SET_REBIND_PROC_ARGS == 3	
-	ldap_set_rebind_proc(ldap_struct, &rebindproc_connect_with_state, (void *)ldap_state);	
+# if LDAP_SET_REBIND_PROC_ARGS == 3
+	ldap_set_rebind_proc(ldap_struct, &rebindproc_connect_with_state, (void *)ldap_state);
 # endif
 #else /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
-# if LDAP_SET_REBIND_PROC_ARGS == 2	
-	ldap_set_rebind_proc(ldap_struct, &rebindproc);	
+# if LDAP_SET_REBIND_PROC_ARGS == 2
+	ldap_set_rebind_proc(ldap_struct, &rebindproc);
 # endif
-# if LDAP_SET_REBIND_PROC_ARGS == 3	
-	ldap_set_rebind_proc(ldap_struct, &rebindproc_with_state, (void *)ldap_state);	
+# if LDAP_SET_REBIND_PROC_ARGS == 3
+	ldap_set_rebind_proc(ldap_struct, &rebindproc_with_state, (void *)ldap_state);
 # endif
 #endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
 #endif
@@ -1074,7 +1074,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state)
 	}
 
 	DEBUG(3, ("ldap_connect_system: successful connection to the LDAP server\n"));
-	DEBUGADD(10, ("ldap_connect_system: LDAP server %s support paged results\n", 
+	DEBUGADD(10, ("ldap_connect_system: LDAP server %s support paged results\n",
 		ldap_state->paged_results ? "does" : "does not"));
 done:
 	if (rc != 0) {
@@ -1126,7 +1126,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 		    	ldap_state->last_ping = (time_t)0;
 		} else {
 			ldap_state->last_ping = time_mono(NULL);
-		} 
+		}
     	}
 
 	if (smbldap_get_ldap(ldap_state) != NULL) {
@@ -1161,7 +1161,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 }
 
 /**********************************************************************
-Disconnect from LDAP server 
+Disconnect from LDAP server
 *********************************************************************/
 static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 {
@@ -1296,9 +1296,9 @@ static int get_cached_ldap_connect(struct smbldap_state *ldap_state, time_t abs_
  ********************************************************************/
 
 static int smbldap_search_ext(struct smbldap_state *ldap_state,
-			      const char *base, int scope, const char *filter, 
+			      const char *base, int scope, const char *filter,
 			      const char *attrs[], int attrsonly,
-			      LDAPControl **sctrls, LDAPControl **cctrls, 
+			      LDAPControl **sctrls, LDAPControl **cctrls,
 			      int sizelimit, LDAPMessage **res)
 {
 	int 		rc = LDAP_SERVER_DOWN;
@@ -1390,17 +1390,17 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	return end_ldap_local_alarm(abs_endtime, rc);
 }
 
-int smbldap_search(struct smbldap_state *ldap_state, 
-		   const char *base, int scope, const char *filter, 
-		   const char *attrs[], int attrsonly, 
+int smbldap_search(struct smbldap_state *ldap_state,
+		   const char *base, int scope, const char *filter,
+		   const char *attrs[], int attrsonly,
 		   LDAPMessage **res)
 {
 	return smbldap_search_ext(ldap_state, base, scope, filter, attrs,
 				  attrsonly, NULL, NULL, LDAP_NO_LIMIT, res);
 }
 
-int smbldap_search_paged(struct smbldap_state *ldap_state, 
-			 const char *base, int scope, const char *filter, 
+int smbldap_search_paged(struct smbldap_state *ldap_state,
+			 const char *base, int scope, const char *filter,
 			 const char **attrs, int attrsonly, int pagesize,
 			 LDAPMessage **res, void **cookie)
 {
@@ -1443,7 +1443,7 @@ int smbldap_search_paged(struct smbldap_state *ldap_state,
 	controls[0] = &pr;
 	controls[1] = NULL;
 
-	rc = smbldap_search_ext(ldap_state, base, scope, filter, attrs, 
+	rc = smbldap_search_ext(ldap_state, base, scope, filter, attrs,
 				 0, controls, NULL, LDAP_NO_LIMIT, res);
 
 	ber_free(cookie_be, 1);
@@ -1486,7 +1486,7 @@ int smbldap_search_paged(struct smbldap_state *ldap_state,
 		break;
 	}
 	ldap_controls_free(rcontrols);
-done:	
+done:
 	return rc;
 }
 
@@ -1641,9 +1641,9 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 	return end_ldap_local_alarm(abs_endtime, rc);
 }
 
-int smbldap_extended_operation(struct smbldap_state *ldap_state, 
-			       LDAP_CONST char *reqoid, struct berval *reqdata, 
-			       LDAPControl **serverctrls, LDAPControl **clientctrls, 
+int smbldap_extended_operation(struct smbldap_state *ldap_state,
+			       LDAP_CONST char *reqoid, struct berval *reqdata,
+			       LDAPControl **serverctrls, LDAPControl **clientctrls,
 			       char **retoidp, struct berval **retdatap)
 {
 	int 		rc = LDAP_SERVER_DOWN;
@@ -1735,7 +1735,7 @@ static void smbldap_idle_fn(struct tevent_context *tevent_ctx,
  Housekeeping
  *********************************************************************/
 
-void smbldap_free_struct(struct smbldap_state **ldap_state) 
+void smbldap_free_struct(struct smbldap_state **ldap_state)
 {
 	smbldap_close(*ldap_state);
 
@@ -1816,7 +1816,7 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct tevent_context *tevent_ctx,
  Check if root-dse has a certain Control or Extension
 ********************************************************************/
 
-static bool smbldap_check_root_dse(LDAP *ld, const char **attrs, const char *value) 
+static bool smbldap_check_root_dse(LDAP *ld, const char **attrs, const char *value)
 {
 	LDAPMessage *msg = NULL;
 	LDAPMessage *entry = NULL;
@@ -1829,14 +1829,14 @@ static bool smbldap_check_root_dse(LDAP *ld, const char **attrs, const char *val
 		return False;
 	}
 
-	if (!strequal(attrs[0], "supportedExtension") && 
-	    !strequal(attrs[0], "supportedControl") && 
+	if (!strequal(attrs[0], "supportedExtension") &&
+	    !strequal(attrs[0], "supportedControl") &&
 	    !strequal(attrs[0], "namingContexts")) {
 		DEBUG(3,("smbldap_check_root_dse: no idea what to query root-dse for: %s ?\n", attrs[0]));
 		return False;
 	}
 
-	rc = ldap_search_s(ld, "", LDAP_SCOPE_BASE, 
+	rc = ldap_search_s(ld, "", LDAP_SCOPE_BASE,
 			   "(objectclass=*)", discard_const_p(char *, attrs), 0 , &msg);
 
 	if (rc != LDAP_SUCCESS) {
