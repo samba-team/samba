@@ -311,6 +311,29 @@ static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
 		server = dst;
 
 		/*
+		 * Cosmetic fix for Linux-only DFS clients.
+		 * The Linux kernel SMB1 client has a bug - it sends
+		 * DFS pathnames as:
+		 *
+		 * \\server\share\path
+		 *
+		 * Causing us to mis-parse server,share,remaining_path here
+		 * and jump into 'goto local_path' at 'share\path' instead
+		 * of 'path'.
+		 *
+		 * This doesn't cause an error as the limits on share names
+		 * are similar to those on pathnames.
+		 *
+		 * parse_dfs_path() which we call before filename parsing
+		 * copes with this by calling trim_char on the leading '\'
+		 * characters before processing.
+		 * Do the same here so logging of pathnames looks better.
+		 */
+		if (server[1] == path_sep) {
+			trim_char(&server[1], path_sep, '\0');
+		}
+
+		/*
 		 * Look to see if we also have /share following.
 		 */
 		share = strchr(server+1, path_sep);
