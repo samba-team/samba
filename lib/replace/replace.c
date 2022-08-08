@@ -1087,7 +1087,15 @@ ssize_t rep_copy_file_range(int fd_in,
 long rep_openat2(int dirfd, const char *pathname,
 		 struct open_how *how, size_t size)
 {
+#ifdef __NR_openat2
+	return syscall(__NR_openat2,
+		       dirfd,
+		       pathname,
+		       how,
+		       size);
+#else
 	errno = ENOSYS;
 	return -1;
+#endif
 }
 #endif /* !HAVE_OPENAT2 */
