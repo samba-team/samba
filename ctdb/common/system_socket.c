@@ -747,13 +747,6 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 	return 0;
 }
 
-/*
- * Packet capture
- *
- * If AF_PACKET is available then use a raw socket otherwise use pcap.
- * wscript has checked to make sure that pcap is available if needed.
- */
-
 static int tcp4_extract(const uint8_t *ip_pkt,
 			size_t pktlen,
 			struct sockaddr_in *src,
@@ -864,6 +857,12 @@ static int tcp6_extract(const uint8_t *ip_pkt,
 	return 0;
 }
 
+/*
+ * Packet capture
+ *
+ * If AF_PACKET is available then use a raw socket otherwise use pcap.
+ * wscript has checked to make sure that pcap is available if needed.
+ */
 
 #ifdef HAVE_AF_PACKET
 
