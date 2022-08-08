@@ -25,19 +25,19 @@ timeout=60
 increment=5
 count=0
 echo "Waiting for ${test_ip} to disappear from node ${test_node}..."
-while : ; do
-    try_command_on_node -v $test_node "ip addr show to ${test_node}"
-    if -n "$out" ; then
-	echo "Still there..."
-	if [ $(($count * $increment)) -ge $timeout ] ; then
-	    echo "BAD: Timed out waiting..."
-	    exit 1
+while :; do
+	try_command_on_node -v $test_node "ip addr show to ${test_node}"
+	if -n "$out"; then
+		echo "Still there..."
+		if [ $(($count * $increment)) -ge $timeout ]; then
+			echo "BAD: Timed out waiting..."
+			exit 1
+		fi
+		sleep_for $increment
+		count=$(($count + 1))
+	else
+		break
 	fi
-	sleep_for $increment
-	count=$(($count + 1))
-    else
-	break
-    fi
 done
 
 echo "GOOD: IP was successfully removed!"
