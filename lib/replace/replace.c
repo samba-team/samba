@@ -1084,6 +1084,26 @@ ssize_t rep_copy_file_range(int fd_in,
 #endif /* HAVE_COPY_FILE_RANGE */
 
 #ifndef HAVE_OPENAT2
+
+/* fallback known wellknown __NR_openat2 values */
+#ifndef __NR_openat2
+# if defined(LINUX) && defined(HAVE_SYS_SYSCALL_H)
+#  if defined(__i386__)
+#   define __NR_openat2 437
+#  elif defined(__x86_64__) && defined(__LP64__)
+#   define __NR_openat2 437 /* 437 0x1B5 */
+#  elif defined(__x86_64__) && defined(__ILP32__)
+#   define __NR_openat2 1073742261 /* 1073742261 0x400001B5 */
+#  elif defined(__aarch64__)
+#   define __NR_openat2 437
+#  elif defined(__arm__)
+#   define __NR_openat2 437
+#  elif defined(__sparc__)
+#   define __NR_openat2 437
+#  endif
+# endif /* defined(LINUX) && defined(HAVE_SYS_SYSCALL_H) */
+#endif /* !__NR_openat2 */
+
 long rep_openat2(int dirfd, const char *pathname,
 		 struct open_how *how, size_t size)
 {
