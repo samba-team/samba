@@ -560,6 +560,11 @@ bool remove_msdfs_link(const struct junction_map *jucn,
 struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx,
 				      struct auth_session_info *session_info,
 				      size_t *p_num_jn);
+NTSTATUS dfs_filename_convert(TALLOC_CTX *ctx,
+			      connection_struct *conn,
+			      uint32_t ucf_flags,
+			      const char *dfs_path_in,
+			      char **pp_path_out);
 NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *name_in,
