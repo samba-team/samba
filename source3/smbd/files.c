@@ -856,6 +856,18 @@ next:
 					*unparsed = len - parsed;
 				}
 			}
+			/*
+			 * If we're on an MSDFS share, see if this is
+			 * an MSDFS link.
+			 */
+			if (lp_host_msdfs() &&
+			    lp_msdfs_root(SNUM(conn)) &&
+			    (substitute != NULL) &&
+			    strnequal(*substitute, "msdfs:", 6) &&
+			    is_msdfs_link(dirfsp, &rel_fname))
+			{
+				status = NT_STATUS_PATH_NOT_COVERED;
+			}
 		} else {
 
 			DBG_DEBUG("readlink_talloc failed: %s\n",
