@@ -98,6 +98,9 @@ def options(opt):
     opt.add_option('--enable-etcd-reclock',
                    help=("Enable etcd recovery lock helper (default=no)"),
                    action="store_true", dest='ctdb_etcd_reclock', default=False)
+    opt.add_option('--enable-pcap',
+                   help=("Use pcap for packet capture (default=no)"),
+                   action="store_true", dest='ctdb_pcap', default=False)
 
     opt.add_option('--with-libcephfs',
                    help=("Directory under which libcephfs is installed"),
@@ -201,7 +204,9 @@ def configure(conf):
     if not conf.CHECK_VARIABLE('ETIME', headers='errno.h'):
         conf.DEFINE('ETIME', 'ETIMEDOUT')
 
-    if sys.platform.startswith('linux'):
+    if Options.options.ctdb_pcap or not sys.platform.startswith('linux'):
+        conf.DEFINE('ENABLE_PCAP', 1)
+    if not conf.env.ENABLE_PCAP:
         conf.SET_TARGET_TYPE('pcap', 'EMPTY')
     else:
         conf.find_program('pcap-config', var='PCAP_CONFIG')
