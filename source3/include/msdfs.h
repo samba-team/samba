@@ -56,11 +56,4 @@ struct junction_map {
 	size_t referral_count;
 	struct referral* referral_list;
 };
-
-struct dfs_path {
-	char *hostname;
-	char *servicename;
-	char *reqpath;
-};
-
 #endif /* _MSDFS_H */
