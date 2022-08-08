@@ -905,6 +905,68 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 /*****************************************************************
  Decides if a dfs pathname should be redirected or not.
  If not, the pathname is converted to a tcon-relative local unix path
+ This is now a simple wrapper around parse_dfs_path()
+ as it does all the required checks.
+*****************************************************************/
+
+NTSTATUS dfs_filename_convert(TALLOC_CTX *ctx,
+			      connection_struct *conn,
+			      uint32_t ucf_flags,
+			      const char *dfs_path_in,
+			      char **pp_path_out)
+{
+	char *hostname = NULL;
+	char *servicename = NULL;
+	char *reqpath = NULL;
+	NTSTATUS status;
+
+	status = parse_dfs_path(ctx,
+				conn,
+				dfs_path_in,
+				!conn->sconn->using_smb2,
+				&hostname,
+				&servicename,
+				&reqpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * Caller doesn't care about hostname
+	 * or servicename.
+	 */
+	TALLOC_FREE(hostname);
+	TALLOC_FREE(servicename);
+
+	/*
+	 * If parse_dfs_path fell back to a local path
+	 * after skipping hostname or servicename, ensure
+	 * we still have called check_path_syntax()
+	 * on the full returned local path. check_path_syntax()
+	 * is idempotent so this is safe.
+	 */
+	if (ucf_flags & UCF_POSIX_PATHNAMES) {
+		status = check_path_syntax_posix(reqpath);
+	} else {
+		status = check_path_syntax(reqpath);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	/*
+	 * Previous (and current logic) just ignores
+	 * the server, share components if a DFS
+	 * path is sent on a non-DFS share except to
+	 * check that they match an existing share. Should
+	 * we tighten this up to return an error here ?
+	 */
+	*pp_path_out = reqpath;
+	return NT_STATUS_OK;
+}
+
+/*****************************************************************
+ Decides if a dfs pathname should be redirected or not.
+ If not, the pathname is converted to a tcon-relative local unix path
 
  search_wcard_flag: this flag performs 2 functions both related
  to searches.  See resolve_dfs_path() and parse_dfs_path_XX()
