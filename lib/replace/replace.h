@@ -865,6 +865,17 @@ typedef unsigned long long ptrdiff_t ;
 #define BURN_PTR_SIZE(x, s) memset_s((x), (s), 0, (s))
 
 /**
+ * Explicitly zero data in string. This is guaranteed to be not optimized
+ * away.
+ */
+#define BURN_STR(x)	do { \
+				if ((x) != NULL) { \
+					size_t s = strlen(x); \
+					memset_s((x), s, 0, s); \
+				} \
+			} while(0)
+
+/**
  * Work out how many elements there are in a static array.
  */
 #ifdef ARRAY_SIZE
