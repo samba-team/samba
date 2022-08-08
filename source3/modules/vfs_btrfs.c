@@ -17,6 +17,8 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "includes.h"
+#include "system/filesys.h"
 #include <linux/ioctl.h>
 #include <linux/fs.h>
 #include <sys/ioctl.h>
@@ -24,8 +26,6 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <libgen.h>
-#include "system/filesys.h"
-#include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "librpc/gen_ndr/smbXsrv.h"
