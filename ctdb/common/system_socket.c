@@ -998,7 +998,7 @@ int ctdb_sys_read_tcp_packet(int s,
 			     uint16_t *window)
 {
 	int ret;
-	struct ether_header *eth;
+	const struct ether_header *eth;
 	struct pcap_pkthdr pkthdr;
 	const u_char *buffer;
 	pcap_t *pt = (pcap_t *)private_data;
@@ -1012,7 +1012,7 @@ int ctdb_sys_read_tcp_packet(int s,
 	ZERO_STRUCTP(dst);
 
 	/* Ethernet */
-	eth = (struct ether_header *)buffer;
+	eth = (const struct ether_header *)buffer;
 
 	/* we want either IPv4 or IPv6 */
 	if (eth->ether_type == htons(ETHERTYPE_IP)) {
