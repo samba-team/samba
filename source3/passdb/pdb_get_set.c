@@ -899,10 +899,9 @@ bool pdb_set_pw_history(struct samu *sampass, const uint8_t *pwd, uint32_t histo
 
 bool pdb_set_plaintext_pw_only(struct samu *sampass, const char *password, enum pdb_value_state flag)
 {
-	if (password) {
-		if (sampass->plaintext_pw!=NULL)
-			memset(sampass->plaintext_pw,'\0',strlen(sampass->plaintext_pw)+1);
+	BURN_STR(sampass->plaintext_pw);
 
+	if (password != NULL) {
 		sampass->plaintext_pw = talloc_strdup(sampass, password);
 
 		if (!sampass->plaintext_pw) {

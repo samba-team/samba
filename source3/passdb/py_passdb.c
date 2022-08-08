@@ -797,6 +797,8 @@ static PyObject *py_samu_get_plaintext_passwd(PyObject *obj, void *closure)
 	}
 
 	py_plaintext_pw = PyUnicode_FromString(plaintext_pw);
+
+	BURN_STR(discard_const_p(char, plaintext_pw));
 	talloc_free(frame);
 	return py_plaintext_pw;
 }
