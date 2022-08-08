@@ -864,7 +864,7 @@ static int tcp6_extract(const uint8_t *ip_pkt,
  * wscript has checked to make sure that pcap is available if needed.
  */
 
-#ifdef HAVE_AF_PACKET
+#if defined(HAVE_AF_PACKET) && !defined(ENABLE_PCAP)
 
 /*
  * This function is used to open a raw socket to capture from
@@ -963,7 +963,7 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 	return ENOMSG;
 }
 
-#else /* HAVE_AF_PACKET */
+#else /* defined(HAVE_AF_PACKET) && !defined(ENABLE_PCAP) */
 
 #include <pcap.h>
 
@@ -1043,4 +1043,4 @@ int ctdb_sys_read_tcp_packet(int s,
 	return ENOMSG;
 }
 
-#endif /* HAVE_AF_PACKET */
+#endif /* defined(HAVE_AF_PACKET) && !defined(ENABLE_PCAP) */
