@@ -2549,6 +2549,11 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 			  nt_errstr(status));
 		TALLOC_FREE(dirname);
 
+		if (NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
+			/* MS-DFS error must propagate back out. */
+			goto fail;
+		}
+
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 			/*
 			 * Except ACCESS_DENIED, everything else leads
