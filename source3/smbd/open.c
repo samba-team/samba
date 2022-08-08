@@ -4329,7 +4329,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	 */
 	fsp->fsp_flags.is_pathref = true;
 
-	status = fd_openat(conn->cwd_fsp, smb_dname, fsp, &how);
+	status = fd_openat(parent_dir_fname->fsp, smb_fname_atname, fsp, &how);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
