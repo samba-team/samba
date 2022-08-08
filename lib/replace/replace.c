@@ -33,6 +33,10 @@
 #include "system/locale.h"
 #include "system/wait.h"
 
+#ifdef HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
+#endif
+
 #ifdef _WIN32
 #define mkdir(d,m) _mkdir(d)
 #endif
@@ -1058,9 +1062,6 @@ const char *rep_getprogname(void)
 #endif /* HAVE_GETPROGNAME */
 
 #ifndef HAVE_COPY_FILE_RANGE
-# ifdef HAVE_SYSCALL_COPY_FILE_RANGE
-# include <sys/syscall.h>
-# endif
 ssize_t rep_copy_file_range(int fd_in,
 			    loff_t *off_in,
 			    int fd_out,
