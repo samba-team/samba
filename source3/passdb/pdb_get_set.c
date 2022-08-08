@@ -1001,6 +1001,7 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 {
 	uchar new_lanman_p16[LM_HASH_LEN];
 	uchar new_nt_p16[NT_HASH_LEN];
+	bool ok;
 
 	if (!plaintext)
 		return False;
@@ -1008,8 +1009,10 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	E_md4hash(plaintext, new_nt_p16);
 
-	if (!pdb_set_nt_passwd (sampass, new_nt_p16, PDB_CHANGED))
+	if (!pdb_set_nt_passwd (sampass, new_nt_p16, PDB_CHANGED)) {
+		ZERO_STRUCT(new_nt_p16);
 		return False;
+	}
 
 	if (!E_deshash(plaintext, new_lanman_p16)) {
 		/* E_deshash returns false for 'long' passwords (> 14
@@ -1017,21 +1020,33 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 		   does not store a LM hash for these passwords (which
 		   would reduce the effective password length to 14 */
 
-		if (!pdb_set_lanman_passwd (sampass, NULL, PDB_CHANGED))
+		if (!pdb_set_lanman_passwd (sampass, NULL, PDB_CHANGED)) {
+			ZERO_STRUCT(new_nt_p16);
+			ZERO_STRUCT(new_lanman_p16);
 			return False;
+		}
 	} else {
-		if (!pdb_set_lanman_passwd (sampass, new_lanman_p16, PDB_CHANGED))
+		if (!pdb_set_lanman_passwd (sampass, new_lanman_p16, PDB_CHANGED)) {
+			ZERO_STRUCT(new_nt_p16);
+			ZERO_STRUCT(new_lanman_p16);
 			return False;
+		}
+	}
+	ZERO_STRUCT(new_lanman_p16);
+
+	if (!pdb_set_plaintext_pw_only (sampass, plaintext, PDB_CHANGED)) {
+		ZERO_STRUCT(new_nt_p16);
+		return False;
 	}
 
-	if (!pdb_set_plaintext_pw_only (sampass, plaintext, PDB_CHANGED))
+	if (!pdb_set_pass_last_set_time (sampass, time(NULL), PDB_CHANGED)) {
+		ZERO_STRUCT(new_nt_p16);
 		return False;
+	}
 
-	if (!pdb_set_pass_last_set_time (sampass, time(NULL), PDB_CHANGED))
-		return False;
-
-
-	return pdb_update_history(sampass, new_nt_p16);
+	ok = pdb_update_history(sampass, new_nt_p16);
+	ZERO_STRUCT(new_nt_p16);
+	return ok;
 }
 
 /*********************************************************************
