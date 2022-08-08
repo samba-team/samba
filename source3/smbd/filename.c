@@ -2635,6 +2635,19 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		char *normalized = NULL;
 
 		if (VALID_STAT(smb_fname_rel->st)) {
+			/*
+			 * If we're on an MSDFS share, see if this is
+			 * an MSDFS link.
+			 */
+			if (lp_host_msdfs() &&
+			    lp_msdfs_root(SNUM(conn)) &&
+			    S_ISLNK(smb_fname_rel->st.st_ex_mode) &&
+			    is_msdfs_link(smb_dirname->fsp, smb_fname_rel))
+			{
+				status = NT_STATUS_PATH_NOT_COVERED;
+				goto fail;
+			}
+
 #if defined(WITH_SMB1SERVER)
 			/*
 			 * In SMB1 posix mode, if this is a symlink,
