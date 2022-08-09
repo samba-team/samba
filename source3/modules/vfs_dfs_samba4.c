@@ -1,7 +1,5 @@
 /*
- * VFS module to alter the algorithm to calculate
- * the struct file_id used as key for the share mode
- * and byte range locking db's.
+ * VFS module to retrieve DFS referrals from AD
  *
  * Copyright (C) 2007, Stefan Metzmacher
  *
