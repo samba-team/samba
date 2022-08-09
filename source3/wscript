@@ -1738,6 +1738,19 @@ main() {
                                       and conf.CHECK_LIB('uring', shlib=True)):
             conf.CHECK_FUNCS_IN('io_uring_ring_dontfork', 'uring',
                                 headers='liburing.h')
+            # There are a few distributions, which
+            # don't seem to have linux/openat2.h available
+            # during the liburing build, which means liburing/compat.h
+            # defines struct open_how directly instead of including
+            # linux/openat2.h, while linux/openat2.h is
+            # available on the installed system, which cause problems
+            # when we try to include both files.
+            #
+            # check if struct open_how is defined in liburing/compat.h
+            # itself and not via inclusing linux/openat2.h
+            conf.CHECK_TYPE_IN('struct open_how', 'liburing/compat.h',
+                               cflags='-D_LINUX_OPENAT2_H',
+                               define='HAVE_STRUCT_OPEN_HOW_LIBURING_COMPAT_H')
             conf.DEFINE('HAVE_LIBURING', '1')
 
     conf.env.build_regedit = False

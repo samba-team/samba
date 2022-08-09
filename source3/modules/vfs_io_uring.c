@@ -20,6 +20,24 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "replace.h"
+
+/*
+ * liburing.h only needs a forward declaration
+ * of struct open_how.
+ *
+ * If struct open_how is defined in liburing/compat.h
+ * itself, hide it away in order to avoid conflicts
+ * with including linux/openat2.h or defining 'struct open_how'
+ * in libreplace.
+ */
+struct open_how;
+#ifdef HAVE_STRUCT_OPEN_HOW_LIBURING_COMPAT_H
+#define open_how __ignore_liburing_compat_h_open_how
+#include <liburing/compat.h>
+#undef open_how
+#endif /* HAVE_STRUCT_OPEN_HOW_LIBURING_COMPAT_H */
+
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
