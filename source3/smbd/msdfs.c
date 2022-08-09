@@ -36,6 +36,52 @@
 #include "lib/global_contexts.h"
 #include "source3/lib/substitute.h"
 
+#if 0
+/**********************************************************************
+ Function to determine if a given sharename matches a connection.
+**********************************************************************/
+
+static bool msdfs_servicename_matches_connection(struct connection_struct *conn,
+						 const char *servicename,
+						 const char *vfs_user)
+{
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *conn_servicename = NULL;
+	int snum;
+	bool match = false;
+
+	if (conn == NULL) {
+		/* No connection always matches. */
+		return true;
+	}
+
+	snum = SNUM(conn);
+
+	conn_servicename = lp_servicename(talloc_tos(), lp_sub, snum);
+	if (conn_servicename == NULL) {
+		DBG_ERR("lp_servicename() failed, OOM!\n");
+		return false;
+	}
+
+	if (strequal(servicename, conn_servicename)) {
+		match = true;
+		goto done;
+	}
+	if (strequal(servicename, HOMES_NAME)) {
+		match = true;
+		goto done;
+	}
+	if (strequal(vfs_user, conn_servicename)) {
+		match = true;
+		goto done;
+	}
+done:
+	TALLOC_FREE(conn_servicename);
+	return match;
+}
+#endif
+
 /**********************************************************************
  Parse a DFS pathname of the form /hostname/service/reqpath
  into the dfs_path structure.
