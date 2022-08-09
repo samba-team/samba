@@ -713,7 +713,6 @@ bool is_msdfs_link(struct files_struct *dirfsp,
 	return (NT_STATUS_IS_OK(status));
 }
 
-#if 0
 /*****************************************************************
  Used by other functions to decide if a dfs path is remote,
  and to get the list of referred locations for that remote path.
@@ -972,8 +971,8 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	TALLOC_FREE(canon_dfspath);
 	return status;
 }
-#endif
 
+#if 0
 /*****************************************************************
  Used by other functions to decide if a dfs path is remote,
  and to get the list of referred locations for that remote path.
@@ -1162,6 +1161,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	TALLOC_FREE(smb_fname);
 	return status;
 }
+#endif
 
 /*****************************************************************
  Decides if a dfs pathname should be redirected or not.
@@ -1420,40 +1420,21 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		}
 	}
 
-	/* If this is a DFS path dfs_lookup should return
-	 * NT_STATUS_PATH_NOT_COVERED. */
-
 	status = dfs_path_lookup(ctx,
 				conn,
 				dfs_path,
 				reqpath,
 				0, /* ucf_flags */
-				NULL,
 				consumedcntp,
 				&jucn->referral_list,
 				&jucn->referral_count);
 
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
-		DEBUG(3,("get_referred_path: No valid referrals for path %s\n",
-			dfs_path));
-		if (NT_STATUS_IS_OK(status)) {
-			/*
-			 * We are in an error path here (we
-			 * know it's not a DFS path), but
-			 * dfs_path_lookup() can return
-			 * NT_STATUS_OK. Ensure we always
-			 * return a valid error code.
-			 *
-			 * #9588 - ACLs are not inherited to directories
-			 *         for DFS shares.
-			 */
-			status = NT_STATUS_NOT_FOUND;
-		}
-		goto err_exit;
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_NOTICE("No valid referrals for path %s (%s)\n",
+			dfs_path,
+			nt_errstr(status));
 	}
 
-	status = NT_STATUS_OK;
- err_exit:
 	TALLOC_FREE(frame);
 	return status;
 }
