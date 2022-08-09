@@ -472,14 +472,17 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 		if (!*domain || !**domain)
 			*domain = smb_xstrdup(lp_workgroup());
 
-		if (!*password || !**password)
+		if (!*password || !**password) {
+			BURN_FREE_STR(*password);
 			*password = smb_xstrdup("");
+		}
 
 		DEBUG(3, ("IPC$ connections done by user %s\\%s\n",
 			  *domain, *username));
 
 	} else {
 		DEBUG(3, ("IPC$ connections done anonymously\n"));
+		BURN_FREE_STR(*password);
 		*username = smb_xstrdup("");
 		*domain = smb_xstrdup("");
 		*password = smb_xstrdup("");
