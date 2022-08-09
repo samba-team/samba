@@ -4957,6 +4957,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	NTTIME dst_twrp = 0;
 	NTSTATUS status = NT_STATUS_OK;
+	bool is_dfs = (req->flags2 & FLAGS2_DFS_PATHNAMES);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!fsp) {
@@ -4974,25 +4975,18 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (req->posix_pathnames) {
-		srvstr_get_path_posix(ctx,
-				pdata,
-				req->flags2,
-				&newname,
-				&pdata[20],
-				len,
-				STR_TERMINATE,
-				&status);
-	} else {
-		srvstr_get_path(ctx,
-				pdata,
-				req->flags2,
-				&newname,
-				&pdata[20],
-				len,
-				STR_TERMINATE,
-				&status);
+	(void)srvstr_pull_talloc(ctx,
+				 pdata,
+				 req->flags2,
+				 &newname,
+				 &pdata[20],
+				 len,
+				 STR_TERMINATE);
+
+	if (newname == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
+	status = check_path_syntax_smb2(newname, is_dfs);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
