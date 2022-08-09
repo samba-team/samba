@@ -886,7 +886,7 @@ bool pdb_set_pw_history(struct samu *sampass, const uint8_t *pwd, uint32_t histo
 		}
 	}
 
-	data_blob_free(&sampass->nt_pw_his);
+	data_blob_clear_free(&sampass->nt_pw_his);
 	sampass->nt_pw_his = new_nt_pw_his;
 
 	return pdb_set_init_flags(sampass, PDB_PWHISTORY, flag);
