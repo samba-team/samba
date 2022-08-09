@@ -99,9 +99,11 @@ static NTSTATUS smbd_check_access_rights_fname(
 				struct connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				bool use_privs,
-				uint32_t access_mask)
+				uint32_t access_mask,
+				uint32_t do_not_check_mask)
 {
 	uint32_t rejected_share_access;
+	uint32_t effective_access;
 
 	rejected_share_access = access_mask & ~(conn->share_access);
 
@@ -112,6 +114,14 @@ static NTSTATUS smbd_check_access_rights_fname(
 			  smb_fname_str_dbg(smb_fname),
 			  rejected_share_access);
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	effective_access = access_mask & ~do_not_check_mask;
+	if (effective_access == 0) {
+		DBG_DEBUG("do_not_check_mask override on %s. Granting 0x%x for free.\n",
+			  smb_fname_str_dbg(smb_fname),
+			  (unsigned int)access_mask);
+		return NT_STATUS_OK;
 	}
 
 	if (!use_privs && get_current_uid(conn) == (uid_t)0) {
@@ -151,37 +161,14 @@ static NTSTATUS smbd_check_access_rights_sd(
 				const struct smb_filename *smb_fname,
 				struct security_descriptor *sd,
 				bool use_privs,
-				uint32_t access_mask)
+				uint32_t access_mask,
+				uint32_t do_not_check_mask)
 {
 	uint32_t rejected_mask = access_mask;
-	uint32_t do_not_check_mask = 0;
 	NTSTATUS status;
 
 	if (sd == NULL) {
 		goto access_denied;
-	}
-
- 	/*
-	 * If we can access the path to this file, by
-	 * default we have FILE_READ_ATTRIBUTES from the
-	 * containing directory. See the section:
-	 * "Algorithm to Check Access to an Existing File"
-	 * in MS-FSA.pdf.
-	 *
-	 * se_file_access_check() also takes care of
-	 * owner WRITE_DAC and READ_CONTROL.
-	 */
-	do_not_check_mask = FILE_READ_ATTRIBUTES;
-
-	/*
-	 * Samba 3.6 and earlier granted execute access even
-	 * if the ACL did not contain execute rights.
-	 * Samba 4.0 is more correct and checks it.
-	 * The compatibilty mode allows one to skip this check
-	 * to smoothen upgrades.
-	 */
-	if (lp_acl_allow_execute_always(SNUM(conn))) {
-		do_not_check_mask |= FILE_EXECUTE;
 	}
 
 	status = se_file_access_check(sd,
@@ -263,6 +250,7 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *dirfsp,
 				      uint32_t access_mask)
 {
 	struct security_descriptor *sd = NULL;
+	uint32_t do_not_check_mask = 0;
 	NTSTATUS status;
 
 	/* Cope with fake/printer fsp's. */
@@ -288,10 +276,34 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *dirfsp,
 		return NT_STATUS_OK;
 	}
 
+	/*
+	 * If we can access the path to this file, by
+	 * default we have FILE_READ_ATTRIBUTES from the
+	 * containing directory. See the section:
+	 * "Algorithm to Check Access to an Existing File"
+	 * in MS-FSA.pdf.
+	 *
+	 * se_file_access_check() also takes care of
+	 * owner WRITE_DAC and READ_CONTROL.
+	 */
+	do_not_check_mask = FILE_READ_ATTRIBUTES;
+
+	/*
+	 * Samba 3.6 and earlier granted execute access even
+	 * if the ACL did not contain execute rights.
+	 * Samba 4.0 is more correct and checks it.
+	 * The compatibilty mode allows one to skip this check
+	 * to smoothen upgrades.
+	 */
+	if (lp_acl_allow_execute_always(SNUM(fsp->conn))) {
+		do_not_check_mask |= FILE_EXECUTE;
+	}
+
 	status = smbd_check_access_rights_fname(fsp->conn,
 						fsp->fsp_name,
 						use_privs,
-						access_mask);
+						access_mask,
+						do_not_check_mask);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return status;
 	}
@@ -314,7 +326,8 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *dirfsp,
 					   fsp->fsp_name,
 					   sd,
 					   use_privs,
-					   access_mask);
+					   access_mask,
+					   do_not_check_mask);
 }
 
 /*
