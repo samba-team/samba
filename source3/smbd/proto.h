@@ -350,22 +350,10 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
 
 uint32_t ucf_flags_from_smb_request(struct smb_request *req);
 uint32_t filename_create_ucf_flags(struct smb_request *req, uint32_t create_disposition);
-NTSTATUS unix_convert(TALLOC_CTX *ctx,
-		      connection_struct *conn,
-		      const char *orig_path,
-		      NTTIME twrp,
-		      struct smb_filename **smb_fname,
-		      uint32_t ucf_flags);
 bool extract_snapshot_token(char *fname, NTTIME *twrp);
 NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 				    uint32_t ucf_flags,
 				    NTTIME twrp);
-NTSTATUS get_real_filename_full_scan(connection_struct *conn,
-				     const char *path,
-				     const char *name,
-				     bool mangled,
-				     TALLOC_CTX *mem_ctx,
-				     char **found_name);
 NTSTATUS get_real_filename_full_scan_at(struct files_struct *dirfsp,
 					const char *name,
 					bool mangled,
