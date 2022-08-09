@@ -332,7 +332,7 @@ static int net_getauthuser(struct net_context *c, int argc, const char **argv)
 
 		SAFE_FREE(user);
 		SAFE_FREE(domain);
-		SAFE_FREE(password);
+		BURN_FREE_STR(password);
 		d_printf(_("No authorised user configured\n"));
 		return 0;
 	}
@@ -345,7 +345,7 @@ static int net_getauthuser(struct net_context *c, int argc, const char **argv)
 
 	SAFE_FREE(user);
 	SAFE_FREE(domain);
-	SAFE_FREE(password);
+	BURN_FREE_STR(password);
 
 	return 0;
 }
