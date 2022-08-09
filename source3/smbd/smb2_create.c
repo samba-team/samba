@@ -430,6 +430,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	uint32_t ucf_flags;
 	NTTIME twrp = fsp->fsp_name->twrp;
 	NTSTATUS status;
+	bool is_dfs = (smb1req->flags2 & FLAGS2_DFS_PATHNAMES);
 
 	if (lease_ptr == NULL) {
 		if (fsp->oplock_type != LEASE_OPLOCK) {
@@ -459,7 +460,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	}
 
 	/* This also converts '\' to '/' */
-	status = check_path_syntax(filename);
+	status = check_path_syntax_smb2(filename, is_dfs);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(filename);
 		return status;
