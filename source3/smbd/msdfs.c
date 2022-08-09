@@ -713,6 +713,267 @@ bool is_msdfs_link(struct files_struct *dirfsp,
 	return (NT_STATUS_IS_OK(status));
 }
 
+#if 0
+/*****************************************************************
+ Used by other functions to decide if a dfs path is remote,
+ and to get the list of referred locations for that remote path.
+
+ consumedcntp: how much of the dfs path is being redirected. the client
+ should try the remaining path on the redirected server.
+*****************************************************************/
+
+static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
+		connection_struct *conn,
+		const char *dfspath, /* Incoming complete dfs path */
+		const char *reqpath, /* Parsed out remaining path. */
+		uint32_t ucf_flags,
+		size_t *consumedcntp,
+		struct referral **ppreflist,
+		size_t *preferral_count)
+{
+	NTSTATUS status;
+	struct smb_filename *parent_smb_fname = NULL;
+	struct smb_filename *smb_fname_rel = NULL;
+	NTTIME twrp = 0;
+	char *local_pathname = NULL;
+	char *last_component = NULL;
+	char *atname = NULL;
+	size_t removed_components = 0;
+	bool posix = (ucf_flags & UCF_POSIX_PATHNAMES);
+	char *p = NULL;
+	char *canon_dfspath = NULL;
+
+	DBG_DEBUG("Conn path = %s reqpath = %s\n", conn->connectpath, reqpath);
+
+	local_pathname = talloc_strdup(ctx, reqpath);
+	if (local_pathname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	/* We know reqpath isn't a DFS path. */
+	ucf_flags &= ~UCF_DFS_PATHNAME;
+
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		extract_snapshot_token(local_pathname, &twrp);
+		ucf_flags &= ~UCF_GMT_PATHNAME;
+	}
+
+	/*
+	 * We should have been given a DFS path to resolve.
+	 * This should return NT_STATUS_PATH_NOT_COVERED.
+	 *
+	 * Do a pathname walk, stripping off components
+	 * until we get NT_STATUS_OK instead of
+	 * NT_STATUS_PATH_NOT_COVERED.
+	 *
+	 * Fail on any other error.
+	 */
+
+	for (;;) {
+		TALLOC_CTX *frame = NULL;
+		struct files_struct *dirfsp = NULL;
+		struct smb_filename *smb_fname_walk = NULL;
+
+		TALLOC_FREE(parent_smb_fname);
+
+		/*
+		 * Use a local stackframe as filename_convert_dirfsp()
+		 * opens handles on the last two components in the path.
+		 * Allow these to be freed as we step back through
+		 * the local_pathname.
+		 */
+		frame = talloc_stackframe();
+		status = filename_convert_dirfsp(frame,
+						 conn,
+						 local_pathname,
+						 ucf_flags,
+						 twrp,
+						 &dirfsp,
+						 &smb_fname_walk);
+		/* If we got a name, save it. */
+		if (smb_fname_walk != NULL) {
+			parent_smb_fname = talloc_move(ctx, &smb_fname_walk);
+		}
+		TALLOC_FREE(frame);
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
+			/*
+			 * For any other status than NT_STATUS_PATH_NOT_COVERED
+			 * (including NT_STATUS_OK) we exit the walk.
+			 * If it's an error we catch it outside the loop.
+			 */
+			break;
+		}
+
+		/* Step back one component and save it off as last_component. */
+		TALLOC_FREE(last_component);
+		p = strrchr(local_pathname, '/');
+		if (p == NULL) {
+			/*
+			 * We removed all components.
+			 * Go around once more to make
+			 * sure we can open the root '\0'.
+			 */
+			last_component = talloc_strdup(ctx, local_pathname);
+			*local_pathname = '\0';
+		} else {
+			last_component = talloc_strdup(ctx, p+1);
+			*p = '\0';
+		}
+		if (last_component == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+		/* Integer wrap check. */
+		if (removed_components + 1 < removed_components) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto out;
+		}
+		removed_components++;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dfspath = %s. reqpath = %s. Error %s.\n",
+			dfspath,
+			reqpath,
+			nt_errstr(status));
+		goto out;
+	}
+
+	if (parent_smb_fname->fsp == NULL) {
+		/* Unable to open parent. */
+		DBG_DEBUG("dfspath = %s. reqpath = %s. "
+			  "Unable to open parent directory (%s).\n",
+			dfspath,
+			reqpath,
+			smb_fname_str_dbg(parent_smb_fname));
+		status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		goto out;
+	}
+
+	if (removed_components == 0) {
+		/*
+		 * We never got NT_STATUS_PATH_NOT_COVERED.
+		 * There was no DFS redirect.
+		 */
+		DBG_DEBUG("dfspath = %s. reqpath = %s. "
+			"No removed components.\n",
+			dfspath,
+			reqpath);
+		status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		goto out;
+	}
+
+	/*
+	 * One of the removed_components was the MSDFS link
+	 * at the end. We need to count this in the resolved
+	 * path below, so remove one from removed_components.
+	 */
+	removed_components--;
+
+	/*
+	 * Now parent_smb_fname->fsp is the parent directory dirfsp,
+	 * last_component is the untranslated MS-DFS link name.
+	 * Search for it in the parent directory to get the real
+	 * filename on disk.
+	 */
+	status = get_real_filename_at(parent_smb_fname->fsp,
+				      last_component,
+				      ctx,
+				      &atname);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dfspath = %s. reqpath = %s "
+			"get_real_filename_at(%s, %s) error (%s)\n",
+			dfspath,
+			reqpath,
+			smb_fname_str_dbg(parent_smb_fname),
+			last_component,
+			nt_errstr(status));
+		goto out;
+	}
+
+        smb_fname_rel = synthetic_smb_fname(ctx,
+				atname,
+				NULL,
+				NULL,
+				twrp,
+				posix ? SMB_FILENAME_POSIX_PATH : 0);
+	if (smb_fname_rel == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	/* Get the referral to return. */
+	status = SMB_VFS_READ_DFS_PATHAT(conn,
+					 ctx,
+					 parent_smb_fname->fsp,
+					 smb_fname_rel,
+					 ppreflist,
+					 preferral_count);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dfspath = %s. reqpath = %s. "
+			"SMB_VFS_READ_DFS_PATHAT(%s, %s) error (%s)\n",
+			dfspath,
+			reqpath,
+			smb_fname_str_dbg(parent_smb_fname),
+			smb_fname_str_dbg(smb_fname_rel),
+			nt_errstr(status));
+		goto out;
+	}
+
+	/*
+	 * Now we must work out how much of the
+	 * given pathname we consumed.
+	 */
+	canon_dfspath = talloc_strdup(ctx, dfspath);
+	if (!canon_dfspath) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+	/* Canonicalize the raw dfspath. */
+	string_replace(canon_dfspath, '\\', '/');
+
+	/*
+	 * reqpath comes out of parse_dfs_path(), so it has
+	 * no trailing backslash. Make sure that canon_dfspath hasn't either.
+	 */
+	trim_char(canon_dfspath, 0, '/');
+
+	DBG_DEBUG("Unconsumed path: %s\n", canon_dfspath);
+
+	while (removed_components > 0) {
+		p = strrchr(canon_dfspath, '/');
+		if (p != NULL) {
+			*p = '\0';
+		}
+		removed_components--;
+		if (p == NULL && removed_components != 0) {
+			DBG_ERR("Component missmatch. path = %s, "
+				"%zu components left\n",
+				canon_dfspath,
+				removed_components);
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			goto out;
+		}
+	}
+	*consumedcntp = strlen(canon_dfspath);
+	DBG_DEBUG("Path consumed: %s (%zu)\n", canon_dfspath, *consumedcntp);
+	status = NT_STATUS_OK;
+
+  out:
+
+	TALLOC_FREE(parent_smb_fname);
+	TALLOC_FREE(local_pathname);
+	TALLOC_FREE(last_component);
+	TALLOC_FREE(atname);
+	TALLOC_FREE(smb_fname_rel);
+	TALLOC_FREE(canon_dfspath);
+	return status;
+}
+#endif
+
 /*****************************************************************
  Used by other functions to decide if a dfs path is remote,
  and to get the list of referred locations for that remote path.
