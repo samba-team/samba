@@ -75,7 +75,8 @@ static int add_server_id_to_json(struct json_object *parent_json,
 		goto failure;
 	}
 
-	pid_str = talloc_asprintf(tmp_ctx, "%lu", server_id.pid);
+	pid_str = talloc_asprintf(
+		tmp_ctx, "%lu", (unsigned long)server_id.pid);
 	result = json_add_string(&sub_json, "pid", pid_str);
 	if (result < 0) {
 		goto failure;
@@ -90,7 +91,8 @@ static int add_server_id_to_json(struct json_object *parent_json,
 	if (result < 0) {
 		goto failure;
 	}
-	unique_id_str = talloc_asprintf(tmp_ctx, "%lu", server_id.unique_id);
+	unique_id_str = talloc_asprintf(
+		tmp_ctx, "%"PRIu64, server_id.unique_id);
 	result = json_add_string(&sub_json, "unique_id", unique_id_str);
 	if (result < 0) {
 		goto failure;
@@ -834,7 +836,7 @@ static int add_open_to_json(struct json_object *parent_json,
 	if (result < 0) {
 		goto failure;
 	}
-	share_file_id = talloc_asprintf(tmp_ctx, "%lu", e->share_file_id);
+	share_file_id = talloc_asprintf(tmp_ctx, "%"PRIu64, e->share_file_id);
 	result = json_add_string(&sub_json, "share_file_id", share_file_id);
 	if (result < 0) {
 		goto failure;
@@ -871,7 +873,7 @@ static int add_open_to_json(struct json_object *parent_json,
 	}
 
 	pid = server_id_str_buf(e->pid, &tmp);
-	key = talloc_asprintf(tmp_ctx, "%s/%lu", pid, e->share_file_id);
+	key = talloc_asprintf(tmp_ctx, "%s/%"PRIu64, pid, e->share_file_id);
 	result = json_add_object(&opens_json, key, &sub_json);
 	if (result < 0) {
 		goto failure;
