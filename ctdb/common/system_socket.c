@@ -969,11 +969,14 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 
 int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 {
+	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_t *pt;
 
-	pt=pcap_open_live(iface, 100, 0, 0, NULL);
+	pt = pcap_open_live(iface, 100, 0, 0, errbuf);
 	if (pt == NULL) {
-		DBG_ERR("Failed to open capture device %s\n", iface);
+		DBG_ERR("Failed to open pcap capture device %s (%s)\n",
+			iface,
+			errbuf);
 		return -1;
 	}
 	*((pcap_t **)private_data) = pt;
