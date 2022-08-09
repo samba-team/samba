@@ -925,11 +925,10 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			NTTIME *_twrp,
 			char **pp_path_out)
 {
-	const struct loadparm_substitution *lp_sub =
-		loadparm_s3_global_substitution();
 	char *hostname = NULL;
 	char *servicename = NULL;
 	char *reqpath = NULL;
+	bool servicename_matches = false;
 	NTSTATUS status;
 
 	status = parse_dfs_path(ctx,
@@ -974,11 +973,11 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (!( strequal(servicename, lp_servicename(talloc_tos(), lp_sub, SNUM(conn)))
-			|| (strequal(servicename, HOMES_NAME)
-			&& strequal(lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
-				conn->session_info->unix_info->sanitized_username) )) ) {
-
+	servicename_matches = msdfs_servicename_matches_connection(
+			conn,
+			servicename,
+			conn->session_info->unix_info->sanitized_username);
+	if (!servicename_matches) {
 		/* The given sharename doesn't match this connection. */
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
