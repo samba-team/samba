@@ -243,7 +243,6 @@ NTSTATUS check_path_syntax_posix(char *path)
 	return check_path_syntax_internal(path, true);
 }
 
-#if 0
 /****************************************************************************
  Check the path for an SMB2 DFS path.
  SMB2 DFS paths look like hostname\share (followed by a possible \extrapath.
@@ -279,7 +278,15 @@ static NTSTATUS check_path_syntax_smb2_msdfs(char *path)
 	*remaining_path++ = '/';
 	return check_path_syntax(remaining_path);
 }
-#endif
+
+NTSTATUS check_path_syntax_smb2(char *path, bool dfs_path)
+{
+	if (dfs_path) {
+		return check_path_syntax_smb2_msdfs(path);
+	} else {
+		return check_path_syntax(path);
+	}
+}
 
 /****************************************************************************
  Pull a string and check the path allowing a wildcard - provide for error return.
