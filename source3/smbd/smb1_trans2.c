@@ -2918,8 +2918,9 @@ static void call_trans2getdfsreferral(connection_struct *conn,
 		reply_nterror(req, NT_STATUS_NOT_FOUND);
 		return;
 	}
-	if((reply_size = setup_dfs_referral(conn, pathname, max_referral_level,
-					    ppdata,&status)) < 0) {
+	reply_size = setup_dfs_referral(
+		conn, pathname, max_referral_level, ppdata, &status);
+	if (reply_size < 0) {
 		reply_nterror(req, status);
 		return;
 	}
