@@ -36,7 +36,6 @@
 #include "lib/global_contexts.h"
 #include "source3/lib/substitute.h"
 
-#if 0
 /**********************************************************************
  Function to determine if a given sharename matches a connection.
 **********************************************************************/
@@ -80,7 +79,6 @@ done:
 	TALLOC_FREE(conn_servicename);
 	return match;
 }
-#endif
 
 /**********************************************************************
  Parse a DFS pathname of the form /hostname/service/reqpath
@@ -112,14 +110,13 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 				char **_servicename,
 				char **_remaining_path)
 {
-	const struct loadparm_substitution *lp_sub =
-		loadparm_s3_global_substitution();
 	char *hostname = NULL;
 	char *pathname_local = NULL;
 	char *p = NULL;
 	char *servicename = NULL;
 	char *reqpath = NULL;
 	char *eos_ptr = NULL;
+	bool servicename_matches = false;
 
 	pathname_local = talloc_strdup(ctx, pathname);
 	if (pathname_local == NULL) {
@@ -196,10 +193,12 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 	}
 
 	/* Is this really our servicename ? */
-	if (conn && !( strequal(servicename, lp_servicename(talloc_tos(), lp_sub, SNUM(conn)))
-			|| (strequal(servicename, HOMES_NAME)
-			&& strequal(lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
-				get_current_username()) )) ) {
+	servicename_matches = msdfs_servicename_matches_connection(
+					conn,
+					servicename,
+					get_current_username());
+
+	if (!servicename_matches) {
 		DBG_ERR("%s is not our servicename\n", servicename);
 
 		/*
