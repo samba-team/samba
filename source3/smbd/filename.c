@@ -2384,28 +2384,26 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	if (ucf_flags & UCF_DFS_PATHNAME) {
-		char *fname = NULL;
-		NTTIME dfs_twrp = 0;
-		status = dfs_redirect(
-			mem_ctx,
-			conn,
-			name_in,
-			ucf_flags,
-			!conn->sconn->using_smb2,
-			&dfs_twrp,
-			&fname);
+		/*
+		 * We've been given a raw DFS pathname.
+		 */
+		char *pathname = NULL;
+		DBG_DEBUG("Before dfs_filename_convert name_in: %s\n", name_in);
+		status = dfs_filename_convert(mem_ctx,
+					      conn,
+					      ucf_flags,
+					      name_in,
+					      &pathname);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("dfs_redirect "
+			DBG_DEBUG("dfs_filename_convert "
 				"failed for name %s with %s\n",
 				name_in,
 				nt_errstr(status));
 			return status;
 		}
-		name_in = fname;
 		ucf_flags &= ~UCF_DFS_PATHNAME;
-		if (twrp == 0 && dfs_twrp != 0) {
-			twrp = dfs_twrp;
-		}
+		name_in = pathname;
+		DBG_DEBUG("After dfs_filename_convert name_in: %s\n", name_in);
 	}
 
 	if (is_fake_file_path(name_in)) {
