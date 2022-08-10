@@ -4593,6 +4593,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 	struct smb_filename *smb_dname = fsp->fsp_name;
 	bool dir_existed = VALID_STAT(smb_dname->st);
 	struct share_mode_lock *lck = NULL;
+	int oplock_type = NO_OPLOCK;
+	uint32_t granted_lease = 0;
 	NTSTATUS status;
 	struct timespec mtimespec;
 	int info = 0;
@@ -4873,9 +4875,17 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_DELETE_PENDING;
 	}
 
-	status = open_mode_check(conn, fsp->file_id, lck,
-				 access_mask, share_access);
-
+	status = handle_share_mode_lease(
+		fsp,
+		lck,
+		create_disposition,
+		access_mask,
+		share_access,
+		NO_OPLOCK,
+		NULL, /* lease */
+		true, /* first_open_attempt */
+		&oplock_type,
+		&granted_lease);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
@@ -4889,7 +4899,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		fsp,
 		get_current_uid(conn),
 		req ? req->mid : 0,
-		NO_OPLOCK,
+		oplock_type,
 		NULL,
 		share_access,
 		fsp->access_mask);
