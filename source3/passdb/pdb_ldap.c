@@ -6659,8 +6659,7 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 	nt_status = smbldap_init(*pdb_method, pdb_get_tevent_context(),
 				 location, false, bind_dn, bind_secret,
 				 &ldap_state->smbldap_state);
-	memset(bind_secret, '\0', strlen(bind_secret));
-	SAFE_FREE(bind_secret);
+	BURN_FREE_STR(bind_secret);
 	SAFE_FREE(bind_dn);
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		return nt_status;

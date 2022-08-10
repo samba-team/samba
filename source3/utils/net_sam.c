@@ -1678,8 +1678,7 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 
 	status = smbldap_init(tc, NULL, ldap_uri, false, bind_dn, bind_secret, &state);
 
-	memset(bind_secret, '\0', strlen(bind_secret));
-	SAFE_FREE(bind_secret);
+	BURN_FREE_STR(bind_secret);
 	SAFE_FREE(bind_dn);
 
 	if (!NT_STATUS_IS_OK(status)) {
