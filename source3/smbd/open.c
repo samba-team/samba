@@ -2888,12 +2888,15 @@ static NTSTATUS handle_share_mode_lease(
 	uint32_t share_access,
 	int oplock_request,
 	const struct smb2_lease *lease,
-	bool first_open_attempt)
+	bool first_open_attempt,
+	int *poplock_type,
+	uint32_t *pgranted)
 {
 	bool sharing_violation = false;
-	int oplock_type = NO_OPLOCK;
-	uint32_t granted = 0;
 	NTSTATUS status;
+
+	*poplock_type = NO_OPLOCK;
+	*pgranted = 0;
 
 	status = open_mode_check(
 		fsp->conn, fsp->file_id, lck, access_mask, share_access);
@@ -2916,8 +2919,6 @@ static NTSTATUS handle_share_mode_lease(
 		 * Internal opens never do oplocks or leases. We don't
 		 * need to go through delay_for_oplock().
 		 */
-		fsp->oplock_type = NO_OPLOCK;
-
 		return NT_STATUS_OK;
 	}
 
@@ -2929,33 +2930,10 @@ static NTSTATUS handle_share_mode_lease(
 		sharing_violation,
 		create_disposition,
 		first_open_attempt,
-		&oplock_type,
-		&granted);
+		poplock_type,
+		pgranted);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (oplock_type == LEASE_OPLOCK) {
-		status = grant_fsp_lease(fsp, lck, lease, granted);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-
-		}
-
-		fsp->oplock_type = oplock_type;
-
-		DBG_DEBUG("lease_state=%d\n", fsp->lease->lease.lease_state);
-	} else {
-
-		fsp->oplock_type = oplock_type;
-
-		status = set_file_oplock(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			/*
-			 * Could not get the kernel oplock
-			 */
-			fsp->oplock_type = NO_OPLOCK;
-		}
 	}
 
 	return NT_STATUS_OK;
@@ -3684,6 +3662,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	struct share_mode_lock *lck = NULL;
 	uint32_t open_access_mask = access_mask;
 	const struct smb2_lease_key *lease_key = NULL;
+	int oplock_type = NO_OPLOCK;
+	uint32_t granted_lease = 0;
 	NTSTATUS status;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
@@ -4171,7 +4151,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		share_access,
 		oplock_request,
 		lease,
-		first_open_attempt);
+		first_open_attempt,
+		&oplock_type,
+		&granted_lease);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
 		schedule_defer_open(lck, fsp->file_id, req);
@@ -4186,8 +4168,30 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return status;
 	}
 
-	if (fsp->oplock_type == LEASE_OPLOCK) {
+	if (oplock_type == LEASE_OPLOCK) {
 		lease_key = &lease->lease_key;
+
+		status = grant_fsp_lease(fsp, lck, lease, granted_lease);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(lck);
+			fd_close(fsp);
+			return status;
+		}
+
+		fsp->oplock_type = oplock_type;
+
+		DBG_DEBUG("lease_state=%d\n", fsp->lease->lease.lease_state);
+	} else if (oplock_type != NO_OPLOCK) {
+
+		fsp->oplock_type = oplock_type;
+
+		status = set_file_oplock(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * Could not get the kernel oplock
+			 */
+			fsp->oplock_type = oplock_type = NO_OPLOCK;
+		}
 	}
 
 	share_mode_flags_restrict(lck, access_mask, share_access, 0);
@@ -4197,7 +4201,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp,
 		get_current_uid(fsp->conn),
 		req ? req->mid : 0,
-		fsp->oplock_type,
+		oplock_type,
 		lease_key,
 		share_access,
 		access_mask);
