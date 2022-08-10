@@ -793,21 +793,44 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 		goto nomem;
 	}
 
+	/*
+	 * First split the path into individual components.
+	 */
 	path = path_to_strv(talloc_tos(), path_in);
 	if (path == NULL) {
 		DBG_DEBUG("path_to_strv() failed\n");
 		goto nomem;
 	}
-	rel_fname.base_name = path;
 
+	/*
+	 * First we loop over all components
+	 * in order to verify, there's no '.' or '..'
+	 */
+	rel_fname.base_name = path;
+	while (rel_fname.base_name != NULL) {
+
+		next = strv_next(path, rel_fname.base_name);
+
+		if (ISDOT(rel_fname.base_name) || ISDOTDOT(rel_fname.base_name)) {
+			DBG_DEBUG("%s contains a dot\n", path_in);
+			status = NT_STATUS_OBJECT_NAME_INVALID;
+			goto fail;
+		}
+
+		rel_fname.base_name = next;
+	}
+
+	/*
+	 * Now we loop over all components
+	 * opening each one and using it
+	 * as dirfd for the next one.
+	 *
+	 * It means we can detect symlinks
+	 * within the path.
+	 */
+	rel_fname.base_name = path;
 next:
 	next = strv_next(path, rel_fname.base_name);
-
-	if (ISDOT(rel_fname.base_name) || ISDOTDOT(rel_fname.base_name)) {
-		DBG_DEBUG("%s contains a dot\n", path_in);
-		status = NT_STATUS_OBJECT_NAME_INVALID;
-		goto fail;
-	}
 
 	fd = SMB_VFS_OPENAT(
 		conn,
