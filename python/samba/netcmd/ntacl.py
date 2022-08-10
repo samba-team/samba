@@ -409,10 +409,15 @@ class cmd_ntacl_sysvolreset(Command):
         if use_ntvfs:
             logger.warning("Please note that POSIX permissions have NOT been changed, only the stored NT ACL")
 
-        provision.setsysvolacl(samdb, netlogon, sysvol,
-                               LA_uid, BA_gid, domain_sid,
-                               lp.get("realm").lower(), samdb.domain_dn(),
-                               lp, use_ntvfs=use_ntvfs)
+        try:
+            provision.setsysvolacl(samdb, netlogon, sysvol,
+                                   LA_uid, BA_gid, domain_sid,
+                                   lp.get("realm").lower(), samdb.domain_dn(),
+                                   lp, use_ntvfs=use_ntvfs)
+        except OSError as e:
+            if not e.filename:
+                raise
+            raise CommandError(f"Could not access {e.filename}: {e.strerror}", e)
 
 
 class cmd_ntacl_sysvolcheck(Command):
@@ -440,10 +445,15 @@ class cmd_ntacl_sysvolcheck(Command):
 
         domain_sid = security.dom_sid(samdb.domain_sid)
 
-        provision.checksysvolacl(samdb, netlogon, sysvol,
-                                 domain_sid,
-                                 lp.get("realm").lower(), samdb.domain_dn(),
-                                 lp)
+        try:
+            provision.checksysvolacl(samdb, netlogon, sysvol,
+                                     domain_sid,
+                                     lp.get("realm").lower(), samdb.domain_dn(),
+                                     lp)
+        except OSError as e:
+            if not e.filename:
+                raise
+            raise CommandError(f"Could not access {e.filename}: {e.strerror}", e)
 
 
 class cmd_ntacl(SuperCommand):
