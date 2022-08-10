@@ -35,6 +35,15 @@
 void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options)
 {
+	struct GUID client_guid;
+	const char *str = NULL;
+
+	str = lpcfg_parm_string(lp_ctx, NULL, "libsmb", "client_guid");
+	if (str != NULL) {
+		GUID_from_string(str, &client_guid);
+	} else {
+		client_guid = GUID_random();
+	}
 	*options = (struct smbcli_options) {
 		.max_xmit = lpcfg_max_xmit(lp_ctx),
 		.max_mux = lpcfg_max_mux(lp_ctx),
@@ -48,7 +57,7 @@ void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 		.use_oplocks = true,
 		.use_level2_oplocks = true,
 		.smb2_capabilities = SMB2_CAP_ALL,
-		.client_guid = GUID_random(),
+		.client_guid = client_guid,
 		.max_credits = WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK,
 		.smb3_capabilities = smb311_capabilities_parse("client",
 			lpcfg_client_smb3_signing_algorithms(lp_ctx),
