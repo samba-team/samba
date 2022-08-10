@@ -133,7 +133,8 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 {
 	struct tevent_req *req;
 	struct np_write_state *state;
-	NTSTATUS status;
+	struct npa_state *p = NULL;
+	struct tevent_req *subreq = NULL;
 
 	DBG_INFO("len: %zu\n", len);
 	dump_data(50, data, len);
@@ -143,44 +144,31 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return NULL;
 	}
 
+	if (handle->type != FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return tevent_req_post(req, ev);
+	}
+
 	if (len == 0) {
 		state->nwritten = 0;
-		status = NT_STATUS_OK;
-		goto post_status;
-	}
-
-	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
-		struct npa_state *p = talloc_get_type_abort(
-			handle->private_data, struct npa_state);
-		struct tevent_req *subreq;
-
-		state->ev = ev;
-		state->p = p;
-		state->iov.iov_base = discard_const_p(void, data);
-		state->iov.iov_len = len;
-
-		subreq = tstream_writev_queue_send(state, ev,
-						   p->stream,
-						   p->write_queue,
-						   &state->iov, 1);
-		if (subreq == NULL) {
-			goto fail;
-		}
-		tevent_req_set_callback(subreq, np_write_done, req);
-		return req;
-	}
-
-	status = NT_STATUS_INVALID_HANDLE;
- post_status:
-	if (NT_STATUS_IS_OK(status)) {
 		tevent_req_done(req);
-	} else {
-		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
-	return tevent_req_post(req, ev);
- fail:
-	TALLOC_FREE(req);
-	return NULL;
+
+	p = talloc_get_type_abort(handle->private_data, struct npa_state);
+
+	state->ev = ev;
+	state->p = p;
+	state->iov.iov_base = discard_const_p(void, data);
+	state->iov.iov_len = len;
+
+	subreq = tstream_writev_queue_send(
+		state, ev, p->stream, p->write_queue, &state->iov, 1);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, np_write_done, req);
+	return req;
 }
 
 static void np_write_done(struct tevent_req *subreq)
@@ -306,43 +294,35 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 {
 	struct tevent_req *req;
 	struct np_read_state *state;
-	NTSTATUS status;
+	struct npa_state *p = NULL;
+	struct tevent_req *subreq = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct np_read_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
-		struct npa_state *p = talloc_get_type_abort(
-			handle->private_data, struct npa_state);
-		struct tevent_req *subreq;
-
-		np_ipc_readv_next_vector_init(&state->next_vector,
-					      data, len);
-
-		subreq = tstream_readv_pdu_queue_send(state,
-						      ev,
-						      p->stream,
-						      p->read_queue,
-						      np_ipc_readv_next_vector,
-						      &state->next_vector);
-		if (subreq == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto post_status;
-		}
-		tevent_req_set_callback(subreq, np_read_done, req);
-		return req;
+	if (handle->type != FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return tevent_req_post(req, ev);
 	}
 
-	status = NT_STATUS_INVALID_HANDLE;
- post_status:
-	if (NT_STATUS_IS_OK(status)) {
-		tevent_req_done(req);
-	} else {
-		tevent_req_nterror(req, status);
+	p = talloc_get_type_abort(handle->private_data, struct npa_state);
+
+	np_ipc_readv_next_vector_init(&state->next_vector, data, len);
+
+	subreq = tstream_readv_pdu_queue_send(
+		state,
+		ev,
+		p->stream,
+		p->read_queue,
+		np_ipc_readv_next_vector,
+		&state->next_vector);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-	return tevent_req_post(req, ev);
+	tevent_req_set_callback(subreq, np_read_done, req);
+	return req;
 }
 
 static void np_read_done(struct tevent_req *subreq)
