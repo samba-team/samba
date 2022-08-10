@@ -4170,20 +4170,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (oplock_type == LEASE_OPLOCK) {
 		lease_key = &lease->lease_key;
-
-		fsp->oplock_type = oplock_type;
-
-	} else if (oplock_type != NO_OPLOCK) {
-
-		fsp->oplock_type = oplock_type;
-
-		status = set_file_oplock(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			/*
-			 * Could not get the kernel oplock
-			 */
-			fsp->oplock_type = oplock_type = NO_OPLOCK;
-		}
 	}
 
 	share_mode_flags_restrict(lck, access_mask, share_access, 0);
@@ -4213,6 +4199,23 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		DBG_DEBUG("lease_state=%d\n", fsp->lease->lease.lease_state);
+	}
+
+	fsp->oplock_type = oplock_type;
+
+	if (fsp->oplock_type != NO_OPLOCK && fsp->oplock_type != LEASE_OPLOCK) {
+		/*
+		 * Now ask for kernel oplocks
+		 * and cleanup on failure.
+		 */
+		status = set_file_oplock(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * Could not get the kernel oplock
+			 */
+			remove_share_oplock(lck, fsp);
+			fsp->oplock_type = oplock_type = NO_OPLOCK;
+		}
 	}
 
 	/* Should we atomically (to the client at least) truncate ? */
