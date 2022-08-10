@@ -565,13 +565,6 @@ NTSTATUS dfs_filename_convert(TALLOC_CTX *ctx,
 			      uint32_t ucf_flags,
 			      const char *dfs_path_in,
 			      char **pp_path_out);
-NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			const char *name_in,
-			uint32_t ucf_flags,
-			bool allow_broken_path,
-			NTTIME *twrp,
-			char **pp_name_out);
 struct connection_struct;
 struct smb_filename;
 
