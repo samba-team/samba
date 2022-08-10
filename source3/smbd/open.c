@@ -3548,6 +3548,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint32_t existing_dos_attributes = 0;
 	struct share_mode_lock *lck = NULL;
 	uint32_t open_access_mask = access_mask;
+	const struct smb2_lease_key *lease_key = NULL;
 	NTSTATUS status;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
@@ -4064,6 +4065,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return status;
 	}
 
+	if (fsp->oplock_type == LEASE_OPLOCK) {
+		lease_key = &lease->lease_key;
+	}
+
 	share_mode_flags_restrict(lck, access_mask, share_access, 0);
 
 	ok = set_share_mode(
@@ -4072,6 +4077,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		get_current_uid(fsp->conn),
 		req ? req->mid : 0,
 		fsp->oplock_type,
+		lease_key,
 		share_access,
 		access_mask);
 	if (!ok) {
@@ -4752,6 +4758,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		get_current_uid(conn),
 		req ? req->mid : 0,
 		NO_OPLOCK,
+		NULL,
 		share_access,
 		fsp->access_mask);
 	if (!ok) {
