@@ -189,7 +189,12 @@ int add_profile_item_to_json(struct traverse_state *state,
 			     const char *key,
 			     uintmax_t value)
 {
-	struct json_object section_json, subsection_json;
+	struct json_object section_json = {
+		.valid = false,
+	};
+	struct json_object subsection_json = {
+		.valid = false,
+	};
 	int result = 0;
 
 	section_json = json_get_object(&state->root_json, section);
@@ -796,8 +801,12 @@ static int add_open_to_json(struct json_object *parent_json,
 			    uint32_t lease_type,
 			    const char *uid_str)
 {
-	struct json_object sub_json;
-	struct json_object opens_json;
+	struct json_object sub_json = {
+		.valid = false,
+	};
+	struct json_object opens_json = {
+		.valid = false,
+	};
 	struct timeval_buf tv_buf;
 	int result = 0;
 	char *timestr;
@@ -936,8 +945,12 @@ int print_share_mode_json(struct traverse_state *state,
 			  uint32_t lease_type,
 			  const char *filename)
 {
-	struct json_object locks_json;
-	struct json_object file_json;
+	struct json_object locks_json = {
+		.valid = false,
+	};
+	struct json_object file_json = {
+		.valid = false,
+	};
 	char *key = NULL;
 	int result = 0;
 
@@ -1013,8 +1026,12 @@ static int add_lock_to_json(struct json_object *parent_json,
 			    intmax_t start,
 			    intmax_t size)
 {
-	struct json_object sub_json;
-	struct json_object locks_json;
+	struct json_object sub_json = {
+		.valid = false,
+	};
+	struct json_object locks_json = {
+		.valid = false,
+	};
 	const char *flavour_str;
 	int result = 0;
 
