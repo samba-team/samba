@@ -10,7 +10,7 @@ bld.SAMBA_LIBRARY('samba-errors',
                   deps='gnutls',
                   # private_library=True,
                   pc_files=[],
-                  vnum='1',
+                  vnum='1.0.0',
                   )
 
 bld.SAMBA_GENERATOR('ntstatus_generated',
