@@ -2728,7 +2728,9 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 				 struct share_mode_lock *lck,
 				 bool have_sharing_violation,
 				 uint32_t create_disposition,
-				 bool first_open_attempt)
+				 bool first_open_attempt,
+				 int *poplock_type,
+				 uint32_t *pgranted)
 {
 	struct delay_for_oplock_state state = {
 		.fsp = fsp,
@@ -2737,8 +2739,11 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 	};
 	uint32_t requested;
 	uint32_t granted;
-	NTSTATUS status;
+	int oplock_type;
 	bool ok;
+
+	*poplock_type = NO_OPLOCK;
+	*pgranted = 0;
 
 	if (oplock_request == LEASE_OPLOCK) {
 		if (lease == NULL) {
@@ -2835,36 +2840,18 @@ grant:
 			granted &= ~SMB2_LEASE_HANDLE;
 		}
 
-		fsp->oplock_type = LEASE_OPLOCK;
-
-		status = grant_fsp_lease(fsp, lck, lease, granted);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-
-		}
-
-		DBG_DEBUG("lease_state=%d\n", fsp->lease->lease.lease_state);
+		oplock_type = LEASE_OPLOCK;
 	} else {
 		if (state.got_handle_lease) {
 			granted = SMB2_LEASE_NONE;
 		}
 
-		fsp->oplock_type = map_lease_type_to_oplock(granted);
-
-		status = set_file_oplock(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			/*
-			 * Could not get the kernel oplock
-			 */
-			fsp->oplock_type = NO_OPLOCK;
-		}
-
 		/*
 		 * Reflect possible downgrades from:
 		 * - map_lease_type_to_oplock() => "RH" to just LEVEL_II
-		 * - set_file_oplock() fails => NO_OPLOCK.
 		 */
-		granted = map_oplock_to_lease_type(fsp->oplock_type);
+		oplock_type = map_lease_type_to_oplock(granted);
+		granted = map_oplock_to_lease_type(oplock_type);
 	}
 
 	if (granted & SMB2_LEASE_READ) {
@@ -2888,6 +2875,8 @@ grant:
 		  requested & SMB2_LEASE_HANDLE ? "H":"",
 		  requested);
 
+	*poplock_type = oplock_type;
+	*pgranted = granted;
 	return NT_STATUS_OK;
 }
 
@@ -2902,6 +2891,8 @@ static NTSTATUS handle_share_mode_lease(
 	bool first_open_attempt)
 {
 	bool sharing_violation = false;
+	int oplock_type = NO_OPLOCK;
+	uint32_t granted = 0;
 	NTSTATUS status;
 
 	status = open_mode_check(
@@ -2937,9 +2928,34 @@ static NTSTATUS handle_share_mode_lease(
 		lck,
 		sharing_violation,
 		create_disposition,
-		first_open_attempt);
+		first_open_attempt,
+		&oplock_type,
+		&granted);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (oplock_type == LEASE_OPLOCK) {
+		status = grant_fsp_lease(fsp, lck, lease, granted);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+
+		}
+
+		fsp->oplock_type = oplock_type;
+
+		DBG_DEBUG("lease_state=%d\n", fsp->lease->lease.lease_state);
+	} else {
+
+		fsp->oplock_type = oplock_type;
+
+		status = set_file_oplock(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * Could not get the kernel oplock
+			 */
+			fsp->oplock_type = NO_OPLOCK;
+		}
 	}
 
 	return NT_STATUS_OK;
