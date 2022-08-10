@@ -981,7 +981,7 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 	}
 	*((pcap_t **)private_data) = pt;
 
-	return pcap_fileno(pt);
+	return pcap_get_selectable_fd(pt);
 }
 
 int ctdb_sys_close_capture_socket(void *private_data)
