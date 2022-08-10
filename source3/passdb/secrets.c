@@ -430,14 +430,14 @@ bool secrets_fetch_afs_key(const char *cell, struct afs_key *result)
 		return False;
 
 	if (size != sizeof(struct afs_keyfile)) {
-		SAFE_FREE(keyfile);
+		BURN_FREE(keyfile, sizeof(*keyfile));
 		return False;
 	}
 
 	i = ntohl(keyfile->nkeys);
 
 	if (i > SECRETS_AFS_MAXKEYS) {
-		SAFE_FREE(keyfile);
+		BURN_FREE(keyfile, sizeof(*keyfile));
 		return False;
 	}
 
@@ -445,7 +445,7 @@ bool secrets_fetch_afs_key(const char *cell, struct afs_key *result)
 
 	result->kvno = ntohl(result->kvno);
 
-	SAFE_FREE(keyfile);
+	BURN_FREE(keyfile, sizeof(*keyfile));
 
 	return True;
 }
