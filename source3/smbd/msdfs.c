@@ -62,24 +62,20 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				const char *pathname,
 				bool allow_broken_path,
-				struct dfs_path *pdp) /* MUST BE TALLOCED */
+				char **_hostname,
+				char **_servicename,
+				char **_remaining_path)
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	char *pathname_local;
-	char *p;
-	char *servicename;
-	char *eos_ptr;
+	char *hostname = NULL;
+	char *pathname_local = NULL;
+	char *p = NULL;
+	char *servicename = NULL;
+	char *reqpath = NULL;
+	char *eos_ptr = NULL;
 
-	ZERO_STRUCTP(pdp);
-
-	/*
-	 * This is the only talloc we should need to do
-	 * on the struct dfs_path. All the pointers inside
-	 * it should point to offsets within this string.
-	 */
-
-	pathname_local = talloc_strdup(pdp, pathname);
+	pathname_local = talloc_strdup(ctx, pathname);
 	if (pathname_local == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -109,8 +105,8 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 		 * to cope with known broken SMB1 clients.
 		 */
 
-		pdp->hostname = eos_ptr; /* "" */
-		pdp->servicename = eos_ptr; /* "" */
+		hostname = eos_ptr; /* "" */
+		servicename = eos_ptr; /* "" */
 
 		DBG_ERR("trying to convert %s to a local path\n", p);
 		goto local_path;
@@ -134,17 +130,17 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 		 * Try and convert to a local path.
 		 */
 
-		pdp->hostname = eos_ptr; /* "" */
-		pdp->servicename = eos_ptr; /* "" */
+		hostname = eos_ptr; /* "" */
+		servicename = eos_ptr; /* "" */
 
 		p = pathname_local;
 		DBG_ERR("trying to convert %s to a local path\n", p);
 		goto local_path;
 	}
 	*p = '\0';
-	pdp->hostname = pathname_local;
+	hostname = pathname_local;
 
-	DBG_DEBUG("hostname: %s\n",pdp->hostname);
+	DBG_DEBUG("hostname: %s\n", hostname);
 
 	/* Parse out servicename. */
 	servicename = p+1;
@@ -165,9 +161,6 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 		 * Try and convert to a local path.
 		 */
 
-		pdp->hostname = eos_ptr; /* "" */
-		pdp->servicename = eos_ptr; /* "" */
-
 		/* Repair the path - replace the sepchar's
 		   we nulled out */
 		servicename--;
@@ -176,20 +169,23 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 			*p = '/';
 		}
 
+		hostname = eos_ptr; /* "" */
+		servicename = eos_ptr; /* "" */
+
 		p = pathname_local;
 		DBG_ERR("trying to convert %s to a local path\n",
 			pathname_local);
 		goto local_path;
 	}
 
-	pdp->servicename = servicename;
+	servicename = servicename;
 
-	DBG_DEBUG("servicename: %s\n", pdp->servicename);
+	DBG_DEBUG("servicename: %s\n", servicename);
 
 	if(p == NULL) {
 		/* Client sent self referral \server\share. */
-		pdp->reqpath = eos_ptr; /* "" */
-		return NT_STATUS_OK;
+		reqpath = eos_ptr; /* "" */
+		goto out;
 	}
 
 	p++;
@@ -202,8 +198,31 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 	 * '/' separators.
 	 */
 
-	pdp->reqpath = p;
-	DBG_DEBUG("rest of the path: %s\n", pdp->reqpath);
+	reqpath = p;
+
+  out:
+
+	DBG_DEBUG("rest of the path: %s\n", reqpath);
+
+	if (_hostname != NULL) {
+		*_hostname = talloc_strdup(ctx, hostname);
+		if (*_hostname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	if (_servicename != NULL) {
+		*_servicename = talloc_strdup(ctx, servicename);
+		if (*_servicename == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	if (_remaining_path != NULL) {
+		*_remaining_path = talloc_strdup(ctx, reqpath);
+		if (*_remaining_path == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	TALLOC_FREE(pathname_local);
 	return NT_STATUS_OK;
 }
 
@@ -663,8 +682,7 @@ bool is_msdfs_link(struct files_struct *dirfsp,
 static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		connection_struct *conn,
 		const char *dfspath, /* Incoming complete dfs path */
-		const struct dfs_path *pdp, /* Parsed out
-					       server+share+extrapath. */
+		const char *reqpath, /* Parsed out remaining path. */
 		uint32_t ucf_flags,
 		NTTIME *_twrp,
 		size_t *consumedcntp,
@@ -681,7 +699,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 				  components). */
 
 	DEBUG(10,("dfs_path_lookup: Conn path = %s reqpath = %s\n",
-		conn->connectpath, pdp->reqpath));
+		conn->connectpath, reqpath));
 
 	/*
  	 * Note the unix path conversion here we're doing we
@@ -690,7 +708,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	 * unix_convert later in the codepath.
 	 */
 
-	status = unix_convert(ctx, conn, pdp->reqpath, 0, &smb_fname,
+	status = unix_convert(ctx, conn, reqpath, 0, &smb_fname,
 			      ucf_flags);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -864,25 +882,23 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
+	char *hostname = NULL;
+	char *servicename = NULL;
+	char *reqpath = NULL;
 	NTSTATUS status;
-	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
-
-	if (!pdp) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	status = parse_dfs_path(ctx,
 				conn,
 				path_in,
 				allow_broken_path,
-				pdp);
+				&hostname,
+				&servicename,
+				&reqpath);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(pdp);
 		return status;
 	}
 
-	if (pdp->reqpath[0] == '\0') {
-		TALLOC_FREE(pdp);
+	if (reqpath[0] == '\0') {
 		*pp_path_out = talloc_strdup(ctx, "");
 		if (!*pp_path_out) {
 			return NT_STATUS_NO_MEMORY;
@@ -895,8 +911,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 	   path and return OK */
 
 	if (!lp_msdfs_root(SNUM(conn))) {
-		*pp_path_out = talloc_strdup(ctx, pdp->reqpath);
-		TALLOC_FREE(pdp);
+		*pp_path_out = talloc_strdup(ctx, reqpath);
 		if (!*pp_path_out) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -906,30 +921,27 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 	/* If it looked like a local path (zero hostname/servicename)
 	 * just treat as a tcon-relative path. */
 
-	if (pdp->hostname[0] == '\0' && pdp->servicename[0] == '\0') {
-		*pp_path_out = talloc_strdup(ctx, pdp->reqpath);
-		TALLOC_FREE(pdp);
+	if (hostname[0] == '\0' && servicename[0] == '\0') {
+		*pp_path_out = talloc_strdup(ctx, reqpath);
 		if (!*pp_path_out) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		return NT_STATUS_OK;
 	}
 
-	if (!( strequal(pdp->servicename, lp_servicename(talloc_tos(), lp_sub, SNUM(conn)))
-			|| (strequal(pdp->servicename, HOMES_NAME)
+	if (!( strequal(servicename, lp_servicename(talloc_tos(), lp_sub, SNUM(conn)))
+			|| (strequal(servicename, HOMES_NAME)
 			&& strequal(lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 				conn->session_info->unix_info->sanitized_username) )) ) {
 
 		/* The given sharename doesn't match this connection. */
-		TALLOC_FREE(pdp);
-
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
 	status = dfs_path_lookup(ctx,
 				conn,
 				path_in,
-				pdp,
+				reqpath,
 				ucf_flags,
 				_twrp, /* twrp. */
 				NULL, /* size_t *consumedcntp */
@@ -949,8 +961,7 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 	DEBUG(3,("dfs_redirect: Not redirecting %s.\n", path_in));
 
 	/* Form non-dfs tcon-relative path */
-	*pp_path_out = talloc_strdup(ctx, pdp->reqpath);
-	TALLOC_FREE(pdp);
+	*pp_path_out = talloc_strdup(ctx, reqpath);
 	if (!*pp_path_out) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1013,14 +1024,10 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		loadparm_s3_global_substitution();
 	struct conn_struct_tos *c = NULL;
 	struct connection_struct *conn = NULL;
+	char *servicename = NULL;
+	char *reqpath = NULL;
 	int snum;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
-	struct dfs_path *pdp = talloc_zero(frame, struct dfs_path);
-
-	if (!pdp) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	*self_referralp = False;
 
@@ -1028,14 +1035,16 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 				NULL,
 				dfs_path,
 				allow_broken_path,
-				pdp);
+				NULL,
+				&servicename,
+				&reqpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	jucn->service_name = talloc_strdup(ctx, pdp->servicename);
-	jucn->volume_name = talloc_strdup(ctx, pdp->reqpath);
+	jucn->service_name = talloc_strdup(ctx, servicename);
+	jucn->volume_name = talloc_strdup(ctx, reqpath);
 	if (!jucn->service_name || !jucn->volume_name) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
@@ -1064,7 +1073,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	if (!lp_msdfs_root(snum) && (*lp_msdfs_proxy(talloc_tos(), lp_sub, snum) == '\0')) {
 		DEBUG(3,("get_referred_path: |%s| in dfs path %s is not "
 			"a dfs root.\n",
-			pdp->servicename, dfs_path));
+			servicename, dfs_path));
 		TALLOC_FREE(frame);
 		return NT_STATUS_NOT_FOUND;
 	}
@@ -1077,7 +1086,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	 * user). Cope with this.
 	 */
 
-	if (pdp->reqpath[0] == '\0') {
+	if (reqpath[0] == '\0') {
 		char *tmp;
 		struct referral *ref;
 		size_t refcount;
@@ -1158,7 +1167,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	status = dfs_path_lookup(ctx,
 				conn,
 				dfs_path,
-				pdp,
+				reqpath,
 				0, /* ucf_flags */
 				NULL,
 				consumedcntp,
@@ -1271,45 +1280,43 @@ bool create_junction(TALLOC_CTX *ctx,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	int snum;
-	struct dfs_path *pdp = talloc(ctx,struct dfs_path);
+	char *hostname = NULL;
+	char *servicename = NULL;
+	char *reqpath = NULL;
 	NTSTATUS status;
 
-	if (!pdp) {
-		return False;
-	}
 	status = parse_dfs_path(ctx,
 				NULL,
 				dfs_path,
 				allow_broken_path,
-				pdp);
+				&hostname,
+				&servicename,
+				&reqpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
 	/* check if path is dfs : validate first token */
-	if (!is_myname_or_ipaddr(pdp->hostname)) {
+	if (!is_myname_or_ipaddr(hostname)) {
 		DEBUG(4,("create_junction: Invalid hostname %s "
 			"in dfs path %s\n",
-			pdp->hostname, dfs_path));
-		TALLOC_FREE(pdp);
+			hostname, dfs_path));
 		return False;
 	}
 
 	/* Check for a non-DFS share */
-	snum = lp_servicenumber(pdp->servicename);
+	snum = lp_servicenumber(servicename);
 
 	if(snum < 0 || !lp_msdfs_root(snum)) {
 		DEBUG(4,("create_junction: %s is not an msdfs root.\n",
-			pdp->servicename));
-		TALLOC_FREE(pdp);
+			servicename));
 		return False;
 	}
 
-	jucn->service_name = talloc_strdup(ctx, pdp->servicename);
-	jucn->volume_name = talloc_strdup(ctx, pdp->reqpath);
+	jucn->service_name = talloc_strdup(ctx, servicename);
+	jucn->volume_name = talloc_strdup(ctx, reqpath);
 	jucn->comment = lp_comment(ctx, lp_sub, snum);
 
-	TALLOC_FREE(pdp);
 	if (!jucn->service_name || !jucn->volume_name || ! jucn->comment) {
 		return False;
 	}
