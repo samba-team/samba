@@ -1215,7 +1215,7 @@ bool print_notify_rec_json(struct traverse_state *state,
 		goto failure;
 	}
 	subdir_filter = talloc_asprintf(tmp_ctx, "%u", instance->subdir_filter);
-	if (filter == NULL) {
+	if (subdir_filter == NULL) {
 		goto failure;
 	}
 	result = json_add_string(&sub_json, "subdir_filter", subdir_filter);
