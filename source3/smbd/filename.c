@@ -1935,67 +1935,23 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 		/*
 		 * We've been given a raw DFS pathname.
 		 */
-		char *fname = NULL;
-		char *name_in_copy = NULL;
-		char *last_component = NULL;
-
-		/* Work on a copy of name_in. */
-		name_in_copy = talloc_strdup(ctx, name_in);
-		if (name_in_copy == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/*
-		 * Now we know that the last component is the
-		 * wildcard. Copy it and truncate to remove it.
-		 */
-		p = strrchr(name_in_copy, '/');
-		if (p == NULL) {
-			last_component = talloc_strdup(ctx, name_in_copy);
-			name_in_copy[0] = '\0';
-		} else {
-			last_component = talloc_strdup(ctx, p+1);
-			*p = '\0';
-		}
-		if (last_component == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		DBG_DEBUG("name_in_copy: %s\n", name_in_copy);
-
-		/*
-		 * Now we can call dfs_redirect()
-		 * on the name without wildcard.
-		 */
-		status = dfs_redirect(ctx,
-				      conn,
-				      name_in_copy,
-				      ucf_flags,
-				      !conn->sconn->using_smb2,
-				      NULL,
-				      &fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("dfs_redirect "
+		char *pathname = NULL;
+		DBG_DEBUG("Before dfs_filename_convert name_in: %s\n", name_in);
+		status = dfs_filename_convert(ctx,
+					      conn,
+					      ucf_flags,
+					      name_in,
+					      &pathname);
+                if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("dfs_filename_convert "
 				"failed for name %s with %s\n",
-				name_in_copy,
+				name_in,
 				nt_errstr(status));
 			return status;
 		}
-		/* Add the last component back. */
-		if (fname[0] == '\0') {
-			name_in = talloc_strdup(ctx, last_component);
-		} else {
-			name_in = talloc_asprintf(ctx,
-						  "%s/%s",
-						  fname,
-						  last_component);
-		}
-		if (name_in == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
 		ucf_flags &= ~UCF_DFS_PATHNAME;
-
-		DBG_DEBUG("After DFS redirect name_in: %s\n", name_in);
+		name_in = pathname;
+		DBG_DEBUG("After dfs_filename_convert name_in: %s\n", name_in);
 	}
 
 	/* Get the original lcomp. */
