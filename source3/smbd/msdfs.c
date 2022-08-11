@@ -80,7 +80,6 @@ done:
 	return match;
 }
 
-#if 0
 /**********************************************************************
  Parse a DFS pathname of the form(s)
 
@@ -221,7 +220,6 @@ out:
 	TALLOC_FREE(pathname_local);
 	return status;
 }
-#endif
 
 /**********************************************************************
  Parse a DFS pathname of the form /hostname/service/reqpath
@@ -1236,11 +1234,10 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	*self_referralp = False;
 
-	status = parse_dfs_path(frame,
-				NULL,
+	status = parse_dfs_path_strict(
+				frame,
 				dfs_path,
-				allow_broken_path,
-				NULL,
+				NULL, /* hostname */
 				&servicename,
 				&reqpath);
 	if (!NT_STATUS_IS_OK(status)) {
