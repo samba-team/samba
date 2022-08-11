@@ -386,7 +386,7 @@ bool fetch_ldap_pw(char **dn, char** pw)
 
 	if (*pw == NULL || size == 0 || (*pw)[size-1] != '\0') {
 		DBG_ERR("No valid password for %s\n", *dn);
-		SAFE_FREE(*pw);
+		BURN_FREE_STR(*pw);
 		SAFE_FREE(*dn);
 		return false;
 	}
