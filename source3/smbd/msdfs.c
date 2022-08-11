@@ -241,7 +241,6 @@ out:
 static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				const char *pathname,
-				bool allow_broken_path,
 				char **_hostname,
 				char **_servicename,
 				char **_remaining_path)
@@ -1143,7 +1142,6 @@ NTSTATUS dfs_filename_convert(TALLOC_CTX *ctx,
 	status = parse_dfs_path(ctx,
 				conn,
 				dfs_path_in,
-				!conn->sconn->using_smb2,
 				NULL, /* hostname */
 				NULL, /* servicename */
 				&reqpath);
