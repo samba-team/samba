@@ -71,7 +71,11 @@ class cmd_dbcheck(Command):
         Option("--attrs", dest="attrs", default=None, help="list of attributes to check (space separated)"),
         Option("--reindex", dest="reindex", default=False, action="store_true", help="force database re-index"),
         Option("--force-modules", dest="force_modules", default=False, action="store_true", help="force loading of Samba modules and ignore the @MODULES record (for very old databases)"),
-        Option("--reset-well-known-acls", dest="reset_well_known_acls", default=False, action="store_true", help="reset ACLs on objects with well known default ACL values to the default"),
+        Option("--reset-well-known-acls",
+               dest="reset_well_known_acls",
+               default=False, action="store_true",
+               help=("reset ACLs on objects with well known default values"
+                     " (for updating from early 4.0.x)")),
         Option("--quick-membership-checks", dest="quick_membership_checks",
                help=("Skips missing/orphaned memberOf backlinks checks, "
                      "but speeds up dbcheck dramatically for domains with "
