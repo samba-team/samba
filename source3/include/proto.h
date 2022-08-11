@@ -82,6 +82,9 @@ NTSTATUS vfs_at_fspcwd(TALLOC_CTX *mem_ctx,
 		       struct connection_struct *conn,
 		       struct files_struct **_fsp);
 
+NTSTATUS vfs_fget_dos_attributes(struct files_struct *fsp,
+				 uint32_t *dosmode);
+
 #include "source3/lib/interface.h"
 
 /* The following definitions come from lib/ldap_debug_handler.c  */

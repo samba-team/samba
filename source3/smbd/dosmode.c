@@ -754,8 +754,7 @@ uint32_t fdos_mode(struct files_struct *fsp)
 	}
 
 	/* Get the DOS attributes via the VFS if we can */
-	status = SMB_VFS_FGET_DOS_ATTRIBUTES(
-		fsp->conn, metadata_fsp(fsp), &result);
+	status = vfs_fget_dos_attributes(fsp, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * Only fall back to using UNIX modes if we get NOT_IMPLEMENTED.
