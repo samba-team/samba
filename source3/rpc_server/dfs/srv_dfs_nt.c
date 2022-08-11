@@ -403,7 +403,6 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 	}
 
 	ret = create_junction(ctx, r->in.dfs_entry_path,
-			      true, /* allow broken_path */
 			      jn);
 	if (!ret) {
 		return WERR_NERR_DFSNOSUCHSERVER;

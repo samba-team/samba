@@ -1458,7 +1458,6 @@ int setup_dfs_referral(connection_struct *orig_conn,
 
 bool create_junction(TALLOC_CTX *ctx,
 		const char *dfs_path,
-		bool allow_broken_path,
 		struct junction_map *jucn)
 {
 	const struct loadparm_substitution *lp_sub =
