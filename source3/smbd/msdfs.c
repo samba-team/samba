@@ -253,6 +253,7 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 	char *reqpath = NULL;
 	char *eos_ptr = NULL;
 	bool servicename_matches = false;
+	bool using_smb1 = !conn->sconn->using_smb2;
 
 	pathname_local = talloc_strdup(ctx, pathname);
 	if (pathname_local == NULL) {
@@ -271,11 +272,16 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 	p = pathname_local;
 
 	/*
-	 * Non-broken DFS paths *must* start with the
-	 * path separator '/'.
+	 * SMB1 DFS paths sent to the fileserver should start with
+	 * the path separator '/'. However, libsmbclient libraries
+	 * will set the DFS bit on SMB1 calls and then send non-DFS
+	 * paths. We must cope with this.
+	 *
+	 * Note SMB2 paths sent to the fileserver never start with
+	 * the path separator '/'.
 	 */
 
-	if (allow_broken_path && (*p != '/')) {
+	if (using_smb1 && (*p != '/')) {
 		DBG_ERR("path %s doesn't start with /\n", p);
 		/*
 		 * Possibly client sent a local path by mistake.
