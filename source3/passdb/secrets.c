@@ -119,6 +119,16 @@ void *secrets_fetch(const char *key, size_t *size)
 	if (result == NULL) {
 		return NULL;
 	}
+	/*
+	 * secrets_fetch() is a generic code and may be used for sensitive data,
+	 * so clear the local dbuf.dptr memory via BURN_PTR_SIZE().
+	 * The future plan is to convert secrets_fetch() to talloc.
+	 * That would improve performance via:
+	 * - avoid smb_memdup() above, instead directly return dbuf.dptr
+	 * - BURN_PTR_SIZE() will be done not here but in the caller and only
+	 *   if the caller asks for sensitive data.
+	 */
+	BURN_PTR_SIZE(dbuf.dptr, dbuf.dsize);
 	TALLOC_FREE(dbuf.dptr);
 
 	if (size) {
