@@ -1485,14 +1485,6 @@ bool create_junction(TALLOC_CTX *ctx,
 		return False;
 	}
 
-	/* check if path is dfs : validate first token */
-	if (!is_myname_or_ipaddr(hostname)) {
-		DEBUG(4,("create_junction: Invalid hostname %s "
-			"in dfs path %s\n",
-			hostname, dfs_path));
-		return False;
-	}
-
 	/* Check for a non-DFS share */
 	snum = lp_servicenumber(servicename);
 
