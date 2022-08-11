@@ -593,7 +593,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 		 * work out if the node as a whole needs tombstoning.
 		 */
 		if (update->rr_type == DNS_QTYPE_ALL) {
-			if (dns_name_equal(update->name, zone->name)) {
+			if (samba_dns_name_equal(update->name, zone->name)) {
 				for (i = first; i < rcount; i++) {
 
 					if (recs[i].wType == DNS_TYPE_SOA) {
@@ -617,7 +617,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 				}
 			}
 
-		} else if (dns_name_equal(update->name, zone->name)) {
+		} else if (samba_dns_name_equal(update->name, zone->name)) {
 
 			if (update->rr_type == DNS_QTYPE_SOA) {
 				return WERR_OK;
