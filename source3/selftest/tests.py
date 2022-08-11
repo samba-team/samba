@@ -640,6 +640,10 @@ for env in ["fileserver"]:
                   '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/local_symlinks',
                   '$PREFIX', smbclient3])
 
+    plantestsuite("samba3.blackbox.test_veto_files", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_veto_files.sh"),
+                  '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/veto', smbclient3])
+
     #
     # tar command tests
     #

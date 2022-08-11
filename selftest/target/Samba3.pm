@@ -1916,6 +1916,10 @@ sub setup_fileserver
 	path = $veto_sharedir
 	delete veto files = yes
 
+[veto_files]
+	path = $veto_sharedir
+	veto files = /veto_name*/
+
 [delete_yes_unwrite]
 	read only = no
 	path = $delete_unwrite_sharedir
