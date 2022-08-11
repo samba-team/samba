@@ -1475,10 +1475,9 @@ bool create_junction(TALLOC_CTX *ctx,
 	char *reqpath = NULL;
 	NTSTATUS status;
 
-	status = parse_dfs_path(ctx,
-				NULL,
+	status = parse_dfs_path_strict(
+				ctx,
 				dfs_path,
-				allow_broken_path,
 				&hostname,
 				&servicename,
 				&reqpath);
