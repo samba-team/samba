@@ -90,7 +90,6 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 				   r->in.path,
 				   remote_address,
 				   local_address,
-				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
@@ -172,7 +171,6 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 				   r->in.dfs_entry_path,
 				   remote_address,
 				   local_address,
-				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status)) {
 		return WERR_NERR_DFSNOSUCHVOLUME;
@@ -417,7 +415,6 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 				   r->in.dfs_entry_path,
 				   remote_address,
 				   local_address,
-				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status) ||
 			consumedcnt < strlen(r->in.dfs_entry_path)) {

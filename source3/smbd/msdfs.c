@@ -1212,7 +1212,6 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			   const char *dfs_path,
 			   const struct tsocket_address *remote_address,
 			   const struct tsocket_address *local_address,
-			   bool allow_broken_path,
 			   struct junction_map *jucn,
 			   size_t *consumedcntp,
 			   bool *self_referralp)
