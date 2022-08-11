@@ -38,6 +38,8 @@
 static char DIRSEP_CHAR = '\\';
 
 static int inheritance = 0;
+static const char *save_file = NULL;
+static const char *restore_file = NULL;
 static int test_args;
 static int sddl;
 static int query_sec_info = -1;
@@ -1575,6 +1577,26 @@ int main(int argc, char *argv[])
 			.arg        = &inheritance,
 			.val        = 1,
 			.descrip    = "Supports propagation of inheritable ACE(s) when used in conjunction with add, delete, set or modify",
+		},
+		{
+			.longName   = "save",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &save_file,
+			.val        = 1,
+			.descrip    = "stores the DACLs in sddl format of the "
+				      "specified file or folder for later use "
+				      "with restore. SACLS, owner or integrity"
+				      " labels are not stored",
+		},
+		{
+			.longName   = "restore",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &restore_file,
+			.val        = 1,
+			.descrip    = "applies the stored DACLS to files in "
+				      "directory.",
 		},
 		{
 			.longName   = "numeric",
