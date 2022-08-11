@@ -147,6 +147,16 @@ can cause the Kerberos password salt to change.  This means that after
 *both* an account rename and a password change, only the current
 password will be recognised for password history purposes.
 
+Python API for smbconf
+----------------------
+
+Samba's smbconf library provides a generic frontend to various
+configuration backends (plain text file, registry) as a C library. A
+new Python wrapper, importable as 'samba.smbconf' is available.  An
+additional module, 'samba.samba3.smbconf', is also available to enable
+registry backend support. These libraries allow Python programs to
+read, and optionally write, Samba configuration natively.
+
 
 REMOVED FEATURES
 ================
