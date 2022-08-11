@@ -50,11 +50,6 @@ static bool msdfs_servicename_matches_connection(struct connection_struct *conn,
 	int snum;
 	bool match = false;
 
-	if (conn == NULL) {
-		/* No connection always matches. */
-		return true;
-	}
-
 	snum = SNUM(conn);
 
 	conn_servicename = lp_servicename(talloc_tos(), lp_sub, snum);
