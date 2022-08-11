@@ -469,8 +469,10 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 
 	if (*username && **username) {
 
-		if (!*domain || !**domain)
+		if (!*domain || !**domain) {
+			SAFE_FREE(*domain);
 			*domain = smb_xstrdup(lp_workgroup());
+		}
 
 		if (!*password || !**password) {
 			BURN_FREE_STR(*password);
@@ -482,6 +484,8 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 
 	} else {
 		DEBUG(3, ("IPC$ connections done anonymously\n"));
+		SAFE_FREE(*username);
+		SAFE_FREE(*domain);
 		BURN_FREE_STR(*password);
 		*username = smb_xstrdup("");
 		*domain = smb_xstrdup("");
