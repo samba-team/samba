@@ -817,6 +817,14 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 			goto fail;
 		}
 
+		/* Check veto files. */
+		if (IS_VETO_PATH(conn, rel_fname.base_name)) {
+			DBG_DEBUG("%s contains veto files path component %s\n",
+				  path_in, rel_fname.base_name);
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			goto fail;
+		}
+
 		rel_fname.base_name = next;
 	}
 
@@ -903,6 +911,8 @@ next:
 		&how);
 
 	if ((fd == -1) && (errno == ENOENT)) {
+		const char *orig_base_name = rel_fname.base_name;
+
 		status = get_real_filename_at(
 			dirfsp,
 			rel_fname.base_name,
@@ -912,6 +922,14 @@ next:
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("get_real_filename_at failed: %s\n",
 				  nt_errstr(status));
+			goto fail;
+		}
+
+		/* Name might have been demangled - check veto files. */
+		if (IS_VETO_PATH(conn, rel_fname.base_name)) {
+			DBG_DEBUG("%s contains veto files path component %s => %s\n",
+				  path_in, orig_base_name, rel_fname.base_name);
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			goto fail;
 		}
 
