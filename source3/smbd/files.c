@@ -860,7 +860,15 @@ next:
 			&how);
 	}
 
-	if ((fd == -1) && (errno == ENOTDIR)) {
+	/*
+	 * O_NOFOLLOW|O_DIRECTORY results in
+	 * ENOTDIR instead of ELOOP.
+	 *
+	 * But we should be prepared to handle ELOOP too.
+	 */
+	if ((fd == -1) && (errno == ENOTDIR || errno == ELOOP)) {
+		NTSTATUS orig_status = map_nt_error_from_unix(errno);
+
 		status = readlink_talloc(
 			mem_ctx, dirfsp, &rel_fname, substitute);
 
@@ -898,7 +906,7 @@ next:
 			/*
 			 * Restore the error status from SMB_VFS_OPENAT()
 			 */
-			status = NT_STATUS_NOT_A_DIRECTORY;
+			status = orig_status;
 		}
 		goto fail;
 	}
