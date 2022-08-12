@@ -1149,6 +1149,13 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		return status;
 	}
 
+	/* Path referrals are always non-POSIX. */
+	status = check_path_syntax(reqpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
 	jucn->service_name = talloc_strdup(ctx, servicename);
 	jucn->volume_name = talloc_strdup(ctx, reqpath);
 	if (!jucn->service_name || !jucn->volume_name) {
