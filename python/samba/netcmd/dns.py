@@ -456,7 +456,7 @@ class cmd_serverinfo(Command):
             versionopts=None):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         client_version = dns_client_version(cli_ver)
 
@@ -533,7 +533,7 @@ class cmd_zoneoptions(Command):
             **kwargs):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         client_version = dns_client_version(cli_ver)
         nap_type = dnsserver.DNSSRV_TYPEID_NAME_AND_PARAM
@@ -772,7 +772,7 @@ class cmd_zoneinfo(Command):
             versionopts=None):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         client_version = dns_client_version(cli_ver)
 
@@ -843,7 +843,7 @@ class cmd_zonelist(Command):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         client_version = dns_client_version(cli_ver)
 
@@ -884,7 +884,7 @@ class cmd_zonecreate(Command):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         zone = zone.lower()
 
@@ -955,7 +955,7 @@ class cmd_zonedelete(Command):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         zone = zone.lower()
         try:
@@ -1038,7 +1038,7 @@ class cmd_query(Command):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         try:
             buflen, res = dns_conn.DnssrvEnumRecords2(
@@ -1073,7 +1073,7 @@ class cmd_roothints(Command):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         buflen, res = dns_conn.DnssrvEnumRecords2(
             dnsserver.DNS_CLIENT_VERSION_LONGHORN, 0, server, '..RootHints',
@@ -1116,7 +1116,7 @@ class cmd_add_record(Command):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
@@ -1252,7 +1252,7 @@ class cmd_delete_record(Command):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         del_rec_buf.rec = rec
