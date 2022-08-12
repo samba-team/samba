@@ -1426,6 +1426,12 @@ bool create_junction(TALLOC_CTX *ctx,
 		return False;
 	}
 
+	/* Junction create paths are always non-POSIX. */
+	status = check_path_syntax(reqpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
 	jucn->service_name = talloc_strdup(ctx, servicename);
 	jucn->volume_name = talloc_strdup(ctx, reqpath);
 	jucn->comment = lp_comment(ctx, lp_sub, snum);
