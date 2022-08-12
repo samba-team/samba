@@ -1292,20 +1292,22 @@ class cmd_delete_record(Command):
         del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         del_rec_buf.rec = rec
 
-        try:
-            dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
-                                         0,
-                                         server,
-                                         zone,
-                                         name,
-                                         None,
-                                         del_rec_buf)
-        except WERRORError as e:
-            if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
-                raise CommandError('Zone does not exist; record could not be deleted. zone[%s] name[%s]' % (zone, name))
-            if e.args[0] == werror.WERR_DNS_ERROR_RECORD_DOES_NOT_EXIST:
-                raise CommandError('Record does not exist; record could not be deleted. zone[%s] name[%s]' % (zone, name))
-            raise e
+        messages = {
+            werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST: (
+                'Zone does not exist; record could not be deleted. '
+                f'zone[{zone}] name[{name}'),
+            werror.WERR_DNS_ERROR_RECORD_ALREADY_EXISTS: (
+                'Record already exists; record could not be deleted. '
+                f'zone[{zone}] name[{name}]')
+        }
+        dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0,
+                                     server,
+                                     zone,
+                                     name,
+                                     None,
+                                     del_rec_buf,
+                                     messages=messages)
 
         self.outf.write('Record deleted successfully\n')
 
