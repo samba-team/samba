@@ -275,6 +275,8 @@ sub setup_nt4_dc
 	server schannel = auto
 	rpc start on demand helpers = false
 
+	vfs_default:VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS = no
+
 	fss: sequence timeout = 1
 	check parent directory delete on close = yes
 ";
