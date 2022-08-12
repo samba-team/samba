@@ -1482,6 +1482,525 @@ out:
 	return result;
 }
 
+struct diritem {
+       struct diritem *prev, *next;
+       /*
+	* dirname and targetpath below are sanitized,
+	* e.g.
+	*   + start and end with '\'
+	*   + have no trailing '*'
+	*   + all '/' have been converted to '\'
+	*/
+       char *dirname;
+       char  *targetpath;
+       struct cli_state *targetcli;
+};
+
+struct save_restore_stats
+{
+	int success;
+	int failure;
+};
+
+struct dump_context {
+	struct diritem *list;
+	struct cli_credentials *creds;
+	struct cli_state *cli;
+	struct save_restore_stats *stats;
+	int save_fd;
+	struct diritem *dir;
+	NTSTATUS status;
+};
+
+static int write_dacl(struct dump_context *ctx,
+		      struct cli_state *cli,
+		      const char *filename,
+		      const char *origfname)
+{
+	struct security_descriptor *sd = NULL;
+	char *str = NULL;
+	const char *output_fmt = "%s\r\n%s\r\n";
+	const char *tmp = NULL;
+	char *out_str = NULL;
+	uint8_t *dest = NULL;
+	ssize_t s_len;
+	size_t d_len;
+	bool ok;
+	int result;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (test_args) {
+		return EXIT_OK;
+	}
+
+	if (ctx->save_fd < 0) {
+		DBG_ERR("error processing %s no file descriptor\n", filename);
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	sd = get_secdesc(cli, filename);
+	if (sd == NULL) {
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	sd->owner_sid = NULL;
+	sd->group_sid = NULL;
+
+	str = sddl_encode(frame, sd, get_domain_sid(cli));
+	if (str == NULL) {
+		DBG_ERR("error processing %s couldn't encode DACL\n", filename);
+		result = EXIT_FAILED;
+		goto out;
+	}
+	/*
+	 * format of icacls save file is
+	 * a line containing the path of the file/dir
+	 * followed by a line containing the sddl format
+	 * of the dacl.
+	 * The format of the strings are null terminated
+	 * 16-bit Unicode. Each line is terminated by "\r\n"
+	 */
+
+	tmp = origfname;
+	/* skip leading '\' */
+	if (tmp[0] == '\\') {
+		tmp++;
+	}
+	out_str = talloc_asprintf(frame, output_fmt, tmp, str);
+
+	if (out_str == NULL) {
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	s_len = strlen(out_str);
+
+	ok = convert_string_talloc(out_str,
+				   CH_UNIX,
+				   CH_UTF16,
+				   out_str,
+				   s_len, (void **)(void *)&dest, &d_len);
+	if (!ok) {
+		DBG_ERR("error processing %s out of memory\n", tmp);
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	if (write(ctx->save_fd, dest, d_len) != d_len) {
+		DBG_ERR("error processing %s failed to write to file.\n", tmp);
+		result = EXIT_FAILED;
+		goto out;
+	}
+	fsync(ctx->save_fd);
+
+	result = EXIT_OK;
+	ctx->stats->success += 1;
+	fprintf(stdout, "Successfully processed file: %s\n", tmp);
+out:
+	TALLOC_FREE(frame);
+	if (result != EXIT_OK) {
+		ctx->stats->failure += 1;
+	}
+	return result;
+}
+
+/*
+ * Sanitize directory name.
+ * Given a directory name 'dir' ensure it;
+ *    o starts with '\'
+ *    o ends with '\'
+ *    o doesn't end with trailing '*'
+ *    o ensure all '/' are converted to '\'
+ */
+
+static char *sanitize_dirname(TALLOC_CTX *ctx,
+			 const char *dir)
+{
+	char *mask = NULL;
+	char *name_end = NULL;
+
+	mask = talloc_strdup(ctx, dir);
+	name_end = strrchr(mask, '*');
+	if (name_end) {
+		*name_end = '\0';
+	}
+
+	name_end = strrchr(mask, DIRSEP_CHAR);
+
+	if (strlen(mask) > 0 && name_end != mask + (strlen(mask) - 1)) {
+		mask = talloc_asprintf(ctx, "%s\\", mask);
+	}
+
+	string_replace(mask, '/', '\\');
+	return mask;
+}
+
+/*
+ * Process each entry (child) of a directory.
+ * Each entry, regardless of whether it is itself a file or directory
+ * has it's dacl written to the restore/save file.
+ * Each directory is saved to context->list (for further processing)
+ * write_dacl will update the stats (success/fail)
+ */
+static NTSTATUS cacl_dump_dacl_cb(struct file_info *f,
+				  const char *mask, void *state)
+{
+	struct dump_context *ctx = talloc_get_type_abort(state,
+							 struct dump_context);
+
+	NTSTATUS status;
+
+	char *mask2 = NULL;
+	char *targetpath = NULL;
+	char *unresolved = NULL;
+
+	/*
+	 * if we have already encountered an error
+	 * bail out
+	 */
+	if (!NT_STATUS_IS_OK(ctx->status)) {
+		return ctx->status;
+	}
+
+	if (!f->name || !f->name[0]) {
+		DBG_ERR("Empty dir name returned. Possible server "
+			"misconfiguration.\n");
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+
+	mask2 = sanitize_dirname(ctx, mask);
+	if (!mask2) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+	if (f->attr & FILE_ATTRIBUTE_DIRECTORY) {
+		struct diritem *item = NULL;
+
+		/* ignore special '.' & '..' */
+		if ((f->name == NULL) || ISDOT(f->name) || ISDOTDOT(f->name)) {
+			status = NT_STATUS_OK;
+			goto out;
+		}
+
+		/* Work out the directory. */
+		unresolved = sanitize_dirname(ctx, ctx->dir->dirname);
+		if (!unresolved) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		unresolved = talloc_asprintf(ctx, "%s%s", unresolved, f->name);
+
+		if (unresolved == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		item = talloc_zero(ctx, struct diritem);
+		if (item == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		item->dirname = unresolved;
+
+		mask2 = talloc_asprintf(ctx, "%s%s", mask2, f->name);
+		if (!mask2) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		status = cli_resolve_path(ctx, "", ctx->creds, ctx->cli,
+					  mask2, &item->targetcli, &targetpath);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("error failed to resolve: %s\n",
+				nt_errstr(status));
+			goto out;
+		}
+
+		item->targetpath = sanitize_dirname(ctx, targetpath);
+		if (!item->targetpath) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		if (write_dacl(ctx,
+			       item->targetcli,
+			       item->targetpath, unresolved) != EXIT_OK) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			/*
+			 * cli_list happily ignores error encountered
+			 * when processing the callback so we need
+			 * to save any error status encountered while
+			 * processing directories (so we can stop recursing
+			 * those as soon as possible).
+			 * Changing the current behaviour of the callback
+			 * handling by cli_list would be I think be too
+			 * risky.
+			 */
+			ctx->status = status;
+			goto out;
+		}
+
+		DLIST_ADD_END(ctx->list, item);
+
+	} else {
+		unresolved = sanitize_dirname(ctx, ctx->dir->dirname);
+		if (!unresolved) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		unresolved = talloc_asprintf(ctx, "%s%s", unresolved, f->name);
+
+		if (!unresolved) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+		/*
+		 * build full path to the file and replace '/' with '\' so
+		 * other utility functions can deal with it
+		 */
+
+		targetpath = talloc_asprintf(ctx, "%s%s", mask2, f->name);
+
+		if (!targetpath) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		if (write_dacl(ctx,
+			       ctx->dir->targetcli,
+			       targetpath, unresolved) != EXIT_OK) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			/*
+			 * cli_list happily ignores error encountered
+			 * when processing the callback so we need
+			 * to save any error status encountered while
+			 * processing directories (so we can stop recursing
+			 * those as soon as possible).
+			 * Changing the current behaviour of the callback
+			 * handling by cli_list would be I think be too
+			 * risky.
+			 */
+			ctx->status = status;
+			goto out;
+		}
+	}
+	status = NT_STATUS_OK;
+out:
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("error %s: processing %s\n",
+			nt_errstr(status), targetpath);
+	}
+	return status;
+}
+
+/*
+ * dump_ctx contains a list of directories to be processed
+ *    + each directory 'dir' is scanned by cli_list, the cli_list
+ *      callback 'cacl_dump_dacl_cb' writes out the dacl of each
+ *      child of 'dir' (regardless of whether it is a dir or file)
+ *      to the restore/save file. Additionally any directories encountered
+ *      are returned in the passed in dump_ctx->list member
+ *    + the directory list returned from cli_list is passed and processed
+ *      by recursively calling dump_dacl_dirtree
+ *
+ */
+static int dump_dacl_dirtree(struct dump_context *dump_ctx)
+{
+	struct diritem *item = NULL;
+	struct dump_context *new_dump_ctx = NULL;
+	int result;
+	for (item = dump_ctx->list; item; item = item->next) {
+		uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY
+		    | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+		NTSTATUS status;
+		char *mask = NULL;
+
+		new_dump_ctx = talloc_zero(dump_ctx, struct dump_context);
+
+		if (new_dump_ctx == NULL) {
+			DBG_ERR("out of memory\n");
+			result = EXIT_FAILED;
+			goto out;
+		}
+
+		if (item->targetcli == NULL) {
+			status = cli_resolve_path(new_dump_ctx,
+						  "",
+						  dump_ctx->creds,
+						  dump_ctx->cli,
+						  item->dirname,
+						  &item->targetcli,
+						  &item->targetpath);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_ERR("failed to resolve path %s "
+					"error: %s\n",
+					item->dirname, nt_errstr(status));
+				result = EXIT_FAILED;
+				goto out;
+			}
+		}
+		new_dump_ctx->creds = dump_ctx->creds;
+		new_dump_ctx->save_fd = dump_ctx->save_fd;
+		new_dump_ctx->stats = dump_ctx->stats;
+		new_dump_ctx->dir = item;
+		new_dump_ctx->cli = item->targetcli;
+
+		mask = talloc_asprintf(new_dump_ctx, "%s*",
+				       new_dump_ctx->dir->targetpath);
+		status = cli_list(new_dump_ctx->dir->targetcli,
+				  mask,
+				  attribute, cacl_dump_dacl_cb, new_dump_ctx);
+
+		if (!NT_STATUS_IS_OK(status) ||
+		    !NT_STATUS_IS_OK(new_dump_ctx->status)) {
+			NTSTATUS tmpstatus;
+			if (!NT_STATUS_IS_OK(status)) {
+				/*
+				 * cli_list failed for some reason
+				 * so we need to update the failure stat
+				 */
+				new_dump_ctx->stats->failure += 1;
+				tmpstatus = status;
+			} else {
+				/* cacl_dump_dacl_cb should have updated stat */
+				tmpstatus = new_dump_ctx->status;
+			}
+			DBG_ERR("error %s: processing %s\n",
+				nt_errstr(tmpstatus), item->dirname);
+			result = EXIT_FAILED;
+			goto out;
+		}
+		result = dump_dacl_dirtree(new_dump_ctx);
+		if (result != EXIT_OK) {
+			goto out;
+		}
+	}
+
+	result = EXIT_OK;
+out:
+	TALLOC_FREE(new_dump_ctx);
+	return result;
+}
+
+static int cacl_dump_dacl(struct cli_state *cli,
+			  struct cli_credentials *creds,
+			  char *filename)
+{
+	int fileattr;
+	char *mask = NULL;
+	TALLOC_CTX *ctx = NULL;
+	bool isdirectory = false;
+	int result;
+	struct dump_context *dump_ctx = NULL;
+	struct save_restore_stats stats = {0};
+	struct diritem *item = NULL;
+	struct cli_state *targetcli = NULL;
+	char *targetpath = NULL;
+	NTSTATUS status;
+
+	ctx = talloc_init("cacl_dump");
+	if (ctx == NULL) {
+		DBG_ERR("out of memory\n");
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	dump_ctx = talloc_zero(ctx, struct dump_context);
+	if (dump_ctx == NULL) {
+		DBG_ERR("out of memory\n");
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	dump_ctx->save_fd = open(save_file,
+				 O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+
+	if (dump_ctx->save_fd < 0) {
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	dump_ctx->creds = creds;
+	dump_ctx->cli = cli;
+	dump_ctx->stats = &stats;
+
+	/* ensure we have a filename that starts with '\' */
+	if (!filename || *filename != DIRSEP_CHAR) {
+		/* illegal or no filename */
+		result = EXIT_FAILED;
+		DBG_ERR("illegal or missing name '%s'\n", filename);
+		goto out;
+	}
+
+	status = cli_resolve_path(dump_ctx, "",
+				  dump_ctx->creds,
+				  dump_ctx->cli,
+				  filename, &targetcli, &targetpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("failed resolve %s\n", filename);
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	fileattr = get_fileinfo(targetcli, targetpath);
+	isdirectory = (fileattr & FILE_ATTRIBUTE_DIRECTORY)
+	    == FILE_ATTRIBUTE_DIRECTORY;
+
+	/*
+	 * if we've got as far as here then we have already evaluated
+	 * the args.
+	 */
+	if (test_args) {
+		result = EXIT_OK;
+		goto out;
+	}
+
+	mask = NULL;
+	/* make sure we have a trailing '\*' for directory */
+	if (!isdirectory) {
+		mask = talloc_strdup(ctx, filename);
+	} else if (strlen(filename) > 1) {
+		mask = sanitize_dirname(ctx, filename);
+	} else {
+		/* filename is a single '\' */
+		mask = talloc_strdup(ctx, filename);
+	}
+	if (!mask) {
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	write_dacl(dump_ctx, targetcli, targetpath, filename);
+	if (isdirectory && recurse) {
+		item = talloc_zero(dump_ctx, struct diritem);
+		if (!item) {
+			result = EXIT_FAILED;
+			goto out;
+		}
+		item->dirname = mask;
+		DLIST_ADD_END(dump_ctx->list, item);
+		dump_dacl_dirtree(dump_ctx);
+	}
+
+	fprintf(stdout, "Successfully processed %d files: "
+		"Failed processing %d files\n",
+		dump_ctx->stats->success, dump_ctx->stats->failure);
+	result = EXIT_OK;
+out:
+	if (dump_ctx && dump_ctx->save_fd) {
+		close(dump_ctx->save_fd);
+	}
+	TALLOC_FREE(ctx);
+	return result;
+}
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -1863,7 +2382,12 @@ int main(int argc, char *argv[])
 					   numeric);
 		}
 	} else {
-		result = cacl_dump(targetcli, targetfile, numeric);
+		if (save_file) {
+			sddl = 1;
+			result = cacl_dump_dacl(cli, creds, filename);
+		} else {
+			result = cacl_dump(targetcli, targetfile, numeric);
+		}
 	}
 
 	gfree_all();
