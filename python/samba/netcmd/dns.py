@@ -991,15 +991,15 @@ class cmd_zonedelete(Command):
         dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         zone = zone.lower()
-        try:
-            res = dns_conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
-                                            0, server, zone, 0, 'DeleteZoneFromDs',
-                                            dnsserver.DNSSRV_TYPEID_NULL,
-                                            None)
-        except WERRORError as e:
-            if e.args[0] == werror.WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST:
-                raise CommandError('Zone does not exist and so could not be deleted.')
-            raise e
+
+        messages = {
+            werror.WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST: (
+                f'Zone {zone} does not exist and so could not be deleted.'),
+        }
+        res = dns_conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                        0, server, zone, 0, 'DeleteZoneFromDs',
+                                        dnsserver.DNSSRV_TYPEID_NULL,
+                                        None, messages=messages)
 
         self.outf.write('Zone %s deleted successfully\n' % zone)
 
