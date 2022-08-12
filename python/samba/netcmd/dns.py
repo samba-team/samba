@@ -1154,15 +1154,17 @@ class cmd_add_record(Command):
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
 
-        try:
-            dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
-                                         0, server, zone, name, add_rec_buf, None)
-        except WERRORError as e:
-            if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
-                raise CommandError('Zone does not exist; record could not be added. zone[%s] name[%s]' % (zone, name))
-            if e.args[0] == werror.WERR_DNS_ERROR_RECORD_ALREADY_EXISTS:
-                raise CommandError('Record already exists; record could not be added. zone[%s] name[%s]' % (zone, name))
-            raise e
+        messages = {
+            werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST: (
+                'Zone does not exist; record could not be added. '
+                f'zone[{zone}] name[{name}'),
+            werror.WERR_DNS_ERROR_RECORD_ALREADY_EXISTS: (
+                'Record already exists; record could not be added. '
+                f'zone[{zone}] name[{name}]')
+        }
+        dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0, server, zone, name, add_rec_buf, None,
+                                     messages=messages)
 
         self.outf.write('Record added successfully\n')
 
