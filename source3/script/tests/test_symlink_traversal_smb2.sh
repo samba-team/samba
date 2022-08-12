@@ -50,7 +50,11 @@ do_cleanup()
 	(
 		#subshell.
 		cd "$share_test_dir" || return
+		rm -f "symlink_to_dot"
 		rm -f "file_exists"
+		rm -f "symlink_to_file_exists"
+		rm -rf "dir_exists"
+		rm -f "symlink_to_dir_exists"
 		rm -f "symlink_noexist"
 		rm -f "symlink_file_outside_share"
 		rm -f "symlink_file_outside_share_noexist"
@@ -93,7 +97,13 @@ chmod 0 "$dir_outside_share_noperms"
 (
 	#subshell.
 	cd "$share_test_dir" || return
+	ln -s "." "symlink_to_dot"
 	touch "file_exists"
+	ln -s "file_exists" "symlink_to_file_exists"
+	mkdir "dir_exists"
+	ln -s "dir_exists" "symlink_to_dir_exists"
+	touch "dir_exists/subfile_exists"
+	mkdir "dir_exists/subdir_exists"
 	ln -s "noexist" "symlink_noexist"
 	ln -s "$file_outside_share" "symlink_file_outside_share"
 	ln -s "$file_outside_share_noexist" "symlink_file_outside_share_noexist"
@@ -107,7 +117,13 @@ chmod 0 "$dir_outside_share_noperms"
 	(
 		#subshell
 		cd "emptydir" || return
+		ln -s "." "symlink_to_dot"
 		touch "file_exists"
+		ln -s "file_exists" "symlink_to_file_exists"
+		mkdir "dir_exists"
+		ln -s "dir_exists" "symlink_to_dir_exists"
+		touch "dir_exists/subfile_exists"
+		mkdir "dir_exists/subdir_exists"
 		ln -s "noexist" "symlink_noexist"
 		ln -s "$file_outside_share" "symlink_file_outside_share"
 		ln -s "$file_outside_share_noexist" "symlink_file_outside_share_noexist"
@@ -126,6 +142,8 @@ chmod 0 "$dir_outside_share_noperms"
 	touch "dir_inside_share_noperms/noperm_file_exists"
 	chmod 0 "dir_inside_share_noperms"
 	ln -s "dir_inside_share_noperms" "symlink_dir_inside_share_noperms"
+	mkdir "dir_inside_share_noperms/noperm_subdir_exists"
+	touch "dir_inside_share_noperms/noperm_subdir_exists/noperm_subdir_file_exists"
 )
 
 #
@@ -179,25 +197,33 @@ test_symlink_traversal_SMB2_onename()
 	#
 	smbclient_expect_error "get" "$name" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 	smbclient_expect_error "get" "$name/noexist" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "$name/noexistsdir/noexist" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	smbclient_expect_error "get" "$name/*" "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
 	smbclient_expect_error "get" "$name/*/noexist" "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
+	smbclient_expect_error "get" "$name/*/noexistsdir/noexist" "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
 	# Now in subdirectory emptydir
 	smbclient_expect_error "get" "emptydir/$name" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 	smbclient_expect_error "get" "emptydir/$name/noexist" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "emptydir/$name/noexistsdir/noexist" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	smbclient_expect_error "get" "emptydir/$name/*" "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
 	smbclient_expect_error "get" "emptydir/$name/*/noexist" "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
+	smbclient_expect_error "get" "emptydir/$name/*/noexistsdir/noexist" "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
 	#
 	# ls commands.
 	#
 	smbclient_expect_error "ls" "$name" "" "NT_STATUS_NO_SUCH_FILE" || return 1
 	smbclient_expect_error "ls" "$name/noexist" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "$name/noexistsdir/noexist" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	smbclient_expect_error "ls" "$name/*" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 	smbclient_expect_error "ls" "$name/*/noexist" "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
+	smbclient_expect_error "ls" "$name/*/noexistsdir/noexist" "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
 	# Now in subdirectory emptydir
 	smbclient_expect_error "ls" "emptydir/$name" "" "NT_STATUS_NO_SUCH_FILE" || return 1
 	smbclient_expect_error "ls" "emptydir/$name/noexist" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "emptydir/$name/noexistsdir/noexist" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	smbclient_expect_error "ls" "emptydir/$name/*" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 	smbclient_expect_error "ls" "emptydir/$name/*/noexist" "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
+	smbclient_expect_error "ls" "emptydir/$name/*/noexistsdir/noexist" "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
 
 	#
 	# del commands.
@@ -215,9 +241,21 @@ test_symlink_traversal_SMB2_onename()
 		#
 		smbclient_expect_error "rename" "file_exists" "$name" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 		smbclient_expect_error "rename" "file_exists" "$name/noexist" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "symlink_to_file_exists" "$name" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "symlink_to_file_exists" "$name/noexist" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "dir_exists" "$name" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "dir_exists" "$name/noexist" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "symlink_to_dir_exists" "$name" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "symlink_to_dir_exists" "$name/noexist" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 		# Now in subdirectory emptydir
 		smbclient_expect_error "rename" "file_exists" "emptydir/$name" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 		smbclient_expect_error "rename" "file_exists" "emptydir/$name/noexist" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "symlink_to_file_exists" "emptydir/$name" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "symlink_to_file_exists" "emptydir/$name/noexist" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "dir_exists" "emptydir/$name" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "dir_exists" "emptydir/$name/noexist" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "symlink_to_dir_exists" "emptydir/$name" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+		smbclient_expect_error "rename" "symlink_to_dir_exists" "emptydir/$name/noexist" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	fi
 	return 0
 }
@@ -234,6 +272,80 @@ test_symlink_traversal_SMB2()
 	test_symlink_traversal_SMB2_onename "symlink_dir_outside_share_noexist" "no rename" || return 1
 	test_symlink_traversal_SMB2_onename "symlink_file_outside_share_noperms" "do rename" || return 1
 	test_symlink_traversal_SMB2_onename "symlink_dir_outside_share_noperms" "do rename" || return 1
+
+	# Note the share has 'follow symlinks = yes'
+	smbclient_expect_error "ls" "." "" "NT_STATUS_NO_SUCH_FILE" || return 1
+	smbclient_expect_error "ls" "noexist1" "" "NT_STATUS_NO_SUCH_FILE" || return 1
+	smbclient_expect_error "ls" "noexist1/noexist2" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "noexist1/noexist2/noexist3" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "symlink_to_dot" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "ls" "symlink_to_dot/noexist1" "" "NT_STATUS_NO_SUCH_FILE" || return 1
+	smbclient_expect_error "ls" "symlink_to_dot/noexist1/noexist2" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "symlink_to_dot/noexist1/noexist2/noexist3" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "file_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "ls" "file_exists/noexist1" "" "NT_STATUS_NOT_A_DIRECTORY" || return 1
+	smbclient_expect_error "ls" "file_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "file_exists/noexist1/noexist2/noexist3" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "symlink_to_file_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "ls" "symlink_to_file_exists/noexist1" "" "NT_STATUS_NOT_A_DIRECTORY" || return 1
+	smbclient_expect_error "ls" "symlink_to_file_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "symlink_to_file_exists/noexist1/noexist2/noexist" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "dir_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "ls" "dir_exists/noexist1" "" "NT_STATUS_NO_SUCH_FILE" || return 1
+	smbclient_expect_error "ls" "dir_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "dir_exists/noexist1/noexist2/noexist3" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "dir_exists/subfile_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "ls" "dir_exists/subfile_exists/noexist1" "" "NT_STATUS_NOT_A_DIRECTORY" || return 1
+	smbclient_expect_error "ls" "dir_exists/subfile_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "dir_exists/subfile_exists/noexist1/noexist2/noexist3" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "dir_exists/subdir_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "ls" "dir_exists/subdir_exists/noexist1" "" "NT_STATUS_NO_SUCH_FILE" || return 1
+	smbclient_expect_error "ls" "dir_exists/subdir_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "dir_exists/subdir_exists/noexist1/noexist2/noexist3" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/noexist1" "" "NT_STATUS_NO_SUCH_FILE" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/noexist1/noexist2/noexist3" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/subfile_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/subfile_exists/noexist1" "" "NT_STATUS_NOT_A_DIRECTORY" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/subfile_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/subfile_exists/noexist1/noexist2/noexist3" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/subdir_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/subdir_exists/noexist1" "" "NT_STATUS_NO_SUCH_FILE" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/subdir_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "ls" "symlink_to_dir_exists/subdir_exists/noexist1/noexist2/noexist3" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+
+	smbclient_expect_error "get" "." "" "NT_STATUS_OBJECT_NAME_INVALID" || return 1
+	smbclient_expect_error "get" "noexist1" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_to_dot" "" "NT_STATUS_FILE_IS_A_DIRECTORY" || return 1
+	smbclient_expect_error "get" "symlink_to_dot/noexist1" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_to_dot/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "file_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "get" "file_exists/noexist1" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "file_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_to_file_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "get" "symlink_to_file_exists/noexist1" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_to_file_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "dir_exists" "" "NT_STATUS_FILE_IS_A_DIRECTORY" || return 1
+	smbclient_expect_error "get" "dir_exists/noexist1" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "dir_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "dir_exists/subfile_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "get" "dir_exists/subfile_exists/noexist1" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "dir_exists/subfile_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "dir_exists/subdir_exists" "" "NT_STATUS_FILE_IS_A_DIRECTORY" || return 1
+	smbclient_expect_error "get" "dir_exists/subdir_exists/noexist1" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "dir_exists/subdir_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_to_dir_exists" "" "NT_STATUS_FILE_IS_A_DIRECTORY" || return 1
+	smbclient_expect_error "get" "symlink_to_dir_exists/noexist1" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_to_dir_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_to_dir_exists/subfile_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "get" "symlink_to_dir_exists/subfile_exists/noexist1" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_to_dir_exists/subfile_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_to_dir_exists/subdir_exists" "" "NT_STATUS_FILE_IS_A_DIRECTORY" || return 1
+	smbclient_expect_error "get" "symlink_to_dir_exists/subdir_exists/noexist1" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "symlink_to_dir_exists/subdir_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+
 	#
 	# Test paths within share with no permissions.
 	#
@@ -249,6 +361,10 @@ test_symlink_traversal_SMB2()
 	# But can list the directory with no perms and the symlink to it.
 	smbclient_expect_error "ls" "dir_inside_share_noperms" "" "NT_STATUS_OK" || return 1
 	smbclient_expect_error "ls" "symlink_dir_inside_share_noperms" "" "NT_STATUS_OK" || return 1
+	# Check that 'get' on non existing subpaths also returns NT_STATUS_ACCESS_DENIED
+	smbclient_expect_error "get" "symlink_dir_inside_share_noperms/noperm_file_exists/_none_" "" "NT_STATUS_ACCESS_DENIED" || return 1
+	smbclient_expect_error "get" "symlink_dir_inside_share_noperms/noperm_subdir_exists/noperm_subdir_file_exists" "" "NT_STATUS_ACCESS_DENIED" || return 1
+	smbclient_expect_error "get" "symlink_dir_inside_share_noperms/noperm_subdir_exists/noperm_subdir_file_exists/_none_" "" "NT_STATUS_ACCESS_DENIED" || return 1
 }
 
 testit "symlink_traversal_SMB2" \
