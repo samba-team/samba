@@ -1073,14 +1073,14 @@ class cmd_query(Command):
         self.creds = credopts.get_credentials(self.lp)
         dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
-        try:
-            buflen, res = dns_conn.DnssrvEnumRecords2(
-                dnsserver.DNS_CLIENT_VERSION_LONGHORN, 0, server, zone, name,
-                None, record_type, select_flags, None, None)
-        except WERRORError as e:
-            if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
-                raise CommandError('Record or zone does not exist.')
-            raise e
+        messages = {
+            werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST: (
+                'Record or zone does not exist.')
+        }
+        buflen, res = dns_conn.DnssrvEnumRecords2(
+            dnsserver.DNS_CLIENT_VERSION_LONGHORN, 0, server, zone, name,
+            None, record_type, select_flags, None, None,
+            messages=messages)
 
         print_dnsrecords(self.outf, res)
 
