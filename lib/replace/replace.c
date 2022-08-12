@@ -1104,6 +1104,14 @@ ssize_t rep_copy_file_range(int fd_in,
 # endif /* defined(LINUX) && defined(HAVE_SYS_SYSCALL_H) */
 #endif /* !__NR_openat2 */
 
+#ifdef DISABLE_OPATH
+/*
+ * systems without O_PATH also don't have openat2,
+ * so make sure we at a realistic combination.
+ */
+#undef __NR_openat2
+#endif /* DISABLE_OPATH */
+
 long rep_openat2(int dirfd, const char *pathname,
 		 struct open_how *how, size_t size)
 {
