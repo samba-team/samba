@@ -56,6 +56,44 @@ def dns_connect(server, lp, creds):
     return dns_conn
 
 
+class DnsConnWrapper:
+    """A wrapper around a dnsserver.dnsserver connection that makes it
+    harder not to report friendly messages.
+    """
+
+    default_messages = {
+    }
+
+    def __init__(self, server, lp, creds):
+        self.dns_conn = dns_connect(server, lp, creds)
+
+    def __getattr__(self, name):
+        attr = getattr(self.dns_conn, name)
+        if name not in {
+                "DnssrvComplexOperation2",
+                "DnssrvEnumRecords2",
+                "DnssrvOperation2",
+                "DnssrvQuery2",
+                "DnssrvUpdateRecord2"}:
+            return attr
+
+        def f(*args, messages={}):
+            try:
+                return attr(*args)
+            except WERRORError as e:
+                werr, errstr = e.args
+                if werr in messages:
+                    if werr is None:
+                        # None overrides a default message, leaving the bare exception
+                        raise
+                    raise CommandError(f"{messages[werr]} [{errstr}]", e)
+                if werr in self.default_messages:
+                    raise CommandError(f"{self.default_messages[werr]} [{errstr}]", e)
+                raise
+
+        return f
+
+
 def bool_string(flag):
     if flag == 0:
         ret = 'FALSE'
