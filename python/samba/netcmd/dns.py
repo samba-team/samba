@@ -958,14 +958,14 @@ class cmd_zonecreate(Command):
         name_and_param.pszNodeName = 'AllowUpdate'
         name_and_param.dwParam = dnsp.DNS_ZONE_UPDATE_SECURE
 
-        try:
-            dns_conn.DnssrvOperation2(client_version, 0, server, zone,
-                                      0, 'ResetDwordProperty', typeid,
-                                      name_and_param)
-        except WERRORError as e:
-            if e.args[0] == werror.WERR_DNS_ERROR_ZONE_ALREADY_EXISTS:
-                self.outf.write('Zone already exists.')
-            raise e
+        messages = {
+            werror.WERR_DNS_ERROR_ZONE_ALREADY_EXISTS: (
+                f'Zone "{zone}" already exists.')
+        }
+
+        dns_conn.DnssrvOperation2(client_version, 0, server, zone,
+                                  0, 'ResetDwordProperty', typeid,
+                                  name_and_param, messages=messages)
 
         self.outf.write('Zone %s created successfully\n' % zone)
 
