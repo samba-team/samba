@@ -469,6 +469,7 @@ NTSTATUS cli_posix_readlink_recv(
 		return status;
 	}
 	*target = talloc_move(mem_ctx, &state->converted);
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
