@@ -23,6 +23,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 
+#include "smb_constants.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
@@ -1960,6 +1961,359 @@ done:
 	return ret;
 }
 
+static bool check_metadata(struct torture_context *tctx,
+			   struct smb2_tree *tree,
+			   const char *path,
+			   struct smb2_handle _h,
+			   NTTIME expected_btime,
+			   uint32_t expected_attribs)
+{
+	struct smb2_handle h = _h;
+	union smb_fileinfo getinfo;
+	NTSTATUS status;
+	bool ret = true;
+
+	if (smb2_util_handle_empty(h)) {
+		struct smb2_create c;
+
+		c = (struct smb2_create) {
+			.in.desired_access = SEC_FILE_ALL,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+			.in.file_attributes = FILE_ATTRIBUTE_HIDDEN,
+			.in.create_disposition = NTCREATEX_DISP_OPEN,
+			.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION,
+			.in.fname = path,
+		};
+		status = smb2_create(tree, tctx, &c);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+
+		h = c.out.file.handle;
+	}
+
+	getinfo = (union smb_fileinfo) {
+		.generic.level = SMB_QFILEINFO_BASIC_INFORMATION,
+		.generic.in.file.handle = h,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &getinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+
+	torture_assert_u64_equal_goto(tctx,
+				      expected_btime,
+				      getinfo.basic_info.out.create_time,
+				      ret, done,
+				      "btime was updated\n");
+
+	torture_assert_u32_equal_goto(tctx,
+				      expected_attribs,
+				      getinfo.basic_info.out.attrib,
+				      ret, done,
+				      "btime was updated\n");
+
+done:
+	if (smb2_util_handle_empty(_h)) {
+		smb2_util_close(tree, h);
+	}
+
+	return ret;
+}
+
+static bool test_stream_attributes2(struct torture_context *tctx,
+				    struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	struct smb2_create c1;
+	struct smb2_handle h1 = {{0}};
+	const char *fname = DNAME "\\test_stream_btime";
+	const char *sname = DNAME "\\test_stream_btime:stream";
+	union smb_fileinfo getinfo;
+	union smb_setfileinfo setinfo;
+	const char *data = "test data";
+	struct timespec ts;
+	NTTIME btime;
+	uint32_t attrib = FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_ARCHIVE;
+	bool ret;
+
+	smb2_deltree(tree, DNAME);
+
+	status = torture_smb2_testdir(tree, DNAME, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree, h1);
+
+	torture_comment(tctx, "Let's dance!\n");
+
+	/*
+	 * Step 1: create file and get creation date
+	 */
+
+	c1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = FILE_ATTRIBUTE_HIDDEN,
+		.in.create_disposition = NTCREATEX_DISP_CREATE,
+		.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION,
+		.in.fname = fname,
+	};
+	status = smb2_create(tree, tctx, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c1.out.file.handle;
+
+	getinfo = (union smb_fileinfo) {
+		.generic.level = SMB_QFILEINFO_BASIC_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+	status = smb2_getinfo_file(tree, tctx, &getinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+
+	btime = getinfo.basic_info.out.create_time;
+
+	status = smb2_util_close(tree, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	/*
+	 * Step X: write to file, assert btime was not updated
+	 */
+
+	c1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = attrib,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION,
+		.in.fname = fname,
+	};
+	status = smb2_create(tree, tctx, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c1.out.file.handle;
+
+	status = smb2_util_write(tree, h1, data, 0, strlen(data));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed\n");
+
+	ret = check_metadata(tctx, tree, NULL, h1, btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad metadata\n");
+
+	status = smb2_util_close(tree, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	ret = check_metadata(tctx, tree, fname, (struct smb2_handle){{0}},
+			     btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad metadata\n");
+
+	/*
+	 * Step X: create stream, assert creation date is the same
+	 * as the one on the basefile
+	 */
+
+	c1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = attrib,
+		.in.create_disposition = NTCREATEX_DISP_CREATE,
+		.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION,
+		.in.fname = sname,
+	};
+	status = smb2_create(tree, tctx, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c1.out.file.handle;
+
+	status = smb2_util_close(tree, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	ret = check_metadata(tctx, tree, sname, (struct smb2_handle){{0}},
+			     btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad metadata\n");
+
+	/*
+	 * Step X: set btime on stream, verify basefile has the same btime.
+	 */
+
+	c1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = attrib,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION,
+		.in.fname = sname,
+	};
+	status = smb2_create(tree, tctx, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c1.out.file.handle;
+
+	setinfo = (union smb_setfileinfo) {
+		.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION,
+		.basic_info.in.file.handle = h1,
+	};
+	clock_gettime_mono(&ts);
+	btime = setinfo.basic_info.in.create_time = full_timespec_to_nt_time(&ts);
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	ret = check_metadata(tctx, tree, NULL, h1, btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad time on stream\n");
+
+	status = smb2_util_close(tree, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	ret = check_metadata(tctx, tree, fname, (struct smb2_handle){{0}},
+			     btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad time on basefile\n");
+
+	ret = check_metadata(tctx, tree, sname, (struct smb2_handle){{0}},
+			     btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad time on stream\n");
+
+	/*
+	 * Step X: write to stream, assert btime was not updated
+	 */
+
+	c1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = attrib,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION,
+		.in.fname = sname,
+	};
+	status = smb2_create(tree, tctx, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c1.out.file.handle;
+
+	status = smb2_util_write(tree, h1, data, 0, strlen(data));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed\n");
+
+	ret = check_metadata(tctx, tree, NULL, h1, btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad metadata\n");
+
+	status = smb2_util_close(tree, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	ret = check_metadata(tctx, tree, fname, (struct smb2_handle){{0}},
+			     btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad metadata\n");
+
+	ret = check_metadata(tctx, tree, sname, (struct smb2_handle){{0}},
+			     btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad metadata\n");
+
+	/*
+	 * Step X: modify attributes via stream, verify it's "also" set on the
+	 * basefile.
+	 */
+
+	c1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = attrib,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION,
+		.in.fname = sname,
+	};
+	status = smb2_create(tree, tctx, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c1.out.file.handle;
+
+	attrib = FILE_ATTRIBUTE_NORMAL;
+
+	setinfo = (union smb_setfileinfo) {
+		.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION,
+		.basic_info.in.file.handle = h1,
+		.basic_info.in.attrib = attrib,
+	};
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	status = smb2_util_close(tree, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	ret = check_metadata(tctx, tree, fname, (struct smb2_handle){{0}},
+			     btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad metadata\n");
+
+	ret = check_metadata(tctx, tree, sname, (struct smb2_handle){{0}},
+			     btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad metadata\n");
+
+	/*
+	 * Step X: modify attributes via basefile, verify it's "also" set on the
+	 * stream.
+	 */
+
+	c1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = attrib,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION,
+		.in.fname = fname,
+	};
+	status = smb2_create(tree, tctx, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c1.out.file.handle;
+
+	attrib = FILE_ATTRIBUTE_HIDDEN;
+
+	setinfo = (union smb_setfileinfo) {
+		.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION,
+		.basic_info.in.file.handle = h1,
+		.basic_info.in.attrib = attrib,
+	};
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	status = smb2_util_close(tree, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	ret = check_metadata(tctx, tree, fname, (struct smb2_handle){{0}},
+			     btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad metadata\n");
+
+	ret = check_metadata(tctx, tree, sname, (struct smb2_handle){{0}},
+			     btime, attrib);
+	torture_assert_goto(tctx, ret, ret, done, "Bad metadata\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+
+	smb2_deltree(tree, DNAME);
+
+	return ret;
+}
+
 static bool test_basefile_rename_with_open_stream(struct torture_context *tctx,
 						  struct smb2_tree *tree)
 {
@@ -2059,6 +2413,7 @@ struct torture_suite *torture_smb2_streams_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "rename2", test_stream_rename2);
 	torture_suite_add_1smb2_test(suite, "create-disposition", test_stream_create_disposition);
 	torture_suite_add_1smb2_test(suite, "attributes1", test_stream_attributes1);
+	torture_suite_add_1smb2_test(suite, "attributes2", test_stream_attributes2);
 	torture_suite_add_1smb2_test(suite, "delete", test_stream_delete);
 	torture_suite_add_1smb2_test(suite, "zero-byte", test_zero_byte_stream);
 	torture_suite_add_1smb2_test(suite, "basefile-rename-with-open-stream",
