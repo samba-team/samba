@@ -125,7 +125,7 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16_t *pmajor,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -134,23 +134,17 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16_t *pmajor,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-
 	req = cli_unix_extensions_version_send(frame, ev, cli);
 	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-
 	status = cli_unix_extensions_version_recv(req, pmajor, pminor, pcaplow,
 						  pcaphigh);
  fail:
