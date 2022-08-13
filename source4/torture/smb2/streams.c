@@ -1804,8 +1804,8 @@ static bool open_stream(struct smb2_tree *tree,
 
 
 /* Test the effect of setting attributes on a stream. */
-static bool test_stream_attributes(struct torture_context *tctx,
-				   struct smb2_tree *tree)
+static bool test_stream_attributes1(struct torture_context *tctx,
+				    struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	bool ret = true;
@@ -2058,7 +2058,7 @@ struct torture_suite *torture_smb2_streams_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "rename", test_stream_rename);
 	torture_suite_add_1smb2_test(suite, "rename2", test_stream_rename2);
 	torture_suite_add_1smb2_test(suite, "create-disposition", test_stream_create_disposition);
-	torture_suite_add_1smb2_test(suite, "attributes", test_stream_attributes);
+	torture_suite_add_1smb2_test(suite, "attributes1", test_stream_attributes1);
 	torture_suite_add_1smb2_test(suite, "delete", test_stream_delete);
 	torture_suite_add_1smb2_test(suite, "zero-byte", test_zero_byte_stream);
 	torture_suite_add_1smb2_test(suite, "basefile-rename-with-open-stream",
