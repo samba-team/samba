@@ -47,7 +47,7 @@ static void *realloc_(void *ptr, size_t size)
 {
 #undef realloc
 	return realloc(ptr, size);
-#define realloc(p,s) __ERROR_DONT_USE_RELLOC_DIRECTLY
+#define realloc(p,s) __ERROR_DONT_USE_REALLOC_DIRECTLY
 }
 
 #endif /* PARANOID_MALLOC_CHECKER */
