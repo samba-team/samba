@@ -2957,15 +2957,9 @@ static bool test_smb2_oplock_batch25(struct torture_context *tctx,
 	h1 = io.smb2.out.file.handle;
 	CHECK_VAL(io.smb2.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
 
-	torture_comment(tctx, "changing the file attribute info should trigger "
-			"a break and a violation\n");
-
 	status = smb2_util_setatr(tree1, fname, FILE_ATTRIBUTE_HIDDEN);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_SHARING_VIOLATION,
-				      "Incorrect status");
-
-	torture_wait_for_oplock_break(tctx);
-	CHECK_VAL(break_info.count, 1);
+	torture_assert_ntstatus_ok(tctx, status, "Setting attributes "
+				   "shouldn't trigger an oplock break");
 
 	smb2_util_close(tree1, h1);
 	smb2_util_close(tree1, h);
