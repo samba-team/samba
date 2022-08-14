@@ -362,11 +362,16 @@ static void cli_readlink_closed(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct cli_readlink_state *state = tevent_req_data(
+		req, struct cli_readlink_state);
 	NTSTATUS status;
 
 	status = cli_close_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	if (tevent_req_nterror(req, state->get_reparse_status)) {
 		return;
 	}
 	tevent_req_done(req);
