@@ -88,14 +88,37 @@ NTSTATUS smb2_util_mkdir(struct smb2_tree *tree, const char *dname)
 */
 NTSTATUS smb2_util_setatr(struct smb2_tree *tree, const char *name, uint32_t attrib)
 {
-	union smb_setfileinfo io;
-	
-	ZERO_STRUCT(io);
-	io.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION;
-	io.basic_info.in.file.path = name;
-	io.basic_info.in.attrib = attrib;
+	struct smb2_create cr = {0};
+	struct smb2_handle h1 = {{0}};
+	union smb_setfileinfo setinfo;
+	NTSTATUS status;
 
-	return smb2_composite_setpathinfo(tree, &io);
+	cr = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_WRITE_ATTRIBUTE,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = FILE_OPEN,
+		.in.fname = name,
+	};
+	status = smb2_create(tree, tree, &cr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	h1 = cr.out.file.handle;
+
+	setinfo = (union smb_setfileinfo) {
+		.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION,
+		.basic_info.in.file.handle = h1,
+		.basic_info.in.attrib = attrib,
+	};
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		smb2_util_close(tree, h1);
+		return status;
+	}
+
+	smb2_util_close(tree, h1);
+	return NT_STATUS_OK;
 }
 
 
