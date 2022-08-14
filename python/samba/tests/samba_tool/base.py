@@ -38,6 +38,9 @@ def truncate_string(s, cutoff=100):
 
 
 class SambaToolCmdTest(samba.tests.BlackboxTestCase):
+    # Use a class level reference to StringIO, which subclasses can
+    # override if they need to (to e.g. add a lying isatty() method).
+    stringIO = StringIO
 
     def getSamDB(self, *argv):
         """a convenience function to get a samdb instance so that we can query it"""
@@ -72,8 +75,8 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
     def runcmd(self, name, *args):
         """run a single level command"""
         cmd = cmd_sambatool.subcommands[name]
-        cmd.outf = StringIO()
-        cmd.errf = StringIO()
+        cmd.outf = self.stringIO()
+        cmd.errf = self.stringIO()
         result = cmd._run("samba-tool %s" % name, *args)
         return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
 
@@ -83,8 +86,8 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         # that the .outf StringIO assignment is overridden if we use
         # runcmd, so we can't capture stdout and stderr
         cmd = cmd_sambatool.subcommands[name].subcommands[sub]
-        cmd.outf = StringIO()
-        cmd.errf = StringIO()
+        cmd.outf = self.stringIO()
+        cmd.errf = self.stringIO()
         result = cmd._run("samba-tool %s %s" % (name, sub), *args)
         return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
 
@@ -100,8 +103,8 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         for sub in sublevels:
             cmd = cmd.subcommands[sub]
             cmd_str += " %s" % sub
-        cmd.outf = StringIO()
-        cmd.errf = StringIO()
+        cmd.outf = self.stringIO()
+        cmd.errf = self.stringIO()
         result = cmd._run(cmd_str, *args)
         return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
 
