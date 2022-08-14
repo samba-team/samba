@@ -366,7 +366,7 @@ NTSTATUS fget_ea_dos_attribute(struct files_struct *fsp,
 	/* Don't reset pattr to zero as we may already have filename-based attributes we
 	   need to preserve. */
 
-	sizeret = SMB_VFS_FGETXATTR(fsp->base_fsp ? fsp->base_fsp : fsp,
+	sizeret = SMB_VFS_FGETXATTR(fsp,
 				    SAMBA_XATTR_DOS_ATTRIB,
 				    attrstr,
 				    sizeof(attrstr));
@@ -377,7 +377,7 @@ NTSTATUS fget_ea_dos_attribute(struct files_struct *fsp,
 		   rights than the real user
 		*/
 		become_root();
-		sizeret = SMB_VFS_FGETXATTR(fsp->base_fsp ? fsp->base_fsp : fsp,
+		sizeret = SMB_VFS_FGETXATTR(fsp,
 					    SAMBA_XATTR_DOS_ATTRIB,
 					    attrstr,
 					    sizeof(attrstr));
