@@ -303,6 +303,34 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 
 		ZERO_STRUCT(write_time_ts);
 
+		/*
+		 * MS-SMB2 3.3.5.20.1 "Handling SMB2_0_INFO_FILE"
+		 *
+		 * FileBasicInformation, FileAllInformation,
+		 * FileNetworkOpenInformation, FileAttributeTagInformation
+		 * require FILE_READ_ATTRIBUTES.
+		 *
+		 * FileFullEaInformation requires FILE_READ_EA.
+		 */
+		switch (in_file_info_class) {
+		case FSCC_FILE_BASIC_INFORMATION:
+		case FSCC_FILE_ALL_INFORMATION:
+		case FSCC_FILE_NETWORK_OPEN_INFORMATION:
+		case FSCC_FILE_ATTRIBUTE_TAG_INFORMATION:
+			if (!(fsp->access_mask & SEC_FILE_READ_ATTRIBUTE)) {
+				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+				return tevent_req_post(req, ev);
+			}
+			break;
+
+		case FSCC_FILE_FULL_EA_INFORMATION:
+			if (!(fsp->access_mask & SEC_FILE_READ_EA)) {
+				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+				return tevent_req_post(req, ev);
+			}
+			break;
+		}
+
 		switch (in_file_info_class) {
 		case FSCC_FILE_FULL_EA_INFORMATION:
 			file_info_level = SMB2_FILE_FULL_EA_INFORMATION;
