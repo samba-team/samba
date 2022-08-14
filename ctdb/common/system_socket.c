@@ -971,6 +971,8 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_t *pt;
+	int pcap_packet_type;
+	const char *t;
 	int fd;
 
 	pt = pcap_open_live(iface, 100, 0, 0, errbuf);
@@ -981,9 +983,22 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 		return -1;
 	}
 	*((pcap_t **)private_data) = pt;
-	fd = pcap_get_selectable_fd(pt);
 
-	DBG_DEBUG("Opened pcap capture for TCP tickle capture (fd=%d)\n", fd);
+	pcap_packet_type = pcap_datalink(pt);
+	switch (pcap_packet_type) {
+	case DLT_EN10MB:
+		t = "DLT_EN10MB";
+		break;
+	default:
+		DBG_ERR("Unknown pcap packet type %d\n", pcap_packet_type);
+		pcap_close(pt);
+		return -1;
+	}
+
+	fd = pcap_get_selectable_fd(pt);
+	DBG_DEBUG("Opened pcap capture for TCP tickle (type=%s, fd=%d)\n",
+		  t,
+		  fd);
 
 	return fd;
 }
@@ -1005,10 +1020,12 @@ int ctdb_sys_read_tcp_packet(int s,
 			     uint16_t *window)
 {
 	int ret;
-	const struct ether_header *eth;
 	struct pcap_pkthdr pkthdr;
 	const u_char *buffer;
 	pcap_t *pt = (pcap_t *)private_data;
+	int pcap_packet_type;
+	uint16_t ether_type;
+	size_t ll_hdr_len;
 
 	buffer=pcap_next(pt, &pkthdr);
 	if (buffer==NULL) {
@@ -1018,36 +1035,50 @@ int ctdb_sys_read_tcp_packet(int s,
 	ZERO_STRUCTP(src);
 	ZERO_STRUCTP(dst);
 
-	/* Ethernet */
-	eth = (const struct ether_header *)buffer;
+	pcap_packet_type = pcap_datalink(pt);
+	switch (pcap_packet_type) {
+	case DLT_EN10MB: {
+		const struct ether_header *eth =
+			(const struct ether_header *)buffer;
+		ether_type = ntohs(eth->ether_type);
+		ll_hdr_len = sizeof(struct ether_header);
+		break;
+	}
+	default:
+		DBG_DEBUG("Unknown pcap packet type %d\n", pcap_packet_type);
+		return EPROTONOSUPPORT;
+	}
 
-	/* we want either IPv4 or IPv6 */
-	if (eth->ether_type == htons(ETHERTYPE_IP)) {
-		ret = tcp4_extract(buffer + sizeof(struct ether_header),
-				   (size_t)(pkthdr.caplen -
-					    sizeof(struct ether_header)),
+	switch (ether_type) {
+	case ETHERTYPE_IP:
+		ret = tcp4_extract(buffer + ll_hdr_len,
+				   (size_t)pkthdr.caplen - ll_hdr_len,
 				   &src->ip,
 				   &dst->ip,
 				   ack_seq,
 				   seq,
 				   rst,
 				   window);
-		return ret;
-
-	} else if (eth->ether_type == htons(ETHERTYPE_IP6)) {
-		ret = tcp6_extract(buffer + sizeof(struct ether_header),
-				   (size_t)(pkthdr.caplen -
-					    sizeof(struct ether_header)),
+		break;
+	case ETHERTYPE_IP6:
+		ret = tcp6_extract(buffer + ll_hdr_len,
+				   (size_t)pkthdr.caplen - ll_hdr_len,
 				   &src->ip6,
 				   &dst->ip6,
 				   ack_seq,
 				   seq,
 				   rst,
 				   window);
-		return ret;
+		break;
+	case ETHERTYPE_ARP:
+		/* Silently ignore ARP packets */
+		return EPROTO;
+	default:
+		DBG_DEBUG("Unknown ether type %"PRIu16"\n", ether_type);
+		return EPROTO;
 	}
 
-	return ENOMSG;
+	return ret;
 }
 
 #endif /* defined(HAVE_AF_PACKET) && !defined(ENABLE_PCAP) */
