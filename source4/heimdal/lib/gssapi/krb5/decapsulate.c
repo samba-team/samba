@@ -193,13 +193,13 @@ _gssapi_verify_pad(gss_buffer_t wrapped_token,
     if (wrapped_token->length < 1)
 	return GSS_S_BAD_MECH;
 
-    pad = (u_char *)wrapped_token->value + wrapped_token->length - 1;
-    padlength = *pad;
+    pad = (u_char *)wrapped_token->value + wrapped_token->length;
+    padlength = pad[-1];
 
     if (padlength > datalen)
 	return GSS_S_BAD_MECH;
 
-    for (i = padlength; i > 0 && *pad == padlength; i--, pad--)
+    for (i = padlength; i > 0 && *--pad == padlength; i--)
 	;
     if (i != 0)
 	return GSS_S_BAD_MIC;
