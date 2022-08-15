@@ -64,6 +64,8 @@ unwrap_des
 
   if (IS_DCE_STYLE(context_handle)) {
      token_len = 22 + 8 + 15; /* 45 */
+     if (input_message_buffer->length < token_len)
+	  return GSS_S_BAD_MECH;
   } else {
      token_len = input_message_buffer->length;
   }
@@ -75,6 +77,11 @@ unwrap_des
 				   GSS_KRB5_MECHANISM);
   if (ret)
       return ret;
+
+  len = (p - (u_char *)input_message_buffer->value)
+      + 22 + 8;
+  if (input_message_buffer->length < len)
+      return GSS_S_BAD_MECH;
 
   if (memcmp (p, "\x00\x00", 2) != 0)
     return GSS_S_BAD_SIG;
@@ -219,6 +226,8 @@ unwrap_des3
 
   if (IS_DCE_STYLE(context_handle)) {
      token_len = 34 + 8 + 15; /* 57 */
+     if (input_message_buffer->length < token_len)
+	  return GSS_S_BAD_MECH;
   } else {
      token_len = input_message_buffer->length;
   }
@@ -230,6 +239,11 @@ unwrap_des3
 				   GSS_KRB5_MECHANISM);
   if (ret)
       return ret;
+
+  len = (p - (u_char *)input_message_buffer->value)
+      + 34 + 8;
+  if (input_message_buffer->length < len)
+      return GSS_S_BAD_MECH;
 
   if (ct_memcmp (p, "\x04\x00", 2) != 0) /* HMAC SHA1 DES3_KD */
     return GSS_S_BAD_SIG;
