@@ -118,7 +118,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-l|--long</term>
+		<term>--long</term>
 		<listitem><para>
 		When listing data, give more information on each item.
 		</para></listitem>
@@ -2139,8 +2139,8 @@ can create user defined shares on demand using the commands below.
 <simplelist>
 <member>net usershare add sharename path [comment [acl] [guest_ok=[y|n]]] - to add or change a user defined share.</member>
 <member>net usershare delete sharename - to delete a user defined share.</member>
-<member>net usershare info [-l|--long] [wildcard sharename] - to print info about a user defined share.</member>
-<member>net usershare list [-l|--long] [wildcard sharename] - to list user defined shares.</member>
+<member>net usershare info [--long] [wildcard sharename] - to print info about a user defined share.</member>
+<member>net usershare list [--long] [wildcard sharename] - to list user defined shares.</member>
 </simplelist>
 
 </para>
@@ -2209,7 +2209,7 @@ any users currently connected to the deleted share.
 </refsect3>
 
 <refsect3>
-<title>USERSHARE INFO <replaceable>[-l|--long]</replaceable> <replaceable>[wildcard sharename]</replaceable></title>
+<title>USERSHARE INFO <replaceable>[--long]</replaceable> <replaceable>[wildcard sharename]</replaceable></title>
 
 <para>
 Get info on user defined shares owned by the current user matching the given pattern, or all users.
@@ -2219,7 +2219,7 @@ Get info on user defined shares owned by the current user matching the given pat
 net usershare info on its own dumps out info on the user defined shares that were
 created by the current user, or restricts them to share names that match the given
 wildcard pattern ('*' matches one or more characters, '?' matches only one character).
-If the '-l' or '--long' option is also given, it prints out info on user defined
+If the '--long' option is also given, it prints out info on user defined
 shares created by other users.
 </para>
 
@@ -2239,7 +2239,7 @@ modified by the "net usershare add" command.
 </refsect3>
 
 <refsect3>
-<title>USERSHARE LIST <replaceable>[-l|--long]</replaceable> <replaceable>wildcard sharename</replaceable></title>
+<title>USERSHARE LIST <replaceable>[--long]</replaceable> <replaceable>wildcard sharename</replaceable></title>
 
 <para>
 List all the user defined shares owned by the current user matching the given pattern, or all users.
@@ -2249,7 +2249,7 @@ List all the user defined shares owned by the current user matching the given pa
 net usershare list on its own list out the names of the user defined shares that were
 created by the current user, or restricts the list to share names that match the given
 wildcard pattern ('*' matches one or more characters, '?' matches only one character).
-If the '-l' or '--long' option is also given, it includes the names of user defined
+If the '--long' option is also given, it includes the names of user defined
 shares created by other users.
 </para>
 
