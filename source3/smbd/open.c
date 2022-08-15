@@ -5491,7 +5491,7 @@ static bool lease_match_break_fn(
 {
 	struct lease_match_break_state *state = private_data;
 	bool stale, equal;
-	uint32_t e_lease_type;
+	uint32_t e_lease_type = SMB2_LEASE_NONE;
 	NTSTATUS status;
 
 	stale = share_entry_stale_pid(e);
@@ -5508,7 +5508,7 @@ static bool lease_match_break_fn(
 		&e->client_guid,
 		&e->lease_key,
 		&state->id,
-		NULL, /* current_state */
+		&e_lease_type, /* current_state */
 		NULL, /* breaking */
 		NULL, /* breaking_to_requested */
 		NULL, /* breaking_to_required */
@@ -5519,9 +5519,9 @@ static bool lease_match_break_fn(
 	} else {
 		DBG_WARNING("Could not find version/epoch: %s\n",
 			    nt_errstr(status));
+		return false;
 	}
 
-	e_lease_type = get_lease_type(e, state->id);
 	if (e_lease_type == SMB2_LEASE_NONE) {
 		return false;
 	}
