@@ -1064,6 +1064,7 @@ int ctdb_sys_read_tcp_packet(int s,
 		uint16_t arphrd_type = ntohs(sll->sll_hatype);
 		switch (arphrd_type) {
 		case ARPHRD_ETHER:
+		case ARPHRD_INFINIBAND:
 			break;
 		default:
 			DBG_DEBUG("SLL: Unknown arphrd_type %"PRIu16"\n",
@@ -1081,6 +1082,7 @@ int ctdb_sys_read_tcp_packet(int s,
 		uint16_t arphrd_type = ntohs(sll2->sll2_hatype);
 		switch (arphrd_type) {
 		case ARPHRD_ETHER:
+		case ARPHRD_INFINIBAND:
 			break;
 		default:
 			DBG_DEBUG("SLL2: Unknown arphrd_type %"PRIu16"\n",
