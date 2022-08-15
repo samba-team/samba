@@ -2536,7 +2536,7 @@ static bool delay_for_oplock_fn(
 	struct files_struct *fsp = state->fsp;
 	const struct smb2_lease *lease = state->lease;
 	bool e_is_lease = (e->op_type == LEASE_OPLOCK);
-	uint32_t e_lease_type = get_lease_type(e, fsp->file_id);
+	uint32_t e_lease_type = SMB2_LEASE_NONE;
 	uint32_t break_to;
 	bool lease_is_breaking = false;
 
@@ -2555,7 +2555,7 @@ static bool delay_for_oplock_fn(
 			&e->client_guid,
 			&e->lease_key,
 			&fsp->file_id,
-			NULL, /* current_state */
+			&e_lease_type, /* current_state */
 			&lease_is_breaking,
 			NULL, /* breaking_to_requested */
 			NULL, /* breaking_to_required */
@@ -2597,6 +2597,8 @@ static bool delay_for_oplock_fn(
 				nt_errstr(status));
 			smb_panic("leases_db_get() failed");
 		}
+	} else {
+		e_lease_type = get_lease_type(e, fsp->file_id);
 	}
 
 	if (!state->got_handle_lease &&
