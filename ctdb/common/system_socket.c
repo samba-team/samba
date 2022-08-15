@@ -880,7 +880,7 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 		return -1;
 	}
 
-	DBG_DEBUG("Created RAW SOCKET FD:%d for tcp tickle\n", s);
+	DBG_DEBUG("Opened raw socket for TCP tickle capture (fd=%d)\n", s);
 
 	ret = set_blocking(s, false);
 	if (ret != 0) {
@@ -971,6 +971,7 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_t *pt;
+	int fd;
 
 	pt = pcap_open_live(iface, 100, 0, 0, errbuf);
 	if (pt == NULL) {
@@ -980,8 +981,11 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 		return -1;
 	}
 	*((pcap_t **)private_data) = pt;
+	fd = pcap_get_selectable_fd(pt);
 
-	return pcap_get_selectable_fd(pt);
+	DBG_DEBUG("Opened pcap capture for TCP tickle capture (fd=%d)\n", fd);
+
+	return fd;
 }
 
 int ctdb_sys_close_capture_socket(void *private_data)
