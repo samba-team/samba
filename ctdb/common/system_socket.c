@@ -967,12 +967,18 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 
 #include <pcap.h>
 
+/*
+ * Assume this exists if pcap.h exists - it has been around for a
+ * while
+ */
+#include <pcap/sll.h>
+
 int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_t *pt;
 	int pcap_packet_type;
-	const char *t;
+	const char *t = NULL;
 	int fd;
 
 	pt = pcap_open_live(iface, 100, 0, 0, errbuf);
@@ -989,6 +995,14 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 	case DLT_EN10MB:
 		t = "DLT_EN10MB";
 		break;
+	case DLT_LINUX_SLL:
+		t = "DLT_LINUX_SLL";
+		break;
+#ifdef DLT_LINUX_SLL2
+	case DLT_LINUX_SLL2:
+		t = "DLT_LINUX_SLL2";
+		break;
+#endif /* DLT_LINUX_SLL2 */
 	default:
 		DBG_ERR("Unknown pcap packet type %d\n", pcap_packet_type);
 		pcap_close(pt);
@@ -1044,6 +1058,40 @@ int ctdb_sys_read_tcp_packet(int s,
 		ll_hdr_len = sizeof(struct ether_header);
 		break;
 	}
+	case DLT_LINUX_SLL: {
+		const struct sll_header *sll =
+			(const struct sll_header *)buffer;
+		uint16_t arphrd_type = ntohs(sll->sll_hatype);
+		switch (arphrd_type) {
+		case ARPHRD_ETHER:
+			break;
+		default:
+			DBG_DEBUG("SLL: Unknown arphrd_type %"PRIu16"\n",
+				  arphrd_type);
+			return EPROTONOSUPPORT;
+		}
+		ether_type = ntohs(sll->sll_protocol);
+		ll_hdr_len = SLL_HDR_LEN;
+		break;
+	}
+#ifdef DLT_LINUX_SLL2
+	case DLT_LINUX_SLL2: {
+		const struct sll2_header *sll2 =
+			(const struct sll2_header *)buffer;
+		uint16_t arphrd_type = ntohs(sll2->sll2_hatype);
+		switch (arphrd_type) {
+		case ARPHRD_ETHER:
+			break;
+		default:
+			DBG_DEBUG("SLL2: Unknown arphrd_type %"PRIu16"\n",
+				  arphrd_type);
+			return EPROTONOSUPPORT;
+		}
+		ether_type = ntohs(sll2->sll2_protocol);
+		ll_hdr_len = SLL2_HDR_LEN;
+		break;
+	}
+#endif /* DLT_LINUX_SLL2 */
 	default:
 		DBG_DEBUG("Unknown pcap packet type %d\n", pcap_packet_type);
 		return EPROTONOSUPPORT;
