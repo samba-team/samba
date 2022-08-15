@@ -2726,7 +2726,7 @@ grant:
 	if (granted & SMB2_LEASE_READ) {
 		uint32_t acc, sh, ls;
 		share_mode_flags_get(lck, &acc, &sh, &ls);
-		ls |= SHARE_MODE_LEASE_READ;
+		ls |= SMB2_LEASE_READ;
 		share_mode_flags_set(lck, acc, sh, ls, NULL);
 	}
 
