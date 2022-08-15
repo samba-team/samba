@@ -1150,6 +1150,7 @@ struct break_to_none_state {
 	struct smb2_lease_key lease_key;
 	struct GUID client_guid;
 	size_t num_read_leases;
+	uint32_t total_lease_types;
 };
 
 static bool do_break_lease_to_none(struct share_mode_entry *e,
@@ -1178,6 +1179,8 @@ static bool do_break_lease_to_none(struct share_mode_entry *e,
 			    nt_errstr(status));
 		return false;
 	}
+
+	state->total_lease_types |= current_state;
 
 	if ((current_state & SMB2_LEASE_READ) == 0) {
 		return false;
@@ -1228,6 +1231,8 @@ static bool do_break_oplock_to_none(struct share_mode_entry *e,
 	 */
 
 	DBG_DEBUG("e->op_type == %d\n", e->op_type);
+
+	state->total_lease_types |= map_oplock_to_lease_type(e->op_type);
 
 	if (e->op_type == NO_OPLOCK) {
 		return false;
@@ -1313,14 +1318,14 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 		DBG_WARNING("share_mode_forall_entries failed\n");
 	}
 
-	if (state.num_read_leases == 0) {
+	{
 		/*
-		 * Lazy update here. It might be that the read lease
-		 * has gone in the meantime.
+		 * Lazy update here. It might be that all leases
+		 * have gone in the meantime.
 		 */
 		uint32_t acc, sh, ls;
 		share_mode_flags_get(lck, &acc, &sh, &ls);
-		ls &= ~SMB2_LEASE_READ;
+		ls = state.total_lease_types;
 		share_mode_flags_set(lck, acc, sh, ls, NULL);
 	}
 

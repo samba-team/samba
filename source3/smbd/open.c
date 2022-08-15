@@ -2571,6 +2571,7 @@ struct delay_for_oplock_state {
 	bool got_handle_lease;
 	bool got_oplock;
 	bool have_other_lease;
+	uint32_t total_lease_types;
 	bool delay;
 };
 
@@ -2646,6 +2647,12 @@ static bool delay_for_oplock_fn(
 		}
 	} else {
 		e_lease_type = get_lease_type(e, fsp->file_id);
+	}
+
+	if (((e_lease_type & ~state->total_lease_types) != 0) &&
+	    !share_entry_stale_pid(e))
+	{
+		state->total_lease_types |= e_lease_type;
 	}
 
 	if (!state->got_handle_lease &&
@@ -2770,6 +2777,8 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 			oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
 	}
 
+	share_mode_flags_get(lck, NULL, NULL, &state.total_lease_types);
+
 	if (is_oplock_stat_open(fsp->access_mask)) {
 		goto grant;
 	}
@@ -2788,6 +2797,7 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 		break;
 	}
 
+	state.total_lease_types = SMB2_LEASE_NONE;
 	ok = share_mode_forall_entries(lck, delay_for_oplock_fn, &state);
 	if (!ok) {
 		return NT_STATUS_INTERNAL_ERROR;
@@ -2865,15 +2875,17 @@ grant:
 		granted = map_oplock_to_lease_type(oplock_type);
 	}
 
-	if (granted & SMB2_LEASE_READ) {
+	state.total_lease_types |= granted;
+
+	{
 		uint32_t acc, sh, ls;
 		share_mode_flags_get(lck, &acc, &sh, &ls);
-		ls |= SMB2_LEASE_READ;
+		ls = state.total_lease_types;
 		share_mode_flags_set(lck, acc, sh, ls, NULL);
 	}
 
 	DBG_DEBUG("oplock type 0x%x granted (%s%s%s)(0x%x), on file %s, "
-		  "requested 0x%x (%s%s%s)(0x%x)\n",
+		  "requested 0x%x (%s%s%s)(0x%x) => total (%s%s%s)(0x%x)\n",
 		  fsp->oplock_type,
 		  granted & SMB2_LEASE_READ ? "R":"",
 		  granted & SMB2_LEASE_WRITE ? "W":"",
@@ -2884,7 +2896,11 @@ grant:
 		  requested & SMB2_LEASE_READ ? "R":"",
 		  requested & SMB2_LEASE_WRITE ? "W":"",
 		  requested & SMB2_LEASE_HANDLE ? "H":"",
-		  requested);
+		  requested,
+		  state.total_lease_types & SMB2_LEASE_READ ? "R":"",
+		  state.total_lease_types & SMB2_LEASE_WRITE ? "W":"",
+		  state.total_lease_types & SMB2_LEASE_HANDLE ? "H":"",
+		  state.total_lease_types);
 
 	*poplock_type = oplock_type;
 	*pgranted = granted;
