@@ -80,6 +80,10 @@ _gssapi_verify_mech_header(u_char **str,
 
     if (mech_len != mech->length)
 	return GSS_S_BAD_MECH;
+    if (mech_len > total_len)
+	return GSS_S_BAD_MECH;
+    if (p - *str > total_len - mech_len)
+	return GSS_S_BAD_MECH;
     if (ct_memcmp(p,
 		  mech->elements,
 		  mech->length) != 0)
