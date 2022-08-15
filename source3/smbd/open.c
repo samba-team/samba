@@ -3373,6 +3373,83 @@ static void schedule_async_open(struct smb_request *req)
 	}
 }
 
+static NTSTATUS check_and_store_share_mode(
+	struct files_struct *fsp,
+	struct smb_request *req,
+	struct share_mode_lock *lck,
+	uint32_t create_disposition,
+	uint32_t access_mask,
+	uint32_t share_access,
+	int oplock_request,
+	const struct smb2_lease *lease,
+	bool first_open_attempt)
+{
+	NTSTATUS status;
+	int oplock_type = NO_OPLOCK;
+	uint32_t granted_lease = 0;
+	const struct smb2_lease_key *lease_key = NULL;
+	bool ok;
+
+	/* Get the types we need to examine. */
+	if (!validate_oplock_types(lck)) {
+		smb_panic("validate_oplock_types failed");
+	}
+
+	if (has_delete_on_close(lck, fsp->name_hash)) {
+		return NT_STATUS_DELETE_PENDING;
+	}
+
+	status = handle_share_mode_lease(fsp,
+					 lck,
+					 create_disposition,
+					 access_mask,
+					 share_access,
+					 oplock_request,
+					 lease,
+					 first_open_attempt,
+					 &oplock_type,
+					 &granted_lease);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		schedule_defer_open(lck, fsp->file_id, req);
+		return NT_STATUS_SHARING_VIOLATION;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (oplock_type == LEASE_OPLOCK) {
+		lease_key = &lease->lease_key;
+	}
+
+	share_mode_flags_restrict(lck, access_mask, share_access, 0);
+
+	ok = set_share_mode(lck,
+			    fsp,
+			    get_current_uid(fsp->conn),
+			    req ? req->mid : 0,
+			    oplock_type,
+			    lease_key,
+			    share_access,
+			    access_mask);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (oplock_type == LEASE_OPLOCK) {
+		status = grant_fsp_lease(fsp, lck, lease, granted_lease);
+		if (!NT_STATUS_IS_OK(status)) {
+			del_share_mode(lck, fsp);
+			return status;
+		}
+
+		DBG_DEBUG("lease_state=%d\n", fsp->lease->lease.lease_state);
+	}
+
+	fsp->oplock_type = oplock_type;
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Work out what access_mask to use from what the client sent us.
 ****************************************************************************/
@@ -3672,14 +3749,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint32_t existing_dos_attributes = 0;
 	struct share_mode_lock *lck = NULL;
 	uint32_t open_access_mask = access_mask;
-	const struct smb2_lease_key *lease_key = NULL;
-	int oplock_type = NO_OPLOCK;
-	uint32_t granted_lease = 0;
 	NTSTATUS status;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
 	bool setup_poll = false;
-	bool ok;
 
 	if (conn->printer) {
 		/*
@@ -4143,76 +4216,21 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
-	/* Get the types we need to examine. */
-	if (!validate_oplock_types(lck)) {
-		smb_panic("validate_oplock_types failed");
-	}
-
-	if (has_delete_on_close(lck, fsp->name_hash)) {
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		return NT_STATUS_DELETE_PENDING;
-	}
-
-	status = handle_share_mode_lease(
+	status = check_and_store_share_mode(
 		fsp,
+		req,
 		lck,
 		create_disposition,
 		access_mask,
 		share_access,
 		oplock_request,
 		lease,
-		first_open_attempt,
-		&oplock_type,
-		&granted_lease);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
-		schedule_defer_open(lck, fsp->file_id, req);
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		return NT_STATUS_SHARING_VIOLATION;
-	}
-
+		first_open_attempt);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
 		return status;
 	}
-
-	if (oplock_type == LEASE_OPLOCK) {
-		lease_key = &lease->lease_key;
-	}
-
-	share_mode_flags_restrict(lck, access_mask, share_access, 0);
-
-	ok = set_share_mode(
-		lck,
-		fsp,
-		get_current_uid(fsp->conn),
-		req ? req->mid : 0,
-		oplock_type,
-		lease_key,
-		share_access,
-		access_mask);
-	if (!ok) {
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (oplock_type == LEASE_OPLOCK) {
-		status = grant_fsp_lease(fsp, lck, lease, granted_lease);
-		if (!NT_STATUS_IS_OK(status)) {
-			del_share_mode(lck, fsp);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-			return status;
-		}
-
-		DBG_DEBUG("lease_state=%d\n", fsp->lease->lease.lease_state);
-	}
-
-	fsp->oplock_type = oplock_type;
 
 	if (fsp->oplock_type != NO_OPLOCK && fsp->oplock_type != LEASE_OPLOCK) {
 		/*
@@ -4225,7 +4243,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * Could not get the kernel oplock
 			 */
 			remove_share_oplock(lck, fsp);
-			fsp->oplock_type = oplock_type = NO_OPLOCK;
+			fsp->oplock_type = NO_OPLOCK;
 		}
 	}
 
@@ -4593,12 +4611,9 @@ static NTSTATUS open_directory(connection_struct *conn,
 	struct smb_filename *smb_dname = fsp->fsp_name;
 	bool dir_existed = VALID_STAT(smb_dname->st);
 	struct share_mode_lock *lck = NULL;
-	int oplock_type = NO_OPLOCK;
-	uint32_t granted_lease = 0;
 	NTSTATUS status;
 	struct timespec mtimespec;
 	int info = 0;
-	bool ok;
 	uint32_t need_fd_access;
 
 	if (is_ntfs_stream_smb_fname(smb_dname)) {
@@ -4869,44 +4884,20 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
-	if (has_delete_on_close(lck, fsp->name_hash)) {
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		return NT_STATUS_DELETE_PENDING;
-	}
-
-	status = handle_share_mode_lease(
+	status = check_and_store_share_mode(
 		fsp,
+		req,
 		lck,
 		create_disposition,
 		access_mask,
 		share_access,
 		NO_OPLOCK,
-		NULL, /* lease */
-		true, /* first_open_attempt */
-		&oplock_type,
-		&granted_lease);
+		NULL,  /* lease */
+		true); /* first_open_attempt */
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
 		return status;
-	}
-
-	share_mode_flags_restrict(lck, access_mask, share_access, 0);
-
-	ok = set_share_mode(
-		lck,
-		fsp,
-		get_current_uid(conn),
-		req ? req->mid : 0,
-		oplock_type,
-		NULL,
-		share_access,
-		fsp->access_mask);
-	if (!ok) {
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* For directories the delete on close bit at open time seems
