@@ -1175,7 +1175,7 @@ struct break_to_none_state {
 	struct file_id id;
 	struct smb2_lease_key lease_key;
 	struct GUID client_guid;
-	size_t num_broken;
+	size_t num_read_leases;
 };
 
 static bool do_break_lease_to_none(struct share_mode_entry *e,
@@ -1209,6 +1209,8 @@ static bool do_break_lease_to_none(struct share_mode_entry *e,
 		return false;
 	}
 
+	state->num_read_leases += 1;
+
 	our_own = smb2_lease_equal(&state->client_guid,
 				   &state->lease_key,
 				   &e->client_guid,
@@ -1223,8 +1225,6 @@ static bool do_break_lease_to_none(struct share_mode_entry *e,
 		  e->lease_key.data[1]);
 
 	send_break_to_none(state->sconn->msg_ctx, &state->id, e);
-
-	state->num_broken += 1;
 
 	return false;
 }
@@ -1259,11 +1259,12 @@ static bool do_break_oplock_to_none(struct share_mode_entry *e,
 		return false;
 	}
 
+	state->num_read_leases += 1;
+
 	/* Paranoia .... */
 	SMB_ASSERT(!EXCLUSIVE_OPLOCK_TYPE(e->op_type));
 
 	send_break_to_none(state->sconn->msg_ctx, &state->id, e);
-	state->num_broken += 1;
 
 	return false;
 }
@@ -1337,7 +1338,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 		DBG_WARNING("share_mode_forall_entries failed\n");
 	}
 
-	if (state.num_broken == 0) {
+	if (state.num_read_leases == 0) {
 		/*
 		 * Lazy update here. It might be that the read lease
 		 * has gone in the meantime.
