@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.17.  This is *not*
+This is the second release candidate of Samba 4.17.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -204,6 +204,28 @@ smb.conf changes
   --------------                          -----------     -------
   dns port                                New default     53
   nt hash store				  New parameter   always
+
+CHANGES SINCE 4.17.0rc1
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15143: New filename parser doesn't check veto files smb.conf parameter.
+   * BUG 15144: 4.17.rc1 still uses symlink-race prone unix_convert()
+   * BUG 15146: Backport fileserver related changed to 4.17.0rc2
+
+o  Jule Anger <janger@samba.org>
+   * BUG 15147: Manpage for smbstatus json is missing
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15146: Backport fileserver related changed to 4.17.0rc2
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15125: Performance regression on contended path based operations
+   * BUG 15146: Backport fileserver related changed to 4.17.0rc2
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15140: Fix issues found by coverity in smbstatus json code
+   * BUG 15146: Backport fileserver related changed to 4.17.0rc2
 
 
 KNOWN ISSUES
