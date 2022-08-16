@@ -16,6 +16,27 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+SMB Server performance improvements
+-----------------------------------
+
+The security improvements in recent releases
+(4.13, 4.14, 4.15, 4.16), mainly as protection against symlink races,
+caused performance regressions for meta data heavy workloads.
+
+With 4.17 the situation improved a lot again:
+
+- Pathnames given by a client are devided into dirname and basename.
+  The amount of syscalls to validate dirnames is reduced to 2 syscalls
+  (openat, close) per component. On modern Linux kernels (>= 5.6) smbd
+  makes use of the openat2() syscall with RESOLVE_NO_SYMLINKS,
+  in order to just use 2 syscalls (openat2, close) for the whole dirname.
+
+- Contended path based operations used to generate a lot of unsolicited
+  wakeup events causing thundering herd problems, which lead to masive
+  latencies for some clients. These events are now avoided in order
+  to provide stable latencies and much higher throughput of open/close
+  operations.
+
 Configure without the SMB1 Server
 ---------------------------------
 
