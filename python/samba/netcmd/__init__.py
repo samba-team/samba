@@ -198,9 +198,9 @@ class Command(object):
             self.show_command_error(e)
             return -1
 
-    def run(self):
+    def run(self, *args, **kwargs):
         """Run the command. This should be overridden by all subclasses."""
-        raise NotImplementedError(self.run)
+        raise NotImplementedError(f"'{self.command_name}' run method not implemented")
 
     def get_logger(self, name="", verbose=False, quiet=False, **kwargs):
         """Get a logger object."""
