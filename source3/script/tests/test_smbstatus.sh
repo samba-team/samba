@@ -293,17 +293,6 @@ EOF
 	fi
 
 	out=$(cat $PREFIX/$status_json | jq ".")
-	echo $out | grep -c 'jq: not found'
-	ret=$?
-	if [ $ret -eq 0 ]; then
-		subunit_start_test "test_smbstatus_json"
-		subunit_skip_test "test_smbstatus_json" <<EOF
-Test needs jq
-EOF
-		return 0
-	fi
-
-	out=$(cat $PREFIX/$status_json | jq ".")
 	ret=$?
 	if [ $ret -ne 0 ]; then
 		echo "Failed: Could not parse json output from smbstatus with error $ret"
@@ -422,17 +411,6 @@ EOF
 		echo "Failed: Could not print json profile output with error $ret"
 		echo "$out"
 		return 1
-	fi
-
-	out=$(cat $PREFIX/$status_json | jq ".")
-	echo $out | grep -c 'jq: not found'
-	ret=$?
-	if [ $ret -eq 0 ]; then
-		subunit_start_test "test_smbstatus_json_profile"
-		subunit_skip_test "test_smbstatus_json_profile" <<EOF
-Test needs jq
-EOF
-		return 0
 	fi
 
 	out=$(cat $PREFIX/$status_json | jq ".")
