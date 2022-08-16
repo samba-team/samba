@@ -375,9 +375,10 @@
  * Version 47 - Add fsp flag fstat_before_close
  * Version 47 - Change SMB_VFS_OPENAT() to match the Linux openat2 prototype, add vfs_open_how
  * Version 47 - Add VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS for SMB_VFS_OPENAT()
+ * Change to Version 48 - will ship with 4.18
  */
 
-#define SMB_VFS_INTERFACE_VERSION 47
+#define SMB_VFS_INTERFACE_VERSION 48
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
