@@ -158,6 +158,8 @@ class GraphCommand(Command):
             return None
 
         if color == 'auto':
+            if os.environ.get('NO_COLOR'):
+                return None
             if isinstance(output, str) and output != '-':
                 return None
             if not hasattr(self.outf, 'isatty'):
