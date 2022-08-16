@@ -374,6 +374,7 @@
  * Version 47 - Re-add dirfsp to CREATE_FILE
  * Version 47 - Add fsp flag fstat_before_close
  * Version 47 - Change SMB_VFS_OPENAT() to match the Linux openat2 prototype, add vfs_open_how
+ * Version 47 - Add VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS for SMB_VFS_OPENAT()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 47
