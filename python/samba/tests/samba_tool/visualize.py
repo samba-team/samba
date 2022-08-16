@@ -21,7 +21,7 @@
 topologies.
 
 We don't test samba-tool visualize reps here because repsTo and
-repsFrom are not replicated, and there are actual remote servers to
+repsFrom are not replicated, and there are no actual remote servers to
 query.
 """
 import samba
