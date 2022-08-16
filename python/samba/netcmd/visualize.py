@@ -162,9 +162,6 @@ class GraphCommand(Command):
                 return None
             if isinstance(output, str) and output != '-':
                 return None
-            if not hasattr(self.outf, 'isatty'):
-                # not a real file, perhaps cStringIO in testing
-                return None
             if not self.outf.isatty():
                 return None
 
