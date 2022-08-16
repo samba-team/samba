@@ -157,6 +157,15 @@ additional module, 'samba.samba3.smbconf', is also available to enable
 registry backend support. These libraries allow Python programs to
 read, and optionally write, Samba configuration natively.
 
+JSON support for smbstatus
+--------------------------
+
+It is now possible to print detailed information in JSON format in
+the smbstatus program using the new option --json. The JSON output
+covers all the existing text output including sessions, connections,
+open files, byte-range locks, notifies and profile data with all
+low-level information maintained by Samba in the respective databases.
+
 
 REMOVED FEATURES
 ================
