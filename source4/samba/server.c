@@ -851,8 +851,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("At this time the 'samba' binary should only be used "
 			"for either:\n"));
 		DEBUGADD(0, ("'server role = active directory domain "
-			"controller' or to access the ntvfs file server "
-			"with 'server services = +smb' or the rpc proxy "
+			"controller' or the rpc proxy "
 			"with 'dcerpc endpoint servers = remote'\n"));
 		DEBUGADD(0, ("You should start smbd/nmbd/winbindd instead for "
 			"domain member and standalone file server tasks\n"));
