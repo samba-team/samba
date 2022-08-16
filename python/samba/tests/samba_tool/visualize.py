@@ -170,13 +170,27 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
                     # NO_COLOR='no': we still expect no colour
                     ['no', '--color=auto', False],
                     # NO_COLOR=' ', alias for 'auto'
+                    [' ', '--color=tty', False],
+                    # NO_COLOR=' ', alias for 'auto'
+                    [' ', '--color=if-tty', False],
+                    # NO_COLOR='', alias for 'auto'
+                    ['', '--color=tty', True],
+                    # NO_COLOR='', alias for 'no'
+                    ['', '--color=never', False],
+                    # NO_COLOR='x', alias for 'yes' (--color=yes wins)
+                    ['x', '--color=force', True],
                     ]:
                 os.environ['NO_COLOR'] = env
-                print(f" {env}, {opt}, {is_colour}")
-                result, out, err = self.runsubcmd("visualize", "ntdsconn",
-                                                  '-H', self.dburl,
-                                                  '-S',
-                                                  opt)
+
+                try:
+                    result, out, err = self.runsubcmd("visualize", "ntdsconn",
+                                                      '-H', self.dburl,
+                                                      '-S',
+                                                      opt)
+                except SystemExit as e:
+                    # optparse makes us do this
+                    self.fail(f"optparse rejects {env}, {opt}, {is_colour}")
+
                 self.assertCmdSuccess(result, out, err)
                 self.assert_colour(out, is_colour, monochrome)
 
