@@ -204,6 +204,7 @@ smb.conf changes
   --------------                          -----------     -------
   dns port                                New default     53
   nt hash store				  New parameter   always
+  volume serial number			  New parameter   -1
 
 CHANGES SINCE 4.17.0rc1
 =======================
