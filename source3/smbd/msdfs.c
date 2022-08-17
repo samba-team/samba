@@ -1131,6 +1131,16 @@ NTSTATUS dfs_filename_convert(TALLOC_CTX *ctx,
 	char *reqpath = NULL;
 	NTSTATUS status;
 
+	/*
+	 * We must use the non-strict version of parse_dfs_path for
+	 * pathnames sent to the fileserver over SMB1/2/3.
+	 * libsmbclient callers always set the FLAGS2_DFS_PATHNAMES
+	 * but then don't send a DFS path in (for example) FindFirst
+	 * or other calls. This is a problem with our client libraries
+	 * for both SMB1 and SMB2+ and will remain so whilst broken
+	 * versions of libsmbclient are being used.
+	 */
+
 	status = parse_dfs_path(ctx,
 				conn,
 				dfs_path_in,
