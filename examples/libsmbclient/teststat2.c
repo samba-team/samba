@@ -38,33 +38,33 @@ static int gettime(const char * pUrl,
         char m_time[32];
         char c_time[32];
         char a_time[32];
-        
+
         smbc_init(get_auth_data_fn, 0);
-        
+
         if (smbc_stat(pUrl, &st) < 0)
         {
                 perror("smbc_stat");
                 return 1;
         }
-        
+
         printf("SAMBA\n mtime:%lld/%s ctime:%lld/%s atime:%lld/%s\n",
                (long long)st.st_mtime, ctime_r(&st.st_mtime, m_time),
                (long long)st.st_ctime, ctime_r(&st.st_ctime, c_time),
                (long long)st.st_atime, ctime_r(&st.st_atime, a_time));
-        
-        
+
+
         /* check the stat on this file */
         if (stat(pLocalPath, &st) < 0)
         {
                 perror("stat");
                 return 1;
         }
-        
+
         printf("LOCAL\n mtime:%lld/%s ctime:%lld/%s atime:%lld/%s\n",
                (long long)st.st_mtime, ctime_r(&st.st_mtime, m_time),
                (long long)st.st_ctime, ctime_r(&st.st_ctime, c_time),
                (long long)st.st_atime, ctime_r(&st.st_atime, a_time));
-        
-        
+
+
         return 0;
 }

@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB client library test program
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Richard Sharpe 2000
    Copyright (C) John Terpsra 2000
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -31,261 +31,261 @@
 
 int main(int argc, char *argv[])
 {
-  int err, fd, dh1, dsize, dirc;
-  const char *file = "smb://samba/public/testfile.txt";
-  const char *file2 = "smb://samba/public/testfile2.txt";
-  char buff[256];
-  char dirbuf[512];
-  char *dirp;
-  struct stat st1, st2;
+	int err, fd, dh1, dsize, dirc;
+	const char *file = "smb://samba/public/testfile.txt";
+	const char *file2 = "smb://samba/public/testfile2.txt";
+	char buff[256];
+	char dirbuf[512];
+	char *dirp;
+	struct stat st1, st2;
 
-  err = smbc_init(get_auth_data_fn,  10); /* Initialize things */
+	err = smbc_init(get_auth_data_fn,  10); /* Initialize things */
 
-  if (err < 0) {
+	if (err < 0) {
 
-    fprintf(stderr, "Initializing the smbclient library ...: %s\n", strerror(errno));
+		fprintf(stderr, "Initializing the smbclient library ...: %s\n", strerror(errno));
 
-  }
+	}
 
-  if (argc > 1) {
+	if (argc > 1) {
 
-    if ((dh1 = smbc_opendir(argv[1]))<1) {
+		if ((dh1 = smbc_opendir(argv[1]))<1) {
 
-      fprintf(stderr, "Could not open directory: %s: %s\n",
-	      argv[1], strerror(errno));
+			fprintf(stderr, "Could not open directory: %s: %s\n",
+				argv[1], strerror(errno));
 
-      exit(1);
+			exit(1);
 
-    }
+		}
 
-    fprintf(stdout, "Directory handle: %u\n", dh1);
+		fprintf(stdout, "Directory handle: %u\n", dh1);
 
-    /* Now, list those directories, but in funny ways ... */
+		/* Now, list those directories, but in funny ways ... */
 
-    dirp = (char *)dirbuf;
+		dirp = (char *)dirbuf;
 
-    if ((dirc = smbc_getdents(dh1, (struct smbc_dirent *)dirp, 
-			      sizeof(dirbuf))) < 0) {
+		if ((dirc = smbc_getdents(dh1, (struct smbc_dirent *)dirp,
+					  sizeof(dirbuf))) < 0) {
 
-      fprintf(stderr, "Problems getting directory entries: %s\n",
-	      strerror(errno));
+			fprintf(stderr, "Problems getting directory entries: %s\n",
+				strerror(errno));
 
-      exit(1);
+			exit(1);
 
-    }
+		}
 
-    /* Now, process the list of names ... */
+		/* Now, process the list of names ... */
 
-    fprintf(stdout, "Directory listing, size = %u\n", dirc);
+		fprintf(stdout, "Directory listing, size = %u\n", dirc);
 
-    while (dirc > 0) {
+		while (dirc > 0) {
 
-      dsize = ((struct smbc_dirent *)dirp)->dirlen;
-      fprintf(stdout, "Dir Ent, Type: %u, Name: %s, Comment: %s\n",
-	      ((struct smbc_dirent *)dirp)->smbc_type, 
-	      ((struct smbc_dirent *)dirp)->name, 
-	      ((struct smbc_dirent *)dirp)->comment);
+			dsize = ((struct smbc_dirent *)dirp)->dirlen;
+			fprintf(stdout, "Dir Ent, Type: %u, Name: %s, Comment: %s\n",
+				((struct smbc_dirent *)dirp)->smbc_type,
+				((struct smbc_dirent *)dirp)->name,
+				((struct smbc_dirent *)dirp)->comment);
 
-      dirp += dsize;
-      dirc -= dsize;
+			dirp += dsize;
+			dirc -= dsize;
 
-    }
+		}
 
-    dirp = (char *)dirbuf;
+		dirp = (char *)dirbuf;
 
-    exit(1);
+		exit(1);
 
-  }
+	}
 
-  /* For now, open a file on a server that is hard coded ... later will
-   * read from the command line ...
-   */
+	/* For now, open a file on a server that is hard coded ... later will
+	 * read from the command line ...
+	 */
 
-  fd = smbc_open(file, O_RDWR | O_CREAT | O_TRUNC, 0666);
+	fd = smbc_open(file, O_RDWR | O_CREAT | O_TRUNC, 0666);
 
-  if (fd < 0) {
+	if (fd < 0) {
 
-    fprintf(stderr, "Creating file: %s: %s\n", file, strerror(errno));
-    exit(0);
+		fprintf(stderr, "Creating file: %s: %s\n", file, strerror(errno));
+		exit(0);
 
-  }
+	}
 
-  fprintf(stdout, "Opened or created file: %s\n", file);
+	fprintf(stdout, "Opened or created file: %s\n", file);
 
-  /* Now, write some date to the file ... */
+	/* Now, write some date to the file ... */
 
-  memset(buff, '\0', sizeof(buff));
-  snprintf(buff, sizeof(buff), "%s", "Some test data for the moment ...");
+	memset(buff, '\0', sizeof(buff));
+	snprintf(buff, sizeof(buff), "%s", "Some test data for the moment ...");
 
-  err = smbc_write(fd, buff, sizeof(buff));
+	err = smbc_write(fd, buff, sizeof(buff));
 
-  if (err < 0) {
-    
-    fprintf(stderr, "writing file: %s: %s\n", file, strerror(errno));
-    exit(0);
+	if (err < 0) {
 
-  }
+		fprintf(stderr, "writing file: %s: %s\n", file, strerror(errno));
+		exit(0);
 
-  fprintf(stdout, "Wrote %lu bytes to file: %s\n",
-          (unsigned long) sizeof(buff), buff);
+	}
 
-  /* Now, seek the file back to offset 0 */
+	fprintf(stdout, "Wrote %lu bytes to file: %s\n",
+		(unsigned long) sizeof(buff), buff);
 
-  err = smbc_lseek(fd, SEEK_SET, 0);
+	/* Now, seek the file back to offset 0 */
 
-  if (err < 0) {
+	err = smbc_lseek(fd, SEEK_SET, 0);
 
-    fprintf(stderr, "Seeking file: %s: %s\n", file, strerror(errno));
-    exit(0);
+	if (err < 0) {
 
-  }
+		fprintf(stderr, "Seeking file: %s: %s\n", file, strerror(errno));
+		exit(0);
 
-  fprintf(stdout, "Completed lseek on file: %s\n", file);
+	}
 
-  /* Now, read the file contents back ... */
+	fprintf(stdout, "Completed lseek on file: %s\n", file);
 
-  err = smbc_read(fd, buff, sizeof(buff));
+	/* Now, read the file contents back ... */
 
-  if (err < 0) {
+	err = smbc_read(fd, buff, sizeof(buff));
 
-    fprintf(stderr, "Reading file: %s: %s\n", file, strerror(errno));
-    exit(0);
+	if (err < 0) {
 
-  }
+		fprintf(stderr, "Reading file: %s: %s\n", file, strerror(errno));
+		exit(0);
 
-  fprintf(stdout, "Read file: %s\n", buff);  /* Should check the contents */
+	}
 
-  fprintf(stdout, "Now fstat'ing file: %s\n", file);
+	fprintf(stdout, "Read file: %s\n", buff);  /* Should check the contents */
 
-  err = smbc_fstat(fd, &st1);
+	fprintf(stdout, "Now fstat'ing file: %s\n", file);
 
-  if (err < 0) {
+	err = smbc_fstat(fd, &st1);
 
-    fprintf(stderr, "Fstat'ing file: %s: %s\n", file, strerror(errno));
-    exit(0);
+	if (err < 0) {
 
-  }
+		fprintf(stderr, "Fstat'ing file: %s: %s\n", file, strerror(errno));
+		exit(0);
 
+	}
 
-  /* Now, close the file ... */
 
-  err = smbc_close(fd);
+	/* Now, close the file ... */
 
-  if (err < 0) {
+	err = smbc_close(fd);
 
-    fprintf(stderr, "Closing file: %s: %s\n", file, strerror(errno));
+	if (err < 0) {
 
-  }
+		fprintf(stderr, "Closing file: %s: %s\n", file, strerror(errno));
 
-  /* Now, rename the file ... */
+	}
 
-  err = smbc_rename(file, file2);
+	/* Now, rename the file ... */
 
-  if (err < 0) {
+	err = smbc_rename(file, file2);
 
-    fprintf(stderr, "Renaming file: %s to %s: %s\n", file, file2, strerror(errno));
+	if (err < 0) {
 
-  }
+		fprintf(stderr, "Renaming file: %s to %s: %s\n", file, file2, strerror(errno));
 
-  fprintf(stdout, "Renamed file %s to %s\n", file, file2);
+	}
 
-  /* Now, create a file and delete it ... */
+	fprintf(stdout, "Renamed file %s to %s\n", file, file2);
 
-  fprintf(stdout, "Now, creating file: %s so we can delete it.\n", file);
+	/* Now, create a file and delete it ... */
 
-  fd = smbc_open(file, O_RDWR | O_CREAT, 0666);
+	fprintf(stdout, "Now, creating file: %s so we can delete it.\n", file);
 
-  if (fd < 0) {
+	fd = smbc_open(file, O_RDWR | O_CREAT, 0666);
 
-    fprintf(stderr, "Creating file: %s: %s\n", file, strerror(errno));
-    exit(0);
+	if (fd < 0) {
 
-  }
+		fprintf(stderr, "Creating file: %s: %s\n", file, strerror(errno));
+		exit(0);
 
-  fprintf(stdout, "Opened or created file: %s\n", file);
+	}
 
-  err = smbc_close(fd);
+	fprintf(stdout, "Opened or created file: %s\n", file);
 
-  if (err < 0) {
+	err = smbc_close(fd);
 
-    fprintf(stderr, "Closing file: %s: %s\n", file, strerror(errno));
-    exit(0);
+	if (err < 0) {
 
-  }
-  
-  /* Now, delete the file ... */
+		fprintf(stderr, "Closing file: %s: %s\n", file, strerror(errno));
+		exit(0);
 
-  fprintf(stdout, "File %s created, now deleting ...\n", file);
+	}
 
-  err = smbc_unlink(file);
+	/* Now, delete the file ... */
 
-  if (err < 0) {
+	fprintf(stdout, "File %s created, now deleting ...\n", file);
 
-    fprintf(stderr, "Deleting file: %s: %s\n", file, strerror(errno));
-    exit(0);
+	err = smbc_unlink(file);
 
-  }
+	if (err < 0) {
 
-  /* Now, stat the file, file 2 ... */
+		fprintf(stderr, "Deleting file: %s: %s\n", file, strerror(errno));
+		exit(0);
 
-  fprintf(stdout, "Now stat'ing file: %s\n", file);
+	}
 
-  err = smbc_stat(file2, &st2);
+	/* Now, stat the file, file 2 ... */
 
-  if (err < 0) {
+	fprintf(stdout, "Now stat'ing file: %s\n", file);
 
-    fprintf(stderr, "Stat'ing file: %s: %s\n", file, strerror(errno));
-    exit(0);
+	err = smbc_stat(file2, &st2);
 
-  }
+	if (err < 0) {
 
-  fprintf(stdout, "Stat'ed file:   %s. Size = %d, mode = %04X\n", file2, 
-	  (int)st2.st_size, (unsigned int)st2.st_mode);
-  fprintf(stdout, "    time: %s\n", ctime(&st2.st_atime));
-  fprintf(stdout, "Earlier stat:   %s, Size = %d, mode = %04X\n", file, 
-	  (int)st1.st_size, (unsigned int)st1.st_mode);
-  fprintf(stdout, "    time: %s\n", ctime(&st1.st_atime));
+		fprintf(stderr, "Stat'ing file: %s: %s\n", file, strerror(errno));
+		exit(0);
 
-  /* Now, make a directory ... */
+	}
 
-  fprintf(stdout, "Making directory smb://samba/public/make-dir\n");
+	fprintf(stdout, "Stat'ed file:   %s. Size = %d, mode = %04X\n", file2,
+		(int)st2.st_size, (unsigned int)st2.st_mode);
+	fprintf(stdout, "    time: %s\n", ctime(&st2.st_atime));
+	fprintf(stdout, "Earlier stat:   %s, Size = %d, mode = %04X\n", file,
+		(int)st1.st_size, (unsigned int)st1.st_mode);
+	fprintf(stdout, "    time: %s\n", ctime(&st1.st_atime));
 
-  if (smbc_mkdir("smb://samba/public/make-dir", 0666) < 0) {
+	/* Now, make a directory ... */
 
-    fprintf(stderr, "Error making directory: smb://samba/public/make-dir: %s\n", 
-	    strerror(errno));
+	fprintf(stdout, "Making directory smb://samba/public/make-dir\n");
 
-    if (errno == EEXIST) { /* Try to delete the directory */
+	if (smbc_mkdir("smb://samba/public/make-dir", 0666) < 0) {
 
-      fprintf(stdout, "Trying to delete directory: smb://samba/public/make-dir\n");
+		fprintf(stderr, "Error making directory: smb://samba/public/make-dir: %s\n",
+			strerror(errno));
 
-      if (smbc_rmdir("smb://samba/public/make-dir") < 0) { /* Error */
+		if (errno == EEXIST) { /* Try to delete the directory */
 
-	fprintf(stderr, "Error removing directory: smb://samba/public/make-dir: %s\n", strerror(errno));
+			fprintf(stdout, "Trying to delete directory: smb://samba/public/make-dir\n");
 
-	exit(0);
+			if (smbc_rmdir("smb://samba/public/make-dir") < 0) { /* Error */
 
-      }
+				fprintf(stderr, "Error removing directory: smb://samba/public/make-dir: %s\n", strerror(errno));
 
-      fprintf(stdout, "Making directory: smb://samba/public/make-dir\n");
+				exit(0);
 
-      if (smbc_mkdir("smb://samba/public/make-dir", 666) < 0) {
+			}
 
-	fprintf(stderr, "Error making directory: smb://samba/public/make-dir: %s\n",
-		strerror(errno));
+			fprintf(stdout, "Making directory: smb://samba/public/make-dir\n");
 
-	fprintf(stderr, "I give up!\n");
+			if (smbc_mkdir("smb://samba/public/make-dir", 666) < 0) {
 
-	exit(1);
+				fprintf(stderr, "Error making directory: smb://samba/public/make-dir: %s\n",
+					strerror(errno));
 
-      }
+				fprintf(stderr, "I give up!\n");
 
-    }
+				exit(1);
 
-    exit(0);
-    
-  }
+			}
 
-  fprintf(stdout, "Made dir: make-dir\n");
-  return 0;
+		}
+
+		exit(0);
+
+	}
+
+	fprintf(stdout, "Made dir: make-dir\n");
+	return 0;
 }

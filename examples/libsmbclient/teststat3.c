@@ -25,15 +25,15 @@ int main(int argc, char* argv[])
                 return 1;
         }
 
-        
+
         smbc_init(get_auth_data_fn, 0);
-        
+
         if (smbc_stat(pUrl, &st1) < 0)
         {
                 perror("smbc_stat");
                 return 1;
         }
-        
+
         if ((fd = smbc_open(pUrl, O_RDONLY, 0)) < 0)
         {
                 perror("smbc_open");
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
                 perror("smbc_fstat");
                 return 1;
         }
-        
+
         smbc_close(fd);
 
 #define COMPARE(name, field)                                            \
@@ -72,4 +72,3 @@ int main(int argc, char* argv[])
 
         return 0;
 }
-
