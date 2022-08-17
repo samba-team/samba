@@ -110,7 +110,10 @@ class LDAPBase(object):
     def find_netbios(self):
         res = self.ldb.search(base="CN=Partitions,%s" % self.config_dn,
                               scope=SCOPE_SUBTREE, attrs=["nETBIOSName"])
-        assert len(res) > 0
+
+        if len(res) == 0:
+            raise CommandError("Could not find netbios name")
+
         for x in res:
             if "nETBIOSName" in x:
                 return x["nETBIOSName"][0]
