@@ -1128,8 +1128,6 @@ NTSTATUS dfs_filename_convert(TALLOC_CTX *ctx,
 			      const char *dfs_path_in,
 			      char **pp_path_out)
 {
-	char *hostname = NULL;
-	char *servicename = NULL;
 	char *reqpath = NULL;
 	NTSTATUS status;
 
@@ -1137,19 +1135,12 @@ NTSTATUS dfs_filename_convert(TALLOC_CTX *ctx,
 				conn,
 				dfs_path_in,
 				!conn->sconn->using_smb2,
-				&hostname,
-				&servicename,
+				NULL, /* hostname */
+				NULL, /* servicename */
 				&reqpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	/*
-	 * Caller doesn't care about hostname
-	 * or servicename.
-	 */
-	TALLOC_FREE(hostname);
-	TALLOC_FREE(servicename);
 
 	/*
 	 * If parse_dfs_path fell back to a local path
