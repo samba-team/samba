@@ -80,6 +80,149 @@ done:
 	return match;
 }
 
+#if 0
+/**********************************************************************
+ Parse a DFS pathname of the form(s)
+
+ \hostname\service			- self referral
+ \hostname\service\remainingpath	- Windows referral path
+
+ FIXME! Should we also parse:
+ \hostname\service/remainingpath	- POSIX referral path
+ as currently nothing uses this ?
+
+ into the dfs_path components. Strict form.
+
+ Checks DFS path starts with separator.
+ Checks hostname is ours.
+ Ensures servicename (share) is sent, and
+     if so, terminates the name or is followed by
+     \pathname.
+
+ If returned, remainingpath is untouched. Caller must call
+ check_path_syntaxXXX() on it.
+
+ Called by all non-fileserver processing (DFS RPC, FSCTL_DFS_GET_REFERRALS)
+ etc. Errors out on any inconsistency in the path.
+**********************************************************************/
+
+static NTSTATUS parse_dfs_path_strict(TALLOC_CTX *ctx,
+				const char *pathname,
+				char **_hostname,
+				char **_servicename,
+				char **_remaining_path)
+{
+	char *pathname_local = NULL;
+	char *p = NULL;
+	const char *hostname = NULL;
+	const char *servicename = NULL;
+	const char *reqpath = NULL;
+	bool my_hostname = false;
+	NTSTATUS status;
+
+	DBG_DEBUG("path = |%s|\n", pathname);
+
+	pathname_local = talloc_strdup(talloc_tos(), pathname);
+	if (pathname_local == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	/*
+	 * parse_dfs_path_strict() is called from
+	 * get_referred_path() and create_junction()
+	 * which use Windows DFS paths of \server\share.
+	 */
+
+	/*
+	 * Strict DFS paths *must* start with the
+	 * path separator '\\'.
+	 */
+
+	if (pathname_local[0] != '\\') {
+		DBG_ERR("path %s doesn't start with \\\n",
+			pathname_local);
+		status = NT_STATUS_NOT_FOUND;
+		goto out;
+	}
+
+	/* Now tokenize. */
+	/* Parse out hostname. */
+	p = strchr(pathname_local + 1, '\\');
+	if (p == NULL) {
+		DBG_ERR("can't parse hostname from path %s\n",
+			pathname_local);
+		status = NT_STATUS_NOT_FOUND;
+		goto out;
+	}
+	*p = '\0';
+	hostname = &pathname_local[1];
+
+	DBG_DEBUG("hostname: %s\n", hostname);
+
+	/* Is this really our hostname ? */
+	my_hostname = is_myname_or_ipaddr(hostname);
+	if (!my_hostname) {
+		DBG_ERR("Hostname %s is not ours.\n",
+			hostname);
+		status = NT_STATUS_NOT_FOUND;
+		goto out;
+	}
+
+	servicename = p + 1;
+
+	/*
+	 * Find the end of servicename by looking for
+	 * a directory separator character. The character
+	 * should be '\\' for a Windows path.
+	 * If there is no separator, then this is a self-referral
+	 * of "\server\share".
+	 */
+
+	p = strchr(servicename, '\\');
+	if (p != NULL) {
+		*p = '\0';
+	}
+
+	DBG_DEBUG("servicename: %s\n", servicename);
+
+	if (p == NULL) {
+		/* Client sent self referral "\server\share". */
+		reqpath = "";
+	} else {
+		/* Step past the '\0' we just replaced '\\' with. */
+		reqpath = p + 1;
+	}
+
+	DBG_DEBUG("rest of the path: %s\n", reqpath);
+
+	if (_hostname != NULL) {
+		*_hostname = talloc_strdup(ctx, hostname);
+		if (*_hostname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	}
+	if (_servicename != NULL) {
+		*_servicename = talloc_strdup(ctx, servicename);
+		if (*_servicename == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	}
+	if (_remaining_path != NULL) {
+		*_remaining_path = talloc_strdup(ctx, reqpath);
+		if (*_remaining_path == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	}
+
+	status = NT_STATUS_OK;
+out:
+	TALLOC_FREE(pathname_local);
+	return status;
+}
+#endif
+
 /**********************************************************************
  Parse a DFS pathname of the form /hostname/service/reqpath
  into the dfs_path structure.
