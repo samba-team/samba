@@ -229,35 +229,39 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
         self._enable_all_repl(self.dc1)
         self._force_all_reps(samdb1, self.dc1, 'inbound')
         self._force_all_reps(samdb1, self.dc1, 'outbound')
+        all_good_green = "\033[1;32m[ALL GOOD]\033[0m\n"
+        all_good = "[ALL GOOD]\n"
+
         try:
             out = self.check_output(
                 "samba-tool drs showrepl --pull-summary %s %s" %
                 (self.dc1, self.cmdline_creds))
             out = get_string(out)
-            self.assertStringsEqual(out, "[ALL GOOD]\n")
+            self.assertStringsEqual(out, all_good)
             out = get_string(out)
 
             out = self.check_output("samba-tool drs showrepl --pull-summary "
                                     "--color=yes %s %s" %
                                     (self.dc1, self.cmdline_creds))
             out = get_string(out)
-            self.assertStringsEqual(out, "\033[1;32m[ALL GOOD]\033[0m\n")
+            self.assertStringsEqual(out, all_good_green)
 
             # --verbose output is still quiet when all is good.
             out = self.check_output(
                 "samba-tool drs showrepl --pull-summary -v %s %s" %
                 (self.dc1, self.cmdline_creds))
             out = get_string(out)
-            self.assertStringsEqual(out, "[ALL GOOD]\n")
+            self.assertStringsEqual(out, all_good)
+
             out = self.check_output("samba-tool drs showrepl --pull-summary -v "
                                     "--color=yes %s %s" %
                                     (self.dc1, self.cmdline_creds))
             out = get_string(out)
+            self.assertStringsEqual(out, all_good_green)
 
         except samba.tests.BlackboxProcessError as e:
             self.fail(str(e))
 
-        self.assertStringsEqual(out, "\033[1;32m[ALL GOOD]\033[0m\n")
 
     def test_samba_tool_showrepl_summary_forced_failure(self):
         """Tests 'samba-tool drs showrepl --summary' command when we break the
