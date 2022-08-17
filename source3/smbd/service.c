@@ -1120,7 +1120,7 @@ void close_cnum(connection_struct *conn,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 
-	file_close_conn(conn);
+	file_close_conn(conn, close_type);
 
 	change_to_root_user();
 

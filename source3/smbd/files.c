@@ -755,7 +755,7 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
  Close all open files for a connection.
 ****************************************************************************/
 
-void file_close_conn(connection_struct *conn)
+void file_close_conn(connection_struct *conn, enum file_close_type close_type)
 {
 	files_struct *fsp, *next;
 
