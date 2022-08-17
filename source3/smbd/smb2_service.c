@@ -932,7 +932,9 @@ connection_struct *make_connection_smb2(struct smbd_smb2_request *req,
  Close a cnum.
 ****************************************************************************/
 
-void close_cnum(connection_struct *conn, uint64_t vuid)
+void close_cnum(connection_struct *conn,
+		uint64_t vuid,
+		enum file_close_type close_type)
 {
 	char rootpath[2] = { '/', '\0'};
 	struct smb_filename root_fname = { .base_name = rootpath };
