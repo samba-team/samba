@@ -47,90 +47,89 @@ static void *initialized_ctx_count_mutex = NULL;
 static void
 SMBC_module_init(void * punused)
 {
-    bool conf_loaded = False;
-    char *home = NULL;
-    TALLOC_CTX *frame = talloc_stackframe();
+	bool conf_loaded = False;
+	char *home = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-    setup_logging("libsmbclient", DEBUG_STDOUT);
+	setup_logging("libsmbclient", DEBUG_STDOUT);
 
-    /* Here we would open the smb.conf file if needed ... */
+	/* Here we would open the smb.conf file if needed ... */
 
-    home = getenv("HOME");
-    if (home) {
-        char *conf = NULL;
-        if (asprintf(&conf, "%s/.smb/smb.conf", home) > 0) {
-            if (lp_load_client(conf)) {
-                conf_loaded = True;
-            } else {
-                DEBUG(5, ("Could not load config file: %s\n",
-                          conf));
-            }
-            SAFE_FREE(conf);
-        }
-    }
+	home = getenv("HOME");
+	if (home) {
+		char *conf = NULL;
+		if (asprintf(&conf, "%s/.smb/smb.conf", home) > 0) {
+			if (lp_load_client(conf)) {
+				conf_loaded = True;
+			} else {
+				DEBUG(5, ("Could not load config file: %s\n",
+					  conf));
+			}
+			SAFE_FREE(conf);
+		}
+	}
 
-    if (!conf_loaded) {
-        /*
-         * Well, if that failed, try the get_dyn_CONFIGFILE
-         * Which points to the standard locn, and if that
-         * fails, silently ignore it and use the internal
-         * defaults ...
-         */
+	if (!conf_loaded) {
+		/*
+		 * Well, if that failed, try the get_dyn_CONFIGFILE
+		 * Which points to the standard locn, and if that
+		 * fails, silently ignore it and use the internal
+		 * defaults ...
+		 */
 
-        if (!lp_load_client(get_dyn_CONFIGFILE())) {
-            DEBUG(5, ("Could not load config file: %s\n",
-                      get_dyn_CONFIGFILE()));
-        } else if (home) {
-            char *conf;
-            /*
-             * We loaded the global config file.  Now lets
-             * load user-specific modifications to the
-             * global config.
-             */
-            if (asprintf(&conf,
-                         "%s/.smb/smb.conf.append",
-                         home) > 0) {
-                if (!lp_load_client_no_reinit(conf)) {
-                    DEBUG(10,
-                          ("Could not append config file: "
-                           "%s\n",
-                           conf));
-                }
-                SAFE_FREE(conf);
-            }
-        }
-    }
+		if (!lp_load_client(get_dyn_CONFIGFILE())) {
+			DEBUG(5, ("Could not load config file: %s\n",
+				  get_dyn_CONFIGFILE()));
+		} else if (home) {
+			char *conf;
+			/*
+			 * We loaded the global config file.  Now lets
+			 * load user-specific modifications to the
+			 * global config.
+			 */
+			if (asprintf(&conf,
+				     "%s/.smb/smb.conf.append",
+				     home) > 0) {
+				if (!lp_load_client_no_reinit(conf)) {
+					DEBUG(10,
+					      ("Could not append config file: "
+					       "%s\n",
+					       conf));
+				}
+				SAFE_FREE(conf);
+			}
+		}
+	}
 
-    load_interfaces();  /* Load the list of interfaces ... */
+	load_interfaces();  /* Load the list of interfaces ... */
 
-    reopen_logs();  /* Get logging working ... */
+	reopen_logs();  /* Get logging working ... */
 
-    /*
-     * Block SIGPIPE (from lib/util_sock.c: write())
-     * It is not needed and should not stop execution
-     */
-    BlockSignals(True, SIGPIPE);
+	/*
+	 * Block SIGPIPE (from lib/util_sock.c: write())
+	 * It is not needed and should not stop execution
+	 */
+	BlockSignals(True, SIGPIPE);
 
-    /* Create the mutex we'll use to protect initialized_ctx_count */
-    if (SMB_THREAD_CREATE_MUTEX("initialized_ctx_count_mutex",
-                                initialized_ctx_count_mutex) != 0) {
-        smb_panic("SMBC_module_init: "
-                  "failed to create 'initialized_ctx_count' mutex");
-    }
+	/* Create the mutex we'll use to protect initialized_ctx_count */
+	if (SMB_THREAD_CREATE_MUTEX("initialized_ctx_count_mutex",
+				    initialized_ctx_count_mutex) != 0) {
+		smb_panic("SMBC_module_init: "
+			  "failed to create 'initialized_ctx_count' mutex");
+	}
 
-
-    TALLOC_FREE(frame);
+	TALLOC_FREE(frame);
 }
 
 
 static void
 SMBC_module_terminate(void)
 {
-    TALLOC_CTX *frame = talloc_stackframe();
-    secrets_shutdown();
-    gfree_all();
-    SMBC_initialized = false;
-    TALLOC_FREE(frame);
+	TALLOC_CTX *frame = talloc_stackframe();
+	secrets_shutdown();
+	gfree_all();
+	SMBC_initialized = false;
+	TALLOC_FREE(frame);
 }
 
 
