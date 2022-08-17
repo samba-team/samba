@@ -1127,7 +1127,9 @@ connection_struct *make_connection(struct smb_request *req,
 				   const char *service_in,
 				   const char *pdev, uint64_t vuid,
 				   NTSTATUS *status);
-void close_cnum(connection_struct *conn, uint64_t vuid);
+void close_cnum(connection_struct *conn,
+		uint64_t vuid,
+		enum file_close_type close_type);
 
 /* The following definitions come from smbd/session.c  */
 struct sessionid;
