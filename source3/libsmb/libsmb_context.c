@@ -42,7 +42,7 @@ static unsigned int initialized_ctx_count = 0;
 static void *initialized_ctx_count_mutex = NULL;
 
 /*
- * Do some module- and library-wide intializations
+ * Do some module- and library-wide initializations
  */
 static void
 SMBC_module_init(void * punused)
