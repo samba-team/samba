@@ -21,6 +21,7 @@ import samba.tests
 import drs_base
 from samba.dcerpc import drsuapi
 from samba import drs_utils
+import os
 import re
 import json
 import ldb
@@ -229,6 +230,7 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
         self._enable_all_repl(self.dc1)
         self._force_all_reps(samdb1, self.dc1, 'inbound')
         self._force_all_reps(samdb1, self.dc1, 'outbound')
+        old_no_color = os.environ.get('NO_COLOR')
         all_good_green = "\033[1;32m[ALL GOOD]\033[0m\n"
         all_good = "[ALL GOOD]\n"
 
@@ -254,13 +256,40 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
             self.assertStringsEqual(out, all_good)
 
             out = self.check_output("samba-tool drs showrepl --pull-summary -v "
-                                    "--color=yes %s %s" %
+                                    "--color=always %s %s" %
+                                    (self.dc1, self.cmdline_creds))
+            out = get_string(out)
+            self.assertStringsEqual(out, all_good_green)
+
+            out = self.check_output("samba-tool drs showrepl --pull-summary -v "
+                                    "--color=never %s %s" %
+                                    (self.dc1, self.cmdline_creds))
+            out = get_string(out)
+            self.assertStringsEqual(out, all_good)
+
+            os.environ['NO_COLOR'] = 'bean'
+
+            out = self.check_output("samba-tool drs showrepl --pull-summary -v "
+                                    "--color=auto %s %s" %
+                                    (self.dc1, self.cmdline_creds))
+            out = get_string(out)
+            self.assertStringsEqual(out, all_good)
+
+            os.environ['NO_COLOR'] = ''
+
+            out = self.check_output("samba-tool drs showrepl --pull-summary -v "
+                                    "--color=auto %s %s" %
                                     (self.dc1, self.cmdline_creds))
             out = get_string(out)
             self.assertStringsEqual(out, all_good_green)
 
         except samba.tests.BlackboxProcessError as e:
             self.fail(str(e))
+        finally:
+            if old_no_color is None:
+                os.environ.pop('NO_COLOR', None)
+            else:
+                os.environ['NO_COLOR'] = old_no_color
 
 
     def test_samba_tool_showrepl_summary_forced_failure(self):
