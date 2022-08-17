@@ -57,7 +57,8 @@ COMMON_OPTIONS = [
     Option("--utf8", help="Use utf-8 Unicode characters",
            action='store_true'),
     Option("--color", help="use color (yes, no, auto)",
-           choices=['yes', 'no', 'auto']),
+           choices=['yes', 'no', 'auto', 'always', 'never', 'force',
+                    'none', 'if-tty', 'tty']),
     Option("--color-scheme", help=("use this colour scheme "
                                    "(implies --color=yes)"),
            choices=list(COLOUR_SETS.keys())),
@@ -154,12 +155,15 @@ class GraphCommand(Command):
         """Heuristics to work out the colour scheme for distance matrices.
         Returning None means no colour, otherwise it sould be a colour
         from graph.COLOUR_SETS"""
-        if color == 'no':
+        if color in ('no', 'never', 'none'):
             return None
 
-        if color == 'auto':
+        if color in ('auto', 'tty', 'if-tty', None):
             if os.environ.get('NO_COLOR'):
                 return None
+            if color_scheme is not None:
+                # --color-scheme usually implies --color=yes.
+                return color_scheme
             if isinstance(output, str) and output != '-':
                 return None
             if not self.outf.isatty():
