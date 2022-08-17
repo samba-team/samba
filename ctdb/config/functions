@@ -631,21 +631,11 @@ flush_route_cache ()
 # underlying interface
 interface_get_real ()
 {
-    # Output of "ip link show <iface>"
-    _iface_info="$1"
+	_iface="$1"
 
-    # Extract the full interface description to see if it is a VLAN
-    _t=$(echo "$_iface_info" |
-		awk 'NR == 1 { iface = $2; sub(":$", "", iface) ;
-			       print iface }')
-    case "$_t" in
-	*@*)
-	    # VLAN: use the underlying interface, after the '@'
-	    echo "${_t##*@}"
-	    ;;
-	*)
-	    echo "$_t"
-    esac
+	# If $_iface is a VLAN (i.e. contains an '@') then strip every
+	# before the '@', otherwise print the whole interface
+	echo "${_iface##*@}"
 }
 
 # Check whether an interface is operational
@@ -653,7 +643,7 @@ interface_monitor ()
 {
     _iface="$1"
 
-    _iface_info=$(ip link show "$_iface" 2>&1) || {
+    _iface_info=$(ip -br link show "$_iface" 2>&1) || {
 	echo "ERROR: Monitored interface ${_iface} does not exist"
 	return 1
     }
@@ -661,7 +651,7 @@ interface_monitor ()
 
     # If the interface is a virtual one (e.g. VLAN) then get the
     # underlying interface.
-    _realiface=$(interface_get_real "$_iface_info")
+    _realiface=$(interface_get_real "${_iface_info%% *}")
 
     if _bi=$(get_proc "net/bonding/${_realiface}" 2>/dev/null) ; then
 	# This is a bond: various monitoring strategies
