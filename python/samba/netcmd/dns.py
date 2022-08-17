@@ -63,6 +63,7 @@ class DnsConnWrapper:
 
     default_messages = {
         werror.WERR_DNS_ERROR_DS_UNAVAILABLE: "Could not contact RPC server",
+        werror.WERR_DNS_ERROR_ZONE_ALREADY_EXISTS: 'Zone already exists',
     }
 
     def __init__(self, server, lp, creds):
