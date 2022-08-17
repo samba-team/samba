@@ -108,8 +108,13 @@ class LDAPBase(object):
         return [str(x["cn"][0]) for x in res]
 
     def find_netbios(self):
-        res = self.ldb.search(base="CN=Partitions,%s" % self.config_dn,
-                              scope=SCOPE_SUBTREE, attrs=["nETBIOSName"])
+        try:
+            res = self.ldb.search(base="CN=Partitions,%s" % self.config_dn,
+                                  scope=SCOPE_SUBTREE, attrs=["nETBIOSName"])
+        except LdbError as e:
+            enum, estr = e
+            if estr in ["Operation unavailable without authentication"]:
+                raise CommandError(estr, e)
 
         if len(res) == 0:
             raise CommandError("Could not find netbios name")
