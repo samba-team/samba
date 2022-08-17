@@ -1214,11 +1214,11 @@ class cmd_update_record(Command):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
-        dns_conn = dns_connect(server, self.lp, self.creds)
+        dns_conn = DnsConnWrapper(server, self.lp, self.creds)
 
         try:
-            rec_match = dns_record_match(dns_conn, server, zone, name, record_type,
-                                         olddata)
+            rec_match = dns_record_match(dns_conn.dns_conn, server, zone,
+                                         name, record_type, olddata)
         except DNSParseError as e:
             raise CommandError(*e.args) from None
 
@@ -1237,18 +1237,19 @@ class cmd_update_record(Command):
         del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         del_rec_buf.rec = rec_match
 
-        try:
-            dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
-                                         0,
-                                         server,
-                                         zone,
-                                         name,
-                                         add_rec_buf,
-                                         del_rec_buf)
-        except WERRORError as e:
-            if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
-                raise CommandError('Zone does not exist; record could not be updated.')
-            raise e
+        messages = {
+            werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST: (
+                f'Zone {zone} does not exist; record could not be updated.'),
+        }
+
+        dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0,
+                                     server,
+                                     zone,
+                                     name,
+                                     add_rec_buf,
+                                     del_rec_buf,
+                                     messages=messages)
 
         self.outf.write('Record updated successfully\n')
 
