@@ -587,10 +587,14 @@ class LDAPObject(object):
         for x in self.attributes:
             if x.upper() in self.ignore_attributes or x.upper() in missing_attrs:
                 continue
-            if isinstance(self.attributes[x], list) and isinstance(other.attributes[x], list):
-                self.attributes[x] = sorted(self.attributes[x])
-                other.attributes[x] = sorted(other.attributes[x])
-            if self.attributes[x] != other.attributes[x]:
+            ours = self.attributes[x]
+            theirs = other.attributes[x]
+
+            if isinstance(ours, list) and isinstance(theirs, list):
+                ours = sorted(ours)
+                theirs = sorted(theirs)
+
+            if ours != theirs:
                 p = None
                 q = None
                 m = None
@@ -598,14 +602,14 @@ class LDAPObject(object):
                 # First check if the difference can be fixed but shunting the first part
                 # of the DomainHostName e.g. 'mysamba4.test.local' => 'mysamba4'
                 if x.upper() in self.other_attributes:
-                    p = [self.con.domain_name.split(".")[0] == j for j in self.attributes[x]]
-                    q = [other.con.domain_name.split(".")[0] == j for j in other.attributes[x]]
+                    p = [self.con.domain_name.split(".")[0] == j for j in ours]
+                    q = [other.con.domain_name.split(".")[0] == j for j in theirs]
                     if p == q:
                         continue
                 # Attribute values that are list that contain DN based values that may differ
                 elif x.upper() in self.dn_attributes:
-                    m = self.attributes[x]
-                    n = other.attributes[x]
+                    m = ours
+                    n = theirs
                     p = [self.fix_dn(j) for j in m]
                     q = [other.fix_dn(j) for j in n]
                     if p == q:
@@ -615,8 +619,8 @@ class LDAPObject(object):
                     m = p
                     n = q
                     if not p and not q:
-                        m = self.attributes[x]
-                        n = other.attributes[x]
+                        m = ours
+                        n = theirs
                     p = [self.fix_domain_name(j) for j in m]
                     q = [other.fix_domain_name(j) for j in n]
                     if p == q:
@@ -627,8 +631,8 @@ class LDAPObject(object):
                     m = p
                     n = q
                     if not p and not q:
-                        m = self.attributes[x]
-                        n = other.attributes[x]
+                        m = ours
+                        n = theirs
                     p = [self.fix_server_name(j) for j in m]
                     q = [other.fix_server_name(j) for j in n]
                     if p == q:
@@ -639,8 +643,8 @@ class LDAPObject(object):
                     m = p
                     n = q
                     if not p and not q:
-                        m = self.attributes[x]
-                        n = other.attributes[x]
+                        m = ours
+                        n = theirs
                     p = [self.fix_domain_netbios(j) for j in m]
                     q = [other.fix_domain_netbios(j) for j in n]
                     if p == q:
@@ -652,7 +656,7 @@ class LDAPObject(object):
                 if p and q:
                     res += 8 * " " + x + " => \n%s\n%s" % (p, q) + "\n"
                 else:
-                    res += 8 * " " + x + " => \n%s\n%s" % (self.attributes[x], other.attributes[x]) + "\n"
+                    res += 8 * " " + x + " => \n%s\n%s" % (ours, theirs) + "\n"
                 self.df_value_attrs.append(x)
         #
         if missing_attrs:
