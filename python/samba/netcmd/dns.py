@@ -59,12 +59,42 @@ def dns_connect(server, lp, creds):
 class DnsConnWrapper:
     """A wrapper around a dnsserver.dnsserver connection that makes it
     harder not to report friendly messages.
+
+    If, rather than
+
+        dns_conn = dns_connect(server, lp, creds)
+
+    you use
+
+        dns_conn = DnsConnWrapper(server, lp, creds)
+
+    then various common errors (for example, mispelled zones) on
+    common operations will raise CommandErrors that turn into
+    relatively nice messages (when compared to tracebacks).
+
+    In addition, if you provide a messages keyword argument, it will
+    override the defaults. Note that providing None will turn off the
+    default, letting the original exception shine through.
+
+        messages = {
+            werror.WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST: (
+                f'Zone {zone} does not exist and so could not be deleted.'),
+            werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST: None
+        }
+        res = dns_conn.DnssrvOperation2( # ...
+                                        messages=messages)
+
+    This example changes the message for ZONE_DOES_NOT_EXIST and
+    avoids catching NAME_DOES_NOT_EXIST.
+
+    Only WERRORErrors are intercepted.
     """
 
     default_messages = {
         werror.WERR_DNS_ERROR_DS_UNAVAILABLE: "Could not contact RPC server",
         werror.WERR_DNS_ERROR_ZONE_ALREADY_EXISTS: 'Zone already exists',
         werror.WERR_DNS_ERROR_RECORD_DOES_NOT_EXIST: 'The record does not exist',
+        werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:  'The zone does not exist',
     }
 
     def __init__(self, server, lp, creds):
