@@ -287,17 +287,11 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	}
 
 	if (*p == '/') {
-		int wl = strlen(smbc_getWorkgroup(context));
-
-		if (wl > 16) {
-			wl = 16;
-		}
-
-		*pp_server = talloc_strdup(ctx, smbc_getWorkgroup(context));
+		*pp_server = talloc_strndup(
+			ctx, smbc_getWorkgroup(context), 16);
 		if (!*pp_server) {
 			return -1;
 		}
-		(*pp_server)[wl] = '\0';
 		return 0;
 	}
 
