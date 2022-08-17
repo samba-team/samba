@@ -2341,7 +2341,7 @@ SMBC_listxattr_ctx(SMBCCTX *context,
          * attribute names which actually exist for a file.  Hmmm...
          */
         size_t retsize;
-        const char supported_old[] =
+        static const char supported_old[] =
                 "system.*\0"
                 "system.*+\0"
                 "system.nt_sec_desc.revision\0"
@@ -2360,7 +2360,7 @@ SMBC_listxattr_ctx(SMBCCTX *context,
                 "system.dos_attr.a_time\0"
                 "system.dos_attr.m_time\0"
                 ;
-        const char supported_new[] =
+        static const char supported_new[] =
                 "system.*\0"
                 "system.*+\0"
                 "system.nt_sec_desc.revision\0"
