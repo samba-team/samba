@@ -588,7 +588,7 @@ class LDAPObject(object):
             if x.upper() in self.ignore_attributes or x.upper() in missing_attrs:
                 continue
             ours = self.attributes[x]
-            theirs = other.attributes[x]
+            theirs = other.attributes.get(x)
 
             if isinstance(ours, list) and isinstance(theirs, list):
                 ours = sorted(ours)
