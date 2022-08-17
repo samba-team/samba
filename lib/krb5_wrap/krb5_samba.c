@@ -322,7 +322,7 @@ int smb_krb5_create_key_from_string(krb5_context context,
 		}
 
 		mdfour(nt_hash, utf16, utf16_size);
-		memset(utf16, 0, utf16_size);
+		BURN_PTR_SIZE(utf16, utf16_size);
 		ret = smb_krb5_keyblock_init_contents(context,
 						      ENCTYPE_ARCFOUR_HMAC,
 						      nt_hash,
