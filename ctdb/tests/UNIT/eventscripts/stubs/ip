@@ -130,17 +130,26 @@ ip_link_show()
 		_mac="00:00:00:00:00:00"
 		_brd="00:00:00:00:00:00"
 		_type="loopback"
-		_opts="<LOOPBACK${_flags}> mtu 65536 qdisc noqueue state UNKNOWN"
+		_state="UNKNOWN"
+		_status="<LOOPBACK${_flags}>"
+		_opts="mtu 65536 qdisc noqueue state ${_state}"
 		;;
 	*)
 		_mac=$(echo "$dev" | cksum | sed -r -e 's@(..)(..)(..).*@fe:fe:fe:\1:\2:\3@')
 		_brd="ff:ff:ff:ff:ff:ff"
 		_type="ether"
-		_opts="<BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
+		_status="<BROADCAST,MULTICAST${_flags}>"
+		_opts="mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
 		;;
 	esac
-	echo "${n:-42}: ${dev}: ${_opts}"
-	echo "    link/${_type} ${_mac} brd ${_brd}"
+
+	if $brief; then
+		printf '%-16s %-14s %-17s %s\n' \
+			"$dev" "$_status" "$_mac" "$_status"
+	else
+		echo "${n:-42}: ${dev}: ${_status} ${_opts}"
+		echo "    link/${_type} ${_mac} brd ${_brd}"
+	fi
 }
 
 # This is incomplete because it doesn't actually look up table ids in
@@ -209,6 +218,11 @@ ip_addr_show()
 	primary=true
 	secondary=true
 	_to=""
+
+	if $brief; then
+		not_implemented "ip -br addr show in \"$orig_args\""
+	fi
+
 	while [ -n "$1" ]; do
 		case "$1" in
 		dev)
@@ -466,6 +480,10 @@ ip_rule()
 
 ip_rule_show()
 {
+	if $brief; then
+		not_implemented "ip -br rule show in \"$orig_args\""
+	fi
+
 	ip_rule_show_1()
 	{
 		_pre="$1"
@@ -783,6 +801,14 @@ ip_route_del()
 ######################################################################
 
 orig_args="$*"
+
+brief=false
+case "$1" in
+-br*)
+	brief=true
+	shift
+	;;
+esac
 
 case "$1" in
 link)
