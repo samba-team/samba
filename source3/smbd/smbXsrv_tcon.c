@@ -921,12 +921,12 @@ NTSTATUS smbXsrv_tcon_disconnect(struct smbXsrv_tcon *tcon, uint64_t vuid)
 			 * removed from the linked list
 			 * conn->sconn->connections.
 			 */
-			close_cnum(tcon->compat, vuid);
+			close_cnum(tcon->compat, vuid, ERROR_CLOSE);
 			tcon->compat = NULL;
 			return status;
 		}
 
-		close_cnum(tcon->compat, vuid);
+		close_cnum(tcon->compat, vuid, SHUTDOWN_CLOSE);
 		tcon->compat = NULL;
 	}
 

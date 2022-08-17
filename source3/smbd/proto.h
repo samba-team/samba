@@ -1053,7 +1053,9 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 			      int snum,
 			      struct smbXsrv_session *session,
 			      const char *pdev);
-void close_cnum(connection_struct *conn, uint64_t vuid);
+void close_cnum(connection_struct *conn,
+		uint64_t vuid,
+		enum file_close_type close_type);
 
 /* The following definitions come from smbd/session.c  */
 struct sessionid;
