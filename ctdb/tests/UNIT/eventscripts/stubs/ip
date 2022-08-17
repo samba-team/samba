@@ -5,132 +5,142 @@ mkdir -p "$FAKE_IP_STATE"
 
 promote_secondaries=true
 
-not_implemented ()
+not_implemented()
 {
-    echo "ip stub command: \"$1\" not implemented"
-    exit 127
+	echo "ip stub command: \"$1\" not implemented"
+	exit 127
 }
 
 ######################################################################
 
-ip_link ()
+ip_link()
 {
-    case "$1" in
-	set)
-	    shift
-	    # iface="$1"
-	    case "$2" in
-		up)   ip_link_set_up "$1"  ;;
-		down) ip_link_down_up "$1" ;;
-		*)    not_implemented "\"$2\" in \"$orig_args\"" ;;
-	    esac
-	    ;;
-	show) shift ; ip_link_show "$@" ;;
-	add*) shift ; ip_link_add "$@" ;;
-	del*) shift ; ip_link_delete "$@" ;;
-	*) not_implemented "$*" ;;
-    esac
-}
-
-ip_link_add ()
-{
-    _link=""
-    _name=""
-    _type=""
-
-    while [ -n "$1" ] ; do
 	case "$1" in
-	    link)
-		_link="$2"
-		shift 2
+	set)
+		shift
+		# iface="$1"
+		case "$2" in
+		up) ip_link_set_up "$1" ;;
+		down) ip_link_down_up "$1" ;;
+		*) not_implemented "\"$2\" in \"$orig_args\"" ;;
+		esac
 		;;
-	    name)
-		_name="$2"
-		shift 2
+	show)
+		shift
+		ip_link_show "$@"
 		;;
-	    type)
-		if [ "$2" != "vlan" ] ; then
-		    not_implemented "link type $1"
-		fi
-		_type="$2"
-		shift 2
+	add*)
+		shift
+		ip_link_add "$@"
 		;;
-	    id) shift 2 ;;
-	    *) not_implemented "$1" ;;
+	del*)
+		shift
+		ip_link_delete "$@"
+		;;
+	*) not_implemented "$*" ;;
 	esac
-    done
+}
 
-    case "$_type" in
+ip_link_add()
+{
+	_link=""
+	_name=""
+	_type=""
+
+	while [ -n "$1" ]; do
+		case "$1" in
+		link)
+			_link="$2"
+			shift 2
+			;;
+		name)
+			_name="$2"
+			shift 2
+			;;
+		type)
+			if [ "$2" != "vlan" ]; then
+				not_implemented "link type $1"
+			fi
+			_type="$2"
+			shift 2
+			;;
+		id) shift 2 ;;
+		*) not_implemented "$1" ;;
+		esac
+	done
+
+	case "$_type" in
 	vlan)
-	    if [ -z "$_name" -o -z "$_link" ] ; then
-		not_implemented "ip link add with null name or link"
-	    fi
+		if [ -z "$_name" -o -z "$_link" ]; then
+			not_implemented "ip link add with null name or link"
+		fi
 
-	    mkdir -p "${FAKE_IP_STATE}/interfaces-vlan"
-	    echo "$_link" >"${FAKE_IP_STATE}/interfaces-vlan/${_name}"
-	    ip_link_set_down "$_name"
-	    ;;
-    esac
+		mkdir -p "${FAKE_IP_STATE}/interfaces-vlan"
+		echo "$_link" >"${FAKE_IP_STATE}/interfaces-vlan/${_name}"
+		ip_link_set_down "$_name"
+		;;
+	esac
 }
 
-ip_link_delete ()
+ip_link_delete()
 {
-    mkdir -p "${FAKE_IP_STATE}/interfaces-deleted"
-    touch "${FAKE_IP_STATE}/interfaces-deleted/$1"
-    rm -f "${FAKE_IP_STATE}/interfaces-vlan/$1"
+	mkdir -p "${FAKE_IP_STATE}/interfaces-deleted"
+	touch "${FAKE_IP_STATE}/interfaces-deleted/$1"
+	rm -f "${FAKE_IP_STATE}/interfaces-vlan/$1"
 }
 
-ip_link_set_up ()
+ip_link_set_up()
 {
-    rm -f "${FAKE_IP_STATE}/interfaces-down/$1"
-    rm -f "${FAKE_IP_STATE}/interfaces-deleted/$1"
+	rm -f "${FAKE_IP_STATE}/interfaces-down/$1"
+	rm -f "${FAKE_IP_STATE}/interfaces-deleted/$1"
 }
 
-ip_link_set_down ()
+ip_link_set_down()
 {
-    rm -f "${FAKE_IP_STATE}/interfaces-deleted/$1"
-    mkdir -p "${FAKE_IP_STATE}/interfaces-down"
-    touch "${FAKE_IP_STATE}/interfaces-down/$1"
+	rm -f "${FAKE_IP_STATE}/interfaces-deleted/$1"
+	mkdir -p "${FAKE_IP_STATE}/interfaces-down"
+	touch "${FAKE_IP_STATE}/interfaces-down/$1"
 }
 
-ip_link_show ()
+ip_link_show()
 {
-    dev="$1"
-    if [ "$dev" = "dev" -a -n "$2" ] ; then
-	dev="$2"
-    fi
+	dev="$1"
+	if [ "$dev" = "dev" -a -n "$2" ]; then
+		dev="$2"
+	fi
 
-    if [ -e "${FAKE_IP_STATE}/interfaces-deleted/$dev" ] ; then
-	echo "Device \"${dev}\" does not exist." >&2
-	exit 255
-    fi
+	if [ -e "${FAKE_IP_STATE}/interfaces-deleted/$dev" ]; then
+		echo "Device \"${dev}\" does not exist." >&2
+		exit 255
+	fi
 
-    if [ -r "${FAKE_IP_STATE}/interfaces-vlan/${dev}" ] ; then
-	read _link <"${FAKE_IP_STATE}/interfaces-vlan/${dev}"
-	dev="${dev}@${_link}"
-    fi
+	if [ -r "${FAKE_IP_STATE}/interfaces-vlan/${dev}" ]; then
+		read _link <"${FAKE_IP_STATE}/interfaces-vlan/${dev}"
+		dev="${dev}@${_link}"
+	fi
 
-    _state="UP"
-    _flags=",UP,LOWER_UP"
-    if [ -e "${FAKE_IP_STATE}/interfaces-down/$dev" ] ; then
-	_state="DOWN"
-	_flags=""
-    fi
-    case "$dev" in
-    lo)
-	    _mac="00:00:00:00:00:00"
-	    _brd="00:00:00:00:00:00"
-	    _type="loopback"
-	    _opts="<LOOPBACK${_flags}> mtu 65536 qdisc noqueue state UNKNOWN"
-	    ;;
-    *)
-	    _mac=$(echo $dev | cksum | sed -r -e 's@(..)(..)(..).*@fe:fe:fe:\1:\2:\3@')
-	    _brd="ff:ff:ff:ff:ff:ff"
-	    _type="ether"
-	    _opts="<BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
-    esac
-    echo "${n:-42}: ${dev}: ${_opts}"
-    echo "    link/${_type} ${_mac} brd ${_brd}"
+	_state="UP"
+	_flags=",UP,LOWER_UP"
+	if [ -e "${FAKE_IP_STATE}/interfaces-down/$dev" ]; then
+		_state="DOWN"
+		_flags=""
+	fi
+	case "$dev" in
+	lo)
+		_mac="00:00:00:00:00:00"
+		_brd="00:00:00:00:00:00"
+		_type="loopback"
+		_opts="<LOOPBACK${_flags}> mtu 65536 qdisc noqueue state UNKNOWN"
+		;;
+	*)
+		_mac=$(echo $dev | cksum | sed -r -e 's@(..)(..)(..).*@fe:fe:fe:\1:\2:\3@')
+		_brd="ff:ff:ff:ff:ff:ff"
+		_type="ether"
+		_opts="<BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
+		;;
+	esac
+	echo "${n:-42}: ${dev}: ${_opts}"
+	echo "    link/${_type} ${_mac} brd ${_brd}"
 }
 
 # This is incomplete because it doesn't actually look up table ids in
@@ -139,270 +149,315 @@ ip_link_show ()
 # to fake a bad table id.
 [ -n "$IP_ROUTE_BAD_TABLE_ID" ] || IP_ROUTE_BAD_TABLE_ID=false
 
-ip_check_table ()
+ip_check_table()
 {
-    _cmd="$1"
+	_cmd="$1"
 
-    if [ "$_cmd" = "route" -a -z "$_table" ] ;then
-	_table="main"
-    fi
+	if [ "$_cmd" = "route" -a -z "$_table" ]; then
+		_table="main"
+	fi
 
-    [ -n "$_table" ] || not_implemented "ip rule/route without \"table\""
+	[ -n "$_table" ] || not_implemented "ip rule/route without \"table\""
 
-    # Only allow tables names from 13.per_ip_routing and "main".  This
-    # is a cheap way of avoiding implementing the default/local
-    # tables.
-    case "$_table" in
-	ctdb.*|main)
-	    if $IP_ROUTE_BAD_TABLE_ID ; then
-		# Ouch.  Simulate inconsistent errors from ip.  :-(
-		case "$_cmd" in
-		    route)
-			echo "Error: argument "${_table}" is wrong: table id value is invalid" >&2
-			
-			;;
-		    *)
-			echo "Error: argument "${_table}" is wrong: invalid table ID" >&2
-		esac
-		exit 255
-	    fi
-	    ;;
+	# Only allow tables names from 13.per_ip_routing and "main".  This
+	# is a cheap way of avoiding implementing the default/local
+	# tables.
+	case "$_table" in
+	ctdb.* | main)
+		if $IP_ROUTE_BAD_TABLE_ID; then
+			# Ouch.  Simulate inconsistent errors from ip.  :-(
+			case "$_cmd" in
+			route)
+				echo "Error: argument "${_table}" is wrong: table id value is invalid" >&2
+
+				;;
+			*)
+				echo "Error: argument "${_table}" is wrong: invalid table ID" >&2
+				;;
+			esac
+			exit 255
+		fi
+		;;
 	*) not_implemented "table=${_table} ${orig_args}" ;;
-    esac
+	esac
 }
 
 ######################################################################
 
-ip_addr ()
+ip_addr()
 {
-    case "$1" in
-	show|list|"") shift ; ip_addr_show "$@" ;;
-	add*)         shift ; ip_addr_add  "$@" ;;
-	del*)         shift ; ip_addr_del  "$@" ;;
+	case "$1" in
+	show | list | "")
+		shift
+		ip_addr_show "$@"
+		;;
+	add*)
+		shift
+		ip_addr_add "$@"
+		;;
+	del*)
+		shift
+		ip_addr_del "$@"
+		;;
 	*) not_implemented "\"$1\" in \"$orig_args\"" ;;
-    esac
+	esac
 }
 
-ip_addr_show ()
+ip_addr_show()
 {
-    dev=""
-    primary=true
-    secondary=true
-    _to=""
-    while [ -n "$1" ] ; do
-	case "$1" in
-	    dev)
-		dev="$2" ; shift 2
-		;;
-            # Do stupid things and stupid things will happen!
-	    primary)
-		primary=true ; secondary=false ; shift
-		;;
-	    secondary)
-		secondary=true ; primary=false ; shift
-		;;
-	    to)
-		_to="$2" ; shift 2
-		;;
-	    *)
-	        # Assume an interface name
-		dev="$1" ; shift 1
-	esac
-    done
-    devices="$dev"
-    if [ -z "$devices" ] ; then
-	# No device specified?  Get all the primaries...
-	devices=$(ls "${FAKE_IP_STATE}/addresses/"*-primary 2>/dev/null | \
-	    sed -e 's@.*/@@' -e 's@-.*-primary$@@' | sort -u)
-    fi
-    calc_brd ()
-    {
-	    case "${local#*/}" in
-	    24) brd="${local%.*}.255" ;;
-	    32) brd="" ;;
-	    *) not_implemented "list ... fake bits other than 24/32: ${local#*/}"
-	esac
-    }
-    show_iface()
-    {
-	ip_link_show "$dev"
-
-	nets=$(ls "${FAKE_IP_STATE}/addresses/${dev}"-*-primary 2>/dev/null | \
-	    sed -e 's@.*/@@' -e "s@${dev}-\(.*\)-primary\$@\1@")
-
-	for net in $nets ; do
-	    pf="${FAKE_IP_STATE}/addresses/${dev}-${net}-primary"
-	    sf="${FAKE_IP_STATE}/addresses/${dev}-${net}-secondary"
-	    if $primary && [ -r "$pf" ] ; then
-		read local scope <"$pf"
-		if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
-		    calc_brd
-		    echo "    inet ${local} ${brd:+brd ${brd} }scope ${scope} ${dev}"
-		fi
-	    fi
-	    if $secondary && [ -r "$sf" ] ; then
-		while read local scope ; do
-		    if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
-			calc_brd
-			echo "    inet ${local} ${brd:+brd }${brd} scope ${scope} secondary ${dev}"
-		    fi
-		done <"$sf"
-	    fi
-	    if [ -z "$_to" ] ; then
-		echo "       valid_lft forever preferred_lft forever"
-	    fi
+	dev=""
+	primary=true
+	secondary=true
+	_to=""
+	while [ -n "$1" ]; do
+		case "$1" in
+		dev)
+			dev="$2"
+			shift 2
+			;;
+			# Do stupid things and stupid things will happen!
+		primary)
+			primary=true
+			secondary=false
+			shift
+			;;
+		secondary)
+			secondary=true
+			primary=false
+			shift
+			;;
+		to)
+			_to="$2"
+			shift 2
+			;;
+		*)
+			# Assume an interface name
+			dev="$1"
+			shift 1
+			;;
+		esac
 	done
-    }
-    n=1
-    for dev in $devices ; do
-	if [ -z "$_to" ] || \
-	    grep -F "${_to%/*}/" "${FAKE_IP_STATE}/addresses/${dev}-"* >/dev/null ; then
-	    show_iface
+	devices="$dev"
+	if [ -z "$devices" ]; then
+		# No device specified?  Get all the primaries...
+		devices=$(ls "${FAKE_IP_STATE}/addresses/"*-primary 2>/dev/null |
+			sed -e 's@.*/@@' -e 's@-.*-primary$@@' | sort -u)
 	fi
-	n=$(($n + 1))
-    done
+	calc_brd()
+	{
+		case "${local#*/}" in
+		24) brd="${local%.*}.255" ;;
+		32) brd="" ;;
+		*) not_implemented "list ... fake bits other than 24/32: ${local#*/}" ;;
+		esac
+	}
+	show_iface()
+	{
+		ip_link_show "$dev"
+
+		nets=$(ls "${FAKE_IP_STATE}/addresses/${dev}"-*-primary 2>/dev/null |
+			sed -e 's@.*/@@' -e "s@${dev}-\(.*\)-primary\$@\1@")
+
+		for net in $nets; do
+			pf="${FAKE_IP_STATE}/addresses/${dev}-${net}-primary"
+			sf="${FAKE_IP_STATE}/addresses/${dev}-${net}-secondary"
+			if $primary && [ -r "$pf" ]; then
+				read local scope <"$pf"
+				if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ]; then
+					calc_brd
+					echo "    inet ${local} ${brd:+brd ${brd} }scope ${scope} ${dev}"
+				fi
+			fi
+			if $secondary && [ -r "$sf" ]; then
+				while read local scope; do
+					if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ]; then
+						calc_brd
+						echo "    inet ${local} ${brd:+brd }${brd} scope ${scope} secondary ${dev}"
+					fi
+				done <"$sf"
+			fi
+			if [ -z "$_to" ]; then
+				echo "       valid_lft forever preferred_lft forever"
+			fi
+		done
+	}
+	n=1
+	for dev in $devices; do
+		if [ -z "$_to" ] ||
+			grep -F "${_to%/*}/" "${FAKE_IP_STATE}/addresses/${dev}-"* >/dev/null; then
+			show_iface
+		fi
+		n=$(($n + 1))
+	done
 }
 
 # Copied from 13.per_ip_routing for now... so this is lazy testing  :-(
-ipv4_host_addr_to_net ()
+ipv4_host_addr_to_net()
 {
-    _host="$1"
-    _maskbits="$2"
+	_host="$1"
+	_maskbits="$2"
 
-    # Convert the host address to an unsigned long by splitting out
-    # the octets and doing the math.
-    _host_ul=0
-    for _o in $(export IFS="." ; echo $_host) ; do
-	_host_ul=$(( ($_host_ul << 8) + $_o)) # work around Emacs color bug
-    done
+	# Convert the host address to an unsigned long by splitting out
+	# the octets and doing the math.
+	_host_ul=0
+	for _o in $(
+		export IFS="."
+		echo $_host
+	); do
+		_host_ul=$((($_host_ul << 8) + $_o)) # work around Emacs color bug
+	done
 
-    # Calculate the mask and apply it.
-    _mask_ul=$(( 0xffffffff << (32 - $_maskbits) ))
-    _net_ul=$(( $_host_ul & $_mask_ul ))
+	# Calculate the mask and apply it.
+	_mask_ul=$((0xffffffff << (32 - $_maskbits)))
+	_net_ul=$(($_host_ul & $_mask_ul))
 
-    # Now convert to a network address one byte at a time.
-    _net=""
-    for _o in $(seq 1 4) ; do
-	_net="$(($_net_ul & 255))${_net:+.}${_net}"
-	_net_ul=$(($_net_ul >> 8))
-    done
+	# Now convert to a network address one byte at a time.
+	_net=""
+	for _o in $(seq 1 4); do
+		_net="$(($_net_ul & 255))${_net:+.}${_net}"
+		_net_ul=$(($_net_ul >> 8))
+	done
 
-    echo "${_net}/${_maskbits}"
+	echo "${_net}/${_maskbits}"
 }
 
-ip_addr_add ()
+ip_addr_add()
 {
-    local=""
-    dev=""
-    brd=""
-    scope="global"
-    while [ -n "$1" ] ; do
-	case "$1" in
-	    *.*.*.*/*)
-		local="$1" ; shift
-		;;
-	    local)
-		local="$2" ; shift 2
-		;;
-	    broadcast|brd)
-		# For now assume this is always '+'.
-		if [ "$2" != "+" ] ; then
-		    not_implemented "addr add ... brd $2 ..."
-		fi
-		shift 2
-		;;
-	    dev)
-		dev="$2" ; shift 2
-		;;
-	    scope)
-		scope="$2" ; shift 2
-		;;
-	    *)
-		not_implemented "$@"
-	esac
-    done
-    if [ -z "$dev" ] ; then
-	not_implemented "addr add (without dev)"
-    fi
-    mkdir -p "${FAKE_IP_STATE}/addresses"
-    net_str=$(ipv4_host_addr_to_net $(IFS="/" ; echo $local))
-    net_str=$(echo "$net_str" | sed -e 's@/@_@')
-    pf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-primary"
-    sf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-secondary"
-    # We could lock here... but we should be the only ones playing
-    # around here with these stubs.
-    if [ ! -f "$pf" ] ; then
-	echo "$local $scope" >"$pf"
-    elif grep -Fq "$local" "$pf" ; then 
-	echo "RTNETLINK answers: File exists" >&2
-	exit 254
-    elif [ -f "$sf" ] && grep -Fq "$local" "$sf" ; then 
-	echo "RTNETLINK answers: File exists" >&2
-	exit 254
-    else
-	echo "$local $scope" >>"$sf"
-    fi
-}
-
-ip_addr_del ()
-{
-    local=""
-    dev=""
-    while [ -n "$1" ] ; do
-	case "$1" in
-	    *.*.*.*/*)
-		local="$1" ; shift
-		;;
-	    local)
-		local="$2" ; shift 2
-		;;
-	    dev)
-		dev="$2" ; shift 2
-		;;
-	    *)
-		not_implemented "addr del ... $1 ..."
-	esac
-    done
-    if [ -z "$dev" ] ; then
-	not_implemented "addr del (without dev)"
-    fi
-    mkdir -p "${FAKE_IP_STATE}/addresses"
-    net_str=$(ipv4_host_addr_to_net $(IFS="/" ; echo $local))
-    net_str=$(echo "$net_str" | sed -e 's@/@_@')
-    pf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-primary"
-    sf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-secondary"
-    # We could lock here... but we should be the only ones playing
-    # around here with these stubs.
-    if [ ! -f "$pf" ] ; then
-	echo "RTNETLINK answers: Cannot assign requested address" >&2
-	exit 254
-    elif grep -Fq "$local" "$pf" ; then
-	if $promote_secondaries && [ -s "$sf" ] ; then
-	    head -n 1 "$sf" >"$pf"
-	    sed -i -e '1d' "$sf"
-	else
-	    # Remove primaries AND SECONDARIES.
-	    rm -f "$pf" "$sf"
+	local=""
+	dev=""
+	brd=""
+	scope="global"
+	while [ -n "$1" ]; do
+		case "$1" in
+		*.*.*.*/*)
+			local="$1"
+			shift
+			;;
+		local)
+			local="$2"
+			shift 2
+			;;
+		broadcast | brd)
+			# For now assume this is always '+'.
+			if [ "$2" != "+" ]; then
+				not_implemented "addr add ... brd $2 ..."
+			fi
+			shift 2
+			;;
+		dev)
+			dev="$2"
+			shift 2
+			;;
+		scope)
+			scope="$2"
+			shift 2
+			;;
+		*)
+			not_implemented "$@"
+			;;
+		esac
+	done
+	if [ -z "$dev" ]; then
+		not_implemented "addr add (without dev)"
 	fi
-    elif [ -f "$sf" ] && grep -Fq "$local" "$sf" ; then 
-	grep -Fv "$local" "$sf" >"${sf}.new"
-	mv "${sf}.new" "$sf"
-    else
-	echo "RTNETLINK answers: Cannot assign requested address" >&2
-	exit 254
-    fi
+	mkdir -p "${FAKE_IP_STATE}/addresses"
+	net_str=$(ipv4_host_addr_to_net $(
+		IFS="/"
+		echo $local
+	))
+	net_str=$(echo "$net_str" | sed -e 's@/@_@')
+	pf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-primary"
+	sf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-secondary"
+	# We could lock here... but we should be the only ones playing
+	# around here with these stubs.
+	if [ ! -f "$pf" ]; then
+		echo "$local $scope" >"$pf"
+	elif grep -Fq "$local" "$pf"; then
+		echo "RTNETLINK answers: File exists" >&2
+		exit 254
+	elif [ -f "$sf" ] && grep -Fq "$local" "$sf"; then
+		echo "RTNETLINK answers: File exists" >&2
+		exit 254
+	else
+		echo "$local $scope" >>"$sf"
+	fi
+}
+
+ip_addr_del()
+{
+	local=""
+	dev=""
+	while [ -n "$1" ]; do
+		case "$1" in
+		*.*.*.*/*)
+			local="$1"
+			shift
+			;;
+		local)
+			local="$2"
+			shift 2
+			;;
+		dev)
+			dev="$2"
+			shift 2
+			;;
+		*)
+			not_implemented "addr del ... $1 ..."
+			;;
+		esac
+	done
+	if [ -z "$dev" ]; then
+		not_implemented "addr del (without dev)"
+	fi
+	mkdir -p "${FAKE_IP_STATE}/addresses"
+	net_str=$(ipv4_host_addr_to_net $(
+		IFS="/"
+		echo $local
+	))
+	net_str=$(echo "$net_str" | sed -e 's@/@_@')
+	pf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-primary"
+	sf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-secondary"
+	# We could lock here... but we should be the only ones playing
+	# around here with these stubs.
+	if [ ! -f "$pf" ]; then
+		echo "RTNETLINK answers: Cannot assign requested address" >&2
+		exit 254
+	elif grep -Fq "$local" "$pf"; then
+		if $promote_secondaries && [ -s "$sf" ]; then
+			head -n 1 "$sf" >"$pf"
+			sed -i -e '1d' "$sf"
+		else
+			# Remove primaries AND SECONDARIES.
+			rm -f "$pf" "$sf"
+		fi
+	elif [ -f "$sf" ] && grep -Fq "$local" "$sf"; then
+		grep -Fv "$local" "$sf" >"${sf}.new"
+		mv "${sf}.new" "$sf"
+	else
+		echo "RTNETLINK answers: Cannot assign requested address" >&2
+		exit 254
+	fi
 }
 
 ######################################################################
 
-ip_rule ()
+ip_rule()
 {
-    case "$1" in
-	show|list|"") shift ; ip_rule_show "$@" ;;
-	add)          shift ; ip_rule_add  "$@" ;;
-	del*)         shift ; ip_rule_del  "$@" ;;
+	case "$1" in
+	show | list | "")
+		shift
+		ip_rule_show "$@"
+		;;
+	add)
+		shift
+		ip_rule_add "$@"
+		;;
+	del*)
+		shift
+		ip_rule_del "$@"
+		;;
 	*) not_implemented "$1 in \"$orig_args\"" ;;
-    esac
+	esac
 
 }
 
@@ -410,129 +465,150 @@ ip_rule ()
 # the real version, rules can be repeated.  Deleting just deletes the
 # 1st match.
 
-ip_rule_show ()
+ip_rule_show()
 {
-    ip_rule_show_1 ()
-    {
-	_pre="$1"
-	_table="$2"
-	_selectors="$3"
-	# potentially more options
+	ip_rule_show_1()
+	{
+		_pre="$1"
+		_table="$2"
+		_selectors="$3"
+		# potentially more options
 
-	printf "%d:\t%s lookup %s \n" $_pre "$_selectors" "$_table"
-    }
+		printf "%d:\t%s lookup %s \n" $_pre "$_selectors" "$_table"
+	}
 
-    ip_rule_show_some ()
-    {
-	_min="$1"
-	_max="$2"
+	ip_rule_show_some()
+	{
+		_min="$1"
+		_max="$2"
 
-	[ -f "${FAKE_IP_STATE}/rules" ] || return
+		[ -f "${FAKE_IP_STATE}/rules" ] || return
 
-	while read _pre _table _selectors ; do
-	    # Only print those in range
-	    [ $_min -le $_pre -a $_pre -le $_max ] || continue
+		while read _pre _table _selectors; do
+			# Only print those in range
+			[ $_min -le $_pre -a $_pre -le $_max ] || continue
 
-	    ip_rule_show_1 $_pre "$_table" "$_selectors"
-	done <"${FAKE_IP_STATE}/rules"
-    }
+			ip_rule_show_1 $_pre "$_table" "$_selectors"
+		done <"${FAKE_IP_STATE}/rules"
+	}
 
-    ip_rule_show_1 0 "local" "from all"
+	ip_rule_show_1 0 "local" "from all"
 
-    ip_rule_show_some 1 32765
+	ip_rule_show_some 1 32765
 
-    ip_rule_show_1 32766 "main" "from all"
-    ip_rule_show_1 32767 "default" "from all"
+	ip_rule_show_1 32766 "main" "from all"
+	ip_rule_show_1 32767 "default" "from all"
 
-    ip_rule_show_some 32768 2147483648
+	ip_rule_show_some 32768 2147483648
 }
 
-ip_rule_common ()
+ip_rule_common()
 {
-    _from=""
-    _pre=""
-    _table=""
-    while [ -n "$1" ] ; do
-	case "$1" in
-	    from)  _from="$2"  ; shift 2 ;;
-	    pref)  _pre="$2"   ; shift 2 ;;
-	    table) _table="$2" ; shift 2 ;;
-	    *) not_implemented "$1 in \"$orig_args\"" ;;
-	esac
-    done
-
-    [ -n "$_pre" ]   || not_implemented "ip rule without \"pref\""
-    ip_check_table "rule"
-    # Relax this if more selectors added later...
-    [ -n "$_from" ]  || not_implemented "ip rule without \"from\""
-}
-
-ip_rule_add ()
-{
-    ip_rule_common "$@"
-
-    _f="${FAKE_IP_STATE}/rules"
-    touch "$_f"
-    (
-	flock 0
-	# Filter order must be consistent with the comparison in ip_rule_del()
-	echo "$_pre $_table${_from:+ from }$_from" >>"$_f"
-    ) <"$_f"
-}
-
-ip_rule_del ()
-{
-    ip_rule_common "$@"
-
-    _f="${FAKE_IP_STATE}/rules"
-    touch "$_f"
-    (
-	flock 0
-	_tmp="${_f}.new"
-	: >"$_tmp"
-	_found=false
-	while read _p _t _s ; do
-	    if ! $_found && \
-		[ "$_p" = "$_pre" -a "$_t" = "$_table" -a \
-		"$_s" = "${_from:+from }$_from" ] ; then
-		# Found.  Skip this one but not future ones.
-		_found=true
-	    else
-		echo "$_p $_t $_s" >>"$_tmp"
-	    fi
+	_from=""
+	_pre=""
+	_table=""
+	while [ -n "$1" ]; do
+		case "$1" in
+		from)
+			_from="$2"
+			shift 2
+			;;
+		pref)
+			_pre="$2"
+			shift 2
+			;;
+		table)
+			_table="$2"
+			shift 2
+			;;
+		*) not_implemented "$1 in \"$orig_args\"" ;;
+		esac
 	done
-	if cmp -s "$_tmp" "$_f" ; then
-	    # No changes, must not have found what we wanted to delete
-	    echo "RTNETLINK answers: No such file or directory" >&2
-	    rm -f "$_tmp"
-	    exit 2
-	else
-	    mv "$_tmp" "$_f"
-	fi
-    ) <"$_f" || exit $?
+
+	[ -n "$_pre" ] || not_implemented "ip rule without \"pref\""
+	ip_check_table "rule"
+	# Relax this if more selectors added later...
+	[ -n "$_from" ] || not_implemented "ip rule without \"from\""
+}
+
+ip_rule_add()
+{
+	ip_rule_common "$@"
+
+	_f="${FAKE_IP_STATE}/rules"
+	touch "$_f"
+	(
+		flock 0
+		# Filter order must be consistent with the comparison in ip_rule_del()
+		echo "$_pre $_table${_from:+ from }$_from" >>"$_f"
+	) <"$_f"
+}
+
+ip_rule_del()
+{
+	ip_rule_common "$@"
+
+	_f="${FAKE_IP_STATE}/rules"
+	touch "$_f"
+	(
+		flock 0
+		_tmp="${_f}.new"
+		: >"$_tmp"
+		_found=false
+		while read _p _t _s; do
+			if ! $_found &&
+				[ "$_p" = "$_pre" -a "$_t" = "$_table" -a \
+					"$_s" = "${_from:+from }$_from" ]; then
+				# Found.  Skip this one but not future ones.
+				_found=true
+			else
+				echo "$_p $_t $_s" >>"$_tmp"
+			fi
+		done
+		if cmp -s "$_tmp" "$_f"; then
+			# No changes, must not have found what we wanted to delete
+			echo "RTNETLINK answers: No such file or directory" >&2
+			rm -f "$_tmp"
+			exit 2
+		else
+			mv "$_tmp" "$_f"
+		fi
+	) <"$_f" || exit $?
 }
 
 ######################################################################
 
-ip_route ()
+ip_route()
 {
-    case "$1" in
-	show|list)    shift ; ip_route_show  "$@" ;;
-	flush)        shift ; ip_route_flush "$@" ;;
-	add)          shift ; ip_route_add   "$@" ;;
-	del*)         shift ; ip_route_del   "$@" ;;
+	case "$1" in
+	show | list)
+		shift
+		ip_route_show "$@"
+		;;
+	flush)
+		shift
+		ip_route_flush "$@"
+		;;
+	add)
+		shift
+		ip_route_add "$@"
+		;;
+	del*)
+		shift
+		ip_route_del "$@"
+		;;
 	*) not_implemented "$1 in \"ip route\"" ;;
-    esac
+	esac
 }
 
-ip_route_common ()
+ip_route_common()
 {
-    if [ "$1" = table ] ; then
-	_table="$2"
-	shift 2
-    fi
+	if [ "$1" = table ]; then
+		_table="$2"
+		shift 2
+	fi
 
-    ip_check_table "route"
+	ip_check_table "route"
 }
 
 # Routes are in a file per table in the directory
@@ -540,128 +616,164 @@ ip_route_common ()
 # that is passed and don't do any lookup.  This could be "improved" if
 # necessary.
 
-ip_route_show ()
+ip_route_show()
 {
-    ip_route_common "$@"
+	ip_route_common "$@"
 
-    # Missing file is just an empty table
-    sort "$FAKE_IP_STATE/routes/${_table}" 2>/dev/null || true
+	# Missing file is just an empty table
+	sort "$FAKE_IP_STATE/routes/${_table}" 2>/dev/null || true
 }
 
-ip_route_flush ()
+ip_route_flush()
 {
-    ip_route_common "$@"
+	ip_route_common "$@"
 
-    rm -f "$FAKE_IP_STATE/routes/${_table}"
+	rm -f "$FAKE_IP_STATE/routes/${_table}"
 }
 
-ip_route_add ()
+ip_route_add()
 {
-    _prefix=""
-    _dev=""
-    _gw=""
-    _table=""
-    _metric=""
+	_prefix=""
+	_dev=""
+	_gw=""
+	_table=""
+	_metric=""
 
-    while [ -n "$1" ] ; do
-	case "$1" in
-	    *.*.*.*/*|*.*.*.*) _prefix="$1" ; shift 1 ;;
-	    local) _prefix="$2" ; shift 2 ;;
-	    dev)   _dev="$2"   ; shift 2 ;;
-	    via)   _gw="$2"    ; shift 2 ;;
-	    table) _table="$2" ; shift 2 ;;
-	    metric) _metric="$2" ; shift 2 ;;
-	    *) not_implemented "$1 in \"$orig_args\"" ;;
-	esac
-    done
+	while [ -n "$1" ]; do
+		case "$1" in
+		*.*.*.*/* | *.*.*.*)
+			_prefix="$1"
+			shift 1
+			;;
+		local)
+			_prefix="$2"
+			shift 2
+			;;
+		dev)
+			_dev="$2"
+			shift 2
+			;;
+		via)
+			_gw="$2"
+			shift 2
+			;;
+		table)
+			_table="$2"
+			shift 2
+			;;
+		metric)
+			_metric="$2"
+			shift 2
+			;;
+		*) not_implemented "$1 in \"$orig_args\"" ;;
+		esac
+	done
 
-    ip_check_table "route"
-    [ -n "$_prefix" ] || not_implemented "ip route without inet prefix in \"$orig_args\""
-    # This can't be easily deduced, so print some garbage.
-    [ -n "$_dev" ] || _dev="ethXXX"
+	ip_check_table "route"
+	[ -n "$_prefix" ] || not_implemented "ip route without inet prefix in \"$orig_args\""
+	# This can't be easily deduced, so print some garbage.
+	[ -n "$_dev" ] || _dev="ethXXX"
 
-    # Alias or add missing bits
-    case "$_prefix" in
+	# Alias or add missing bits
+	case "$_prefix" in
 	0.0.0.0/0) _prefix="default" ;;
 	*/*) : ;;
 	*) _prefix="${_prefix}/32" ;;
-    esac
+	esac
 
-    _f="$FAKE_IP_STATE/routes/${_table}"
-    mkdir -p "$FAKE_IP_STATE/routes"
-    touch "$_f"
+	_f="$FAKE_IP_STATE/routes/${_table}"
+	mkdir -p "$FAKE_IP_STATE/routes"
+	touch "$_f"
 
-    # Check for duplicate
-    _prefix_regexp=$(echo "^${_prefix}" | sed -e 's@\.@\\.@g')
-    if [ -n "$_metric" ] ; then
-	_prefix_regexp="${_prefix_regexp} .*metric ${_metric} "
-    fi
-    if grep -q "$_prefix_regexp" "$_f" ; then
-	echo "RTNETLINK answers: File exists" >&2
-	exit 1
-    fi
+	# Check for duplicate
+	_prefix_regexp=$(echo "^${_prefix}" | sed -e 's@\.@\\.@g')
+	if [ -n "$_metric" ]; then
+		_prefix_regexp="${_prefix_regexp} .*metric ${_metric} "
+	fi
+	if grep -q "$_prefix_regexp" "$_f"; then
+		echo "RTNETLINK answers: File exists" >&2
+		exit 1
+	fi
 
-    (
-	flock 0
+	(
+		flock 0
 
-	_out="${_prefix} "
-	[ -z "$_gw" ] || _out="${_out}via ${_gw} "
-	[ -z "$_dev" ] || _out="${_out}dev ${_dev} "
-	[ -n "$_gw" ] || _out="${_out} scope link "
-	[ -z "$_metric" ] || _out="${_out} metric ${_metric} "
-	echo "$_out" >>"$_f"
-    ) <"$_f"
+		_out="${_prefix} "
+		[ -z "$_gw" ] || _out="${_out}via ${_gw} "
+		[ -z "$_dev" ] || _out="${_out}dev ${_dev} "
+		[ -n "$_gw" ] || _out="${_out} scope link "
+		[ -z "$_metric" ] || _out="${_out} metric ${_metric} "
+		echo "$_out" >>"$_f"
+	) <"$_f"
 }
 
-ip_route_del ()
+ip_route_del()
 {
-    _prefix=""
-    _dev=""
-    _gw=""
-    _table=""
-    _metric=""
+	_prefix=""
+	_dev=""
+	_gw=""
+	_table=""
+	_metric=""
 
-    while [ -n "$1" ] ; do
-	case "$1" in
-	    *.*.*.*/*|*.*.*.*) _prefix="$1" ; shift 1 ;;
-	    local) _prefix="$2" ; shift 2 ;;
-	    dev)   _dev="$2"   ; shift 2 ;;
-	    via)   _gw="$2"    ; shift 2 ;;
-	    table) _table="$2" ; shift 2 ;;
-	    metric) _metric="$2" ; shift 2 ;;
-	    *) not_implemented "$1 in \"$orig_args\"" ;;
-	esac
-    done
+	while [ -n "$1" ]; do
+		case "$1" in
+		*.*.*.*/* | *.*.*.*)
+			_prefix="$1"
+			shift 1
+			;;
+		local)
+			_prefix="$2"
+			shift 2
+			;;
+		dev)
+			_dev="$2"
+			shift 2
+			;;
+		via)
+			_gw="$2"
+			shift 2
+			;;
+		table)
+			_table="$2"
+			shift 2
+			;;
+		metric)
+			_metric="$2"
+			shift 2
+			;;
+		*) not_implemented "$1 in \"$orig_args\"" ;;
+		esac
+	done
 
-    ip_check_table "route"
-    [ -n "$_prefix" ] || not_implemented "ip route without inet prefix in \"$orig_args\""
-    # This can't be easily deduced, so print some garbage.
-    [ -n "$_dev" ] || _dev="ethXXX"
+	ip_check_table "route"
+	[ -n "$_prefix" ] || not_implemented "ip route without inet prefix in \"$orig_args\""
+	# This can't be easily deduced, so print some garbage.
+	[ -n "$_dev" ] || _dev="ethXXX"
 
-    # Alias or add missing bits
-    case "$_prefix" in
+	# Alias or add missing bits
+	case "$_prefix" in
 	0.0.0.0/0) _prefix="default" ;;
 	*/*) : ;;
 	*) _prefix="${_prefix}/32" ;;
-    esac
+	esac
 
-    _f="$FAKE_IP_STATE/routes/${_table}"
-    mkdir -p "$FAKE_IP_STATE/routes"
-    touch "$_f"
+	_f="$FAKE_IP_STATE/routes/${_table}"
+	mkdir -p "$FAKE_IP_STATE/routes"
+	touch "$_f"
 
-    (
-	flock 0
+	(
+		flock 0
 
-	# Escape some dots
-	[ -z "$_gw" ] || _gw=$(echo "$_gw" | sed -e 's@\.@\\.@g')
-	_prefix=$(echo "$_prefix" | sed -e 's@\.@\\.@g' -e 's@/@\\/@')
+		# Escape some dots
+		[ -z "$_gw" ] || _gw=$(echo "$_gw" | sed -e 's@\.@\\.@g')
+		_prefix=$(echo "$_prefix" | sed -e 's@\.@\\.@g' -e 's@/@\\/@')
 
-	_re="^${_prefix}\>.*"
-	[ -z "$_gw" ] || _re="${_re}\<via ${_gw}\>.*"
-	[ -z "$_dev" ] || _re="${_re}\<dev ${_dev}\>.*"
-	[ -z "$_metric" ] || _re="${_re}.*\<metric ${_metric}\>.*"
-	sed -i -e "/${_re}/d" "$_f"
-    ) <"$_f"
+		_re="^${_prefix}\>.*"
+		[ -z "$_gw" ] || _re="${_re}\<via ${_gw}\>.*"
+		[ -z "$_dev" ] || _re="${_re}\<dev ${_dev}\>.*"
+		[ -z "$_metric" ] || _re="${_re}.*\<metric ${_metric}\>.*"
+		sed -i -e "/${_re}/d" "$_f"
+	) <"$_f"
 }
 
 ######################################################################
@@ -669,11 +781,23 @@ ip_route_del ()
 orig_args="$*"
 
 case "$1" in
-    link)   shift ; ip_link  "$@" ;;
-    addr*)  shift ; ip_addr  "$@" ;;
-    rule)   shift ; ip_rule  "$@" ;;
-    route)  shift ; ip_route "$@" ;;
-    *) not_implemented "$1" ;;
+link)
+	shift
+	ip_link "$@"
+	;;
+addr*)
+	shift
+	ip_addr "$@"
+	;;
+rule)
+	shift
+	ip_rule "$@"
+	;;
+route)
+	shift
+	ip_route "$@"
+	;;
+*) not_implemented "$1" ;;
 esac
 
 exit 0
