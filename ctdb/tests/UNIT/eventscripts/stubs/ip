@@ -71,7 +71,7 @@ ip_link_add()
 
 	case "$_type" in
 	vlan)
-		if [ -z "$_name" -o -z "$_link" ]; then
+		if [ -z "$_name" ] || [ -z "$_link" ]; then
 			not_implemented "ip link add with null name or link"
 		fi
 
@@ -105,7 +105,7 @@ ip_link_set_down()
 ip_link_show()
 {
 	dev="$1"
-	if [ "$dev" = "dev" -a -n "$2" ]; then
+	if [ "$dev" = "dev" ] && [ -n "$2" ]; then
 		dev="$2"
 	fi
 
@@ -115,7 +115,7 @@ ip_link_show()
 	fi
 
 	if [ -r "${FAKE_IP_STATE}/interfaces-vlan/${dev}" ]; then
-		read _link <"${FAKE_IP_STATE}/interfaces-vlan/${dev}"
+		read -r _link <"${FAKE_IP_STATE}/interfaces-vlan/${dev}"
 		dev="${dev}@${_link}"
 	fi
 
@@ -133,7 +133,7 @@ ip_link_show()
 		_opts="<LOOPBACK${_flags}> mtu 65536 qdisc noqueue state UNKNOWN"
 		;;
 	*)
-		_mac=$(echo $dev | cksum | sed -r -e 's@(..)(..)(..).*@fe:fe:fe:\1:\2:\3@')
+		_mac=$(echo "$dev" | cksum | sed -r -e 's@(..)(..)(..).*@fe:fe:fe:\1:\2:\3@')
 		_brd="ff:ff:ff:ff:ff:ff"
 		_type="ether"
 		_opts="<BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
@@ -153,7 +153,7 @@ ip_check_table()
 {
 	_cmd="$1"
 
-	if [ "$_cmd" = "route" -a -z "$_table" ]; then
+	if [ "$_cmd" = "route" ] && [ -z "$_table" ]; then
 		_table="main"
 	fi
 
@@ -168,11 +168,11 @@ ip_check_table()
 			# Ouch.  Simulate inconsistent errors from ip.  :-(
 			case "$_cmd" in
 			route)
-				echo "Error: argument "${_table}" is wrong: table id value is invalid" >&2
+				echo "Error: argument \"${_table}\" is wrong: table id value is invalid" >&2
 
 				;;
 			*)
-				echo "Error: argument "${_table}" is wrong: invalid table ID" >&2
+				echo "Error: argument \"${_table}\" is wrong: invalid table ID" >&2
 				;;
 			esac
 			exit 255
@@ -240,8 +240,9 @@ ip_addr_show()
 	devices="$dev"
 	if [ -z "$devices" ]; then
 		# No device specified?  Get all the primaries...
-		devices=$(ls "${FAKE_IP_STATE}/addresses/"*-primary 2>/dev/null |
-			sed -e 's@.*/@@' -e 's@-.*-primary$@@' | sort -u)
+		devices=$(find "${FAKE_IP_STATE}/addresses" -name "*-primary" |
+			sed -e 's@.*/@@' -e 's@-.*-primary$@@' |
+			sort -u)
 	fi
 	calc_brd()
 	{
@@ -255,22 +256,22 @@ ip_addr_show()
 	{
 		ip_link_show "$dev"
 
-		nets=$(ls "${FAKE_IP_STATE}/addresses/${dev}"-*-primary 2>/dev/null |
+		nets=$(find "${FAKE_IP_STATE}/addresses" -name "${dev}-*-primary" |
 			sed -e 's@.*/@@' -e "s@${dev}-\(.*\)-primary\$@\1@")
 
 		for net in $nets; do
 			pf="${FAKE_IP_STATE}/addresses/${dev}-${net}-primary"
 			sf="${FAKE_IP_STATE}/addresses/${dev}-${net}-secondary"
 			if $primary && [ -r "$pf" ]; then
-				read local scope <"$pf"
-				if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ]; then
+				read -r local scope <"$pf"
+				if [ -z "$_to" ] || [ "${_to%/*}" = "${local%/*}" ]; then
 					calc_brd
 					echo "    inet ${local} ${brd:+brd ${brd} }scope ${scope} ${dev}"
 				fi
 			fi
 			if $secondary && [ -r "$sf" ]; then
-				while read local scope; do
-					if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ]; then
+				while read -r local scope; do
+					if [ -z "$_to" ] || [ "${_to%/*}" = "${local%/*}" ]; then
 						calc_brd
 						echo "    inet ${local} ${brd:+brd }${brd} scope ${scope} secondary ${dev}"
 					fi
@@ -287,35 +288,39 @@ ip_addr_show()
 			grep -F "${_to%/*}/" "${FAKE_IP_STATE}/addresses/${dev}-"* >/dev/null; then
 			show_iface
 		fi
-		n=$(($n + 1))
+		n=$((n + 1))
 	done
 }
 
 # Copied from 13.per_ip_routing for now... so this is lazy testing  :-(
 ipv4_host_addr_to_net()
 {
-	_host="$1"
-	_maskbits="$2"
+	_addr="$1"
+
+	_host="${_addr%/*}"
+	_maskbits="${_addr#*/}"
 
 	# Convert the host address to an unsigned long by splitting out
 	# the octets and doing the math.
 	_host_ul=0
+	# Want word splitting here
+	# shellcheck disable=SC2086
 	for _o in $(
 		export IFS="."
 		echo $_host
 	); do
-		_host_ul=$((($_host_ul << 8) + $_o)) # work around Emacs color bug
+		_host_ul=$(((_host_ul << 8) + _o)) # work around Emacs color bug
 	done
 
 	# Calculate the mask and apply it.
-	_mask_ul=$((0xffffffff << (32 - $_maskbits)))
-	_net_ul=$(($_host_ul & $_mask_ul))
+	_mask_ul=$((0xffffffff << (32 - _maskbits)))
+	_net_ul=$((_host_ul & _mask_ul))
 
 	# Now convert to a network address one byte at a time.
 	_net=""
 	for _o in $(seq 1 4); do
-		_net="$(($_net_ul & 255))${_net:+.}${_net}"
-		_net_ul=$(($_net_ul >> 8))
+		_net="$((_net_ul & 255))${_net:+.}${_net}"
+		_net_ul=$((_net_ul >> 8))
 	done
 
 	echo "${_net}/${_maskbits}"
@@ -361,10 +366,7 @@ ip_addr_add()
 		not_implemented "addr add (without dev)"
 	fi
 	mkdir -p "${FAKE_IP_STATE}/addresses"
-	net_str=$(ipv4_host_addr_to_net $(
-		IFS="/"
-		echo $local
-	))
+	net_str=$(ipv4_host_addr_to_net "$local")
 	net_str=$(echo "$net_str" | sed -e 's@/@_@')
 	pf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-primary"
 	sf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-secondary"
@@ -410,10 +412,7 @@ ip_addr_del()
 		not_implemented "addr del (without dev)"
 	fi
 	mkdir -p "${FAKE_IP_STATE}/addresses"
-	net_str=$(ipv4_host_addr_to_net $(
-		IFS="/"
-		echo $local
-	))
+	net_str=$(ipv4_host_addr_to_net "$local")
 	net_str=$(echo "$net_str" | sed -e 's@/@_@')
 	pf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-primary"
 	sf="${FAKE_IP_STATE}/addresses/${dev}-${net_str}-secondary"
@@ -474,7 +473,7 @@ ip_rule_show()
 		_selectors="$3"
 		# potentially more options
 
-		printf "%d:\t%s lookup %s \n" $_pre "$_selectors" "$_table"
+		printf "%d:\t%s lookup %s \n" "$_pre" "$_selectors" "$_table"
 	}
 
 	ip_rule_show_some()
@@ -484,11 +483,12 @@ ip_rule_show()
 
 		[ -f "${FAKE_IP_STATE}/rules" ] || return
 
-		while read _pre _table _selectors; do
+		while read -r _pre _table _selectors; do
 			# Only print those in range
-			[ $_min -le $_pre -a $_pre -le $_max ] || continue
-
-			ip_rule_show_1 $_pre "$_table" "$_selectors"
+			if [ "$_min" -le "$_pre" ] &&
+				[ "$_pre" -le "$_max" ]; then
+				ip_rule_show_1 "$_pre" "$_table" "$_selectors"
+			fi
 		done <"${FAKE_IP_STATE}/rules"
 	}
 
@@ -550,15 +550,17 @@ ip_rule_del()
 
 	_f="${FAKE_IP_STATE}/rules"
 	touch "$_f"
+	# ShellCheck doesn't understand this flock pattern
+	# shellcheck disable=SC2094
 	(
 		flock 0
 		_tmp="${_f}.new"
 		: >"$_tmp"
 		_found=false
-		while read _p _t _s; do
+		while read -r _p _t _s; do
 			if ! $_found &&
-				[ "$_p" = "$_pre" -a "$_t" = "$_table" -a \
-					"$_s" = "${_from:+from }$_from" ]; then
+				[ "$_p" = "$_pre" ] && [ "$_t" = "$_table" ] &&
+				[ "$_s" = "${_from:+from }$_from" ]; then
 				# Found.  Skip this one but not future ones.
 				_found=true
 			else
@@ -761,6 +763,8 @@ ip_route_del()
 	mkdir -p "$FAKE_IP_STATE/routes"
 	touch "$_f"
 
+	# ShellCheck doesn't understand this flock pattern
+	# shellcheck disable=SC2094
 	(
 		flock 0
 
