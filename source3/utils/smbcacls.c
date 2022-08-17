@@ -40,6 +40,7 @@ static char DIRSEP_CHAR = '\\';
 static int inheritance = 0;
 static const char *save_file = NULL;
 static const char *restore_file = NULL;
+static int recurse;
 static int test_args;
 static int sddl;
 static int query_sec_info = -1;
@@ -1597,6 +1598,16 @@ int main(int argc, char *argv[])
 			.val        = 1,
 			.descrip    = "applies the stored DACLS to files in "
 				      "directory.",
+		},
+		{
+			.longName   = "recurse",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &recurse,
+			.val        = 1,
+			.descrip    = "indicates the operation is performed "
+				      "on directory and all files/directories"
+				      " below. (only applies to save option)",
 		},
 		{
 			.longName   = "numeric",
