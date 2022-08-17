@@ -644,12 +644,7 @@ interface_get_real ()
 	    echo "${_t##*@}"
 	    ;;
 	*)
-	    # Not a regular VLAN.  For backward compatibility, assume
-	    # there is some other sort of VLAN that doesn't have the
-	    # '@' in the output and only use what is before a '.'.  If
-	    # there is no '.' then this will be the whole interface
-	    # name.
-	    echo "${_t%%.*}"
+	    echo "$_t"
     esac
 }
 
