@@ -770,7 +770,7 @@ void file_close_conn(connection_struct *conn, enum file_close_type close_type)
 			 */
 			fsp->op->global->durable = false;
 		}
-		close_file(NULL, fsp, SHUTDOWN_CLOSE);
+		close_file(NULL, fsp, close_type);
 	}
 }
 
