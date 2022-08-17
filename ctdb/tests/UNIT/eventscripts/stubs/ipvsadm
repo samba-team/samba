@@ -3,7 +3,7 @@
 die ()
 {
 	echo "$1" >&2
-	exit ${2:-1}
+	exit "${2:-1}"
 }
 
 
@@ -103,16 +103,15 @@ IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 EOF
-	[ -d "$FAKE_LVS_STATE_DIR" ] || exit 0
+	cd "$FAKE_LVS_STATE_DIR" || exit 0
 	(
-		cd "$FAKE_LVS_STATE_DIR"
 		for d in *; do
 			[ -d "$d" ] || continue
-			echo -n "$d "
+			printf '%s ' "$d"
 			cat "${d}/.info"
 			for f in "${d}/"* ; do
 				[ -f "$f" ] || continue
-				read forwarding_method <"$f"
+				read -r forwarding_method <"$f"
 				printf "  -> %-28s %-7s %-6s %-10s %-10s\n" \
 				       "${f##*/}" "$forwarding_method" 1 0 0
 			done

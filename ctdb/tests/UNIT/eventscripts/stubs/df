@@ -19,7 +19,7 @@ fs="${1:-/}"
 # Anything starting with CTDB_DBDIR_BASE gets canonicalised to
 # CTDB_DBDIR_BASE.  This helps with the setting of defaults for the
 # filesystem checks.
-if [ "${fs#${CTDB_DBDIR_BASE}}" != "$fs" ] ; then
+if [ "${fs#"${CTDB_DBDIR_BASE}"}" != "$fs" ] ; then
     fs="$CTDB_DBDIR_BASE"
 fi
 
@@ -31,8 +31,8 @@ fi
 echo "Filesystem             1024-blocks      Used Available Capacity Mounted on"
 
 blocks="1000000"
-used=$(($blocks * $FAKE_FS_USE / 100))
-available=$(($blocks - $used))
+used=$((blocks * FAKE_FS_USE / 100))
+available=$((blocks - used))
 
 printf "%-36s %10d %10d %10d %10d%% %s\n" \
        "/dev/sda1" "$blocks" "$used" "$available" "$FAKE_FS_USE" "$fs"

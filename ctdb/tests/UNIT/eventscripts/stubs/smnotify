@@ -31,7 +31,7 @@ while [ $# -gt 0 ] ; do
 done
 [ $# -eq 0 ] || usage
 
-if [ -z "$cip" -o -z "$sip" -o -z "$mon_name" -o -z "$state" ] ; then
+if [ -z "$cip" ] || [ -z "$sip" ] || [ -z "$mon_name" ] || [ -z "$state" ]; then
 	usage
 fi
 

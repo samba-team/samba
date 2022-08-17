@@ -23,11 +23,11 @@ do_cmd ()
     case "$*" in
 	*check) do_check ;;
 	help) do_help ;;
-	"") read tdb_cmd && [ -n "$tdb_cmd" ] && do_cmd $tdb_cmd ;;
+	"") read -r tdb_cmd && [ -n "$tdb_cmd" ] && do_cmd "$tdb_cmd" ;;
 	*) echo "$0: Not implemented: $*" ; exit 1 ;;
     esac
 }
 
-do_cmd $*
+do_cmd "$@"
 
 exit 0

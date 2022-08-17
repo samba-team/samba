@@ -27,9 +27,11 @@ parse_options ()
 	[ "$netid" = "tcp" ] || usage
 
 	host="$1" ; shift
-	[ "$host" = "localhost" -o "$host" = "127.0.0.1" ] || usage
+	[ "$host" = "localhost" ] || [ "$host" = "127.0.0.1" ] || usage
 
-	[ 1 -le $# -a $# -le 2 ] || usage
+	if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+		usage
+	fi
 
 	p="$1"
 	v="$2"
@@ -41,12 +43,14 @@ for i in ${FAKE_RPCINFO_SERVICES} ; do
     # This is stupidly cummulative, but needs to happen after the
     # initial split of the list above.
     IFS="${IFS}:"
+    # Want glob expansion
+    # shellcheck disable=SC2086
     set -- $i
     # $1 = program, $2 = low version, $3 = high version
 
     if [ "$1" = "$p" ] ; then
 	if [ -n "$v" ] ; then
-	    if [ "$2" -le "$v" -a "$v" -le "$3" ] ; then
+	    if [ "$2" -le "$v" ] && [ "$v" -le "$3" ] ; then
 		echo "program ${p} version ${v} ready and waiting"
 		exit 0
 	    else
@@ -55,7 +59,7 @@ for i in ${FAKE_RPCINFO_SERVICES} ; do
 		exit 1
 	    fi
 	else
-	    for j in $(seq $2 $3) ; do
+	    for j in $(seq "$2" "$3") ; do
 		echo "program ${p} version ${j} ready and waiting"
 	    done
 	    exit 0

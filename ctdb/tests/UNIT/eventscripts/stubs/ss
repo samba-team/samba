@@ -82,10 +82,11 @@ filter_socket ()
     ip="${socket%:*}"
     port="${socket##*:}"
 
-    if [ "$ok_ports" != "|" -a "${ok_ports#*|${port}|}" = "$ok_ports" ] ; then
+    if [ "$ok_ports" != "|" ] &&
+	       [ "${ok_ports#*|"${port}"|}" = "$ok_ports" ]; then
 	return 1
     fi
-    if [ "$ok_ips" != "|" -a "${ok_ips#*|${ip}|}" = "$ok_ips" ] ; then
+    if [ "$ok_ips" != "|" ] && [ "${ok_ips#*|"${ip}"|}" = "$ok_ips" ]; then
 	return 1
     fi
 
@@ -98,6 +99,8 @@ ss_tcp_established ()
 	echo "Recv-Q Send-Q Local Address:Port Peer Address:Port"
     fi
 
+    # Yes, lose the quoting so we can do a hacky parsing job
+    # shellcheck disable=SC2048,SC2086
     parse_filter $*
 
     for i in $FAKE_NETSTAT_TCP_ESTABLISHED ; do
@@ -111,7 +114,7 @@ ss_tcp_established ()
     if [ -z "$FAKE_NETSTAT_TCP_ESTABLISHED_FILE" ] ; then
 	    return
     fi
-    while read src dst ; do
+    while read -r src dst ; do
 	if filter_socket "$srcs" "$sports" "$src" ; then
 	    echo 0 0 "$src" "$dst"
 	fi
@@ -128,6 +131,8 @@ Netid State Recv-Q Send-Q   Local Address:Port   Peer Address:Port"
 EOF
 	fi
 
+	# Yes, lose the quoting so we can do a hacky parsing job
+	# shellcheck disable=SC2048,SC2086
 	parse_filter $*
 
 	_n=12345
@@ -167,15 +172,19 @@ done
 shift $((OPTIND - 1))
 
 $tcp || $unix || not_supported "$*"
+if [ -z "$all" ]; then
+	nosupported "$*"
+fi
 
 if $tcp ; then
-	if [ "$1" != "state" -o "$2" != "established" ] || $listen ; then
+	if [ "$1" != "state" ] || [ "$2" != "established" ] || $listen; then
 		usage
 	fi
 
 	shift 2
 
 	# Yes, lose the quoting so we can do a hacky parsing job
+	# shellcheck disable=SC2048,SC2086
 	ss_tcp_established $*
 
 	exit
@@ -187,6 +196,7 @@ if $unix ; then
 	fi
 
 	# Yes, lose the quoting so we can do a hacky parsing job
+	# shellcheck disable=SC2048,SC2086
 	unix_listen $*
 
 	exit
