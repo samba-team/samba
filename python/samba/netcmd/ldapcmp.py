@@ -556,7 +556,7 @@ class LDAPObject(object):
         elif self.con.view == "collision":
             res = d1.diff_1(d2)
         else:
-            raise Exception("Unknown --view option value.")
+            raise ValueError(f"Unknown --view option value: {self.con.view}")
         #
         self.screen_output = res[1]
         other.screen_output = res[1]
