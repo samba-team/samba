@@ -95,6 +95,7 @@ class DnsConnWrapper:
         werror.WERR_DNS_ERROR_ZONE_ALREADY_EXISTS: 'Zone already exists',
         werror.WERR_DNS_ERROR_RECORD_DOES_NOT_EXIST: 'The record does not exist',
         werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:  'The zone does not exist',
+        werror.WERR_ACCESS_DENIED: 'Insufficient permissions',
     }
 
     def __init__(self, server, lp, creds):
