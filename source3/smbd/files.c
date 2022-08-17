@@ -1339,7 +1339,7 @@ static struct files_struct *file_close_conn_fn(
 	return NULL;
 }
 
-void file_close_conn(connection_struct *conn)
+void file_close_conn(connection_struct *conn, enum file_close_type close_type)
 {
 	struct file_close_conn_state state = { .conn = conn };
 
