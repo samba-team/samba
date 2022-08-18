@@ -1470,7 +1470,6 @@ bool create_junction(TALLOC_CTX *ctx,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	int snum;
-	char *hostname = NULL;
 	char *servicename = NULL;
 	char *reqpath = NULL;
 	NTSTATUS status;
@@ -1478,7 +1477,7 @@ bool create_junction(TALLOC_CTX *ctx,
 	status = parse_dfs_path_strict(
 				ctx,
 				dfs_path,
-				&hostname,
+				NULL,
 				&servicename,
 				&reqpath);
 	if (!NT_STATUS_IS_OK(status)) {
