@@ -1038,7 +1038,7 @@ static void share_mode_do_locked_fn(
 	}
 }
 
-NTSTATUS share_mode_do_locked(
+static NTSTATUS share_mode_do_locked(
 	struct file_id id,
 	void (*fn)(const uint8_t *buf,
 		   size_t buflen,
