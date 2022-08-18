@@ -137,4 +137,22 @@ NTSTATUS share_mode_watch_recv(
 	struct tevent_req *req, bool *blockerdead, struct server_id *blocker);
 NTSTATUS share_mode_wakeup_waiters(struct file_id id);
 
+typedef void (*share_mode_do_locked_vfs_fn_t)(
+		struct share_mode_lock *lck,
+		void *private_data);
+NTSTATUS _share_mode_do_locked_vfs_denied(
+	struct file_id id,
+	share_mode_do_locked_vfs_fn_t fn,
+	void *private_data,
+	const char *location);
+#define share_mode_do_locked_vfs_denied(__id, __fn, __private_data) \
+	_share_mode_do_locked_vfs_denied(__id, __fn, __private_data, __location__)
+NTSTATUS _share_mode_do_locked_vfs_allowed(
+	struct file_id id,
+	share_mode_do_locked_vfs_fn_t fn,
+	void *private_data,
+	const char *location);
+#define share_mode_do_locked_vfs_allowed(__id, __fn, __private_data) \
+	_share_mode_do_locked_vfs_allowed(__id, __fn, __private_data, __location__)
+
 #endif

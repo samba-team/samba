@@ -2602,3 +2602,80 @@ done:
 	TALLOC_FREE(ltdb);
 	return ret;
 }
+
+/**
+ * @brief Run @fn protected with G_LOCK_WRITE in the given file_id
+ *
+ * @fn is NOT allowed to call SMB_VFS_* or similar functions,
+ * which may block for some time in the kernel.
+ *
+ * There must be at least one share_mode_entry, otherwise
+ * NT_STATUS_NOT_FOUND is returned.
+ *
+ * @param[in]  id           The key for the share_mode record.
+ * @param[in]  fn           The function to run under the g_lock.
+ * @param[in]  private_date A private pointer passed to @fn.
+ */
+NTSTATUS _share_mode_do_locked_vfs_denied(
+	struct file_id id,
+	share_mode_do_locked_vfs_fn_t fn,
+	void *private_data,
+	const char *location)
+{
+	struct smb_vfs_deny_state vfs_deny = {};
+	struct share_mode_lock *lck = NULL;
+
+	lck = get_existing_share_mode_lock(talloc_tos(), id);
+	if (lck == NULL) {
+		NTSTATUS status = NT_STATUS_NOT_FOUND;
+		DBG_DEBUG("get_existing_share_mode_lock failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+
+	_smb_vfs_deny_push(&vfs_deny, location);
+	fn(lck, private_data);
+	_smb_vfs_deny_pop(&vfs_deny, location);
+
+	TALLOC_FREE(lck);
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * @brief Run @fn protected with G_LOCK_WRITE in the given file_id
+ *
+ * @fn is allowed to call SMB_VFS_* or similar functions,
+ * which may block for some time in the kernel.
+ *
+ * There must be at least one share_mode_entry, otherwise
+ * NT_STATUS_NOT_FOUND is returned.
+ *
+ * @param[in]  id           The key for the share_mode record.
+ * @param[in]  fn           The function to run under the g_lock.
+ * @param[in]  private_date A private pointer passed to @fn.
+ */
+NTSTATUS _share_mode_do_locked_vfs_allowed(
+	struct file_id id,
+	share_mode_do_locked_vfs_fn_t fn,
+	void *private_data,
+	const char *location)
+{
+	struct share_mode_lock *lck = NULL;
+
+	smb_vfs_assert_allowed();
+
+	lck = get_existing_share_mode_lock(talloc_tos(), id);
+	if (lck == NULL) {
+		NTSTATUS status = NT_STATUS_NOT_FOUND;
+		DBG_DEBUG("get_existing_share_mode_lock failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+
+	fn(lck, private_data);
+
+	TALLOC_FREE(lck);
+
+	return NT_STATUS_OK;
+}
