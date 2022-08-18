@@ -38,6 +38,8 @@ struct share_mode_lock *get_share_mode_lock(
 	const char *servicepath,
 	const struct smb_filename *smb_fname,
 	const struct timespec *old_write_time);
+struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
+						     struct file_id id);
 
 bool del_share_mode(struct share_mode_lock *lck,
 		    struct files_struct *fsp);

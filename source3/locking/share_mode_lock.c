@@ -1005,6 +1005,17 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	return 0;
 }
 
+/*******************************************************************
+ Fetch a share mode where we know one MUST exist. This call reference
+ counts it internally to allow for nested lock fetches.
+********************************************************************/
+
+struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
+						     const struct file_id id)
+{
+	return get_share_mode_lock(mem_ctx, id, NULL, NULL, NULL);
+}
+
 struct share_mode_do_locked_state {
 	TDB_DATA key;
 	void (*fn)(const uint8_t *buf,
