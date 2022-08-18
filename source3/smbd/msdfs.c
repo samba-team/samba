@@ -259,10 +259,10 @@ static NTSTATUS parse_dfs_path(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	/*
-	 * parse_dfs_path() can be called from
-	 * get_referred_path() and create_junction()
-	 * which use Windows DFS paths of \server\share.
-	 * Ensure we only have to cope with '/' separators.
+	 * parse_dfs_path() is only called from
+	 * dfs_filename_convert() with SMB1/2/3 DFS
+	 * names. Ensure we only have to cope with
+	 * '/' separators.
 	 */
 	string_replace(pathname_local, '\\', '/');
 
