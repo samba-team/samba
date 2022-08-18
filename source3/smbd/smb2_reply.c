@@ -2129,9 +2129,7 @@ struct smbd_do_unlocking_state {
 };
 
 static void smbd_do_unlocking_fn(
-	const uint8_t *buf,
-	size_t buflen,
-	bool *pmodified_dependent,
+	struct share_mode_lock *lck,
 	void *private_data)
 {
 	struct smbd_do_unlocking_state *state = private_data;
@@ -2165,7 +2163,7 @@ static void smbd_do_unlocking_fn(
 		}
 	}
 
-	*pmodified_dependent = true;
+	share_mode_wakeup_waiters(fsp->file_id);
 }
 
 NTSTATUS smbd_do_unlocking(struct smb_request *req,
@@ -2182,11 +2180,11 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 
 	DBG_NOTICE("%s num_ulocks=%"PRIu16"\n", fsp_fnum_dbg(fsp), num_ulocks);
 
-	status = share_mode_do_locked(
+	status = share_mode_do_locked_vfs_allowed(
 		fsp->file_id, smbd_do_unlocking_fn, &state);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("share_mode_do_locked failed: %s\n",
+		DBG_DEBUG("share_mode_do_locked_vfs_allowed failed: %s\n",
 			  nt_errstr(status));
 		return status;
 	}
