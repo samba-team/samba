@@ -25,6 +25,7 @@ struct dptr_struct;
 #include "vfs.h"
 #include "smbd/proto.h"
 #include "locking/proto.h"
+#include "locking/share_mode_lock.h"
 #include "smbd/fd_handle.h"
 #if defined(WITH_SMB1SERVER)
 #include "smbd/smb1_message.h"

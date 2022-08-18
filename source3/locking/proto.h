@@ -128,8 +128,6 @@ void locking_close_file(files_struct *fsp,
 char *share_mode_str(TALLOC_CTX *ctx, int num,
 		     const struct file_id *id,
 		     const struct share_mode_entry *e);
-struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
-						     struct file_id id);
 
 bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,

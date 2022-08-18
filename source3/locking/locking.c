@@ -468,17 +468,6 @@ char *share_mode_str(TALLOC_CTX *ctx, int num,
 		 (unsigned int)e->name_hash);
 }
 
-/*******************************************************************
- Fetch a share mode where we know one MUST exist. This call reference
- counts it internally to allow for nested lock fetches.
-********************************************************************/
-
-struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
-						     const struct file_id id)
-{
-	return get_share_mode_lock(mem_ctx, id, NULL, NULL, NULL);
-}
-
 struct rename_share_filename_state {
 	struct share_mode_lock *lck;
 	struct messaging_context *msg_ctx;
