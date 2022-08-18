@@ -33,7 +33,7 @@
 #ifdef _SAMBA_DEBUG_H
 #define SMB_ASSERT(b) \
 do { \
-	if (!(b)) { \
+	if (unlikely(!(b))) { \
 		DEBUG(0,("PANIC: assert failed at %s(%d): %s\n", \
 			 __FILE__, __LINE__, #b)); \
 		smb_panic("assert failed: " #b); \
