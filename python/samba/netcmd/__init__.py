@@ -21,7 +21,7 @@ import samba
 from samba import colour
 from samba.getopt import SambaOption
 from samba.logger import get_samba_logger
-from ldb import LdbError
+from ldb import LdbError, ERR_INVALID_CREDENTIALS
 import sys
 import traceback
 import textwrap
@@ -112,7 +112,11 @@ class Command(object):
 
         if isinstance(inner_exception, LdbError):
             (ldb_ecode, ldb_emsg) = inner_exception.args
-            self.errf.write("ERROR(ldb): %s - %s\n" % (message, ldb_emsg))
+            if ldb_ecode == ERR_INVALID_CREDENTIALS:
+                print("Invalid username or password", file=self.errf)
+                force_traceback = False
+            else:
+                self.errf.write("ERROR(ldb): %s - %s\n" % (message, ldb_emsg))
         elif isinstance(inner_exception, AssertionError):
             self.errf.write("ERROR(assert): %s\n" % message)
             force_traceback = True
