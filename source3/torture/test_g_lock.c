@@ -115,7 +115,7 @@ struct lock2_parser_state {
 
 static void lock2_parser(struct server_id exclusive,
 			 size_t num_shared,
-			 struct server_id *shared,
+			 const struct server_id *shared,
 			 const uint8_t *data,
 			 size_t datalen,
 			 void *private_data)
@@ -216,14 +216,14 @@ struct lock3_parser_state {
 
 static void lock3_parser(struct server_id exclusive,
 			 size_t num_shared,
-			 struct server_id *shared,
+			 const struct server_id *shared,
 			 const uint8_t *data,
 			 size_t datalen,
 			 void *private_data)
 {
 	struct lock3_parser_state *state = private_data;
 	size_t num_locks = num_shared + ((exclusive.pid != 0) ? 1 : 0);
-	struct server_id *pid;
+	const struct server_id *pid;
 
 	if (datalen != 0) {
 		fprintf(stderr, "datalen=%zu\n", datalen);
@@ -423,7 +423,7 @@ struct lock4_check_state {
 
 static void lock4_check(struct server_id exclusive,
 			size_t num_shared,
-			struct server_id *shared,
+			const struct server_id *shared,
 			const uint8_t *data,
 			size_t datalen,
 			void *private_data)
@@ -712,7 +712,7 @@ struct lock5_parser_state {
 
 static void lock5_parser(struct server_id exclusive,
 			 size_t num_shared,
-			 struct server_id *shared,
+			 const struct server_id *shared,
 			 const uint8_t *data,
 			 size_t datalen,
 			 void *private_data)
@@ -859,7 +859,7 @@ struct lock6_parser_state {
 
 static void lock6_parser(struct server_id exclusive,
 			 size_t num_shared,
-			 struct server_id *shared,
+			 const struct server_id *shared,
 			 const uint8_t *data,
 			 size_t datalen,
 			 void *private_data)

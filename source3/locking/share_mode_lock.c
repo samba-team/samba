@@ -468,7 +468,7 @@ struct locking_tdb_data_fetch_state {
 static void locking_tdb_data_fetch_fn(
 	struct server_id exclusive,
 	size_t num_shared,
-	struct server_id *shared,
+	const struct server_id *shared,
 	const uint8_t *data,
 	size_t datalen,
 	void *private_data)
@@ -768,7 +768,7 @@ struct get_static_share_mode_data_state {
 static void get_static_share_mode_data_fn(
 	struct server_id exclusive,
 	size_t num_shared,
-	struct server_id *shared,
+	const struct server_id *shared,
 	const uint8_t *data,
 	size_t datalen,
 	void *private_data)
@@ -1017,7 +1017,7 @@ struct share_mode_do_locked_state {
 static void share_mode_do_locked_fn(
 	struct server_id exclusive,
 	size_t num_shared,
-	struct server_id *shared,
+	const struct server_id *shared,
 	const uint8_t *data,
 	size_t datalen,
 	void *private_data)
@@ -1324,7 +1324,7 @@ struct fetch_share_mode_unlocked_state {
 static void fetch_share_mode_unlocked_parser(
 	struct server_id exclusive,
 	size_t num_shared,
-	struct server_id *shared,
+	const struct server_id *shared,
 	const uint8_t *data,
 	size_t datalen,
 	void *private_data)
@@ -1395,7 +1395,7 @@ struct fetch_share_mode_state {
 static void fetch_share_mode_fn(
 	struct server_id exclusive,
 	size_t num_shared,
-	struct server_id *shared,
+	const struct server_id *shared,
 	const uint8_t *data,
 	size_t datalen,
 	void *private_data);
@@ -1460,7 +1460,7 @@ struct tevent_req *fetch_share_mode_send(TALLOC_CTX *mem_ctx,
 static void fetch_share_mode_fn(
 	struct server_id exclusive,
 	size_t num_shared,
-	struct server_id *shared,
+	const struct server_id *shared,
 	const uint8_t *data,
 	size_t datalen,
 	void *private_data)
@@ -1564,7 +1564,7 @@ struct share_mode_forall_state {
 static void share_mode_forall_dump_fn(
 	struct server_id exclusive,
 	size_t num_shared,
-	struct server_id *shared,
+	const struct server_id *shared,
 	const uint8_t *data,
 	size_t datalen,
 	void *private_data)
@@ -2108,7 +2108,7 @@ struct share_mode_count_entries_state {
 static void share_mode_count_entries_fn(
 	struct server_id exclusive,
 	size_t num_shared,
-	struct server_id *shared,
+	const struct server_id *shared,
 	const uint8_t *data,
 	size_t datalen,
 	void *private_data)
