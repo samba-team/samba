@@ -1248,6 +1248,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 		.sconn = fsp->conn->sconn, .id = fsp->file_id,
 	};
 	struct share_mode_lock *lck = NULL;
+	uint32_t fsp_lease = fsp_lease_type(fsp);
 	bool ok, has_read_lease;
 
 	/*
@@ -1258,7 +1259,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	 * the shared memory area whilst doing this.
 	 */
 
-	if (fsp_lease_type_is_exclusive(fsp)) {
+	if (fsp_lease & SMB2_LEASE_WRITE) {
 		/*
 		 * There can't be any level2 oplocks, we're alone.
 		 */
