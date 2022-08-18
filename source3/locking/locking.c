@@ -253,9 +253,7 @@ struct do_lock_state {
 };
 
 static void do_lock_fn(
-	const uint8_t *buf,
-	size_t buflen,
-	bool *modified_dependent,
+	struct share_mode_lock *lck,
 	void *private_data)
 {
 	struct do_lock_state *state = private_data;
@@ -334,7 +332,9 @@ NTSTATUS do_lock(files_struct *fsp,
 		  fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp));
 
-	status = share_mode_do_locked(fsp->file_id, do_lock_fn, &state);
+	status = share_mode_do_locked_vfs_allowed(fsp->file_id,
+						  do_lock_fn,
+						  &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("share_mode_do_locked returned %s\n",
 			  nt_errstr(status));
