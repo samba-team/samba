@@ -1238,12 +1238,14 @@ static void g_lock_dump_fn(TDB_DATA key, TDB_DATA data,
 		return;
 	}
 
-	shared = talloc_array(
-		state->mem_ctx, struct server_id, lck.num_shared);
-	if (shared == NULL) {
-		DBG_DEBUG("talloc failed\n");
-		state->status = NT_STATUS_NO_MEMORY;
-		return;
+	if (lck.num_shared > 0) {
+		shared = talloc_array(
+			state->mem_ctx, struct server_id, lck.num_shared);
+		if (shared == NULL) {
+			DBG_DEBUG("talloc failed\n");
+			state->status = NT_STATUS_NO_MEMORY;
+			return;
+		}
 	}
 
 	for (i=0; i<lck.num_shared; i++) {
