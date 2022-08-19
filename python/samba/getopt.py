@@ -67,7 +67,10 @@ class SambaOptions(optparse.OptionGroup):
         self._configfile = arg
 
     def _set_debuglevel(self, option, opt_str, arg, parser):
-        self._lp.set('debug level', arg)
+        try:
+            self._lp.set('debug level', arg)
+        except RuntimeError:
+            raise OptionError(f"invalid -d/--debug value: '{arg}'")
         parser.values.debuglevel = arg
 
     def _set_realm(self, option, opt_str, arg, parser):
