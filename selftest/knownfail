@@ -175,6 +175,7 @@
 ^samba4.smb2.oplock.stream1 # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.statopen1\(ad_dc_ntvfs\)$ # fails with ACCESS_DENIED on a SYNCHRONIZE_ACCESS open
 ^samba4.smb2.getinfo.complex # streams on directories does not work
+^samba4.smb2.getinfo.getinfo_access\(ad_dc_ntvfs\) # Access checks not implemented
 ^samba4.smb2.getinfo.qfs_buffercheck # S4 does not do the INFO_LENGTH_MISMATCH/BUFFER_OVERFLOW thingy
 ^samba4.smb2.getinfo.qfile_buffercheck # S4 does not do the INFO_LENGTH_MISMATCH/BUFFER_OVERFLOW thingy
 ^samba4.smb2.getinfo.qsec_buffercheck # S4 does not do the BUFFER_TOO_SMALL thingy
