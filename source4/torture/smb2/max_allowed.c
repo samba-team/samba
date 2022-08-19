@@ -27,8 +27,8 @@
 #include "torture/smb2/proto.h"
 
 #define MAXIMUM_ALLOWED_FILE    "torture_maximum_allowed"
-bool torture_smb2_maximum_allowed(struct torture_context *tctx,
-    struct smb2_tree *tree)
+static bool torture_smb2_maximum_allowed(struct torture_context *tctx,
+					 struct smb2_tree *tree)
 {
 	struct security_descriptor *sd = NULL, *sd_orig = NULL;
 	struct smb2_create io = {0};
@@ -189,4 +189,12 @@ bool torture_smb2_maximum_allowed(struct torture_context *tctx,
 	smb2_util_unlink(tree, MAXIMUM_ALLOWED_FILE);
 	talloc_free(mem_ctx);
 	return ret;
+}
+
+struct torture_suite *torture_smb2_max_allowed(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = torture_suite_create(ctx, "maximum_allowed");
+
+	torture_suite_add_1smb2_test(suite, "maximum_allowed", torture_smb2_maximum_allowed);
+	return suite;
 }

@@ -118,7 +118,7 @@
 ^samba4.smb2.charset.*.Testing partial surrogate # This test is currently broken
 ^samba3.smb2.charset.*.Testing partial surrogate # This test is currently broken
 ^samba4.*.base.maximum_allowed		# broken until we implement NTCREATEX_OPTIONS_BACKUP_INTENT
-^samba..*.smb2.maximum_allowed
+^samba..*.smb2.maximum_allowed.maximum_allowed
 .*net.api.delshare.*				# DelShare isn't implemented yet
 ^samba4.smb2.oplock.doc
 ^samba4.smb2.lock.valid-request
