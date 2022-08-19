@@ -783,6 +783,151 @@ static bool torture_smb2_getinfo(struct torture_context *tctx)
 	return ret;
 }
 
+#undef LEVEL
+#define LEVEL(l, u, ua, ra) \
+	.name = #l, \
+	.level = l, \
+	.unrestricted = u, \
+	.unrestricted_access = ua, \
+	.required_access = ra
+
+static struct {
+	const char *name;
+	uint16_t level;
+	bool unrestricted;
+	uint32_t unrestricted_access;
+	uint32_t required_access;
+} file_levels_access[] = {
+	/*
+	 * The following info levels are not checked:
+	 * - FileFullEaInformation and FileIdInformation:
+	 *   not implemented by the s4/libcli/raw
+	 * - all pipe infolevels: that should be tested elsewhere by RPC tests
+	 */
+
+	/*
+	 * The following allow unrestricted access, so requesting
+	 * SEC_FILE_READ_ATTRIBUTE works, SEC_FILE_READ_ATTRIBUTE or
+	 * SEC_FILE_READ_EA as well of course.
+	 */
+	{ LEVEL(RAW_FILEINFO_STANDARD_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_INTERNAL_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_ACCESS_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_POSITION_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_MODE_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_ALIGNMENT_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_ALT_NAME_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_STREAM_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_COMPRESSION_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_NORMALIZED_NAME_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_EA_INFORMATION, true, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_EA) },
+
+	/*
+	 * The following require either SEC_FILE_READ_ATTRIBUTE or
+	 * SEC_FILE_READ_EA.
+	 */
+	{ LEVEL(RAW_FILEINFO_BASIC_INFORMATION, false, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_ALL_INFORMATION, false, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_NETWORK_OPEN_INFORMATION, false, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION, false, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_SMB2_ALL_INFORMATION, false, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_ATTRIBUTE) },
+	{ LEVEL(RAW_FILEINFO_SMB2_ALL_EAS, false, SEC_STD_SYNCHRONIZE, SEC_FILE_READ_EA) },
+	/* Also try SEC_FILE_READ_ATTRIBUTE to show that it is the wrong one */
+	{ LEVEL(RAW_FILEINFO_SMB2_ALL_EAS, false, SEC_FILE_READ_ATTRIBUTE, SEC_FILE_READ_EA) },
+	{ LEVEL(RAW_FILEINFO_SEC_DESC, false, SEC_STD_SYNCHRONIZE, SEC_STD_READ_CONTROL) },
+	/* Also try SEC_FILE_READ_ATTRIBUTE to show that it is the wrong one */
+	{ LEVEL(RAW_FILEINFO_SEC_DESC, false, SEC_FILE_READ_ATTRIBUTE, SEC_STD_READ_CONTROL) }
+};
+
+
+/*
+  test fileinfo levels
+*/
+static bool torture_smb2_getfinfo_access(struct torture_context *tctx,
+					 struct smb2_tree *tree)
+{
+	const char *fname = "torture_smb2_getfinfo_access";
+	struct smb2_handle hfile;
+	NTSTATUS status;
+	bool ret = true;
+	int i;
+
+	smb2_deltree(tree, fname);
+
+	torture_setup_complex_file(tctx, tree, fname);
+
+	for (i = 0; i < ARRAY_SIZE(file_levels_access); i++) {
+		union smb_fileinfo finfo;
+		NTSTATUS expected_status;
+
+		/*
+		 * First open with unrestricted_access, SEC_STD_SYNCHRONIZE for
+		 * most tests, info levels with unrestricted=true should allow
+		 * this.
+		 */
+		status = torture_smb2_testfile_access(
+			tree, fname, &hfile, file_levels_access[i].unrestricted_access);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					   "Unable to open test file\n");
+
+		if (file_levels_access[i].level == RAW_FILEINFO_SEC_DESC) {
+			finfo.query_secdesc.in.secinfo_flags = 0x7;
+		}
+		if (file_levels_access[i].level == RAW_FILEINFO_SMB2_ALL_EAS) {
+			finfo.all_eas.in.continue_flags =
+				SMB2_CONTINUE_FLAG_RESTART;
+		}
+
+		finfo.generic.level = file_levels_access[i].level;
+		finfo.generic.in.file.handle = hfile;
+
+		if (file_levels_access[i].unrestricted) {
+			expected_status = NT_STATUS_OK;
+		} else {
+			expected_status = NT_STATUS_ACCESS_DENIED;
+		}
+
+		status = smb2_getinfo_file(tree, tree, &finfo);
+		torture_assert_ntstatus_equal_goto(
+			tctx, status, expected_status, ret, done,
+			talloc_asprintf(tctx, "Level %s failed\n",
+					file_levels_access[i].name));
+
+		smb2_util_close(tree, hfile);
+
+		/*
+		 * Now open with expected access, getinfo should work.
+		 */
+		status = torture_smb2_testfile_access(
+			tree, fname, &hfile, file_levels_access[i].required_access);
+		torture_assert_ntstatus_ok_goto(
+			tctx, status, ret, done,
+			"Unable to open test file\n");
+
+		if (file_levels_access[i].level == RAW_FILEINFO_SEC_DESC) {
+			finfo.query_secdesc.in.secinfo_flags = 0x7;
+		}
+		if (file_levels_access[i].level == RAW_FILEINFO_SMB2_ALL_EAS) {
+			finfo.all_eas.in.continue_flags =
+				SMB2_CONTINUE_FLAG_RESTART;
+		}
+		finfo.generic.level = file_levels_access[i].level;
+		finfo.generic.in.file.handle = hfile;
+
+		status = smb2_getinfo_file(tree, tree, &finfo);
+		torture_assert_ntstatus_ok_goto(
+			tctx, status, ret, done,
+			talloc_asprintf(tctx, "%s on file",
+					file_levels_access[i].name));
+
+		smb2_util_close(tree, hfile);
+	}
+
+done:
+	smb2_deltree(tree, fname);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_getinfo_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
@@ -800,5 +945,7 @@ struct torture_suite *torture_smb2_getinfo_init(TALLOC_CTX *ctx)
 				      torture_smb2_fileinfo_grant_read);
 	torture_suite_add_simple_test(suite, "normalized",
 				      torture_smb2_fileinfo_normalized);
+	torture_suite_add_1smb2_test(suite, "getinfo_access",
+				     torture_smb2_getfinfo_access);
 	return suite;
 }
