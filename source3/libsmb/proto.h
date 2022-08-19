@@ -135,6 +135,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 		     struct cli_state **pcli);
 void cli_cm_display(struct cli_state *c);
 struct client_dfs_referral;
+bool cli_dfs_is_already_full_path(struct cli_state *cli, const char *path);
 NTSTATUS cli_dfs_get_referral_ex(TALLOC_CTX *ctx,
 			struct cli_state *cli,
 			const char *path,

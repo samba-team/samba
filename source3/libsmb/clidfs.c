@@ -589,6 +589,46 @@ static char *cli_dfs_make_full_path(TALLOC_CTX *ctx,
 }
 
 /********************************************************************
+ Check if a path has already been converted to DFS.
+********************************************************************/
+
+bool cli_dfs_is_already_full_path(struct cli_state *cli, const char *path)
+{
+	const char *server = smbXcli_conn_remote_name(cli->conn);
+	size_t server_len = strlen(server);
+	bool found_server = false;
+	const char *share = cli->share;
+	size_t share_len = strlen(share);
+	bool found_share = false;
+
+	if (!IS_DIRECTORY_SEP(path[0])) {
+		return false;
+	}
+	path++;
+	found_server = (strncasecmp_m(path, server, server_len) == 0);
+	if (!found_server) {
+		return false;
+	}
+	path += server_len;
+	if (!IS_DIRECTORY_SEP(path[0])) {
+		return false;
+	}
+	path++;
+	found_share = (strncasecmp_m(path, share, share_len) == 0);
+	if (!found_share) {
+		return false;
+	}
+	path += share_len;
+	if (path[0] == '\0') {
+		return true;
+	}
+	if (IS_DIRECTORY_SEP(path[0])) {
+		return true;
+	}
+	return false;
+}
+
+/********************************************************************
  Get the dfs referral link.
 ********************************************************************/
 
