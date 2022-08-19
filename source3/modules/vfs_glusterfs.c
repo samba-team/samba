@@ -2403,14 +2403,11 @@ static NTSTATUS vfs_gluster_create_dfs_pathat(struct vfs_handle_struct *handle,
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	int ret;
 	char *msdfs_link = NULL;
+#ifdef HAVE_GFAPI_VER_7_11
+	glfs_fd_t *pglfd = NULL;
+#else
 	struct smb_filename *full_fname = NULL;
-
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						  dirfsp,
-						  smb_fname);
-	if (full_fname == NULL) {
-		goto out;
-	}
+#endif
 
 	/* Form the msdfs_link contents */
 	msdfs_link = msdfs_link_string(frame,
@@ -2420,9 +2417,27 @@ static NTSTATUS vfs_gluster_create_dfs_pathat(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	ret = glfs_symlink(handle->data,
-			msdfs_link,
-			full_fname->base_name);
+#ifdef HAVE_GFAPI_VER_7_11
+	pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
+	if (pglfd == NULL) {
+		DBG_ERR("Failed to fetch gluster fd\n");
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto out;
+	}
+
+	ret = glfs_symlinkat(msdfs_link, pglfd, smb_fname->base_name);
+#else
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		goto out;
+	}
+
+	ret = glfs_symlink(handle->data, msdfs_link, full_fname->base_name);
+
+	TALLOC_FREE(full_fname);
+#endif
 	if (ret == 0) {
 		status = NT_STATUS_OK;
 	} else {
