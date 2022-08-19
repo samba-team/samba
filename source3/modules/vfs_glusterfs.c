@@ -1581,8 +1581,23 @@ static int vfs_gluster_unlinkat(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
-	struct smb_filename *full_fname = NULL;
 	int ret;
+
+#ifdef HAVE_GFAPI_VER_7_11
+	glfs_fd_t *pglfd = NULL;
+
+	START_PROFILE(syscall_unlinkat);
+
+	pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
+	if (pglfd == NULL) {
+		END_PROFILE(syscall_unlinkat);
+		DBG_ERR("Failed to fetch gluster fd\n");
+		return -1;
+	}
+
+	ret = glfs_unlinkat(pglfd, smb_fname->base_name, flags);
+#else
+	struct smb_filename *full_fname = NULL;
 
 	START_PROFILE(syscall_unlinkat);
 
@@ -1599,7 +1614,10 @@ static int vfs_gluster_unlinkat(struct vfs_handle_struct *handle,
 	} else {
 		ret = glfs_unlink(handle->data, full_fname->base_name);
 	}
+
 	TALLOC_FREE(full_fname);
+#endif
+
 	END_PROFILE(syscall_unlinkat);
 
 	return ret;
