@@ -2772,6 +2772,7 @@ sub provision($$)
 	panic action = cd $self->{srcdir} && $self->{srcdir}/selftest/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	smbd:suicide mode = yes
 	smbd:FSCTL_SMBTORTURE = yes
+	smbd:validate_oplock_types = yes
 
 	client min protocol = SMB2_02
 	server min protocol = SMB2_02
