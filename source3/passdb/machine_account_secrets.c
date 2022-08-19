@@ -1093,6 +1093,7 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		TALLOC_FREE(keys);
 		return krb5_ret;
 	}
+	talloc_keep_secret(cleartext_utf8_b.data);
 	cleartext_utf8.data = (void *)cleartext_utf8_b.data;
 	cleartext_utf8.length = cleartext_utf8_b.length;
 
