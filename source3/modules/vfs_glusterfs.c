@@ -2111,24 +2111,52 @@ static int vfs_gluster_linkat(struct vfs_handle_struct *handle,
 				int flags)
 {
 	int ret;
+
+#ifdef HAVE_GFAPI_VER_7_11
+	glfs_fd_t *src_pglfd = NULL;
+	glfs_fd_t *dst_pglfd = NULL;
+
+	START_PROFILE(syscall_linkat);
+
+	src_pglfd = vfs_gluster_fetch_glfd(handle, srcfsp);
+	if (src_pglfd == NULL) {
+		END_PROFILE(syscall_linkat);
+		DBG_ERR("Failed to fetch gluster fd\n");
+		return -1;
+	}
+
+	dst_pglfd = vfs_gluster_fetch_glfd(handle, dstfsp);
+	if (dst_pglfd == NULL) {
+		END_PROFILE(syscall_linkat);
+		DBG_ERR("Failed to fetch gluster fd\n");
+		return -1;
+	}
+
+	ret = glfs_linkat(src_pglfd,
+			  old_smb_fname->base_name,
+			  dst_pglfd,
+			  new_smb_fname->base_name,
+			  flags);
+#else
 	struct smb_filename *full_fname_old = NULL;
 	struct smb_filename *full_fname_new = NULL;
 
 	START_PROFILE(syscall_linkat);
 
 	full_fname_old = full_path_from_dirfsp_atname(talloc_tos(),
-						srcfsp,
-						old_smb_fname);
+						      srcfsp,
+						      old_smb_fname);
 	if (full_fname_old == NULL) {
 		END_PROFILE(syscall_linkat);
 		return -1;
 	}
+
 	full_fname_new = full_path_from_dirfsp_atname(talloc_tos(),
-						dstfsp,
-						new_smb_fname);
+						      dstfsp,
+						      new_smb_fname);
 	if (full_fname_new == NULL) {
-		TALLOC_FREE(full_fname_old);
 		END_PROFILE(syscall_linkat);
+		TALLOC_FREE(full_fname_old);
 		return -1;
 	}
 
@@ -2138,6 +2166,8 @@ static int vfs_gluster_linkat(struct vfs_handle_struct *handle,
 
 	TALLOC_FREE(full_fname_old);
 	TALLOC_FREE(full_fname_new);
+#endif
+
 	END_PROFILE(syscall_linkat);
 
 	return ret;
