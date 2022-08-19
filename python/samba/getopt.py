@@ -84,7 +84,7 @@ class SambaOptions(optparse.OptionGroup):
         if arg.find('=') == -1:
             raise optparse.OptionValueError(
                 "--option option takes a 'a=b' argument")
-        a = arg.split('=')
+        a = arg.split('=', 1)
         try:
             self._lp.set(a[0], a[1])
         except Exception as e:
