@@ -3269,6 +3269,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 {
 	struct security_descriptor *sd = NULL;
 	uint32_t access_granted = 0;
+	uint32_t dosattrs;
 	NTSTATUS status;
 
 	/* Cope with symlinks */
@@ -3343,6 +3344,11 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 				fsp->fsp_name)) {
 			*p_access_mask |= DELETE_ACCESS;
 		}
+	}
+
+	dosattrs = fdos_mode(fsp);
+	if (IS_DOS_READONLY(dosattrs) || !CAN_WRITE(fsp->conn)) {
+		*p_access_mask &= ~(FILE_GENERIC_WRITE | DELETE_ACCESS);
 	}
 
 	return NT_STATUS_OK;
