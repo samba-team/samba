@@ -606,7 +606,7 @@ static uint32_t vfs_gluster_fs_capabilities(struct vfs_handle_struct *handle,
 }
 
 static glfs_fd_t *vfs_gluster_fetch_glfd(struct vfs_handle_struct *handle,
-					 files_struct *fsp)
+					 const files_struct *fsp)
 {
 	glfs_fd_t **glfd = (glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	if (glfd == NULL) {
