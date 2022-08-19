@@ -737,8 +737,23 @@ static int vfs_gluster_mkdirat(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
 {
-	struct smb_filename *full_fname = NULL;
 	int ret;
+
+#ifdef HAVE_GFAPI_VER_7_11
+	glfs_fd_t *pglfd = NULL;
+
+	START_PROFILE(syscall_mkdirat);
+
+	pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
+	if (pglfd == NULL) {
+		END_PROFILE(syscall_mkdirat);
+		DBG_ERR("Failed to fetch gluster fd\n");
+		return -1;
+	}
+
+	ret = glfs_mkdirat(pglfd, smb_fname->base_name, mode);
+#else
+	struct smb_filename *full_fname = NULL;
 
 	START_PROFILE(syscall_mkdirat);
 
@@ -753,6 +768,7 @@ static int vfs_gluster_mkdirat(struct vfs_handle_struct *handle,
 	ret = glfs_mkdir(handle->data, full_fname->base_name, mode);
 
 	TALLOC_FREE(full_fname);
+#endif
 
 	END_PROFILE(syscall_mkdirat);
 
