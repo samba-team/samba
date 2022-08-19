@@ -765,9 +765,12 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 			      files_struct *fsp,
 			      const struct vfs_open_how *how)
 {
-	struct smb_filename *name = NULL;
+	int flags = how->flags;
+	struct smb_filename *full_fname = NULL;
+	bool have_opath = false;
 	bool became_root = false;
 	glfs_fd_t *glfd;
+	glfs_fd_t *pglfd = NULL;
 	glfs_fd_t **p_tmp;
 
 	START_PROFILE(syscall_openat);
@@ -778,58 +781,103 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	/*
-	 * Looks like glfs API doesn't have openat().
-	 */
-	if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
-		name = full_path_from_dirfsp_atname(talloc_tos(),
-						    dirfsp,
-						    smb_fname);
-		if (name == NULL) {
-			END_PROFILE(syscall_openat);
-			return -1;
-		}
-		smb_fname = name;
-	}
-
 	p_tmp = VFS_ADD_FSP_EXTENSION(handle, fsp, glfs_fd_t *, NULL);
 	if (p_tmp == NULL) {
-		TALLOC_FREE(name);
 		END_PROFILE(syscall_openat);
 		errno = ENOMEM;
 		return -1;
 	}
 
+#ifdef O_PATH
+	have_opath = true;
 	if (fsp->fsp_flags.is_pathref) {
-		/*
-		 * ceph doesn't support O_PATH so we have to fallback to
-		 * become_root().
-		 */
+		flags |= O_PATH;
+	}
+#endif
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		END_PROFILE(syscall_openat);
+		return -1;
+	}
+
+	if (fsp->fsp_flags.is_pathref && !have_opath) {
 		become_root();
 		became_root = true;
 	}
 
-	if (how->flags & O_DIRECTORY) {
-		glfd = glfs_opendir(handle->data, smb_fname->base_name);
-	} else if (how->flags & O_CREAT) {
+	/*
+	 * O_CREAT flag in open is handled differently in a way which is *NOT*
+	 * safe against symlink race situations. We use glfs_creat() instead
+	 * for correctness as glfs_openat() is broken with O_CREAT present
+	 * in open flags.
+	 */
+	if (flags & O_CREAT) {
+		if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
+			/*
+			 * Replace smb_fname with full_path constructed above.
+			 */
+			smb_fname = full_fname;
+		}
+
+		/*
+		 * smb_fname can either be a full_path or the same one
+		 * as received from the caller. In the latter case we
+		 * are operating at current working directory.
+		 */
 		glfd = glfs_creat(handle->data,
 				  smb_fname->base_name,
-				  how->flags,
+				  flags,
 				  how->mode);
 	} else {
-		glfd = glfs_open(handle->data,
-				 smb_fname->base_name,
-				 how->flags);
+		if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
+#ifdef HAVE_GFAPI_VER_7_11
+			/*
+			 * Fetch Gluster fd for parent directory using dirfsp
+			 * before calling glfs_openat();
+			 */
+			pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
+			if (pglfd == NULL) {
+				END_PROFILE(syscall_openat);
+				DBG_ERR("Failed to fetch gluster fd\n");
+				return -1;
+			}
+
+			glfd = glfs_openat(pglfd,
+					   smb_fname->base_name,
+					   flags,
+					   how->mode);
+#else
+			/*
+			 * Replace smb_fname with full_path constructed above.
+			 */
+			smb_fname = full_fname;
+#endif
+		}
+
+		if (pglfd == NULL) {
+			/*
+			 * smb_fname can either be a full_path or the same one
+			 * as received from the caller. In the latter case we
+			 * are operating at current working directory.
+			 */
+			glfd = glfs_open(handle->data,
+					 smb_fname->base_name,
+					 flags);
+		}
 	}
 
 	if (became_root) {
 		unbecome_root();
 	}
 
+	TALLOC_FREE(full_fname);
+
 	fsp->fsp_flags.have_proc_fds = false;
 
 	if (glfd == NULL) {
-		TALLOC_FREE(name);
 		END_PROFILE(syscall_openat);
 		/* no extension destroy_fn, so no need to save errno */
 		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
@@ -838,7 +886,6 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 
 	*p_tmp = glfd;
 
-	TALLOC_FREE(name);
 	END_PROFILE(syscall_openat);
 	/* An arbitrary value for error reporting, so you know its us. */
 	return 13371337;
