@@ -2479,6 +2479,9 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 	struct stat st;
 	struct smb_filename *full_fname = NULL;
 	int ret;
+#ifdef HAVE_GFAPI_VER_7_11
+	glfs_fd_t *pglfd = NULL;
+#endif
 
 	if (is_named_stream(smb_fname)) {
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -2514,10 +2517,23 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 		goto err;
 	}
 
+#ifdef HAVE_GFAPI_VER_7_11
+	pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
+	if (pglfd == NULL) {
+		DBG_ERR("Failed to fetch gluster fd\n");
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	referral_len = glfs_readlinkat(pglfd,
+				       smb_fname->base_name,
+				       link_target,
+				       bufsize - 1);
+#else
 	referral_len = glfs_readlink(handle->data,
 				full_fname->base_name,
 				link_target,
 				bufsize - 1);
+#endif
 	if (referral_len < 0) {
 		if (errno == EINVAL) {
 			DBG_INFO("%s is not a link.\n", full_fname->base_name);
