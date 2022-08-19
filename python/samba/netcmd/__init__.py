@@ -120,6 +120,9 @@ class Command(object):
             if ldb_ecode == ERR_INVALID_CREDENTIALS:
                 print("Invalid username or password", file=self.errf)
                 force_traceback = False
+            elif ldb_emsg == 'LDAP client internal error: NT_STATUS_NETWORK_UNREACHABLE':
+                print("Could not reach remote server", file=self.errf)
+                force_traceback = False
             else:
                 self.errf.write("ERROR(ldb): %s - %s\n" % (message, ldb_emsg))
         elif isinstance(inner_exception, AssertionError):
