@@ -2179,14 +2179,29 @@ static int vfs_gluster_mknodat(struct vfs_handle_struct *handle,
 				mode_t mode,
 				SMB_DEV_T dev)
 {
-	struct smb_filename *full_fname = NULL;
 	int ret;
+
+#ifdef HAVE_GFAPI_VER_7_11
+	glfs_fd_t *pglfd = NULL;
+
+	START_PROFILE(syscall_mknodat);
+
+	pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
+	if (pglfd == NULL) {
+		END_PROFILE(syscall_mknodat);
+		DBG_ERR("Failed to fetch gluster fd\n");
+		return -1;
+	}
+
+	ret = glfs_mknodat(pglfd, smb_fname->base_name, mode, dev);
+#else
+	struct smb_filename *full_fname = NULL;
 
 	START_PROFILE(syscall_mknodat);
 
 	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						dirfsp,
-						smb_fname);
+						  dirfsp,
+						  smb_fname);
 	if (full_fname == NULL) {
 		END_PROFILE(syscall_mknodat);
 		return -1;
@@ -2195,6 +2210,7 @@ static int vfs_gluster_mknodat(struct vfs_handle_struct *handle,
 	ret = glfs_mknod(handle->data, full_fname->base_name, mode, dev);
 
 	TALLOC_FREE(full_fname);
+#endif
 
 	END_PROFILE(syscall_mknodat);
 
