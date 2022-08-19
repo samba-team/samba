@@ -2210,7 +2210,20 @@ static bool validate_oplock_types_fn(
 static bool validate_oplock_types(struct share_mode_lock *lck)
 {
 	struct validate_oplock_types_state state = { .valid = true };
+	static bool skip_validation;
+	bool validate;
 	bool ok;
+
+	if (skip_validation) {
+		return true;
+	}
+
+	validate = lp_parm_bool(-1, "smbd", "validate_oplock_types", false);
+	if (!validate) {
+		DBG_DEBUG("smbd:validate_oplock_types not set to yes\n");
+		skip_validation = true;
+		return true;
+	}
 
 	ok = share_mode_forall_entries(lck, validate_oplock_types_fn, &state);
 	if (!ok) {
