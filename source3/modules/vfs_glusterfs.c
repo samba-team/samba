@@ -2017,24 +2017,42 @@ static int vfs_gluster_symlinkat(struct vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *new_smb_fname)
 {
-	struct smb_filename *full_fname = NULL;
 	int ret;
+
+#ifdef HAVE_GFAPI_VER_7_11
+	glfs_fd_t *pglfd = NULL;
+
+	START_PROFILE(syscall_symlinkat);
+
+	pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
+	if (pglfd == NULL) {
+		END_PROFILE(syscall_symlinkat);
+		DBG_ERR("Failed to fetch gluster fd\n");
+		return -1;
+	}
+
+	ret = glfs_symlinkat(link_target->base_name,
+			     pglfd,
+			     new_smb_fname->base_name);
+#else
+	struct smb_filename *full_fname = NULL;
 
 	START_PROFILE(syscall_symlinkat);
 
 	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						dirfsp,
-						new_smb_fname);
+						  dirfsp,
+						  new_smb_fname);
 	if (full_fname == NULL) {
 		END_PROFILE(syscall_symlinkat);
 		return -1;
 	}
 
 	ret = glfs_symlink(handle->data,
-			link_target->base_name,
-			full_fname->base_name);
+			   link_target->base_name,
+			   full_fname->base_name);
 
 	TALLOC_FREE(full_fname);
+#endif
 
 	END_PROFILE(syscall_symlinkat);
 
