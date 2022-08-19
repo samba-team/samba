@@ -2745,6 +2745,17 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 	*poplock_type = NO_OPLOCK;
 	*pgranted = 0;
 
+	if (fsp->fsp_flags.is_directory) {
+		/*
+		 * No directory leases yet
+		 */
+		SMB_ASSERT(oplock_request == NO_OPLOCK);
+		if (have_sharing_violation) {
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+		return NT_STATUS_OK;
+	}
+
 	if (oplock_request == LEASE_OPLOCK) {
 		if (lease == NULL) {
 			/*
