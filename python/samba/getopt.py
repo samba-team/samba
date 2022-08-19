@@ -74,7 +74,10 @@ class SambaOptions(optparse.OptionGroup):
         parser.values.debuglevel = arg
 
     def _set_realm(self, option, opt_str, arg, parser):
-        self._lp.set('realm', arg)
+        try:
+            self._lp.set('realm', arg)
+        except RuntimeError:
+            raise OptionError(f"invalid --realm value: '{arg}'")
         self.realm = arg
 
     def _set_option(self, option, opt_str, arg, parser):
