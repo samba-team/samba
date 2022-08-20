@@ -685,6 +685,28 @@ char *secrets_fetch_machine_password(const char *domain,
 	return ret;
 }
 
+static int password_nt_hash_destructor(struct secrets_domain_info1_password *pw)
+{
+	ZERO_STRUCT(pw->nt_hash);
+
+	return 0;
+}
+
+static int setup_password_zeroing(struct secrets_domain_info1_password *pw)
+{
+	if (pw != NULL) {
+		size_t i;
+
+		talloc_keep_secret(pw->cleartext_blob.data);
+		talloc_set_destructor(pw, password_nt_hash_destructor);
+		for (i = 0; i < pw->num_keys; i++) {
+			talloc_keep_secret(pw->keys[i].value.data);
+		}
+	}
+
+	return 0;
+}
+
 static char *domain_info_keystr(const char *domain)
 {
 	char *keystr;
@@ -725,6 +747,13 @@ static NTSTATUS secrets_fetch_domain_info1_by_key(const char *key,
 			ndr_errstr(ndr_err));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
+
+	if (sdib.info.info1->next_change != NULL) {
+		setup_password_zeroing(sdib.info.info1->next_change->password);
+	}
+	setup_password_zeroing(sdib.info.info1->password);
+	setup_password_zeroing(sdib.info.info1->old_password);
+	setup_password_zeroing(sdib.info.info1->older_password);
 
 	if (sdib.version != SECRETS_DOMAIN_INFO_VERSION_1) {
 		DBG_ERR("sdib.version = %u\n", (unsigned)sdib.version);
