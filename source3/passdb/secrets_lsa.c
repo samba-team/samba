@@ -62,7 +62,16 @@ static NTSTATUS lsa_secret_get_common(TALLOC_CTX *mem_ctx,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	SAFE_FREE(blob.data);
+	/* This is NOT a talloc blob */
+	BURN_FREE(blob.data, blob.length);
+
+	if (secret->secret_current != NULL &&
+	    secret->secret_current->data != NULL) {
+		talloc_keep_secret(secret->secret_current->data);
+	}
+	if (secret->secret_old != NULL && secret->secret_old->data != NULL) {
+		talloc_keep_secret(secret->secret_old->data);
+	}
 
 	return NT_STATUS_OK;
 }
@@ -163,9 +172,11 @@ static NTSTATUS lsa_secret_set_common(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!secrets_store(key, blob.data, blob.length)) {
+		data_blob_clear(&blob);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	data_blob_clear(&blob);
 	return NT_STATUS_OK;
 }
 
