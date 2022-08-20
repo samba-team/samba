@@ -1077,6 +1077,7 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		TALLOC_FREE(keys);
 		return ENOMEM;
 	}
+	talloc_keep_secret(arc4_b.data);
 
 #ifdef HAVE_ADS
 	if (salt_principal == NULL) {
@@ -1151,6 +1152,7 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		TALLOC_FREE(salt_data);
 		return ENOMEM;
 	}
+	talloc_keep_secret(aes_256_b.data);
 
 	krb5_ret = smb_krb5_create_key_from_string(krb5_ctx,
 						   NULL,
@@ -1177,6 +1179,7 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		TALLOC_FREE(salt_data);
 		return ENOMEM;
 	}
+	talloc_keep_secret(aes_128_b.data);
 
 	krb5_free_context(krb5_ctx);
 no_kerberos:
@@ -1248,10 +1251,12 @@ static NTSTATUS secrets_domain_info_password_create(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(p);
 		return status;
 	}
+	talloc_keep_secret(p->cleartext_blob.data);
 	mdfour(p->nt_hash.hash,
 	       p->cleartext_blob.data,
 	       p->cleartext_blob.length);
 
+	talloc_set_destructor(p, password_nt_hash_destructor);
 	ret = secrets_domain_info_kerberos_keys(p, salt_principal);
 	if (ret != 0) {
 		NTSTATUS status = krb5_to_nt_status(ret);
