@@ -407,7 +407,7 @@ NTSTATUS fget_ea_dos_attribute(struct files_struct *fsp,
 ****************************************************************************/
 
 NTSTATUS set_ea_dos_attribute(connection_struct *conn,
-			      const struct smb_filename *smb_fname,
+			      struct smb_filename *smb_fname,
 			      uint32_t dosmode)
 {
 	struct xattr_DOSATTRIB dosattrib;
