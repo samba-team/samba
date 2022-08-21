@@ -1333,7 +1333,44 @@ NTSTATUS vfs_fget_dos_attributes(struct files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
+static struct smb_vfs_deny_state *smb_vfs_deny_global;
+
+void smb_vfs_assert_allowed(void)
+{
+	if (unlikely(smb_vfs_deny_global != NULL)) {
+		DBG_ERR("Called with VFS denied by %s\n",
+			smb_vfs_deny_global->location);
+		smb_panic("Called with VFS denied!");
+	}
+}
+
+void _smb_vfs_deny_push(struct smb_vfs_deny_state *state, const char *location)
+{
+	SMB_ASSERT(smb_vfs_deny_global != state);
+
+	*state = (struct smb_vfs_deny_state) {
+		.parent = smb_vfs_deny_global,
+		.location = location,
+	};
+
+	smb_vfs_deny_global = state;
+}
+
+void _smb_vfs_deny_pop(struct smb_vfs_deny_state *state, const char *location)
+{
+	SMB_ASSERT(smb_vfs_deny_global == state);
+
+	smb_vfs_deny_global = state->parent;
+
+	*state = (struct smb_vfs_deny_state) { .parent = NULL, };
+}
+
 #define VFS_FIND(__fn__) do { \
+	if (unlikely(smb_vfs_deny_global != NULL)) { \
+		DBG_ERR("Called with VFS denied by %s\n", \
+			smb_vfs_deny_global->location); \
+		smb_panic("Called with VFS denied!"); \
+	} \
 	while (handle->fns->__fn__##_fn==NULL) { \
 		handle = handle->next; \
 	} \

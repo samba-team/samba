@@ -1405,6 +1405,18 @@ struct vfs_statvfs_struct {
 
 #include "vfs_macros.h"
 
+struct smb_vfs_deny_state {
+	struct smb_vfs_deny_state *parent;
+	const char *location;
+};
+
+void smb_vfs_assert_allowed(void);
+
+void _smb_vfs_deny_push(struct smb_vfs_deny_state *state, const char *location);
+#define smb_vfs_deny_push(__state) _smb_vfs_deny_push(__state, __location__);
+void _smb_vfs_deny_pop(struct smb_vfs_deny_state *state, const char *location);
+#define smb_vfs_deny_pop(__state) _smb_vfs_deny_pop(__state, __location__);
+
 int smb_vfs_call_connect(struct vfs_handle_struct *handle,
 			 const char *service, const char *user);
 void smb_vfs_call_disconnect(struct vfs_handle_struct *handle);
