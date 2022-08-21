@@ -413,6 +413,7 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 	struct xattr_DOSATTRIB dosattrib;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
+	struct timespec btime;
 	int ret;
 
 	if (!lp_store_dos_attributes(SNUM(conn))) {
@@ -515,11 +516,11 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 	 * We correctly stored the create time.
 	 * We *always* set XATTR_DOSINFO_CREATE_TIME,
 	 * so now it can no longer be considered
-	 * calculated.
+	 * calculated. Make sure to use the value rounded
+	 * to NTTIME granularity we've stored in the xattr.
 	 */
-	update_stat_ex_create_time(
-		&smb_fname->fsp->fsp_name->st,
-		smb_fname->st.st_ex_btime);
+	btime = nt_time_to_full_timespec(dosattrib.info.info5.create_time);
+	update_stat_ex_create_time(&smb_fname->st, btime);
 
 	DEBUG(10,("set_ea_dos_attribute: set EA 0x%x on file %s\n",
 		(unsigned int)dosmode,
