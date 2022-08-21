@@ -12,10 +12,19 @@ import "misc.idl";
 
 interface open_files
 {
+	typedef [enum16bit] enum {
+		SHARE_MODE_ENTRY_OP_TYPE_NONE = 0,
+		SHARE_MODE_ENTRY_OP_TYPE_EXCLUSIVE = 1,
+		SHARE_MODE_ENTRY_OP_TYPE_BATCH_WITHOUT_EXCLUSIVE = 2,
+		SHARE_MODE_ENTRY_OP_TYPE_BATCH = 3,
+		SHARE_MODE_ENTRY_OP_TYPE_LEVEL_II = 4,
+		SHARE_MODE_ENTRY_OP_TYPE_LEASE = 0x100
+	} share_mode_entry_op_type;
+
 	typedef [public] struct {
 		server_id	pid;
 		hyper		op_mid;
-		uint16		op_type;
+		share_mode_entry_op_type op_type;
 		GUID		client_guid;
 		smb2_lease_key  lease_key;
 		uint32		access_mask;
