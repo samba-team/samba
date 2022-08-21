@@ -891,10 +891,6 @@ struct smb_filename {
 
 #define SMB_FILENAME_POSIX_PATH		FSP_POSIX_FLAGS_PATHNAMES
 
-#define VFS_FIND(__fn__) while (handle->fns->__fn__##_fn==NULL) { \
-				handle = handle->next; \
-			 }
-
 enum vfs_translate_direction {
 	vfs_translate_to_unix = 0,
 	vfs_translate_to_windows

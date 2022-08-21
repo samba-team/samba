@@ -1333,6 +1333,12 @@ NTSTATUS vfs_fget_dos_attributes(struct files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
+#define VFS_FIND(__fn__) do { \
+	while (handle->fns->__fn__##_fn==NULL) { \
+		handle = handle->next; \
+	} \
+} while(0)
+
 int smb_vfs_call_connect(struct vfs_handle_struct *handle,
 			 const char *service, const char *user)
 {
