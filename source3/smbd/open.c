@@ -2735,9 +2735,24 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 		.lease = lease,
 		.first_open_attempt = first_open_attempt,
 	};
+	uint32_t requested;
 	uint32_t granted;
 	NTSTATUS status;
 	bool ok;
+
+	if (oplock_request == LEASE_OPLOCK) {
+		if (lease == NULL) {
+			/*
+			 * The SMB2 layer should have checked this
+			 */
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		requested = lease->lease_state;
+	} else {
+		requested = map_oplock_to_lease_type(
+			oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
+	}
 
 	if (is_oplock_stat_open(fsp->access_mask)) {
 		goto grant;
@@ -2771,16 +2786,9 @@ grant:
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
+	granted = requested;
+
 	if (oplock_request == LEASE_OPLOCK) {
-		if (lease == NULL) {
-			/*
-			 * The SMB2 layer should have checked this
-			 */
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		granted = lease->lease_state;
-
 		if (lp_kernel_oplocks(SNUM(fsp->conn))) {
 			DEBUG(10, ("No lease granted because kernel oplocks are enabled\n"));
 			granted = SMB2_LEASE_NONE;
@@ -2797,9 +2805,6 @@ grant:
 			DEBUG(10, ("write and handle lease requested\n"));
 			granted = SMB2_LEASE_NONE;
 		}
-	} else {
-		granted = map_oplock_to_lease_type(
-			oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
 	}
 
 	if (lp_locking(fsp->conn->params) && file_has_brlocks(fsp)) {
@@ -2853,6 +2858,13 @@ grant:
 			 */
 			fsp->oplock_type = NO_OPLOCK;
 		}
+
+		/*
+		 * Reflect possible downgrades from:
+		 * - map_lease_type_to_oplock() => "RH" to just LEVEL_II
+		 * - set_file_oplock() fails => NO_OPLOCK.
+		 */
+		granted = map_oplock_to_lease_type(fsp->oplock_type);
 	}
 
 	if (granted & SMB2_LEASE_READ) {
@@ -2862,8 +2874,19 @@ grant:
 		share_mode_flags_set(lck, acc, sh, ls, NULL);
 	}
 
-	DBG_DEBUG("oplock type 0x%x on file %s\n",
-		  fsp->oplock_type, fsp_str_dbg(fsp));
+	DBG_DEBUG("oplock type 0x%x granted (%s%s%s)(0x%x), on file %s, "
+		  "requested 0x%x (%s%s%s)(0x%x)\n",
+		  fsp->oplock_type,
+		  granted & SMB2_LEASE_READ ? "R":"",
+		  granted & SMB2_LEASE_WRITE ? "W":"",
+		  granted & SMB2_LEASE_HANDLE ? "H":"",
+		  granted,
+		  fsp_str_dbg(fsp),
+		  oplock_request,
+		  requested & SMB2_LEASE_READ ? "R":"",
+		  requested & SMB2_LEASE_WRITE ? "W":"",
+		  requested & SMB2_LEASE_HANDLE ? "H":"",
+		  requested);
 
 	return NT_STATUS_OK;
 }
