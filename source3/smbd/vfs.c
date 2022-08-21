@@ -2633,3 +2633,36 @@ NTSTATUS smb_vfs_call_freaddir_attr(struct vfs_handle_struct *handle,
 					     mem_ctx,
 					     attr_data);
 }
+
+bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
+		       struct files_struct *fsp, int op, off_t offset,
+		       off_t count, int type)
+{
+	VFS_FIND(lock);
+	return handle->fns->lock_fn(handle, fsp, op, offset, count, type);
+}
+
+bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,
+			  struct files_struct *fsp, off_t *poffset,
+			  off_t *pcount, int *ptype, pid_t *ppid)
+{
+	VFS_FIND(getlock);
+	return handle->fns->getlock_fn(handle, fsp, poffset, pcount, ptype,
+				       ppid);
+}
+
+NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
+				       struct byte_range_lock *br_lck,
+				       struct lock_struct *plock)
+{
+	VFS_FIND(brl_lock_windows);
+	return handle->fns->brl_lock_windows_fn(handle, br_lck, plock);
+}
+
+bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
+				     struct byte_range_lock *br_lck,
+				     const struct lock_struct *plock)
+{
+	VFS_FIND(brl_unlock_windows);
+	return handle->fns->brl_unlock_windows_fn(handle, br_lck, plock);
+}

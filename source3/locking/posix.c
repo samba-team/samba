@@ -179,14 +179,6 @@ static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 	return True;
 }
 
-bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
-		       struct files_struct *fsp, int op, off_t offset,
-		       off_t count, int type)
-{
-	VFS_FIND(lock);
-	return handle->fns->lock_fn(handle, fsp, op, offset, count, type);
-}
-
 /****************************************************************************
  Actual function that does POSIX locks. Copes with 64 -> 32 bit cruft and
  broken NFS implementations.
@@ -241,15 +233,6 @@ static bool posix_fcntl_lock(files_struct *fsp, int op, off_t offset, off_t coun
 
 	DEBUG(8,("posix_fcntl_lock: Lock call %s\n", ret ? "successful" : "failed"));
 	return ret;
-}
-
-bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,
-			  struct files_struct *fsp, off_t *poffset,
-			  off_t *pcount, int *ptype, pid_t *ppid)
-{
-	VFS_FIND(getlock);
-	return handle->fns->getlock_fn(handle, fsp, poffset, pcount, ptype, 
-				       ppid);
 }
 
 /****************************************************************************

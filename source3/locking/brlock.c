@@ -971,14 +971,6 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	return status;
 }
 
-NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
-				       struct byte_range_lock *br_lck,
-				       struct lock_struct *plock)
-{
-	VFS_FIND(brl_lock_windows);
-	return handle->fns->brl_lock_windows_fn(handle, br_lck, plock);
-}
-
 /****************************************************************************
  Lock a range of bytes.
 ****************************************************************************/
@@ -1248,14 +1240,6 @@ static bool brl_unlock_posix(struct byte_range_lock *br_lck,
 	br_lck->modified = True;
 
 	return True;
-}
-
-bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
-				     struct byte_range_lock *br_lck,
-				     const struct lock_struct *plock)
-{
-	VFS_FIND(brl_unlock_windows);
-	return handle->fns->brl_unlock_windows_fn(handle, br_lck, plock);
 }
 
 /****************************************************************************

@@ -758,6 +758,7 @@ bld.SAMBA3_SUBSYSTEM('LOCKING',
                     deps='''
                          tdb
                          talloc
+                         vfs
                          LEASES_DB
                          LEASES_UTIL
                          NDR_OPEN_FILES
