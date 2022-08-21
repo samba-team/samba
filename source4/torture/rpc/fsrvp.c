@@ -692,6 +692,11 @@ static bool test_fsrvp_enum_created(struct torture_context *tctx,
 		       "count");
 	torture_assert_int_equal(tctx, count, 2, "num snaps");
 
+	smb2_util_close(tree_base, base_fh);
+	ZERO_STRUCT(base_fh);
+
+	smb2_util_unlink(tree_base, FNAME);
+
 	talloc_free(tmp_ctx);
 
 	return true;
