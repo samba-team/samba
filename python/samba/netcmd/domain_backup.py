@@ -983,9 +983,15 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                     return
                 raise e
             raise copy_err
+
+        except FileNotFoundError as e:
+            # tdbbackup tool was not found.
+            raise CommandError(e.strerror, e)
+
         if not os.path.exists(backup_path):
             s = "tdbbackup said backup succeeded but {0} not found"
             raise CommandError(s.format(backup_path))
+
 
     def offline_mdb_copy(self, path):
         mdb_copy(path, path + self.backup_ext)

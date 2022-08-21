@@ -32,6 +32,10 @@ def tdb_copy(file1, file2, readonly=False):
         toolpath = os.path.join(d, "tdbbackup")
         if os.path.exists(toolpath):
             break
+    else:
+        # we did not find a path to tdbbackup
+        raise FileNotFoundError(2, "could not find tdbbackup tool: "
+                                "is tdb-tools installed?")
 
     tdbbackup_cmd = [toolpath, "-s", ".copy.tdb", file1]
     if readonly:
