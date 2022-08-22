@@ -1110,38 +1110,75 @@ NTSTATUS share_mode_wakeup_waiters(struct file_id id)
 }
 
 struct fsp_update_share_mode_flags_state {
+	struct files_struct *fsp;
 	enum ndr_err_code ndr_err;
+	uint64_t share_mode_epoch;
 	uint16_t share_mode_flags;
 };
 
 static void fsp_update_share_mode_flags_fn(
-	const uint8_t *buf,
-	size_t buflen,
-	bool *modified_dependent,
+	struct server_id exclusive,
+	size_t num_shared,
+	const struct server_id *shared,
+	const uint8_t *data,
+	size_t datalen,
 	void *private_data)
 {
 	struct fsp_update_share_mode_flags_state *state = private_data;
-	uint64_t seq;
+	struct locking_tdb_data ltdb = { 0 };
 
-	state->ndr_err = get_share_mode_blob_header(
-		buf, buflen, &seq, &state->share_mode_flags);
+	if (datalen != 0) {
+		bool ok = locking_tdb_data_get(&ltdb, data, datalen);
+		if (!ok) {
+			DBG_DEBUG("locking_tdb_data_get failed\n");
+			return;
+		}
+	}
+
+	if (ltdb.share_mode_data_len == 0) {
+		/* Likely a ctdb tombstone record, ignore it */
+		return;
+	}
+
+	if (exclusive.pid != 0) {
+		struct server_id self =
+			messaging_server_id(state->fsp->conn->sconn->msg_ctx);
+		bool is_self = server_id_equal(&self, &exclusive);
+
+		if (!is_self) {
+			/*
+			 * If someone else is holding an exclusive
+			 * lock, pretend there's a read lease
+			 */
+			state->share_mode_flags = SHARE_MODE_LEASE_READ;
+			return;
+		}
+	}
+
+	state->ndr_err = get_share_mode_blob_header(ltdb.share_mode_data_buf,
+						    ltdb.share_mode_data_len,
+						    &state->share_mode_epoch,
+						    &state->share_mode_flags);
 }
 
 static NTSTATUS fsp_update_share_mode_flags(struct files_struct *fsp)
 {
-	struct fsp_update_share_mode_flags_state state = {0};
+	struct fsp_update_share_mode_flags_state state = { .fsp = fsp, };
 	int seqnum = g_lock_seqnum(lock_ctx);
+	TDB_DATA key = {0};
 	NTSTATUS status;
 
 	if (seqnum == fsp->share_mode_flags_seqnum) {
 		return NT_STATUS_OK;
 	}
 
-	status = share_mode_do_locked(
-		fsp->file_id, fsp_update_share_mode_flags_fn, &state);
+	key = locking_key(&fsp->file_id);
+	status = g_lock_dump(lock_ctx, key,
+			     fsp_update_share_mode_flags_fn,
+			     &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* no DBG_GET_SHARE_MODE_LOCK here! */
-		DBG_ERR("share_mode_do_locked returned %s\n",
+		DBG_ERR("g_lock_dump returned %s\n",
 			nt_errstr(status));
 		return status;
 	}
