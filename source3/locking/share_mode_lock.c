@@ -212,68 +212,6 @@ static enum ndr_err_code get_share_mode_blob_header(
 	return NDR_ERR_SUCCESS;
 }
 
-struct fsp_update_share_mode_flags_state {
-	enum ndr_err_code ndr_err;
-	uint16_t share_mode_flags;
-};
-
-static void fsp_update_share_mode_flags_fn(
-	const uint8_t *buf,
-	size_t buflen,
-	bool *modified_dependent,
-	void *private_data)
-{
-	struct fsp_update_share_mode_flags_state *state = private_data;
-	uint64_t seq;
-
-	state->ndr_err = get_share_mode_blob_header(
-		buf, buflen, &seq, &state->share_mode_flags);
-}
-
-static NTSTATUS fsp_update_share_mode_flags(struct files_struct *fsp)
-{
-	struct fsp_update_share_mode_flags_state state = {0};
-	int seqnum = g_lock_seqnum(lock_ctx);
-	NTSTATUS status;
-
-	if (seqnum == fsp->share_mode_flags_seqnum) {
-		return NT_STATUS_OK;
-	}
-
-	status = share_mode_do_locked(
-		fsp->file_id, fsp_update_share_mode_flags_fn, &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		/* no DBG_GET_SHARE_MODE_LOCK here! */
-		DBG_ERR("share_mode_do_locked returned %s\n",
-			nt_errstr(status));
-		return status;
-	}
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(state.ndr_err)) {
-		DBG_ERR("get_share_mode_blob_header returned %s\n",
-			ndr_errstr(state.ndr_err));
-		return ndr_map_error2ntstatus(state.ndr_err);
-	}
-
-	fsp->share_mode_flags_seqnum = seqnum;
-	fsp->share_mode_flags = state.share_mode_flags;
-
-	return NT_STATUS_OK;
-}
-
-bool file_has_read_lease(struct files_struct *fsp)
-{
-	NTSTATUS status;
-
-	status = fsp_update_share_mode_flags(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		/* Safe default for leases */
-		return true;
-	}
-
-	return (fsp->share_mode_flags & SHARE_MODE_LEASE_READ) != 0;
-}
-
 static int share_mode_data_nofree_destructor(struct share_mode_data *d)
 {
 	return -1;
@@ -1169,6 +1107,68 @@ static void share_mode_wakeup_waiters_fn(
 NTSTATUS share_mode_wakeup_waiters(struct file_id id)
 {
 	return share_mode_do_locked(id, share_mode_wakeup_waiters_fn, NULL);
+}
+
+struct fsp_update_share_mode_flags_state {
+	enum ndr_err_code ndr_err;
+	uint16_t share_mode_flags;
+};
+
+static void fsp_update_share_mode_flags_fn(
+	const uint8_t *buf,
+	size_t buflen,
+	bool *modified_dependent,
+	void *private_data)
+{
+	struct fsp_update_share_mode_flags_state *state = private_data;
+	uint64_t seq;
+
+	state->ndr_err = get_share_mode_blob_header(
+		buf, buflen, &seq, &state->share_mode_flags);
+}
+
+static NTSTATUS fsp_update_share_mode_flags(struct files_struct *fsp)
+{
+	struct fsp_update_share_mode_flags_state state = {0};
+	int seqnum = g_lock_seqnum(lock_ctx);
+	NTSTATUS status;
+
+	if (seqnum == fsp->share_mode_flags_seqnum) {
+		return NT_STATUS_OK;
+	}
+
+	status = share_mode_do_locked(
+		fsp->file_id, fsp_update_share_mode_flags_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* no DBG_GET_SHARE_MODE_LOCK here! */
+		DBG_ERR("share_mode_do_locked returned %s\n",
+			nt_errstr(status));
+		return status;
+	}
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(state.ndr_err)) {
+		DBG_ERR("get_share_mode_blob_header returned %s\n",
+			ndr_errstr(state.ndr_err));
+		return ndr_map_error2ntstatus(state.ndr_err);
+	}
+
+	fsp->share_mode_flags_seqnum = seqnum;
+	fsp->share_mode_flags = state.share_mode_flags;
+
+	return NT_STATUS_OK;
+}
+
+bool file_has_read_lease(struct files_struct *fsp)
+{
+	NTSTATUS status;
+
+	status = fsp_update_share_mode_flags(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Safe default for leases */
+		return true;
+	}
+
+	return (fsp->share_mode_flags & SHARE_MODE_LEASE_READ) != 0;
 }
 
 NTTIME share_mode_changed_write_time(struct share_mode_lock *lck)
