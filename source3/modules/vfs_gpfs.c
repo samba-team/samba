@@ -1679,10 +1679,10 @@ static int timespec_to_gpfs_time(
 		return 0;
 	}
 
-	if (ts.tv_sec > UINT32_MAX) {
-		DBG_WARNING("GPFS uses 32-bit unsigned timestamps, "
-			    "%ju is too large\n",
-			    (uintmax_t)ts.tv_sec);
+	if (ts.tv_sec < 0 || ts.tv_sec > UINT32_MAX) {
+		DBG_NOTICE("GPFS uses 32-bit unsigned timestamps "
+			   "and cannot handle %jd.\n",
+			   (intmax_t)ts.tv_sec);
 		errno = ERANGE;
 		return -1;
 	}
