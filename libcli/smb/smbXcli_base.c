@@ -5013,7 +5013,11 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 
 	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
-	if (tevent_req_nterror(req, status) || iov == NULL) {
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	if (iov == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
