@@ -634,6 +634,62 @@ fail:
 	return NULL;
 }
 
+static NTSTATUS share_mode_data_ltdb_store(struct share_mode_data *d,
+					   TDB_DATA key,
+					   struct locking_tdb_data *ltdb,
+					   const TDB_DATA *share_mode_dbufs,
+					   size_t num_share_mode_dbufs)
+{
+	DATA_BLOB blob = { 0 };
+	NTSTATUS status;
+
+	if (!d->modified) {
+		DBG_DEBUG("share_mode_data not modified\n");
+		goto store;
+	}
+
+	d->unique_content_epoch = generate_unique_u64(d->unique_content_epoch);
+
+	if (DEBUGLEVEL >= 10) {
+		DBG_DEBUG("\n");
+		NDR_PRINT_DEBUG(share_mode_data, d);
+	}
+
+	if (ltdb->num_share_entries != 0 || num_share_mode_dbufs != 0) {
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_push_struct_blob(
+			&blob,
+			ltdb,
+			d,
+			(ndr_push_flags_fn_t)ndr_push_share_mode_data);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DBG_ERR("ndr_push_share_mode_data failed: %s\n",
+				  ndr_errstr(ndr_err));
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+	}
+
+	ltdb->share_mode_data_buf = blob.data;
+	ltdb->share_mode_data_len = blob.length;
+
+store:
+	status = locking_tdb_data_store(key,
+					ltdb,
+					share_mode_dbufs,
+					num_share_mode_dbufs);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("locking_tdb_data_store failed: %s\n",
+			nt_errstr(status));
+		return status;
+	}
+
+	d->modified = false;
+	d->not_stored = (ltdb->share_mode_data_len == 0);
+
+	return NT_STATUS_OK;
+}
+
 /*******************************************************************
  If modified, store the share_mode_data back into the database.
 ********************************************************************/
@@ -642,7 +698,6 @@ static NTSTATUS share_mode_data_store(struct share_mode_data *d)
 {
 	TDB_DATA key = locking_key(&d->id);
 	struct locking_tdb_data *ltdb = NULL;
-	DATA_BLOB blob = { 0 };
 	NTSTATUS status;
 
 	if (!d->modified) {
@@ -655,8 +710,6 @@ static NTSTATUS share_mode_data_store(struct share_mode_data *d)
 		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 
-	d->unique_content_epoch = generate_unique_u64(d->unique_content_epoch);
-
 	status = locking_tdb_data_fetch(key, d, &ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("locking_tdb_data_fetch failed: %s\n",
@@ -664,36 +717,13 @@ static NTSTATUS share_mode_data_store(struct share_mode_data *d)
 		return status;
 	}
 
-	if (ltdb->num_share_entries != 0) {
-		enum ndr_err_code ndr_err;
-
-		ndr_err = ndr_push_struct_blob(
-			&blob,
-			ltdb,
-			d,
-			(ndr_push_flags_fn_t)ndr_push_share_mode_data);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			DBG_DEBUG("ndr_push_share_mode_data failed: %s\n",
-				  ndr_errstr(ndr_err));
-			TALLOC_FREE(ltdb);
-			return ndr_map_error2ntstatus(ndr_err);
-		}
-	}
-
-	ltdb->share_mode_data_buf = blob.data;
-	ltdb->share_mode_data_len = blob.length;
-
-	status = locking_tdb_data_store(key, ltdb, NULL, 0);
+	status = share_mode_data_ltdb_store(d, key, ltdb, NULL, 0);
+	TALLOC_FREE(ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(ltdb);
-		DBG_ERR("locking_tdb_data_store failed: %s\n",
+		DBG_ERR("share_mode_data_ltdb_store failed: %s\n",
 			nt_errstr(status));
 		return status;
 	}
-
-	d->modified = false;
-	d->not_stored = (ltdb->share_mode_data_len == 0);
-	TALLOC_FREE(ltdb);
 
 	return NT_STATUS_OK;
 }
