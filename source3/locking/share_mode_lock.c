@@ -1977,10 +1977,10 @@ bool set_share_mode(struct share_mode_lock *lck,
 	ltdb->share_entries = NULL;
 	ltdb->num_share_entries = 0;
 
-	status = locking_tdb_data_store(key, ltdb, dbufs, num_dbufs);
+	status = share_mode_data_ltdb_store(d, key, ltdb, dbufs, num_dbufs);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("locking_tdb_data_store failed: %s\n",
-			  nt_errstr(status));
+		DBG_ERR("share_mode_data_ltdb_store failed: %s\n",
+			nt_errstr(status));
 	}
 done:
 	TALLOC_FREE(ltdb);
@@ -2149,10 +2149,10 @@ bool share_mode_forall_entries(
 	ltdb->num_share_entries = num_share_entries;
 	ltdb->share_entries = share_entries;
 
-	status = locking_tdb_data_store(key, ltdb, NULL, 0);
+	status = share_mode_data_ltdb_store(d, key, ltdb, NULL, 0);
 	TALLOC_FREE(ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("locking_tdb_data_store failed: %s\n",
+		DBG_ERR("share_mode_data_ltdb_store failed: %s\n",
 			nt_errstr(status));
 		return false;
 	}
@@ -2320,9 +2320,9 @@ static bool share_mode_entry_do(
 		memcpy(e_ptr, buf.buf, SHARE_MODE_ENTRY_SIZE);
 	}
 
-	status = locking_tdb_data_store(key, ltdb, NULL, 0);
+	status = share_mode_data_ltdb_store(d, key, ltdb, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("locking_tdb_data_store failed: %s\n",
+		DBG_ERR("share_mode_data_ltdb_store failed: %s\n",
 			nt_errstr(status));
 		goto done;
 	}
@@ -2551,14 +2551,15 @@ bool reset_share_mode_entry(
 
 	ltdb->share_entries = e_buf.buf;
 
-	status = locking_tdb_data_store(key, ltdb, NULL, 0);
+	d->modified = true;
+
+	status = share_mode_data_ltdb_store(d, key, ltdb, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("locking_tdb_data_store failed: %s\n",
+		DBG_ERR("share_mode_data_ltdb_store failed: %s\n",
 			nt_errstr(status));
 		goto done;
 	}
 
-	d->modified = true;
 	ret = true;
 done:
 	TALLOC_FREE(ltdb);
