@@ -175,8 +175,8 @@ static void share_mode_memcache_store(struct share_mode_data *d)
 		  file_id_str_buf(d->id, &idbuf));
 
 	/* Ensure everything stored in the cache is pristine. */
-	d->modified = false;
-	d->fresh = false;
+	SMB_ASSERT(!d->modified);
+	SMB_ASSERT(!d->not_stored);
 
 	/*
 	 * Ensure the memory going into the cache
@@ -638,8 +638,7 @@ fail:
  If modified, store the share_mode_data back into the database.
 ********************************************************************/
 
-static NTSTATUS share_mode_data_store(
-	struct share_mode_data *d, bool *have_share_entries)
+static NTSTATUS share_mode_data_store(struct share_mode_data *d)
 {
 	TDB_DATA key = locking_key(&d->id);
 	struct locking_tdb_data *ltdb = NULL;
@@ -679,16 +678,24 @@ static NTSTATUS share_mode_data_store(
 			TALLOC_FREE(ltdb);
 			return ndr_map_error2ntstatus(ndr_err);
 		}
-
-		*have_share_entries = true;
 	}
 
 	ltdb->share_mode_data_buf = blob.data;
 	ltdb->share_mode_data_len = blob.length;
 
 	status = locking_tdb_data_store(key, ltdb, NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(ltdb);
+		DBG_ERR("locking_tdb_data_store failed: %s\n",
+			nt_errstr(status));
+		return status;
+	}
+
+	d->modified = false;
+	d->not_stored = (ltdb->share_mode_data_len == 0);
 	TALLOC_FREE(ltdb);
-	return status;
+
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -733,7 +740,7 @@ static struct share_mode_data *fresh_share_mode_lock(
 		SHARE_MODE_SHARE_WRITE |
 		SHARE_MODE_SHARE_READ;
 	d->modified = false;
-	d->fresh = true;
+	d->not_stored = true;
 	return d;
 fail:
 	DEBUG(0, ("talloc failed\n"));
@@ -971,7 +978,6 @@ fail:
 
 static int share_mode_lock_destructor(struct share_mode_lock *lck)
 {
-	bool have_share_entries = false;
 	NTSTATUS status;
 
 	SMB_ASSERT(static_share_mode_data_refcount > 0);
@@ -981,8 +987,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		return 0;
 	}
 
-	status = share_mode_data_store(
-		static_share_mode_data, &have_share_entries);
+	status = share_mode_data_store(static_share_mode_data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("share_mode_data_store failed: %s\n",
 			nt_errstr(status));
@@ -1001,7 +1006,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		}
 	}
 
-	if (have_share_entries) {
+	if (!static_share_mode_data->not_stored) {
 		/*
 		 * This is worth keeping. Without share modes,
 		 * share_mode_data_store above has left nothing in the

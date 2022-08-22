@@ -71,7 +71,7 @@ interface open_files
 		[size_is(num_delete_tokens)] delete_token delete_tokens[];
 		NTTIME old_write_time;
 		NTTIME changed_write_time;
-		[skip] boolean8 fresh;
+		[skip] boolean8 not_stored;
 		[skip] boolean8 modified;
 		[ignore] file_id id; /* In memory key used to lookup cache. */
 	} share_mode_data;
