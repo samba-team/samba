@@ -4469,7 +4469,11 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 				  NULL, /* pinbuf */
 				  expected, ARRAY_SIZE(expected));
 	TALLOC_FREE(subreq);
-	if (inhdr == NULL || tevent_req_nterror(req, status)) {
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	if (inhdr == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
