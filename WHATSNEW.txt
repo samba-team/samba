@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.17.  This is *not*
+This is the third release candidate of Samba 4.17.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -205,6 +205,32 @@ smb.conf changes
   dns port                                New default     53
   nt hash store				  New parameter   always
   volume serial number			  New parameter   -1
+
+CHANGES SINCE 4.17.0rc2
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15128: Possible use after free of connection_struct when iterating
+     smbd_server_connection->connections.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 15145: `net usershare add` fails with flag works with --long but fails
+     with -l.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15126: acl_xattr VFS module may unintentionally use filesystem
+     permissions instead of ACL from xattr.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15125: Performance regression on contended path based operations.
+   * BUG 15148: Missing READ_LEASE break could cause data corruption.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15141: libsamba-errors uses a wrong version number.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15152: SMB1 negotiation can fail to handle connection errors.
+
 
 CHANGES SINCE 4.17.0rc1
 =======================
