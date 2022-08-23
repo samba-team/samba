@@ -2170,7 +2170,6 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 			SMB_INO_T *ino)
 {
 	NTSTATUS status;
-	struct smb2_hnd *ph = NULL;
 	uint16_t fnum = 0xffff;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -2192,13 +2191,6 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 					FILE_READ_ATTRIBUTES,
 					&fnum);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
