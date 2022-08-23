@@ -2099,7 +2099,6 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 {
 	NTSTATUS status;
 	uint16_t fnum = 0xffff;
-	struct smb2_hnd *ph = NULL;
 	struct timespec write_time_ts;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -2125,12 +2124,6 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
 	status = cli_qfileinfo_basic(
 		cli,
 		fnum,
