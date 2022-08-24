@@ -1435,6 +1435,7 @@ static bool run_tcon_test(int dummy)
 	uint16_t fnum1;
 	uint32_t cnum1, cnum2, cnum3;
 	struct smbXcli_tcon *orig_tcon = NULL;
+	char *orig_share = NULL;
 	uint16_t vuid1, vuid2;
 	char buf[4];
 	bool ret = True;
@@ -1466,16 +1467,13 @@ static bool run_tcon_test(int dummy)
 		return False;
 	}
 
-	orig_tcon = cli_state_save_tcon(cli);
-	if (orig_tcon == NULL) {
-		return false;
-	}
+	cli_state_save_tcon_share(cli, &orig_tcon, &orig_share);
 
 	status = cli_tree_connect_creds(cli, share, "?????", torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s refused 2nd tree connect (%s)\n", host,
 		       nt_errstr(status));
-		cli_state_restore_tcon(cli, orig_tcon);
+		cli_state_restore_tcon_share(cli, orig_tcon, orig_share);
 		cli_shutdown(cli);
 		return False;
 	}
@@ -1528,7 +1526,7 @@ static bool run_tcon_test(int dummy)
 	status = cli_close(cli, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("close failed (%s)\n", nt_errstr(status));
-		cli_state_restore_tcon(cli, orig_tcon);
+		cli_state_restore_tcon_share(cli, orig_tcon, orig_share);
 		cli_shutdown(cli);
 		return False;
 	}
@@ -1538,12 +1536,12 @@ static bool run_tcon_test(int dummy)
 	status = cli_tdis(cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("secondary tdis failed (%s)\n", nt_errstr(status));
-		cli_state_restore_tcon(cli, orig_tcon);
+		cli_state_restore_tcon_share(cli, orig_tcon, orig_share);
 		cli_shutdown(cli);
 		return False;
 	}
 
-	cli_state_restore_tcon(cli, orig_tcon);
+	cli_state_restore_tcon_share(cli, orig_tcon, orig_share);
 
 	cli_state_set_tid(cli, cnum1);
 
@@ -11856,7 +11854,7 @@ static bool run_uid_regression_test(int dummy)
 	 * second tdis call with invalid vuid.
 	 *
 	 * This is a test-only hack. Real client code
-	 * uses cli_state_save_tcon()/cli_state_restore_tcon().
+	 * uses cli_state_save_tcon_share()/cli_state_restore_tcon_share().
 	 */
 	tcon_copy = smbXcli_tcon_copy(cli, cli->smb1.tcon);
 	if (tcon_copy == NULL) {
