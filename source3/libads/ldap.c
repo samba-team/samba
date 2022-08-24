@@ -25,6 +25,7 @@
 #include "ads.h"
 #include "libads/sitename_cache.h"
 #include "libads/cldap.h"
+#include "../lib/tsocket/tsocket.h"
 #include "../lib/addns/dnsquery.h"
 #include "../libds/common/flags.h"
 #include "smbldap.h"
@@ -408,11 +409,44 @@ static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,
 			struct samba_sockaddr *sa_list,
 			size_t count)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct timeval endtime = timeval_current_ofs(MAX(3,lp_ldap_timeout()/2), 0);
+	uint32_t nt_version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
+	struct tsocket_address **ts_list = NULL;
+	const struct tsocket_address * const *ts_list_const = NULL;
+	struct samba_sockaddr **req_sa_list = NULL;
+	struct netlogon_samlogon_response **responses = NULL;
+	size_t num_requests = 0;
+	NTSTATUS status;
 	size_t i;
-	bool ok;
+	bool ok = false;
+	bool retry;
+
+	ts_list = talloc_zero_array(frame,
+				    struct tsocket_address *,
+				    count);
+	if (ts_list == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	req_sa_list = talloc_zero_array(frame,
+					struct samba_sockaddr *,
+					count);
+	if (req_sa_list == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+again:
+	/*
+	 * The retry loop is bound by the timeout
+	 */
+	retry = false;
 
 	for (i = 0; i < count; i++) {
 		char server[INET6_ADDRSTRLEN];
+		int ret;
 
 		if (is_zero_addr(&sa_list[i].u.ss)) {
 			continue;
@@ -420,22 +454,124 @@ static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,
 
 		print_sockaddr(server, sizeof(server), &sa_list[i].u.ss);
 
-		if (!NT_STATUS_IS_OK(
-			check_negative_conn_cache(domain, server)))
+		status = check_negative_conn_cache(domain, server);
+		if (!NT_STATUS_IS_OK(status)) {
 			continue;
+		}
+
+		ret = tsocket_address_inet_from_strings(ts_list, "ip",
+							server, LDAP_PORT,
+							&ts_list[num_requests]);
+		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
+			DBG_WARNING("Failed to create tsocket_address for %s - %s\n",
+				    server, nt_errstr(status));
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		req_sa_list[num_requests] = &sa_list[i];
+		num_requests += 1;
+	}
+
+	if (num_requests == 0) {
+		status = NT_STATUS_NO_LOGON_SERVERS;
+		DBG_WARNING("domain[%s] num_requests[%zu] for count[%zu] - %s\n",
+			    domain, num_requests, count, nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	ts_list_const = (const struct tsocket_address * const *)ts_list;
+
+	status = cldap_multi_netlogon(frame,
+				      ts_list_const, num_requests,
+				      ads->server.realm, NULL,
+				      nt_version,
+				      1, endtime, &responses);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("cldap_multi_netlogon(realm=%s, num_requests=%zu) "
+			    "for count[%zu] - %s\n",
+			    ads->server.realm,
+			    num_requests, count,
+			    nt_errstr(status));
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
+
+	for (i = 0; i < num_requests; i++) {
+		struct NETLOGON_SAM_LOGON_RESPONSE_EX *cldap_reply = NULL;
+		char server[INET6_ADDRSTRLEN];
+
+		if (responses[i] == NULL) {
+			continue;
+		}
+
+		print_sockaddr(server, sizeof(server), &req_sa_list[i]->u.ss);
+
+		if (responses[i]->ntver != NETLOGON_NT_VERSION_5EX) {
+			DBG_NOTICE("realm=[%s] nt_version mismatch: 0x%08x for %s\n",
+				   ads->server.realm,
+				   responses[i]->ntver, server);
+			continue;
+		}
+
+		cldap_reply = &responses[i]->data.nt5_ex;
 
 		/* Returns ok only if it matches the correct server type */
-		ok = ads_try_connect(ads, false, &sa_list[i].u.ss);
-
+		ok = ads_fill_cldap_reply(ads,
+					  false,
+					  &req_sa_list[i]->u.ss,
+					  cldap_reply);
 		if (ok) {
+			DBG_DEBUG("realm[%s]: selected %s => %s\n",
+				  ads->server.realm,
+				  server, cldap_reply->pdc_dns_name);
+			if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+				NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE_EX,
+						cldap_reply);
+			}
+			TALLOC_FREE(frame);
 			return NT_STATUS_OK;
 		}
 
-		/* keep track of failures */
+		DBG_NOTICE("realm[%s] server %s %s - not usable\n",
+			   ads->server.realm,
+			   server, cldap_reply->pdc_dns_name);
+		if (CHECK_DEBUGLVL(DBGLVL_NOTICE)) {
+			NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE_EX,
+					cldap_reply);
+		}
+		add_failed_connection_entry(domain, server,
+				NT_STATUS_CLIENT_SERVER_PARAMETERS_INVALID);
+		retry = true;
+	}
+
+	if (retry) {
+		bool expired;
+
+		expired = timeval_expired(&endtime);
+		if (!expired) {
+			goto again;
+		}
+	}
+
+	/* keep track of failures as all were not suitable */
+	for (i = 0; i < num_requests; i++) {
+		char server[INET6_ADDRSTRLEN];
+
+		print_sockaddr(server, sizeof(server), &req_sa_list[i]->u.ss);
+
 		add_failed_connection_entry(domain, server,
 					    NT_STATUS_UNSUCCESSFUL);
 	}
 
+	status = NT_STATUS_NO_LOGON_SERVERS;
+	DBG_WARNING("realm[%s] no valid response "
+		    "num_requests[%zu] for count[%zu] - %s\n",
+		    ads->server.realm,
+		    num_requests, count, nt_errstr(status));
+	TALLOC_FREE(frame);
 	return NT_STATUS_NO_LOGON_SERVERS;
 }
 
