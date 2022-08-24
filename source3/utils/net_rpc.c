@@ -5129,6 +5129,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	WERROR result;
 	NTSTATUS status;
 	struct smbXcli_tcon *orig_tcon = NULL;
+	char *orig_share = NULL;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	status = dcerpc_srvsvc_NetShareGetInfo(b, mem_ctx,
@@ -5151,14 +5152,11 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	}
 
 	if (cli_state_has_tcon(cli)) {
-		orig_tcon = cli_state_save_tcon(cli);
-		if (orig_tcon == NULL) {
-			return;
-		}
+		cli_state_save_tcon_share(cli, &orig_tcon, &orig_share);
 	}
 
 	if (!NT_STATUS_IS_OK(cli_tree_connect(cli, netname, "A:", NULL))) {
-		cli_state_restore_tcon(cli, orig_tcon);
+		cli_state_restore_tcon_share(cli, orig_tcon, orig_share);
 		return;
 	}
 
@@ -5201,7 +5199,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	if (fnum != (uint16_t)-1)
 		cli_close(cli, fnum);
 	cli_tdis(cli);
-	cli_state_restore_tcon(cli, orig_tcon);
+	cli_state_restore_tcon_share(cli, orig_tcon, orig_share);
 
 	return;
 }
