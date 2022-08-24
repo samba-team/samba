@@ -188,7 +188,13 @@ uint32_t cli_state_get_tid(struct cli_state *cli);
 uint32_t cli_state_set_tid(struct cli_state *cli, uint32_t tid);
 struct smbXcli_tcon;
 struct smbXcli_tcon *cli_state_save_tcon(struct cli_state *cli);
+void cli_state_save_tcon_share(struct cli_state *cli,
+			       struct smbXcli_tcon **_tcon_ret,
+			       char **_share_ret);
 void cli_state_restore_tcon(struct cli_state *cli, struct smbXcli_tcon *tcon);
+void cli_state_restore_tcon_share(struct cli_state *cli,
+				  struct smbXcli_tcon *tcon,
+				  char *share);
 uint16_t cli_state_get_uid(struct cli_state *cli);
 uint16_t cli_state_set_uid(struct cli_state *cli, uint16_t uid);
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive);
