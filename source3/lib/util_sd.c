@@ -173,6 +173,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 				    struct dom_sid *sid)
 {
 	struct smbXcli_tcon *orig_tcon = NULL;
+	char *orig_share = NULL;
 	struct rpc_pipe_client *p = NULL;
 	struct policy_handle handle;
 	NTSTATUS status;
@@ -181,11 +182,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 	enum lsa_SidType *types;
 
 	if (cli_state_has_tcon(cli)) {
-		orig_tcon = cli_state_save_tcon(cli);
-		if (orig_tcon == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto tcon_fail;
-		}
+		cli_state_save_tcon_share(cli, &orig_tcon, &orig_share);
 	}
 
 	status = cli_tree_connect(cli, "IPC$", "?????", NULL);
@@ -219,7 +216,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 	TALLOC_FREE(p);
 	cli_tdis(cli);
  tcon_fail:
-	cli_state_restore_tcon(cli, orig_tcon);
+	cli_state_restore_tcon_share(cli, orig_tcon, orig_share);
 	TALLOC_FREE(frame);
 	return status;
 }
