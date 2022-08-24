@@ -201,6 +201,7 @@ struct stat_ex {
 	struct timespec st_ex_mtime;
 	struct timespec st_ex_ctime;
 	struct timespec st_ex_btime; /* birthtime */
+	uint32_t	cached_dos_attributes;
 
 	blksize_t	st_ex_blksize;
 	blkcnt_t	st_ex_blocks;

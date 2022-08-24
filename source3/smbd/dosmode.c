@@ -727,6 +727,10 @@ uint32_t fdos_mode(struct files_struct *fsp)
 		return FILE_ATTRIBUTE_NORMAL;
 	}
 
+	if (fsp->fsp_name->st.cached_dos_attributes != FILE_ATTRIBUTES_INVALID) {
+		return fsp->fsp_name->st.cached_dos_attributes;
+	}
+
 	/* Get the DOS attributes via the VFS if we can */
 	status = vfs_fget_dos_attributes(fsp, &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -738,8 +742,8 @@ uint32_t fdos_mode(struct files_struct *fsp)
 		}
 	}
 
-	result = dos_mode_post(result, fsp, __func__);
-	return result;
+	fsp->fsp_name->st.cached_dos_attributes = dos_mode_post(result, fsp, __func__);
+	return fsp->fsp_name->st.cached_dos_attributes;
 }
 
 struct dos_mode_at_state {
@@ -940,6 +944,7 @@ int file_set_dosmode(connection_struct *conn,
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
+		smb_fname->st.cached_dos_attributes = dosmode;
 		ret = 0;
 		goto done;
 	}
@@ -1147,6 +1152,7 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 		     FILE_NOTIFY_CHANGE_ATTRIBUTES,
 		     fsp->fsp_name->base_name);
 
+	fsp->fsp_name->st.cached_dos_attributes = new_dosmode;
 	fsp->fsp_flags.is_sparse = sparse;
 
 	return NT_STATUS_OK;

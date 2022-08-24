@@ -329,6 +329,7 @@ enum csc_policy {
 #define FLAGS2_UNICODE_STRINGS         0x8000
 
 /* FileAttributes (search attributes) field */
+#define FILE_ATTRIBUTES_INVALID 	0x0000L
 #define FILE_ATTRIBUTE_READONLY		0x0001L
 #define FILE_ATTRIBUTE_HIDDEN		0x0002L
 #define FILE_ATTRIBUTE_SYSTEM		0x0004L

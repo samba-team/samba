@@ -376,6 +376,7 @@
  * Version 47 - Change SMB_VFS_OPENAT() to match the Linux openat2 prototype, add vfs_open_how
  * Version 47 - Add VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS for SMB_VFS_OPENAT()
  * Change to Version 48 - will ship with 4.18
+ * Version 48 - Add cached_dos_attributes to struct stat_ex
  */
 
 #define SMB_VFS_INTERFACE_VERSION 48

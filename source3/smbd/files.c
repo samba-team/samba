@@ -1843,6 +1843,7 @@ files_struct *file_fsp(struct smb_request *req, uint16_t fid)
 	}
 
 	req->chain_fsp = fsp;
+	fsp->fsp_name->st.cached_dos_attributes = FILE_ATTRIBUTES_INVALID;
 	return fsp;
 }
 
@@ -1889,6 +1890,8 @@ struct files_struct *file_fsp_get(struct smbd_smb2_request *smb2req,
 		return NULL;
 	}
 
+	fsp->fsp_name->st.cached_dos_attributes = FILE_ATTRIBUTES_INVALID;
+
 	return fsp;
 }
 
@@ -1902,6 +1905,8 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 		if (smb2req->compat_chain_fsp->fsp_flags.closing) {
 			return NULL;
 		}
+		smb2req->compat_chain_fsp->fsp_name->st.cached_dos_attributes =
+			FILE_ATTRIBUTES_INVALID;
 		return smb2req->compat_chain_fsp;
 	}
 
@@ -2027,6 +2032,7 @@ static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
 
 	fsp->name_hash = name_hash;
 	fsp->fsp_name = smb_fname_new;
+	fsp->fsp_name->st.cached_dos_attributes = FILE_ATTRIBUTES_INVALID;
 	*_smb_fname = NULL;
 	return NT_STATUS_OK;
 }
