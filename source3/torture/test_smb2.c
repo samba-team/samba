@@ -46,6 +46,7 @@ bool run_smb2_basic(int dummy)
 	uint32_t dir_data_length;
 	uint32_t saved_tid = 0;
 	struct smbXcli_tcon *saved_tcon = NULL;
+	char *saved_share = NULL;
 	uint64_t saved_uid = 0;
 
 	printf("Starting SMB2-BASIC\n");
@@ -172,10 +173,7 @@ bool run_smb2_basic(int dummy)
 	}
 
 	saved_tid = smb2cli_tcon_current_id(cli->smb2.tcon);
-	saved_tcon = cli_state_save_tcon(cli);
-	if (saved_tcon == NULL) {
-		return false;
-	}
+	cli_state_save_tcon_share(cli, &saved_tcon, &saved_share);
 	cli->smb2.tcon = smbXcli_tcon_create(cli);
 	smb2cli_tcon_set_values(cli->smb2.tcon,
 				NULL, /* session */
@@ -188,7 +186,7 @@ bool run_smb2_basic(int dummy)
 			      cli->timeout,
 			      cli->smb2.session,
 			      cli->smb2.tcon);
-	cli_state_restore_tcon(cli, saved_tcon);
+	cli_state_restore_tcon_share(cli, saved_tcon, saved_share);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_tdis returned %s\n", nt_errstr(status));
 		return false;
