@@ -1543,6 +1543,55 @@ static int vfs_gluster_fstat(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_gluster_fstatat(struct vfs_handle_struct *handle,
+			       const struct files_struct *dirfsp,
+			       const struct smb_filename *smb_fname,
+			       SMB_STRUCT_STAT *sbuf,
+			       int flags)
+{
+	struct stat st;
+	int ret;
+
+#ifdef HAVE_GFAPI_VER_7_11
+	glfs_fd_t *pglfd = NULL;
+
+	START_PROFILE(syscall_fstatat);
+
+	pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
+	if (pglfd == NULL) {
+		END_PROFILE(syscall_fstatat);
+		DBG_ERR("Failed to fetch gluster fd\n");
+		return -1;
+	}
+
+	ret = glfs_fstatat(pglfd, smb_fname->base_name, &st, flags);
+#else
+	struct smb_filename *full_fname = NULL;
+
+	START_PROFILE(syscall_fstatat);
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		END_PROFILE(syscall_fstatat);
+		return -1;
+	}
+
+	ret = glfs_stat(handle->data, full_fname->base_name, &st);
+
+	TALLOC_FREE(full_fname->base_name);
+#endif
+
+	if (ret == 0) {
+		smb_stat_ex_from_stat(sbuf, &st);
+	}
+
+	END_PROFILE(syscall_fstatat);
+
+	return ret;
+}
+
 static int vfs_gluster_lstat(struct vfs_handle_struct *handle,
 			     struct smb_filename *smb_fname)
 {
@@ -2641,6 +2690,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 
 	.stat_fn = vfs_gluster_stat,
 	.fstat_fn = vfs_gluster_fstat,
+	.fstatat_fn = vfs_gluster_fstatat,
 	.lstat_fn = vfs_gluster_lstat,
 	.get_alloc_size_fn = vfs_gluster_get_alloc_size,
 	.unlinkat_fn = vfs_gluster_unlinkat,
