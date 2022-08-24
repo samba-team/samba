@@ -359,7 +359,7 @@ uint32_t cli_state_set_tid(struct cli_state *cli, uint32_t tid)
 	return ret;
 }
 
-struct smbXcli_tcon *cli_state_save_tcon(struct cli_state *cli)
+static struct smbXcli_tcon *cli_state_save_tcon(struct cli_state *cli)
 {
 	/*
 	 * Note. This used to make a deep copy of either
@@ -407,7 +407,8 @@ void cli_state_save_tcon_share(struct cli_state *cli,
 	cli->share = NULL;
 }
 
-void cli_state_restore_tcon(struct cli_state *cli, struct smbXcli_tcon *tcon)
+static void cli_state_restore_tcon(struct cli_state *cli,
+				   struct smbXcli_tcon *tcon)
 {
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		TALLOC_FREE(cli->smb2.tcon);
