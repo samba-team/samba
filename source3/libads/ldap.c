@@ -249,43 +249,23 @@ bool ads_closest_dc(ADS_STRUCT *ads)
 	return False;
 }
 
-
-/*
-  try a connection to a given ldap server, returning True and setting the servers IP
-  in the ads struct if successful
- */
-static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
-			    struct sockaddr_storage *ss)
+static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
+				 bool gc,
+				 const struct sockaddr_storage *ss,
+				 const struct NETLOGON_SAM_LOGON_RESPONSE_EX *cldap_reply)
 {
-	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply;
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ret = false;
 	char addr[INET6_ADDRSTRLEN];
 	ADS_STATUS status;
 
-	if (ss == NULL) {
-		TALLOC_FREE(frame);
-		return False;
-	}
-
 	print_sockaddr(addr, sizeof(addr), ss);
-
-	DEBUG(5,("ads_try_connect: sending CLDAP request to %s (realm: %s)\n",
-		addr, ads->server.realm));
-
-	ZERO_STRUCT( cldap_reply );
-
-	if ( !ads_cldap_netlogon_5(frame, ss, ads->server.realm, &cldap_reply ) ) {
-		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", addr));
-		ret = false;
-		goto out;
-	}
 
 	/* Check the CLDAP reply flags */
 
-	if ( !(cldap_reply.server_type & NBT_SERVER_LDAP) ) {
-		DEBUG(1,("ads_try_connect: %s's CLDAP reply says it is not an LDAP server!\n",
-			addr));
+	if (!(cldap_reply->server_type & NBT_SERVER_LDAP)) {
+		DBG_WARNING("%s's CLDAP reply says it is not an LDAP server!\n",
+			    addr);
 		ret = false;
 		goto out;
 	}
@@ -299,14 +279,14 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	TALLOC_FREE(ads->config.client_site_name);
 	TALLOC_FREE(ads->server.workgroup);
 
-	if (!check_cldap_reply_required_flags(cldap_reply.server_type,
+	if (!check_cldap_reply_required_flags(cldap_reply->server_type,
 					      ads->config.flags)) {
 		ret = false;
 		goto out;
 	}
 
 	ads->config.ldap_server_name = talloc_strdup(ads,
-						     cldap_reply.pdc_dns_name);
+						     cldap_reply->pdc_dns_name);
 	if (ads->config.ldap_server_name == NULL) {
 		DBG_WARNING("Out of memory\n");
 		ret = false;
@@ -315,7 +295,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 
 	ads->config.realm = talloc_asprintf_strupper_m(ads,
 						       "%s",
-						       cldap_reply.dns_domain);
+						       cldap_reply->dns_domain);
 	if (ads->config.realm == NULL) {
 		DBG_WARNING("Out of memory\n");
 		ret = false;
@@ -330,9 +310,9 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 		goto out;
 	}
 
-	if (*cldap_reply.server_site) {
+	if (*cldap_reply->server_site) {
 		ads->config.server_site_name =
-			talloc_strdup(ads, cldap_reply.server_site);
+			talloc_strdup(ads, cldap_reply->server_site);
 		if (ads->config.server_site_name == NULL) {
 			DBG_WARNING("Out of memory\n");
 			ret = false;
@@ -340,9 +320,9 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 		}
 	}
 
-	if (*cldap_reply.client_site) {
+	if (*cldap_reply->client_site) {
 		ads->config.client_site_name =
-			talloc_strdup(ads, cldap_reply.client_site);
+			talloc_strdup(ads, cldap_reply->client_site);
 		if (ads->config.client_site_name == NULL) {
 			DBG_WARNING("Out of memory\n");
 			ret = false;
@@ -350,7 +330,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 		}
 	}
 
-	ads->server.workgroup = talloc_strdup(ads, cldap_reply.domain_name);
+	ads->server.workgroup = talloc_strdup(ads, cldap_reply->domain_name);
 	if (ads->server.workgroup == NULL) {
 		DBG_WARNING("Out of memory\n");
 		ret = false;
@@ -361,11 +341,11 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	ads->ldap.ss = *ss;
 
 	/* Store our site name. */
-	sitename_store( cldap_reply.domain_name, cldap_reply.client_site);
-	sitename_store( cldap_reply.dns_domain, cldap_reply.client_site);
+	sitename_store(cldap_reply->domain_name, cldap_reply->client_site);
+	sitename_store(cldap_reply->dns_domain, cldap_reply->client_site);
 
 	/* Leave this until last so that the flags are not clobbered */
-	ads->config.flags	       = cldap_reply.server_type;
+	ads->config.flags = cldap_reply->server_type;
 
 	ret = true;
 
@@ -373,6 +353,48 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 
 	TALLOC_FREE(frame);
 	return ret;
+}
+
+/*
+  try a connection to a given ldap server, returning True and setting the servers IP
+  in the ads struct if successful
+ */
+static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
+			    struct sockaddr_storage *ss)
+{
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply = {};
+	TALLOC_CTX *frame = talloc_stackframe();
+	bool ok;
+	char addr[INET6_ADDRSTRLEN] = { 0, };
+
+	if (ss == NULL) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	print_sockaddr(addr, sizeof(addr), ss);
+
+	DBG_INFO("ads_try_connect: sending CLDAP request to %s (realm: %s)\n",
+		 addr, ads->server.realm);
+
+	ok = ads_cldap_netlogon_5(frame, ss, ads->server.realm, &cldap_reply);
+	if (!ok) {
+		DBG_NOTICE("ads_cldap_netlogon_5(%s, %s) failed.\n",
+			   addr, ads->server.realm);
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	ok = ads_fill_cldap_reply(ads, gc, ss, &cldap_reply);
+	if (!ok) {
+		DBG_NOTICE("ads_fill_cldap_reply(%s, %s) failed.\n",
+			   addr, ads->server.realm);
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	TALLOC_FREE(frame);
+	return true;
 }
 
 /**********************************************************************
