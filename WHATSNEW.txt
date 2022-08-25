@@ -194,6 +194,45 @@ covers all the existing text output including sessions, connections,
 open files, byte-range locks, notifies and profile data with all
 low-level information maintained by Samba in the respective databases.
 
+Protected Users security group
+------------------------------
+
+Samba AD DC now includes support for the Protected Users security
+group introduced in Windows Server 2012 R2. The feature reduces the
+attack surface of user accounts by preventing the use of weak
+encryption types. It also mitigates the effects of credential theft by
+limiting credential lifetime and scope.
+
+The protections are intended for user accounts only, and service or
+computer accounts should not be added to the Protected Users
+group. User accounts added to the group are granted the following
+security protections:
+
+   * NTLM authentication is disabled.
+   * Kerberos ticket-granting tickets (TGTs) encrypted with RC4 are
+     not issued to or accepted from affected principals. Tickets
+     encrypted with AES, and service tickets encrypted with RC4, are
+     not affected by this restriction.
+   * The lifetime of Kerberos TGTs is restricted to a maximum of four
+     hours.
+   * Kerberos constrained and unconstrained delegation is disabled.
+
+If the Protected Users group is not already present in the domain, it
+can be created with 'samba-tool group add'. The new '--special'
+parameter must be specified, with 'Protected Users' as the name of the
+group. An example command invocation is:
+
+samba-tool group add 'Protected Users' --special
+
+or against a remote server:
+
+samba-tool group add 'Protected Users' --special -H ldap://dc1.example.com -U Administrator
+
+The Protected Users group is identified in the domain by its having a
+RID of 525. Thus, it should only be created with samba-tool and the
+'--special' parameter, as above, so that it has the required RID
+to function correctly.
+
 
 REMOVED FEATURES
 ================
