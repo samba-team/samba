@@ -88,11 +88,17 @@ class SidStringTests(TestCase):
 
         class_dn = f'CN={class_name},{self.schema_dn}'
 
+        governs_id = f'1.3.6.1.4.1.7165.4.6.2.9.{random_suffix}'
+        if expected_sid is not None:
+            # Append the RID to our OID to ensure more uniqueness.
+            rid = expected_sid.rsplit('-', 1)[1]
+            governs_id += f'.{rid}'
+
         ldif = f'''
 dn: {class_dn}
 objectClass: classSchema
 cn: {class_name}
-governsId: 1.3.6.1.4.1.7165.4.6.2.6.3.{random_suffix}
+governsId: {governs_id}
 subClassOf: top
 possSuperiors: domainDNS
 defaultSecurityDescriptor: O:{code}
