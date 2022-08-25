@@ -140,10 +140,10 @@ chmod 0 "$dir_outside_share_noperms"
 	ln -s "file_inside_share_noperms" "symlink_file_inside_share_noperms"
 	mkdir "dir_inside_share_noperms"
 	touch "dir_inside_share_noperms/noperm_file_exists"
-	chmod 0 "dir_inside_share_noperms"
 	ln -s "dir_inside_share_noperms" "symlink_dir_inside_share_noperms"
 	mkdir "dir_inside_share_noperms/noperm_subdir_exists"
 	touch "dir_inside_share_noperms/noperm_subdir_exists/noperm_subdir_file_exists"
+	chmod 0 "dir_inside_share_noperms"
 )
 
 #
