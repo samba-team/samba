@@ -326,7 +326,7 @@ static const struct flag_map ace_access_mask[] = {
 };
 
 static const struct flag_map decode_ace_access_mask[] = {
-	{ "FA", FILE_ALL_ACCESS },
+	{ "FA", FILE_GENERIC_ALL },
 	{ "FR", FILE_GENERIC_READ },
 	{ "FW", FILE_GENERIC_WRITE },
 	{ "FX", FILE_GENERIC_EXECUTE },
