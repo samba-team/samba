@@ -274,7 +274,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 			return smbd_smb2_request_error(req, status);
 		}
 
-		if (lp_smb2_unix_extensions()) {
+		if (lp_smb3_unix_extensions()) {
 			in_posix = smb2_negotiate_context_find(&in_c,
 					SMB2_POSIX_EXTENSIONS_AVAILABLE);
 
