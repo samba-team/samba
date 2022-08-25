@@ -490,7 +490,7 @@ typedef SMBCSRV * (*smbc_get_cached_srv_fn)   (SMBCCTX * c, const char * server,
                                                const char * username);
 
 /**@ingroup callback
- * Check if a server is still good
+ * Remove a cached server
  *
  * @param c         pointer to smb context
  *
