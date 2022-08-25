@@ -2850,11 +2850,15 @@ static void cli_start_connection_connected(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = smbXcli_negprot_send(state, state->ev, state->cli->conn,
-				      state->cli->timeout,
-				      state->min_protocol,
-				      state->max_protocol,
-				      WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK);
+	subreq = smbXcli_negprot_send(
+		state,
+		state->ev,
+		state->cli->conn,
+		state->cli->timeout,
+		state->min_protocol,
+		state->max_protocol,
+		WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK,
+		NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -2869,7 +2873,7 @@ static void cli_start_connection_done(struct tevent_req *subreq)
 		req, struct cli_start_connection_state);
 	NTSTATUS status;
 
-	status = smbXcli_negprot_recv(subreq);
+	status = smbXcli_negprot_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

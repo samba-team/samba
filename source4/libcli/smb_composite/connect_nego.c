@@ -167,7 +167,8 @@ static void smb_connect_nego_connect_done(struct composite_context *creq)
 				      timeout_msec,
 				      state->options.min_protocol,
 				      state->options.max_protocol,
-				      state->options.max_credits);
+				      state->options.max_credits,
+				      NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -181,7 +182,7 @@ static void smb_connect_nego_nego_done(struct tevent_req *subreq)
 		struct tevent_req);
 	NTSTATUS status;
 
-	status = smbXcli_negprot_recv(subreq);
+	status = smbXcli_negprot_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
