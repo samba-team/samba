@@ -1751,6 +1751,17 @@ static PyObject *py_smb_chkpath(struct py_cli_state *self, PyObject *args)
 	return PyBool_FromLong(dir_exists);
 }
 
+static PyObject *py_smb_have_posix(struct py_cli_state *self,
+				   PyObject *Py_UNUSED(ignored))
+{
+	bool posix = smbXcli_conn_have_posix(self->cli->conn);
+
+	if (posix) {
+		Py_RETURN_TRUE;
+	}
+	Py_RETURN_FALSE;
+}
+
 static PyObject *py_smb_get_sd(struct py_cli_state *self, PyObject *args)
 {
 	int fnum;
@@ -1879,6 +1890,12 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "set_sd", (PyCFunction)py_smb_set_sd, METH_VARARGS,
 	  "set_sd(fnum, security_descriptor[, security_info=0]) -> None\n\n"
 	  "\t\tSet security descriptor for opened file." },
+	{ "have_posix",
+	  (PyCFunction)py_smb_have_posix,
+	  METH_NOARGS,
+	  "have_posix() -> True/False\n\n"
+	  "\t\tReturn if the server has posix extensions"
+	},
 	{ NULL, NULL, 0, NULL }
 };
 
