@@ -321,10 +321,10 @@ test_symlink_traversal_SMB2()
 	smbclient_expect_error "get" "symlink_to_dot" "" "NT_STATUS_FILE_IS_A_DIRECTORY" || return 1
 	smbclient_expect_error "get" "symlink_to_dot/noexist1" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 	smbclient_expect_error "get" "symlink_to_dot/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
-	smbclient_expect_error "get" "file_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "get" "file_exists" "$dir_outside_share/file_exists" "NT_STATUS_OK" || return 1
 	smbclient_expect_error "get" "file_exists/noexist1" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	smbclient_expect_error "get" "file_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
-	smbclient_expect_error "get" "symlink_to_file_exists" "" "NT_STATUS_OK" || return 1
+	smbclient_expect_error "get" "symlink_to_file_exists" "$dir_outside_share/symlink_to_file_exists" "NT_STATUS_OK" || return 1
 	smbclient_expect_error "get" "symlink_to_file_exists/noexist1" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	smbclient_expect_error "get" "symlink_to_file_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
 	smbclient_expect_error "get" "dir_exists" "" "NT_STATUS_FILE_IS_A_DIRECTORY" || return 1
