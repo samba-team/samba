@@ -2776,6 +2776,7 @@ struct cli_start_connection_state {
 	struct cli_state *cli;
 	int min_protocol;
 	int max_protocol;
+	struct smb2_negotiate_contexts *negotiate_contexts;
 };
 
 static void cli_start_connection_connected(struct tevent_req *subreq);
@@ -2827,6 +2828,26 @@ static struct tevent_req *cli_start_connection_send(
 					  state->min_protocol);
 	}
 
+	state->negotiate_contexts = talloc_zero(
+		state, struct smb2_negotiate_contexts);
+	if (tevent_req_nomem(state->negotiate_contexts, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (flags & CLI_FULL_CONNECTION_REQUEST_POSIX) {
+		NTSTATUS status;
+
+		status = smb2_negotiate_context_add(
+			state->negotiate_contexts,
+			state->negotiate_contexts,
+			SMB2_POSIX_EXTENSIONS_AVAILABLE,
+			(const uint8_t *)SMB2_CREATE_TAG_POSIX,
+			strlen(SMB2_CREATE_TAG_POSIX));
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
 	subreq = cli_connect_nb_send(state, ev, dest_host, dest_ss, port,
 				     0x20, my_name, signing_state, flags);
 	if (tevent_req_nomem(subreq, req)) {
@@ -2858,7 +2879,7 @@ static void cli_start_connection_connected(struct tevent_req *subreq)
 		state->min_protocol,
 		state->max_protocol,
 		WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK,
-		NULL);
+		state->negotiate_contexts);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
