@@ -438,7 +438,9 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	PyObject *py_force_smb1 = Py_False;
 	bool force_smb1 = false;
 	PyObject *py_ipc = Py_False;
+	PyObject *py_posix = Py_False;
 	bool use_ipc = false;
+	bool request_posix = false;
 	struct tevent_req *req;
 	bool ret;
 	int flags = 0;
@@ -447,6 +449,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		"host", "share", "lp", "creds",
 		"multi_threaded", "force_smb1",
 		"ipc",
+		"posix",
 		NULL
 	};
 
@@ -457,12 +460,13 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	}
 
 	ret = ParseTupleAndKeywords(
-		args, kwds, "ssO|O!OOO", kwlist,
+		args, kwds, "ssO|O!OOOO", kwlist,
 		&host, &share, &py_lp,
 		py_type_Credentials, &creds,
 		&py_multi_threaded,
 		&py_force_smb1,
-		&py_ipc);
+		&py_ipc,
+		&py_posix);
 
 	Py_DECREF(py_type_Credentials);
 
@@ -486,6 +490,11 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	use_ipc = PyObject_IsTrue(py_ipc);
 	if (use_ipc) {
 		flags |= CLI_FULL_CONNECTION_IPC;
+	}
+
+	request_posix = PyObject_IsTrue(py_posix);
+	if (request_posix) {
+		flags |= CLI_FULL_CONNECTION_REQUEST_POSIX;
 	}
 
 	if (multi_threaded) {
