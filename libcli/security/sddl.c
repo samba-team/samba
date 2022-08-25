@@ -333,6 +333,22 @@ static const struct flag_map decode_ace_access_mask[] = {
 	{ NULL, 0 },
 };
 
+
+static char *sddl_match_file_rights(TALLOC_CTX *mem_ctx,
+				uint32_t flags)
+{
+	int i;
+
+	/* try to find an exact match */
+	for (i=0;decode_ace_access_mask[i].name;i++) {
+		if (decode_ace_access_mask[i].flag == flags) {
+			return talloc_strdup(mem_ctx,
+					decode_ace_access_mask[i].name);
+		}
+	}
+	return NULL;
+}
+
 static bool sddl_decode_access(const char *str, uint32_t *pmask)
 {
 	const char *str0 = str;
@@ -776,8 +792,12 @@ static char *sddl_transition_encode_ace(TALLOC_CTX *mem_ctx, const struct securi
 	sddl_mask = sddl_flags_to_string(tmp_ctx, ace_access_mask,
 					 ace->access_mask, true);
 	if (sddl_mask == NULL) {
-		sddl_mask = talloc_asprintf(tmp_ctx, "0x%x",
-					     ace->access_mask);
+		sddl_mask = sddl_match_file_rights(tmp_ctx,
+				ace->access_mask);
+		if (sddl_mask == NULL) {
+			sddl_mask = talloc_asprintf(tmp_ctx, "0x%x",
+						    ace->access_mask);
+		}
 		if (sddl_mask == NULL) {
 			goto failed;
 		}

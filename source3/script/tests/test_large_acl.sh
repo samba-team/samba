@@ -43,14 +43,11 @@ build_files
 test_large_acl()
 {
 	#An ACL with 200 entries, ~7K
-	new_acl=$(seq 1001 1200 | sed -r -e '1 i\D:(A;;0x001f01ff;;;WD)' -e 's/(.*)/(A;;0x001f01ff;;;S-1-5-21-11111111-22222222-33333333-\1)/' | tr -d '\n')
-        # the ace flags will lose their 0x00 padding when reserialised from the SD.
-        new_acl_out=$(echo -n "$new_acl" | perl -p -e 's/0x00/0x/g')
+	new_acl=$(seq 1001 1200 | sed -r -e '1 i\D:(A;;FA;;;WD)' -e 's/(.*)/(A;;FA;;;S-1-5-21-11111111-22222222-33333333-\1)/' | tr -d '\n')
 	$SMBCACLS //$SERVER/acl_xattr_ign_sysacl_windows -U $USERNAME%$PASSWORD --sddl -S $new_acl large_acl
 	actual_acl=$($SMBCACLS //$SERVER/acl_xattr_ign_sysacl_windows -U $USERNAME%$PASSWORD --sddl --numeric large_acl 2>/dev/null | sed -rn 's/.*(D:.*)/\1/p' | tr -d '\n')
-	if [ ! "$new_acl_out" = "$actual_acl" ]; then
-		echo -e "given:\n$new_acl\n"
-		echo -e "expected:\n$new_acl_out\nactual:\n$actual_acl\n"
+	if [ ! "$new_acl" = "$actual_acl" ]; then
+		echo -e "expected:\n$new_acl\nactual:\n$actual_acl\n"
 		return 1
 	fi
 }
