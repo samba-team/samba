@@ -3953,8 +3953,15 @@ static bool run_negprot_nowait(int dummy)
 	for (i=0;i<50000;i++) {
 		struct tevent_req *req;
 
-		req = smbXcli_negprot_send(ev, ev, cli->conn, cli->timeout,
-					   PROTOCOL_CORE, PROTOCOL_NT1, 0);
+		req = smbXcli_negprot_send(
+			ev,
+			ev,
+			cli->conn,
+			cli->timeout,
+			PROTOCOL_CORE,
+			PROTOCOL_NT1,
+			0,
+			NULL);
 		if (req == NULL) {
 			TALLOC_FREE(ev);
 			return false;

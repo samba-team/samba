@@ -457,14 +457,19 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 NTSTATUS smb2cli_req_get_sent_iov(struct tevent_req *req,
 				  struct iovec *sent_iov);
 
+struct smb2_negotiate_contexts;
 struct tevent_req *smbXcli_negprot_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbXcli_conn *conn,
 					uint32_t timeout_msec,
 					enum protocol_types min_protocol,
 					enum protocol_types max_protocol,
-					uint16_t max_credits);
-NTSTATUS smbXcli_negprot_recv(struct tevent_req *req);
+					uint16_t max_credits,
+					struct smb2_negotiate_contexts *in_ctx);
+NTSTATUS smbXcli_negprot_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct smb2_negotiate_contexts **out_ctx);
 NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 			 uint32_t timeout_msec,
 			 enum protocol_types min_protocol,

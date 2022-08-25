@@ -106,7 +106,8 @@ struct tevent_req *smb_raw_negotiate_send(TALLOC_CTX *mem_ctx,
 				      timeout_msec,
 				      minprotocol,
 				      maxprotocol,
-				      transport->options.max_credits);
+				      transport->options.max_credits,
+				      NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -125,7 +126,7 @@ static void smb_raw_negotiate_done(struct tevent_req *subreq)
 		struct smb_raw_negotiate_state);
 	NTSTATUS status;
 
-	status = smbXcli_negprot_recv(subreq);
+	status = smbXcli_negprot_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
