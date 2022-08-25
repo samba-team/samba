@@ -130,6 +130,7 @@ struct smbXcli_conn {
 			DATA_BLOB gss_blob;
 			uint16_t sign_algo;
 			uint16_t cipher;
+			bool smb311_posix;
 		} server;
 
 		uint64_t mid;
@@ -498,6 +499,17 @@ bool smbXcli_conn_use_unicode(struct smbXcli_conn *conn)
 bool smbXcli_conn_signing_mandatory(struct smbXcli_conn *conn)
 {
 	return conn->mandatory_signing;
+}
+
+bool smbXcli_conn_have_posix(struct smbXcli_conn *conn)
+{
+	if (conn->protocol >= PROTOCOL_SMB3_11) {
+		return conn->smb2.server.smb311_posix;
+	}
+	if (conn->protocol <= PROTOCOL_NT1) {
+		return (conn->smb1.capabilities & CAP_UNIX);
+	}
+	return false;
 }
 
 /*
@@ -5024,6 +5036,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	gnutls_hash_hd_t hash_hnd = NULL;
 	struct smb2_negotiate_context *sign_algo = NULL;
 	struct smb2_negotiate_context *cipher = NULL;
+	struct smb2_negotiate_context *posix = NULL;
 	struct iovec sent_iov[3] = {{0}, {0}, {0}};
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
@@ -5379,6 +5392,17 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 
 		conn->smb2.server.cipher = cipher_selected;
 	}
+
+	posix = smb2_negotiate_context_find(
+		state->out_ctx, SMB2_POSIX_EXTENSIONS_AVAILABLE);
+	if (posix != NULL) {
+		DATA_BLOB posix_blob = data_blob_const(
+			SMB2_CREATE_TAG_POSIX, strlen(SMB2_CREATE_TAG_POSIX));
+		int cmp = data_blob_cmp(&posix->data, &posix_blob);
+
+		conn->smb2.server.smb311_posix = (cmp == 0);
+	}
+
 
 	/* First we hash the request */
 	smb2cli_req_get_sent_iov(subreq, sent_iov);
