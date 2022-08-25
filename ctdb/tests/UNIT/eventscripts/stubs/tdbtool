@@ -1,31 +1,34 @@
 #!/bin/sh
 
-do_help ()
+do_help()
 {
-    if [ "$FAKE_TDBTOOL_SUPPORTS_CHECK" = "yes" ] ; then
-	echo "check"
-    fi
-    exit 0
+	if [ "$FAKE_TDBTOOL_SUPPORTS_CHECK" = "yes" ]; then
+		echo "check"
+	fi
+	exit 0
 }
 
-do_check ()
+do_check()
 {
-    if [ "$FAKE_TDB_IS_OK" = "yes" ] ; then
-	echo "Database integrity is OK"
-    else
-	echo "Database is busted"
-    fi
-    exit 0
+	if [ "$FAKE_TDB_IS_OK" = "yes" ]; then
+		echo "Database integrity is OK"
+	else
+		echo "Database is busted"
+	fi
+	exit 0
 }
 
-do_cmd ()
+do_cmd()
 {
-    case "$*" in
+	case "$*" in
 	*check) do_check ;;
 	help) do_help ;;
 	"") read -r tdb_cmd && [ -n "$tdb_cmd" ] && do_cmd "$tdb_cmd" ;;
-	*) echo "$0: Not implemented: $*" ; exit 1 ;;
-    esac
+	*)
+		echo "$0: Not implemented: $*"
+		exit 1
+		;;
+	esac
 }
 
 do_cmd "$@"

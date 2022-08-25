@@ -1,10 +1,10 @@
 #!/bin/sh
 
-if [ -z "$FAKE_TDB_MUTEX_CHECK" ] ; then
+if [ -z "$FAKE_TDB_MUTEX_CHECK" ]; then
 	exit
 fi
 
 echo "$FAKE_TDB_MUTEX_CHECK" |
-while read -r pid chain ; do
-	echo "[${chain}] pid=${pid}"
-done
+	while read -r pid chain; do
+		echo "[${chain}] pid=${pid}"
+	done

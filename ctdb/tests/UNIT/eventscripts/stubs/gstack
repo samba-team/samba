@@ -2,12 +2,12 @@
 
 pid="$1"
 
-if [ -n "$FAKE_PS_MAP" ] ; then
+if [ -n "$FAKE_PS_MAP" ]; then
 	command=$(echo "$FAKE_PS_MAP" |
-		  awk -v pid="$pid" '$1 == pid { print $2 }')
+		awk -v pid="$pid" '$1 == pid { print $2 }')
 fi
 
-if [ -z "$command" ] ; then
+if [ -z "$command" ]; then
 	command="smbd"
 fi
 

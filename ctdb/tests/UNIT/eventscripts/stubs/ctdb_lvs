@@ -3,30 +3,31 @@
 prog="ctdb_lvs"
 
 # Print a message and exit.
-die ()
+die()
 {
-    echo "$1" >&2 ; exit "${2:-1}"
+	echo "$1" >&2
+	exit "${2:-1}"
 }
 
 not_implemented_exit_code=1
 
-usage ()
+usage()
 {
-    cat >&2 <<EOF
+	cat >&2 <<EOF
 Usage: $prog { leader | list }
 EOF
-    exit 1
+	exit 1
 }
 
-not_implemented ()
+not_implemented()
 {
-    echo "${prog}: command \"$1\" not implemented in stub" >&2
-    exit $not_implemented_exit_code
+	echo "${prog}: command \"$1\" not implemented in stub" >&2
+	exit $not_implemented_exit_code
 }
 
-ctdb_lvs_leader ()
+ctdb_lvs_leader()
 {
-	if [ -n "$FAKE_CTDB_LVS_LEADER" ] ; then
+	if [ -n "$FAKE_CTDB_LVS_LEADER" ]; then
 		echo "$FAKE_CTDB_LVS_LEADER"
 		return 0
 	else
@@ -34,10 +35,10 @@ ctdb_lvs_leader ()
 	fi
 }
 
-ctdb_lvs_list ()
+ctdb_lvs_list()
 {
 	_pnn=0
-	while read -r _ip _ ; do
+	while read -r _ip _; do
 		echo "${_pnn} ${_ip}"
 		_pnn=$((_pnn + 1))
 	done <"$CTDB_LVS_NODES"
@@ -46,7 +47,7 @@ ctdb_lvs_list ()
 ######################################################################
 
 case "$1" in
-    leader) ctdb_lvs_leader "$@" ;;
-    list)   ctdb_lvs_list "$@" ;;
-    *) not_implemented "$1" ;;
+leader) ctdb_lvs_leader "$@" ;;
+list) ctdb_lvs_list "$@" ;;
+*) not_implemented "$1" ;;
 esac

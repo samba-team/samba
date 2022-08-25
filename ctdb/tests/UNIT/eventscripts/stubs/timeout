@@ -1,8 +1,8 @@
 #!/bin/sh
 
-if [ -n "$FAKE_TIMEOUT" ] ; then
-    exit 124
+if [ -n "$FAKE_TIMEOUT" ]; then
+	exit 124
 else
-    shift 1
-    exec "$@"
+	shift 1
+	exec "$@"
 fi

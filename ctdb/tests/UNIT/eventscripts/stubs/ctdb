@@ -3,28 +3,29 @@
 prog="ctdb"
 
 # Print a message and exit.
-die ()
+die()
 {
-    echo "$1" >&2 ; exit "${2:-1}"
+	echo "$1" >&2
+	exit "${2:-1}"
 }
 
 not_implemented_exit_code=1
 
-usage ()
+usage()
 {
-    cat >&2 <<EOF
+	cat >&2 <<EOF
 Usage: $prog [-X] cmd
 
 A fake CTDB stub that prints items depending on the variables
 FAKE_CTDB_PNN (default 0) depending on command-line options.
 EOF
-    exit 1
+	exit 1
 }
 
-not_implemented ()
+not_implemented()
 {
-    echo "${prog}: command \"$1\" not implemented in stub" >&2
-    exit $not_implemented_exit_code
+	echo "${prog}: command \"$1\" not implemented in stub" >&2
+	exit $not_implemented_exit_code
 }
 
 verbose=false
@@ -36,19 +37,19 @@ args=""
 # Options and command argument can appear in any order, so when
 # getopts thinks it is done, process any non-option arguments and go
 # around again.
-while [ $# -gt 0 ] ; do
-	while getopts "Xvhn:?" opt ; do
+while [ $# -gt 0 ]; do
+	while getopts "Xvhn:?" opt; do
 		case "$opt" in
 		X) machine_readable=true ;;
 		v) verbose=true ;;
 		n) nodespec="$OPTARG" ;;
-		\?|*) usage ;;
+		\? | *) usage ;;
 		esac
 	done
 	shift $((OPTIND - 1))
 
 	# Anything left over must be a non-option arg
-	if [ $# -gt 0 ] ; then
+	if [ $# -gt 0 ]; then
 		args="${args}${args:+ }${1}"
 		shift
 	fi
@@ -59,85 +60,85 @@ done
 # shellcheck disable=SC2086
 set -- $args
 
-setup_tickles ()
+setup_tickles()
 {
-    # Make sure tickles file exists.
-    tickles_file="${CTDB_TEST_TMP_DIR}/fake-ctdb/tickles"
-    mkdir -p "$(dirname "$tickles_file")"
-    touch "$tickles_file"
+	# Make sure tickles file exists.
+	tickles_file="${CTDB_TEST_TMP_DIR}/fake-ctdb/tickles"
+	mkdir -p "$(dirname "$tickles_file")"
+	touch "$tickles_file"
 }
 
-ctdb_gettickles ()
+ctdb_gettickles()
 {
-    _ip="$1"
-    _port="$2"
+	_ip="$1"
+	_port="$2"
 
-    setup_tickles
+	setup_tickles
 
-    echo "|source ip|port|destination ip|port|"
-    while read -r _src _dst ; do
-	if [ -z "$_ip" ] || [ "$_ip" = "${_dst%:*}" ] ; then
-	    if [ -z "$_port" ] || [ "$_port" = "${_dst##*:}" ] ; then
-		echo "|${_src%:*}|${_src##*:}|${_dst%:*}|${_dst##*:}|"
-	    fi
+	echo "|source ip|port|destination ip|port|"
+	while read -r _src _dst; do
+		if [ -z "$_ip" ] || [ "$_ip" = "${_dst%:*}" ]; then
+			if [ -z "$_port" ] || [ "$_port" = "${_dst##*:}" ]; then
+				echo "|${_src%:*}|${_src##*:}|${_dst%:*}|${_dst##*:}|"
+			fi
+		fi
+	done <"$tickles_file"
+}
+
+ctdb_addtickle()
+{
+	_src="$1"
+	_dst="$2"
+
+	setup_tickles
+
+	if [ -n "$_dst" ]; then
+		echo "${_src} ${_dst}" >>"$tickles_file"
+	else
+		cat >>"$tickles_file"
 	fi
-    done <"$tickles_file"
 }
 
-ctdb_addtickle ()
+ctdb_deltickle()
 {
-    _src="$1"
-    _dst="$2"
+	_src="$1"
+	_dst="$2"
 
-    setup_tickles
+	setup_tickles
 
-    if [ -n "$_dst" ] ; then
-	echo "${_src} ${_dst}" >>"$tickles_file"
-    else
-	cat >>"$tickles_file"
-    fi
+	if [ -n "$_dst" ]; then
+		_t=$(grep -F -v "${_src} $${_dst}" "$tickles_file")
+	else
+		_t=$(cat "$tickles_file")
+		while read -r _src _dst; do
+			_t=$(echo "$_t" | grep -F -v "${_src} ${_dst}")
+		done
+	fi
+	echo "$_t" >"$tickles_file"
 }
 
-ctdb_deltickle ()
+parse_nodespec()
 {
-    _src="$1"
-    _dst="$2"
-
-    setup_tickles
-
-    if [ -n "$_dst" ] ; then
-	_t=$(grep -F -v "${_src} $${_dst}" "$tickles_file")
-    else
-	_t=$(cat "$tickles_file")
-	while read -r _src _dst ; do
-	    _t=$(echo "$_t" | grep -F -v "${_src} ${_dst}")
-	done
-    fi
-    echo "$_t" >"$tickles_file"
-}
-
-parse_nodespec ()
-{
-    if [ "$nodespec" = "all" ] ; then
-	nodes="$(seq 0 $((FAKE_CTDB_NUMNODES - 1)) )"
-    elif [ -n "$nodespec" ] ; then
-	nodes="$(echo "$nodespec" | sed -e 's@,@ @g')"
-    else
-	nodes=$(ctdb_pnn)
-    fi
+	if [ "$nodespec" = "all" ]; then
+		nodes="$(seq 0 $((FAKE_CTDB_NUMNODES - 1)))"
+	elif [ -n "$nodespec" ]; then
+		nodes="$(echo "$nodespec" | sed -e 's@,@ @g')"
+	else
+		nodes=$(ctdb_pnn)
+	fi
 }
 
 # For testing backward compatibility...
-for i in $CTDB_NOT_IMPLEMENTED ; do
-    if [ "$i" = "$1" ] ; then
-	not_implemented "$i"
-    fi
+for i in $CTDB_NOT_IMPLEMENTED; do
+	if [ "$i" = "$1" ]; then
+		not_implemented "$i"
+	fi
 done
 
-ctdb_pnn ()
+ctdb_pnn()
 {
-    # Defaults to 0
-    echo "${FAKE_CTDB_PNN:-0}"
+	# Defaults to 0
+	echo "${FAKE_CTDB_PNN:-0}"
 }
 
 ######################################################################
@@ -151,147 +152,147 @@ FAKE_CTDB_NODES_DISABLED="$FAKE_CTDB_NODE_STATE/0x4"
 
 FAKE_CTDB_IP_LAYOUT="$FAKE_CTDB_STATE/ip-layout"
 
-ip_reallocate ()
+ip_reallocate()
 {
-    touch "$FAKE_CTDB_IP_LAYOUT"
+	touch "$FAKE_CTDB_IP_LAYOUT"
 
-    # ShellCheck doesn't understand this flock pattern
-    # shellcheck disable=SC2094
-    (
-	flock 0
+	# ShellCheck doesn't understand this flock pattern
+	# shellcheck disable=SC2094
+	(
+		flock 0
 
-	_pa="${CTDB_BASE}/public_addresses"
+		_pa="${CTDB_BASE}/public_addresses"
 
-	if [ ! -s "$FAKE_CTDB_IP_LAYOUT" ] ; then
-	    sed -n -e 's@^\([^#][^/]*\)/.*@\1 -1@p' \
-		"$_pa" >"$FAKE_CTDB_IP_LAYOUT"
-	fi
+		if [ ! -s "$FAKE_CTDB_IP_LAYOUT" ]; then
+			sed -n -e 's@^\([^#][^/]*\)/.*@\1 -1@p' \
+				"$_pa" >"$FAKE_CTDB_IP_LAYOUT"
+		fi
 
-	_t="${FAKE_CTDB_IP_LAYOUT}.new"
+		_t="${FAKE_CTDB_IP_LAYOUT}.new"
 
-	_flags=""
-	for _i in $(seq 0 $((FAKE_CTDB_NUMNODES - 1)) ) ; do
-	    if ls "$FAKE_CTDB_STATE/node-state/"*"/$_i" >/dev/null 2>&1 ; then
-		# Have non-zero flags
-		_this=0
-		for _j in "$FAKE_CTDB_STATE/node-state/"*"/$_i" ; do
-		    _tf="${_j%/*}" # dirname
-		    _f="${_tf##*/}" # basename
-		    _this=$(( _this | _f ))
+		_flags=""
+		for _i in $(seq 0 $((FAKE_CTDB_NUMNODES - 1))); do
+			if ls "$FAKE_CTDB_STATE/node-state/"*"/$_i" >/dev/null 2>&1; then
+				# Have non-zero flags
+				_this=0
+				for _j in "$FAKE_CTDB_STATE/node-state/"*"/$_i"; do
+					_tf="${_j%/*}"  # dirname
+					_f="${_tf##*/}" # basename
+					_this=$((_this | _f))
+				done
+			else
+				_this="0"
+			fi
+			_flags="${_flags}${_flags:+,}${_this}"
 		done
-	    else
-		_this="0"
-	    fi
-	    _flags="${_flags}${_flags:+,}${_this}"
+		CTDB_TEST_LOGLEVEL=NOTICE \
+			"ctdb_takeover_tests" \
+			"ipalloc" "$_flags" <"$FAKE_CTDB_IP_LAYOUT" |
+			sort >"$_t"
+		mv "$_t" "$FAKE_CTDB_IP_LAYOUT"
+	) <"$FAKE_CTDB_IP_LAYOUT"
+}
+
+ctdb_ip()
+{
+	# If nobody has done any IP-fu then generate a layout.
+	[ -f "$FAKE_CTDB_IP_LAYOUT" ] || ip_reallocate
+
+	_mypnn=$(ctdb_pnn)
+
+	if $machine_readable; then
+		if $verbose; then
+			echo "|Public IP|Node|ActiveInterface|AvailableInterfaces|ConfiguredInterfaces|"
+		else
+			echo "|Public IP|Node|"
+		fi
+	else
+		echo "Public IPs on node ${_mypnn}"
+	fi
+
+	# Join public addresses file with $FAKE_CTDB_IP_LAYOUT, and
+	# process output line by line...
+	_pa="${CTDB_BASE}/public_addresses"
+	sed -e 's@/@ @' "$_pa" | sort | join - "$FAKE_CTDB_IP_LAYOUT" |
+		while read -r _ip _ _ifaces _pnn; do
+			if $verbose; then
+				# If more than 1 interface, assume all addresses are on the 1st.
+				_first_iface="${_ifaces%%,*}"
+				# Only show interface if address is on this node.
+				_my_iface=""
+				if [ "$_pnn" = "$_mypnn" ]; then
+					_my_iface="$_first_iface"
+				fi
+				if $machine_readable; then
+					echo "|${_ip}|${_pnn}|${_my_iface}|${_first_iface}|${_ifaces}|"
+				else
+					echo "${_ip} node[${_pnn}] active[${_my_iface}] available[${_first_iface}] configured[[${_ifaces}]"
+				fi
+			else
+				if $machine_readable; then
+					echo "|${_ip}|${_pnn}|"
+				else
+					echo "${_ip} ${_pnn}"
+				fi
+			fi
+		done
+}
+
+ctdb_moveip()
+{
+	_ip="$1"
+	_target="$2"
+
+	ip_reallocate # should be harmless and ensures we have good state
+
+	# ShellCheck doesn't understand this flock pattern
+	# shellcheck disable=SC2094
+	(
+		flock 0
+
+		_t="${FAKE_CTDB_IP_LAYOUT}.new"
+
+		while read -r _i _pnn; do
+			if [ "$_ip" = "$_i" ]; then
+				echo "$_i $_target"
+			else
+				echo "$_i $_pnn"
+			fi
+		done | sort >"$_t"
+		mv "$_t" "$FAKE_CTDB_IP_LAYOUT"
+	) <"$FAKE_CTDB_IP_LAYOUT"
+}
+
+######################################################################
+
+ctdb_enable()
+{
+	parse_nodespec
+
+	for _i in $nodes; do
+		rm -f "${FAKE_CTDB_NODES_DISABLED}/${_i}"
 	done
-	CTDB_TEST_LOGLEVEL=NOTICE \
-	    "ctdb_takeover_tests" \
-	    "ipalloc" "$_flags" <"$FAKE_CTDB_IP_LAYOUT" |
-	    sort >"$_t"
-	mv "$_t" "$FAKE_CTDB_IP_LAYOUT"
-    ) <"$FAKE_CTDB_IP_LAYOUT"
+
+	ip_reallocate
 }
 
-ctdb_ip ()
+ctdb_disable()
 {
-    # If nobody has done any IP-fu then generate a layout.
-    [ -f "$FAKE_CTDB_IP_LAYOUT" ] || ip_reallocate
+	parse_nodespec
 
-    _mypnn=$(ctdb_pnn)
+	for _i in $nodes; do
+		mkdir -p "$FAKE_CTDB_NODES_DISABLED"
+		touch "${FAKE_CTDB_NODES_DISABLED}/${_i}"
+	done
 
-    if $machine_readable ; then
-	if $verbose ; then
-	    echo "|Public IP|Node|ActiveInterface|AvailableInterfaces|ConfiguredInterfaces|"
-	else
-	    echo "|Public IP|Node|"
-	fi
-    else
-	echo "Public IPs on node ${_mypnn}"
-    fi
-
-    # Join public addresses file with $FAKE_CTDB_IP_LAYOUT, and
-    # process output line by line...
-    _pa="${CTDB_BASE}/public_addresses"
-    sed -e 's@/@ @' "$_pa" | sort | join - "$FAKE_CTDB_IP_LAYOUT" |
-    while read -r _ip _ _ifaces _pnn ; do
-	if $verbose ; then
-	    # If more than 1 interface, assume all addresses are on the 1st.
-	    _first_iface="${_ifaces%%,*}"
-	    # Only show interface if address is on this node.
-	    _my_iface=""
-	    if [ "$_pnn" = "$_mypnn" ]; then
-		_my_iface="$_first_iface"
-	    fi
-	    if $machine_readable ; then
-		echo "|${_ip}|${_pnn}|${_my_iface}|${_first_iface}|${_ifaces}|"
-	    else
-		echo "${_ip} node[${_pnn}] active[${_my_iface}] available[${_first_iface}] configured[[${_ifaces}]"
-	    fi
-	else
-	    if $machine_readable ; then
-		echo "|${_ip}|${_pnn}|"
-	    else
-		echo "${_ip} ${_pnn}"
-	    fi
-	fi
-    done
-}
-
-ctdb_moveip ()
-{
-    _ip="$1"
-    _target="$2"
-
-    ip_reallocate  # should be harmless and ensures we have good state
-
-    # ShellCheck doesn't understand this flock pattern
-    # shellcheck disable=SC2094
-    (
-	flock 0
-
-	_t="${FAKE_CTDB_IP_LAYOUT}.new"
-
-	while read -r _i _pnn ; do
-	    if [ "$_ip" = "$_i" ] ; then
-		echo "$_i $_target"
-	    else
-		echo "$_i $_pnn"
-	    fi
-	done | sort >"$_t"
-	mv "$_t" "$FAKE_CTDB_IP_LAYOUT"
-    ) <"$FAKE_CTDB_IP_LAYOUT"
+	ip_reallocate
 }
 
 ######################################################################
 
-ctdb_enable ()
+ctdb_shutdown()
 {
-    parse_nodespec
-
-    for _i in $nodes ; do
-	rm -f "${FAKE_CTDB_NODES_DISABLED}/${_i}"
-    done
-
-    ip_reallocate
-}
-
-ctdb_disable ()
-{
-    parse_nodespec
-
-    for _i in $nodes ; do
-	mkdir -p "$FAKE_CTDB_NODES_DISABLED"
-	touch "${FAKE_CTDB_NODES_DISABLED}/${_i}"
-    done
-
-    ip_reallocate
-}
-
-######################################################################
-
-ctdb_shutdown ()
-{
-    echo "CTDB says BYE!"
+	echo "CTDB says BYE!"
 }
 
 ######################################################################
@@ -301,118 +302,118 @@ ctdb_shutdown ()
 # contains all nodes in the cluster (which is what current tests
 # assume).  Use the PNN to find the address from this file.  The NAT
 # gateway code only used the address, so just mark the node healthy.
-ctdb_nodestatus ()
+ctdb_nodestatus()
 {
-    echo '|Node|IP|Disconnected|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode|'
-    _line=$(( FAKE_CTDB_PNN + 1 ))
-    _ip=$(sed -e "${_line}p" "${CTDB_NATGW_NODES:-${CTDB_LVS_NODES}}")
-    echo "|${FAKE_CTDB_PNN}|${_ip}|0|0|0|0|0|0|0|Y|"
+	echo '|Node|IP|Disconnected|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode|'
+	_line=$((FAKE_CTDB_PNN + 1))
+	_ip=$(sed -e "${_line}p" "${CTDB_NATGW_NODES:-${CTDB_LVS_NODES}}")
+	echo "|${FAKE_CTDB_PNN}|${_ip}|0|0|0|0|0|0|0|Y|"
 }
 
 ######################################################################
 
-ctdb_setvar ()
+ctdb_setvar()
 {
-    _var="$1"
+	_var="$1"
 
-    for _i in $FAKE_CTDB_TUNABLES_OK ; do
-	if [ "$_var" = "$_i" ] ; then
-	    return 0
-	fi
-    done
+	for _i in $FAKE_CTDB_TUNABLES_OK; do
+		if [ "$_var" = "$_i" ]; then
+			return 0
+		fi
+	done
 
-    for _i in $FAKE_CTDB_TUNABLES_OBSOLETE ; do
-	if [ "$_var" = "$_i" ] ; then
-	    echo "Setting obsolete tunable variable '${_var}'"
-	    return 0
-	fi
-    done
+	for _i in $FAKE_CTDB_TUNABLES_OBSOLETE; do
+		if [ "$_var" = "$_i" ]; then
+			echo "Setting obsolete tunable variable '${_var}'"
+			return 0
+		fi
+	done
 
-    echo "Unable to set tunable variable '${_var}'"
-    return 1
+	echo "Unable to set tunable variable '${_var}'"
+	return 1
 }
 
 ######################################################################
 
-_t_setup ()
+_t_setup()
 {
-    _t_dir="${CTDB_TEST_TMP_DIR}/fake-ctdb/fake-tdb/$1"
-    mkdir -p "$_t_dir"
+	_t_dir="${CTDB_TEST_TMP_DIR}/fake-ctdb/fake-tdb/$1"
+	mkdir -p "$_t_dir"
 }
 
-_t_put ()
+_t_put()
 {
-    echo "$2" >"${_t_dir}/$1"
+	echo "$2" >"${_t_dir}/$1"
 }
 
-_t_get ()
+_t_get()
 {
-    cat "${_t_dir}/$1"
+	cat "${_t_dir}/$1"
 }
 
-_t_del ()
+_t_del()
 {
-    rm -f "${_t_dir}/$1"
+	rm -f "${_t_dir}/$1"
 }
 
-ctdb_pstore ()
+ctdb_pstore()
 {
-    _t_setup "$1"
-    _t_put "$2" "$3"
+	_t_setup "$1"
+	_t_put "$2" "$3"
 }
 
-ctdb_pdelete ()
+ctdb_pdelete()
 {
-    _t_setup "$1"
-    _t_del "$2"
+	_t_setup "$1"
+	_t_del "$2"
 }
 
-ctdb_pfetch ()
+ctdb_pfetch()
 {
-    _t_setup "$1"
-    _t_get "$2" >"$3" 2>/dev/null
+	_t_setup "$1"
+	_t_get "$2" >"$3" 2>/dev/null
 }
 
-ctdb_ptrans ()
+ctdb_ptrans()
 {
-    _t_setup "$1"
+	_t_setup "$1"
 
-    while IFS="" read -r _line ; do
-	_k=$(echo "$_line" | sed -n -e 's@^"\([^"]*\)" "[^"]*"$@\1@p')
-	_v=$(echo "$_line" | sed -e 's@^"[^"]*" "\([^"]*\)"$@\1@')
-	[ -n "$_k" ] || die "ctdb ptrans: bad line \"${_line}\""
-	if [ -n "$_v" ] ; then
-	    _t_put "$_k" "$_v"
-	else
-	    _t_del "$_k"
-	fi
-    done
+	while IFS="" read -r _line; do
+		_k=$(echo "$_line" | sed -n -e 's@^"\([^"]*\)" "[^"]*"$@\1@p')
+		_v=$(echo "$_line" | sed -e 's@^"[^"]*" "\([^"]*\)"$@\1@')
+		[ -n "$_k" ] || die "ctdb ptrans: bad line \"${_line}\""
+		if [ -n "$_v" ]; then
+			_t_put "$_k" "$_v"
+		else
+			_t_del "$_k"
+		fi
+	done
 }
 
-ctdb_catdb ()
+ctdb_catdb()
 {
-    _t_setup "$1"
+	_t_setup "$1"
 
-    # This will break on keys with spaces but we don't have any of
-    # those yet.
-    _count=0
-    for _i in "${_t_dir}/"* ; do
-	[ -r "$_i" ] || continue
-	_k="${_i##*/}" # basename
-	_v=$(_t_get "$_k")
-	_kn=$(printf '%s' "$_k" | wc -c)
-	_vn=$(printf '%s' "$_v" | wc -c)
-	cat <<EOF
+	# This will break on keys with spaces but we don't have any of
+	# those yet.
+	_count=0
+	for _i in "${_t_dir}/"*; do
+		[ -r "$_i" ] || continue
+		_k="${_i##*/}" # basename
+		_v=$(_t_get "$_k")
+		_kn=$(printf '%s' "$_k" | wc -c)
+		_vn=$(printf '%s' "$_v" | wc -c)
+		cat <<EOF
 key(${_kn}) = "${_k}"
 dmaster: 0
 rsn: 1
 data(${_vn}) = "${_v}"
 
 EOF
-	_count=$((_count + 1))
-    done
+		_count=$((_count + 1))
+	done
 
-    echo "Dumped ${_count} records"
+	echo "Dumped ${_count} records"
 }
 
 ######################################################################
@@ -424,29 +425,30 @@ ctdb_ifaces()
 {
 	_f="${CTDB_BASE}/public_addresses"
 
-	if [ ! -f "$_f" ] ; then
+	if [ ! -f "$_f" ]; then
 		die "Public addresses file \"${_f}\" not found"
 	fi
 
 	# Assume -Y.
 	echo "|Name|LinkStatus|References|"
-	while read -r _ip _iface ; do
+	while read -r _ip _iface; do
 		case "$_ip" in
 		\#*) : ;;
 		*)
 			_status=1
 			# For now assume _iface contains only 1.
-			if [ -f "{FAKE_CTDB_IFACES_DOWN}/${_iface}" ] ; then
+			if [ -f "{FAKE_CTDB_IFACES_DOWN}/${_iface}" ]; then
 				_status=0
 			fi
 			# Nobody looks at references
 			echo "|${_iface}|${_status}|0|"
+			;;
 		esac
 	done <"$_f" |
-	sort -u
+		sort -u
 }
 
-ctdb_setifacelink ()
+ctdb_setifacelink()
 {
 	_iface="$1"
 	_state="$2"
@@ -457,7 +459,7 @@ ctdb_setifacelink ()
 	_f="${FAKE_CTDB_IFACES_DOWN}/${_iface}"
 
 	case "$_state" in
-	up)   rm -f "$_f" ;;
+	up) rm -f "$_f" ;;
 	down) touch "$_f" ;;
 	*) die "ctdb setifacelink: unsupported interface status ${_state}" ;;
 	esac
@@ -465,12 +467,12 @@ ctdb_setifacelink ()
 
 ######################################################################
 
-ctdb_checktcpport ()
+ctdb_checktcpport()
 {
 	_port="$1"
 
-	for _i in $FAKE_TCP_LISTEN ; do
-		if [ "$_port" = "$_i" ] ; then
+	for _i in $FAKE_TCP_LISTEN; do
+		if [ "$_port" = "$_i" ]; then
 			exit 98
 		fi
 	done
@@ -478,7 +480,7 @@ ctdb_checktcpport ()
 	exit 0
 }
 
-ctdb_gratarp ()
+ctdb_gratarp()
 {
 	# Do nothing for now
 	:
@@ -495,7 +497,7 @@ func="ctdb_${cmd}"
 # function.  However, this can only happen if testing a script
 # containing a new ctdb command that is not implemented, so this is
 # unlikely to do harm.
-if type "$func" >/dev/null 2>&1 ; then
+if type "$func" >/dev/null 2>&1; then
 	"$func" "$@"
 else
 	not_implemented "$cmd"

@@ -4,31 +4,31 @@ prog="ctdb_natgw"
 
 not_implemented_exit_code=1
 
-not_implemented ()
+not_implemented()
 {
-    echo "${prog}: command \"$1\" not implemented in stub" >&2
-    exit $not_implemented_exit_code
+	echo "${prog}: command \"$1\" not implemented in stub" >&2
+	exit $not_implemented_exit_code
 }
 
-ctdb_natgw_leader ()
+ctdb_natgw_leader()
 {
-    [ -r "$CTDB_NATGW_NODES" ] || \
-	die "error: missing CTDB_NATGW_NODES=${CTDB_NATGW_NODES}"
+	[ -r "$CTDB_NATGW_NODES" ] ||
+		die "error: missing CTDB_NATGW_NODES=${CTDB_NATGW_NODES}"
 
-    # Determine the leader node
-    _leader="-1 0.0.0.0"
-    _pnn=0
-    while read -r _ip ; do
-	if [ "$FAKE_CTDB_NATGW_LEADER" = "$_ip" ] ; then
-	    _leader="${_pnn} ${_ip}"
-	    break
-	fi
-	_pnn=$((_pnn + 1))
-    done <"$CTDB_NATGW_NODES"
-    echo "$_leader"
+	# Determine the leader node
+	_leader="-1 0.0.0.0"
+	_pnn=0
+	while read -r _ip; do
+		if [ "$FAKE_CTDB_NATGW_LEADER" = "$_ip" ]; then
+			_leader="${_pnn} ${_ip}"
+			break
+		fi
+		_pnn=$((_pnn + 1))
+	done <"$CTDB_NATGW_NODES"
+	echo "$_leader"
 }
 
 case "$1" in
-    leader) ctdb_natgw_leader "$@" ;;
-    *) not_implemented "$1" ;;
+leader) ctdb_natgw_leader "$@" ;;
+*) not_implemented "$1" ;;
 esac

@@ -4,13 +4,14 @@ case "$1" in
 nfsd)
 	echo "$FAKE_NFSD_THREAD_PIDS"
 	;;
-rpc.statd|rpc.rquotad|rpc.mountd)
+rpc.statd | rpc.rquotad | rpc.mountd)
 	echo "$FAKE_RPC_THREAD_PIDS"
 	;;
 smbd)
 	echo "$FAKE_SMBD_THREAD_PIDS"
 	;;
-    *)
+*)
 	echo "pidof: \"$1\" not implemented"
 	exit 1
+	;;
 esac

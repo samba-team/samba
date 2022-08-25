@@ -1,37 +1,37 @@
 #!/bin/sh
 
-usage ()
+usage()
 {
 	echo "ps [ -p PID | -o FORMAT | aufxww ]"
 	exit 1
 }
 
-while getopts "o:p:h:?" opt ; do
+while getopts "o:p:h:?" opt; do
 	case "$opt" in
 	o) format="$OPTARG" ;;
 	p) pid="$OPTARG" ;;
-	\?|h) usage ;;
+	\? | h) usage ;;
 	esac
 done
 shift $((OPTIND - 1))
 
-if [ -n "$pid" ] && [ -n "$FAKE_PS_MAP" ] ; then
+if [ -n "$pid" ] && [ -n "$FAKE_PS_MAP" ]; then
 	# shellcheck disable=SC1001
 	case "$format" in
 	comm\=)
 		echo "$FAKE_PS_MAP" |
-		awk -v pid="$pid" '$1 == pid { print $2 }'
+			awk -v pid="$pid" '$1 == pid { print $2 }'
 		;;
 	state\=)
 		echo "$FAKE_PS_MAP" |
-		awk -v pid="$pid" '$1 == pid { print $3 }'
+			awk -v pid="$pid" '$1 == pid { print $3 }'
 		;;
 	esac
 
 	exit
 fi
 
-if [ "$1" != "auxfww" ] ; then
+if [ "$1" != "auxfww" ]; then
 	echo "option $1 not supported"
 	usage
 fi

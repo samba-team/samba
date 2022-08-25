@@ -1,6 +1,6 @@
 #!/bin/sh
 
-usage ()
+usage()
 {
 	echo "stat -c FMT FILE ..."
 	exit 1
@@ -8,20 +8,20 @@ usage ()
 
 format=""
 
-while getopts "c:h:?" opt ; do
+while getopts "c:h:?" opt; do
 	case "$opt" in
 	c) format="$OPTARG" ;;
-	\?|h) usage ;;
+	\? | h) usage ;;
 	esac
 done
 shift $((OPTIND - 1))
 
-fake_device_id ()
+fake_device_id()
 {
 	_path="$1"
 
 	_t=$(echo "$FAKE_FILE_ID_MAP" |
-	     awk -v path="${_path}" '$1 == path { print $2 }')
+		awk -v path="${_path}" '$1 == path { print $2 }')
 	_major_minor="${_t%:*}"
 	_major="0x${_major_minor%:*}"
 	_minor="0x${_major_minor#*:}"
@@ -29,18 +29,18 @@ fake_device_id ()
 	echo "$_device_id"
 }
 
-fake_inode ()
+fake_inode()
 {
 	_path="$1"
 
 	_t=$(echo "$FAKE_FILE_ID_MAP" |
-	     awk -v path="${_path}" '$1 == path { print $2 }')
+		awk -v path="${_path}" '$1 == path { print $2 }')
 	echo "${_t##*:}"
 }
 
-if [ -n "$format" ] ; then
-	for f ; do
-		if [ ! -e "$f" ] ; then
+if [ -n "$format" ]; then
+	for f; do
+		if [ ! -e "$f" ]; then
 			continue
 		fi
 		case "$f" in

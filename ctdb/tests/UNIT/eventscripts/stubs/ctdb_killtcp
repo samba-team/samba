@@ -3,7 +3,7 @@
 # Only supports reading from stdin
 
 # shellcheck disable=SC2034
-iface="$1"  # ignored
+iface="$1" # ignored
 
 while read -r src dst; do
 	sed -i -e "/^${dst} ${src}\$/d" "$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"

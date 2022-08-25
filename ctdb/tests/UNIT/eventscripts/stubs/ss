@@ -2,7 +2,7 @@
 
 prog="ss"
 
-usage ()
+usage()
 {
 	cat >&2 <<EOF
 Usage: $prog { -t|--tcp | -x|--unix } [options] [ FILTER ]
@@ -17,7 +17,7 @@ EOF
 	exit 1
 }
 
-not_supported ()
+not_supported()
 {
 	echo "Options not supported in stub: $*" >&2
 	usage
@@ -26,7 +26,7 @@ not_supported ()
 ############################################################
 
 #
-parse_filter ()
+parse_filter()
 {
 	# Very limited implementation:
 	# We only expect to find || inside parentheses
@@ -41,7 +41,7 @@ parse_filter ()
 	sports="|"
 	srcs="|"
 
-	while [ -n "$1" ] ; do
+	while [ -n "$1" ]; do
 		case "$1" in
 		\()
 			in_parens=true
@@ -52,17 +52,20 @@ parse_filter ()
 			shift
 			;;
 		\|\|)
-			if ! $in_parens ; then
+			if ! $in_parens; then
 				not_supported "|| in parentheses"
 			fi
 			shift
 			;;
 		sport)
-			p="${3#:}" ; sports="${sports}${p}|"
+			p="${3#:}"
+			sports="${sports}${p}|"
 			shift 3
 			;;
 		src)
-			ip="${2#\[}" ; ip="${ip%\]}" ; srcs="${srcs}${ip}|"
+			ip="${2#\[}"
+			ip="${ip%\]}"
+			srcs="${srcs}${ip}|"
 			shift 2
 			;;
 		*)
@@ -73,59 +76,59 @@ parse_filter ()
 }
 
 # Check if socket has matches in both ok_ips and ok_ports
-filter_socket ()
+filter_socket()
 {
-    ok_ips="$1"
-    ok_ports="$2"
-    socket="$3"
+	ok_ips="$1"
+	ok_ports="$2"
+	socket="$3"
 
-    ip="${socket%:*}"
-    port="${socket##*:}"
+	ip="${socket%:*}"
+	port="${socket##*:}"
 
-    if [ "$ok_ports" != "|" ] &&
-	       [ "${ok_ports#*|"${port}"|}" = "$ok_ports" ]; then
-	return 1
-    fi
-    if [ "$ok_ips" != "|" ] && [ "${ok_ips#*|"${ip}"|}" = "$ok_ips" ]; then
-	return 1
-    fi
+	if [ "$ok_ports" != "|" ] &&
+		[ "${ok_ports#*|"${port}"|}" = "$ok_ports" ]; then
+		return 1
+	fi
+	if [ "$ok_ips" != "|" ] && [ "${ok_ips#*|"${ip}"|}" = "$ok_ips" ]; then
+		return 1
+	fi
 
-    return 0
+	return 0
 }
 
-ss_tcp_established ()
+ss_tcp_established()
 {
-    if $header ; then
-	echo "Recv-Q Send-Q Local Address:Port Peer Address:Port"
-    fi
-
-    # Yes, lose the quoting so we can do a hacky parsing job
-    # shellcheck disable=SC2048,SC2086
-    parse_filter $*
-
-    for i in $FAKE_NETSTAT_TCP_ESTABLISHED ; do
-	src="${i%|*}"
-	dst="${i#*|}"
-	if filter_socket "$srcs" "$sports" "$src" ; then
-	    echo 0 0 "$src" "$dst"
+	if $header; then
+		echo "Recv-Q Send-Q Local Address:Port Peer Address:Port"
 	fi
-    done
 
-    if [ -z "$FAKE_NETSTAT_TCP_ESTABLISHED_FILE" ] ; then
-	    return
-    fi
-    while read -r src dst ; do
-	if filter_socket "$srcs" "$sports" "$src" ; then
-	    echo 0 0 "$src" "$dst"
+	# Yes, lose the quoting so we can do a hacky parsing job
+	# shellcheck disable=SC2048,SC2086
+	parse_filter $*
+
+	for i in $FAKE_NETSTAT_TCP_ESTABLISHED; do
+		src="${i%|*}"
+		dst="${i#*|}"
+		if filter_socket "$srcs" "$sports" "$src"; then
+			echo 0 0 "$src" "$dst"
+		fi
+	done
+
+	if [ -z "$FAKE_NETSTAT_TCP_ESTABLISHED_FILE" ]; then
+		return
 	fi
-    done <"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
+	while read -r src dst; do
+		if filter_socket "$srcs" "$sports" "$src"; then
+			echo 0 0 "$src" "$dst"
+		fi
+	done <"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
 }
 
 ############################################################
 
-unix_listen ()
+unix_listen()
 {
-	if $header ; then
+	if $header; then
 		cat <<EOF
 Netid State Recv-Q Send-Q   Local Address:Port   Peer Address:Port"
 EOF
@@ -136,11 +139,11 @@ EOF
 	parse_filter $*
 
 	_n=12345
-	for _s in $FAKE_NETSTAT_UNIX_LISTEN ; do
+	for _s in $FAKE_NETSTAT_UNIX_LISTEN; do
 		# ss matches Unix domain sockets as either src or
 		# sport.
-		if filter_socket "$srcs" "$sports" "${_s}:" || \
-				filter_socket "$srcs" "$sports" ":${_s}" ; then
+		if filter_socket "$srcs" "$sports" "${_s}:" ||
+			filter_socket "$srcs" "$sports" ":${_s}"; then
 			printf "u_str LISTEN 0 128   %s %d   * 0\n" "$_s" "$_n"
 			_n=$((_n + 1))
 		fi
@@ -158,7 +161,7 @@ header=true
 
 orig="$*"
 
-while getopts "txnalHh?" opt ; do
+while getopts "txnalHh?" opt; do
 	case "$opt" in
 	t) tcp=true ;;
 	x) unix=true ;;
@@ -166,7 +169,7 @@ while getopts "txnalHh?" opt ; do
 	a) all=true ;;
 	H) header=false ;;
 	n) : ;;
-	\?|h) usage ;;
+	\? | h) usage ;;
 	esac
 done
 shift $((OPTIND - 1))
@@ -176,7 +179,7 @@ if [ -z "$all" ]; then
 	nosupported "$*"
 fi
 
-if $tcp ; then
+if $tcp; then
 	if [ "$1" != "state" ] || [ "$2" != "established" ] || $listen; then
 		usage
 	fi
@@ -190,8 +193,8 @@ if $tcp ; then
 	exit
 fi
 
-if $unix ; then
-	if ! $listen ; then
+if $unix; then
+	if ! $listen; then
 		not_supported "$orig"
 	fi
 

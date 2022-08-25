@@ -8,57 +8,58 @@ flag="${service_status_dir}/${service}"
 
 start()
 {
-    if [ -f "$flag" ] ; then
-	echo "service: can't start ${service} - already running"
-	exit 1
-    else
-	touch "$flag"
-	echo "Starting ${service}: OK"
-    fi
+	if [ -f "$flag" ]; then
+		echo "service: can't start ${service} - already running"
+		exit 1
+	else
+		touch "$flag"
+		echo "Starting ${service}: OK"
+	fi
 }
 
-stop ()
+stop()
 {
-    if [ -f "$flag" ] ; then
-	echo "Stopping ${service}: OK"
-	rm -f "$flag"
-    else
-	echo "service: can't stop ${service} - not running"
-	exit 1
-    fi
+	if [ -f "$flag" ]; then
+		echo "Stopping ${service}: OK"
+		rm -f "$flag"
+	else
+		echo "service: can't stop ${service} - not running"
+		exit 1
+	fi
 }
 
 case "$2" in
-    start)
+start)
 	start
 	;;
-    stop)
+stop)
 	stop
 	;;
-    restart|reload)
+restart | reload)
 	stop
 	start
 	;;
-    status)
-	if [ -f "$flag" ] ; then
-	    echo "$service running"
-	    exit 0
+status)
+	if [ -f "$flag" ]; then
+		echo "$service running"
+		exit 0
 	else
-	    echo "$service not running"
-	    exit 3
+		echo "$service not running"
+		exit 3
 	fi
 	;;
-    force-started)
+force-started)
 	# For test setup...
 	touch "$flag"
 	;;
-    force-stopped)
+force-stopped)
 	# For test setup...
 	rm -f "$flag"
 	;;
-    *)
+*)
 	echo "service $service $2 not supported"
 	exit 1
+	;;
 esac
 
 exit 0
