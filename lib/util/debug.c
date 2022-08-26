@@ -1852,6 +1852,16 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 		}
 	}
 
+	if (debug_call_depth > 0) {
+		state.hs_len += snprintf(state.header_str + state.hs_len,
+					 sizeof(state.header_str) - state.hs_len,
+					 ", depth=%zu",
+					 debug_call_depth);
+		if (state.hs_len >= sizeof(state.header_str) - 1) {
+			goto full;
+		}
+	}
+
 	state.header_str[state.hs_len] = ']';
 	state.hs_len++;
 	if (state.hs_len < sizeof(state.header_str) - 1) {
