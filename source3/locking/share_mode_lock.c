@@ -725,10 +725,10 @@ fail:
 /*
  * Key that's locked with g_lock
  */
-static uint8_t share_mode_lock_key_data[sizeof(struct file_id)];
+static struct file_id share_mode_lock_key_id = {};
 static TDB_DATA share_mode_lock_key = {
-	.dptr = share_mode_lock_key_data,
-	.dsize = sizeof(share_mode_lock_key_data),
+	.dptr = (uint8_t *)&share_mode_lock_key_id,
+	.dsize = sizeof(share_mode_lock_key_id),
 };
 static size_t share_mode_lock_key_refcount = 0;
 
@@ -878,7 +878,6 @@ struct share_mode_lock *get_share_mode_lock(
 	TDB_DATA key = locking_key(&id);
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
-	int cmp;
 
 	lck = talloc(mem_ctx, struct share_mode_lock);
 	if (lck == NULL) {
@@ -914,12 +913,17 @@ struct share_mode_lock *get_share_mode_lock(
 				  nt_errstr(status));
 			goto fail;
 		}
-		memcpy(share_mode_lock_key_data, key.dptr, key.dsize);
+		share_mode_lock_key_id = id;
 	}
 
-	cmp = tdb_data_cmp(share_mode_lock_key, key);
-	if (cmp != 0) {
-		DBG_WARNING("Can not lock two share modes simultaneously\n");
+	if (!file_id_equal(&share_mode_lock_key_id, &id)) {
+		struct file_id_buf existing;
+		struct file_id_buf requested;
+
+		DBG_ERR("Can not lock two share modes "
+			"simultaneously: existing %s requested %s\n",
+			file_id_str_buf(share_mode_lock_key_id, &existing),
+			file_id_str_buf(id, &requested));
 		smb_panic(__location__);
 		goto fail;
 	}
