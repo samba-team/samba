@@ -469,7 +469,7 @@ char *share_mode_str(TALLOC_CTX *ctx, int num,
 }
 
 struct rename_share_filename_state {
-	struct share_mode_lock *lck;
+	struct share_mode_data *data;
 	struct messaging_context *msg_ctx;
 	struct server_id self;
 	uint32_t orig_name_hash;
@@ -481,7 +481,7 @@ static bool rename_lease_fn(struct share_mode_entry *e,
 			    void *private_data)
 {
 	struct rename_share_filename_state *state = private_data;
-	struct share_mode_data *d = state->lck->data;
+	struct share_mode_data *d = state->data;
 	NTSTATUS status;
 
 	status = leases_db_rename(&e->client_guid,
@@ -570,7 +570,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			const struct smb_filename *smb_fname_dst)
 {
 	struct rename_share_filename_state state = {
-		.lck = lck,
+		.data = lck->data,
 		.msg_ctx = msg_ctx,
 		.self = messaging_server_id(msg_ctx),
 		.orig_name_hash = orig_name_hash,
