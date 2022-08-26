@@ -2088,8 +2088,9 @@ bool share_mode_forall_entries(
 		   void *private_data),
 	void *private_data)
 {
-	struct share_mode_data *d = lck->data;
-	TDB_DATA key = locking_key(&d->id);
+	struct file_id id = share_mode_lock_file_id(lck);
+	struct share_mode_data *d = NULL;
+	TDB_DATA key = locking_key(&id);
 	struct locking_tdb_data *ltdb = NULL;
 	uint8_t *share_entries = NULL;
 	size_t num_share_entries;
@@ -2097,6 +2098,17 @@ bool share_mode_forall_entries(
 	NTSTATUS status;
 	bool stop = false;
 	size_t i;
+
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct file_id_buf id_buf;
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s - %s\n",
+			file_id_str_buf(id, &id_buf),
+			nt_errstr(status));
+		return false;
+	}
 
 	status = locking_tdb_data_fetch(key, talloc_tos(), &ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
