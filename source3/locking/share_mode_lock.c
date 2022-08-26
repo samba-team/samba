@@ -2546,8 +2546,9 @@ bool reset_share_mode_entry(
 	uint64_t new_mid,
 	uint64_t new_share_file_id)
 {
-	struct share_mode_data *d = lck->data;
-	TDB_DATA key = locking_key(&d->id);
+	struct file_id id = share_mode_lock_file_id(lck);
+	struct share_mode_data *d = NULL;
+	TDB_DATA key = locking_key(&id);
 	struct locking_tdb_data *ltdb = NULL;
 	struct share_mode_entry e;
 	struct share_mode_entry_buf e_buf;
@@ -2555,6 +2556,17 @@ bool reset_share_mode_entry(
 	int cmp;
 	bool ret = false;
 	bool ok;
+
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct file_id_buf id_buf;
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s - %s\n",
+			file_id_str_buf(id, &id_buf),
+			nt_errstr(status));
+		return false;
+	}
 
 	status = locking_tdb_data_fetch(key, talloc_tos(), &ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
