@@ -570,7 +570,6 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			const struct smb_filename *smb_fname_dst)
 {
 	struct rename_share_filename_state state = {
-		.data = lck->data,
 		.msg_ctx = msg_ctx,
 		.self = messaging_server_id(msg_ctx),
 		.orig_name_hash = orig_name_hash,
@@ -580,11 +579,23 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 		.msg.base_name = smb_fname_dst->base_name,
 		.msg.stream_name = smb_fname_dst->stream_name,
 	};
-	struct share_mode_data *d = lck->data;
+	struct share_mode_data *d = NULL;
+	NTSTATUS status;
 	bool ok;
 
 	DEBUG(10, ("rename_share_filename: servicepath %s newname %s\n",
 		   servicepath, smb_fname_dst->base_name));
+
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"servicepath %s newname %s - %s\n",
+			servicepath, smb_fname_dst->base_name,
+			nt_errstr(status));
+		return false;
+	}
+	state.data = d;
 
 	/*
 	 * rename_internal_fsp() and rename_internals() add './' to
