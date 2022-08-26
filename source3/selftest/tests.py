@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../
 import selftesthelpers
 from selftesthelpers import bindir, srcdir, scriptdir, binpath
 from selftesthelpers import plantestsuite, samba3srcdir
+from selftesthelpers import planpythontestsuite
 from selftesthelpers import smbtorture3, configuration, smbclient3, smbtorture4
 from selftesthelpers import net, wbinfo, dbwrap_tool, rpcclient, python
 from selftesthelpers import smbget, smbcacls, smbcquotas, ntlm_auth3
@@ -1573,3 +1574,5 @@ for t in CLUSTERED_LOCAL_TESTS:
          '""',
          smbtorture3,
          "-N 1000 -o 2000"])
+
+planpythontestsuite("fileserver", "samba.tests.smb3unix")
