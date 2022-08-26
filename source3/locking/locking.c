@@ -881,13 +881,23 @@ void set_delete_on_close_lck(files_struct *fsp,
 			const struct security_token *nt_tok,
 			const struct security_unix_token *tok)
 {
-	struct share_mode_data *d = lck->data;
+	struct share_mode_data *d = NULL;
 	struct set_delete_on_close_state state = {
 		.msg_ctx = fsp->conn->sconn->msg_ctx
 	};
 	uint32_t i;
 	bool ret;
 	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s - %s\n", fsp_str_dbg(fsp), nt_errstr(status));
+		smb_panic(__location__);
+		return;
+	}
 
 	SMB_ASSERT(nt_tok != NULL);
 	SMB_ASSERT(tok != NULL);
@@ -909,7 +919,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 		}
 	}
 
-	ret = add_delete_on_close_token(lck->data, fsp->name_hash, nt_tok, tok);
+	ret = add_delete_on_close_token(d, fsp->name_hash, nt_tok, tok);
 	SMB_ASSERT(ret);
 
 	ndr_err = ndr_push_struct_blob(
