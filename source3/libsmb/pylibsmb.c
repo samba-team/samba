@@ -26,6 +26,7 @@
 #include "python/py3compat.h"
 #include "python/modules.h"
 #include "libcli/smb/smbXcli_base.h"
+#include "libcli/smb/smb2_negotiate_context.h"
 #include "libsmb/libsmb.h"
 #include "libcli/security/security.h"
 #include "system/select.h"
@@ -423,6 +424,86 @@ static PyObject *py_cli_state_new(PyTypeObject *type, PyObject *args,
 	return (PyObject *)self;
 }
 
+static struct smb2_negotiate_contexts *py_cli_get_negotiate_contexts(
+	TALLOC_CTX *mem_ctx, PyObject *list)
+{
+	struct smb2_negotiate_contexts *ctxs = NULL;
+	Py_ssize_t i, len;
+	int ret;
+
+	ret = PyList_Check(list);
+	if (!ret) {
+		goto fail;
+	}
+
+	len = PyList_Size(list);
+	if (len == 0) {
+		goto fail;
+	}
+
+	ctxs = talloc_zero(mem_ctx, struct smb2_negotiate_contexts);
+	if (ctxs == NULL) {
+		goto fail;
+	}
+
+	for (i=0; i<len; i++) {
+		NTSTATUS status;
+
+		PyObject *t = PyList_GetItem(list, i);
+		Py_ssize_t tlen;
+
+		PyObject *ptype = NULL;
+		long type;
+
+		PyObject *pdata = NULL;
+		DATA_BLOB data = { .data = NULL, };
+
+		if (t == NULL) {
+			goto fail;
+		}
+
+		ret = PyTuple_Check(t);
+		if (!ret) {
+			goto fail;
+		}
+
+		tlen = PyTuple_Size(t);
+		if (tlen != 2) {
+			goto fail;
+		}
+
+		ptype = PyTuple_GetItem(t, 0);
+		if (ptype == NULL) {
+			goto fail;
+		}
+		type = PyLong_AsLong(ptype);
+		if ((type < 0) || (type > UINT16_MAX)) {
+			goto fail;
+		}
+
+		pdata = PyTuple_GetItem(t, 1);
+
+		ret = PyBytes_Check(pdata);
+		if (!ret) {
+			goto fail;
+		}
+
+		data.data = (uint8_t *)PyBytes_AsString(pdata);
+		data.length = PyBytes_Size(pdata);
+
+		status = smb2_negotiate_context_add(
+			ctxs, ctxs, type, data.data, data.length);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	}
+	return ctxs;
+
+fail:
+	TALLOC_FREE(ctxs);
+	return NULL;
+}
+
 static void py_cli_got_oplock_break(struct tevent_req *req);
 
 static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
@@ -439,6 +520,8 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	bool force_smb1 = false;
 	PyObject *py_ipc = Py_False;
 	PyObject *py_posix = Py_False;
+	PyObject *py_negotiate_contexts = NULL;
+	struct smb2_negotiate_contexts *negotiate_contexts = NULL;
 	bool use_ipc = false;
 	bool request_posix = false;
 	struct tevent_req *req;
@@ -450,6 +533,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		"multi_threaded", "force_smb1",
 		"ipc",
 		"posix",
+		"negotiate_contexts",
 		NULL
 	};
 
@@ -460,13 +544,14 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	}
 
 	ret = ParseTupleAndKeywords(
-		args, kwds, "ssO|O!OOOO", kwlist,
+		args, kwds, "ssO|O!OOOOO", kwlist,
 		&host, &share, &py_lp,
 		py_type_Credentials, &creds,
 		&py_multi_threaded,
 		&py_force_smb1,
 		&py_ipc,
-		&py_posix);
+		&py_posix,
+		&py_negotiate_contexts);
 
 	Py_DECREF(py_type_Credentials);
 
@@ -497,6 +582,14 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		flags |= CLI_FULL_CONNECTION_REQUEST_POSIX;
 	}
 
+	if (py_negotiate_contexts != NULL) {
+		negotiate_contexts = py_cli_get_negotiate_contexts(
+			talloc_tos(), py_negotiate_contexts);
+		if (negotiate_contexts == NULL) {
+			return -1;
+		}
+	}
+
 	if (multi_threaded) {
 #ifdef HAVE_PTHREAD
 		ret = py_cli_state_setup_mt_ev(self);
@@ -524,7 +617,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	req = cli_full_connection_creds_send(
 		NULL, self->ev, "myname", host, NULL, 0, share, "?????",
 		cli_creds, flags,
-		NULL);
+		negotiate_contexts);
 	if (!py_tevent_req_wait_exc(self, req)) {
 		return -1;
 	}
