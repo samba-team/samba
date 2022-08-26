@@ -721,7 +721,7 @@ NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
 	struct find_lease_ref_state state = {
 		.client_guid = client_guid, .lease_key = lease_key,
 	};
-	struct share_mode_data *d = lck->data;
+	struct file_id id = share_mode_lock_file_id(lck);
 	NTSTATUS status;
 	bool ok;
 
@@ -735,7 +735,7 @@ NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
 		return NT_STATUS_RESOURCE_IN_USE;
 	}
 
-	status = leases_db_del(client_guid, lease_key, &d->id);
+	status = leases_db_del(client_guid, lease_key, &id);
 	if (!NT_STATUS_IS_OK(status)) {
 		int level = DBGLVL_DEBUG;
 
