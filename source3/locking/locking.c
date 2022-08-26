@@ -1130,7 +1130,22 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 
 struct timespec get_share_mode_write_time(struct share_mode_lock *lck)
 {
-	struct share_mode_data *d = lck->data;
+	struct share_mode_data *d = NULL;
+	NTSTATUS status;
+
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct file_id id = share_mode_lock_file_id(lck);
+		struct file_id_buf id_buf;
+		struct timespec ts_zero = {};
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s - %s\n",
+			file_id_str_buf(id, &id_buf),
+			nt_errstr(status));
+		smb_panic(__location__);
+		return ts_zero;
+	}
 
 	if (!null_nttime(d->changed_write_time)) {
 		return nt_time_to_full_timespec(d->changed_write_time);
