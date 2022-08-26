@@ -1007,9 +1007,23 @@ bool get_delete_on_close_token(struct share_mode_lock *lck,
 					const struct security_token **pp_nt_tok,
 					const struct security_unix_token **pp_tok)
 {
+	struct share_mode_data *d = NULL;
 	struct delete_token *dt;
+	NTSTATUS status;
 
-	dt = find_delete_on_close_token(lck->data, name_hash);
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct file_id id = share_mode_lock_file_id(lck);
+		struct file_id_buf id_buf;
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s name_hash=%"PRIu32" - %s\n",
+			file_id_str_buf(id, &id_buf), name_hash,
+			nt_errstr(status));
+		return false;
+	}
+
+	dt = find_delete_on_close_token(d, name_hash);
 	if (dt == NULL) {
 		return false;
 	}
