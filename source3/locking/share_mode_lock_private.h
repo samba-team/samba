@@ -21,4 +21,7 @@ struct share_mode_lock {
 	struct share_mode_data *data;
 };
 
+NTSTATUS share_mode_lock_access_private_data(struct share_mode_lock *lck,
+					     struct share_mode_data **data);
+
 #endif

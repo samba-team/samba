@@ -839,6 +839,18 @@ static NTSTATUS get_static_share_mode_data(
 	return NT_STATUS_OK;
 }
 
+NTSTATUS share_mode_lock_access_private_data(struct share_mode_lock *lck,
+					     struct share_mode_data **data)
+{
+	/*
+	 * For now we always have lck->data,
+	 * but we may change that in future.
+	 */
+	SMB_ASSERT(lck->data != NULL);
+	*data = lck->data;
+	return NT_STATUS_OK;
+}
+
 /*******************************************************************
  Get a share_mode_lock, Reference counted to allow nested calls.
 ********************************************************************/
