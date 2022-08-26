@@ -738,7 +738,6 @@ static size_t share_mode_lock_key_refcount = 0;
  * share_mode_lock structures, explicitly refcounted.
  */
 static struct share_mode_data *static_share_mode_data = NULL;
-static size_t static_share_mode_data_refcount = 0;
 
 /*******************************************************************
  Either fetch a share mode from the database, or allocate a fresh
@@ -886,22 +885,6 @@ struct share_mode_lock *get_share_mode_lock(
 	}
 	lck->id = id;
 
-	if (static_share_mode_data != NULL) {
-		if (!file_id_equal(&static_share_mode_data->id, &id)) {
-			struct file_id_buf existing;
-			struct file_id_buf requested;
-
-			DBG_ERR("Can not lock two share modes "
-				"simultaneously: existing %s requested %s\n",
-				file_id_str_buf(static_share_mode_data->id, &existing),
-				file_id_str_buf(id, &requested));
-
-			smb_panic(__location__);
-			goto fail;
-		}
-		goto done;
-	}
-
 	if (share_mode_lock_key_refcount == 0) {
 		status = g_lock_lock(
 			lock_ctx,
@@ -931,7 +914,9 @@ struct share_mode_lock *get_share_mode_lock(
 	SMB_ASSERT(share_mode_lock_key_refcount < SIZE_MAX);
 	share_mode_lock_key_refcount += 1;
 
-	SMB_ASSERT(static_share_mode_data_refcount == 0);
+	if (static_share_mode_data != NULL) {
+		goto done;
+	}
 
 	status = get_static_share_mode_data(
 		id,
@@ -945,7 +930,6 @@ struct share_mode_lock *get_share_mode_lock(
 		goto fail;
 	}
 done:
-	static_share_mode_data_refcount += 1;
 	lck->cached_data = static_share_mode_data;
 
 	talloc_set_destructor(lck, share_mode_lock_destructor);
@@ -953,9 +937,9 @@ done:
 	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
 		struct file_id_buf returned;
 
-		DBG_DEBUG("Returning %s (data_refcount=%zu key_refcount=%zu)\n",
+		DBG_DEBUG("Returning %s (data_cached=%u key_refcount=%zu)\n",
 			  file_id_str_buf(id, &returned),
-			  static_share_mode_data_refcount,
+			  static_share_mode_data != NULL,
 			  share_mode_lock_key_refcount);
 	}
 
@@ -976,10 +960,10 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 {
 	NTSTATUS status;
 
-	SMB_ASSERT(static_share_mode_data_refcount > 0);
-	static_share_mode_data_refcount -= 1;
+	SMB_ASSERT(share_mode_lock_key_refcount > 0);
+	share_mode_lock_key_refcount -= 1;
 
-	if (static_share_mode_data_refcount > 0) {
+	if (share_mode_lock_key_refcount > 0) {
 		return 0;
 	}
 
@@ -990,16 +974,11 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		smb_panic("Could not store share mode data\n");
 	}
 
-	SMB_ASSERT(share_mode_lock_key_refcount > 0);
-	share_mode_lock_key_refcount -= 1;
-
-	if (share_mode_lock_key_refcount == 0) {
-		status = g_lock_unlock(lock_ctx, share_mode_lock_key);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("g_lock_unlock failed: %s\n",
-				nt_errstr(status));
-			smb_panic("Could not unlock share mode\n");
-		}
+	status = g_lock_unlock(lock_ctx, share_mode_lock_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("g_lock_unlock failed: %s\n",
+			nt_errstr(status));
+		smb_panic("Could not unlock share mode\n");
 	}
 
 	if (!static_share_mode_data->not_stored) {
