@@ -808,8 +808,18 @@ static bool add_delete_on_close_token(struct share_mode_data *d,
 void reset_delete_on_close_lck(files_struct *fsp,
 			       struct share_mode_lock *lck)
 {
-	struct share_mode_data *d = lck->data;
+	struct share_mode_data *d = NULL;
+	NTSTATUS status;
 	uint32_t i;
+
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s - %s\n", fsp_str_dbg(fsp), nt_errstr(status));
+		smb_panic(__location__);
+		return;
+	}
 
 	for (i=0; i<d->num_delete_tokens; i++) {
 		struct delete_token *dt = &d->delete_tokens[i];
