@@ -1130,19 +1130,48 @@ bool file_has_read_lease(struct files_struct *fsp)
 	return (fsp->share_mode_flags & SHARE_MODE_LEASE_READ) != 0;
 }
 
+#define share_mode_lock_assert_private_data(__lck) \
+	_share_mode_lock_assert_private_data(__lck, __func__, __location__)
+static struct share_mode_data *_share_mode_lock_assert_private_data(
+					struct share_mode_lock *lck,
+					const char *caller_function,
+					const char *caller_location)
+{
+	struct share_mode_data *d = NULL;
+	NTSTATUS status;
+
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct file_id id = share_mode_lock_file_id(lck);
+		struct file_id_buf id_buf;
+		/* Any error recovery possible here ? */
+		D_ERR("%s:%s(): share_mode_lock_access_private_data() "
+		      "failed for id=%s - %s\n",
+		      caller_location, caller_function,
+		      file_id_str_buf(id, &id_buf),
+		      nt_errstr(status));
+		smb_panic(caller_location);
+		return NULL;
+	}
+
+	return d;
+}
+
 NTTIME share_mode_changed_write_time(struct share_mode_lock *lck)
 {
-	return lck->data->changed_write_time;
+	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
+	return d->changed_write_time;
 }
 
 const char *share_mode_servicepath(struct share_mode_lock *lck)
 {
-	return lck->data->servicepath;
+	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
+	return d->servicepath;
 }
 
 char *share_mode_filename(TALLOC_CTX *mem_ctx, struct share_mode_lock *lck)
 {
-	struct share_mode_data *d = lck->data;
+	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
 	bool has_stream = (d->stream_name != NULL);
 	char *fname = NULL;
 
@@ -1158,6 +1187,7 @@ char *share_mode_filename(TALLOC_CTX *mem_ctx, struct share_mode_lock *lck)
 char *share_mode_data_dump(
 	TALLOC_CTX *mem_ctx, struct share_mode_lock *lck)
 {
+	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
 	struct ndr_print *p = talloc(mem_ctx, struct ndr_print);
 	char *ret = NULL;
 
@@ -1176,7 +1206,7 @@ char *share_mode_data_dump(
 		return NULL;
 	}
 
-	ndr_print_share_mode_data(p, "SHARE_MODE_DATA", lck->data);
+	ndr_print_share_mode_data(p, "SHARE_MODE_DATA", d);
 
 	ret = p->private_data;
 
@@ -1191,7 +1221,8 @@ void share_mode_flags_get(
 	uint32_t *share_mode,
 	uint32_t *lease_type)
 {
-	uint16_t flags = lck->data->flags;
+	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
+	uint16_t flags = d->flags;
 
 	if (access_mask != NULL) {
 		*access_mask =
@@ -1229,7 +1260,7 @@ void share_mode_flags_set(
 	uint32_t lease_type,
 	bool *modified)
 {
-	struct share_mode_data *d = lck->data;
+	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
 	uint16_t flags = 0;
 
 	flags |= (access_mask & (FILE_READ_DATA | FILE_EXECUTE)) ?
@@ -1805,7 +1836,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 		    uint32_t share_access,
 		    uint32_t access_mask)
 {
-	struct share_mode_data *d = lck->data;
+	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
 	TDB_DATA key = locking_key(&d->id);
 	struct server_id my_pid = messaging_server_id(
 		fsp->conn->sconn->msg_ctx);
