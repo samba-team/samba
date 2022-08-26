@@ -1093,9 +1093,11 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 bool set_write_time(struct file_id fileid, struct timespec write_time)
 {
 	struct share_mode_lock *lck;
+	struct share_mode_data *d = NULL;
 	struct file_id_buf idbuf;
 	struct timeval_buf tbuf;
 	NTTIME nt = full_timespec_to_nt_time(&write_time);
+	NTSTATUS status;
 
 	DBG_INFO("%s id=%s\n",
 		 timespec_string_buf(&write_time, true, &tbuf),
@@ -1106,9 +1108,20 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 		return False;
 	}
 
-	if (lck->data->old_write_time != nt) {
-		lck->data->modified = True;
-		lck->data->old_write_time = nt;
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s id=%s - %s\n",
+			timespec_string_buf(&write_time, true, &tbuf),
+			file_id_str_buf(fileid, &idbuf),
+			nt_errstr(status));
+		return false;
+	}
+
+	if (d->old_write_time != nt) {
+		d->modified = True;
+		d->old_write_time = nt;
 	}
 
 	TALLOC_FREE(lck);
