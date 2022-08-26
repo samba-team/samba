@@ -378,4 +378,6 @@ uint64_t debug_traceid_set(uint64_t id);
 /* Get the current traceid. */
 uint64_t debug_traceid_get(void);
 
+size_t *debug_call_depth_addr(void);
+
 #endif /* _SAMBA_DEBUG_H */

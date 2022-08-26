@@ -1598,6 +1598,17 @@ static void bufr_print( void )
 	format_pos = 0;
 }
 
+/*
+ * If set (by tevent_thread_call_depth_set()) to value > 0, debug code will use
+ * it for the trace indentation.
+ */
+static size_t debug_call_depth = 0;
+
+size_t *debug_call_depth_addr(void)
+{
+	return &debug_call_depth;
+}
+
 /***************************************************************************
  Format the debug message text.
 
