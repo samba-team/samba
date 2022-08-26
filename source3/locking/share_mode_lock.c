@@ -1308,7 +1308,8 @@ struct tevent_req *share_mode_watch_send(
 	struct share_mode_lock *lck,
 	struct server_id blocker)
 {
-	TDB_DATA key = locking_key(&lck->data->id);
+	struct file_id id = share_mode_lock_file_id(lck);
+	TDB_DATA key = locking_key(&id);
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct share_mode_watch_state *state = NULL;
 
