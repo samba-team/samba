@@ -18,6 +18,7 @@
 
 struct share_mode_data;
 struct share_mode_lock {
+	struct file_id id;
 	struct share_mode_data *data;
 };
 

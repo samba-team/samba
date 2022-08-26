@@ -32,6 +32,8 @@ bool locking_init(void);
 bool locking_init_readonly(void);
 bool locking_end(void);
 
+struct file_id share_mode_lock_file_id(const struct share_mode_lock *lck);
+
 struct share_mode_lock *get_share_mode_lock(
 	TALLOC_CTX *mem_ctx,
 	struct file_id id,

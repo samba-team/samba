@@ -839,6 +839,11 @@ static NTSTATUS get_static_share_mode_data(
 	return NT_STATUS_OK;
 }
 
+struct file_id share_mode_lock_file_id(const struct share_mode_lock *lck)
+{
+	return lck->id;
+}
+
 NTSTATUS share_mode_lock_access_private_data(struct share_mode_lock *lck,
 					     struct share_mode_data **data)
 {
@@ -874,6 +879,7 @@ struct share_mode_lock *get_share_mode_lock(
 		DEBUG(1, ("talloc failed\n"));
 		return NULL;
 	}
+	lck->id = id;
 
 	if (static_share_mode_data != NULL) {
 		if (!file_id_equal(&static_share_mode_data->id, &id)) {
@@ -1359,6 +1365,7 @@ static void fetch_share_mode_unlocked_parser(
 		DEBUG(0, ("talloc failed\n"));
 		return;
 	}
+	state->lck->id = state->id;
 
 	state->lck->data = parse_share_modes(
 		state->lck,
@@ -1497,6 +1504,7 @@ static void fetch_share_mode_fn(
 		state->status = NT_STATUS_NO_MEMORY;
 		return;
 	}
+	state->lck->id = state->id,
 
 	state->lck->data = parse_share_modes(
 		state->lck,
@@ -1679,6 +1687,7 @@ static int share_entry_traverse_fn(struct file_id fid,
 {
 	struct share_entry_forall_state *state = private_data;
 	struct share_mode_lock lck = {
+		.id = fid,
 		.data = discard_const_p(struct share_mode_data, data)
 	};
 	bool ok;
