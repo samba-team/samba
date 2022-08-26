@@ -2713,21 +2713,32 @@ NTSTATUS _share_mode_do_locked_vfs_denied(
 	const char *location)
 {
 	struct smb_vfs_deny_state vfs_deny = {};
-	struct share_mode_lock *lck = NULL;
+	struct share_mode_lock lck;
+	NTSTATUS status;
 
-	lck = get_existing_share_mode_lock(talloc_tos(), id);
-	if (lck == NULL) {
-		NTSTATUS status = NT_STATUS_NOT_FOUND;
-		DBG_DEBUG("get_existing_share_mode_lock failed: %s\n",
-			  nt_errstr(status));
+	status = get_share_mode_lock_internal(id,
+					      NULL,  /* servicepath */
+					      NULL,  /* smb_fname */
+					      NULL,  /* old_write_time */
+					      &lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_GET_SHARE_MODE_LOCK(status,
+			"get_share_mode_lock_internal failed: %s\n",
+			nt_errstr(status));
 		return status;
 	}
 
 	_smb_vfs_deny_push(&vfs_deny, location);
-	fn(lck, private_data);
+	fn(&lck, private_data);
 	_smb_vfs_deny_pop(&vfs_deny, location);
 
-	TALLOC_FREE(lck);
+	status = put_share_mode_lock_internal(&lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("put_share_mode_lock_internal failed: %s\n",
+			nt_errstr(status));
+		smb_panic("put_share_mode_lock_internal failed\n");
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -2751,21 +2762,32 @@ NTSTATUS _share_mode_do_locked_vfs_allowed(
 	void *private_data,
 	const char *location)
 {
-	struct share_mode_lock *lck = NULL;
+	struct share_mode_lock lck;
+	NTSTATUS status;
 
 	smb_vfs_assert_allowed();
 
-	lck = get_existing_share_mode_lock(talloc_tos(), id);
-	if (lck == NULL) {
-		NTSTATUS status = NT_STATUS_NOT_FOUND;
-		DBG_DEBUG("get_existing_share_mode_lock failed: %s\n",
-			  nt_errstr(status));
+	status = get_share_mode_lock_internal(id,
+					      NULL,  /* servicepath */
+					      NULL,  /* smb_fname */
+					      NULL,  /* old_write_time */
+					      &lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_GET_SHARE_MODE_LOCK(status,
+			"get_share_mode_lock_internal failed: %s\n",
+			nt_errstr(status));
 		return status;
 	}
 
-	fn(lck, private_data);
+	fn(&lck, private_data);
 
-	TALLOC_FREE(lck);
+	status = put_share_mode_lock_internal(&lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("put_share_mode_lock_internal failed: %s\n",
+			nt_errstr(status));
+		smb_panic("put_share_mode_lock_internal failed\n");
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
