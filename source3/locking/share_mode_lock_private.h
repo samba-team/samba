@@ -16,11 +16,8 @@
 #ifndef __LOCKING_SHARE_MODE_LOCK_PRIVATE_H__
 #define __LOCKING_SHARE_MODE_LOCK_PRIVATE_H__
 
+struct share_mode_lock;
 struct share_mode_data;
-struct share_mode_lock {
-	struct file_id id;
-	struct share_mode_data *data;
-};
 
 NTSTATUS share_mode_lock_access_private_data(struct share_mode_lock *lck,
 					     struct share_mode_data **data);

@@ -67,6 +67,11 @@
 		DBGLVL_DEBUG : DBGLVL_ERR, \
 		(__VA_ARGS__))
 
+struct share_mode_lock {
+	struct file_id id;
+	struct share_mode_data *cached_data;
+};
+
 /* the locking database handle */
 static struct g_lock_ctx *lock_ctx;
 
@@ -848,11 +853,11 @@ NTSTATUS share_mode_lock_access_private_data(struct share_mode_lock *lck,
 					     struct share_mode_data **data)
 {
 	/*
-	 * For now we always have lck->data,
+	 * For now we always have lck->cached_data,
 	 * but we may change that in future.
 	 */
-	SMB_ASSERT(lck->data != NULL);
-	*data = lck->data;
+	SMB_ASSERT(lck->cached_data != NULL);
+	*data = lck->cached_data;
 	return NT_STATUS_OK;
 }
 
@@ -936,7 +941,7 @@ struct share_mode_lock *get_share_mode_lock(
 	}
 done:
 	static_share_mode_data_refcount += 1;
-	lck->data = static_share_mode_data;
+	lck->cached_data = static_share_mode_data;
 
 	talloc_set_destructor(lck, share_mode_lock_destructor);
 
@@ -1399,12 +1404,12 @@ static void fetch_share_mode_unlocked_parser(
 	}
 	state->lck->id = state->id;
 
-	state->lck->data = parse_share_modes(
+	state->lck->cached_data = parse_share_modes(
 		state->lck,
 		state->id,
 		ltdb.share_mode_data_buf,
 		ltdb.share_mode_data_len);
-	if (state->lck->data == NULL) {
+	if (state->lck->cached_data == NULL) {
 		DBG_DEBUG("parse_share_modes failed\n");
 		TALLOC_FREE(state->lck);
 	}
@@ -1538,12 +1543,12 @@ static void fetch_share_mode_fn(
 	}
 	state->lck->id = state->id,
 
-	state->lck->data = parse_share_modes(
+	state->lck->cached_data = parse_share_modes(
 		state->lck,
 		state->id,
 		ltdb.share_mode_data_buf,
 		ltdb.share_mode_data_len);
-	if (state->lck->data == NULL) {
+	if (state->lck->cached_data == NULL) {
 		DBG_DEBUG("parse_share_modes failed\n");
 		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		TALLOC_FREE(state->lck);
@@ -1594,7 +1599,7 @@ NTSTATUS fetch_share_mode_recv(struct tevent_req *req,
 
 	if (DEBUGLEVEL >= 10) {
 		DBG_DEBUG("share_mode_data:\n");
-		NDR_PRINT_DEBUG(share_mode_data, lck->data);
+		NDR_PRINT_DEBUG(share_mode_data, lck->cached_data);
 	}
 
 	*_lck = lck;
@@ -1720,7 +1725,7 @@ static int share_entry_traverse_fn(struct file_id fid,
 	struct share_entry_forall_state *state = private_data;
 	struct share_mode_lock lck = {
 		.id = fid,
-		.data = discard_const_p(struct share_mode_data, data)
+		.cached_data = discard_const_p(struct share_mode_data, data)
 	};
 	bool ok;
 
