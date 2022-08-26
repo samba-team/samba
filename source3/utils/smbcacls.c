@@ -678,7 +678,7 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 	struct security_descriptor *sd = NULL;
 
 	if (sddl) {
-		sd = sddl_decode(talloc_tos(), the_acl, get_global_sam_sid());
+		sd = sddl_decode(talloc_tos(), the_acl, get_domain_sid(cli));
 	} else {
 		sd = sec_desc_parse(talloc_tos(), cli, the_acl);
 	}
@@ -1100,7 +1100,7 @@ static NTSTATUS prepare_inheritance_propagation(TALLOC_CTX *ctx, char *filename,
 	/* parse acl passed on the command line */
 	if (sddl) {
 		cbstate->aclsd = sddl_decode(ctx, the_acl,
-					     get_global_sam_sid());
+					     get_domain_sid(cli));
 	} else {
 		cbstate->aclsd = sec_desc_parse(ctx, cli, the_acl);
 	}
