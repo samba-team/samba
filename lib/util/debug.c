@@ -1635,8 +1635,21 @@ static void format_debug_text( const char *msg )
 	for( i = 0; msg[i]; i++ ) {
 		/* Indent two spaces at each new line. */
 		if(timestamp && 0 == format_pos) {
+			/* Limit the maximum indentation to 20 levels */
+			size_t depth = MIN(20, debug_call_depth);
 			format_bufr[0] = format_bufr[1] = ' ';
 			format_pos = 2;
+			/*
+			 * Indent by four spaces for each depth level,
+			 * but only if the current debug level is >= 8.
+			 */
+			if (depth > 0 && debuglevel_get() >= 8 &&
+			    format_pos + 4 * depth < FORMAT_BUFR_SIZE) {
+				memset(&format_bufr[format_pos],
+				       ' ',
+				       4 * depth);
+				format_pos += 4 * depth;
+			}
 		}
 
 		/* If there's room, copy the character to the format buffer. */
