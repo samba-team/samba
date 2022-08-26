@@ -2221,7 +2221,7 @@ NTSTATUS share_mode_count_entries(struct file_id fid, size_t *num_share_modes)
 }
 
 static bool share_mode_entry_do(
-	struct share_mode_lock *lck,
+	struct share_mode_data *d,
 	struct server_id pid,
 	uint64_t share_file_id,
 	void (*fn)(struct share_mode_entry *e,
@@ -2230,7 +2230,6 @@ static bool share_mode_entry_do(
 		   void *private_data),
 	void *private_data)
 {
-	struct share_mode_data *d = lck->data;
 	TDB_DATA key = locking_key(&d->id);
 	struct locking_tdb_data *ltdb = NULL;
 	size_t idx;
@@ -2357,10 +2356,25 @@ static void del_share_mode_fn(
 bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct del_share_mode_state state = { .ok = false };
+	struct share_mode_data *d = NULL;
+	NTSTATUS status;
 	bool ok;
 
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct file_id id = share_mode_lock_file_id(lck);
+		struct file_id_buf id_buf;
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s %s - %s\n",
+			file_id_str_buf(id, &id_buf),
+			fsp_str_dbg(fsp),
+			nt_errstr(status));
+		return false;
+	}
+
 	ok = share_mode_entry_do(
-		lck,
+		d,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),
 		fh_get_gen_id(fsp->fh),
 		del_share_mode_fn,
@@ -2396,10 +2410,25 @@ static void remove_share_oplock_fn(
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct remove_share_oplock_state state = { .ok = false };
+	struct share_mode_data *d = NULL;
+	NTSTATUS status;
 	bool ok;
 
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct file_id id = share_mode_lock_file_id(lck);
+		struct file_id_buf id_buf;
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s %s - %s\n",
+			file_id_str_buf(id, &id_buf),
+			fsp_str_dbg(fsp),
+			nt_errstr(status));
+		return false;
+	}
+
 	ok = share_mode_entry_do(
-		lck,
+		d,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),
 		fh_get_gen_id(fsp->fh),
 		remove_share_oplock_fn,
@@ -2445,10 +2474,25 @@ static void downgrade_share_oplock_fn(
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct downgrade_share_oplock_state state = { .ok = false };
+	struct share_mode_data *d = NULL;
+	NTSTATUS status;
 	bool ok;
 
+	status = share_mode_lock_access_private_data(lck, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct file_id id = share_mode_lock_file_id(lck);
+		struct file_id_buf id_buf;
+		/* Any error recovery possible here ? */
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s %s - %s\n",
+			file_id_str_buf(id, &id_buf),
+			fsp_str_dbg(fsp),
+			nt_errstr(status));
+		return false;
+	}
+
 	ok = share_mode_entry_do(
-		lck,
+		d,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),
 		fh_get_gen_id(fsp->fh),
 		downgrade_share_oplock_fn,
@@ -2462,8 +2506,8 @@ bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 		return false;
 	}
 
-	lck->data->flags |= SHARE_MODE_LEASE_READ;
-	lck->data->modified = true;
+	d->flags |= SHARE_MODE_LEASE_READ;
+	d->modified = true;
 
 	return true;
 }
