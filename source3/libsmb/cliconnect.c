@@ -2794,7 +2794,8 @@ static struct tevent_req *cli_start_connection_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const char *my_name, const char *dest_host,
 	const struct sockaddr_storage *dest_ss, int port,
-	enum smb_signing_setting signing_state, int flags)
+	enum smb_signing_setting signing_state, int flags,
+	struct smb2_negotiate_contexts *negotiate_contexts)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_start_connection_state *state;
@@ -2845,6 +2846,26 @@ static struct tevent_req *cli_start_connection_send(
 			strlen(SMB2_CREATE_TAG_POSIX));
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (negotiate_contexts != NULL) {
+		uint16_t i;
+
+		for (i=0; i<negotiate_contexts->num_contexts; i++) {
+			struct smb2_negotiate_context *ctx =
+				&negotiate_contexts->contexts[i];
+			NTSTATUS status;
+
+			status = smb2_negotiate_context_add(
+				state->negotiate_contexts,
+				state->negotiate_contexts,
+				ctx->type,
+				ctx->data.data,
+				ctx->data.length);
+			if (tevent_req_nterror(req, status)) {
+				return tevent_req_post(req, ev);
+			}
 		}
 	}
 
@@ -2939,7 +2960,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 		goto fail;
 	}
 	req = cli_start_connection_send(ev, ev, my_name, dest_host, dest_ss,
-					port, signing_state, flags);
+					port, signing_state, flags, NULL);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -3413,7 +3434,8 @@ struct tevent_req *cli_full_connection_creds_send(
 	const struct sockaddr_storage *dest_ss, int port,
 	const char *service, const char *service_type,
 	struct cli_credentials *creds,
-	int flags)
+	int flags,
+	struct smb2_negotiate_contexts *negotiate_contexts)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_full_connection_creds_state *state;
@@ -3452,7 +3474,8 @@ struct tevent_req *cli_full_connection_creds_send(
 
 	subreq = cli_start_connection_send(
 		state, ev, my_name, dest_host, dest_ss, port,
-		signing_state, flags);
+		signing_state, flags,
+		negotiate_contexts);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -3783,7 +3806,8 @@ NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
 	}
 	req = cli_full_connection_creds_send(
 		ev, ev, my_name, dest_host, dest_ss, port, service,
-		service_type, creds, flags);
+		service_type, creds, flags,
+		NULL);
 	if (req == NULL) {
 		goto fail;
 	}
