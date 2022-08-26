@@ -999,114 +999,18 @@ struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
 	return get_share_mode_lock(mem_ctx, id, NULL, NULL, NULL);
 }
 
-struct share_mode_do_locked_state {
-	TDB_DATA key;
-	void (*fn)(const uint8_t *buf,
-		   size_t buflen,
-		   bool *modified_dependent,
-		   void *private_data);
-	void *private_data;
-};
-
-static void share_mode_do_locked_fn(
-	struct server_id exclusive,
-	size_t num_shared,
-	const struct server_id *shared,
-	const uint8_t *data,
-	size_t datalen,
-	void *private_data)
-{
-	struct share_mode_do_locked_state *state = private_data;
-	bool modified_dependent = false;
-	struct locking_tdb_data ltdb = { 0 };
-	bool ok;
-
-	ok = locking_tdb_data_get(
-		&ltdb, discard_const_p(uint8_t, data), datalen);
-	if (!ok) {
-		DBG_WARNING("locking_tdb_data_get failed\n");
-		return;
-	}
-
-	state->fn(ltdb.share_mode_data_buf,
-		  ltdb.share_mode_data_len,
-		  &modified_dependent,
-		  state->private_data);
-
-	if (modified_dependent) {
-		g_lock_wake_watchers(lock_ctx, state->key);
-	}
-}
-
-static NTSTATUS share_mode_do_locked(
-	struct file_id id,
-	void (*fn)(const uint8_t *buf,
-		   size_t buflen,
-		   bool *modified_dependent,
-		   void *private_data),
-	void *private_data)
-{
-	TDB_DATA key = locking_key(&id);
-	size_t data_refcount, key_refcount;
-	struct share_mode_do_locked_state state = {
-		.key = key, .fn = fn, .private_data = private_data,
-	};
-	NTSTATUS status;
-
-	if (share_mode_lock_key_refcount == 0) {
-		status = g_lock_lock(
-			lock_ctx,
-			key,
-			G_LOCK_WRITE,
-			(struct timeval) { .tv_sec = 3600 });
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("g_lock_lock failed: %s\n",
-				  nt_errstr(status));
-			return status;
-		}
-		memcpy(share_mode_lock_key_data, key.dptr, key.dsize);
-	}
-
-	SMB_ASSERT(share_mode_lock_key_refcount < SIZE_MAX);
-	share_mode_lock_key_refcount += 1;
-
-	key_refcount = share_mode_lock_key_refcount;
-	data_refcount = static_share_mode_data_refcount;
-
-	status = g_lock_dump(
-		lock_ctx, key, share_mode_do_locked_fn, &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("g_lock_dump failed: %s\n",
-			  nt_errstr(status));
-	}
-
-	SMB_ASSERT(data_refcount == static_share_mode_data_refcount);
-	SMB_ASSERT(key_refcount == share_mode_lock_key_refcount);
-	share_mode_lock_key_refcount -= 1;
-
-	if (share_mode_lock_key_refcount == 0) {
-		status = g_lock_unlock(lock_ctx, key);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("g_lock_unlock failed: %s\n",
-				  nt_errstr(status));
-		}
-	}
-
-	return status;
-}
-
 static void share_mode_wakeup_waiters_fn(
-	const uint8_t *buf,
-	size_t buflen,
-	bool *modified_dependent,
+	struct share_mode_lock *lck,
 	void *private_data)
 {
-	*modified_dependent = true;
+	g_lock_wake_watchers(lock_ctx, share_mode_lock_key);
 }
 
 NTSTATUS share_mode_wakeup_waiters(struct file_id id)
 {
-	return share_mode_do_locked(id, share_mode_wakeup_waiters_fn, NULL);
+	return share_mode_do_locked_vfs_denied(id,
+					       share_mode_wakeup_waiters_fn,
+					       NULL);
 }
 
 struct fsp_update_share_mode_flags_state {
