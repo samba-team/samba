@@ -867,25 +867,22 @@ NTSTATUS share_mode_lock_access_private_data(struct share_mode_lock *lck,
 
 static int share_mode_lock_destructor(struct share_mode_lock *lck);
 
-struct share_mode_lock *get_share_mode_lock(
-	TALLOC_CTX *mem_ctx,
+static NTSTATUS get_share_mode_lock_internal(
 	struct file_id id,
 	const char *servicepath,
 	const struct smb_filename *smb_fname,
-	const struct timespec *old_write_time)
+	const struct timespec *old_write_time,
+	struct share_mode_lock *lck)
 {
-	TDB_DATA key = locking_key(&id);
-	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
 
-	lck = talloc(mem_ctx, struct share_mode_lock);
-	if (lck == NULL) {
-		DEBUG(1, ("talloc failed\n"));
-		return NULL;
-	}
-	lck->id = id;
+	*lck = (struct share_mode_lock) {
+		.id = id,
+	};
 
 	if (share_mode_lock_key_refcount == 0) {
+		TDB_DATA key = locking_key(&id);
+
 		status = g_lock_lock(
 			lock_ctx,
 			key,
@@ -894,7 +891,7 @@ struct share_mode_lock *get_share_mode_lock(
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("g_lock_lock failed: %s\n",
 				  nt_errstr(status));
-			goto fail;
+			return status;
 		}
 		share_mode_lock_key_id = id;
 	}
@@ -932,8 +929,6 @@ struct share_mode_lock *get_share_mode_lock(
 done:
 	lck->cached_data = static_share_mode_data;
 
-	talloc_set_destructor(lck, share_mode_lock_destructor);
-
 	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
 		struct file_id_buf returned;
 
@@ -943,17 +938,16 @@ done:
 			  share_mode_lock_key_refcount);
 	}
 
-	return lck;
+	return NT_STATUS_OK;
 fail:
-	TALLOC_FREE(lck);
 	if (share_mode_lock_key_refcount == 0) {
-		status = g_lock_unlock(lock_ctx, share_mode_lock_key);
-		if (!NT_STATUS_IS_OK(status)) {
+		NTSTATUS ulstatus = g_lock_unlock(lock_ctx, share_mode_lock_key);
+		if (!NT_STATUS_IS_OK(ulstatus)) {
 			DBG_ERR("g_lock_unlock failed: %s\n",
-				nt_errstr(status));
+				nt_errstr(ulstatus));
 		}
 	}
-	return NULL;
+	return status;
 }
 
 static int share_mode_lock_destructor(struct share_mode_lock *lck)
@@ -993,6 +987,38 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 
 	TALLOC_FREE(static_share_mode_data);
 	return 0;
+}
+
+struct share_mode_lock *get_share_mode_lock(
+	TALLOC_CTX *mem_ctx,
+	struct file_id id,
+	const char *servicepath,
+	const struct smb_filename *smb_fname,
+	const struct timespec *old_write_time)
+{
+	struct share_mode_lock *lck = NULL;
+	NTSTATUS status;
+
+	lck = talloc(mem_ctx, struct share_mode_lock);
+	if (lck == NULL) {
+		return NULL;
+	}
+
+	status = get_share_mode_lock_internal(id,
+					      servicepath,
+					      smb_fname,
+					      old_write_time,
+					      lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_GET_SHARE_MODE_LOCK(status,
+			"get_share_mode_lock_internal() failed - %s\n",
+			nt_errstr(status));
+		TALLOC_FREE(lck);
+		return NULL;
+	}
+
+	talloc_set_destructor(lck, share_mode_lock_destructor);
+	return lck;
 }
 
 /*******************************************************************
