@@ -17,7 +17,7 @@
 
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.samba3 import param as s3param
-from samba import (credentials,NTSTATUSError)
+from samba import (credentials,NTSTATUSError,ntstatus)
 import samba.tests
 import os
 
@@ -68,3 +68,36 @@ class Smb3UnixTests(samba.tests.TestCase):
                 self.creds,
                 posix=True)
         self.assertFalse(c.have_posix())
+
+    def test_negotiate_context_posix_invalid_length(self):
+        try:
+            self.enable_smb3unix()
+
+            with self.assertRaises(NTSTATUSError) as cm:
+                c = libsmb.Conn(
+                    os.getenv("SERVER_IP"),
+                    "tmp",
+                    self.lp,
+                    self.creds,
+                    negotiate_contexts=[(0x100, b'01234')])
+
+            e = cm.exception
+            self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_PARAMETER)
+
+        finally:
+            self.disable_smb3unix()
+
+    def test_negotiate_context_posix_invalid_blob(self):
+        try:
+            self.enable_smb3unix()
+
+            c = libsmb.Conn(
+                os.getenv("SERVER_IP"),
+                "tmp",
+                self.lp,
+                self.creds,
+                negotiate_contexts=[(0x100, b'0123456789012345')])
+            self.assertFalse(c.have_posix())
+
+        finally:
+            self.disable_smb3unix()
