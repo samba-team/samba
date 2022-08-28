@@ -836,16 +836,8 @@ static void g_lock_lock_simple_fn(
 	struct g_lock_lock_simple_state *state = private_data;
 	struct server_id_buf buf;
 	struct g_lock lck = { .exclusive.pid = 0 };
+	struct server_id *new_shared = NULL;
 	bool ok;
-
-	/*
-	 * We're trying to get a lock and if we are
-	 * successful in doing that, we should not
-	 * wakeup any other waiters, all they would
-	 * find is that we're holding a lock they
-	 * are conflicting with.
-	 */
-	dbwrap_watched_watch_skip_alerting(rec);
 
 	ok = g_lock_parse(value.dptr, value.dsize, &lck);
 	if (!ok) {
@@ -860,23 +852,32 @@ static void g_lock_lock_simple_fn(
 		goto not_granted;
 	}
 
-	lck.unique_lock_epoch = generate_unique_u64(lck.unique_lock_epoch);
-
 	if (state->type == G_LOCK_WRITE) {
 		if (lck.num_shared != 0) {
 			DBG_DEBUG("num_shared=%zu\n", lck.num_shared);
 			goto not_granted;
 		}
 		lck.exclusive = state->me;
-		state->status = g_lock_store(rec, &lck, NULL, NULL, 0);
-		return;
+	} else if (state->type == G_LOCK_READ) {
+		g_lock_cleanup_shared(&lck);
+		new_shared = &state->me;
+	} else {
+		smb_panic(__location__);
 	}
 
-	if (state->type == G_LOCK_READ) {
-		g_lock_cleanup_shared(&lck);
-		state->status = g_lock_store(rec, &lck, &state->me, NULL, 0);
-		return;
-	}
+	lck.unique_lock_epoch = generate_unique_u64(lck.unique_lock_epoch);
+
+	/*
+	 * We're storing a lock and if we are
+	 * successful in doing that, we should not
+	 * wakeup any other waiters, all they would
+	 * find is that we're holding a lock they
+	 * are conflicting with.
+	 */
+	dbwrap_watched_watch_skip_alerting(rec);
+
+	state->status = g_lock_store(rec, &lck, new_shared, NULL, 0);
+	return;
 
 not_granted:
 	state->status = NT_STATUS_LOCK_NOT_GRANTED;
