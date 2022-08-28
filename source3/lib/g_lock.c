@@ -1127,9 +1127,12 @@ NTSTATUS g_lock_lock_recv(struct tevent_req *req)
 }
 
 struct g_lock_lock_simple_state {
+	struct g_lock_ctx *ctx;
 	struct server_id me;
 	enum g_lock_type type;
 	NTSTATUS status;
+	g_lock_lock_cb_fn_t cb_fn;
+	void *cb_private;
 };
 
 static void g_lock_lock_simple_fn(
@@ -1140,7 +1143,15 @@ static void g_lock_lock_simple_fn(
 	struct g_lock_lock_simple_state *state = private_data;
 	struct server_id_buf buf;
 	struct g_lock lck = { .exclusive.pid = 0 };
-	struct server_id *new_shared = NULL;
+	struct g_lock_lock_cb_state cb_state = {
+		.ctx = state->ctx,
+		.rec = rec,
+		.lck = &lck,
+		.cb_fn = state->cb_fn,
+		.cb_private = state->cb_private,
+		.existed = value.dsize != 0,
+		.update_mem_ctx = talloc_tos(),
+	};
 	bool ok;
 
 	ok = g_lock_parse(value.dptr, value.dsize, &lck);
@@ -1164,7 +1175,7 @@ static void g_lock_lock_simple_fn(
 		lck.exclusive = state->me;
 	} else if (state->type == G_LOCK_READ) {
 		g_lock_cleanup_shared(&lck);
-		new_shared = &state->me;
+		cb_state.new_shared = &state->me;
 	} else {
 		smb_panic(__location__);
 	}
@@ -1172,15 +1183,23 @@ static void g_lock_lock_simple_fn(
 	lck.unique_lock_epoch = generate_unique_u64(lck.unique_lock_epoch);
 
 	/*
-	 * We're storing a lock and if we are
-	 * successful in doing that, we should not
-	 * wakeup any other waiters, all they would
-	 * find is that we're holding a lock they
-	 * are conflicting with.
+	 * We are going to store us as owner,
+	 * so we got what we were waiting for.
+	 *
+	 * So we no longer need to monitor the
+	 * record.
 	 */
 	dbwrap_watched_watch_skip_alerting(rec);
 
-	state->status = g_lock_store(rec, &lck, new_shared, NULL, 0);
+	state->status = g_lock_lock_cb_run_and_store(&cb_state);
+	if (!NT_STATUS_IS_OK(state->status) &&
+	    !NT_STATUS_EQUAL(state->status, NT_STATUS_WAS_UNLOCKED))
+	{
+		DBG_WARNING("g_lock_lock_cb_run_and_store() failed: %s\n",
+			    nt_errstr(state->status));
+		return;
+	}
+
 	return;
 
 not_granted:
@@ -1190,6 +1209,8 @@ not_granted:
 NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 		     enum g_lock_type type, struct timeval timeout)
 {
+	g_lock_lock_cb_fn_t cb_fn = NULL;
+	void *cb_private = NULL;
 	TALLOC_CTX *frame;
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -1209,8 +1230,11 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 		 * improvement for lock/unlock.
 		 */
 		struct g_lock_lock_simple_state state = {
+			.ctx = ctx,
 			.me = messaging_server_id(ctx->msg),
 			.type = type,
+			.cb_fn = cb_fn,
+			.cb_private = cb_private,
 		};
 		status = dbwrap_do_locked(
 			ctx->db, key, g_lock_lock_simple_fn, &state);
@@ -1229,6 +1253,10 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 				const char *name = dbwrap_name(ctx->db);
 				dbwrap_lock_order_lock(name, ctx->lock_order);
 			}
+			return NT_STATUS_OK;
+		}
+		if (NT_STATUS_EQUAL(state.status, NT_STATUS_WAS_UNLOCKED)) {
+			/* without dbwrap_lock_order_lock() */
 			return NT_STATUS_OK;
 		}
 		if (!NT_STATUS_EQUAL(
