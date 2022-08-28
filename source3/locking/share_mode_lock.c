@@ -950,7 +950,7 @@ fail:
 	return status;
 }
 
-static int share_mode_lock_destructor(struct share_mode_lock *lck)
+static NTSTATUS put_share_mode_lock_internal(struct share_mode_lock *lck)
 {
 	NTSTATUS status;
 
@@ -958,21 +958,21 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	share_mode_lock_key_refcount -= 1;
 
 	if (share_mode_lock_key_refcount > 0) {
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	status = share_mode_data_store(static_share_mode_data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("share_mode_data_store failed: %s\n",
 			nt_errstr(status));
-		smb_panic("Could not store share mode data\n");
+		return status;
 	}
 
 	status = g_lock_unlock(lock_ctx, share_mode_lock_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("g_lock_unlock failed: %s\n",
 			nt_errstr(status));
-		smb_panic("Could not unlock share mode\n");
+		return status;
 	}
 
 	if (!static_share_mode_data->not_stored) {
@@ -986,6 +986,20 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	}
 
 	TALLOC_FREE(static_share_mode_data);
+	return NT_STATUS_OK;
+}
+
+static int share_mode_lock_destructor(struct share_mode_lock *lck)
+{
+	NTSTATUS status;
+
+	status = put_share_mode_lock_internal(lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("put_share_mode_lock_internal failed: %s\n",
+			nt_errstr(status));
+		smb_panic("put_share_mode_lock_internal failed\n");
+	}
+
 	return 0;
 }
 
