@@ -2900,6 +2900,11 @@ static void call_trans2getdfsreferral(connection_struct *conn,
 
 	DEBUG(10,("call_trans2getdfsreferral\n"));
 
+	if (!IS_IPC(conn)) {
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
 	if (total_params < 3) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
