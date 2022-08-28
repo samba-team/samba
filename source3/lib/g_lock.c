@@ -607,7 +607,7 @@ static NTSTATUS g_lock_trylock(
 	enum g_lock_type type = req_state->type;
 	bool retry = req_state->retry;
 	struct g_lock lck = { .exclusive.pid = 0 };
-	size_t orig_num_shared;
+	struct server_id *new_shared = NULL;
 	struct server_id_buf tmp;
 	NTSTATUS status;
 	bool ok;
@@ -618,7 +618,6 @@ static NTSTATUS g_lock_trylock(
 		DBG_DEBUG("g_lock_parse failed\n");
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	orig_num_shared = lck.num_shared;
 
 	g_lock_cleanup_dead(&lck, state->dead_blocker);
 
@@ -744,26 +743,10 @@ static NTSTATUS g_lock_trylock(
 		}
 
 		/*
-		 * All pending readers are gone and we no longer need
-		 * to monitor the record.
+		 * Retry after a conflicting lock was released..
+		 * All pending readers are gone so we got the lock...
 		 */
-		dbwrap_watched_watch_remove_instance(rec, state->watch_instance);
-
-		if (orig_num_shared != lck.num_shared) {
-			status = g_lock_store(rec, &lck, NULL, NULL, 0);
-			if (!NT_STATUS_IS_OK(status)) {
-				DBG_DEBUG("g_lock_store() failed: %s\n",
-					  nt_errstr(status));
-				return status;
-			}
-		}
-
-		talloc_set_destructor(req_state, NULL);
-
-		/*
-		 * Retry after a conflicting lock was released
-		 */
-		return NT_STATUS_OK;
+		goto got_lock;
 	}
 
 noexclusive:
@@ -803,11 +786,12 @@ noexclusive:
 		if (lck.num_shared == 0) {
 			/*
 			 * If we store ourself as exclusive writter,
-			 * without any pending readers, we don't
-			 * need to monitor the record anymore...
+			 * without any pending readers ...
 			 */
-			dbwrap_watched_watch_remove_instance(rec, state->watch_instance);
-		} else if (state->watch_instance == 0) {
+			goto got_lock;
+		}
+
+		if (state->watch_instance == 0) {
 			/*
 			 * Here we have lck.num_shared != 0.
 			 *
@@ -831,29 +815,28 @@ noexclusive:
 			return status;
 		}
 
-		if (lck.num_shared != 0) {
-			talloc_set_destructor(
-				req_state, g_lock_lock_state_destructor);
+		talloc_set_destructor(
+			req_state, g_lock_lock_state_destructor);
 
-			g_lock_get_shared(&lck, 0, blocker);
+		g_lock_get_shared(&lck, 0, blocker);
 
-			DBG_DEBUG("Waiting for %zu shared locks, "
-				  "picking blocker %s\n",
-				  lck.num_shared,
-				  server_id_str_buf(*blocker, &tmp));
+		DBG_DEBUG("Waiting for %zu shared locks, "
+			  "picking blocker %s\n",
+			  lck.num_shared,
+			  server_id_str_buf(*blocker, &tmp));
 
-			return NT_STATUS_LOCK_NOT_GRANTED;
-		}
-
-		talloc_set_destructor(req_state, NULL);
-
-		return NT_STATUS_OK;
+		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
 do_shared:
 
+	g_lock_cleanup_shared(&lck);
+	new_shared = &self;
+	goto got_lock;
+
+got_lock:
 	/*
-	 * We are going to store us as a reader,
+	 * We are going to store us as owner or a reader,
 	 * so we got what we were waiting for.
 	 *
 	 * So we no longer need to monitor the
@@ -861,14 +844,14 @@ do_shared:
 	 */
 	dbwrap_watched_watch_remove_instance(rec, state->watch_instance);
 
-	g_lock_cleanup_shared(&lck);
-
-	status = g_lock_store(rec, &lck, &self, NULL, 0);
+	status = g_lock_store(rec, &lck, new_shared, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("g_lock_store() failed: %s\n",
 			  nt_errstr(status));
 		return status;
 	}
+
+	talloc_set_destructor(req_state, NULL);
 
 	return NT_STATUS_OK;
 }
