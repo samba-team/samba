@@ -577,12 +577,92 @@ void g_lock_lock_cb_wake_watchers(struct g_lock_lock_cb_state *cb_state)
 	cb_state->modified = true;
 }
 
+static NTSTATUS g_lock_lock_cb_run_and_store(struct g_lock_lock_cb_state *cb_state)
+{
+	struct g_lock *lck = cb_state->lck;
+	NTSTATUS success_status = NT_STATUS_OK;
+	NTSTATUS status;
+
+	if (cb_state->cb_fn != NULL) {
+
+		SMB_ASSERT(lck->num_shared == 0);
+		SMB_ASSERT(cb_state->new_shared == NULL);
+
+		if (cb_state->ctx->lock_order != DBWRAP_LOCK_ORDER_NONE) {
+			const char *name = dbwrap_name(cb_state->ctx->db);
+			dbwrap_lock_order_lock(name, cb_state->ctx->lock_order);
+		}
+
+		cb_state->ctx->busy = true;
+		cb_state->cb_fn(cb_state, cb_state->cb_private);
+		cb_state->ctx->busy = false;
+
+		if (cb_state->ctx->lock_order != DBWRAP_LOCK_ORDER_NONE) {
+			const char *name = dbwrap_name(cb_state->ctx->db);
+			dbwrap_lock_order_unlock(name, cb_state->ctx->lock_order);
+		}
+	}
+
+	if (cb_state->unlock) {
+		/*
+		 * Unlocked should wake up watchers.
+		 *
+		 * We no longer need the lock, so
+		 * force a wakeup of the next watchers,
+		 * even if we don't do any update.
+		 */
+		dbwrap_watched_watch_reset_alerting(cb_state->rec);
+		dbwrap_watched_watch_force_alerting(cb_state->rec);
+		if (!cb_state->modified) {
+			/*
+			 * The record was not changed at
+			 * all, so we can also avoid
+			 * storing the lck.unique_lock_epoch
+			 * change
+			 */
+			return NT_STATUS_WAS_UNLOCKED;
+		}
+		lck->exclusive = (struct server_id) { .pid = 0 };
+		cb_state->new_shared = NULL;
+
+		if (lck->datalen == 0) {
+			if (!cb_state->existed) {
+				return NT_STATUS_WAS_UNLOCKED;
+			}
+
+			status = dbwrap_record_delete(cb_state->rec);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_WARNING("dbwrap_record_delete() failed: %s\n",
+				    nt_errstr(status));
+				return status;
+			}
+			return NT_STATUS_WAS_UNLOCKED;
+		}
+
+		success_status = NT_STATUS_WAS_UNLOCKED;
+	}
+
+	status = g_lock_store(cb_state->rec,
+			      cb_state->lck,
+			      cb_state->new_shared,
+			      NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("g_lock_store() failed: %s\n",
+			    nt_errstr(status));
+		return status;
+	}
+
+	return success_status;
+}
+
 struct g_lock_lock_state {
 	struct tevent_context *ev;
 	struct g_lock_ctx *ctx;
 	TDB_DATA key;
 	enum g_lock_type type;
 	bool retry;
+	g_lock_lock_cb_fn_t cb_fn;
+	void *cb_private;
 };
 
 struct g_lock_lock_fn_state {
@@ -607,7 +687,15 @@ static NTSTATUS g_lock_trylock(
 	enum g_lock_type type = req_state->type;
 	bool retry = req_state->retry;
 	struct g_lock lck = { .exclusive.pid = 0 };
-	struct server_id *new_shared = NULL;
+	struct g_lock_lock_cb_state cb_state = {
+		.ctx = req_state->ctx,
+		.rec = rec,
+		.lck = &lck,
+		.cb_fn = req_state->cb_fn,
+		.cb_private = req_state->cb_private,
+		.existed = data.dsize != 0,
+		.update_mem_ctx = talloc_tos(),
+	};
 	struct server_id_buf tmp;
 	NTSTATUS status;
 	bool ok;
@@ -831,29 +919,27 @@ noexclusive:
 do_shared:
 
 	g_lock_cleanup_shared(&lck);
-	new_shared = &self;
+	cb_state.new_shared = &self;
 	goto got_lock;
 
 got_lock:
 	/*
-	 * We are going to store us as owner or a reader,
-	 * so we got what we were waiting for.
-	 *
-	 * So we no longer need to monitor the
-	 * record.
+	 * We got the lock we asked for, so we no
+	 * longer need to monitor the record.
 	 */
 	dbwrap_watched_watch_remove_instance(rec, state->watch_instance);
 
-	status = g_lock_store(rec, &lck, new_shared, NULL, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("g_lock_store() failed: %s\n",
-			  nt_errstr(status));
+	status = g_lock_lock_cb_run_and_store(&cb_state);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_WAS_UNLOCKED))
+	{
+		DBG_WARNING("g_lock_lock_cb_run_and_store() failed: %s\n",
+			    nt_errstr(status));
 		return status;
 	}
 
 	talloc_set_destructor(req_state, NULL);
-
-	return NT_STATUS_OK;
+	return status;
 }
 
 static void g_lock_lock_fn(
