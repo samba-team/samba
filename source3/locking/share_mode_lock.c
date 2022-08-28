@@ -887,7 +887,8 @@ static NTSTATUS get_share_mode_lock_internal(
 			lock_ctx,
 			key,
 			G_LOCK_WRITE,
-			(struct timeval) { .tv_sec = 3600 });
+			(struct timeval) { .tv_sec = 3600 },
+			NULL, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("g_lock_lock failed: %s\n",
 				  nt_errstr(status));

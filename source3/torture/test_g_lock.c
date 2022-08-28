@@ -71,7 +71,8 @@ bool run_g_lock1(int dummy)
 	}
 
 	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_WRITE,
-			     (struct timeval) { .tv_sec = 1 });
+			     (struct timeval) { .tv_sec = 1 },
+			     NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock failed: %s\n",
 			nt_errstr(status));
@@ -79,7 +80,8 @@ bool run_g_lock1(int dummy)
 	}
 
 	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_WRITE,
-			     (struct timeval) { .tv_sec = 1 });
+			     (struct timeval) { .tv_sec = 1 },
+			     NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_WAS_LOCKED)) {
 		fprintf(stderr, "Double lock got %s\n",
 			nt_errstr(status));
@@ -160,7 +162,8 @@ bool run_g_lock2(int dummy)
 	}
 
 	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_WRITE,
-			     (struct timeval) { .tv_sec = 1 });
+			     (struct timeval) { .tv_sec = 1 },
+			     NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
 			nt_errstr(status));
@@ -282,7 +285,8 @@ bool run_g_lock3(int dummy)
 	state.self = messaging_server_id(msg);
 
 	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_READ,
-			     (struct timeval) { .tv_sec = 1 });
+			     (struct timeval) { .tv_sec = 1 },
+			     NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
 			nt_errstr(status));
@@ -304,7 +308,8 @@ bool run_g_lock3(int dummy)
 	}
 
 	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_UPGRADE,
-			     (struct timeval) { .tv_sec = 1 });
+			     (struct timeval) { .tv_sec = 1 },
+			     NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
 			nt_errstr(status));
@@ -355,7 +360,9 @@ static bool lock4_child(const char *lockname,
 		ctx,
 		string_term_tdb_data(lockname),
 		lock_type,
-		(struct timeval) { .tv_sec = 1 });
+		(struct timeval) { .tv_sec = 1 },
+		NULL,
+		NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "child: g_lock_lock returned %s\n",
 			nt_errstr(status));
@@ -510,16 +517,18 @@ bool run_g_lock4(int dummy)
 		return false;
 	}
 
-	status = g_lock_lock(
-		ctx, key, G_LOCK_WRITE, (struct timeval) { .tv_usec = 1 });
+	status = g_lock_lock(ctx, key, G_LOCK_WRITE,
+			     (struct timeval) { .tv_usec = 1 },
+			      NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
 			nt_errstr(status));
 		goto fail;
 	}
 
-	status = g_lock_lock(
-		ctx, key, G_LOCK_READ, (struct timeval) { .tv_usec = 1 });
+	status = g_lock_lock(ctx, key, G_LOCK_READ,
+			     (struct timeval) { .tv_usec = 1 },
+			     NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
 			nt_errstr(status));
@@ -633,16 +642,18 @@ bool run_g_lock4a(int dummy)
 		return false;
 	}
 
-	status = g_lock_lock(
-		ctx, key, G_LOCK_WRITE, (struct timeval) { .tv_usec = 1 });
+	status = g_lock_lock(ctx, key, G_LOCK_WRITE,
+			     (struct timeval) { .tv_usec = 1 },
+			     NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
 			nt_errstr(status));
 		goto fail;
 	}
 
-	status = g_lock_lock(
-		ctx, key, G_LOCK_READ, (struct timeval) { .tv_usec = 1 });
+	status = g_lock_lock(ctx, key, G_LOCK_READ,
+			     (struct timeval) { .tv_usec = 1 },
+			     NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
 			nt_errstr(status));
@@ -778,7 +789,8 @@ bool run_g_lock5(int dummy)
 			status = g_lock_lock(ctx,
 					     string_term_tdb_data(lockname),
 					     G_LOCK_READ,
-					     (struct timeval) { .tv_sec = 1 });
+					     (struct timeval) { .tv_sec = 1 },
+					     NULL, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				fprintf(stderr,
 					"child g_lock_lock failed %s\n",
@@ -835,7 +847,8 @@ bool run_g_lock5(int dummy)
 
 		status = g_lock_lock(ctx, string_term_tdb_data(lockname),
 				     G_LOCK_READ,
-				     (struct timeval) { .tv_sec = 1 });
+				     (struct timeval) { .tv_sec = 1 },
+				     NULL, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr, "g_lock_lock failed %s\n",
 				nt_errstr(status));
@@ -903,7 +916,8 @@ bool run_g_lock6(int dummy)
 	 * CLEAR_IF_FIRST
 	 */
 	status = g_lock_lock(ctx, lockname, G_LOCK_WRITE,
-			     (struct timeval) { .tv_sec = 1 });
+			     (struct timeval) { .tv_sec = 1 },
+			     NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock failed: %s\n",
 			nt_errstr(status));
@@ -947,7 +961,8 @@ bool run_g_lock6(int dummy)
 			status = g_lock_lock(ctx,
 					     lockname,
 					     G_LOCK_READ,
-					     (struct timeval) { .tv_sec = 1 });
+					     (struct timeval) { .tv_sec = 1 },
+					     NULL, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				fprintf(stderr,
 					"child g_lock_lock failed %s\n",
@@ -1005,7 +1020,8 @@ bool run_g_lock6(int dummy)
 		status = g_lock_lock(ctx,
 				     lockname,
 				     G_LOCK_WRITE,
-				     (struct timeval) { .tv_sec = 1 });
+				     (struct timeval) { .tv_sec = 1 },
+				     NULL, NULL);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 			fprintf(stderr, "g_lock_lock should have failed with %s - %s\n",
 				nt_errstr(NT_STATUS_IO_TIMEOUT),
@@ -1014,7 +1030,8 @@ bool run_g_lock6(int dummy)
 		}
 
 		status = g_lock_lock(ctx, lockname, G_LOCK_READ,
-				     (struct timeval) { .tv_sec = 1 });
+				     (struct timeval) { .tv_sec = 1 },
+				     NULL, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr, "g_lock_lock failed: %s\n",
 				nt_errstr(status));
@@ -1034,7 +1051,8 @@ bool run_g_lock6(int dummy)
 	}
 
 	status = g_lock_lock(ctx, lockname, G_LOCK_UPGRADE,
-			     (struct timeval) { .tv_sec = 1 });
+			     (struct timeval) { .tv_sec = 1 },
+			     NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock failed: %s\n",
 			nt_errstr(status));
@@ -1102,7 +1120,8 @@ bool run_g_lock7(int dummy)
 			ctx,
 			key,
 			G_LOCK_READ,
-			(struct timeval) { .tv_usec = 1 });
+			(struct timeval) { .tv_usec = 1 },
+			NULL, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr,
 				"g_lock_lock(READ) failed: %s\n",
@@ -1169,7 +1188,8 @@ bool run_g_lock7(int dummy)
 		ctx,
 		key,
 		G_LOCK_READ,
-		(struct timeval) { .tv_usec = 1 });
+		(struct timeval) { .tv_usec = 1 },
+		NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr,
 			"g_lock_lock(READ) failed: %s\n",
@@ -1194,7 +1214,8 @@ bool run_g_lock7(int dummy)
 		ctx,
 		key,
 		G_LOCK_UPGRADE,
-		(struct timeval) { .tv_sec = 10 });
+		(struct timeval) { .tv_sec = 10 },
+		NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_POSSIBLE_DEADLOCK)) {
 		fprintf(stderr,
 			"g_lock_lock returned %s\n",
@@ -1237,7 +1258,8 @@ bool run_g_lock8(int dummy)
 		ctx,
 		lockname,
 		G_LOCK_WRITE,
-		(struct timeval) { .tv_sec = 999 });
+		(struct timeval) { .tv_sec = 999 },
+		NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr,
 			"g_lock_lock failed: %s\n",
@@ -1330,7 +1352,8 @@ bool run_g_lock_ping_pong(int dummy)
 	snprintf(name, sizeof(name), "ping_pong_%d", i);
 
 	status = g_lock_lock(ctx, string_term_tdb_data(name), G_LOCK_WRITE,
-			     (struct timeval) { .tv_sec = 60 });
+			     (struct timeval) { .tv_sec = 60 },
+			     NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock failed: %s\n",
 			nt_errstr(status));
@@ -1343,7 +1366,8 @@ bool run_g_lock_ping_pong(int dummy)
 
 		status = g_lock_lock(ctx, string_term_tdb_data(name),
 				     G_LOCK_WRITE,
-				     (struct timeval) { .tv_sec = 60 });
+				     (struct timeval) { .tv_sec = 60 },
+				     NULL, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr, "g_lock_lock failed: %s\n",
 				nt_errstr(status));

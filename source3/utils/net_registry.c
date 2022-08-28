@@ -613,7 +613,12 @@ static int net_registry_increment(struct net_context *c, int argc,
 		goto done;
 	}
 
-	status = g_lock_lock(ctx, lock_key, G_LOCK_WRITE, timeval_set(600, 0));
+	status = g_lock_lock(ctx,
+			     lock_key,
+			     G_LOCK_WRITE,
+			     timeval_set(600, 0),
+			     NULL,
+			     NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("g_lock_lock failed: %s\n"),
 			  nt_errstr(status));

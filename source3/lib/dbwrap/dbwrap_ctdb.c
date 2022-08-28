@@ -382,7 +382,7 @@ static int db_ctdb_transaction_start(struct db_context *db)
 	 * Wait a day, i.e. forever...
 	 */
 	status = g_lock_lock(ctx->lock_ctx, string_term_tdb_data(h->lock_name),
-			     G_LOCK_WRITE, timeval_set(86400, 0));
+			     G_LOCK_WRITE, timeval_set(86400, 0), NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("g_lock_lock failed: %s\n", nt_errstr(status)));
 		TALLOC_FREE(h);

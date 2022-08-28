@@ -1225,10 +1225,10 @@ not_granted:
 }
 
 NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
-		     enum g_lock_type type, struct timeval timeout)
+		     enum g_lock_type type, struct timeval timeout,
+		     g_lock_lock_cb_fn_t cb_fn,
+		     void *cb_private)
 {
-	g_lock_lock_cb_fn_t cb_fn = NULL;
-	void *cb_private = NULL;
 	TALLOC_CTX *frame;
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -1236,6 +1236,16 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 	NTSTATUS status;
 
 	SMB_ASSERT(!ctx->busy);
+
+	/*
+	 * We allow a cn_fn only for G_LOCK_WRITE for now.
+	 *
+	 * It's all we currently need and it makes a few things
+	 * easier to implement.
+	 */
+	if (unlikely(cb_fn != NULL && type != G_LOCK_WRITE)) {
+		return NT_STATUS_INVALID_PARAMETER_5;
+	}
 
 	if ((type == G_LOCK_READ) || (type == G_LOCK_WRITE)) {
 		/*

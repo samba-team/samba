@@ -1471,8 +1471,12 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	status = g_lock_lock(
-		ctx, key, G_LOCK_READ, (struct timeval) { .tv_sec = 60 });
+	status = g_lock_lock(ctx,
+			     key,
+			     G_LOCK_READ,
+			     (struct timeval) { .tv_sec = 60 },
+			     NULL,
+			     NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_lock(G_LOCK_READ) failed: %s\n",
 			    nt_errstr(status));
@@ -1500,8 +1504,12 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 		return NT_STATUS_OK;
 	}
 
-	status = g_lock_lock(
-		ctx, key, G_LOCK_UPGRADE, (struct timeval) { .tv_sec = 60 });
+	status = g_lock_lock(ctx,
+			     key,
+			     G_LOCK_UPGRADE,
+			     (struct timeval) { .tv_sec = 60 },
+			     NULL,
+			     NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_lock(G_LOCK_WRITE) failed: %s\n",
 			    nt_errstr(status));
@@ -1520,8 +1528,12 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 		return status;
 	}
 
-	status = g_lock_lock(
-		ctx, key, G_LOCK_DOWNGRADE, (struct timeval) { .tv_sec = 60 });
+	status = g_lock_lock(ctx,
+			     key,
+			     G_LOCK_DOWNGRADE,
+			     (struct timeval) { .tv_sec = 60 },
+			     NULL,
+			     NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_lock(G_LOCK_READ) failed: %s\n",
 			    nt_errstr(status));
