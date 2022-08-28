@@ -74,7 +74,9 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct g_lock_ctx *ctx,
 				    TDB_DATA key,
-				    enum g_lock_type type);
+				    enum g_lock_type type,
+				    g_lock_lock_cb_fn_t cb_fn,
+				    void *cb_private);
 NTSTATUS g_lock_lock_recv(struct tevent_req *req);
 NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 		     enum g_lock_type lock_type, struct timeval timeout);

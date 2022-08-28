@@ -990,7 +990,9 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct g_lock_ctx *ctx,
 				    TDB_DATA key,
-				    enum g_lock_type type)
+				    enum g_lock_type type,
+				    g_lock_lock_cb_fn_t cb_fn,
+				    void *cb_private)
 {
 	struct tevent_req *req;
 	struct g_lock_lock_state *state;
@@ -1008,10 +1010,23 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 	state->ctx = ctx;
 	state->key = key;
 	state->type = type;
+	state->cb_fn = cb_fn;
+	state->cb_private = cb_private;
 
 	fn_state = (struct g_lock_lock_fn_state) {
 		.req_state = state,
 	};
+
+	/*
+	 * We allow a cn_fn only for G_LOCK_WRITE for now.
+	 *
+	 * It's all we currently need and it makes a few things
+	 * easier to implement.
+	 */
+	if (unlikely(cb_fn != NULL && type != G_LOCK_WRITE)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_6);
+		return tevent_req_post(req, ev);
+	}
 
 	status = dbwrap_do_locked(ctx->db, key, g_lock_lock_fn, &fn_state);
 	if (tevent_req_nterror(req, status)) {
@@ -1113,6 +1128,9 @@ NTSTATUS g_lock_lock_recv(struct tevent_req *req)
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_WAS_UNLOCKED)) {
+			return NT_STATUS_OK;
+		}
 		return status;
 	}
 
@@ -1278,7 +1296,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = g_lock_lock_send(frame, ev, ctx, key, type);
+	req = g_lock_lock_send(frame, ev, ctx, key, type, cb_fn, cb_private);
 	if (req == NULL) {
 		goto fail;
 	}

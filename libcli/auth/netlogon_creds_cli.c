@@ -813,7 +813,8 @@ struct tevent_req *netlogon_creds_cli_lock_send(TALLOC_CTX *mem_ctx,
 	subreq = g_lock_lock_send(state, ev,
 				  context->db.g_ctx,
 				  string_term_tdb_data(context->db.key_name),
-				  G_LOCK_WRITE);
+				  G_LOCK_WRITE,
+				  NULL, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1027,7 +1028,8 @@ struct tevent_req *netlogon_creds_cli_lck_send(
 	subreq = g_lock_lock_send(state, ev,
 				  context->db.g_ctx,
 				  string_term_tdb_data(context->db.key_name),
-				  gtype);
+				  gtype,
+				  NULL, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

@@ -526,7 +526,7 @@ bool run_g_lock4(int dummy)
 		goto fail;
 	}
 
-	req = g_lock_lock_send(ev, ev, ctx, key, G_LOCK_WRITE);
+	req = g_lock_lock_send(ev, ev, ctx, key, G_LOCK_WRITE, NULL, NULL);
 	if (req == NULL) {
 		fprintf(stderr, "g_lock_lock send failed\n");
 		goto fail;
@@ -657,7 +657,7 @@ bool run_g_lock4a(int dummy)
 		goto fail;
 	}
 
-	req = g_lock_lock_send(ev, ev, ctx, key, G_LOCK_WRITE);
+	req = g_lock_lock_send(ev, ev, ctx, key, G_LOCK_WRITE, NULL, NULL);
 	if (req == NULL) {
 		fprintf(stderr, "g_lock_lock send failed\n");
 		goto fail;
@@ -1135,7 +1135,8 @@ bool run_g_lock7(int dummy)
 			ev,
 			ctx,
 			key,
-			G_LOCK_UPGRADE);
+			G_LOCK_UPGRADE,
+			NULL, NULL);
 		if (req == NULL) {
 			fprintf(stderr, "g_lock_lock_send(UPGRADE) failed\n");
 			exit(1);
