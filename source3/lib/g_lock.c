@@ -37,6 +37,7 @@ struct g_lock_ctx {
 	struct db_context *db;
 	struct messaging_context *msg;
 	enum dbwrap_lock_order lock_order;
+	bool busy;
 };
 
 struct g_lock {
@@ -198,7 +199,7 @@ struct g_lock_ctx *g_lock_ctx_init_backend(
 {
 	struct g_lock_ctx *result;
 
-	result = talloc(mem_ctx, struct g_lock_ctx);
+	result = talloc_zero(mem_ctx, struct g_lock_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -938,6 +939,8 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	bool ok;
 
+	SMB_ASSERT(!ctx->busy);
+
 	req = tevent_req_create(mem_ctx, &state, struct g_lock_lock_state);
 	if (req == NULL) {
 		return NULL;
@@ -1134,6 +1137,8 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 	struct timeval end;
 	NTSTATUS status;
 
+	SMB_ASSERT(!ctx->busy);
+
 	if ((type == G_LOCK_READ) || (type == G_LOCK_WRITE)) {
 		/*
 		 * This is an abstraction violation: Normally we do
@@ -1291,6 +1296,8 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, TDB_DATA key)
 	};
 	NTSTATUS status;
 
+	SMB_ASSERT(!ctx->busy);
+
 	status = dbwrap_do_locked(ctx->db, key, g_lock_unlock_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("dbwrap_do_locked failed: %s\n",
@@ -1390,6 +1397,8 @@ NTSTATUS g_lock_writev_data(
 	};
 	NTSTATUS status;
 
+	SMB_ASSERT(!ctx->busy);
+
 	status = dbwrap_do_locked(
 		ctx->db, key, g_lock_writev_data_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1437,6 +1446,8 @@ int g_lock_locks(struct g_lock_ctx *ctx,
 	struct g_lock_locks_state state;
 	NTSTATUS status;
 	int count;
+
+	SMB_ASSERT(!ctx->busy);
 
 	state.fn = fn;
 	state.private_data = private_data;
@@ -1522,6 +1533,8 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, TDB_DATA key,
 	};
 	NTSTATUS status;
 
+	SMB_ASSERT(!ctx->busy);
+
 	status = dbwrap_parse_record(ctx->db, key, g_lock_dump_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("dbwrap_parse_record returned %s\n",
@@ -1554,6 +1567,8 @@ struct tevent_req *g_lock_dump_send(
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct g_lock_dump_state *state = NULL;
 
+	SMB_ASSERT(!ctx->busy);
+
 	req = tevent_req_create(mem_ctx, &state, struct g_lock_dump_state);
 	if (req == NULL) {
 		return NULL;
@@ -1562,6 +1577,8 @@ struct tevent_req *g_lock_dump_send(
 	state->key = key;
 	state->fn = fn;
 	state->private_data = private_data;
+
+	SMB_ASSERT(!ctx->busy);
 
 	subreq = dbwrap_parse_record_send(
 		state,
@@ -1663,6 +1680,8 @@ struct tevent_req *g_lock_watch_data_send(
 	struct tevent_req *req = NULL;
 	struct g_lock_watch_data_state *state = NULL;
 	NTSTATUS status;
+
+	SMB_ASSERT(!ctx->busy);
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct g_lock_watch_data_state);
@@ -1839,6 +1858,8 @@ static void g_lock_wake_watchers_fn(
 void g_lock_wake_watchers(struct g_lock_ctx *ctx, TDB_DATA key)
 {
 	NTSTATUS status;
+
+	SMB_ASSERT(!ctx->busy);
 
 	status = dbwrap_do_locked(ctx->db, key, g_lock_wake_watchers_fn, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
