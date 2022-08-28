@@ -1034,6 +1034,7 @@ void dbwrap_watched_watch_skip_alerting(struct db_record *rec)
 {
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
 
+	wrec->wakeup.watcher = (struct dbwrap_watcher) { .instance = 0, };
 	wrec->watchers.alerted = true;
 }
 
