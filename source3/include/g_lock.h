@@ -25,6 +25,7 @@
 #include "dbwrap/dbwrap.h"
 
 struct g_lock_ctx;
+struct g_lock_lock_cb_state;
 struct messaging_context;
 
 enum g_lock_type {
@@ -42,6 +43,32 @@ void g_lock_set_lock_order(struct g_lock_ctx *ctx,
 			   enum dbwrap_lock_order lock_order);
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg);
+
+typedef void (*g_lock_lock_cb_fn_t)(struct g_lock_lock_cb_state *glck,
+				    void *cb_private);
+
+NTSTATUS g_lock_lock_cb_dump(struct g_lock_lock_cb_state *glck,
+			     void (*fn)(struct server_id exclusive,
+					size_t num_shared,
+					const struct server_id *shared,
+					const uint8_t *data,
+					size_t datalen,
+					void *private_data),
+			     void *private_data);
+NTSTATUS g_lock_lock_cb_writev(struct g_lock_lock_cb_state *glck,
+			       const TDB_DATA *dbufs,
+			       size_t num_dbufs);
+void g_lock_lock_cb_unlock(struct g_lock_lock_cb_state *glck);
+struct tevent_req *g_lock_lock_cb_watch_data_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct g_lock_lock_cb_state *cb_state,
+	struct server_id blocker);
+NTSTATUS g_lock_lock_cb_watch_data_recv(
+	struct tevent_req *req,
+	bool *blockerdead,
+	struct server_id *blocker);
+void g_lock_lock_cb_wake_watchers(struct g_lock_lock_cb_state *cb_state);
 
 struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,

@@ -334,6 +334,248 @@ static void g_lock_cleanup_shared(struct g_lock *lck)
 	}
 }
 
+struct g_lock_lock_cb_state {
+	struct g_lock_ctx *ctx;
+	struct db_record *rec;
+	struct g_lock *lck;
+	struct server_id *new_shared;
+	g_lock_lock_cb_fn_t cb_fn;
+	void *cb_private;
+	TALLOC_CTX *update_mem_ctx;
+	TDB_DATA updated_data;
+	bool existed;
+	bool modified;
+	bool unlock;
+};
+
+NTSTATUS g_lock_lock_cb_dump(struct g_lock_lock_cb_state *cb_state,
+			     void (*fn)(struct server_id exclusive,
+					size_t num_shared,
+					const struct server_id *shared,
+					const uint8_t *data,
+					size_t datalen,
+					void *private_data),
+			     void *private_data)
+{
+	struct g_lock *lck = cb_state->lck;
+
+	/* We allow a cn_fn only for G_LOCK_WRITE for now... */
+	SMB_ASSERT(lck->num_shared == 0);
+
+	fn(lck->exclusive,
+	   0, /* num_shared */
+	   NULL, /* shared */
+	   lck->data,
+	   lck->datalen,
+	   private_data);
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS g_lock_lock_cb_writev(struct g_lock_lock_cb_state *cb_state,
+			       const TDB_DATA *dbufs,
+			       size_t num_dbufs)
+{
+	NTSTATUS status;
+
+	status = dbwrap_merge_dbufs(&cb_state->updated_data,
+				    cb_state->update_mem_ctx,
+				    dbufs, num_dbufs);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	cb_state->modified = true;
+	cb_state->lck->data = cb_state->updated_data.dptr;
+	cb_state->lck->datalen = cb_state->updated_data.dsize;
+
+	return NT_STATUS_OK;
+}
+
+void g_lock_lock_cb_unlock(struct g_lock_lock_cb_state *cb_state)
+{
+	cb_state->unlock = true;
+}
+
+struct g_lock_lock_cb_watch_data_state {
+	struct tevent_context *ev;
+	struct g_lock_ctx *ctx;
+	TDB_DATA key;
+	struct server_id blocker;
+	bool blockerdead;
+	uint64_t unique_lock_epoch;
+	uint64_t unique_data_epoch;
+	uint64_t watch_instance;
+	NTSTATUS status;
+};
+
+static void g_lock_lock_cb_watch_data_done(struct tevent_req *subreq);
+
+struct tevent_req *g_lock_lock_cb_watch_data_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct g_lock_lock_cb_state *cb_state,
+	struct server_id blocker)
+{
+	struct tevent_req *req = NULL;
+	struct g_lock_lock_cb_watch_data_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+	TDB_DATA key = dbwrap_record_get_key(cb_state->rec);
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct g_lock_lock_cb_watch_data_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->ctx = cb_state->ctx;
+	state->blocker = blocker;
+
+	state->key = tdb_data_talloc_copy(state, key);
+	if (tevent_req_nomem(state->key.dptr, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->unique_lock_epoch = cb_state->lck->unique_lock_epoch;
+	state->unique_data_epoch = cb_state->lck->unique_data_epoch;
+
+	DBG_DEBUG("state->unique_data_epoch=%"PRIu64"\n", state->unique_data_epoch);
+
+	subreq = dbwrap_watched_watch_send(
+		state, state->ev, cb_state->rec, 0, state->blocker);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, g_lock_lock_cb_watch_data_done, req);
+
+	return req;
+}
+
+static void g_lock_lock_cb_watch_data_done_fn(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
+{
+	struct tevent_req *req = talloc_get_type_abort(
+		private_data, struct tevent_req);
+	struct g_lock_lock_cb_watch_data_state *state = tevent_req_data(
+		req, struct g_lock_lock_cb_watch_data_state);
+	struct tevent_req *subreq = NULL;
+	struct g_lock lck;
+	bool ok;
+
+	ok = g_lock_parse(value.dptr, value.dsize, &lck);
+	if (!ok) {
+		dbwrap_watched_watch_remove_instance(rec, state->watch_instance);
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return;
+	}
+
+	if (lck.unique_data_epoch != state->unique_data_epoch) {
+		dbwrap_watched_watch_remove_instance(rec, state->watch_instance);
+		DBG_DEBUG("lck.unique_data_epoch=%"PRIu64", "
+			  "state->unique_data_epoch=%"PRIu64"\n",
+			  lck.unique_data_epoch,
+			  state->unique_data_epoch);
+		state->status = NT_STATUS_OK;
+		return;
+	}
+
+	/*
+	 * The lock epoch changed, so we better
+	 * remove ourself from the waiter list
+	 * (most likely the first position)
+	 * and re-add us at the end of the list.
+	 *
+	 * This gives other lock waiters a change
+	 * to make progress.
+	 *
+	 * Otherwise we'll keep our waiter instance alive,
+	 * keep waiting (most likely at first position).
+	 */
+	if (lck.unique_lock_epoch != state->unique_lock_epoch) {
+		dbwrap_watched_watch_remove_instance(rec, state->watch_instance);
+		state->watch_instance = dbwrap_watched_watch_add_instance(rec);
+		state->unique_lock_epoch = lck.unique_lock_epoch;
+	}
+
+	subreq = dbwrap_watched_watch_send(
+		state, state->ev, rec, state->watch_instance, state->blocker);
+	if (subreq == NULL) {
+		dbwrap_watched_watch_remove_instance(rec, state->watch_instance);
+		state->status = NT_STATUS_NO_MEMORY;
+		return;
+	}
+	tevent_req_set_callback(subreq, g_lock_lock_cb_watch_data_done, req);
+
+	state->status = NT_STATUS_EVENT_PENDING;
+}
+
+static void g_lock_lock_cb_watch_data_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct g_lock_lock_cb_watch_data_state *state = tevent_req_data(
+		req, struct g_lock_lock_cb_watch_data_state);
+	NTSTATUS status;
+	uint64_t instance = 0;
+
+	status = dbwrap_watched_watch_recv(
+		subreq, &instance, &state->blockerdead, &state->blocker);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		DBG_DEBUG("dbwrap_watched_watch_recv returned %s\n",
+			  nt_errstr(status));
+		return;
+	}
+
+	state->watch_instance = instance;
+
+	status = dbwrap_do_locked(
+		state->ctx->db, state->key, g_lock_lock_cb_watch_data_done_fn, req);
+	if (tevent_req_nterror(req, status)) {
+		DBG_DEBUG("dbwrap_do_locked returned %s\n", nt_errstr(status));
+		return;
+	}
+	if (NT_STATUS_EQUAL(state->status, NT_STATUS_EVENT_PENDING)) {
+		return;
+	}
+	if (tevent_req_nterror(req, state->status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS g_lock_lock_cb_watch_data_recv(
+	struct tevent_req *req,
+	bool *blockerdead,
+	struct server_id *blocker)
+{
+	struct g_lock_lock_cb_watch_data_state *state = tevent_req_data(
+		req, struct g_lock_lock_cb_watch_data_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (blockerdead != NULL) {
+		*blockerdead = state->blockerdead;
+	}
+	if (blocker != NULL) {
+		*blocker = state->blocker;
+	}
+
+	return NT_STATUS_OK;
+}
+
+void g_lock_lock_cb_wake_watchers(struct g_lock_lock_cb_state *cb_state)
+{
+	struct g_lock *lck = cb_state->lck;
+
+	lck->unique_data_epoch = generate_unique_u64(lck->unique_data_epoch);
+	cb_state->modified = true;
+}
+
 struct g_lock_lock_state {
 	struct tevent_context *ev;
 	struct g_lock_ctx *ctx;
