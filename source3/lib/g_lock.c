@@ -861,16 +861,6 @@ do_shared:
 	 */
 	dbwrap_watched_watch_remove_instance(rec, state->watch_instance);
 
-	if (lck.num_shared == 0) {
-		status = g_lock_store(rec, &lck, &self, NULL, 0);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("g_lock_store() failed: %s\n",
-				  nt_errstr(status));
-		}
-
-		return status;
-	}
-
 	g_lock_cleanup_shared(&lck);
 
 	status = g_lock_store(rec, &lck, &self, NULL, 0);
