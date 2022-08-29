@@ -920,6 +920,8 @@ NTSTATUS share_mode_lock_access_private_data(struct share_mode_lock *lck,
 
 static int share_mode_lock_destructor(struct share_mode_lock *lck);
 
+static bool share_mode_lock_skip_g_lock;
+
 static NTSTATUS get_share_mode_lock_internal(
 	struct file_id id,
 	const char *servicepath,
@@ -934,18 +936,20 @@ static NTSTATUS get_share_mode_lock_internal(
 	};
 
 	if (share_mode_lock_key_refcount == 0) {
-		TDB_DATA key = locking_key(&id);
+		if (!share_mode_lock_skip_g_lock) {
+			TDB_DATA key = locking_key(&id);
 
-		status = g_lock_lock(
-			lock_ctx,
-			key,
-			G_LOCK_WRITE,
-			(struct timeval) { .tv_sec = 3600 },
-			NULL, NULL);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("g_lock_lock failed: %s\n",
-				  nt_errstr(status));
-			return status;
+			status = g_lock_lock(
+				lock_ctx,
+				key,
+				G_LOCK_WRITE,
+				(struct timeval) { .tv_sec = 3600 },
+				NULL, NULL);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_DEBUG("g_lock_lock failed: %s\n",
+					  nt_errstr(status));
+				return status;
+			}
 		}
 		share_mode_lock_key_id = id;
 	}
@@ -995,10 +999,12 @@ done:
 	return NT_STATUS_OK;
 fail:
 	if (share_mode_lock_key_refcount == 0) {
-		NTSTATUS ulstatus = g_lock_unlock(lock_ctx, share_mode_lock_key);
-		if (!NT_STATUS_IS_OK(ulstatus)) {
-			DBG_ERR("g_lock_unlock failed: %s\n",
-				nt_errstr(ulstatus));
+		if (!share_mode_lock_skip_g_lock) {
+			NTSTATUS ulstatus = g_lock_unlock(lock_ctx, share_mode_lock_key);
+			if (!NT_STATUS_IS_OK(ulstatus)) {
+				DBG_ERR("g_lock_unlock failed: %s\n",
+					nt_errstr(ulstatus));
+			}
 		}
 	}
 	return status;
@@ -1022,11 +1028,13 @@ static NTSTATUS put_share_mode_lock_internal(struct share_mode_lock *lck)
 		return status;
 	}
 
-	status = g_lock_unlock(lock_ctx, share_mode_lock_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("g_lock_unlock failed: %s\n",
-			nt_errstr(status));
-		return status;
+	if (!share_mode_lock_skip_g_lock) {
+		status = g_lock_unlock(lock_ctx, share_mode_lock_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("g_lock_unlock failed: %s\n",
+				nt_errstr(status));
+			return status;
+		}
 	}
 
 	if (!static_share_mode_data->not_stored) {
@@ -2772,6 +2780,61 @@ done:
 	return ret;
 }
 
+struct share_mode_do_locked_vfs_denied_state {
+	struct file_id id;
+	share_mode_do_locked_vfs_fn_t fn;
+	void *private_data;
+	const char *location;
+	NTSTATUS status;
+};
+
+static void share_mode_do_locked_vfs_denied_fn(struct g_lock_lock_cb_state *glck,
+					       void *cb_private)
+{
+	struct share_mode_do_locked_vfs_denied_state *state =
+		(struct share_mode_do_locked_vfs_denied_state *)cb_private;
+	struct smb_vfs_deny_state vfs_deny = {};
+	struct share_mode_lock lck;
+
+	if (glck != NULL) {
+		current_share_mode_glck = glck;
+	}
+
+	state->status = get_share_mode_lock_internal(state->id,
+						     NULL,  /* servicepath */
+						     NULL,  /* smb_fname */
+						     NULL,  /* old_write_time */
+						     &lck);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		DBG_GET_SHARE_MODE_LOCK(state->status,
+			"get_share_mode_lock_internal failed: %s\n",
+			nt_errstr(state->status));
+		if (glck != NULL) {
+			g_lock_lock_cb_unlock(glck);
+			current_share_mode_glck = NULL;
+		}
+		return;
+	}
+
+	_smb_vfs_deny_push(&vfs_deny, state->location);
+	state->fn(&lck, state->private_data);
+	_smb_vfs_deny_pop(&vfs_deny, state->location);
+
+	state->status = put_share_mode_lock_internal(&lck);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		DBG_ERR("put_share_mode_lock_internal failed: %s\n",
+			nt_errstr(state->status));
+		smb_panic("put_share_mode_lock_internal failed\n");
+		return;
+	}
+
+	if (glck != NULL) {
+		g_lock_lock_cb_unlock(glck);
+		current_share_mode_glck = NULL;
+	}
+	return;
+}
+
 /**
  * @brief Run @fn protected with G_LOCK_WRITE in the given file_id
  *
@@ -2791,35 +2854,37 @@ NTSTATUS _share_mode_do_locked_vfs_denied(
 	void *private_data,
 	const char *location)
 {
-	struct smb_vfs_deny_state vfs_deny = {};
-	struct share_mode_lock lck;
-	NTSTATUS status;
+	struct share_mode_do_locked_vfs_denied_state state = {
+		.id = id,
+		.fn = fn,
+		.private_data = private_data,
+		.location = location,
+	};
 
-	status = get_share_mode_lock_internal(id,
-					      NULL,  /* servicepath */
-					      NULL,  /* smb_fname */
-					      NULL,  /* old_write_time */
-					      &lck);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_GET_SHARE_MODE_LOCK(status,
-			"get_share_mode_lock_internal failed: %s\n",
-			nt_errstr(status));
-		return status;
+	if (share_mode_lock_key_refcount == 0) {
+		TDB_DATA key = locking_key(&id);
+		NTSTATUS status;
+
+		share_mode_lock_skip_g_lock = true;
+		status = g_lock_lock(
+			lock_ctx,
+			key,
+			G_LOCK_WRITE,
+			(struct timeval) { .tv_sec = 3600 },
+			share_mode_do_locked_vfs_denied_fn,
+			&state);
+		share_mode_lock_skip_g_lock = false;
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("g_lock_lock failed: %s\n",
+				  nt_errstr(status));
+			return status;
+		}
+		return state.status;
 	}
 
-	_smb_vfs_deny_push(&vfs_deny, location);
-	fn(&lck, private_data);
-	_smb_vfs_deny_pop(&vfs_deny, location);
+	share_mode_do_locked_vfs_denied_fn(NULL, &state);
 
-	status = put_share_mode_lock_internal(&lck);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("put_share_mode_lock_internal failed: %s\n",
-			nt_errstr(status));
-		smb_panic("put_share_mode_lock_internal failed\n");
-		return status;
-	}
-
-	return NT_STATUS_OK;
+	return state.status;
 }
 
 /**
