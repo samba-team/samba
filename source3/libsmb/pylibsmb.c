@@ -837,6 +837,349 @@ static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
 	return Py_BuildValue("I", (unsigned)fnum);
 }
 
+static struct smb2_create_blobs *py_cli_get_create_contexts(
+	TALLOC_CTX *mem_ctx, PyObject *list)
+{
+	struct smb2_create_blobs *ctxs = NULL;
+	Py_ssize_t i, len;
+	int ret;
+
+	ret = PyList_Check(list);
+	if (!ret) {
+		goto fail;
+	}
+
+	len = PyList_Size(list);
+	if (len == 0) {
+		goto fail;
+	}
+
+	ctxs = talloc_zero(mem_ctx, struct smb2_create_blobs);
+	if (ctxs == NULL) {
+		goto fail;
+	}
+
+	for (i=0; i<len; i++) {
+		NTSTATUS status;
+
+		PyObject *t = NULL;
+		Py_ssize_t tlen;
+
+		PyObject *pname = NULL;
+		char *name = NULL;
+
+		PyObject *pdata = NULL;
+		DATA_BLOB data = { .data = NULL, };
+
+		t = PyList_GetItem(list, i);
+		if (t == NULL) {
+			goto fail;
+		}
+
+		ret = PyTuple_Check(t);
+		if (!ret) {
+			goto fail;
+		}
+
+		tlen = PyTuple_Size(t);
+		if (tlen != 2) {
+			goto fail;
+		}
+
+		pname = PyTuple_GetItem(t, 0);
+		if (pname == NULL) {
+			goto fail;
+		}
+		ret = PyBytes_Check(pname);
+		if (!ret) {
+			goto fail;
+		}
+		name = PyBytes_AsString(pname);
+
+		pdata = PyTuple_GetItem(t, 1);
+		if (pdata == NULL) {
+			goto fail;
+		}
+		ret = PyBytes_Check(pdata);
+		if (!ret) {
+			goto fail;
+		}
+		data = (DATA_BLOB) {
+			.data = (uint8_t *)PyBytes_AsString(pdata),
+			.length = PyBytes_Size(pdata),
+		};
+		status = smb2_create_blob_add(ctxs, ctxs, name, data);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	}
+	return ctxs;
+
+fail:
+	TALLOC_FREE(ctxs);
+	return NULL;
+}
+
+static PyObject *py_cli_create_contexts(const struct smb2_create_blobs *blobs)
+{
+	PyObject *py_blobs = NULL;
+	PyObject *py_blob = NULL;
+	PyObject *tmp = NULL;
+	uint32_t i;
+
+	if (blobs == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	py_blobs = PyList_New(blobs->num_blobs);
+	if (py_blobs == NULL) {
+		goto fail;
+	}
+
+	for (i=0; i<blobs->num_blobs; i++) {
+		struct smb2_create_blob *blob = &blobs->blobs[i];
+		int ret;
+
+		py_blob = PyTuple_New(2);
+		if (py_blob == NULL) {
+			goto nomem;
+		}
+
+		tmp = PyBytes_FromString(blob->tag);
+		if (tmp == NULL) {
+			goto nomem;
+		}
+		ret = PyTuple_SetItem(py_blob, 0, tmp);
+		if (ret == -1) {
+			goto fail;
+		}
+
+		tmp = PyBytes_FromStringAndSize(
+			(char *)blob->data.data, blob->data.length);
+		if (tmp == NULL) {
+			goto nomem;
+		}
+		ret = PyTuple_SetItem(py_blob, 1, tmp);
+		if (ret == -1) {
+			goto fail;
+		}
+
+		ret = PyList_SetItem(py_blobs, i, py_blob);
+		if (ret == -1) {
+			goto fail;
+		}
+	}
+	return py_blobs;
+
+nomem:
+	PyErr_NoMemory();
+fail:
+	Py_XDECREF(tmp);
+	Py_XDECREF(py_blob);
+	Py_XDECREF(py_blobs);
+	return NULL;
+}
+
+static bool pydict_setnum(PyObject *dict, const char *key, uint64_t num)
+{
+	PyObject *py_num = NULL;
+	int ret;
+
+	py_num = PyLong_FromLong(num);
+	if (py_num == NULL) {
+		return false;
+	}
+
+	ret = PyDict_SetItemString(dict, key, py_num);
+	Py_CLEAR(py_num);
+	return (ret == 0);
+}
+
+static PyObject *py_cli_create_returns(const struct smb_create_returns *r)
+{
+	PyObject *v = NULL;
+	bool ok = true;
+
+	v = PyDict_New();
+	if (v == NULL) {
+		return NULL;
+	}
+	ok &= pydict_setnum(v, "oplock_level", r->oplock_level);
+	ok &= pydict_setnum(v, "create_action", r->create_action);
+	ok &= pydict_setnum(v, "creation_time", r->creation_time);
+	ok &= pydict_setnum(v, "last_access_time", r->last_access_time);
+	ok &= pydict_setnum(v, "last_write_time", r->last_write_time);
+	ok &= pydict_setnum(v, "change_time", r->change_time);
+	ok &= pydict_setnum(v, "allocation_size", r->allocation_size);
+	ok &= pydict_setnum(v, "end_of_file", r->end_of_file);
+	ok &= pydict_setnum(v, "file_attributes", r->file_attributes);
+
+	if (!ok) {
+		Py_CLEAR(v);
+		Py_RETURN_NONE;
+	}
+	return v;
+}
+
+static PyObject *py_cli_create_ex(
+	struct py_cli_state *self, PyObject *args, PyObject *kwds)
+{
+	char *fname = NULL;
+	unsigned CreateFlags = 0;
+	unsigned DesiredAccess = FILE_GENERIC_READ;
+	unsigned FileAttributes = 0;
+	unsigned ShareAccess = 0;
+	unsigned CreateDisposition = FILE_OPEN;
+	unsigned CreateOptions = 0;
+	unsigned ImpersonationLevel = SMB2_IMPERSONATION_IMPERSONATION;
+	unsigned SecurityFlags = 0;
+	PyObject *py_create_contexts_in = NULL;
+	PyObject *py_create_contexts_out = NULL;
+	struct smb2_create_blobs *create_contexts_in = NULL;
+	struct smb2_create_blobs create_contexts_out = { .num_blobs = 0 };
+	struct smb_create_returns cr = { .create_action = 0, };
+	PyObject *py_cr = NULL;
+	uint16_t fnum;
+	struct tevent_req *req;
+	NTSTATUS status;
+	int ret;
+	bool ok;
+	PyObject *v = NULL;
+
+	static const char *kwlist[] = {
+		"Name",
+		"CreateFlags",
+		"DesiredAccess",
+		"FileAttributes",
+		"ShareAccess",
+		"CreateDisposition",
+		"CreateOptions",
+		"ImpersonationLevel",
+		"SecurityFlags",
+		"CreateContexts",
+		NULL };
+
+	ret = ParseTupleAndKeywords(
+		args,
+		kwds,
+		"s|IIIIIIIIO",
+		kwlist,
+		&fname,
+		&CreateFlags,
+		&DesiredAccess,
+		&FileAttributes,
+		&ShareAccess,
+		&CreateDisposition,
+		&CreateOptions,
+		&ImpersonationLevel,
+		&SecurityFlags,
+		&py_create_contexts_in);
+	if (!ret) {
+		return NULL;
+	}
+
+	if (py_create_contexts_in != NULL) {
+		create_contexts_in = py_cli_get_create_contexts(
+			NULL, py_create_contexts_in);
+		if (create_contexts_in == NULL) {
+			errno = EINVAL;
+			PyErr_SetFromErrno(PyExc_RuntimeError);
+			return NULL;
+		}
+	}
+
+	if (smbXcli_conn_protocol(self->cli->conn) >= PROTOCOL_SMB2_02) {
+		req = cli_smb2_create_fnum_send(
+			NULL,
+			self->ev,
+			self->cli,
+			fname,
+			CreateFlags,
+			ImpersonationLevel,
+			DesiredAccess,
+			FileAttributes,
+			ShareAccess,
+			CreateDisposition,
+			CreateOptions,
+			create_contexts_in);
+	} else {
+		req = cli_ntcreate_send(
+			NULL,
+			self->ev,
+			self->cli,
+			fname,
+			CreateFlags,
+			DesiredAccess,
+			FileAttributes,
+			ShareAccess,
+			CreateDisposition,
+			CreateOptions,
+			ImpersonationLevel,
+			SecurityFlags);
+	}
+
+	TALLOC_FREE(create_contexts_in);
+
+	ok = py_tevent_req_wait_exc(self, req);
+	if (!ok) {
+		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(self->cli->conn) >= PROTOCOL_SMB2_02) {
+		status = cli_smb2_create_fnum_recv(
+			req, &fnum, &cr, NULL, &create_contexts_out);
+	} else {
+		status = cli_ntcreate_recv(req, &fnum, &cr);
+	}
+
+	TALLOC_FREE(req);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	py_create_contexts_out = py_cli_create_contexts(&create_contexts_out);
+	TALLOC_FREE(create_contexts_out.blobs);
+	if (py_create_contexts_out == NULL) {
+		goto nomem;
+	}
+
+	py_cr = py_cli_create_returns(&cr);
+	if (py_cr == NULL) {
+		goto nomem;
+	}
+
+	v = PyTuple_New(3);
+	if (v == NULL) {
+		goto nomem;
+	}
+	ret = PyTuple_SetItem(v, 0, Py_BuildValue("I", (unsigned)fnum));
+	if (ret == -1) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+	ret = PyTuple_SetItem(v, 1, py_cr);
+	if (ret == -1) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+	ret = PyTuple_SetItem(v, 2, py_create_contexts_out);
+	if (ret == -1) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+
+	return v;
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+fail:
+	Py_XDECREF(py_create_contexts_out);
+	Py_XDECREF(py_cr);
+	Py_XDECREF(v);
+	PyErr_SetNTSTATUS(status);
+	return NULL;
+}
+
 static PyObject *py_cli_close(struct py_cli_state *self, PyObject *args)
 {
 	struct tevent_req *req;
@@ -1921,6 +2264,10 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "create", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_create),
 		METH_VARARGS|METH_KEYWORDS,
 	  "Open a file" },
+	{ "create_ex",
+	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_create_ex),
+	  METH_VARARGS|METH_KEYWORDS,
+	  "Open a file, SMB2 version returning create contexts" },
 	{ "close", (PyCFunction)py_cli_close, METH_VARARGS,
 	  "Close a file handle" },
 	{ "write", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_write),

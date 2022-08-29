@@ -140,6 +140,18 @@ class LibsmbTestCase(samba.tests.TestCase):
         except:
             pass
 
+    def test_libsmb_CreateContexts(self):
+        (lp,creds) = self.prep_creds()
+        c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp", lp, creds)
+        cc_in = [(libsmb.SMB2_CREATE_TAG_MXAC, b'')]
+        fnum,cr,cc = c.create_ex("",CreateContexts=cc_in)
+        self.assertEqual(
+            cr['file_attributes'] & libsmb.FILE_ATTRIBUTE_DIRECTORY,
+            libsmb.FILE_ATTRIBUTE_DIRECTORY)
+        self.assertEqual(cc[0][0],libsmb.SMB2_CREATE_TAG_MXAC)
+        self.assertEqual(len(cc[0][1]),8)
+        c.close(fnum)
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
