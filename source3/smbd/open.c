@@ -3730,6 +3730,88 @@ static int calculate_open_access_flags(uint32_t access_mask,
 	return O_RDWR;
 }
 
+struct open_ntcreate_lock_state {
+	struct share_mode_entry_prepare_state prepare_state;
+	struct files_struct *fsp;
+	const char *object_type;
+	struct smb_request *req;
+	uint32_t create_disposition;
+	uint32_t access_mask;
+	uint32_t share_access;
+	int oplock_request;
+	const struct smb2_lease *lease;
+	bool first_open_attempt;
+	bool keep_locked;
+	NTSTATUS status;
+	struct timespec write_time;
+	share_mode_entry_prepare_unlock_fn_t cleanup_fn;
+};
+
+static void open_ntcreate_lock_add_entry(struct share_mode_lock *lck,
+					 bool *keep_locked,
+					 void *private_data)
+{
+	struct open_ntcreate_lock_state *state =
+		(struct open_ntcreate_lock_state *)private_data;
+
+	/*
+	 * By default drop the g_lock again if we leave the
+	 * tdb chainlock.
+	 */
+	*keep_locked = false;
+
+	state->status = check_and_store_share_mode(state->fsp,
+						   state->req,
+						   lck,
+						   state->create_disposition,
+						   state->access_mask,
+						   state->share_access,
+						   state->oplock_request,
+						   state->lease,
+						   state->first_open_attempt);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		return;
+	}
+
+	state->write_time = get_share_mode_write_time(lck);
+
+	/*
+	 * keep the g_lock while existing the tdb chainlock,
+	 * we we're asked to, which mean we'll keep
+	 * the share_mode_lock during object creation,
+	 * or setting delete on close.
+	 */
+	*keep_locked = state->keep_locked;
+}
+
+static void open_ntcreate_lock_cleanup_oplock(struct share_mode_lock *lck,
+					      void *private_data)
+{
+	struct open_ntcreate_lock_state *state =
+		(struct open_ntcreate_lock_state *)private_data;
+	bool ok;
+
+	ok = remove_share_oplock(lck, state->fsp);
+	if (!ok) {
+		DBG_ERR("Could not remove oplock for %s %s\n",
+			state->object_type, fsp_str_dbg(state->fsp));
+	}
+}
+
+static void open_ntcreate_lock_cleanup_entry(struct share_mode_lock *lck,
+					     void *private_data)
+{
+	struct open_ntcreate_lock_state *state =
+		(struct open_ntcreate_lock_state *)private_data;
+	bool ok;
+
+	ok = del_share_mode(lck, state->fsp);
+	if (!ok) {
+		DBG_ERR("Could not delete share entry for %s %s\n",
+			state->object_type, fsp_str_dbg(state->fsp));
+	}
+}
+
 /****************************************************************************
  Open a file with a share mode. Passed in an already created files_struct *.
 ****************************************************************************/
@@ -3763,12 +3845,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	mode_t unx_mode = (mode_t)0;
 	int info;
 	uint32_t existing_dos_attributes = 0;
-	struct share_mode_lock *lck = NULL;
+	struct open_ntcreate_lock_state lck_state = {};
+	bool keep_locked = false;
 	uint32_t open_access_mask = access_mask;
 	NTSTATUS status;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
 	bool setup_poll = false;
+	NTSTATUS ulstatus;
 
 	if (conn->printer) {
 		/*
@@ -4230,33 +4314,54 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
-				  conn->connectpath,
-				  smb_fname, &old_write_time);
-
-	if (lck == NULL) {
-		DEBUG(0, ("open_file_ntcreate: Could not get share "
-			  "mode lock for %s\n",
-			  smb_fname_str_dbg(smb_fname)));
-		fd_close(fsp);
-		return NT_STATUS_SHARING_VIOLATION;
+	/*
+	 * If we created a new file, overwrite an existing one
+	 * or going to delete it later, we should keep
+	 * the share_mode_lock (g_lock) until we call
+	 * share_mode_entry_prepare_unlock()
+	 */
+	if (info != FILE_WAS_OPENED) {
+		keep_locked = true;
+	} else if (create_options & FILE_DELETE_ON_CLOSE) {
+		keep_locked = true;
 	}
 
-	status = check_and_store_share_mode(
-		fsp,
-		req,
-		lck,
-		create_disposition,
-		access_mask,
-		share_access,
-		oplock_request,
-		lease,
-		first_open_attempt);
+	lck_state = (struct open_ntcreate_lock_state) {
+		.fsp			= fsp,
+		.object_type		= "file",
+		.req			= req,
+		.create_disposition	= create_disposition,
+		.access_mask		= access_mask,
+		.share_access		= share_access,
+		.oplock_request		= oplock_request,
+		.lease			= lease,
+		.first_open_attempt	= first_open_attempt,
+		.keep_locked		= keep_locked,
+	};
+
+	status = share_mode_entry_prepare_lock_add(&lck_state.prepare_state,
+						   fsp->file_id,
+						   conn->connectpath,
+						   smb_fname,
+						   &old_write_time,
+						   open_ntcreate_lock_add_entry,
+						   &lck_state);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(lck);
+		DBG_ERR("share_mode_entry_prepare_lock_add() failed for %s - %s\n",
+			smb_fname_str_dbg(smb_fname), nt_errstr(status));
 		fd_close(fsp);
 		return status;
 	}
+
+	status = lck_state.status;
+	if (!NT_STATUS_IS_OK(status)) {
+		fd_close(fsp);
+		return status;
+	}
+
+	/*
+	 * From here we need to use 'goto unlock;' instead of return !!!
+	 */
 
 	if (fsp->oplock_type != NO_OPLOCK && fsp->oplock_type != LEASE_OPLOCK) {
 		/*
@@ -4268,7 +4373,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			/*
 			 * Could not get the kernel oplock
 			 */
-			remove_share_oplock(lck, fsp);
+			lck_state.cleanup_fn =
+				open_ntcreate_lock_cleanup_oplock;
 			fsp->oplock_type = NO_OPLOCK;
 		}
 	}
@@ -4282,10 +4388,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		ret = SMB_VFS_FTRUNCATE(fsp, 0);
 		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
-			del_share_mode(lck, fsp);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-			return status;
+			lck_state.cleanup_fn =
+				open_ntcreate_lock_cleanup_entry;
+			goto unlock;
 		}
 		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_SIZE
@@ -4303,10 +4408,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	    !fsp_is_alternate_stream(fsp)) {
 		status = delete_all_streams(conn, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
-			del_share_mode(lck, fsp);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-			return status;
+			lck_state.cleanup_fn =
+				open_ntcreate_lock_cleanup_entry;
+			goto unlock;
 		}
 	}
 
@@ -4328,11 +4432,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 						   share_access,
 						   access_mask);
 		if (ret == -1){
-			del_share_mode(lck, fsp);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-
-			return NT_STATUS_SHARING_VIOLATION;
+			status = NT_STATUS_SHARING_VIOLATION;
+			lck_state.cleanup_fn =
+				open_ntcreate_lock_cleanup_entry;
+			goto unlock;
 		}
 
 		fsp->fsp_flags.kernel_share_modes_taken = true;
@@ -4373,10 +4476,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			if (!NT_STATUS_IS_OK(status)) {
 				/* Remember to delete the mode we just added. */
-				del_share_mode(lck, fsp);
-				TALLOC_FREE(lck);
-				fd_close(fsp);
-				return status;
+				lck_state.cleanup_fn =
+					open_ntcreate_lock_cleanup_entry;
+				goto unlock;
 			}
 		}
 		/* Note that here we set the *initial* delete on close flag,
@@ -4456,18 +4558,29 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	{
-		/*
-		 * Deal with other opens having a modified write time.
-		 */
-		struct timespec write_time = get_share_mode_write_time(lck);
-
-		if (!is_omit_timespec(&write_time)) {
-			update_stat_ex_mtime(&fsp->fsp_name->st, write_time);
-		}
+	/*
+	 * Deal with other opens having a modified write time.
+	 */
+	if (!is_omit_timespec(&lck_state.write_time)) {
+		update_stat_ex_mtime(&fsp->fsp_name->st, lck_state.write_time);
 	}
 
-	TALLOC_FREE(lck);
+	status = NT_STATUS_OK;
+
+unlock:
+	ulstatus = share_mode_entry_prepare_unlock(&lck_state.prepare_state,
+						   lck_state.cleanup_fn,
+						   &lck_state);
+	if (!NT_STATUS_IS_OK(ulstatus)) {
+		DBG_ERR("share_mode_entry_prepare_unlock() failed for %s - %s\n",
+			smb_fname_str_dbg(smb_fname), nt_errstr(ulstatus));
+		smb_panic("share_mode_entry_prepare_unlock() failed!");
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		fd_close(fsp);
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -4626,11 +4739,13 @@ static NTSTATUS open_directory(connection_struct *conn,
 {
 	struct smb_filename *smb_dname = fsp->fsp_name;
 	bool dir_existed = VALID_STAT(smb_dname->st);
-	struct share_mode_lock *lck = NULL;
+	struct open_ntcreate_lock_state lck_state = {};
+	bool keep_locked = false;
 	NTSTATUS status;
 	struct timespec mtimespec;
 	int info = 0;
 	uint32_t need_fd_access;
+	NTSTATUS ulstatus;
 
 	if (is_ntfs_stream_smb_fname(smb_dname)) {
 		DEBUG(2, ("open_directory: %s is a stream name!\n",
@@ -4889,42 +5004,62 @@ static NTSTATUS open_directory(connection_struct *conn,
 		}
 	}
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
-				  conn->connectpath, smb_dname,
-				  &mtimespec);
-
-	if (lck == NULL) {
-		DEBUG(0, ("open_directory: Could not get share mode lock for "
-			  "%s\n", smb_fname_str_dbg(smb_dname)));
-		fd_close(fsp);
-		return NT_STATUS_SHARING_VIOLATION;
+	/*
+	 * If we created a new directory or going to delete it later,
+	 * we should keep * the share_mode_lock (g_lock) until we call
+	 * share_mode_entry_prepare_unlock()
+	 */
+	if (info != FILE_WAS_OPENED) {
+		keep_locked = true;
+	} else if (create_options & FILE_DELETE_ON_CLOSE) {
+		keep_locked = true;
 	}
 
-	status = check_and_store_share_mode(
-		fsp,
-		req,
-		lck,
-		create_disposition,
-		access_mask,
-		share_access,
-		NO_OPLOCK,
-		NULL,  /* lease */
-		true); /* first_open_attempt */
+	lck_state = (struct open_ntcreate_lock_state) {
+		.fsp			= fsp,
+		.object_type		= "directory",
+		.req			= req,
+		.create_disposition	= create_disposition,
+		.access_mask		= access_mask,
+		.share_access		= share_access,
+		.oplock_request		= NO_OPLOCK,
+		.lease			= NULL,
+		.first_open_attempt	= true,
+		.keep_locked		= keep_locked,
+	};
+
+	status = share_mode_entry_prepare_lock_add(&lck_state.prepare_state,
+						   fsp->file_id,
+						   conn->connectpath,
+						   smb_dname,
+						   &mtimespec,
+						   open_ntcreate_lock_add_entry,
+						   &lck_state);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(lck);
+		DBG_ERR("share_mode_entry_prepare_lock_add() failed for %s - %s\n",
+			smb_fname_str_dbg(smb_dname), nt_errstr(status));
 		fd_close(fsp);
 		return status;
 	}
+
+	status = lck_state.status;
+	if (!NT_STATUS_IS_OK(status)) {
+		fd_close(fsp);
+		return status;
+	}
+
+	/*
+	 * From here we need to use 'goto unlock;' instead of return !!!
+	 */
 
 	/* For directories the delete on close bit at open time seems
 	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */
 	if (create_options & FILE_DELETE_ON_CLOSE) {
 		status = can_set_delete_on_close(fsp, 0);
 		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
-			del_share_mode(lck, fsp);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-			return status;
+			lck_state.cleanup_fn =
+				open_ntcreate_lock_cleanup_entry;
+			goto unlock;
 		}
 
 		if (NT_STATUS_IS_OK(status)) {
@@ -4934,22 +5069,32 @@ static NTSTATUS open_directory(connection_struct *conn,
 		}
 	}
 
-	{
-		/*
-		 * Deal with other opens having a modified write time. Is this
-		 * possible for directories?
-		 */
-		struct timespec write_time = get_share_mode_write_time(lck);
-
-		if (!is_omit_timespec(&write_time)) {
-			update_stat_ex_mtime(&fsp->fsp_name->st, write_time);
-		}
+	/*
+	 * Deal with other opens having a modified write time.
+	 */
+	if (!is_omit_timespec(&lck_state.write_time)) {
+		update_stat_ex_mtime(&fsp->fsp_name->st, lck_state.write_time);
 	}
-
-	TALLOC_FREE(lck);
 
 	if (pinfo) {
 		*pinfo = info;
+	}
+
+	status = NT_STATUS_OK;
+
+unlock:
+	ulstatus = share_mode_entry_prepare_unlock(&lck_state.prepare_state,
+						   lck_state.cleanup_fn,
+						   &lck_state);
+	if (!NT_STATUS_IS_OK(ulstatus)) {
+		DBG_ERR("share_mode_entry_prepare_unlock() failed for %s - %s\n",
+			smb_fname_str_dbg(smb_dname), nt_errstr(ulstatus));
+		smb_panic("share_mode_entry_prepare_unlock() failed!");
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		fd_close(fsp);
+		return status;
 	}
 
 	return NT_STATUS_OK;
