@@ -3608,3 +3608,730 @@ bool run_delete_on_close_nonwrite_delete_no_test(int dummy)
 	}
 	return ret;
 }
+
+/*
+ * Open an SMB2 file readonly and return the inode number.
+ */
+static NTSTATUS get_smb2_inode(struct cli_state *cli,
+				const char *pathname,
+				uint64_t *ino_ret)
+{
+	NTSTATUS status;
+	uint64_t fid_persistent = 0;
+	uint64_t fid_volatile = 0;
+	DATA_BLOB outbuf = data_blob_null;
+	/*
+	 * Open the file.
+	 */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				pathname,
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_FILE_READ_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_OPEN, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL); /* struct smb2_create_blobs * */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * Get the inode.
+	 */
+	status = smb2cli_query_info(cli->conn,
+				    cli->timeout,
+				    cli->smb2.session,
+				    cli->smb2.tcon,
+				    SMB2_0_INFO_FILE,
+				    (SMB_FILE_ALL_INFORMATION - 1000), /* in_file_info_class */
+				    1024, /* in_max_output_length */
+				    NULL, /* in_input_buffer */
+				    0, /* in_additional_info */
+				    0, /* in_flags */
+				    fid_persistent,
+				    fid_volatile,
+				    talloc_tos(),
+				    &outbuf);
+
+	if (NT_STATUS_IS_OK(status)) {
+		*ino_ret = PULL_LE_U64(outbuf.data, 0x40);
+	}
+
+	(void)smb2cli_close(cli->conn,
+			    cli->timeout,
+			    cli->smb2.session,
+			    cli->smb2.tcon,
+			    0,
+			    fid_persistent,
+			    fid_volatile);
+	return status;
+}
+
+/*
+ * Check an inode matches a given SMB2 path.
+ */
+static bool smb2_inode_matches(struct cli_state *cli,
+				const char *match_pathname,
+				uint64_t ino_tomatch,
+				const char *test_pathname)
+{
+	uint64_t test_ino = 0;
+	NTSTATUS status;
+
+	status = get_smb2_inode(cli,
+				test_pathname,
+				&test_ino);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s: Failed to get ino "
+			"number for %s, (%s)\n",
+			__func__,
+			test_pathname,
+			nt_errstr(status));
+		return false;
+	}
+	if (test_ino != ino_tomatch) {
+		printf("%s: Inode missmatch, ino_tomatch (%s) "
+			"ino=%"PRIu64" test (%s) "
+			"ino=%"PRIu64"\n",
+			__func__,
+			match_pathname,
+			ino_tomatch,
+			test_pathname,
+			test_ino);
+		return false;
+	}
+	return true;
+}
+
+/*
+ * Delete an SMB2 file on a DFS share.
+ */
+static NTSTATUS smb2_dfs_delete(struct cli_state *cli,
+				const char *pathname)
+{
+	NTSTATUS status;
+	uint64_t fid_persistent = 0;
+	uint64_t fid_volatile = 0;
+	uint8_t data[1];
+	DATA_BLOB inbuf;
+
+	/*
+	 * Open the file.
+	 */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				pathname,
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_STD_DELETE, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_OPEN, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL); /* struct smb2_create_blobs * */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * Set delete on close.
+	 */
+	PUSH_LE_U8(&data[0], 0, 1);
+	inbuf.data = &data[0];
+	inbuf.length = 1;
+
+	status = smb2cli_set_info(cli->conn,
+				  cli->timeout,
+				  cli->smb2.session,
+				  cli->smb2.tcon,
+				  SMB2_0_INFO_FILE, /* info_type. */
+				  SMB_FILE_DISPOSITION_INFORMATION - 1000, /* info_class */
+				  &inbuf,
+				  0, /* additional_info. */
+				  fid_persistent,
+				  fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = smb2cli_close(cli->conn,
+			       cli->timeout,
+			       cli->smb2.session,
+			       cli->smb2.tcon,
+			       0,
+			       fid_persistent,
+			       fid_volatile);
+	return status;
+}
+
+/*
+ * Rename or hardlink an SMB2 file on a DFS share.
+ */
+static NTSTATUS smb2_dfs_setinfo_name(struct cli_state *cli,
+				      uint64_t fid_persistent,
+				      uint64_t fid_volatile,
+				      const char *newname,
+				      bool do_rename)
+{
+	NTSTATUS status;
+	DATA_BLOB inbuf;
+	smb_ucs2_t *converted_str = NULL;
+	size_t converted_size_bytes = 0;
+	size_t inbuf_size;
+	uint8_t info_class = 0;
+	bool ok;
+
+	ok = push_ucs2_talloc(talloc_tos(),
+			      &converted_str,
+			      newname,
+			      &converted_size_bytes);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	/*
+	 * W2K8 insists the dest name is not null terminated. Remove
+	 * the last 2 zero bytes and reduce the name length.
+	 */
+	if (converted_size_bytes < 2) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	converted_size_bytes -= 2;
+	inbuf_size = 20 + converted_size_bytes;
+	if (inbuf_size < 20) {
+		/* Integer wrap check. */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/*
+	 * The Windows 10 SMB2 server has a minimum length
+	 * for a SMB2_FILE_RENAME_INFORMATION buffer of
+	 * 24 bytes. It returns NT_STATUS_INFO_LENGTH_MISMATCH
+	 * if the length is less.
+	 */
+	inbuf_size = MAX(inbuf_size, 24);
+	inbuf = data_blob_talloc_zero(talloc_tos(), inbuf_size);
+	if (inbuf.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+        }
+	PUSH_LE_U32(inbuf.data, 16, converted_size_bytes);
+	memcpy(inbuf.data + 20, converted_str, converted_size_bytes);
+	TALLOC_FREE(converted_str);
+
+	if (do_rename == true) {
+		info_class = SMB_FILE_RENAME_INFORMATION - 1000;
+	} else {
+		/* Hardlink. */
+		info_class = SMB_FILE_LINK_INFORMATION - 1000;
+	}
+
+	status = smb2cli_set_info(cli->conn,
+				  cli->timeout,
+				  cli->smb2.session,
+				  cli->smb2.tcon,
+				  SMB2_0_INFO_FILE, /* info_type. */
+				  info_class, /* info_class */
+				  &inbuf,
+				  0, /* additional_info. */
+				  fid_persistent,
+				  fid_volatile);
+	return status;
+}
+
+static NTSTATUS smb2_dfs_rename(struct cli_state *cli,
+				      uint64_t fid_persistent,
+				      uint64_t fid_volatile,
+				      const char *newname)
+{
+	return smb2_dfs_setinfo_name(cli,
+				     fid_persistent,
+				     fid_volatile,
+				     newname,
+				     true); /* do_rename */
+}
+
+static NTSTATUS smb2_dfs_hlink(struct cli_state *cli,
+			       uint64_t fid_persistent,
+			       uint64_t fid_volatile,
+			       const char *newname)
+{
+	return smb2_dfs_setinfo_name(cli,
+				     fid_persistent,
+				     fid_volatile,
+				     newname,
+				     false); /* do_rename */
+}
+
+/*
+ * According to:
+
+ * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/dc9978d7-6299-4c5a-a22d-a039cdc716ea
+ *
+ *  (Characters " \ / [ ] : | < > + = ; , * ?,
+ *  and control characters in range 0x00 through
+ *  0x1F, inclusive, are illegal in a share name)
+ *
+ * But Windows server only checks in DFS sharenames ':'. All other
+ * share names are allowed.
+ */
+
+static bool test_smb2_dfs_sharenames(struct cli_state *cli,
+				     const char *dfs_root_share_name,
+				     uint64_t root_ino)
+{
+	char test_path[9];
+	const char *test_str = "/[]:|<>+=;,*?";
+	const char *p;
+	unsigned int i;
+	bool ino_matched = false;
+
+	/* Setup template pathname. */
+	memcpy(test_path, "SERVER\\X", 9);
+
+	/* Test invalid control characters. */
+	for (i = 1; i < 0x20; i++) {
+		test_path[7] = i;
+		ino_matched = smb2_inode_matches(cli,
+					 dfs_root_share_name,
+					 root_ino,
+					 test_path);
+		if (!ino_matched) {
+			return false;
+		}
+	}
+
+	/* Test explicit invalid characters. */
+	for (p = test_str; *p != '\0'; p++) {
+		test_path[7] = *p;
+		if (*p == ':') {
+			/*
+			 * Only ':' is treated as an INVALID sharename
+			 * for a DFS SERVER\\SHARE path.
+			 */
+			uint64_t test_ino = 0;
+			NTSTATUS status = get_smb2_inode(cli,
+							 test_path,
+							 &test_ino);
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_INVALID)) {
+				printf("%s:%d Open of %s should get "
+					"NT_STATUS_OBJECT_NAME_INVALID, got %s\n",
+					__FILE__,
+					__LINE__,
+					test_path,
+					nt_errstr(status));
+				return false;
+			}
+		} else {
+			ino_matched = smb2_inode_matches(cli,
+						 dfs_root_share_name,
+						 root_ino,
+						 test_path);
+			if (!ino_matched) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+/*
+ * "Raw" test of SMB2 paths to a DFS share.
+ * We must use the lower level smb2cli_XXXX() interfaces,
+ * not the cli_XXX() ones here as the ultimate goal is to fix our
+ * cli_XXX() interfaces to work transparently over DFS.
+ *
+ * So here, we're testing the server code, not the client code.
+ *
+ * Passes cleanly against Windows.
+ */
+
+bool run_smb2_dfs_paths(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	bool dfs_supported = false;
+	char *dfs_root_share_name = NULL;
+	uint64_t root_ino = 0;
+	uint64_t test_ino = 0;
+	bool ino_matched = false;
+	uint64_t fid_persistent = 0;
+	uint64_t fid_volatile = 0;
+	bool retval = false;
+	bool ok = false;
+
+	printf("Starting SMB2-DFS-PATHS\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	/* Ensure this is a DFS share. */
+	dfs_supported = smbXcli_conn_dfs_supported(cli->conn);
+	if (!dfs_supported) {
+		printf("Server %s does not support DFS\n",
+			smbXcli_conn_remote_name(cli->conn));
+		return false;
+	}
+	dfs_supported = smbXcli_tcon_is_dfs_share(cli->smb2.tcon);
+	if (!dfs_supported) {
+		printf("Share %s does not support DFS\n",
+			cli->share);
+		return false;
+	}
+	/*
+	 * Create the "official" DFS share root name.
+	 * No SMB2 paths can start with '\\'.
+	 */
+	dfs_root_share_name = talloc_asprintf(talloc_tos(),
+					"%s\\%s",
+					smbXcli_conn_remote_name(cli->conn),
+					cli->share);
+	if (dfs_root_share_name == NULL) {
+		printf("Out of memory\n");
+		return false;
+	}
+
+	/* Get the share root inode number. */
+	status = get_smb2_inode(cli,
+				dfs_root_share_name,
+				&root_ino);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d Failed to get ino number for share root %s, (%s)\n",
+			__FILE__,
+			__LINE__,
+			dfs_root_share_name,
+			nt_errstr(status));
+		return false;
+	}
+
+	/*
+	 * Test the Windows algorithm for parsing DFS names.
+	 */
+	/*
+	 * A single "SERVER" element should open and match the share root.
+	 */
+	ino_matched = smb2_inode_matches(cli,
+					 dfs_root_share_name,
+					 root_ino,
+					 smbXcli_conn_remote_name(cli->conn));
+	if (!ino_matched) {
+		printf("%s:%d Failed to match ino number for %s\n",
+			__FILE__,
+			__LINE__,
+			smbXcli_conn_remote_name(cli->conn));
+		return false;
+	}
+
+	/* An "" (empty) server name should open and match the share root. */
+	ino_matched = smb2_inode_matches(cli,
+					 dfs_root_share_name,
+					 root_ino,
+					 "");
+	if (!ino_matched) {
+		printf("%s:%d Failed to match ino number for %s\n",
+			__FILE__,
+			__LINE__,
+			"");
+		return false;
+	}
+	/* A "BAD" server name should open and match the share root. */
+	ino_matched = smb2_inode_matches(cli,
+					 dfs_root_share_name,
+					 root_ino,
+					 "BAD");
+	if (!ino_matched) {
+		printf("%s:%d Failed to match ino number for %s\n",
+			__FILE__,
+			__LINE__,
+			"BAD");
+		return false;
+	}
+	/*
+	 * A "BAD\\BAD" server and share name should open
+	 * and match the share root.
+	 */
+	ino_matched = smb2_inode_matches(cli,
+					 dfs_root_share_name,
+					 root_ino,
+					 "BAD\\BAD");
+	if (!ino_matched) {
+		printf("%s:%d Failed to match ino number for %s\n",
+			__FILE__,
+			__LINE__,
+			"BAD\\BAD");
+		return false;
+	}
+	/*
+	 * Trying to open "BAD\\BAD\\BAD" should get
+	 * NT_STATUS_OBJECT_NAME_NOT_FOUND.
+	 */
+	status = get_smb2_inode(cli,
+				"BAD\\BAD\\BAD",
+				&test_ino);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		printf("%s:%d Open of %s should get "
+			"STATUS_OBJECT_NAME_NOT_FOUND, got %s\n",
+			__FILE__,
+			__LINE__,
+			"BAD\\BAD\\BAD",
+			nt_errstr(status));
+		return false;
+	}
+	/*
+	 * Trying to open "BAD\\BAD\\BAD\\BAD" should get
+	 * NT_STATUS_OBJECT_PATH_NOT_FOUND.
+	 */
+	status = get_smb2_inode(cli,
+				"BAD\\BAD\\BAD\\BAD",
+				&test_ino);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+		printf("%s:%d Open of %s should get "
+			"STATUS_OBJECT_NAME_NOT_FOUND, got %s\n",
+			__FILE__,
+			__LINE__,
+			"BAD\\BAD\\BAD\\BAD",
+			nt_errstr(status));
+		return false;
+	}
+	/*
+	 * Test for invalid pathname characters in the servername.
+	 * They are ignored, and it still opens the share root.
+	 */
+	ino_matched = smb2_inode_matches(cli,
+					 dfs_root_share_name,
+					 root_ino,
+					 "::::");
+	if (!ino_matched) {
+		printf("%s:%d Failed to match ino number for %s\n",
+			__FILE__,
+			__LINE__,
+			"::::");
+		return false;
+	}
+
+	/*
+	 * Test for invalid pathname characters in the sharename.
+	 * Invalid sharename characters should still be flagged as
+	 * NT_STATUS_OBJECT_NAME_INVALID. It turns out only ':'
+	 * is considered an invalid sharename character.
+	 */
+	ok = test_smb2_dfs_sharenames(cli,
+				      dfs_root_share_name,
+				      root_ino);
+	if (!ok) {
+		return false;
+	}
+
+	/* Now create a file called "file". */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				"BAD\\BAD\\file",
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_STD_DELETE |
+					SEC_FILE_READ_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_CREATE, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL); /* struct smb2_create_blobs * */
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d smb2cli_create on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			"BAD\\BAD\\file",
+			nt_errstr(status));
+		return false;
+	}
+
+	/*
+	 * Trying to open "BAD\\BAD\\file" should now get
+	 * a valid inode.
+	 */
+	status = get_smb2_inode(cli,
+				"BAD\\BAD\\file",
+				&test_ino);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d Open of %s should succeed "
+			"got %s\n",
+			__FILE__,
+			__LINE__,
+			"BAD\\BAD\\file",
+			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * Now show that renames use relative,
+	 * not full DFS paths.
+	 */
+
+	/* Full DFS path should fail. */
+	status = smb2_dfs_rename(cli,
+				 fid_persistent,
+				 fid_volatile,
+				 "ANY\\NAME\\renamed_file");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+		printf("%s:%d Rename of %s -> %s should fail "
+			"with NT_STATUS_OBJECT_PATH_NOT_FOUND. Got %s\n",
+			__FILE__,
+			__LINE__,
+			"BAD\\BAD\\file",
+			"ANY\\NAME\\renamed_file",
+			nt_errstr(status));
+		goto err;
+	}
+	/* Relative DFS path should succeed. */
+	status = smb2_dfs_rename(cli,
+				 fid_persistent,
+				 fid_volatile,
+				 "renamed_file");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d: Rename of %s -> %s should succeed. "
+			"Got %s\n",
+			__FILE__,
+			__LINE__,
+			"BAD\\BAD\\file",
+			"renamed_file",
+			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * Trying to open "BAD\\BAD\\renamed_file" should now get
+	 * a valid inode.
+	 */
+	status = get_smb2_inode(cli,
+				"BAD\\BAD\\renamed_file",
+				&test_ino);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d: Open of %s should succeed "
+			"got %s\n",
+			__FILE__,
+			__LINE__,
+			"BAD\\BAD\\renamed_file",
+			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * Now show that hard links use relative,
+	 * not full DFS paths.
+	 */
+
+	/* Full DFS path should fail. */
+	status = smb2_dfs_hlink(cli,
+				 fid_persistent,
+				 fid_volatile,
+				 "ANY\\NAME\\hlink");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+		printf("%s:%d Hlink of %s -> %s should fail "
+			"with NT_STATUS_OBJECT_PATH_NOT_FOUND. Got %s\n",
+			__FILE__,
+			__LINE__,
+			"ANY\\NAME\\renamed_file",
+			"ANY\\NAME\\hlink",
+			nt_errstr(status));
+		goto err;
+	}
+	/* Relative DFS path should succeed. */
+	status = smb2_dfs_hlink(cli,
+				 fid_persistent,
+				 fid_volatile,
+				 "hlink");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d: Hlink of %s -> %s should succeed. "
+			"Got %s\n",
+			__FILE__,
+			__LINE__,
+			"ANY\\NAME\\renamed_file",
+			"hlink",
+			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * Trying to open "BAD\\BAD\\hlink" should now get
+	 * a valid inode.
+	 */
+	status = get_smb2_inode(cli,
+				"BAD\\BAD\\hlink",
+				&test_ino);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d Open of %s should succeed "
+			"got %s\n",
+			__FILE__,
+			__LINE__,
+			"BAD\\BAD\\hlink",
+			nt_errstr(status));
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	if (fid_persistent != 0 || fid_volatile != 0) {
+		smb2cli_close(cli->conn,
+			      cli->timeout,
+			      cli->smb2.session,
+			      cli->smb2.tcon,
+			      0, /* flags */
+			      fid_persistent,
+			      fid_volatile);
+	}
+	/* Delete anything we made. */
+	(void)smb2_dfs_delete(cli, "BAD\\BAD\\BAD");
+	(void)smb2_dfs_delete(cli, "BAD\\BAD\\file");
+	(void)smb2_dfs_delete(cli, "BAD\\BAD\\renamed_file");
+	(void)smb2_dfs_delete(cli, "BAD\\BAD\\hlink");
+	return retval;
+}

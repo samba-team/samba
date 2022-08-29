@@ -120,6 +120,7 @@ bool run_smb2_path_slash(int dummy);
 bool run_smb2_sacl(int dummy);
 bool run_smb2_quota1(int dummy);
 bool run_smb2_stream_acl(int dummy);
+bool run_smb2_dfs_paths(int dummy);
 bool run_list_dir_async_test(int dummy);
 bool run_delete_on_close_non_empty(int dummy);
 bool run_delete_on_close_nonwrite_delete_yes_test(int dummy);

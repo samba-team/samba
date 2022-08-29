@@ -15358,6 +15358,10 @@ static struct {
 		.fn    = run_delete_on_close_nonwrite_delete_no_test,
 	},
 	{
+		.name  = "SMB2-DFS-PATHS",
+		.fn    = run_smb2_dfs_paths,
+	},
+	{
 		.name  = "CLEANUP1",
 		.fn    = run_cleanup1,
 	},
