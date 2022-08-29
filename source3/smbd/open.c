@@ -3060,11 +3060,12 @@ static void poll_open_done(struct tevent_req *subreq);
  **/
 static bool setup_poll_open(
 	struct smb_request *req,
-	struct share_mode_lock *lck,
-	struct file_id id,
+	const struct file_id *id,
 	struct timeval max_timeout,
 	struct timeval interval)
 {
+	struct share_mode_lock *lck = NULL;
+	static struct file_id zero_id = {};
 	bool ok;
 	struct deferred_open_record *open_rec = NULL;
 	struct timeval endtime, next_interval;
@@ -3103,12 +3104,23 @@ static bool setup_poll_open(
 		return false;
 	}
 
+	if (id != NULL) {
+		lck = get_existing_share_mode_lock(talloc_tos(), *id);
+
+		if ((lck != NULL) && !validate_oplock_types(lck)) {
+		        smb_panic("validate_oplock_types failed");
+		}
+	} else {
+		id = &zero_id;
+	}
+
 	if (lck != NULL) {
 		open_rec->watch_req = share_mode_watch_send(
 			open_rec,
 			req->sconn->ev_ctx,
 			lck,
 			(struct server_id) {0});
+		TALLOC_FREE(lck);
 		if (open_rec->watch_req == NULL) {
 			DBG_WARNING("share_mode_watch_send failed\n");
 			TALLOC_FREE(open_rec);
@@ -3118,7 +3130,7 @@ static bool setup_poll_open(
 			open_rec->watch_req, poll_open_done, open_rec);
 	}
 
-	ok = push_deferred_open_message_smb(req, max_timeout, id, open_rec);
+	ok = push_deferred_open_message_smb(req, max_timeout, *id, open_rec);
 	if (!ok) {
 		DBG_WARNING("push_deferred_open_message_smb failed\n");
 		TALLOC_FREE(open_rec);
@@ -3128,7 +3140,7 @@ static bool setup_poll_open(
 	DBG_DEBUG("poll request time [%s] mid [%" PRIu64 "] file_id [%s]\n",
 		  timeval_string(talloc_tos(), &req->request_time, false),
 		  req->mid,
-		  file_id_str_buf(id, &ftmp));
+		  file_id_str_buf(*id, &ftmp));
 
 	return true;
 }
@@ -3180,7 +3192,6 @@ bool defer_smb1_sharing_violation(struct smb_request *req)
 	ok = setup_poll_open(
 		req,
 		NULL,
-		(struct file_id) {0},
 		(struct timeval) { .tv_usec = timeout_usecs },
 		(struct timeval) { .tv_usec = 200000 });
 	return ok;
@@ -3985,16 +3996,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (setup_poll) {
 		/*
-		 * From here on we assume this is an oplock break triggered
-		 */
-
-		lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
-
-		if ((lck != NULL) && !validate_oplock_types(lck)) {
-			smb_panic("validate_oplock_types failed");
-		}
-
-		/*
 		 * Retry once a second. If there's a share_mode_lock
 		 * around, also wait for it in case it was smbd
 		 * holding that kernel oplock that can quickly tell us
@@ -4003,12 +4004,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		setup_poll_open(
 			req,
-			lck,
-			fsp->file_id,
+			&fsp->file_id,
 			timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0),
 			timeval_set(1, 0));
-
-		TALLOC_FREE(lck);
 
 		return NT_STATUS_SHARING_VIOLATION;
 	}
