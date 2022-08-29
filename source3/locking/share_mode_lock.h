@@ -152,4 +152,54 @@ NTSTATUS _share_mode_do_locked_vfs_allowed(
 #define share_mode_do_locked_vfs_allowed(__id, __fn, __private_data) \
 	_share_mode_do_locked_vfs_allowed(__id, __fn, __private_data, __location__)
 
+struct share_mode_entry_prepare_state {
+	struct file_id __fid;
+	struct share_mode_lock *__lck_ptr;
+	union {
+#define __SHARE_MODE_LOCK_SPACE 32
+		uint8_t __u8_space[__SHARE_MODE_LOCK_SPACE];
+#ifdef SHARE_MODE_ENTRY_PREPARE_STATE_LCK_SPACE
+		struct share_mode_lock __lck_space;
+#endif
+	};
+};
+
+typedef void (*share_mode_entry_prepare_lock_fn_t)(
+		struct share_mode_lock *lck,
+		bool *keep_locked,
+		void *private_data);
+NTSTATUS _share_mode_entry_prepare_lock(
+	struct share_mode_entry_prepare_state *prepare_state,
+	struct file_id id,
+	const char *servicepath,
+	const struct smb_filename *smb_fname,
+	const struct timespec *old_write_time,
+	share_mode_entry_prepare_lock_fn_t fn,
+	void *private_data,
+	const char *location);
+#define share_mode_entry_prepare_lock_add(__prepare_state, __id, \
+		__servicepath, __smb_fname, __old_write_time, \
+		__fn, __private_data) \
+	_share_mode_entry_prepare_lock(__prepare_state, __id, \
+		__servicepath, __smb_fname, __old_write_time, \
+		__fn, __private_data, __location__);
+#define share_mode_entry_prepare_lock_del(__prepare_state, __id, \
+		__fn, __private_data) \
+	_share_mode_entry_prepare_lock(__prepare_state, __id, \
+		NULL, NULL, NULL, \
+		__fn, __private_data, __location__);
+
+typedef void (*share_mode_entry_prepare_unlock_fn_t)(
+		struct share_mode_lock *lck,
+		void *private_data);
+NTSTATUS _share_mode_entry_prepare_unlock(
+	struct share_mode_entry_prepare_state *prepare_state,
+	share_mode_entry_prepare_unlock_fn_t fn,
+	void *private_data,
+	const char *location);
+#define share_mode_entry_prepare_unlock(__prepare_state, \
+		__fn, __private_data) \
+	_share_mode_entry_prepare_unlock(__prepare_state, \
+		__fn, __private_data, __location__);
+
 #endif
