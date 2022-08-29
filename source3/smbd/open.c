@@ -3055,6 +3055,33 @@ static void poll_open_fn(struct tevent_context *ev,
 
 static void poll_open_done(struct tevent_req *subreq);
 
+struct poll_open_setup_watcher_state {
+	TALLOC_CTX *mem_ctx;
+	struct tevent_context *ev_ctx;
+	struct tevent_req *watch_req;
+};
+
+static void poll_open_setup_watcher_fn(struct share_mode_lock *lck,
+					     void *private_data)
+{
+	struct poll_open_setup_watcher_state *state =
+		(struct poll_open_setup_watcher_state *)private_data;
+
+	if (!validate_oplock_types(lck)) {
+		smb_panic("validate_oplock_types failed");
+	}
+
+	state->watch_req = share_mode_watch_send(
+			state->mem_ctx,
+			state->ev_ctx,
+			lck,
+			(struct server_id) {0});
+	if (state->watch_req == NULL) {
+		DBG_WARNING("share_mode_watch_send failed\n");
+		return;
+	}
+}
+
 /**
  * Reschedule an open for 1 second from now, if not timed out.
  **/
@@ -3064,7 +3091,6 @@ static bool setup_poll_open(
 	struct timeval max_timeout,
 	struct timeval interval)
 {
-	struct share_mode_lock *lck = NULL;
 	static struct file_id zero_id = {};
 	bool ok;
 	struct deferred_open_record *open_rec = NULL;
@@ -3105,29 +3131,33 @@ static bool setup_poll_open(
 	}
 
 	if (id != NULL) {
-		lck = get_existing_share_mode_lock(talloc_tos(), *id);
+		struct poll_open_setup_watcher_state wstate = {
+			.mem_ctx = open_rec,
+			.ev_ctx = req->sconn->ev_ctx,
+		};
+		NTSTATUS status;
 
-		if ((lck != NULL) && !validate_oplock_types(lck)) {
-		        smb_panic("validate_oplock_types failed");
-		}
-	} else {
-		id = &zero_id;
-	}
-
-	if (lck != NULL) {
-		open_rec->watch_req = share_mode_watch_send(
-			open_rec,
-			req->sconn->ev_ctx,
-			lck,
-			(struct server_id) {0});
-		TALLOC_FREE(lck);
-		if (open_rec->watch_req == NULL) {
-			DBG_WARNING("share_mode_watch_send failed\n");
+		status = share_mode_do_locked_vfs_denied(*id,
+						poll_open_setup_watcher_fn,
+						&wstate);
+		if (NT_STATUS_IS_OK(status)) {
+			if (wstate.watch_req == NULL) {
+				DBG_WARNING("share_mode_watch_send failed\n");
+				TALLOC_FREE(open_rec);
+				return false;
+			}
+			open_rec->watch_req = wstate.watch_req;
+			tevent_req_set_callback(open_rec->watch_req,
+						poll_open_done,
+						open_rec);
+		} else if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			DBG_WARNING("share_mode_do_locked_vfs_denied failed - %s\n",
+				    nt_errstr(status));
 			TALLOC_FREE(open_rec);
 			return false;
 		}
-		tevent_req_set_callback(
-			open_rec->watch_req, poll_open_done, open_rec);
+	} else {
+		id = &zero_id;
 	}
 
 	ok = push_deferred_open_message_smb(req, max_timeout, *id, open_rec);
