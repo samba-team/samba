@@ -75,6 +75,38 @@ struct share_mode_lock {
 
 /* the locking database handle */
 static struct g_lock_ctx *lock_ctx;
+static struct g_lock_lock_cb_state *current_share_mode_glck = NULL;
+
+static bool share_mode_g_lock_within_cb(TDB_DATA key);
+
+static NTSTATUS share_mode_g_lock_dump(TDB_DATA key,
+				       void (*fn)(struct server_id exclusive,
+						  size_t num_shared,
+						  const struct server_id *shared,
+						  const uint8_t *data,
+						  size_t datalen,
+						  void *private_data),
+				       void *private_data)
+{
+	if (share_mode_g_lock_within_cb(key)) {
+		return g_lock_lock_cb_dump(current_share_mode_glck,
+					   fn, private_data);
+	}
+
+	return g_lock_dump(lock_ctx, key, fn, private_data);
+}
+
+static NTSTATUS share_mode_g_lock_writev(TDB_DATA key,
+					 const TDB_DATA *dbufs,
+					 size_t num_dbufs)
+{
+	if (share_mode_g_lock_within_cb(key)) {
+		return g_lock_lock_cb_writev(current_share_mode_glck,
+					     dbufs, num_dbufs);
+	}
+
+	return g_lock_writev_data(lock_ctx, key, dbufs, num_dbufs);
+}
 
 static bool locking_init_internal(bool read_only)
 {
@@ -441,8 +473,7 @@ static NTSTATUS locking_tdb_data_fetch(
 	}
 	state.mem_ctx = result;
 
-	status = g_lock_dump(lock_ctx, key, locking_tdb_data_fetch_fn, &state);
-
+	status = share_mode_g_lock_dump(key, locking_tdb_data_fetch_fn, &state);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		/*
 		 * Just return an empty record
@@ -450,7 +481,7 @@ static NTSTATUS locking_tdb_data_fetch(
 		goto done;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("g_lock_dump failed: %s\n",
+		DBG_ERR("share_mode_g_lock_dump failed: %s\n",
 			nt_errstr(status));
 		return status;
 	}
@@ -487,9 +518,9 @@ static NTSTATUS locking_tdb_data_store(
 		/*
 		 * Nothing to write
 		 */
-		status = g_lock_write_data(lock_ctx, key, NULL, 0);
+		status = share_mode_g_lock_writev(key, NULL, 0);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("g_lock_writev_data() failed: %s\n",
+			DBG_ERR("share_mode_g_lock_writev(NULL) failed: %s\n",
 				nt_errstr(status));
 		}
 		return status;
@@ -521,9 +552,9 @@ static NTSTATUS locking_tdb_data_store(
 		       num_share_mode_dbufs * sizeof(TDB_DATA));
 	}
 
-	status = g_lock_writev_data(lock_ctx, key, dbufs, ARRAY_SIZE(dbufs));
+	status = share_mode_g_lock_writev(key, dbufs, ARRAY_SIZE(dbufs));
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("g_lock_writev_data() failed: %s\n",
+		DBG_ERR("share_mode_g_lock_writev() failed: %s\n",
 			nt_errstr(status));
 	}
 	return status;
@@ -732,6 +763,29 @@ static TDB_DATA share_mode_lock_key = {
 };
 static size_t share_mode_lock_key_refcount = 0;
 
+static bool share_mode_g_lock_within_cb(TDB_DATA key)
+{
+	int cmp;
+
+	if (current_share_mode_glck == NULL) {
+		return false;
+	}
+
+	cmp = tdb_data_cmp(share_mode_lock_key, key);
+	if (cmp != 0) {
+		struct file_id_buf existing;
+
+		DBG_ERR("Can not lock two share modes "
+			"simultaneously: existing %s requested %s\n",
+			file_id_str_buf(share_mode_lock_key_id, &existing),
+			hex_encode_talloc(talloc_tos(), key.dptr, key.dsize));
+		smb_panic(__location__);
+		return false;
+	}
+
+	return true;
+}
+
 /*
  * We can only ever have one share mode locked. Use a static
  * share_mode_data pointer that is shared by multiple nested
@@ -823,14 +877,13 @@ static NTSTATUS get_static_share_mode_data(
 
 	SMB_ASSERT(static_share_mode_data == NULL);
 
-	status = g_lock_dump(
-		lock_ctx,
+	status = share_mode_g_lock_dump(
 		share_mode_lock_key,
 		get_static_share_mode_data_fn,
 		&state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_GET_SHARE_MODE_LOCK(status,
-			"g_lock_dump failed: %s\n",
+			"share_mode_g_lock_dump failed: %s\n",
 			nt_errstr(status));
 		return status;
 	}
@@ -1051,6 +1104,11 @@ static void share_mode_wakeup_waiters_fn(
 	struct share_mode_lock *lck,
 	void *private_data)
 {
+	if (share_mode_g_lock_within_cb(share_mode_lock_key)) {
+		g_lock_lock_cb_wake_watchers(current_share_mode_glck);
+		return;
+	}
+
 	g_lock_wake_watchers(lock_ctx, share_mode_lock_key);
 }
 
@@ -1125,12 +1183,12 @@ static NTSTATUS fsp_update_share_mode_flags(struct files_struct *fsp)
 	}
 
 	key = locking_key(&fsp->file_id);
-	status = g_lock_dump(lock_ctx, key,
+	status = share_mode_g_lock_dump(key,
 			     fsp_update_share_mode_flags_fn,
 			     &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* no DBG_GET_SHARE_MODE_LOCK here! */
-		DBG_ERR("g_lock_dump returned %s\n",
+		DBG_ERR("share_mode_g_lock_dump returned %s\n",
 			nt_errstr(status));
 		return status;
 	}
@@ -1364,6 +1422,7 @@ void share_mode_flags_set(
 struct share_mode_watch_state {
 	bool blockerdead;
 	struct server_id blocker;
+	bool within_cb;
 };
 
 static void share_mode_watch_done(struct tevent_req *subreq);
@@ -1385,9 +1444,19 @@ struct tevent_req *share_mode_watch_send(
 		return NULL;
 	}
 
-	subreq = g_lock_watch_data_send(state, ev, lock_ctx, key, blocker);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+	if (share_mode_g_lock_within_cb(key)) {
+		state->within_cb = true;
+		subreq = g_lock_lock_cb_watch_data_send(state, ev,
+							current_share_mode_glck,
+							blocker);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+	} else {
+		subreq = g_lock_watch_data_send(state, ev, lock_ctx, key, blocker);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
 	}
 	tevent_req_set_callback(subreq, share_mode_watch_done, req);
 	return req;
@@ -1401,11 +1470,20 @@ static void share_mode_watch_done(struct tevent_req *subreq)
 		req, struct share_mode_watch_state);
 	NTSTATUS status;
 
-	status = g_lock_watch_data_recv(
-		subreq, &state->blockerdead, &state->blocker);
-	if (tevent_req_nterror(req, status)) {
-		return;
+	if (state->within_cb) {
+		status = g_lock_lock_cb_watch_data_recv(
+			subreq, &state->blockerdead, &state->blocker);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	} else {
+		status = g_lock_watch_data_recv(
+			subreq, &state->blockerdead, &state->blocker);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
 	}
+
 	tevent_req_done(req);
 }
 
@@ -1723,8 +1801,8 @@ static int share_mode_forall_fn(TDB_DATA key, void *private_data)
 
 	state->key = key;
 
-	status = g_lock_dump(
-		lock_ctx, key, share_mode_forall_dump_fn, private_data);
+	status = share_mode_g_lock_dump(
+		key, share_mode_forall_dump_fn, private_data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_GET_SHARE_MODE_LOCK(status,
 			"g_lock_dump failed: %s\n",
