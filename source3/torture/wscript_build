@@ -35,6 +35,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         test_notify_online.c
                         test_chain3.c
                         test_smb2.c
+                        test_smb1_dfs.c
                         test_authinfo_structs.c
                         test_smbsock_any_connect.c
                         test_cleanup.c
