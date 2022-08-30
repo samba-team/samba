@@ -36,6 +36,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/time_basic.h"
 #include "system/filesys.h"
 #include "lib/util/server_id.h"
 #include "share_mode_lock.h"
@@ -1166,6 +1167,42 @@ NTTIME share_mode_changed_write_time(struct share_mode_lock *lck)
 {
 	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
 	return d->changed_write_time;
+}
+
+void share_mode_set_changed_write_time(struct share_mode_lock *lck, struct timespec write_time)
+{
+	struct file_id fileid = share_mode_lock_file_id(lck);
+	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
+	struct file_id_buf ftmp;
+	struct timeval_buf tbuf;
+	NTTIME nt = full_timespec_to_nt_time(&write_time);
+
+	DBG_INFO("%s id=%s\n",
+		 timespec_string_buf(&write_time, true, &tbuf),
+		 file_id_str_buf(fileid, &ftmp));
+
+	if (d->changed_write_time != nt) {
+		d->modified = true;
+		d->changed_write_time = nt;
+	}
+}
+
+void share_mode_set_old_write_time(struct share_mode_lock *lck, struct timespec write_time)
+{
+	struct file_id fileid = share_mode_lock_file_id(lck);
+	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
+	struct file_id_buf ftmp;
+	struct timeval_buf tbuf;
+	NTTIME nt = full_timespec_to_nt_time(&write_time);
+
+	DBG_INFO("%s id=%s\n",
+		 timespec_string_buf(&write_time, true, &tbuf),
+		 file_id_str_buf(fileid, &ftmp));
+
+	if (d->changed_write_time != nt) {
+		d->modified = true;
+		d->old_write_time = nt;
+	}
 }
 
 const char *share_mode_servicepath(struct share_mode_lock *lck)

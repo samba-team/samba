@@ -106,6 +106,8 @@ bool share_mode_forall_entries(
 	void *private_data);
 
 NTTIME share_mode_changed_write_time(struct share_mode_lock *lck);
+void share_mode_set_changed_write_time(struct share_mode_lock *lck, struct timespec write_time);
+void share_mode_set_old_write_time(struct share_mode_lock *lck, struct timespec write_time);
 const char *share_mode_servicepath(struct share_mode_lock *lck);
 char *share_mode_filename(TALLOC_CTX *mem_ctx, struct share_mode_lock *lck);
 char *share_mode_data_dump(
