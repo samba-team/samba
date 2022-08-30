@@ -564,11 +564,33 @@ void set_close_write_time(struct files_struct *fsp, struct timespec ts)
 	fsp->close_write_time = ts;
 }
 
+static void update_write_time_on_close_share_mode_fn(struct share_mode_lock *lck,
+						     void *private_data)
+{
+	struct files_struct *fsp =
+		talloc_get_type_abort(private_data,
+		struct files_struct);
+	NTTIME share_mtime = share_mode_changed_write_time(lck);
+
+	/*
+	 * On close if we're changing the real file time we
+	 * must update it in the open file db too.
+	 */
+	share_mode_set_old_write_time(lck, fsp->close_write_time);
+
+	/*
+	 * Close write times overwrite sticky write times
+	 * so we must replace any sticky write time here.
+	 */
+	if (!null_nttime(share_mtime)) {
+		share_mode_set_changed_write_time(lck, fsp->close_write_time);
+	}
+}
+
 static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 {
 	struct smb_file_time ft;
 	NTSTATUS status;
-	struct share_mode_lock *lck = NULL;
 
 	init_smb_file_time(&ft);
 
@@ -592,31 +614,14 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 	}
 
 	/*
-	 * get_existing_share_mode_lock() isn't really the right
-	 * call here, as we're being called after
-	 * close_remove_share_mode() inside close_normal_file()
-	 * so it's quite normal to not have an existing share
-	 * mode here. However, get_share_mode_lock() doesn't
-	 * work because that will create a new share mode if
-	 * one doesn't exist - so stick with this call (just
-	 * ignore any error we get if the share mode doesn't
-	 * exist.
+	 * We're being called after close_remove_share_mode() inside
+	 * close_normal_file() so it's quite normal to not have an
+	 * existing share. So just ignore the result of
+	 * share_mode_do_locked_vfs_denied()...
 	 */
-
-	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
-	if (lck) {
-		NTTIME share_mtime = share_mode_changed_write_time(lck);
-		/* On close if we're changing the real file time we
-		 * must update it in the open file db too. */
-		share_mode_set_old_write_time(lck, fsp->close_write_time);
-
-		/* Close write times overwrite sticky write times
-		   so we must replace any sticky write time here. */
-		if (!null_nttime(share_mtime)) {
-			share_mode_set_changed_write_time(lck, fsp->close_write_time);
-		}
-		TALLOC_FREE(lck);
-	}
+	share_mode_do_locked_vfs_denied(fsp->file_id,
+					update_write_time_on_close_share_mode_fn,
+					fsp);
 
 	ft.mtime = fsp->close_write_time;
 	/* As this is a close based update, we are not directly changing the
