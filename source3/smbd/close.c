@@ -284,16 +284,24 @@ struct close_share_mode_lock_state {
 	const struct security_unix_token *del_token;
 	const struct security_token *del_nt_token;
 	bool reset_delete_on_close;
-	void (*cleanup_fn)(struct share_mode_lock *lck,
-			   struct close_share_mode_lock_state *state);
+	share_mode_entry_prepare_unlock_fn_t cleanup_fn;
 };
 
 static void close_share_mode_lock_prepare(struct share_mode_lock *lck,
-					  struct close_share_mode_lock_state *state)
+					  bool *keep_locked,
+					  void *private_data)
 {
+	struct close_share_mode_lock_state *state =
+		(struct close_share_mode_lock_state *)private_data;
 	struct files_struct *fsp = state->fsp;
 	bool normal_close;
 	bool ok;
+
+	/*
+	 * By default drop the g_lock again if we leave the
+	 * tdb chainlock.
+	 */
+	*keep_locked = false;
 
 	if (fsp->oplock_type != NO_OPLOCK) {
 		ok = remove_share_oplock(lck, fsp);
@@ -371,6 +379,14 @@ static void close_share_mode_lock_prepare(struct share_mode_lock *lck,
 		return;
 	}
 
+	/*
+	 * We're going to remove the file/directory
+	 * so keep the g_lock after the tdb chainlock
+	 * is left, so we hold the share_mode_lock
+	 * also during the deletion
+	 */
+	*keep_locked = true;
+
 	state->got_tokens = get_delete_on_close_token(lck, fsp->name_hash,
 					&state->del_nt_token, &state->del_token);
 	if (state->close_type != ERROR_CLOSE) {
@@ -379,8 +395,10 @@ static void close_share_mode_lock_prepare(struct share_mode_lock *lck,
 }
 
 static void close_share_mode_lock_cleanup(struct share_mode_lock *lck,
-					  struct close_share_mode_lock_state *state)
+					  void *private_data)
 {
+	struct close_share_mode_lock_state *state =
+		(struct close_share_mode_lock_state *)private_data;
 	struct files_struct *fsp = state->fsp;
 	bool ok;
 
@@ -405,9 +423,9 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	connection_struct *conn = fsp->conn;
 	struct close_share_mode_lock_state lck_state = {};
 	bool changed_user = false;
-	struct share_mode_lock *lck = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS tmp_status;
+	NTSTATUS ulstatus;
 	struct file_id id;
 	struct smb_filename *parent_fname = NULL;
 	struct smb_filename *base_fname = NULL;
@@ -424,20 +442,21 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
-	if (lck == NULL) {
-		DEBUG(0, ("close_remove_share_mode: Could not get share mode "
-			  "lock for file %s\n", fsp_str_dbg(fsp)));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	lck_state = (struct close_share_mode_lock_state) {
 		.fsp			= fsp,
 		.object_type		= "file",
 		.close_type		= close_type,
 	};
 
-	close_share_mode_lock_prepare(lck, &lck_state);
+	status = share_mode_entry_prepare_lock_del(&lck_state.prepare_state,
+						   fsp->file_id,
+						   close_share_mode_lock_prepare,
+						   &lck_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("share_mode_entry_prepare_lock_del() failed for %s - %s\n",
+			fsp_str_dbg(fsp), nt_errstr(status));
+		return status;
+	}
 
 	/* Remove the oplock before potentially deleting the file. */
 	if (fsp->oplock_type != NO_OPLOCK) {
@@ -608,11 +627,14 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		}
 	}
 
-	if (lck_state.cleanup_fn != NULL) {
-		lck_state.cleanup_fn(lck, &lck_state);
+	ulstatus = share_mode_entry_prepare_unlock(&lck_state.prepare_state,
+						   lck_state.cleanup_fn,
+						   &lck_state);
+	if (!NT_STATUS_IS_OK(ulstatus)) {
+		DBG_ERR("share_mode_entry_prepare_unlock() failed for %s - %s\n",
+			fsp_str_dbg(fsp), nt_errstr(ulstatus));
+		smb_panic("share_mode_entry_prepare_unlock() failed!");
 	}
-
-	TALLOC_FREE(lck);
 
 	if (lck_state.delete_object) {
 		/*
@@ -1457,12 +1479,12 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				enum file_close_type close_type)
 {
 	connection_struct *conn = fsp->conn;
-	struct share_mode_lock *lck = NULL;
 	struct close_share_mode_lock_state lck_state = {};
 	bool changed_user = false;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS status1 = NT_STATUS_OK;
 	NTSTATUS notify_status;
+	NTSTATUS ulstatus;
 
 	SMB_ASSERT(fsp->fsp_flags.is_fsa);
 
@@ -1479,20 +1501,21 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	 * reference to a directory also.
 	 */
 
-	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
-	if (lck == NULL) {
-		DEBUG(0, ("close_directory: Could not get share mode lock for "
-			  "%s\n", fsp_str_dbg(fsp)));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	lck_state = (struct close_share_mode_lock_state) {
 		.fsp			= fsp,
 		.object_type		= "directory",
 		.close_type		= close_type,
 	};
 
-	close_share_mode_lock_prepare(lck, &lck_state);
+	status = share_mode_entry_prepare_lock_del(&lck_state.prepare_state,
+						   fsp->file_id,
+						   close_share_mode_lock_prepare,
+						   &lck_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("share_mode_entry_prepare_lock_del() failed for %s - %s\n",
+			fsp_str_dbg(fsp), nt_errstr(status));
+		return status;
+	}
 
 	/*
 	 * We don't have directory leases yet, so assert it in order
@@ -1569,11 +1592,14 @@ done:
 		pop_sec_ctx();
 	}
 
-	if (lck_state.cleanup_fn != NULL) {
-		lck_state.cleanup_fn(lck, &lck_state);
+	ulstatus = share_mode_entry_prepare_unlock(&lck_state.prepare_state,
+						   lck_state.cleanup_fn,
+						   &lck_state);
+	if (!NT_STATUS_IS_OK(ulstatus)) {
+		DBG_ERR("share_mode_entry_prepare_unlock() failed for %s - %s\n",
+			fsp_str_dbg(fsp), nt_errstr(ulstatus));
+		smb_panic("share_mode_entry_prepare_unlock() failed!");
 	}
-
-	TALLOC_FREE(lck);
 
 	remove_pending_change_notify_requests_by_fid(fsp, notify_status);
 
