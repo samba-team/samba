@@ -572,10 +572,6 @@ static bool smb2srv_client_mc_negprot_filter(struct messaging_rec *rec, void *pr
 		return false;
 	}
 
-	if (rec->buf.length < SMB2_HDR_BODY) {
-		return false;
-	}
-
 	return true;
 }
 
@@ -660,6 +656,14 @@ static void smb2srv_client_mc_negprot_done(struct tevent_req *subreq)
 			nt_time_string(talloc_tos(),
 				       passed_info0->xconn_connect_time),
 			(unsigned long long)passed_info0->xconn_connect_time);
+		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	if (passed_info0->negotiate_request.length != 0) {
+		DBG_ERR("negotiate_request.length[%zu]\n",
+			passed_info0->negotiate_request.length);
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
@@ -883,12 +887,6 @@ static bool smbXsrv_client_connection_pass_filter(struct messaging_rec *rec, voi
 		return false;
 	}
 
-	if (rec->buf.length < SMB2_HDR_BODY) {
-		return false;
-	}
-
-	/* TODO: verify client_guid...? */
-
 	return true;
 }
 
@@ -975,6 +973,15 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 			nt_time_string(talloc_tos(),
 				       pass_info0->client_connect_time),
 			(unsigned long long)pass_info0->client_connect_time);
+		if (DEBUGLVL(DBGLVL_WARNING)) {
+			NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
+		}
+		goto next;
+	}
+
+	if (pass_info0->negotiate_request.length < SMB2_HDR_BODY) {
+		DBG_WARNING("negotiate_request.length[%zu]\n",
+			    pass_info0->negotiate_request.length);
 		if (DEBUGLVL(DBGLVL_WARNING)) {
 			NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
 		}
