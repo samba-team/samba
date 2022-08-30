@@ -335,6 +335,11 @@ static void close_share_mode_lock_prepare(struct share_mode_lock *lck,
 		/* Initial delete on close was set and no one else
 		 * wrote a real delete on close. */
 
+		if (fsp->fsp_flags.is_directory) {
+			send_stat_cache_delete_message(fsp->conn->sconn->msg_ctx,
+						       fsp->fsp_name->base_name);
+		}
+
 		fsp->fsp_flags.delete_on_close = true;
 		set_delete_on_close_lck(fsp, lck,
 					fsp->conn->session_info->security_token,
@@ -1453,14 +1458,10 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 {
 	connection_struct *conn = fsp->conn;
 	struct share_mode_lock *lck = NULL;
-	bool delete_dir = False;
+	struct close_share_mode_lock_state lck_state = {};
 	bool changed_user = false;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS status1 = NT_STATUS_OK;
-	const struct security_token *del_nt_token = NULL;
-	const struct security_unix_token *del_token = NULL;
-	bool got_tokens;
-	bool normal_close;
 	NTSTATUS notify_status;
 
 	SMB_ASSERT(fsp->fsp_flags.is_fsa);
@@ -1485,37 +1486,26 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp->fsp_flags.initial_delete_on_close &&
-			!is_delete_on_close_set(lck, fsp->name_hash)) {
-		/* Initial delete on close was set - for
-		 * directories we don't care if anyone else
-		 * wrote a real delete on close. */
+	lck_state = (struct close_share_mode_lock_state) {
+		.fsp			= fsp,
+		.object_type		= "directory",
+		.close_type		= close_type,
+	};
 
-		send_stat_cache_delete_message(fsp->conn->sconn->msg_ctx,
-					       fsp->fsp_name->base_name);
-		set_delete_on_close_lck(fsp, lck,
-					fsp->conn->session_info->security_token,
-					fsp->conn->session_info->unix_token);
-		fsp->fsp_flags.delete_on_close = true;
-	}
+	close_share_mode_lock_prepare(lck, &lck_state);
 
-	delete_dir = is_delete_on_close_set(lck, fsp->name_hash) &&
-		!has_other_nonposix_opens(lck, fsp);
+	/*
+	 * We don't have directory leases yet, so assert it in order
+	 * to skip release_file_oplock().
+	 */
+	SMB_ASSERT(fsp->oplock_type == NO_OPLOCK);
 
 	/*
 	 * NT can set delete_on_close of the last open
 	 * reference to a file.
 	 */
 
-	normal_close = (close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE);
-	if (!normal_close) {
-		/*
-		 * Never try to delete the directory for ERROR_CLOSE
-		 */
-		delete_dir = false;
-	}
-
-	if (!delete_dir) {
+	if (!lck_state.delete_object) {
 		status = NT_STATUS_OK;
 		goto done;
 	}
@@ -1523,32 +1513,26 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	/*
 	 * Ok, we have to delete the directory
 	 */
+	lck_state.cleanup_fn = close_share_mode_lock_cleanup;
 
-	DBG_INFO("dir %s. Delete on close was set - deleting directory.\n",
-		 fsp_str_dbg(fsp));
-
-	got_tokens = get_delete_on_close_token(lck, fsp->name_hash,
-					&del_nt_token, &del_token);
-	SMB_ASSERT(got_tokens);
-
-	/* Become the user who requested the delete. */
-
-	if (!unix_token_equal(del_token, get_current_utok(conn))) {
+	if (lck_state.got_tokens &&
+	    !unix_token_equal(lck_state.del_token, get_current_utok(conn)))
+	{
 		/* Become the user who requested the delete. */
 
 		DBG_INFO("dir %s. Change user to uid %u\n",
 			 fsp_str_dbg(fsp),
-			 (unsigned int)del_token->uid);
+			 (unsigned int)lck_state.del_token->uid);
 
 		if (!push_sec_ctx()) {
 			smb_panic("close_directory: failed to push sec_ctx.\n");
 		}
 
-		set_sec_ctx(del_token->uid,
-			    del_token->gid,
-			    del_token->ngroups,
-			    del_token->groups,
-			    del_nt_token);
+		set_sec_ctx(lck_state.del_token->uid,
+			    lck_state.del_token->gid,
+			    lck_state.del_token->ngroups,
+			    lck_state.del_token->groups,
+			    lck_state.del_nt_token);
 
 		changed_user = true;
 	}
@@ -1585,9 +1569,8 @@ done:
 		pop_sec_ctx();
 	}
 
-	if (!del_share_mode(lck, fsp)) {
-		DEBUG(0, ("close_directory: Could not delete share entry for "
-			  "%s\n", fsp_str_dbg(fsp)));
+	if (lck_state.cleanup_fn != NULL) {
+		lck_state.cleanup_fn(lck, &lck_state);
 	}
 
 	TALLOC_FREE(lck);
