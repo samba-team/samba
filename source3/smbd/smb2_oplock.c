@@ -126,7 +126,7 @@ static void release_fsp_kernel_oplock(files_struct *fsp)
  Attempt to release an oplock on a file. Decrements oplock count.
 ****************************************************************************/
 
-static void release_file_oplock(files_struct *fsp)
+void release_file_oplock(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 
