@@ -608,12 +608,12 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 		NTTIME share_mtime = share_mode_changed_write_time(lck);
 		/* On close if we're changing the real file time we
 		 * must update it in the open file db too. */
-		(void)set_write_time(fsp->file_id, fsp->close_write_time);
+		share_mode_set_old_write_time(lck, fsp->close_write_time);
 
 		/* Close write times overwrite sticky write times
 		   so we must replace any sticky write time here. */
 		if (!null_nttime(share_mtime)) {
-			(void)set_sticky_write_time(fsp->file_id, fsp->close_write_time);
+			share_mode_set_changed_write_time(lck, fsp->close_write_time);
 		}
 		TALLOC_FREE(lck);
 	}
