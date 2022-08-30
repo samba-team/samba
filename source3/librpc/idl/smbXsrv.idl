@@ -143,6 +143,7 @@ interface smbXsrv
 		boolean8		server_multi_channel_enabled;
 		hyper			next_channel_id;
 		[ignore] struct tevent_req		*connection_pass_subreq;
+		[ignore] struct tevent_req		*connection_drop_subreq;
 
 		/*
 		 * A List of pending breaks.
@@ -192,6 +193,33 @@ interface smbXsrv
 
 	void smbXsrv_connection_pass_decode(
 		[in] smbXsrv_connection_passB blob
+		);
+
+	/*
+	 * smbXsrv_connection_drop is used in the MSG_SMBXSRV_CONNECTION_DROP
+	 * message as reaction the record is deleted.
+	 */
+	typedef struct {
+		GUID					client_guid;
+		server_id				src_server_id;
+		NTTIME					xconn_connect_time;
+		server_id				dst_server_id;
+		NTTIME					client_connect_time;
+	} smbXsrv_connection_drop0;
+
+	typedef union {
+		[case(0)] smbXsrv_connection_drop0	*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_connection_dropU;
+
+	typedef [public] struct {
+		smbXsrv_version_values			version;
+		[value(0)] uint32			reserved;
+		[switch_is(version)] smbXsrv_connection_dropU	info;
+	} smbXsrv_connection_dropB;
+
+	void smbXsrv_connection_drop_decode(
+		[in] smbXsrv_connection_dropB blob
 		);
 
 	/* sessions */
