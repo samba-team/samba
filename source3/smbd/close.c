@@ -274,6 +274,122 @@ bool has_other_nonposix_opens(struct share_mode_lock *lck,
 	return state.found_another;
 }
 
+struct close_share_mode_lock_state {
+	struct share_mode_entry_prepare_state prepare_state;
+	const char *object_type;
+	struct files_struct *fsp;
+	enum file_close_type close_type;
+	bool delete_object;
+	bool got_tokens;
+	const struct security_unix_token *del_token;
+	const struct security_token *del_nt_token;
+	bool reset_delete_on_close;
+	void (*cleanup_fn)(struct share_mode_lock *lck,
+			   struct close_share_mode_lock_state *state);
+};
+
+static void close_share_mode_lock_prepare(struct share_mode_lock *lck,
+					  struct close_share_mode_lock_state *state)
+{
+	struct files_struct *fsp = state->fsp;
+	bool normal_close;
+	bool ok;
+
+	if (fsp->oplock_type != NO_OPLOCK) {
+		ok = remove_share_oplock(lck, fsp);
+		if (!ok) {
+			struct file_id_buf buf;
+
+			DBG_ERR("failed to remove share oplock for "
+				"%s %s, %s, %s\n",
+				state->object_type,
+				fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
+				file_id_str_buf(fsp->file_id, &buf));
+		}
+	}
+
+	if (fsp->fsp_flags.write_time_forced) {
+		NTTIME mtime = share_mode_changed_write_time(lck);
+		struct timespec ts = nt_time_to_full_timespec(mtime);
+
+		DBG_DEBUG("write time forced for %s %s\n",
+			  state->object_type, fsp_str_dbg(fsp));
+		set_close_write_time(fsp, ts);
+	} else if (fsp->fsp_flags.update_write_time_on_close) {
+		/* Someone had a pending write. */
+		if (is_omit_timespec(&fsp->close_write_time)) {
+			DBG_DEBUG("update to current time for %s %s\n",
+				  state->object_type, fsp_str_dbg(fsp));
+			/* Update to current time due to "normal" write. */
+			set_close_write_time(fsp, timespec_current());
+		} else {
+			DBG_DEBUG("write time pending for %s %s\n",
+				  state->object_type, fsp_str_dbg(fsp));
+			/* Update to time set on close call. */
+			set_close_write_time(fsp, fsp->close_write_time);
+		}
+	}
+
+	if (fsp->fsp_flags.initial_delete_on_close &&
+			!is_delete_on_close_set(lck, fsp->name_hash)) {
+		/* Initial delete on close was set and no one else
+		 * wrote a real delete on close. */
+
+		fsp->fsp_flags.delete_on_close = true;
+		set_delete_on_close_lck(fsp, lck,
+					fsp->conn->session_info->security_token,
+					fsp->conn->session_info->unix_token);
+	}
+
+	state->delete_object = is_delete_on_close_set(lck, fsp->name_hash) &&
+		!has_other_nonposix_opens(lck, fsp);
+
+	/*
+	 * NT can set delete_on_close of the last open
+	 * reference to a file.
+	 */
+
+	normal_close = (state->close_type == NORMAL_CLOSE || state->close_type == SHUTDOWN_CLOSE);
+	if (!normal_close) {
+		/*
+		 * Never try to delete the file/directory for ERROR_CLOSE
+		 */
+		state->delete_object = false;
+	}
+
+	if (!state->delete_object) {
+		ok = del_share_mode(lck, fsp);
+		if (!ok) {
+			DBG_ERR("Could not delete share entry for %s %s\n",
+				state->object_type, fsp_str_dbg(fsp));
+		}
+		return;
+	}
+
+	state->got_tokens = get_delete_on_close_token(lck, fsp->name_hash,
+					&state->del_nt_token, &state->del_token);
+	if (state->close_type != ERROR_CLOSE) {
+		SMB_ASSERT(state->got_tokens);
+	}
+}
+
+static void close_share_mode_lock_cleanup(struct share_mode_lock *lck,
+					  struct close_share_mode_lock_state *state)
+{
+	struct files_struct *fsp = state->fsp;
+	bool ok;
+
+	if (state->reset_delete_on_close) {
+		reset_delete_on_close_lck(fsp, lck);
+	}
+
+	ok = del_share_mode(lck, fsp);
+	if (!ok) {
+		DBG_ERR("Could not delete share entry for %s %s\n",
+			state->object_type, fsp_str_dbg(fsp));
+	}
+}
+
 /****************************************************************************
  Deal with removing a share mode on last close.
 ****************************************************************************/
@@ -282,18 +398,14 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 					enum file_close_type close_type)
 {
 	connection_struct *conn = fsp->conn;
-	bool delete_file = false;
+	struct close_share_mode_lock_state lck_state = {};
 	bool changed_user = false;
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS tmp_status;
 	struct file_id id;
-	const struct security_unix_token *del_token = NULL;
-	const struct security_token *del_nt_token = NULL;
 	struct smb_filename *parent_fname = NULL;
 	struct smb_filename *base_fname = NULL;
-	bool got_tokens = false;
-	bool normal_close;
 	int ret;
 
 	/* Ensure any pending write time updates are done. */
@@ -314,75 +426,25 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	lck_state = (struct close_share_mode_lock_state) {
+		.fsp			= fsp,
+		.object_type		= "file",
+		.close_type		= close_type,
+	};
+
+	close_share_mode_lock_prepare(lck, &lck_state);
+
 	/* Remove the oplock before potentially deleting the file. */
 	if (fsp->oplock_type != NO_OPLOCK) {
-		bool ok;
-
-		ok = remove_share_oplock(lck, fsp);
-		if (!ok) {
-			struct file_id_buf buf;
-
-			DBG_ERR("failed to remove share oplock for "
-				"file %s, %s, %s\n",
-				fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
-				file_id_str_buf(fsp->file_id, &buf));
-		}
 		release_file_oplock(fsp);
 	}
-
-	if (fsp->fsp_flags.write_time_forced) {
-		NTTIME mtime = share_mode_changed_write_time(lck);
-		struct timespec ts = nt_time_to_full_timespec(mtime);
-
-		DEBUG(10,("close_remove_share_mode: write time forced "
-			"for file %s\n",
-			fsp_str_dbg(fsp)));
-		set_close_write_time(fsp, ts);
-	} else if (fsp->fsp_flags.update_write_time_on_close) {
-		/* Someone had a pending write. */
-		if (is_omit_timespec(&fsp->close_write_time)) {
-			DEBUG(10,("close_remove_share_mode: update to current time "
-				"for file %s\n",
-				fsp_str_dbg(fsp)));
-			/* Update to current time due to "normal" write. */
-			set_close_write_time(fsp, timespec_current());
-		} else {
-			DEBUG(10,("close_remove_share_mode: write time pending "
-				"for file %s\n",
-				fsp_str_dbg(fsp)));
-			/* Update to time set on close call. */
-			set_close_write_time(fsp, fsp->close_write_time);
-		}
-	}
-
-	if (fsp->fsp_flags.initial_delete_on_close &&
-			!is_delete_on_close_set(lck, fsp->name_hash)) {
-		/* Initial delete on close was set and no one else
-		 * wrote a real delete on close. */
-
-		fsp->fsp_flags.delete_on_close = true;
-		set_delete_on_close_lck(fsp, lck,
-					fsp->conn->session_info->security_token,
-					fsp->conn->session_info->unix_token);
-	}
-
-	delete_file = is_delete_on_close_set(lck, fsp->name_hash) &&
-		!has_other_nonposix_opens(lck, fsp);
 
 	/*
 	 * NT can set delete_on_close of the last open
 	 * reference to a file.
 	 */
 
-	normal_close = (close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE);
-	if (!normal_close) {
-		/*
-		 * Never try to delete the file for ERROR_CLOSE
-		 */
-		delete_file = false;
-	}
-
-	if (!delete_file) {
+	if (!lck_state.delete_object) {
 		status = NT_STATUS_OK;
 		goto done;
 	}
@@ -390,6 +452,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	/*
 	 * Ok, we have to delete the file
 	 */
+	lck_state.cleanup_fn = close_share_mode_lock_cleanup;
 
 	DEBUG(5,("close_remove_share_mode: file %s. Delete on close was set "
 		 "- deleting file.\n", fsp_str_dbg(fsp)));
@@ -399,28 +462,26 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 */
 	fsp->fsp_flags.update_write_time_on_close = false;
 
-	got_tokens = get_delete_on_close_token(lck, fsp->name_hash,
-					&del_nt_token, &del_token);
-	SMB_ASSERT(got_tokens);
-
-	if (!unix_token_equal(del_token, get_current_utok(conn))) {
+	if (lck_state.got_tokens &&
+	    !unix_token_equal(lck_state.del_token, get_current_utok(conn)))
+	{
 		/* Become the user who requested the delete. */
 
 		DEBUG(5,("close_remove_share_mode: file %s. "
 			"Change user to uid %u\n",
 			fsp_str_dbg(fsp),
-			(unsigned int)del_token->uid));
+			(unsigned int)lck_state.del_token->uid));
 
 		if (!push_sec_ctx()) {
 			smb_panic("close_remove_share_mode: file %s. failed to push "
 				  "sec_ctx.\n");
 		}
 
-		set_sec_ctx(del_token->uid,
-			    del_token->gid,
-			    del_token->ngroups,
-			    del_token->groups,
-			    del_nt_token);
+		set_sec_ctx(lck_state.del_token->uid,
+			    lck_state.del_token->gid,
+			    lck_state.del_token->ngroups,
+			    lck_state.del_token->groups,
+			    lck_state.del_nt_token);
 
 		changed_user = true;
 	}
@@ -523,7 +584,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
  	 */
 
 	fsp->fsp_flags.delete_on_close = false;
-	reset_delete_on_close_lck(fsp, lck);
+	lck_state.reset_delete_on_close = true;
 
  done:
 
@@ -542,14 +603,13 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		}
 	}
 
-	if (!del_share_mode(lck, fsp)) {
-		DEBUG(0, ("close_remove_share_mode: Could not delete share "
-			  "entry for file %s\n", fsp_str_dbg(fsp)));
+	if (lck_state.cleanup_fn != NULL) {
+		lck_state.cleanup_fn(lck, &lck_state);
 	}
 
 	TALLOC_FREE(lck);
 
-	if (delete_file) {
+	if (lck_state.delete_object) {
 		/*
 		 * Do the notification after we released the share
 		 * mode lock. Inside notify_fname we take out another
