@@ -1058,12 +1058,7 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 	struct share_mode_data *d = NULL;
 	struct file_id_buf ftmp;
 	struct timeval_buf tbuf;
-	NTTIME nt = full_timespec_to_nt_time(&write_time);
 	NTSTATUS status;
-
-	DBG_INFO("%s id=%s\n",
-		 timespec_string_buf(&write_time, true, &tbuf),
-		 file_id_str_buf(fileid, &ftmp));
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fileid);
 	if (lck == NULL) {
@@ -1081,10 +1076,7 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 		return false;
 	}
 
-	if (d->changed_write_time != nt) {
-		d->modified = True;
-		d->changed_write_time = nt;
-	}
+	share_mode_set_changed_write_time(lck, write_time);
 
 	TALLOC_FREE(lck);
 	return True;
@@ -1096,12 +1088,7 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 	struct share_mode_data *d = NULL;
 	struct file_id_buf idbuf;
 	struct timeval_buf tbuf;
-	NTTIME nt = full_timespec_to_nt_time(&write_time);
 	NTSTATUS status;
-
-	DBG_INFO("%s id=%s\n",
-		 timespec_string_buf(&write_time, true, &tbuf),
-		 file_id_str_buf(fileid, &idbuf));
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fileid);
 	if (lck == NULL) {
@@ -1119,10 +1106,7 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 		return false;
 	}
 
-	if (d->old_write_time != nt) {
-		d->modified = True;
-		d->old_write_time = nt;
-	}
+	share_mode_set_old_write_time(lck, write_time);
 
 	TALLOC_FREE(lck);
 	return True;
