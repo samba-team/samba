@@ -339,6 +339,55 @@ static NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS smb2srv_client_connection_drop(struct smbd_smb2_request *smb2req,
+					       struct smbXsrv_client_global0 *global)
+{
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+	struct smbXsrv_connection_drop0 drop_info0;
+	struct smbXsrv_connection_dropB drop_blob;
+	struct iovec iov;
+
+	drop_info0 = (struct smbXsrv_connection_drop0) {
+		.client_guid = global->client_guid,
+		.src_server_id = smb2req->xconn->client->global->server_id,
+		.xconn_connect_time = smb2req->xconn->client->global->initial_connect_time,
+		.dst_server_id = global->server_id,
+		.client_connect_time = global->initial_connect_time,
+	};
+
+	ZERO_STRUCT(drop_blob);
+	drop_blob.version = smbXsrv_version_global_current();
+	drop_blob.info.info0 = &drop_info0;
+
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &drop_blob,
+			(ndr_push_flags_fn_t)ndr_push_smbXsrv_connection_dropB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		return status;
+	}
+
+	iov.iov_base = blob.data;
+	iov.iov_len = blob.length;
+
+	status = messaging_send_iov(smb2req->xconn->client->msg_ctx,
+				    global->server_id,
+				    MSG_SMBXSRV_CONNECTION_DROP,
+				    &iov, 1,
+				    NULL, 0);
+	data_blob_free(&blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *global)
 {
 	struct smbXsrv_client_globalB global_blob;
@@ -532,15 +581,17 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 		return;
 	}
 
-	subreq = messaging_filtered_read_send(state,
-					      state->ev,
-					      client->msg_ctx,
-					      smb2srv_client_mc_negprot_filter,
-					      NULL);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
+	if (procid_is_local(&global->server_id)) {
+		subreq = messaging_filtered_read_send(state,
+						      state->ev,
+						      client->msg_ctx,
+						      smb2srv_client_mc_negprot_filter,
+						      NULL);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, smb2srv_client_mc_negprot_done, req);
 	}
-	tevent_req_set_callback(subreq, smb2srv_client_mc_negprot_done, req);
 
 	subreq = dbwrap_watched_watch_send(state,
 					   state->ev,
@@ -551,11 +602,20 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 	}
 	tevent_req_set_callback(subreq, smb2srv_client_mc_negprot_watched, req);
 
-	status = smb2srv_client_connection_pass(state->smb2req,
-						global);
-	TALLOC_FREE(global);
-	if (tevent_req_nterror(req, status)) {
-		return;
+	if (procid_is_local(&global->server_id)) {
+		status = smb2srv_client_connection_pass(state->smb2req,
+							global);
+		TALLOC_FREE(global);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	} else {
+		status = smb2srv_client_connection_drop(state->smb2req,
+							global);
+		TALLOC_FREE(global);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
 	}
 
 	TALLOC_FREE(state->db_rec);
@@ -744,6 +804,8 @@ static int smbXsrv_client_destructor(struct smbXsrv_client *client)
 
 static bool smbXsrv_client_connection_pass_filter(struct messaging_rec *rec, void *private_data);
 static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq);
+static bool smbXsrv_client_connection_drop_filter(struct messaging_rec *rec, void *private_data);
+static void smbXsrv_client_connection_drop_loop(struct tevent_req *subreq);
 
 NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 			       struct tevent_context *ev_ctx,
@@ -825,6 +887,18 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, smbXsrv_client_connection_pass_loop, client);
 	client->connection_pass_subreq = subreq;
+
+	subreq = messaging_filtered_read_send(client,
+					client->raw_ev_ctx,
+					client->msg_ctx,
+					smbXsrv_client_connection_drop_filter,
+					client);
+	if (subreq == NULL) {
+		TALLOC_FREE(client);
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, smbXsrv_client_connection_drop_loop, client);
+	client->connection_drop_subreq = subreq;
 
 	*_client = client;
 	return NT_STATUS_OK;
@@ -1051,6 +1125,144 @@ next:
 	client->connection_pass_subreq = subreq;
 }
 
+static bool smbXsrv_client_connection_drop_filter(struct messaging_rec *rec, void *private_data)
+{
+	if (rec->msg_type != MSG_SMBXSRV_CONNECTION_DROP) {
+		return false;
+	}
+
+	if (rec->num_fds != 0) {
+		return false;
+	}
+
+	return true;
+}
+
+static void smbXsrv_client_connection_drop_loop(struct tevent_req *subreq)
+{
+	struct smbXsrv_client *client =
+		tevent_req_callback_data(subreq,
+		struct smbXsrv_client);
+	int ret;
+	struct messaging_rec *rec = NULL;
+	struct smbXsrv_connection_dropB drop_blob;
+	enum ndr_err_code ndr_err;
+	struct smbXsrv_connection_drop0 *drop_info0 = NULL;
+	struct server_id_buf src_server_id_buf = {};
+	NTSTATUS status;
+
+	client->connection_drop_subreq = NULL;
+
+	ret = messaging_filtered_read_recv(subreq, talloc_tos(), &rec);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		goto next;
+	}
+
+	if (rec->num_fds != 0) {
+		DBG_ERR("MSG_SMBXSRV_CONNECTION_DROP: num_fds[%u]\n",
+			rec->num_fds);
+		goto next;
+	}
+
+	ndr_err = ndr_pull_struct_blob(&rec->buf, rec, &drop_blob,
+			(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_connection_dropB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DBG_WARNING("ndr_pull_struct_blob - %s\n", nt_errstr(status));
+		goto next;
+	}
+
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
+	}
+
+	if (drop_blob.version != SMBXSRV_VERSION_0) {
+		DBG_ERR("ignore invalid version %u\n", drop_blob.version);
+		NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
+		goto next;
+	}
+
+	drop_info0 = drop_blob.info.info0;
+	if (drop_info0 == NULL) {
+		DBG_ERR("ignore NULL info %u\n", drop_blob.version);
+		NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
+		goto next;
+	}
+
+	if (!GUID_equal(&client->global->client_guid, &drop_info0->client_guid))
+	{
+		struct GUID_txt_buf buf1, buf2;
+
+		DBG_WARNING("client's client_guid [%s] != droped guid [%s]\n",
+			    GUID_buf_string(&client->global->client_guid,
+					    &buf1),
+			    GUID_buf_string(&drop_info0->client_guid,
+					    &buf2));
+		if (DEBUGLVL(DBGLVL_WARNING)) {
+			NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
+		}
+		goto next;
+	}
+
+	if (client->global->initial_connect_time !=
+	    drop_info0->client_connect_time)
+	{
+		DBG_WARNING("client's initial connect time [%s] (%llu) != "
+			"droped initial connect time [%s] (%llu)\n",
+			nt_time_string(talloc_tos(),
+				       client->global->initial_connect_time),
+			(unsigned long long)client->global->initial_connect_time,
+			nt_time_string(talloc_tos(),
+				       drop_info0->client_connect_time),
+			(unsigned long long)drop_info0->client_connect_time);
+		if (DEBUGLVL(DBGLVL_WARNING)) {
+			NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
+		}
+		goto next;
+	}
+
+	/*
+	 * Disconnect all client connections, which means we will tear down all
+	 * sessions, tcons and non-durable opens. At the end we will remove our
+	 * smbXsrv_client_global.tdb record, which will wake up the watcher on
+	 * the other node in order to let it take over the client.
+	 *
+	 * The client will have to reopen all sessions, tcons and durable opens.
+	 */
+	smbd_server_disconnect_client(client,
+		server_id_str_buf(drop_info0->src_server_id, &src_server_id_buf));
+	return;
+
+next:
+	if (rec != NULL) {
+		int sock_fd;
+		uint8_t fd_idx;
+
+		for (fd_idx = 0; fd_idx < rec->num_fds; fd_idx++) {
+			sock_fd = rec->fds[fd_idx];
+			close(sock_fd);
+		}
+		rec->num_fds = 0;
+
+		TALLOC_FREE(rec);
+	}
+
+	subreq = messaging_filtered_read_send(client,
+					client->raw_ev_ctx,
+					client->msg_ctx,
+					smbXsrv_client_connection_drop_filter,
+					client);
+	if (subreq == NULL) {
+		const char *r;
+		r = "messaging_read_send(MSG_SMBXSRV_CONNECTION_DROP failed";
+		exit_server_cleanly(r);
+		return;
+	}
+	tevent_req_set_callback(subreq, smbXsrv_client_connection_drop_loop, client);
+	client->connection_drop_subreq = subreq;
+}
+
 NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client)
 {
 	struct smbXsrv_client_table *table = client->table;
@@ -1069,6 +1281,7 @@ NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client)
 	}
 
 	TALLOC_FREE(client->connection_pass_subreq);
+	TALLOC_FREE(client->connection_drop_subreq);
 
 	client->global->db_rec = smbXsrv_client_global_fetch_locked(
 					table->global.db_ctx,
