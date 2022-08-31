@@ -573,6 +573,8 @@ static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 {
 	struct smbd_smb2_create_state *state = tevent_req_data(
 		req, struct smbd_smb2_create_state);
+	struct smbd_smb2_request *smb2req = state->smb2req;
+	struct smbXsrv_connection *xconn = smb2req->xconn;
 
 	/*
 	 * For now, remove the posix create context from the wire. We
@@ -590,7 +592,7 @@ static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 					    SMB2_CREATE_TAG_DH2Q);
 	state->dh2c = smb2_create_blob_find(in_context_blobs,
 					    SMB2_CREATE_TAG_DH2C);
-	if (state->smb2req->xconn->smb2.server.capabilities & SMB2_CAP_LEASING) {
+	if (xconn->smb2.server.capabilities & SMB2_CAP_LEASING) {
 		state->rqls = smb2_create_blob_find(in_context_blobs,
 						    SMB2_CREATE_TAG_RQLS);
 	}
@@ -680,7 +682,7 @@ static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 					    SMB2_CREATE_TAG_TWRP);
 	state->qfid = smb2_create_blob_find(in_context_blobs,
 					    SMB2_CREATE_TAG_QFID);
-	if (state->smb2req->xconn->protocol >= PROTOCOL_SMB3_02) {
+	if (xconn->protocol >= PROTOCOL_SMB3_02) {
 		/*
 		 * This was introduced with SMB3_02
 		 */
