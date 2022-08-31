@@ -1467,6 +1467,10 @@ int ldb_build_search_req_ex(struct ldb_request **ret_req,
 	req->operation = LDB_SEARCH;
 	if (base == NULL) {
 		req->op.search.base = ldb_dn_new(req, ldb, NULL);
+		if (req->op.search.base == NULL) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	} else {
 		req->op.search.base = base;
 	}
