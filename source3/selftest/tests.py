@@ -1370,6 +1370,13 @@ plantestsuite("samba3.blackbox.smbXsrv_client_dead_rec", "fileserver:local",
                '$SERVER_IP',
                "tmp"])
 
+plantestsuite("samba3.blackbox.smbXsrv_client_cross_node", "clusteredmember:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_smbXsrv_client_cross_node.sh"),
+               configuration,
+               'ctdb0', 'ctdb1',
+               "tmp"])
+
 env = 'fileserver'
 plantestsuite("samba3.blackbox.virus_scanner", "%s:local" % (env),
               [os.path.join(samba3srcdir,
