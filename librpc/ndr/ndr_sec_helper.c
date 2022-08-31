@@ -129,8 +129,6 @@ size_t ndr_size_dom_sid(const struct dom_sid *sid, int flags)
 
 size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags)
 {
-	if (!sid) return 0;
-
 	if (all_zero((const uint8_t *)sid, sizeof(struct dom_sid))) {
 		return 0;
 	}
