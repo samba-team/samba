@@ -22,6 +22,7 @@ import os
 import time
 import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
+from samba.tests import env_loadparm
 import random
 
 
@@ -68,6 +69,32 @@ class NtACLCmdSysvolTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err)
         self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertEqual(out, "", "Shouldn't be any output messages")
+
+    def test_with_missing_files(self):
+        lp = env_loadparm()
+        sysvol = lp.get('path', 'sysvol')
+        realm = lp.get('realm').lower()
+
+        src = os.path.join(sysvol, realm, 'Policies')
+        dest = os.path.join(sysvol, realm, 'Policies-NOT-IN-THE-EXPECTED-PLACE')
+        try:
+            os.rename(src, dest)
+
+            for args in (["sysvolreset", "--use-s3fs"],
+                         ["sysvolreset", "--use-ntvfs"],
+                         ["sysvolreset"],
+                         ["sysvolcheck"]
+            ):
+
+                (result, out, err) = self.runsubcmd("ntacl", *args)
+                self.assertCmdFail(result, f"succeeded with {args} with missing dir")
+                self.assertNotIn("uncaught exception", err,
+                                 "Shouldn't be uncaught exception")
+                self.assertNotRegex(err, '^\s*File [^,]+, line \d+, in',
+                                    "Shouldn't be lines of traceback")
+                self.assertEqual(out, "", "Shouldn't be any output messages")
+        finally:
+            os.rename(dest, src)
 
 
 class NtACLCmdGetSetTestCase(SambaToolCmdTest):
