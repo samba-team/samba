@@ -177,6 +177,14 @@ def level_to_string(level):
     return strings.get(level, "higher than 2016")
 
 
+def string_to_level(string):
+    """Interpret a string indicating a functional level."""
+    try:
+        return string_version_to_constant[string]
+    except KeyError as e:
+        raise CommandError(f"'{string}' is not a valid domain level")
+
+
 def get_testparm_var(testparm, smbconf, varname):
     errfile = open(os.devnull, 'w')
     p = subprocess.Popen([testparm, '-s', '-l',
