@@ -34,12 +34,6 @@ bool locking_end(void);
 
 struct file_id share_mode_lock_file_id(const struct share_mode_lock *lck);
 
-struct share_mode_lock *get_share_mode_lock(
-	TALLOC_CTX *mem_ctx,
-	struct file_id id,
-	const char *servicepath,
-	const struct smb_filename *smb_fname,
-	const struct timespec *old_write_time);
 struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
 						     struct file_id id);
 

@@ -1065,12 +1065,13 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	return 0;
 }
 
-struct share_mode_lock *get_share_mode_lock(
-	TALLOC_CTX *mem_ctx,
-	struct file_id id,
-	const char *servicepath,
-	const struct smb_filename *smb_fname,
-	const struct timespec *old_write_time)
+/*******************************************************************
+ Fetch a share mode where we know one MUST exist. This call reference
+ counts it internally to allow for nested lock fetches.
+********************************************************************/
+
+struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
+						     const struct file_id id)
 {
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
@@ -1081,9 +1082,9 @@ struct share_mode_lock *get_share_mode_lock(
 	}
 
 	status = get_share_mode_lock_internal(id,
-					      servicepath,
-					      smb_fname,
-					      old_write_time,
+					      NULL, /* servicepath */
+					      NULL, /* smb_fname */
+					      NULL, /* old_write_time */
 					      lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_GET_SHARE_MODE_LOCK(status,
@@ -1095,17 +1096,6 @@ struct share_mode_lock *get_share_mode_lock(
 
 	talloc_set_destructor(lck, share_mode_lock_destructor);
 	return lck;
-}
-
-/*******************************************************************
- Fetch a share mode where we know one MUST exist. This call reference
- counts it internally to allow for nested lock fetches.
-********************************************************************/
-
-struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
-						     const struct file_id id)
-{
-	return get_share_mode_lock(mem_ctx, id, NULL, NULL, NULL);
 }
 
 static void share_mode_wakeup_waiters_fn(
