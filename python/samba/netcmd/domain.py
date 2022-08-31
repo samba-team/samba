@@ -1181,16 +1181,7 @@ class cmd_domain_level(Command):
             msgs = []
 
             if domain_level is not None:
-                if domain_level == "2003":
-                    new_level_domain = DS_DOMAIN_FUNCTION_2003
-                elif domain_level == "2008":
-                    new_level_domain = DS_DOMAIN_FUNCTION_2008
-                elif domain_level == "2008_R2":
-                    new_level_domain = DS_DOMAIN_FUNCTION_2008_R2
-                elif domain_level == "2012":
-                    new_level_domain = DS_DOMAIN_FUNCTION_2012
-                elif domain_level == "2012_R2":
-                    new_level_domain = DS_DOMAIN_FUNCTION_2012_R2
+                new_level_domain = string_to_level(domain_level)
 
                 if new_level_domain <= level_domain and level_domain_mixed == 0:
                     raise CommandError("Domain function level can't be smaller than or equal to the actual one!")
@@ -1242,16 +1233,7 @@ class cmd_domain_level(Command):
                 msgs.append("Domain function level changed!")
 
             if forest_level is not None:
-                if forest_level == "2003":
-                    new_level_forest = DS_DOMAIN_FUNCTION_2003
-                elif forest_level == "2008":
-                    new_level_forest = DS_DOMAIN_FUNCTION_2008
-                elif forest_level == "2008_R2":
-                    new_level_forest = DS_DOMAIN_FUNCTION_2008_R2
-                elif forest_level == "2012":
-                    new_level_forest = DS_DOMAIN_FUNCTION_2012
-                elif forest_level == "2012_R2":
-                    new_level_forest = DS_DOMAIN_FUNCTION_2012_R2
+                new_level_forest = string_to_level(forest_level)
 
                 if new_level_forest <= level_forest:
                     raise CommandError("Forest function level can't be smaller than or equal to the actual one!")
@@ -4278,7 +4260,7 @@ class cmd_domain_functional_prep(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         H = kwargs.get("H")
-        target_level = string_version_to_constant[kwargs.get("function_level")]
+        target_level = string_to_level(kwargs.get("function_level"))
         forest_prep = kwargs.get("forest_prep")
         domain_prep = kwargs.get("domain_prep")
 
