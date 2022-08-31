@@ -1151,58 +1151,16 @@ class cmd_domain_level(Command):
 
             self.message("")
 
-            if level_forest == DS_DOMAIN_FUNCTION_2000:
-                outstr = "2000"
-            elif level_forest == DS_DOMAIN_FUNCTION_2003_MIXED:
-                outstr = "2003 with mixed domains/interim (NT4 DC support)"
-            elif level_forest == DS_DOMAIN_FUNCTION_2003:
-                outstr = "2003"
-            elif level_forest == DS_DOMAIN_FUNCTION_2008:
-                outstr = "2008"
-            elif level_forest == DS_DOMAIN_FUNCTION_2008_R2:
-                outstr = "2008 R2"
-            elif level_forest == DS_DOMAIN_FUNCTION_2012:
-                outstr = "2012"
-            elif level_forest == DS_DOMAIN_FUNCTION_2012_R2:
-                outstr = "2012 R2"
-            else:
-                outstr = "higher than 2012 R2"
+            outstr = level_to_string(level_forest)
             self.message("Forest function level: (Windows) " + outstr)
 
-            if level_domain == DS_DOMAIN_FUNCTION_2000 and level_domain_mixed != 0:
+            if level_domain == DS_DOMAIN_FUNCTION_2000 and level_domain_mixed:
                 outstr = "2000 mixed (NT4 DC support)"
-            elif level_domain == DS_DOMAIN_FUNCTION_2000 and level_domain_mixed == 0:
-                outstr = "2000"
-            elif level_domain == DS_DOMAIN_FUNCTION_2003_MIXED:
-                outstr = "2003 with mixed domains/interim (NT4 DC support)"
-            elif level_domain == DS_DOMAIN_FUNCTION_2003:
-                outstr = "2003"
-            elif level_domain == DS_DOMAIN_FUNCTION_2008:
-                outstr = "2008"
-            elif level_domain == DS_DOMAIN_FUNCTION_2008_R2:
-                outstr = "2008 R2"
-            elif level_domain == DS_DOMAIN_FUNCTION_2012:
-                outstr = "2012"
-            elif level_domain == DS_DOMAIN_FUNCTION_2012_R2:
-                outstr = "2012 R2"
             else:
-                outstr = "higher than 2012 R2"
+                outstr = level_to_string(level_domain)
             self.message("Domain function level: (Windows) " + outstr)
 
-            if min_level_dc == DS_DOMAIN_FUNCTION_2000:
-                outstr = "2000"
-            elif min_level_dc == DS_DOMAIN_FUNCTION_2003:
-                outstr = "2003"
-            elif min_level_dc == DS_DOMAIN_FUNCTION_2008:
-                outstr = "2008"
-            elif min_level_dc == DS_DOMAIN_FUNCTION_2008_R2:
-                outstr = "2008 R2"
-            elif min_level_dc == DS_DOMAIN_FUNCTION_2012:
-                outstr = "2012"
-            elif min_level_dc == DS_DOMAIN_FUNCTION_2012_R2:
-                outstr = "2012 R2"
-            else:
-                outstr = "higher than 2012 R2"
+            outstr = level_to_string(min_level_dc)
             self.message("Lowest function level of a DC: (Windows) " + outstr)
 
         elif subcommand == "raise":
