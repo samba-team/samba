@@ -5629,6 +5629,17 @@ static bool lease_match_break_fn(
 	return false;
 }
 
+static void lease_match_fid_fn(struct share_mode_lock *lck,
+			       void *private_data)
+{
+	bool ok;
+
+	ok = share_mode_forall_leases(lck, lease_match_break_fn, private_data);
+	if (!ok) {
+		DBG_DEBUG("share_mode_forall_leases failed\n");
+	}
+}
+
 static NTSTATUS lease_match(connection_struct *conn,
 			    struct smb_request *req,
 			    const struct smb2_lease_key *lease_key,
@@ -5675,8 +5686,6 @@ static NTSTATUS lease_match(connection_struct *conn,
 			.msg_ctx = conn->sconn->msg_ctx,
 			.lease_key = lease_key,
 		};
-		struct share_mode_lock *lck;
-		bool ok;
 
 		if (file_id_equal(&state.ids[i], &state.id)) {
 			/* Don't need to break our own file. */
@@ -5685,22 +5694,13 @@ static NTSTATUS lease_match(connection_struct *conn,
 
 		break_state.id = state.ids[i];
 
-		lck = get_existing_share_mode_lock(
-			talloc_tos(), break_state.id);
-		if (lck == NULL) {
+		status = share_mode_do_locked_vfs_denied(break_state.id,
+							 lease_match_fid_fn,
+							 &break_state);
+		if (!NT_STATUS_IS_OK(status)) {
 			/* Race condition - file already closed. */
 			continue;
 		}
-
-		ok = share_mode_forall_leases(
-			lck, lease_match_break_fn, &break_state);
-		if (!ok) {
-			DBG_DEBUG("share_mode_forall_leases failed\n");
-			TALLOC_FREE(lck);
-			continue;
-		}
-
-		TALLOC_FREE(lck);
 
 		if (break_state.found_lease) {
 			*p_version = break_state.version;
