@@ -111,9 +111,13 @@ from samba.trust_utils import CreateTrustedDomainRelax
 from samba import dsdb
 
 string_version_to_constant = {
+    "2000": DS_DOMAIN_FUNCTION_2000,
+    "2003": DS_DOMAIN_FUNCTION_2003,
+    "2008": DS_DOMAIN_FUNCTION_2008,
     "2008_R2": DS_DOMAIN_FUNCTION_2008_R2,
     "2012": DS_DOMAIN_FUNCTION_2012,
     "2012_R2": DS_DOMAIN_FUNCTION_2012_R2,
+    "2016": DS_DOMAIN_FUNCTION_2016,
 }
 
 common_provision_join_options = [
