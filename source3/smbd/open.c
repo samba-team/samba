@@ -5668,6 +5668,7 @@ static NTSTATUS lease_match(connection_struct *conn,
 			lck, lease_match_break_fn, &break_state);
 		if (!ok) {
 			DBG_DEBUG("share_mode_forall_leases failed\n");
+			TALLOC_FREE(lck);
 			continue;
 		}
 
