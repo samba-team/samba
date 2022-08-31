@@ -101,3 +101,62 @@ class Smb3UnixTests(samba.tests.TestCase):
 
         finally:
             self.disable_smb3unix()
+
+    def test_posix_create_context(self):
+        try:
+            self.enable_smb3unix()
+
+            c = libsmb.Conn(
+                os.getenv("SERVER_IP"),
+                "tmp",
+                self.lp,
+                self.creds,
+                posix=True)
+            self.assertTrue(c.have_posix())
+
+            cc_in=[(libsmb.SMB2_CREATE_TAG_POSIX,b'0000')]
+            fnum,_,cc_out = c.create_ex("",CreateContexts=cc_in)
+            self.assertEqual(cc_in[0][0],cc_out[0][0])
+
+            c.close(fnum)
+
+        finally:
+            self.disable_smb3unix()
+
+    def test_posix_create_context_noposix(self):
+        c = libsmb.Conn(
+            os.getenv("SERVER_IP"),
+            "tmp",
+            self.lp,
+            self.creds,
+            posix=True)
+        self.assertFalse(c.have_posix())
+
+        cc_in=[(libsmb.SMB2_CREATE_TAG_POSIX,b'0000')]
+        fnum,_,cc_out = c.create_ex("",CreateContexts=cc_in)
+        self.assertEqual(len(cc_out), 0)
+
+        c.close(fnum)
+
+    def test_posix_create_invalid_context_length(self):
+        try:
+            self.enable_smb3unix()
+
+            c = libsmb.Conn(
+                os.getenv("SERVER_IP"),
+                "tmp",
+                self.lp,
+                self.creds,
+                posix=True)
+            self.assertTrue(c.have_posix())
+
+            cc_in=[(libsmb.SMB2_CREATE_TAG_POSIX,b'00000')]
+
+            with self.assertRaises(NTSTATUSError) as cm:
+                fnum,_,cc_out = c.create_ex("",CreateContexts=cc_in)
+
+            e = cm.exception
+            self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_PARAMETER)
+
+        finally:
+            self.disable_smb3unix()
