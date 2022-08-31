@@ -943,37 +943,63 @@ void set_delete_on_close_lck(files_struct *fsp,
 	TALLOC_FREE(state.blob.data);
 }
 
+struct set_delete_on_close_locked_state {
+	struct files_struct *fsp;
+	bool delete_on_close;
+	const struct security_token *nt_tok;
+	const struct security_unix_token *tok;
+};
+
+static void set_delete_on_close_locked(struct share_mode_lock *lck,
+				       void *private_data)
+{
+	struct set_delete_on_close_locked_state *state =
+		(struct set_delete_on_close_locked_state *)private_data;
+
+	if (state->delete_on_close) {
+		set_delete_on_close_lck(state->fsp,
+					lck,
+					state->nt_tok,
+					state->tok);
+	} else {
+		reset_delete_on_close_lck(state->fsp, lck);
+	}
+
+	if (state->fsp->fsp_flags.is_directory) {
+		send_stat_cache_delete_message(state->fsp->conn->sconn->msg_ctx,
+					       state->fsp->fsp_name->base_name);
+	}
+
+	state->fsp->fsp_flags.delete_on_close = state->delete_on_close;
+}
+
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
 			const struct security_token *nt_tok,
 			const struct security_unix_token *tok)
 {
-	struct share_mode_lock *lck;
+	struct set_delete_on_close_locked_state state = {
+		.fsp = fsp,
+		.delete_on_close = delete_on_close,
+		.nt_tok = nt_tok,
+		.tok = tok,
+	};
+	NTSTATUS status;
 
 	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
 		  "%s, file %s\n",
 		  delete_on_close ? "Adding" : "Removing", fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp)));
 
-	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
-	if (lck == NULL) {
-		return False;
-	}
-
-	if (delete_on_close) {
-		set_delete_on_close_lck(fsp, lck, nt_tok, tok);
-	} else {
-		reset_delete_on_close_lck(fsp, lck);
-	}
-
 	if (fsp->fsp_flags.is_directory) {
 		SMB_ASSERT(!is_ntfs_stream_smb_fname(fsp->fsp_name));
-		send_stat_cache_delete_message(fsp->conn->sconn->msg_ctx,
-					       fsp->fsp_name->base_name);
 	}
 
-	TALLOC_FREE(lck);
-
-	fsp->fsp_flags.delete_on_close = delete_on_close;
+	status = share_mode_do_locked_vfs_denied(fsp->file_id,
+						 set_delete_on_close_locked,
+						 &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
 
 	return True;
 }
