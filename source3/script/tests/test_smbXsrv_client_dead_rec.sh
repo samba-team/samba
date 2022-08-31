@@ -62,7 +62,7 @@ ${SMBCLIENT} //"${SERVER}"/"${SHARE}" -U"${USER}"%"${PASSWORD}" \
 	--option="libsmb:client_guid=6112f7d3-9528-4a2a-8861-0ca129aae6c4" \
 	-c exit
 
-rm -f smbclient-stdin smbclient-stdout aio_outstanding_testfile
+rm -f smbclient-stdin smbclient-stdout smbclient-stderr
 
 #
 # Ensure the panic count didn't change.
