@@ -81,6 +81,7 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2008_R2,
     DS_DOMAIN_FUNCTION_2012,
     DS_DOMAIN_FUNCTION_2012_R2,
+    DS_DOMAIN_FUNCTION_2016,
     DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL,
     DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL,
     UF_WORKSTATION_TRUST_ACCOUNT,
@@ -167,8 +168,9 @@ def level_to_string(level):
         DS_DOMAIN_FUNCTION_2008_R2: "2008 R2",
         DS_DOMAIN_FUNCTION_2012: "2012",
         DS_DOMAIN_FUNCTION_2012_R2: "2012 R2",
+        DS_DOMAIN_FUNCTION_2016: "2016",
     }
-    return strings.get(level, "higher than 2012 R2")
+    return strings.get(level, "higher than 2016")
 
 
 def get_testparm_var(testparm, smbconf, varname):
