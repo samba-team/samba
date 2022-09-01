@@ -154,6 +154,42 @@ static uint8_t flags_to_smb2_oplock(uint32_t create_flags)
 }
 
 /***************************************************************
+ If we're on a DFS share, ensure we convert to a full DFS path
+ if this hasn't already been done.
+***************************************************************/
+
+static const char *smb2_dfs_share_path(TALLOC_CTX *ctx,
+				       struct cli_state *cli,
+				       const char *path)
+{
+	bool is_dfs = smbXcli_conn_dfs_supported(cli->conn) &&
+			smbXcli_tcon_is_dfs_share(cli->smb2.tcon);
+	bool is_already_dfs_path = false;
+
+	if (!is_dfs) {
+		return path;
+	}
+	is_already_dfs_path = cli_dfs_is_already_full_path(cli, path);
+	if (is_already_dfs_path) {
+		return path;
+	}
+	if (path[0] == '\0') {
+		return talloc_asprintf(ctx,
+				       "%s\\%s",
+					smbXcli_conn_remote_name(cli->conn),
+					cli->share);
+	}
+	while (*path == '\\') {
+		path++;
+	}
+	return talloc_asprintf(ctx,
+			       "%s\\%s\\%s",
+			       smbXcli_conn_remote_name(cli->conn),
+			       cli->share,
+			       path);
+}
+
+/***************************************************************
  Small wrapper that allows SMB2 create to return a uint16_t fnum.
 ***************************************************************/
 
@@ -252,6 +288,11 @@ struct tevent_req *cli_smb2_create_fnum_send(
 				return tevent_req_post(req, ev);
 			}
 		}
+	}
+
+	fname = smb2_dfs_share_path(state, cli, fname);
+	if (tevent_req_nomem(fname, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	/* SMB2 is pickier about pathnames. Ensure it doesn't
