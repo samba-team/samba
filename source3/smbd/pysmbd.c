@@ -811,6 +811,14 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args, PyObject *kw
 	status = set_nt_acl_conn(fname, security_info_sent, sd, conn);
 	TALLOC_FREE(frame);
 	if (NT_STATUS_IS_ERR(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			/*
+			 * This will show up as a FileNotFoundError in python.
+			 */
+			PyErr_SetFromErrnoWithFilename(PyExc_OSError, fname);
+		} else {
+			PyErr_SetNTSTATUS(status);
+		}
 		return NULL;
 	}
 
