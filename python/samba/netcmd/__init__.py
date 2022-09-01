@@ -137,7 +137,6 @@ class Command(object):
             self.errf.write("ERROR: %s\n" % (message))
         else:
             self.errf.write("ERROR(%s): %s - %s\n" % (str(etype), message, evalue))
-            force_traceback = True
 
         if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback, file=self.errf)
