@@ -266,10 +266,9 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 					      in_output_buffer_length,
 					      in_completion_filter,
 					      recursive);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (tevent_req_nterror(req, status)) {
 			DEBUG(10, ("change_notify_create returned %s\n",
 				   nt_errstr(status)));
-			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
 	}
@@ -307,8 +306,7 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 			in_completion_filter,
 			recursive, fsp,
 			smbd_smb2_notify_reply);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -358,8 +356,7 @@ static void smbd_smb2_notify_reply(struct smb_request *smbreq,
 
 	tevent_req_defer_callback(req, state->smb2req->sconn->ev_ctx);
 
-	if (!NT_STATUS_IS_OK(state->status)) {
-		tevent_req_nterror(req, state->status);
+	if (tevent_req_nterror(req, state->status)) {
 		return;
 	}
 

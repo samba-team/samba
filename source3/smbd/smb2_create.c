@@ -806,8 +806,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 
 		status = open_np_file(smb1req, pipe_name, &state->result);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, state->ev);
 		}
 		state->info = FILE_WAS_OPENED;
@@ -824,16 +823,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 
 		status = file_new(smb1req, smb1req->conn, &state->result);
-		if(!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, state->ev);
 		}
 
 		status = print_spool_open(state->result, in_name,
 					  smb1req->vuid);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (tevent_req_nterror(req, status)) {
 			file_free(smb1req, state->result);
-			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}
 		state->info = FILE_WAS_CREATED;
@@ -844,8 +841,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	/* Check for trailing slash specific directory handling. */
 	status = windows_name_trailing_check(state->fname, in_create_options);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, state->ev);
 	}
 
@@ -887,10 +883,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					       state->create_guid,
 					       now,
 					       &state->op);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (tevent_req_nterror(req, status)) {
 			DBG_NOTICE("smb2srv_open_recreate failed: %s\n",
 				   nt_errstr(status));
-			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}
 
@@ -929,10 +924,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		status = smbd_smb2_create_durable_lease_check(
 			smb1req, state->fname, state->result, state->lease_ptr);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (tevent_req_nterror(req, status)) {
 			close_file_free(
 				smb1req, &state->result, SHUTDOWN_CLOSE);
-			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}
 
@@ -970,8 +964,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	/* convert '\\' into '/' */
 	status = check_path_syntax_smb2(state->fname, is_dfs);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, state->ev);
 	}
 
@@ -986,8 +979,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->twrp_time,
 		&dirfsp,
 		&smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, state->ev);
 	}
 
@@ -1266,10 +1258,9 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 		} else if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_NOT_AVAILABLE)) {
 			tevent_req_nterror(req, status);
 			return;
-		} else if (!NT_STATUS_IS_OK(status)) {
+		} else if (tevent_req_nterror(req, status)) {
 			DBG_WARNING("smb2srv_open_lookup_replay_cache "
 				    "failed: %s\n", nt_errstr(status));
-			tevent_req_nterror(req, status);
 			return;
 		} else if (!state->replay_operation) {
 			/*
@@ -1438,8 +1429,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 				state->out_context_blobs,
 				SMB2_CREATE_TAG_MXAC,
 				blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				tevent_req_nterror(req, status);
+			if (tevent_req_nterror(req, status)) {
 				tevent_req_post(req, state->ev);
 				return;
 			}
@@ -1475,8 +1465,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 		DEBUG(10, ("smb2_create_send: smbXsrv_open_update "
 			   "returned %s\n",
 			   nt_errstr(status)));
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			tevent_req_post(req, state->ev);
 			return;
 		}
@@ -1496,8 +1485,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 					      state->out_context_blobs,
 					      SMB2_CREATE_TAG_DHNQ,
 					      blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			tevent_req_post(req, state->ev);
 			return;
 		}
@@ -1526,8 +1514,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 					      state->out_context_blobs,
 					      SMB2_CREATE_TAG_DH2Q,
 					      blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			tevent_req_post(req, state->ev);
 			return;
 		}
@@ -1554,8 +1541,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 					      state->out_context_blobs,
 					      SMB2_CREATE_TAG_QFID,
 					      blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			tevent_req_post(req, state->ev);
 			return;
 		}
@@ -1584,8 +1570,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 			state, state->out_context_blobs,
 			SMB2_CREATE_TAG_RQLS,
 			data_blob_const(buf, lease_len));
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			tevent_req_post(req, state->ev);
 			return;
 		}

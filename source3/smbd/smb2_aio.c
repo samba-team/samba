@@ -411,8 +411,7 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 		   (unsigned int)nread,
 		   vfs_aio_state.error, nt_errstr(status)));
 
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(subreq, status);
+	if (tevent_req_nterror(subreq, status)) {
 		return;
 	}
 	tevent_req_done(subreq);
@@ -560,8 +559,7 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 		   (unsigned int)nwritten,
 		   err, nt_errstr(status)));
 
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(subreq, status);
+	if (tevent_req_nterror(subreq, status)) {
 		return;
 	}
 	tevent_req_done(subreq);

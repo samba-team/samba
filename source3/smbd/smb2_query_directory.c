@@ -896,8 +896,7 @@ static void fetch_write_time_done(struct tevent_req *subreq)
 		tevent_req_done(req);
 		return;
 	}
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -1008,8 +1007,7 @@ static void fetch_dos_mode_done(struct tevent_req *subreq)
 		tevent_req_done(req);
 		return;
 	}
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
