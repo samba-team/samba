@@ -405,8 +405,11 @@ static struct tevent_req *cli_list_old_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), mask,
-				   strlen(mask)+1, NULL);
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   state->mask,
+				   strlen(state->mask)+1,
+				   NULL);
 
 	bytes = smb_bytes_push_bytes(bytes, 5, (const uint8_t *)&zero, 2);
 	if (tevent_req_nomem(bytes, req)) {
