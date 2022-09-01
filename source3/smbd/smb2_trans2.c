@@ -6540,20 +6540,48 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
  Delete a file with POSIX semantics.
 ****************************************************************************/
 
+struct smb_posix_unlink_state {
+	struct smb_filename *smb_fname;
+	struct files_struct *fsp;
+	NTSTATUS status;
+};
+
+static void smb_posix_unlink_locked(struct share_mode_lock *lck,
+				    void *private_data)
+{
+	struct smb_posix_unlink_state *state = private_data;
+	char del = 1;
+	bool other_nonposix_opens;
+
+	other_nonposix_opens = has_other_nonposix_opens(lck, state->fsp);
+	if (other_nonposix_opens) {
+		/* Fail with sharing violation. */
+		state->status = NT_STATUS_SHARING_VIOLATION;
+		return;
+	}
+
+	/*
+	 * Set the delete on close.
+	 */
+	state->status = smb_set_file_disposition_info(state->fsp->conn,
+						      &del,
+						      1,
+						      state->fsp,
+						      state->smb_fname);
+}
+
 static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				 struct smb_request *req,
 				const char *pdata,
 				int total_data,
 				struct smb_filename *smb_fname)
 {
+	struct smb_posix_unlink_state state = {};
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = NULL;
 	uint16_t flags = 0;
-	char del = 1;
 	int info = 0;
 	int create_options = 0;
-	struct share_mode_lock *lck = NULL;
-	bool other_nonposix_opens;
 	struct smb2_create_blobs *posx = NULL;
 
 	if (total_data < 2) {
@@ -6619,33 +6647,22 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	 * non-POSIX opens return SHARING_VIOLATION.
 	 */
 
-	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
-	if (lck == NULL) {
-		DEBUG(0, ("smb_posix_unlink: Could not get share mode "
-			  "lock for file %s\n", fsp_str_dbg(fsp)));
+	state = (struct smb_posix_unlink_state) {
+		.smb_fname = smb_fname,
+		.fsp = fsp,
+	};
+
+	status = share_mode_do_locked_vfs_allowed(fsp->file_id,
+						  smb_posix_unlink_locked,
+						  &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("share_mode_do_locked_vfs_allowed(%s) failed - %s\n",
+			fsp_str_dbg(fsp), nt_errstr(status));
 		close_file_free(req, &fsp, NORMAL_CLOSE);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	other_nonposix_opens = has_other_nonposix_opens(lck, fsp);
-	if (other_nonposix_opens) {
-		/* Fail with sharing violation. */
-		TALLOC_FREE(lck);
-		close_file_free(req, &fsp, NORMAL_CLOSE);
-		return NT_STATUS_SHARING_VIOLATION;
-	}
-
-	/*
-	 * Set the delete on close.
-	 */
-	status = smb_set_file_disposition_info(conn,
-						&del,
-						1,
-						fsp,
-						smb_fname);
-
-	TALLOC_FREE(lck);
-
+	status = state.status;
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file_free(req, &fsp, NORMAL_CLOSE);
 		return status;
