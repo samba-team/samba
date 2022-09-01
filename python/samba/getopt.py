@@ -31,6 +31,9 @@ from samba.credentials import (
 import sys
 
 
+OptionError = optparse.OptionValueError
+
+
 class SambaOptions(optparse.OptionGroup):
     """General Samba-related command line options."""
 

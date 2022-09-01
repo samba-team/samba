@@ -19,7 +19,7 @@
 import optparse
 import samba
 from samba import colour
-from samba.getopt import SambaOption
+from samba.getopt import SambaOption, OptionError
 from samba.logger import get_samba_logger
 from ldb import LdbError, ERR_INVALID_CREDENTIALS
 import sys
@@ -110,7 +110,12 @@ class Command(object):
             message = "uncaught exception"
             force_traceback = True
 
-        if isinstance(inner_exception, LdbError):
+        if isinstance(e, OptionError):
+            print(evalue, file=self.errf)
+            self.usage()
+            force_traceback = False
+
+        elif isinstance(inner_exception, LdbError):
             (ldb_ecode, ldb_emsg) = inner_exception.args
             if ldb_ecode == ERR_INVALID_CREDENTIALS:
                 print("Invalid username or password", file=self.errf)
