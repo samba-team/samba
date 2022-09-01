@@ -1165,6 +1165,7 @@ struct timespec get_share_mode_write_time(struct share_mode_lock *lck)
 
 struct file_has_open_streams_state {
 	bool found_one;
+	bool ok;
 };
 
 static bool file_has_open_streams_fn(
@@ -1187,25 +1188,35 @@ static bool file_has_open_streams_fn(
 	return true;
 }
 
+static void file_has_open_streams_locked(struct share_mode_lock *lck,
+					 void *private_data)
+{
+	struct file_has_open_streams_state *state = private_data;
+
+	state->ok = share_mode_forall_entries(lck,
+					      file_has_open_streams_fn,
+					      private_data);
+}
+
 bool file_has_open_streams(files_struct *fsp)
 {
 	struct file_has_open_streams_state state = { .found_one = false };
-	struct share_mode_lock *lock = NULL;
-	bool ok;
+	NTSTATUS status;
 
-	lock = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
-	if (lock == NULL) {
+	status = share_mode_do_locked_vfs_denied(fsp->file_id,
+						 file_has_open_streams_locked,
+						 &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("share_mode_do_locked_vfs_denied() failed - %s\n",
+			  nt_errstr(status));
 		return false;
 	}
 
-	ok = share_mode_forall_entries(
-		lock, file_has_open_streams_fn, &state);
-	TALLOC_FREE(lock);
-
-	if (!ok) {
+	if (!state.ok) {
 		DBG_DEBUG("share_mode_forall_entries failed\n");
 		return false;
 	}
+
 	return state.found_one;
 }
 
