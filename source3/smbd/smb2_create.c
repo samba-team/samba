@@ -1387,6 +1387,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 {
 	struct smbd_smb2_create_state *state = tevent_req_data(
 		req, struct smbd_smb2_create_state);
+	connection_struct *conn = state->result->conn;
 	NTSTATUS status;
 
 	/*
@@ -1409,7 +1410,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 			DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
 			status = smbd_calculate_access_mask_fsp(
-					state->result->conn->cwd_fsp,
+					conn->cwd_fsp,
 					state->result,
 					false,
 					SEC_FLAG_MAXIMUM_ALLOWED,
@@ -1523,8 +1524,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 		SMB_STRUCT_STAT *base_sp = state->result->base_fsp ?
 			&state->result->base_fsp->fsp_name->st :
 			&state->result->fsp_name->st;
-		uint64_t file_id = SMB_VFS_FS_FILE_ID(
-			state->result->conn, base_sp);
+		uint64_t file_id = SMB_VFS_FS_FILE_ID(conn, base_sp);
 		DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
 		ZERO_STRUCT(p);
