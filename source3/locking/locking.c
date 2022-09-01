@@ -1108,23 +1108,52 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 	return True;
 }
 
-bool set_write_time(struct file_id fileid, struct timespec write_time)
+struct set_write_time_state {
+	struct file_id fileid;
+	struct timespec write_time;
+	bool ok;
+};
+
+static void set_write_time_fn(struct share_mode_lock *lck,
+			      void *private_data)
 {
-	struct share_mode_lock *lck;
+	struct set_write_time_state *state = private_data;
 	struct share_mode_data *d = NULL;
 	struct file_id_buf idbuf;
 	struct timeval_buf tbuf;
 	NTSTATUS status;
 
-	lck = get_existing_share_mode_lock(talloc_tos(), fileid);
-	if (lck == NULL) {
-		return False;
-	}
-
 	status = share_mode_lock_access_private_data(lck, &d);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Any error recovery possible here ? */
 		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s id=%s - %s\n",
+			timespec_string_buf(&state->write_time, true, &tbuf),
+			file_id_str_buf(state->fileid, &idbuf),
+			nt_errstr(status));
+		return;
+	}
+
+	share_mode_set_old_write_time(lck, state->write_time);
+
+	state->ok = true;
+}
+
+bool set_write_time(struct file_id fileid, struct timespec write_time)
+{
+	struct set_write_time_state state = {
+		.fileid = fileid,
+		.write_time = write_time,
+	};
+	struct file_id_buf idbuf;
+	struct timeval_buf tbuf;
+	NTSTATUS status;
+
+	status = share_mode_do_locked_vfs_denied(fileid,
+						 set_write_time_fn,
+						 &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("share_mode_do_locked_vfs_denied() failed for "
 			"%s id=%s - %s\n",
 			timespec_string_buf(&write_time, true, &tbuf),
 			file_id_str_buf(fileid, &idbuf),
@@ -1132,10 +1161,7 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 		return false;
 	}
 
-	share_mode_set_old_write_time(lck, write_time);
-
-	TALLOC_FREE(lck);
-	return True;
+	return state.ok;
 }
 
 struct timespec get_share_mode_write_time(struct share_mode_lock *lck)
