@@ -1033,7 +1033,14 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		state->stream = strchr_m(state->smb_fname->base_name, ':');
 
 		if (state->stream != NULL) {
-			char *tmp = talloc_strdup(state->smb_fname, state->stream);
+			char *tmp = NULL;
+
+			if (!(conn->fs_capabilities & FILE_NAMED_STREAMS)) {
+				status = NT_STATUS_OBJECT_NAME_INVALID;
+				goto err;
+			}
+
+			tmp = talloc_strdup(state->smb_fname, state->stream);
 			if (tmp == NULL) {
 				status = NT_STATUS_NO_MEMORY;
 				goto err;
