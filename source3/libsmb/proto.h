@@ -168,6 +168,9 @@ NTSTATUS cli_dfs_target_check(TALLOC_CTX *mem_ctx,
 			struct cli_state *cli,
 			const char *fname_dst,
 			const char **fname_dst_out);
+char *smb1_dfs_share_path(TALLOC_CTX *ctx,
+			  struct cli_state *cli,
+			  const char *path);
 
 /* The following definitions come from libsmb/clientgen.c  */
 

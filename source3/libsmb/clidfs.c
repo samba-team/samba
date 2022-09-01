@@ -1347,3 +1347,53 @@ NTSTATUS cli_dfs_target_check(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(dfs_prefix);
 	return NT_STATUS_OK;
 }
+
+/********************************************************************
+ Convert a pathname into a DFS path if it hasn't already been converted.
+ Always returns a talloc'ed path, makes it easy to pass const paths in.
+********************************************************************/
+
+char *smb1_dfs_share_path(TALLOC_CTX *ctx,
+			  struct cli_state *cli,
+			  const char *path)
+{
+	bool is_dfs = smbXcli_conn_dfs_supported(cli->conn) &&
+			smbXcli_tcon_is_dfs_share(cli->smb1.tcon);
+	bool is_already_dfs_path = false;
+	bool posix = (cli->requested_posix_capabilities &
+			CIFS_UNIX_POSIX_PATHNAMES_CAP);
+	char sepchar = (posix ? '/' : '\\');
+
+	if (!is_dfs) {
+		return talloc_strdup(ctx, path);
+	}
+	is_already_dfs_path = cli_dfs_is_already_full_path(cli, path);
+	if (is_already_dfs_path) {
+		return talloc_strdup(ctx, path);
+	}
+	/*
+	 * We don't use cli_dfs_make_full_path() as,
+	 * when given a null path, cli_dfs_make_full_path
+	 * deliberately adds a trailing '\\' (this is by
+	 * design to check for an existing DFS prefix match).
+	 */
+	if (path[0] == '\0') {
+		return talloc_asprintf(ctx,
+				       "%c%s%c%s",
+				       sepchar,
+				       smbXcli_conn_remote_name(cli->conn),
+				       sepchar,
+				       cli->share);
+	}
+	while (*path == sepchar) {
+		path++;
+	}
+	return talloc_asprintf(ctx,
+			       "%c%s%c%s%c%s",
+			       sepchar,
+			       smbXcli_conn_remote_name(cli->conn),
+			       sepchar,
+			       cli->share,
+			       sepchar,
+			       path);
+}
