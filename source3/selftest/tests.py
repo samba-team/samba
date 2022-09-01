@@ -1080,6 +1080,8 @@ for t in tests:
     elif t == "smb2.twrp":
         # This is being driven by samba3.blackbox.shadow_copy_torture
         pass
+    elif t == "smb2.create_no_streams":
+        plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/nfs4acl_simple_40 -U$USERNAME%$PASSWORD')
     elif t == "rpc.wkssvc":
         plansmbtorture4testsuite(t, "ad_member", '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
     elif t == "rpc.srvsvc":
