@@ -25,61 +25,60 @@
 /*
  * SMB2 POSIX create context return details.
  */
-DATA_BLOB smb2_posix_cc_info(TALLOC_CTX *mem_ctx,
-				connection_struct *conn,
-				uint32_t reparse_tag,
-				const SMB_STRUCT_STAT *psbuf)
+ssize_t smb2_posix_cc_info(
+	connection_struct *conn,
+	uint32_t reparse_tag,
+	const SMB_STRUCT_STAT *psbuf,
+	const struct dom_sid *owner,
+	const struct dom_sid *group,
+	uint8_t *buf,
+	size_t buflen)
 {
-	DATA_BLOB ret_blob = data_blob_null;
-	struct dom_sid sid_owner;
-	struct dom_sid sid_group;
-	size_t owner_sid_size = 0;
-	size_t group_sid_size = 0;
+	size_t owner_sid_size = ndr_size_dom_sid(owner, 0);
+	size_t group_sid_size = ndr_size_dom_sid(group, 0);
 	size_t b_size = 12;
 
-	uid_to_sid(&sid_owner, psbuf->st_ex_uid);
-	owner_sid_size = ndr_size_dom_sid(&sid_owner, 0);
+	owner_sid_size = ndr_size_dom_sid(owner, 0);
 	if (b_size + owner_sid_size < b_size) {
-		return data_blob_null;
+		return -1;
 	}
 	b_size += owner_sid_size;
 
-	gid_to_sid(&sid_group, psbuf->st_ex_gid);
-	group_sid_size = ndr_size_dom_sid(&sid_group, 0);
+	group_sid_size = ndr_size_dom_sid(group, 0);
 	if (b_size + group_sid_size < b_size) {
-		return data_blob_null;
+		return -1;
 	}
 	b_size += group_sid_size;
 
-	ret_blob = data_blob_talloc(mem_ctx,
-				    NULL,
-				    b_size);
-	if (ret_blob.data == NULL) {
-		return data_blob_null;
+	if (buflen < b_size) {
+		return b_size;
 	}
 
 	/* number of hard links */
-	PUSH_LE_U32(ret_blob.data, 0, psbuf->st_ex_nlink);
+	PUSH_LE_U32(buf, 0, psbuf->st_ex_nlink);
 
 	/* Reparse tag if FILE_FLAG_REPARSE is set, else zero. */
-	PUSH_LE_U32(ret_blob.data, 4, reparse_tag);
+	PUSH_LE_U32(buf, 4, reparse_tag);
 
 	/*
 	 * Remove type info from mode, leaving only the
 	 * permissions and setuid/gid bits.
 	 */
-	PUSH_LE_U32(ret_blob.data,
+	PUSH_LE_U32(buf,
 		    8,
 		    unix_perms_to_wire(psbuf->st_ex_mode & ~S_IFMT));
 
+	buf += 12;
+	buflen -= 12;
+
 	/* Now add in the owner and group sids. */
-	sid_linearize(ret_blob.data + 12,
-		      b_size - 12,
-		      &sid_owner);
-	sid_linearize(ret_blob.data + 12 + owner_sid_size,
-		      b_size - owner_sid_size - 12,
-		      &sid_group);
-	return ret_blob;
+	sid_linearize(buf, buflen, owner);
+	buf += owner_sid_size;
+	buflen -= owner_sid_size;
+
+	sid_linearize(buf, buflen, group);
+
+	return b_size;
 }
 
 /*
@@ -93,24 +92,28 @@ DATA_BLOB store_smb2_posix_info(TALLOC_CTX *mem_ctx,
 {
 	uint64_t file_id = SMB_VFS_FS_FILE_ID(conn, psbuf);
 	DATA_BLOB ret_blob = data_blob_null;
-	DATA_BLOB cc = smb2_posix_cc_info(mem_ctx,
-					conn,
-					reparse_tag,
-					psbuf);
-	if (cc.data == NULL) {
+	struct dom_sid owner = { .sid_rev_num = 0, };
+	struct dom_sid group = { .sid_rev_num = 0, };
+	ssize_t cc_len;
+
+	uid_to_sid(&owner, psbuf->st_ex_uid);
+	gid_to_sid(&group, psbuf->st_ex_gid);
+
+	cc_len = smb2_posix_cc_info(
+		conn, reparse_tag, psbuf, &owner, &group, NULL, 0);
+
+	if (cc_len == -1) {
 		return data_blob_null;
 	}
 
-	if (cc.length + 68 < 68) {
-		data_blob_free(&cc);
+	if (cc_len + 68 < 68) {
 		return data_blob_null;
 	}
 
 	ret_blob = data_blob_talloc(mem_ctx,
 				NULL,
-				cc.length + 68);
+				cc_len + 68);
 	if (ret_blob.data == NULL) {
-		data_blob_free(&cc);
 		return data_blob_null;
 	}
 
@@ -164,7 +167,14 @@ DATA_BLOB store_smb2_posix_info(TALLOC_CTX *mem_ctx,
 	/*
 	 * Append a POSIX create context (variable bytes).
 	 */
-	memcpy(ret_blob.data + 68, cc.data, cc.length);
-	data_blob_free(&cc);
+	smb2_posix_cc_info(
+		conn,
+		reparse_tag,
+		psbuf,
+		&owner,
+		&group,
+		ret_blob.data + 68,
+		cc_len);
+
 	return ret_blob;
 }

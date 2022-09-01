@@ -1258,10 +1258,14 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 				       DATA_BLOB *new_cookie);
 
 /* The following definitions come from smbd/smb2_posix.c */
-DATA_BLOB smb2_posix_cc_info(TALLOC_CTX *mem_ctx,
-				connection_struct *conn,
-				uint32_t reparse_tag,
-				const SMB_STRUCT_STAT *psbuf);
+ssize_t smb2_posix_cc_info(
+	connection_struct *conn,
+	uint32_t reparse_tag,
+	const SMB_STRUCT_STAT *psbuf,
+	const struct dom_sid *owner,
+	const struct dom_sid *group,
+	uint8_t *buf,
+	size_t buflen);
 DATA_BLOB store_smb2_posix_info(TALLOC_CTX *mem_ctx,
 				connection_struct *conn,
 				const SMB_STRUCT_STAT *psbuf,
