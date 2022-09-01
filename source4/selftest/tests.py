@@ -373,6 +373,7 @@ smb2_s3only = [
     "smb2.timestamps",
     "smb2.async_dosmode",
     "smb2.twrp",
+    "smb2.create_no_streams",
 ]
 smb2 = [x for x in smbtorture4_testsuites("smb2.") if x not in smb2_s3only]
 
