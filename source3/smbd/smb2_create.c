@@ -30,6 +30,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "messages.h"
 #include "lib/util_ea.h"
+#include "source3/passdb/lookup_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -542,6 +543,7 @@ struct smbd_smb2_create_state {
 	struct smb2_create_blob *alsi;
 	struct smb2_create_blob *twrp;
 	struct smb2_create_blob *qfid;
+	struct smb2_create_blob *posx;
 	struct smb2_create_blob *svhdx;
 
 	uint8_t out_oplock_level;
@@ -575,14 +577,6 @@ static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 		req, struct smbd_smb2_create_state);
 	struct smbd_smb2_request *smb2req = state->smb2req;
 	struct smbXsrv_connection *xconn = smb2req->xconn;
-
-	/*
-	 * For now, remove the posix create context from the wire. We
-	 * are using it inside smbd and will properly use it once
-	 * smb3.11 unix extensions will be done. So in the future we
-	 * will remove it only if unix extensions are not negotiated.
-	 */
-	smb2_create_blob_remove(in_context_blobs, SMB2_CREATE_TAG_POSIX);
 
 	state->dhnq = smb2_create_blob_find(in_context_blobs,
 					    SMB2_CREATE_TAG_DHNQ);
@@ -688,6 +682,15 @@ static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 		 */
 		state->svhdx = smb2_create_blob_find(
 			in_context_blobs, SVHDX_OPEN_DEVICE_CONTEXT);
+	}
+	if (xconn->smb2.server.posix_extensions_negotiated) {
+		/*
+		 * Negprot only allowed this for proto>=3.11
+		 */
+		SMB_ASSERT(xconn->protocol >= PROTOCOL_SMB3_11);
+
+		state->posx = smb2_create_blob_find(
+			in_context_blobs, SMB2_CREATE_TAG_POSIX);
 	}
 
 	return NT_STATUS_OK;
@@ -1383,6 +1386,15 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 			}
 		}
 	}
+
+	if (state->posx != NULL) {
+		if (state->posx->data.length != 4) {
+			DBG_DEBUG("Got %zu bytes POSX cctx, expected 4\n",
+				  state->posx->data.length);
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
+		}
+	}
 }
 
 static void smbd_smb2_create_after_exec(struct tevent_req *req)
@@ -1576,6 +1588,53 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 			tevent_req_nterror(req, status);
 			tevent_req_post(req, state->ev);
 			return;
+		}
+	}
+
+	if (state->posx != NULL) {
+		struct dom_sid owner = { .sid_rev_num = 0, };
+		struct dom_sid group = { .sid_rev_num = 0, };
+		struct stat_ex *psbuf = &state->result->fsp_name->st;
+		ssize_t cc_len;
+
+		uid_to_sid(&owner, psbuf->st_ex_uid);
+		gid_to_sid(&group, psbuf->st_ex_gid);
+
+		cc_len = smb2_posix_cc_info(
+			conn, 0, psbuf, &owner, &group, NULL, 0);
+
+		if (cc_len == -1) {
+			tevent_req_nterror(
+				req, NT_STATUS_INSUFFICIENT_RESOURCES);
+			tevent_req_post(req, state->ev);
+			return;
+		}
+
+		{
+			/*
+			 * cc_len is 68 + 2 SIDs, allocate on the stack
+			 */
+			uint8_t buf[cc_len];
+			DATA_BLOB blob = { .data = buf, .length = cc_len, };
+
+			smb2_posix_cc_info(
+				conn,
+				0,
+				psbuf,
+				&owner,
+				&group,
+				buf,
+				sizeof(buf));
+
+			status = smb2_create_blob_add(
+				state->out_context_blobs,
+				state->out_context_blobs,
+				SMB2_CREATE_TAG_POSIX,
+				blob);
+			if (tevent_req_nterror(req, status)) {
+				tevent_req_post(req, state->ev);
+				return;
+			}
 		}
 	}
 
