@@ -394,6 +394,10 @@ static struct tevent_req *cli_list_old_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->mask, req)) {
 		return tevent_req_post(req, ev);
 	}
+	state->mask = smb1_dfs_share_path(state, cli, state->mask);
+	if (tevent_req_nomem(state->mask, req)) {
+		return tevent_req_post(req, ev);
+	}
 	usable_space = cli_state_available_size(cli, 100);
 	state->num_asked = usable_space / DIR_STRUCT_SIZE;
 
