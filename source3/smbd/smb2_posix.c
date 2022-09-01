@@ -84,14 +84,15 @@ ssize_t smb2_posix_cc_info(
 /*
  * SMB2 POSIX info level.
  */
-DATA_BLOB store_smb2_posix_info(TALLOC_CTX *mem_ctx,
-				connection_struct *conn,
-				const SMB_STRUCT_STAT *psbuf,
-				uint32_t reparse_tag,
-				uint32_t dos_attributes)
+ssize_t store_smb2_posix_info(
+	connection_struct *conn,
+	const SMB_STRUCT_STAT *psbuf,
+	uint32_t reparse_tag,
+	uint32_t dos_attributes,
+	uint8_t *buf,
+	size_t buflen)
 {
 	uint64_t file_id = SMB_VFS_FS_FILE_ID(conn, psbuf);
-	DATA_BLOB ret_blob = data_blob_null;
 	struct dom_sid owner = { .sid_rev_num = 0, };
 	struct dom_sid group = { .sid_rev_num = 0, };
 	ssize_t cc_len;
@@ -103,66 +104,59 @@ DATA_BLOB store_smb2_posix_info(TALLOC_CTX *mem_ctx,
 		conn, reparse_tag, psbuf, &owner, &group, NULL, 0);
 
 	if (cc_len == -1) {
-		return data_blob_null;
+		return -1;
 	}
 
 	if (cc_len + 68 < 68) {
-		return data_blob_null;
+		return -1;
 	}
 
-	ret_blob = data_blob_talloc(mem_ctx,
-				NULL,
-				cc_len + 68);
-	if (ret_blob.data == NULL) {
-		return data_blob_null;
+	if (cc_len + 68 < buflen) {
+		return cc_len + 68;
 	}
 
 	/* Timestamps. */
 
 	/* Birth (creation) time. */
 	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER,
-			       (char *)ret_blob.data+0,
+			       (char *)buf+0,
 			       psbuf->st_ex_btime);
 	/* Access time. */
 	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER,
-			       (char *)ret_blob.data+8,
+			       (char *)buf+8,
 			       psbuf->st_ex_atime);
 	/* Last write time. */
 	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER,
-			       (char *)ret_blob.data+16,
+			       (char *)buf+16,
 			       psbuf->st_ex_mtime);
 	/* Change time. */
 	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER,
-			       (char *)ret_blob.data+24,
+			       (char *)buf+24,
 			       psbuf->st_ex_ctime);
 
 	/* File size 64 Bit */
-	SOFF_T(ret_blob.data,32, get_file_size_stat(psbuf));
+	SOFF_T(buf,32, get_file_size_stat(psbuf));
 
 	/* Number of bytes used on disk - 64 Bit */
-	SOFF_T(ret_blob.data,40,SMB_VFS_GET_ALLOC_SIZE(conn,NULL,psbuf));
+	SOFF_T(buf,40,SMB_VFS_GET_ALLOC_SIZE(conn,NULL,psbuf));
 
 	/* DOS attributes */
 	if (S_ISREG(psbuf->st_ex_mode)) {
-		PUSH_LE_U32(ret_blob.data, 48, dos_attributes);
+		PUSH_LE_U32(buf, 48, dos_attributes);
 	} else if (S_ISDIR(psbuf->st_ex_mode)) {
-		PUSH_LE_U32(ret_blob.data,
-			    48,
-			    dos_attributes|FILE_ATTRIBUTE_DIRECTORY);
+		PUSH_LE_U32(buf, 48, dos_attributes|FILE_ATTRIBUTE_DIRECTORY);
 	} else {
 		/*
 		 * All non-directory or regular files are reported
 		 * as reparse points. Client may or may not be able
 		 * to access these.
 		 */
-		PUSH_LE_U32(ret_blob.data,
-			    48,
-			    FILE_ATTRIBUTE_REPARSE_POINT);
+		PUSH_LE_U32(buf, 48, FILE_ATTRIBUTE_REPARSE_POINT);
 	}
 
 	/* Add the inode and dev (16 bytes). */
-	PUSH_LE_U64(ret_blob.data, 52, file_id);
-	PUSH_LE_U64(ret_blob.data, 60, psbuf->st_ex_dev);
+	PUSH_LE_U64(buf, 52, file_id);
+	PUSH_LE_U64(buf, 60, psbuf->st_ex_dev);
 
 	/*
 	 * Append a POSIX create context (variable bytes).
@@ -173,8 +167,8 @@ DATA_BLOB store_smb2_posix_info(TALLOC_CTX *mem_ctx,
 		psbuf,
 		&owner,
 		&group,
-		ret_blob.data + 68,
+		buf + 68,
 		cc_len);
 
-	return ret_blob;
+	return cc_len + 68;
 }

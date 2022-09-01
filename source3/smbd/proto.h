@@ -1266,10 +1266,12 @@ ssize_t smb2_posix_cc_info(
 	const struct dom_sid *group,
 	uint8_t *buf,
 	size_t buflen);
-DATA_BLOB store_smb2_posix_info(TALLOC_CTX *mem_ctx,
-				connection_struct *conn,
-				const SMB_STRUCT_STAT *psbuf,
-				uint32_t reparse_tag,
-				uint32_t dos_attributes);
+ssize_t store_smb2_posix_info(
+	connection_struct *conn,
+	const SMB_STRUCT_STAT *psbuf,
+	uint32_t reparse_tag,
+	uint32_t dos_attributes,
+	uint8_t *buf,
+	size_t buflen);
 
 #endif /* _SMBD_PROTO_H_ */
