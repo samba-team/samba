@@ -3979,3 +3979,51 @@ struct torture_suite *torture_smb2_bench_init(TALLOC_CTX *ctx)
 
 	return suite;
 }
+
+static bool test_no_stream(struct torture_context *tctx,
+			   struct smb2_tree *tree)
+{
+	struct smb2_create c;
+	NTSTATUS status;
+	bool ret = true;
+	const char *names[] = {
+		"test_no_stream::$DATA",
+		"test_no_stream::foooooooooooo",
+		"test_no_stream:stream",
+		"test_no_stream:stream:$DATA",
+		NULL
+	};
+	int i;
+
+	for (i = 0; names[i] != NULL; i++) {
+		c = (struct smb2_create) {
+			.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED,
+			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+			.in.create_disposition = NTCREATEX_DISP_OPEN,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+			.in.fname = names[i],
+		};
+
+		status = smb2_create(tree, tctx, &c);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_INVALID)) {
+			torture_comment(
+				tctx, "Expected NT_STATUS_OBJECT_NAME_INVALID, "
+				"got %s, name: '%s'\n",
+				nt_errstr(status), names[i]);
+			torture_fail_goto(tctx, done, "Bad create result\n");
+		}
+	}
+done:
+	return ret;
+}
+
+struct torture_suite *torture_smb2_create_no_streams_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = torture_suite_create(ctx, "create_no_streams");
+
+	torture_suite_add_1smb2_test(suite, "no_stream", test_no_stream);
+
+	suite->description = talloc_strdup(suite, "SMB2-CREATE stream test on share without streams support");
+
+	return suite;
+}
