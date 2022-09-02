@@ -565,8 +565,14 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		return NT_STATUS_OK;
 	}
 
-	if (!(conn->fs_capabilities & FILE_NAMED_STREAMS) ||
-	    !is_named_stream(smb_fname)) {
+	if (is_named_stream(smb_fname) &&
+	    ((conn->fs_capabilities & FILE_NAMED_STREAMS) == 0)) {
+		DBG_DEBUG("stream open [%s] on non-stream share\n",
+			  smb_fname_str_dbg(smb_fname));
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
+	if (!is_named_stream(smb_fname)) {
 		/*
 		 * openat_pathref_fullname() will make "full_fname" a
 		 * talloc child of the smb_fname->fsp. Don't use
