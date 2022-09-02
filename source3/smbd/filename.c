@@ -1120,6 +1120,12 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		goto fail;
 	}
 
+	if ((streamname != NULL) &&
+	    ((conn->fs_capabilities & FILE_NAMED_STREAMS) == 0)) {
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto fail;
+	}
+
 	if (!posix) {
 		bool name_has_wild = ms_has_wild(dirname);
 		name_has_wild |= ms_has_wild(fname_rel);
