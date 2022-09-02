@@ -1445,6 +1445,14 @@ planoldpythontestsuite("fileserver",
 # Run smbcacls_propagate_inhertance tests on non msdfs root share
 planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_propagate_inhertance")
+planoldpythontestsuite("fileserver",
+                       "samba.tests.blackbox.smbcacls_save_restore")
+planoldpythontestsuite("ad_member",
+                       "samba.tests.blackbox.smbcacls_save_restore",
+                       environ={'USER': '$DC_USERNAME',
+                                'PASSWORD' : '$DC_PASSWORD'}
+                       )
+
 #
 # A) Run the smbcacls_propagate_inhertance tests on a msdfs root share
 #    *without* any nested dfs links

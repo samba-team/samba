@@ -746,6 +746,9 @@ sub provision_ad_member
 	$substitution_path = "$share_dir/D_$dcvars->{DOMAIN}/u_$dcvars->{DOMAIN}/alice/g_$dcvars->{DOMAIN}/domain users";
 	push(@dirs, $substitution_path);
 
+	my $smbcacls_sharedir="$share_dir/smbcacls";
+	push(@dirs,$smbcacls_sharedir);
+
 	my $option_offline_logon = "no";
 	if (defined($offline_logon)) {
 		$option_offline_logon = "yes";
