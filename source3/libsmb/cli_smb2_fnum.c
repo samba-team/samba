@@ -3213,7 +3213,6 @@ struct tevent_req *cli_smb2_rename_send(
 	 */
 	status = cli_dfs_target_check(state,
 				cli,
-				fname_src,
 				fname_dst,
 				&fname_dst);
 	if (tevent_req_nterror(req, status)) {

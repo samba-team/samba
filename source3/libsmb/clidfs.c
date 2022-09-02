@@ -1261,7 +1261,6 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 
 NTSTATUS cli_dfs_target_check(TALLOC_CTX *mem_ctx,
 			struct cli_state *cli,
-			const char *fname_src,
 			const char *fname_dst,
 			const char **fname_dst_out)
 {

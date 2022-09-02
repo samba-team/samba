@@ -1240,7 +1240,6 @@ static struct tevent_req *cli_smb1_rename_send(TALLOC_CTX *mem_ctx,
 	 */
 	status = cli_dfs_target_check(state,
 				cli,
-				fname_src,
 				fname_dst,
 				&fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1344,7 +1343,6 @@ static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
 	 */
 	status = cli_dfs_target_check(state,
 				cli,
-				fname_src,
 				fname_dst,
 				&fname_dst);
 	if (tevent_req_nterror(req, status)) {
@@ -1557,7 +1555,6 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 	 */
 	status = cli_dfs_target_check(state,
 				cli,
-				fname_src,
 				fname_dst,
 				&fname_dst);
 	if (tevent_req_nterror(req, status)) {
@@ -1734,7 +1731,6 @@ static struct tevent_req *cli_smb2_hardlink_send(
 	 */
 	status = cli_dfs_target_check(state,
 				cli,
-				fname_src,
 				fname_dst,
 				&fname_dst);
 	if (tevent_req_nterror(req, status)) {
