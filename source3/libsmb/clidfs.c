@@ -905,6 +905,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	struct smbXcli_tcon *target_tcon = NULL;
 	struct cli_dfs_path_split *dfs_refs = NULL;
 	bool ok;
+	bool is_already_dfs = false;
 
 	if ( !rootcli || !path || !targetcli ) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -928,6 +929,24 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	}
 
 	*targetcli = NULL;
+
+	is_already_dfs = cli_dfs_is_already_full_path(rootcli, path);
+	if (is_already_dfs) {
+		const char *localpath = NULL;
+		/*
+		 * Given path is already converted to DFS.
+		 * Convert to a local path so clean_path()
+		 * can correctly strip any wildcards.
+		 */
+		status = cli_dfs_target_check(ctx,
+					      rootcli,
+					      path,
+					      &localpath);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		path = localpath;
+	}
 
 	/* Send a trans2_query_path_info to check for a referral. */
 
