@@ -731,6 +731,7 @@ wbcErr wbcCtxPingDc2(struct wbcContext *ctx, const char *domain,
 	BAIL_ON_WBC_ERROR(wbc_status);
 
  done:
+	winbindd_free_response(&response);
 	return wbc_status;
 }
 
