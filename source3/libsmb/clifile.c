@@ -47,6 +47,7 @@ struct tevent_req *cli_setpathinfo_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct cli_setpathinfo_state *state;
 	uint16_t additional_flags2 = 0;
+	char *path_cp = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_setpathinfo_state);
@@ -64,8 +65,16 @@ struct tevent_req *cli_setpathinfo_send(TALLOC_CTX *mem_ctx,
 	}
 	SSVAL(state->param, 0, level);
 
-	state->param = trans2_bytes_push_str(
-		state->param, smbXcli_conn_use_unicode(cli->conn), path, strlen(path)+1, NULL);
+	/* Check for DFS. */
+	path_cp = smb1_dfs_share_path(state, cli, path);
+	if (tevent_req_nomem(path_cp, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->param = trans2_bytes_push_str(state->param,
+					smbXcli_conn_use_unicode(cli->conn),
+					path_cp,
+					strlen(path_cp)+1,
+					NULL);
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
 	}
