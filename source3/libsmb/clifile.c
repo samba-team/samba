@@ -1566,6 +1566,7 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 	uint8_t additional_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint8_t *bytes = NULL;
+	char *fname_src_cp = NULL;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1592,9 +1593,20 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
+	/*
+	 * SMBntrename on a DFS share uses DFS names for src and dst.
+	 * See smbtorture3: SMB1-DFS-PATHS: test_smb1_ntrename_rename().
+	 */
+	fname_src_cp = smb1_dfs_share_path(state, cli, fname_src);
+	if (tevent_req_nomem(fname_src_cp, req)) {
+		return tevent_req_post(req, ev);
+	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname_src,
-				   strlen(fname_src)+1, NULL);
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   fname_src_cp,
+				   strlen(fname_src_cp)+1,
+				   NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
