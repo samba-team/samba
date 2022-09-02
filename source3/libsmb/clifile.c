@@ -1333,7 +1333,7 @@ static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
 	uint16_t additional_flags2 = 0;
 	uint8_t *bytes = NULL;
 	char *fname_src_cp = NULL;
-	NTSTATUS status;
+	char *fname_dst_cp = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_cifs_rename_state);
 	if (req == NULL) {
@@ -1345,17 +1345,6 @@ static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
 		 * CIFS doesn't support replace
 		 */
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
-	/*
-	 * Strip a MSDFS path from fname_dst if we were given one.
-	 */
-	status = cli_dfs_target_check(state,
-				cli,
-				fname_dst,
-				&fname_dst);
-	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -1395,9 +1384,21 @@ static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	/*
+	 * SMBmv on a DFS share uses DFS names for src and dst.
+	 * See smbtorture3: SMB1-DFS-PATHS: test_smb1_mv().
+	 */
+
+	fname_dst_cp = smb1_dfs_share_path(state, cli, fname_dst);
+	if (tevent_req_nomem(fname_dst_cp, req)) {
+		return tevent_req_post(req, ev);
+	}
 	bytes[talloc_get_size(bytes)-1] = 4;
-	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname_dst,
-				   strlen(fname_dst)+1, NULL);
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   fname_dst_cp,
+				   strlen(fname_dst_cp)+1,
+				   NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
