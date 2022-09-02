@@ -60,50 +60,6 @@ struct cacl_callback_state {
 	bool numeric;
 };
 
-/*
- * if this dfs link is local to this share then we need to
- * adjust targetpath. A local dfs link is prepended with
- * '/$SERVER/$SHARE/path_from_args' The 'full' path is not
- * suitable for passing to cli_list (and will fail)
- */
-static NTSTATUS local_cli_resolve_path(TALLOC_CTX* ctx,
-			const char *mountpt,
-			struct cli_credentials *creds,
-			struct cli_state *rootcli,
-			const char *path,
-			struct cli_state **targetcli,
-			char **pp_targetpath)
-{
-	size_t searchlen = 0;
-	char *search = NULL;
-	NTSTATUS status;
-
-	status = cli_resolve_path(ctx,
-				mountpt,
-				creds,
-				rootcli,
-				path,
-				targetcli,
-				pp_targetpath);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	search = talloc_asprintf(ctx, "\\%s\\%s",
-			rootcli->server_domain,
-			rootcli->share);
-	if (search == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	searchlen = strlen(search);
-
-	if (strncmp(*pp_targetpath, search, searchlen) == 0) {
-		*pp_targetpath += searchlen;
-	}
-	return status;
-}
-
 static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
 					  struct dom_sid *sid)
 {
@@ -1305,7 +1261,7 @@ static NTSTATUS cacl_set_cb(struct file_info *f,
 		}
 
 		/* check for dfs */
-		status = local_cli_resolve_path(dirctx, "", creds, cli,
+		status = cli_resolve_path(dirctx, "", creds, cli,
 			mask2, &targetcli, &targetpath);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
@@ -1416,7 +1372,6 @@ static int inheritance_cacl_set(char *filename,
 	bool isdirectory = false;
 	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM
 				| FILE_ATTRIBUTE_HIDDEN;
-	char *save_share = NULL;
 	ctx = talloc_init("inherit_set");
 	if (ctx == NULL) {
 		d_printf("out of memory\n");
@@ -1475,11 +1430,6 @@ static int inheritance_cacl_set(char *filename,
 	 * prepare for automatic propagation of the acl passed on the
 	 * cmdline.
 	 */
-	save_share = talloc_strdup(ctx, cli->share);
-	if (save_share == NULL) {
-		result = EXIT_FAILED;
-		goto out;
-	}
 
 	ntstatus = prepare_inheritance_propagation(ctx, filename,
 							   cbstate);
@@ -1490,25 +1440,6 @@ static int inheritance_cacl_set(char *filename,
 		goto out;
 	}
 
-	/*
-	 * sec_desc_parse ends up calling a bunch of functions one of which
-	 * connects to IPC$ (which overwrites cli->share)
-	 * we need a new connection to the share here.
-	 * Note: This only is an issue when the share is a msdfs root
-	 *       because the presence of cli->share gets expanded out
-	 *       later on by cli_resolve_path (when it is constructing a path)
-	 */
-	ntstatus = cli_tree_connect_creds(cli,
-			  save_share,
-			  "?????",
-			  cbstate->creds);
-
-	if (!NT_STATUS_IS_OK(ntstatus)) {
-		d_printf("error: %s processing %s\n",
-			 nt_errstr(ntstatus), filename);
-		result = EXIT_FAILED;
-		goto out;
-	}
 	result = cacl_set_from_sd(cli, filename, cbstate->aclsd,
 				cbstate->mode, cbstate->numeric);
 
@@ -1855,7 +1786,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	status = local_cli_resolve_path(frame,
+	status = cli_resolve_path(frame,
 				  "",
 				  creds,
 				  cli,
