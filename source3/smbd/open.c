@@ -6233,7 +6233,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		}
 
 		if (!(conn->fs_capabilities & FILE_NAMED_STREAMS)) {
-			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			status = NT_STATUS_OBJECT_NAME_INVALID;
 			goto fail;
 		}
 	}
