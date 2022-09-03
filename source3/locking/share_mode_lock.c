@@ -2134,6 +2134,7 @@ bool share_mode_forall_entries(
 		  (int)writeback);
 
 	if (!writeback) {
+		TALLOC_FREE(ltdb);
 		return true;
 	}
 
@@ -2149,6 +2150,7 @@ bool share_mode_forall_entries(
 	ltdb->share_entries = share_entries;
 
 	status = locking_tdb_data_store(key, ltdb, NULL, 0);
+	TALLOC_FREE(ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("locking_tdb_data_store failed: %s\n",
 			nt_errstr(status));
