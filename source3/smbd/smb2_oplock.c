@@ -61,6 +61,8 @@ NTSTATUS set_file_oplock(files_struct *fsp)
 			(koplocks != NULL);
 	struct file_id_buf buf;
 
+	smb_vfs_assert_allowed();
+
 	if (fsp->oplock_type == LEVEL_II_OPLOCK && use_kernel) {
 		DEBUG(10, ("Refusing level2 oplock, kernel oplocks "
 			   "don't support them\n"));
@@ -97,6 +99,8 @@ static void release_fsp_kernel_oplock(files_struct *fsp)
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 	bool use_kernel;
+
+	smb_vfs_assert_allowed();
 
 	if (koplocks == NULL) {
 		return;
@@ -153,6 +157,8 @@ static void downgrade_file_oplock(files_struct *fsp)
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
 			(koplocks != NULL);
+
+	smb_vfs_assert_allowed();
 
 	if (!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(0, ("trying to downgrade an already-downgraded oplock!\n"));
@@ -835,6 +841,8 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	uint16_t break_from;
 	uint16_t break_to;
 	bool break_needed = true;
+
+	smb_vfs_assert_allowed();
 
 	msg = talloc(talloc_tos(), struct oplock_break_message);
 	if (msg == NULL) {
