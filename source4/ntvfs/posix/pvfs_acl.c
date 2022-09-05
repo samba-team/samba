@@ -670,7 +670,7 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	}
 
 	/* check the acl against the required access mask */
-	status = se_access_check(sd, token, *access_mask, access_mask);
+	status = se_file_access_check(sd, token, false, *access_mask, access_mask);
 	talloc_free(acl);
 
 	/* if we used a NT acl, then allow access override if the
