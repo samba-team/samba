@@ -7765,6 +7765,7 @@ static bool run_simple_posix_open_test(int dummy)
 	size_t nread;
 	const char *fname_windows = "windows_file";
 	uint16_t fnum2 = (uint16_t)-1;
+	bool ok;
 
 	printf("Starting simple POSIX open test\n");
 
@@ -8033,15 +8034,16 @@ static bool run_simple_posix_open_test(int dummy)
 	if (NT_STATUS_IS_OK(status)) {
 		printf("POSIX open of %s succeeded (should have failed)\n", sname);
 		goto out;
-	} else {
-		if (!check_both_error(__LINE__, status, ERRDOS, ERRbadpath,
-				NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			printf("POSIX open of %s should have failed "
-				"with NT_STATUS_OBJECT_NAME_NOT_FOUND, "
-				"failed with %s instead.\n",
-				sname, nt_errstr(status));
-			goto out;
-		}
+	}
+	ok = check_both_error(
+		__LINE__, status, ERRDOS, ERRbadpath,
+		NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	if (!ok) {
+		printf("POSIX open of %s should have failed "
+		       "with NT_STATUS_OBJECT_NAME_NOT_FOUND, "
+		       "failed with %s instead.\n",
+		       sname, nt_errstr(status));
+		goto out;
 	}
 
 	status = cli_posix_readlink(cli1, sname, talloc_tos(), &target);
