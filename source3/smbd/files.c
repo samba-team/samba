@@ -817,7 +817,8 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 
 		next = strv_next(path, rel_fname.base_name);
 
-		if (ISDOT(rel_fname.base_name) || ISDOTDOT(rel_fname.base_name)) {
+		if (ISDOT(rel_fname.base_name) ||
+		    ISDOTDOT(rel_fname.base_name)) {
 			DBG_DEBUG("%s contains a dot\n", path_in);
 			status = NT_STATUS_OBJECT_NAME_INVALID;
 			goto fail;
@@ -853,7 +854,8 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 		}
 
 		status = map_nt_error_from_unix(errno);
-		DBG_DEBUG("SMB_VFS_OPENAT(%s, %s, RESOLVE_NO_SYMLINKS) returned %d %s => %s\n",
+		DBG_DEBUG("SMB_VFS_OPENAT(%s, %s, RESOLVE_NO_SYMLINKS) "
+			  "returned %d %s => %s\n",
 			  smb_fname_str_dbg(dirfsp->fsp_name), path_in,
 			  errno, strerror(errno), nt_errstr(status));
 		SMB_ASSERT(fd == -1);
@@ -933,8 +935,11 @@ next:
 
 		/* Name might have been demangled - check veto files. */
 		if (IS_VETO_PATH(conn, rel_fname.base_name)) {
-			DBG_DEBUG("%s contains veto files path component %s => %s\n",
-				  path_in, orig_base_name, rel_fname.base_name);
+			DBG_DEBUG("%s contains veto files path component "
+				  "%s => %s\n",
+				  path_in,
+				  orig_base_name,
+				  rel_fname.base_name);
 			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			goto fail;
 		}
