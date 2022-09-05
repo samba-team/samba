@@ -68,8 +68,8 @@ even when Samba is configured as --without-smb1-server. This is
 to ensure maximum compatibility with environments containing old
 SMB1 servers.
 
-Bronze bit and S4U support with MIT Kerberos 1.20
--------------------------------------------------
+Bronze bit and S4U support now also with MIT Kerberos 1.20
+----------------------------------------------------------
 
 In 2020 Microsoft Security Response Team received another Kerberos-related
 report. Eventually, that led to a security update of the CVE-2020-17049,
@@ -87,16 +87,23 @@ but 'Bronze Bit' mitigation is provided only with MIT Kerberos 1.20.
 In addition to fixing the ‘Bronze Bit’ issue, Samba AD DC now fully supports
 S4U2Self and S4U2Proxy Kerberos extensions.
 
+Note the default (Heimdal-based) KDC was already fixed in 2021,
+see https://bugzilla.samba.org/show_bug.cgi?id=14642
+
 Resource Based Constrained Delegation (RBCD) support
 ----------------------------------------------------
 
 Samba AD DC built with MIT Kerberos 1.20 offers RBCD support now. With MIT
 Kerberos 1.20 we have complete RBCD support passing Sambas S4U testsuite.
-Note that samba-tool lacks support for setting this up yet!
+
+samba-tool delegation got the 'add-principal' and 'del-principal' subcommands
+in order to manage RBCD.
 
 To complete RBCD support and make it useful to Administrators we added the
 Asserted Identity [1] SID into the PAC for constrained delegation. This is
 available for Samba AD compiled with MIT Kerberos 1.20.
+
+Note the default (Heimdal-based) KDC does not support RBCD yet.
 
 [1] https://docs.microsoft.com/en-us/windows-server/security/kerberos/kerberos-constrained-delegation-overview
 
