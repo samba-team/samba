@@ -204,14 +204,19 @@ LanMan Authentication and password storage removed from the AD DC
 The storage and authentication with LanMan passwords has been entirely
 removed from the Samba AD DC, even when "lanman auth = yes" is set.
 
+
 smb.conf changes
 ================
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
   dns port                                New default     53
-  nt hash store				  New parameter   always
-  volume serial number			  New parameter   -1
+  fruit:zero_file_id                      New default     yes
+  nt hash store                           New parameter   always
+  smb1 unix extensions                    Replaces "unix extensions"
+  volume serial number                    New parameter   -1
+  winbind debug traceid                   New parameter   no
+
 
 CHANGES SINCE 4.17.0rc3
 =======================
