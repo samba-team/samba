@@ -151,6 +151,7 @@ static void glfs_clear_preopened(glfs_t *fs)
 
 			glfs_fini(entry->fs);
 			talloc_free(entry);
+			break;
 		}
 	}
 }
