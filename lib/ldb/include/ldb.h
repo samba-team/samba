@@ -1857,7 +1857,7 @@ struct ldb_dn *ldb_dn_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const ch
   \param mem_ctx TALLOC context to return resulting ldb_dn structure on
   \param new_fms The new DN as a format string (plus arguments)
 
-  \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntacticly correct
+  \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntactically correct
 */
 
 struct ldb_dn *ldb_dn_new_fmt(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...) PRINTF_ATTRIBUTE(3,4);
