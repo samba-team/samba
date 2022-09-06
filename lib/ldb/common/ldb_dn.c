@@ -1056,7 +1056,7 @@ int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 	if (( ! base->valid_case) || ( ! dn->valid_case)) {
 		if (base->linearized && dn->linearized && dn->special == base->special) {
 			/* try with a normal compare first, if we are lucky
-			 * we will avoid exploding and casfolding */
+			 * we will avoid exploding and casefolding */
 			int dif;
 			dif = strlen(dn->linearized) - strlen(base->linearized);
 			if (dif < 0) {
@@ -1144,7 +1144,7 @@ int ldb_dn_compare(struct ldb_dn *dn0, struct ldb_dn *dn1)
 	if (( ! dn0->valid_case) || ( ! dn1->valid_case)) {
 		if (dn0->linearized && dn1->linearized) {
 			/* try with a normal compare first, if we are lucky
-			 * we will avoid exploding and casfolding */
+			 * we will avoid exploding and casefolding */
 			if (strcmp(dn0->linearized, dn1->linearized) == 0) {
 				return 0;
 			}
