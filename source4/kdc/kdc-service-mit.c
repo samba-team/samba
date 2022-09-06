@@ -41,6 +41,9 @@
 
 #include "source4/kdc/mit_kdc_irpc.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 /* PROTOTYPES */
 static void mitkdc_server_done(struct tevent_req *subreq);
 
