@@ -38,7 +38,6 @@
 #include "smb_krb5.h"
 #include "lib/util/tiniparser.h"
 #include "librpc/gen_ndr/krb5pac.h"
-#include "../lib/util/asn1.h"
 #include "auth/common_auth.h"
 #include "source3/include/auth.h"
 #include "source3/auth/proto.h"
