@@ -291,6 +291,14 @@ def cmd_testonly(opt):
         # Have the selftest.pl LD_PRELOAD libasan in the right spot
         env.OPTIONS += " --asan_so_path=" + libasan
 
+        if CONFIG_SET(opt, 'HAVE_CRYPT_R'):
+            # We try to find the correct libcrypt automatically
+            libcrypt = Utils.cmd_output(
+                'ldd bin/modules/ldb/password_hash.so | awk \'/libcrypt.so/ { print $3 }\'',
+                silent=True).strip()
+            libcrypt = libcrypt.decode('utf8')
+            env.OPTIONS += " --crypt_so_path=" + libcrypt
+
     subunit_cache = None
     # We use the full path rather than relative path to avoid problems on some platforms (ie. solaris 8).
     env.CORE_COMMAND = '${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${srcdir}/selftest/skip ${TESTLISTS} ${OPTIONS} ${TESTS}'

@@ -62,6 +62,7 @@ my $opt_libresolv_wrapper_so_path = "";
 my $opt_libsocket_wrapper_so_path = "";
 my $opt_libuid_wrapper_so_path = "";
 my $opt_libasan_so_path = "";
+my $opt_libcrypt_so_path = "";
 my $opt_use_dns_faking = 0;
 my @testlists = ();
 
@@ -248,6 +249,7 @@ my $result = GetOptions (
 		'socket_wrapper_so_path=s' => \$opt_libsocket_wrapper_so_path,
 		'uid_wrapper_so_path=s' => \$opt_libuid_wrapper_so_path,
 		'asan_so_path=s' => \$opt_libasan_so_path,
+		'crypt_so_path=s' => \$opt_libcrypt_so_path,
 		'use-dns-faking' => \$opt_use_dns_faking
 	    );
 
@@ -346,9 +348,17 @@ my $ld_preload = $ENV{LD_PRELOAD};
 
 if ($opt_libasan_so_path) {
 	if ($ld_preload) {
-		$ld_preload = "$opt_libasan_so_path:$ld_preload";
+		if ($opt_libcrypt_so_path) {
+			$ld_preload = "$opt_libasan_so_path:$opt_libcrypt_so_path:$ld_preload";
+		} else {
+			$ld_preload = "$opt_libasan_so_path:$ld_preload";
+		}
 	} else {
-		$ld_preload = "$opt_libasan_so_path";
+		if ($opt_libcrypt_so_path) {
+			$ld_preload = "$opt_libasan_so_path:$opt_libcrypt_so_path";
+		} else {
+			$ld_preload = "$opt_libasan_so_path";
+		}
 	}
 }
 
