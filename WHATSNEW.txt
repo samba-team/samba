@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fourth release candidate of Samba 4.17.  This is *not*
+This is the fifth release candidate of Samba 4.17.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -255,6 +255,31 @@ smb.conf changes
   smb1 unix extensions                    Replaces "unix extensions"
   volume serial number                    New parameter   -1
   winbind debug traceid                   New parameter   no
+
+
+CHANGES SINCE 4.17.0rc4
+=======================
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15126: acl_xattr VFS module may unintentionally use filesystem
+     permissions instead of ACL from xattr.
+   * BUG 15153: Missing SMB2-GETINFO access checks from MS-SMB2 3.3.5.20.1.
+   * BUG 15161: assert failed: !is_named_stream(smb_fname)") at
+     ../../lib/util/fault.c:197.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15126: acl_xattr VFS module may unintentionally use filesystem
+     permissions instead of ACL from xattr.
+   * BUG 15161: assert failed: !is_named_stream(smb_fname)") at
+     ../../lib/util/fault.c:197.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15159: Cross-node multi-channel reconnects result in SMB2 Negotiate
+     returning NT_STATUS_NOT_SUPPORTED.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15160: winbind at info level debug can coredump when processing
+     wb_lookupusergroups.
 
 
 CHANGES SINCE 4.17.0rc3
