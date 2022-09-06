@@ -1,0 +1,2 @@
+interceptor_via_lib:libcrypto.so
+interceptor_via_lib:libgnutls.so
