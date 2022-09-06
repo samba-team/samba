@@ -2100,7 +2100,6 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 {
 	const char *dname = NULL;
 	char *dname_talloced = NULL;
-	SMB_STRUCT_STAT st;
 	bool found = false;
 	char *translated = NULL;
 	struct smb_filename *smb_fname = NULL;
@@ -2141,7 +2140,7 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		/* ReadDirName() returns Windows "encoding" */
 		dname = ReadDirName(vfs->currentdir,
 				    &vfs->currentdir_offset,
-				    &st,
+				    NULL,
 				    &dname_talloced);
 		if (dname == NULL) {
 			break;
