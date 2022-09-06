@@ -208,7 +208,7 @@ DNS:
 
 Target Specific:
  --socket-wrapper-pcap      save traffic to pcap directories
- --socket-wrapper-keep-pcap keep all pcap files, not just those for tests that 
+ --socket-wrapper-keep-pcap keep all pcap files, not just those for tests that
                             failed
  --socket-wrapper           enable socket wrapper
 
@@ -464,14 +464,14 @@ sub read_test_regexes($)
 	my ($name) = @_;
 	my @ret = ();
 	open(LF, "<$name") or die("unable to read $name: $!");
-	while (<LF>) { 
-		chomp; 
+	while (<LF>) {
+		chomp;
 		next if (/^#/);
 		if (/^(.*?)([ \t]+)\#([\t ]*)(.*?)$/) {
 			push (@ret, [$1, $4]);
 		} else {
 			s/^(.*?)([ \t]+)\#([\t ]*)(.*?)$//;
-			push (@ret, [$_, undef]); 
+			push (@ret, [$_, undef]);
 		}
 	}
 	close(LF);
@@ -981,7 +981,7 @@ $envvarstr
 			next;
 		}
 
-		# Generate a file with the individual tests to run, if the 
+		# Generate a file with the individual tests to run, if the
 		# test runner for this test suite supports it.
 		if ($individual_tests and $individual_tests->{$name}) {
 			if ($$_[3]) {
