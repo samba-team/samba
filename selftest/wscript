@@ -281,6 +281,7 @@ def cmd_testonly(opt):
     if os.environ.get('DISABLE_OPATH'):
         env.OPTIONS += " --exclude=${srcdir}/selftest/skip.opath-required"
 
+    libasan = None
     if env.ADDRESS_SANITIZER:
         # We try to find the correct libasan automatically
         libasan = Utils.cmd_output(
@@ -310,20 +311,27 @@ def cmd_testonly(opt):
     if os.environ.get('USE_NAMESPACES') is not None:
         env.CORE_COMMAND = 'unshare --net --user --map-root-user ' + env.CORE_COMMAND
 
-    if env.ADDRESS_SANITIZER:
+    if env.ADDRESS_SANITIZER and libasan:
         # For now we cannot run with leak and odr detection
-        no_leak_check = "ASAN_OPTIONS=detect_leaks=0:detect_odr_violation=0 "
+        asan_options = "ASAN_OPTIONS=detect_leaks=0"
+        asan_options += ":detect_odr_violation=0"
+        # uncomment if you need asan logs
+        # asan_options += ":verbosity=111"
+        asan_options += " "
+
         # And we need to disable RTLD_DEEPBIND in ldb and socket wrapper
-        no_leak_check += "LDB_MODULES_DISABLE_DEEPBIND=1 "
+        no_leak_check = "LDB_MODULES_DISABLE_DEEPBIND=1 "
         no_leak_check += "SOCKET_WRAPPER_DISABLE_DEEP_BIND=1"
-        env.CORE_COMMAND = no_leak_check + " " + env.CORE_COMMAND
+        no_leak_check += " "
+        env.CORE_COMMAND = asan_options + no_leak_check + env.CORE_COMMAND
 
         # We need to have the subunit filter and formatter preload
         # libasan otherwise the tests fail at startup.
         #
         # Also, we do not care about leaks in python
 
-        asan_envs = no_leak_check + " LD_PRELOAD=" + libasan + ' '
+        asan_envs = (asan_options + no_leak_check + "LD_PRELOAD=" + libasan
+                     + ' ')
         env.FILTER_OPTIONS = asan_envs + env.FILTER_OPTIONS
         env.SUBUNIT_FORMATTER = asan_envs + env.SUBUNIT_FORMATTER
 
