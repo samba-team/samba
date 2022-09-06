@@ -1931,7 +1931,6 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	long dirpos = 0;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	SMB_STRUCT_STAT st;
 	struct connection_struct *conn = fsp->conn;
 	struct smb_Dir *dir_hnd = NULL;
 
@@ -1941,7 +1940,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 		return status;
 	}
 
-	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced))) {
+	while ((dname = ReadDirName(dir_hnd, &dirpos, NULL, &talloced))) {
 		struct smb_filename *smb_dname_full = NULL;
 		struct smb_filename *direntry_fname = NULL;
 		char *fullname = NULL;
