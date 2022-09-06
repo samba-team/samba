@@ -452,8 +452,14 @@ kill_tcp_connections ()
 	    return
 	fi
 
+	if [ -n "$CTDB_KILLTCP_DEBUGLEVEL" ]; then
+		_debuglevel="$CTDB_KILLTCP_DEBUGLEVEL"
+	else
+		_debuglevel="$CTDB_DEBUGLEVEL"
+	fi
 	echo "$_connections" | \
-		"${CTDB_HELPER_BINDIR}/ctdb_killtcp" "$_iface" || {
+		CTDB_DEBUGLEVEL="$_debuglevel" \
+			"${CTDB_HELPER_BINDIR}/ctdb_killtcp" "$_iface" || {
 		echo "Failed to kill TCP connections"
 		return
 	}
