@@ -4945,9 +4945,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (plaintext_buf) {
-		memset(plaintext_buf, '\0', strlen(plaintext_buf));
-	}
+	BURN_STR(plaintext_buf);
 
 	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID) &&
 	    (!NT_STATUS_IS_OK(status =  pdb_set_unix_primary_group(mem_ctx,
@@ -5017,7 +5015,7 @@ static bool set_user_info_pw(uint8_t *pass, const char *rhost, struct samu *pwd)
 		}
 	}
 
-	memset(plaintext_buf, '\0', strlen(plaintext_buf));
+	BURN_STR(plaintext_buf);
 
 	DEBUG(5,("set_user_info_pw: pdb_update_pwd()\n"));
 
