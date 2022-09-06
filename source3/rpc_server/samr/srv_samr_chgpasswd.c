@@ -1358,7 +1358,7 @@ NTSTATUS pass_oem_change(char *user, const char *rhost,
 					True, reject_reason);
 	unbecome_root();
 
-	memset(new_passwd, 0, strlen(new_passwd));
+	BURN_STR(new_passwd);
 
 done:
 	TALLOC_FREE(sampass);
