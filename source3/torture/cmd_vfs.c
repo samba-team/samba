@@ -190,9 +190,14 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 
 static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
+	struct smb_Dir *currentdir = vfs->currentdir;
+	files_struct *dirfsp = dir_hnd_fetch_fsp(currentdir);
+	connection_struct *conn = dirfsp->conn;
 	SMB_STRUCT_STAT st;
 	const char *dname = NULL;
+	struct smb_filename *fname = NULL;
 	char *talloced = NULL;
+	int ret;
 
 	if (vfs->currentdir == NULL) {
 		printf("readdir: error=-1 (no open directory)\n");
@@ -201,15 +206,25 @@ static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 
         dname = ReadDirName(vfs->currentdir,
 			    &vfs->currentdir_offset,
-			    &st,
+			    NULL,
 			    &talloced);
 	if (dname == NULL) {
 		printf("readdir: NULL\n");
 		return NT_STATUS_OK;
 	}
 
+	fname = synthetic_smb_fname(
+		talloc_tos(), dname, NULL, 0, 0, ssf_flags());
+	if (fname == NULL) {
+		printf("readdir: no memory\n");
+		return NT_STATUS_OK;
+	}
+
 	printf("readdir: %s\n", dname);
-	if (VALID_STAT(st)) {
+
+	ret = SMB_VFS_FSTATAT(conn, dirfsp, fname, &st, AT_SYMLINK_NOFOLLOW);
+
+	if ((ret == 0) && VALID_STAT(st)) {
 		time_t tmp_time;
 		printf("  stat available");
 		if (S_ISREG(st.st_ex_mode)) printf("  Regular File\n");
