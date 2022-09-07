@@ -1587,6 +1587,7 @@ bool run_smb1_dfs_paths(int dummy)
 	bool crtime_matched = false;
 	bool retval = false;
 	bool ok = false;
+	bool equal = false;
 	unsigned int i;
 	uint16_t fnum = (uint16_t)-1;
 
@@ -1843,6 +1844,21 @@ bool run_smb1_dfs_paths(int dummy)
 			__LINE__,
 			"BAD\\BAD\\file",
 			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * This crtime must be different from the root_crtime.
+	 * This checks we're actually correctly reading crtimes
+	 * from the filesystem.
+	 */
+	equal = (timespec_compare(&test_crtime, &root_crtime) == 0);
+	if (equal) {
+		printf("%s:%d Error. crtime of %s must differ from "
+			"root_crtime\n",
+			__FILE__,
+			__LINE__,
+			"BAD\\BAD\\file");
 		goto err;
 	}
 
