@@ -19,7 +19,7 @@
 import samba.tests
 from io import StringIO
 from samba.common import get_string
-from samba.netcmd.main import cmd_sambatool
+from samba.netcmd.main import samba_tool
 from samba.credentials import Credentials
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -71,17 +71,17 @@ class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
         self.assertTrue(b"No DNS updates needed" in out, out + rpc_out)
 
     def test_add_new_uncovered_site(self):
-        name = 'sites'
-        cmd = cmd_sambatool.subcommands[name]
-        cmd.outf = StringIO()
-        cmd.errf = StringIO()
-
         site_name = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
         # Clear out any existing site
-        cmd._run("samba-tool %s" % name, 'remove', site_name)
+        result = samba_tool('sites', 'remove', site_name,
+                            outf=StringIO(),
+                            errf=StringIO())
 
-        result = cmd._run("samba-tool %s" % name, 'create', site_name)
+        result = samba_tool('sites', 'create', site_name,
+                            outf=StringIO(),
+                            errf=StringIO())
+
         if result is not None:
             self.fail("Error creating new site")
 
@@ -118,6 +118,8 @@ class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
         self.assertNotIn("No DNS updates needed", out)
         self.assertIn(site_name.lower(), out)
 
-        result = cmd._run("samba-tool %s" % name, 'remove', site_name)
+        result = samba_tool('sites', 'remove', site_name,
+                            outf=StringIO(),
+                            errf=StringIO())
         if result is not None:
             self.fail("Error deleting site")
