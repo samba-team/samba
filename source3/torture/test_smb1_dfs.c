@@ -3092,6 +3092,168 @@ static bool test_smb1_openx(struct cli_state *cli)
 	return retval;
 }
 
+static NTSTATUS smb1_open(struct cli_state *cli,
+			  const char *path,
+			  uint16_t *pfnum)
+{
+	uint16_t vwv[2] = { 0, 0};
+	uint8_t *bytes = NULL;
+	uint16_t accessmode = 0;
+	uint16_t *return_words = NULL;
+	uint8_t return_wcount = 0;
+	NTSTATUS status;
+
+	accessmode = (DENY_NONE<<4);
+	accessmode |= DOS_OPEN_RDONLY;
+
+	PUSH_LE_U16(vwv + 0, 0, accessmode);
+	PUSH_LE_U16(vwv + 1, 0, FILE_ATTRIBUTE_NORMAL);
+
+	bytes = talloc_array(talloc_tos(), uint8_t, 1);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   path,
+				   strlen(path)+1,
+				   NULL);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = cli_smb(talloc_tos(),
+			 cli,
+			 SMBopen, /* command. */
+			 0, /* additional_flags. */
+			 2, /* wct. */
+			 vwv, /* vwv. */
+			 talloc_get_size(bytes), /* num_bytes. */
+			 bytes, /* bytes. */
+			 NULL, /* result parent. */
+			 7, /* min_wct. */
+			 &return_wcount, /* return wcount. */
+			 &return_words, /* return wvw. */
+			 NULL, /* return byte count. */
+			 NULL); /* return bytes. */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*pfnum = PULL_LE_U16(return_words, 0);
+	return status;
+}
+
+static bool test_smb1_open(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+	bool ok = false;
+	bool equal = false;
+	uint16_t fnum = (uint16_t)-1;
+	struct timespec testfile_crtime = { 0 };
+	struct timespec open_crtime = { 0 };
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\openfile");
+
+	/* Create a test file. */
+	ok = smb1_create_testfile(cli, "\\BAD\\BAD\\openfile");
+	if (!ok) {
+		printf("%s:%d failed to create test file %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\openfile");
+		goto err;
+	}
+
+	/* Get the test file crtime number. */
+	status = get_smb1_crtime(cli,
+				"\\BAD\\BAD\\openfile",
+				&testfile_crtime);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d Failed to get crtime for %s, (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\openfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	status = smb1_open(cli, "openfile", &fnum);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1open of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"openfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_open(cli, "\\BAD\\openfile", &fnum);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1open of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\openfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_open(cli, "\\BAD\\BAD\\openfile", &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d failed to open test file %s (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\openfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	status = cli_qfileinfo_basic(cli,
+				     fnum,
+				     NULL, /* attr */
+				     NULL, /* size */
+				     &open_crtime, /* create_time */
+				     NULL, /* access_time */
+				     NULL, /* write_time */
+				     NULL, /* change_time */
+				     NULL); /* ino */
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d failed to get crtime of test file %s (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\openfile",
+			nt_errstr(status));
+		goto err;
+	}
+	equal = (timespec_compare(&testfile_crtime, &open_crtime) == 0);
+	if (!equal) {
+		printf("%s:%d crtime missmatch of test file %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\openfile");
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	/* Close "openfile" handle. */
+	if (fnum != (uint16_t)-1) {
+		(void)smb1cli_close(cli->conn,
+				    cli->timeout,
+				    cli->smb1.pid,
+				    cli->smb1.tcon,
+				    cli->smb1.session,
+				    fnum,
+				    0); /* last_modified */
+	}
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\openfile");
+	return retval;
+}
+
 /*
  * "Raw" test of different SMB1 operations to a DFS share.
  * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
@@ -3160,6 +3322,11 @@ bool run_smb1_dfs_operations(int dummy)
 	}
 
 	ok = test_smb1_openx(cli);
+	if (!ok) {
+		goto err;
+	}
+
+	ok = test_smb1_open(cli);
 	if (!ok) {
 		goto err;
 	}
