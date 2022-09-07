@@ -2677,6 +2677,95 @@ static bool test_smb1_rmdir(struct cli_state *cli)
 	return retval;
 }
 
+static NTSTATUS smb1_ntcreatex(struct cli_state *cli,
+			       const char *path)
+{
+	NTSTATUS status;
+	uint16_t fnum = (uint16_t)-1;
+
+	status = smb1cli_ntcreatex(cli->conn,
+				   cli->timeout,
+				   cli->smb1.pid,
+				   cli->smb1.tcon,
+				   cli->smb1.session,
+				   path,
+				   OPLOCK_NONE, /* CreatFlags */
+				   0, /* RootDirectoryFid */
+				   SEC_STD_SYNCHRONIZE|
+					SEC_STD_DELETE |
+					SEC_FILE_READ_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* DesiredAccess */
+				   0, /* AllocationSize */
+				   FILE_ATTRIBUTE_NORMAL, /* FileAttributes */
+				   FILE_SHARE_READ|
+					FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE, /* ShareAccess */
+				   FILE_CREATE, /* CreateDisposition */
+				   0, /* CreateOptions */
+				   2, /* ImpersonationLevel */
+				   0, /* SecurityFlags */
+				   &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* Close "file" handle. */
+	(void)smb1cli_close(cli->conn,
+			    cli->timeout,
+			    cli->smb1.pid,
+			    cli->smb1.tcon,
+			    cli->smb1.session,
+			    fnum,
+			    0); /* last_modified */
+	return NT_STATUS_OK;
+}
+
+static bool test_smb1_ntcreatex(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\ntcreateXfile");
+
+	status = smb1_ntcreatex(cli, "ntcreateXfile");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		printf("%s:%d SMB1ntcreateX of %s should get "
+			"NT_STATUS_OBJECT_NAME_COLLISION, got %s\n",
+			__FILE__,
+			__LINE__,
+			"ntcreateXfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_ntcreatex(cli, "\\BAD\\ntcreateXfile");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		printf("%s:%d SMB1ntcreateX of %s should get "
+			"NT_STATUS_OBJECT_NAME_COLLISION, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\ntcreateXfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_ntcreatex(cli, "\\BAD\\BAD\\ntcreateXfile");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d SMB1ntcreateX on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\ntcreateXfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\ntcreateXfile");
+	return retval;
+}
+
 /*
  * "Raw" test of different SMB1 operations to a DFS share.
  * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
@@ -2730,6 +2819,11 @@ bool run_smb1_dfs_operations(int dummy)
 	}
 
 	ok = test_smb1_rmdir(cli);
+	if (!ok) {
+		goto err;
+	}
+
+	ok = test_smb1_ntcreatex(cli);
 	if (!ok) {
 		goto err;
 	}
