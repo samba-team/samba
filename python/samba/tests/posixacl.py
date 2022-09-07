@@ -28,6 +28,7 @@ from samba.samba3 import param as s3param
 from samba import auth
 from samba.samdb import SamDB
 from samba.auth_util import system_session_unix
+from errno import ENODATA
 
 DOM_SID = "S-1-5-21-2212615479-2695158682-2101375467"
 ACL = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
@@ -89,8 +90,11 @@ class PosixAclMappingTests(SmbdBaseTests):
         smbd.set_simple_acl(self.tempf, 0o640, self.get_session_info())
 
         # However, this only asks the xattr
-        self.assertRaises(
-            TypeError, getntacl, self.lp, self.tempf, self.get_session_info(), direct_db_access=True)
+        with self.assertRaises(OSError) as cm:
+            getntacl(self.lp, self.tempf, self.get_session_info(),
+                     direct_db_access=True)
+
+        self.assertEqual(cm.exception.errno, ENODATA)
 
     def test_setntacl_invalidate_getntacl(self):
         acl = ACL
@@ -202,7 +206,10 @@ class PosixAclMappingTests(SmbdBaseTests):
     def test_setposixacl_getntacl(self):
         smbd.set_simple_acl(self.tempf, 0o750, self.get_session_info())
         # We don't expect the xattr to be filled in in this case
-        self.assertRaises(TypeError, getntacl, self.lp, self.tempf, self.get_session_info())
+        with self.assertRaises(OSError) as cm:
+            getntacl(self.lp, self.tempf, self.get_session_info())
+
+        self.assertEqual(cm.exception.errno, ENODATA)
 
     def test_setposixacl_getntacl_smbd(self):
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
