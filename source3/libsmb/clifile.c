@@ -3070,6 +3070,9 @@ struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
 	}
 
 	bytes = talloc_array(state, uint8_t, 0);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
 	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname,
 				   strlen(fname)+1, NULL);
 
