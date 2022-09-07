@@ -158,9 +158,15 @@ class Command(object):
     def message(self, text):
         self.outf.write(text + "\n")
 
+
+    def _resolve(self, path, *argv):
+        """This is a leaf node, the command that will actually run."""
+        self.command_name = path
+        return (self, argv)
+
     def _run(self, *argv):
-        parser, optiongroups = self._create_parser(argv[0])
-        opts, args = parser.parse_args(list(argv))
+        parser, optiongroups = self._create_parser(self.command_name)
+        opts, args = parser.parse_args([self.command_name] + list(argv))
         # Filter out options from option groups
         args = args[1:]
         kwargs = dict(opts.__dict__)
@@ -229,43 +235,60 @@ class SuperCommand(Command):
 
     subcommands = {}
 
-    def _run(self, myname, subcommand=None, *args):
-        if subcommand in self.subcommands:
-            return self.subcommands[subcommand]._run(
-                "%s %s" % (myname, subcommand), *args)
-        elif subcommand not in [ '--help', 'help', None, '-h', '-V', '--version' ]:
-            print("%s: no such subcommand: %s\n" % (myname, subcommand))
-            args = []
+    def _resolve(self, path, *args):
+        """This is an internal node. We need to consume one of the args and
+        find the relevant child, returning an instance of that Command.
 
-        if subcommand == 'help':
-            # pass the request down
-            if len(args) > 0:
-                sub = self.subcommands.get(args[0])
-                if isinstance(sub, SuperCommand):
-                    return sub._run("%s %s" % (myname, args[0]), 'help',
-                                    *args[1:])
-                elif sub is not None:
-                    return sub._run("%s %s" % (myname, args[0]), '--help',
-                                    *args[1:])
+        If there are no children, this SuperCommand will be returned
+        and its _run() will do a --help like thing.
+        """
+        self.command_name = path
 
-            subcommand = '--help'
+        # We collect up certain option arguments and pass them to the
+        # leaf, which is why we iterate over args, though we really
+        # expect to return in the first iteration.
+        deferred_args = []
 
+        for i, a in enumerate(args):
+            if a in self.subcommands:
+                sub_args = args[i + 1:] + tuple(deferred_args)
+                sub_path = f'{path} {a}'
+
+                sub = self.subcommands[a]
+                return sub._resolve(sub_path, *sub_args)
+
+            elif a in [ '--help', 'help', None, '-h', '-V', '--version' ]:
+                # we pass these to the leaf node.
+                if a == 'help':
+                    a = '--help'
+                deferred_args.append(a)
+                continue
+
+            # they are talking nonsense
+            print("%s: no such subcommand: %s\n" % (path, a), file=self.outf)
+            return (self, [])
+
+        # We didn't find a subcommand, but maybe we found e.g. --version
+        print("%s: missing subcommand\n" % (path), file=self.outf)
+        return (self, deferred_args)
+
+    def _run(self, *argv):
         epilog = "\nAvailable subcommands:\n"
         subcmds = list(self.subcommands.keys())
         subcmds.sort()
         max_length = max([len(c) for c in subcmds])
         for cmd_name in subcmds:
             cmd = self.subcommands[cmd_name]
-            if not cmd.hidden:
-                epilog += "  %*s  - %s\n" % (
-                    -max_length, cmd_name, cmd.short_description)
-        epilog += "For more help on a specific subcommand, please type: %s <subcommand> (-h|--help)\n" % myname
+            if cmd.hidden:
+                continue
+            epilog += "  %*s  - %s\n" % (
+                -max_length, cmd_name, cmd.short_description)
 
-        parser, optiongroups = self._create_parser(myname, epilog=epilog)
-        args_list = list(args)
-        if subcommand:
-            args_list.insert(0, subcommand)
-        opts, args = parser.parse_args(args_list)
+        epilog += ("For more help on a specific subcommand, please type: "
+                   f"{self.command_name} <subcommand> (-h|--help)\n")
+
+        parser, optiongroups = self._create_parser(self.command_name, epilog=epilog)
+        opts, args = parser.parse_args([self.command_name] + list(argv))
 
         parser.print_help()
         return -1

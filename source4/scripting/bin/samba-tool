@@ -32,16 +32,10 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 from samba.netcmd.main import cmd_sambatool
 cmd = cmd_sambatool()
-subcommand = None
-args = ()
-
-if len(sys.argv) > 1:
-    subcommand = sys.argv[1]
-    if len(sys.argv) > 2:
-        args = sys.argv[2:]
 
 try:
-    retval = cmd._run("samba-tool", subcommand, *args)
+    command, args = cmd._resolve("samba-tool", *sys.argv[1:])
+    retval = command._run(*args)
 except SystemExit as e:
     retval = e.code
 except Exception as e:
