@@ -31,20 +31,21 @@
 #include "libsmb/clirap.h"
 #include "async_smb.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "lib/util/time_basic.h"
 
 extern fstring host, workgroup, share, password, username, myname;
 extern struct cli_credentials *torture_creds;
 
 /*
- * Open an SMB1 file readonly and return the inode number.
+ * Open an SMB1 file readonly and return the create time.
  */
-static NTSTATUS get_smb1_inode(struct cli_state *cli,
+static NTSTATUS get_smb1_crtime(struct cli_state *cli,
 				const char *pathname,
-				uint64_t *ino_ret)
+				struct timespec *pcrtime)
 {
 	NTSTATUS status;
 	uint16_t fnum = 0;
-	SMB_INO_T ino = 0;
+	struct timespec crtime = {0};
 
 	/*
 	 * Open the file.
@@ -76,7 +77,7 @@ static NTSTATUS get_smb1_inode(struct cli_state *cli,
 	}
 
 	/*
-	 * Get the inode. Note - we can use
+	 * Get the create time. Note - we can use
 	 * a higher-level cli_XXX function here
 	 * for SMB1 as cli_qfileinfo_basic()
 	 * doesn't use any pathnames, only fnums
@@ -86,13 +87,13 @@ static NTSTATUS get_smb1_inode(struct cli_state *cli,
 				     fnum,
 				     NULL, /* attr */
 				     NULL, /* size */
-				     NULL, /* create_time */
+				     &crtime, /* create_time */
 				     NULL, /* access_time */
 				     NULL, /* write_time */
 				     NULL, /* change_time */
-				     &ino);
+				     NULL);
 	if (NT_STATUS_IS_OK(status)) {
-		*ino_ret = (uint64_t)ino;
+		*pcrtime = crtime;
 	}
 
 	(void)smb1cli_close(cli->conn,
@@ -106,36 +107,43 @@ static NTSTATUS get_smb1_inode(struct cli_state *cli,
 }
 
 /*
- * Check an inode matches a given SMB1 path.
+ * Check a crtime matches a given SMB1 path.
  */
-static bool smb1_inode_matches(struct cli_state *cli,
+static bool smb1_crtime_matches(struct cli_state *cli,
 				const char *match_pathname,
-				uint64_t ino_tomatch,
+				struct timespec crtime_tomatch,
 				const char *test_pathname)
 {
-	uint64_t test_ino = 0;
+	struct timespec test_crtime = { 0 };
 	NTSTATUS status;
+	bool equal = false;
 
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				test_pathname,
-				&test_ino);
+				&test_crtime);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("%s: Failed to get ino "
-			"number for %s, (%s)\n",
+		printf("%s: Failed to get crtime "
+			"for %s, (%s)\n",
 			__func__,
 			test_pathname,
 			nt_errstr(status));
 		return false;
 	}
-	if (test_ino != ino_tomatch) {
-		printf("%s: Inode missmatch, ino_tomatch (%s) "
-			"ino=%"PRIu64" test (%s) "
-			"ino=%"PRIu64"\n",
+	equal = (timespec_compare(&test_crtime, &crtime_tomatch) == 0);
+	if (!equal) {
+		struct timeval_buf test_buf;
+		struct timeval_buf tomatch_buf;
+		printf("%s: crtime missmatch "
+			"%s:crtime_tomatch=%s, %s:test_crtime = %s\n",
 			__func__,
 			match_pathname,
-			ino_tomatch,
+			timespec_string_buf(&crtime_tomatch,
+				true,
+				&tomatch_buf),
 			test_pathname,
-			test_ino);
+			timespec_string_buf(&test_crtime,
+				true,
+				&test_buf));
 		return false;
 	}
 	return true;
@@ -343,7 +351,7 @@ static NTSTATUS smb1_mv(struct cli_state *cli,
 static bool test_smb1_mv(struct cli_state *cli,
 			 const char *src_dfs_name)
 {
-	uint64_t test_ino = 0;
+	struct timespec test_timespec = { 0 };
 	NTSTATUS status;
 
 	status = smb1_mv(cli,
@@ -361,12 +369,12 @@ static bool test_smb1_mv(struct cli_state *cli,
 	}
 
 	/* Ensure we did rename. */
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				"BAD\\BAD\\renamed_file",
-				&test_ino);
+				&test_timespec);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("%s:%d Failed to get ino "
-			"number for %s, (%s)\n",
+		printf("%s:%d Failed to get crtime "
+			"for %s, (%s)\n",
 			__FILE__,
 			__LINE__,
                         "BAD\\BAD\\renamed_file",
@@ -390,12 +398,12 @@ static bool test_smb1_mv(struct cli_state *cli,
 	}
 
 	/* Ensure we did put it back. */
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				src_dfs_name,
-				&test_ino);
+				&test_timespec);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("%s:%d Failed to get ino "
-			"number for %s, (%s)\n",
+		printf("%s:%d Failed to get crtime "
+			"for %s, (%s)\n",
 			__FILE__,
 			__LINE__,
                         src_dfs_name,
@@ -621,7 +629,7 @@ static NTSTATUS smb1_setpathinfo_rename(struct cli_state *cli,
 static bool test_smb1_setpathinfo_rename(struct cli_state *cli,
 					 const char *src_dfs_name)
 {
-	uint64_t test_ino = 0;
+	struct timespec test_crtime = { 0 };
 	NTSTATUS status;
 	const char *putback_path = NULL;
 
@@ -665,12 +673,12 @@ static bool test_smb1_setpathinfo_rename(struct cli_state *cli,
 	}
 
 	/* Ensure we did rename. */
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				"BAD\\BAD\\renamed_file",
-				&test_ino);
+				&test_crtime);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("%s:%d Failed to get ino "
-			"number for %s, (%s)\n",
+		printf("%s:%d Failed to get crtime "
+			"for %s, (%s)\n",
 			__FILE__,
 			__LINE__,
                         "BAD\\BAD\\renamed_file",
@@ -709,12 +717,12 @@ static bool test_smb1_setpathinfo_rename(struct cli_state *cli,
 	}
 
 	/* Ensure we did rename. */
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				src_dfs_name,
-				&test_ino);
+				&test_crtime);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("%s:%d Failed to get ino "
-			"number for %s, (%s)\n",
+		printf("%s:%d Failed to get crtime "
+			"for %s, (%s)\n",
 			__FILE__,
 			__LINE__,
                         src_dfs_name,
@@ -953,7 +961,7 @@ static NTSTATUS smb1_ntrename_rename(struct cli_state *cli,
 static bool test_smb1_ntrename_rename(struct cli_state *cli,
 				      const char *src_dfs_name)
 {
-	uint64_t test_ino = 0;
+	struct timespec test_crtime = { 0 };
 	NTSTATUS status;
 
 	/* Try with a non-DFS name. */
@@ -987,12 +995,12 @@ static bool test_smb1_ntrename_rename(struct cli_state *cli,
 	}
 
 	/* Ensure we did rename. */
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				"BAD\\BAD\\renamed_file",
-				&test_ino);
+				&test_crtime);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("%s:%d Failed to get ino "
-			"number for %s, (%s)\n",
+		printf("%s:%d Failed to get crtime "
+			"for %s, (%s)\n",
 			__FILE__,
 			__LINE__,
                         "BAD\\BAD\\renamed_file",
@@ -1016,12 +1024,12 @@ static bool test_smb1_ntrename_rename(struct cli_state *cli,
 	}
 
 	/* Ensure we did rename. */
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				src_dfs_name,
-				&test_ino);
+				&test_crtime);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("%s:%d Failed to get ino "
-			"number for %s, (%s)\n",
+		printf("%s:%d Failed to get crtime "
+			"for %s, (%s)\n",
 			__FILE__,
 			__LINE__,
                         src_dfs_name,
@@ -1048,7 +1056,7 @@ static NTSTATUS smb1_ntrename_hardlink(struct cli_state *cli,
 static bool test_smb1_ntrename_hardlink(struct cli_state *cli,
 					const char *src_dfs_name)
 {
-	uint64_t test_ino = 0;
+	struct timespec test_crtime = { 0 };
 	NTSTATUS status;
 	bool retval = false;
 
@@ -1083,12 +1091,12 @@ static bool test_smb1_ntrename_hardlink(struct cli_state *cli,
 	}
 
 	/* Ensure we did hardlink. */
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				"BAD\\BAD\\hlink",
-				&test_ino);
+				&test_crtime);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("%s:%d Failed to get ino "
-			"number for %s, (%s)\n",
+		printf("%s:%d Failed to get crtime "
+			"for %s, (%s)\n",
 			__FILE__,
 			__LINE__,
                         "BAD\\BAD\\hlink",
@@ -1096,12 +1104,12 @@ static bool test_smb1_ntrename_hardlink(struct cli_state *cli,
 		goto out;
         }
 
-	retval = smb1_inode_matches(cli,
+	retval = smb1_crtime_matches(cli,
 				    "BAD\\BAD\\hlink",
-				    test_ino,
+				    test_crtime,
 				    src_dfs_name);
 	if (!retval) {
-		printf("%s:%d smb1_inode_matches failed for "
+		printf("%s:%d smb1_crtime_matches failed for "
 			"%s %s\n",
 			__FILE__,
 			__LINE__,
@@ -1500,13 +1508,13 @@ static bool test_smb1_setfileinfo_hardlink(struct cli_state *cli,
 
 static bool test_smb1_dfs_sharenames(struct cli_state *cli,
 				     const char *dfs_root_share_name,
-				     uint64_t root_ino)
+				     struct timespec root_crtime)
 {
 	char test_path[20];
 	const char *test_str = "/[]:|<>+=;,*?";
 	const char *p;
 	unsigned int i;
-	bool ino_matched = false;
+	bool crtime_matched = false;
 
 	/* Setup template pathname. */
 	memcpy(test_path, "\\SERVER\\X", 10);
@@ -1514,11 +1522,11 @@ static bool test_smb1_dfs_sharenames(struct cli_state *cli,
 	/* Test invalid control characters. */
 	for (i = 1; i < 0x20; i++) {
 		test_path[8] = i;
-		ino_matched = smb1_inode_matches(cli,
+		crtime_matched = smb1_crtime_matches(cli,
 					 dfs_root_share_name,
-					 root_ino,
+					 root_crtime,
 					 test_path);
-		if (!ino_matched) {
+		if (!crtime_matched) {
 			return false;
 		}
 	}
@@ -1531,10 +1539,10 @@ static bool test_smb1_dfs_sharenames(struct cli_state *cli,
 			 * Only ':' is treated as an INVALID sharename
 			 * for a DFS SERVER\\SHARE path.
 			 */
-			uint64_t test_ino = 0;
-			NTSTATUS status = get_smb1_inode(cli,
+			struct timespec test_crtime = { 0 };
+			NTSTATUS status = get_smb1_crtime(cli,
 							 test_path,
-							 &test_ino);
+							 &test_crtime);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_INVALID)) {
 				printf("%s:%d Open of %s should get "
 					"NT_STATUS_OBJECT_NAME_INVALID, got %s\n",
@@ -1545,11 +1553,11 @@ static bool test_smb1_dfs_sharenames(struct cli_state *cli,
 				return false;
 			}
 		} else {
-			ino_matched = smb1_inode_matches(cli,
+			crtime_matched = smb1_crtime_matches(cli,
 						 dfs_root_share_name,
-						 root_ino,
+						 root_crtime,
 						 test_path);
-			if (!ino_matched) {
+			if (!crtime_matched) {
 				return false;
 			}
 		}
@@ -1574,9 +1582,9 @@ bool run_smb1_dfs_paths(int dummy)
 	NTSTATUS status;
 	bool dfs_supported = false;
 	char *dfs_root_share_name = NULL;
-	uint64_t root_ino = 0;
-	uint64_t test_ino = 0;
-	bool ino_matched = false;
+	struct timespec root_crtime = { 0 };
+	struct timespec test_crtime = { 0 };
+	bool crtime_matched = false;
 	bool retval = false;
 	bool ok = false;
 	unsigned int i;
@@ -1624,12 +1632,12 @@ bool run_smb1_dfs_paths(int dummy)
 		return false;
 	}
 
-	/* Get the share root inode number. */
-	status = get_smb1_inode(cli,
+	/* Get the share root crtime. */
+	status = get_smb1_crtime(cli,
 				dfs_root_share_name,
-				&root_ino);
+				&root_crtime);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("%s:%d Failed to get ino number for share root %s, (%s)\n",
+		printf("%s:%d Failed to get crtime for share root %s, (%s)\n",
 			__FILE__,
 			__LINE__,
 			dfs_root_share_name,
@@ -1643,12 +1651,12 @@ bool run_smb1_dfs_paths(int dummy)
 	/*
 	 * A single "SERVER" element should open and match the share root.
 	 */
-	ino_matched = smb1_inode_matches(cli,
+	crtime_matched = smb1_crtime_matches(cli,
 					 dfs_root_share_name,
-					 root_ino,
+					 root_crtime,
 					 smbXcli_conn_remote_name(cli->conn));
-	if (!ino_matched) {
-		printf("%s:%d Failed to match ino number for %s\n",
+	if (!crtime_matched) {
+		printf("%s:%d Failed to match crtime for %s\n",
 			__FILE__,
 			__LINE__,
 			smbXcli_conn_remote_name(cli->conn));
@@ -1656,12 +1664,12 @@ bool run_smb1_dfs_paths(int dummy)
 	}
 
 	/* An "" (empty) server name should open and match the share root. */
-	ino_matched = smb1_inode_matches(cli,
+	crtime_matched = smb1_crtime_matches(cli,
 					 dfs_root_share_name,
-					 root_ino,
+					 root_crtime,
 					 "");
-	if (!ino_matched) {
-		printf("%s:%d Failed to match ino number for %s\n",
+	if (!crtime_matched) {
+		printf("%s:%d Failed to match crtime for %s\n",
 			__FILE__,
 			__LINE__,
 			"");
@@ -1679,12 +1687,12 @@ bool run_smb1_dfs_paths(int dummy)
 			"SERVER",
 			strlen("SERVER")+1);
 
-		ino_matched = smb1_inode_matches(cli,
+		crtime_matched = smb1_crtime_matches(cli,
 					 dfs_root_share_name,
-					 root_ino,
+					 root_crtime,
 					 leading_backslash_name);
-		if (!ino_matched) {
-			printf("%s:%d Failed to match ino number for %s\n",
+		if (!crtime_matched) {
+			printf("%s:%d Failed to match crtime for %s\n",
 				__FILE__,
 				__LINE__,
 				leading_backslash_name);
@@ -1693,12 +1701,12 @@ bool run_smb1_dfs_paths(int dummy)
 	}
 
 	/* A "BAD" server name should open and match the share root. */
-	ino_matched = smb1_inode_matches(cli,
+	crtime_matched = smb1_crtime_matches(cli,
 					 dfs_root_share_name,
-					 root_ino,
+					 root_crtime,
 					 "BAD");
-	if (!ino_matched) {
-		printf("%s:%d Failed to match ino number for %s\n",
+	if (!crtime_matched) {
+		printf("%s:%d Failed to match crtime for %s\n",
 			__FILE__,
 			__LINE__,
 			"BAD");
@@ -1708,12 +1716,12 @@ bool run_smb1_dfs_paths(int dummy)
 	 * A "BAD\\BAD" server and share name should open
 	 * and match the share root.
 	 */
-	ino_matched = smb1_inode_matches(cli,
+	crtime_matched = smb1_crtime_matches(cli,
 					 dfs_root_share_name,
-					 root_ino,
+					 root_crtime,
 					 "BAD\\BAD");
-	if (!ino_matched) {
-		printf("%s:%d Failed to match ino number for %s\n",
+	if (!crtime_matched) {
+		printf("%s:%d Failed to match crtime for %s\n",
 			__FILE__,
 			__LINE__,
 			"BAD\\BAD");
@@ -1723,9 +1731,9 @@ bool run_smb1_dfs_paths(int dummy)
 	 * Trying to open "BAD\\BAD\\BAD" should get
 	 * NT_STATUS_OBJECT_NAME_NOT_FOUND.
 	 */
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				"BAD\\BAD\\BAD",
-				&test_ino);
+				&test_crtime);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		printf("%s:%d Open of %s should get "
 			"STATUS_OBJECT_NAME_NOT_FOUND, got %s\n",
@@ -1739,9 +1747,9 @@ bool run_smb1_dfs_paths(int dummy)
 	 * Trying to open "BAD\\BAD\\BAD\\BAD" should get
 	 * NT_STATUS_OBJECT_PATH_NOT_FOUND.
 	 */
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				"BAD\\BAD\\BAD\\BAD",
-				&test_ino);
+				&test_crtime);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
 		printf("%s:%d Open of %s should get "
 			"STATUS_OBJECT_NAME_NOT_FOUND, got %s\n",
@@ -1755,12 +1763,12 @@ bool run_smb1_dfs_paths(int dummy)
 	 * Test for invalid pathname characters in the servername.
 	 * They are ignored, and it still opens the share root.
 	 */
-	ino_matched = smb1_inode_matches(cli,
+	crtime_matched = smb1_crtime_matches(cli,
 					 dfs_root_share_name,
-					 root_ino,
+					 root_crtime,
 					 "::::");
-	if (!ino_matched) {
-		printf("%s:%d Failed to match ino number for %s\n",
+	if (!crtime_matched) {
+		printf("%s:%d Failed to match crtime for %s\n",
 			__FILE__,
 			__LINE__,
 			"::::");
@@ -1775,7 +1783,7 @@ bool run_smb1_dfs_paths(int dummy)
 	 */
 	ok = test_smb1_dfs_sharenames(cli,
 				      dfs_root_share_name,
-				      root_ino);
+				      root_crtime);
 	if (!ok) {
 		return false;
 	}
@@ -1823,11 +1831,11 @@ bool run_smb1_dfs_paths(int dummy)
 
 	/*
 	 * Trying to open "BAD\\BAD\\file" should now get
-	 * a valid inode.
+	 * a valid crtime.
 	 */
-	status = get_smb1_inode(cli,
+	status = get_smb1_crtime(cli,
 				"BAD\\BAD\\file",
-				&test_ino);
+				&test_crtime);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s:%d Open of %s should succeed "
 			"got %s\n",
