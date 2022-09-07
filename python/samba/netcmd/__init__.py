@@ -279,8 +279,8 @@ class SuperCommand(Command):
 
     def _run(self, *argv):
         epilog = "\nAvailable subcommands:\n"
-        subcmds = list(self.subcommands.keys())
-        subcmds.sort()
+
+        subcmds = sorted(self.subcommands.keys())
         max_length = max([len(c) for c in subcmds])
         for cmd_name in subcmds:
             cmd = self.subcommands[cmd_name]
@@ -295,6 +295,9 @@ class SuperCommand(Command):
         parser, optiongroups = self._create_parser(self.command_name, epilog=epilog)
         opts, args = parser.parse_args(list(argv))
 
+        # note: if argv had --help, parser.parse_args() will have
+        # already done the .print_help() and attempted to exit with
+        # return code 0, so we won't get here.
         parser.print_help()
         return -1
 
