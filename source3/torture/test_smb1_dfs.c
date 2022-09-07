@@ -3254,6 +3254,168 @@ static bool test_smb1_open(struct cli_state *cli)
 	return retval;
 }
 
+static NTSTATUS smb1_create(struct cli_state *cli,
+			    const char *path,
+			    uint16_t smb1_operation,
+			    uint16_t *pfnum)
+{
+	uint16_t vwv[3] = { 0, 0, 0};
+	uint8_t *bytes = NULL;
+	uint16_t accessmode = 0;
+	uint16_t *return_words = NULL;
+	uint8_t return_wcount = 0;
+	NTSTATUS status;
+
+	accessmode = (DENY_NONE<<4);
+	accessmode |= DOS_OPEN_RDONLY;
+
+	PUSH_LE_U16(vwv + 0, 0, FILE_ATTRIBUTE_NORMAL);
+
+	bytes = talloc_array(talloc_tos(), uint8_t, 1);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   path,
+				   strlen(path)+1,
+				   NULL);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = cli_smb(talloc_tos(),
+			 cli,
+			 smb1_operation, /* command. */
+			 0, /* additional_flags. */
+			 3, /* wct. */
+			 vwv, /* vwv. */
+			 talloc_get_size(bytes), /* num_bytes. */
+			 bytes, /* bytes. */
+			 NULL, /* result parent. */
+			 1, /* min_wct. */
+			 &return_wcount, /* return wcount. */
+			 &return_words, /* return wvw. */
+			 NULL, /* return byte count. */
+			 NULL); /* return bytes. */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*pfnum = PULL_LE_U16(return_words, 0);
+	return status;
+}
+
+static bool test_smb1_create(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+	uint16_t fnum = (uint16_t)-1;
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\createfile");
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\mknewfile");
+
+	status = smb1_create(cli, "createfile", SMBcreate, &fnum);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1create of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"createfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_create(cli, "\\BAD\\createfile", SMBcreate, &fnum);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1open of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\openfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_create(cli, "\\BAD\\BAD\\createfile", SMBcreate, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d failed to create file %s (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\createfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	(void)smb1cli_close(cli->conn,
+			    cli->timeout,
+			    cli->smb1.pid,
+			    cli->smb1.tcon,
+			    cli->smb1.session,
+			    fnum,
+			    0); /* last_modified */
+
+	fnum = (uint16_t)-1;
+
+	/* Now do the same with SMBmknew */
+	status = smb1_create(cli, "mknewfile", SMBmknew, &fnum);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1mknew of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"mknewfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_create(cli, "\\BAD\\mknewfile", SMBmknew, &fnum);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1mknew of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\mknewfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_create(cli, "\\BAD\\BAD\\mknewfile", SMBmknew, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d failed to create file %s (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\mknewfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	(void)smb1cli_close(cli->conn,
+			    cli->timeout,
+			    cli->smb1.pid,
+			    cli->smb1.tcon,
+			    cli->smb1.session,
+			    fnum,
+			    0); /* last_modified */
+
+	fnum = (uint16_t)-1;
+
+	retval = true;
+
+  err:
+
+	/* Close "openfile" handle. */
+	if (fnum != (uint16_t)-1) {
+		(void)smb1cli_close(cli->conn,
+				    cli->timeout,
+				    cli->smb1.pid,
+				    cli->smb1.tcon,
+				    cli->smb1.session,
+				    fnum,
+				    0); /* last_modified */
+	}
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\createfile");
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\mknewfile");
+	return retval;
+}
+
 /*
  * "Raw" test of different SMB1 operations to a DFS share.
  * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
@@ -3327,6 +3489,11 @@ bool run_smb1_dfs_operations(int dummy)
 	}
 
 	ok = test_smb1_open(cli);
+	if (!ok) {
+		goto err;
+	}
+
+	ok = test_smb1_create(cli);
 	if (!ok) {
 		goto err;
 	}
