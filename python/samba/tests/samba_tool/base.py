@@ -72,24 +72,24 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
                       credentials=creds, lp=lp)
         return samdb
 
+    def _run(self, *argv):
+        """run an arbitrary level command"""
+        cmd, args = cmd_sambatool()._resolve('samba-tool', *argv,
+                                             outf=self.stringIO(),
+                                             errf=self.stringIO())
+        result = cmd._run(*args)
+        return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
+
     def runcmd(self, name, *args):
         """run a single level command"""
-        cmd = cmd_sambatool.subcommands[name]
-        cmd.outf = self.stringIO()
-        cmd.errf = self.stringIO()
-        result = cmd._run("samba-tool %s" % name, *args)
-        return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
+        return self._run(name, *args)
 
     def runsubcmd(self, name, sub, *args):
         """run a command with sub commands"""
         # The reason we need this function separate from runcmd is
         # that the .outf StringIO assignment is overridden if we use
         # runcmd, so we can't capture stdout and stderr
-        cmd = cmd_sambatool.subcommands[name].subcommands[sub]
-        cmd.outf = self.stringIO()
-        cmd.errf = self.stringIO()
-        result = cmd._run("samba-tool %s %s" % (name, sub), *args)
-        return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
+        return self._run(name, sub, *args)
 
     def runsublevelcmd(self, name, sublevels, *args):
         """run a command with any number of sub command levels"""
@@ -98,15 +98,7 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         # runsubcmd() only handles exactly one level of sub-commands.
         # First, traverse the levels of sub-commands to get the actual cmd
         # object we'll run, and construct the cmd string along the way
-        cmd = cmd_sambatool.subcommands[name]
-        cmd_str = "samba-tool %s" % name
-        for sub in sublevels:
-            cmd = cmd.subcommands[sub]
-            cmd_str += " %s" % sub
-        cmd.outf = self.stringIO()
-        cmd.errf = self.stringIO()
-        result = cmd._run(cmd_str, *args)
-        return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
+        return self._run(name, *sublevels, *args)
 
     def assertCmdSuccess(self, exit, out, err, msg=""):
         # Make sure we allow '\n]\n' in stdout and stderr
