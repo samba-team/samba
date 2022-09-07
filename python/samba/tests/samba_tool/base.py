@@ -73,31 +73,20 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         return samdb
 
     def _run(self, *argv):
-        """run an arbitrary level command"""
+        """run a samba-tool command"""
         cmd, args = cmd_sambatool()._resolve('samba-tool', *argv,
                                              outf=self.stringIO(),
                                              errf=self.stringIO())
         result = cmd._run(*args)
         return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
 
-    def runcmd(self, name, *args):
-        """run a single level command"""
-        return self._run(name, *args)
-
-    def runsubcmd(self, name, sub, *args):
-        """run a command with sub commands"""
-        # The reason we need this function separate from runcmd is
-        # that the .outf StringIO assignment is overridden if we use
-        # runcmd, so we can't capture stdout and stderr
-        return self._run(name, sub, *args)
+    runcmd = _run
+    runsubcmd = _run
 
     def runsublevelcmd(self, name, sublevels, *args):
         """run a command with any number of sub command levels"""
-        # Same as runsubcmd, except this handles a varying number of sub-command
-        # levels, e.g. 'samba-tool domain passwordsettings pso set', whereas
-        # runsubcmd() only handles exactly one level of sub-commands.
-        # First, traverse the levels of sub-commands to get the actual cmd
-        # object we'll run, and construct the cmd string along the way
+        # This is a weird and clunky interface for running a
+        # subcommand. Use self.runcmd() instead.
         return self._run(name, *sublevels, *args)
 
     def assertCmdSuccess(self, exit, out, err, msg=""):
