@@ -2766,6 +2766,129 @@ static bool test_smb1_ntcreatex(struct cli_state *cli)
 	return retval;
 }
 
+static NTSTATUS smb1_nttrans_create(struct cli_state *cli,
+				    const char *path)
+{
+	uint8_t *param = NULL;
+	size_t converted_len = 0;
+	uint8_t *rparam = NULL;
+	uint32_t num_rparam = 0;
+	uint16_t fnum = (uint16_t)-1;
+	NTSTATUS status;
+
+	param = talloc_zero_array(talloc_tos(), uint8_t, 53);
+	if (param == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	param = trans2_bytes_push_str(param,
+				      smbXcli_conn_use_unicode(cli->conn),
+				      path,
+				      strlen(path),
+				      &converted_len);
+	if (param == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	PUSH_LE_U32(param, 8, SEC_STD_SYNCHRONIZE|
+				SEC_STD_DELETE |
+				SEC_FILE_READ_DATA|
+				SEC_FILE_READ_ATTRIBUTE); /* DesiredAccess */
+	PUSH_LE_U32(param, 20, FILE_ATTRIBUTE_NORMAL);
+	PUSH_LE_U32(param, 24, FILE_SHARE_READ|
+				FILE_SHARE_WRITE|
+				FILE_SHARE_DELETE); /* ShareAccess */
+	PUSH_LE_U32(param, 28, FILE_CREATE);
+	PUSH_LE_U32(param, 44, converted_len);
+	PUSH_LE_U32(param, 48, 0x02); /* ImpersonationLevel */
+
+	status = cli_trans(talloc_tos(),
+			   cli,
+			   SMBnttrans, /* trans cmd */
+			   NULL, /* pipe_name */
+			   0, /* fid */
+			   NT_TRANSACT_CREATE, /* function */
+			   0, /* flags */
+			   NULL, /* setup */
+			   0, /* num_setup */
+			   0, /* max_setup */
+			   param, /* param */
+			   talloc_get_size(param), /* num_param */
+			   128, /* max_param */
+			   NULL, /* data */
+			   0, /* num_data */
+			   0, /* max_data */
+			   NULL, /* recv_flags2 */
+			   NULL, /* rsetup */
+			   0, /* min_rsetup */
+			   NULL, /* num_rsetup */
+			   &rparam, /* rparam */
+			   69, /* min_rparam */
+			   &num_rparam, /* num_rparam */
+			   NULL, /* rdata */
+			   0, /* min_rdata */
+			   NULL); /* num_rdata */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	fnum = PULL_LE_U16(param, 2);
+	/* Close "file" handle. */
+	(void)smb1cli_close(cli->conn,
+			    cli->timeout,
+			    cli->smb1.pid,
+			    cli->smb1.tcon,
+			    cli->smb1.session,
+			    fnum,
+			    0); /* last_modified */
+	return NT_STATUS_OK;
+}
+
+static bool test_smb1_nttrans_create(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\nttransfile");
+
+	status = smb1_nttrans_create(cli, "nttransfile");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		printf("%s:%d SMB1trans NT_TRANSACT_CREATE of %s should get "
+			"NT_STATUS_OBJECT_NAME_COLLISION, got %s\n",
+			__FILE__,
+			__LINE__,
+			"nttransfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_nttrans_create(cli, "\\BAD\\nttransfile");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		printf("%s:%d SMB1trans NT_TRANSACT_CREATE of %s should get "
+			"NT_STATUS_OBJECT_NAME_COLLISION, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\nttransfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_nttrans_create(cli, "\\BAD\\BAD\\nttransfile");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d SMB1trans NT_TRANSACT_CREATE on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\nttransfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\nttransfile");
+	return retval;
+}
+
 /*
  * "Raw" test of different SMB1 operations to a DFS share.
  * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
@@ -2824,6 +2947,11 @@ bool run_smb1_dfs_operations(int dummy)
 	}
 
 	ok = test_smb1_ntcreatex(cli);
+	if (!ok) {
+		goto err;
+	}
+
+	ok = test_smb1_nttrans_create(cli);
 	if (!ok) {
 		goto err;
 	}
