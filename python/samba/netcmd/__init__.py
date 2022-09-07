@@ -89,9 +89,14 @@ class Command(object):
     raw_args = None
     raw_kwargs = None
 
+    def _set_files(self, outf=None, errf=None):
+        if outf is not None:
+            self.outf = outf
+        if errf is not None:
+            self.errf = errf
+
     def __init__(self, outf=sys.stdout, errf=sys.stderr):
-        self.outf = outf
-        self.errf = errf
+        self._set_files(outf, errf)
 
     def usage(self, prog=None):
         parser, _ = self._create_parser(prog)
@@ -158,9 +163,9 @@ class Command(object):
     def message(self, text):
         self.outf.write(text + "\n")
 
-
-    def _resolve(self, path, *argv):
+    def _resolve(self, path, *argv, outf=None, errf=None):
         """This is a leaf node, the command that will actually run."""
+        self._set_files(outf, errf)
         self.command_name = path
         return (self, argv)
 
@@ -234,7 +239,7 @@ class SuperCommand(Command):
 
     subcommands = {}
 
-    def _resolve(self, path, *args):
+    def _resolve(self, path, *args, outf=None, errf=None):
         """This is an internal node. We need to consume one of the args and
         find the relevant child, returning an instance of that Command.
 
@@ -242,6 +247,7 @@ class SuperCommand(Command):
         and its _run() will do a --help like thing.
         """
         self.command_name = path
+        self._set_files(outf, errf)
 
         # We collect up certain option arguments and pass them to the
         # leaf, which is why we iterate over args, though we really
@@ -254,7 +260,7 @@ class SuperCommand(Command):
                 sub_path = f'{path} {a}'
 
                 sub = self.subcommands[a]
-                return sub._resolve(sub_path, *sub_args)
+                return sub._resolve(sub_path, *sub_args, outf=outf, errf=errf)
 
             elif a in [ '--help', 'help', None, '-h', '-V', '--version' ]:
                 # we pass these to the leaf node.
