@@ -1,3 +1,2 @@
-^samba.tests.netcmd.
 ^samba.tests.blackbox.samba_dnsupdate
 ^samba4.ldap.password_lockout.python
