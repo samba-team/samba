@@ -2505,9 +2505,15 @@ static struct tevent_req *cli_ntcreate1_send(TALLOC_CTX *mem_ctx,
 	SCVAL(vwv+23, 1, SecurityFlags);
 
 	bytes = talloc_array(state, uint8_t, 0);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
 	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   fname, strlen(fname)+1,
 				   &converted_len);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	if (clistr_is_previous_version_path(fname, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
