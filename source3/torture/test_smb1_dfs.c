@@ -2505,6 +2505,87 @@ static bool test_smb1_unlink(struct cli_state *cli)
 	return retval;
 }
 
+static NTSTATUS smb1_mkdir(struct cli_state *cli,
+			   const char *path)
+{
+	uint8_t *bytes = NULL;
+
+	bytes = talloc_array(talloc_tos(), uint8_t, 1);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   path,
+				   strlen(path)+1,
+				   NULL);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return cli_smb(talloc_tos(),
+		       cli,
+		       SMBmkdir, /* command. */
+		       0, /* additional_flags. */
+		       0, /* wct. */
+		       NULL, /* vwv. */
+		       talloc_get_size(bytes), /* num_bytes. */
+		       bytes, /* bytes. */
+		       NULL, /* result parent. */
+		       0, /* min_wct. */
+		       NULL, /* return wcount. */
+		       NULL, /* return wvw. */
+		       NULL, /* return byte count. */
+		       NULL); /* return bytes. */
+}
+
+static bool test_smb1_mkdir(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\dir");
+
+	status = smb1_mkdir(cli, "dir");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		printf("%s:%d SMB1mkdir of %s should get "
+			"NT_STATUS_OBJECT_NAME_COLLISION, got %s\n",
+			__FILE__,
+			__LINE__,
+			"dir",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_mkdir(cli, "\\BAD\\dir");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		printf("%s:%d SMB1mkdir of %s should get "
+			"NT_STATUS_OBJECT_NAME_COLLISION, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\dir",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_mkdir(cli, "\\BAD\\BAD\\dir");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d SMB1mkdir on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\dir",
+			nt_errstr(status));
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\dir");
+	return retval;
+}
+
 /*
  * "Raw" test of different SMB1 operations to a DFS share.
  * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
@@ -2551,6 +2632,12 @@ bool run_smb1_dfs_operations(int dummy)
 	if (!ok) {
 		goto err;
 	}
+
+	ok = test_smb1_mkdir(cli);
+	if (!ok) {
+		goto err;
+	}
+
 
 	retval = true;
 
