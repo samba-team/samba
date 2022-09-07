@@ -2887,6 +2887,7 @@ struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	size_t converted_len;
 	uint16_t additional_flags2 = 0;
+	char *fname_cp = NULL;
 
 	req = tevent_req_create(mem_ctx,
 				&state, struct cli_nttrans_create_state);
@@ -2920,8 +2921,17 @@ struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
-				      fname, strlen(fname),
+	/*
+	 * SMBntcreateX on a DFS share must use DFS names.
+	 */
+	fname_cp = smb1_dfs_share_path(state, cli, fname);
+	if (tevent_req_nomem(fname_cp, req)) {
+		return tevent_req_post(req, ev);
+	}
+	param = trans2_bytes_push_str(param,
+				      smbXcli_conn_use_unicode(cli->conn),
+				      fname_cp,
+				      strlen(fname_cp),
 				      &converted_len);
 	if (tevent_req_nomem(param, req)) {
 		return tevent_req_post(req, ev);
