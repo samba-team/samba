@@ -748,7 +748,7 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 		 *   conflicting flags are specified in how.flags.
 		 *
 		 * So we better clear ignored/invalid flags
-		 * and only keep the exptected once.
+		 * and only keep the expected ones.
 		 */
 		flags &= (O_PATH|O_CLOEXEC|O_DIRECTORY|O_NOFOLLOW);
 	}
