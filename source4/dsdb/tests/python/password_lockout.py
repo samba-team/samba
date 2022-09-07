@@ -16,7 +16,7 @@ sys.path.insert(0, "bin/python")
 import samba
 
 from samba.tests.subunitrun import TestProgram, SubunitOptions
-from samba.netcmd.main import cmd_sambatool
+from samba.netcmd.main import samba_tool
 
 import samba.getopt as options
 
@@ -143,12 +143,10 @@ lockoutTime: 0
     def _reset_samba_tool(self, res):
         username = res[0]["sAMAccountName"][0]
 
-        cmd = cmd_sambatool.subcommands['user'].subcommands['unlock']
-        result = cmd._run("samba-tool user unlock",
-                          username,
-                          "-H%s" % self.host_url,
-                          "-U%s%%%s" % (global_creds.get_username(),
-                                        global_creds.get_password()))
+        result = samba_tool('user', 'unlock', username,
+                            "-H%s" % self.host_url,
+                            "-U%s%%%s" % (global_creds.get_username(),
+                                          global_creds.get_password()))
         self.assertEqual(result, None)
 
     def _reset_ldap_userAccountControl(self, res):
