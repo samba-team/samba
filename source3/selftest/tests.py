@@ -297,6 +297,22 @@ plantestsuite("samba3.smbtorture_s3.smb1.SMB1-DFS-SEARCH-PATHS",
                 "-mNT1"])
 
 #
+# SMB1-DFS-OPERATIONS needs to run against a special share msdfs-pathname-share
+# This is an empty DFS share with no links, used merely to test
+# incoming DFS pathnames and how they map to local paths.
+#
+plantestsuite("samba3.smbtorture_s3.smb1.SMB1-DFS-OPERATIONS",
+                "fileserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'SMB1-DFS-OPERATIONS',
+                '//$SERVER_IP/msdfs-pathname-share',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "-mNT1"])
+
+#
 # SMB2-STREAM-ACL needs to run against a special share - vfs_wo_fruit
 #
 plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-STREAM-ACL",

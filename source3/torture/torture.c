@@ -15376,6 +15376,10 @@ static struct {
 		.fn    = run_smb1_dfs_search_paths,
 	},
 	{
+		.name  = "SMB1-DFS-OPERATIONS",
+		.fn    = run_smb1_dfs_operations,
+	},
+	{
 		.name  = "CLEANUP1",
 		.fn    = run_cleanup1,
 	},

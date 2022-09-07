@@ -2361,3 +2361,202 @@ bool run_smb1_dfs_search_paths(int dummy)
 	(void)smb1_dfs_delete(cli, "BAD\\BAD\\file");
 	return retval;
 }
+
+static bool smb1_create_testfile(struct cli_state *cli,
+				 const char *path)
+{
+	NTSTATUS status;
+	uint16_t fnum = (uint16_t)-1;
+
+	/* Create a test file. */
+	status = smb1cli_ntcreatex(cli->conn,
+				   cli->timeout,
+				   cli->smb1.pid,
+				   cli->smb1.tcon,
+				   cli->smb1.session,
+				   path,
+				   OPLOCK_NONE, /* CreatFlags */
+				   0, /* RootDirectoryFid */
+				   SEC_STD_SYNCHRONIZE|
+					SEC_STD_DELETE |
+					SEC_FILE_READ_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* DesiredAccess */
+				   0, /* AllocationSize */
+				   FILE_ATTRIBUTE_NORMAL, /* FileAttributes */
+				   FILE_SHARE_READ|
+					FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE, /* ShareAccess */
+				   FILE_CREATE, /* CreateDisposition */
+				   0, /* CreateOptions */
+				   2, /* ImpersonationLevel */
+				   0, /* SecurityFlags */
+				   &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d smb1cli_ntcreatex on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			path,
+			nt_errstr(status));
+		return false;
+	}
+
+	/* Close "file" handle. */
+	(void)smb1cli_close(cli->conn,
+			    cli->timeout,
+			    cli->smb1.pid,
+			    cli->smb1.tcon,
+			    cli->smb1.session,
+			    fnum,
+			    0); /* last_modified */
+	return true;
+}
+
+static NTSTATUS smb1_unlink(struct cli_state *cli,
+			    const char *path)
+{
+	uint16_t vwv[1];
+	uint8_t *bytes = NULL;
+
+	PUSH_LE_U16(vwv, 0, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	bytes = talloc_array(talloc_tos(), uint8_t, 1);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   path,
+				   strlen(path)+1,
+				   NULL);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return cli_smb(talloc_tos(),
+		       cli,
+		       SMBunlink, /* command. */
+		       0, /* additional_flags. */
+		       1, /* wct. */
+		       vwv, /* vwv. */
+		       talloc_get_size(bytes), /* num_bytes. */
+		       bytes, /* bytes. */
+		       NULL, /* result parent. */
+		       0, /* min_wct. */
+		       NULL, /* return wcount. */
+		       NULL, /* return wvw. */
+		       NULL, /* return byte count. */
+		       NULL); /* return bytes. */
+}
+
+static bool test_smb1_unlink(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+	bool ok = false;
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\file");
+
+	/* Create a test file. */
+	ok = smb1_create_testfile(cli, "\\BAD\\BAD\\file");
+	if (!ok) {
+		printf("%s:%d failed to create test file %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\file");
+		goto err;
+	}
+
+	status = smb1_unlink(cli, "file");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1unlink of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"file",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_unlink(cli, "\\BAD\\file");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1unlink of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\file",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_unlink(cli, "\\BAD\\BAD\\file");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d SMB1unlink on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\file",
+			nt_errstr(status));
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\file");
+	return retval;
+}
+
+/*
+ * "Raw" test of different SMB1 operations to a DFS share.
+ * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
+ * not the cli_XXX() ones here as the ultimate goal is to fix our
+ * cli_XXX() interfaces to work transparently over DFS.
+ *
+ * So here, we're testing the server code, not the client code.
+ *
+ * Passes cleanly against Windows.
+ */
+
+bool run_smb1_dfs_operations(int dummy)
+{
+	struct cli_state *cli = NULL;
+	bool dfs_supported = false;
+	bool retval = false;
+	bool ok = false;
+
+	printf("Starting SMB1-DFS-OPS\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	if (!torture_open_connection(&cli, 0)) {
+		return false;
+	}
+
+	/* Ensure this is a DFS share. */
+	dfs_supported = smbXcli_conn_dfs_supported(cli->conn);
+	if (!dfs_supported) {
+		printf("Server %s does not support DFS\n",
+			smbXcli_conn_remote_name(cli->conn));
+		return false;
+	}
+	dfs_supported = smbXcli_tcon_is_dfs_share(cli->smb1.tcon);
+	if (!dfs_supported) {
+		printf("Share %s does not support DFS\n",
+			cli->share);
+		return false;
+	}
+
+	ok = test_smb1_unlink(cli);
+	if (!ok) {
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	/* Delete anything we made. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\file");
+	return retval;
+}
