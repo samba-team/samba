@@ -52,7 +52,7 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 		if (errno == ENOTSUP) {
 			PyErr_SetFromErrno(PyExc_IOError);
 		} else {
-			PyErr_SetFromErrno(PyExc_TypeError);
+			PyErr_SetFromErrnoWithFilename(PyExc_OSError, filename);
 		}
 		return NULL;
 	}
@@ -74,7 +74,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		if (errno == ENOTSUP) {
 			PyErr_SetFromErrno(PyExc_IOError);
 		} else {
-			PyErr_SetFromErrno(PyExc_TypeError);
+			PyErr_SetFromErrnoWithFilename(PyExc_OSError, filename);
 		}
 		talloc_free(mem_ctx);
 		return NULL;
@@ -86,7 +86,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		if (errno == ENOTSUP) {
 			PyErr_SetFromErrno(PyExc_IOError);
 		} else {
-			PyErr_SetFromErrno(PyExc_TypeError);
+			PyErr_SetFromErrnoWithFilename(PyExc_OSError, filename);
 		}
 		talloc_free(mem_ctx);
 		return NULL;
