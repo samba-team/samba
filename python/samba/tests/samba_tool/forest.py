@@ -43,11 +43,12 @@ class ForestCmdTestCase(SambaToolCmdTest):
 
     def test_display(self):
         """Tests that we can display forest settings"""
-        (result, out, err) = self.runsublevelcmd("forest", ("directory_service",
-                                                            "show"),
-                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"],
-                                                               os.environ["DC_PASSWORD"]))
+        (result, out, err) = self.runcmd("forest",
+                                         "directory_service",
+                                         "show",
+                                         "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                         "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                       os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
         self.assertEqual(err, "", "Shouldn't be any error messages")
@@ -56,11 +57,13 @@ class ForestCmdTestCase(SambaToolCmdTest):
     def test_modify_dsheuristics(self):
         """Test that we can modify the dsheuristics setting"""
 
-        (result, out, err) = self.runsublevelcmd("forest", ("directory_service",
-                                                            "dsheuristics"), "0000002",
-                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
-                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"],
-                                                               os.environ["DC_PASSWORD"]))
+        (result, out, err) = self.runcmd("forest",
+                                         "directory_service",
+                                         "dsheuristics",
+                                         "0000002",
+                                         "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                         "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                       os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
         self.assertEqual(err, "", "Shouldn't be any error messages")
