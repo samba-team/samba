@@ -685,7 +685,7 @@ NTSTATUS readlink_talloc(
 	struct smb_filename *smb_relname,
 	char **_substitute)
 {
-	char buf[4096];
+	char buf[PATH_MAX];
 	ssize_t ret;
 	char *substitute;
 	NTSTATUS status;
@@ -718,7 +718,7 @@ NTSTATUS readlink_talloc(
 
 	if ((size_t)ret == sizeof(buf)) {
 		/*
-		 * Do we need symlink targets >4k?
+		 * Do we need symlink targets longer than PATH_MAX?
 		 */
 		DBG_DEBUG("Got full %zu bytes from readlink, too long\n",
 			  sizeof(buf));
