@@ -2889,6 +2889,209 @@ static bool test_smb1_nttrans_create(struct cli_state *cli)
 	return retval;
 }
 
+struct smb1_openx_state {
+	const char *fname;
+	uint16_t vwv[15];
+	uint16_t fnum;
+	struct iovec bytes;
+};
+
+static void smb1_openx_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb1_openx_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct cli_state *cli,
+					  const char *path)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	uint16_t accessmode = 0;
+	struct smb1_openx_state *state = NULL;
+	uint8_t *bytes = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state, struct smb1_openx_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	accessmode = (DENY_NONE<<4);
+	accessmode |= DOS_OPEN_RDONLY;
+
+	PUSH_LE_U8(state->vwv + 0, 0, 0xFF);
+	PUSH_LE_U16(state->vwv + 3, 0, accessmode);
+	PUSH_LE_U16(state->vwv + 4, 0,
+		FILE_ATTRIBUTE_SYSTEM |
+		FILE_ATTRIBUTE_HIDDEN |
+		FILE_ATTRIBUTE_DIRECTORY);
+	PUSH_LE_U16(state->vwv + 8,
+		0,
+		OPENX_FILE_CREATE_IF_NOT_EXIST| OPENX_FILE_EXISTS_FAIL);
+
+	bytes = talloc_array(state, uint8_t, 0);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   path,
+				   strlen(path)+1,
+				   NULL);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->bytes.iov_base = (void *)bytes;
+	state->bytes.iov_len = talloc_get_size(bytes);
+	subreq = cli_smb_req_create(state,
+				    ev,
+				    cli,
+				    SMBopenX, /* cmd */
+				    0, /* additional_flags */
+				    0, /* additional_flags2 */
+				    15, /* num_vwv */
+				    state->vwv, /* vwv */
+				    1, /* iovcount */
+				    &state->bytes); /* iovec */
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb1_openx_done, req);
+
+	status = smb1cli_req_chain_submit(&subreq, 1);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+	return req;
+}
+
+static void smb1_openx_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb1_openx_state *state = tevent_req_data(
+		req, struct smb1_openx_state);
+	uint8_t wct = 0;
+	uint16_t *vwv = NULL;
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq,
+			      state,
+			      NULL, /* pinbuf */
+			      3, /* min_wct */
+			      &wct, /* wct */
+			      &vwv, /* vwv */
+			      NULL, /* num_rbytes */
+			      NULL); /* rbytes */
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	state->fnum = PULL_LE_U16(vwv+2, 0);
+	tevent_req_done(req);
+}
+
+static NTSTATUS smb1_openx_recv(struct tevent_req *req, uint16_t *pfnum)
+{
+	struct smb1_openx_state *state = tevent_req_data(
+		req, struct smb1_openx_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*pfnum = state->fnum;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS smb1_openx(struct cli_state *cli, const char *path)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	uint16_t fnum = (uint16_t)-1;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	req = smb1_openx_send(frame,
+			      ev,
+			      cli,
+			      path);
+	if (req == NULL) {
+		goto fail;
+	}
+
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+
+	status = smb1_openx_recv(req, &fnum);
+ fail:
+
+	/* Close "file" handle. */
+	if (fnum != (uint16_t)-1) {
+		(void)smb1cli_close(cli->conn,
+				    cli->timeout,
+				    cli->smb1.pid,
+				    cli->smb1.tcon,
+				    cli->smb1.session,
+				    fnum,
+				    0); /* last_modified */
+	}
+	TALLOC_FREE(frame);
+	return status;
+}
+
+static bool test_smb1_openx(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\openxfile");
+
+	status = smb1_openx(cli, "openxfile");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1openx of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"openxfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_openx(cli, "\\BAD\\openxfile");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1openx of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\openxfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_openx(cli, "\\BAD\\BAD\\openxfile");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d SMB1openx on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\openxfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\openxfile");
+	return retval;
+}
+
 /*
  * "Raw" test of different SMB1 operations to a DFS share.
  * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
@@ -2952,6 +3155,11 @@ bool run_smb1_dfs_operations(int dummy)
 	}
 
 	ok = test_smb1_nttrans_create(cli);
+	if (!ok) {
+		goto err;
+	}
+
+	ok = test_smb1_openx(cli);
 	if (!ok) {
 		goto err;
 	}
