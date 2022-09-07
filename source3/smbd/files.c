@@ -679,7 +679,7 @@ static char *path_to_strv(TALLOC_CTX *mem_ctx, const char *path)
 	return result;
 }
 
-static NTSTATUS readlink_talloc(
+NTSTATUS readlink_talloc(
 	TALLOC_CTX *mem_ctx,
 	struct files_struct *dirfsp,
 	struct smb_filename *smb_relname,

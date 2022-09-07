@@ -455,6 +455,11 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 	struct smb_filename **_smb_fname,
 	size_t *unparsed,
 	char **substitute);
+NTSTATUS readlink_talloc(
+	TALLOC_CTX *mem_ctx,
+	struct files_struct *dirfsp,
+	struct smb_filename *smb_relname,
+	char **_substitute);
 
 void smb_fname_fsp_unlink(struct smb_filename *smb_fname);
 
