@@ -166,9 +166,8 @@ class Command(object):
 
     def _run(self, *argv):
         parser, optiongroups = self._create_parser(self.command_name)
-        opts, args = parser.parse_args([self.command_name] + list(argv))
+        opts, args = parser.parse_args(list(argv))
         # Filter out options from option groups
-        args = args[1:]
         kwargs = dict(opts.__dict__)
         for option_group in parser.option_groups:
             for option in option_group.option_list:
@@ -288,7 +287,7 @@ class SuperCommand(Command):
                    f"{self.command_name} <subcommand> (-h|--help)\n")
 
         parser, optiongroups = self._create_parser(self.command_name, epilog=epilog)
-        opts, args = parser.parse_args([self.command_name] + list(argv))
+        opts, args = parser.parse_args(list(argv))
 
         parser.print_help()
         return -1
