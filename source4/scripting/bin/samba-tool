@@ -31,14 +31,14 @@ import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 from samba.netcmd.main import cmd_sambatool
-cmd = cmd_sambatool()
+samba_tool = cmd_sambatool()
 
 try:
-    command, args = cmd._resolve("samba-tool", *sys.argv[1:])
+    command, args = samba_tool._resolve("samba-tool", *sys.argv[1:])
     retval = command._run(*args)
 except SystemExit as e:
     retval = e.code
 except Exception as e:
-    cmd.show_command_error(e)
+    command.show_command_error(e)
     retval = 1
 sys.exit(retval)
