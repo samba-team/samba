@@ -2284,6 +2284,7 @@ struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
 	uint8_t additional_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint8_t *bytes = NULL;
+	char *dname_cp = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_rmdir_state);
 	if (req == NULL) {
@@ -2303,9 +2304,19 @@ struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
+	/*
+	 * SMBrmdir on a DFS share must use DFS names.
+	 */
+	dname_cp = smb1_dfs_share_path(state, cli, dname);
+	if (tevent_req_nomem(dname_cp, req)) {
+		return tevent_req_post(req, ev);
+	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), dname,
-				   strlen(dname)+1, NULL);
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   dname_cp,
+				   strlen(dname_cp)+1,
+				   NULL);
 
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
