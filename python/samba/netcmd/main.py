@@ -86,5 +86,12 @@ class cmd_sambatool(SuperCommand):
 def samba_tool(*args, **kwargs):
     """A single function that runs samba-tool, returning an error code on
     error, and None on success."""
-    cmd, argv = cmd_sambatool()._resolve("samba-tool", *args, **kwargs)
-    return cmd._run(*argv)
+    try:
+        cmd, argv = cmd_sambatool()._resolve("samba-tool", *args, **kwargs)
+        ret = cmd._run(*argv)
+    except SystemExit as e:
+        ret = e.code
+    except Exception as e:
+        cmd.show_command_error(e)
+        ret = 1
+    return ret
