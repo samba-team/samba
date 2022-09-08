@@ -20,7 +20,7 @@ bld.SAMBA_MODULE('gensec_krb5',
 
 bld.SAMBA_SUBSYSTEM('gensec_krb5_helpers',
     source='gensec_krb5_helpers.c',
-    deps='gensec_krb5',
+    deps='talloc authkrb5',
     enabled=bld.AD_DC_BUILD_IS_ENABLED())
 
 bld.SAMBA_MODULE('gensec_gssapi',
