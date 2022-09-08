@@ -4335,3 +4335,165 @@ bool run_smb2_dfs_paths(int dummy)
 	(void)smb2_dfs_delete(cli, "BAD\\BAD\\hlink");
 	return retval;
 }
+
+/*
+ * Add a test that sends DFS paths and sets the
+ * SMB2 flag FLAGS2_DFS_PATHNAMES, but to a non-DFS
+ * share. Windows passes this (it just treats the
+ * pathnames as non-DFS and ignores the FLAGS2_DFS_PATHNAMES
+ * bit).
+ */
+
+bool run_smb2_non_dfs_share(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	bool dfs_supported = false;
+	uint64_t fid_persistent = 0;
+	uint64_t fid_volatile = 0;
+	bool retval = false;
+	char *dfs_filename = NULL;
+
+	printf("Starting SMB2-DFS-NON-DFS-SHARE\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	dfs_supported = smbXcli_conn_dfs_supported(cli->conn);
+	if (!dfs_supported) {
+		printf("Server %s does not support DFS\n",
+			smbXcli_conn_remote_name(cli->conn));
+		return false;
+	}
+	/* Ensure this is *NOT* a DFS share. */
+	dfs_supported = smbXcli_tcon_is_dfs_share(cli->smb2.tcon);
+	if (dfs_supported) {
+		printf("Share %s is a DFS share.\n",
+			cli->share);
+		return false;
+	}
+	/*
+	 * Force the share to be DFS, as far as the client
+	 * is concerned.
+	 */
+	smb2cli_tcon_set_values(cli->smb2.tcon,
+				cli->smb2.session,
+				smb2cli_tcon_current_id(cli->smb2.tcon),
+				0,
+				smb2cli_tcon_flags(cli->smb2.tcon),
+				smb2cli_tcon_capabilities(cli->smb2.tcon) |
+					SMB2_SHARE_CAP_DFS,
+				0);
+
+	/* Come up with a "valid" SMB2 DFS name. */
+	dfs_filename = talloc_asprintf(talloc_tos(),
+				       "%s\\%s\\file",
+				       smbXcli_conn_remote_name(cli->conn),
+				       cli->share);
+	if (dfs_filename == NULL) {
+		printf("Out of memory\n");
+		return false;
+	}
+
+	/* Now try create dfs_filename. */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				dfs_filename,
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_STD_DELETE |
+					SEC_FILE_READ_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_CREATE, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL); /* struct smb2_create_blobs * */
+	/*
+	 * Should fail with NT_STATUS_OBJECT_PATH_NOT_FOUND, as
+	 * even though we set the FLAGS2_DFS_PATHNAMES the server
+	 * knows this isn't a DFS share and so treats BAD\\BAD as
+	 * part of the filename.
+	 */
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+		printf("%s:%d create of %s should fail "
+			"with NT_STATUS_OBJECT_PATH_NOT_FOUND. Got %s\n",
+			__FILE__,
+			__LINE__,
+			dfs_filename,
+			nt_errstr(status));
+		goto err;
+	}
+	/*
+	 * Prove we can still use non-DFS pathnames, even though
+	 * we are setting the FLAGS2_DFS_PATHNAMES in the SMB2
+	 * request.
+	 */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				"file",
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_STD_DELETE |
+					SEC_FILE_READ_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_CREATE, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL); /* struct smb2_create_blobs * */
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d smb2cli_create on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			"file",
+			nt_errstr(status));
+		return false;
+	}
+
+	retval = true;
+
+  err:
+
+	(void)smb2_dfs_delete(cli, dfs_filename);
+	(void)smb2_dfs_delete(cli, "file");
+	return retval;
+}

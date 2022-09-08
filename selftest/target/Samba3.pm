@@ -2537,6 +2537,9 @@ sub provision($$)
 	my $msdfs_pathname_share="$shrdir/msdfs_pathname_share";
 	push(@dirs,$msdfs_pathname_share);
 
+	my $non_msdfs_pathname_share="$shrdir/non_msdfs_pathname_share";
+	push(@dirs,$non_msdfs_pathname_share);
+
 	my $msdfs_deeppath="$msdfs_shrdir/deeppath";
 	push(@dirs,$msdfs_deeppath);
 
@@ -2967,6 +2970,10 @@ sub provision($$)
 [msdfs-pathname-share]
 	path = $msdfs_pathname_share
 	msdfs root = yes
+	guest ok = yes
+[non-msdfs-pathname-share]
+	path = $non_msdfs_pathname_share
+	msdfs root = no
 	guest ok = yes
 [hideunread]
 	copy = tmp
