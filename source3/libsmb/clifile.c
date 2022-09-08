@@ -5439,6 +5439,7 @@ NTSTATUS cli_set_ea_path(struct cli_state *cli, const char *path,
 	uint8_t *param;
 	NTSTATUS status;
 	TALLOC_CTX *frame = NULL;
+	char *path_cp = NULL;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		return cli_smb2_set_ea_path(cli,
@@ -5459,8 +5460,18 @@ NTSTATUS cli_set_ea_path(struct cli_state *cli, const char *path,
 	SSVAL(param,2,0);
 	SSVAL(param,4,0);
 
-	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
-				      path, strlen(path)+1,
+	/*
+	 * TRANSACT2_SETPATHINFO on a DFS share must use DFS names.
+	 */
+	path_cp = smb1_dfs_share_path(frame, cli, path);
+	if (path_cp == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	param = trans2_bytes_push_str(param,
+				      smbXcli_conn_use_unicode(cli->conn),
+				      path_cp,
+				      strlen(path_cp)+1,
 				      NULL);
 	param_len = talloc_get_size(param);
 
