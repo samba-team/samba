@@ -4664,6 +4664,7 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 	uint8_t additional_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint8_t *bytes = NULL;
+	char *fname_cp = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_setatr_state);
 	if (req == NULL) {
@@ -4687,9 +4688,19 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
+	/*
+	 * SMBsetatr on a DFS share must use DFS names.
+	 */
+	fname_cp = smb1_dfs_share_path(state, cli, fname);
+	if (tevent_req_nomem(fname_cp, req)) {
+		return tevent_req_post(req, ev);
+	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname,
-				   strlen(fname)+1, NULL);
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   fname_cp,
+				   strlen(fname_cp)+1,
+				   NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
