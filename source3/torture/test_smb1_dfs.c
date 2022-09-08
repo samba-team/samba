@@ -3814,6 +3814,159 @@ static bool test_smb1_chkpath(struct cli_state *cli)
 	return retval;
 }
 
+static NTSTATUS smb1_ctemp(struct cli_state *cli,
+			   const char *path,
+			   char **tmp_path)
+{
+	uint16_t vwv[3] = { 0 };
+	uint8_t *bytes = NULL;
+	NTSTATUS status;
+	uint16_t *return_words = NULL;
+	uint8_t return_wcount = 0;
+	uint32_t return_bytecount = 0;
+	uint8_t *return_bytes = NULL;
+	size_t sret = 0;
+	uint16_t fnum = (uint16_t)-1;
+
+	bytes = talloc_array(talloc_tos(), uint8_t, 1);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   path,
+				   strlen(path)+1,
+				   NULL);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = cli_smb(talloc_tos(),
+			 cli,
+			 SMBctemp, /* command. */
+			 0, /* additional_flags. */
+			 3, /* wct. */
+			 vwv, /* vwv. */
+			 talloc_get_size(bytes), /* num_bytes. */
+			 bytes, /* bytes. */
+			 NULL, /* result parent. */
+			 1, /* min_wct. */
+			 &return_wcount, /* return wcount. */
+			 &return_words, /* return wvw. */
+			 &return_bytecount, /* return byte count. */
+			 &return_bytes); /* return bytes. */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (return_wcount != 1) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	fnum = PULL_LE_U16(return_words, 0);
+
+	/* Delete the file by fnum. */
+	status = cli_nt_delete_on_close(cli, fnum, 1);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	(void)smb1cli_close(cli->conn,
+			    cli->timeout,
+			    cli->smb1.pid,
+			    cli->smb1.tcon,
+			    cli->smb1.session,
+			    fnum,
+			    0); /* last_modified */
+	fnum = (uint16_t)-1;
+
+	if (return_bytecount < 2) {
+		return NT_STATUS_DATA_ERROR;
+	}
+
+	sret = pull_string_talloc(talloc_tos(),
+				  NULL,
+				  0,
+				  tmp_path,
+				  return_bytes,
+				  return_bytecount,
+				  STR_ASCII);
+	if (sret == 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return status;
+}
+
+static bool test_smb1_ctemp(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+	char *retpath = NULL;
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\ctemp_dir");
+
+	status = smb1_mkdir(cli, "\\BAD\\BAD\\ctemp_dir");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d Failed to create %s (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\ctemp_dir",
+			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * Windows returns NT_STATUS_FILE_IS_A_DIRECTORY
+	 * for all SMBctemp calls on a DFS share, no
+	 * matter what we put in the pathname.
+	 */
+
+	/*
+	 * When we fix smbd we'll need to detect running
+	 * in smbtorture3 against smbd here and modify
+	 * the expected behavior. Windows is simply
+	 * broken here.
+	 */
+	status = smb1_ctemp(cli, "ctemp_dir", &retpath);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1ctemp of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"ctemp_dir",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_ctemp(cli, "\\BAD\\ctemp_dir", &retpath);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1ctemp of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\ctemp_dir",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_ctemp(cli, "\\BAD\\BAD\\ctemp_dir", &retpath);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		printf("%s:%d SMB1ctemp of %s should get "
+			"NT_STATUS_FILE_IS_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\ctemp_dir",
+			nt_errstr(status));
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\ctemp_dir");
+	return retval;
+}
+
 /*
  * "Raw" test of different SMB1 operations to a DFS share.
  * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
@@ -3907,6 +4060,11 @@ bool run_smb1_dfs_operations(int dummy)
 	}
 
 	ok = test_smb1_chkpath(cli);
+	if (!ok) {
+		goto err;
+	}
+
+	ok = test_smb1_ctemp(cli);
 	if (!ok) {
 		goto err;
 	}
