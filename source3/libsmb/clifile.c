@@ -5192,6 +5192,7 @@ struct tevent_req *cli_ctemp_send(TALLOC_CTX *mem_ctx,
 	uint8_t additional_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint8_t *bytes = NULL;
+	char *path_cp = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct ctemp_state);
 	if (req == NULL) {
@@ -5205,9 +5206,19 @@ struct tevent_req *cli_ctemp_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
+	/*
+	 * SMBctemp on a DFS share must use DFS names.
+	 */
+	path_cp = smb1_dfs_share_path(state, cli, path);
+	if (tevent_req_nomem(path_cp, req)) {
+		return tevent_req_post(req, ev);
+	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), path,
-				   strlen(path)+1, NULL);
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   path_cp,
+				   strlen(path_cp)+1,
+				   NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
