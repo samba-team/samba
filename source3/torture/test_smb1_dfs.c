@@ -3557,6 +3557,155 @@ static bool test_smb1_getatr(struct cli_state *cli)
 	return retval;
 }
 
+static NTSTATUS smb1_setatr(struct cli_state *cli,
+			    const char *path,
+			    uint16_t attr)
+{
+	uint16_t vwv[8] = { 0 };
+	uint8_t *bytes = NULL;
+	NTSTATUS status;
+
+	PUSH_LE_U16(vwv, 0, attr);
+	bytes = talloc_array(talloc_tos(), uint8_t, 1);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   path,
+				   strlen(path)+1,
+				   NULL);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = cli_smb(talloc_tos(),
+			 cli,
+			 SMBsetatr, /* command. */
+			 0, /* additional_flags. */
+			 8, /* wct. */
+			 vwv, /* vwv. */
+			 talloc_get_size(bytes), /* num_bytes. */
+			 bytes, /* bytes. */
+			 NULL, /* result parent. */
+			 0, /* min_wct. */
+			 NULL, /* return wcount. */
+			 NULL, /* return wvw. */
+			 NULL, /* return byte count. */
+			 NULL); /* return bytes. */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return status;
+}
+
+static bool test_smb1_setatr(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+	bool ok = false;
+	uint16_t file_attrs = 0;
+	uint16_t orig_file_attrs = 0;
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\setatrfile");
+
+	/* Create a test file. */
+	ok = smb1_create_testfile(cli, "\\BAD\\BAD\\setatrfile");
+	if (!ok) {
+		printf("%s:%d failed to create test file %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\setatrfile");
+		goto err;
+	}
+	/* Get it's original attributes. */
+	status = smb1_getatr(cli, "\\BAD\\BAD\\setatrfile", &orig_file_attrs);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d SMB1getatr of %s failed (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\setatrfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	if (orig_file_attrs & FILE_ATTRIBUTE_SYSTEM) {
+		printf("%s:%d orig_file_attrs of %s already has SYSTEM. "
+			"Test cannot proceed.\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\setatrfile");
+		goto err;
+	}
+
+	/*
+	 * Seems we can't set attrs on the root of a share,
+	 * even as Administrator.
+	 */
+	status = smb1_setatr(cli, "setatrfile", FILE_ATTRIBUTE_SYSTEM);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("%s:%d SMB1setatr of %s should get "
+			"NT_STATUS_ACCESS_DENIED, got %s\n",
+			__FILE__,
+			__LINE__,
+			"setatrfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * Seems we can't set attrs on the root of a share,
+	 * even as Administrator.
+	 */
+	status = smb1_setatr(cli, "\\BAD\\setatrfile", FILE_ATTRIBUTE_SYSTEM);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("%s:%d SMB1setatr of %s should get "
+			"NT_STATUS_ACCESS_DENIED, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\setatrfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	status = smb1_setatr(cli,
+			     "\\BAD\\BAD\\setatrfile",
+			     FILE_ATTRIBUTE_SYSTEM);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d SMB1setatr of %s failed (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\setatrfile",
+			nt_errstr(status));
+		goto err;
+	}
+	status = smb1_getatr(cli, "\\BAD\\BAD\\setatrfile", &file_attrs);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d SMB1getatr of %s failed (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\setatrfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	if (file_attrs != FILE_ATTRIBUTE_SYSTEM) {
+		printf("%s:%d Failed to set SYSTEM attr on %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\setatrfile");
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\setatrfile");
+	return retval;
+}
+
 /*
  * "Raw" test of different SMB1 operations to a DFS share.
  * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
@@ -3640,6 +3789,11 @@ bool run_smb1_dfs_operations(int dummy)
 	}
 
 	ok = test_smb1_getatr(cli);
+	if (!ok) {
+		goto err;
+	}
+
+	ok = test_smb1_setatr(cli);
 	if (!ok) {
 		goto err;
 	}
