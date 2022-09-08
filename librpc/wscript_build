@@ -372,7 +372,7 @@ bld.SAMBA_SUBSYSTEM('NDR_KRB5PAC',
 
 bld.SAMBA_LIBRARY('ndr-krb5pac',
     source='ndr/ndr_krb5pac.c gen_ndr/ndr_krb5pac.c',
-    public_deps='ndr ndr-standard NDR_SECURITY',
+    public_deps='ndr ndr-standard NDR_SECURITY NDR_CLAIMS',
     public_headers='gen_ndr/krb5pac.h gen_ndr/ndr_krb5pac.h ndr/ndr_krb5pac.h',
     header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')],
     pc_files='ndr_krb5pac.pc',
@@ -384,6 +384,10 @@ bld.SAMBA_SUBSYSTEM('NDR_KRB5CCACHE',
     deps='ndr NDR_COMPRESSION NDR_SECURITY ndr-standard asn1util'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_CLAIMS',
+    source='gen_ndr/ndr_claims.c',
+    deps='ndr')
+
 bld.SAMBA_LIBRARY('ndr-standard',
     source='',
     vnum='0.0.1',
@@ -394,7 +398,7 @@ bld.SAMBA_LIBRARY('ndr-standard',
     NDR_ECHO security NDR_DNS NDR_DNSP NDR_ATSVC NDR_SPOOLSS NDR_DSSETUP
     NDR_SERVER_ID NDR_NOTIFY''',
     public_deps='ndr',
-    public_headers='gen_ndr/samr.h gen_ndr/ndr_samr.h gen_ndr/lsa.h gen_ndr/netlogon.h gen_ndr/atsvc.h gen_ndr/ndr_atsvc.h gen_ndr/ndr_svcctl.h gen_ndr/svcctl.h',
+    public_headers='gen_ndr/samr.h gen_ndr/ndr_samr.h gen_ndr/lsa.h gen_ndr/netlogon.h gen_ndr/atsvc.h gen_ndr/ndr_atsvc.h gen_ndr/ndr_svcctl.h gen_ndr/svcctl.h gen_ndr/claims.h',
     header_path='gen_ndr'
     )
 

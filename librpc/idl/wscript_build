@@ -141,6 +141,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
 bld.SAMBA_PIDL_LIST('PIDL',
 		    '''
                     auth.idl
+                    claims.idl
                     dcerpc.idl
                     dfsblobs.idl
                     dns.idl

@@ -7,3 +7,79 @@ under the following license:
   This work is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+The following relates to IDL obtained from Open Specifications Documentation
+
+  Intellectual Property Rights Notice for Open Specifications Documentation
+
+  * Technical Documentation. Microsoft publishes Open Specifications
+    documentation (“this documentation”) for protocols, file formats,
+    data portability, computer languages, and standards
+    support. Additionally, overview documents cover inter-protocol
+    relationships and interactions.
+
+  * Copyrights. This documentation is covered by Microsoft
+    copyrights. Regardless of any other terms that are contained in
+    the terms of use for the Microsoft website that hosts this
+    documentation, you can make copies of it in order to develop
+    implementations of the technologies that are described in this
+    documentation and can distribute portions of it in your
+    implementations that use these technologies or in your
+    documentation as necessary to properly document the
+    implementation. You can also distribute in your implementation,
+    with or without modification, any schemas, IDLs, or code samples
+    that are included in the documentation. This permission also
+    applies to any documents that are referenced in the Open
+    Specifications documentation.
+
+  * No Trade Secrets. Microsoft does not claim any trade secret rights
+    in this documentation.
+
+  * Patents. Microsoft has patents that might cover your
+    implementations of the technologies described in the Open
+    Specifications documentation. Neither this notice nor Microsoft's
+    delivery of this documentation grants any licenses under those
+    patents or any other Microsoft patents.  However, a given Open
+    Specifications document might be covered by the Microsoft Open
+    Specifications Promise or the Microsoft Community Promise. If you
+    would prefer a written license, or if the technologies described
+    in this documentation are not covered by the Open Specifications
+    Promise or Community Promise, as applicable, patent licenses are
+    available by contacting iplg@microsoft.com.
+
+  * License Programs. To see all of the protocols in scope under a
+    specific license program and the associated patents, visit the
+    Patent Map.
+
+  * Trademarks. The names of companies and products contained in this
+    documentation might be covered by trademarks or similar
+    intellectual property rights. This notice does not grant any
+    licenses under those rights. For a list of Microsoft trademarks,
+    visit www.microsoft.com/trademarks.
+
+  * Fictitious Names. The example companies, organizations, products,
+    domain names, email addresses, logos, people, places, and events
+    that are depicted in this documentation are fictitious.  No
+    association with any real company, organization, product, domain
+    name, email address, logo, person, place, or event is intended or
+    should be inferred.
+
+  Reservation of Rights. All other rights are reserved, and this notice
+  does not grant any rights other than as specifically described above,
+  whether by implication, estoppel, or otherwise.
+
+  Tools. The Open Specifications documentation does not require the use
+  of Microsoft programming tools or programming environments in order
+  for you to develop an implementation. If you have access to Microsoft
+  programming tools and environments, you are free to take advantage of
+  them. Certain Open Specifications documents are intended for use in
+  conjunction with publicly available standards specifications and
+  network programming art and, as such, assume that the reader either
+  is familiar with the aforementioned material or has immediate access
+  to it.
+
+  Support. For questions and support, please contact dochelp@microsoft.com
+
+
+  The above is the IPR notice from MS-KILE

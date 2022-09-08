@@ -1,0 +1,118 @@
+/*
+  claims
+
+  claim: An assertion about a security principal
+
+  From MS-ADTS:
+
+   For ease of implementation, the full IDL for the data types used for
+   claims is provided
+
+  The below was intially obtained from MS-ADTS which is
+  Copyright © 2022 Microsoft Corporation as permitted
+  by the Open Specifications terms reproduced in IDL_LICENCE.txt
+*/
+
+#include "idl_types.h"
+
+[
+  uuid("bba9cb76-eb0c-462c-aa1b-5d8c34415701"),
+  version(1.0),
+  pointer_default(unique),
+  helpstring("Active Directory Claims")
+]
+interface claims
+{
+#define wchar_t uint16
+#define CLAIM_ID [string, charset(UTF16)] wchar_t *
+
+	typedef enum {
+		CLAIM_TYPE_INT64 = 1,
+		CLAIM_TYPE_UINT64 = 2,
+		CLAIM_TYPE_STRING = 3,
+		CLAIM_TYPE_BOOLEAN = 6
+	} CLAIM_TYPE;
+
+	typedef enum {
+		CLAIMS_SOURCE_TYPE_AD = 1,
+		CLAIMS_SOURCE_TYPE_CERTIFICATE = 2
+	} CLAIMS_SOURCE_TYPE;
+
+	typedef enum {
+		CLAIMS_COMPRESSION_FORMAT_NONE = 0,
+		CLAIMS_COMPRESSION_FORMAT_LZNT1 = 2,
+		CLAIMS_COMPRESSION_FORMAT_XPRESS = 3,
+		CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF = 4
+	} CLAIMS_COMPRESSION_FORMAT;
+
+	typedef struct {
+		[range(1, 10*1024*1024)] uint32 value_count;
+		[size_is(value_count)] dlong *values;
+	} CLAIM_INT64;
+
+	typedef struct {
+		[range(1, 10*1024*1024)] uint32 value_count;
+		[size_is(value_count)] hyper *values;
+	} CLAIM_UINT64;
+
+	typedef struct {
+		[range(1, 10*1024*1024)] uint32 value_count;
+		[size_is(value_count), string, charset(UTF16)] wchar_t **values;
+	} CLAIM_STRING;
+
+	typedef [switch_type(CLAIM_TYPE),nodiscriminant,flag(NDR_ALIGN8)] union {
+		[case(CLAIM_TYPE_INT64)] CLAIM_INT64 claim_int64;
+		[case(CLAIM_TYPE_UINT64)] CLAIM_UINT64 claim_uint64;
+		[case(CLAIM_TYPE_STRING)] CLAIM_STRING claim_string;
+		[case(CLAIM_TYPE_BOOLEAN)] CLAIM_UINT64 claim_boolean;
+		[default];
+	} CLAIM_ENTRY_VALUES;
+
+	typedef struct {
+		CLAIM_ID id;
+		CLAIM_TYPE type;
+		[switch_is(type)] CLAIM_ENTRY_VALUES values;
+	} CLAIM_ENTRY;
+
+	typedef struct {
+		CLAIMS_SOURCE_TYPE claims_source_type;
+		uint32 claims_count;
+		[size_is(claims_count)] CLAIM_ENTRY *claim_entries;
+	} CLAIMS_ARRAY;
+
+	typedef struct {
+		CLAIMS_SET_METADATA *metadata;
+	} CLAIMS_SET_METADATA_CTR;
+
+	typedef struct {
+		CLAIMS_SET *claims;
+	} CLAIMS_SET_CTR;
+
+	/* Public structures. */
+
+	typedef [public] struct {
+		uint32 claims_array_count;
+		[size_is(claims_array_count)] CLAIMS_ARRAY *claims_arrays;
+		uint16 reserved_type;
+		uint32 reserved_field_size;
+		[size_is(reserved_field_size)] uint8 *reserved_field;
+	} CLAIMS_SET;
+
+	typedef [public] struct {
+		[subcontext(0xFFFFFC01)] CLAIMS_SET_CTR claims;
+	} CLAIMS_SET_NDR;
+
+	typedef [public] struct {
+		[subcontext(0xFFFFFC01)] CLAIMS_SET_METADATA_CTR claims;
+	} CLAIMS_SET_METADATA_NDR;
+
+	typedef [public] struct {
+		uint32 claims_set_size;
+		[size_is(claims_set_size)] uint8 *claims_set;
+		CLAIMS_COMPRESSION_FORMAT compression_format;
+		uint32 uncompressed_claims_set_size;
+		uint16 reserved_type;
+		uint32 reserved_field_size;
+		[size_is(reserved_field_size)] uint8 *reserved_field;
+	} CLAIMS_SET_METADATA;
+}

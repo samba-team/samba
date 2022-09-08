@@ -256,6 +256,13 @@ bld.SAMBA_PYTHON('python_krb5ccache',
         cflags_end=gen_cflags
         )
 
+bld.SAMBA_PYTHON('python_claims',
+        source='../../librpc/gen_ndr/py_claims.c',
+        deps='NDR_CLAIMS %s %s' % (pytalloc_util, pyrpc_util),
+        realname='samba/dcerpc/claims.so',
+        cflags_end=gen_cflags
+        )
+
 bld.SAMBA_PYTHON('python_netlogon',
         source='../../librpc/gen_ndr/py_netlogon.c',
         deps='RPC_NDR_NETLOGON %s %s' % (pytalloc_util, pyrpc_util),
