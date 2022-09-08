@@ -195,11 +195,11 @@ userAccountControl: %d
         if use_kerberos == MUST_USE_KERBEROS:
             logoncount_relation = 'greater'
             lastlogon_relation = 'greater'
-            print("Performs a password cleartext change operation on 'userPassword' using Kerberos")
+            self.debug("Performs a password cleartext change operation on 'userPassword' using Kerberos")
         else:
             logoncount_relation = 'equal'
             lastlogon_relation = 'equal'
-            print("Performs a password cleartext change operation on 'userPassword' using NTLMSSP")
+            self.debug("Performs a password cleartext change operation on 'userPassword' using NTLMSSP")
 
         if initial_lastlogon_relation is not None:
             lastlogon_relation = initial_lastlogon_relation
@@ -293,7 +293,7 @@ userPassword: thatsAcomplPASS2
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
-        print("two failed password change")
+        self.debug("two failed password change")
 
         # Wrong old password
         try:
@@ -696,7 +696,7 @@ userPassword: thatsAcomplPASS2XYZ
         for i in range(lockout_threshold):
             badPwdCount = i + 1
             try:
-                print("Trying bad password, attempt #%u" % badPwdCount)
+                self.debug("Trying bad password, attempt #%u" % badPwdCount)
                 net.change_password(newpassword=new_password,
                                     username=creds.get_username(),
                                     oldpassword="bad-password")
@@ -730,7 +730,7 @@ userPassword: thatsAcomplPASS2XYZ
         # good or a bad password now
         for password in (creds.get_password(), "bad-password"):
             try:
-                print("Trying password %s" % password)
+                self.debug("Trying password %s" % password)
                 net.change_password(newpassword=new_password,
                                     username=creds.get_username(),
                                     oldpassword=password)
@@ -930,7 +930,7 @@ userPassword: thatsAcomplPASS2XYZ
             with self.assertRaises(
                     NTSTATUSError,
                     msg='Invalid SAMR change_password accepted') as err:
-                print(f'Trying correct password, attempt #{i}')
+                self.debug(f'Trying correct password, attempt #{i}')
                 net.change_password(newpassword=new_password,
                                     username=username,
                                     oldpassword=creds.get_password())
@@ -1024,7 +1024,7 @@ userPassword: {new_password}
             with self.assertRaises(
                     NTSTATUSError,
                     msg='Invalid SAMR set_password accepted') as err:
-                print(f'Trying correct password, attempt #{i}')
+                self.debug(f'Trying correct password, attempt #{i}')
                 net.set_password(newpassword=new_password,
                                  account_name=username,
                                  domain_name=creds.get_domain())
@@ -1063,7 +1063,7 @@ class PasswordTestsWithSleep(PasswordTests):
 
     def _test_unicodePwd_lockout_with_clear_change(self, creds, other_ldb,
                                                    initial_logoncount_relation=None):
-        print("Performs a password cleartext change operation on 'unicodePwd'")
+        self.debug("Performs a password cleartext change operation on 'unicodePwd'")
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
@@ -1180,7 +1180,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
                                   userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
-        print("two failed password change")
+        self.debug("two failed password change")
 
         # Wrong old password
         try:
