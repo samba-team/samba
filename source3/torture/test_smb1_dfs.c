@@ -3706,6 +3706,114 @@ static bool test_smb1_setatr(struct cli_state *cli)
 	return retval;
 }
 
+static NTSTATUS smb1_chkpath(struct cli_state *cli,
+			     const char *path)
+{
+	uint8_t *bytes = NULL;
+	NTSTATUS status;
+
+	bytes = talloc_array(talloc_tos(), uint8_t, 1);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes,
+				   smbXcli_conn_use_unicode(cli->conn),
+				   path,
+				   strlen(path)+1,
+				   NULL);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = cli_smb(talloc_tos(),
+			 cli,
+			 SMBcheckpath, /* command. */
+			 0, /* additional_flags. */
+			 0, /* wct. */
+			 NULL, /* vwv. */
+			 talloc_get_size(bytes), /* num_bytes. */
+			 bytes, /* bytes. */
+			 NULL, /* result parent. */
+			 0, /* min_wct. */
+			 NULL, /* return wcount. */
+			 NULL, /* return wvw. */
+			 NULL, /* return byte count. */
+			 NULL); /* return bytes. */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return status;
+}
+
+static bool test_smb1_chkpath(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+	bool ok = false;
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\chkpathfile");
+
+	/* Create a test file. */
+	ok = smb1_create_testfile(cli, "\\BAD\\BAD\\chkpathfile");
+	if (!ok) {
+		printf("%s:%d failed to create test file %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\chkpathfile");
+		goto err;
+	}
+	/*
+	 * Should succeed - "chkpathfile" maps to
+	 * directory "".
+	 */
+	status = smb1_chkpath(cli, "chkpathfile");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d SMB1chkpath of %s failed (%s)\n",
+			__FILE__,
+			__LINE__,
+			"chkpathfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * Should succeed - "\\BAD\\chkpathfile" maps to
+	 * directory "".
+	 */
+	status = smb1_chkpath(cli, "\\BAD\\chkpathfile");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d SMB1chkpath of %s failed (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\chkpathfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * Should fail - "\\BAD\\BAD\\chkpathfile" maps to the
+	 * "\\BAD\\BAD\\chkpathfile", not a directory.
+	 */
+	status = smb1_chkpath(cli, "\\BAD\\BAD\\chkpathfile");
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY)) {
+		printf("%s:%d SMB1chkpath of %s should get "
+			"NT_STATUS_NOT_A_DIRECTORY, got %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\chkpathfile",
+			nt_errstr(status));
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\chkpathfile");
+	return retval;
+}
+
 /*
  * "Raw" test of different SMB1 operations to a DFS share.
  * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
@@ -3794,6 +3902,11 @@ bool run_smb1_dfs_operations(int dummy)
 	}
 
 	ok = test_smb1_setatr(cli);
+	if (!ok) {
+		goto err;
+	}
+
+	ok = test_smb1_chkpath(cli);
 	if (!ok) {
 		goto err;
 	}
