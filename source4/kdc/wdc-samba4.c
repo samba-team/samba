@@ -30,6 +30,9 @@
 #include "librpc/gen_ndr/auth.h"
 #include <krb5_locl.h>
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 static bool samba_wdc_is_s4u2self_req(astgs_request_t r)
 {
 	krb5_kdc_configuration *config = kdc_request_get_config((kdc_request_t)r);

@@ -31,6 +31,9 @@
 #include "kdc/kpasswd-helper.h"
 #include "param/param.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 #define HEADER_LEN 6
 #ifndef RFC3244_VERSION
 #define RFC3244_VERSION 0xff80

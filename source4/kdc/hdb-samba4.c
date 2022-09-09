@@ -48,6 +48,9 @@
 #include "hdb.h"
 #include <kdc-audit.h>
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 static krb5_error_code hdb_samba4_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
 	if (db->hdb_master_key_set) {

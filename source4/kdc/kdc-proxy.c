@@ -33,6 +33,8 @@
 #include "libcli/composite/composite.h"
 #include "libcli/resolve/resolve.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
 
 /*
   get a list of our replication partners from repsFrom, returning it in *proxy_list

@@ -40,6 +40,9 @@
 #include <kdc.h>
 #include <hdb.h>
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 NTSTATUS server_service_kdc_init(TALLOC_CTX *);
 
 extern struct krb5plugin_kdc_ftable kdc_plugin_table;

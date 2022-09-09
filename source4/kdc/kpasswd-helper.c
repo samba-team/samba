@@ -27,6 +27,9 @@
 #include "auth/auth.h"
 #include "kdc/kpasswd-helper.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 bool kpasswd_make_error_reply(TALLOC_CTX *mem_ctx,
 			      krb5_error_code error_code,
 			      const char *error_string,

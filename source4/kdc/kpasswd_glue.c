@@ -28,6 +28,9 @@
 #include "auth/auth.h"
 #include "kdc/kpasswd_glue.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 /*
    A user password change
 

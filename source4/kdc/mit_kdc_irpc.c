@@ -37,6 +37,9 @@
 #include "sdb.h"
 #include "mit_kdc_irpc.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 struct mit_kdc_irpc_context {
 	struct task_server *task;
 	krb5_context krb5_context;

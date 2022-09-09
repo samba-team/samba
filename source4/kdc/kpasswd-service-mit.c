@@ -31,6 +31,9 @@
 #include "kdc/kpasswd-helper.h"
 #include "../lib/util/asn1.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 #define RFC3244_VERSION 0xff80
 
 krb5_error_code decode_krb5_setpw_req(const krb5_data *code,

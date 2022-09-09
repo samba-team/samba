@@ -27,6 +27,9 @@
 #include "samba_kdc.h"
 #include "lib/krb5_wrap/krb5_samba.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 void sdb_key_free(struct sdb_key *k)
 {
 	if (k == NULL) {

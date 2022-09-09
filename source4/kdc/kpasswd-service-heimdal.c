@@ -30,6 +30,9 @@
 #include "kdc/kpasswd-service.h"
 #include "kdc/kpasswd-helper.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 					       TALLOC_CTX *mem_ctx,
 					       const struct gensec_security *gensec_security,

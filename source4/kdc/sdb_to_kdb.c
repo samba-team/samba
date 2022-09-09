@@ -28,6 +28,9 @@
 #include "kdc/samba_kdc.h"
 #include "lib/krb5_wrap/krb5_samba.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 static int SDBFlags_to_kflags(const struct SDBFlags *s,
 			      krb5_flags *k)
 {

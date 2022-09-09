@@ -30,6 +30,9 @@
 #include "kdc/kdc-proxy.h"
 #include "lib/stream/packet.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 /*
  * State of an open tcp connection
  */
