@@ -1454,15 +1454,14 @@ static NTSTATUS vfswrap_parent_pathname(struct vfs_handle_struct *handle,
 		return NT_STATUS_OK;
 	}
 
-	name = cp_smb_filename(frame, smb_fname_in);
+	name = synthetic_smb_fname(
+		frame,
+		p,
+		smb_fname_in->stream_name,
+		&smb_fname_in->st,
+		smb_fname_in->twrp,
+		smb_fname_in->flags);
 	if (name == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-	TALLOC_FREE(name->base_name);
-
-	name->base_name = talloc_strdup(name, p);
-	if (name->base_name == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
