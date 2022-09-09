@@ -139,8 +139,12 @@ class Command(object):
             elif ldb_emsg == 'LDAP client internal error: NT_STATUS_NETWORK_UNREACHABLE':
                 print("Could not reach remote server", file=self.errf)
                 force_traceback = False
+            elif ldb_emsg.startswith("Unable to open tdb "):
+                self._print_error(message, ldb_emsg, 'ldb')
+                force_traceback = False
             else:
                 self._print_error(message, ldb_emsg, 'ldb')
+
         elif isinstance(inner_exception, AssertionError):
             self._print_error(message, klass='assert')
             force_traceback = True
