@@ -5794,6 +5794,7 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_posix_open_internal_state *state = NULL;
+	char *fname_cp = NULL;
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct cli_posix_open_internal_state);
@@ -5811,11 +5812,18 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 	}
 	SSVAL(state->param, 0, SMB_POSIX_PATH_OPEN);
 
+	/*
+	 * TRANSACT2_SETPATHINFO on a DFS share must use DFS names.
+	 */
+	fname_cp = smb1_dfs_share_path(state, cli, fname);
+	if (tevent_req_nomem(fname_cp, req)) {
+		return tevent_req_post(req, ev);
+	}
 	state->param = trans2_bytes_push_str(
 		state->param,
 		smbXcli_conn_use_unicode(cli->conn),
-		fname,
-		strlen(fname)+1,
+		fname_cp,
+		strlen(fname_cp)+1,
 		NULL);
 
 	if (tevent_req_nomem(state->param, req)) {
