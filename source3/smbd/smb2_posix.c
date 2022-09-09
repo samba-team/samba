@@ -111,7 +111,7 @@ ssize_t store_smb2_posix_info(
 		return -1;
 	}
 
-	if (cc_len + 68 < buflen) {
+	if (buflen < cc_len + 68) {
 		return cc_len + 68;
 	}
 
