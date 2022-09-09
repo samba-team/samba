@@ -56,9 +56,6 @@ COMMON_OPTIONS = [
            dest='format', const='distance', action='store_const'),
     Option("--utf8", help="Use utf-8 Unicode characters",
            action='store_true'),
-    Option("--color", help="use color (yes, no, auto)",
-           choices=['yes', 'no', 'auto', 'always', 'never', 'force',
-                    'none', 'if-tty', 'tty']),
     Option("--color-scheme", help=("use this colour scheme "
                                    "(implies --color=yes)"),
            choices=list(COLOUR_SETS.keys())),
@@ -92,7 +89,6 @@ class GraphCommand(Command):
     }
     takes_options = COMMON_OPTIONS + DOT_OPTIONS
     takes_args = ()
-    use_colour = False
 
     def get_db(self, H, sambaopts, credopts):
         lp = sambaopts.get_loadparm()
@@ -152,14 +148,14 @@ class GraphCommand(Command):
         subprocess.call([xdot, fn])
         os.remove(fn)
 
-    def calc_distance_color_scheme(self, color, color_scheme, output):
+    def calc_distance_color_scheme(self, color_scheme, output):
         """Heuristics to work out the colour scheme for distance matrices.
         Returning None means no colour, otherwise it sould be a colour
         from graph.COLOUR_SETS"""
-        if color in ('no', 'never', 'none'):
+        if self.requested_colour in ('no', 'never', 'none'):
             return None
 
-        if color in ('auto', 'tty', 'if-tty', None):
+        if self.requested_colour in ('auto', 'tty', 'if-tty', None):
             if os.environ.get('NO_COLOR'):
                 return None
             if color_scheme is not None:
@@ -216,7 +212,7 @@ class cmd_reps(GraphCommand):
     def run(self, H=None, output=None, shorten_names=False,
             key=True, talk_to_remote=False,
             sambaopts=None, credopts=None, versionopts=None,
-            mode='self', partition=None, color=None, color_scheme=None,
+            mode='self', partition=None, color_scheme=None,
             utf8=None, format=None, xdot=False):
         # We use the KCC libraries in readonly mode to get the
         # replication graph.
@@ -312,8 +308,7 @@ class cmd_reps(GraphCommand):
         # interpretation and presentation.
 
         if self.calc_output_format(format, output) == 'distance':
-            color_scheme = self.calc_distance_color_scheme(color,
-                                                           color_scheme,
+            color_scheme = self.calc_distance_color_scheme(color_scheme,
                                                            output)
             header_strings = {
                 'from': "RepsFrom objects for %s",
@@ -420,7 +415,7 @@ class cmd_ntdsconn(GraphCommand):
     def run(self, H=None, output=None, shorten_names=False,
             key=True, talk_to_remote=False,
             sambaopts=None, credopts=None, versionopts=None,
-            color=None, color_scheme=None,
+            color_scheme=None,
             utf8=None, format=None, importldif=None,
             xdot=False):
 
@@ -497,8 +492,7 @@ class cmd_ntdsconn(GraphCommand):
         vertices, rodc_status = zip(*sorted(vertices))
 
         if self.calc_output_format(format, output) == 'distance':
-            color_scheme = self.calc_distance_color_scheme(color,
-                                                           color_scheme,
+            color_scheme = self.calc_distance_color_scheme(color_scheme,
                                                            output)
             colours = COLOUR_SETS[color_scheme]
             c_header = colours.get('header', '')
@@ -655,7 +649,7 @@ class cmd_uptodateness(GraphCommand):
     def run(self, H=None, output=None, shorten_names=False,
             key=True, talk_to_remote=False,
             sambaopts=None, credopts=None, versionopts=None,
-            color=None, color_scheme=None,
+            color_scheme=None,
             utf8=False, format=None, importldif=None,
             xdot=False, partition=None, max_digits=3):
         if not talk_to_remote:
@@ -672,8 +666,7 @@ class cmd_uptodateness(GraphCommand):
         partition = get_partition(self.samdb, partition)
 
         short_partitions, long_partitions = get_partition_maps(self.samdb)
-        color_scheme = self.calc_distance_color_scheme(color,
-                                                       color_scheme,
+        color_scheme = self.calc_distance_color_scheme(color_scheme,
                                                        output)
 
         for part_name, part_dn in short_partitions.items():
