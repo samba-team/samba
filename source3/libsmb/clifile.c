@@ -6577,6 +6577,7 @@ struct tevent_req *cli_qpathinfo_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct cli_qpathinfo_state *state;
 	uint16_t additional_flags2 = 0;
+	char *fname_cp = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_qpathinfo_state);
 	if (req == NULL) {
@@ -6590,8 +6591,18 @@ struct tevent_req *cli_qpathinfo_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	SSVAL(state->param, 0, level);
-	state->param = trans2_bytes_push_str(
-		state->param, smbXcli_conn_use_unicode(cli->conn), fname, strlen(fname)+1, NULL);
+	/*
+	 * qpathinfo on a DFS share must use DFS names.
+	 */
+	fname_cp = smb1_dfs_share_path(state, cli, fname);
+	if (tevent_req_nomem(fname_cp, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->param = trans2_bytes_push_str(state->param,
+					     smbXcli_conn_use_unicode(cli->conn),
+					     fname_cp,
+					     strlen(fname_cp)+1,
+					     NULL);
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
 	}
