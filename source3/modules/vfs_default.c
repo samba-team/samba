@@ -1422,14 +1422,12 @@ static NTSTATUS vfswrap_parent_pathname(struct vfs_handle_struct *handle,
 					struct smb_filename **parent_dir_out,
 					struct smb_filename **atname_out)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
 	struct smb_filename *parent = NULL;
 	struct smb_filename *name = NULL;
 	char *p = NULL;
 
-	parent = cp_smb_filename_nostream(frame, smb_fname_in);
+	parent = cp_smb_filename_nostream(mem_ctx, smb_fname_in);
 	if (parent == NULL) {
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 	SET_STAT_INVALID(parent->st);
@@ -1439,7 +1437,7 @@ static NTSTATUS vfswrap_parent_pathname(struct vfs_handle_struct *handle,
 		TALLOC_FREE(parent->base_name);
 		parent->base_name = talloc_strdup(parent, ".");
 		if (parent->base_name == NULL) {
-			TALLOC_FREE(frame);
+			TALLOC_FREE(parent);
 			return NT_STATUS_NO_MEMORY;
 		}
 		p = smb_fname_in->base_name;
@@ -1449,26 +1447,23 @@ static NTSTATUS vfswrap_parent_pathname(struct vfs_handle_struct *handle,
 	}
 
 	if (atname_out == NULL) {
-		*parent_dir_out = talloc_move(mem_ctx, &parent);
-		TALLOC_FREE(frame);
+		*parent_dir_out = parent;
 		return NT_STATUS_OK;
 	}
 
 	name = synthetic_smb_fname(
-		frame,
+		parent,
 		p,
 		smb_fname_in->stream_name,
 		&smb_fname_in->st,
 		smb_fname_in->twrp,
 		smb_fname_in->flags);
 	if (name == NULL) {
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	*parent_dir_out = talloc_move(mem_ctx, &parent);
-	*atname_out = talloc_move(*parent_dir_out, &name);
-	TALLOC_FREE(frame);
+	*parent_dir_out = parent;
+	*atname_out = name;
 	return NT_STATUS_OK;
 }
 
