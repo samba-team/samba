@@ -812,8 +812,9 @@ static char *shadow_copy2_do_convert(TALLOC_CTX *mem_ctx,
 			goto fail;
 		}
 
-		ZERO_STRUCT(converted_fname);
-		converted_fname.base_name = converted;
+		converted_fname = (struct smb_filename) {
+			.base_name = converted,
+		};
 
 		ret = SMB_VFS_NEXT_LSTAT(handle, &converted_fname);
 		DEBUG(10, ("Trying[not snapdirseverywhere] %s: %d (%s)\n",
@@ -900,8 +901,9 @@ static char *shadow_copy2_do_convert(TALLOC_CTX *mem_ctx,
 	memcpy(converted, path, pathlen+1);
 	converted[pathlen+insertlen] = '\0';
 
-	ZERO_STRUCT(converted_fname);
-	converted_fname.base_name = converted;
+	converted_fname = (struct smb_filename) {
+		.base_name = converted,
+	};
 
 	for (i = num_slashes-1; i>=0; i--) {
 		int ret;
@@ -1946,9 +1948,10 @@ static char *have_snapdir(struct vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return NULL);
 
-	ZERO_STRUCT(smb_fname);
-	smb_fname.base_name = talloc_asprintf(talloc_tos(), "%s/%s",
-					      path, priv->config->snapdir);
+	smb_fname = (struct smb_filename) {
+		.base_name = talloc_asprintf(
+			talloc_tos(), "%s/%s", path, priv->config->snapdir),
+	};
 	if (smb_fname.base_name == NULL) {
 		return NULL;
 	}
@@ -2017,7 +2020,7 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 					 const char *name,
 					 char *gmt, size_t gmt_len)
 {
-	struct tm timestamp;
+	struct tm timestamp = { .tm_sec = 0, };
 	time_t timestamp_t;
 	unsigned long int timestamp_long;
 	const char *fmt;
@@ -2063,7 +2066,6 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 		}
 	}
 
-	ZERO_STRUCT(timestamp);
 	if (config->use_sscanf) {
 		if (sscanf(name, fmt, &timestamp_long) != 1) {
 			DEBUG(10, ("shadow_copy2_snapshot_to_gmt: "
