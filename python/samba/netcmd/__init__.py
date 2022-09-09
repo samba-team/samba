@@ -84,6 +84,7 @@ class Command(object):
     takes_optiongroups = {}
 
     hidden = False
+    use_colour = True
 
     raw_argv = None
     raw_args = None
@@ -158,6 +159,12 @@ class Command(object):
             optiongroup = self.takes_optiongroups[name]
             optiongroups[name] = optiongroup(parser)
             parser.add_option_group(optiongroups[name])
+        if self.use_colour:
+            parser.add_option("--color",
+                              help="use colour if available (default: auto)",
+                              metavar="always|never|auto",
+                              default="auto")
+
         return parser, optiongroups
 
     def message(self, text):
@@ -179,6 +186,9 @@ class Command(object):
                 if option.dest is not None:
                     del kwargs[option.dest]
         kwargs.update(optiongroups)
+
+        if self.use_colour:
+            self.apply_colour_choice(kwargs.pop('color', 'auto'))
 
         # Check for a min a max number of allowed arguments, whenever possible
         # The suffix "?" means zero or one occurence

@@ -92,6 +92,7 @@ class cmd_drs_showrepl(Command):
     """Show replication status."""
 
     synopsis = "%prog [<DC>] [options]"
+    use_colour = False
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,

@@ -92,6 +92,7 @@ class GraphCommand(Command):
     }
     takes_options = COMMON_OPTIONS + DOT_OPTIONS
     takes_args = ()
+    use_colour = False
 
     def get_db(self, H, sambaopts, credopts):
         lp = sambaopts.get_loadparm()
