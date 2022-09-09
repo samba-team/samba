@@ -122,7 +122,9 @@ def is_colour_wanted(stream, hint='auto'):
 
 
 def colour_if_wanted(stream, hint='auto'):
-    if is_colour_wanted(stream, hint):
+    wanted = is_colour_wanted(stream, hint)
+    if wanted:
         switch_colour_on()
     else:
         switch_colour_off()
+    return wanted
