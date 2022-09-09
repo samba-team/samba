@@ -92,7 +92,6 @@ class cmd_drs_showrepl(Command):
     """Show replication status."""
 
     synopsis = "%prog [<DC>] [options]"
-    use_colour = False
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -118,8 +117,6 @@ class cmd_drs_showrepl(Command):
                dest='format', action='store_const', const='classic',
                default=DEFAULT_SHOWREPL_FORMAT),
         Option("-v", "--verbose", help="Be verbose", action="store_true"),
-        Option("--color", help="Use colour output (yes|no|auto)",
-               default='no'),
     ]
 
     takes_args = ["DC?"]
@@ -185,8 +182,7 @@ class cmd_drs_showrepl(Command):
     def run(self, DC=None, sambaopts=None,
             credopts=None, versionopts=None,
             format=DEFAULT_SHOWREPL_FORMAT,
-            verbose=False, color='no'):
-        self.apply_colour_choice(color)
+            verbose=False):
         self.lp = sambaopts.get_loadparm()
         if DC is None:
             DC = common.netcmd_dnsname(self.lp)
