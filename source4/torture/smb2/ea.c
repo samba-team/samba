@@ -91,7 +91,7 @@ static bool torture_smb2_acl_xattr(struct torture_context *tctx,
 
 	status = smb2_setinfo_file(tree, &sfinfo);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"Setting EA should faild\n");
+					"Setting EA should fail\n");
 
 	/*
 	 * 2. Verify NT ACL EA is not listed

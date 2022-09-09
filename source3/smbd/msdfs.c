@@ -1090,7 +1090,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		}
 		removed_components--;
 		if (p == NULL && removed_components != 0) {
-			DBG_ERR("Component missmatch. path = %s, "
+			DBG_ERR("Component mismatch. path = %s, "
 				"%zu components left\n",
 				canon_dfspath,
 				removed_components);

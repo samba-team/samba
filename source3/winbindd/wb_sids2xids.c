@@ -233,7 +233,7 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 
 		sid_copy(&domain_sid, &state->sids[i]);
 		sid_split_rid(&domain_sid, &rid);
-		D_DEBUG("%"PRIu32": Splitted SID %s into domain SID %s and RID %"PRIu32"\n",
+		D_DEBUG("%"PRIu32": Split SID %s into domain SID %s and RID %"PRIu32"\n",
 			i,
 			dom_sid_str_buf(&state->sids[i], &buf0),
 			dom_sid_str_buf(&domain_sid, &buf1),

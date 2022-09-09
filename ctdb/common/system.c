@@ -157,7 +157,7 @@ bool ctdb_sys_check_iface_exists(const char *iface)
 
 	ifnis = if_nameindex();
 	if (ifnis == NULL) {
-		DBG_ERR("Failed to retrieve inteface list\n");
+		DBG_ERR("Failed to retrieve interface list\n");
 		return false;
 	}
 

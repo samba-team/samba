@@ -2754,7 +2754,7 @@ static bool test_session_bind_negative_smb210s(struct torture_context *tctx, str
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.10 if encrytion is required");
+			     "Can't test SMB 2.10 if encryption is required");
 	}
 
 	options1 = transport0->options;
@@ -2785,7 +2785,7 @@ static bool test_session_bind_negative_smb210d(struct torture_context *tctx, str
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.10 if encrytion is required");
+			     "Can't test SMB 2.10 if encryption is required");
 	}
 
 	options1 = transport0->options;
@@ -2817,7 +2817,7 @@ static bool test_session_bind_negative_smb2to3s(struct torture_context *tctx, st
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.10 if encrytion is required");
+			     "Can't test SMB 2.10 if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
@@ -2862,7 +2862,7 @@ static bool test_session_bind_negative_smb2to3d(struct torture_context *tctx, st
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.10 if encrytion is required");
+			     "Can't test SMB 2.10 if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
@@ -2908,7 +2908,7 @@ static bool test_session_bind_negative_smb3to2s(struct torture_context *tctx, st
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.10 if encrytion is required");
+			     "Can't test SMB 2.10 if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
@@ -2959,7 +2959,7 @@ static bool test_session_bind_negative_smb3to2d(struct torture_context *tctx, st
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.10 if encrytion is required");
+			     "Can't test SMB 2.10 if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
@@ -4548,7 +4548,7 @@ static bool test_session_bind_negative_smb3signH2XtoGs(struct torture_context *t
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.10 if encrytion is required");
+			     "Can't test SMB 2.10 if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
@@ -4608,7 +4608,7 @@ static bool test_session_bind_negative_smb3signH2XtoGd(struct torture_context *t
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.10 if encrytion is required");
+			     "Can't test SMB 2.10 if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
@@ -4788,7 +4788,7 @@ static bool test_session_bind_negative_smb3signGtoH2Xs(struct torture_context *t
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.10 if encrytion is required");
+			     "Can't test SMB 2.10 if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
@@ -4854,7 +4854,7 @@ static bool test_session_bind_negative_smb3signGtoH2Xd(struct torture_context *t
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test SMB 2.10 if encrytion is required");
+			     "Can't test SMB 2.10 if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
@@ -5066,7 +5066,7 @@ static bool test_session_signing_hmac_sha_256(struct torture_context *tctx, stru
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test signing only if encrytion is required");
+			     "Can't test signing only if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
@@ -5110,7 +5110,7 @@ static bool test_session_signing_aes_128_cmac(struct torture_context *tctx, stru
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test signing only if encrytion is required");
+			     "Can't test signing only if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
@@ -5154,7 +5154,7 @@ static bool test_session_signing_aes_128_gmac(struct torture_context *tctx, stru
 	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
 	if (encrypted) {
 		torture_skip(tctx,
-			     "Can't test signing only if encrytion is required");
+			     "Can't test signing only if encryption is required");
 	}
 
 	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {

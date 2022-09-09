@@ -399,7 +399,7 @@
 	      on-disk file identifier to have the semantics of HFS+ Catalog Node
 	      Identifier (CNID). Samba provides File-IDs based on a file's inode
 	      number which gets recycled across file creation and deletion and
-	      can therefor not be used for Mac client. Returning a file identifier of
+	      can therefore not be used for Mac client. Returning a file identifier of
 	      zero causes the Mac client to stop using and trusting the file id
 	      returned from the server.</para>
 	      <para>The default is <emphasis>yes</emphasis>.</para>

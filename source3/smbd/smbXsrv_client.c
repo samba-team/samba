@@ -1242,7 +1242,7 @@ static void smbXsrv_client_connection_drop_loop(struct tevent_req *subreq)
 	{
 		struct GUID_txt_buf buf1, buf2;
 
-		DBG_WARNING("client's client_guid [%s] != droped guid [%s]\n",
+		DBG_WARNING("client's client_guid [%s] != dropped guid [%s]\n",
 			    GUID_buf_string(&client->global->client_guid,
 					    &buf1),
 			    GUID_buf_string(&drop_info0->client_guid,
@@ -1257,7 +1257,7 @@ static void smbXsrv_client_connection_drop_loop(struct tevent_req *subreq)
 	    drop_info0->client_connect_time)
 	{
 		DBG_WARNING("client's initial connect time [%s] (%llu) != "
-			"droped initial connect time [%s] (%llu)\n",
+			"dropped initial connect time [%s] (%llu)\n",
 			nt_time_string(talloc_tos(),
 				       client->global->initial_connect_time),
 			(unsigned long long)client->global->initial_connect_time,
