@@ -85,6 +85,7 @@ class Command(object):
 
     hidden = False
     use_colour = True
+    requested_colour = None
 
     raw_argv = None
     raw_args = None
@@ -235,6 +236,7 @@ class Command(object):
         "constants" in the colour module to be either real colours or empty
         strings.
         """
+        self.requested_colour = requested
         try:
             colour.colour_if_wanted(self.outf, requested)
         except ValueError as e:
