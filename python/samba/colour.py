@@ -90,7 +90,7 @@ def xterm_256_colour(n, bg=False, bold=False):
     return "\033[%s%s;5;%dm" % (weight, target, int(n))
 
 
-def is_colour_wanted(stream, hint='auto'):
+def is_colour_wanted(*streams, hint='auto'):
     """The hint is presumably a --color argument.
 
     We follow the behaviour of GNU `ls` in what we accept.
@@ -116,13 +116,14 @@ def is_colour_wanted(stream, hint='auto'):
         # Note: per spec, we treat the empty string as if unset.
         return False
 
-    if (hasattr(stream, 'isatty') and stream.isatty()):
-        return True
-    return False
+    for stream in streams:
+        if not stream.isatty():
+            return False
+    return True
 
 
-def colour_if_wanted(stream, hint='auto'):
-    wanted = is_colour_wanted(stream, hint)
+def colour_if_wanted(*streams, hint='auto'):
+    wanted = is_colour_wanted(*streams, hint=hint)
     if wanted:
         switch_colour_on()
     else:

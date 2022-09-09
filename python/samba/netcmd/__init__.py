@@ -238,7 +238,9 @@ class Command(object):
         """
         self.requested_colour = requested
         try:
-            colour.colour_if_wanted(self.outf, requested)
+            colour.colour_if_wanted(self.outf,
+                                    self.errf,
+                                    hint=requested)
         except ValueError as e:
             raise CommandError(f"Unknown --color option: {requested} "
                                "please choose from always|never|auto")
