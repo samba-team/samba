@@ -104,6 +104,15 @@ class Command(object):
         parser, _ = self._create_parser(prog)
         parser.print_usage()
 
+    def _print_error(self, msg, evalue=None, klass=None):
+        err = colour.c_DARK_RED("ERROR")
+        klass = '' if klass is None else f'({klass})'
+
+        if evalue is None:
+            print(f"{err}{klass}: {msg}", file=self.errf)
+        else:
+            print(f"{err}{klass}: {msg} - {evalue}", file=self.errf)
+
     def show_command_error(self, e):
         '''display a command error'''
         if isinstance(e, CommandError):
@@ -131,19 +140,19 @@ class Command(object):
                 print("Could not reach remote server", file=self.errf)
                 force_traceback = False
             else:
-                self.errf.write("ERROR(ldb): %s - %s\n" % (message, ldb_emsg))
+                self._print_error(message, ldb_emsg, 'ldb')
         elif isinstance(inner_exception, AssertionError):
-            self.errf.write("ERROR(assert): %s\n" % message)
+            self._print_error(message, klass='assert')
             force_traceback = True
         elif isinstance(inner_exception, RuntimeError):
-            self.errf.write("ERROR(runtime): %s - %s\n" % (message, evalue))
+            self._print_error(message, evalue, 'runtime')
         elif type(inner_exception) is Exception:
-            self.errf.write("ERROR(exception): %s - %s\n" % (message, evalue))
+            self._print_error(message, evalue, 'exception')
             force_traceback = True
         elif inner_exception is None:
-            self.errf.write("ERROR: %s\n" % (message))
+            self._print_error(message)
         else:
-            self.errf.write("ERROR(%s): %s - %s\n" % (str(etype), message, evalue))
+            self._print_error(message, evalue, str(etype))
 
         if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback, file=self.errf)
