@@ -3967,6 +3967,154 @@ static bool test_smb1_ctemp(struct cli_state *cli)
 	return retval;
 }
 
+static NTSTATUS smb1_qpathinfo(struct cli_state *cli,
+			       const char *fname,
+			       uint32_t *pattrs)
+{
+	NTSTATUS status;
+	uint8_t *param = NULL;
+	uint16_t setup[1] = { 0 };
+	uint8_t *rdata = NULL;
+	uint32_t num_rdata = 0;
+
+	PUSH_LE_U16(setup, 0, TRANSACT2_QPATHINFO);
+
+	param = talloc_zero_array(talloc_tos(), uint8_t, 6);
+	if (param == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	PUSH_LE_U16(param, 0, SMB_QUERY_FILE_BASIC_INFO);
+
+	param = trans2_bytes_push_str(param,
+				      smbXcli_conn_use_unicode(cli->conn),
+				      fname,
+				      strlen(fname)+1,
+				      NULL);
+	if (param == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = cli_trans(talloc_tos(),
+			   cli,
+			   SMBtrans2, /* cmd */
+			   NULL, /* pipe_name */
+			   0, /* fid */
+			   0, /* function */
+			   0, /* flags */
+			   &setup[0],
+			   1, /* num_setup uint16_t words */
+			   0, /* max returned setup */
+			   param,
+			   talloc_get_size(param), /* num_param */
+			   2, /* max returned param */
+			   NULL, /* data */
+			   0, /* num_data */
+			   SMB_BUFFER_SIZE_MAX, /* max retured data */
+			   /* Return values from here on.. */
+			   NULL, /* recv_flags2 */
+			   NULL, /* rsetup */
+			   0, /* min returned rsetup */
+			   NULL, /* num_rsetup */
+			   NULL,
+			   0, /* min returned rparam */
+			   NULL, /* number of returned rparam */
+			   &rdata,
+			   36, /* min returned rdata */
+			   &num_rdata);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*pattrs = PULL_LE_U32(rdata, 32);
+	return NT_STATUS_OK;
+}
+
+static bool test_smb1_qpathinfo(struct cli_state *cli)
+{
+	NTSTATUS status;
+	bool retval = false;
+	bool ok = false;
+	uint32_t attrs;
+
+	/* Start clean. */
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\qpathinfo_file");
+
+	/* Create a test file. */
+	ok = smb1_create_testfile(cli, "\\BAD\\BAD\\qpathinfo_file");
+	if (!ok) {
+		printf("%s:%d failed to create test file %s\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\qpathinfo_file");
+		goto err;
+	}
+
+	/* Should get root dir attrs. */
+	status = smb1_qpathinfo(cli, "qpathinfo_file", &attrs);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d smb1_qpathinfo failed %s (%s)\n",
+			__FILE__,
+			__LINE__,
+			"qpathinfo_file",
+			nt_errstr(status));
+		goto err;
+	}
+	if ((attrs & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+		printf("%s:%d expected FILE_ATTRIBUTE_DIRECTORY on %s "
+			"got attribute 0x%x\n",
+			__FILE__,
+			__LINE__,
+			"qpathinfo_file",
+			(unsigned int)attrs);
+		goto err;
+	}
+
+	/* Should get root dir attrs. */
+	status = smb1_qpathinfo(cli, "\\BAD\\qpathinfo_file", &attrs);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d smb1_qpathinfo failed %s (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\qpathinfo_file",
+			nt_errstr(status));
+		goto err;
+	}
+	if ((attrs & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+		printf("%s:%d expected FILE_ATTRIBUTE_DIRECTORY on %s "
+			"got attribute 0x%x\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\qpathinfo_file",
+			(unsigned int)attrs);
+		goto err;
+	}
+
+	/* Should get file attrs. */
+	status = smb1_qpathinfo(cli, "\\BAD\\BAD\\qpathinfo_file", &attrs);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d smb1_qpathinfo failed %s (%s)\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\qpathinfo_file",
+			nt_errstr(status));
+		goto err;
+	}
+	if ((attrs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+		printf("%s:%d expected not FILE_ATTRIBUTE_DIRECTORY on %s "
+			"got attribute 0x%x\n",
+			__FILE__,
+			__LINE__,
+			"\\BAD\\BAD\\qpathinfo_file",
+			(unsigned int)attrs);
+	}
+
+	retval = true;
+
+  err:
+
+	(void)smb1_dfs_delete(cli, "\\BAD\\BAD\\qpathinfo_file");
+	return retval;
+}
+
 /*
  * "Raw" test of different SMB1 operations to a DFS share.
  * We must (mostly) use the lower level smb1cli_XXXX() interfaces,
@@ -4065,6 +4213,11 @@ bool run_smb1_dfs_operations(int dummy)
 	}
 
 	ok = test_smb1_ctemp(cli);
+	if (!ok) {
+		goto err;
+	}
+
+	ok = test_smb1_qpathinfo(cli);
 	if (!ok) {
 		goto err;
 	}
