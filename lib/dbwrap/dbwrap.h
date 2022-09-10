@@ -222,7 +222,7 @@ NTSTATUS dbwrap_parse_marshall_buf(const uint8_t *buf, size_t buflen,
 NTSTATUS dbwrap_unmarshall(struct db_context *db, const uint8_t *buf,
 			   size_t buflen);
 
-TDB_DATA dbwrap_merge_dbufs(TALLOC_CTX *mem_ctx,
+NTSTATUS dbwrap_merge_dbufs(TDB_DATA *buf, TALLOC_CTX *mem_ctx,
 			    const TDB_DATA *dbufs, int num_dbufs);
 
 

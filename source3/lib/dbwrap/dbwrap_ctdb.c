@@ -674,11 +674,11 @@ static NTSTATUS db_ctdb_storev_transaction(
 	struct db_ctdb_transaction_handle *h = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_transaction_handle);
 	NTSTATUS status;
-	TDB_DATA data;
+	TDB_DATA data = {0};
 
-	data = dbwrap_merge_dbufs(rec, dbufs, num_dbufs);
-	if (data.dptr == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	status = dbwrap_merge_dbufs(&data, rec, dbufs, num_dbufs);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	status = db_ctdb_transaction_store(h, rec->key, data);

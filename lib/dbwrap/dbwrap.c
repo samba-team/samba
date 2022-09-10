@@ -680,22 +680,28 @@ static ssize_t tdb_data_buf(const TDB_DATA *dbufs, int num_dbufs,
 }
 
 
-TDB_DATA dbwrap_merge_dbufs(TALLOC_CTX *mem_ctx,
+NTSTATUS dbwrap_merge_dbufs(TDB_DATA *buf, TALLOC_CTX *mem_ctx,
 			    const TDB_DATA *dbufs, int num_dbufs)
 {
 	ssize_t len = tdb_data_buf(dbufs, num_dbufs, NULL, 0);
-	uint8_t *buf;
 
 	if (len == -1) {
-		return (TDB_DATA) {0};
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	buf = talloc_array(mem_ctx, uint8_t, len);
-	if (buf == NULL) {
-		return (TDB_DATA) {0};
+	if (buf->dsize != len) {
+		uint8_t *tmp;
+
+		tmp = talloc_realloc(mem_ctx, buf->dptr, uint8_t, len);
+		if (tmp == NULL && len != 0) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		buf->dptr = tmp;
+		buf->dsize = len;
 	}
 
-	tdb_data_buf(dbufs, num_dbufs, buf, len);
+	tdb_data_buf(dbufs, num_dbufs, buf->dptr, buf->dsize);
 
-	return (TDB_DATA) { .dptr = buf, .dsize = len };
+	return NT_STATUS_OK;
 }
