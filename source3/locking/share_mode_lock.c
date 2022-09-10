@@ -238,14 +238,14 @@ static NTSTATUS fsp_update_share_mode_flags(struct files_struct *fsp)
 	status = share_mode_do_locked(
 		fsp->file_id, fsp_update_share_mode_flags_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("share_mode_do_locked returned %s\n",
-			  nt_errstr(status));
+		DBG_ERR("share_mode_do_locked returned %s\n",
+			nt_errstr(status));
 		return status;
 	}
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(state.ndr_err)) {
-		DBG_DEBUG("get_share_mode_blob_header returned %s\n",
-			  ndr_errstr(state.ndr_err));
+		DBG_ERR("get_share_mode_blob_header returned %s\n",
+			ndr_errstr(state.ndr_err));
 		return ndr_map_error2ntstatus(state.ndr_err);
 	}
 
