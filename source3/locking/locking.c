@@ -1174,13 +1174,13 @@ bool share_mode_forall_leases(
 		lck, share_mode_forall_leases_fn, &state);
 	TALLOC_FREE(state.leases);
 	if (!ok) {
-		DBG_DEBUG("share_mode_forall_entries failed\n");
+		DBG_ERR("share_mode_forall_entries failed\n");
 		return false;
 	}
 
 	if (!NT_STATUS_IS_OK(state.status)) {
-		DBG_DEBUG("share_mode_forall_leases_fn returned %s\n",
-			  nt_errstr(state.status));
+		DBG_ERR("share_mode_forall_leases_fn returned %s\n",
+			nt_errstr(state.status));
 		return false;
 	}
 
