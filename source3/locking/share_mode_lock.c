@@ -61,6 +61,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
+#define DBG_GET_SHARE_MODE_LOCK(__status, ...) \
+	DBG_PREFIX( \
+		NT_STATUS_EQUAL(__status, NT_STATUS_NOT_FOUND) ? \
+		DBGLVL_DEBUG : DBGLVL_ERR, \
+		(__VA_ARGS__))
 
 /* the locking database handle */
 static struct g_lock_ctx *lock_ctx;
@@ -238,6 +243,7 @@ static NTSTATUS fsp_update_share_mode_flags(struct files_struct *fsp)
 	status = share_mode_do_locked(
 		fsp->file_id, fsp_update_share_mode_flags_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
+		/* no DBG_GET_SHARE_MODE_LOCK here! */
 		DBG_ERR("share_mode_do_locked returned %s\n",
 			nt_errstr(status));
 		return status;
@@ -843,13 +849,15 @@ static NTSTATUS get_static_share_mode_data(
 		get_static_share_mode_data_fn,
 		&state);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("g_lock_dump failed: %s\n",
-			  nt_errstr(status));
+		DBG_GET_SHARE_MODE_LOCK(status,
+			"g_lock_dump failed: %s\n",
+			nt_errstr(status));
 		return status;
 	}
 	if (!NT_STATUS_IS_OK(state.status)) {
-		DBG_DEBUG("get_static_share_mode_data_fn failed: %s\n",
-			  nt_errstr(state.status));
+		DBG_GET_SHARE_MODE_LOCK(status,
+			"get_static_share_mode_data_fn failed: %s\n",
+			nt_errstr(state.status));
 		return state.status;
 	}
 
@@ -1624,8 +1632,9 @@ static int share_mode_forall_fn(TDB_DATA key, void *private_data)
 	status = g_lock_dump(
 		lock_ctx, key, share_mode_forall_dump_fn, private_data);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("g_lock_dump failed: %s\n",
-			  nt_errstr(status));
+		DBG_GET_SHARE_MODE_LOCK(status,
+			"g_lock_dump failed: %s\n",
+			nt_errstr(status));
 	}
 	return 0;
 }
