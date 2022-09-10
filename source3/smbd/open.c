@@ -694,7 +694,6 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	struct smb_filename *oldwd_fname = NULL;
 	struct smb_filename *parent_dir_fname = NULL;
 	bool have_opath = false;
-	bool is_share_root = false;
 	struct vfs_open_how how = *_how;
 	int ret;
 
@@ -710,11 +709,19 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 		int cmp = strcmp(connpath, smb_fname->base_name);
 
 		if (cmp == 0) {
-			is_share_root = true;
+			/*
+			 * We're on the share root, reflect this in
+			 * smb_fname
+			 */
+			smb_fname->base_name = talloc_strdup(smb_fname, "");
+			if (smb_fname->base_name == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto out;
+			}
 		}
 	}
 
-	if (!is_share_root && (dirfsp == conn->cwd_fsp)) {
+	if (dirfsp == conn->cwd_fsp) {
 		struct smb_filename *smb_fname_dot = NULL;
 
 		status = SMB_VFS_PARENT_PATHNAME(fsp->conn,
@@ -769,10 +776,7 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 		smb_fname_rel = smb_fname;
 	}
 
-	if (!is_share_root) {
-		char *slash = strchr_m(smb_fname_rel->base_name, '/');
-		SMB_ASSERT(slash == NULL);
-	}
+	SMB_ASSERT(strchr_m(smb_fname_rel->base_name, '/') == NULL);
 
 	how.flags |= O_NOFOLLOW;
 
