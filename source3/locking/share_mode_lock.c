@@ -538,8 +538,8 @@ static NTSTATUS locking_tdb_data_store(
 		 */
 		status = g_lock_write_data(lock_ctx, key, NULL, 0);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("g_lock_writev_data() failed: %s\n",
-				  nt_errstr(status));
+			DBG_ERR("g_lock_writev_data() failed: %s\n",
+				nt_errstr(status));
 		}
 		return status;
 	}
@@ -572,8 +572,8 @@ static NTSTATUS locking_tdb_data_store(
 
 	status = g_lock_writev_data(lock_ctx, key, dbufs, ARRAY_SIZE(dbufs));
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("g_lock_writev_data() failed: %s\n",
-			  nt_errstr(status));
+		DBG_ERR("g_lock_writev_data() failed: %s\n",
+			nt_errstr(status));
 	}
 	return status;
 }
