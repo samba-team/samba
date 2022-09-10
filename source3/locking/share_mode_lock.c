@@ -61,7 +61,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
-#define NO_LOCKING_COUNT (-1)
 
 /* the locking database handle */
 static struct g_lock_ctx *lock_ctx;
