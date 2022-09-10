@@ -509,7 +509,7 @@ static NTSTATUS locking_tdb_data_fetch(
 
 	ok = locking_tdb_data_get(result, state.data, state.datalen);
 	if (!ok) {
-		DBG_DEBUG("locking_tdb_data_get failed for %zu bytes\n",
+		DBG_ERR("locking_tdb_data_get failed for %zu bytes\n",
 			  state.datalen);
 		TALLOC_FREE(result);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -653,6 +653,8 @@ static NTSTATUS share_mode_data_store(
 
 	status = locking_tdb_data_fetch(key, d, &ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("locking_tdb_data_fetch failed: %s\n",
+			nt_errstr(status));
 		return status;
 	}
 
@@ -781,7 +783,7 @@ static void get_static_share_mode_data_fn(
 
 		ok = locking_tdb_data_get(&ltdb, data, datalen);
 		if (!ok) {
-			DBG_DEBUG("locking_tdb_data_get failed\n");
+			DBG_ERR("locking_tdb_data_get failed\n");
 			state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			return;
 		}
@@ -1812,8 +1814,8 @@ bool set_share_mode(struct share_mode_lock *lck,
 
 	status = locking_tdb_data_fetch(key, talloc_tos(), &ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("locking_tdb_data_fetch failed: %s\n",
-			  nt_errstr(status));
+		DBG_ERR("locking_tdb_data_fetch failed: %s\n",
+			nt_errstr(status));
 		return false;
 	}
 	DBG_DEBUG("num_share_modes=%zu\n", ltdb->num_share_entries);
@@ -2059,8 +2061,8 @@ bool share_mode_forall_entries(
 
 	status = locking_tdb_data_fetch(key, talloc_tos(), &ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("locking_tdb_data_fetch failed: %s\n",
-			  nt_errstr(status));
+		DBG_ERR("locking_tdb_data_fetch failed: %s\n",
+			nt_errstr(status));
 		return false;
 	}
 	DBG_DEBUG("num_share_modes=%zu\n", ltdb->num_share_entries);
@@ -2188,8 +2190,8 @@ static bool share_mode_entry_do(
 
 	status = locking_tdb_data_fetch(key, talloc_tos(), &ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("locking_tdb_data_fetch failed: %s\n",
-			  nt_errstr(status));
+		DBG_ERR("locking_tdb_data_fetch failed: %s\n",
+			nt_errstr(status));
 		return false;
 	}
 	DBG_DEBUG("num_share_modes=%zu\n", ltdb->num_share_entries);
@@ -2459,8 +2461,8 @@ bool reset_share_mode_entry(
 
 	status = locking_tdb_data_fetch(key, talloc_tos(), &ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("locking_tdb_data_fetch failed: %s\n",
-			  nt_errstr(status));
+		DBG_ERR("locking_tdb_data_fetch failed: %s\n",
+			nt_errstr(status));
 		return false;
 	}
 
