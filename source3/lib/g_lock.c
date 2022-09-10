@@ -1442,12 +1442,14 @@ struct tevent_req *g_lock_watch_data_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if (NT_STATUS_IS_OK(state->status)) {
-		tevent_req_done(req);
+	if (NT_STATUS_EQUAL(state->status, NT_STATUS_EVENT_PENDING)) {
+		return req;
+	}
+	if (tevent_req_nterror(req, state->status)) {
 		return tevent_req_post(req, ev);
 	}
-
-	return req;
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
 }
 
 static void g_lock_watch_data_done_fn(
