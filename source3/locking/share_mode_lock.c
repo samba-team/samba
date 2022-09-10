@@ -2105,8 +2105,8 @@ bool share_mode_forall_entries(
 
 	status = locking_tdb_data_store(key, ltdb, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("locking_tdb_data_store failed: %s\n",
-			  nt_errstr(status));
+		DBG_ERR("locking_tdb_data_store failed: %s\n",
+			nt_errstr(status));
 		return false;
 	}
 
@@ -2275,8 +2275,8 @@ static bool share_mode_entry_do(
 
 	status = locking_tdb_data_store(key, ltdb, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("locking_tdb_data_store failed: %s\n",
-			  nt_errstr(status));
+		DBG_ERR("locking_tdb_data_store failed: %s\n",
+			nt_errstr(status));
 		goto done;
 	}
 
@@ -2506,8 +2506,8 @@ bool reset_share_mode_entry(
 
 	status = locking_tdb_data_store(key, ltdb, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("locking_tdb_data_store failed: %s\n",
-			  nt_errstr(status));
+		DBG_ERR("locking_tdb_data_store failed: %s\n",
+			nt_errstr(status));
 		goto done;
 	}
 
