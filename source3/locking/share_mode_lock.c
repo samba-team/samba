@@ -2453,6 +2453,7 @@ bool reset_share_mode_entry(
 	struct share_mode_entry e;
 	struct share_mode_entry_buf e_buf;
 	NTSTATUS status;
+	int cmp;
 	bool ret = false;
 	bool ok;
 
@@ -2474,9 +2475,9 @@ bool reset_share_mode_entry(
 		goto done;
 	}
 
-	ret = share_mode_entry_cmp(
+	cmp = share_mode_entry_cmp(
 		old_pid, old_share_file_id, e.pid, e.share_file_id);
-	if (ret != 0) {
+	if (cmp != 0) {
 		struct server_id_buf tmp1, tmp2;
 		DBG_WARNING("Expected pid=%s, file_id=%"PRIu64", "
 			    "got pid=%s, file_id=%"PRIu64"\n",
@@ -2512,5 +2513,5 @@ bool reset_share_mode_entry(
 	ret = true;
 done:
 	TALLOC_FREE(ltdb);
-	return true;
+	return ret;
 }
