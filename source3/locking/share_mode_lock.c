@@ -500,7 +500,8 @@ static NTSTATUS locking_tdb_data_fetch(
 		goto done;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("g_lock_dump failed: %s\n", nt_errstr(status));
+		DBG_ERR("g_lock_dump failed: %s\n",
+			nt_errstr(status));
 		return status;
 	}
 	if (state.datalen == 0) {
