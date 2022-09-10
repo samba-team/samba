@@ -1692,7 +1692,7 @@ static int share_entry_traverse_fn(struct file_id fid,
 	ok = share_mode_forall_entries(
 		&lck, share_entry_traverse_walker, state);
 	if (!ok) {
-		DBG_DEBUG("share_mode_forall_entries failed\n");
+		DBG_ERR("share_mode_forall_entries failed\n");
 		return false;
 	}
 

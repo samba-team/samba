@@ -716,6 +716,7 @@ NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
 
 	ok = share_mode_forall_entries(lck, find_lease_ref_fn, &state);
 	if (!ok) {
+		DBG_ERR("share_mode_forall_entries failed\n");
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
