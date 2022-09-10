@@ -93,6 +93,9 @@ def xterm_256_colour(n, bg=False, bold=False):
 def is_colour_wanted(*streams, hint='auto'):
     """The hint is presumably a --color argument.
 
+    The streams to be considered can be file objects or file names,
+    with '-' being a special filename indicating stdout.
+
     We follow the behaviour of GNU `ls` in what we accept.
     * `git` is stricter, accepting only {always,never,auto}.
     * `grep` is looser, accepting mixed case variants.
@@ -117,6 +120,15 @@ def is_colour_wanted(*streams, hint='auto'):
         return False
 
     for stream in streams:
+        if isinstance(stream, str):
+            # This function can be passed filenames instead of file
+            # objects, in which case we treat '-' as stdout, and test
+            # that. Any other string is not regarded as a tty.
+            if stream != '-':
+                return False
+            import sys
+            stream = sys.stdout
+
         if not stream.isatty():
             return False
     return True
