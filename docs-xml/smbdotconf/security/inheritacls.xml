@@ -3,12 +3,15 @@
                  type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>This parameter can be used to ensure that if default acls
+    <para>This parameter is only relevant for filesystems that
+    do not support standardized NFS4 ACLs but only a POSIX draft ACL
+    implementation and which implements default ACLs like most filesystems
+    on Linux. It can be used to ensure that if default ACLs
     exist on parent directories, they are always honored when creating a
     new file or subdirectory in these parent directories. The default 
     behavior is to use the unix mode specified when creating the directory. 
     Enabling this option sets the unix mode to 0777, thus guaranteeing that 
-    default directory acls are propagated.
+    the default directory ACLs are propagated.
 
     Note that using the VFS modules acl_xattr or acl_tdb which store native
     Windows as meta-data will automatically turn this option on for any

@@ -3,13 +3,17 @@
                  type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>This boolean parameter controls whether <citerefentry><refentrytitle>smbd</refentrytitle>                                       
-    <manvolnum>8</manvolnum></citerefentry> will attempt to map the 'inherit' and 'protected'
-    access control entry flags stored in Windows ACLs into an extended attribute
-    called user.SAMBA_PAI (POSIX ACL Inheritance). This parameter requires
-    supports for extended attributes on the filesystem and
-    allows the Windows ACL editor to store inheritance information while
-    NT ACLs are mapped best-effort to the POSIX ACLs.
+    <para>This boolean parameter is only relevant for systems that do not support
+    standardized NFS4 ACLs but only a POSIX draft implementation of ACLs. Linux
+    is the only common UNIX system which does still not offer standardized NFS4
+    ACLs actually. On such systems this parameter controls whether
+    <citerefentry><refentrytitle>smbd</refentrytitle>
+    <manvolnum>8</manvolnum></citerefentry> will attempt to map the 'protected'
+    (don't inherit) flags of the Windows ACLs into an extended attribute called
+    user.SAMBA_PAI (POSIX draft ACL Inheritance). This parameter requires
+    support for extended attributes on the filesystem and allows the Windows
+    ACL editor to store (non-)inheritance information while NT ACLs are mapped
+    best-effort to the POSIX draft ACLs that the OS and filesystem implements.
     </para>
 </description>
 <value type="default">no</value>

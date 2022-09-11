@@ -18,12 +18,9 @@
     <para>
     Note that the SMB protocol allows setting attributes whose value is 64K bytes long,
     and that on NTFS, the maximum storage space for extended attributes per file is 64K.
-    On most UNIX systems (Solaris and ZFS file system being the exception), the limits
-    are much lower - typically 4K. Worse, the same 4K space is often used to store
-    system metadata such as POSIX ACLs, or Samba's NT ACLs. Giving clients
-    access to this tight space via extended attribute support could consume all
-    of it by unsuspecting client applications, which would prevent changing
-    system metadata due to lack of space.
+    On some filesystem the limits may be lower. Filesystems with too limited EA
+    space may experience unexpected weird effects.
+
 
     The default has changed to yes in Samba release 4.9.0 and above to allow better Windows
     fileserver compatibility in a default install.
