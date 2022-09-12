@@ -24,6 +24,7 @@
 #include "auth.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "passdb.h"
+#include "lib/util/memcache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -562,8 +563,6 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 	nt_status = make_server_info_sam(mem_ctx, sampass, server_info);
 	unbecome_root();
 
-	TALLOC_FREE(sampass);
-
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));
 		goto done;
@@ -582,6 +581,11 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 	(*server_info)->nss_token |= user_info->was_mapped;
 
 done:
+	/*
+	 * Always flush the getpwsid cache or this will grow indefinetly for
+	 * each NTLM auththentication.
+	 */
+	memcache_flush(NULL, PDB_GETPWSID_CACHE);
 	TALLOC_FREE(sampass);
 	data_blob_free(&user_sess_key);
 	data_blob_free(&lm_sess_key);
