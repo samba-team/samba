@@ -475,6 +475,8 @@ static NTSTATUS check_base_file_access(struct files_struct *fsp,
 					access_mask);
 }
 
+#if 0
+
 /****************************************************************************
  Handle differing symlink errno's
 ****************************************************************************/
@@ -674,6 +676,251 @@ static NTSTATUS process_symlink_open(const struct files_struct *dirfsp,
 
 	return status;
 }
+#endif
+
+/*
+ * Take two absolute paths, figure out if "subdir" is a proper
+ * subdirectory of "parent". Return the component relative to the
+ * "parent" without the potential "/". Take care of "parent"
+ * possibly ending in "/".
+ */
+static bool subdir_of(
+	const char *parent,
+	size_t parent_len,
+	const char *subdir,
+	const char **_relative)
+
+{
+	const char *relative = NULL;
+	bool matched;
+
+	SMB_ASSERT(parent[0] == '/');
+	SMB_ASSERT(subdir[0] == '/');
+
+	if (parent_len == 1) {
+		/*
+		 * Everything is below "/"
+		 */
+		*_relative = subdir+1;
+		return true;
+	}
+
+	if (parent[parent_len-1] == '/') {
+		parent_len -= 1;
+	}
+
+	matched = (strncmp(subdir, parent, parent_len) == 0);
+	if (!matched) {
+		return false;
+	}
+
+	relative = &subdir[parent_len];
+
+	if (relative[0] == '\0') {
+		*_relative = relative; /* nothing left */
+		return true;
+	}
+
+	if (relative[0] == '/') {
+		/* End of parent must match a '/' in subdir. */
+		*_relative = relative+1;
+		return true;
+	}
+
+	return false;
+}
+
+static NTSTATUS chdir_below_conn(
+	TALLOC_CTX *mem_ctx,
+	connection_struct *conn,
+	const char *connectpath,
+	size_t connectpath_len,
+	struct smb_filename *dir_fname,
+	struct smb_filename **_oldwd_fname)
+{
+	struct smb_filename *oldwd_fname = NULL;
+	struct smb_filename *smb_fname_dot = NULL;
+	struct smb_filename *real_fname = NULL;
+	const char *relative = NULL;
+	NTSTATUS status;
+	int ret;
+	bool ok;
+
+	if (!ISDOT(dir_fname->base_name)) {
+
+		oldwd_fname = vfs_GetWd(talloc_tos(), conn);
+		if (oldwd_fname == NULL) {
+			status = map_nt_error_from_unix(errno);
+			goto out;
+		}
+
+		/* Pin parent directory in place. */
+		ret = vfs_ChDir(conn, dir_fname);
+		if (ret == -1) {
+			status = map_nt_error_from_unix(errno);
+			DBG_DEBUG("chdir to %s failed: %s\n",
+				  dir_fname->base_name,
+				  strerror(errno));
+			goto out;
+		}
+	}
+
+	smb_fname_dot = synthetic_smb_fname(
+		talloc_tos(),
+		".",
+		NULL,
+		NULL,
+		dir_fname->twrp,
+		dir_fname->flags);
+	if (smb_fname_dot == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	real_fname = SMB_VFS_REALPATH(conn, talloc_tos(), smb_fname_dot);
+	if (real_fname == NULL) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("realpath in %s failed: %s\n",
+			  dir_fname->base_name,
+			  strerror(errno));
+		goto out;
+	}
+	TALLOC_FREE(smb_fname_dot);
+
+	ok = subdir_of(connectpath,
+		       connectpath_len,
+		       real_fname->base_name,
+		       &relative);
+	if (ok) {
+		TALLOC_FREE(real_fname);
+		*_oldwd_fname = oldwd_fname;
+		return NT_STATUS_OK;
+	}
+
+	DBG_NOTICE("Bad access attempt: %s is a symlink "
+		   "outside the share path\n"
+		   "conn_rootdir =%s\n"
+		   "resolved_name=%s\n",
+		   dir_fname->base_name,
+		   connectpath,
+		   real_fname->base_name);
+	TALLOC_FREE(real_fname);
+
+	status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+out:
+	if (oldwd_fname != NULL) {
+		ret = vfs_ChDir(conn, oldwd_fname);
+		SMB_ASSERT(ret == 0);
+		TALLOC_FREE(oldwd_fname);
+	}
+
+	return status;
+}
+
+/*
+ * Get the symlink target of dirfsp/symlink_name, making sure the
+ * target is below connection_path.
+ */
+
+static NTSTATUS symlink_target_below_conn(
+	TALLOC_CTX *mem_ctx,
+	const char *connection_path,
+	size_t connection_path_len,
+	struct files_struct *fsp,
+	struct files_struct *dirfsp,
+	struct smb_filename *symlink_name,
+	char **_target)
+{
+	char *target = NULL;
+	char *absolute = NULL;
+	const char *relative = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	if (fsp_get_pathref_fd(fsp) != -1) {
+		/*
+		 * fsp is an O_PATH open, Linux does a "freadlink"
+		 * with an empty name argument to readlinkat
+		 */
+		struct smb_filename null_fname = {
+			.base_name = discard_const_p(char, ""),
+		};
+		status = readlink_talloc(
+			talloc_tos(), fsp, &null_fname, &target);
+	} else {
+		status = readlink_talloc(
+			talloc_tos(), dirfsp, symlink_name, &target);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("readlink_talloc failed: %s\n", nt_errstr(status));
+		return status;
+	}
+
+	if (target[0] != '/') {
+		char *tmp = talloc_asprintf(
+			talloc_tos(),
+			"%s/%s/%s",
+			connection_path,
+			dirfsp->fsp_name->base_name,
+			target);
+
+		TALLOC_FREE(target);
+
+		if (tmp == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		target = tmp;
+	}
+
+	DBG_DEBUG("redirecting to %s\n", target);
+
+	absolute = canonicalize_absolute_path(talloc_tos(), target);
+	TALLOC_FREE(target);
+
+	if (absolute == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * We're doing the "below connection_path" here because it's
+	 * cheap. It might be that we get a symlink out of the share,
+	 * pointing to yet another symlink getting us back into the
+	 * share. If we need that, we would have to remove the check
+	 * here.
+	 */
+	ok = subdir_of(
+		connection_path,
+		connection_path_len,
+		absolute,
+		&relative);
+	if (!ok) {
+		DBG_NOTICE("Bad access attempt: %s is a symlink "
+			   "outside the share path\n"
+			   "conn_rootdir =%s\n"
+			   "resolved_name=%s\n",
+			   symlink_name->base_name,
+			   connection_path,
+			   absolute);
+		TALLOC_FREE(absolute);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (relative[0] == '\0') {
+		/*
+		 * special case symlink to share root: "." is our
+		 * share root filename
+		 */
+		absolute[0] = '.';
+		absolute[1] = '\0';
+	} else {
+		memmove(absolute, relative, strlen(relative)+1);
+	}
+
+	*_target = absolute;
+	return NT_STATUS_OK;
+}
 
 /****************************************************************************
  Non-widelink open.
@@ -686,33 +933,34 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			     unsigned int link_depth)
 {
 	struct connection_struct *conn = fsp->conn;
-	NTSTATUS saved_status;
+	const char *connpath = SMB_VFS_CONNECTPATH(conn, dirfsp, smb_fname);
+	size_t connpath_len;
 	NTSTATUS status = NT_STATUS_OK;
 	int fd = -1;
+	char *orig_smb_fname_base = smb_fname->base_name;
 	struct smb_filename *orig_fsp_name = fsp->fsp_name;
 	struct smb_filename *smb_fname_rel = NULL;
 	struct smb_filename *oldwd_fname = NULL;
 	struct smb_filename *parent_dir_fname = NULL;
-	bool have_opath = false;
 	struct vfs_open_how how = *_how;
+	char *target = NULL;
 	int ret;
-
-#ifdef O_PATH
-	have_opath = true;
-#endif
 
 	SMB_ASSERT(!fsp_is_alternate_stream(fsp));
 
-	if (smb_fname->base_name[0] == '/') {
-		const char *connpath = SMB_VFS_CONNECTPATH(
-			conn, NULL, smb_fname);
-		int cmp = strcmp(connpath, smb_fname->base_name);
+	if (connpath == NULL) {
+		/*
+		 * This can happen with shadow_copy2 if the snapshot
+		 * path is not found
+		 */
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	connpath_len = strlen(connpath);
 
+again:
+	if (smb_fname->base_name[0] == '/') {
+		int cmp = strcmp(connpath, smb_fname->base_name);
 		if (cmp == 0) {
-			/*
-			 * We're on the share root, reflect this in
-			 * smb_fname
-			 */
 			smb_fname->base_name = talloc_strdup(smb_fname, "");
 			if (smb_fname->base_name == NULL) {
 				status = NT_STATUS_NO_MEMORY;
@@ -722,7 +970,6 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	}
 
 	if (dirfsp == conn->cwd_fsp) {
-		struct smb_filename *smb_fname_dot = NULL;
 
 		status = SMB_VFS_PARENT_PATHNAME(fsp->conn,
 						 talloc_tos(),
@@ -733,35 +980,13 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			goto out;
 		}
 
-		if (!ISDOT(parent_dir_fname->base_name)) {
-			oldwd_fname = vfs_GetWd(talloc_tos(), conn);
-			if (oldwd_fname == NULL) {
-				status = map_nt_error_from_unix(errno);
-				goto out;
-			}
-
-			/* Pin parent directory in place. */
-			if (vfs_ChDir(conn, parent_dir_fname) == -1) {
-				status = map_nt_error_from_unix(errno);
-				goto out;
-			}
-		}
-
-		smb_fname_dot = synthetic_smb_fname(
+		status = chdir_below_conn(
+			talloc_tos(),
+			conn,
+			connpath,
+			connpath_len,
 			parent_dir_fname,
-			".",
-			NULL,
-			NULL,
-			0,
-			smb_fname->flags);
-		if (smb_fname_dot == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-
-		/* Ensure the relative path is below the share. */
-		status = check_reduced_name(conn, parent_dir_fname, smb_fname_dot);
-		TALLOC_FREE(smb_fname_dot);
+			&oldwd_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
@@ -776,7 +1001,15 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 		smb_fname_rel = smb_fname;
 	}
 
-	SMB_ASSERT(strchr_m(smb_fname_rel->base_name, '/') == NULL);
+	{
+		/*
+		 * Assert nobody can step in with a symlink on the
+		 * path, there is no path anymore and we'll use
+		 * O_NOFOLLOW to open.
+		 */
+		char *slash = strchr_m(smb_fname_rel->base_name, '/');
+		SMB_ASSERT(slash == NULL);
+	}
 
 	how.flags |= O_NOFOLLOW;
 
@@ -785,108 +1018,120 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			    smb_fname_rel,
 			    fsp,
 			    &how);
-	if (fd == -1) {
-		status = link_errno_convert(errno);
-	}
-	fsp_set_fd(fsp, fd);
+	fsp_set_fd(fsp, fd);	/* This preserves errno */
 
-	if ((fd == -1) &&
-	    NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK) &&
-	    fsp->fsp_flags.is_pathref &&
-	    !have_opath) {
+	if (fd == -1) {
+		status = map_nt_error_from_unix(errno);
+
+		if (errno == ENOENT) {
+			goto out;
+		}
+
+		/*
+		 * ENOENT makes it worthless retrying with a
+		 * stat, we know for sure the file does not
+		 * exist. For everything else we want to know
+		 * what's there.
+		 */
 		ret = SMB_VFS_FSTATAT(
 			fsp->conn,
 			dirfsp,
 			smb_fname_rel,
 			&fsp->fsp_name->st,
 			AT_SYMLINK_NOFOLLOW);
+	} else {
+		ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
+	}
+
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("fstat[at](%s) failed: %s\n",
+			  smb_fname_str_dbg(smb_fname),
+			  strerror(errno));
+		goto out;
+	}
+
+	fsp->fsp_flags.is_directory = S_ISDIR(fsp->fsp_name->st.st_ex_mode);
+	orig_fsp_name->st = fsp->fsp_name->st;
+
+	if (!S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
+		goto out;
+	}
+
+	/*
+	 * Found a symlink to follow in user space
+	 */
+
+	if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
+		/* Never follow symlinks on posix open. */
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
+		goto out;
+	}
+	if (!lp_follow_symlinks(SNUM(conn))) {
+		/* Explicitly no symlinks. */
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
+		goto out;
+	}
+
+	link_depth += 1;
+	if (link_depth >= 40) {
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
+		goto out;
+	}
+
+	fsp->fsp_name = orig_fsp_name;
+
+	status = symlink_target_below_conn(
+		talloc_tos(),
+		connpath,
+		connpath_len,
+		fsp,
+		discard_const_p(files_struct, dirfsp),
+		smb_fname_rel,
+		&target);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("symlink_target_below_conn() failed: %s\n",
+			  nt_errstr(status));
+		goto out;
+	}
+
+	/*
+	 * Close what openat(O_PATH) potentially left behind
+	 */
+	fd_close(fsp);
+
+	if (smb_fname->base_name != orig_smb_fname_base) {
+		TALLOC_FREE(smb_fname->base_name);
+	}
+	smb_fname->base_name = target;
+
+	if (oldwd_fname != NULL) {
+		ret = vfs_ChDir(conn, oldwd_fname);
 		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
-			DBG_DEBUG("fstatat(%s) failed: %s\n",
-				  smb_fname_str_dbg(smb_fname),
-				  strerror(errno));
-			goto out;
+			smb_panic("unable to get back to old directory\n");
 		}
-		orig_fsp_name->st = fsp->fsp_name->st;
+		TALLOC_FREE(oldwd_fname);
 	}
 
-	if (fd != -1) {
-		status = vfs_stat_fsp(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-		orig_fsp_name->st = fsp->fsp_name->st;
-	}
+	/*
+	 * And do it all again... As smb_fname is not relative to the passed in
+	 * dirfsp anymore, we pass conn->cwd_fsp as dirfsp to
+	 * non_widelink_open() to trigger the chdir(parentdir) logic.
+	 */
+	dirfsp = conn->cwd_fsp;
 
-	if (!is_ntfs_stream_smb_fname(fsp->fsp_name) &&
-	    fsp->fsp_flags.is_pathref &&
-	    have_opath)
-	{
-		/*
-		 * Opening with O_PATH and O_NOFOLLOW opens a handle on the
-		 * symlink. In follow symlink=yes mode we must avoid this and
-		 * instead should open a handle on the symlink target.
-		 *
-		 * Check for this case by doing an fstat, forcing
-		 * process_symlink_open() codepath down below by setting fd=-1
-		 * and errno=ELOOP.
-		 */
-		if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
-			status = fd_close(fsp);
-			SMB_ASSERT(NT_STATUS_IS_OK(status));
-			fd = -1;
-			status = NT_STATUS_STOPPED_ON_SYMLINK;
-		}
-	}
-
-	if ((fd == -1) &&
-	    (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK) ||
-	     NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY)))
-	{
-		/*
-		 * Trying to open a symlink to a directory with O_NOFOLLOW and
-		 * O_DIRECTORY can return either of ELOOP and ENOTDIR. So
-		 * ENOTDIR really means: might be a symlink, but we're not sure.
-		 * In this case, we just assume there's a symlink. If we were
-		 * wrong, process_symlink_open() will return EINVAL. We check
-		 * this below, and fall back to returning the initial
-		 * saved_errno.
-		 *
-		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=12860
-		 */
-		saved_status = status;
-
-		if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
-			/* Never follow symlinks on posix open. */
-			goto out;
-		}
-		if (!lp_follow_symlinks(SNUM(conn))) {
-			/* Explicitly no symlinks. */
-			goto out;
-		}
-
-		fsp->fsp_name = orig_fsp_name;
-
-		/*
-		 * We may have a symlink. Follow in userspace
-		 * to ensure it's under the share definition.
-		 */
-		status = process_symlink_open(dirfsp,
-					      fsp,
-					      smb_fname_rel,
-					      &how,
-					      link_depth);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
-		    NT_STATUS_EQUAL(saved_status, NT_STATUS_NOT_A_DIRECTORY))
-		{
-			status = saved_status;
-		}
-	}
+	goto again;
 
   out:
 	fsp->fsp_name = orig_fsp_name;
+	smb_fname->base_name = orig_smb_fname_base;
 
 	TALLOC_FREE(parent_dir_fname);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		fd_close(fsp);
+	}
 
 	if (oldwd_fname != NULL) {
 		ret = vfs_ChDir(conn, oldwd_fname);
