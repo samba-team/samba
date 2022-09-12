@@ -2184,6 +2184,23 @@ static void samba_extended_info_version(struct smb_extended_info *extended_info)
 		  "%s", samba_version_string());
 }
 
+static bool fsinfo_unix_valid_level(connection_struct *conn,
+				    uint16_t info_level)
+{
+	if (conn->sconn->using_smb2 &&
+			lp_smb3_unix_extensions() &&
+			info_level == SMB2_FS_POSIX_INFORMATION_INTERNAL) {
+		return true;
+	}
+#if defined(SMB1SERVER)
+	if (lp_smb1_unix_extensions() &&
+			info_level == SMB_QUERY_POSIX_FS_INFO) {
+		return true;
+	}
+#endif
+	return false;
+}
+
 NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			 connection_struct *conn,
 			 TALLOC_CTX *mem_ctx,
@@ -2682,11 +2699,12 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 #endif
 
 		case SMB_QUERY_POSIX_FS_INFO:
+		case SMB2_FS_POSIX_INFORMATION_INTERNAL:
 		{
 			int rc;
 			struct vfs_statvfs_struct svfs;
 
-			if (!lp_smb1_unix_extensions()) {
+			if (!fsinfo_unix_valid_level(conn, info_level)) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
