@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    file opening and share modes
    Copyright (C) Andrew Tridgell 1992-1998
@@ -1399,7 +1399,7 @@ static NTSTATUS open_file(struct smb_request *req,
 	/* Check permissions */
 
 	/*
-	 * This code was changed after seeing a client open request 
+	 * This code was changed after seeing a client open request
 	 * containing the open mode of (DENY_WRITE/read-only) with
 	 * the 'create if not exist' bit set. The previous code
 	 * would fail to open the file read only on a read-only share
@@ -3201,7 +3201,7 @@ static bool open_match_attributes(connection_struct *conn,
 	noarch_old_dos_attr = (old_dos_attr & ~FILE_ATTRIBUTE_ARCHIVE);
 	noarch_new_dos_attr = (new_dos_attr & ~FILE_ATTRIBUTE_ARCHIVE);
 
-	if((noarch_old_dos_attr == 0 && noarch_new_dos_attr != 0) || 
+	if((noarch_old_dos_attr == 0 && noarch_new_dos_attr != 0) ||
 	   (noarch_old_dos_attr != 0 && ((noarch_old_dos_attr & noarch_new_dos_attr) == noarch_old_dos_attr))) {
 		*returned_unx_mode = new_unx_mode;
 	} else {

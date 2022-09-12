@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB transaction2 handling
 
@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -46,7 +46,7 @@
 
 #define SMB_SIZE_NO_CHANGE_LO              0xFFFFFFFF
 #define SMB_SIZE_NO_CHANGE_HI              0xFFFFFFFF
- 
+
 #define SMB_TIME_NO_CHANGE_LO              0xFFFFFFFF
 #define SMB_TIME_NO_CHANGE_HI              0xFFFFFFFF
 
@@ -139,7 +139,7 @@ Offset Size         Name
 /* SMB_QUERY_POSIX_ACL 0x204 see below */
 #define SMB_QUERY_XATTR                0x205 /* need for non-user XATTRs */
 #define SMB_QUERY_ATTR_FLAGS           0x206 /* chflags, chattr */
-#define SMB_SET_ATTR_FLAGS             0x206 
+#define SMB_SET_ATTR_FLAGS             0x206
 #define SMB_QUERY_POSIX_PERMISSION     0x207
 /* Only valid for qfileinfo */
 #define SMB_QUERY_POSIX_LOCK	       0x208
@@ -220,34 +220,34 @@ findfirst/findnext is SMB_FIND_FILE_UNIX_INFO2.
 #define SMB_QUERY_POSIX_FS_INFO     0x201
 
 /* Returns FILE_SYSTEM_POSIX_INFO struct as follows
-      (NB   For undefined values return -1 in that field) 
-   le32 OptimalTransferSize;    bsize on some os, iosize on other os, This 
+      (NB   For undefined values return -1 in that field)
+   le32 OptimalTransferSize;    bsize on some os, iosize on other os, This
 				is a hint to the client about best size. Server
-				can return -1 if no preference, ie if SMB 
+				can return -1 if no preference, ie if SMB
 				negotiated size is adequate for optimal
 				read/write performance
    le32 BlockSize; (often 512 bytes) NB: BlockSize * TotalBlocks = disk space
    le64 TotalBlocks;  redundant with other infolevels but easy to ret here
    le64 BlocksAvail;  although redundant, easy to return
-   le64 UserBlocksAvail;      bavail 
+   le64 UserBlocksAvail;      bavail
    le64 TotalFileNodes;
    le64 FreeFileNodes;
-   le64 FileSysIdentifier;    fsid 
-   (NB statfs field Namelen comes from FILE_SYSTEM_ATTRIBUTE_INFO call) 
-   (NB statfs field flags can come from FILE_SYSTEM_DEVICE_INFO call)  
+   le64 FileSysIdentifier;    fsid
+   (NB statfs field Namelen comes from FILE_SYSTEM_ATTRIBUTE_INFO call)
+   (NB statfs field flags can come from FILE_SYSTEM_DEVICE_INFO call)
 */
 
 #define SMB_QUERY_POSIX_WHO_AM_I  0x202 /* QFS Info */
 /* returns:
-        __u32 flags;  0 = Authenticated user 1 = GUEST 
-        __u32 mask;  which flags bits server understands ie 0x0001 
+        __u32 flags;  0 = Authenticated user 1 = GUEST
+        __u32 mask;  which flags bits server understands ie 0x0001
         __u64 unix_user_id;
         __u64 unix_user_gid;
-        __u32 number_of_supplementary_gids;  may be zero 
+        __u32 number_of_supplementary_gids;  may be zero
         __u32 number_of_sids;  may be zero
-        __u32 length_of_sid_array;  in bytes - may be zero 
-        __u32 pad;  reserved - MBZ 
-        __u64 gid_array[0];  may be empty 
+        __u32 length_of_sid_array;  in bytes - may be zero
+        __u32 pad;  reserved - MBZ
+        __u64 gid_array[0];  may be empty
         __u8 * psid_list  may be empty
 */
 

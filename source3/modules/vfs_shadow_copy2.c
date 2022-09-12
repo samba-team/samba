@@ -69,7 +69,6 @@ struct shadow_copy2_snaplist_info {
 	time_t fetch_time; /* snaplist update time */
 };
 
-
 /*
  * shadow_copy2 private structure. This structure will be
  * used to keep module specific information
@@ -90,7 +89,7 @@ static int shadow_copy2_get_shadow_copy_data(
 	bool labels);
 
 /**
- *This function will create a new snapshot list entry and
+ * This function will create a new snapshot list entry and
  * return to the caller. This entry will also be added to
  * the global snapshot list.
  *
@@ -115,7 +114,7 @@ static struct shadow_copy2_snapentry *shadow_copy2_create_snapentry(
 }
 
 /**
- *This function will delete the entire snaplist and reset
+ * This function will delete the entire snaplist and reset
  * priv->snaps->snaplist to NULL.
  *
  * @param[in] priv shadow_copye specific data structure
@@ -2083,7 +2082,7 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 		}
 		DEBUG(10, ("shadow_copy2_snapshot_to_gmt: match %s: %s\n",
 			   fmt, name));
-		
+
 		if (config->use_localtime) {
 			timestamp.tm_isdst = -1;
 			timestamp_t = mktime(&timestamp);
