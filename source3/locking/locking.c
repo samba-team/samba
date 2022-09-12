@@ -896,14 +896,16 @@ void set_delete_on_close_lck(files_struct *fsp,
 		&fsp->file_id,
 		(ndr_push_flags_fn_t)ndr_push_file_id);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(10, ("ndr_push_file_id failed: %s\n",
-			   ndr_errstr(ndr_err)));
+		DBG_ERR("ndr_push_file_id failed: %s\n",
+			ndr_errstr(ndr_err));
+		smb_panic(__location__);
 	}
 
 	ret = share_mode_forall_entries(
 		lck, set_delete_on_close_fn, &state);
 	if (!ret) {
-		DBG_DEBUG("share_mode_forall_entries failed\n");
+		DBG_ERR("share_mode_forall_entries failed\n");
+		smb_panic(__location__);
 	}
 
 	TALLOC_FREE(state.blob.data);
