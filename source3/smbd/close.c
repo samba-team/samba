@@ -364,8 +364,14 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 */
 
 	normal_close = (close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE);
+	if (!normal_close) {
+		/*
+		 * Never try to delete the file for ERROR_CLOSE
+		 */
+		delete_file = false;
+	}
 
-	if (!normal_close || !delete_file) {
+	if (!delete_file) {
 		status = NT_STATUS_OK;
 		goto done;
 	}
