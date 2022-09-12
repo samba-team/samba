@@ -81,14 +81,14 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 	uint32_t i;
 	uint32_t num_valid = 0;
 
-	D_INFO("WB command sids2xids start.\n"
-	       "Resolving %"PRIu32" SID(s).\n", num_sids);
-
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_sids2xids_state);
 	if (req == NULL) {
 		return NULL;
 	}
+
+	D_INFO("WB command sids2xids start.\n"
+	       "Resolving %"PRIu32" SID(s).\n", num_sids);
 
 	state->ev = ev;
 

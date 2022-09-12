@@ -116,6 +116,11 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 	struct wb_lookupsids_state *state;
 	uint32_t i;
 
+	req = tevent_req_create(mem_ctx, &state, struct wb_lookupsids_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
 	D_INFO("WB command lookupsids start.\nLooking up %"PRIu32" SID(s)\n",
 	       num_sids);
 	if (CHECK_DEBUGLVL(DBGLVL_INFO)) {
@@ -125,10 +130,7 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 			       i, dom_sid_str_buf(&sids[i], &buf));
 		}
 	}
-	req = tevent_req_create(mem_ctx, &state, struct wb_lookupsids_state);
-	if (req == NULL) {
-		return NULL;
-	}
+
 	state->ev = ev;
 	state->sids = sids;
 	state->num_sids = num_sids;
