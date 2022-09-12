@@ -315,8 +315,19 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	}
 
 	/* Remove the oplock before potentially deleting the file. */
-	if(fsp->oplock_type) {
-		remove_oplock(fsp);
+	if (fsp->oplock_type != NO_OPLOCK) {
+		bool ok;
+
+		ok = remove_share_oplock(lck, fsp);
+		if (!ok) {
+			struct file_id_buf buf;
+
+			DBG_ERR("failed to remove share oplock for "
+				"file %s, %s, %s\n",
+				fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
+				file_id_str_buf(fsp->file_id, &buf));
+		}
+		release_file_oplock(fsp);
 	}
 
 	if (fsp->fsp_flags.write_time_forced) {
