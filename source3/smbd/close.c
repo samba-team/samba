@@ -1386,6 +1386,8 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	NTSTATUS status1 = NT_STATUS_OK;
 	const struct security_token *del_nt_token = NULL;
 	const struct security_unix_token *del_token = NULL;
+	bool got_tokens;
+	bool normal_close;
 	NTSTATUS notify_status;
 
 	SMB_ASSERT(fsp->fsp_flags.is_fsa);
@@ -1410,7 +1412,8 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp->fsp_flags.initial_delete_on_close) {
+	if (fsp->fsp_flags.initial_delete_on_close &&
+			!is_delete_on_close_set(lck, fsp->name_hash)) {
 		/* Initial delete on close was set - for
 		 * directories we don't care if anyone else
 		 * wrote a real delete on close. */
@@ -1423,13 +1426,35 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		fsp->fsp_flags.delete_on_close = true;
 	}
 
-	delete_dir = get_delete_on_close_token(
-		lck, fsp->name_hash, &del_nt_token, &del_token) &&
+	delete_dir = is_delete_on_close_set(lck, fsp->name_hash) &&
 		!has_other_nonposix_opens(lck, fsp);
 
-	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
-				delete_dir) {
-	
+	/*
+	 * NT can set delete_on_close of the last open
+	 * reference to a file.
+	 */
+
+	normal_close = (close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE);
+	if (!normal_close) {
+		/*
+		 * Never try to delete the directory for ERROR_CLOSE
+		 */
+		delete_dir = false;
+	}
+
+	if (delete_dir) {
+
+		/*
+		 * Ok, we have to delete the directory
+		 */
+
+		DBG_INFO("dir %s. Delete on close was set - deleting directory.\n",
+			 fsp_str_dbg(fsp));
+
+		got_tokens = get_delete_on_close_token(lck, fsp->name_hash,
+						&del_nt_token, &del_token);
+		SMB_ASSERT(got_tokens);
+
 		/* Become the user who requested the delete. */
 
 		if (!push_sec_ctx()) {
