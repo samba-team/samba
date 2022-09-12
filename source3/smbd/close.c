@@ -1436,13 +1436,6 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				del_token->groups,
 				del_nt_token);
 
-		if (!del_share_mode(lck, fsp)) {
-			DEBUG(0, ("close_directory: Could not delete share entry for "
-				  "%s\n", fsp_str_dbg(fsp)));
-		}
-
-		TALLOC_FREE(lck);
-
 		if ((fsp->conn->fs_capabilities & FILE_NAMED_STREAMS)
 		    && !is_ntfs_stream_smb_fname(fsp->fsp_name)) {
 
@@ -1473,14 +1466,14 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		if (NT_STATUS_IS_OK(status)) {
 			notify_status = NT_STATUS_DELETE_PENDING;
 		}
-	} else {
-		if (!del_share_mode(lck, fsp)) {
-			DEBUG(0, ("close_directory: Could not delete share entry for "
-				  "%s\n", fsp_str_dbg(fsp)));
-		}
-
-		TALLOC_FREE(lck);
 	}
+
+	if (!del_share_mode(lck, fsp)) {
+		DEBUG(0, ("close_directory: Could not delete share entry for "
+			  "%s\n", fsp_str_dbg(fsp)));
+	}
+
+	TALLOC_FREE(lck);
 
 	remove_pending_change_notify_requests_by_fid(fsp, notify_status);
 
