@@ -1442,63 +1442,66 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		delete_dir = false;
 	}
 
-	if (delete_dir) {
+	if (!delete_dir) {
+		status = NT_STATUS_OK;
+		goto done;
+	}
 
-		/*
-		 * Ok, we have to delete the directory
-		 */
+	/*
+	 * Ok, we have to delete the directory
+	 */
 
-		DBG_INFO("dir %s. Delete on close was set - deleting directory.\n",
-			 fsp_str_dbg(fsp));
+	DBG_INFO("dir %s. Delete on close was set - deleting directory.\n",
+		 fsp_str_dbg(fsp));
 
-		got_tokens = get_delete_on_close_token(lck, fsp->name_hash,
-						&del_nt_token, &del_token);
-		SMB_ASSERT(got_tokens);
+	got_tokens = get_delete_on_close_token(lck, fsp->name_hash,
+					&del_nt_token, &del_token);
+	SMB_ASSERT(got_tokens);
 
-		/* Become the user who requested the delete. */
+	/* Become the user who requested the delete. */
 
-		if (!push_sec_ctx()) {
-			smb_panic("close_directory: failed to push sec_ctx.\n");
-		}
+	if (!push_sec_ctx()) {
+		smb_panic("close_directory: failed to push sec_ctx.\n");
+	}
 
-		set_sec_ctx(del_token->uid,
-				del_token->gid,
-				del_token->ngroups,
-				del_token->groups,
-				del_nt_token);
+	set_sec_ctx(del_token->uid,
+			del_token->gid,
+			del_token->ngroups,
+			del_token->groups,
+			del_nt_token);
 
-		if ((fsp->conn->fs_capabilities & FILE_NAMED_STREAMS)
-		    && !is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+	if ((fsp->conn->fs_capabilities & FILE_NAMED_STREAMS)
+	    && !is_ntfs_stream_smb_fname(fsp->fsp_name)) {
 
-			status = delete_all_streams(fsp->conn, fsp->fsp_name);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(5, ("delete_all_streams failed: %s\n",
-					  nt_errstr(status)));
-				/* unbecome user. */
-				pop_sec_ctx();
-				return status;
-			}
-		}
-
-		status = rmdir_internals(talloc_tos(), fsp);
-
-		DEBUG(5,("close_directory: %s. Delete on close was set - "
-			 "deleting directory returned %s.\n",
-			 fsp_str_dbg(fsp), nt_errstr(status)));
-
-		/* unbecome user. */
-		pop_sec_ctx();
-
-		/*
-		 * Ensure we remove any change notify requests that would
-		 * now fail as the directory has been deleted.
-		 */
-
-		if (NT_STATUS_IS_OK(status)) {
-			notify_status = NT_STATUS_DELETE_PENDING;
+		status = delete_all_streams(fsp->conn, fsp->fsp_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(5, ("delete_all_streams failed: %s\n",
+				  nt_errstr(status)));
+			/* unbecome user. */
+			pop_sec_ctx();
+			return status;
 		}
 	}
 
+	status = rmdir_internals(talloc_tos(), fsp);
+
+	DEBUG(5,("close_directory: %s. Delete on close was set - "
+		 "deleting directory returned %s.\n",
+		 fsp_str_dbg(fsp), nt_errstr(status)));
+
+	/* unbecome user. */
+	pop_sec_ctx();
+
+	/*
+	 * Ensure we remove any change notify requests that would
+	 * now fail as the directory has been deleted.
+	 */
+
+	if (NT_STATUS_IS_OK(status)) {
+		notify_status = NT_STATUS_DELETE_PENDING;
+	}
+
+done:
 	if (!del_share_mode(lck, fsp)) {
 		DEBUG(0, ("close_directory: Could not delete share entry for "
 			  "%s\n", fsp_str_dbg(fsp)));
