@@ -1135,6 +1135,15 @@ done:
 	return werr;
 }
 
+static int registry_value_cmp(
+	const struct registry_value* v1, const struct registry_value* v2)
+{
+	if (v1->type == v2->type) {
+		return data_blob_cmp(&v1->data, &v2->data);
+	}
+	return v1->type - v2->type;
+}
+
 static WERROR precheck_create_val(struct precheck_ctx *ctx,
 				  struct registry_key *parent,
 				  const char *name,
