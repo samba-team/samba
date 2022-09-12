@@ -1380,8 +1380,10 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				enum file_close_type close_type)
 {
+	connection_struct *conn = fsp->conn;
 	struct share_mode_lock *lck = NULL;
 	bool delete_dir = False;
+	bool changed_user = false;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS status1 = NT_STATUS_OK;
 	const struct security_token *del_nt_token = NULL;
@@ -1460,15 +1462,25 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 
 	/* Become the user who requested the delete. */
 
-	if (!push_sec_ctx()) {
-		smb_panic("close_directory: failed to push sec_ctx.\n");
-	}
+	if (!unix_token_equal(del_token, get_current_utok(conn))) {
+		/* Become the user who requested the delete. */
 
-	set_sec_ctx(del_token->uid,
-			del_token->gid,
-			del_token->ngroups,
-			del_token->groups,
-			del_nt_token);
+		DBG_INFO("dir %s. Change user to uid %u\n",
+			 fsp_str_dbg(fsp),
+			 (unsigned int)del_token->uid);
+
+		if (!push_sec_ctx()) {
+			smb_panic("close_directory: failed to push sec_ctx.\n");
+		}
+
+		set_sec_ctx(del_token->uid,
+			    del_token->gid,
+			    del_token->ngroups,
+			    del_token->groups,
+			    del_nt_token);
+
+		changed_user = true;
+	}
 
 	if ((fsp->conn->fs_capabilities & FILE_NAMED_STREAMS)
 	    && !is_ntfs_stream_smb_fname(fsp->fsp_name)) {
@@ -1477,9 +1489,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("delete_all_streams failed: %s\n",
 				  nt_errstr(status)));
-			/* unbecome user. */
-			pop_sec_ctx();
-			return status;
+			goto done;
 		}
 	}
 
@@ -1488,9 +1498,6 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	DEBUG(5,("close_directory: %s. Delete on close was set - "
 		 "deleting directory returned %s.\n",
 		 fsp_str_dbg(fsp), nt_errstr(status)));
-
-	/* unbecome user. */
-	pop_sec_ctx();
 
 	/*
 	 * Ensure we remove any change notify requests that would
@@ -1502,6 +1509,11 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	}
 
 done:
+	if (changed_user) {
+		/* unbecome user. */
+		pop_sec_ctx();
+	}
+
 	if (!del_share_mode(lck, fsp)) {
 		DEBUG(0, ("close_directory: Could not delete share entry for "
 			  "%s\n", fsp_str_dbg(fsp)));
