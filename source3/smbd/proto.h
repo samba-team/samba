@@ -1223,9 +1223,6 @@ const char *vfs_readdirname(connection_struct *conn,
 int vfs_ChDir(connection_struct *conn,
 			const struct smb_filename *smb_fname);
 struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
-NTSTATUS check_reduced_name(connection_struct *conn,
-			const struct smb_filename *cwd_fname,
-			const struct smb_filename *smb_fname);
 int vfs_stat(struct connection_struct *conn,
 	     struct smb_filename *smb_fname);
 int vfs_stat_smb_basename(struct connection_struct *conn,
