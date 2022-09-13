@@ -1,16 +1,11 @@
-Release Announcements
-=====================
-
-This is the fifth release candidate of Samba 4.17.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.17 will be the next version of the Samba suite.
+                   ==============================
+                   Release Notes for Samba 4.17.0
+                         September 13, 2022
+                   ==============================
 
 
-UPGRADING
-=========
+This is the first stable release of the Samba 4.17 release series.
+Please read the release notes carefully before upgrading.
 
 
 NEW FEATURES/CHANGES
