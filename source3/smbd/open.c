@@ -4220,6 +4220,16 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * Nadav Danieli <nadavd@exanet.com>. JRA.
 	 */
 
+	if (new_file_created) {
+		info = FILE_WAS_CREATED;
+	} else {
+		if (flags2 & O_TRUNC) {
+			info = FILE_WAS_OVERWRITTEN;
+		} else {
+			info = FILE_WAS_OPENED;
+		}
+	}
+
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
 				  conn->connectpath,
 				  smb_fname, &old_write_time);
@@ -4349,16 +4359,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	} else {
 		/* But SMB1 does. */
 		fsp->access_mask = access_mask | FILE_READ_ATTRIBUTES;
-	}
-
-	if (new_file_created) {
-		info = FILE_WAS_CREATED;
-	} else {
-		if (flags2 & O_TRUNC) {
-			info = FILE_WAS_OVERWRITTEN;
-		} else {
-			info = FILE_WAS_OPENED;
-		}
 	}
 
 	if (pinfo) {
