@@ -122,3 +122,71 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
         self.assertEqual(err, "", "Shouldn't be any error messages")
         acl_list = re.findall('.*descriptor for.*:\n(.*?)\n',out)
         return acl_list
+
+    def test_add_delete_sddl(self):
+        """Tests if a sddl string can be added 'the normal way', deleted and
+        final state is the same as initial.
+        """
+        (result, out, err) = self.runsubcmd("dsacl", "get",
+                                            "--objectdn=%s" % self.dn)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEqual(err, "", "Shouldn't be any error messages")
+        # extract only the two sddl strings from samba-tool output
+        acl_list_orig = re.findall('^descriptor for.*:\n(.*?)\n', out)[0]
+
+        (result, out, err) = self.runsubcmd("dsacl", "set",
+                                            "--objectdn=%s" % self.dn,
+                                            "--sddl=%s" % self.sddl)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEqual(err, "", "Shouldn't be any error messages")
+        acl_list_added = re.findall('new descriptor for.*:\n(.*?)\n', out)[0]
+        self.assertNotEqual(acl_list_added, acl_list_orig, "After adding the SD should be different.")
+        self.assertMatch(acl_list_added, self.sddl, "The added ACE should be part of the new SD.")
+
+        (result, out, err) = self.runsubcmd("dsacl", "delete",
+                                            "--objectdn=%s" % self.dn,
+                                            "--sddl=%s" % self.sddl)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEqual(err, "", "Shouldn't be any error messages")
+        acl_list_final = re.findall('new descriptor for.*:\n(.*?)\n', out)[0]
+        self.assertEqual(acl_list_orig, acl_list_final,
+                         "output of dsacl delete should be the same as before adding")
+
+        (result, out, err) = self.runsubcmd("dsacl", "get",
+                                            "--objectdn=%s" % self.dn)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEqual(err, "", "Shouldn't be any error messages")
+        # extract only the two sddl strings from samba-tool output
+        acl_list_final_get = re.findall('^descriptor for.*:\n(.*?)\n', out)[0]
+        self.assertEqual(acl_list_orig, acl_list_final_get,
+                         "output of dsacl get should be the same as after adding and deleting again")
+
+    def test_delete_twice(self):
+        """Tests if deleting twice the same ACEs returns the expected warning."""
+        # add sddl_multi first
+        (result, out, err) = self.runsubcmd("dsacl", "set",
+                                            "--objectdn=%s" % self.dn,
+                                            "--sddl=%s" % self.sddl_multi)
+
+        self.assertCmdSuccess(result, out, err)
+        self.assertEqual(err, "", "Shouldn't be any error messages")
+
+        # delete sddl
+        (result, out, err) = self.runsubcmd("dsacl", "delete",
+                                            "--objectdn=%s" % self.dn,
+                                            "--sddl=%s" % self.sddl)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEqual(err, "", "Shouldn't be any error messages")
+
+        # delete sddl_multi
+        (result, out, err) = self.runsubcmd("dsacl", "delete",
+                                            "--objectdn=%s" % self.dn,
+                                            "--sddl=%s" % self.sddl_multi)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEqual(err, "", "Shouldn't be any error messages")
+        self.assertRegex(out, "WARNING", "Should throw a warning about deleting non existent ace.")
+        warn = re.findall("WARNING: (.*?)\n", out)[0]
+        left_sddl = self.sddl_multi.replace(self.sddl, "")
+        self.assertRegex(warn, re.escape(self.sddl), "Should point out the non existent ace.")
+        self.assertNotRegex(warn, re.escape(left_sddl),
+                            "Should not complain about all aces, since one of them is not deleted twice.")
