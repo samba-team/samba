@@ -126,7 +126,8 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
                                               '-H', self.dburl,
                                               '-S', *args)
             self.assertCmdSuccess(result, out, err)
-            self.assertTrue(colour_re.search(out))
+            self.assertTrue(colour_re.search(out),
+                            f"'{' '.join(args)}' should be colour")
             uncoloured = colour_re.sub('', out)
 
             self.assertStringsEqual(monochrome, uncoloured, strip=True)
