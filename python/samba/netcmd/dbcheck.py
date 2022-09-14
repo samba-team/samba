@@ -27,6 +27,7 @@ from samba.netcmd import (
     Option
 )
 from samba.dbchecker import dbcheck
+from samba import colour
 
 
 class cmd_dbcheck(Command):
@@ -139,6 +140,11 @@ class cmd_dbcheck(Command):
         else:
             attrs = attrs.split()
 
+        # The dbcheck module always prints to stdout, not our self.outf
+        # (yes, maybe FIXME).
+        stdout_colour = colour.colour_if_wanted(sys.stdout,
+                                                hint=self.requested_colour)
+
         started_transaction = False
         if yes and fix:
             samdb.transaction_start()
@@ -149,7 +155,8 @@ class cmd_dbcheck(Command):
                           in_transaction=started_transaction,
                           quick_membership_checks=quick_membership_checks,
                           reset_well_known_acls=reset_well_known_acls,
-                          check_expired_tombstones=selftest_check_expired_tombstones)
+                          check_expired_tombstones=selftest_check_expired_tombstones,
+                          colour=stdout_colour)
 
             for option in yes_rules:
                 if hasattr(chk, option):
