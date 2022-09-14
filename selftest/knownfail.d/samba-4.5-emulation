@@ -1,0 +1,2 @@
+# This fails as there is no second DC in this enviroment, so it is always the owner
+samba4.drs.getnc_exop.python\(chgdcpass\).getnc_exop.DrsReplicaSyncTestCase.test_FSMONotOwner\(chgdcpass\)
