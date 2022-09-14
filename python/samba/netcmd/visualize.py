@@ -21,7 +21,6 @@ import os
 import sys
 from collections import defaultdict
 import subprocess
-
 import tempfile
 import samba.getopt as options
 from samba import dsdb
@@ -31,6 +30,8 @@ from samba.samdb import SamDB
 from samba.graph import dot_graph
 from samba.graph import distance_matrix, COLOUR_SETS
 from samba.graph import full_matrix
+from samba.colour import is_colour_wanted
+
 from ldb import SCOPE_BASE, SCOPE_SUBTREE, LdbError
 import time
 import re
@@ -152,26 +153,23 @@ class GraphCommand(Command):
         """Heuristics to work out the colour scheme for distance matrices.
         Returning None means no colour, otherwise it sould be a colour
         from graph.COLOUR_SETS"""
-        if self.requested_colour in ('no', 'never', 'none'):
+        if color_scheme is not None:
+            # --color-scheme implies --color=yes for *this* purpose.
+            return color_scheme
+
+        if output in ('-', None):
+            output = self.outf
+
+        want_colour = is_colour_wanted(output, hint=self.requested_colour)
+        if not want_colour:
             return None
 
-        if self.requested_colour in ('auto', 'tty', 'if-tty', None):
-            if os.environ.get('NO_COLOR'):
-                return None
-            if color_scheme is not None:
-                # --color-scheme usually implies --color=yes.
-                return color_scheme
-            if isinstance(output, str) and output != '-':
-                return None
-            if not self.outf.isatty():
-                return None
-
-        if color_scheme is None:
-            if '256color' in os.environ.get('TERM', ''):
-                return 'xterm-256color-heatmap'
-            return 'ansi'
-
-        return color_scheme
+        # if we got to here, we are using colour according to the
+        # --color/NO_COLOR rules, but no colour scheme has been
+        # specified, so we choose some defaults.
+        if '256color' in os.environ.get('TERM', ''):
+            return 'xterm-256color-heatmap'
+        return 'ansi'
 
 
 def get_dnstr_site(dn):
