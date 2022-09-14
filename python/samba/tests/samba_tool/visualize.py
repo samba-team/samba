@@ -312,7 +312,7 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
 
         self.assertStringsEqual(color_no, expected, strip=True)
 
-        color_yes_file = os.path.join(self.tempdir, 'color-no')
+        color_yes_file = os.path.join(self.tempdir, 'color-yes')
         result, out, err = self.runsubcmd("visualize", "ntdsconn",
                                           '-H', self.dburl,
                                           '--color=yes', '-S',
