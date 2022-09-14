@@ -33,7 +33,7 @@ from samba.descriptor import get_wellknown_sds, get_diff_sds
 from samba.auth import system_session, admin_session
 from samba.netcmd import CommandError
 from samba.netcmd.fsmo import get_fsmo_roleowner
-
+from samba.colour import c_RED, c_DARK_YELLOW, c_DARK_CYAN, c_DARK_GREEN
 
 def dump_attr_values(vals):
     """Stringify a value list, using utf-8 if possible (which some tests
@@ -56,7 +56,8 @@ class dbcheck(object):
                  yes=False, quiet=False, in_transaction=False,
                  quick_membership_checks=False,
                  reset_well_known_acls=False,
-                 check_expired_tombstones=False):
+                 check_expired_tombstones=False,
+                 colour=False):
         self.samdb = samdb
         self.dict_oid_name = None
         self.samdb_schema = (samdb_schema or samdb)
@@ -64,6 +65,7 @@ class dbcheck(object):
         self.fix = fix
         self.yes = yes
         self.quiet = quiet
+        self.colour = colour
         self.remove_all_unknown_attributes = False
         self.remove_all_empty_attributes = False
         self.fix_all_normalisation = False
@@ -370,8 +372,23 @@ systemFlags: -1946157056%s""" % (dn, guid_suffix),
 
     def report(self, msg):
         '''print a message unless quiet is set'''
-        if not self.quiet:
-            print(msg)
+        if self.quiet:
+            return
+        if self.colour:
+            if msg.startswith('ERROR'):
+                msg = c_RED('ERROR') + msg[5:]
+            elif msg.startswith('WARNING'):
+                msg = c_DARK_YELLOW('WARNING') + msg[8:]
+            elif msg.startswith('INFO'):
+                msg = c_DARK_CYAN('INFO') + msg[4:]
+            elif msg.startswith('NOTICE'):
+                msg = c_DARK_CYAN('NOTICE') + msg[6:]
+            elif msg.startswith('NOTE'):
+                msg = c_DARK_CYAN('NOTE') + msg[4:]
+            elif msg.startswith('SKIPPING'):
+                msg = c_DARK_GREEN('SKIPPING') + msg[8:]
+
+        print(msg)
 
     def confirm(self, msg, allow_all=False, forced=False):
         '''confirm a change'''
