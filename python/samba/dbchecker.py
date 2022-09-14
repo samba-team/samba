@@ -2613,19 +2613,28 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 controls += ["local_oid:%s:1" % dsdb.DSDB_CONTROL_DBCHECK_FIX_LINK_DN_NAME]
             if parent_dn is None:
                 parent_dn = obj.dn.parent()
-            expected_dn = ldb.Dn(self.samdb, "RDN=RDN,%s" % (parent_dn))
-            expected_dn.set_component(0, obj.dn.get_rdn_name(), name_val)
 
-            if obj.dn == deleted_objects_dn:
-                expected_dn = obj.dn
+            try:
+                expected_dn = ldb.Dn(self.samdb, "RDN=RDN,%s" % (parent_dn))
+            except ValueError as e:
+                error_count += 1
+                self.report(f"ERROR: could not handle parent DN '{parent_dn}': "
+                            "skipping RDN checks")
+            else:
+                expected_dn.set_component(0, obj.dn.get_rdn_name(), name_val)
 
-            if expected_dn != obj.dn:
-                error_count += 1
-                self.err_wrong_dn(obj, expected_dn, object_rdn_attr,
-                        object_rdn_val, name_val, controls)
-            elif obj.dn.get_rdn_value() != object_rdn_val:
-                error_count += 1
-                self.report("ERROR: Not fixing %s=%r on '%s'" % (object_rdn_attr, object_rdn_val, str(obj.dn)))
+                if obj.dn == deleted_objects_dn:
+                    expected_dn = obj.dn
+
+                if expected_dn != obj.dn:
+                    error_count += 1
+                    self.err_wrong_dn(obj, expected_dn, object_rdn_attr,
+                            object_rdn_val, name_val, controls)
+                elif obj.dn.get_rdn_value() != object_rdn_val:
+                    error_count += 1
+                    self.report("ERROR: Not fixing %s=%r on '%s'" % (object_rdn_attr,
+                                                                     object_rdn_val,
+                                                                     obj.dn))
 
         show_dn = True
         if repl_meta_data_val:
