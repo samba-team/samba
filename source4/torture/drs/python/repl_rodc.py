@@ -30,12 +30,10 @@
 import drs_base
 import samba.tests
 import ldb
-from ldb import SCOPE_BASE
 
 from samba import WERRORError
 from samba.join import DCJoinContext
 from samba.dcerpc import drsuapi, misc, drsblobs, security
-from samba.drs_utils import drs_DsBind, drs_Replicate
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.samdb import dsdb_Dn
 from samba.credentials import Credentials
