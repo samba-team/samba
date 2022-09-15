@@ -23,9 +23,7 @@ import samba.getopt as options
 
 from samba.auth import system_session
 from samba.credentials import Credentials
-from samba.dcerpc import drsblobs, misc, security
-from samba.drs_utils import drsuapi_connect
-from samba.ndr import ndr_unpack
+from samba.dcerpc import security
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_ATTRIBUTE_OR_VALUE_EXISTS
 from ldb import ERR_UNWILLING_TO_PERFORM, ERR_INSUFFICIENT_ACCESS_RIGHTS
@@ -34,7 +32,7 @@ from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_INVALID_CREDENTIALS
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
-from samba import gensec, net, werror
+from samba import gensec, werror
 from samba.samdb import SamDB
 from samba.tests import delete_force
 
