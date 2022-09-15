@@ -69,6 +69,29 @@
 	</para></listitem>
 	</varlistentry>
 
+	<varlistentry>
+	<term>--color=always|never|auto</term>
+	<listitem>
+          <para>
+	    Indicate whether samba-tool should use ANSI colour codes
+	    in its output. If 'auto' (the default), samba-tool will
+	    use colour when its output is directed toward a terminal,
+	    unless the NO_COLOR environment variable is set and
+	    non-empty.
+	  </para>
+          <para>
+            The values 'yes' and 'force' are accepted as synonyms for
+            'always'; 'no' and 'none' for 'never'; and 'tty' and
+            'if-tty' for 'auto'.
+          </para>
+          <para>
+	    Note that asking for colour doesn't mean samba-tool will
+	    necessarily be very colourful. Many commands are very
+	    monochrome, particularly when successful.
+	</para>
+        </listitem>
+	</varlistentry>
+
 	&cmdline.common.debug.client;
 
 	</variablelist>
