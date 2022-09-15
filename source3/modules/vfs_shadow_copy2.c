@@ -1939,6 +1939,7 @@ done:
  * otherwise return NULL.
  */
 static char *have_snapdir(struct vfs_handle_struct *handle,
+			  TALLOC_CTX *mem_ctx,
 			  const char *path)
 {
 	struct smb_filename smb_fname;
@@ -1950,7 +1951,7 @@ static char *have_snapdir(struct vfs_handle_struct *handle,
 
 	smb_fname = (struct smb_filename) {
 		.base_name = talloc_asprintf(
-			talloc_tos(), "%s/%s", path, priv->config->snapdir),
+			mem_ctx, "%s/%s", path, priv->config->snapdir),
 	};
 	if (smb_fname.base_name == NULL) {
 		return NULL;
@@ -1996,7 +1997,7 @@ static const char *shadow_copy2_find_snapdir(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	snapdir = have_snapdir(handle, path);
+	snapdir = have_snapdir(handle, talloc_tos(), path);
 	if (snapdir != NULL) {
 		TALLOC_FREE(path);
 		return snapdir;
@@ -2006,7 +2007,7 @@ static const char *shadow_copy2_find_snapdir(TALLOC_CTX *mem_ctx,
 
 		p[0] = '\0';
 
-		snapdir = have_snapdir(handle, path);
+		snapdir = have_snapdir(handle, talloc_tos(), path);
 		if (snapdir != NULL) {
 			TALLOC_FREE(path);
 			return snapdir;
