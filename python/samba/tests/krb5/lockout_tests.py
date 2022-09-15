@@ -17,10 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from concurrent import futures
 from enum import Enum
 from functools import partial
-from multiprocessing import Pipe
 import os
 import sys
 import time
@@ -74,9 +72,39 @@ class ConnectionResult(Enum):
     LOCKED_OUT = 1
     WRONG_PASSWORD = 2
     SUCCESS = 3
+    ERROR = 4
 
 
-def connect_kdc(pipe,
+def fork_connect_fn(connect_fn,
+                    read_pipe,
+                    write_pipe,
+                    *args,
+                    **kwargs):
+    pid = os.fork()
+    if pid == 0:
+        result = ConnectionResult.ERROR
+        msg = b'done'
+        try:
+            result = connect_fn(
+                read_pipe=read_pipe,
+                write_pipe=write_pipe,
+                *args,
+                **kwargs)
+        except Exception as err:
+            msg = repr(err).encode('utf8')
+        finally:
+            # Write something to the pipe to provide some information if we
+            # fail, and so the main process won't wait forever.
+            os.write(write_pipe, msg)
+
+            # Return result via the exit status.
+            os._exit(result.value)
+
+    return pid
+
+
+def connect_kdc(read_pipe,
+                write_pipe,
                 url,
                 hostname,
                 username,
@@ -138,10 +166,11 @@ def connect_kdc(pipe,
 
     # Indicate that we're ready. This ensures we hit the right transaction
     # lock.
-    pipe.send_bytes(b'0')
+    if os.write(write_pipe, b'ready') != 5:
+        raise AssertionError('we failed to indicate readiness')
 
     # Wait for the main process to take out a transaction lock.
-    if not pipe.poll(timeout=5):
+    if os.read(read_pipe, 5) != b'ready':
         raise AssertionError('main process failed to indicate readiness')
 
     # Try making a Kerberos AS-REQ to the KDC. This should fail, either due to
@@ -185,7 +214,8 @@ def connect_kdc(pipe,
         raise AssertionError(f'wrong error code {error_code}')
 
 
-def connect_ntlm(pipe,
+def connect_ntlm(read_pipe,
+                 write_pipe,
                  url,
                  hostname,
                  username,
@@ -203,10 +233,11 @@ def connect_ntlm(pipe,
 
     # Indicate that we're ready. This ensures we hit the right transaction
     # lock.
-    pipe.send_bytes(b'0')
+    if os.write(write_pipe, b'ready') != 5:
+        raise AssertionError('we failed to indicate readiness')
 
     # Wait for the main process to take out a transaction lock.
-    if not pipe.poll(timeout=5):
+    if os.read(read_pipe, 5) != b'ready':
         raise AssertionError('main process failed to indicate readiness')
 
     try:
@@ -233,7 +264,8 @@ def connect_ntlm(pipe,
         return ConnectionResult.SUCCESS
 
 
-def connect_samr(pipe,
+def connect_samr(read_pipe,
+                 write_pipe,
                  url,
                  hostname,
                  username,
@@ -292,10 +324,11 @@ def connect_samr(pipe,
 
     # Indicate that we're ready. This ensures we hit the right transaction
     # lock.
-    pipe.send_bytes(b'0')
+    if os.write(write_pipe, b'ready') != 5:
+        raise AssertionError('we failed to indicate readiness')
 
     # Wait for the main process to take out a transaction lock.
-    if not pipe.poll(timeout=5):
+    if os.read(read_pipe, 5) != b'ready':
         raise AssertionError('main process failed to indicate readiness')
 
     try:
@@ -323,7 +356,8 @@ def connect_samr(pipe,
         return ConnectionResult.SUCCESS
 
 
-def ldap_pwd_change(pipe,
+def ldap_pwd_change(read_pipe,
+                    write_pipe,
                     url,
                     hostname,
                     username,
@@ -359,10 +393,11 @@ def ldap_pwd_change(pipe,
 
     # Indicate that we're ready. This ensures we hit the right transaction
     # lock.
-    pipe.send_bytes(b'0')
+    if os.write(write_pipe, b'ready') != 5:
+        raise AssertionError('we failed to indicate readiness')
 
     # Wait for the main process to take out a transaction lock.
-    if not pipe.poll(timeout=5):
+    if os.read(read_pipe, 5) != b'ready':
         raise AssertionError('main process failed to indicate readiness')
 
     # Try changing the user's password. This should fail, either due to the
@@ -459,18 +494,12 @@ class LockoutTests(KDCBaseTest):
 
         self.fail(f'connection to {samdb.url} is not local!')
 
-    def wait_for_ready(self, pipe, future):
-        if pipe.poll(timeout=5):
-            return
+    def indicate_ready(self, write_pipe):
+        self.assertEqual(5, os.write(write_pipe, b'ready'))
 
-        # We failed to read a response from the pipe, so see if the test raised
-        # an exception with more information.
-        if future.done():
-            exception = future.exception(timeout=0)
-            if exception is not None:
-                raise exception
-
-        self.fail('test failed to indicate readiness')
+    def wait_for_ready(self, read_pipe):
+        self.assertEqual(b'ready', os.read(read_pipe, 256),
+                         'test failed to indicate readiness')
 
     def test_lockout_transaction_kdc(self):
         self.do_lockout_transaction(connect_kdc)
@@ -581,12 +610,14 @@ class LockoutTests(KDCBaseTest):
         password = user_creds.get_password()
 
         # Prepare to connect to the server with a valid password.
-        our_pipe, their_pipe = Pipe(duplex=True)
+        our_read_pipe, their_write_pipe = os.pipe()
+        their_read_pipe, our_write_pipe = os.pipe()
 
         # Inform the test function that it may proceed.
-        our_pipe.send_bytes(b'0')
+        self.indicate_ready(our_write_pipe)
 
-        result = connect_fn(pipe=their_pipe,
+        result = connect_fn(read_pipe=their_read_pipe,
+                            write_pipe=their_write_pipe,
                             url=f'ldap://{samdb.host_dns_name()}',
                             hostname=samdb.host_dns_name(),
                             username=user_creds.get_username(),
@@ -624,98 +655,113 @@ class LockoutTests(KDCBaseTest):
         if not correct_pw:
             password = password[:-1]
 
+        url = f'ldap://{samdb.host_dns_name()}'
+        hostname = samdb.host_dns_name()
+        username = user_creds.get_username()
+        domain = user_creds.get_domain()
+        realm = user_creds.get_realm()
+        workstation = user_creds.get_workstation()
+        dn = str(user_dn)
+
         # Prepare to connect to the server.
-        with futures.ProcessPoolExecutor(max_workers=1) as executor:
-            our_pipe, their_pipe = Pipe(duplex=True)
-            connect_future = executor.submit(
-                connect_fn,
-                pipe=their_pipe,
-                url=f'ldap://{samdb.host_dns_name()}',
-                hostname=samdb.host_dns_name(),
-                username=user_creds.get_username(),
-                password=password,
-                domain=user_creds.get_domain(),
-                realm=user_creds.get_realm(),
-                workstation=user_creds.get_workstation(),
-                dn=str(user_dn))
+        our_read_pipe, their_write_pipe = os.pipe()
+        their_read_pipe, our_write_pipe = os.pipe()
 
-            # Wait until the test process indicates it's ready.
-            self.wait_for_ready(our_pipe, connect_future)
+        pid = fork_connect_fn(
+            connect_fn=connect_fn,
+            read_pipe=their_read_pipe,
+            write_pipe=their_write_pipe,
+            url=url,
+            hostname=hostname,
+            username=username,
+            password=password,
+            domain=domain,
+            realm=realm,
+            workstation=workstation,
+            dn=dn)
 
-            # Take out a transaction.
-            samdb.transaction_start()
-            try:
-                # Lock out the account. We must do it using an actual password
-                # check like so, rather than directly with a database
-                # modification, so that the account is also added to the
-                # auxiliary bad password database.
+        # Wait until the test process indicates it's ready.
+        self.wait_for_ready(our_read_pipe)
 
-                old_utf16pw = f'"Secret007"'.encode('utf-16le')  # invalid pwd
-                new_utf16pw = f'"Secret008"'.encode('utf-16le')
+        # Take out a transaction.
+        samdb.transaction_start()
+        try:
+            # Lock out the account. We must do it using an actual password
+            # check like so, rather than directly with a database
+            # modification, so that the account is also added to the
+            # auxiliary bad password database.
 
-                msg = ldb.Message(user_dn)
-                msg['0'] = ldb.MessageElement(old_utf16pw,
-                                              ldb.FLAG_MOD_DELETE,
-                                              'unicodePwd')
-                msg['1'] = ldb.MessageElement(new_utf16pw,
-                                              ldb.FLAG_MOD_ADD,
-                                              'unicodePwd')
+            old_utf16pw = f'"Secret007"'.encode('utf-16le')  # invalid pwd
+            new_utf16pw = f'"Secret008"'.encode('utf-16le')
 
-                for i in range(self.lockout_threshold):
-                    try:
-                        samdb.modify(msg)
-                    except ldb.LdbError as err:
-                        num, estr = err.args
+            msg = ldb.Message(user_dn)
+            msg['0'] = ldb.MessageElement(old_utf16pw,
+                                          ldb.FLAG_MOD_DELETE,
+                                          'unicodePwd')
+            msg['1'] = ldb.MessageElement(new_utf16pw,
+                                          ldb.FLAG_MOD_ADD,
+                                          'unicodePwd')
 
-                        # We get an error, but the bad password count should
-                        # still be updated.
-                        self.assertEqual(num, ldb.ERR_OPERATIONS_ERROR)
-                        self.assertEqual('Failed to obtain remote address for '
-                                         'the LDAP client while changing the '
-                                         'password',
-                                         estr)
-                    else:
-                        self.fail('pwd change should have failed')
-
-                # Ensure the account is locked out.
-
-                res = samdb.search(
-                    user_dn, scope=ldb.SCOPE_BASE,
-                    attrs=['msDS-User-Account-Control-Computed'])
-                self.assertEqual(1, len(res))
-
-                uac = int(res[0].get('msDS-User-Account-Control-Computed',
-                                     idx=0))
-                self.assertTrue(uac & dsdb.UF_LOCKOUT)
-
-                # Now the bad password database has been updated, inform the
-                # test process that it may proceed.
-                our_pipe.send_bytes(b'0')
-
-                # Wait one second to ensure the test process hits the
-                # transaction lock.
-                time.sleep(1)
-
-                if rename:
-                    # While we're at it, rename the account to ensure that is
-                    # also safe if a race occurs.
-                    msg = ldb.Message(user_dn)
-                    new_username = self.get_new_username()
-                    msg['sAMAccountName'] = ldb.MessageElement(
-                        new_username,
-                        ldb.FLAG_MOD_REPLACE,
-                        'sAMAccountName')
+            for i in range(self.lockout_threshold):
+                try:
                     samdb.modify(msg)
+                except ldb.LdbError as err:
+                    num, estr = err.args
 
-            except Exception:
-                samdb.transaction_cancel()
-                raise
+                    # We get an error, but the bad password count should
+                    # still be updated.
+                    self.assertEqual(num, ldb.ERR_OPERATIONS_ERROR)
+                    self.assertEqual('Failed to obtain remote address for '
+                                     'the LDAP client while changing the '
+                                     'password',
+                                     estr)
+                else:
+                    self.fail('pwd change should have failed')
 
-            # Commit the local transaction.
-            samdb.transaction_commit()
+            # Ensure the account is locked out.
 
-            result = connect_future.result(timeout=5)
-            self.assertEqual(result, ConnectionResult.LOCKED_OUT)
+            res = samdb.search(
+                user_dn, scope=ldb.SCOPE_BASE,
+                attrs=['msDS-User-Account-Control-Computed'])
+            self.assertEqual(1, len(res))
+
+            uac = int(res[0].get('msDS-User-Account-Control-Computed',
+                                 idx=0))
+            self.assertTrue(uac & dsdb.UF_LOCKOUT)
+
+            # Now the bad password database has been updated, inform the
+            # test process that it may proceed.
+            self.indicate_ready(our_write_pipe)
+
+            # Wait one second to ensure the test process hits the
+            # transaction lock.
+            time.sleep(1)
+
+            if rename:
+                # While we're at it, rename the account to ensure that is
+                # also safe if a race occurs.
+                msg = ldb.Message(user_dn)
+                new_username = self.get_new_username()
+                msg['sAMAccountName'] = ldb.MessageElement(
+                    new_username,
+                    ldb.FLAG_MOD_REPLACE,
+                    'sAMAccountName')
+                samdb.modify(msg)
+
+        except Exception:
+            samdb.transaction_cancel()
+            raise
+
+        # Commit the local transaction.
+        samdb.transaction_commit()
+
+        got_pid, status = os.waitpid(pid, 0)
+        self.assertEqual(pid, got_pid)
+
+        self.assertTrue(os.WIFEXITED(status))
+        result = ConnectionResult(os.WEXITSTATUS(status))
+
+        self.assertEqual(result, ConnectionResult.LOCKED_OUT)
 
     # Update the bad password count while holding a transaction lock, then
     # release the lock. A logon attempt already in progress should reread the
@@ -737,75 +783,91 @@ class LockoutTests(KDCBaseTest):
                               credentials=admin_creds)
         self.assertLocalSamDB(samdb)
 
+        url = f'ldap://{samdb.host_dns_name()}'
+        hostname = samdb.host_dns_name()
+        username = user_creds.get_username()
+        password = user_creds.get_password()[:-1]  # invalid password
+        domain = user_creds.get_domain()
+        realm = user_creds.get_realm()
+        workstation = user_creds.get_workstation()
+        dn = str(user_dn)
+
         # Prepare to connect to the server with an invalid password.
-        with futures.ProcessPoolExecutor(max_workers=1) as executor:
-            our_pipe, their_pipe = Pipe(duplex=True)
-            connect_future = executor.submit(
-                connect_fn,
-                pipe=their_pipe,
-                url=f'ldap://{samdb.host_dns_name()}',
-                hostname=samdb.host_dns_name(),
-                username=user_creds.get_username(),
-                password=user_creds.get_password()[:-1],  # invalid password
-                domain=user_creds.get_domain(),
-                realm=user_creds.get_realm(),
-                workstation=user_creds.get_workstation(),
-                dn=str(user_dn))
+        our_read_pipe, their_write_pipe = os.pipe()
+        their_read_pipe, our_write_pipe = os.pipe()
 
-            # Wait until the test process indicates it's ready.
-            self.wait_for_ready(our_pipe, connect_future)
+        pid = fork_connect_fn(
+            connect_fn=connect_fn,
+            read_pipe=their_read_pipe,
+            write_pipe=their_write_pipe,
+            url=url,
+            hostname=hostname,
+            username=username,
+            password=password,
+            domain=domain,
+            realm=realm,
+            workstation=workstation,
+            dn=dn)
 
-            # Take out a transaction.
-            samdb.transaction_start()
-            try:
-                # Inform the test process that it may proceed.
-                our_pipe.send_bytes(b'0')
+        # Wait until the test process indicates it's ready.
+        self.wait_for_ready(our_read_pipe)
 
-                # Wait one second to ensure the test process hits the
-                # transaction lock.
-                time.sleep(1)
+        # Take out a transaction.
+        samdb.transaction_start()
+        try:
+            # Inform the test process that it may proceed.
+            self.indicate_ready(our_write_pipe)
 
-                # Set badPwdCount to 1.
-                msg = ldb.Message(user_dn)
-                now = int(time.time())
-                bad_pwd_time = unix2nttime(now)
-                msg['badPwdCount'] = ldb.MessageElement(
-                    '1',
+            # Wait one second to ensure the test process hits the
+            # transaction lock.
+            time.sleep(1)
+
+            # Set badPwdCount to 1.
+            msg = ldb.Message(user_dn)
+            now = int(time.time())
+            bad_pwd_time = unix2nttime(now)
+            msg['badPwdCount'] = ldb.MessageElement(
+                '1',
+                ldb.FLAG_MOD_REPLACE,
+                'badPwdCount')
+            msg['badPasswordTime'] = ldb.MessageElement(
+                str(bad_pwd_time),
+                ldb.FLAG_MOD_REPLACE,
+                'badPasswordTime')
+            if rename:
+                # While we're at it, rename the account to ensure that is
+                # also safe if a race occurs.
+                new_username = self.get_new_username()
+                msg['sAMAccountName'] = ldb.MessageElement(
+                    new_username,
                     ldb.FLAG_MOD_REPLACE,
-                    'badPwdCount')
-                msg['badPasswordTime'] = ldb.MessageElement(
-                    str(bad_pwd_time),
-                    ldb.FLAG_MOD_REPLACE,
-                    'badPasswordTime')
-                if rename:
-                    # While we're at it, rename the account to ensure that is
-                    # also safe if a race occurs.
-                    new_username = self.get_new_username()
-                    msg['sAMAccountName'] = ldb.MessageElement(
-                        new_username,
-                        ldb.FLAG_MOD_REPLACE,
-                        'sAMAccountName')
-                samdb.modify(msg)
+                    'sAMAccountName')
+            samdb.modify(msg)
 
-                # Ensure the account is not yet locked out.
+            # Ensure the account is not yet locked out.
 
-                res = samdb.search(
-                    user_dn, scope=ldb.SCOPE_BASE,
-                    attrs=['msDS-User-Account-Control-Computed'])
-                self.assertEqual(1, len(res))
+            res = samdb.search(
+                user_dn, scope=ldb.SCOPE_BASE,
+                attrs=['msDS-User-Account-Control-Computed'])
+            self.assertEqual(1, len(res))
 
-                uac = int(res[0].get('msDS-User-Account-Control-Computed',
-                                     idx=0))
-                self.assertFalse(uac & dsdb.UF_LOCKOUT)
-            except Exception:
-                samdb.transaction_cancel()
-                raise
+            uac = int(res[0].get('msDS-User-Account-Control-Computed',
+                                 idx=0))
+            self.assertFalse(uac & dsdb.UF_LOCKOUT)
+        except Exception:
+            samdb.transaction_cancel()
+            raise
 
-            # Commit the local transaction.
-            samdb.transaction_commit()
+        # Commit the local transaction.
+        samdb.transaction_commit()
 
-            result = connect_future.result(timeout=5)
-            self.assertEqual(result, ConnectionResult.WRONG_PASSWORD, result)
+        got_pid, status = os.waitpid(pid, 0)
+        self.assertEqual(pid, got_pid)
+
+        self.assertTrue(os.WIFEXITED(status))
+        result = ConnectionResult(os.WEXITSTATUS(status))
+
+        self.assertEqual(result, ConnectionResult.WRONG_PASSWORD, result)
 
         # Check that badPwdCount has now increased to 2.
 
@@ -835,64 +897,80 @@ class LockoutTests(KDCBaseTest):
                               credentials=admin_creds)
         self.assertLocalSamDB(samdb)
 
+        url = f'ldap://{samdb.host_dns_name()}'
+        hostname = samdb.host_dns_name()
+        username = user_creds.get_username()
+        password = user_creds.get_password()[:-1]  # invalid pw
+        domain = user_creds.get_domain()
+        realm = user_creds.get_realm()
+        workstation = user_creds.get_workstation()
+        dn = str(user_dn)
+
         # Prepare to connect to the server with an invalid password, using four
         # simultaneous requests. Only three of those attempts should get
         # through before the account is locked out.
         num_attempts = self.lockout_threshold + 1
-        with futures.ProcessPoolExecutor(max_workers=num_attempts) as executor:
-            connect_futures = []
-            our_pipes = []
-            for i in range(num_attempts):
-                our_pipe, their_pipe = Pipe(duplex=True)
-                our_pipes.append(our_pipe)
+        our_write_pipes = []
+        pids = []
+        for i in range(num_attempts):
+            our_read_pipe, their_write_pipe = os.pipe()
+            their_read_pipe, our_write_pipe = os.pipe()
+            our_write_pipes.append(our_write_pipe)
 
-                connect_future = executor.submit(
-                    connect_fn,
-                    pipe=their_pipe,
-                    url=f'ldap://{samdb.host_dns_name()}',
-                    hostname=samdb.host_dns_name(),
-                    username=user_creds.get_username(),
-                    password=user_creds.get_password()[:-1],  # invalid pw
-                    domain=user_creds.get_domain(),
-                    realm=user_creds.get_realm(),
-                    workstation=user_creds.get_workstation(),
-                    dn=str(user_dn))
-                connect_futures.append(connect_future)
+            pid = fork_connect_fn(
+                connect_fn=connect_fn,
+                read_pipe=their_read_pipe,
+                write_pipe=their_write_pipe,
+                url=url,
+                hostname=hostname,
+                username=username,
+                password=password,
+                domain=domain,
+                realm=realm,
+                workstation=workstation,
+                dn=dn)
 
-                # Wait until the test process indicates it's ready.
-                self.wait_for_ready(our_pipe, connect_future)
+            # Wait until the test process indicates it's ready.
+            self.wait_for_ready(our_read_pipe)
 
-            # Take out a transaction.
-            samdb.transaction_start()
-            try:
-                # Inform the test processes that they may proceed.
-                for our_pipe in our_pipes:
-                    our_pipe.send_bytes(b'0')
+            pids.append(pid)
 
-                # Wait one second to ensure the test processes hit the
-                # transaction lock.
-                time.sleep(1)
-            except Exception:
-                samdb.transaction_cancel()
-                raise
+        # Take out a transaction.
+        samdb.transaction_start()
+        try:
+            # Inform the test processes that they may proceed.
+            for our_write_pipe in our_write_pipes:
+                self.indicate_ready(our_write_pipe)
 
-            # Commit the local transaction.
-            samdb.transaction_commit()
+            # Wait one second to ensure the test processes hit the
+            # transaction lock.
+            time.sleep(1)
+        except Exception:
+            samdb.transaction_cancel()
+            raise
 
-            lockouts = 0
-            wrong_passwords = 0
-            for i, connect_future in enumerate(connect_futures):
-                result = connect_future.result(timeout=5)
-                if result == ConnectionResult.LOCKED_OUT:
-                    lockouts += 1
-                elif result == ConnectionResult.WRONG_PASSWORD:
-                    wrong_passwords += 1
-                else:
-                    self.fail(f'process {i} gave an unexpected result '
-                              f'{result}')
+        # Commit the local transaction.
+        samdb.transaction_commit()
 
-            self.assertEqual(wrong_passwords, self.lockout_threshold)
-            self.assertEqual(lockouts, num_attempts - self.lockout_threshold)
+        lockouts = 0
+        wrong_passwords = 0
+        for i, pid in enumerate(pids):
+            got_pid, status = os.waitpid(pid, 0)
+            self.assertEqual(pid, got_pid)
+
+            self.assertTrue(os.WIFEXITED(status))
+            result = ConnectionResult(os.WEXITSTATUS(status))
+
+            if result == ConnectionResult.LOCKED_OUT:
+                lockouts += 1
+            elif result == ConnectionResult.WRONG_PASSWORD:
+                wrong_passwords += 1
+            else:
+                self.fail(f'process {i} gave an unexpected result '
+                          f'{result}')
+
+        self.assertEqual(wrong_passwords, self.lockout_threshold)
+        self.assertEqual(lockouts, num_attempts - self.lockout_threshold)
 
         # Ensure the account is now locked out.
 
@@ -932,40 +1010,55 @@ class LockoutTests(KDCBaseTest):
 
         password = user_creds.get_password()
 
+        url = f'ldap://{samdb.host_dns_name()}'
+        hostname = samdb.host_dns_name()
+        username = user_creds.get_username()
+        domain = user_creds.get_domain()
+        realm = user_creds.get_realm()
+        workstation = user_creds.get_workstation()
+        dn = str(user_dn)
+
         # Prepare to connect to the server with a valid password.
-        with futures.ProcessPoolExecutor(max_workers=1) as executor:
-            our_pipe, their_pipe = Pipe(duplex=True)
-            connect_future = executor.submit(
-                connect_fn,
-                pipe=their_pipe,
-                url=f'ldap://{samdb.host_dns_name()}',
-                hostname=samdb.host_dns_name(),
-                username=user_creds.get_username(),
-                password=password,
-                domain=user_creds.get_domain(),
-                realm=user_creds.get_realm(),
-                workstation=user_creds.get_workstation(),
-                dn=str(user_dn))
+        our_read_pipe, their_write_pipe = os.pipe()
+        their_read_pipe, our_write_pipe = os.pipe()
 
-            # Wait until the test process indicates it's ready.
-            self.wait_for_ready(our_pipe, connect_future)
+        pid = fork_connect_fn(
+            connect_fn=connect_fn,
+            read_pipe=their_read_pipe,
+            write_pipe=their_write_pipe,
+            url=url,
+            hostname=hostname,
+            username=username,
+            password=password,
+            domain=domain,
+            realm=realm,
+            workstation=workstation,
+            dn=dn)
 
-            # Take out a transaction.
-            samdb.transaction_start()
-            try:
-                # Inform the test process that it may proceed.
-                our_pipe.send_bytes(b'0')
+        # Wait until the test process indicates it's ready.
+        self.wait_for_ready(our_read_pipe)
 
-                # The connection should succeed, despite our holding a
-                # transaction.
-                result = connect_future.result(timeout=5)
-                self.assertEqual(result, ConnectionResult.SUCCESS)
-            except Exception:
-                samdb.transaction_cancel()
-                raise
+        # Take out a transaction.
+        samdb.transaction_start()
+        try:
+            # Inform the test process that it may proceed.
+            self.indicate_ready(our_write_pipe)
 
-            # Commit the local transaction.
-            samdb.transaction_commit()
+            # The connection should succeed, despite our holding a
+            # transaction.
+            got_pid, status = os.waitpid(pid, 0)
+            self.assertEqual(pid, got_pid)
+
+            self.assertTrue(os.WIFEXITED(status))
+            result = ConnectionResult(os.WEXITSTATUS(status))
+
+            self.assertEqual(result, ConnectionResult.SUCCESS)
+        except Exception:
+            samdb.transaction_cancel()
+            raise
+
+        # Commit the local transaction.
+        samdb.transaction_commit()
 
 
 if __name__ == '__main__':

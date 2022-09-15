@@ -3,4 +3,3 @@
 # process may be able to acquire it during the short period of time in which it
 # is not held.
 ^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_ldap_pw_change.ad_dc:local
-^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.*
