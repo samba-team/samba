@@ -28,7 +28,6 @@
 #
 
 import time
-import uuid
 import samba.tests
 
 from samba.ndr import ndr_unpack
@@ -43,7 +42,40 @@ from ldb import (
 
 import drs_base
 import ldb
-from samba.dcerpc.drsuapi import *
+from samba.dcerpc.drsuapi import (
+    drsuapi,
+    DRSUAPI_ATTID_accountExpires,
+    DRSUAPI_ATTID_cn,
+    DRSUAPI_ATTID_codePage,
+    DRSUAPI_ATTID_countryCode,
+    DRSUAPI_ATTID_dBCSPwd,
+    DRSUAPI_ATTID_description,
+    DRSUAPI_ATTID_instanceType,
+    DRSUAPI_ATTID_isDeleted,
+    DRSUAPI_ATTID_isRecycled,
+    DRSUAPI_ATTID_lastKnownParent,
+    DRSUAPI_ATTID_lmPwdHistory,
+    DRSUAPI_ATTID_logonHours,
+    DRSUAPI_ATTID_name,
+    DRSUAPI_ATTID_ntPwdHistory,
+    DRSUAPI_ATTID_ntSecurityDescriptor,
+    DRSUAPI_ATTID_objectCategory,
+    DRSUAPI_ATTID_objectClass,
+    DRSUAPI_ATTID_objectSid,
+    DRSUAPI_ATTID_ou,
+    DRSUAPI_ATTID_primaryGroupID,
+    DRSUAPI_ATTID_pwdLastSet,
+    DRSUAPI_ATTID_sAMAccountName,
+    DRSUAPI_ATTID_sAMAccountType,
+    DRSUAPI_ATTID_unicodePwd,
+    DRSUAPI_ATTID_userAccountControl,
+    DRSUAPI_ATTID_userPrincipalName,
+    DRSUAPI_ATTID_whenCreated,
+    DRSUAPI_DRS_SYNC_FORCED,
+    DRSUAPI_EXOP_REPL_OBJ,
+    DsGetNCChangesRequest8,
+    DsReplicaHighWaterMark,
+    DsReplicaObjectIdentifier)
 
 
 class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
