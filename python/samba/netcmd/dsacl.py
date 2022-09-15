@@ -74,17 +74,28 @@ def get_domain_sid(samdb):
     return ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
 
 
-class cmd_dsacl_set(Command):
-    """Modify access list on a directory object."""
+class cmd_dsacl_base(Command):
+    """Base class for DSACL commands."""
 
     synopsis = "%prog [options]"
-    car_help = """ The access control right to allow or deny """
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
     }
+
+    def print_acl(self, samdb, object_dn, prefix=''):
+        desc = read_descriptor(samdb, object_dn)
+        desc_sddl = desc.as_sddl(get_domain_sid(samdb))
+        self.outf.write("%sdescriptor for %s:\n" % (prefix, object_dn))
+        self.outf.write(desc_sddl + "\n")
+
+
+class cmd_dsacl_set(cmd_dsacl_base):
+    """Modify access list on a directory object."""
+
+    car_help = """ The access control right to allow or deny """
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
@@ -134,15 +145,6 @@ class cmd_dsacl_set(Command):
             desc = security.descriptor.from_sddl(desc_sddl, get_domain_sid(samdb))
             modify_descriptor(samdb, object_dn, desc)
 
-    def print_acl(self, samdb, object_dn, new=False):
-        desc = read_descriptor(samdb, object_dn)
-        desc_sddl = desc.as_sddl(get_domain_sid(samdb))
-        if new:
-            self.outf.write("new descriptor for %s:\n" % object_dn)
-        else:
-            self.outf.write("old descriptor for %s:\n" % object_dn)
-        self.outf.write(desc_sddl + "\n")
-
     def run(self, car, action, objectdn, trusteedn, sddl,
             H=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
@@ -178,21 +180,13 @@ class cmd_dsacl_set(Command):
         else:
             raise CommandError("Wrong argument '%s'!" % action)
 
-        self.print_acl(samdb, objectdn)
+        self.print_acl(samdb, objectdn, prefix='old ')
         self.add_ace(samdb, objectdn, new_ace)
-        self.print_acl(samdb, objectdn, new=True)
+        self.print_acl(samdb, objectdn, prefix='new ')
 
 
-class cmd_dsacl_get(Command):
+class cmd_dsacl_get(cmd_dsacl_base):
     """Print access list on a directory object."""
-
-    synopsis = "%prog [options]"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
@@ -200,12 +194,6 @@ class cmd_dsacl_get(Command):
         Option("--objectdn", help="DN of the object whose SD to modify",
             type="string"),
         ]
-
-    def print_acl(self, samdb, object_dn):
-        desc = read_descriptor(samdb, object_dn)
-        desc_sddl = desc.as_sddl(get_domain_sid(samdb))
-        self.outf.write("descriptor for %s:\n" % object_dn)
-        self.outf.write(desc_sddl + "\n")
 
     def run(self, objectdn,
             H=None, credopts=None, sambaopts=None, versionopts=None):
@@ -217,16 +205,8 @@ class cmd_dsacl_get(Command):
         self.print_acl(samdb, objectdn)
 
 
-class cmd_dsacl_delete(Command):
+class cmd_dsacl_delete(cmd_dsacl_base):
     """Delete an access list entry on a directory object."""
-
-    synopsis = "%prog [options]"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
@@ -236,15 +216,6 @@ class cmd_dsacl_delete(Command):
         Option("--sddl", help="An ACE or group of ACEs to be deleted from the object",
                type="string"),
         ]
-
-    def print_acl(self, samdb, object_dn, new=False):
-        desc = read_descriptor(samdb, object_dn)
-        desc_sddl = desc.as_sddl(get_domain_sid(samdb))
-        if new:
-            self.outf.write("new descriptor for %s:\n" % object_dn)
-        else:
-            self.outf.write("old descriptor for %s:\n" % object_dn)
-        self.outf.write(desc_sddl + "\n")
 
     def run(self, objectdn, sddl, H=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
@@ -256,9 +227,9 @@ class cmd_dsacl_delete(Command):
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
-        self.print_acl(samdb, objectdn)
+        self.print_acl(samdb, objectdn, prefix='old ')
         self.delete_ace(samdb, objectdn, sddl)
-        self.print_acl(samdb, objectdn, new=True)
+        self.print_acl(samdb, objectdn, prefix='new ')
 
     def delete_ace(self, samdb, object_dn, delete_aces):
         """Delete ace explicitly."""
