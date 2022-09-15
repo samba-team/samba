@@ -1,11 +1,7 @@
 import drs_base
 import ldb
 import time
-from samba.dcerpc import misc
-from samba.drs_utils import drs_Replicate, drsException
-import samba
 import random
-import time
 import os
 
 break_me = os.getenv("PLEASE_BREAK_MY_WINDOWS") == "1"
