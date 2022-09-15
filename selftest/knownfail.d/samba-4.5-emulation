@@ -2,4 +2,3 @@
 samba4.drs.getnc_exop.python\(chgdcpass\).getnc_exop.DrsReplicaSyncTestCase.test_FSMONotOwner\(chgdcpass\)
 # This fails because GET_ANC is now poorly implemented (matching Samba 4.5)
 ^samba4.drs.getnc_exop.python\(chgdcpass\).getnc_exop.DrsReplicaSyncTestCase.test_link_utdv_hwm\(chgdcpass\)
-^samba4.drs.samba_tool_drs_critical.python\(chgdcpass\).samba_tool_drs_critical.SambaToolDrsTests.test_samba_tool_drs_clone_dc_critical_object_chain\(chgdcpass:local\)
