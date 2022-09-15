@@ -735,8 +735,10 @@ NTSTATUS vfs_not_implemented_get_real_filename_at(
 }
 
 _PUBLIC_
-const char *vfs_not_implemented_connectpath(struct vfs_handle_struct *handle,
-					    const struct smb_filename *smb_fname)
+const char *vfs_not_implemented_connectpath(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname)
 {
 	errno = ENOSYS;
 	return NULL;

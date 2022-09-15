@@ -532,7 +532,7 @@ static NTSTATUS process_symlink_open(const struct files_struct *dirfsp,
 	struct smb_filename *full_fname = NULL;
 	NTSTATUS status;
 
-	conn_rootdir = SMB_VFS_CONNECTPATH(conn, smb_fname);
+	conn_rootdir = SMB_VFS_CONNECTPATH(conn, NULL, smb_fname);
 	if (conn_rootdir == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -705,7 +705,8 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	SMB_ASSERT(!fsp_is_alternate_stream(fsp));
 
 	if (smb_fname->base_name[0] == '/') {
-		const char *connpath = SMB_VFS_CONNECTPATH(conn, smb_fname);
+		const char *connpath = SMB_VFS_CONNECTPATH(
+			conn, NULL, smb_fname);
 		int cmp = strcmp(connpath, smb_fname->base_name);
 
 		if (cmp == 0) {

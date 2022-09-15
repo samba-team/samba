@@ -377,6 +377,7 @@
  * Version 47 - Add VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS for SMB_VFS_OPENAT()
  * Change to Version 48 - will ship with 4.18
  * Version 48 - Add cached_dos_attributes to struct stat_ex
+ * Version 48 - Add dirfsp to connectpath_fn()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 48
@@ -1172,6 +1173,7 @@ struct vfs_fn_pointers {
 					    char **found_name);
 
 	const char *(*connectpath_fn)(struct vfs_handle_struct *handle,
+				      const struct files_struct *dirfsp,
 				      const struct smb_filename *smb_fname);
 
 	NTSTATUS (*brl_lock_windows_fn)(struct vfs_handle_struct *handle,
@@ -1640,7 +1642,8 @@ NTSTATUS smb_vfs_call_get_real_filename_at(struct vfs_handle_struct *handle,
 					   TALLOC_CTX *mem_ctx,
 					   char **found_name);
 const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
-				     const struct smb_filename *smb_fname);
+				 const struct files_struct *dirfsp,
+				 const struct smb_filename *smb_fname);
 NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
 				       struct byte_range_lock *br_lck,
 				       struct lock_struct *plock);
@@ -2112,8 +2115,10 @@ NTSTATUS vfs_not_implemented_get_real_filename_at(
 	const char *name,
 	TALLOC_CTX *mem_ctx,
 	char **found_name);
-const char *vfs_not_implemented_connectpath(struct vfs_handle_struct *handle,
-					    const struct smb_filename *smb_fname);
+const char *vfs_not_implemented_connectpath(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname);
 NTSTATUS vfs_not_implemented_brl_lock_windows(struct vfs_handle_struct *handle,
 					      struct byte_range_lock *br_lck,
 					      struct lock_struct *plock);

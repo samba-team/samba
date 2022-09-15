@@ -1292,8 +1292,10 @@ static NTSTATUS cephwrap_get_real_filename_at(
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-static const char *cephwrap_connectpath(struct vfs_handle_struct *handle,
-				       const struct smb_filename *smb_fname)
+static const char *cephwrap_connectpath(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname)
 {
 	return handle->conn->connectpath;
 }

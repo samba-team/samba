@@ -2348,8 +2348,10 @@ static NTSTATUS vfs_gluster_get_real_filename_at(
 	return NT_STATUS_OK;
 }
 
-static const char *vfs_gluster_connectpath(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
+static const char *vfs_gluster_connectpath(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname)
 {
 	return handle->conn->connectpath;
 }

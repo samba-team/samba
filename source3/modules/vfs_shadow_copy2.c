@@ -2625,8 +2625,10 @@ static NTSTATUS shadow_copy2_get_real_filename_at(
 	return NT_STATUS_OK;
 }
 
-static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname_in)
+static const char *shadow_copy2_connectpath(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname_in)
 {
 	time_t timestamp = 0;
 	char *stripped = NULL;
@@ -2656,7 +2658,7 @@ static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 		goto done;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_CONNECTPATH(handle, smb_fname_in);
+		return SMB_VFS_NEXT_CONNECTPATH(handle, dirfsp, smb_fname_in);
 	}
 
 	tmp = shadow_copy2_do_convert(talloc_tos(), handle, stripped, timestamp,

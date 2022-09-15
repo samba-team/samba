@@ -886,10 +886,12 @@ static NTSTATUS skel_get_real_filename_at(struct vfs_handle_struct *handle,
 		handle, dirfsp, name, mem_ctx, found_name);
 }
 
-static const char *skel_connectpath(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
+static const char *skel_connectpath(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname)
 {
-	return SMB_VFS_NEXT_CONNECTPATH(handle, smb_fname);
+	return SMB_VFS_NEXT_CONNECTPATH(handle, dirfsp, smb_fname);
 }
 
 static NTSTATUS skel_brl_lock_windows(struct vfs_handle_struct *handle,

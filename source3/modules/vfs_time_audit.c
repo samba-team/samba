@@ -1743,15 +1743,17 @@ static NTSTATUS smb_time_audit_get_real_filename_at(
 	return result;
 }
 
-static const char *smb_time_audit_connectpath(vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname)
+static const char *smb_time_audit_connectpath(
+	vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname)
 {
 	const char *result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_CONNECTPATH(handle, smb_fname);
+	result = SMB_VFS_NEXT_CONNECTPATH(handle, dirfsp, smb_fname);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

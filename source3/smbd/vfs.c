@@ -1224,7 +1224,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	}
 
 	/* Common widelinks and symlinks checks. */
-	conn_rootdir = SMB_VFS_CONNECTPATH(conn, smb_fname);
+	conn_rootdir = SMB_VFS_CONNECTPATH(conn, NULL, smb_fname);
 	if (conn_rootdir == NULL) {
 		DBG_NOTICE("Could not get conn_rootdir\n");
 		TALLOC_FREE(resolved_fname);
@@ -2312,10 +2312,11 @@ NTSTATUS smb_vfs_call_get_real_filename_at(struct vfs_handle_struct *handle,
 }
 
 const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
+				 const struct files_struct *dirfsp,
 				 const struct smb_filename *smb_fname)
 {
 	VFS_FIND(connectpath);
-	return handle->fns->connectpath_fn(handle, smb_fname);
+	return handle->fns->connectpath_fn(handle, dirfsp, smb_fname);
 }
 
 bool smb_vfs_call_strict_lock_check(struct vfs_handle_struct *handle,

@@ -2115,12 +2115,14 @@ static NTSTATUS smb_full_audit_get_real_filename_at(
 	return result;
 }
 
-static const char *smb_full_audit_connectpath(vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname)
+static const char *smb_full_audit_connectpath(
+	vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname)
 {
 	const char *result;
 
-	result = SMB_VFS_NEXT_CONNECTPATH(handle, smb_fname);
+	result = SMB_VFS_NEXT_CONNECTPATH(handle, dirfsp, smb_fname);
 
 	do_log(SMB_VFS_OP_CONNECTPATH,
 	       result != NULL,

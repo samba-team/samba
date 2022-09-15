@@ -665,8 +665,10 @@ static NTSTATUS skel_get_real_filename_at(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static const char *skel_connectpath(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
+static const char *skel_connectpath(
+	struct vfs_handle_struct *handle,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *smb_fname)
 {
 	errno = ENOSYS;
 	return NULL;
