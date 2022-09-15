@@ -2,28 +2,14 @@
 # -*- coding: utf-8 -*-
 # Originally based on ./sam.py
 import sys
-import os
-import base64
-import random
-import re
 
 sys.path.insert(0, "bin/python")
-import samba
-from samba.tests.subunitrun import SubunitOptions, TestProgram
-
-import samba.getopt as options
-
-from samba.auth import system_session
 import ldb
-from samba.samdb import SamDB
 
-from samba.dcerpc import drsuapi, misc, drsblobs
-from samba.drs_utils import drs_DsBind
+from samba.dcerpc import drsuapi, misc
 from samba.ndr import ndr_unpack, ndr_pack
 
 import drs_base
-
-import time
 
 
 class LATestException(Exception):
