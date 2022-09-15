@@ -30,17 +30,14 @@
 #
 
 import drs_base
-import samba.tests
 
 import ldb
 from ldb import SCOPE_BASE
 
 from samba.dcerpc import drsuapi, misc
-from samba.drs_utils import drs_DsBind
 from samba.samdb import SamDB
 
 import shutil
-import tempfile
 import os
 from samba.auth import system_session, admin_session
 from samba.dbchecker import dbcheck
