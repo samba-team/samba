@@ -207,6 +207,44 @@ class drs_Replicate(object):
                 supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10 and
                 (req.more_flags & drsuapi.DRSUAPI_DRS_GET_TGT) == 0)
 
+    @staticmethod
+    def _should_calculate_missing_anc_locally(error_code, req):
+        # If the error indicates we fail to resolve the parent object
+        # for a new object, then we assume we are replicating from a
+        # buggy server (Samba 4.5 and earlier) that doesn't really
+        # understand how to implement GET_ANC
+
+        return ((error_code == werror.WERR_DS_DRA_MISSING_PARENT) and
+                (req.replica_flags & drsuapi.DRSUAPI_DRS_GET_ANC) != 0)
+
+
+    def _calculate_missing_anc_locally(self, ctr):
+        self.guids_seen = set()
+
+        # walk objects in ctr, add to guid_seen as we see them
+        # note if an object doesn't have a parent
+
+        object_to_check = ctr.first_object
+
+        while True:
+            if object_to_check is None:
+                break
+
+            self.guids_seen.add(str(object_to_check.object.identifier.guid))
+
+            if object_to_check.parent_object_guid is not None \
+               and object_to_check.parent_object_guid \
+               != misc.GUID("00000000-0000-0000-0000-000000000000") \
+               and str(object_to_check.parent_object_guid) not in self.guids_seen:
+                obj_dn = ldb.Dn(self.samdb, object_to_check.object.identifier.dn)
+                parent_dn = obj_dn.parent()
+                print(f"Object {parent_dn} with "
+                      f"GUID {object_to_check.parent_object_guid} "
+                      "was not sent by the server in this chunk")
+
+            object_to_check = object_to_check.next_object
+
+
     def process_chunk(self, level, ctr, schema, req_level, req, first_chunk):
         '''Processes a single chunk of received replication data'''
         # pass the replication into the py_net.c python bindings for processing
@@ -329,8 +367,13 @@ class drs_Replicate(object):
                     # of causing the DC to restart the replication from scratch)
                     first_chunk = True
                     continue
-                else:
-                    raise e
+
+                if self._should_calculate_missing_anc_locally(e.args[0],
+                                                              req):
+                    print("Missing parent object - calculating missing objects locally")
+
+                    self._calculate_missing_anc_locally(ctr)
+                raise e
 
             first_chunk = False
             num_objects += ctr.object_count
