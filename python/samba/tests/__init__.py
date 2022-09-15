@@ -51,11 +51,8 @@ import samba.ndr
 import samba.dcerpc.dcerpc
 import samba.dcerpc.epmapper
 
-try:
-    from unittest import SkipTest
-except ImportError:
-    class SkipTest(Exception):
-        """Test skipped."""
+from unittest import SkipTest
+
 
 BINDIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                       "../../../../bin"))
