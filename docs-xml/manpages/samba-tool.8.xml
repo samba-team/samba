@@ -765,6 +765,16 @@
 </refsect2>
 
 <refsect3>
+	<title>dsacl delete</title>
+	<para>Delete an access list entry on a directory object.</para>
+</refsect3>
+
+<refsect3>
+	<title>dsacl get</title>
+	<para>Print access list on a directory object.</para>
+</refsect3>
+
+<refsect3>
 	<title>dsacl set</title>
 	<para>Modify access list on a directory object.</para>
 </refsect3>
