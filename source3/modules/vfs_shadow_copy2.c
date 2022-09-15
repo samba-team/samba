@@ -2634,7 +2634,7 @@ static const char *shadow_copy2_connectpath(
 	char *stripped = NULL;
 	char *tmp = NULL;
 	const char *fname = smb_fname_in->base_name;
-	const struct smb_filename *full = smb_fname_in;
+	const struct smb_filename *full = NULL;
 	struct smb_filename smb_fname = {0};
 	struct smb_filename *result_fname = NULL;
 	char *result = NULL;
@@ -2654,12 +2654,10 @@ static const char *shadow_copy2_connectpath(
 		return priv->shadow_connectpath;
 	}
 
-	if (dirfsp != NULL) {
-		full = full_path_from_dirfsp_atname(
-			talloc_tos(), dirfsp, smb_fname_in);
-		if (full == NULL) {
-			return NULL;
-		}
+	full = full_path_from_dirfsp_atname(
+		talloc_tos(), dirfsp, smb_fname_in);
+	if (full == NULL) {
+		return NULL;
 	}
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, full,
