@@ -1643,6 +1643,7 @@ static void smbd_server_connection_terminate_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = smbXsrv_connection_shutdown_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_server("smbXsrv_connection_shutdown_recv failed");
 	}
