@@ -86,7 +86,7 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
         self.assertEqual(err, "", "Shouldn't be any error messages")
         #extract only the two sddl strings from samba-tool output
         acl_list=re.findall('.*descriptor for.*:\n(.*?)\n',out)
-        for ace in re.findall('\(.*?\)',self.sddl_multi):
+        for ace in re.findall(r'\(.*?\)',self.sddl_multi):
             self.assertMatch(acl_list[1], ace, "new SDDL string should be contained within second sddl output")
 
     def test_duplicatesddl(self):
