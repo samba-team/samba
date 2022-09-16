@@ -502,6 +502,15 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 		if (ret == LDB_SUCCESS) {
 			flags |= SECINFO_OWNER | SECINFO_GROUP;
 		}
+
+		/*
+		 * This call is made with
+		 * IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS
+		 * and without reference to the dSHeuristics via
+		 * dsdb_block_owner_implicit_rights().  This is
+		 * probably a Windows bug but for now we match
+		 * exactly.
+		 */
 		ret = acl_check_access_on_attribute_implicit_owner(
 			module,
 			msg,
