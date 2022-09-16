@@ -74,17 +74,15 @@ static NTSTATUS streams_xattr_get_name(vfs_handle_struct *handle,
 				       const char *stream_name,
 				       char **xattr_name)
 {
-	char *sname;
+	size_t stream_name_len = strlen(stream_name);
 	char *stype;
 	struct streams_xattr_config *config;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
 				return NT_STATUS_UNSUCCESSFUL);
 
-	sname = talloc_strdup(ctx, stream_name + 1);
-	if (sname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	SMB_ASSERT(stream_name[0] == ':');
+	stream_name += 1;
 
 	/*
 	 * With vfs_fruit option "fruit:encoding = native" we're
@@ -100,34 +98,32 @@ static NTSTATUS streams_xattr_get_name(vfs_handle_struct *handle,
 	 * In check_path_syntax() we've already ensured the streamname
 	 * we got from the client is valid.
 	 */
-	stype = strrchr_m(sname, ':');
+	stype = strrchr_m(stream_name, ':');
 
 	if (stype) {
 		/*
 		 * We only support one stream type: "$DATA"
 		 */
 		if (strcasecmp_m(stype, ":$DATA") != 0) {
-			talloc_free(sname);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		/* Split name and type */
-		stype[0] = '\0';
+		stream_name_len = (stype - stream_name);
 	}
 
-	*xattr_name = talloc_asprintf(ctx, "%s%s%s",
+	*xattr_name = talloc_asprintf(ctx, "%s%.*s%s",
 				      config->prefix,
-				      sname,
+				      (int)stream_name_len,
+				      stream_name,
 				      config->store_stream_type ? ":$DATA" : "");
 	if (*xattr_name == NULL) {
-		talloc_free(sname);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	DEBUG(10, ("xattr_name: %s, stream_name: %s\n", *xattr_name,
 		   stream_name));
 
-	talloc_free(sname);
 	return NT_STATUS_OK;
 }
 
