@@ -245,6 +245,7 @@ class dbcheck(object):
         res = self.samdb.search(base=DN, scope=scope, attrs=['dn'], controls=controls)
         self.report('Checking %u objects' % len(res))
         error_count = 0
+        self.unfixable_errors = 0
 
         error_count += self.check_deleted_objects_containers()
 
@@ -264,10 +265,16 @@ class dbcheck(object):
                         "would do that immediately." % (
                         self.expired_tombstones))
 
+        self.report('Checked %u objects (%u errors)' %
+                    (len(res), error_count + self.unfixable_errors))
+
+        if self.unfixable_errors != 0:
+            self.report(f"WARNING: {self.unfixable_errors} "
+                        "of these errors cannot be automatically fixed.")
+
         if error_count != 0 and not self.fix:
             self.report("Please use --fix to fix these errors")
 
-        self.report('Checked %u objects (%u errors)' % (len(res), error_count))
         return error_count
 
     def check_deleted_objects_containers(self):
@@ -2392,7 +2399,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             if attrname.lower() == "name":
                 if len(obj[attrname]) != 1:
-                    error_count += 1
+                    self.unfixable_errors += 1
                     self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
                                 (len(obj[attrname]), attrname, str(obj.dn)))
                 else:
@@ -2401,7 +2408,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if attrname.lower() == str(obj.dn.get_rdn_name()).lower():
                 object_rdn_attr = attrname
                 if len(obj[attrname]) != 1:
-                    error_count += 1
+                    self.unfixable_errors += 1
                     self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
                                 (len(obj[attrname]), attrname, str(obj.dn)))
                 else:
@@ -2432,7 +2439,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     # Here we check that the first attid is 0
                     # (objectClass).
                     if list_attid_from_md[0] != 0:
-                        error_count += 1
+                        self.unfixable_errors += 1
                         self.report("ERROR: Not fixing incorrect initial attributeID in '%s' on '%s', it should be objectClass" %
                                     (attrname, str(dn)))
 
@@ -2534,7 +2541,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             if attrname.lower() == 'attributeid' or attrname.lower() == 'governsid':
                 if obj[attrname][0] in self.attribute_or_class_ids:
-                    error_count += 1
+                    self.unfixable_errors += 1
                     self.report('Error: %s %s on %s already exists as an attributeId or governsId'
                                 % (attrname, obj.dn, obj[attrname][0]))
                 else:
@@ -2598,10 +2605,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         if ("*" in lc_attrs or "name" in lc_attrs):
             if name_val is None:
-                error_count += 1
+                self.unfixable_errors += 1
                 self.report("ERROR: Not fixing missing 'name' on '%s'" % (str(obj.dn)))
             if object_rdn_attr is None:
-                error_count += 1
+                self.unfixable_errors += 1
                 self.report("ERROR: Not fixing missing '%s' on '%s'" % (obj.dn.get_rdn_name(), str(obj.dn)))
 
         if name_val is not None:
@@ -2617,7 +2624,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             try:
                 expected_dn = ldb.Dn(self.samdb, "RDN=RDN,%s" % (parent_dn))
             except ValueError as e:
-                error_count += 1
+                self.unfixable_errors += 1
                 self.report(f"ERROR: could not handle parent DN '{parent_dn}': "
                             "skipping RDN checks")
             else:
@@ -2631,7 +2638,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     self.err_wrong_dn(obj, expected_dn, object_rdn_attr,
                             object_rdn_val, name_val, controls)
                 elif obj.dn.get_rdn_value() != object_rdn_val:
-                    error_count += 1
+                    self.unfixable_errors += 1
                     self.report("ERROR: Not fixing %s=%r on '%s'" % (object_rdn_attr,
                                                                      object_rdn_val,
                                                                      obj.dn))
@@ -2789,18 +2796,18 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 if pool != 0 and low >= high:
                     self.report("Invalid RID pool %d-%d, %d >= %d!" %
                                 (low, high, low, high))
-                    error_count += 1
+                    self.unfixable_errors += 1
 
             if "rIDAllocationPool" not in res[0]:
                 self.report("No rIDAllocationPool found in %s" % dn)
-                error_count += 1
+                self.unfixable_errors += 1
 
             try:
                 next_free_rid, high = self.samdb.free_rid_bounds()
             except ldb.LdbError as err:
                 enum, estr = err.args
                 self.report("Couldn't get available RIDs: %s" % estr)
-                error_count += 1
+                self.unfixable_errors += 1
             else:
                 # Check the remainder of this pool for conflicts.  If
                 # ridalloc_allocate_rid() moves to a new pool, this
