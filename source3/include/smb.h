@@ -454,18 +454,6 @@ Offset  Data			length.
 #define NOTIFY_ACTION_REMOVED_STREAM 7
 #define NOTIFY_ACTION_MODIFIED_STREAM 8
 
-/*
- * Timestamp format used in "previous versions":
- * This is the windows-level format of the @GMT- token.
- * It is a fixed format not to be confused with the
- * format for the POSIX-Level token of the shadow_copy2
- * VFS module that can be configured via the "shadow:format"
- * configuration option but defaults to the same format.
- * See the shadow_copy2 module.
- */
-#define GMT_NAME_LEN 24 /* length of a @GMT- name */
-#define GMT_FORMAT "@GMT-%Y.%m.%d-%H.%M.%S"
-
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((const char *)(buf))+4)
 

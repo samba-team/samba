@@ -350,7 +350,6 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
 
 uint32_t ucf_flags_from_smb_request(struct smb_request *req);
 uint32_t filename_create_ucf_flags(struct smb_request *req, uint32_t create_disposition);
-bool extract_snapshot_token(char *fname, NTTIME *twrp);
 NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 				    uint32_t ucf_flags,
 				    NTTIME twrp);

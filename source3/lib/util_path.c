@@ -24,6 +24,7 @@
 #include "replace.h"
 #include <talloc.h>
 #include "lib/util/samba_util.h"
+#include "lib/util/debug.h"
 #include "lib/util_path.h"
 
 struct loadparm_substitution;
@@ -203,4 +204,75 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *pathname_in)
 	/* Terminate and we're done ! */
 	*p++ = '\0';
 	return pathname;
+}
+
+static bool find_snapshot_token(
+	const char *filename,
+	const char **_start,
+	const char **_next_component,
+	NTTIME *twrp)
+{
+	const char *start = NULL;
+	const char *end = NULL;
+	struct tm tm;
+	time_t t;
+
+	start = strstr_m(filename, "@GMT-");
+
+	if (start == NULL) {
+		return false;
+	}
+
+	if ((start > filename) && (start[-1] != '/')) {
+		/* the GMT-token does not start a path-component */
+		return false;
+	}
+
+	end = strptime(start, GMT_FORMAT, &tm);
+	if (end == NULL) {
+		/* Not a valid timestring. */
+		return false;
+	}
+
+	if ((end[0] != '\0') && (end[0] != '/')) {
+		/*
+		 * It is not a complete path component, i.e. the path
+		 * component continues after the gmt-token.
+		 */
+		return false;
+	}
+
+	tm.tm_isdst = -1;
+	t = timegm(&tm);
+	unix_to_nt_time(twrp, t);
+
+	DBG_DEBUG("Extracted @GMT-Timestamp %s\n",
+		  nt_time_string(talloc_tos(), *twrp));
+
+	*_start = start;
+
+	if (end[0] == '/') {
+		end += 1;
+	}
+	*_next_component = end;
+
+	return true;
+}
+
+bool extract_snapshot_token(char *fname, NTTIME *twrp)
+{
+	const char *start = NULL;
+	const char *next = NULL;
+	size_t remaining;
+	bool found;
+
+	found = find_snapshot_token(fname, &start, &next, twrp);
+	if (!found) {
+		return false;
+	}
+
+	remaining = strlen(next);
+	memmove(discard_const_p(char, start), next, remaining+1);
+
+	return true;
 }
