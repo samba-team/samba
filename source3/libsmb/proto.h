@@ -989,13 +989,6 @@ NTSTATUS cli_query_mxac(struct cli_state *cli,
 			const char *filename,
 			uint32_t *mxac);
 
-/* The following definitions come from libsmb/clistr.c  */
-
-bool clistr_is_previous_version_path(const char *path,
-			const char **startp,
-			const char **endp,
-			time_t *ptime);
-
 /* The following definitions come from libsmb/clitrans.c  */
 
 struct tevent_req *cli_trans_send(

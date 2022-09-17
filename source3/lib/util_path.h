@@ -45,5 +45,9 @@ char *state_path(TALLOC_CTX *mem_ctx, const char *name);
 char *cache_path(TALLOC_CTX *mem_ctx, const char *name);
 char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *abs_path);
 bool extract_snapshot_token(char *fname, NTTIME *twrp);
+bool clistr_is_previous_version_path(const char *path,
+				     const char **startp,
+				     const char **endp,
+				     NTTIME *ptwrp);
 
 #endif

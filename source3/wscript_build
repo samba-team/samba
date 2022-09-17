@@ -431,7 +431,6 @@ bld.SAMBA3_LIBRARY('libsmb',
                           libsmb/cliprint.c
                           libsmb/clitrans.c
                           libsmb/clisecdesc.c
-                          libsmb/clistr.c
                           libsmb/cliquota.c
                           libsmb/clifsinfo.c
                           libsmb/clidfs.c

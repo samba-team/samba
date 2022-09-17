@@ -224,7 +224,7 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	size_t fname_len = 0;
 	const char *startp = NULL;
 	const char *endp = NULL;
-	time_t tstamp = (time_t)0;
+	NTTIME ntt;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -245,11 +245,9 @@ struct tevent_req *cli_smb2_create_fnum_send(
 
 	/* Check for @GMT- paths. Remove the @GMT and turn into TWrp if so. */
 	fname_len = strlen(fname);
-	if (clistr_is_previous_version_path(fname, &startp, &endp, &tstamp)) {
+	if (clistr_is_previous_version_path(fname, &startp, &endp, &ntt)) {
 		size_t len_before_gmt = startp - fname;
 		size_t len_after_gmt = fname + fname_len - endp;
-		DATA_BLOB twrp_blob;
-		NTTIME ntt;
 
 		char *new_fname = talloc_array(state, char,
 				len_before_gmt + len_after_gmt + 1);
@@ -263,14 +261,14 @@ struct tevent_req *cli_smb2_create_fnum_send(
 		fname = new_fname;
 		fname_len = len_before_gmt + len_after_gmt;
 
-		unix_to_nt_time(&ntt, tstamp);
-		twrp_blob = data_blob_const((const void *)&ntt, 8);
-
 		status = smb2_create_blob_add(
 			state,
 			&state->in_cblobs,
 			SMB2_CREATE_TAG_TWRP,
-			twrp_blob);
+			(DATA_BLOB) {
+				.data = (uint8_t *)&ntt,
+				.length = sizeof(ntt),
+			});
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}

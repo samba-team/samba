@@ -260,6 +260,33 @@ static bool find_snapshot_token(
 	return true;
 }
 
+bool clistr_is_previous_version_path(const char *path,
+				     const char **startp,
+				     const char **endp,
+				     NTTIME *ptwrp)
+{
+	const char *start = NULL;
+	const char *next = NULL;
+	NTTIME twrp;
+	bool ok;
+
+	ok = find_snapshot_token(path, '\\', &start, &next, &twrp);
+	if (!ok) {
+		return false;
+	}
+
+	if (startp != NULL) {
+		*startp = start;
+	}
+	if (endp != NULL) {
+		*endp = next;
+	}
+	if (ptwrp != NULL) {
+		*ptwrp = twrp;
+	}
+	return true;
+}
+
 bool extract_snapshot_token(char *fname, NTTIME *twrp)
 {
 	const char *start = NULL;
