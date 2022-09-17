@@ -208,6 +208,7 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *pathname_in)
 
 static bool find_snapshot_token(
 	const char *filename,
+	char sep,
 	const char **_start,
 	const char **_next_component,
 	NTTIME *twrp)
@@ -223,7 +224,7 @@ static bool find_snapshot_token(
 		return false;
 	}
 
-	if ((start > filename) && (start[-1] != '/')) {
+	if ((start > filename) && (start[-1] != sep)) {
 		/* the GMT-token does not start a path-component */
 		return false;
 	}
@@ -234,7 +235,7 @@ static bool find_snapshot_token(
 		return false;
 	}
 
-	if ((end[0] != '\0') && (end[0] != '/')) {
+	if ((end[0] != '\0') && (end[0] != sep)) {
 		/*
 		 * It is not a complete path component, i.e. the path
 		 * component continues after the gmt-token.
@@ -251,7 +252,7 @@ static bool find_snapshot_token(
 
 	*_start = start;
 
-	if (end[0] == '/') {
+	if (end[0] == sep) {
 		end += 1;
 	}
 	*_next_component = end;
@@ -266,7 +267,7 @@ bool extract_snapshot_token(char *fname, NTTIME *twrp)
 	size_t remaining;
 	bool found;
 
-	found = find_snapshot_token(fname, &start, &next, twrp);
+	found = find_snapshot_token(fname, '/', &start, &next, twrp);
 	if (!found) {
 		return false;
 	}
