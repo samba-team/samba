@@ -273,7 +273,8 @@ class dbcheck(object):
                         "of these errors cannot be automatically fixed.")
 
         if error_count != 0 and not self.fix:
-            self.report("Please use --fix to fix these errors")
+            self.report("Please use 'samba-tool dbcheck --fix' to fix "
+                        f"{error_count} errors")
 
         return error_count
 
