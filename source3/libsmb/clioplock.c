@@ -85,8 +85,7 @@ static void cli_smb_oplock_break_waiter_done(struct tevent_req *subreq)
 				  NULL, /* pinbuf */
 				  NULL, 0); /* expected */
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	if (wct < 8) {

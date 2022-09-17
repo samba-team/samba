@@ -271,8 +271,7 @@ struct tevent_req *cli_smb2_create_fnum_send(
 			&state->in_cblobs,
 			SMB2_CREATE_TAG_TWRP,
 			twrp_blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
 	}
