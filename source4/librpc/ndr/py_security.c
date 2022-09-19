@@ -19,6 +19,7 @@
 */
 #include <Python.h>
 #include "py3compat.h"
+#include "libcli/security/sddl.h"
 #include "libcli/security/security.h"
 
 static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
@@ -618,9 +619,45 @@ static PyObject *py_security_ace_equal(PyObject *py_self, PyObject *py_other, in
 	Py_RETURN_NOTIMPLEMENTED;
 }
 
+static PyObject *py_security_ace_as_sddl(PyObject *self, PyObject *args)
+{
+	struct security_ace *ace = pytalloc_get_ptr(self);
+	PyObject *py_sid = Py_None;
+	struct dom_sid *sid = NULL;
+	char *text = NULL;
+	PyObject *ret = Py_None;
+
+	if (!PyArg_ParseTuple(args, "O!", &dom_sid_Type, &py_sid))
+		return NULL;
+
+	if (!PyObject_TypeCheck(py_sid, &dom_sid_Type)) {
+		PyErr_SetString(PyExc_TypeError,
+				"expected security.dom_sid "
+				"for second argument to .sddl_encode_ace");
+		return NULL;
+	}
+
+	sid = pytalloc_get_ptr(py_sid);
+
+	text = sddl_encode_ace(NULL, ace, sid);
+	if (text == NULL) {
+		return NULL;
+	}
+	ret = PyUnicode_FromString(text);
+	talloc_free(text);
+
+	return ret;
+}
+
+static PyMethodDef py_security_ace_extra_methods[] = {
+	{ "as_sddl", (PyCFunction)py_security_ace_as_sddl, METH_VARARGS, NULL },
+	{0}
+};
+
 #define PY_ACE_PATCH py_security_ace_patch
 
 static void py_security_ace_patch(PyTypeObject *type)
 {
 	type->tp_richcompare = py_security_ace_equal;
+	PyType_AddMethods(type, py_security_ace_extra_methods);
 }
