@@ -168,3 +168,38 @@ class CheckAccessTests(samba.tests.TestCase):
                 self.assertEqual(num, e_num)
             else:
                 self.fail()
+
+
+class SecurityAceTests(samba.tests.TestCase):
+    sddl       = "(OA;CIIO;RPWP;aaaaaaaa-1111-bbbb-2222-dddddddddddd;33333333-eeee-4444-ffff-555555555555;PS)"
+    sddl2      = "(OA;CIIO;RPWP;cccccccc-9999-ffff-8888-eeeeeeeeeeee;77777777-dddd-6666-bbbb-555555555555;PS)"
+    sddl3      = "(OA;CIIO;RPWP;aaaaaaaa-1111-bbbb-2222-dddddddddddd;77777777-dddd-6666-bbbb-555555555555;PS)"
+    sddl_uc    = "(OA;CIIO;RPWP;AAAAAAAA-1111-BBBB-2222-DDDDDDDDDDDD;33333333-EEEE-4444-FFFF-555555555555;PS)"
+    sddl_mc    = "(OA;CIIO;RPWP;AaAaAAAa-1111-BbBb-2222-DDddDDdDDDDD;33333333-EeeE-4444-FffF-555555555555;PS)"
+    sddl_sid   = "(OA;CIIO;RPWP;aaaaaaaa-1111-bbbb-2222-dddddddddddd;33333333-eeee-4444-ffff-555555555555;S-1-5-10)"
+
+    def setUp(self):
+        super(SecurityAceTests, self).setUp()
+        self.dom = security.dom_sid("S-2-0-0")
+
+    def test_equality(self):
+        ace = security.descriptor.from_sddl("D:" + self.sddl, self.dom).dacl.aces[0]
+        ace2 = security.descriptor.from_sddl("D:" + self.sddl2, self.dom).dacl.aces[0]
+        ace3 = security.descriptor.from_sddl("D:" + self.sddl3, self.dom).dacl.aces[0]
+        ace_uc = security.descriptor.from_sddl("D:" + self.sddl_uc, self.dom).dacl.aces[0]
+        ace_mc = security.descriptor.from_sddl("D:" + self.sddl_mc, self.dom).dacl.aces[0]
+        ace_sid = security.descriptor.from_sddl("D:" + self.sddl_sid, self.dom).dacl.aces[0]
+        self.assertTrue(ace == ace_uc, "Case should not matter.")
+        self.assertTrue(ace == ace_mc, "Case should not matter.")
+        self.assertTrue(ace != ace2, "Different ACEs should be unequal.")
+        self.assertTrue(ace2 != ace3, "Different ACEs should be unequal.")
+        self.assertTrue(ace == ace_sid, "Different ways of specifying SID should not matter.")
+
+    def test_as_sddl(self):
+        ace = security.descriptor.from_sddl("D:" + self.sddl, self.dom).dacl.aces[0]
+        ace_sddl = ace.as_sddl(self.dom)
+        # compare created SDDL with original one (we need to strip the parenthesis from the original
+        # since as_sddl does not create them)
+        self.assertEqual(ace_sddl, self.sddl[1:-1])
+        ace_new = security.descriptor.from_sddl("D:(" + ace_sddl + ")", self.dom).dacl.aces[0]
+        self.assertTrue(ace == ace_new, "Exporting ace as SDDl and reading back should result in same ACE.")
