@@ -583,8 +583,8 @@ static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 /*
   encode an ACE in SDDL format
 */
-static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
-			     const struct dom_sid *domain_sid)
+char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
+		      const struct dom_sid *domain_sid)
 {
 	char *sddl = NULL;
 	TALLOC_CTX *tmp_ctx;
