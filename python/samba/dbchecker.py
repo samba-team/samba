@@ -386,7 +386,7 @@ systemFlags: -1946157056%s""" % (dn, guid_suffix),
             if msg.startswith('ERROR'):
                 msg = c_RED('ERROR') + msg[5:]
             elif msg.startswith('WARNING'):
-                msg = c_DARK_YELLOW('WARNING') + msg[8:]
+                msg = c_DARK_YELLOW('WARNING') + msg[7:]
             elif msg.startswith('INFO'):
                 msg = c_DARK_CYAN('INFO') + msg[4:]
             elif msg.startswith('NOTICE'):
