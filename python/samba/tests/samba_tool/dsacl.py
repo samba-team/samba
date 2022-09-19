@@ -161,6 +161,26 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
         self.assertEqual(acl_list_orig, acl_list_final_get,
                          "output of dsacl get should be the same as after adding and deleting again")
 
+    def test_delete(self):
+        # add sddl_multi first
+        (result, out, err) = self.runsubcmd("dsacl", "set",
+                                            "--objectdn=%s" % self.dn,
+                                            "--sddl=%s" % self.sddl_multi)
+
+        self.assertCmdSuccess(result, out, err)
+        self.assertEqual(err, "", "Shouldn't be any error messages")
+        # delete sddl
+        (result, out, err) = self.runsubcmd("dsacl", "delete",
+                                            "--objectdn=%s" % self.dn,
+                                            "--sddl=%s" % self.sddl)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEqual(err, "", "Shouldn't be any error messages")
+        acl_list_deleted = re.findall('new descriptor for.*:\n(.*?)\n', out)[0]
+
+        self.assertNotRegex(acl_list_deleted, re.escape(self.sddl))
+        left_sddl = self.sddl_multi.replace(self.sddl, "")
+        self.assertRegex(acl_list_deleted, re.escape(left_sddl))
+
     def test_delete_twice(self):
         """Tests if deleting twice the same ACEs returns the expected warning."""
         # add sddl_multi first
