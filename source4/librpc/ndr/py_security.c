@@ -582,3 +582,45 @@ static void py_mod_security_patch(PyObject *m)
 }
 
 #define PY_MOD_SECURITY_PATCH py_mod_security_patch
+
+static PyObject *py_security_ace_equal(PyObject *py_self, PyObject *py_other, int op)
+{
+	struct security_ace *self = pytalloc_get_ptr(py_self);
+	struct security_ace *other = NULL;
+	bool eq;
+
+	if (!PyObject_TypeCheck(py_other, &security_ace_Type)) {
+		eq = false;
+	} else {
+		other = pytalloc_get_ptr(py_other);
+		eq = security_ace_equal(self, other);
+	}
+
+	switch(op) {
+	case Py_EQ:
+		if (eq) {
+			Py_RETURN_TRUE;
+		} else {
+			Py_RETURN_FALSE;
+		}
+		break;
+	case Py_NE:
+		if (eq) {
+			Py_RETURN_FALSE;
+		} else {
+			Py_RETURN_TRUE;
+		}
+		break;
+	default:
+		break;
+	}
+
+	Py_RETURN_NOTIMPLEMENTED;
+}
+
+#define PY_ACE_PATCH py_security_ace_patch
+
+static void py_security_ace_patch(PyTypeObject *type)
+{
+	type->tp_richcompare = py_security_ace_equal;
+}
