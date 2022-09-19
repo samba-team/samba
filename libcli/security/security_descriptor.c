@@ -420,6 +420,72 @@ NTSTATUS security_descriptor_sacl_del(struct security_descriptor *sd,
 }
 
 /*
+  delete the given ACE in the SACL or DACL of a security_descriptor
+*/
+static NTSTATUS security_descriptor_acl_del_ace(struct security_descriptor *sd,
+						bool sacl_del,
+						const struct security_ace *ace)
+{
+	uint32_t i;
+	bool found = false;
+	struct security_acl *acl = NULL;
+
+	if (sacl_del) {
+		acl = sd->sacl;
+	} else {
+		acl = sd->dacl;
+	}
+
+	if (acl == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	for (i=0;i<acl->num_aces;i++) {
+		if (security_ace_equal(ace, &acl->aces[i])) {
+			ARRAY_DEL_ELEMENT(acl->aces, i, acl->num_aces);
+			acl->num_aces--;
+			if (acl->num_aces == 0) {
+				acl->aces = NULL;
+			}
+			found = true;
+			i--;
+		}
+	}
+
+	if (!found) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	acl->revision = SECURITY_ACL_REVISION_NT4;
+
+	for (i=0;i<acl->num_aces;i++) {
+		switch (acl->aces[i].type) {
+		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+		case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
+		case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+			acl->revision = SECURITY_ACL_REVISION_ADS;
+			return NT_STATUS_OK;
+		default:
+			break; /* only for the switch statement */
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS security_descriptor_dacl_del_ace(struct security_descriptor *sd,
+					  const struct security_ace *ace)
+{
+	return security_descriptor_acl_del_ace(sd, false, ace);
+}
+
+NTSTATUS security_descriptor_sacl_del_ace(struct security_descriptor *sd,
+					  const struct security_ace *ace)
+{
+	return security_descriptor_acl_del_ace(sd, true, ace);
+}
+/*
   compare two security ace structures
 */
 bool security_ace_equal(const struct security_ace *ace1,
