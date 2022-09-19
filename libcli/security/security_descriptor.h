@@ -39,6 +39,10 @@ NTSTATUS security_descriptor_dacl_del(struct security_descriptor *sd,
 				      const struct dom_sid *trustee);
 NTSTATUS security_descriptor_sacl_del(struct security_descriptor *sd,
 				      const struct dom_sid *trustee);
+NTSTATUS security_descriptor_dacl_del_ace(struct security_descriptor *sd,
+					  const struct security_ace *ace);
+NTSTATUS security_descriptor_sacl_del_ace(struct security_descriptor *sd,
+					  const struct security_ace *ace);
 bool security_ace_equal(const struct security_ace *ace1, 
 			const struct security_ace *ace2);
 bool security_acl_equal(const struct security_acl *acl1, 
