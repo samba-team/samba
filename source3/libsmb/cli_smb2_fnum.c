@@ -1331,12 +1331,14 @@ struct tevent_req *cli_smb2_list_send(
 	struct tevent_context *ev,
 	struct cli_state *cli,
 	const char *pathname,
-	unsigned int info_level)
+	unsigned int info_level,
+	bool posix)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_smb2_list_state *state = NULL;
 	char *parent = NULL;
 	bool ok;
+	struct smb2_create_blobs *in_cblobs = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_smb2_list_state);
 	if (req == NULL) {
@@ -1353,6 +1355,29 @@ struct tevent_req *cli_smb2_list_send(
 		return tevent_req_post(req, ev);
 	}
 
+	if (smbXcli_conn_have_posix(cli->conn) && posix) {
+		NTSTATUS status;
+
+		/* The mode MUST be 0 when opening an existing file/dir, and
+		 * will be ignored by the server.
+		 */
+		uint8_t linear_mode[4] = { 0 };
+		DATA_BLOB blob = { .data=linear_mode,
+				   .length=sizeof(linear_mode) };
+
+		in_cblobs = talloc_zero(mem_ctx, struct smb2_create_blobs);
+		if (in_cblobs == NULL) {
+			return NULL;
+		}
+
+		status = smb2_create_blob_add(in_cblobs, in_cblobs,
+					      SMB2_CREATE_TAG_POSIX, blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+	}
+
 	subreq = cli_smb2_create_fnum_send(
 		state,					/* mem_ctx */
 		ev,					/* ev */
@@ -1365,7 +1390,8 @@ struct tevent_req *cli_smb2_list_send(
 		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition */
 		FILE_DIRECTORY_FILE,			/* create_options */
-		NULL);					/* in_cblobs */
+		in_cblobs);				/* in_cblobs */
+	TALLOC_FREE(in_cblobs);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

@@ -996,7 +996,8 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 				 struct cli_state *cli,
 				 const char *mask,
 				 uint32_t attribute,
-				 uint16_t info_level)
+				 uint16_t info_level,
+				 bool posix)
 {
 	struct tevent_req *req = NULL;
 	struct cli_list_state *state;
@@ -1010,7 +1011,7 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 
 	if (proto >= PROTOCOL_SMB2_02) {
 		state->subreq = cli_smb2_list_send(state, ev, cli, mask,
-						   info_level);
+						   info_level, posix);
 		state->recv_fn = cli_smb2_list_recv;
 	} else if (proto >= PROTOCOL_LANMAN2) {
 		state->subreq = cli_list_trans_send(
@@ -1223,7 +1224,7 @@ NTSTATUS cli_list(struct cli_state *cli,
 			? SMB_FIND_FILE_BOTH_DIRECTORY_INFO : SMB_FIND_INFO_STANDARD;
 	}
 
-	req = cli_list_send(frame, ev, cli, mask, attribute, info_level);
+	req = cli_list_send(frame, ev, cli, mask, attribute, info_level, false);
 	if (req == NULL) {
 		goto fail;
 	}
