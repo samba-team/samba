@@ -518,11 +518,6 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    krb5_pac pac)
 {
 	krb5_data logon_data;
-	krb5_data cred_data;
-	krb5_data upn_data;
-	krb5_data pac_attrs_data;
-	krb5_data requester_sid_data;
-	krb5_data deleg_data;
 	krb5_error_code ret;
 #ifdef SAMBA4_USES_HEIMDAL
 	char null_byte = '\0';
@@ -537,99 +532,18 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		return 0;
 	}
 
-	ret = smb_krb5_copy_data_contents(&logon_data,
-					  logon_blob->data,
-					  logon_blob->length);
-	if (ret != 0) {
-		return ret;
-	}
-
-	ZERO_STRUCT(cred_data);
-	if (cred_blob != NULL) {
-		ret = smb_krb5_copy_data_contents(&cred_data,
-						  cred_blob->data,
-						  cred_blob->length);
-		if (ret != 0) {
-			smb_krb5_free_data_contents(context, &logon_data);
-			return ret;
-		}
-	}
-
-	ZERO_STRUCT(upn_data);
-	if (upn_blob != NULL) {
-		ret = smb_krb5_copy_data_contents(&upn_data,
-						  upn_blob->data,
-						  upn_blob->length);
-		if (ret != 0) {
-			smb_krb5_free_data_contents(context, &logon_data);
-			smb_krb5_free_data_contents(context, &cred_data);
-			return ret;
-		}
-	}
-
-	ZERO_STRUCT(pac_attrs_data);
-	if (pac_attrs_blob != NULL) {
-		ret = smb_krb5_copy_data_contents(&pac_attrs_data,
-						  pac_attrs_blob->data,
-						  pac_attrs_blob->length);
-		if (ret != 0) {
-			smb_krb5_free_data_contents(context, &logon_data);
-			smb_krb5_free_data_contents(context, &cred_data);
-			smb_krb5_free_data_contents(context, &upn_data);
-			return ret;
-		}
-	}
-
-	ZERO_STRUCT(requester_sid_data);
-	if (requester_sid_blob != NULL) {
-		ret = smb_krb5_copy_data_contents(&requester_sid_data,
-						  requester_sid_blob->data,
-						  requester_sid_blob->length);
-		if (ret != 0) {
-			smb_krb5_free_data_contents(context, &logon_data);
-			smb_krb5_free_data_contents(context, &cred_data);
-			smb_krb5_free_data_contents(context, &upn_data);
-			smb_krb5_free_data_contents(context, &pac_attrs_data);
-			return ret;
-		}
-	}
-
-	ZERO_STRUCT(deleg_data);
-	if (deleg_blob != NULL) {
-		ret = smb_krb5_copy_data_contents(&deleg_data,
-						  deleg_blob->data,
-						  deleg_blob->length);
-		if (ret != 0) {
-			smb_krb5_free_data_contents(context, &logon_data);
-			smb_krb5_free_data_contents(context, &cred_data);
-			smb_krb5_free_data_contents(context, &upn_data);
-			smb_krb5_free_data_contents(context, &pac_attrs_data);
-			smb_krb5_free_data_contents(context, &requester_sid_data);
-			return ret;
-		}
-	}
-
+	logon_data = smb_krb5_data_from_blob(*logon_blob);
 	ret = krb5_pac_add_buffer(context, pac, PAC_TYPE_LOGON_INFO, &logon_data);
-	smb_krb5_free_data_contents(context, &logon_data);
 	if (ret != 0) {
-		smb_krb5_free_data_contents(context, &cred_data);
-		smb_krb5_free_data_contents(context, &upn_data);
-		smb_krb5_free_data_contents(context, &pac_attrs_data);
-		smb_krb5_free_data_contents(context, &requester_sid_data);
-		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
 
 	if (cred_blob != NULL) {
+		krb5_data cred_data = smb_krb5_data_from_blob(*cred_blob);
 		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_CREDENTIAL_INFO,
 					  &cred_data);
-		smb_krb5_free_data_contents(context, &cred_data);
 		if (ret != 0) {
-			smb_krb5_free_data_contents(context, &upn_data);
-			smb_krb5_free_data_contents(context, &pac_attrs_data);
-			smb_krb5_free_data_contents(context, &requester_sid_data);
-			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
 		}
 	}
@@ -646,55 +560,45 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				  PAC_TYPE_LOGON_NAME,
 				  &null_data);
 	if (ret != 0) {
-		smb_krb5_free_data_contents(context, &upn_data);
-		smb_krb5_free_data_contents(context, &pac_attrs_data);
-		smb_krb5_free_data_contents(context, &requester_sid_data);
-		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
 #endif
 
 	if (upn_blob != NULL) {
+		krb5_data upn_data = smb_krb5_data_from_blob(*upn_blob);
 		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_UPN_DNS_INFO,
 					  &upn_data);
-		smb_krb5_free_data_contents(context, &upn_data);
 		if (ret != 0) {
-			smb_krb5_free_data_contents(context, &pac_attrs_data);
-			smb_krb5_free_data_contents(context, &requester_sid_data);
-			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
 		}
 	}
 
 	if (pac_attrs_blob != NULL) {
+		krb5_data pac_attrs_data = smb_krb5_data_from_blob(*pac_attrs_blob);
 		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_ATTRIBUTES_INFO,
 					  &pac_attrs_data);
-		smb_krb5_free_data_contents(context, &pac_attrs_data);
 		if (ret != 0) {
-			smb_krb5_free_data_contents(context, &requester_sid_data);
-			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
 		}
 	}
 
 	if (requester_sid_blob != NULL) {
+		krb5_data requester_sid_data = smb_krb5_data_from_blob(*requester_sid_blob);
 		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_REQUESTER_SID,
 					  &requester_sid_data);
-		smb_krb5_free_data_contents(context, &requester_sid_data);
 		if (ret != 0) {
-			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
 		}
 	}
 
 	if (deleg_blob != NULL) {
+		krb5_data deleg_data = smb_krb5_data_from_blob(*deleg_blob);
 		ret = krb5_pac_add_buffer(context, pac,
 					  PAC_TYPE_CONSTRAINED_DELEGATION,
 					  &deleg_data);
-		smb_krb5_free_data_contents(context, &deleg_data);
 		if (ret != 0) {
 			return ret;
 		}
