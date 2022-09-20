@@ -747,14 +747,25 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 		/* Assuming we didn't skip or error, increment the number of objects */
 		out->num_objects++;
 	}
+
+	DBG_INFO("Proceesed %"PRIu32" DRS objects, saw %"PRIu32" objects "
+		 "and expected %"PRIu32" objects\n",
+		 out->num_objects, i, object_count);
+
 	out->objects = talloc_realloc(out, out->objects,
 				      struct dsdb_extended_replicated_object,
 				      out->num_objects);
 	if (out->num_objects != 0 && out->objects == NULL) {
+		DBG_ERR("FAILURE: talloc_realloc() failed after "
+			"processing %"PRIu32" DRS objects!\n",
+			out->num_objects);
 		talloc_free(out);
 		return WERR_FOOBAR;
 	}
 	if (i != object_count) {
+		DBG_ERR("FAILURE: saw %"PRIu32" DRS objects, server said we "
+			"should expected to see %"PRIu32" objects!\n",
+			i, object_count);
 		talloc_free(out);
 		return WERR_FOOBAR;
 	}
