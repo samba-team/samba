@@ -1,0 +1,3 @@
+^samba3.vfs.fruit\ metadata_stream.fsync_resource_fork.nt4_dc
+^samba3.vfs.fruit\ metadata_netatalk.fsync_resource_fork.nt4_dc
+^samba3.vfs.fruit\ fruit_delete_empty_adfiles.fsync_resource_fork.nt4_dc
