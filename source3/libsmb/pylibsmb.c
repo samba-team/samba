@@ -51,6 +51,7 @@ c = libsmb.Conn("127.0.0.1",
 #include "python/modules.h"
 #include "libcli/smb/smbXcli_base.h"
 #include "libcli/smb/smb2_negotiate_context.h"
+#include "libcli/smb/reparse_symlink.h"
 #include "libsmb/libsmb.h"
 #include "libcli/security/security.h"
 #include "system/select.h"
@@ -1012,6 +1013,59 @@ static PyObject *py_cli_create_returns(const struct smb_create_returns *r)
 	return v;
 }
 
+static PyObject *py_cli_symlink_error(const struct symlink_reparse_struct *s)
+{
+	char *subst_utf8 = NULL, *print_utf8 = NULL;
+	size_t subst_utf8_len, print_utf8_len;
+	PyObject *v = NULL;
+	bool ok = true;
+
+	/*
+	 * Python wants utf-8, regardless of our unix charset (which
+	 * most likely is utf-8 these days, but you never know).
+	 */
+
+	ok = convert_string_talloc(
+		talloc_tos(),
+		CH_UNIX,
+		CH_UTF8,
+		s->substitute_name,
+		strlen(s->substitute_name),
+		&subst_utf8,
+		&subst_utf8_len);
+	if (!ok) {
+		goto fail;
+	}
+
+	ok = convert_string_talloc(
+		talloc_tos(),
+		CH_UNIX,
+		CH_UTF8,
+		s->print_name,
+		strlen(s->print_name),
+		&print_utf8,
+		&print_utf8_len);
+	if (!ok) {
+		goto fail;
+	}
+
+	v = Py_BuildValue(
+		"{sLsssssL}",
+		"unparsed_path_length",
+		(unsigned long long)s->unparsed_path_length,
+		"substitute_name",
+		subst_utf8,
+		"print_name",
+		print_utf8,
+		"flags",
+		(unsigned long long)s->flags);
+
+fail:
+	TALLOC_FREE(subst_utf8);
+	TALLOC_FREE(print_utf8);
+	return v;
+}
+
 static PyObject *py_cli_create_ex(
 	struct py_cli_state *self, PyObject *args, PyObject *kwds)
 {
@@ -1029,6 +1083,7 @@ static PyObject *py_cli_create_ex(
 	struct smb2_create_blobs *create_contexts_in = NULL;
 	struct smb2_create_blobs create_contexts_out = { .num_blobs = 0 };
 	struct smb_create_returns cr = { .create_action = 0, };
+	struct symlink_reparse_struct *symlink = NULL;
 	PyObject *py_cr = NULL;
 	uint16_t fnum;
 	struct tevent_req *req;
@@ -1118,7 +1173,12 @@ static PyObject *py_cli_create_ex(
 
 	if (smbXcli_conn_protocol(self->cli->conn) >= PROTOCOL_SMB2_02) {
 		status = cli_smb2_create_fnum_recv(
-			req, &fnum, &cr, NULL, &create_contexts_out, NULL);
+			req,
+			&fnum,
+			&cr,
+			NULL,
+			&create_contexts_out,
+			&symlink);
 	} else {
 		status = cli_ntcreate_recv(req, &fnum, &cr);
 	}
@@ -1128,6 +1188,8 @@ static PyObject *py_cli_create_ex(
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
+
+	SMB_ASSERT(symlink == NULL);
 
 	py_create_contexts_out = py_cli_create_contexts(&create_contexts_out);
 	TALLOC_FREE(create_contexts_out.blobs);
@@ -1167,7 +1229,21 @@ fail:
 	Py_XDECREF(py_create_contexts_out);
 	Py_XDECREF(py_cr);
 	Py_XDECREF(v);
-	PyErr_SetNTSTATUS(status);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK) &&
+	    (symlink != NULL)) {
+		PyErr_SetObject(
+			PyObject_GetAttrString(
+				PyImport_ImportModule("samba"),
+				"NTSTATUSError"),
+			Py_BuildValue(
+				"I,s,O",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status),
+				py_cli_symlink_error(symlink)));
+	} else {
+		PyErr_SetNTSTATUS(status);
+	}
 	return NULL;
 }
 
