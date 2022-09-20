@@ -3071,6 +3071,106 @@ static ssize_t fruit_pwrite_recv(struct tevent_req *req,
 	return state->nwritten;
 }
 
+struct fruit_fsync_state {
+	int ret;
+	struct vfs_aio_state vfs_aio_state;
+};
+
+static void fruit_fsync_done(struct tevent_req *subreq);
+
+static struct tevent_req *fruit_fsync_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct files_struct *fsp)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct fruit_fsync_state *state = NULL;
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct fruit_fsync_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (fruit_must_handle_aio_stream(fio)) {
+		struct adouble *ad = NULL;
+
+		if (fio->type == ADOUBLE_META) {
+			/*
+			 * We must never pass a fake_fd
+			 * to lower level fsync calls.
+			 * Everything is already done
+			 * synchronously, so just return
+			 * true.
+			 */
+			SMB_ASSERT(fio->fake_fd);
+			tevent_req_done(req);
+			return tevent_req_post(req, ev);
+		}
+
+		/*
+		 * We know the following must be true,
+		 * as it's the condition for fruit_must_handle_aio_stream()
+		 * to return true if fio->type == ADOUBLE_RSRC.
+		 */
+		SMB_ASSERT(fio->config->rsrc == FRUIT_RSRC_ADFILE);
+		if (fio->ad_fsp == NULL) {
+			tevent_req_error(req, EBADF);
+			return tevent_req_post(req, ev);
+		}
+		ad = ad_fget(talloc_tos(), handle, fio->ad_fsp, ADOUBLE_RSRC);
+		if (ad == NULL) {
+			tevent_req_error(req, ENOMEM);
+			return tevent_req_post(req, ev);
+		}
+		fsp = fio->ad_fsp;
+	}
+
+	subreq = SMB_VFS_NEXT_FSYNC_SEND(state, ev, handle, fsp);
+	if (tevent_req_nomem(req, subreq)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, fruit_fsync_done, req);
+	return req;
+}
+
+static void fruit_fsync_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct fruit_fsync_state *state = tevent_req_data(
+		req, struct fruit_fsync_state);
+
+	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->vfs_aio_state);
+	TALLOC_FREE(subreq);
+	if (state->ret != 0) {
+		tevent_req_error(req, errno);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static int fruit_fsync_recv(struct tevent_req *req,
+					struct vfs_aio_state *vfs_aio_state)
+{
+	struct fruit_fsync_state *state = tevent_req_data(
+		req, struct fruit_fsync_state);
+	int retval = -1;
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		tevent_req_received(req);
+		return -1;
+	}
+
+	*vfs_aio_state = state->vfs_aio_state;
+	retval = state->ret;
+	tevent_req_received(req);
+	return retval;
+}
+
 /**
  * Helper to stat/lstat the base file of an smb_fname.
  */
@@ -5305,6 +5405,8 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.pread_recv_fn = fruit_pread_recv,
 	.pwrite_send_fn = fruit_pwrite_send,
 	.pwrite_recv_fn = fruit_pwrite_recv,
+	.fsync_send_fn = fruit_fsync_send,
+	.fsync_recv_fn = fruit_fsync_recv,
 	.stat_fn = fruit_stat,
 	.lstat_fn = fruit_lstat,
 	.fstat_fn = fruit_fstat,
