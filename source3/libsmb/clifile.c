@@ -1814,7 +1814,7 @@ static void cli_smb2_hardlink_opened(struct tevent_req *subreq)
 	bool ok;
 
 	status = cli_smb2_create_fnum_recv(
-		subreq, &state->fnum_src, NULL, NULL, NULL);
+		subreq, &state->fnum_src, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -2773,6 +2773,7 @@ static void cli_ntcreate_done_smb2(struct tevent_req *subreq)
 		subreq,
 		&state->fnum,
 		&state->cr,
+		NULL,
 		NULL,
 		NULL);
 	TALLOC_FREE(subreq);

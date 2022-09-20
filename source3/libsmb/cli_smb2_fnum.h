@@ -24,6 +24,7 @@ struct smbXcli_conn;
 struct smbXcli_session;
 struct cli_state;
 struct file_info;
+struct symlink_reparse_struct;
 
 struct tevent_req *cli_smb2_create_fnum_send(
 	TALLOC_CTX *mem_ctx,
@@ -43,7 +44,8 @@ NTSTATUS cli_smb2_create_fnum_recv(
 	uint16_t *pfnum,
 	struct smb_create_returns *cr,
 	TALLOC_CTX *mem_ctx,
-	struct smb2_create_blobs *out_cblobs);
+	struct smb2_create_blobs *out_cblobs,
+	struct symlink_reparse_struct **symlink);
 NTSTATUS cli_smb2_create_fnum(
 	struct cli_state *cli,
 	const char *fname,

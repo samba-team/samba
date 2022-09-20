@@ -178,7 +178,7 @@ static void cli_ll_create_done(struct tevent_req *req)
 	uint16_t fnum;
 	NTSTATUS status;
 
-	status = cli_smb2_create_fnum_recv(req, &fnum, NULL, NULL, NULL);
+	status = cli_smb2_create_fnum_recv(req, &fnum, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		fuse_reply_err(state->freq, map_errno_from_nt_status(status));
@@ -875,7 +875,7 @@ static void cli_ll_open_done(struct tevent_req *req)
 	uint16_t fnum;
 	NTSTATUS status;
 
-	status = cli_smb2_create_fnum_recv(req, &fnum, NULL, NULL, NULL);
+	status = cli_smb2_create_fnum_recv(req, &fnum, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		fuse_reply_err(state->freq, map_errno_from_nt_status(status));

@@ -1118,7 +1118,7 @@ static PyObject *py_cli_create_ex(
 
 	if (smbXcli_conn_protocol(self->cli->conn) >= PROTOCOL_SMB2_02) {
 		status = cli_smb2_create_fnum_recv(
-			req, &fnum, &cr, NULL, &create_contexts_out);
+			req, &fnum, &cr, NULL, &create_contexts_out, NULL);
 	} else {
 		status = cli_ntcreate_recv(req, &fnum, &cr);
 	}

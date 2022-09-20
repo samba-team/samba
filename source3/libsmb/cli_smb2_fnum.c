@@ -198,6 +198,7 @@ struct cli_smb2_create_fnum_state {
 	struct smb2_create_blobs in_cblobs;
 	struct smb2_create_blobs out_cblobs;
 	struct smb_create_returns cr;
+	struct symlink_reparse_struct *symlink;
 	uint16_t fnum;
 	struct tevent_req *subreq;
 };
@@ -344,7 +345,7 @@ static void cli_smb2_create_fnum_done(struct tevent_req *subreq)
 		&h.fid_volatile, &state->cr,
 		state,
 		&state->out_cblobs,
-		NULL);
+		&state->symlink);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -369,13 +370,18 @@ NTSTATUS cli_smb2_create_fnum_recv(
 	uint16_t *pfnum,
 	struct smb_create_returns *cr,
 	TALLOC_CTX *mem_ctx,
-	struct smb2_create_blobs *out_cblobs)
+	struct smb2_create_blobs *out_cblobs,
+	struct symlink_reparse_struct **symlink)
 {
 	struct cli_smb2_create_fnum_state *state = tevent_req_data(
 		req, struct cli_smb2_create_fnum_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK) &&
+		    (symlink != NULL)) {
+			*symlink = talloc_move(mem_ctx, &state->symlink);
+		}
 		state->cli->raw_status = status;
 		return status;
 	}
@@ -447,7 +453,8 @@ NTSTATUS cli_smb2_create_fnum(
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_smb2_create_fnum_recv(req, pfid, cr, mem_ctx, out_cblobs);
+	status = cli_smb2_create_fnum_recv(
+		req, pfid, cr, mem_ctx, out_cblobs, NULL);
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -841,7 +848,8 @@ static void cli_smb2_mkdir_opened(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint16_t fnum = 0xffff;
 
-	status = cli_smb2_create_fnum_recv(subreq, &fnum, NULL, NULL, NULL);
+	status = cli_smb2_create_fnum_recv(
+		subreq, &fnum, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -927,7 +935,7 @@ static void cli_smb2_rmdir_opened1(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_smb2_create_fnum_recv(
-		subreq, &state->fnum, NULL, NULL, NULL);
+		subreq, &state->fnum, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
@@ -980,7 +988,7 @@ static void cli_smb2_rmdir_opened2(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_smb2_create_fnum_recv(
-		subreq, &state->fnum, NULL, NULL, NULL);
+		subreq, &state->fnum, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -1099,7 +1107,8 @@ static void cli_smb2_unlink_opened1(struct tevent_req *subreq)
 	uint16_t fnum = 0xffff;
 	NTSTATUS status;
 
-	status = cli_smb2_create_fnum_recv(subreq, &fnum, NULL, NULL, NULL);
+	status = cli_smb2_create_fnum_recv(
+		subreq, &fnum, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK) ||
@@ -1153,7 +1162,8 @@ static void cli_smb2_unlink_opened2(struct tevent_req *subreq)
 	uint16_t fnum = 0xffff;
 	NTSTATUS status;
 
-	status = cli_smb2_create_fnum_recv(subreq, &fnum, NULL, NULL, NULL);
+	status = cli_smb2_create_fnum_recv(
+		subreq, &fnum, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -1369,7 +1379,7 @@ static void cli_smb2_list_opened(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_smb2_create_fnum_recv(
-		subreq, &state->fnum, NULL, NULL, NULL);
+		subreq, &state->fnum, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -1885,7 +1895,7 @@ static void get_fnum_from_path_opened_file(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_smb2_create_fnum_recv(
-		subreq, &state->fnum, NULL, NULL, NULL);
+		subreq, &state->fnum, NULL, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
@@ -1955,7 +1965,7 @@ static void get_fnum_from_path_opened_reparse(struct tevent_req *subreq)
 	struct get_fnum_from_path_state *state = tevent_req_data(
 		req, struct get_fnum_from_path_state);
 	NTSTATUS status = cli_smb2_create_fnum_recv(
-		subreq, &state->fnum, NULL, NULL, NULL);
+		subreq, &state->fnum, NULL, NULL, NULL, NULL);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
@@ -2913,7 +2923,7 @@ static void cli_smb2_mxac_opened(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_smb2_create_fnum_recv(
-		subreq, &state->fnum, NULL, state, &out_cblobs);
+		subreq, &state->fnum, NULL, state, &out_cblobs, NULL);
 	TALLOC_FREE(subreq);
 
 	if (tevent_req_nterror(req, status)) {
