@@ -521,10 +521,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	krb5_error_code ret;
 #ifdef SAMBA4_USES_HEIMDAL
 	char null_byte = '\0';
-	krb5_data null_data = {
-		.length = 1,
-		.data = &null_byte,
-	};
+	krb5_data null_data = smb_krb5_make_data(&null_byte, 1);
 #endif
 
 	/* The user account may be set not to want the PAC */

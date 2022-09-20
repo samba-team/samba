@@ -329,8 +329,7 @@ reply:
 			goto done;
 		}
 
-		k_dec_data.length = dec_data_blob.length;
-		k_dec_data.data   = (char *)dec_data_blob.data;
+		k_dec_data = smb_krb5_data_from_blob(dec_data_blob);
 
 		principal_string = cli_credentials_get_principal(server_credentials,
 								 tmp_ctx);

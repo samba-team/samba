@@ -172,8 +172,7 @@ static krb5_error_code kpasswd_set_password(struct kdc_server *kdc,
 	struct samr_DomInfo1 *dominfo = NULL;
 	NTSTATUS status;
 
-	k_dec_data.length = decoded_data->length;
-	k_dec_data.data   = (char *)decoded_data->data;
+	k_dec_data = smb_krb5_data_from_blob(*decoded_data);
 
 	code = decode_krb5_setpw_req(&k_dec_data,
 				     &k_clear_data,
