@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -42,7 +42,7 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 	void *parm_ptr = NULL;
 	int i;
 
-	if (service_name != NULL && strwicmp(service_name, GLOBAL_NAME) && 
+	if (service_name != NULL && strwicmp(service_name, GLOBAL_NAME) &&
 		strwicmp(service_name, GLOBAL_NAME2)) {
 		struct loadparm_service *service;
 		/* its a share parameter */
@@ -120,19 +120,19 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 	}
 	return NULL;
     case P_CMDLIST:
-    case P_LIST: 
+    case P_LIST:
 	{
 	    int j;
 	    const char **strlist = *(const char ***)parm_ptr;
 	    PyObject *pylist;
-		
+
 	    if(strlist == NULL) {
 		    return PyList_New(0);
 	    }
-		
+
 	    pylist = PyList_New(str_list_length(strlist));
-	    for (j = 0; strlist[j]; j++) 
-		PyList_SetItem(pylist, j, 
+	    for (j = 0; strlist[j]; j++)
+		PyList_SetItem(pylist, j,
 			       PyUnicode_FromString(strlist[j]));
 	    return pylist;
 	}
@@ -658,7 +658,7 @@ static PyObject *py_lp_service_dump(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef py_lp_service_methods[] = {
-	{ "dump", (PyCFunction)py_lp_service_dump, METH_VARARGS, 
+	{ "dump", (PyCFunction)py_lp_service_dump, METH_VARARGS,
 		"S.dump(default_service, show_defaults=False, file_name='', mode='w')" },
 	{0}
 };
