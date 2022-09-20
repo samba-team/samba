@@ -2718,6 +2718,85 @@ done:
 	return ret;
 }
 
+/*
+ * BUG: https://bugzilla.samba.org/show_bug.cgi?id=15182
+ */
+
+static bool test_rfork_fsync(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\torture_rfork_fsync";
+	const char *rfork = BASEDIR "\\torture_rfork_fsync" AFPRESOURCE_STREAM;
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	struct smb2_create create;
+	struct smb2_handle fh1;
+	struct smb2_flush f;
+
+	ZERO_STRUCT(fh1);
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
+
+	smb2_util_unlink(tree, fname);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx,
+					status,
+					ret,
+					done,
+					"torture_smb2_testdir");
+	smb2_util_close(tree, testdirh);
+
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	if (ret == false) {
+		goto done;
+	}
+
+	torture_comment(tctx, "(%s) create resource fork %s\n",
+		__location__,
+		rfork);
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition  = NTCREATEX_DISP_OPEN_IF;
+	create.in.desired_access      = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
+	create.in.file_attributes     = FILE_ATTRIBUTE_NORMAL;
+	create.in.fname               = rfork;
+	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
+	fh1 = create.out.file.handle;
+
+	torture_comment(tctx, "(%s) Write 10 bytes to resource fork %s\n",
+		__location__,
+		rfork);
+
+	status = smb2_util_write(tree, fh1, "1234567890", 0, 10);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed\n");
+
+	torture_comment(tctx, "(%s) fsync on resource fork %s\n",
+		__location__,
+		rfork);
+
+	f.in.file.handle = fh1;
+	status = smb2_flush(tree, &f);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_flush failed\n");
+
+done:
+
+	smb2_util_close(tree, fh1);
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static bool test_rfork_create_ro(struct torture_context *tctx,
 				 struct smb2_tree *tree)
 {
@@ -6961,6 +7040,7 @@ struct torture_suite *torture_vfs_fruit(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "stream names", test_stream_names);
 	torture_suite_add_1smb2_test(suite, "truncate resource fork to 0 bytes", test_rfork_truncate);
 	torture_suite_add_1smb2_test(suite, "opening and creating resource fork", test_rfork_create);
+	torture_suite_add_1smb2_test(suite, "fsync_resource_fork", test_rfork_fsync);
 	torture_suite_add_1smb2_test(suite, "rename_dir_openfile", test_rename_dir_openfile);
 	torture_suite_add_1smb2_test(suite, "File without AFP_AfpInfo", test_afpinfo_enoent);
 	torture_suite_add_1smb2_test(suite, "create delete-on-close AFP_AfpInfo", test_create_delete_on_close);
