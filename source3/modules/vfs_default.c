@@ -3689,7 +3689,7 @@ static struct tevent_req *vfswrap_getxattrat_send(
 
 	/*
 	 * Now allocate all parameters from a memory context that won't go away
-	 * no matter what. These paremeters will get used in threads and we
+	 * no matter what. These parameters will get used in threads and we
 	 * can't reliably cancel threads, so all buffers passed to the threads
 	 * must not be freed before all referencing threads terminate.
 	 */
