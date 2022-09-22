@@ -5,6 +5,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
         acls.c
         attr.c
         block.c
+        bench.c
         charset.c
         compound.c
         connect.c
