@@ -245,16 +245,16 @@ static PyObject *py_ldb_register_samba_handlers(PyObject *self,
 
 static PyMethodDef py_samba_ldb_methods[] = {
 	{ "set_loadparm", (PyCFunction)py_ldb_set_loadparm, METH_VARARGS, 
-		"ldb_set_loadparm(session_info)\n"
+		"set_loadparm(session_info)\n"
 		"Set loadparm context to use when connecting." },
 	{ "set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS,
-		"ldb_set_credentials(credentials)\n"
+		"set_credentials(credentials)\n"
 		"Set credentials to use when connecting." },
 	{ "set_opaque_integer", (PyCFunction)py_ldb_set_opaque_integer,
 		METH_VARARGS, NULL },
 	{ "set_utf8_casefold", (PyCFunction)py_ldb_set_utf8_casefold, 
 		METH_NOARGS,
-		"ldb_set_utf8_casefold()\n"
+		"set_utf8_casefold()\n"
 		"Set the right Samba casefolding function for UTF8 charset." },
 	{ "register_samba_handlers", (PyCFunction)py_ldb_register_samba_handlers,
 		METH_NOARGS,
