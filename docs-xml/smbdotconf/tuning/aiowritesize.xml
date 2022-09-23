@@ -13,8 +13,7 @@
     a smaller effect, most writes should end up in the
     file system cache. Writes that require space allocation might
     benefit most from going asynchronous.</para>
-  
-  <related>write cache size</related>
+
   <related>aio read size</related>
 </description>
 

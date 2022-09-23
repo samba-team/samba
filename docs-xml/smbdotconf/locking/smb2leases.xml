@@ -22,6 +22,5 @@
 <related>oplocks</related>
 <related>kernel oplocks</related>
 <related>level2 oplocks</related>
-<related>write cache size</related>
 <value type="default">yes</value>
 </samba:parameter>

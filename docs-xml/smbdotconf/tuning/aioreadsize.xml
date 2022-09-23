@@ -9,7 +9,6 @@
     reads and when not using write cache.</para>
   <para>The only reasonable values for this parameter are 0 (no async I/O) and
     1 (always do async I/O).</para>
-  <related>write cache size</related>
   <related>aio write size</related>
 </description>
 
