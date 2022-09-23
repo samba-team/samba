@@ -5,7 +5,7 @@
                  enumlist="enum_security"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <when_value value="security">
-    <requires option="encrypted passwords">/(yes|true)/</requires>
+    <requires option="encrypt passwords">/(yes|true)/</requires>
 </when_value>
 <description>
     <para>This option affects how clients respond to 
@@ -37,7 +37,7 @@
     <para>If <smbconfoption name="server role"/> is not specified, this is the default security setting in Samba. 
     With user-level security a client must first &quot;log-on&quot; with a 
     valid username and password (which can be mapped using the <smbconfoption name="username map"/> 
-    parameter). Encrypted passwords (see the <smbconfoption name="encrypted passwords"/> parameter) can also
+    parameter). Encrypted passwords (see the <smbconfoption name="encrypt passwords"/> parameter) can also
     be used in this security mode. Parameters such as <smbconfoption name="user"/> and <smbconfoption
 	name="guest only"/> if set	are then applied and 
     may change the UNIX user to use on this connection, but only after 
@@ -54,7 +54,7 @@
 
     <para>This mode will only work correctly if <citerefentry><refentrytitle>net</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> has been used to add this
-    machine into a Windows NT Domain. It expects the <smbconfoption name="encrypted passwords"/>
+    machine into a Windows NT Domain. It expects the <smbconfoption name="encrypt passwords"/>
 	parameter to be set to <constant>yes</constant>. In this 
     mode Samba will try to validate the username/password by passing
     it to a Windows NT Primary or Backup Domain Controller, in exactly 
@@ -78,7 +78,7 @@
     See the <smbconfoption name="map to guest"/> parameter for details on doing this.</para>
 
     <para>See also the <smbconfoption name="password server"/> parameter and
-	 the <smbconfoption name="encrypted passwords"/> parameter.</para>
+	 the <smbconfoption name="encrypt passwords"/> parameter.</para>
 
 	<para><anchor id="SECURITYEQUALSADS"/><emphasis>SECURITY = ADS</emphasis></para>
 	

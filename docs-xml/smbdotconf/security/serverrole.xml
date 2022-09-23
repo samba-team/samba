@@ -32,7 +32,7 @@
     <para>If <smbconfoption name="security"/> is also not specified, this is the default security setting in Samba. 
     In standalone operation, a client must first &quot;log-on&quot; with a 
     valid username and password (which can be mapped using the <smbconfoption name="username map"/> 
-    parameter) stored on this machine. Encrypted passwords (see the <smbconfoption name="encrypted passwords"/> parameter) are by default
+    parameter) stored on this machine. Encrypted passwords (see the <smbconfoption name="encrypt passwords"/> parameter) are by default
     used in this security mode. Parameters such as <smbconfoption name="user"/> and <smbconfoption
 	name="guest only"/> if set	are then applied and 
     may change the UNIX user to use on this connection, but only after 
@@ -42,7 +42,7 @@
 
     <para>This mode will only work correctly if <citerefentry><refentrytitle>net</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> has been used to add this
-    machine into a Windows Domain. It expects the <smbconfoption name="encrypted passwords"/>
+    machine into a Windows Domain. It expects the <smbconfoption name="encrypt passwords"/>
 	parameter to be set to <constant>yes</constant>. In this 
     mode Samba will try to validate the username/password by passing
     it to a Windows or Samba Domain Controller, in exactly 
