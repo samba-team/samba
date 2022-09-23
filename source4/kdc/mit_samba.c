@@ -867,7 +867,7 @@ static void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
 	e_data->length = 0;
 
 	pa.magic		= KV5M_PA_DATA;
-	pa.pa_type		= KRB5_PADATA_PW_SALT;
+	pa.pa_type		= KRB5_PADATA_PW_SALT /* KERB_ERR_TYPE_EXTENDED */;
 	pa.length		= 12;
 	pa.contents		= malloc(pa.length);
 	if (!pa.contents) {
