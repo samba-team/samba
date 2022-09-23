@@ -33,7 +33,7 @@
     In standalone operation, a client must first &quot;log-on&quot; with a 
     valid username and password (which can be mapped using the <smbconfoption name="username map"/> 
     parameter) stored on this machine. Encrypted passwords (see the <smbconfoption name="encrypt passwords"/> parameter) are by default
-    used in this security mode. Parameters such as <smbconfoption name="user"/> and <smbconfoption
+    used in this security mode. Parameters such as <smbconfoption name="force user"/> and <smbconfoption
 	name="guest only"/> if set	are then applied and 
     may change the UNIX user to use on this connection, but only after 
     the user has been successfully authenticated.</para>

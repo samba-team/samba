@@ -39,7 +39,7 @@
     With user-level security a client must first &quot;log-on&quot; with a 
     valid username and password (which can be mapped using the <smbconfoption name="username map"/> 
     parameter). Encrypted passwords (see the <smbconfoption name="encrypt passwords"/> parameter) can also
-    be used in this security mode. Parameters such as <smbconfoption name="user"/> and <smbconfoption
+    be used in this security mode. Parameters such as <smbconfoption name="force user"/> and <smbconfoption
 	name="guest only"/> if set	are then applied and 
     may change the UNIX user to use on this connection, but only after 
     the user has been successfully authenticated.</para>
