@@ -9,7 +9,7 @@
 	should be mapped to DOS-compatible names (&quot;mangled&quot;) and made visible, 
 	or whether non-DOS names should simply be ignored.</para>
 
-	<para>See the section on <smbconfoption name="name mangling"/> for 
+	<para>See the section on <link linkend="NAMEMANGLINGSECT">name mangling</link> for
 	details on how to control the mangling process.</para>
 
 	<para>Possible option settings are</para>

@@ -6,7 +6,7 @@
 <synonym>casesignames</synonym>
 
 <description>
-	<para>See the discussion in the section <smbconfoption name="name mangling"/>.</para>
+	<para>See the discussion in the section <link linkend="NAMEMANGLINGSECT">name mangling</link>.</para>
 </description>
 
 <value type="default">auto</value>
