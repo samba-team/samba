@@ -13,7 +13,7 @@
     It may also check for, and deny access to, soft links to other 
     parts of the filesystem, or attempts to use &quot;..&quot; in file names 
     to access other directories (depending on the setting of the
-	<smbconfoption name="wide smbconfoptions"/> parameter).
+	<smbconfoption name="wide links"/> parameter).
     </para>
 
     <para>Adding a <parameter moreinfo="none">root directory</parameter> entry other 
