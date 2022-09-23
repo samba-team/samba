@@ -24,8 +24,8 @@
 </xsl:template>
 
 <xsl:template match="//samba:parameter">
-  <xsl:variable name="name"><xsl:value-of select="translate(translate(string(@name),' ',''),
-                  'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+  <xsl:variable name="name"><xsl:value-of select="translate(string(@name),
+                  'abcdefghijklmnopqrstuvwxyz ','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
   </xsl:variable>
   
   <xsl:if test="contains(@context,$smb.context) or $smb.context='ALL'">

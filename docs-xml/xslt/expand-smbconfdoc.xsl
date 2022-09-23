@@ -32,8 +32,8 @@
 	</xsl:template>
 
 	<xsl:template match="samba:parameter">
-		<xsl:variable name="cname"><xsl:value-of select="translate(translate(string(@name),' ',''),
-				'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+		<xsl:variable name="cname"><xsl:value-of select="translate(string(@name),
+				'abcdefghijklmnopqrstuvwxyz ','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
 		</xsl:variable>
 
 		<xsl:variable name="name"><xsl:value-of select="@name"/></xsl:variable>
@@ -140,7 +140,7 @@
 				<xsl:text>&#10;</xsl:text>
 					<xsl:element name="anchor">
 						<xsl:attribute name="id">
-							<xsl:value-of select="translate(translate(string(.),' ',''), 'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+							<xsl:value-of select="translate(string(.), 'abcdefghijklmnopqrstuvwxyz ','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
 						</xsl:attribute>
 					</xsl:element>
 					<xsl:value-of select="."/>
@@ -153,7 +153,7 @@
 								<xsl:text>This parameter is a synonym for </xsl:text>
 								<xsl:element name="link">
 									<xsl:attribute name="linkend">
-										<xsl:value-of select="translate(translate(string($name),' ',''), 'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+										<xsl:value-of select="translate(string($name), 'abcdefghijklmnopqrstuvwxyz ','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
 									</xsl:attribute>
 									<xsl:value-of select="$name"/>
 								</xsl:element>

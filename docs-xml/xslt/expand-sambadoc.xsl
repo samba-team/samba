@@ -48,7 +48,7 @@
 				<xsl:value-of select="$linkcontent"/>
 			</xsl:when>
 			<xsl:otherwise>
-				<xsl:variable name="newid"><xsl:value-of select="translate(translate(string($name),' ',''),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/></xsl:variable>
+				<xsl:variable name="newid"><xsl:value-of select="translate(string($name),'abcdefghijklmnopqrstuvwxyz ','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/></xsl:variable>
 				<xsl:element name="link">
 					<xsl:attribute name="linkend">
 						<xsl:value-of select="$newid"/>
