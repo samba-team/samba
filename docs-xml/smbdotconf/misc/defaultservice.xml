@@ -17,7 +17,7 @@
 
 	<para>
 	Typically the default service would be a <smbconfoption name="guest ok"/>, <smbconfoption
-	name="read-only"/> service.</para> <para>Also note that the apparent service name will be changed to equal
+	name="read only"/> service.</para> <para>Also note that the apparent service name will be changed to equal
 	that of the requested service, this is very useful as it allows you to use macros like <parameter
 	moreinfo="none">%S</parameter> to make a wildcard service.
 	</para>
