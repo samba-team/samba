@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from samba import provision, param
-import tarfile
 import os
 import shutil
 from samba.tests import (env_loadparm, create_test_ou, BlackboxProcessError,
@@ -28,6 +27,7 @@ from samba.netcmd.fsmo import get_fsmo_roleowner
 import re
 from samba import sites
 from samba.dsdb import _dsdb_load_udv_v2
+from samba import safe_tarfile as tarfile
 
 
 def get_prim_dom(secrets_path, lp):

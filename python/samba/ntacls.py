@@ -19,7 +19,6 @@
 
 
 import os
-import tarfile
 import tempfile
 import shutil
 
@@ -34,6 +33,8 @@ from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.logger import get_samba_logger
 from samba import NTSTATUSError
 from samba.auth_util import system_session_unix
+from samba import safe_tarfile as tarfile
+
 
 # don't include volumes
 SMB_FILE_ATTRIBUTE_FLAGS = libsmb.FILE_ATTRIBUTE_SYSTEM | \

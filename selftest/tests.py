@@ -105,6 +105,7 @@ planpythontestsuite('ad_dc_fips:local',
                     environ={'GNUTLS_FORCE_FIPS_MODE': '1',
                              'OPENSSL_FORCE_FIPS_MODE': '1'})
 
+planpythontestsuite("none", "samba.tests.safe_tarfile")
 
 def cmdline(script, *args):
     """

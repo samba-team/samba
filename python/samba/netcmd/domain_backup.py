@@ -18,7 +18,6 @@
 import datetime
 import os
 import sys
-import tarfile
 import logging
 import shutil
 import tempfile
@@ -56,6 +55,7 @@ from samba import sites
 from samba.dsdb import _dsdb_load_udv_v2
 from samba.ndr import ndr_pack
 from samba.credentials import SMB_SIGNING_REQUIRED
+from samba import safe_tarfile as tarfile
 
 
 # work out a SID (based on a free RID) to use when the domain gets restored.

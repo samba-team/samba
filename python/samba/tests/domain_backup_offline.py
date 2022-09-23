@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import tarfile
 import os
 import shutil
 import tempfile
@@ -25,6 +24,8 @@ from samba.param import LoadParm
 from samba.join import join_DC
 from samba.credentials import Credentials
 from samba.logger import get_samba_logger
+from samba import safe_tarfile as tarfile
+
 
 # The backup tests require that a completely clean LoadParm object gets used
 # for the restore. Otherwise the same global LP gets re-used, and the LP
