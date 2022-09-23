@@ -551,14 +551,20 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
+	/* Check for integer wrap. */
+	if (numdcs + numdcs < numdcs) {
+		TALLOC_FREE(dcs);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/*
-	 * We're only returning one address per
-	 * DC name, so just allocate size numdcs.
+	 * We're only returning up to 2 addresses per
+	 * DC name, so just allocate size numdcs x 2.
 	 */
 
 	dclist = talloc_zero_array(mem_ctx,
 				   struct ip_service_name,
-				   numdcs);
+				   numdcs * 2);
 	if (!dclist) {
 		TALLOC_FREE(dcs);
 		return NT_STATUS_NO_MEMORY;
@@ -571,17 +577,16 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	ret_count = 0;
 	for (i = 0; i < numdcs; i++) {
 		size_t j;
+		bool have_v4_addr = false;
+		bool have_v6_addr = false;
 
 		if (dcs[i].num_ips == 0) {
 			continue;
 		}
 
-		dclist[ret_count].hostname =
-			talloc_move(dclist, &dcs[i].hostname);
-
 		/*
-		 * Pick the first IPv4 address,
-		 * if none pick the first address.
+		 * Pick up to 1 address from each address
+		 * family (IPv4, IPv6).
 		 *
 		 * This is different from the previous
 		 * code which picked a 'next ip' address
@@ -589,8 +594,11 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		 * Too complex to maintain :-(.
 		 */
 		for (j = 0; j < dcs[i].num_ips; j++) {
-			if (dcs[i].ss_s[j].ss_family == AF_INET) {
+			if ((dcs[i].ss_s[j].ss_family == AF_INET && !have_v4_addr) ||
+			    (dcs[i].ss_s[j].ss_family == AF_INET6 && !have_v6_addr)) {
 				bool ok;
+				dclist[ret_count].hostname =
+					talloc_strdup(dclist, dcs[i].hostname);
 				ok = sockaddr_storage_to_samba_sockaddr(
 					&dclist[ret_count].sa,
 					&dcs[i].ss_s[j]);
@@ -599,22 +607,17 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 					TALLOC_FREE(dclist);
 					return NT_STATUS_INVALID_PARAMETER;
 				}
-				break;
+				ret_count++;
+				if (dcs[i].ss_s[j].ss_family == AF_INET) {
+					have_v4_addr = true;
+				} else {
+					have_v6_addr = true;
+				}
+				if (have_v4_addr && have_v6_addr) {
+					break;
+				}
 			}
 		}
-		if (j == dcs[i].num_ips) {
-			/* No IPv4- use the first IPv6 addr. */
-			bool ok;
-			ok = sockaddr_storage_to_samba_sockaddr(
-					&dclist[ret_count].sa,
-					&dcs[i].ss_s[0]);
-			if (!ok) {
-				TALLOC_FREE(dcs);
-				TALLOC_FREE(dclist);
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-		}
-		ret_count++;
 	}
 
 	TALLOC_FREE(dcs);
