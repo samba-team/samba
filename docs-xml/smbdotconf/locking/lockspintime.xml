@@ -7,7 +7,7 @@
 	keep waiting to see if a failed lock request can
 	be granted. This parameter has changed in default
 	value from Samba 3.0.23 from 10 to 200. The associated
-	<smbconfoption name="lock spin count"/> parameter is
+	<command moreinfo="none">lock spin count</command> parameter is
 	no longer used in Samba 3.0.24. You should not need
 	to change the value of this parameter.</para>
 </description>
