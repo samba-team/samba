@@ -12,10 +12,11 @@
     Samba and is one of the most important settings in the <filename moreinfo="none">
     smb.conf</filename> file.</para>
 
-    <para>The default is <command moreinfo="none">security = user</command>, as this is
+    <para>Unless <smbconfoption name="server role"/> is specified,
+    the default is <command moreinfo="none">security = user</command>, as this is
     the most common setting, used for a standalone file server or a DC.</para>
 
-    <para>The alternatives are
+    <para>The alternatives to <command moreinfo="none">security = user</command> are
     <command moreinfo="none">security = ads</command> or <command moreinfo="none">security = domain
     </command>, which support joining Samba to a Windows domain</para>
 
