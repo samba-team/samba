@@ -71,17 +71,6 @@ bool ks_data_eq_string(krb5_data d, const char *s)
 	return true;
 }
 
-krb5_data ks_make_data(void *data, unsigned int len)
-{
-	krb5_data d;
-
-	d.magic = KV5M_DATA;
-	d.data = data;
-	d.length = len;
-
-	return d;
-}
-
 krb5_boolean ks_is_kadmin(krb5_context context,
 			  krb5_const_principal princ)
 {

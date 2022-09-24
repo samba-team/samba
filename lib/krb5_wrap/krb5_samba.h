@@ -383,6 +383,11 @@ krb5_error_code smb_krb5_copy_data_contents(krb5_data *p,
 					    const void *data,
 					    size_t len);
 
+krb5_data smb_krb5_make_data(void *data,
+			     size_t len);
+
+krb5_data smb_krb5_data_from_blob(DATA_BLOB blob);
+
 int smb_krb5_principal_get_type(krb5_context context,
 				krb5_const_principal principal);
 

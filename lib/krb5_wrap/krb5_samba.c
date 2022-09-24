@@ -938,6 +938,36 @@ krb5_error_code smb_krb5_copy_data_contents(krb5_data *p,
 #endif
 }
 
+/*
+ * @brief put a buffer reference into a krb5_data struct
+ *
+ * @param[in] data		The data to reference
+ * @param[in] length		The length of the data to reference
+ * @return krb5_data
+ *
+ * Caller should not free krb5_data.
+ */
+krb5_data smb_krb5_make_data(void *data,
+			     size_t len)
+{
+	krb5_data d;
+
+#ifdef SAMBA4_USES_HEIMDAL
+	d.data = (uint8_t *)data;
+	d.length = len;
+#else
+	d.magic = KV5M_DATA;
+	d.data = data;
+	d.length = len;
+#endif
+	return d;
+}
+
+krb5_data smb_krb5_data_from_blob(DATA_BLOB blob)
+{
+	return smb_krb5_make_data(blob.data, blob.length);
+}
+
 bool smb_krb5_get_smb_session_key(TALLOC_CTX *mem_ctx,
 				  krb5_context context,
 				  krb5_auth_context auth_context,

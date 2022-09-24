@@ -26,6 +26,8 @@
 #include "lib/util/debug.h"
 #include "lib/util/fault.h"
 #include "lib/util/memory.h"
+#include "libcli/util/ntstatus.h"
+#include "lib/krb5_wrap/krb5_samba.h"
 
 #include <profile.h>
 #include <kdb.h>
@@ -147,7 +149,7 @@ krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 		/* make sure the mapped return code is returned - gd */
 		int code_tmp;
 
-		d = ks_make_data(int_data.data, int_data.length);
+		d = smb_krb5_data_from_blob(int_data);
 
 		code_tmp = decode_krb5_padata_sequence(&d, &e_data);
 		if (code_tmp == 0) {
