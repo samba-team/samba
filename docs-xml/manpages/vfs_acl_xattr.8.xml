@@ -29,16 +29,31 @@
 	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
+	<para>This module is made for systems which do not support
+	standardized NFS4 ACLs but only a deprecated POSIX ACL
+	draft implementation. This is usually the case on Linux systems.
+	Systems that do support just use NFSv4 ACLs directly instead
+	of this module. Such support is usually provided by the filesystem
+	VFS module specific to the underlying filesystem that supports
+	NFS4 ACLs
+	</para>
+
 	<para>The <command>vfs_acl_xattr</command> VFS module stores
 	NTFS Access Control Lists (ACLs) in Extended Attributes (EAs).
 	This enables the full mapping of Windows ACLs on Samba
-	servers.
+	servers even if the ACL implementation is not capable of
+	doing so.
 	</para>
 
-	<para>The ACLs are stored in the Extended Attribute
-	<parameter>security.NTACL</parameter> of a file or directory.
-	This Attribute is <emphasis>not</emphasis> listed by
-	<command>getfattr -d <filename>filename</filename></command>.
+	<para>The NT ACLs are stored in the
+	<parameter>security.NTACL</parameter> extended attribute of files and
+	directories in a form containing the Windows SID representing the users
+	and groups in the ACL.
+	This is different from the uid and gids stored in local filesystem ACLs
+	and the mapping from users and groups to Windows SIDs must be
+	consistent in order to maintain the meaning of the stored NT ACL
+	That extended attribute is <emphasis>not</emphasis> listed by the Linux
+	command <command>getfattr -d <filename>filename</filename></command>.
 	To show the current value, the name of the EA must be specified
 	(e.g. <command>getfattr -n security.NTACL <filename>filename</filename>
 	</command>).
@@ -85,7 +100,7 @@
 		<listitem>
 		<para>
 		When set to <emphasis>yes</emphasis>, a best effort mapping
-		from/to the POSIX ACL layer will <emphasis>not</emphasis> be
+		from/to the POSIX draft ACL layer will <emphasis>not</emphasis> be
 		done by this module. The default is <emphasis>no</emphasis>,
 		which means that Samba keeps setting and evaluating both the
 		system ACLs and the NT ACLs. This is better if you need your

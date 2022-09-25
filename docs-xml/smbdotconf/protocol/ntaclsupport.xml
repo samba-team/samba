@@ -7,7 +7,7 @@
     <manvolnum>8</manvolnum></citerefentry> will attempt to map 
     UNIX permissions into Windows NT access control lists.  The UNIX
     permissions considered are the traditional UNIX owner and
-    group permissions, as well as POSIX ACLs set on any files or
+    group permissions, as well as filesystem ACLs set on any files or
     directories.  This parameter was formally a global parameter in
     releases prior to 2.2.2.</para>
 </description>

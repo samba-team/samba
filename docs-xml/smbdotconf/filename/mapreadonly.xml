@@ -32,7 +32,7 @@
 		<listitem><para>
 		<constant>Permissions</constant> - The read only DOS attribute is mapped to the effective permissions of
 		the connecting user, as evaluated by <citerefentry><refentrytitle>smbd</refentrytitle>
-		<manvolnum>8</manvolnum></citerefentry> by reading the unix permissions and POSIX ACL (if present).
+		<manvolnum>8</manvolnum></citerefentry> by reading the unix permissions and filesystem ACL (if present).
 		If the connecting user does not have permission to modify the file, the read only attribute
 		is reported as being set on the file.
 		</para></listitem>
