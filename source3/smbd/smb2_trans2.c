@@ -454,7 +454,19 @@ static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 		struct ea_list *listp;
 		fstring dos_ea_name;
 
-		if (strnequal(names[i], "system.", 7)
+		/*
+		 * POSIX EA names are divided into several namespaces by
+		 * means of string prefixes. Usually, the system controls
+		 * semantics for each namespace, but the 'user' namespace is
+		 * available for arbitrary use, which comes closest to
+		 * Windows EA semantics. Hence, we map POSIX EAs from the
+		 * 'user' namespace to Windows EAs, and just ignore all the
+		 * other namespaces. Also, a few specific names in the 'user'
+		 * namespace are used by Samba internally. Filter them out as
+		 * well, and only present the EAs that are available for
+		 * arbitrary use.
+		 */
+		if (!strnequal(names[i], "user.", 5)
 		    || samba_private_attr_name(names[i]))
 			continue;
 
@@ -780,7 +792,14 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		int ret;
 		fstring unix_ea_name;
 
-		fstrcpy(unix_ea_name, "user."); /* All EA's must start with user. */
+		/*
+		 * Complementing the forward mapping from POSIX EAs to
+		 * Windows EAs in get_ea_list_from_fsp(), here we map in the
+		 * opposite direction from Windows EAs to the 'user' namespace
+		 * of POSIX EAs. Hence, all POSIX EA names the we set here must
+		 * start with a 'user.' prefix.
+		 */
+		fstrcpy(unix_ea_name, "user.");
 		fstrcat(unix_ea_name, ea_list->ea.name);
 
 		canonicalize_ea_name(fsp, unix_ea_name);
