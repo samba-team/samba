@@ -416,7 +416,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 		smb_krb5_free_data_contents(context, &k5pac_srv_checksum_in);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			nt_status = ndr_map_error2ntstatus(ndr_err);
-			DEBUG(0,("can't parse the KDC signature: %s\n",
+			DEBUG(0,("can't parse the server signature: %s\n",
 				 nt_errstr(nt_status)));
 			return EINVAL;
 		}
