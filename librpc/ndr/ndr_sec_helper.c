@@ -178,7 +178,7 @@ enum ndr_err_code ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct 
 	NDR_CHECK(ndr_pull_dom_sid(ndr, ndr_flags, sid));
 	if (sid->num_auths != num_auths) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
-				      "Bad array size %u should exceed %u", 
+				      "Bad num_auths %u; should equal %u",
 				      num_auths, sid->num_auths);
 	}
 	return NDR_ERR_SUCCESS;
