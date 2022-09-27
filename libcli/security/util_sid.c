@@ -339,7 +339,7 @@ int sid_compare_domain(const struct dom_sid *sid1, const struct dom_sid *sid2)
 }
 
 /********************************************************************
- Add SID to an array SIDs
+ Add SID to an array of SIDs
 ********************************************************************/
 
 NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
@@ -366,7 +366,7 @@ NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 
 
 /********************************************************************
- Add SID to an array SIDs ensuring that it is not already there
+ Add SID to an array of SIDs ensuring that it is not already there
 ********************************************************************/
 
 NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
