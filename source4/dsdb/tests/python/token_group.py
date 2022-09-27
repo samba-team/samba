@@ -530,7 +530,6 @@ class DynamicTokenTest(samba.tests.TestCase):
         res = self.ldb.search(self.user_sid_dn, scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
         self.assertEqual(len(res), 1)
 
-        dn_tokengroups = []
         for sid in res[0]['tokenGroups']:
             sid = ndr_unpack(samba.dcerpc.security.dom_sid, sid)
             res3 = self.admin_ldb.search(base="<SID=%s>" % sid, scope=ldb.SCOPE_BASE,
@@ -617,7 +616,6 @@ class DynamicTokenTest(samba.tests.TestCase):
         res = self.ldb.search(self.user_sid_dn, scope=ldb.SCOPE_BASE, attrs=["tokenGroupsGlobalAndUniversal"])
         self.assertEqual(len(res), 1)
 
-        dn_tokengroups = []
         for sid in res[0]['tokenGroupsGlobalAndUniversal']:
             sid = ndr_unpack(samba.dcerpc.security.dom_sid, sid)
             res3 = self.admin_ldb.search(base="<SID=%s>" % sid, scope=ldb.SCOPE_BASE,
