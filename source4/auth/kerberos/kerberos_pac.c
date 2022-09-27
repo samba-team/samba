@@ -385,7 +385,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 		upn_dns_info = &_upn_dns_info.upn_dns_info;
 	}
 
-	/* Pull this right into the normal auth sysstem structures */
+	/* Pull this right into the normal auth system structures */
 	nt_status = make_user_info_dc_pac(mem_ctx,
 					 info.logon_info.info,
 					 upn_dns_info,
