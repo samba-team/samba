@@ -95,6 +95,11 @@ interface auth
 		TICKET_TYPE_NON_TGT = 2
 	} ticket_type;
 
+	typedef [public] struct {
+		dom_sid sid;
+		security_GroupAttrs attrs;
+	} auth_SidAttr;
+
 	/* This is the interim product of the auth subsystem, before
 	 * privileges and local groups are handled */
 	typedef [public] struct {
