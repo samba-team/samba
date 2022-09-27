@@ -134,6 +134,10 @@ typedef struct {
 #define KRB5_ERROR_CODE(k)	((k)->error)
 #endif /* HAVE_E_DATA_POINTER_IN_KRB5_ERROR */
 
+#ifndef HAVE_KRB5_CONST_PAC
+typedef krb5_pac krb5_const_pac;
+#endif
+
 krb5_error_code smb_krb5_parse_name(krb5_context context,
 				const char *name, /* in unix charset */
                                 krb5_principal *principal);
