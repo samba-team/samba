@@ -4521,3 +4521,210 @@ bool run_smb2_non_dfs_share(int dummy)
 	(void)smb2_dfs_delete(cli, "file");
 	return retval;
 }
+
+/*
+ * Add a test that sends a non-DFS path and does not set the
+ * SMB2 flag FLAGS2_DFS_PATHNAMES to a DFS
+ * share. Windows passes this (it just treats the
+ * pathnames as non-DFS).
+ */
+
+bool run_smb2_dfs_share_non_dfs_path(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	bool dfs_supported = false;
+	uint64_t fid_persistent = 0;
+	uint64_t fid_volatile = 0;
+	bool retval = false;
+	char *dfs_filename = NULL;
+	uint64_t root_ino = (uint64_t)-1;
+	bool ino_matched = false;
+
+	printf("Starting SMB2-DFS-SHARE-NON-DFS-PATH\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	dfs_supported = smbXcli_conn_dfs_supported(cli->conn);
+	if (!dfs_supported) {
+		printf("Server %s does not support DFS\n",
+			smbXcli_conn_remote_name(cli->conn));
+		return false;
+	}
+	/* Ensure this is a DFS share. */
+	dfs_supported = smbXcli_tcon_is_dfs_share(cli->smb2.tcon);
+	if (!dfs_supported) {
+		printf("Share %s is not a DFS share.\n",
+			cli->share);
+		return false;
+	}
+	/* Come up with a "valid" SMB2 DFS name. */
+	dfs_filename = talloc_asprintf(talloc_tos(),
+				       "%s\\%s\\file",
+				       smbXcli_conn_remote_name(cli->conn),
+				       cli->share);
+	if (dfs_filename == NULL) {
+		printf("Out of memory\n");
+		return false;
+	}
+
+	/* Get the root of the share ino. */
+	status = get_smb2_inode(cli,
+				"SERVER\\SHARE",
+				&root_ino);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d get_smb2_inode on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			"SERVER\\SHARE",
+			nt_errstr(status));
+		goto err;
+	}
+
+	/* Create a dfs_filename. */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				dfs_filename,
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_STD_DELETE |
+					SEC_FILE_READ_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_CREATE, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL); /* struct smb2_create_blobs * */
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d smb2cli_create on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			dfs_filename,
+			nt_errstr(status));
+		goto err;
+	}
+
+	/* Close the handle we just opened. */
+	smb2cli_close(cli->conn,
+		      cli->timeout,
+		      cli->smb2.session,
+		      cli->smb2.tcon,
+		      0, /* flags */
+		      fid_persistent,
+		      fid_volatile);
+
+	fid_persistent = 0;
+	fid_volatile = 0;
+
+	/*
+	 * Force the share to be non-DFS, as far as the client
+	 * is concerned.
+	 */
+	smb2cli_tcon_set_values(cli->smb2.tcon,
+			cli->smb2.session,
+			smb2cli_tcon_current_id(cli->smb2.tcon),
+			0,
+			smb2cli_tcon_flags(cli->smb2.tcon),
+			smb2cli_tcon_capabilities(cli->smb2.tcon) &
+				~SMB2_SHARE_CAP_DFS,
+			0);
+
+	/*
+	 * Prove we can still use non-DFS pathnames on a DFS
+	 * share so long as we don't set the FLAGS2_DFS_PATHNAMES
+	 * in the SMB2 request.
+	 */
+	status = smb2cli_create(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				"file",
+				SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+				SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+				SEC_STD_SYNCHRONIZE|
+					SEC_STD_DELETE |
+					SEC_FILE_READ_DATA|
+					SEC_FILE_READ_ATTRIBUTE, /* desired_access, */
+				FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+				FILE_OPEN, /* create_disposition, */
+				0, /* create_options, */
+				NULL, /* smb2_create_blobs *blobs */
+				&fid_persistent,
+				&fid_volatile,
+				NULL, /* struct smb_create_returns * */
+				talloc_tos(), /* mem_ctx. */
+				NULL); /* struct smb2_create_blobs * */
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s:%d smb2cli_create on %s returned %s\n",
+			__FILE__,
+			__LINE__,
+			"file",
+			nt_errstr(status));
+		goto err;
+	}
+
+	/*
+	 * Show that now we're using non-DFS pathnames
+	 * on a DFS share, "" opens the root of the share.
+	 */
+	ino_matched = smb2_inode_matches(cli,
+					 "SERVER\\SHARE",
+					 root_ino,
+					 "");
+	if (!ino_matched) {
+		printf("%s:%d Failed to match ino number for %s\n",
+			__FILE__,
+			__LINE__,
+			"");
+		goto err;
+	}
+
+	retval = true;
+
+  err:
+
+	if (fid_volatile != 0) {
+		smb2cli_close(cli->conn,
+			      cli->timeout,
+			      cli->smb2.session,
+			      cli->smb2.tcon,
+			      0, /* flags */
+			      fid_persistent,
+			      fid_volatile);
+	}
+	(void)smb2_dfs_delete(cli, "file");
+	(void)smb2_dfs_delete(cli, dfs_filename);
+	return retval;
+}

@@ -265,6 +265,22 @@ plantestsuite("samba3.smbtorture_s3.smb2.SMB2-NON-DFS-SHARE",
                 "-mSMB2"])
 
 #
+# SMB2-DFS-SHARE-NON-DFS-PATH needs to run against a special share msdfs-pathname-share
+# This is an empty DFS share with no links, used merely to test
+# incoming non-DFS pathnames and how they map to local paths.
+#
+plantestsuite("samba3.smbtorture_s3.smb2.SMB2-DFS-SHARE-NON-DFS-PATH",
+                "fileserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'SMB2-DFS-SHARE-NON-DFS-PATH',
+                '//$SERVER_IP/msdfs-pathname-share',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "-mSMB2"])
+
+#
 # SMB1-DFS-PATHS needs to run against a special share msdfs-pathname-share
 # This is an empty DFS share with no links, used merely to test
 # incoming DFS pathnames and how they map to local paths.

@@ -15366,6 +15366,10 @@ static struct {
 		.fn    = run_smb2_non_dfs_share,
 	},
 	{
+		.name  = "SMB2-DFS-SHARE-NON-DFS-PATH",
+		.fn    = run_smb2_dfs_share_non_dfs_path,
+	},
+	{
 		.name  = "SMB1-DFS-PATHS",
 		.fn    = run_smb1_dfs_paths,
 	},
