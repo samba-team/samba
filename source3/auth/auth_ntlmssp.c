@@ -58,7 +58,7 @@ NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
 		if (user_info->num_sids != 1) {
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		sid = &user_info->sids[PRIMARY_USER_SID_INDEX];
+		sid = &user_info->sids[PRIMARY_USER_SID_INDEX].sid;
 
 		cmp = dom_sid_compare(sid, &global_sid_System);
 		if (cmp == 0) {

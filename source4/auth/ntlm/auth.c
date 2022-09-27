@@ -421,7 +421,7 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 				 state->user_info, status,
 				 state->user_info_dc->info->domain_name,
 				 state->user_info_dc->info->account_name,
-				 &state->user_info_dc->sids[0]);
+				 &state->user_info_dc->sids[0].sid);
 
 	*user_info_dc = talloc_move(mem_ctx, &state->user_info_dc);
 

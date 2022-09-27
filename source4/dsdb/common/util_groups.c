@@ -27,15 +27,22 @@
 #include "dsdb/common/util.h"
 
 /* This function tests if a SID structure "sids" contains the SID "sid" */
-static bool sids_contains_sid(const struct dom_sid *sids,
+static bool sids_contains_sid(const struct auth_SidAttr *sids,
 			      const unsigned int num_sids,
-			      const struct dom_sid *sid)
+			      const struct dom_sid *sid,
+			      uint32_t attrs)
 {
 	unsigned int i;
 
 	for (i = 0; i < num_sids; i++) {
-		if (dom_sid_equal(&sids[i], sid))
-			return true;
+		if (attrs != sids[i].attrs) {
+			continue;
+		}
+		if (!dom_sid_equal(&sids[i].sid, sid)) {
+			continue;
+		}
+
+		return true;
 	}
 	return false;
 }
@@ -56,13 +63,12 @@ static bool sids_contains_sid(const struct dom_sid *sids,
  */
 NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 				   struct ldb_val *dn_val, const bool only_childs, const char *filter,
-				   TALLOC_CTX *res_sids_ctx, struct dom_sid **res_sids,
+				   TALLOC_CTX *res_sids_ctx, struct auth_SidAttr **res_sids,
 				   unsigned int *num_res_sids)
 {
-	const char * const attrs[] = { "memberOf", NULL };
+	const char * const attrs[] = { "groupType", "memberOf", NULL };
 	unsigned int i;
 	int ret;
-	bool already_there;
 	struct ldb_dn *dn;
 	struct dom_sid sid;
 	TALLOC_CTX *tmp_ctx;
@@ -113,14 +119,6 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 		ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
 				     DSDB_SEARCH_SHOW_EXTENDED_DN);
 	} else {
-		/* This is an O(n^2) linear search */
-		already_there = sids_contains_sid(*res_sids,
-						  *num_res_sids, &sid);
-		if (already_there) {
-			talloc_free(tmp_ctx);
-			return NT_STATUS_OK;
-		}
-
 		ret = dsdb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE,
 				  attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, "%s",
 				  filter);
@@ -172,13 +170,34 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 
 	/* We only apply this test once we know the SID matches the filter */
 	if (!only_childs) {
+		unsigned group_type;
+		uint32_t sid_attrs;
+		bool already_there;
+
+		sid_attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		group_type = ldb_msg_find_attr_as_uint(res->msgs[0], "groupType", 0);
+		if (group_type & GROUP_TYPE_RESOURCE_GROUP) {
+			sid_attrs |= SE_GROUP_RESOURCE;
+		}
+
+		/* This is an O(n^2) linear search */
+		already_there = sids_contains_sid(*res_sids, *num_res_sids,
+						  &sid, sid_attrs);
+		if (already_there) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_OK;
+		}
+
 		*res_sids = talloc_realloc(res_sids_ctx, *res_sids,
-			struct dom_sid, *num_res_sids + 1);
+			struct auth_SidAttr, *num_res_sids + 1);
 		if (*res_sids == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
-		(*res_sids)[*num_res_sids] = sid;
+
+		(*res_sids)[*num_res_sids].sid = sid;
+		(*res_sids)[*num_res_sids].attrs = sid_attrs;
+
 		++(*num_res_sids);
 	}
 

@@ -35,7 +35,7 @@ static NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCTP(sam);
 
 	if (user_info_dc->num_sids > PRIMARY_USER_SID_INDEX) {
-		status = dom_sid_split_rid(sam, &user_info_dc->sids[PRIMARY_USER_SID_INDEX],
+		status = dom_sid_split_rid(sam, &user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid,
 					   &sam->domain_sid, &sam->rid);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -45,7 +45,7 @@ static NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 	}
 
 	if (user_info_dc->num_sids > PRIMARY_GROUP_SID_INDEX) {
-		status = dom_sid_split_rid(NULL, &user_info_dc->sids[PRIMARY_GROUP_SID_INDEX],
+		status = dom_sid_split_rid(NULL, &user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid,
 					   NULL, &sam->primary_gid);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -98,16 +98,15 @@ static NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 
 		for (i=PRIMARY_GROUP_SID_INDEX; i<user_info_dc->num_sids; i++) {
-			struct dom_sid *group_sid = &user_info_dc->sids[i];
-			if (!dom_sid_in_domain(sam->domain_sid, group_sid)) {
+			struct auth_SidAttr *group_sid = &user_info_dc->sids[i];
+			if (!dom_sid_in_domain(sam->domain_sid, &group_sid->sid)) {
 				/* We handle this elsewhere */
 				continue;
 			}
 			sam->groups.rids[sam->groups.count].rid =
-				group_sid->sub_auths[group_sid->num_auths-1];
+				group_sid->sid.sub_auths[group_sid->sid.num_auths-1];
 
-			sam->groups.rids[sam->groups.count].attributes =
-				SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+			sam->groups.rids[sam->groups.count].attributes = group_sid->attrs;
 			sam->groups.count += 1;
 		}
 	}
@@ -169,16 +168,15 @@ NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 
 	/* We don't put the user and group SIDs in there */
 	for (i=2; i<user_info_dc->num_sids; i++) {
-		if (dom_sid_in_domain(sam6->base.domain_sid, &user_info_dc->sids[i])) {
+		if (dom_sid_in_domain(sam6->base.domain_sid, &user_info_dc->sids[i].sid)) {
 			continue;
 		}
-		sam6->sids[sam6->sidcount].sid = dom_sid_dup(sam6->sids, &user_info_dc->sids[i]);
+		sam6->sids[sam6->sidcount].sid = dom_sid_dup(sam6->sids, &user_info_dc->sids[i].sid);
 		if (sam6->sids[sam6->sidcount].sid == NULL) {
 			TALLOC_FREE(sam6);
 			return NT_STATUS_NO_MEMORY;
 		}
-		sam6->sids[sam6->sidcount].attributes =
-			SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		sam6->sids[sam6->sidcount].attributes = user_info_dc->sids[i].attrs;
 		sam6->sidcount += 1;
 	}
 	if (sam6->sidcount) {
@@ -437,28 +435,39 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 
 	user_info_dc->num_sids = 2;
 
-	user_info_dc->sids = talloc_array(user_info_dc, struct dom_sid,  user_info_dc->num_sids + base->groups.count);
+	user_info_dc->sids = talloc_array(user_info_dc, struct auth_SidAttr,  user_info_dc->num_sids + base->groups.count);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->sids);
 
-	user_info_dc->sids[PRIMARY_USER_SID_INDEX] = *base->domain_sid;
-	if (!sid_append_rid(&user_info_dc->sids[PRIMARY_USER_SID_INDEX], base->rid)) {
+	user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid = *base->domain_sid;
+	if (!sid_append_rid(&user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid, base->rid)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	user_info_dc->sids[PRIMARY_USER_SID_INDEX].attrs
+		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 
-	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX] = *base->domain_sid;
-	if (!sid_append_rid(&user_info_dc->sids[PRIMARY_GROUP_SID_INDEX], base->primary_gid)) {
+	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid = *base->domain_sid;
+	if (!sid_append_rid(&user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid, base->primary_gid)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	/*
+	 * This attribute value might be wrong if the primary group is a
+	 * resource group. But a resource group is not meant to be in a primary
+	 * group in the first place, and besides, these attributes will never
+	 * make their way into a PAC.
+	 */
+	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].attrs
+		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 
 	for (i = 0; i < base->groups.count; i++) {
 		/* Skip primary group, already added above */
 		if (base->groups.rids[i].rid == base->primary_gid) {
 			continue;
 		}
-		user_info_dc->sids[user_info_dc->num_sids] = *base->domain_sid;
-		if (!sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids], base->groups.rids[i].rid)) {
+		user_info_dc->sids[user_info_dc->num_sids].sid = *base->domain_sid;
+		if (!sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids].sid, base->groups.rids[i].rid)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		user_info_dc->sids[user_info_dc->num_sids].attrs = base->groups.rids[i].attributes;
 		user_info_dc->num_sids++;
 	}
 
@@ -477,11 +486,11 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	}
 
 	if (sidcount > 0) {
-		struct dom_sid *dgrps = user_info_dc->sids;
+		struct auth_SidAttr *dgrps = user_info_dc->sids;
 		size_t dgrps_count;
 
 		dgrps_count = user_info_dc->num_sids + sidcount;
-		dgrps = talloc_realloc(user_info_dc, dgrps, struct dom_sid,
+		dgrps = talloc_realloc(user_info_dc, dgrps, struct auth_SidAttr,
 				       dgrps_count);
 		if (dgrps == NULL) {
 			return NT_STATUS_NO_MEMORY;
@@ -489,7 +498,8 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 
 		for (i = 0; i < sidcount; i++) {
 			if (sids[i].sid) {
-				dgrps[user_info_dc->num_sids] = *sids[i].sid;
+				dgrps[user_info_dc->num_sids].sid = *sids[i].sid;
+				dgrps[user_info_dc->num_sids].attrs = sids[i].attributes;
 				user_info_dc->num_sids++;
 			}
 		}
@@ -596,7 +606,7 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 
 		sidcount = user_info_dc->num_sids + rg->groups.count;
 		user_info_dc->sids
-			= talloc_realloc(user_info_dc, user_info_dc->sids, struct dom_sid, sidcount);
+			= talloc_realloc(user_info_dc, user_info_dc->sids, struct auth_SidAttr, sidcount);
 		if (user_info_dc->sids == NULL) {
 			TALLOC_FREE(user_info_dc);
 			return NT_STATUS_NO_MEMORY;
@@ -605,12 +615,13 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 		for (i = 0; i < rg->groups.count; i++) {
 			bool ok;
 
-			user_info_dc->sids[user_info_dc->num_sids] = *rg->domain_sid;
-			ok = sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids],
+			user_info_dc->sids[user_info_dc->num_sids].sid = *rg->domain_sid;
+			ok = sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids].sid,
 					    rg->groups.rids[i].rid);
 			if (!ok) {
 				return NT_STATUS_INVALID_PARAMETER;
 			}
+			user_info_dc->sids[user_info_dc->num_sids].attrs = rg->groups.rids[i].attributes;
 			user_info_dc->num_sids++;
 		}
 	}

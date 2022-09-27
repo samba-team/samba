@@ -93,7 +93,7 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 
 		ZERO_STRUCT(pac_requester_sid);
 
-		pac_requester_sid.requester_sid.sid = info->sids[0];
+		pac_requester_sid.requester_sid.sid = info->sids[0].sid;
 
 		ndr_err = ndr_push_union_blob(requester_sid_blob, mem_ctx,
 					      &pac_requester_sid,
@@ -140,7 +140,7 @@ NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
 		= info->info->account_name;
 
 	pac_upn.upn_dns_info.ex.sam_name_and_sid.objectsid
-		= &info->sids[0];
+		= &info->sids[0].sid;
 
 	ndr_err = ndr_push_union_blob(upn_data, mem_ctx, &pac_upn,
 				      PAC_TYPE_UPN_DNS_INFO,
@@ -802,10 +802,12 @@ static NTSTATUS samba_add_asserted_identity(TALLOC_CTX *mem_ctx,
 
 	dom_sid_parse(sid_str, &ai_sid);
 
-	return add_sid_to_array_unique(user_info_dc,
-				       &ai_sid,
-				       &user_info_dc->sids,
-				       &user_info_dc->num_sids);
+	return add_sid_to_array_attrs_unique(
+		user_info_dc,
+		&ai_sid,
+		SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED,
+		&user_info_dc->sids,
+		&user_info_dc->num_sids);
 }
 
 /*
@@ -1259,7 +1261,7 @@ krb5_error_code samba_kdc_validate_pac_blob(
 			goto out;
 		}
 
-		pac_sid = pac_user_info->sids[0];
+		pac_sid = pac_user_info->sids[0].sid;
 	} else if (code != 0) {
 		goto out;
 	}
@@ -1484,6 +1486,10 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	if (is_untrusted) {
 		struct auth_user_info_dc *user_info_dc = NULL;
 		WERROR werr;
+
+		struct dom_sid *object_sids = NULL;
+		uint32_t j;
+
 		/*
 		 * In this case the RWDC discards the PAC an RODC generated.
 		 * Windows adds the asserted_identity in this case too.
@@ -1533,10 +1539,21 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		 * Check if the SID list in the user_info_dc intersects
 		 * correctly with the RODC allow/deny lists.
 		 */
+		object_sids = talloc_array(mem_ctx, struct dom_sid, user_info_dc->num_sids);
+		if (object_sids == NULL) {
+			code = ENOMEM;
+			goto done;
+		}
+
+		for (j = 0; j < user_info_dc->num_sids; ++j) {
+			object_sids[j] = user_info_dc->sids[j].sid;
+		}
+
 		werr = samba_rodc_confirm_user_is_allowed(user_info_dc->num_sids,
-							  user_info_dc->sids,
+							  object_sids,
 							  krbtgt,
 							  client);
+		TALLOC_FREE(object_sids);
 		TALLOC_FREE(user_info_dc);
 		if (!W_ERROR_IS_OK(werr)) {
 			code = KRB5KDC_ERR_TGT_REVOKED;

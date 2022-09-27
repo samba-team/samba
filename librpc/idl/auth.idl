@@ -59,7 +59,7 @@ interface auth
 	typedef [public] struct {
 		/* Number SIDs from the DC netlogon validation info */
 		uint32 num_dc_sids;
-		[size_is(num_dc_sids)] dom_sid dc_sids[*];
+		[size_is(num_dc_sids)] auth_SidAttr dc_sids[*];
 	} auth_user_info_torture;
 
 	typedef [public] struct {
@@ -104,7 +104,7 @@ interface auth
 	 * privileges and local groups are handled */
 	typedef [public] struct {
 		uint32 num_sids;
-		[size_is(num_sids)] dom_sid sids[*];
+		[size_is(num_sids)] auth_SidAttr sids[*];
 		auth_user_info *info;
 		[noprint] DATA_BLOB user_session_key;
 		[noprint] DATA_BLOB lm_session_key;

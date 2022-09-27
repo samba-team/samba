@@ -353,7 +353,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	const char *primary_group_dn;
 	DATA_BLOB primary_group_blob;
 	/* SID structures for the expanded group memberships */
-	struct dom_sid *sids = NULL;
+	struct auth_SidAttr *sids = NULL;
 	unsigned int num_sids = 0, i;
 	struct dom_sid *domain_sid;
 	TALLOC_CTX *tmp_ctx;
@@ -368,7 +368,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sids = talloc_array(user_info_dc, struct dom_sid, 2);
+	sids = talloc_array(user_info_dc, struct auth_SidAttr, 2);
 	if (sids == NULL) {
 		TALLOC_FREE(user_info_dc);
 		return NT_STATUS_NO_MEMORY;
@@ -388,9 +388,13 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	sids[PRIMARY_USER_SID_INDEX] = *account_sid;
-	sids[PRIMARY_GROUP_SID_INDEX] = *domain_sid;
-	sid_append_rid(&sids[PRIMARY_GROUP_SID_INDEX], ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
+	sids[PRIMARY_USER_SID_INDEX].sid = *account_sid;
+	sids[PRIMARY_USER_SID_INDEX].attrs
+		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+	sids[PRIMARY_GROUP_SID_INDEX].sid = *domain_sid;
+	sid_append_rid(&sids[PRIMARY_GROUP_SID_INDEX].sid, ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
+	sids[PRIMARY_GROUP_SID_INDEX].attrs
+		= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 
 	/*
 	 * Filter out builtin groups from this token. We will search
@@ -406,7 +410,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	primary_group_dn = talloc_asprintf(
 		tmp_ctx,
 		"<SID=%s>",
-		dom_sid_str_buf(&sids[PRIMARY_GROUP_SID_INDEX], &buf));
+		dom_sid_str_buf(&sids[PRIMARY_GROUP_SID_INDEX].sid, &buf));
 	if (primary_group_dn == NULL) {
 		TALLOC_FREE(user_info_dc);
 		return NT_STATUS_NO_MEMORY;
@@ -570,13 +574,15 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		   PAC */
 		user_info_dc->sids = talloc_realloc(user_info_dc,
 						   user_info_dc->sids,
-						   struct dom_sid,
+						   struct auth_SidAttr,
 						   user_info_dc->num_sids+1);
 		if (user_info_dc->sids == NULL) {
 			TALLOC_FREE(user_info_dc);
 			return NT_STATUS_NO_MEMORY;
 		}
-		user_info_dc->sids[user_info_dc->num_sids] = global_sid_Enterprise_DCs;
+		user_info_dc->sids[user_info_dc->num_sids].sid = global_sid_Enterprise_DCs;
+		user_info_dc->sids[user_info_dc->num_sids].attrs
+			= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 		user_info_dc->num_sids++;
 	}
 
@@ -585,15 +591,17 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		/* the DOMAIN_RID_ENTERPRISE_READONLY_DCS PAC */
 		user_info_dc->sids = talloc_realloc(user_info_dc,
 						   user_info_dc->sids,
-						   struct dom_sid,
+						   struct auth_SidAttr,
 						   user_info_dc->num_sids+1);
 		if (user_info_dc->sids == NULL) {
 			TALLOC_FREE(user_info_dc);
 			return NT_STATUS_NO_MEMORY;
 		}
-		user_info_dc->sids[user_info_dc->num_sids] = *domain_sid;
-		sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids],
+		user_info_dc->sids[user_info_dc->num_sids].sid = *domain_sid;
+		sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids].sid,
 			    DOMAIN_RID_ENTERPRISE_READONLY_DCS);
+		user_info_dc->sids[user_info_dc->num_sids].attrs
+			= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 		user_info_dc->num_sids++;
 	}
 
@@ -636,7 +644,7 @@ _PUBLIC_ NTSTATUS authsam_update_user_info_dc(TALLOC_CTX *mem_ctx,
 	 */
 	n = user_info_dc->num_sids;
 	for (i = 0; i < n; i++) {
-		struct dom_sid *sid = &user_info_dc->sids[i];
+		struct dom_sid *sid = &user_info_dc->sids[i].sid;
 		struct dom_sid_buf sid_buf;
 		char dn_str[sizeof(sid_buf.buf)*2];
 		DATA_BLOB dn_blob = data_blob_null;

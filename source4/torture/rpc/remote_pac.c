@@ -981,8 +981,8 @@ static bool test_S4U2Self(struct torture_context *tctx,
 
 	/* Check that the primary group is not duplicated in user_info_dc SID array */
 	for (i = 2; i < netlogon_user_info_dc->num_sids; i++) {
-		torture_assert(tctx, !dom_sid_equal(&netlogon_user_info_dc->sids[1],
-						    &netlogon_user_info_dc->sids[i]),
+		torture_assert(tctx, !dom_sid_equal(&netlogon_user_info_dc->sids[1].sid,
+						    &netlogon_user_info_dc->sids[i].sid),
 			       "Duplicate PrimaryGroupId in return SID array");
 	}
 
@@ -1007,14 +1007,14 @@ static bool test_S4U2Self(struct torture_context *tctx,
 	ai_auth_authority_count = 0;
 	ai_service_count = 0;
 	for (i = 0; i < kinit_session_info->torture->num_dc_sids; i++) {
-		ok = dom_sid_equal(&kinit_session_info->torture->dc_sids[i],
+		ok = dom_sid_equal(&kinit_session_info->torture->dc_sids[i].sid,
 				   ai_auth_authority);
 		if (ok) {
 			ai_auth_authority_count++;
 			kinit_asserted_identity_index = i;
 		}
 
-		ok = dom_sid_equal(&kinit_session_info->torture->dc_sids[i],
+		ok = dom_sid_equal(&kinit_session_info->torture->dc_sids[i].sid,
 				   ai_service);
 		if (ok) {
 			ai_service_count++;
@@ -1030,14 +1030,14 @@ static bool test_S4U2Self(struct torture_context *tctx,
 	ai_auth_authority_count = 0;
 	ai_service_count = 0;
 	for (i = 0; i < s4u2self_session_info->torture->num_dc_sids; i++) {
-		ok = dom_sid_equal(&s4u2self_session_info->torture->dc_sids[i],
+		ok = dom_sid_equal(&s4u2self_session_info->torture->dc_sids[i].sid,
 				   ai_auth_authority);
 		if (ok) {
 			ai_auth_authority_count++;
 			s4u2self_asserted_identity_index = i;
 		}
 
-		ok = dom_sid_equal(&s4u2self_session_info->torture->dc_sids[i],
+		ok = dom_sid_equal(&s4u2self_session_info->torture->dc_sids[i].sid,
 				   ai_service);
 		if (ok) {
 			ai_service_count++;
@@ -1063,11 +1063,11 @@ static bool test_S4U2Self(struct torture_context *tctx,
 			/* Skip over the asserted identity SID. */
 			++k;
 		}
-		torture_assert(tctx, dom_sid_equal(&netlogon_user_info_dc->sids[i], &kinit_session_info->torture->dc_sids[j]), "Different domain groups for kinit-based PAC");
-		torture_assert(tctx, dom_sid_equal(&netlogon_user_info_dc->sids[i], &s4u2self_session_info->torture->dc_sids[k]), "Different domain groups for S4U2Self");
-		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &s4u2self_session_info->torture->dc_sids[k]), "Returned BUILTIN domain in groups for S4U2Self");
-		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &kinit_session_info->torture->dc_sids[j]), "Returned BUILTIN domain in groups kinit-based PAC");
-		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &netlogon_user_info_dc->sids[i]), "Returned BUILTIN domian in groups from NETLOGON SamLogon reply");
+		torture_assert(tctx, dom_sid_equal(&netlogon_user_info_dc->sids[i].sid, &kinit_session_info->torture->dc_sids[j].sid), "Different domain groups for kinit-based PAC");
+		torture_assert(tctx, dom_sid_equal(&netlogon_user_info_dc->sids[i].sid, &s4u2self_session_info->torture->dc_sids[k].sid), "Different domain groups for S4U2Self");
+		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &s4u2self_session_info->torture->dc_sids[k].sid), "Returned BUILTIN domain in groups for S4U2Self");
+		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &kinit_session_info->torture->dc_sids[j].sid), "Returned BUILTIN domain in groups kinit-based PAC");
+		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &netlogon_user_info_dc->sids[i].sid), "Returned BUILTIN domian in groups from NETLOGON SamLogon reply");
 	}
 
 	return true;

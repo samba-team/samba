@@ -1703,7 +1703,7 @@ static NTSTATUS pdb_samba_dsdb_enum_alias_memberships(struct pdb_methods *m,
 	uint32_t *alias_rids = NULL;
 	size_t num_alias_rids = 0;
 	int i;
-	struct dom_sid *groupSIDs = NULL;
+	struct auth_SidAttr *groupSIDs = NULL;
 	unsigned int num_groupSIDs = 0;
 	char *filter;
 	NTSTATUS status;
@@ -1752,7 +1752,7 @@ static NTSTATUS pdb_samba_dsdb_enum_alias_memberships(struct pdb_methods *m,
 	}
 
 	for (i=0; i<num_groupSIDs; i++) {
-		if (sid_peek_check_rid(domain_sid, &groupSIDs[i],
+		if (sid_peek_check_rid(domain_sid, &groupSIDs[i].sid,
 				       &alias_rids[num_alias_rids])) {
 			num_alias_rids++;;
 		}

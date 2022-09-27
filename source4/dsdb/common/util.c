@@ -6369,7 +6369,7 @@ done:
  * if not. Returns a negative value on error.
  */
 int dsdb_is_protected_user(struct ldb_context *ldb,
-			   const struct dom_sid *sids,
+			   const struct auth_SidAttr *sids,
 			   uint32_t num_sids)
 {
 	const struct dom_sid *domain_sid = NULL;
@@ -6387,7 +6387,7 @@ int dsdb_is_protected_user(struct ldb_context *ldb,
 	}
 
 	for (i = 0; i < num_sids; ++i) {
-		if (dom_sid_equal(&protected_users_sid, &sids[i])) {
+		if (dom_sid_equal(&protected_users_sid, &sids[i].sid)) {
 			return 1;
 		}
 	}

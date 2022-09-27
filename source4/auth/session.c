@@ -62,7 +62,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 	const char *filter;
 
-	struct dom_sid *sids = NULL;
+	struct auth_SidAttr *sids = NULL;
 	const struct dom_sid *anonymous_sid, *system_sid;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -110,7 +110,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sids = talloc_array(tmp_ctx, struct dom_sid, user_info_dc->num_sids);
+	sids = talloc_array(tmp_ctx, struct auth_SidAttr, user_info_dc->num_sids);
 	if (sids == NULL) {
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -129,48 +129,52 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	 */
 
 	if (session_info_flags & AUTH_SESSION_INFO_DEFAULT_GROUPS) {
-		sids = talloc_realloc(tmp_ctx, sids, struct dom_sid, num_sids + 2);
+		sids = talloc_realloc(tmp_ctx, sids, struct auth_SidAttr, num_sids + 2);
 		if (sids == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		sid_copy(&sids[num_sids], &global_sid_World);
+		sid_copy(&sids[num_sids].sid, &global_sid_World);
+		sids[num_sids].attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 		num_sids++;
 
-		sid_copy(&sids[num_sids], &global_sid_Network);
+		sid_copy(&sids[num_sids].sid, &global_sid_Network);
+		sids[num_sids].attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 		num_sids++;
 	}
 
 	if (session_info_flags & AUTH_SESSION_INFO_AUTHENTICATED) {
-		sids = talloc_realloc(tmp_ctx, sids, struct dom_sid, num_sids + 1);
+		sids = talloc_realloc(tmp_ctx, sids, struct auth_SidAttr, num_sids + 1);
 		if (sids == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		sid_copy(&sids[num_sids], &global_sid_Authenticated_Users);
+		sid_copy(&sids[num_sids].sid, &global_sid_Authenticated_Users);
+		sids[num_sids].attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 		num_sids++;
 	}
 
 	if (session_info_flags & AUTH_SESSION_INFO_NTLM) {
-		sids = talloc_realloc(tmp_ctx, sids, struct dom_sid, num_sids + 1);
+		sids = talloc_realloc(tmp_ctx, sids, struct auth_SidAttr, num_sids + 1);
 		if (sids == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!dom_sid_parse(SID_NT_NTLM_AUTHENTICATION, &sids[num_sids])) {
+		if (!dom_sid_parse(SID_NT_NTLM_AUTHENTICATION, &sids[num_sids].sid)) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
+		sids[num_sids].attrs = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 		num_sids++;
 	}
 
 
-	if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(anonymous_sid, &sids[PRIMARY_USER_SID_INDEX])) {
+	if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(anonymous_sid, &sids[PRIMARY_USER_SID_INDEX].sid)) {
 		/* Don't expand nested groups of system, anonymous etc*/
-	} else if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(system_sid, &sids[PRIMARY_USER_SID_INDEX])) {
+	} else if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(system_sid, &sids[PRIMARY_USER_SID_INDEX].sid)) {
 		/* Don't expand nested groups of system, anonymous etc*/
 	} else if (sam_ctx) {
 		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
@@ -185,7 +189,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 			sid_dn = talloc_asprintf(
 				tmp_ctx,
 				"<SID=%s>",
-				dom_sid_str_buf(&sids[i], &buf));
+				dom_sid_str_buf(&sids[i].sid, &buf));
 			if (sid_dn == NULL) {
 				TALLOC_FREE(tmp_ctx);
 				return NT_STATUS_NO_MEMORY;

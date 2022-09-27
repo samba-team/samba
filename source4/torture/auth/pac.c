@@ -170,8 +170,8 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 						      &user_info_dc_out, NULL, NULL);
 
 	/* The user's SID is the first element in the list */
-	if (!dom_sid_equal(user_info_dc->sids,
-			   user_info_dc_out->sids)) {
+	if (!dom_sid_equal(&user_info_dc->sids[0].sid,
+			   &user_info_dc_out->sids[0].sid)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &krbtgt_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -182,8 +182,8 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 		torture_fail(tctx,  
 			     talloc_asprintf(tctx, 
 					     "(self test) PAC Decode resulted in *different* domain SID: %s != %s",
-					     dom_sid_string(mem_ctx, user_info_dc->sids),
-					     dom_sid_string(mem_ctx, user_info_dc_out->sids)));
+					     dom_sid_string(mem_ctx, &user_info_dc->sids[0].sid),
+					     dom_sid_string(mem_ctx, &user_info_dc_out->sids[0].sid)));
 	}
 	talloc_free(user_info_dc_out);
 
@@ -232,13 +232,13 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 					     nt_errstr(nt_status)));
 	}
 	
-	if (!dom_sid_equal(user_info_dc->sids,
-			   user_info_dc_out->sids)) {
+	if (!dom_sid_equal(&user_info_dc->sids[0].sid,
+			   &user_info_dc_out->sids[0].sid)) {
 		torture_fail(tctx,  
 			     talloc_asprintf(tctx, 
 					     "(self test) PAC Decode resulted in *different* domain SID: %s != %s",
-					     dom_sid_string(mem_ctx, user_info_dc->sids),
-					     dom_sid_string(mem_ctx, user_info_dc_out->sids)));
+					     dom_sid_string(mem_ctx, &user_info_dc->sids[0].sid),
+					     dom_sid_string(mem_ctx, &user_info_dc_out->sids[0].sid)));
 	}
 	return true;
 }
@@ -447,7 +447,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	if (!pac_file &&
 	    !dom_sid_equal(dom_sid_parse_talloc(mem_ctx, 
 						"S-1-5-21-3048156945-3961193616-3706469200-1005"), 
-			   user_info_dc_out->sids)) {
+			   &user_info_dc_out->sids[0].sid)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -458,7 +458,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 			     talloc_asprintf(tctx, 
 					     "(saved test) Heimdal PAC Decode resulted in *different* domain SID: %s != %s",
 					     "S-1-5-21-3048156945-3961193616-3706469200-1005", 
-					     dom_sid_string(mem_ctx, user_info_dc_out->sids)));
+					     dom_sid_string(mem_ctx, &user_info_dc_out->sids[0].sid)));
 	}
 
 	talloc_free(user_info_dc_out);
@@ -506,7 +506,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	if (!pac_file &&
 	    !dom_sid_equal(dom_sid_parse_talloc(mem_ctx, 
 						"S-1-5-21-3048156945-3961193616-3706469200-1005"), 
-			   user_info_dc_out->sids)) {
+			   &user_info_dc_out->sids[0].sid)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -517,7 +517,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 			     talloc_asprintf(tctx, 
 					     "(saved test) PAC Decode resulted in *different* domain SID: %s != %s",
 					     "S-1-5-21-3048156945-3961193616-3706469200-1005", 
-					     dom_sid_string(mem_ctx, user_info_dc_out->sids)));
+					     dom_sid_string(mem_ctx, &user_info_dc_out->sids[0].sid)));
 	}
 
 	if (krbtgt_bytes == NULL) {

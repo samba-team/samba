@@ -163,7 +163,7 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 NTSTATUS security_token_create(TALLOC_CTX *mem_ctx, 
 			       struct loadparm_context *lp_ctx,
 			       unsigned int num_sids,
-			       struct dom_sid *sids,
+			       struct auth_SidAttr *sids,
 			       uint32_t session_info_flags,
 			       struct security_token **token)
 {
@@ -184,7 +184,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		for (check_sid_idx = 0;
 		     check_sid_idx < ptoken->num_sids;
 		     check_sid_idx++) {
-			if (dom_sid_equal(&ptoken->sids[check_sid_idx], &sids[i])) {
+			if (dom_sid_equal(&ptoken->sids[check_sid_idx], &sids[i].sid)) {
 				break;
 			}
 		}
@@ -193,7 +193,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 			ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
 			NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-			ptoken->sids[ptoken->num_sids] = sids[i];
+			ptoken->sids[ptoken->num_sids] = sids[i].sid;
 			ptoken->num_sids++;
 		}
 	}

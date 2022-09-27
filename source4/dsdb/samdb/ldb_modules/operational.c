@@ -76,6 +76,8 @@
 
 #include "libcli/security/security.h"
 
+#include "auth/auth.h"
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 #endif
@@ -149,7 +151,7 @@ static int construct_primary_group_token(struct ldb_module *module,
  */
 static int get_group_sids(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			  struct ldb_message *msg, const char *attribute_string,
-			  enum search_type type, struct dom_sid **groupSIDs,
+			  enum search_type type, struct auth_SidAttr **groupSIDs,
 			  unsigned int *num_groupSIDs)
 {
 	const char *filter = NULL;
@@ -204,7 +206,7 @@ static int get_group_sids(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	/* for RevMembGetAccountGroups, exclude built-in groups */
 	case ACCOUNT_GROUPS:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=group)(!(groupType:1.2.840.113556.1.4.803:=%u))(groupType:1.2.840.113556.1.4.803:=%u))",
-				GROUP_TYPE_BUILTIN_LOCAL_GROUP, GROUP_TYPE_SECURITY_ENABLED);
+					 GROUP_TYPE_BUILTIN_LOCAL_GROUP, GROUP_TYPE_SECURITY_ENABLED);
 		break;
 	}
 
@@ -280,7 +282,7 @@ static int construct_generic_token_groups(struct ldb_module *module,
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	unsigned int i;
 	int ret;
-	struct dom_sid *groupSIDs = NULL;
+	struct auth_SidAttr *groupSIDs = NULL;
 	unsigned int num_groupSIDs = 0;
 
 	if (scope != LDB_SCOPE_BASE) {
@@ -299,7 +301,7 @@ static int construct_generic_token_groups(struct ldb_module *module,
 
 	/* add these SIDs to the search result */
 	for (i=0; i < num_groupSIDs; i++) {
-		ret = samdb_msg_add_dom_sid(ldb, msg, msg, attribute_string, &groupSIDs[i]);
+		ret = samdb_msg_add_dom_sid(ldb, msg, msg, attribute_string, &groupSIDs[i].sid);
 		if (ret) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -1070,7 +1072,7 @@ static int pso_compare(struct ldb_message **m1, struct ldb_message **m2)
  */
 static int pso_search_by_sids(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			      struct ldb_request *parent,
-			      struct dom_sid *sid_array, unsigned int num_sids,
+			      struct auth_SidAttr *sid_array, unsigned int num_sids,
 			      struct ldb_result **result)
 {
 	int ret;
@@ -1096,7 +1098,7 @@ static int pso_search_by_sids(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		sid_filter = talloc_asprintf_append(
 			sid_filter,
 			"(msDS-PSOAppliesTo=<SID=%s>)",
-			dom_sid_str_buf(&sid_array[i], &sid_buf));
+			dom_sid_str_buf(&sid_array[i].sid, &sid_buf));
 	}
 
 	if (sid_filter == NULL) {
@@ -1125,7 +1127,7 @@ static int pso_search_by_sids(struct ldb_module *module, TALLOC_CTX *mem_ctx,
  * Returns the best PSO object that applies to the object SID(s) specified
  */
 static int pso_find_best(struct ldb_module *module, TALLOC_CTX *mem_ctx,
-			 struct ldb_request *parent, struct dom_sid *sid_array,
+			 struct ldb_request *parent, struct auth_SidAttr *sid_array,
 			 unsigned int num_sids, struct ldb_message **best_pso)
 {
 	struct ldb_result *res = NULL;
@@ -1160,7 +1162,7 @@ static int get_pso_for_user(struct ldb_module *module,
                             struct ldb_message **pso_msg)
 {
 	bool pso_supported;
-	struct dom_sid *groupSIDs = NULL;
+	struct auth_SidAttr *groupSIDs = NULL;
 	unsigned int num_groupSIDs = 0;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *best_pso = NULL;
@@ -1219,10 +1221,12 @@ static int get_pso_for_user(struct ldb_module *module,
 	el = ldb_msg_find_element(user_msg, "msDS-PSOApplied");
 
 	if (el != NULL && el->num_values > 0) {
-		struct dom_sid *user_sid = NULL;
+		struct auth_SidAttr *user_sid = NULL;
 
 		/* lookup the best PSO object, based on the user's SID */
-		user_sid = samdb_result_dom_sid(tmp_ctx, user_msg, "objectSid");
+		user_sid = samdb_result_dom_sid_attrs(
+			tmp_ctx, user_msg, "objectSid",
+			SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED);
 
 		ret = pso_find_best(module, tmp_ctx, parent, user_sid, 1,
 				    &best_pso);

@@ -22,6 +22,7 @@
 #ifndef __SAMDB_H__
 #define __SAMDB_H__
 
+struct auth_SidAttr;
 struct auth_session_info;
 struct dsdb_control_current_partition;
 struct dsdb_extended_replicated_object;
