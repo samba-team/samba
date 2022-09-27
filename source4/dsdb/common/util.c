@@ -2544,7 +2544,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS nt_status;
-	const char * const user_attrs[] = {
+	static const char * const attrs[] = {
 		"userAccountControl",
 		"sAMAccountName",
 		NULL
@@ -2561,7 +2561,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 
 	ret = dsdb_search_one(ldb, frame, &user_msg, ldb_get_default_basedn(ldb),
-			      LDB_SCOPE_SUBTREE, user_attrs, 0,
+			      LDB_SCOPE_SUBTREE, attrs, 0,
 			      "(&(objectSid=%s)(objectClass=user))",
 			      ldap_encode_ndr_dom_sid(frame, user_sid));
 	if (ret != LDB_SUCCESS) {
