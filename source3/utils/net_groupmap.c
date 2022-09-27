@@ -157,7 +157,7 @@ static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 		/* Get the current mapping from the database */
 		if(!pdb_getgrsid(map, sid)) {
 			d_fprintf(stderr,
-				  _("Failure to local group SID in the "
+				  _("Failure to find local group SID in the "
 				    "database\n"));
 			TALLOC_FREE(map);
 			return -1;
