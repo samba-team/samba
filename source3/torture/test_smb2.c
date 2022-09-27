@@ -4059,15 +4059,41 @@ bool run_smb2_dfs_paths(int dummy)
 		return false;
 	}
 
-	/* An "" (empty) server name should open and match the share root. */
-	ino_matched = smb2_inode_matches(cli,
-					 dfs_root_share_name,
-					 root_ino,
-					 "");
-	if (!ino_matched) {
-		printf("%s:%d Failed to match ino number for %s\n",
+	/*
+	 * An "" DFS empty server name should open and match the share root on
+	 * Windows 2008. Windows 2022 returns NT_STATUS_INVALID_PARAMETER
+	 * for a DFS empty server name.
+	 */
+	status = get_smb2_inode(cli,
+				"",
+				&test_ino);
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * Windows 2008 - open succeeded. Proceed to
+		 * check ino number.
+		 */
+		ino_matched = smb2_inode_matches(cli,
+						 dfs_root_share_name,
+						 root_ino,
+						 "");
+		if (!ino_matched) {
+			printf("%s:%d Failed to match ino number for %s\n",
+				__FILE__,
+				__LINE__,
+				"");
+			return false;
+		}
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		/*
+		 * For Windows 2022 we expect to fail with
+		 * NT_STATUS_INVALID_PARAMETER. Anything else is
+		 * unexpected.
+		 */
+		printf("%s:%d Unexpected error (%s) getting ino number for %s\n",
 			__FILE__,
 			__LINE__,
+			nt_errstr(status),
 			"");
 		return false;
 	}
