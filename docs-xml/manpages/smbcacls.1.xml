@@ -29,7 +29,10 @@
 		<arg choice="opt">-C|--chown=USERNAME</arg>
 		<arg choice="opt">-G|--chgrp=GROUPNAME</arg>
 		<arg choice="opt">-I|--inherit=STRING</arg>
+		<arg choice="opt">--recurse</arg>
 		<arg choice="opt">--propagate-inheritance</arg>
+		<arg choice="opt">--save=savefile</arg>
+		<arg choice="opt">--restore=restorefile</arg>
 		<arg choice="opt">--numeric</arg>
 		<arg choice="opt">--sddl</arg>
 		<arg choice="opt">--query-security-info=INT</arg>
@@ -168,6 +171,29 @@
 		<listitem><para>Add, modify, delete or set ACEs on an entire
 		directory tree according to the inheritance flags. Refer to the
 		INHERITANCE section for details.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--save savefile</term>
+		<listitem><para> stores the DACLs in sddl format
+                of the specified file or folder for later use with restore.
+                SACLS, owner or integrity labels are not stored.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--restore savefile</term>
+		<listitem><para> applies the stored DACLS to files in
+		directory.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--recurse</term>
+		<listitem><para> indicates the operation is performed on
+		directory and all files/directories below. (only applies
+		to save option)
 		</para></listitem>
 		</varlistentry>
 
