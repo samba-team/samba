@@ -56,7 +56,7 @@ void mit_samba_context_free(struct mit_samba_context *ctx)
 }
 
 /*
- * Implemant a callback to log to the MIT KDC log facility
+ * Implement a callback to log to the MIT KDC log facility
  *
  * http://web.mit.edu/kerberos/krb5-devel/doc/plugindev/general.html#logging-from-kdc-and-kadmind-plugin-modules
  */
