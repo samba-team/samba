@@ -21,6 +21,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "librpc/gen_ndr/auth.h"
+
 enum samba_asserted_identity {
 	SAMBA_ASSERTED_IDENTITY_IGNORE = 0,
 	SAMBA_ASSERTED_IDENTITY_SERVICE,
@@ -71,6 +73,7 @@ NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *skdc_entry,
 				 enum samba_asserted_identity asserted_identity,
+				 enum auth_group_inclusion group_inclusion,
 				 DATA_BLOB **_logon_info_blob,
 				 DATA_BLOB **_cred_ndr_blob,
 				 DATA_BLOB **_upn_info_blob,
@@ -81,6 +84,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
+				   enum auth_group_inclusion group_inclusion,
 				   const krb5_pac pac, DATA_BLOB *pac_blob,
 				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
 				   struct PAC_SIGNATURE_DATA *pac_kdc_sig);

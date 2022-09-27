@@ -49,6 +49,7 @@
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 				       const struct auth_user_info_dc *info,
+				       enum auth_group_inclusion group_inclusion,
 				       DATA_BLOB *pac_data,
 				       DATA_BLOB *requester_sid_blob)
 {
@@ -64,7 +65,9 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 		*requester_sid_blob = data_blob_null;
 	}
 
-	nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx, info, &info3);
+	nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx, info,
+						       group_inclusion,
+						       &info3);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Getting Samba info failed: %s\n",
 			  nt_errstr(nt_status)));
@@ -845,6 +848,7 @@ NTSTATUS samba_kdc_get_user_info_from_db(struct samba_kdc_entry *skdc_entry,
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *p,
 				 enum samba_asserted_identity asserted_identity,
+				 enum auth_group_inclusion group_inclusion,
 				 DATA_BLOB **_logon_info_blob,
 				 DATA_BLOB **_cred_ndr_blob,
 				 DATA_BLOB **_upn_info_blob,
@@ -940,6 +944,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_get_logon_info_pac_blob(logon_blob,
 						  user_info_dc,
+						  group_inclusion,
 						  logon_blob,
 						  requester_sid_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1000,6 +1005,7 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
 				   struct ldb_context *samdb,
+				   enum auth_group_inclusion group_inclusion,
 				   const krb5_pac pac, DATA_BLOB *pac_blob,
 				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
 				   struct PAC_SIGNATURE_DATA *pac_kdc_sig)
@@ -1026,8 +1032,9 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = samba_get_logon_info_pac_blob(mem_ctx,
-						  user_info_dc, pac_blob, NULL);
-
+						  user_info_dc,
+						  group_inclusion,
+						  pac_blob, NULL);
 	return nt_status;
 }
 
@@ -1427,6 +1434,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *client_claims_blob = NULL;
 	bool is_untrusted = flags & SAMBA_KDC_FLAG_KRBTGT_IS_UNTRUSTED;
 	int is_tgs = false;
+	enum auth_group_inclusion group_inclusion;
 	size_t num_types = 0;
 	uint32_t *types = NULL;
 	/*
@@ -1447,6 +1455,17 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	ssize_t attrs_info_idx = -1;
 	ssize_t requester_sid_idx = -1;
 	ssize_t full_checksum_idx = -1;
+
+	is_tgs = smb_krb5_principal_is_tgs(context, server_principal);
+	if (is_tgs == -1) {
+		code = ENOMEM;
+		goto done;
+	}
+
+	/* Only include resource groups in a service ticket. */
+	group_inclusion = (is_tgs)
+		? AUTH_EXCLUDE_RESOURCE_GROUPS
+		: AUTH_INCLUDE_RESOURCE_GROUPS;
 
 	if (client != NULL) {
 		/*
@@ -1511,6 +1530,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		nt_status = samba_kdc_get_pac_blobs(mem_ctx,
 						    client,
 						    asserted_identity,
+						    group_inclusion,
 						    &pac_blob,
 						    NULL,
 						    &upn_blob,
@@ -1589,6 +1609,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		nt_status = samba_kdc_update_pac_blob(mem_ctx,
 						      context,
 						      samdb,
+						      group_inclusion,
 						      old_pac,
 						      pac_blob,
 						      NULL,
@@ -1775,12 +1796,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	 */
 	if (!samba_princ_needs_pac(server)) {
 		code = ENOATTR;
-		goto done;
-	}
-
-	is_tgs = smb_krb5_principal_is_tgs(context, server_principal);
-	if (is_tgs == -1) {
-		code = ENOMEM;
 		goto done;
 	}
 

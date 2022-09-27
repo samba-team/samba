@@ -143,7 +143,12 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	struct samba_kdc_entry *skdc_entry =
 		talloc_get_type_abort(client->context,
 		struct samba_kdc_entry);
-	bool is_krbtgt;
+	bool is_krbtgt = krb5_principal_is_krbtgt(context, server->principal);
+	/* Only include resource groups in a service ticket. */
+	enum auth_group_inclusion group_inclusion =
+		(is_krbtgt) ?
+			AUTH_EXCLUDE_RESOURCE_GROUPS :
+			AUTH_INCLUDE_RESOURCE_GROUPS;
 	bool is_s4u2self = samba_wdc_is_s4u2self_req(r);
 	enum samba_asserted_identity asserted_identity =
 		(is_s4u2self) ?
@@ -165,10 +170,9 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		cred_ndr_ptr = &cred_ndr;
 	}
 
-	is_krbtgt = krb5_principal_is_krbtgt(context, server->principal);
-
 	nt_status = samba_kdc_get_pac_blobs(mem_ctx, skdc_entry,
 					    asserted_identity,
+					    group_inclusion,
 					    &logon_blob,
 					    cred_ndr_ptr,
 					    &upn_blob,

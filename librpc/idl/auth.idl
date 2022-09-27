@@ -95,6 +95,15 @@ interface auth
 		TICKET_TYPE_NON_TGT = 2
 	} ticket_type;
 
+	/*
+	 * Used to indicate whether or not to include resource groups in the
+	 * formation of SamInfo or a PAC.
+	 */
+	typedef enum {
+		AUTH_INCLUDE_RESOURCE_GROUPS = 0,
+		AUTH_EXCLUDE_RESOURCE_GROUPS = 1
+	} auth_group_inclusion;
+
 	typedef [public] struct {
 		dom_sid sid;
 		security_GroupAttrs attrs;

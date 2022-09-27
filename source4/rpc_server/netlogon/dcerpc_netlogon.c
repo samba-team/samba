@@ -1469,6 +1469,7 @@ static void dcesrv_netr_LogonSamLogon_base_auth_done(struct tevent_req *subreq)
 	case 2:
 		nt_status = auth_convert_user_info_dc_saminfo2(mem_ctx,
 							       user_info_dc,
+							       AUTH_INCLUDE_RESOURCE_GROUPS,
 							       &sam2);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			r->out.result = nt_status;
@@ -1482,6 +1483,7 @@ static void dcesrv_netr_LogonSamLogon_base_auth_done(struct tevent_req *subreq)
 	case 3:
 		nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx,
 							       user_info_dc,
+							       AUTH_INCLUDE_RESOURCE_GROUPS,
 							       &sam3);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			r->out.result = nt_status;
@@ -1495,6 +1497,7 @@ static void dcesrv_netr_LogonSamLogon_base_auth_done(struct tevent_req *subreq)
 	case 6:
 		nt_status = auth_convert_user_info_dc_saminfo6(mem_ctx,
 							       user_info_dc,
+							       AUTH_INCLUDE_RESOURCE_GROUPS,
 							       &sam6);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			r->out.result = nt_status;

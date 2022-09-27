@@ -99,6 +99,13 @@ static NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 
 		for (i=PRIMARY_GROUP_SID_INDEX; i<user_info_dc->num_sids; i++) {
 			struct auth_SidAttr *group_sid = &user_info_dc->sids[i];
+			if (group_sid->attrs & SE_GROUP_RESOURCE) {
+				/*
+				 * Resource groups don't belong in the base
+				 * RIDs, they're handled elsewhere.
+				 */
+				continue;
+			}
 			if (!dom_sid_in_domain(sam->domain_sid, &group_sid->sid)) {
 				/* We handle this elsewhere */
 				continue;
@@ -140,6 +147,7 @@ static NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
  * the user_info_dc it was generated from */
 NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 					    const struct auth_user_info_dc *user_info_dc,
+					    enum auth_group_inclusion group_inclusion,
 					    struct netr_SamInfo6 **_sam6)
 {
 	NTSTATUS status;
@@ -168,7 +176,20 @@ NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 
 	/* We don't put the user and group SIDs in there */
 	for (i=2; i<user_info_dc->num_sids; i++) {
-		if (dom_sid_in_domain(sam6->base.domain_sid, &user_info_dc->sids[i].sid)) {
+		if (user_info_dc->sids[i].attrs & SE_GROUP_RESOURCE) {
+			/*
+			 * If it's a resource group, check whether it should be
+			 * included or filtered out.
+			 */
+			switch (group_inclusion) {
+			case AUTH_INCLUDE_RESOURCE_GROUPS:
+				/* Include it. */
+				break;
+			case AUTH_EXCLUDE_RESOURCE_GROUPS:
+				/* Ignore it. */
+				continue;
+			}
+		} else if (dom_sid_in_domain(sam6->base.domain_sid, &user_info_dc->sids[i].sid)) {
 			continue;
 		}
 		sam6->sids[sam6->sidcount].sid = dom_sid_dup(sam6->sids, &user_info_dc->sids[i].sid);
@@ -211,6 +232,7 @@ NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
  * the user_info_dc it was generated from */
 NTSTATUS auth_convert_user_info_dc_saminfo2(TALLOC_CTX *mem_ctx,
 					   const struct auth_user_info_dc *user_info_dc,
+					   enum auth_group_inclusion group_inclusion,
 					   struct netr_SamInfo2 **_sam2)
 {
 	NTSTATUS status;
@@ -222,7 +244,8 @@ NTSTATUS auth_convert_user_info_dc_saminfo2(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = auth_convert_user_info_dc_saminfo6(sam2, user_info_dc, &sam6);
+	status = auth_convert_user_info_dc_saminfo6(sam2, user_info_dc,
+						    group_inclusion, &sam6);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sam2);
 		return status;
@@ -237,6 +260,7 @@ NTSTATUS auth_convert_user_info_dc_saminfo2(TALLOC_CTX *mem_ctx,
  * the user_info_dc it was generated from */
 NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 					   const struct auth_user_info_dc *user_info_dc,
+					   enum auth_group_inclusion group_inclusion,
 					   struct netr_SamInfo3 **_sam3)
 {
 	NTSTATUS status;
@@ -248,7 +272,8 @@ NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = auth_convert_user_info_dc_saminfo6(sam3, user_info_dc, &sam6);
+	status = auth_convert_user_info_dc_saminfo6(sam3, user_info_dc,
+						    group_inclusion, &sam6);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sam3);
 		return status;

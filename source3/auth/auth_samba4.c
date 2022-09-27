@@ -152,6 +152,7 @@ static NTSTATUS check_samba4_security(
 
 	nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx,
 						       user_info_dc,
+						       AUTH_INCLUDE_RESOURCE_GROUPS,
 						       &info3);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		/* We need the strings from the server_info to be valid as long as the info3 is around */

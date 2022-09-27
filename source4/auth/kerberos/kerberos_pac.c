@@ -247,7 +247,9 @@
 		talloc_free(pac_data);
 		return ENOMEM;
 	}
-	nt_status = auth_convert_user_info_dc_saminfo3(LOGON_INFO, user_info_dc, &sam3);
+	nt_status = auth_convert_user_info_dc_saminfo3(LOGON_INFO, user_info_dc,
+						       AUTH_INCLUDE_RESOURCE_GROUPS,
+						       &sam3);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Getting Samba info failed: %s\n", nt_errstr(nt_status)));
 		talloc_free(pac_data);

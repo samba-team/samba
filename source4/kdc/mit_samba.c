@@ -475,7 +475,11 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	NTSTATUS nt_status;
 	krb5_error_code code;
 	struct samba_kdc_entry *skdc_entry;
-	bool is_krbtgt;
+	bool is_krbtgt = ks_is_tgs_principal(smb_ctx, server->princ);
+	/* Only include resource groups in a service ticket. */
+	enum auth_group_inclusion group_inclusion = (is_krbtgt)
+		? AUTH_EXCLUDE_RESOURCE_GROUPS
+		: AUTH_INCLUDE_RESOURCE_GROUPS;
 	enum samba_asserted_identity asserted_identity =
 		(flags & KRB5_KDB_FLAG_PROTOCOL_TRANSITION) ?
 			SAMBA_ASSERTED_IDENTITY_SERVICE :
@@ -496,11 +500,10 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		cred_ndr_ptr = &cred_ndr;
 	}
 
-	is_krbtgt = ks_is_tgs_principal(smb_ctx, server->princ);
-
 	nt_status = samba_kdc_get_pac_blobs(tmp_ctx,
 					    skdc_entry,
 					    asserted_identity,
+					    group_inclusion,
 					    &logon_info_blob,
 					    cred_ndr_ptr,
 					    &upn_dns_info_blob,

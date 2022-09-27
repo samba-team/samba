@@ -47,12 +47,15 @@ struct auth_user_info *auth_user_info_copy(TALLOC_CTX *mem_ctx,
 
 NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 					   const struct auth_user_info_dc *user_info_dc,
+					   enum auth_group_inclusion group_inclusion,
 					   struct netr_SamInfo6 **_sam6);
 NTSTATUS auth_convert_user_info_dc_saminfo2(TALLOC_CTX *mem_ctx,
 					   const struct auth_user_info_dc *user_info_dc,
+					   enum auth_group_inclusion group_inclusion,
 					   struct netr_SamInfo2 **_sam2);
 NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 					   const struct auth_user_info_dc *user_info_dc,
+					   enum auth_group_inclusion group_inclusion,
 					   struct netr_SamInfo3 **_sam3);
 
 /**
