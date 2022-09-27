@@ -1825,7 +1825,7 @@ class SamTests(samba.tests.TestCase):
                                 msg, expected_msg))
 
         try:
-            ldb_fail = SamDB(url=host, credentials=sasl_wrong_creds, lp=lp)
+            SamDB(url=host, credentials=sasl_wrong_creds, lp=lp)
             self.fail()
         except LdbError as e56:
             (num, msg) = e56.args
@@ -1834,7 +1834,7 @@ class SamTests(samba.tests.TestCase):
 
         if not requires_strong_auth:
             try:
-                ldb_fail = SamDB(url=host, credentials=simple_wrong_creds, lp=lp)
+                SamDB(url=host, credentials=simple_wrong_creds, lp=lp)
                 self.fail()
             except LdbError as e4:
                 (num, msg) = e4.args
@@ -1853,7 +1853,7 @@ class SamTests(samba.tests.TestCase):
         self.assertEqual(int(res1[0]["pwdLastSet"][0]), 0)
 
         try:
-            ldb_fail = SamDB(url=host, credentials=sasl_wrong_creds, lp=lp)
+            SamDB(url=host, credentials=sasl_wrong_creds, lp=lp)
             self.fail()
         except LdbError as e57:
             (num, msg) = e57.args
@@ -1861,7 +1861,7 @@ class SamTests(samba.tests.TestCase):
             assertLDAPErrorMsg(msg, error_msg_sasl_wrong_pw)
 
         try:
-            ldb_fail = SamDB(url=host, credentials=sasl_creds, lp=lp)
+            SamDB(url=host, credentials=sasl_creds, lp=lp)
             self.fail()
         except LdbError as e58:
             (num, msg) = e58.args
@@ -1870,7 +1870,7 @@ class SamTests(samba.tests.TestCase):
 
         if not requires_strong_auth:
             try:
-                ldb_fail = SamDB(url=host, credentials=simple_wrong_creds, lp=lp)
+                SamDB(url=host, credentials=simple_wrong_creds, lp=lp)
                 self.fail()
             except LdbError as e5:
                 (num, msg) = e5.args
@@ -1878,7 +1878,7 @@ class SamTests(samba.tests.TestCase):
                 assertLDAPErrorMsg(msg, error_msg_simple_wrong_pw)
 
             try:
-                ldb_fail = SamDB(url=host, credentials=simple_creds, lp=lp)
+                SamDB(url=host, credentials=simple_creds, lp=lp)
                 self.fail()
             except LdbError as e6:
                 (num, msg) = e6.args
@@ -2666,7 +2666,6 @@ class SamTests(samba.tests.TestCase):
         self.assertEqual(int(res[0]["userAccountControl"][0]),
                          UF_NORMAL_ACCOUNT |UF_SMARTCARD_REQUIRED)
         self.assertEqual(int(res[0]["pwdLastSet"][0]), lastset)
-        lastset1 = int(res[0]["pwdLastSet"][0])
         self.assertEqual(int(res[0]["msDS-KeyVersionNumber"][0]), 2)
         self.assertTrue(len(res[0]["replPropertyMetaData"]) == 1)
         rpmd = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
