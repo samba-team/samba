@@ -23,7 +23,7 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS,
 from samba.dsdb import GTYPE_SECURITY_GLOBAL_GROUP, GTYPE_SECURITY_UNIVERSAL_GROUP
 import samba.tests
 from samba.tests import delete_force
-from samba.dcerpc import samr, security
+from samba.dcerpc import security
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES, AUTH_SESSION_INFO_NTLM
 
 
