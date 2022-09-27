@@ -183,7 +183,7 @@ int mit_samba_generate_random_password(krb5_data *pwd)
 
 	tmp_ctx = talloc_named(NULL,
 			       0,
-			       "mit_samba_create_principal_password context");
+			       "mit_samba_generate_random_password context");
 	if (tmp_ctx == NULL) {
 		return ENOMEM;
 	}
@@ -485,7 +485,7 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 
 	tmp_ctx = talloc_named(smb_ctx,
 			       0,
-			       "mit_samba_get_pac_data_blobs context");
+			       "mit_samba_get_pac context");
 	if (tmp_ctx == NULL) {
 		return ENOMEM;
 	}
