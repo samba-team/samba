@@ -189,7 +189,7 @@ class StaticTokenTest(samba.tests.TestCase):
         server_to_client = b""
 
         # Run the actual call loop.
-        while client_finished == False and server_finished == False:
+        while not client_finished and not server_finished:
             if not client_finished:
                 print("running client gensec_update")
                 (client_finished, client_to_server) = gensec_client.update(server_to_client)
@@ -461,7 +461,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         server_to_client = b""
 
         # Run the actual call loop.
-        while client_finished == False and server_finished == False:
+        while not client_finished and not server_finished:
             if not client_finished:
                 print("running client gensec_update")
                 (client_finished, client_to_server) = gensec_client.update(server_to_client)
