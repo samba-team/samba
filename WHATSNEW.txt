@@ -1,3 +1,68 @@
+                   ===============================
+                   Release Notes for Samba 4.15.10
+                         September 28, 2022
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.15 release series.
+
+
+Changes since 4.15.9
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15128: Possible use after free of connection_struct when iterating
+     smbd_server_connection->connections.
+   * BUG 15174: smbXsrv_connection_shutdown_send result leaked.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15086: Spotlight RPC service returns wrong response when Spotlight is
+     disabled on a share.
+   * BUG 15126: acl_xattr VFS module may unintentionally use filesystem
+     permissions instead of ACL from xattr.
+   * BUG 15153: Missing SMB2-GETINFO access checks from MS-SMB2 3.3.5.20.1.
+   * BUG 15161: assert failed: !is_named_stream(smb_fname)") at
+     ../../lib/util/fault.c:197.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15148: Missing READ_LEASE break could cause data corruption.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15124: rpcclient can crash using setuserinfo(2).
+   * BUG 15132: Samba fails to build with glibc 2.36 caused by including
+     <sys/mount.h> in libreplace.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15152: SMB1 negotiation can fail to handle connection errors.
+
+o  Michael Tokarev <mjt@tls.msk.ru>
+   * BUG 15078: samba-tool domain join segfault when joining a samba ad domain.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
                    ==============================
                    Release Notes for Samba 4.15.9
                            July 27, 2022
@@ -67,8 +132,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.15.8
                            June 28, 2022
