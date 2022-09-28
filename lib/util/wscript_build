@@ -147,6 +147,13 @@ bld.SAMBA_LIBRARY('genrand',
                   local_include=False,
                   private_library=True)
 
+bld.SAMBA_LIBRARY('stable_sort',
+                  source='stable_sort.c',
+                  deps='replace',
+                  public_deps='talloc',
+                  local_include=False,
+                  private_library=True)
+
 if bld.env.SAMBA_UTIL_CORE_ONLY:
 
     bld.SAMBA_LIBRARY('tevent-util',
@@ -398,5 +405,11 @@ else:
                                     'samba-util',
                                     'popt']),
                      cflags="-D USING_CMDLINE_S3",
+                     local_include=False,
+                     for_selftest=True)
+
+    bld.SAMBA_BINARY('test_stable_sort',
+                     source='tests/test_stable_sort.c',
+                     deps='cmocka replace talloc stable_sort',
                      local_include=False,
                      for_selftest=True)
