@@ -33,6 +33,15 @@ struct imessaging_context {
 	struct server_id_db *names;
 	struct timeval start_time;
 	void *msg_dgm_ref;
+	/*
+	 * The number of instances waiting for incoming
+	 * messages. By default it's always greater than 0.
+	 *
+	 * If it's 0 we'll discard incoming messages,
+	 * see imessaging_init_discard_imcoming().
+	 */
+	bool discard_incoming;
+	uint64_t num_incoming_listeners;
 };
 
 NTSTATUS imessaging_register_extra_handlers(struct imessaging_context *msg);
