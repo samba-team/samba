@@ -64,6 +64,6 @@
 #define HAVE_STRSEP 1
 #endif
 
-#define fallthrough FALL_THROUGH
+#define HEIM_FALLTHROUGH FALL_THROUGH
 
 #endif
