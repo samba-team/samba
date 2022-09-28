@@ -818,7 +818,7 @@ struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
 	/* This is because we are not in the s3 serverid database */
 	id.unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY;
 
-	return imessaging_init(mem_ctx, lp_ctx, id, ev);
+	return imessaging_init_discard_incoming(mem_ctx, lp_ctx, id, ev);
 }
 
 /*
