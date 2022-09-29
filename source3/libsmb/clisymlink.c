@@ -37,8 +37,8 @@ struct cli_symlink_state {
 	uint32_t flags;
 
 	uint16_t fnum;
+	DATA_BLOB in;
 
-	uint16_t setup[4];
 	NTSTATUS set_reparse_status;
 };
 
@@ -88,7 +88,6 @@ static void cli_symlink_create_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_symlink_state *state = tevent_req_data(
 		req, struct cli_symlink_state);
-	DATA_BLOB data;
 	NTSTATUS status;
 
 	status = cli_ntcreate_recv(subreq, &state->fnum, NULL);
@@ -99,33 +98,19 @@ static void cli_symlink_create_done(struct tevent_req *subreq)
 
 	if (!symlink_reparse_buffer_marshall(
 		    state->link_target, NULL, state->flags, state,
-		    &data.data, &data.length)) {
+		    &state->in.data, &state->in.length)) {
 		tevent_req_oom(req);
 		return;
 	}
 
-	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
-		subreq = cli_smb2_set_reparse_point_fnum_send(state,
-						state->ev,
-						state->cli,
-						state->fnum,
-						data);
-	} else {
-		SIVAL(state->setup, 0, FSCTL_SET_REPARSE_POINT);
-		SSVAL(state->setup, 4, state->fnum);
-		SCVAL(state->setup, 6, 1); /* IsFcntl */
-		SCVAL(state->setup, 7, 0); /* IsFlags */
-
-
-		subreq = cli_trans_send(state, state->ev, state->cli, 0,
-				SMBnttrans,
-				NULL, -1, /* name, fid */
-				NT_TRANSACT_IOCTL, 0,
-				state->setup, 4, 0, /* setup */
-				NULL, 0, 0,	    /* param */
-				data.data, data.length, 0); /* data */
-	}
-
+	subreq = cli_fsctl_send(
+		state,
+		state->ev,
+		state->cli,
+		state->fnum,
+		FSCTL_SET_REPARSE_POINT,
+		&state->in,
+		0);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -139,16 +124,7 @@ static void cli_symlink_set_reparse_done(struct tevent_req *subreq)
 	struct cli_symlink_state *state = tevent_req_data(
 		req, struct cli_symlink_state);
 
-	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
-		state->set_reparse_status =
-			cli_smb2_set_reparse_point_fnum_recv(subreq);
-	} else {
-		state->set_reparse_status = cli_trans_recv(
-			subreq, NULL, NULL,
-			NULL, 0, NULL,	/* rsetup */
-			NULL, 0, NULL,	/* rparam */
-			NULL, 0, NULL);	/* rdata */
-	}
+	state->set_reparse_status = cli_fsctl_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_IS_OK(state->set_reparse_status)) {
