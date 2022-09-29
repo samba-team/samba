@@ -60,6 +60,7 @@ struct drsuapi_getncchanges_state {
 	struct GUID ncRoot_guid;
 	bool is_schema_nc;
 	bool is_get_anc;
+	bool broken_samba_4_5_get_anc_emulation;
 	bool is_get_tgt;
 	uint64_t min_usn;
 	uint64_t max_usn;
@@ -1018,6 +1019,17 @@ struct drsuapi_changed_objects {
 	struct GUID guid;
 	uint64_t usn;
 };
+
+
+/*
+  sort the objects we send by tree order (Samba 4.5 emulation)
+ */
+static int site_res_cmp_anc_order(struct drsuapi_changed_objects *m1,
+				  struct drsuapi_changed_objects *m2,
+				  struct drsuapi_getncchanges_state *getnc_state)
+{
+	return ldb_dn_compare(m2->dn, m1->dn);
+}
 
 /*
   sort the objects we send first by uSNChanged
@@ -2281,8 +2293,13 @@ static WERROR getncchanges_get_obj_to_send(const struct ldb_message *msg,
 	 * If required, also add any ancestors that the client may need to know
 	 * about before it can resolve this object. These get prepended to the
 	 * ret_obj_list so the client adds them first.
+	 *
+	 * We allow this to be disabled to permit testing of a
+	 * client-side fallback for the broken behaviour in Samba 4.5
+	 * and earlier.
 	 */
-	if (getnc_state->is_get_anc) {
+	if (getnc_state->is_get_anc
+	    && !getnc_state->broken_samba_4_5_get_anc_emulation) {
 		werr = getncchanges_add_ancestors(obj, msg->dn, mem_ctx,
 						  sam_ctx, getnc_state,
 						  schema, session_key,
@@ -3097,9 +3114,35 @@ allowed:
 			}
 		}
 
+		if (req10->extended_op == DRSUAPI_EXOP_NONE) {
+			getnc_state->is_get_anc =
+				((req10->replica_flags & DRSUAPI_DRS_GET_ANC) != 0);
+			if (getnc_state->is_get_anc
+				&& lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx,
+						    NULL,
+						    "drs",
+						    "broken_samba_4.5_get_anc_emulation",
+						   false)) {
+				getnc_state->broken_samba_4_5_get_anc_emulation = true;
+			}
+			if (lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx,
+					     NULL,
+					     "drs",
+					     "get_tgt_support",
+					     true)) {
+				getnc_state->is_get_tgt =
+					((req10->more_flags & DRSUAPI_DRS_GET_TGT) != 0);
+			}
+		}
+
 		/* RID_ALLOC returns 3 objects in a fixed order */
 		if (req10->extended_op == DRSUAPI_EXOP_FSMO_RID_ALLOC) {
 			/* Do nothing */
+		} else if (getnc_state->broken_samba_4_5_get_anc_emulation) {
+			LDB_TYPESAFE_QSORT(changes,
+					   getnc_state->num_records,
+					   getnc_state,
+					   site_res_cmp_anc_order);
 		} else {
 			LDB_TYPESAFE_QSORT(changes,
 					   getnc_state->num_records,
@@ -3122,13 +3165,6 @@ allowed:
 
 		talloc_free(search_res);
 		talloc_free(changes);
-
-		if (req10->extended_op == DRSUAPI_EXOP_NONE) {
-			getnc_state->is_get_anc =
-				((req10->replica_flags & DRSUAPI_DRS_GET_ANC) != 0);
-			getnc_state->is_get_tgt =
-				((req10->more_flags & DRSUAPI_DRS_GET_TGT) != 0);
-		}
 
 		/*
 		 * when using GET_ANC or GET_TGT, cache the objects that have
