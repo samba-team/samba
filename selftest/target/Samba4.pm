@@ -2053,10 +2053,22 @@ sub provision_chgdcpass($$)
 	# This environment disallows the use of this password
 	# (and also removes the default AD complexity checks)
 	my $unacceptable_password = "Paßßword-widk3Dsle32jxdBdskldsk55klASKQ";
+
+	# This environment also sets some settings that are unusual,
+	# to test specific behaviours.  In particular, this
+	# environment fails to correctly support DRSUAPI_DRS_GET_ANC
+	# like Samba before 4.5 and DRSUAPI_DRS_GET_TGT before 4.8
+	#
+	# Additionally, disabling DRSUAPI_DRS_GET_TGT causes all links
+	# to be sent last (in the final chunk), which is like Samba
+	# before 4.8.
+
 	my $extra_smb_conf = "
 	check password script = $self->{srcdir}/selftest/checkpassword_arg1.sh ${unacceptable_password}
 	allow dcerpc auth level connect:lsarpc = yes
 	dcesrv:max auth states = 8
+        drs:broken_samba_4.5_get_anc_emulation = true
+        drs:get_tgt_support = false
 ";
 	my $extra_provision_options = ["--dns-backend=BIND9_DLZ"];
 	my $ret = $self->provision($prefix,
