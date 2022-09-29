@@ -234,11 +234,6 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	}
 	state->cli = cli;
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
 	if (cli->backup_intent) {
 		create_options |= FILE_OPEN_FOR_BACKUP_INTENT;
 	}
@@ -486,11 +481,6 @@ struct tevent_req *cli_smb2_close_fnum_send(TALLOC_CTX *mem_ctx,
 	state->cli = cli;
 	state->fnum = fnum;
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
 	status = map_fnum_to_smb2_handle(cli, fnum, &state->ph);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
@@ -710,11 +700,6 @@ struct tevent_req *cli_smb2_delete_on_close_send(TALLOC_CTX *mem_ctx,
 	}
 	state->cli = cli;
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
 	/*
 	 * setinfo on the handle with info_type SMB2_SETINFO_FILE (1),
 	 * level 13 (SMB_FILE_DISPOSITION_INFORMATION - 1000).
@@ -912,11 +897,6 @@ struct tevent_req *cli_smb2_rmdir_send(
 	state->dname = dname;
 	state->in_cblobs = in_cblobs;
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
 	subreq = cli_smb2_create_fnum_send(
 		state,
 		state->ev,
@@ -1086,11 +1066,6 @@ struct tevent_req *cli_smb2_unlink_send(
 	state->cli = cli;
 	state->fname = fname;
 	state->in_cblobs = in_cblobs;
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
 
 	subreq = cli_smb2_create_fnum_send(
 		state,		/* mem_ctx */
@@ -1357,11 +1332,6 @@ struct tevent_req *cli_smb2_list_send(
 	state->cli = cli;
 	state->status = NT_STATUS_OK;
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
 	ok = windows_parent_dirname(state, pathname, &parent, &state->mask);
 	if (!ok) {
 		tevent_req_oom(req);
@@ -1595,10 +1565,6 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2047,11 +2013,6 @@ NTSTATUS cli_smb2_qpathinfo_alt_name(struct cli_state *cli,
 		goto fail;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
 	status = get_fnum_from_path(cli,
 				name,
 				FILE_READ_ATTRIBUTES,
@@ -2148,11 +2109,6 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 		goto fail;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
 	status = get_fnum_from_path(cli,
 				name,
 				FILE_READ_ATTRIBUTES,
@@ -2219,11 +2175,6 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 		goto fail;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
 	status = get_fnum_from_path(cli,
 					name,
 					FILE_READ_ATTRIBUTES,
@@ -2276,11 +2227,6 @@ NTSTATUS cli_smb2_qpathinfo_streams(struct cli_state *cli,
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
@@ -2355,11 +2301,6 @@ NTSTATUS cli_smb2_setpathinfo(struct cli_state *cli,
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
@@ -2475,10 +2416,6 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	/* setinfo on the handle with info_type SMB2_SETINFO_FILE (1),
 	   level 4 (SMB_FILE_BASIC_INFORMATION - 1000). */
 
@@ -2529,11 +2466,6 @@ NTSTATUS cli_smb2_dskattr(struct cli_state *cli, const char *path,
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
@@ -2636,11 +2568,6 @@ NTSTATUS cli_smb2_get_fs_full_size_info(struct cli_state *cli,
 		goto fail;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
 	/* First open the top level directory. */
 	status =
 	    cli_smb2_create_fnum(cli, "", 0,		   /* create_flags */
@@ -2722,11 +2649,6 @@ NTSTATUS cli_smb2_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr)
 		goto fail;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
 	/* First open the top level directory. */
 	status =
 	    cli_smb2_create_fnum(cli, "", 0,		   /* create_flags */
@@ -2803,11 +2725,6 @@ NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
@@ -2936,11 +2853,6 @@ struct tevent_req *cli_smb2_query_mxac_send(TALLOC_CTX *mem_ctx,
 		.cli = cli,
 		.fname = fname,
 	};
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
 
 	status = smb2_create_blob_add(state,
 				      &state->in_cblobs,
@@ -3361,11 +3273,6 @@ NTSTATUS cli_smb2_set_ea_fnum(struct cli_state *cli,
 		goto fail;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
 	/* Marshall the SMB2 EA data. */
 	if (ea_len > 0xFFFF) {
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -3441,11 +3348,6 @@ NTSTATUS cli_smb2_set_ea_path(struct cli_state *cli,
 		goto fail;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
 	status = get_fnum_from_path(cli,
 				name,
 				FILE_WRITE_EA,
@@ -3501,11 +3403,6 @@ NTSTATUS cli_smb2_get_ea_list_path(struct cli_state *cli,
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
@@ -3602,11 +3499,6 @@ NTSTATUS cli_smb2_get_user_quota(struct cli_state *cli,
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
@@ -3711,11 +3603,6 @@ NTSTATUS cli_smb2_list_user_quota_step(struct cli_state *cli,
 		goto cleanup;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto cleanup;
-	}
-
 	info.restart_scan = first ? 1 : 0;
 
 	err = ndr_push_struct_blob(
@@ -3784,11 +3671,6 @@ NTSTATUS cli_smb2_get_fs_quota_info(struct cli_state *cli,
 		goto cleanup;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto cleanup;
-	}
-
 	status = cli_smb2_query_info_fnum(
 		cli,
 		quota_fnum,
@@ -3835,11 +3717,6 @@ NTSTATUS cli_smb2_set_user_quota(struct cli_state *cli,
 		goto cleanup;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto cleanup;
-	}
-
 	status = build_user_quota_buffer(qtl, 0, talloc_tos(), &inbuf, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup;
@@ -3873,11 +3750,6 @@ NTSTATUS cli_smb2_set_fs_quota_info(struct cli_state *cli,
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto cleanup;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto cleanup;
 	}
@@ -4578,11 +4450,6 @@ static struct tevent_req *cli_smb2_shadow_copy_data_fnum_send(
 		return NULL;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
 	state->cli = cli;
 	state->fnum = fnum;
 
@@ -4795,11 +4662,6 @@ NTSTATUS cli_smb2_ftruncate(struct cli_state *cli,
 		goto fail;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
 	SBVAL(buf, 0, newsize);
 
 	/* setinfo on the handle with info_type SMB2_SETINFO_FILE (1),
@@ -4848,11 +4710,6 @@ struct tevent_req *cli_smb2_notify_send(
 				struct cli_smb2_notify_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
 	}
 
 	status = map_fnum_to_smb2_handle(cli, fnum, &ph);
@@ -5051,11 +4908,6 @@ struct tevent_req *cli_smb2_set_reparse_point_fnum_send(
 		return NULL;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
 	state->cli = cli;
 	state->fnum = fnum;
 
@@ -5141,11 +4993,6 @@ struct tevent_req *cli_smb2_get_reparse_point_fnum_send(
 				struct cli_smb2_get_reparse_point_fnum_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
 	}
 
 	state->cli = cli;

@@ -2997,11 +2997,17 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	bool use_channel_sequence = conn->smb2.force_channel_sequence;
 	uint16_t channel_sequence = 0;
 	bool use_replay_flag = false;
+	enum protocol_types proto = smbXcli_conn_protocol(conn);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbXcli_req_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if ((proto > PROTOCOL_NONE) && (proto < PROTOCOL_SMB2_02)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return req;
 	}
 
 	state->ev = ev;
