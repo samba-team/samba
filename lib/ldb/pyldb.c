@@ -639,6 +639,7 @@ static PyObject *py_ldb_dn_add_child(PyLdbDnObject *self, PyObject *args)
 {
 	PyObject *py_other;
 	struct ldb_dn *dn, *other;
+	bool ok;
 	if (!PyArg_ParseTuple(args, "O", &py_other))
 		return NULL;
 
@@ -647,13 +648,20 @@ static PyObject *py_ldb_dn_add_child(PyLdbDnObject *self, PyObject *args)
 	if (!pyldb_Object_AsDn(NULL, py_other, ldb_dn_get_ldb_context(dn), &other))
 		return NULL;
 
-	return PyBool_FromLong(ldb_dn_add_child(dn, other));
+	ok = ldb_dn_add_child(dn, other);
+	if (!ok) {
+		PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, NULL);
+		return NULL;
+	}
+
+	Py_RETURN_TRUE;
 }
 
 static PyObject *py_ldb_dn_add_base(PyLdbDnObject *self, PyObject *args)
 {
 	PyObject *py_other;
 	struct ldb_dn *other, *dn;
+	bool ok;
 	if (!PyArg_ParseTuple(args, "O", &py_other))
 		return NULL;
 
@@ -662,19 +670,32 @@ static PyObject *py_ldb_dn_add_base(PyLdbDnObject *self, PyObject *args)
 	if (!pyldb_Object_AsDn(NULL, py_other, ldb_dn_get_ldb_context(dn), &other))
 		return NULL;
 
-	return PyBool_FromLong(ldb_dn_add_base(dn, other));
+	ok = ldb_dn_add_base(dn, other);
+	if (!ok) {
+		PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, NULL);
+		return NULL;
+	}
+
+	Py_RETURN_TRUE;
 }
 
 static PyObject *py_ldb_dn_remove_base_components(PyLdbDnObject *self, PyObject *args)
 {
 	struct ldb_dn *dn;
 	int i;
+	bool ok;
 	if (!PyArg_ParseTuple(args, "i", &i))
 		return NULL;
 
 	dn = pyldb_Dn_AS_DN((PyObject *)self);
 
-	return PyBool_FromLong(ldb_dn_remove_base_components(dn, i));
+	ok = ldb_dn_remove_base_components(dn, i);
+	if (!ok) {
+		PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, NULL);
+		return NULL;
+	}
+
+	Py_RETURN_TRUE;
 }
 
 static PyObject *py_ldb_dn_is_child_of(PyLdbDnObject *self, PyObject *args)
@@ -819,10 +840,10 @@ static PyMethodDef py_ldb_dn_methods[] = {
    		"S.parent() -> dn\n"
 		"Get the parent for this DN." },
 	{ "add_child", (PyCFunction)py_ldb_dn_add_child, METH_VARARGS, 
-		"S.add_child(dn) -> None\n"
+		"S.add_child(dn) -> bool\n"
 		"Add a child DN to this DN." },
 	{ "add_base", (PyCFunction)py_ldb_dn_add_base, METH_VARARGS,
-		"S.add_base(dn) -> None\n"
+		"S.add_base(dn) -> bool\n"
 		"Add a base DN to this DN." },
 	{ "remove_base_components", (PyCFunction)py_ldb_dn_remove_base_components, METH_VARARGS,
 		"S.remove_base_components(int) -> bool\n"
