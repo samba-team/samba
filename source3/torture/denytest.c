@@ -75,7 +75,7 @@ static const char *resultstr(enum deny_result res)
 		{A_R, "R"},
 		{A_W, "W"},
 		{A_RW,"RW"}};
-	int i;
+	size_t i;
 	for (i=0;i<ARRAY_SIZE(results);i++) {
 		if (results[i].res == res) return results[i].name;
 	}
@@ -1410,11 +1410,10 @@ bool torture_denytest1(int dummy)
 {
 	struct cli_state *cli1;
 	uint16_t fnum1, fnum2;
-	int i;
 	bool correct = True;
 	NTSTATUS ret1, ret2, status;
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
-	size_t nread;
+	size_t i, nread;
 
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
