@@ -3081,9 +3081,8 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	}
 
 	state->smb2.recv_iov = talloc_zero_array(state, struct iovec, 3);
-	if (state->smb2.recv_iov == NULL) {
-		TALLOC_FREE(req);
-		return NULL;
+	if (tevent_req_nomem(state->smb2.recv_iov, req)) {
+		return req;
 	}
 
 	flags |= additional_flags;
