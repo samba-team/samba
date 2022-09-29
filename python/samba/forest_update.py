@@ -158,11 +158,15 @@ class ForestUpdate(object):
         self.domain_sid = security.dom_sid(samdb.get_domain_sid())
 
         self.forestupdate_container = self.samdb.get_config_basedn()
-        if not self.forestupdate_container.add_child("CN=Operations,CN=ForestUpdates"):
+        try:
+            self.forestupdate_container.add_child("CN=Operations,CN=ForestUpdates")
+        except ldb.LdbError:
             raise ForestUpdateException("Failed to add forest update container child")
 
         self.revision_object = self.samdb.get_config_basedn()
-        if not self.revision_object.add_child("CN=ActiveDirectoryUpdate,CN=ForestUpdates"):
+        try:
+            self.revision_object.add_child("CN=ActiveDirectoryUpdate,CN=ForestUpdates")
+        except ldb.LdbError:
             raise ForestUpdateException("Failed to add revision object child")
 
         # Store the result of parsing the markdown in a dictionary

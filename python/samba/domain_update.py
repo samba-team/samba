@@ -100,11 +100,15 @@ class DomainUpdate(object):
         self.domain_sid = security.dom_sid(samdb.get_domain_sid())
 
         self.domainupdate_container = self.samdb.get_root_basedn()
-        if not self.domainupdate_container.add_child("CN=Operations,CN=DomainUpdates,CN=System"):
+        try:
+            self.domainupdate_container.add_child("CN=Operations,CN=DomainUpdates,CN=System")
+        except ldb.LdbError:
             raise DomainUpdateException("Failed to add domain update container child")
 
         self.revision_object = self.samdb.get_root_basedn()
-        if not self.revision_object.add_child("CN=ActiveDirectoryUpdate,CN=DomainUpdates,CN=System"):
+        try:
+            self.revision_object.add_child("CN=ActiveDirectoryUpdate,CN=DomainUpdates,CN=System")
+        except ldb.LdbError:
             raise DomainUpdateException("Failed to add revision object child")
 
     def check_updates_functional_level(self, functional_level,

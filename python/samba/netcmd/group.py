@@ -199,15 +199,23 @@ Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (b
                                 SYSTEM_FLAG_DOMAIN_DISALLOW_RENAME |
                                 SYSTEM_FLAG_DISALLOW_DELETE)
 
-                if not groupou and not group_dn.add_child('CN=Builtin'):
-                    raise RuntimeError('Error getting Builtin objects DN')
+                if not groupou:
+                    try:
+                        group_dn.add_child('CN=Builtin')
+                    except ldb.LdbError:
+                        raise RuntimeError('Error getting Builtin objects DN')
             else:
                 raise RuntimeError(f'Unknown group type {gtype}')
 
-            if groupou and not group_dn.add_child(groupou):
-                raise CommandError(f'Invalid group OU "{groupou}"')
+            if groupou:
+                try:
+                    group_dn.add_child(groupou)
+                except ldb.LdbError:
+                    raise CommandError(f'Invalid group OU "{groupou}"')
 
-            if not group_dn.add_child(f'CN={groupname}'):
+            try:
+                group_dn.add_child(f'CN={groupname}')
+            except ldb.LdbError:
                 raise CommandError(f'Invalid group name "{groupname}"')
 
             msg = {

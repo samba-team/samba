@@ -138,8 +138,7 @@ class KDCBaseTest(RawKerberosTest):
         if self._claim_types_dn is None:
             claim_config_dn = samdb.get_config_basedn()
 
-            self.assertTrue(claim_config_dn.add_child(
-                'CN=Claims Configuration,CN=Services'))
+            claim_config_dn.add_child('CN=Claims Configuration,CN=Services')
             details = {
                 'dn': claim_config_dn,
                 'objectClass': 'container',
@@ -154,7 +153,7 @@ class KDCBaseTest(RawKerberosTest):
                 self.accounts.append(str(claim_config_dn))
 
             claim_types_dn = claim_config_dn
-            self.assertTrue(claim_types_dn.add_child('CN=Claim Types'))
+            claim_types_dn.add_child('CN=Claim Types')
             details = {
                 'dn': claim_types_dn,
                 'objectClass': 'msDS-ClaimTypes',
@@ -354,7 +353,7 @@ class KDCBaseTest(RawKerberosTest):
         samdb = self.get_samdb()
 
         claim_dn = self.get_claim_types_dn()
-        self.assertTrue(claim_dn.add_child(f'CN={claim_id}'))
+        claim_dn.add_child(f'CN={claim_id}')
 
         details = {
             'dn': claim_dn,

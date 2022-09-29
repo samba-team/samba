@@ -45,10 +45,14 @@ def remove_sysvol_references(samdb, logger, dc_name):
 
         # This is verbose, but it is the safe, escape-proof way
         # to add a base and add an arbitrary RDN.
-        if dn.add_base(samdb.get_config_basedn()) == False:
+        try:
+            dn.add_base(samdb.get_config_basedn())
+        except ldb.LdbError:
             raise DemoteException("Failed constructing DN %s by adding base %s"
                                   % (dn, samdb.get_config_basedn()))
-        if dn.add_child("CN=X") == False:
+        try:
+            dn.add_child("CN=X")
+        except ldb.LdbError:
             raise DemoteException("Failed constructing DN %s by adding child CN=X"
                                   % (dn))
         dn.set_component(0, "CN", dc_name)
@@ -68,10 +72,14 @@ def remove_sysvol_references(samdb, logger, dc_name):
         # This is verbose, but it is the safe, escape-proof way
         # to add a base and add an arbitrary RDN.
         dn = ldb.Dn(samdb, s)
-        if dn.add_base(samdb.get_default_basedn()) == False:
+        try:
+            dn.add_base(samdb.get_default_basedn())
+        except ldb.LdbError:
             raise DemoteException("Failed constructing DN %s by adding base %s"
                                   % (dn, samdb.get_default_basedn()))
-        if dn.add_child("CN=X") == False:
+        try:
+            dn.add_child("CN=X")
+        except ldb.LdbError:
             raise DemoteException("Failed constructing DN %s by adding child "
                                   "CN=X (soon to be CN=%s)" % (dn, dc_name))
         dn.set_component(0, "CN", dc_name)

@@ -72,9 +72,13 @@ def create_subnet(samdb, configDn, subnet_name, site_name):
         raise SubnetInvalid("%s is not a valid subnet (not a string)" % subnet_name)
 
     dnsubnet = ldb.Dn(samdb, "CN=Subnets,CN=Sites")
-    if dnsubnet.add_base(configDn) == False:
+    try:
+        dnsubnet.add_base(configDn)
+    except ldb.LdbError:
         raise SubnetException("dnsubnet.add_base() failed")
-    if dnsubnet.add_child("CN=X") == False:
+    try:
+        dnsubnet.add_child("CN=X")
+    except ldb.LdbError:
         raise SubnetException("dnsubnet.add_child() failed")
     dnsubnet.set_component(0, "CN", subnet_name)
 
@@ -112,9 +116,13 @@ def delete_subnet(samdb, configDn, subnet_name):
     :raise SubnetNotFound: if the subnet to be deleted does not exist.
     """
     dnsubnet = ldb.Dn(samdb, "CN=Subnets,CN=Sites")
-    if dnsubnet.add_base(configDn) == False:
+    try:
+        dnsubnet.add_base(configDn)
+    except ldb.LdbError:
         raise SubnetException("dnsubnet.add_base() failed")
-    if dnsubnet.add_child("CN=X") == False:
+    try:
+        dnsubnet.add_child("CN=X")
+    except ldb.LdbError:
         raise SubnetException("dnsubnet.add_child() failed")
     dnsubnet.set_component(0, "CN", subnet_name)
 
@@ -143,9 +151,13 @@ def rename_subnet(samdb, configDn, subnet_name, new_name):
     :raise SubnetExists: if the subnet to be created already exists.
     """
     dnsubnet = ldb.Dn(samdb, "CN=Subnets,CN=Sites")
-    if dnsubnet.add_base(configDn) == False:
+    try:
+        dnsubnet.add_base(configDn)
+    except ldb.LdbError:
         raise SubnetException("dnsubnet.add_base() failed")
-    if dnsubnet.add_child("CN=X") == False:
+    try:
+        dnsubnet.add_child("CN=X")
+    except ldb.LdbError:
         raise SubnetException("dnsubnet.add_child() failed")
     dnsubnet.set_component(0, "CN", subnet_name)
 
@@ -182,9 +194,13 @@ def set_subnet_site(samdb, configDn, subnet_name, site_name):
     """
 
     dnsubnet = ldb.Dn(samdb, "CN=Subnets,CN=Sites")
-    if dnsubnet.add_base(configDn) == False:
+    try:
+        dnsubnet.add_base(configDn)
+    except ldb.LdbError:
         raise SubnetException("dnsubnet.add_base() failed")
-    if dnsubnet.add_child("CN=X") == False:
+    try:
+        dnsubnet.add_child("CN=X")
+    except ldb.LdbError:
         raise SubnetException("dnsubnet.add_child() failed")
     dnsubnet.set_component(0, "CN", subnet_name)
 
@@ -199,9 +215,13 @@ def set_subnet_site(samdb, configDn, subnet_name, site_name):
             raise SubnetNotFound('Subnet %s does not exist' % subnet_name)
 
     dnsite = ldb.Dn(samdb, "CN=Sites")
-    if dnsite.add_base(configDn) == False:
+    try:
+        dnsite.add_base(configDn)
+    except ldb.LdbError:
         raise SubnetException("dnsite.add_base() failed")
-    if dnsite.add_child("CN=X") == False:
+    try:
+        dnsite.add_child("CN=X")
+    except ldb.LdbError:
         raise SubnetException("dnsite.add_child() failed")
     dnsite.set_component(0, "CN", site_name)
 
