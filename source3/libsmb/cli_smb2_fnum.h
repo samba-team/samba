@@ -319,15 +319,6 @@ struct tevent_req *cli_smb2_set_reparse_point_fnum_send(
 			DATA_BLOB in_buf);
 NTSTATUS cli_smb2_set_reparse_point_fnum_recv(struct tevent_req *req);
 
-struct tevent_req *cli_smb2_get_reparse_point_fnum_send(
-			TALLOC_CTX *mem_ctx,
-			struct tevent_context *ev,
-			struct cli_state *cli,
-			uint16_t fnum);
-NTSTATUS cli_smb2_get_reparse_point_fnum_recv(struct tevent_req *req,
-			TALLOC_CTX *mem_ctx,
-			DATA_BLOB *output);
-
 struct tevent_req *cli_smb2_fsctl_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
