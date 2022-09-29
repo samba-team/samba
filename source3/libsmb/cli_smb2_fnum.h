@@ -311,13 +311,6 @@ NTSTATUS cli_smb2_notify(struct cli_state *cli, uint16_t fnum,
 			 bool recursive, TALLOC_CTX *mem_ctx,
 			 struct notify_change **pchanges,
 			 uint32_t *pnum_changes);
-struct tevent_req *cli_smb2_set_reparse_point_fnum_send(
-			TALLOC_CTX *mem_ctx,
-			struct tevent_context *ev,
-			struct cli_state *cli,
-			uint16_t fnum,
-			DATA_BLOB in_buf);
-NTSTATUS cli_smb2_set_reparse_point_fnum_recv(struct tevent_req *req);
 
 struct tevent_req *cli_smb2_fsctl_send(
 	TALLOC_CTX *mem_ctx,
