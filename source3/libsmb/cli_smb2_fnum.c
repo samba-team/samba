@@ -5066,3 +5066,96 @@ NTSTATUS cli_smb2_get_reparse_point_fnum_recv(struct tevent_req *req,
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
+
+struct cli_smb2_fsctl_state {
+	DATA_BLOB out;
+};
+
+static void cli_smb2_fsctl_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_fsctl_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint32_t ctl_code,
+	const DATA_BLOB *in,
+	uint32_t max_out)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_fsctl_state *state = NULL;
+	struct smb2_hnd *ph = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_smb2_fsctl_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = map_fnum_to_smb2_handle(cli, fnum, &ph);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = smb2cli_ioctl_send(
+		state,
+		ev,
+		cli->conn,
+		cli->timeout,
+		cli->smb2.session,
+		cli->smb2.tcon,
+		ph->fid_persistent,
+		ph->fid_volatile,
+		ctl_code,
+		0, /* in_max_input_length */
+		in,
+		max_out,
+		NULL,
+		SMB2_IOCTL_FLAG_IS_FSCTL);
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_fsctl_done, req);
+	return req;
+}
+
+static void cli_smb2_fsctl_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_fsctl_state *state = tevent_req_data(
+		req, struct cli_smb2_fsctl_state);
+	NTSTATUS status;
+
+	status = smb2cli_ioctl_recv(subreq, state, NULL, &state->out);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_smb2_fsctl_recv(
+	struct tevent_req *req, TALLOC_CTX *mem_ctx, DATA_BLOB *out)
+{
+	struct cli_smb2_fsctl_state *state = tevent_req_data(
+		req, struct cli_smb2_fsctl_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	/*
+	 * Can't use talloc_move() here, the outblobs from
+	 * smb2cli_ioctl_recv() are not standalone talloc objects but
+	 * just peek into the larger buffers received, hanging off
+	 * "state".
+	 */
+	*out = data_blob_talloc(mem_ctx, state->out.data, state->out.length);
+	if (out->data == NULL) {
+		tevent_req_received(req);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
