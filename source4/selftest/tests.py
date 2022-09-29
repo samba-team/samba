@@ -1510,6 +1510,9 @@ planoldpythontestsuite(env, "ridalloc_exop",
 #
 # That is why this test is run on the isolated environment and not on
 # those connected with ad_dc (vampiredc/promoteddc)
+#
+# The chgdcpass enviroment is likewise isolated and emulates Samba 4.5
+# with regard to GET_ANC
 
 env = 'schema_pair_dc'
 planoldpythontestsuite("%s:local" % env, "samba_tool_drs",
@@ -1517,6 +1520,12 @@ planoldpythontestsuite("%s:local" % env, "samba_tool_drs",
                        name="samba4.drs.samba_tool_drs.python(%s)" % env,
                        environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+for env in ['chgdcpass', 'schema_pair_dc']:
+    planoldpythontestsuite("%s:local" % env, "samba_tool_drs_critical",
+                           extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+                           name="samba4.drs.samba_tool_drs_critical.python(%s)" % env,
+                           environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 planoldpythontestsuite(env, "getnc_schema",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                        name="samba4.drs.getnc_schema.python(%s)" % env,
