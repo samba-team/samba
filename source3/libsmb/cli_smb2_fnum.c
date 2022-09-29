@@ -1614,6 +1614,24 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 			NULL);
 	}
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		/* Maybe a reparse point ? */
+		status = cli_smb2_create_fnum(cli,
+			name,
+			0,			/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION,
+			FILE_READ_ATTRIBUTES,		/* desired_access */
+			0, /* file attributes */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
+			FILE_OPEN,		/* create_disposition */
+			FILE_OPEN_REPARSE_POINT, /* create_options */
+			NULL,
+			&fnum,
+			&cr,
+			NULL,
+			NULL);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
