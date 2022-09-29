@@ -7119,3 +7119,124 @@ NTSTATUS cli_shadow_copy_data(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	TALLOC_FREE(frame);
 	return status;
 }
+
+struct cli_fsctl_state {
+	DATA_BLOB out;
+};
+
+static void cli_fsctl_smb1_done(struct tevent_req *subreq);
+static void cli_fsctl_smb2_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_fsctl_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint32_t ctl_code,
+	const DATA_BLOB *in,
+	uint32_t max_out)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_fsctl_state *state = NULL;
+	uint16_t *setup = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_fsctl_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_fsctl_send(
+			state, ev, cli, fnum, ctl_code, in, max_out);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_fsctl_smb2_done, req);
+		return req;
+	}
+
+	setup = talloc_array(state, uint16_t, 4);
+	if (tevent_req_nomem(setup, req)) {
+		return tevent_req_post(req, ev);
+	}
+	SIVAL(setup, 0, ctl_code);
+	SSVAL(setup, 4, fnum);
+	SCVAL(setup, 6, 1);	/* IsFcntl */
+	SCVAL(setup, 7, 0);	/* IsFlags */
+
+	subreq = cli_trans_send(
+		state, ev, cli,
+		0,		/* additional_flags2 */
+		SMBnttrans,	/* cmd */
+		NULL,		/* name */
+		-1, 		/* fid */
+		NT_TRANSACT_IOCTL, /* function */
+		0,		   /* flags */
+		setup, 4, 0,	   /* setup */
+		NULL, 0, 0,	    /* param */
+		NULL, 0, max_out); /* data */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_fsctl_smb1_done, req);
+	return req;
+}
+
+static void cli_fsctl_smb2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_fsctl_state *state = tevent_req_data(
+		req, struct cli_fsctl_state);
+	NTSTATUS status;
+
+	status = cli_smb2_fsctl_recv(subreq, state, &state->out);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_fsctl_smb1_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_fsctl_state *state = tevent_req_data(
+		req, struct cli_fsctl_state);
+	uint8_t *out = NULL;
+	uint32_t out_len;
+	NTSTATUS status;
+
+	status = cli_trans_recv(
+		subreq,	state, NULL,
+		NULL, 0, NULL,	/* rsetup */
+		NULL, 0, NULL,	/* rparam */
+		&out, 0, &out_len);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	state->out = (DATA_BLOB) {
+		.data = out, .length = out_len,
+	};
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_fsctl_recv(
+	struct tevent_req *req, TALLOC_CTX *mem_ctx, DATA_BLOB *out)
+{
+	struct cli_fsctl_state *state = tevent_req_data(
+		req, struct cli_fsctl_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if (out != NULL) {
+		*out = (DATA_BLOB) {
+			.data = talloc_move(mem_ctx, &state->out.data),
+			.length = state->out.length,
+		};
+	}
+
+	return NT_STATUS_OK;
+}

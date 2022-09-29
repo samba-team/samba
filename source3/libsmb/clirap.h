@@ -203,4 +203,16 @@ NTSTATUS cli_shadow_copy_data(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			      uint16_t fnum, bool get_names,
 			      char ***pnames, int *pnum_names);
 
+struct tevent_req *cli_fsctl_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint32_t ctl_code,
+	const DATA_BLOB *in,
+	uint32_t max_out);
+NTSTATUS cli_fsctl_recv(
+	struct tevent_req *req, TALLOC_CTX *mem_ctx, DATA_BLOB *out);
+
+
 #endif /* _LIBSMB_CLIRAP_H */
