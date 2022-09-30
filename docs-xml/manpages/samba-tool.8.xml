@@ -62,6 +62,8 @@
 
 	&cmdline.common.credentials.usekrb5ccache;
 
+	&cmdline.common.credentials.authenticationfile;
+
 	<varlistentry>
 	<term>--ipaddress=IPADDRESS</term>
 	<listitem><para>

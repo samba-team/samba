@@ -192,6 +192,10 @@ class CredentialsOptions(optparse.OptionGroup):
                          action="callback", type=str,
                          help="Kerberos Credentials cache",
                          callback=self._set_krb5_ccache)
+        self._add_option("-A", "--authentication-file", metavar="AUTHFILE",
+                         action="callback", type=str,
+                         help="Authentication file",
+                         callback=self._set_auth_file)
 
         # LEGACY
         self._add_option("-k", "--kerberos", metavar="KERBEROS",
@@ -292,6 +296,12 @@ class CredentialsOptions(optparse.OptionGroup):
     def _set_krb5_ccache(self, option, opt_str, arg, parser):
         self.creds.set_kerberos_state(MUST_USE_KERBEROS)
         self.creds.set_named_ccache(arg)
+
+    def _set_auth_file(self, option, opt_str, arg, parser):
+        if os.path.exists(arg):
+            self.creds.parse_file(arg)
+            self.ask_for_password = False
+            self.machine_pass = False
 
     def get_credentials(self, lp, fallback_machine=False):
         """Obtain the credentials set on the command-line.
