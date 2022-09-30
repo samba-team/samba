@@ -408,10 +408,10 @@ struct tevent_req *run_proc_send(TALLOC_CTX *mem_ctx,
 static int run_proc_state_destructor(struct run_proc_state *state)
 {
 	/* Do not get rid of the child process if timeout has occurred */
-	if (state->proc->req != NULL) {
+	if ((state->proc != NULL) && (state->proc->req != NULL)) {
 		state->proc->req = NULL;
 		DLIST_REMOVE(state->run_ctx->plist, state->proc);
-		talloc_free(state->proc);
+		TALLOC_FREE(state->proc);
 	}
 
 	return 0;
@@ -439,6 +439,7 @@ static void run_proc_kill(struct tevent_req *req)
 		req, struct run_proc_state);
 
 	state->proc->req = NULL;
+	state->proc = NULL;
 
 	state->result.sig = SIGKILL;
 
