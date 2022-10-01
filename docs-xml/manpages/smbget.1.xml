@@ -35,6 +35,7 @@
 		<arg choice="opt">-O, --stdout</arg>
 		<arg choice="opt">-u, --update</arg>
 		<arg choice="opt">-e, --encrypt</arg>
+		<arg choice="opt">--limit-rate=INT</arg>
 		<arg choice="opt">-?, --help</arg>
 		<arg choice="opt">--usage</arg>
 		<arg choice="req">smb://host/share/path/to/file</arg>
@@ -149,6 +150,11 @@
 	<varlistentry>
         <term>-e, --encrypt</term>
 		<listitem><para>Enable SMB encryption.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+        <term>--limit-rate=INT</term>
+		<listitem><para>Limit download rate by this many KB/s.</para></listitem>
 	</varlistentry>
 
 </refsect1>

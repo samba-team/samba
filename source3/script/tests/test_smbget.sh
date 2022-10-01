@@ -269,6 +269,32 @@ test_msdfs_link()
 	return 0
 }
 
+# Tests --limit-rate. Getting the testfile (128K in size) with --limit-rate 100
+# (that is 100KB/s) should take at least 1 sec to complete.
+test_limit_rate()
+{
+	clear_download_area
+	echo "$SMBGET -v -a --limit-rate 100 smb://$SERVER_IP/smbget/testfile"
+	time_begin=$(date +%s)
+	$SMBGET -v -a --limit-rate 100 smb://$SERVER_IP/smbget/testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+	time_end=$(date +%s)
+	cmp --silent $WORKDIR/testfile ./testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+	if [ $((time_end - time_begin)) -lt 1 ]; then
+		echo 'ERROR: It should take at least 1s to transfer 128KB with rate 100KB/s'
+		return 1
+	fi
+	return 0
+}
+
+
 create_test_data
 
 pushd $TMPDIR
@@ -306,6 +332,10 @@ testit "update" test_update ||
 
 testit "msdfs" test_msdfs_link ||
 	failed=$((failed + 1))
+
+testit "limit rate" test_limit_rate ||
+	failed=$((failed + 1))
+
 clear_download_area
 
 popd # TMPDIR

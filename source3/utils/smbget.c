@@ -56,6 +56,7 @@ struct opt {
 	bool send_stdout;
 	bool update;
 	int debuglevel;
+	unsigned limit_rate;
 };
 static struct opt opt = { .blocksize = SMB_DEFAULT_BLOCKSIZE };
 
@@ -355,6 +356,10 @@ static bool smb_download_file(const char *base, const char *name,
 	off_t offset_download = 0, offset_check = 0, curpos = 0,
 	      start_offset = 0;
 	struct stat localstat, remotestat;
+	clock_t start_of_bucket_ticks = 0;
+	size_t bytes_in_bucket = 0;
+	size_t bucket_size = 0;
+	clock_t ticks_to_fill_bucket = 0;
 
 	snprintf(path, SMB_MAXPATHLEN-1, "%s%s%s", base,
 		 (*base && *name && name[0] != '/' &&
@@ -576,6 +581,44 @@ static bool smb_download_file(const char *base, const char *name,
 		offset_check = 0;
 	}
 
+	/* We implement rate limiting by filling up a bucket with bytes and
+	 * checking, once the bucket is filled, if it was filled too fast.
+	 * If so, we sleep for some time to get an average transfer rate that
+	 * equals to the one set by the user.
+	 *
+	 * The bucket size directly affects the traffic characteristics.
+	 * The smaller the bucket the more frequent the pause/resume cycle.
+	 * A large bucket can result in burst of high speed traffic and large
+	 * pauses. A cycle of 100ms looks like a good value. This value (in
+	 * ticks) is held in `ticks_to_fill_bucket`. The `bucket_size` is
+	 * calculated as:
+	 * `limit_rate * 1024 * / (CLOCKS_PER_SEC / ticks_to_fill_bucket)`
+	 *
+	 * After selecting the bucket size we also need to check the blocksize
+	 * of the transfer, since this is the minimum unit of traffic that we
+	 * can observe. Achieving a ~10% precision requires a blocksize with a
+	 * maximum size of `bucket_size / 10`.
+	 */
+	if (opt.limit_rate > 0) {
+		unsigned max_block_size;
+		/* This is the time that the bucket should take to fill. */
+		ticks_to_fill_bucket = 100 /*ms*/ * CLOCKS_PER_SEC / 1000;
+		/* This is the size of the bucket in bytes.
+		 * If we fill the bucket too quickly we should pause */
+		bucket_size = opt.limit_rate * 1024 / (CLOCKS_PER_SEC / ticks_to_fill_bucket);
+		max_block_size = bucket_size / 10;
+		max_block_size = max_block_size > 0 ? max_block_size : 1;
+		if (opt.blocksize > max_block_size) {
+			if (opt.blocksize != SMB_DEFAULT_BLOCKSIZE) {
+				fprintf(stderr,
+				        "Warning: Overriding block size to %d \
+				         due to limit-rate", max_block_size);
+			}
+			opt.blocksize = max_block_size;
+		}
+		start_of_bucket_ticks = clock();
+	}
+
 	readbuf = (char *)SMB_MALLOC(opt.blocksize);
 	if (!readbuf) {
 		fprintf(stderr, "Failed to allocate %zu bytes for read "
@@ -592,7 +635,30 @@ static bool smb_download_file(const char *base, const char *name,
 		ssize_t bytesread;
 		ssize_t byteswritten;
 
+		/* Rate limiting. This pauses the transfer to limit traffic. */
+		if (opt.limit_rate > 0) {
+			if (bytes_in_bucket > bucket_size) {
+				clock_t now_ticks = clock();
+				clock_t diff_ticks = now_ticks
+				                     - start_of_bucket_ticks;
+				/* Check if the bucket filled up too fast. */
+				if (diff_ticks < ticks_to_fill_bucket) {
+					/* Pause until `ticks_to_fill_bucket` */
+					double sleep_us
+					 = (ticks_to_fill_bucket - diff_ticks)
+					  * 1000000 / CLOCKS_PER_SEC;
+					usleep(sleep_us);
+				}
+				/* Reset the byte counter and the ticks. */
+				bytes_in_bucket = 0;
+				start_of_bucket_ticks = clock();
+			}
+		}
+
 		bytesread = smbc_read(remotehandle, readbuf, opt.blocksize);
+		if (opt.limit_rate > 0) {
+			bytes_in_bucket += bytesread;
+		}
 		if(bytesread < 0) {
 			fprintf(stderr,
 				"Can't read %zu bytes at offset %jd, file %s\n",
@@ -901,6 +967,13 @@ int main(int argc, char **argv)
 			.arg        = NULL,
 			.val        = 'f',
 			.descrip    = "Use specified rc file"
+		},
+		{
+			.longName   = "limit-rate",
+			.argInfo    = POPT_ARG_INT,
+			.arg        = &opt.limit_rate,
+			.val        = 'l',
+			.descrip    = "Limit download speed to this many KB/s"
 		},
 
 		POPT_TABLEEND
