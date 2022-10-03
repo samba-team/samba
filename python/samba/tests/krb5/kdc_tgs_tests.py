@@ -178,6 +178,7 @@ class KdcTgsBaseTests(KDCBaseTest):
                  sname=None,
                  srealm=None,
                  use_fast=False,
+                 till=None,
                  expect_claims=True,
                  etypes=None,
                  expected_ticket_etype=None,
@@ -294,6 +295,7 @@ class KdcTgsBaseTests(KDCBaseTest):
                                          cname=None,
                                          realm=srealm,
                                          sname=sname,
+                                         till_time=till,
                                          etypes=etypes,
                                          additional_tickets=additional_tickets)
         if expected_error:
@@ -2391,6 +2393,18 @@ class KdcTgsTests(KdcTgsBaseTests):
 
         self._run_tgs(tgt, expected_error=(KDC_ERR_TGT_REVOKED,
                                            KDC_ERR_C_PRINCIPAL_UNKNOWN))
+
+    # Test making a TGS request for a ticket expiring post-2038.
+    def test_tgs_req_future_till(self):
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds)
+
+        target_creds = self.get_service_creds()
+        self._tgs_req(
+            tgt=tgt,
+            expected_error=0,
+            target_creds=target_creds,
+            till='99990913024805Z')
 
     def _modify_renewable(self, enc_part):
         # Set the renewable flag.
