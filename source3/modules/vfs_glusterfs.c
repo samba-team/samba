@@ -825,61 +825,43 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 		became_root = true;
 	}
 
-	/*
-	 * O_CREAT flag in open is handled differently in a way which is *NOT*
-	 * safe against symlink race situations. We use glfs_creat() instead
-	 * for correctness as glfs_openat() is broken with O_CREAT present
-	 * in open flags.
-	 */
-	if (flags & O_CREAT) {
-		if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
-			/*
-			 * Replace smb_fname with full_path constructed above.
-			 */
-			smb_fname = full_fname;
+	if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
+#ifdef HAVE_GFAPI_VER_7_11
+		/*
+		 * Fetch Gluster fd for parent directory using dirfsp
+		 * before calling glfs_openat();
+		 */
+		pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
+		if (pglfd == NULL) {
+			END_PROFILE(syscall_openat);
+			DBG_ERR("Failed to fetch gluster fd\n");
+			return -1;
 		}
 
+		glfd = glfs_openat(pglfd,
+				   smb_fname->base_name,
+				   flags,
+				   how->mode);
+#else
+		/*
+		 * Replace smb_fname with full_path constructed above.
+		 */
+		smb_fname = full_fname;
+#endif
+	}
+
+	if (pglfd == NULL) {
 		/*
 		 * smb_fname can either be a full_path or the same one
 		 * as received from the caller. In the latter case we
 		 * are operating at current working directory.
 		 */
-		glfd = glfs_creat(handle->data,
-				  smb_fname->base_name,
-				  flags,
-				  how->mode);
-	} else {
-		if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
-#ifdef HAVE_GFAPI_VER_7_11
-			/*
-			 * Fetch Gluster fd for parent directory using dirfsp
-			 * before calling glfs_openat();
-			 */
-			pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
-			if (pglfd == NULL) {
-				END_PROFILE(syscall_openat);
-				DBG_ERR("Failed to fetch gluster fd\n");
-				return -1;
-			}
-
-			glfd = glfs_openat(pglfd,
-					   smb_fname->base_name,
-					   flags,
-					   how->mode);
-#else
-			/*
-			 * Replace smb_fname with full_path constructed above.
-			 */
-			smb_fname = full_fname;
-#endif
-		}
-
-		if (pglfd == NULL) {
-			/*
-			 * smb_fname can either be a full_path or the same one
-			 * as received from the caller. In the latter case we
-			 * are operating at current working directory.
-			 */
+		if (flags & O_CREAT) {
+			glfd = glfs_creat(handle->data,
+					  smb_fname->base_name,
+					  flags,
+					  how->mode);
+		} else {
 			glfd = glfs_open(handle->data,
 					 smb_fname->base_name,
 					 flags);
