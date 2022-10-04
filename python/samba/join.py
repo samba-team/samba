@@ -987,7 +987,7 @@ class DCJoinContext(object):
                                            "not possible due to a missing parent object.  "
                                            "This is typical of a Samba "
                                            "4.5 or earlier server. "
-                                           "We will replicate the all objects instead.")
+                                           "We will replicate all the objects instead.")
                     else:
                         raise
 

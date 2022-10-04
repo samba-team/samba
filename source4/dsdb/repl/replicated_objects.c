@@ -748,7 +748,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 		out->num_objects++;
 	}
 
-	DBG_INFO("Proceesed %"PRIu32" DRS objects, saw %"PRIu32" objects "
+	DBG_INFO("Processed %"PRIu32" DRS objects, saw %"PRIu32" objects "
 		 "and expected %"PRIu32" objects\n",
 		 out->num_objects, i, object_count);
 
@@ -764,7 +764,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	}
 	if (i != object_count) {
 		DBG_ERR("FAILURE: saw %"PRIu32" DRS objects, server said we "
-			"should expected to see %"PRIu32" objects!\n",
+			"should expect to see %"PRIu32" objects!\n",
 			i, object_count);
 		talloc_free(out);
 		return WERR_FOOBAR;
