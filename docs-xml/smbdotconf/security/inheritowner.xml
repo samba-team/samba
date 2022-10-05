@@ -39,7 +39,7 @@
 	<para>The <constant>unix only</constant> option effectively
 	breaks the tie between the Windows owner of a file and the
 	UNIX owner. As a logical consequence, in this mode,
-	setting the the Windows owner of a file does not modify the UNIX
+	setting the Windows owner of a file does not modify the UNIX
 	owner. Using this mode should typically be combined with a
 	backing store that can emulate the full NT ACL model without
 	affecting the POSIX permissions, such as the acl_xattr
