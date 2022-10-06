@@ -2624,13 +2624,17 @@ static ssize_t fruit_pread_recv(struct tevent_req *req,
 {
 	struct fruit_pread_state *state = tevent_req_data(
 		req, struct fruit_pread_state);
+	ssize_t retval = -1;
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		tevent_req_received(req);
 		return -1;
 	}
 
 	*vfs_aio_state = state->vfs_aio_state;
-	return state->nread;
+	retval = state->nread;
+	tevent_req_received(req);
+	return retval;
 }
 
 static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
@@ -3049,13 +3053,17 @@ static ssize_t fruit_pwrite_recv(struct tevent_req *req,
 {
 	struct fruit_pwrite_state *state = tevent_req_data(
 		req, struct fruit_pwrite_state);
+	ssize_t retval = -1;
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		tevent_req_received(req);
 		return -1;
 	}
 
 	*vfs_aio_state = state->vfs_aio_state;
-	return state->nwritten;
+	retval = state->nwritten;
+	tevent_req_received(req);
+	return retval;
 }
 
 struct fruit_fsync_state {
