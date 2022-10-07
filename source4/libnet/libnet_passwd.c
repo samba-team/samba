@@ -57,13 +57,13 @@ static NTSTATUS libnet_ChangePassword_samr_aes(TALLOC_CTX *mem_ctx,
 	struct samr_EncryptedPasswordAES pwd_buf = {
 		.cipher_len = 0
 	};
-	DATA_BLOB iv = {
+	DATA_BLOB salt = {
 		.data = pwd_buf.salt,
 		.length = sizeof(pwd_buf.salt),
 	};
-	gnutls_datum_t iv_datum = {
-		.data = iv.data,
-		.size = iv.length,
+	gnutls_datum_t salt_datum = {
+		.data = pwd_buf.salt,
+		.size = sizeof(pwd_buf.salt),
 	};
 	uint64_t pbkdf2_iterations = generate_random_u64_range(5000, 1000000);
 	NTSTATUS status;
@@ -71,11 +71,11 @@ static NTSTATUS libnet_ChangePassword_samr_aes(TALLOC_CTX *mem_ctx,
 
 	E_md4hash(old_password, old_nt_key_data);
 
-	generate_nonce_buffer(iv.data, iv.length);
+	generate_nonce_buffer(salt.data, salt.length);
 
 	rc = gnutls_pbkdf2(GNUTLS_MAC_SHA512,
 			   &old_nt_key,
-			   &iv_datum,
+			   &salt_datum,
 			   pbkdf2_iterations,
 			   cek.data,
 			   cek.length);
@@ -86,6 +86,7 @@ static NTSTATUS libnet_ChangePassword_samr_aes(TALLOC_CTX *mem_ctx,
 
 	status = init_samr_CryptPasswordAES(mem_ctx,
 					    new_password,
+					    &salt,
 					    &cek,
 					    &pwd_buf);
 	data_blob_clear(&cek);

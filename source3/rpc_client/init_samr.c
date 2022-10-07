@@ -79,6 +79,7 @@ NTSTATUS init_samr_CryptPassword(const char *pwd,
 
 NTSTATUS init_samr_CryptPasswordAES(TALLOC_CTX *mem_ctx,
 				    const char *password,
+				    DATA_BLOB *salt,
 				    DATA_BLOB *session_key,
 				    struct samr_EncryptedPasswordAES *ppwd_buf)
 {
@@ -87,12 +88,6 @@ NTSTATUS init_samr_CryptPasswordAES(TALLOC_CTX *mem_ctx,
 		.data = pw_data,
 		.length = sizeof(pw_data),
 	};
-	size_t iv_size = gnutls_cipher_get_iv_size(GNUTLS_CIPHER_AES_256_CBC);
-	uint8_t iv_data[iv_size];
-	DATA_BLOB iv = {
-		.data = iv_data,
-		.length = iv_size,
-	};
 	DATA_BLOB ciphertext = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	bool ok;
@@ -100,8 +95,6 @@ NTSTATUS init_samr_CryptPasswordAES(TALLOC_CTX *mem_ctx,
 	if (ppwd_buf == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-	generate_nonce_buffer(iv.data, iv.length);
 
 	ok = encode_pwd_buffer514_from_str(pw_data, password, STR_UNICODE);
 	if (!ok) {
@@ -114,7 +107,7 @@ NTSTATUS init_samr_CryptPasswordAES(TALLOC_CTX *mem_ctx,
 			session_key,
 			&samr_aes256_enc_key_salt,
 			&samr_aes256_mac_key_salt,
-			&iv,
+			salt,
 			&ciphertext,
 			ppwd_buf->auth_data);
 	BURN_DATA(pw_data);
@@ -126,8 +119,8 @@ NTSTATUS init_samr_CryptPasswordAES(TALLOC_CTX *mem_ctx,
 	ppwd_buf->cipher = ciphertext.data;
 	ppwd_buf->PBKDF2Iterations = 0;
 
-	SMB_ASSERT(iv.length == sizeof(ppwd_buf->salt));
-	memcpy(ppwd_buf->salt, iv.data, iv.length);
+	SMB_ASSERT(salt->length == sizeof(ppwd_buf->salt));
+	memcpy(ppwd_buf->salt, salt->data, salt->length);
 
 	return NT_STATUS_OK;
 }

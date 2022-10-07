@@ -47,6 +47,7 @@ NTSTATUS init_samr_CryptPassword(const char *pwd,
  */
 NTSTATUS init_samr_CryptPasswordAES(TALLOC_CTX *mem_ctx,
 				    const char *password,
+				    DATA_BLOB *salt,
 				    DATA_BLOB *session_key,
 				    struct samr_EncryptedPasswordAES *ppwd_buf);
 
