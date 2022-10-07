@@ -3172,6 +3172,11 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 	uint8_t nt_hash[16];
 	uint8_t lm_hash[16];
 	DATA_BLOB session_key;
+	uint8_t salt_data[16];
+	DATA_BLOB salt = {
+		.data = salt_data,
+		.length = sizeof(salt_data),
+	};
 	uint8_t password_expired = 0;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	TALLOC_CTX *frame = NULL;
@@ -3198,6 +3203,8 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
+	generate_nonce_buffer(salt.data, salt.length);
+
 	switch(level) {
 	case 18:
 	case 21:
@@ -3220,6 +3227,7 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 	case 31:
 		status = init_samr_CryptPasswordAES(frame,
 						    param,
+						    &salt,
 						    &session_key,
 						    &pwd_buf_aes);
 		if (!NT_STATUS_IS_OK(status)) {

@@ -783,6 +783,11 @@ static bool test_SetUserPass_32(struct dcerpc_pipe *p, struct torture_context *t
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	DATA_BLOB session_key;
+	uint8_t salt_data[16];
+	DATA_BLOB salt = {
+		.data = salt_data,
+		.length = sizeof(salt_data),
+	};
 	char *newpass = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct samr_GetUserPwInfo pwp;
@@ -818,8 +823,11 @@ static bool test_SetUserPass_32(struct dcerpc_pipe *p, struct torture_context *t
 		return false;
 	}
 
+	generate_nonce_buffer(salt.data, salt.length);
+
 	status = init_samr_CryptPasswordAES(tctx,
 					    newpass,
+					    &salt,
 					    &session_key,
 					    &u.info32.password);
 	torture_assert_ntstatus_ok(tctx,
@@ -852,6 +860,7 @@ static bool test_SetUserPass_32(struct dcerpc_pipe *p, struct torture_context *t
 
 	status = init_samr_CryptPasswordAES(tctx,
 					    newpass,
+					    &salt,
 					    &session_key,
 					    &u.info32.password);
 	torture_assert_ntstatus_ok(tctx,
@@ -896,6 +905,11 @@ static bool test_SetUserPass_31(struct dcerpc_pipe *p, struct torture_context *t
 	union samr_UserInfo u;
 	bool ret = true;
 	DATA_BLOB session_key;
+	uint8_t salt_data[16];
+	DATA_BLOB salt = {
+		.data = salt_data,
+		.length = sizeof(salt_data),
+	};
 	char *newpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct samr_GetUserPwInfo pwp;
@@ -931,8 +945,11 @@ static bool test_SetUserPass_31(struct dcerpc_pipe *p, struct torture_context *t
 		return false;
 	}
 
+	generate_nonce_buffer(salt.data, salt.length);
+
 	status = init_samr_CryptPasswordAES(tctx,
 					    newpass,
+					    &salt,
 					    &session_key,
 					    &u.info31.password);
 	torture_assert_ntstatus_ok(tctx,
@@ -959,6 +976,7 @@ static bool test_SetUserPass_31(struct dcerpc_pipe *p, struct torture_context *t
 
 	status = init_samr_CryptPasswordAES(tctx,
 					    newpass,
+					    &salt,
 					    &session_key,
 					    &u.info31.password);
 	torture_assert_ntstatus_ok(tctx,
@@ -1381,6 +1399,11 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	union samr_UserInfo u;
 	bool ret = true;
 	DATA_BLOB session_key;
+	uint8_t salt_data[16];
+	DATA_BLOB salt = {
+		.data = salt_data,
+		.length = sizeof(salt_data),
+	};
 	char *newpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct samr_GetUserPwInfo pwp;
@@ -1490,6 +1513,8 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		return false;
 	}
 
+	generate_nonce_buffer(salt.data, salt.length);
+
 	switch (level) {
 	case 18:
 		{
@@ -1561,6 +1586,7 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	case 31:
 		status = init_samr_CryptPasswordAES(tctx,
 						    newpass,
+						    &salt,
 						    &session_key,
 						    &u.info31.password);
 
@@ -1568,6 +1594,7 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	case 32:
 		status = init_samr_CryptPasswordAES(tctx,
 						    newpass,
+						    &salt,
 						    &session_key,
 						    &u.info32.password);
 
