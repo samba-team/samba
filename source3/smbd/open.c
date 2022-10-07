@@ -1325,7 +1325,7 @@ static NTSTATUS open_file(struct smb_request *req,
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 	bool file_existed = VALID_STAT(fsp->fsp_name->st);
-	uint32_t need_fd_mask =
+	const uint32_t need_fd_mask =
 		FILE_READ_DATA |
 		FILE_WRITE_DATA |
 		FILE_APPEND_DATA |
