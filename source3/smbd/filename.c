@@ -982,7 +982,8 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		 * We've been given a raw DFS pathname.
 		 */
 		char *pathname = NULL;
-		DBG_DEBUG("Before dfs_filename_convert name_in: %s\n", name_in);
+		DBG_DEBUG("Before dfs_filename_convert name_in: %s\n",
+			  name_in);
 		status = dfs_filename_convert(mem_ctx,
 					      conn,
 					      ucf_flags,
@@ -997,7 +998,8 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		}
 		ucf_flags &= ~UCF_DFS_PATHNAME;
 		name_in = pathname;
-		DBG_DEBUG("After dfs_filename_convert name_in: %s\n", name_in);
+		DBG_DEBUG("After dfs_filename_convert name_in: %s\n",
+			  name_in);
 	}
 
 	if (is_fake_file_path(name_in)) {
