@@ -245,8 +245,7 @@ yum install -y dnf-plugins-core
 yum install -y epel-release
 
 yum -v repolist all
-yum config-manager --set-enabled powertools -y || \
-    yum config-manager --set-enabled powertools -y
+yum config-manager --set-enabled powertools -y
 
 yum update -y
 
