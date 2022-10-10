@@ -2312,7 +2312,21 @@ static ssize_t vfs_gluster_fgetxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	return glfs_fgetxattr(glfd, name, value, size);
+	if (!fsp->fsp_flags.is_pathref) {
+		/*
+		 * We can use an io_fd to retrieve xattr value.
+		 */
+		return glfs_fgetxattr(glfd, name, value, size);
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	return glfs_getxattr(handle->data,
+			     fsp->fsp_name->base_name,
+			     name,
+			     value,
+			     size);
 }
 
 static ssize_t vfs_gluster_flistxattr(struct vfs_handle_struct *handle,
