@@ -1,3 +1,2 @@
-^samba.unittests.auth.heimdal_gensec_unwrap_des.test_unwrap_truncated_header_0.none
 ^samba.unittests.auth.heimdal_gensec_unwrap_des.test_unwrap_with_padding_truncated_0.none
 ^samba.unittests.auth.heimdal_gensec_unwrap_des.test_unwrap_with_padding_truncated_1.none
