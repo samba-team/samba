@@ -546,11 +546,28 @@ init_sec_context_done:
 		goto done;
 	case GSS_S_FAILURE:
 		switch (gss_min) {
-		case (OM_uint32)KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
-			DBG_NOTICE("Server principal not found\n");
+		case (OM_uint32)KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN: {
+			gss_buffer_desc name_token = {
+				.length = 0,
+			};
+
+			gss_maj = gss_display_name(&gss_min,
+						   gse_ctx->server_name,
+						   &name_token,
+						   NULL);
+			if (gss_maj == GSS_S_COMPLETE) {
+				DBG_NOTICE("Server principal %.*s not found\n",
+					   (int)name_token.length,
+					   (char *)name_token.value);
+				gss_release_buffer(&gss_maj, &name_token);
+			} else {
+				DBG_NOTICE("Server principal not found\n");
+			}
+
 			/* Make SPNEGO ignore us, we can't go any further here */
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto done;
+		}
 		case (OM_uint32)KRB5KRB_AP_ERR_TKT_EXPIRED:
 			DBG_NOTICE("Ticket expired\n");
 			/* Make SPNEGO ignore us, we can't go any further here */
