@@ -1499,11 +1499,11 @@ static NTSTATUS open_file(struct smb_request *req,
 					 p_file_created);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 			/*
-			 * POSIX client that hit a symlink. We don't want to
-			 * return NT_STATUS_STOPPED_ON_SYMLINK to avoid handling
-			 * this special error code in all callers, so we map
-			 * this to NT_STATUS_OBJECT_NAME_NOT_FOUND to match
-			 * openat_pathref_fsp().
+			 * Non-O_PATH reopen that hit a race
+			 * condition: Someone has put a symlink where
+			 * we used to have a file. Can't happen with
+			 * O_PATH and reopening from /proc/self/fd/ or
+			 * equivalent.
 			 */
 			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
