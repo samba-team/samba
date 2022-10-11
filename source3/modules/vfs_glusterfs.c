@@ -2266,9 +2266,6 @@ static NTSTATUS vfs_gluster_get_real_filename_at(
 	int ret;
 	char key_buf[GLUSTER_NAME_MAX + 64];
 	char val_buf[GLUSTER_NAME_MAX + 1];
-#ifdef HAVE_GFAPI_VER_7_11
-	glfs_fd_t *pglfd = NULL;
-#endif
 
 	if (strlen(name) >= GLUSTER_NAME_MAX) {
 		return NT_STATUS_OBJECT_NAME_INVALID;
@@ -2277,22 +2274,11 @@ static NTSTATUS vfs_gluster_get_real_filename_at(
 	snprintf(key_buf, GLUSTER_NAME_MAX + 64,
 		 "glusterfs.get_real_filename:%s", name);
 
-#ifdef HAVE_GFAPI_VER_7_11
-	pglfd = vfs_gluster_fetch_glfd(handle, dirfsp);
-	if (pglfd == NULL) {
-		DBG_ERR("Failed to fetch gluster fd\n");
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	ret = glfs_fgetxattr(pglfd, key_buf, val_buf, GLUSTER_NAME_MAX + 1);
-#else
 	ret = glfs_getxattr(handle->data,
 			    dirfsp->fsp_name->base_name,
 			    key_buf,
 			    val_buf,
 			    GLUSTER_NAME_MAX + 1);
-#endif
-
 	if (ret == -1) {
 		if (errno == ENOATTR) {
 			errno = ENOENT;
