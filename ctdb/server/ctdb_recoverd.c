@@ -619,7 +619,7 @@ static void ctdb_wait_handler(struct tevent_context *ev,
 static void ctdb_wait_timeout(struct ctdb_context *ctdb, double secs)
 {
 	uint32_t timed_out = 0;
-	time_t usecs = (secs - (time_t)secs) * 1000000;
+	uint32_t usecs = (secs - (uint32_t)secs) * 1000000;
 	tevent_add_timer(ctdb->ev, ctdb, timeval_current_ofs(secs, usecs),
 			 ctdb_wait_handler, &timed_out);
 	while (!timed_out) {
