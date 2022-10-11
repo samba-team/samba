@@ -627,37 +627,11 @@ static DIR *vfs_gluster_fdopendir(struct vfs_handle_struct *handle,
 				  uint32_t attributes)
 {
 	glfs_fd_t *glfd = NULL;
-	struct smb_filename *full_fname = NULL;
-	struct smb_filename *smb_fname_dot = NULL;
 
-	smb_fname_dot = synthetic_smb_fname(fsp->fsp_name,
-					    ".",
-					    NULL,
-					    NULL,
-					    0,
-					    0);
-
-	if (smb_fname_dot == NULL) {
-		return NULL;
-	}
-
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						  fsp,
-						  smb_fname_dot);
-	if (full_fname == NULL) {
-		TALLOC_FREE(smb_fname_dot);
-		return NULL;
-	}
-
-	glfd = glfs_opendir(handle->data, full_fname->base_name);
+	glfd = glfs_opendir(handle->data, fsp->fsp_name->base_name);
 	if (glfd == NULL) {
-		TALLOC_FREE(full_fname);
-		TALLOC_FREE(smb_fname_dot);
 		return NULL;
 	}
-
-	TALLOC_FREE(full_fname);
-	TALLOC_FREE(smb_fname_dot);
 
 	return (DIR *)glfd;
 }
