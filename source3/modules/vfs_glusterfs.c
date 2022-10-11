@@ -2269,9 +2269,6 @@ static NTSTATUS vfs_gluster_get_real_filename_at(
 	char val_buf[GLUSTER_NAME_MAX + 1];
 #ifdef HAVE_GFAPI_VER_7_11
 	glfs_fd_t *pglfd = NULL;
-#else
-	struct smb_filename *smb_fname_dot = NULL;
-	struct smb_filename *full_fname = NULL;
 #endif
 
 	if (strlen(name) >= GLUSTER_NAME_MAX) {
@@ -2290,29 +2287,11 @@ static NTSTATUS vfs_gluster_get_real_filename_at(
 
 	ret = glfs_fgetxattr(pglfd, key_buf, val_buf, GLUSTER_NAME_MAX + 1);
 #else
-	smb_fname_dot = synthetic_smb_fname(mem_ctx,
-					    ".",
-					    NULL,
-					    NULL,
-					    0,
-					    0);
-	if (smb_fname_dot == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						  dirfsp,
-						  smb_fname_dot);
-	if (full_fname == NULL) {
-		TALLOC_FREE(smb_fname_dot);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = glfs_getxattr(handle->data, full_fname->base_name,
-			    key_buf, val_buf, GLUSTER_NAME_MAX + 1);
-
-	TALLOC_FREE(smb_fname_dot);
-	TALLOC_FREE(full_fname);
+	ret = glfs_getxattr(handle->data,
+			    dirfsp->fsp_name->base_name,
+			    key_buf,
+			    val_buf,
+			    GLUSTER_NAME_MAX + 1);
 #endif
 
 	if (ret == -1) {
