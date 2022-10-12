@@ -204,10 +204,6 @@ extern const char _krb5_wellknown_lkdc[];
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 #define ALLOC_SEQ(X, N) do { (X)->len = (N); ALLOC((X)->val, (N)); } while(0)
 
-#ifndef __func__
-#define __func__ "unknown-function"
-#endif
-
 #define krb5_einval(context, argnum) _krb5_einval((context), __func__, (argnum))
 
 #ifndef PATH_SEP
