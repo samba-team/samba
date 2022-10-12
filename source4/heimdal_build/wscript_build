@@ -571,8 +571,8 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
     HEIMDAL_AUTOPROTO_PRIVATE('lib/gssapi/krb5/gsskrb5-private.h',
                               HEIMDAL_GSSAPI_KRB5_SOURCE)
 
-    HEIMDAL_LIBRARY('gssapi',
-                    HEIMDAL_GSSAPI_SPNEGO_SOURCE + HEIMDAL_GSSAPI_KRB5_SOURCE + '''
+    HEIMDAL_SUBSYSTEM('gssapi-subsystem',
+                      HEIMDAL_GSSAPI_SPNEGO_SOURCE + HEIMDAL_GSSAPI_KRB5_SOURCE + '''
     lib/gssapi/mech/context.c lib/gssapi/mech/gss_krb5.c lib/gssapi/mech/gss_mech_switch.c
     lib/gssapi/mech/gss_process_context_token.c lib/gssapi/mech/gss_buffer_set.c
     lib/gssapi/mech/gss_aeap.c lib/gssapi/mech/gss_add_cred.c lib/gssapi/mech/gss_cred.c
@@ -597,9 +597,15 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
     lib/gssapi/mech/gss_set_cred_option.c  lib/gssapi/mech/gss_pseudo_random.c ../heimdal_build/gssapi-glue.c''',
         includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
         deps='hcrypto asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind heimbase',
-        vnum='2.0.0',
-        version_script='lib/gssapi/version-script.map',
         )
+
+    HEIMDAL_LIBRARY('gssapi',
+                    '',
+                    includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
+                    deps='gssapi-subsystem',
+                    vnum='2.0.0',
+                    version_script='lib/gssapi/version-script.map',
+                    )
 
 if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
     # expand_path.c needs some of the install paths
