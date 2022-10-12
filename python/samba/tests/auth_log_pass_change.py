@@ -26,7 +26,6 @@ import samba.tests.auth_log_base
 from samba.tests import delete_force
 from samba.net import Net
 import samba
-from subprocess import call
 from ldb import LdbError
 from samba.tests.password_test import PasswordCommon
 from samba.dcerpc.windows_event_ids import (

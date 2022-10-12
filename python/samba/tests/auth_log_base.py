@@ -26,7 +26,6 @@ import time
 import json
 import os
 import re
-from samba import param
 
 
 class AuthLogTestBase(samba.tests.TestCase):
