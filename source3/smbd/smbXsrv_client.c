@@ -462,6 +462,7 @@ struct smb2srv_client_mc_negprot_state {
 	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
 	struct db_record *db_rec;
+	struct tevent_req *filter_subreq;
 };
 
 static void smb2srv_client_mc_negprot_cleanup(struct tevent_req *req,
@@ -519,6 +520,7 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 
+	TALLOC_FREE(state->filter_subreq);
 	SMB_ASSERT(state->db_rec == NULL);
 	state->db_rec = smbXsrv_client_global_fetch_locked(table->global.db_ctx,
 							   &client_guid,
@@ -590,6 +592,7 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 			return;
 		}
 		tevent_req_set_callback(subreq, smb2srv_client_mc_negprot_done, req);
+		state->filter_subreq = subreq;
 	}
 
 	if (procid_is_local(&global->server_id)) {
@@ -649,6 +652,9 @@ static void smb2srv_client_mc_negprot_done(struct tevent_req *subreq)
 	struct smbXsrv_connection_pass0 *passed_info0 = NULL;
 	NTSTATUS status;
 	int ret;
+
+	SMB_ASSERT(state->filter_subreq == subreq);
+	state->filter_subreq = NULL;
 
 	ret = messaging_filtered_read_recv(subreq, state, &rec);
 	TALLOC_FREE(subreq);
