@@ -231,8 +231,7 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 			(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_client_globalB);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-		DBG_WARNING("smbXsrv_client_global_verify_record: "
-			    "key '%s' ndr_pull_struct_blob - %s\n",
+		DBG_WARNING("key '%s' ndr_pull_struct_blob - %s\n",
 			    hex_encode_talloc(frame, key.dptr, key.dsize),
 			    nt_errstr(status));
 		TALLOC_FREE(frame);
