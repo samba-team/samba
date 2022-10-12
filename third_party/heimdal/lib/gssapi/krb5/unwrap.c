@@ -124,7 +124,7 @@ unwrap_des
   } else {
     /* check pad */
     ret = _gssapi_verify_pad(input_message_buffer,
-			     input_message_buffer->length - len,
+			     input_message_buffer->length - len - 8,
 			     &padlength);
     if (ret)
         return ret;
@@ -292,7 +292,7 @@ unwrap_des3
   } else {
     /* check pad */
     ret = _gssapi_verify_pad(input_message_buffer,
-			     input_message_buffer->length - len,
+			     input_message_buffer->length - len - 8,
 			     &padlength);
     if (ret)
         return ret;
