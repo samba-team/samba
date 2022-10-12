@@ -180,9 +180,10 @@ unwrap_des
   output_message_buffer->value  = malloc(output_message_buffer->length);
   if(output_message_buffer->length != 0 && output_message_buffer->value == NULL)
       return GSS_S_FAILURE;
-  memcpy (output_message_buffer->value,
-	  p + 24,
-	  output_message_buffer->length);
+  if (output_message_buffer->value != NULL)
+      memcpy (output_message_buffer->value,
+	      p + 24,
+	      output_message_buffer->length);
   return GSS_S_COMPLETE;
 }
 #endif
@@ -374,9 +375,10 @@ unwrap_des3
   output_message_buffer->value  = malloc(output_message_buffer->length);
   if(output_message_buffer->length != 0 && output_message_buffer->value == NULL)
       return GSS_S_FAILURE;
-  memcpy (output_message_buffer->value,
-	  p + 36,
-	  output_message_buffer->length);
+  if (output_message_buffer->value != NULL)
+      memcpy (output_message_buffer->value,
+	      p + 36,
+	      output_message_buffer->length);
   return GSS_S_COMPLETE;
 }
 
