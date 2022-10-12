@@ -17,7 +17,12 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
+#include "replace.h"
+#include <talloc.h>
+#include "lib/util/debug.h"
+#include "lib/util/samba_util.h"
+#include "util/charset/charset.h"
+#include "source3/include/smb_macros.h"
 #include "adt_tree.h"
 
 struct tree_node {
@@ -42,7 +47,7 @@ static bool trim_tree_keypath( char *path, char **base, char **new_path )
 	*new_path = *base = NULL;
 
 	if ( !path )
-		return False;
+		return false;
 
 	*base = path;
 
@@ -53,7 +58,7 @@ static bool trim_tree_keypath( char *path, char **base, char **new_path )
 		*new_path = p+1;
 	}
 
-	return True;
+	return true;
 }
 
 /**************************************************************************
