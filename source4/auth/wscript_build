@@ -49,6 +49,27 @@ bld.SAMBA_BINARY('test_kerberos',
         for_selftest=True
         )
 
+bld.SAMBA_BINARY('test_heimdal_gensec_unwrap_des',
+                 source='tests/heimdal_unwrap_des.c',
+                 deps='cmocka talloc gssapi-subsystem',
+                 local_include=False,
+                 for_selftest=True,
+                 enabled=(bld.CONFIG_SET('SAMBA4_USES_HEIMDAL') and
+                          not bld.CONFIG_SET('USING_SYSTEM_GSSAPI')),
+                 ldflags='''
+                 -Wl,--wrap,ct_memcmp
+                 -Wl,--wrap,der_get_length
+                 -Wl,--wrap,krb5_auth_con_getlocalsubkey
+                 -Wl,--wrap,krb5_crypto_destroy
+                 -Wl,--wrap,krb5_crypto_init
+                 -Wl,--wrap,krb5_decrypt
+                 -Wl,--wrap,krb5_decrypt_ivec
+                 -Wl,--wrap,krb5_free_keyblock
+                 -Wl,--wrap,krb5_verify_checksum
+                 -Wl,--wrap,malloc
+                 '''
+)
+
 pytalloc_util = bld.pyembed_libname('pytalloc-util')
 pyparam_util = bld.pyembed_libname('pyparam_util')
 pyldb_util = bld.pyembed_libname('pyldb-util')
