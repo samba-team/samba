@@ -1,6 +1,0 @@
-^samba.unittests.tsocket_tstream.test_tstream_disconnected_tcp_client_spin
-^samba.unittests.tsocket_tstream.test_tstream_disconnected_unix_client_spin
-^samba.unittests.tsocket_tstream.test_tstream_more_tcp_client_spin
-^samba.unittests.tsocket_tstream.test_tstream_more_unix_client_spin
-^samba.unittests.tsocket_tstream.test_tstream_more_disconnect_tcp_client_spin
-^samba.unittests.tsocket_tstream.test_tstream_more_disconnect_unix_client_spin
