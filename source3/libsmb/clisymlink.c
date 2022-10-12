@@ -228,8 +228,10 @@ struct cli_readlink_state {
 	NTSTATUS get_reparse_status;
 	uint8_t *data;
 	uint32_t num_data;
+	char *target;
 };
 
+static void cli_readlink_posix1_done(struct tevent_req *subreq);
 static void cli_readlink_opened(struct tevent_req *subreq);
 static void cli_readlink_got_reparse_data(struct tevent_req *subreq);
 static void cli_readlink_closed(struct tevent_req *subreq);
@@ -249,6 +251,18 @@ struct tevent_req *cli_readlink_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->cli = cli;
 
+	if (cli->requested_posix_capabilities != 0) {
+		/*
+		 * Only happens for negotiated SMB1 posix caps
+		 */
+		subreq = cli_posix_readlink_send(state, ev, cli, fname);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_readlink_posix1_done, req);
+		return req;
+	}
+
 	subreq = cli_ntcreate_send(
 		state, ev, cli, fname, 0, FILE_READ_ATTRIBUTES | FILE_READ_EA,
 		0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
@@ -259,6 +273,22 @@ struct tevent_req *cli_readlink_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, cli_readlink_opened, req);
 	return req;
+}
+
+static void cli_readlink_posix1_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_readlink_state *state = tevent_req_data(
+		req, struct cli_readlink_state);
+	NTSTATUS status;
+
+	status = cli_posix_readlink_recv(subreq, state, &state->target);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
 }
 
 static void cli_readlink_opened(struct tevent_req *subreq)
@@ -343,6 +373,23 @@ NTSTATUS cli_readlink_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
+	}
+
+	if (state->target != NULL) {
+		/*
+		 * SMB1 posix version
+		 */
+		if (psubstitute_name != NULL) {
+			*psubstitute_name = talloc_move(
+				mem_ctx, &state->target);
+		}
+		if (pprint_name != NULL) {
+			*pprint_name = NULL;
+		}
+		if (pflags != NULL) {
+			*pflags = 0;
+		}
+		return NT_STATUS_OK;
 	}
 
 	symlink = symlink_reparse_buffer_parse(
