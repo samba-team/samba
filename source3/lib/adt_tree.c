@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Generic Abstract Data Types
  *  Copyright (C) Gerald Carter                     2002.
@@ -7,12 +7,12 @@
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -116,18 +116,18 @@ static struct tree_node *pathtree_birth_child(struct tree_node *node,
 	/* first child */
 
 	if ( node->num_children == 1 ) {
-		DEBUG(11,("pathtree_birth_child: First child of node [%s]! [%s]\n", 
+		DEBUG(11,("pathtree_birth_child: First child of node [%s]! [%s]\n",
 			node->key ? node->key : "NULL", infant->key ));
 		node->children[0] = infant;
 	}
-	else 
+	else
 	{
-		/* 
+		/*
 		 * multiple siblings .... (at least 2 children)
-		 * 
-		 * work from the end of the list forward 
-		 * The last child is not set at this point 
-		 * Insert the new infanct in ascending order 
+		 *
+		 * work from the end of the list forward
+		 * The last child is not set at this point
+		 * Insert the new infanct in ascending order
 		 * from left to right
 		 */
 
@@ -136,11 +136,11 @@ static struct tree_node *pathtree_birth_child(struct tree_node *node,
 			DEBUG(11,("pathtree_birth_child: Looking for crib; infant -> [%s], child -> [%s]\n",
 				infant->key, node->children[i-1]->key));
 
-			/* the strings should never match assuming that we 
+			/* the strings should never match assuming that we
 			   have called pathtree_find_child() first */
 
 			if ( strcasecmp_m( infant->key, node->children[i-1]->key ) > 0 ) {
-				DEBUG(11,("pathtree_birth_child: storing infant in i == [%d]\n", 
+				DEBUG(11,("pathtree_birth_child: storing infant in i == [%d]\n",
 					i));
 				node->children[i] = infant;
 				break;
@@ -153,7 +153,7 @@ static struct tree_node *pathtree_birth_child(struct tree_node *node,
 
 		DEBUG(11,("pathtree_birth_child: Exiting loop (i == [%d])\n", i ));
 
-		/* if we haven't found the correct slot yet, the child 
+		/* if we haven't found the correct slot yet, the child
 		   will be first in the list */
 
 		if ( i == 0 )
@@ -184,7 +184,7 @@ static struct tree_node *pathtree_find_child(struct tree_node *node,
 	}
 
 	for ( i=0; i<node->num_children; i++ )
-	{	
+	{
 		DEBUG(11,("pathtree_find_child: child key => [%s]\n",
 			node->children[i]->key));
 
@@ -194,7 +194,7 @@ static struct tree_node *pathtree_find_child(struct tree_node *node,
 			next = node->children[i];
 
 		/* if result > 0 then we've gone to far because
-		   the list of children is sorted by key name 
+		   the list of children is sorted by key name
 		   If result == 0, then we have a match         */
 
 		if ( result > 0 )
@@ -202,7 +202,7 @@ static struct tree_node *pathtree_find_child(struct tree_node *node,
 	}
 
 	DEBUG(11,("pathtree_find_child: %s [%s]\n",
-		next ? "Found" : "Did not find", key ));	
+		next ? "Found" : "Did not find", key ));
 
 	return next;
 }
@@ -232,7 +232,7 @@ bool pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 
 	/* move past the first '\\' */
 
-	path++;	
+	path++;
 	path2 = SMB_STRDUP( path );
 	if ( !path2 ) {
 		DEBUG(0,("pathtree_add: strdup() failed on string [%s]!?!?!\n", path));
@@ -240,8 +240,8 @@ bool pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 	}
 
 
-	/* 
-	 * this works sort of like a 'mkdir -p'	call, possibly 
+	/*
+	 * this works sort of like a 'mkdir -p'	call, possibly
 	 * creating an entire path to the new node at once
 	 * The path should be of the form /<key1>/<key2>/...
 	 */
@@ -413,7 +413,7 @@ void* pathtree_find(struct sorted_tree *tree, char *key )
 
 		trim_tree_keypath( p, &base, &str );
 
-		DEBUG(11,("pathtree_find: [loop] base => [%s], new_path => [%s]\n", 
+		DEBUG(11,("pathtree_find: [loop] base => [%s], new_path => [%s]\n",
 			base ? base : "",
 			str ? str : ""));
 
@@ -421,9 +421,9 @@ void* pathtree_find(struct sorted_tree *tree, char *key )
 
 		current = pathtree_find_child( current, base );
 
-		/* 
-		 * the idea is that the data_p for a parent should 
-		 * be inherited by all children, but allow it to be 
+		/*
+		 * the idea is that the data_p for a parent should
+		 * be inherited by all children, but allow it to be
 		 * overridden farther down
 		 */
 
@@ -446,5 +446,3 @@ void* pathtree_find(struct sorted_tree *tree, char *key )
 
 	return result;
 }
-
-
