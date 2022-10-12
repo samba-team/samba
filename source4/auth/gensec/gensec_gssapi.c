@@ -836,6 +836,7 @@ init_sec_context_done:
 			}
 			
 			if (output_token.length < 4) {
+				gss_release_buffer(&min_stat, &output_token);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 
@@ -989,6 +990,7 @@ init_sec_context_done:
 		}
 			
 		if (output_token.length < 4) {
+			gss_release_buffer(&min_stat, &output_token);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
