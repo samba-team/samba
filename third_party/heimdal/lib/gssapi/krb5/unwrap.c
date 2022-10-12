@@ -230,7 +230,7 @@ unwrap_des3
   if (ret)
       return ret;
 
-  if (memcmp (p, "\x04\x00", 2) != 0) /* HMAC SHA1 DES3_KD */
+  if (ct_memcmp (p, "\x04\x00", 2) != 0) /* HMAC SHA1 DES3_KD */
     return GSS_S_BAD_SIG;
   p += 2;
   if (ct_memcmp (p, "\x02\x00", 2) == 0) {
