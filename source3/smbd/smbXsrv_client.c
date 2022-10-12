@@ -1111,6 +1111,16 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 	}
 
 	status = smb2srv_client_connection_passed(client, pass_info0);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		/*
+		 * We hit a race where, the client dropped the connection
+		 * while the socket was passed to us and the origin
+		 * process already existed.
+		 */
+		DBG_DEBUG("smb2srv_client_connection_passed() ignore %s\n",
+			  nt_errstr(status));
+		status = NT_STATUS_OK;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *r = "smb2srv_client_connection_passed() failed";
 		DBG_ERR("%s => %s\n", r, nt_errstr(status));
