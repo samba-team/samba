@@ -592,6 +592,20 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 		tevent_req_set_callback(subreq, smb2srv_client_mc_negprot_done, req);
 	}
 
+	if (procid_is_local(&global->server_id)) {
+		status = smb2srv_client_connection_pass(state->smb2req,
+							global);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	} else {
+		status = smb2srv_client_connection_drop(state->smb2req,
+							global);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	}
+
 	subreq = dbwrap_watched_watch_send(state,
 					   state->ev,
 					   state->db_rec,
@@ -601,22 +615,7 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 	}
 	tevent_req_set_callback(subreq, smb2srv_client_mc_negprot_watched, req);
 
-	if (procid_is_local(&global->server_id)) {
-		status = smb2srv_client_connection_pass(state->smb2req,
-							global);
-		TALLOC_FREE(global);
-		if (tevent_req_nterror(req, status)) {
-			return;
-		}
-	} else {
-		status = smb2srv_client_connection_drop(state->smb2req,
-							global);
-		TALLOC_FREE(global);
-		if (tevent_req_nterror(req, status)) {
-			return;
-		}
-	}
-
+	TALLOC_FREE(global);
 	TALLOC_FREE(state->db_rec);
 	return;
 }
