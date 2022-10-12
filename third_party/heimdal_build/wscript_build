@@ -633,15 +633,21 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
         ../heimdal_build/gssapi-glue.c
     '''
 
-    HEIMDAL_LIBRARY('gssapi',
+    HEIMDAL_SUBSYSTEM('gssapi-subsystem',
                     HEIMDAL_GSSAPI_SPNEGO_SOURCE +
                     HEIMDAL_GSSAPI_KRB5_SOURCE +
                     HEIMDAL_GSSAPI_MECH_SOURCE,
-        includes='../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech ../heimdal/lib/ntlm',
-        deps='hcrypto asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind heimbase',
-        cflags=bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS,
-        version_script='lib/gssapi/version-script.map',
-        )
+                      includes='../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech ../heimdal/lib/ntlm',
+                      deps='hcrypto asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind heimbase',
+                      cflags=bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS,
+    )
+
+    HEIMDAL_LIBRARY('gssapi',
+                    '',
+                    includes='../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech ../heimdal/lib/ntlm',
+                    deps='gssapi-subsystem',
+                    version_script='lib/gssapi/version-script.map',
+    )
 
 if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
     # expand_path.c needs some of the install paths
