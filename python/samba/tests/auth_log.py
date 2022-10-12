@@ -92,7 +92,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         # lambda x: x removes anything that evaluates to False,
         # including empty strings, so we handle "" as well
         binding_list = \
-            list(filter(lambda x: x, re.compile('[\[,\]]').split(binding)))
+            list(filter(lambda x: x, re.compile(r'[\[,\]]').split(binding)))
 
         # Handle explicit smb2, smb1 or auto negotiation
         if "smb2" in binding_list:
