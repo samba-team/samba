@@ -3455,6 +3455,8 @@ static int cmd_readlink(void)
 	char *buf = NULL;
 	char *targetname = NULL;
 	char *linkname = NULL;
+	char *printname = NULL;
+	uint32_t flags;
 	struct cli_state *targetcli;
 	struct cli_credentials *creds = samba_cmdline_get_creds();
         NTSTATUS status;
@@ -3483,18 +3485,8 @@ static int cmd_readlink(void)
 		return 1;
 	}
 
-	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
-	}
-
-	if (CLI_DIRSEP_CHAR != '/') {
-		d_printf("Command \"posix\" must be issued before "
-			 "the \"readlink\" command can be used.\n");
-		return 1;
-	}
-
-	status = cli_posix_readlink(targetcli, name, talloc_tos(), &linkname);
+	status = cli_readlink(
+		cli, name, talloc_tos(), &linkname, &printname, &flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s readlink on file %s\n",
 			 nt_errstr(status), name);
