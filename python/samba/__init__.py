@@ -334,12 +334,7 @@ def current_unix_time():
 
 
 def string_to_byte_array(string):
-    blob = [0] * len(string)
-
-    for i in range(len(string)):
-        blob[i] = string[i] if isinstance(string[i], int) else ord(string[i])
-
-    return blob
+    return [c if isinstance(c, int) else ord(c) for c in string]
 
 
 def arcfour_encrypt(key, data):
