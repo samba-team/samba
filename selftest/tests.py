@@ -47,6 +47,8 @@ with_pam = ("WITH_PAM" in config_hash)
 with_elasticsearch_backend = ("HAVE_SPOTLIGHT_BACKEND_ES" in config_hash)
 pam_wrapper_so_path = config_hash.get("LIBPAM_WRAPPER_SO_PATH")
 pam_set_items_so_path = config_hash.get("PAM_SET_ITEMS_SO_PATH")
+have_heimdal_support = "SAMBA4_USES_HEIMDAL" in config_hash
+using_system_gssapi = "USING_SYSTEM_GSSAPI" in config_hash
 
 planpythontestsuite("none", "samba.tests.source")
 planpythontestsuite("none", "samba.tests.source_chars")
@@ -449,6 +451,9 @@ plantestsuite("samba.unittests.test_oLschema2ldif", "none",
               [os.path.join(bindir(), "default/source4/utils/oLschema2ldif/test_oLschema2ldif")])
 plantestsuite("samba.unittests.auth.sam", "none",
               [os.path.join(bindir(), "test_auth_sam")])
+if have_heimdal_support and not using_system_gssapi:
+    plantestsuite("samba.unittests.auth.heimdal_gensec_unwrap_des", "none",
+                  [valgrindify(os.path.join(bindir(), "test_heimdal_gensec_unwrap_des"))])
 if with_elasticsearch_backend:
     plantestsuite("samba.unittests.mdsparser_es", "none",
                   [os.path.join(bindir(), "default/source3/test_mdsparser_es")] + [configuration])
