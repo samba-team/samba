@@ -6765,7 +6765,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		(flags == SMB_POSIX_UNLINK_DIRECTORY_TARGET) ? "directory" : "file",
 		smb_fname_str_dbg(smb_fname)));
 
-	if (VALID_STAT_OF_DIR(smb_fname->st)) {
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 		create_options |= FILE_DIRECTORY_FILE;
 	}
 
