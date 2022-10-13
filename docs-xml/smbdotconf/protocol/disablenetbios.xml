@@ -5,7 +5,7 @@
 <description>
     <para>Enabling this parameter will disable netbios support
     in Samba. Netbios is the only available form of browsing in 
-    all windows versions except for 2000 and XP. </para>
+    Windows versions prior to Windows 2000. </para>
 
     <note><para>Clients that only support netbios won't be able to 
     see your samba server when netbios support is disabled.
