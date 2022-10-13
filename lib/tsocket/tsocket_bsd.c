@@ -1744,6 +1744,7 @@ int _tdgram_unix_socket(const struct tsocket_address *local,
 
 struct tstream_bsd {
 	int fd;
+	int error;
 
 	void *event_ptr;
 	struct tevent_fd *fde;
@@ -1921,7 +1922,19 @@ static ssize_t tstream_bsd_pending_bytes(struct tstream_context *stream)
 		return -1;
 	}
 
+	if (bsds->error != 0) {
+		errno = bsds->error;
+		return -1;
+	}
+
 	ret = tsocket_bsd_pending(bsds->fd);
+	if (ret == -1) {
+		/*
+		 * remember the error and don't
+		 * allow further requests
+		 */
+		bsds->error = errno;
+	}
 
 	return ret;
 }
@@ -2029,9 +2042,15 @@ static void tstream_bsd_readv_handler(void *private_data)
 	int _count;
 	bool ok, retry;
 
+	if (bsds->error != 0) {
+		tevent_req_error(req, bsds->error);
+		return;
+	}
+
 	ret = readv(bsds->fd, state->vector, state->count);
 	if (ret == 0) {
 		/* propagate end of file */
+		bsds->error = EPIPE;
 		tevent_req_error(req, EPIPE);
 		return;
 	}
@@ -2039,6 +2058,13 @@ static void tstream_bsd_readv_handler(void *private_data)
 	if (retry) {
 		/* retry later */
 		return;
+	}
+	if (err != 0) {
+		/*
+		 * remember the error and don't
+		 * allow further requests
+		 */
+		bsds->error = err;
 	}
 	if (tevent_req_error(req, err)) {
 		return;
@@ -2172,9 +2198,15 @@ static void tstream_bsd_writev_handler(void *private_data)
 	int _count;
 	bool ok, retry;
 
+	if (bsds->error != 0) {
+		tevent_req_error(req, bsds->error);
+		return;
+	}
+
 	ret = writev(bsds->fd, state->vector, state->count);
 	if (ret == 0) {
 		/* propagate end of file */
+		bsds->error = EPIPE;
 		tevent_req_error(req, EPIPE);
 		return;
 	}
@@ -2182,6 +2214,13 @@ static void tstream_bsd_writev_handler(void *private_data)
 	if (retry) {
 		/* retry later */
 		return;
+	}
+	if (err != 0) {
+		/*
+		 * remember the error and don't
+		 * allow further requests
+		 */
+		bsds->error = err;
 	}
 	if (tevent_req_error(req, err)) {
 		return;
