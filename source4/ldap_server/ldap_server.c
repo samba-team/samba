@@ -697,6 +697,7 @@ static void ldapsrv_call_writev_start(struct ldapsrv_call *call)
 	struct ldapsrv_connection *conn = call->conn;
 	struct ldapsrv_reply *reply = NULL;
 	struct tevent_req *subreq = NULL;
+	struct timeval endtime;
 	size_t length = 0;
 	size_t i;
 
@@ -781,6 +782,10 @@ static void ldapsrv_call_writev_start(struct ldapsrv_call *call)
 		ldapsrv_terminate_connection(conn, "stream_writev_queue_send failed");
 		return;
 	}
+	endtime = timeval_current_ofs(conn->limits.conn_idle_time, 0);
+	tevent_req_set_endtime(subreq,
+			       conn->connection->event.ctx,
+			       endtime);
 	tevent_req_set_callback(subreq, ldapsrv_call_writev_done, call);
 }
 
