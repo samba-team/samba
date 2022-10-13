@@ -171,11 +171,31 @@ static ssize_t tsocket_bsd_netlink_pending(int fd)
 }
 #endif
 
+static ssize_t tsocket_bsd_error(int fd)
+{
+	int ret, error = 0;
+	socklen_t len = sizeof(error);
+
+	/*
+	 * if no data is available check if the socket is in error state. For
+	 * dgram sockets it's the way to return ICMP error messages of
+	 * connected sockets to the caller.
+	 */
+	ret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &len);
+	if (ret == -1) {
+		return ret;
+	}
+	if (error != 0) {
+		errno = error;
+		return -1;
+	}
+	return 0;
+}
+
 static ssize_t tsocket_bsd_pending(int fd)
 {
-	int ret, error;
+	int ret;
 	int value = 0;
-	socklen_t len;
 
 	ret = ioctl(fd, FIONREAD, &value);
 	if (ret == -1) {
@@ -192,23 +212,7 @@ static ssize_t tsocket_bsd_pending(int fd)
 		return value;
 	}
 
-	error = 0;
-	len = sizeof(error);
-
-	/*
-	 * if no data is available check if the socket is in error state. For
-	 * dgram sockets it's the way to return ICMP error messages of
-	 * connected sockets to the caller.
-	 */
-	ret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &len);
-	if (ret == -1) {
-		return ret;
-	}
-	if (error != 0) {
-		errno = error;
-		return -1;
-	}
-	return 0;
+	return tsocket_bsd_error(fd);
 }
 
 static const struct tsocket_address_ops tsocket_address_bsd_ops;
