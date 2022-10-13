@@ -1772,7 +1772,13 @@ static int vfs_gluster_fntimes(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = glfs_futimens(glfd, times);
+	if (!fsp->fsp_flags.is_pathref) {
+		ret = glfs_futimens(glfd, times);
+	} else {
+		ret = glfs_utimens(handle->data,
+				   fsp->fsp_name->base_name,
+				   times);
+	}
 	END_PROFILE(syscall_fntimes);
 
 	return ret;
