@@ -2580,6 +2580,10 @@ done:
 	    local,
 	    result);
 
+	if (NT_STATUS_IS_OK(result)) {
+		gpupdate_user_init(r->in.info->username);
+	}
+
 	return result;
 }
 
