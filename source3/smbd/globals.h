@@ -256,10 +256,11 @@ bool smbXsrv_server_multi_channel_enabled(void);
 
 NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    NTSTATUS status,
+				    uint8_t error_context_count,
 				    DATA_BLOB *info,
 				    const char *location);
 #define smbd_smb2_request_error(req, status) \
-	smbd_smb2_request_error_ex(req, status, NULL, __location__)
+	smbd_smb2_request_error_ex(req, status, 0, NULL, __location__)
 NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 				   NTSTATUS status,
 				   DATA_BLOB body, DATA_BLOB *dyn,

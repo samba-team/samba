@@ -3949,6 +3949,7 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 
 NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    NTSTATUS status,
+				    uint8_t error_context_count,
 				    DATA_BLOB *info,
 				    const char *location)
 {
@@ -3988,6 +3989,7 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 	body.data = outhdr + SMB2_HDR_BODY;
 	body.length = 8;
 	SSVAL(body.data, 0, 9);
+	SCVAL(body.data, 2, error_context_count);
 
 	if (info) {
 		SIVAL(body.data, 0x04, info->length);

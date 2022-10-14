@@ -172,6 +172,7 @@ static void smbd_smb2_request_getinfo_done(struct tevent_req *subreq)
 		/* Return a specific error with data. */
 		error = smbd_smb2_request_error_ex(req,
 						call_status,
+						0,
 						&out_output_buffer,
 						__location__);
 		if (!NT_STATUS_IS_OK(error)) {
