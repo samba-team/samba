@@ -838,6 +838,7 @@ check_ticket_signature(krb5_context context,
     krb5_crypto crypto;
     krb5_data data, orig_pac_ad;
     Ticket ticket;
+    AuthorizationDataElement ad;
     EncTicketPart et;
     krb5_principal client;
     krb5_pac pac;
@@ -889,8 +890,10 @@ check_ticket_signature(krb5_context context,
     heim_assert(rodc_id == tkt->rodc_id, "Wrong RODCIdentifier");
 
     /* Try to resign the PAC */
-    orig_pac_ad = et.authorization_data->val[0].ad_data;
-    et.authorization_data->val[0].ad_data.data = NULL;
+    ret = copy_AuthorizationDataElement(&et.authorization_data->val[0], &ad);
+    if (ret)
+	t_err(context, tkt->name, "remove_AuthorizationData", ret);
+    orig_pac_ad = ad.ad_data;
 
     ret = remove_AuthorizationData(et.authorization_data, 0);
     if (ret)
@@ -904,6 +907,8 @@ check_ticket_signature(krb5_context context,
 
     heim_assert(krb5_data_cmp(&et.authorization_data->val[0].ad_data,
 			      &orig_pac_ad) == 0, "PACs differ");
+
+    free_AuthorizationDataElement(&ad);
 
     /* Sign and verify a clean PAC */
     krb5_pac_free(context, pac);
@@ -958,6 +963,7 @@ main(int argc, char **argv)
     krb5_pac pac;
     krb5_data data;
     krb5_principal p, p2;
+    unsigned char bad_pac[sizeof(saved_pac)];
 
     ret = krb5_init_context(&context);
     if (ret)
@@ -970,6 +976,44 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");
 
+    /* Attempt to parse a truncated PAC */
+    ret = krb5_pac_parse(context, saved_pac, sizeof(saved_pac) >> 1, &pac);
+    if (ret == 0)
+	krb5_err(context, 1, ret, "krb5_pac_parse parsed a short PAC");
+
+    /* Attempt to parse a PAC with a buffer claiming too large a length */
+    memcpy(bad_pac, saved_pac, sizeof(saved_pac));
+    bad_pac[13] += 1;
+
+    ret = krb5_pac_parse(context, bad_pac, sizeof(saved_pac), &pac);
+    if (ret == 0)
+	krb5_err(context, 1, ret, "krb5_pac_parse parsed a malicious PAC");
+
+    /* Attempt to parse a PAC with a buffer offset too far in */
+    memcpy(bad_pac, saved_pac, sizeof(saved_pac));
+    bad_pac[16] += 1;
+
+    ret = krb5_pac_parse(context, bad_pac, sizeof(saved_pac), &pac);
+    if (ret == 0)
+	krb5_err(context, 1, ret, "krb5_pac_parse parsed a malicious PAC");
+
+    /* Attempt to parse a PAC with a buffer offset too far back */
+    memcpy(bad_pac, saved_pac, sizeof(saved_pac));
+    bad_pac[16] -= 1;
+
+    ret = krb5_pac_parse(context, bad_pac, sizeof(saved_pac), &pac);
+    if (ret == 0)
+	krb5_err(context, 1, ret, "krb5_pac_parse parsed a malicious PAC");
+
+    /* Attempt to parse a PAC with an incorrect buffer count */
+    memcpy(bad_pac, saved_pac, sizeof(saved_pac));
+    bad_pac[0] += 1;
+
+    ret = krb5_pac_parse(context, bad_pac, sizeof(saved_pac), &pac);
+    if (ret == 0)
+	krb5_err(context, 1, ret, "krb5_pac_parse parsed a malicious PAC");
+
+    /* Parse a well-formed PAC */
     ret = krb5_pac_parse(context, saved_pac, sizeof(saved_pac), &pac);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_pac_parse");
