@@ -82,7 +82,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (poptPeekArg(pc)) {
-		config_file = poptGetArg(pc);
+		config_file = talloc_strdup(frame, poptGetArg(pc));
 	} else {
 		config_file = get_dyn_CONFIGFILE();
 	}
