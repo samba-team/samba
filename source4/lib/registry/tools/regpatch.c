@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	patch = poptGetArg(pc);
+	patch = talloc_strdup(mem_ctx, poptGetArg(pc));
 	if (patch == NULL) {
 		poptPrintUsage(pc, stderr, 0);
 		TALLOC_FREE(mem_ctx);
