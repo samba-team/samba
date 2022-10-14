@@ -97,7 +97,7 @@ static void cli_symlink_create_done(struct tevent_req *subreq)
 	}
 
 	if (!symlink_reparse_buffer_marshall(
-		    state->link_target, NULL, state->flags, state,
+		    state->link_target, NULL, 0, state->flags, state,
 		    &state->in.data, &state->in.length)) {
 		tevent_req_oom(req);
 		return;

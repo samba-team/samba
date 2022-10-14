@@ -34,8 +34,13 @@ struct symlink_reparse_struct {
 };
 
 bool symlink_reparse_buffer_marshall(
-	const char *substitute, const char *printname, uint32_t flags,
-	TALLOC_CTX *mem_ctx, uint8_t **pdst, size_t *pdstlen);
+	const char *substitute,
+	const char *printname,
+	uint16_t unparsed_path_length,
+	uint32_t flags,
+	TALLOC_CTX *mem_ctx,
+	uint8_t **pdst,
+	size_t *pdstlen);
 struct symlink_reparse_struct *symlink_reparse_buffer_parse(
 	TALLOC_CTX *mem_ctx, const uint8_t *src, size_t srclen);
 

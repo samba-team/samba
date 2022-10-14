@@ -29,8 +29,13 @@
 #include "lib/util/debug.h"
 
 bool symlink_reparse_buffer_marshall(
-	const char *substitute, const char *printname, uint32_t flags,
-	TALLOC_CTX *mem_ctx, uint8_t **pdst, size_t *pdstlen)
+	const char *substitute,
+	const char *printname,
+	uint16_t unparsed_path_length,
+	uint32_t flags,
+	TALLOC_CTX *mem_ctx,
+	uint8_t **pdst,
+	size_t *pdstlen)
 {
 	uint8_t *dst = NULL;
 	size_t dst_len;
@@ -87,7 +92,7 @@ bool symlink_reparse_buffer_marshall(
 
 	SIVAL(dst, 0, IO_REPARSE_TAG_SYMLINK);	   /* ReparseTag */
 	SSVAL(dst, 4, 12 + subst_len + print_len); /* ReparseDataLength */
-	SSVAL(dst, 6, 0);			   /* Reserved */
+	SSVAL(dst, 6, unparsed_path_length);	   /* Reserved */
 	SSVAL(dst, 8, 0);			   /* SubstituteNameOffset */
 	SSVAL(dst, 10, subst_len);		   /* SubstituteNameLength */
 	SSVAL(dst, 12, subst_len);		   /* PrintNameOffset */
