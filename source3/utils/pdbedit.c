@@ -1150,7 +1150,7 @@ int main(int argc, const char **argv)
 	poptGetArg(pc); /* Drop argv[0], the program name */
 
 	if (user_name == NULL)
-		user_name = poptGetArg(pc);
+		user_name = talloc_strdup(frame, poptGetArg(pc));
 
 	setparms =	(backend ? BIT_BACKEND : 0) +
 			(verbose ? BIT_VERBOSE : 0) +
