@@ -1238,7 +1238,7 @@ out_free:
 	/* Get server as remaining unparsed argument.  Print usage if more
 	   than one unparsed argument is present. */
 
-	server = poptGetArg(pc);
+	server = talloc_strdup(frame, poptGetArg(pc));
 
 	if (!server || poptGetArg(pc)) {
 		poptPrintHelp(pc, stderr, 0);
