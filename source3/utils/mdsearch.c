@@ -242,6 +242,7 @@ int main(int argc, char **argv)
 	return 0;
 
 fail:
+	poptFreeContext(pc);
 	TALLOC_FREE(frame);
 	return 1;
 }
