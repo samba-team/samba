@@ -49,5 +49,9 @@ bool clistr_is_previous_version_path(const char *path,
 				     const char **startp,
 				     const char **endp,
 				     NTTIME *ptwrp);
+bool subdir_of(const char *parent,
+	       size_t parent_len,
+	       const char *subdir,
+	       const char **_relative);
 
 #endif

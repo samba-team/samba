@@ -304,3 +304,53 @@ bool extract_snapshot_token(char *fname, NTTIME *twrp)
 
 	return true;
 }
+
+/*
+ * Take two absolute paths, figure out if "subdir" is a proper
+ * subdirectory of "parent". Return the component relative to the
+ * "parent" without the potential "/". Take care of "parent"
+ * possibly ending in "/".
+ */
+bool subdir_of(const char *parent,
+	       size_t parent_len,
+	       const char *subdir,
+	       const char **_relative)
+{
+	const char *relative = NULL;
+	bool matched;
+
+	SMB_ASSERT(parent[0] == '/');
+	SMB_ASSERT(subdir[0] == '/');
+
+	if (parent_len == 1) {
+		/*
+		 * Everything is below "/"
+		 */
+		*_relative = subdir+1;
+		return true;
+	}
+
+	if (parent[parent_len-1] == '/') {
+		parent_len -= 1;
+	}
+
+	matched = (strncmp(subdir, parent, parent_len) == 0);
+	if (!matched) {
+		return false;
+	}
+
+	relative = &subdir[parent_len];
+
+	if (relative[0] == '\0') {
+		*_relative = relative; /* nothing left */
+		return true;
+	}
+
+	if (relative[0] == '/') {
+		/* End of parent must match a '/' in subdir. */
+		*_relative = relative+1;
+		return true;
+	}
+
+	return false;
+}
