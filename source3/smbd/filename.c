@@ -1369,6 +1369,7 @@ NTSTATUS filename_convert_dirfsp(
 	struct smb_filename **_smb_fname)
 {
 	char *substitute = NULL;
+	const char *relative = NULL;
 	size_t unparsed = 0;
 	NTSTATUS status;
 	char *target = NULL;
@@ -1441,17 +1442,17 @@ next:
 
 	DBG_DEBUG("abs_target_canon=%s\n", abs_target_canon);
 
-	in_share = strncmp(
-		abs_target_canon,
+	in_share = subdir_of(
 		conn->connectpath,
-		strlen(conn->connectpath)) == 0;
+		strlen(conn->connectpath),
+		abs_target_canon,
+		&relative);
 	if (!in_share) {
 		DBG_DEBUG("wide link to %s\n", abs_target_canon);
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
-	name_in = talloc_strdup(
-		mem_ctx, abs_target_canon + strlen(conn->connectpath) + 1);
+	name_in = talloc_strdup(mem_ctx, relative);
 
 	symlink_redirects += 1;
 
