@@ -31,5 +31,9 @@ char *lock_path(TALLOC_CTX *mem_ctx, const char *name);
 char *state_path(TALLOC_CTX *mem_ctx, const char *name);
 char *cache_path(TALLOC_CTX *mem_ctx, const char *name);
 char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *abs_path);
+bool subdir_of(const char *parent,
+	       size_t parent_len,
+	       const char *subdir,
+	       const char **_relative);
 
 #endif

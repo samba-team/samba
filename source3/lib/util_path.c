@@ -23,6 +23,7 @@
 
 #include "replace.h"
 #include <talloc.h>
+#include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 #include "lib/util_path.h"
 
@@ -203,4 +204,54 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *pathname_in)
 	/* Terminate and we're done ! */
 	*p++ = '\0';
 	return pathname;
+}
+
+/*
+ * Take two absolute paths, figure out if "subdir" is a proper
+ * subdirectory of "parent". Return the component relative to the
+ * "parent" without the potential "/". Take care of "parent"
+ * possibly ending in "/".
+ */
+bool subdir_of(const char *parent,
+	       size_t parent_len,
+	       const char *subdir,
+	       const char **_relative)
+{
+	const char *relative = NULL;
+	bool matched;
+
+	SMB_ASSERT(parent[0] == '/');
+	SMB_ASSERT(subdir[0] == '/');
+
+	if (parent_len == 1) {
+		/*
+		 * Everything is below "/"
+		 */
+		*_relative = subdir+1;
+		return true;
+	}
+
+	if (parent[parent_len-1] == '/') {
+		parent_len -= 1;
+	}
+
+	matched = (strncmp(subdir, parent, parent_len) == 0);
+	if (!matched) {
+		return false;
+	}
+
+	relative = &subdir[parent_len];
+
+	if (relative[0] == '\0') {
+		*_relative = relative; /* nothing left */
+		return true;
+	}
+
+	if (relative[0] == '/') {
+		/* End of parent must match a '/' in subdir. */
+		*_relative = relative+1;
+		return true;
+	}
+
+	return false;
 }
