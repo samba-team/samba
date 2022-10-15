@@ -144,6 +144,9 @@ chmod 0 "$dir_outside_share_noperms"
 	mkdir "dir_inside_share_noperms/noperm_subdir_exists"
 	touch "dir_inside_share_noperms/noperm_subdir_exists/noperm_subdir_file_exists"
 	chmod 0 "dir_inside_share_noperms"
+
+	# Symlink pointing out of the share
+	ln -s "$share_test_dir"a"/etc" x
 )
 
 #
@@ -345,6 +348,7 @@ test_symlink_traversal_SMB2()
 	smbclient_expect_error "get" "symlink_to_dir_exists/subdir_exists" "" "NT_STATUS_FILE_IS_A_DIRECTORY" || return 1
 	smbclient_expect_error "get" "symlink_to_dir_exists/subdir_exists/noexist1" "" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
 	smbclient_expect_error "get" "symlink_to_dir_exists/subdir_exists/noexist1/noexist2" "" "NT_STATUS_OBJECT_PATH_NOT_FOUND" || return 1
+	smbclient_expect_error "get" "x/passwd" "passwd" "NT_STATUS_CONNECTION_DISCONNECTED" || return 1
 
 	#
 	# Test paths within share with no permissions.
