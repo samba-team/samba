@@ -23,8 +23,8 @@
 
 #include "replace.h"
 #include <talloc.h>
-#include "lib/util/samba_util.h"
 #include "lib/util/debug.h"
+#include "lib/util/samba_util.h"
 #include "lib/util_path.h"
 
 struct loadparm_substitution;
