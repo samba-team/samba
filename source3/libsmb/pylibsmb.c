@@ -2323,6 +2323,48 @@ static PyObject *py_smb_set_sd(struct py_cli_state *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_smb_smb1_posix(
+	struct py_cli_state *self, PyObject *Py_UNUSED(ignored))
+{
+	NTSTATUS status;
+	struct tevent_req *req = NULL;
+	uint16_t major, minor;
+	uint32_t caplow, caphigh;
+	PyObject *result = NULL;
+
+	req = cli_unix_extensions_version_send(NULL, self->ev, self->cli);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_unix_extensions_version_recv(
+		req, &major, &minor, &caplow, &caphigh);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	req = cli_set_unix_extensions_capabilities_send(
+		NULL, self->ev, self->cli, major, minor, caplow, caphigh);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_set_unix_extensions_capabilities_recv(req);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	result = Py_BuildValue(
+		"[IIII]",
+		(unsigned)minor,
+		(unsigned)major,
+		(unsigned)caplow,
+		(unsigned)caphigh);
+	return result;
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
@@ -2403,6 +2445,11 @@ static PyMethodDef py_cli_state_methods[] = {
 	  METH_NOARGS,
 	  "have_posix() -> True/False\n\n"
 	  "\t\tReturn if the server has posix extensions"
+	},
+	{ "smb1_posix",
+	  (PyCFunction)py_smb_smb1_posix,
+	  METH_NOARGS,
+	  "Negotiate SMB1 posix extensions",
 	},
 	{ NULL, NULL, 0, NULL }
 };
