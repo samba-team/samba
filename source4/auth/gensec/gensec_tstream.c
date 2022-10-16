@@ -378,7 +378,7 @@ static struct tevent_req *tstream_gensec_writev_send(TALLOC_CTX *mem_ctx,
 		struct tstream_gensec);
 	struct tevent_req *req;
 	struct tstream_gensec_writev_state *state;
-	int i;
+	size_t i;
 	int total;
 	int chunk;
 
