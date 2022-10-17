@@ -1149,8 +1149,16 @@ int main(int argc, const char **argv)
 
 	poptGetArg(pc); /* Drop argv[0], the program name */
 
-	if (user_name == NULL)
-		user_name = talloc_strdup(frame, poptGetArg(pc));
+	if (user_name == NULL) {
+		if (poptPeekArg(pc)) {
+			user_name = talloc_strdup(frame, poptGetArg(pc));
+			if (user_name == NULL) {
+				fprintf(stderr, "out of memory\n");
+				TALLOC_FREE(frame);
+				exit(1);
+			}
+		}
+	}
 
 	setparms =	(backend ? BIT_BACKEND : 0) +
 			(verbose ? BIT_VERBOSE : 0) +
