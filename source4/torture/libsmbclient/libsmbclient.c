@@ -1412,6 +1412,67 @@ static bool torture_libsmbclient_rename(struct torture_context *tctx)
 	return success;
 }
 
+static bool torture_libsmbclient_getatr(struct torture_context *tctx)
+{
+	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
+	SMBCCTX *ctx = NULL;
+	char *getatr_name = NULL;
+	struct stat st = {0};
+	bool ok;
+	int ret = 0;
+	int err = 0;
+
+	if (smburl == NULL) {
+		torture_fail(tctx,
+			     "option --option=torture:smburl="
+			     "smb://user:password@server missing\n");
+	}
+
+	ok = torture_libsmbclient_init_context(tctx, &ctx);
+	torture_assert(tctx, ok, "Failed to init context");
+	smbc_set_context(ctx);
+
+	getatr_name = talloc_asprintf(tctx,
+			"%s/noexist",
+			smburl);
+	if (getatr_name == NULL) {
+		torture_result(tctx,
+			       TORTURE_FAIL,
+			       __location__": %s",
+			       "talloc fail\n");
+		return false;
+	}
+	/* Ensure the file doesn't exist. */
+	smbc_unlink(getatr_name);
+	/*
+	 * smbc_stat() internally uses SMBC_getatr().
+	 * Make sure doing getatr on a non-existent file gives
+	 * an error of -1, errno = ENOENT.
+	 */
+
+	ret = smbc_stat(getatr_name, &st);
+	if (ret == -1) {
+		err = errno;
+	}
+	torture_assert_int_equal(tctx,
+				 ret,
+				 -1,
+				 talloc_asprintf(tctx,
+					"smbc_stat on '%s' should "
+					"get -1, got %d\n",
+					getatr_name,
+					ret));
+	torture_assert_int_equal(tctx,
+				 err,
+				 ENOENT,
+				 talloc_asprintf(tctx,
+					"smbc_stat on '%s' should "
+					"get errno = ENOENT, got %s\n",
+					getatr_name,
+					strerror(err)));
+	return true;
+}
+
 NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
@@ -1438,6 +1499,8 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite,
 					"rename",
 					torture_libsmbclient_rename);
+	torture_suite_add_simple_test(suite, "getatr",
+		torture_libsmbclient_getatr);
 
 	suite->description = talloc_strdup(suite, "libsmbclient interface tests");
 
