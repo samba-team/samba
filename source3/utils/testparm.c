@@ -844,6 +844,11 @@ static void do_per_share_checks(int s)
 
 	if (poptPeekArg(pc)) {
 		config_file = talloc_strdup(frame, poptGetArg(pc));
+                if (config_file == NULL) {
+                        DBG_ERR("out of memory\n");
+                        TALLOC_FREE(frame);
+                        exit(1);
+                }
 	} else {
 		config_file = get_dyn_CONFIGFILE();
 	}
