@@ -817,6 +817,12 @@ NTSTATUS openat_pathref_dirfsp_nosymlink(
 
 		next = strv_next(path, rel_fname.base_name);
 
+		/*
+		 * Path sanitizing further up has cleaned or rejected
+		 * empty path components. Assert this here.
+		 */
+		SMB_ASSERT(rel_fname.base_name[0] != '\0');
+
 		if (ISDOT(rel_fname.base_name) ||
 		    ISDOTDOT(rel_fname.base_name)) {
 			DBG_DEBUG("%s contains a dot\n", path_in);
