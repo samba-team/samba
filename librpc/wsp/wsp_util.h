@@ -25,6 +25,7 @@
 
 struct safearraybound;
 struct wsp_cfullpropspec;
+struct wsp_cbasestoragevariant;
 struct wsp_crestriction;
 
 struct full_propset_info {
@@ -51,5 +52,11 @@ const struct full_propset_info *get_propset_info_with_guid(
 						const char *prop_name,
 						struct GUID *guid);
 
+void set_variant_lpwstr(TALLOC_CTX *ctx,
+			struct wsp_cbasestoragevariant *vvalue,
+			const char *string_val);
+void set_variant_lpwstr_vector(TALLOC_CTX *ctx,
+			      struct wsp_cbasestoragevariant *variant,
+			      const char **string_vals, uint32_t elems);
 struct wsp_cfullpropspec *get_full_prop(struct wsp_crestriction *restriction);
 #endif /* __LIBRPC_WSP_UTIL_H__ */

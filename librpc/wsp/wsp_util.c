@@ -489,3 +489,34 @@ struct wsp_cfullpropspec *get_full_prop(struct wsp_crestriction *restriction)
 	}
 	return result;
 }
+
+void set_variant_lpwstr(TALLOC_CTX *ctx,
+			struct wsp_cbasestoragevariant *vvalue,
+			const char *string_val)
+{
+	vvalue->vtype = VT_LPWSTR;
+	vvalue->vvalue.vt_lpwstr.value = talloc_strdup(ctx, string_val);
+}
+
+static void fill_string_vec(TALLOC_CTX* ctx,
+				struct wsp_cbasestoragevariant *variant,
+				const char **strings, uint16_t elems)
+{
+	int i;
+	variant->vvalue.vt_lpwstr_v.vvector_elements = elems;
+	variant->vvalue.vt_lpwstr_v.vvector_data = talloc_zero_array(ctx,
+							struct vt_lpwstr,
+							elems);
+
+	for( i = 0; i < elems; i++ ) {
+		variant->vvalue.vt_lpwstr_v.vvector_data[ i ].value = talloc_strdup(ctx, strings[ i ]);
+	}
+}
+
+void set_variant_lpwstr_vector(TALLOC_CTX *ctx,
+                              struct wsp_cbasestoragevariant *variant,
+                              const char **string_vals, uint32_t elems)
+{
+        variant->vtype = VT_LPWSTR | VT_VECTOR;
+        fill_string_vec(ctx, variant, string_vals, elems);
+}
