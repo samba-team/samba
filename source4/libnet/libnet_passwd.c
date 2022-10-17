@@ -101,7 +101,7 @@ static NTSTATUS libnet_ChangePassword_samr_aes(TALLOC_CTX *mem_ctx,
 	r.in.password = &pwd_buf;
 
 	status = dcerpc_samr_ChangePasswordUser4_r(h, mem_ctx, &r);
-	if (NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 	if (!NT_STATUS_IS_OK(r.out.result)) {
@@ -112,6 +112,7 @@ static NTSTATUS libnet_ChangePassword_samr_aes(TALLOC_CTX *mem_ctx,
 						account->string,
 						nt_errstr(status));
 		status = r.out.result;
+		goto done;
 	}
 
 done:
@@ -424,20 +425,23 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 		r->samr.in.oldpassword,
 		r->samr.in.newpassword,
 		&(r->samr.out.error_string));
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,
-				     NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE) ||
-		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
-		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-			/*
-			* Don't fallback to RC4 based SAMR if weak crypto is not
-			* allowed.
-			*/
-			if (lpcfg_weak_crypto(ctx->lp_ctx) ==
-			SAMBA_WEAK_CRYPTO_DISALLOWED) {
-				goto disconnect;
-			}
+	if (NT_STATUS_IS_OK(status)) {
+		goto disconnect;
+	} else if (NT_STATUS_EQUAL(status,
+				   NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE) ||
+		   NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
+		   NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		/*
+		 * Don't fallback to RC4 based SAMR if weak crypto is not
+		 * allowed.
+		 */
+		if (lpcfg_weak_crypto(ctx->lp_ctx) ==
+		    SAMBA_WEAK_CRYPTO_DISALLOWED) {
+			goto disconnect;
 		}
+	} else {
+		/* libnet_ChangePassword_samr_aes is implemented and failed */
+		goto disconnect;
 	}
 
 	status = libnet_ChangePassword_samr_rc4(
