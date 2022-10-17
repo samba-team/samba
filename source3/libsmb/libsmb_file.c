@@ -463,6 +463,7 @@ SMBC_getatr(SMBCCTX * context,
 	struct timespec access_time_ts = {0};
 	struct timespec write_time_ts = {0};
 	struct timespec change_time_ts = {0};
+	struct timespec w_time_ts = {0};
 	time_t write_time = 0;
 	SMB_INO_T ino = 0;
 	struct cli_credentials *creds = NULL;
@@ -503,12 +504,13 @@ SMBC_getatr(SMBCCTX * context,
 				  &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Couldn't resolve %s\n", path);
-                errno = ENOENT;
 		TALLOC_FREE(frame);
+		errno = cli_status_to_errno(status);
 		return False;
 	}
 
 	if (!srv->no_pathinfo2) {
+		bool not_supported_error = false;
 		status = cli_qpathinfo2(targetcli,
 					targetpath,
 					&create_time_ts,
@@ -521,11 +523,22 @@ SMBC_getatr(SMBCCTX * context,
 		if (NT_STATUS_IS_OK(status)) {
 			goto setup_stat;
 		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			not_supported_error = true;
+		}
+		if (!not_supported_error) {
+			/* "Normal error". Just return it to caller. */
+			TALLOC_FREE(frame);
+			errno = cli_status_to_errno(status);
+			return false;
+		}
         }
 
 	srv->no_pathinfo2 = True;
 
 	if (!srv->no_pathinfo3) {
+		bool not_supported_error = false;
 		status = cli_qpathinfo3(targetcli,
 					targetpath,
 					&create_time_ts,
@@ -538,24 +551,32 @@ SMBC_getatr(SMBCCTX * context,
 		if (NT_STATUS_IS_OK(status)) {
 			goto setup_stat;
 		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			not_supported_error = true;
+		}
+		if (!not_supported_error) {
+			/* "Normal error". Just return it to caller. */
+			TALLOC_FREE(frame);
+			errno = cli_status_to_errno(status);
+			return false;
+		}
         }
 
 	srv->no_pathinfo3 = True;
 
 	/* if this is NT then don't bother with the getatr */
 	if (smb1cli_conn_capabilities(targetcli->conn) & CAP_NT_SMBS) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto all_failed;
         }
 
 	status = cli_getatr(targetcli, targetpath, &attr, &size, &write_time);
-	if (NT_STATUS_IS_OK(status)) {
-		struct timespec w_time_ts =
-			convert_time_t_to_timespec(write_time);
-
-		access_time_ts = change_time_ts = write_time_ts = w_time_ts;
-
-		goto setup_stat;
+	if (!NT_STATUS_IS_OK(status)) {
+		goto all_failed;
 	}
+	w_time_ts = convert_time_t_to_timespec(write_time);
+	access_time_ts = change_time_ts = write_time_ts = w_time_ts;
 
 setup_stat:
 	setup_stat(sb,
@@ -575,8 +596,8 @@ all_failed:
 	srv->no_pathinfo2 = False;
 	srv->no_pathinfo3 = False;
 
-        errno = EPERM;
 	TALLOC_FREE(frame);
+	errno = cli_status_to_errno(status);
 	return False;
 }
 
