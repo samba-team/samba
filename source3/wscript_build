@@ -1080,6 +1080,12 @@ bld.SAMBA3_SUBSYSTEM('RPCCLI_MDSSVC',
                     ''',
                     deps='mdssvc RPC_NDR_MDSSVC')
 
+bld.SAMBA3_SUBSYSTEM('RPCCLI_WSP',
+                    source='''
+                    rpc_client/wsp_cli.c
+                    ''',
+                    deps='tevent-util tstream_binding_handle')
+
 bld.SAMBA3_SUBSYSTEM('INIT_LSA',
                     source='rpc_client/init_lsa.c',
                     deps='samba-util')
