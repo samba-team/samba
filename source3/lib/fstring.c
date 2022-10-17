@@ -41,8 +41,11 @@ size_t push_ascii_fstring(void *dest, const char *src)
 size_t push_ascii_nstring(void *dest, const char *src)
 {
 	size_t converted_size = 0;
-	bool ret = convert_string_error(CH_UNIX, CH_DOS, src, -1, dest, sizeof(nstring), &converted_size);
-	if (ret) {
+	bool ret;
+
+	errno = 0;
+	ret = convert_string_error(CH_UNIX, CH_DOS, src, -1, dest, sizeof(nstring), &converted_size);
+	if (ret || errno == E2BIG) {
 		SCVAL(dest, sizeof(nstring)-1, 0);
 	} else {
 		SCVAL(dest, 0, 0);
