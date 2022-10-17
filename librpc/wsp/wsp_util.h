@@ -52,6 +52,12 @@ const struct full_propset_info *get_propset_info_with_guid(
 						const char *prop_name,
 						struct GUID *guid);
 
+bool is_operator(struct wsp_crestriction *restriction);
+const char *op_as_string(struct wsp_crestriction *restriction);
+const char *genmeth_to_string(uint32_t genmethod);
+const char *variant_as_string(TALLOC_CTX *ctx,
+                        struct wsp_cbasestoragevariant *value,
+                        bool quote);
 void set_variant_lpwstr(TALLOC_CTX *ctx,
 			struct wsp_cbasestoragevariant *vvalue,
 			const char *string_val);

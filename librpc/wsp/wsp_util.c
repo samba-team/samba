@@ -470,6 +470,91 @@ char *prop_from_fullprop(TALLOC_CTX *ctx, struct wsp_cfullpropspec *fullprop)
 	return result;
 }
 
+const char *genmeth_to_string(uint32_t genmethod)
+{
+	const char *result = NULL;
+	switch (genmethod) {
+		case 0:
+			result = "equals";
+			break;
+		case 1:
+			result = "starts with";
+			break;
+		case 2:
+			result = "matches inflection";
+			break;
+		default:
+			result = NULL;
+			break;
+	}
+	return result;
+}
+
+bool is_operator(struct wsp_crestriction *restriction) {
+	bool result;
+	switch(restriction->ultype) {
+		case RTAND:
+		case RTOR:
+		case RTNOT:
+			result = true;
+			break;
+		default:
+			result = false;
+			break;
+	}
+	return result;
+}
+
+const char *op_as_string(struct wsp_crestriction *restriction)
+{
+	const char *op = NULL;
+	if (is_operator(restriction)) {
+		switch(restriction->ultype) {
+			case RTAND:
+				op = " && ";
+				break;
+			case RTOR:
+				op = " || ";
+				break;
+			case RTNOT:
+				op = "!";
+				break;
+		}
+	} else if (restriction->ultype == RTPROPERTY) {
+		struct wsp_cpropertyrestriction *prop_restr =
+			&restriction->restriction.cpropertyrestriction;
+		switch (prop_restr->relop & 0XF) {
+			case PREQ:
+				op = "=";
+				break;
+			case PRNE:
+				op = "!=";
+				break;
+			case PRGE:
+				op = ">=";
+				break;
+			case PRLE:
+				op = "<=";
+				break;
+			case PRLT:
+				op = "<";
+				break;
+			case PRGT:
+				op = ">";
+				break;
+			default:
+				break;
+		}
+	} else if (restriction->ultype == RTCONTENT) {
+		struct wsp_ccontentrestriction *content = NULL;
+		content = &restriction->restriction.ccontentrestriction;
+		op = genmeth_to_string(content->ulgeneratemethod);
+	} else if (restriction->ultype == RTNATLANGUAGE) {
+		op = "=";
+	}
+	return op;
+}
+
 struct wsp_cfullpropspec *get_full_prop(struct wsp_crestriction *restriction)
 {
 	struct wsp_cfullpropspec *result;
@@ -485,6 +570,119 @@ struct wsp_cfullpropspec *get_full_prop(struct wsp_crestriction *restriction)
 			break;
 		default:
 			result = NULL;
+			break;
+	}
+	return result;
+}
+
+const char *variant_as_string(TALLOC_CTX *ctx,
+			struct wsp_cbasestoragevariant *value, bool quote)
+{
+	const char* result = NULL;
+	switch(value->vtype) {
+		case VT_UI1:
+			result = talloc_asprintf(ctx, "%u",
+						 value->vvalue.vt_ui1);
+			break;
+		case VT_INT:
+		case VT_I4:
+			result = talloc_asprintf(ctx, "%d",
+						 value->vvalue.vt_i4);
+			break;
+		case VT_ERROR:
+		case VT_UINT:
+		case VT_UI4:
+			result = talloc_asprintf(ctx, "%u",
+						 value->vvalue.vt_ui4);
+			break;
+		case VT_UI2:
+		case VT_I2:
+			result = talloc_asprintf(ctx, "%u",
+						 value->vvalue.vt_ui2);
+			break;
+		case VT_BOOL:
+			result = talloc_asprintf(ctx, "%s",
+					value->vvalue.vt_ui2 == 0xFFFF ?
+						"true" : "false");
+			break;
+		case VT_DATE:
+		case VT_FILETIME: {
+			NTTIME filetime = value->vvalue.vt_ui8;
+			time_t unixtime;
+			struct tm *tm = NULL;
+			char datestring[256];
+			unixtime = nt_time_to_unix(filetime);
+			tm = gmtime(&unixtime);
+			strftime(datestring, sizeof(datestring), "%FT%TZ", tm);
+			result = talloc_strdup(ctx, datestring);
+			break;
+		}
+		case VT_R4: {
+			float f;
+			if (sizeof(f) != sizeof(value->vvalue.vt_ui4)) {
+				DBG_ERR("can't convert float\n");
+				break;
+			}
+			memcpy((void*)&f,
+				(void*)&value->vvalue.vt_ui4,
+				sizeof(value->vvalue.vt_ui4));
+			result = talloc_asprintf(ctx, "%f",
+						 f);
+			break;
+		}
+		case VT_R8: {
+			/* should this really be unsigned ? */
+			double dval;
+			if (sizeof(dval) != sizeof(value->vvalue.vt_i8)) {
+				DBG_ERR("can't convert double\n");
+				break;
+			}
+			memcpy((void*)&dval,
+				(void*)&value->vvalue.vt_i8,
+				sizeof(dval));
+			result = talloc_asprintf(ctx, "%f",
+						 dval);
+			break;
+		}
+		case VT_I8: {
+			result = talloc_asprintf(ctx, "%" PRIi64,
+						 value->vvalue.vt_i8);
+			break;
+		}
+		case VT_UI8: {
+			result = talloc_asprintf(ctx, "%" PRIu64,
+						 value->vvalue.vt_ui8);
+			break;
+		}
+		case VT_LPWSTR:
+			result = talloc_asprintf(ctx, "%s%s%s",
+						quote ? "\'" : "",
+						value->vvalue.vt_lpwstr.value,
+						quote ? "\'" : "");
+			break;
+		case VT_LPWSTR | VT_VECTOR: {
+			int num_elems =
+			value->vvalue.vt_lpwstr_v.vvector_elements;
+			int i;
+			for(i = 0; i < num_elems; i++) {
+				struct vt_lpwstr_vec *vec;
+				const char *val;
+				vec = &value->vvalue.vt_lpwstr_v;
+				val = vec->vvector_data[i].value;
+				result =
+					talloc_asprintf(ctx,
+							"%s%s%s%s%s",
+							result ? result : "",
+							i ? "," : "",
+							quote ? "\'" : "",
+							val,
+							quote ? "\'" : "");
+			}
+			break;
+		}
+		default:
+			DBG_INFO("can't represent unsupported vtype 0x%x as string\n",
+				value->vtype);
 			break;
 	}
 	return result;
