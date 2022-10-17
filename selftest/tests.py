@@ -452,5 +452,8 @@ plantestsuite("samba.unittests.credentials", "none",
               [os.path.join(bindir(), "default/auth/credentials/test_creds")])
 plantestsuite("samba.unittests.tsocket_bsd_addr", "none",
               [os.path.join(bindir(), "default/lib/tsocket/test_tsocket_bsd_addr")])
+plantestsuite("samba.unittests.tsocket_tstream", "none",
+              [os.path.join(bindir(), "default/lib/tsocket/test_tstream")],
+              environ={'SOCKET_WRAPPER_DIR': ''})
 plantestsuite("samba.unittests.adouble", "none",
               [os.path.join(bindir(), "test_adouble")])
