@@ -13,3 +13,9 @@ bld.SAMBA_BINARY('test_tsocket_bsd_addr',
                  local_include=False,
                  for_selftest=True)
 
+bld.SAMBA_BINARY('test_tstream',
+                 source='tests/test_tstream.c tests/socketpair_tcp.c',
+                 deps='cmocka replace LIBTSOCKET',
+                 local_include=False,
+                 for_selftest=True)
+
