@@ -21,6 +21,7 @@
 #include "smbd/smbd.h"
 #include "passdb/lookup_sid.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
 
 /*
  * SMB2 POSIX create context return details.
@@ -93,12 +94,16 @@ ssize_t store_smb2_posix_info(
 	size_t buflen)
 {
 	uint64_t file_id = SMB_VFS_FS_FILE_ID(conn, psbuf);
-	struct dom_sid owner = { .sid_rev_num = 0, };
-	struct dom_sid group = { .sid_rev_num = 0, };
+	struct dom_sid owner = global_sid_NULL;
+	struct dom_sid group = global_sid_NULL;
 	ssize_t cc_len;
 
-	uid_to_sid(&owner, psbuf->st_ex_uid);
-	gid_to_sid(&group, psbuf->st_ex_gid);
+	if (psbuf->st_ex_uid != (uid_t)-1) {
+		uid_to_sid(&owner, psbuf->st_ex_uid);
+	}
+	if (psbuf->st_ex_gid != (gid_t)-1) {
+		gid_to_sid(&group, psbuf->st_ex_gid);
+	}
 
 	cc_len = smb2_posix_cc_info(
 		conn, reparse_tag, psbuf, &owner, &group, NULL, 0);

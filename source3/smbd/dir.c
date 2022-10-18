@@ -988,6 +988,13 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			smb_fname = tmp_smb_fname;
 			mode = FILE_ATTRIBUTE_DIRECTORY;
 			get_dosmode = false;
+
+			/* Ensure posix fileid and sids are hidden
+			 */
+			smb_fname->st.st_ex_ino = 0;
+			smb_fname->st.st_ex_dev = 0;
+			smb_fname->st.st_ex_uid = -1;
+			smb_fname->st.st_ex_gid = -1;
 		}
 
 		ok = mode_fn(ctx,
