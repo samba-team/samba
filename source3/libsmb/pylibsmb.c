@@ -2365,6 +2365,35 @@ static PyObject *py_smb_smb1_posix(
 	return result;
 }
 
+static PyObject *py_smb_smb1_readlink(
+	struct py_cli_state *self, PyObject *args)
+{
+	NTSTATUS status;
+	const char *filename = NULL;
+	struct tevent_req *req = NULL;
+	char *target = NULL;
+	PyObject *result = NULL;
+
+	if (!PyArg_ParseTuple(args, "s:smb1_readlink", &filename)) {
+		return NULL;
+	}
+
+	req = cli_posix_readlink_send(NULL, self->ev, self->cli, filename);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_posix_readlink_recv(req, NULL, &target);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	result = PyBytes_FromString(target);
+	TALLOC_FREE(target);
+	return result;
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
@@ -2450,6 +2479,11 @@ static PyMethodDef py_cli_state_methods[] = {
 	  (PyCFunction)py_smb_smb1_posix,
 	  METH_NOARGS,
 	  "Negotiate SMB1 posix extensions",
+	},
+	{ "smb1_readlink",
+	  (PyCFunction)py_smb_smb1_readlink,
+	  METH_VARARGS,
+	  "smb1_readlink(path) -> link target",
 	},
 	{ NULL, NULL, 0, NULL }
 };
