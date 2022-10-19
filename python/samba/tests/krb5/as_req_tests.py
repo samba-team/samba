@@ -42,7 +42,7 @@ global_hexdump = False
 
 class AsReqBaseTest(KDCBaseTest):
     def _run_as_req_enc_timestamp(self, client_creds, sname=None,
-                                  expected_error=None,
+                                  expected_error=None, till=None,
                                   expected_pa_error=None, expect_pa_edata=None):
         client_account = client_creds.get_username()
         client_as_etypes = self.get_default_enctypes()
@@ -63,7 +63,8 @@ class AsReqBaseTest(KDCBaseTest):
         expected_sname = sname
         expected_salt = client_creds.get_salt()
 
-        till = self.get_KerberosTime(offset=36000)
+        if till is None:
+            till = self.get_KerberosTime(offset=36000)
 
         initial_etypes = client_as_etypes
         initial_kdc_options = krb5_asn1.KDCOptions('forwardable')
@@ -251,6 +252,14 @@ class AsReqKerberosTests(AsReqBaseTest):
                 client_creds,
                 sname=wrong_krbtgt_princ,
                 expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
+
+    # Test that we can make a request for a ticket expiring post-2038.
+    def test_future_till(self):
+        client_creds = self.get_client_creds()
+
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            till='99990913024805Z')
 
 
 if __name__ == "__main__":
