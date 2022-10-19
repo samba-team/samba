@@ -19,18 +19,16 @@
 
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.dcerpc import security
-from samba.samba3 import param as s3param
-from samba import (credentials,NTSTATUSError)
+from samba import NTSTATUSError
 from samba.ntstatus import NT_STATUS_DELETE_PENDING
 from samba.credentials import SMB_ENCRYPTION_REQUIRED
-import samba.tests
+import samba.tests.libsmb
 import threading
 import sys
-import os
 import random
 
 
-class LibsmbTestCase(samba.tests.TestCase):
+class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
 
     class OpenClose(threading.Thread):
 
@@ -52,23 +50,15 @@ class LibsmbTestCase(samba.tests.TestCase):
             except Exception:
                 self.exc = sys.exc_info()
 
-    def prep_creds(self):
-        lp = s3param.get_context()
-        lp.load(os.getenv("SMB_CONF_PATH"))
-
-        creds = credentials.Credentials()
-        creds.guess(lp)
-        creds.set_username(os.getenv("USERNAME"))
-        creds.set_password(os.getenv("PASSWORD"))
-
-        return (lp,creds)
-
     def test_OpenClose(self):
-        (lp,creds) = self.prep_creds()
 
-        c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp",
-                        lp, creds, multi_threaded=True,
-                        force_smb1=True)
+        c = libsmb.Conn(
+            self.server_ip,
+            "tmp",
+            self.lp,
+            self.creds,
+            multi_threaded=True,
+            force_smb1=True)
 
         mythreads = []
 
@@ -87,11 +77,9 @@ class LibsmbTestCase(samba.tests.TestCase):
     def test_SMB3EncryptionRequired(self):
         test_dir = 'testing_%d' % random.randint(0, 0xFFFF)
 
-        (lp,creds) = self.prep_creds()
-        creds.set_smb_encryption(SMB_ENCRYPTION_REQUIRED)
+        self.creds.set_smb_encryption(SMB_ENCRYPTION_REQUIRED)
 
-        c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp",
-                        lp, creds)
+        c = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
 
         c.mkdir(test_dir)
         c.rmdir(test_dir)
@@ -99,22 +87,24 @@ class LibsmbTestCase(samba.tests.TestCase):
     def test_SMB1EncryptionRequired(self):
         test_dir = 'testing_%d' % random.randint(0, 0xFFFF)
 
-        (lp,creds) = self.prep_creds()
-        creds.set_smb_encryption(SMB_ENCRYPTION_REQUIRED)
+        self.creds.set_smb_encryption(SMB_ENCRYPTION_REQUIRED)
 
-        c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp",
-                        lp, creds, force_smb1=True)
+        c = libsmb.Conn(
+            self.server_ip,
+            "tmp",
+            self.lp,
+            self.creds,
+            force_smb1=True)
 
         c.mkdir(test_dir)
         c.rmdir(test_dir)
 
     def test_RenameDstDelOnClose(self):
-        (lp,creds) = self.prep_creds()
 
         dstdir = "\\dst-subdir"
 
-        c1 = libsmb.Conn(os.getenv("SERVER_IP"), "tmp", lp, creds)
-        c2 = libsmb.Conn(os.getenv("SERVER_IP"), "tmp", lp, creds)
+        c1 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        c2 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
 
         try:
             c1.deltree(dstdir)
@@ -141,8 +131,7 @@ class LibsmbTestCase(samba.tests.TestCase):
             pass
 
     def test_libsmb_CreateContexts(self):
-        (lp,creds) = self.prep_creds()
-        c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp", lp, creds)
+        c = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
         cc_in = [(libsmb.SMB2_CREATE_TAG_MXAC, b'')]
         fnum,cr,cc = c.create_ex("",CreateContexts=cc_in)
         self.assertEqual(
