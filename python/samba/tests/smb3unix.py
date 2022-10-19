@@ -16,26 +16,10 @@
 #
 
 from samba.samba3 import libsmb_samba_internal as libsmb
-from samba.samba3 import param as s3param
-from samba import (credentials,NTSTATUSError,ntstatus)
-import samba.tests
-import os
+from samba import NTSTATUSError,ntstatus
+import samba.tests.libsmb
 
-class Smb3UnixTests(samba.tests.TestCase):
-
-    def setUp(self):
-        self.lp = s3param.get_context()
-        self.lp.load(os.getenv("SMB_CONF_PATH"))
-
-        self.creds = credentials.Credentials()
-        self.creds.guess(self.lp)
-        self.creds.set_username(os.getenv("USERNAME"))
-        self.creds.set_password(os.getenv("PASSWORD"))
-
-        # Build the global inject file path
-        server_conf = os.getenv("SERVERCONFFILE")
-        server_conf_dir = os.path.dirname(server_conf)
-        self.global_inject = os.path.join(server_conf_dir, "global_inject.conf")
+class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
     def enable_smb3unix(self):
         with open(self.global_inject, 'w') as f:
@@ -50,7 +34,7 @@ class Smb3UnixTests(samba.tests.TestCase):
             self.enable_smb3unix()
 
             c = libsmb.Conn(
-                os.getenv("SERVER_IP"),
+                self.server_ip,
                 "tmp",
                 self.lp,
                 self.creds,
@@ -62,7 +46,7 @@ class Smb3UnixTests(samba.tests.TestCase):
 
     def test_negotiate_context_noposix(self):
         c = libsmb.Conn(
-                os.getenv("SERVER_IP"),
+                self.server_ip,
                 "tmp",
                 self.lp,
                 self.creds,
@@ -75,7 +59,7 @@ class Smb3UnixTests(samba.tests.TestCase):
 
             with self.assertRaises(NTSTATUSError) as cm:
                 c = libsmb.Conn(
-                    os.getenv("SERVER_IP"),
+                    self.server_ip,
                     "tmp",
                     self.lp,
                     self.creds,
@@ -92,7 +76,7 @@ class Smb3UnixTests(samba.tests.TestCase):
             self.enable_smb3unix()
 
             c = libsmb.Conn(
-                os.getenv("SERVER_IP"),
+                self.server_ip,
                 "tmp",
                 self.lp,
                 self.creds,
@@ -107,7 +91,7 @@ class Smb3UnixTests(samba.tests.TestCase):
             self.enable_smb3unix()
 
             c = libsmb.Conn(
-                os.getenv("SERVER_IP"),
+                self.server_ip,
                 "tmp",
                 self.lp,
                 self.creds,
@@ -125,7 +109,7 @@ class Smb3UnixTests(samba.tests.TestCase):
 
     def test_posix_create_context_noposix(self):
         c = libsmb.Conn(
-            os.getenv("SERVER_IP"),
+            self.server_ip,
             "tmp",
             self.lp,
             self.creds,
@@ -143,7 +127,7 @@ class Smb3UnixTests(samba.tests.TestCase):
             self.enable_smb3unix()
 
             c = libsmb.Conn(
-                os.getenv("SERVER_IP"),
+                self.server_ip,
                 "tmp",
                 self.lp,
                 self.creds,
