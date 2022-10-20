@@ -674,8 +674,7 @@ static NTSTATUS symlink_target_below_conn(
 static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			     files_struct *fsp,
 			     struct smb_filename *smb_fname,
-			     const struct vfs_open_how *_how,
-			     unsigned int link_depth)
+			     const struct vfs_open_how *_how)
 {
 	struct connection_struct *conn = fsp->conn;
 	const char *connpath = SMB_VFS_CONNECTPATH(conn, dirfsp, smb_fname);
@@ -689,6 +688,7 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	struct smb_filename *parent_dir_fname = NULL;
 	struct vfs_open_how how = *_how;
 	char *target = NULL;
+	size_t link_depth = 0;
 	int ret;
 
 	SMB_ASSERT(!fsp_is_alternate_stream(fsp));
@@ -944,7 +944,7 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 	 * Only follow symlinks within a share
 	 * definition.
 	 */
-	status = non_widelink_open(dirfsp, fsp, smb_fname, &how, 0);
+	status = non_widelink_open(dirfsp, fsp, smb_fname, &how);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_TOO_MANY_OPENED_FILES)) {
 			static time_t last_warned = 0L;
