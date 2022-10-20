@@ -923,8 +923,6 @@ fail:
 static PyObject *py_cli_create_contexts(const struct smb2_create_blobs *blobs)
 {
 	PyObject *py_blobs = NULL;
-	PyObject *py_blob = NULL;
-	PyObject *tmp = NULL;
 	uint32_t i;
 
 	if (blobs == NULL) {
@@ -933,49 +931,32 @@ static PyObject *py_cli_create_contexts(const struct smb2_create_blobs *blobs)
 
 	py_blobs = PyList_New(blobs->num_blobs);
 	if (py_blobs == NULL) {
-		goto fail;
+		return NULL;
 	}
 
 	for (i=0; i<blobs->num_blobs; i++) {
 		struct smb2_create_blob *blob = &blobs->blobs[i];
+		PyObject *py_blob = NULL;
 		int ret;
 
-		py_blob = PyTuple_New(2);
+		py_blob = Py_BuildValue(
+			"(yy#)",
+			blob->tag,
+			blob->data.data,
+			(int)blob->data.length);
 		if (py_blob == NULL) {
-			goto nomem;
-		}
-
-		tmp = PyBytes_FromString(blob->tag);
-		if (tmp == NULL) {
-			goto nomem;
-		}
-		ret = PyTuple_SetItem(py_blob, 0, tmp);
-		if (ret == -1) {
-			goto fail;
-		}
-
-		tmp = PyBytes_FromStringAndSize(
-			(char *)blob->data.data, blob->data.length);
-		if (tmp == NULL) {
-			goto nomem;
-		}
-		ret = PyTuple_SetItem(py_blob, 1, tmp);
-		if (ret == -1) {
 			goto fail;
 		}
 
 		ret = PyList_SetItem(py_blobs, i, py_blob);
 		if (ret == -1) {
+			Py_XDECREF(py_blob);
 			goto fail;
 		}
 	}
 	return py_blobs;
 
-nomem:
-	PyErr_NoMemory();
 fail:
-	Py_XDECREF(tmp);
-	Py_XDECREF(py_blob);
 	Py_XDECREF(py_blobs);
 	return NULL;
 }
