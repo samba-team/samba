@@ -126,6 +126,8 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq;
 	struct smbd_smb2_flush_state *state;
 	struct smb_request *smbreq;
+	bool is_compound = false;
+	bool is_last_in_compound = false;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_flush_state);
@@ -194,6 +196,18 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 	}
 
 	tevent_req_set_callback(subreq, smbd_smb2_flush_done, req);
+
+	is_compound = smbd_smb2_is_compound(smb2req);
+	is_last_in_compound = smbd_smb2_is_last_in_compound(smb2req);
+
+	if (is_compound && !is_last_in_compound) {
+		/*
+		 * Can't go async if we're not the
+		 * last request in a compound request.
+		 * Cause this request to complete synchronously.
+		 */
+		smb2_request_set_async_internal(state->smb2req, true);
+	}
 
 	/* Ensure any close request knows about this outstanding IO. */
 	if (!aio_add_req_to_fsp(fsp, req)) {
