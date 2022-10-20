@@ -229,6 +229,12 @@ bool smbd_smb2_is_compound(const struct smbd_smb2_request *req)
 	return req->in.vector_count >= (2*SMBD_SMB2_NUM_IOV_PER_REQ);
 }
 
+bool smbd_smb2_is_last_in_compound(const struct smbd_smb2_request *req)
+{
+	return (req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ ==
+		req->in.vector_count);
+}
+
 static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
 				     uint64_t expected_seq_low)
 {
