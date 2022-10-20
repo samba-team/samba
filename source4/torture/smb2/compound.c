@@ -2161,6 +2161,119 @@ static bool test_compound_async_flush_close(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_compound_async_flush_flush(struct torture_context *tctx,
+					    struct smb2_tree *tree)
+{
+	struct smb2_handle fhandle = { .data = { 0, 0 } };
+	struct smb2_handle relhandle = { .data = { UINT64_MAX, UINT64_MAX } };
+	struct smb2_flush fl1;
+	struct smb2_flush fl2;
+	const char *fname = "compound_async_flush_flush";
+	struct smb2_request *req[2];
+	NTSTATUS status;
+	bool ret = false;
+
+	/* Start clean. */
+	smb2_util_unlink(tree, fname);
+
+	/* Create a file. */
+	status = torture_smb2_testfile_access(tree,
+					      fname,
+					      &fhandle,
+					      SEC_RIGHTS_FILE_ALL);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Now do a compound flush + flush handle. */
+	smb2_transport_compound_start(tree->session->transport, 2);
+
+	ZERO_STRUCT(fl1);
+	fl1.in.file.handle = fhandle;
+
+	req[0] = smb2_flush_send(tree, &fl1);
+	torture_assert_not_null_goto(tctx, req[0], ret, done,
+		"smb2_flush_send (1) failed\n");
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	ZERO_STRUCT(fl2);
+	fl2.in.file.handle = relhandle;
+
+	req[1] = smb2_flush_send(tree, &fl2);
+	torture_assert_not_null_goto(tctx, req[1], ret, done,
+		"smb2_flush_send (2) failed\n");
+
+	status = smb2_flush_recv(req[0], &fl1);
+	/*
+	 * On Windows, this flush will usually
+	 * succeed as we have nothing to flush,
+	 * so allow NT_STATUS_OK. Once bug #15172
+	 * is fixed Samba will do the flush synchronously
+	 * so allow NT_STATUS_OK.
+	 */
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * If we didn't get NT_STATUS_OK, we *must*
+		 * get NT_STATUS_INTERNAL_ERROR if the flush
+		 * goes async.
+		 *
+		 * For pre-bugfix #15172 Samba, the flush goes async and
+		 * we should get NT_STATUS_INTERNAL_ERROR.
+		 */
+		torture_assert_ntstatus_equal_goto(tctx,
+			status,
+			NT_STATUS_INTERNAL_ERROR,
+			ret,
+			done,
+			"smb2_flush_recv (1) didn't return "
+			"NT_STATUS_INTERNAL_ERROR.\n");
+	}
+
+	/*
+	 * If the flush is the last entry in a compound,
+	 * it should always succeed even if it goes async.
+	 */
+	status = smb2_flush_recv(req[1], &fl2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+		"smb2_flush_recv (2) failed.");
+
+	status = smb2_util_close(tree, fhandle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+		"smb2_util_close failed.");
+	ZERO_STRUCT(fhandle);
+
+	/*
+	 * Do several more operations on the tree, spaced
+	 * out by 1 sec sleeps to make sure the server didn't
+	 * crash on the close. The sleeps are required to
+	 * make test test for a crash reliable, as we ensure
+	 * the pthread fsync internally finishes and accesses
+	 * freed memory. Without them the test occassionally
+	 * passes as we disconnect before the pthread fsync
+	 * finishes.
+	 */
+	status = smb2_util_unlink(tree, fname);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	sleep(1);
+	status = smb2_util_unlink(tree, fname);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	sleep(1);
+	status = smb2_util_unlink(tree, fname);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	ret = true;
+
+  done:
+
+	if (fhandle.data[0] != 0) {
+		smb2_util_close(tree, fhandle);
+	}
+
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_compound_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "compound");
@@ -2219,6 +2332,8 @@ struct torture_suite *torture_smb2_compound_async_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "flush_close",
 		test_compound_async_flush_close);
+	torture_suite_add_1smb2_test(suite, "flush_flush",
+		test_compound_async_flush_flush);
 
 	suite->description = talloc_strdup(suite, "SMB2-COMPOUND-ASYNC tests");
 
