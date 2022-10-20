@@ -113,10 +113,7 @@ pk_check_pkauthenticator(krb5_context context,
 			 PKAuthenticator *a,
 			 const KDC_REQ *req)
 {
-    u_char *buf = NULL;
-    size_t buf_size;
     krb5_error_code ret;
-    size_t len = 0;
     krb5_timestamp now;
     Checksum checksum;
 
@@ -128,22 +125,13 @@ pk_check_pkauthenticator(krb5_context context,
 	return KRB5KRB_AP_ERR_SKEW;
     }
 
-    ASN1_MALLOC_ENCODE(KDC_REQ_BODY, buf, buf_size, &req->req_body, &len, ret);
-    if (ret) {
-	krb5_clear_error_message(context);
-	return ret;
-    }
-    if (buf_size != len)
-	krb5_abortx(context, "Internal error in ASN.1 encoder");
-
     ret = krb5_create_checksum(context,
 			       NULL,
 			       0,
 			       CKSUMTYPE_SHA1,
-			       buf,
-			       len,
+			       req->req_body._save.data,
+			       req->req_body._save.length,
 			       &checksum);
-    free(buf);
     if (ret) {
 	krb5_clear_error_message(context);
 	return ret;

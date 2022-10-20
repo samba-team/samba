@@ -780,9 +780,6 @@ tgs_check_authenticator(krb5_context context,
 			krb5_keyblock *key)
 {
     krb5_authenticator auth;
-    size_t len = 0;
-    unsigned char *buf;
-    size_t buf_size;
     krb5_error_code ret;
     krb5_crypto crypto;
 
@@ -808,25 +805,9 @@ tgs_check_authenticator(krb5_context context,
 	goto out;
     }
 
-    /* XXX should not re-encode this */
-    ASN1_MALLOC_ENCODE(KDC_REQ_BODY, buf, buf_size, b, &len, ret);
-    if(ret){
-	const char *msg = krb5_get_error_message(context, ret);
-	kdc_log(context, config, 0, "Failed to encode KDC-REQ-BODY: %s", msg);
-	krb5_free_error_message(context, msg);
-	goto out;
-    }
-    if(buf_size != len) {
-	free(buf);
-	kdc_log(context, config, 0, "Internal error in ASN.1 encoder");
-	*e_text = "KDC internal error";
-	ret = KRB5KRB_ERR_GENERIC;
-	goto out;
-    }
     ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret) {
 	const char *msg = krb5_get_error_message(context, ret);
-	free(buf);
 	kdc_log(context, config, 0, "krb5_crypto_init failed: %s", msg);
 	krb5_free_error_message(context, msg);
 	goto out;
@@ -834,10 +815,9 @@ tgs_check_authenticator(krb5_context context,
     ret = krb5_verify_checksum(context,
 			       crypto,
 			       KRB5_KU_TGS_REQ_AUTH_CKSUM,
-			       buf,
-			       len,
+			       b->_save.data,
+			       b->_save.length,
 			       auth->cksum);
-    free(buf);
     krb5_crypto_destroy(context, crypto);
     if(ret){
 	const char *msg = krb5_get_error_message(context, ret);

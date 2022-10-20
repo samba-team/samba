@@ -1,2 +1,0 @@
-# This tests shows the new timestamp from Windows 11 22H2 which fails in this version
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_req_future_till
