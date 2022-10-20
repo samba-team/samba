@@ -25,6 +25,8 @@
 #include "smb2_create_blob.h"
 
 struct smb2cli_create_state {
+	uint8_t *name_utf16;
+	size_t name_utf16_len;
 	uint8_t fixed[56];
 
 	uint64_t fid_persistent;
@@ -57,8 +59,6 @@ struct tevent_req *smb2cli_create_send(
 	struct tevent_req *req, *subreq;
 	struct smb2cli_create_state *state;
 	uint8_t *fixed;
-	uint8_t *name_utf16;
-	size_t name_utf16_len;
 	DATA_BLOB blob;
 	NTSTATUS status;
 	size_t blobs_offset;
@@ -67,6 +67,7 @@ struct tevent_req *smb2cli_create_send(
 	size_t max_dyn_len;
 	uint32_t additional_flags = 0;
 	uint32_t clear_flags = 0;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_create_state);
@@ -74,16 +75,22 @@ struct tevent_req *smb2cli_create_send(
 		return NULL;
 	}
 
-	if (!convert_string_talloc(state, CH_UNIX, CH_UTF16,
-				   filename, strlen(filename),
-				   &name_utf16, &name_utf16_len)) {
+	ok = convert_string_talloc(
+		state,
+		CH_UNIX,
+		CH_UTF16,
+		filename,
+		strlen(filename),
+		&state->name_utf16,
+		&state->name_utf16_len);
+	if (!ok) {
 		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 
 	if (strlen(filename) == 0) {
-		TALLOC_FREE(name_utf16);
-		name_utf16_len = 0;
+		TALLOC_FREE(state->name_utf16);
+		state->name_utf16_len = 0;
 	}
 
 	fixed = state->fixed;
@@ -98,7 +105,7 @@ struct tevent_req *smb2cli_create_send(
 	SIVAL(fixed, 40, create_options);
 
 	SSVAL(fixed, 44, SMB2_HDR_BODY + 56);
-	SSVAL(fixed, 46, name_utf16_len);
+	SSVAL(fixed, 46, state->name_utf16_len);
 
 	blob = data_blob_null;
 
@@ -109,7 +116,7 @@ struct tevent_req *smb2cli_create_send(
 		}
 	}
 
-	blobs_offset = name_utf16_len;
+	blobs_offset = state->name_utf16_len;
 	blobs_offset = ((blobs_offset + 3) & ~3);
 
 	if (blob.length > 0) {
@@ -124,9 +131,8 @@ struct tevent_req *smb2cli_create_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if (name_utf16) {
-		memcpy(dyn, name_utf16, name_utf16_len);
-		TALLOC_FREE(name_utf16);
+	if (state->name_utf16 != NULL) {
+		memcpy(dyn, state->name_utf16, state->name_utf16_len);
 	}
 
 	if (blob.data != NULL) {
