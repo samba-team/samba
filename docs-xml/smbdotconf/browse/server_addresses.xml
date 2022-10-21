@@ -1,0 +1,12 @@
+<samba:parameter name="server addresses"
+                 context="S"
+                 type="cmdlist"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+  <para>This is a per-share parameter to limit share visibility and
+  accessibility to specific server IP addresses. Multi-homed servers
+  can offer a different set of shares per interface.</para>
+  <para>An empty list means to offer a share on all interfaces.</para>
+</description>
+<value type="default"/>
+</samba:parameter>
