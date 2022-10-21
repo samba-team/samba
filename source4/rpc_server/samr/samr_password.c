@@ -250,7 +250,6 @@ NTSTATUS dcesrv_samr_ChangePasswordUser4(struct dcesrv_call_state *dce_call,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_transaction_cancel(sam_ctx);
-		status = NT_STATUS_WRONG_PASSWORD;
 		goto done;
 	}
 
