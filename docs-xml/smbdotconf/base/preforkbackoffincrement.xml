@@ -10,7 +10,7 @@
 		"prefork maximum backoff".
 	</para>
 
-	<para>Additionally the the backoff for an individual service by using
+	<para>Additionally set the backoff for an individual service by using
 		"prefork backoff increment: service name"
 		i.e. "prefork backoff increment:ldap = 2" to set the
 		backoff increment to 2.</para>
