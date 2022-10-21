@@ -243,17 +243,17 @@ struct hdb_method hdb_test =
 #ifdef WIN32
     /* Not c99 */
     HDB_INTERFACE_VERSION,
-    1 /*is_file_based*/, 1 /*can_taste*/,
     hdb_test_init,
     hdb_test_fini,
+    1 /*is_file_based*/, 1 /*can_taste*/,
     "test",
     hdb_test_create
 #else
-    .version = HDB_INTERFACE_VERSION,
-    .is_file_based = 1,
-    .can_taste = 1,
+    .minor_version = HDB_INTERFACE_VERSION,
     .init = hdb_test_init,
     .fini = hdb_test_fini,
+    .is_file_based = 1,
+    .can_taste = 1,
     .prefix = "test",
     .create = hdb_test_create
 #endif

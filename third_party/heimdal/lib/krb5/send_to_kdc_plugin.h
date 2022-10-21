@@ -37,6 +37,7 @@
 #define HEIMDAL_KRB5_SEND_TO_KDC_PLUGIN_H 1
 
 #include <krb5.h>
+#include <heimbase-svc.h>
 
 #define KRB5_PLUGIN_SEND_TO_KDC "send_to_kdc"
 
@@ -61,9 +62,7 @@ typedef krb5_error_code
 
 
 typedef struct krb5plugin_send_to_kdc_ftable {
-    int			minor_version;
-    krb5_error_code	(KRB5_CALLCONV *init)(krb5_context, void **);
-    void		(KRB5_CALLCONV *fini)(void *);
+    HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);
     krb5plugin_send_to_kdc_func send_to_kdc;
     krb5plugin_send_to_realm_func send_to_realm; /* added in version 2 */
 } krb5plugin_send_to_kdc_ftable;

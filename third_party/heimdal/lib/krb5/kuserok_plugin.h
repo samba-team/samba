@@ -32,6 +32,8 @@
 #ifndef HEIMDAL_KRB5_KUSEROK_PLUGIN_H
 #define HEIMDAL_KRB5_KUSEROK_PLUGIN_H 1
 
+#include <heimbase-svc.h>
+
 #define KRB5_PLUGIN_KUSEROK "krb5_plugin_kuserok"
 #define KRB5_PLUGIN_KUSEROK_VERSION_0 0
 
@@ -76,9 +78,7 @@
  * @ingroup krb5_support
  */
 typedef struct krb5plugin_kuserok_ftable_desc {
-    int			minor_version;
-    krb5_error_code	(KRB5_LIB_CALL *init)(krb5_context, void **);
-    void		(KRB5_LIB_CALL *fini)(void *);
+    HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);
     krb5_error_code	(KRB5_LIB_CALL *kuserok)(void *, krb5_context, const char *,
 				   unsigned int, const char *, const char *,
 				   krb5_const_principal,

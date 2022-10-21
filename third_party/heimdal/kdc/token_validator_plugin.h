@@ -67,9 +67,7 @@
  * @ingroup krb5_support
  */
 typedef struct krb5plugin_token_validator_ftable_desc {
-    int			minor_version;
-    krb5_error_code	(KRB5_LIB_CALL *init)(krb5_context, void **);
-    void		(KRB5_LIB_CALL *fini)(void *);
+    HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);
     krb5_error_code	(KRB5_LIB_CALL *validate)(void *,           /*plug_ctx*/
                                                   krb5_context,
                                                   const char *,     /*realm*/

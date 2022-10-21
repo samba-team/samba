@@ -35,6 +35,8 @@
 
 #define KADM5_HOOK_VERSION_V1 1
 
+#include <heimbase-svc.h>
+
 /*
  * Each hook is called before the operation using KADM5_STAGE_PRECOMMIT and
  * then after the operation using KADM5_STAGE_POSTCOMMIT. If the hook returns
@@ -53,9 +55,7 @@ enum kadm5_hook_stage {
 #define KADM5_HOOK_FLAG_CONDITIONAL 0x2 /* only change password if different */
 
 typedef struct kadm5_hook_ftable {
-    int version;
-    krb5_error_code (KRB5_CALLCONV *init)(krb5_context, void **data);
-    void (KRB5_CALLCONV *fini)(void *data);
+    HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);
 
     const char *name;
     const char *vendor;
