@@ -36,6 +36,8 @@
 #ifndef HEIMDAL_BASE_COMMON_PLUGIN_H
 #define HEIMDAL_BASE_COMMON_PLUGIN_H
 
+#include <heimbase-svc.h>
+
 #ifdef _WIN32
 # ifndef HEIM_CALLCONV
 #  define HEIM_CALLCONV __stdcall
@@ -69,9 +71,7 @@ typedef heim_get_instance_func_t krb5_get_instance_t;
  * All plugin function tables extend the following structure.
  */
 struct heim_plugin_common_ftable_desc {
-    int			version;
-    int            	(HEIM_LIB_CALL *init)(heim_pcontext, void **);
-    void		(HEIM_LIB_CALL *fini)(void *);
+    HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(heim_pcontext);
 };
 typedef struct heim_plugin_common_ftable_desc heim_plugin_common_ftable;
 typedef struct heim_plugin_common_ftable_desc *heim_plugin_common_ftable_p;

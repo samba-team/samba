@@ -653,7 +653,7 @@ reduce_by_version(heim_object_t value, void *ctx, int *stop)
     struct iter_ctx *s = ctx;
     struct heim_plugin *pl = value;
 
-    if (pl->ftable && pl->ftable->version >= s->caller->min_version)
+    if (pl->ftable && pl->ftable->minor_version >= s->caller->min_version)
         heim_array_append_value(s->result, pl);
 }
 

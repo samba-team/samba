@@ -33,6 +33,8 @@
 #ifndef HEIMDAL_KRB5_DB_PLUGIN_H
 #define HEIMDAL_KRB5_DB_PLUGIN_H 1
 
+#include <heimbase-svc.h>
+
 #define KRB5_PLUGIN_DB "krb5_db_plug"
 #define KRB5_PLUGIN_DB_VERSION_0 0
 
@@ -59,9 +61,7 @@
  * @ingroup krb5_support
  */
 typedef struct krb5plugin_db_ftable_desc {
-    int			minor_version;
-    krb5_error_code	(KRB5_LIB_CALL *init)(krb5_context, void **);
-    void		(KRB5_LIB_CALL *fini)(void *);
+    HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);
 } krb5plugin_db_ftable;
 
 #endif /* HEIMDAL_KRB5_DB_PLUGIN_H */

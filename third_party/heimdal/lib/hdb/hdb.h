@@ -307,11 +307,9 @@ typedef struct HDB {
 #define HDB_INTERFACE_VERSION	11
 
 struct hdb_method {
-    int			version;
+    HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);
     unsigned int	is_file_based:1;
     unsigned int	can_taste:1;
-    krb5_error_code	(*init)(krb5_context, void **);
-    void		(*fini)(void *);
     const char *prefix;
     krb5_error_code (*create)(krb5_context, HDB **, const char *filename);
 };

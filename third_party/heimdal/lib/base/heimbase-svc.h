@@ -75,4 +75,9 @@
     heim_dict_t attributes;                                     \
     int32_t error_code
 
+#define HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(CONTEXT_TYPE)        \
+    int minor_version;                                          \
+    int (HEIM_LIB_CALL *init)(CONTEXT_TYPE, void **);           \
+    void (HEIM_LIB_CALL *fini)(void *)
+
 #endif /* HEIMBASE_SVC_H */

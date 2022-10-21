@@ -120,9 +120,7 @@ typedef krb5_error_code
 #define KRB5_PLUGIN_KDC_VERSION_10	10
 
 typedef struct krb5plugin_kdc_ftable {
-    int			minor_version;
-    krb5_error_code	(KRB5_CALLCONV *init)(krb5_context, void **);
-    void		(KRB5_CALLCONV *fini)(void *);
+    HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);
     krb5plugin_kdc_pac_generate		pac_generate;
     krb5plugin_kdc_pac_verify		pac_verify;
     krb5plugin_kdc_client_access	client_access;

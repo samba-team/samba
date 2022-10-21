@@ -66,41 +66,41 @@ const int hdb_interface_version = HDB_INTERFACE_VERSION;
 static struct hdb_method methods[] = {
     /* "db:" should be db3 if we have db3, or db1 if we have db1 */
 #if HAVE_DB3
-    { HDB_INTERFACE_VERSION, 1 /*is_file_based*/, 1 /*can_taste*/, NULL, NULL,
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1 /*is_file_based*/, 1 /*can_taste*/,
                                                "db:",	hdb_db3_create},
 #elif HAVE_DB1
-    { HDB_INTERFACE_VERSION, 1, 1, NULL, NULL, "db:",	hdb_db1_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 1, "db:",	hdb_db1_create},
 #endif
 #if HAVE_DB1
-    { HDB_INTERFACE_VERSION, 1, 1, NULL, NULL, "db1:",	hdb_db1_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 1, "db1:",	hdb_db1_create},
 #endif
 #if HAVE_DB3
-    { HDB_INTERFACE_VERSION, 1, 1, NULL, NULL, "db3:",	hdb_db3_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 1, "db3:",	hdb_db3_create},
 #endif
 #if HAVE_DB1
-    { HDB_INTERFACE_VERSION, 1, 1, NULL, NULL, "mit-db:",	hdb_mitdb_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 1, "mit-db:",	hdb_mitdb_create},
 #endif
 #if HAVE_LMDB
-    { HDB_INTERFACE_VERSION, 1, 1, NULL, NULL, "mdb:",	hdb_mdb_create},
-    { HDB_INTERFACE_VERSION, 1, 1, NULL, NULL, "lmdb:",	hdb_mdb_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 1, "mdb:",	hdb_mdb_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 1, "lmdb:",	hdb_mdb_create},
 #endif
 #if HAVE_NDBM
-    { HDB_INTERFACE_VERSION, 1, 0, NULL, NULL, "ndbm:",	hdb_ndbm_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 0, "ndbm:",	hdb_ndbm_create},
 #endif
 #ifdef HAVE_SQLITE3
-    { HDB_INTERFACE_VERSION, 1, 1, NULL, NULL, "sqlite:", hdb_sqlite_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 1, "sqlite:", hdb_sqlite_create},
 #endif
     /* The keytab interface can't use its hdb_open() method to "taste" a DB */
-    { HDB_INTERFACE_VERSION, 1, 0, NULL, NULL, "keytab:",	hdb_keytab_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 0, "keytab:",	hdb_keytab_create},
     /* The rest are not file-based */
 #if defined(OPENLDAP) && !defined(OPENLDAP_MODULE)
-    { HDB_INTERFACE_VERSION, 0, 0, NULL, NULL, "ldap:",	hdb_ldap_create},
-    { HDB_INTERFACE_VERSION, 0, 0, NULL, NULL, "ldapi:",	hdb_ldapi_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 0, 0, "ldap:",	hdb_ldap_create},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 0, 0, "ldapi:",	hdb_ldapi_create},
 #elif defined(OPENLDAP)
-    { HDB_INTERFACE_VERSION, 0, 0, NULL, NULL, "ldap:",	NULL},
-    { HDB_INTERFACE_VERSION, 0, 0, NULL, NULL, "ldapi:", NULL},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 0, 0, "ldap:",	NULL},
+    { HDB_INTERFACE_VERSION, NULL, NULL, 0, 0, "ldapi:", NULL},
 #endif
-    { 0, 0, 0, NULL, NULL, NULL, NULL}
+    { 0, NULL, NULL, 0, 0, NULL, NULL}
 };
 
 /**
@@ -494,19 +494,19 @@ hdb_init_db(krb5_context context, HDB *db)
  */
 #if defined(HAVE_LMDB)
 static struct hdb_method default_dbmethod =
-    { HDB_INTERFACE_VERSION, 1, 1, NULL, NULL, "", hdb_mdb_create };
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 1, "", hdb_mdb_create };
 #elif defined(HAVE_DB3)
 static struct hdb_method default_dbmethod =
-    { HDB_INTERFACE_VERSION, 1, 1, NULL, NULL, "", hdb_db3_create };
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 1, "", hdb_db3_create };
 #elif defined(HAVE_DB1)
 static struct hdb_method default_dbmethod =
-    { HDB_INTERFACE_VERSION, 1, 1, NULL, NULL, "", hdb_db1_create };
+    { HDB_INTERFACE_VERSION, NULL, NULL, 1, 1, "", hdb_db1_create };
 #elif defined(HAVE_NDBM)
 static struct hdb_method default_dbmethod =
-    { HDB_INTERFACE_VERSION, 0, 1, NULL, NULL, "", hdb_ndbm_create };
+    { HDB_INTERFACE_VERSION, NULL, NULL, 0, 1, "", hdb_ndbm_create };
 #else
 static struct hdb_method default_dbmethod =
-    { 0, 0, 0, NULL, NULL, NULL, NULL};
+    { 0, NULL, NULL, 0, 0, NULL, NULL};
 #endif
 
 static int

@@ -38,6 +38,8 @@
 #ifndef HEIMDAL_KRB5_LOCATE_PLUGIN_H
 #define HEIMDAL_KRB5_LOCATE_PLUGIN_H 1
 
+#include <heimbase-svc.h>
+
 #define KRB5_PLUGIN_LOCATE "service_locator"
 #define KRB5_PLUGIN_LOCATE_VERSION 1
 #define KRB5_PLUGIN_LOCATE_VERSION_0 0
@@ -70,9 +72,7 @@ typedef krb5_error_code
 
 
 typedef struct krb5plugin_service_locate_ftable {
-    int			minor_version;
-    krb5_error_code	(KRB5_CALLCONV *init)(krb5_context, void **);
-    void		(KRB5_CALLCONV *fini)(void *);
+    HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);
     krb5plugin_service_locate_lookup_old old_lookup;
     krb5plugin_service_locate_lookup lookup; /* version 2 */
 } krb5plugin_service_locate_ftable;
