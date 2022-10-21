@@ -70,7 +70,7 @@
 	  helpers">true</smbconfoption> is set (the default setting),
 	  it is invoked on demand from <command>smbd</command> or
 	  <command>winbind</command> with a command line
-	  containing--np-helper to serve DCERPC over named pipes
+	  containing --np-helper to serve DCERPC over named pipes
 	  (np). It can also be used in a standalone mode where it is
 	  started separately from <command>smbd</command> or
 	  <command>winbind</command> via system startup scripts. If
