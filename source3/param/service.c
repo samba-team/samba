@@ -264,3 +264,72 @@ int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 
 	return (iService);
 }
+
+bool lp_allow_local_address(
+	int snum, const struct tsocket_address *local_address)
+{
+	bool is_inet = tsocket_address_is_inet(local_address, "ip");
+	const char **server_addresses = lp_server_addresses(snum);
+	char *local = NULL;
+	ssize_t i;
+
+	if (!is_inet) {
+		return false;
+	}
+
+	if (server_addresses == NULL) {
+		return true;
+	}
+
+	local = tsocket_address_inet_addr_string(local_address, talloc_tos());
+	if (local == NULL) {
+		return false;
+	}
+
+	for (i=0; server_addresses[i] != NULL; i++) {
+		struct tsocket_address *server_addr = NULL;
+		char *server_addr_string = NULL;
+		bool equal;
+		int ret;
+
+		/*
+		 * Go through struct tsocket_address to normalize the
+		 * string representation
+		 */
+
+		ret = tsocket_address_inet_from_strings(
+			talloc_tos(),
+			"ip",
+			server_addresses[i],
+			0,
+			&server_addr);
+		if (ret == -1) {
+			DBG_WARNING("tsocket_address_inet_from_strings "
+				    "failed for %s: %s, ignoring\n",
+				    server_addresses[i],
+				    strerror(errno));
+			continue;
+		}
+
+		server_addr_string = tsocket_address_inet_addr_string(
+			server_addr, talloc_tos());
+		TALLOC_FREE(server_addr);
+		if (server_addr_string == NULL) {
+			DBG_ERR("tsocket_address_inet_addr_string failed "
+				"for %s, ignoring\n",
+				server_addresses[i]);
+			continue;
+		}
+
+		equal = strequal(local, server_addr_string);
+		TALLOC_FREE(server_addr_string);
+
+		if (equal) {
+			TALLOC_FREE(local);
+			return true;
+		}
+	}
+
+	TALLOC_FREE(local);
+	return false;
+}

@@ -30,6 +30,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/sys_rw_data.h"
+#include "source3/lib/util_tsock.h"
 
 /****************************************************************************
  Determine if a file descriptor is in fact a socket.
