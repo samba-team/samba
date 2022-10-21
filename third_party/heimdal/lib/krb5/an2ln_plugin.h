@@ -36,6 +36,8 @@
 #ifndef HEIMDAL_KRB5_AN2LN_PLUGIN_H
 #define HEIMDAL_KRB5_AN2LN_PLUGIN_H 1
 
+#include <heimbase-svc.h>
+
 #define KRB5_PLUGIN_AN2LN "an2ln"
 #define KRB5_PLUGIN_AN2LN_VERSION_0 0
 
@@ -80,9 +82,7 @@ typedef krb5_error_code (KRB5_LIB_CALL *set_result_f)(void *, const char *);
  * @ingroup krb5_support
  */
 typedef struct krb5plugin_an2ln_ftable_desc {
-    int			minor_version;
-    krb5_error_code	(KRB5_LIB_CALL *init)(krb5_context, void **);
-    void		(KRB5_LIB_CALL *fini)(void *);
+    HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);
     krb5_error_code	(KRB5_LIB_CALL *an2ln)(void *, krb5_context, const char *,
 	                         krb5_const_principal, set_result_f, void *);
 } krb5plugin_an2ln_ftable;

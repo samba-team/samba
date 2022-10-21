@@ -2097,9 +2097,9 @@ fini(void *ctx)
 
 struct hdb_method hdb_ldap_interface = {
     HDB_INTERFACE_VERSION,
-    0 /*is_file_based*/, 0 /*can_taste*/,
     init,
     fini,
+    0 /*is_file_based*/, 0 /*can_taste*/,
     "ldap",
     hdb_ldap_create
 };
@@ -2108,6 +2108,7 @@ struct hdb_method hdb_ldapi_interface = {
     HDB_INTERFACE_VERSION,
     init,
     fini,
+    0 /*is_file_based*/, 0 /*can_taste*/,
     "ldapi",
     hdb_ldapi_create
 };
