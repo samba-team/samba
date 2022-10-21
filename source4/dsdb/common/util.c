@@ -2587,7 +2587,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 
 	if (uac & UF_INTERDOMAIN_TRUST_ACCOUNT) {
-		const char * const tdo_attrs[] = {
+		static const char * const tdo_attrs[] = {
 			"trustAuthIncoming",
 			"trustDirection",
 			NULL
