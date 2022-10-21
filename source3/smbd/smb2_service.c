@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    service (connection) opening and closing
    Copyright (C) Andrew Tridgell 1992-1998
@@ -177,7 +177,7 @@ bool chdir_current_service(connection_struct *conn)
 }
 
 /****************************************************************************
- do some basic sainity checks on the share.  
+ do some basic sainity checks on the share.
  This function modifies dev, ecode.
 ****************************************************************************/
 
@@ -236,7 +236,7 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address
 }
 
 /*
- * Go through lookup_name etc to find the force'd group.  
+ * Go through lookup_name etc to find the force'd group.
  *
  * Create a new token from src_token, replacing the primary group sid with the
  * one found.
