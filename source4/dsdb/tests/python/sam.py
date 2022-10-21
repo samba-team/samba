@@ -1806,13 +1806,13 @@ class SamTests(samba.tests.TestCase):
 
         sasl_ldb = SamDB(url=host, credentials=sasl_creds, lp=lp)
         self.assertIsNotNone(sasl_ldb)
-        sasl_ldb = None
+        del sasl_ldb
 
         requires_strong_auth = False
         try:
             simple_ldb = SamDB(url=host, credentials=simple_creds, lp=lp)
             self.assertIsNotNone(simple_ldb)
-            simple_ldb = None
+            del simple_ldb
         except LdbError as e55:
             (num, msg) = e55.args
             if num != ERR_STRONG_AUTH_REQUIRED:
