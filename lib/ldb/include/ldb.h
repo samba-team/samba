@@ -2296,7 +2296,9 @@ void ldb_qsort (void *const pbase, size_t total_elems, size_t size, void *opaque
 do { \
 	if (numel > 1) { \
 		ldb_qsort(base, numel, sizeof((base)[0]), discard_const(opaque), (ldb_qsort_cmp_fn_t)comparison); \
-		comparison(&((base)[0]), &((base)[1]), opaque);		\
+		if (0) { \
+			comparison(&((base)[0]), &((base)[1]), opaque); \
+		} \
 	} \
 } while (0)
 
@@ -2306,7 +2308,9 @@ do { \
 do { \
 	if (numel > 1) { \
 		qsort(base, numel, sizeof((base)[0]), (int (*)(const void *, const void *))comparison); \
-		comparison(&((base)[0]), &((base)[1])); \
+		if (0) { \
+			comparison(&((base)[0]), &((base)[1])); \
+		} \
 	} \
 } while (0)
 #endif
