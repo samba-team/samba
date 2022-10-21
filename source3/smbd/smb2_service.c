@@ -181,12 +181,36 @@ bool chdir_current_service(connection_struct *conn)
  This function modifies dev, ecode.
 ****************************************************************************/
 
-static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address,
+static NTSTATUS share_sanity_checks(const struct tsocket_address *local_address,
+				    const struct tsocket_address *remote_address,
 				    const char *rhost,
 				    int snum,
 				    fstring dev)
 {
 	char *raddr;
+
+	if (!lp_allow_local_address(snum, local_address)) {
+		char *laddr = NULL;
+
+		laddr = tsocket_address_inet_addr_string(
+			local_address, talloc_tos());
+		if (laddr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		raddr = tsocket_address_inet_addr_string(
+			remote_address, laddr);
+		if (raddr == NULL) {
+			TALLOC_FREE(laddr);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		DBG_ERR("Denied connection from %s (%s) to \\\\%s\\%s\n",
+			rhost, raddr, laddr, lp_const_servicename(snum));
+		TALLOC_FREE(laddr);
+
+		return NT_STATUS_BAD_NETWORK_NAME;
+	}
 
 	raddr = tsocket_address_inet_addr_string(remote_address,
 						 talloc_tos());
@@ -527,7 +551,8 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 
 	fstrcpy(dev, pdev);
 
-	status = share_sanity_checks(sconn->remote_address,
+	status = share_sanity_checks(sconn->local_address,
+				       sconn->remote_address,
 				       sconn->remote_hostname,
 				       snum,
 				       dev);
