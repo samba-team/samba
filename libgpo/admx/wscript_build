@@ -1,3 +1,8 @@
 #!/usr/bin/env python
 
-bld.INSTALL_FILES('${DATADIR}/samba/admx', ['samba.admx', 'en-US/samba.adml'])
+bld.INSTALL_FILES('${DATADIR}/samba/admx', ['samba.admx',
+                                            'en-US/samba.adml',
+                                            'GNOME_Settings.admx',
+                                            'en-US/GNOME_Settings.adml',
+                                            'ru-RU/GNOME_Settings.adml'
+                                            ])
