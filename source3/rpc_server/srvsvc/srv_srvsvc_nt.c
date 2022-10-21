@@ -44,6 +44,8 @@
 #include "serverid.h"
 #include "lib/global_contexts.h"
 #include "source3/lib/substitute.h"
+#include "lib/tsocket/tsocket.h"
+#include "librpc/rpc/dcesrv_core.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
@@ -615,6 +617,9 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 	struct dcesrv_call_state *dce_call = p->dce_call;
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
+	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
+	const struct tsocket_address *local_address =
+		dcesrv_connection_get_local_address(dcesrv_conn);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	uint32_t num_entries = 0;
@@ -655,8 +660,9 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
         /* Count the number of entries. */
         for (snum = 0; snum < num_services; snum++) {
                 if (lp_browseable(snum) && lp_snum_ok(snum) &&
-                    is_enumeration_allowed(p, snum) &&
-                    (all_shares || !is_hidden_share(snum)) ) {
+                    lp_allow_local_address(snum, local_address) &&
+		    is_enumeration_allowed(p, snum) &&
+                    (all_shares || !is_hidden_share(snum))) {
                         DEBUG(10, ("counting service %s\n",
 				lp_servicename(talloc_tos(), lp_sub, snum) ? lp_servicename(talloc_tos(), lp_sub, snum) : "(null)"));
                         allowed[snum] = true;
