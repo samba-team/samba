@@ -14,7 +14,16 @@
 	attributes (e.g. the getfattr<manvolnum>1</manvolnum> / setfattr<manvolnum>1</manvolnum>
 	utilities must work).
 	</para></listitem>
+	<listitem><para>Access to extended user attributes must be allowed by the underlying
+        filesystem (e.g. when mounted with a system-dependent option like user_xattr on Linux).
+	</para></listitem>
     </itemizedlist>
+    <para>
+    This option exposes the "user" attribute namespace from the underlying filesystem to
+    clients. In order to match Windows conventions, the namespace prefix ("user.") is
+    stripped from the attribute name on the client side. The handling of further attribute
+    namespaces (like "security", "system", or "trusted") is not affected by this option.
+    </para>
     <para>
     Note that the SMB protocol allows setting attributes whose value is 64K bytes long,
     and that on NTFS, the maximum storage space for extended attributes per file is 64K.
