@@ -72,6 +72,18 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         # discard any auth log messages for the password setup
         self.discardMessages()
+        gnutls_pbkdf2_support = samba.tests.env_get_var_value(
+            'GNUTLS_PBKDF2_SUPPORT',
+            allow_missing=True)
+        if gnutls_pbkdf2_support is None:
+            gnutls_pbkdf2_support = '0'
+        self.gnutls_pbkdf2_support = bool(int(gnutls_pbkdf2_support))
+
+    def _authDescription(self):
+        if self.gnutls_pbkdf2_support:
+            return "samr_ChangePasswordUser4"
+        else:
+            return "samr_ChangePasswordUser3"
 
     def tearDown(self):
         super(AuthLogPassChangeTests, self).tearDown()
@@ -83,7 +95,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["serviceDescription"] ==
                         "SAMR Password Change") and
                     (msg["Authentication"]["authDescription"] ==
-                        "samr_ChangePasswordUser3") and
+                        self._authDescription()) and
                     (msg["Authentication"]["eventId"] ==
                         EVT_ID_SUCCESSFUL_LOGON) and
                     (msg["Authentication"]["logonType"] ==
@@ -109,7 +121,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["serviceDescription"] ==
                         "SAMR Password Change") and
                     (msg["Authentication"]["authDescription"] ==
-                        "samr_ChangePasswordUser3") and
+                        self._authDescription()) and
                     (msg["Authentication"]["eventId"] ==
                         EVT_ID_UNSUCCESSFUL_LOGON) and
                     (msg["Authentication"]["logonType"] ==
@@ -141,7 +153,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["serviceDescription"] ==
                         "SAMR Password Change") and
                     (msg["Authentication"]["authDescription"] ==
-                        "samr_ChangePasswordUser3") and
+                        self._authDescription()) and
                     (msg["Authentication"]["eventId"] ==
                         EVT_ID_UNSUCCESSFUL_LOGON) and
                     (msg["Authentication"]["logonType"] ==
@@ -174,7 +186,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     (msg["Authentication"]["serviceDescription"] ==
                         "SAMR Password Change") and
                     (msg["Authentication"]["authDescription"] ==
-                        "samr_ChangePasswordUser3") and
+                        self._authDescription()) and
                     (msg["Authentication"]["eventId"] ==
                         EVT_ID_UNSUCCESSFUL_LOGON) and
                     (msg["Authentication"]["logonType"] ==

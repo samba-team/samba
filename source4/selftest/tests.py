@@ -1094,9 +1094,11 @@ if have_heimdal_support:
                            environ={'CLIENT_IP': '10.53.57.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
     planoldpythontestsuite("ad_dc_smb1", "samba.tests.auth_log_pass_change",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'])
+                           extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           environ={'GNUTLS_PBKDF2_SUPPORT': gnutls_pbkdf2_support})
     planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.auth_log_pass_change",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'])
+                           extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           environ={'GNUTLS_PBKDF2_SUPPORT': gnutls_pbkdf2_support})
 
     # these tests use a NCA local RPC connection, so always run on the
     # :local testenv, and so don't need to fake a client connection
@@ -1113,7 +1115,8 @@ if have_heimdal_support:
                            "samba.tests.auth_log_winbind",
                            extra_args=['-U"$DC_USERNAME%$DC_PASSWORD"'])
     planoldpythontestsuite("ad_dc", "samba.tests.audit_log_pass_change",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'])
+                           extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           environ={'GNUTLS_PBKDF2_SUPPORT': gnutls_pbkdf2_support})
     planoldpythontestsuite("ad_dc", "samba.tests.audit_log_dsdb",
                            extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc", "samba.tests.group_audit",
