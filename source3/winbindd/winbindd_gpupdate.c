@@ -44,6 +44,8 @@ struct gpupdate_state {
 	struct loadparm_context *lp_ctx;
 };
 
+static void gpupdate_cmd_done(struct tevent_req *subreq);
+
 static void gpupdate_callback(struct tevent_context *ev,
 			      struct tevent_timer *tim,
 			      struct timeval current_time,
@@ -70,6 +72,8 @@ static void gpupdate_callback(struct tevent_context *ev,
 		DEBUG(0, ("Failed to execute the gpupdate command\n"));
 		return;
 	}
+
+	tevent_req_set_callback(req, gpupdate_cmd_done, NULL);
 
 	/* Schedule the next event */
 	schedule = tevent_timeval_current_ofs(gpupdate_interval(), 0);
@@ -115,3 +119,14 @@ void gpupdate_init(void)
 	}
 }
 
+static void gpupdate_cmd_done(struct tevent_req *subreq)
+{
+	int sys_errno;
+	int ret;
+
+	ret = samba_runcmd_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		DBG_ERR("gpupdate failed with exit status %d\n", sys_errno);
+	}
+}
