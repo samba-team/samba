@@ -842,14 +842,6 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(vfs_handle_struct *handle, files_str
 	if (acl->acl_version == GPFS_ACL_VERSION_NFS4) {
 		struct gpfs_config_data *config;
 
-		if (lp_parm_bool(fsp->conn->params->service, "gpfs",
-				 "refuse_dacl_protected", false)
-		    && (psd->type&SEC_DESC_DACL_PROTECTED)) {
-			DEBUG(2, ("Rejecting unsupported ACL with DACL_PROTECTED bit set\n"));
-			talloc_free(acl);
-			return NT_STATUS_NOT_SUPPORTED;
-		}
-
 		SMB_VFS_HANDLE_GET_DATA(handle, config,
 					struct gpfs_config_data,
 					return NT_STATUS_INTERNAL_ERROR);
