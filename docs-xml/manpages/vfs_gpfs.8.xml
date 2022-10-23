@@ -252,37 +252,6 @@
 		</varlistentry>
 		<varlistentry>
 
-		<term>gpfs:refuse_dacl_protected = [ yes | no ]</term>
-		<listitem>
-		<para>
-		As GPFS does not support the ACE4_FLAG_NO_PROPAGATE NFSv4 flag (which would be
-		the mapping for the DESC_DACL_PROTECTED flag), the status of this flag is
-		currently silently ignored by Samba. That means that if you deselect the "Allow
-		inheritable permissions..." checkbox in Windows' ACL dialog and then apply the
-		ACL, the flag will be back immediately.
-		</para>
-		<para>
-		To make sure that automatic migration with e.g. robocopy does not lead to
-		ACLs silently (and unintentionally) changed, you can set
-		<command>gpfs:refuse_dacl_protected = yes</command> to enable an explicit
-		check for this flag and if set, it will return NT_STATUS_NOT_SUPPORTED so
-		errors are shown up on the Windows side and the Administrator is aware of
-		the ACLs not being settable like intended
-		</para>
-
-		<itemizedlist>
-		<listitem><para>
-		<command>no(default)</command> - ignore the DESC_DACL_PROTECTED flags.
-		</para></listitem>
-		<listitem><para>
-		<command>yes</command> - reject ACLs with DESC_DACL_PROTECTED.
-		</para></listitem>
-		</itemizedlist>
-		</listitem>
-
-		</varlistentry>
-		<varlistentry>
-
 		<term>gpfs:dfreequota = [ yes | no ]</term>
 		<listitem>
 		<para>
