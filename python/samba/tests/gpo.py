@@ -8240,7 +8240,6 @@ class GPOTests(tests.TestCase):
 
         # Unstage the manifest.xml and script files
         unstage_file(manifest)
-        unstage_file(test_script)
 
         # Stage the manifest.xml file for run once scripts
         etree.SubElement(listelement, 'run_once')
@@ -8280,6 +8279,54 @@ class GPOTests(tests.TestCase):
             # Test rsop
             entry = 'Run once as: %s `%s %s`' % (run_as.text, test_script,
                                             parameters.text)
+            g = [g for g in gpos if g.name == guid][0]
+            ret = ext.rsop(g)
+            self.assertIn(entry, list(ret.values())[0][0],
+                          'The target entry was not listed by rsop')
+
+        # Unstage the manifest.xml and script files
+        unstage_file(manifest)
+
+        # Stage the manifest.xml file for a script without parameters
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        version = etree.SubElement(policysetting, 'version')
+        version.text = '1'
+        data = etree.SubElement(policysetting, 'data')
+        listelement = etree.SubElement(data, 'listelement')
+        script = etree.SubElement(listelement, 'script')
+        script.text = os.path.basename(test_script).lower()
+        hash = etree.SubElement(listelement, 'hash')
+        hash.text = \
+            hashlib.md5(open(test_script, 'rb').read()).hexdigest().upper()
+        run_as = etree.SubElement(listelement, 'run_as')
+        run_as.text = 'root'
+        ret = stage_file(manifest, etree.tostring(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % manifest)
+
+        # Process all gpos, with temp output directory
+        with TemporaryDirectory() as dname:
+            try:
+                ext.process_group_policy([], gpos, dname)
+            except Exception as e:
+                self.fail(str(e))
+            files = os.listdir(dname)
+            self.assertEquals(len(files), 1,
+                              'The target script was not created')
+            entry = '@reboot %s %s' % (run_as.text, test_script)
+            self.assertIn(entry,
+                          open(os.path.join(dname, files[0]), 'r').read(),
+                          'The test entry was not found')
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+            files = os.listdir(dname)
+            self.assertEquals(len(files), 0,
+                              'The target script was not removed')
+
+            # Test rsop
             g = [g for g in gpos if g.name == guid][0]
             ret = ext.rsop(g)
             self.assertIn(entry, list(ret.values())[0][0],
