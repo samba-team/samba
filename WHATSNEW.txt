@@ -1,4 +1,55 @@
                    ===============================
+                   Release Notes for Samba 4.15.11
+                          October 25, 2022
+                   ===============================
+
+
+This is a security release in order to address the following defect:
+
+o CVE-2022-3437:  There is a limited write heap buffer overflow in the GSSAPI
+                  unwrap_des() and unwrap_des3() routines of Heimdal (included
+                  in Samba).
+                  https://www.samba.org/samba/security/CVE-2022-3437.html
+
+Changes since 4.15.10
+---------------------
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15193: Allow rebuild of Centos 8 images after move to vault for Samba
+     4.15.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15193: Allow rebuild of Centos 8 images after move to vault for Samba
+     4.15.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15134: CVE-2022-3437.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ===============================
                    Release Notes for Samba 4.15.10
                          September 28, 2022
                    ===============================
@@ -61,8 +112,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.15.9
                            July 27, 2022
