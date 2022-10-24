@@ -509,29 +509,6 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 		ucf_flags &= ~UCF_GMT_PATHNAME;
 	}
 
-	if (ucf_flags & UCF_DFS_PATHNAME) {
-		/*
-		 * We've been given a raw DFS pathname.
-		 */
-		char *pathname = NULL;
-		DBG_DEBUG("Before dfs_filename_convert name_in: %s\n", name_in);
-		status = dfs_filename_convert(ctx,
-					      conn,
-					      ucf_flags,
-					      name_in,
-					      &pathname);
-                if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("dfs_filename_convert "
-				"failed for name %s with %s\n",
-				name_in,
-				nt_errstr(status));
-			return status;
-		}
-		ucf_flags &= ~UCF_DFS_PATHNAME;
-		name_in = pathname;
-		DBG_DEBUG("After dfs_filename_convert name_in: %s\n", name_in);
-	}
-
 	/* Get the original lcomp. */
 	mask = get_original_lcomp(ctx,
 				  conn,
