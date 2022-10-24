@@ -31,3 +31,11 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA_WSP',
 	public_deps='LIBSAMBA_WSP_PARSER',
 	enabled=bld.env.with_wsp
 	)
+
+bld.SAMBA_BINARY('test_wsp_parser',
+    source='test_wsp_parser.c',
+    deps= 'dcerpc CMDLINE_S3 LIBSAMBA_WSP NDR_WSP NDR_WSP_DATA WSP_UTIL cmocka',
+    enabled=bld.env.with_wsp,
+    install=False
+    )
+

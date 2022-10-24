@@ -457,6 +457,8 @@ plantestsuite("samba.unittests.auth.sam", "none",
 if have_heimdal_support and not using_system_gssapi:
     plantestsuite("samba.unittests.auth.heimdal_gensec_unwrap_des", "none",
                   [valgrindify(os.path.join(bindir(), "test_heimdal_gensec_unwrap_des"))])
+plantestsuite("samba.unittests.test_wsp_parser", "none",
+              [os.path.join(bindir(), "default/libcli/wsp/test_wsp_parser")] + [configuration])
 if with_elasticsearch_backend:
     plantestsuite("samba.unittests.mdsparser_es", "none",
                   [os.path.join(bindir(), "default/source3/test_mdsparser_es")] + [configuration])
