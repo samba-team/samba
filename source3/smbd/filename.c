@@ -885,10 +885,6 @@ lookup:
 	return status;
 }
 
-/*
- * Split up name_in as sent by the client into a directory pathref fsp
- * and a relative smb_filename.
- */
 static const char *previous_slash(const char *name_in, const char *slash)
 {
 	const char *prev = name_in;
