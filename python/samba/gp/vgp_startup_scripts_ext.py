@@ -62,7 +62,11 @@ class vgp_startup_scripts_ext(gp_xml_ext):
                     script_file = os.path.join(local_path,
                         os.path.dirname(check_safe_path(path)).upper(),
                                         script.upper())
-                    parameters = listelement.find('parameters').text
+                    parameters = listelement.find('parameters')
+                    if parameters is not None:
+                        parameters = parameters.text
+                    else:
+                        parameters = ''
                     hash = listelement.find('hash').text
                     attribute = '%s:%s:%s' % (script, hash, parameters)
                     old_val = self.gp_db.retrieve(str(self), attribute)
@@ -105,7 +109,11 @@ class vgp_startup_scripts_ext(gp_xml_ext):
                 script_file = os.path.join(local_path,
                     os.path.dirname(check_safe_path(path)).upper(),
                                     script.upper())
-                parameters = listelement.find('parameters').text
+                parameters = listelement.find('parameters')
+                if parameters is not None:
+                    parameters = parameters.text
+                else:
+                    parameters = ''
                 run_as = listelement.find('run_as')
                 if run_as is not None:
                     run_as = run_as.text
