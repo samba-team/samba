@@ -136,6 +136,7 @@ struct fruit_config_data {
 	bool wipe_intentionally_left_blank_rfork;
 	bool delete_empty_adfiles;
 	bool validate_afpinfo;
+	bool veto_localized;
 
 	/*
 	 * Additional options, all enabled by default,
@@ -377,6 +378,10 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	config->validate_afpinfo = lp_parm_bool(
 		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
 		"validate_afpinfo", true);
+
+	config->veto_localized = lp_parm_bool(
+		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
+		"veto_localized", false);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct fruit_config_data,
@@ -1359,6 +1364,26 @@ static int fruit_connect(vfs_handle_struct *handle,
 			lp_do_parameter(SNUM(handle->conn),
 					"veto files",
 					"/" ADOUBLE_NAME_PREFIX "*/");
+		}
+
+		TALLOC_FREE(list);
+	}
+
+	if (config->veto_localized) {
+		list = lp_veto_files(talloc_tos(), lp_sub, SNUM(handle->conn));
+
+		if (list) {
+			newlist = talloc_asprintf(
+				list,
+				"%s/.localized/",
+				list);
+			lp_do_parameter(SNUM(handle->conn),
+					"veto files",
+					newlist);
+		} else {
+			lp_do_parameter(SNUM(handle->conn),
+					"veto files",
+					"/.localized/");
 		}
 
 		TALLOC_FREE(list);

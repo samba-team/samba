@@ -426,6 +426,27 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>fruit:veto_localized = yes | no</term>
+	    <listitem>
+
+	      <para>When <parameter>fruit:veto_localized</parameter> is set to
+	      <parameter>yes</parameter>, vfs_fruit will automatically veto any
+	      attempts to access the <emphasis>.localized</emphasis> file or directory.
+	      These can be created in order to let Mac OS provide localized
+	      translations for folder names (typically for localized versions
+	      of <emphasis>Desktop</emphasis>, <emphasis>Music</emphasis>, etc.).
+	      When very large directories are listed a Mac client might do queries for
+	      the presence of the .localized file for each and every entry in that
+	      directory listing. In combination with clustered filesystems this might
+	      have a significant impact on the overal directory listing performance.
+	      When potential folder name translation is not desired this option allows
+	      to avoid the additional network overhead by not letting the server go
+	      down to the filesystem layer for any queries.</para>
+	      <para>The default is <emphasis>no</emphasis>.</para>
+
+            </listitem>
+	  </varlistentry>
 	</variablelist>
 </refsect1>
 
