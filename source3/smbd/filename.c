@@ -950,6 +950,70 @@ static char *symlink_target_path(
 	return ret;
 }
 
+static NTSTATUS safe_symlink_target_path(
+	TALLOC_CTX *mem_ctx,
+	const char *connectpath,
+	const char *name_in,
+	const char *substitute,
+	size_t unparsed,
+	char **_name_out)
+{
+	char *target = NULL;
+	char *abs_target = NULL;
+	char *abs_target_canon = NULL;
+	const char *relative = NULL;
+	char *name_out = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	bool in_share;
+
+	target = symlink_target_path(mem_ctx, name_in, substitute, unparsed);
+	if (target == NULL) {
+		goto fail;
+	}
+
+	DBG_DEBUG("name_in: %s, substitute: %s, unparsed: %zu, target=%s\n",
+		  name_in,
+		  substitute,
+		  unparsed,
+		  target);
+
+	if (target[0] == '/') {
+		abs_target = target;
+	} else {
+		abs_target = talloc_asprintf(
+			target, "%s/%s", connectpath, target);
+		if (abs_target == NULL) {
+			goto fail;
+		}
+	}
+
+	abs_target_canon = canonicalize_absolute_path(target, abs_target);
+	if (abs_target_canon == NULL) {
+		goto fail;
+	}
+
+	DBG_DEBUG("abs_target_canon=%s\n", abs_target_canon);
+
+	in_share = subdir_of(
+		connectpath, strlen(connectpath), abs_target_canon, &relative);
+	if (!in_share) {
+		DBG_DEBUG("wide link to %s\n", abs_target_canon);
+		status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		goto fail;
+	}
+
+	name_out = talloc_strdup(mem_ctx, relative);
+	if (name_out == NULL) {
+		goto fail;
+	}
+
+	status = NT_STATUS_OK;
+	*_name_out = name_out;
+fail:
+	TALLOC_FREE(target);
+	return status;
+}
+
 /*
  * Split up name_in as sent by the client into a directory pathref fsp
  * and a relative smb_filename.
@@ -1367,14 +1431,10 @@ NTSTATUS filename_convert_dirfsp(
 	struct smb_filename **_smb_fname)
 {
 	char *substitute = NULL;
-	const char *relative = NULL;
 	size_t unparsed = 0;
 	NTSTATUS status;
 	char *target = NULL;
-	char *abs_target = NULL;
-	char *abs_target_canon = NULL;
 	size_t symlink_redirects = 0;
-	bool in_share;
 
 next:
 	if (symlink_redirects > 40) {
@@ -1412,45 +1472,17 @@ next:
 	 * resolve all symlinks locally.
 	 */
 
-	target = symlink_target_path(mem_ctx, name_in, substitute, unparsed);
-	if (target == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	DBG_DEBUG("name_in: %s, substitute: %s, unparsed: %zu, target=%s\n",
-		  name_in,
-		  substitute,
-		  unparsed,
-		  target);
-
-	if (target[0] == '/') {
-		abs_target = target;
-	} else {
-		abs_target = talloc_asprintf(
-			mem_ctx, "%s/%s", conn->connectpath, target);
-		if (abs_target == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	abs_target_canon = canonicalize_absolute_path(mem_ctx, abs_target);
-	if (abs_target_canon == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	DBG_DEBUG("abs_target_canon=%s\n", abs_target_canon);
-
-	in_share = subdir_of(
+	status = safe_symlink_target_path(
+		mem_ctx,
 		conn->connectpath,
-		strlen(conn->connectpath),
-		abs_target_canon,
-		&relative);
-	if (!in_share) {
-		DBG_DEBUG("wide link to %s\n", abs_target_canon);
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		name_in,
+		substitute,
+		unparsed,
+		&target);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	name_in = talloc_strdup(mem_ctx, relative);
+	name_in = target;
 
 	symlink_redirects += 1;
 
