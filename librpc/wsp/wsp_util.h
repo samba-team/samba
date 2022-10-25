@@ -51,6 +51,9 @@ const struct full_propset_info *get_prop_info(const char *prop_name);
 const struct full_propset_info *get_propset_info_with_guid(
 						const char *prop_name,
 						struct GUID *guid);
+const char * get_vtype_name(uint32_t type);
+bool is_variable_size(uint16_t vtype);
+const char *get_store_status(uint8_t status_byte);
 
 bool is_operator(struct wsp_crestriction *restriction);
 const char *op_as_string(struct wsp_crestriction *restriction);
@@ -61,8 +64,26 @@ const char *variant_as_string(TALLOC_CTX *ctx,
 void set_variant_lpwstr(TALLOC_CTX *ctx,
 			struct wsp_cbasestoragevariant *vvalue,
 			const char *string_val);
+void set_variant_i4(TALLOC_CTX *ctx,
+		    struct wsp_cbasestoragevariant *vvalue,
+		    uint32_t val);
+void set_variant_vt_bool(TALLOC_CTX *ctx,
+			struct wsp_cbasestoragevariant *variant,
+			bool bval);
+void set_variant_bstr(TALLOC_CTX *ctx, struct wsp_cbasestoragevariant *variant,
+		      const char *string_val);
 void set_variant_lpwstr_vector(TALLOC_CTX *ctx,
 			      struct wsp_cbasestoragevariant *variant,
 			      const char **string_vals, uint32_t elems);
+void set_variant_array_bstr(TALLOC_CTX *ctx,
+			   struct wsp_cbasestoragevariant *variant,
+			   const char **string_vals, uint16_t elems);
+void set_variant_i4_vector(TALLOC_CTX *ctx,
+			   struct wsp_cbasestoragevariant *variant,
+			   int32_t* ivector, uint32_t elems);
+void set_variant_array_i4(TALLOC_CTX *ctx,
+			 struct wsp_cbasestoragevariant *variant,
+			 int32_t *vals, uint16_t elems);
+
 struct wsp_cfullpropspec *get_full_prop(struct wsp_crestriction *restriction);
 #endif /* __LIBRPC_WSP_UTIL_H__ */

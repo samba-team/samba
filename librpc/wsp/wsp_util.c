@@ -688,12 +688,145 @@ const char *variant_as_string(TALLOC_CTX *ctx,
 	return result;
 }
 
+static const struct {
+	uint32_t id;
+	const char *name;
+} typename_map[] = {
+	{VT_EMPTY, "Empty"},
+	{VT_NULL, "Null"},
+	{VT_I2, "VT_I2"},
+	{VT_I4, "VT_I4"},
+	{VT_I4, "VT_I4"},
+	{VT_R4, "VT_R4"},
+	{VT_R8, "VT_R8"},
+	{VT_CY, "VT_CY"},
+	{VT_DATE, "VT_DATE"},
+	{VT_BSTR, "VT_BSTR"},
+	{VT_I1, "VT_I1"},
+	{VT_UI1, "VT_UI1"},
+	{VT_UI2, "VT_UI2"},
+	{VT_UI4, "VT_UI4"},
+	{VT_I8, "VT_I8"},
+	{VT_UI8, "VT_UI8"},
+	{VT_INT, "VT_INT"},
+	{VT_UINT, "VT_UINT"},
+	{VT_ERROR, "VT_ERROR"},
+	{VT_BOOL, "VT_BOOL"},
+	{VT_VARIANT, "VT_VARIANT"},
+	{VT_DECIMAL, "VT_DECIMAL"},
+	{VT_FILETIME, "VT_FILETIME"},
+	{VT_BLOB, "VT_BLOB"},
+	{VT_BLOB_OBJECT, "VT_BLOB_OBJECT"},
+	{VT_CLSID, "VT_CLSID"},
+	{VT_LPSTR, "VT_LPSTR"},
+	{VT_LPWSTR, "VT_LPWSTR"},
+	{VT_COMPRESSED_LPWSTR, "VT_COMPRESSED_LPWSTR"},
+};
+
+const char *get_vtype_name(uint32_t type)
+{
+	const char *type_name = NULL;
+	static char result_buf[255];
+	int i;
+	uint32_t temp = type & ~(VT_VECTOR | VT_ARRAY);
+	for (i = 0; i < ARRAY_SIZE(typename_map); i++) {
+		if (temp == typename_map[i].id) {
+			type_name = typename_map[i].name;
+			break;
+		}
+	}
+	if (type & VT_VECTOR) {
+		snprintf(result_buf, sizeof(result_buf), "Vector | %s", type_name);
+	} else if (type & VT_ARRAY) {
+		snprintf(result_buf, sizeof(result_buf), "Array | %s", type_name);
+	} else {
+		snprintf(result_buf, sizeof(result_buf), "%s", type_name);
+	}
+	return result_buf;
+}
+
+bool is_variable_size(uint16_t vtype)
+{
+	bool result;
+	switch(vtype) {
+		case VT_LPWSTR:
+		case VT_COMPRESSED_LPWSTR:
+		case VT_BSTR:
+		case VT_BLOB:
+		case VT_BLOB_OBJECT:
+		case VT_VARIANT:
+			result = true;
+			break;
+		default:
+			result = false;
+			break;
+	}
+	return result;
+}
+
+const char *get_store_status(uint8_t status_byte)
+{
+	const char *result;
+	switch(status_byte) {
+		case 0:
+			result = "StoreStatusOk";
+			break;
+		case 1:
+			result = "StoreStatusDeferred";
+			break;
+		case 2:
+			result = "StoreStatusNull";
+			break;
+		default:
+			result = "Unknown Status";
+			break;
+	}
+	return result;
+}
+
 void set_variant_lpwstr(TALLOC_CTX *ctx,
 			struct wsp_cbasestoragevariant *vvalue,
 			const char *string_val)
 {
 	vvalue->vtype = VT_LPWSTR;
 	vvalue->vvalue.vt_lpwstr.value = talloc_strdup(ctx, string_val);
+}
+
+void set_variant_i4(TALLOC_CTX *ctx,
+		    struct wsp_cbasestoragevariant *vvalue,
+		    uint32_t val)
+{
+	vvalue->vtype = VT_I4;
+	vvalue->vvalue.vt_i4 = val;
+}
+
+void set_variant_vt_bool(TALLOC_CTX *ctx,
+			struct wsp_cbasestoragevariant *variant,
+			bool bval)
+{
+	variant->vtype = VT_BOOL;
+	variant->vvalue.vt_bool = bval;
+}
+
+static void fill_int32_vec(TALLOC_CTX* ctx,
+			    int32_t **pdest,
+			    int32_t* ivector, uint32_t elems)
+{
+	int i;
+	int32_t *dest = talloc_zero_array(ctx, int32_t, elems);
+	for ( i = 0; i < elems; i++ ) {
+		dest[ i ] = ivector[ i ];
+	}
+	*pdest = dest;
+}
+
+void set_variant_i4_vector(TALLOC_CTX *ctx,
+			   struct wsp_cbasestoragevariant *variant,
+			   int32_t* ivector, uint32_t elems)
+{
+	variant->vtype = VT_VECTOR | VT_I4;
+	variant->vvalue.vt_i4_vec.vvector_elements = elems;
+	fill_int32_vec(ctx, &variant->vvalue.vt_i4_vec.vvector_data, ivector, elems);
 }
 
 static void fill_string_vec(TALLOC_CTX* ctx,
@@ -711,10 +844,76 @@ static void fill_string_vec(TALLOC_CTX* ctx,
 	}
 }
 
+static void fill_bstr_vec(TALLOC_CTX *ctx,
+		  struct vt_bstr **pvector,
+		  const char **strings, uint16_t elems)
+{
+	int i;
+	struct vt_bstr *vdata = talloc_zero_array(ctx, struct vt_bstr, elems);
+
+	for( i = 0; i < elems; i++ ) {
+		vdata [ i ].value = talloc_strdup(ctx, strings[ i ]);
+	}
+	*pvector = vdata;
+}
+
+void set_variant_bstr(TALLOC_CTX *ctx, struct wsp_cbasestoragevariant *variant,
+			const char *string_val)
+{
+	variant->vtype = VT_BSTR;
+	variant->vvalue.vt_bstr.value = talloc_strdup(ctx, string_val);
+}
+
 void set_variant_lpwstr_vector(TALLOC_CTX *ctx,
                               struct wsp_cbasestoragevariant *variant,
                               const char **string_vals, uint32_t elems)
 {
         variant->vtype = VT_LPWSTR | VT_VECTOR;
         fill_string_vec(ctx, variant, string_vals, elems);
+}
+
+void set_variant_array_bstr(TALLOC_CTX *ctx,
+			   struct wsp_cbasestoragevariant *variant,
+			   const char **string_vals, uint16_t elems)
+{
+	variant->vtype = VT_BSTR | VT_ARRAY;
+	variant->vvalue.vt_bstr_array.cdims = 1;
+	variant->vvalue.vt_bstr_array.ffeatures = 0;
+
+	variant->vvalue.vt_bstr_array.rgsabound =
+		talloc_zero_array(ctx, struct safearraybound, 1);
+
+	variant->vvalue.vt_bstr_array.rgsabound[0].celements = elems;
+	variant->vvalue.vt_bstr_array.rgsabound[0].ilbound = 0;
+	variant->vvalue.vt_bstr_array.cbelements = 0;
+	fill_bstr_vec(ctx, &variant->vvalue.vt_bstr_array.vdata,
+		      string_vals, elems);
+	/*
+	 * if cbelements is the num bytes per elem it kindof means each
+	 * string in the array must be the same size ?
+	 */
+
+	if (elems >0) {
+		variant->vvalue.vt_bstr_array.cbelements =
+			strlen_m_term(variant->vvalue.vt_bstr_array.vdata[0].value)*2;
+	}
+}
+
+/* create single dim array of vt_i4 */
+void set_variant_array_i4(TALLOC_CTX *ctx,
+			 struct wsp_cbasestoragevariant *variant,
+			 int32_t *vals, uint16_t elems)
+{
+	/* #TODO see if we can combine with other set_variant_array methods */
+	variant->vtype = VT_I4 | VT_ARRAY;
+	variant->vvalue.vt_i4_array.cdims = 1;
+	variant->vvalue.vt_i4_array.ffeatures = 0;
+
+	variant->vvalue.vt_i4_array.rgsabound =
+		talloc_zero_array(ctx, struct safearraybound, 1);
+
+	variant->vvalue.vt_i4_array.rgsabound[0].celements = elems;
+	variant->vvalue.vt_i4_array.rgsabound[0].ilbound = 0;
+	variant->vvalue.vt_i4_array.cbelements = sizeof(uint32_t);
+	fill_int32_vec(ctx, &variant->vvalue.vt_i4_array.vdata, vals, elems);
 }
