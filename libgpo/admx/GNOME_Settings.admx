@@ -10,9 +10,7 @@
     </definitions>
   </supportedOn>
   <categories>
-    <category name="CAT_351B0FDF_55F3_4904_AC71_D3A6CF8DB323" displayName="$(string.CAT_351B0FDF_55F3_4904_AC71_D3A6CF8DB323)">
-      <parentCategory ref="windows:ControlPanel" />
-    </category>
+    <category name="CAT_351B0FDF_55F3_4904_AC71_D3A6CF8DB323" displayName="$(string.CAT_351B0FDF_55F3_4904_AC71_D3A6CF8DB323)" />
     <category name="CAT_7E067B4B_2FE1_4AAD_8D76_54209466A491" displayName="$(string.CAT_7E067B4B_2FE1_4AAD_8D76_54209466A491)">
       <parentCategory ref="CAT_351B0FDF_55F3_4904_AC71_D3A6CF8DB323" />
     </category>
