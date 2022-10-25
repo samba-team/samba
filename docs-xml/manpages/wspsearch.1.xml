@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="wspsearch.1">
+
+  <refmeta>
+    <refentrytitle>wspsearch</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">Samba</refmiscinfo>
+    <refmiscinfo class="manual">User Commands</refmiscinfo>
+    <refmiscinfo class="version">&doc.version;</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>wspsearch</refname>
+    <refpurpose>Run Windows Search Protocol searches against a SMB server</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>wspsearch</command>
+      <arg choice="req">//server/share</arg>
+      <arg choice="opt">--limit=results</arg>
+      <arg choice="opt">--search=phrase</arg>
+      <arg choice="opt">--kind=KIND</arg>
+      <arg choice="opt">--query=QUERY</arg>
+      <arg choice="opt">-?|--help</arg>
+      <arg choice="opt">--usage</arg>
+      <arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+      <arg choice="opt">--debug-stdout</arg>
+      <arg choice="opt">-s|--configfile=CONFIGFILE</arg>
+      <arg choice="opt">--option=name=value</arg>
+      <arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+      <arg choice="opt">--leak-report</arg>
+      <arg choice="opt">--leak-report-full</arg>
+      <arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
+      <arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
+      <arg choice="opt">-m|--max-protocol=MAXPROTOCOL</arg>
+      <arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
+      <arg choice="opt">--netbios-scope=SCOPE</arg>
+      <arg choice="opt">-W|--workgroup=WORKGROUP</arg>
+      <arg choice="opt">--realm=REALM</arg>
+      <arg choice="opt">-U|--user=[DOMAIN/]USERNAME[%PASSWORD]</arg>
+      <arg choice="opt">-N|--no-pass</arg>
+      <arg choice="opt">--password=STRING</arg>
+      <arg choice="opt">--pw-nt-hash</arg>
+      <arg choice="opt">-A|--authentication-file=FILE</arg>
+      <arg choice="opt">-P|--machine-pass</arg>
+      <arg choice="opt">--simple-bind-dn=DN</arg>
+      <arg choice="opt">--use-kerberos=desired|required|off</arg>
+      <arg choice="opt">--use-krb5-ccache=CCACHE</arg>
+      <arg choice="opt">--use-winbind-ccache</arg>
+      <arg choice="opt">--client-protection=sign|encrypt|off</arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+
+    <para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+    <manvolnum>1</manvolnum></citerefentry> suite.</para>
+
+    <para>wspsearch is a simple utility to run Windows Search Protocol searches against a SMB server that has the WSP service enabled.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>OPTIONS</title>
+
+    <variablelist>
+      <varlistentry>
+	<term>server</term>
+	<listitem>
+	  <para>The SMB server name or IP address to connect to.</para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>sharename</term>
+	<listitem>
+	  <para>The name of a share on the server.</para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--query</term>
+	<listitem><para>A query specified in simplified AQS-like (Advanced query syntax).</para>
+	<para>Basic (AQS) syntax is supported (See <emphasis>SEE ALSO</emphasis>).
+	A query consists of a sequence of queries connected by AND, OR
+	and NOT boolean operators. The query elements are essentially
+	restrictions defined by a property. There are some limitations on the
+	operators supported and some types of properties like enumerated
+	ranges are not supported at all. Additionally syntactically
+	range values are not delimited as specified by AQS (ranges are
+	instead specified as value-value). Some special cases that you see in
+	the windows search UI (for example sizes like 'tiny', 'small',
+	'large' etc.) are exceptions which are handled more or less
+	as keywords. See <emphasis>EXAMPLES</emphasis>.</para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--search=phrase</term>
+	<listitem>
+	  <para>A simple phrase that is searched across the index
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--kind=KIND</term>
+	<listitem>
+	  <para>kind one of;
+	  <itemizedlist>
+		  <listitem><para><emphasis>Calendar</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Communication</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Contact</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Document</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Email</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Feed</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Folder</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Game</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>InstantMessage</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Journal</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Movie</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Music</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Link</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Note</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Picture</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Program</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>RecordedTV</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>SearchFolder</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Task</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>Video</emphasis> </para> </listitem>
+		  <listitem><para><emphasis>WebHistory</emphasis> </para> </listitem>
+	  </itemizedlist>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--limit</term>
+	<listitem><para>A limit on the number of results returned, by default
+	there is a limit of 500 results, a limit of 0 indicates no limit and
+	all results will be returned.</para></listitem>
+      </varlistentry>
+
+      &popt.autohelp;
+      &cmdline.common.samba.client;
+      &cmdline.common.credentials;
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>EXAMPLES</title>
+
+    <para>Search using a basic phrase:</para>
+    <programlisting>
+	'wspsearch -Usomeuser%password //server/share --phrase="cats"'
+    </programlisting>
+
+    <para>Search using an AQS like query for a picture whose name starts with p403 or p404:</para>
+    <programlisting>
+	'wspsearch -Usomeuser%password //server/share --query="ALL:$&lt;p403 OR ALL:$&lt;p404 AND System.Kind:picture"'
+    </programlisting>
+
+  </refsect1>
+
+  <refsect1>
+    <title>SEE ALSO</title>
+    <para>Adanced Query Syntax
+    <ulink url="https://learn.microsoft.com/en-gb/windows/win32/search/-search-3x-advancedquerysyntax">
+    https://learn.microsoft.com/en-gb/windows/win32/search/-search-3x-advancedquerysyntax </ulink>
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>VERSION</title>
+
+    <para>This man page is part of version &doc.version; of the Samba suite.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>AUTHOR</title>
+
+    <para>The original Samba software and related utilities were created by
+    Andrew Tridgell. Samba is now developed by the Samba Team as an Open
+    Source project similar to the way the Linux kernel is developed.</para>
+
+    <para>The wspsearch manpage was written by Noel Power.</para>
+  </refsect1>
+</refentry>
