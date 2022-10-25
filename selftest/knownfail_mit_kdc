@@ -549,3 +549,10 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_canonicalize_realm_case.ad_dc
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_no_canonicalize_realm_case.ad_dc
 ^samba.tests.krb5.kpasswd_tests.samba.tests.krb5.kpasswd_tests.KpasswdTests.test_kpasswd_ticket_requester_sid_tgs.ad_dc
+#
+# Encryption type tests
+#
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_supported_aes_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_aes_supported_rc4_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_rc4_requested.ad_dc
+^samba.tests.krb5.etype_tests.samba.tests.krb5.etype_tests.EtypeTests.test_as_rc4_supported_rc4_requested.ad_dc
