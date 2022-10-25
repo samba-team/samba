@@ -114,6 +114,7 @@ EXCLUDE_USAGE = {
     'python/samba/tests/krb5/nt_hash_tests.py',
     'python/samba/tests/krb5/kpasswd_tests.py',
     'python/samba/tests/krb5/lockout_tests.py',
+    'python/samba/tests/krb5/etype_tests.py',
 }
 
 EXCLUDE_HELP = {
