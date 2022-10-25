@@ -1758,6 +1758,10 @@ planoldpythontestsuite(
     'ad_dc',
     'samba.tests.krb5.group_tests',
     environ=krb5_environ)
+planoldpythontestsuite(
+    'ad_dc',
+    'samba.tests.krb5.etype_tests',
+    environ=krb5_environ)
 
 for env in [
         'vampire_dc',
