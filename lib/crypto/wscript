@@ -1,40 +1,14 @@
 #!/usr/bin/env python
-from waflib import Options
 from waflib import Errors, Logs
-
-
-def options(opt):
-    opt.add_option('--accel-aes',
-                   help=("Should we use accelerated AES crypto functions. "
-                         "Options are intelaesni|none."),
-                   action="store",
-                   dest='accel_aes',
-                   default="none")
 
 
 def configure(conf):
     if conf.CHECK_FUNCS('SHA1_Update'):
         conf.DEFINE('SHA1_RENAME_NEEDED', 1)
 
-    #
-    # --aes-accel=XXX selects accelerated AES crypto library to use, if any.
-    # Default is none.
-    #
-    if Options.options.accel_aes.lower() == "intelaesni":
-        Logs.info("Attempting to compile with runtime-switchable x86_64 "
-                  "Intel AES instructions. WARNING - this is temporary.")
-    elif Options.options.accel_aes.lower() != "none":
-        raise Errors.WafError("--aes-accel=%s is not a valid option. Valid "
-                              "options are [none|intelaesni]" %
-                              Options.options.accel_aes)
-
 
 def build(bld):
     extra_deps = ""
-
-    if (bld.CONFIG_SET("HAVE_AESNI_INTEL")
-            and not bld.CONFIG_SET('HAVE_GNUTLS_AES_CMAC')):
-        extra_deps += ' aesni-intel'
 
     bld.SAMBA_SUBSYSTEM("GNUTLS_HELPERS",
                         source='''

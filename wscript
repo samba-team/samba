@@ -45,7 +45,6 @@ def options(opt):
     opt.RECURSE('pidl')
     opt.RECURSE('source3')
     opt.RECURSE('lib/util')
-    opt.RECURSE('lib/crypto')
     opt.RECURSE('ctdb')
 
 # Optional Libraries
