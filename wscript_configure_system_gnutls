@@ -64,7 +64,3 @@ conf.CHECK_CODE(fragment,
                 msg='Checking for gnutls fips mode support')
 del os.environ['GNUTLS_FORCE_FIPS_MODE']
 
-if conf.CHECK_VALUEOF('GNUTLS_MAC_AES_CMAC_128', headers='gnutls/gnutls.h', lib='gnutls'):
-    conf.DEFINE('HAVE_GNUTLS_AES_CMAC', 1)
-else:
-    Logs.warn('No gnutls support for AES CMAC')

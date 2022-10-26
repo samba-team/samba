@@ -19,38 +19,19 @@ def build(bld):
                         ''',
                         deps="gnutls samba-errors")
 
-    bld.SAMBA_SUBSYSTEM("LIBCRYPTO_AES",
-                        source='aes.c rijndael-alg-fst.c',
-                        deps='talloc',
-                        enabled=not bld.CONFIG_SET('HAVE_GNUTLS_AES_CMAC'))
-
-    bld.SAMBA_SUBSYSTEM('LIBCRYPTO_AES_CMAC',
-                        source='aes_cmac_128.c',
-                        deps='talloc',
-                        enabled=not bld.CONFIG_SET('HAVE_GNUTLS_AES_CMAC'))
-
     bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
                         source='''
                         md4.c
                         ''',
                         deps='''
                         talloc
-                        LIBCRYPTO_AES
-                        LIBCRYPTO_AES_CMAC
-                        ''' + extra_deps)
-
-    bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO_AES_CMAC',
-                        source='aes_cmac_128_test.c',
-                        autoproto='aes_cmac_test_proto.h',
-                        deps='talloc',
-                        enabled=not bld.CONFIG_SET('HAVE_GNUTLS_AES_CMAC'))
+                        ''')
 
     bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO',
                         source='md4test.c',
                         autoproto='test_proto.h',
                         deps='''
                         LIBCRYPTO
-                        TORTURE_LIBCRYPTO_AES_CMAC
                         ''')
 
     bld.SAMBA_PYTHON('python_crypto',

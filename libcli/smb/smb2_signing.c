@@ -27,11 +27,6 @@
 #include "../lib/crypto/crypto.h"
 #include "lib/util/iov_buf.h"
 
-#ifndef HAVE_GNUTLS_AES_CMAC
-#include "lib/crypto/aes.h"
-#include "lib/crypto/aes_cmac_128.h"
-#endif
-
 #include "lib/crypto/gnutls_helpers.h"
 
 void smb2_signing_derivations_fill_const_stack(struct smb2_signing_derivations *ds,
@@ -514,33 +509,8 @@ static NTSTATUS smb2_signing_calc_signature(struct smb2_signing_key *signing_key
 	}	break;
 
 	case SMB2_SIGNING_AES128_CMAC:
-#ifdef HAVE_GNUTLS_AES_CMAC
 		hmac_algo = GNUTLS_MAC_AES_CMAC_128;
 		break;
-#else /* NOT HAVE_GNUTLS_AES_CMAC */
-	{
-		struct aes_cmac_128_context ctx;
-		uint8_t key[AES_BLOCK_SIZE] = {0};
-
-		memcpy(key,
-		       signing_key->blob.data,
-		       MIN(signing_key->blob.length, 16));
-
-		aes_cmac_128_init(&ctx, key);
-		aes_cmac_128_update(&ctx, hdr, SMB2_HDR_SIGNATURE);
-		aes_cmac_128_update(&ctx, zero_sig, 16);
-		for (i=1; i < count; i++) {
-			aes_cmac_128_update(&ctx,
-					(const uint8_t *)vector[i].iov_base,
-					vector[i].iov_len);
-		}
-		aes_cmac_128_final(&ctx, signature);
-
-		ZERO_ARRAY(key);
-
-		return NT_STATUS_OK;
-	}	break;
-#endif
 	case SMB2_SIGNING_HMAC_SHA256:
 		hmac_algo = GNUTLS_MAC_SHA256;
 		break;
