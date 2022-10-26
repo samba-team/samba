@@ -458,6 +458,148 @@ out:
 }
 
 /**********************************************************************
+ Delete a single service principal, i.e. 'host' from the system keytab
+***********************************************************************/
+
+int ads_keytab_delete_entry(ADS_STRUCT *ads, const char *srvPrinc)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	krb5_error_code ret = 0;
+	krb5_context context = NULL;
+	krb5_keytab keytab = NULL;
+	char *princ_s = NULL;
+	krb5_principal princ = NULL;
+	char *short_princ_s = NULL;
+	krb5_principal short_princ = NULL;
+	bool ok;
+
+	ret = smb_krb5_init_context_common(&context);
+	if (ret) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(ret));
+		goto out;
+	}
+
+	ret = ads_keytab_open(context, &keytab);
+	if (ret != 0) {
+		goto out;
+	}
+
+	/* Construct our principal */
+	if (strchr_m(srvPrinc, '@')) {
+		/* It's a fully-named principal. */
+		princ_s = talloc_asprintf(frame, "%s", srvPrinc);
+		if (!princ_s) {
+			ret = -1;
+			goto out;
+		}
+	} else if (srvPrinc[strlen(srvPrinc)-1] == '$') {
+		/* It's the machine account, as used by smbclient clients. */
+		princ_s = talloc_asprintf(frame, "%s@%s",
+					  srvPrinc, lp_realm());
+		if (!princ_s) {
+			ret = -1;
+			goto out;
+		}
+	} else {
+		/*
+		 * It's a normal service principal.
+		 */
+		char *my_fqdn = NULL;
+		char *tmp = NULL;
+
+		/*
+		 * SPN should have '/' otherwise we
+		 * need to fallback and find our dnshostname
+		 */
+		tmp = strchr_m(srvPrinc, '/');
+		if (tmp == NULL) {
+			my_fqdn = ads_get_dnshostname(ads, frame, lp_netbios_name());
+			if (!my_fqdn) {
+				DBG_ERR("unable to determine machine account's dns name in "
+					"AD!\n");
+				ret = -1;
+				goto out;
+			}
+		}
+
+		ok = service_or_spn_to_kerberos_princ(frame,
+						      srvPrinc,
+						      my_fqdn,
+						      &princ_s,
+						      &short_princ_s);
+		if (!ok) {
+			ret = -1;
+			goto out;
+		}
+	}
+
+	ret = smb_krb5_parse_name(context, princ_s, &princ);
+	if (ret) {
+		DEBUG(1, (__location__ ": smb_krb5_parse_name(%s) "
+			  "failed (%s)\n", princ_s, error_message(ret)));
+		goto out;
+	}
+
+	if (short_princ_s != NULL) {
+		ret = smb_krb5_parse_name(context, short_princ_s, &short_princ);
+		if (ret) {
+			DEBUG(1, (__location__ ": smb_krb5_parse_name(%s) "
+				  "failed (%s)\n", short_princ_s, error_message(ret)));
+			goto out;
+		}
+	}
+
+	/* Seek and delete old keytab entries */
+	ret = smb_krb5_kt_seek_and_delete_old_entries(context,
+						      keytab,
+						      false, /* keep_old_kvno */
+						      -1,
+						      false, /* enctype_only */
+						      ENCTYPE_NULL,
+						      princ_s,
+						      princ,
+						      false); /* flush */
+	if (ret) {
+		goto out;
+	}
+
+	if (short_princ_s == NULL) {
+		goto out;
+	}
+
+	/* Seek and delete old keytab entries */
+	ret = smb_krb5_kt_seek_and_delete_old_entries(context,
+						      keytab,
+						      false, /* keep_old_kvno */
+						      -1,
+						      false, /* enctype_only */
+						      ENCTYPE_NULL,
+						      short_princ_s,
+						      short_princ,
+						      false); /* flush */
+	if (ret) {
+		goto out;
+	}
+
+out:
+	if (princ) {
+		krb5_free_principal(context, princ);
+	}
+	if (short_princ) {
+		krb5_free_principal(context, short_princ);
+	}
+	if (keytab) {
+		krb5_kt_close(context, keytab);
+	}
+	if (context) {
+		krb5_free_context(context);
+	}
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+/**********************************************************************
  Flushes all entries from the system keytab.
 ***********************************************************************/
 

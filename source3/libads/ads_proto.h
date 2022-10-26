@@ -62,6 +62,7 @@ void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_descripto
 
 int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc,
 			 bool update_ads);
+int ads_keytab_delete_entry(ADS_STRUCT *ads, const char *srvPrinc);
 int ads_keytab_flush(ADS_STRUCT *ads);
 int ads_keytab_create_default(ADS_STRUCT *ads);
 int ads_keytab_list(const char *keytab_name);
