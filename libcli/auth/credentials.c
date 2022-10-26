@@ -26,10 +26,6 @@
 #include "../libcli/security/dom_sid.h"
 #include "lib/util/util_str_escape.h"
 
-#ifndef HAVE_GNUTLS_AES_CFB8
-#include "lib/crypto/aes.h"
-#endif
-
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -404,7 +400,6 @@ NTSTATUS netlogon_creds_aes_encrypt(struct netlogon_creds_CredentialState *creds
 				    uint8_t *data,
 				    size_t len)
 {
-#ifdef HAVE_GNUTLS_AES_CFB8
 	gnutls_cipher_hd_t cipher_hnd = NULL;
 	gnutls_datum_t key = {
 		.data = creds->session_key,
@@ -435,15 +430,6 @@ NTSTATUS netlogon_creds_aes_encrypt(struct netlogon_creds_CredentialState *creds
 		return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 	}
 
-#else /* NOT HAVE_GNUTLS_AES_CFB8 */
-	AES_KEY key;
-	uint8_t iv[AES_BLOCK_SIZE] = {0};
-
-	AES_set_encrypt_key(creds->session_key, 128, &key);
-
-	aes_cfb8_encrypt(data, data, len, &key, iv, AES_ENCRYPT);
-#endif /* HAVE_GNUTLS_AES_CFB8 */
-
 	return NT_STATUS_OK;
 }
 
@@ -452,7 +438,6 @@ NTSTATUS netlogon_creds_aes_encrypt(struct netlogon_creds_CredentialState *creds
 */
 NTSTATUS netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len)
 {
-#ifdef HAVE_GNUTLS_AES_CFB8
 	gnutls_cipher_hd_t cipher_hnd = NULL;
 	gnutls_datum_t key = {
 		.data = creds->session_key,
@@ -484,15 +469,6 @@ NTSTATUS netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds
 		return gnutls_error_to_ntstatus(rc,
 						NT_STATUS_CRYPTO_SYSTEM_INVALID);
 	}
-
-#else /* NOT HAVE_GNUTLS_AES_CFB8 */
-	AES_KEY key;
-	uint8_t iv[AES_BLOCK_SIZE] = {0};
-
-	AES_set_encrypt_key(creds->session_key, 128, &key);
-
-	aes_cfb8_encrypt(data, data, len, &key, iv, AES_DECRYPT);
-#endif /* HAVE_GNUTLS_AES_CFB8 */
 
 	return NT_STATUS_OK;
 }

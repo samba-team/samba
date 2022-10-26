@@ -30,7 +30,6 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-#if defined(HAVE_GNUTLS_AES_CFB8) && GNUTLS_VERSION_NUMBER > 0x03060a
 static void torture_gnutls_aes_128_cfb_flags(void **state,
 					const DATA_BLOB session_key,
 					const DATA_BLOB seq_num_initial,
@@ -132,11 +131,9 @@ static void torture_gnutls_aes_128_cfb_flags(void **state,
 	assert_memory_equal(io.data, clear_initial.data, clear_initial.length);
 	assert_memory_equal(confounder, confounder_initial.data, confounder_initial.length);
 }
-#endif
 
 static void torture_gnutls_aes_128_cfb(void **state)
 {
-#if defined(HAVE_GNUTLS_AES_CFB8) && GNUTLS_VERSION_NUMBER > 0x03060a
 	const uint8_t _session_key[16] = {
 		0x8E, 0xE8, 0x27, 0x85, 0x83, 0x41, 0x3C, 0x8D,
 		0xC9, 0x54, 0x70, 0x75, 0x8E, 0xC9, 0x69, 0x91
@@ -225,7 +222,6 @@ static void torture_gnutls_aes_128_cfb(void **state)
 					    clear_initial_trunc,
 					    crypt_expected_trunc);
 	}
-#endif
 }
 
 static void torture_gnutls_des_crypt56(void **state)

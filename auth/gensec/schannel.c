@@ -35,10 +35,6 @@
 #include "auth/gensec/gensec_toplevel_proto.h"
 #include "libds/common/roles.h"
 
-#ifndef HAVE_GNUTLS_AES_CFB8
-#include "lib/crypto/aes.h"
-#endif
-
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -150,7 +146,6 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 				  uint8_t seq_num[8])
 {
 	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-#ifdef HAVE_GNUTLS_AES_CFB8
 		gnutls_cipher_hd_t cipher_hnd = NULL;
 		gnutls_datum_t key = {
 			.data = state->creds->session_key,
@@ -186,17 +181,6 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 							NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		}
 
-#else /* NOT HAVE_GNUTLS_AES_CFB8 */
-		AES_KEY key;
-		uint8_t iv[AES_BLOCK_SIZE];
-
-		AES_set_encrypt_key(state->creds->session_key, 128, &key);
-		ZERO_STRUCT(iv);
-		memcpy(iv+0, checksum, 8);
-		memcpy(iv+8, checksum, 8);
-
-		aes_cfb8_encrypt(seq_num, seq_num, 8, &key, iv, AES_ENCRYPT);
-#endif /* HAVE_GNUTLS_AES_CFB8 */
 	} else {
 		static const uint8_t zeros[4];
 		uint8_t _sequence_key[16];
@@ -261,7 +245,6 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 			       bool forward)
 {
 	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-#ifdef HAVE_GNUTLS_AES_CFB8
 		gnutls_cipher_hd_t cipher_hnd = NULL;
 		uint8_t sess_kf0[16] = {0};
 		gnutls_datum_t key = {
@@ -354,29 +337,6 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 			}
 		}
 		gnutls_cipher_deinit(cipher_hnd);
-#else /* NOT HAVE_GNUTLS_AES_CFB8 */
-		AES_KEY key;
-		uint8_t iv[AES_BLOCK_SIZE];
-		uint8_t sess_kf0[16];
-		int i;
-
-		for (i = 0; i < 16; i++) {
-			sess_kf0[i] = state->creds->session_key[i] ^ 0xf0;
-		}
-
-		AES_set_encrypt_key(sess_kf0, 128, &key);
-		ZERO_STRUCT(iv);
-		memcpy(iv+0, seq_num, 8);
-		memcpy(iv+8, seq_num, 8);
-
-		if (forward) {
-			aes_cfb8_encrypt(confounder, confounder, 8, &key, iv, AES_ENCRYPT);
-			aes_cfb8_encrypt(data, data, length, &key, iv, AES_ENCRYPT);
-		} else {
-			aes_cfb8_encrypt(confounder, confounder, 8, &key, iv, AES_DECRYPT);
-			aes_cfb8_encrypt(data, data, length, &key, iv, AES_DECRYPT);
-		}
-#endif /* HAVE_GNUTLS_AES_CFB8 */
 	} else {
 		gnutls_cipher_hd_t cipher_hnd;
 		uint8_t _sealing_key[16];
