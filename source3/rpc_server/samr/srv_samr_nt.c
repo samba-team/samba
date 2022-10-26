@@ -7670,7 +7670,6 @@ void _samr_Opnum72NotUsedOnWire(struct pipes_struct *p,
 NTSTATUS _samr_ChangePasswordUser4(struct pipes_struct *p,
 				   struct samr_ChangePasswordUser4 *r)
 {
-#ifdef HAVE_GNUTLS_PBKDF2
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct dcesrv_call_state *dce_call = p->dce_call;
 	struct dcesrv_connection *dcesrv_conn = dce_call->conn;
@@ -7904,10 +7903,6 @@ done:
 	}
 
 	return status;
-#else  /* HAVE_GNUTLS_PBKDF2 */
-	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-	return NT_STATUS_NOT_IMPLEMENTED;
-#endif /* HAVE_GNUTLS_PBKDF2 */
 }
 
 /* include the generated boilerplate */

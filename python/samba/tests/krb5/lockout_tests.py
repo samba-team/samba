@@ -618,8 +618,6 @@ class LockoutTests(KDCBaseTest):
         self.do_lockout_transaction(connect_samr)
 
     def test_lockout_transaction_samr_aes(self):
-        if not self.gnutls_pbkdf2_support:
-            self.skipTest('gnutls_pbkdf2() is not available')
         self.do_lockout_transaction(connect_samr_aes)
 
     def test_lockout_transaction_ldap_pw_change(self):
@@ -659,8 +657,6 @@ class LockoutTests(KDCBaseTest):
         self.do_lockout_transaction(connect_samr, correct_pw=False)
 
     def test_lockout_transaction_bad_pwd_samr_aes(self):
-        if not self.gnutls_pbkdf2_support:
-            self.skipTest('gnutls_pbkdf2() is not available')
         self.do_lockout_transaction(connect_samr_aes, correct_pw=False)
 
     def test_lockout_transaction_bad_pwd_ldap_pw_change(self):
@@ -676,8 +672,6 @@ class LockoutTests(KDCBaseTest):
         self.do_bad_pwd_count_transaction(connect_samr)
 
     def test_bad_pwd_count_transaction_samr_aes(self):
-        if not self.gnutls_pbkdf2_support:
-            self.skipTest('gnutls_pbkdf2() is not available')
         self.do_bad_pwd_count_transaction(connect_samr_aes)
 
     def test_bad_pwd_count_transaction_ldap_pw_change(self):
@@ -705,8 +699,6 @@ class LockoutTests(KDCBaseTest):
         self.do_lockout_race(connect_samr)
 
     def test_lockout_race_samr_aes(self):
-        if not self.gnutls_pbkdf2_support:
-            self.skipTest('gnutls_pbkdf2() is not available')
         self.do_lockout_race(connect_samr_aes)
 
     def test_lockout_race_ldap_pw_change(self):
@@ -728,8 +720,6 @@ class LockoutTests(KDCBaseTest):
         self.do_logon(connect_samr)
 
     def test_logon_samr_aes(self):
-        if not self.gnutls_pbkdf2_support:
-            self.skipTest('gnutls_pbkdf2() is not available')
         self.do_logon(connect_samr_aes)
 
     def test_logon_ldap_pw_change(self):

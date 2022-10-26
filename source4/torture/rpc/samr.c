@@ -3052,7 +3052,6 @@ bool test_ChangePasswordUser4(struct dcerpc_pipe *p,
 			      char **password,
 			      const char *newpassword)
 {
-#ifdef HAVE_GNUTLS_PBKDF2
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct samr_ChangePasswordUser4 r;
 	const char *oldpassword = *password;
@@ -3158,7 +3157,6 @@ bool test_ChangePasswordUser4(struct dcerpc_pipe *p,
 	torture_assert_ntstatus_ok(tctx, status, "ChangePasswordUser4 failed");
 
 	*password = talloc_strdup(tctx, newpassword);
-#endif /* HAVE_GNUTLS_PBKDF2 */
 	return true;
 }
 

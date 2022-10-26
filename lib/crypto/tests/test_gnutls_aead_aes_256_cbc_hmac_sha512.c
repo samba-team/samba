@@ -256,7 +256,6 @@ static void torture_encrypt_decrypt(void **state)
 	TALLOC_FREE(frame);
 }
 
-#ifdef HAVE_GNUTLS_PBKDF2
 /* The following hexdumps are from a Windows Server 2022 time trace */
 static uint8_t pbkdf2_nt_hash[] = {
 	0xf8, 0x48, 0x54, 0xde, 0xb8, 0x36, 0x10, 0x33,
@@ -298,7 +297,6 @@ static void torture_pbkdf2(void **state)
 			    expected_pbkdf2_derived_key,
 			    sizeof(derived_key));
 }
-#endif /* HAVE_GNUTLS_PBKDF2 */
 
 int main(int argc, char *argv[])
 {
@@ -308,9 +306,7 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_mac_key),
 		cmocka_unit_test(torture_encrypt),
 		cmocka_unit_test(torture_encrypt_decrypt),
-#ifdef HAVE_GNUTLS_PBKDF2
 		cmocka_unit_test(torture_pbkdf2),
-#endif /* HAVE_GNUTLS_PBKDF2 */
 	};
 
 	if (argc == 2) {

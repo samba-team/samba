@@ -67,18 +67,9 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         # discard any auth log messages for the password setup
         type(self).discardMessages()
-        gnutls_pbkdf2_support = samba.tests.env_get_var_value(
-            'GNUTLS_PBKDF2_SUPPORT',
-            allow_missing=True)
-        if gnutls_pbkdf2_support is None:
-            gnutls_pbkdf2_support = '0'
-        self.gnutls_pbkdf2_support = bool(int(gnutls_pbkdf2_support))
 
     def _authDescription(self):
-        if self.gnutls_pbkdf2_support:
-            return "samr_ChangePasswordUser4"
-        else:
-            return "samr_ChangePasswordUser3"
+        return "samr_ChangePasswordUser4"
 
     def tearDown(self):
         super(AuthLogPassChangeTests, self).tearDown()

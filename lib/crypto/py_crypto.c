@@ -29,7 +29,6 @@
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/util/pyerrors.h"
 
-#ifdef HAVE_GNUTLS_PBKDF2
 static bool samba_gnutls_datum_from_PyObject(PyObject *py_obj,
 					     gnutls_datum_t *datum)
 {
@@ -50,7 +49,6 @@ static bool samba_gnutls_datum_from_PyObject(PyObject *py_obj,
 
 	return true;
 }
-#endif /* HAVE_GNUTLS_PBKDF2 */
 
 static bool samba_DATA_BLOB_from_PyObject(PyObject *py_obj,
 					  DATA_BLOB *blob)
@@ -238,7 +236,6 @@ static PyObject *py_crypto_md4_hash_blob(PyObject *self, PyObject *args)
 
 static PyObject *py_crypto_sha512_pbkdf2(PyObject *self, PyObject *args)
 {
-#ifdef HAVE_GNUTLS_PBKDF2
 	PyObject *py_key = NULL;
 	uint8_t *key = NULL;
 	gnutls_datum_t key_datum = {0};
@@ -285,10 +282,6 @@ static PyObject *py_crypto_sha512_pbkdf2(PyObject *self, PyObject *args)
 
 	return PyBytes_FromStringAndSize((const char *)result,
 					 sizeof(result));
-#else /* HAVE_GNUTLS_PBKDF2 */
-	PyErr_SetString(PyExc_NotImplementedError, "gnutls_pbkdf2() is not available");
-	return NULL;
-#endif /* HAVE_GNUTLS_PBKDF2 */
 }
 
 static PyObject *py_crypto_aead_aes_256_cbc_hmac_sha512_blob(PyObject *self, PyObject *args)

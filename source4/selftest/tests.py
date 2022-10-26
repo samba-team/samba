@@ -1200,8 +1200,6 @@ if 'SAMBA4_USES_HEIMDAL' in config_hash:
 else:
     full_sig_support = 0
 
-gnutls_pbkdf2_support = int('HAVE_GNUTLS_PBKDF2' in config_hash)
-
 if 'HAVE_MIT_KRB5_1_20' in config_hash:
     kadmin_is_tgs = 1
 else:
@@ -1226,7 +1224,6 @@ krb5_environ = {
     'COMPOUND_ID_SUPPORT': compound_id_support,
     'TKT_SIG_SUPPORT': tkt_sig_support,
     'FULL_SIG_SUPPORT': full_sig_support,
-    'GNUTLS_PBKDF2_SUPPORT': gnutls_pbkdf2_support,
     'EXPECT_PAC': expect_pac,
     'EXPECT_EXTRA_PAC_BUFFERS': extra_pac_buffers,
     'CHECK_CNAME': check_cname,
@@ -1305,11 +1302,9 @@ if have_heimdal_support:
                            environ={'CLIENT_IP': '10.53.57.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
     planoldpythontestsuite("ad_dc_smb1", "samba.tests.auth_log_pass_change",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'GNUTLS_PBKDF2_SUPPORT': gnutls_pbkdf2_support})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.auth_log_pass_change",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'GNUTLS_PBKDF2_SUPPORT': gnutls_pbkdf2_support})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
 
     # these tests use a NCA local RPC connection, so always run on the
     # :local testenv, and so don't need to fake a client connection
@@ -1326,8 +1321,7 @@ if have_heimdal_support:
                            "samba.tests.auth_log_winbind",
                            extra_args=['-U"$DC_USERNAME%$DC_PASSWORD"'])
     planoldpythontestsuite("ad_dc", "samba.tests.audit_log_pass_change",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'GNUTLS_PBKDF2_SUPPORT': gnutls_pbkdf2_support})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc", "samba.tests.audit_log_dsdb",
                            extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc", "samba.tests.group_audit",

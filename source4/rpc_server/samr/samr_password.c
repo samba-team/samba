@@ -119,7 +119,6 @@ NTSTATUS dcesrv_samr_ChangePasswordUser4(struct dcesrv_call_state *dce_call,
 					 TALLOC_CTX *mem_ctx,
 					 struct samr_ChangePasswordUser4 *r)
 {
-#ifdef HAVE_GNUTLS_PBKDF2
 	struct ldb_context *sam_ctx = NULL;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *dn = NULL;
@@ -298,9 +297,6 @@ done:
 	}
 
 	return status;
-#else  /* HAVE_GNUTLS_PBKDF2 */
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-#endif /* HAVE_GNUTLS_PBKDF2 */
 }
 
 static NTSTATUS dcesrv_samr_ChangePasswordUser_impl(struct dcesrv_call_state *dce_call,

@@ -29,9 +29,6 @@ conf.CHECK_FUNCS_IN('gnutls_pkcs7_get_embedded_data_oid', 'gnutls')
 # Check for gnutls_set_default_priority_append (>= 3.6.3)
 conf.CHECK_FUNCS_IN('gnutls_set_default_priority_append', 'gnutls')
 
-# Check for gnutls_pbkdf2 (>= 3.6.13)
-conf.CHECK_FUNCS_IN('gnutls_pbkdf2', 'gnutls')
-
 # Check for gnutls_aead_cipher_encryptv2
 #
 # This is available since version 3.6.10, but 3.6.10 has a bug which got fixed

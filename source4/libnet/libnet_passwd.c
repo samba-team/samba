@@ -42,7 +42,6 @@ static NTSTATUS libnet_ChangePassword_samr_aes(TALLOC_CTX *mem_ctx,
 					       const char *new_password,
 					       const char **error_string)
 {
-#ifdef HAVE_GNUTLS_PBKDF2
 	struct samr_ChangePasswordUser4 r;
 	uint8_t old_nt_key_data[16] = {0};
 	gnutls_datum_t old_nt_key = {
@@ -122,9 +121,6 @@ done:
 	BURN_DATA(pwd_buf);
 
 	return status;
-#else /* HAVE_GNUTLS_PBKDF2 */
-	return NT_STATUS_NOT_IMPLEMENTED;
-#endif /* HAVE_GNUTLS_PBKDF2 */
 }
 
 static NTSTATUS libnet_ChangePassword_samr_rc4(TALLOC_CTX *mem_ctx,

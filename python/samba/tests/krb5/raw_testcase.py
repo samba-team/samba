@@ -691,13 +691,6 @@ class RawKerberosTest(TestCase):
             full_sig_support = '0'
         cls.full_sig_support = bool(int(full_sig_support))
 
-        gnutls_pbkdf2_support = samba.tests.env_get_var_value(
-            'GNUTLS_PBKDF2_SUPPORT',
-            allow_missing=True)
-        if gnutls_pbkdf2_support is None:
-            gnutls_pbkdf2_support = '1'
-        cls.gnutls_pbkdf2_support = bool(int(gnutls_pbkdf2_support))
-
         expect_pac = samba.tests.env_get_var_value('EXPECT_PAC',
                                                    allow_missing=True)
         if expect_pac is None:
