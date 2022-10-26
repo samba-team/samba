@@ -126,7 +126,7 @@ PKGS = [
     ('apt-utils', 'yum-utils'),
     ('pkg-config', 'pkgconfig'),
     ('procps', 'procps-ng'),  # required for the free cmd in tests
-    ('lsb-release', 'lsb-release'),  # we need lsb_relase to show info
+    ('lsb-release', 'lsb-release'),  # we need lsb_release to show info
     ('', 'rpcgen'),  # required for test
     # refer: https://fedoraproject.org/wiki/Changes/SunRPCRemoval
     ('', 'libtirpc-devel'),  # for <rpc/rpc.h> header on fedora
