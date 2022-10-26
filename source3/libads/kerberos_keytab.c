@@ -466,7 +466,6 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	krb5_error_code ret = 0;
 	krb5_context context = NULL;
 	krb5_keytab keytab = NULL;
-	krb5_kvno kvno;
 	ADS_STATUS aderr;
 
 	ret = smb_krb5_init_context_common(&context);
@@ -481,18 +480,10 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 		goto out;
 	}
 
-	kvno = (krb5_kvno)ads_get_machine_kvno(ads, lp_netbios_name());
-	if (kvno == -1) {
-		/* -1 indicates a failure */
-		DEBUG(1, (__location__ ": Error determining the kvno.\n"));
-		ret = -1;
-		goto out;
-	}
-
-	/* Seek and delete old keytab entries */
+	/* Seek and delete all old keytab entries */
 	ret = smb_krb5_kt_seek_and_delete_old_entries(context,
 						      keytab,
-						      kvno,
+						      -1,
 						      ENCTYPE_NULL,
 						      NULL,
 						      NULL,
