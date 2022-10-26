@@ -217,8 +217,7 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 							krb5_enctype enctype,
 							const char *princ_s,
 							krb5_principal princ,
-							bool flush,
-							bool keep_old_entries);
+							bool flush);
 krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
 				      krb5_keytab keytab,
 				      krb5_kvno kvno,

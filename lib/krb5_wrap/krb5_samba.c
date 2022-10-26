@@ -1638,8 +1638,6 @@ krb5_error_code smb_krb5_kt_get_name(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  flush         Whether to flush the complete keytab.
  *
- * @param[in]  keep_old_entries Keep the entry with the previous kvno.
- *
  * @retval 0 on Sucess
  *
  * @return An appropriate KRB5 error code.
@@ -1650,8 +1648,7 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 							krb5_enctype enctype,
 							const char *princ_s,
 							krb5_principal princ,
-							bool flush,
-							bool keep_old_entries)
+							bool flush)
 {
 	krb5_error_code ret;
 	krb5_kt_cursor cursor;
@@ -1738,13 +1735,6 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 			DEBUG(5, (__location__ ": Saving previous (kvno %d) "
 				  "entry for principal: %s.\n",
 				  old_kvno, princ_s));
-			continue;
-		}
-
-		if (keep_old_entries) {
-			DEBUG(5, (__location__ ": Saving old (kvno %d) "
-				  "entry for principal: %s.\n",
-				  kvno, princ_s));
 			continue;
 		}
 
@@ -1865,8 +1855,7 @@ krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
 						      enctype,
 						      princ_s,
 						      princ,
-						      false, /* flush */
-						      false); /* keep_old_entries */
+						      false); /* flush */
 	if (ret) {
 		goto out;
 	}

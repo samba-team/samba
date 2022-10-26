@@ -496,8 +496,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 						      ENCTYPE_NULL,
 						      NULL,
 						      NULL,
-						      true,
-						      false);
+						      true); /* flush */
 	if (ret) {
 		goto out;
 	}
