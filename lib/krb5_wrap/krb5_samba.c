@@ -1632,6 +1632,8 @@ krb5_error_code smb_krb5_kt_get_name(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  kvno          The kvnco to use.
  *
+ * @param[in]  enctype       Only search for entries with the specified enctype
+ *
  * @param[in]  princ_s       The principal as a string to search for.
  *
  * @param[in]  princ         The principal as a krb5_principal to search for.
