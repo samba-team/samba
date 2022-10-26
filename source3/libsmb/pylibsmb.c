@@ -961,44 +961,30 @@ fail:
 	return NULL;
 }
 
-static bool pydict_setnum(PyObject *dict, const char *key, uint64_t num)
-{
-	PyObject *py_num = NULL;
-	int ret;
-
-	py_num = PyLong_FromLong(num);
-	if (py_num == NULL) {
-		return false;
-	}
-
-	ret = PyDict_SetItemString(dict, key, py_num);
-	Py_CLEAR(py_num);
-	return (ret == 0);
-}
-
 static PyObject *py_cli_create_returns(const struct smb_create_returns *r)
 {
 	PyObject *v = NULL;
-	bool ok = true;
 
-	v = PyDict_New();
-	if (v == NULL) {
-		return NULL;
-	}
-	ok &= pydict_setnum(v, "oplock_level", r->oplock_level);
-	ok &= pydict_setnum(v, "create_action", r->create_action);
-	ok &= pydict_setnum(v, "creation_time", r->creation_time);
-	ok &= pydict_setnum(v, "last_access_time", r->last_access_time);
-	ok &= pydict_setnum(v, "last_write_time", r->last_write_time);
-	ok &= pydict_setnum(v, "change_time", r->change_time);
-	ok &= pydict_setnum(v, "allocation_size", r->allocation_size);
-	ok &= pydict_setnum(v, "end_of_file", r->end_of_file);
-	ok &= pydict_setnum(v, "file_attributes", r->file_attributes);
-
-	if (!ok) {
-		Py_CLEAR(v);
-		Py_RETURN_NONE;
-	}
+	v = Py_BuildValue(
+		"{sLsLsLsLsLsLsLsLsL}",
+		"oplock_level",
+		(unsigned long long)r->oplock_level,
+		"create_action",
+		(unsigned long long)r->create_action,
+		"creation_time",
+		(unsigned long long)r->creation_time,
+		"last_access_time",
+		(unsigned long long)r->last_access_time,
+		"last_write_time",
+		(unsigned long long)r->last_write_time,
+		"change_time",
+		(unsigned long long)r->change_time,
+		"allocation_size",
+		(unsigned long long)r->allocation_size,
+		"end_of_file",
+		(unsigned long long)r->end_of_file,
+		"file_attributes",
+		(unsigned long long)r->file_attributes);
 	return v;
 }
 
