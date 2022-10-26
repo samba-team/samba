@@ -1630,7 +1630,11 @@ krb5_error_code smb_krb5_kt_get_name(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  keytab        The keytab to operate on.
  *
+ * @param[in]  keep_old_kvno Keep the entries with the previous kvno.
+ *
  * @param[in]  kvno          The kvnco to use.
+ *
+ * @param[in]  enctype_only  Only evaluate the enctype argument if true
  *
  * @param[in]  enctype       Only search for entries with the specified enctype
  *
@@ -1646,7 +1650,9 @@ krb5_error_code smb_krb5_kt_get_name(TALLOC_CTX *mem_ctx,
  */
 krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 							krb5_keytab keytab,
+							bool keep_old_kvno,
 							krb5_kvno kvno,
+							bool enctype_only,
 							krb5_enctype enctype,
 							const char *princ_s,
 							krb5_principal princ,
@@ -1658,6 +1664,16 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 	char *ktprinc = NULL;
 	krb5_kvno old_kvno = kvno - 1;
 	TALLOC_CTX *tmp_ctx;
+
+	if (flush) {
+		SMB_ASSERT(!keep_old_kvno);
+		SMB_ASSERT(!enctype_only);
+		SMB_ASSERT(princ_s == NULL);
+		SMB_ASSERT(princ == NULL);
+	} else {
+		SMB_ASSERT(princ_s != NULL);
+		SMB_ASSERT(princ != NULL);
+	}
 
 	ZERO_STRUCT(cursor);
 	ZERO_STRUCT(kt_entry);
@@ -1679,7 +1695,7 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 		krb5_enctype kt_entry_enctype =
 			smb_krb5_kt_get_enctype_from_entry(&kt_entry);
 
-		if (!flush && (princ_s != NULL)) {
+		if (princ_s != NULL) {
 			ret = smb_krb5_unparse_name(tmp_ctx, context,
 						    kt_entry.principal,
 						    &ktprinc);
@@ -1733,14 +1749,14 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 		 * the compare accordingly.
 		 */
 
-		if (!flush && ((kt_entry.vno & 0xff) == (old_kvno & 0xff))) {
+		if (keep_old_kvno && ((kt_entry.vno & 0xff) == (old_kvno & 0xff))) {
 			DEBUG(5, (__location__ ": Saving previous (kvno %d) "
 				  "entry for principal: %s.\n",
 				  old_kvno, princ_s));
 			continue;
 		}
 
-		if (!flush &&
+		if (enctype_only &&
 		    ((kt_entry.vno & 0xff) == (kvno & 0xff)) &&
 		    (kt_entry_enctype != enctype))
 		{
@@ -1853,7 +1869,9 @@ krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
 	/* Seek and delete old keytab entries */
 	ret = smb_krb5_kt_seek_and_delete_old_entries(context,
 						      keytab,
+						      true, /* keep_old_kvno */
 						      kvno,
+						      true, /* enctype_only */
 						      enctype,
 						      princ_s,
 						      princ,
