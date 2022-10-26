@@ -306,8 +306,7 @@ static int add_kt_entry_etypes(krb5_context context, TALLOC_CTX *tmpctx,
 					    salt_princ_s,
 					    enctypes[i],
 					    password,
-					    false,
-					    false);
+					    false); /* no_salt */
 		if (ret) {
 			DBG_WARNING("Failed to add entry to keytab\n");
 			goto out;
@@ -322,8 +321,7 @@ static int add_kt_entry_etypes(krb5_context context, TALLOC_CTX *tmpctx,
 						    salt_princ_s,
 						    enctypes[i],
 						    password,
-						    false,
-						    false);
+						    false); /* no_salt */
 			if (ret) {
 				DBG_WARNING("Failed to add short entry to keytab\n");
 				goto out;

@@ -113,8 +113,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 						     NULL,
 						     enctype,
 						     &password,
-						     true,    /* no_salt */
-						     false);  /* keeyp_old_entries */
+						     true);    /* no_salt */
 			if (code != 0) {
 				status = NT_STATUS_UNSUCCESSFUL;
 				*error_string = smb_get_krb5_error_message(context,

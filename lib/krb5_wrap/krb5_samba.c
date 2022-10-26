@@ -1829,8 +1829,6 @@ out:
  *                            this is only set to false for encryption types
  *                            which do not support salting like RC4.
  *
- * @param[in]  keep_old_entries Whether to keep or delete old keytab entries.
- *
  * @retval 0 on Success
  *
  * @return A corresponding KRB5 error code.
@@ -1844,8 +1842,7 @@ krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
 				      const char *salt_principal,
 				      krb5_enctype enctype,
 				      krb5_data *password,
-				      bool no_salt,
-				      bool keep_old_entries)
+				      bool no_salt)
 {
 	krb5_error_code ret;
 	krb5_keytab_entry kt_entry;
@@ -1868,8 +1865,8 @@ krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
 						      enctype,
 						      princ_s,
 						      princ,
-						      false,
-						      keep_old_entries);
+						      false, /* flush */
+						      false); /* keep_old_entries */
 	if (ret) {
 		goto out;
 	}
