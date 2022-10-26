@@ -38,9 +38,6 @@ if (gnutls_version > parse_version('3.6.10')):
         if (gnutls_version > parse_version('3.6.14')):
             conf.DEFINE('ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_CCM', 1)
 
-if (gnutls_version < parse_version('3.5.2')):
-    conf.DEFINE('HAVE_GNUTLS_AEAD_CIPHER_DECRYPT_PTEXT_LEN_BUG', 1)
-
 # Check if gnutls has fips mode support
 # gnutls_fips140_mode_enabled() is available since 3.3.0
 fragment = '''

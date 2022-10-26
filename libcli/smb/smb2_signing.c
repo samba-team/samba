@@ -1257,21 +1257,6 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 			status = gnutls_error_to_ntstatus(rc, NT_STATUS_INTERNAL_ERROR);
 			goto out;
 		}
-#ifdef HAVE_GNUTLS_AEAD_CIPHER_DECRYPT_PTEXT_LEN_BUG
-		/*
-		 * Note that gnutls before 3.5.2 had a bug and returned
-		 * *ptext_len = ctext_len, instead of
-		 * *ptext_len = ctext_len - tag_size
-		 */
-		if (ptext_size != ctext_size) {
-			TALLOC_FREE(ptext);
-			TALLOC_FREE(ctext);
-			rc = GNUTLS_E_SHORT_MEMORY_BUFFER;
-			status = gnutls_error_to_ntstatus(rc, NT_STATUS_INTERNAL_ERROR);
-			goto out;
-		}
-		ptext_size -= tag_size;
-#endif /* HAVE_GNUTLS_AEAD_CIPHER_DECRYPT_PTEXT_LEN_BUG */
 		if (ptext_size != m_total) {
 			TALLOC_FREE(ptext);
 			TALLOC_FREE(ctext);
