@@ -23,9 +23,6 @@ gnutls_version = parse_version(gnutls_version_str)
 # Define gnutls as a system library
 conf.SET_TARGET_TYPE('gnutls', 'SYSLIB')
 
-# Check for gnutls_pkcs7_get_embedded_data_oid (>= 3.5.5) required by libmscat
-conf.CHECK_FUNCS_IN('gnutls_pkcs7_get_embedded_data_oid', 'gnutls')
-
 # Check for gnutls_aead_cipher_encryptv2
 #
 # This is available since version 3.6.10, but 3.6.10 has a bug which got fixed

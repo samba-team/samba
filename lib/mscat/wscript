@@ -14,8 +14,7 @@ def configure(conf):
 
 def build(bld):
     if (bld.CONFIG_SET('HAVE_LIBTASN1') and
-        bld.env.ASN1PARSER and
-        bld.CONFIG_SET('HAVE_GNUTLS_PKCS7_GET_EMBEDDED_DATA_OID')):
+        bld.env.ASN1PARSER):
 
         bld.SAMBA_GENERATOR('MSCAT_PARSER',
                             source='mscat.asn',
