@@ -127,6 +127,9 @@ void gpupdate_user_init(const char *user)
 		loadparm_init_s3(NULL, loadparm_s3_helpers());
 	const char *const *gpupdate_cmd = lpcfg_gpo_update_command(lp_ctx);
 	const char *smbconf = lpcfg_configfile(lp_ctx);
+	if (smbconf == NULL) {
+		smbconf = lp_default_path();
+	}
 
 	if (ctx == NULL) {
 		DBG_ERR("talloc_new failed\n");
