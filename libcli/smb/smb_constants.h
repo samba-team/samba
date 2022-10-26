@@ -619,4 +619,9 @@ enum csc_policy {
  */
 #define SYMLINK_FLAG_RELATIVE	     0x00000001
 
+/*
+ * Symlink error tag from [MS-SMB2] 2.2.2.2.1 Symbolic Link Error Response
+ */
+#define SYMLINK_ERROR_TAG	     0x4C4D5953
+
 #endif /* _SMB_CONSTANTS_H */
