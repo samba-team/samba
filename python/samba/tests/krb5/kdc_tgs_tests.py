@@ -69,6 +69,7 @@ class KdcTgsBaseTests(KDCBaseTest):
                  srealm=None,
                  use_fast=False,
                  expect_claims=True,
+                 etypes=None,
                  expect_pac=True,
                  expect_pac_attrs=None,
                  expect_pac_attrs_pac_request=None,
@@ -134,7 +135,8 @@ class KdcTgsBaseTests(KDCBaseTest):
 
             pac_options = None
 
-        etypes = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
+        if etypes is None:
+            etypes = (AES256_CTS_HMAC_SHA1_96, ARCFOUR_HMAC_MD5)
 
         if expected_error:
             check_error_fn = self.generic_check_kdc_error
