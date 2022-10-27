@@ -58,7 +58,10 @@ static void gpupdate_callback(struct tevent_context *ev,
 		talloc_get_type_abort(private_data, struct gpupdate_state);
 	const char *const *gpupdate_cmd =
 		lpcfg_gpo_update_command(data->lp_ctx);
-	const char *smbconf = lp_default_path();
+	const char *smbconf = lpcfg_configfile(data->lp_ctx);
+	if (smbconf == NULL) {
+		smbconf = lp_default_path();
+	}
 
 	/* Execute gpupdate */
 	req = samba_runcmd_send(data->ctx, ev, timeval_zero(), 2, 0,
