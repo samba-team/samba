@@ -673,7 +673,8 @@ syscall(SYS_copy_file_range,0,NULL,0,NULL,0,0);
              conf.CONFIG_SET('HAVE_PTHREAD_MUTEX_CONSISTENT_NP'))):
             conf.DEFINE('HAVE_ROBUST_MUTEXES', 1)
 
-    # __thread is available since 2002 in gcc.
+    # __thread is available in Solaris Studio, IBM XL,
+    # gcc, Clang and Intel C Compiler
     conf.CHECK_CODE('''
         __thread int tls;
 
