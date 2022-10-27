@@ -102,7 +102,7 @@ found=$($net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberos
 testit "test (dedicated keytab) at least one fully qualified krb5 principal that was added is present in keytab" test $found -gt 1 || failed=$(expr $failed + 1)
 
 machinename="machine123"
-testit "test (dedicated keytab) add a kerberos prinicple created from machinename to keytab" $VALGRIND $net_tool ads keytab add $machinename'$' -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
+testit "test (dedicated keytab) add a kerberos principal created from machinename to keytab" $VALGRIND $net_tool ads keytab add $machinename'$' -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
 search_str="$machinename\$@$REALM"
 found=$($net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l)
 testit "test (dedicated keytab) at least one krb5 principal created from $machinename added is present in keytab" test $found -gt 1 || failed=$(expr $failed + 1)
