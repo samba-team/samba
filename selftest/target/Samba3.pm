@@ -3374,6 +3374,9 @@ sub provision($$)
 	copy = tmp
 	path = $nosymlinks_shrdir
 	follow symlinks = no
+[nosymlinks_smb1allow]
+	copy=nosymlinks
+	follow symlinks = yes
 
 [local_symlinks]
 	copy = tmp
