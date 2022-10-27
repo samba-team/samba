@@ -2144,7 +2144,7 @@ struct loadparm_service *lp_servicebynum(int snum)
 	return ServicePtrs[snum];
 }
 
-struct loadparm_service *lp_default_loadparm_service()
+struct loadparm_service *lp_default_loadparm_service(void)
 {
 	return &sDefault;
 }
@@ -4795,7 +4795,7 @@ unsigned int * get_flags(void)
 	return flags_list;
 }
 
-enum samba_weak_crypto lp_weak_crypto()
+enum samba_weak_crypto lp_weak_crypto(void)
 {
 	if (Globals.weak_crypto == SAMBA_WEAK_CRYPTO_UNKNOWN) {
 		Globals.weak_crypto = SAMBA_WEAK_CRYPTO_DISALLOWED;
