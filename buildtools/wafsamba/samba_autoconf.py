@@ -775,6 +775,8 @@ def SAMBA_CONFIG_H(conf, path=None):
                         testflags=True)
         conf.ADD_CFLAGS('-Werror-implicit-function-declaration',
                         testflags=True)
+        conf.ADD_CFLAGS('-Werror=implicit-int',
+                        testflags=True)
         conf.ADD_CFLAGS('-Werror=pointer-arith -Wpointer-arith',
                         testflags=True)
         conf.ADD_CFLAGS('-Werror=declaration-after-statement -Wdeclaration-after-statement',
