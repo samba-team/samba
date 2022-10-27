@@ -517,9 +517,9 @@ RPM_DISTS = {
             'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
         }
     },
-    'opensuse153': {
-        'docker_image': 'opensuse/leap:15.3',
-        'vagrant_box': 'opensuse/openSUSE-15.3-x86_64',
+    'opensuse154': {
+        'docker_image': 'opensuse/leap:15.4',
+        'vagrant_box': 'opensuse/openSUSE-15.4-x86_64',
         'bootstrap': ZYPPER_BOOTSTRAP,
         'replace': {
             '@development-tools': '',
@@ -531,7 +531,7 @@ RPM_DISTS = {
             'jansson-devel': 'libjansson-devel',
             'keyutils-libs-devel': 'keyutils-devel',
             'krb5-workstation': 'krb5-client',
-            'python3-libsemanage': 'python2-semanage',
+            'python3-libsemanage': 'python3-semanage',
             'openldap-devel': 'openldap2-devel',
             'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',
             'perl-JSON-Parse': 'perl-JSON-XS',
@@ -546,8 +546,8 @@ RPM_DISTS = {
             'glusterfs-api-devel': '',
             'libtasn1-tools': '', # asn1Parser is part of libtasn1
             'mold': '',
-            'ShellCheck': '',
             'shfmt': '',
+            'yum-utils': '',
         }
     }
 }

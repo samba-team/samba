@@ -45,11 +45,11 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "fedora36/locale.sh"
     end
 
-    config.vm.define "opensuse153" do |v|
-        v.vm.box = "opensuse/openSUSE-15.3-x86_64"
-        v.vm.hostname = "opensuse153"
-        v.vm.provision :shell, path: "opensuse153/bootstrap.sh"
-        v.vm.provision :shell, path: "opensuse153/locale.sh"
+    config.vm.define "opensuse154" do |v|
+        v.vm.box = "opensuse/openSUSE-15.4-x86_64"
+        v.vm.hostname = "opensuse154"
+        v.vm.provision :shell, path: "opensuse154/bootstrap.sh"
+        v.vm.provision :shell, path: "opensuse154/locale.sh"
     end
 
     config.vm.define "ubuntu1804" do |v|

@@ -12,6 +12,7 @@ zypper --non-interactive update
 zypper --non-interactive install \
     --no-recommends \
     system-user-nobody \
+    ShellCheck \
     acl \
     attr \
     autoconf \
@@ -81,7 +82,6 @@ zypper --non-interactive install \
     popt-devel \
     procps \
     psmisc \
-    python2-semanage \
     python3 \
     python3-Markdown \
     python3-cryptography \
@@ -92,6 +92,7 @@ zypper --non-interactive install \
     python3-pyasn1 \
     python3-python-dateutil \
     python3-requests \
+    python3-semanage \
     python3-setproctitle \
     readline-devel \
     rng-tools \
@@ -108,7 +109,6 @@ zypper --non-interactive install \
     which \
     xfsprogs-devel \
     xz \
-    yum-utils \
     zlib-devel
 
 zypper --non-interactive clean

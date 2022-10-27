@@ -1,5 +1,6 @@
 ---
 packages:
+  - ShellCheck
   - acl
   - attr
   - autoconf
@@ -69,7 +70,6 @@ packages:
   - popt-devel
   - procps
   - psmisc
-  - python2-semanage
   - python3
   - python3-Markdown
   - python3-cryptography
@@ -80,6 +80,7 @@ packages:
   - python3-pyasn1
   - python3-python-dateutil
   - python3-requests
+  - python3-semanage
   - python3-setproctitle
   - readline-devel
   - rng-tools
@@ -96,5 +97,4 @@ packages:
   - which
   - xfsprogs-devel
   - xz
-  - yum-utils
   - zlib-devel
