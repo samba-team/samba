@@ -166,6 +166,60 @@ testit_expect_failure "test (dedicated keytab) fail to parse windows spn with mi
 windows_spn="$spn_service/$spn_host/"
 testit_expect_failure "test (dedicated keytab) fail to parse windows spn with missing servicename" $VALGRIND $net_tool ads keytab add $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
 
+# now delete the keytab entries again...
+
+krb_princ="primary/instance@$REALM"
+testit "test (dedicated keytab) delete a fully qualified krb5 principal" $VALGRIND $net_tool ads keytab delete $krb_princ -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
+
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $krb_princ | wc -l`
+
+testit "test (dedicated keytab) fully qualified krb5 principal was deleted and is no longer present in keytab" test $found -eq 0 || failed=$(expr $failed + 1)
+
+machinename="machine123"
+testit "test (dedicated keytab) delete a kerberos principle created from machinename from keytab" $VALGRIND $net_tool ads keytab delete $machinename'$' -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
+search_str="$machinename\$@$REALM"
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
+testit "test (dedicated keytab) krb5 principal created from $machinename was deleted and is no longer present in keytab" test $found -eq 0 || failed=$(expr $failed + 1)
+
+service="nfs"
+testit "test (dedicated keytab) delete a $service service to keytab" $VALGRIND $net_tool ads keytab delete $service -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
+
+search_str="$service"
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
+testit "test (dedicated keytab) krb5 principal created from service was deleted and is no longer present in keytab" test $found -eq 0 || failed=$(expr $failed + 1)
+
+spn_service="random_srv"
+spn_host="somehost.subdomain.domain"
+spn_port="12345"
+
+windows_spn="$spn_service/$spn_host"
+testit "test (dedicated keytab) delete a $windows_spn windows style SPN from keytab" $VALGRIND $net_tool ads keytab delete $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
+
+search_str="$spn_service/$spn_host@$REALM"
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
+testit "test (dedicated keytab) krb5 principal created from windown SPN was deleted and is no longer present in keytab" test $found -eq 0 || failed=$(expr $failed + 1)
+
+windows_spn="$spn_service/$spn_host:$spn_port"
+testit "test (dedicated keytab) delete a $windows_spn windows style SPN to keytab" $VALGRIND $net_tool ads keytab delete $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
+
+search_str="$spn_service/$spn_host@$REALM"
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
+testit "test (dedicated keytab) krb5 principal created from windown SPN (with port) was deleted and is no longer present in keytab" test $found -eq 0 || failed=$(expr $failed + 1)
+
+# keytab add shouldn't have written spn to AD
+found=$($net_tool ads setspn list -U$DC_USERNAME%$DC_PASSWORD | grep $service | wc -l)
+testit "test (dedicated keytab) spn is not written to AD (using keytab add)" test $found -eq 0 || failed=$(expr $failed + 1)
+
+ad_service="writetoad"
+testit "test (dedicated keytab) delete a $ad_service service from keytab (used add_update_ads)" $VALGRIND $net_tool ads keytab delete $ad_service -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
+
+search_str="$ad_service"
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
+testit "test (dedicated keytab) spn is written to AD (using keytab add_update_ads) was deleted and is no longer present in keytab" test $found -eq 0 || failed=$(expr $failed + 1)
+# still in ad
+found=$($net_tool ads setspn list -U$DC_USERNAME%$DC_PASSWORD | grep $ad_service | wc -l)
+testit "test (dedicated keytab) spn is written to AD (using keytab add_update_ads) is still in ad after deletion from keytab" test $found -eq 2 || failed=$(expr $failed + 1)
+
 testit "changetrustpw (dedicated keytab)" $VALGRIND $net_tool ads changetrustpw || failed=$(expr $failed + 1)
 
 testit "leave (dedicated keytab)" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
