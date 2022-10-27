@@ -75,7 +75,8 @@ heimdal_no_error_flags = ['-Wno-error=discarded-qualifiers',
                           '-Wno-error=unused-but-set-variable',
                           '-Wno-error=unused-const-variable',
                           '-Wno-error=unused-variable',
-                          '-Wno-error=unused-result']
+                          '-Wno-error=unused-result',
+                          '-Wno-error=old-style-definition']
 for flag in heimdal_no_error_flags:
     conf.ADD_NAMED_CFLAGS('HEIMDAL_NO_ERROR_CFLAGS',
                           flag,
