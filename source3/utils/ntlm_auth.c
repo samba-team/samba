@@ -366,7 +366,7 @@ const char *get_winbind_netbios_name(void)
 
 }
 
-DATA_BLOB get_challenge(void) 
+DATA_BLOB get_challenge(void)
 {
 	static DATA_BLOB chal;
 	if (opt_challenge.length)
@@ -442,7 +442,7 @@ static bool get_require_membership_sid(void) {
  * need to contact trusted domain
  */
 
-int get_pam_winbind_config()
+int get_pam_winbind_config(void)
 {
 	int ctrl = 0;
 	struct tiniparser_dictionary *d = NULL;
@@ -716,7 +716,7 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
 	nt_status = (NT_STATUS(response.data.auth.nt_status));
 	if (!NT_STATUS_IS_OK(nt_status))
 	{
-		if (error_string) 
+		if (error_string)
 			*error_string = smb_xstrdup(response.data.auth.error_string);
 		winbindd_free_response(&response);
 		return nt_status;
@@ -866,7 +866,7 @@ done:
 
 
 /**
- * Return the challenge as determined by the authentication subsystem 
+ * Return the challenge as determined by the authentication subsystem
  * @return an 8 byte random challenge
  */
 
@@ -874,7 +874,7 @@ static NTSTATUS ntlm_auth_get_challenge(struct auth4_context *auth_ctx,
 					uint8_t chal[8])
 {
 	if (auth_ctx->challenge.data.length == 8) {
-		DEBUG(5, ("auth_get_challenge: returning previous challenge by module %s (normal)\n", 
+		DEBUG(5, ("auth_get_challenge: returning previous challenge by module %s (normal)\n",
 			  auth_ctx->challenge.set_by));
 		memcpy(chal, auth_ctx->challenge.data.data, 8);
 		return NT_STATUS_OK;
@@ -1940,7 +1940,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 
 				printf("Authenticated: Yes\n");
 
-				if (ntlm_server_1_lm_session_key 
+				if (ntlm_server_1_lm_session_key
 				    && (!all_zero(lm_key,
 						  sizeof(lm_key)))) {
 					hex_lm_key = hex_encode_talloc(NULL,
