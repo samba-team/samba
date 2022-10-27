@@ -31,7 +31,7 @@ struct tevent_context *s4_event_context_init(TALLOC_CTX *mem_ctx)
 {
 	struct tevent_context *ev;
 
-	ev = tevent_context_init_byname(mem_ctx, NULL);
+	ev = samba_tevent_context_init(mem_ctx);
 	if (ev) {
 		samba_tevent_set_debug(ev, "s4_tevent");
 		tevent_loop_allow_nesting(ev);
