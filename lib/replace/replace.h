@@ -699,12 +699,8 @@ int rep_strerror_r(int errnum, char *buf, size_t buflen);
 #include <stdbool.h>
 #endif
 
-#if !defined(HAVE_BOOL)
-#ifdef HAVE__Bool
-#define bool _Bool
-#else
+#ifndef HAVE_BOOL
 #error Need a real boolean type
-#endif
 #endif
 
 #if !defined(HAVE_INTPTR_T)

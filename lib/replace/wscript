@@ -160,8 +160,7 @@ def configure(conf):
                     msg='Checking for O_DIRECT flag to open(2)')
 
     conf.CHECK_TYPES('"long long" intptr_t uintptr_t ptrdiff_t comparison_fn_t')
-    if not conf.CHECK_TYPE('bool', define='HAVE_BOOL'):
-        if not conf.CHECK_TYPE('_Bool', define='HAVE__Bool'):
+    if not conf.CHECK_TYPE('bool', define='HAVE_BOOL', headers='stdbool.h'):
             raise Errors.WafError('Samba requires a genuine boolean type')
 
     conf.CHECK_TYPE('int8_t', 'char')
