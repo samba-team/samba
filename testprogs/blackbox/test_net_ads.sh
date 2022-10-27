@@ -1,6 +1,6 @@
 if [ $# -lt 4 ]; then
 	cat <<EOF
-Usage: test_net.sh DC_SERVER DC_USERNAME DC_PASSWORD PREFIX_ABS
+Usage: test_net.sh DC_SERVER DC_USERNAME DC_PASSWORD BASEDIR
 EOF
 	exit 1
 fi
@@ -84,7 +84,7 @@ testit "changetrustpw" $VALGRIND $net_tool ads changetrustpw || failed=$(expr $f
 testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
 
 # Test with kerberos method = secrets and keytab
-dedicated_keytab_file="$PREFIX_ABS/test_net_ads_dedicated_krb5.keytab"
+dedicated_keytab_file="$BASEDIR/$WORKDIR/test_net_ads_dedicated_krb5.keytab"
 testit "join (dedicated keytab)" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
 
 testit "testjoin (dedicated keytab)" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required || failed=$(expr $failed + 1)
@@ -228,22 +228,22 @@ testit_grep "dns alias addl" $dns_alias1 $VALGRIND $net_tool ads search -P samac
 testit_grep "dns alias addl" $dns_alias2 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ msDS-AdditionalDnsHostName || failed=$(expr $failed + 1)
 
 # Test binary msDS-AdditionalDnsHostName like ones added by Windows DC
-short_alias_file="$PREFIX_ABS/short_alias_file"
+short_alias_file="$BASEDIR/$WORKDIR/short_alias_file"
 printf 'short_alias\0$' >$short_alias_file
-cat >$PREFIX_ABS/tmpldbmodify <<EOF
+cat >$BASEDIR/$WORKDIR/tmpldbmodify <<EOF
 dn: CN=$HOSTNAME,$computers_dn
 changetype: modify
 add: msDS-AdditionalDnsHostName
 msDS-AdditionalDnsHostName:< file://$short_alias_file
 EOF
 
-testit "add binary msDS-AdditionalDnsHostName" $VALGRIND $ldbmodify -k yes -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM $PREFIX_ABS/tmpldbmodify || failed=$(expr $failed + 1)
+testit "add binary msDS-AdditionalDnsHostName" $VALGRIND $ldbmodify -k yes -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM $BASEDIR/$WORKDIR/tmpldbmodify || failed=$(expr $failed + 1)
 
 testit_grep "addl short alias" short_alias $ldbsearch --show-binary -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM --scope=base -b "CN=$HOSTNAME,CN=Computers,$base_dn" msDS-AdditionalDnsHostName || failed=$(expr $failed + 1)
 
-rm -f $PREFIX_ABS/tmpldbmodify $short_alias_file
+rm -f $BASEDIR/$WORKDIR/tmpldbmodify $short_alias_file
 
-dedicated_keytab_file="$PREFIX_ABS/test_dns_aliases_dedicated_krb5.keytab"
+dedicated_keytab_file="$BASEDIR/$WORKDIR/test_dns_aliases_dedicated_krb5.keytab"
 
 testit "dns alias create_keytab" $VALGRIND $net_tool ads keytab create --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
 
@@ -294,7 +294,7 @@ testit "join+createupn" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD
 
 testit_grep "checkupn" "userPrincipalName: host/test-$HOSTNAME@$REALM" $ldbsearch -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM --scope=base -b "CN=$HOSTNAME,CN=Computers,$base_dn" || failed=$(expr $failed + 1)
 
-dedicated_keytab_file="$PREFIX_ABS/test_net_create_dedicated_krb5.keytab"
+dedicated_keytab_file="$BASEDIR/$WORKDIR/test_net_create_dedicated_krb5.keytab"
 
 testit "create_keytab" $VALGRIND $net_tool ads keytab create --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
 
