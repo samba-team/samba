@@ -110,6 +110,7 @@ SAFE_FORMAT_CHARS = {
 # In the real world mixing directions would be normal in bilingual
 # documents, but it is rare in Samba source code.
 BIDI_FILES = {
+    'third_party/heimdal/lib/base/test_base.c',
     'third_party/heimdal/lib/wind/NormalizationTest.txt',
     'testdata/source-chars-bidi.py',
 }
