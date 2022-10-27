@@ -218,7 +218,7 @@ static NTSTATUS is_subpath(const char *sub, const char *full,
  /*
  * tar_get_ctx - retrieve global tar context handle
  */
-struct tar *tar_get_ctx()
+struct tar *tar_get_ctx(void)
 {
 	return &tar_ctx;
 }
