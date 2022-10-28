@@ -2180,7 +2180,11 @@ SMBC_getxattr_ctx(SMBCCTX *context,
                         errno = SMBC_errno(context, srv->cli);
                 }
 		TALLOC_FREE(frame);
-                return ret;
+		/*
+		 * static function cacl_get returns a value greater than zero
+		 * on success. Map this to zero meaning success.
+		 */
+                return ret < 0 ? -1 : 0;
         }
 
         /* Unsupported attribute name */
