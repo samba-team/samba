@@ -2442,6 +2442,7 @@ struct tevent_ops {
 };
 
 bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
+const struct tevent_ops *tevent_find_ops_byname(const char *name);
 
 /* @} */
 
