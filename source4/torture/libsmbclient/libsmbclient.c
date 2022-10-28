@@ -1473,6 +1473,98 @@ static bool torture_libsmbclient_getatr(struct torture_context *tctx)
 	return true;
 }
 
+static bool torture_libsmbclient_getxattr(struct torture_context *tctx)
+{
+	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
+	int fhandle = -1;
+	SMBCCTX *ctx = NULL;
+	char *getxattr_name = NULL;
+	char value[4096];
+	bool ok = false;
+	int ret = -1;
+
+	if (smburl == NULL) {
+		torture_fail(tctx,
+			     "option --option=torture:smburl="
+			     "smb://user:password@server missing\n");
+	}
+
+	ok = torture_libsmbclient_init_context(tctx, &ctx);
+	torture_assert(tctx, ok, "Failed to init context");
+	smbc_set_context(ctx);
+
+	getxattr_name = talloc_asprintf(tctx,
+			"%s/getxattr",
+			smburl);
+	if (getxattr_name == NULL) {
+		torture_result(tctx,
+			       TORTURE_FAIL,
+			       __location__": %s",
+			       "talloc fail\n");
+		return false;
+	}
+	/* Ensure the file doesn't exist. */
+	smbc_unlink(getxattr_name);
+
+	/* Create testfile. */
+	fhandle = smbc_creat(getxattr_name, 0666);
+	if (fhandle < 0) {
+		torture_fail_goto(tctx,
+			done,
+			talloc_asprintf(tctx,
+				"failed to create file '%s': %s",
+				getxattr_name,
+				strerror(errno)));
+	}
+	ret = smbc_close(fhandle);
+	torture_assert_int_equal_goto(tctx,
+		ret,
+		0,
+		ok,
+		done,
+		talloc_asprintf(tctx,
+			"failed to close handle for '%s'",
+			getxattr_name));
+
+	/*
+	 * Ensure getting a non-existent attribute returns -1.
+	 */
+	ret = smbc_getxattr(getxattr_name, "foobar", value, sizeof(value));
+	torture_assert_int_equal_goto(tctx,
+		ret,
+		-1,
+		ok,
+		done,
+		talloc_asprintf(tctx,
+			"smbc_getxattr(foobar) on '%s' should "
+			"get -1, got %d\n",
+			getxattr_name,
+			ret));
+
+	/*
+	 * Ensure getting a valid attribute returns 0.
+	 */
+	ret = smbc_getxattr(getxattr_name, "system.*", value, sizeof(value));
+	torture_assert_int_equal_goto(tctx,
+		ret,
+		0,
+		ok,
+		done,
+		talloc_asprintf(tctx,
+			"smbc_getxattr(foobar) on '%s' should "
+			"get -1, got %d\n",
+			getxattr_name,
+			ret));
+
+	ok = true;
+
+  done:
+
+	smbc_unlink(getxattr_name);
+	smbc_free_context(ctx, 1);
+	return ok;
+}
+
 NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
@@ -1501,6 +1593,8 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 					torture_libsmbclient_rename);
 	torture_suite_add_simple_test(suite, "getatr",
 		torture_libsmbclient_getatr);
+	torture_suite_add_simple_test(suite, "getxattr",
+		torture_libsmbclient_getxattr);
 
 	suite->description = talloc_strdup(suite, "libsmbclient interface tests");
 
