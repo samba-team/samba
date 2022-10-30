@@ -15,7 +15,7 @@ PASSWORD="$2"
 SERVER="$3"
 RPCCLIENT="$4"
 
-HASH=$(echo -n $PASSWORD | iconv -t utf16le | openssl md4 | cut -d ' ' -f2)
+HASH=$(echo -n $PASSWORD | iconv -t utf16le | $PYTHON -c 'import sys, binascii, samba, samba.crypto; sys.stdout.buffer.write(binascii.hexlify(samba.crypto.md4_hash_blob(sys.stdin.buffer.read(1000))))')
 
 RPCCLIENTCMD="$RPCCLIENT $SERVER --pw-nt-hash -U$USERNAME%$HASH -c queryuser"
 
